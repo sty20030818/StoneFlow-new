@@ -1,0 +1,39 @@
+[workspace]
+members = [
+  "crates/core",
+  "crates/desktop-app",
+  "crates/entity",
+  "crates/migration",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.77.2"
+version = "0.1.0"
+
+[workspace.dependencies]
+log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tauri = { version = "2.10.3" }
+tauri-plugin-log = "2"
+
+[package]
+name = "stoneflow"
+description = "StoneFlow"
+authors = ["StoneFish"]
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.6", features = [] }
+
+[dependencies]
+desktop-app = { path = "crates/desktop-app" }
+tauri.workspace = true

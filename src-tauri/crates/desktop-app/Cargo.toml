@@ -1,0 +1,14 @@
+[package]
+name = "desktop-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+log.workspace = true
+serde.workspace = true
+tauri.workspace = true
+tauri-plugin-log.workspace = true
+stoneflow-core = { path = "../core" }
+stoneflow-entity = { path = "../entity" }
+stoneflow-migration = { path = "../migration" }

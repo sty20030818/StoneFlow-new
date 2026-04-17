@@ -1,0 +1,9 @@
+[package]
+name = "stoneflow-entity"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "stoneflow_entity"
+path = "src/lib.rs"
