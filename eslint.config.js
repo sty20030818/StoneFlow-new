@@ -26,5 +26,11 @@ export default defineConfig([
         tsconfigRootDir,
       },
     },
+    rules: {
+      'react-refresh/only-export-components': [
+        'error',
+        { allowConstantExport: true },
+      ],
+    },
   },
 ])
