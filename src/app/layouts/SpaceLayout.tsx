@@ -1,25 +1,39 @@
 import { useEffect } from 'react'
-import { Outlet, useParams } from 'react-router-dom'
+import { Outlet, useLocation, useParams } from 'react-router-dom'
 
+import { resolveShellSection } from './shell/config'
 import {
+  selectActiveSection,
   selectCurrentSpaceId,
-  useSpaceShellStore,
-} from '../../features/space/model/useSpaceShellStore'
-import { AppFrame } from '../../shared/ui/AppFrame'
+  useShellLayoutStore,
+} from './shell/model/useShellLayoutStore'
+import { ShellLayout } from './shell/ShellLayout'
 
 export function SpaceLayout() {
   const { spaceId = 'default' } = useParams()
-  const currentSpaceId = useSpaceShellStore(selectCurrentSpaceId)
+  const { pathname } = useLocation()
+  const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
+  const activeSection = useShellLayoutStore(selectActiveSection)
+  const setCurrentSpaceId = useShellLayoutStore((state) => state.setCurrentSpaceId)
+  const setActiveSection = useShellLayoutStore((state) => state.setActiveSection)
 
   useEffect(() => {
     if (currentSpaceId !== spaceId) {
-      useSpaceShellStore.setState({ currentSpaceId: spaceId })
+      setCurrentSpaceId(spaceId)
     }
-  }, [currentSpaceId, spaceId])
+
+    const nextSection = resolveShellSection(pathname)
+    if (activeSection !== nextSection) {
+      setActiveSection(nextSection)
+    }
+  }, [activeSection, currentSpaceId, pathname, setActiveSection, setCurrentSpaceId, spaceId])
 
   return (
-    <AppFrame currentSpaceId={spaceId}>
+    <ShellLayout
+      activeSection={activeSection}
+      currentSpaceId={spaceId}
+    >
       <Outlet />
-    </AppFrame>
+    </ShellLayout>
   )
 }

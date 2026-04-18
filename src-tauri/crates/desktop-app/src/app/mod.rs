@@ -1,4 +1,39 @@
 use serde::Serialize;
+#[cfg(target_os = "macos")]
+use tauri::TitleBarStyle;
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+
+const MAIN_WINDOW_LABEL: &str = "main";
+
+fn build_main_window(app: &tauri::App) -> tauri::Result<()> {
+  if app.get_webview_window(MAIN_WINDOW_LABEL).is_some() {
+    return Ok(());
+  }
+
+  let window_builder = WebviewWindowBuilder::new(
+    app,
+    MAIN_WINDOW_LABEL,
+    WebviewUrl::default(),
+  )
+  .title("StoneFlow")
+  .inner_size(1440.0, 920.0)
+  .min_inner_size(960.0, 720.0)
+  .resizable(true)
+  .fullscreen(false);
+
+  #[cfg(target_os = "macos")]
+  let window_builder = window_builder
+    .decorations(true)
+    .title_bar_style(TitleBarStyle::Overlay)
+    .hidden_title(true);
+
+  #[cfg(not(target_os = "macos"))]
+  let window_builder = window_builder.decorations(false);
+
+  window_builder.build()?;
+
+  Ok(())
+}
 
 #[derive(Debug, Clone, Serialize)]
 struct HealthcheckPayload {
@@ -25,6 +60,8 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             .build(),
         )?;
       }
+
+      build_main_window(app)?;
 
       Ok(())
     })

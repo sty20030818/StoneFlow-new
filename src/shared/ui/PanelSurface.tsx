@@ -21,7 +21,7 @@ export function PanelSurface({
   return (
     <section
       className={cn(
-        'rounded-xl border border-border/80 bg-card px-5 py-5 shadow-(--sf-shadow-panel)',
+        'rounded-2xl border border-border/75 bg-card px-5 py-5 shadow-(--sf-shadow-panel)',
         className,
       )}
       {...props}
@@ -40,7 +40,7 @@ export function PanelSurface({
               </h2>
             ) : null}
             {description ? (
-              <p className="max-w-2xl text-sm text-muted-foreground">
+              <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
                 {description}
               </p>
             ) : null}
