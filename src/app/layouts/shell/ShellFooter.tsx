@@ -1,5 +1,6 @@
 import { getSectionLabel, getSpaceLabel } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
+import { useHealthcheckStatus } from '@/features/healthcheck/model/useHealthcheckStatus'
 import { Button } from '@/shared/ui/base/button'
 import {
   Settings2Icon,
@@ -15,15 +16,24 @@ export function ShellFooter({
   currentSpaceId,
   activeSection,
 }: ShellFooterProps) {
+  const healthcheckStatus = useHealthcheckStatus()
+
   return (
     <footer className="flex h-9.5 shrink-0 bg-(--sf-color-shell-chrome)">
       <div className="flex w-(--sf-shell-sidebar-width) items-center gap-2 px-3">
         <div className="flex min-w-0 items-center gap-2 text-[11px] text-(--sf-color-shell-tertiary)">
-          <span className="size-1.5 rounded-full bg-(--sf-color-shell-online)" />
-          <span className="truncate">All synced</span>
+          <span
+            className={`size-1.5 shrink-0 rounded-full ${healthcheckStatus.indicatorClassName}`}
+          />
+          <span className="truncate" title={healthcheckStatus.title}>
+            {healthcheckStatus.label}
+          </span>
         </div>
-        <span className="ml-auto text-[11px] text-(--sf-color-shell-tertiary)">
-          Apr 18
+        <span
+          className="ml-auto max-w-32 truncate text-[10px] text-(--sf-color-shell-tertiary)"
+          title={healthcheckStatus.title}
+        >
+          {healthcheckStatus.detail}
         </span>
         <Button className="size-7 rounded-[0.45rem]" size="icon-sm" variant="ghost">
           <Trash2Icon className="size-3.5" />

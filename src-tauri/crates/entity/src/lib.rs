@@ -1,8 +1,13 @@
-//! StoneFlow 数据实体骨架。
-//!
-//! M1-A 阶段只先锁定 crate 位置，具体 SeaORM 实体会在后续里程碑接入。
+//! StoneFlow 的 SeaORM 实体集合。
 
-/// 标记 entity crate 已经接通到 workspace。
-pub fn stage_label() -> &'static str {
-  "m1-a-entity-skeleton"
+pub mod project;
+pub mod space;
+pub mod task;
+pub mod trash_entry;
+
+pub mod prelude {
+  pub use super::project::Entity as Project;
+  pub use super::space::Entity as Space;
+  pub use super::task::Entity as Task;
+  pub use super::trash_entry::Entity as TrashEntry;
 }

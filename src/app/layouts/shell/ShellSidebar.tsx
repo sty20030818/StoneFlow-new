@@ -74,7 +74,7 @@ export function ShellSidebar({ currentSpaceId }: ShellSidebarProps) {
                   project.id === 'stoneflow-v1' ? 'pl-6' : '',
                   isActive
                     ? 'bg-black/9 font-medium text-foreground'
-                    : 'text-(--sf-color-shell-secondary)] hover:bg-black/5 hover:text-foreground',
+                    : 'text-(--sf-color-shell-secondary) hover:bg-black/5 hover:text-foreground',
                 )
               }
               key={project.id}

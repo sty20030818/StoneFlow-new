@@ -5,10 +5,15 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+anyhow.workspace = true
+chrono.workspace = true
 log.workspace = true
+sea-orm.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 tauri.workspace = true
 tauri-plugin-log.workspace = true
+uuid.workspace = true
 stoneflow-core = { path = "../core" }
 stoneflow-entity = { path = "../entity" }
 stoneflow-migration = { path = "../migration" }
