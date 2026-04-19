@@ -4,9 +4,9 @@ import { AppProviders } from './providers/AppProviders'
 import { router } from './router'
 
 export function App() {
-  return (
-    <AppProviders>
-      <RouterProvider router={router} />
-    </AppProviders>
-  )
+	return (
+		<AppProviders>
+			<RouterProvider router={router} />
+		</AppProviders>
+	)
 }

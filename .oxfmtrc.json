@@ -1,0 +1,49 @@
+{
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"printWidth": 100,
+	"tabWidth": 2,
+	"useTabs": true,
+	"semi": false,
+	"singleQuote": true,
+	"quoteProps": "as-needed",
+	"trailingComma": "all",
+	"bracketSpacing": true,
+	"arrowParens": "always",
+	"proseWrap": "preserve",
+	"embeddedLanguageFormatting": "auto",
+	"htmlWhitespaceSensitivity": "css",
+	"endOfLine": "lf",
+	"jsxSingleQuote": true,
+	"ignorePatterns": [
+		".codex/**",
+		".git/**",
+		"coverage/**",
+		"dist/**",
+		"dist-ssr/**",
+		"node_modules/**",
+		"src-tauri/**",
+		"Docs/**",
+		"openspec/**",
+		"*.md",
+		"*.svg",
+		"*.png",
+		"*.jpg",
+		"*.jpeg",
+		"*.ico",
+		".DS_Store"
+	],
+	"overrides": [
+		{
+			"files": ["*.json", "*.jsonc", "*.code-workspace"],
+			"options": {
+				"printWidth": 80
+			}
+		},
+		{
+			"files": ["*.css"],
+			"options": {
+				"singleQuote": false
+			}
+		}
+	]
+}

@@ -1,25 +1,33 @@
-# Logs
-logs
+# Node / Bun
+node_modules/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
-
-node_modules
-dist
-dist-ssr
 *.local
-src-tauri/target
-src-tauri/gen/schemas
+*.tsbuildinfo
+.turbo/
+.cache/
 
+# Build / test outputs
+dist/
+dist-ssr/
+coverage/
 
-# Editor directories and files
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/schemas/
+*.db
+*.db-shm
+*.db-wal
+
+# Editor / OS
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj

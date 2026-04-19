@@ -7,30 +7,30 @@ import { ProjectPage } from '../features/project/ui/ProjectPage'
 import { TrashPage } from '../features/trash/ui/TrashPage'
 
 export const router = createHashRouter([
-  {
-    path: '/',
-    element: <Navigate to="/space/default/inbox" replace />,
-  },
-  {
-    path: '/space/:spaceId',
-    element: <SpaceLayout />,
-    children: [
-      {
-        path: 'inbox',
-        element: <InboxPage />,
-      },
-      {
-        path: 'focus',
-        element: <FocusPage />,
-      },
-      {
-        path: 'project/:projectId',
-        element: <ProjectPage />,
-      },
-      {
-        path: 'trash',
-        element: <TrashPage />,
-      },
-    ],
-  },
+	{
+		path: '/',
+		element: <Navigate to='/space/default/inbox' replace />,
+	},
+	{
+		path: '/space/:spaceId',
+		element: <SpaceLayout />,
+		children: [
+			{
+				path: 'inbox',
+				element: <InboxPage />,
+			},
+			{
+				path: 'focus',
+				element: <FocusPage />,
+			},
+			{
+				path: 'project/:projectId',
+				element: <ProjectPage />,
+			},
+			{
+				path: 'trash',
+				element: <TrashPage />,
+			},
+		],
+	},
 ])

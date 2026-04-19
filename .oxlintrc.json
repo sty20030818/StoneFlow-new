@@ -1,0 +1,29 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"plugins": ["react", "vitest"],
+	"categories": {},
+	"rules": {},
+	"settings": {
+		"vitest": {
+			"typecheck": false
+		}
+	},
+	"env": {
+		"builtin": true
+	},
+	"ignorePatterns": [
+		".codex/**",
+		".git/**",
+		"coverage/**",
+		"dist/**",
+		"dist-ssr/**",
+		"node_modules/**",
+		"src-tauri/**",
+		"Docs/**",
+		"openspec/**",
+		"*.min.js",
+		"*.d.ts",
+		"*.tsbuildinfo",
+		".DS_Store"
+	]
+}
