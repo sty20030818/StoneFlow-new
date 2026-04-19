@@ -230,7 +230,7 @@ export function ShellHeader({
 								}}
 							>
 								<PlusIcon />
-								创建任务草稿
+								创建任务
 								<CommandShortcut>↵</CommandShortcut>
 							</CommandItem>
 							<CommandItem

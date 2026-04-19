@@ -59,6 +59,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				<ShellDrawer
 					activeDrawerId={activeDrawerId}
 					activeDrawerKind={activeDrawerKind}
+					currentSpaceId={currentSpaceId}
 					onClose={closeDrawer}
 					open={isDrawerOpen}
 				/>

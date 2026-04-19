@@ -2,6 +2,11 @@
 use tauri::TitleBarStyle;
 use tauri::{Manager, State, WebviewUrl, WebviewWindowBuilder};
 
+use crate::application::create::{
+    create_project as create_project_usecase, create_space as create_space_usecase,
+    create_task as create_task_usecase, CreateProjectInput, CreateSpaceInput, CreateTaskInput,
+    CreatedProjectPayload, CreatedSpacePayload, CreatedTaskPayload,
+};
 use crate::infrastructure::database::{
     initialize_database, DatabaseHealthcheckPayload, DatabaseState,
 };
@@ -39,6 +44,36 @@ fn healthcheck(database: State<'_, DatabaseState>) -> DatabaseHealthcheckPayload
     database.payload()
 }
 
+#[tauri::command]
+async fn create_space(
+    input: CreateSpaceInput,
+    database: State<'_, DatabaseState>,
+) -> Result<CreatedSpacePayload, String> {
+    create_space_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn create_project(
+    input: CreateProjectInput,
+    database: State<'_, DatabaseState>,
+) -> Result<CreatedProjectPayload, String> {
+    create_project_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn create_task(
+    input: CreateTaskInput,
+    database: State<'_, DatabaseState>,
+) -> Result<CreatedTaskPayload, String> {
+    create_task_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
 /// 启动 StoneFlow 的 Tauri 宿主。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
     tauri::Builder::default()
@@ -60,17 +95,26 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![healthcheck])
+        .invoke_handler(tauri::generate_handler![
+            healthcheck,
+            create_space,
+            create_project,
+            create_task
+        ])
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::application::create::{
+        create_project, create_space, create_task, CreateProjectInput, CreateSpaceInput,
+        CreateTaskInput,
+    };
     use crate::infrastructure::database::prepare_database_at_path;
     use sea_orm::{
         ActiveModelTrait, ActiveValue::Set, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter,
     };
     use serde_json::json;
-    use stoneflow_entity::{focus_view, resource, space, trash_entry};
+    use stoneflow_entity::{focus_view, project, resource, space, task, trash_entry};
     use stoneflow_migration::MigratorTrait;
 
     struct TestDatabaseDir {
@@ -292,6 +336,222 @@ mod tests {
 
             assert_eq!(resource_count, 0);
             assert_eq!(focus_view_count, 4);
+        });
+    }
+
+    #[test]
+    fn create_task_writes_in_app_inbox_defaults() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before creating task");
+
+            let payload = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "  编写 M2-B 创建链路  ".to_owned(),
+                    note: Some("  先打通 Header 入口  ".to_owned()),
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("task should be created successfully");
+
+            let persisted_task = task::Entity::find_by_id(payload.id)
+                .one(&state.connection)
+                .await
+                .expect("created task should be queryable")
+                .expect("created task should exist");
+
+            assert_eq!(persisted_task.title, "编写 M2-B 创建链路");
+            assert_eq!(persisted_task.note.as_deref(), Some("先打通 Header 入口"));
+            assert_eq!(persisted_task.status, "todo");
+            assert_eq!(persisted_task.source, "in_app_capture");
+            assert!(persisted_task.project_id.is_none());
+            assert!(persisted_task.deleted_at.is_none());
+            assert!(persisted_task.completed_at.is_none());
+        });
+    }
+
+    #[test]
+    fn create_task_rejects_blank_title() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before blank title validation");
+
+            let error = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "   ".to_owned(),
+                    note: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect_err("blank title should be rejected");
+
+            assert!(error.to_string().contains("task title cannot be empty"));
+        });
+    }
+
+    #[test]
+    fn create_task_rejects_unknown_space_slug() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before space validation");
+
+            let error = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "unknown".to_owned(),
+                    title: "验证非法空间".to_owned(),
+                    note: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect_err("unknown space slug should be rejected");
+
+            assert!(error.to_string().contains("space `unknown` does not exist"));
+        });
+    }
+
+    #[test]
+    fn create_space_initializes_system_focus_views() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before creating space");
+
+            let created_space = create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "  深度工作  ".to_owned(),
+                },
+            )
+            .await
+            .expect("space should be created successfully");
+
+            let focus_view_count = focus_view::Entity::find()
+                .filter(focus_view::Column::SpaceId.eq(created_space.id))
+                .count(&state.connection)
+                .await
+                .expect("new space focus views should be queryable");
+
+            assert_eq!(created_space.slug, "深度工作");
+            assert_eq!(focus_view_count, 4);
+        });
+    }
+
+    #[test]
+    fn create_space_normalizes_ascii_slug_and_create_project_uses_tail_sort_order() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before creating space and project");
+
+            let created_space = create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "Design Ops".to_owned(),
+                },
+            )
+            .await
+            .expect("space should be created successfully");
+
+            assert_eq!(created_space.slug, "design-ops");
+
+            let first_project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: created_space.slug.clone(),
+                    name: "Roadmap".to_owned(),
+                },
+            )
+            .await
+            .expect("first project should be created");
+
+            let second_project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: created_space.slug.clone(),
+                    name: "Execution".to_owned(),
+                },
+            )
+            .await
+            .expect("second project should be created");
+
+            let second_model = project::Entity::find_by_id(second_project.id)
+                .one(&state.connection)
+                .await
+                .expect("second project should be queryable")
+                .expect("second project should exist");
+
+            assert_eq!(first_project.status, "active");
+            assert_eq!(first_project.sort_order, 0);
+            assert_eq!(second_model.parent_project_id, None);
+            assert_eq!(second_model.sort_order, 1);
+            assert!(second_model.deleted_at.is_none());
+        });
+    }
+
+    #[test]
+    fn create_task_rejects_project_from_another_space() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before project scope validation");
+
+            let other_space = create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "Study".to_owned(),
+                },
+            )
+            .await
+            .expect("other space should be created");
+
+            let foreign_project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: other_space.slug,
+                    name: "Read Papers".to_owned(),
+                },
+            )
+            .await
+            .expect("foreign project should be created");
+
+            let error = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "不能跨空间挂项目".to_owned(),
+                    note: None,
+                    project_id: Some(foreign_project.id),
+                },
+            )
+            .await
+            .expect_err("cross-space project should be rejected");
+
+            assert!(error
+                .to_string()
+                .contains("does not belong to space `default`"));
         });
     }
 }

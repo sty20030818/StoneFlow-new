@@ -2,10 +2,11 @@
 
 use anyhow::{Context, Result};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, JsonValue,
+    QueryFilter, QueryOrder,
 };
 use stoneflow_core::{DefaultSpaceSeed, FocusViewType, SystemFocusViewDefinition};
-use stoneflow_entity::{focus_view, space};
+use stoneflow_entity::{focus_view, project, space, task};
 use uuid::Uuid;
 
 /// 初始化阶段使用的 Space 仓储。
@@ -66,6 +67,41 @@ impl<'db> SpaceRepository<'db> {
         .insert(self.connection)
         .await
         .context("failed to insert default space seed")
+    }
+
+    /// 计算新的 Space 排序值。
+    pub(crate) async fn next_sort_order(&self) -> Result<i32> {
+        let next_sort_order = space::Entity::find()
+            .order_by_desc(space::Column::SortOrder)
+            .one(self.connection)
+            .await
+            .context("failed to query next space sort order")?
+            .map_or(0, |space| space.sort_order.saturating_add(1));
+
+        Ok(next_sort_order)
+    }
+
+    /// 创建新的 Space。
+    pub(crate) async fn create_space(
+        &self,
+        name: &str,
+        slug: &str,
+        sort_order: i32,
+    ) -> Result<space::Model> {
+        let now = chrono::Utc::now();
+
+        space::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            name: Set(name.to_owned()),
+            slug: Set(slug.to_owned()),
+            sort_order: Set(sort_order),
+            is_archived: Set(false),
+            created_at: Set(now),
+            updated_at: Set(now),
+        }
+        .insert(self.connection)
+        .await
+        .with_context(|| format!("failed to create space `{slug}`"))
     }
 }
 
@@ -150,5 +186,115 @@ impl<'db> FocusViewRepository<'db> {
         .insert(self.connection)
         .await
         .with_context(|| format!("failed to insert system focus view `{key}`"))
+    }
+}
+
+/// 创建阶段使用的 Project 仓储。
+pub(crate) struct ProjectRepository<'db> {
+    connection: &'db DatabaseConnection,
+}
+
+impl<'db> ProjectRepository<'db> {
+    /// 创建仓储实例。
+    pub(crate) const fn new(connection: &'db DatabaseConnection) -> Self {
+        Self { connection }
+    }
+
+    /// 查询未删除的 Project。
+    pub(crate) async fn find_active_by_id(&self, id: Uuid) -> Result<Option<project::Model>> {
+        project::Entity::find()
+            .filter(project::Column::Id.eq(id))
+            .filter(project::Column::DeletedAt.is_null())
+            .one(self.connection)
+            .await
+            .with_context(|| format!("failed to query project `{id}`"))
+    }
+
+    /// 计算 Space 下一个 Project 排序值。
+    pub(crate) async fn next_sort_order(&self, space_id: Uuid) -> Result<i32> {
+        let next_sort_order = project::Entity::find()
+            .filter(project::Column::SpaceId.eq(space_id))
+            .filter(project::Column::DeletedAt.is_null())
+            .order_by_desc(project::Column::SortOrder)
+            .one(self.connection)
+            .await
+            .with_context(|| format!("failed to query next project sort order for `{space_id}`"))?
+            .map_or(0, |project| project.sort_order.saturating_add(1));
+
+        Ok(next_sort_order)
+    }
+
+    /// 创建顶层 Project。
+    pub(crate) async fn create_project(
+        &self,
+        space_id: Uuid,
+        name: &str,
+        status: &str,
+        sort_order: i32,
+    ) -> Result<project::Model> {
+        let now = chrono::Utc::now();
+
+        project::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            space_id: Set(space_id),
+            parent_project_id: Set(None),
+            name: Set(name.to_owned()),
+            status: Set(status.to_owned()),
+            note: Set(None),
+            due_at: Set(None),
+            sort_order: Set(sort_order),
+            deleted_at: Set(None),
+            created_at: Set(now),
+            updated_at: Set(now),
+        }
+        .insert(self.connection)
+        .await
+        .with_context(|| format!("failed to create project `{name}`"))
+    }
+}
+
+/// 创建阶段使用的 Task 仓储。
+pub(crate) struct TaskRepository<'db> {
+    connection: &'db DatabaseConnection,
+}
+
+impl<'db> TaskRepository<'db> {
+    /// 创建仓储实例。
+    pub(crate) const fn new(connection: &'db DatabaseConnection) -> Self {
+        Self { connection }
+    }
+
+    /// 创建新的 Task。
+    pub(crate) async fn create_task(
+        &self,
+        space_id: Uuid,
+        project_id: Option<Uuid>,
+        title: &str,
+        note: Option<&str>,
+        status: &str,
+        source: &str,
+    ) -> Result<task::Model> {
+        let now = chrono::Utc::now();
+
+        task::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            space_id: Set(space_id),
+            project_id: Set(project_id),
+            title: Set(title.to_owned()),
+            status: Set(status.to_owned()),
+            priority: Set(None),
+            note: Set(note.map(str::to_owned)),
+            tags: Set(JsonValue::Array(Vec::new())),
+            due_at: Set(None),
+            pinned: Set(false),
+            source: Set(source.to_owned()),
+            deleted_at: Set(None),
+            completed_at: Set(None),
+            created_at: Set(now),
+            updated_at: Set(now),
+        }
+        .insert(self.connection)
+        .await
+        .with_context(|| format!("failed to create task `{title}`"))
     }
 }
