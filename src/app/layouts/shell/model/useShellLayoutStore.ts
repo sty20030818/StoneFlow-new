@@ -9,6 +9,7 @@ type ShellLayoutState = {
 	isDrawerOpen: boolean
 	activeDrawerKind: ShellDrawerKind | null
 	activeDrawerId: string | null
+	taskDataVersion: number
 	setCurrentSpaceId: (spaceId: string) => void
 	setActiveSection: (section: ShellSectionKey) => void
 	setCommandOpen: (open: boolean) => void
@@ -17,6 +18,7 @@ type ShellLayoutState = {
 	setDrawerOpen: (open: boolean) => void
 	openDrawer: (kind: ShellDrawerKind, id: string) => void
 	closeDrawer: () => void
+	bumpTaskDataVersion: () => void
 }
 
 export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
@@ -26,6 +28,7 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 	isDrawerOpen: false,
 	activeDrawerKind: null,
 	activeDrawerId: null,
+	taskDataVersion: 0,
 	setCurrentSpaceId: (spaceId) => set({ currentSpaceId: spaceId }),
 	setActiveSection: (section) => set({ activeSection: section }),
 	setCommandOpen: (open) => set({ isCommandOpen: open }),
@@ -53,6 +56,10 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 			activeDrawerKind: null,
 			activeDrawerId: null,
 		}),
+	bumpTaskDataVersion: () =>
+		set((state) => ({
+			taskDataVersion: state.taskDataVersion + 1,
+		})),
 }))
 
 export const selectCurrentSpaceId = (state: ShellLayoutState) => state.currentSpaceId
@@ -66,3 +73,5 @@ export const selectIsDrawerOpen = (state: ShellLayoutState) => state.isDrawerOpe
 export const selectActiveDrawerKind = (state: ShellLayoutState) => state.activeDrawerKind
 
 export const selectActiveDrawerId = (state: ShellLayoutState) => state.activeDrawerId
+
+export const selectTaskDataVersion = (state: ShellLayoutState) => state.taskDataVersion

@@ -2,12 +2,12 @@ import { startTransition, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
+	getProjectSectionPath,
 	getSectionLabel,
 	getSpaceLabel,
 	SHELL_COMMAND_CREATE_TARGET,
-	SHELL_COMMAND_PROJECT_TARGET,
 	SHELL_NAV_ITEMS,
-	SHELL_PROJECT_LINKS,
+	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import { Kbd } from '@/shared/ui/Kbd'
@@ -30,6 +30,9 @@ type ShellHeaderProps = {
 	currentSpaceId: string
 	activeSection: ShellSectionKey
 	isCommandOpen: boolean
+	isProjectsLoading: boolean
+	projects: ShellProjectLink[]
+	projectsError: string | null
 	onCommandOpenChange: (open: boolean) => void
 	onOpenDrawer: (kind: ShellDrawerKind, id: string) => void
 }
@@ -38,12 +41,16 @@ export function ShellHeader({
 	currentSpaceId,
 	activeSection,
 	isCommandOpen,
+	isProjectsLoading,
 	onCommandOpenChange,
 	onOpenDrawer,
+	projects,
+	projectsError,
 }: ShellHeaderProps) {
 	const navigate = useNavigate()
 	const [isMaximized, setIsMaximized] = useState(false)
 	const isMac = useMemo(() => /Mac|iPhone|iPad|iPod/i.test(window.navigator.userAgent), [])
+	const defaultProjectId = projects[0]?.id ?? null
 
 	useEffect(() => {
 		let disposed = false
@@ -234,9 +241,12 @@ export function ShellHeader({
 								<CommandShortcut>↵</CommandShortcut>
 							</CommandItem>
 							<CommandItem
+								disabled={!defaultProjectId}
 								onSelect={() => {
 									onCommandOpenChange(false)
-									onOpenDrawer(SHELL_COMMAND_PROJECT_TARGET.kind, SHELL_COMMAND_PROJECT_TARGET.id)
+									if (defaultProjectId) {
+										onOpenDrawer('project', defaultProjectId)
+									}
 								}}
 							>
 								<SearchIcon />
@@ -251,7 +261,13 @@ export function ShellHeader({
 							{SHELL_NAV_ITEMS.map((item) => (
 								<CommandItem
 									key={item.key}
-									onSelect={() => handleNavigate(item.to(currentSpaceId))}
+									onSelect={() =>
+										handleNavigate(
+											item.key === 'project'
+												? getProjectSectionPath(currentSpaceId, defaultProjectId)
+												: item.to(currentSpaceId),
+										)
+									}
 									value={item.label}
 								>
 									<item.icon />
@@ -264,17 +280,36 @@ export function ShellHeader({
 						<CommandSeparator />
 
 						<CommandGroup heading='Projects'>
-							{SHELL_PROJECT_LINKS.map((project) => (
-								<CommandItem
-									key={project.id}
-									onSelect={() => handleNavigate(`/space/${currentSpaceId}/project/${project.id}`)}
-									value={project.label}
-								>
+							{isProjectsLoading ? (
+								<CommandItem disabled value='loading-projects'>
 									<SearchIcon />
-									{project.label}
-									{project.badge ? <CommandShortcut>{project.badge}</CommandShortcut> : null}
+									正在加载项目...
 								</CommandItem>
-							))}
+							) : projectsError ? (
+								<CommandItem disabled value='projects-error'>
+									<SearchIcon />
+									{projectsError}
+								</CommandItem>
+							) : projects.length === 0 ? (
+								<CommandItem disabled value='empty-projects'>
+									<SearchIcon />
+									当前 Space 还没有项目
+								</CommandItem>
+							) : (
+								projects.map((project) => (
+									<CommandItem
+										key={project.id}
+										onSelect={() =>
+											handleNavigate(`/space/${currentSpaceId}/project/${project.id}`)
+										}
+										value={project.label}
+									>
+										<SearchIcon />
+										{project.label}
+										{project.badge ? <CommandShortcut>{project.badge}</CommandShortcut> : null}
+									</CommandItem>
+								))
+							)}
 						</CommandGroup>
 					</CommandList>
 				</Command>

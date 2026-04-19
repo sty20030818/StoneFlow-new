@@ -5,8 +5,9 @@ import {
 	selectActiveDrawerKind,
 	selectIsCommandOpen,
 	selectIsDrawerOpen,
-	useShellLayoutStore,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
+import { useShellProjects } from '@/app/layouts/shell/model/useShellProjects'
+import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { ShellDrawer } from '@/app/layouts/shell/ShellDrawer'
 import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
@@ -24,6 +25,16 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 	const isDrawerOpen = useShellLayoutStore(selectIsDrawerOpen)
 	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
 	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
+	const {
+		projects,
+		isLoading: isProjectsLoading,
+		error: projectsError,
+	} = useShellProjects(currentSpaceId)
+	const projectLinks = projects.map((project) => ({
+		id: project.id,
+		label: project.name,
+		badge: project.status,
+	}))
 	const setCommandOpen = useShellLayoutStore((state) => state.setCommandOpen)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
 	const closeDrawer = useShellLayoutStore((state) => state.closeDrawer)
@@ -34,12 +45,20 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				activeSection={activeSection}
 				currentSpaceId={currentSpaceId}
 				isCommandOpen={isCommandOpen}
+				isProjectsLoading={isProjectsLoading}
 				onCommandOpenChange={setCommandOpen}
 				onOpenDrawer={openDrawer}
+				projects={projectLinks}
+				projectsError={projectsError}
 			/>
 
 			<div className='relative flex min-h-0 flex-1 overflow-hidden'>
-				<ShellSidebar currentSpaceId={currentSpaceId} />
+				<ShellSidebar
+					currentSpaceId={currentSpaceId}
+					isProjectsLoading={isProjectsLoading}
+					projects={projectLinks}
+					projectsError={projectsError}
+				/>
 
 				<div className='relative flex min-w-0 flex-1 flex-col overflow-hidden bg-(--sf-color-shell-chrome)'>
 					<ShellMain>{children}</ShellMain>

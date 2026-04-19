@@ -1,5 +1,6 @@
 import { getDrawerDetail } from '@/app/layouts/shell/config'
 import { TaskCaptureDrawerContent } from '@/features/task-capture/ui/TaskCaptureDrawerContent'
+import { TaskDrawerContent } from '@/features/task-drawer/ui/TaskDrawerContent'
 import type { ShellDrawerKind } from '@/app/layouts/shell/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
@@ -25,6 +26,13 @@ export function ShellDrawer({
 	const detail = getDrawerDetail(activeDrawerKind, activeDrawerId)
 	const isTaskCaptureDrawer =
 		activeDrawerKind === 'task' && activeDrawerId === TASK_CAPTURE_DRAWER_ID
+	const isRealTaskDrawer =
+		activeDrawerKind === 'task' && !!activeDrawerId && !isTaskCaptureDrawer && !detail
+	const drawerTitle = isTaskCaptureDrawer
+		? 'Create task'
+		: activeDrawerKind === 'project'
+			? 'Project detail'
+			: 'Task detail'
 
 	return (
 		<aside
@@ -34,9 +42,7 @@ export function ShellDrawer({
 			}`}
 		>
 			<header className='flex h-10.5 shrink-0 items-center justify-between border-b border-black/6 px-3.5'>
-				<div className='text-[13px] font-medium text-foreground'>
-					{isTaskCaptureDrawer ? 'Create task' : 'Task detail'}
-				</div>
+				<div className='text-[13px] font-medium text-foreground'>{drawerTitle}</div>
 				<Button
 					className='size-5 rounded-[0.35rem]'
 					onClick={onClose}
@@ -50,6 +56,12 @@ export function ShellDrawer({
 			<div className='no-scrollbar flex-1 overflow-y-auto px-3.5 py-3'>
 				{isTaskCaptureDrawer ? (
 					<TaskCaptureDrawerContent currentSpaceId={currentSpaceId} onClose={onClose} />
+				) : isRealTaskDrawer && activeDrawerId ? (
+					<TaskDrawerContent
+						currentSpaceId={currentSpaceId}
+						onClose={onClose}
+						taskId={activeDrawerId}
+					/>
 				) : detail ? (
 					<div className='space-y-3'>
 						<div className='space-y-2'>

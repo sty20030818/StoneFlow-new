@@ -20,7 +20,7 @@ type ShellNavItem = {
 	to: (spaceId: string) => string
 }
 
-type ShellProjectLink = {
+export type ShellProjectLink = {
 	id: string
 	label: string
 	badge?: string
@@ -89,21 +89,9 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
 	},
 ]
 
-export const SHELL_PROJECT_LINKS: ShellProjectLink[] = [
-	{ id: 'product-design', label: '产品设计' },
-	{ id: 'engineering', label: '工程开发' },
-	{ id: 'stoneflow-v1', label: 'StoneFlow V1', badge: '当前' },
-	{ id: 'growth', label: '市场推广' },
-]
-
 export const SHELL_COMMAND_CREATE_TARGET = {
 	kind: 'task' as const,
 	id: 'task-command-capture',
-}
-
-export const SHELL_COMMAND_PROJECT_TARGET = {
-	kind: 'project' as const,
-	id: 'stoneflow-v1',
 }
 
 export function resolveShellSection(pathname: string): ShellSectionKey {
@@ -128,6 +116,10 @@ export function getSectionLabel(section: ShellSectionKey) {
 
 export function getSpaceLabel(spaceId: string) {
 	return SHELL_SPACES.find((item) => item.id === spaceId)?.label ?? spaceId
+}
+
+export function getProjectSectionPath(spaceId: string, projectId?: string | null) {
+	return projectId ? `/space/${spaceId}/project/${projectId}` : `/space/${spaceId}/inbox`
 }
 
 const taskDetails: Record<string, DrawerDetail> = {

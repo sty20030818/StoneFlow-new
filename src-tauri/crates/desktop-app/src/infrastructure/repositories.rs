@@ -210,6 +210,18 @@ impl<'db> ProjectRepository<'db> {
             .with_context(|| format!("failed to query project `{id}`"))
     }
 
+    /// 查询 Space 下可用于 Inbox 整理的 Project 列表。
+    pub(crate) async fn list_active_by_space(&self, space_id: Uuid) -> Result<Vec<project::Model>> {
+        project::Entity::find()
+            .filter(project::Column::SpaceId.eq(space_id))
+            .filter(project::Column::DeletedAt.is_null())
+            .filter(project::Column::Status.eq("active"))
+            .order_by_asc(project::Column::SortOrder)
+            .all(self.connection)
+            .await
+            .with_context(|| format!("failed to query active projects for space `{space_id}`"))
+    }
+
     /// 计算 Space 下一个 Project 排序值。
     pub(crate) async fn next_sort_order(&self, space_id: Uuid) -> Result<i32> {
         let next_sort_order = project::Entity::find()
@@ -258,6 +270,16 @@ pub(crate) struct TaskRepository<'db> {
     connection: &'db DatabaseConnection,
 }
 
+/// Task Drawer 基础字段更新载荷。
+pub(crate) struct UpdateTaskDrawerFieldsParams<'a> {
+    pub(crate) title: &'a str,
+    pub(crate) note: Option<&'a str>,
+    pub(crate) priority: Option<&'a str>,
+    pub(crate) project_id: Option<Uuid>,
+    pub(crate) status: &'a str,
+    pub(crate) completed_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
 impl<'db> TaskRepository<'db> {
     /// 创建仓储实例。
     pub(crate) const fn new(connection: &'db DatabaseConnection) -> Self {
@@ -296,5 +318,116 @@ impl<'db> TaskRepository<'db> {
         .insert(self.connection)
         .await
         .with_context(|| format!("failed to create task `{title}`"))
+    }
+
+    /// 查询单个未删除 Task。
+    pub(crate) async fn find_active_by_id(&self, id: Uuid) -> Result<Option<task::Model>> {
+        task::Entity::find()
+            .filter(task::Column::Id.eq(id))
+            .filter(task::Column::DeletedAt.is_null())
+            .one(self.connection)
+            .await
+            .with_context(|| format!("failed to query task `{id}`"))
+    }
+
+    /// 查询 Space 下仍位于 Inbox 的 Task 列表。
+    pub(crate) async fn list_inbox_by_space(&self, space_id: Uuid) -> Result<Vec<task::Model>> {
+        task::Entity::find()
+            .filter(task::Column::SpaceId.eq(space_id))
+            .filter(task::Column::DeletedAt.is_null())
+            .filter(task::Column::Status.eq("todo"))
+            .filter(
+                task::Column::ProjectId
+                    .is_null()
+                    .or(task::Column::Priority.is_null()),
+            )
+            .order_by_desc(task::Column::CreatedAt)
+            .all(self.connection)
+            .await
+            .with_context(|| format!("failed to query inbox tasks for space `{space_id}`"))
+    }
+
+    /// 更新 Inbox 整理允许变动的最小字段。
+    pub(crate) async fn update_inbox_triage(
+        &self,
+        task_model: task::Model,
+        project_id: Option<Uuid>,
+        priority: Option<&str>,
+    ) -> Result<task::Model> {
+        let mut active_model: task::ActiveModel = task_model.into();
+
+        if let Some(project_id) = project_id {
+            active_model.project_id = Set(Some(project_id));
+        }
+
+        if let Some(priority) = priority {
+            active_model.priority = Set(Some(priority.to_owned()));
+        }
+
+        active_model.updated_at = Set(chrono::Utc::now());
+
+        active_model
+            .update(self.connection)
+            .await
+            .context("failed to update inbox triage fields")
+    }
+
+    /// 查询当前 Project 执行视图中的任务。
+    pub(crate) async fn list_project_execution_tasks(
+        &self,
+        space_id: Uuid,
+        project_id: Uuid,
+    ) -> Result<Vec<task::Model>> {
+        task::Entity::find()
+            .filter(task::Column::SpaceId.eq(space_id))
+            .filter(task::Column::ProjectId.eq(project_id))
+            .filter(task::Column::DeletedAt.is_null())
+            .filter(task::Column::Priority.is_not_null())
+            .filter(task::Column::Status.is_in(["todo", "done"]))
+            .order_by_desc(task::Column::UpdatedAt)
+            .all(self.connection)
+            .await
+            .with_context(|| {
+                format!("failed to query project execution tasks for project `{project_id}`")
+            })
+    }
+
+    /// 更新 Project 执行任务状态与完成时间。
+    pub(crate) async fn update_project_task_status(
+        &self,
+        task_model: task::Model,
+        status: &str,
+        completed_at: Option<chrono::DateTime<chrono::Utc>>,
+    ) -> Result<task::Model> {
+        let mut active_model: task::ActiveModel = task_model.into();
+        active_model.status = Set(status.to_owned());
+        active_model.completed_at = Set(completed_at);
+        active_model.updated_at = Set(chrono::Utc::now());
+
+        active_model
+            .update(self.connection)
+            .await
+            .context("failed to update project task status")
+    }
+
+    /// 更新 Task Drawer 允许编辑的基础字段。
+    pub(crate) async fn update_task_drawer_fields(
+        &self,
+        task_model: task::Model,
+        params: UpdateTaskDrawerFieldsParams<'_>,
+    ) -> Result<task::Model> {
+        let mut active_model: task::ActiveModel = task_model.into();
+        active_model.title = Set(params.title.to_owned());
+        active_model.note = Set(params.note.map(str::to_owned));
+        active_model.priority = Set(params.priority.map(str::to_owned));
+        active_model.project_id = Set(params.project_id);
+        active_model.status = Set(params.status.to_owned());
+        active_model.completed_at = Set(params.completed_at);
+        active_model.updated_at = Set(chrono::Utc::now());
+
+        active_model
+            .update(self.connection)
+            .await
+            .context("failed to update task drawer fields")
     }
 }

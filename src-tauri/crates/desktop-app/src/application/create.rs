@@ -11,8 +11,9 @@ use crate::infrastructure::{
     seed::initialize_system_focus_views,
 };
 
-const PROJECT_STATUS_ACTIVE: &str = "active";
-const TASK_STATUS_TODO: &str = "todo";
+pub(crate) const PROJECT_STATUS_ACTIVE: &str = "active";
+pub(crate) const TASK_STATUS_TODO: &str = "todo";
+pub(crate) const TASK_STATUS_DONE: &str = "done";
 const TASK_SOURCE_IN_APP_CAPTURE: &str = "in_app_capture";
 
 /// 创建 Space 的输入。
@@ -193,7 +194,7 @@ pub(crate) async fn create_task(
     })
 }
 
-async fn resolve_active_space(
+pub(crate) async fn resolve_active_space(
     space_repository: &SpaceRepository<'_>,
     slug: &str,
 ) -> Result<stoneflow_entity::space::Model> {
@@ -209,7 +210,7 @@ async fn resolve_active_space(
     Ok(space)
 }
 
-fn normalize_required_text(value: &str, field_name: &str) -> Result<String> {
+pub(crate) fn normalize_required_text(value: &str, field_name: &str) -> Result<String> {
     let normalized = value.trim();
 
     if normalized.is_empty() {
@@ -219,7 +220,7 @@ fn normalize_required_text(value: &str, field_name: &str) -> Result<String> {
     Ok(normalized.to_owned())
 }
 
-fn normalize_optional_text(value: Option<String>) -> Option<String> {
+pub(crate) fn normalize_optional_text(value: Option<String>) -> Option<String> {
     value.and_then(|item| {
         let normalized = item.trim();
         if normalized.is_empty() {

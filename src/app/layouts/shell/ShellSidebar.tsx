@@ -1,14 +1,29 @@
 import { NavLink } from 'react-router-dom'
 
-import { SHELL_NAV_ITEMS, SHELL_PROJECT_LINKS, SHELL_SPACES } from '@/app/layouts/shell/config'
+import {
+	getProjectSectionPath,
+	SHELL_NAV_ITEMS,
+	SHELL_SPACES,
+	type ShellProjectLink,
+} from '@/app/layouts/shell/config'
 import { Badge } from '@/shared/ui/base/badge'
 import { cn } from '@/shared/lib/utils'
 
 type ShellSidebarProps = {
 	currentSpaceId: string
+	projects: ShellProjectLink[]
+	isProjectsLoading: boolean
+	projectsError: string | null
 }
 
-export function ShellSidebar({ currentSpaceId }: ShellSidebarProps) {
+export function ShellSidebar({
+	currentSpaceId,
+	projects,
+	isProjectsLoading,
+	projectsError,
+}: ShellSidebarProps) {
+	const defaultProjectId = projects[0]?.id ?? null
+
 	return (
 		<aside className='flex h-full w-(--sf-shell-sidebar-width) shrink-0 flex-col bg-(--sf-color-shell-chrome)'>
 			<div className='px-1.5 pb-4 pt-1.5'>
@@ -45,7 +60,11 @@ export function ShellSidebar({ currentSpaceId }: ShellSidebarProps) {
 								)
 							}
 							key={item.key}
-							to={item.to(currentSpaceId)}
+							to={
+								item.key === 'project'
+									? getProjectSectionPath(currentSpaceId, defaultProjectId)
+									: item.to(currentSpaceId)
+							}
 						>
 							<item.icon className='size-3.5 shrink-0' />
 							<span>{item.label}</span>
@@ -62,29 +81,40 @@ export function ShellSidebar({ currentSpaceId }: ShellSidebarProps) {
 					<p className='px-2.5 text-[11px] font-medium tracking-[0.04em] text-(--sf-color-shell-tertiary)'>
 						Projects
 					</p>
-					{SHELL_PROJECT_LINKS.map((project) => (
-						<NavLink
-							className={({ isActive }) =>
-								cn(
-									'flex h-8 items-center gap-2 rounded-xl px-2.5 text-[13px] transition-colors',
-									project.id === 'stoneflow-v1' ? 'pl-6' : '',
-									isActive
-										? 'bg-black/9 font-medium text-foreground'
-										: 'text-(--sf-color-shell-secondary) hover:bg-black/5 hover:text-foreground',
-								)
-							}
-							key={project.id}
-							to={`/space/${currentSpaceId}/project/${project.id}`}
-						>
-							<span className='size-3 rounded-lg bg-black/12' />
-							<span>{project.label}</span>
-							{project.badge ? (
-								<span className='ml-auto text-[10px] text-(--sf-color-shell-tertiary)'>
-									{project.badge}
-								</span>
-							) : null}
-						</NavLink>
-					))}
+					{isProjectsLoading ? (
+						<p className='px-2.5 py-1 text-[12px] text-(--sf-color-shell-tertiary)'>
+							正在加载项目...
+						</p>
+					) : projectsError ? (
+						<p className='px-2.5 py-1 text-[12px] text-destructive'>{projectsError}</p>
+					) : projects.length === 0 ? (
+						<p className='px-2.5 py-1 text-[12px] text-(--sf-color-shell-tertiary)'>
+							当前 Space 还没有项目
+						</p>
+					) : (
+						projects.map((project) => (
+							<NavLink
+								className={({ isActive }) =>
+									cn(
+										'flex h-8 items-center gap-2 rounded-xl px-2.5 text-[13px] transition-colors',
+										isActive
+											? 'bg-black/9 font-medium text-foreground'
+											: 'text-(--sf-color-shell-secondary) hover:bg-black/5 hover:text-foreground',
+									)
+								}
+								key={project.id}
+								to={`/space/${currentSpaceId}/project/${project.id}`}
+							>
+								<span className='size-3 rounded-lg bg-black/12' />
+								<span>{project.label}</span>
+								{project.badge ? (
+									<span className='ml-auto text-[10px] text-(--sf-color-shell-tertiary)'>
+										{project.badge}
+									</span>
+								) : null}
+							</NavLink>
+						))
+					)}
 				</section>
 			</div>
 		</aside>
