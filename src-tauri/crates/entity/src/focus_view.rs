@@ -1,20 +1,24 @@
-//! TrashEntry 实体定义。
+//! FocusView 实体定义。
 
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
-#[sea_orm(table_name = "trash_entries")]
+#[sea_orm(table_name = "focus_views")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub space_id: Uuid,
-    pub entity_type: String,
-    pub entity_id: Uuid,
-    pub entity_snapshot: Json,
-    pub deleted_at: DateTimeUtc,
-    pub deleted_from: Option<String>,
+    pub name: String,
+    pub key: String,
+    pub r#type: String,
+    pub filter_config: Json,
+    pub sort_config: Json,
+    pub group_config: Json,
+    pub sort_order: i32,
+    pub is_enabled: bool,
     pub created_at: DateTimeUtc,
+    pub updated_at: DateTimeUtc,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
