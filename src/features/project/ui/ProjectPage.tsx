@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom'
 
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
+import { useProjectExecution } from '@/features/project/model/useProjectExecution'
+import type { ProjectExecutionTask } from '@/features/project/model/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -11,34 +13,16 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
-import { ListItem } from '@/shared/ui/ListItem'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
 import { MoreHorizontalIcon } from 'lucide-react'
 
-const groupedTasks = [
-	{
-		id: 'task-project-shell-refactor',
-		title: '重组 Header / Sidebar / Footer',
-		description: '让标题栏、搜索、新建、Sidebar、Footer 与 Drawer 的边界回到清晰状态。',
-		status: 'Todo',
-	},
-	{
-		id: 'task-project-sidebar-polish',
-		title: '把 Sidebar 做成连续导航带',
-		description: '同时承接 Space、主导航和静态 Projects，而不是继续停留在 demo 链接层。',
-		status: 'Doing',
-	},
-	{
-		id: 'task-project-drawer-sections',
-		title: '把 Drawer 的分区做清楚',
-		description: '摘要区、资源区和元信息区要像精密面板，而不是厚重卡片堆。',
-		status: 'Ready',
-	},
-]
-
 export function ProjectPage() {
-	const { projectId = 'stoneflow-v1' } = useParams()
+	const { projectId = 'stoneflow-v1', spaceId = 'default' } = useParams()
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
+	const { view, isLoading, loadError, feedback, pendingTaskId, refresh, toggleTaskStatus } =
+		useProjectExecution(spaceId, projectId)
+	const todoTasks = view?.tasks.filter((task) => task.status === 'todo') ?? []
+	const doneTasks = view?.tasks.filter((task) => task.status === 'done') ?? []
 
 	return (
 		<div className='flex flex-col gap-5 p-4'>
@@ -52,49 +36,148 @@ export function ProjectPage() {
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align='end'>
 							<DropdownMenuGroup>
-								<DropdownMenuItem onSelect={() => openDrawer('project', projectId)}>
-									打开项目摘要
-								</DropdownMenuItem>
-								<DropdownMenuItem>查看项目备注</DropdownMenuItem>
+								<DropdownMenuItem onSelect={() => void refresh()}>刷新执行视图</DropdownMenuItem>
+								<DropdownMenuItem disabled>点击任务标题可打开详情 Drawer</DropdownMenuItem>
 							</DropdownMenuGroup>
 							<DropdownMenuSeparator />
 							<DropdownMenuGroup>
-								<DropdownMenuItem variant='destructive'>归档预览</DropdownMenuItem>
+								<DropdownMenuItem disabled variant='destructive'>
+									归档预览
+								</DropdownMenuItem>
 							</DropdownMenuGroup>
 						</DropdownMenuContent>
 					</DropdownMenu>
 				}
 				eyebrow='Project'
-				title={`项目工作区 · ${projectId}`}
+				title={`项目工作区 · ${view?.project.name ?? projectId}`}
 			>
-				<div className='flex flex-wrap items-center gap-2'>
-					<Badge>Active</Badge>
-					<Badge variant='outline'>6 tasks</Badge>
-					<Badge variant='secondary'>今天 17:40</Badge>
-					<Button
-						className='rounded-xl'
-						onClick={() => openDrawer('project', projectId)}
-						size='sm'
-						variant='outline'
+				{feedback ? (
+					<p
+						className='mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-3 py-2 text-sm text-emerald-700'
+						role='status'
 					>
-						查看详情
-					</Button>
-				</div>
+						{feedback}
+					</p>
+				) : null}
+
+				{loadError ? (
+					<p
+						className='rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive'
+						role='alert'
+					>
+						{loadError}
+					</p>
+				) : null}
+
+				{isLoading ? (
+					<p className='text-sm text-muted-foreground' role='status'>
+						正在加载 Project 执行视图...
+					</p>
+				) : view ? (
+					<div className='flex flex-wrap items-center gap-2'>
+						<Badge>{view.project.status}</Badge>
+						<Badge variant='outline'>{view.tasks.length} tasks</Badge>
+						<Badge variant='secondary'>待执行 {todoTasks.length}</Badge>
+						<Badge variant='secondary'>已完成 {doneTasks.length}</Badge>
+						<Button
+							className='rounded-xl'
+							onClick={() => void refresh()}
+							size='sm'
+							variant='outline'
+						>
+							刷新
+						</Button>
+					</div>
+				) : null}
 			</PanelSurface>
 
-			<PanelSurface eyebrow='Grouped Tasks' title='按状态分组'>
-				<div className='flex flex-col gap-3'>
-					{groupedTasks.map((task) => (
-						<ListItem
-							key={task.id}
-							description={task.description}
-							onClick={() => openDrawer('task', task.id)}
-							title={task.title}
-							trailing={<Badge variant='secondary'>{task.status}</Badge>}
-						/>
-					))}
-				</div>
+			<PanelSurface eyebrow='Execution' title='待执行'>
+				<ProjectTaskGroup
+					emptyMessage='当前 Project 还没有待执行任务。'
+					onOpenTask={(taskId) => openDrawer('task', taskId)}
+					pendingTaskId={pendingTaskId}
+					tasks={todoTasks}
+					onToggleTaskStatus={toggleTaskStatus}
+				/>
 			</PanelSurface>
+
+			<PanelSurface eyebrow='Execution' title='已完成'>
+				<ProjectTaskGroup
+					emptyMessage='还没有完成的任务。'
+					onOpenTask={(taskId) => openDrawer('task', taskId)}
+					pendingTaskId={pendingTaskId}
+					tasks={doneTasks}
+					onToggleTaskStatus={toggleTaskStatus}
+				/>
+			</PanelSurface>
+		</div>
+	)
+}
+
+type ProjectTaskGroupProps = {
+	tasks: ProjectExecutionTask[]
+	pendingTaskId: string | null
+	emptyMessage: string
+	onToggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
+	onOpenTask: (taskId: string) => void
+}
+
+function ProjectTaskGroup({
+	tasks,
+	pendingTaskId,
+	emptyMessage,
+	onToggleTaskStatus,
+	onOpenTask,
+}: ProjectTaskGroupProps) {
+	if (tasks.length === 0) {
+		return <p className='text-sm text-muted-foreground'>{emptyMessage}</p>
+	}
+
+	return (
+		<div className='flex flex-col gap-3'>
+			{tasks.map((task) => (
+				<div
+					className='flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 lg:flex-row lg:items-start lg:justify-between'
+					key={task.id}
+				>
+					<div className='space-y-2'>
+						<div className='flex flex-wrap items-center gap-2'>
+							<button
+								className='cursor-pointer text-left text-sm font-semibold text-foreground transition-colors hover:text-primary'
+								onClick={() => onOpenTask(task.id)}
+								type='button'
+							>
+								{task.title}
+							</button>
+							<Badge variant='outline'>{task.priority}</Badge>
+							<Badge variant='secondary'>{task.status === 'todo' ? '待执行' : '已完成'}</Badge>
+						</div>
+						<p className='text-sm leading-6 text-muted-foreground'>
+							{task.note?.trim() || '当前任务没有补充备注，可直接在 Project 中推进执行。'}
+						</p>
+						{task.completedAt ? (
+							<p className='text-xs text-muted-foreground'>
+								完成于 {new Date(task.completedAt).toLocaleString('zh-CN')}
+							</p>
+						) : null}
+					</div>
+
+					<div className='flex shrink-0 items-start'>
+						<Button
+							disabled={pendingTaskId === task.id}
+							onClick={() => void onToggleTaskStatus(task)}
+							size='sm'
+							variant='outline'
+						>
+							{pendingTaskId === task.id
+								? '更新中...'
+								: task.status === 'todo'
+									? '标记完成'
+									: '恢复待执行'}
+						</Button>
+					</div>
+				</div>
+			))}
 		</div>
 	)
 }
