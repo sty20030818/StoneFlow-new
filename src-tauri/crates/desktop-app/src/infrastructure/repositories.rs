@@ -2,21 +2,27 @@
 
 use anyhow::{Context, Result};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, DatabaseConnection, EntityTrait, JsonValue,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, EntityTrait, JsonValue,
     QueryFilter, QueryOrder,
 };
 use stoneflow_core::{DefaultSpaceSeed, FocusViewType, SystemFocusViewDefinition};
-use stoneflow_entity::{focus_view, project, space, task};
+use stoneflow_entity::{focus_view, project, space, task, trash_entry};
 use uuid::Uuid;
 
 /// 初始化阶段使用的 Space 仓储。
-pub(crate) struct SpaceRepository<'db> {
-    connection: &'db DatabaseConnection,
+pub(crate) struct SpaceRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
+    connection: &'db C,
 }
 
-impl<'db> SpaceRepository<'db> {
+impl<'db, C> SpaceRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
     /// 创建仓储实例。
-    pub(crate) const fn new(connection: &'db DatabaseConnection) -> Self {
+    pub(crate) const fn new(connection: &'db C) -> Self {
         Self { connection }
     }
 
@@ -106,13 +112,19 @@ impl<'db> SpaceRepository<'db> {
 }
 
 /// 初始化阶段使用的 FocusView 仓储。
-pub(crate) struct FocusViewRepository<'db> {
-    connection: &'db DatabaseConnection,
+pub(crate) struct FocusViewRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
+    connection: &'db C,
 }
 
-impl<'db> FocusViewRepository<'db> {
+impl<'db, C> FocusViewRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
     /// 创建仓储实例。
-    pub(crate) const fn new(connection: &'db DatabaseConnection) -> Self {
+    pub(crate) const fn new(connection: &'db C) -> Self {
         Self { connection }
     }
 
@@ -190,13 +202,19 @@ impl<'db> FocusViewRepository<'db> {
 }
 
 /// 创建阶段使用的 Project 仓储。
-pub(crate) struct ProjectRepository<'db> {
-    connection: &'db DatabaseConnection,
+pub(crate) struct ProjectRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
+    connection: &'db C,
 }
 
-impl<'db> ProjectRepository<'db> {
+impl<'db, C> ProjectRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
     /// 创建仓储实例。
-    pub(crate) const fn new(connection: &'db DatabaseConnection) -> Self {
+    pub(crate) const fn new(connection: &'db C) -> Self {
         Self { connection }
     }
 
@@ -266,8 +284,11 @@ impl<'db> ProjectRepository<'db> {
 }
 
 /// 创建阶段使用的 Task 仓储。
-pub(crate) struct TaskRepository<'db> {
-    connection: &'db DatabaseConnection,
+pub(crate) struct TaskRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
+    connection: &'db C,
 }
 
 /// Task Drawer 基础字段更新载荷。
@@ -280,9 +301,12 @@ pub(crate) struct UpdateTaskDrawerFieldsParams<'a> {
     pub(crate) completed_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl<'db> TaskRepository<'db> {
+impl<'db, C> TaskRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
     /// 创建仓储实例。
-    pub(crate) const fn new(connection: &'db DatabaseConnection) -> Self {
+    pub(crate) const fn new(connection: &'db C) -> Self {
         Self { connection }
     }
 
@@ -429,5 +453,63 @@ impl<'db> TaskRepository<'db> {
             .update(self.connection)
             .await
             .context("failed to update task drawer fields")
+    }
+
+    /// 软删除 Task，并同步刷新更新时间。
+    pub(crate) async fn soft_delete_task(
+        &self,
+        task_model: task::Model,
+        deleted_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<task::Model> {
+        let mut active_model: task::ActiveModel = task_model.into();
+        active_model.deleted_at = Set(Some(deleted_at));
+        active_model.updated_at = Set(deleted_at);
+
+        active_model
+            .update(self.connection)
+            .await
+            .context("failed to soft delete task")
+    }
+}
+
+/// Trash 阶段使用的 TrashEntry 仓储。
+pub(crate) struct TrashEntryRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
+    connection: &'db C,
+}
+
+impl<'db, C> TrashEntryRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
+    /// 创建仓储实例。
+    pub(crate) const fn new(connection: &'db C) -> Self {
+        Self { connection }
+    }
+
+    /// 写入 Task 删除快照。
+    pub(crate) async fn create_task_entry(
+        &self,
+        space_id: Uuid,
+        entity_id: Uuid,
+        entity_snapshot: JsonValue,
+        deleted_at: chrono::DateTime<chrono::Utc>,
+        deleted_from: Option<&str>,
+    ) -> Result<trash_entry::Model> {
+        trash_entry::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            space_id: Set(space_id),
+            entity_type: Set("task".to_owned()),
+            entity_id: Set(entity_id),
+            entity_snapshot: Set(entity_snapshot),
+            deleted_at: Set(deleted_at),
+            deleted_from: Set(deleted_from.map(str::to_owned)),
+            created_at: Set(deleted_at),
+        }
+        .insert(self.connection)
+        .await
+        .with_context(|| format!("failed to create trash entry for task `{entity_id}`"))
     }
 }

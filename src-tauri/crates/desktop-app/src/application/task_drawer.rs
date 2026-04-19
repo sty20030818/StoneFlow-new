@@ -2,7 +2,9 @@
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Utc};
+use sea_orm::TransactionTrait;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::application::create::{
@@ -13,7 +15,8 @@ use crate::application::project::normalize_project_task_status;
 use crate::infrastructure::{
     database::DatabaseState,
     repositories::{
-        ProjectRepository, SpaceRepository, TaskRepository, UpdateTaskDrawerFieldsParams,
+        ProjectRepository, SpaceRepository, TaskRepository, TrashEntryRepository,
+        UpdateTaskDrawerFieldsParams,
     },
 };
 
@@ -34,6 +37,13 @@ pub(crate) struct UpdateTaskDrawerFieldsInput {
     pub(crate) priority: Option<String>,
     pub(crate) project_id: Option<Uuid>,
     pub(crate) status: String,
+}
+
+/// 删除 Task 到 Trash 的输入。
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct DeleteTaskToTrashInput {
+    pub(crate) space_slug: String,
+    pub(crate) task_id: Uuid,
 }
 
 /// Drawer 中可选 Project 的最小载荷。
@@ -69,6 +79,13 @@ pub(crate) struct TaskDrawerDetailPayload {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub(crate) struct UpdatedTaskDrawerPayload {
     pub(crate) task: TaskDrawerTaskPayload,
+}
+
+/// 删除 Task 后返回的最小载荷。
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(crate) struct DeletedTaskPayload {
+    pub(crate) task_id: Uuid,
+    pub(crate) deleted_at: DateTime<Utc>,
 }
 
 /// 查询单个 Task Drawer 的真实详情。
@@ -192,6 +209,63 @@ pub(crate) async fn update_task_drawer_fields(
     })
 }
 
+/// 从真实 Task Drawer 中删除当前 Task，并写入 Trash 快照。
+pub(crate) async fn delete_task_to_trash(
+    database: &DatabaseState,
+    input: DeleteTaskToTrashInput,
+) -> Result<DeletedTaskPayload> {
+    let space_slug = normalize_required_text(&input.space_slug, "space slug")?;
+    let task_id = input.task_id;
+
+    database
+        .connection
+        .transaction::<_, DeletedTaskPayload, anyhow::Error>(|transaction| {
+            let space_slug = space_slug.clone();
+
+            Box::pin(async move {
+                let space_repository = SpaceRepository::new(transaction);
+                let task_repository = TaskRepository::new(transaction);
+                let trash_entry_repository = TrashEntryRepository::new(transaction);
+
+                let space = resolve_active_space(&space_repository, &space_slug).await?;
+                let current_task = task_repository
+                    .find_active_by_id(task_id)
+                    .await?
+                    .with_context(|| format!("task `{task_id}` does not exist"))?;
+
+                if current_task.space_id != space.id {
+                    bail!(
+                        "task `{}` does not belong to space `{space_slug}`",
+                        current_task.id
+                    );
+                }
+
+                let deleted_at = Utc::now();
+                let snapshot = build_task_trash_snapshot(&current_task);
+
+                task_repository
+                    .soft_delete_task(current_task.clone(), deleted_at)
+                    .await?;
+                trash_entry_repository
+                    .create_task_entry(
+                        space.id,
+                        current_task.id,
+                        snapshot,
+                        deleted_at,
+                        Some("task_drawer"),
+                    )
+                    .await?;
+
+                Ok(DeletedTaskPayload {
+                    task_id: current_task.id,
+                    deleted_at,
+                })
+            })
+        })
+        .await
+        .map_err(|error| anyhow::anyhow!(error))
+}
+
 fn normalize_optional_priority(value: Option<&str>) -> Result<Option<String>> {
     match value {
         Some(priority) if !priority.trim().is_empty() => normalize_priority(priority).map(Some),
@@ -223,4 +297,20 @@ fn map_task_drawer_task(task: stoneflow_entity::task::Model) -> TaskDrawerTaskPa
         updated_at: task.updated_at,
         completed_at: task.completed_at,
     }
+}
+
+fn build_task_trash_snapshot(task: &stoneflow_entity::task::Model) -> serde_json::Value {
+    json!({
+        "id": task.id,
+        "space_id": task.space_id,
+        "project_id": task.project_id,
+        "title": task.title,
+        "note": task.note,
+        "priority": task.priority,
+        "status": task.status,
+        "source": task.source,
+        "completed_at": task.completed_at,
+        "created_at": task.created_at,
+        "updated_at": task.updated_at,
+    })
 }

@@ -5,6 +5,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use sea_orm::ConnectionTrait;
+
 use crate::infrastructure::{
     database::DatabaseState,
     repositories::{ProjectRepository, SpaceRepository, TaskRepository},
@@ -195,7 +197,7 @@ pub(crate) async fn create_task(
 }
 
 pub(crate) async fn resolve_active_space(
-    space_repository: &SpaceRepository<'_>,
+    space_repository: &SpaceRepository<'_, impl ConnectionTrait>,
     slug: &str,
 ) -> Result<stoneflow_entity::space::Model> {
     let space = space_repository

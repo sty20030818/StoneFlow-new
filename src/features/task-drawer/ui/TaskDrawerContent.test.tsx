@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { useTaskDrawer } from '@/features/task-drawer/model/useTaskDrawer'
 import { TaskDrawerContent } from '@/features/task-drawer/ui/TaskDrawerContent'
@@ -129,6 +129,50 @@ describe('TaskDrawerContent', () => {
 			'task drawer update request does not change task',
 		)
 	})
+
+	it('删除成功后关闭 Drawer', async () => {
+		const deleteTask = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
+		const onClose = vi.fn<() => void>()
+
+		mockedUseTaskDrawer.mockReturnValue(
+			createHookState({
+				detail: createDetail(),
+				deleteTask,
+			}),
+		)
+
+		render(<TaskDrawerContent currentSpaceId='default' onClose={onClose} taskId='task-1' />)
+
+		fireEvent.click(screen.getByRole('button', { name: '删除任务' }))
+
+		await waitFor(() => {
+			expect(deleteTask).toHaveBeenCalledTimes(1)
+			expect(onClose).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	it('删除失败时展示错误反馈并保持 Drawer 打开', async () => {
+		const deleteTask = vi.fn<() => Promise<boolean>>().mockResolvedValue(false)
+		const onClose = vi.fn<() => void>()
+
+		mockedUseTaskDrawer.mockReturnValue(
+			createHookState({
+				detail: createDetail(),
+				deleteTask,
+				deleteError: 'failed to soft delete task',
+			}),
+		)
+
+		render(<TaskDrawerContent currentSpaceId='default' onClose={onClose} taskId='task-1' />)
+
+		fireEvent.click(screen.getByRole('button', { name: '删除任务' }))
+
+		await waitFor(() => {
+			expect(deleteTask).toHaveBeenCalledTimes(1)
+		})
+		expect(onClose).not.toHaveBeenCalled()
+		expect(screen.getByRole('alert')).toHaveTextContent('failed to soft delete task')
+	})
 })
 
 function createHookState(overrides: Partial<TaskDrawerHookState> = {}) {
@@ -144,12 +188,15 @@ function createHookState(overrides: Partial<TaskDrawerHookState> = {}) {
 		isDirty: false,
 		isLoading: false,
 		isSaving: false,
+		isDeleting: false,
 		loadError: null,
 		saveError: null,
+		deleteError: null,
 		feedback: null,
 		refresh: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 		updateDraft: vi.fn<(patch: TaskDrawerDraftPatch) => void>(),
 		save: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+		deleteTask: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
 		...overrides,
 	}
 }

@@ -19,9 +19,11 @@ use crate::application::project::{
     UpdateProjectTaskStatusInput, UpdatedProjectTaskStatusPayload,
 };
 use crate::application::task_drawer::{
+    delete_task_to_trash as delete_task_to_trash_usecase,
     get_task_drawer_detail as get_task_drawer_detail_usecase,
-    update_task_drawer_fields as update_task_drawer_fields_usecase, GetTaskDrawerDetailInput,
-    TaskDrawerDetailPayload, UpdateTaskDrawerFieldsInput, UpdatedTaskDrawerPayload,
+    update_task_drawer_fields as update_task_drawer_fields_usecase, DeleteTaskToTrashInput,
+    DeletedTaskPayload, GetTaskDrawerDetailInput, TaskDrawerDetailPayload,
+    UpdateTaskDrawerFieldsInput, UpdatedTaskDrawerPayload,
 };
 use crate::infrastructure::database::{
     initialize_database, DatabaseHealthcheckPayload, DatabaseState,
@@ -160,6 +162,16 @@ async fn update_task_drawer_fields(
         .map_err(|error| error.to_string())
 }
 
+#[tauri::command]
+async fn delete_task_to_trash(
+    input: DeleteTaskToTrashInput,
+    database: State<'_, DatabaseState>,
+) -> Result<DeletedTaskPayload, String> {
+    delete_task_to_trash_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
 /// 启动 StoneFlow 的 Tauri 宿主。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
     tauri::Builder::default()
@@ -192,7 +204,8 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             get_project_execution_view,
             update_project_task_status,
             get_task_drawer_detail,
-            update_task_drawer_fields
+            update_task_drawer_fields,
+            delete_task_to_trash
         ])
 }
 
@@ -210,8 +223,8 @@ mod tests {
         GetProjectExecutionViewInput, ListProjectsInput, UpdateProjectTaskStatusInput,
     };
     use crate::application::task_drawer::{
-        get_task_drawer_detail, update_task_drawer_fields, GetTaskDrawerDetailInput,
-        UpdateTaskDrawerFieldsInput,
+        delete_task_to_trash, get_task_drawer_detail, update_task_drawer_fields,
+        DeleteTaskToTrashInput, GetTaskDrawerDetailInput, UpdateTaskDrawerFieldsInput,
     };
     use crate::infrastructure::database::prepare_database_at_path;
     use sea_orm::{
@@ -1438,6 +1451,183 @@ mod tests {
             )
             .await
             .expect_err("cross-space detail query should be rejected");
+
+            assert!(error
+                .to_string()
+                .contains("does not belong to space `default`"));
+        });
+    }
+
+    #[test]
+    fn delete_task_to_trash_soft_deletes_inbox_task_and_writes_trash_entry() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before deleting inbox task");
+
+            let task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "进入 Trash 的 Inbox 任务".to_owned(),
+                    note: Some("保留最小快照".to_owned()),
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("task should be created");
+
+            let payload = delete_task_to_trash(
+                &state,
+                DeleteTaskToTrashInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                },
+            )
+            .await
+            .expect("delete to trash should succeed");
+
+            let persisted_task = task::Entity::find_by_id(task.id)
+                .one(&state.connection)
+                .await
+                .expect("deleted task should remain queryable")
+                .expect("deleted task should exist");
+            let trash_entry = trash_entry::Entity::find()
+                .filter(trash_entry::Column::EntityType.eq("task"))
+                .filter(trash_entry::Column::EntityId.eq(task.id))
+                .one(&state.connection)
+                .await
+                .expect("trash entry should be queryable")
+                .expect("trash entry should exist");
+            let inbox_snapshot = list_inbox_tasks(
+                &state,
+                ListInboxTasksInput {
+                    space_slug: "default".to_owned(),
+                },
+            )
+            .await
+            .expect("inbox snapshot should remain queryable");
+
+            assert_eq!(payload.task_id, task.id);
+            assert_eq!(persisted_task.deleted_at, Some(payload.deleted_at));
+            assert_eq!(persisted_task.updated_at, payload.deleted_at);
+            assert_eq!(trash_entry.deleted_at, payload.deleted_at);
+            assert_eq!(trash_entry.deleted_from.as_deref(), Some("task_drawer"));
+            assert_eq!(
+                trash_entry.entity_snapshot["title"],
+                "进入 Trash 的 Inbox 任务"
+            );
+            assert!(inbox_snapshot.tasks.is_empty());
+        });
+    }
+
+    #[test]
+    fn delete_task_to_trash_removes_project_task_from_execution_view() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before deleting project task");
+
+            let project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "执行层".to_owned(),
+                },
+            )
+            .await
+            .expect("project should be created");
+            let task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "从 Project 中删除".to_owned(),
+                    note: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("task should be created");
+
+            triage_inbox_task(
+                &state,
+                TriageInboxTaskInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                    project_id: Some(project.id),
+                    priority: Some("high".to_owned()),
+                },
+            )
+            .await
+            .expect("task should be triaged");
+
+            delete_task_to_trash(
+                &state,
+                DeleteTaskToTrashInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                },
+            )
+            .await
+            .expect("delete to trash should succeed");
+
+            let project_view = get_project_execution_view(
+                &state,
+                GetProjectExecutionViewInput {
+                    space_slug: "default".to_owned(),
+                    project_id: project.id,
+                },
+            )
+            .await
+            .expect("project execution view should remain queryable");
+
+            assert!(project_view.tasks.is_empty());
+        });
+    }
+
+    #[test]
+    fn delete_task_to_trash_rejects_cross_space_task() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before cross-space delete validation");
+
+            create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "Study".to_owned(),
+                },
+            )
+            .await
+            .expect("other space should be created");
+
+            let foreign_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "study".to_owned(),
+                    title: "外部删除".to_owned(),
+                    note: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("foreign task should be created");
+
+            let error = delete_task_to_trash(
+                &state,
+                DeleteTaskToTrashInput {
+                    space_slug: "default".to_owned(),
+                    task_id: foreign_task.id,
+                },
+            )
+            .await
+            .expect_err("cross-space delete should be rejected");
 
             assert!(error
                 .to_string()

@@ -22,3 +22,8 @@ export type TaskDrawerDetail = {
 	task: TaskDrawerTask
 	projects: TaskDrawerProjectOption[]
 }
+
+export type DeletedTaskResult = {
+	taskId: string
+	deletedAt: string
+}

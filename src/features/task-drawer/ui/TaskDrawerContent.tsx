@@ -25,12 +25,15 @@ export function TaskDrawerContent({
 		isDirty,
 		isLoading,
 		isSaving,
+		isDeleting,
 		loadError,
 		saveError,
+		deleteError,
 		feedback,
 		refresh,
 		updateDraft,
 		save,
+		deleteTask,
 	} = useTaskDrawer(currentSpaceId, taskId)
 
 	if (isLoading) {
@@ -64,6 +67,8 @@ export function TaskDrawerContent({
 			</div>
 		)
 	}
+
+	const errorMessage = deleteError ?? saveError
 
 	return (
 		<div className='space-y-4'>
@@ -163,12 +168,12 @@ export function TaskDrawerContent({
 				</label>
 			</div>
 
-			{saveError ? (
+			{errorMessage ? (
 				<div
 					className='rounded-xl border border-destructive/20 bg-destructive/8 px-3 py-2 text-[12px] leading-5 text-destructive'
 					role='alert'
 				>
-					{saveError}
+					{errorMessage}
 				</div>
 			) : null}
 
@@ -196,19 +201,50 @@ export function TaskDrawerContent({
 				) : null}
 			</div>
 
-			<div className='flex items-center justify-end gap-2'>
-				<Button className='rounded-xl' disabled={isSaving} onClick={onClose} variant='ghost'>
-					关闭
-				</Button>
+			<div className='rounded-xl border border-destructive/15 bg-destructive/4 px-3 py-2'>
+				<p className='text-[11px] font-medium tracking-[0.03em] text-destructive'>删除任务</p>
+				<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
+					删除后任务会从主列表中移除，并进入 Trash 数据层等待后续恢复能力接入。
+				</p>
+			</div>
+
+			<div className='flex items-center justify-between gap-2'>
 				<Button
 					className='rounded-xl'
-					disabled={isLoading || isSaving || !isDirty}
+					disabled={isSaving || isDeleting}
 					onClick={() => {
-						void save()
+						void (async () => {
+							const deleted = await deleteTask()
+
+							if (deleted) {
+								onClose()
+							}
+						})()
 					}}
+					variant='destructive'
 				>
-					{isSaving ? '保存中...' : '保存修改'}
+					{isDeleting ? '删除中...' : '删除任务'}
 				</Button>
+
+				<div className='flex items-center gap-2'>
+					<Button
+						className='rounded-xl'
+						disabled={isSaving || isDeleting}
+						onClick={onClose}
+						variant='ghost'
+					>
+						关闭
+					</Button>
+					<Button
+						className='rounded-xl'
+						disabled={isLoading || isSaving || isDeleting || !isDirty}
+						onClick={() => {
+							void save()
+						}}
+					>
+						{isSaving ? '保存中...' : '保存修改'}
+					</Button>
+				</div>
 			</div>
 		</div>
 	)

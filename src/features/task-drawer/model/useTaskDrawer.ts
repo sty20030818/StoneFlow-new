@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useEffectEvent, useMemo, useState } from 'react'
 
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
+import { deleteTaskToTrash } from '@/features/task-drawer/api/deleteTaskToTrash'
 import { getTaskDrawerDetail } from '@/features/task-drawer/api/getTaskDrawerDetail'
 import { updateTaskDrawerFields } from '@/features/task-drawer/api/updateTaskDrawerFields'
 import type { TaskDrawerDetail, TaskDrawerStatus, TaskDrawerTask } from '@/features/task-drawer/model/types'
@@ -19,12 +20,15 @@ type UseTaskDrawerResult = {
 	isDirty: boolean
 	isLoading: boolean
 	isSaving: boolean
+	isDeleting: boolean
 	loadError: string | null
 	saveError: string | null
+	deleteError: string | null
 	feedback: string | null
 	refresh: () => Promise<void>
 	updateDraft: (patch: Partial<TaskDrawerDraft>) => void
 	save: () => Promise<void>
+	deleteTask: () => Promise<boolean>
 }
 
 const EMPTY_DRAFT: TaskDrawerDraft = {
@@ -54,8 +58,10 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 	const [draft, setDraft] = useState<TaskDrawerDraft>(EMPTY_DRAFT)
 	const [isLoading, setIsLoading] = useState(true)
 	const [isSaving, setIsSaving] = useState(false)
+	const [isDeleting, setIsDeleting] = useState(false)
 	const [loadError, setLoadError] = useState<string | null>(null)
 	const [saveError, setSaveError] = useState<string | null>(null)
+	const [deleteError, setDeleteError] = useState<string | null>(null)
 	const [feedback, setFeedback] = useState<string | null>(null)
 
 	const refresh = useEffectEvent(async () => {
@@ -73,6 +79,7 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 				setDraft(createDraft(payload.task))
 				setFeedback(null)
 				setSaveError(null)
+				setDeleteError(null)
 			})
 		} catch (error) {
 			setDetail(null)
@@ -114,6 +121,7 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 
 		setIsSaving(true)
 		setSaveError(null)
+		setDeleteError(null)
 
 		try {
 			const payload = await updateTaskDrawerFields({
@@ -147,18 +155,45 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 		}
 	})
 
+	const deleteTask = useEffectEvent(async () => {
+		if (!detail) {
+			return false
+		}
+
+		setIsDeleting(true)
+		setDeleteError(null)
+		setSaveError(null)
+
+		try {
+			await deleteTaskToTrash({
+				spaceSlug: spaceId,
+				taskId,
+			})
+			bumpTaskDataVersion()
+			return true
+		} catch (error) {
+			setDeleteError(toErrorMessage(error))
+			return false
+		} finally {
+			setIsDeleting(false)
+		}
+	})
+
 	return {
 		detail,
 		draft,
 		isDirty,
 		isLoading,
 		isSaving,
+		isDeleting,
 		loadError,
 		saveError,
+		deleteError,
 		feedback,
 		refresh,
 		updateDraft,
 		save,
+		deleteTask,
 	}
 }
 
