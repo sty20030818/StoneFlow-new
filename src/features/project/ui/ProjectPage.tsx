@@ -139,6 +139,8 @@ function ProjectTaskGroup({
 				<div
 					aria-label={`打开任务 ${task.title}`}
 					className='flex cursor-pointer flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 transition-colors hover:border-border hover:bg-background lg:flex-row lg:items-start lg:justify-between'
+					data-shell-task-card='true'
+					data-task-id={task.id}
 					key={task.id}
 					onClick={() => onOpenTask(task.id)}
 					onKeyDown={(event) => {

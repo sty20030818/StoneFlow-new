@@ -108,18 +108,21 @@ export function FocusPage() {
 									<ListItem
 										description='先让壳层骨架、导航和 Drawer 的空间关系稳定下来。'
 										onClick={() => openDrawer('task', 'task-focus-deep-work')}
+										taskId='task-focus-deep-work'
 										title='收口 M1-C 的壳层密度'
 										trailing={<Badge variant='outline'>P1</Badge>}
 									/>
 									<ListItem
 										description='预留时间驱动的执行视图，但不扩成更多路由层级。'
 										onClick={() => openDrawer('task', 'task-focus-upcoming')}
+										taskId='task-focus-upcoming'
 										title='为 Upcoming 留出日期视图骨架'
 										trailing={<Badge variant='secondary'>Upcoming</Badge>}
 									/>
 									<ListItem
 										description='最近添加和高优先级继续留在 Focus 内部切片。'
 										onClick={() => openDrawer('task', 'task-focus-review')}
+										taskId='task-focus-review'
 										title='保留完成回看入口'
 										trailing={<Badge variant='outline'>Later</Badge>}
 									/>
@@ -135,6 +138,7 @@ export function FocusPage() {
 									description={row.description}
 									key={row.id}
 									onClick={() => openDrawer('task', row.id)}
+									taskId={row.id}
 									title={row.title}
 									trailing={<Badge variant='secondary'>{row.badge}</Badge>}
 								/>
@@ -149,6 +153,7 @@ export function FocusPage() {
 									description={row.description}
 									key={row.id}
 									onClick={() => openDrawer('task', row.id)}
+									taskId={row.id}
 									title={row.title}
 									trailing={<Badge variant='outline'>{row.badge}</Badge>}
 								/>
@@ -163,6 +168,7 @@ export function FocusPage() {
 									description={row.description}
 									key={row.id}
 									onClick={() => openDrawer('task', row.id)}
+									taskId={row.id}
 									title={row.title}
 									trailing={<Badge>{row.badge}</Badge>}
 								/>

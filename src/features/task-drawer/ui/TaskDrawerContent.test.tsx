@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { useTaskDrawer } from '@/features/task-drawer/model/useTaskDrawer'
 import { TaskDrawerContent } from '@/features/task-drawer/ui/TaskDrawerContent'
@@ -12,6 +12,25 @@ type TaskDrawerHookState = ReturnType<typeof useTaskDrawer>
 type TaskDrawerDraftPatch = Parameters<TaskDrawerHookState['updateDraft']>[0]
 
 describe('TaskDrawerContent', () => {
+	beforeAll(() => {
+		Object.defineProperty(HTMLElement.prototype, 'hasPointerCapture', {
+			configurable: true,
+			value: () => false,
+		})
+		Object.defineProperty(HTMLElement.prototype, 'setPointerCapture', {
+			configurable: true,
+			value: () => undefined,
+		})
+		Object.defineProperty(HTMLElement.prototype, 'releasePointerCapture', {
+			configurable: true,
+			value: () => undefined,
+		})
+		Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+			configurable: true,
+			value: () => undefined,
+		})
+	})
+
 	afterEach(() => {
 		vi.clearAllMocks()
 	})
@@ -50,7 +69,7 @@ describe('TaskDrawerContent', () => {
 		expect(onClose).toHaveBeenCalledTimes(1)
 	})
 
-	it('展示真实任务详情并透传编辑动作', () => {
+	it('展示真实任务详情并透传编辑动作', async () => {
 		const updateDraft = vi.fn<(patch: TaskDrawerDraftPatch) => void>()
 		const save = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
 
@@ -85,15 +104,24 @@ describe('TaskDrawerContent', () => {
 		fireEvent.change(screen.getByLabelText('描述 / 备注'), {
 			target: { value: '更新后的备注' },
 		})
-		fireEvent.change(screen.getByLabelText('优先级'), {
-			target: { value: 'urgent' },
+		await act(async () => {
+			fireEvent.keyDown(screen.getByRole('combobox', { name: '优先级' }), {
+				key: 'ArrowDown',
+			})
 		})
-		fireEvent.change(screen.getByLabelText('项目'), {
-			target: { value: '' },
+		fireEvent.click(await screen.findByRole('option', { name: '紧急' }))
+		await act(async () => {
+			fireEvent.keyDown(screen.getByRole('combobox', { name: '项目' }), {
+				key: 'ArrowDown',
+			})
 		})
-		fireEvent.change(screen.getByLabelText('状态'), {
-			target: { value: 'done' },
+		fireEvent.click(await screen.findByRole('option', { name: '未归类' }))
+		await act(async () => {
+			fireEvent.keyDown(screen.getByRole('combobox', { name: '状态' }), {
+				key: 'ArrowDown',
+			})
 		})
+		fireEvent.click(await screen.findByRole('option', { name: '已完成' }))
 
 		expect(updateDraft).toHaveBeenNthCalledWith(1, { title: '更新后的标题' })
 		expect(updateDraft).toHaveBeenNthCalledWith(2, { note: '更新后的备注' })

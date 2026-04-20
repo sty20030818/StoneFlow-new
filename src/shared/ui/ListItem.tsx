@@ -8,9 +8,17 @@ type ListItemProps = {
 	trailing?: ReactNode
 	onClick?: () => void
 	className?: string
+	taskId?: string
 }
 
-export function ListItem({ title, description, trailing, onClick, className }: ListItemProps) {
+export function ListItem({
+	title,
+	description,
+	trailing,
+	onClick,
+	className,
+	taskId,
+}: ListItemProps) {
 	const classes = cn(
 		'flex w-full items-start justify-between gap-3 rounded-xl border border-border/70 bg-background px-4 py-3 text-left transition hover:border-border hover:bg-muted/35 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/45 focus-visible:outline-none',
 		className,
@@ -18,7 +26,13 @@ export function ListItem({ title, description, trailing, onClick, className }: L
 
 	if (onClick) {
 		return (
-			<button className={classes} onClick={onClick} type='button'>
+			<button
+				className={classes}
+				data-shell-task-card={taskId ? 'true' : undefined}
+				data-task-id={taskId}
+				onClick={onClick}
+				type='button'
+			>
 				<div className='flex min-w-0 flex-1 flex-col gap-1'>
 					<p className='truncate text-sm font-medium text-foreground'>{title}</p>
 					<p className='text-xs leading-5 text-muted-foreground'>{description}</p>

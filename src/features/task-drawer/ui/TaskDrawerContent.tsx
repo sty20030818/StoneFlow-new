@@ -133,10 +133,11 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						<SelectTrigger
 							aria-label='优先级'
 							className='h-9 w-full rounded-xl border-black/8 bg-black/2'
+							data-drawer-owned-overlay='true'
 						>
 							<SelectValue placeholder='待补齐' />
 						</SelectTrigger>
-						<SelectContent position='popper'>
+						<SelectContent data-drawer-owned-overlay='true' position='popper'>
 							<SelectGroup>
 								<SelectItem value={EMPTY_PRIORITY_VALUE}>待补齐</SelectItem>
 								{INBOX_PRIORITY_OPTIONS.map((option) => (
@@ -165,10 +166,11 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						<SelectTrigger
 							aria-label='项目'
 							className='h-9 w-full rounded-xl border-black/8 bg-black/2'
+							data-drawer-owned-overlay='true'
 						>
 							<SelectValue placeholder='未归类' />
 						</SelectTrigger>
-						<SelectContent position='popper'>
+						<SelectContent data-drawer-owned-overlay='true' position='popper'>
 							<SelectGroup>
 								<SelectItem value={EMPTY_PROJECT_VALUE}>未归类</SelectItem>
 								{detail.projects.map((project) => (
@@ -197,10 +199,11 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						<SelectTrigger
 							aria-label='状态'
 							className='h-9 w-full rounded-xl border-black/8 bg-black/2'
+							data-drawer-owned-overlay='true'
 						>
 							<SelectValue placeholder='选择状态' />
 						</SelectTrigger>
-						<SelectContent position='popper'>
+						<SelectContent data-drawer-owned-overlay='true' position='popper'>
 							<SelectGroup>
 								<SelectItem value='todo'>待执行</SelectItem>
 								<SelectItem value='done'>已完成</SelectItem>

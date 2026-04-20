@@ -173,7 +173,11 @@ function InboxTaskRow({
 	const canSubmit = projectChanged || priorityChanged
 
 	return (
-		<article className='grid gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-start'>
+		<article
+			className='grid gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-start'
+			data-shell-task-card='true'
+			data-task-id={task.id}
+		>
 			<div className='min-w-0 space-y-3'>
 				<div className='flex flex-wrap items-center gap-2'>
 					<button

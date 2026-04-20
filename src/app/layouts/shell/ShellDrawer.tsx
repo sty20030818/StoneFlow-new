@@ -26,13 +26,15 @@ export function ShellDrawer({
 	const drawerTitle = activeDrawerKind === 'project' ? 'Project detail' : 'Task detail'
 
 	return (
-		<Sheet onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
+		<Sheet modal={false} onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
 			<SheetContent
 				aria-describedby={undefined}
 				className='absolute inset-y-3 right-3 z-50 w-[min(var(--sf-shell-drawer-width),calc(100%-1.5rem))] max-w-[calc(100%-1.5rem)] rounded-[1.25rem] border border-black/8 bg-(--sf-color-shell-drawer)/98 p-0 shadow-[0_24px_72px_rgba(15,23,42,0.18)] backdrop-blur data-[side=right]:inset-y-3 data-[side=right]:right-3 data-[side=right]:left-auto data-[side=right]:h-auto data-[side=right]:w-[min(var(--sf-shell-drawer-width),calc(100%-1.5rem))] data-[side=right]:max-w-[calc(100%-1.5rem)]'
+				data-shell-drawer-root='true'
 				inline
-				overlayClassName='absolute inset-0 z-40 bg-[linear-gradient(90deg,rgba(15,23,42,0.06)_0%,rgba(15,23,42,0.12)_48%,rgba(15,23,42,0.2)_100%)] backdrop-blur-[1px]'
-				overlayProps={{ onClick: onClose, onPointerDown: onClose }}
+				onInteractOutside={(event) => event.preventDefault()}
+				onPointerDownOutside={(event) => event.preventDefault()}
+				overlayClassName='pointer-events-none absolute inset-0 z-40 bg-[linear-gradient(90deg,rgba(15,23,42,0.03)_0%,rgba(15,23,42,0.08)_52%,rgba(15,23,42,0.12)_100%)]'
 				showCloseButton={false}
 				side='right'
 			>
