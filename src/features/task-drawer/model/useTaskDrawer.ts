@@ -4,7 +4,11 @@ import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutSto
 import { deleteTaskToTrash } from '@/features/task-drawer/api/deleteTaskToTrash'
 import { getTaskDrawerDetail } from '@/features/task-drawer/api/getTaskDrawerDetail'
 import { updateTaskDrawerFields } from '@/features/task-drawer/api/updateTaskDrawerFields'
-import type { TaskDrawerDetail, TaskDrawerStatus, TaskDrawerTask } from '@/features/task-drawer/model/types'
+import type {
+	TaskDrawerDetail,
+	TaskDrawerStatus,
+	TaskDrawerTask,
+} from '@/features/task-drawer/model/types'
 
 type TaskDrawerDraft = {
 	title: string

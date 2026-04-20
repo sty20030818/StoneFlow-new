@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { listInboxTasks } from '@/features/inbox/api/listInboxTasks'
@@ -21,10 +21,15 @@ describe('InboxPage', () => {
 		vi.clearAllMocks()
 		useShellLayoutStore.setState({
 			currentSpaceId: 'default',
+			activeSection: 'inbox',
+			isCommandOpen: false,
+			isTaskCreateOpen: false,
+			isProjectCreateOpen: false,
 			isDrawerOpen: false,
 			activeDrawerKind: null,
 			activeDrawerId: null,
 			taskDataVersion: 0,
+			projectDataVersion: 0,
 		})
 	})
 
@@ -61,8 +66,8 @@ describe('InboxPage', () => {
 
 		expect(screen.getByText('整理今天的新任务')).toBeInTheDocument()
 		expect(screen.getByText('优先补齐项目和优先级')).toBeInTheDocument()
-		expect(screen.getByLabelText('整理今天的新任务 优先级')).toHaveValue('')
-		expect(screen.getByLabelText('整理今天的新任务 项目')).toHaveValue('')
+		expect(screen.getByLabelText('整理今天的新任务 优先级')).toHaveTextContent('待补齐')
+		expect(screen.getByLabelText('整理今天的新任务 项目')).toHaveTextContent('待补齐')
 	})
 
 	it('整理成功后移除已完成归类的任务', async () => {
@@ -100,12 +105,10 @@ describe('InboxPage', () => {
 
 		await screen.findByText('整理今天的任务')
 
-		fireEvent.change(screen.getByLabelText('整理今天的任务 优先级'), {
-			target: { value: 'high' },
-		})
-		fireEvent.change(screen.getByLabelText('整理今天的任务 项目'), {
-			target: { value: 'project-1' },
-		})
+		fireEvent.click(screen.getByLabelText('整理今天的任务 优先级'))
+		fireEvent.click(screen.getByRole('option', { name: '高' }))
+		fireEvent.click(screen.getByLabelText('整理今天的任务 项目'))
+		fireEvent.click(screen.getByRole('option', { name: '执行层' }))
 		fireEvent.click(screen.getByRole('button', { name: '整理' }))
 
 		await waitFor(() => {
@@ -148,9 +151,8 @@ describe('InboxPage', () => {
 
 		await screen.findByText('验证整理失败')
 
-		fireEvent.change(screen.getByLabelText('验证整理失败 优先级'), {
-			target: { value: 'urgent' },
-		})
+		fireEvent.click(screen.getByLabelText('验证整理失败 优先级'))
+		fireEvent.click(screen.getByRole('option', { name: '紧急' }))
 		fireEvent.click(screen.getByRole('button', { name: '整理' }))
 
 		await waitFor(() => {
@@ -223,5 +225,92 @@ describe('InboxPage', () => {
 			expect(mockedListInboxTasks).toHaveBeenCalledTimes(2)
 		})
 		expect(await screen.findByText('当前 Inbox 已清空')).toBeInTheDocument()
+	})
+
+	it('没有可选项目时提供创建项目承接入口', async () => {
+		mockedListInboxTasks.mockResolvedValue({
+			tasks: [
+				{
+					id: 'task-1',
+					projectId: null,
+					title: '需要新项目',
+					note: '不能卡在待补齐',
+					status: 'todo',
+					priority: null,
+					createdAt: '2026-04-19T20:00:00Z',
+					updatedAt: '2026-04-19T20:00:00Z',
+				},
+			],
+			projects: [],
+		})
+
+		render(<InboxPage />)
+
+		expect(await screen.findByText('当前 Space 还没有项目可选')).toBeInTheDocument()
+
+		fireEvent.click(screen.getAllByRole('button', { name: '创建项目' })[0])
+
+		expect(useShellLayoutStore.getState()).toMatchObject({
+			isProjectCreateOpen: true,
+			isDrawerOpen: false,
+		})
+	})
+
+	it('项目刷新版本变化后重新拉取列表并保留当前整理草稿', async () => {
+		mockedListInboxTasks
+			.mockResolvedValueOnce({
+				tasks: [
+					{
+						id: 'task-1',
+						projectId: null,
+						title: '继续整理',
+						note: '先选好优先级再去建项目',
+						status: 'todo',
+						priority: null,
+						createdAt: '2026-04-19T20:00:00Z',
+						updatedAt: '2026-04-19T20:00:00Z',
+					},
+				],
+				projects: [],
+			})
+			.mockResolvedValueOnce({
+				tasks: [
+					{
+						id: 'task-1',
+						projectId: null,
+						title: '继续整理',
+						note: '先选好优先级再去建项目',
+						status: 'todo',
+						priority: null,
+						createdAt: '2026-04-19T20:00:00Z',
+						updatedAt: '2026-04-19T20:00:00Z',
+					},
+				],
+				projects: [
+					{
+						id: 'project-1',
+						name: '执行层',
+						sortOrder: 0,
+					},
+				],
+			})
+
+		render(<InboxPage />)
+
+		await screen.findByText('继续整理')
+
+		fireEvent.click(screen.getByLabelText('继续整理 优先级'))
+		fireEvent.click(screen.getByRole('option', { name: '紧急' }))
+
+		await act(async () => {
+			useShellLayoutStore.getState().bumpProjectDataVersion()
+		})
+
+		await waitFor(() => {
+			expect(mockedListInboxTasks).toHaveBeenCalledTimes(2)
+		})
+
+		expect(screen.getByLabelText('继续整理 优先级')).toHaveTextContent('紧急')
+		expect(screen.getByLabelText('继续整理 项目')).toHaveTextContent('待补齐')
 	})
 })

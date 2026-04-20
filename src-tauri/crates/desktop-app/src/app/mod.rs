@@ -18,6 +18,9 @@ use crate::application::project::{
     ListProjectsInput, ProjectExecutionViewPayload, ProjectListPayload,
     UpdateProjectTaskStatusInput, UpdatedProjectTaskStatusPayload,
 };
+use crate::application::search::{
+    search_workspace as search_workspace_usecase, SearchWorkspaceInput, WorkspaceSearchPayload,
+};
 use crate::application::task_drawer::{
     delete_task_to_trash as delete_task_to_trash_usecase,
     get_task_drawer_detail as get_task_drawer_detail_usecase,
@@ -123,6 +126,16 @@ async fn list_projects(
 }
 
 #[tauri::command]
+async fn search_workspace(
+    input: SearchWorkspaceInput,
+    database: State<'_, DatabaseState>,
+) -> Result<WorkspaceSearchPayload, String> {
+    search_workspace_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 async fn get_project_execution_view(
     input: GetProjectExecutionViewInput,
     database: State<'_, DatabaseState>,
@@ -201,6 +214,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             list_inbox_tasks,
             triage_inbox_task,
             list_projects,
+            search_workspace,
             get_project_execution_view,
             update_project_task_status,
             get_task_drawer_detail,
@@ -471,6 +485,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "  编写 M2-B 创建链路  ".to_owned(),
                     note: Some("  先打通 Header 入口  ".to_owned()),
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -494,6 +509,54 @@ mod tests {
     }
 
     #[test]
+    fn create_task_accepts_priority_and_skips_inbox_when_project_is_present() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before creating prioritized task");
+
+            let project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "执行层".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("project should be created");
+
+            let payload = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "直接进入执行".to_owned(),
+                    note: Some("创建时就补齐优先级".to_owned()),
+                    priority: Some("urgent".to_owned()),
+                    project_id: Some(project.id),
+                },
+            )
+            .await
+            .expect("task should be created successfully");
+
+            let inbox_snapshot = list_inbox_tasks(
+                &state,
+                ListInboxTasksInput {
+                    space_slug: "default".to_owned(),
+                },
+            )
+            .await
+            .expect("inbox snapshot should be queryable");
+
+            assert_eq!(payload.project_id, Some(project.id));
+            assert_eq!(payload.priority.as_deref(), Some("urgent"));
+            assert!(inbox_snapshot.tasks.is_empty());
+        });
+    }
+
+    #[test]
     fn create_task_rejects_blank_title() {
         let temp_dir = TestDatabaseDir::new();
 
@@ -508,6 +571,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "   ".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -533,6 +597,7 @@ mod tests {
                     space_slug: "unknown".to_owned(),
                     title: "验证非法空间".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -597,6 +662,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: created_space.slug.clone(),
                     name: "Roadmap".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -607,6 +673,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: created_space.slug.clone(),
                     name: "Execution".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -623,6 +690,64 @@ mod tests {
             assert_eq!(second_model.parent_project_id, None);
             assert_eq!(second_model.sort_order, 1);
             assert!(second_model.deleted_at.is_none());
+        });
+    }
+
+    #[test]
+    fn create_project_rejects_blank_name() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before validating blank project name");
+
+            let error = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "   ".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect_err("blank project name should be rejected");
+
+            assert!(error.to_string().contains("project name cannot be empty"));
+        });
+    }
+
+    #[test]
+    fn create_project_persists_optional_note() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before creating project with note");
+
+            let payload = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "执行层收口".to_owned(),
+                    note: Some("承接当前需要推进的执行任务".to_owned()),
+                },
+            )
+            .await
+            .expect("project should be created");
+
+            let persisted_project = project::Entity::find_by_id(payload.id)
+                .one(&state.connection)
+                .await
+                .expect("created project should be queryable")
+                .expect("created project should exist");
+
+            assert_eq!(
+                persisted_project.note.as_deref(),
+                Some("承接当前需要推进的执行任务")
+            );
+            assert_eq!(payload.note.as_deref(), Some("承接当前需要推进的执行任务"));
         });
     }
 
@@ -649,6 +774,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: other_space.slug,
                     name: "Read Papers".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -660,6 +786,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "不能跨空间挂项目".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: Some(foreign_project.id),
                 },
             )
@@ -686,6 +813,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "产品梳理".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -697,6 +825,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "收敛 Inbox 规则".to_owned(),
                     note: Some("保证创建后稳定入列".to_owned()),
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -735,6 +864,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "M2-C".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -746,6 +876,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "只补项目".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -798,6 +929,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "只补优先级".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -849,6 +981,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "执行层".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -860,6 +993,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "补齐项目和优先级".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -910,6 +1044,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "非法优先级".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -949,6 +1084,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "跨空间整理".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -969,6 +1105,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: other_space.slug,
                     name: "不属于 default".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -1006,6 +1143,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "Alpha".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -1015,6 +1153,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "Beta".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -1049,6 +1188,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "执行项目".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -1060,6 +1200,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "进入 Project 的任务".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -1084,6 +1225,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "仍在 Inbox 的任务".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: Some(project.id),
                 },
             )
@@ -1108,6 +1250,213 @@ mod tests {
     }
 
     #[test]
+    fn search_workspace_groups_results_and_applies_basic_ranking() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before workspace search");
+
+            let project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "Alpha 项目".to_owned(),
+                    note: Some("项目备注".to_owned()),
+                },
+            )
+            .await
+            .expect("alpha project should be created");
+            create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "执行层".to_owned(),
+                    note: Some("包含 alpha 线索".to_owned()),
+                },
+            )
+            .await
+            .expect("note match project should be created");
+
+            let prefix_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "Alpha 任务".to_owned(),
+                    note: Some("标题前缀命中".to_owned()),
+                    priority: Some("high".to_owned()),
+                    project_id: Some(project.id),
+                },
+            )
+            .await
+            .expect("prefix task should be created");
+            let infix_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "收口 Alpha 搜索".to_owned(),
+                    note: Some("标题中间命中".to_owned()),
+                    priority: Some("medium".to_owned()),
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("infix task should be created");
+            let note_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "备注命中任务".to_owned(),
+                    note: Some("这里带有 alpha 提示".to_owned()),
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("note task should be created");
+
+            let other_space = create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "Study".to_owned(),
+                },
+            )
+            .await
+            .expect("other space should be created");
+
+            create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: other_space.slug.clone(),
+                    name: "Alpha Foreign".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("foreign project should be created");
+            create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: other_space.slug,
+                    title: "Alpha Foreign Task".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("foreign task should be created");
+
+            let payload = crate::application::search::search_workspace(
+                &state,
+                crate::application::search::SearchWorkspaceInput {
+                    space_slug: "default".to_owned(),
+                    query: "alpha".to_owned(),
+                    limit: 5,
+                },
+            )
+            .await
+            .expect("workspace search should succeed");
+
+            assert_eq!(payload.tasks.len(), 3);
+            assert_eq!(payload.tasks[0].id, prefix_task.id);
+            assert_eq!(payload.tasks[1].id, infix_task.id);
+            assert_eq!(payload.tasks[2].id, note_task.id);
+            assert_eq!(payload.tasks[0].project_id, Some(project.id));
+            assert_eq!(payload.tasks[0].project_name.as_deref(), Some("Alpha 项目"));
+            assert_eq!(payload.projects.len(), 2);
+            assert_eq!(payload.projects[0].name, "Alpha 项目");
+            assert_eq!(payload.projects[1].name, "执行层");
+        });
+    }
+
+    #[test]
+    fn search_workspace_respects_limit_and_returns_empty_for_blank_query() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before workspace search limit checks");
+
+            create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "Alpha 项目".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("project should be created");
+            create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "Alpha 扩展".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("second project should be created");
+
+            create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "Alpha 任务 A".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("first task should be created");
+            create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "Alpha 任务 B".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("second task should be created");
+
+            let limited_payload = crate::application::search::search_workspace(
+                &state,
+                crate::application::search::SearchWorkspaceInput {
+                    space_slug: "default".to_owned(),
+                    query: "alpha".to_owned(),
+                    limit: 1,
+                },
+            )
+            .await
+            .expect("limited workspace search should succeed");
+
+            assert_eq!(limited_payload.tasks.len(), 1);
+            assert_eq!(limited_payload.projects.len(), 1);
+
+            let empty_payload = crate::application::search::search_workspace(
+                &state,
+                crate::application::search::SearchWorkspaceInput {
+                    space_slug: "default".to_owned(),
+                    query: "   ".to_owned(),
+                    limit: 5,
+                },
+            )
+            .await
+            .expect("blank query should be accepted");
+
+            assert!(empty_payload.tasks.is_empty());
+            assert!(empty_payload.projects.is_empty());
+        });
+    }
+
+    #[test]
     fn update_project_task_status_writes_and_clears_completed_at() {
         let temp_dir = TestDatabaseDir::new();
 
@@ -1121,6 +1470,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "执行项目".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -1132,6 +1482,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "切换完成状态".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -1196,6 +1547,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "Default Project".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -1215,6 +1567,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: other_space.slug,
                     name: "Foreign Project".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -1226,6 +1579,7 @@ mod tests {
                     space_slug: "study".to_owned(),
                     title: "外部任务".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -1276,6 +1630,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "执行层".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -1287,6 +1642,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "打开真实 Drawer".to_owned(),
                     note: Some("补齐详情查询".to_owned()),
+                    priority: None,
                     project_id: Some(project.id),
                 },
             )
@@ -1325,6 +1681,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "执行层".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -1336,6 +1693,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "原始标题".to_owned(),
                     note: Some("原始备注".to_owned()),
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -1436,6 +1794,7 @@ mod tests {
                     space_slug: "study".to_owned(),
                     title: "外部详情".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -1473,6 +1832,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "进入 Trash 的 Inbox 任务".to_owned(),
                     note: Some("保留最小快照".to_owned()),
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -1537,6 +1897,7 @@ mod tests {
                 CreateProjectInput {
                     space_slug: "default".to_owned(),
                     name: "执行层".to_owned(),
+                    note: None,
                 },
             )
             .await
@@ -1547,6 +1908,7 @@ mod tests {
                     space_slug: "default".to_owned(),
                     title: "从 Project 中删除".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )
@@ -1613,6 +1975,7 @@ mod tests {
                     space_slug: "study".to_owned(),
                     title: "外部删除".to_owned(),
                     note: None,
+                    priority: None,
                     project_id: None,
                 },
             )

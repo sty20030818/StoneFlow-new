@@ -7,9 +7,10 @@ use uuid::Uuid;
 
 use sea_orm::ConnectionTrait;
 
+use crate::application::inbox::normalize_priority;
 use crate::infrastructure::{
     database::DatabaseState,
-    repositories::{ProjectRepository, SpaceRepository, TaskRepository},
+    repositories::{CreateTaskParams, ProjectRepository, SpaceRepository, TaskRepository},
     seed::initialize_system_focus_views,
 };
 
@@ -29,6 +30,7 @@ pub(crate) struct CreateSpaceInput {
 pub(crate) struct CreateProjectInput {
     pub(crate) space_slug: String,
     pub(crate) name: String,
+    pub(crate) note: Option<String>,
 }
 
 /// 创建 Task 的输入。
@@ -37,6 +39,7 @@ pub(crate) struct CreateTaskInput {
     pub(crate) space_slug: String,
     pub(crate) title: String,
     pub(crate) note: Option<String>,
+    pub(crate) priority: Option<String>,
     pub(crate) project_id: Option<Uuid>,
 }
 
@@ -58,6 +61,7 @@ pub(crate) struct CreatedProjectPayload {
     pub(crate) space_id: Uuid,
     pub(crate) name: String,
     pub(crate) status: String,
+    pub(crate) note: Option<String>,
     pub(crate) sort_order: i32,
     pub(crate) created_at: DateTime<Utc>,
     pub(crate) updated_at: DateTime<Utc>,
@@ -123,11 +127,18 @@ pub(crate) async fn create_project(
 
     let space_slug = normalize_required_text(&input.space_slug, "space slug")?;
     let name = normalize_required_text(&input.name, "project name")?;
+    let note = normalize_optional_text(input.note);
     let space = resolve_active_space(&space_repository, &space_slug).await?;
     let sort_order = project_repository.next_sort_order(space.id).await?;
 
     let created_project = project_repository
-        .create_project(space.id, &name, PROJECT_STATUS_ACTIVE, sort_order)
+        .create_project(
+            space.id,
+            &name,
+            note.as_deref(),
+            PROJECT_STATUS_ACTIVE,
+            sort_order,
+        )
         .await?;
 
     Ok(CreatedProjectPayload {
@@ -135,6 +146,7 @@ pub(crate) async fn create_project(
         space_id: created_project.space_id,
         name: created_project.name,
         status: created_project.status,
+        note: created_project.note,
         sort_order: created_project.sort_order,
         created_at: created_project.created_at,
         updated_at: created_project.updated_at,
@@ -153,6 +165,7 @@ pub(crate) async fn create_task(
     let space_slug = normalize_required_text(&input.space_slug, "space slug")?;
     let title = normalize_required_text(&input.title, "task title")?;
     let note = normalize_optional_text(input.note);
+    let priority = normalize_optional_priority(input.priority)?;
     let space = resolve_active_space(&space_repository, &space_slug).await?;
 
     let project_id = match input.project_id {
@@ -172,14 +185,15 @@ pub(crate) async fn create_task(
     };
 
     let created_task = task_repository
-        .create_task(
-            space.id,
+        .create_task(CreateTaskParams {
+            space_id: space.id,
             project_id,
-            &title,
-            note.as_deref(),
-            TASK_STATUS_TODO,
-            TASK_SOURCE_IN_APP_CAPTURE,
-        )
+            title: &title,
+            note: note.as_deref(),
+            priority: priority.as_deref(),
+            status: TASK_STATUS_TODO,
+            source: TASK_SOURCE_IN_APP_CAPTURE,
+        })
         .await?;
 
     Ok(CreatedTaskPayload {
@@ -231,6 +245,14 @@ pub(crate) fn normalize_optional_text(value: Option<String>) -> Option<String> {
             Some(normalized.to_owned())
         }
     })
+}
+
+fn normalize_optional_priority(value: Option<String>) -> Result<Option<String>> {
+    match value {
+        Some(priority) if priority.trim().is_empty() => Ok(None),
+        Some(priority) => Ok(Some(normalize_priority(&priority)?)),
+        None => Ok(None),
+    }
 }
 
 fn normalize_slug(value: &str) -> String {

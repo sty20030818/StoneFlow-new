@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useEffectEvent, useState } from 'react'
 
 import {
+	selectProjectDataVersion,
 	selectTaskDataVersion,
 	useShellLayoutStore,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
@@ -51,6 +52,7 @@ function createDraft(task: InboxTaskRecord): InboxTaskDraft {
  */
 export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 	const taskDataVersion = useShellLayoutStore(selectTaskDataVersion)
+	const projectDataVersion = useShellLayoutStore(selectProjectDataVersion)
 	const [tasks, setTasks] = useState<InboxTaskRecord[]>([])
 	const [projects, setProjects] = useState<InboxProjectOption[]>([])
 	const [drafts, setDrafts] = useState<Record<string, InboxTaskDraft>>({})
@@ -68,7 +70,11 @@ export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 			startTransition(() => {
 				setTasks(snapshot.tasks)
 				setProjects(snapshot.projects)
-				setDrafts(Object.fromEntries(snapshot.tasks.map((task) => [task.id, createDraft(task)])))
+				setDrafts((currentDrafts) =>
+					Object.fromEntries(
+						snapshot.tasks.map((task) => [task.id, currentDrafts[task.id] ?? createDraft(task)]),
+					),
+				)
 				setFeedback(null)
 			})
 		} catch (error) {
@@ -80,7 +86,7 @@ export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 
 	useEffect(() => {
 		void refresh()
-	}, [spaceId, taskDataVersion])
+	}, [projectDataVersion, spaceId, taskDataVersion])
 
 	function getDraft(taskId: string) {
 		return drafts[taskId] ?? EMPTY_DRAFT

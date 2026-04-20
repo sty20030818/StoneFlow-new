@@ -2,8 +2,8 @@
 
 use anyhow::{Context, Result};
 use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, EntityTrait, JsonValue,
-    QueryFilter, QueryOrder,
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, Condition, ConnectionTrait, EntityTrait,
+    JsonValue, QueryFilter, QueryOrder, QuerySelect,
 };
 use stoneflow_core::{DefaultSpaceSeed, FocusViewType, SystemFocusViewDefinition};
 use stoneflow_entity::{focus_view, project, space, task, trash_entry};
@@ -240,6 +240,29 @@ where
             .with_context(|| format!("failed to query active projects for space `{space_id}`"))
     }
 
+    /// 按关键词搜索当前 Space 下可见 Project。
+    pub(crate) async fn search_active_by_space(
+        &self,
+        space_id: Uuid,
+        query: &str,
+        limit: u64,
+    ) -> Result<Vec<project::Model>> {
+        project::Entity::find()
+            .filter(project::Column::SpaceId.eq(space_id))
+            .filter(project::Column::DeletedAt.is_null())
+            .filter(project::Column::Status.eq("active"))
+            .filter(
+                Condition::any()
+                    .add(project::Column::Name.contains(query))
+                    .add(project::Column::Note.contains(query)),
+            )
+            .order_by_asc(project::Column::SortOrder)
+            .limit(limit)
+            .all(self.connection)
+            .await
+            .with_context(|| format!("failed to search active projects for space `{space_id}`"))
+    }
+
     /// 计算 Space 下一个 Project 排序值。
     pub(crate) async fn next_sort_order(&self, space_id: Uuid) -> Result<i32> {
         let next_sort_order = project::Entity::find()
@@ -259,6 +282,7 @@ where
         &self,
         space_id: Uuid,
         name: &str,
+        note: Option<&str>,
         status: &str,
         sort_order: i32,
     ) -> Result<project::Model> {
@@ -270,7 +294,7 @@ where
             parent_project_id: Set(None),
             name: Set(name.to_owned()),
             status: Set(status.to_owned()),
-            note: Set(None),
+            note: Set(note.map(str::to_owned)),
             due_at: Set(None),
             sort_order: Set(sort_order),
             deleted_at: Set(None),
@@ -301,6 +325,17 @@ pub(crate) struct UpdateTaskDrawerFieldsParams<'a> {
     pub(crate) completed_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+/// 创建 Task 的仓储载荷。
+pub(crate) struct CreateTaskParams<'a> {
+    pub(crate) space_id: Uuid,
+    pub(crate) project_id: Option<Uuid>,
+    pub(crate) title: &'a str,
+    pub(crate) note: Option<&'a str>,
+    pub(crate) priority: Option<&'a str>,
+    pub(crate) status: &'a str,
+    pub(crate) source: &'a str,
+}
+
 impl<'db, C> TaskRepository<'db, C>
 where
     C: ConnectionTrait,
@@ -311,15 +346,16 @@ where
     }
 
     /// 创建新的 Task。
-    pub(crate) async fn create_task(
-        &self,
-        space_id: Uuid,
-        project_id: Option<Uuid>,
-        title: &str,
-        note: Option<&str>,
-        status: &str,
-        source: &str,
-    ) -> Result<task::Model> {
+    pub(crate) async fn create_task(&self, params: CreateTaskParams<'_>) -> Result<task::Model> {
+        let CreateTaskParams {
+            space_id,
+            project_id,
+            title,
+            note,
+            priority,
+            status,
+            source,
+        } = params;
         let now = chrono::Utc::now();
 
         task::ActiveModel {
@@ -328,7 +364,7 @@ where
             project_id: Set(project_id),
             title: Set(title.to_owned()),
             status: Set(status.to_owned()),
-            priority: Set(None),
+            priority: Set(priority.map(str::to_owned)),
             note: Set(note.map(str::to_owned)),
             tags: Set(JsonValue::Array(Vec::new())),
             due_at: Set(None),
@@ -414,6 +450,28 @@ where
             .with_context(|| {
                 format!("failed to query project execution tasks for project `{project_id}`")
             })
+    }
+
+    /// 按关键词搜索当前 Space 下未删除 Task。
+    pub(crate) async fn search_active_by_space(
+        &self,
+        space_id: Uuid,
+        query: &str,
+        limit: u64,
+    ) -> Result<Vec<task::Model>> {
+        task::Entity::find()
+            .filter(task::Column::SpaceId.eq(space_id))
+            .filter(task::Column::DeletedAt.is_null())
+            .filter(
+                Condition::any()
+                    .add(task::Column::Title.contains(query))
+                    .add(task::Column::Note.contains(query)),
+            )
+            .order_by_desc(task::Column::UpdatedAt)
+            .limit(limit)
+            .all(self.connection)
+            .await
+            .with_context(|| format!("failed to search active tasks for space `{space_id}`"))
     }
 
     /// 更新 Project 执行任务状态与完成时间。

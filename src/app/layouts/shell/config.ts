@@ -75,12 +75,6 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
 		to: (spaceId) => `/space/${spaceId}/focus`,
 	},
 	{
-		key: 'project',
-		label: 'Projects',
-		icon: FolderOpenDotIcon,
-		to: (spaceId) => `/space/${spaceId}/project/stoneflow-v1`,
-	},
-	{
 		key: 'trash',
 		label: 'Trash',
 		badge: '2',
@@ -88,11 +82,6 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
 		to: (spaceId) => `/space/${spaceId}/trash`,
 	},
 ]
-
-export const SHELL_COMMAND_CREATE_TARGET = {
-	kind: 'task' as const,
-	id: 'task-command-capture',
-}
 
 export function resolveShellSection(pathname: string): ShellSectionKey {
 	if (pathname.includes('/focus')) {
@@ -111,7 +100,18 @@ export function resolveShellSection(pathname: string): ShellSectionKey {
 }
 
 export function getSectionLabel(section: ShellSectionKey) {
-	return SHELL_NAV_ITEMS.find((item) => item.key === section)?.label ?? 'Workspace'
+	switch (section) {
+		case 'inbox':
+			return 'Inbox'
+		case 'focus':
+			return 'Focus'
+		case 'project':
+			return 'Projects'
+		case 'trash':
+			return 'Trash'
+		default:
+			return 'Workspace'
+	}
 }
 
 export function getSpaceLabel(spaceId: string) {

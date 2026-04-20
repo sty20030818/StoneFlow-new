@@ -4,11 +4,13 @@ import {
 	selectActiveDrawerId,
 	selectActiveDrawerKind,
 	selectIsCommandOpen,
-	selectIsDrawerOpen,
+	selectIsProjectCreateOpen,
+	selectIsTaskCreateOpen,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { useShellProjects } from '@/app/layouts/shell/model/useShellProjects'
+import { ProjectCreateDialog } from '@/features/project/ui/ProjectCreateDialog'
+import { TaskCreateDialog } from '@/features/task/ui/TaskCreateDialog'
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
-import { ShellDrawer } from '@/app/layouts/shell/ShellDrawer'
 import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
@@ -22,7 +24,8 @@ type ShellLayoutProps = PropsWithChildren<{
 
 export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLayoutProps) {
 	const isCommandOpen = useShellLayoutStore(selectIsCommandOpen)
-	const isDrawerOpen = useShellLayoutStore(selectIsDrawerOpen)
+	const isTaskCreateOpen = useShellLayoutStore(selectIsTaskCreateOpen)
+	const isProjectCreateOpen = useShellLayoutStore(selectIsProjectCreateOpen)
 	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
 	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
 	const {
@@ -36,17 +39,24 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 		badge: project.status,
 	}))
 	const setCommandOpen = useShellLayoutStore((state) => state.setCommandOpen)
+	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
+	const closeTaskCreateDialog = useShellLayoutStore((state) => state.closeTaskCreateDialog)
+	const openProjectCreateDialog = useShellLayoutStore((state) => state.openProjectCreateDialog)
+	const closeProjectCreateDialog = useShellLayoutStore((state) => state.closeProjectCreateDialog)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
 	const closeDrawer = useShellLayoutStore((state) => state.closeDrawer)
 
 	return (
-		<div className='sf-shell-layout flex h-full min-h-0 flex-col overflow-hidden bg-background'>
+		<div className='sf-shell-layout relative flex h-full min-h-0 flex-col overflow-hidden bg-background'>
 			<ShellHeader
 				activeSection={activeSection}
 				currentSpaceId={currentSpaceId}
 				isCommandOpen={isCommandOpen}
 				isProjectsLoading={isProjectsLoading}
 				onCommandOpenChange={setCommandOpen}
+				onCloseDrawer={closeDrawer}
+				onOpenProjectCreateDialog={openProjectCreateDialog}
+				onOpenTaskCreateDialog={openTaskCreateDialog}
 				onOpenDrawer={openDrawer}
 				projects={projectLinks}
 				projectsError={projectsError}
@@ -56,33 +66,36 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				<ShellSidebar
 					currentSpaceId={currentSpaceId}
 					isProjectsLoading={isProjectsLoading}
+					onOpenProjectCreateDialog={openProjectCreateDialog}
 					projects={projectLinks}
 					projectsError={projectsError}
 				/>
 
 				<div className='relative flex min-w-0 flex-1 flex-col overflow-hidden bg-(--sf-color-shell-chrome)'>
-					<ShellMain>{children}</ShellMain>
+					<ShellMain
+						activeDrawerId={activeDrawerId}
+						activeDrawerKind={activeDrawerKind}
+						currentSpaceId={currentSpaceId}
+						onCloseDrawer={closeDrawer}
+					>
+						{children}
+					</ShellMain>
 				</div>
-
-				<button
-					aria-hidden={!isDrawerOpen}
-					aria-label='关闭抽屉'
-					className={`absolute inset-y-0 left-(--sf-shell-sidebar-width) right-0 z-20 bg-black/8 transition-opacity ${
-						isDrawerOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-					}`}
-					onClick={closeDrawer}
-					tabIndex={-1}
-					type='button'
-				/>
-
-				<ShellDrawer
-					activeDrawerId={activeDrawerId}
-					activeDrawerKind={activeDrawerKind}
-					currentSpaceId={currentSpaceId}
-					onClose={closeDrawer}
-					open={isDrawerOpen}
-				/>
 			</div>
+
+			<TaskCreateDialog
+				currentSpaceId={currentSpaceId}
+				onClose={closeTaskCreateDialog}
+				open={isTaskCreateOpen}
+				projects={projects}
+				projectsLoading={isProjectsLoading}
+			/>
+
+			<ProjectCreateDialog
+				currentSpaceId={currentSpaceId}
+				onClose={closeProjectCreateDialog}
+				open={isProjectCreateOpen}
+			/>
 
 			<ShellFooter activeSection={activeSection} currentSpaceId={currentSpaceId} />
 		</div>

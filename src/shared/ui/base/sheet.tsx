@@ -42,14 +42,20 @@ function SheetContent({
 	children,
 	side = 'right',
 	showCloseButton = true,
+	inline = false,
+	overlayClassName,
+	overlayProps,
 	...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
 	side?: 'top' | 'right' | 'bottom' | 'left'
 	showCloseButton?: boolean
+	inline?: boolean
+	overlayClassName?: string
+	overlayProps?: React.ComponentProps<typeof SheetPrimitive.Overlay>
 }) {
-	return (
-		<SheetPortal>
-			<SheetOverlay />
+	const content = (
+		<>
+			<SheetOverlay className={overlayClassName} {...overlayProps} />
 			<SheetPrimitive.Content
 				data-slot='sheet-content'
 				data-side={side}
@@ -69,8 +75,14 @@ function SheetContent({
 					</SheetPrimitive.Close>
 				)}
 			</SheetPrimitive.Content>
-		</SheetPortal>
+		</>
 	)
+
+	if (inline) {
+		return content
+	}
+
+	return <SheetPortal>{content}</SheetPortal>
 }
 
 function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
@@ -120,6 +132,7 @@ export {
 	Sheet,
 	SheetTrigger,
 	SheetClose,
+	SheetOverlay,
 	SheetContent,
 	SheetHeader,
 	SheetFooter,

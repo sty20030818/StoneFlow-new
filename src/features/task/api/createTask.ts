@@ -4,6 +4,7 @@ type CreateTaskCommandInput = {
 	spaceSlug: string
 	title: string
 	note?: string | null
+	priority?: string | null
 	projectId?: string | null
 }
 
@@ -42,7 +43,8 @@ export async function createTask(input: CreateTaskCommandInput) {
 			space_slug: input.spaceSlug,
 			title: input.title,
 			note: input.note ?? null,
-			project_id: input.projectId ?? null,
+			priority: input.priority?.trim() ? input.priority : null,
+			project_id: input.projectId?.trim() ? input.projectId : null,
 		},
 	})
 

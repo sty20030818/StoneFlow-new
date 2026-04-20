@@ -6,12 +6,21 @@ import { formatInboxPriorityLabel, INBOX_PRIORITY_OPTIONS } from '@/features/inb
 import { useInboxTasks } from '@/features/inbox/model/useInboxTasks'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/shared/ui/base/select'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
 import { RefreshCwIcon } from 'lucide-react'
 
 export function InboxPage() {
 	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
+	const openProjectCreateDialog = useShellLayoutStore((state) => state.openProjectCreateDialog)
 	const {
 		tasks,
 		projects,
@@ -28,15 +37,41 @@ export function InboxPage() {
 		<div className='p-4'>
 			<PanelSurface
 				actions={
-					<Button disabled={isLoading} onClick={() => void refresh()} size='sm' variant='outline'>
-						<RefreshCwIcon data-icon='inline-start' />
-						刷新列表
-					</Button>
+					<div className='flex flex-wrap items-center gap-2'>
+						<Button
+							className='rounded-xl'
+							onClick={openProjectCreateDialog}
+							size='sm'
+							variant='secondary'
+						>
+							创建项目
+						</Button>
+						<Button disabled={isLoading} onClick={() => void refresh()} size='sm' variant='outline'>
+							<RefreshCwIcon data-icon='inline-start' />
+							刷新列表
+						</Button>
+					</div>
 				}
 				description='补齐项目和优先级后，任务才会真正离开 Inbox。'
 				eyebrow='Inbox'
 				title='待整理队列'
 			>
+				{!isLoading && !loadError && tasks.length > 0 && projects.length === 0 ? (
+					<div className='mb-3 flex flex-col gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/8 px-4 py-4'>
+						<div className='flex flex-col gap-1'>
+							<p className='text-sm font-medium text-foreground'>当前 Space 还没有项目可选</p>
+							<p className='text-sm leading-6 text-muted-foreground'>
+								先补一个 Project，任务才能在补齐优先级后离开 Inbox。
+							</p>
+						</div>
+						<div>
+							<Button className='rounded-xl' onClick={openProjectCreateDialog} size='sm'>
+								创建项目
+							</Button>
+						</div>
+					</div>
+				) : null}
+
 				{feedback ? (
 					<p
 						className='mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-3 py-2 text-sm text-emerald-700'
@@ -118,6 +153,9 @@ type InboxTaskRowProps = {
 	onOpenTask: () => void
 }
 
+const EMPTY_PRIORITY_VALUE = '__inbox-priority-empty__'
+const EMPTY_PROJECT_VALUE = '__inbox-project-empty__'
+
 function InboxTaskRow({
 	task,
 	projects,
@@ -162,38 +200,56 @@ function InboxTaskRow({
 
 			<label className='flex flex-col gap-1 text-xs font-medium text-muted-foreground'>
 				优先级
-				<select
+				<Select
 					aria-label={`${task.title} 优先级`}
-					className='h-9 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-ring'
 					disabled={draft.isSubmitting}
-					onChange={(event) => onPriorityChange(event.target.value)}
-					value={draft.priority}
+					onValueChange={(value) => onPriorityChange(value === EMPTY_PRIORITY_VALUE ? '' : value)}
+					value={draft.priority || EMPTY_PRIORITY_VALUE}
 				>
-					<option value=''>待补齐</option>
-					{INBOX_PRIORITY_OPTIONS.map((option) => (
-						<option key={option.value} value={option.value}>
-							{option.label}
-						</option>
-					))}
-				</select>
+					<SelectTrigger
+						aria-label={`${task.title} 优先级`}
+						className='h-9 w-full rounded-xl bg-background'
+					>
+						<SelectValue placeholder='待补齐' />
+					</SelectTrigger>
+					<SelectContent position='popper'>
+						<SelectGroup>
+							<SelectItem value={EMPTY_PRIORITY_VALUE}>待补齐</SelectItem>
+							{INBOX_PRIORITY_OPTIONS.map((option) => (
+								<SelectItem key={option.value} value={option.value}>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
+					</SelectContent>
+				</Select>
 			</label>
 
 			<label className='flex flex-col gap-1 text-xs font-medium text-muted-foreground'>
 				项目
-				<select
+				<Select
 					aria-label={`${task.title} 项目`}
-					className='h-9 rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-ring'
 					disabled={draft.isSubmitting}
-					onChange={(event) => onProjectChange(event.target.value)}
-					value={draft.projectId}
+					onValueChange={(value) => onProjectChange(value === EMPTY_PROJECT_VALUE ? '' : value)}
+					value={draft.projectId || EMPTY_PROJECT_VALUE}
 				>
-					<option value=''>待补齐</option>
-					{projects.map((project) => (
-						<option key={project.id} value={project.id}>
-							{project.name}
-						</option>
-					))}
-				</select>
+					<SelectTrigger
+						aria-label={`${task.title} 项目`}
+						className='h-9 w-full rounded-xl bg-background'
+					>
+						<SelectValue placeholder='待补齐' />
+					</SelectTrigger>
+					<SelectContent position='popper'>
+						<SelectGroup>
+							<SelectItem value={EMPTY_PROJECT_VALUE}>待补齐</SelectItem>
+							{projects.map((project) => (
+								<SelectItem key={project.id} value={project.id}>
+									{project.name}
+								</SelectItem>
+							))}
+						</SelectGroup>
+					</SelectContent>
+				</Select>
 			</label>
 
 			<div className='flex items-start justify-end'>

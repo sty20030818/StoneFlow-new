@@ -1,19 +1,17 @@
 import { NavLink } from 'react-router-dom'
 
-import {
-	getProjectSectionPath,
-	SHELL_NAV_ITEMS,
-	SHELL_SPACES,
-	type ShellProjectLink,
-} from '@/app/layouts/shell/config'
+import { SHELL_NAV_ITEMS, SHELL_SPACES, type ShellProjectLink } from '@/app/layouts/shell/config'
 import { Badge } from '@/shared/ui/base/badge'
+import { Button } from '@/shared/ui/base/button'
 import { cn } from '@/shared/lib/utils'
+import { PlusIcon } from 'lucide-react'
 
 type ShellSidebarProps = {
 	currentSpaceId: string
 	projects: ShellProjectLink[]
 	isProjectsLoading: boolean
 	projectsError: string | null
+	onOpenProjectCreateDialog: () => void
 }
 
 export function ShellSidebar({
@@ -21,9 +19,8 @@ export function ShellSidebar({
 	projects,
 	isProjectsLoading,
 	projectsError,
+	onOpenProjectCreateDialog,
 }: ShellSidebarProps) {
-	const defaultProjectId = projects[0]?.id ?? null
-
 	return (
 		<aside className='flex h-full w-(--sf-shell-sidebar-width) shrink-0 flex-col bg-(--sf-color-shell-chrome)'>
 			<div className='px-1.5 pb-4 pt-1.5'>
@@ -60,11 +57,7 @@ export function ShellSidebar({
 								)
 							}
 							key={item.key}
-							to={
-								item.key === 'project'
-									? getProjectSectionPath(currentSpaceId, defaultProjectId)
-									: item.to(currentSpaceId)
-							}
+							to={item.to(currentSpaceId)}
 						>
 							<item.icon className='size-3.5 shrink-0' />
 							<span>{item.label}</span>
@@ -78,9 +71,20 @@ export function ShellSidebar({
 				</nav>
 
 				<section className='space-y-1 px-1.5'>
-					<p className='px-2.5 text-[11px] font-medium tracking-[0.04em] text-(--sf-color-shell-tertiary)'>
-						Projects
-					</p>
+					<div className='flex items-center justify-between px-2.5'>
+						<p className='text-[11px] font-medium tracking-[0.04em] text-(--sf-color-shell-tertiary)'>
+							Projects
+						</p>
+						<Button
+							aria-label='创建项目'
+							className='rounded-[0.5rem] text-(--sf-color-shell-secondary)'
+							onClick={onOpenProjectCreateDialog}
+							size='icon-xs'
+							variant='ghost'
+						>
+							<PlusIcon />
+						</Button>
+					</div>
 					{isProjectsLoading ? (
 						<p className='px-2.5 py-1 text-[12px] text-(--sf-color-shell-tertiary)'>
 							正在加载项目...
@@ -88,9 +92,17 @@ export function ShellSidebar({
 					) : projectsError ? (
 						<p className='px-2.5 py-1 text-[12px] text-destructive'>{projectsError}</p>
 					) : projects.length === 0 ? (
-						<p className='px-2.5 py-1 text-[12px] text-(--sf-color-shell-tertiary)'>
-							当前 Space 还没有项目
-						</p>
+						<div className='flex flex-col gap-2 px-2.5 py-1'>
+							<p className='text-[12px] text-(--sf-color-shell-tertiary)'>当前 Space 还没有项目</p>
+							<Button
+								className='justify-start rounded-xl'
+								onClick={onOpenProjectCreateDialog}
+								size='sm'
+							>
+								<PlusIcon data-icon='inline-start' />
+								创建第一个项目
+							</Button>
+						</div>
 					) : (
 						projects.map((project) => (
 							<NavLink

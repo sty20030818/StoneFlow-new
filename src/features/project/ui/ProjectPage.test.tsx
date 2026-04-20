@@ -21,10 +21,14 @@ describe('ProjectPage', () => {
 	afterEach(() => {
 		vi.clearAllMocks()
 		useShellLayoutStore.setState({
+			isCommandOpen: false,
+			isTaskCreateOpen: false,
+			isProjectCreateOpen: false,
 			isDrawerOpen: false,
 			activeDrawerKind: null,
 			activeDrawerId: null,
 			taskDataVersion: 0,
+			projectDataVersion: 0,
 		})
 	})
 
@@ -194,7 +198,7 @@ describe('ProjectPage', () => {
 
 		renderProjectPage()
 
-		fireEvent.click(await screen.findByRole('button', { name: '打开 Project Drawer' }))
+		fireEvent.click(await screen.findByRole('button', { name: '打开任务 打开 Project Drawer' }))
 
 		expect(useShellLayoutStore.getState()).toMatchObject({
 			isDrawerOpen: true,

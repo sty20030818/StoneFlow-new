@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
@@ -9,6 +9,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
+			onOpenProjectCreateDialog: vi.fn<() => void>(),
 			projects: [
 				{ id: 'project-1', label: '执行层', badge: 'active' },
 				{ id: 'project-2', label: '产品设计', badge: 'paused' },
@@ -29,6 +30,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: true,
+			onOpenProjectCreateDialog: vi.fn<() => void>(),
 			projects: [],
 			projectsError: null,
 		})
@@ -40,6 +42,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
+			onOpenProjectCreateDialog: vi.fn<() => void>(),
 			projects: [],
 			projectsError: null,
 		})
@@ -51,11 +54,29 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
+			onOpenProjectCreateDialog: vi.fn<() => void>(),
 			projects: [],
 			projectsError: '项目导航加载失败',
 		})
 
 		expect(screen.getByText('项目导航加载失败')).toBeInTheDocument()
+	})
+
+	it('提供项目创建入口且不再渲染重复 Projects 一级导航', () => {
+		const onOpenProjectCreateDialog = vi.fn<() => void>()
+
+		renderSidebar({
+			currentSpaceId: 'default',
+			isProjectsLoading: false,
+			onOpenProjectCreateDialog,
+			projects: [],
+			projectsError: null,
+		})
+
+		fireEvent.click(screen.getByRole('button', { name: '创建项目' }))
+
+		expect(onOpenProjectCreateDialog).toHaveBeenCalledTimes(1)
+		expect(screen.queryByRole('link', { name: 'Projects' })).not.toBeInTheDocument()
 	})
 })
 

@@ -14,11 +14,7 @@ type TaskDrawerContentProps = {
 /**
  * 真实 Task Drawer 内容，负责详情查询和基础字段编辑。
  */
-export function TaskDrawerContent({
-	currentSpaceId,
-	taskId,
-	onClose,
-}: TaskDrawerContentProps) {
+export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawerContentProps) {
 	const {
 		detail,
 		draft,

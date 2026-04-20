@@ -137,18 +137,24 @@ function ProjectTaskGroup({
 		<div className='flex flex-col gap-3'>
 			{tasks.map((task) => (
 				<div
-					className='flex flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 lg:flex-row lg:items-start lg:justify-between'
+					aria-label={`打开任务 ${task.title}`}
+					className='flex cursor-pointer flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 transition-colors hover:border-border hover:bg-background lg:flex-row lg:items-start lg:justify-between'
 					key={task.id}
+					onClick={() => onOpenTask(task.id)}
+					onKeyDown={(event) => {
+						if (event.key === 'Enter' || event.key === ' ') {
+							event.preventDefault()
+							onOpenTask(task.id)
+						}
+					}}
+					role='button'
+					tabIndex={0}
 				>
 					<div className='space-y-2'>
 						<div className='flex flex-wrap items-center gap-2'>
-							<button
-								className='cursor-pointer text-left text-sm font-semibold text-foreground transition-colors hover:text-primary'
-								onClick={() => onOpenTask(task.id)}
-								type='button'
-							>
+							<div className='text-left text-sm font-semibold text-foreground transition-colors group-hover:text-primary'>
 								{task.title}
-							</button>
+							</div>
 							<Badge variant='outline'>{task.priority}</Badge>
 							<Badge variant='secondary'>{task.status === 'todo' ? '待执行' : '已完成'}</Badge>
 						</div>
@@ -165,7 +171,10 @@ function ProjectTaskGroup({
 					<div className='flex shrink-0 items-start'>
 						<Button
 							disabled={pendingTaskId === task.id}
-							onClick={() => void onToggleTaskStatus(task)}
+							onClick={(event) => {
+								event.stopPropagation()
+								void onToggleTaskStatus(task)
+							}}
 							size='sm'
 							variant='outline'
 						>

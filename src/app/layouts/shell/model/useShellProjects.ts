@@ -1,5 +1,9 @@
 import { useEffect, useEffectEvent, useState } from 'react'
 
+import {
+	selectProjectDataVersion,
+	useShellLayoutStore,
+} from '@/app/layouts/shell/model/useShellLayoutStore'
 import { listProjects } from '@/features/project/api/listProjects'
 import type { ProjectRecord } from '@/features/project/model/types'
 
@@ -13,6 +17,7 @@ type UseShellProjectsResult = {
  * 为 Shell Header / Sidebar 提供当前 Space 的真实项目导航数据。
  */
 export function useShellProjects(spaceId: string): UseShellProjectsResult {
+	const projectDataVersion = useShellLayoutStore(selectProjectDataVersion)
 	const [projects, setProjects] = useState<ProjectRecord[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -34,7 +39,7 @@ export function useShellProjects(spaceId: string): UseShellProjectsResult {
 
 	useEffect(() => {
 		void refresh()
-	}, [spaceId])
+	}, [projectDataVersion, spaceId])
 
 	return {
 		projects,

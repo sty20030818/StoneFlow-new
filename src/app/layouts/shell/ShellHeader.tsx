@@ -2,15 +2,13 @@ import { startTransition, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
-	getProjectSectionPath,
 	getSectionLabel,
 	getSpaceLabel,
-	SHELL_COMMAND_CREATE_TARGET,
 	SHELL_NAV_ITEMS,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
-import { Kbd } from '@/shared/ui/Kbd'
+import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Command,
@@ -23,8 +21,24 @@ import {
 	CommandSeparator,
 	CommandShortcut,
 } from '@/shared/ui/base/command'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/shared/ui/base/dropdown-menu'
+import { Kbd } from '@/shared/ui/base/kbd'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { MinusIcon, PlusIcon, SearchIcon, SquareIcon, XIcon } from 'lucide-react'
+import {
+	ChevronDownIcon,
+	FolderPlusIcon,
+	MinusIcon,
+	PlusIcon,
+	SearchIcon,
+	SquareIcon,
+	XIcon,
+} from 'lucide-react'
 
 type ShellHeaderProps = {
 	currentSpaceId: string
@@ -34,7 +48,10 @@ type ShellHeaderProps = {
 	projects: ShellProjectLink[]
 	projectsError: string | null
 	onCommandOpenChange: (open: boolean) => void
+	onOpenTaskCreateDialog: () => void
+	onOpenProjectCreateDialog: () => void
 	onOpenDrawer: (kind: ShellDrawerKind, id: string) => void
+	onCloseDrawer: () => void
 }
 
 export function ShellHeader({
@@ -43,7 +60,10 @@ export function ShellHeader({
 	isCommandOpen,
 	isProjectsLoading,
 	onCommandOpenChange,
+	onOpenProjectCreateDialog,
+	onOpenTaskCreateDialog,
 	onOpenDrawer,
+	onCloseDrawer,
 	projects,
 	projectsError,
 }: ShellHeaderProps) {
@@ -79,9 +99,19 @@ export function ShellHeader({
 
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
+			if (isTextInputTarget(event.target)) {
+				return
+			}
+
 			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
 				event.preventDefault()
 				onCommandOpenChange(true)
+				return
+			}
+
+			if (!event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase() === 'c') {
+				event.preventDefault()
+				onOpenTaskCreateDialog()
 			}
 		}
 
@@ -90,12 +120,19 @@ export function ShellHeader({
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown)
 		}
-	}, [onCommandOpenChange])
+	}, [onCommandOpenChange, onOpenTaskCreateDialog])
 
 	const handleNavigate = (to: string) => {
 		onCommandOpenChange(false)
 		startTransition(() => {
 			navigate(to)
+		})
+	}
+
+	const handleOpenProjectFromSearch = (projectId: string) => {
+		onCloseDrawer()
+		startTransition(() => {
+			navigate(`/space/${currentSpaceId}/project/${projectId}`)
 		})
 	}
 
@@ -125,11 +162,30 @@ export function ShellHeader({
 		}
 	}
 
+	const handleHeaderMouseDownCapture = (event: React.MouseEvent<HTMLElement>) => {
+		const target = event.target
+		if (!(target instanceof HTMLElement)) {
+			return
+		}
+
+		if (target.closest('[data-sf-search-root="true"]')) {
+			return
+		}
+
+		const activeElement = document.activeElement
+		if (activeElement instanceof HTMLElement) {
+			activeElement.blur()
+		}
+	}
+
 	return (
 		<>
-			<header className='relative flex h-11 shrink-0 bg-(--sf-color-shell-chrome)'>
+			<header
+				className='relative flex h-12 shrink-0 items-center bg-(--sf-color-shell-chrome) px-2'
+				onMouseDownCapture={handleHeaderMouseDownCapture}
+			>
 				<div
-					className='flex w-(--sf-shell-sidebar-width) items-center gap-2 px-3'
+					className={`flex h-full w-(--sf-shell-sidebar-width) items-center gap-2 px-3 ${isMac ? 'pl-24' : ''}`}
 					data-tauri-drag-region
 					onDoubleClick={() => {
 						if (!isMac) {
@@ -137,57 +193,84 @@ export function ShellHeader({
 						}
 					}}
 				>
-					{isMac ? (
-						<div className='flex items-center gap-1.5'>
-							<span className='size-2.75 rounded-full bg-[#ff5f57]' />
-							<span className='size-2.75 rounded-full bg-[#ffbd2e]' />
-							<span className='size-2.75 rounded-full bg-[#28c840]' />
-						</div>
-					) : (
-						<>
-							<div className='flex size-5 items-center justify-center rounded-[0.3125rem] bg-black text-[10px] font-semibold text-white'>
-								S
-							</div>
-							<span className='text-[13px] font-medium text-foreground'>StoneFlow</span>
-						</>
-					)}
+					<div className='flex size-5 items-center justify-center rounded-[0.3125rem] bg-black text-[10px] font-semibold text-white'>
+						S
+					</div>
+					<span className='text-[13px] font-medium text-foreground'>StoneFlow</span>
+				</div>
+
+				<div className='flex min-w-0 flex-1 items-center gap-2 px-2'>
+					<div
+						className='min-w-4 flex-1 self-stretch'
+						data-tauri-drag-region
+						onDoubleClick={() => {
+							if (!isMac) {
+								void handleToggleMaximize()
+							}
+						}}
+					/>
+
+					<div className='min-w-0 w-full max-w-[34rem] shrink'>
+						<GlobalSearchInput
+							currentSpaceId={currentSpaceId}
+							onOpenProject={handleOpenProjectFromSearch}
+							onOpenTask={(taskId) => onOpenDrawer('task', taskId)}
+						/>
+					</div>
+
+					<div
+						className='min-w-4 flex-1 self-stretch'
+						data-tauri-drag-region
+						onDoubleClick={() => {
+							if (!isMac) {
+								void handleToggleMaximize()
+							}
+						}}
+					/>
 				</div>
 
 				<div
-					className={`flex min-w-0 flex-1 items-center justify-center px-3 ${isMac ? 'pl-6' : ''}`}
-					data-tauri-drag-region
-					onDoubleClick={() => {
-						if (!isMac) {
-							void handleToggleMaximize()
-						}
-					}}
+					className={`flex h-full shrink-0 items-center ${isMac ? 'gap-2 px-1.5' : 'gap-0 pl-2 pr-0'}`}
 				>
-					<button
-						className='flex h-6.75 w-52.5 items-center gap-2 rounded-[0.4375rem] border border-black/10 bg-black/7 px-2.5 text-left'
-						onClick={() => onCommandOpenChange(true)}
-						type='button'
-					>
-						<SearchIcon className='size-3.5 shrink-0 text-(--sf-color-shell-tertiary)' />
-						<span className='flex-1 text-[12px] text-(--sf-color-shell-tertiary)'>Search...</span>
-						<Kbd className='bg-black/7'>⌘K</Kbd>
-					</button>
-				</div>
+					<div className='flex items-center gap-1.5'>
+						<Button
+							className='border-black/10 bg-background/60 px-3 text-[12px] font-medium text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] hover:bg-background/78'
+							onClick={onOpenTaskCreateDialog}
+							size='default'
+							variant='outline'
+						>
+							<PlusIcon data-icon='inline-start' />
+							<span>新建任务</span>
+							<Kbd>C</Kbd>
+						</Button>
 
-				<div
-					className={`flex shrink-0 items-center ${isMac ? 'gap-2 px-2.5' : 'gap-0 pl-2.5 pr-0'}`}
-				>
-					<Button
-						className='h-6.5 gap-1.5 rounded-[0.375rem] border-black/12 bg-black/8 px-2.5 text-[12px] font-medium text-foreground hover:bg-black/10'
-						onClick={() =>
-							onOpenDrawer(SHELL_COMMAND_CREATE_TARGET.kind, SHELL_COMMAND_CREATE_TARGET.id)
-						}
-						variant='outline'
-					>
-						<PlusIcon className='size-3' />
-						<span>New task</span>
-						<Kbd className='bg-black/7'>C</Kbd>
-					</Button>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									aria-label='打开创建菜单'
+									className='border-black/10 bg-background/60 text-(--sf-color-shell-secondary) shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] hover:bg-background/78 hover:text-foreground'
+									size='icon'
+									variant='outline'
+								>
+									<ChevronDownIcon />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align='end' className='w-44'>
+								<DropdownMenuGroup>
+									<DropdownMenuItem onSelect={onOpenTaskCreateDialog}>
+										<PlusIcon />
+										新建任务
+									</DropdownMenuItem>
+									<DropdownMenuItem onSelect={onOpenProjectCreateDialog}>
+										<FolderPlusIcon />
+										新建项目
+									</DropdownMenuItem>
+								</DropdownMenuGroup>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</div>
 
+					{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 					{!isMac ? (
 						<div className='flex h-full items-stretch pl-3'>
 							<div className='my-auto mr-3 h-5 w-px bg-black/10' />
@@ -233,12 +316,22 @@ export function ShellHeader({
 							<CommandItem
 								onSelect={() => {
 									onCommandOpenChange(false)
-									onOpenDrawer(SHELL_COMMAND_CREATE_TARGET.kind, SHELL_COMMAND_CREATE_TARGET.id)
+									onOpenTaskCreateDialog()
 								}}
 							>
 								<PlusIcon />
 								创建任务
 								<CommandShortcut>↵</CommandShortcut>
+							</CommandItem>
+							<CommandItem
+								onSelect={() => {
+									onCommandOpenChange(false)
+									onOpenProjectCreateDialog()
+								}}
+							>
+								<FolderPlusIcon />
+								创建项目
+								<CommandShortcut>⇧↵</CommandShortcut>
 							</CommandItem>
 							<CommandItem
 								disabled={!defaultProjectId}
@@ -261,13 +354,7 @@ export function ShellHeader({
 							{SHELL_NAV_ITEMS.map((item) => (
 								<CommandItem
 									key={item.key}
-									onSelect={() =>
-										handleNavigate(
-											item.key === 'project'
-												? getProjectSectionPath(currentSpaceId, defaultProjectId)
-												: item.to(currentSpaceId),
-										)
-									}
+									onSelect={() => handleNavigate(item.to(currentSpaceId))}
 									value={item.label}
 								>
 									<item.icon />
@@ -315,5 +402,18 @@ export function ShellHeader({
 				</Command>
 			</CommandDialog>
 		</>
+	)
+}
+
+function isTextInputTarget(target: EventTarget | null) {
+	if (!(target instanceof HTMLElement)) {
+		return false
+	}
+
+	return (
+		target.isContentEditable ||
+		target.tagName === 'INPUT' ||
+		target.tagName === 'TEXTAREA' ||
+		target.tagName === 'SELECT'
 	)
 }
