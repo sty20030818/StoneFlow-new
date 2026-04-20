@@ -3,6 +3,14 @@ import { INBOX_PRIORITY_OPTIONS } from '@/features/inbox/model/constants'
 import { useTaskDrawer } from '@/features/task-drawer/model/useTaskDrawer'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/shared/ui/base/select'
 import { Textarea } from '@/shared/ui/base/textarea'
 
 type TaskDrawerContentProps = {
@@ -10,6 +18,9 @@ type TaskDrawerContentProps = {
 	taskId: string
 	onClose: () => void
 }
+
+const EMPTY_PRIORITY_VALUE = '__task-drawer-priority-empty__'
+const EMPTY_PROJECT_VALUE = '__task-drawer-project-empty__'
 
 /**
  * 真实 Task Drawer 内容，负责详情查询和基础字段编辑。
@@ -110,57 +121,92 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 					<span className='text-[11px] font-medium tracking-[0.03em] text-(--sf-color-shell-tertiary)'>
 						优先级
 					</span>
-					<select
-						className='h-9 w-full rounded-xl border border-black/8 bg-black/2 px-3 text-sm text-foreground outline-none focus:border-ring'
+					<Select
 						disabled={isSaving}
-						onChange={(event) => updateDraft({ priority: event.currentTarget.value })}
-						value={draft.priority}
+						onValueChange={(value) =>
+							updateDraft({
+								priority: value === EMPTY_PRIORITY_VALUE ? '' : value,
+							})
+						}
+						value={draft.priority || EMPTY_PRIORITY_VALUE}
 					>
-						<option value=''>待补齐</option>
-						{INBOX_PRIORITY_OPTIONS.map((option) => (
-							<option key={option.value} value={option.value}>
-								{option.label}
-							</option>
-						))}
-					</select>
+						<SelectTrigger
+							aria-label='优先级'
+							className='h-9 w-full rounded-xl border-black/8 bg-black/2'
+						>
+							<SelectValue placeholder='待补齐' />
+						</SelectTrigger>
+						<SelectContent position='popper'>
+							<SelectGroup>
+								<SelectItem value={EMPTY_PRIORITY_VALUE}>待补齐</SelectItem>
+								{INBOX_PRIORITY_OPTIONS.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectGroup>
+						</SelectContent>
+					</Select>
 				</label>
 
 				<label className='space-y-1.5'>
 					<span className='text-[11px] font-medium tracking-[0.03em] text-(--sf-color-shell-tertiary)'>
 						项目
 					</span>
-					<select
-						className='h-9 w-full rounded-xl border border-black/8 bg-black/2 px-3 text-sm text-foreground outline-none focus:border-ring'
+					<Select
 						disabled={isSaving}
-						onChange={(event) => updateDraft({ projectId: event.currentTarget.value })}
-						value={draft.projectId}
+						onValueChange={(value) =>
+							updateDraft({
+								projectId: value === EMPTY_PROJECT_VALUE ? '' : value,
+							})
+						}
+						value={draft.projectId || EMPTY_PROJECT_VALUE}
 					>
-						<option value=''>未归类</option>
-						{detail.projects.map((project) => (
-							<option key={project.id} value={project.id}>
-								{project.name}
-							</option>
-						))}
-					</select>
+						<SelectTrigger
+							aria-label='项目'
+							className='h-9 w-full rounded-xl border-black/8 bg-black/2'
+						>
+							<SelectValue placeholder='未归类' />
+						</SelectTrigger>
+						<SelectContent position='popper'>
+							<SelectGroup>
+								<SelectItem value={EMPTY_PROJECT_VALUE}>未归类</SelectItem>
+								{detail.projects.map((project) => (
+									<SelectItem key={project.id} value={project.id}>
+										{project.name}
+									</SelectItem>
+								))}
+							</SelectGroup>
+						</SelectContent>
+					</Select>
 				</label>
 
 				<label className='space-y-1.5'>
 					<span className='text-[11px] font-medium tracking-[0.03em] text-(--sf-color-shell-tertiary)'>
 						状态
 					</span>
-					<select
-						className='h-9 w-full rounded-xl border border-black/8 bg-black/2 px-3 text-sm text-foreground outline-none focus:border-ring'
+					<Select
 						disabled={isSaving}
-						onChange={(event) =>
+						onValueChange={(value) =>
 							updateDraft({
-								status: event.currentTarget.value as 'todo' | 'done',
+								status: value as 'todo' | 'done',
 							})
 						}
 						value={draft.status}
 					>
-						<option value='todo'>待执行</option>
-						<option value='done'>已完成</option>
-					</select>
+						<SelectTrigger
+							aria-label='状态'
+							className='h-9 w-full rounded-xl border-black/8 bg-black/2'
+						>
+							<SelectValue placeholder='选择状态' />
+						</SelectTrigger>
+						<SelectContent position='popper'>
+							<SelectGroup>
+								<SelectItem value='todo'>待执行</SelectItem>
+								<SelectItem value='done'>已完成</SelectItem>
+							</SelectGroup>
+						</SelectContent>
+					</Select>
 				</label>
 			</div>
 

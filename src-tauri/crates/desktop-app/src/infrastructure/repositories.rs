@@ -9,6 +9,17 @@ use stoneflow_core::{DefaultSpaceSeed, FocusViewType, SystemFocusViewDefinition}
 use stoneflow_entity::{focus_view, project, space, task, trash_entry};
 use uuid::Uuid;
 
+const TASK_PRIORITY_LOW: &str = "low";
+const TASK_PRIORITY_MEDIUM: &str = "medium";
+const TASK_PRIORITY_HIGH: &str = "high";
+const TASK_PRIORITY_URGENT: &str = "urgent";
+const TASK_PRIORITIES: [&str; 4] = [
+    TASK_PRIORITY_LOW,
+    TASK_PRIORITY_MEDIUM,
+    TASK_PRIORITY_HIGH,
+    TASK_PRIORITY_URGENT,
+];
+
 /// 初始化阶段使用的 Space 仓储。
 pub(crate) struct SpaceRepository<'db, C>
 where
@@ -140,6 +151,21 @@ where
             .one(self.connection)
             .await
             .with_context(|| format!("failed to query focus view `{key}` for space `{space_id}`"))
+    }
+
+    /// 查询 Space 下启用的系统 FocusView。
+    pub(crate) async fn list_enabled_system_by_space(
+        &self,
+        space_id: Uuid,
+    ) -> Result<Vec<focus_view::Model>> {
+        focus_view::Entity::find()
+            .filter(focus_view::Column::SpaceId.eq(space_id))
+            .filter(focus_view::Column::Type.eq(FocusViewType::System.as_str()))
+            .filter(focus_view::Column::IsEnabled.eq(true))
+            .order_by_asc(focus_view::Column::SortOrder)
+            .all(self.connection)
+            .await
+            .with_context(|| format!("failed to query focus views for space `{space_id}`"))
     }
 
     /// 保证系统默认视图存在，并在必要时回写规范字段。
@@ -452,6 +478,44 @@ where
             })
     }
 
+    /// 查询单个系统 Focus 视图下的可执行任务集合。
+    pub(crate) async fn list_focus_view_tasks(
+        &self,
+        space_id: Uuid,
+        view_key: &str,
+    ) -> Result<Vec<task::Model>> {
+        let base_query = task::Entity::find()
+            .filter(task::Column::SpaceId.eq(space_id))
+            .filter(task::Column::DeletedAt.is_null())
+            .filter(task::Column::Status.eq("todo"))
+            .filter(task::Column::ProjectId.is_not_null())
+            .filter(task::Column::Priority.is_in(TASK_PRIORITIES));
+
+        let query = match view_key {
+            "focus" => base_query
+                .filter(task::Column::Pinned.eq(true))
+                .order_by_desc(task::Column::UpdatedAt),
+            "upcoming" => base_query
+                .filter(task::Column::DueAt.is_not_null())
+                .order_by_asc(task::Column::DueAt)
+                .order_by_desc(task::Column::UpdatedAt),
+            "recent" => base_query
+                .order_by_desc(task::Column::CreatedAt)
+                .order_by_desc(task::Column::UpdatedAt),
+            "high_priority" => base_query
+                .filter(task::Column::Priority.is_in([TASK_PRIORITY_HIGH, TASK_PRIORITY_URGENT]))
+                .order_by_desc(task::Column::UpdatedAt),
+            _ => {
+                anyhow::bail!("unsupported focus view key `{view_key}`");
+            }
+        };
+
+        query
+            .all(self.connection)
+            .await
+            .with_context(|| format!("failed to query focus tasks for view `{view_key}`"))
+    }
+
     /// 按关键词搜索当前 Space 下未删除 Task。
     pub(crate) async fn search_active_by_space(
         &self,
@@ -490,6 +554,22 @@ where
             .update(self.connection)
             .await
             .context("failed to update project task status")
+    }
+
+    /// 更新 Task pin 状态。
+    pub(crate) async fn update_task_pin_state(
+        &self,
+        task_model: task::Model,
+        pinned: bool,
+    ) -> Result<task::Model> {
+        let mut active_model: task::ActiveModel = task_model.into();
+        active_model.pinned = Set(pinned);
+        active_model.updated_at = Set(chrono::Utc::now());
+
+        active_model
+            .update(self.connection)
+            .await
+            .context("failed to update task pin state")
     }
 
     /// 更新 Task Drawer 允许编辑的基础字段。

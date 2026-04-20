@@ -3,13 +3,7 @@ import { TaskDrawerContent } from '@/features/task-drawer/ui/TaskDrawerContent'
 import type { ShellDrawerKind } from '@/app/layouts/shell/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
-import {
-	Sheet,
-	SheetClose,
-	SheetContent,
-	SheetHeader,
-	SheetTitle,
-} from '@/shared/ui/base/sheet'
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/base/sheet'
 import { XIcon } from 'lucide-react'
 
 type ShellDrawerProps = {
@@ -68,7 +62,9 @@ export function ShellDrawer({
 										</Badge>
 									))}
 								</div>
-								<h2 className='text-[13px] font-medium leading-6 text-foreground'>{detail.title}</h2>
+								<h2 className='text-[13px] font-medium leading-6 text-foreground'>
+									{detail.title}
+								</h2>
 								<Button className='h-8 w-full justify-center rounded-xl' variant='outline'>
 									标记完成
 								</Button>
@@ -94,7 +90,9 @@ export function ShellDrawer({
 							))}
 						</div>
 					) : (
-						<div className='text-[12px] text-(--sf-color-shell-tertiary)'>当前没有可展示的详情。</div>
+						<div className='text-[12px] text-(--sf-color-shell-tertiary)'>
+							当前没有可展示的详情。
+						</div>
 					)}
 				</div>
 			</SheetContent>

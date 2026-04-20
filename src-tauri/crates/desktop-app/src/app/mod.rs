@@ -7,6 +7,13 @@ use crate::application::create::{
     create_task as create_task_usecase, CreateProjectInput, CreateSpaceInput, CreateTaskInput,
     CreatedProjectPayload, CreatedSpacePayload, CreatedTaskPayload,
 };
+use crate::application::focus::{
+    get_focus_view_tasks as get_focus_view_tasks_usecase,
+    list_focus_views as list_focus_views_usecase,
+    update_task_pin_state as update_task_pin_state_usecase, FocusViewListPayload,
+    FocusViewTasksPayload, GetFocusViewTasksInput, ListFocusViewsInput, UpdateTaskPinStateInput,
+    UpdatedTaskPinStatePayload,
+};
 use crate::application::inbox::{
     list_inbox_tasks as list_inbox_tasks_usecase, triage_inbox_task as triage_inbox_task_usecase,
     InboxSnapshotPayload, ListInboxTasksInput, TriageInboxTaskInput, TriageInboxTaskPayload,
@@ -101,6 +108,36 @@ async fn list_inbox_tasks(
     database: State<'_, DatabaseState>,
 ) -> Result<InboxSnapshotPayload, String> {
     list_inbox_tasks_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn list_focus_views(
+    input: ListFocusViewsInput,
+    database: State<'_, DatabaseState>,
+) -> Result<FocusViewListPayload, String> {
+    list_focus_views_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn get_focus_view_tasks(
+    input: GetFocusViewTasksInput,
+    database: State<'_, DatabaseState>,
+) -> Result<FocusViewTasksPayload, String> {
+    get_focus_view_tasks_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn update_task_pin_state(
+    input: UpdateTaskPinStateInput,
+    database: State<'_, DatabaseState>,
+) -> Result<UpdatedTaskPinStatePayload, String> {
+    update_task_pin_state_usecase(&database, input)
         .await
         .map_err(|error| error.to_string())
 }
@@ -212,6 +249,9 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             create_project,
             create_task,
             list_inbox_tasks,
+            list_focus_views,
+            get_focus_view_tasks,
+            update_task_pin_state,
             triage_inbox_task,
             list_projects,
             search_workspace,
@@ -228,6 +268,10 @@ mod tests {
     use crate::application::create::{
         create_project, create_space, create_task, CreateProjectInput, CreateSpaceInput,
         CreateTaskInput,
+    };
+    use crate::application::focus::{
+        get_focus_view_tasks, list_focus_views, update_task_pin_state, GetFocusViewTasksInput,
+        ListFocusViewsInput, UpdateTaskPinStateInput,
     };
     use crate::application::inbox::{
         list_inbox_tasks, triage_inbox_task, ListInboxTasksInput, TriageInboxTaskInput,
@@ -1818,6 +1862,603 @@ mod tests {
     }
 
     #[test]
+    fn list_focus_views_returns_ordered_system_views_for_target_space() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before querying focus views");
+
+            create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "Study".to_owned(),
+                },
+            )
+            .await
+            .expect("secondary space should be created");
+
+            let payload = list_focus_views(
+                &state,
+                ListFocusViewsInput {
+                    space_slug: "study".to_owned(),
+                },
+            )
+            .await
+            .expect("focus views should be queryable");
+
+            let keys = payload
+                .views
+                .iter()
+                .map(|view| view.key.as_str())
+                .collect::<Vec<_>>();
+
+            assert_eq!(keys, vec!["focus", "upcoming", "recent", "high_priority"]);
+            assert!(payload.views.iter().all(|view| view.is_enabled));
+            assert!(payload.views.iter().all(|view| view.sort_order >= 0));
+        });
+    }
+
+    #[test]
+    fn get_focus_view_tasks_applies_all_system_rules_and_space_isolation() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before querying focus tasks");
+
+            let project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "执行层".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("project should be created");
+
+            let focus_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "Focus 任务".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("focus task should be created");
+            triage_inbox_task(
+                &state,
+                TriageInboxTaskInput {
+                    space_slug: "default".to_owned(),
+                    task_id: focus_task.id,
+                    project_id: Some(project.id),
+                    priority: Some("high".to_owned()),
+                },
+            )
+            .await
+            .expect("focus task should be triaged");
+
+            let upcoming_soon = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "即将到期".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("upcoming task should be created");
+            triage_inbox_task(
+                &state,
+                TriageInboxTaskInput {
+                    space_slug: "default".to_owned(),
+                    task_id: upcoming_soon.id,
+                    project_id: Some(project.id),
+                    priority: Some("medium".to_owned()),
+                },
+            )
+            .await
+            .expect("upcoming task should be triaged");
+
+            let upcoming_later = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "稍后到期".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("later upcoming task should be created");
+            triage_inbox_task(
+                &state,
+                TriageInboxTaskInput {
+                    space_slug: "default".to_owned(),
+                    task_id: upcoming_later.id,
+                    project_id: Some(project.id),
+                    priority: Some("medium".to_owned()),
+                },
+            )
+            .await
+            .expect("later upcoming task should be triaged");
+
+            let recent_old = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "较早创建".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("old recent task should be created");
+            triage_inbox_task(
+                &state,
+                TriageInboxTaskInput {
+                    space_slug: "default".to_owned(),
+                    task_id: recent_old.id,
+                    project_id: Some(project.id),
+                    priority: Some("low".to_owned()),
+                },
+            )
+            .await
+            .expect("old recent task should be triaged");
+
+            let recent_new = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "较晚创建".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("new recent task should be created");
+            triage_inbox_task(
+                &state,
+                TriageInboxTaskInput {
+                    space_slug: "default".to_owned(),
+                    task_id: recent_new.id,
+                    project_id: Some(project.id),
+                    priority: Some("low".to_owned()),
+                },
+            )
+            .await
+            .expect("new recent task should be triaged");
+
+            let urgent_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "紧急任务".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("urgent task should be created");
+            triage_inbox_task(
+                &state,
+                TriageInboxTaskInput {
+                    space_slug: "default".to_owned(),
+                    task_id: urgent_task.id,
+                    project_id: Some(project.id),
+                    priority: Some("urgent".to_owned()),
+                },
+            )
+            .await
+            .expect("urgent task should be triaged");
+
+            let inbox_only_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "仍在 Inbox".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("inbox task should be created");
+
+            let done_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "已完成任务".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("done task should be created");
+            triage_inbox_task(
+                &state,
+                TriageInboxTaskInput {
+                    space_slug: "default".to_owned(),
+                    task_id: done_task.id,
+                    project_id: Some(project.id),
+                    priority: Some("high".to_owned()),
+                },
+            )
+            .await
+            .expect("done task should be triaged");
+
+            let foreign_space = create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "Study".to_owned(),
+                },
+            )
+            .await
+            .expect("foreign space should be created");
+            let foreign_project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: foreign_space.slug.clone(),
+                    name: "外部项目".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("foreign project should be created");
+            let foreign_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: foreign_space.slug.clone(),
+                    title: "外部 Focus 任务".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("foreign task should be created");
+            triage_inbox_task(
+                &state,
+                TriageInboxTaskInput {
+                    space_slug: foreign_space.slug.clone(),
+                    task_id: foreign_task.id,
+                    project_id: Some(foreign_project.id),
+                    priority: Some("high".to_owned()),
+                },
+            )
+            .await
+            .expect("foreign task should be triaged");
+
+            let focus_persisted = task::Entity::find_by_id(focus_task.id)
+                .one(&state.connection)
+                .await
+                .expect("focus task should remain queryable")
+                .expect("focus task should exist");
+            let mut focus_active: task::ActiveModel = focus_persisted.into();
+            focus_active.pinned = Set(true);
+            focus_active.updated_at = Set(parse_utc("2026-04-20T09:00:00Z"));
+            focus_active
+                .update(&state.connection)
+                .await
+                .expect("focus task should be updated");
+
+            let soon_persisted = task::Entity::find_by_id(upcoming_soon.id)
+                .one(&state.connection)
+                .await
+                .expect("soon task should remain queryable")
+                .expect("soon task should exist");
+            let mut soon_active: task::ActiveModel = soon_persisted.into();
+            soon_active.due_at = Set(Some(parse_utc("2026-04-21T08:00:00Z")));
+            soon_active.updated_at = Set(parse_utc("2026-04-20T08:10:00Z"));
+            soon_active
+                .update(&state.connection)
+                .await
+                .expect("soon task should be updated");
+
+            let later_persisted = task::Entity::find_by_id(upcoming_later.id)
+                .one(&state.connection)
+                .await
+                .expect("later task should remain queryable")
+                .expect("later task should exist");
+            let mut later_active: task::ActiveModel = later_persisted.into();
+            later_active.due_at = Set(Some(parse_utc("2026-04-22T08:00:00Z")));
+            later_active.updated_at = Set(parse_utc("2026-04-20T08:20:00Z"));
+            later_active
+                .update(&state.connection)
+                .await
+                .expect("later task should be updated");
+
+            let recent_old_persisted = task::Entity::find_by_id(recent_old.id)
+                .one(&state.connection)
+                .await
+                .expect("old recent task should remain queryable")
+                .expect("old recent task should exist");
+            let mut recent_old_active: task::ActiveModel = recent_old_persisted.into();
+            recent_old_active.created_at = Set(parse_utc("2026-04-20T07:00:00Z"));
+            recent_old_active.updated_at = Set(parse_utc("2026-04-20T07:30:00Z"));
+            recent_old_active
+                .update(&state.connection)
+                .await
+                .expect("old recent task should be updated");
+
+            let recent_new_persisted = task::Entity::find_by_id(recent_new.id)
+                .one(&state.connection)
+                .await
+                .expect("new recent task should remain queryable")
+                .expect("new recent task should exist");
+            let mut recent_new_active: task::ActiveModel = recent_new_persisted.into();
+            recent_new_active.created_at = Set(parse_utc("2026-04-20T11:00:00Z"));
+            recent_new_active.updated_at = Set(parse_utc("2026-04-20T11:30:00Z"));
+            recent_new_active
+                .update(&state.connection)
+                .await
+                .expect("new recent task should be updated");
+
+            let urgent_persisted = task::Entity::find_by_id(urgent_task.id)
+                .one(&state.connection)
+                .await
+                .expect("urgent task should remain queryable")
+                .expect("urgent task should exist");
+            let mut urgent_active: task::ActiveModel = urgent_persisted.into();
+            urgent_active.updated_at = Set(parse_utc("2026-04-20T12:00:00Z"));
+            urgent_active
+                .update(&state.connection)
+                .await
+                .expect("urgent task should be updated");
+
+            let done_persisted = task::Entity::find_by_id(done_task.id)
+                .one(&state.connection)
+                .await
+                .expect("done task should remain queryable")
+                .expect("done task should exist");
+            let mut done_active: task::ActiveModel = done_persisted.into();
+            done_active.status = Set("done".to_owned());
+            done_active.completed_at = Set(Some(parse_utc("2026-04-20T10:30:00Z")));
+            done_active.updated_at = Set(parse_utc("2026-04-20T10:30:00Z"));
+            done_active
+                .update(&state.connection)
+                .await
+                .expect("done task should be updated");
+
+            let focus_view = get_focus_view_tasks(
+                &state,
+                GetFocusViewTasksInput {
+                    space_slug: "default".to_owned(),
+                    view_key: "focus".to_owned(),
+                },
+            )
+            .await
+            .expect("focus view should be queryable");
+            let upcoming_view = get_focus_view_tasks(
+                &state,
+                GetFocusViewTasksInput {
+                    space_slug: "default".to_owned(),
+                    view_key: "upcoming".to_owned(),
+                },
+            )
+            .await
+            .expect("upcoming view should be queryable");
+            let recent_view = get_focus_view_tasks(
+                &state,
+                GetFocusViewTasksInput {
+                    space_slug: "default".to_owned(),
+                    view_key: "recent".to_owned(),
+                },
+            )
+            .await
+            .expect("recent view should be queryable");
+            let high_priority_view = get_focus_view_tasks(
+                &state,
+                GetFocusViewTasksInput {
+                    space_slug: "default".to_owned(),
+                    view_key: "high_priority".to_owned(),
+                },
+            )
+            .await
+            .expect("high priority view should be queryable");
+
+            assert_eq!(
+                focus_view.tasks.iter().map(|task| task.id).collect::<Vec<_>>(),
+                vec![focus_task.id]
+            );
+            assert_eq!(
+                upcoming_view
+                    .tasks
+                    .iter()
+                    .map(|task| task.id)
+                    .collect::<Vec<_>>(),
+                vec![upcoming_soon.id, upcoming_later.id]
+            );
+            assert_eq!(
+                recent_view.tasks.first().map(|task| task.id),
+                Some(recent_new.id)
+            );
+            assert_eq!(
+                recent_view.tasks.last().map(|task| task.id),
+                Some(recent_old.id)
+            );
+            assert_eq!(
+                high_priority_view
+                    .tasks
+                    .iter()
+                    .map(|task| task.id)
+                    .collect::<Vec<_>>(),
+                vec![urgent_task.id, focus_task.id]
+            );
+            assert!(recent_view.tasks.iter().all(|task| task.id != inbox_only_task.id));
+            assert!(recent_view.tasks.iter().all(|task| task.id != done_task.id));
+            assert!(recent_view.tasks.iter().all(|task| task.id != foreign_task.id));
+        });
+    }
+
+    #[test]
+    fn update_task_pin_state_updates_updated_at_and_focus_results() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before updating pin state");
+
+            let project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "执行层".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("project should be created");
+            let task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "切换 pin".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("task should be created");
+
+            triage_inbox_task(
+                &state,
+                TriageInboxTaskInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                    project_id: Some(project.id),
+                    priority: Some("high".to_owned()),
+                },
+            )
+            .await
+            .expect("task should be triaged");
+
+            let before = task::Entity::find_by_id(task.id)
+                .one(&state.connection)
+                .await
+                .expect("task should remain queryable")
+                .expect("task should exist");
+
+            let pinned = update_task_pin_state(
+                &state,
+                UpdateTaskPinStateInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                    pinned: true,
+                },
+            )
+            .await
+            .expect("pin update should succeed");
+
+            assert_eq!(pinned.task_id, task.id);
+            assert!(pinned.pinned);
+            assert!(pinned.updated_at > before.updated_at);
+
+            let focus_view = get_focus_view_tasks(
+                &state,
+                GetFocusViewTasksInput {
+                    space_slug: "default".to_owned(),
+                    view_key: "focus".to_owned(),
+                },
+            )
+            .await
+            .expect("focus view should be queryable after pin");
+
+            assert_eq!(focus_view.tasks.len(), 1);
+            assert_eq!(focus_view.tasks[0].id, task.id);
+
+            let unpinned = update_task_pin_state(
+                &state,
+                UpdateTaskPinStateInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                    pinned: false,
+                },
+            )
+            .await
+            .expect("unpin update should succeed");
+
+            assert!(!unpinned.pinned);
+
+            let focus_view_after_unpin = get_focus_view_tasks(
+                &state,
+                GetFocusViewTasksInput {
+                    space_slug: "default".to_owned(),
+                    view_key: "focus".to_owned(),
+                },
+            )
+            .await
+            .expect("focus view should be queryable after unpin");
+
+            assert!(focus_view_after_unpin.tasks.is_empty());
+        });
+    }
+
+    #[test]
+    fn update_task_pin_state_rejects_cross_space_task() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before cross-space pin validation");
+
+            create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "Study".to_owned(),
+                },
+            )
+            .await
+            .expect("other space should be created");
+
+            let foreign_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "study".to_owned(),
+                    title: "外部 pin".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("foreign task should be created");
+
+            let error = update_task_pin_state(
+                &state,
+                UpdateTaskPinStateInput {
+                    space_slug: "default".to_owned(),
+                    task_id: foreign_task.id,
+                    pinned: true,
+                },
+            )
+            .await
+            .expect_err("cross-space pin update should be rejected");
+
+            assert!(error
+                .to_string()
+                .contains("does not belong to space `default`"));
+        });
+    }
+
+    #[test]
     fn delete_task_to_trash_soft_deletes_inbox_task_and_writes_trash_entry() {
         let temp_dir = TestDatabaseDir::new();
 
@@ -1996,5 +2637,11 @@ mod tests {
                 .to_string()
                 .contains("does not belong to space `default`"));
         });
+    }
+
+    fn parse_utc(value: &str) -> chrono::DateTime<chrono::Utc> {
+        chrono::DateTime::parse_from_rfc3339(value)
+            .expect("timestamp should be parseable")
+            .with_timezone(&chrono::Utc)
     }
 }

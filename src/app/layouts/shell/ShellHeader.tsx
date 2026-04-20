@@ -234,7 +234,7 @@ export function ShellHeader({
 				>
 					<div className='flex items-center gap-1.5'>
 						<Button
-							className='border-black/10 bg-background/60 px-3 text-[12px] font-medium text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] hover:bg-background/78'
+							className='border-black/10 bg-white px-3 text-[12px] font-medium text-foreground shadow-[0_1px_0_rgba(255,255,255,0.8),0_10px_20px_rgba(15,23,42,0.06)] hover:bg-[#fffdf8]'
 							onClick={onOpenTaskCreateDialog}
 							size='default'
 							variant='outline'
@@ -248,7 +248,7 @@ export function ShellHeader({
 							<DropdownMenuTrigger asChild>
 								<Button
 									aria-label='打开创建菜单'
-									className='border-black/10 bg-background/60 text-(--sf-color-shell-secondary) shadow-[inset_0_1px_0_rgba(255,255,255,0.22)] hover:bg-background/78 hover:text-foreground'
+									className='border-black/10 bg-white text-(--sf-color-shell-secondary) shadow-[0_1px_0_rgba(255,255,255,0.8),0_10px_20px_rgba(15,23,42,0.06)] hover:bg-[#fffdf8] hover:text-foreground'
 									size='icon'
 									variant='outline'
 								>

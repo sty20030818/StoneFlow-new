@@ -1,6 +1,9 @@
 import type { PropsWithChildren } from 'react'
 
-import { selectIsDrawerOpen, useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
+import {
+	selectIsDrawerOpen,
+	useShellLayoutStore,
+} from '@/app/layouts/shell/model/useShellLayoutStore'
 import { ShellDrawer } from '@/app/layouts/shell/ShellDrawer'
 import type { ShellDrawerKind } from '@/app/layouts/shell/types'
 import { cn } from '@/shared/lib/utils'
