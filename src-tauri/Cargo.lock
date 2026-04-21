@@ -970,6 +970,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-log",
  "tauri-plugin-opener",
+ "thiserror 1.0.69",
  "uuid",
 ]
 
