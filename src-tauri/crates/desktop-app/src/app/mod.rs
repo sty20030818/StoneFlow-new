@@ -44,6 +44,14 @@ use crate::application::task_drawer::{
     DeletedTaskPayload, GetTaskDrawerDetailInput, TaskDrawerDetailPayload,
     UpdateTaskDrawerFieldsInput, UpdatedTaskDrawerPayload,
 };
+use crate::application::trash::{
+    delete_project_to_trash as delete_project_to_trash_usecase,
+    list_trash_entries as list_trash_entries_usecase,
+    restore_project_from_trash as restore_project_from_trash_usecase,
+    restore_task_from_trash as restore_task_from_trash_usecase, DeleteProjectToTrashInput,
+    DeletedProjectToTrashPayload, ListTrashEntriesInput, RestoreProjectFromTrashInput,
+    RestoreTaskFromTrashInput, RestoredTrashEntryPayload, TrashListPayload,
+};
 use crate::infrastructure::database::{
     initialize_database, DatabaseHealthcheckPayload, DatabaseState,
 };
@@ -271,6 +279,46 @@ async fn delete_task_resource(
         .map_err(|error| error.to_string())
 }
 
+#[tauri::command]
+async fn list_trash_entries(
+    input: ListTrashEntriesInput,
+    database: State<'_, DatabaseState>,
+) -> Result<TrashListPayload, String> {
+    list_trash_entries_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn restore_task_from_trash(
+    input: RestoreTaskFromTrashInput,
+    database: State<'_, DatabaseState>,
+) -> Result<RestoredTrashEntryPayload, String> {
+    restore_task_from_trash_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn restore_project_from_trash(
+    input: RestoreProjectFromTrashInput,
+    database: State<'_, DatabaseState>,
+) -> Result<RestoredTrashEntryPayload, String> {
+    restore_project_from_trash_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn delete_project_to_trash(
+    input: DeleteProjectToTrashInput,
+    database: State<'_, DatabaseState>,
+) -> Result<DeletedProjectToTrashPayload, String> {
+    delete_project_to_trash_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
 /// 启动 StoneFlow 的 Tauri 宿主。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
     tauri::Builder::default()
@@ -314,7 +362,11 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             list_task_resources,
             create_task_resource,
             open_task_resource,
-            delete_task_resource
+            delete_task_resource,
+            list_trash_entries,
+            restore_task_from_trash,
+            restore_project_from_trash,
+            delete_project_to_trash
         ])
 }
 
@@ -343,6 +395,11 @@ mod tests {
     use crate::application::task_drawer::{
         delete_task_to_trash, get_task_drawer_detail, update_task_drawer_fields,
         DeleteTaskToTrashInput, GetTaskDrawerDetailInput, UpdateTaskDrawerFieldsInput,
+    };
+    use crate::application::trash::{
+        delete_project_to_trash, list_trash_entries, restore_project_from_trash,
+        restore_task_from_trash, DeleteProjectToTrashInput, ListTrashEntriesInput,
+        RestoreProjectFromTrashInput, RestoreTaskFromTrashInput,
     };
     use crate::infrastructure::database::prepare_database_at_path;
     use sea_orm::{
@@ -823,11 +880,9 @@ mod tests {
             .await
             .expect_err("resource creation should reject unsupported type");
 
-            assert!(
-                cross_space_error
-                    .to_string()
-                    .contains("does not belong to space `other`")
-            );
+            assert!(cross_space_error
+                .to_string()
+                .contains("does not belong to space `other`"));
             assert!(invalid_type_error
                 .to_string()
                 .contains("unsupported resource type `video`"));
@@ -2601,7 +2656,11 @@ mod tests {
             .expect("high priority view should be queryable");
 
             assert_eq!(
-                focus_view.tasks.iter().map(|task| task.id).collect::<Vec<_>>(),
+                focus_view
+                    .tasks
+                    .iter()
+                    .map(|task| task.id)
+                    .collect::<Vec<_>>(),
                 vec![focus_task.id]
             );
             assert_eq!(
@@ -2631,9 +2690,15 @@ mod tests {
                     .collect::<Vec<_>>(),
                 vec![urgent_task.id, focus_task.id]
             );
-            assert!(recent_view.tasks.iter().all(|task| task.id != inbox_only_task.id));
+            assert!(recent_view
+                .tasks
+                .iter()
+                .all(|task| task.id != inbox_only_task.id));
             assert!(recent_view.tasks.iter().all(|task| task.id != done_task.id));
-            assert!(recent_view.tasks.iter().all(|task| task.id != foreign_task.id));
+            assert!(recent_view
+                .tasks
+                .iter()
+                .all(|task| task.id != foreign_task.id));
         });
     }
 
@@ -2969,6 +3034,626 @@ mod tests {
                 .to_string()
                 .contains("does not belong to space `default`"));
         });
+    }
+
+    #[test]
+    fn list_trash_entries_maps_task_and_project_by_space_in_deleted_order() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before trash list test");
+            let default_space = space::Entity::find()
+                .filter(space::Column::Slug.eq("default"))
+                .one(&state.connection)
+                .await
+                .expect("default space should be queryable")
+                .expect("default space should exist");
+            let other_space = create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "Study".to_owned(),
+                },
+            )
+            .await
+            .expect("other space should be created");
+
+            let task_entity_id = uuid::Uuid::new_v4();
+            let project_entity_id = uuid::Uuid::new_v4();
+            let foreign_entity_id = uuid::Uuid::new_v4();
+
+            trash_entry::ActiveModel {
+                id: Set(uuid::Uuid::new_v4()),
+                space_id: Set(default_space.id),
+                entity_type: Set("task".to_owned()),
+                entity_id: Set(task_entity_id),
+                entity_snapshot: Set(json!({
+                    "title": "旧任务",
+                    "project_id": null
+                })),
+                deleted_at: Set(parse_utc("2026-04-20T08:00:00Z")),
+                deleted_from: Set(Some("task_drawer".to_owned())),
+                created_at: Set(parse_utc("2026-04-20T08:00:00Z")),
+            }
+            .insert(&state.connection)
+            .await
+            .expect("task trash entry should be inserted");
+            trash_entry::ActiveModel {
+                id: Set(uuid::Uuid::new_v4()),
+                space_id: Set(default_space.id),
+                entity_type: Set("project".to_owned()),
+                entity_id: Set(project_entity_id),
+                entity_snapshot: Set(json!({
+                    "name": "旧项目",
+                    "parent_project_id": null
+                })),
+                deleted_at: Set(parse_utc("2026-04-20T09:00:00Z")),
+                deleted_from: Set(Some("project_page".to_owned())),
+                created_at: Set(parse_utc("2026-04-20T09:00:00Z")),
+            }
+            .insert(&state.connection)
+            .await
+            .expect("project trash entry should be inserted");
+            trash_entry::ActiveModel {
+                id: Set(uuid::Uuid::new_v4()),
+                space_id: Set(other_space.id),
+                entity_type: Set("task".to_owned()),
+                entity_id: Set(foreign_entity_id),
+                entity_snapshot: Set(json!({ "title": "外部任务" })),
+                deleted_at: Set(parse_utc("2026-04-20T10:00:00Z")),
+                deleted_from: Set(Some("task_drawer".to_owned())),
+                created_at: Set(parse_utc("2026-04-20T10:00:00Z")),
+            }
+            .insert(&state.connection)
+            .await
+            .expect("foreign trash entry should be inserted");
+
+            let payload = list_trash_entries(
+                &state,
+                ListTrashEntriesInput {
+                    space_slug: "default".to_owned(),
+                },
+            )
+            .await
+            .expect("trash entries should be listed");
+
+            assert_eq!(payload.entries.len(), 2);
+            assert_eq!(payload.entries[0].entity_type, "project");
+            assert_eq!(payload.entries[0].title, "旧项目");
+            assert_eq!(payload.entries[0].restore_hint, "恢复为顶层 Project");
+            assert_eq!(payload.entries[1].entity_type, "task");
+            assert_eq!(payload.entries[1].title, "旧任务");
+            assert_eq!(payload.entries[1].restore_hint, "恢复到 Inbox");
+        });
+    }
+
+    #[test]
+    fn restore_task_from_trash_restores_inbox_task_and_removes_entry() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before task restore test");
+            let task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "恢复 Inbox Task".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("task should be created");
+
+            delete_task_to_trash(
+                &state,
+                DeleteTaskToTrashInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                },
+            )
+            .await
+            .expect("task should be deleted to trash");
+
+            let trash_entry = trash_entry_for_entity(&state, task.id).await;
+
+            let restored = restore_task_from_trash(
+                &state,
+                RestoreTaskFromTrashInput {
+                    space_slug: "default".to_owned(),
+                    trash_entry_id: trash_entry.id,
+                },
+            )
+            .await
+            .expect("task should restore from trash");
+
+            let restored_task = task::Entity::find_by_id(task.id)
+                .one(&state.connection)
+                .await
+                .expect("task should be queryable")
+                .expect("task should exist");
+            let trash_count = trash_entry::Entity::find()
+                .filter(trash_entry::Column::EntityId.eq(task.id))
+                .count(&state.connection)
+                .await
+                .expect("trash count should be queryable");
+
+            assert_eq!(restored.trash_entry_id, trash_entry.id);
+            assert_eq!(restored_task.deleted_at, None);
+            assert_eq!(restored_task.project_id, None);
+            assert_eq!(trash_count, 0);
+        });
+    }
+
+    #[test]
+    fn restore_task_from_trash_restores_original_active_project() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before task project restore test");
+            let project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "原 Project".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("project should be created");
+            let task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "恢复到原 Project".to_owned(),
+                    note: None,
+                    priority: Some("high".to_owned()),
+                    project_id: Some(project.id),
+                },
+            )
+            .await
+            .expect("task should be created");
+
+            delete_task_to_trash(
+                &state,
+                DeleteTaskToTrashInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                },
+            )
+            .await
+            .expect("task should be deleted to trash");
+
+            let trash_entry = trash_entry_for_entity(&state, task.id).await;
+
+            restore_task_from_trash(
+                &state,
+                RestoreTaskFromTrashInput {
+                    space_slug: "default".to_owned(),
+                    trash_entry_id: trash_entry.id,
+                },
+            )
+            .await
+            .expect("task should restore to original project");
+
+            let restored_task = task::Entity::find_by_id(task.id)
+                .one(&state.connection)
+                .await
+                .expect("task should be queryable")
+                .expect("task should exist");
+
+            assert_eq!(restored_task.deleted_at, None);
+            assert_eq!(restored_task.project_id, Some(project.id));
+        });
+    }
+
+    #[test]
+    fn restore_task_from_trash_rejects_deleted_original_project_and_keeps_entry() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before deleted project restore test");
+            let project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "原项目".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("project should be created");
+            let task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "恢复到已删项目".to_owned(),
+                    note: None,
+                    priority: Some("high".to_owned()),
+                    project_id: Some(project.id),
+                },
+            )
+            .await
+            .expect("task should be created");
+
+            delete_task_to_trash(
+                &state,
+                DeleteTaskToTrashInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                },
+            )
+            .await
+            .expect("task should be deleted to trash");
+            delete_project_to_trash(
+                &state,
+                DeleteProjectToTrashInput {
+                    space_slug: "default".to_owned(),
+                    project_id: project.id,
+                },
+            )
+            .await
+            .expect("project should be deleted to trash");
+
+            let task_trash_entry = trash_entry_for_entity(&state, task.id).await;
+            let error = restore_task_from_trash(
+                &state,
+                RestoreTaskFromTrashInput {
+                    space_slug: "default".to_owned(),
+                    trash_entry_id: task_trash_entry.id,
+                },
+            )
+            .await
+            .expect_err("restore should fail when original project is deleted");
+            let still_deleted_task = task::Entity::find_by_id(task.id)
+                .one(&state.connection)
+                .await
+                .expect("task should be queryable")
+                .expect("task should exist");
+            let task_trash_count = trash_entry::Entity::find()
+                .filter(trash_entry::Column::EntityId.eq(task.id))
+                .count(&state.connection)
+                .await
+                .expect("trash count should be queryable");
+
+            assert!(error.to_string().contains("is not restorable"));
+            assert!(still_deleted_task.deleted_at.is_some());
+            assert_eq!(task_trash_count, 1);
+        });
+    }
+
+    #[test]
+    fn restore_task_from_trash_rejects_cross_space_trash_entry() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before cross-space task restore test");
+            create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "Study".to_owned(),
+                },
+            )
+            .await
+            .expect("other space should be created");
+            let foreign_task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "study".to_owned(),
+                    title: "外部 Task".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("foreign task should be created");
+            delete_task_to_trash(
+                &state,
+                DeleteTaskToTrashInput {
+                    space_slug: "study".to_owned(),
+                    task_id: foreign_task.id,
+                },
+            )
+            .await
+            .expect("foreign task should be deleted");
+
+            let trash_entry = trash_entry_for_entity(&state, foreign_task.id).await;
+            let error = restore_task_from_trash(
+                &state,
+                RestoreTaskFromTrashInput {
+                    space_slug: "default".to_owned(),
+                    trash_entry_id: trash_entry.id,
+                },
+            )
+            .await
+            .expect_err("cross-space restore should be rejected");
+
+            assert!(error
+                .to_string()
+                .contains("does not belong to current space"));
+        });
+    }
+
+    #[test]
+    fn delete_project_to_trash_soft_deletes_project_without_cascading_tasks() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before project delete test");
+            let project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "删除项目".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("project should be created");
+            let task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "保留任务".to_owned(),
+                    note: None,
+                    priority: Some("medium".to_owned()),
+                    project_id: Some(project.id),
+                },
+            )
+            .await
+            .expect("task should be created");
+
+            delete_project_to_trash(
+                &state,
+                DeleteProjectToTrashInput {
+                    space_slug: "default".to_owned(),
+                    project_id: project.id,
+                },
+            )
+            .await
+            .expect("project should be deleted to trash");
+
+            let deleted_project = project::Entity::find_by_id(project.id)
+                .one(&state.connection)
+                .await
+                .expect("project should be queryable")
+                .expect("project should exist");
+            let active_task = task::Entity::find_by_id(task.id)
+                .one(&state.connection)
+                .await
+                .expect("task should be queryable")
+                .expect("task should exist");
+            let projects = list_projects(
+                &state,
+                ListProjectsInput {
+                    space_slug: "default".to_owned(),
+                },
+            )
+            .await
+            .expect("projects should be listed");
+            let trash_entry = trash_entry_for_entity(&state, project.id).await;
+
+            assert!(deleted_project.deleted_at.is_some());
+            assert_eq!(active_task.deleted_at, None);
+            assert_eq!(active_task.project_id, Some(project.id));
+            assert_eq!(trash_entry.entity_type, "project");
+            assert_eq!(
+                trash_entry
+                    .entity_snapshot
+                    .get("name")
+                    .and_then(|value| value.as_str()),
+                Some("删除项目")
+            );
+            assert!(projects.projects.is_empty());
+        });
+    }
+
+    #[test]
+    fn delete_project_to_trash_rejects_cross_space_project() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before cross-space project delete test");
+            create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "Study".to_owned(),
+                },
+            )
+            .await
+            .expect("other space should be created");
+            let foreign_project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "study".to_owned(),
+                    name: "外部 Project".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("foreign project should be created");
+
+            let error = delete_project_to_trash(
+                &state,
+                DeleteProjectToTrashInput {
+                    space_slug: "default".to_owned(),
+                    project_id: foreign_project.id,
+                },
+            )
+            .await
+            .expect_err("cross-space project delete should be rejected");
+
+            assert!(error
+                .to_string()
+                .contains("does not belong to space `default`"));
+        });
+    }
+
+    #[test]
+    fn restore_project_from_trash_restores_top_level_project_and_removes_entry() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before project restore test");
+            let project = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "恢复项目".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("project should be created");
+
+            delete_project_to_trash(
+                &state,
+                DeleteProjectToTrashInput {
+                    space_slug: "default".to_owned(),
+                    project_id: project.id,
+                },
+            )
+            .await
+            .expect("project should be deleted to trash");
+
+            let trash_entry = trash_entry_for_entity(&state, project.id).await;
+
+            restore_project_from_trash(
+                &state,
+                RestoreProjectFromTrashInput {
+                    space_slug: "default".to_owned(),
+                    trash_entry_id: trash_entry.id,
+                },
+            )
+            .await
+            .expect("project should restore from trash");
+
+            let restored_project = project::Entity::find_by_id(project.id)
+                .one(&state.connection)
+                .await
+                .expect("project should be queryable")
+                .expect("project should exist");
+            let trash_count = trash_entry::Entity::find()
+                .filter(trash_entry::Column::EntityId.eq(project.id))
+                .count(&state.connection)
+                .await
+                .expect("trash count should be queryable");
+
+            assert_eq!(restored_project.deleted_at, None);
+            assert_eq!(restored_project.parent_project_id, None);
+            assert_eq!(trash_count, 0);
+        });
+    }
+
+    #[test]
+    fn restore_project_from_trash_rejects_deleted_parent_and_keeps_entry() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before child project restore test");
+            let parent = create_project(
+                &state,
+                CreateProjectInput {
+                    space_slug: "default".to_owned(),
+                    name: "父项目".to_owned(),
+                    note: None,
+                },
+            )
+            .await
+            .expect("parent project should be created");
+            let space = space::Entity::find()
+                .filter(space::Column::Slug.eq("default"))
+                .one(&state.connection)
+                .await
+                .expect("default space should be queryable")
+                .expect("default space should exist");
+            let now = chrono::Utc::now();
+            let child = project::ActiveModel {
+                id: Set(uuid::Uuid::new_v4()),
+                space_id: Set(space.id),
+                parent_project_id: Set(Some(parent.id)),
+                name: Set("子项目".to_owned()),
+                status: Set("active".to_owned()),
+                note: Set(None),
+                due_at: Set(None),
+                sort_order: Set(1),
+                deleted_at: Set(None),
+                created_at: Set(now),
+                updated_at: Set(now),
+            }
+            .insert(&state.connection)
+            .await
+            .expect("child project should be inserted");
+
+            delete_project_to_trash(
+                &state,
+                DeleteProjectToTrashInput {
+                    space_slug: "default".to_owned(),
+                    project_id: child.id,
+                },
+            )
+            .await
+            .expect("child project should be deleted to trash");
+            delete_project_to_trash(
+                &state,
+                DeleteProjectToTrashInput {
+                    space_slug: "default".to_owned(),
+                    project_id: parent.id,
+                },
+            )
+            .await
+            .expect("parent project should be deleted to trash");
+
+            let child_trash_entry = trash_entry_for_entity(&state, child.id).await;
+            let error = restore_project_from_trash(
+                &state,
+                RestoreProjectFromTrashInput {
+                    space_slug: "default".to_owned(),
+                    trash_entry_id: child_trash_entry.id,
+                },
+            )
+            .await
+            .expect_err("restore should fail when original parent is deleted");
+            let child_trash_count = trash_entry::Entity::find()
+                .filter(trash_entry::Column::EntityId.eq(child.id))
+                .count(&state.connection)
+                .await
+                .expect("trash count should be queryable");
+
+            assert!(error.to_string().contains("is not restorable"));
+            assert_eq!(child_trash_count, 1);
+        });
+    }
+
+    async fn trash_entry_for_entity(
+        state: &crate::infrastructure::database::DatabaseState,
+        entity_id: uuid::Uuid,
+    ) -> trash_entry::Model {
+        trash_entry::Entity::find()
+            .filter(trash_entry::Column::EntityId.eq(entity_id))
+            .one(&state.connection)
+            .await
+            .expect("trash entry should be queryable")
+            .expect("trash entry should exist")
     }
 
     fn parse_utc(value: &str) -> chrono::DateTime<chrono::Utc> {

@@ -1,11 +1,13 @@
 import { startTransition, useEffect, useEffectEvent, useState } from 'react'
 
 import {
+	selectProjectDataVersion,
 	selectTaskDataVersion,
 	useShellLayoutStore,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { getProjectExecutionView } from '@/features/project/api/getProjectExecutionView'
 import { updateProjectTaskStatus } from '@/features/project/api/updateProjectTaskStatus'
+import { deleteProjectToTrash } from '@/features/trash/api/deleteProjectToTrash'
 import type {
 	ProjectExecutionTask,
 	ProjectExecutionView,
@@ -18,8 +20,10 @@ type UseProjectExecutionResult = {
 	loadError: string | null
 	feedback: string | null
 	pendingTaskId: string | null
+	isDeletingProject: boolean
 	refresh: () => Promise<void>
 	toggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
+	deleteCurrentProject: () => Promise<boolean>
 }
 
 /**
@@ -27,11 +31,14 @@ type UseProjectExecutionResult = {
  */
 export function useProjectExecution(spaceId: string, projectId: string): UseProjectExecutionResult {
 	const taskDataVersion = useShellLayoutStore(selectTaskDataVersion)
+	const projectDataVersion = useShellLayoutStore(selectProjectDataVersion)
+	const bumpProjectDataVersion = useShellLayoutStore((state) => state.bumpProjectDataVersion)
 	const [view, setView] = useState<ProjectExecutionView | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
 	const [loadError, setLoadError] = useState<string | null>(null)
 	const [feedback, setFeedback] = useState<string | null>(null)
 	const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
+	const [isDeletingProject, setIsDeletingProject] = useState(false)
 
 	const refresh = useEffectEvent(async () => {
 		setIsLoading(true)
@@ -57,7 +64,7 @@ export function useProjectExecution(spaceId: string, projectId: string): UseProj
 
 	useEffect(() => {
 		void refresh()
-	}, [projectId, spaceId, taskDataVersion])
+	}, [projectId, spaceId, taskDataVersion, projectDataVersion])
 
 	const toggleTaskStatus = useEffectEvent(async (task: ProjectExecutionTask) => {
 		const nextStatus: ProjectTaskStatus = task.status === 'todo' ? 'done' : 'todo'
@@ -104,14 +111,35 @@ export function useProjectExecution(spaceId: string, projectId: string): UseProj
 		}
 	})
 
+	const deleteCurrentProject = useEffectEvent(async () => {
+		setIsDeletingProject(true)
+		setLoadError(null)
+
+		try {
+			await deleteProjectToTrash({
+				spaceSlug: spaceId,
+				projectId,
+			})
+			bumpProjectDataVersion()
+			return true
+		} catch (error) {
+			setLoadError(toErrorMessage(error))
+			return false
+		} finally {
+			setIsDeletingProject(false)
+		}
+	})
+
 	return {
 		view,
 		isLoading,
 		loadError,
 		feedback,
 		pendingTaskId,
+		isDeletingProject,
 		refresh,
 		toggleTaskStatus,
+		deleteCurrentProject,
 	}
 }
 

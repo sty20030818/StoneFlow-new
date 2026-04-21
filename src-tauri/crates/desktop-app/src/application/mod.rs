@@ -7,3 +7,4 @@ pub(crate) mod project;
 pub(crate) mod resource;
 pub(crate) mod search;
 pub(crate) mod task_drawer;
+pub(crate) mod trash;

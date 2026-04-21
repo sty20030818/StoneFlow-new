@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { useProjectExecution } from '@/features/project/model/useProjectExecution'
@@ -14,15 +14,32 @@ import {
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
-import { MoreHorizontalIcon } from 'lucide-react'
+import { MoreHorizontalIcon, Trash2Icon } from 'lucide-react'
 
 export function ProjectPage() {
 	const { projectId = 'stoneflow-v1', spaceId = 'default' } = useParams()
+	const navigate = useNavigate()
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
-	const { view, isLoading, loadError, feedback, pendingTaskId, refresh, toggleTaskStatus } =
-		useProjectExecution(spaceId, projectId)
+	const {
+		view,
+		isLoading,
+		loadError,
+		feedback,
+		pendingTaskId,
+		isDeletingProject,
+		refresh,
+		toggleTaskStatus,
+		deleteCurrentProject,
+	} = useProjectExecution(spaceId, projectId)
 	const todoTasks = view?.tasks.filter((task) => task.status === 'todo') ?? []
 	const doneTasks = view?.tasks.filter((task) => task.status === 'done') ?? []
+	const handleDeleteProject = async () => {
+		const deleted = await deleteCurrentProject()
+
+		if (deleted) {
+			navigate(`/space/${spaceId}/trash`)
+		}
+	}
 
 	return (
 		<div className='flex flex-col gap-5 p-4'>
@@ -41,8 +58,13 @@ export function ProjectPage() {
 							</DropdownMenuGroup>
 							<DropdownMenuSeparator />
 							<DropdownMenuGroup>
-								<DropdownMenuItem disabled variant='destructive'>
-									归档预览
+								<DropdownMenuItem
+									disabled={isDeletingProject}
+									onSelect={() => void handleDeleteProject()}
+									variant='destructive'
+								>
+									<Trash2Icon />
+									{isDeletingProject ? '移入中...' : '移入回收站'}
 								</DropdownMenuItem>
 							</DropdownMenuGroup>
 						</DropdownMenuContent>

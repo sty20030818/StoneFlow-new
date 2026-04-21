@@ -254,6 +254,14 @@ where
             .with_context(|| format!("failed to query project `{id}`"))
     }
 
+    /// 按 ID 查询 Project，包含已删除记录。
+    pub(crate) async fn find_by_id(&self, id: Uuid) -> Result<Option<project::Model>> {
+        project::Entity::find_by_id(id)
+            .one(self.connection)
+            .await
+            .with_context(|| format!("failed to query project `{id}`"))
+    }
+
     /// 查询 Space 下可用于 Inbox 整理的 Project 列表。
     pub(crate) async fn list_active_by_space(&self, space_id: Uuid) -> Result<Vec<project::Model>> {
         project::Entity::find()
@@ -330,6 +338,40 @@ where
         .insert(self.connection)
         .await
         .with_context(|| format!("failed to create project `{name}`"))
+    }
+
+    /// 软删除 Project。M3-D 不级联删除其下 Task。
+    pub(crate) async fn soft_delete_project(
+        &self,
+        project_model: project::Model,
+        deleted_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<project::Model> {
+        let mut active_model: project::ActiveModel = project_model.into();
+        active_model.deleted_at = Set(Some(deleted_at));
+        active_model.updated_at = Set(deleted_at);
+
+        active_model
+            .update(self.connection)
+            .await
+            .context("failed to soft delete project")
+    }
+
+    /// 恢复 Project，并按删除快照写回原父 Project。
+    pub(crate) async fn restore_project(
+        &self,
+        project_model: project::Model,
+        parent_project_id: Option<Uuid>,
+        restored_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<project::Model> {
+        let mut active_model: project::ActiveModel = project_model.into();
+        active_model.parent_project_id = Set(parent_project_id);
+        active_model.deleted_at = Set(None);
+        active_model.updated_at = Set(restored_at);
+
+        active_model
+            .update(self.connection)
+            .await
+            .context("failed to restore project")
     }
 }
 
@@ -411,6 +453,14 @@ where
         task::Entity::find()
             .filter(task::Column::Id.eq(id))
             .filter(task::Column::DeletedAt.is_null())
+            .one(self.connection)
+            .await
+            .with_context(|| format!("failed to query task `{id}`"))
+    }
+
+    /// 按 ID 查询 Task，包含已删除记录。
+    pub(crate) async fn find_by_id(&self, id: Uuid) -> Result<Option<task::Model>> {
+        task::Entity::find_by_id(id)
             .one(self.connection)
             .await
             .with_context(|| format!("failed to query task `{id}`"))
@@ -608,6 +658,24 @@ where
             .await
             .context("failed to soft delete task")
     }
+
+    /// 恢复 Task，并按删除快照写回原 Project 归属。
+    pub(crate) async fn restore_task(
+        &self,
+        task_model: task::Model,
+        project_id: Option<Uuid>,
+        restored_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<task::Model> {
+        let mut active_model: task::ActiveModel = task_model.into();
+        active_model.project_id = Set(project_id);
+        active_model.deleted_at = Set(None);
+        active_model.updated_at = Set(restored_at);
+
+        active_model
+            .update(self.connection)
+            .await
+            .context("failed to restore task")
+    }
 }
 
 /// Resource 创建的最小仓储载荷。
@@ -741,5 +809,58 @@ where
         .insert(self.connection)
         .await
         .with_context(|| format!("failed to create trash entry for task `{entity_id}`"))
+    }
+
+    /// 写入 Project 删除快照。
+    pub(crate) async fn create_project_entry(
+        &self,
+        space_id: Uuid,
+        entity_id: Uuid,
+        entity_snapshot: JsonValue,
+        deleted_at: chrono::DateTime<chrono::Utc>,
+        deleted_from: Option<&str>,
+    ) -> Result<trash_entry::Model> {
+        trash_entry::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            space_id: Set(space_id),
+            entity_type: Set("project".to_owned()),
+            entity_id: Set(entity_id),
+            entity_snapshot: Set(entity_snapshot),
+            deleted_at: Set(deleted_at),
+            deleted_from: Set(deleted_from.map(str::to_owned)),
+            created_at: Set(deleted_at),
+        }
+        .insert(self.connection)
+        .await
+        .with_context(|| format!("failed to create trash entry for project `{entity_id}`"))
+    }
+
+    /// 查询 Space 下的 TrashEntry，按删除时间倒序返回。
+    pub(crate) async fn list_by_space(&self, space_id: Uuid) -> Result<Vec<trash_entry::Model>> {
+        trash_entry::Entity::find()
+            .filter(trash_entry::Column::SpaceId.eq(space_id))
+            .order_by_desc(trash_entry::Column::DeletedAt)
+            .order_by_desc(trash_entry::Column::CreatedAt)
+            .all(self.connection)
+            .await
+            .with_context(|| format!("failed to query trash entries for space `{space_id}`"))
+    }
+
+    /// 按 ID 查询 TrashEntry。
+    pub(crate) async fn find_by_id(&self, id: Uuid) -> Result<Option<trash_entry::Model>> {
+        trash_entry::Entity::find_by_id(id)
+            .one(self.connection)
+            .await
+            .with_context(|| format!("failed to query trash entry `{id}`"))
+    }
+
+    /// 删除已恢复实体对应的 TrashEntry。
+    pub(crate) async fn delete_by_id(&self, id: Uuid) -> Result<()> {
+        trash_entry::Entity::delete_by_id(id)
+            .exec(self.connection)
+            .await
+            .with_context(|| format!("failed to delete trash entry `{id}`"))?;
+
+        Ok(())
     }
 }
