@@ -12,10 +12,11 @@ use crate::application::create::{
 };
 use crate::application::inbox::normalize_priority;
 use crate::application::project::normalize_project_task_status;
+use crate::application::resource::{map_task_resource, TaskResourcePayload};
 use crate::infrastructure::{
     database::DatabaseState,
     repositories::{
-        ProjectRepository, SpaceRepository, TaskRepository, TrashEntryRepository,
+        ProjectRepository, ResourceRepository, SpaceRepository, TaskRepository, TrashEntryRepository,
         UpdateTaskDrawerFieldsParams,
     },
 };
@@ -73,6 +74,7 @@ pub(crate) struct TaskDrawerTaskPayload {
 pub(crate) struct TaskDrawerDetailPayload {
     pub(crate) task: TaskDrawerTaskPayload,
     pub(crate) projects: Vec<TaskDrawerProjectOptionPayload>,
+    pub(crate) resources: Vec<TaskResourcePayload>,
 }
 
 /// 保存 Drawer 后返回的最新任务快照。
@@ -95,6 +97,7 @@ pub(crate) async fn get_task_drawer_detail(
 ) -> Result<TaskDrawerDetailPayload> {
     let space_repository = SpaceRepository::new(&database.connection);
     let project_repository = ProjectRepository::new(&database.connection);
+    let resource_repository = ResourceRepository::new(&database.connection);
     let task_repository = TaskRepository::new(&database.connection);
 
     let space_slug = normalize_required_text(&input.space_slug, "space slug")?;
@@ -109,6 +112,7 @@ pub(crate) async fn get_task_drawer_detail(
     }
 
     let projects = project_repository.list_active_by_space(space.id).await?;
+    let resources = resource_repository.list_by_task(task.id).await?;
 
     Ok(TaskDrawerDetailPayload {
         task: map_task_drawer_task(task),
@@ -120,6 +124,7 @@ pub(crate) async fn get_task_drawer_detail(
                 sort_order: project.sort_order,
             })
             .collect(),
+        resources: resources.into_iter().map(map_task_resource).collect(),
     })
 }
 

@@ -233,6 +233,7 @@ function createTaskDrawerHookState() {
 					sortOrder: 0,
 				},
 			],
+			resources: [],
 		},
 		draft: {
 			title: 'M3-A Task Drawer',
@@ -245,13 +246,30 @@ function createTaskDrawerHookState() {
 		isLoading: false,
 		isSaving: false,
 		isDeleting: false,
+		isResourceLoading: false,
+		isAddingResource: false,
+		pendingResourceId: null,
 		loadError: null,
 		saveError: null,
 		deleteError: null,
+		resourceError: null,
 		feedback: null,
+		resourceFeedback: null,
 		refresh: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+		refreshResources: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 		updateDraft: vi.fn<(patch: Record<string, unknown>) => void>(),
 		save: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 		deleteTask: vi.fn<() => Promise<boolean>>().mockResolvedValue(false),
+		addResource: vi
+			.fn<
+				(input: {
+					type: 'doc_link' | 'local_file' | 'local_folder'
+					title: string
+					target: string
+				}) => Promise<boolean>
+			>()
+			.mockResolvedValue(false),
+		openResource: vi.fn<(resourceId: string) => Promise<boolean>>().mockResolvedValue(false),
+		deleteResource: vi.fn<(resourceId: string) => Promise<boolean>>().mockResolvedValue(false),
 	}
 }

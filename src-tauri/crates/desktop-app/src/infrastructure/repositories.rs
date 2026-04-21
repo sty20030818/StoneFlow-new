@@ -6,7 +6,7 @@ use sea_orm::{
     JsonValue, QueryFilter, QueryOrder, QuerySelect,
 };
 use stoneflow_core::{DefaultSpaceSeed, FocusViewType, SystemFocusViewDefinition};
-use stoneflow_entity::{focus_view, project, space, task, trash_entry};
+use stoneflow_entity::{focus_view, project, resource, space, task, trash_entry};
 use uuid::Uuid;
 
 const TASK_PRIORITY_LOW: &str = "low";
@@ -607,6 +607,98 @@ where
             .update(self.connection)
             .await
             .context("failed to soft delete task")
+    }
+}
+
+/// Resource 创建的最小仓储载荷。
+pub(crate) struct CreateResourceParams<'a> {
+    pub(crate) task_id: Uuid,
+    pub(crate) r#type: &'a str,
+    pub(crate) title: &'a str,
+    pub(crate) target: &'a str,
+    pub(crate) sort_order: i32,
+}
+
+/// Task 下挂载资源的仓储。
+pub(crate) struct ResourceRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
+    connection: &'db C,
+}
+
+impl<'db, C> ResourceRepository<'db, C>
+where
+    C: ConnectionTrait,
+{
+    /// 创建仓储实例。
+    pub(crate) const fn new(connection: &'db C) -> Self {
+        Self { connection }
+    }
+
+    /// 查询 Task 下全部 Resource，按用户可见顺序返回。
+    pub(crate) async fn list_by_task(&self, task_id: Uuid) -> Result<Vec<resource::Model>> {
+        resource::Entity::find()
+            .filter(resource::Column::TaskId.eq(task_id))
+            .order_by_asc(resource::Column::SortOrder)
+            .order_by_asc(resource::Column::CreatedAt)
+            .all(self.connection)
+            .await
+            .with_context(|| format!("failed to query resources for task `{task_id}`"))
+    }
+
+    /// 查询单个 Resource。
+    pub(crate) async fn find_by_id(&self, id: Uuid) -> Result<Option<resource::Model>> {
+        resource::Entity::find_by_id(id)
+            .one(self.connection)
+            .await
+            .with_context(|| format!("failed to query resource `{id}`"))
+    }
+
+    /// 计算 Task 下一个 Resource 排序值。
+    pub(crate) async fn next_sort_order(&self, task_id: Uuid) -> Result<i32> {
+        let next_sort_order = resource::Entity::find()
+            .filter(resource::Column::TaskId.eq(task_id))
+            .order_by_desc(resource::Column::SortOrder)
+            .one(self.connection)
+            .await
+            .with_context(|| format!("failed to query next resource sort order for `{task_id}`"))?
+            .map_or(0, |resource| resource.sort_order.saturating_add(1));
+
+        Ok(next_sort_order)
+    }
+
+    /// 创建 Resource 挂载记录。
+    pub(crate) async fn create_resource(
+        &self,
+        params: CreateResourceParams<'_>,
+    ) -> Result<resource::Model> {
+        let now = chrono::Utc::now();
+
+        resource::ActiveModel {
+            id: Set(Uuid::new_v4()),
+            task_id: Set(params.task_id),
+            r#type: Set(params.r#type.to_owned()),
+            title: Set(params.title.to_owned()),
+            target: Set(params.target.to_owned()),
+            metadata: Set(JsonValue::Object(serde_json::Map::new())),
+            sort_order: Set(params.sort_order),
+            created_at: Set(now),
+            updated_at: Set(now),
+        }
+        .insert(self.connection)
+        .await
+        .with_context(|| format!("failed to create resource for task `{}`", params.task_id))
+    }
+
+    /// 物理删除 Resource。M3-C 明确不写入 Trash。
+    pub(crate) async fn delete_resource(&self, id: Uuid) -> Result<()> {
+        resource::Entity::delete_by_id(id)
+            .exec(self.connection)
+            .await
+            .with_context(|| format!("failed to delete resource `{id}`"))?;
+
+        Ok(())
     }
 }
 

@@ -25,9 +25,21 @@ type TaskDrawerTaskResponse = {
 	completed_at: string | null
 }
 
+type TaskDrawerResourceResponse = {
+	id: string
+	task_id: string
+	type: 'doc_link' | 'local_file' | 'local_folder'
+	title: string
+	target: string
+	sort_order: number
+	created_at: string
+	updated_at: string
+}
+
 type TaskDrawerDetailResponse = {
 	task: TaskDrawerTaskResponse
 	projects: TaskDrawerProjectOptionResponse[]
+	resources: TaskDrawerResourceResponse[]
 }
 
 /**
@@ -57,6 +69,16 @@ export async function getTaskDrawerDetail(input: GetTaskDrawerDetailCommandInput
 			id: project.id,
 			name: project.name,
 			sortOrder: project.sort_order,
+		})),
+		resources: payload.resources.map((resource) => ({
+			id: resource.id,
+			taskId: resource.task_id,
+			type: resource.type,
+			title: resource.title,
+			target: resource.target,
+			sortOrder: resource.sort_order,
+			createdAt: resource.created_at,
+			updatedAt: resource.updated_at,
 		})),
 	} satisfies TaskDrawerDetail
 }

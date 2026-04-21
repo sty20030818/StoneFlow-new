@@ -1,11 +1,16 @@
 import { startTransition, useEffect, useEffectEvent, useMemo, useState } from 'react'
 
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
+import { createTaskResource } from '@/features/task-drawer/api/createTaskResource'
+import { deleteTaskResource } from '@/features/task-drawer/api/deleteTaskResource'
 import { deleteTaskToTrash } from '@/features/task-drawer/api/deleteTaskToTrash'
 import { getTaskDrawerDetail } from '@/features/task-drawer/api/getTaskDrawerDetail'
+import { listTaskResources } from '@/features/task-drawer/api/listTaskResources'
+import { openTaskResource } from '@/features/task-drawer/api/openTaskResource'
 import { updateTaskDrawerFields } from '@/features/task-drawer/api/updateTaskDrawerFields'
 import type {
 	TaskDrawerDetail,
+	TaskDrawerResourceType,
 	TaskDrawerStatus,
 	TaskDrawerTask,
 } from '@/features/task-drawer/model/types'
@@ -25,14 +30,27 @@ type UseTaskDrawerResult = {
 	isLoading: boolean
 	isSaving: boolean
 	isDeleting: boolean
+	isResourceLoading: boolean
+	isAddingResource: boolean
+	pendingResourceId: string | null
 	loadError: string | null
 	saveError: string | null
 	deleteError: string | null
+	resourceError: string | null
 	feedback: string | null
+	resourceFeedback: string | null
 	refresh: () => Promise<void>
+	refreshResources: () => Promise<void>
 	updateDraft: (patch: Partial<TaskDrawerDraft>) => void
 	save: () => Promise<void>
 	deleteTask: () => Promise<boolean>
+	addResource: (input: {
+		type: TaskDrawerResourceType
+		title: string
+		target: string
+	}) => Promise<boolean>
+	openResource: (resourceId: string) => Promise<boolean>
+	deleteResource: (resourceId: string) => Promise<boolean>
 }
 
 const EMPTY_DRAFT: TaskDrawerDraft = {
@@ -63,10 +81,15 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 	const [isLoading, setIsLoading] = useState(true)
 	const [isSaving, setIsSaving] = useState(false)
 	const [isDeleting, setIsDeleting] = useState(false)
+	const [isResourceLoading, setIsResourceLoading] = useState(false)
+	const [isAddingResource, setIsAddingResource] = useState(false)
+	const [pendingResourceId, setPendingResourceId] = useState<string | null>(null)
 	const [loadError, setLoadError] = useState<string | null>(null)
 	const [saveError, setSaveError] = useState<string | null>(null)
 	const [deleteError, setDeleteError] = useState<string | null>(null)
+	const [resourceError, setResourceError] = useState<string | null>(null)
 	const [feedback, setFeedback] = useState<string | null>(null)
+	const [resourceFeedback, setResourceFeedback] = useState<string | null>(null)
 
 	const refresh = useEffectEvent(async () => {
 		setIsLoading(true)
@@ -84,12 +107,45 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 				setFeedback(null)
 				setSaveError(null)
 				setDeleteError(null)
+				setResourceError(null)
+				setResourceFeedback(null)
 			})
 		} catch (error) {
 			setDetail(null)
 			setLoadError(toErrorMessage(error))
 		} finally {
 			setIsLoading(false)
+		}
+	})
+
+	const refreshResources = useEffectEvent(async () => {
+		if (!detail) {
+			return
+		}
+
+		setIsResourceLoading(true)
+		setResourceError(null)
+
+		try {
+			const resources = await listTaskResources({
+				spaceSlug: spaceId,
+				taskId,
+			})
+
+			startTransition(() => {
+				setDetail((currentDetail) =>
+					currentDetail
+						? {
+								...currentDetail,
+								resources,
+							}
+						: currentDetail,
+				)
+			})
+		} catch (error) {
+			setResourceError(toErrorMessage(error))
+		} finally {
+			setIsResourceLoading(false)
 		}
 	})
 
@@ -126,6 +182,7 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 		setIsSaving(true)
 		setSaveError(null)
 		setDeleteError(null)
+		setResourceError(null)
 
 		try {
 			const payload = await updateTaskDrawerFields({
@@ -167,6 +224,7 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 		setIsDeleting(true)
 		setDeleteError(null)
 		setSaveError(null)
+		setResourceError(null)
 
 		try {
 			await deleteTaskToTrash({
@@ -183,6 +241,85 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 		}
 	})
 
+	const addResource = useEffectEvent(
+		async (input: { type: TaskDrawerResourceType; title: string; target: string }) => {
+			if (!detail) {
+				return false
+			}
+
+			setIsAddingResource(true)
+			setResourceError(null)
+			setResourceFeedback(null)
+
+			try {
+				await createTaskResource({
+					spaceSlug: spaceId,
+					taskId,
+					type: input.type,
+					title: input.title,
+					target: input.target,
+				})
+				await refreshResources()
+				setResourceFeedback('资源已挂载')
+				return true
+			} catch (error) {
+				setResourceError(toErrorMessage(error))
+				return false
+			} finally {
+				setIsAddingResource(false)
+			}
+		},
+	)
+
+	const openResource = useEffectEvent(async (resourceId: string) => {
+		if (!detail) {
+			return false
+		}
+
+		setPendingResourceId(resourceId)
+		setResourceError(null)
+		setResourceFeedback(null)
+
+		try {
+			await openTaskResource({
+				spaceSlug: spaceId,
+				resourceId,
+			})
+			setResourceFeedback('已交给系统打开')
+			return true
+		} catch (error) {
+			setResourceError(toErrorMessage(error))
+			return false
+		} finally {
+			setPendingResourceId(null)
+		}
+	})
+
+	const deleteResource = useEffectEvent(async (resourceId: string) => {
+		if (!detail) {
+			return false
+		}
+
+		setPendingResourceId(resourceId)
+		setResourceError(null)
+		setResourceFeedback(null)
+
+		try {
+			await deleteTaskResource({
+				spaceSlug: spaceId,
+				resourceId,
+			})
+			await refreshResources()
+			setResourceFeedback('资源已移除')
+			return true
+		} catch (error) {
+			setResourceError(toErrorMessage(error))
+			return false
+		} finally {
+			setPendingResourceId(null)
+		}
+	})
+
 	return {
 		detail,
 		draft,
@@ -190,14 +327,23 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 		isLoading,
 		isSaving,
 		isDeleting,
+		isResourceLoading,
+		isAddingResource,
+		pendingResourceId,
 		loadError,
 		saveError,
 		deleteError,
+		resourceError,
 		feedback,
+		resourceFeedback,
 		refresh,
+		refreshResources,
 		updateDraft,
 		save,
 		deleteTask,
+		addResource,
+		openResource,
+		deleteResource,
 	}
 }
 
@@ -207,5 +353,9 @@ function normalizeOptionalText(value: string | null) {
 }
 
 function toErrorMessage(error: unknown) {
+	if (typeof error === 'string') {
+		return error
+	}
+
 	return error instanceof Error ? error.message : 'Task Drawer 请求失败，请稍后重试。'
 }

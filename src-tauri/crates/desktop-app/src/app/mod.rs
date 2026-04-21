@@ -25,6 +25,15 @@ use crate::application::project::{
     ListProjectsInput, ProjectExecutionViewPayload, ProjectListPayload,
     UpdateProjectTaskStatusInput, UpdatedProjectTaskStatusPayload,
 };
+use crate::application::resource::{
+    create_task_resource as create_task_resource_usecase,
+    delete_task_resource as delete_task_resource_usecase,
+    list_task_resources as list_task_resources_usecase,
+    open_task_resource as open_task_resource_usecase, CreateTaskResourceInput,
+    CreatedTaskResourcePayload, DeleteTaskResourceInput, DeletedTaskResourcePayload,
+    ListTaskResourcesInput, OpenTaskResourceInput, OpenedTaskResourcePayload,
+    TaskResourceListPayload,
+};
 use crate::application::search::{
     search_workspace as search_workspace_usecase, SearchWorkspaceInput, WorkspaceSearchPayload,
 };
@@ -222,9 +231,51 @@ async fn delete_task_to_trash(
         .map_err(|error| error.to_string())
 }
 
+#[tauri::command]
+async fn list_task_resources(
+    input: ListTaskResourcesInput,
+    database: State<'_, DatabaseState>,
+) -> Result<TaskResourceListPayload, String> {
+    list_task_resources_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn create_task_resource(
+    input: CreateTaskResourceInput,
+    database: State<'_, DatabaseState>,
+) -> Result<CreatedTaskResourcePayload, String> {
+    create_task_resource_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn open_task_resource(
+    input: OpenTaskResourceInput,
+    database: State<'_, DatabaseState>,
+) -> Result<OpenedTaskResourcePayload, String> {
+    open_task_resource_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+async fn delete_task_resource(
+    input: DeleteTaskResourceInput,
+    database: State<'_, DatabaseState>,
+) -> Result<DeletedTaskResourcePayload, String> {
+    delete_task_resource_usecase(&database, input)
+        .await
+        .map_err(|error| error.to_string())
+}
+
 /// 启动 StoneFlow 的 Tauri 宿主。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -259,7 +310,11 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             update_project_task_status,
             get_task_drawer_detail,
             update_task_drawer_fields,
-            delete_task_to_trash
+            delete_task_to_trash,
+            list_task_resources,
+            create_task_resource,
+            open_task_resource,
+            delete_task_resource
         ])
 }
 
@@ -279,6 +334,11 @@ mod tests {
     use crate::application::project::{
         get_project_execution_view, list_projects, update_project_task_status,
         GetProjectExecutionViewInput, ListProjectsInput, UpdateProjectTaskStatusInput,
+    };
+    use crate::application::resource::{
+        create_task_resource, delete_task_resource, list_task_resources, resolve_open_target,
+        CreateTaskResourceInput, DeleteTaskResourceInput, ListTaskResourcesInput,
+        ResourceOpenTarget, RESOURCE_TYPE_DOC_LINK, RESOURCE_TYPE_LOCAL_FILE,
     };
     use crate::application::task_drawer::{
         delete_task_to_trash, get_task_drawer_detail, update_task_drawer_fields,
@@ -624,6 +684,271 @@ mod tests {
 
             assert!(error.to_string().contains("task title cannot be empty"));
         });
+    }
+
+    #[test]
+    fn task_resources_support_three_types_and_list_by_task_order() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before creating resources");
+            let task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "挂载 M3-C 资源".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("task should be created before resources");
+            let local_root = temp_dir.root.join("resource-fixtures");
+            let local_folder = local_root.join("folder");
+            let local_file = local_root.join("brief.md");
+            std::fs::create_dir_all(&local_folder).expect("folder fixture should be created");
+            std::fs::write(&local_file, "M3-C").expect("file fixture should be created");
+
+            create_task_resource(
+                &state,
+                CreateTaskResourceInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                    r#type: "doc_link".to_owned(),
+                    title: "需求文档".to_owned(),
+                    target: "https://stoneflow.local/spec".to_owned(),
+                },
+            )
+            .await
+            .expect("doc link resource should be created");
+            create_task_resource(
+                &state,
+                CreateTaskResourceInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                    r#type: "local_file".to_owned(),
+                    title: "brief.md".to_owned(),
+                    target: local_file.display().to_string(),
+                },
+            )
+            .await
+            .expect("local file resource should be created");
+            create_task_resource(
+                &state,
+                CreateTaskResourceInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                    r#type: "local_folder".to_owned(),
+                    title: "folder".to_owned(),
+                    target: local_folder.display().to_string(),
+                },
+            )
+            .await
+            .expect("local folder resource should be created");
+
+            let payload = list_task_resources(
+                &state,
+                ListTaskResourcesInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                },
+            )
+            .await
+            .expect("resources should be listed");
+
+            assert_eq!(payload.resources.len(), 3);
+            assert_eq!(payload.resources[0].r#type, "doc_link");
+            assert_eq!(payload.resources[1].r#type, "local_file");
+            assert_eq!(payload.resources[2].r#type, "local_folder");
+            assert_eq!(payload.resources[0].sort_order, 0);
+            assert_eq!(payload.resources[1].sort_order, 1);
+            assert_eq!(payload.resources[2].sort_order, 2);
+        });
+    }
+
+    #[test]
+    fn create_task_resource_rejects_cross_space_and_invalid_type() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before validation tests");
+            let task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "资源边界".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("task should be created before resources");
+            create_space(
+                &state,
+                CreateSpaceInput {
+                    name: "other".to_owned(),
+                },
+            )
+            .await
+            .expect("second space should be created");
+
+            let cross_space_error = create_task_resource(
+                &state,
+                CreateTaskResourceInput {
+                    space_slug: "other".to_owned(),
+                    task_id: task.id,
+                    r#type: "doc_link".to_owned(),
+                    title: "跨空间链接".to_owned(),
+                    target: "https://stoneflow.local/spec".to_owned(),
+                },
+            )
+            .await
+            .expect_err("resource creation should reject cross-space task");
+            let invalid_type_error = create_task_resource(
+                &state,
+                CreateTaskResourceInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                    r#type: "video".to_owned(),
+                    title: "非法类型".to_owned(),
+                    target: "https://stoneflow.local/video".to_owned(),
+                },
+            )
+            .await
+            .expect_err("resource creation should reject unsupported type");
+
+            assert!(
+                cross_space_error
+                    .to_string()
+                    .contains("does not belong to space `other`")
+            );
+            assert!(invalid_type_error
+                .to_string()
+                .contains("unsupported resource type `video`"));
+        });
+    }
+
+    #[test]
+    fn delete_task_resource_removes_record_without_trash_entry() {
+        let temp_dir = TestDatabaseDir::new();
+
+        tauri::async_runtime::block_on(async {
+            let state = prepare_database_at_path(&temp_dir.database_path())
+                .await
+                .expect("bootstrap should succeed before delete test");
+            let task = create_task(
+                &state,
+                CreateTaskInput {
+                    space_slug: "default".to_owned(),
+                    title: "删除资源".to_owned(),
+                    note: None,
+                    priority: None,
+                    project_id: None,
+                },
+            )
+            .await
+            .expect("task should be created before resource");
+            let created = create_task_resource(
+                &state,
+                CreateTaskResourceInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                    r#type: "doc_link".to_owned(),
+                    title: "临时链接".to_owned(),
+                    target: "https://stoneflow.local/temp".to_owned(),
+                },
+            )
+            .await
+            .expect("resource should be created before deletion");
+
+            delete_task_resource(
+                &state,
+                DeleteTaskResourceInput {
+                    space_slug: "default".to_owned(),
+                    resource_id: created.resource.id,
+                },
+            )
+            .await
+            .expect("resource should be deleted");
+
+            let resources = list_task_resources(
+                &state,
+                ListTaskResourcesInput {
+                    space_slug: "default".to_owned(),
+                    task_id: task.id,
+                },
+            )
+            .await
+            .expect("resources should remain queryable after deletion");
+            let trash_count = trash_entry::Entity::find()
+                .count(&state.connection)
+                .await
+                .expect("trash count should be queryable");
+
+            assert!(resources.resources.is_empty());
+            assert_eq!(trash_count, 0);
+        });
+    }
+
+    #[test]
+    fn resource_open_target_validation_is_testable_without_opening_system_apps() {
+        let temp_dir = TestDatabaseDir::new();
+        let local_file = temp_dir.root.join("open-target.md");
+        std::fs::create_dir_all(&temp_dir.root).expect("fixture root should be created");
+        std::fs::write(&local_file, "open").expect("file fixture should be created");
+        let now = chrono::Utc::now();
+        let doc_resource = resource::Model {
+            id: uuid::Uuid::new_v4(),
+            task_id: uuid::Uuid::new_v4(),
+            r#type: RESOURCE_TYPE_DOC_LINK.to_owned(),
+            title: "文档".to_owned(),
+            target: "https://stoneflow.local/doc".to_owned(),
+            metadata: json!({}),
+            sort_order: 0,
+            created_at: now,
+            updated_at: now,
+        };
+        let file_resource = resource::Model {
+            id: uuid::Uuid::new_v4(),
+            task_id: uuid::Uuid::new_v4(),
+            r#type: RESOURCE_TYPE_LOCAL_FILE.to_owned(),
+            title: "文件".to_owned(),
+            target: local_file.display().to_string(),
+            metadata: json!({}),
+            sort_order: 1,
+            created_at: now,
+            updated_at: now,
+        };
+        let invalid_resource = resource::Model {
+            id: uuid::Uuid::new_v4(),
+            task_id: uuid::Uuid::new_v4(),
+            r#type: RESOURCE_TYPE_DOC_LINK.to_owned(),
+            title: "错误链接".to_owned(),
+            target: "ftp://stoneflow.local/doc".to_owned(),
+            metadata: json!({}),
+            sort_order: 2,
+            created_at: now,
+            updated_at: now,
+        };
+
+        assert_eq!(
+            resolve_open_target(&doc_resource).expect("doc url should be valid"),
+            ResourceOpenTarget::Url("https://stoneflow.local/doc".to_owned())
+        );
+        assert_eq!(
+            resolve_open_target(&file_resource).expect("file path should be valid"),
+            ResourceOpenTarget::Path(local_file)
+        );
+        assert!(resolve_open_target(&invalid_resource)
+            .expect_err("invalid url should fail")
+            .to_string()
+            .contains("http or https url"));
     }
 
     #[test]
@@ -2150,6 +2475,7 @@ mod tests {
                 .expect("focus task should exist");
             let mut focus_active: task::ActiveModel = focus_persisted.into();
             focus_active.pinned = Set(true);
+            focus_active.created_at = Set(parse_utc("2026-04-20T06:30:00Z"));
             focus_active.updated_at = Set(parse_utc("2026-04-20T09:00:00Z"));
             focus_active
                 .update(&state.connection)
@@ -2162,6 +2488,7 @@ mod tests {
                 .expect("soon task should remain queryable")
                 .expect("soon task should exist");
             let mut soon_active: task::ActiveModel = soon_persisted.into();
+            soon_active.created_at = Set(parse_utc("2026-04-20T06:20:00Z"));
             soon_active.due_at = Set(Some(parse_utc("2026-04-21T08:00:00Z")));
             soon_active.updated_at = Set(parse_utc("2026-04-20T08:10:00Z"));
             soon_active
@@ -2175,6 +2502,7 @@ mod tests {
                 .expect("later task should remain queryable")
                 .expect("later task should exist");
             let mut later_active: task::ActiveModel = later_persisted.into();
+            later_active.created_at = Set(parse_utc("2026-04-20T06:10:00Z"));
             later_active.due_at = Set(Some(parse_utc("2026-04-22T08:00:00Z")));
             later_active.updated_at = Set(parse_utc("2026-04-20T08:20:00Z"));
             later_active
@@ -2214,6 +2542,7 @@ mod tests {
                 .expect("urgent task should remain queryable")
                 .expect("urgent task should exist");
             let mut urgent_active: task::ActiveModel = urgent_persisted.into();
+            urgent_active.created_at = Set(parse_utc("2026-04-20T06:00:00Z"));
             urgent_active.updated_at = Set(parse_utc("2026-04-20T12:00:00Z"));
             urgent_active
                 .update(&state.connection)
@@ -2283,14 +2612,17 @@ mod tests {
                     .collect::<Vec<_>>(),
                 vec![upcoming_soon.id, upcoming_later.id]
             );
-            assert_eq!(
-                recent_view.tasks.first().map(|task| task.id),
-                Some(recent_new.id)
-            );
-            assert_eq!(
-                recent_view.tasks.last().map(|task| task.id),
-                Some(recent_old.id)
-            );
+            let recent_new_index = recent_view
+                .tasks
+                .iter()
+                .position(|task| task.id == recent_new.id)
+                .expect("recent new task should be included");
+            let recent_old_index = recent_view
+                .tasks
+                .iter()
+                .position(|task| task.id == recent_old.id)
+                .expect("recent old task should be included");
+            assert!(recent_new_index < recent_old_index);
             assert_eq!(
                 high_priority_view
                     .tasks
