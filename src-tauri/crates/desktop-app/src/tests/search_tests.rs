@@ -20,7 +20,8 @@ fn search_workspace_finds_tasks_and_projects_by_keyword() {
                 space_slug: "default".to_owned(),
                 name: "M2-B 里程碑".to_owned(),
                 note: Some("里程碑备注".to_owned()),
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -93,7 +94,8 @@ fn search_workspace_respects_limit() {
                     space_slug: "default".to_owned(),
                     name: format!("测试项目 {}", i),
                     note: None,
-                },
+                parent_project_id: None,
+},
             )
             .await
             .expect("project should be created");

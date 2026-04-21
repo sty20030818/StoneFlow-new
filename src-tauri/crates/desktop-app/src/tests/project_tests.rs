@@ -28,7 +28,8 @@ fn project_creation_with_optional_fields() {
                 space_slug: "default".to_owned(),
                 name: "  整理 M2-B  ".to_owned(),
                 note: Some("  包含数据库与接口梳理  ".to_owned()),
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -65,7 +66,8 @@ fn project_list_returns_active_sorted_by_sort_order() {
                 space_slug: "default".to_owned(),
                 name: "Alpha".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("first project should be created");
@@ -76,7 +78,8 @@ fn project_list_returns_active_sorted_by_sort_order() {
                 space_slug: "default".to_owned(),
                 name: "Beta".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("second project should be created");
@@ -110,7 +113,8 @@ fn project_rejects_blank_name() {
                 space_slug: "default".to_owned(),
                 name: "   ".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect_err("blank project name should be rejected");
@@ -134,7 +138,8 @@ fn project_execution_view_filters_ready_tasks() {
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -195,7 +200,8 @@ fn update_project_task_status_toggles_completion() {
                 space_slug: "default".to_owned(),
                 name: "状态切换".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -264,7 +270,8 @@ fn update_project_task_status_rejects_cross_space_task() {
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -284,7 +291,8 @@ fn update_project_task_status_rejects_cross_space_task() {
                 space_slug: "study".to_owned(),
                 name: "Foreign Project".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("foreign project should be created");

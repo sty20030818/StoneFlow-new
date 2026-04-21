@@ -24,7 +24,8 @@ fn inbox_lists_todo_tasks_without_project_or_priority() {
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -103,7 +104,8 @@ fn inbox_excludes_done_tasks() {
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -175,7 +177,8 @@ fn triage_inbox_task_assigns_project_and_priority() {
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");

@@ -31,6 +31,7 @@ pub(crate) struct CreateProjectInput {
     pub(crate) space_slug: String,
     pub(crate) name: String,
     pub(crate) note: Option<String>,
+    pub(crate) parent_project_id: Option<Uuid>,
 }
 
 /// 创建 Task 的输入。
@@ -59,6 +60,7 @@ pub(crate) struct CreatedSpacePayload {
 pub(crate) struct CreatedProjectPayload {
     pub(crate) id: Uuid,
     pub(crate) space_id: Uuid,
+    pub(crate) parent_project_id: Option<Uuid>,
     pub(crate) name: String,
     pub(crate) status: String,
     pub(crate) note: Option<String>,
@@ -129,11 +131,33 @@ pub(crate) async fn create_project(
     let name = normalize_required_text(&input.name, "project name")?;
     let note = normalize_optional_text(input.note);
     let space = resolve_active_space(&space_repository, &space_slug).await?;
-    let sort_order = project_repository.next_sort_order(space.id).await?;
+    if let Some(parent_project_id) = input.parent_project_id {
+        let parent_project = project_repository
+            .find_active_by_id(parent_project_id)
+            .await?
+            .with_context(|| format!("parent project `{parent_project_id}` does not exist"))?;
+
+        if parent_project.space_id != space.id {
+            bail!("parent project `{parent_project_id}` does not belong to space `{space_slug}`");
+        }
+
+        if parent_project.status != PROJECT_STATUS_ACTIVE {
+            bail!("parent project `{parent_project_id}` is not active");
+        }
+
+        if parent_project.parent_project_id.is_some() {
+            bail!("StoneFlow V1 only supports one-level subprojects");
+        }
+    }
+
+    let sort_order = project_repository
+        .next_sort_order(space.id, input.parent_project_id)
+        .await?;
 
     let created_project = project_repository
         .create_project(
             space.id,
+            input.parent_project_id,
             &name,
             note.as_deref(),
             PROJECT_STATUS_ACTIVE,
@@ -144,6 +168,7 @@ pub(crate) async fn create_project(
     Ok(CreatedProjectPayload {
         id: created_project.id,
         space_id: created_project.space_id,
+        parent_project_id: created_project.parent_project_id,
         name: created_project.name,
         status: created_project.status,
         note: created_project.note,

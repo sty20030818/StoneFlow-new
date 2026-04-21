@@ -82,7 +82,8 @@ fn delete_task_to_trash_writes_trash_entry_and_soft_deletes() {
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -145,7 +146,8 @@ fn restore_task_from_trash_recovers_to_original_project() {
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -223,7 +225,8 @@ fn delete_project_to_trash_soft_deletes_without_cascade() {
                 space_slug: "default".to_owned(),
                 name: "可删除项目".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");

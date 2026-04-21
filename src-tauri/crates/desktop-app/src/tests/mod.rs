@@ -13,7 +13,7 @@ impl TestDatabaseDir {
     /// 创建新的临时测试目录。
     pub fn new() -> Self {
         let root =
-            std::env::temp_dir().join(format!("stoneflow-db-test-{}\", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("stoneflow-db-test-{}", uuid::Uuid::new_v4()));
         std::fs::create_dir_all(&root).expect("test dir should be created");
         Self { root }
     }

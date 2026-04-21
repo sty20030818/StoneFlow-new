@@ -51,7 +51,8 @@ fn focus_view_shows_pinned_tasks() {
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -124,7 +125,8 @@ fn high_priority_view_shows_high_and_urgent_tasks() {
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");

@@ -43,6 +43,7 @@ pub(crate) struct ProjectListItemPayload {
     pub(crate) name: String,
     pub(crate) status: String,
     pub(crate) sort_order: i32,
+    pub(crate) children: Vec<ProjectListItemPayload>,
 }
 
 /// 当前 Space 的真实 Project 列表。
@@ -76,6 +77,7 @@ pub(crate) struct ProjectExecutionTaskPayload {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub(crate) struct ProjectExecutionViewPayload {
     pub(crate) project: ProjectExecutionProjectPayload,
+    pub(crate) child_projects: Vec<ProjectExecutionProjectPayload>,
     pub(crate) tasks: Vec<ProjectExecutionTaskPayload>,
 }
 
@@ -101,15 +103,7 @@ pub(crate) async fn list_projects(
     let projects = project_repository.list_active_by_space(space.id).await?;
 
     Ok(ProjectListPayload {
-        projects: projects
-            .into_iter()
-            .map(|project| ProjectListItemPayload {
-                id: project.id,
-                name: project.name,
-                status: project.status,
-                sort_order: project.sort_order,
-            })
-            .collect(),
+        projects: build_project_tree_payload(projects),
     })
 }
 
@@ -143,6 +137,13 @@ pub(crate) async fn get_project_execution_view(
     let tasks = task_repository
         .list_project_execution_tasks(space.id, project.id)
         .await?;
+    let child_projects = if project.parent_project_id.is_none() {
+        project_repository
+            .list_active_children(space.id, project.id)
+            .await?
+    } else {
+        Vec::new()
+    };
 
     Ok(ProjectExecutionViewPayload {
         project: ProjectExecutionProjectPayload {
@@ -151,6 +152,10 @@ pub(crate) async fn get_project_execution_view(
             status: project.status,
             sort_order: project.sort_order,
         },
+        child_projects: child_projects
+            .into_iter()
+            .map(map_project_execution_project)
+            .collect(),
         tasks: tasks
             .into_iter()
             .map(|task| ProjectExecutionTaskPayload {
@@ -164,6 +169,43 @@ pub(crate) async fn get_project_execution_view(
             })
             .collect(),
     })
+}
+
+pub(crate) fn build_project_tree_payload(
+    projects: Vec<stoneflow_entity::project::Model>,
+) -> Vec<ProjectListItemPayload> {
+    projects
+        .iter()
+        .filter(|project| project.parent_project_id.is_none())
+        .map(|project| ProjectListItemPayload {
+            id: project.id,
+            name: project.name.clone(),
+            status: project.status.clone(),
+            sort_order: project.sort_order,
+            children: projects
+                .iter()
+                .filter(|child_project| child_project.parent_project_id == Some(project.id))
+                .map(|child_project| ProjectListItemPayload {
+                    id: child_project.id,
+                    name: child_project.name.clone(),
+                    status: child_project.status.clone(),
+                    sort_order: child_project.sort_order,
+                    children: Vec::new(),
+                })
+                .collect(),
+        })
+        .collect()
+}
+
+fn map_project_execution_project(
+    project: stoneflow_entity::project::Model,
+) -> ProjectExecutionProjectPayload {
+    ProjectExecutionProjectPayload {
+        id: project.id,
+        name: project.name,
+        status: project.status,
+        sort_order: project.sort_order,
+    }
 }
 
 /// 在 Project 中切换任务状态。

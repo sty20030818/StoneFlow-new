@@ -60,7 +60,8 @@ fn create_task_accepts_priority_and_skips_inbox_when_project_assigned() {
                 space_slug: "default".to_owned(),
                 name: "M2-B 联调".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -159,7 +160,8 @@ fn create_task_rejects_foreign_project() {
                 space_slug: "default".to_owned(),
                 name: "Foreign Project".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");

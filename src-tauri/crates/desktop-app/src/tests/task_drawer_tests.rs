@@ -27,7 +27,8 @@ fn get_task_drawer_detail_returns_task_and_projects_for_current_space() {
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");
@@ -78,7 +79,8 @@ fn update_task_drawer_fields_updates_core_fields_and_moves_task_back_to_inbox() 
                 space_slug: "default".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
-            },
+            parent_project_id: None,
+},
         )
         .await
         .expect("project should be created");

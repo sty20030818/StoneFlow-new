@@ -247,6 +247,12 @@ pub(crate) async fn restore_project_from_trash(
                             bail!("original parent project `{parent_project_id}` is not restorable");
                         }
 
+                        if parent_project.parent_project_id.is_some() {
+                            bail!(
+                                "original parent project `{parent_project_id}` would create multi-level subprojects"
+                            );
+                        }
+
                         Some(parent_project.id)
                     }
                     None => None,

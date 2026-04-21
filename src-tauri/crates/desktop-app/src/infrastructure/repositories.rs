@@ -262,16 +262,37 @@ where
             .with_context(|| format!("failed to query project `{id}`"))
     }
 
-    /// 查询 Space 下可用于 Inbox 整理的 Project 列表。
+    /// 查询 Space 下可用于 Inbox 整理和项目导航的 Project 列表。
     pub(crate) async fn list_active_by_space(&self, space_id: Uuid) -> Result<Vec<project::Model>> {
         project::Entity::find()
             .filter(project::Column::SpaceId.eq(space_id))
             .filter(project::Column::DeletedAt.is_null())
             .filter(project::Column::Status.eq("active"))
             .order_by_asc(project::Column::SortOrder)
+            .order_by_asc(project::Column::CreatedAt)
             .all(self.connection)
             .await
             .with_context(|| format!("failed to query active projects for space `{space_id}`"))
+    }
+
+    /// 查询某个 Project 的直属子项目。
+    pub(crate) async fn list_active_children(
+        &self,
+        space_id: Uuid,
+        parent_project_id: Uuid,
+    ) -> Result<Vec<project::Model>> {
+        project::Entity::find()
+            .filter(project::Column::SpaceId.eq(space_id))
+            .filter(project::Column::ParentProjectId.eq(parent_project_id))
+            .filter(project::Column::DeletedAt.is_null())
+            .filter(project::Column::Status.eq("active"))
+            .order_by_asc(project::Column::SortOrder)
+            .order_by_asc(project::Column::CreatedAt)
+            .all(self.connection)
+            .await
+            .with_context(|| {
+                format!("failed to query child projects for parent `{parent_project_id}`")
+            })
     }
 
     /// 按关键词搜索当前 Space 下可见 Project。
@@ -297,10 +318,19 @@ where
             .with_context(|| format!("failed to search active projects for space `{space_id}`"))
     }
 
-    /// 计算 Space 下一个 Project 排序值。
-    pub(crate) async fn next_sort_order(&self, space_id: Uuid) -> Result<i32> {
+    /// 计算同一父级下的下一个 Project 排序值。
+    pub(crate) async fn next_sort_order(
+        &self,
+        space_id: Uuid,
+        parent_project_id: Option<Uuid>,
+    ) -> Result<i32> {
+        let parent_filter = match parent_project_id {
+            Some(parent_project_id) => project::Column::ParentProjectId.eq(parent_project_id),
+            None => project::Column::ParentProjectId.is_null(),
+        };
         let next_sort_order = project::Entity::find()
             .filter(project::Column::SpaceId.eq(space_id))
+            .filter(parent_filter)
             .filter(project::Column::DeletedAt.is_null())
             .order_by_desc(project::Column::SortOrder)
             .one(self.connection)
@@ -311,10 +341,11 @@ where
         Ok(next_sort_order)
     }
 
-    /// 创建顶层 Project。
+    /// 创建 Project，允许传入一个顶层父 Project 形成一层子项目。
     pub(crate) async fn create_project(
         &self,
         space_id: Uuid,
+        parent_project_id: Option<Uuid>,
         name: &str,
         note: Option<&str>,
         status: &str,
@@ -325,7 +356,7 @@ where
         project::ActiveModel {
             id: Set(Uuid::new_v4()),
             space_id: Set(space_id),
-            parent_project_id: Set(None),
+            parent_project_id: Set(parent_project_id),
             name: Set(name.to_owned()),
             status: Set(status.to_owned()),
             note: Set(note.map(str::to_owned)),
