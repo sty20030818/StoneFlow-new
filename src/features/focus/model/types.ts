@@ -1,4 +1,5 @@
 export type FocusViewKey = 'focus' | 'upcoming' | 'recent' | 'high_priority'
+export type FocusRecentTimeWindow = '7d' | '30d' | 'all'
 
 export type FocusViewRecord = {
 	id: string
@@ -24,4 +25,11 @@ export type FocusTaskRecord = {
 export type FocusViewSnapshot = {
 	view: FocusViewRecord
 	tasks: FocusTaskRecord[]
+}
+
+export type FocusWorkspaceSummary = {
+	key: FocusViewKey
+	label: string
+	description: string
+	count: number
 }

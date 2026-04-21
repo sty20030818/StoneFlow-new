@@ -1,11 +1,12 @@
 import { invoke } from '@tauri-apps/api/core'
+import type * as TauriCore from '@tauri-apps/api/core'
 
 import { getFocusViewTasks } from '@/features/focus/api/getFocusViewTasks'
 import { listFocusViews } from '@/features/focus/api/listFocusViews'
 import { updateTaskPinState } from '@/features/focus/api/updateTaskPinState'
 
 vi.mock('@tauri-apps/api/core', () => ({
-	invoke: vi.fn(),
+	invoke: vi.fn<typeof TauriCore.invoke>(),
 }))
 
 const mockedInvoke = vi.mocked(invoke)
@@ -25,6 +26,13 @@ describe('focus api', () => {
 					sort_order: 0,
 					is_enabled: true,
 				},
+				{
+					id: 'view-recent',
+					key: 'recent',
+					name: '最近添加',
+					sort_order: 2,
+					is_enabled: false,
+				},
 			],
 		})
 
@@ -35,6 +43,13 @@ describe('focus api', () => {
 				name: 'Focus',
 				sortOrder: 0,
 				isEnabled: true,
+			},
+			{
+				id: 'view-recent',
+				key: 'recent',
+				name: '最近添加',
+				sortOrder: 2,
+				isEnabled: false,
 			},
 		])
 
@@ -67,6 +82,18 @@ describe('focus api', () => {
 					created_at: '2026-04-20T08:00:00Z',
 					updated_at: '2026-04-20T09:00:00Z',
 				},
+				{
+					id: 'task-2',
+					project_id: 'project-1',
+					title: '没有备注和截止时间',
+					note: null,
+					priority: 'urgent',
+					status: 'done',
+					pinned: true,
+					due_at: null,
+					created_at: '2026-04-20T10:00:00Z',
+					updated_at: '2026-04-20T11:00:00Z',
+				},
 			],
 		})
 
@@ -95,6 +122,18 @@ describe('focus api', () => {
 					dueAt: '2026-04-21T08:00:00Z',
 					createdAt: '2026-04-20T08:00:00Z',
 					updatedAt: '2026-04-20T09:00:00Z',
+				},
+				{
+					id: 'task-2',
+					projectId: 'project-1',
+					title: '没有备注和截止时间',
+					note: null,
+					priority: 'urgent',
+					status: 'done',
+					pinned: true,
+					dueAt: null,
+					createdAt: '2026-04-20T10:00:00Z',
+					updatedAt: '2026-04-20T11:00:00Z',
 				},
 			],
 		})
@@ -131,6 +170,34 @@ describe('focus api', () => {
 				space_slug: 'default',
 				task_id: 'task-1',
 				pinned: true,
+			},
+		})
+	})
+
+	it('映射 unpin 状态切换结果', async () => {
+		mockedInvoke.mockResolvedValue({
+			task_id: 'task-1',
+			pinned: false,
+			updated_at: '2026-04-20T10:30:00Z',
+		})
+
+		await expect(
+			updateTaskPinState({
+				spaceSlug: 'default',
+				taskId: 'task-1',
+				pinned: false,
+			}),
+		).resolves.toEqual({
+			taskId: 'task-1',
+			pinned: false,
+			updatedAt: '2026-04-20T10:30:00Z',
+		})
+
+		expect(mockedInvoke).toHaveBeenCalledWith('update_task_pin_state', {
+			input: {
+				space_slug: 'default',
+				task_id: 'task-1',
+				pinned: false,
 			},
 		})
 	})
