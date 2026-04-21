@@ -24,6 +24,7 @@ export type ShellProjectLink = {
 	id: string
 	label: string
 	badge?: string
+	children?: ShellProjectLink[]
 }
 
 type ShellSpace = {

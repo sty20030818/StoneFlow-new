@@ -37,8 +37,22 @@ describe('TaskCreateModalContent', () => {
 				currentSpaceId='default'
 				onClose={onClose}
 				projects={[
-					{ id: 'project-1', name: '执行层', status: 'active', sortOrder: 0 },
-					{ id: 'project-2', name: '产品设计', status: 'active', sortOrder: 1 },
+					{
+						id: 'project-1',
+						parentProjectId: null,
+						name: '执行层',
+						status: 'active',
+						sortOrder: 0,
+						children: [],
+					},
+					{
+						id: 'project-2',
+						parentProjectId: null,
+						name: '产品设计',
+						status: 'active',
+						sortOrder: 1,
+						children: [],
+					},
 				]}
 				projectsLoading={false}
 			/>,

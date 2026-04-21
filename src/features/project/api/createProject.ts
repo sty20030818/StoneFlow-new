@@ -4,11 +4,13 @@ type CreateProjectCommandInput = {
 	spaceSlug: string
 	name: string
 	note?: string | null
+	parentProjectId?: string | null
 }
 
 type CreateProjectResponse = {
 	id: string
 	space_id: string
+	parent_project_id: string | null
 	name: string
 	status: string
 	note: string | null
@@ -20,6 +22,7 @@ type CreateProjectResponse = {
 export type CreatedProjectPayload = {
 	id: string
 	spaceId: string
+	parentProjectId: string | null
 	name: string
 	status: string
 	note: string | null
@@ -37,12 +40,14 @@ export async function createProject(input: CreateProjectCommandInput) {
 			space_slug: input.spaceSlug,
 			name: input.name,
 			note: input.note ?? null,
+			parent_project_id: input.parentProjectId ?? null,
 		},
 	})
 
 	return {
 		id: payload.id,
 		spaceId: payload.space_id,
+		parentProjectId: payload.parent_project_id,
 		name: payload.name,
 		status: payload.status,
 		note: payload.note,

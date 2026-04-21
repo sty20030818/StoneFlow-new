@@ -24,6 +24,7 @@ describe('ProjectPage', () => {
 			isCommandOpen: false,
 			isTaskCreateOpen: false,
 			isProjectCreateOpen: false,
+			projectCreateParentId: null,
 			isDrawerOpen: false,
 			activeDrawerKind: null,
 			activeDrawerId: null,
@@ -39,7 +40,10 @@ describe('ProjectPage', () => {
 				name: '执行层',
 				status: 'active',
 				sortOrder: 0,
+				parentProjectId: null,
+				children: [],
 			},
+			childProjects: [],
 			tasks: [
 				{
 					id: 'task-1',
@@ -83,7 +87,10 @@ describe('ProjectPage', () => {
 				name: '执行层',
 				status: 'active',
 				sortOrder: 0,
+				parentProjectId: null,
+				children: [],
 			},
+			childProjects: [],
 			tasks: [
 				{
 					id: 'task-1',
@@ -128,7 +135,10 @@ describe('ProjectPage', () => {
 				name: '执行层',
 				status: 'active',
 				sortOrder: 0,
+				parentProjectId: null,
+				children: [],
 			},
+			childProjects: [],
 			tasks: [
 				{
 					id: 'task-1',
@@ -165,7 +175,10 @@ describe('ProjectPage', () => {
 				name: '执行层',
 				status: 'active',
 				sortOrder: 0,
+				parentProjectId: null,
+				children: [],
 			},
+			childProjects: [],
 			tasks: [],
 		})
 
@@ -175,6 +188,65 @@ describe('ProjectPage', () => {
 		expect(screen.getByText('还没有完成的任务。')).toBeInTheDocument()
 	})
 
+	it('展示直属子项目入口并允许进入子项目', async () => {
+		mockedGetProjectExecutionView.mockResolvedValue({
+			project: {
+				id: 'project-1',
+				name: '执行层',
+				status: 'active',
+				sortOrder: 0,
+				parentProjectId: null,
+				children: [],
+			},
+			childProjects: [
+				{
+					id: 'project-child',
+					name: '子项目收口',
+					status: 'active',
+					sortOrder: 0,
+					parentProjectId: 'project-1',
+					children: [],
+				},
+			],
+			tasks: [],
+		})
+
+		renderProjectPage()
+
+		fireEvent.click(await screen.findByRole('button', { name: /子项目收口/ }))
+
+		await waitFor(() => {
+			expect(mockedGetProjectExecutionView).toHaveBeenCalledWith({
+				spaceSlug: 'default',
+				projectId: 'project-child',
+			})
+		})
+	})
+
+	it('点击创建子项目时打开 Project 创建弹窗并记录父项目', async () => {
+		mockedGetProjectExecutionView.mockResolvedValue({
+			project: {
+				id: 'project-1',
+				name: '执行层',
+				status: 'active',
+				sortOrder: 0,
+				parentProjectId: null,
+				children: [],
+			},
+			childProjects: [],
+			tasks: [],
+		})
+
+		renderProjectPage()
+
+		fireEvent.click(await screen.findByRole('button', { name: '子项目' }))
+
+		expect(useShellLayoutStore.getState()).toMatchObject({
+			isProjectCreateOpen: true,
+			projectCreateParentId: 'project-1',
+		})
+	})
+
 	it('点击任务标题时打开 Task Drawer', async () => {
 		mockedGetProjectExecutionView.mockResolvedValue({
 			project: {
@@ -182,7 +254,10 @@ describe('ProjectPage', () => {
 				name: '执行层',
 				status: 'active',
 				sortOrder: 0,
+				parentProjectId: null,
+				children: [],
 			},
+			childProjects: [],
 			tasks: [
 				{
 					id: 'task-1',
@@ -215,7 +290,10 @@ describe('ProjectPage', () => {
 					name: '执行层',
 					status: 'active',
 					sortOrder: 0,
+					parentProjectId: null,
+					children: [],
 				},
+				childProjects: [],
 				tasks: [
 					{
 						id: 'task-1',
@@ -234,7 +312,10 @@ describe('ProjectPage', () => {
 					name: '执行层',
 					status: 'active',
 					sortOrder: 0,
+					parentProjectId: null,
+					children: [],
 				},
+				childProjects: [],
 				tasks: [],
 			})
 

@@ -7,6 +7,7 @@ import { Textarea } from '@/shared/ui/base/textarea'
 
 type ProjectCreateModalContentProps = {
 	currentSpaceId: string
+	parentProjectId?: string | null
 	onClose: () => void
 }
 
@@ -15,11 +16,14 @@ type ProjectCreateModalContentProps = {
  */
 export function ProjectCreateModalContent({
 	currentSpaceId,
+	parentProjectId = null,
 	onClose,
 }: ProjectCreateModalContentProps) {
+	const isSubproject = Boolean(parentProjectId)
 	const { name, note, status, errorMessage, createdProject, setName, setNote, reset, submit } =
 		useProjectCreate({
 			currentSpaceId,
+			parentProjectId,
 		})
 
 	useEffect(() => {
@@ -48,7 +52,7 @@ export function ProjectCreateModalContent({
 						disabled={status === 'submitting' || status === 'success'}
 						id='project-create-name'
 						onChange={(event) => setName(event.currentTarget.value)}
-						placeholder='例如：执行层收口'
+						placeholder={isSubproject ? '例如：M3-E 子项目收口' : '例如：执行层收口'}
 						value={name}
 					/>
 				</label>
@@ -60,7 +64,11 @@ export function ProjectCreateModalContent({
 						disabled={status === 'submitting' || status === 'success'}
 						id='project-create-note'
 						onChange={(event) => setNote(event.currentTarget.value)}
-						placeholder='可选，写一句这个项目承接什么工作。'
+						placeholder={
+							isSubproject
+								? '可选，写一句这个子项目承接什么工作。'
+								: '可选，写一句这个项目承接什么工作。'
+						}
 						value={note}
 					/>
 				</label>
@@ -80,7 +88,7 @@ export function ProjectCreateModalContent({
 					className='rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2 text-[12px] leading-5 text-emerald-700'
 					role='status'
 				>
-					已创建项目“{createdProject.name}”。
+					已创建{isSubproject ? '子项目' : '项目'}“{createdProject.name}”。
 				</div>
 			) : null}
 
@@ -103,7 +111,13 @@ export function ProjectCreateModalContent({
 						void submit()
 					}}
 				>
-					{status === 'submitting' ? '创建中...' : status === 'success' ? '已创建' : '创建项目'}
+					{status === 'submitting'
+						? '创建中...'
+						: status === 'success'
+							? '已创建'
+							: isSubproject
+								? '创建子项目'
+								: '创建项目'}
 				</Button>
 			</div>
 		</div>

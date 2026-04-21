@@ -11,7 +11,7 @@ type ShellSidebarProps = {
 	projects: ShellProjectLink[]
 	isProjectsLoading: boolean
 	projectsError: string | null
-	onOpenProjectCreateDialog: () => void
+	onOpenProjectCreateDialog: (parentProjectId?: string | null) => void
 }
 
 export function ShellSidebar({
@@ -78,7 +78,7 @@ export function ShellSidebar({
 						<Button
 							aria-label='创建项目'
 							className='rounded-[0.5rem] text-(--sf-color-shell-secondary)'
-							onClick={onOpenProjectCreateDialog}
+							onClick={() => onOpenProjectCreateDialog()}
 							size='icon-xs'
 							variant='ghost'
 						>
@@ -96,7 +96,7 @@ export function ShellSidebar({
 							<p className='text-[12px] text-(--sf-color-shell-tertiary)'>当前 Space 还没有项目</p>
 							<Button
 								className='justify-start rounded-xl'
-								onClick={onOpenProjectCreateDialog}
+								onClick={() => onOpenProjectCreateDialog()}
 								size='sm'
 							>
 								<PlusIcon data-icon='inline-start' />
@@ -105,26 +105,60 @@ export function ShellSidebar({
 						</div>
 					) : (
 						projects.map((project) => (
-							<NavLink
-								className={({ isActive }) =>
-									cn(
-										'flex h-8 items-center gap-2 rounded-xl px-2.5 text-[13px] transition-colors',
-										isActive
-											? 'bg-black/9 font-medium text-foreground'
-											: 'text-(--sf-color-shell-secondary) hover:bg-black/5 hover:text-foreground',
-									)
-								}
-								key={project.id}
-								to={`/space/${currentSpaceId}/project/${project.id}`}
-							>
-								<span className='size-3 rounded-lg bg-black/12' />
-								<span>{project.label}</span>
-								{project.badge ? (
-									<span className='ml-auto text-[10px] text-(--sf-color-shell-tertiary)'>
-										{project.badge}
-									</span>
-								) : null}
-							</NavLink>
+							<div className='space-y-0.5' key={project.id}>
+								<div className='group flex items-center gap-1'>
+									<NavLink
+										className={({ isActive }) =>
+											cn(
+												'flex h-8 min-w-0 flex-1 items-center gap-2 rounded-xl px-2.5 text-[13px] transition-colors',
+												isActive
+													? 'bg-black/9 font-medium text-foreground'
+													: 'text-(--sf-color-shell-secondary) hover:bg-black/5 hover:text-foreground',
+											)
+										}
+										to={`/space/${currentSpaceId}/project/${project.id}`}
+									>
+										<span className='size-3 shrink-0 rounded-lg bg-black/12' />
+										<span className='min-w-0 truncate'>{project.label}</span>
+										{project.badge ? (
+											<span className='ml-auto shrink-0 text-[10px] text-(--sf-color-shell-tertiary)'>
+												{project.badge}
+											</span>
+										) : null}
+									</NavLink>
+									<Button
+										aria-label={`在 ${project.label} 下创建子项目`}
+										className='size-7 shrink-0 rounded-[0.5rem] text-(--sf-color-shell-secondary) opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100'
+										onClick={() => onOpenProjectCreateDialog(project.id)}
+										size='icon-xs'
+										variant='ghost'
+									>
+										<PlusIcon />
+									</Button>
+								</div>
+								{project.children?.map((childProject) => (
+									<NavLink
+										className={({ isActive }) =>
+											cn(
+												'ml-5 flex h-7 items-center gap-2 rounded-lg px-2 text-[12px] transition-colors',
+												isActive
+													? 'bg-black/9 font-medium text-foreground'
+													: 'text-(--sf-color-shell-secondary) hover:bg-black/5 hover:text-foreground',
+											)
+										}
+										key={childProject.id}
+										to={`/space/${currentSpaceId}/project/${childProject.id}`}
+									>
+										<span className='size-2 shrink-0 rounded-full bg-black/16' />
+										<span className='min-w-0 truncate'>{childProject.label}</span>
+										{childProject.badge ? (
+											<span className='ml-auto shrink-0 text-[10px] text-(--sf-color-shell-tertiary)'>
+												{childProject.badge}
+											</span>
+										) : null}
+									</NavLink>
+								))}
+							</div>
 						))
 					)}
 				</section>

@@ -11,6 +11,7 @@ type ProjectListItemResponse = {
 	name: string
 	status: string
 	sort_order: number
+	children: ProjectListItemResponse[]
 }
 
 type ProjectListResponse = {
@@ -27,10 +28,23 @@ export async function listProjects(input: ListProjectsCommandInput) {
 		},
 	})
 
-	return payload.projects.map((project) => ({
+	return payload.projects.map(mapProjectRecord) satisfies ProjectRecord[]
+}
+
+function mapProjectRecord(project: ProjectListItemResponse): ProjectRecord {
+	return {
 		id: project.id,
+		parentProjectId: null,
 		name: project.name,
 		status: project.status,
 		sortOrder: project.sort_order,
-	})) satisfies ProjectRecord[]
+		children: project.children.map((childProject) => ({
+			id: childProject.id,
+			parentProjectId: project.id,
+			name: childProject.name,
+			status: childProject.status,
+			sortOrder: childProject.sort_order,
+			children: [],
+		})),
+	}
 }

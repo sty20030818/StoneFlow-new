@@ -26,6 +26,7 @@ type ProjectExecutionTaskResponse = {
 
 type ProjectExecutionViewResponse = {
 	project: ProjectExecutionProjectResponse
+	child_projects: ProjectExecutionProjectResponse[]
 	tasks: ProjectExecutionTaskResponse[]
 }
 
@@ -43,10 +44,20 @@ export async function getProjectExecutionView(input: GetProjectExecutionViewComm
 	return {
 		project: {
 			id: payload.project.id,
+			parentProjectId: null,
 			name: payload.project.name,
 			status: payload.project.status,
 			sortOrder: payload.project.sort_order,
+			children: [],
 		},
+		childProjects: payload.child_projects.map((project) => ({
+			id: project.id,
+			parentProjectId: payload.project.id,
+			name: project.name,
+			status: project.status,
+			sortOrder: project.sort_order,
+			children: [],
+		})),
 		tasks: payload.tasks.map((task) => ({
 			id: task.id,
 			title: task.title,

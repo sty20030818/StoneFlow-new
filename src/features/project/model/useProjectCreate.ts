@@ -7,12 +7,16 @@ type ProjectCreateStatus = 'idle' | 'submitting' | 'success' | 'error'
 
 type UseProjectCreateOptions = {
 	currentSpaceId: string
+	parentProjectId?: string | null
 }
 
 /**
  * 管理应用内项目创建表单的最小状态。
  */
-export function useProjectCreate({ currentSpaceId }: UseProjectCreateOptions) {
+export function useProjectCreate({
+	currentSpaceId,
+	parentProjectId = null,
+}: UseProjectCreateOptions) {
 	const bumpProjectDataVersion = useShellLayoutStore((state) => state.bumpProjectDataVersion)
 	const [name, setName] = useState('')
 	const [note, setNote] = useState('')
@@ -41,6 +45,7 @@ export function useProjectCreate({ currentSpaceId }: UseProjectCreateOptions) {
 				spaceSlug: currentSpaceId,
 				name,
 				note,
+				parentProjectId,
 			})
 
 			setCreatedProject(payload)
@@ -54,7 +59,7 @@ export function useProjectCreate({ currentSpaceId }: UseProjectCreateOptions) {
 			setErrorMessage(message)
 			return null
 		}
-	}, [bumpProjectDataVersion, currentSpaceId, name, note, status])
+	}, [bumpProjectDataVersion, currentSpaceId, name, note, parentProjectId, status])
 
 	return {
 		name,

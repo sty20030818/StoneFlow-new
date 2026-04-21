@@ -9,10 +9,15 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
-			onOpenProjectCreateDialog: vi.fn<() => void>(),
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
 			projects: [
-				{ id: 'project-1', label: '执行层', badge: 'active' },
-				{ id: 'project-2', label: '产品设计', badge: 'paused' },
+				{
+					id: 'project-1',
+					label: '执行层',
+					badge: 'active',
+					children: [{ id: 'project-child', label: '子项目收口', badge: 'active' }],
+				},
+				{ id: 'project-2', label: '产品设计', badge: 'paused', children: [] },
 			],
 			projectsError: null,
 		})
@@ -24,13 +29,33 @@ describe('ShellSidebar', () => {
 			'href',
 			'/space/default/project/project-2',
 		)
+		expect(screen.getByRole('link', { name: /子项目收口active/ })).toHaveAttribute(
+			'href',
+			'/space/default/project/project-child',
+		)
+	})
+
+	it('可以从父项目触发创建子项目', () => {
+		const onOpenProjectCreateDialog = vi.fn<(parentProjectId?: string | null) => void>()
+
+		renderSidebar({
+			currentSpaceId: 'default',
+			isProjectsLoading: false,
+			onOpenProjectCreateDialog,
+			projects: [{ id: 'project-1', label: '执行层', badge: 'active', children: [] }],
+			projectsError: null,
+		})
+
+		fireEvent.click(screen.getByRole('button', { name: '在 执行层 下创建子项目' }))
+
+		expect(onOpenProjectCreateDialog).toHaveBeenCalledWith('project-1')
 	})
 
 	it('展示项目加载态', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: true,
-			onOpenProjectCreateDialog: vi.fn<() => void>(),
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
 			projects: [],
 			projectsError: null,
 		})
@@ -42,7 +67,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
-			onOpenProjectCreateDialog: vi.fn<() => void>(),
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
 			projects: [],
 			projectsError: null,
 		})
@@ -54,7 +79,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
-			onOpenProjectCreateDialog: vi.fn<() => void>(),
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
 			projects: [],
 			projectsError: '项目导航加载失败',
 		})
@@ -63,7 +88,7 @@ describe('ShellSidebar', () => {
 	})
 
 	it('提供项目创建入口且不再渲染重复 Projects 一级导航', () => {
-		const onOpenProjectCreateDialog = vi.fn<() => void>()
+		const onOpenProjectCreateDialog = vi.fn<(parentProjectId?: string | null) => void>()
 
 		renderSidebar({
 			currentSpaceId: 'default',

@@ -6,10 +6,12 @@ import {
 	selectIsCommandOpen,
 	selectIsProjectCreateOpen,
 	selectIsTaskCreateOpen,
+	selectProjectCreateParentId,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { useShellProjects } from '@/app/layouts/shell/model/useShellProjects'
 import { ProjectCreateDialog } from '@/features/project/ui/ProjectCreateDialog'
 import { TaskCreateDialog } from '@/features/task/ui/TaskCreateDialog'
+import { flattenProjectTree } from '@/features/project/model/types'
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
@@ -26,6 +28,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 	const isCommandOpen = useShellLayoutStore(selectIsCommandOpen)
 	const isTaskCreateOpen = useShellLayoutStore(selectIsTaskCreateOpen)
 	const isProjectCreateOpen = useShellLayoutStore(selectIsProjectCreateOpen)
+	const projectCreateParentId = useShellLayoutStore(selectProjectCreateParentId)
 	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
 	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
 	const {
@@ -33,10 +36,21 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 		isLoading: isProjectsLoading,
 		error: projectsError,
 	} = useShellProjects(currentSpaceId)
-	const projectLinks = projects.map((project) => ({
+	const flatProjects = flattenProjectTree(projects)
+	const projectLinks = flatProjects.map((project) => ({
 		id: project.id,
 		label: project.name,
 		badge: project.status,
+	}))
+	const projectTreeLinks = projects.map((project) => ({
+		id: project.id,
+		label: project.name,
+		badge: project.status,
+		children: project.children.map((childProject) => ({
+			id: childProject.id,
+			label: childProject.name,
+			badge: childProject.status,
+		})),
 	}))
 	const setCommandOpen = useShellLayoutStore((state) => state.setCommandOpen)
 	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
@@ -55,7 +69,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				isProjectsLoading={isProjectsLoading}
 				onCommandOpenChange={setCommandOpen}
 				onCloseDrawer={closeDrawer}
-				onOpenProjectCreateDialog={openProjectCreateDialog}
+				onOpenProjectCreateDialog={() => openProjectCreateDialog()}
 				onOpenTaskCreateDialog={openTaskCreateDialog}
 				onOpenDrawer={openDrawer}
 				projects={projectLinks}
@@ -67,7 +81,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 					currentSpaceId={currentSpaceId}
 					isProjectsLoading={isProjectsLoading}
 					onOpenProjectCreateDialog={openProjectCreateDialog}
-					projects={projectLinks}
+					projects={projectTreeLinks}
 					projectsError={projectsError}
 				/>
 
@@ -87,7 +101,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				currentSpaceId={currentSpaceId}
 				onClose={closeTaskCreateDialog}
 				open={isTaskCreateOpen}
-				projects={projects}
+				projects={flatProjects}
 				projectsLoading={isProjectsLoading}
 			/>
 
@@ -95,6 +109,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				currentSpaceId={currentSpaceId}
 				onClose={closeProjectCreateDialog}
 				open={isProjectCreateOpen}
+				parentProjectId={projectCreateParentId}
 			/>
 
 			<ShellFooter activeSection={activeSection} currentSpaceId={currentSpaceId} />

@@ -8,6 +8,7 @@ type ShellLayoutState = {
 	isCommandOpen: boolean
 	isTaskCreateOpen: boolean
 	isProjectCreateOpen: boolean
+	projectCreateParentId: string | null
 	isDrawerOpen: boolean
 	activeDrawerKind: ShellDrawerKind | null
 	activeDrawerId: string | null
@@ -20,7 +21,7 @@ type ShellLayoutState = {
 	closeCommand: () => void
 	openTaskCreateDialog: () => void
 	closeTaskCreateDialog: () => void
-	openProjectCreateDialog: () => void
+	openProjectCreateDialog: (parentProjectId?: string | null) => void
 	closeProjectCreateDialog: () => void
 	setDrawerOpen: (open: boolean) => void
 	openDrawer: (kind: ShellDrawerKind, id: string) => void
@@ -35,6 +36,7 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 	isCommandOpen: false,
 	isTaskCreateOpen: false,
 	isProjectCreateOpen: false,
+	projectCreateParentId: null,
 	isDrawerOpen: false,
 	activeDrawerKind: null,
 	activeDrawerId: null,
@@ -80,11 +82,12 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 		set({
 			isTaskCreateOpen: false,
 		}),
-	openProjectCreateDialog: () =>
+	openProjectCreateDialog: (parentProjectId = null) =>
 		set({
 			isCommandOpen: false,
 			isTaskCreateOpen: false,
 			isProjectCreateOpen: true,
+			projectCreateParentId: parentProjectId,
 			isDrawerOpen: false,
 			activeDrawerKind: null,
 			activeDrawerId: null,
@@ -92,6 +95,7 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 	closeProjectCreateDialog: () =>
 		set({
 			isProjectCreateOpen: false,
+			projectCreateParentId: null,
 		}),
 	setDrawerOpen: (open) =>
 		set(() =>
@@ -142,6 +146,8 @@ export const selectIsCommandOpen = (state: ShellLayoutState) => state.isCommandO
 export const selectIsTaskCreateOpen = (state: ShellLayoutState) => state.isTaskCreateOpen
 
 export const selectIsProjectCreateOpen = (state: ShellLayoutState) => state.isProjectCreateOpen
+
+export const selectProjectCreateParentId = (state: ShellLayoutState) => state.projectCreateParentId
 
 export const selectIsDrawerOpen = (state: ShellLayoutState) => state.isDrawerOpen
 

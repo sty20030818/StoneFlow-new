@@ -40,7 +40,7 @@ export function InboxPage() {
 					<div className='flex flex-wrap items-center gap-2'>
 						<Button
 							className='rounded-xl'
-							onClick={openProjectCreateDialog}
+							onClick={() => openProjectCreateDialog()}
 							size='sm'
 							variant='secondary'
 						>
@@ -65,7 +65,7 @@ export function InboxPage() {
 							</p>
 						</div>
 						<div>
-							<Button className='rounded-xl' onClick={openProjectCreateDialog} size='sm'>
+							<Button className='rounded-xl' onClick={() => openProjectCreateDialog()} size='sm'>
 								创建项目
 							</Button>
 						</div>

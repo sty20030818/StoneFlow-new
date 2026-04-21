@@ -14,12 +14,13 @@ import {
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
-import { MoreHorizontalIcon, Trash2Icon } from 'lucide-react'
+import { FolderOpenDotIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
 export function ProjectPage() {
 	const { projectId = 'stoneflow-v1', spaceId = 'default' } = useParams()
 	const navigate = useNavigate()
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
+	const openProjectCreateDialog = useShellLayoutStore((state) => state.openProjectCreateDialog)
 	const {
 		view,
 		isLoading,
@@ -109,9 +110,45 @@ export function ProjectPage() {
 						>
 							刷新
 						</Button>
+						{view ? (
+							<Button
+								className='rounded-xl'
+								onClick={() => openProjectCreateDialog(view.project.id)}
+								size='sm'
+								variant='secondary'
+							>
+								<PlusIcon data-icon='inline-start' />
+								子项目
+							</Button>
+						) : null}
 					</div>
 				) : null}
 			</PanelSurface>
+
+			{view?.childProjects.length ? (
+				<PanelSurface eyebrow='Project' title='子项目'>
+					<div className='grid gap-2 sm:grid-cols-2'>
+						{view.childProjects.map((project) => (
+							<button
+								className='flex min-h-16 items-center gap-3 rounded-xl border border-border/70 bg-background/80 px-3 py-3 text-left transition-colors hover:border-border hover:bg-background'
+								key={project.id}
+								onClick={() => navigate(`/space/${spaceId}/project/${project.id}`)}
+								type='button'
+							>
+								<span className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-black/6 text-muted-foreground'>
+									<FolderOpenDotIcon className='size-4' />
+								</span>
+								<span className='min-w-0 flex-1'>
+									<span className='block truncate text-sm font-medium text-foreground'>
+										{project.name}
+									</span>
+									<span className='mt-1 block text-xs text-muted-foreground'>{project.status}</span>
+								</span>
+							</button>
+						))}
+					</div>
+				</PanelSurface>
+			) : null}
 
 			<PanelSurface eyebrow='Execution' title='待执行'>
 				<ProjectTaskGroup

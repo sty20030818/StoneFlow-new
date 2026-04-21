@@ -9,7 +9,16 @@ describe('TaskCreateDialog', () => {
 				currentSpaceId='default'
 				onClose={vi.fn<() => void>()}
 				open
-				projects={[{ id: 'project-1', name: '执行层', status: 'active', sortOrder: 0 }]}
+				projects={[
+					{
+						id: 'project-1',
+						parentProjectId: null,
+						name: '执行层',
+						status: 'active',
+						sortOrder: 0,
+						children: [],
+					},
+				]}
 				projectsLoading={false}
 			/>,
 		)

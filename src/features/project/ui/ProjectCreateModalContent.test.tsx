@@ -22,6 +22,7 @@ describe('ProjectCreateModalContent', () => {
 		mockedCreateProject.mockResolvedValue({
 			id: 'project-1',
 			spaceId: 'space-1',
+			parentProjectId: null,
 			name: '执行层',
 			status: 'active',
 			note: '承接执行层任务',
@@ -49,6 +50,7 @@ describe('ProjectCreateModalContent', () => {
 			spaceSlug: 'default',
 			name: '执行层',
 			note: '承接执行层任务',
+			parentProjectId: null,
 		})
 		expect(screen.getByRole('status')).toHaveTextContent('已创建项目“执行层”')
 
@@ -69,5 +71,42 @@ describe('ProjectCreateModalContent', () => {
 		await waitFor(() => {
 			expect(screen.getByRole('alert')).toHaveTextContent('project name cannot be empty')
 		})
+	})
+
+	it('创建子项目时提交父项目参数', async () => {
+		mockedCreateProject.mockResolvedValue({
+			id: 'project-child',
+			spaceId: 'space-1',
+			parentProjectId: 'project-1',
+			name: '子项目收口',
+			status: 'active',
+			note: null,
+			sortOrder: 0,
+			createdAt: '2026-04-20T08:00:00Z',
+			updatedAt: '2026-04-20T08:00:00Z',
+		})
+
+		render(
+			<ProjectCreateModalContent
+				currentSpaceId='default'
+				onClose={vi.fn<() => void>()}
+				parentProjectId='project-1'
+			/>,
+		)
+
+		fireEvent.change(screen.getByLabelText('项目名称'), {
+			target: { value: '子项目收口' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: '创建子项目' }))
+
+		await waitFor(() => {
+			expect(mockedCreateProject).toHaveBeenCalledWith({
+				spaceSlug: 'default',
+				name: '子项目收口',
+				note: '',
+				parentProjectId: 'project-1',
+			})
+		})
+		expect(screen.getByRole('status')).toHaveTextContent('已创建子项目“子项目收口”')
 	})
 })
