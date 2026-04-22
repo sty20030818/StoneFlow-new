@@ -386,7 +386,7 @@ export function QuickCaptureSurface({
 			className='flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-(--sf-color-border-secondary) bg-card text-foreground shadow-(--sf-shadow-float)'
 			onPointerDown={handleSurfacePointerDown}
 		>
-			<div className='flex items-center gap-2 border-b border-(--sf-color-divider) px-3.5 py-3'>
+			<div className='flex items-center gap-2 border-b border-(--sf-color-divider) px-4 py-3'>
 				<div className='flex h-9 flex-1 items-center gap-2 rounded-md border border-input bg-card px-3 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/14'>
 					<SearchIcon className='size-3.5 shrink-0 text-(--sf-color-icon-subtle)' />
 					<input
@@ -432,7 +432,7 @@ export function QuickCaptureSurface({
 			</div>
 
 			{mode === 'create' ? (
-				<div className='flex h-11 items-center gap-2 overflow-hidden border-b border-(--sf-color-divider) px-3.5'>
+				<div className='flex h-11 items-center gap-2 overflow-hidden border-b border-(--sf-color-divider) bg-muted/45 px-4'>
 					<span className='shrink-0 text-[11.5px] text-(--sf-color-text-quaternary)'>优先级</span>
 					{PRIORITIES.map((item) => (
 						<button
@@ -479,7 +479,7 @@ export function QuickCaptureSurface({
 				)}
 			</div>
 
-			<div className='flex min-h-10 items-center gap-3 border-t border-(--sf-color-divider) bg-muted px-3.5 text-[11px] text-(--sf-color-text-quaternary)'>
+			<div className='flex min-h-10 items-center gap-3 border-t border-(--sf-color-divider) bg-muted/70 px-4 text-[11px] text-(--sf-color-text-quaternary)'>
 				<StatusMessage status={status} message={message} />
 				<div className='ml-auto flex items-center gap-3'>
 					<Hint keys='↑↓' label='选择' />
@@ -544,7 +544,7 @@ function CommandResults({
 function CommandResultSection({ title, children }: { title: string; children: ReactNode }) {
 	return (
 		<section className='border-b border-(--sf-color-divider) last:border-b-0'>
-			<div className='px-4 pb-1 pt-2 text-[10.5px] font-medium tracking-[0.06em] text-(--sf-color-text-quaternary)'>
+			<div className='px-4 pb-1 pt-2 text-[10.5px] font-medium tracking-[0.06em] text-(--sf-color-text-quaternary) uppercase'>
 				{title}
 			</div>
 			<div>{children}</div>
@@ -583,9 +583,11 @@ function CommandResultRow({
 			<span
 				className={cn(
 					'flex size-6 shrink-0 items-center justify-center rounded-md',
-					isTask
-						? 'bg-accent text-accent-foreground'
-						: 'bg-(--sf-color-success-soft) text-(--sf-color-success-soft-text)',
+					isActive
+						? isTask
+							? 'bg-accent text-accent-foreground'
+							: 'bg-(--sf-color-success-soft) text-(--sf-color-success-soft-text)'
+						: 'bg-muted/70 text-(--sf-color-text-secondary)',
 				)}
 			>
 				{isTask ? <CircleIcon className='size-3' /> : <FolderIcon className='size-3.5' />}
@@ -597,7 +599,7 @@ function CommandResultRow({
 				</span>
 			</span>
 			{isTask && item.priority ? <PriorityBadge priority={item.priority} /> : null}
-			<span className='rounded-sm border border-(--sf-color-border-subtle) bg-muted px-1.5 py-0.5 text-[11px] text-(--sf-color-text-quaternary)'>
+			<span className='rounded-md border border-(--sf-color-border-subtle) bg-muted/70 px-1.5 py-0.5 text-[11px] text-(--sf-color-text-quaternary)'>
 				{isTask ? '任务' : '项目'}
 			</span>
 		</button>
@@ -616,7 +618,7 @@ function PriorityBadge({ priority }: { priority: string }) {
 					: PRIORITY_CLASS.P3
 
 	return (
-		<span className={cn('rounded-sm border px-1.5 py-0.5 font-mono text-[10.5px]', className)}>
+		<span className={cn('rounded-md border px-1.5 py-0.5 font-mono text-[10.5px]', className)}>
 			{label}
 		</span>
 	)
@@ -624,8 +626,8 @@ function PriorityBadge({ priority }: { priority: string }) {
 
 function CommandPanelState({ label, loading = false }: { label: string; loading?: boolean }) {
 	return (
-		<div className='flex h-full min-h-44 items-center justify-center px-5 text-center text-[13px] text-(--sf-color-text-quaternary)'>
-			<div className='flex items-center gap-2'>
+		<div className='flex h-full min-h-44 items-center justify-center px-5'>
+			<div className='flex items-center gap-2 rounded-lg border border-(--sf-color-border-subtle) bg-muted/60 px-3.5 py-3 text-center text-[12.5px] text-(--sf-color-text-quaternary)'>
 				{loading ? (
 					<LoaderCircleIcon className='size-4 animate-spin' />
 				) : (
@@ -644,9 +646,9 @@ function StatusMessage({ status, message }: { status: CommandStatus; message: st
 			className={cn(
 				'flex min-w-0 items-center gap-1.5',
 				status === 'error'
-					? 'text-destructive'
+					? 'text-(--sf-color-danger-soft-text)'
 					: status === 'success'
-						? 'text-success-foreground'
+						? 'text-(--sf-color-success-soft-text)'
 						: 'text-(--sf-color-text-quaternary)',
 			)}
 		>

@@ -4,6 +4,8 @@ import { SHELL_NAV_ITEMS, SHELL_SPACES, type ShellProjectLink } from '@/app/layo
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { cn } from '@/shared/lib/utils'
+import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
+import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { PlusIcon } from 'lucide-react'
 
 type ShellSidebarProps = {
@@ -34,7 +36,7 @@ export function ShellSidebar({
 									'flex h-6 flex-1 items-center justify-center rounded-md border border-transparent text-[12px] font-medium transition-colors',
 									isActive
 										? 'border-(--sf-color-border-subtle) bg-card text-foreground shadow-(--sf-shadow-panel)'
-										: 'text-muted-foreground hover:bg-(--sf-color-bg-surface-hover) hover:text-foreground',
+										: 'text-muted-foreground hover:bg-(--sf-color-shell-hover) hover:text-foreground',
 								)
 							}
 							key={space.id}
@@ -55,7 +57,7 @@ export function ShellSidebar({
 									'flex h-8 items-center gap-2 rounded-md border border-transparent px-2.5 text-[13px] transition-colors',
 									isActive
 										? 'border-(--sf-color-border-subtle) bg-card font-medium text-foreground shadow-(--sf-shadow-panel)'
-										: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-bg-surface-hover) hover:text-foreground',
+										: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
 								)
 							}
 							key={item.key}
@@ -74,12 +76,12 @@ export function ShellSidebar({
 
 				<section className='space-y-1 px-1.5'>
 					<div className='flex items-center justify-between px-2.5'>
-						<p className='text-[11px] font-medium tracking-[0.04em] text-(--sf-color-shell-tertiary)'>
+						<p className='text-[10.5px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'>
 							Projects
 						</p>
 						<Button
 							aria-label='创建项目'
-							className='rounded-md text-(--sf-color-shell-secondary)'
+							className='rounded-md text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground'
 							onClick={() => onOpenProjectCreateDialog()}
 							size='icon-xs'
 							variant='ghost'
@@ -88,33 +90,43 @@ export function ShellSidebar({
 						</Button>
 					</div>
 					{isProjectsLoading ? (
-						<p className='px-2.5 py-1 text-[12px] text-(--sf-color-shell-tertiary)'>
+						<StatusNotice className='text-[12px]' size='sm'>
 							正在加载项目...
-						</p>
+						</StatusNotice>
 					) : projectsError ? (
-						<div className='space-y-2 px-2.5 py-1'>
-							<p className='text-[12px] leading-5 text-destructive'>{projectsError}</p>
-							<Button
-								className='h-7 rounded-md px-2 text-[12px]'
-								onClick={onRefreshProjects}
-								size='sm'
-								variant='outline'
-							>
-								重试加载
-							</Button>
-						</div>
+						<StatusNotice
+							actions={
+								<Button
+									className='h-7 rounded-md px-2 text-[12px]'
+									onClick={onRefreshProjects}
+									size='sm'
+									variant='outline'
+								>
+									重试加载
+								</Button>
+							}
+							className='text-[12px]'
+							size='sm'
+							variant='danger'
+						>
+							<p className='leading-5'>{projectsError}</p>
+						</StatusNotice>
 					) : projects.length === 0 ? (
-						<div className='flex flex-col gap-2 px-2.5 py-1'>
-							<p className='text-[12px] text-(--sf-color-shell-tertiary)'>当前 Space 还没有项目</p>
-							<Button
-								className='justify-start rounded-md'
-								onClick={() => onOpenProjectCreateDialog()}
-								size='sm'
-							>
-								<PlusIcon data-icon='inline-start' />
-								创建第一个项目
-							</Button>
-						</div>
+						<StatusNotice
+							actions={
+								<Button
+									className='justify-start rounded-md'
+									onClick={() => onOpenProjectCreateDialog()}
+									size='sm'
+								>
+									<PlusIcon data-icon='inline-start' />
+									创建第一个项目
+								</Button>
+							}
+							className='text-[12px]'
+							size='sm'
+							title='当前 Space 还没有项目'
+						/>
 					) : (
 						projects.map((project) => (
 							<div className='space-y-0.5' key={project.id}>
@@ -125,7 +137,7 @@ export function ShellSidebar({
 												'flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md border border-transparent px-2.5 text-[13px] transition-colors',
 												isActive
 													? 'border-(--sf-color-border-subtle) bg-card font-medium text-foreground shadow-(--sf-shadow-panel)'
-													: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-bg-surface-hover) hover:text-foreground',
+													: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
 											)
 										}
 										to={`/space/${currentSpaceId}/project/${project.id}`}
@@ -133,14 +145,17 @@ export function ShellSidebar({
 										<span className='size-3 shrink-0 rounded-full bg-(--sf-color-border-strong)' />
 										<span className='min-w-0 truncate'>{project.label}</span>
 										{project.badge ? (
-											<span className='ml-auto shrink-0 text-[10px] text-(--sf-color-shell-tertiary)'>
+											<Badge
+												className='ml-auto h-4 shrink-0 rounded-md px-1.5 text-[10.5px]'
+												variant={getProjectStatusBadgeVariant(project.badge)}
+											>
 												{project.badge}
-											</span>
+											</Badge>
 										) : null}
 									</NavLink>
 									<Button
 										aria-label={`在 ${project.label} 下创建子项目`}
-										className='size-7 shrink-0 rounded-md text-(--sf-color-shell-secondary) opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100'
+										className='size-7 shrink-0 rounded-md text-(--sf-color-shell-secondary) opacity-0 transition-opacity group-hover:opacity-100 hover:bg-(--sf-color-shell-hover) hover:text-foreground focus-visible:opacity-100'
 										onClick={() => onOpenProjectCreateDialog(project.id)}
 										size='icon-xs'
 										variant='ghost'
@@ -155,7 +170,7 @@ export function ShellSidebar({
 												'ml-5 flex h-7 items-center gap-2 rounded-md border border-transparent px-2 text-[12px] transition-colors',
 												isActive
 													? 'border-(--sf-color-border-subtle) bg-card font-medium text-foreground shadow-(--sf-shadow-panel)'
-													: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-bg-surface-hover) hover:text-foreground',
+													: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
 											)
 										}
 										key={childProject.id}
@@ -164,9 +179,12 @@ export function ShellSidebar({
 										<span className='size-2 shrink-0 rounded-full bg-(--sf-color-border-strong)' />
 										<span className='min-w-0 truncate'>{childProject.label}</span>
 										{childProject.badge ? (
-											<span className='ml-auto shrink-0 text-[10px] text-(--sf-color-shell-tertiary)'>
+											<Badge
+												className='ml-auto h-4 shrink-0 rounded-md px-1.5 text-[10.5px]'
+												variant={getProjectStatusBadgeVariant(childProject.badge)}
+											>
 												{childProject.badge}
-											</span>
+											</Badge>
 										) : null}
 									</NavLink>
 								))}

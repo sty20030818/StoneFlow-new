@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
+import type { BadgeVariant } from '@/shared/ui/base/badge'
 import {
 	FolderOpenDotIcon,
 	InboxIcon,
@@ -34,7 +35,7 @@ type ShellSpace = {
 
 type DrawerDetailBadge = {
 	label: string
-	variant?: 'default' | 'secondary' | 'outline' | 'destructive'
+	variant?: BadgeVariant
 }
 
 type DrawerDetailSection = {
@@ -442,7 +443,7 @@ const projectDetails: Record<string, DrawerDetail> = {
 		description: 'V1 目标是做成可长期自用的本地优先个人执行系统。',
 		icon: FolderOpenDotIcon,
 		badges: [
-			{ label: 'Active' },
+			{ label: 'Active', variant: 'primary' },
 			{ label: '6 tasks', variant: 'outline' },
 			{ label: 'Current Milestone', variant: 'secondary' },
 		],
@@ -469,7 +470,10 @@ const projectDetails: Record<string, DrawerDetail> = {
 		title: '产品设计',
 		description: '承接产品结构、交互和界面表达的主设计项目。',
 		icon: Layers3Icon,
-		badges: [{ label: 'Design' }, { label: 'Active', variant: 'outline' }],
+		badges: [
+			{ label: 'Design', variant: 'secondary' },
+			{ label: 'Active', variant: 'primary' },
+		],
 		sections: [
 			{
 				title: '当前关注',
@@ -486,7 +490,10 @@ const projectDetails: Record<string, DrawerDetail> = {
 		title: '工程开发',
 		description: '承接前端架构、Tauri 壳层和本地数据底座实现。',
 		icon: FolderOpenDotIcon,
-		badges: [{ label: 'Code' }, { label: 'Active', variant: 'outline' }],
+		badges: [
+			{ label: 'Code', variant: 'secondary' },
+			{ label: 'Active', variant: 'primary' },
+		],
 		sections: [
 			{
 				title: '当前关注',

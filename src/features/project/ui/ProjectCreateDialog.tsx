@@ -27,15 +27,15 @@ export function ProjectCreateDialog({
 
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
-			<DialogContent className='max-w-[calc(100%-1.5rem)] rounded-xl border-(--sf-color-border-secondary) bg-popover p-0 shadow-(--sf-shadow-float) sm:max-w-xl'>
-				<DialogHeader className='gap-1 border-b border-(--sf-color-divider) px-6 py-5 pr-14'>
-					<DialogTitle className='text-[1.125rem] font-semibold tracking-[-0.03em] text-foreground'>
+			<DialogContent className='max-w-[calc(100%-1.5rem)] border-(--sf-color-border-secondary) bg-popover p-0 shadow-(--sf-shadow-float) sm:max-w-xl'>
+				<DialogHeader className='gap-1.5 border-b border-(--sf-color-divider) px-6 py-4 pr-14'>
+					<DialogTitle className='text-[1.0625rem] font-semibold tracking-[-0.02em] text-foreground'>
 						{isSubproject ? '新建子项目' : '新建项目'}
 					</DialogTitle>
-					<DialogDescription className='sr-only'>
+					<DialogDescription className='max-w-[30rem] text-[13px] leading-5 text-muted-foreground'>
 						{isSubproject
-							? '在当前项目下创建一个新的子项目。'
-							: '在当前 Space 中创建一个新的项目。'}
+							? '在当前项目下补一个子项目，用来继续拆分和承接后续执行。'
+							: '在当前 Space 中创建一个新的项目，后续任务可以继续归类到这里。'}
 					</DialogDescription>
 				</DialogHeader>
 

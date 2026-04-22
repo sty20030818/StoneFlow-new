@@ -15,16 +15,15 @@ import {
 	SelectValue,
 } from '@/shared/ui/base/select'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
+import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { cn } from '@/shared/lib/utils'
+import {
+	LINEAR_CARD_ACTIVE_CLASS,
+	LINEAR_CARD_BASE_CLASS,
+	LINEAR_CARD_IDLE_CLASS,
+	LINEAR_EMPTY_STATE_CLASS,
+} from '@/shared/ui/linearSurface'
 import { RefreshCwIcon } from 'lucide-react'
-
-const TASK_CARD_BASE_CLASS = 'rounded-lg border p-4 transition-colors'
-const TASK_CARD_IDLE_CLASS =
-	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
-const TASK_CARD_ACTIVE_CLASS =
-	'border-(--sf-color-accent-soft-border) bg-accent shadow-[inset_3px_0_0_var(--primary)]'
-const TASK_CARD_EMPTY_CLASS =
-	'rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30'
 
 export function InboxPage() {
 	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
@@ -68,36 +67,29 @@ export function InboxPage() {
 				title='待整理队列'
 			>
 				{!isLoading && !loadError && tasks.length > 0 && projects.length === 0 ? (
-					<div className='mb-3 flex flex-col gap-3 rounded-lg border border-(--sf-color-warning-soft-border) bg-(--sf-color-warning-soft) px-4 py-4'>
-						<div className='flex flex-col gap-1'>
-							<p className='text-sm font-medium text-foreground'>当前 Space 还没有项目可选</p>
-							<p className='text-sm leading-6 text-muted-foreground'>
-								先补一个 Project，任务才能在补齐优先级后离开 Inbox。
-							</p>
-						</div>
-						<div>
+					<StatusNotice
+						actions={
 							<Button className='rounded-md' onClick={() => openProjectCreateDialog()} size='sm'>
 								创建项目
 							</Button>
-						</div>
-					</div>
+						}
+						className='mb-3'
+						description='先补一个 Project，任务才能在补齐优先级后离开 Inbox。'
+						title='当前 Space 还没有项目可选'
+						variant='warning'
+					/>
 				) : null}
 
 				{feedback ? (
-					<p
-						className='mb-3 rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-sm text-(--sf-color-success-soft-text)'
-						role='status'
-					>
+					<StatusNotice className='mb-3 text-sm' role='status' size='sm' variant='success'>
 						{feedback}
-					</p>
+					</StatusNotice>
 				) : null}
 
 				{loadError ? (
-					<div className='rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) p-4'>
-						<p className='text-sm text-destructive' role='alert'>
-							{loadError}
-						</p>
-					</div>
+					<StatusNotice role='alert' variant='danger'>
+						<p className='text-sm'>{loadError}</p>
+					</StatusNotice>
 				) : null}
 
 				{isLoading ? (
@@ -107,7 +99,7 @@ export function InboxPage() {
 				) : null}
 
 				{!isLoading && !loadError && tasks.length === 0 ? (
-					<div className={cn(TASK_CARD_EMPTY_CLASS, 'px-4 py-8 text-center')}>
+					<div className={cn(LINEAR_EMPTY_STATE_CLASS, 'px-4 py-8 text-center')}>
 						<p className='text-sm font-medium text-foreground'>当前 Inbox 已清空</p>
 						<p className='mt-2 text-sm text-muted-foreground'>
 							新捕获的任务会先进入这里，补齐项目和优先级后再离开。
@@ -189,9 +181,9 @@ function InboxTaskRow({
 	return (
 		<article
 			className={cn(
-				TASK_CARD_BASE_CLASS,
-				'grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-start',
-				isActive ? TASK_CARD_ACTIVE_CLASS : TASK_CARD_IDLE_CLASS,
+				LINEAR_CARD_BASE_CLASS,
+				'group grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-start',
+				isActive ? LINEAR_CARD_ACTIVE_CLASS : LINEAR_CARD_IDLE_CLASS,
 				draft.isSubmitting ? 'opacity-75' : null,
 			)}
 			data-shell-task-card='true'
@@ -200,7 +192,7 @@ function InboxTaskRow({
 			<div className='min-w-0 space-y-3'>
 				<div className='flex flex-wrap items-center gap-2'>
 					<button
-						className='cursor-pointer text-left text-sm font-semibold text-foreground transition-colors hover:text-primary'
+						className='cursor-pointer text-left text-sm font-semibold text-foreground transition-colors hover:text-primary group-hover:text-primary'
 						onClick={onOpenTask}
 						type='button'
 					>
@@ -215,7 +207,7 @@ function InboxTaskRow({
 					{task.note?.trim() || '这条任务还没有补充备注，建议尽快完成最小归类后再继续处理。'}
 				</p>
 				{draft.error ? (
-					<p className='text-sm text-destructive' role='alert'>
+					<p className='text-sm text-(--sf-color-danger-soft-text)' role='alert'>
 						{draft.error}
 					</p>
 				) : null}

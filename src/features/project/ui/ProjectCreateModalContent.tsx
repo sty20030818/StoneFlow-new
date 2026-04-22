@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { useProjectCreate } from '@/features/project/model/useProjectCreate'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
+import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Textarea } from '@/shared/ui/base/textarea'
 
 type ProjectCreateModalContentProps = {
@@ -75,24 +76,18 @@ export function ProjectCreateModalContent({
 			</div>
 
 			{status === 'error' && errorMessage ? (
-				<div
-					className='rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) px-3 py-2 text-[12px] leading-5 text-(--sf-color-danger-soft-text)'
-					role='alert'
-				>
+				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
 					{errorMessage}
-				</div>
+				</StatusNotice>
 			) : null}
 
 			{status === 'success' && createdProject ? (
-				<div
-					className='rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-[12px] leading-5 text-(--sf-color-success-soft-text)'
-					role='status'
-				>
+				<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
 					已创建{isSubproject ? '子项目' : '项目'}“{createdProject.name}”。
-				</div>
+				</StatusNotice>
 			) : null}
 
-			<div className='flex items-center justify-end gap-2 border-t border-(--sf-color-divider) pt-1'>
+			<div className='flex items-center justify-end gap-2 border-t border-(--sf-color-divider) pt-3'>
 				<Button
 					className='rounded-md'
 					disabled={status === 'submitting'}

@@ -3,6 +3,10 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { deleteTaskToTrash } from '@/features/task-drawer/api/deleteTaskToTrash'
 import { getTaskDrawerDetail } from '@/features/task-drawer/api/getTaskDrawerDetail'
+import { listTaskResources } from '@/features/task-drawer/api/listTaskResources'
+import { createTaskResource } from '@/features/task-drawer/api/createTaskResource'
+import { openTaskResource } from '@/features/task-drawer/api/openTaskResource'
+import { deleteTaskResource } from '@/features/task-drawer/api/deleteTaskResource'
 import { updateTaskDrawerFields } from '@/features/task-drawer/api/updateTaskDrawerFields'
 import type { TaskDrawerDetail, TaskDrawerTask } from '@/features/task-drawer/model/types'
 import { useTaskDrawer } from '@/features/task-drawer/model/useTaskDrawer'
@@ -20,19 +24,19 @@ vi.mock('@/features/task-drawer/api/deleteTaskToTrash', () => ({
 }))
 
 vi.mock('@/features/task-drawer/api/listTaskResources', () => ({
-	listTaskResources: vi.fn(),
+	listTaskResources: vi.fn<typeof listTaskResources>(),
 }))
 
 vi.mock('@/features/task-drawer/api/createTaskResource', () => ({
-	createTaskResource: vi.fn(),
+	createTaskResource: vi.fn<typeof createTaskResource>(),
 }))
 
 vi.mock('@/features/task-drawer/api/openTaskResource', () => ({
-	openTaskResource: vi.fn(),
+	openTaskResource: vi.fn<typeof openTaskResource>(),
 }))
 
 vi.mock('@/features/task-drawer/api/deleteTaskResource', () => ({
-	deleteTaskResource: vi.fn(),
+	deleteTaskResource: vi.fn<typeof deleteTaskResource>(),
 }))
 
 const mockedGetTaskDrawerDetail = vi.mocked(getTaskDrawerDetail)

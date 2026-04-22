@@ -69,6 +69,8 @@ describe('ShellMain', () => {
 
 		expect(screen.getByText('workspace content')).toBeInTheDocument()
 		expect(screen.getByRole('dialog', { name: 'Project detail' })).toBeInTheDocument()
+		expect(screen.getByText('Active')).toHaveAttribute('data-variant', 'primary')
+		expect(screen.getByText('Code')).toHaveAttribute('data-variant', 'secondary')
 
 		fireEvent.pointerDown(screen.getByTestId('outside-blank'))
 

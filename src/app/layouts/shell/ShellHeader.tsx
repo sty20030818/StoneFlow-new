@@ -9,6 +9,7 @@ import {
 } from '@/app/layouts/shell/config'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
+import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Command,
@@ -21,6 +22,7 @@ import {
 	CommandSeparator,
 	CommandShortcut,
 } from '@/shared/ui/base/command'
+import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -181,7 +183,7 @@ export function ShellHeader({
 	return (
 		<>
 			<header
-				className='relative flex h-12 shrink-0 items-center bg-(--sf-color-shell-chrome) px-2'
+				className='relative flex h-12 shrink-0 items-center bg-(--sf-color-shell-chrome) pl-2 pr-0'
 				onMouseDownCapture={handleHeaderMouseDownCapture}
 			>
 				<div
@@ -272,24 +274,27 @@ export function ShellHeader({
 
 					{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 					{!isMac ? (
-						<div className='flex h-full items-stretch pl-3'>
-							<div className='my-auto mr-3 h-5 w-px bg-(--sf-color-divider)' />
+						<div className='flex h-full items-stretch overflow-hidden pl-3'>
+							<div className='my-auto mr-2 h-6 w-px bg-(--sf-color-border-strong)' />
 							<Button
-								className='size-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-bg-surface-hover) hover:text-foreground'
+								aria-label='最小化窗口'
+								className='h-full w-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover-strong) hover:text-foreground'
 								onClick={() => void handleMinimize()}
 								variant='ghost'
 							>
 								<MinusIcon className='size-3.5' />
 							</Button>
 							<Button
-								className='size-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-bg-surface-hover) hover:text-foreground'
+								aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
+								className='h-full w-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover-strong) hover:text-foreground'
 								onClick={() => void handleToggleMaximize()}
 								variant='ghost'
 							>
 								<SquareIcon className={`size-3 ${isMaximized ? 'scale-[0.88]' : ''}`} />
 							</Button>
 							<Button
-								className='size-11 rounded-none border-0 bg-transparent shadow-none ring-0 hover:bg-[#E81123] hover:text-white'
+								aria-label='关闭窗口'
+								className='h-full w-11 rounded-none border-0 bg-transparent shadow-none ring-0 hover:bg-[#E81123] hover:text-white'
 								onClick={() => void handleClose()}
 								variant='ghost'
 							>
@@ -393,7 +398,14 @@ export function ShellHeader({
 									>
 										<SearchIcon />
 										{project.label}
-										{project.badge ? <CommandShortcut>{project.badge}</CommandShortcut> : null}
+										{project.badge ? (
+											<Badge
+												className='ml-auto h-4 rounded-md px-1.5 text-[10.5px]'
+												variant={getProjectStatusBadgeVariant(project.badge)}
+											>
+												{project.badge}
+											</Badge>
+										) : null}
 									</CommandItem>
 								))
 							)}

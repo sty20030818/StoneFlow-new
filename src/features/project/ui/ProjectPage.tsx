@@ -18,19 +18,20 @@ import {
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
+import { StatusNotice } from '@/shared/ui/StatusNotice'
+import { getProjectStatusBadgeVariant, getTaskStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
 import { cn } from '@/shared/lib/utils'
+import {
+	LINEAR_CARD_ACTIVE_CLASS,
+	LINEAR_CARD_BASE_CLASS,
+	LINEAR_CARD_DONE_CLASS,
+	LINEAR_CARD_IDLE_CLASS,
+	LINEAR_EMPTY_STATE_CLASS,
+} from '@/shared/ui/linearSurface'
 import { FolderOpenDotIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
-const TASK_CARD_BASE_CLASS = 'rounded-lg border p-4 transition-colors'
-const TASK_CARD_INTERACTIVE_CLASS = 'cursor-pointer'
+const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
 const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
-const TASK_CARD_IDLE_CLASS =
-	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
-const TASK_CARD_ACTIVE_CLASS =
-	'border-(--sf-color-accent-soft-border) bg-accent shadow-[inset_3px_0_0_var(--primary)]'
-const TASK_CARD_DONE_CLASS = 'border-(--sf-color-border-subtle) bg-muted/35 text-muted-foreground'
-const TASK_CARD_EMPTY_CLASS =
-	'rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30'
 
 export function ProjectPage() {
 	const { projectId = 'stoneflow-v1', spaceId = 'default' } = useParams()
@@ -64,69 +65,7 @@ export function ProjectPage() {
 		<div className='flex flex-col gap-5 p-4'>
 			<PanelSurface
 				actions={
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button className='rounded-md' size='icon-sm' variant='outline'>
-								<MoreHorizontalIcon />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align='end'>
-							<DropdownMenuGroup>
-								<DropdownMenuItem onSelect={() => void refresh()}>刷新执行视图</DropdownMenuItem>
-								<DropdownMenuItem disabled>点击任务标题可打开详情 Drawer</DropdownMenuItem>
-							</DropdownMenuGroup>
-							<DropdownMenuSeparator />
-							<DropdownMenuGroup>
-								<DropdownMenuItem
-									disabled={isDeletingProject}
-									onSelect={() => void handleDeleteProject()}
-									variant='destructive'
-								>
-									<Trash2Icon />
-									{isDeletingProject ? '移入中...' : '移入回收站'}
-								</DropdownMenuItem>
-							</DropdownMenuGroup>
-						</DropdownMenuContent>
-					</DropdownMenu>
-				}
-				eyebrow='Project'
-				title={`项目工作区 · ${view?.project.name ?? projectId}`}
-			>
-				{feedback ? (
-					<p
-						className='mb-3 rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-sm text-(--sf-color-success-soft-text)'
-						role='status'
-					>
-						{feedback}
-					</p>
-				) : null}
-
-				{loadError ? (
-					<div className='flex flex-col gap-3 rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) px-3 py-3 sm:flex-row sm:items-center sm:justify-between'>
-						<p className='text-sm text-destructive' role='alert'>
-							{loadError}
-						</p>
-						<Button
-							className='rounded-md'
-							onClick={() => void refresh()}
-							size='sm'
-							variant='outline'
-						>
-							重试
-						</Button>
-					</div>
-				) : null}
-
-				{isLoading ? (
-					<p className='text-sm text-muted-foreground' role='status'>
-						正在加载 Project 执行视图...
-					</p>
-				) : view ? (
 					<div className='flex flex-wrap items-center gap-2'>
-						<Badge>{view.project.status}</Badge>
-						<Badge variant='outline'>{view.tasks.length} tasks</Badge>
-						<Badge variant='secondary'>待执行 {todoTasks.length}</Badge>
-						<Badge variant='secondary'>已完成 {doneTasks.length}</Badge>
 						<Button
 							className='rounded-md'
 							onClick={() => void refresh()}
@@ -146,16 +85,91 @@ export function ProjectPage() {
 								子项目
 							</Button>
 						) : null}
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button className='rounded-md' size='icon-sm' variant='outline'>
+									<MoreHorizontalIcon />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align='end'>
+								<DropdownMenuGroup>
+									<DropdownMenuItem onSelect={() => void refresh()}>刷新执行视图</DropdownMenuItem>
+									<DropdownMenuItem disabled>点击任务标题可打开详情 Drawer</DropdownMenuItem>
+								</DropdownMenuGroup>
+								<DropdownMenuSeparator />
+								<DropdownMenuGroup>
+									<DropdownMenuItem
+										disabled={isDeletingProject}
+										onSelect={() => void handleDeleteProject()}
+										variant='destructive'
+									>
+										<Trash2Icon />
+										{isDeletingProject ? '移入中...' : '移入回收站'}
+									</DropdownMenuItem>
+								</DropdownMenuGroup>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</div>
+				}
+				description={
+					view
+						? `当前项目包含 ${view.tasks.length} 条任务与 ${view.childProjects.length} 个子项目，可在这里直接推进执行与整理结构。`
+						: '查看当前项目下的任务、子项目和执行状态，并直接从这里继续推进。'
+				}
+				eyebrow='Project'
+				title={`项目工作区 · ${view?.project.name ?? projectId}`}
+			>
+				{feedback ? (
+					<StatusNotice className='mb-3 text-sm' role='status' size='sm' variant='success'>
+						{feedback}
+					</StatusNotice>
+				) : null}
+
+				{loadError ? (
+					<StatusNotice
+						actions={
+							<Button
+								className='rounded-md'
+								onClick={() => void refresh()}
+								size='sm'
+								variant='outline'
+							>
+								重试
+							</Button>
+						}
+						role='alert'
+						variant='danger'
+					>
+						<p className='text-sm'>{loadError}</p>
+					</StatusNotice>
+				) : null}
+
+				{isLoading ? (
+					<p className='text-sm text-muted-foreground' role='status'>
+						正在加载 Project 执行视图...
+					</p>
+				) : view ? (
+					<div className='flex flex-wrap items-center gap-2'>
+						<Badge variant={getProjectStatusBadgeVariant(view.project.status)}>
+							{view.project.status}
+						</Badge>
+						<Badge variant='outline'>{view.tasks.length} tasks</Badge>
+						<Badge variant='secondary'>待执行 {todoTasks.length}</Badge>
+						<Badge variant='success'>已完成 {doneTasks.length}</Badge>
 					</div>
 				) : null}
 			</PanelSurface>
 
 			{view?.childProjects.length ? (
-				<PanelSurface eyebrow='Project' title='子项目'>
+				<PanelSurface
+					description='子项目用于继续拆分当前项目下的执行块，保持主项目视图清晰。'
+					eyebrow='Project'
+					title='子项目'
+				>
 					<div className='grid gap-2 sm:grid-cols-2'>
 						{view.childProjects.map((project) => (
 							<button
-								className='flex min-h-16 items-center gap-3 rounded-lg border border-(--sf-color-border-subtle) bg-card px-3 py-3 text-left transition-colors hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
+								className='group flex min-h-16 items-center gap-3 rounded-lg border border-(--sf-color-border-subtle) bg-card px-3 py-3 text-left transition-colors hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
 								key={project.id}
 								onClick={() => navigate(`/space/${spaceId}/project/${project.id}`)}
 								type='button'
@@ -164,7 +178,7 @@ export function ProjectPage() {
 									<FolderOpenDotIcon className='size-4' />
 								</span>
 								<span className='min-w-0 flex-1'>
-									<span className='block truncate text-sm font-medium text-foreground'>
+									<span className='block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary'>
 										{project.name}
 									</span>
 									<span className='mt-1 block text-xs text-muted-foreground'>{project.status}</span>
@@ -175,7 +189,11 @@ export function ProjectPage() {
 				</PanelSurface>
 			) : null}
 
-			<PanelSurface eyebrow='Execution' title='待执行'>
+			<PanelSurface
+				description='这里保留当前项目下还未完成的执行项，点击任务标题可直接打开右侧详情。'
+				eyebrow='Execution'
+				title='待执行'
+			>
 				<ProjectTaskGroup
 					emptyMessage='当前 Project 还没有待执行任务。'
 					activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
@@ -186,7 +204,11 @@ export function ProjectPage() {
 				/>
 			</PanelSurface>
 
-			<PanelSurface eyebrow='Execution' title='已完成'>
+			<PanelSurface
+				description='已完成任务会沉到底部，便于回看最近的推进结果和关闭情况。'
+				eyebrow='Execution'
+				title='已完成'
+			>
 				<ProjectTaskGroup
 					emptyMessage='还没有完成的任务。'
 					activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
@@ -219,7 +241,7 @@ function ProjectTaskGroup({
 }: ProjectTaskGroupProps) {
 	if (tasks.length === 0) {
 		return (
-			<div className={cn(TASK_CARD_EMPTY_CLASS, 'px-4 py-6 text-sm text-muted-foreground')}>
+			<div className={cn(LINEAR_EMPTY_STATE_CLASS, 'px-4 py-6 text-sm text-muted-foreground')}>
 				{emptyMessage}
 			</div>
 		)
@@ -231,11 +253,11 @@ function ProjectTaskGroup({
 				<div
 					aria-label={`打开任务 ${task.title}`}
 					className={cn(
-						TASK_CARD_BASE_CLASS,
+						LINEAR_CARD_BASE_CLASS,
 						TASK_CARD_INTERACTIVE_CLASS,
 						TASK_CARD_GRID_CLASS,
-						task.status === 'done' ? TASK_CARD_DONE_CLASS : TASK_CARD_IDLE_CLASS,
-						activeTaskId === task.id ? TASK_CARD_ACTIVE_CLASS : null,
+						task.status === 'done' ? LINEAR_CARD_DONE_CLASS : LINEAR_CARD_IDLE_CLASS,
+						activeTaskId === task.id ? LINEAR_CARD_ACTIVE_CLASS : null,
 						pendingTaskId === task.id ? 'opacity-75' : null,
 					)}
 					data-shell-task-card='true'
@@ -262,7 +284,9 @@ function ProjectTaskGroup({
 								{task.title}
 							</div>
 							<Badge variant='outline'>{task.priority}</Badge>
-							<Badge variant='secondary'>{task.status === 'todo' ? '待执行' : '已完成'}</Badge>
+							<Badge variant={getTaskStatusBadgeVariant(task.status)}>
+								{task.status === 'todo' ? '待执行' : '已完成'}
+							</Badge>
 						</div>
 						<p className='text-sm leading-6 text-muted-foreground'>
 							{task.note?.trim() || '当前任务没有补充备注，可直接在 Project 中推进执行。'}

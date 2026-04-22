@@ -33,6 +33,11 @@ describe('ShellSidebar', () => {
 			'href',
 			'/space/default/project/project-child',
 		)
+		expect(screen.getByRole('link', { name: 'Focus' }).className).toContain(
+			'hover:bg-(--sf-color-shell-hover)',
+		)
+		expect(screen.getAllByText('active')[0]).toHaveAttribute('data-variant', 'primary')
+		expect(screen.getByText('paused')).toHaveAttribute('data-variant', 'warning')
 	})
 
 	it('可以从父项目触发创建子项目', () => {

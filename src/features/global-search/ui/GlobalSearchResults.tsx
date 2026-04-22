@@ -33,7 +33,7 @@ export function GlobalSearchResults({
 
 	return (
 		<div className='absolute inset-x-0 top-full z-40 mt-1.5 overflow-hidden rounded-xl border border-(--sf-color-border-secondary) bg-popover/98 shadow-(--sf-shadow-popover) backdrop-blur'>
-			<div className='max-h-[24rem] overflow-y-auto p-2'>
+			<div className='max-h-[24rem] overflow-y-auto p-2.5'>
 				{isLoading && !hasResults ? (
 					<SearchPanelState label='正在搜索任务与项目...' />
 				) : errorMessage ? (
@@ -116,9 +116,9 @@ function SearchResultButton({
 	return (
 		<button
 			className={cn(
-				'flex w-full flex-col gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors',
+				'flex w-full flex-col gap-1.5 rounded-lg border px-3 py-2.5 text-left transition-colors',
 				isActive
-					? 'border-(--sf-color-accent-soft-border) bg-accent'
+					? 'border-(--sf-color-accent-soft-border) bg-accent shadow-[inset_2px_0_0_var(--primary)]'
 					: 'border-transparent hover:border-(--sf-color-border-subtle) hover:bg-(--sf-color-bg-surface-hover)',
 			)}
 			onClick={onSelect}
@@ -145,7 +145,7 @@ function SearchResultButton({
 
 function SearchGroupHeading({ title }: { title: string }) {
 	return (
-		<div className='px-1 text-[11px] font-medium tracking-[0.04em] text-(--sf-color-shell-secondary)'>
+		<div className='px-1 text-[10.5px] font-medium tracking-[0.06em] text-(--sf-color-shell-secondary) uppercase'>
 			{title}
 		</div>
 	)
@@ -158,7 +158,7 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 				'flex items-center gap-2 rounded-lg border px-3 py-3 text-[12px]',
 				tone === 'danger'
 					? 'border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) text-(--sf-color-danger-soft-text)'
-					: 'border-(--sf-color-border-subtle) bg-muted text-(--sf-color-shell-secondary)',
+					: 'border-(--sf-color-border-subtle) bg-muted/60 text-(--sf-color-shell-secondary)',
 			)}
 		>
 			<SearchIcon className='size-3.5 shrink-0' />

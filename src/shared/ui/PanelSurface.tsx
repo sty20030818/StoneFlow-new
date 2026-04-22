@@ -27,21 +27,25 @@ export function PanelSurface({
 			{...props}
 		>
 			{eyebrow || title || description || actions ? (
-				<header className='mb-4 flex flex-wrap items-start justify-between gap-3'>
-					<div className='space-y-1'>
+				<header className='mb-5 flex flex-wrap items-start justify-between gap-4'>
+					<div className='min-w-0 space-y-1.5'>
 						{eyebrow ? (
-							<p className='text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase'>
+							<p className='text-[10.5px] font-medium tracking-[0.16em] text-muted-foreground uppercase'>
 								{eyebrow}
 							</p>
 						) : null}
 						{title ? (
-							<h2 className='text-lg font-semibold tracking-[-0.02em] text-foreground'>{title}</h2>
+							<h2 className='text-[1.0625rem] font-semibold tracking-[-0.02em] text-foreground'>
+								{title}
+							</h2>
 						) : null}
 						{description ? (
 							<p className='max-w-2xl text-sm leading-6 text-muted-foreground'>{description}</p>
 						) : null}
 					</div>
-					{actions ? <div className='flex items-center gap-2'>{actions}</div> : null}
+					{actions ? (
+						<div className='flex shrink-0 flex-wrap items-center gap-2'>{actions}</div>
+					) : null}
 				</header>
 			) : null}
 			{children}

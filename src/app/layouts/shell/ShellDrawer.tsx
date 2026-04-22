@@ -38,7 +38,7 @@ export function ShellDrawer({
 				showCloseButton={false}
 				side='right'
 			>
-				<SheetHeader className='flex h-12 shrink-0 flex-row items-center justify-between gap-2 border-b border-(--sf-color-divider) px-4 py-0'>
+				<SheetHeader className='flex h-12 shrink-0 flex-row items-center justify-between gap-2 border-b border-(--sf-color-divider) bg-muted/35 px-4 py-0'>
 					<SheetTitle className='text-[13px] font-medium text-foreground'>{drawerTitle}</SheetTitle>
 					<SheetClose asChild>
 						<Button aria-label='关闭详情面板' className='size-7' size='icon-sm' variant='ghost'>
@@ -55,7 +55,7 @@ export function ShellDrawer({
 							taskId={activeDrawerId}
 						/>
 					) : detail ? (
-						<div className='space-y-3'>
+						<div className='space-y-4'>
 							<div className='space-y-2'>
 								<div className='flex flex-wrap items-center gap-2'>
 									{detail.badges.map((badge) => (
@@ -73,14 +73,14 @@ export function ShellDrawer({
 							</div>
 
 							{detail.sections.map((section) => (
-								<section className='space-y-1.5' key={section.title}>
-									<p className='text-[11px] font-medium tracking-[0.03em] text-(--sf-color-shell-tertiary)'>
+								<section className='space-y-2' key={section.title}>
+									<p className='text-[11px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'>
 										{section.title}
 									</p>
 									<div className='space-y-1.5'>
 										{section.items.map((item) => (
 											<div
-												className='rounded-lg border border-(--sf-color-border-subtle) bg-muted/60 px-2.5 py-2'
+												className='rounded-lg border border-(--sf-color-border-subtle) bg-muted/45 px-3 py-2.5'
 												key={`${section.title}-${item.label}`}
 											>
 												<p className='text-[11px] text-(--sf-color-shell-tertiary)'>{item.label}</p>
@@ -92,7 +92,7 @@ export function ShellDrawer({
 							))}
 						</div>
 					) : (
-						<div className='text-[12px] text-(--sf-color-shell-tertiary)'>
+						<div className='rounded-lg border border-(--sf-color-border-subtle) bg-muted/60 px-3.5 py-3 text-[12px] text-(--sf-color-shell-tertiary)'>
 							当前没有可展示的详情。
 						</div>
 					)}

@@ -6,13 +6,13 @@ import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
+import { StatusNotice } from '@/shared/ui/StatusNotice'
+import {
+	LINEAR_CARD_BASE_CLASS,
+	LINEAR_CARD_IDLE_CLASS,
+	LINEAR_EMPTY_STATE_CLASS,
+} from '@/shared/ui/linearSurface'
 import { RotateCcwIcon, Trash2Icon } from 'lucide-react'
-
-const TRASH_CARD_BASE_CLASS = 'rounded-lg border p-4 transition-colors'
-const TRASH_CARD_IDLE_CLASS =
-	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
-const TRASH_CARD_EMPTY_CLASS =
-	'rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30'
 
 export function TrashPage() {
 	const { spaceId = 'default' } = useParams()
@@ -33,20 +33,15 @@ export function TrashPage() {
 			>
 				<div className='flex flex-col gap-3'>
 					{feedback ? (
-						<p
-							className='rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-sm text-(--sf-color-success-soft-text)'
-							role='status'
-						>
+						<StatusNotice className='text-sm' role='status' size='sm' variant='success'>
 							{feedback}
-						</p>
+						</StatusNotice>
 					) : null}
 
 					{loadError ? (
-						<div className='rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) p-4'>
-							<p className='text-sm text-destructive' role='alert'>
-								{loadError}
-							</p>
-						</div>
+						<StatusNotice role='alert' variant='danger'>
+							<p className='text-sm'>{loadError}</p>
+						</StatusNotice>
 					) : null}
 
 					{isLoading ? (
@@ -55,7 +50,7 @@ export function TrashPage() {
 						</p>
 					) : entries.length === 0 ? (
 						<div
-							className={cn(TRASH_CARD_EMPTY_CLASS, 'flex flex-col items-start gap-2 px-4 py-6')}
+							className={cn(LINEAR_EMPTY_STATE_CLASS, 'flex flex-col items-start gap-2 px-4 py-6')}
 						>
 							<Trash2Icon className='size-5 text-muted-foreground' />
 							<p className='text-sm font-medium text-foreground'>回收站为空</p>
@@ -89,9 +84,9 @@ function TrashEntryRow({ entry, isPending, onRestore }: TrashEntryRowProps) {
 	return (
 		<div
 			className={cn(
-				TRASH_CARD_BASE_CLASS,
+				LINEAR_CARD_BASE_CLASS,
 				'flex flex-wrap items-center justify-between gap-3',
-				TRASH_CARD_IDLE_CLASS,
+				LINEAR_CARD_IDLE_CLASS,
 			)}
 		>
 			<div className='flex min-w-0 flex-col gap-1'>

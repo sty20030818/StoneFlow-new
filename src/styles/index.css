@@ -55,8 +55,8 @@
 	--sf-color-bg-surface: #ffffff;
 	--sf-color-bg-surface-muted: #f5f6f7;
 	--sf-color-bg-surface-tertiary: #f3f4f5;
-	--sf-color-bg-surface-hover: #eef1f4;
-	--sf-color-bg-surface-active: #e9edf2;
+	--sf-color-bg-surface-hover: #e7ecf2;
+	--sf-color-bg-surface-active: #dde4ec;
 	--sf-color-bg-elevated: #ffffff;
 	--sf-color-border: #d0d6e0;
 	--sf-color-border-subtle: #e8ebef;
@@ -104,6 +104,8 @@
 	--sf-shell-drawer-width: 32rem;
 	--sf-color-shell-chrome: #f3f4f5;
 	--sf-color-shell-drawer: #ffffff;
+	--sf-color-shell-hover: #e1e7ef;
+	--sf-color-shell-hover-strong: #d7dee8;
 	--sf-color-shell-secondary: var(--sf-color-text-secondary);
 	--sf-color-shell-tertiary: var(--sf-color-text-quaternary);
 	--sf-color-shell-online: #4ade80;

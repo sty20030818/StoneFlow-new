@@ -17,6 +17,7 @@ import {
 	SelectValue,
 } from '@/shared/ui/base/select'
 import { Textarea } from '@/shared/ui/base/textarea'
+import { StatusNotice } from '@/shared/ui/StatusNotice'
 
 type TaskDrawerContentProps = {
 	currentSpaceId: string
@@ -28,12 +29,10 @@ const EMPTY_PRIORITY_VALUE = '__task-drawer-priority-empty__'
 const EMPTY_PROJECT_VALUE = '__task-drawer-project-empty__'
 const DRAWER_FIELD_CLASS = 'rounded-md border-input bg-card'
 const DRAWER_SECTION_CLASS = 'rounded-lg border border-(--sf-color-border-subtle) bg-muted/35'
-const DRAWER_ALERT_DANGER_CLASS =
-	'rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) px-3 py-2 text-[12px] leading-5 text-(--sf-color-danger-soft-text)'
-const DRAWER_ALERT_SUCCESS_CLASS =
-	'rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-[12px] leading-5 text-(--sf-color-success-soft-text)'
 const DRAWER_HELP_CLASS =
-	'rounded-lg border border-(--sf-color-border-subtle) bg-muted px-3 py-2 text-[12px] text-(--sf-color-shell-tertiary)'
+	'rounded-lg border border-(--sf-color-border-subtle) bg-muted/60 px-3 py-2 text-[12px] text-(--sf-color-shell-tertiary)'
+const DRAWER_SECTION_TITLE_CLASS =
+	'text-[11px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'
 
 /**
  * 真实 Task Drawer 内容，负责详情查询和基础字段编辑。
@@ -69,10 +68,12 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 	if (isLoading) {
 		return (
 			<div className='space-y-3'>
-				<p className='text-[12px] font-medium text-foreground'>正在加载任务详情...</p>
-				<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
-					会从 {getSpaceLabel(currentSpaceId)} 的真实数据中读取任务详情。
-				</p>
+				<div className='rounded-lg border border-(--sf-color-border-subtle) bg-muted/60 px-3.5 py-3'>
+					<p className='text-[12px] font-medium text-foreground'>正在加载任务详情...</p>
+					<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
+						会从 {getSpaceLabel(currentSpaceId)} 的真实数据中读取任务详情。
+					</p>
+				</div>
 			</div>
 		)
 	}
@@ -80,9 +81,9 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 	if (loadError || !detail) {
 		return (
 			<div className='space-y-4'>
-				<div className={DRAWER_ALERT_DANGER_CLASS} role='alert'>
+				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
 					{loadError ?? '当前没有可展示的任务详情。'}
-				</div>
+				</StatusNotice>
 				<div className='flex items-center justify-end gap-2'>
 					<Button className='rounded-md' onClick={() => void refresh()} variant='outline'>
 						重试
@@ -131,17 +132,15 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 	return (
 		<div className='space-y-4'>
 			<div className='space-y-1.5'>
-				<p className='text-[12px] font-medium text-foreground'>任务详情</p>
+				<p className={DRAWER_SECTION_TITLE_CLASS}>任务详情</p>
 				<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
 					在 {getSpaceLabel(currentSpaceId)} 的主视图内直接编辑任务，不需要跳页。
 				</p>
 			</div>
 
-			<div className='space-y-2'>
+			<div className={`${DRAWER_SECTION_CLASS} space-y-3 px-3.5 py-3.5`}>
 				<label className='space-y-1.5' htmlFor='task-drawer-title'>
-					<span className='text-[11px] font-medium tracking-[0.03em] text-(--sf-color-shell-tertiary)'>
-						标题
-					</span>
+					<span className={DRAWER_SECTION_TITLE_CLASS}>标题</span>
 					<Input
 						autoFocus
 						className={`h-9 ${DRAWER_FIELD_CLASS}`}
@@ -153,9 +152,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				</label>
 
 				<label className='space-y-1.5' htmlFor='task-drawer-note'>
-					<span className='text-[11px] font-medium tracking-[0.03em] text-(--sf-color-shell-tertiary)'>
-						描述 / 备注
-					</span>
+					<span className={DRAWER_SECTION_TITLE_CLASS}>描述 / 备注</span>
 					<Textarea
 						className={`min-h-24 ${DRAWER_FIELD_CLASS}`}
 						disabled={isSaving}
@@ -167,11 +164,9 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				</label>
 			</div>
 
-			<div className='grid gap-3 md:grid-cols-2'>
+			<div className={`${DRAWER_SECTION_CLASS} grid gap-3 px-3.5 py-3.5 md:grid-cols-2`}>
 				<label className='space-y-1.5'>
-					<span className='text-[11px] font-medium tracking-[0.03em] text-(--sf-color-shell-tertiary)'>
-						优先级
-					</span>
+					<span className={DRAWER_SECTION_TITLE_CLASS}>优先级</span>
 					<Select
 						disabled={isSaving}
 						onValueChange={(value) =>
@@ -202,9 +197,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				</label>
 
 				<label className='space-y-1.5'>
-					<span className='text-[11px] font-medium tracking-[0.03em] text-(--sf-color-shell-tertiary)'>
-						项目
-					</span>
+					<span className={DRAWER_SECTION_TITLE_CLASS}>项目</span>
 					<Select
 						disabled={isSaving}
 						onValueChange={(value) =>
@@ -235,9 +228,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				</label>
 
 				<label className='space-y-1.5'>
-					<span className='text-[11px] font-medium tracking-[0.03em] text-(--sf-color-shell-tertiary)'>
-						状态
-					</span>
+					<span className={DRAWER_SECTION_TITLE_CLASS}>状态</span>
 					<Select
 						disabled={isSaving}
 						onValueChange={(value) =>
@@ -265,12 +256,12 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 			</div>
 
 			<section
-				className='space-y-3 border-t border-(--sf-color-divider) pt-3'
+				className={`${DRAWER_SECTION_CLASS} space-y-3 px-3.5 py-3.5`}
 				aria-labelledby='task-resources-title'
 			>
 				<div className='flex items-center justify-between gap-2'>
 					<div className='space-y-1'>
-						<h3 className='text-[12px] font-medium text-foreground' id='task-resources-title'>
+						<h3 className={DRAWER_SECTION_TITLE_CLASS} id='task-resources-title'>
 							资源
 						</h3>
 						<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
@@ -396,33 +387,33 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				</div>
 
 				{resourceError ? (
-					<div className={DRAWER_ALERT_DANGER_CLASS} role='alert'>
+					<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
 						{resourceError}
-					</div>
+					</StatusNotice>
 				) : null}
 
 				{resourceFeedback ? (
-					<div className={DRAWER_ALERT_SUCCESS_CLASS} role='status'>
+					<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
 						{resourceFeedback}
-					</div>
+					</StatusNotice>
 				) : null}
 			</section>
 
 			{errorMessage ? (
-				<div className={DRAWER_ALERT_DANGER_CLASS} role='alert'>
+				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
 					{errorMessage}
-				</div>
+				</StatusNotice>
 			) : null}
 
 			{feedback ? (
-				<div className={DRAWER_ALERT_SUCCESS_CLASS} role='status'>
+				<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
 					{feedback}
-				</div>
+				</StatusNotice>
 			) : null}
 
-			<div className={`${DRAWER_SECTION_CLASS} px-3 py-2`}>
-				<p className='text-[11px] text-(--sf-color-shell-tertiary)'>时间信息</p>
-				<p className='mt-1 text-[12px] leading-5 text-foreground'>
+			<div className={`${DRAWER_SECTION_CLASS} px-3.5 py-3`}>
+				<p className={DRAWER_SECTION_TITLE_CLASS}>时间信息</p>
+				<p className='mt-2 text-[12px] leading-5 text-foreground'>
 					创建于 {new Date(detail.task.createdAt).toLocaleString('zh-CN')}
 				</p>
 				<p className='mt-1 text-[12px] leading-5 text-foreground'>
@@ -435,14 +426,13 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				) : null}
 			</div>
 
-			<div className='rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) px-3 py-2'>
-				<p className='text-[11px] font-medium tracking-[0.03em] text-destructive'>删除任务</p>
-				<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
-					删除后任务会从主列表中移除，并进入 Trash 数据层等待后续恢复能力接入。
-				</p>
-			</div>
+			<StatusNotice
+				description='删除后任务会从主列表中移除，并进入 Trash 数据层等待后续恢复能力接入。'
+				title='删除任务'
+				variant='danger'
+			/>
 
-			<div className='flex items-center justify-between gap-2'>
+			<div className='flex items-center justify-between gap-2 border-t border-(--sf-color-divider) pt-3'>
 				<Button
 					className='rounded-md'
 					disabled={isSaving || isDeleting}

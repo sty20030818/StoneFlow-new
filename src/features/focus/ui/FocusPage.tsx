@@ -18,7 +18,15 @@ import {
 } from '@/shared/ui/base/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/base/tabs'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
+import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { cn } from '@/shared/lib/utils'
+import {
+	LINEAR_CARD_ACTIVE_CLASS,
+	LINEAR_CARD_BASE_CLASS,
+	LINEAR_CARD_DONE_CLASS,
+	LINEAR_CARD_IDLE_CLASS,
+	LINEAR_EMPTY_STATE_CLASS,
+} from '@/shared/ui/linearSurface'
 import type {
 	FocusRecentTimeWindow,
 	FocusTaskRecord,
@@ -30,16 +38,8 @@ import { PinIcon, RefreshCwIcon, SquareCheckBigIcon } from 'lucide-react'
 const SUMMARY_CARD_IDLE_CLASS =
 	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-muted/45'
 const SUMMARY_CARD_ACTIVE_CLASS = 'border-(--sf-color-accent-soft-border) bg-accent'
-const TASK_CARD_BASE_CLASS = 'rounded-lg border p-4 transition-colors'
-const TASK_CARD_INTERACTIVE_CLASS = 'cursor-pointer'
+const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
 const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
-const TASK_CARD_IDLE_CLASS =
-	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
-const TASK_CARD_ACTIVE_CLASS =
-	'border-(--sf-color-accent-soft-border) bg-accent shadow-[inset_3px_0_0_var(--primary)]'
-const TASK_CARD_DONE_CLASS = 'border-(--sf-color-border-subtle) bg-muted/35 text-muted-foreground'
-const TASK_CARD_EMPTY_CLASS =
-	'rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30'
 
 const RECENT_TIME_WINDOW_OPTIONS: Array<{
 	value: FocusRecentTimeWindow
@@ -141,28 +141,28 @@ export function FocusPage() {
 						</div>
 
 						{feedback ? (
-							<p
-								className='rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-sm text-(--sf-color-success-soft-text)'
-								role='status'
-							>
+							<StatusNotice className='text-sm' role='status' size='sm' variant='success'>
 								{feedback}
-							</p>
+							</StatusNotice>
 						) : null}
 
 						{loadError ? (
-							<div className='flex flex-col gap-3 rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) p-4 sm:flex-row sm:items-center sm:justify-between'>
-								<p className='text-sm text-destructive' role='alert'>
-									{loadError}
-								</p>
-								<Button
-									className='rounded-md'
-									onClick={() => void refresh()}
-									size='sm'
-									variant='outline'
-								>
-									重试
-								</Button>
-							</div>
+							<StatusNotice
+								actions={
+									<Button
+										className='rounded-md'
+										onClick={() => void refresh()}
+										size='sm'
+										variant='outline'
+									>
+										重试
+									</Button>
+								}
+								role='alert'
+								variant='danger'
+							>
+								<p className='text-sm'>{loadError}</p>
+							</StatusNotice>
 						) : null}
 
 						{views.map((view) => (
@@ -242,7 +242,7 @@ function FocusTaskPanel({
 
 	if (tasks.length === 0) {
 		return (
-			<div className={cn(TASK_CARD_EMPTY_CLASS, 'px-4 py-8 text-center')}>
+			<div className={cn(LINEAR_EMPTY_STATE_CLASS, 'px-4 py-8 text-center')}>
 				<p className='text-sm font-medium text-foreground'>{getEmptyTitle(activeViewKey)}</p>
 				<p className='mt-2 text-sm text-muted-foreground'>{getEmptyDescription(activeViewKey)}</p>
 			</div>
@@ -290,11 +290,11 @@ function FocusTaskRow({
 		<div
 			aria-label={`打开任务 ${task.title}`}
 			className={cn(
-				TASK_CARD_BASE_CLASS,
+				LINEAR_CARD_BASE_CLASS,
 				TASK_CARD_INTERACTIVE_CLASS,
 				TASK_CARD_GRID_CLASS,
-				task.status === 'done' ? TASK_CARD_DONE_CLASS : TASK_CARD_IDLE_CLASS,
-				isActive ? TASK_CARD_ACTIVE_CLASS : null,
+				task.status === 'done' ? LINEAR_CARD_DONE_CLASS : LINEAR_CARD_IDLE_CLASS,
+				isActive ? LINEAR_CARD_ACTIVE_CLASS : null,
 				isPending ? 'opacity-75' : null,
 			)}
 			data-shell-task-card='true'
@@ -313,7 +313,7 @@ function FocusTaskRow({
 				<div className='flex flex-wrap items-center gap-2'>
 					<p
 						className={cn(
-							'text-left text-sm font-semibold',
+							'text-left text-sm font-semibold transition-colors group-hover:text-primary',
 							task.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground',
 						)}
 					>

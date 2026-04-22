@@ -7,6 +7,7 @@ import {
 	normalizeTaskChangedPayload,
 	subscribeToTaskChanged,
 	TASKS_CHANGED_EVENT,
+	type TaskChangedPayload,
 	useTaskChangedListener,
 } from '@/shared/events/taskChanged'
 
@@ -47,8 +48,8 @@ describe('taskChanged event helpers', () => {
 	})
 
 	it('订阅任务变更并在清理时释放监听', async () => {
-		const unlisten = vi.fn()
-		const onTaskChanged = vi.fn()
+		const unlisten = vi.fn<() => void>()
+		const onTaskChanged = vi.fn<(payload: TaskChangedPayload) => void>()
 		let callback: TauriEvent.EventCallback<unknown> = () => undefined
 
 		mockedListen.mockImplementation(async (_eventName, handler) => {
@@ -86,8 +87,8 @@ describe('taskChanged event helpers', () => {
 	})
 
 	it('hook 只响应当前 Space 的任务变更', async () => {
-		const unlisten = vi.fn()
-		const onTaskChanged = vi.fn()
+		const unlisten = vi.fn<() => void>()
+		const onTaskChanged = vi.fn<(payload: TaskChangedPayload) => void>()
 		let callback: TauriEvent.EventCallback<unknown> = () => undefined
 
 		mockedListen.mockImplementation(async (_eventName, handler) => {
