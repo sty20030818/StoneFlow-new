@@ -71,27 +71,38 @@ describe('InboxPage', () => {
 	})
 
 	it('整理成功后移除已完成归类的任务', async () => {
-		mockedListInboxTasks.mockResolvedValue({
-			tasks: [
-				{
-					id: 'task-1',
-					projectId: null,
-					title: '整理今天的任务',
-					note: '补齐后应离开 Inbox',
-					status: 'todo',
-					priority: null,
-					createdAt: '2026-04-19T20:00:00Z',
-					updatedAt: '2026-04-19T20:00:00Z',
-				},
-			],
-			projects: [
-				{
-					id: 'project-1',
-					name: '执行层',
-					sortOrder: 0,
-				},
-			],
-		})
+		mockedListInboxTasks
+			.mockResolvedValueOnce({
+				tasks: [
+					{
+						id: 'task-1',
+						projectId: null,
+						title: '整理今天的任务',
+						note: '补齐后应离开 Inbox',
+						status: 'todo',
+						priority: null,
+						createdAt: '2026-04-19T20:00:00Z',
+						updatedAt: '2026-04-19T20:00:00Z',
+					},
+				],
+				projects: [
+					{
+						id: 'project-1',
+						name: '执行层',
+						sortOrder: 0,
+					},
+				],
+			})
+			.mockResolvedValueOnce({
+				tasks: [],
+				projects: [
+					{
+						id: 'project-1',
+						name: '执行层',
+						sortOrder: 0,
+					},
+				],
+			})
 		mockedTriageInboxTask.mockResolvedValue({
 			taskId: 'task-1',
 			projectId: 'project-1',

@@ -1,4 +1,4 @@
-import { useCallback, type PropsWithChildren } from 'react'
+import type { PropsWithChildren } from 'react'
 
 import {
 	selectActiveDrawerId,
@@ -10,7 +10,6 @@ import {
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { useShellProjects } from '@/app/layouts/shell/model/useShellProjects'
 import { ProjectCreateDialog } from '@/features/project/ui/ProjectCreateDialog'
-import { openQuickCapture } from '@/features/quick-capture/api/openQuickCapture'
 import { TaskCreateDialog } from '@/features/task/ui/TaskCreateDialog'
 import { flattenProjectTree } from '@/features/project/model/types'
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
@@ -18,6 +17,7 @@ import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
+import { useTaskChangedListener } from '@/shared/events/taskChanged'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 
 type ShellLayoutProps = PropsWithChildren<{
@@ -36,6 +36,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 		projects,
 		isLoading: isProjectsLoading,
 		error: projectsError,
+		refresh: refreshProjects,
 	} = useShellProjects(currentSpaceId)
 	const flatProjects = flattenProjectTree(projects)
 	const projectLinks = flatProjects.map((project) => ({
@@ -60,11 +61,11 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 	const closeProjectCreateDialog = useShellLayoutStore((state) => state.closeProjectCreateDialog)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
 	const closeDrawer = useShellLayoutStore((state) => state.closeDrawer)
-	const handleOpenQuickCaptureWindow = useCallback(() => {
-		void openQuickCapture().catch((error) => {
-			console.error('quick capture open failed', { error })
-		})
-	}, [])
+	const bumpTaskDataVersion = useShellLayoutStore((state) => state.bumpTaskDataVersion)
+
+	useTaskChangedListener(currentSpaceId, () => {
+		bumpTaskDataVersion()
+	})
 
 	return (
 		<div className='sf-shell-layout relative flex h-full min-h-0 flex-col overflow-hidden bg-background'>
@@ -76,7 +77,6 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				onCommandOpenChange={setCommandOpen}
 				onCloseDrawer={closeDrawer}
 				onOpenProjectCreateDialog={() => openProjectCreateDialog()}
-				onOpenQuickCaptureWindow={handleOpenQuickCaptureWindow}
 				onOpenTaskCreateDialog={openTaskCreateDialog}
 				onOpenDrawer={openDrawer}
 				projects={projectLinks}
@@ -88,6 +88,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 					currentSpaceId={currentSpaceId}
 					isProjectsLoading={isProjectsLoading}
 					onOpenProjectCreateDialog={openProjectCreateDialog}
+					onRefreshProjects={() => void refreshProjects()}
 					projects={projectTreeLinks}
 					projectsError={projectsError}
 				/>

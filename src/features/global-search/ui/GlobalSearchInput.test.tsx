@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
+import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { searchWorkspace } from '@/features/global-search/api/searchWorkspace'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
 
@@ -12,6 +13,10 @@ const mockedSearchWorkspace = vi.mocked(searchWorkspace)
 describe('GlobalSearchInput', () => {
 	afterEach(() => {
 		vi.clearAllMocks()
+		useShellLayoutStore.setState({
+			taskDataVersion: 0,
+			projectDataVersion: 0,
+		})
 	})
 
 	it('支持 / 聚焦、分组展示并通过键盘打开高亮结果', async () => {
@@ -206,5 +211,50 @@ describe('GlobalSearchInput', () => {
 		await waitFor(() => {
 			expect(screen.queryByText('Tasks')).not.toBeInTheDocument()
 		})
+	})
+
+	it('任务刷新版本变化后用当前查询重新搜索', async () => {
+		mockedSearchWorkspace
+			.mockResolvedValueOnce({
+				tasks: [],
+				projects: [],
+			})
+			.mockResolvedValueOnce({
+				tasks: [
+					{
+						id: 'task-capture',
+						title: '系统捕获任务',
+						note: '来自 Quick Capture',
+						priority: null,
+						projectId: null,
+						projectName: null,
+						updatedAt: '2026-04-22T08:00:00Z',
+					},
+				],
+				projects: [],
+			})
+
+		render(
+			<GlobalSearchInput
+				currentSpaceId='default'
+				onOpenProject={vi.fn<(projectId: string) => void>()}
+				onOpenTask={vi.fn<(taskId: string) => void>()}
+			/>,
+		)
+
+		const input = screen.getByLabelText('全局搜索')
+		fireEvent.focus(input)
+		fireEvent.change(input, { target: { value: '捕获' } })
+
+		await waitFor(() => {
+			expect(mockedSearchWorkspace).toHaveBeenCalledTimes(1)
+		})
+
+		useShellLayoutStore.getState().bumpTaskDataVersion()
+
+		await waitFor(() => {
+			expect(mockedSearchWorkspace).toHaveBeenCalledTimes(2)
+		})
+		expect(await screen.findByText('系统捕获任务')).toBeInTheDocument()
 	})
 })

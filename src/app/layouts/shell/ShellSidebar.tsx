@@ -12,6 +12,7 @@ type ShellSidebarProps = {
 	isProjectsLoading: boolean
 	projectsError: string | null
 	onOpenProjectCreateDialog: (parentProjectId?: string | null) => void
+	onRefreshProjects?: () => void
 }
 
 export function ShellSidebar({
@@ -20,6 +21,7 @@ export function ShellSidebar({
 	isProjectsLoading,
 	projectsError,
 	onOpenProjectCreateDialog,
+	onRefreshProjects = () => undefined,
 }: ShellSidebarProps) {
 	return (
 		<aside className='flex h-full w-(--sf-shell-sidebar-width) shrink-0 flex-col bg-(--sf-color-shell-chrome)'>
@@ -90,7 +92,17 @@ export function ShellSidebar({
 							正在加载项目...
 						</p>
 					) : projectsError ? (
-						<p className='px-2.5 py-1 text-[12px] text-destructive'>{projectsError}</p>
+						<div className='space-y-2 px-2.5 py-1'>
+							<p className='text-[12px] leading-5 text-destructive'>{projectsError}</p>
+							<Button
+								className='h-7 rounded-lg px-2 text-[12px]'
+								onClick={onRefreshProjects}
+								size='sm'
+								variant='outline'
+							>
+								重试加载
+							</Button>
+						</div>
 					) : projects.length === 0 ? (
 						<div className='flex flex-col gap-2 px-2.5 py-1'>
 							<p className='text-[12px] text-(--sf-color-shell-tertiary)'>当前 Space 还没有项目</p>

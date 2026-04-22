@@ -119,6 +119,7 @@ pub(crate) struct CreatedProjectPayload {
 pub(crate) struct CreatedTaskPayload {
     pub(crate) id: Uuid,
     pub(crate) space_id: Uuid,
+    pub(crate) space_slug: String,
     pub(crate) project_id: Option<Uuid>,
     pub(crate) title: String,
     pub(crate) status: String,
@@ -266,6 +267,7 @@ pub(crate) async fn create_task(
         &task_repository,
         CreateTaskInSpaceInput {
             space_id: space.id,
+            space_slug: space.slug,
             project_id,
             title,
             note,
@@ -314,6 +316,7 @@ pub(crate) async fn create_capture_task(
         &task_repository,
         CreateTaskInSpaceInput {
             space_id: space.id,
+            space_slug: space.slug,
             project_id: None,
             title,
             note,
@@ -327,6 +330,7 @@ pub(crate) async fn create_capture_task(
 
 struct CreateTaskInSpaceInput {
     space_id: Uuid,
+    space_slug: String,
     project_id: Option<Uuid>,
     title: String,
     note: Option<String>,
@@ -354,6 +358,7 @@ async fn create_task_in_space(
     Ok(CreatedTaskPayload {
         id: created_task.id,
         space_id: created_task.space_id,
+        space_slug: input.space_slug,
         project_id: created_task.project_id,
         title: created_task.title,
         status: created_task.status,

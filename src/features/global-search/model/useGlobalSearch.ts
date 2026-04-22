@@ -2,6 +2,11 @@ import type { KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react'
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 
 import {
+	selectProjectDataVersion,
+	selectTaskDataVersion,
+	useShellLayoutStore,
+} from '@/app/layouts/shell/model/useShellLayoutStore'
+import {
 	searchWorkspace,
 	type WorkspaceProjectSearchItem,
 	type WorkspaceSearchResult,
@@ -51,6 +56,8 @@ export function useGlobalSearch({
 	onOpenTask,
 	onOpenProject,
 }: UseGlobalSearchOptions): UseGlobalSearchResult {
+	const taskDataVersion = useShellLayoutStore(selectTaskDataVersion)
+	const projectDataVersion = useShellLayoutStore(selectProjectDataVersion)
 	const rootRef = useRef<HTMLDivElement>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
 	const requestIdRef = useRef(0)
@@ -148,7 +155,7 @@ export function useGlobalSearch({
 		return () => {
 			window.clearTimeout(timerId)
 		}
-	}, [currentSpaceId, normalizedQuery])
+	}, [currentSpaceId, normalizedQuery, projectDataVersion, taskDataVersion])
 
 	useEffect(() => {
 		setQuery('')

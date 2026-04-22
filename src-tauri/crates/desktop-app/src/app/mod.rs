@@ -11,6 +11,7 @@ use crate::infrastructure::database::initialize_database;
 pub mod command_helper;
 pub mod commands;
 pub mod error;
+pub(crate) mod events;
 pub(crate) mod helper_process;
 
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";

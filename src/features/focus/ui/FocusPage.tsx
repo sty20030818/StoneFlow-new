@@ -1,6 +1,11 @@
 import { formatInboxPriorityLabel } from '@/features/inbox/model/constants'
 import { useFocusWorkspace } from '@/features/focus/model/useFocusWorkspace'
-import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
+import {
+	selectActiveDrawerId,
+	selectActiveDrawerKind,
+	selectCurrentSpaceId,
+	useShellLayoutStore,
+} from '@/app/layouts/shell/model/useShellLayoutStore'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -13,6 +18,7 @@ import {
 } from '@/shared/ui/base/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/base/tabs'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
+import { cn } from '@/shared/lib/utils'
 import type {
 	FocusRecentTimeWindow,
 	FocusTaskRecord,
@@ -31,6 +37,9 @@ const RECENT_TIME_WINDOW_OPTIONS: Array<{
 ]
 
 export function FocusPage() {
+	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
+	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
+	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
 	const {
 		views,
@@ -47,7 +56,7 @@ export function FocusPage() {
 		refresh,
 		toggleTaskPin,
 		toggleTaskStatus,
-	} = useFocusWorkspace('default')
+	} = useFocusWorkspace(currentSpaceId)
 	const showRecentWindow = activeViewKey === 'recent'
 
 	return (
@@ -127,10 +136,13 @@ export function FocusPage() {
 						) : null}
 
 						{loadError ? (
-							<div className='rounded-2xl border border-destructive/30 bg-destructive/5 p-4'>
+							<div className='flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between'>
 								<p className='text-sm text-destructive' role='alert'>
 									{loadError}
 								</p>
+								<Button className='rounded-xl' onClick={() => void refresh()} size='sm' variant='outline'>
+									重试
+								</Button>
 							</div>
 						) : null}
 
@@ -138,6 +150,7 @@ export function FocusPage() {
 							<TabsContent key={view.id} value={view.key}>
 								<FocusTaskPanel
 									activeViewKey={view.key}
+									activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
 									isLoading={isLoading}
 									onOpenTask={(taskId) => openDrawer('task', taskId)}
 									onToggleTaskPin={toggleTaskPin}
@@ -182,6 +195,7 @@ function SummaryCard({ summary, active, onClick }: SummaryCardProps) {
 
 type FocusTaskPanelProps = {
 	activeViewKey: FocusViewKey
+	activeTaskId: string | null
 	tasks: FocusTaskRecord[]
 	pendingTaskId: string | null
 	isLoading: boolean
@@ -192,6 +206,7 @@ type FocusTaskPanelProps = {
 
 function FocusTaskPanel({
 	activeViewKey,
+	activeTaskId,
 	tasks,
 	pendingTaskId,
 	isLoading,
@@ -221,6 +236,7 @@ function FocusTaskPanel({
 			{tasks.map((task) => (
 				<FocusTaskRow
 					activeViewKey={activeViewKey}
+					isActive={activeTaskId === task.id}
 					isPending={pendingTaskId === task.id}
 					key={task.id}
 					onOpenTask={onOpenTask}
@@ -236,6 +252,7 @@ function FocusTaskPanel({
 type FocusTaskRowProps = {
 	task: FocusTaskRecord
 	activeViewKey: FocusViewKey
+	isActive: boolean
 	isPending: boolean
 	onOpenTask: (taskId: string) => void
 	onToggleTaskPin: (task: FocusTaskRecord) => Promise<void>
@@ -245,6 +262,7 @@ type FocusTaskRowProps = {
 function FocusTaskRow({
 	task,
 	activeViewKey,
+	isActive,
 	isPending,
 	onOpenTask,
 	onToggleTaskPin,
@@ -253,7 +271,14 @@ function FocusTaskRow({
 	return (
 		<div
 			aria-label={`打开任务 ${task.title}`}
-			className='flex cursor-pointer flex-col gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 transition-colors hover:border-border hover:bg-background lg:flex-row lg:items-start lg:justify-between'
+			className={cn(
+				'flex cursor-pointer flex-col gap-3 rounded-2xl border p-4 transition-colors lg:flex-row lg:items-start lg:justify-between',
+				task.status === 'done'
+					? 'border-border/60 bg-muted/30 text-muted-foreground'
+					: 'border-border/70 bg-background/80 hover:border-border hover:bg-background',
+				isActive ? 'border-primary/45 bg-primary/6 shadow-[inset_3px_0_0_var(--primary)]' : null,
+				isPending ? 'opacity-75' : null,
+			)}
 			data-shell-task-card='true'
 			data-task-id={task.id}
 			onClick={() => onOpenTask(task.id)}
@@ -268,7 +293,14 @@ function FocusTaskRow({
 		>
 			<div className='min-w-0 space-y-2'>
 				<div className='flex flex-wrap items-center gap-2'>
-					<p className='text-left text-sm font-semibold text-foreground'>{task.title}</p>
+					<p
+						className={cn(
+							'text-left text-sm font-semibold',
+							task.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground',
+						)}
+					>
+						{task.title}
+					</p>
 					<Badge variant='outline'>{formatInboxPriorityLabel(task.priority)}</Badge>
 					{task.pinned ? <Badge variant='secondary'>已 Pin</Badge> : null}
 					<Badge variant='outline'>{getTaskMetaLabel(task, activeViewKey)}</Badge>

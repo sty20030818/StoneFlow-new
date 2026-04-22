@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useState } from 'react'
 
 import {
 	selectProjectDataVersion,
+	selectTaskDataVersion,
 	useShellLayoutStore,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { listProjects } from '@/features/project/api/listProjects'
@@ -11,6 +12,7 @@ type UseShellProjectsResult = {
 	projects: ProjectRecord[]
 	isLoading: boolean
 	error: string | null
+	refresh: () => Promise<void>
 }
 
 /**
@@ -18,6 +20,7 @@ type UseShellProjectsResult = {
  */
 export function useShellProjects(spaceId: string): UseShellProjectsResult {
 	const projectDataVersion = useShellLayoutStore(selectProjectDataVersion)
+	const taskDataVersion = useShellLayoutStore(selectTaskDataVersion)
 	const [projects, setProjects] = useState<ProjectRecord[]>([])
 	const [isLoading, setIsLoading] = useState(true)
 	const [error, setError] = useState<string | null>(null)
@@ -39,12 +42,13 @@ export function useShellProjects(spaceId: string): UseShellProjectsResult {
 
 	useEffect(() => {
 		void refresh()
-	}, [projectDataVersion, spaceId])
+	}, [projectDataVersion, spaceId, taskDataVersion])
 
 	return {
 		projects,
 		isLoading,
 		error,
+		refresh,
 	}
 }
 

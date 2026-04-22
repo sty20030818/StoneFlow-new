@@ -38,7 +38,6 @@ import {
 	SearchIcon,
 	SquareIcon,
 	XIcon,
-	ZapIcon,
 } from 'lucide-react'
 
 type ShellHeaderProps = {
@@ -51,7 +50,6 @@ type ShellHeaderProps = {
 	onCommandOpenChange: (open: boolean) => void
 	onOpenTaskCreateDialog: () => void
 	onOpenProjectCreateDialog: () => void
-	onOpenQuickCaptureWindow: () => void
 	onOpenDrawer: (kind: ShellDrawerKind, id: string) => void
 	onCloseDrawer: () => void
 }
@@ -64,7 +62,6 @@ export function ShellHeader({
 	onCommandOpenChange,
 	onOpenProjectCreateDialog,
 	onOpenTaskCreateDialog,
-	onOpenQuickCaptureWindow,
 	onOpenDrawer,
 	onCloseDrawer,
 	projects,
@@ -137,11 +134,6 @@ export function ShellHeader({
 		startTransition(() => {
 			navigate(`/space/${currentSpaceId}/project/${projectId}`)
 		})
-	}
-
-	const handleOpenQuickCapture = () => {
-		onCommandOpenChange(false)
-		onOpenQuickCaptureWindow()
 	}
 
 	const handleMinimize = async () => {
@@ -218,7 +210,7 @@ export function ShellHeader({
 						}}
 					/>
 
-					<div className='min-w-0 w-full max-w-[34rem] shrink'>
+					<div className='min-w-0 w-full max-w-136 shrink'>
 						<GlobalSearchInput
 							currentSpaceId={currentSpaceId}
 							onOpenProject={handleOpenProjectFromSearch}
@@ -268,10 +260,6 @@ export function ShellHeader({
 									<DropdownMenuItem onSelect={onOpenTaskCreateDialog}>
 										<PlusIcon />
 										新建任务
-									</DropdownMenuItem>
-									<DropdownMenuItem onSelect={handleOpenQuickCapture}>
-										<ZapIcon />
-										Quick Capture
 									</DropdownMenuItem>
 									<DropdownMenuItem onSelect={onOpenProjectCreateDialog}>
 										<FolderPlusIcon />
@@ -325,15 +313,6 @@ export function ShellHeader({
 						<CommandEmpty>没有结果</CommandEmpty>
 
 						<CommandGroup heading='Quick Actions'>
-							<CommandItem
-								onSelect={() => {
-									handleOpenQuickCapture()
-								}}
-							>
-								<ZapIcon />
-								Quick Capture
-								<CommandShortcut>↵</CommandShortcut>
-							</CommandItem>
 							<CommandItem
 								onSelect={() => {
 									onCommandOpenChange(false)

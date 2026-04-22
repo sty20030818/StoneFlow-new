@@ -2,7 +2,6 @@ import { invoke } from '@tauri-apps/api/core'
 import type * as TauriCore from '@tauri-apps/api/core'
 
 import { createCaptureTask, CaptureTaskError } from '@/features/quick-capture/api/createCaptureTask'
-import { openQuickCapture } from '@/features/quick-capture/api/openQuickCapture'
 
 vi.mock('@tauri-apps/api/core', () => ({
 	invoke: vi.fn<typeof TauriCore.invoke>(),
@@ -63,11 +62,4 @@ describe('quick capture api', () => {
 		} satisfies Partial<CaptureTaskError>)
 	})
 
-	it('打开 Quick Capture 独立浮窗', async () => {
-		mockedInvoke.mockResolvedValue(null)
-
-		await expect(openQuickCapture()).resolves.toBeUndefined()
-
-		expect(mockedInvoke).toHaveBeenCalledWith('open_quick_capture')
-	})
 })

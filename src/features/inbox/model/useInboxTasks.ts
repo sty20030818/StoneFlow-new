@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useEffectEvent, useState } from 'react'
+import { startTransition, useEffect, useEffectEvent, useRef, useState } from 'react'
 
 import {
 	selectProjectDataVersion,
@@ -53,6 +53,9 @@ function createDraft(task: InboxTaskRecord): InboxTaskDraft {
 export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 	const taskDataVersion = useShellLayoutStore(selectTaskDataVersion)
 	const projectDataVersion = useShellLayoutStore(selectProjectDataVersion)
+	const bumpTaskDataVersion = useShellLayoutStore((state) => state.bumpTaskDataVersion)
+	const skipNextTaskDataVersionRefreshRef = useRef(false)
+	const lastTaskDataVersionRef = useRef(taskDataVersion)
 	const [tasks, setTasks] = useState<InboxTaskRecord[]>([])
 	const [projects, setProjects] = useState<InboxProjectOption[]>([])
 	const [drafts, setDrafts] = useState<Record<string, InboxTaskDraft>>({})
@@ -60,7 +63,7 @@ export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 	const [loadError, setLoadError] = useState<string | null>(null)
 	const [feedback, setFeedback] = useState<string | null>(null)
 
-	const refresh = useEffectEvent(async () => {
+	const refresh = useEffectEvent(async (preserveFeedback = false) => {
 		setIsLoading(true)
 		setLoadError(null)
 
@@ -75,7 +78,9 @@ export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 						snapshot.tasks.map((task) => [task.id, currentDrafts[task.id] ?? createDraft(task)]),
 					),
 				)
-				setFeedback(null)
+				if (!preserveFeedback) {
+					setFeedback(null)
+				}
 			})
 		} catch (error) {
 			setLoadError(toErrorMessage(error))
@@ -86,7 +91,22 @@ export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 
 	useEffect(() => {
 		void refresh()
-	}, [projectDataVersion, spaceId, taskDataVersion])
+	}, [projectDataVersion, spaceId])
+
+	useEffect(() => {
+		if (skipNextTaskDataVersionRefreshRef.current) {
+			skipNextTaskDataVersionRefreshRef.current = false
+			lastTaskDataVersionRef.current = taskDataVersion
+			return
+		}
+
+		if (lastTaskDataVersionRef.current === taskDataVersion) {
+			return
+		}
+
+		lastTaskDataVersionRef.current = taskDataVersion
+		void refresh()
+	}, [taskDataVersion])
 
 	function getDraft(taskId: string) {
 		return drafts[taskId] ?? EMPTY_DRAFT
@@ -183,6 +203,9 @@ export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 					}
 				})
 			})
+			skipNextTaskDataVersionRefreshRef.current = true
+			bumpTaskDataVersion()
+			await refresh(true)
 		} catch (error) {
 			setDrafts((currentDrafts) => ({
 				...currentDrafts,

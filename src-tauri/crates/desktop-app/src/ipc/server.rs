@@ -14,6 +14,7 @@ use tauri::{AppHandle, Manager, Runtime};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::app::error::AppError;
+use crate::app::events::{emit_task_changed, TaskChangedPayload};
 use crate::application::create::{
     create_capture_task as create_capture_task_usecase, ActiveSpaceState, CaptureTaskInput,
 };
@@ -127,14 +128,25 @@ async fn dispatch<R: Runtime>(app_handle: &AppHandle<R>, request: IpcRequest) ->
             .await;
 
             match result {
-                Ok(payload) => IpcResponse::TaskCreated(TaskCreatedPayload {
-                    id: payload.id,
-                    title: payload.title,
-                    // 用例返回的 payload 不含 slug，Helper 初版也不需要展示给用户，
-                    // 这里置为 None 反映真实情况；未来若需要，可在用例返回中补字段。
-                    space_slug: None,
-                    space_fallback: payload.space_fallback,
-                }),
+                Ok(payload) => {
+                    emit_task_changed(
+                        app_handle,
+                        TaskChangedPayload {
+                            space_id: payload.space_id,
+                            space_slug: payload.space_slug.clone(),
+                            task_id: payload.id,
+                            source: payload.source.clone(),
+                            space_fallback: payload.space_fallback,
+                        },
+                    );
+
+                    IpcResponse::TaskCreated(TaskCreatedPayload {
+                        id: payload.id,
+                        title: payload.title,
+                        space_slug: Some(payload.space_slug),
+                        space_fallback: payload.space_fallback,
+                    })
+                }
                 Err(error) => {
                     let app_error: AppError = error.into();
                     log::warn!("IPC CreateTask 处理失败: {app_error:?}");

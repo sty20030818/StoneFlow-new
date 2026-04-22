@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useEffectEvent, useState } from 'react'
+import { startTransition, useEffect, useEffectEvent, useRef, useState } from 'react'
 
 import {
 	selectProjectDataVersion,
@@ -32,7 +32,10 @@ type UseProjectExecutionResult = {
 export function useProjectExecution(spaceId: string, projectId: string): UseProjectExecutionResult {
 	const taskDataVersion = useShellLayoutStore(selectTaskDataVersion)
 	const projectDataVersion = useShellLayoutStore(selectProjectDataVersion)
+	const bumpTaskDataVersion = useShellLayoutStore((state) => state.bumpTaskDataVersion)
 	const bumpProjectDataVersion = useShellLayoutStore((state) => state.bumpProjectDataVersion)
+	const skipNextTaskDataVersionRefreshRef = useRef(false)
+	const lastTaskDataVersionRef = useRef(taskDataVersion)
 	const [view, setView] = useState<ProjectExecutionView | null>(null)
 	const [isLoading, setIsLoading] = useState(true)
 	const [loadError, setLoadError] = useState<string | null>(null)
@@ -64,7 +67,22 @@ export function useProjectExecution(spaceId: string, projectId: string): UseProj
 
 	useEffect(() => {
 		void refresh()
-	}, [projectId, spaceId, taskDataVersion, projectDataVersion])
+	}, [projectId, spaceId, projectDataVersion])
+
+	useEffect(() => {
+		if (skipNextTaskDataVersionRefreshRef.current) {
+			skipNextTaskDataVersionRefreshRef.current = false
+			lastTaskDataVersionRef.current = taskDataVersion
+			return
+		}
+
+		if (lastTaskDataVersionRef.current === taskDataVersion) {
+			return
+		}
+
+		lastTaskDataVersionRef.current = taskDataVersion
+		void refresh()
+	}, [taskDataVersion])
 
 	const toggleTaskStatus = useEffectEvent(async (task: ProjectExecutionTask) => {
 		const nextStatus: ProjectTaskStatus = task.status === 'todo' ? 'done' : 'todo'
@@ -104,6 +122,8 @@ export function useProjectExecution(spaceId: string, projectId: string): UseProj
 				)
 				setLoadError(null)
 			})
+			skipNextTaskDataVersionRefreshRef.current = true
+			bumpTaskDataVersion()
 		} catch (error) {
 			setLoadError(toErrorMessage(error))
 		} finally {

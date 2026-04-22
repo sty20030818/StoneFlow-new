@@ -15,10 +15,13 @@ import {
 	SelectValue,
 } from '@/shared/ui/base/select'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
+import { cn } from '@/shared/lib/utils'
 import { RefreshCwIcon } from 'lucide-react'
 
 export function InboxPage() {
 	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
+	const activeDrawerId = useShellLayoutStore((state) => state.activeDrawerId)
+	const activeDrawerKind = useShellLayoutStore((state) => state.activeDrawerKind)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
 	const openProjectCreateDialog = useShellLayoutStore((state) => state.openProjectCreateDialog)
 	const {
@@ -113,6 +116,7 @@ export function InboxPage() {
 								<InboxTaskRow
 									key={task.id}
 									draft={draft}
+									isActive={activeDrawerKind === 'task' && activeDrawerId === task.id}
 									onOpenTask={() => openDrawer('task', task.id)}
 									onProjectChange={(projectId) => updateDraft(task.id, { projectId, error: null })}
 									onSubmit={() => void submitTriage(task.id)}
@@ -147,6 +151,7 @@ type InboxTaskRowProps = {
 		isSubmitting: boolean
 		error: string | null
 	}
+	isActive: boolean
 	onProjectChange: (projectId: string) => void
 	onPriorityChange: (priority: string) => void
 	onSubmit: () => void
@@ -160,6 +165,7 @@ function InboxTaskRow({
 	task,
 	projects,
 	draft,
+	isActive,
 	onOpenTask,
 	onProjectChange,
 	onPriorityChange,
@@ -174,7 +180,13 @@ function InboxTaskRow({
 
 	return (
 		<article
-			className='grid gap-3 rounded-2xl border border-border/70 bg-background/80 p-4 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-start'
+			className={cn(
+				'grid gap-3 rounded-2xl border p-4 transition-colors lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-start',
+				isActive
+					? 'border-primary/45 bg-primary/6 shadow-[inset_3px_0_0_var(--primary)]'
+					: 'border-border/70 bg-background/80 hover:border-border hover:bg-background',
+				draft.isSubmitting ? 'opacity-75' : null,
+			)}
 			data-shell-task-card='true'
 			data-task-id={task.id}
 		>

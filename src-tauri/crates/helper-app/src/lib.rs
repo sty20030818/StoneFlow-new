@@ -13,7 +13,7 @@ pub mod window_spec;
 #[cfg(target_os = "macos")]
 pub mod panel;
 
-/// 组装 Helper 的 Tauri Builder。调用方（`src-tauri-helper` 宿主）
+/// 组装 Helper 的 Tauri Builder。调用方（`src-tauri/helper-bin` 宿主）
 /// 负责调用 `.run(tauri::generate_context!())` 并处理 panic。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
     let b = tauri::Builder::default().plugin(tauri_plugin_global_shortcut::Builder::new().build());

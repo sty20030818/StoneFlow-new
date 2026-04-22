@@ -11,6 +11,10 @@ type CreateTaskMock = (input: CreateCaptureTaskCommandInput) => Promise<CreatedC
 
 type CloseWindowMock = () => void
 
+vi.mock('@tauri-apps/api/event', () => ({
+	listen: vi.fn(async () => vi.fn()),
+}))
+
 vi.mock('@tauri-apps/api/window', () => ({
 	getCurrentWindow: vi.fn<() => { close: CloseWindowMock }>(() => ({
 		close: vi.fn<CloseWindowMock>(),

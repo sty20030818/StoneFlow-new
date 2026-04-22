@@ -91,7 +91,7 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 	const [feedback, setFeedback] = useState<string | null>(null)
 	const [resourceFeedback, setResourceFeedback] = useState<string | null>(null)
 
-	const refresh = useEffectEvent(async () => {
+	const refresh = useEffectEvent(async (preserveFeedback = false) => {
 		setIsLoading(true)
 		setLoadError(null)
 
@@ -104,7 +104,9 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 			startTransition(() => {
 				setDetail(payload)
 				setDraft(createDraft(payload.task))
-				setFeedback(null)
+				if (!preserveFeedback) {
+					setFeedback(null)
+				}
 				setSaveError(null)
 				setDeleteError(null)
 				setResourceError(null)
@@ -208,6 +210,7 @@ export function useTaskDrawer(spaceId: string, taskId: string): UseTaskDrawerRes
 				setFeedback(`已保存“${payload.title}”`)
 			})
 			bumpTaskDataVersion()
+			await refresh(true)
 		} catch (error) {
 			setSaveError(toErrorMessage(error))
 			return
