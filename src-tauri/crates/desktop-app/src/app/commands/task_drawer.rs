@@ -6,8 +6,8 @@ use crate::app::error::AppError;
 use crate::application::task_drawer::{
     delete_task_to_trash as delete_task_to_trash_usecase,
     get_task_drawer_detail as get_task_drawer_detail_usecase,
-    update_task_drawer_fields as update_task_drawer_fields_usecase,
-    DeleteTaskToTrashInput, DeletedTaskPayload, GetTaskDrawerDetailInput, TaskDrawerDetailPayload,
+    update_task_drawer_fields as update_task_drawer_fields_usecase, DeleteTaskToTrashInput,
+    DeletedTaskPayload, GetTaskDrawerDetailInput, TaskDrawerDetailPayload,
     UpdateTaskDrawerFieldsInput, UpdatedTaskDrawerPayload,
 };
 use crate::infrastructure::database::DatabaseState;

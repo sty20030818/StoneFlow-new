@@ -1,4 +1,4 @@
-//! StoneFlow Command Helper：独立 Accessory 进程，仅承担全局快捷键与 Quick Capture NSPanel。
+//! StoneFlow Command Helper：独立 Accessory 进程，仅承担全局快捷键与 Quick Capture 浮窗。
 //!
 //! 与主 App 的关系：
 //! - Helper 不拥有数据库；所有写入动作经 IPC 下发到主 App 的 `ipc::server`；
@@ -12,6 +12,9 @@ pub mod window_spec;
 
 #[cfg(target_os = "macos")]
 pub mod panel;
+
+#[cfg(target_os = "windows")]
+pub mod panel_windows;
 
 /// 组装 Helper 的 Tauri Builder。调用方（`src-tauri/helper-bin` 宿主）
 /// 负责调用 `.run(tauri::generate_context!())` 并处理 panic。
@@ -42,9 +45,13 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         #[cfg(target_os = "macos")]
         app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
-        // macOS：在 setup（主线程）创建 NSPanel。非 macOS 平台第一版不提供面板。
+        // macOS：在 setup（主线程）创建 NSPanel。
         #[cfg(target_os = "macos")]
         panel::init_quick_capture_panel(app.handle());
+
+        // Windows：预创建标准 Tauri 浮窗，后续快捷键只负责 toggle。
+        #[cfg(target_os = "windows")]
+        panel_windows::init_quick_capture_panel(app.handle());
 
         shortcut::register_global_shortcut(app.handle());
 

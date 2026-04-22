@@ -94,7 +94,9 @@ pub(crate) async fn list_focus_views(
 
     let space_slug = normalize_required_text(&input.space_slug, "space slug")?;
     let space = resolve_active_space(&space_repository, &space_slug).await?;
-    let views = focus_view_repository.list_enabled_system_by_space(space.id).await?;
+    let views = focus_view_repository
+        .list_enabled_system_by_space(space.id)
+        .await?;
 
     Ok(FocusViewListPayload {
         views: views
@@ -154,9 +156,9 @@ pub(crate) async fn get_focus_view_tasks(
             .map(|task| {
                 Ok(FocusTaskPayload {
                     id: task.id,
-                    project_id: task.project_id.with_context(|| {
-                        format!("focus task `{}` must have a project", task.id)
-                    })?,
+                    project_id: task
+                        .project_id
+                        .with_context(|| format!("focus task `{}` must have a project", task.id))?,
                     title: task.title,
                     note: task.note,
                     priority: task.priority.with_context(|| {

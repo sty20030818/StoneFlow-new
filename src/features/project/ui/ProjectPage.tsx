@@ -95,7 +95,12 @@ export function ProjectPage() {
 						<p className='text-sm text-destructive' role='alert'>
 							{loadError}
 						</p>
-						<Button className='rounded-xl' onClick={() => void refresh()} size='sm' variant='outline'>
+						<Button
+							className='rounded-xl'
+							onClick={() => void refresh()}
+							size='sm'
+							variant='outline'
+						>
 							重试
 						</Button>
 					</div>

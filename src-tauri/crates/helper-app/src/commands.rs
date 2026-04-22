@@ -56,9 +56,13 @@ pub async fn helper_create_task(
     input: HelperCreateTaskInput,
 ) -> Result<HelperCreatedTaskResponse, HelperCaptureErrorPayload> {
     // 清洗：空白 priority 归一为 None，与主 App 前端逻辑保持一致。
-    let priority = input
-        .priority
-        .and_then(|value| if value.trim().is_empty() { None } else { Some(value) });
+    let priority = input.priority.and_then(|value| {
+        if value.trim().is_empty() {
+            None
+        } else {
+            Some(value)
+        }
+    });
 
     let payload = CreateTaskPayload {
         title: input.title,
@@ -76,4 +80,46 @@ pub async fn helper_create_task(
         title: created.title,
         space_fallback: created.space_fallback,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn maps_ipc_errors_to_frontend_capture_error_contract() {
+        let cases = [
+            (
+                IpcError::Validation("blank title".to_owned()),
+                "Validation",
+                "blank title",
+            ),
+            (
+                IpcError::CaptureSpaceUnavailable("active space missing".to_owned()),
+                "CaptureSpaceUnavailable",
+                "active space missing",
+            ),
+            (
+                IpcError::DefaultSpaceUnavailable("default space archived".to_owned()),
+                "DefaultSpaceUnavailable",
+                "default space archived",
+            ),
+            (
+                IpcError::CapturePersistence("sqlite write failed".to_owned()),
+                "CapturePersistence",
+                "sqlite write failed",
+            ),
+            (
+                IpcError::Internal("connect main app failed".to_owned()),
+                "Internal",
+                "connect main app failed",
+            ),
+        ];
+
+        for (error, expected_type, expected_message) in cases {
+            let payload = HelperCaptureErrorPayload::from(error);
+            assert_eq!(payload.type_, expected_type);
+            assert_eq!(payload.message, expected_message);
+        }
+    }
 }

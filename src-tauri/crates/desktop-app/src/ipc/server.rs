@@ -190,11 +190,17 @@ fn build_listener(socket: &SocketName) -> io::Result<Listener> {
 }
 
 /// Unix 域套接字重启时可能残留文件，若无人监听会导致 `bind` 报 `AddrInUse`。
-/// 清理策略：文件存在且尝试连一下无人响应时才删除，避免误删正在运行的实例的 socket。
+/// Windows 使用命名管道，不存在文件型 socket 清理需求，因此直接跳过。
 fn cleanup_stale_socket(socket: &SocketName) {
     if socket.namespaced {
         return;
     }
+    cleanup_stale_socket_file(socket);
+}
+
+/// 清理 Unix 文件型 socket 的残留文件。
+#[cfg(unix)]
+fn cleanup_stale_socket_file(socket: &SocketName) {
     let path = std::path::Path::new(&socket.raw);
     if !path.exists() {
         return;
@@ -217,3 +223,7 @@ fn cleanup_stale_socket(socket: &SocketName) {
         }
     }
 }
+
+/// 非 Unix 平台不会生成文件型 Unix socket；该分支只用于保持跨平台编译边界清晰。
+#[cfg(not(unix))]
+fn cleanup_stale_socket_file(_socket: &SocketName) {}

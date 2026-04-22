@@ -4,8 +4,7 @@ use tauri::State;
 
 use crate::app::error::AppError;
 use crate::application::inbox::{
-    list_inbox_tasks as list_inbox_tasks_usecase,
-    triage_inbox_task as triage_inbox_task_usecase,
+    list_inbox_tasks as list_inbox_tasks_usecase, triage_inbox_task as triage_inbox_task_usecase,
     InboxSnapshotPayload, ListInboxTasksInput, TriageInboxTaskInput, TriageInboxTaskPayload,
 };
 use crate::infrastructure::database::DatabaseState;

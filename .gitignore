@@ -17,7 +17,7 @@ coverage/
 
 # Rust / Tauri
 src-tauri/target/
-src-tauri/gen/schemas/
+src-tauri/**/gen/
 *.db
 *.db-shm
 *.db-wal

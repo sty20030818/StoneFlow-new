@@ -195,7 +195,9 @@ pub(crate) async fn delete_task_resource(
 }
 
 /// 将实体模型转为前端稳定载荷。
-pub(crate) fn map_task_resource(resource: stoneflow_entity::resource::Model) -> TaskResourcePayload {
+pub(crate) fn map_task_resource(
+    resource: stoneflow_entity::resource::Model,
+) -> TaskResourcePayload {
     TaskResourcePayload {
         id: resource.id,
         task_id: resource.task_id,
@@ -217,9 +219,9 @@ pub(crate) fn resolve_open_target(
 
     match resource_type {
         RESOURCE_TYPE_DOC_LINK => Ok(ResourceOpenTarget::Url(resource.target.clone())),
-        RESOURCE_TYPE_LOCAL_FILE | RESOURCE_TYPE_LOCAL_FOLDER => {
-            Ok(ResourceOpenTarget::Path(std::path::PathBuf::from(&resource.target)))
-        }
+        RESOURCE_TYPE_LOCAL_FILE | RESOURCE_TYPE_LOCAL_FOLDER => Ok(ResourceOpenTarget::Path(
+            std::path::PathBuf::from(&resource.target),
+        )),
         _ => unreachable!("resource type should be normalized before matching"),
     }
 }

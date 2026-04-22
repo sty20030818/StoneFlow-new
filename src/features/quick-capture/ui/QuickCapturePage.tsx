@@ -76,9 +76,9 @@ export function QuickCapturePage() {
 	}, [])
 
 	return (
-		// 已去阴影，外层只需极小 padding 防 ring 被窗口边缘裁切；背景透明。
+		// 已去阴影，卡片直接铺满窗口；避免 Windows 透明窗口露出一圈留白。
 		// 不使用 overflow-hidden 以防未来再加阴影/动画时出现裁切。
-		<div className='flex h-full min-h-0 items-stretch bg-transparent p-1'>
+		<div className='flex h-full min-h-0 items-stretch bg-transparent'>
 			<QuickCaptureSurface />
 		</div>
 	)

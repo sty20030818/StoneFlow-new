@@ -7,15 +7,14 @@ use crate::application::create::{
     create_project as create_project_usecase, CreateProjectInput, CreatedProjectPayload,
 };
 use crate::application::project::{
-    get_project_execution_view as get_view_usecase,
-    list_projects as list_projects_usecase,
-    update_project_task_status as update_status_usecase,
-    GetProjectExecutionViewInput, ListProjectsInput, ProjectExecutionViewPayload,
-    ProjectListPayload, UpdateProjectTaskStatusInput, UpdatedProjectTaskStatusPayload,
+    get_project_execution_view as get_view_usecase, list_projects as list_projects_usecase,
+    update_project_task_status as update_status_usecase, GetProjectExecutionViewInput,
+    ListProjectsInput, ProjectExecutionViewPayload, ProjectListPayload,
+    UpdateProjectTaskStatusInput, UpdatedProjectTaskStatusPayload,
 };
 use crate::application::trash::{
-    delete_project_to_trash as delete_project_usecase,
-    DeleteProjectToTrashInput, DeletedProjectToTrashPayload,
+    delete_project_to_trash as delete_project_usecase, DeleteProjectToTrashInput,
+    DeletedProjectToTrashPayload,
 };
 use crate::infrastructure::database::DatabaseState;
 
@@ -44,9 +43,7 @@ pub async fn get_project_execution_view(
     input: GetProjectExecutionViewInput,
     database: State<'_, DatabaseState>,
 ) -> Result<ProjectExecutionViewPayload, AppError> {
-    get_view_usecase(&database, input)
-        .await
-        .map_err(Into::into)
+    get_view_usecase(&database, input).await.map_err(Into::into)
 }
 
 #[tauri::command]

@@ -22,11 +22,14 @@ pub fn register_global_shortcut(app_handle: &AppHandle<tauri::Wry>) {
             #[cfg(target_os = "macos")]
             crate::panel::toggle_quick_capture_panel(&handle);
 
-            // 非 macOS 平台暂未实现 NSPanel 等价物；第一版不支持。
-            #[cfg(not(target_os = "macos"))]
+            #[cfg(target_os = "windows")]
+            crate::panel_windows::toggle_quick_capture_panel(&handle);
+
+            // 其他平台暂未定义 Quick Capture 浮窗语义。
+            #[cfg(not(any(target_os = "macos", target_os = "windows")))]
             {
                 let _ = &handle; // 消除未使用警告
-                log::warn!("helper: 非 macOS 平台暂不支持 Quick Capture NSPanel");
+                log::warn!("helper: 当前平台暂不支持 Quick Capture 浮窗");
             }
         },
     );

@@ -183,7 +183,9 @@ fn create_subproject_validates_parent_boundary() {
         )
         .await
         .expect_err("cross-space parent should be rejected");
-        assert!(cross_space_error.to_string().contains("does not belong to space"));
+        assert!(cross_space_error
+            .to_string()
+            .contains("does not belong to space"));
 
         delete_project_to_trash(
             &state,

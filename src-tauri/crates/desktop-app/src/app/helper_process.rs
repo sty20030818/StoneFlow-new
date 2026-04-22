@@ -8,7 +8,7 @@
 //! 设计取舍：不在主 App 里做自动重启（避免快捷键注册失败时反复重启拖慢启动），
 //! Helper 自身即使失败只影响 Quick Capture 功能本身，不影响主 App 使用。
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command};
 use std::sync::Mutex;
 
@@ -98,13 +98,14 @@ fn resolve_helper_binary_path() -> Result<PathBuf> {
             .ok_or_else(|| anyhow!("current exe has no parent dir"))?
             .to_path_buf();
         let sibling = sibling_dir.join(HELPER_BIN_NAME);
-        if sibling.exists() {
+        if sibling.exists() && !is_debug_helper_binary_stale(&sibling, &current_exe)? {
             return Ok(sibling);
         }
 
         // `tauri dev` 只会构建主 App 本身，不会顺带构建 Helper 二进制。
-        // 这里 dev 下做一次即时 `cargo build -p stoneflow-helper` 兜底：
+        // 这里 dev 下在二进制缺失或源码更新时做一次即时 `cargo build -p stoneflow-helper`：
         // - 首次启动会多等几秒（增量构建之后近乎瞬时）
+        // - Helper 源码改动后不会继续启动旧二进制，避免快捷键逻辑与源码脱节
         // - 未装 cargo 或 workspace 不完整的场景会返回友好错误，主 App 启动不受影响（Quick Capture 降级不可用）
         try_cargo_build_helper(&current_exe)?;
 
@@ -157,17 +158,8 @@ fn resolve_helper_binary_path() -> Result<PathBuf> {
 ///
 /// `--manifest-path` 从 `current_exe = <workspace>/target/debug/<bin>` 反推出
 /// `<workspace>/Cargo.toml`，避免依赖当前进程 cwd。
-fn try_cargo_build_helper(current_exe: &std::path::Path) -> Result<()> {
-    let workspace_root = current_exe
-        .parent() // target/debug
-        .and_then(|p| p.parent()) // target
-        .and_then(|p| p.parent()) // <workspace>
-        .ok_or_else(|| {
-            anyhow!(
-                "无法从主 App 可执行路径反推 workspace 根目录: {}",
-                current_exe.display()
-            )
-        })?;
+fn try_cargo_build_helper(current_exe: &Path) -> Result<()> {
+    let workspace_root = resolve_workspace_root_from_exe(current_exe)?;
     let manifest = workspace_root.join("Cargo.toml");
     if !manifest.exists() {
         return Err(anyhow!(
@@ -201,5 +193,94 @@ fn try_cargo_build_helper(current_exe: &std::path::Path) -> Result<()> {
         ));
     }
 
+    Ok(())
+}
+
+fn resolve_workspace_root_from_exe(current_exe: &Path) -> Result<PathBuf> {
+    current_exe
+        .parent() // target/debug
+        .and_then(|p| p.parent()) // target
+        .and_then(|p| p.parent()) // <workspace>
+        .map(Path::to_path_buf)
+        .ok_or_else(|| {
+            anyhow!(
+                "无法从主 App 可执行路径反推 workspace 根目录: {}",
+                current_exe.display()
+            )
+        })
+}
+
+/// Dev 模式下判断 Helper 二进制是否落后于 Helper 相关源码。
+fn is_debug_helper_binary_stale(binary: &Path, current_exe: &Path) -> Result<bool> {
+    let binary_modified = binary
+        .metadata()
+        .with_context(|| format!("读取 Helper 二进制元数据失败: {}", binary.display()))?
+        .modified()
+        .with_context(|| format!("读取 Helper 二进制修改时间失败: {}", binary.display()))?;
+    let workspace_root = resolve_workspace_root_from_exe(current_exe)?;
+
+    let mut newest_source = std::time::SystemTime::UNIX_EPOCH;
+    for path in [
+        workspace_root.join("Cargo.toml"),
+        workspace_root.join("helper-bin").join("Cargo.toml"),
+        workspace_root
+            .join("crates")
+            .join("helper-app")
+            .join("Cargo.toml"),
+    ] {
+        update_newest_modified(&path, &mut newest_source)?;
+    }
+
+    update_newest_modified_recursive(
+        &workspace_root.join("helper-bin").join("src"),
+        &mut newest_source,
+    )?;
+    update_newest_modified_recursive(
+        &workspace_root.join("crates").join("helper-app").join("src"),
+        &mut newest_source,
+    )?;
+
+    let stale = newest_source > binary_modified;
+    if stale {
+        log::info!(
+            "Helper 二进制已过期，将重新构建 (binary={}, binary_modified={binary_modified:?}, newest_source={newest_source:?})",
+            binary.display()
+        );
+    }
+    Ok(stale)
+}
+
+fn update_newest_modified(path: &Path, newest: &mut std::time::SystemTime) -> Result<()> {
+    if !path.exists() {
+        return Ok(());
+    }
+
+    let modified = path
+        .metadata()
+        .with_context(|| format!("读取文件元数据失败: {}", path.display()))?
+        .modified()
+        .with_context(|| format!("读取文件修改时间失败: {}", path.display()))?;
+    if modified > *newest {
+        *newest = modified;
+    }
+    Ok(())
+}
+
+fn update_newest_modified_recursive(path: &Path, newest: &mut std::time::SystemTime) -> Result<()> {
+    if !path.exists() {
+        return Ok(());
+    }
+
+    for entry in
+        std::fs::read_dir(path).with_context(|| format!("读取目录失败: {}", path.display()))?
+    {
+        let entry = entry.with_context(|| format!("读取目录项失败: {}", path.display()))?;
+        let entry_path = entry.path();
+        if entry_path.is_dir() {
+            update_newest_modified_recursive(&entry_path, newest)?;
+        } else {
+            update_newest_modified(&entry_path, newest)?;
+        }
+    }
     Ok(())
 }

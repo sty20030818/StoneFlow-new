@@ -140,7 +140,7 @@ function toCreatedPayloadFromHelper(
 		projectId: null,
 		title: payload.title,
 		status: 'inbox',
-		priority: input.priority?.trim() ? input.priority ?? null : null,
+		priority: input.priority?.trim() ? (input.priority ?? null) : null,
 		note: input.note ?? null,
 		source: 'quick-capture',
 		spaceFallback: payload.space_fallback,

@@ -16,8 +16,8 @@ use crate::application::resource::{map_task_resource, TaskResourcePayload};
 use crate::infrastructure::{
     database::DatabaseState,
     repositories::{
-        ProjectRepository, ResourceRepository, SpaceRepository, TaskRepository, TrashEntryRepository,
-        UpdateTaskDrawerFieldsParams,
+        ProjectRepository, ResourceRepository, SpaceRepository, TaskRepository,
+        TrashEntryRepository, UpdateTaskDrawerFieldsParams,
     },
 };
 

@@ -6,9 +6,9 @@ use crate::app::error::AppError;
 use crate::application::trash::{
     list_trash_entries as list_trash_entries_usecase,
     restore_project_from_trash as restore_project_usecase,
-    restore_task_from_trash as restore_task_usecase,
-    ListTrashEntriesInput, RestoreProjectFromTrashInput, RestoreTaskFromTrashInput,
-    RestoredTrashEntryPayload, TrashListPayload,
+    restore_task_from_trash as restore_task_usecase, ListTrashEntriesInput,
+    RestoreProjectFromTrashInput, RestoreTaskFromTrashInput, RestoredTrashEntryPayload,
+    TrashListPayload,
 };
 use crate::infrastructure::database::DatabaseState;
 
