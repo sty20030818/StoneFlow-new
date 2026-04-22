@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { listen } from '@tauri-apps/api/event'
 import {
 	AlertTriangleIcon,
 	CheckCircle2Icon,
@@ -57,8 +58,19 @@ function getSuccessMessage(payload: CreatedCaptureTaskPayload) {
 }
 
 export function QuickCapturePage() {
+	// 挂载/卸载时在 body 上打标，使全局 body[data-quick-capture] 透明样式生效。
+	// 避免 body 的 bg-background 盖掉 Tauri 窗口 transparent(true)，造成卡片外出现灰白一圈。
+	useEffect(() => {
+		document.body.dataset.quickCapture = 'true'
+		return () => {
+			delete document.body.dataset.quickCapture
+		}
+	}, [])
+
 	return (
-		<div className='flex h-full min-h-0 items-stretch overflow-hidden bg-[#eceef2] p-2'>
+		// 已去阴影，外层只需极小 padding 防 ring 被窗口边缘裁切；背景透明。
+		// 不使用 overflow-hidden 以防未来再加阴影/动画时出现裁切。
+		<div className='flex h-full min-h-0 items-stretch bg-transparent p-1'>
 			<QuickCaptureSurface />
 		</div>
 	)
@@ -94,9 +106,8 @@ export function QuickCaptureSurface({
 		void closeWindow()
 	}, [closeWindow])
 
-	// 每次窗口重新获得焦点（Option+Space 呼出）时重置为初始状态，
-	// 确保即使上次提交成功/失败，再次打开也是空白干净的输入框。
-	const handleWindowFocus = useCallback(() => {
+	// 每次面板被呼出时重置为初始状态，确保每次打开都是空白干净的输入框。
+	const handlePanelShown = useCallback(() => {
 		setTitle('')
 		setStatus('idle')
 		setMessage('写入当前 Space 的 Inbox')
@@ -104,31 +115,28 @@ export function QuickCaptureSurface({
 	}, [focusInput])
 
 	useEffect(() => {
-		handleWindowFocus()
-		window.addEventListener('focus', handleWindowFocus)
+		// 首次挂载时立即重置并聚焦。
+		handlePanelShown()
+
+		// macOS：监听 Rust 侧发出的 `quick-capture:shown` 自定义事件。
+		// show_and_make_key() 不保证 WKWebView 的 window.focus 一定触发（尤其在全屏 Space），
+		// 用 Tauri 事件作为可靠的驱动源。
+		let unlistenTauri: (() => void) | undefined
+		listen<void>('quick-capture:shown', handlePanelShown).then((fn) => {
+			unlistenTauri = fn
+		})
+
+		// 非 macOS 或 Tauri 事件未触发时的兜底：监听 DOM window.focus 事件。
+		window.addEventListener('focus', handlePanelShown)
 
 		return () => {
-			window.removeEventListener('focus', handleWindowFocus)
+			unlistenTauri?.()
+			window.removeEventListener('focus', handlePanelShown)
 			if (closeTimerRef.current !== null) {
 				window.clearTimeout(closeTimerRef.current)
 			}
 		}
-	}, [handleWindowFocus])
-
-	// 兜底：焦点不在 input 时（如拖拽标题栏后）document 级 Esc 仍可关窗。
-	useEffect(() => {
-		const handleDocumentKeyDown = (event: KeyboardEvent) => {
-			if (event.key === 'Escape') {
-				event.preventDefault()
-				requestClose()
-			}
-		}
-
-		document.addEventListener('keydown', handleDocumentKeyDown)
-		return () => {
-			document.removeEventListener('keydown', handleDocumentKeyDown)
-		}
-	}, [requestClose])
+	}, [handlePanelShown])
 
 	const submit = useCallback(async () => {
 		if (isSubmitting) {
@@ -170,14 +178,9 @@ export function QuickCaptureSurface({
 	}, [closeDelayMs, createTask, focusInput, isSubmitting, requestClose, trimmedTitle])
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-		if (event.key === 'Escape') {
-			event.preventDefault()
-			// 阻止冒泡，避免 document 级兜底监听器重复触发关闭。
-			event.stopPropagation()
-			requestClose()
-			return
-		}
-
+		// 关闭面板仅通过：Option+Space 再次切换 / 点击面板外失焦。
+		// 不再处理 Esc：panel 未被设为 key window，键盘事件链不稳定，
+		// 保留 Esc 会导致行为时好时坏，索性统一入口。
 		if (event.key === 'Enter') {
 			event.preventDefault()
 			void submit()
@@ -187,7 +190,8 @@ export function QuickCaptureSurface({
 	return (
 		<section
 			aria-label='Quick Capture'
-			className='flex min-h-0 w-full flex-col overflow-hidden rounded-[13px] border border-[#d6d9e0] bg-[#fcfcfd] shadow-[0_16px_40px_rgba(10,15,40,0.12),0_2px_8px_rgba(10,15,40,0.06)]'
+			// 无阴影方案：单层 1px 极淡边框勾勒卡片轮廓，不叠 ring。
+			className='flex min-h-0 w-full flex-col overflow-hidden rounded-[13px] border border-black/10 bg-[#fcfcfd]'
 		>
 			<div
 				className='flex items-center justify-between border-b border-[#eaecf0] px-3 py-2'
