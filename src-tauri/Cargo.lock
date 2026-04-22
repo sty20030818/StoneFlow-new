@@ -4898,6 +4898,7 @@ dependencies = [
  "tauri-plugin-log",
  "thiserror 1.0.69",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

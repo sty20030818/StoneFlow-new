@@ -30,6 +30,12 @@ pub enum IpcRequest {
     GetActiveSpace,
     /// 请求创建一条 Quick Capture 任务。
     CreateTask(CreateTaskPayload),
+    /// 在当前捕获 Space 内搜索 Task / Project。
+    SearchWorkspace(SearchWorkspacePayload),
+    /// 请求主 App 打开一个 Task。
+    OpenTask(OpenTaskPayload),
+    /// 请求主 App 打开一个 Project。
+    OpenProject(OpenProjectPayload),
 }
 
 /// 创建任务的输入载荷，语义对应主 App `create_capture_task_usecase` 的入参。
@@ -42,6 +48,25 @@ pub struct CreateTaskPayload {
     pub priority: Option<String>,
 }
 
+/// Helper 搜索请求。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SearchWorkspacePayload {
+    pub query: String,
+    pub limit: u64,
+}
+
+/// 打开 Task 的请求。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct OpenTaskPayload {
+    pub task_id: Uuid,
+}
+
+/// 打开 Project 的请求。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct OpenProjectPayload {
+    pub project_id: Uuid,
+}
+
 /// 主 App → Helper 的响应。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -52,6 +77,10 @@ pub enum IpcResponse {
     ActiveSpace { space_slug: Option<String> },
     /// 创建成功的任务摘要。
     TaskCreated(TaskCreatedPayload),
+    /// 当前捕获 Space 内的轻量搜索结果。
+    WorkspaceSearch(WorkspaceSearchResultPayload),
+    /// 打开请求已转交主 App。
+    Opened,
     /// 处理失败，返回结构化错误。
     Error(IpcError),
 }
@@ -67,6 +96,41 @@ pub struct TaskCreatedPayload {
     #[serde(default)]
     pub space_slug: Option<String>,
     pub space_fallback: bool,
+}
+
+/// Helper 侧搜索结果。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WorkspaceSearchResultPayload {
+    pub space_slug: String,
+    pub tasks: Vec<WorkspaceTaskSearchItemPayload>,
+    pub projects: Vec<WorkspaceProjectSearchItemPayload>,
+}
+
+/// Task 搜索结果的 IPC 载荷。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WorkspaceTaskSearchItemPayload {
+    pub id: Uuid,
+    pub title: String,
+    #[serde(default)]
+    pub note: Option<String>,
+    #[serde(default)]
+    pub priority: Option<String>,
+    #[serde(default)]
+    pub project_id: Option<Uuid>,
+    #[serde(default)]
+    pub project_name: Option<String>,
+    pub updated_at: String,
+}
+
+/// Project 搜索结果的 IPC 载荷。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WorkspaceProjectSearchItemPayload {
+    pub id: Uuid,
+    pub name: String,
+    #[serde(default)]
+    pub note: Option<String>,
+    pub status: String,
+    pub sort_order: i32,
 }
 
 /// IPC 通道上承载的业务错误。

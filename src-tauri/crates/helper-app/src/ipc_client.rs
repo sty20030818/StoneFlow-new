@@ -13,8 +13,10 @@ use interprocess::local_socket::{
     GenericFilePath, GenericNamespaced, ToFsName, ToNsName,
 };
 use stoneflow_ipc_protocol::{
-    socket_name, CreateTaskPayload, IpcError, IpcRequest, IpcResponse, SocketName,
-    TaskCreatedPayload, DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS, MAX_FRAME_BYTES,
+    socket_name, CreateTaskPayload, IpcError, IpcRequest, IpcResponse, OpenProjectPayload,
+    OpenTaskPayload, SearchWorkspacePayload, SocketName, TaskCreatedPayload,
+    WorkspaceSearchResultPayload, DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS,
+    MAX_FRAME_BYTES,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::time::timeout;
@@ -37,6 +39,41 @@ pub async fn create_task(payload: CreateTaskPayload) -> Result<TaskCreatedPayloa
         IpcResponse::Error(err) => Err(err),
         other => Err(IpcError::Internal(format!(
             "unexpected ipc response for CreateTask: {other:?}"
+        ))),
+    }
+}
+
+/// 搜索主 App 当前捕获 Space 的 Task / Project。
+pub async fn search_workspace(
+    payload: SearchWorkspacePayload,
+) -> Result<WorkspaceSearchResultPayload, IpcError> {
+    match round_trip(IpcRequest::SearchWorkspace(payload)).await? {
+        IpcResponse::WorkspaceSearch(p) => Ok(p),
+        IpcResponse::Error(err) => Err(err),
+        other => Err(IpcError::Internal(format!(
+            "unexpected ipc response for SearchWorkspace: {other:?}"
+        ))),
+    }
+}
+
+/// 请求主 App 打开指定 Task。
+pub async fn open_task(payload: OpenTaskPayload) -> Result<(), IpcError> {
+    match round_trip(IpcRequest::OpenTask(payload)).await? {
+        IpcResponse::Opened => Ok(()),
+        IpcResponse::Error(err) => Err(err),
+        other => Err(IpcError::Internal(format!(
+            "unexpected ipc response for OpenTask: {other:?}"
+        ))),
+    }
+}
+
+/// 请求主 App 打开指定 Project。
+pub async fn open_project(payload: OpenProjectPayload) -> Result<(), IpcError> {
+    match round_trip(IpcRequest::OpenProject(payload)).await? {
+        IpcResponse::Opened => Ok(()),
+        IpcResponse::Error(err) => Err(err),
+        other => Err(IpcError::Internal(format!(
+            "unexpected ipc response for OpenProject: {other:?}"
         ))),
     }
 }

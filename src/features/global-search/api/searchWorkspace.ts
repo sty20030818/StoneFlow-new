@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 
 export type WorkspaceTaskSearchItem = {
 	id: string
@@ -19,6 +20,7 @@ export type WorkspaceProjectSearchItem = {
 }
 
 export type WorkspaceSearchResult = {
+	spaceSlug?: string | null
 	tasks: WorkspaceTaskSearchItem[]
 	projects: WorkspaceProjectSearchItem[]
 }
@@ -48,25 +50,46 @@ type SearchWorkspaceProjectResponse = {
 }
 
 type SearchWorkspaceResponse = {
+	space_slug?: string
 	tasks: SearchWorkspaceTaskResponse[]
 	projects: SearchWorkspaceProjectResponse[]
 }
 
 const DEFAULT_LIMIT = 5
+const HELPER_WINDOW_LABEL = 'quick-capture'
+
+function isRunningInHelperWindow(): boolean {
+	try {
+		return getCurrentWindow().label === HELPER_WINDOW_LABEL
+	} catch {
+		return false
+	}
+}
 
 /**
  * 查询当前 Space 的 Task / Project 轻量实时搜索结果。
  */
-export async function searchWorkspace(input: SearchWorkspaceCommandInput) {
-	const payload = await invoke<SearchWorkspaceResponse>('search_workspace', {
-		input: {
-			space_slug: input.spaceSlug,
-			query: input.query,
-			limit: input.limit ?? DEFAULT_LIMIT,
-		},
+export async function searchWorkspace(
+	input: SearchWorkspaceCommandInput,
+): Promise<WorkspaceSearchResult> {
+	const commandName = isRunningInHelperWindow() ? 'helper_search_workspace' : 'search_workspace'
+	const commandInput = isRunningInHelperWindow()
+		? {
+				query: input.query,
+				limit: input.limit ?? DEFAULT_LIMIT,
+			}
+		: {
+				space_slug: input.spaceSlug,
+				query: input.query,
+				limit: input.limit ?? DEFAULT_LIMIT,
+			}
+
+	const payload = await invoke<SearchWorkspaceResponse>(commandName, {
+		input: commandInput,
 	})
 
 	return {
+		spaceSlug: payload.space_slug ?? null,
 		tasks: payload.tasks.map((task) => ({
 			id: task.id,
 			title: task.title,

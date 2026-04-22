@@ -1,38 +1,78 @@
 import {
 	useCallback,
 	useEffect,
+	useMemo,
 	useRef,
 	useState,
 	type KeyboardEvent,
 	type PointerEvent as ReactPointerEvent,
+	type ReactNode,
 } from 'react'
-import { getCurrentWindow } from '@tauri-apps/api/window'
 import { listen } from '@tauri-apps/api/event'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
 	AlertTriangleIcon,
 	CheckCircle2Icon,
+	CircleIcon,
+	FolderIcon,
 	LoaderCircleIcon,
-	SendHorizontalIcon,
+	PlusIcon,
+	SearchIcon,
 } from 'lucide-react'
 
 import {
 	createCaptureTask,
 	normalizeCaptureTaskError,
+	type CreateCaptureTaskCommandInput,
 	type CreatedCaptureTaskPayload,
 } from '@/features/quick-capture/api/createCaptureTask'
+import { openCommandProject, openCommandTask } from '@/features/quick-capture/api/openCommandResult'
+import {
+	searchWorkspace,
+	type WorkspaceProjectSearchItem,
+	type WorkspaceSearchResult,
+	type WorkspaceTaskSearchItem,
+} from '@/features/global-search/api/searchWorkspace'
 import { Button } from '@/shared/ui/base/button'
 import { Kbd } from '@/shared/ui/base/kbd'
 import { cn } from '@/shared/lib/utils'
 
-type QuickCaptureStatus = 'idle' | 'submitting' | 'success' | 'error'
+type CommandMode = 'idle' | 'search' | 'create'
+type CommandPriority = 'P0' | 'P1' | 'P2' | 'P3'
+type CommandStatus = 'idle' | 'submitting' | 'success' | 'error'
+type CommandResultItem =
+	| ({ kind: 'task' } & WorkspaceTaskSearchItem)
+	| ({ kind: 'project' } & WorkspaceProjectSearchItem)
 
 type QuickCaptureSurfaceProps = {
-	createTask?: typeof createCaptureTask
+	createTask?: (input: CreateCaptureTaskCommandInput) => Promise<CreatedCaptureTaskPayload>
+	search?: typeof searchWorkspace
+	openTask?: (taskId: string) => Promise<void>
+	openProject?: (projectId: string) => Promise<void>
 	closeWindow?: () => Promise<void> | void
 	closeDelayMs?: number
 }
 
 const DEFAULT_CLOSE_DELAY_MS = 900
+const SEARCH_LIMIT = 5
+const EMPTY_RESULTS: WorkspaceSearchResult = {
+	spaceSlug: null,
+	tasks: [],
+	projects: [],
+}
+const PRIORITIES: CommandPriority[] = ['P0', 'P1', 'P2', 'P3']
+const PRIORITY_TO_PAYLOAD: Record<CommandPriority, string> = {
+	P0: 'urgent',
+	P1: 'high',
+	P2: 'medium',
+	P3: 'low',
+}
+const PRIORITY_CLASS: Record<CommandPriority, string> = {
+	P0: 'border-[#f1a5a5] bg-[#ffe8e8] text-[#b83232]',
+	P1: 'border-[#f0bf84] bg-[#fff0de] text-[#a85500]',
+	P2: 'border-[#aebcff] bg-[#ecf0ff] text-[#3049d1]',
+	P3: 'border-[#d4d9e4] bg-[#f2f4f8] text-[#5c6478]',
+}
 
 const ERROR_MESSAGES: Record<string, string> = {
 	Validation: '请输入一个可以捕获的任务标题。',
@@ -42,7 +82,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 }
 
 function closeCurrentWindow() {
-	// 隐藏而非销毁：面板实例常驻内存，保证 toggle（Option+Space）能复用。
+	// 隐藏而非销毁：面板实例常驻内存，保证全局快捷键 toggle 时能快速复用。
 	return getCurrentWindow().hide()
 }
 
@@ -53,7 +93,7 @@ function getErrorMessage(error: unknown) {
 		return ERROR_MESSAGES[normalized.type] ?? normalized.message
 	}
 
-	return normalized.message || '捕获失败，请稍后重试。'
+	return normalized.message || '操作失败，请稍后重试。'
 }
 
 function getSuccessMessage(payload: CreatedCaptureTaskPayload) {
@@ -65,9 +105,6 @@ function getSuccessMessage(payload: CreatedCaptureTaskPayload) {
 }
 
 export function QuickCapturePage() {
-	// Quick Capture 面板只在 Helper 进程的窗口里被渲染（主 App 不再挂载 `/quick-capture`）。
-	// 此处给 `body` 打 data-quick-capture 标志只是让 Helper 窗口的 body/#root 透明，
-	// 避免 body 的 bg-background 盖掉 Tauri 窗口 transparent(true) 造成卡片外出现灰白一圈。
 	useEffect(() => {
 		document.body.dataset.quickCapture = 'true'
 		return () => {
@@ -76,9 +113,7 @@ export function QuickCapturePage() {
 	}, [])
 
 	return (
-		// 已去阴影，卡片直接铺满窗口；避免 Windows 透明窗口露出一圈留白。
-		// 不使用 overflow-hidden 以防未来再加阴影/动画时出现裁切。
-		<div className='flex h-full min-h-0 items-stretch bg-transparent'>
+		<div className='flex h-full min-h-0 items-stretch bg-transparent p-[3px]'>
 			<QuickCaptureSurface />
 		</div>
 	)
@@ -86,24 +121,38 @@ export function QuickCapturePage() {
 
 export function QuickCaptureSurface({
 	createTask = createCaptureTask,
+	search = searchWorkspace,
+	openTask = openCommandTask,
+	openProject = openCommandProject,
 	closeWindow = closeCurrentWindow,
 	closeDelayMs = DEFAULT_CLOSE_DELAY_MS,
 }: QuickCaptureSurfaceProps) {
 	const inputRef = useRef<HTMLInputElement>(null)
 	const closeTimerRef = useRef<number | null>(null)
-	const [title, setTitle] = useState('')
-	const [status, setStatus] = useState<QuickCaptureStatus>('idle')
-	const [message, setMessage] = useState('写入当前 Space 的 Inbox')
-
-	const isSubmitting = status === 'submitting'
-	const trimmedTitle = title.trim()
+	const requestIdRef = useRef(0)
+	const [query, setQuery] = useState('')
+	const [priority, setPriority] = useState<CommandPriority>('P1')
+	const [results, setResults] = useState<WorkspaceSearchResult>(EMPTY_RESULTS)
+	const [highlightedIndex, setHighlightedIndex] = useState(0)
+	const [isLoading, setIsLoading] = useState(false)
+	const [status, setStatus] = useState<CommandStatus>('idle')
+	const [message, setMessage] = useState('输入标题创建，或搜索已有任务与项目')
+	const normalizedQuery = query.trim()
+	const hasResults = results.tasks.length > 0 || results.projects.length > 0
+	const mode: CommandMode = !normalizedQuery
+		? 'idle'
+		: hasResults || isLoading
+			? 'search'
+			: 'create'
+	const flatItems = useMemo<CommandResultItem[]>(
+		() => [
+			...results.tasks.map((item) => ({ kind: 'task' as const, ...item })),
+			...results.projects.map((item) => ({ kind: 'project' as const, ...item })),
+		],
+		[results.projects, results.tasks],
+	)
 
 	const focusInput = useCallback(() => {
-		// 用双帧 requestAnimationFrame 替代 setTimeout(0)：
-		// `quick-capture:shown` 事件是 Rust 在 `windowDidBecomeKey:` 回调里发出的，
-		// 此时 NSPanel 刚进 key 状态、WKWebView 的 first responder 还在切换。
-		// 直接同步 focus 大概率会被 WKWebView 的 responder swap 吃掉；
-		// 双帧足够让一次 layout + responder 切换完成，input.focus() 才会稳定命中。
 		window.requestAnimationFrame(() => {
 			window.requestAnimationFrame(() => {
 				inputRef.current?.focus()
@@ -121,45 +170,37 @@ export function QuickCaptureSurface({
 		void closeWindow()
 	}, [closeWindow])
 
-	// 每次面板被呼出时重置为初始状态，确保每次打开都是空白干净的输入框。
-	const handlePanelShown = useCallback(() => {
-		setTitle('')
+	const resetPanel = useCallback(() => {
+		requestIdRef.current += 1
+		setQuery('')
+		setPriority('P1')
+		setResults(EMPTY_RESULTS)
+		setHighlightedIndex(0)
+		setIsLoading(false)
 		setStatus('idle')
-		setMessage('写入当前 Space 的 Inbox')
+		setMessage('输入标题创建，或搜索已有任务与项目')
 		focusInput()
 	}, [focusInput])
 
 	useEffect(() => {
-		// 首次挂载时立即重置并聚焦。
-		handlePanelShown()
+		resetPanel()
 
-		// macOS：监听 Rust 侧发出的 `quick-capture:shown` 自定义事件。
-		// show_and_make_key() 不保证 WKWebView 的 window.focus 一定触发（尤其在全屏 Space），
-		// 用 Tauri 事件作为可靠的驱动源。
 		let unlistenTauri: (() => void) | undefined
-		listen<void>('quick-capture:shown', handlePanelShown).then((fn) => {
+		listen<void>('quick-capture:shown', resetPanel).then((fn) => {
 			unlistenTauri = fn
 		})
 
-		// 非 macOS 或 Tauri 事件未触发时的兜底：监听 DOM window.focus 事件。
-		window.addEventListener('focus', handlePanelShown)
+		window.addEventListener('focus', resetPanel)
 
 		return () => {
 			unlistenTauri?.()
-			window.removeEventListener('focus', handlePanelShown)
+			window.removeEventListener('focus', resetPanel)
 			if (closeTimerRef.current !== null) {
 				window.clearTimeout(closeTimerRef.current)
 			}
 		}
-	}, [handlePanelShown])
+	}, [resetPanel])
 
-	// Esc 统一挂在 document 级：
-	// 面板内任何区域（标题栏 drag-region / 提示文字 / 空白）被点击后，
-	// <input> 都可能失去 DOM focus，绑在 `<input onKeyDown>` 上的 Esc 会收不到。
-	// 只要 panel 仍是 key window，WebView 就能收到 document-level keydown，
-	// 这是唯一与 UI 焦点解耦的可靠入口。
-	// 面板关闭是幂等的（只是 hide），下次 becomeKey 时 handlePanelShown 会清空并重置，
-	// 所以「先关闭、下次打开已干净」= 用户要的"先关闭再清空"语义，无需显式清空。
 	useEffect(() => {
 		const onDocKeyDown = (event: globalThis.KeyboardEvent) => {
 			if (event.key !== 'Escape') return
@@ -170,27 +211,71 @@ export function QuickCaptureSurface({
 		return () => document.removeEventListener('keydown', onDocKeyDown)
 	}, [requestClose])
 
-	// 面板内"空白/非交互区域"被按下时，把 DOM focus 拉回输入框。
-	// 触发条件：target 不是可交互控件（button / input / textarea / select / [contenteditable]）。
-	// 对这些非交互区域 preventDefault 可避免浏览器把 focus 转移到 document.body / WebView，
-	// 从而保证 Esc 与继续打字都能立刻工作（Raycast / Spotlight 同款体验）。
-	// 注意：按钮 / 输入框本身不进此分支，它们的原生 click / focus / selection 行为不受影响。
-	const handleSurfacePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-		const target = event.target as HTMLElement | null
-		if (!target) return
-		if (target.closest('button, input, textarea, select, [contenteditable="true"]')) {
+	useEffect(() => {
+		if (!normalizedQuery) {
+			requestIdRef.current += 1
+			setResults(EMPTY_RESULTS)
+			setIsLoading(false)
+			setHighlightedIndex(0)
 			return
 		}
-		event.preventDefault()
-		inputRef.current?.focus()
+
+		const currentRequestId = requestIdRef.current + 1
+		requestIdRef.current = currentRequestId
+		setIsLoading(true)
+
+		const timerId = window.setTimeout(() => {
+			void search({
+				spaceSlug: 'default',
+				query: normalizedQuery,
+				limit: SEARCH_LIMIT,
+			})
+				.then((payload) => {
+					if (requestIdRef.current !== currentRequestId) return
+					setResults(payload)
+					setHighlightedIndex(0)
+					setStatus('idle')
+					setMessage('输入标题创建，或搜索已有任务与项目')
+				})
+				.catch((error) => {
+					if (requestIdRef.current !== currentRequestId) return
+					setResults(EMPTY_RESULTS)
+					setStatus('error')
+					setMessage(getErrorMessage(error))
+				})
+				.finally(() => {
+					if (requestIdRef.current === currentRequestId) {
+						setIsLoading(false)
+					}
+				})
+		}, 120)
+
+		return () => window.clearTimeout(timerId)
+	}, [normalizedQuery, search])
+
+	const cyclePriority = useCallback(() => {
+		setPriority((current) => {
+			const currentIndex = PRIORITIES.indexOf(current)
+			return PRIORITIES[(currentIndex + 1) % PRIORITIES.length]
+		})
 	}, [])
 
-	const submit = useCallback(async () => {
-		if (isSubmitting) {
-			return
-		}
+	const moveHighlight = useCallback(
+		(direction: 1 | -1) => {
+			if (flatItems.length === 0) return
+			setHighlightedIndex((currentIndex) => {
+				const nextIndex = currentIndex + direction
+				if (nextIndex < 0) return flatItems.length - 1
+				if (nextIndex >= flatItems.length) return 0
+				return nextIndex
+			})
+		},
+		[flatItems.length],
+	)
 
-		if (!trimmedTitle) {
+	const submitCreate = useCallback(async () => {
+		if (status === 'submitting') return
+		if (!normalizedQuery) {
 			setStatus('error')
 			setMessage('请输入任务标题')
 			focusInput()
@@ -202,12 +287,13 @@ export function QuickCaptureSurface({
 
 		try {
 			const payload = await createTask({
-				title: trimmedTitle,
+				title: normalizedQuery,
 				note: null,
-				priority: null,
+				priority: PRIORITY_TO_PAYLOAD[priority],
 			})
 
-			setTitle('')
+			setQuery('')
+			setResults(EMPTY_RESULTS)
 			setStatus('success')
 			setMessage(getSuccessMessage(payload))
 
@@ -222,94 +308,383 @@ export function QuickCaptureSurface({
 			setMessage(getErrorMessage(error))
 			focusInput()
 		}
-	}, [closeDelayMs, createTask, focusInput, isSubmitting, requestClose, trimmedTitle])
+	}, [closeDelayMs, createTask, focusInput, normalizedQuery, priority, requestClose, status])
+
+	const openResult = useCallback(
+		async (item: CommandResultItem) => {
+			setStatus('submitting')
+			setMessage(item.kind === 'task' ? '正在打开任务...' : '正在打开项目...')
+
+			try {
+				if (item.kind === 'task') {
+					await openTask(item.id)
+				} else {
+					await openProject(item.id)
+				}
+				requestClose()
+			} catch (error) {
+				setStatus('error')
+				setMessage(getErrorMessage(error))
+				focusInput()
+			}
+		},
+		[focusInput, openProject, openTask, requestClose],
+	)
+
+	const executePrimaryAction = useCallback(() => {
+		if (mode === 'search') {
+			const activeItem = flatItems[highlightedIndex]
+			if (activeItem) {
+				void openResult(activeItem)
+			}
+			return
+		}
+
+		if (mode === 'create') {
+			void submitCreate()
+		}
+	}, [flatItems, highlightedIndex, mode, openResult, submitCreate])
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-		// Esc 由 document-level listener 统一处理（与 UI focus 解耦），
-		// 这里只负责 Enter 提交（Enter 按语义就该在输入框聚焦时才触发）。
 		if (event.key === 'Enter') {
 			event.preventDefault()
-			void submit()
+			executePrimaryAction()
+			return
+		}
+
+		if (event.key === 'ArrowDown') {
+			event.preventDefault()
+			moveHighlight(1)
+			return
+		}
+
+		if (event.key === 'ArrowUp') {
+			event.preventDefault()
+			moveHighlight(-1)
+			return
+		}
+
+		if (event.key === 'Tab' && mode === 'create') {
+			event.preventDefault()
+			cyclePriority()
 		}
 	}
 
+	const handleSurfacePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+		const target = event.target as HTMLElement | null
+		if (!target) return
+		if (target.closest('button, input, textarea, select, [contenteditable="true"]')) {
+			return
+		}
+		event.preventDefault()
+		inputRef.current?.focus()
+	}, [])
+
 	return (
 		<section
-			aria-label='Quick Capture'
-			// 无阴影方案：单层 1px 极淡边框勾勒卡片轮廓，不叠 ring。
-			className='flex min-h-0 w-full flex-col overflow-hidden rounded-[13px] border border-black/10 bg-[#fcfcfd]'
+			aria-label='StoneFlow Command'
+			className='flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[14px] border border-[#d6d9e0] bg-[#fcfcfd] text-[#141720] shadow-[0_16px_40px_rgba(10,15,40,0.12),0_2px_8px_rgba(10,15,40,0.06)]'
 			onPointerDown={handleSurfacePointerDown}
 		>
-			<div
-				className='flex items-center justify-between border-b border-[#eaecf0] px-3 py-2'
-				data-tauri-drag-region
-			>
-				<div className='flex min-w-0 items-center gap-2' data-tauri-drag-region>
-					<span className='size-2 rounded-full bg-primary ring-3 ring-primary/15' />
-					<div className='min-w-0' data-tauri-drag-region>
-						<h1 className='truncate text-[12px] font-semibold text-foreground'>Quick Capture</h1>
-						<p className='truncate text-[11px] text-(--sf-color-text-tertiary)'>一句话写入 Inbox</p>
-					</div>
-				</div>
-				<div className='flex items-center gap-1.5 text-[11px] text-(--sf-color-text-tertiary)'>
-					<Kbd>Enter</Kbd>
-					<span>创建</span>
-					<Kbd>Esc</Kbd>
-				</div>
-			</div>
-
-			<div className='flex min-h-0 flex-1 flex-col gap-3 px-3 py-3'>
-				<div className='flex h-11 items-center gap-2 rounded-[10px] border border-[#d0d4dc] bg-white px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] focus-within:border-primary focus-within:ring-3 focus-within:ring-primary/12'>
+			<div className='flex items-center gap-2 border-b border-[#eaecf0] px-3.5 py-3'>
+				<div className='flex h-9 flex-1 items-center gap-2 rounded-[8px] border border-[#d0d4dc] bg-white px-3 transition-colors focus-within:border-[#6b8aff] focus-within:ring-3 focus-within:ring-[#6b8aff]/14'>
+					<SearchIcon className='size-3.5 shrink-0 text-[#9099ac]' />
 					<input
 						ref={inputRef}
-						aria-label='任务标题'
-						className='min-w-0 flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-(--sf-color-text-tertiary)'
-						disabled={isSubmitting}
+						aria-label='Command 输入'
+						autoComplete='off'
+						className='min-w-0 flex-1 bg-transparent text-[13.5px] text-[#141720] outline-none placeholder:text-[#a8b0c2]'
+						disabled={status === 'submitting'}
 						onChange={(event) => {
-							setTitle(event.target.value)
+							setQuery(event.target.value)
 							if (status === 'error') {
 								setStatus('idle')
-								setMessage('写入当前 Space 的 Inbox')
+								setMessage('输入标题创建，或搜索已有任务与项目')
 							}
 						}}
 						onKeyDown={handleKeyDown}
-						placeholder='输入任务标题'
+						placeholder='输入任务标题，或搜索已有任务、项目...'
 						spellCheck={false}
-						value={title}
+						value={query}
 					/>
-					<Button
-						aria-label='创建捕获任务'
-						className='h-8 min-w-18 gap-1.5 rounded-[8px] px-2.5 text-[12px]'
-						disabled={isSubmitting}
-						onClick={() => void submit()}
-						size='sm'
-					>
-						{isSubmitting ? (
-							<LoaderCircleIcon className='size-3.5 animate-spin' />
-						) : (
-							<SendHorizontalIcon className='size-3.5' />
-						)}
-						<span>{isSubmitting ? '写入中' : '创建'}</span>
-					</Button>
 				</div>
 
-				<div
-					aria-live='polite'
+				<Button
 					className={cn(
-						'flex min-h-6 items-center gap-1.5 text-[12px]',
-						status === 'error'
-							? 'text-destructive'
-							: status === 'success'
-								? 'text-success-foreground'
-								: 'text-(--sf-color-text-secondary)',
+						'h-9 min-w-22 gap-1.5 rounded-[8px] px-3 text-[12px]',
+						mode === 'create'
+							? 'bg-[#4c6fff] text-white hover:bg-[#3b5eee]'
+							: 'border border-[#d0d4dc] bg-white text-[#5c6478] hover:border-[#9aadff] hover:bg-[#f5f7ff] hover:text-[#3a5eff]',
 					)}
+					disabled={status === 'submitting' || mode === 'idle'}
+					onClick={executePrimaryAction}
+					variant={mode === 'create' ? 'default' : 'ghost'}
 				>
-					{status === 'error' ? <AlertTriangleIcon className='size-3.5' /> : null}
-					{status === 'success' ? <CheckCircle2Icon className='size-3.5' /> : null}
-					{status === 'submitting' ? <LoaderCircleIcon className='size-3.5 animate-spin' /> : null}
-					<span>{message}</span>
+					{status === 'submitting' ? (
+						<LoaderCircleIcon className='size-3.5 animate-spin' />
+					) : mode === 'create' ? (
+						<PlusIcon className='size-3.5' />
+					) : (
+						<SearchIcon className='size-3.5' />
+					)}
+					<span>{mode === 'create' ? '创建任务' : '打开'}</span>
+				</Button>
+			</div>
+
+			{mode === 'create' ? (
+				<div className='flex h-11 items-center gap-2 overflow-hidden border-b border-[#eaecf0] px-3.5'>
+					<span className='shrink-0 text-[11.5px] text-[#a0a8b8]'>优先级</span>
+					{PRIORITIES.map((item) => (
+						<button
+							key={item}
+							className={cn(
+								'h-6 rounded-[6px] border px-2.5 font-mono text-[11.5px] font-semibold transition-opacity',
+								PRIORITY_CLASS[item],
+								item === priority ? 'opacity-100 ring-2 ring-white ring-offset-1' : 'opacity-45',
+							)}
+							onClick={() => setPriority(item)}
+							type='button'
+						>
+							{item}
+						</button>
+					))}
+					<div className='mx-1 h-4 w-px bg-[#eaecf0]' />
+					<span className='shrink-0 text-[11.5px] text-[#a0a8b8]'>所属空间</span>
+					<span className='rounded-[6px] border border-[#d0d4dc] bg-white px-2.5 py-1 text-[12px] text-[#3a4152]'>
+						{results.spaceSlug ?? '当前 Space'}
+					</span>
+					<div className='mx-1 h-4 w-px bg-[#eaecf0]' />
+					<span className='shrink-0 text-[11.5px] text-[#a0a8b8]'>所属项目</span>
+					<span className='rounded-[6px] border border-[#d0d4dc] bg-white px-2.5 py-1 text-[12px] text-[#3a4152]'>
+						稍后归类
+					</span>
+				</div>
+			) : null}
+
+			<div className='min-h-0 flex-1 overflow-y-auto'>
+				{mode === 'idle' ? (
+					<CommandPanelState label='输入关键词搜索任务 / 项目；无匹配时直接创建任务。' />
+				) : isLoading && !hasResults ? (
+					<CommandPanelState label='正在搜索当前 Space...' loading />
+				) : mode === 'create' ? (
+					<CommandPanelState label={`没有匹配结果，按 Enter 创建“${normalizedQuery}”。`} />
+				) : (
+					<CommandResults
+						highlightedIndex={highlightedIndex}
+						projectItems={results.projects}
+						taskItems={results.tasks}
+						onHighlightIndex={setHighlightedIndex}
+						onOpenResult={(item) => void openResult(item)}
+					/>
+				)}
+			</div>
+
+			<div className='flex min-h-10 items-center gap-3 border-t border-[#eaecf0] bg-[#f7f8fa] px-3.5 text-[11px] text-[#9099ac]'>
+				<StatusMessage status={status} message={message} />
+				<div className='ml-auto flex items-center gap-3'>
+					<Hint keys='↑↓' label='选择' />
+					<Hint keys='↵' label={mode === 'create' ? '创建' : '打开'} />
+					{mode === 'create' ? <Hint keys='Tab' label='切优先级' /> : null}
+					<Hint keys='Esc' label='关闭' />
 				</div>
 			</div>
 		</section>
 	)
+}
+
+function CommandResults({
+	taskItems,
+	projectItems,
+	highlightedIndex,
+	onHighlightIndex,
+	onOpenResult,
+}: {
+	taskItems: WorkspaceTaskSearchItem[]
+	projectItems: WorkspaceProjectSearchItem[]
+	highlightedIndex: number
+	onHighlightIndex: (index: number) => void
+	onOpenResult: (item: CommandResultItem) => void
+}) {
+	return (
+		<div className='py-2'>
+			{taskItems.length > 0 ? (
+				<CommandResultSection title='任务'>
+					{taskItems.map((item, index) => (
+						<CommandResultRow
+							isActive={highlightedIndex === index}
+							item={{ kind: 'task', ...item }}
+							key={item.id}
+							onHighlight={() => onHighlightIndex(index)}
+							onOpen={() => onOpenResult({ kind: 'task', ...item })}
+						/>
+					))}
+				</CommandResultSection>
+			) : null}
+
+			{projectItems.length > 0 ? (
+				<CommandResultSection title='项目'>
+					{projectItems.map((item, index) => {
+						const flatIndex = taskItems.length + index
+						return (
+							<CommandResultRow
+								isActive={highlightedIndex === flatIndex}
+								item={{ kind: 'project', ...item }}
+								key={item.id}
+								onHighlight={() => onHighlightIndex(flatIndex)}
+								onOpen={() => onOpenResult({ kind: 'project', ...item })}
+							/>
+						)
+					})}
+				</CommandResultSection>
+			) : null}
+		</div>
+	)
+}
+
+function CommandResultSection({ title, children }: { title: string; children: ReactNode }) {
+	return (
+		<section className='border-b border-[#eaecf0] last:border-b-0'>
+			<div className='px-4 pb-1 pt-2 text-[10.5px] font-medium tracking-[0.06em] text-[#a0a8b8]'>
+				{title}
+			</div>
+			<div>{children}</div>
+		</section>
+	)
+}
+
+function CommandResultRow({
+	item,
+	isActive,
+	onHighlight,
+	onOpen,
+}: {
+	item: CommandResultItem
+	isActive: boolean
+	onHighlight: () => void
+	onOpen: () => void
+}) {
+	const isTask = item.kind === 'task'
+	const title = isTask ? item.title : item.name
+	const subtitle = isTask ? (item.projectName ?? 'Inbox') : formatProjectStatus(item.status)
+
+	return (
+		<button
+			className={cn(
+				'relative flex w-full items-center gap-2.5 px-4 py-2 text-left transition-colors',
+				isActive ? 'bg-[#f2f5ff]' : 'hover:bg-[#f2f5ff]',
+			)}
+			onClick={onOpen}
+			onMouseEnter={onHighlight}
+			type='button'
+		>
+			{isActive ? (
+				<span className='absolute inset-y-0 left-0 w-[3px] rounded-r-sm bg-[#4c6fff]' />
+			) : null}
+			<span
+				className={cn(
+					'flex size-6 shrink-0 items-center justify-center rounded-[6px]',
+					isTask ? 'bg-[#eef1ff] text-[#4c6fff]' : 'bg-[#edfaf3] text-[#1f9d62]',
+				)}
+			>
+				{isTask ? <CircleIcon className='size-3' /> : <FolderIcon className='size-3.5' />}
+			</span>
+			<span className='min-w-0 flex-1'>
+				<span className='block truncate text-[13px] text-[#141720]'>{title}</span>
+				<span className='mt-0.5 block truncate text-[11.5px] text-[#9099ac]'>{subtitle}</span>
+			</span>
+			{isTask && item.priority ? <PriorityBadge priority={item.priority} /> : null}
+			<span className='rounded-[4px] border border-[#e6e9ee] bg-[#f2f4f8] px-1.5 py-0.5 text-[11px] text-[#9099ac]'>
+				{isTask ? '任务' : '项目'}
+			</span>
+		</button>
+	)
+}
+
+function PriorityBadge({ priority }: { priority: string }) {
+	const label = priorityToLabel(priority)
+	const className =
+		label === 'P0'
+			? PRIORITY_CLASS.P0
+			: label === 'P1'
+				? PRIORITY_CLASS.P1
+				: label === 'P2'
+					? PRIORITY_CLASS.P2
+					: PRIORITY_CLASS.P3
+
+	return (
+		<span className={cn('rounded-[4px] border px-1.5 py-0.5 font-mono text-[10.5px]', className)}>
+			{label}
+		</span>
+	)
+}
+
+function CommandPanelState({ label, loading = false }: { label: string; loading?: boolean }) {
+	return (
+		<div className='flex h-full min-h-44 items-center justify-center px-5 text-center text-[13px] text-[#9099ac]'>
+			<div className='flex items-center gap-2'>
+				{loading ? (
+					<LoaderCircleIcon className='size-4 animate-spin' />
+				) : (
+					<SearchIcon className='size-4' />
+				)}
+				<span>{label}</span>
+			</div>
+		</div>
+	)
+}
+
+function StatusMessage({ status, message }: { status: CommandStatus; message: string }) {
+	return (
+		<div
+			aria-live='polite'
+			className={cn(
+				'flex min-w-0 items-center gap-1.5',
+				status === 'error'
+					? 'text-destructive'
+					: status === 'success'
+						? 'text-success-foreground'
+						: 'text-[#9099ac]',
+			)}
+		>
+			{status === 'error' ? <AlertTriangleIcon className='size-3.5 shrink-0' /> : null}
+			{status === 'success' ? <CheckCircle2Icon className='size-3.5 shrink-0' /> : null}
+			{status === 'submitting' ? (
+				<LoaderCircleIcon className='size-3.5 shrink-0 animate-spin' />
+			) : null}
+			<span className='truncate'>{message}</span>
+		</div>
+	)
+}
+
+function Hint({ keys, label }: { keys: string; label: string }) {
+	return (
+		<span className='flex items-center gap-1'>
+			<Kbd>{keys}</Kbd>
+			<span>{label}</span>
+		</span>
+	)
+}
+
+function priorityToLabel(priority: string) {
+	switch (priority) {
+		case 'urgent':
+			return 'P0'
+		case 'high':
+			return 'P1'
+		case 'medium':
+			return 'P2'
+		case 'low':
+			return 'P3'
+		default:
+			return 'P3'
+	}
+}
+
+function formatProjectStatus(status: string) {
+	switch (status) {
+		case 'active':
+			return '进行中'
+		default:
+			return status
+	}
 }

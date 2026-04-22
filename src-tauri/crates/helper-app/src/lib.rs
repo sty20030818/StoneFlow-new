@@ -69,5 +69,10 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
 
         Ok(())
     })
-    .invoke_handler(tauri::generate_handler![commands::helper_create_task])
+    .invoke_handler(tauri::generate_handler![
+        commands::helper_create_task,
+        commands::helper_search_workspace,
+        commands::helper_open_task,
+        commands::helper_open_project
+    ])
 }

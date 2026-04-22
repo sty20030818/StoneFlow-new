@@ -1,4 +1,6 @@
 import type { PropsWithChildren } from 'react'
+import { startTransition } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import {
 	selectActiveDrawerId,
@@ -17,6 +19,7 @@ import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
+import { useCommandOpenListener } from '@/shared/events/commandOpen'
 import { useTaskChangedListener } from '@/shared/events/taskChanged'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 
@@ -26,6 +29,7 @@ type ShellLayoutProps = PropsWithChildren<{
 }>
 
 export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLayoutProps) {
+	const navigate = useNavigate()
 	const isCommandOpen = useShellLayoutStore(selectIsCommandOpen)
 	const isTaskCreateOpen = useShellLayoutStore(selectIsTaskCreateOpen)
 	const isProjectCreateOpen = useShellLayoutStore(selectIsProjectCreateOpen)
@@ -65,6 +69,26 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 
 	useTaskChangedListener(currentSpaceId, () => {
 		bumpTaskDataVersion()
+	})
+
+	useCommandOpenListener((payload) => {
+		if (payload.kind === 'project') {
+			setCommandOpen(false)
+			closeDrawer()
+			startTransition(() => {
+				navigate(`/space/${payload.spaceSlug}/project/${payload.id}`)
+			})
+			return
+		}
+
+		setCommandOpen(false)
+		startTransition(() => {
+			const targetPath = payload.projectId
+				? `/space/${payload.spaceSlug}/project/${payload.projectId}`
+				: `/space/${payload.spaceSlug}/inbox`
+			navigate(targetPath)
+			openDrawer('task', payload.id)
+		})
 	})
 
 	return (

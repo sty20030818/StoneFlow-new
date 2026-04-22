@@ -9,6 +9,9 @@ use uuid::Uuid;
 /// 任务事实变化事件：用于 Quick Capture / Drawer / 列表动作后的主应用刷新。
 pub(crate) const TASKS_CHANGED_EVENT: &str = "stoneflow://tasks/changed";
 
+/// Command Helper 请求主 App 打开实体。
+pub(crate) const COMMAND_OPEN_EVENT: &str = "stoneflow://command/open";
+
 /// 任务事实变化事件的最小载荷。
 #[derive(Debug, Clone, serde::Serialize)]
 pub(crate) struct TaskChangedPayload {
@@ -17,6 +20,16 @@ pub(crate) struct TaskChangedPayload {
     pub(crate) task_id: Uuid,
     pub(crate) source: String,
     pub(crate) space_fallback: bool,
+}
+
+/// Command 打开请求载荷。
+#[derive(Debug, Clone, serde::Serialize)]
+pub(crate) struct CommandOpenPayload {
+    pub(crate) kind: String,
+    pub(crate) id: Uuid,
+    pub(crate) space_slug: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) project_id: Option<Uuid>,
 }
 
 /// 向所有已打开前端窗口广播任务变化。
@@ -28,5 +41,12 @@ pub(crate) fn emit_task_changed<R: Runtime>(
 ) {
     if let Err(error) = app_handle.emit(TASKS_CHANGED_EVENT, payload) {
         log::warn!("发送任务变更事件失败: {error}");
+    }
+}
+
+/// 向主 App 前端广播 Command 打开请求。
+pub(crate) fn emit_command_open<R: Runtime>(app_handle: &AppHandle<R>, payload: CommandOpenPayload) {
+    if let Err(error) = app_handle.emit(COMMAND_OPEN_EVENT, payload) {
+        log::warn!("发送 Command 打开事件失败: {error}");
     }
 }

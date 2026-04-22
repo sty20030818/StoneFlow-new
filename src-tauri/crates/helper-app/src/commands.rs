@@ -1,7 +1,10 @@
 //! Helper 前端（Quick Capture 页面）可调的 Tauri Command。
 
 use serde::{Deserialize, Serialize};
-use stoneflow_ipc_protocol::{CreateTaskPayload, IpcError};
+use stoneflow_ipc_protocol::{
+    CreateTaskPayload, IpcError, OpenProjectPayload, OpenTaskPayload, SearchWorkspacePayload,
+};
+use uuid::Uuid;
 
 use crate::ipc_client;
 
@@ -50,6 +53,58 @@ pub struct HelperCreatedTaskResponse {
     pub space_fallback: bool,
 }
 
+/// Helper 搜索输入；不暴露 Space，Space 由主 App 的 ActiveSpaceState 决定。
+#[derive(Debug, Clone, Deserialize)]
+pub struct HelperSearchWorkspaceInput {
+    pub query: String,
+    #[serde(default = "default_search_limit")]
+    pub limit: u64,
+}
+
+/// Helper Task 搜索响应，字段名对齐主 App `search_workspace`。
+#[derive(Debug, Clone, Serialize)]
+pub struct HelperTaskSearchItemResponse {
+    pub id: String,
+    pub title: String,
+    pub note: Option<String>,
+    pub priority: Option<String>,
+    pub project_id: Option<String>,
+    pub project_name: Option<String>,
+    pub updated_at: String,
+}
+
+/// Helper Project 搜索响应，字段名对齐主 App `search_workspace`。
+#[derive(Debug, Clone, Serialize)]
+pub struct HelperProjectSearchItemResponse {
+    pub id: String,
+    pub name: String,
+    pub note: Option<String>,
+    pub status: String,
+    pub sort_order: i32,
+}
+
+/// Helper 搜索响应。
+#[derive(Debug, Clone, Serialize)]
+pub struct HelperSearchWorkspaceResponse {
+    pub space_slug: String,
+    pub tasks: Vec<HelperTaskSearchItemResponse>,
+    pub projects: Vec<HelperProjectSearchItemResponse>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct HelperOpenTaskInput {
+    pub task_id: Uuid,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct HelperOpenProjectInput {
+    pub project_id: Uuid,
+}
+
+const fn default_search_limit() -> u64 {
+    5
+}
+
 /// Helper 侧的「创建任务」入口：转换前端输入 → 经 IPC 发给主 App。
 #[tauri::command]
 pub async fn helper_create_task(
@@ -79,6 +134,80 @@ pub async fn helper_create_task(
         id: created.id.to_string(),
         title: created.title,
         space_fallback: created.space_fallback,
+    })
+}
+
+/// Helper 侧搜索入口：经 IPC 转发给主 App，复用主 App 搜索规则。
+#[tauri::command]
+pub async fn helper_search_workspace(
+    input: HelperSearchWorkspaceInput,
+) -> Result<HelperSearchWorkspaceResponse, HelperCaptureErrorPayload> {
+    let payload = SearchWorkspacePayload {
+        query: input.query,
+        limit: input.limit,
+    };
+
+    let result = ipc_client::search_workspace(payload).await.map_err(|error| {
+        log::warn!("helper_search_workspace 失败: {error}");
+        HelperCaptureErrorPayload::from(error)
+    })?;
+
+    Ok(HelperSearchWorkspaceResponse {
+        space_slug: result.space_slug,
+        tasks: result
+            .tasks
+            .into_iter()
+            .map(|task| HelperTaskSearchItemResponse {
+                id: task.id.to_string(),
+                title: task.title,
+                note: task.note,
+                priority: task.priority,
+                project_id: task.project_id.map(|id| id.to_string()),
+                project_name: task.project_name,
+                updated_at: task.updated_at,
+            })
+            .collect(),
+        projects: result
+            .projects
+            .into_iter()
+            .map(|project| HelperProjectSearchItemResponse {
+                id: project.id.to_string(),
+                name: project.name,
+                note: project.note,
+                status: project.status,
+                sort_order: project.sort_order,
+            })
+            .collect(),
+    })
+}
+
+/// Helper 侧打开 Task：交给主 App 恢复窗口并处理 Drawer。
+#[tauri::command]
+pub async fn helper_open_task(
+    input: HelperOpenTaskInput,
+) -> Result<(), HelperCaptureErrorPayload> {
+    ipc_client::open_task(OpenTaskPayload {
+        task_id: input.task_id,
+    })
+    .await
+    .map_err(|error| {
+        log::warn!("helper_open_task 失败: {error}");
+        HelperCaptureErrorPayload::from(error)
+    })
+}
+
+/// Helper 侧打开 Project：交给主 App 恢复窗口并导航。
+#[tauri::command]
+pub async fn helper_open_project(
+    input: HelperOpenProjectInput,
+) -> Result<(), HelperCaptureErrorPayload> {
+    ipc_client::open_project(OpenProjectPayload {
+        project_id: input.project_id,
+    })
+    .await
+    .map_err(|error| {
+        log::warn!("helper_open_project 失败: {error}");
+        HelperCaptureErrorPayload::from(error)
     })
 }
 

@@ -140,9 +140,7 @@
 		isolation: isolate;
 	}
 
-	/* Quick Capture 浮层：窗口已设置 transparent(true)，前端这一层也需透明，
-	   否则 body/#root 的 bg-background 会覆盖窗口透明，导致卡片外出现灰白一圈。
-	   仅在 `/quick-capture` 路由挂载时由 QuickCapturePage 给 body 打上 data-quick-capture。 */
+	/* Quick Capture 浮层：窗口透明由面板自身圆角裁切，避免 body/#root 在圆角外露出白底。 */
 	body[data-quick-capture] {
 		background: transparent !important;
 	}

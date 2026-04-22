@@ -42,6 +42,7 @@ type UseGlobalSearchResult = {
 }
 
 const EMPTY_RESULTS: WorkspaceSearchResult = {
+	spaceSlug: null,
 	tasks: [],
 	projects: [],
 }

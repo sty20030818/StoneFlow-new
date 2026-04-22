@@ -6,19 +6,30 @@ use interprocess::local_socket::{
     tokio::{prelude::*, Listener, Stream},
     GenericFilePath, GenericNamespaced, ListenerOptions, ToFsName, ToNsName,
 };
+use anyhow::Context;
+use stoneflow_core::default_space_seed;
 use stoneflow_ipc_protocol::{
     socket_name, CreateTaskPayload, IpcError, IpcRequest, IpcResponse, SocketName,
-    TaskCreatedPayload, MAX_FRAME_BYTES, PROTOCOL_VERSION,
+    TaskCreatedPayload, WorkspaceProjectSearchItemPayload, WorkspaceSearchResultPayload,
+    WorkspaceTaskSearchItemPayload, MAX_FRAME_BYTES, PROTOCOL_VERSION,
 };
 use tauri::{AppHandle, Manager, Runtime};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use uuid::Uuid;
 
 use crate::app::error::AppError;
-use crate::app::events::{emit_task_changed, TaskChangedPayload};
+use crate::app::events::{
+    emit_command_open, emit_task_changed, CommandOpenPayload, TaskChangedPayload,
+};
+use crate::app::command_helper::{restore_main_window_from_helper, CommandHelperState};
 use crate::application::create::{
     create_capture_task as create_capture_task_usecase, ActiveSpaceState, CaptureTaskInput,
 };
+use crate::application::search::{
+    search_workspace as search_workspace_usecase, SearchWorkspaceInput,
+};
 use crate::infrastructure::database::DatabaseState;
+use crate::infrastructure::repositories::{ProjectRepository, SpaceRepository, TaskRepository};
 
 /// 启动 IPC Server：在 Tauri 的异步运行时里长期运行，直至进程退出。
 ///
@@ -154,6 +165,187 @@ async fn dispatch<R: Runtime>(app_handle: &AppHandle<R>, request: IpcRequest) ->
                 }
             }
         }
+        IpcRequest::SearchWorkspace(payload) => {
+            let database = app_handle.state::<DatabaseState>();
+            let active_space = app_handle.state::<ActiveSpaceState>();
+            let space_slug =
+                match resolve_command_space_slug(database.inner(), active_space.inner()).await {
+                    Ok(slug) => slug,
+                    Err(error) => {
+                        let app_error: AppError = error.into();
+                        return IpcResponse::Error(app_error.into());
+                    }
+                };
+            let result = search_workspace_usecase(
+                database.inner(),
+                SearchWorkspaceInput {
+                    space_slug: space_slug.clone(),
+                    query: payload.query,
+                    limit: payload.limit,
+                },
+            )
+            .await;
+
+            match result {
+                Ok(payload) => IpcResponse::WorkspaceSearch(WorkspaceSearchResultPayload {
+                    space_slug,
+                    tasks: payload
+                        .tasks
+                        .into_iter()
+                        .map(|task| WorkspaceTaskSearchItemPayload {
+                            id: task.id,
+                            title: task.title,
+                            note: task.note,
+                            priority: task.priority,
+                            project_id: task.project_id,
+                            project_name: task.project_name,
+                            updated_at: task.updated_at.to_rfc3339(),
+                        })
+                        .collect(),
+                    projects: payload
+                        .projects
+                        .into_iter()
+                        .map(|project| WorkspaceProjectSearchItemPayload {
+                            id: project.id,
+                            name: project.name,
+                            note: project.note,
+                            status: project.status,
+                            sort_order: project.sort_order,
+                        })
+                        .collect(),
+                }),
+                Err(error) => {
+                    let app_error: AppError = error.into();
+                    log::warn!("IPC SearchWorkspace 处理失败: {app_error:?}");
+                    IpcResponse::Error(app_error.into())
+                }
+            }
+        }
+        IpcRequest::OpenTask(payload) => open_task_from_helper(app_handle, payload.task_id).await,
+        IpcRequest::OpenProject(payload) => {
+            open_project_from_helper(app_handle, payload.project_id).await
+        }
+    }
+}
+
+async fn resolve_command_space_slug(
+    database: &DatabaseState,
+    active_space_state: &ActiveSpaceState,
+) -> anyhow::Result<String> {
+    let space_repository = SpaceRepository::new(&database.connection);
+
+    if let Some(active_space_id) = active_space_state.get()? {
+        if let Some(space) = space_repository.find_by_id(active_space_id).await? {
+            if !space.is_archived {
+                return Ok(space.slug);
+            }
+        }
+    }
+
+    let default_slug = default_space_seed().slug;
+    let default_space = space_repository
+        .find_by_slug(default_slug)
+        .await?
+        .with_context(|| format!("default space `{default_slug}` does not exist"))?;
+
+    if default_space.is_archived {
+        anyhow::bail!("default space `{default_slug}` is archived");
+    }
+
+    Ok(default_space.slug)
+}
+
+async fn open_task_from_helper<R: Runtime>(
+    app_handle: &AppHandle<R>,
+    task_id: Uuid,
+) -> IpcResponse {
+    let database = app_handle.state::<DatabaseState>();
+    let task_repository = TaskRepository::new(&database.connection);
+    let space_repository = SpaceRepository::new(&database.connection);
+
+    let result = async {
+        let task = task_repository
+            .find_active_by_id(task_id)
+            .await?
+            .with_context(|| format!("task `{task_id}` does not exist"))?;
+        let project_id = task.project_id;
+        let space = space_repository
+            .find_by_id(task.space_id)
+            .await?
+            .with_context(|| format!("space `{}` does not exist", task.space_id))?;
+        Ok::<_, anyhow::Error>((space.slug, project_id))
+    }
+    .await;
+
+    match result {
+        Ok((space_slug, project_id)) => {
+            restore_main_window(app_handle);
+            emit_command_open(
+                app_handle,
+                CommandOpenPayload {
+                    kind: "task".to_owned(),
+                    id: task_id,
+                    space_slug,
+                    project_id,
+                },
+            );
+            IpcResponse::Opened
+        }
+        Err(error) => {
+            let app_error: AppError = error.into();
+            log::warn!("IPC OpenTask 处理失败: {app_error:?}");
+            IpcResponse::Error(app_error.into())
+        }
+    }
+}
+
+async fn open_project_from_helper<R: Runtime>(
+    app_handle: &AppHandle<R>,
+    project_id: Uuid,
+) -> IpcResponse {
+    let database = app_handle.state::<DatabaseState>();
+    let project_repository = ProjectRepository::new(&database.connection);
+    let space_repository = SpaceRepository::new(&database.connection);
+
+    let result = async {
+        let project = project_repository
+            .find_active_by_id(project_id)
+            .await?
+            .with_context(|| format!("project `{project_id}` does not exist"))?;
+        let space = space_repository
+            .find_by_id(project.space_id)
+            .await?
+            .with_context(|| format!("space `{}` does not exist", project.space_id))?;
+        Ok::<_, anyhow::Error>(space.slug)
+    }
+    .await;
+
+    match result {
+        Ok(space_slug) => {
+            restore_main_window(app_handle);
+            emit_command_open(
+                app_handle,
+                CommandOpenPayload {
+                    kind: "project".to_owned(),
+                    id: project_id,
+                    space_slug,
+                    project_id: None,
+                },
+            );
+            IpcResponse::Opened
+        }
+        Err(error) => {
+            let app_error: AppError = error.into();
+            log::warn!("IPC OpenProject 处理失败: {app_error:?}");
+            IpcResponse::Error(app_error.into())
+        }
+    }
+}
+
+fn restore_main_window<R: Runtime>(app_handle: &AppHandle<R>) {
+    let helper_state = app_handle.state::<CommandHelperState>();
+    if let Err(error) = restore_main_window_from_helper(app_handle, helper_state.inner()) {
+        log::warn!("Helper 打开请求恢复主窗口失败: {error}");
     }
 }
 
