@@ -21,6 +21,17 @@ import { PanelSurface } from '@/shared/ui/PanelSurface'
 import { cn } from '@/shared/lib/utils'
 import { FolderOpenDotIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
+const TASK_CARD_BASE_CLASS = 'rounded-lg border p-4 transition-colors'
+const TASK_CARD_INTERACTIVE_CLASS = 'cursor-pointer'
+const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
+const TASK_CARD_IDLE_CLASS =
+	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
+const TASK_CARD_ACTIVE_CLASS =
+	'border-(--sf-color-accent-soft-border) bg-accent shadow-[inset_3px_0_0_var(--primary)]'
+const TASK_CARD_DONE_CLASS = 'border-(--sf-color-border-subtle) bg-muted/35 text-muted-foreground'
+const TASK_CARD_EMPTY_CLASS =
+	'rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30'
+
 export function ProjectPage() {
 	const { projectId = 'stoneflow-v1', spaceId = 'default' } = useParams()
 	const navigate = useNavigate()
@@ -55,7 +66,7 @@ export function ProjectPage() {
 				actions={
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button className='rounded-xl' size='icon-sm' variant='outline'>
+							<Button className='rounded-md' size='icon-sm' variant='outline'>
 								<MoreHorizontalIcon />
 							</Button>
 						</DropdownMenuTrigger>
@@ -83,7 +94,7 @@ export function ProjectPage() {
 			>
 				{feedback ? (
 					<p
-						className='mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-3 py-2 text-sm text-emerald-700'
+						className='mb-3 rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-sm text-(--sf-color-success-soft-text)'
 						role='status'
 					>
 						{feedback}
@@ -91,12 +102,12 @@ export function ProjectPage() {
 				) : null}
 
 				{loadError ? (
-					<div className='flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-3 sm:flex-row sm:items-center sm:justify-between'>
+					<div className='flex flex-col gap-3 rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) px-3 py-3 sm:flex-row sm:items-center sm:justify-between'>
 						<p className='text-sm text-destructive' role='alert'>
 							{loadError}
 						</p>
 						<Button
-							className='rounded-xl'
+							className='rounded-md'
 							onClick={() => void refresh()}
 							size='sm'
 							variant='outline'
@@ -117,7 +128,7 @@ export function ProjectPage() {
 						<Badge variant='secondary'>待执行 {todoTasks.length}</Badge>
 						<Badge variant='secondary'>已完成 {doneTasks.length}</Badge>
 						<Button
-							className='rounded-xl'
+							className='rounded-md'
 							onClick={() => void refresh()}
 							size='sm'
 							variant='outline'
@@ -126,7 +137,7 @@ export function ProjectPage() {
 						</Button>
 						{view ? (
 							<Button
-								className='rounded-xl'
+								className='rounded-md'
 								onClick={() => openProjectCreateDialog(view.project.id)}
 								size='sm'
 								variant='secondary'
@@ -144,12 +155,12 @@ export function ProjectPage() {
 					<div className='grid gap-2 sm:grid-cols-2'>
 						{view.childProjects.map((project) => (
 							<button
-								className='flex min-h-16 items-center gap-3 rounded-xl border border-border/70 bg-background/80 px-3 py-3 text-left transition-colors hover:border-border hover:bg-background'
+								className='flex min-h-16 items-center gap-3 rounded-lg border border-(--sf-color-border-subtle) bg-card px-3 py-3 text-left transition-colors hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
 								key={project.id}
 								onClick={() => navigate(`/space/${spaceId}/project/${project.id}`)}
 								type='button'
 							>
-								<span className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-black/6 text-muted-foreground'>
+								<span className='flex size-8 shrink-0 items-center justify-center rounded-md border border-(--sf-color-border-subtle) bg-muted text-(--sf-color-text-secondary)'>
 									<FolderOpenDotIcon className='size-4' />
 								</span>
 								<span className='min-w-0 flex-1'>
@@ -208,7 +219,7 @@ function ProjectTaskGroup({
 }: ProjectTaskGroupProps) {
 	if (tasks.length === 0) {
 		return (
-			<div className='rounded-2xl border border-dashed border-border/80 bg-muted/20 px-4 py-6 text-sm text-muted-foreground'>
+			<div className={cn(TASK_CARD_EMPTY_CLASS, 'px-4 py-6 text-sm text-muted-foreground')}>
 				{emptyMessage}
 			</div>
 		)
@@ -220,13 +231,11 @@ function ProjectTaskGroup({
 				<div
 					aria-label={`打开任务 ${task.title}`}
 					className={cn(
-						'flex cursor-pointer flex-col gap-3 rounded-2xl border p-4 transition-colors lg:flex-row lg:items-start lg:justify-between',
-						task.status === 'done'
-							? 'border-border/60 bg-muted/30 text-muted-foreground'
-							: 'border-border/70 bg-background/80 hover:border-border hover:bg-background',
-						activeTaskId === task.id
-							? 'border-primary/45 bg-primary/6 shadow-[inset_3px_0_0_var(--primary)]'
-							: null,
+						TASK_CARD_BASE_CLASS,
+						TASK_CARD_INTERACTIVE_CLASS,
+						TASK_CARD_GRID_CLASS,
+						task.status === 'done' ? TASK_CARD_DONE_CLASS : TASK_CARD_IDLE_CLASS,
+						activeTaskId === task.id ? TASK_CARD_ACTIVE_CLASS : null,
 						pendingTaskId === task.id ? 'opacity-75' : null,
 					)}
 					data-shell-task-card='true'

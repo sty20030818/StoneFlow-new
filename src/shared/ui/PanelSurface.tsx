@@ -21,7 +21,7 @@ export function PanelSurface({
 	return (
 		<section
 			className={cn(
-				'rounded-2xl border border-border/75 bg-card px-5 py-5 shadow-(--sf-shadow-panel)',
+				'rounded-lg border border-border bg-card px-5 py-5 shadow-(--sf-shadow-panel)',
 				className,
 			)}
 			{...props}

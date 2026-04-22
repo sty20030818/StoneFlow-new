@@ -97,7 +97,7 @@ export function ShellMain({
 	return (
 		<main className='relative flex min-w-0 flex-1 overflow-hidden bg-transparent'>
 			<div className='flex min-w-0 flex-1 pr-2'>
-				<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-[0.625rem] bg-card shadow-[6px_0_18px_rgb(15_23_42/0.04)]'>
+				<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-(--sf-color-border-subtle) bg-card shadow-(--sf-shadow-panel)'>
 					<div className='no-scrollbar min-w-0 flex-1 overflow-y-auto'>
 						<div className='flex min-h-full min-w-0 flex-col'>{children}</div>
 					</div>

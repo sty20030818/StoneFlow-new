@@ -69,12 +69,12 @@ export function TaskCreateModalContent({
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='flex flex-col gap-4'>
+			<div className='flex flex-col gap-4 rounded-lg border border-(--sf-color-border-subtle) bg-muted/35 p-4'>
 				<label className='flex flex-col gap-1.5' htmlFor='task-create-title'>
 					<span className='text-[12px] font-medium text-foreground'>任务标题</span>
 					<Input
 						autoFocus
-						className='h-11 rounded-xl border-black/10 bg-white'
+						className='h-11 rounded-md border-input bg-card'
 						disabled={status === 'submitting' || status === 'success'}
 						id='task-create-title'
 						onChange={(event) => setTitle(event.currentTarget.value)}
@@ -93,7 +93,7 @@ export function TaskCreateModalContent({
 						>
 							<SelectTrigger
 								aria-label='优先级'
-								className='h-11 w-full rounded-xl border-black/10 bg-white'
+								className='h-11 w-full rounded-md border-input bg-card'
 							>
 								<SelectValue placeholder='选择优先级' />
 							</SelectTrigger>
@@ -124,7 +124,7 @@ export function TaskCreateModalContent({
 						>
 							<SelectTrigger
 								aria-label='项目'
-								className='h-11 w-full rounded-xl border-black/10 bg-white'
+								className='h-11 w-full rounded-md border-input bg-card'
 							>
 								<SelectValue
 									placeholder={
@@ -153,7 +153,7 @@ export function TaskCreateModalContent({
 				<label className='flex flex-col gap-1.5' htmlFor='task-create-note'>
 					<span className='text-[12px] font-medium text-foreground'>备注</span>
 					<Textarea
-						className='min-h-28 rounded-xl border-black/10 bg-white'
+						className='min-h-28 rounded-md border-input bg-card'
 						disabled={status === 'submitting' || status === 'success'}
 						id='task-create-note'
 						onChange={(event) => setNote(event.currentTarget.value)}
@@ -165,7 +165,7 @@ export function TaskCreateModalContent({
 
 			{status === 'error' && errorMessage ? (
 				<div
-					className='rounded-xl border border-destructive/20 bg-destructive/8 px-3 py-2 text-[12px] leading-5 text-destructive'
+					className='rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) px-3 py-2 text-[12px] leading-5 text-(--sf-color-danger-soft-text)'
 					role='alert'
 				>
 					{errorMessage}
@@ -174,16 +174,16 @@ export function TaskCreateModalContent({
 
 			{status === 'success' && createdTask ? (
 				<div
-					className='rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2 text-[12px] leading-5 text-emerald-700'
+					className='rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-[12px] leading-5 text-(--sf-color-success-soft-text)'
 					role='status'
 				>
 					已创建“{createdTask.title}”。
 				</div>
 			) : null}
 
-			<div className='flex items-center justify-end gap-2'>
+			<div className='flex items-center justify-end gap-2 border-t border-(--sf-color-divider) pt-1'>
 				<Button
-					className='rounded-xl'
+					className='rounded-md'
 					disabled={status === 'submitting'}
 					onClick={() => {
 						reset()
@@ -194,7 +194,7 @@ export function TaskCreateModalContent({
 					取消
 				</Button>
 				<Button
-					className='rounded-xl'
+					className='rounded-md'
 					disabled={status === 'submitting' || status === 'success'}
 					onClick={() => {
 						void submit()

@@ -18,6 +18,14 @@ import { PanelSurface } from '@/shared/ui/PanelSurface'
 import { cn } from '@/shared/lib/utils'
 import { RefreshCwIcon } from 'lucide-react'
 
+const TASK_CARD_BASE_CLASS = 'rounded-lg border p-4 transition-colors'
+const TASK_CARD_IDLE_CLASS =
+	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
+const TASK_CARD_ACTIVE_CLASS =
+	'border-(--sf-color-accent-soft-border) bg-accent shadow-[inset_3px_0_0_var(--primary)]'
+const TASK_CARD_EMPTY_CLASS =
+	'rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30'
+
 export function InboxPage() {
 	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
 	const activeDrawerId = useShellLayoutStore((state) => state.activeDrawerId)
@@ -42,7 +50,7 @@ export function InboxPage() {
 				actions={
 					<div className='flex flex-wrap items-center gap-2'>
 						<Button
-							className='rounded-xl'
+							className='rounded-md'
 							onClick={() => openProjectCreateDialog()}
 							size='sm'
 							variant='secondary'
@@ -60,7 +68,7 @@ export function InboxPage() {
 				title='待整理队列'
 			>
 				{!isLoading && !loadError && tasks.length > 0 && projects.length === 0 ? (
-					<div className='mb-3 flex flex-col gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/8 px-4 py-4'>
+					<div className='mb-3 flex flex-col gap-3 rounded-lg border border-(--sf-color-warning-soft-border) bg-(--sf-color-warning-soft) px-4 py-4'>
 						<div className='flex flex-col gap-1'>
 							<p className='text-sm font-medium text-foreground'>当前 Space 还没有项目可选</p>
 							<p className='text-sm leading-6 text-muted-foreground'>
@@ -68,7 +76,7 @@ export function InboxPage() {
 							</p>
 						</div>
 						<div>
-							<Button className='rounded-xl' onClick={() => openProjectCreateDialog()} size='sm'>
+							<Button className='rounded-md' onClick={() => openProjectCreateDialog()} size='sm'>
 								创建项目
 							</Button>
 						</div>
@@ -77,7 +85,7 @@ export function InboxPage() {
 
 				{feedback ? (
 					<p
-						className='mb-3 rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-3 py-2 text-sm text-emerald-700'
+						className='mb-3 rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-sm text-(--sf-color-success-soft-text)'
 						role='status'
 					>
 						{feedback}
@@ -85,7 +93,7 @@ export function InboxPage() {
 				) : null}
 
 				{loadError ? (
-					<div className='rounded-2xl border border-destructive/30 bg-destructive/5 p-4'>
+					<div className='rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) p-4'>
 						<p className='text-sm text-destructive' role='alert'>
 							{loadError}
 						</p>
@@ -99,7 +107,7 @@ export function InboxPage() {
 				) : null}
 
 				{!isLoading && !loadError && tasks.length === 0 ? (
-					<div className='rounded-2xl border border-dashed border-border/80 bg-muted/20 px-4 py-8 text-center'>
+					<div className={cn(TASK_CARD_EMPTY_CLASS, 'px-4 py-8 text-center')}>
 						<p className='text-sm font-medium text-foreground'>当前 Inbox 已清空</p>
 						<p className='mt-2 text-sm text-muted-foreground'>
 							新捕获的任务会先进入这里，补齐项目和优先级后再离开。
@@ -181,10 +189,9 @@ function InboxTaskRow({
 	return (
 		<article
 			className={cn(
-				'grid gap-3 rounded-2xl border p-4 transition-colors lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-start',
-				isActive
-					? 'border-primary/45 bg-primary/6 shadow-[inset_3px_0_0_var(--primary)]'
-					: 'border-border/70 bg-background/80 hover:border-border hover:bg-background',
+				TASK_CARD_BASE_CLASS,
+				'grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-start',
+				isActive ? TASK_CARD_ACTIVE_CLASS : TASK_CARD_IDLE_CLASS,
 				draft.isSubmitting ? 'opacity-75' : null,
 			)}
 			data-shell-task-card='true'
@@ -224,7 +231,7 @@ function InboxTaskRow({
 				>
 					<SelectTrigger
 						aria-label={`${task.title} 优先级`}
-						className='h-9 w-full rounded-xl bg-background'
+						className='h-9 w-full rounded-md bg-card'
 					>
 						<SelectValue placeholder='待补齐' />
 					</SelectTrigger>
@@ -251,7 +258,7 @@ function InboxTaskRow({
 				>
 					<SelectTrigger
 						aria-label={`${task.title} 项目`}
-						className='h-9 w-full rounded-xl bg-background'
+						className='h-9 w-full rounded-md bg-card'
 					>
 						<SelectValue placeholder='待补齐' />
 					</SelectTrigger>

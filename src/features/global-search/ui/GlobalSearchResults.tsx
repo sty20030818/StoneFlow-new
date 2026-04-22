@@ -32,7 +32,7 @@ export function GlobalSearchResults({
 	const hasResults = taskItems.length > 0 || projectItems.length > 0
 
 	return (
-		<div className='absolute inset-x-0 top-full z-40 mt-1.5 overflow-hidden rounded-[1rem] border border-black/10 bg-background/98 shadow-[0_22px_52px_rgba(15,23,42,0.13)] backdrop-blur'>
+		<div className='absolute inset-x-0 top-full z-40 mt-1.5 overflow-hidden rounded-xl border border-(--sf-color-border-secondary) bg-popover/98 shadow-(--sf-shadow-popover) backdrop-blur'>
 			<div className='max-h-[24rem] overflow-y-auto p-2'>
 				{isLoading && !hasResults ? (
 					<SearchPanelState label='正在搜索任务与项目...' />
@@ -116,10 +116,10 @@ function SearchResultButton({
 	return (
 		<button
 			className={cn(
-				'flex w-full flex-col gap-1 rounded-[0.95rem] border px-3 py-2.5 text-left transition-colors',
+				'flex w-full flex-col gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors',
 				isActive
-					? 'border-black/12 bg-black/6'
-					: 'border-transparent hover:border-black/10 hover:bg-black/4',
+					? 'border-(--sf-color-accent-soft-border) bg-accent'
+					: 'border-transparent hover:border-(--sf-color-border-subtle) hover:bg-(--sf-color-bg-surface-hover)',
 			)}
 			onClick={onSelect}
 			onMouseDown={(event) => {
@@ -155,10 +155,10 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 	return (
 		<div
 			className={cn(
-				'flex items-center gap-2 rounded-[0.95rem] px-3 py-3 text-[12px]',
+				'flex items-center gap-2 rounded-lg border px-3 py-3 text-[12px]',
 				tone === 'danger'
-					? 'bg-destructive/8 text-destructive'
-					: 'bg-black/3 text-(--sf-color-shell-secondary)',
+					? 'border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) text-(--sf-color-danger-soft-text)'
+					: 'border-(--sf-color-border-subtle) bg-muted text-(--sf-color-shell-secondary)',
 			)}
 		>
 			<SearchIcon className='size-3.5 shrink-0' />

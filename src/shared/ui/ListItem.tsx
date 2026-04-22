@@ -20,7 +20,7 @@ export function ListItem({
 	taskId,
 }: ListItemProps) {
 	const classes = cn(
-		'flex w-full items-start justify-between gap-3 rounded-xl border border-border/70 bg-background px-4 py-3 text-left transition hover:border-border hover:bg-muted/35 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/45 focus-visible:outline-none',
+		'flex w-full items-start justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:border-(--sf-color-border) hover:bg-muted/45 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/18 focus-visible:outline-none',
 		className,
 	)
 

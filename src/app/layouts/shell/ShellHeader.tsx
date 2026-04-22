@@ -193,7 +193,7 @@ export function ShellHeader({
 						}
 					}}
 				>
-					<div className='flex size-5 items-center justify-center rounded-[0.3125rem] bg-black text-[10px] font-semibold text-white'>
+					<div className='flex size-5 items-center justify-center rounded-md bg-primary text-[10px] font-semibold text-primary-foreground'>
 						S
 					</div>
 					<span className='text-[13px] font-medium text-foreground'>StoneFlow</span>
@@ -234,7 +234,7 @@ export function ShellHeader({
 				>
 					<div className='flex items-center gap-1.5'>
 						<Button
-							className='border-black/10 bg-white px-3 text-[12px] font-medium text-foreground shadow-[0_1px_0_rgba(255,255,255,0.8),0_10px_20px_rgba(15,23,42,0.06)] hover:bg-[#fffdf8]'
+							className='border-border bg-card px-3 text-[12px] font-medium text-foreground shadow-(--sf-shadow-panel) hover:bg-(--sf-color-bg-surface-tertiary)'
 							onClick={onOpenTaskCreateDialog}
 							size='default'
 							variant='outline'
@@ -248,7 +248,7 @@ export function ShellHeader({
 							<DropdownMenuTrigger asChild>
 								<Button
 									aria-label='打开创建菜单'
-									className='border-black/10 bg-white text-(--sf-color-shell-secondary) shadow-[0_1px_0_rgba(255,255,255,0.8),0_10px_20px_rgba(15,23,42,0.06)] hover:bg-[#fffdf8] hover:text-foreground'
+									className='border-border bg-card text-(--sf-color-shell-secondary) shadow-(--sf-shadow-panel) hover:bg-(--sf-color-bg-surface-tertiary) hover:text-foreground'
 									size='icon'
 									variant='outline'
 								>
@@ -273,16 +273,16 @@ export function ShellHeader({
 					{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 					{!isMac ? (
 						<div className='flex h-full items-stretch pl-3'>
-							<div className='my-auto mr-3 h-5 w-px bg-black/10' />
+							<div className='my-auto mr-3 h-5 w-px bg-(--sf-color-divider)' />
 							<Button
-								className='size-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-black/14 hover:text-foreground'
+								className='size-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-bg-surface-hover) hover:text-foreground'
 								onClick={() => void handleMinimize()}
 								variant='ghost'
 							>
 								<MinusIcon className='size-3.5' />
 							</Button>
 							<Button
-								className='size-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-black/14 hover:text-foreground'
+								className='size-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-bg-surface-hover) hover:text-foreground'
 								onClick={() => void handleToggleMaximize()}
 								variant='ghost'
 							>

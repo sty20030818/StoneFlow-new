@@ -43,12 +43,12 @@ export function ProjectCreateModalContent({
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='flex flex-col gap-4'>
+			<div className='flex flex-col gap-4 rounded-lg border border-(--sf-color-border-subtle) bg-muted/35 p-4'>
 				<label className='flex flex-col gap-1.5' htmlFor='project-create-name'>
 					<span className='text-[12px] font-medium text-foreground'>项目名称</span>
 					<Input
 						autoFocus
-						className='h-11 rounded-xl border-black/10 bg-white'
+						className='h-11 rounded-md border-input bg-card'
 						disabled={status === 'submitting' || status === 'success'}
 						id='project-create-name'
 						onChange={(event) => setName(event.currentTarget.value)}
@@ -60,7 +60,7 @@ export function ProjectCreateModalContent({
 				<label className='flex flex-col gap-1.5' htmlFor='project-create-note'>
 					<span className='text-[12px] font-medium text-foreground'>项目说明</span>
 					<Textarea
-						className='min-h-24 rounded-xl border-black/10 bg-white'
+						className='min-h-24 rounded-md border-input bg-card'
 						disabled={status === 'submitting' || status === 'success'}
 						id='project-create-note'
 						onChange={(event) => setNote(event.currentTarget.value)}
@@ -76,7 +76,7 @@ export function ProjectCreateModalContent({
 
 			{status === 'error' && errorMessage ? (
 				<div
-					className='rounded-xl border border-destructive/20 bg-destructive/8 px-3 py-2 text-[12px] leading-5 text-destructive'
+					className='rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) px-3 py-2 text-[12px] leading-5 text-(--sf-color-danger-soft-text)'
 					role='alert'
 				>
 					{errorMessage}
@@ -85,16 +85,16 @@ export function ProjectCreateModalContent({
 
 			{status === 'success' && createdProject ? (
 				<div
-					className='rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2 text-[12px] leading-5 text-emerald-700'
+					className='rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-[12px] leading-5 text-(--sf-color-success-soft-text)'
 					role='status'
 				>
 					已创建{isSubproject ? '子项目' : '项目'}“{createdProject.name}”。
 				</div>
 			) : null}
 
-			<div className='flex items-center justify-end gap-2'>
+			<div className='flex items-center justify-end gap-2 border-t border-(--sf-color-divider) pt-1'>
 				<Button
-					className='rounded-xl'
+					className='rounded-md'
 					disabled={status === 'submitting'}
 					onClick={() => {
 						reset()
@@ -105,7 +105,7 @@ export function ProjectCreateModalContent({
 					取消
 				</Button>
 				<Button
-					className='rounded-xl'
+					className='rounded-md'
 					disabled={status === 'submitting' || status === 'success'}
 					onClick={() => {
 						void submit()

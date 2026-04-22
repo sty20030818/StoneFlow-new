@@ -28,8 +28,8 @@ export function TaskCreateDialog({
 }: TaskCreateDialogProps) {
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
-			<DialogContent className='max-w-[calc(100%-1.5rem)] rounded-2xl border-black/10 bg-background p-0 shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:max-w-2xl'>
-				<DialogHeader className='gap-1 border-b border-black/8 px-6 py-5 pr-14'>
+			<DialogContent className='max-w-[calc(100%-1.5rem)] rounded-xl border-(--sf-color-border-secondary) bg-popover p-0 shadow-(--sf-shadow-float) sm:max-w-2xl'>
+				<DialogHeader className='gap-1 border-b border-(--sf-color-divider) px-6 py-5 pr-14'>
 					<DialogTitle className='text-[1.125rem] font-semibold tracking-[-0.03em] text-foreground'>
 						新建任务
 					</DialogTitle>

@@ -29,10 +29,10 @@ export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps)
 				>
 					{healthcheckStatus.detail}
 				</span>
-				<Button className='size-7 rounded-[0.45rem]' size='icon-sm' variant='ghost'>
+				<Button className='size-7 rounded-md' size='icon-sm' variant='ghost'>
 					<Trash2Icon className='size-3.5' />
 				</Button>
-				<Button className='size-7 rounded-[0.45rem]' size='icon-sm' variant='ghost'>
+				<Button className='size-7 rounded-md' size='icon-sm' variant='ghost'>
 					<Settings2Icon className='size-3.5' />
 				</Button>
 			</div>
@@ -40,12 +40,12 @@ export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps)
 			<div className='flex min-w-0 flex-1 items-center justify-between px-4'>
 				<div className='flex min-w-0 items-center gap-3 text-[11px] text-(--sf-color-shell-tertiary)'>
 					<span>{getSpaceLabel(currentSpaceId)}</span>
-					<span className='text-black/16'>•</span>
+					<span className='text-(--sf-color-border-strong)'>•</span>
 					<span>{getSectionLabel(activeSection)}</span>
 				</div>
 				<div className='flex items-center gap-3 text-[11px] text-(--sf-color-shell-tertiary)'>
 					<span>Focus view</span>
-					<span className='text-black/16'>•</span>
+					<span className='text-(--sf-color-border-strong)'>•</span>
 					<span>Cmd/Ctrl + K</span>
 				</div>
 			</div>

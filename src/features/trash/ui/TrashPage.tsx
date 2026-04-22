@@ -2,10 +2,17 @@ import { useParams } from 'react-router-dom'
 
 import { useTrashEntries } from '@/features/trash/model/useTrashEntries'
 import type { TrashEntry } from '@/features/trash/model/types'
+import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { PanelSurface } from '@/shared/ui/PanelSurface'
 import { RotateCcwIcon, Trash2Icon } from 'lucide-react'
+
+const TRASH_CARD_BASE_CLASS = 'rounded-lg border p-4 transition-colors'
+const TRASH_CARD_IDLE_CLASS =
+	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
+const TRASH_CARD_EMPTY_CLASS =
+	'rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30'
 
 export function TrashPage() {
 	const { spaceId = 'default' } = useParams()
@@ -16,17 +23,18 @@ export function TrashPage() {
 		<div className='p-4'>
 			<PanelSurface
 				actions={
-					<Button className='rounded-xl' onClick={() => void refresh()} size='sm' variant='outline'>
+					<Button className='rounded-md' onClick={() => void refresh()} size='sm' variant='outline'>
 						刷新
 					</Button>
 				}
+				description='删除后的 Task 和 Project 会先进入这里，恢复后会回到原来的执行位置。'
 				eyebrow='Trash'
 				title='回收站'
 			>
 				<div className='flex flex-col gap-3'>
 					{feedback ? (
 						<p
-							className='rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-3 py-2 text-sm text-emerald-700'
+							className='rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-sm text-(--sf-color-success-soft-text)'
 							role='status'
 						>
 							{feedback}
@@ -34,20 +42,21 @@ export function TrashPage() {
 					) : null}
 
 					{loadError ? (
-						<p
-							className='rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive'
-							role='alert'
-						>
-							{loadError}
-						</p>
+						<div className='rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) p-4'>
+							<p className='text-sm text-destructive' role='alert'>
+								{loadError}
+							</p>
+						</div>
 					) : null}
 
 					{isLoading ? (
-						<p className='text-sm text-muted-foreground' role='status'>
+						<p className='py-8 text-sm text-muted-foreground' role='status'>
 							正在加载回收站...
 						</p>
 					) : entries.length === 0 ? (
-						<div className='flex flex-col items-start gap-2 rounded-xl border border-dashed border-border/70 bg-background px-4 py-6'>
+						<div
+							className={cn(TRASH_CARD_EMPTY_CLASS, 'flex flex-col items-start gap-2 px-4 py-6')}
+						>
 							<Trash2Icon className='size-5 text-muted-foreground' />
 							<p className='text-sm font-medium text-foreground'>回收站为空</p>
 							<p className='text-sm text-muted-foreground'>
@@ -78,7 +87,13 @@ type TrashEntryRowProps = {
 
 function TrashEntryRow({ entry, isPending, onRestore }: TrashEntryRowProps) {
 	return (
-		<div className='flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background px-4 py-3'>
+		<div
+			className={cn(
+				TRASH_CARD_BASE_CLASS,
+				'flex flex-wrap items-center justify-between gap-3',
+				TRASH_CARD_IDLE_CLASS,
+			)}
+		>
 			<div className='flex min-w-0 flex-col gap-1'>
 				<div className='flex flex-wrap items-center gap-2'>
 					<Badge variant={entry.entityType === 'task' ? 'secondary' : 'outline'}>
@@ -95,6 +110,7 @@ function TrashEntryRow({ entry, isPending, onRestore }: TrashEntryRowProps) {
 			<div className='flex flex-wrap items-center gap-2'>
 				<Badge variant='outline'>可恢复</Badge>
 				<Button
+					className='rounded-md'
 					disabled={isPending}
 					onClick={() => void onRestore(entry)}
 					size='sm'

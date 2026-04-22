@@ -68,10 +68,10 @@ const PRIORITY_TO_PAYLOAD: Record<CommandPriority, string> = {
 	P3: 'low',
 }
 const PRIORITY_CLASS: Record<CommandPriority, string> = {
-	P0: 'border-[#f1a5a5] bg-[#ffe8e8] text-[#b83232]',
-	P1: 'border-[#f0bf84] bg-[#fff0de] text-[#a85500]',
-	P2: 'border-[#aebcff] bg-[#ecf0ff] text-[#3049d1]',
-	P3: 'border-[#d4d9e4] bg-[#f2f4f8] text-[#5c6478]',
+	P0: 'border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) text-(--sf-color-danger-soft-text)',
+	P1: 'border-(--sf-color-warning-soft-border) bg-(--sf-color-warning-soft) text-(--sf-color-warning-soft-text)',
+	P2: 'border-(--sf-color-accent-soft-border) bg-accent text-accent-foreground',
+	P3: 'border-(--sf-color-border-subtle) bg-muted text-(--sf-color-text-secondary)',
 }
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -383,17 +383,17 @@ export function QuickCaptureSurface({
 	return (
 		<section
 			aria-label='StoneFlow Command'
-			className='flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[14px] border border-[#d6d9e0] bg-[#fcfcfd] text-[#141720] shadow-[0_16px_40px_rgba(10,15,40,0.12),0_2px_8px_rgba(10,15,40,0.06)]'
+			className='flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-(--sf-color-border-secondary) bg-card text-foreground shadow-(--sf-shadow-float)'
 			onPointerDown={handleSurfacePointerDown}
 		>
-			<div className='flex items-center gap-2 border-b border-[#eaecf0] px-3.5 py-3'>
-				<div className='flex h-9 flex-1 items-center gap-2 rounded-[8px] border border-[#d0d4dc] bg-white px-3 transition-colors focus-within:border-[#6b8aff] focus-within:ring-3 focus-within:ring-[#6b8aff]/14'>
-					<SearchIcon className='size-3.5 shrink-0 text-[#9099ac]' />
+			<div className='flex items-center gap-2 border-b border-(--sf-color-divider) px-3.5 py-3'>
+				<div className='flex h-9 flex-1 items-center gap-2 rounded-md border border-input bg-card px-3 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/14'>
+					<SearchIcon className='size-3.5 shrink-0 text-(--sf-color-icon-subtle)' />
 					<input
 						ref={inputRef}
 						aria-label='Command 输入'
 						autoComplete='off'
-						className='min-w-0 flex-1 bg-transparent text-[13.5px] text-[#141720] outline-none placeholder:text-[#a8b0c2]'
+						className='min-w-0 flex-1 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-(--sf-color-text-quaternary)'
 						disabled={status === 'submitting'}
 						onChange={(event) => {
 							setQuery(event.target.value)
@@ -411,10 +411,10 @@ export function QuickCaptureSurface({
 
 				<Button
 					className={cn(
-						'h-9 min-w-22 gap-1.5 rounded-[8px] px-3 text-[12px]',
+						'h-9 min-w-22 gap-1.5 rounded-md px-3 text-[12px]',
 						mode === 'create'
-							? 'bg-[#4c6fff] text-white hover:bg-[#3b5eee]'
-							: 'border border-[#d0d4dc] bg-white text-[#5c6478] hover:border-[#9aadff] hover:bg-[#f5f7ff] hover:text-[#3a5eff]',
+							? 'bg-primary text-primary-foreground hover:bg-(--sf-color-accent-hover)'
+							: 'border border-border bg-card text-(--sf-color-text-secondary) hover:border-(--sf-color-accent-soft-border) hover:bg-accent hover:text-accent-foreground',
 					)}
 					disabled={status === 'submitting' || mode === 'idle'}
 					onClick={executePrimaryAction}
@@ -432,15 +432,15 @@ export function QuickCaptureSurface({
 			</div>
 
 			{mode === 'create' ? (
-				<div className='flex h-11 items-center gap-2 overflow-hidden border-b border-[#eaecf0] px-3.5'>
-					<span className='shrink-0 text-[11.5px] text-[#a0a8b8]'>优先级</span>
+				<div className='flex h-11 items-center gap-2 overflow-hidden border-b border-(--sf-color-divider) px-3.5'>
+					<span className='shrink-0 text-[11.5px] text-(--sf-color-text-quaternary)'>优先级</span>
 					{PRIORITIES.map((item) => (
 						<button
 							key={item}
 							className={cn(
-								'h-6 rounded-[6px] border px-2.5 font-mono text-[11.5px] font-semibold transition-opacity',
+								'h-6 rounded-md border px-2.5 font-mono text-[11.5px] font-semibold transition-opacity',
 								PRIORITY_CLASS[item],
-								item === priority ? 'opacity-100 ring-2 ring-white ring-offset-1' : 'opacity-45',
+								item === priority ? 'opacity-100 ring-2 ring-ring/14 ring-offset-1' : 'opacity-45',
 							)}
 							onClick={() => setPriority(item)}
 							type='button'
@@ -448,14 +448,14 @@ export function QuickCaptureSurface({
 							{item}
 						</button>
 					))}
-					<div className='mx-1 h-4 w-px bg-[#eaecf0]' />
-					<span className='shrink-0 text-[11.5px] text-[#a0a8b8]'>所属空间</span>
-					<span className='rounded-[6px] border border-[#d0d4dc] bg-white px-2.5 py-1 text-[12px] text-[#3a4152]'>
+					<div className='mx-1 h-4 w-px bg-(--sf-color-divider)' />
+					<span className='shrink-0 text-[11.5px] text-(--sf-color-text-quaternary)'>所属空间</span>
+					<span className='rounded-md border border-border bg-card px-2.5 py-1 text-[12px] text-(--sf-color-text-secondary)'>
 						{results.spaceSlug ?? '当前 Space'}
 					</span>
-					<div className='mx-1 h-4 w-px bg-[#eaecf0]' />
-					<span className='shrink-0 text-[11.5px] text-[#a0a8b8]'>所属项目</span>
-					<span className='rounded-[6px] border border-[#d0d4dc] bg-white px-2.5 py-1 text-[12px] text-[#3a4152]'>
+					<div className='mx-1 h-4 w-px bg-(--sf-color-divider)' />
+					<span className='shrink-0 text-[11.5px] text-(--sf-color-text-quaternary)'>所属项目</span>
+					<span className='rounded-md border border-border bg-card px-2.5 py-1 text-[12px] text-(--sf-color-text-secondary)'>
 						稍后归类
 					</span>
 				</div>
@@ -479,7 +479,7 @@ export function QuickCaptureSurface({
 				)}
 			</div>
 
-			<div className='flex min-h-10 items-center gap-3 border-t border-[#eaecf0] bg-[#f7f8fa] px-3.5 text-[11px] text-[#9099ac]'>
+			<div className='flex min-h-10 items-center gap-3 border-t border-(--sf-color-divider) bg-muted px-3.5 text-[11px] text-(--sf-color-text-quaternary)'>
 				<StatusMessage status={status} message={message} />
 				<div className='ml-auto flex items-center gap-3'>
 					<Hint keys='↑↓' label='选择' />
@@ -543,8 +543,8 @@ function CommandResults({
 
 function CommandResultSection({ title, children }: { title: string; children: ReactNode }) {
 	return (
-		<section className='border-b border-[#eaecf0] last:border-b-0'>
-			<div className='px-4 pb-1 pt-2 text-[10.5px] font-medium tracking-[0.06em] text-[#a0a8b8]'>
+		<section className='border-b border-(--sf-color-divider) last:border-b-0'>
+			<div className='px-4 pb-1 pt-2 text-[10.5px] font-medium tracking-[0.06em] text-(--sf-color-text-quaternary)'>
 				{title}
 			</div>
 			<div>{children}</div>
@@ -571,29 +571,33 @@ function CommandResultRow({
 		<button
 			className={cn(
 				'relative flex w-full items-center gap-2.5 px-4 py-2 text-left transition-colors',
-				isActive ? 'bg-[#f2f5ff]' : 'hover:bg-[#f2f5ff]',
+				isActive ? 'bg-accent' : 'hover:bg-(--sf-color-bg-surface-hover)',
 			)}
 			onClick={onOpen}
 			onMouseEnter={onHighlight}
 			type='button'
 		>
 			{isActive ? (
-				<span className='absolute inset-y-0 left-0 w-[3px] rounded-r-sm bg-[#4c6fff]' />
+				<span className='absolute inset-y-0 left-0 w-[3px] rounded-r-sm bg-primary' />
 			) : null}
 			<span
 				className={cn(
-					'flex size-6 shrink-0 items-center justify-center rounded-[6px]',
-					isTask ? 'bg-[#eef1ff] text-[#4c6fff]' : 'bg-[#edfaf3] text-[#1f9d62]',
+					'flex size-6 shrink-0 items-center justify-center rounded-md',
+					isTask
+						? 'bg-accent text-accent-foreground'
+						: 'bg-(--sf-color-success-soft) text-(--sf-color-success-soft-text)',
 				)}
 			>
 				{isTask ? <CircleIcon className='size-3' /> : <FolderIcon className='size-3.5' />}
 			</span>
 			<span className='min-w-0 flex-1'>
-				<span className='block truncate text-[13px] text-[#141720]'>{title}</span>
-				<span className='mt-0.5 block truncate text-[11.5px] text-[#9099ac]'>{subtitle}</span>
+				<span className='block truncate text-[13px] text-foreground'>{title}</span>
+				<span className='mt-0.5 block truncate text-[11.5px] text-(--sf-color-text-quaternary)'>
+					{subtitle}
+				</span>
 			</span>
 			{isTask && item.priority ? <PriorityBadge priority={item.priority} /> : null}
-			<span className='rounded-[4px] border border-[#e6e9ee] bg-[#f2f4f8] px-1.5 py-0.5 text-[11px] text-[#9099ac]'>
+			<span className='rounded-sm border border-(--sf-color-border-subtle) bg-muted px-1.5 py-0.5 text-[11px] text-(--sf-color-text-quaternary)'>
 				{isTask ? '任务' : '项目'}
 			</span>
 		</button>
@@ -612,7 +616,7 @@ function PriorityBadge({ priority }: { priority: string }) {
 					: PRIORITY_CLASS.P3
 
 	return (
-		<span className={cn('rounded-[4px] border px-1.5 py-0.5 font-mono text-[10.5px]', className)}>
+		<span className={cn('rounded-sm border px-1.5 py-0.5 font-mono text-[10.5px]', className)}>
 			{label}
 		</span>
 	)
@@ -620,7 +624,7 @@ function PriorityBadge({ priority }: { priority: string }) {
 
 function CommandPanelState({ label, loading = false }: { label: string; loading?: boolean }) {
 	return (
-		<div className='flex h-full min-h-44 items-center justify-center px-5 text-center text-[13px] text-[#9099ac]'>
+		<div className='flex h-full min-h-44 items-center justify-center px-5 text-center text-[13px] text-(--sf-color-text-quaternary)'>
 			<div className='flex items-center gap-2'>
 				{loading ? (
 					<LoaderCircleIcon className='size-4 animate-spin' />
@@ -643,7 +647,7 @@ function StatusMessage({ status, message }: { status: CommandStatus; message: st
 					? 'text-destructive'
 					: status === 'success'
 						? 'text-success-foreground'
-						: 'text-[#9099ac]',
+						: 'text-(--sf-color-text-quaternary)',
 			)}
 		>
 			{status === 'error' ? <AlertTriangleIcon className='size-3.5 shrink-0' /> : null}

@@ -27,6 +27,20 @@ import type {
 } from '@/features/focus/model/types'
 import { PinIcon, RefreshCwIcon, SquareCheckBigIcon } from 'lucide-react'
 
+const SUMMARY_CARD_IDLE_CLASS =
+	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-muted/45'
+const SUMMARY_CARD_ACTIVE_CLASS = 'border-(--sf-color-accent-soft-border) bg-accent'
+const TASK_CARD_BASE_CLASS = 'rounded-lg border p-4 transition-colors'
+const TASK_CARD_INTERACTIVE_CLASS = 'cursor-pointer'
+const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
+const TASK_CARD_IDLE_CLASS =
+	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
+const TASK_CARD_ACTIVE_CLASS =
+	'border-(--sf-color-accent-soft-border) bg-accent shadow-[inset_3px_0_0_var(--primary)]'
+const TASK_CARD_DONE_CLASS = 'border-(--sf-color-border-subtle) bg-muted/35 text-muted-foreground'
+const TASK_CARD_EMPTY_CLASS =
+	'rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30'
+
 const RECENT_TIME_WINDOW_OPTIONS: Array<{
 	value: FocusRecentTimeWindow
 	label: string
@@ -69,7 +83,7 @@ export function FocusPage() {
 								onValueChange={(value) => setRecentTimeWindow(value as FocusRecentTimeWindow)}
 								value={recentTimeWindow}
 							>
-								<SelectTrigger aria-label='最近添加时间窗' className='h-8 w-[9.5rem] rounded-xl'>
+								<SelectTrigger aria-label='最近添加时间窗' className='h-8 w-[9.5rem] rounded-md'>
 									<SelectValue placeholder='选择时间窗' />
 								</SelectTrigger>
 								<SelectContent position='popper'>
@@ -84,7 +98,7 @@ export function FocusPage() {
 							</Select>
 						) : null}
 						<Button
-							className='rounded-xl'
+							className='rounded-md'
 							disabled={isLoading}
 							onClick={() => {
 								void refresh()
@@ -128,7 +142,7 @@ export function FocusPage() {
 
 						{feedback ? (
 							<p
-								className='rounded-xl border border-emerald-500/30 bg-emerald-500/8 px-3 py-2 text-sm text-emerald-700'
+								className='rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-sm text-(--sf-color-success-soft-text)'
 								role='status'
 							>
 								{feedback}
@@ -136,12 +150,12 @@ export function FocusPage() {
 						) : null}
 
 						{loadError ? (
-							<div className='flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between'>
+							<div className='flex flex-col gap-3 rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) p-4 sm:flex-row sm:items-center sm:justify-between'>
 								<p className='text-sm text-destructive' role='alert'>
 									{loadError}
 								</p>
 								<Button
-									className='rounded-xl'
+									className='rounded-md'
 									onClick={() => void refresh()}
 									size='sm'
 									variant='outline'
@@ -181,11 +195,10 @@ type SummaryCardProps = {
 function SummaryCard({ summary, active, onClick }: SummaryCardProps) {
 	return (
 		<button
-			className={`rounded-2xl border px-4 py-4 text-left transition-colors ${
-				active
-					? 'border-black/12 bg-black/5'
-					: 'border-border/70 bg-background hover:border-border hover:bg-muted/25'
-			}`}
+			className={cn(
+				'rounded-lg border px-4 py-4 text-left transition-colors',
+				active ? SUMMARY_CARD_ACTIVE_CLASS : SUMMARY_CARD_IDLE_CLASS,
+			)}
 			onClick={onClick}
 			type='button'
 		>
@@ -229,7 +242,7 @@ function FocusTaskPanel({
 
 	if (tasks.length === 0) {
 		return (
-			<div className='rounded-2xl border border-dashed border-border/80 bg-muted/20 px-4 py-8 text-center'>
+			<div className={cn(TASK_CARD_EMPTY_CLASS, 'px-4 py-8 text-center')}>
 				<p className='text-sm font-medium text-foreground'>{getEmptyTitle(activeViewKey)}</p>
 				<p className='mt-2 text-sm text-muted-foreground'>{getEmptyDescription(activeViewKey)}</p>
 			</div>
@@ -277,11 +290,11 @@ function FocusTaskRow({
 		<div
 			aria-label={`打开任务 ${task.title}`}
 			className={cn(
-				'flex cursor-pointer flex-col gap-3 rounded-2xl border p-4 transition-colors lg:flex-row lg:items-start lg:justify-between',
-				task.status === 'done'
-					? 'border-border/60 bg-muted/30 text-muted-foreground'
-					: 'border-border/70 bg-background/80 hover:border-border hover:bg-background',
-				isActive ? 'border-primary/45 bg-primary/6 shadow-[inset_3px_0_0_var(--primary)]' : null,
+				TASK_CARD_BASE_CLASS,
+				TASK_CARD_INTERACTIVE_CLASS,
+				TASK_CARD_GRID_CLASS,
+				task.status === 'done' ? TASK_CARD_DONE_CLASS : TASK_CARD_IDLE_CLASS,
+				isActive ? TASK_CARD_ACTIVE_CLASS : null,
 				isPending ? 'opacity-75' : null,
 			)}
 			data-shell-task-card='true'

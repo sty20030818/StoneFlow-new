@@ -26,6 +26,14 @@ type TaskDrawerContentProps = {
 
 const EMPTY_PRIORITY_VALUE = '__task-drawer-priority-empty__'
 const EMPTY_PROJECT_VALUE = '__task-drawer-project-empty__'
+const DRAWER_FIELD_CLASS = 'rounded-md border-input bg-card'
+const DRAWER_SECTION_CLASS = 'rounded-lg border border-(--sf-color-border-subtle) bg-muted/35'
+const DRAWER_ALERT_DANGER_CLASS =
+	'rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) px-3 py-2 text-[12px] leading-5 text-(--sf-color-danger-soft-text)'
+const DRAWER_ALERT_SUCCESS_CLASS =
+	'rounded-lg border border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) px-3 py-2 text-[12px] leading-5 text-(--sf-color-success-soft-text)'
+const DRAWER_HELP_CLASS =
+	'rounded-lg border border-(--sf-color-border-subtle) bg-muted px-3 py-2 text-[12px] text-(--sf-color-shell-tertiary)'
 
 /**
  * 真实 Task Drawer 内容，负责详情查询和基础字段编辑。
@@ -72,17 +80,14 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 	if (loadError || !detail) {
 		return (
 			<div className='space-y-4'>
-				<div
-					className='rounded-xl border border-destructive/20 bg-destructive/8 px-3 py-2 text-[12px] leading-5 text-destructive'
-					role='alert'
-				>
+				<div className={DRAWER_ALERT_DANGER_CLASS} role='alert'>
 					{loadError ?? '当前没有可展示的任务详情。'}
 				</div>
 				<div className='flex items-center justify-end gap-2'>
-					<Button className='rounded-xl' onClick={() => void refresh()} variant='outline'>
+					<Button className='rounded-md' onClick={() => void refresh()} variant='outline'>
 						重试
 					</Button>
-					<Button className='rounded-xl' onClick={onClose} variant='ghost'>
+					<Button className='rounded-md' onClick={onClose} variant='ghost'>
 						关闭
 					</Button>
 				</div>
@@ -139,7 +144,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 					</span>
 					<Input
 						autoFocus
-						className='h-9 rounded-xl border-black/8 bg-black/2'
+						className={`h-9 ${DRAWER_FIELD_CLASS}`}
 						disabled={isSaving}
 						id='task-drawer-title'
 						onChange={(event) => updateDraft({ title: event.currentTarget.value })}
@@ -152,7 +157,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						描述 / 备注
 					</span>
 					<Textarea
-						className='min-h-24 rounded-xl border-black/8 bg-black/2'
+						className={`min-h-24 ${DRAWER_FIELD_CLASS}`}
 						disabled={isSaving}
 						id='task-drawer-note'
 						onChange={(event) => updateDraft({ note: event.currentTarget.value })}
@@ -178,7 +183,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 					>
 						<SelectTrigger
 							aria-label='优先级'
-							className='h-9 w-full rounded-xl border-black/8 bg-black/2'
+							className={`h-9 w-full ${DRAWER_FIELD_CLASS}`}
 							data-drawer-owned-overlay='true'
 						>
 							<SelectValue placeholder='待补齐' />
@@ -211,7 +216,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 					>
 						<SelectTrigger
 							aria-label='项目'
-							className='h-9 w-full rounded-xl border-black/8 bg-black/2'
+							className={`h-9 w-full ${DRAWER_FIELD_CLASS}`}
 							data-drawer-owned-overlay='true'
 						>
 							<SelectValue placeholder='未归类' />
@@ -244,7 +249,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 					>
 						<SelectTrigger
 							aria-label='状态'
-							className='h-9 w-full rounded-xl border-black/8 bg-black/2'
+							className={`h-9 w-full ${DRAWER_FIELD_CLASS}`}
 							data-drawer-owned-overlay='true'
 						>
 							<SelectValue placeholder='选择状态' />
@@ -260,7 +265,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 			</div>
 
 			<section
-				className='space-y-3 border-t border-black/6 pt-3'
+				className='space-y-3 border-t border-(--sf-color-divider) pt-3'
 				aria-labelledby='task-resources-title'
 			>
 				<div className='flex items-center justify-between gap-2'>
@@ -275,7 +280,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 					<div className='flex items-center gap-1.5'>
 						<Button
 							aria-label='选择文件'
-							className='rounded-xl'
+							className='rounded-md'
 							disabled={isAddingResource}
 							onClick={() => {
 								void handleSelectLocalResource('local_file')
@@ -289,7 +294,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						</Button>
 						<Button
 							aria-label='选择文件夹'
-							className='rounded-xl'
+							className='rounded-md'
 							disabled={isAddingResource}
 							onClick={() => {
 								void handleSelectLocalResource('local_folder')
@@ -307,7 +312,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				<div className='grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto]'>
 					<Input
 						aria-label='资源标题'
-						className='h-8 rounded-xl border-black/8 bg-black/2 text-[12px]'
+						className={`h-8 text-[12px] ${DRAWER_FIELD_CLASS}`}
 						disabled={isAddingResource}
 						onChange={(event) => setDocLinkTitle(event.currentTarget.value)}
 						placeholder='链接标题'
@@ -315,14 +320,14 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 					/>
 					<Input
 						aria-label='资源 URL'
-						className='h-8 rounded-xl border-black/8 bg-black/2 text-[12px]'
+						className={`h-8 text-[12px] ${DRAWER_FIELD_CLASS}`}
 						disabled={isAddingResource}
 						onChange={(event) => setDocLinkUrl(event.currentTarget.value)}
 						placeholder='https://...'
 						value={docLinkUrl}
 					/>
 					<Button
-						className='rounded-xl'
+						className='rounded-md'
 						disabled={isAddingResource || !canCreateDocLink}
 						onClick={() => void handleCreateDocLink()}
 						size='sm'
@@ -334,14 +339,10 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				</div>
 
 				<div className='space-y-2'>
-					{isResourceLoading ? (
-						<p className='rounded-xl border border-black/6 bg-black/3 px-3 py-2 text-[12px] text-(--sf-color-shell-tertiary)'>
-							正在刷新资源...
-						</p>
-					) : null}
+					{isResourceLoading ? <p className={DRAWER_HELP_CLASS}>正在刷新资源...</p> : null}
 
 					{detail.resources.length === 0 ? (
-						<p className='rounded-xl border border-dashed border-black/10 bg-black/2 px-3 py-3 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
+						<p className='rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30 px-3 py-3 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
 							暂无资源。
 						</p>
 					) : (
@@ -351,10 +352,10 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 
 								return (
 									<li
-										className='flex items-center gap-2 rounded-xl border border-black/6 bg-black/3 px-3 py-2'
+										className={`flex items-center gap-2 px-3 py-2 ${DRAWER_SECTION_CLASS}`}
 										key={resource.id}
 									>
-										<div className='flex size-8 shrink-0 items-center justify-center rounded-lg bg-white text-(--sf-color-shell-tertiary) shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)]'>
+										<div className='flex size-8 shrink-0 items-center justify-center rounded-md border border-(--sf-color-border-subtle) bg-card text-(--sf-color-shell-tertiary) shadow-(--sf-shadow-panel)'>
 											<ResourceIcon resource={resource} />
 										</div>
 										<div className='min-w-0 flex-1'>
@@ -395,43 +396,31 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				</div>
 
 				{resourceError ? (
-					<div
-						className='rounded-xl border border-destructive/20 bg-destructive/8 px-3 py-2 text-[12px] leading-5 text-destructive'
-						role='alert'
-					>
+					<div className={DRAWER_ALERT_DANGER_CLASS} role='alert'>
 						{resourceError}
 					</div>
 				) : null}
 
 				{resourceFeedback ? (
-					<div
-						className='rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2 text-[12px] leading-5 text-emerald-700'
-						role='status'
-					>
+					<div className={DRAWER_ALERT_SUCCESS_CLASS} role='status'>
 						{resourceFeedback}
 					</div>
 				) : null}
 			</section>
 
 			{errorMessage ? (
-				<div
-					className='rounded-xl border border-destructive/20 bg-destructive/8 px-3 py-2 text-[12px] leading-5 text-destructive'
-					role='alert'
-				>
+				<div className={DRAWER_ALERT_DANGER_CLASS} role='alert'>
 					{errorMessage}
 				</div>
 			) : null}
 
 			{feedback ? (
-				<div
-					className='rounded-xl border border-emerald-500/20 bg-emerald-500/8 px-3 py-2 text-[12px] leading-5 text-emerald-700'
-					role='status'
-				>
+				<div className={DRAWER_ALERT_SUCCESS_CLASS} role='status'>
 					{feedback}
 				</div>
 			) : null}
 
-			<div className='rounded-xl border border-black/6 bg-black/3 px-3 py-2'>
+			<div className={`${DRAWER_SECTION_CLASS} px-3 py-2`}>
 				<p className='text-[11px] text-(--sf-color-shell-tertiary)'>时间信息</p>
 				<p className='mt-1 text-[12px] leading-5 text-foreground'>
 					创建于 {new Date(detail.task.createdAt).toLocaleString('zh-CN')}
@@ -446,7 +435,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				) : null}
 			</div>
 
-			<div className='rounded-xl border border-destructive/15 bg-destructive/4 px-3 py-2'>
+			<div className='rounded-lg border border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) px-3 py-2'>
 				<p className='text-[11px] font-medium tracking-[0.03em] text-destructive'>删除任务</p>
 				<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
 					删除后任务会从主列表中移除，并进入 Trash 数据层等待后续恢复能力接入。
@@ -455,7 +444,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 
 			<div className='flex items-center justify-between gap-2'>
 				<Button
-					className='rounded-xl'
+					className='rounded-md'
 					disabled={isSaving || isDeleting}
 					onClick={() => {
 						void (async () => {
@@ -473,7 +462,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 
 				<div className='flex items-center gap-2'>
 					<Button
-						className='rounded-xl'
+						className='rounded-md'
 						disabled={isSaving || isDeleting}
 						onClick={onClose}
 						variant='ghost'
@@ -481,7 +470,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						关闭
 					</Button>
 					<Button
-						className='rounded-xl'
+						className='rounded-md'
 						disabled={isLoading || isSaving || isDeleting || !isDirty}
 						onClick={() => {
 							void save()
