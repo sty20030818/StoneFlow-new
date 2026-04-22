@@ -4,9 +4,14 @@ import { SpaceLayout } from './layouts/SpaceLayout'
 import { FocusPage } from '../features/focus/ui/FocusPage'
 import { InboxPage } from '../features/inbox/ui/InboxPage'
 import { ProjectPage } from '../features/project/ui/ProjectPage'
+import { QuickCapturePage } from '../features/quick-capture/ui/QuickCapturePage'
 import { TrashPage } from '../features/trash/ui/TrashPage'
 
 export const router = createHashRouter([
+	{
+		path: '/quick-capture',
+		element: <QuickCapturePage />,
+	},
 	{
 		path: '/',
 		element: <Navigate to='/space/default/inbox' replace />,

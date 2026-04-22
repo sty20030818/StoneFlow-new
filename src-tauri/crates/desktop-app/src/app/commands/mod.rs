@@ -5,6 +5,7 @@ use tauri::ipc::Invoke;
 mod focus;
 mod inbox;
 mod project;
+mod quick_capture;
 mod resource;
 mod search;
 mod space;
@@ -28,6 +29,10 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         task::create_task,
         task::set_active_space,
         task::create_capture_task,
+        quick_capture::open_quick_capture,
+        quick_capture::restore_main_window,
+        quick_capture::quit_stoneflow,
+        quick_capture::get_command_helper_status,
         // Inbox
         inbox::list_inbox_tasks,
         inbox::triage_inbox_task,

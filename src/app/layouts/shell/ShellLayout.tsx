@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react'
+import { useCallback, type PropsWithChildren } from 'react'
 
 import {
 	selectActiveDrawerId,
@@ -10,6 +10,7 @@ import {
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { useShellProjects } from '@/app/layouts/shell/model/useShellProjects'
 import { ProjectCreateDialog } from '@/features/project/ui/ProjectCreateDialog'
+import { openQuickCapture } from '@/features/quick-capture/api/openQuickCapture'
 import { TaskCreateDialog } from '@/features/task/ui/TaskCreateDialog'
 import { flattenProjectTree } from '@/features/project/model/types'
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
@@ -59,6 +60,11 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 	const closeProjectCreateDialog = useShellLayoutStore((state) => state.closeProjectCreateDialog)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
 	const closeDrawer = useShellLayoutStore((state) => state.closeDrawer)
+	const handleOpenQuickCaptureWindow = useCallback(() => {
+		void openQuickCapture().catch((error) => {
+			console.error('quick capture open failed', { error })
+		})
+	}, [])
 
 	return (
 		<div className='sf-shell-layout relative flex h-full min-h-0 flex-col overflow-hidden bg-background'>
@@ -70,6 +76,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				onCommandOpenChange={setCommandOpen}
 				onCloseDrawer={closeDrawer}
 				onOpenProjectCreateDialog={() => openProjectCreateDialog()}
+				onOpenQuickCaptureWindow={handleOpenQuickCaptureWindow}
 				onOpenTaskCreateDialog={openTaskCreateDialog}
 				onOpenDrawer={openDrawer}
 				projects={projectLinks}

@@ -38,6 +38,7 @@ import {
 	SearchIcon,
 	SquareIcon,
 	XIcon,
+	ZapIcon,
 } from 'lucide-react'
 
 type ShellHeaderProps = {
@@ -50,6 +51,7 @@ type ShellHeaderProps = {
 	onCommandOpenChange: (open: boolean) => void
 	onOpenTaskCreateDialog: () => void
 	onOpenProjectCreateDialog: () => void
+	onOpenQuickCaptureWindow: () => void
 	onOpenDrawer: (kind: ShellDrawerKind, id: string) => void
 	onCloseDrawer: () => void
 }
@@ -62,6 +64,7 @@ export function ShellHeader({
 	onCommandOpenChange,
 	onOpenProjectCreateDialog,
 	onOpenTaskCreateDialog,
+	onOpenQuickCaptureWindow,
 	onOpenDrawer,
 	onCloseDrawer,
 	projects,
@@ -134,6 +137,11 @@ export function ShellHeader({
 		startTransition(() => {
 			navigate(`/space/${currentSpaceId}/project/${projectId}`)
 		})
+	}
+
+	const handleOpenQuickCapture = () => {
+		onCommandOpenChange(false)
+		onOpenQuickCaptureWindow()
 	}
 
 	const handleMinimize = async () => {
@@ -261,6 +269,10 @@ export function ShellHeader({
 										<PlusIcon />
 										新建任务
 									</DropdownMenuItem>
+									<DropdownMenuItem onSelect={handleOpenQuickCapture}>
+										<ZapIcon />
+										Quick Capture
+									</DropdownMenuItem>
 									<DropdownMenuItem onSelect={onOpenProjectCreateDialog}>
 										<FolderPlusIcon />
 										新建项目
@@ -315,13 +327,22 @@ export function ShellHeader({
 						<CommandGroup heading='Quick Actions'>
 							<CommandItem
 								onSelect={() => {
+									handleOpenQuickCapture()
+								}}
+							>
+								<ZapIcon />
+								Quick Capture
+								<CommandShortcut>↵</CommandShortcut>
+							</CommandItem>
+							<CommandItem
+								onSelect={() => {
 									onCommandOpenChange(false)
 									onOpenTaskCreateDialog()
 								}}
 							>
 								<PlusIcon />
 								创建任务
-								<CommandShortcut>↵</CommandShortcut>
+								<CommandShortcut>C</CommandShortcut>
 							</CommandItem>
 							<CommandItem
 								onSelect={() => {
