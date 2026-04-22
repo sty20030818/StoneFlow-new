@@ -5,6 +5,8 @@ import { TaskCreateModalContent } from '@/features/task/ui/TaskCreateModalConten
 
 vi.mock('@/features/task/api/createTask', () => ({
 	createTask: vi.fn<typeof createTask>(),
+	normalizeTaskCreateError: (error: unknown) =>
+		error instanceof Error ? error : new Error('创建任务失败，请稍后重试。'),
 }))
 
 const mockedCreateTask = vi.mocked(createTask)
@@ -28,6 +30,7 @@ describe('TaskCreateModalContent', () => {
 			priority: null,
 			note: '先接通 Header',
 			source: 'in_app_capture',
+			spaceFallback: false,
 			createdAt: '2026-04-19T20:00:00Z',
 			updatedAt: '2026-04-19T20:00:00Z',
 		})

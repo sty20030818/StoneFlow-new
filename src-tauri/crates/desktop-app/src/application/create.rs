@@ -1,8 +1,11 @@
-//! M2-B 阶段的基础创建用例。
+//! M2-B 阶段的基础创建用例，以及 M4-A 捕获底座复用的创建语义。
 
-use anyhow::{bail, Context, Result};
+use std::sync::Mutex;
+
+use anyhow::{anyhow, bail, Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use stoneflow_core::default_space_seed;
 use uuid::Uuid;
 
 use sea_orm::ConnectionTrait;
@@ -18,6 +21,34 @@ pub(crate) const PROJECT_STATUS_ACTIVE: &str = "active";
 pub(crate) const TASK_STATUS_TODO: &str = "todo";
 pub(crate) const TASK_STATUS_DONE: &str = "done";
 const TASK_SOURCE_IN_APP_CAPTURE: &str = "in_app_capture";
+const TASK_SOURCE_QUICK_CAPTURE: &str = "quick_capture";
+
+/// 当前 Space 的轻量运行时状态。
+///
+/// 这里保存稳定 `space_id`，业务实体仍然只使用既有 Space 表。
+#[derive(Debug, Default)]
+pub(crate) struct ActiveSpaceState {
+    active_space_id: Mutex<Option<Uuid>>,
+}
+
+impl ActiveSpaceState {
+    pub(crate) fn set(&self, space_id: Uuid) -> Result<()> {
+        let mut active_space_id = self
+            .active_space_id
+            .lock()
+            .map_err(|_| anyhow!("active space state lock is poisoned"))?;
+        *active_space_id = Some(space_id);
+        Ok(())
+    }
+
+    pub(crate) fn get(&self) -> Result<Option<Uuid>> {
+        let active_space_id = self
+            .active_space_id
+            .lock()
+            .map_err(|_| anyhow!("active space state lock is poisoned"))?;
+        Ok(*active_space_id)
+    }
+}
 
 /// 创建 Space 的输入。
 #[derive(Debug, Clone, Deserialize)]
@@ -42,6 +73,20 @@ pub(crate) struct CreateTaskInput {
     pub(crate) note: Option<String>,
     pub(crate) priority: Option<String>,
     pub(crate) project_id: Option<Uuid>,
+}
+
+/// 写入当前 Space 状态的输入。
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct SetActiveSpaceInput {
+    pub(crate) space_slug: String,
+}
+
+/// 系统级捕获准备入口的最小输入。
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct CaptureTaskInput {
+    pub(crate) title: String,
+    pub(crate) note: Option<String>,
+    pub(crate) priority: Option<String>,
 }
 
 /// 创建 Space 的返回载荷。
@@ -80,8 +125,16 @@ pub(crate) struct CreatedTaskPayload {
     pub(crate) priority: Option<String>,
     pub(crate) note: Option<String>,
     pub(crate) source: String,
+    pub(crate) space_fallback: bool,
     pub(crate) created_at: DateTime<Utc>,
     pub(crate) updated_at: DateTime<Utc>,
+}
+
+/// 当前 Space 状态写入结果。
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct ActiveSpacePayload {
+    pub(crate) active_space_id: Uuid,
+    pub(crate) space_slug: String,
 }
 
 /// 创建 Space，并补齐系统 FocusView。
@@ -209,15 +262,92 @@ pub(crate) async fn create_task(
         None => None,
     };
 
-    let created_task = task_repository
-        .create_task(CreateTaskParams {
+    create_task_in_space(
+        &task_repository,
+        CreateTaskInSpaceInput {
             space_id: space.id,
             project_id,
-            title: &title,
-            note: note.as_deref(),
-            priority: priority.as_deref(),
-            status: TASK_STATUS_TODO,
+            title,
+            note,
+            priority,
             source: TASK_SOURCE_IN_APP_CAPTURE,
+            space_fallback: false,
+        },
+    )
+    .await
+}
+
+/// 写入当前活跃 Space 状态，供后续捕获入口读取。
+pub(crate) async fn set_active_space(
+    database: &DatabaseState,
+    active_space_state: &ActiveSpaceState,
+    input: SetActiveSpaceInput,
+) -> Result<ActiveSpacePayload> {
+    let space_repository = SpaceRepository::new(&database.connection);
+    let space_slug = normalize_required_text(&input.space_slug, "space slug")?;
+    let space = resolve_active_space(&space_repository, &space_slug).await?;
+
+    active_space_state.set(space.id)?;
+
+    Ok(ActiveSpacePayload {
+        active_space_id: space.id,
+        space_slug: space.slug,
+    })
+}
+
+/// 系统级捕获准备入口：读取当前 Space，失败时回退默认 Space。
+pub(crate) async fn create_capture_task(
+    database: &DatabaseState,
+    active_space_state: &ActiveSpaceState,
+    input: CaptureTaskInput,
+) -> Result<CreatedTaskPayload> {
+    let space_repository = SpaceRepository::new(&database.connection);
+    let task_repository = TaskRepository::new(&database.connection);
+
+    let title = normalize_required_text(&input.title, "task title")?;
+    let note = normalize_optional_text(input.note);
+    let priority = normalize_optional_priority(input.priority)?;
+    let (space, space_fallback) =
+        resolve_capture_space(&space_repository, active_space_state).await?;
+
+    create_task_in_space(
+        &task_repository,
+        CreateTaskInSpaceInput {
+            space_id: space.id,
+            project_id: None,
+            title,
+            note,
+            priority,
+            source: TASK_SOURCE_QUICK_CAPTURE,
+            space_fallback,
+        },
+    )
+    .await
+}
+
+struct CreateTaskInSpaceInput {
+    space_id: Uuid,
+    project_id: Option<Uuid>,
+    title: String,
+    note: Option<String>,
+    priority: Option<String>,
+    source: &'static str,
+    space_fallback: bool,
+}
+
+async fn create_task_in_space(
+    task_repository: &TaskRepository<'_, impl ConnectionTrait>,
+    input: CreateTaskInSpaceInput,
+) -> Result<CreatedTaskPayload> {
+    let created_task = task_repository
+        .create_task(CreateTaskParams {
+            space_id: input.space_id,
+            project_id: input.project_id,
+            title: &input.title,
+            note: input.note.as_deref(),
+            priority: input.priority.as_deref(),
+            status: TASK_STATUS_TODO,
+            source: input.source,
         })
         .await?;
 
@@ -230,9 +360,42 @@ pub(crate) async fn create_task(
         priority: created_task.priority,
         note: created_task.note,
         source: created_task.source,
+        space_fallback: input.space_fallback,
         created_at: created_task.created_at,
         updated_at: created_task.updated_at,
     })
+}
+
+async fn resolve_capture_space(
+    space_repository: &SpaceRepository<'_, impl ConnectionTrait>,
+    active_space_state: &ActiveSpaceState,
+) -> Result<(stoneflow_entity::space::Model, bool)> {
+    if let Some(active_space_id) = active_space_state.get()? {
+        if let Some(space) = space_repository.find_by_id(active_space_id).await? {
+            if !space.is_archived {
+                return Ok((space, false));
+            }
+        }
+    }
+
+    let default_space = resolve_default_space(space_repository).await?;
+    Ok((default_space, true))
+}
+
+async fn resolve_default_space(
+    space_repository: &SpaceRepository<'_, impl ConnectionTrait>,
+) -> Result<stoneflow_entity::space::Model> {
+    let default_slug = default_space_seed().slug;
+    let space = space_repository
+        .find_by_slug(default_slug)
+        .await?
+        .with_context(|| format!("default space `{default_slug}` does not exist"))?;
+
+    if space.is_archived {
+        bail!("default space `{default_slug}` is archived");
+    }
+
+    Ok(space)
 }
 
 pub(crate) async fn resolve_active_space(

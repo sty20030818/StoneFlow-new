@@ -28,6 +28,18 @@ pub enum AppError {
     /// 内部服务器错误
     #[error("内部错误: {0}")]
     Internal(String),
+
+    /// 捕获入口无法解析可用 Space
+    #[error("捕获 Space 解析失败: {0}")]
+    CaptureSpaceUnavailable(String),
+
+    /// 捕获入口无法回退默认 Space
+    #[error("默认 Space 不可用: {0}")]
+    DefaultSpaceUnavailable(String),
+
+    /// 捕获任务持久化失败
+    #[error("捕获任务持久化失败: {0}")]
+    CapturePersistence(String),
 }
 
 impl From<anyhow::Error> for AppError {
@@ -35,7 +47,13 @@ impl From<anyhow::Error> for AppError {
         let msg = error.to_string();
 
         // 基于错误消息模式自动分类
-        if msg.contains("does not exist") || msg.contains("does not belong to") {
+        if msg.contains("default space") {
+            AppError::DefaultSpaceUnavailable(msg)
+        } else if msg.contains("active space") {
+            AppError::CaptureSpaceUnavailable(msg)
+        } else if msg.contains("failed to create task") {
+            AppError::CapturePersistence(msg)
+        } else if msg.contains("does not exist") || msg.contains("does not belong to") {
             AppError::NotFound(msg)
         } else if msg.contains("already exists") {
             AppError::Conflict(msg)
@@ -95,5 +113,21 @@ mod tests {
         let app_err: AppError = anyhow_err.into();
 
         assert!(matches!(app_err, AppError::Internal(_)));
+    }
+
+    #[test]
+    fn default_space_error_from_anyhow() {
+        let anyhow_err = anyhow::anyhow!("default space `default` is archived");
+        let app_err: AppError = anyhow_err.into();
+
+        assert!(matches!(app_err, AppError::DefaultSpaceUnavailable(_)));
+    }
+
+    #[test]
+    fn capture_persistence_error_from_anyhow() {
+        let anyhow_err = anyhow::anyhow!("failed to create task `capture`");
+        let app_err: AppError = anyhow_err.into();
+
+        assert!(matches!(app_err, AppError::CapturePersistence(_)));
     }
 }

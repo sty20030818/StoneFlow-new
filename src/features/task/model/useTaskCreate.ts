@@ -1,7 +1,11 @@
 import { useCallback, useState } from 'react'
 
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
-import { createTask, type CreatedTaskPayload } from '@/features/task/api/createTask'
+import {
+	createTask,
+	normalizeTaskCreateError,
+	type CreatedTaskPayload,
+} from '@/features/task/api/createTask'
 
 type TaskCreateStatus = 'idle' | 'submitting' | 'success' | 'error'
 
@@ -54,14 +58,15 @@ export function useTaskCreate({ currentSpaceId }: UseTaskCreateOptions) {
 			bumpTaskDataVersion()
 			return payload
 		} catch (error) {
-			const message = error instanceof Error ? error.message : '创建任务失败，请稍后重试。'
+			const normalizedError = normalizeTaskCreateError(error)
+			const message = normalizedError.message
 			console.error('task create failed', {
 				currentSpaceId,
 				title,
 				note,
 				priority,
 				projectId,
-				error,
+				error: normalizedError,
 			})
 			setCreatedTask(null)
 			setStatus('error')

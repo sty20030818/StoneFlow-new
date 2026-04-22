@@ -26,6 +26,8 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         project::delete_project_to_trash,
         // Task
         task::create_task,
+        task::set_active_space,
+        task::create_capture_task,
         // Inbox
         inbox::list_inbox_tasks,
         inbox::triage_inbox_task,

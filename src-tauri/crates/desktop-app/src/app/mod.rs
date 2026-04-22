@@ -4,6 +4,7 @@
 use tauri::TitleBarStyle;
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
+use crate::application::create::ActiveSpaceState;
 use crate::infrastructure::database::initialize_database;
 
 pub mod commands;
@@ -53,6 +54,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             let database_state = tauri::async_runtime::block_on(initialize_database(app))
                 .map_err(tauri::Error::Anyhow)?;
             app.manage(database_state);
+            app.manage(ActiveSpaceState::default());
 
             build_main_window(app)?;
             Ok(())

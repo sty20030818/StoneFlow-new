@@ -8,6 +8,7 @@ import {
 	useShellLayoutStore,
 } from './shell/model/useShellLayoutStore'
 import { ShellLayout } from './shell/ShellLayout'
+import { setActiveSpace } from '@/features/task/api/setActiveSpace'
 
 export function SpaceLayout() {
 	const { spaceId = 'default' } = useParams()
@@ -27,6 +28,15 @@ export function SpaceLayout() {
 			setActiveSection(nextSection)
 		}
 	}, [activeSection, currentSpaceId, pathname, setActiveSection, setCurrentSpaceId, spaceId])
+
+	useEffect(() => {
+		void setActiveSpace(spaceId).catch((error) => {
+			console.error('active space sync failed', {
+				spaceId,
+				error,
+			})
+		})
+	}, [spaceId])
 
 	return (
 		<ShellLayout activeSection={activeSection} currentSpaceId={spaceId}>

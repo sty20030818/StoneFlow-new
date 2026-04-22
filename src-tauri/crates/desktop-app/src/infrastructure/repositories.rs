@@ -46,6 +46,14 @@ where
             .with_context(|| format!("failed to query space by slug `{slug}`"))
     }
 
+    /// 按稳定 ID 查询空间。
+    pub(crate) async fn find_by_id(&self, id: Uuid) -> Result<Option<space::Model>> {
+        space::Entity::find_by_id(id)
+            .one(self.connection)
+            .await
+            .with_context(|| format!("failed to query space `{id}`"))
+    }
+
     /// 保证默认空间存在，并在必要时回写规范字段。
     pub(crate) async fn ensure_space(&self, seed: &DefaultSpaceSeed) -> Result<space::Model> {
         if let Some(existing) = self.find_by_slug(seed.slug).await? {
