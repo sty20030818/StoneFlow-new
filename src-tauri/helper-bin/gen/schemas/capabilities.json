@@ -1,0 +1,1 @@
+{"helper-default":{"identifier":"helper-default","description":"Helper 默认权限：仅给 Quick Capture 面板打开 core 的默认能力","local":true,"windows":["quick-capture"],"permissions":["core:default","core:window:allow-close","core:window:allow-hide","core:window:allow-show","core:window:allow-set-focus"]}}

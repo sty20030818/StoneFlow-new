@@ -1,14 +1,10 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "StoneFlow",
+  "productName": "StoneFlow Helper",
   "version": "0.1.0",
-  "identifier": "com.stonefish.stoneflow",
+  "identifier": "com.stonefish.stoneflow.helper",
   "build": {
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "bun dev",
-    "beforeBuildCommand": "bun run build",
-    "beforeBundleCommand": "bash ../scripts/bundle-helper.sh"
+    "frontendDist": "../dist"
   },
   "app": {
     "windows": [],
@@ -18,7 +14,7 @@
     "macOSPrivateApi": true
   },
   "bundle": {
-    "active": true,
+    "active": false,
     "targets": "all",
     "icon": [
       "icons/32x32.png",

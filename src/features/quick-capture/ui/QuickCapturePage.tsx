@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import {
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+	type KeyboardEvent,
+	type PointerEvent as ReactPointerEvent,
+} from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { listen } from '@tauri-apps/api/event'
 import {
@@ -58,8 +65,9 @@ function getSuccessMessage(payload: CreatedCaptureTaskPayload) {
 }
 
 export function QuickCapturePage() {
-	// 挂载/卸载时在 body 上打标，使全局 body[data-quick-capture] 透明样式生效。
-	// 避免 body 的 bg-background 盖掉 Tauri 窗口 transparent(true)，造成卡片外出现灰白一圈。
+	// Quick Capture 面板只在 Helper 进程的窗口里被渲染（主 App 不再挂载 `/quick-capture`）。
+	// 此处给 `body` 打 data-quick-capture 标志只是让 Helper 窗口的 body/#root 透明，
+	// 避免 body 的 bg-background 盖掉 Tauri 窗口 transparent(true) 造成卡片外出现灰白一圈。
 	useEffect(() => {
 		document.body.dataset.quickCapture = 'true'
 		return () => {
@@ -91,10 +99,17 @@ export function QuickCaptureSurface({
 	const trimmedTitle = title.trim()
 
 	const focusInput = useCallback(() => {
-		window.setTimeout(() => {
-			inputRef.current?.focus()
-			inputRef.current?.select()
-		}, 0)
+		// 用双帧 requestAnimationFrame 替代 setTimeout(0)：
+		// `quick-capture:shown` 事件是 Rust 在 `windowDidBecomeKey:` 回调里发出的，
+		// 此时 NSPanel 刚进 key 状态、WKWebView 的 first responder 还在切换。
+		// 直接同步 focus 大概率会被 WKWebView 的 responder swap 吃掉；
+		// 双帧足够让一次 layout + responder 切换完成，input.focus() 才会稳定命中。
+		window.requestAnimationFrame(() => {
+			window.requestAnimationFrame(() => {
+				inputRef.current?.focus()
+				inputRef.current?.select()
+			})
+		})
 	}, [])
 
 	const requestClose = useCallback(() => {
@@ -138,6 +153,38 @@ export function QuickCaptureSurface({
 		}
 	}, [handlePanelShown])
 
+	// Esc 统一挂在 document 级：
+	// 面板内任何区域（标题栏 drag-region / 提示文字 / 空白）被点击后，
+	// <input> 都可能失去 DOM focus，绑在 `<input onKeyDown>` 上的 Esc 会收不到。
+	// 只要 panel 仍是 key window，WebView 就能收到 document-level keydown，
+	// 这是唯一与 UI 焦点解耦的可靠入口。
+	// 面板关闭是幂等的（只是 hide），下次 becomeKey 时 handlePanelShown 会清空并重置，
+	// 所以「先关闭、下次打开已干净」= 用户要的"先关闭再清空"语义，无需显式清空。
+	useEffect(() => {
+		const onDocKeyDown = (event: globalThis.KeyboardEvent) => {
+			if (event.key !== 'Escape') return
+			event.preventDefault()
+			requestClose()
+		}
+		document.addEventListener('keydown', onDocKeyDown)
+		return () => document.removeEventListener('keydown', onDocKeyDown)
+	}, [requestClose])
+
+	// 面板内"空白/非交互区域"被按下时，把 DOM focus 拉回输入框。
+	// 触发条件：target 不是可交互控件（button / input / textarea / select / [contenteditable]）。
+	// 对这些非交互区域 preventDefault 可避免浏览器把 focus 转移到 document.body / WebView，
+	// 从而保证 Esc 与继续打字都能立刻工作（Raycast / Spotlight 同款体验）。
+	// 注意：按钮 / 输入框本身不进此分支，它们的原生 click / focus / selection 行为不受影响。
+	const handleSurfacePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+		const target = event.target as HTMLElement | null
+		if (!target) return
+		if (target.closest('button, input, textarea, select, [contenteditable="true"]')) {
+			return
+		}
+		event.preventDefault()
+		inputRef.current?.focus()
+	}, [])
+
 	const submit = useCallback(async () => {
 		if (isSubmitting) {
 			return
@@ -178,9 +225,8 @@ export function QuickCaptureSurface({
 	}, [closeDelayMs, createTask, focusInput, isSubmitting, requestClose, trimmedTitle])
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-		// 关闭面板仅通过：Option+Space 再次切换 / 点击面板外失焦。
-		// 不再处理 Esc：panel 未被设为 key window，键盘事件链不稳定，
-		// 保留 Esc 会导致行为时好时坏，索性统一入口。
+		// Esc 由 document-level listener 统一处理（与 UI focus 解耦），
+		// 这里只负责 Enter 提交（Enter 按语义就该在输入框聚焦时才触发）。
 		if (event.key === 'Enter') {
 			event.preventDefault()
 			void submit()
@@ -192,6 +238,7 @@ export function QuickCaptureSurface({
 			aria-label='Quick Capture'
 			// 无阴影方案：单层 1px 极淡边框勾勒卡片轮廓，不叠 ring。
 			className='flex min-h-0 w-full flex-col overflow-hidden rounded-[13px] border border-black/10 bg-[#fcfcfd]'
+			onPointerDown={handleSurfacePointerDown}
 		>
 			<div
 				className='flex items-center justify-between border-b border-[#eaecf0] px-3 py-2'

@@ -1,0 +1,11 @@
+[package]
+name = "stoneflow-ipc-protocol"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+thiserror = "1.0"

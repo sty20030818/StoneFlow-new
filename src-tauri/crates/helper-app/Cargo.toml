@@ -1,0 +1,28 @@
+[package]
+name = "stoneflow-helper-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+# Helper 独占轻量职责：全局快捷键 + Quick Capture NSPanel + 通过 IPC 向主 App 下发请求。
+# 刻意不引入 sea-orm / stoneflow-entity / stoneflow-migration / stoneflow-core 里任何业务依赖，
+# 保证 Helper 启动毫秒级、二进制体积最小。
+
+[dependencies]
+anyhow.workspace = true
+interprocess.workspace = true
+log.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+stoneflow-ipc-protocol.workspace = true
+tauri.workspace = true
+tauri-plugin-global-shortcut.workspace = true
+tauri-plugin-log.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
+objc2 = "0.6.4"
+objc2-app-kit = "0.3.2"
+objc2-foundation = "0.3.2"

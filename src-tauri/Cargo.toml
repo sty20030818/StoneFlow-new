@@ -3,7 +3,10 @@ members = [
   "crates/core",
   "crates/desktop-app",
   "crates/entity",
+  "crates/helper-app",
+  "crates/ipc-protocol",
   "crates/migration",
+  "helper-bin",
 ]
 resolver = "2"
 
@@ -15,16 +18,20 @@ version = "0.1.0"
 [workspace.dependencies]
 anyhow = "1"
 chrono = { version = "0.4", features = ["clock", "serde"] }
+interprocess = { version = "2", features = ["tokio"] }
 log = "0.4"
 sea-orm = { version = "1.1.20", default-features = false, features = ["macros", "sqlx-sqlite", "runtime-tokio-rustls", "with-chrono", "with-json", "with-uuid"] }
 sea-orm-migration = { version = "1.1.20", default-features = false, features = ["sqlx-sqlite", "runtime-tokio-rustls"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+stoneflow-ipc-protocol = { path = "crates/ipc-protocol" }
 tauri = { version = "2.10.3", features = ["macos-private-api"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-opener = "2"
+thiserror = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "io-util", "time", "net"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 
 [package]

@@ -1,6 +1,7 @@
 //! StoneFlow 桌面应用统一错误类型。
 
 use serde::Serialize;
+use stoneflow_ipc_protocol::IpcError;
 use thiserror::Error;
 
 /// 应用层统一错误类型。
@@ -66,6 +67,24 @@ impl From<anyhow::Error> for AppError {
             AppError::Forbidden(msg)
         } else {
             AppError::Internal(msg)
+        }
+    }
+}
+
+/// 将内部 `AppError` 投影到 IPC 通道上等价的 `IpcError`。
+///
+/// 分类一一对应，保持与前端 / 其他调用方观察到的错误语义一致。
+impl From<AppError> for IpcError {
+    fn from(error: AppError) -> Self {
+        match error {
+            AppError::Validation(msg) => IpcError::Validation(msg),
+            AppError::NotFound(msg) => IpcError::NotFound(msg),
+            AppError::Forbidden(msg) => IpcError::Forbidden(msg),
+            AppError::Conflict(msg) => IpcError::Conflict(msg),
+            AppError::Internal(msg) => IpcError::Internal(msg),
+            AppError::CaptureSpaceUnavailable(msg) => IpcError::CaptureSpaceUnavailable(msg),
+            AppError::DefaultSpaceUnavailable(msg) => IpcError::DefaultSpaceUnavailable(msg),
+            AppError::CapturePersistence(msg) => IpcError::CapturePersistence(msg),
         }
     }
 }

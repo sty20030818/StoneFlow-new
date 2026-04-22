@@ -7,26 +7,19 @@ rust-version.workspace = true
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
+interprocess.workspace = true
 log.workspace = true
 sea-orm.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+stoneflow-core = { path = "../core" }
+stoneflow-entity = { path = "../entity" }
+stoneflow-ipc-protocol.workspace = true
+stoneflow-migration = { path = "../migration" }
 tauri.workspace = true
 tauri-plugin-dialog.workspace = true
 tauri-plugin-log.workspace = true
-tauri-plugin-global-shortcut.workspace = true
 tauri-plugin-opener.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
 uuid.workspace = true
-stoneflow-core = { path = "../core" }
-stoneflow-entity = { path = "../entity" }
-stoneflow-migration = { path = "../migration" }
-thiserror = "1.0"
-
-# macOS 专用：将 Quick Capture 窗口转为 NSPanel，以支持全屏 Space 可见与 toggle 行为。
-# objc2-app-kit / objc2-foundation：直接引用与 tauri-nspanel 相同版本，
-# 用于获取 NSScreen.mainScreen() 以在显示时将面板居中到当前活跃屏幕。
-[target.'cfg(target_os = "macos")'.dependencies]
-tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
-objc2 = "0.6.4"
-objc2-app-kit = "0.3.2"
-objc2-foundation = "0.3.2"
