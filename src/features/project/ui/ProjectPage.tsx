@@ -46,7 +46,7 @@ const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
 const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
 
 export function ProjectPage() {
-	const { projectId = 'stoneflow-v1', spaceId = 'default' } = useParams()
+	const { projectId = 'stoneflow-v1', spaceId = 'work' } = useParams()
 	const navigate = useNavigate()
 	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
 	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)

@@ -70,7 +70,7 @@ describe('ProjectPage', () => {
 
 		await waitFor(() => {
 			expect(mockedGetProjectExecutionView).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				projectId: 'project-1',
 			})
 		})
@@ -133,7 +133,7 @@ describe('ProjectPage', () => {
 
 		await waitFor(() => {
 			expect(mockedUpdateProjectTaskStatus).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				projectId: 'project-1',
 				taskId: 'task-1',
 				status: 'done',
@@ -233,7 +233,7 @@ describe('ProjectPage', () => {
 
 		await waitFor(() => {
 			expect(mockedGetProjectExecutionView).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				projectId: 'project-child',
 			})
 		})
@@ -351,7 +351,7 @@ describe('ProjectPage', () => {
 
 function renderProjectPage() {
 	return render(
-		<MemoryRouter initialEntries={['/space/default/project/project-1']}>
+		<MemoryRouter initialEntries={['/space/work/project/project-1']}>
 			<Routes>
 				<Route element={<ProjectPage />} path='/space/:spaceId/project/:projectId' />
 			</Routes>

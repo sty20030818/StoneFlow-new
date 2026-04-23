@@ -31,7 +31,7 @@ type ShellLayoutState = {
 }
 
 export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
-	currentSpaceId: 'default',
+	currentSpaceId: 'work',
 	activeSection: 'inbox',
 	isCommandOpen: false,
 	isTaskCreateOpen: false,

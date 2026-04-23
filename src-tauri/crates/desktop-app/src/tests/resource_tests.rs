@@ -24,7 +24,7 @@ fn task_resources_support_three_types_and_list_by_task_order() {
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "挂载 M3-C 资源".to_owned(),
                 note: None,
                 priority: None,
@@ -43,7 +43,7 @@ fn task_resources_support_three_types_and_list_by_task_order() {
         create_task_resource(
             &state,
             CreateTaskResourceInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
                 r#type: "doc_link".to_owned(),
                 title: "需求文档".to_owned(),
@@ -56,7 +56,7 @@ fn task_resources_support_three_types_and_list_by_task_order() {
         create_task_resource(
             &state,
             CreateTaskResourceInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
                 r#type: "local_file".to_owned(),
                 title: "brief.md".to_owned(),
@@ -69,7 +69,7 @@ fn task_resources_support_three_types_and_list_by_task_order() {
         create_task_resource(
             &state,
             CreateTaskResourceInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
                 r#type: "local_folder".to_owned(),
                 title: "folder".to_owned(),
@@ -82,7 +82,7 @@ fn task_resources_support_three_types_and_list_by_task_order() {
         let payload = list_task_resources(
             &state,
             ListTaskResourcesInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
             },
         )
@@ -113,7 +113,7 @@ fn create_task_resource_rejects_cross_space_and_invalid_type() {
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "资源边界".to_owned(),
                 note: None,
                 priority: None,
@@ -148,7 +148,7 @@ fn create_task_resource_rejects_cross_space_and_invalid_type() {
         let invalid_type_error = create_task_resource(
             &state,
             CreateTaskResourceInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
                 r#type: "video".to_owned(),
                 title: "非法类型".to_owned(),
@@ -181,7 +181,7 @@ fn delete_task_resource_removes_record_without_trash_entry() {
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "删除资源".to_owned(),
                 note: None,
                 priority: None,
@@ -194,7 +194,7 @@ fn delete_task_resource_removes_record_without_trash_entry() {
         let created = create_task_resource(
             &state,
             CreateTaskResourceInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
                 r#type: "doc_link".to_owned(),
                 title: "临时链接".to_owned(),
@@ -207,7 +207,7 @@ fn delete_task_resource_removes_record_without_trash_entry() {
         delete_task_resource(
             &state,
             DeleteTaskResourceInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 resource_id: created.resource.id,
             },
         )
@@ -217,7 +217,7 @@ fn delete_task_resource_removes_record_without_trash_entry() {
         let resources = list_task_resources(
             &state,
             ListTaskResourcesInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
             },
         )

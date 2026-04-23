@@ -37,7 +37,7 @@ describe('project api', () => {
 			],
 		})
 
-		await expect(listProjects({ spaceSlug: 'default' })).resolves.toEqual([
+		await expect(listProjects({ spaceSlug: 'work' })).resolves.toEqual([
 			{
 				id: 'project-1',
 				parentProjectId: null,
@@ -59,7 +59,7 @@ describe('project api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('list_projects', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 			},
 		})
 	})
@@ -79,7 +79,7 @@ describe('project api', () => {
 
 		await expect(
 			createProject({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				name: '子项目收口',
 				note: null,
 				parentProjectId: 'project-1',
@@ -91,7 +91,7 @@ describe('project api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('create_project', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				name: '子项目收口',
 				note: null,
 				parent_project_id: 'project-1',
@@ -120,7 +120,7 @@ describe('project api', () => {
 
 		await expect(
 			getProjectExecutionView({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				projectId: 'project-1',
 			}),
 		).resolves.toMatchObject({

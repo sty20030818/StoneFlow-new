@@ -31,7 +31,7 @@ describe('ProjectCreateModalContent', () => {
 			updatedAt: '2026-04-20T08:00:00Z',
 		})
 
-		render(<ProjectCreateModalContent currentSpaceId='default' onClose={onClose} />)
+		render(<ProjectCreateModalContent currentSpaceId='work' onClose={onClose} />)
 
 		fireEvent.change(screen.getByLabelText('项目名称'), {
 			target: { value: '执行层' },
@@ -47,7 +47,7 @@ describe('ProjectCreateModalContent', () => {
 		})
 
 		expect(mockedCreateProject).toHaveBeenCalledWith({
-			spaceSlug: 'default',
+			spaceSlug: 'work',
 			name: '执行层',
 			note: '承接执行层任务',
 			parentProjectId: null,
@@ -64,7 +64,7 @@ describe('ProjectCreateModalContent', () => {
 	it('创建失败时展示错误反馈', async () => {
 		mockedCreateProject.mockRejectedValue(new Error('project name cannot be empty'))
 
-		render(<ProjectCreateModalContent currentSpaceId='default' onClose={vi.fn<() => void>()} />)
+		render(<ProjectCreateModalContent currentSpaceId='work' onClose={vi.fn<() => void>()} />)
 
 		fireEvent.click(screen.getByRole('button', { name: '创建项目' }))
 
@@ -88,7 +88,7 @@ describe('ProjectCreateModalContent', () => {
 
 		render(
 			<ProjectCreateModalContent
-				currentSpaceId='default'
+				currentSpaceId='work'
 				onClose={vi.fn<() => void>()}
 				parentProjectId='project-1'
 			/>,
@@ -101,7 +101,7 @@ describe('ProjectCreateModalContent', () => {
 
 		await waitFor(() => {
 			expect(mockedCreateProject).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				name: '子项目收口',
 				note: '',
 				parentProjectId: 'project-1',

@@ -19,7 +19,7 @@ fn create_task_writes_in_app_inbox_defaults() {
         let payload = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "  编写 M2-B 创建链路  ".to_owned(),
                 note: Some("  先打通 Header 入口  ".to_owned()),
                 priority: None,
@@ -57,7 +57,7 @@ fn create_task_accepts_priority_and_skips_inbox_when_project_assigned() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "M2-B 联调".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -69,7 +69,7 @@ fn create_task_accepts_priority_and_skips_inbox_when_project_assigned() {
         let payload = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "直接写入执行层".to_owned(),
                 note: None,
                 priority: Some("high".to_owned()),
@@ -103,7 +103,7 @@ fn create_task_rejects_blank_title() {
         let error = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "   ".to_owned(),
                 note: None,
                 priority: None,
@@ -129,7 +129,7 @@ fn create_task_rejects_invalid_priority() {
         let error = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "测试无效优先级".to_owned(),
                 note: None,
                 priority: Some("invalid".to_owned()),
@@ -157,7 +157,7 @@ fn create_task_rejects_foreign_project() {
         let foreign_project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "Foreign Project".to_owned(),
                 note: None,
             parent_project_id: None,

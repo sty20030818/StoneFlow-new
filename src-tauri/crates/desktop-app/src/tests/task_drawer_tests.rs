@@ -24,7 +24,7 @@ fn get_task_drawer_detail_returns_task_and_projects_for_current_space() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -36,7 +36,7 @@ fn get_task_drawer_detail_returns_task_and_projects_for_current_space() {
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "打开真实 Drawer".to_owned(),
                 note: Some("补齐详情查询".to_owned()),
                 priority: None,
@@ -49,7 +49,7 @@ fn get_task_drawer_detail_returns_task_and_projects_for_current_space() {
         let payload = get_task_drawer_detail(
             &state,
             GetTaskDrawerDetailInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
             },
         )
@@ -76,7 +76,7 @@ fn update_task_drawer_fields_updates_core_fields_and_moves_task_back_to_inbox() 
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -88,7 +88,7 @@ fn update_task_drawer_fields_updates_core_fields_and_moves_task_back_to_inbox() 
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "Drawer 可编辑字段".to_owned(),
                 note: Some("原始备注".to_owned()),
                 priority: None,
@@ -101,7 +101,7 @@ fn update_task_drawer_fields_updates_core_fields_and_moves_task_back_to_inbox() 
         triage_inbox_task(
             &state,
             TriageInboxTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
                 project_id: Some(project.id),
                 priority: Some("high".to_owned()),
@@ -113,7 +113,7 @@ fn update_task_drawer_fields_updates_core_fields_and_moves_task_back_to_inbox() 
         let updated = update_task_drawer_fields(
             &state,
             UpdateTaskDrawerFieldsInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
                 title: "  修正后的标题  ".to_owned(),
                 note: Some("更新后的备注".to_owned()),
@@ -152,7 +152,7 @@ fn update_task_drawer_fields_sets_status_done_and_completed_at() {
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "完成任务".to_owned(),
                 note: None,
                 priority: Some("medium".to_owned()),
@@ -165,7 +165,7 @@ fn update_task_drawer_fields_sets_status_done_and_completed_at() {
         let updated = update_task_drawer_fields(
             &state,
             UpdateTaskDrawerFieldsInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
                 title: "已完成".to_owned(),
                 note: None,

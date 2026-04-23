@@ -45,7 +45,7 @@ describe('TaskDrawerContent', () => {
 		mockedUseTaskDrawer.mockReturnValue(createHookState({ isLoading: true }))
 
 		render(
-			<TaskDrawerContent currentSpaceId='default' onClose={vi.fn<() => void>()} taskId='task-1' />,
+			<TaskDrawerContent currentSpaceId='work' onClose={vi.fn<() => void>()} taskId='task-1' />,
 		)
 
 		expect(screen.getByText('正在加载任务详情...')).toBeInTheDocument()
@@ -64,7 +64,7 @@ describe('TaskDrawerContent', () => {
 			}),
 		)
 
-		render(<TaskDrawerContent currentSpaceId='default' onClose={onClose} taskId='task-1' />)
+		render(<TaskDrawerContent currentSpaceId='work' onClose={onClose} taskId='task-1' />)
 
 		expect(screen.getByRole('alert')).toHaveTextContent('task `task-1` does not exist')
 
@@ -97,7 +97,7 @@ describe('TaskDrawerContent', () => {
 		)
 
 		render(
-			<TaskDrawerContent currentSpaceId='default' onClose={vi.fn<() => void>()} taskId='task-1' />,
+			<TaskDrawerContent currentSpaceId='work' onClose={vi.fn<() => void>()} taskId='task-1' />,
 		)
 
 		expect(screen.getByDisplayValue('M2-E Task Drawer')).toBeInTheDocument()
@@ -165,7 +165,7 @@ describe('TaskDrawerContent', () => {
 		)
 
 		render(
-			<TaskDrawerContent currentSpaceId='default' onClose={vi.fn<() => void>()} taskId='task-1' />,
+			<TaskDrawerContent currentSpaceId='work' onClose={vi.fn<() => void>()} taskId='task-1' />,
 		)
 
 		expect(screen.getByText('需求文档')).toBeInTheDocument()
@@ -191,7 +191,7 @@ describe('TaskDrawerContent', () => {
 		)
 
 		render(
-			<TaskDrawerContent currentSpaceId='default' onClose={vi.fn<() => void>()} taskId='task-1' />,
+			<TaskDrawerContent currentSpaceId='work' onClose={vi.fn<() => void>()} taskId='task-1' />,
 		)
 
 		fireEvent.change(screen.getByLabelText('资源标题'), {
@@ -223,7 +223,7 @@ describe('TaskDrawerContent', () => {
 		)
 
 		render(
-			<TaskDrawerContent currentSpaceId='default' onClose={vi.fn<() => void>()} taskId='task-1' />,
+			<TaskDrawerContent currentSpaceId='work' onClose={vi.fn<() => void>()} taskId='task-1' />,
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '选择文件' }))
@@ -258,7 +258,7 @@ describe('TaskDrawerContent', () => {
 		)
 
 		render(
-			<TaskDrawerContent currentSpaceId='default' onClose={vi.fn<() => void>()} taskId='task-1' />,
+			<TaskDrawerContent currentSpaceId='work' onClose={vi.fn<() => void>()} taskId='task-1' />,
 		)
 
 		expect(screen.getByRole('alert')).toHaveTextContent(
@@ -277,7 +277,7 @@ describe('TaskDrawerContent', () => {
 			}),
 		)
 
-		render(<TaskDrawerContent currentSpaceId='default' onClose={onClose} taskId='task-1' />)
+		render(<TaskDrawerContent currentSpaceId='work' onClose={onClose} taskId='task-1' />)
 
 		fireEvent.click(screen.getByRole('button', { name: '删除任务' }))
 
@@ -299,7 +299,7 @@ describe('TaskDrawerContent', () => {
 			}),
 		)
 
-		render(<TaskDrawerContent currentSpaceId='default' onClose={onClose} taskId='task-1' />)
+		render(<TaskDrawerContent currentSpaceId='work' onClose={onClose} taskId='task-1' />)
 
 		fireEvent.click(screen.getByRole('button', { name: '删除任务' }))
 

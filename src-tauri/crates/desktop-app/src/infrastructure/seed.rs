@@ -2,7 +2,10 @@
 
 use anyhow::Result;
 use sea_orm::DatabaseConnection;
-use stoneflow_core::{default_space_seed, system_focus_view_definitions};
+use stoneflow_core::{
+    default_space_seed, system_focus_view_definitions, system_space_seeds,
+    LEGACY_DEFAULT_SPACE_SLUG,
+};
 use uuid::Uuid;
 
 use crate::infrastructure::repositories::{FocusViewRepository, SpaceRepository};
@@ -10,8 +13,15 @@ use crate::infrastructure::repositories::{FocusViewRepository, SpaceRepository};
 /// 执行最小幂等 seed，保证默认 Space 与系统 FocusView 存在。
 pub(crate) async fn run_seed(connection: &DatabaseConnection) -> Result<()> {
     let space_repository = SpaceRepository::new(connection);
-    let default_space = space_repository.ensure_space(&default_space_seed()).await?;
-    initialize_system_focus_views(connection, default_space.id).await?;
+    let primary_space_seed = default_space_seed();
+    let _ = space_repository
+        .migrate_space_slug(LEGACY_DEFAULT_SPACE_SLUG, &primary_space_seed)
+        .await?;
+
+    for seed in system_space_seeds() {
+        let space = space_repository.ensure_space(&seed).await?;
+        initialize_system_focus_views(connection, space.id).await?;
+    }
 
     Ok(())
 }

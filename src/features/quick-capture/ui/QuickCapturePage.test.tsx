@@ -43,7 +43,7 @@ const basePayload: CreatedCaptureTaskPayload = {
 }
 
 const emptyResults: WorkspaceSearchResult = {
-	spaceSlug: 'default',
+	spaceSlug: 'work',
 	tasks: [],
 	projects: [],
 }
@@ -100,7 +100,7 @@ describe('QuickCaptureSurface', () => {
 
 	it('输入关键词后搜索并展示 Task / Project 分组', async () => {
 		const search = vi.fn<SearchMock>().mockResolvedValue({
-			spaceSlug: 'default',
+			spaceSlug: 'work',
 			tasks: [
 				{
 					id: 'task-1',
@@ -128,7 +128,7 @@ describe('QuickCaptureSurface', () => {
 
 		await waitFor(() => {
 			expect(search).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				query: 'Command',
 				limit: 5,
 			})
@@ -145,7 +145,7 @@ describe('QuickCaptureSurface', () => {
 		const openProject = vi.fn<OpenResultMock>().mockResolvedValue(undefined)
 		const closeWindow = vi.fn<CloseWindowMock>()
 		const search = vi.fn<SearchMock>().mockResolvedValue({
-			spaceSlug: 'default',
+			spaceSlug: 'work',
 			tasks: [
 				{
 					id: 'task-1',

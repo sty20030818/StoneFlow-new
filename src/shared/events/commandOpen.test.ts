@@ -6,13 +6,13 @@ describe('commandOpen event helpers', () => {
 			normalizeCommandOpenPayload({
 				kind: 'task',
 				id: 'task-uuid',
-				space_slug: 'default',
+				space_slug: 'work',
 				project_id: 'project-uuid',
 			}),
 		).toEqual({
 			kind: 'task',
 			id: 'task-uuid',
-			spaceSlug: 'default',
+			spaceSlug: 'work',
 			projectId: 'project-uuid',
 		})
 	})
@@ -22,12 +22,12 @@ describe('commandOpen event helpers', () => {
 			normalizeCommandOpenPayload({
 				kind: 'task',
 				id: 'task-uuid',
-				space_slug: 'default',
+				space_slug: 'work',
 			}),
 		).toEqual({
 			kind: 'task',
 			id: 'task-uuid',
-			spaceSlug: 'default',
+			spaceSlug: 'work',
 			projectId: null,
 		})
 	})
@@ -38,7 +38,7 @@ describe('commandOpen event helpers', () => {
 			normalizeCommandOpenPayload({
 				kind: 'space',
 				id: 'space-uuid',
-				space_slug: 'default',
+				space_slug: 'work',
 			}),
 		).toBeNull()
 	})

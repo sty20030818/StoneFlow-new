@@ -11,7 +11,7 @@ import { ShellLayout } from './shell/ShellLayout'
 import { setActiveSpace } from '@/features/task/api/setActiveSpace'
 
 export function SpaceLayout() {
-	const { spaceId = 'default' } = useParams()
+	const { spaceId = 'work' } = useParams()
 	const { pathname } = useLocation()
 	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
 	const activeSection = useShellLayoutStore(selectActiveSection)

@@ -36,7 +36,7 @@ describe('focus api', () => {
 			],
 		})
 
-		await expect(listFocusViews({ spaceSlug: 'default' })).resolves.toEqual([
+		await expect(listFocusViews({ spaceSlug: 'work' })).resolves.toEqual([
 			{
 				id: 'view-focus',
 				key: 'focus',
@@ -55,7 +55,7 @@ describe('focus api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('list_focus_views', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 			},
 		})
 	})
@@ -99,7 +99,7 @@ describe('focus api', () => {
 
 		await expect(
 			getFocusViewTasks({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				viewKey: 'upcoming',
 			}),
 		).resolves.toEqual({
@@ -140,7 +140,7 @@ describe('focus api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('get_focus_view_tasks', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				view_key: 'upcoming',
 			},
 		})
@@ -155,7 +155,7 @@ describe('focus api', () => {
 
 		await expect(
 			updateTaskPinState({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				taskId: 'task-1',
 				pinned: true,
 			}),
@@ -167,7 +167,7 @@ describe('focus api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('update_task_pin_state', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				task_id: 'task-1',
 				pinned: true,
 			},
@@ -183,7 +183,7 @@ describe('focus api', () => {
 
 		await expect(
 			updateTaskPinState({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				taskId: 'task-1',
 				pinned: false,
 			}),
@@ -195,7 +195,7 @@ describe('focus api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('update_task_pin_state', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				task_id: 'task-1',
 				pinned: false,
 			},

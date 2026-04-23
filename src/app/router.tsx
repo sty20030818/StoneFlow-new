@@ -15,7 +15,7 @@ export const router = createHashRouter([
 	},
 	{
 		path: '/',
-		element: <Navigate to='/space/default/inbox' replace />,
+		element: <Navigate to='/space/work/inbox' replace />,
 	},
 	{
 		path: '/space/:spaceId',

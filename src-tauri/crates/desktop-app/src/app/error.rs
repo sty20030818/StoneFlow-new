@@ -95,11 +95,11 @@ mod tests {
 
     #[test]
     fn error_serializes_to_expected_format() {
-        let error = AppError::NotFound("space `default` does not exist".to_owned());
+        let error = AppError::NotFound("space `work` does not exist".to_owned());
         let json = serde_json::to_value(&error).unwrap();
 
         assert_eq!(json["type"], "NotFound");
-        assert_eq!(json["message"], "space `default` does not exist");
+        assert_eq!(json["message"], "space `work` does not exist");
     }
 
     #[test]
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn conflict_error_from_anyhow() {
-        let anyhow_err = anyhow::anyhow!("space slug `default` already exists");
+        let anyhow_err = anyhow::anyhow!("space slug `work` already exists");
         let app_err: AppError = anyhow_err.into();
 
         assert!(matches!(app_err, AppError::Conflict(_)));
@@ -136,7 +136,7 @@ mod tests {
 
     #[test]
     fn default_space_error_from_anyhow() {
-        let anyhow_err = anyhow::anyhow!("default space `default` is archived");
+        let anyhow_err = anyhow::anyhow!("default space `work` is archived");
         let app_err: AppError = anyhow_err.into();
 
         assert!(matches!(app_err, AppError::DefaultSpaceUnavailable(_)));

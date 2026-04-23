@@ -25,7 +25,7 @@ fn project_creation_with_optional_fields() {
         let payload = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "  整理 M2-B  ".to_owned(),
                 note: Some("  包含数据库与接口梳理  ".to_owned()),
             parent_project_id: None,
@@ -63,7 +63,7 @@ fn project_list_returns_active_sorted_by_sort_order() {
         create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "Alpha".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -75,7 +75,7 @@ fn project_list_returns_active_sorted_by_sort_order() {
         create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "Beta".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -87,7 +87,7 @@ fn project_list_returns_active_sorted_by_sort_order() {
         let payload = list_projects(
             &state,
             ListProjectsInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
             },
         )
         .await
@@ -110,7 +110,7 @@ fn project_rejects_blank_name() {
         let error = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "   ".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -135,7 +135,7 @@ fn project_execution_view_filters_ready_tasks() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -147,7 +147,7 @@ fn project_execution_view_filters_ready_tasks() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "已就绪任务".to_owned(),
                 note: None,
                 priority: Some("high".to_owned()),
@@ -160,7 +160,7 @@ fn project_execution_view_filters_ready_tasks() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "未分类任务".to_owned(),
                 note: None,
                 priority: None,
@@ -173,7 +173,7 @@ fn project_execution_view_filters_ready_tasks() {
         let payload = get_project_execution_view(
             &state,
             GetProjectExecutionViewInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: project.id,
             },
         )
@@ -197,7 +197,7 @@ fn update_project_task_status_toggles_completion() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "状态切换".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -209,7 +209,7 @@ fn update_project_task_status_toggles_completion() {
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "可切换任务".to_owned(),
                 note: None,
                 priority: Some("medium".to_owned()),
@@ -222,7 +222,7 @@ fn update_project_task_status_toggles_completion() {
         let done_payload = update_project_task_status(
             &state,
             UpdateProjectTaskStatusInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: project.id,
                 task_id: task.id,
                 status: "done".to_owned(),
@@ -237,7 +237,7 @@ fn update_project_task_status_toggles_completion() {
         let todo_payload = update_project_task_status(
             &state,
             UpdateProjectTaskStatusInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: project.id,
                 task_id: task.id,
                 status: "todo".to_owned(),
@@ -267,7 +267,7 @@ fn update_project_task_status_rejects_cross_space_task() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -325,7 +325,7 @@ fn update_project_task_status_rejects_cross_space_task() {
         let error = update_project_task_status(
             &state,
             UpdateProjectTaskStatusInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: project.id,
                 task_id: foreign_task.id,
                 status: "done".to_owned(),
@@ -336,6 +336,6 @@ fn update_project_task_status_rejects_cross_space_task() {
 
         assert!(error
             .to_string()
-            .contains("does not belong to space `default`"));
+            .contains("does not belong to space `work`"));
     });
 }

@@ -225,7 +225,7 @@ export function QuickCaptureSurface({
 
 		const timerId = window.setTimeout(() => {
 			void search({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				query: normalizedQuery,
 				limit: SEARCH_LIMIT,
 			})

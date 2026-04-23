@@ -103,7 +103,7 @@ fn create_capture_task_falls_back_to_default_space_when_active_space_missing() {
         let active_space_state = ActiveSpaceState::default();
 
         let default_space = space::Entity::find()
-            .filter(space::Column::Slug.eq("default"))
+            .filter(space::Column::Slug.eq("work"))
             .one(&state.connection)
             .await
             .expect("default space should be queryable")
@@ -168,7 +168,7 @@ fn create_capture_task_rejects_when_default_space_unavailable() {
         let active_space_state = ActiveSpaceState::default();
 
         let default_space = space::Entity::find()
-            .filter(space::Column::Slug.eq("default"))
+            .filter(space::Column::Slug.eq("work"))
             .one(&state.connection)
             .await
             .expect("default space should be queryable")
@@ -194,7 +194,7 @@ fn create_capture_task_rejects_when_default_space_unavailable() {
 
         assert!(error
             .to_string()
-            .contains("default space `default` is archived"));
+            .contains("default space `work` is archived"));
     });
 }
 

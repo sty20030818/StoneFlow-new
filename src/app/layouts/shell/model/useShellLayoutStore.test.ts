@@ -3,7 +3,7 @@ import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutSto
 describe('useShellLayoutStore', () => {
 	afterEach(() => {
 		useShellLayoutStore.setState({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			activeSection: 'inbox',
 			isCommandOpen: false,
 			isTaskCreateOpen: false,

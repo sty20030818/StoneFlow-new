@@ -17,7 +17,7 @@ fn search_workspace_finds_tasks_and_projects_by_keyword() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "M2-B 里程碑".to_owned(),
                 note: Some("里程碑备注".to_owned()),
             parent_project_id: None,
@@ -29,7 +29,7 @@ fn search_workspace_finds_tasks_and_projects_by_keyword() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "M2-B 任务标题".to_owned(),
                 note: Some("任务包含 M2-B 内容".to_owned()),
                 priority: Some("high".to_owned()),
@@ -42,7 +42,7 @@ fn search_workspace_finds_tasks_and_projects_by_keyword() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "不相关的任务".to_owned(),
                 note: None,
                 priority: None,
@@ -55,7 +55,7 @@ fn search_workspace_finds_tasks_and_projects_by_keyword() {
         let payload = search_workspace(
             &state,
             SearchWorkspaceInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 query: "M2-B".to_owned(),
                 limit: 10,
             },
@@ -91,7 +91,7 @@ fn search_workspace_respects_limit() {
             create_project(
                 &state,
                 CreateProjectInput {
-                    space_slug: "default".to_owned(),
+                    space_slug: "work".to_owned(),
                     name: format!("测试项目 {}", i),
                     note: None,
                 parent_project_id: None,
@@ -103,7 +103,7 @@ fn search_workspace_respects_limit() {
             create_task(
                 &state,
                 CreateTaskInput {
-                    space_slug: "default".to_owned(),
+                    space_slug: "work".to_owned(),
                     title: format!("测试任务 {}", i),
                     note: None,
                     priority: Some("medium".to_owned()),
@@ -117,7 +117,7 @@ fn search_workspace_respects_limit() {
         let payload = search_workspace(
             &state,
             SearchWorkspaceInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 query: "测试".to_owned(),
                 limit: 3,
             },

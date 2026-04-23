@@ -48,7 +48,7 @@ describe('GlobalSearchInput', () => {
 
 		render(
 			<GlobalSearchInput
-				currentSpaceId='default'
+				currentSpaceId='work'
 				onOpenProject={onOpenProject}
 				onOpenTask={onOpenTask}
 			/>,
@@ -63,7 +63,7 @@ describe('GlobalSearchInput', () => {
 
 		await waitFor(() => {
 			expect(mockedSearchWorkspace).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				query: 'alpha',
 				limit: 5,
 			})
@@ -103,7 +103,7 @@ describe('GlobalSearchInput', () => {
 
 		render(
 			<GlobalSearchInput
-				currentSpaceId='default'
+				currentSpaceId='work'
 				onOpenProject={onOpenProject}
 				onOpenTask={onOpenTask}
 			/>,
@@ -124,7 +124,7 @@ describe('GlobalSearchInput', () => {
 
 		await waitFor(() => {
 			expect(mockedSearchWorkspace).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				query: '再次搜索',
 				limit: 5,
 			})
@@ -155,7 +155,7 @@ describe('GlobalSearchInput', () => {
 		render(
 			<div>
 				<GlobalSearchInput
-					currentSpaceId='default'
+					currentSpaceId='work'
 					onOpenProject={vi.fn<(projectId: string) => void>()}
 					onOpenTask={vi.fn<(taskId: string) => void>()}
 				/>
@@ -194,7 +194,7 @@ describe('GlobalSearchInput', () => {
 
 		render(
 			<GlobalSearchInput
-				currentSpaceId='default'
+				currentSpaceId='work'
 				onOpenProject={vi.fn<(projectId: string) => void>()}
 				onOpenTask={vi.fn<(taskId: string) => void>()}
 			/>,
@@ -236,7 +236,7 @@ describe('GlobalSearchInput', () => {
 
 		render(
 			<GlobalSearchInput
-				currentSpaceId='default'
+				currentSpaceId='work'
 				onOpenProject={vi.fn<(projectId: string) => void>()}
 				onOpenTask={vi.fn<(taskId: string) => void>()}
 			/>,

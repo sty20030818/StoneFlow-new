@@ -32,7 +32,7 @@ describe('useFocusWorkspace', () => {
 	afterEach(() => {
 		vi.clearAllMocks()
 		useShellLayoutStore.setState({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			activeSection: 'inbox',
 			isCommandOpen: false,
 			isTaskCreateOpen: false,
@@ -53,7 +53,7 @@ describe('useFocusWorkspace', () => {
 		render(<FocusWorkspaceHarness />)
 
 		await waitFor(() => {
-			expect(mockedListFocusViews).toHaveBeenCalledWith({ spaceSlug: 'default' })
+			expect(mockedListFocusViews).toHaveBeenCalledWith({ spaceSlug: 'work' })
 		})
 		await waitFor(() => {
 			expect(mockedGetFocusViewTasks).toHaveBeenCalledTimes(4)
@@ -130,7 +130,7 @@ describe('useFocusWorkspace', () => {
 
 		await waitFor(() => {
 			expect(mockedUpdateTaskPinState).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				taskId: 'task-upcoming-1',
 				pinned: true,
 			})
@@ -167,7 +167,7 @@ describe('useFocusWorkspace', () => {
 
 		await waitFor(() => {
 			expect(mockedUpdateProjectTaskStatus).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				projectId: 'project-1',
 				taskId: 'task-focus-1',
 				status: 'done',
@@ -212,7 +212,7 @@ function FocusWorkspaceHarness() {
 		setRecentTimeWindow,
 		toggleTaskPin,
 		toggleTaskStatus,
-	} = useFocusWorkspace('default')
+	} = useFocusWorkspace('work')
 
 	return (
 		<div>

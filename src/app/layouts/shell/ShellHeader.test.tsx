@@ -46,24 +46,15 @@ describe('ShellHeader', () => {
 			'data-tauri-drag-region',
 		)
 		expect(screen.queryByText('StoneFlow')).not.toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '打开历史记录' }).className).toContain(
-			'rounded-full',
-		)
-		expect(screen.getByRole('button', { name: '打开历史记录' }).className).toContain(
-			'size-[30px]',
-		)
+		expect(screen.getByRole('button', { name: '打开历史记录' }).className).toContain('rounded-full')
+		expect(screen.getByRole('button', { name: '打开历史记录' }).className).toContain('size-[30px]')
 		expect(screen.getByRole('button', { name: '打开历史记录' }).className).toContain(
 			'focus-visible:ring-0',
 		)
 		expect(screen.getByRole('button', { name: '后退' }).className).toContain('rounded-full')
 		expect(screen.getByRole('button', { name: '前进' }).className).toContain('rounded-full')
-		expect(screen.getByRole('img', { name: '当前用户头像' })).toHaveAttribute(
-			'src',
-			'/avatar.jpg',
-		)
-		expect(screen.getByRole('img', { name: '当前用户头像' }).className).toContain(
-			'size-[30px]',
-		)
+		expect(screen.getByRole('img', { name: '当前用户头像' })).toHaveAttribute('src', '/avatar.jpg')
+		expect(screen.getByRole('img', { name: '当前用户头像' }).className).toContain('size-7.5')
 		expect(screen.getByRole('button', { name: '打开设置' }).className).toContain('rounded-full')
 		expect(screen.getByRole('button', { name: '后退' })).toBeDisabled()
 		expect(screen.getByRole('button', { name: '前进' })).toBeDisabled()
@@ -165,7 +156,7 @@ describe('ShellHeader', () => {
 
 function renderHeader(overrides: Partial<ComponentProps<typeof ShellHeader>> = {}) {
 	const props: ComponentProps<typeof ShellHeader> = {
-		currentSpaceId: 'default',
+		currentSpaceId: 'work',
 		activeSection: 'inbox',
 		isCommandOpen: false,
 		isProjectsLoading: false,
@@ -187,7 +178,7 @@ function renderHeader(overrides: Partial<ComponentProps<typeof ShellHeader>> = {
 	}
 
 	return render(
-		<MemoryRouter initialEntries={['/space/default/inbox']}>
+		<MemoryRouter initialEntries={['/space/work/inbox']}>
 			<ShellHeader {...props} />
 		</MemoryRouter>,
 	)

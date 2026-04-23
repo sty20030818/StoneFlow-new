@@ -2,18 +2,18 @@ import { getSectionLabel, getSpaceLabel, resolveShellSection } from '@/app/layou
 
 describe('shell config helpers', () => {
 	it('按路由解析主分区', () => {
-		expect(resolveShellSection('/space/default/focus')).toBe('focus')
-		expect(resolveShellSection('/space/default/project/stoneflow-v1')).toBe('project')
-		expect(resolveShellSection('/space/default/trash')).toBe('trash')
-		expect(resolveShellSection('/space/default/settings')).toBe('settings')
-		expect(resolveShellSection('/space/default/inbox')).toBe('inbox')
+		expect(resolveShellSection('/space/work/focus')).toBe('focus')
+		expect(resolveShellSection('/space/work/project/stoneflow-v1')).toBe('project')
+		expect(resolveShellSection('/space/work/trash')).toBe('trash')
+		expect(resolveShellSection('/space/work/settings')).toBe('settings')
+		expect(resolveShellSection('/space/work/inbox')).toBe('inbox')
 	})
 
 	it('为已知分区和空间返回标签', () => {
 		expect(getSectionLabel('inbox')).toBe('Inbox')
 		expect(getSectionLabel('focus')).toBe('Views')
 		expect(getSectionLabel('settings')).toBe('Settings')
-		expect(getSpaceLabel('default')).toBe('工作')
+		expect(getSpaceLabel('work')).toBe('工作')
 	})
 
 	it('为未知值返回兜底标签', () => {

@@ -99,12 +99,12 @@ describe('quick capture api', () => {
 		} as ReturnType<typeof getCurrentWindow>)
 		mockedInvoke.mockRejectedValue({
 			type: 'DefaultSpaceUnavailable',
-			message: 'default space `default` is archived',
+			message: 'default space `work` is archived',
 		})
 
 		await expect(createCaptureTask({ title: '失败捕获' })).rejects.toMatchObject({
 			type: 'DefaultSpaceUnavailable',
-			message: 'default space `default` is archived',
+			message: 'default space `work` is archived',
 		} satisfies Partial<CaptureTaskError>)
 	})
 

@@ -94,6 +94,35 @@ where
         .context("failed to insert default space seed")
     }
 
+    /// 将旧版本默认 Space slug 迁移为新的系统主 Space slug。
+    pub(crate) async fn migrate_space_slug(
+        &self,
+        legacy_slug: &str,
+        seed: &DefaultSpaceSeed,
+    ) -> Result<Option<space::Model>> {
+        if self.find_by_slug(seed.slug).await?.is_some() {
+            return Ok(None);
+        }
+
+        let Some(existing) = self.find_by_slug(legacy_slug).await? else {
+            return Ok(None);
+        };
+
+        let mut active_model: space::ActiveModel = existing.into();
+        let now = chrono::Utc::now();
+        active_model.name = Set(seed.name.to_owned());
+        active_model.slug = Set(seed.slug.to_owned());
+        active_model.sort_order = Set(seed.sort_order);
+        active_model.is_archived = Set(false);
+        active_model.updated_at = Set(now);
+
+        active_model
+            .update(self.connection)
+            .await
+            .with_context(|| format!("failed to migrate space `{legacy_slug}` to `{}`", seed.slug))
+            .map(Some)
+    }
+
     /// 计算新的 Space 排序值。
     pub(crate) async fn next_sort_order(&self) -> Result<i32> {
         let next_sort_order = space::Entity::find()

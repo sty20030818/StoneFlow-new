@@ -25,7 +25,7 @@ describe('taskChanged event helpers', () => {
 	it('将 Rust snake_case 事件载荷映射为前端字段', () => {
 		const payload = normalizeTaskChangedPayload({
 			space_id: 'space-uuid',
-			space_slug: 'default',
+			space_slug: 'work',
 			task_id: 'task-uuid',
 			source: 'quick_capture',
 			space_fallback: false,
@@ -33,12 +33,12 @@ describe('taskChanged event helpers', () => {
 
 		expect(payload).toEqual({
 			spaceId: 'space-uuid',
-			spaceSlug: 'default',
+			spaceSlug: 'work',
 			taskId: 'task-uuid',
 			source: 'quick_capture',
 			spaceFallback: false,
 		})
-		expect(payload ? isTaskChangedForSpace(payload, 'default') : false).toBe(true)
+		expect(payload ? isTaskChangedForSpace(payload, 'work') : false).toBe(true)
 		expect(payload ? isTaskChangedForSpace(payload, 'other') : true).toBe(false)
 	})
 
@@ -67,7 +67,7 @@ describe('taskChanged event helpers', () => {
 			id: 1,
 			payload: {
 				space_id: 'space-uuid',
-				space_slug: 'default',
+				space_slug: 'work',
 				task_id: 'task-uuid',
 				source: 'quick_capture',
 				space_fallback: true,
@@ -76,7 +76,7 @@ describe('taskChanged event helpers', () => {
 
 		expect(onTaskChanged).toHaveBeenCalledWith(
 			expect.objectContaining({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				taskId: 'task-uuid',
 				spaceFallback: true,
 			}),
@@ -96,7 +96,7 @@ describe('taskChanged event helpers', () => {
 			return unlisten
 		})
 
-		const { unmount } = renderHook(() => useTaskChangedListener('default', onTaskChanged))
+		const { unmount } = renderHook(() => useTaskChangedListener('work', onTaskChanged))
 		await Promise.resolve()
 
 		callback({
@@ -115,7 +115,7 @@ describe('taskChanged event helpers', () => {
 			id: 2,
 			payload: {
 				space_id: 'space-default',
-				space_slug: 'default',
+				space_slug: 'work',
 				task_id: 'task-default',
 				source: 'quick_capture',
 				space_fallback: false,
@@ -125,7 +125,7 @@ describe('taskChanged event helpers', () => {
 		expect(onTaskChanged).toHaveBeenCalledTimes(1)
 		expect(onTaskChanged).toHaveBeenCalledWith(
 			expect.objectContaining({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				taskId: 'task-default',
 			}),
 		)

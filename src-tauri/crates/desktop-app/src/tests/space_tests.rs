@@ -6,7 +6,7 @@ use crate::infrastructure::database::prepare_database_at_path;
 use crate::tests::TestDatabaseDir;
 
 #[test]
-fn empty_database_bootstrap_creates_default_space() {
+fn empty_database_bootstrap_creates_system_spaces() {
     let temp_dir = TestDatabaseDir::new();
 
     tauri::async_runtime::block_on(async {
@@ -15,19 +15,29 @@ fn empty_database_bootstrap_creates_default_space() {
             .expect("empty database bootstrap should succeed");
 
         let space_count = space::Entity::find()
-            .filter(space::Column::Slug.eq("default"))
             .count(&state.connection)
             .await
-            .expect("default space count should be queryable");
+            .expect("space count should be queryable");
 
         let focus_view_count = focus_view::Entity::find()
             .count(&state.connection)
             .await
             .expect("focus view count should be queryable");
 
+        for slug in ["work", "studio", "life"] {
+            let exists = space::Entity::find()
+                .filter(space::Column::Slug.eq(slug))
+                .one(&state.connection)
+                .await
+                .expect("system space should be queryable")
+                .is_some();
+
+            assert!(exists, "system space `{slug}` should exist");
+        }
+
         assert!(state.is_ready);
-        assert_eq!(space_count, 1);
-        assert_eq!(focus_view_count, 4);
+        assert_eq!(space_count, 3);
+        assert_eq!(focus_view_count, 12);
     });
 }
 
@@ -45,18 +55,65 @@ fn repeated_bootstrap_keeps_seed_idempotent() {
             .expect("second bootstrap should succeed");
 
         let space_count = space::Entity::find()
-            .filter(space::Column::Slug.eq("default"))
             .count(&state.connection)
             .await
-            .expect("default space count should remain queryable");
+            .expect("space count should remain queryable");
 
         let focus_view_count = focus_view::Entity::find()
             .count(&state.connection)
             .await
             .expect("focus view count should remain queryable");
 
-        assert_eq!(space_count, 1);
-        assert_eq!(focus_view_count, 4);
+        assert_eq!(space_count, 3);
+        assert_eq!(focus_view_count, 12);
+    });
+}
+
+#[test]
+fn bootstrap_migrates_legacy_default_slug_to_work() {
+    use sea_orm::{ActiveModelTrait, ActiveValue::Set};
+
+    let temp_dir = TestDatabaseDir::new();
+
+    tauri::async_runtime::block_on(async {
+        let state = prepare_database_at_path(&temp_dir.database_path())
+            .await
+            .expect("bootstrap should succeed before simulating legacy slug");
+
+        let work_space = space::Entity::find()
+            .filter(space::Column::Slug.eq("work"))
+            .one(&state.connection)
+            .await
+            .expect("work space should be queryable")
+            .expect("work space should exist");
+        let work_space_id = work_space.id;
+        let mut active_model: space::ActiveModel = work_space.into();
+        active_model.slug = Set("default".to_owned());
+        active_model.name = Set("旧工作".to_owned());
+        active_model
+            .update(&state.connection)
+            .await
+            .expect("legacy slug simulation should persist");
+
+        let state = prepare_database_at_path(&temp_dir.database_path())
+            .await
+            .expect("bootstrap should migrate legacy default slug");
+
+        let migrated_space = space::Entity::find()
+            .filter(space::Column::Slug.eq("work"))
+            .one(&state.connection)
+            .await
+            .expect("migrated space should be queryable")
+            .expect("migrated space should exist");
+        let legacy_space = space::Entity::find()
+            .filter(space::Column::Slug.eq("default"))
+            .one(&state.connection)
+            .await
+            .expect("legacy space should be queryable");
+
+        assert_eq!(migrated_space.id, work_space_id);
+        assert_eq!(migrated_space.name, "工作");
+        assert!(legacy_space.is_none());
     });
 }
 
@@ -88,7 +145,7 @@ fn duplicate_focus_view_key_is_rejected_by_unique_constraint() {
             .expect("bootstrap should succeed before testing unique focus view key");
 
         let default_space = space::Entity::find()
-            .filter(space::Column::Slug.eq("default"))
+            .filter(space::Column::Slug.eq("work"))
             .one(&state.connection)
             .await
             .expect("default space should be queryable")

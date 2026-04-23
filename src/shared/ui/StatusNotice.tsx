@@ -52,6 +52,7 @@ export function StatusNotice({
 	children,
 	...props
 }: StatusNoticeProps) {
+	const effectiveLayout = actions ? (layout === 'stack' ? 'stack' : 'split') : layout
 	const content =
 		title || description ? (
 			<div className='min-w-0'>
@@ -68,14 +69,20 @@ export function StatusNotice({
 
 	return (
 		<div
-			className={cn(
-				statusNoticeVariants({ variant, size, layout: actions ? 'split' : layout }),
-				className,
-			)}
+			className={cn(statusNoticeVariants({ variant, size, layout: effectiveLayout }), className)}
 			{...props}
 		>
 			{content}
-			{actions ? <div className='flex shrink-0 items-center gap-2'>{actions}</div> : null}
+			{actions ? (
+				<div
+					className={cn(
+						'flex shrink-0 items-center gap-2',
+						effectiveLayout === 'stack' ? 'mt-3' : null,
+					)}
+				>
+					{actions}
+				</div>
+			) : null}
 		</div>
 	)
 }

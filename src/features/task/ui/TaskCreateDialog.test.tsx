@@ -6,7 +6,7 @@ describe('TaskCreateDialog', () => {
 	it('渲染正式的新建任务弹窗', () => {
 		render(
 			<TaskCreateDialog
-				currentSpaceId='default'
+				currentSpaceId='work'
 				onClose={vi.fn<() => void>()}
 				open
 				projects={[

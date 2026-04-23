@@ -116,7 +116,7 @@ fn create_subproject_validates_parent_boundary() {
         let parent = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "父项目".to_owned(),
                 note: None,
                 parent_project_id: None,
@@ -127,7 +127,7 @@ fn create_subproject_validates_parent_boundary() {
         let child = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "子项目".to_owned(),
                 note: None,
                 parent_project_id: Some(parent.id),
@@ -141,7 +141,7 @@ fn create_subproject_validates_parent_boundary() {
         let grandchild_error = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "孙级项目".to_owned(),
                 note: None,
                 parent_project_id: Some(child.id),
@@ -175,7 +175,7 @@ fn create_subproject_validates_parent_boundary() {
         let cross_space_error = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "跨 Space 子项目".to_owned(),
                 note: None,
                 parent_project_id: Some(foreign_parent.id),
@@ -190,7 +190,7 @@ fn create_subproject_validates_parent_boundary() {
         delete_project_to_trash(
             &state,
             DeleteProjectToTrashInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: parent.id,
             },
         )
@@ -199,7 +199,7 @@ fn create_subproject_validates_parent_boundary() {
         let deleted_parent_error = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "已删除父级下的子项目".to_owned(),
                 note: None,
                 parent_project_id: Some(parent.id),
@@ -225,7 +225,7 @@ fn project_execution_view_returns_children_without_aggregating_child_tasks() {
         let parent = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "父项目".to_owned(),
                 note: None,
                 parent_project_id: None,
@@ -236,7 +236,7 @@ fn project_execution_view_returns_children_without_aggregating_child_tasks() {
         let child = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "子项目".to_owned(),
                 note: None,
                 parent_project_id: Some(parent.id),
@@ -248,7 +248,7 @@ fn project_execution_view_returns_children_without_aggregating_child_tasks() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "父项目任务".to_owned(),
                 note: None,
                 priority: Some("high".to_owned()),
@@ -260,7 +260,7 @@ fn project_execution_view_returns_children_without_aggregating_child_tasks() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "子项目任务".to_owned(),
                 note: None,
                 priority: Some("high".to_owned()),
@@ -273,7 +273,7 @@ fn project_execution_view_returns_children_without_aggregating_child_tasks() {
         let tree = list_projects(
             &state,
             ListProjectsInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
             },
         )
         .await
@@ -284,7 +284,7 @@ fn project_execution_view_returns_children_without_aggregating_child_tasks() {
         let parent_view = get_project_execution_view(
             &state,
             GetProjectExecutionViewInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: parent.id,
             },
         )
@@ -297,7 +297,7 @@ fn project_execution_view_returns_children_without_aggregating_child_tasks() {
         let child_view = get_project_execution_view(
             &state,
             GetProjectExecutionViewInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: child.id,
             },
         )
@@ -323,7 +323,7 @@ fn restore_subproject_requires_available_top_level_parent() {
         let parent = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "父项目".to_owned(),
                 note: None,
                 parent_project_id: None,
@@ -334,7 +334,7 @@ fn restore_subproject_requires_available_top_level_parent() {
         let child = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "子项目".to_owned(),
                 note: None,
                 parent_project_id: Some(parent.id),
@@ -346,7 +346,7 @@ fn restore_subproject_requires_available_top_level_parent() {
         delete_project_to_trash(
             &state,
             DeleteProjectToTrashInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: child.id,
             },
         )
@@ -355,7 +355,7 @@ fn restore_subproject_requires_available_top_level_parent() {
         delete_project_to_trash(
             &state,
             DeleteProjectToTrashInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: parent.id,
             },
         )
@@ -364,7 +364,7 @@ fn restore_subproject_requires_available_top_level_parent() {
         let trash = list_trash_entries(
             &state,
             ListTrashEntriesInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
             },
         )
         .await
@@ -379,7 +379,7 @@ fn restore_subproject_requires_available_top_level_parent() {
         let restore_error = restore_project_from_trash(
             &state,
             RestoreProjectFromTrashInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 trash_entry_id: child_trash_entry_id,
             },
         )
@@ -390,7 +390,7 @@ fn restore_subproject_requires_available_top_level_parent() {
         let active_tree = list_projects(
             &state,
             ListProjectsInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
             },
         )
         .await

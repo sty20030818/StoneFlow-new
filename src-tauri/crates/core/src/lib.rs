@@ -90,6 +90,9 @@ pub struct DefaultSpaceSeed {
     pub sort_order: i32,
 }
 
+/// 旧版本里工作空间使用的 slug。
+pub const LEGACY_DEFAULT_SPACE_SLUG: &str = "default";
+
 /// 系统默认 FocusView 定义。
 #[derive(Debug, Clone, PartialEq)]
 pub struct SystemFocusViewDefinition {
@@ -111,9 +114,26 @@ pub struct SystemFocusViewDefinition {
 pub const fn default_space_seed() -> DefaultSpaceSeed {
     DefaultSpaceSeed {
         name: "工作",
-        slug: "default",
+        slug: "work",
         sort_order: 0,
     }
+}
+
+/// 返回系统内置 Space 定义。
+pub const fn system_space_seeds() -> [DefaultSpaceSeed; 3] {
+    [
+        default_space_seed(),
+        DefaultSpaceSeed {
+            name: "学习",
+            slug: "studio",
+            sort_order: 1,
+        },
+        DefaultSpaceSeed {
+            name: "生活",
+            slug: "life",
+            sort_order: 2,
+        },
+    ]
 }
 
 /// 返回 4 个系统默认 FocusView 定义。

@@ -39,7 +39,6 @@ export function ShellSidebar({
 }: ShellSidebarProps) {
 	const navigate = useNavigate()
 	const activeSpace = SHELL_SPACES.find((space) => space.id === currentSpaceId) ?? SHELL_SPACES[0]
-	const ActiveSpaceIcon = activeSpace.icon
 
 	return (
 		<aside className='flex h-full w-(--sf-shell-sidebar-width) shrink-0 flex-col bg-(--sf-color-shell-chrome)'>
@@ -52,7 +51,7 @@ export function ShellSidebar({
 							size='default'
 							variant='ghost'
 						>
-							<ActiveSpaceIcon className={cn('size-3.5 shrink-0', activeSpace.iconClassName)} />
+							<SpaceIconBadge space={activeSpace} />
 							<span className='min-w-0 flex-1 truncate text-left font-medium'>
 								{activeSpace.label}
 							</span>
@@ -62,7 +61,6 @@ export function ShellSidebar({
 					<DropdownMenuContent align='start' className='w-44'>
 						<DropdownMenuGroup>
 							{SHELL_SPACES.map((space) => {
-								const SpaceIcon = space.icon
 								const isActive = space.id === activeSpace.id
 
 								return (
@@ -72,7 +70,7 @@ export function ShellSidebar({
 											navigate(`/space/${space.id}/inbox`)
 										}}
 									>
-										<SpaceIcon className={cn('size-3.5', space.iconClassName)} />
+										<SpaceIconBadge space={space} />
 										<span>{space.label}</span>
 										{isActive ? (
 											<CheckIcon className='ml-auto size-3.5 text-(--sf-color-icon-secondary)' />
@@ -162,9 +160,10 @@ export function ShellSidebar({
 						</StatusNotice>
 					) : projects.length === 0 ? (
 						<StatusNotice
+							layout='stack'
 							actions={
 								<Button
-									className='justify-start rounded-md'
+									className='w-full justify-center rounded-md'
 									onClick={() => onOpenProjectCreateDialog()}
 									size='sm'
 								>
@@ -242,5 +241,21 @@ export function ShellSidebar({
 				</section>
 			</div>
 		</aside>
+	)
+}
+
+function SpaceIconBadge({ space }: { space: (typeof SHELL_SPACES)[number] }) {
+	const SpaceIcon = space.icon
+
+	return (
+		<span
+			className={cn(
+				'flex size-5 shrink-0 items-center justify-center rounded-full text-white shadow-(--sf-shadow-panel)',
+				space.iconBadgeClassName,
+			)}
+			data-space-icon-badge='true'
+		>
+			<SpaceIcon className='size-3 text-white' />
+		</span>
 	)
 }

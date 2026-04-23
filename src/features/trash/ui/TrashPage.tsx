@@ -6,7 +6,11 @@ import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
-import { MainCardHeader, MainCardLayout, MainCardToolbar } from '@/app/layouts/main-card/MainCardLayout'
+import {
+	MainCardHeader,
+	MainCardLayout,
+	MainCardToolbar,
+} from '@/app/layouts/main-card/MainCardLayout'
 import {
 	LINEAR_CARD_BASE_CLASS,
 	LINEAR_CARD_IDLE_CLASS,
@@ -15,7 +19,7 @@ import {
 import { Trash2Icon } from 'lucide-react'
 
 export function TrashPage() {
-	const { spaceId = 'default' } = useParams()
+	const { spaceId = 'work' } = useParams()
 	const { entries, isLoading, loadError, feedback, pendingEntryId, refresh, restoreEntry } =
 		useTrashEntries(spaceId)
 

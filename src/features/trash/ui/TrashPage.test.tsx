@@ -119,7 +119,7 @@ describe('TrashPage', () => {
 
 		await waitFor(() => {
 			expect(mockedRestoreTaskFromTrash).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				trashEntryId: 'trash-task',
 			})
 		})
@@ -160,7 +160,7 @@ describe('TrashPage', () => {
 
 function renderTrashPage() {
 	return render(
-		<MemoryRouter initialEntries={['/space/default/trash']}>
+		<MemoryRouter initialEntries={['/space/work/trash']}>
 			<Routes>
 				<Route element={<TrashPage />} path='/space/:spaceId/trash' />
 			</Routes>

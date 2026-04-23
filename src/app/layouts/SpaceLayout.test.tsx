@@ -32,7 +32,7 @@ describe('SpaceLayout', () => {
 	afterEach(() => {
 		vi.clearAllMocks()
 		useShellLayoutStore.setState({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			activeSection: 'inbox',
 			isCommandOpen: false,
 			isTaskCreateOpen: false,

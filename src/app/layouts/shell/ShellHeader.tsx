@@ -222,7 +222,7 @@ export function ShellHeader({
 						<DropdownMenuTrigger asChild>
 							<Button
 								aria-label='打开历史记录'
-								className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground focus-visible:border-transparent focus-visible:ring-0 aria-expanded:bg-(--sf-color-shell-hover)'
+								className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground aria-expanded:bg-(--sf-color-shell-hover)'
 								size='icon-sm'
 								variant='ghost'
 							>

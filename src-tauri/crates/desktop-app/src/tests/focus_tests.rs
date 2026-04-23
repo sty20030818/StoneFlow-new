@@ -22,7 +22,7 @@ fn focus_views_lists_system_views_for_space() {
         let payload = list_focus_views(
             &state,
             ListFocusViewsInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
             },
         )
         .await
@@ -48,7 +48,7 @@ fn focus_view_shows_pinned_tasks() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -60,7 +60,7 @@ fn focus_view_shows_pinned_tasks() {
         let pinned_task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "置顶任务".to_owned(),
                 note: None,
                 priority: Some("high".to_owned()),
@@ -73,7 +73,7 @@ fn focus_view_shows_pinned_tasks() {
         update_task_pin_state(
             &state,
             UpdateTaskPinStateInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: pinned_task.id,
                 pinned: true,
             },
@@ -84,7 +84,7 @@ fn focus_view_shows_pinned_tasks() {
         let regular_task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "普通任务".to_owned(),
                 note: None,
                 priority: Some("medium".to_owned()),
@@ -97,7 +97,7 @@ fn focus_view_shows_pinned_tasks() {
         let payload = get_focus_view_tasks(
             &state,
             GetFocusViewTasksInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 view_key: "focus".to_owned(),
             },
         )
@@ -122,7 +122,7 @@ fn high_priority_view_shows_high_and_urgent_tasks() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -134,7 +134,7 @@ fn high_priority_view_shows_high_and_urgent_tasks() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "高优先级".to_owned(),
                 note: None,
                 priority: Some("high".to_owned()),
@@ -147,7 +147,7 @@ fn high_priority_view_shows_high_and_urgent_tasks() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "紧急任务".to_owned(),
                 note: None,
                 priority: Some("urgent".to_owned()),
@@ -160,7 +160,7 @@ fn high_priority_view_shows_high_and_urgent_tasks() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "普通优先级".to_owned(),
                 note: None,
                 priority: Some("medium".to_owned()),
@@ -173,7 +173,7 @@ fn high_priority_view_shows_high_and_urgent_tasks() {
         let payload = get_focus_view_tasks(
             &state,
             GetFocusViewTasksInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 view_key: "high_priority".to_owned(),
             },
         )

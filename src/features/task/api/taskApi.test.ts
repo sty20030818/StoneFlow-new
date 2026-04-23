@@ -32,7 +32,7 @@ describe('task api', () => {
 
 		await expect(
 			createTask({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				title: '捕获底座',
 				note: null,
 				priority: null,
@@ -45,7 +45,7 @@ describe('task api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('create_task', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				title: '捕获底座',
 				note: null,
 				priority: null,
@@ -57,34 +57,34 @@ describe('task api', () => {
 	it('保留结构化创建错误分类', async () => {
 		mockedInvoke.mockRejectedValue({
 			type: 'DefaultSpaceUnavailable',
-			message: 'default space `default` is archived',
+			message: 'default space `work` is archived',
 		})
 
 		await expect(
 			createTask({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				title: '捕获失败',
 			}),
 		).rejects.toMatchObject({
 			type: 'DefaultSpaceUnavailable',
-			message: 'default space `default` is archived',
+			message: 'default space `work` is archived',
 		} satisfies Partial<TaskCreateError>)
 	})
 
 	it('同步当前 Space 状态', async () => {
 		mockedInvoke.mockResolvedValue({
 			active_space_id: 'space-1',
-			space_slug: 'default',
+			space_slug: 'work',
 		})
 
-		await expect(setActiveSpace('default')).resolves.toEqual({
+		await expect(setActiveSpace('work')).resolves.toEqual({
 			activeSpaceId: 'space-1',
-			spaceSlug: 'default',
+			spaceSlug: 'work',
 		})
 
 		expect(mockedInvoke).toHaveBeenCalledWith('set_active_space', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 			},
 		})
 	})

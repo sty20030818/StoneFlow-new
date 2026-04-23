@@ -27,7 +27,7 @@ fn duplicate_trash_entry_is_rejected_by_unique_constraint() {
             .expect("bootstrap should succeed before testing trash uniqueness");
 
         let space = stoneflow_entity::space::Entity::find()
-            .filter(stoneflow_entity::space::Column::Slug.eq("default"))
+            .filter(stoneflow_entity::space::Column::Slug.eq("work"))
             .one(&state.connection)
             .await
             .expect("default space should be queryable")
@@ -79,7 +79,7 @@ fn delete_task_to_trash_writes_trash_entry_and_soft_deletes() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -91,7 +91,7 @@ fn delete_task_to_trash_writes_trash_entry_and_soft_deletes() {
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "待删除任务".to_owned(),
                 note: None,
                 priority: Some("high".to_owned()),
@@ -104,7 +104,7 @@ fn delete_task_to_trash_writes_trash_entry_and_soft_deletes() {
         let payload = delete_task_to_trash(
             &state,
             DeleteTaskToTrashInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
             },
         )
@@ -143,7 +143,7 @@ fn restore_task_from_trash_recovers_to_original_project() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -155,7 +155,7 @@ fn restore_task_from_trash_recovers_to_original_project() {
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "可恢复任务".to_owned(),
                 note: None,
                 priority: Some("medium".to_owned()),
@@ -168,7 +168,7 @@ fn restore_task_from_trash_recovers_to_original_project() {
         let deleted = delete_task_to_trash(
             &state,
             DeleteTaskToTrashInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
             },
         )
@@ -178,7 +178,7 @@ fn restore_task_from_trash_recovers_to_original_project() {
         let trash_entries = list_trash_entries(
             &state,
             ListTrashEntriesInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
             },
         )
         .await
@@ -189,7 +189,7 @@ fn restore_task_from_trash_recovers_to_original_project() {
         let restored = restore_task_from_trash(
             &state,
             RestoreTaskFromTrashInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 trash_entry_id: trash_entry.id,
             },
         )
@@ -222,7 +222,7 @@ fn delete_project_to_trash_soft_deletes_without_cascade() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "可删除项目".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -234,7 +234,7 @@ fn delete_project_to_trash_soft_deletes_without_cascade() {
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "项目下的任务".to_owned(),
                 note: None,
                 priority: Some("low".to_owned()),
@@ -247,7 +247,7 @@ fn delete_project_to_trash_soft_deletes_without_cascade() {
         let payload = delete_project_to_trash(
             &state,
             DeleteProjectToTrashInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: project.id,
             },
         )

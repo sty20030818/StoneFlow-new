@@ -37,7 +37,7 @@ describe('TaskCreateModalContent', () => {
 
 		render(
 			<TaskCreateModalContent
-				currentSpaceId='default'
+				currentSpaceId='work'
 				onClose={onClose}
 				projects={[
 					{
@@ -79,7 +79,7 @@ describe('TaskCreateModalContent', () => {
 		})
 
 		expect(mockedCreateTask).toHaveBeenCalledWith({
-			spaceSlug: 'default',
+			spaceSlug: 'work',
 			title: '补齐 M2-B 创建链路',
 			note: '先接通 Header',
 			priority: 'high',

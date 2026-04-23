@@ -35,7 +35,7 @@ describe('FocusPage', () => {
 	afterEach(() => {
 		vi.clearAllMocks()
 		useShellLayoutStore.setState({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			activeSection: 'focus',
 			isCommandOpen: false,
 			isTaskCreateOpen: false,

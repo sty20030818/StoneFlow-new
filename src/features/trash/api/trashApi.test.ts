@@ -34,7 +34,7 @@ describe('trash api', () => {
 			],
 		})
 
-		await expect(listTrashEntries({ spaceSlug: 'default' })).resolves.toEqual({
+		await expect(listTrashEntries({ spaceSlug: 'work' })).resolves.toEqual({
 			entries: [
 				{
 					id: 'trash-1',
@@ -52,7 +52,7 @@ describe('trash api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('list_trash_entries', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 			},
 		})
 	})
@@ -72,7 +72,7 @@ describe('trash api', () => {
 
 		await expect(
 			restoreTaskFromTrash({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				trashEntryId: 'trash-task',
 			}),
 		).resolves.toEqual({
@@ -82,7 +82,7 @@ describe('trash api', () => {
 		})
 		await expect(
 			restoreProjectFromTrash({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				trashEntryId: 'trash-project',
 			}),
 		).resolves.toEqual({
@@ -93,13 +93,13 @@ describe('trash api', () => {
 
 		expect(mockedInvoke).toHaveBeenNthCalledWith(1, 'restore_task_from_trash', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				trash_entry_id: 'trash-task',
 			},
 		})
 		expect(mockedInvoke).toHaveBeenNthCalledWith(2, 'restore_project_from_trash', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				trash_entry_id: 'trash-project',
 			},
 		})
@@ -113,7 +113,7 @@ describe('trash api', () => {
 
 		await expect(
 			deleteProjectToTrash({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				projectId: 'project-1',
 			}),
 		).resolves.toEqual({
@@ -123,7 +123,7 @@ describe('trash api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('delete_project_to_trash', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				project_id: 'project-1',
 			},
 		})

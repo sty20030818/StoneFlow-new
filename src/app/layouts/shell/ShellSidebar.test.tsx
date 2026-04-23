@@ -7,7 +7,7 @@ import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
 describe('ShellSidebar', () => {
 	it('渲染来自真实数据层的一级导航 badge', () => {
 		renderSidebar({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			isProjectsLoading: false,
 			navBadges: {
 				inbox: '7',
@@ -21,17 +21,17 @@ describe('ShellSidebar', () => {
 
 		expect(screen.getByRole('link', { name: /Inbox7/ })).toHaveAttribute(
 			'href',
-			'/space/default/inbox',
+			'/space/work/inbox',
 		)
 		expect(screen.getByRole('link', { name: /Trash1/ })).toHaveAttribute(
 			'href',
-			'/space/default/trash',
+			'/space/work/trash',
 		)
 	})
 
 	it('渲染真实项目导航并标记当前项目激活态', () => {
 		renderSidebar({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			isProjectsLoading: false,
 			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
@@ -48,15 +48,15 @@ describe('ShellSidebar', () => {
 		})
 
 		const activeProjectLink = screen.getByRole('link', { name: /执行层active/ })
-		expect(activeProjectLink).toHaveAttribute('href', '/space/default/project/project-1')
+		expect(activeProjectLink).toHaveAttribute('href', '/space/work/project/project-1')
 		expect(activeProjectLink).toHaveAttribute('aria-current', 'page')
 		expect(screen.getByRole('link', { name: /产品设计paused/ })).toHaveAttribute(
 			'href',
-			'/space/default/project/project-2',
+			'/space/work/project/project-2',
 		)
 		expect(screen.getByRole('link', { name: /子项目收口active/ })).toHaveAttribute(
 			'href',
-			'/space/default/project/project-child',
+			'/space/work/project/project-child',
 		)
 		expect(screen.getByRole('link', { name: 'Views' }).className).toContain(
 			'hover:bg-(--sf-color-shell-hover)',
@@ -69,7 +69,7 @@ describe('ShellSidebar', () => {
 		const onOpenProjectCreateDialog = vi.fn<(parentProjectId?: string | null) => void>()
 
 		renderSidebar({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			isProjectsLoading: false,
 			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog,
@@ -84,7 +84,7 @@ describe('ShellSidebar', () => {
 
 	it('展示项目加载态', () => {
 		renderSidebar({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			isProjectsLoading: true,
 			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
@@ -97,7 +97,7 @@ describe('ShellSidebar', () => {
 
 	it('展示项目空态', () => {
 		renderSidebar({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			isProjectsLoading: false,
 			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
@@ -110,7 +110,7 @@ describe('ShellSidebar', () => {
 
 	it('展示项目加载失败提示', () => {
 		renderSidebar({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			isProjectsLoading: false,
 			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
@@ -125,7 +125,7 @@ describe('ShellSidebar', () => {
 		const onOpenProjectCreateDialog = vi.fn<(parentProjectId?: string | null) => void>()
 
 		renderSidebar({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			isProjectsLoading: false,
 			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog,
@@ -143,7 +143,7 @@ describe('ShellSidebar', () => {
 		const onOpenTaskCreateDialog = vi.fn<() => void>()
 
 		renderSidebar({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			isProjectsLoading: false,
 			onOpenTaskCreateDialog,
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
@@ -154,6 +154,12 @@ describe('ShellSidebar', () => {
 		const spaceTrigger = screen.getByRole('button', { name: '切换 Space' })
 
 		expect(spaceTrigger).toHaveTextContent('工作')
+		expect(spaceTrigger.querySelector('[data-space-icon-badge="true"]')?.className).toContain(
+			'rounded-full',
+		)
+		expect(spaceTrigger.querySelector('[data-space-icon-badge="true"]')?.className).toContain(
+			'bg-[#5e6ad2]',
+		)
 		expect(spaceTrigger.closest('div')?.className).toContain('px-5.5')
 		expect(document.querySelector('nav')?.className).toContain('px-5.5')
 		expect(screen.queryByRole('link', { name: '学习' })).not.toBeInTheDocument()
@@ -164,14 +170,17 @@ describe('ShellSidebar', () => {
 		fireEvent.pointerDown(spaceTrigger)
 		const studySpaceItem = screen.getByRole('menuitem', { name: /学习/ })
 		expect(studySpaceItem).toBeInTheDocument()
+		expect(studySpaceItem.querySelector('[data-space-icon-badge="true"]')?.className).toContain(
+			'bg-[#e58a00]',
+		)
 		expect(studySpaceItem.className).toContain('hover:bg-(--sf-color-shell-hover)')
-		expect(studySpaceItem.className).toContain('data-[highlighted]:bg-(--sf-color-shell-hover)')
+		expect(studySpaceItem.className).toContain('data-highlighted:bg-(--sf-color-shell-hover)')
 	})
 })
 
 function renderSidebar(props: ComponentProps<typeof ShellSidebar>) {
 	return render(
-		<MemoryRouter initialEntries={['/space/default/project/project-1']}>
+		<MemoryRouter initialEntries={['/space/work/project/project-1']}>
 			<Routes>
 				<Route element={<ShellSidebar {...props} />} path='/space/:spaceId/project/:projectId' />
 			</Routes>

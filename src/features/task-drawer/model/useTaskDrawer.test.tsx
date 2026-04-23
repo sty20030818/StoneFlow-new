@@ -62,7 +62,7 @@ describe('useTaskDrawer', () => {
 			.mockResolvedValueOnce(refreshedDetail)
 		mockedUpdateTaskDrawerFields.mockResolvedValue(savedTask)
 
-		const { result } = renderHook(() => useTaskDrawer('default', 'task-1'))
+		const { result } = renderHook(() => useTaskDrawer('work', 'task-1'))
 
 		await waitFor(() => {
 			expect(result.current.detail?.task.title).toBe('旧任务标题')
@@ -78,7 +78,7 @@ describe('useTaskDrawer', () => {
 
 		expect(mockedUpdateTaskDrawerFields).toHaveBeenCalledWith(
 			expect.objectContaining({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				taskId: 'task-1',
 				title: '新任务标题',
 			}),
@@ -93,7 +93,7 @@ describe('useTaskDrawer', () => {
 		mockedGetTaskDrawerDetail.mockResolvedValue(createDetail({ title: '保留的任务' }))
 		mockedDeleteTaskToTrash.mockRejectedValue(new Error('delete task rejected'))
 
-		const { result } = renderHook(() => useTaskDrawer('default', 'task-1'))
+		const { result } = renderHook(() => useTaskDrawer('work', 'task-1'))
 
 		await waitFor(() => {
 			expect(result.current.detail?.task.title).toBe('保留的任务')

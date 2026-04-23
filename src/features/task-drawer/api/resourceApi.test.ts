@@ -35,7 +35,7 @@ describe('task resource api', () => {
 
 		await expect(
 			listTaskResources({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				taskId: 'task-1',
 			}),
 		).resolves.toEqual([
@@ -53,7 +53,7 @@ describe('task resource api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('list_task_resources', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				task_id: 'task-1',
 			},
 		})
@@ -75,7 +75,7 @@ describe('task resource api', () => {
 
 		await expect(
 			createTaskResource({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				taskId: 'task-1',
 				type: 'local_file',
 				title: 'M3-C.md',
@@ -96,7 +96,7 @@ describe('task resource api', () => {
 
 		expect(mockedInvoke).toHaveBeenCalledWith('create_task_resource', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				task_id: 'task-1',
 				type: 'local_file',
 				title: 'M3-C.md',
@@ -112,26 +112,26 @@ describe('task resource api', () => {
 
 		await expect(
 			openTaskResource({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				resourceId: 'resource-1',
 			}),
 		).resolves.toEqual({ resourceId: 'resource-1' })
 		await expect(
 			deleteTaskResource({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				resourceId: 'resource-1',
 			}),
 		).resolves.toEqual({ resourceId: 'resource-1' })
 
 		expect(mockedInvoke).toHaveBeenNthCalledWith(1, 'open_task_resource', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				resource_id: 'resource-1',
 			},
 		})
 		expect(mockedInvoke).toHaveBeenNthCalledWith(2, 'delete_task_resource', {
 			input: {
-				space_slug: 'default',
+				space_slug: 'work',
 				resource_id: 'resource-1',
 			},
 		})

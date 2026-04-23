@@ -21,7 +21,7 @@ fn inbox_lists_todo_tasks_without_project_or_priority() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -33,7 +33,7 @@ fn inbox_lists_todo_tasks_without_project_or_priority() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "纯 Inbox 任务".to_owned(),
                 note: None,
                 priority: None,
@@ -46,7 +46,7 @@ fn inbox_lists_todo_tasks_without_project_or_priority() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "有优先级无项目".to_owned(),
                 note: None,
                 priority: Some("high".to_owned()),
@@ -59,7 +59,7 @@ fn inbox_lists_todo_tasks_without_project_or_priority() {
         create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "已分类任务".to_owned(),
                 note: None,
                 priority: Some("medium".to_owned()),
@@ -72,7 +72,7 @@ fn inbox_lists_todo_tasks_without_project_or_priority() {
         let payload = list_inbox_tasks(
             &state,
             ListInboxTasksInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
             },
         )
         .await
@@ -101,7 +101,7 @@ fn inbox_excludes_done_tasks() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -113,7 +113,7 @@ fn inbox_excludes_done_tasks() {
         let inbox_task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "待整理任务".to_owned(),
                 note: None,
                 priority: None,
@@ -126,7 +126,7 @@ fn inbox_excludes_done_tasks() {
         let project_task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "有项目任务".to_owned(),
                 note: None,
                 priority: Some("low".to_owned()),
@@ -139,7 +139,7 @@ fn inbox_excludes_done_tasks() {
         update_project_task_status(
             &state,
             UpdateProjectTaskStatusInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 project_id: project.id,
                 task_id: project_task.id,
                 status: "done".to_owned(),
@@ -151,7 +151,7 @@ fn inbox_excludes_done_tasks() {
         let payload = list_inbox_tasks(
             &state,
             ListInboxTasksInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
             },
         )
         .await
@@ -174,7 +174,7 @@ fn triage_inbox_task_assigns_project_and_priority() {
         let project = create_project(
             &state,
             CreateProjectInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 name: "执行层".to_owned(),
                 note: None,
             parent_project_id: None,
@@ -186,7 +186,7 @@ fn triage_inbox_task_assigns_project_and_priority() {
         let task = create_task(
             &state,
             CreateTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 title: "待整理任务".to_owned(),
                 note: None,
                 priority: None,
@@ -199,7 +199,7 @@ fn triage_inbox_task_assigns_project_and_priority() {
         let payload = triage_inbox_task(
             &state,
             TriageInboxTaskInput {
-                space_slug: "default".to_owned(),
+                space_slug: "work".to_owned(),
                 task_id: task.id,
                 project_id: Some(project.id),
                 priority: Some("high".to_owned()),

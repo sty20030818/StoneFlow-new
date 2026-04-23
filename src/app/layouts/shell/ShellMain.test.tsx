@@ -33,7 +33,7 @@ describe('ShellMain', () => {
 	afterEach(() => {
 		vi.clearAllMocks()
 		useShellLayoutStore.setState({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			activeSection: 'inbox',
 			isCommandOpen: false,
 			isTaskCreateOpen: false,
@@ -59,7 +59,7 @@ describe('ShellMain', () => {
 				<ShellMain
 					activeDrawerId='engineering'
 					activeDrawerKind='project'
-					currentSpaceId='default'
+					currentSpaceId='work'
 					onCloseDrawer={() => useShellLayoutStore.getState().closeDrawer()}
 				>
 					<div>workspace content</div>
@@ -100,7 +100,7 @@ describe('ShellMain', () => {
 				<ShellMain
 					activeDrawerId='engineering'
 					activeDrawerKind='project'
-					currentSpaceId='default'
+					currentSpaceId='work'
 					onCloseDrawer={() => useShellLayoutStore.getState().closeDrawer()}
 				>
 					<div>workspace content</div>
@@ -140,7 +140,7 @@ describe('ShellMain', () => {
 				<ShellMain
 					activeDrawerId='engineering'
 					activeDrawerKind='project'
-					currentSpaceId='default'
+					currentSpaceId='work'
 					onCloseDrawer={() => useShellLayoutStore.getState().closeDrawer()}
 				>
 					<div>workspace content</div>
@@ -172,7 +172,7 @@ describe('ShellMain', () => {
 				<ShellMain
 					activeDrawerId='task-1'
 					activeDrawerKind='task'
-					currentSpaceId='default'
+					currentSpaceId='work'
 					onCloseDrawer={() => useShellLayoutStore.getState().closeDrawer()}
 				>
 					<div>workspace content</div>

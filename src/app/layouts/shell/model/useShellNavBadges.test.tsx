@@ -53,7 +53,7 @@ describe('useShellNavBadges', () => {
 			})),
 		})
 
-		const { result } = renderHook(() => useShellNavBadges('default'))
+		const { result } = renderHook(() => useShellNavBadges('work'))
 
 		await waitFor(() => {
 			expect(result.current).toEqual({
@@ -61,8 +61,8 @@ describe('useShellNavBadges', () => {
 				trash: '2',
 			})
 		})
-		expect(mockedListInboxTasks).toHaveBeenCalledWith({ spaceSlug: 'default' })
-		expect(mockedListTrashEntries).toHaveBeenCalledWith({ spaceSlug: 'default' })
+		expect(mockedListInboxTasks).toHaveBeenCalledWith({ spaceSlug: 'work' })
+		expect(mockedListTrashEntries).toHaveBeenCalledWith({ spaceSlug: 'work' })
 	})
 
 	it('数量为 0 时不显示 badge', async () => {
@@ -74,7 +74,7 @@ describe('useShellNavBadges', () => {
 			entries: [],
 		})
 
-		const { result } = renderHook(() => useShellNavBadges('default'))
+		const { result } = renderHook(() => useShellNavBadges('work'))
 
 		await waitFor(() => {
 			expect(result.current).toEqual({

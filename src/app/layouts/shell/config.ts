@@ -35,6 +35,7 @@ type ShellSpace = {
 	label: string
 	icon: ShellIcon
 	iconClassName: string
+	iconBadgeClassName: string
 }
 
 type DrawerDetailBadge = {
@@ -61,9 +62,27 @@ export type DrawerDetail = {
 }
 
 export const SHELL_SPACES: ShellSpace[] = [
-	{ id: 'default', label: '工作', icon: BriefcaseBusinessIcon, iconClassName: 'text-[#5e6ad2]' },
-	{ id: 'studio', label: '学习', icon: GraduationCapIcon, iconClassName: 'text-[#e58a00]' },
-	{ id: 'life', label: '生活', icon: HouseIcon, iconClassName: 'text-[#2da44e]' },
+	{
+		id: 'work',
+		label: '工作',
+		icon: BriefcaseBusinessIcon,
+		iconClassName: 'text-[#5e6ad2]',
+		iconBadgeClassName: 'bg-[#5e6ad2]',
+	},
+	{
+		id: 'studio',
+		label: '学习',
+		icon: GraduationCapIcon,
+		iconClassName: 'text-[#e58a00]',
+		iconBadgeClassName: 'bg-[#e58a00]',
+	},
+	{
+		id: 'life',
+		label: '生活',
+		icon: HouseIcon,
+		iconClassName: 'text-[#2da44e]',
+		iconBadgeClassName: 'bg-[#2da44e]',
+	},
 ]
 
 export const SHELL_NAV_ITEMS: ShellNavItem[] = [

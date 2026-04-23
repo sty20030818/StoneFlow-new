@@ -20,7 +20,7 @@ describe('InboxPage', () => {
 	afterEach(() => {
 		vi.clearAllMocks()
 		useShellLayoutStore.setState({
-			currentSpaceId: 'default',
+			currentSpaceId: 'work',
 			activeSection: 'inbox',
 			isCommandOpen: false,
 			isTaskCreateOpen: false,
@@ -59,7 +59,7 @@ describe('InboxPage', () => {
 		render(<InboxPage />)
 
 		await waitFor(() => {
-			expect(mockedListInboxTasks).toHaveBeenCalledWith({ spaceSlug: 'default' })
+			expect(mockedListInboxTasks).toHaveBeenCalledWith({ spaceSlug: 'work' })
 		})
 
 		await screen.findByText('整理今天的新任务')
@@ -134,7 +134,7 @@ describe('InboxPage', () => {
 
 		await waitFor(() => {
 			expect(mockedTriageInboxTask).toHaveBeenCalledWith({
-				spaceSlug: 'default',
+				spaceSlug: 'work',
 				taskId: 'task-1',
 				projectId: 'project-1',
 				priority: 'high',
