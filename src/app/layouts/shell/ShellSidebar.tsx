@@ -7,12 +7,14 @@ import { cn } from '@/shared/lib/utils'
 import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { PlusIcon } from 'lucide-react'
+import type { ShellNavBadges } from '@/app/layouts/shell/model/useShellNavBadges'
 
 type ShellSidebarProps = {
 	currentSpaceId: string
 	projects: ShellProjectLink[]
 	isProjectsLoading: boolean
 	projectsError: string | null
+	navBadges?: ShellNavBadges
 	onOpenProjectCreateDialog: (parentProjectId?: string | null) => void
 	onRefreshProjects?: () => void
 }
@@ -22,6 +24,7 @@ export function ShellSidebar({
 	projects,
 	isProjectsLoading,
 	projectsError,
+	navBadges = {},
 	onOpenProjectCreateDialog,
 	onRefreshProjects = () => undefined,
 }: ShellSidebarProps) {
@@ -50,28 +53,32 @@ export function ShellSidebar({
 
 			<div className='no-scrollbar flex-1 overflow-y-auto pb-4'>
 				<nav className='space-y-0.5 px-1.5'>
-					{SHELL_NAV_ITEMS.map((item) => (
-						<NavLink
-							className={({ isActive }) =>
-								cn(
-									'flex h-8 items-center gap-2 rounded-md border border-transparent px-2.5 text-[13px] transition-colors',
-									isActive
-										? 'border-(--sf-color-border-subtle) bg-card font-medium text-foreground shadow-(--sf-shadow-panel)'
-										: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
-								)
-							}
-							key={item.key}
-							to={item.to(currentSpaceId)}
-						>
-							<item.icon className='size-3.5 shrink-0' />
-							<span>{item.label}</span>
-							{item.badge ? (
-								<Badge className='ml-auto rounded-full px-1.5 py-0 text-[10px]' variant='outline'>
-									{item.badge}
-								</Badge>
-							) : null}
-						</NavLink>
-					))}
+					{SHELL_NAV_ITEMS.map((item) => {
+						const badge = navBadges[item.key]
+
+						return (
+							<NavLink
+								className={({ isActive }) =>
+									cn(
+										'flex h-8 items-center gap-2 rounded-md border border-transparent px-2.5 text-[13px] transition-colors',
+										isActive
+											? 'border-(--sf-color-border-subtle) bg-card font-medium text-foreground shadow-(--sf-shadow-panel)'
+											: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
+									)
+								}
+								key={item.key}
+								to={item.to(currentSpaceId)}
+							>
+								<item.icon className='size-3.5 shrink-0' />
+								<span>{item.label}</span>
+								{badge ? (
+									<Badge className='ml-auto rounded-full px-1.5 py-0 text-[10px]' variant='outline'>
+										{badge}
+									</Badge>
+								) : null}
+							</NavLink>
+						)
+					})}
 				</nav>
 
 				<section className='space-y-1 px-1.5'>

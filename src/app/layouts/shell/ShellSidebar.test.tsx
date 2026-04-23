@@ -5,6 +5,29 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
 
 describe('ShellSidebar', () => {
+	it('渲染来自真实数据层的一级导航 badge', () => {
+		renderSidebar({
+			currentSpaceId: 'default',
+			isProjectsLoading: false,
+			navBadges: {
+				inbox: '7',
+				trash: '1',
+			},
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
+			projects: [],
+			projectsError: null,
+		})
+
+		expect(screen.getByRole('link', { name: /Inbox7/ })).toHaveAttribute(
+			'href',
+			'/space/default/inbox',
+		)
+		expect(screen.getByRole('link', { name: /Trash1/ })).toHaveAttribute(
+			'href',
+			'/space/default/trash',
+		)
+	})
+
 	it('渲染真实项目导航并标记当前项目激活态', () => {
 		renderSidebar({
 			currentSpaceId: 'default',

@@ -13,7 +13,7 @@ export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps)
 	const healthcheckStatus = useHealthcheckStatus()
 
 	return (
-		<footer className='flex h-9.5 shrink-0 border-t border-(--sf-color-divider) bg-(--sf-color-shell-chrome)'>
+		<footer className='flex h-9.5 shrink-0 bg-(--sf-color-shell-chrome)'>
 			<div className='flex w-(--sf-shell-sidebar-width) items-center gap-2 px-3'>
 				<div className='flex min-w-0 items-center gap-2 text-[11px] text-(--sf-color-shell-tertiary)'>
 					<span
@@ -37,7 +37,7 @@ export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps)
 				</Button>
 			</div>
 
-			<div className='flex min-w-0 flex-1 items-center justify-between px-4'>
+			<div className='flex min-w-0 flex-1 items-center justify-between border-t border-(--sf-color-divider) px-4'>
 				<div className='flex min-w-0 items-center gap-3 text-[11px] text-(--sf-color-shell-tertiary)'>
 					<span className='rounded-md border border-(--sf-color-border-subtle) bg-card px-2 py-1 text-[10.5px] text-(--sf-color-text-secondary)'>
 						{getSpaceLabel(currentSpaceId)}

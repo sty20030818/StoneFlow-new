@@ -19,6 +19,7 @@ import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
+import { useShellNavBadges } from '@/app/layouts/shell/model/useShellNavBadges'
 import { useCommandOpenListener } from '@/shared/events/commandOpen'
 import { useTaskChangedListener } from '@/shared/events/taskChanged'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -43,6 +44,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 		refresh: refreshProjects,
 	} = useShellProjects(currentSpaceId)
 	const flatProjects = flattenProjectTree(projects)
+	const navBadges = useShellNavBadges(currentSpaceId)
 	const projectLinks = flatProjects.map((project) => ({
 		id: project.id,
 		label: project.name,
@@ -113,6 +115,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 					isProjectsLoading={isProjectsLoading}
 					onOpenProjectCreateDialog={openProjectCreateDialog}
 					onRefreshProjects={() => void refreshProjects()}
+					navBadges={navBadges}
 					projects={projectTreeLinks}
 					projectsError={projectsError}
 				/>

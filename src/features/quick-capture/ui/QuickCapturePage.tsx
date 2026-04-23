@@ -113,7 +113,7 @@ export function QuickCapturePage() {
 	}, [])
 
 	return (
-		<div className='flex h-full min-h-0 items-stretch bg-transparent p-[3px]'>
+		<div className='flex h-full min-h-0 items-stretch bg-transparent p-0.75'>
 			<QuickCaptureSurface />
 		</div>
 	)
@@ -383,7 +383,7 @@ export function QuickCaptureSurface({
 	return (
 		<section
 			aria-label='StoneFlow Command'
-			className='flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-(--sf-color-border-secondary) bg-card text-foreground shadow-(--sf-shadow-float)'
+			className='flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-(--sf-color-border-secondary) bg-card text-foreground'
 			onPointerDown={handleSurfacePointerDown}
 		>
 			<div className='flex items-center gap-2 border-b border-(--sf-color-divider) px-4 py-3'>
@@ -578,7 +578,7 @@ function CommandResultRow({
 			type='button'
 		>
 			{isActive ? (
-				<span className='absolute inset-y-0 left-0 w-[3px] rounded-r-sm bg-primary' />
+				<span className='absolute inset-y-0 left-0 w-0.75 rounded-r-sm bg-primary' />
 			) : null}
 			<span
 				className={cn(

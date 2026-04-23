@@ -232,7 +232,7 @@ export function ShellHeader({
 				</div>
 
 				<div
-					className={`flex h-full shrink-0 items-center ${isMac ? 'gap-2 px-1.5' : 'gap-0 pl-2 pr-0'}`}
+					className={`flex h-full shrink-0 items-center ${isMac ? 'gap-2 pl-1.5 pr-3' : 'gap-0 pl-2 pr-0'}`}
 				>
 					<div className='flex items-center gap-1.5'>
 						<Button
@@ -364,7 +364,6 @@ export function ShellHeader({
 								>
 									<item.icon />
 									{item.label}
-									{item.badge ? <CommandShortcut>{item.badge}</CommandShortcut> : null}
 								</CommandItem>
 							))}
 						</CommandGroup>

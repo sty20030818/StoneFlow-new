@@ -16,7 +16,6 @@ type ShellIcon = ComponentType<{ className?: string }>
 type ShellNavItem = {
 	key: ShellSectionKey
 	label: string
-	badge?: string
 	icon: ShellIcon
 	to: (spaceId: string) => string
 }
@@ -66,7 +65,6 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
 	{
 		key: 'inbox',
 		label: 'Inbox',
-		badge: '3',
 		icon: InboxIcon,
 		to: (spaceId) => `/space/${spaceId}/inbox`,
 	},
@@ -79,7 +77,6 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
 	{
 		key: 'trash',
 		label: 'Trash',
-		badge: '2',
 		icon: Trash2Icon,
 		to: (spaceId) => `/space/${spaceId}/trash`,
 	},

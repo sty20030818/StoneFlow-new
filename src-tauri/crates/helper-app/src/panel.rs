@@ -67,6 +67,7 @@ pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
     .always_on_top(true)
     .skip_taskbar(true)
     .decorations(false)
+    .shadow(false)
     .transparent(true)
     .center()
     .visible(false)
