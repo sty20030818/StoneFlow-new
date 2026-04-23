@@ -154,6 +154,8 @@ describe('ShellSidebar', () => {
 		const spaceTrigger = screen.getByRole('button', { name: '切换 Space' })
 
 		expect(spaceTrigger).toHaveTextContent('工作')
+		expect(spaceTrigger.closest('div')?.className).toContain('px-5.5')
+		expect(document.querySelector('nav')?.className).toContain('px-5.5')
 		expect(screen.queryByRole('link', { name: '学习' })).not.toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: '新建任务' }))

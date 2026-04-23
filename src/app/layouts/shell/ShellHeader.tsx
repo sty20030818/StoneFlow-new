@@ -7,6 +7,7 @@ import {
 	SHELL_NAV_ITEMS,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
+import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
 import { Badge } from '@/shared/ui/base/badge'
@@ -28,13 +29,17 @@ import {
 	DropdownMenuContent,
 	DropdownMenuGroup,
 	DropdownMenuItem,
+	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
 import { Kbd } from '@/shared/ui/base/kbd'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
+	ChevronLeftIcon,
 	ChevronDownIcon,
+	ChevronRightIcon,
 	FolderPlusIcon,
+	HistoryIcon,
 	MinusIcon,
 	SearchIcon,
 	SquarePenIcon,
@@ -73,6 +78,14 @@ export function ShellHeader({
 	const [isMaximized, setIsMaximized] = useState(false)
 	const isMac = useMemo(() => /Mac|iPhone|iPad|iPod/i.test(window.navigator.userAgent), [])
 	const defaultProjectId = projects[0]?.id ?? null
+	const {
+		entries: routeHistoryEntries,
+		canGoBack,
+		canGoForward,
+		goBack,
+		goForward,
+		navigateToHistoryEntry,
+	} = useShellRouteHistory({ currentSpaceId, projects })
 
 	useEffect(() => {
 		let disposed = false
@@ -183,11 +196,12 @@ export function ShellHeader({
 	return (
 		<>
 			<header
-				className='relative flex h-12 shrink-0 items-center bg-(--sf-color-shell-chrome) pl-2 pr-0'
+				className='relative flex h-12 shrink-0 items-center bg-(--sf-color-shell-chrome) pl-0 pr-0'
+				data-tauri-drag-region
 				onMouseDownCapture={handleHeaderMouseDownCapture}
 			>
 				<div
-					className={`flex h-full w-(--sf-shell-sidebar-width) items-center gap-2 px-3 ${isMac ? 'pl-24' : ''}`}
+					className={`flex h-full w-(--sf-shell-sidebar-width) items-center gap-2 px-[22px] ${isMac ? 'pl-24' : ''}`}
 					data-tauri-drag-region
 					onDoubleClick={() => {
 						if (!isMac) {
@@ -195,23 +209,70 @@ export function ShellHeader({
 						}
 					}}
 				>
-					<div className='flex size-5 items-center justify-center rounded-md bg-primary text-[10px] font-semibold text-primary-foreground'>
-						S
-					</div>
-					<span className='text-[13px] font-medium text-foreground'>StoneFlow</span>
+					<div className='min-w-0 flex-1 self-stretch' data-tauri-drag-region />
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								aria-label='打开历史记录'
+								className='size-7 rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground focus-visible:border-transparent focus-visible:ring-0 aria-expanded:bg-(--sf-color-shell-hover)'
+								size='icon-sm'
+								variant='ghost'
+							>
+								<HistoryIcon className='size-3.5' />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align='start' className='w-58'>
+							<DropdownMenuLabel>最近浏览</DropdownMenuLabel>
+							<DropdownMenuGroup>
+								{routeHistoryEntries.length > 0 ? (
+									routeHistoryEntries.map((entry) => (
+										<DropdownMenuItem
+											className='flex-col items-start gap-0.5 px-2 py-1.5'
+											key={entry.id}
+											onSelect={() => navigateToHistoryEntry(entry)}
+										>
+											<span className='max-w-full truncate text-[12.5px] font-medium'>
+												{entry.label}
+											</span>
+											<span className='max-w-full truncate text-[11px] text-(--sf-color-shell-tertiary)'>
+												{entry.description}
+											</span>
+										</DropdownMenuItem>
+									))
+								) : (
+									<DropdownMenuItem
+										className='px-2 py-1.5 text-[12px] text-(--sf-color-shell-tertiary)'
+										disabled
+									>
+										暂无历史记录
+									</DropdownMenuItem>
+								)}
+							</DropdownMenuGroup>
+						</DropdownMenuContent>
+					</DropdownMenu>
+					<Button
+						aria-label='后退'
+						className='size-7 rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
+						disabled={!canGoBack}
+						onClick={goBack}
+						size='icon-sm'
+						variant='ghost'
+					>
+						<ChevronLeftIcon className='size-3.5' />
+					</Button>
+					<Button
+						aria-label='前进'
+						className='size-7 rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
+						disabled={!canGoForward}
+						onClick={goForward}
+						size='icon-sm'
+						variant='ghost'
+					>
+						<ChevronRightIcon className='size-3.5' />
+					</Button>
 				</div>
 
-				<div className='flex min-w-0 flex-1 items-center gap-2 px-2'>
-					<div
-						className='min-w-4 flex-1 self-stretch'
-						data-tauri-drag-region
-						onDoubleClick={() => {
-							if (!isMac) {
-								void handleToggleMaximize()
-							}
-						}}
-					/>
-
+				<div className='flex min-w-0 flex-1 items-center gap-2 px-0' data-tauri-drag-region>
 					<div className='min-w-0 w-full max-w-136 shrink'>
 						<GlobalSearchInput
 							currentSpaceId={currentSpaceId}
@@ -233,6 +294,7 @@ export function ShellHeader({
 
 				<div
 					className={`flex h-full shrink-0 items-center ${isMac ? 'gap-2 pl-1.5 pr-3' : 'gap-0 pl-2 pr-0'}`}
+					data-tauri-drag-region
 				>
 					<div className='flex items-center gap-1.5'>
 						<Button

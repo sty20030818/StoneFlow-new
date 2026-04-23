@@ -43,7 +43,7 @@ export function ShellSidebar({
 
 	return (
 		<aside className='flex h-full w-(--sf-shell-sidebar-width) shrink-0 flex-col bg-(--sf-color-shell-chrome)'>
-			<div className='flex items-center gap-1.5 px-2 pb-4 pt-2'>
+			<div className='flex items-center gap-1.5 px-5.5 pb-4 pt-2'>
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button
@@ -95,7 +95,7 @@ export function ShellSidebar({
 			</div>
 
 			<div className='no-scrollbar flex-1 overflow-y-auto pb-4'>
-				<nav className='space-y-0.5 px-1.5'>
+				<nav className='space-y-0.5 px-5.5'>
 					{SHELL_NAV_ITEMS.map((item) => {
 						const badge = navBadges[item.key]
 
@@ -124,7 +124,7 @@ export function ShellSidebar({
 					})}
 				</nav>
 
-				<section className='space-y-1 px-1.5'>
+				<section className='space-y-1 px-5.5'>
 					<div className='flex items-center justify-between px-2.5'>
 						<p className='text-[10.5px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'>
 							Projects

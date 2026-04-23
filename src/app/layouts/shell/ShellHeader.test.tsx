@@ -36,8 +36,26 @@ describe('ShellHeader', () => {
 			expect(currentWindow.isMaximized).toHaveBeenCalled()
 		})
 
-		expect(screen.getByRole('banner').className).toContain('pl-2 pr-0')
-		expect(document.querySelectorAll('[data-tauri-drag-region]')).toHaveLength(3)
+		expect(screen.getByRole('banner').className).toContain('pl-0 pr-0')
+		expect(screen.getByRole('banner')).toHaveAttribute('data-tauri-drag-region')
+		expect(document.querySelectorAll('[data-tauri-drag-region]')).toHaveLength(6)
+		expect(screen.getByRole('button', { name: '打开历史记录' })).not.toHaveAttribute(
+			'data-tauri-drag-region',
+		)
+		expect(document.querySelector('[data-sf-search-root="true"]')).not.toHaveAttribute(
+			'data-tauri-drag-region',
+		)
+		expect(screen.queryByText('StoneFlow')).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '打开历史记录' }).className).toContain(
+			'rounded-full',
+		)
+		expect(screen.getByRole('button', { name: '打开历史记录' }).className).toContain(
+			'focus-visible:ring-0',
+		)
+		expect(screen.getByRole('button', { name: '后退' }).className).toContain('rounded-full')
+		expect(screen.getByRole('button', { name: '前进' }).className).toContain('rounded-full')
+		expect(screen.getByRole('button', { name: '后退' })).toBeDisabled()
+		expect(screen.getByRole('button', { name: '前进' })).toBeDisabled()
 
 		const closeButton = screen.getByRole('button', { name: '关闭窗口' })
 		expect(screen.getByRole('button', { name: '最小化窗口' }).className).toContain('h-full w-11')
@@ -64,6 +82,20 @@ describe('ShellHeader', () => {
 			expect(currentWindow.toggleMaximize).toHaveBeenCalledTimes(1)
 			expect(currentWindow.close).toHaveBeenCalledTimes(1)
 		})
+	})
+
+	it('历史记录下拉左对齐触发按钮且不展示当前路由', async () => {
+		mockedGetCurrentWindow.mockReturnValue(createMockWindow())
+
+		renderHeader()
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '打开历史记录' }))
+
+		await waitFor(() => {
+			expect(screen.getByText('最近浏览')).toBeInTheDocument()
+			expect(screen.getByRole('menuitem', { name: '暂无历史记录' })).toBeInTheDocument()
+		})
+		expect(screen.queryByRole('menuitem', { name: /Inbox工作/ })).not.toBeInTheDocument()
 	})
 
 	it('支持 Command 快捷键和新建任务快捷键，并忽略输入内按键', () => {
@@ -144,7 +176,7 @@ function renderHeader(overrides: Partial<ComponentProps<typeof ShellHeader>> = {
 	}
 
 	return render(
-		<MemoryRouter>
+		<MemoryRouter initialEntries={['/space/default/inbox']}>
 			<ShellHeader {...props} />
 		</MemoryRouter>,
 	)
