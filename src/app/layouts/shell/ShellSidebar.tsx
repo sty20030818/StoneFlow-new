@@ -168,7 +168,6 @@ export function ShellSidebar({
 									onClick={() => onOpenProjectCreateDialog()}
 									size='sm'
 								>
-									<SquarePenIcon data-icon='inline-start' />
 									创建第一个项目
 								</Button>
 							}

@@ -162,7 +162,10 @@ describe('ShellSidebar', () => {
 		expect(onOpenTaskCreateDialog).toHaveBeenCalledTimes(1)
 
 		fireEvent.pointerDown(spaceTrigger)
-		expect(screen.getByRole('menuitem', { name: /学习/ })).toBeInTheDocument()
+		const studySpaceItem = screen.getByRole('menuitem', { name: /学习/ })
+		expect(studySpaceItem).toBeInTheDocument()
+		expect(studySpaceItem.className).toContain('hover:bg-(--sf-color-shell-hover)')
+		expect(studySpaceItem.className).toContain('data-[highlighted]:bg-(--sf-color-shell-hover)')
 	})
 })
 

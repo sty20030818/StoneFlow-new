@@ -27,7 +27,7 @@ import {
 	MainCardHeader,
 	MainCardLayout,
 	MainCardToolbar,
-} from '@/shared/ui/MainCardLayout'
+} from '@/app/layouts/main-card/MainCardLayout'
 import { PlusIcon } from 'lucide-react'
 
 export function InboxPage() {

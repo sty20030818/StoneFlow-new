@@ -1,7 +1,7 @@
 import type { ComponentProps, ComponentType, ReactNode } from 'react'
 
-import { Button } from '@/shared/ui/base/button'
 import { cn } from '@/shared/lib/utils'
+import { Button } from '@/shared/ui/base/button'
 import {
 	ListFilterIcon,
 	PanelRightOpenIcon,

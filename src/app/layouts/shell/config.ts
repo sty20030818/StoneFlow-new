@@ -100,6 +100,10 @@ export function resolveShellSection(pathname: string): ShellSectionKey {
 		return 'trash'
 	}
 
+	if (pathname.includes('/settings')) {
+		return 'settings'
+	}
+
 	return 'inbox'
 }
 
@@ -113,6 +117,8 @@ export function getSectionLabel(section: ShellSectionKey) {
 			return 'Projects'
 		case 'trash':
 			return 'Trash'
+		case 'settings':
+			return 'Settings'
 		default:
 			return 'Workspace'
 	}

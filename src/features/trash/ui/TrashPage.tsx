@@ -6,13 +6,13 @@ import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
-import { MainCardHeader, MainCardLayout, MainCardToolbar } from '@/shared/ui/MainCardLayout'
+import { MainCardHeader, MainCardLayout, MainCardToolbar } from '@/app/layouts/main-card/MainCardLayout'
 import {
 	LINEAR_CARD_BASE_CLASS,
 	LINEAR_CARD_IDLE_CLASS,
 	LINEAR_EMPTY_STATE_CLASS,
 } from '@/shared/ui/linearSurface'
-import { RotateCcwIcon, Trash2Icon } from 'lucide-react'
+import { Trash2Icon } from 'lucide-react'
 
 export function TrashPage() {
 	const { spaceId = 'default' } = useParams()
@@ -115,7 +115,6 @@ function TrashEntryRow({ entry, isPending, onRestore }: TrashEntryRowProps) {
 					size='sm'
 					variant='secondary'
 				>
-					<RotateCcwIcon data-icon='inline-start' />
 					{isPending ? '恢复中...' : '恢复'}
 				</Button>
 			</div>

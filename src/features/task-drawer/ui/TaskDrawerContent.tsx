@@ -1,5 +1,5 @@
 import { open as openDialog } from '@tauri-apps/plugin-dialog'
-import { ExternalLink, File, Folder, Link2, Plus, Trash2 } from 'lucide-react'
+import { ExternalLink, File, Folder, Link2, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { getSpaceLabel } from '@/app/layouts/shell/config'
@@ -324,7 +324,6 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						size='sm'
 						type='button'
 					>
-						<Plus data-icon='inline-start' />
 						添加链接
 					</Button>
 				</div>

@@ -16,7 +16,6 @@ import {
 	CircleIcon,
 	FolderIcon,
 	LoaderCircleIcon,
-	PlusIcon,
 	SearchIcon,
 } from 'lucide-react'
 
@@ -411,7 +410,7 @@ export function QuickCaptureSurface({
 
 				<Button
 					className={cn(
-						'h-9 min-w-22 gap-1.5 rounded-md px-3 text-[12px]',
+						'h-9 min-w-22 rounded-md px-3 text-[12px]',
 						mode === 'create'
 							? 'bg-primary text-primary-foreground hover:bg-(--sf-color-accent-hover)'
 							: 'border border-border bg-card text-(--sf-color-text-secondary) hover:border-(--sf-color-accent-soft-border) hover:bg-accent hover:text-accent-foreground',
@@ -420,14 +419,7 @@ export function QuickCaptureSurface({
 					onClick={executePrimaryAction}
 					variant={mode === 'create' ? 'default' : 'ghost'}
 				>
-					{status === 'submitting' ? (
-						<LoaderCircleIcon className='size-3.5 animate-spin' />
-					) : mode === 'create' ? (
-						<PlusIcon className='size-3.5' />
-					) : (
-						<SearchIcon className='size-3.5' />
-					)}
-					<span>{mode === 'create' ? '创建任务' : '打开'}</span>
+					{status === 'submitting' ? '处理中...' : mode === 'create' ? '创建任务' : '打开'}
 				</Button>
 			</div>
 

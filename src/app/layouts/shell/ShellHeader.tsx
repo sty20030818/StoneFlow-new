@@ -42,6 +42,7 @@ import {
 	HistoryIcon,
 	MinusIcon,
 	SearchIcon,
+	SettingsIcon,
 	SquarePenIcon,
 	SquareIcon,
 	XIcon,
@@ -151,6 +152,13 @@ export function ShellHeader({
 		})
 	}
 
+	const handleOpenSettings = () => {
+		onCloseDrawer()
+		startTransition(() => {
+			navigate(`/space/${currentSpaceId}/settings`)
+		})
+	}
+
 	const handleMinimize = async () => {
 		try {
 			await getCurrentWindow().minimize()
@@ -201,7 +209,7 @@ export function ShellHeader({
 				onMouseDownCapture={handleHeaderMouseDownCapture}
 			>
 				<div
-					className={`flex h-full w-(--sf-shell-sidebar-width) items-center gap-2 px-[22px] ${isMac ? 'pl-24' : ''}`}
+					className={`flex h-full w-(--sf-shell-sidebar-width) items-center gap-2 px-5.5 ${isMac ? 'pl-24' : ''}`}
 					data-tauri-drag-region
 					onDoubleClick={() => {
 						if (!isMac) {
@@ -214,7 +222,7 @@ export function ShellHeader({
 						<DropdownMenuTrigger asChild>
 							<Button
 								aria-label='打开历史记录'
-								className='size-7 rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground focus-visible:border-transparent focus-visible:ring-0 aria-expanded:bg-(--sf-color-shell-hover)'
+								className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground focus-visible:border-transparent focus-visible:ring-0 aria-expanded:bg-(--sf-color-shell-hover)'
 								size='icon-sm'
 								variant='ghost'
 							>
@@ -252,7 +260,7 @@ export function ShellHeader({
 					</DropdownMenu>
 					<Button
 						aria-label='后退'
-						className='size-7 rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
+						className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
 						disabled={!canGoBack}
 						onClick={goBack}
 						size='icon-sm'
@@ -262,7 +270,7 @@ export function ShellHeader({
 					</Button>
 					<Button
 						aria-label='前进'
-						className='size-7 rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
+						className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
 						disabled={!canGoForward}
 						onClick={goForward}
 						size='icon-sm'
@@ -303,7 +311,6 @@ export function ShellHeader({
 							size='default'
 							variant='outline'
 						>
-							<SquarePenIcon data-icon='inline-start' />
 							<span>新建任务</span>
 							<Kbd>C</Kbd>
 						</Button>
@@ -332,6 +339,23 @@ export function ShellHeader({
 								</DropdownMenuGroup>
 							</DropdownMenuContent>
 						</DropdownMenu>
+					</div>
+
+					<div className='ml-2 flex items-center gap-2'>
+						<img
+							alt='当前用户头像'
+							className='size-7.5 rounded-full border border-(--sf-color-border-subtle) object-cover'
+							src='/avatar.jpg'
+						/>
+						<Button
+							aria-label='打开设置'
+							className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
+							onClick={handleOpenSettings}
+							size='icon-sm'
+							variant='ghost'
+						>
+							<SettingsIcon className='size-3.5' />
+						</Button>
 					</div>
 
 					{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}

@@ -5,12 +5,14 @@ describe('shell config helpers', () => {
 		expect(resolveShellSection('/space/default/focus')).toBe('focus')
 		expect(resolveShellSection('/space/default/project/stoneflow-v1')).toBe('project')
 		expect(resolveShellSection('/space/default/trash')).toBe('trash')
+		expect(resolveShellSection('/space/default/settings')).toBe('settings')
 		expect(resolveShellSection('/space/default/inbox')).toBe('inbox')
 	})
 
 	it('为已知分区和空间返回标签', () => {
 		expect(getSectionLabel('inbox')).toBe('Inbox')
 		expect(getSectionLabel('focus')).toBe('Views')
+		expect(getSectionLabel('settings')).toBe('Settings')
 		expect(getSpaceLabel('default')).toBe('工作')
 	})
 

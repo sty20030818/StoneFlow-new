@@ -39,7 +39,7 @@ import {
 	MainCardHeader,
 	MainCardLayout,
 	MainCardToolbar,
-} from '@/shared/ui/MainCardLayout'
+} from '@/app/layouts/main-card/MainCardLayout'
 import { FolderOpenDotIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
 const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'

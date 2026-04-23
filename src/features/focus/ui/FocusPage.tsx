@@ -29,8 +29,12 @@ import type {
 	FocusTaskRecord,
 	FocusViewKey,
 } from '@/features/focus/model/types'
-import { MainCardHeader, MainCardLayout, MainCardToolbar } from '@/shared/ui/MainCardLayout'
-import { ListFilterIcon, PinIcon, SquareCheckBigIcon } from 'lucide-react'
+import {
+	MainCardHeader,
+	MainCardLayout,
+	MainCardToolbar,
+} from '@/app/layouts/main-card/MainCardLayout'
+import { ListFilterIcon } from 'lucide-react'
 
 const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
 const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
@@ -258,7 +262,6 @@ function FocusTaskRow({
 					size='sm'
 					variant={task.pinned ? 'secondary' : 'outline'}
 				>
-					<PinIcon data-icon='inline-start' />
 					{isPending ? '处理中...' : task.pinned ? '取消 Pin' : 'Pin 到 Focus'}
 				</Button>
 				<Button
@@ -273,7 +276,6 @@ function FocusTaskRow({
 					size='sm'
 					variant='outline'
 				>
-					<SquareCheckBigIcon data-icon='inline-start' />
 					{isPending ? '处理中...' : task.status === 'todo' ? '标记完成' : '恢复待执行'}
 				</Button>
 			</div>
