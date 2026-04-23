@@ -49,16 +49,20 @@ export function InboxPage() {
 				actions={
 					<div className='flex flex-wrap items-center gap-2'>
 						<Button
-							className='rounded-md'
 							onClick={() => openProjectCreateDialog()}
 							size='sm'
 							variant='secondary'
 						>
 							创建项目
 						</Button>
-						<Button disabled={isLoading} onClick={() => void refresh()} size='sm' variant='outline'>
-							<RefreshCwIcon data-icon='inline-start' />
-							刷新列表
+						<Button
+							aria-label='刷新列表'
+							disabled={isLoading}
+							onClick={() => void refresh()}
+							size='icon-sm'
+							variant='outline'
+						>
+							<RefreshCwIcon />
 						</Button>
 					</div>
 				}
@@ -69,7 +73,7 @@ export function InboxPage() {
 				{!isLoading && !loadError && tasks.length > 0 && projects.length === 0 ? (
 					<StatusNotice
 						actions={
-							<Button className='rounded-md' onClick={() => openProjectCreateDialog()} size='sm'>
+							<Button onClick={() => openProjectCreateDialog()} size='sm'>
 								创建项目
 							</Button>
 						}

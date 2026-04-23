@@ -13,6 +13,7 @@ describe('ShellSidebar', () => {
 				inbox: '7',
 				trash: '1',
 			},
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
 			projects: [],
 			projectsError: null,
@@ -32,6 +33,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
 			projects: [
 				{
@@ -69,6 +71,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog,
 			projects: [{ id: 'project-1', label: '执行层', badge: 'active', children: [] }],
 			projectsError: null,
@@ -83,6 +86,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: true,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
 			projects: [],
 			projectsError: null,
@@ -95,6 +99,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
 			projects: [],
 			projectsError: null,
@@ -107,6 +112,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
 			projects: [],
 			projectsError: '项目导航加载失败',
@@ -121,6 +127,7 @@ describe('ShellSidebar', () => {
 		renderSidebar({
 			currentSpaceId: 'default',
 			isProjectsLoading: false,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog,
 			projects: [],
 			projectsError: null,
@@ -130,6 +137,30 @@ describe('ShellSidebar', () => {
 
 		expect(onOpenProjectCreateDialog).toHaveBeenCalledTimes(1)
 		expect(screen.queryByRole('link', { name: 'Projects' })).not.toBeInTheDocument()
+	})
+
+	it('使用 Space 下拉和右侧圆形新建任务入口替代顶部 tabs', () => {
+		const onOpenTaskCreateDialog = vi.fn<() => void>()
+
+		renderSidebar({
+			currentSpaceId: 'default',
+			isProjectsLoading: false,
+			onOpenTaskCreateDialog,
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
+			projects: [],
+			projectsError: null,
+		})
+
+		const spaceTrigger = screen.getByRole('button', { name: '切换 Space' })
+
+		expect(spaceTrigger).toHaveTextContent('工作')
+		expect(screen.queryByRole('link', { name: '学习' })).not.toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '新建任务' }))
+		expect(onOpenTaskCreateDialog).toHaveBeenCalledTimes(1)
+
+		fireEvent.pointerDown(spaceTrigger)
+		expect(screen.getByRole('menuitem', { name: /学习/ })).toBeInTheDocument()
 	})
 })
 

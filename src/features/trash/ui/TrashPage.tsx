@@ -12,7 +12,7 @@ import {
 	LINEAR_CARD_IDLE_CLASS,
 	LINEAR_EMPTY_STATE_CLASS,
 } from '@/shared/ui/linearSurface'
-import { RotateCcwIcon, Trash2Icon } from 'lucide-react'
+import { RefreshCwIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react'
 
 export function TrashPage() {
 	const { spaceId = 'default' } = useParams()
@@ -23,8 +23,13 @@ export function TrashPage() {
 		<div className='p-4'>
 			<PanelSurface
 				actions={
-					<Button className='rounded-md' onClick={() => void refresh()} size='sm' variant='outline'>
-						刷新
+					<Button
+						aria-label='刷新回收站'
+						onClick={() => void refresh()}
+						size='icon-sm'
+						variant='outline'
+					>
+						<RefreshCwIcon />
 					</Button>
 				}
 				description='删除后的 Task 和 Project 会先进入这里，恢复后会回到原来的执行位置。'

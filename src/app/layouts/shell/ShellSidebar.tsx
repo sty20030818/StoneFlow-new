@@ -1,12 +1,19 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 
 import { SHELL_NAV_ITEMS, SHELL_SPACES, type ShellProjectLink } from '@/app/layouts/shell/config'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { cn } from '@/shared/lib/utils'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/shared/ui/base/dropdown-menu'
 import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
-import { PlusIcon } from 'lucide-react'
+import { CheckIcon, ChevronDownIcon, SquarePenIcon, PlusIcon } from 'lucide-react'
 import type { ShellNavBadges } from '@/app/layouts/shell/model/useShellNavBadges'
 
 type ShellSidebarProps = {
@@ -15,6 +22,7 @@ type ShellSidebarProps = {
 	isProjectsLoading: boolean
 	projectsError: string | null
 	navBadges?: ShellNavBadges
+	onOpenTaskCreateDialog: () => void
 	onOpenProjectCreateDialog: (parentProjectId?: string | null) => void
 	onRefreshProjects?: () => void
 }
@@ -25,30 +33,65 @@ export function ShellSidebar({
 	isProjectsLoading,
 	projectsError,
 	navBadges = {},
+	onOpenTaskCreateDialog,
 	onOpenProjectCreateDialog,
 	onRefreshProjects = () => undefined,
 }: ShellSidebarProps) {
+	const navigate = useNavigate()
+	const activeSpace = SHELL_SPACES.find((space) => space.id === currentSpaceId) ?? SHELL_SPACES[0]
+	const ActiveSpaceIcon = activeSpace.icon
+
 	return (
 		<aside className='flex h-full w-(--sf-shell-sidebar-width) shrink-0 flex-col bg-(--sf-color-shell-chrome)'>
-			<div className='px-1.5 pb-4 pt-1.5'>
-				<div className='flex gap-1 rounded-lg p-1'>
-					{SHELL_SPACES.map((space) => (
-						<NavLink
-							className={({ isActive }) =>
-								cn(
-									'flex h-6 flex-1 items-center justify-center rounded-md border border-transparent text-[12px] font-medium transition-colors',
-									isActive
-										? 'border-(--sf-color-border-subtle) bg-card text-foreground shadow-(--sf-shadow-panel)'
-										: 'text-muted-foreground hover:bg-(--sf-color-shell-hover) hover:text-foreground',
-								)
-							}
-							key={space.id}
-							to={`/space/${space.id}/inbox`}
+			<div className='flex items-center gap-1.5 px-2 pb-4 pt-2'>
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button
+							aria-label='切换 Space'
+							className='h-8 w-29.5 justify-start gap-1.5 rounded-md border-transparent bg-transparent px-2 text-[13px] text-foreground shadow-none hover:bg-(--sf-color-shell-hover) aria-expanded:bg-(--sf-color-shell-hover)'
+							size='default'
+							variant='ghost'
 						>
-							{space.label}
-						</NavLink>
-					))}
-				</div>
+							<ActiveSpaceIcon className={cn('size-3.5 shrink-0', activeSpace.iconClassName)} />
+							<span className='min-w-0 flex-1 truncate text-left font-medium'>
+								{activeSpace.label}
+							</span>
+							<ChevronDownIcon className='size-3 shrink-0 text-(--sf-color-icon-subtle)' />
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align='start' className='w-44'>
+						<DropdownMenuGroup>
+							{SHELL_SPACES.map((space) => {
+								const SpaceIcon = space.icon
+								const isActive = space.id === activeSpace.id
+
+								return (
+									<DropdownMenuItem
+										key={space.id}
+										onSelect={() => {
+											navigate(`/space/${space.id}/inbox`)
+										}}
+									>
+										<SpaceIcon className={cn('size-3.5', space.iconClassName)} />
+										<span>{space.label}</span>
+										{isActive ? (
+											<CheckIcon className='ml-auto size-3.5 text-(--sf-color-icon-secondary)' />
+										) : null}
+									</DropdownMenuItem>
+								)
+							})}
+						</DropdownMenuGroup>
+					</DropdownMenuContent>
+				</DropdownMenu>
+				<Button
+					aria-label='新建任务'
+					className='ml-auto'
+					onClick={onOpenTaskCreateDialog}
+					size='icon'
+					variant='secondary'
+				>
+					<SquarePenIcon />
+				</Button>
 			</div>
 
 			<div className='no-scrollbar flex-1 overflow-y-auto pb-4'>
@@ -62,7 +105,7 @@ export function ShellSidebar({
 									cn(
 										'flex h-8 items-center gap-2 rounded-md border border-transparent px-2.5 text-[13px] transition-colors',
 										isActive
-											? 'border-(--sf-color-border-subtle) bg-card font-medium text-foreground shadow-(--sf-shadow-panel)'
+											? 'border-(--sf-color-border-subtle) bg-sidebar-accent font-medium text-foreground shadow-(--sf-shadow-panel)'
 											: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
 									)
 								}
@@ -72,9 +115,9 @@ export function ShellSidebar({
 								<item.icon className='size-3.5 shrink-0' />
 								<span>{item.label}</span>
 								{badge ? (
-									<Badge className='ml-auto rounded-full px-1.5 py-0 text-[10px]' variant='outline'>
+									<span className='ml-auto text-[12px] font-semibold text-(--sf-color-shell-secondary)'>
 										{badge}
-									</Badge>
+									</span>
 								) : null}
 							</NavLink>
 						)
@@ -88,7 +131,6 @@ export function ShellSidebar({
 						</p>
 						<Button
 							aria-label='创建项目'
-							className='rounded-md text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground'
 							onClick={() => onOpenProjectCreateDialog()}
 							size='icon-xs'
 							variant='ghost'
@@ -126,7 +168,7 @@ export function ShellSidebar({
 									onClick={() => onOpenProjectCreateDialog()}
 									size='sm'
 								>
-									<PlusIcon data-icon='inline-start' />
+									<SquarePenIcon data-icon='inline-start' />
 									创建第一个项目
 								</Button>
 							}
@@ -143,7 +185,7 @@ export function ShellSidebar({
 											cn(
 												'flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md border border-transparent px-2.5 text-[13px] transition-colors',
 												isActive
-													? 'border-(--sf-color-border-subtle) bg-card font-medium text-foreground shadow-(--sf-shadow-panel)'
+													? 'border-(--sf-color-border-subtle) bg-sidebar-accent font-medium text-foreground shadow-(--sf-shadow-panel)'
 													: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
 											)
 										}
@@ -162,12 +204,12 @@ export function ShellSidebar({
 									</NavLink>
 									<Button
 										aria-label={`在 ${project.label} 下创建子项目`}
-										className='size-7 shrink-0 rounded-md text-(--sf-color-shell-secondary) opacity-0 transition-opacity group-hover:opacity-100 hover:bg-(--sf-color-shell-hover) hover:text-foreground focus-visible:opacity-100'
+										className='shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100'
 										onClick={() => onOpenProjectCreateDialog(project.id)}
 										size='icon-xs'
 										variant='ghost'
 									>
-										<PlusIcon />
+										<SquarePenIcon />
 									</Button>
 								</div>
 								{project.children?.map((childProject) => (
@@ -176,7 +218,7 @@ export function ShellSidebar({
 											cn(
 												'ml-5 flex h-7 items-center gap-2 rounded-md border border-transparent px-2 text-[12px] transition-colors',
 												isActive
-													? 'border-(--sf-color-border-subtle) bg-card font-medium text-foreground shadow-(--sf-shadow-panel)'
+													? 'border-(--sf-color-border-subtle) bg-sidebar-accent font-medium text-foreground shadow-(--sf-shadow-panel)'
 													: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
 											)
 										}

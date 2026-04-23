@@ -28,7 +28,7 @@ import {
 	LINEAR_CARD_IDLE_CLASS,
 	LINEAR_EMPTY_STATE_CLASS,
 } from '@/shared/ui/linearSurface'
-import { FolderOpenDotIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from 'lucide-react'
+import { FolderOpenDotIcon, MoreHorizontalIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from 'lucide-react'
 
 const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
 const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
@@ -66,17 +66,8 @@ export function ProjectPage() {
 			<PanelSurface
 				actions={
 					<div className='flex flex-wrap items-center gap-2'>
-						<Button
-							className='rounded-md'
-							onClick={() => void refresh()}
-							size='sm'
-							variant='outline'
-						>
-							刷新
-						</Button>
 						{view ? (
 							<Button
-								className='rounded-md'
 								onClick={() => openProjectCreateDialog(view.project.id)}
 								size='sm'
 								variant='secondary'
@@ -87,7 +78,7 @@ export function ProjectPage() {
 						) : null}
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<Button className='rounded-md' size='icon-sm' variant='outline'>
+								<Button size='icon-sm' variant='outline'>
 									<MoreHorizontalIcon />
 								</Button>
 							</DropdownMenuTrigger>
@@ -107,8 +98,16 @@ export function ProjectPage() {
 										{isDeletingProject ? '移入中...' : '移入回收站'}
 									</DropdownMenuItem>
 								</DropdownMenuGroup>
-							</DropdownMenuContent>
-						</DropdownMenu>
+								</DropdownMenuContent>
+							</DropdownMenu>
+						<Button
+							aria-label='刷新执行视图'
+							onClick={() => void refresh()}
+							size='icon-sm'
+							variant='outline'
+						>
+							<RefreshCwIcon />
+						</Button>
 					</div>
 				}
 				description={

@@ -36,8 +36,8 @@ import {
 	ChevronDownIcon,
 	FolderPlusIcon,
 	MinusIcon,
-	PlusIcon,
 	SearchIcon,
+	SquarePenIcon,
 	SquareIcon,
 	XIcon,
 } from 'lucide-react'
@@ -241,7 +241,7 @@ export function ShellHeader({
 							size='default'
 							variant='outline'
 						>
-							<PlusIcon data-icon='inline-start' />
+							<SquarePenIcon data-icon='inline-start' />
 							<span>新建任务</span>
 							<Kbd>C</Kbd>
 						</Button>
@@ -260,7 +260,7 @@ export function ShellHeader({
 							<DropdownMenuContent align='end' className='w-44'>
 								<DropdownMenuGroup>
 									<DropdownMenuItem onSelect={onOpenTaskCreateDialog}>
-										<PlusIcon />
+										<SquarePenIcon />
 										新建任务
 									</DropdownMenuItem>
 									<DropdownMenuItem onSelect={onOpenProjectCreateDialog}>
@@ -324,7 +324,7 @@ export function ShellHeader({
 									onOpenTaskCreateDialog()
 								}}
 							>
-								<PlusIcon />
+								<SquarePenIcon />
 								创建任务
 								<CommandShortcut>C</CommandShortcut>
 							</CommandItem>

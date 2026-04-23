@@ -41,7 +41,7 @@ export function ShellDrawer({
 				<SheetHeader className='flex h-12 shrink-0 flex-row items-center justify-between gap-2 border-b border-(--sf-color-divider) bg-muted/35 px-4 py-0'>
 					<SheetTitle className='text-[13px] font-medium text-foreground'>{drawerTitle}</SheetTitle>
 					<SheetClose asChild>
-						<Button aria-label='关闭详情面板' className='size-7' size='icon-sm' variant='ghost'>
+						<Button aria-label='关闭详情面板' size='icon-sm' variant='ghost'>
 							<XIcon className='size-3.5' />
 						</Button>
 					</SheetClose>
@@ -67,7 +67,7 @@ export function ShellDrawer({
 								<h2 className='text-[13px] font-medium leading-6 text-foreground'>
 									{detail.title}
 								</h2>
-								<Button className='h-8 w-full justify-center rounded-md' variant='outline'>
+								<Button className='h-8 w-full justify-center' variant='outline'>
 									标记完成
 								</Button>
 							</div>

@@ -29,10 +29,10 @@ export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps)
 				>
 					{healthcheckStatus.detail}
 				</span>
-				<Button className='size-7 rounded-md' size='icon-sm' variant='ghost'>
+				<Button size='icon-sm' variant='ghost'>
 					<Trash2Icon className='size-3.5' />
 				</Button>
-				<Button className='size-7 rounded-md' size='icon-sm' variant='ghost'>
+				<Button size='icon-sm' variant='ghost'>
 					<Settings2Icon className='size-3.5' />
 				</Button>
 			</div>

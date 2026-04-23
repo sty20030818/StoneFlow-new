@@ -98,16 +98,15 @@ export function FocusPage() {
 							</Select>
 						) : null}
 						<Button
-							className='rounded-md'
+							aria-label='刷新聚合视图'
 							disabled={isLoading}
 							onClick={() => {
 								void refresh()
 							}}
-							size='sm'
+							size='icon-sm'
 							variant='outline'
 						>
-							<RefreshCwIcon data-icon='inline-start' />
-							刷新
+							<RefreshCwIcon />
 						</Button>
 					</div>
 				}

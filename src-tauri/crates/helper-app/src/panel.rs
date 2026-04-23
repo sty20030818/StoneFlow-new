@@ -93,7 +93,7 @@ pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
     panel.set_style_mask(StyleMask::empty().nonactivating_panel().into());
     panel.set_collection_behavior(
         CollectionBehavior::new()
-            .can_join_all_spaces()
+            .move_to_active_space()
             .full_screen_auxiliary()
             .ignores_cycle()
             .into(),
@@ -132,7 +132,7 @@ pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
 
     log::info!(
         "helper: quick capture NSPanel 初始化完成 \
-         [level=101/PopUpMenu, style=NonActivating, collection=CanJoinAllSpaces+FullScreenAuxiliary+IgnoresCycle, delegate=QuickCapturePanelEvents]"
+         [level=101/PopUpMenu, style=NonActivating, collection=MoveToActiveSpace+FullScreenAuxiliary+IgnoresCycle, delegate=QuickCapturePanelEvents]"
     );
 }
 

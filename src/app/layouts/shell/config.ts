@@ -3,7 +3,10 @@ import type { ComponentType } from 'react'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import type { BadgeVariant } from '@/shared/ui/base/badge'
 import {
+	BriefcaseBusinessIcon,
 	FolderOpenDotIcon,
+	GraduationCapIcon,
+	HouseIcon,
 	InboxIcon,
 	Layers3Icon,
 	SparklesIcon,
@@ -30,6 +33,8 @@ export type ShellProjectLink = {
 type ShellSpace = {
 	id: string
 	label: string
+	icon: ShellIcon
+	iconClassName: string
 }
 
 type DrawerDetailBadge = {
@@ -56,9 +61,9 @@ export type DrawerDetail = {
 }
 
 export const SHELL_SPACES: ShellSpace[] = [
-	{ id: 'default', label: '工作' },
-	{ id: 'studio', label: '学习' },
-	{ id: 'life', label: '生活' },
+	{ id: 'default', label: '工作', icon: BriefcaseBusinessIcon, iconClassName: 'text-[#5e6ad2]' },
+	{ id: 'studio', label: '学习', icon: GraduationCapIcon, iconClassName: 'text-[#e58a00]' },
+	{ id: 'life', label: '生活', icon: HouseIcon, iconClassName: 'text-[#2da44e]' },
 ]
 
 export const SHELL_NAV_ITEMS: ShellNavItem[] = [

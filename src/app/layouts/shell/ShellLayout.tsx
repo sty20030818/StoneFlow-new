@@ -113,6 +113,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				<ShellSidebar
 					currentSpaceId={currentSpaceId}
 					isProjectsLoading={isProjectsLoading}
+					onOpenTaskCreateDialog={openTaskCreateDialog}
 					onOpenProjectCreateDialog={openProjectCreateDialog}
 					onRefreshProjects={() => void refreshProjects()}
 					navBadges={navBadges}
