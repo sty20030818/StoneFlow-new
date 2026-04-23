@@ -75,7 +75,7 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
 	},
 	{
 		key: 'focus',
-		label: 'Focus',
+		label: 'Views',
 		icon: TargetIcon,
 		to: (spaceId) => `/space/${spaceId}/focus`,
 	},
@@ -108,7 +108,7 @@ export function getSectionLabel(section: ShellSectionKey) {
 		case 'inbox':
 			return 'Inbox'
 		case 'focus':
-			return 'Focus'
+			return 'Views'
 		case 'project':
 			return 'Projects'
 		case 'trash':

@@ -63,10 +63,20 @@ describe('TrashPage', () => {
 		renderTrashPage()
 
 		expect(await screen.findByText('恢复任务')).toBeInTheDocument()
+		expect(screen.getByText('Trash')).toBeInTheDocument()
+		expect(screen.getByText('All deleted')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '筛选' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '刷新' })).toBeInTheDocument()
 		expect(screen.getByText('恢复项目')).toBeInTheDocument()
 		expect(screen.getByText('恢复到 Inbox')).toBeInTheDocument()
 		expect(screen.getByText('恢复为顶层 Project')).toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: /清除/ })).not.toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '刷新' }))
+
+		await waitFor(() => {
+			expect(mockedListTrashEntries).toHaveBeenCalledTimes(2)
+		})
 	})
 
 	it('列表为空时展示空状态', async () => {

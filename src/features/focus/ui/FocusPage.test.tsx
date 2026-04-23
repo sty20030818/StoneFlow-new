@@ -48,16 +48,25 @@ describe('FocusPage', () => {
 		})
 	})
 
-	it('渲染真实 tabs、摘要和任务列表', () => {
-		mockedUseFocusWorkspace.mockReturnValue(createWorkspaceState())
+	it('渲染 Views tabs 和任务列表', () => {
+		const refresh = vi.fn<() => Promise<void>>().mockResolvedValue(undefined)
+		mockedUseFocusWorkspace.mockReturnValue(createWorkspaceState({ refresh }))
 
 		render(<FocusPage />)
 
+		expect(screen.getByText('Views')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '筛选' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '刷新' })).toBeInTheDocument()
 		expect(screen.getByRole('tab', { name: 'Focus' })).toBeInTheDocument()
 		expect(screen.getByRole('tab', { name: 'Upcoming' })).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: 'Focus 1 手动置顶的执行任务' })).toBeInTheDocument()
-		expect(screen.getByText('手动置顶的执行任务')).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Focus 1 手动置顶的执行任务' }),
+		).not.toBeInTheDocument()
 		expect(screen.getByText('收口 Focus 查询')).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '刷新' }))
+
+		expect(refresh).toHaveBeenCalledTimes(1)
 	})
 
 	it('切换 tab 时调用工作台状态更新', () => {
@@ -71,10 +80,7 @@ describe('FocusPage', () => {
 
 		render(<FocusPage />)
 
-		fireEvent.mouseDown(screen.getByRole('tab', { name: 'Upcoming' }), {
-			button: 0,
-			ctrlKey: false,
-		})
+		fireEvent.click(screen.getByRole('tab', { name: 'Upcoming' }))
 
 		expect(setActiveViewKey).toHaveBeenCalledWith('upcoming')
 	})
@@ -105,10 +111,8 @@ describe('FocusPage', () => {
 
 		render(<FocusPage />)
 
-		fireEvent.keyDown(screen.getByRole('combobox', { name: '最近添加时间窗' }), {
-			key: 'ArrowDown',
-		})
-		fireEvent.click(await screen.findByRole('option', { name: '最近 7 天' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '筛选' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '最近 7 天' }))
 
 		expect(setRecentTimeWindow).toHaveBeenCalledWith('7d')
 	})

@@ -46,7 +46,7 @@ export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps)
 					<span>{getSectionLabel(activeSection)}</span>
 				</div>
 				<div className='flex items-center gap-3 text-[11px] text-(--sf-color-shell-tertiary)'>
-					<span>Focus view</span>
+					<span>Views</span>
 					<span className='text-(--sf-color-border-strong)'>•</span>
 					<span>Cmd/Ctrl + K</span>
 				</div>

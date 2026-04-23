@@ -77,6 +77,9 @@ describe('ProjectPage', () => {
 
 		expect(await screen.findByText('接通 Project 查询')).toBeInTheDocument()
 		expect(screen.getByText('完成状态切换')).toBeInTheDocument()
+		expect(screen.getByText('Projects')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '筛选' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '刷新' })).toBeInTheDocument()
 		expect(screen.getByText('项目工作区 · 执行层')).toBeInTheDocument()
 		expect(screen.getByText('active')).toHaveAttribute('data-variant', 'primary')
 		expect(screen.getByText('已完成 1')).toHaveAttribute('data-variant', 'success')
@@ -85,6 +88,12 @@ describe('ProjectPage', () => {
 				screen.getByText('完成状态切换').closest('[data-shell-task-card="true"]') as HTMLElement,
 			).getByText('已完成'),
 		).toHaveAttribute('data-variant', 'success')
+
+		fireEvent.click(screen.getByRole('button', { name: '刷新' }))
+
+		await waitFor(() => {
+			expect(mockedGetProjectExecutionView).toHaveBeenCalledTimes(2)
+		})
 	})
 
 	it('切换任务状态成功后回写反馈', async () => {

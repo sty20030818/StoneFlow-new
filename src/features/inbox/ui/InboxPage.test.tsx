@@ -64,10 +64,20 @@ describe('InboxPage', () => {
 
 		await screen.findByText('整理今天的新任务')
 
+		expect(screen.getByText('Inbox')).toBeInTheDocument()
+		expect(screen.getByText('All issues')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '筛选' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '刷新' })).toBeInTheDocument()
 		expect(screen.getByText('整理今天的新任务')).toBeInTheDocument()
 		expect(screen.getByText('优先补齐项目和优先级')).toBeInTheDocument()
 		expect(screen.getByLabelText('整理今天的新任务 优先级')).toHaveTextContent('待补齐')
 		expect(screen.getByLabelText('整理今天的新任务 项目')).toHaveTextContent('待补齐')
+
+		fireEvent.click(screen.getByRole('button', { name: '刷新' }))
+
+		await waitFor(() => {
+			expect(mockedListInboxTasks).toHaveBeenCalledTimes(2)
+		})
 	})
 
 	it('整理成功后移除已完成归类的任务', async () => {

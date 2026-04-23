@@ -58,7 +58,7 @@ describe('ShellSidebar', () => {
 			'href',
 			'/space/default/project/project-child',
 		)
-		expect(screen.getByRole('link', { name: 'Focus' }).className).toContain(
+		expect(screen.getByRole('link', { name: 'Views' }).className).toContain(
 			'hover:bg-(--sf-color-shell-hover)',
 		)
 		expect(screen.getAllByText('active')[0]).toHaveAttribute('data-variant', 'primary')

@@ -10,6 +10,7 @@ describe('shell config helpers', () => {
 
 	it('为已知分区和空间返回标签', () => {
 		expect(getSectionLabel('inbox')).toBe('Inbox')
+		expect(getSectionLabel('focus')).toBe('Views')
 		expect(getSpaceLabel('default')).toBe('工作')
 	})
 

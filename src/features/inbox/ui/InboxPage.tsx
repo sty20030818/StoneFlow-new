@@ -14,7 +14,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/shared/ui/base/select'
-import { PanelSurface } from '@/shared/ui/PanelSurface'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { cn } from '@/shared/lib/utils'
 import {
@@ -23,7 +22,13 @@ import {
 	LINEAR_CARD_IDLE_CLASS,
 	LINEAR_EMPTY_STATE_CLASS,
 } from '@/shared/ui/linearSurface'
-import { RefreshCwIcon } from 'lucide-react'
+import {
+	MainCardGhostAction,
+	MainCardHeader,
+	MainCardLayout,
+	MainCardToolbar,
+} from '@/shared/ui/MainCardLayout'
+import { PlusIcon } from 'lucide-react'
 
 export function InboxPage() {
 	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
@@ -44,32 +49,30 @@ export function InboxPage() {
 	} = useInboxTasks(currentSpaceId)
 
 	return (
-		<div className='p-4'>
-			<PanelSurface
-				actions={
-					<div className='flex flex-wrap items-center gap-2'>
-						<Button
-							onClick={() => openProjectCreateDialog()}
-							size='sm'
-							variant='secondary'
-						>
-							创建项目
-						</Button>
-						<Button
-							aria-label='刷新列表'
-							disabled={isLoading}
-							onClick={() => void refresh()}
-							size='icon-sm'
-							variant='outline'
-						>
-							<RefreshCwIcon />
-						</Button>
-					</div>
-				}
-				description='补齐项目和优先级后，任务才会真正离开 Inbox。'
-				eyebrow='Inbox'
-				title='待整理队列'
-			>
+		<MainCardLayout
+			header={
+				<MainCardHeader
+					action={
+						<MainCardGhostAction aria-label='创建项目' onClick={() => openProjectCreateDialog()}>
+							<PlusIcon />
+						</MainCardGhostAction>
+					}
+					title='Inbox'
+				/>
+			}
+			toolbar={
+				<MainCardToolbar
+					onRefresh={() => void refresh()}
+					pills={[
+						{ label: 'All issues', active: true },
+						{ label: 'Untriaged' },
+						{ label: 'Ready' },
+					]}
+					refreshDisabled={isLoading}
+				/>
+			}
+		>
+			<div className='flex flex-col gap-3 pt-4'>
 				{!isLoading && !loadError && tasks.length > 0 && projects.length === 0 ? (
 					<StatusNotice
 						actions={
@@ -132,8 +135,8 @@ export function InboxPage() {
 						})}
 					</div>
 				) : null}
-			</PanelSurface>
-		</div>
+			</div>
+		</MainCardLayout>
 	)
 }
 

@@ -9,15 +9,12 @@ import {
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/shared/ui/base/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/base/tabs'
-import { PanelSurface } from '@/shared/ui/PanelSurface'
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/shared/ui/base/dropdown-menu'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { cn } from '@/shared/lib/utils'
 import {
@@ -31,13 +28,10 @@ import type {
 	FocusRecentTimeWindow,
 	FocusTaskRecord,
 	FocusViewKey,
-	FocusWorkspaceSummary,
 } from '@/features/focus/model/types'
-import { PinIcon, RefreshCwIcon, SquareCheckBigIcon } from 'lucide-react'
+import { MainCardHeader, MainCardLayout, MainCardToolbar } from '@/shared/ui/MainCardLayout'
+import { ListFilterIcon, PinIcon, SquareCheckBigIcon } from 'lucide-react'
 
-const SUMMARY_CARD_IDLE_CLASS =
-	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-muted/45'
-const SUMMARY_CARD_ACTIVE_CLASS = 'border-(--sf-color-accent-soft-border) bg-accent'
 const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
 const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
 
@@ -59,7 +53,6 @@ export function FocusPage() {
 		views,
 		activeViewKey,
 		recentTimeWindow,
-		summaries,
 		tasks,
 		isLoading,
 		loadError,
@@ -74,139 +67,66 @@ export function FocusPage() {
 	const showRecentWindow = activeViewKey === 'recent'
 
 	return (
-		<div className='p-4'>
-			<PanelSurface
-				actions={
-					<div className='flex flex-wrap items-center gap-2'>
-						{showRecentWindow ? (
-							<Select
-								onValueChange={(value) => setRecentTimeWindow(value as FocusRecentTimeWindow)}
-								value={recentTimeWindow}
-							>
-								<SelectTrigger aria-label='最近添加时间窗' className='h-8 w-[9.5rem] rounded-md'>
-									<SelectValue placeholder='选择时间窗' />
-								</SelectTrigger>
-								<SelectContent position='popper'>
-									<SelectGroup>
-										{RECENT_TIME_WINDOW_OPTIONS.map((option) => (
-											<SelectItem key={option.value} value={option.value}>
-												{option.label}
-											</SelectItem>
-										))}
-									</SelectGroup>
-								</SelectContent>
-							</Select>
-						) : null}
-						<Button
-							aria-label='刷新聚合视图'
-							disabled={isLoading}
-							onClick={() => {
-								void refresh()
-							}}
-							size='icon-sm'
-							variant='outline'
-						>
-							<RefreshCwIcon />
-						</Button>
-					</div>
-				}
-				description='在同一个工作台里切换 Focus、Upcoming、最近添加和高优先级，并直接继续执行。'
-				eyebrow='Focus'
-				title='聚合视图工作台'
-			>
-				<Tabs
-					className='gap-5'
-					onValueChange={(value) => setActiveViewKey(value as FocusViewKey)}
-					value={activeViewKey}
-				>
-					<TabsList>
-						{views.map((view) => (
-							<TabsTrigger key={view.id} value={view.key}>
-								{view.name}
-							</TabsTrigger>
-						))}
-					</TabsList>
-
-					<div className='flex flex-col gap-5'>
-						<div className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
-							{summaries.map((summary) => (
-								<SummaryCard
-									active={summary.key === activeViewKey}
-									key={summary.key}
-									onClick={() => setActiveViewKey(summary.key)}
-									summary={summary}
-								/>
-							))}
-						</div>
-
-						{feedback ? (
-							<StatusNotice className='text-sm' role='status' size='sm' variant='success'>
-								{feedback}
-							</StatusNotice>
-						) : null}
-
-						{loadError ? (
-							<StatusNotice
-								actions={
-									<Button
-										className='rounded-md'
-										onClick={() => void refresh()}
-										size='sm'
-										variant='outline'
-									>
-										重试
-									</Button>
-								}
-								role='alert'
-								variant='danger'
-							>
-								<p className='text-sm'>{loadError}</p>
-							</StatusNotice>
-						) : null}
-
-						{views.map((view) => (
-							<TabsContent key={view.id} value={view.key}>
-								<FocusTaskPanel
-									activeViewKey={view.key}
-									activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-									isLoading={isLoading}
-									onOpenTask={(taskId) => openDrawer('task', taskId)}
-									onToggleTaskPin={toggleTaskPin}
-									onToggleTaskStatus={toggleTaskStatus}
-									pendingTaskId={pendingTaskId}
-									tasks={tasks}
-								/>
-							</TabsContent>
-						))}
-					</div>
-				</Tabs>
-			</PanelSurface>
-		</div>
-	)
-}
-
-type SummaryCardProps = {
-	summary: FocusWorkspaceSummary
-	active: boolean
-	onClick: () => void
-}
-
-function SummaryCard({ summary, active, onClick }: SummaryCardProps) {
-	return (
-		<button
-			className={cn(
-				'rounded-lg border px-4 py-4 text-left transition-colors',
-				active ? SUMMARY_CARD_ACTIVE_CLASS : SUMMARY_CARD_IDLE_CLASS,
-			)}
-			onClick={onClick}
-			type='button'
+		<MainCardLayout
+			header={<MainCardHeader title='Views' />}
+			toolbar={
+				<MainCardToolbar
+					filterAction={
+						showRecentWindow ? (
+							<RecentWindowFilter onWindowChange={setRecentTimeWindow} value={recentTimeWindow} />
+						) : undefined
+					}
+					onRefresh={() => void refresh()}
+					pills={views.map((view) => ({
+						label: view.name,
+						active: view.key === activeViewKey,
+						onClick: () => setActiveViewKey(view.key),
+						role: 'tab',
+					}))}
+					refreshDisabled={isLoading}
+				/>
+			}
 		>
-			<div className='flex items-center justify-between gap-3'>
-				<p className='text-sm font-medium text-foreground'>{summary.label}</p>
-				<Badge variant={active ? 'secondary' : 'outline'}>{summary.count}</Badge>
+			<div className='flex flex-col gap-5 pt-4'>
+				<div className='flex flex-col gap-5'>
+					{feedback ? (
+						<StatusNotice className='text-sm' role='status' size='sm' variant='success'>
+							{feedback}
+						</StatusNotice>
+					) : null}
+
+					{loadError ? (
+						<StatusNotice
+							actions={
+								<Button
+									className='rounded-md'
+									onClick={() => void refresh()}
+									size='sm'
+									variant='outline'
+								>
+									重试
+								</Button>
+							}
+							role='alert'
+							variant='danger'
+						>
+							<p className='text-sm'>{loadError}</p>
+						</StatusNotice>
+					) : null}
+
+					<FocusTaskPanel
+						activeViewKey={activeViewKey}
+						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
+						isLoading={isLoading}
+						onOpenTask={(taskId) => openDrawer('task', taskId)}
+						onToggleTaskPin={toggleTaskPin}
+						onToggleTaskStatus={toggleTaskStatus}
+						pendingTaskId={pendingTaskId}
+						tasks={tasks}
+					/>
+				</div>
 			</div>
-			<p className='mt-3 text-[13px] leading-6 text-muted-foreground'>{summary.description}</p>
-		</button>
+		</MainCardLayout>
 	)
 }
 
@@ -398,6 +318,34 @@ function getEmptyDescription(activeViewKey: FocusViewKey) {
 		case 'high_priority':
 			return '优先级为高或紧急的任务会自动聚合到这里。'
 	}
+}
+
+type RecentWindowFilterProps = {
+	value: FocusRecentTimeWindow
+	onWindowChange: (window: FocusRecentTimeWindow) => void
+}
+
+function RecentWindowFilter({ value, onWindowChange }: RecentWindowFilterProps) {
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button aria-label='筛选' size='icon-sm' type='button' variant='outline'>
+					<ListFilterIcon />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align='end'>
+				<DropdownMenuGroup>
+					{RECENT_TIME_WINDOW_OPTIONS.map((option) => (
+						<DropdownMenuItem key={option.value} onSelect={() => onWindowChange(option.value)}>
+							<span className={cn(option.value === value ? 'font-semibold text-foreground' : null)}>
+								{option.label}
+							</span>
+						</DropdownMenuItem>
+					))}
+				</DropdownMenuGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	)
 }
 
 function getTaskMetaLabel(task: FocusTaskRecord, activeViewKey: FocusViewKey) {

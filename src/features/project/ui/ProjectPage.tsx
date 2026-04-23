@@ -17,7 +17,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
-import { PanelSurface } from '@/shared/ui/PanelSurface'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { getProjectStatusBadgeVariant, getTaskStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
 import { cn } from '@/shared/lib/utils'
@@ -28,7 +27,20 @@ import {
 	LINEAR_CARD_IDLE_CLASS,
 	LINEAR_EMPTY_STATE_CLASS,
 } from '@/shared/ui/linearSurface'
-import { FolderOpenDotIcon, MoreHorizontalIcon, PlusIcon, RefreshCwIcon, Trash2Icon } from 'lucide-react'
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbList,
+	BreadcrumbPage,
+	BreadcrumbSeparator,
+} from '@/shared/ui/base/breadcrumb'
+import {
+	MainCardGhostAction,
+	MainCardHeader,
+	MainCardLayout,
+	MainCardToolbar,
+} from '@/shared/ui/MainCardLayout'
+import { FolderOpenDotIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
 const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
 const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
@@ -62,62 +74,31 @@ export function ProjectPage() {
 	}
 
 	return (
-		<div className='flex flex-col gap-5 p-4'>
-			<PanelSurface
-				actions={
-					<div className='flex flex-wrap items-center gap-2'>
-						{view ? (
-							<Button
+		<MainCardLayout
+			header={
+				<MainCardHeader
+					action={
+						view ? (
+							<MainCardGhostAction
+								aria-label='子项目'
 								onClick={() => openProjectCreateDialog(view.project.id)}
-								size='sm'
-								variant='secondary'
 							>
-								<PlusIcon data-icon='inline-start' />
-								子项目
-							</Button>
-						) : null}
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button size='icon-sm' variant='outline'>
-									<MoreHorizontalIcon />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align='end'>
-								<DropdownMenuGroup>
-									<DropdownMenuItem onSelect={() => void refresh()}>刷新执行视图</DropdownMenuItem>
-									<DropdownMenuItem disabled>点击任务标题可打开详情 Drawer</DropdownMenuItem>
-								</DropdownMenuGroup>
-								<DropdownMenuSeparator />
-								<DropdownMenuGroup>
-									<DropdownMenuItem
-										disabled={isDeletingProject}
-										onSelect={() => void handleDeleteProject()}
-										variant='destructive'
-									>
-										<Trash2Icon />
-										{isDeletingProject ? '移入中...' : '移入回收站'}
-									</DropdownMenuItem>
-								</DropdownMenuGroup>
-								</DropdownMenuContent>
-							</DropdownMenu>
-						<Button
-							aria-label='刷新执行视图'
-							onClick={() => void refresh()}
-							size='icon-sm'
-							variant='outline'
-						>
-							<RefreshCwIcon />
-						</Button>
-					</div>
-				}
-				description={
-					view
-						? `当前项目包含 ${view.tasks.length} 条任务与 ${view.childProjects.length} 个子项目，可在这里直接推进执行与整理结构。`
-						: '查看当前项目下的任务、子项目和执行状态，并直接从这里继续推进。'
-				}
-				eyebrow='Project'
-				title={`项目工作区 · ${view?.project.name ?? projectId}`}
-			>
+								<PlusIcon />
+							</MainCardGhostAction>
+						) : null
+					}
+					breadcrumb={<ProjectBreadcrumb projectName={view?.project.name ?? projectId} />}
+				/>
+			}
+			toolbar={
+				<MainCardToolbar
+					onRefresh={() => void refresh()}
+					pills={[{ label: 'All issues', active: true }, { label: 'Active' }, { label: 'Backlog' }]}
+					refreshDisabled={isLoading}
+				/>
+			}
+		>
+			<div className='flex flex-col gap-5 pt-4'>
 				{feedback ? (
 					<StatusNotice className='mb-3 text-sm' role='status' size='sm' variant='success'>
 						{feedback}
@@ -148,76 +129,150 @@ export function ProjectPage() {
 						正在加载 Project 执行视图...
 					</p>
 				) : view ? (
-					<div className='flex flex-wrap items-center gap-2'>
-						<Badge variant={getProjectStatusBadgeVariant(view.project.status)}>
-							{view.project.status}
-						</Badge>
-						<Badge variant='outline'>{view.tasks.length} tasks</Badge>
-						<Badge variant='secondary'>待执行 {todoTasks.length}</Badge>
-						<Badge variant='success'>已完成 {doneTasks.length}</Badge>
-					</div>
+					<section className='flex flex-wrap items-center justify-between gap-3'>
+						<div className='flex min-w-0 flex-wrap items-center gap-2'>
+							<h2 className='sr-only'>项目工作区 · {view.project.name}</h2>
+							<Badge variant={getProjectStatusBadgeVariant(view.project.status)}>
+								{view.project.status}
+							</Badge>
+							<Badge variant='outline'>{view.tasks.length} tasks</Badge>
+							<Badge variant='secondary'>待执行 {todoTasks.length}</Badge>
+							<Badge variant='success'>已完成 {doneTasks.length}</Badge>
+						</div>
+						<ProjectMoreActions
+							isDeletingProject={isDeletingProject}
+							onDeleteProject={handleDeleteProject}
+							onRefresh={refresh}
+						/>
+					</section>
 				) : null}
-			</PanelSurface>
 
-			{view?.childProjects.length ? (
-				<PanelSurface
-					description='子项目用于继续拆分当前项目下的执行块，保持主项目视图清晰。'
-					eyebrow='Project'
-					title='子项目'
-				>
-					<div className='grid gap-2 sm:grid-cols-2'>
-						{view.childProjects.map((project) => (
-							<button
-								className='group flex min-h-16 items-center gap-3 rounded-lg border border-(--sf-color-border-subtle) bg-card px-3 py-3 text-left transition-colors hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
-								key={project.id}
-								onClick={() => navigate(`/space/${spaceId}/project/${project.id}`)}
-								type='button'
-							>
-								<span className='flex size-8 shrink-0 items-center justify-center rounded-md border border-(--sf-color-border-subtle) bg-muted text-(--sf-color-text-secondary)'>
-									<FolderOpenDotIcon className='size-4' />
-								</span>
-								<span className='min-w-0 flex-1'>
-									<span className='block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary'>
-										{project.name}
+				{view?.childProjects.length ? (
+					<section className='flex flex-col gap-3'>
+						<div>
+							<h2 className='text-sm font-semibold text-foreground'>子项目</h2>
+							<p className='mt-1 text-sm text-muted-foreground'>
+								子项目用于继续拆分当前项目下的执行块，保持主项目视图清晰。
+							</p>
+						</div>
+						<div className='grid gap-2 sm:grid-cols-2'>
+							{view.childProjects.map((project) => (
+								<button
+									className='group flex min-h-16 items-center gap-3 rounded-lg border border-(--sf-color-border-subtle) bg-card px-3 py-3 text-left transition-colors hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
+									key={project.id}
+									onClick={() => navigate(`/space/${spaceId}/project/${project.id}`)}
+									type='button'
+								>
+									<span className='flex size-8 shrink-0 items-center justify-center rounded-md border border-(--sf-color-border-subtle) bg-muted text-(--sf-color-text-secondary)'>
+										<FolderOpenDotIcon className='size-4' />
 									</span>
-									<span className='mt-1 block text-xs text-muted-foreground'>{project.status}</span>
-								</span>
-							</button>
-						))}
+									<span className='min-w-0 flex-1'>
+										<span className='block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary'>
+											{project.name}
+										</span>
+										<span className='mt-1 block text-xs text-muted-foreground'>
+											{project.status}
+										</span>
+									</span>
+								</button>
+							))}
+						</div>
+					</section>
+				) : null}
+
+				<section className='flex flex-col gap-3'>
+					<div>
+						<h2 className='text-sm font-semibold text-foreground'>待执行</h2>
+						<p className='mt-1 text-sm text-muted-foreground'>
+							这里保留当前项目下还未完成的执行项，点击任务标题可直接打开右侧详情。
+						</p>
 					</div>
-				</PanelSurface>
-			) : null}
+					<ProjectTaskGroup
+						emptyMessage='当前 Project 还没有待执行任务。'
+						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
+						onOpenTask={(taskId) => openDrawer('task', taskId)}
+						pendingTaskId={pendingTaskId}
+						tasks={todoTasks}
+						onToggleTaskStatus={toggleTaskStatus}
+					/>
+				</section>
 
-			<PanelSurface
-				description='这里保留当前项目下还未完成的执行项，点击任务标题可直接打开右侧详情。'
-				eyebrow='Execution'
-				title='待执行'
-			>
-				<ProjectTaskGroup
-					emptyMessage='当前 Project 还没有待执行任务。'
-					activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-					onOpenTask={(taskId) => openDrawer('task', taskId)}
-					pendingTaskId={pendingTaskId}
-					tasks={todoTasks}
-					onToggleTaskStatus={toggleTaskStatus}
-				/>
-			</PanelSurface>
+				<section className='flex flex-col gap-3'>
+					<div>
+						<h2 className='text-sm font-semibold text-foreground'>已完成</h2>
+						<p className='mt-1 text-sm text-muted-foreground'>
+							已完成任务会沉到底部，便于回看最近的推进结果和关闭情况。
+						</p>
+					</div>
+					<ProjectTaskGroup
+						emptyMessage='还没有完成的任务。'
+						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
+						onOpenTask={(taskId) => openDrawer('task', taskId)}
+						pendingTaskId={pendingTaskId}
+						tasks={doneTasks}
+						onToggleTaskStatus={toggleTaskStatus}
+					/>
+				</section>
+			</div>
+		</MainCardLayout>
+	)
+}
 
-			<PanelSurface
-				description='已完成任务会沉到底部，便于回看最近的推进结果和关闭情况。'
-				eyebrow='Execution'
-				title='已完成'
-			>
-				<ProjectTaskGroup
-					emptyMessage='还没有完成的任务。'
-					activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-					onOpenTask={(taskId) => openDrawer('task', taskId)}
-					pendingTaskId={pendingTaskId}
-					tasks={doneTasks}
-					onToggleTaskStatus={toggleTaskStatus}
-				/>
-			</PanelSurface>
-		</div>
+function ProjectBreadcrumb({ projectName }: { projectName: string }) {
+	return (
+		<Breadcrumb>
+			<BreadcrumbList className='text-[1.0625rem] font-semibold'>
+				<BreadcrumbItem>
+					<span className='text-foreground'>Projects</span>
+				</BreadcrumbItem>
+				<BreadcrumbSeparator />
+				<BreadcrumbItem className='min-w-0'>
+					<BreadcrumbPage className='flex min-w-0 items-center gap-2 font-semibold'>
+						<FolderOpenDotIcon className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						<span className='truncate'>{projectName}</span>
+					</BreadcrumbPage>
+				</BreadcrumbItem>
+			</BreadcrumbList>
+		</Breadcrumb>
+	)
+}
+
+type ProjectMoreActionsProps = {
+	isDeletingProject: boolean
+	onRefresh: () => Promise<void>
+	onDeleteProject: () => Promise<void>
+}
+
+function ProjectMoreActions({
+	isDeletingProject,
+	onRefresh,
+	onDeleteProject,
+}: ProjectMoreActionsProps) {
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<Button aria-label='更多项目操作' size='icon-sm' variant='ghost'>
+					<MoreHorizontalIcon />
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align='end'>
+				<DropdownMenuGroup>
+					<DropdownMenuItem onSelect={() => void onRefresh()}>刷新执行视图</DropdownMenuItem>
+					<DropdownMenuItem disabled>点击任务标题可打开详情 Drawer</DropdownMenuItem>
+				</DropdownMenuGroup>
+				<DropdownMenuSeparator />
+				<DropdownMenuGroup>
+					<DropdownMenuItem
+						disabled={isDeletingProject}
+						onSelect={() => void onDeleteProject()}
+						variant='destructive'
+					>
+						<Trash2Icon />
+						{isDeletingProject ? '移入中...' : '移入回收站'}
+					</DropdownMenuItem>
+				</DropdownMenuGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	)
 }
 

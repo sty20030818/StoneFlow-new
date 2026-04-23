@@ -5,14 +5,14 @@ import type { TrashEntry } from '@/features/trash/model/types'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
-import { PanelSurface } from '@/shared/ui/PanelSurface'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
+import { MainCardHeader, MainCardLayout, MainCardToolbar } from '@/shared/ui/MainCardLayout'
 import {
 	LINEAR_CARD_BASE_CLASS,
 	LINEAR_CARD_IDLE_CLASS,
 	LINEAR_EMPTY_STATE_CLASS,
 } from '@/shared/ui/linearSurface'
-import { RefreshCwIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react'
+import { RotateCcwIcon, Trash2Icon } from 'lucide-react'
 
 export function TrashPage() {
 	const { spaceId = 'default' } = useParams()
@@ -20,22 +20,21 @@ export function TrashPage() {
 		useTrashEntries(spaceId)
 
 	return (
-		<div className='p-4'>
-			<PanelSurface
-				actions={
-					<Button
-						aria-label='刷新回收站'
-						onClick={() => void refresh()}
-						size='icon-sm'
-						variant='outline'
-					>
-						<RefreshCwIcon />
-					</Button>
-				}
-				description='删除后的 Task 和 Project 会先进入这里，恢复后会回到原来的执行位置。'
-				eyebrow='Trash'
-				title='回收站'
-			>
+		<MainCardLayout
+			header={<MainCardHeader title='Trash' />}
+			toolbar={
+				<MainCardToolbar
+					onRefresh={() => void refresh()}
+					pills={[
+						{ label: 'All deleted', active: true },
+						{ label: 'Tasks' },
+						{ label: 'Projects' },
+					]}
+					refreshDisabled={isLoading}
+				/>
+			}
+		>
+			<div className='pt-4'>
 				<div className='flex flex-col gap-3'>
 					{feedback ? (
 						<StatusNotice className='text-sm' role='status' size='sm' variant='success'>
@@ -74,8 +73,8 @@ export function TrashPage() {
 						))
 					)}
 				</div>
-			</PanelSurface>
-		</div>
+			</div>
+		</MainCardLayout>
 	)
 }
 
