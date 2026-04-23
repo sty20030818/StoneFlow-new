@@ -44,7 +44,7 @@ export function ProjectCreateModalContent({
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='flex flex-col gap-4 rounded-lg border border-(--sf-color-border-subtle) bg-muted/35 p-4'>
+			<div className='flex flex-col gap-4'>
 				<label className='flex flex-col gap-1.5' htmlFor='project-create-name'>
 					<span className='text-[12px] font-medium text-foreground'>项目名称</span>
 					<Input
@@ -89,7 +89,6 @@ export function ProjectCreateModalContent({
 
 			<div className='flex items-center justify-end gap-2 border-t border-(--sf-color-divider) pt-3'>
 				<Button
-					className='rounded-md'
 					disabled={status === 'submitting'}
 					onClick={() => {
 						reset()
@@ -100,7 +99,6 @@ export function ProjectCreateModalContent({
 					取消
 				</Button>
 				<Button
-					className='rounded-md'
 					disabled={status === 'submitting' || status === 'success'}
 					onClick={() => {
 						void submit()
