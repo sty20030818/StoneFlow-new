@@ -34,6 +34,7 @@ import {
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
+import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import { ListFilterIcon } from 'lucide-react'
 
 const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
@@ -67,6 +68,7 @@ export function FocusPage() {
 		refresh,
 		toggleTaskPin,
 		toggleTaskStatus,
+		moveTaskToTrash,
 	} = useFocusWorkspace(currentSpaceId)
 	const showRecentWindow = activeViewKey === 'recent'
 
@@ -123,6 +125,7 @@ export function FocusPage() {
 						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
 						isLoading={isLoading}
 						onOpenTask={(taskId) => openDrawer('task', taskId)}
+						onMoveTaskToTrash={moveTaskToTrash}
 						onToggleTaskPin={toggleTaskPin}
 						onToggleTaskStatus={toggleTaskStatus}
 						pendingTaskId={pendingTaskId}
@@ -143,6 +146,7 @@ type FocusTaskPanelProps = {
 	onOpenTask: (taskId: string) => void
 	onToggleTaskPin: (task: FocusTaskRecord) => Promise<void>
 	onToggleTaskStatus: (task: FocusTaskRecord) => Promise<void>
+	onMoveTaskToTrash: (task: FocusTaskRecord) => Promise<void>
 }
 
 function FocusTaskPanel({
@@ -154,6 +158,7 @@ function FocusTaskPanel({
 	onOpenTask,
 	onToggleTaskPin,
 	onToggleTaskStatus,
+	onMoveTaskToTrash,
 }: FocusTaskPanelProps) {
 	if (isLoading) {
 		return (
@@ -181,6 +186,7 @@ function FocusTaskPanel({
 					isPending={pendingTaskId === task.id}
 					key={task.id}
 					onOpenTask={onOpenTask}
+					onMoveTaskToTrash={onMoveTaskToTrash}
 					onToggleTaskPin={onToggleTaskPin}
 					onToggleTaskStatus={onToggleTaskStatus}
 					task={task}
@@ -198,6 +204,7 @@ type FocusTaskRowProps = {
 	onOpenTask: (taskId: string) => void
 	onToggleTaskPin: (task: FocusTaskRecord) => Promise<void>
 	onToggleTaskStatus: (task: FocusTaskRecord) => Promise<void>
+	onMoveTaskToTrash: (task: FocusTaskRecord) => Promise<void>
 }
 
 function FocusTaskRow({
@@ -208,78 +215,89 @@ function FocusTaskRow({
 	onOpenTask,
 	onToggleTaskPin,
 	onToggleTaskStatus,
+	onMoveTaskToTrash,
 }: FocusTaskRowProps) {
 	return (
-		<div
-			aria-label={`打开任务 ${task.title}`}
-			className={cn(
-				LINEAR_CARD_BASE_CLASS,
-				TASK_CARD_INTERACTIVE_CLASS,
-				TASK_CARD_GRID_CLASS,
-				task.status === 'done' ? LINEAR_CARD_DONE_CLASS : LINEAR_CARD_IDLE_CLASS,
-				isActive ? LINEAR_CARD_ACTIVE_CLASS : null,
-				isPending ? 'opacity-75' : null,
-			)}
-			data-shell-task-card='true'
-			data-task-id={task.id}
-			onClick={() => onOpenTask(task.id)}
-			onKeyDown={(event) => {
-				if (event.key === 'Enter' || event.key === ' ') {
-					event.preventDefault()
-					onOpenTask(task.id)
-				}
-			}}
-			role='button'
-			tabIndex={0}
+		<TaskContextMenu
+			isBusy={isPending}
+			isPinned={task.pinned}
+			onMoveToTrash={() => void onMoveTaskToTrash(task)}
+			onOpenDetails={() => onOpenTask(task.id)}
+			onTogglePin={() => void onToggleTaskPin(task)}
+			onToggleStatus={() => void onToggleTaskStatus(task)}
+			status={task.status}
 		>
-			<div className='min-w-0 space-y-2'>
-				<div className='flex flex-wrap items-center gap-2'>
-					<p
-						className={cn(
-							'text-left text-sm font-semibold transition-colors group-hover:text-primary',
-							task.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground',
-						)}
-					>
-						{task.title}
-					</p>
-					<Badge variant='outline'>{formatInboxPriorityLabel(task.priority)}</Badge>
-					{task.pinned ? <Badge variant='secondary'>已 Pin</Badge> : null}
-					<Badge variant='outline'>{getTaskMetaLabel(task, activeViewKey)}</Badge>
-				</div>
-				<p className='text-sm leading-6 text-muted-foreground'>
-					{task.note?.trim() || '当前任务还没有补充备注，可直接打开 Drawer 完成上下文编辑。'}
-				</p>
-			</div>
-
-			<div className='flex shrink-0 flex-wrap items-center gap-2'>
-				<Button
-					aria-label={task.pinned ? `取消 pin ${task.title}` : `pin ${task.title}`}
-					disabled={isPending}
-					onClick={(event) => {
-						event.stopPropagation()
-						void onToggleTaskPin(task)
-					}}
-					size='sm'
-					variant={task.pinned ? 'secondary' : 'outline'}
-				>
-					{isPending ? '处理中...' : task.pinned ? '取消 Pin' : 'Pin 到 Focus'}
-				</Button>
-				<Button
-					aria-label={
-						task.status === 'todo' ? `标记完成 ${task.title}` : `恢复待执行 ${task.title}`
+			<div
+				aria-label={`打开任务 ${task.title}`}
+				className={cn(
+					LINEAR_CARD_BASE_CLASS,
+					TASK_CARD_INTERACTIVE_CLASS,
+					TASK_CARD_GRID_CLASS,
+					task.status === 'done' ? LINEAR_CARD_DONE_CLASS : LINEAR_CARD_IDLE_CLASS,
+					isActive ? LINEAR_CARD_ACTIVE_CLASS : null,
+					isPending ? 'opacity-75' : null,
+				)}
+				data-shell-task-card='true'
+				data-task-id={task.id}
+				onClick={() => onOpenTask(task.id)}
+				onKeyDown={(event) => {
+					if (event.key === 'Enter' || event.key === ' ') {
+						event.preventDefault()
+						onOpenTask(task.id)
 					}
-					disabled={isPending}
-					onClick={(event) => {
-						event.stopPropagation()
-						void onToggleTaskStatus(task)
-					}}
-					size='sm'
-					variant='outline'
-				>
-					{isPending ? '处理中...' : task.status === 'todo' ? '标记完成' : '恢复待执行'}
-				</Button>
+				}}
+				role='button'
+				tabIndex={0}
+			>
+				<div className='min-w-0 space-y-2'>
+					<div className='flex flex-wrap items-center gap-2'>
+						<p
+							className={cn(
+								'text-left text-sm font-semibold transition-colors group-hover:text-primary',
+								task.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground',
+							)}
+						>
+							{task.title}
+						</p>
+						<Badge variant='outline'>{formatInboxPriorityLabel(task.priority)}</Badge>
+						{task.pinned ? <Badge variant='secondary'>已 Pin</Badge> : null}
+						<Badge variant='outline'>{getTaskMetaLabel(task, activeViewKey)}</Badge>
+					</div>
+					<p className='text-sm leading-6 text-muted-foreground'>
+						{task.note?.trim() || '当前任务还没有补充备注，可直接打开 Drawer 完成上下文编辑。'}
+					</p>
+				</div>
+
+				<div className='flex shrink-0 flex-wrap items-center gap-2'>
+					<Button
+						aria-label={task.pinned ? `取消 pin ${task.title}` : `pin ${task.title}`}
+						disabled={isPending}
+						onClick={(event) => {
+							event.stopPropagation()
+							void onToggleTaskPin(task)
+						}}
+						size='sm'
+						variant={task.pinned ? 'secondary' : 'outline'}
+					>
+						{isPending ? '处理中...' : task.pinned ? '取消 Pin' : 'Pin 到 Focus'}
+					</Button>
+					<Button
+						aria-label={
+							task.status === 'todo' ? `标记完成 ${task.title}` : `恢复待执行 ${task.title}`
+						}
+						disabled={isPending}
+						onClick={(event) => {
+							event.stopPropagation()
+							void onToggleTaskStatus(task)
+						}}
+						size='sm'
+						variant='outline'
+					>
+						{isPending ? '处理中...' : task.status === 'todo' ? '标记完成' : '恢复待执行'}
+					</Button>
+				</div>
 			</div>
-		</div>
+		</TaskContextMenu>
 	)
 }
 

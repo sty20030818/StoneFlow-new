@@ -7,6 +7,7 @@ import {
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { getProjectExecutionView } from '@/features/project/api/getProjectExecutionView'
 import { updateProjectTaskStatus } from '@/features/project/api/updateProjectTaskStatus'
+import { deleteTaskToTrash } from '@/features/task-drawer/api/deleteTaskToTrash'
 import { deleteProjectToTrash } from '@/features/trash/api/deleteProjectToTrash'
 import type {
 	ProjectExecutionTask,
@@ -23,6 +24,7 @@ type UseProjectExecutionResult = {
 	isDeletingProject: boolean
 	refresh: () => Promise<void>
 	toggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
+	moveTaskToTrash: (task: ProjectExecutionTask) => Promise<void>
 	deleteCurrentProject: () => Promise<boolean>
 }
 
@@ -150,6 +152,36 @@ export function useProjectExecution(spaceId: string, projectId: string): UseProj
 		}
 	})
 
+	const moveTaskToTrash = useEffectEvent(async (task: ProjectExecutionTask) => {
+		setPendingTaskId(task.id)
+		setLoadError(null)
+
+		try {
+			await deleteTaskToTrash({
+				spaceSlug: spaceId,
+				taskId: task.id,
+			})
+
+			startTransition(() => {
+				setView((currentView) =>
+					currentView
+						? {
+								...currentView,
+								tasks: currentView.tasks.filter((currentTask) => currentTask.id !== task.id),
+							}
+						: currentView,
+				)
+				setFeedback(`已将“${task.title}”移入回收站`)
+			})
+			skipNextTaskDataVersionRefreshRef.current = true
+			bumpTaskDataVersion()
+		} catch (error) {
+			setLoadError(toErrorMessage(error))
+		} finally {
+			setPendingTaskId(null)
+		}
+	})
+
 	return {
 		view,
 		isLoading,
@@ -159,6 +191,7 @@ export function useProjectExecution(spaceId: string, projectId: string): UseProj
 		isDeletingProject,
 		refresh,
 		toggleTaskStatus,
+		moveTaskToTrash,
 		deleteCurrentProject,
 	}
 }

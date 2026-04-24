@@ -7,6 +7,7 @@ import {
 import { getFocusViewTasks } from '@/features/focus/api/getFocusViewTasks'
 import { listFocusViews } from '@/features/focus/api/listFocusViews'
 import { updateTaskPinState } from '@/features/focus/api/updateTaskPinState'
+import { deleteTaskToTrash } from '@/features/task-drawer/api/deleteTaskToTrash'
 import type { UpdatedProjectTaskStatusPayload } from '@/features/project/api/updateProjectTaskStatus'
 import { updateProjectTaskStatus } from '@/features/project/api/updateProjectTaskStatus'
 import type {
@@ -33,6 +34,7 @@ type UseFocusWorkspaceResult = {
 	refresh: () => Promise<void>
 	toggleTaskPin: (task: FocusTaskRecord) => Promise<void>
 	toggleTaskStatus: (task: FocusTaskRecord) => Promise<void>
+	moveTaskToTrash: (task: FocusTaskRecord) => Promise<void>
 }
 
 const DEFAULT_ACTIVE_VIEW_KEY: FocusViewKey = 'focus'
@@ -183,6 +185,29 @@ export function useFocusWorkspace(spaceId: string): UseFocusWorkspaceResult {
 		}
 	})
 
+	const moveTaskToTrash = useEffectEvent(async (task: FocusTaskRecord) => {
+		setPendingTaskId(task.id)
+		setLoadError(null)
+
+		try {
+			await deleteTaskToTrash({
+				spaceSlug: spaceId,
+				taskId: task.id,
+			})
+
+			startTransition(() => {
+				setFeedback(`已将“${task.title}”移入回收站`)
+			})
+			skipNextTaskDataVersionRefreshRef.current = true
+			bumpTaskDataVersion()
+			await refresh(true)
+		} catch (error) {
+			setLoadError(toErrorMessage(error))
+		} finally {
+			setPendingTaskId(null)
+		}
+	})
+
 	const activeSnapshot = snapshots[activeViewKey]
 	const tasks =
 		activeViewKey === 'recent'
@@ -210,6 +235,7 @@ export function useFocusWorkspace(spaceId: string): UseFocusWorkspaceResult {
 		refresh,
 		toggleTaskPin,
 		toggleTaskStatus,
+		moveTaskToTrash,
 	}
 }
 

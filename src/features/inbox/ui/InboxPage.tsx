@@ -28,6 +28,7 @@ import {
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
+import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import { PlusIcon } from 'lucide-react'
 
 export function InboxPage() {
@@ -46,6 +47,7 @@ export function InboxPage() {
 		updateDraft,
 		refresh,
 		submitTriage,
+		moveTaskToTrash,
 	} = useInboxTasks(currentSpaceId)
 
 	return (
@@ -125,6 +127,7 @@ export function InboxPage() {
 									draft={draft}
 									isActive={activeDrawerKind === 'task' && activeDrawerId === task.id}
 									onOpenTask={() => openDrawer('task', task.id)}
+									onMoveTaskToTrash={() => void moveTaskToTrash(task.id)}
 									onProjectChange={(projectId) => updateDraft(task.id, { projectId, error: null })}
 									onSubmit={() => void submitTriage(task.id)}
 									onPriorityChange={(priority) => updateDraft(task.id, { priority, error: null })}
@@ -163,6 +166,7 @@ type InboxTaskRowProps = {
 	onPriorityChange: (priority: string) => void
 	onSubmit: () => void
 	onOpenTask: () => void
+	onMoveTaskToTrash: () => void
 }
 
 const EMPTY_PRIORITY_VALUE = '__inbox-priority-empty__'
@@ -174,6 +178,7 @@ function InboxTaskRow({
 	draft,
 	isActive,
 	onOpenTask,
+	onMoveTaskToTrash,
 	onProjectChange,
 	onPriorityChange,
 	onSubmit,
@@ -186,99 +191,105 @@ function InboxTaskRow({
 	const canSubmit = projectChanged || priorityChanged
 
 	return (
-		<article
-			className={cn(
-				LINEAR_CARD_BASE_CLASS,
-				'group grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-start',
-				isActive ? LINEAR_CARD_ACTIVE_CLASS : LINEAR_CARD_IDLE_CLASS,
-				draft.isSubmitting ? 'opacity-75' : null,
-			)}
-			data-shell-task-card='true'
-			data-task-id={task.id}
+		<TaskContextMenu
+			isBusy={draft.isSubmitting}
+			onMoveToTrash={onMoveTaskToTrash}
+			onOpenDetails={onOpenTask}
 		>
-			<div className='min-w-0 space-y-3'>
-				<div className='flex flex-wrap items-center gap-2'>
-					<button
-						className='cursor-pointer text-left text-sm font-semibold text-foreground transition-colors hover:text-primary group-hover:text-primary'
-						onClick={onOpenTask}
-						type='button'
-					>
-						{task.title}
-					</button>
-					<Badge variant='outline'>
-						{formatInboxPriorityLabel(draft.priority || task.priority)}
-					</Badge>
-					<Badge variant='secondary'>{currentProjectName}</Badge>
-				</div>
-				<p className='text-sm leading-6 text-muted-foreground'>
-					{task.note?.trim() || '这条任务还没有补充备注，建议尽快完成最小归类后再继续处理。'}
-				</p>
-				{draft.error ? (
-					<p className='text-sm text-(--sf-color-danger-soft-text)' role='alert'>
-						{draft.error}
+			<article
+				className={cn(
+					LINEAR_CARD_BASE_CLASS,
+					'group grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto] lg:items-start',
+					isActive ? LINEAR_CARD_ACTIVE_CLASS : LINEAR_CARD_IDLE_CLASS,
+					draft.isSubmitting ? 'opacity-75' : null,
+				)}
+				data-shell-task-card='true'
+				data-task-id={task.id}
+			>
+				<div className='min-w-0 space-y-3'>
+					<div className='flex flex-wrap items-center gap-2'>
+						<button
+							className='cursor-pointer text-left text-sm font-semibold text-foreground transition-colors hover:text-primary group-hover:text-primary'
+							onClick={onOpenTask}
+							type='button'
+						>
+							{task.title}
+						</button>
+						<Badge variant='outline'>
+							{formatInboxPriorityLabel(draft.priority || task.priority)}
+						</Badge>
+						<Badge variant='secondary'>{currentProjectName}</Badge>
+					</div>
+					<p className='text-sm leading-6 text-muted-foreground'>
+						{task.note?.trim() || '这条任务还没有补充备注，建议尽快完成最小归类后再继续处理。'}
 					</p>
-				) : null}
-			</div>
+					{draft.error ? (
+						<p className='text-sm text-(--sf-color-danger-soft-text)' role='alert'>
+							{draft.error}
+						</p>
+					) : null}
+				</div>
 
-			<label className='flex flex-col gap-1 text-xs font-medium text-muted-foreground'>
-				优先级
-				<Select
-					aria-label={`${task.title} 优先级`}
-					disabled={draft.isSubmitting}
-					onValueChange={(value) => onPriorityChange(value === EMPTY_PRIORITY_VALUE ? '' : value)}
-					value={draft.priority || EMPTY_PRIORITY_VALUE}
-				>
-					<SelectTrigger
+				<label className='flex flex-col gap-1 text-xs font-medium text-muted-foreground'>
+					优先级
+					<Select
 						aria-label={`${task.title} 优先级`}
-						className='h-9 w-full rounded-md bg-card'
+						disabled={draft.isSubmitting}
+						onValueChange={(value) => onPriorityChange(value === EMPTY_PRIORITY_VALUE ? '' : value)}
+						value={draft.priority || EMPTY_PRIORITY_VALUE}
 					>
-						<SelectValue placeholder='待补齐' />
-					</SelectTrigger>
-					<SelectContent position='popper'>
-						<SelectGroup>
-							<SelectItem value={EMPTY_PRIORITY_VALUE}>待补齐</SelectItem>
-							{INBOX_PRIORITY_OPTIONS.map((option) => (
-								<SelectItem key={option.value} value={option.value}>
-									{option.label}
-								</SelectItem>
-							))}
-						</SelectGroup>
-					</SelectContent>
-				</Select>
-			</label>
+						<SelectTrigger
+							aria-label={`${task.title} 优先级`}
+							className='h-9 w-full rounded-md bg-card'
+						>
+							<SelectValue placeholder='待补齐' />
+						</SelectTrigger>
+						<SelectContent position='popper'>
+							<SelectGroup>
+								<SelectItem value={EMPTY_PRIORITY_VALUE}>待补齐</SelectItem>
+								{INBOX_PRIORITY_OPTIONS.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectGroup>
+						</SelectContent>
+					</Select>
+				</label>
 
-			<label className='flex flex-col gap-1 text-xs font-medium text-muted-foreground'>
-				项目
-				<Select
-					aria-label={`${task.title} 项目`}
-					disabled={draft.isSubmitting}
-					onValueChange={(value) => onProjectChange(value === EMPTY_PROJECT_VALUE ? '' : value)}
-					value={draft.projectId || EMPTY_PROJECT_VALUE}
-				>
-					<SelectTrigger
+				<label className='flex flex-col gap-1 text-xs font-medium text-muted-foreground'>
+					项目
+					<Select
 						aria-label={`${task.title} 项目`}
-						className='h-9 w-full rounded-md bg-card'
+						disabled={draft.isSubmitting}
+						onValueChange={(value) => onProjectChange(value === EMPTY_PROJECT_VALUE ? '' : value)}
+						value={draft.projectId || EMPTY_PROJECT_VALUE}
 					>
-						<SelectValue placeholder='待补齐' />
-					</SelectTrigger>
-					<SelectContent position='popper'>
-						<SelectGroup>
-							<SelectItem value={EMPTY_PROJECT_VALUE}>待补齐</SelectItem>
-							{projects.map((project) => (
-								<SelectItem key={project.id} value={project.id}>
-									{project.name}
-								</SelectItem>
-							))}
-						</SelectGroup>
-					</SelectContent>
-				</Select>
-			</label>
+						<SelectTrigger
+							aria-label={`${task.title} 项目`}
+							className='h-9 w-full rounded-md bg-card'
+						>
+							<SelectValue placeholder='待补齐' />
+						</SelectTrigger>
+						<SelectContent position='popper'>
+							<SelectGroup>
+								<SelectItem value={EMPTY_PROJECT_VALUE}>待补齐</SelectItem>
+								{projects.map((project) => (
+									<SelectItem key={project.id} value={project.id}>
+										{project.name}
+									</SelectItem>
+								))}
+							</SelectGroup>
+						</SelectContent>
+					</Select>
+				</label>
 
-			<div className='flex items-start justify-end'>
-				<Button disabled={draft.isSubmitting || !canSubmit} onClick={onSubmit} size='sm'>
-					{draft.isSubmitting ? '整理中...' : '整理'}
-				</Button>
-			</div>
-		</article>
+				<div className='flex items-start justify-end'>
+					<Button disabled={draft.isSubmitting || !canSubmit} onClick={onSubmit} size='sm'>
+						{draft.isSubmitting ? '整理中...' : '整理'}
+					</Button>
+				</div>
+			</article>
+		</TaskContextMenu>
 	)
 }

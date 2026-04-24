@@ -167,6 +167,48 @@ describe('FocusPage', () => {
 		})
 	})
 
+	it('任务右键菜单可以触发详情、状态和删除动作', async () => {
+		const toggleTaskStatus = vi
+			.fn<
+				(
+					task: Parameters<ReturnType<typeof useFocusWorkspace>['toggleTaskStatus']>[0],
+				) => Promise<void>
+			>()
+			.mockResolvedValue(undefined)
+		const moveTaskToTrash = vi
+			.fn<
+				(
+					task: Parameters<ReturnType<typeof useFocusWorkspace>['moveTaskToTrash']>[0],
+				) => Promise<void>
+			>()
+			.mockResolvedValue(undefined)
+		mockedUseFocusWorkspace.mockReturnValue(
+			createWorkspaceState({
+				toggleTaskStatus,
+				moveTaskToTrash,
+			}),
+		)
+
+		render(<FocusPage />)
+
+		fireEvent.contextMenu(screen.getByRole('button', { name: '打开任务 收口 Focus 查询' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑详情' }))
+
+		expect(useShellLayoutStore.getState()).toMatchObject({
+			isDrawerOpen: true,
+			activeDrawerKind: 'task',
+			activeDrawerId: 'task-focus-1',
+		})
+
+		fireEvent.contextMenu(screen.getByRole('button', { name: '打开任务 收口 Focus 查询' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '标记完成' }))
+		fireEvent.contextMenu(screen.getByRole('button', { name: '打开任务 收口 Focus 查询' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
+
+		expect(toggleTaskStatus).toHaveBeenCalledTimes(1)
+		expect(moveTaskToTrash).toHaveBeenCalledTimes(1)
+	})
+
 	it('展示加载、失败和空状态', () => {
 		mockedUseFocusWorkspace.mockReturnValue(
 			createWorkspaceState({
@@ -283,6 +325,22 @@ function createWorkspaceState(
 			>()
 			.mockResolvedValue(undefined),
 		toggleTaskStatus: vi
+			.fn<
+				(task: {
+					id: string
+					projectId: string
+					title: string
+					note: string | null
+					priority: string
+					status: 'todo' | 'done'
+					pinned: boolean
+					dueAt: string | null
+					createdAt: string
+					updatedAt: string
+				}) => Promise<void>
+			>()
+			.mockResolvedValue(undefined),
+		moveTaskToTrash: vi
 			.fn<
 				(task: {
 					id: string

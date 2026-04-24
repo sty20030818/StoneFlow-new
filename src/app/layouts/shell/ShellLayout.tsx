@@ -127,6 +127,8 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 						activeDrawerKind={activeDrawerKind}
 						currentSpaceId={currentSpaceId}
 						onCloseDrawer={closeDrawer}
+						onOpenProjectCreateDialog={() => openProjectCreateDialog()}
+						onOpenTaskCreateDialog={openTaskCreateDialog}
 					>
 						{children}
 					</ShellMain>

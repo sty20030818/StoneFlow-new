@@ -2,9 +2,17 @@ import type { ComponentProps } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
+import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
 
 describe('ShellSidebar', () => {
+	afterEach(() => {
+		window.localStorage.clear()
+		useShellLayoutStore.setState({
+			hiddenNavItemKeys: [],
+		})
+	})
+
 	it('渲染来自真实数据层的一级导航 badge', () => {
 		renderSidebar({
 			currentSpaceId: 'work',
@@ -175,6 +183,46 @@ describe('ShellSidebar', () => {
 		)
 		expect(studySpaceItem.className).toContain('hover:bg-(--sf-color-shell-hover)')
 		expect(studySpaceItem.className).toContain('data-highlighted:bg-(--sf-color-shell-hover)')
+	})
+
+	it('固定导航项右键支持隐藏入口和恢复默认侧栏', () => {
+		renderSidebar({
+			currentSpaceId: 'work',
+			isProjectsLoading: false,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
+			projects: [],
+			projectsError: null,
+		})
+
+		fireEvent.contextMenu(screen.getByRole('link', { name: 'Inbox' }))
+		fireEvent.click(screen.getByRole('menuitem', { name: '自定义侧边栏' }))
+		fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Views' }))
+
+		expect(screen.queryByRole('link', { name: 'Views' })).not.toBeInTheDocument()
+		expect(window.localStorage.getItem('stoneflow:shell-nav-visibility:v1')).toContain('focus')
+
+		fireEvent.contextMenu(screen.getByRole('link', { name: 'Inbox' }))
+		fireEvent.click(screen.getByRole('menuitem', { name: '自定义侧边栏' }))
+		fireEvent.click(screen.getByRole('menuitem', { name: '恢复默认侧栏' }))
+
+		expect(screen.getByRole('link', { name: 'Views' })).toBeInTheDocument()
+	})
+
+	it('sidebar 空白区右键保留自定义侧边栏入口', () => {
+		renderSidebar({
+			currentSpaceId: 'work',
+			isProjectsLoading: false,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
+			projects: [],
+			projectsError: null,
+		})
+
+		fireEvent.contextMenu(document.querySelector('aside') as HTMLElement)
+
+		expect(screen.getByRole('menuitem', { name: '自定义侧边栏' })).toBeInTheDocument()
+		expect(screen.queryByRole('menuitem', { name: '恢复默认侧栏' })).not.toBeInTheDocument()
 	})
 })
 

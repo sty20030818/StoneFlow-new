@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import {
@@ -7,6 +8,7 @@ import {
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { useProjectExecution } from '@/features/project/model/useProjectExecution'
 import type { ProjectExecutionTask } from '@/features/project/model/types'
+import { deleteProjectToTrash } from '@/features/trash/api/deleteProjectToTrash'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -40,6 +42,8 @@ import {
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
+import { ProjectContextMenu } from '@/features/project/ui/ProjectContextMenu'
+import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import { FolderOpenDotIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
 const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
@@ -52,6 +56,8 @@ export function ProjectPage() {
 	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
 	const openProjectCreateDialog = useShellLayoutStore((state) => state.openProjectCreateDialog)
+	const bumpProjectDataVersion = useShellLayoutStore((state) => state.bumpProjectDataVersion)
+	const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null)
 	const {
 		view,
 		isLoading,
@@ -61,6 +67,7 @@ export function ProjectPage() {
 		isDeletingProject,
 		refresh,
 		toggleTaskStatus,
+		moveTaskToTrash,
 		deleteCurrentProject,
 	} = useProjectExecution(spaceId, projectId)
 	const todoTasks = view?.tasks.filter((task) => task.status === 'todo') ?? []
@@ -70,6 +77,22 @@ export function ProjectPage() {
 
 		if (deleted) {
 			navigate(`/space/${spaceId}/trash`)
+		}
+	}
+	const handleDeleteChildProject = async (targetProjectId: string) => {
+		setDeletingProjectId(targetProjectId)
+
+		try {
+			await deleteProjectToTrash({
+				spaceSlug: spaceId,
+				projectId: targetProjectId,
+			})
+			bumpProjectDataVersion()
+			await refresh()
+		} catch {
+			await refresh()
+		} finally {
+			setDeletingProjectId(null)
 		}
 	}
 
@@ -157,24 +180,31 @@ export function ProjectPage() {
 						</div>
 						<div className='grid gap-2 sm:grid-cols-2'>
 							{view.childProjects.map((project) => (
-								<button
-									className='group flex min-h-16 items-center gap-3 rounded-lg border border-(--sf-color-border-subtle) bg-card px-3 py-3 text-left transition-colors hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
+								<ProjectContextMenu
 									key={project.id}
-									onClick={() => navigate(`/space/${spaceId}/project/${project.id}`)}
-									type='button'
+									isBusy={deletingProjectId === project.id}
+									onCreateChildProject={() => openProjectCreateDialog(project.id)}
+									onMoveToTrash={() => void handleDeleteChildProject(project.id)}
+									onOpenProject={() => navigate(`/space/${spaceId}/project/${project.id}`)}
 								>
-									<span className='flex size-8 shrink-0 items-center justify-center rounded-md border border-(--sf-color-border-subtle) bg-muted text-(--sf-color-text-secondary)'>
-										<FolderOpenDotIcon className='size-4' />
-									</span>
-									<span className='min-w-0 flex-1'>
-										<span className='block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary'>
-											{project.name}
+									<button
+										className='group flex min-h-16 items-center gap-3 rounded-lg border border-(--sf-color-border-subtle) bg-card px-3 py-3 text-left transition-colors hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'
+										onClick={() => navigate(`/space/${spaceId}/project/${project.id}`)}
+										type='button'
+									>
+										<span className='flex size-8 shrink-0 items-center justify-center rounded-md border border-(--sf-color-border-subtle) bg-muted text-(--sf-color-text-secondary)'>
+											<FolderOpenDotIcon className='size-4' />
 										</span>
-										<span className='mt-1 block text-xs text-muted-foreground'>
-											{project.status}
+										<span className='min-w-0 flex-1'>
+											<span className='block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary'>
+												{project.name}
+											</span>
+											<span className='mt-1 block text-xs text-muted-foreground'>
+												{project.status}
+											</span>
 										</span>
-									</span>
-								</button>
+									</button>
+								</ProjectContextMenu>
 							))}
 						</div>
 					</section>
@@ -193,6 +223,7 @@ export function ProjectPage() {
 						onOpenTask={(taskId) => openDrawer('task', taskId)}
 						pendingTaskId={pendingTaskId}
 						tasks={todoTasks}
+						onMoveTaskToTrash={moveTaskToTrash}
 						onToggleTaskStatus={toggleTaskStatus}
 					/>
 				</section>
@@ -210,6 +241,7 @@ export function ProjectPage() {
 						onOpenTask={(taskId) => openDrawer('task', taskId)}
 						pendingTaskId={pendingTaskId}
 						tasks={doneTasks}
+						onMoveTaskToTrash={moveTaskToTrash}
 						onToggleTaskStatus={toggleTaskStatus}
 					/>
 				</section>
@@ -282,6 +314,7 @@ type ProjectTaskGroupProps = {
 	activeTaskId: string | null
 	emptyMessage: string
 	onToggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
+	onMoveTaskToTrash: (task: ProjectExecutionTask) => Promise<void>
 	onOpenTask: (taskId: string) => void
 }
 
@@ -291,6 +324,7 @@ function ProjectTaskGroup({
 	activeTaskId,
 	emptyMessage,
 	onToggleTaskStatus,
+	onMoveTaskToTrash,
 	onOpenTask,
 }: ProjectTaskGroupProps) {
 	if (tasks.length === 0) {
@@ -304,72 +338,82 @@ function ProjectTaskGroup({
 	return (
 		<div className='flex flex-col gap-3'>
 			{tasks.map((task) => (
-				<div
-					aria-label={`打开任务 ${task.title}`}
-					className={cn(
-						LINEAR_CARD_BASE_CLASS,
-						TASK_CARD_INTERACTIVE_CLASS,
-						TASK_CARD_GRID_CLASS,
-						task.status === 'done' ? LINEAR_CARD_DONE_CLASS : LINEAR_CARD_IDLE_CLASS,
-						activeTaskId === task.id ? LINEAR_CARD_ACTIVE_CLASS : null,
-						pendingTaskId === task.id ? 'opacity-75' : null,
-					)}
-					data-shell-task-card='true'
-					data-task-id={task.id}
+				<TaskContextMenu
 					key={task.id}
-					onClick={() => onOpenTask(task.id)}
-					onKeyDown={(event) => {
-						if (event.key === 'Enter' || event.key === ' ') {
-							event.preventDefault()
-							onOpenTask(task.id)
-						}
-					}}
-					role='button'
-					tabIndex={0}
+					isBusy={pendingTaskId === task.id}
+					onMoveToTrash={() => void onMoveTaskToTrash(task)}
+					onOpenDetails={() => onOpenTask(task.id)}
+					onToggleStatus={() => void onToggleTaskStatus(task)}
+					status={task.status}
 				>
-					<div className='space-y-2'>
-						<div className='flex flex-wrap items-center gap-2'>
-							<div
-								className={cn(
-									'text-left text-sm font-semibold transition-colors group-hover:text-primary',
-									task.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground',
-								)}
-							>
-								{task.title}
+					<div
+						aria-label={`打开任务 ${task.title}`}
+						className={cn(
+							LINEAR_CARD_BASE_CLASS,
+							TASK_CARD_INTERACTIVE_CLASS,
+							TASK_CARD_GRID_CLASS,
+							task.status === 'done' ? LINEAR_CARD_DONE_CLASS : LINEAR_CARD_IDLE_CLASS,
+							activeTaskId === task.id ? LINEAR_CARD_ACTIVE_CLASS : null,
+							pendingTaskId === task.id ? 'opacity-75' : null,
+						)}
+						data-shell-task-card='true'
+						data-task-id={task.id}
+						onClick={() => onOpenTask(task.id)}
+						onKeyDown={(event) => {
+							if (event.key === 'Enter' || event.key === ' ') {
+								event.preventDefault()
+								onOpenTask(task.id)
+							}
+						}}
+						role='button'
+						tabIndex={0}
+					>
+						<div className='space-y-2'>
+							<div className='flex flex-wrap items-center gap-2'>
+								<div
+									className={cn(
+										'text-left text-sm font-semibold transition-colors group-hover:text-primary',
+										task.status === 'done'
+											? 'text-muted-foreground line-through'
+											: 'text-foreground',
+									)}
+								>
+									{task.title}
+								</div>
+								<Badge variant='outline'>{task.priority}</Badge>
+								<Badge variant={getTaskStatusBadgeVariant(task.status)}>
+									{task.status === 'todo' ? '待执行' : '已完成'}
+								</Badge>
 							</div>
-							<Badge variant='outline'>{task.priority}</Badge>
-							<Badge variant={getTaskStatusBadgeVariant(task.status)}>
-								{task.status === 'todo' ? '待执行' : '已完成'}
-							</Badge>
-						</div>
-						<p className='text-sm leading-6 text-muted-foreground'>
-							{task.note?.trim() || '当前任务没有补充备注，可直接在 Project 中推进执行。'}
-						</p>
-						{task.completedAt ? (
-							<p className='text-xs text-muted-foreground'>
-								完成于 {new Date(task.completedAt).toLocaleString('zh-CN')}
+							<p className='text-sm leading-6 text-muted-foreground'>
+								{task.note?.trim() || '当前任务没有补充备注，可直接在 Project 中推进执行。'}
 							</p>
-						) : null}
-					</div>
+							{task.completedAt ? (
+								<p className='text-xs text-muted-foreground'>
+									完成于 {new Date(task.completedAt).toLocaleString('zh-CN')}
+								</p>
+							) : null}
+						</div>
 
-					<div className='flex shrink-0 items-start'>
-						<Button
-							disabled={pendingTaskId === task.id}
-							onClick={(event) => {
-								event.stopPropagation()
-								void onToggleTaskStatus(task)
-							}}
-							size='sm'
-							variant='outline'
-						>
-							{pendingTaskId === task.id
-								? '更新中...'
-								: task.status === 'todo'
-									? '标记完成'
-									: '恢复待执行'}
-						</Button>
+						<div className='flex shrink-0 items-start'>
+							<Button
+								disabled={pendingTaskId === task.id}
+								onClick={(event) => {
+									event.stopPropagation()
+									void onToggleTaskStatus(task)
+								}}
+								size='sm'
+								variant='outline'
+							>
+								{pendingTaskId === task.id
+									? '更新中...'
+									: task.status === 'todo'
+										? '标记完成'
+										: '恢复待执行'}
+							</Button>
+						</div>
 					</div>
-				</div>
+				</TaskContextMenu>
 			))}
 		</div>
 	)

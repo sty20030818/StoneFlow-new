@@ -10,6 +10,7 @@ import {
 	type InboxProjectOption,
 	type InboxTaskRecord,
 } from '@/features/inbox/api/listInboxTasks'
+import { deleteTaskToTrash } from '@/features/task-drawer/api/deleteTaskToTrash'
 import { triageInboxTask } from '@/features/inbox/api/triageInboxTask'
 
 type InboxTaskDraft = {
@@ -29,6 +30,7 @@ type UseInboxTasksResult = {
 	updateDraft: (taskId: string, patch: Partial<Omit<InboxTaskDraft, 'isSubmitting'>>) => void
 	refresh: () => Promise<void>
 	submitTriage: (taskId: string) => Promise<void>
+	moveTaskToTrash: (taskId: string) => Promise<void>
 }
 
 const EMPTY_DRAFT: InboxTaskDraft = {
@@ -219,6 +221,50 @@ export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 		}
 	})
 
+	const moveTaskToTrash = useEffectEvent(async (taskId: string) => {
+		const task = tasks.find((item) => item.id === taskId)
+		if (!task) {
+			return
+		}
+
+		setDrafts((currentDrafts) => ({
+			...currentDrafts,
+			[taskId]: {
+				...(currentDrafts[taskId] ?? EMPTY_DRAFT),
+				isSubmitting: true,
+				error: null,
+			},
+		}))
+
+		try {
+			await deleteTaskToTrash({
+				spaceSlug: spaceId,
+				taskId,
+			})
+
+			startTransition(() => {
+				setTasks((currentTasks) => currentTasks.filter((currentTask) => currentTask.id !== taskId))
+				setDrafts((currentDrafts) => {
+					const { [taskId]: _removed, ...rest } = currentDrafts
+					return rest
+				})
+				setFeedback(`已将“${task.title}”移入回收站`)
+			})
+			skipNextTaskDataVersionRefreshRef.current = true
+			bumpTaskDataVersion()
+			await refresh(true)
+		} catch (error) {
+			setDrafts((currentDrafts) => ({
+				...currentDrafts,
+				[taskId]: {
+					...(currentDrafts[taskId] ?? EMPTY_DRAFT),
+					isSubmitting: false,
+					error: toErrorMessage(error),
+				},
+			}))
+		}
+	})
+
 	return {
 		tasks,
 		projects,
@@ -229,6 +275,7 @@ export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 		updateDraft,
 		refresh,
 		submitTriage,
+		moveTaskToTrash,
 	}
 }
 

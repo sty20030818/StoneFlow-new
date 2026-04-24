@@ -61,6 +61,8 @@ describe('ShellMain', () => {
 					activeDrawerKind='project'
 					currentSpaceId='work'
 					onCloseDrawer={() => useShellLayoutStore.getState().closeDrawer()}
+					onOpenProjectCreateDialog={() => useShellLayoutStore.getState().openProjectCreateDialog()}
+					onOpenTaskCreateDialog={() => useShellLayoutStore.getState().openTaskCreateDialog()}
 				>
 					<div>workspace content</div>
 				</ShellMain>
@@ -83,6 +85,49 @@ describe('ShellMain', () => {
 		})
 	})
 
+	it('Main 空白区右键提供全局创建动作', async () => {
+		const openTaskCreateDialog = vi.fn<() => void>()
+		const openProjectCreateDialog = vi.fn<() => void>()
+
+		render(
+			<ShellMain
+				activeDrawerId={null}
+				activeDrawerKind={null}
+				currentSpaceId='work'
+				onCloseDrawer={() => undefined}
+				onOpenProjectCreateDialog={openProjectCreateDialog}
+				onOpenTaskCreateDialog={openTaskCreateDialog}
+			>
+				<div>workspace content</div>
+			</ShellMain>,
+		)
+
+		fireEvent.contextMenu(screen.getByText('workspace content'))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '新建任务' }))
+
+		expect(openTaskCreateDialog).toHaveBeenCalledTimes(1)
+		expect(openProjectCreateDialog).not.toHaveBeenCalled()
+	})
+
+	it('Main 内交互控件右键不打开全局菜单', () => {
+		render(
+			<ShellMain
+				activeDrawerId={null}
+				activeDrawerKind={null}
+				currentSpaceId='work'
+				onCloseDrawer={() => undefined}
+				onOpenProjectCreateDialog={() => undefined}
+				onOpenTaskCreateDialog={() => undefined}
+			>
+				<button type='button'>inline action</button>
+			</ShellMain>,
+		)
+
+		fireEvent.contextMenu(screen.getByRole('button', { name: 'inline action' }))
+
+		expect(screen.queryByRole('menuitem', { name: '新建任务' })).not.toBeInTheDocument()
+	})
+
 	it('点击外部按钮时保留 Drawer 并执行原动作', () => {
 		useShellLayoutStore.setState({
 			isDrawerOpen: true,
@@ -102,6 +147,8 @@ describe('ShellMain', () => {
 					activeDrawerKind='project'
 					currentSpaceId='work'
 					onCloseDrawer={() => useShellLayoutStore.getState().closeDrawer()}
+					onOpenProjectCreateDialog={() => useShellLayoutStore.getState().openProjectCreateDialog()}
+					onOpenTaskCreateDialog={() => useShellLayoutStore.getState().openTaskCreateDialog()}
 				>
 					<div>workspace content</div>
 				</ShellMain>
@@ -142,6 +189,8 @@ describe('ShellMain', () => {
 					activeDrawerKind='project'
 					currentSpaceId='work'
 					onCloseDrawer={() => useShellLayoutStore.getState().closeDrawer()}
+					onOpenProjectCreateDialog={() => useShellLayoutStore.getState().openProjectCreateDialog()}
+					onOpenTaskCreateDialog={() => useShellLayoutStore.getState().openTaskCreateDialog()}
 				>
 					<div>workspace content</div>
 				</ShellMain>
@@ -174,6 +223,8 @@ describe('ShellMain', () => {
 					activeDrawerKind='task'
 					currentSpaceId='work'
 					onCloseDrawer={() => useShellLayoutStore.getState().closeDrawer()}
+					onOpenProjectCreateDialog={() => useShellLayoutStore.getState().openProjectCreateDialog()}
+					onOpenTaskCreateDialog={() => useShellLayoutStore.getState().openTaskCreateDialog()}
 				>
 					<div>workspace content</div>
 				</ShellMain>
