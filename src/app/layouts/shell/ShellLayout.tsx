@@ -95,7 +95,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 	})
 
 	return (
-		<div className='sf-shell-layout relative flex h-full min-h-0 flex-col overflow-hidden bg-background'>
+		<SidebarProvider className='sf-shell-layout relative flex h-full min-h-0 flex-col overflow-hidden bg-background'>
 			<ShellHeader
 				activeSection={activeSection}
 				currentSpaceId={currentSpaceId}
@@ -110,7 +110,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				projectsError={projectsError}
 			/>
 
-			<SidebarProvider className='relative flex min-h-0 flex-1 overflow-hidden'>
+			<div className='relative flex min-h-0 flex-1 overflow-hidden'>
 				<ShellSidebar
 					currentSpaceId={currentSpaceId}
 					isProjectsLoading={isProjectsLoading}
@@ -134,7 +134,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 						{children}
 					</ShellMain>
 				</div>
-			</SidebarProvider>
+			</div>
 
 			<TaskCreateDialog
 				currentSpaceId={currentSpaceId}
@@ -152,6 +152,6 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 			/>
 
 			<ShellFooter activeSection={activeSection} currentSpaceId={currentSpaceId} />
-		</div>
+		</SidebarProvider>
 	)
 }

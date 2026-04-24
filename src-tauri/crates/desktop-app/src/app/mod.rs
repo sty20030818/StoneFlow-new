@@ -1,6 +1,8 @@
 //! StoneFlow Tauri 应用入口。
 
 #[cfg(target_os = "macos")]
+use tauri::LogicalPosition;
+#[cfg(target_os = "macos")]
 use tauri::TitleBarStyle;
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
@@ -24,7 +26,7 @@ fn build_main_window(app: &tauri::App) -> tauri::Result<()> {
     let window_builder = WebviewWindowBuilder::new(app, MAIN_WINDOW_LABEL, WebviewUrl::default())
         .title("StoneFlow")
         .inner_size(1440.0, 920.0)
-        .min_inner_size(960.0, 720.0)
+        .min_inner_size(500.0, 520.0)
         .resizable(true)
         .fullscreen(false);
 
@@ -32,7 +34,9 @@ fn build_main_window(app: &tauri::App) -> tauri::Result<()> {
     let window_builder = window_builder
         .decorations(true)
         .title_bar_style(TitleBarStyle::Overlay)
-        .hidden_title(true);
+        .hidden_title(true)
+        // 自绘 header 高度为 h-12=48px；traffic light 的 y 需略大于「一半高度」才能在视觉上居中（截图上 18 仍偏上）
+        .traffic_light_position(LogicalPosition::new(14.0, 25.0));
 
     #[cfg(not(target_os = "macos"))]
     let window_builder = window_builder.decorations(false);

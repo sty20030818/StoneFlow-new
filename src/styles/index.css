@@ -101,6 +101,7 @@
 	--sf-shadow-float: 0 16px 40px rgb(16 24 40 / 0.1), 0 4px 12px rgb(16 24 40 / 0.06);
 
 	--sf-shell-sidebar-width: 245px;
+	--sf-shell-sidebar-width-icon: 3rem;
 	--sf-shell-drawer-width: 32rem;
 	--sf-color-shell-chrome: #f3f3f4;
 	--sf-color-shell-drawer: #ffffff;

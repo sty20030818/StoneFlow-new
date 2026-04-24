@@ -13,6 +13,7 @@ import {
 	ContextMenuItem,
 	ContextMenuTrigger,
 } from '@/shared/ui/base/context-menu'
+import { cn } from '@/shared/lib/utils'
 import { FolderPlusIcon, SquarePenIcon } from 'lucide-react'
 
 type ShellMainProps = PropsWithChildren<{
@@ -126,10 +127,17 @@ export function ShellMain({
 
 	return (
 		<main className='relative flex min-w-0 flex-1 overflow-hidden bg-transparent'>
-			<div className='flex min-w-0 flex-1 pr-2'>
+			{/* mobile：仅去掉主卡左右 gutter（pr-3）与圆角；卡片边框/阴影/底色保持不动 */}
+			<div className='flex min-w-0 flex-1 px-0 pr-3 group-data-[sidebar-layout=mobile]/sidebar-wrapper:px-0'>
 				<ContextMenu>
 					<ContextMenuTrigger asChild onContextMenu={handleGlobalContextMenu}>
-						<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-(--sf-color-border-subtle) bg-card shadow-(--sf-shadow-panel)'>
+						<div
+							className={cn(
+								'relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-(--sf-color-border-subtle) bg-card shadow-(--sf-shadow-panel) transition-shadow duration-200 ease-out group-data-[sidebar-layout=mobile]/sidebar-wrapper:rounded-none',
+								// sidebar icon 折叠后，主卡与侧栏接缝处更容易“透出”阴影；这里直接弱化主卡阴影（不动边框/圆角逻辑）
+								'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:shadow-none',
+							)}
+						>
 							<div className='no-scrollbar min-w-0 flex-1 overflow-y-auto'>
 								<div className='flex min-h-full min-w-0 flex-col'>{children}</div>
 							</div>

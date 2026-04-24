@@ -56,6 +56,7 @@ import {
 	SidebarMenuSub,
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
+	SidebarRail,
 	useSidebar,
 } from '@/shared/ui/base/sidebar'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
@@ -159,19 +160,23 @@ export function ShellSidebar({
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild onContextMenu={handleSidebarContextMenu}>
-				<Sidebar>
-					<SidebarHeader className='px-3 pb-4 pt-2'>
+				<Sidebar collapsible='icon'>
+					<SidebarHeader className='px-3 pb-4 pt-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2'>
 						<div className='flex items-center gap-1.5'>
 							<SidebarMenu className='flex-1'>
 								<SidebarMenuItem>
 									<DropdownMenu>
 										<DropdownMenuTrigger asChild>
-											<SidebarMenuButton aria-label='切换 Space' size='lg'>
+											<SidebarMenuButton
+												aria-label='切换 Space'
+												size='lg'
+												tooltip={activeSpace.label}
+											>
 												<SpaceIconBadge space={activeSpace} />
 												<span className='min-w-0 flex-1 truncate text-left font-semibold'>
 													{activeSpace.label}
 												</span>
-												<ChevronsUpDownIcon className='shrink-0 text-(--sf-color-icon-subtle)' />
+												<ChevronsUpDownIcon className='shrink-0 text-(--sf-color-icon-subtle) group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden' />
 											</SidebarMenuButton>
 										</DropdownMenuTrigger>
 										<DropdownMenuContent
@@ -244,7 +249,7 @@ export function ShellSidebar({
 							</SidebarGroupContent>
 						</SidebarGroup>
 
-						<SidebarGroup>
+						<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden'>
 							<div className='flex items-center justify-between px-2.5'>
 								<SidebarGroupLabel className='px-0'>Projects</SidebarGroupLabel>
 								<SidebarGroupAction
@@ -318,7 +323,7 @@ export function ShellSidebar({
 						</SidebarGroup>
 					</SidebarContent>
 
-					<SidebarFooter className='border-t border-(--sf-color-divider) px-3 py-3'>
+					<SidebarFooter className='border-t border-(--sf-color-divider) px-3 py-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2'>
 						<SidebarMenu>
 							{footerItems.map((item) => (
 								<SidebarMenuItem key={item.key}>
@@ -332,6 +337,7 @@ export function ShellSidebar({
 							))}
 						</SidebarMenu>
 					</SidebarFooter>
+					<SidebarRail />
 				</Sidebar>
 			</ContextMenuTrigger>
 
@@ -531,7 +537,7 @@ function SidebarNavMenuItem({
 		<SidebarMenuItem>
 			<ContextMenu>
 				<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
-					<SidebarMenuButton asChild isActive={isActive}>
+					<SidebarMenuButton asChild isActive={isActive} tooltip={label}>
 						<NavLink to={to}>
 							<Icon className='size-3.5 shrink-0' />
 							<span className='min-w-0 truncate'>{label}</span>
@@ -582,7 +588,7 @@ function SidebarRouteMenuItem({
 	const isActive = !!useMatch({ end: true, path: to })
 
 	return (
-		<SidebarMenuButton asChild isActive={isActive} size={size}>
+		<SidebarMenuButton asChild isActive={isActive} size={size} tooltip={label}>
 			<NavLink to={to}>
 				<Icon className='size-3.5 shrink-0' />
 				<span className='min-w-0 truncate'>{label}</span>
@@ -697,6 +703,7 @@ function SpaceIconBadge({ space }: { space: (typeof SHELL_SPACES)[number] }) {
 				'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white shadow-(--sf-shadow-panel)',
 				space.iconBadgeClassName,
 			)}
+			data-sidebar-keep='true'
 			data-space-icon-badge='true'
 		>
 			<SpaceIcon className='size-4 text-white' />

@@ -33,6 +33,8 @@ import {
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
 import { Kbd } from '@/shared/ui/base/kbd'
+import { SidebarTrigger } from '@/shared/ui/base/sidebar'
+import { cn } from '@/shared/lib/utils'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
 	ChevronLeftIcon,
@@ -207,7 +209,25 @@ export function ShellHeader({
 				onMouseDownCapture={handleHeaderMouseDownCapture}
 			>
 				<div
-					className={`flex h-full w-(--sf-shell-sidebar-width) items-center gap-2 px-5.5 ${isMac ? 'pl-24' : ''}`}
+					className={cn(
+						// 与主内容区（ShellMain）右侧 gutter 对齐：12px
+						'flex h-full items-center gap-2 pr-3 transition-[width] duration-200 ease-out',
+						// 桌面展开：历史组用 ml-auto 贴右；不需要子项之间的 gap（否则会留下“幽灵间距”）
+						'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:gap-0',
+						'group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none',
+						// macOS：折叠态保留 traffic light 左侧安全区；展开态左区已用 flex-1 把按钮顶到右侧，无需额外 pl
+						isMac
+							? 'pl-24 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-0'
+							: 'pl-5.5 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-0',
+						// 桌面展开：对齐 sidebar 宽
+						'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:w-(--sf-shell-sidebar-width-current)',
+						// 桌面折叠：这里需要容纳「折叠按钮 + 历史/前进/后退」，因此用 auto 宽
+						isMac
+							? 'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-auto'
+							: 'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-auto group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:pl-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:pr-3',
+						// 移动端：内容自适应
+						'group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-auto',
+					)}
 					data-tauri-drag-region
 					onDoubleClick={() => {
 						if (!isMac) {
@@ -215,60 +235,73 @@ export function ShellHeader({
 						}
 					}}
 				>
-					<div className='min-w-0 flex-1 self-stretch' data-tauri-drag-region />
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								aria-label='打开历史记录'
-								className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground aria-expanded:bg-(--sf-color-shell-hover)'
-								size='icon-sm'
-								variant='ghost'
-							>
-								<HistoryIcon className='size-3.5' />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align='start'>
-							<DropdownMenuLabel>最近浏览</DropdownMenuLabel>
-							<DropdownMenuGroup>
-								{routeHistoryEntries.length > 0 ? (
-									routeHistoryEntries.map((entry) => {
-										const EntryIcon = resolveHistoryIcon(entry.path)
-										return (
-											<DropdownMenuItem
-												key={entry.id}
-												onSelect={() => navigateToHistoryEntry(entry)}
-											>
-												<EntryIcon />
-												<span className='min-w-0 truncate'>{entry.label}</span>
-											</DropdownMenuItem>
-										)
-									})
-								) : (
-									<DropdownMenuItem disabled>暂无历史记录</DropdownMenuItem>
-								)}
-							</DropdownMenuGroup>
-						</DropdownMenuContent>
-					</DropdownMenu>
-					<Button
-						aria-label='后退'
-						className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
-						disabled={!canGoBack}
-						onClick={goBack}
-						size='icon-sm'
-						variant='ghost'
-					>
-						<ChevronLeftIcon className='size-3.5' />
-					</Button>
-					<Button
-						aria-label='前进'
-						className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
-						disabled={!canGoForward}
-						onClick={goForward}
-						size='icon-sm'
-						variant='ghost'
-					>
-						<ChevronRightIcon className='size-3.5' />
-					</Button>
+					<div
+						className='min-w-0 flex-1 self-stretch group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:block group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden'
+						data-tauri-drag-region
+					/>
+
+					{/* 桌面折叠态 / 移动端：以 SidebarTrigger 作为唯一入口替代历史集群 */}
+					<SidebarTrigger
+						// desktop-expanded：完全不渲染占位（避免父级 gap-2 在“隐藏但仍占位”的元素旁产生空隙）
+						className='hidden group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:inline-flex group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:-translate-x-0.5'
+					/>
+
+					{/* 历史 / 前进 / 后退：桌面展开态、桌面折叠态都显示；移动端隐藏 */}
+					<div className='flex items-center gap-2 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:ml-auto group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden'>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									aria-label='打开历史记录'
+									className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground aria-expanded:bg-(--sf-color-shell-hover)'
+									size='icon-sm'
+									variant='ghost'
+								>
+									<HistoryIcon className='size-3.5' />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align='start'>
+								<DropdownMenuLabel>最近浏览</DropdownMenuLabel>
+								<DropdownMenuGroup>
+									{routeHistoryEntries.length > 0 ? (
+										routeHistoryEntries.map((entry) => {
+											const EntryIcon = resolveHistoryIcon(entry.path)
+											return (
+												<DropdownMenuItem
+													key={entry.id}
+													onSelect={() => navigateToHistoryEntry(entry)}
+												>
+													<EntryIcon />
+													<span className='min-w-0 truncate'>{entry.label}</span>
+												</DropdownMenuItem>
+											)
+										})
+									) : (
+										<DropdownMenuItem disabled>暂无历史记录</DropdownMenuItem>
+									)}
+								</DropdownMenuGroup>
+							</DropdownMenuContent>
+						</DropdownMenu>
+						<Button
+							aria-label='后退'
+							className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
+							disabled={!canGoBack}
+							onClick={goBack}
+							size='icon-sm'
+							variant='ghost'
+						>
+							<ChevronLeftIcon className='size-3.5' />
+						</Button>
+						<Button
+							aria-label='前进'
+							className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
+							disabled={!canGoForward}
+							onClick={goForward}
+							size='icon-sm'
+							variant='ghost'
+						>
+							<ChevronRightIcon className='size-3.5' />
+						</Button>
+					</div>
 				</div>
 
 				<div className='flex min-w-0 flex-1 items-center gap-2 px-0' data-tauri-drag-region>
