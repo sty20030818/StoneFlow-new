@@ -12,7 +12,7 @@ export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps)
 
 	return (
 		<footer className='flex h-9.5 shrink-0 bg-(--sf-color-shell-chrome)'>
-			<div className='flex w-(--sf-shell-sidebar-width-current) items-center gap-2 px-3 transition-[width] duration-200 ease-out group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-(--sf-shell-sidebar-width-icon) group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:overflow-hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden'>
+			<div className='flex w-(--sf-shell-sidebar-reserved-width) items-center gap-2 overflow-hidden px-3 transition-[width] duration-200 ease-out group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden motion-reduce:transition-none'>
 				<div className='flex min-w-0 items-center gap-2 text-[11px] text-(--sf-color-shell-tertiary)'>
 					<span
 						className={`size-1.5 shrink-0 rounded-full ${healthcheckStatus.indicatorClassName}`}

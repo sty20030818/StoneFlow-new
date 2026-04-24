@@ -5,35 +5,27 @@ import { PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react'
 
 import { cn } from '@/shared/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/base/tooltip'
+import {
+	SidebarContext,
+	type SidebarContextValue,
+	type SidebarDesktopState,
+	type SidebarGeometry,
+	type SidebarLayoutMode,
+	type SidebarVisualState,
+	useSidebar,
+} from '@/shared/ui/base/sidebar-context'
 
-// Shell 响应式断点：>=1024 视作 desktop（桌面态），<1024 视作 mobile（使用 drawer）
+// Shell 响应式断点：>=1024 视作 desktop（桌面态），<1024 视作 mobile（抽屉态）
 const SIDEBAR_DESKTOP_BREAKPOINT_PX = 1024
-// 断点切换的防抖窗口，避免拖拽窗口过程中反复切换造成闪烁
-const SIDEBAR_LAYOUT_DEBOUNCE_MS = 200
 // 桌面态展开/折叠的持久化 key，刷新后保留用户上次的选择
 const SIDEBAR_STATE_STORAGE_KEY = 'sf:sidebar:state'
 // 桌面态可变宽（px）
 const SIDEBAR_WIDTH_STORAGE_KEY = 'sf:sidebar:width'
 const SIDEBAR_WIDTH_MIN = 220
 const SIDEBAR_WIDTH_MAX = 330
+const SIDEBAR_MOBILE_GUTTER_PX = 24
 // 桌面态切换快捷键（对齐 VS Code / shadcn 惯例）
 const SIDEBAR_TOGGLE_SHORTCUT_KEY = 'b'
-
-type SidebarLayoutMode = 'desktop' | 'mobile'
-type SidebarDesktopState = 'expanded' | 'collapsed'
-
-type SidebarContextValue = {
-	layoutMode: SidebarLayoutMode
-	sidebarState: SidebarDesktopState
-	sidebarWidth: number
-	drawerOpen: boolean
-	isMobile: boolean
-	toggleSidebar: () => void
-	setDrawerOpen: (open: boolean) => void
-	setSidebarWidth: (width: number) => void
-}
-
-const SidebarContext = React.createContext<SidebarContextValue | null>(null)
 
 function readStoredSidebarState(): SidebarDesktopState {
 	if (typeof window === 'undefined') {
@@ -105,55 +97,106 @@ function resolveLayoutMode(): SidebarLayoutMode {
 		: 'mobile'
 }
 
+function resolveVisualState(
+	layoutMode: SidebarLayoutMode,
+	desktopPreference: SidebarDesktopState,
+	mobileOpen: boolean,
+): SidebarVisualState {
+	if (layoutMode === 'mobile') {
+		return mobileOpen ? 'mobile-open' : 'mobile-closed'
+	}
+
+	return desktopPreference === 'expanded' ? 'desktop-expanded' : 'desktop-collapsed'
+}
+
+function resolveGeometry(
+	visualState: SidebarVisualState,
+	sidebarWidth: number,
+	collapsibleEnabled = true,
+): SidebarGeometry {
+	const desktopWidth = `${sidebarWidth}px`
+	const iconWidth = 'var(--sf-shell-sidebar-width-icon)'
+	const mobileWidth = `min(${SIDEBAR_WIDTH_MAX}px, calc(100vw - ${SIDEBAR_MOBILE_GUTTER_PX}px))`
+
+	if (!collapsibleEnabled && visualState.startsWith('desktop')) {
+		return {
+			panelWidth: desktopWidth,
+			panelOffsetX: '0px',
+			reservedWidth: desktopWidth,
+			overlayOpacity: 0,
+		}
+	}
+
+	switch (visualState) {
+		case 'desktop-expanded':
+			return {
+				panelWidth: desktopWidth,
+				panelOffsetX: '0px',
+				reservedWidth: desktopWidth,
+				overlayOpacity: 0,
+			}
+		case 'desktop-collapsed':
+			return {
+				panelWidth: desktopWidth,
+				panelOffsetX: `calc((${desktopWidth} - ${iconWidth}) * -1)`,
+				reservedWidth: iconWidth,
+				overlayOpacity: 0,
+			}
+		case 'mobile-open':
+			return {
+				panelWidth: mobileWidth,
+				panelOffsetX: '0px',
+				reservedWidth: '0px',
+				overlayOpacity: 1,
+			}
+		case 'mobile-closed':
+			return {
+				panelWidth: mobileWidth,
+				panelOffsetX: 'calc(var(--sf-shell-sidebar-panel-width) * -1)',
+				reservedWidth: '0px',
+				overlayOpacity: 0,
+			}
+	}
+}
+
 function SidebarProvider({ className, children, ...props }: React.ComponentProps<'div'>) {
 	const [layoutMode, setLayoutMode] = React.useState<SidebarLayoutMode>(() => resolveLayoutMode())
-	const [sidebarState, setSidebarState] = React.useState<SidebarDesktopState>(() =>
+	const [desktopPreference, setDesktopPreference] = React.useState<SidebarDesktopState>(() =>
 		readStoredSidebarState(),
 	)
 	const [sidebarWidth, setSidebarWidth] = React.useState(() => readStoredSidebarWidth())
-	const [drawerOpen, setDrawerOpen] = React.useState(false)
+	const [mobileOpen, setMobileOpen] = React.useState(false)
 
-	// 监听窗口宽度变化，配合 debounce 规避拖拽过程中的高频切换
+	// 断点只改变目标几何状态；sidebar 面板本体始终保持同一套 DOM。
 	React.useEffect(() => {
 		if (typeof window === 'undefined') return
 
 		const mediaQuery = window.matchMedia(`(min-width: ${SIDEBAR_DESKTOP_BREAKPOINT_PX}px)`)
-		let timer: number | null = null
 
 		const commitMode = (nextMode: SidebarLayoutMode) => {
 			setLayoutMode((prev) => {
 				if (prev === nextMode) return prev
-				// 离开 mobile 返回 desktop 时，drawer 不再需要开启
-				if (nextMode === 'desktop') {
-					setDrawerOpen(false)
+				if (nextMode === 'mobile') {
+					setMobileOpen(false)
 				}
 				return nextMode
 			})
 		}
 
 		const handleChange = () => {
-			if (timer !== null) {
-				window.clearTimeout(timer)
-			}
-			timer = window.setTimeout(() => {
-				commitMode(mediaQuery.matches ? 'desktop' : 'mobile')
-				timer = null
-			}, SIDEBAR_LAYOUT_DEBOUNCE_MS)
+			commitMode(mediaQuery.matches ? 'desktop' : 'mobile')
 		}
 
 		mediaQuery.addEventListener('change', handleChange)
 		return () => {
 			mediaQuery.removeEventListener('change', handleChange)
-			if (timer !== null) {
-				window.clearTimeout(timer)
-			}
 		}
 	}, [])
 
 	// 每次变化时写回本地存储；只在桌面态这项决策是有效的
 	React.useEffect(() => {
-		writeStoredSidebarState(sidebarState)
-	}, [sidebarState])
+		writeStoredSidebarState(desktopPreference)
+	}, [desktopPreference])
 
 	React.useEffect(() => {
 		writeStoredSidebarWidth(sidebarWidth)
@@ -161,10 +204,10 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 
 	const toggleSidebar = React.useCallback(() => {
 		if (layoutMode === 'mobile') {
-			setDrawerOpen((prev) => !prev)
+			setMobileOpen((prev) => !prev)
 			return
 		}
-		setSidebarState((prev) => (prev === 'expanded' ? 'collapsed' : 'expanded'))
+		setDesktopPreference((prev) => (prev === 'expanded' ? 'collapsed' : 'expanded'))
 	}, [layoutMode])
 
 	// 全局快捷键：Cmd/Ctrl + B，忽略输入态，防止覆盖文字输入时的组合键
@@ -197,30 +240,44 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 	const setSidebarWidthClamped = React.useCallback((width: number) => {
 		setSidebarWidth(clampSidebarWidth(width))
 	}, [])
+	const setDrawerOpen = React.useCallback((open: boolean) => {
+		setMobileOpen(open)
+	}, [])
+
+	const visualState = resolveVisualState(layoutMode, desktopPreference, mobileOpen)
+	const geometry = resolveGeometry(visualState, sidebarWidth)
 
 	const value = React.useMemo<SidebarContextValue>(
 		() => ({
 			layoutMode,
-			sidebarState,
+			desktopPreference,
+			mobileOpen,
+			visualState,
+			geometry,
+			panelWidth: geometry.panelWidth,
+			panelOffsetX: geometry.panelOffsetX,
+			reservedWidth: geometry.reservedWidth,
+			overlayOpacity: geometry.overlayOpacity,
+			sidebarState: desktopPreference,
 			sidebarWidth,
-			drawerOpen,
+			drawerOpen: mobileOpen,
 			isMobile: layoutMode === 'mobile',
 			toggleSidebar,
 			setDrawerOpen,
 			setSidebarWidth: setSidebarWidthClamped,
 		}),
-		[layoutMode, sidebarState, sidebarWidth, drawerOpen, toggleSidebar, setSidebarWidthClamped],
+		[
+			layoutMode,
+			desktopPreference,
+			mobileOpen,
+			visualState,
+			geometry,
+			sidebarWidth,
+			toggleSidebar,
+			setDrawerOpen,
+			setSidebarWidthClamped,
+		],
 	)
-
-	// 合并为单一 data-sidebar-mode，避免 Tailwind 链式 group-data variant 需要两个嵌套 group 的坑
-	const mode =
-		layoutMode === 'mobile'
-			? drawerOpen
-				? 'mobile-open'
-				: 'mobile-closed'
-			: sidebarState === 'expanded'
-				? 'desktop-expanded'
-				: 'desktop-collapsed'
 
 	return (
 		<SidebarContext.Provider value={value}>
@@ -228,14 +285,19 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 				className={cn('group/sidebar-wrapper', className)}
 				data-slot='sidebar-provider'
 				data-sidebar-layout={layoutMode}
-				data-sidebar-state={sidebarState}
-				data-sidebar-mode={mode}
+				data-sidebar-state={desktopPreference}
+				data-sidebar-mode={visualState}
 				data-sidebar-resizing='false'
-				data-sidebar-drawer={drawerOpen ? 'open' : 'closed'}
+				data-sidebar-drawer={mobileOpen ? 'open' : 'closed'}
+				data-sidebar-visual-state={visualState}
 				style={
 					{
-						// 让布局层（Header/Footer/Sidebar）共享同一份“当前 sidebar 宽度”
+						// 布局与面板动画共用同一组几何变量，断点切换时只换目标值。
 						'--sf-shell-sidebar-width-current': `${sidebarWidth}px`,
+						'--sf-shell-sidebar-panel-width': geometry.panelWidth,
+						'--sf-shell-sidebar-panel-offset-x': geometry.panelOffsetX,
+						'--sf-shell-sidebar-reserved-width': geometry.reservedWidth,
+						'--sf-shell-sidebar-overlay-opacity': String(geometry.overlayOpacity),
 					} as React.CSSProperties
 				}
 				{...props}
@@ -246,15 +308,6 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 	)
 }
 
-function useSidebar() {
-	const context = React.useContext(SidebarContext)
-
-	if (!context) {
-		throw new Error('useSidebar 必须运行在 SidebarProvider 内部')
-	}
-
-	return context
-}
 
 type SidebarProps = React.ComponentProps<'aside'> & {
 	collapsible?: 'icon' | 'none'
@@ -262,65 +315,41 @@ type SidebarProps = React.ComponentProps<'aside'> & {
 
 /**
  * Sidebar 主容器：
- * - desktop + collapsible="icon" 时，宽度在 expanded/collapsed 之间过渡
- * - desktop + collapsible="none" 时，固定宽度不响应 state
- * - mobile 时，以 fixed drawer 形式出现，伴随遮罩
+ * - 始终使用同一个 fixed 面板，desktop/mobile 只切几何目标值
+ * - desktop collapsed 通过 transform 只露出 icon rail 宽度
+ * - mobile closed 通过同一套 transform 完全移出视口
  */
 function Sidebar({ className, collapsible = 'none', children, ...props }: SidebarProps) {
-	const { layoutMode, drawerOpen, setDrawerOpen } = useSidebar()
-
+	const { setDrawerOpen, visualState } = useSidebar()
 	const collapsibleEnabled = collapsible === 'icon'
 
-	if (layoutMode === 'mobile') {
-		// 点击遮罩关闭抽屉；抽屉本身保持 sidebar 原本的完整宽度
-		return (
-			<>
-				<div
-					aria-hidden='true'
-					className={cn(
-						// 遮罩覆盖整个窗口（包含 Header），用于“压住”主界面
-						// 顶部留出与 Header 等高的区域：不压暗 traffic light（macOS overlay titlebar 场景）
-						'fixed inset-0 z-40 bg-black/30 pt-12 opacity-0 transition-opacity duration-200 ease-out pointer-events-none',
-						drawerOpen && 'opacity-100 pointer-events-auto',
-					)}
-					data-slot='sidebar-overlay'
-					onClick={() => setDrawerOpen(false)}
-				/>
-				<aside
-					aria-hidden={!drawerOpen}
-					className={cn(
-						// 抽屉覆盖 Header；顶部用 `pt-12` 留出 traffic light 区域（仍使用 chrome 底色，不再做透明分层）
-						// mobile：固定 220px 宽（不走桌面可变宽变量）
-						'fixed inset-y-0 left-0 z-50 flex w-55 flex-col overflow-hidden bg-(--sf-color-shell-chrome) pt-12 shadow-(--sf-shadow-float) transition-transform duration-200 ease-out',
-						drawerOpen ? 'translate-x-0' : '-translate-x-full',
-						className,
-					)}
-					data-slot='sidebar'
-					data-collapsible='none'
-					{...props}
-				>
-					{children}
-				</aside>
-			</>
-		)
-	}
-
 	return (
-		<aside
-			className={cn(
-				'relative flex h-full shrink-0 flex-col overflow-hidden bg-(--sf-color-shell-chrome)',
-				// desktop 展开态用 current width；折叠态用 icon width
-				collapsibleEnabled
-					? 'w-(--sf-shell-sidebar-width-current) transition-[width] duration-200 ease-out group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-(--sf-shell-sidebar-width-icon) group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none'
-					: 'w-(--sf-shell-sidebar-width-current) group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none',
-				className,
-			)}
-			data-slot='sidebar'
-			data-collapsible={collapsible}
-			{...props}
-		>
-			{children}
-		</aside>
+		<>
+			<div
+				aria-hidden='true'
+				className={cn(
+					// mobile 下压住主界面；desktop 下同一节点保持透明且不可交互。
+					'fixed inset-0 z-40 bg-black/30 pt-12 opacity-(--sf-shell-sidebar-overlay-opacity) transition-opacity duration-200 ease-out pointer-events-none group-data-[sidebar-mode=mobile-open]/sidebar-wrapper:pointer-events-auto motion-reduce:transition-none',
+				)}
+				data-slot='sidebar-overlay'
+				onClick={() => setDrawerOpen(false)}
+			/>
+			<aside
+				aria-hidden={visualState === 'mobile-closed'}
+				className={cn(
+					'fixed inset-y-0 left-0 z-50 flex w-(--sf-shell-sidebar-panel-width) translate-x-(--sf-shell-sidebar-panel-offset-x) flex-col overflow-hidden bg-(--sf-color-shell-chrome) shadow-(--sf-shadow-float) transition-[transform,width] duration-200 ease-out will-change-transform group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none motion-reduce:transition-none',
+					// mobile 抽屉覆盖 Header，但保留 traffic light 安全区；desktop 面板参与完整 chrome 高度。
+					'group-data-[sidebar-layout=mobile]/sidebar-wrapper:pt-12 group-data-[sidebar-layout=desktop]/sidebar-wrapper:top-12 group-data-[sidebar-layout=desktop]/sidebar-wrapper:bottom-9.5',
+					!collapsibleEnabled && 'translate-x-0',
+					className,
+				)}
+				data-collapsible={collapsible}
+				data-slot='sidebar'
+				{...props}
+			>
+				{children}
+			</aside>
+		</>
 	)
 }
 
@@ -599,7 +628,14 @@ function SidebarMenuSubButton({
  * - 默认透明，hover 时才显示一条高亮线，不干扰其他交互
  */
 function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
-	const { toggleSidebar, sidebarState, sidebarWidth, setSidebarWidth, layoutMode } = useSidebar()
+	const {
+		toggleSidebar,
+		desktopPreference,
+		sidebarWidth,
+		setSidebarWidth,
+		layoutMode,
+		visualState,
+	} = useSidebar()
 	const dragStateRef = React.useRef<{
 		startX: number
 		startWidth: number
@@ -610,14 +646,12 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 
 	return (
 		<button
-			aria-label={sidebarState === 'expanded' ? '收起侧边栏' : '展开侧边栏'}
+			aria-label={desktopPreference === 'expanded' ? '收起侧边栏' : '展开侧边栏'}
 			className={cn(
 				// rail 热区跨过分界线左右各一半（更好命中，也让 hover 高亮“两边都亮”）
 				'group/sidebar-rail absolute inset-y-0 right-0 z-20 flex w-8 translate-x-1/2 items-stretch select-none group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden',
 				// 可变宽 resize 光标：左右一致
-				layoutMode === 'mobile' || sidebarState !== 'expanded'
-					? 'cursor-pointer'
-					: 'cursor-col-resize',
+				visualState !== 'desktop-expanded' ? 'cursor-pointer' : 'cursor-col-resize',
 				className,
 			)}
 			data-slot='sidebar-rail'
@@ -631,7 +665,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 			}}
 			onPointerDown={(event) => {
 				// mobile：抽屉宽度固定，不允许拖拽改宽
-				if (layoutMode === 'mobile' || sidebarState !== 'expanded') return
+				if (visualState !== 'desktop-expanded') return
 
 				dragStateRef.current.startWidth = sidebarWidth
 				dragStateRef.current.lastWidth = sidebarWidth
@@ -647,7 +681,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 				}
 			}}
 			onPointerMove={(event) => {
-				if (layoutMode === 'mobile' || sidebarState !== 'expanded') return
+				if (visualState !== 'desktop-expanded') return
 
 				// 仅当按住 rail 拖动时才处理
 				if (!(event.currentTarget as HTMLButtonElement).hasPointerCapture(event.pointerId)) {
@@ -674,6 +708,8 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 				dragStateRef.current.raf = window.requestAnimationFrame(() => {
 					const clamped = clampSidebarWidth(dragStateRef.current.lastWidth)
 					providerEl.style.setProperty('--sf-shell-sidebar-width-current', `${clamped}px`)
+					providerEl.style.setProperty('--sf-shell-sidebar-panel-width', `${clamped}px`)
+					providerEl.style.setProperty('--sf-shell-sidebar-reserved-width', `${clamped}px`)
 					dragStateRef.current.raf = null
 				})
 			}}
@@ -696,7 +732,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 				// 松手时一次性写回 state + 持久化
 				if (
 					layoutMode === 'desktop' &&
-					sidebarState === 'expanded' &&
+					desktopPreference === 'expanded' &&
 					dragStateRef.current.dragged
 				) {
 					setSidebarWidth(dragStateRef.current.lastWidth)
@@ -726,10 +762,10 @@ type SidebarTriggerProps = React.ComponentProps<'button'> & {
  * - mobile 模式：切 drawer 打开/关闭（这里只处理 toggle，不额外做"打开后点自己关"的防御）
  */
 function SidebarTrigger({ className, stateful = true, onClick, ...props }: SidebarTriggerProps) {
-	const { toggleSidebar, sidebarState, drawerOpen, layoutMode } = useSidebar()
+	const { toggleSidebar, visualState } = useSidebar()
 
 	// 根据当前状态决定图标方向：已展开 → close icon；已收起 → open icon
-	const isOpen = layoutMode === 'mobile' ? drawerOpen : sidebarState === 'expanded'
+	const isOpen = visualState === 'desktop-expanded' || visualState === 'mobile-open'
 	const Icon = stateful && isOpen ? PanelLeftCloseIcon : PanelLeftOpenIcon
 
 	return (
@@ -773,5 +809,4 @@ export {
 	SidebarMenuSubButton,
 	SidebarRail,
 	SidebarTrigger,
-	useSidebar,
 }

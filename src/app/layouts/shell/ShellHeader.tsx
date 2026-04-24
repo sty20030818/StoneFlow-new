@@ -219,8 +219,8 @@ export function ShellHeader({
 						isMac
 							? 'pl-24 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-0'
 							: 'pl-5.5 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-0',
-						// 桌面展开：对齐 sidebar 宽
-						'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:w-(--sf-shell-sidebar-width-current)',
+						// 桌面展开：对齐 sidebar 的统一预留宽度，而不是依赖流式 sidebar 列。
+						'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:w-(--sf-shell-sidebar-reserved-width)',
 						// 桌面折叠：这里需要容纳「折叠按钮 + 历史/前进/后退」，因此用 auto 宽
 						isMac
 							? 'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-auto'

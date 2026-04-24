@@ -21,6 +21,22 @@ if (typeof HTMLElement !== 'undefined' && !HTMLElement.prototype.scrollIntoView)
 	})
 }
 
+if (typeof window !== 'undefined' && !window.matchMedia) {
+	Object.defineProperty(window, 'matchMedia', {
+		configurable: true,
+		value: (query: string) => ({
+			matches: true,
+			media: query,
+			onchange: null,
+			addEventListener: () => undefined,
+			removeEventListener: () => undefined,
+			addListener: () => undefined,
+			removeListener: () => undefined,
+			dispatchEvent: () => false,
+		}),
+	})
+}
+
 afterEach(() => {
 	cleanup()
 	vi.restoreAllMocks()

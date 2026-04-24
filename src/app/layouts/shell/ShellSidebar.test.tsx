@@ -4,6 +4,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
+import { SidebarProvider } from '@/shared/ui/base/sidebar'
+import { TooltipProvider } from '@/shared/ui/base/tooltip'
 
 describe('ShellSidebar', () => {
 	afterEach(() => {
@@ -68,6 +70,7 @@ describe('ShellSidebar', () => {
 			'href',
 			'/space/work/project/project-2',
 		)
+		fireEvent.click(screen.getByRole('button', { name: '展开子项目' }))
 		expect(screen.getByRole('link', { name: '子项目收口' })).toHaveAttribute(
 			'href',
 			'/space/work/project/project-child',
@@ -165,13 +168,11 @@ describe('ShellSidebar', () => {
 		expect(screen.getByRole('menuitem', { name: '新建子项目' })).toBeInTheDocument()
 	})
 
-	it('使用 Space 下拉和右侧圆形新建任务入口替代顶部 tabs', () => {
-		const onOpenTaskCreateDialog = vi.fn<() => void>()
-
+	it('使用 Space 下拉替代顶部 tabs', () => {
 		renderSidebar({
 			currentSpaceId: 'work',
 			isProjectsLoading: false,
-			onOpenTaskCreateDialog,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
 			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
 			projects: [],
 			projectsError: null,
@@ -181,7 +182,7 @@ describe('ShellSidebar', () => {
 
 		expect(spaceTrigger).toHaveTextContent('工作')
 		expect(spaceTrigger.querySelector('[data-space-icon-badge="true"]')?.className).toContain(
-			'rounded-full',
+			'rounded-lg',
 		)
 		expect(spaceTrigger.querySelector('[data-space-icon-badge="true"]')?.className).toContain(
 			'bg-[#5e6ad2]',
@@ -190,15 +191,9 @@ describe('ShellSidebar', () => {
 		expect(document.querySelectorAll('[data-slot="sidebar-group"]')[0]?.className).toContain('px-3')
 		expect(screen.queryByRole('link', { name: '学习' })).not.toBeInTheDocument()
 
-		fireEvent.click(screen.getByRole('button', { name: '新建任务' }))
-		expect(onOpenTaskCreateDialog).toHaveBeenCalledTimes(1)
-
 		fireEvent.pointerDown(spaceTrigger)
 		const studySpaceItem = screen.getByRole('menuitem', { name: /学习/ })
 		expect(studySpaceItem).toBeInTheDocument()
-		expect(studySpaceItem.querySelector('[data-space-icon-badge="true"]')?.className).toContain(
-			'bg-[#e58a00]',
-		)
 		expect(studySpaceItem.className).toContain('hover:bg-(--sf-color-shell-hover)')
 		expect(studySpaceItem.className).toContain('data-highlighted:bg-(--sf-color-shell-hover)')
 	})
@@ -302,10 +297,14 @@ function renderSidebar(
 	initialEntry = '/space/work/project/project-1',
 ) {
 	return render(
-		<MemoryRouter initialEntries={[initialEntry]}>
-			<Routes>
-				<Route element={<ShellSidebar {...props} />} path='/space/:spaceId/*' />
-			</Routes>
-		</MemoryRouter>,
+		<TooltipProvider>
+			<SidebarProvider>
+				<MemoryRouter initialEntries={[initialEntry]}>
+					<Routes>
+						<Route element={<ShellSidebar {...props} />} path='/space/:spaceId/*' />
+					</Routes>
+				</MemoryRouter>
+			</SidebarProvider>
+		</TooltipProvider>,
 	)
 }

@@ -57,8 +57,8 @@ import {
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
 	SidebarRail,
-	useSidebar,
 } from '@/shared/ui/base/sidebar'
+import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
 import {

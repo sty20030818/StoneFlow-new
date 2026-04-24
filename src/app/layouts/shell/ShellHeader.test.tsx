@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
+import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 
 vi.mock('@/features/global-search/ui/GlobalSearchInput', () => ({
@@ -178,9 +179,11 @@ function renderHeader(overrides: Partial<ComponentProps<typeof ShellHeader>> = {
 	}
 
 	return render(
-		<MemoryRouter initialEntries={['/space/work/inbox']}>
-			<ShellHeader {...props} />
-		</MemoryRouter>,
+		<SidebarProvider>
+			<MemoryRouter initialEntries={['/space/work/inbox']}>
+				<ShellHeader {...props} />
+			</MemoryRouter>
+		</SidebarProvider>,
 	)
 }
 

@@ -110,7 +110,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				projectsError={projectsError}
 			/>
 
-			<div className='relative flex min-h-0 flex-1 overflow-hidden'>
+			<div className='relative flex min-h-0 flex-1 overflow-hidden bg-(--sf-color-shell-chrome) pl-(--sf-shell-sidebar-reserved-width) transition-[padding-left] duration-200 ease-out group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none motion-reduce:transition-none'>
 				<ShellSidebar
 					currentSpaceId={currentSpaceId}
 					isProjectsLoading={isProjectsLoading}
