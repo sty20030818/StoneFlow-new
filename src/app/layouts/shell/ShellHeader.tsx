@@ -204,29 +204,26 @@ export function ShellHeader({
 	return (
 		<>
 			<header
-				className='relative z-30 flex h-12 shrink-0 flex-nowrap items-center bg-(--sf-color-shell-chrome) pl-0 pr-0'
+				className='relative z-30 flex h-12 shrink-0 flex-nowrap items-center bg-(--sf-color-shell-chrome) pr-0'
 				data-tauri-drag-region
 				onMouseDownCapture={handleHeaderMouseDownCapture}
 			>
 				<div
 					className={cn(
-						// 与主内容区（ShellMain）右侧 gutter 对齐：12px；shrink-0 避免中间搜索区挤扁左列
-						// 不对 width 做 transition：折叠 w-auto 与展开 w-(reserved) 插值不稳定，会导致折叠钮左右横跳
-						'flex h-full shrink-0 items-center gap-2 pr-3',
-						// 桌面展开：历史组用 ml-auto 贴右；不需要子项之间的 gap（否则会留下“幽灵间距”）
+						'flex h-full shrink-0 flex-nowrap items-center gap-2 pr-3 transition-[width] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) motion-reduce:transition-none',
+						// 桌面展开：与主带侧栏槽同宽（width 插值稳定）；勿用 grid 列过渡 minmax
+						'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:w-(--sf-shell-sidebar-reserved-width) group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:min-w-0',
+						isMac
+							? 'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-[250px] group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-[250px]'
+							: 'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-[162px] group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-[162px]',
 						'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:gap-0',
-						// macOS：折叠态保留 traffic light 左侧安全区；展开态左区已用 flex-1 把按钮顶到右侧，无需额外 pl
 						isMac
 							? 'pl-24 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-0'
 							: 'pl-5.5 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-0',
-						// 桌面展开：对齐 sidebar 的统一预留宽度，而不是依赖流式 sidebar 列。
-						'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:w-(--sf-shell-sidebar-reserved-width)',
-						// 桌面折叠：这里需要容纳「折叠按钮 + 历史/前进/后退」，因此用 auto 宽
-						isMac
-							? 'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-auto'
-							: 'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:w-auto group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:pl-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:pr-3',
-						// 移动端：内容自适应
-						'group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-auto',
+						!isMac &&
+							'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:pl-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:pr-3',
+						// mobile：仅非 Mac 收紧 pl；Mac 须保留 pl-24 给 traffic light（勿用 pl-3 覆盖）
+						!isMac && 'group-data-[sidebar-layout=mobile]/sidebar-wrapper:pl-3',
 					)}
 					data-tauri-drag-region
 					onDoubleClick={() => {
@@ -304,7 +301,10 @@ export function ShellHeader({
 					</div>
 				</div>
 
-				<div className='flex min-w-0 flex-1 items-center gap-2 px-0' data-tauri-drag-region>
+				<div
+					className='flex min-h-0 min-w-0 flex-1 flex-nowrap items-center gap-2 px-0 group-data-[sidebar-layout=mobile]/sidebar-wrapper:min-w-0'
+					data-tauri-drag-region
+				>
 					<div className='min-w-0 w-full max-w-136 shrink'>
 						<GlobalSearchInput
 							currentSpaceId={currentSpaceId}
@@ -322,87 +322,87 @@ export function ShellHeader({
 							}
 						}}
 					/>
-				</div>
 
-				<div
-					className={`flex h-full shrink-0 items-center ${isMac ? 'gap-2 pl-1.5 pr-3' : 'gap-0 pl-2 pr-0'}`}
-					data-tauri-drag-region
-				>
-					<div className='flex items-center gap-1.5'>
-						<Button
-							className='border-border bg-card px-3 text-[12px] font-medium text-foreground shadow-(--sf-shadow-panel) hover:bg-(--sf-color-bg-surface-tertiary)'
-							onClick={onOpenTaskCreateDialog}
-							size='default'
-							variant='outline'
-						>
-							<span>新建任务</span>
-							<Kbd>C</Kbd>
-						</Button>
-
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									aria-label='打开创建菜单'
-									className='border-border bg-card text-(--sf-color-shell-secondary) shadow-(--sf-shadow-panel) hover:bg-(--sf-color-bg-surface-tertiary) hover:text-foreground'
-									size='icon'
-									variant='outline'
-								>
-									<ChevronDownIcon />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align='end'>
-								<DropdownMenuGroup>
-									<DropdownMenuItem onSelect={onOpenTaskCreateDialog}>
-										<SquarePenIcon />
-										新建任务
-									</DropdownMenuItem>
-									<DropdownMenuItem onSelect={onOpenProjectCreateDialog}>
-										<FolderPlusIcon />
-										新建项目
-									</DropdownMenuItem>
-								</DropdownMenuGroup>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					</div>
-
-					<div className='ml-2 flex items-center gap-2'>
-						<img
-							alt='当前用户头像'
-							className='size-7.5 rounded-full border border-(--sf-color-border-subtle) object-cover'
-							src='/avatar.jpg'
-						/>
-					</div>
-
-					{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
-					{!isMac ? (
-						<div className='flex h-full items-stretch overflow-hidden pl-3'>
-							<div className='my-auto mr-2 h-6 w-px bg-(--sf-color-border-strong)' />
+					<div
+						className={`flex h-full shrink-0 items-center ${isMac ? 'gap-2 pl-1.5 pr-3' : 'gap-0 pl-2 pr-0'}`}
+						data-tauri-drag-region
+					>
+						<div className='flex items-center gap-1.5'>
 							<Button
-								aria-label='最小化窗口'
-								className='h-full w-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover-strong) hover:text-foreground'
-								onClick={() => void handleMinimize()}
-								variant='ghost'
+								className='border-border bg-card px-3 text-[12px] font-medium text-foreground shadow-(--sf-shadow-panel) hover:bg-(--sf-color-bg-surface-tertiary)'
+								onClick={onOpenTaskCreateDialog}
+								size='default'
+								variant='outline'
 							>
-								<MinusIcon className='size-3.5' />
+								<span>新建任务</span>
+								<Kbd>C</Kbd>
 							</Button>
-							<Button
-								aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
-								className='h-full w-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover-strong) hover:text-foreground'
-								onClick={() => void handleToggleMaximize()}
-								variant='ghost'
-							>
-								<SquareIcon className={`size-3 ${isMaximized ? 'scale-[0.88]' : ''}`} />
-							</Button>
-							<Button
-								aria-label='关闭窗口'
-								className='h-full w-11 rounded-none border-0 bg-transparent shadow-none ring-0 hover:bg-[#E81123] hover:text-white'
-								onClick={() => void handleClose()}
-								variant='ghost'
-							>
-								<XIcon className='size-3.5' />
-							</Button>
+
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										aria-label='打开创建菜单'
+										className='border-border bg-card text-(--sf-color-shell-secondary) shadow-(--sf-shadow-panel) hover:bg-(--sf-color-bg-surface-tertiary) hover:text-foreground'
+										size='icon'
+										variant='outline'
+									>
+										<ChevronDownIcon />
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align='end'>
+									<DropdownMenuGroup>
+										<DropdownMenuItem onSelect={onOpenTaskCreateDialog}>
+											<SquarePenIcon />
+											新建任务
+										</DropdownMenuItem>
+										<DropdownMenuItem onSelect={onOpenProjectCreateDialog}>
+											<FolderPlusIcon />
+											新建项目
+										</DropdownMenuItem>
+									</DropdownMenuGroup>
+								</DropdownMenuContent>
+							</DropdownMenu>
 						</div>
-					) : null}
+
+						<div className='ml-2 flex items-center gap-2'>
+							<img
+								alt='当前用户头像'
+								className='size-7.5 rounded-full border border-(--sf-color-border-subtle) object-cover'
+								src='/avatar.jpg'
+							/>
+						</div>
+
+						{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
+						{!isMac ? (
+							<div className='flex h-full items-stretch overflow-hidden pl-3'>
+								<div className='my-auto mr-2 h-6 w-px bg-(--sf-color-border-strong)' />
+								<Button
+									aria-label='最小化窗口'
+									className='h-full w-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover-strong) hover:text-foreground'
+									onClick={() => void handleMinimize()}
+									variant='ghost'
+								>
+									<MinusIcon className='size-3.5' />
+								</Button>
+								<Button
+									aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
+									className='h-full w-11 rounded-none border-0 bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover-strong) hover:text-foreground'
+									onClick={() => void handleToggleMaximize()}
+									variant='ghost'
+								>
+									<SquareIcon className={`size-3 ${isMaximized ? 'scale-[0.88]' : ''}`} />
+								</Button>
+								<Button
+									aria-label='关闭窗口'
+									className='h-full w-11 rounded-none border-0 bg-transparent shadow-none ring-0 hover:bg-[#E81123] hover:text-white'
+									onClick={() => void handleClose()}
+									variant='ghost'
+								>
+									<XIcon className='size-3.5' />
+								</Button>
+							</div>
+						) : null}
+					</div>
 				</div>
 			</header>
 

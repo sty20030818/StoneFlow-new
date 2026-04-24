@@ -226,4 +226,6 @@
 	.sf-shell-layout {
 		height: 100%;
 	}
+
+	/* 侧栏槽宽由组件上 w-(--sf-shell-sidebar-reserved-width) + transition-[width] 驱动（避免 grid 列插值异常） */
 }

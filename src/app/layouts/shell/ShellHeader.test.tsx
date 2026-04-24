@@ -25,6 +25,7 @@ const mockedGetCurrentWindow = vi.mocked(getCurrentWindow)
 describe('ShellHeader', () => {
 	afterEach(() => {
 		vi.clearAllMocks()
+		window.localStorage.clear()
 	})
 
 	it('保留 Tauri 拖拽区并支持窗口控制按钮', async () => {
@@ -37,7 +38,13 @@ describe('ShellHeader', () => {
 			expect(currentWindow.isMaximized).toHaveBeenCalled()
 		})
 
-		expect(screen.getByRole('banner').className).toContain('pl-0 pr-0')
+		const leftChrome = screen.getByRole('banner').firstElementChild
+		expect(leftChrome).toBeTruthy()
+		expect(leftChrome!.className).toContain('w-(--sf-shell-sidebar-reserved-width)')
+		expect(leftChrome!.className).toContain('transition-[width]')
+		expect(leftChrome!.className).toContain(
+			'group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-[162px]',
+		)
 		expect(screen.getByRole('banner')).toHaveAttribute('data-tauri-drag-region')
 		expect(document.querySelectorAll('[data-tauri-drag-region]')).toHaveLength(6)
 		expect(screen.getByRole('button', { name: '打开历史记录' })).not.toHaveAttribute(
@@ -178,6 +185,9 @@ function renderHeader(overrides: Partial<ComponentProps<typeof ShellHeader>> = {
 		...overrides,
 	}
 
+	// 与 sidebar 一致：>=1024 桌面态；默认展开时左列与主带同宽
+	installMatchMediaDesktop()
+
 	return render(
 		<SidebarProvider>
 			<MemoryRouter initialEntries={['/space/work/inbox']}>
@@ -185,6 +195,23 @@ function renderHeader(overrides: Partial<ComponentProps<typeof ShellHeader>> = {
 			</MemoryRouter>
 		</SidebarProvider>,
 	)
+}
+
+function installMatchMediaDesktop() {
+	Object.defineProperty(window, 'matchMedia', {
+		configurable: true,
+		value: () =>
+			({
+				matches: true,
+				media: '(min-width: 1024px)',
+				onchange: null,
+				addEventListener: () => undefined,
+				removeEventListener: () => undefined,
+				addListener: () => undefined,
+				removeListener: () => undefined,
+				dispatchEvent: () => false,
+			}) as unknown as MediaQueryList,
+	})
 }
 
 function createMockWindow() {

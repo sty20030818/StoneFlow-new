@@ -110,19 +110,22 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				projectsError={projectsError}
 			/>
 
-			<div className='relative flex min-h-0 flex-1 overflow-hidden bg-(--sf-color-shell-chrome) pl-(--sf-shell-sidebar-reserved-width) transition-[padding-left] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none group-data-[sidebar-sync=suppressed]/sidebar-wrapper:transition-none motion-reduce:transition-none'>
-				<ShellSidebar
-					currentSpaceId={currentSpaceId}
-					isProjectsLoading={isProjectsLoading}
-					onOpenTaskCreateDialog={openTaskCreateDialog}
-					onOpenProjectCreateDialog={openProjectCreateDialog}
-					onRefreshProjects={() => void refreshProjects()}
-					navBadges={navBadges}
-					projects={projectTreeLinks}
-					projectsError={projectsError}
-				/>
+			{/* 主带：flex + 显式 width(reserved)。勿用 grid-template-columns 过渡 minmax(0,var)，部分引擎插值会「先胀极宽再收」 */}
+			<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-(--sf-color-shell-chrome)'>
+				<div className='flex min-h-0 w-(--sf-shell-sidebar-reserved-width) shrink-0 flex-col overflow-hidden transition-[width] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) motion-reduce:transition-none group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none'>
+					<ShellSidebar
+						currentSpaceId={currentSpaceId}
+						isProjectsLoading={isProjectsLoading}
+						onOpenTaskCreateDialog={openTaskCreateDialog}
+						onOpenProjectCreateDialog={openProjectCreateDialog}
+						onRefreshProjects={() => void refreshProjects()}
+						navBadges={navBadges}
+						projects={projectTreeLinks}
+						projectsError={projectsError}
+					/>
+				</div>
 
-				<div className='relative flex min-w-0 flex-1 flex-col overflow-hidden bg-(--sf-color-shell-chrome)'>
+				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-(--sf-color-shell-chrome)'>
 					<ShellMain
 						activeDrawerId={activeDrawerId}
 						activeDrawerKind={activeDrawerKind}

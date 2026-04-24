@@ -161,7 +161,7 @@ export function ShellSidebar({
 		<ContextMenu>
 			<ContextMenuTrigger asChild onContextMenu={handleSidebarContextMenu}>
 				<Sidebar collapsible='icon'>
-					<SidebarHeader className='px-3 pb-4 pt-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2'>
+					<SidebarHeader className='px-3 pb-4 pt-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
 						<div className='flex items-center gap-1.5'>
 							<SidebarMenu className='flex-1'>
 								<SidebarMenuItem>
@@ -176,7 +176,7 @@ export function ShellSidebar({
 												<span className='min-w-0 flex-1 truncate text-left font-semibold'>
 													{activeSpace.label}
 												</span>
-												<ChevronsUpDownIcon className='shrink-0 text-(--sf-color-icon-subtle) group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden' />
+												<ChevronsUpDownIcon className='shrink-0 text-(--sf-color-icon-subtle) group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden' />
 											</SidebarMenuButton>
 										</DropdownMenuTrigger>
 										<DropdownMenuContent
@@ -249,7 +249,7 @@ export function ShellSidebar({
 							</SidebarGroupContent>
 						</SidebarGroup>
 
-						<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden'>
+						<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
 							<div className='flex items-center justify-between px-2.5'>
 								<SidebarGroupLabel className='px-0'>Projects</SidebarGroupLabel>
 								<SidebarGroupAction
@@ -323,7 +323,7 @@ export function ShellSidebar({
 						</SidebarGroup>
 					</SidebarContent>
 
-					<SidebarFooter className='border-t border-(--sf-color-divider) px-3 py-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2'>
+					<SidebarFooter className='border-t border-(--sf-color-divider) px-3 py-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
 						<SidebarMenu>
 							{footerItems.map((item) => (
 								<SidebarMenuItem key={item.key}>

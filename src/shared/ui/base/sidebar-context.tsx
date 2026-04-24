@@ -2,7 +2,11 @@ import * as React from 'react'
 
 export type SidebarLayoutMode = 'desktop' | 'mobile'
 export type SidebarDesktopState = 'expanded' | 'collapsed'
-export type SidebarVisualState = 'desktop-expanded' | 'desktop-collapsed' | 'mobile-open' | 'mobile-closed'
+export type SidebarVisualState =
+	| 'desktop-expanded'
+	| 'desktop-collapsed'
+	| 'mobile-open'
+	| 'mobile-closed'
 
 export type SidebarGeometry = {
 	panelWidth: string
@@ -21,6 +25,8 @@ export type SidebarContextValue = {
 	panelOffsetX: string
 	reservedWidth: string
 	overlayOpacity: number
+	/** 断点切换的首帧防闪标记；只用于关闭 sidebar 面板自身过渡。 */
+	isBreakpointSwitching: boolean
 	/** @deprecated 用 desktopPreference 表达桌面态偏好。 */
 	sidebarState: SidebarDesktopState
 	sidebarWidth: number
@@ -30,8 +36,6 @@ export type SidebarContextValue = {
 	toggleSidebar: () => void
 	setDrawerOpen: (open: boolean) => void
 	setSidebarWidth: (width: number) => void
-	/** mobile↔desktop 切换首帧：关闭 pl/侧栏宽度的 transition，避免 220px/translate 与桌面几何交叉插值「突然撑一下」 */
-	suppressLayoutSyncTransition: boolean
 }
 
 export const SidebarContext = React.createContext<SidebarContextValue | null>(null)

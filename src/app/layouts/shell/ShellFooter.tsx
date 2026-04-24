@@ -8,7 +8,7 @@ type ShellFooterProps = {
 }
 
 /**
- * Shell 底栏：与侧栏宽度/展开状态解耦，全宽单行，避免随 sidebar reserved 列伸缩。
+ * Shell 底栏：全宽单行，与侧栏槽解耦（底栏不参与双列 grid）。
  */
 export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps) {
 	const healthcheckStatus = useHealthcheckStatus()

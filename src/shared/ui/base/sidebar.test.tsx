@@ -1,6 +1,12 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react'
 
-import { Sidebar, SidebarProvider, SidebarRail, SidebarTrigger } from '@/shared/ui/base/sidebar'
+import {
+	Sidebar,
+	SidebarMenuButton,
+	SidebarProvider,
+	SidebarRail,
+	SidebarTrigger,
+} from '@/shared/ui/base/sidebar'
 
 type MatchMediaController = {
 	setMatches: (matches: boolean) => void
@@ -71,12 +77,44 @@ describe('Sidebar primitive', () => {
 		)
 	})
 
+	it('desktop icon 跨到 mobile-closed 时保持 compact 内容规则', () => {
+		const media = installMatchMedia(true)
+		renderSidebarFixture()
+
+		fireEvent.click(getTrigger())
+		act(() => media.setMatches(false))
+
+		expect(getProvider()).toHaveAttribute('data-sidebar-mode', 'mobile-closed')
+		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-panel-width')).toBe('48px')
+		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-panel-offset-x')).toBe('-48px')
+		expect(getMenuButton().className).toContain(
+			'group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:[&>span:not([data-sidebar-keep])]:hidden',
+		)
+	})
+
+	it('断点切换首帧硬关闭 sidebar 面板过渡，避免宽 drawer 闪过', () => {
+		const media = installMatchMedia(true)
+		renderSidebarFixture()
+
+		act(() => media.setMatches(false))
+
+		expect(getProvider()).toHaveAttribute('data-sidebar-breakpoint-switching', 'true')
+		expect(getSidebar().style.transition).toBe('none')
+		expect(getSidebar().className).toContain(
+			'group-data-[sidebar-layout=mobile]/sidebar-wrapper:transition-transform',
+		)
+		expect(getSidebar().className).not.toContain('transition-[transform,width]')
+	})
+
 	it('mobile trigger 切换同一份面板与遮罩', () => {
 		installMatchMedia(false)
 		renderSidebarFixture()
 
 		expect(getProvider()).toHaveAttribute('data-sidebar-mode', 'mobile-closed')
 		expect(getTrigger()).toHaveAccessibleName('展开侧边栏')
+		expect(getSidebar().className).toContain(
+			'group-data-[sidebar-layout=mobile]/sidebar-wrapper:z-70',
+		)
 
 		fireEvent.click(getTrigger())
 
@@ -84,6 +122,8 @@ describe('Sidebar primitive', () => {
 		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-overlay-opacity')).toBe('1')
 		expect(document.querySelectorAll('[data-slot="sidebar"]')).toHaveLength(1)
 		expect(document.querySelectorAll('[data-slot="sidebar-overlay"]')).toHaveLength(1)
+		expect(document.querySelector('[data-slot="sidebar-overlay"]')?.className).toContain('inset-0')
+		expect(document.querySelector('[data-slot="sidebar-overlay"]')?.className).toContain('z-60')
 		expect(getTrigger()).toHaveAccessibleName('收起侧边栏')
 	})
 
@@ -134,7 +174,9 @@ function renderSidebarFixture() {
 	return render(
 		<SidebarProvider>
 			<Sidebar collapsible='icon'>
-				<span>sidebar content</span>
+				<SidebarMenuButton>
+					<span>sidebar content</span>
+				</SidebarMenuButton>
 				<SidebarRail />
 			</Sidebar>
 			<SidebarTrigger />
@@ -156,6 +198,22 @@ function getTrigger() {
 		throw new Error('缺少 sidebar trigger')
 	}
 	return trigger
+}
+
+function getMenuButton() {
+	const button = document.querySelector('[data-slot="sidebar-menu-button"]')
+	if (!(button instanceof HTMLElement)) {
+		throw new Error('缺少 sidebar menu button')
+	}
+	return button
+}
+
+function getSidebar() {
+	const sidebar = document.querySelector('[data-slot="sidebar"]')
+	if (!(sidebar instanceof HTMLElement)) {
+		throw new Error('缺少 sidebar')
+	}
+	return sidebar
 }
 
 function installMatchMedia(initialMatches: boolean): MatchMediaController {
