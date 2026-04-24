@@ -43,8 +43,13 @@ describe('ShellHeader', () => {
 		expect(leftChrome!.className).toContain('w-(--sf-shell-sidebar-reserved-width)')
 		expect(leftChrome!.className).toContain('transition-[width]')
 		expect(leftChrome!.className).toContain(
-			'group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-[162px]',
+			'group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none',
 		)
+		expect(leftChrome!.className).toContain(
+			'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-3',
+		)
+		expect(leftChrome!.className).toContain('group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-max')
+		expect(leftChrome!.className).toContain('gap-1')
 		expect(screen.getByRole('banner')).toHaveAttribute('data-tauri-drag-region')
 		expect(document.querySelectorAll('[data-tauri-drag-region]')).toHaveLength(6)
 		expect(screen.getByRole('button', { name: '打开历史记录' })).not.toHaveAttribute(
@@ -54,6 +59,11 @@ describe('ShellHeader', () => {
 			'data-tauri-drag-region',
 		)
 		expect(screen.queryByText('StoneFlow')).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'StoneFlow' }).className).toContain('rounded-full')
+		expect(screen.getByRole('button', { name: 'StoneFlow' }).className).toContain('size-[30px]')
+		const sidebarTrigger = document.querySelector('[data-slot="sidebar-trigger"]')
+		expect(sidebarTrigger?.className).toContain('rounded-full')
+		expect(sidebarTrigger?.className).toContain('size-[30px]')
 		expect(screen.getByRole('button', { name: '打开历史记录' }).className).toContain('rounded-full')
 		expect(screen.getByRole('button', { name: '打开历史记录' }).className).toContain('size-[30px]')
 		expect(screen.getByRole('button', { name: '打开历史记录' }).className).toContain(
@@ -61,6 +71,14 @@ describe('ShellHeader', () => {
 		)
 		expect(screen.getByRole('button', { name: '后退' }).className).toContain('rounded-full')
 		expect(screen.getByRole('button', { name: '前进' }).className).toContain('rounded-full')
+		expect(screen.getByRole('button', { name: '后退' }).parentElement?.className).toContain(
+			'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:contents',
+		)
+		expect(screen.getByRole('button', { name: '后退' }).parentElement?.className).toContain(
+			'group-data-[sidebar-layout=mobile]/sidebar-wrapper:contents',
+		)
+		const avatarImages = document.querySelectorAll('img[src="/avatar.jpg"]')
+		expect(avatarImages.length).toBe(2)
 		expect(screen.getByRole('img', { name: '当前用户头像' })).toHaveAttribute('src', '/avatar.jpg')
 		expect(screen.getByRole('img', { name: '当前用户头像' }).className).toContain('size-7.5')
 		expect(screen.queryByRole('button', { name: '打开设置' })).not.toBeInTheDocument()
@@ -68,9 +86,18 @@ describe('ShellHeader', () => {
 		expect(screen.getByRole('button', { name: '前进' })).toBeDisabled()
 
 		const closeButton = screen.getByRole('button', { name: '关闭窗口' })
-		expect(screen.getByRole('button', { name: '最小化窗口' }).className).toContain('h-full w-11')
-		expect(screen.getByRole('button', { name: '最大化窗口' }).className).toContain('h-full w-11')
-		expect(closeButton.className).toContain('h-full w-11')
+		expect(screen.getByRole('button', { name: '最小化窗口' }).className).toContain('h-10 w-10')
+		expect(screen.getByRole('button', { name: '最大化窗口' }).className).toContain('h-10 w-10')
+		expect(closeButton.className).toContain('h-10 w-10')
+		expect(screen.getByRole('button', { name: '最小化窗口' }).className).toContain('rounded-md')
+		expect(screen.getByRole('button', { name: '最大化窗口' }).className).toContain('rounded-md')
+		expect(closeButton.className).toContain('rounded-md')
+		expect(document.querySelector('[aria-label="最小化窗口"]')?.parentElement?.className).toContain(
+			'gap-1',
+		)
+		expect(document.querySelector('[aria-label="最小化窗口"]')?.parentElement?.className).toContain(
+			'p-1',
+		)
 		expect(screen.getByRole('button', { name: '最小化窗口' }).className).toContain(
 			'hover:bg-(--sf-color-shell-hover-strong)',
 		)
@@ -78,10 +105,6 @@ describe('ShellHeader', () => {
 			'hover:bg-(--sf-color-shell-hover-strong)',
 		)
 		expect(closeButton.className).toContain('hover:bg-[#E81123]')
-		expect(
-			document.querySelector('[aria-label="最小化窗口"]')?.parentElement?.querySelector('div')
-				?.className,
-		).toContain('bg-(--sf-color-border-strong)')
 
 		fireEvent.click(screen.getByRole('button', { name: '最小化窗口' }))
 		fireEvent.click(screen.getByRole('button', { name: '最大化窗口' }))
@@ -92,6 +115,22 @@ describe('ShellHeader', () => {
 			expect(currentWindow.toggleMaximize).toHaveBeenCalledTimes(1)
 			expect(currentWindow.close).toHaveBeenCalledTimes(1)
 		})
+	})
+
+	it('<640 不渲染左侧整条（含侧栏折叠、历史等）', async () => {
+		mockedGetCurrentWindow.mockReturnValue(createMockWindow())
+
+		renderHeader({}, { matchMedia: 'narrow' })
+
+		await waitFor(() => {
+			expect(document.querySelectorAll('[data-tauri-drag-region]')).toHaveLength(4)
+		})
+		expect(document.querySelector('[data-slot="sidebar-trigger"]')).toBeNull()
+		expect(screen.queryByRole('button', { name: '打开历史记录' })).toBeNull()
+		expect(screen.queryByRole('button', { name: '展开侧边栏' })).toBeNull()
+		expect(screen.queryByRole('button', { name: '收起侧边栏' })).toBeNull()
+		const leftChrome = screen.getByRole('banner').firstElementChild
+		expect(leftChrome?.className).not.toContain('w-(--sf-shell-sidebar-reserved-width)')
 	})
 
 	it('历史记录下拉左对齐触发按钮且不展示当前路由', async () => {
@@ -162,7 +201,21 @@ describe('ShellHeader', () => {
 	})
 })
 
-function renderHeader(overrides: Partial<ComponentProps<typeof ShellHeader>> = {}) {
+type RenderHeaderOptions = {
+	/** 默认 `desktop`：`renderHeader` 会安装 `matchMedia`；`narrow` 用于 &lt;640 顶栏不渲染左条等场景 */
+	matchMedia?: 'desktop' | 'narrow'
+}
+
+function renderHeader(
+	overrides: Partial<ComponentProps<typeof ShellHeader>> = {},
+	options: RenderHeaderOptions = {},
+) {
+	if (options.matchMedia === 'narrow') {
+		installMatchMediaNarrowPhone()
+	} else {
+		installMatchMediaDesktop()
+	}
+
 	const props: ComponentProps<typeof ShellHeader> = {
 		currentSpaceId: 'work',
 		activeSection: 'inbox',
@@ -185,8 +238,10 @@ function renderHeader(overrides: Partial<ComponentProps<typeof ShellHeader>> = {
 		...overrides,
 	}
 
-	// 与 sidebar 一致：>=1024 桌面态；默认展开时左列与主带同宽
-	installMatchMediaDesktop()
+	// Windows 壳层行为：避免 JSDOM 默认 UA 含 `Mac` 导致 isMac 误判
+	installNavigatorWindows()
+
+	// 与 sidebar 一致：由 options.matchMedia 或上方分支决定；未传时 `desktop`
 
 	return render(
 		<SidebarProvider>
@@ -197,13 +252,20 @@ function renderHeader(overrides: Partial<ComponentProps<typeof ShellHeader>> = {
 	)
 }
 
+function installNavigatorWindows() {
+	Object.defineProperty(window.navigator, 'userAgent', {
+		configurable: true,
+		get: () => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+	})
+}
+
 function installMatchMediaDesktop() {
 	Object.defineProperty(window, 'matchMedia', {
 		configurable: true,
-		value: () =>
+		value: (query: string) =>
 			({
 				matches: true,
-				media: '(min-width: 1024px)',
+				media: query,
 				onchange: null,
 				addEventListener: () => undefined,
 				removeEventListener: () => undefined,
@@ -211,6 +273,30 @@ function installMatchMediaDesktop() {
 				removeListener: () => undefined,
 				dispatchEvent: () => false,
 			}) as unknown as MediaQueryList,
+	})
+}
+
+/** 与顶栏 `max-sm`(640) / 侧栏 1024 断点一致：小屏不匹桌面宽 */
+function installMatchMediaNarrowPhone() {
+	Object.defineProperty(window, 'matchMedia', {
+		configurable: true,
+		value: (query: string) => {
+			const matches = query.includes('640px')
+				? false
+				: query.includes('1024px')
+					? false
+					: true
+			return {
+				matches,
+				media: query,
+				onchange: null,
+				addEventListener: () => undefined,
+				removeEventListener: () => undefined,
+				addListener: () => undefined,
+				removeListener: () => undefined,
+				dispatchEvent: () => false,
+			} as unknown as MediaQueryList
+		},
 	})
 }
 

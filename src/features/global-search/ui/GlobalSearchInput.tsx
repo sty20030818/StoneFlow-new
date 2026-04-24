@@ -43,7 +43,10 @@ export function GlobalSearchInput({
 	const shouldShowClearHint = isOpen || query.trim().length > 0
 
 	return (
-		<div className='relative w-full max-w-[34rem]' data-sf-search-root='true'>
+		<div
+			className='relative w-full min-w-0 max-w-100'
+			data-sf-search-root='true'
+		>
 			<div ref={rootRef}>
 				<InputGroup className='h-8 border-(--sf-color-border-subtle) bg-card/94 shadow-(--sf-shadow-panel) transition-colors hover:border-(--sf-color-border) focus-within:border-ring'>
 					<InputGroupAddon align='inline-start' className='px-2.5 text-(--sf-color-icon-subtle)'>

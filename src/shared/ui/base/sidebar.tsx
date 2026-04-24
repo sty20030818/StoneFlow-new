@@ -363,6 +363,10 @@ type SidebarProps = React.ComponentProps<'aside'> & {
 function Sidebar({ className, collapsible = 'none', children, style, ...props }: SidebarProps) {
 	const { isBreakpointSwitching, setDrawerOpen, visualState, layoutMode, mobileOpen } = useSidebar()
 	const collapsibleEnabled = collapsible === 'icon'
+	// mobile 抽屉的 `pt-12` 主要为 macOS 交通灯/额外安全区服务；Windows 上会与自绘顶栏“重复留空”
+	const isWin =
+		/Windows/i.test(typeof navigator === 'undefined' ? '' : navigator.userAgent) ||
+		(typeof navigator !== 'undefined' && navigator.platform === 'Win32')
 
 	return (
 		<>
@@ -386,7 +390,9 @@ function Sidebar({ className, collapsible = 'none', children, style, ...props }:
 					'group-data-[sidebar-layout=desktop]/sidebar-wrapper:relative group-data-[sidebar-layout=desktop]/sidebar-wrapper:z-30 group-data-[sidebar-layout=desktop]/sidebar-wrapper:h-full group-data-[sidebar-layout=desktop]/sidebar-wrapper:min-h-0 group-data-[sidebar-layout=desktop]/sidebar-wrapper:w-full group-data-[sidebar-layout=desktop]/sidebar-wrapper:min-w-0 group-data-[sidebar-layout=desktop]/sidebar-wrapper:max-w-full group-data-[sidebar-layout=desktop]/sidebar-wrapper:translate-x-0',
 					// mobile：fixed 抽屉，覆盖 Header 安全区以下
 					// 抽屉宽度固定 220px，只过渡 transform；勿过渡 width（与断点/变量切换叠在一起会像整屏宽条带）
-					'group-data-[sidebar-layout=mobile]/sidebar-wrapper:fixed group-data-[sidebar-layout=mobile]/sidebar-wrapper:inset-y-0 group-data-[sidebar-layout=mobile]/sidebar-wrapper:left-0 group-data-[sidebar-layout=mobile]/sidebar-wrapper:z-70 group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-(--sf-shell-sidebar-panel-width) group-data-[sidebar-layout=mobile]/sidebar-wrapper:translate-x-(--sf-shell-sidebar-panel-offset-x) group-data-[sidebar-layout=mobile]/sidebar-wrapper:pt-12 group-data-[sidebar-layout=mobile]/sidebar-wrapper:transition-transform group-data-[sidebar-layout=mobile]/sidebar-wrapper:duration-(--sf-shell-layout-sync-duration) group-data-[sidebar-layout=mobile]/sidebar-wrapper:ease-(--sf-shell-layout-sync-easing) group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none',
+					'group-data-[sidebar-layout=mobile]/sidebar-wrapper:fixed group-data-[sidebar-layout=mobile]/sidebar-wrapper:inset-y-0 group-data-[sidebar-layout=mobile]/sidebar-wrapper:left-0 group-data-[sidebar-layout=mobile]/sidebar-wrapper:z-70 group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-(--sf-shell-sidebar-panel-width) group-data-[sidebar-layout=mobile]/sidebar-wrapper:translate-x-(--sf-shell-sidebar-panel-offset-x)',
+					!isWin && 'group-data-[sidebar-layout=mobile]/sidebar-wrapper:pt-12',
+					'group-data-[sidebar-layout=mobile]/sidebar-wrapper:transition-transform group-data-[sidebar-layout=mobile]/sidebar-wrapper:duration-(--sf-shell-layout-sync-duration) group-data-[sidebar-layout=mobile]/sidebar-wrapper:ease-(--sf-shell-layout-sync-easing) group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none',
 					'group-data-[sidebar-breakpoint-switching=true]/sidebar-wrapper:transition-none!',
 					'group-data-[sidebar-mode=mobile-open]/sidebar-wrapper:border-r group-data-[sidebar-mode=mobile-open]/sidebar-wrapper:border-(--sf-color-border-subtle)',
 					!collapsibleEnabled && 'translate-x-0',
@@ -826,7 +832,8 @@ function SidebarTrigger({ className, stateful = true, onClick, ...props }: Sideb
 		<button
 			aria-label={isOpen ? '收起侧边栏' : '展开侧边栏'}
 			className={cn(
-				'inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-(--sf-color-shell-secondary) transition-colors hover:bg-(--sf-color-shell-hover) hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
+				// 与主壳 `Button` `icon-sm` 同 30×30 底槽，便于与顶栏三键/品牌圆钮对齐
+				'inline-flex size-7.5 shrink-0 items-center justify-center rounded-md border border-transparent text-(--sf-color-shell-secondary) transition-colors hover:bg-(--sf-color-shell-hover) hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
 				className,
 			)}
 			data-slot='sidebar-trigger'
