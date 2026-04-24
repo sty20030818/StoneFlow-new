@@ -11,7 +11,7 @@ describe('Sidebar primitive', () => {
 		window.localStorage.clear()
 	})
 
-	it('desktop 初始态产出展开几何变量且只渲染一份 sidebar/overlay', () => {
+	it('desktop 初始态产出展开几何变量且只渲染 sidebar（无遮罩 DOM）', () => {
 		installMatchMedia(true)
 		renderSidebarFixture()
 
@@ -23,7 +23,19 @@ describe('Sidebar primitive', () => {
 		expect(provider.style.getPropertyValue('--sf-shell-sidebar-panel-offset-x')).toBe('0px')
 		expect(provider.style.getPropertyValue('--sf-shell-sidebar-reserved-width')).toBe('245px')
 		expect(document.querySelectorAll('[data-slot="sidebar"]')).toHaveLength(1)
-		expect(document.querySelectorAll('[data-slot="sidebar-overlay"]')).toHaveLength(1)
+		expect(document.querySelectorAll('[data-slot="sidebar-overlay"]')).toHaveLength(0)
+	})
+
+	it('desktop 折叠后为 icon 宽且位移为 0（裁左侧图标列，而非 translate 露右缘）', () => {
+		installMatchMedia(true)
+		renderSidebarFixture()
+
+		fireEvent.click(getTrigger())
+		const provider = getProvider()
+		expect(provider).toHaveAttribute('data-sidebar-mode', 'desktop-collapsed')
+		expect(provider.style.getPropertyValue('--sf-shell-sidebar-panel-width').trim()).toBe('48px')
+		expect(provider.style.getPropertyValue('--sf-shell-sidebar-panel-offset-x').trim()).toBe('0px')
+		expect(provider.style.getPropertyValue('--sf-shell-sidebar-reserved-width').trim()).toBe('48px')
 	})
 
 	it('从 desktop 进入 mobile 时默认 closed，再回 desktop 恢复桌面偏好态', () => {
@@ -43,7 +55,7 @@ describe('Sidebar primitive', () => {
 		expect(getProvider()).toHaveAttribute('data-sidebar-mode', 'desktop-collapsed')
 	})
 
-	it('mobile 使用固定满态宽，不继承 desktop 当前宽度', () => {
+	it('mobile 使用固定 220px 抽屉宽，不继承 desktop 当前可变宽', () => {
 		window.localStorage.setItem('sf:sidebar:width', '220')
 		const media = installMatchMedia(true)
 		renderSidebarFixture()
@@ -53,9 +65,7 @@ describe('Sidebar primitive', () => {
 		act(() => media.setMatches(false))
 
 		expect(getProvider()).toHaveAttribute('data-sidebar-mode', 'mobile-closed')
-		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-panel-width')).toBe(
-			'min(330px, calc(100vw - 24px))',
-		)
+		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-panel-width')).toBe('220px')
 		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-panel-offset-x')).toBe(
 			'calc(var(--sf-shell-sidebar-panel-width) * -1)',
 		)

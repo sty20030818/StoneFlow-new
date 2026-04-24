@@ -44,10 +44,8 @@
 }
 
 :root {
-	--sf-font-sans:
-		"Inter Variable", "Inter", "SF Pro Display", "PingFang SC", "Segoe UI", system-ui, sans-serif;
-	--sf-font-mono:
-		"Berkeley Mono", "SF Mono", "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+	--sf-font-sans: "Inter Variable", "Inter", "SF Pro Display", "PingFang SC", "Segoe UI", system-ui, sans-serif;
+	--sf-font-mono: "Berkeley Mono", "SF Mono", "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
 
 	--sf-color-bg-app: #f3f3f4;
 	--sf-color-bg-app-alt: #e4e4e5;
@@ -102,6 +100,9 @@
 
 	--sf-shell-sidebar-width: 245px;
 	--sf-shell-sidebar-width-icon: 3rem;
+	/** Shell 主区 padding 与 fixed sidebar transform 共用（略短 + 更平滑的减速，避免拖尾感） */
+	--sf-shell-layout-sync-duration: 175ms;
+	--sf-shell-layout-sync-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 	--sf-shell-drawer-width: 32rem;
 	--sf-color-shell-chrome: #f3f3f4;
 	--sf-color-shell-drawer: #ffffff;

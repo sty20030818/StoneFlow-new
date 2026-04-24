@@ -204,17 +204,17 @@ export function ShellHeader({
 	return (
 		<>
 			<header
-				className='relative flex h-12 shrink-0 items-center bg-(--sf-color-shell-chrome) pl-0 pr-0'
+				className='relative z-30 flex h-12 shrink-0 flex-nowrap items-center bg-(--sf-color-shell-chrome) pl-0 pr-0'
 				data-tauri-drag-region
 				onMouseDownCapture={handleHeaderMouseDownCapture}
 			>
 				<div
 					className={cn(
-						// 与主内容区（ShellMain）右侧 gutter 对齐：12px
-						'flex h-full items-center gap-2 pr-3 transition-[width] duration-200 ease-out',
+						// 与主内容区（ShellMain）右侧 gutter 对齐：12px；shrink-0 避免中间搜索区挤扁左列
+						// 不对 width 做 transition：折叠 w-auto 与展开 w-(reserved) 插值不稳定，会导致折叠钮左右横跳
+						'flex h-full shrink-0 items-center gap-2 pr-3',
 						// 桌面展开：历史组用 ml-auto 贴右；不需要子项之间的 gap（否则会留下“幽灵间距”）
 						'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:gap-0',
-						'group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none',
 						// macOS：折叠态保留 traffic light 左侧安全区；展开态左区已用 flex-1 把按钮顶到右侧，无需额外 pl
 						isMac
 							? 'pl-24 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-0'
@@ -240,14 +240,14 @@ export function ShellHeader({
 						data-tauri-drag-region
 					/>
 
-					{/* 桌面折叠态 / 移动端：以 SidebarTrigger 作为唯一入口替代历史集群 */}
+					{/* 桌面折叠 / 移动端：SidebarTrigger；桌面展开时由侧栏 rail 承担收起，此处不占位 */}
 					<SidebarTrigger
 						// desktop-expanded：完全不渲染占位（避免父级 gap-2 在“隐藏但仍占位”的元素旁产生空隙）
-						className='hidden group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:inline-flex group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:-translate-x-0.5'
+						className='hidden shrink-0 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:inline-flex'
 					/>
 
-					{/* 历史 / 前进 / 后退：桌面展开态、桌面折叠态都显示；移动端隐藏 */}
-					<div className='flex items-center gap-2 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:ml-auto group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden'>
+					{/* 历史 / 前进 / 后退：桌面展开态贴右；折叠与移动端紧跟 Trigger */}
+					<div className='flex shrink-0 items-center gap-2 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:ml-auto'>
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
 								<Button

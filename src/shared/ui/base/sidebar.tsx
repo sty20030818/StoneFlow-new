@@ -23,7 +23,10 @@ const SIDEBAR_STATE_STORAGE_KEY = 'sf:sidebar:state'
 const SIDEBAR_WIDTH_STORAGE_KEY = 'sf:sidebar:width'
 const SIDEBAR_WIDTH_MIN = 220
 const SIDEBAR_WIDTH_MAX = 330
-const SIDEBAR_MOBILE_GUTTER_PX = 24
+/** 移动端 offcanvas 抽屉宽度（固定，不参与桌面可变宽） */
+const SIDEBAR_MOBILE_DRAWER_WIDTH_PX = 220
+/** 与 index.css `--sf-shell-sidebar-width-icon: 3rem` 对齐，几何内联用 px 以便与展开宽度插值动画 */
+const SIDEBAR_ICON_RAIL_PX = 48
 // 桌面态切换快捷键（对齐 VS Code / shadcn 惯例）
 const SIDEBAR_TOGGLE_SHORTCUT_KEY = 'b'
 
@@ -115,8 +118,8 @@ function resolveGeometry(
 	collapsibleEnabled = true,
 ): SidebarGeometry {
 	const desktopWidth = `${sidebarWidth}px`
-	const iconWidth = 'var(--sf-shell-sidebar-width-icon)'
-	const mobileWidth = `min(${SIDEBAR_WIDTH_MAX}px, calc(100vw - ${SIDEBAR_MOBILE_GUTTER_PX}px))`
+	const iconRailPx = `${SIDEBAR_ICON_RAIL_PX}px`
+	const mobileWidth = `${SIDEBAR_MOBILE_DRAWER_WIDTH_PX}px`
 
 	if (!collapsibleEnabled && visualState.startsWith('desktop')) {
 		return {
@@ -136,10 +139,12 @@ function resolveGeometry(
 				overlayOpacity: 0,
 			}
 		case 'desktop-collapsed':
+			// 必须用「窄容器 + offset 0」裁出左侧 icon 列；若用整宽 translateX，视口会露在面板右侧，图标全在左侧被移出屏幕
+			// panel/reserved 用固定 px（与展开态的 px 同源），避免 var()↔px 无法插值导致展开时宽度「瞬跳」
 			return {
-				panelWidth: desktopWidth,
-				panelOffsetX: `calc((${desktopWidth} - ${iconWidth}) * -1)`,
-				reservedWidth: iconWidth,
+				panelWidth: iconRailPx,
+				panelOffsetX: '0px',
+				reservedWidth: iconRailPx,
 				overlayOpacity: 0,
 			}
 		case 'mobile-open':
@@ -166,6 +171,8 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 	)
 	const [sidebarWidth, setSidebarWidth] = React.useState(() => readStoredSidebarWidth())
 	const [mobileOpen, setMobileOpen] = React.useState(false)
+	const [suppressLayoutSyncTransition, setSuppressLayoutSyncTransition] = React.useState(false)
+	const layoutModeRef = React.useRef<SidebarLayoutMode | null>(null)
 
 	// 断点只改变目标几何状态；sidebar 面板本体始终保持同一套 DOM。
 	React.useEffect(() => {
@@ -192,6 +199,24 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 			mediaQuery.removeEventListener('change', handleChange)
 		}
 	}, [])
+
+	// mobile↔desktop 时几何从「抽屉 220 + translate」切到「桌面 px/icon」若仍带 transition，会跨单位插值失败 → 首帧关掉同步过渡
+	React.useEffect(() => {
+		if (layoutModeRef.current === null) {
+			layoutModeRef.current = layoutMode
+			return
+		}
+		if (layoutModeRef.current === layoutMode) return
+		layoutModeRef.current = layoutMode
+		setSuppressLayoutSyncTransition(true)
+		// 约一帧后再允许 transition，避免 mobile 抽屉几何与桌面几何在同一轮插值里「撑一下」
+		const id = window.setTimeout(() => {
+			setSuppressLayoutSyncTransition(false)
+		}, 16)
+		return () => {
+			window.clearTimeout(id)
+		}
+	}, [layoutMode])
 
 	// 每次变化时写回本地存储；只在桌面态这项决策是有效的
 	React.useEffect(() => {
@@ -265,6 +290,7 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 			toggleSidebar,
 			setDrawerOpen,
 			setSidebarWidth: setSidebarWidthClamped,
+			suppressLayoutSyncTransition,
 		}),
 		[
 			layoutMode,
@@ -276,6 +302,7 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 			toggleSidebar,
 			setDrawerOpen,
 			setSidebarWidthClamped,
+			suppressLayoutSyncTransition,
 		],
 	)
 
@@ -290,6 +317,7 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 				data-sidebar-resizing='false'
 				data-sidebar-drawer={mobileOpen ? 'open' : 'closed'}
 				data-sidebar-visual-state={visualState}
+				data-sidebar-sync={suppressLayoutSyncTransition ? 'suppressed' : 'normal'}
 				style={
 					{
 						// 布局与面板动画共用同一组几何变量，断点切换时只换目标值。
@@ -316,28 +344,37 @@ type SidebarProps = React.ComponentProps<'aside'> & {
 /**
  * Sidebar 主容器：
  * - 始终使用同一个 fixed 面板，desktop/mobile 只切几何目标值
- * - desktop collapsed 通过 transform 只露出 icon rail 宽度
- * - mobile closed 通过同一套 transform 完全移出视口
+ * - desktop collapsed：面板宽度缩至 icon rail，`overflow-hidden` 裁出左侧图标列（勿用整宽 translate，否则会露错边）
+ * - mobile closed：整宽 + translateX 移出视口
  */
 function Sidebar({ className, collapsible = 'none', children, ...props }: SidebarProps) {
-	const { setDrawerOpen, visualState } = useSidebar()
+	const { setDrawerOpen, visualState, layoutMode, mobileOpen, suppressLayoutSyncTransition } = useSidebar()
 	const collapsibleEnabled = collapsible === 'icon'
 
 	return (
 		<>
-			<div
-				aria-hidden='true'
-				className={cn(
-					// mobile 下压住主界面；desktop 下同一节点保持透明且不可交互。
-					'fixed inset-0 z-40 bg-black/30 pt-12 opacity-(--sf-shell-sidebar-overlay-opacity) transition-opacity duration-200 ease-out pointer-events-none group-data-[sidebar-mode=mobile-open]/sidebar-wrapper:pointer-events-auto motion-reduce:transition-none',
-				)}
-				data-slot='sidebar-overlay'
-				onClick={() => setDrawerOpen(false)}
-			/>
+			{/* 仅 mobile 挂载遮罩：desktop 完全不参与合成，避免底栏常驻「抽屉灰膜」残影 */}
+			{layoutMode === 'mobile' ? (
+				<div
+					aria-hidden={!mobileOpen}
+					className={cn(
+						'fixed inset-0 z-40 bg-black/30 pt-12 transition-opacity duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) motion-reduce:transition-none',
+						mobileOpen
+							? 'pointer-events-auto opacity-100'
+							: 'pointer-events-none opacity-0 invisible',
+						suppressLayoutSyncTransition && 'transition-none',
+					)}
+					data-slot='sidebar-overlay'
+					onClick={() => setDrawerOpen(false)}
+				/>
+			) : null}
 			<aside
 				aria-hidden={visualState === 'mobile-closed'}
 				className={cn(
-					'fixed inset-y-0 left-0 z-50 flex w-(--sf-shell-sidebar-panel-width) translate-x-(--sf-shell-sidebar-panel-offset-x) flex-col overflow-hidden bg-(--sf-color-shell-chrome) shadow-(--sf-shadow-float) transition-[transform,width] duration-200 ease-out will-change-transform group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none motion-reduce:transition-none',
+					// 与 Header/Footer 统一使用 shell-chrome；抽屉不再用大阴影（会扫到 footer），用右边线分隔即可
+					'fixed inset-y-0 left-0 z-40 flex w-(--sf-shell-sidebar-panel-width) translate-x-(--sf-shell-sidebar-panel-offset-x) flex-col overflow-hidden bg-(--sf-color-shell-chrome) shadow-none transition-[transform,width] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) backface-hidden group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none motion-reduce:transition-none',
+					suppressLayoutSyncTransition && 'transition-none',
+					'group-data-[sidebar-mode=mobile-open]/sidebar-wrapper:border-r group-data-[sidebar-mode=mobile-open]/sidebar-wrapper:border-(--sf-color-border-subtle)',
 					// mobile 抽屉覆盖 Header，但保留 traffic light 安全区；desktop 面板参与完整 chrome 高度。
 					'group-data-[sidebar-layout=mobile]/sidebar-wrapper:pt-12 group-data-[sidebar-layout=desktop]/sidebar-wrapper:top-12 group-data-[sidebar-layout=desktop]/sidebar-wrapper:bottom-9.5',
 					!collapsibleEnabled && 'translate-x-0',

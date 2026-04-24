@@ -30,6 +30,8 @@ export type SidebarContextValue = {
 	toggleSidebar: () => void
 	setDrawerOpen: (open: boolean) => void
 	setSidebarWidth: (width: number) => void
+	/** mobile↔desktop 切换首帧：关闭 pl/侧栏宽度的 transition，避免 220px/translate 与桌面几何交叉插值「突然撑一下」 */
+	suppressLayoutSyncTransition: boolean
 }
 
 export const SidebarContext = React.createContext<SidebarContextValue | null>(null)

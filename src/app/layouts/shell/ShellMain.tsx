@@ -133,7 +133,7 @@ export function ShellMain({
 					<ContextMenuTrigger asChild onContextMenu={handleGlobalContextMenu}>
 						<div
 							className={cn(
-								'relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-(--sf-color-border-subtle) bg-card shadow-(--sf-shadow-panel) transition-shadow duration-200 ease-out group-data-[sidebar-layout=mobile]/sidebar-wrapper:rounded-none',
+								'relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-(--sf-color-border-subtle) bg-card shadow-(--sf-shadow-panel) transition-shadow duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) group-data-[sidebar-layout=mobile]/sidebar-wrapper:rounded-none',
 								// sidebar icon 折叠后，主卡与侧栏接缝处更容易“透出”阴影；这里直接弱化主卡阴影（不动边框/圆角逻辑）
 								'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:shadow-none',
 							)}
