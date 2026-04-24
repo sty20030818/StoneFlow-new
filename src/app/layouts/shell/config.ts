@@ -4,11 +4,12 @@ import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types
 import type { BadgeVariant } from '@/shared/ui/base/badge'
 import {
 	BriefcaseBusinessIcon,
-	FolderOpenDotIcon,
+	FolderIcon,
 	GraduationCapIcon,
 	HouseIcon,
 	InboxIcon,
 	Layers3Icon,
+	Settings2Icon,
 	SparklesIcon,
 	TargetIcon,
 	Trash2Icon,
@@ -98,13 +99,24 @@ export const SHELL_NAV_ITEMS: ShellNavItem[] = [
 		icon: TargetIcon,
 		to: (spaceId) => `/space/${spaceId}/focus`,
 	},
+]
+
+export const SHELL_FOOTER_ITEMS: ShellNavItem[] = [
 	{
 		key: 'trash',
 		label: 'Trash',
 		icon: Trash2Icon,
 		to: (spaceId) => `/space/${spaceId}/trash`,
 	},
+	{
+		key: 'settings',
+		label: 'Settings',
+		icon: Settings2Icon,
+		to: (spaceId) => `/space/${spaceId}/settings`,
+	},
 ]
+
+export const SHELL_ROUTE_ITEMS = [...SHELL_NAV_ITEMS, ...SHELL_FOOTER_ITEMS]
 
 export function resolveShellSection(pathname: string): ShellSectionKey {
 	if (pathname.includes('/focus')) {
@@ -325,7 +337,7 @@ const taskDetails: Record<string, DrawerDetail> = {
 		eyebrow: 'Task',
 		title: '重组 Header / Sidebar / Footer',
 		description: '这轮要验证的是整窗框架，而不是再拼更多局部组件。',
-		icon: FolderOpenDotIcon,
+		icon: FolderIcon,
 		badges: [
 			{ label: 'Layout' },
 			{ label: 'P1', variant: 'outline' },
@@ -353,7 +365,7 @@ const taskDetails: Record<string, DrawerDetail> = {
 		eyebrow: 'Task',
 		title: '把 Sidebar 做成连续导航带',
 		description: 'Sidebar 要与 Header、Footer 的左区形成连续关系，而不是独立浮块。',
-		icon: FolderOpenDotIcon,
+		icon: FolderIcon,
 		badges: [
 			{ label: 'Sidebar' },
 			{ label: 'P2', variant: 'outline' },
@@ -381,7 +393,7 @@ const taskDetails: Record<string, DrawerDetail> = {
 		eyebrow: 'Task',
 		title: '把 Drawer 的分区做清楚',
 		description: 'Drawer 应该是轻量、精密、默认覆盖式的详情层。',
-		icon: FolderOpenDotIcon,
+		icon: FolderIcon,
 		badges: [
 			{ label: 'Drawer' },
 			{ label: 'P2', variant: 'outline' },
@@ -468,7 +480,7 @@ const projectDetails: Record<string, DrawerDetail> = {
 		eyebrow: 'Project',
 		title: 'StoneFlow V1',
 		description: 'V1 目标是做成可长期自用的本地优先个人执行系统。',
-		icon: FolderOpenDotIcon,
+		icon: FolderIcon,
 		badges: [
 			{ label: 'Active', variant: 'primary' },
 			{ label: '6 tasks', variant: 'outline' },
@@ -516,7 +528,7 @@ const projectDetails: Record<string, DrawerDetail> = {
 		eyebrow: 'Project',
 		title: '工程开发',
 		description: '承接前端架构、Tauri 壳层和本地数据底座实现。',
-		icon: FolderOpenDotIcon,
+		icon: FolderIcon,
 		badges: [
 			{ label: 'Code', variant: 'secondary' },
 			{ label: 'Active', variant: 'primary' },

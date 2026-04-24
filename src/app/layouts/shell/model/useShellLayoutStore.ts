@@ -15,6 +15,7 @@ type ShellLayoutState = {
 	activeDrawerId: string | null
 	taskDataVersion: number
 	projectDataVersion: number
+	projectTreeCollapsed: Record<string, boolean>
 	setCurrentSpaceId: (spaceId: string) => void
 	setActiveSection: (section: ShellSectionKey) => void
 	setNavItemVisible: (section: ShellSectionKey, visible: boolean) => void
@@ -31,10 +32,11 @@ type ShellLayoutState = {
 	closeDrawer: () => void
 	bumpTaskDataVersion: () => void
 	bumpProjectDataVersion: () => void
+	setProjectTreeCollapsed: (payload: { spaceId: string; projectId: string; collapsed: boolean }) => void
 }
 
 const SHELL_NAV_VISIBILITY_STORAGE_KEY = 'stoneflow:shell-nav-visibility:v1'
-const CONFIGURABLE_NAV_ITEM_KEYS: ShellSectionKey[] = ['inbox', 'focus', 'trash']
+const CONFIGURABLE_NAV_ITEM_KEYS: ShellSectionKey[] = ['inbox', 'focus']
 
 function readStoredHiddenNavItemKeys() {
 	if (typeof window === 'undefined') {
@@ -81,6 +83,7 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 	activeDrawerId: null,
 	taskDataVersion: 0,
 	projectDataVersion: 0,
+	projectTreeCollapsed: {},
 	setCurrentSpaceId: (spaceId) => set({ currentSpaceId: spaceId }),
 	setActiveSection: (section) => set({ activeSection: section }),
 	setNavItemVisible: (section, visible) =>
@@ -200,6 +203,16 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 		set((state) => ({
 			projectDataVersion: state.projectDataVersion + 1,
 		})),
+	setProjectTreeCollapsed: ({ spaceId, projectId, collapsed }) =>
+		set((state) => {
+			const key = toProjectTreeKey(spaceId, projectId)
+			return {
+				projectTreeCollapsed: {
+					...state.projectTreeCollapsed,
+					[key]: collapsed,
+				},
+			}
+		}),
 }))
 
 export const selectCurrentSpaceId = (state: ShellLayoutState) => state.currentSpaceId
@@ -225,3 +238,9 @@ export const selectActiveDrawerId = (state: ShellLayoutState) => state.activeDra
 export const selectTaskDataVersion = (state: ShellLayoutState) => state.taskDataVersion
 
 export const selectProjectDataVersion = (state: ShellLayoutState) => state.projectDataVersion
+
+export const selectProjectTreeCollapsed = (state: ShellLayoutState) => state.projectTreeCollapsed
+
+export function toProjectTreeKey(spaceId: string, projectId: string) {
+	return `${spaceId}:${projectId}`
+}

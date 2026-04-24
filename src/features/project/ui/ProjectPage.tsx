@@ -44,7 +44,7 @@ import {
 } from '@/app/layouts/main-card/MainCardLayout'
 import { ProjectContextMenu } from '@/features/project/ui/ProjectContextMenu'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
-import { FolderOpenDotIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from 'lucide-react'
+import { FolderIcon, MoreHorizontalIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
 const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
 const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
@@ -193,7 +193,7 @@ export function ProjectPage() {
 										type='button'
 									>
 										<span className='flex size-8 shrink-0 items-center justify-center rounded-md border border-(--sf-color-border-subtle) bg-muted text-(--sf-color-text-secondary)'>
-											<FolderOpenDotIcon className='size-4' />
+											<FolderIcon className='size-4' />
 										</span>
 										<span className='min-w-0 flex-1'>
 											<span className='block truncate text-sm font-medium text-foreground transition-colors group-hover:text-primary'>
@@ -260,7 +260,7 @@ function ProjectBreadcrumb({ projectName }: { projectName: string }) {
 				<BreadcrumbSeparator />
 				<BreadcrumbItem className='min-w-0'>
 					<BreadcrumbPage className='flex min-w-0 items-center gap-2 font-semibold'>
-						<FolderOpenDotIcon className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						<FolderIcon className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
 						<span className='truncate'>{projectName}</span>
 					</BreadcrumbPage>
 				</BreadcrumbItem>

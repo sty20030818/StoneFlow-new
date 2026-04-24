@@ -1,21 +1,23 @@
-import { useState, type ReactNode } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useState, type ComponentType } from 'react'
+import { NavLink, useMatch, useNavigate } from 'react-router-dom'
 
-import { SHELL_NAV_ITEMS, SHELL_SPACES, type ShellProjectLink } from '@/app/layouts/shell/config'
+import {
+	SHELL_FOOTER_ITEMS,
+	SHELL_NAV_ITEMS,
+	SHELL_SPACES,
+	type ShellProjectLink,
+} from '@/app/layouts/shell/config'
 import {
 	selectHiddenNavItemKeys,
+	selectProjectTreeCollapsed,
+	toProjectTreeKey,
 	useShellLayoutStore,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
-import { Badge } from '@/shared/ui/base/badge'
-import { Button } from '@/shared/ui/base/button'
+import type { ShellNavBadges } from '@/app/layouts/shell/model/useShellNavBadges'
+import type { ShellSectionKey } from '@/app/layouts/shell/types'
+import { deleteProjectToTrash } from '@/features/trash/api/deleteProjectToTrash'
 import { cn } from '@/shared/lib/utils'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from '@/shared/ui/base/dropdown-menu'
+import { Button } from '@/shared/ui/base/button'
 import {
 	ContextMenu,
 	ContextMenuCheckboxItem,
@@ -23,26 +25,53 @@ import {
 	ContextMenuGroup,
 	ContextMenuItem,
 	ContextMenuLabel,
+	ContextMenuSeparator,
 	ContextMenuSub,
 	ContextMenuSubContent,
 	ContextMenuSubTrigger,
-	ContextMenuSeparator,
 	ContextMenuTrigger,
 } from '@/shared/ui/base/context-menu'
-import { ProjectContextMenu } from '@/features/project/ui/ProjectContextMenu'
-import { deleteProjectToTrash } from '@/features/trash/api/deleteProjectToTrash'
-import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@/shared/ui/base/dropdown-menu'
+import {
+	Sidebar,
+	SidebarContent,
+	SidebarFooter,
+	SidebarGroup,
+	SidebarGroupAction,
+	SidebarGroupContent,
+	SidebarGroupLabel,
+	SidebarHeader,
+	SidebarMenu,
+	SidebarMenuBadge,
+	SidebarMenuButton,
+	SidebarMenuItem,
+	SidebarMenuSub,
+	SidebarMenuSubButton,
+	SidebarMenuSubItem,
+	useSidebar,
+} from '@/shared/ui/base/sidebar'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
 import {
 	CheckIcon,
-	ChevronDownIcon,
+	ChevronRightIcon,
+	ChevronsUpDownIcon,
+	ExternalLinkIcon,
+	FolderIcon,
+	FolderPlusIcon,
 	PanelLeftIcon,
-	RotateCcwIcon,
-	SquarePenIcon,
 	PlusIcon,
+	RotateCcwIcon,
+	Trash2Icon,
 } from 'lucide-react'
-import type { ShellNavBadges } from '@/app/layouts/shell/model/useShellNavBadges'
-import type { ShellSectionKey } from '@/app/layouts/shell/types'
 
 type ShellSidebarProps = {
 	currentSpaceId: string
@@ -63,25 +92,41 @@ const SIDEBAR_ENTITY_SELECTOR = [
 	'[data-slot="context-menu-content"]',
 ].join(', ')
 
+type SidebarRouteItem = {
+	label: string
+	icon: ComponentType<{ className?: string }>
+	to: string
+	badge?: string
+	size?: 'default' | 'sm'
+}
+
 export function ShellSidebar({
 	currentSpaceId,
 	projects,
 	isProjectsLoading,
 	projectsError,
 	navBadges = {},
-	onOpenTaskCreateDialog,
 	onOpenProjectCreateDialog,
 	onRefreshProjects = () => undefined,
 }: ShellSidebarProps) {
 	const navigate = useNavigate()
+	const { isMobile } = useSidebar()
 	const activeSpace = SHELL_SPACES.find((space) => space.id === currentSpaceId) ?? SHELL_SPACES[0]
 	const hiddenNavItemKeys = useShellLayoutStore(selectHiddenNavItemKeys)
+	const projectTreeCollapsed = useShellLayoutStore(selectProjectTreeCollapsed)
 	const setNavItemVisible = useShellLayoutStore((state) => state.setNavItemVisible)
 	const resetNavItemVisibility = useShellLayoutStore((state) => state.resetNavItemVisibility)
 	const bumpProjectDataVersion = useShellLayoutStore((state) => state.bumpProjectDataVersion)
+	const setProjectTreeCollapsed = useShellLayoutStore((state) => state.setProjectTreeCollapsed)
 	const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null)
 	const visibleNavItems = SHELL_NAV_ITEMS.filter((item) => !hiddenNavItemKeys.includes(item.key))
 	const visibleNavItemCount = visibleNavItems.length
+	const footerItems = SHELL_FOOTER_ITEMS.map((item) => ({
+		...item,
+		badge: navBadges[item.key],
+		to: item.to(currentSpaceId),
+	}))
+
 	const handleDeleteProject = async (projectId: string) => {
 		setDeletingProjectId(projectId)
 
@@ -98,6 +143,7 @@ export function ShellSidebar({
 			setDeletingProjectId(null)
 		}
 	}
+
 	const handleSidebarContextMenu = (event: React.MouseEvent<HTMLElement>) => {
 		const target = event.target
 		if (!(target instanceof HTMLElement)) {
@@ -113,233 +159,182 @@ export function ShellSidebar({
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild onContextMenu={handleSidebarContextMenu}>
-				<aside className='flex h-full w-(--sf-shell-sidebar-width) shrink-0 flex-col bg-(--sf-color-shell-chrome)'>
-					<div className='flex items-center gap-1.5 px-5.5 pb-4 pt-2'>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button
-									aria-label='切换 Space'
-									className='h-8 w-29.5 justify-start gap-1.5 rounded-md border-transparent bg-transparent px-2 text-[13px] text-foreground shadow-none hover:bg-(--sf-color-shell-hover) aria-expanded:bg-(--sf-color-shell-hover)'
-									size='default'
-									variant='ghost'
-								>
-									<SpaceIconBadge space={activeSpace} />
-									<span className='min-w-0 flex-1 truncate text-left font-medium'>
-										{activeSpace.label}
-									</span>
-									<ChevronDownIcon className='size-3 shrink-0 text-(--sf-color-icon-subtle)' />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align='start' className='w-44'>
-								<DropdownMenuGroup>
-									{SHELL_SPACES.map((space) => {
-										const isActive = space.id === activeSpace.id
-
-										return (
-											<DropdownMenuItem
-												key={space.id}
-												onSelect={() => {
-													navigate(`/space/${space.id}/inbox`)
-												}}
-											>
-												<SpaceIconBadge space={space} />
-												<span>{space.label}</span>
-												{isActive ? (
-													<CheckIcon className='ml-auto size-3.5 text-(--sf-color-icon-secondary)' />
-												) : null}
-											</DropdownMenuItem>
-										)
-									})}
-								</DropdownMenuGroup>
-							</DropdownMenuContent>
-						</DropdownMenu>
-						<Button
-							aria-label='新建任务'
-							className='ml-auto'
-							onClick={onOpenTaskCreateDialog}
-							size='icon'
-							variant='secondary'
-						>
-							<SquarePenIcon />
-						</Button>
-					</div>
-
-					<div className='no-scrollbar flex-1 overflow-y-auto pb-4'>
-						<nav className='space-y-0.5 px-5.5'>
-							{visibleNavItems.map((item) => {
-								const badge = navBadges[item.key]
-
-								return (
-									<ShellNavContextMenu
-										hiddenNavItemKeys={hiddenNavItemKeys}
-										itemKey={item.key}
-										key={item.key}
-										onResetNavItemVisibility={resetNavItemVisibility}
-										onSetNavItemVisible={setNavItemVisible}
-										visibleNavItemCount={visibleNavItemCount}
-									>
-										<NavLink
-											className={({ isActive }) =>
-												cn(
-													'flex h-8 items-center gap-2 rounded-md border border-transparent px-2.5 text-[13px] transition-colors',
-													isActive
-														? 'border-(--sf-color-border-subtle) bg-sidebar-accent font-medium text-foreground shadow-(--sf-shadow-panel)'
-														: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
-												)
-											}
-											to={item.to(currentSpaceId)}
-										>
-											<item.icon className='size-3.5 shrink-0' />
-											<span>{item.label}</span>
-											{badge ? (
-												<span className='ml-auto text-[12px] font-semibold text-(--sf-color-shell-secondary)'>
-													{badge}
+				<Sidebar>
+					<SidebarHeader className='px-3 pb-4 pt-2'>
+						<div className='flex items-center gap-1.5'>
+							<SidebarMenu className='flex-1'>
+								<SidebarMenuItem>
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<SidebarMenuButton aria-label='切换 Space' size='lg'>
+												<SpaceIconBadge space={activeSpace} />
+												<span className='min-w-0 flex-1 truncate text-left font-semibold'>
+													{activeSpace.label}
 												</span>
-											) : null}
-										</NavLink>
-									</ShellNavContextMenu>
-								)
-							})}
-						</nav>
+												<ChevronsUpDownIcon className='shrink-0 text-(--sf-color-icon-subtle)' />
+											</SidebarMenuButton>
+										</DropdownMenuTrigger>
+										<DropdownMenuContent
+											align='start'
+											className=''
+											side={isMobile ? 'bottom' : 'right'}
+											sideOffset={6}
+										>
+											<DropdownMenuLabel>Spaces</DropdownMenuLabel>
+											<DropdownMenuGroup>
+												{SHELL_SPACES.map((space) => {
+													const isActive = space.id === activeSpace.id
+													const SpaceIcon = space.icon
 
-						<section className='space-y-1 px-5.5'>
+													return (
+														<DropdownMenuItem
+															className='gap-2 p-2'
+															key={space.id}
+															onSelect={() => {
+																navigate(`/space/${space.id}/inbox`)
+															}}
+														>
+															<SpaceIcon className={cn('shrink-0', space.iconClassName)} />
+															<span>{space.label}</span>
+															{isActive ? (
+																<CheckIcon className='ml-auto size-3.5 text-(--sf-color-icon-secondary)' />
+															) : null}
+														</DropdownMenuItem>
+													)
+												})}
+											</DropdownMenuGroup>
+											<DropdownMenuSeparator />
+											<DropdownMenuGroup>
+												<DropdownMenuItem
+													className='gap-2 p-2'
+													onSelect={(event) => {
+														event.preventDefault()
+													}}
+												>
+													<PlusIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
+													<span className='text-(--sf-color-shell-secondary)'>Add space</span>
+												</DropdownMenuItem>
+											</DropdownMenuGroup>
+										</DropdownMenuContent>
+									</DropdownMenu>
+								</SidebarMenuItem>
+							</SidebarMenu>
+						</div>
+					</SidebarHeader>
+
+					<SidebarContent className='no-scrollbar gap-4 pb-4'>
+						<SidebarGroup>
+							<SidebarGroupContent>
+								<SidebarMenu>
+									{visibleNavItems.map((item) => (
+										<SidebarNavMenuItem
+											badge={navBadges[item.key]}
+											hiddenNavItemKeys={hiddenNavItemKeys}
+											icon={item.icon}
+											itemKey={item.key}
+											key={item.key}
+											label={item.label}
+											onResetNavItemVisibility={resetNavItemVisibility}
+											onSetNavItemVisible={setNavItemVisible}
+											to={item.to(currentSpaceId)}
+											visibleNavItemCount={visibleNavItemCount}
+										/>
+									))}
+								</SidebarMenu>
+							</SidebarGroupContent>
+						</SidebarGroup>
+
+						<SidebarGroup>
 							<div className='flex items-center justify-between px-2.5'>
-								<p className='text-[10.5px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'>
-									Projects
-								</p>
-								<Button
+								<SidebarGroupLabel className='px-0'>Projects</SidebarGroupLabel>
+								<SidebarGroupAction
 									aria-label='创建项目'
 									onClick={() => onOpenProjectCreateDialog()}
-									size='icon-xs'
-									variant='ghost'
+									type='button'
 								>
 									<PlusIcon />
-								</Button>
+								</SidebarGroupAction>
 							</div>
-							{isProjectsLoading ? (
-								<StatusNotice className='text-[12px]' size='sm'>
-									正在加载项目...
-								</StatusNotice>
-							) : projectsError ? (
-								<StatusNotice
-									actions={
-										<Button
-											className='h-7 rounded-md px-2 text-[12px]'
-											onClick={onRefreshProjects}
-											size='sm'
-											variant='outline'
-										>
-											重试加载
-										</Button>
-									}
-									className='text-[12px]'
-									size='sm'
-									variant='danger'
-								>
-									<p className='leading-5'>{projectsError}</p>
-								</StatusNotice>
-							) : projects.length === 0 ? (
-								<StatusNotice
-									layout='stack'
-									actions={
-										<Button
-											className='w-full justify-center rounded-md'
-											onClick={() => onOpenProjectCreateDialog()}
-											size='sm'
-										>
-											创建第一个项目
-										</Button>
-									}
-									className='text-[12px]'
-									size='sm'
-									title='当前 Space 还没有项目'
-								/>
-							) : (
-								projects.map((project) => (
-									<div className='space-y-0.5' key={project.id}>
-										<ProjectContextMenu
-											isBusy={deletingProjectId === project.id}
-											onCreateChildProject={() => onOpenProjectCreateDialog(project.id)}
-											onMoveToTrash={() => void handleDeleteProject(project.id)}
-											onOpenProject={() =>
-												navigate(`/space/${currentSpaceId}/project/${project.id}`)
-											}
-										>
-											<div className='group flex items-center gap-1'>
-												<NavLink
-													className={({ isActive }) =>
-														cn(
-															'flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md border border-transparent px-2.5 text-[13px] transition-colors',
-															isActive
-																? 'border-(--sf-color-border-subtle) bg-sidebar-accent font-medium text-foreground shadow-(--sf-shadow-panel)'
-																: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
-														)
-													}
-													to={`/space/${currentSpaceId}/project/${project.id}`}
-												>
-													<span className='size-3 shrink-0 rounded-full bg-(--sf-color-border-strong)' />
-													<span className='min-w-0 truncate'>{project.label}</span>
-													{project.badge ? (
-														<Badge
-															className='ml-auto h-4 shrink-0 rounded-md px-1.5 text-[10.5px]'
-															variant={getProjectStatusBadgeVariant(project.badge)}
-														>
-															{project.badge}
-														</Badge>
-													) : null}
-												</NavLink>
-												<Button
-													aria-label={`在 ${project.label} 下创建子项目`}
-													className='shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100'
-													onClick={() => onOpenProjectCreateDialog(project.id)}
-													size='icon-xs'
-													variant='ghost'
-												>
-													<SquarePenIcon />
-												</Button>
-											</div>
-										</ProjectContextMenu>
-										{project.children?.map((childProject) => (
-											<ProjectContextMenu
-												key={childProject.id}
-												isBusy={deletingProjectId === childProject.id}
-												onCreateChildProject={() => onOpenProjectCreateDialog(childProject.id)}
-												onMoveToTrash={() => void handleDeleteProject(childProject.id)}
-												onOpenProject={() =>
-													navigate(`/space/${currentSpaceId}/project/${childProject.id}`)
-												}
+
+							<SidebarGroupContent>
+								{isProjectsLoading ? (
+									<StatusNotice className='text-[12px]' size='sm'>
+										正在加载项目...
+									</StatusNotice>
+								) : projectsError ? (
+									<StatusNotice
+										actions={
+											<Button
+												className='h-7 rounded-md px-2 text-[12px]'
+												onClick={onRefreshProjects}
+												size='sm'
+												variant='outline'
 											>
-												<NavLink
-													className={({ isActive }) =>
-														cn(
-															'ml-5 flex h-7 items-center gap-2 rounded-md border border-transparent px-2 text-[12px] transition-colors',
-															isActive
-																? 'border-(--sf-color-border-subtle) bg-sidebar-accent font-medium text-foreground shadow-(--sf-shadow-panel)'
-																: 'text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover) hover:text-foreground',
-														)
-													}
-													to={`/space/${currentSpaceId}/project/${childProject.id}`}
-												>
-													<span className='size-2 shrink-0 rounded-full bg-(--sf-color-border-strong)' />
-													<span className='min-w-0 truncate'>{childProject.label}</span>
-													{childProject.badge ? (
-														<Badge
-															className='ml-auto h-4 shrink-0 rounded-md px-1.5 text-[10.5px]'
-															variant={getProjectStatusBadgeVariant(childProject.badge)}
-														>
-															{childProject.badge}
-														</Badge>
-													) : null}
-												</NavLink>
-											</ProjectContextMenu>
+												重试加载
+											</Button>
+										}
+										className='text-[12px]'
+										size='sm'
+										variant='danger'
+									>
+										<p className='leading-5'>{projectsError}</p>
+									</StatusNotice>
+								) : projects.length === 0 ? (
+									<StatusNotice
+										actions={
+											<Button
+												className='w-full justify-center rounded-md'
+												onClick={() => onOpenProjectCreateDialog()}
+												size='sm'
+											>
+												创建第一个项目
+											</Button>
+										}
+										className='text-[12px]'
+										layout='stack'
+										size='sm'
+										title='当前 Space 还没有项目'
+									/>
+								) : (
+									<SidebarMenu>
+										{projects.map((project) => (
+											<ProjectSidebarMenuItem
+												currentSpaceId={currentSpaceId}
+												deletingProjectId={deletingProjectId}
+												key={project.id}
+												onMoveProjectToTrash={(projectId) => void handleDeleteProject(projectId)}
+												onNavigateToProject={(projectId) =>
+													navigate(`/space/${currentSpaceId}/project/${projectId}`)
+												}
+												onOpenProjectCreateDialog={onOpenProjectCreateDialog}
+												onToggleProjectCollapsed={(payload) => setProjectTreeCollapsed(payload)}
+												projectTreeCollapsed={projectTreeCollapsed}
+												project={project}
+											/>
 										))}
-									</div>
-								))
-							)}
-						</section>
-					</div>
-				</aside>
+									</SidebarMenu>
+								)}
+							</SidebarGroupContent>
+						</SidebarGroup>
+					</SidebarContent>
+
+					<SidebarFooter className='border-t border-(--sf-color-divider) px-3 py-3'>
+						<SidebarMenu>
+							{footerItems.map((item) => (
+								<SidebarMenuItem key={item.key}>
+									<SidebarRouteMenuItem
+										badge={item.badge}
+										icon={item.icon}
+										label={item.label}
+										to={item.to}
+									/>
+								</SidebarMenuItem>
+							))}
+						</SidebarMenu>
+					</SidebarFooter>
+				</Sidebar>
 			</ContextMenuTrigger>
+
 			<ContextMenuContent className='w-52'>
 				<ContextMenuGroup>
 					<SidebarCustomizeMenu
@@ -351,6 +346,107 @@ export function ShellSidebar({
 				</ContextMenuGroup>
 			</ContextMenuContent>
 		</ContextMenu>
+	)
+}
+
+type ProjectSidebarMenuItemProps = {
+	currentSpaceId: string
+	project: ShellProjectLink
+	deletingProjectId: string | null
+	projectTreeCollapsed: Record<string, boolean>
+	onOpenProjectCreateDialog: (parentProjectId?: string | null) => void
+	onNavigateToProject: (projectId: string) => void
+	onMoveProjectToTrash: (projectId: string) => void
+	onToggleProjectCollapsed: (payload: {
+		spaceId: string
+		projectId: string
+		collapsed: boolean
+	}) => void
+}
+
+function ProjectSidebarMenuItem({
+	currentSpaceId,
+	project,
+	deletingProjectId,
+	projectTreeCollapsed,
+	onOpenProjectCreateDialog,
+	onNavigateToProject,
+	onMoveProjectToTrash,
+	onToggleProjectCollapsed,
+}: ProjectSidebarMenuItemProps) {
+	const projectPath = `/space/${currentSpaceId}/project/${project.id}`
+	const hasChildren = !!project.children?.length
+	const isCollapsed = projectTreeCollapsed[toProjectTreeKey(currentSpaceId, project.id)] ?? true
+	const isOpen = hasChildren ? !isCollapsed : false
+
+	return (
+		<Collapsible
+			asChild
+			onOpenChange={(nextOpen) => {
+				if (!hasChildren) {
+					return
+				}
+				onToggleProjectCollapsed({
+					spaceId: currentSpaceId,
+					projectId: project.id,
+					collapsed: !nextOpen,
+				})
+			}}
+			open={hasChildren ? isOpen : undefined}
+		>
+			<SidebarMenuItem className='flex flex-col gap-0.5'>
+				<div className='flex items-center gap-1'>
+					<div className='min-w-0 flex-1'>
+						<ProjectSidebarRouteMenuItem
+							isBusy={deletingProjectId === project.id}
+							label={project.label}
+							onCreateChildProject={() => onOpenProjectCreateDialog(project.id)}
+							onMoveToTrash={() => onMoveProjectToTrash(project.id)}
+							onOpenProject={() => onNavigateToProject(project.id)}
+							to={projectPath}
+						/>
+					</div>
+
+					{hasChildren ? (
+						<CollapsibleTrigger asChild>
+							<Button
+								aria-label={isOpen ? '收起子项目' : '展开子项目'}
+								className='h-8 w-8 shrink-0 rounded-md px-0 hover:bg-(--sf-color-shell-hover) aria-expanded:bg-(--sf-color-shell-hover-strong)'
+								onClick={(event) => event.stopPropagation()}
+								size='icon'
+								variant='ghost'
+							>
+								<ChevronRightIcon
+									className={cn(
+										'size-3.5 text-(--sf-color-icon-subtle) transition-transform',
+										isOpen ? 'rotate-90' : undefined,
+									)}
+								/>
+							</Button>
+						</CollapsibleTrigger>
+					) : null}
+				</div>
+
+				{hasChildren ? (
+					<CollapsibleContent>
+						<SidebarMenuSub>
+							{project.children?.map((childProject) => (
+								<SidebarMenuSubItem key={childProject.id}>
+									<ProjectSidebarSubRouteMenuItem
+										isBusy={deletingProjectId === childProject.id}
+										label={childProject.label}
+										onCreateChildProject={() => onOpenProjectCreateDialog(childProject.id)}
+										onMoveToTrash={() => onMoveProjectToTrash(childProject.id)}
+										onOpenProject={() => onNavigateToProject(childProject.id)}
+										to={`/space/${currentSpaceId}/project/${childProject.id}`}
+									/>
+								</SidebarMenuSubItem>
+							))}
+						</SidebarMenuSub>
+					</CollapsibleContent>
+				) : null}
+			</SidebarMenuItem>
+		</Collapsible>
 	)
 }
 
@@ -405,7 +501,6 @@ function SidebarCustomizeMenu({
 }
 
 type ShellNavContextMenuProps = {
-	children: ReactNode
 	itemKey: ShellSectionKey
 	hiddenNavItemKeys: ShellSectionKey[]
 	visibleNavItemCount: number
@@ -413,46 +508,181 @@ type ShellNavContextMenuProps = {
 	onResetNavItemVisibility: () => void
 }
 
-function ShellNavContextMenu({
-	children,
+type SidebarNavMenuItemProps = ShellNavContextMenuProps &
+	SidebarRouteItem & {
+		badge?: string
+	}
+
+function SidebarNavMenuItem({
 	itemKey,
+	label,
+	icon: Icon,
+	to,
+	badge,
 	hiddenNavItemKeys,
 	visibleNavItemCount,
 	onSetNavItemVisible,
 	onResetNavItemVisibility,
-}: ShellNavContextMenuProps) {
+}: SidebarNavMenuItemProps) {
 	const currentItem = SHELL_NAV_ITEMS.find((item) => item.key === itemKey)
+	const isActive = !!useMatch({ end: true, path: to })
+
+	return (
+		<SidebarMenuItem>
+			<ContextMenu>
+				<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
+					<SidebarMenuButton asChild isActive={isActive}>
+						<NavLink to={to}>
+							<Icon className='size-3.5 shrink-0' />
+							<span className='min-w-0 truncate'>{label}</span>
+							{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
+						</NavLink>
+					</SidebarMenuButton>
+				</ContextMenuTrigger>
+				<ContextMenuContent className='w-52'>
+					<ContextMenuGroup>
+						<SidebarCustomizeMenu
+							hiddenNavItemKeys={hiddenNavItemKeys}
+							onResetNavItemVisibility={onResetNavItemVisibility}
+							onSetNavItemVisible={onSetNavItemVisible}
+							visibleNavItemCount={visibleNavItemCount}
+						/>
+					</ContextMenuGroup>
+					{currentItem ? (
+						<>
+							<ContextMenuSeparator />
+							<ContextMenuGroup>
+								<ContextMenuCheckboxItem
+									checked={!hiddenNavItemKeys.includes(currentItem.key)}
+									disabled={
+										visibleNavItemCount === 1 && !hiddenNavItemKeys.includes(currentItem.key)
+									}
+									onCheckedChange={(checked) =>
+										onSetNavItemVisible(currentItem.key, checked === true)
+									}
+								>
+									显示当前入口
+								</ContextMenuCheckboxItem>
+							</ContextMenuGroup>
+						</>
+					) : null}
+				</ContextMenuContent>
+			</ContextMenu>
+		</SidebarMenuItem>
+	)
+}
+
+function SidebarRouteMenuItem({
+	label,
+	icon: Icon,
+	to,
+	badge,
+	size = 'default',
+}: SidebarRouteItem) {
+	const isActive = !!useMatch({ end: true, path: to })
+
+	return (
+		<SidebarMenuButton asChild isActive={isActive} size={size}>
+			<NavLink to={to}>
+				<Icon className='size-3.5 shrink-0' />
+				<span className='min-w-0 truncate'>{label}</span>
+				{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
+			</NavLink>
+		</SidebarMenuButton>
+	)
+}
+
+type ProjectSidebarRouteMenuItemProps = {
+	to: string
+	label: string
+	size?: 'default' | 'sm'
+	isBusy?: boolean
+	onOpenProject: () => void
+	onCreateChildProject: () => void
+	onMoveToTrash: () => void
+}
+
+function ProjectSidebarRouteMenuItem({
+	to,
+	label,
+	size = 'default',
+	isBusy,
+	onOpenProject,
+	onCreateChildProject,
+	onMoveToTrash,
+}: ProjectSidebarRouteMenuItemProps) {
+	const isActive = !!useMatch({ end: true, path: to })
 
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
-				{children}
+				<SidebarMenuButton asChild isActive={isActive} size={size}>
+					<NavLink to={to}>
+						<FolderIcon
+							className={cn(
+								'shrink-0 text-(--sf-color-shell-secondary)',
+								size === 'sm' ? 'size-3' : 'size-3.5',
+							)}
+						/>
+						<span className='min-w-0 truncate'>{label}</span>
+					</NavLink>
+				</SidebarMenuButton>
 			</ContextMenuTrigger>
-			<ContextMenuContent className='w-52'>
+			<ContextMenuContent className='w-44'>
 				<ContextMenuGroup>
-					<SidebarCustomizeMenu
-						hiddenNavItemKeys={hiddenNavItemKeys}
-						onResetNavItemVisibility={onResetNavItemVisibility}
-						onSetNavItemVisible={onSetNavItemVisible}
-						visibleNavItemCount={visibleNavItemCount}
-					/>
+					<ContextMenuItem onSelect={onOpenProject}>
+						<ExternalLinkIcon />
+						打开项目
+					</ContextMenuItem>
+					<ContextMenuItem onSelect={onCreateChildProject}>
+						<FolderPlusIcon />
+						新建子项目
+					</ContextMenuItem>
 				</ContextMenuGroup>
-				{currentItem ? (
-					<>
-						<ContextMenuSeparator />
-						<ContextMenuGroup>
-							<ContextMenuCheckboxItem
-								checked={!hiddenNavItemKeys.includes(currentItem.key)}
-								disabled={visibleNavItemCount === 1 && !hiddenNavItemKeys.includes(currentItem.key)}
-								onCheckedChange={(checked) =>
-									onSetNavItemVisible(currentItem.key, checked === true)
-								}
-							>
-								显示当前入口
-							</ContextMenuCheckboxItem>
-						</ContextMenuGroup>
-					</>
-				) : null}
+				<ContextMenuSeparator />
+				<ContextMenuGroup>
+					<ContextMenuItem disabled={isBusy} onSelect={onMoveToTrash} variant='destructive'>
+						<Trash2Icon />
+						移入回收站
+					</ContextMenuItem>
+				</ContextMenuGroup>
+			</ContextMenuContent>
+		</ContextMenu>
+	)
+}
+
+function ProjectSidebarSubRouteMenuItem(props: ProjectSidebarRouteMenuItemProps) {
+	const { to, label, isBusy, onOpenProject, onCreateChildProject, onMoveToTrash } = props
+	const isActive = !!useMatch({ end: true, path: to })
+
+	return (
+		<ContextMenu>
+			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
+				<SidebarMenuSubButton asChild isActive={isActive}>
+					<NavLink to={to}>
+						<FolderIcon className='shrink-0 text-(--sf-color-shell-secondary)' />
+						<span className='min-w-0 truncate'>{label}</span>
+					</NavLink>
+				</SidebarMenuSubButton>
+			</ContextMenuTrigger>
+			<ContextMenuContent className='w-44'>
+				<ContextMenuGroup>
+					<ContextMenuItem onSelect={onOpenProject}>
+						<ExternalLinkIcon />
+						打开项目
+					</ContextMenuItem>
+					<ContextMenuItem onSelect={onCreateChildProject}>
+						<FolderPlusIcon />
+						新建子项目
+					</ContextMenuItem>
+				</ContextMenuGroup>
+				<ContextMenuSeparator />
+				<ContextMenuGroup>
+					<ContextMenuItem disabled={isBusy} onSelect={onMoveToTrash} variant='destructive'>
+						<Trash2Icon />
+						移入回收站
+					</ContextMenuItem>
+				</ContextMenuGroup>
 			</ContextMenuContent>
 		</ContextMenu>
 	)
@@ -464,12 +694,12 @@ function SpaceIconBadge({ space }: { space: (typeof SHELL_SPACES)[number] }) {
 	return (
 		<span
 			className={cn(
-				'flex size-5 shrink-0 items-center justify-center rounded-full text-white shadow-(--sf-shadow-panel)',
+				'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white shadow-(--sf-shadow-panel)',
 				space.iconBadgeClassName,
 			)}
 			data-space-icon-badge='true'
 		>
-			<SpaceIcon className='size-3 text-white' />
+			<SpaceIcon className='size-4 text-white' />
 		</span>
 	)
 }

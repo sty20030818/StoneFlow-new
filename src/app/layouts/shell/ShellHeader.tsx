@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
 	getSectionLabel,
 	getSpaceLabel,
-	SHELL_NAV_ITEMS,
+	SHELL_ROUTE_ITEMS,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
 import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
@@ -38,14 +38,19 @@ import {
 	ChevronLeftIcon,
 	ChevronDownIcon,
 	ChevronRightIcon,
+	FolderIcon,
 	FolderPlusIcon,
 	HistoryIcon,
+	InboxIcon,
 	MinusIcon,
 	SearchIcon,
-	SettingsIcon,
+	Settings2Icon,
 	SquarePenIcon,
 	SquareIcon,
+	TargetIcon,
+	Trash2Icon,
 	XIcon,
+	type LucideIcon,
 } from 'lucide-react'
 
 type ShellHeaderProps = {
@@ -152,13 +157,6 @@ export function ShellHeader({
 		})
 	}
 
-	const handleOpenSettings = () => {
-		onCloseDrawer()
-		startTransition(() => {
-			navigate(`/space/${currentSpaceId}/settings`)
-		})
-	}
-
 	const handleMinimize = async () => {
 		try {
 			await getCurrentWindow().minimize()
@@ -229,31 +227,24 @@ export function ShellHeader({
 								<HistoryIcon className='size-3.5' />
 							</Button>
 						</DropdownMenuTrigger>
-						<DropdownMenuContent align='start' className='w-58'>
+						<DropdownMenuContent align='start'>
 							<DropdownMenuLabel>最近浏览</DropdownMenuLabel>
 							<DropdownMenuGroup>
 								{routeHistoryEntries.length > 0 ? (
-									routeHistoryEntries.map((entry) => (
-										<DropdownMenuItem
-											className='flex-col items-start gap-0.5 px-2 py-1.5'
-											key={entry.id}
-											onSelect={() => navigateToHistoryEntry(entry)}
-										>
-											<span className='max-w-full truncate text-[12.5px] font-medium'>
-												{entry.label}
-											</span>
-											<span className='max-w-full truncate text-[11px] text-(--sf-color-shell-tertiary)'>
-												{entry.description}
-											</span>
-										</DropdownMenuItem>
-									))
+									routeHistoryEntries.map((entry) => {
+										const EntryIcon = resolveHistoryIcon(entry.path)
+										return (
+											<DropdownMenuItem
+												key={entry.id}
+												onSelect={() => navigateToHistoryEntry(entry)}
+											>
+												<EntryIcon />
+												<span className='min-w-0 truncate'>{entry.label}</span>
+											</DropdownMenuItem>
+										)
+									})
 								) : (
-									<DropdownMenuItem
-										className='px-2 py-1.5 text-[12px] text-(--sf-color-shell-tertiary)'
-										disabled
-									>
-										暂无历史记录
-									</DropdownMenuItem>
+									<DropdownMenuItem disabled>暂无历史记录</DropdownMenuItem>
 								)}
 							</DropdownMenuGroup>
 						</DropdownMenuContent>
@@ -326,7 +317,7 @@ export function ShellHeader({
 									<ChevronDownIcon />
 								</Button>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent align='end' className='w-44'>
+							<DropdownMenuContent align='end'>
 								<DropdownMenuGroup>
 									<DropdownMenuItem onSelect={onOpenTaskCreateDialog}>
 										<SquarePenIcon />
@@ -347,15 +338,6 @@ export function ShellHeader({
 							className='size-7.5 rounded-full border border-(--sf-color-border-subtle) object-cover'
 							src='/avatar.jpg'
 						/>
-						<Button
-							aria-label='打开设置'
-							className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
-							onClick={handleOpenSettings}
-							size='icon-sm'
-							variant='ghost'
-						>
-							<SettingsIcon className='size-3.5' />
-						</Button>
 					</div>
 
 					{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
@@ -442,7 +424,7 @@ export function ShellHeader({
 						<CommandSeparator />
 
 						<CommandGroup heading='Navigate'>
-							{SHELL_NAV_ITEMS.map((item) => (
+							{SHELL_ROUTE_ITEMS.map((item) => (
 								<CommandItem
 									key={item.key}
 									onSelect={() => handleNavigate(item.to(currentSpaceId))}
@@ -500,6 +482,27 @@ export function ShellHeader({
 			</CommandDialog>
 		</>
 	)
+}
+
+// 根据历史条目的路径推断对应的语义 icon，与 Sidebar 主导航保持一致
+function resolveHistoryIcon(path: string): LucideIcon {
+	if (path.includes('/project/')) {
+		return FolderIcon
+	}
+
+	if (path.includes('/focus')) {
+		return TargetIcon
+	}
+
+	if (path.includes('/trash')) {
+		return Trash2Icon
+	}
+
+	if (path.includes('/settings')) {
+		return Settings2Icon
+	}
+
+	return InboxIcon
 }
 
 function isTextInputTarget(target: EventTarget | null) {

@@ -22,6 +22,7 @@ import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
 import { useShellNavBadges } from '@/app/layouts/shell/model/useShellNavBadges'
 import { useCommandOpenListener } from '@/shared/events/commandOpen'
 import { useTaskChangedListener } from '@/shared/events/taskChanged'
+import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 
 type ShellLayoutProps = PropsWithChildren<{
@@ -109,7 +110,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				projectsError={projectsError}
 			/>
 
-			<div className='relative flex min-h-0 flex-1 overflow-hidden'>
+			<SidebarProvider className='relative flex min-h-0 flex-1 overflow-hidden'>
 				<ShellSidebar
 					currentSpaceId={currentSpaceId}
 					isProjectsLoading={isProjectsLoading}
@@ -133,7 +134,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 						{children}
 					</ShellMain>
 				</div>
-			</div>
+			</SidebarProvider>
 
 			<TaskCreateDialog
 				currentSpaceId={currentSpaceId}

@@ -1,8 +1,6 @@
 import { getSectionLabel, getSpaceLabel } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import { useHealthcheckStatus } from '@/features/healthcheck/model/useHealthcheckStatus'
-import { Button } from '@/shared/ui/base/button'
-import { Settings2Icon, Trash2Icon } from 'lucide-react'
 
 type ShellFooterProps = {
 	currentSpaceId: string
@@ -29,12 +27,6 @@ export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps)
 				>
 					{healthcheckStatus.detail}
 				</span>
-				<Button size='icon-sm' variant='ghost'>
-					<Trash2Icon className='size-3.5' />
-				</Button>
-				<Button size='icon-sm' variant='ghost'>
-					<Settings2Icon className='size-3.5' />
-				</Button>
 			</div>
 
 			<div className='flex min-w-0 flex-1 items-center justify-between border-t border-(--sf-color-divider) px-4'>

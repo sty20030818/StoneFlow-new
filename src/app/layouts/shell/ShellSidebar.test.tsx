@@ -35,6 +35,11 @@ describe('ShellSidebar', () => {
 			'href',
 			'/space/work/trash',
 		)
+		expect(screen.getByRole('link', { name: 'Views' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute(
+			'href',
+			'/space/work/settings',
+		)
 	})
 
 	it('渲染真实项目导航并标记当前项目激活态', () => {
@@ -55,39 +60,23 @@ describe('ShellSidebar', () => {
 			projectsError: null,
 		})
 
-		const activeProjectLink = screen.getByRole('link', { name: /执行层active/ })
+		const activeProjectLink = screen.getByRole('link', { name: '执行层' })
 		expect(activeProjectLink).toHaveAttribute('href', '/space/work/project/project-1')
 		expect(activeProjectLink).toHaveAttribute('aria-current', 'page')
-		expect(screen.getByRole('link', { name: /产品设计paused/ })).toHaveAttribute(
+		expect(activeProjectLink.querySelector('svg')).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '产品设计' })).toHaveAttribute(
 			'href',
 			'/space/work/project/project-2',
 		)
-		expect(screen.getByRole('link', { name: /子项目收口active/ })).toHaveAttribute(
+		expect(screen.getByRole('link', { name: '子项目收口' })).toHaveAttribute(
 			'href',
 			'/space/work/project/project-child',
 		)
 		expect(screen.getByRole('link', { name: 'Views' }).className).toContain(
 			'hover:bg-(--sf-color-shell-hover)',
 		)
-		expect(screen.getAllByText('active')[0]).toHaveAttribute('data-variant', 'primary')
-		expect(screen.getByText('paused')).toHaveAttribute('data-variant', 'warning')
-	})
-
-	it('可以从父项目触发创建子项目', () => {
-		const onOpenProjectCreateDialog = vi.fn<(parentProjectId?: string | null) => void>()
-
-		renderSidebar({
-			currentSpaceId: 'work',
-			isProjectsLoading: false,
-			onOpenTaskCreateDialog: vi.fn<() => void>(),
-			onOpenProjectCreateDialog,
-			projects: [{ id: 'project-1', label: '执行层', badge: 'active', children: [] }],
-			projectsError: null,
-		})
-
-		fireEvent.click(screen.getByRole('button', { name: '在 执行层 下创建子项目' }))
-
-		expect(onOpenProjectCreateDialog).toHaveBeenCalledWith('project-1')
+		expect(screen.queryByText('active')).not.toBeInTheDocument()
+		expect(screen.queryByText('paused')).not.toBeInTheDocument()
 	})
 
 	it('展示项目加载态', () => {
@@ -147,6 +136,35 @@ describe('ShellSidebar', () => {
 		expect(screen.queryByRole('link', { name: 'Projects' })).not.toBeInTheDocument()
 	})
 
+	it('移除项目行尾快捷按钮，项目管理改由右键菜单承接', () => {
+		renderSidebar({
+			currentSpaceId: 'work',
+			isProjectsLoading: false,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
+			projects: [{ id: 'project-1', label: '执行层', badge: 'active', children: [] }],
+			projectsError: null,
+		})
+
+		expect(screen.queryByRole('button', { name: '在 执行层 下创建子项目' })).not.toBeInTheDocument()
+	})
+
+	it('项目项右键仍可打开项目管理菜单', () => {
+		renderSidebar({
+			currentSpaceId: 'work',
+			isProjectsLoading: false,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
+			projects: [{ id: 'project-1', label: '执行层', badge: 'active', children: [] }],
+			projectsError: null,
+		})
+
+		fireEvent.contextMenu(screen.getByRole('link', { name: '执行层' }))
+
+		expect(screen.getByRole('menuitem', { name: '打开项目' })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: '新建子项目' })).toBeInTheDocument()
+	})
+
 	it('使用 Space 下拉和右侧圆形新建任务入口替代顶部 tabs', () => {
 		const onOpenTaskCreateDialog = vi.fn<() => void>()
 
@@ -168,8 +186,8 @@ describe('ShellSidebar', () => {
 		expect(spaceTrigger.querySelector('[data-space-icon-badge="true"]')?.className).toContain(
 			'bg-[#5e6ad2]',
 		)
-		expect(spaceTrigger.closest('div')?.className).toContain('px-5.5')
-		expect(document.querySelector('nav')?.className).toContain('px-5.5')
+		expect(document.querySelector('[data-slot="sidebar-header"]')?.className).toContain('px-3')
+		expect(document.querySelectorAll('[data-slot="sidebar-group"]')[0]?.className).toContain('px-3')
 		expect(screen.queryByRole('link', { name: '学习' })).not.toBeInTheDocument()
 
 		fireEvent.click(screen.getByRole('button', { name: '新建任务' }))
@@ -200,6 +218,7 @@ describe('ShellSidebar', () => {
 		fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Views' }))
 
 		expect(screen.queryByRole('link', { name: 'Views' })).not.toBeInTheDocument()
+		expect(screen.getByRole('link', { name: 'Trash' })).toBeInTheDocument()
 		expect(window.localStorage.getItem('stoneflow:shell-nav-visibility:v1')).toContain('focus')
 
 		fireEvent.contextMenu(screen.getByRole('link', { name: 'Inbox' }))
@@ -224,13 +243,68 @@ describe('ShellSidebar', () => {
 		expect(screen.getByRole('menuitem', { name: '自定义侧边栏' })).toBeInTheDocument()
 		expect(screen.queryByRole('menuitem', { name: '恢复默认侧栏' })).not.toBeInTheDocument()
 	})
+
+	it('自定义侧边栏仅控制 Inbox 和 Views，不包含 Footer 入口', () => {
+		renderSidebar({
+			currentSpaceId: 'work',
+			isProjectsLoading: false,
+			onOpenTaskCreateDialog: vi.fn<() => void>(),
+			onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
+			projects: [],
+			projectsError: null,
+		})
+
+		fireEvent.contextMenu(screen.getByRole('link', { name: 'Inbox' }))
+		fireEvent.click(screen.getByRole('menuitem', { name: '自定义侧边栏' }))
+
+		expect(screen.getByRole('menuitemcheckbox', { name: 'Inbox' })).toBeInTheDocument()
+		expect(screen.getByRole('menuitemcheckbox', { name: 'Views' })).toBeInTheDocument()
+		expect(screen.queryByRole('menuitemcheckbox', { name: 'Trash' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('menuitemcheckbox', { name: 'Settings' })).not.toBeInTheDocument()
+	})
+
+	it('在 Trash 路由下高亮 Footer 的 Trash 入口', () => {
+		renderSidebar(
+			{
+				currentSpaceId: 'work',
+				isProjectsLoading: false,
+				onOpenTaskCreateDialog: vi.fn<() => void>(),
+				onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
+				projects: [],
+				projectsError: null,
+			},
+			'/space/work/trash',
+		)
+
+		expect(screen.getByRole('link', { name: 'Trash' })).toHaveAttribute('aria-current', 'page')
+		expect(screen.getByRole('link', { name: 'Settings' })).not.toHaveAttribute('aria-current')
+	})
+
+	it('在 Settings 路由下高亮 Footer 的 Settings 入口', () => {
+		renderSidebar(
+			{
+				currentSpaceId: 'work',
+				isProjectsLoading: false,
+				onOpenTaskCreateDialog: vi.fn<() => void>(),
+				onOpenProjectCreateDialog: vi.fn<(parentProjectId?: string | null) => void>(),
+				projects: [],
+				projectsError: null,
+			},
+			'/space/work/settings',
+		)
+
+		expect(screen.getByRole('link', { name: 'Settings' })).toHaveAttribute('aria-current', 'page')
+	})
 })
 
-function renderSidebar(props: ComponentProps<typeof ShellSidebar>) {
+function renderSidebar(
+	props: ComponentProps<typeof ShellSidebar>,
+	initialEntry = '/space/work/project/project-1',
+) {
 	return render(
-		<MemoryRouter initialEntries={['/space/work/project/project-1']}>
+		<MemoryRouter initialEntries={[initialEntry]}>
 			<Routes>
-				<Route element={<ShellSidebar {...props} />} path='/space/:spaceId/project/:projectId' />
+				<Route element={<ShellSidebar {...props} />} path='/space/:spaceId/*' />
 			</Routes>
 		</MemoryRouter>,
 	)
