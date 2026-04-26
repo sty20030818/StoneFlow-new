@@ -13,8 +13,13 @@
 use std::sync::Mutex;
 
 use tauri::{Manager, Runtime};
+use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
 use crate::app::MAIN_WINDOW_LABEL;
+
+fn main_window_state_flags() -> StateFlags {
+    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED
+}
 
 /// 最近一次主窗口操作的结果（供 snapshot 观测）。
 ///
@@ -145,10 +150,7 @@ pub(crate) fn handle_main_window_close_requested<R: Runtime>(
         return Ok(false);
     }
 
-    window.hide()?;
-    helper_state
-        .mark_main_window_hidden(true)
-        .map_err(tauri::Error::Anyhow)?;
+    hide_main_window_to_tray(&window.app_handle(), helper_state)?;
     Ok(true)
 }
 
@@ -163,7 +165,26 @@ pub(crate) fn should_hide_main_window_on_close(
     Ok(!helper_state.is_exiting()?)
 }
 
-pub(crate) fn restore_main_window_from_helper<R: Runtime>(
+/// 隐藏主窗口到托盘前主动保存窗口状态，避免长期驻留托盘时丢失布局。
+pub(crate) fn hide_main_window_to_tray<R: Runtime>(
+    app_handle: &tauri::AppHandle<R>,
+    helper_state: &CommandHelperState,
+) -> tauri::Result<()> {
+    app_handle
+        .save_window_state(main_window_state_flags())
+        .map_err(|error| tauri::Error::Anyhow(anyhow::Error::new(error)))?;
+
+    if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
+        window.hide()?;
+        helper_state
+            .mark_main_window_hidden(true)
+            .map_err(tauri::Error::Anyhow)?;
+    }
+
+    Ok(())
+}
+
+pub(crate) fn restore_main_window<R: Runtime>(
     app_handle: &tauri::AppHandle<R>,
     helper_state: &CommandHelperState,
 ) -> tauri::Result<()> {
@@ -178,7 +199,7 @@ pub(crate) fn restore_main_window_from_helper<R: Runtime>(
     Ok(())
 }
 
-pub(crate) fn quit_from_helper<R: Runtime>(
+pub(crate) fn quit_application<R: Runtime>(
     app_handle: &tauri::AppHandle<R>,
     helper_state: &CommandHelperState,
 ) -> tauri::Result<()> {
@@ -188,6 +209,20 @@ pub(crate) fn quit_from_helper<R: Runtime>(
 
     app_handle.exit(0);
     Ok(())
+}
+
+pub(crate) fn restore_main_window_from_helper<R: Runtime>(
+    app_handle: &tauri::AppHandle<R>,
+    helper_state: &CommandHelperState,
+) -> tauri::Result<()> {
+    restore_main_window(app_handle, helper_state)
+}
+
+pub(crate) fn quit_from_helper<R: Runtime>(
+    app_handle: &tauri::AppHandle<R>,
+    helper_state: &CommandHelperState,
+) -> tauri::Result<()> {
+    quit_application(app_handle, helper_state)
 }
 
 #[cfg(test)]
@@ -263,5 +298,15 @@ mod tests {
         state.mark_exiting().expect("exit state should be recorded");
         assert!(!should_hide_main_window_on_close(MAIN_WINDOW_LABEL, &state)
             .expect("policy should be available"));
+    }
+
+    #[test]
+    fn state_flags_exclude_visible_state() {
+        let flags = main_window_state_flags();
+
+        assert!(flags.contains(StateFlags::SIZE));
+        assert!(flags.contains(StateFlags::POSITION));
+        assert!(flags.contains(StateFlags::MAXIMIZED));
+        assert!(!flags.contains(StateFlags::VISIBLE));
     }
 }

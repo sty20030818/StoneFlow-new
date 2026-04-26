@@ -5,6 +5,7 @@ use tauri::LogicalPosition;
 #[cfg(target_os = "macos")]
 use tauri::TitleBarStyle;
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri_plugin_window_state::StateFlags;
 
 use crate::app::command_helper::{handle_main_window_close_requested, CommandHelperState};
 use crate::application::create::ActiveSpaceState;
@@ -15,6 +16,7 @@ pub mod commands;
 pub mod error;
 pub(crate) mod events;
 pub(crate) mod helper_process;
+pub(crate) mod tray;
 
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
 
@@ -50,6 +52,13 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_state_flags(
+                    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED,
+                )
+                .build(),
+        )
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 let helper_state = window.state::<CommandHelperState>();
@@ -81,6 +90,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             app.manage(helper_process::HelperProcessState::default());
 
             build_main_window(app)?;
+            tray::initialize_main_tray(app)?;
 
             // 启动 IPC Server：监听 Helper 进程的 Quick Capture 请求。
             // 放在 setup 末尾是为了确保 DatabaseState / ActiveSpaceState 已 manage 入容器。
