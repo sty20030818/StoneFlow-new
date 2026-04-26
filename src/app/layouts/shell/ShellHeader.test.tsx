@@ -38,8 +38,12 @@ describe('ShellHeader', () => {
 			expect(currentWindow.isMaximized).toHaveBeenCalled()
 		})
 
-		const leftChrome = screen.getByRole('banner').firstElementChild
+		const leftChrome = document.querySelector('[data-slot="shell-header-left"]')
+		const centerChrome = document.querySelector('[data-slot="shell-header-center"]')
+		const rightChrome = document.querySelector('[data-slot="shell-header-right"]')
 		expect(leftChrome).toBeTruthy()
+		expect(centerChrome).toBeTruthy()
+		expect(rightChrome).toBeTruthy()
 		expect(leftChrome!.className).toContain('w-(--sf-shell-sidebar-reserved-width)')
 		expect(leftChrome!.className).toContain('transition-[width]')
 		expect(leftChrome!.className).toContain(
@@ -49,13 +53,22 @@ describe('ShellHeader', () => {
 			'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-3',
 		)
 		expect(leftChrome!.className).toContain('group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-max')
-		expect(leftChrome!.className).toContain('gap-1')
+		expect(centerChrome!.className).toContain('justify-center')
+		expect(screen.getByRole('banner').className).toContain('gap-3')
 		expect(screen.getByRole('banner')).toHaveAttribute('data-tauri-drag-region')
-		expect(document.querySelectorAll('[data-tauri-drag-region]')).toHaveLength(6)
+		expect(document.querySelector('[data-slot="shell-header-nav"]')).toHaveAttribute(
+			'data-tauri-drag-region',
+		)
+		expect(document.querySelector('[data-slot="shell-header-right"]')).toHaveAttribute(
+			'data-tauri-drag-region',
+		)
 		expect(screen.getByRole('button', { name: '打开历史记录' })).not.toHaveAttribute(
 			'data-tauri-drag-region',
 		)
 		expect(document.querySelector('[data-sf-search-root="true"]')).not.toHaveAttribute(
+			'data-tauri-drag-region',
+		)
+		expect(screen.getByRole('img', { name: '当前用户头像' })).toHaveAttribute(
 			'data-tauri-drag-region',
 		)
 		expect(screen.queryByText('StoneFlow')).not.toBeInTheDocument()
@@ -71,12 +84,7 @@ describe('ShellHeader', () => {
 		)
 		expect(screen.getByRole('button', { name: '后退' }).className).toContain('rounded-full')
 		expect(screen.getByRole('button', { name: '前进' }).className).toContain('rounded-full')
-		expect(screen.getByRole('button', { name: '后退' }).parentElement?.className).toContain(
-			'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:contents',
-		)
-		expect(screen.getByRole('button', { name: '后退' }).parentElement?.className).toContain(
-			'group-data-[sidebar-layout=mobile]/sidebar-wrapper:contents',
-		)
+		expect(document.querySelector('[data-slot="shell-header-nav"]')?.className).toContain('gap-1')
 		const avatarImages = document.querySelectorAll('img[src="/avatar.jpg"]')
 		expect(avatarImages.length).toBe(2)
 		expect(screen.getByRole('img', { name: '当前用户头像' })).toHaveAttribute('src', '/avatar.jpg')
@@ -123,14 +131,14 @@ describe('ShellHeader', () => {
 		renderHeader({}, { matchMedia: 'narrow' })
 
 		await waitFor(() => {
-			expect(document.querySelectorAll('[data-tauri-drag-region]')).toHaveLength(4)
+			expect(document.querySelector('[data-slot="shell-header-center"]')).toBeTruthy()
 		})
 		expect(document.querySelector('[data-slot="sidebar-trigger"]')).toBeNull()
 		expect(screen.queryByRole('button', { name: '打开历史记录' })).toBeNull()
 		expect(screen.queryByRole('button', { name: '展开侧边栏' })).toBeNull()
 		expect(screen.queryByRole('button', { name: '收起侧边栏' })).toBeNull()
-		const leftChrome = screen.getByRole('banner').firstElementChild
-		expect(leftChrome?.className).not.toContain('w-(--sf-shell-sidebar-reserved-width)')
+		expect(document.querySelector('[data-slot="shell-header-left"]')).toBeNull()
+		expect(document.querySelector('[data-slot="shell-header-right"]')).toBeTruthy()
 	})
 
 	it('历史记录下拉左对齐触发按钮且不展示当前路由', async () => {
