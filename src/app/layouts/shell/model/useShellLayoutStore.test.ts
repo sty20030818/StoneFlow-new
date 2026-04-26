@@ -7,12 +7,15 @@ describe('useShellLayoutStore', () => {
 			activeSection: 'inbox',
 			isCommandOpen: false,
 			isTaskCreateOpen: false,
+			taskCreateProjectId: null,
+			taskCreateStatus: 'todo',
 			isProjectCreateOpen: false,
 			isDrawerOpen: false,
 			activeDrawerKind: null,
 			activeDrawerId: null,
 			taskDataVersion: 0,
 			projectDataVersion: 0,
+			projectTaskBoardOpenSections: ['todo', 'done'],
 		})
 	})
 
@@ -51,6 +54,19 @@ describe('useShellLayoutStore', () => {
 		expect(useShellLayoutStore.getState()).toMatchObject({
 			taskDataVersion: 1,
 			projectDataVersion: 1,
+		})
+	})
+
+	it('打开任务创建弹窗时记录默认 project 与 status', () => {
+		useShellLayoutStore.getState().openTaskCreateDialog({
+			projectId: 'project-1',
+			status: 'done',
+		})
+
+		expect(useShellLayoutStore.getState()).toMatchObject({
+			isTaskCreateOpen: true,
+			taskCreateProjectId: 'project-1',
+			taskCreateStatus: 'done',
 		})
 	})
 })

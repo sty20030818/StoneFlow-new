@@ -65,6 +65,7 @@ fn focus_view_shows_pinned_tasks() {
                 note: None,
                 priority: Some("high".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -89,6 +90,7 @@ fn focus_view_shows_pinned_tasks() {
                 note: None,
                 priority: Some("medium".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -139,6 +141,7 @@ fn high_priority_view_shows_high_and_urgent_tasks() {
                 note: None,
                 priority: Some("high".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -152,6 +155,7 @@ fn high_priority_view_shows_high_and_urgent_tasks() {
                 note: None,
                 priority: Some("urgent".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -165,6 +169,7 @@ fn high_priority_view_shows_high_and_urgent_tasks() {
                 note: None,
                 priority: Some("medium".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await

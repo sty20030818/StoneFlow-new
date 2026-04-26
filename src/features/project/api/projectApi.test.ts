@@ -115,7 +115,19 @@ describe('project api', () => {
 					sort_order: 0,
 				},
 			],
-			tasks: [],
+			tasks: [
+				{
+					id: 'task-1',
+					title: '执行任务',
+					note: null,
+					priority: 'high',
+					status: 'todo',
+					due_at: '2026-04-22T08:00:00Z',
+					completed_at: null,
+					created_at: '2026-04-20T08:00:00Z',
+					updated_at: '2026-04-21T08:00:00Z',
+				},
+			],
 		})
 
 		await expect(
@@ -129,6 +141,14 @@ describe('project api', () => {
 					id: 'project-child',
 					parentProjectId: 'project-1',
 					name: '子项目收口',
+				},
+			],
+			tasks: [
+				{
+					id: 'task-1',
+					tags: [],
+					dueAt: '2026-04-22T08:00:00Z',
+					createdAt: '2026-04-20T08:00:00Z',
 				},
 			],
 		})

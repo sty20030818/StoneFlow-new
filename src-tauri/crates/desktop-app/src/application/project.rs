@@ -69,7 +69,9 @@ pub(crate) struct ProjectExecutionTaskPayload {
     pub(crate) note: Option<String>,
     pub(crate) priority: String,
     pub(crate) status: String,
+    pub(crate) due_at: Option<DateTime<Utc>>,
     pub(crate) completed_at: Option<DateTime<Utc>>,
+    pub(crate) created_at: DateTime<Utc>,
     pub(crate) updated_at: DateTime<Utc>,
 }
 
@@ -164,7 +166,9 @@ pub(crate) async fn get_project_execution_view(
                 note: task.note,
                 priority: task.priority.unwrap_or_default(),
                 status: task.status,
+                due_at: task.due_at,
                 completed_at: task.completed_at,
+                created_at: task.created_at,
                 updated_at: task.updated_at,
             })
             .collect(),

@@ -152,6 +152,7 @@ fn project_execution_view_filters_ready_tasks() {
                 note: None,
                 priority: Some("high".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -165,6 +166,7 @@ fn project_execution_view_filters_ready_tasks() {
                 note: None,
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await
@@ -182,6 +184,8 @@ fn project_execution_view_filters_ready_tasks() {
 
         assert_eq!(payload.tasks.len(), 1);
         assert_eq!(payload.tasks[0].title, "已就绪任务");
+        assert_eq!(payload.tasks[0].due_at, None);
+        assert!(payload.tasks[0].created_at <= payload.tasks[0].updated_at);
     });
 }
 
@@ -214,6 +218,7 @@ fn update_project_task_status_toggles_completion() {
                 note: None,
                 priority: Some("medium".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -305,6 +310,7 @@ fn update_project_task_status_rejects_cross_space_task() {
                 note: None,
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await

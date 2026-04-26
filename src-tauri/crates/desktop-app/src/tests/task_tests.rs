@@ -24,6 +24,7 @@ fn create_task_writes_in_app_inbox_defaults() {
                 note: Some("  先打通 Header 入口  ".to_owned()),
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await
@@ -74,6 +75,7 @@ fn create_task_accepts_priority_and_skips_inbox_when_project_assigned() {
                 note: None,
                 priority: Some("high".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -88,6 +90,40 @@ fn create_task_accepts_priority_and_skips_inbox_when_project_assigned() {
         assert_eq!(persisted_task.status, "todo");
         assert_eq!(persisted_task.priority.as_deref(), Some("high"));
         assert_eq!(persisted_task.project_id, Some(project.id));
+    });
+}
+
+#[test]
+fn create_task_accepts_done_status_and_sets_completed_at() {
+    let temp_dir = TestDatabaseDir::new();
+
+    tauri::async_runtime::block_on(async {
+        let state = prepare_database_at_path(&temp_dir.database_path())
+            .await
+            .expect("bootstrap should succeed before creating done task");
+
+        let payload = create_task(
+            &state,
+            CreateTaskInput {
+                space_slug: "work".to_owned(),
+                title: "直接创建已完成任务".to_owned(),
+                note: None,
+                priority: Some("medium".to_owned()),
+                project_id: None,
+                status: Some("done".to_owned()),
+            },
+        )
+        .await
+        .expect("done task should be created");
+
+        let persisted_task = task::Entity::find_by_id(payload.id)
+            .one(&state.connection)
+            .await
+            .expect("created task should be queryable")
+            .expect("created task should exist");
+
+        assert_eq!(persisted_task.status, "done");
+        assert!(persisted_task.completed_at.is_some());
     });
 }
 
@@ -108,6 +144,7 @@ fn create_task_rejects_blank_title() {
                 note: None,
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await
@@ -134,12 +171,40 @@ fn create_task_rejects_invalid_priority() {
                 note: None,
                 priority: Some("invalid".to_owned()),
                 project_id: None,
+            status: None,
             },
         )
         .await
         .expect_err("invalid priority should be rejected");
 
         assert!(error.to_string().contains("invalid priority"));
+    });
+}
+
+#[test]
+fn create_task_rejects_invalid_status() {
+    let temp_dir = TestDatabaseDir::new();
+
+    tauri::async_runtime::block_on(async {
+        let state = prepare_database_at_path(&temp_dir.database_path())
+            .await
+            .expect("bootstrap should succeed before validation");
+
+        let error = create_task(
+            &state,
+            CreateTaskInput {
+                space_slug: "work".to_owned(),
+                title: "测试无效状态".to_owned(),
+                note: None,
+                priority: None,
+                project_id: None,
+                status: Some("archived".to_owned()),
+            },
+        )
+        .await
+        .expect_err("invalid status should be rejected");
+
+        assert!(error.to_string().contains("task status must be `todo` or `done`"));
     });
 }
 
@@ -183,6 +248,7 @@ fn create_task_rejects_foreign_project() {
                 note: None,
                 priority: None,
                 project_id: Some(foreign_project.id),
+            status: None,
             },
         )
         .await

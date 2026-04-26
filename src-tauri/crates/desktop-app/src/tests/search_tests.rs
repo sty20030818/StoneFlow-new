@@ -34,6 +34,7 @@ fn search_workspace_finds_tasks_and_projects_by_keyword() {
                 note: Some("任务包含 M2-B 内容".to_owned()),
                 priority: Some("high".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -47,6 +48,7 @@ fn search_workspace_finds_tasks_and_projects_by_keyword() {
                 note: None,
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await
@@ -108,6 +110,7 @@ fn search_workspace_respects_limit() {
                     note: None,
                     priority: Some("medium".to_owned()),
                     project_id: None,
+                status: None,
                 },
             )
             .await

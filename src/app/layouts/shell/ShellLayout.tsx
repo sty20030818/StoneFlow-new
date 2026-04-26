@@ -9,6 +9,8 @@ import {
 	selectIsProjectCreateOpen,
 	selectIsTaskCreateOpen,
 	selectProjectCreateParentId,
+	selectTaskCreateProjectId,
+	selectTaskCreateStatus,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { useShellProjects } from '@/app/layouts/shell/model/useShellProjects'
 import { ProjectCreateDialog } from '@/features/project/ui/ProjectCreateDialog'
@@ -36,6 +38,8 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 	const isTaskCreateOpen = useShellLayoutStore(selectIsTaskCreateOpen)
 	const isProjectCreateOpen = useShellLayoutStore(selectIsProjectCreateOpen)
 	const projectCreateParentId = useShellLayoutStore(selectProjectCreateParentId)
+	const taskCreateProjectId = useShellLayoutStore(selectTaskCreateProjectId)
+	const taskCreateStatus = useShellLayoutStore(selectTaskCreateStatus)
 	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
 	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
 	const {
@@ -141,6 +145,8 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 
 			<TaskCreateDialog
 				currentSpaceId={currentSpaceId}
+				initialProjectId={taskCreateProjectId}
+				initialStatus={taskCreateStatus}
 				onClose={closeTaskCreateDialog}
 				open={isTaskCreateOpen}
 				projects={flatProjects}

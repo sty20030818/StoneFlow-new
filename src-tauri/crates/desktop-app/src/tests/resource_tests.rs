@@ -29,6 +29,7 @@ fn task_resources_support_three_types_and_list_by_task_order() {
                 note: None,
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await
@@ -118,6 +119,7 @@ fn create_task_resource_rejects_cross_space_and_invalid_type() {
                 note: None,
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await
@@ -186,6 +188,7 @@ fn delete_task_resource_removes_record_without_trash_entry() {
                 note: None,
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await

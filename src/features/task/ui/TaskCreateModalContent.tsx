@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 import { INBOX_PRIORITY_OPTIONS } from '@/features/inbox/model/constants'
-import type { ProjectRecord } from '@/features/project/model/types'
+import type { ProjectRecord, ProjectTaskStatus } from '@/features/project/model/types'
 import { useTaskCreate } from '@/features/task/model/useTaskCreate'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
@@ -18,6 +18,8 @@ import { StatusNotice } from '@/shared/ui/StatusNotice'
 
 type TaskCreateModalContentProps = {
 	currentSpaceId: string
+	initialProjectId: string | null
+	initialStatus: ProjectTaskStatus
 	onClose: () => void
 	projects: ProjectRecord[]
 	projectsLoading: boolean
@@ -31,6 +33,8 @@ const EMPTY_PROJECT_VALUE = '__project-empty__'
  */
 export function TaskCreateModalContent({
 	currentSpaceId,
+	initialProjectId,
+	initialStatus,
 	onClose,
 	projects,
 	projectsLoading,
@@ -51,6 +55,8 @@ export function TaskCreateModalContent({
 		submit,
 	} = useTaskCreate({
 		currentSpaceId,
+		initialProjectId,
+		initialStatus,
 	})
 
 	useEffect(() => {

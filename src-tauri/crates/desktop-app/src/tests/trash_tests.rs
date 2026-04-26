@@ -96,6 +96,7 @@ fn delete_task_to_trash_writes_trash_entry_and_soft_deletes() {
                 note: None,
                 priority: Some("high".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -160,6 +161,7 @@ fn restore_task_from_trash_recovers_to_original_project() {
                 note: None,
                 priority: Some("medium".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -239,6 +241,7 @@ fn delete_project_to_trash_soft_deletes_without_cascade() {
                 note: None,
                 priority: Some("low".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await

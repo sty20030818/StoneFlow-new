@@ -15,7 +15,10 @@ export type ProjectExecutionTask = {
 	note: string | null
 	priority: string
 	status: ProjectTaskStatus
+	tags?: string[]
+	dueAt: string | null
 	completedAt: string | null
+	createdAt: string
 	updatedAt: string
 }
 

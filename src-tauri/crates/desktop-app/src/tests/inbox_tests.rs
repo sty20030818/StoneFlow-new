@@ -38,6 +38,7 @@ fn inbox_lists_todo_tasks_without_project_or_priority() {
                 note: None,
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await
@@ -51,6 +52,7 @@ fn inbox_lists_todo_tasks_without_project_or_priority() {
                 note: None,
                 priority: Some("high".to_owned()),
                 project_id: None,
+            status: None,
             },
         )
         .await
@@ -64,6 +66,7 @@ fn inbox_lists_todo_tasks_without_project_or_priority() {
                 note: None,
                 priority: Some("medium".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -118,6 +121,7 @@ fn inbox_excludes_done_tasks() {
                 note: None,
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await
@@ -131,6 +135,7 @@ fn inbox_excludes_done_tasks() {
                 note: None,
                 priority: Some("low".to_owned()),
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -191,6 +196,7 @@ fn triage_inbox_task_assigns_project_and_priority() {
                 note: None,
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await

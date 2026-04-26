@@ -253,6 +253,7 @@ fn project_execution_view_returns_children_without_aggregating_child_tasks() {
                 note: None,
                 priority: Some("high".to_owned()),
                 project_id: Some(parent.id),
+                status: None,
             },
         )
         .await
@@ -265,6 +266,7 @@ fn project_execution_view_returns_children_without_aggregating_child_tasks() {
                 note: None,
                 priority: Some("high".to_owned()),
                 project_id: Some(child.id),
+                status: None,
             },
         )
         .await

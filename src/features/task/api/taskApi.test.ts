@@ -37,6 +37,7 @@ describe('task api', () => {
 				note: null,
 				priority: null,
 				projectId: null,
+				status: 'done',
 			}),
 		).resolves.toMatchObject({
 			id: 'task-1',
@@ -50,6 +51,7 @@ describe('task api', () => {
 				note: null,
 				priority: null,
 				project_id: null,
+				status: 'done',
 			},
 		})
 	})

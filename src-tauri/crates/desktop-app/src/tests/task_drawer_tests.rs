@@ -41,6 +41,7 @@ fn get_task_drawer_detail_returns_task_and_projects_for_current_space() {
                 note: Some("补齐详情查询".to_owned()),
                 priority: None,
                 project_id: Some(project.id),
+            status: None,
             },
         )
         .await
@@ -93,6 +94,7 @@ fn update_task_drawer_fields_updates_core_fields_and_moves_task_back_to_inbox() 
                 note: Some("原始备注".to_owned()),
                 priority: None,
                 project_id: None,
+            status: None,
             },
         )
         .await
@@ -157,6 +159,7 @@ fn update_task_drawer_fields_sets_status_done_and_completed_at() {
                 note: None,
                 priority: Some("medium".to_owned()),
                 project_id: None,
+            status: None,
             },
         )
         .await

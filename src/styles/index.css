@@ -117,6 +117,10 @@
 	--sf-color-main-icon-button-bg: #ffffff;
 	--sf-color-main-icon-button-foreground: #5d5d5f;
 	--sf-color-main-icon-button-hover: #f7f7f7;
+	--sf-color-project-task-section-header: #f3f3f4;
+	--sf-color-project-task-row-hover: #f6f6f7;
+	--sf-color-project-task-row-selected: #efeff0;
+	--sf-color-project-task-status-done: #27a644;
 
 	--radius: 0.5rem;
 	--background: var(--sf-color-bg-app);

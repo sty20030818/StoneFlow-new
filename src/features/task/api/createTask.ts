@@ -1,11 +1,14 @@
 import { invoke } from '@tauri-apps/api/core'
 
+import type { ProjectTaskStatus } from '@/features/project/model/types'
+
 type CreateTaskCommandInput = {
 	spaceSlug: string
 	title: string
 	note?: string | null
 	priority?: string | null
 	projectId?: string | null
+	status?: ProjectTaskStatus
 }
 
 type CreateTaskResponse = {
@@ -96,6 +99,7 @@ export async function createTask(input: CreateTaskCommandInput) {
 				note: input.note ?? null,
 				priority: input.priority?.trim() ? input.priority : null,
 				project_id: input.projectId?.trim() ? input.projectId : null,
+				status: input.status ?? 'todo',
 			},
 		})
 	} catch (error) {

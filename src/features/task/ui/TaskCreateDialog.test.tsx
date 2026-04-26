@@ -7,6 +7,8 @@ describe('TaskCreateDialog', () => {
 		render(
 			<TaskCreateDialog
 				currentSpaceId='work'
+				initialProjectId={null}
+				initialStatus='todo'
 				onClose={vi.fn<() => void>()}
 				open
 				projects={[

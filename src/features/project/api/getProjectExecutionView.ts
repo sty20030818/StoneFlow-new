@@ -20,7 +20,9 @@ type ProjectExecutionTaskResponse = {
 	note: string | null
 	priority: string
 	status: 'todo' | 'done'
+	due_at: string | null
 	completed_at: string | null
+	created_at: string
 	updated_at: string
 }
 
@@ -64,7 +66,10 @@ export async function getProjectExecutionView(input: GetProjectExecutionViewComm
 			note: task.note,
 			priority: task.priority,
 			status: task.status,
+			tags: [],
+			dueAt: task.due_at,
 			completedAt: task.completed_at,
+			createdAt: task.created_at,
 			updatedAt: task.updated_at,
 		})),
 	} satisfies ProjectExecutionView

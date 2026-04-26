@@ -38,6 +38,8 @@ describe('TaskCreateModalContent', () => {
 		render(
 			<TaskCreateModalContent
 				currentSpaceId='work'
+				initialProjectId={null}
+				initialStatus='todo'
 				onClose={onClose}
 				projects={[
 					{
@@ -84,6 +86,7 @@ describe('TaskCreateModalContent', () => {
 			note: '先接通 Header',
 			priority: 'high',
 			projectId: 'project-1',
+			status: 'todo',
 		})
 
 		expect(screen.getByRole('status').textContent).toContain('已创建“补齐 M2-B 创建链路”')
@@ -103,6 +106,8 @@ describe('TaskCreateModalContent', () => {
 		render(
 			<TaskCreateModalContent
 				currentSpaceId='studio'
+				initialProjectId={null}
+				initialStatus='todo'
 				onClose={onClose}
 				projects={[]}
 				projectsLoading={false}

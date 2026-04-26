@@ -493,6 +493,7 @@ where
             source,
         } = params;
         let now = chrono::Utc::now();
+        let completed_at = if status == "done" { Some(now) } else { None };
 
         task::ActiveModel {
             id: Set(Uuid::new_v4()),
@@ -507,7 +508,7 @@ where
             pinned: Set(false),
             source: Set(source.to_owned()),
             deleted_at: Set(None),
-            completed_at: Set(None),
+            completed_at: Set(completed_at),
             created_at: Set(now),
             updated_at: Set(now),
         }

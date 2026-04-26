@@ -73,6 +73,7 @@ pub(crate) struct CreateTaskInput {
     pub(crate) note: Option<String>,
     pub(crate) priority: Option<String>,
     pub(crate) project_id: Option<Uuid>,
+    pub(crate) status: Option<String>,
 }
 
 /// 写入当前 Space 状态的输入。
@@ -245,6 +246,7 @@ pub(crate) async fn create_task(
     let title = normalize_required_text(&input.title, "task title")?;
     let note = normalize_optional_text(input.note);
     let priority = normalize_optional_priority(input.priority)?;
+    let status = normalize_task_status(input.status)?;
     let space = resolve_active_space(&space_repository, &space_slug).await?;
 
     let project_id = match input.project_id {
@@ -272,6 +274,7 @@ pub(crate) async fn create_task(
             title,
             note,
             priority,
+            status,
             source: TASK_SOURCE_IN_APP_CAPTURE,
             space_fallback: false,
         },
@@ -321,6 +324,7 @@ pub(crate) async fn create_capture_task(
             title,
             note,
             priority,
+            status: TASK_STATUS_TODO,
             source: TASK_SOURCE_QUICK_CAPTURE,
             space_fallback,
         },
@@ -335,6 +339,7 @@ struct CreateTaskInSpaceInput {
     title: String,
     note: Option<String>,
     priority: Option<String>,
+    status: &'static str,
     source: &'static str,
     space_fallback: bool,
 }
@@ -350,7 +355,7 @@ async fn create_task_in_space(
             title: &input.title,
             note: input.note.as_deref(),
             priority: input.priority.as_deref(),
-            status: TASK_STATUS_TODO,
+            status: input.status,
             source: input.source,
         })
         .await?;
@@ -445,6 +450,21 @@ fn normalize_optional_priority(value: Option<String>) -> Result<Option<String>> 
         Some(priority) if priority.trim().is_empty() => Ok(None),
         Some(priority) => Ok(Some(normalize_priority(&priority)?)),
         None => Ok(None),
+    }
+}
+
+fn normalize_task_status(value: Option<String>) -> Result<&'static str> {
+    match value {
+        Some(status) if status.trim().is_empty() => Ok(TASK_STATUS_TODO),
+        Some(status) => {
+            let normalized = status.trim().to_ascii_lowercase();
+            match normalized.as_str() {
+                TASK_STATUS_TODO => Ok(TASK_STATUS_TODO),
+                TASK_STATUS_DONE => Ok(TASK_STATUS_DONE),
+                _ => bail!("task status must be `todo` or `done`"),
+            }
+        }
+        None => Ok(TASK_STATUS_TODO),
     }
 }
 
