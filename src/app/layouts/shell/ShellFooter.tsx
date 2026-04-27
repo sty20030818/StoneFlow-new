@@ -35,7 +35,9 @@ export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps)
 					{getSpaceLabel(currentSpaceId)}
 				</span>
 				<span className='text-(--sf-color-border-strong)'>•</span>
-				<span className='max-w-[28vw] truncate sm:max-w-none'>{getSectionLabel(activeSection)}</span>
+				<span className='max-w-[28vw] truncate sm:max-w-none'>
+					{getSectionLabel(activeSection)}
+				</span>
 			</div>
 
 			<div className='hidden items-center gap-3 text-[11px] text-(--sf-color-shell-tertiary) sm:flex'>

@@ -131,7 +131,7 @@ describe('FocusPage', () => {
 		})
 	})
 
-	it('点击列表动作时调用真实工作台动作而不是打开 Drawer', () => {
+	it('点击列表动作时调用真实工作台动作而不是打开 Drawer', async () => {
 		const toggleTaskPin = vi
 			.fn<
 				(
@@ -139,27 +139,49 @@ describe('FocusPage', () => {
 				) => Promise<void>
 			>()
 			.mockResolvedValue(undefined)
-		const toggleTaskStatus = vi
+		const updateTaskStatus = vi
 			.fn<
 				(
-					task: Parameters<ReturnType<typeof useFocusWorkspace>['toggleTaskStatus']>[0],
+					task: Parameters<ReturnType<typeof useFocusWorkspace>['updateTaskStatus']>[0],
+					status: Parameters<ReturnType<typeof useFocusWorkspace>['updateTaskStatus']>[1],
+				) => Promise<void>
+			>()
+			.mockResolvedValue(undefined)
+		const updateTaskPriority = vi
+			.fn<
+				(
+					task: Parameters<ReturnType<typeof useFocusWorkspace>['updateTaskPriority']>[0],
+					priority: Parameters<ReturnType<typeof useFocusWorkspace>['updateTaskPriority']>[1],
 				) => Promise<void>
 			>()
 			.mockResolvedValue(undefined)
 		mockedUseFocusWorkspace.mockReturnValue(
 			createWorkspaceState({
 				toggleTaskPin,
-				toggleTaskStatus,
+				updateTaskPriority,
+				updateTaskStatus,
 			}),
 		)
 
 		render(<FocusPage />)
 
 		fireEvent.click(screen.getByRole('button', { name: '取消 pin 收口 Focus 查询' }))
-		fireEvent.click(screen.getByRole('button', { name: '标记完成 收口 Focus 查询' }))
+		const priorityTrigger = screen.getByLabelText('收口 Focus 查询 优先级')
+		fireEvent.pointerDown(priorityTrigger)
+		fireEvent.click(await screen.findByRole('menuitem', { name: /紧急/ }))
+		const statusTrigger = screen.getByLabelText('收口 Focus 查询 状态')
+		fireEvent.pointerDown(statusTrigger)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '已完成' }))
 
 		expect(toggleTaskPin).toHaveBeenCalledTimes(1)
-		expect(toggleTaskStatus).toHaveBeenCalledTimes(1)
+		expect(updateTaskPriority).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 'task-focus-1' }),
+			'urgent',
+		)
+		expect(updateTaskStatus).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 'task-focus-1' }),
+			'done',
+		)
 		expect(useShellLayoutStore.getState()).toMatchObject({
 			isDrawerOpen: false,
 			activeDrawerKind: null,
@@ -322,6 +344,44 @@ function createWorkspaceState(
 					createdAt: string
 					updatedAt: string
 				}) => Promise<void>
+			>()
+			.mockResolvedValue(undefined),
+		updateTaskPriority: vi
+			.fn<
+				(
+					task: {
+						id: string
+						projectId: string
+						title: string
+						note: string | null
+						priority: string
+						status: 'todo' | 'done'
+						pinned: boolean
+						dueAt: string | null
+						createdAt: string
+						updatedAt: string
+					},
+					priority: '' | 'low' | 'medium' | 'high' | 'urgent',
+				) => Promise<void>
+			>()
+			.mockResolvedValue(undefined),
+		updateTaskStatus: vi
+			.fn<
+				(
+					task: {
+						id: string
+						projectId: string
+						title: string
+						note: string | null
+						priority: string
+						status: 'todo' | 'done'
+						pinned: boolean
+						dueAt: string | null
+						createdAt: string
+						updatedAt: string
+					},
+					status: 'todo' | 'done',
+				) => Promise<void>
 			>()
 			.mockResolvedValue(undefined),
 		toggleTaskStatus: vi

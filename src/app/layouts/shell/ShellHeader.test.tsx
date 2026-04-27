@@ -52,7 +52,9 @@ describe('ShellHeader', () => {
 		expect(leftChrome!.className).toContain(
 			'group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:pl-3',
 		)
-		expect(leftChrome!.className).toContain('group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-max')
+		expect(leftChrome!.className).toContain(
+			'group-data-[sidebar-layout=mobile]/sidebar-wrapper:w-max',
+		)
 		expect(centerChrome!.className).toContain('justify-center')
 		expect(screen.getByRole('banner').className).toContain('gap-3')
 		expect(screen.getByRole('banner')).toHaveAttribute('data-tauri-drag-region')
@@ -289,11 +291,7 @@ function installMatchMediaNarrowPhone() {
 	Object.defineProperty(window, 'matchMedia', {
 		configurable: true,
 		value: (query: string) => {
-			const matches = query.includes('640px')
-				? false
-				: query.includes('1024px')
-					? false
-					: true
+			const matches = query.includes('640px') ? false : query.includes('1024px') ? false : true
 			return {
 				matches,
 				media: query,

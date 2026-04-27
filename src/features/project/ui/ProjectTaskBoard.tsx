@@ -4,8 +4,16 @@ import {
 	selectProjectTaskBoardOpenSections,
 	useShellLayoutStore,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
+import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { ProjectExecutionTask, ProjectTaskStatus } from '@/features/project/model/types'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
+import {
+	TaskLeadRail,
+	TaskPrioritySelect,
+	TaskSelectionCheckbox,
+	TaskStatusIndicator,
+	TaskStatusSelect,
+} from '@/features/task/ui/TaskMetadataSelect'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
@@ -19,10 +27,10 @@ import {
 	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
-import { CheckIcon, ChevronRightIcon, CircleIcon, ListTodoIcon, PlusIcon } from 'lucide-react'
+import { ChevronRightIcon, ListTodoIcon, PlusIcon } from 'lucide-react'
 
 const PROJECT_TASK_ROW_BASE_CLASS =
-	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-2.5 text-left transition-colors'
+	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-left transition-colors'
 
 const PROJECT_TASK_ROW_IDLE_CLASS = 'hover:bg-(--sf-color-project-task-row-hover)'
 const PROJECT_TASK_ROW_ACTIVE_CLASS =
@@ -36,6 +44,10 @@ type ProjectTaskBoardProps = {
 	tasks: ProjectExecutionTask[]
 	pendingTaskId: string | null
 	activeTaskId: string | null
+	selectedTaskIdSet: Set<string>
+	onToggleTaskSelection: (taskId: string) => void
+	onUpdateTaskPriority: (task: ProjectExecutionTask, priority: TaskPriorityValue) => Promise<void>
+	onUpdateTaskStatus: (task: ProjectExecutionTask, status: ProjectTaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
 	onMoveTaskToTrash: (task: ProjectExecutionTask) => Promise<void>
 	onOpenTask: (taskId: string) => void
@@ -50,6 +62,10 @@ type TaskStatusSectionProps = {
 	onOpenChange: (open: boolean) => void
 	pendingTaskId: string | null
 	activeTaskId: string | null
+	selectedTaskIdSet: Set<string>
+	onToggleTaskSelection: (taskId: string) => void
+	onUpdateTaskPriority: (task: ProjectExecutionTask, priority: TaskPriorityValue) => Promise<void>
+	onUpdateTaskStatus: (task: ProjectExecutionTask, status: ProjectTaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
 	onMoveTaskToTrash: (task: ProjectExecutionTask) => Promise<void>
 	onOpenTask: (taskId: string) => void
@@ -65,6 +81,10 @@ export function ProjectTaskBoard({
 	tasks,
 	pendingTaskId,
 	activeTaskId,
+	selectedTaskIdSet,
+	onToggleTaskSelection,
+	onUpdateTaskPriority,
+	onUpdateTaskStatus,
 	onToggleTaskStatus,
 	onMoveTaskToTrash,
 	onOpenTask,
@@ -129,10 +149,14 @@ export function ProjectTaskBoard({
 						onOpenChange={(open) => handleSectionOpenChange(section.status, open)}
 						onMoveTaskToTrash={onMoveTaskToTrash}
 						onOpenTask={onOpenTask}
+						onToggleTaskSelection={onToggleTaskSelection}
+						onUpdateTaskPriority={onUpdateTaskPriority}
+						onUpdateTaskStatus={onUpdateTaskStatus}
 						onToggleTaskStatus={onToggleTaskStatus}
 						open={openSections.includes(section.status)}
 						pendingTaskId={pendingTaskId}
 						projectId={projectId}
+						selectedTaskIdSet={selectedTaskIdSet}
 						status={section.status}
 						tasks={tasksByStatus[section.status]}
 					/>
@@ -151,6 +175,10 @@ function TaskStatusSection({
 	onOpenChange,
 	pendingTaskId,
 	activeTaskId,
+	selectedTaskIdSet,
+	onToggleTaskSelection,
+	onUpdateTaskPriority,
+	onUpdateTaskStatus,
 	onToggleTaskStatus,
 	onMoveTaskToTrash,
 	onOpenTask,
@@ -163,7 +191,7 @@ function TaskStatusSection({
 			onOpenChange={onOpenChange}
 			open={open}
 		>
-			<div className='flex items-center gap-2 rounded-md bg-(--sf-color-project-task-section-header) px-3 py-2'>
+			<div className='flex items-center gap-2 rounded-md bg-(--sf-color-project-task-section-header) py-1 pl-3 pr-1'>
 				<CollapsibleTrigger
 					aria-label={`切换 ${label} 分区折叠状态`}
 					className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-(--sf-color-icon-subtle) outline-none transition-none hover:bg-transparent hover:text-(--sf-color-icon-subtle) focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
@@ -179,7 +207,7 @@ function TaskStatusSection({
 				</div>
 				<Button
 					aria-label={`在 ${label} 中创建任务`}
-					className='rounded-md hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
+					className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
 					onClick={(event) => {
 						event.preventDefault()
 						event.stopPropagation()
@@ -204,8 +232,12 @@ function TaskStatusSection({
 							key={task.id}
 							onMoveTaskToTrash={onMoveTaskToTrash}
 							onOpenTask={onOpenTask}
+							onToggleTaskSelection={onToggleTaskSelection}
+							onUpdateTaskPriority={onUpdateTaskPriority}
+							onUpdateTaskStatus={onUpdateTaskStatus}
 							onToggleTaskStatus={onToggleTaskStatus}
 							pendingTaskId={pendingTaskId}
+							selectedTaskIdSet={selectedTaskIdSet}
 							task={task}
 						/>
 					))}
@@ -219,6 +251,10 @@ function ProjectTaskRow({
 	task,
 	pendingTaskId,
 	activeTaskId,
+	selectedTaskIdSet,
+	onToggleTaskSelection,
+	onUpdateTaskPriority,
+	onUpdateTaskStatus,
 	onToggleTaskStatus,
 	onMoveTaskToTrash,
 	onOpenTask,
@@ -226,12 +262,17 @@ function ProjectTaskRow({
 	task: ProjectExecutionTask
 	pendingTaskId: string | null
 	activeTaskId: string | null
+	selectedTaskIdSet: Set<string>
+	onToggleTaskSelection: (taskId: string) => void
+	onUpdateTaskPriority: (task: ProjectExecutionTask, priority: TaskPriorityValue) => Promise<void>
+	onUpdateTaskStatus: (task: ProjectExecutionTask, status: ProjectTaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
 	onMoveTaskToTrash: (task: ProjectExecutionTask) => Promise<void>
 	onOpenTask: (taskId: string) => void
 }) {
 	const isPending = pendingTaskId === task.id
 	const isActive = activeTaskId === task.id
+	const isSelected = selectedTaskIdSet.has(task.id)
 
 	return (
 		<TaskContextMenu
@@ -262,14 +303,27 @@ function ProjectTaskRow({
 				role='button'
 				tabIndex={0}
 			>
-				<div className='flex min-w-0 flex-1 items-center gap-3'>
-					<TaskPriorityBadge priority={task.priority} />
-					<TaskStatusToggle
-						isPending={isPending}
-						onToggle={() => void onToggleTaskStatus(task)}
-						status={task.status}
-						title={task.title}
-					/>
+				<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+					<TaskLeadRail>
+						<TaskSelectionCheckbox
+							ariaLabel={`选择任务 ${task.title}`}
+							checked={isSelected}
+							disabled={isPending}
+							onCheckedChange={() => onToggleTaskSelection(task.id)}
+						/>
+						<TaskPrioritySelect
+							ariaLabel={`${task.title} 优先级`}
+							disabled={isPending}
+							onValueChange={(priority) => void onUpdateTaskPriority(task, priority)}
+							value={task.priority}
+						/>
+						<TaskStatusSelect
+							ariaLabel={`${task.title} 状态`}
+							disabled={isPending}
+							onValueChange={(status) => void onUpdateTaskStatus(task, status)}
+							value={task.status}
+						/>
+					</TaskLeadRail>
 					<span
 						className={cn(
 							'truncate text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
@@ -283,72 +337,6 @@ function ProjectTaskRow({
 				<TaskMetaRail createdAt={task.createdAt} dueAt={task.dueAt} tags={task.tags ?? []} />
 			</div>
 		</TaskContextMenu>
-	)
-}
-
-function TaskPriorityBadge({ priority }: { priority: string | null | undefined }) {
-	const label = mapPriorityToProjectLabel(priority)
-
-	return (
-		<span
-			className={cn(
-				'shrink-0 rounded-md px-2 py-1 text-[11px] font-semibold tracking-[0.02em]',
-				label === 'P0'
-					? 'bg-(--sf-color-danger-soft) text-(--sf-color-danger-soft-text)'
-					: label === 'P1'
-						? 'bg-(--sf-color-warning-soft) text-(--sf-color-warning-soft-text)'
-						: label === 'P2'
-							? 'bg-(--sf-color-accent-primary-soft) text-(--sf-color-accent-soft-text)'
-							: 'bg-(--sf-color-bg-surface-muted) text-(--sf-color-text-tertiary)',
-			)}
-		>
-			{label}
-		</span>
-	)
-}
-
-function TaskStatusToggle({
-	status,
-	title,
-	isPending,
-	onToggle,
-}: {
-	status: ProjectTaskStatus
-	title: string
-	isPending: boolean
-	onToggle: () => void
-}) {
-	return (
-		<Button
-			aria-label={status === 'todo' ? `标记完成 ${title}` : `恢复待执行 ${title}`}
-			className='rounded-full'
-			disabled={isPending}
-			onClick={(event) => {
-				event.stopPropagation()
-				onToggle()
-			}}
-			size='icon-xs'
-			type='button'
-			variant='ghost'
-		>
-			<TaskStatusIndicator status={status} />
-		</Button>
-	)
-}
-
-function TaskStatusIndicator({ status }: { status: ProjectTaskStatus }) {
-	if (status === 'done') {
-		return (
-			<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-(--sf-color-project-task-status-done) text-white'>
-				<CheckIcon className='size-3' />
-			</span>
-		)
-	}
-
-	return (
-		<span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-(--sf-color-border-strong) text-transparent'>
-			<CircleIcon className='size-3 fill-transparent stroke-transparent' />
-		</span>
 	)
 }
 
@@ -378,19 +366,6 @@ function TaskMetaRail({
 			<span className={PROJECT_TASK_SECTION_META_CLASS}>{formatProjectTaskDate(createdAt)}</span>
 		</div>
 	)
-}
-
-function mapPriorityToProjectLabel(priority: string | null | undefined) {
-	switch (priority) {
-		case 'urgent':
-			return 'P0'
-		case 'high':
-			return 'P1'
-		case 'medium':
-			return 'P2'
-		default:
-			return 'P3'
-	}
 }
 
 function formatProjectTaskDate(value: string) {

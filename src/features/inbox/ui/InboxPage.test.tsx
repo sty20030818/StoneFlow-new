@@ -70,7 +70,7 @@ describe('InboxPage', () => {
 		expect(screen.getByRole('button', { name: '刷新' })).toBeInTheDocument()
 		expect(screen.getByText('整理今天的新任务')).toBeInTheDocument()
 		expect(screen.getByText('优先补齐项目和优先级')).toBeInTheDocument()
-		expect(screen.getByLabelText('整理今天的新任务 优先级')).toHaveTextContent('待补齐')
+		expect(screen.getByLabelText('整理今天的新任务 优先级')).toHaveTextContent('无优先级')
 		expect(screen.getByLabelText('整理今天的新任务 项目')).toHaveTextContent('待补齐')
 
 		fireEvent.click(screen.getByRole('button', { name: '刷新' }))
@@ -126,8 +126,9 @@ describe('InboxPage', () => {
 
 		await screen.findByText('整理今天的任务')
 
-		fireEvent.click(screen.getByLabelText('整理今天的任务 优先级'))
-		fireEvent.click(screen.getByRole('option', { name: '高' }))
+		const triagePriority = screen.getByLabelText('整理今天的任务 优先级')
+		fireEvent.pointerDown(triagePriority)
+		fireEvent.click(screen.getByRole('menuitem', { name: /高/ }))
 		fireEvent.click(screen.getByLabelText('整理今天的任务 项目'))
 		fireEvent.click(screen.getByRole('option', { name: '执行层' }))
 		fireEvent.click(screen.getByRole('button', { name: '整理' }))
@@ -172,8 +173,9 @@ describe('InboxPage', () => {
 
 		await screen.findByText('验证整理失败')
 
-		fireEvent.click(screen.getByLabelText('验证整理失败 优先级'))
-		fireEvent.click(screen.getByRole('option', { name: '紧急' }))
+		const failPriority = screen.getByLabelText('验证整理失败 优先级')
+		fireEvent.pointerDown(failPriority)
+		fireEvent.click(screen.getByRole('menuitem', { name: /紧急/ }))
 		fireEvent.click(screen.getByRole('button', { name: '整理' }))
 
 		await waitFor(() => {
@@ -320,8 +322,9 @@ describe('InboxPage', () => {
 
 		await screen.findByText('继续整理')
 
-		fireEvent.click(screen.getByLabelText('继续整理 优先级'))
-		fireEvent.click(screen.getByRole('option', { name: '紧急' }))
+		const draftPriority = screen.getByLabelText('继续整理 优先级')
+		fireEvent.pointerDown(draftPriority)
+		fireEvent.click(screen.getByRole('menuitem', { name: /紧急/ }))
 
 		await act(async () => {
 			useShellLayoutStore.getState().bumpProjectDataVersion()

@@ -1,10 +1,12 @@
-export const INBOX_PRIORITY_OPTIONS = [
-	{ value: 'low', label: '低' },
-	{ value: 'medium', label: '中' },
-	{ value: 'high', label: '高' },
-	{ value: 'urgent', label: '紧急' },
-] as const
+import { formatTaskPriorityLabel, TASK_PRIORITY_OPTIONS } from '@/features/task/model/taskPriority'
+
+export const INBOX_PRIORITY_OPTIONS = TASK_PRIORITY_OPTIONS.filter(
+	(option) => option.value !== '',
+).map((option) => ({
+	value: option.value,
+	label: option.label,
+}))
 
 export function formatInboxPriorityLabel(priority: string | null | undefined) {
-	return INBOX_PRIORITY_OPTIONS.find((option) => option.value === priority)?.label ?? '待补优先级'
+	return priority ? formatTaskPriorityLabel(priority) : '待补优先级'
 }

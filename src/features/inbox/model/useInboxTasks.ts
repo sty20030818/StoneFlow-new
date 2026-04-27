@@ -11,6 +11,7 @@ import {
 	type InboxTaskRecord,
 } from '@/features/inbox/api/listInboxTasks'
 import { deleteTaskToTrash } from '@/features/task-drawer/api/deleteTaskToTrash'
+import { updateTaskDrawerFields } from '@/features/task-drawer/api/updateTaskDrawerFields'
 import { triageInboxTask } from '@/features/inbox/api/triageInboxTask'
 
 type InboxTaskDraft = {
@@ -29,6 +30,7 @@ type UseInboxTasksResult = {
 	getDraft: (taskId: string) => InboxTaskDraft
 	updateDraft: (taskId: string, patch: Partial<Omit<InboxTaskDraft, 'isSubmitting'>>) => void
 	refresh: () => Promise<void>
+	updateTaskStatus: (taskId: string, status: 'todo' | 'done') => Promise<void>
 	submitTriage: (taskId: string) => Promise<void>
 	moveTaskToTrash: (taskId: string) => Promise<void>
 }
@@ -123,6 +125,68 @@ export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 			},
 		}))
 	}
+
+	const updateTaskStatus = useEffectEvent(async (taskId: string, status: 'todo' | 'done') => {
+		const task = tasks.find((item) => item.id === taskId)
+		if (!task || task.status === status) {
+			return
+		}
+
+		setDrafts((currentDrafts) => ({
+			...currentDrafts,
+			[taskId]: {
+				...(currentDrafts[taskId] ?? EMPTY_DRAFT),
+				isSubmitting: true,
+				error: null,
+			},
+		}))
+
+		try {
+			const payload = await updateTaskDrawerFields({
+				spaceSlug: spaceId,
+				taskId,
+				title: task.title,
+				note: task.note ?? '',
+				priority: task.priority ?? '',
+				projectId: task.projectId ?? '',
+				status,
+			})
+
+			startTransition(() => {
+				setTasks((currentTasks) =>
+					currentTasks.map((currentTask) =>
+						currentTask.id === taskId
+							? {
+									...currentTask,
+									status: payload.status,
+									updatedAt: payload.updatedAt,
+								}
+							: currentTask,
+					),
+				)
+				setDrafts((currentDrafts) => ({
+					...currentDrafts,
+					[taskId]: {
+						...(currentDrafts[taskId] ?? EMPTY_DRAFT),
+						isSubmitting: false,
+						error: null,
+					},
+				}))
+				setFeedback(status === 'done' ? `已完成“${task.title}”` : `已将“${task.title}”恢复为待执行`)
+			})
+			skipNextTaskDataVersionRefreshRef.current = true
+			bumpTaskDataVersion()
+		} catch (error) {
+			setDrafts((currentDrafts) => ({
+				...currentDrafts,
+				[taskId]: {
+					...(currentDrafts[taskId] ?? EMPTY_DRAFT),
+					isSubmitting: false,
+					error: toErrorMessage(error),
+				},
+			}))
+		}
+	})
 
 	const submitTriage = useEffectEvent(async (taskId: string) => {
 		const task = tasks.find((item) => item.id === taskId)
@@ -274,6 +338,7 @@ export function useInboxTasks(spaceId: string): UseInboxTasksResult {
 		getDraft,
 		updateDraft,
 		refresh,
+		updateTaskStatus,
 		submitTriage,
 		moveTaskToTrash,
 	}

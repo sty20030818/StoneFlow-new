@@ -11,6 +11,7 @@ import {
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
 import { useProjectExecution } from '@/features/project/model/useProjectExecution'
+import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
 import { Button } from '@/shared/ui/base/button'
 import { EmptyPage } from '@/shared/ui/base/empty'
@@ -37,9 +38,14 @@ export function ProjectPage() {
 		feedback,
 		pendingTaskId,
 		refresh,
+		updateTaskPriority,
+		updateTaskStatus,
 		toggleTaskStatus,
 		moveTaskToTrash,
 	} = useProjectExecution(spaceId, projectId)
+	const { selectedTaskIdSet, toggleTaskSelection } = useTaskSelection(
+		view?.tasks.map((task) => task.id) ?? [],
+	)
 
 	return (
 		<MainCardLayout
@@ -89,9 +95,13 @@ export function ProjectPage() {
 							activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
 							onMoveTaskToTrash={moveTaskToTrash}
 							onOpenTask={(taskId) => openDrawer('task', taskId)}
+							onToggleTaskSelection={toggleTaskSelection}
+							onUpdateTaskPriority={updateTaskPriority}
+							onUpdateTaskStatus={updateTaskStatus}
 							onToggleTaskStatus={toggleTaskStatus}
 							pendingTaskId={pendingTaskId}
 							projectId={view.project.id}
+							selectedTaskIdSet={selectedTaskIdSet}
 							tasks={view.tasks}
 						/>
 					) : null}

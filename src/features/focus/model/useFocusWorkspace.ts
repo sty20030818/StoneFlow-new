@@ -7,7 +7,9 @@ import {
 import { getFocusViewTasks } from '@/features/focus/api/getFocusViewTasks'
 import { listFocusViews } from '@/features/focus/api/listFocusViews'
 import { updateTaskPinState } from '@/features/focus/api/updateTaskPinState'
+import { formatTaskPriorityLabel, type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { deleteTaskToTrash } from '@/features/task-drawer/api/deleteTaskToTrash'
+import { updateTaskDrawerFields } from '@/features/task-drawer/api/updateTaskDrawerFields'
 import type { UpdatedProjectTaskStatusPayload } from '@/features/project/api/updateProjectTaskStatus'
 import { updateProjectTaskStatus } from '@/features/project/api/updateProjectTaskStatus'
 import type {
@@ -33,6 +35,8 @@ type UseFocusWorkspaceResult = {
 	setRecentTimeWindow: (window: FocusRecentTimeWindow) => void
 	refresh: () => Promise<void>
 	toggleTaskPin: (task: FocusTaskRecord) => Promise<void>
+	updateTaskPriority: (task: FocusTaskRecord, priority: TaskPriorityValue) => Promise<void>
+	updateTaskStatus: (task: FocusTaskRecord, status: 'todo' | 'done') => Promise<void>
 	toggleTaskStatus: (task: FocusTaskRecord) => Promise<void>
 	moveTaskToTrash: (task: FocusTaskRecord) => Promise<void>
 }
@@ -154,35 +158,79 @@ export function useFocusWorkspace(spaceId: string): UseFocusWorkspaceResult {
 		}
 	})
 
+	const updateTaskPriority = useEffectEvent(
+		async (task: FocusTaskRecord, nextPriority: TaskPriorityValue) => {
+			if ((task.priority || '') === nextPriority) {
+				return
+			}
+
+			setPendingTaskId(task.id)
+			setLoadError(null)
+
+			try {
+				await updateTaskDrawerFields({
+					spaceSlug: spaceId,
+					taskId: task.id,
+					title: task.title,
+					note: task.note ?? '',
+					priority: nextPriority,
+					projectId: task.projectId,
+					status: task.status,
+				})
+
+				startTransition(() => {
+					setFeedback(`已更新“${task.title}”的优先级为${formatTaskPriorityLabel(nextPriority)}`)
+				})
+				skipNextTaskDataVersionRefreshRef.current = true
+				bumpTaskDataVersion()
+				await refresh(true)
+			} catch (error) {
+				setLoadError(toErrorMessage(error))
+			} finally {
+				setPendingTaskId(null)
+			}
+		},
+	)
+
+	const updateTaskStatus = useEffectEvent(
+		async (task: FocusTaskRecord, nextStatus: 'todo' | 'done') => {
+			if (!task.projectId) {
+				setLoadError('当前任务缺少 Project，无法切换执行状态。')
+				return
+			}
+
+			if (task.status === nextStatus) {
+				return
+			}
+
+			setPendingTaskId(task.id)
+			setLoadError(null)
+
+			try {
+				const payload = await updateProjectTaskStatus({
+					spaceSlug: spaceId,
+					projectId: task.projectId,
+					taskId: task.id,
+					status: nextStatus,
+				})
+
+				startTransition(() => {
+					setFeedback(createTaskStatusFeedback(task.title, payload))
+				})
+				skipNextTaskDataVersionRefreshRef.current = true
+				bumpTaskDataVersion()
+				await refresh(true)
+			} catch (error) {
+				setLoadError(toErrorMessage(error))
+			} finally {
+				setPendingTaskId(null)
+			}
+		},
+	)
+
 	const toggleTaskStatus = useEffectEvent(async (task: FocusTaskRecord) => {
-		if (!task.projectId) {
-			setLoadError('当前任务缺少 Project，无法切换执行状态。')
-			return
-		}
-
 		const nextStatus = task.status === 'todo' ? 'done' : 'todo'
-		setPendingTaskId(task.id)
-		setLoadError(null)
-
-		try {
-			const payload = await updateProjectTaskStatus({
-				spaceSlug: spaceId,
-				projectId: task.projectId,
-				taskId: task.id,
-				status: nextStatus,
-			})
-
-			startTransition(() => {
-				setFeedback(createTaskStatusFeedback(task.title, payload))
-			})
-			skipNextTaskDataVersionRefreshRef.current = true
-			bumpTaskDataVersion()
-			await refresh(true)
-		} catch (error) {
-			setLoadError(toErrorMessage(error))
-		} finally {
-			setPendingTaskId(null)
-		}
+		await updateTaskStatus(task, nextStatus)
 	})
 
 	const moveTaskToTrash = useEffectEvent(async (task: FocusTaskRecord) => {
@@ -234,6 +282,8 @@ export function useFocusWorkspace(spaceId: string): UseFocusWorkspaceResult {
 		setRecentTimeWindow,
 		refresh,
 		toggleTaskPin,
+		updateTaskPriority,
+		updateTaskStatus,
 		toggleTaskStatus,
 		moveTaskToTrash,
 	}

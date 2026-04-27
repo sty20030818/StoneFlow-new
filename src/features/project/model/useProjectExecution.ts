@@ -7,7 +7,9 @@ import {
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { getProjectExecutionView } from '@/features/project/api/getProjectExecutionView'
 import { updateProjectTaskStatus } from '@/features/project/api/updateProjectTaskStatus'
+import { formatTaskPriorityLabel, type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { deleteTaskToTrash } from '@/features/task-drawer/api/deleteTaskToTrash'
+import { updateTaskDrawerFields } from '@/features/task-drawer/api/updateTaskDrawerFields'
 import { deleteProjectToTrash } from '@/features/trash/api/deleteProjectToTrash'
 import type {
 	ProjectExecutionTask,
@@ -23,6 +25,8 @@ type UseProjectExecutionResult = {
 	pendingTaskId: string | null
 	isDeletingProject: boolean
 	refresh: () => Promise<void>
+	updateTaskStatus: (task: ProjectExecutionTask, status: ProjectTaskStatus) => Promise<void>
+	updateTaskPriority: (task: ProjectExecutionTask, priority: TaskPriorityValue) => Promise<void>
 	toggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
 	moveTaskToTrash: (task: ProjectExecutionTask) => Promise<void>
 	deleteCurrentProject: () => Promise<boolean>
@@ -86,51 +90,111 @@ export function useProjectExecution(spaceId: string, projectId: string): UseProj
 		void refresh()
 	}, [taskDataVersion])
 
+	const updateTaskStatus = useEffectEvent(
+		async (task: ProjectExecutionTask, nextStatus: ProjectTaskStatus) => {
+			if (task.status === nextStatus) {
+				return
+			}
+
+			setPendingTaskId(task.id)
+
+			try {
+				const payload = await updateProjectTaskStatus({
+					spaceSlug: spaceId,
+					projectId,
+					taskId: task.id,
+					status: nextStatus,
+				})
+
+				startTransition(() => {
+					setView((currentView) => {
+						if (!currentView) {
+							return currentView
+						}
+
+						return {
+							...currentView,
+							tasks: currentView.tasks.map((currentTask) =>
+								currentTask.id === payload.taskId
+									? {
+											...currentTask,
+											status: payload.status,
+											completedAt: payload.completedAt,
+											updatedAt: payload.updatedAt,
+										}
+									: currentTask,
+							),
+						}
+					})
+					setFeedback(
+						nextStatus === 'done' ? `已完成“${task.title}”` : `已将“${task.title}”恢复为待执行`,
+					)
+					setLoadError(null)
+				})
+				skipNextTaskDataVersionRefreshRef.current = true
+				bumpTaskDataVersion()
+			} catch (error) {
+				setLoadError(toErrorMessage(error))
+			} finally {
+				setPendingTaskId(null)
+			}
+		},
+	)
+
+	const updateTaskPriority = useEffectEvent(
+		async (task: ProjectExecutionTask, nextPriority: TaskPriorityValue) => {
+			if ((task.priority || '') === nextPriority) {
+				return
+			}
+
+			setPendingTaskId(task.id)
+			setLoadError(null)
+
+			try {
+				const payload = await updateTaskDrawerFields({
+					spaceSlug: spaceId,
+					taskId: task.id,
+					title: task.title,
+					note: task.note ?? '',
+					priority: nextPriority,
+					projectId,
+					status: task.status,
+				})
+
+				startTransition(() => {
+					setView((currentView) => {
+						if (!currentView) {
+							return currentView
+						}
+
+						return {
+							...currentView,
+							tasks: currentView.tasks.map((currentTask) =>
+								currentTask.id === payload.id
+									? {
+											...currentTask,
+											priority: payload.priority ?? '',
+											updatedAt: payload.updatedAt,
+										}
+									: currentTask,
+							),
+						}
+					})
+					setFeedback(`已更新“${task.title}”的优先级为${formatTaskPriorityLabel(nextPriority)}`)
+				})
+				skipNextTaskDataVersionRefreshRef.current = true
+				bumpTaskDataVersion()
+			} catch (error) {
+				setLoadError(toErrorMessage(error))
+			} finally {
+				setPendingTaskId(null)
+			}
+		},
+	)
+
 	const toggleTaskStatus = useEffectEvent(async (task: ProjectExecutionTask) => {
 		const nextStatus: ProjectTaskStatus = task.status === 'todo' ? 'done' : 'todo'
-
-		setPendingTaskId(task.id)
-
-		try {
-			const payload = await updateProjectTaskStatus({
-				spaceSlug: spaceId,
-				projectId,
-				taskId: task.id,
-				status: nextStatus,
-			})
-
-			startTransition(() => {
-				setView((currentView) => {
-					if (!currentView) {
-						return currentView
-					}
-
-					return {
-						...currentView,
-						tasks: currentView.tasks.map((currentTask) =>
-							currentTask.id === payload.taskId
-								? {
-										...currentTask,
-										status: payload.status,
-										completedAt: payload.completedAt,
-										updatedAt: payload.updatedAt,
-									}
-								: currentTask,
-						),
-					}
-				})
-				setFeedback(
-					nextStatus === 'done' ? `已完成“${task.title}”` : `已将“${task.title}”恢复为待执行`,
-				)
-				setLoadError(null)
-			})
-			skipNextTaskDataVersionRefreshRef.current = true
-			bumpTaskDataVersion()
-		} catch (error) {
-			setLoadError(toErrorMessage(error))
-		} finally {
-			setPendingTaskId(null)
-		}
+		await updateTaskStatus(task, nextStatus)
 	})
 
 	const deleteCurrentProject = useEffectEvent(async () => {
@@ -190,6 +254,8 @@ export function useProjectExecution(spaceId: string, projectId: string): UseProj
 		pendingTaskId,
 		isDeletingProject,
 		refresh,
+		updateTaskStatus,
+		updateTaskPriority,
 		toggleTaskStatus,
 		moveTaskToTrash,
 		deleteCurrentProject,

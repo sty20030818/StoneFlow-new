@@ -41,13 +41,16 @@ type ShellLayoutState = {
 	closeDrawer: () => void
 	bumpTaskDataVersion: () => void
 	bumpProjectDataVersion: () => void
-	setProjectTreeCollapsed: (payload: { spaceId: string; projectId: string; collapsed: boolean }) => void
+	setProjectTreeCollapsed: (payload: {
+		spaceId: string
+		projectId: string
+		collapsed: boolean
+	}) => void
 	setProjectTaskBoardOpenSections: (sections: ProjectTaskStatus[]) => void
 }
 
 const SHELL_NAV_VISIBILITY_STORAGE_KEY = 'stoneflow:shell-nav-visibility:v1'
-const PROJECT_TASK_BOARD_OPEN_SECTIONS_STORAGE_KEY =
-	'stoneflow:project-task-board-open-sections:v1'
+const PROJECT_TASK_BOARD_OPEN_SECTIONS_STORAGE_KEY = 'stoneflow:project-task-board-open-sections:v1'
 const CONFIGURABLE_NAV_ITEM_KEYS: ShellSectionKey[] = ['inbox', 'focus']
 const DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS: ProjectTaskStatus[] = ['todo', 'done']
 

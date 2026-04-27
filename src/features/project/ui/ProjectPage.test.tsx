@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { useShellLayoutStore } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { getProjectExecutionView } from '@/features/project/api/getProjectExecutionView'
 import { updateProjectTaskStatus } from '@/features/project/api/updateProjectTaskStatus'
+import { updateTaskDrawerFields } from '@/features/task-drawer/api/updateTaskDrawerFields'
 import { ProjectPage } from '@/features/project/ui/ProjectPage'
 
 vi.mock('@/features/project/api/getProjectExecutionView', () => ({
@@ -14,8 +15,13 @@ vi.mock('@/features/project/api/updateProjectTaskStatus', () => ({
 	updateProjectTaskStatus: vi.fn<typeof updateProjectTaskStatus>(),
 }))
 
+vi.mock('@/features/task-drawer/api/updateTaskDrawerFields', () => ({
+	updateTaskDrawerFields: vi.fn<typeof updateTaskDrawerFields>(),
+}))
+
 const mockedGetProjectExecutionView = vi.mocked(getProjectExecutionView)
 const mockedUpdateProjectTaskStatus = vi.mocked(updateProjectTaskStatus)
+const mockedUpdateTaskDrawerFields = vi.mocked(updateTaskDrawerFields)
 
 describe('ProjectPage', () => {
 	afterEach(() => {
@@ -74,7 +80,7 @@ describe('ProjectPage', () => {
 		})
 	})
 
-	it('切换任务状态成功后将任务移动到 Done 分区并回写反馈', async () => {
+	it('通过状态选择器切换任务状态后将任务移动到 Done 分区并回写反馈', async () => {
 		mockedGetProjectExecutionView.mockResolvedValue({
 			...buildProjectView(),
 			tasks: [
@@ -102,7 +108,9 @@ describe('ProjectPage', () => {
 		renderProjectPage()
 
 		await screen.findByText('验证完成切换')
-		fireEvent.click(screen.getByRole('button', { name: '标记完成 验证完成切换' }))
+		const statusTrigger = screen.getByLabelText('验证完成切换 状态')
+		fireEvent.pointerDown(statusTrigger)
+		fireEvent.click(await screen.findByRole('menuitem', { name: '已完成' }))
 
 		await waitFor(() => {
 			expect(mockedUpdateProjectTaskStatus).toHaveBeenCalledWith({
@@ -115,7 +123,45 @@ describe('ProjectPage', () => {
 
 		expect(await screen.findByRole('status')).toHaveTextContent('已完成“验证完成切换”')
 		expect(screen.getByText('Done').parentElement).toHaveTextContent('1')
-		expect(screen.getByRole('button', { name: '恢复待执行 验证完成切换' })).toBeInTheDocument()
+		expect(screen.getByLabelText('验证完成切换 状态')).toBeInTheDocument()
+	})
+
+	it('通过优先级选择器更新任务优先级', async () => {
+		mockedGetProjectExecutionView.mockResolvedValue(buildProjectView())
+		mockedUpdateTaskDrawerFields.mockResolvedValue({
+			id: 'task-1',
+			title: '接通 Project 查询',
+			note: '验证真实任务列表',
+			priority: 'urgent',
+			projectId: 'project-1',
+			status: 'todo',
+			createdAt: '2026-04-20T08:00:00Z',
+			updatedAt: '2026-04-20T10:00:00Z',
+			completedAt: null,
+		})
+
+		renderProjectPage()
+
+		await screen.findByText('接通 Project 查询')
+		const priorityTrigger = screen.getByLabelText('接通 Project 查询 优先级')
+		fireEvent.pointerDown(priorityTrigger)
+		fireEvent.click(await screen.findByRole('menuitem', { name: /紧急/ }))
+
+		await waitFor(() => {
+			expect(mockedUpdateTaskDrawerFields).toHaveBeenCalledWith({
+				spaceSlug: 'work',
+				taskId: 'task-1',
+				title: '接通 Project 查询',
+				note: '验证真实任务列表',
+				priority: 'urgent',
+				projectId: 'project-1',
+				status: 'todo',
+			})
+		})
+
+		expect(await screen.findByRole('status')).toHaveTextContent(
+			'已更新“接通 Project 查询”的优先级为紧急',
+		)
 	})
 
 	it('任务为空时只展示总空态并提供创建入口', async () => {

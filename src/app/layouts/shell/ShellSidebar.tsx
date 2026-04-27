@@ -417,7 +417,7 @@ function ProjectSidebarMenuItem({
 						<CollapsibleTrigger asChild>
 							<Button
 								aria-label={isOpen ? '收起子项目' : '展开子项目'}
-								className='h-8 w-8 shrink-0 rounded-md px-0 hover:bg-(--sf-color-shell-hover) aria-expanded:bg-(--sf-color-shell-hover-strong)'
+								className='shrink-0 hover:bg-(--sf-color-shell-hover) aria-expanded:bg-(--sf-color-shell-hover-strong)'
 								onClick={(event) => event.stopPropagation()}
 								size='icon'
 								variant='ghost'

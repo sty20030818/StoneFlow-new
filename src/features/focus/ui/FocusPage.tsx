@@ -1,4 +1,3 @@
-import { formatInboxPriorityLabel } from '@/features/inbox/model/constants'
 import { useFocusWorkspace } from '@/features/focus/model/useFocusWorkspace'
 import {
 	selectActiveDrawerId,
@@ -37,6 +36,13 @@ import type {
 	FocusTaskRecord,
 	FocusViewKey,
 } from '@/features/focus/model/types'
+import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import {
+	TaskLeadRail,
+	TaskPrioritySelect,
+	TaskSelectionCheckbox,
+	TaskStatusSelect,
+} from '@/features/task/ui/TaskMetadataSelect'
 import {
 	MainCardHeader,
 	MainCardLayout,
@@ -77,9 +83,12 @@ export function FocusPage() {
 		setRecentTimeWindow,
 		refresh,
 		toggleTaskPin,
+		updateTaskPriority,
+		updateTaskStatus,
 		toggleTaskStatus,
 		moveTaskToTrash,
 	} = useFocusWorkspace(currentSpaceId)
+	const { selectedTaskIdSet, toggleTaskSelection } = useTaskSelection(tasks.map((task) => task.id))
 	const showRecentWindow = activeViewKey === 'recent'
 
 	return (
@@ -134,9 +143,13 @@ export function FocusPage() {
 						onCreateTask={() => openTaskCreateDialog()}
 						onOpenTask={(taskId) => openDrawer('task', taskId)}
 						onMoveTaskToTrash={moveTaskToTrash}
+						onToggleTaskSelection={toggleTaskSelection}
 						onToggleTaskPin={toggleTaskPin}
+						onUpdateTaskPriority={updateTaskPriority}
+						onUpdateTaskStatus={updateTaskStatus}
 						onToggleTaskStatus={toggleTaskStatus}
 						pendingTaskId={pendingTaskId}
+						selectedTaskIdSet={selectedTaskIdSet}
 						tasks={tasks}
 					/>
 				</div>
@@ -151,9 +164,16 @@ type FocusTaskPanelProps = {
 	tasks: FocusTaskRecord[]
 	pendingTaskId: string | null
 	isLoading: boolean
+	selectedTaskIdSet: Set<string>
 	onCreateTask: () => void
 	onOpenTask: (taskId: string) => void
+	onToggleTaskSelection: (taskId: string) => void
 	onToggleTaskPin: (task: FocusTaskRecord) => Promise<void>
+	onUpdateTaskPriority: (
+		task: FocusTaskRecord,
+		priority: '' | 'low' | 'medium' | 'high' | 'urgent',
+	) => Promise<void>
+	onUpdateTaskStatus: (task: FocusTaskRecord, status: 'todo' | 'done') => Promise<void>
 	onToggleTaskStatus: (task: FocusTaskRecord) => Promise<void>
 	onMoveTaskToTrash: (task: FocusTaskRecord) => Promise<void>
 }
@@ -164,9 +184,13 @@ function FocusTaskPanel({
 	tasks,
 	pendingTaskId,
 	isLoading,
+	selectedTaskIdSet,
 	onCreateTask,
 	onOpenTask,
+	onToggleTaskSelection,
 	onToggleTaskPin,
+	onUpdateTaskPriority,
+	onUpdateTaskStatus,
 	onToggleTaskStatus,
 	onMoveTaskToTrash,
 }: FocusTaskPanelProps) {
@@ -209,8 +233,12 @@ function FocusTaskPanel({
 					key={task.id}
 					onOpenTask={onOpenTask}
 					onMoveTaskToTrash={onMoveTaskToTrash}
+					onToggleTaskSelection={onToggleTaskSelection}
 					onToggleTaskPin={onToggleTaskPin}
+					onUpdateTaskPriority={onUpdateTaskPriority}
+					onUpdateTaskStatus={onUpdateTaskStatus}
 					onToggleTaskStatus={onToggleTaskStatus}
+					selectedTaskIdSet={selectedTaskIdSet}
 					task={task}
 				/>
 			))}
@@ -223,8 +251,15 @@ type FocusTaskRowProps = {
 	activeViewKey: FocusViewKey
 	isActive: boolean
 	isPending: boolean
+	selectedTaskIdSet: Set<string>
 	onOpenTask: (taskId: string) => void
+	onToggleTaskSelection: (taskId: string) => void
 	onToggleTaskPin: (task: FocusTaskRecord) => Promise<void>
+	onUpdateTaskPriority: (
+		task: FocusTaskRecord,
+		priority: '' | 'low' | 'medium' | 'high' | 'urgent',
+	) => Promise<void>
+	onUpdateTaskStatus: (task: FocusTaskRecord, status: 'todo' | 'done') => Promise<void>
 	onToggleTaskStatus: (task: FocusTaskRecord) => Promise<void>
 	onMoveTaskToTrash: (task: FocusTaskRecord) => Promise<void>
 }
@@ -234,11 +269,17 @@ function FocusTaskRow({
 	activeViewKey,
 	isActive,
 	isPending,
+	selectedTaskIdSet,
 	onOpenTask,
+	onToggleTaskSelection,
 	onToggleTaskPin,
+	onUpdateTaskPriority,
+	onUpdateTaskStatus,
 	onToggleTaskStatus,
 	onMoveTaskToTrash,
 }: FocusTaskRowProps) {
+	const isSelected = selectedTaskIdSet.has(task.id)
+
 	return (
 		<TaskContextMenu
 			isBusy={isPending}
@@ -271,23 +312,44 @@ function FocusTaskRow({
 				role='button'
 				tabIndex={0}
 			>
-				<div className='min-w-0 space-y-2'>
-					<div className='flex flex-wrap items-center gap-2'>
-						<p
-							className={cn(
-								'text-left text-sm font-semibold transition-colors group-hover:text-primary',
-								task.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground',
-							)}
-						>
-							{task.title}
+				<div className='flex min-w-0 flex-1 items-start gap-2.5'>
+					<TaskLeadRail className='pt-0.5'>
+						<TaskSelectionCheckbox
+							ariaLabel={`选择任务 ${task.title}`}
+							checked={isSelected}
+							disabled={isPending}
+							onCheckedChange={() => onToggleTaskSelection(task.id)}
+						/>
+						<TaskPrioritySelect
+							ariaLabel={`${task.title} 优先级`}
+							disabled={isPending}
+							onValueChange={(priority) => void onUpdateTaskPriority(task, priority)}
+							value={task.priority}
+						/>
+						<TaskStatusSelect
+							ariaLabel={`${task.title} 状态`}
+							disabled={isPending}
+							onValueChange={(status) => void onUpdateTaskStatus(task, status)}
+							value={task.status}
+						/>
+					</TaskLeadRail>
+					<div className='min-w-0 space-y-2'>
+						<div className='flex flex-wrap items-center gap-2'>
+							<p
+								className={cn(
+									'text-left text-sm font-semibold transition-colors group-hover:text-primary',
+									task.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground',
+								)}
+							>
+								{task.title}
+							</p>
+							{task.pinned ? <Badge variant='secondary'>已 Pin</Badge> : null}
+							<Badge variant='outline'>{getTaskMetaLabel(task, activeViewKey)}</Badge>
+						</div>
+						<p className='text-sm leading-6 text-muted-foreground'>
+							{task.note?.trim() || '当前任务还没有补充备注，可直接打开 Drawer 完成上下文编辑。'}
 						</p>
-						<Badge variant='outline'>{formatInboxPriorityLabel(task.priority)}</Badge>
-						{task.pinned ? <Badge variant='secondary'>已 Pin</Badge> : null}
-						<Badge variant='outline'>{getTaskMetaLabel(task, activeViewKey)}</Badge>
 					</div>
-					<p className='text-sm leading-6 text-muted-foreground'>
-						{task.note?.trim() || '当前任务还没有补充备注，可直接打开 Drawer 完成上下文编辑。'}
-					</p>
 				</div>
 
 				<div className='flex shrink-0 flex-wrap items-center gap-2'>
@@ -302,20 +364,6 @@ function FocusTaskRow({
 						variant={task.pinned ? 'secondary' : 'outline'}
 					>
 						{isPending ? '处理中...' : task.pinned ? '取消 Pin' : 'Pin 到 Focus'}
-					</Button>
-					<Button
-						aria-label={
-							task.status === 'todo' ? `标记完成 ${task.title}` : `恢复待执行 ${task.title}`
-						}
-						disabled={isPending}
-						onClick={(event) => {
-							event.stopPropagation()
-							void onToggleTaskStatus(task)
-						}}
-						size='sm'
-						variant='outline'
-					>
-						{isPending ? '处理中...' : task.status === 'todo' ? '标记完成' : '恢复待执行'}
 					</Button>
 				</div>
 			</div>
