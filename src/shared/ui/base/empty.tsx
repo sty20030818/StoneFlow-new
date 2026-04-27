@@ -2,11 +2,25 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/shared/lib/utils'
 
+/**
+ * 页面级空态容器：负责在 flex 布局中吃掉剩余高度（flex-1 + min-h-0），
+ * 让内部的 `Empty` 能稳定做到垂直/水平居中。
+ */
+function EmptyPage({ className, ...props }: React.ComponentProps<'div'>) {
+	return (
+		<div
+			className={cn('flex min-h-0 min-w-0 flex-1 flex-col', className)}
+			data-slot='empty-page'
+			{...props}
+		/>
+	)
+}
+
 function Empty({ className, ...props }: React.ComponentProps<'div'>) {
 	return (
 		<div
 			className={cn(
-				'flex w-full min-w-0 flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30 p-6 text-center',
+				'flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4 p-6 text-center',
 				className,
 			)}
 			data-slot='empty'
@@ -31,7 +45,7 @@ const emptyMediaVariants = cva(
 		variants: {
 			variant: {
 				default: 'bg-transparent',
-				icon: 'size-9 rounded-lg bg-card text-(--sf-color-shell-tertiary) [&_svg:not([class*=size-])]:size-4.5',
+				icon: 'size-9 rounded-lg bg-(--sf-color-shell-hover-strong) text-(--sf-color-text-primary) [&_svg:not([class*=size-])]:size-4.5',
 			},
 		},
 		defaultVariants: {
@@ -69,7 +83,8 @@ function EmptyDescription({ className, ...props }: React.ComponentProps<'p'>) {
 	return (
 		<p
 			className={cn(
-				'text-sm leading-6 text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-foreground',
+				// 让空态描述在多行时更“均匀换行”，避免最后一行特别短带来的视觉失衡
+				'text-balance text-sm leading-6 text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-foreground',
 				className,
 			)}
 			data-slot='empty-description'
@@ -88,4 +103,4 @@ function EmptyContent({ className, ...props }: React.ComponentProps<'div'>) {
 	)
 }
 
-export { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle }
+export { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyPage, EmptyTitle }

@@ -13,6 +13,7 @@ import {
 import { useProjectExecution } from '@/features/project/model/useProjectExecution'
 import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
 import { Button } from '@/shared/ui/base/button'
+import { EmptyPage } from '@/shared/ui/base/empty'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -55,7 +56,7 @@ export function ProjectPage() {
 				/>
 			}
 		>
-			<div className='flex flex-col gap-5'>
+			<div className='flex min-h-0 flex-1 flex-col'>
 				<ToastFeedbackBridge feedback={feedback} />
 
 				{loadError ? (
@@ -70,6 +71,7 @@ export function ProjectPage() {
 								重试
 							</Button>
 						}
+						className='mb-3'
 						role='alert'
 						variant='danger'
 					>
@@ -77,21 +79,23 @@ export function ProjectPage() {
 					</StatusNotice>
 				) : null}
 
-				{isLoading ? (
-					<p className='text-sm text-muted-foreground' role='status'>
-						正在加载 Project 执行视图...
-					</p>
-				) : view ? (
-					<ProjectTaskBoard
-						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-						onMoveTaskToTrash={moveTaskToTrash}
-						onOpenTask={(taskId) => openDrawer('task', taskId)}
-						onToggleTaskStatus={toggleTaskStatus}
-						pendingTaskId={pendingTaskId}
-						projectId={view.project.id}
-						tasks={view.tasks}
-					/>
-				) : null}
+				<EmptyPage>
+					{isLoading ? (
+						<p className='text-sm text-muted-foreground' role='status'>
+							正在加载 Project 执行视图...
+						</p>
+					) : view ? (
+						<ProjectTaskBoard
+							activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
+							onMoveTaskToTrash={moveTaskToTrash}
+							onOpenTask={(taskId) => openDrawer('task', taskId)}
+							onToggleTaskStatus={toggleTaskStatus}
+							pendingTaskId={pendingTaskId}
+							projectId={view.project.id}
+							tasks={view.tasks}
+						/>
+					) : null}
+				</EmptyPage>
 			</div>
 		</MainCardLayout>
 	)

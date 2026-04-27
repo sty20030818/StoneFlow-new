@@ -10,8 +10,16 @@ import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/shared/ui/base/empty'
-import { CheckIcon, ChevronRightIcon, CircleIcon, PlusIcon } from 'lucide-react'
+import {
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyPage,
+	EmptyTitle,
+} from '@/shared/ui/base/empty'
+import { CheckIcon, ChevronRightIcon, CircleIcon, ListTodoIcon, PlusIcon } from 'lucide-react'
 
 const PROJECT_TASK_ROW_BASE_CLASS =
 	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-2.5 text-left transition-colors'
@@ -65,6 +73,7 @@ export function ProjectTaskBoard({
 	const setProjectTaskBoardOpenSections = useShellLayoutStore(
 		(state) => state.setProjectTaskBoardOpenSections,
 	)
+	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
 
 	const tasksByStatus = useMemo(
 		() => ({
@@ -72,6 +81,9 @@ export function ProjectTaskBoard({
 			done: tasks.filter((task) => task.status === 'done'),
 		}),
 		[tasks],
+	)
+	const visibleSections = PROJECT_TASK_SECTIONS.filter(
+		(section) => tasksByStatus[section.status].length > 0,
 	)
 
 	function handleSectionOpenChange(status: ProjectTaskStatus, open: boolean) {
@@ -82,23 +94,50 @@ export function ProjectTaskBoard({
 	}
 
 	return (
-		<div className='flex flex-col gap-1'>
-			{PROJECT_TASK_SECTIONS.map((section) => (
-				<TaskStatusSection
-					activeTaskId={activeTaskId}
-					key={section.status}
-					label={section.label}
-					onOpenChange={(open) => handleSectionOpenChange(section.status, open)}
-					onMoveTaskToTrash={onMoveTaskToTrash}
-					onOpenTask={onOpenTask}
-					onToggleTaskStatus={onToggleTaskStatus}
-					open={openSections.includes(section.status)}
-					pendingTaskId={pendingTaskId}
-					projectId={projectId}
-					status={section.status}
-					tasks={tasksByStatus[section.status]}
-				/>
-			))}
+		<div className='flex min-h-0 flex-1 flex-col gap-1'>
+			{visibleSections.length === 0 ? (
+				<EmptyPage>
+					<Empty className='rounded-md bg-transparent'>
+						<EmptyHeader>
+							<EmptyMedia variant='icon'>
+								<ListTodoIcon />
+							</EmptyMedia>
+							<EmptyTitle>当前还没有任务</EmptyTitle>
+							<EmptyDescription>先创建第一条任务，再从这里开始推进这个 Project。</EmptyDescription>
+						</EmptyHeader>
+						<EmptyContent>
+							<Button
+								onClick={() =>
+									openTaskCreateDialog({
+										projectId,
+										status: 'todo',
+									})
+								}
+								type='button'
+							>
+								创建任务
+							</Button>
+						</EmptyContent>
+					</Empty>
+				</EmptyPage>
+			) : (
+				visibleSections.map((section) => (
+					<TaskStatusSection
+						activeTaskId={activeTaskId}
+						key={section.status}
+						label={section.label}
+						onOpenChange={(open) => handleSectionOpenChange(section.status, open)}
+						onMoveTaskToTrash={onMoveTaskToTrash}
+						onOpenTask={onOpenTask}
+						onToggleTaskStatus={onToggleTaskStatus}
+						open={openSections.includes(section.status)}
+						pendingTaskId={pendingTaskId}
+						projectId={projectId}
+						status={section.status}
+						tasks={tasksByStatus[section.status]}
+					/>
+				))
+			)}
 		</div>
 	)
 }
@@ -158,34 +197,19 @@ function TaskStatusSection({
 			</div>
 
 			<CollapsibleContent className='overflow-hidden px-0'>
-				{tasks.length === 0 ? (
-					<Empty className='rounded-md bg-transparent py-5'>
-						<EmptyHeader>
-							<EmptyTitle>
-								{status === 'todo' ? '当前没有待执行任务。' : '当前没有已完成任务。'}
-							</EmptyTitle>
-							<EmptyDescription>
-								{status === 'todo'
-									? '新建任务后会先进入这里，等待开始执行。'
-									: '完成的任务会在这里归档，方便回看。'}
-							</EmptyDescription>
-						</EmptyHeader>
-					</Empty>
-				) : (
-					<div className='flex flex-col gap-1'>
-						{tasks.map((task) => (
-							<ProjectTaskRow
-								activeTaskId={activeTaskId}
-								key={task.id}
-								onMoveTaskToTrash={onMoveTaskToTrash}
-								onOpenTask={onOpenTask}
-								onToggleTaskStatus={onToggleTaskStatus}
-								pendingTaskId={pendingTaskId}
-								task={task}
-							/>
-						))}
-					</div>
-				)}
+				<div className='flex flex-col gap-1'>
+					{tasks.map((task) => (
+						<ProjectTaskRow
+							activeTaskId={activeTaskId}
+							key={task.id}
+							onMoveTaskToTrash={onMoveTaskToTrash}
+							onOpenTask={onOpenTask}
+							onToggleTaskStatus={onToggleTaskStatus}
+							pendingTaskId={pendingTaskId}
+							task={task}
+						/>
+					))}
+				</div>
 			</CollapsibleContent>
 		</Collapsible>
 	)

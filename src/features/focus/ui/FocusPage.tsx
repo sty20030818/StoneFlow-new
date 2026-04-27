@@ -19,9 +19,11 @@ import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { cn } from '@/shared/lib/utils'
 import {
 	Empty,
+	EmptyContent,
 	EmptyDescription,
 	EmptyHeader,
 	EmptyMedia,
+	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
 import {
@@ -61,6 +63,7 @@ export function FocusPage() {
 	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
 	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
+	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
 	const {
 		views,
 		activeViewKey,
@@ -100,33 +103,35 @@ export function FocusPage() {
 				/>
 			}
 		>
-			<div className='flex flex-col gap-5'>
-				<div className='flex flex-col gap-5'>
-					<ToastFeedbackBridge feedback={feedback} />
+			<div className='flex min-h-0 flex-1 flex-col'>
+				<ToastFeedbackBridge feedback={feedback} />
 
-					{loadError ? (
-						<StatusNotice
-							actions={
-								<Button
-									className='rounded-md'
-									onClick={() => void refresh()}
-									size='sm'
-									variant='outline'
-								>
-									重试
-								</Button>
-							}
-							role='alert'
-							variant='danger'
-						>
-							<p className='text-sm'>{loadError}</p>
-						</StatusNotice>
-					) : null}
+				{loadError ? (
+					<StatusNotice
+						actions={
+							<Button
+								className='rounded-md'
+								onClick={() => void refresh()}
+								size='sm'
+								variant='outline'
+							>
+								重试
+							</Button>
+						}
+						className='mb-3'
+						role='alert'
+						variant='danger'
+					>
+						<p className='text-sm'>{loadError}</p>
+					</StatusNotice>
+				) : null}
 
+				<div className='flex min-h-0 flex-1 flex-col'>
 					<FocusTaskPanel
 						activeViewKey={activeViewKey}
 						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
 						isLoading={isLoading}
+						onCreateTask={() => openTaskCreateDialog()}
 						onOpenTask={(taskId) => openDrawer('task', taskId)}
 						onMoveTaskToTrash={moveTaskToTrash}
 						onToggleTaskPin={toggleTaskPin}
@@ -146,6 +151,7 @@ type FocusTaskPanelProps = {
 	tasks: FocusTaskRecord[]
 	pendingTaskId: string | null
 	isLoading: boolean
+	onCreateTask: () => void
 	onOpenTask: (taskId: string) => void
 	onToggleTaskPin: (task: FocusTaskRecord) => Promise<void>
 	onToggleTaskStatus: (task: FocusTaskRecord) => Promise<void>
@@ -158,6 +164,7 @@ function FocusTaskPanel({
 	tasks,
 	pendingTaskId,
 	isLoading,
+	onCreateTask,
 	onOpenTask,
 	onToggleTaskPin,
 	onToggleTaskStatus,
@@ -173,20 +180,27 @@ function FocusTaskPanel({
 
 	if (tasks.length === 0) {
 		return (
-			<Empty>
-				<EmptyHeader>
-					<EmptyMedia variant='icon'>
-						<TargetIcon />
-					</EmptyMedia>
-					<EmptyTitle>{getEmptyTitle(activeViewKey)}</EmptyTitle>
-					<EmptyDescription>{getEmptyDescription(activeViewKey)}</EmptyDescription>
-				</EmptyHeader>
-			</Empty>
+			<EmptyPage>
+				<Empty>
+					<EmptyHeader>
+						<EmptyMedia variant='icon'>
+							<TargetIcon />
+						</EmptyMedia>
+						<EmptyTitle>{getEmptyTitle(activeViewKey)}</EmptyTitle>
+						<EmptyDescription>{getEmptyDescription(activeViewKey)}</EmptyDescription>
+					</EmptyHeader>
+					<EmptyContent>
+						<Button onClick={onCreateTask} type='button'>
+							创建任务
+						</Button>
+					</EmptyContent>
+				</Empty>
+			</EmptyPage>
 		)
 	}
 
 	return (
-		<div className='flex flex-col gap-3'>
+		<div className='flex min-h-0 flex-1 flex-col gap-3'>
 			{tasks.map((task) => (
 				<FocusTaskRow
 					activeViewKey={activeViewKey}

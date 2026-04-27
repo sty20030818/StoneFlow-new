@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 
 import { useTrashEntries } from '@/features/trash/model/useTrashEntries'
 import type { TrashEntry } from '@/features/trash/model/types'
@@ -7,9 +7,11 @@ import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Empty,
+	EmptyContent,
 	EmptyDescription,
 	EmptyHeader,
 	EmptyMedia,
+	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
@@ -42,39 +44,48 @@ export function TrashPage() {
 				/>
 			}
 		>
-			<div>
-				<div className='flex flex-col gap-3'>
-					<ToastFeedbackBridge feedback={feedback} />
+			<div className='flex min-h-0 flex-1 flex-col'>
+				<ToastFeedbackBridge feedback={feedback} />
 
-					{loadError ? (
-						<StatusNotice role='alert' variant='danger'>
-							<p className='text-sm'>{loadError}</p>
-						</StatusNotice>
-					) : null}
+				{loadError ? (
+					<StatusNotice className='mb-3' role='alert' variant='danger'>
+						<p className='text-sm'>{loadError}</p>
+					</StatusNotice>
+				) : null}
 
+				<div className='flex min-h-0 flex-1 flex-col'>
 					{isLoading ? (
 						<p className='py-8 text-sm text-muted-foreground' role='status'>
 							正在加载回收站...
 						</p>
 					) : entries.length === 0 ? (
-						<Empty className='items-start text-left'>
-							<EmptyHeader className='items-start'>
-								<EmptyMedia variant='icon'>
-									<Trash2Icon />
-								</EmptyMedia>
-								<EmptyTitle>回收站为空</EmptyTitle>
-								<EmptyDescription>删除后的 Task 和 Project 会在这里等待恢复。</EmptyDescription>
-							</EmptyHeader>
-						</Empty>
+						<EmptyPage>
+							<Empty>
+								<EmptyHeader>
+									<EmptyMedia variant='icon'>
+										<Trash2Icon />
+									</EmptyMedia>
+									<EmptyTitle>回收站为空</EmptyTitle>
+									<EmptyDescription>删除后的 Task 和 Project 会在这里等待恢复。</EmptyDescription>
+								</EmptyHeader>
+								<EmptyContent>
+									<Button asChild>
+										<Link to={`/space/${spaceId}/inbox`}>返回 Inbox</Link>
+									</Button>
+								</EmptyContent>
+							</Empty>
+						</EmptyPage>
 					) : (
-						entries.map((entry) => (
-							<TrashEntryRow
-								entry={entry}
-								isPending={pendingEntryId === entry.id}
-								key={entry.id}
-								onRestore={restoreEntry}
-							/>
-						))
+						<div className='flex min-h-0 flex-1 flex-col gap-3'>
+							{entries.map((entry) => (
+								<TrashEntryRow
+									entry={entry}
+									isPending={pendingEntryId === entry.id}
+									key={entry.id}
+									onRestore={restoreEntry}
+								/>
+							))}
+						</div>
 					)}
 				</div>
 			</div>

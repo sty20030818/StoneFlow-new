@@ -118,7 +118,7 @@ describe('ProjectPage', () => {
 		expect(screen.getByRole('button', { name: '恢复待执行 验证完成切换' })).toBeInTheDocument()
 	})
 
-	it('任务为空时展示两个状态分区的空态', async () => {
+	it('任务为空时只展示总空态并提供创建入口', async () => {
 		mockedGetProjectExecutionView.mockResolvedValue({
 			project: {
 				id: 'project-1',
@@ -134,8 +134,43 @@ describe('ProjectPage', () => {
 
 		renderProjectPage()
 
-		expect(await screen.findByText('当前没有待执行任务。')).toBeInTheDocument()
-		expect(screen.getByText('当前没有已完成任务。')).toBeInTheDocument()
+		expect(await screen.findByText('当前还没有任务')).toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '切换 Todo 分区折叠状态' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '切换 Done 分区折叠状态' })).not.toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
+
+		expect(useShellLayoutStore.getState()).toMatchObject({
+			isTaskCreateOpen: true,
+			taskCreateProjectId: 'project-1',
+			taskCreateStatus: 'todo',
+		})
+	})
+
+	it('没有 done 任务时不展示 done 分区标题栏', async () => {
+		mockedGetProjectExecutionView.mockResolvedValue({
+			...buildProjectView(),
+			tasks: [
+				{
+					id: 'task-1',
+					title: '只剩待执行',
+					note: null,
+					priority: 'high',
+					status: 'todo',
+					tags: [],
+					dueAt: null,
+					completedAt: null,
+					createdAt: '2026-04-20T08:00:00Z',
+					updatedAt: '2026-04-20T08:00:00Z',
+				},
+			],
+		})
+
+		renderProjectPage()
+
+		expect(await screen.findByText('只剩待执行')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '切换 Todo 分区折叠状态' })).toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '切换 Done 分区折叠状态' })).not.toBeInTheDocument()
 	})
 
 	it('点击任务行时打开 Task Drawer', async () => {
@@ -203,7 +238,7 @@ describe('ProjectPage', () => {
 			expect(mockedGetProjectExecutionView).toHaveBeenCalledTimes(2)
 		})
 		await waitFor(() => {
-			expect(screen.getByText('当前没有待执行任务。')).toBeInTheDocument()
+			expect(screen.getByText('当前还没有任务')).toBeInTheDocument()
 		})
 	})
 })

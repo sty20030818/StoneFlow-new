@@ -8,9 +8,11 @@ import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Empty,
+	EmptyContent,
 	EmptyDescription,
 	EmptyHeader,
 	EmptyMedia,
+	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
 import {
@@ -44,6 +46,7 @@ export function InboxPage() {
 	const activeDrawerKind = useShellLayoutStore((state) => state.activeDrawerKind)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
 	const openProjectCreateDialog = useShellLayoutStore((state) => state.openProjectCreateDialog)
+	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
 	const {
 		tasks,
 		projects,
@@ -81,7 +84,7 @@ export function InboxPage() {
 				/>
 			}
 		>
-			<div className='flex flex-col gap-3'>
+			<div className='flex min-h-0 flex-1 flex-col'>
 				<ToastFeedbackBridge feedback={feedback} />
 
 				{!isLoading && !loadError && tasks.length > 0 && projects.length === 0 ? (
@@ -99,53 +102,62 @@ export function InboxPage() {
 				) : null}
 
 				{loadError ? (
-					<StatusNotice role='alert' variant='danger'>
+					<StatusNotice className='mb-3' role='alert' variant='danger'>
 						<p className='text-sm'>{loadError}</p>
 					</StatusNotice>
 				) : null}
 
-				{isLoading ? (
-					<p className='py-8 text-sm text-muted-foreground' role='status'>
-						正在加载 Inbox...
-					</p>
-				) : null}
+				<div className='flex min-h-0 flex-1 flex-col'>
+					{isLoading ? (
+						<p className='py-8 text-sm text-muted-foreground' role='status'>
+							正在加载 Inbox...
+						</p>
+					) : null}
 
-				{!isLoading && !loadError && tasks.length === 0 ? (
-					<Empty>
-						<EmptyHeader>
-							<EmptyMedia variant='icon'>
-								<InboxIcon />
-							</EmptyMedia>
-							<EmptyTitle>当前 Inbox 已清空</EmptyTitle>
-							<EmptyDescription>
-								新捕获的任务会先进入这里，补齐项目和优先级后再离开。
-							</EmptyDescription>
-						</EmptyHeader>
-					</Empty>
-				) : null}
+					{!isLoading && !loadError && tasks.length === 0 ? (
+						<EmptyPage>
+							<Empty>
+								<EmptyHeader>
+									<EmptyMedia variant='icon'>
+										<InboxIcon />
+									</EmptyMedia>
+									<EmptyTitle>当前 Inbox 已清空</EmptyTitle>
+									<EmptyDescription>
+										新捕获的任务会先进入这里，补齐项目和优先级后再离开。
+									</EmptyDescription>
+								</EmptyHeader>
+								<EmptyContent>
+									<Button onClick={() => openTaskCreateDialog()} type='button'>
+										创建任务
+									</Button>
+								</EmptyContent>
+							</Empty>
+						</EmptyPage>
+					) : null}
 
-				{!isLoading && !loadError && tasks.length > 0 ? (
-					<div className='flex flex-col gap-3'>
-						{tasks.map((task) => {
-							const draft = getDraft(task.id)
+					{!isLoading && !loadError && tasks.length > 0 ? (
+						<div className='flex min-h-0 flex-1 flex-col gap-3'>
+							{tasks.map((task) => {
+								const draft = getDraft(task.id)
 
-							return (
-								<InboxTaskRow
-									key={task.id}
-									draft={draft}
-									isActive={activeDrawerKind === 'task' && activeDrawerId === task.id}
-									onOpenTask={() => openDrawer('task', task.id)}
-									onMoveTaskToTrash={() => void moveTaskToTrash(task.id)}
-									onProjectChange={(projectId) => updateDraft(task.id, { projectId, error: null })}
-									onSubmit={() => void submitTriage(task.id)}
-									onPriorityChange={(priority) => updateDraft(task.id, { priority, error: null })}
-									projects={projects}
-									task={task}
-								/>
-							)
-						})}
-					</div>
-				) : null}
+								return (
+									<InboxTaskRow
+										key={task.id}
+										draft={draft}
+										isActive={activeDrawerKind === 'task' && activeDrawerId === task.id}
+										onOpenTask={() => openDrawer('task', task.id)}
+										onMoveTaskToTrash={() => void moveTaskToTrash(task.id)}
+										onProjectChange={(projectId) => updateDraft(task.id, { projectId, error: null })}
+										onSubmit={() => void submitTriage(task.id)}
+										onPriorityChange={(priority) => updateDraft(task.id, { priority, error: null })}
+										projects={projects}
+										task={task}
+									/>
+								)
+							})}
+						</div>
+					) : null}
+				</div>
 			</div>
 		</MainCardLayout>
 	)

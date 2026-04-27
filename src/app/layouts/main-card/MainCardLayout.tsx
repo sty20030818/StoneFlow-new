@@ -51,7 +51,14 @@ const MAIN_CARD_GHOST_ACTION_CLASS =
 
 export function MainCardLayout({ header, toolbar, children, className }: MainCardLayoutProps) {
 	return (
-		<div className={cn('flex min-h-full min-w-0 flex-col', className)}>
+		<div
+			className={cn(
+				// 作为 ShellMain 滚动区域内的主容器：既要至少铺满一屏（min-h-full），
+				// 也要在父级是纵向 flex 时吃掉剩余高度（flex-1），避免短内容底部留白。
+				'flex min-h-full min-w-0 flex-1 flex-col',
+				className,
+			)}
+		>
 			{header}
 			<MainCardContentInset>
 				{toolbar}
