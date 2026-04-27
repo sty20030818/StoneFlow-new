@@ -12,6 +12,7 @@ import {
 } from '@/app/layouts/main-card/MainCardLayout'
 import { useProjectExecution } from '@/features/project/model/useProjectExecution'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
 import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
 import { Button } from '@/shared/ui/base/button'
 import { EmptyPage } from '@/shared/ui/base/empty'
@@ -43,7 +44,7 @@ export function ProjectPage() {
 		toggleTaskStatus,
 		moveTaskToTrash,
 	} = useProjectExecution(spaceId, projectId)
-	const { selectedTaskIdSet, toggleTaskSelection } = useTaskSelection(
+	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } = useTaskSelection(
 		view?.tasks.map((task) => task.id) ?? [],
 	)
 
@@ -106,6 +107,28 @@ export function ProjectPage() {
 						/>
 					) : null}
 				</EmptyPage>
+
+				<TaskBulkActionBar
+					action={
+						<Button
+							className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
+							onClick={() => undefined}
+							size='sm'
+							type='button'
+							variant='outline'
+						>
+							<span
+								aria-hidden
+								className='text-sm leading-none text-(--sf-color-sidebar-action-foreground)'
+							>
+								⌘
+							</span>
+							指令
+						</Button>
+					}
+					onClear={clearTaskSelection}
+					selectedCount={selectedCount}
+				/>
 			</div>
 		</MainCardLayout>
 	)

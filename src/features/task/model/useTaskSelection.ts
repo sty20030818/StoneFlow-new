@@ -25,6 +25,7 @@ export function useTaskSelection(taskIds: string[]) {
 	}, [taskIdSignature])
 
 	const selectedTaskIdSet = useMemo(() => new Set(selectedTaskIds), [selectedTaskIds])
+	const selectedCount = selectedTaskIds.length
 
 	function toggleTaskSelection(taskId: string) {
 		setSelectedTaskIds((currentIds) =>
@@ -34,9 +35,15 @@ export function useTaskSelection(taskIds: string[]) {
 		)
 	}
 
+	function clearTaskSelection() {
+		setSelectedTaskIds((currentIds) => (currentIds.length === 0 ? currentIds : []))
+	}
+
 	return {
 		selectedTaskIds,
 		selectedTaskIdSet,
+		selectedCount,
 		toggleTaskSelection,
+		clearTaskSelection,
 	}
 }

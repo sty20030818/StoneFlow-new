@@ -233,6 +233,24 @@ describe('ProjectPage', () => {
 		})
 	})
 
+	it('勾选任务后展示底部批量胶囊，并可通过 X 清空已选', async () => {
+		mockedGetProjectExecutionView.mockResolvedValue(buildProjectView())
+
+		renderProjectPage()
+
+		fireEvent.click(await screen.findByRole('checkbox', { name: '选择任务 接通 Project 查询' }))
+
+		expect(await screen.findByText('已选 1 项')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '清空已选任务' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '快捷操作' })).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '清空已选任务' }))
+
+		await waitFor(() => {
+			expect(screen.queryByText('已选 1 项')).not.toBeInTheDocument()
+		})
+	})
+
 	it('分区展开状态在不同 Project 间全局共享', async () => {
 		mockedGetProjectExecutionView.mockResolvedValueOnce(buildProjectView()).mockResolvedValueOnce({
 			...buildProjectView(),
