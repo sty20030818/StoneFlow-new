@@ -53,8 +53,10 @@ export function MainCardLayout({ header, toolbar, children, className }: MainCar
 	return (
 		<div className={cn('flex min-h-full min-w-0 flex-col', className)}>
 			{header}
-			{toolbar}
-			<MainCardBody>{children}</MainCardBody>
+			<MainCardContentInset>
+				{toolbar}
+				<MainCardBody>{children}</MainCardBody>
+			</MainCardContentInset>
 		</div>
 	)
 }
@@ -90,9 +92,7 @@ export function MainCardToolbar({
 	const pillRole = pills?.some((pill) => pill.role === 'tab') ? 'tablist' : undefined
 
 	return (
-		<div
-			className={cn('flex min-h-13.5 items-center justify-between gap-3 px-4 py-2.5', className)}
-		>
+		<div className={cn('flex min-h-8 items-center justify-between gap-3', className)}>
 			<div className='flex min-w-0 flex-wrap items-center gap-2' role={pillRole}>
 				{left ??
 					pills?.map((pill) => (
@@ -130,8 +130,22 @@ export function MainCardToolbar({
 	)
 }
 
+function MainCardContentInset({
+	children,
+	className,
+}: {
+	children: ReactNode
+	className?: string
+}) {
+	return (
+		<div className={cn('flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2', className)}>
+			{children}
+		</div>
+	)
+}
+
 export function MainCardBody({ children, className }: { children: ReactNode; className?: string }) {
-	return <div className={cn('flex min-w-0 flex-1 flex-col px-6 pb-6', className)}>{children}</div>
+	return <div className={cn('flex min-h-0 min-w-0 flex-1 flex-col', className)}>{children}</div>
 }
 
 export function MainCardGhostAction({

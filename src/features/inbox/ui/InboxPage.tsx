@@ -74,7 +74,7 @@ export function InboxPage() {
 				/>
 			}
 		>
-			<div className='flex flex-col gap-3 pt-4'>
+			<div className='flex flex-col gap-3'>
 				{!isLoading && !loadError && tasks.length > 0 && projects.length === 0 ? (
 					<StatusNotice
 						actions={

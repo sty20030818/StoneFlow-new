@@ -51,8 +51,8 @@ describe('ProjectPage', () => {
 
 		expect(await screen.findByText('接通 Project 查询')).toBeInTheDocument()
 		expect(screen.getByText('完成状态切换')).toBeInTheDocument()
-		expect(screen.getAllByRole('button', { name: /Todo/ })[0]).toBeInTheDocument()
-		expect(screen.getAllByRole('button', { name: /Done/ })[0]).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '切换 Todo 分区折叠状态' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '切换 Done 分区折叠状态' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '在 Todo 中创建任务' })).toBeInTheDocument()
 		expect(screen.queryByText('待执行 1')).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '更多项目操作' })).not.toBeInTheDocument()
@@ -114,7 +114,7 @@ describe('ProjectPage', () => {
 		})
 
 		expect(await screen.findByRole('status')).toHaveTextContent('已完成“验证完成切换”')
-		expect(screen.getAllByRole('button', { name: /Done/ })[0]).toHaveTextContent('1')
+		expect(screen.getByText('Done').parentElement).toHaveTextContent('1')
 		expect(screen.getByRole('button', { name: '恢复待执行 验证完成切换' })).toBeInTheDocument()
 	})
 
@@ -152,23 +152,21 @@ describe('ProjectPage', () => {
 		})
 	})
 
-	it('Accordion 展开状态在不同 Project 间全局共享', async () => {
-		mockedGetProjectExecutionView
-			.mockResolvedValueOnce(buildProjectView())
-			.mockResolvedValueOnce({
-				...buildProjectView(),
-				project: {
-					id: 'project-2',
-					name: '第二项目',
-					status: 'active',
-					sortOrder: 0,
-					parentProjectId: null,
-					children: [],
-				},
-			})
+	it('分区展开状态在不同 Project 间全局共享', async () => {
+		mockedGetProjectExecutionView.mockResolvedValueOnce(buildProjectView()).mockResolvedValueOnce({
+			...buildProjectView(),
+			project: {
+				id: 'project-2',
+				name: '第二项目',
+				status: 'active',
+				sortOrder: 0,
+				parentProjectId: null,
+				children: [],
+			},
+		})
 
 		const firstRender = renderProjectPage('/space/work/project/project-1')
-		const todoTrigger = (await screen.findAllByRole('button', { name: /Todo/ }))[0]
+		const todoTrigger = await screen.findByRole('button', { name: '切换 Todo 分区折叠状态' })
 		await act(async () => {
 			fireEvent.click(todoTrigger)
 		})
@@ -180,19 +178,17 @@ describe('ProjectPage', () => {
 		firstRender.unmount()
 		renderProjectPage('/space/personal/project/project-2')
 
-		expect((await screen.findAllByRole('button', { name: /Todo/ }))[0]).toHaveAttribute(
+		expect(await screen.findByRole('button', { name: '切换 Todo 分区折叠状态' })).toHaveAttribute(
 			'data-state',
 			'closed',
 		)
 	})
 
 	it('任务刷新版本变化后重新拉取 Project 视图', async () => {
-		mockedGetProjectExecutionView
-			.mockResolvedValueOnce(buildProjectView())
-			.mockResolvedValueOnce({
-				...buildProjectView(),
-				tasks: [],
-			})
+		mockedGetProjectExecutionView.mockResolvedValueOnce(buildProjectView()).mockResolvedValueOnce({
+			...buildProjectView(),
+			tasks: [],
+		})
 
 		renderProjectPage()
 

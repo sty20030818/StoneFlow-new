@@ -8,7 +8,7 @@ import { SettingsIcon } from 'lucide-react'
 export function SettingsPage() {
 	return (
 		<MainCardLayout header={<MainCardHeader title='Settings' />} toolbar={null}>
-			<div className='pt-4'>
+			<div>
 				<StatusNotice className='text-sm'>
 					<div className='space-y-1'>
 						<p className='inline-flex items-center gap-2 text-sm font-medium text-current'>

@@ -41,7 +41,11 @@ export function ProjectPage() {
 
 	return (
 		<MainCardLayout
-			header={<MainCardHeader breadcrumb={<ProjectBreadcrumb projectName={view?.project.name ?? projectId} />} />}
+			header={
+				<MainCardHeader
+					breadcrumb={<ProjectBreadcrumb projectName={view?.project.name ?? projectId} />}
+				/>
+			}
 			toolbar={
 				<MainCardToolbar
 					onRefresh={() => void refresh()}
@@ -50,7 +54,7 @@ export function ProjectPage() {
 				/>
 			}
 		>
-			<div className='flex flex-col gap-5 pt-4'>
+			<div className='flex flex-col gap-5'>
 				{feedback ? (
 					<StatusNotice className='text-sm' role='status' size='sm' variant='success'>
 						{feedback}
@@ -60,7 +64,12 @@ export function ProjectPage() {
 				{loadError ? (
 					<StatusNotice
 						actions={
-							<Button className='rounded-md' onClick={() => void refresh()} size='sm' variant='outline'>
+							<Button
+								className='rounded-md'
+								onClick={() => void refresh()}
+								size='sm'
+								variant='outline'
+							>
 								重试
 							</Button>
 						}

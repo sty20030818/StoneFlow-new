@@ -7,24 +7,23 @@ import {
 import type { ProjectExecutionTask, ProjectTaskStatus } from '@/features/project/model/types'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import { cn } from '@/shared/lib/utils'
-import { Accordion, AccordionContent, AccordionHeader, AccordionItem, AccordionTrigger } from '@/shared/ui/base/accordion'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
 import { CheckIcon, ChevronRightIcon, CircleIcon, PlusIcon } from 'lucide-react'
 
 const PROJECT_TASK_BOARD_EMPTY_CLASS =
 	'rounded-xl border border-dashed border-(--sf-color-border-subtle) bg-transparent px-4 py-6 text-sm text-muted-foreground'
 
 const PROJECT_TASK_ROW_BASE_CLASS =
-	'group flex min-w-0 items-center gap-3 rounded-xl border border-transparent bg-transparent px-3 py-2.5 text-left transition-colors'
+	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-2.5 text-left transition-colors'
 
 const PROJECT_TASK_ROW_IDLE_CLASS = 'hover:bg-(--sf-color-project-task-row-hover)'
 const PROJECT_TASK_ROW_ACTIVE_CLASS =
 	'border-(--sf-color-border-subtle) bg-(--sf-color-project-task-row-selected)'
 const PROJECT_TASK_ROW_DONE_CLASS = 'text-muted-foreground'
 
-const PROJECT_TASK_SECTION_META_CLASS =
-	'text-xs font-medium text-(--sf-color-text-tertiary)'
+const PROJECT_TASK_SECTION_META_CLASS = 'text-xs font-medium text-(--sf-color-text-tertiary)'
 
 type ProjectTaskBoardProps = {
 	projectId: string
@@ -41,6 +40,8 @@ type TaskStatusSectionProps = {
 	status: ProjectTaskStatus
 	label: string
 	tasks: ProjectExecutionTask[]
+	open: boolean
+	onOpenChange: (open: boolean) => void
 	pendingTaskId: string | null
 	activeTaskId: string | null
 	onToggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
@@ -75,32 +76,32 @@ export function ProjectTaskBoard({
 		[tasks],
 	)
 
+	function handleSectionOpenChange(status: ProjectTaskStatus, open: boolean) {
+		const nextSections = open
+			? Array.from(new Set([...openSections, status]))
+			: openSections.filter((section) => section !== status)
+		setProjectTaskBoardOpenSections(nextSections)
+	}
+
 	return (
-		<Accordion
-			className='gap-4'
-			onValueChange={(value) =>
-				setProjectTaskBoardOpenSections(
-					value.filter((section): section is ProjectTaskStatus => section === 'todo' || section === 'done'),
-				)
-			}
-			type='multiple'
-			value={openSections}
-		>
+		<div className='flex flex-col gap-1'>
 			{PROJECT_TASK_SECTIONS.map((section) => (
 				<TaskStatusSection
 					activeTaskId={activeTaskId}
 					key={section.status}
 					label={section.label}
+					onOpenChange={(open) => handleSectionOpenChange(section.status, open)}
 					onMoveTaskToTrash={onMoveTaskToTrash}
 					onOpenTask={onOpenTask}
 					onToggleTaskStatus={onToggleTaskStatus}
+					open={openSections.includes(section.status)}
 					pendingTaskId={pendingTaskId}
 					projectId={projectId}
 					status={section.status}
 					tasks={tasksByStatus[section.status]}
 				/>
 			))}
-		</Accordion>
+		</div>
 	)
 }
 
@@ -109,6 +110,8 @@ function TaskStatusSection({
 	status,
 	label,
 	tasks,
+	open,
+	onOpenChange,
 	pendingTaskId,
 	activeTaskId,
 	onToggleTaskStatus,
@@ -118,46 +121,51 @@ function TaskStatusSection({
 	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
 
 	return (
-		<AccordionItem className='flex flex-col gap-3' value={status}>
-			<div className='rounded-xl bg-(--sf-color-project-task-section-header) px-2 py-2'>
-				<AccordionHeader>
-					<div className='flex w-full items-center gap-2'>
-						<AccordionTrigger className='flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-1 text-left text-sm font-semibold text-foreground hover:bg-white/30 [&[data-state=open]_[data-chevron]]:rotate-90'>
-							<ChevronRightIcon className='size-4 shrink-0 transition-transform' data-chevron />
-							<TaskStatusIndicator status={status} />
-							<span className='truncate'>{label}</span>
-							<Badge className='ml-1' variant='secondary'>
-								{tasks.length}
-							</Badge>
-						</AccordionTrigger>
-						<Button
-							aria-label={`在 ${label} 中创建任务`}
-							className='rounded-lg'
-							onClick={(event) => {
-								event.preventDefault()
-								event.stopPropagation()
-								openTaskCreateDialog({
-									projectId,
-									status,
-								})
-							}}
-							size='icon-xs'
-							type='button'
-							variant='ghost'
-						>
-							<PlusIcon />
-						</Button>
-					</div>
-				</AccordionHeader>
+		<Collapsible
+			className='flex flex-col gap-1 [&[data-state=open]_[data-chevron]]:rotate-90'
+			onOpenChange={onOpenChange}
+			open={open}
+		>
+			<div className='flex items-center gap-2 rounded-md bg-(--sf-color-project-task-section-header) px-3 py-2'>
+				<CollapsibleTrigger
+					aria-label={`切换 ${label} 分区折叠状态`}
+					className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-(--sf-color-icon-subtle) outline-none transition-none hover:bg-transparent hover:text-(--sf-color-icon-subtle) focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
+				>
+					<ChevronRightIcon className='size-4 shrink-0' data-chevron />
+				</CollapsibleTrigger>
+				<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-foreground'>
+					<TaskStatusIndicator status={status} />
+					<span className='truncate'>{label}</span>
+					<Badge className='ml-1' variant='secondary'>
+						{tasks.length}
+					</Badge>
+				</div>
+				<Button
+					aria-label={`在 ${label} 中创建任务`}
+					className='rounded-md hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
+					onClick={(event) => {
+						event.preventDefault()
+						event.stopPropagation()
+						openTaskCreateDialog({
+							projectId,
+							status,
+						})
+					}}
+					size='icon-xs'
+					type='button'
+					variant='ghost'
+				>
+					<PlusIcon />
+				</Button>
 			</div>
 
-			<AccordionContent className='px-1'>
+			<CollapsibleContent className='overflow-hidden px-0'>
 				{tasks.length === 0 ? (
 					<div className={PROJECT_TASK_BOARD_EMPTY_CLASS}>
 						{status === 'todo' ? '当前没有待执行任务。' : '当前没有已完成任务。'}
 					</div>
 				) : (
-					<div className='flex flex-col gap-2'>
+					<div className='flex flex-col gap-1'>
 						{tasks.map((task) => (
 							<ProjectTaskRow
 								activeTaskId={activeTaskId}
@@ -171,8 +179,8 @@ function TaskStatusSection({
 						))}
 					</div>
 				)}
-			</AccordionContent>
-		</AccordionItem>
+			</CollapsibleContent>
+		</Collapsible>
 	)
 }
 
@@ -333,7 +341,9 @@ function TaskMetaRail({
 					))}
 				</div>
 			) : null}
-			{dueAt ? <span className={PROJECT_TASK_SECTION_META_CLASS}>{formatProjectTaskDate(dueAt)}</span> : null}
+			{dueAt ? (
+				<span className={PROJECT_TASK_SECTION_META_CLASS}>{formatProjectTaskDate(dueAt)}</span>
+			) : null}
 			<span className={PROJECT_TASK_SECTION_META_CLASS}>{formatProjectTaskDate(createdAt)}</span>
 		</div>
 	)

@@ -38,7 +38,7 @@ export function TrashPage() {
 				/>
 			}
 		>
-			<div className='pt-4'>
+			<div>
 				<div className='flex flex-col gap-3'>
 					{feedback ? (
 						<StatusNotice className='text-sm' role='status' size='sm' variant='success'>
