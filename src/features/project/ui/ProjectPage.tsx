@@ -21,6 +21,7 @@ import {
 	BreadcrumbSeparator,
 } from '@/shared/ui/base/breadcrumb'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
+import { ToastFeedbackBridge } from '@/shared/ui/ToastFeedbackBridge'
 import { FolderIcon } from 'lucide-react'
 
 export function ProjectPage() {
@@ -55,11 +56,7 @@ export function ProjectPage() {
 			}
 		>
 			<div className='flex flex-col gap-5'>
-				{feedback ? (
-					<StatusNotice className='text-sm' role='status' size='sm' variant='success'>
-						{feedback}
-					</StatusNotice>
-				) : null}
+				<ToastFeedbackBridge feedback={feedback} />
 
 				{loadError ? (
 					<StatusNotice

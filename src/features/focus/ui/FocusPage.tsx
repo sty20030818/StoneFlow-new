@@ -18,11 +18,17 @@ import {
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { cn } from '@/shared/lib/utils'
 import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from '@/shared/ui/base/empty'
+import {
 	LINEAR_CARD_ACTIVE_CLASS,
 	LINEAR_CARD_BASE_CLASS,
 	LINEAR_CARD_DONE_CLASS,
 	LINEAR_CARD_IDLE_CLASS,
-	LINEAR_EMPTY_STATE_CLASS,
 } from '@/shared/ui/linearSurface'
 import type {
 	FocusRecentTimeWindow,
@@ -35,7 +41,8 @@ import {
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
-import { ListFilterIcon } from 'lucide-react'
+import { ListFilterIcon, TargetIcon } from 'lucide-react'
+import { ToastFeedbackBridge } from '@/shared/ui/ToastFeedbackBridge'
 
 const TASK_CARD_INTERACTIVE_CLASS = 'group cursor-pointer'
 const TASK_CARD_GRID_CLASS = 'flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between'
@@ -95,11 +102,7 @@ export function FocusPage() {
 		>
 			<div className='flex flex-col gap-5'>
 				<div className='flex flex-col gap-5'>
-					{feedback ? (
-						<StatusNotice className='text-sm' role='status' size='sm' variant='success'>
-							{feedback}
-						</StatusNotice>
-					) : null}
+					<ToastFeedbackBridge feedback={feedback} />
 
 					{loadError ? (
 						<StatusNotice
@@ -170,10 +173,15 @@ function FocusTaskPanel({
 
 	if (tasks.length === 0) {
 		return (
-			<div className={cn(LINEAR_EMPTY_STATE_CLASS, 'px-4 py-8 text-center')}>
-				<p className='text-sm font-medium text-foreground'>{getEmptyTitle(activeViewKey)}</p>
-				<p className='mt-2 text-sm text-muted-foreground'>{getEmptyDescription(activeViewKey)}</p>
-			</div>
+			<Empty>
+				<EmptyHeader>
+					<EmptyMedia variant='icon'>
+						<TargetIcon />
+					</EmptyMedia>
+					<EmptyTitle>{getEmptyTitle(activeViewKey)}</EmptyTitle>
+					<EmptyDescription>{getEmptyDescription(activeViewKey)}</EmptyDescription>
+				</EmptyHeader>
+			</Empty>
 		)
 	}
 

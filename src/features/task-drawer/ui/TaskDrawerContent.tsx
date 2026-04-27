@@ -18,6 +18,7 @@ import {
 } from '@/shared/ui/base/select'
 import { Textarea } from '@/shared/ui/base/textarea'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
+import { ToastFeedbackBridge } from '@/shared/ui/ToastFeedbackBridge'
 
 type TaskDrawerContentProps = {
 	currentSpaceId: string
@@ -131,6 +132,9 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 
 	return (
 		<div className='space-y-4'>
+			<ToastFeedbackBridge feedback={feedback} />
+			<ToastFeedbackBridge feedback={resourceFeedback} />
+
 			<div className='space-y-1.5'>
 				<p className={DRAWER_SECTION_TITLE_CLASS}>任务详情</p>
 				<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
@@ -390,23 +394,11 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						{resourceError}
 					</StatusNotice>
 				) : null}
-
-				{resourceFeedback ? (
-					<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
-						{resourceFeedback}
-					</StatusNotice>
-				) : null}
 			</section>
 
 			{errorMessage ? (
 				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
 					{errorMessage}
-				</StatusNotice>
-			) : null}
-
-			{feedback ? (
-				<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
-					{feedback}
 				</StatusNotice>
 			) : null}
 

@@ -5,17 +5,21 @@ import type { TrashEntry } from '@/features/trash/model/types'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
+import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from '@/shared/ui/base/empty'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
+import { ToastFeedbackBridge } from '@/shared/ui/ToastFeedbackBridge'
 import {
 	MainCardHeader,
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
-import {
-	LINEAR_CARD_BASE_CLASS,
-	LINEAR_CARD_IDLE_CLASS,
-	LINEAR_EMPTY_STATE_CLASS,
-} from '@/shared/ui/linearSurface'
+import { LINEAR_CARD_BASE_CLASS, LINEAR_CARD_IDLE_CLASS } from '@/shared/ui/linearSurface'
 import { Trash2Icon } from 'lucide-react'
 
 export function TrashPage() {
@@ -40,11 +44,7 @@ export function TrashPage() {
 		>
 			<div>
 				<div className='flex flex-col gap-3'>
-					{feedback ? (
-						<StatusNotice className='text-sm' role='status' size='sm' variant='success'>
-							{feedback}
-						</StatusNotice>
-					) : null}
+					<ToastFeedbackBridge feedback={feedback} />
 
 					{loadError ? (
 						<StatusNotice role='alert' variant='danger'>
@@ -57,15 +57,15 @@ export function TrashPage() {
 							正在加载回收站...
 						</p>
 					) : entries.length === 0 ? (
-						<div
-							className={cn(LINEAR_EMPTY_STATE_CLASS, 'flex flex-col items-start gap-2 px-4 py-6')}
-						>
-							<Trash2Icon className='size-5 text-muted-foreground' />
-							<p className='text-sm font-medium text-foreground'>回收站为空</p>
-							<p className='text-sm text-muted-foreground'>
-								删除后的 Task 和 Project 会在这里等待恢复。
-							</p>
-						</div>
+						<Empty className='items-start text-left'>
+							<EmptyHeader className='items-start'>
+								<EmptyMedia variant='icon'>
+									<Trash2Icon />
+								</EmptyMedia>
+								<EmptyTitle>回收站为空</EmptyTitle>
+								<EmptyDescription>删除后的 Task 和 Project 会在这里等待恢复。</EmptyDescription>
+							</EmptyHeader>
+						</Empty>
 					) : (
 						entries.map((entry) => (
 							<TrashEntryRow

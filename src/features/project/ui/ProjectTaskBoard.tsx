@@ -10,10 +10,8 @@ import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/shared/ui/base/empty'
 import { CheckIcon, ChevronRightIcon, CircleIcon, PlusIcon } from 'lucide-react'
-
-const PROJECT_TASK_BOARD_EMPTY_CLASS =
-	'rounded-xl border border-dashed border-(--sf-color-border-subtle) bg-transparent px-4 py-6 text-sm text-muted-foreground'
 
 const PROJECT_TASK_ROW_BASE_CLASS =
 	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-2.5 text-left transition-colors'
@@ -161,9 +159,18 @@ function TaskStatusSection({
 
 			<CollapsibleContent className='overflow-hidden px-0'>
 				{tasks.length === 0 ? (
-					<div className={PROJECT_TASK_BOARD_EMPTY_CLASS}>
-						{status === 'todo' ? '当前没有待执行任务。' : '当前没有已完成任务。'}
-					</div>
+					<Empty className='rounded-md bg-transparent py-5'>
+						<EmptyHeader>
+							<EmptyTitle>
+								{status === 'todo' ? '当前没有待执行任务。' : '当前没有已完成任务。'}
+							</EmptyTitle>
+							<EmptyDescription>
+								{status === 'todo'
+									? '新建任务后会先进入这里，等待开始执行。'
+									: '完成的任务会在这里归档，方便回看。'}
+							</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
 				) : (
 					<div className='flex flex-col gap-1'>
 						{tasks.map((task) => (

@@ -7,6 +7,13 @@ import { useInboxTasks } from '@/features/inbox/model/useInboxTasks'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
+	Empty,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from '@/shared/ui/base/empty'
+import {
 	Select,
 	SelectContent,
 	SelectGroup,
@@ -15,12 +22,12 @@ import {
 	SelectValue,
 } from '@/shared/ui/base/select'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
+import { ToastFeedbackBridge } from '@/shared/ui/ToastFeedbackBridge'
 import { cn } from '@/shared/lib/utils'
 import {
 	LINEAR_CARD_ACTIVE_CLASS,
 	LINEAR_CARD_BASE_CLASS,
 	LINEAR_CARD_IDLE_CLASS,
-	LINEAR_EMPTY_STATE_CLASS,
 } from '@/shared/ui/linearSurface'
 import {
 	MainCardGhostAction,
@@ -29,7 +36,7 @@ import {
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
-import { PlusIcon } from 'lucide-react'
+import { InboxIcon, PlusIcon } from 'lucide-react'
 
 export function InboxPage() {
 	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
@@ -75,6 +82,8 @@ export function InboxPage() {
 			}
 		>
 			<div className='flex flex-col gap-3'>
+				<ToastFeedbackBridge feedback={feedback} />
+
 				{!isLoading && !loadError && tasks.length > 0 && projects.length === 0 ? (
 					<StatusNotice
 						actions={
@@ -87,12 +96,6 @@ export function InboxPage() {
 						title='当前 Space 还没有项目可选'
 						variant='warning'
 					/>
-				) : null}
-
-				{feedback ? (
-					<StatusNotice className='mb-3 text-sm' role='status' size='sm' variant='success'>
-						{feedback}
-					</StatusNotice>
 				) : null}
 
 				{loadError ? (
@@ -108,12 +111,17 @@ export function InboxPage() {
 				) : null}
 
 				{!isLoading && !loadError && tasks.length === 0 ? (
-					<div className={cn(LINEAR_EMPTY_STATE_CLASS, 'px-4 py-8 text-center')}>
-						<p className='text-sm font-medium text-foreground'>当前 Inbox 已清空</p>
-						<p className='mt-2 text-sm text-muted-foreground'>
-							新捕获的任务会先进入这里，补齐项目和优先级后再离开。
-						</p>
-					</div>
+					<Empty>
+						<EmptyHeader>
+							<EmptyMedia variant='icon'>
+								<InboxIcon />
+							</EmptyMedia>
+							<EmptyTitle>当前 Inbox 已清空</EmptyTitle>
+							<EmptyDescription>
+								新捕获的任务会先进入这里，补齐项目和优先级后再离开。
+							</EmptyDescription>
+						</EmptyHeader>
+					</Empty>
 				) : null}
 
 				{!isLoading && !loadError && tasks.length > 0 ? (
