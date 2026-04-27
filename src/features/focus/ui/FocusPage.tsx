@@ -37,6 +37,7 @@ import type {
 	FocusViewKey,
 } from '@/features/focus/model/types'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import {
 	TaskLeadRail,
 	TaskPrioritySelect,
@@ -297,6 +298,7 @@ function FocusTaskRow({
 					TASK_CARD_INTERACTIVE_CLASS,
 					TASK_CARD_GRID_CLASS,
 					task.status === 'done' ? LINEAR_CARD_DONE_CLASS : LINEAR_CARD_IDLE_CLASS,
+					isSelected && !isActive ? TASK_ROW_BULK_SELECTED_CLASS : null,
 					isActive ? LINEAR_CARD_ACTIVE_CLASS : null,
 					isPending ? 'opacity-75' : null,
 				)}

@@ -4,6 +4,7 @@ import {
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { useInboxTasks } from '@/features/inbox/model/useInboxTasks'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import {
 	TaskLeadRail,
 	TaskPrioritySelect,
@@ -235,7 +236,9 @@ function InboxTaskRow({
 				className={cn(
 					LINEAR_CARD_BASE_CLASS,
 					'group grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_auto] lg:items-start',
-					isActive ? LINEAR_CARD_ACTIVE_CLASS : LINEAR_CARD_IDLE_CLASS,
+					LINEAR_CARD_IDLE_CLASS,
+					selected && !isActive ? TASK_ROW_BULK_SELECTED_CLASS : null,
+					isActive ? LINEAR_CARD_ACTIVE_CLASS : null,
 					draft.isSubmitting ? 'opacity-75' : null,
 				)}
 				data-shell-task-card='true'

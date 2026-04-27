@@ -78,9 +78,7 @@ export function MainCardHeader({ title, breadcrumb, action, className }: MainCar
 		>
 			<div className='min-w-0 flex-1'>
 				{breadcrumb ?? (
-					<h1 className='truncate text-[1.0625rem] leading-6 font-semibold text-foreground'>
-						{title}
-					</h1>
+					<h1 className='truncate text-sm font-semibold leading-5 text-foreground'>{title}</h1>
 				)}
 			</div>
 			{action ? <div className='flex shrink-0 items-center gap-2'>{action}</div> : null}

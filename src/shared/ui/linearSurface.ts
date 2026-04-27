@@ -1,3 +1,4 @@
+/** 任务卡/列表卡：略增纵向留白，避免行高过紧 */
 export const LINEAR_CARD_BASE_CLASS = 'rounded-lg border p-4 transition-colors'
 export const LINEAR_CARD_IDLE_CLASS =
 	'border-(--sf-color-border-subtle) bg-card hover:border-(--sf-color-border) hover:bg-(--sf-color-bg-surface-hover)'

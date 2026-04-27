@@ -128,6 +128,17 @@
 	--sf-color-project-task-row-hover: #f6f6f7;
 	--sf-color-project-task-row-selected: #efeff0;
 	--sf-color-project-task-status-done: #27a644;
+	/** 列表多选勾选：浅蓝底略加深一点；hover 再略深；描边由行 class 用 border-transparent */
+	--sf-color-task-bulk-selected-surface: color-mix(
+		in srgb,
+		var(--sf-color-accent-primary-soft) 90%,
+		var(--sf-color-accent-primary) 10%
+	);
+	--sf-color-task-bulk-selected-surface-hover: color-mix(
+		in srgb,
+		var(--sf-color-accent-primary-soft) 78%,
+		var(--sf-color-accent-primary) 22%
+	);
 
 	--radius: 0.5rem;
 	--background: var(--sf-color-bg-app);

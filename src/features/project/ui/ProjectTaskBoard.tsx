@@ -7,6 +7,7 @@ import {
 import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { ProjectExecutionTask, ProjectTaskStatus } from '@/features/project/model/types'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
+import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import {
 	TaskLeadRail,
 	TaskPrioritySelect,
@@ -30,7 +31,7 @@ import {
 import { ChevronRightIcon, ListTodoIcon, PlusIcon } from 'lucide-react'
 
 const PROJECT_TASK_ROW_BASE_CLASS =
-	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-1.5 text-left transition-colors'
+	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-3 text-left transition-colors'
 
 const PROJECT_TASK_ROW_IDLE_CLASS = 'hover:bg-(--sf-color-project-task-row-hover)'
 const PROJECT_TASK_ROW_ACTIVE_CLASS =
@@ -286,9 +287,12 @@ function ProjectTaskRow({
 				aria-label={`打开任务 ${task.title}`}
 				className={cn(
 					PROJECT_TASK_ROW_BASE_CLASS,
-					PROJECT_TASK_ROW_IDLE_CLASS,
+					isActive
+						? PROJECT_TASK_ROW_ACTIVE_CLASS
+						: isSelected
+							? TASK_ROW_BULK_SELECTED_CLASS
+							: PROJECT_TASK_ROW_IDLE_CLASS,
 					task.status === 'done' ? PROJECT_TASK_ROW_DONE_CLASS : null,
-					isActive ? PROJECT_TASK_ROW_ACTIVE_CLASS : null,
 					isPending ? 'opacity-75' : null,
 				)}
 				data-shell-task-card='true'

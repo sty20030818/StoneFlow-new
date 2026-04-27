@@ -24,7 +24,7 @@ import {
 } from '@/shared/ui/base/breadcrumb'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { ToastFeedbackBridge } from '@/shared/ui/ToastFeedbackBridge'
-import { FolderIcon } from 'lucide-react'
+import { Box, FolderIcon } from 'lucide-react'
 
 export function ProjectPage() {
 	const { projectId = 'stoneflow-v1', spaceId = 'work' } = useParams()
@@ -114,9 +114,12 @@ export function ProjectPage() {
 function ProjectBreadcrumb({ projectName }: { projectName: string }) {
 	return (
 		<Breadcrumb>
-			<BreadcrumbList className='text-[1.0625rem] font-semibold'>
+			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
-					<span className='text-foreground'>Projects</span>
+					<span className='inline-flex items-center gap-1.5 text-foreground'>
+						<Box aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						Projects
+					</span>
 				</BreadcrumbItem>
 				<BreadcrumbSeparator />
 				<BreadcrumbItem className='min-w-0'>
