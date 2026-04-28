@@ -13,13 +13,9 @@
 use std::sync::Mutex;
 
 use tauri::{Manager, Runtime};
-use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 
+use crate::app::window_state;
 use crate::app::MAIN_WINDOW_LABEL;
-
-fn main_window_state_flags() -> StateFlags {
-    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED
-}
 
 /// 最近一次主窗口操作的结果（供 snapshot 观测）。
 ///
@@ -170,11 +166,10 @@ pub(crate) fn hide_main_window_to_tray<R: Runtime>(
     app_handle: &tauri::AppHandle<R>,
     helper_state: &CommandHelperState,
 ) -> tauri::Result<()> {
-    app_handle
-        .save_window_state(main_window_state_flags())
-        .map_err(|error| tauri::Error::Anyhow(anyhow::Error::new(error)))?;
-
     if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
+        if let Err(error) = window_state::save_main_window_size(&window) {
+            log::warn!("保存主窗口尺寸失败，将继续隐藏窗口: {error:#}");
+        }
         window.hide()?;
         helper_state
             .mark_main_window_hidden(true)
@@ -189,6 +184,9 @@ pub(crate) fn restore_main_window<R: Runtime>(
     helper_state: &CommandHelperState,
 ) -> tauri::Result<()> {
     if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
+        if let Err(error) = window_state::ensure_main_window_is_visible(&window) {
+            log::warn!("校正主窗口屏幕位置失败，将沿用当前窗口位置: {error:#}");
+        }
         window.show()?;
         window.unminimize()?;
         window.set_focus()?;
@@ -298,15 +296,5 @@ mod tests {
         state.mark_exiting().expect("exit state should be recorded");
         assert!(!should_hide_main_window_on_close(MAIN_WINDOW_LABEL, &state)
             .expect("policy should be available"));
-    }
-
-    #[test]
-    fn state_flags_exclude_visible_state() {
-        let flags = main_window_state_flags();
-
-        assert!(flags.contains(StateFlags::SIZE));
-        assert!(flags.contains(StateFlags::POSITION));
-        assert!(flags.contains(StateFlags::MAXIMIZED));
-        assert!(!flags.contains(StateFlags::VISIBLE));
     }
 }

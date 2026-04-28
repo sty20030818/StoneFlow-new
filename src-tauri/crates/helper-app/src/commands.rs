@@ -147,10 +147,12 @@ pub async fn helper_search_workspace(
         limit: input.limit,
     };
 
-    let result = ipc_client::search_workspace(payload).await.map_err(|error| {
-        log::warn!("helper_search_workspace 失败: {error}");
-        HelperCaptureErrorPayload::from(error)
-    })?;
+    let result = ipc_client::search_workspace(payload)
+        .await
+        .map_err(|error| {
+            log::warn!("helper_search_workspace 失败: {error}");
+            HelperCaptureErrorPayload::from(error)
+        })?;
 
     Ok(HelperSearchWorkspaceResponse {
         space_slug: result.space_slug,
@@ -183,9 +185,7 @@ pub async fn helper_search_workspace(
 
 /// Helper 侧打开 Task：交给主 App 恢复窗口并处理 Drawer。
 #[tauri::command]
-pub async fn helper_open_task(
-    input: HelperOpenTaskInput,
-) -> Result<(), HelperCaptureErrorPayload> {
+pub async fn helper_open_task(input: HelperOpenTaskInput) -> Result<(), HelperCaptureErrorPayload> {
     ipc_client::open_task(OpenTaskPayload {
         task_id: input.task_id,
     })

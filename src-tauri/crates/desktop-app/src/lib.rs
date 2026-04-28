@@ -10,6 +10,9 @@ mod m3_e_project_hierarchy_tests;
 #[cfg(test)]
 #[path = "tests/m4_a_capture_tests.rs"]
 mod m4_a_capture_tests;
+#[cfg(test)]
+#[path = "tests/window_state_tests.rs"]
+mod window_state_tests;
 
 pub fn builder() -> tauri::Builder<tauri::Wry> {
     app::builder()

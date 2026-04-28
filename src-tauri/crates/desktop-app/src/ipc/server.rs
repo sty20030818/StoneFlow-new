@@ -2,11 +2,11 @@
 
 use std::io;
 
+use anyhow::Context;
 use interprocess::local_socket::{
     tokio::{prelude::*, Listener, Stream},
     GenericFilePath, GenericNamespaced, ListenerOptions, ToFsName, ToNsName,
 };
-use anyhow::Context;
 use stoneflow_core::default_space_seed;
 use stoneflow_ipc_protocol::{
     socket_name, CreateTaskPayload, IpcError, IpcRequest, IpcResponse, SocketName,
@@ -17,11 +17,11 @@ use tauri::{AppHandle, Manager, Runtime};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use uuid::Uuid;
 
+use crate::app::command_helper::{restore_main_window_from_helper, CommandHelperState};
 use crate::app::error::AppError;
 use crate::app::events::{
     emit_command_open, emit_task_changed, CommandOpenPayload, TaskChangedPayload,
 };
-use crate::app::command_helper::{restore_main_window_from_helper, CommandHelperState};
 use crate::application::create::{
     create_capture_task as create_capture_task_usecase, ActiveSpaceState, CaptureTaskInput,
 };

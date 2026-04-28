@@ -5,7 +5,6 @@ use tauri::LogicalPosition;
 #[cfg(target_os = "macos")]
 use tauri::TitleBarStyle;
 use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
-use tauri_plugin_window_state::StateFlags;
 
 use crate::app::command_helper::{handle_main_window_close_requested, CommandHelperState};
 use crate::application::create::ActiveSpaceState;
@@ -17,6 +16,7 @@ pub mod error;
 pub(crate) mod events;
 pub(crate) mod helper_process;
 pub(crate) mod tray;
+pub(crate) mod window_state;
 
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
 
@@ -27,10 +27,17 @@ fn build_main_window(app: &tauri::App) -> tauri::Result<()> {
 
     let window_builder = WebviewWindowBuilder::new(app, MAIN_WINDOW_LABEL, WebviewUrl::default())
         .title("StoneFlow")
-        .inner_size(1440.0, 920.0)
-        .min_inner_size(500.0, 520.0)
+        .inner_size(
+            window_state::MAIN_WINDOW_DEFAULT_WIDTH,
+            window_state::MAIN_WINDOW_DEFAULT_HEIGHT,
+        )
+        .min_inner_size(
+            window_state::MAIN_WINDOW_MIN_WIDTH,
+            window_state::MAIN_WINDOW_MIN_HEIGHT,
+        )
         .resizable(true)
-        .fullscreen(false);
+        .fullscreen(false)
+        .visible(false);
 
     #[cfg(target_os = "macos")]
     let window_builder = window_builder
@@ -43,7 +50,15 @@ fn build_main_window(app: &tauri::App) -> tauri::Result<()> {
     #[cfg(not(target_os = "macos"))]
     let window_builder = window_builder.decorations(false);
 
-    window_builder.build()?;
+    let window = window_builder.build()?;
+    if let Err(error) = window_state::restore_main_window_size(&window) {
+        log::warn!("恢复主窗口尺寸失败，将回退到默认尺寸: {error:#}");
+    }
+    if let Err(error) = window.center() {
+        log::warn!("主窗口启动时居中失败: {error}");
+    }
+    window.show()?;
+    window.set_focus()?;
     Ok(())
 }
 
@@ -52,13 +67,6 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(
-            tauri_plugin_window_state::Builder::new()
-                .with_state_flags(
-                    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED,
-                )
-                .build(),
-        )
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 let helper_state = window.state::<CommandHelperState>();
@@ -119,6 +127,11 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
 
     app.run(|app_handle, event| {
         if let tauri::RunEvent::Exit = event {
+            if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
+                if let Err(error) = window_state::save_main_window_size(&window) {
+                    log::warn!("退出前保存主窗口尺寸失败: {error:#}");
+                }
+            }
             if let Some(state) = app_handle.try_state::<helper_process::HelperProcessState>() {
                 state.shutdown();
             }

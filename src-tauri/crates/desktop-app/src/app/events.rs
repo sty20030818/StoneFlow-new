@@ -45,7 +45,10 @@ pub(crate) fn emit_task_changed<R: Runtime>(
 }
 
 /// 向主 App 前端广播 Command 打开请求。
-pub(crate) fn emit_command_open<R: Runtime>(app_handle: &AppHandle<R>, payload: CommandOpenPayload) {
+pub(crate) fn emit_command_open<R: Runtime>(
+    app_handle: &AppHandle<R>,
+    payload: CommandOpenPayload,
+) {
     if let Err(error) = app_handle.emit(COMMAND_OPEN_EVENT, payload) {
         log::warn!("发送 Command 打开事件失败: {error}");
     }
