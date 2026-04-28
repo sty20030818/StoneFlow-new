@@ -8,7 +8,7 @@
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "bun dev",
     "beforeBuildCommand": "bun run build",
-    "beforeBundleCommand": "bash ../scripts/bundle-helper.sh"
+    "beforeBundleCommand": "bash -c 'if [ -f scripts/bundle-helper.sh ]; then bash scripts/bundle-helper.sh; else bash ../scripts/bundle-helper.sh; fi'"
   },
   "app": {
     "windows": [],
