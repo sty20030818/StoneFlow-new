@@ -1,7 +1,7 @@
 import type {
-	ShellSearchProjectItem,
-	ShellSearchTaskItem,
-} from '@/features/workspace-shell/model/shellData'
+	SearchProjectItem,
+	SearchTaskItem,
+} from '@/features/workspace'
 import { cn } from '@/shared/lib/utils'
 import { SearchIcon } from 'lucide-react'
 
@@ -9,11 +9,11 @@ type GlobalSearchResultsProps = {
 	isLoading: boolean
 	errorMessage: string | null
 	highlightedIndex: number
-	taskItems: Array<{ index: number; item: ShellSearchTaskItem }>
-	projectItems: Array<{ index: number; item: ShellSearchProjectItem }>
+	taskItems: Array<{ index: number; item: SearchTaskItem }>
+	projectItems: Array<{ index: number; item: SearchProjectItem }>
 	onHighlightIndex: (index: number) => void
-	onSelectTask: (item: ShellSearchTaskItem) => void
-	onSelectProject: (item: ShellSearchProjectItem) => void
+	onSelectTask: (item: SearchTaskItem) => void
+	onSelectProject: (item: SearchProjectItem) => void
 }
 
 /**
@@ -161,11 +161,11 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 	)
 }
 
-function buildTaskContext(item: ShellSearchTaskItem) {
+function buildTaskContext(item: SearchTaskItem) {
 	return `${formatPriority(item.priority)} / ${item.projectName ?? 'Inbox'}`
 }
 
-function buildProjectContext(item: ShellSearchProjectItem) {
+function buildProjectContext(item: SearchProjectItem) {
 	return item.status === 'active' ? '进行中' : '草稿'
 }
 

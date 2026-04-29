@@ -20,10 +20,10 @@ import {
 } from 'lucide-react'
 
 import {
-	getShellSearchResults,
-	type ShellSearchProjectItem,
-	type ShellSearchTaskItem,
-} from '@/features/workspace-shell/model/shellData'
+	getSearchResults,
+	type SearchProjectItem,
+	type SearchTaskItem,
+} from '@/features/workspace'
 import { Button } from '@/shared/ui/base/button'
 import { Kbd } from '@/shared/ui/base/kbd'
 import { cn } from '@/shared/lib/utils'
@@ -32,8 +32,8 @@ type CommandMode = 'idle' | 'search' | 'create'
 type CommandPriority = 'P0' | 'P1' | 'P2' | 'P3'
 type CommandStatus = 'idle' | 'submitting' | 'success' | 'error'
 type CommandResultItem =
-	| ({ kind: 'task' } & ShellSearchTaskItem)
-	| ({ kind: 'project' } & ShellSearchProjectItem)
+	| ({ kind: 'task' } & SearchTaskItem)
+	| ({ kind: 'project' } & SearchProjectItem)
 
 type QuickCaptureSurfaceProps = {
 	closeWindow?: () => Promise<void> | void
@@ -87,7 +87,7 @@ export function QuickCaptureSurface({
 	const [status, setStatus] = useState<CommandStatus>('idle')
 	const [message, setMessage] = useState('输入标题创建，或搜索已有任务与项目')
 	const normalizedQuery = query.trim()
-	const results = useMemo(() => getShellSearchResults(query), [query])
+	const results = useMemo(() => getSearchResults(query), [query])
 	const hasResults = results.tasks.length > 0 || results.projects.length > 0
 	const mode: CommandMode = !normalizedQuery
 		? 'idle'
@@ -396,8 +396,8 @@ function CommandResults({
 	onHighlightIndex,
 	onOpenResult,
 }: {
-	taskItems: ShellSearchTaskItem[]
-	projectItems: ShellSearchProjectItem[]
+	taskItems: SearchTaskItem[]
+	projectItems: SearchProjectItem[]
 	highlightedIndex: number
 	onHighlightIndex: (index: number) => void
 	onOpenResult: (item: CommandResultItem) => void

@@ -16,9 +16,9 @@ import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import type { ProjectExecutionTask } from '@/features/project/model/types'
 import {
-	SHELL_PROJECT_RECORDS,
-	getShellProjectTasks,
-} from '@/features/workspace-shell/model/shellData'
+	PROJECT_RECORDS,
+	getProjectTasks,
+} from '@/features/workspace'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
@@ -35,8 +35,8 @@ export function ProjectPage() {
 	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
 	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
-	const project = SHELL_PROJECT_RECORDS.find((item) => item.id === projectId) ?? SHELL_PROJECT_RECORDS[0]
-	const initialTasks = useMemo(() => toProjectExecutionTasks(getShellProjectTasks(project.id)), [project.id])
+	const project = PROJECT_RECORDS.find((item) => item.id === projectId) ?? PROJECT_RECORDS[0]
+	const initialTasks = useMemo(() => toProjectExecutionTasks(getProjectTasks(project.id)), [project.id])
 	const [tasks, setTasks] = useState<ProjectExecutionTask[]>(initialTasks)
 	const [bannerMessage, setBannerMessage] = useState(
 		'Project 页面保留了面包屑、任务分栏和底部多选条外观，数据来自本地 mock。',
@@ -68,7 +68,7 @@ export function ProjectPage() {
 			toolbar={
 				<MainCardToolbar
 					onRefresh={() => {
-						setTasks(toProjectExecutionTasks(getShellProjectTasks(project.id)))
+						setTasks(toProjectExecutionTasks(getProjectTasks(project.id)))
 						setBannerMessage('已刷新本地 mock Project board 数据。')
 					}}
 					pills={[
@@ -170,7 +170,7 @@ function ProjectBreadcrumb({ projectName }: { projectName: string }) {
 }
 
 function toProjectExecutionTasks(
-	tasks: ReturnType<typeof getShellProjectTasks>,
+	tasks: ReturnType<typeof getProjectTasks>,
 ): ProjectExecutionTask[] {
 	return tasks.map((task, index) => ({
 		id: task.id,

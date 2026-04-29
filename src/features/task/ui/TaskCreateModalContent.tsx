@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_PRIORITY_OPTIONS } from '@/features/task/model/taskPriority'
-import type { ShellTaskStatus } from '@/features/workspace-shell/model/shellData'
+import type { TaskStatus } from '@/features/workspace'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import {
@@ -19,7 +19,7 @@ import { Textarea } from '@/shared/ui/base/textarea'
 type TaskCreateModalContentProps = {
 	currentSpaceId: string
 	initialProjectId: string | null
-	initialStatus: ShellTaskStatus
+	initialStatus: TaskStatus
 	onClose: () => void
 	projects: Array<{
 		id: string

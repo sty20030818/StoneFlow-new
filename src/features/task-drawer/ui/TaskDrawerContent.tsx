@@ -2,8 +2,7 @@ import { useMemo, useState } from 'react'
 import { ExternalLink, File, Folder, Link2, Trash2 } from 'lucide-react'
 
 import { getSpaceLabel } from '@/app/layouts/shell/config'
-import { getShellProjectOptions, getShellTaskRecord, getShellTaskResources } from '@/features/workspace-shell/model/shellData'
-import type { ShellTaskResource } from '@/features/workspace-shell/model/shellData'
+import { getProjectOptions, getTaskRecord, getTaskResources, type TaskResource } from '@/features/workspace'
 import { EMPTY_TASK_PRIORITY_VALUE, TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
@@ -36,9 +35,9 @@ const DRAWER_SECTION_TITLE_CLASS =
  * 保留任务详情抽屉的完整表单与资源区块，数据来自本地 mock。
  */
 export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawerContentProps) {
-	const task = getShellTaskRecord(taskId)
-	const projectOptions = getShellProjectOptions()
-	const initialResources = useMemo(() => getShellTaskResources(taskId), [taskId])
+	const task = getTaskRecord(taskId)
+	const projectOptions = getProjectOptions()
+	const initialResources = useMemo(() => getTaskResources(taskId), [taskId])
 	const [draftTitle, setDraftTitle] = useState(task?.title ?? '')
 	const [draftNote, setDraftNote] = useState(task?.note ?? '')
 	const [draftPriority, setDraftPriority] = useState<TaskPriorityValue>(task?.priority ?? '')
@@ -46,7 +45,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 	const [draftStatus, setDraftStatus] = useState<'todo' | 'done'>(task?.status ?? 'todo')
 	const [docLinkTitle, setDocLinkTitle] = useState('')
 	const [docLinkUrl, setDocLinkUrl] = useState('')
-	const [resources, setResources] = useState<ShellTaskResource[]>(initialResources)
+	const [resources, setResources] = useState<TaskResource[]>(initialResources)
 	const [lastAction, setLastAction] = useState('已保留任务详情编辑 UI。')
 
 	if (!task) {
@@ -289,7 +288,7 @@ function ResourceRow({
 	resource,
 	onDelete,
 }: {
-	resource: ShellTaskResource
+	resource: TaskResource
 	onDelete: () => void
 }) {
 	const ResourceIcon =

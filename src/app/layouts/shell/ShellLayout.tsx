@@ -20,7 +20,7 @@ import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
-import { getShellProjectOptions } from '@/features/workspace-shell/model/shellData'
+import { getProjectOptions } from '@/features/workspace'
 import { ProjectCreateDialog } from '@/features/project/ui/ProjectCreateDialog'
 import { TaskCreateDialog } from '@/features/task/ui/TaskCreateDialog'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
@@ -91,7 +91,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				initialStatus={taskCreateStatus}
 				onClose={closeTaskCreateDialog}
 				open={isTaskCreateOpen}
-				projects={getShellProjectOptions()}
+				projects={getProjectOptions()}
 				projectsLoading={false}
 			/>
 

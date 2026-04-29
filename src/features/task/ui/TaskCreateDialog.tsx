@@ -1,4 +1,4 @@
-import type { ShellTaskStatus } from '@/features/workspace-shell/model/shellData'
+import type { TaskStatus } from '@/features/workspace'
 import { TaskCreateModalContent } from '@/features/task/ui/TaskCreateModalContent'
 import {
 	Dialog,
@@ -17,7 +17,7 @@ type TaskCreateDialogProps = {
 	}>
 	projectsLoading: boolean
 	initialProjectId: string | null
-	initialStatus: ShellTaskStatus
+	initialStatus: TaskStatus
 	onClose: () => void
 }
 

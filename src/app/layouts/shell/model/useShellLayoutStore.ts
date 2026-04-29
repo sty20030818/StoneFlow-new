@@ -1,11 +1,11 @@
 import { create } from 'zustand'
 
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
-import type { ShellTaskStatus } from '@/features/workspace-shell/model/shellData'
+import type { TaskStatus } from '@/features/workspace'
 
 type TaskCreateDialogDraft = {
 	projectId?: string | null
-	status?: ShellTaskStatus
+	status?: TaskStatus
 }
 
 type ShellLayoutState = {
@@ -15,14 +15,14 @@ type ShellLayoutState = {
 	isCommandOpen: boolean
 	isTaskCreateOpen: boolean
 	taskCreateProjectId: string | null
-	taskCreateStatus: ShellTaskStatus
+	taskCreateStatus: TaskStatus
 	isProjectCreateOpen: boolean
 	projectCreateParentId: string | null
 	isDrawerOpen: boolean
 	activeDrawerKind: ShellDrawerKind | null
 	activeDrawerId: string | null
 	projectTreeCollapsed: Record<string, boolean>
-	projectTaskBoardOpenSections: ShellTaskStatus[]
+	projectTaskBoardOpenSections: TaskStatus[]
 	setCurrentSpaceId: (spaceId: string) => void
 	setActiveSection: (section: ShellSectionKey) => void
 	setNavItemVisible: (section: ShellSectionKey, visible: boolean) => void
@@ -42,13 +42,13 @@ type ShellLayoutState = {
 		projectId: string
 		collapsed: boolean
 	}) => void
-	setProjectTaskBoardOpenSections: (sections: ShellTaskStatus[]) => void
+	setProjectTaskBoardOpenSections: (sections: TaskStatus[]) => void
 }
 
 const SHELL_NAV_VISIBILITY_STORAGE_KEY = 'stoneflow:shell-nav-visibility:v2'
 const PROJECT_TASK_BOARD_OPEN_SECTIONS_STORAGE_KEY = 'stoneflow:project-task-board-open-sections:v2'
 const CONFIGURABLE_NAV_ITEM_KEYS: ShellSectionKey[] = ['inbox', 'focus']
-const DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS: ShellTaskStatus[] = ['todo', 'done']
+const DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS: TaskStatus[] = ['todo', 'done']
 
 function readStoredHiddenNavItemKeys() {
 	if (typeof window === 'undefined') {
@@ -99,7 +99,7 @@ function readStoredProjectTaskBoardOpenSections() {
 		}
 
 		const normalizedValue = parsedValue.filter(
-			(section): section is ShellTaskStatus => section === 'todo' || section === 'done',
+			(section): section is TaskStatus => section === 'todo' || section === 'done',
 		)
 
 		return normalizedValue.length > 0
@@ -110,7 +110,7 @@ function readStoredProjectTaskBoardOpenSections() {
 	}
 }
 
-function persistProjectTaskBoardOpenSections(sections: ShellTaskStatus[]) {
+function persistProjectTaskBoardOpenSections(sections: TaskStatus[]) {
 	if (typeof window === 'undefined') {
 		return
 	}

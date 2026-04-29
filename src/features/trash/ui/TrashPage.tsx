@@ -22,19 +22,19 @@ import {
 import { LINEAR_CARD_BASE_CLASS, LINEAR_CARD_IDLE_CLASS } from '@/shared/ui/linearSurface'
 import { Trash2Icon } from 'lucide-react'
 import {
-	SHELL_TRASH_ENTRIES,
-	type ShellTrashEntry,
-} from '@/features/workspace-shell/model/shellData'
+	TRASH_ENTRIES,
+	type TrashEntry,
+} from '@/features/workspace'
 
 export function TrashPage() {
 	const { spaceId = 'work' } = useParams()
-	const [entries, setEntries] = useState(SHELL_TRASH_ENTRIES)
+	const [entries, setEntries] = useState(TRASH_ENTRIES)
 	const [pendingEntryId, setPendingEntryId] = useState<string | null>(null)
 	const [bannerMessage, setBannerMessage] = useState(
 		'Trash 页面保留了列表卡片与恢复按钮外观，数据来自本地 mock。',
 	)
 
-	function restoreEntry(entry: ShellTrashEntry) {
+	function restoreEntry(entry: TrashEntry) {
 		setPendingEntryId(entry.id)
 
 		window.setTimeout(() => {
@@ -52,7 +52,7 @@ export function TrashPage() {
 			toolbar={
 				<MainCardToolbar
 					onRefresh={() => {
-						setEntries(SHELL_TRASH_ENTRIES)
+						setEntries(TRASH_ENTRIES)
 						setBannerMessage('已刷新本地 mock 回收站数据。')
 					}}
 					pills={[
@@ -105,9 +105,9 @@ export function TrashPage() {
 }
 
 type TrashEntryRowProps = {
-	entry: ShellTrashEntry
+	entry: TrashEntry
 	isPending: boolean
-	onRestore: (entry: ShellTrashEntry) => void
+	onRestore: (entry: TrashEntry) => void
 }
 
 function TrashEntryRow({ entry, isPending, onRestore }: TrashEntryRowProps) {

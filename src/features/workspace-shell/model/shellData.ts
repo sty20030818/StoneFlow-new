@@ -1,9 +1,9 @@
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 
-export type ShellTaskStatus = 'todo' | 'done'
-export type ShellFocusViewKey = 'today' | 'pinned' | 'recent'
+export type TaskStatus = 'todo' | 'done'
+export type FocusViewKey = 'today' | 'pinned' | 'recent'
 
-export type ShellProjectRecord = {
+export type Project = {
 	id: string
 	name: string
 	note: string
@@ -12,12 +12,12 @@ export type ShellProjectRecord = {
 	sortOrder: number
 }
 
-export type ShellTaskRecord = {
+export type Task = {
 	id: string
 	title: string
 	note: string | null
 	priority: TaskPriorityValue
-	status: ShellTaskStatus
+	status: TaskStatus
 	projectId: string | null
 	projectName: string | null
 	pinned: boolean
@@ -25,10 +25,10 @@ export type ShellTaskRecord = {
 	completedLabel: string | null
 	createdLabel: string
 	updatedLabel: string
-	viewKeys: ShellFocusViewKey[]
+	viewKeys: FocusViewKey[]
 }
 
-export type ShellTrashEntry = {
+export type TrashEntry = {
 	id: string
 	entityType: 'task' | 'project'
 	title: string
@@ -37,14 +37,14 @@ export type ShellTrashEntry = {
 	restoreHint: string
 }
 
-export type ShellTaskResource = {
+export type TaskResource = {
 	id: string
 	type: 'doc_link' | 'local_file' | 'local_folder'
 	title: string
 	target: string
 }
 
-export type ShellSearchTaskItem = {
+export type SearchTaskItem = {
 	id: string
 	title: string
 	note: string | null
@@ -52,14 +52,14 @@ export type ShellSearchTaskItem = {
 	projectName: string | null
 }
 
-export type ShellSearchProjectItem = {
+export type SearchProjectItem = {
 	id: string
 	name: string
 	note: string | null
 	status: string
 }
 
-export const SHELL_PROJECT_RECORDS: ShellProjectRecord[] = [
+export const PROJECT_RECORDS: Project[] = [
 	{
 		id: 'shell-project-stoneflow',
 		name: 'StoneFlow VNext',
@@ -86,7 +86,7 @@ export const SHELL_PROJECT_RECORDS: ShellProjectRecord[] = [
 	},
 ]
 
-export const SHELL_TASK_RECORDS: ShellTaskRecord[] = [
+export const TASK_RECORDS: Task[] = [
 	{
 		id: 'task-inbox-triage',
 		title: '整理今天捕获的新任务',
@@ -164,7 +164,7 @@ export const SHELL_TASK_RECORDS: ShellTaskRecord[] = [
 	},
 ]
 
-export const SHELL_TRASH_ENTRIES: ShellTrashEntry[] = [
+export const TRASH_ENTRIES: TrashEntry[] = [
 	{
 		id: 'trash-task-shell-copy',
 		entityType: 'task',
@@ -183,7 +183,7 @@ export const SHELL_TRASH_ENTRIES: ShellTrashEntry[] = [
 	},
 ]
 
-export const SHELL_TASK_RESOURCES: Record<string, ShellTaskResource[]> = {
+export const TASK_RESOURCES: Record<string, TaskResource[]> = {
 	'task-inbox-triage': [
 		{
 			id: 'resource-triage-spec',
@@ -210,21 +210,21 @@ export const SHELL_TASK_RESOURCES: Record<string, ShellTaskResource[]> = {
 	],
 }
 
-export const SHELL_FOCUS_VIEWS: Array<{ key: ShellFocusViewKey; name: string }> = [
+export const FOCUS_VIEWS: Array<{ key: FocusViewKey; name: string }> = [
 	{ key: 'today', name: 'Today' },
 	{ key: 'pinned', name: 'Pinned' },
 	{ key: 'recent', name: 'Recent' },
 ]
 
-export function getShellProjectOptions() {
-	return SHELL_PROJECT_RECORDS.map((project) => ({
+export function getProjectOptions() {
+	return PROJECT_RECORDS.map((project) => ({
 		id: project.id,
 		name: project.name,
 	}))
 }
 
-export function getShellProjectTree() {
-	return SHELL_PROJECT_RECORDS.filter((project) => project.parentProjectId === null)
+export function getProjectTree() {
+	return PROJECT_RECORDS.filter((project) => project.parentProjectId === null)
 		.sort((left, right) => left.sortOrder - right.sortOrder)
 		.map((project) => ({
 			id: project.id,
@@ -232,7 +232,7 @@ export function getShellProjectTree() {
 			status: project.status,
 			parentProjectId: project.parentProjectId,
 			sortOrder: project.sortOrder,
-			children: SHELL_PROJECT_RECORDS.filter(
+			children: PROJECT_RECORDS.filter(
 				(candidate) => candidate.parentProjectId === project.id,
 			)
 				.sort((left, right) => left.sortOrder - right.sortOrder)
@@ -247,31 +247,31 @@ export function getShellProjectTree() {
 		}))
 }
 
-export function getShellInboxTasks() {
-	return SHELL_TASK_RECORDS.filter((task) =>
+export function getInboxTasks() {
+	return TASK_RECORDS.filter((task) =>
 		['task-inbox-triage', 'task-inbox-command', 'task-inbox-drawer'].includes(task.id),
 	)
 }
 
-export function getShellFocusTasks(viewKey: ShellFocusViewKey) {
-	return SHELL_TASK_RECORDS.filter((task) => task.viewKeys.includes(viewKey))
+export function getFocusTasks(viewKey: FocusViewKey) {
+	return TASK_RECORDS.filter((task) => task.viewKeys.includes(viewKey))
 }
 
-export function getShellProjectTasks(projectId: string) {
-	return SHELL_TASK_RECORDS.filter((task) => task.projectId === projectId)
+export function getProjectTasks(projectId: string) {
+	return TASK_RECORDS.filter((task) => task.projectId === projectId)
 }
 
-export function getShellSearchResults(query: string) {
+export function getSearchResults(query: string) {
 	const normalizedQuery = query.trim().toLowerCase()
 
 	if (!normalizedQuery) {
 		return {
-			tasks: [] as ShellSearchTaskItem[],
-			projects: [] as ShellSearchProjectItem[],
+			tasks: [] as SearchTaskItem[],
+			projects: [] as SearchProjectItem[],
 		}
 	}
 
-	const tasks = SHELL_TASK_RECORDS.filter((task) =>
+	const tasks = TASK_RECORDS.filter((task) =>
 		[task.title, task.note ?? '', task.projectName ?? ''].some((value) =>
 			value.toLowerCase().includes(normalizedQuery),
 		),
@@ -283,7 +283,7 @@ export function getShellSearchResults(query: string) {
 		projectName: task.projectName,
 	}))
 
-	const projects = SHELL_PROJECT_RECORDS.filter((project) =>
+	const projects = PROJECT_RECORDS.filter((project) =>
 		[project.name, project.note].some((value) => value.toLowerCase().includes(normalizedQuery)),
 	).map((project) => ({
 		id: project.id,
@@ -295,10 +295,10 @@ export function getShellSearchResults(query: string) {
 	return { tasks, projects }
 }
 
-export function getShellTaskRecord(taskId: string) {
-	return SHELL_TASK_RECORDS.find((task) => task.id === taskId) ?? null
+export function getTaskRecord(taskId: string) {
+	return TASK_RECORDS.find((task) => task.id === taskId) ?? null
 }
 
-export function getShellTaskResources(taskId: string) {
-	return SHELL_TASK_RESOURCES[taskId] ?? []
+export function getTaskResources(taskId: string) {
+	return TASK_RESOURCES[taskId] ?? []
 }

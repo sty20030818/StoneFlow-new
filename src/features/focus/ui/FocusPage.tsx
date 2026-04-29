@@ -17,11 +17,11 @@ import {
 	TaskStatusSelect,
 } from '@/features/task/ui/TaskMetadataSelect'
 import {
-	SHELL_FOCUS_VIEWS,
-	getShellFocusTasks,
-	type ShellFocusViewKey,
-	type ShellTaskRecord,
-} from '@/features/workspace-shell/model/shellData'
+	FOCUS_VIEWS,
+	getFocusTasks,
+	type FocusViewKey,
+	type Task,
+} from '@/features/workspace'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -69,24 +69,24 @@ export function FocusPage() {
 	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
 	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
-	const [activeViewKey, setActiveViewKey] = useState<ShellFocusViewKey>('today')
+	const [activeViewKey, setActiveViewKey] = useState<FocusViewKey>('today')
 	const [recentTimeWindow, setRecentTimeWindow] = useState<FocusRecentTimeWindow>('all')
-	const [tasks, setTasks] = useState(() => getShellFocusTasks('today'))
+	const [tasks, setTasks] = useState(() => getFocusTasks('today'))
 	const [bannerMessage, setBannerMessage] = useState(
 		'Views 页面保留原来的切换、筛选和任务卡片外观，数据来自本地 mock。',
 	)
 	const { selectedTaskIdSet, toggleTaskSelection } = useTaskSelection(tasks.map((task) => task.id))
 	const showRecentWindow = activeViewKey === 'recent'
 
-	function handleSwitchView(nextViewKey: ShellFocusViewKey) {
+	function handleSwitchView(nextViewKey: FocusViewKey) {
 		setActiveViewKey(nextViewKey)
-		setTasks(getShellFocusTasks(nextViewKey))
-		setBannerMessage(`已切换到 ${SHELL_FOCUS_VIEWS.find((view) => view.key === nextViewKey)?.name ?? nextViewKey} 视图。`)
+		setTasks(getFocusTasks(nextViewKey))
+		setBannerMessage(`已切换到 ${FOCUS_VIEWS.find((view) => view.key === nextViewKey)?.name ?? nextViewKey} 视图。`)
 	}
 
 	function updateTask(
 		taskId: string,
-		updater: (task: ShellTaskRecord) => ShellTaskRecord,
+		updater: (task: Task) => Task,
 		message: string,
 	) {
 		setTasks((currentTasks) =>
@@ -95,7 +95,7 @@ export function FocusPage() {
 		setBannerMessage(message)
 	}
 
-	function moveTaskToTrash(task: ShellTaskRecord) {
+	function moveTaskToTrash(task: Task) {
 		setTasks((currentTasks) => currentTasks.filter((currentTask) => currentTask.id !== task.id))
 		setBannerMessage(`已从本地 mock ${currentSpaceId} / Views 列表中移除「${task.title}」。`)
 	}
@@ -111,10 +111,10 @@ export function FocusPage() {
 						) : undefined
 					}
 					onRefresh={() => {
-						setTasks(getShellFocusTasks(activeViewKey))
+						setTasks(getFocusTasks(activeViewKey))
 						setBannerMessage('已刷新本地 mock 视图数据。')
 					}}
-					pills={SHELL_FOCUS_VIEWS.map((view) => ({
+					pills={FOCUS_VIEWS.map((view) => ({
 						label: view.name,
 						active: view.key === activeViewKey,
 						onClick: () => handleSwitchView(view.key),
@@ -179,20 +179,20 @@ export function FocusPage() {
 }
 
 type FocusTaskPanelProps = {
-	activeViewKey: ShellFocusViewKey
+	activeViewKey: FocusViewKey
 	activeTaskId: string | null
-	tasks: ShellTaskRecord[]
+	tasks: Task[]
 	pendingTaskId: string | null
 	isLoading: boolean
 	selectedTaskIdSet: Set<string>
 	onCreateTask: () => void
 	onOpenTask: (taskId: string) => void
 	onToggleTaskSelection: (taskId: string) => void
-	onToggleTaskPin: (task: ShellTaskRecord) => void
-	onUpdateTaskPriority: (task: ShellTaskRecord, priority: TaskPriorityValue) => void
-	onUpdateTaskStatus: (task: ShellTaskRecord, status: 'todo' | 'done') => void
-	onToggleTaskStatus: (task: ShellTaskRecord) => void
-	onMoveTaskToTrash: (task: ShellTaskRecord) => void
+	onToggleTaskPin: (task: Task) => void
+	onUpdateTaskPriority: (task: Task, priority: TaskPriorityValue) => void
+	onUpdateTaskStatus: (task: Task, status: 'todo' | 'done') => void
+	onToggleTaskStatus: (task: Task) => void
+	onMoveTaskToTrash: (task: Task) => void
 }
 
 function FocusTaskPanel({
@@ -264,18 +264,18 @@ function FocusTaskPanel({
 }
 
 type FocusTaskRowProps = {
-	task: ShellTaskRecord
-	activeViewKey: ShellFocusViewKey
+	task: Task
+	activeViewKey: FocusViewKey
 	isActive: boolean
 	isPending: boolean
 	selectedTaskIdSet: Set<string>
 	onOpenTask: (taskId: string) => void
 	onToggleTaskSelection: (taskId: string) => void
-	onToggleTaskPin: (task: ShellTaskRecord) => void
-	onUpdateTaskPriority: (task: ShellTaskRecord, priority: TaskPriorityValue) => void
-	onUpdateTaskStatus: (task: ShellTaskRecord, status: 'todo' | 'done') => void
-	onToggleTaskStatus: (task: ShellTaskRecord) => void
-	onMoveTaskToTrash: (task: ShellTaskRecord) => void
+	onToggleTaskPin: (task: Task) => void
+	onUpdateTaskPriority: (task: Task, priority: TaskPriorityValue) => void
+	onUpdateTaskStatus: (task: Task, status: 'todo' | 'done') => void
+	onToggleTaskStatus: (task: Task) => void
+	onMoveTaskToTrash: (task: Task) => void
 }
 
 function FocusTaskRow({
@@ -422,15 +422,15 @@ function RecentWindowFilter({
 	)
 }
 
-function getFocusViewLabel(viewKey: ShellFocusViewKey) {
-	return SHELL_FOCUS_VIEWS.find((view) => view.key === viewKey)?.name ?? viewKey
+function getFocusViewLabel(viewKey: FocusViewKey) {
+	return FOCUS_VIEWS.find((view) => view.key === viewKey)?.name ?? viewKey
 }
 
-function getEmptyTitle(viewKey: ShellFocusViewKey) {
+function getEmptyTitle(viewKey: FocusViewKey) {
 	return viewKey === 'pinned' ? '当前没有 Pin 的任务' : viewKey === 'recent' ? '最近没有任务变动' : '今天没有任务'
 }
 
-function getEmptyDescription(viewKey: ShellFocusViewKey) {
+function getEmptyDescription(viewKey: FocusViewKey) {
 	return viewKey === 'pinned'
 		? '给任务加上 Pin 后，它会出现在这里。'
 		: viewKey === 'recent'

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { getShellSearchResults } from '@/features/workspace-shell/model/shellData'
+import { getSearchResults } from '@/features/workspace'
 import { GlobalSearchResults } from '@/features/global-search/ui/GlobalSearchResults'
 import { InputGroup, InputGroupAddon } from '@/shared/ui/base/input-group'
 import { Kbd } from '@/shared/ui/base/kbd'
@@ -27,7 +27,7 @@ export function GlobalSearchInput({
 	const [highlightedIndex, setHighlightedIndex] = useState(0)
 	const [isLoading, setIsLoading] = useState(false)
 	const normalizedQuery = query.trim()
-	const searchResult = useMemo(() => getShellSearchResults(query), [query])
+	const searchResult = useMemo(() => getSearchResults(query), [query])
 	const taskItems = useMemo(
 		() => searchResult.tasks.map((item, index) => ({ index, item })),
 		[searchResult.tasks],

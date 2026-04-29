@@ -5,10 +5,10 @@ import {
 	useShellLayoutStore,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import {
-	getShellInboxTasks,
-	getShellProjectOptions,
-	type ShellTaskRecord,
-} from '@/features/workspace-shell/model/shellData'
+	getInboxTasks,
+	getProjectOptions,
+	type Task,
+} from '@/features/workspace'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
@@ -68,11 +68,11 @@ export function InboxPage() {
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
 	const openProjectCreateDialog = useShellLayoutStore((state) => state.openProjectCreateDialog)
 	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
-	const [tasks, setTasks] = useState(() => getShellInboxTasks())
-	const projects = useMemo(() => getShellProjectOptions(), [])
+	const [tasks, setTasks] = useState(() => getInboxTasks())
+	const projects = useMemo(() => getProjectOptions(), [])
 	const [drafts, setDrafts] = useState<Record<string, InboxDraft>>(() =>
 		Object.fromEntries(
-			getShellInboxTasks().map((task) => [
+			getInboxTasks().map((task) => [
 				task.id,
 				{
 					projectId: task.projectId ?? '',
@@ -160,7 +160,7 @@ export function InboxPage() {
 			toolbar={
 				<MainCardToolbar
 					onRefresh={() => {
-						setTasks(getShellInboxTasks())
+						setTasks(getInboxTasks())
 						setBannerMessage('已刷新本地 mock Inbox 数据。')
 					}}
 					pills={[
@@ -228,7 +228,7 @@ export function InboxPage() {
 }
 
 type InboxTaskRowProps = {
-	task: ShellTaskRecord
+	task: Task
 	projects: Array<{
 		id: string
 		name: string
