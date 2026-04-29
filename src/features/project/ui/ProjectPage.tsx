@@ -44,9 +44,8 @@ export function ProjectPage() {
 		toggleTaskStatus,
 		moveTaskToTrash,
 	} = useProjectExecution(spaceId, projectId)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } = useTaskSelection(
-		view?.tasks.map((task) => task.id) ?? [],
-	)
+	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
+		useTaskSelection(view?.tasks.map((task) => task.id) ?? [])
 
 	return (
 		<MainCardLayout

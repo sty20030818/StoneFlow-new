@@ -53,10 +53,7 @@ export function TaskBulkActionBar({
 					</Button>
 				</div>
 
-				<div
-					aria-hidden
-					className='mx-0.5 h-5 w-px shrink-0 bg-(--sf-color-border)'
-				/>
+				<div aria-hidden className='mx-0.5 h-5 w-px shrink-0 bg-(--sf-color-border)' />
 
 				<div className='flex items-center truncate'>{action}</div>
 			</div>

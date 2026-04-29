@@ -33,7 +33,7 @@ export function GlobalSearchResults({
 
 	return (
 		<div className='absolute inset-x-0 top-full z-40 mt-1.5 overflow-hidden rounded-xl border border-(--sf-color-border-secondary) bg-popover/98 shadow-(--sf-shadow-popover) backdrop-blur'>
-			<div className='max-h-[24rem] overflow-y-auto p-2.5'>
+			<div className='max-h-96 overflow-y-auto p-2.5'>
 				{isLoading && !hasResults ? (
 					<SearchPanelState label='正在搜索任务与项目...' />
 				) : errorMessage ? (
