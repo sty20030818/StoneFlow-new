@@ -1,9 +1,11 @@
 //! 阶段 1 共享类型：只承载数据库层仍然稳定的枚举和值对象。
 
 use sea_orm::entity::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// 任务状态。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum TaskStatus {
     #[sea_orm(string_value = "todo")]
@@ -19,7 +21,8 @@ pub enum TaskStatus {
 }
 
 /// View 类型。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum ViewKind {
     #[sea_orm(string_value = "system")]
@@ -29,7 +32,8 @@ pub enum ViewKind {
 }
 
 /// View 作用对象。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum ViewEntityKind {
     #[sea_orm(string_value = "task")]
@@ -39,7 +43,8 @@ pub enum ViewEntityKind {
 }
 
 /// Activity 作用对象。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum ActivityEntityKind {
     #[sea_orm(string_value = "task")]
@@ -55,7 +60,8 @@ pub enum ActivityEntityKind {
 }
 
 /// Activity 执行主体。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum ActivityActorKind {
     #[sea_orm(string_value = "user")]
@@ -67,7 +73,8 @@ pub enum ActivityActorKind {
 }
 
 /// Activity 触发来源。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 #[sea_orm(rs_type = "String", db_type = "String(StringLen::None)")]
 pub enum ActivitySourceKind {
     #[sea_orm(string_value = "app")]

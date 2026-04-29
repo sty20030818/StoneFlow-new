@@ -104,7 +104,9 @@ export function TaskCreateModalContent({
 						<span className='text-[12px] font-medium text-foreground'>优先级</span>
 						<Select
 							disabled={status !== 'idle'}
-							onValueChange={(value) => setPriority(value === EMPTY_PRIORITY_VALUE ? '' : (value as TaskPriorityValue))}
+							onValueChange={(value) =>
+								setPriority(value === EMPTY_PRIORITY_VALUE ? '' : (value as TaskPriorityValue))
+							}
 							value={priority || EMPTY_PRIORITY_VALUE}
 						>
 							<SelectTrigger
@@ -139,9 +141,7 @@ export function TaskCreateModalContent({
 								aria-label='项目'
 								className='h-11 w-full rounded-md border-input bg-card'
 							>
-								<SelectValue
-									placeholder={projectsLoading ? '正在加载项目...' : '选择项目'}
-								/>
+								<SelectValue placeholder={projectsLoading ? '正在加载项目...' : '选择项目'} />
 							</SelectTrigger>
 							<SelectContent position='popper'>
 								<SelectGroup>
@@ -193,10 +193,7 @@ export function TaskCreateModalContent({
 				>
 					取消
 				</Button>
-				<Button
-					disabled={status !== 'idle' || title.trim().length === 0}
-					onClick={handleSubmit}
-				>
+				<Button disabled={status !== 'idle' || title.trim().length === 0} onClick={handleSubmit}>
 					{status === 'submitting' ? '创建中...' : status === 'success' ? '已保留壳层' : '创建任务'}
 				</Button>
 			</div>

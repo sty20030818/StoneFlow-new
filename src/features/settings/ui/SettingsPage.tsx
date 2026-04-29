@@ -1,9 +1,6 @@
 import { Link } from 'react-router-dom'
 
-import {
-	selectCurrentSpaceId,
-	useShellNavStore,
-} from '@/app/layouts/shell/model/useShellNavStore'
+import { selectCurrentSpaceId, useShellNavStore } from '@/app/layouts/shell/model/useShellNavStore'
 import { MainCardHeader, MainCardLayout } from '@/app/layouts/main-card/MainCardLayout'
 import { Button } from '@/shared/ui/base/button'
 import {

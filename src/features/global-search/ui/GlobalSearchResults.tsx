@@ -1,7 +1,4 @@
-import type {
-	SearchProjectItem,
-	SearchTaskItem,
-} from '@/features/workspace'
+import type { SearchProjectItem, SearchTaskItem } from '@/features/workspace'
 import { cn } from '@/shared/lib/utils'
 import { SearchIcon } from 'lucide-react'
 

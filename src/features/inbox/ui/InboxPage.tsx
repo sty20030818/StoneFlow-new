@@ -1,16 +1,9 @@
 import { useMemo, useState } from 'react'
 
-import {
-	selectCurrentSpaceId,
-	useShellNavStore,
-} from '@/app/layouts/shell/model/useShellNavStore'
+import { selectCurrentSpaceId, useShellNavStore } from '@/app/layouts/shell/model/useShellNavStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
-import {
-	getInboxTasks,
-	getProjectOptions,
-	type Task,
-} from '@/features/workspace'
+import { getInboxTasks, getProjectOptions, type Task } from '@/features/workspace'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
@@ -122,12 +115,13 @@ export function InboxPage() {
 				currentTasks.map((task) =>
 					task.id === taskId
 						? {
-							...task,
-							projectId: drafts[taskId]?.projectId || null,
-							projectName:
-								projects.find((project) => project.id === (drafts[taskId]?.projectId || ''))?.name ?? null,
-							priority: drafts[taskId]?.priority ?? task.priority,
-						}
+								...task,
+								projectId: drafts[taskId]?.projectId || null,
+								projectName:
+									projects.find((project) => project.id === (drafts[taskId]?.projectId || ''))
+										?.name ?? null,
+								priority: drafts[taskId]?.priority ?? task.priority,
+							}
 						: task,
 				),
 			)

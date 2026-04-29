@@ -19,11 +19,7 @@ import {
 	SearchIcon,
 } from 'lucide-react'
 
-import {
-	getSearchResults,
-	type SearchProjectItem,
-	type SearchTaskItem,
-} from '@/features/workspace'
+import { getSearchResults, type SearchProjectItem, type SearchTaskItem } from '@/features/workspace'
 import { Button } from '@/shared/ui/base/button'
 import { Kbd } from '@/shared/ui/base/kbd'
 import { cn } from '@/shared/lib/utils'
@@ -474,7 +470,9 @@ function CommandResultRow({
 			onMouseEnter={onHighlight}
 			type='button'
 		>
-			{isActive ? <span className='absolute inset-y-0 left-0 w-0.75 rounded-r-sm bg-primary' /> : null}
+			{isActive ? (
+				<span className='absolute inset-y-0 left-0 w-0.75 rounded-r-sm bg-primary' />
+			) : null}
 			<span
 				className={cn(
 					'flex size-6 shrink-0 items-center justify-center rounded-md',
@@ -549,7 +547,9 @@ function StatusMessage({ status, message }: { status: CommandStatus; message: st
 		>
 			{status === 'error' ? <AlertTriangleIcon className='size-3.5 shrink-0' /> : null}
 			{status === 'success' ? <CheckCircle2Icon className='size-3.5 shrink-0' /> : null}
-			{status === 'submitting' ? <LoaderCircleIcon className='size-3.5 shrink-0 animate-spin' /> : null}
+			{status === 'submitting' ? (
+				<LoaderCircleIcon className='size-3.5 shrink-0 animate-spin' />
+			) : null}
 			<span className='truncate'>{message}</span>
 		</div>
 	)

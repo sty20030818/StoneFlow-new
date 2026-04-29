@@ -1,10 +1,7 @@
 import type { PropsWithChildren } from 'react'
 
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
-import {
-	SHELL_NAV_BADGES,
-	SHELL_PROJECT_LINKS,
-} from '@/app/layouts/shell/config'
+import { SHELL_NAV_BADGES, SHELL_PROJECT_LINKS } from '@/app/layouts/shell/config'
 import {
 	selectActiveDrawerId,
 	selectActiveDrawerKind,

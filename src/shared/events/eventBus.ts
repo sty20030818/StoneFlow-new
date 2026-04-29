@@ -71,10 +71,7 @@ export function emitEvent(event: AppEvent) {
  * @param type 事件类型
  * @param handler 事件处理函数
  */
-export function useEventSubscription(
-	type: AppEventType,
-	handler: (event: AppEvent) => void,
-) {
+export function useEventSubscription(type: AppEventType, handler: (event: AppEvent) => void) {
 	const subscribe = useEventBus((state) => state.subscribe)
 
 	useEffect(() => {

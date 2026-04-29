@@ -2,8 +2,17 @@ import { useMemo, useState } from 'react'
 import { ExternalLink, File, Folder, Link2, Trash2 } from 'lucide-react'
 
 import { getSpaceLabel } from '@/app/layouts/shell/config'
-import { getProjectOptions, getTaskRecord, getTaskResources, type TaskResource } from '@/features/workspace'
-import { EMPTY_TASK_PRIORITY_VALUE, TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
+import {
+	getProjectOptions,
+	getTaskRecord,
+	getTaskResources,
+	type TaskResource,
+} from '@/features/workspace'
+import {
+	EMPTY_TASK_PRIORITY_VALUE,
+	TASK_PRIORITY_OPTIONS,
+	type TaskPriorityValue,
+} from '@/features/task/model/taskPriority'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import {
@@ -133,7 +142,9 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 					<span className={DRAWER_SECTION_TITLE_CLASS}>优先级</span>
 					<Select
 						onValueChange={(value) =>
-							setDraftPriority(value === EMPTY_TASK_PRIORITY_VALUE ? '' : (value as TaskPriorityValue))
+							setDraftPriority(
+								value === EMPTY_TASK_PRIORITY_VALUE ? '' : (value as TaskPriorityValue),
+							)
 						}
 						value={draftPriority || EMPTY_TASK_PRIORITY_VALUE}
 					>
@@ -162,9 +173,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				<label className='space-y-1.5'>
 					<span className={DRAWER_SECTION_TITLE_CLASS}>项目</span>
 					<Select
-						onValueChange={(value) =>
-							setDraftProjectId(value === EMPTY_PROJECT_VALUE ? '' : value)
-						}
+						onValueChange={(value) => setDraftProjectId(value === EMPTY_PROJECT_VALUE ? '' : value)}
 						value={draftProjectId || EMPTY_PROJECT_VALUE}
 					>
 						<SelectTrigger
@@ -211,7 +220,9 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 
 				<div className='space-y-1.5'>
 					<span className={DRAWER_SECTION_TITLE_CLASS}>更新时间</span>
-					<div className={`flex h-9 items-center rounded-md px-3 text-[12px] text-(--sf-color-shell-secondary) ${DRAWER_FIELD_CLASS}`}>
+					<div
+						className={`flex h-9 items-center rounded-md px-3 text-[12px] text-(--sf-color-shell-secondary) ${DRAWER_FIELD_CLASS}`}
+					>
 						{task.updatedLabel}
 					</div>
 				</div>
@@ -284,13 +295,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 	)
 }
 
-function ResourceRow({
-	resource,
-	onDelete,
-}: {
-	resource: TaskResource
-	onDelete: () => void
-}) {
+function ResourceRow({ resource, onDelete }: { resource: TaskResource; onDelete: () => void }) {
 	const ResourceIcon =
 		resource.type === 'doc_link' ? Link2 : resource.type === 'local_folder' ? Folder : File
 
@@ -306,7 +311,13 @@ function ResourceRow({
 			<Button className='rounded-md' size='icon-sm' type='button' variant='ghost'>
 				<ExternalLink className='size-3.5' />
 			</Button>
-			<Button className='rounded-md' onClick={onDelete} size='icon-sm' type='button' variant='ghost'>
+			<Button
+				className='rounded-md'
+				onClick={onDelete}
+				size='icon-sm'
+				type='button'
+				variant='ghost'
+			>
 				<Trash2 className='size-3.5' />
 			</Button>
 		</div>

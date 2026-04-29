@@ -1,16 +1,17 @@
 import { useState } from 'react'
 
-import {
-	selectCurrentSpaceId,
-	useShellNavStore,
-} from '@/app/layouts/shell/model/useShellNavStore'
+import { selectCurrentSpaceId, useShellNavStore } from '@/app/layouts/shell/model/useShellNavStore'
 import {
 	selectActiveDrawerId,
 	selectActiveDrawerKind,
 	useDrawerStore,
 } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
-import { MainCardHeader, MainCardLayout, MainCardToolbar } from '@/app/layouts/main-card/MainCardLayout'
+import {
+	MainCardHeader,
+	MainCardLayout,
+	MainCardToolbar,
+} from '@/app/layouts/main-card/MainCardLayout'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
@@ -20,12 +21,7 @@ import {
 	TaskSelectionCheckbox,
 	TaskStatusSelect,
 } from '@/features/task/ui/TaskMetadataSelect'
-import {
-	FOCUS_VIEWS,
-	getFocusTasks,
-	type FocusViewKey,
-	type TaskView,
-} from '@/features/workspace'
+import { FOCUS_VIEWS, getFocusTasks, type FocusViewKey, type TaskView } from '@/features/workspace'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -85,14 +81,12 @@ export function FocusPage() {
 	function handleSwitchView(nextViewKey: FocusViewKey) {
 		setActiveViewKey(nextViewKey)
 		setTasks(getFocusTasks(nextViewKey))
-		setBannerMessage(`已切换到 ${FOCUS_VIEWS.find((view) => view.key === nextViewKey)?.name ?? nextViewKey} 视图。`)
+		setBannerMessage(
+			`已切换到 ${FOCUS_VIEWS.find((view) => view.key === nextViewKey)?.name ?? nextViewKey} 视图。`,
+		)
 	}
 
-	function updateTask(
-		taskId: string,
-		updater: (task: TaskView) => TaskView,
-		message: string,
-	) {
+	function updateTask(taskId: string, updater: (task: TaskView) => TaskView, message: string) {
 		setTasks((currentTasks) =>
 			currentTasks.map((task) => (task.id === taskId ? updater(task) : task)),
 		)
@@ -431,7 +425,11 @@ function getFocusViewLabel(viewKey: FocusViewKey) {
 }
 
 function getEmptyTitle(viewKey: FocusViewKey) {
-	return viewKey === 'pinned' ? '当前没有 Pin 的任务' : viewKey === 'recent' ? '最近没有任务变动' : '今天没有任务'
+	return viewKey === 'pinned'
+		? '当前没有 Pin 的任务'
+		: viewKey === 'recent'
+			? '最近没有任务变动'
+			: '今天没有任务'
 }
 
 function getEmptyDescription(viewKey: FocusViewKey) {

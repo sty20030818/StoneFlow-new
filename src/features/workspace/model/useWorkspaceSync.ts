@@ -1,8 +1,4 @@
-import {
-	useTaskChangedListener,
-	useEventSubscription,
-	type AppEvent,
-} from '@/shared/events'
+import { useTaskChangedListener, useEventSubscription, type AppEvent } from '@/shared/events'
 
 /**
  * 工作区数据同步 hook

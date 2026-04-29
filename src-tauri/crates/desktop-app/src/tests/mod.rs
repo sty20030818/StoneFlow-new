@@ -1,5 +1,6 @@
 //! Rust 测试入口。
 
+mod activity_tests;
 mod database_bootstrap_tests;
 mod database_schema_tests;
 mod database_seed_tests;

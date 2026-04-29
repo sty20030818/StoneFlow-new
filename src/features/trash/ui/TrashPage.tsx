@@ -21,10 +21,7 @@ import {
 } from '@/app/layouts/main-card/MainCardLayout'
 import { LINEAR_CARD_BASE_CLASS, LINEAR_CARD_IDLE_CLASS } from '@/shared/ui/linearSurface'
 import { Trash2Icon } from 'lucide-react'
-import {
-	TRASH_ENTRIES,
-	type TrashEntry,
-} from '@/features/workspace'
+import { TRASH_ENTRIES, type TrashEntry } from '@/features/workspace'
 
 export function TrashPage() {
 	const { spaceId = 'work' } = useParams()

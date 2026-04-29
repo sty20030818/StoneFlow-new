@@ -7,7 +7,9 @@ mod space_repository;
 mod task_repository;
 mod view_repository;
 
-pub use activity_repository::ActivityRepository;
+pub use activity_repository::{
+    ActivityChangeRecord, ActivityEventRecord, ActivityQuery, ActivityRepository,
+};
 pub use project_repository::ProjectRepository;
 pub use settings_repository::SettingsRepository;
 pub use space_repository::SpaceRepository;

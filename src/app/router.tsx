@@ -6,6 +6,7 @@ import { InboxPage } from '../features/inbox/ui/InboxPage'
 import { ProjectPage } from '../features/project/ui/ProjectPage'
 import { QuickCapturePage } from '../features/quick-capture/ui/QuickCapturePage'
 import { SettingsPage } from '../features/settings/ui/SettingsPage'
+import { ActivityDebugPage } from '../features/activity/ui/ActivityDebugPage'
 import { TrashPage } from '../features/trash/ui/TrashPage'
 
 export const router = createHashRouter([
@@ -40,6 +41,10 @@ export const router = createHashRouter([
 			{
 				path: 'settings',
 				element: <SettingsPage />,
+			},
+			{
+				path: 'debug/activity',
+				element: <ActivityDebugPage />,
 			},
 		],
 	},

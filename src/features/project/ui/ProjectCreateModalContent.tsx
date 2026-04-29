@@ -109,10 +109,7 @@ export function ProjectCreateModalContent({
 				>
 					取消
 				</Button>
-				<Button
-					disabled={status !== 'idle' || name.trim().length === 0}
-					onClick={handleSubmit}
-				>
+				<Button disabled={status !== 'idle' || name.trim().length === 0} onClick={handleSubmit}>
 					{status === 'submitting'
 						? '创建中...'
 						: status === 'success'

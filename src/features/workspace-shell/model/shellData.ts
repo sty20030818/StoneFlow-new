@@ -1,4 +1,12 @@
-import type { FocusViewKey, Project, SearchProjectItem, SearchTaskItem, TaskResource, TaskView, TrashEntry } from '@/shared/types'
+import type {
+	FocusViewKey,
+	Project,
+	SearchProjectItem,
+	SearchTaskItem,
+	TaskResource,
+	TaskView,
+	TrashEntry,
+} from '@/shared/types'
 
 export const PROJECT_RECORDS: Project[] = [
 	{
@@ -173,9 +181,7 @@ export function getProjectTree() {
 			status: project.status,
 			parentProjectId: project.parentProjectId,
 			sortOrder: project.sortOrder,
-			children: PROJECT_RECORDS.filter(
-				(candidate) => candidate.parentProjectId === project.id,
-			)
+			children: PROJECT_RECORDS.filter((candidate) => candidate.parentProjectId === project.id)
 				.sort((left, right) => left.sortOrder - right.sortOrder)
 				.map((childProject) => ({
 					id: childProject.id,
