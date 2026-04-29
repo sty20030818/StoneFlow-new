@@ -963,7 +963,9 @@ dependencies = [
  "sea-orm",
  "sea-orm-migration",
  "serde",
+ "serde_json",
  "stoneflow-core",
+ "stoneflow-entity",
  "stoneflow-migration",
  "stoneflow-test-support",
  "tauri",
@@ -4862,6 +4864,9 @@ dependencies = [
 [[package]]
 name = "stoneflow-entity"
 version = "0.1.0"
+dependencies = [
+ "sea-orm",
+]
 
 [[package]]
 name = "stoneflow-helper"

@@ -7,7 +7,10 @@ use serde::Serialize;
 
 use crate::app::error::AppError;
 
-use super::connection::{connect_sqlite, resolve_database_path, run_smoke_query};
+use super::{
+    connection::{connect_sqlite, resolve_database_path, run_smoke_query},
+    seed::{multiple_default_spaces_error, run_seed},
+};
 
 /// 数据库健康快照。
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -18,7 +21,7 @@ pub struct DatabaseRuntimeSnapshot {
 }
 
 /// 主应用持有的数据库运行态。
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[cfg_attr(not(test), allow(dead_code))]
 pub struct DatabaseRuntimeState {
     connection: DatabaseConnection,
@@ -61,11 +64,23 @@ pub async fn bootstrap_database(base_dir: &Path) -> Result<DatabaseRuntimeState,
 
     let applied_migrations = stoneflow_migration::run_migrations(&connection)
         .await
-        .map_err(AppError::from)?;
+        .map_err(map_migration_error)?;
+    run_seed(&connection).await?;
 
     Ok(DatabaseRuntimeState {
         connection,
         database_path,
         applied_migrations,
     })
+}
+
+fn map_migration_error(error: sea_orm::DbErr) -> AppError {
+    let message = error.to_string();
+    if message.contains("ux_spaces_single_default_active")
+        || message.contains("UNIQUE constraint failed: spaces.is_default")
+    {
+        return multiple_default_spaces_error();
+    }
+
+    AppError::from(error)
 }

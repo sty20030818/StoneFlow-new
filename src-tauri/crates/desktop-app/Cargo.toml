@@ -10,7 +10,9 @@ chrono.workspace = true
 log.workspace = true
 sea-orm.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 stoneflow-core = { path = "../core" }
+stoneflow-entity = { path = "../entity" }
 stoneflow-migration = { path = "../migration" }
 tauri.workspace = true
 tauri-plugin-dialog.workspace = true

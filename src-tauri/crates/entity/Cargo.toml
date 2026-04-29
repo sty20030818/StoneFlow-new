@@ -9,3 +9,4 @@ name = "stoneflow_entity"
 path = "src/lib.rs"
 
 [dependencies]
+sea-orm.workspace = true
