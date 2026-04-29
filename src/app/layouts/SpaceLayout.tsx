@@ -9,6 +9,7 @@ import {
 } from './shell/model/useShellNavStore'
 import { ShellLayout } from './shell/ShellLayout'
 import { setActiveSpace } from '@/features/task/api/setActiveSpace'
+import { useWorkspaceSync } from '@/features/workspace/model'
 
 export function SpaceLayout() {
 	const { spaceId = 'work' } = useParams()
@@ -17,6 +18,9 @@ export function SpaceLayout() {
 	const activeSection = useShellNavStore(selectActiveSection)
 	const setCurrentSpaceId = useShellNavStore((state) => state.setCurrentSpaceId)
 	const setActiveSection = useShellNavStore((state) => state.setActiveSection)
+
+	// 挂载工作区事件同步
+	useWorkspaceSync(spaceId)
 
 	useEffect(() => {
 		if (currentSpaceId !== spaceId) {
