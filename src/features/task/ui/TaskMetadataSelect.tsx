@@ -14,7 +14,7 @@ import {
 	TASK_PRIORITY_OPTIONS,
 	type TaskPriorityValue,
 } from '@/features/task/model/taskPriority'
-import type { ProjectTaskStatus } from '@/features/project/model/types'
+import type { TaskStatus } from '@/shared/types'
 
 const TASK_LEAD_RAIL_CLASS = 'flex shrink-0 items-center gap-1.5'
 /** 与复选框同级：flex 子项 + 垂直居中，避免外壳高度/对齐与按钮不一致 */
@@ -36,10 +36,10 @@ type TaskPrioritySelectProps = {
 }
 
 type TaskStatusSelectProps = {
-	value: ProjectTaskStatus
+	value: TaskStatus
 	disabled?: boolean
 	ariaLabel: string
-	onValueChange: (value: ProjectTaskStatus) => void
+	onValueChange: (value: TaskStatus) => void
 }
 
 type TaskSelectionCheckboxProps = {
@@ -50,7 +50,7 @@ type TaskSelectionCheckboxProps = {
 }
 
 const TASK_STATUS_OPTIONS: Array<{
-	value: ProjectTaskStatus
+	value: TaskStatus
 	label: string
 }> = [
 	{ value: 'todo', label: '待执行' },
@@ -266,7 +266,7 @@ export function TaskStatusSelect({
 	)
 }
 
-export function TaskStatusIndicator({ status }: { status: ProjectTaskStatus }) {
+export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 	if (status === 'done') {
 		return (
 			<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-(--sf-color-project-task-status-done) text-white'>

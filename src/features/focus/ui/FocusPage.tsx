@@ -20,7 +20,7 @@ import {
 	FOCUS_VIEWS,
 	getFocusTasks,
 	type FocusViewKey,
-	type Task,
+	type TaskView,
 } from '@/features/workspace'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
@@ -86,7 +86,7 @@ export function FocusPage() {
 
 	function updateTask(
 		taskId: string,
-		updater: (task: Task) => Task,
+		updater: (task: TaskView) => TaskView,
 		message: string,
 	) {
 		setTasks((currentTasks) =>
@@ -95,7 +95,7 @@ export function FocusPage() {
 		setBannerMessage(message)
 	}
 
-	function moveTaskToTrash(task: Task) {
+	function moveTaskToTrash(task: TaskView) {
 		setTasks((currentTasks) => currentTasks.filter((currentTask) => currentTask.id !== task.id))
 		setBannerMessage(`已从本地 mock ${currentSpaceId} / Views 列表中移除「${task.title}」。`)
 	}
@@ -181,18 +181,18 @@ export function FocusPage() {
 type FocusTaskPanelProps = {
 	activeViewKey: FocusViewKey
 	activeTaskId: string | null
-	tasks: Task[]
+	tasks: TaskView[]
 	pendingTaskId: string | null
 	isLoading: boolean
 	selectedTaskIdSet: Set<string>
 	onCreateTask: () => void
 	onOpenTask: (taskId: string) => void
 	onToggleTaskSelection: (taskId: string) => void
-	onToggleTaskPin: (task: Task) => void
-	onUpdateTaskPriority: (task: Task, priority: TaskPriorityValue) => void
-	onUpdateTaskStatus: (task: Task, status: 'todo' | 'done') => void
-	onToggleTaskStatus: (task: Task) => void
-	onMoveTaskToTrash: (task: Task) => void
+	onToggleTaskPin: (task: TaskView) => void
+	onUpdateTaskPriority: (task: TaskView, priority: TaskPriorityValue) => void
+	onUpdateTaskStatus: (task: TaskView, status: 'todo' | 'done') => void
+	onToggleTaskStatus: (task: TaskView) => void
+	onMoveTaskToTrash: (task: TaskView) => void
 }
 
 function FocusTaskPanel({
@@ -264,18 +264,18 @@ function FocusTaskPanel({
 }
 
 type FocusTaskRowProps = {
-	task: Task
+	task: TaskView
 	activeViewKey: FocusViewKey
 	isActive: boolean
 	isPending: boolean
 	selectedTaskIdSet: Set<string>
 	onOpenTask: (taskId: string) => void
 	onToggleTaskSelection: (taskId: string) => void
-	onToggleTaskPin: (task: Task) => void
-	onUpdateTaskPriority: (task: Task, priority: TaskPriorityValue) => void
-	onUpdateTaskStatus: (task: Task, status: 'todo' | 'done') => void
-	onToggleTaskStatus: (task: Task) => void
-	onMoveTaskToTrash: (task: Task) => void
+	onToggleTaskPin: (task: TaskView) => void
+	onUpdateTaskPriority: (task: TaskView, priority: TaskPriorityValue) => void
+	onUpdateTaskStatus: (task: TaskView, status: 'todo' | 'done') => void
+	onToggleTaskStatus: (task: TaskView) => void
+	onMoveTaskToTrash: (task: TaskView) => void
 }
 
 function FocusTaskRow({

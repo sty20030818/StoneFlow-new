@@ -1,6 +1,8 @@
 import { CircleAlert, Minus, Wifi, WifiHigh, WifiLow, type LucideIcon } from 'lucide-react'
 
-export type TaskPriorityValue = '' | 'low' | 'medium' | 'high' | 'urgent'
+import type { TaskPriority } from '@/shared/types'
+
+export type TaskPriorityValue = TaskPriority
 
 type TaskPriorityOption = {
 	value: TaskPriorityValue

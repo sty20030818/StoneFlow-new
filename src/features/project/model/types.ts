@@ -1,4 +1,4 @@
-export type ProjectTaskStatus = 'todo' | 'done'
+import type { TaskStatus } from '@/shared/types'
 
 export type ProjectRecord = {
 	id: string
@@ -14,7 +14,7 @@ export type ProjectExecutionTask = {
 	title: string
 	note: string | null
 	priority: string
-	status: ProjectTaskStatus
+	status: TaskStatus
 	tags?: string[]
 	dueAt: string | null
 	completedAt: string | null

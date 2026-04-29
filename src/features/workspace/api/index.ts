@@ -4,15 +4,19 @@
  */
 
 export type {
+  TaskPriority,
   TaskStatus,
+  Task,
+  TaskView,
   FocusViewKey,
   Project,
-  Task,
+  ProjectStatus,
+  ProjectTreeNode,
   TrashEntry,
   TaskResource,
   SearchTaskItem,
   SearchProjectItem,
-} from '@/features/workspace-shell/model/shellData'
+} from '@/shared/types'
 
 export {
   getInboxTasks,

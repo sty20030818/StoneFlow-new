@@ -5,7 +5,8 @@ import {
 	useShellLayoutStore,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
 import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
-import type { ProjectExecutionTask, ProjectTaskStatus } from '@/features/project/model/types'
+import type { ProjectExecutionTask } from '@/features/project/model/types'
+import type { TaskStatus } from '@/shared/types'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import {
@@ -48,7 +49,7 @@ type ProjectTaskBoardProps = {
 	selectedTaskIdSet: Set<string>
 	onToggleTaskSelection: (taskId: string) => void
 	onUpdateTaskPriority: (task: ProjectExecutionTask, priority: TaskPriorityValue) => Promise<void>
-	onUpdateTaskStatus: (task: ProjectExecutionTask, status: ProjectTaskStatus) => Promise<void>
+	onUpdateTaskStatus: (task: ProjectExecutionTask, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
 	onMoveTaskToTrash: (task: ProjectExecutionTask) => Promise<void>
 	onOpenTask: (taskId: string) => void
@@ -56,7 +57,7 @@ type ProjectTaskBoardProps = {
 
 type TaskStatusSectionProps = {
 	projectId: string
-	status: ProjectTaskStatus
+	status: TaskStatus
 	label: string
 	tasks: ProjectExecutionTask[]
 	open: boolean
@@ -66,13 +67,13 @@ type TaskStatusSectionProps = {
 	selectedTaskIdSet: Set<string>
 	onToggleTaskSelection: (taskId: string) => void
 	onUpdateTaskPriority: (task: ProjectExecutionTask, priority: TaskPriorityValue) => Promise<void>
-	onUpdateTaskStatus: (task: ProjectExecutionTask, status: ProjectTaskStatus) => Promise<void>
+	onUpdateTaskStatus: (task: ProjectExecutionTask, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
 	onMoveTaskToTrash: (task: ProjectExecutionTask) => Promise<void>
 	onOpenTask: (taskId: string) => void
 }
 
-const PROJECT_TASK_SECTIONS: Array<{ status: ProjectTaskStatus; label: string }> = [
+const PROJECT_TASK_SECTIONS: Array<{ status: TaskStatus; label: string }> = [
 	{ status: 'todo', label: 'Todo' },
 	{ status: 'done', label: 'Done' },
 ]
@@ -107,7 +108,7 @@ export function ProjectTaskBoard({
 		(section) => tasksByStatus[section.status].length > 0,
 	)
 
-	function handleSectionOpenChange(status: ProjectTaskStatus, open: boolean) {
+	function handleSectionOpenChange(status: TaskStatus, open: boolean) {
 		const nextSections = open
 			? Array.from(new Set([...openSections, status]))
 			: openSections.filter((section) => section !== status)
@@ -266,7 +267,7 @@ function ProjectTaskRow({
 	selectedTaskIdSet: Set<string>
 	onToggleTaskSelection: (taskId: string) => void
 	onUpdateTaskPriority: (task: ProjectExecutionTask, priority: TaskPriorityValue) => Promise<void>
-	onUpdateTaskStatus: (task: ProjectExecutionTask, status: ProjectTaskStatus) => Promise<void>
+	onUpdateTaskStatus: (task: ProjectExecutionTask, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
 	onMoveTaskToTrash: (task: ProjectExecutionTask) => Promise<void>
 	onOpenTask: (taskId: string) => void

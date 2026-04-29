@@ -1,63 +1,4 @@
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
-
-export type TaskStatus = 'todo' | 'done'
-export type FocusViewKey = 'today' | 'pinned' | 'recent'
-
-export type Project = {
-	id: string
-	name: string
-	note: string
-	status: 'active' | 'draft'
-	parentProjectId: string | null
-	sortOrder: number
-}
-
-export type Task = {
-	id: string
-	title: string
-	note: string | null
-	priority: TaskPriorityValue
-	status: TaskStatus
-	projectId: string | null
-	projectName: string | null
-	pinned: boolean
-	dueLabel: string | null
-	completedLabel: string | null
-	createdLabel: string
-	updatedLabel: string
-	viewKeys: FocusViewKey[]
-}
-
-export type TrashEntry = {
-	id: string
-	entityType: 'task' | 'project'
-	title: string
-	deletedAt: string
-	deletedFrom?: string
-	restoreHint: string
-}
-
-export type TaskResource = {
-	id: string
-	type: 'doc_link' | 'local_file' | 'local_folder'
-	title: string
-	target: string
-}
-
-export type SearchTaskItem = {
-	id: string
-	title: string
-	note: string | null
-	priority: TaskPriorityValue
-	projectName: string | null
-}
-
-export type SearchProjectItem = {
-	id: string
-	name: string
-	note: string | null
-	status: string
-}
+import type { FocusViewKey, Project, SearchProjectItem, SearchTaskItem, TaskResource, TaskView, TrashEntry } from '@/shared/types'
 
 export const PROJECT_RECORDS: Project[] = [
 	{
@@ -86,7 +27,7 @@ export const PROJECT_RECORDS: Project[] = [
 	},
 ]
 
-export const TASK_RECORDS: Task[] = [
+export const TASK_RECORDS: TaskView[] = [
 	{
 		id: 'task-inbox-triage',
 		title: '整理今天捕获的新任务',
