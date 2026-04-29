@@ -1,9 +1,10 @@
-import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
+import { getShellSearchResults } from '@/features/workspace-shell/model/shellData'
+import { GlobalSearchResults } from '@/features/global-search/ui/GlobalSearchResults'
 import { InputGroup, InputGroupAddon } from '@/shared/ui/base/input-group'
 import { Kbd } from '@/shared/ui/base/kbd'
 import { SearchIcon } from 'lucide-react'
-
-import { GlobalSearchResults } from './GlobalSearchResults'
 
 type GlobalSearchInputProps = {
 	currentSpaceId: string
@@ -12,35 +13,160 @@ type GlobalSearchInputProps = {
 }
 
 /**
- * Header 中间的真实搜索框，只负责实时搜索 Task / Project。
+ * 保留 Header 中间搜索框的完整 UI，结果来自本地 mock 数据。
  */
 export function GlobalSearchInput({
-	currentSpaceId,
+	currentSpaceId: _currentSpaceId,
 	onOpenTask,
 	onOpenProject,
 }: GlobalSearchInputProps) {
-	const {
-		rootRef,
-		inputRef,
-		query,
-		isOpen,
-		isLoading,
-		errorMessage,
-		highlightedIndex,
-		taskItems,
-		projectItems,
-		setQuery,
-		setIsFocused,
-		setHighlightedIndex,
-		handleInputKeyDown,
-		handleSelectItem,
-		clearSearch,
-	} = useGlobalSearch({
-		currentSpaceId,
-		onOpenTask,
-		onOpenProject,
-	})
-	const shouldShowClearHint = isOpen || query.trim().length > 0
+	const rootRef = useRef<HTMLDivElement>(null)
+	const inputRef = useRef<HTMLInputElement>(null)
+	const [query, setQuery] = useState('')
+	const [isFocused, setIsFocused] = useState(false)
+	const [highlightedIndex, setHighlightedIndex] = useState(0)
+	const [isLoading, setIsLoading] = useState(false)
+	const normalizedQuery = query.trim()
+	const searchResult = useMemo(() => getShellSearchResults(query), [query])
+	const taskItems = useMemo(
+		() => searchResult.tasks.map((item, index) => ({ index, item })),
+		[searchResult.tasks],
+	)
+	const projectItems = useMemo(
+		() =>
+			searchResult.projects.map((item, index) => ({
+				index: taskItems.length + index,
+				item,
+			})),
+		[searchResult.projects, taskItems.length],
+	)
+	const flatItems = useMemo(
+		() => [
+			...taskItems.map(({ item }) => ({ kind: 'task' as const, item })),
+			...projectItems.map(({ item }) => ({ kind: 'project' as const, item })),
+		],
+		[projectItems, taskItems],
+	)
+	const isOpen = isFocused && normalizedQuery.length > 0
+	const shouldShowClearHint = isOpen || normalizedQuery.length > 0
+
+	useEffect(() => {
+		if (!normalizedQuery) {
+			setIsLoading(false)
+			setHighlightedIndex(0)
+			return
+		}
+
+		setIsLoading(true)
+		const timer = window.setTimeout(() => {
+			setIsLoading(false)
+			setHighlightedIndex(0)
+		}, 120)
+
+		return () => {
+			window.clearTimeout(timer)
+		}
+	}, [normalizedQuery])
+
+	useEffect(() => {
+		const handleDocumentPointerDown = (event: PointerEvent) => {
+			const target = event.target
+			if (!(target instanceof HTMLElement)) {
+				return
+			}
+
+			if (rootRef.current?.contains(target)) {
+				return
+			}
+
+			setIsFocused(false)
+		}
+
+		document.addEventListener('pointerdown', handleDocumentPointerDown)
+		return () => {
+			document.removeEventListener('pointerdown', handleDocumentPointerDown)
+		}
+	}, [])
+
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) {
+				return
+			}
+
+			const target = event.target
+			if (
+				target instanceof HTMLElement &&
+				(target.tagName === 'INPUT' ||
+					target.tagName === 'TEXTAREA' ||
+					target.isContentEditable)
+			) {
+				return
+			}
+
+			event.preventDefault()
+			inputRef.current?.focus()
+			setIsFocused(true)
+		}
+
+		window.addEventListener('keydown', handleKeyDown)
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown)
+		}
+	}, [])
+
+	function clearSearch() {
+		setQuery('')
+		setIsFocused(false)
+		setHighlightedIndex(0)
+		inputRef.current?.blur()
+	}
+
+	function selectHighlightedItem() {
+		const activeItem = flatItems[highlightedIndex]
+		if (!activeItem) {
+			return
+		}
+
+		if (activeItem.kind === 'task') {
+			onOpenTask(activeItem.item.id)
+		} else {
+			onOpenProject(activeItem.item.id)
+		}
+
+		clearSearch()
+	}
+
+	function handleInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+		if (event.key === 'Escape') {
+			event.preventDefault()
+			clearSearch()
+			return
+		}
+
+		if (!flatItems.length) {
+			return
+		}
+
+		if (event.key === 'ArrowDown') {
+			event.preventDefault()
+			setHighlightedIndex((currentIndex) => (currentIndex + 1) % flatItems.length)
+			return
+		}
+
+		if (event.key === 'ArrowUp') {
+			event.preventDefault()
+			setHighlightedIndex(
+				(currentIndex) => (currentIndex - 1 + flatItems.length) % flatItems.length,
+			)
+			return
+		}
+
+		if (event.key === 'Enter') {
+			event.preventDefault()
+			selectHighlightedItem()
+		}
+	}
 
 	return (
 		<div className='relative w-full min-w-0 max-w-100' data-sf-search-root='true'>
@@ -62,9 +188,6 @@ export function GlobalSearchInput({
 						}}
 						onFocus={() => {
 							setIsFocused(true)
-						}}
-						onBlur={() => {
-							setIsFocused(false)
 						}}
 						onKeyDown={handleInputKeyDown}
 						placeholder='搜索任务、项目...'
@@ -92,14 +215,20 @@ export function GlobalSearchInput({
 
 			{isOpen ? (
 				<GlobalSearchResults
-					errorMessage={errorMessage}
+					errorMessage={null}
 					highlightedIndex={highlightedIndex}
 					isLoading={isLoading}
 					projectItems={projectItems}
 					taskItems={taskItems}
 					onHighlightIndex={setHighlightedIndex}
-					onSelectProject={(item) => handleSelectItem({ kind: 'project', ...item })}
-					onSelectTask={(item) => handleSelectItem({ kind: 'task', ...item })}
+					onSelectProject={(item) => {
+						onOpenProject(item.id)
+						clearSearch()
+					}}
+					onSelectTask={(item) => {
+						onOpenTask(item.id)
+						clearSearch()
+					}}
 				/>
 			) : null}
 		</div>

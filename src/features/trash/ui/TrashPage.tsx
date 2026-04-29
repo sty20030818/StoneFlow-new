@@ -1,7 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
+import { useState } from 'react'
 
-import { useTrashEntries } from '@/features/trash/model/useTrashEntries'
-import type { TrashEntry } from '@/features/trash/model/types'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
@@ -15,7 +14,6 @@ import {
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
-import { ToastFeedbackBridge } from '@/shared/ui/ToastFeedbackBridge'
 import {
 	MainCardHeader,
 	MainCardLayout,
@@ -23,42 +21,55 @@ import {
 } from '@/app/layouts/main-card/MainCardLayout'
 import { LINEAR_CARD_BASE_CLASS, LINEAR_CARD_IDLE_CLASS } from '@/shared/ui/linearSurface'
 import { Trash2Icon } from 'lucide-react'
+import {
+	SHELL_TRASH_ENTRIES,
+	type ShellTrashEntry,
+} from '@/features/workspace-shell/model/shellData'
 
 export function TrashPage() {
 	const { spaceId = 'work' } = useParams()
-	const { entries, isLoading, loadError, feedback, pendingEntryId, refresh, restoreEntry } =
-		useTrashEntries(spaceId)
+	const [entries, setEntries] = useState(SHELL_TRASH_ENTRIES)
+	const [pendingEntryId, setPendingEntryId] = useState<string | null>(null)
+	const [bannerMessage, setBannerMessage] = useState(
+		'Trash 页面保留了列表卡片与恢复按钮外观，数据来自本地 mock。',
+	)
+
+	function restoreEntry(entry: ShellTrashEntry) {
+		setPendingEntryId(entry.id)
+
+		window.setTimeout(() => {
+			setEntries((currentEntries) =>
+				currentEntries.filter((currentEntry) => currentEntry.id !== entry.id),
+			)
+			setPendingEntryId(null)
+			setBannerMessage(`已从本地 mock 回收站恢复「${entry.title}」。`)
+		}, 260)
+	}
 
 	return (
 		<MainCardLayout
 			header={<MainCardHeader title='Trash' />}
 			toolbar={
 				<MainCardToolbar
-					onRefresh={() => void refresh()}
+					onRefresh={() => {
+						setEntries(SHELL_TRASH_ENTRIES)
+						setBannerMessage('已刷新本地 mock 回收站数据。')
+					}}
 					pills={[
 						{ label: 'All deleted', active: true },
 						{ label: 'Tasks' },
 						{ label: 'Projects' },
 					]}
-					refreshDisabled={isLoading}
 				/>
 			}
 		>
 			<div className='flex min-h-0 flex-1 flex-col'>
-				<ToastFeedbackBridge feedback={feedback} />
-
-				{loadError ? (
-					<StatusNotice className='mb-3' role='alert' variant='danger'>
-						<p className='text-sm'>{loadError}</p>
-					</StatusNotice>
-				) : null}
+				<StatusNotice className='mb-3' size='sm'>
+					{bannerMessage}
+				</StatusNotice>
 
 				<div className='flex min-h-0 flex-1 flex-col'>
-					{isLoading ? (
-						<p className='py-8 text-sm text-muted-foreground' role='status'>
-							正在加载回收站...
-						</p>
-					) : entries.length === 0 ? (
+					{entries.length === 0 ? (
 						<EmptyPage>
 							<Empty>
 								<EmptyHeader>
@@ -94,9 +105,9 @@ export function TrashPage() {
 }
 
 type TrashEntryRowProps = {
-	entry: TrashEntry
+	entry: ShellTrashEntry
 	isPending: boolean
-	onRestore: (entry: TrashEntry) => Promise<void>
+	onRestore: (entry: ShellTrashEntry) => void
 }
 
 function TrashEntryRow({ entry, isPending, onRestore }: TrashEntryRowProps) {
@@ -126,7 +137,7 @@ function TrashEntryRow({ entry, isPending, onRestore }: TrashEntryRowProps) {
 				<Button
 					className='rounded-md'
 					disabled={isPending}
-					onClick={() => void onRestore(entry)}
+					onClick={() => onRestore(entry)}
 					size='sm'
 					variant='secondary'
 				>

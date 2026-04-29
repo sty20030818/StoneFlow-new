@@ -4,7 +4,6 @@
 
 pub mod app;
 pub mod domain;
-mod application;
 mod infrastructure;
 
 #[cfg(test)]

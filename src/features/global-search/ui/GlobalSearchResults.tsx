@@ -1,7 +1,7 @@
 import type {
-	WorkspaceProjectSearchItem,
-	WorkspaceTaskSearchItem,
-} from '@/features/global-search/api/searchWorkspace'
+	ShellSearchProjectItem,
+	ShellSearchTaskItem,
+} from '@/features/workspace-shell/model/shellData'
 import { cn } from '@/shared/lib/utils'
 import { SearchIcon } from 'lucide-react'
 
@@ -9,15 +9,15 @@ type GlobalSearchResultsProps = {
 	isLoading: boolean
 	errorMessage: string | null
 	highlightedIndex: number
-	taskItems: Array<{ index: number; item: WorkspaceTaskSearchItem }>
-	projectItems: Array<{ index: number; item: WorkspaceProjectSearchItem }>
+	taskItems: Array<{ index: number; item: ShellSearchTaskItem }>
+	projectItems: Array<{ index: number; item: ShellSearchProjectItem }>
 	onHighlightIndex: (index: number) => void
-	onSelectTask: (item: WorkspaceTaskSearchItem) => void
-	onSelectProject: (item: WorkspaceProjectSearchItem) => void
+	onSelectTask: (item: ShellSearchTaskItem) => void
+	onSelectProject: (item: ShellSearchProjectItem) => void
 }
 
 /**
- * 渲染 Header 搜索面板，按 Tasks / Projects 分组输出。
+ * 保留 Header 搜索结果面板的完整视觉层，结果来自本地 mock 数据。
  */
 export function GlobalSearchResults({
 	isLoading,
@@ -80,12 +80,6 @@ export function GlobalSearchResults({
 									))}
 								</div>
 							</section>
-						) : null}
-
-						{isLoading ? (
-							<div className='px-1 text-[11px] text-(--sf-color-shell-tertiary)'>
-								正在更新结果...
-							</div>
 						) : null}
 					</div>
 				)}
@@ -167,12 +161,12 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 	)
 }
 
-function buildTaskContext(item: WorkspaceTaskSearchItem) {
+function buildTaskContext(item: ShellSearchTaskItem) {
 	return `${formatPriority(item.priority)} / ${item.projectName ?? 'Inbox'}`
 }
 
-function buildProjectContext(item: WorkspaceProjectSearchItem) {
-	return formatProjectStatus(item.status)
+function buildProjectContext(item: ShellSearchProjectItem) {
+	return item.status === 'active' ? '进行中' : '草稿'
 }
 
 function formatPriority(priority: string | null) {
@@ -190,17 +184,7 @@ function formatPriority(priority: string | null) {
 	}
 }
 
-function formatProjectStatus(status: string) {
-	switch (status) {
-		case 'active':
-			return '进行中'
-		default:
-			return status
-	}
-}
-
 function toSnippet(value: string) {
 	const normalized = value.trim().replace(/\s+/g, ' ')
-
 	return normalized.length > 72 ? `${normalized.slice(0, 72)}...` : normalized
 }

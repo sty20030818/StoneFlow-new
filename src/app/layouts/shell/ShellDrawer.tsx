@@ -92,8 +92,8 @@ export function ShellDrawer({
 							))}
 						</div>
 					) : (
-						<div className='rounded-lg border border-(--sf-color-border-subtle) bg-muted/60 px-3.5 py-3 text-[12px] text-(--sf-color-shell-tertiary)'>
-							当前没有可展示的详情。
+						<div className='rounded-lg border border-(--sf-color-border-subtle) bg-muted/45 px-3 py-2.5 text-[12px] text-(--sf-color-shell-tertiary)'>
+							当前没有可展示的详情数据。
 						</div>
 					)}
 				</div>

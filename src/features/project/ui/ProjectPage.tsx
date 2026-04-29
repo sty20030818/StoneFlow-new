@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import {
@@ -10,12 +11,15 @@ import {
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
-import { useProjectExecution } from '@/features/project/model/useProjectExecution'
-import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
 import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
+import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import type { ProjectExecutionTask } from '@/features/project/model/types'
+import {
+	SHELL_PROJECT_RECORDS,
+	getShellProjectTasks,
+} from '@/features/workspace-shell/model/shellData'
 import { Button } from '@/shared/ui/base/button'
-import { EmptyPage } from '@/shared/ui/base/empty'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -24,94 +28,104 @@ import {
 	BreadcrumbSeparator,
 } from '@/shared/ui/base/breadcrumb'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
-import { ToastFeedbackBridge } from '@/shared/ui/ToastFeedbackBridge'
 import { Box, FolderIcon } from 'lucide-react'
 
 export function ProjectPage() {
-	const { projectId = 'stoneflow-v1', spaceId = 'work' } = useParams()
+	const { projectId = 'shell-project-stoneflow', spaceId = 'work' } = useParams()
 	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
 	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
 	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
-	const {
-		view,
-		isLoading,
-		loadError,
-		feedback,
-		pendingTaskId,
-		refresh,
-		updateTaskPriority,
-		updateTaskStatus,
-		toggleTaskStatus,
-		moveTaskToTrash,
-	} = useProjectExecution(spaceId, projectId)
+	const project = SHELL_PROJECT_RECORDS.find((item) => item.id === projectId) ?? SHELL_PROJECT_RECORDS[0]
+	const initialTasks = useMemo(() => toProjectExecutionTasks(getShellProjectTasks(project.id)), [project.id])
+	const [tasks, setTasks] = useState<ProjectExecutionTask[]>(initialTasks)
+	const [bannerMessage, setBannerMessage] = useState(
+		'Project 页面保留了面包屑、任务分栏和底部多选条外观，数据来自本地 mock。',
+	)
 	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
-		useTaskSelection(view?.tasks.map((task) => task.id) ?? [])
+		useTaskSelection(tasks.map((task) => task.id))
+
+	function updateTask(
+		task: ProjectExecutionTask,
+		updater: (currentTask: ProjectExecutionTask) => ProjectExecutionTask,
+		message: string,
+	) {
+		setTasks((currentTasks) =>
+			currentTasks.map((currentTask) => (currentTask.id === task.id ? updater(currentTask) : currentTask)),
+		)
+		setBannerMessage(message)
+		return Promise.resolve()
+	}
+
+	function moveTaskToTrash(task: ProjectExecutionTask) {
+		setTasks((currentTasks) => currentTasks.filter((currentTask) => currentTask.id !== task.id))
+		setBannerMessage(`已从本地 mock Project board 中移除「${task.title}」。`)
+		return Promise.resolve()
+	}
 
 	return (
 		<MainCardLayout
-			header={
-				<MainCardHeader
-					breadcrumb={<ProjectBreadcrumb projectName={view?.project.name ?? projectId} />}
-				/>
-			}
+			header={<MainCardHeader breadcrumb={<ProjectBreadcrumb projectName={project.name} />} />}
 			toolbar={
 				<MainCardToolbar
-					onRefresh={() => void refresh()}
-					pills={[{ label: 'All issues', active: true }, { label: 'Active' }, { label: 'Backlog' }]}
-					refreshDisabled={isLoading}
+					onRefresh={() => {
+						setTasks(toProjectExecutionTasks(getShellProjectTasks(project.id)))
+						setBannerMessage('已刷新本地 mock Project board 数据。')
+					}}
+					pills={[
+						{ label: 'All issues', active: true },
+						{ label: 'Active' },
+						{ label: 'Backlog' },
+					]}
 				/>
 			}
 		>
 			<div className='flex min-h-0 flex-1 flex-col'>
-				<ToastFeedbackBridge feedback={feedback} />
+				<StatusNotice className='mb-3' size='sm'>
+					{bannerMessage} 当前 Space：{spaceId}。
+				</StatusNotice>
 
-				{loadError ? (
-					<StatusNotice
-						actions={
-							<Button
-								className='rounded-md'
-								onClick={() => void refresh()}
-								size='sm'
-								variant='outline'
-							>
-								重试
-							</Button>
+				<div className='flex min-h-0 flex-1 flex-col'>
+					<ProjectTaskBoard
+						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
+						onMoveTaskToTrash={moveTaskToTrash}
+						onOpenTask={(taskId) => openDrawer('task', taskId)}
+						onToggleTaskSelection={toggleTaskSelection}
+						onToggleTaskStatus={(task) =>
+							updateTask(
+								task,
+								(currentTask) => ({
+									...currentTask,
+									status: currentTask.status === 'done' ? 'todo' : 'done',
+								}),
+								'已切换本地 mock 任务状态。',
+							)
 						}
-						className='mb-3'
-						role='alert'
-						variant='danger'
-					>
-						<p className='text-sm'>{loadError}</p>
-					</StatusNotice>
-				) : null}
-
-				<EmptyPage>
-					{isLoading ? (
-						<p className='text-sm text-muted-foreground' role='status'>
-							正在加载 Project 执行视图...
-						</p>
-					) : view ? (
-						<ProjectTaskBoard
-							activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-							onMoveTaskToTrash={moveTaskToTrash}
-							onOpenTask={(taskId) => openDrawer('task', taskId)}
-							onToggleTaskSelection={toggleTaskSelection}
-							onUpdateTaskPriority={updateTaskPriority}
-							onUpdateTaskStatus={updateTaskStatus}
-							onToggleTaskStatus={toggleTaskStatus}
-							pendingTaskId={pendingTaskId}
-							projectId={view.project.id}
-							selectedTaskIdSet={selectedTaskIdSet}
-							tasks={view.tasks}
-						/>
-					) : null}
-				</EmptyPage>
+						onUpdateTaskPriority={(task, priority) =>
+							updateTask(
+								task,
+								(currentTask) => ({ ...currentTask, priority }),
+								'已更新本地 mock 优先级。',
+							)
+						}
+						onUpdateTaskStatus={(task, status) =>
+							updateTask(
+								task,
+								(currentTask) => ({ ...currentTask, status }),
+								'已更新本地 mock 状态。',
+							)
+						}
+						pendingTaskId={null}
+						projectId={project.id}
+						selectedTaskIdSet={selectedTaskIdSet}
+						tasks={tasks}
+					/>
+				</div>
 
 				<TaskBulkActionBar
 					action={
 						<Button
 							className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
-							onClick={() => undefined}
+							onClick={() => setBannerMessage('批量动作条已保留，真实批量命令将在后续阶段接回。')}
 							size='sm'
 							type='button'
 							variant='outline'
@@ -153,4 +167,21 @@ function ProjectBreadcrumb({ projectName }: { projectName: string }) {
 			</BreadcrumbList>
 		</Breadcrumb>
 	)
+}
+
+function toProjectExecutionTasks(
+	tasks: ReturnType<typeof getShellProjectTasks>,
+): ProjectExecutionTask[] {
+	return tasks.map((task, index) => ({
+		id: task.id,
+		title: task.title,
+		note: task.note,
+		priority: task.priority,
+		status: task.status,
+		tags: index === 0 ? ['UI shell', 'Mock data'] : ['Static'],
+		dueAt: index === 0 ? '2026-04-30T10:00:00.000Z' : null,
+		completedAt: task.status === 'done' ? '2026-04-28T20:00:00.000Z' : null,
+		createdAt: `2026-04-2${index + 5}T09:00:00.000Z`,
+		updatedAt: `2026-04-2${index + 7}T11:30:00.000Z`,
+	}))
 }

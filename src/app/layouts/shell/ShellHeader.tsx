@@ -61,9 +61,7 @@ type ShellHeaderProps = {
 	currentSpaceId: string
 	activeSection: ShellSectionKey
 	isCommandOpen: boolean
-	isProjectsLoading: boolean
 	projects: ShellProjectLink[]
-	projectsError: string | null
 	onCommandOpenChange: (open: boolean) => void
 	onOpenTaskCreateDialog: () => void
 	onOpenProjectCreateDialog: () => void
@@ -75,14 +73,12 @@ export function ShellHeader({
 	currentSpaceId,
 	activeSection,
 	isCommandOpen,
-	isProjectsLoading,
 	onCommandOpenChange,
 	onOpenProjectCreateDialog,
 	onOpenTaskCreateDialog,
 	onOpenDrawer,
 	onCloseDrawer,
 	projects,
-	projectsError,
 }: ShellHeaderProps) {
 	const navigate = useNavigate()
 	const [isMaximized, setIsMaximized] = useState(false)
@@ -548,17 +544,7 @@ export function ShellHeader({
 						<CommandSeparator />
 
 						<CommandGroup heading='Projects'>
-							{isProjectsLoading ? (
-								<CommandItem disabled value='loading-projects'>
-									<SearchIcon />
-									正在加载项目...
-								</CommandItem>
-							) : projectsError ? (
-								<CommandItem disabled value='projects-error'>
-									<SearchIcon />
-									{projectsError}
-								</CommandItem>
-							) : projects.length === 0 ? (
+							{projects.length === 0 ? (
 								<CommandItem disabled value='empty-projects'>
 									<SearchIcon />
 									当前 Space 还没有项目

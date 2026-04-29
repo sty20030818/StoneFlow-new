@@ -1,4 +1,4 @@
-import { useState, type ComponentType } from 'react'
+import type { ComponentType } from 'react'
 import { NavLink, useMatch, useNavigate } from 'react-router-dom'
 
 import {
@@ -13,9 +13,7 @@ import {
 	toProjectTreeKey,
 	useShellLayoutStore,
 } from '@/app/layouts/shell/model/useShellLayoutStore'
-import type { ShellNavBadges } from '@/app/layouts/shell/model/useShellNavBadges'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
-import { deleteProjectToTrash } from '@/features/trash/api/deleteProjectToTrash'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -59,7 +57,6 @@ import {
 	SidebarRail,
 } from '@/shared/ui/base/sidebar'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
-import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
 import {
 	CheckIcon,
@@ -74,15 +71,13 @@ import {
 	Trash2Icon,
 } from 'lucide-react'
 
+type ShellNavBadges = Partial<Record<ShellSectionKey, string>>
+
 type ShellSidebarProps = {
 	currentSpaceId: string
 	projects: ShellProjectLink[]
-	isProjectsLoading: boolean
-	projectsError: string | null
 	navBadges?: ShellNavBadges
-	onOpenTaskCreateDialog: () => void
 	onOpenProjectCreateDialog: (parentProjectId?: string | null) => void
-	onRefreshProjects?: () => void
 }
 
 const SIDEBAR_ENTITY_SELECTOR = [
@@ -104,11 +99,8 @@ type SidebarRouteItem = {
 export function ShellSidebar({
 	currentSpaceId,
 	projects,
-	isProjectsLoading,
-	projectsError,
 	navBadges = {},
 	onOpenProjectCreateDialog,
-	onRefreshProjects = () => undefined,
 }: ShellSidebarProps) {
 	const navigate = useNavigate()
 	const { isMobile } = useSidebar()
@@ -117,9 +109,7 @@ export function ShellSidebar({
 	const projectTreeCollapsed = useShellLayoutStore(selectProjectTreeCollapsed)
 	const setNavItemVisible = useShellLayoutStore((state) => state.setNavItemVisible)
 	const resetNavItemVisibility = useShellLayoutStore((state) => state.resetNavItemVisibility)
-	const bumpProjectDataVersion = useShellLayoutStore((state) => state.bumpProjectDataVersion)
 	const setProjectTreeCollapsed = useShellLayoutStore((state) => state.setProjectTreeCollapsed)
-	const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null)
 	const visibleNavItems = SHELL_NAV_ITEMS.filter((item) => !hiddenNavItemKeys.includes(item.key))
 	const visibleNavItemCount = visibleNavItems.length
 	const footerItems = SHELL_FOOTER_ITEMS.map((item) => ({
@@ -127,23 +117,6 @@ export function ShellSidebar({
 		badge: navBadges[item.key],
 		to: item.to(currentSpaceId),
 	}))
-
-	const handleDeleteProject = async (projectId: string) => {
-		setDeletingProjectId(projectId)
-
-		try {
-			await deleteProjectToTrash({
-				spaceSlug: currentSpaceId,
-				projectId,
-			})
-			bumpProjectDataVersion()
-			onRefreshProjects()
-		} catch (error) {
-			console.error('项目右键菜单删除失败', { error })
-		} finally {
-			setDeletingProjectId(null)
-		}
-	}
 
 	const handleSidebarContextMenu = (event: React.MouseEvent<HTMLElement>) => {
 		const target = event.target
@@ -181,7 +154,6 @@ export function ShellSidebar({
 										</DropdownMenuTrigger>
 										<DropdownMenuContent
 											align='start'
-											className=''
 											side={isMobile ? 'bottom' : 'right'}
 											sideOffset={6}
 										>
@@ -210,12 +182,7 @@ export function ShellSidebar({
 											</DropdownMenuGroup>
 											<DropdownMenuSeparator />
 											<DropdownMenuGroup>
-												<DropdownMenuItem
-													className='gap-2 p-2'
-													onSelect={(event) => {
-														event.preventDefault()
-													}}
-												>
+												<DropdownMenuItem className='gap-2 p-2' disabled>
 													<PlusIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
 													<span className='text-(--sf-color-shell-secondary)'>Add space</span>
 												</DropdownMenuItem>
@@ -262,63 +229,18 @@ export function ShellSidebar({
 							</div>
 
 							<SidebarGroupContent>
-								{isProjectsLoading ? (
-									<StatusNotice className='text-[12px]' size='sm'>
-										正在加载项目...
-									</StatusNotice>
-								) : projectsError ? (
-									<StatusNotice
-										actions={
-											<Button
-												className='h-7 rounded-md px-2 text-[12px]'
-												onClick={onRefreshProjects}
-												size='sm'
-												variant='outline'
-											>
-												重试加载
-											</Button>
-										}
-										className='text-[12px]'
-										size='sm'
-										variant='danger'
-									>
-										<p className='leading-5'>{projectsError}</p>
-									</StatusNotice>
-								) : projects.length === 0 ? (
-									<StatusNotice
-										actions={
-											<Button
-												className='w-full justify-center rounded-md'
-												onClick={() => onOpenProjectCreateDialog()}
-												size='sm'
-											>
-												创建第一个项目
-											</Button>
-										}
-										className='text-[12px]'
-										layout='stack'
-										size='sm'
-										title='当前 Space 还没有项目'
-									/>
-								) : (
-									<SidebarMenu>
-										{projects.map((project) => (
-											<ProjectSidebarMenuItem
-												currentSpaceId={currentSpaceId}
-												deletingProjectId={deletingProjectId}
-												key={project.id}
-												onMoveProjectToTrash={(projectId) => void handleDeleteProject(projectId)}
-												onNavigateToProject={(projectId) =>
-													navigate(`/space/${currentSpaceId}/project/${projectId}`)
-												}
-												onOpenProjectCreateDialog={onOpenProjectCreateDialog}
-												onToggleProjectCollapsed={(payload) => setProjectTreeCollapsed(payload)}
-												projectTreeCollapsed={projectTreeCollapsed}
-												project={project}
-											/>
-										))}
-									</SidebarMenu>
-								)}
+								<SidebarMenu>
+									{projects.map((project) => (
+										<ProjectSidebarMenuItem
+											currentSpaceId={currentSpaceId}
+											key={project.id}
+											onOpenProjectCreateDialog={onOpenProjectCreateDialog}
+											onToggleProjectCollapsed={(payload) => setProjectTreeCollapsed(payload)}
+											project={project}
+											projectTreeCollapsed={projectTreeCollapsed}
+										/>
+									))}
+								</SidebarMenu>
 							</SidebarGroupContent>
 						</SidebarGroup>
 					</SidebarContent>
@@ -358,11 +280,8 @@ export function ShellSidebar({
 type ProjectSidebarMenuItemProps = {
 	currentSpaceId: string
 	project: ShellProjectLink
-	deletingProjectId: string | null
 	projectTreeCollapsed: Record<string, boolean>
 	onOpenProjectCreateDialog: (parentProjectId?: string | null) => void
-	onNavigateToProject: (projectId: string) => void
-	onMoveProjectToTrash: (projectId: string) => void
 	onToggleProjectCollapsed: (payload: {
 		spaceId: string
 		projectId: string
@@ -373,11 +292,8 @@ type ProjectSidebarMenuItemProps = {
 function ProjectSidebarMenuItem({
 	currentSpaceId,
 	project,
-	deletingProjectId,
 	projectTreeCollapsed,
 	onOpenProjectCreateDialog,
-	onNavigateToProject,
-	onMoveProjectToTrash,
 	onToggleProjectCollapsed,
 }: ProjectSidebarMenuItemProps) {
 	const projectPath = `/space/${currentSpaceId}/project/${project.id}`
@@ -404,11 +320,9 @@ function ProjectSidebarMenuItem({
 				<div className='flex items-center gap-1'>
 					<div className='min-w-0 flex-1'>
 						<ProjectSidebarRouteMenuItem
-							isBusy={deletingProjectId === project.id}
 							label={project.label}
 							onCreateChildProject={() => onOpenProjectCreateDialog(project.id)}
-							onMoveToTrash={() => onMoveProjectToTrash(project.id)}
-							onOpenProject={() => onNavigateToProject(project.id)}
+							onOpenProject={() => undefined}
 							to={projectPath}
 						/>
 					</div>
@@ -439,11 +353,9 @@ function ProjectSidebarMenuItem({
 							{project.children?.map((childProject) => (
 								<SidebarMenuSubItem key={childProject.id}>
 									<ProjectSidebarSubRouteMenuItem
-										isBusy={deletingProjectId === childProject.id}
 										label={childProject.label}
 										onCreateChildProject={() => onOpenProjectCreateDialog(childProject.id)}
-										onMoveToTrash={() => onMoveProjectToTrash(childProject.id)}
-										onOpenProject={() => onNavigateToProject(childProject.id)}
+										onOpenProject={() => undefined}
 										to={`/space/${currentSpaceId}/project/${childProject.id}`}
 									/>
 								</SidebarMenuSubItem>
@@ -602,20 +514,16 @@ type ProjectSidebarRouteMenuItemProps = {
 	to: string
 	label: string
 	size?: 'default' | 'sm'
-	isBusy?: boolean
 	onOpenProject: () => void
 	onCreateChildProject: () => void
-	onMoveToTrash: () => void
 }
 
 function ProjectSidebarRouteMenuItem({
 	to,
 	label,
 	size = 'default',
-	isBusy,
 	onOpenProject,
 	onCreateChildProject,
-	onMoveToTrash,
 }: ProjectSidebarRouteMenuItemProps) {
 	const isActive = !!useMatch({ end: true, path: to })
 
@@ -647,7 +555,7 @@ function ProjectSidebarRouteMenuItem({
 				</ContextMenuGroup>
 				<ContextMenuSeparator />
 				<ContextMenuGroup>
-					<ContextMenuItem disabled={isBusy} onSelect={onMoveToTrash} variant='destructive'>
+					<ContextMenuItem disabled variant='destructive'>
 						<Trash2Icon />
 						移入回收站
 					</ContextMenuItem>
@@ -658,7 +566,7 @@ function ProjectSidebarRouteMenuItem({
 }
 
 function ProjectSidebarSubRouteMenuItem(props: ProjectSidebarRouteMenuItemProps) {
-	const { to, label, isBusy, onOpenProject, onCreateChildProject, onMoveToTrash } = props
+	const { to, label, onOpenProject, onCreateChildProject } = props
 	const isActive = !!useMatch({ end: true, path: to })
 
 	return (
@@ -684,7 +592,7 @@ function ProjectSidebarSubRouteMenuItem(props: ProjectSidebarRouteMenuItemProps)
 				</ContextMenuGroup>
 				<ContextMenuSeparator />
 				<ContextMenuGroup>
-					<ContextMenuItem disabled={isBusy} onSelect={onMoveToTrash} variant='destructive'>
+					<ContextMenuItem disabled variant='destructive'>
 						<Trash2Icon />
 						移入回收站
 					</ContextMenuItem>

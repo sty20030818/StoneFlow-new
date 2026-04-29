@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
-import { INBOX_PRIORITY_OPTIONS } from '@/features/inbox/model/constants'
-import type { ProjectRecord, ProjectTaskStatus } from '@/features/project/model/types'
-import { useTaskCreate } from '@/features/task/model/useTaskCreate'
+import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import { TASK_PRIORITY_OPTIONS } from '@/features/task/model/taskPriority'
+import type { ShellTaskStatus } from '@/features/workspace-shell/model/shellData'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import {
@@ -13,15 +13,18 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/shared/ui/base/select'
-import { Textarea } from '@/shared/ui/base/textarea'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
+import { Textarea } from '@/shared/ui/base/textarea'
 
 type TaskCreateModalContentProps = {
 	currentSpaceId: string
 	initialProjectId: string | null
-	initialStatus: ProjectTaskStatus
+	initialStatus: ShellTaskStatus
 	onClose: () => void
-	projects: ProjectRecord[]
+	projects: Array<{
+		id: string
+		name: string
+	}>
 	projectsLoading: boolean
 }
 
@@ -29,7 +32,7 @@ const EMPTY_PRIORITY_VALUE = '__priority-empty__'
 const EMPTY_PROJECT_VALUE = '__project-empty__'
 
 /**
- * 新建任务弹窗中的核心表单。
+ * 保留任务创建弹窗的完整表单外观，但在前置阶段 B 只做本地表单状态演示。
  */
 export function TaskCreateModalContent({
 	currentSpaceId,
@@ -39,25 +42,15 @@ export function TaskCreateModalContent({
 	projects,
 	projectsLoading,
 }: TaskCreateModalContentProps) {
-	const {
-		title,
-		note,
-		priority,
-		projectId,
-		status,
-		errorMessage,
-		createdTask,
-		setTitle,
-		setNote,
-		setPriority,
-		setProjectId,
-		reset,
-		submit,
-	} = useTaskCreate({
-		currentSpaceId,
-		initialProjectId,
-		initialStatus,
-	})
+	const [title, setTitle] = useState('')
+	const [note, setNote] = useState('')
+	const [priority, setPriority] = useState<TaskPriorityValue>('high')
+	const [projectId, setProjectId] = useState(initialProjectId ?? '')
+	const [status, setStatus] = useState<'idle' | 'submitting' | 'success'>('idle')
+
+	useEffect(() => {
+		setProjectId(initialProjectId ?? '')
+	}, [initialProjectId])
 
 	useEffect(() => {
 		if (status !== 'success') {
@@ -65,14 +58,30 @@ export function TaskCreateModalContent({
 		}
 
 		const timer = window.setTimeout(() => {
-			reset()
+			handleReset()
 			onClose()
-		}, 800)
+		}, 900)
 
 		return () => {
 			window.clearTimeout(timer)
 		}
-	}, [onClose, reset, status])
+	}, [onClose, status])
+
+	function handleReset() {
+		setTitle('')
+		setNote('')
+		setPriority('high')
+		setProjectId(initialProjectId ?? '')
+		setStatus('idle')
+	}
+
+	function handleSubmit() {
+		setStatus('submitting')
+
+		window.setTimeout(() => {
+			setStatus('success')
+		}, 320)
+	}
 
 	return (
 		<div className='flex flex-col gap-4'>
@@ -82,7 +91,7 @@ export function TaskCreateModalContent({
 					<Input
 						autoFocus
 						className='h-11 rounded-md border-input bg-card'
-						disabled={status === 'submitting' || status === 'success'}
+						disabled={status !== 'idle'}
 						id='task-create-title'
 						onChange={(event) => setTitle(event.currentTarget.value)}
 						placeholder='例如：整理今天的任务捕获链路'
@@ -94,8 +103,8 @@ export function TaskCreateModalContent({
 					<label className='flex flex-col gap-1.5'>
 						<span className='text-[12px] font-medium text-foreground'>优先级</span>
 						<Select
-							disabled={status === 'submitting' || status === 'success'}
-							onValueChange={(value) => setPriority(value === EMPTY_PRIORITY_VALUE ? '' : value)}
+							disabled={status !== 'idle'}
+							onValueChange={(value) => setPriority(value === EMPTY_PRIORITY_VALUE ? '' : (value as TaskPriorityValue))}
 							value={priority || EMPTY_PRIORITY_VALUE}
 						>
 							<SelectTrigger
@@ -106,10 +115,12 @@ export function TaskCreateModalContent({
 							</SelectTrigger>
 							<SelectContent position='popper'>
 								<SelectGroup>
-									<SelectItem value={EMPTY_PRIORITY_VALUE}>暂不设置</SelectItem>
-									{INBOX_PRIORITY_OPTIONS.map((option) => (
-										<SelectItem key={option.value} value={option.value}>
-											{option.label}
+									{TASK_PRIORITY_OPTIONS.map((option) => (
+										<SelectItem
+											key={option.value || EMPTY_PRIORITY_VALUE}
+											value={option.value || EMPTY_PRIORITY_VALUE}
+										>
+											{option.value === '' ? '暂不设置' : option.label}
 										</SelectItem>
 									))}
 								</SelectGroup>
@@ -120,12 +131,7 @@ export function TaskCreateModalContent({
 					<label className='flex flex-col gap-1.5'>
 						<span className='text-[12px] font-medium text-foreground'>项目</span>
 						<Select
-							disabled={
-								projectsLoading ||
-								projects.length === 0 ||
-								status === 'submitting' ||
-								status === 'success'
-							}
+							disabled={projectsLoading || status !== 'idle'}
 							onValueChange={(value) => setProjectId(value === EMPTY_PROJECT_VALUE ? '' : value)}
 							value={projectId || EMPTY_PROJECT_VALUE}
 						>
@@ -134,13 +140,7 @@ export function TaskCreateModalContent({
 								className='h-11 w-full rounded-md border-input bg-card'
 							>
 								<SelectValue
-									placeholder={
-										projectsLoading
-											? '正在加载项目...'
-											: projects.length === 0
-												? '暂无项目'
-												: '选择项目'
-									}
+									placeholder={projectsLoading ? '正在加载项目...' : '选择项目'}
 								/>
 							</SelectTrigger>
 							<SelectContent position='popper'>
@@ -161,7 +161,7 @@ export function TaskCreateModalContent({
 					<span className='text-[12px] font-medium text-foreground'>备注</span>
 					<Textarea
 						className='min-h-28 rounded-md border-input bg-card'
-						disabled={status === 'submitting' || status === 'success'}
+						disabled={status !== 'idle'}
 						id='task-create-note'
 						onChange={(event) => setNote(event.currentTarget.value)}
 						placeholder='可选，记录上下文、下一步或补充说明。'
@@ -170,23 +170,23 @@ export function TaskCreateModalContent({
 				</label>
 			</div>
 
-			{status === 'error' && errorMessage ? (
-				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
-					{errorMessage}
-				</StatusNotice>
-			) : null}
-
-			{status === 'success' && createdTask ? (
+			{status === 'success' ? (
 				<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
-					已创建“{createdTask.title}”。
+					已保留“新建任务”弹窗壳层。
+					{title.trim() ? ` 任务标题示例：${title.trim()}。` : ''}
+					当前 Space：{currentSpaceId} · 目标状态：{initialStatus === 'done' ? 'Done' : 'Todo'}。
 				</StatusNotice>
-			) : null}
+			) : (
+				<StatusNotice className='text-[12px] leading-5' role='status' size='sm'>
+					前置阶段 B 只保留表单交互与视觉层，真实任务创建逻辑将在后续阶段接入。
+				</StatusNotice>
+			)}
 
 			<div className='flex items-center justify-end gap-2 border-t border-(--sf-color-divider) pt-3'>
 				<Button
 					disabled={status === 'submitting'}
 					onClick={() => {
-						reset()
+						handleReset()
 						onClose()
 					}}
 					variant='ghost'
@@ -194,12 +194,10 @@ export function TaskCreateModalContent({
 					取消
 				</Button>
 				<Button
-					disabled={status === 'submitting' || status === 'success'}
-					onClick={() => {
-						void submit()
-					}}
+					disabled={status !== 'idle' || title.trim().length === 0}
+					onClick={handleSubmit}
 				>
-					{status === 'submitting' ? '创建中...' : status === 'success' ? '已创建' : '创建任务'}
+					{status === 'submitting' ? '创建中...' : status === 'success' ? '已保留壳层' : '创建任务'}
 				</Button>
 			</div>
 		</div>

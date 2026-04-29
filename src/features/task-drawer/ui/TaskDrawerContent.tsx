@@ -1,11 +1,10 @@
-import { open as openDialog } from '@tauri-apps/plugin-dialog'
+import { useMemo, useState } from 'react'
 import { ExternalLink, File, Folder, Link2, Trash2 } from 'lucide-react'
-import { useState } from 'react'
 
 import { getSpaceLabel } from '@/app/layouts/shell/config'
-import { INBOX_PRIORITY_OPTIONS } from '@/features/inbox/model/constants'
-import { useTaskDrawer } from '@/features/task-drawer/model/useTaskDrawer'
-import type { TaskDrawerResource } from '@/features/task-drawer/model/types'
+import { getShellProjectOptions, getShellTaskRecord, getShellTaskResources } from '@/features/workspace-shell/model/shellData'
+import type { ShellTaskResource } from '@/features/workspace-shell/model/shellData'
+import { EMPTY_TASK_PRIORITY_VALUE, TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import {
@@ -18,7 +17,6 @@ import {
 } from '@/shared/ui/base/select'
 import { Textarea } from '@/shared/ui/base/textarea'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
-import { ToastFeedbackBridge } from '@/shared/ui/ToastFeedbackBridge'
 
 type TaskDrawerContentProps = {
 	currentSpaceId: string
@@ -26,7 +24,6 @@ type TaskDrawerContentProps = {
 	onClose: () => void
 }
 
-const EMPTY_PRIORITY_VALUE = '__task-drawer-priority-empty__'
 const EMPTY_PROJECT_VALUE = '__task-drawer-project-empty__'
 const DRAWER_FIELD_CLASS = 'rounded-md border-input bg-card'
 const DRAWER_SECTION_CLASS = 'rounded-lg border border-(--sf-color-border-subtle) bg-muted/35'
@@ -36,59 +33,29 @@ const DRAWER_SECTION_TITLE_CLASS =
 	'text-[11px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'
 
 /**
- * 真实 Task Drawer 内容，负责详情查询和基础字段编辑。
+ * 保留任务详情抽屉的完整表单与资源区块，数据来自本地 mock。
  */
 export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawerContentProps) {
-	const {
-		detail,
-		draft,
-		isDirty,
-		isLoading,
-		isSaving,
-		isDeleting,
-		isResourceLoading,
-		isAddingResource,
-		pendingResourceId,
-		loadError,
-		saveError,
-		deleteError,
-		resourceError,
-		feedback,
-		resourceFeedback,
-		refresh,
-		updateDraft,
-		save,
-		deleteTask,
-		addResource,
-		openResource,
-		deleteResource,
-	} = useTaskDrawer(currentSpaceId, taskId)
+	const task = getShellTaskRecord(taskId)
+	const projectOptions = getShellProjectOptions()
+	const initialResources = useMemo(() => getShellTaskResources(taskId), [taskId])
+	const [draftTitle, setDraftTitle] = useState(task?.title ?? '')
+	const [draftNote, setDraftNote] = useState(task?.note ?? '')
+	const [draftPriority, setDraftPriority] = useState<TaskPriorityValue>(task?.priority ?? '')
+	const [draftProjectId, setDraftProjectId] = useState(task?.projectId ?? '')
+	const [draftStatus, setDraftStatus] = useState<'todo' | 'done'>(task?.status ?? 'todo')
 	const [docLinkTitle, setDocLinkTitle] = useState('')
 	const [docLinkUrl, setDocLinkUrl] = useState('')
+	const [resources, setResources] = useState<ShellTaskResource[]>(initialResources)
+	const [lastAction, setLastAction] = useState('已保留任务详情编辑 UI。')
 
-	if (isLoading) {
-		return (
-			<div className='space-y-3'>
-				<div className='rounded-lg border border-(--sf-color-border-subtle) bg-muted/60 px-3.5 py-3'>
-					<p className='text-[12px] font-medium text-foreground'>正在加载任务详情...</p>
-					<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
-						会从 {getSpaceLabel(currentSpaceId)} 的真实数据中读取任务详情。
-					</p>
-				</div>
-			</div>
-		)
-	}
-
-	if (loadError || !detail) {
+	if (!task) {
 		return (
 			<div className='space-y-4'>
 				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
-					{loadError ?? '当前没有可展示的任务详情。'}
+					当前没有可展示的任务详情。
 				</StatusNotice>
 				<div className='flex items-center justify-end gap-2'>
-					<Button className='rounded-md' onClick={() => void refresh()} variant='outline'>
-						重试
-					</Button>
 					<Button className='rounded-md' onClick={onClose} variant='ghost'>
 						关闭
 					</Button>
@@ -97,44 +64,40 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 		)
 	}
 
-	const errorMessage = deleteError ?? saveError
 	const canCreateDocLink = docLinkTitle.trim().length > 0 && docLinkUrl.trim().length > 0
 
-	async function handleCreateDocLink() {
-		const created = await addResource({
-			type: 'doc_link',
-			title: docLinkTitle,
-			target: docLinkUrl,
-		})
-
-		if (created) {
-			setDocLinkTitle('')
-			setDocLinkUrl('')
-		}
-	}
-
-	async function handleSelectLocalResource(type: 'local_file' | 'local_folder') {
-		const selectedPath = await openDialog({
-			directory: type === 'local_folder',
-			multiple: false,
-		})
-
-		if (!selectedPath) {
+	function handleAddDocLink() {
+		if (!canCreateDocLink) {
 			return
 		}
 
-		await addResource({
-			type,
-			title: getPathName(selectedPath),
-			target: selectedPath,
-		})
+		setResources((currentResources) => [
+			...currentResources,
+			{
+				id: `resource-${Date.now()}`,
+				type: 'doc_link',
+				title: docLinkTitle.trim(),
+				target: docLinkUrl.trim(),
+			},
+		])
+		setDocLinkTitle('')
+		setDocLinkUrl('')
+		setLastAction('已添加一个本地 mock 文档链接。')
+	}
+
+	function handleDeleteResource(resourceId: string) {
+		setResources((currentResources) =>
+			currentResources.filter((resource) => resource.id !== resourceId),
+		)
+		setLastAction('已从抽屉中移除一个 mock 资源。')
+	}
+
+	function handleSave() {
+		setLastAction('已保存本地 mock 编辑结果，真实详情写入将在后续阶段接入。')
 	}
 
 	return (
 		<div className='space-y-4'>
-			<ToastFeedbackBridge feedback={feedback} />
-			<ToastFeedbackBridge feedback={resourceFeedback} />
-
 			<div className='space-y-1.5'>
 				<p className={DRAWER_SECTION_TITLE_CLASS}>任务详情</p>
 				<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
@@ -148,10 +111,9 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 					<Input
 						autoFocus
 						className={`h-9 ${DRAWER_FIELD_CLASS}`}
-						disabled={isSaving}
 						id='task-drawer-title'
-						onChange={(event) => updateDraft({ title: event.currentTarget.value })}
-						value={draft.title}
+						onChange={(event) => setDraftTitle(event.currentTarget.value)}
+						value={draftTitle}
 					/>
 				</label>
 
@@ -159,11 +121,10 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 					<span className={DRAWER_SECTION_TITLE_CLASS}>描述 / 备注</span>
 					<Textarea
 						className={`min-h-24 ${DRAWER_FIELD_CLASS}`}
-						disabled={isSaving}
 						id='task-drawer-note'
-						onChange={(event) => updateDraft({ note: event.currentTarget.value })}
+						onChange={(event) => setDraftNote(event.currentTarget.value)}
 						placeholder='补充任务上下文、验收标准或当前判断。'
-						value={draft.note}
+						value={draftNote}
 					/>
 				</label>
 			</div>
@@ -172,13 +133,10 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				<label className='space-y-1.5'>
 					<span className={DRAWER_SECTION_TITLE_CLASS}>优先级</span>
 					<Select
-						disabled={isSaving}
 						onValueChange={(value) =>
-							updateDraft({
-								priority: value === EMPTY_PRIORITY_VALUE ? '' : value,
-							})
+							setDraftPriority(value === EMPTY_TASK_PRIORITY_VALUE ? '' : (value as TaskPriorityValue))
 						}
-						value={draft.priority || EMPTY_PRIORITY_VALUE}
+						value={draftPriority || EMPTY_TASK_PRIORITY_VALUE}
 					>
 						<SelectTrigger
 							aria-label='优先级'
@@ -189,9 +147,11 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						</SelectTrigger>
 						<SelectContent data-drawer-owned-overlay='true' position='popper'>
 							<SelectGroup>
-								<SelectItem value={EMPTY_PRIORITY_VALUE}>待补齐</SelectItem>
-								{INBOX_PRIORITY_OPTIONS.map((option) => (
-									<SelectItem key={option.value} value={option.value}>
+								{TASK_PRIORITY_OPTIONS.map((option) => (
+									<SelectItem
+										key={option.value || EMPTY_TASK_PRIORITY_VALUE}
+										value={option.value || EMPTY_TASK_PRIORITY_VALUE}
+									>
 										{option.label}
 									</SelectItem>
 								))}
@@ -203,13 +163,10 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				<label className='space-y-1.5'>
 					<span className={DRAWER_SECTION_TITLE_CLASS}>项目</span>
 					<Select
-						disabled={isSaving}
 						onValueChange={(value) =>
-							updateDraft({
-								projectId: value === EMPTY_PROJECT_VALUE ? '' : value,
-							})
+							setDraftProjectId(value === EMPTY_PROJECT_VALUE ? '' : value)
 						}
-						value={draft.projectId || EMPTY_PROJECT_VALUE}
+						value={draftProjectId || EMPTY_PROJECT_VALUE}
 					>
 						<SelectTrigger
 							aria-label='项目'
@@ -221,7 +178,7 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						<SelectContent data-drawer-owned-overlay='true' position='popper'>
 							<SelectGroup>
 								<SelectItem value={EMPTY_PROJECT_VALUE}>未归类</SelectItem>
-								{detail.projects.map((project) => (
+								{projectOptions.map((project) => (
 									<SelectItem key={project.id} value={project.id}>
 										{project.name}
 									</SelectItem>
@@ -234,13 +191,8 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 				<label className='space-y-1.5'>
 					<span className={DRAWER_SECTION_TITLE_CLASS}>状态</span>
 					<Select
-						disabled={isSaving}
-						onValueChange={(value) =>
-							updateDraft({
-								status: value as 'todo' | 'done',
-							})
-						}
-						value={draft.status}
+						onValueChange={(value) => setDraftStatus(value as 'todo' | 'done')}
+						value={draftStatus}
 					>
 						<SelectTrigger
 							aria-label='状态'
@@ -257,207 +209,75 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 						</SelectContent>
 					</Select>
 				</label>
-			</div>
 
-			<section
-				className={`${DRAWER_SECTION_CLASS} space-y-3 px-3.5 py-3.5`}
-				aria-labelledby='task-resources-title'
-			>
-				<div className='flex items-center justify-between gap-2'>
-					<div className='space-y-1'>
-						<h3 className={DRAWER_SECTION_TITLE_CLASS} id='task-resources-title'>
-							资源
-						</h3>
-						<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
-							挂载与当前任务直接相关的链接、文件或文件夹。
-						</p>
-					</div>
-					<div className='flex items-center gap-1.5'>
-						<Button
-							aria-label='选择文件'
-							className='rounded-md'
-							disabled={isAddingResource}
-							onClick={() => {
-								void handleSelectLocalResource('local_file')
-							}}
-							size='icon-sm'
-							title='选择文件'
-							type='button'
-							variant='outline'
-						>
-							<File />
-						</Button>
-						<Button
-							aria-label='选择文件夹'
-							className='rounded-md'
-							disabled={isAddingResource}
-							onClick={() => {
-								void handleSelectLocalResource('local_folder')
-							}}
-							size='icon-sm'
-							title='选择文件夹'
-							type='button'
-							variant='outline'
-						>
-							<Folder />
-						</Button>
+				<div className='space-y-1.5'>
+					<span className={DRAWER_SECTION_TITLE_CLASS}>更新时间</span>
+					<div className={`flex h-9 items-center rounded-md px-3 text-[12px] text-(--sf-color-shell-secondary) ${DRAWER_FIELD_CLASS}`}>
+						{task.updatedLabel}
 					</div>
 				</div>
+			</div>
 
-				<div className='grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_auto]'>
+			<div className={`${DRAWER_SECTION_CLASS} space-y-3 px-3.5 py-3.5`}>
+				<div className='flex items-center justify-between gap-3'>
+					<div>
+						<p className={DRAWER_SECTION_TITLE_CLASS}>资源</p>
+						<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
+							保留文档、文件夹和链接的列表样式，后续阶段再接入真实资源能力。
+						</p>
+					</div>
+					<Button className='rounded-md' onClick={handleSave} size='sm' variant='outline'>
+						保存
+					</Button>
+				</div>
+
+				<div className='space-y-2'>
+					{resources.map((resource) => (
+						<ResourceRow
+							key={resource.id}
+							onDelete={() => handleDeleteResource(resource.id)}
+							resource={resource}
+						/>
+					))}
+				</div>
+
+				<div className='grid gap-2 md:grid-cols-[1fr_1.2fr_auto]'>
 					<Input
-						aria-label='资源标题'
-						className={`h-8 text-[12px] ${DRAWER_FIELD_CLASS}`}
-						disabled={isAddingResource}
+						className={`h-9 ${DRAWER_FIELD_CLASS}`}
 						onChange={(event) => setDocLinkTitle(event.currentTarget.value)}
 						placeholder='链接标题'
 						value={docLinkTitle}
 					/>
 					<Input
-						aria-label='资源 URL'
-						className={`h-8 text-[12px] ${DRAWER_FIELD_CLASS}`}
-						disabled={isAddingResource}
+						className={`h-9 ${DRAWER_FIELD_CLASS}`}
 						onChange={(event) => setDocLinkUrl(event.currentTarget.value)}
-						placeholder='https://...'
+						placeholder='https://example.com'
 						value={docLinkUrl}
 					/>
 					<Button
 						className='rounded-md'
-						disabled={isAddingResource || !canCreateDocLink}
-						onClick={() => void handleCreateDocLink()}
-						size='sm'
+						disabled={!canCreateDocLink}
+						onClick={handleAddDocLink}
 						type='button'
 					>
 						添加链接
 					</Button>
 				</div>
-
-				<div className='space-y-2'>
-					{isResourceLoading ? <p className={DRAWER_HELP_CLASS}>正在刷新资源...</p> : null}
-
-					{detail.resources.length === 0 ? (
-						<p className='rounded-lg border border-dashed border-(--sf-color-border) bg-muted/30 px-3 py-3 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
-							暂无资源。
-						</p>
-					) : (
-						<ul className='space-y-2'>
-							{detail.resources.map((resource) => {
-								const isPending = pendingResourceId === resource.id
-
-								return (
-									<li
-										className={`flex items-center gap-2 px-3 py-2 ${DRAWER_SECTION_CLASS}`}
-										key={resource.id}
-									>
-										<div className='flex size-8 shrink-0 items-center justify-center rounded-md border border-(--sf-color-border-subtle) bg-card text-(--sf-color-shell-tertiary) shadow-(--sf-shadow-panel)'>
-											<ResourceIcon resource={resource} />
-										</div>
-										<div className='min-w-0 flex-1'>
-											<p className='truncate text-[12px] font-medium text-foreground'>
-												{resource.title}
-											</p>
-											<p className='truncate text-[11px] text-(--sf-color-shell-tertiary)'>
-												{getResourceTypeLabel(resource.type)} · {getTargetSummary(resource.target)}
-											</p>
-										</div>
-										<Button
-											aria-label={`打开 ${resource.title}`}
-											disabled={isPending}
-											onClick={() => void openResource(resource.id)}
-											size='icon-sm'
-											title='打开资源'
-											type='button'
-											variant='ghost'
-										>
-											<ExternalLink />
-										</Button>
-										<Button
-											aria-label={`移除 ${resource.title}`}
-											disabled={isPending}
-											onClick={() => void deleteResource(resource.id)}
-											size='icon-sm'
-											title='移除资源'
-											type='button'
-											variant='ghost'
-										>
-											<Trash2 />
-										</Button>
-									</li>
-								)
-							})}
-						</ul>
-					)}
-				</div>
-
-				{resourceError ? (
-					<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
-						{resourceError}
-					</StatusNotice>
-				) : null}
-			</section>
-
-			{errorMessage ? (
-				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
-					{errorMessage}
-				</StatusNotice>
-			) : null}
-
-			<div className={`${DRAWER_SECTION_CLASS} px-3.5 py-3`}>
-				<p className={DRAWER_SECTION_TITLE_CLASS}>时间信息</p>
-				<p className='mt-2 text-[12px] leading-5 text-foreground'>
-					创建于 {new Date(detail.task.createdAt).toLocaleString('zh-CN')}
-				</p>
-				<p className='mt-1 text-[12px] leading-5 text-foreground'>
-					更新于 {new Date(detail.task.updatedAt).toLocaleString('zh-CN')}
-				</p>
-				{detail.task.completedAt ? (
-					<p className='mt-1 text-[12px] leading-5 text-foreground'>
-						完成于 {new Date(detail.task.completedAt).toLocaleString('zh-CN')}
-					</p>
-				) : null}
 			</div>
 
-			<StatusNotice
-				description='删除后任务会从主列表中移除，并进入 Trash 数据层等待后续恢复能力接入。'
-				title='删除任务'
-				variant='danger'
-			/>
+			<div className={DRAWER_HELP_CLASS}>{lastAction}</div>
 
-			<div className='flex items-center justify-between gap-2 border-t border-(--sf-color-divider) pt-3'>
-				<Button
-					className='rounded-md'
-					disabled={isSaving || isDeleting}
-					onClick={() => {
-						void (async () => {
-							const deleted = await deleteTask()
-
-							if (deleted) {
-								onClose()
-							}
-						})()
-					}}
-					variant='destructive'
-				>
-					{isDeleting ? '删除中...' : '删除任务'}
+			<div className='flex items-center justify-between gap-2'>
+				<Button className='rounded-md' type='button' variant='ghost'>
+					<Trash2 />
+					移入回收站
 				</Button>
-
 				<div className='flex items-center gap-2'>
-					<Button
-						className='rounded-md'
-						disabled={isSaving || isDeleting}
-						onClick={onClose}
-						variant='ghost'
-					>
+					<Button className='rounded-md' onClick={onClose} type='button' variant='ghost'>
 						关闭
 					</Button>
-					<Button
-						className='rounded-md'
-						disabled={isLoading || isSaving || isDeleting || !isDirty}
-						onClick={() => {
-							void save()
-						}}
-					>
-						{isSaving ? '保存中...' : '保存修改'}
+					<Button className='rounded-md' onClick={handleSave} type='button'>
+						保存修改
 					</Button>
 				</div>
 			</div>
@@ -465,39 +285,31 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 	)
 }
 
-function ResourceIcon({ resource }: { resource: TaskDrawerResource }) {
-	if (resource.type === 'doc_link') {
-		return <Link2 className='size-4' />
-	}
+function ResourceRow({
+	resource,
+	onDelete,
+}: {
+	resource: ShellTaskResource
+	onDelete: () => void
+}) {
+	const ResourceIcon =
+		resource.type === 'doc_link' ? Link2 : resource.type === 'local_folder' ? Folder : File
 
-	if (resource.type === 'local_folder') {
-		return <Folder className='size-4' />
-	}
-
-	return <File className='size-4' />
-}
-
-function getResourceTypeLabel(type: TaskDrawerResource['type']) {
-	switch (type) {
-		case 'doc_link':
-			return '链接'
-		case 'local_file':
-			return '文件'
-		case 'local_folder':
-			return '文件夹'
-	}
-}
-
-function getTargetSummary(target: string) {
-	if (target.startsWith('http://') || target.startsWith('https://')) {
-		return target.replace(/^https?:\/\//, '')
-	}
-
-	return getPathName(target)
-}
-
-function getPathName(path: string) {
-	const segments = path.split(/[\\/]/).filter(Boolean)
-
-	return segments.at(-1) ?? path
+	return (
+		<div className='flex items-center gap-3 rounded-lg border border-(--sf-color-border-subtle) bg-card px-3 py-2.5'>
+			<div className='flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-(--sf-color-shell-secondary)'>
+				<ResourceIcon className='size-4' />
+			</div>
+			<div className='min-w-0 flex-1'>
+				<p className='truncate text-sm font-medium text-foreground'>{resource.title}</p>
+				<p className='truncate text-[12px] text-(--sf-color-shell-tertiary)'>{resource.target}</p>
+			</div>
+			<Button className='rounded-md' size='icon-sm' type='button' variant='ghost'>
+				<ExternalLink className='size-3.5' />
+			</Button>
+			<Button className='rounded-md' onClick={onDelete} size='icon-sm' type='button' variant='ghost'>
+				<Trash2 className='size-3.5' />
+			</Button>
+		</div>
+	)
 }

@@ -1,5 +1,4 @@
-import type { ProjectRecord } from '@/features/project/model/types'
-import type { ProjectTaskStatus } from '@/features/project/model/types'
+import type { ShellTaskStatus } from '@/features/workspace-shell/model/shellData'
 import { TaskCreateModalContent } from '@/features/task/ui/TaskCreateModalContent'
 import {
 	Dialog,
@@ -12,10 +11,13 @@ import {
 type TaskCreateDialogProps = {
 	open: boolean
 	currentSpaceId: string
-	projects: ProjectRecord[]
+	projects: Array<{
+		id: string
+		name: string
+	}>
 	projectsLoading: boolean
 	initialProjectId: string | null
-	initialStatus: ProjectTaskStatus
+	initialStatus: ShellTaskStatus
 	onClose: () => void
 }
 

@@ -1,11 +1,11 @@
 import { create } from 'zustand'
 
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
-import type { ProjectTaskStatus } from '@/features/project/model/types'
+import type { ShellTaskStatus } from '@/features/workspace-shell/model/shellData'
 
-export type TaskCreateDialogDraft = {
+type TaskCreateDialogDraft = {
 	projectId?: string | null
-	status?: ProjectTaskStatus
+	status?: ShellTaskStatus
 }
 
 type ShellLayoutState = {
@@ -15,16 +15,14 @@ type ShellLayoutState = {
 	isCommandOpen: boolean
 	isTaskCreateOpen: boolean
 	taskCreateProjectId: string | null
-	taskCreateStatus: ProjectTaskStatus
+	taskCreateStatus: ShellTaskStatus
 	isProjectCreateOpen: boolean
 	projectCreateParentId: string | null
 	isDrawerOpen: boolean
 	activeDrawerKind: ShellDrawerKind | null
 	activeDrawerId: string | null
-	taskDataVersion: number
-	projectDataVersion: number
 	projectTreeCollapsed: Record<string, boolean>
-	projectTaskBoardOpenSections: ProjectTaskStatus[]
+	projectTaskBoardOpenSections: ShellTaskStatus[]
 	setCurrentSpaceId: (spaceId: string) => void
 	setActiveSection: (section: ShellSectionKey) => void
 	setNavItemVisible: (section: ShellSectionKey, visible: boolean) => void
@@ -39,20 +37,18 @@ type ShellLayoutState = {
 	setDrawerOpen: (open: boolean) => void
 	openDrawer: (kind: ShellDrawerKind, id: string) => void
 	closeDrawer: () => void
-	bumpTaskDataVersion: () => void
-	bumpProjectDataVersion: () => void
 	setProjectTreeCollapsed: (payload: {
 		spaceId: string
 		projectId: string
 		collapsed: boolean
 	}) => void
-	setProjectTaskBoardOpenSections: (sections: ProjectTaskStatus[]) => void
+	setProjectTaskBoardOpenSections: (sections: ShellTaskStatus[]) => void
 }
 
-const SHELL_NAV_VISIBILITY_STORAGE_KEY = 'stoneflow:shell-nav-visibility:v1'
-const PROJECT_TASK_BOARD_OPEN_SECTIONS_STORAGE_KEY = 'stoneflow:project-task-board-open-sections:v1'
+const SHELL_NAV_VISIBILITY_STORAGE_KEY = 'stoneflow:shell-nav-visibility:v2'
+const PROJECT_TASK_BOARD_OPEN_SECTIONS_STORAGE_KEY = 'stoneflow:project-task-board-open-sections:v2'
 const CONFIGURABLE_NAV_ITEM_KEYS: ShellSectionKey[] = ['inbox', 'focus']
-const DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS: ProjectTaskStatus[] = ['todo', 'done']
+const DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS: ShellTaskStatus[] = ['todo', 'done']
 
 function readStoredHiddenNavItemKeys() {
 	if (typeof window === 'undefined') {
@@ -103,8 +99,9 @@ function readStoredProjectTaskBoardOpenSections() {
 		}
 
 		const normalizedValue = parsedValue.filter(
-			(section): section is ProjectTaskStatus => section === 'todo' || section === 'done',
+			(section): section is ShellTaskStatus => section === 'todo' || section === 'done',
 		)
+
 		return normalizedValue.length > 0
 			? Array.from(new Set(normalizedValue))
 			: DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS
@@ -113,7 +110,7 @@ function readStoredProjectTaskBoardOpenSections() {
 	}
 }
 
-function persistProjectTaskBoardOpenSections(sections: ProjectTaskStatus[]) {
+function persistProjectTaskBoardOpenSections(sections: ShellTaskStatus[]) {
 	if (typeof window === 'undefined') {
 		return
 	}
@@ -137,8 +134,6 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 	isDrawerOpen: false,
 	activeDrawerKind: null,
 	activeDrawerId: null,
-	taskDataVersion: 0,
-	projectDataVersion: 0,
 	projectTreeCollapsed: {},
 	projectTaskBoardOpenSections: readStoredProjectTaskBoardOpenSections(),
 	setCurrentSpaceId: (spaceId) => set({ currentSpaceId: spaceId }),
@@ -156,7 +151,6 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 				(key) => !nextHiddenKeys.includes(key),
 			).length
 
-			// 至少保留一个固定导航入口，避免侧栏被用户偏好清空后失去恢复路径。
 			if (visibleCount === 0) {
 				return state
 			}
@@ -170,22 +164,12 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 			return { hiddenNavItemKeys: [] }
 		}),
 	setCommandOpen: (open) =>
-		set(() =>
-			open
-				? {
-						isCommandOpen: true,
-						isTaskCreateOpen: false,
-						taskCreateProjectId: null,
-						taskCreateStatus: 'todo',
-						isProjectCreateOpen: false,
-						isDrawerOpen: false,
-						activeDrawerKind: null,
-						activeDrawerId: null,
-					}
-				: {
-						isCommandOpen: false,
-					},
-		),
+		set({
+			isCommandOpen: open,
+			isDrawerOpen: open ? false : false,
+			activeDrawerKind: open ? null : null,
+			activeDrawerId: open ? null : null,
+		}),
 	openCommand: () =>
 		set({
 			isCommandOpen: true,
@@ -193,6 +177,7 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 			taskCreateProjectId: null,
 			taskCreateStatus: 'todo',
 			isProjectCreateOpen: false,
+			projectCreateParentId: null,
 			isDrawerOpen: false,
 			activeDrawerKind: null,
 			activeDrawerId: null,
@@ -205,6 +190,7 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 			taskCreateProjectId: draft?.projectId ?? null,
 			taskCreateStatus: draft?.status ?? 'todo',
 			isProjectCreateOpen: false,
+			projectCreateParentId: null,
 			isDrawerOpen: false,
 			activeDrawerKind: null,
 			activeDrawerId: null,
@@ -233,30 +219,20 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 			projectCreateParentId: null,
 		}),
 	setDrawerOpen: (open) =>
-		set(() =>
-			open
-				? {
-						isCommandOpen: false,
-						isTaskCreateOpen: false,
-						taskCreateProjectId: null,
-						taskCreateStatus: 'todo',
-						isProjectCreateOpen: false,
-						isDrawerOpen: true,
-					}
-				: {
-						isDrawerOpen: false,
-						activeDrawerKind: null,
-						activeDrawerId: null,
-					},
-		),
+		set({
+			isDrawerOpen: open,
+			activeDrawerKind: open ? null : null,
+			activeDrawerId: open ? null : null,
+		}),
 	openDrawer: (kind, id) =>
 		set({
-			isDrawerOpen: true,
 			isCommandOpen: false,
 			isTaskCreateOpen: false,
 			taskCreateProjectId: null,
 			taskCreateStatus: 'todo',
 			isProjectCreateOpen: false,
+			projectCreateParentId: null,
+			isDrawerOpen: true,
 			activeDrawerKind: kind,
 			activeDrawerId: id,
 		}),
@@ -266,73 +242,41 @@ export const useShellLayoutStore = create<ShellLayoutState>((set) => ({
 			activeDrawerKind: null,
 			activeDrawerId: null,
 		}),
-	bumpTaskDataVersion: () =>
-		set((state) => ({
-			taskDataVersion: state.taskDataVersion + 1,
-		})),
-	bumpProjectDataVersion: () =>
-		set((state) => ({
-			projectDataVersion: state.projectDataVersion + 1,
-		})),
 	setProjectTreeCollapsed: ({ spaceId, projectId, collapsed }) =>
-		set((state) => {
-			const key = toProjectTreeKey(spaceId, projectId)
-			return {
-				projectTreeCollapsed: {
-					...state.projectTreeCollapsed,
-					[key]: collapsed,
-				},
-			}
-		}),
+		set((state) => ({
+			projectTreeCollapsed: {
+				...state.projectTreeCollapsed,
+				[toProjectTreeKey(spaceId, projectId)]: collapsed,
+			},
+		})),
 	setProjectTaskBoardOpenSections: (sections) =>
 		set(() => {
-			const normalizedSections = sections.filter(
-				(section): section is ProjectTaskStatus => section === 'todo' || section === 'done',
-			)
-			const nextSections =
-				normalizedSections.length > 0
-					? Array.from(new Set(normalizedSections))
-					: DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS
-			persistProjectTaskBoardOpenSections(nextSections)
+			const normalizedSections = sections.length
+				? Array.from(new Set(sections.filter((section) => section === 'todo' || section === 'done')))
+				: DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS
+			persistProjectTaskBoardOpenSections(normalizedSections)
 			return {
-				projectTaskBoardOpenSections: nextSections,
+				projectTaskBoardOpenSections: normalizedSections,
 			}
 		}),
 }))
 
 export const selectCurrentSpaceId = (state: ShellLayoutState) => state.currentSpaceId
-
 export const selectActiveSection = (state: ShellLayoutState) => state.activeSection
-
 export const selectHiddenNavItemKeys = (state: ShellLayoutState) => state.hiddenNavItemKeys
-
 export const selectIsCommandOpen = (state: ShellLayoutState) => state.isCommandOpen
-
-export const selectIsTaskCreateOpen = (state: ShellLayoutState) => state.isTaskCreateOpen
-
-export const selectTaskCreateProjectId = (state: ShellLayoutState) => state.taskCreateProjectId
-
-export const selectTaskCreateStatus = (state: ShellLayoutState) => state.taskCreateStatus
-
-export const selectIsProjectCreateOpen = (state: ShellLayoutState) => state.isProjectCreateOpen
-
-export const selectProjectCreateParentId = (state: ShellLayoutState) => state.projectCreateParentId
-
 export const selectIsDrawerOpen = (state: ShellLayoutState) => state.isDrawerOpen
-
+export const selectIsTaskCreateOpen = (state: ShellLayoutState) => state.isTaskCreateOpen
+export const selectTaskCreateProjectId = (state: ShellLayoutState) => state.taskCreateProjectId
+export const selectTaskCreateStatus = (state: ShellLayoutState) => state.taskCreateStatus
+export const selectIsProjectCreateOpen = (state: ShellLayoutState) => state.isProjectCreateOpen
+export const selectProjectCreateParentId = (state: ShellLayoutState) => state.projectCreateParentId
 export const selectActiveDrawerKind = (state: ShellLayoutState) => state.activeDrawerKind
-
 export const selectActiveDrawerId = (state: ShellLayoutState) => state.activeDrawerId
-
-export const selectTaskDataVersion = (state: ShellLayoutState) => state.taskDataVersion
-
-export const selectProjectDataVersion = (state: ShellLayoutState) => state.projectDataVersion
-
 export const selectProjectTreeCollapsed = (state: ShellLayoutState) => state.projectTreeCollapsed
-
 export const selectProjectTaskBoardOpenSections = (state: ShellLayoutState) =>
 	state.projectTaskBoardOpenSections
 
 export function toProjectTreeKey(spaceId: string, projectId: string) {
-	return `${spaceId}:${projectId}`
+	return `${spaceId}::${projectId}`
 }

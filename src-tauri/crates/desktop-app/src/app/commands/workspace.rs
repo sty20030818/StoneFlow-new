@@ -5,27 +5,12 @@ use tauri::State;
 
 use crate::app::error::AppError;
 use crate::app::state::{ActiveSpaceSnapshot, ActiveSpaceState};
-use crate::domain::{next_runtime_id, normalize_required_text, normalize_slug, DEFAULT_SPACE_NAME, DEFAULT_SPACE_SLUG};
+use crate::domain::{next_runtime_id, normalize_slug, DEFAULT_SPACE_NAME, DEFAULT_SPACE_SLUG};
 use crate::infrastructure::runtime::{healthcheck_payload, RuntimeHealthcheckPayload};
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct CreateSpaceInput {
-    pub name: String,
-}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct SetActiveSpaceInput {
     pub space_slug: String,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct CreatedSpacePayload {
-    pub id: String,
-    pub name: String,
-    pub slug: String,
-    pub sort_order: i32,
-    pub created_at: String,
-    pub updated_at: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -37,25 +22,6 @@ pub struct ActiveSpacePayload {
 #[tauri::command]
 pub fn healthcheck() -> RuntimeHealthcheckPayload {
     healthcheck_payload()
-}
-
-#[tauri::command]
-pub async fn create_space(input: CreateSpaceInput) -> Result<CreatedSpacePayload, AppError> {
-    let name = normalize_required_text(&input.name, "space name")?;
-    let slug = normalize_slug(&name);
-    if slug.is_empty() {
-        return Err(AppError::validation("space slug 不能为空"));
-    }
-
-    let timestamp = chrono::Utc::now().to_rfc3339();
-    Ok(CreatedSpacePayload {
-        id: next_runtime_id().to_string(),
-        name,
-        slug,
-        sort_order: 0,
-        created_at: timestamp.clone(),
-        updated_at: timestamp,
-    })
 }
 
 #[tauri::command]

@@ -43,14 +43,3 @@ pub fn normalize_slug(value: &str) -> String {
         .collect::<Vec<_>>()
         .join("-")
 }
-
-/// 旧 Focus key 的静态展示文案。
-pub fn focus_view_name(key: &str) -> &'static str {
-    match key {
-        "focus" => "Focus",
-        "upcoming" => "近期安排",
-        "recent" => "最近更新",
-        "high_priority" => "高优先级",
-        _ => "系统视图",
-    }
-}

@@ -1,6 +1,5 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
-import { useProjectCreate } from '@/features/project/model/useProjectCreate'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
@@ -13,7 +12,7 @@ type ProjectCreateModalContentProps = {
 }
 
 /**
- * 新建项目弹窗中的核心表单。
+ * 保留项目创建弹窗的完整外观，在前置阶段 B 只使用本地表单状态。
  */
 export function ProjectCreateModalContent({
 	currentSpaceId,
@@ -21,11 +20,9 @@ export function ProjectCreateModalContent({
 	onClose,
 }: ProjectCreateModalContentProps) {
 	const isSubproject = Boolean(parentProjectId)
-	const { name, note, status, errorMessage, createdProject, setName, setNote, reset, submit } =
-		useProjectCreate({
-			currentSpaceId,
-			parentProjectId,
-		})
+	const [name, setName] = useState('')
+	const [note, setNote] = useState('')
+	const [status, setStatus] = useState<'idle' | 'submitting' | 'success'>('idle')
 
 	useEffect(() => {
 		if (status !== 'success') {
@@ -33,14 +30,28 @@ export function ProjectCreateModalContent({
 		}
 
 		const timer = window.setTimeout(() => {
-			reset()
+			handleReset()
 			onClose()
-		}, 800)
+		}, 900)
 
 		return () => {
 			window.clearTimeout(timer)
 		}
-	}, [onClose, reset, status])
+	}, [onClose, status])
+
+	function handleReset() {
+		setName('')
+		setNote('')
+		setStatus('idle')
+	}
+
+	function handleSubmit() {
+		setStatus('submitting')
+
+		window.setTimeout(() => {
+			setStatus('success')
+		}, 320)
+	}
 
 	return (
 		<div className='flex flex-col gap-4'>
@@ -50,10 +61,10 @@ export function ProjectCreateModalContent({
 					<Input
 						autoFocus
 						className='h-11 rounded-md border-input bg-card'
-						disabled={status === 'submitting' || status === 'success'}
+						disabled={status !== 'idle'}
 						id='project-create-name'
 						onChange={(event) => setName(event.currentTarget.value)}
-						placeholder={isSubproject ? '例如：M3-E 子项目收口' : '例如：执行层收口'}
+						placeholder={isSubproject ? '例如：Header 壳层收口' : '例如：Workspace shell polish'}
 						value={name}
 					/>
 				</label>
@@ -62,7 +73,7 @@ export function ProjectCreateModalContent({
 					<span className='text-[12px] font-medium text-foreground'>项目说明</span>
 					<Textarea
 						className='min-h-24 rounded-md border-input bg-card'
-						disabled={status === 'submitting' || status === 'success'}
+						disabled={status !== 'idle'}
 						id='project-create-note'
 						onChange={(event) => setNote(event.currentTarget.value)}
 						placeholder={
@@ -75,23 +86,23 @@ export function ProjectCreateModalContent({
 				</label>
 			</div>
 
-			{status === 'error' && errorMessage ? (
-				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
-					{errorMessage}
-				</StatusNotice>
-			) : null}
-
-			{status === 'success' && createdProject ? (
+			{status === 'success' ? (
 				<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
-					已创建{isSubproject ? '子项目' : '项目'}“{createdProject.name}”。
+					已保留{isSubproject ? '子项目' : '项目'}创建弹窗壳层。
+					{name.trim() ? ` 示例名称：${name.trim()}。` : ''}
+					当前 Space：{currentSpaceId}。
 				</StatusNotice>
-			) : null}
+			) : (
+				<StatusNotice className='text-[12px] leading-5' role='status' size='sm'>
+					前置阶段 B 只保留表单交互和视觉层，真实项目创建逻辑将在后续阶段接入。
+				</StatusNotice>
+			)}
 
 			<div className='flex items-center justify-end gap-2 border-t border-(--sf-color-divider) pt-3'>
 				<Button
 					disabled={status === 'submitting'}
 					onClick={() => {
-						reset()
+						handleReset()
 						onClose()
 					}}
 					variant='ghost'
@@ -99,15 +110,13 @@ export function ProjectCreateModalContent({
 					取消
 				</Button>
 				<Button
-					disabled={status === 'submitting' || status === 'success'}
-					onClick={() => {
-						void submit()
-					}}
+					disabled={status !== 'idle' || name.trim().length === 0}
+					onClick={handleSubmit}
 				>
 					{status === 'submitting'
 						? '创建中...'
 						: status === 'success'
-							? '已创建'
+							? '已保留壳层'
 							: isSubproject
 								? '创建子项目'
 								: '创建项目'}
