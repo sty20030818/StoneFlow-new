@@ -12,7 +12,9 @@ pub async fn restore_main_window(
     helper_state: State<'_, CommandHelperState>,
 ) -> Result<(), AppError> {
     if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
-        window.show().map_err(|error| AppError::internal(error.to_string()))?;
+        window
+            .show()
+            .map_err(|error| AppError::internal(error.to_string()))?;
         window
             .unminimize()
             .map_err(|error| AppError::internal(error.to_string()))?;

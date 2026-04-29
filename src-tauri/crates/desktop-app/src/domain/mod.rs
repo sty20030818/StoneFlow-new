@@ -1,23 +1,15 @@
 //! 纯领域辅助：只保留与具体数据模型无关的基础归一化规则。
 
-use chrono::{DateTime, Utc};
-use stoneflow_core::{new_uuid_v7, now_utc};
-use uuid::Uuid;
-
 use crate::app::error::AppError;
+
+mod ids;
+mod time;
 
 pub const DEFAULT_SPACE_NAME: &str = "个人";
 pub const DEFAULT_SPACE_SLUG: &str = "personal";
 
-/// 生成新的运行时 ID。
-pub fn next_runtime_id() -> Uuid {
-    new_uuid_v7()
-}
-
-/// 返回当前 UTC 时间。
-pub fn now() -> DateTime<Utc> {
-    now_utc()
-}
+pub use ids::{create_id, next_runtime_id};
+pub use time::{date_only, is_today, now, now_utc, today_range, today_range_at};
 
 /// 归一化必填文本。
 pub fn normalize_required_text(value: &str, field: &str) -> Result<String, AppError> {
@@ -30,7 +22,8 @@ pub fn normalize_required_text(value: &str, field: &str) -> Result<String, AppEr
 
 /// 归一化 slug。
 pub fn normalize_slug(value: &str) -> String {
-    value.trim()
+    value
+        .trim()
         .chars()
         .flat_map(char::to_lowercase)
         .map(|ch| match ch {

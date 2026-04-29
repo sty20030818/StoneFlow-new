@@ -3,6 +3,7 @@
 //! 前置阶段 A 的目标不是补旧模型，而是把主应用重置成可持续演进的干净骨架。
 
 pub mod app;
+pub mod application;
 pub mod domain;
 mod infrastructure;
 

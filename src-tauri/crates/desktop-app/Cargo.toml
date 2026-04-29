@@ -8,8 +8,10 @@ rust-version.workspace = true
 anyhow.workspace = true
 chrono.workspace = true
 log.workspace = true
+sea-orm.workspace = true
 serde.workspace = true
 stoneflow-core = { path = "../core" }
+stoneflow-migration = { path = "../migration" }
 tauri.workspace = true
 tauri-plugin-dialog.workspace = true
 tauri-plugin-log.workspace = true
@@ -17,3 +19,7 @@ tauri-plugin-opener.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 uuid.workspace = true
+
+[dev-dependencies]
+sea-orm-migration.workspace = true
+stoneflow-test-support = { path = "../test-support" }

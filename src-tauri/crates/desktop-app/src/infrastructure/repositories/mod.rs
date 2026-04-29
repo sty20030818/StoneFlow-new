@@ -1,0 +1,15 @@
+//! Repository 骨架：阶段 0 只建立边界，不提前写业务规则。
+
+mod activity_repository;
+mod project_repository;
+mod settings_repository;
+mod space_repository;
+mod task_repository;
+mod view_repository;
+
+pub use activity_repository::ActivityRepository;
+pub use project_repository::ProjectRepository;
+pub use settings_repository::SettingsRepository;
+pub use space_repository::SpaceRepository;
+pub use task_repository::TaskRepository;
+pub use view_repository::ViewRepository;

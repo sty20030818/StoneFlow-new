@@ -1,0 +1,71 @@
+//! 数据库 bootstrap：负责连接、迁移与运行态快照。
+
+use std::path::{Path, PathBuf};
+
+use sea_orm::DatabaseConnection;
+use serde::Serialize;
+
+use crate::app::error::AppError;
+
+use super::connection::{connect_sqlite, resolve_database_path, run_smoke_query};
+
+/// 数据库健康快照。
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct DatabaseRuntimeSnapshot {
+    pub database_path: String,
+    pub database_ready: bool,
+    pub migrations_ready: bool,
+}
+
+/// 主应用持有的数据库运行态。
+#[derive(Clone)]
+#[cfg_attr(not(test), allow(dead_code))]
+pub struct DatabaseRuntimeState {
+    connection: DatabaseConnection,
+    database_path: PathBuf,
+    applied_migrations: usize,
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+impl DatabaseRuntimeState {
+    /// 返回数据库连接。
+    pub fn connection(&self) -> &DatabaseConnection {
+        &self.connection
+    }
+
+    /// 返回数据库路径。
+    pub fn database_path(&self) -> &Path {
+        &self.database_path
+    }
+
+    /// 返回当前已配置的迁移数量。
+    pub fn applied_migrations(&self) -> usize {
+        self.applied_migrations
+    }
+
+    /// 返回可序列化健康快照。
+    pub fn snapshot(&self) -> DatabaseRuntimeSnapshot {
+        DatabaseRuntimeSnapshot {
+            database_path: self.database_path.display().to_string(),
+            database_ready: true,
+            migrations_ready: self.applied_migrations > 0,
+        }
+    }
+}
+
+/// 建立数据库连接并执行基础迁移。
+pub async fn bootstrap_database(base_dir: &Path) -> Result<DatabaseRuntimeState, AppError> {
+    let database_path = resolve_database_path(base_dir);
+    let connection = connect_sqlite(&database_path).await?;
+    run_smoke_query(&connection).await?;
+
+    let applied_migrations = stoneflow_migration::run_migrations(&connection)
+        .await
+        .map_err(AppError::from)?;
+
+    Ok(DatabaseRuntimeState {
+        connection,
+        database_path,
+        applied_migrations,
+    })
+}

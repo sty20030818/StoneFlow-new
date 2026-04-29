@@ -23,6 +23,14 @@ pub enum AppError {
     #[error("数据冲突: {0}")]
     Conflict(String),
 
+    /// 数据库错误。
+    #[error("数据库错误: {0}")]
+    Database(String),
+
+    /// 初始化错误。
+    #[error("初始化失败: {0}")]
+    Initialization(String),
+
     /// 内部错误。
     #[error("内部错误: {0}")]
     Internal(String),
@@ -60,16 +68,32 @@ impl AppError {
     pub fn conflict(message: impl Into<String>) -> Self {
         Self::Conflict(message.into())
     }
+
+    /// 构造数据库错误。
+    pub fn database(message: impl Into<String>) -> Self {
+        Self::Database(message.into())
+    }
+
+    /// 构造初始化错误。
+    pub fn initialization(message: impl Into<String>) -> Self {
+        Self::Initialization(message.into())
+    }
 }
 
 impl From<std::io::Error> for AppError {
     fn from(error: std::io::Error) -> Self {
-        Self::Internal(error.to_string())
+        Self::Initialization(error.to_string())
     }
 }
 
 impl From<anyhow::Error> for AppError {
     fn from(error: anyhow::Error) -> Self {
         Self::Internal(error.to_string())
+    }
+}
+
+impl From<sea_orm::DbErr> for AppError {
+    fn from(error: sea_orm::DbErr) -> Self {
+        Self::Database(error.to_string())
     }
 }

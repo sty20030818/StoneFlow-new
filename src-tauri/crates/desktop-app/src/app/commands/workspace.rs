@@ -6,6 +6,7 @@ use tauri::State;
 use crate::app::error::AppError;
 use crate::app::state::{ActiveSpaceSnapshot, ActiveSpaceState};
 use crate::domain::{next_runtime_id, normalize_slug, DEFAULT_SPACE_NAME, DEFAULT_SPACE_SLUG};
+use crate::infrastructure::database::DatabaseRuntimeState;
 use crate::infrastructure::runtime::{healthcheck_payload, RuntimeHealthcheckPayload};
 
 #[derive(Debug, Clone, Deserialize)]
@@ -20,8 +21,8 @@ pub struct ActiveSpacePayload {
 }
 
 #[tauri::command]
-pub fn healthcheck() -> RuntimeHealthcheckPayload {
-    healthcheck_payload()
+pub fn healthcheck(database: State<'_, DatabaseRuntimeState>) -> RuntimeHealthcheckPayload {
+    healthcheck_payload(database.snapshot())
 }
 
 #[tauri::command]

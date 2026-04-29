@@ -1,25 +1,22 @@
 //! 基座回归测试。
 
-use crate::app::commands::workspace::healthcheck;
 use crate::app::state::{ActiveSpaceSnapshot, ActiveSpaceState};
 use crate::domain::next_runtime_id;
+use crate::infrastructure::database::DatabaseRuntimeSnapshot;
 use crate::infrastructure::runtime::healthcheck_payload;
 
 #[test]
-fn healthcheck_should_report_pre_stage_a_runtime() {
-    let payload = healthcheck_payload();
+fn healthcheck_should_report_stage_0_runtime() {
+    let payload = healthcheck_payload(DatabaseRuntimeSnapshot {
+        database_path: "/tmp/stoneflow.sqlite3".to_owned(),
+        database_ready: true,
+        migrations_ready: true,
+    });
 
     assert_eq!(payload.status, "ok");
-    assert_eq!(payload.architecture_stage, "pre_stage_a");
-    assert!(!payload.database_ready);
-}
-
-#[test]
-fn healthcheck_command_should_match_runtime_payload() {
-    let payload = healthcheck();
-
     assert_eq!(payload.app, "desktop-app");
-    assert_eq!(payload.architecture_stage, "pre_stage_a");
+    assert_eq!(payload.architecture_stage, "stage_0_infra");
+    assert!(payload.database_ready);
 }
 
 #[tokio::test]
