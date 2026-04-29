@@ -5,18 +5,18 @@ import { resolveShellSection } from './shell/config'
 import {
 	selectActiveSection,
 	selectCurrentSpaceId,
-	useShellLayoutStore,
-} from './shell/model/useShellLayoutStore'
+	useShellNavStore,
+} from './shell/model/useShellNavStore'
 import { ShellLayout } from './shell/ShellLayout'
 import { setActiveSpace } from '@/features/task/api/setActiveSpace'
 
 export function SpaceLayout() {
 	const { spaceId = 'work' } = useParams()
 	const { pathname } = useLocation()
-	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
-	const activeSection = useShellLayoutStore(selectActiveSection)
-	const setCurrentSpaceId = useShellLayoutStore((state) => state.setCurrentSpaceId)
-	const setActiveSection = useShellLayoutStore((state) => state.setActiveSection)
+	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
+	const activeSection = useShellNavStore(selectActiveSection)
+	const setCurrentSpaceId = useShellNavStore((state) => state.setCurrentSpaceId)
+	const setActiveSection = useShellNavStore((state) => state.setActiveSection)
 
 	useEffect(() => {
 		if (currentSpaceId !== spaceId) {

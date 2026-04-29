@@ -9,10 +9,13 @@ import {
 } from '@/app/layouts/shell/config'
 import {
 	selectHiddenNavItemKeys,
+	useShellNavStore,
+} from '@/app/layouts/shell/model/useShellNavStore'
+import {
 	selectProjectTreeCollapsed,
 	toProjectTreeKey,
-	useShellLayoutStore,
-} from '@/app/layouts/shell/model/useShellLayoutStore'
+	useShellPreferenceStore,
+} from '@/app/layouts/shell/model/useShellPreferenceStore'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
@@ -105,11 +108,11 @@ export function ShellSidebar({
 	const navigate = useNavigate()
 	const { isMobile } = useSidebar()
 	const activeSpace = SHELL_SPACES.find((space) => space.id === currentSpaceId) ?? SHELL_SPACES[0]
-	const hiddenNavItemKeys = useShellLayoutStore(selectHiddenNavItemKeys)
-	const projectTreeCollapsed = useShellLayoutStore(selectProjectTreeCollapsed)
-	const setNavItemVisible = useShellLayoutStore((state) => state.setNavItemVisible)
-	const resetNavItemVisibility = useShellLayoutStore((state) => state.resetNavItemVisibility)
-	const setProjectTreeCollapsed = useShellLayoutStore((state) => state.setProjectTreeCollapsed)
+	const hiddenNavItemKeys = useShellNavStore(selectHiddenNavItemKeys)
+	const projectTreeCollapsed = useShellPreferenceStore(selectProjectTreeCollapsed)
+	const setNavItemVisible = useShellNavStore((state) => state.setNavItemVisible)
+	const resetNavItemVisibility = useShellNavStore((state) => state.resetNavItemVisibility)
+	const setProjectTreeCollapsed = useShellPreferenceStore((state) => state.setProjectTreeCollapsed)
 	const visibleNavItems = SHELL_NAV_ITEMS.filter((item) => !hiddenNavItemKeys.includes(item.key))
 	const visibleNavItemCount = visibleNavItems.length
 	const footerItems = SHELL_FOOTER_ITEMS.map((item) => ({

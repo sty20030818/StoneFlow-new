@@ -8,14 +8,17 @@ import {
 import {
 	selectActiveDrawerId,
 	selectActiveDrawerKind,
+	useDrawerStore,
+} from '@/app/layouts/shell/model/useDrawerStore'
+import {
 	selectIsCommandOpen,
 	selectIsProjectCreateOpen,
 	selectIsTaskCreateOpen,
 	selectProjectCreateParentId,
 	selectTaskCreateProjectId,
 	selectTaskCreateStatus,
-	useShellLayoutStore,
-} from '@/app/layouts/shell/model/useShellLayoutStore'
+	useDialogStore,
+} from '@/app/layouts/shell/model/useDialogStore'
 import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
@@ -31,21 +34,21 @@ type ShellLayoutProps = PropsWithChildren<{
 }>
 
 export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLayoutProps) {
-	const isCommandOpen = useShellLayoutStore(selectIsCommandOpen)
-	const isTaskCreateOpen = useShellLayoutStore(selectIsTaskCreateOpen)
-	const taskCreateProjectId = useShellLayoutStore(selectTaskCreateProjectId)
-	const taskCreateStatus = useShellLayoutStore(selectTaskCreateStatus)
-	const isProjectCreateOpen = useShellLayoutStore(selectIsProjectCreateOpen)
-	const projectCreateParentId = useShellLayoutStore(selectProjectCreateParentId)
-	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
-	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
-	const setCommandOpen = useShellLayoutStore((state) => state.setCommandOpen)
-	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
-	const closeTaskCreateDialog = useShellLayoutStore((state) => state.closeTaskCreateDialog)
-	const openProjectCreateDialog = useShellLayoutStore((state) => state.openProjectCreateDialog)
-	const closeProjectCreateDialog = useShellLayoutStore((state) => state.closeProjectCreateDialog)
-	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
-	const closeDrawer = useShellLayoutStore((state) => state.closeDrawer)
+	const isCommandOpen = useDialogStore(selectIsCommandOpen)
+	const isTaskCreateOpen = useDialogStore(selectIsTaskCreateOpen)
+	const taskCreateProjectId = useDialogStore(selectTaskCreateProjectId)
+	const taskCreateStatus = useDialogStore(selectTaskCreateStatus)
+	const isProjectCreateOpen = useDialogStore(selectIsProjectCreateOpen)
+	const projectCreateParentId = useDialogStore(selectProjectCreateParentId)
+	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
+	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
+	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
+	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
+	const closeTaskCreateDialog = useDialogStore((state) => state.closeTaskCreateDialog)
+	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
+	const closeProjectCreateDialog = useDialogStore((state) => state.closeProjectCreateDialog)
+	const openDrawer = useDrawerStore((state) => state.openDrawer)
+	const closeDrawer = useDrawerStore((state) => state.closeDrawer)
 
 	return (
 		<SidebarProvider className='sf-shell-layout relative flex h-full min-h-0 flex-col overflow-hidden bg-background'>

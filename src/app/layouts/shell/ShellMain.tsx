@@ -1,9 +1,6 @@
 import { useEffect, type MouseEvent, type PropsWithChildren } from 'react'
 
-import {
-	selectIsDrawerOpen,
-	useShellLayoutStore,
-} from '@/app/layouts/shell/model/useShellLayoutStore'
+import { selectIsDrawerOpen, useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { ShellDrawer } from '@/app/layouts/shell/ShellDrawer'
 import type { ShellDrawerKind } from '@/app/layouts/shell/types'
 import {
@@ -60,7 +57,7 @@ export function ShellMain({
 	onOpenTaskCreateDialog,
 	onOpenProjectCreateDialog,
 }: ShellMainProps) {
-	const isDrawerOpen = useShellLayoutStore(selectIsDrawerOpen)
+	const isDrawerOpen = useDrawerStore(selectIsDrawerOpen)
 
 	useEffect(() => {
 		if (!isDrawerOpen) {

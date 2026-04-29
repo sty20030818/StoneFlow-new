@@ -2,8 +2,9 @@ import { useMemo } from 'react'
 
 import {
 	selectProjectTaskBoardOpenSections,
-	useShellLayoutStore,
-} from '@/app/layouts/shell/model/useShellLayoutStore'
+	useShellPreferenceStore,
+} from '@/app/layouts/shell/model/useShellPreferenceStore'
+import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { ProjectExecutionTask } from '@/features/project/model/types'
 import type { TaskStatus } from '@/shared/types'
@@ -91,11 +92,11 @@ export function ProjectTaskBoard({
 	onMoveTaskToTrash,
 	onOpenTask,
 }: ProjectTaskBoardProps) {
-	const openSections = useShellLayoutStore(selectProjectTaskBoardOpenSections)
-	const setProjectTaskBoardOpenSections = useShellLayoutStore(
+	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
+	const setProjectTaskBoardOpenSections = useShellPreferenceStore(
 		(state) => state.setProjectTaskBoardOpenSections,
 	)
-	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
+	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
 	const tasksByStatus = useMemo(
 		() => ({
@@ -185,7 +186,7 @@ function TaskStatusSection({
 	onMoveTaskToTrash,
 	onOpenTask,
 }: TaskStatusSectionProps) {
-	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
+	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
 	return (
 		<Collapsible

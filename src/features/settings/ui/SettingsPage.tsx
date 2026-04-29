@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom'
 
 import {
 	selectCurrentSpaceId,
-	useShellLayoutStore,
-} from '@/app/layouts/shell/model/useShellLayoutStore'
+	useShellNavStore,
+} from '@/app/layouts/shell/model/useShellNavStore'
 import { MainCardHeader, MainCardLayout } from '@/app/layouts/main-card/MainCardLayout'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -21,7 +21,7 @@ import { SettingsIcon } from 'lucide-react'
  * Shell 内的设置占位页，先承接路由与主内容区域，后续再拆分具体设置模块。
  */
 export function SettingsPage() {
-	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
+	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
 
 	return (
 		<MainCardLayout header={<MainCardHeader title='Settings' />} toolbar={null}>

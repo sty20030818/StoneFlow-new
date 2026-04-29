@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react'
 
 import {
 	selectCurrentSpaceId,
-	useShellLayoutStore,
-} from '@/app/layouts/shell/model/useShellLayoutStore'
+	useShellNavStore,
+} from '@/app/layouts/shell/model/useShellNavStore'
+import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
+import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
 	getInboxTasks,
 	getProjectOptions,
@@ -62,12 +64,12 @@ type InboxDraft = {
 const EMPTY_PROJECT_VALUE = '__inbox-project-empty__'
 
 export function InboxPage() {
-	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
-	const activeDrawerId = useShellLayoutStore((state) => state.activeDrawerId)
-	const activeDrawerKind = useShellLayoutStore((state) => state.activeDrawerKind)
-	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
-	const openProjectCreateDialog = useShellLayoutStore((state) => state.openProjectCreateDialog)
-	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
+	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
+	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
+	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
+	const openDrawer = useDrawerStore((state) => state.openDrawer)
+	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
+	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const [tasks, setTasks] = useState(() => getInboxTasks())
 	const projects = useMemo(() => getProjectOptions(), [])
 	const [drafts, setDrafts] = useState<Record<string, InboxDraft>>(() =>

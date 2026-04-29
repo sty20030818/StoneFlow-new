@@ -4,8 +4,8 @@ import { useParams } from 'react-router-dom'
 import {
 	selectActiveDrawerId,
 	selectActiveDrawerKind,
-	useShellLayoutStore,
-} from '@/app/layouts/shell/model/useShellLayoutStore'
+	useDrawerStore,
+} from '@/app/layouts/shell/model/useDrawerStore'
 import {
 	MainCardHeader,
 	MainCardLayout,
@@ -32,9 +32,9 @@ import { Box, FolderIcon } from 'lucide-react'
 
 export function ProjectPage() {
 	const { projectId = 'shell-project-stoneflow', spaceId = 'work' } = useParams()
-	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
-	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
-	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
+	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
+	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
+	const openDrawer = useDrawerStore((state) => state.openDrawer)
 	const project = PROJECT_RECORDS.find((item) => item.id === projectId) ?? PROJECT_RECORDS[0]
 	const initialTasks = useMemo(() => toProjectExecutionTasks(getProjectTasks(project.id)), [project.id])
 	const [tasks, setTasks] = useState<ProjectExecutionTask[]>(initialTasks)

@@ -1,11 +1,15 @@
 import { useState } from 'react'
 
 import {
+	selectCurrentSpaceId,
+	useShellNavStore,
+} from '@/app/layouts/shell/model/useShellNavStore'
+import {
 	selectActiveDrawerId,
 	selectActiveDrawerKind,
-	selectCurrentSpaceId,
-	useShellLayoutStore,
-} from '@/app/layouts/shell/model/useShellLayoutStore'
+	useDrawerStore,
+} from '@/app/layouts/shell/model/useDrawerStore'
+import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { MainCardHeader, MainCardLayout, MainCardToolbar } from '@/app/layouts/main-card/MainCardLayout'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -64,11 +68,11 @@ const RECENT_TIME_WINDOW_OPTIONS: Array<{
 ]
 
 export function FocusPage() {
-	const currentSpaceId = useShellLayoutStore(selectCurrentSpaceId)
-	const activeDrawerKind = useShellLayoutStore(selectActiveDrawerKind)
-	const activeDrawerId = useShellLayoutStore(selectActiveDrawerId)
-	const openDrawer = useShellLayoutStore((state) => state.openDrawer)
-	const openTaskCreateDialog = useShellLayoutStore((state) => state.openTaskCreateDialog)
+	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
+	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
+	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
+	const openDrawer = useDrawerStore((state) => state.openDrawer)
+	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const [activeViewKey, setActiveViewKey] = useState<FocusViewKey>('today')
 	const [recentTimeWindow, setRecentTimeWindow] = useState<FocusRecentTimeWindow>('all')
 	const [tasks, setTasks] = useState(() => getFocusTasks('today'))
