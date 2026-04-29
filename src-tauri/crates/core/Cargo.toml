@@ -9,5 +9,5 @@ name = "stoneflow_core"
 path = "src/lib.rs"
 
 [dependencies]
-serde.workspace = true
-serde_json.workspace = true
+chrono.workspace = true
+uuid.workspace = true

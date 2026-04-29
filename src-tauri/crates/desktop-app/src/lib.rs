@@ -1,24 +1,16 @@
-//! StoneFlow 桌面应用编排入口。
+//! StoneFlow 桌面主应用 crate。
+//!
+//! 前置阶段 A 的目标不是补旧模型，而是把主应用重置成可持续演进的干净骨架。
 
 pub mod app;
+pub mod domain;
 mod application;
 mod infrastructure;
-mod ipc;
-#[cfg(test)]
-#[path = "tests/m3_e_project_hierarchy_tests.rs"]
-mod m3_e_project_hierarchy_tests;
-#[cfg(test)]
-#[path = "tests/m4_a_capture_tests.rs"]
-mod m4_a_capture_tests;
-#[cfg(test)]
-#[path = "tests/window_state_tests.rs"]
-mod window_state_tests;
 
-pub fn builder() -> tauri::Builder<tauri::Wry> {
-    app::builder()
-}
+#[cfg(test)]
+mod tests;
 
-/// 以给定 Tauri Context 启动主 App（含 Helper 子进程生命周期管理）。
+/// 以给定的 Tauri Context 启动主应用。
 pub fn run(context: tauri::Context<tauri::Wry>) {
     app::run(context);
 }

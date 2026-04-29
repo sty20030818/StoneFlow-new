@@ -959,20 +959,13 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
- "interprocess",
  "log",
- "sea-orm",
  "serde",
- "serde_json",
  "stoneflow-core",
- "stoneflow-entity",
- "stoneflow-ipc-protocol",
- "stoneflow-migration",
  "tauri",
  "tauri-plugin-dialog",
  "tauri-plugin-log",
  "tauri-plugin-opener",
- "tauri-plugin-window-state",
  "thiserror 1.0.69",
  "tokio",
  "uuid",
@@ -4858,19 +4851,13 @@ dependencies = [
 name = "stoneflow-core"
 version = "0.1.0"
 dependencies = [
- "serde",
- "serde_json",
+ "chrono",
+ "uuid",
 ]
 
 [[package]]
 name = "stoneflow-entity"
 version = "0.1.0"
-dependencies = [
- "sea-orm",
- "serde",
- "serde_json",
- "uuid",
-]
 
 [[package]]
 name = "stoneflow-helper"
@@ -4921,6 +4908,13 @@ dependencies = [
  "sea-orm-migration",
  "serde_json",
  "stoneflow-entity",
+ "uuid",
+]
+
+[[package]]
+name = "stoneflow-test-support"
+version = "0.1.0"
+dependencies = [
  "uuid",
 ]
 

@@ -1,5 +1,5 @@
-//! StoneFlow Tauri 宿主的基础设施层。
+//! 基础设施层占位。
+//!
+//! 前置阶段 A 只保留骨架，不提前实现数据库、仓储或 seed。
 
-pub(crate) mod database;
-pub(crate) mod repositories;
-pub(crate) mod seed;
+pub mod runtime;

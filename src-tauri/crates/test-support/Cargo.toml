@@ -1,11 +1,12 @@
 [package]
-name = "stoneflow-entity"
+name = "stoneflow-test-support"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
 [lib]
-name = "stoneflow_entity"
+name = "stoneflow_test_support"
 path = "src/lib.rs"
 
 [dependencies]
+uuid.workspace = true
