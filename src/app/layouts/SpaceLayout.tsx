@@ -1,49 +1,71 @@
 import { useEffect } from 'react'
-import { Outlet, useLocation, useParams } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 
 import { resolveShellSection } from './shell/config'
 import {
 	selectActiveSection,
 	selectCurrentSpaceId,
+	selectCurrentScopeType,
 	useShellNavStore,
 } from './shell/model/useShellNavStore'
 import { ShellLayout } from './shell/ShellLayout'
-import { setActiveSpace } from '@/features/task/api/setActiveSpace'
+import { setActiveScope } from '@/features/space/api/spaces'
+import { useScopeRoute } from '@/features/space/model/scopeRoute'
+import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { useWorkspaceSync } from '@/features/workspace/model'
 
 export function SpaceLayout() {
-	const { spaceId = 'work' } = useParams()
+	const { scope } = useScopeRoute()
 	const { pathname } = useLocation()
+	const spaces = useSpaceStore(selectSpaces)
 	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
+	const currentScopeType = useShellNavStore(selectCurrentScopeType)
 	const activeSection = useShellNavStore(selectActiveSection)
-	const setCurrentSpaceId = useShellNavStore((state) => state.setCurrentSpaceId)
+	const setCurrentScope = useShellNavStore((state) => state.setCurrentScope)
 	const setActiveSection = useShellNavStore((state) => state.setActiveSection)
+	const fallbackSpaceId =
+		currentSpaceId ?? spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
 
 	// 挂载工作区事件同步
-	useWorkspaceSync(spaceId)
+	useWorkspaceSync(scope)
 
 	useEffect(() => {
-		if (currentSpaceId !== spaceId) {
-			setCurrentSpaceId(spaceId)
+		const nextScopeType = scope.type
+		const nextSpaceId = scope.type === 'space' ? scope.spaceId : fallbackSpaceId
+		if (currentScopeType !== nextScopeType || currentSpaceId !== nextSpaceId) {
+			setCurrentScope(nextScopeType, nextSpaceId)
 		}
 
 		const nextSection = resolveShellSection(pathname)
 		if (activeSection !== nextSection) {
 			setActiveSection(nextSection)
 		}
-	}, [activeSection, currentSpaceId, pathname, setActiveSection, setCurrentSpaceId, spaceId])
+	}, [
+		activeSection,
+		currentScopeType,
+		currentSpaceId,
+		fallbackSpaceId,
+		pathname,
+		scope,
+		setActiveSection,
+		setCurrentScope,
+	])
 
 	useEffect(() => {
-		void setActiveSpace(spaceId).catch((error) => {
-			console.error('active space sync failed', {
-				spaceId,
+		void setActiveScope(scope).catch((error) => {
+			console.error('active scope sync failed', {
+				scope,
 				error,
 			})
 		})
-	}, [spaceId])
+	}, [scope])
 
 	return (
-		<ShellLayout activeSection={activeSection} currentSpaceId={spaceId}>
+		<ShellLayout
+			activeSection={activeSection}
+			currentScope={scope}
+			currentSpaceId={scope.type === 'space' ? scope.spaceId : fallbackSpaceId}
+		>
 			<Outlet />
 		</ShellLayout>
 	)

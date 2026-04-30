@@ -7,7 +7,7 @@ import { Kbd } from '@/shared/ui/base/kbd'
 import { SearchIcon } from 'lucide-react'
 
 type GlobalSearchInputProps = {
-	currentSpaceId: string
+	currentSpaceId: string | null
 	onOpenTask: (taskId: string) => void
 	onOpenProject: (projectId: string) => void
 }

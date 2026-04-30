@@ -2,7 +2,7 @@
 
 use tauri::{LogicalPosition, Manager, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
 
-use crate::app::state::{ActiveSpaceState, CommandHelperState};
+use crate::app::state::{ActiveScopeState, CommandHelperState};
 use crate::infrastructure::database::bootstrap_database;
 
 pub mod commands;
@@ -57,7 +57,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
                 )?;
             }
 
-            app.manage(ActiveSpaceState::default());
+            app.manage(ActiveScopeState::default());
             app.manage(CommandHelperState::default());
             let database_state = tauri::async_runtime::block_on(async {
                 let app_data_dir = app

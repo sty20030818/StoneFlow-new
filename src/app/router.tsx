@@ -12,6 +12,53 @@ import { ActivityDebugPage } from '../features/activity/ui/ActivityDebugPage'
 import { TrashPage } from '../features/trash/ui/TrashPage'
 import { ViewsPage } from '../features/views/ui/ViewsPage'
 
+const shellChildren = [
+	{
+		index: true,
+		element: <Navigate replace to='inbox' />,
+	},
+	{
+		path: 'inbox',
+		element: <InboxPage />,
+	},
+	{
+		path: 'focus',
+		element: <Navigate replace to='../views' />,
+	},
+	{
+		path: 'all-tasks',
+		element: <AllTasksPage />,
+	},
+	{
+		path: 'views',
+		element: <ViewsPage />,
+	},
+	{
+		path: 'projects',
+		element: <ProjectOverviewPage />,
+	},
+	{
+		path: 'project/:projectId',
+		element: <ProjectPage />,
+	},
+	{
+		path: 'archive',
+		element: <ArchivePage />,
+	},
+	{
+		path: 'trash',
+		element: <TrashPage />,
+	},
+	{
+		path: 'settings',
+		element: <SettingsPage />,
+	},
+	{
+		path: 'debug/activity',
+		element: <ActivityDebugPage />,
+	},
+]
+
 export const router = createHashRouter([
 	{
 		path: '/quick-capture',
@@ -19,52 +66,16 @@ export const router = createHashRouter([
 	},
 	{
 		path: '/',
-		element: <Navigate to='/space/work/inbox' replace />,
+		element: <Navigate to='/spaces/inbox' replace />,
+	},
+	{
+		path: '/spaces',
+		element: <SpaceLayout />,
+		children: shellChildren,
 	},
 	{
 		path: '/space/:spaceId',
 		element: <SpaceLayout />,
-		children: [
-			{
-				path: 'inbox',
-				element: <InboxPage />,
-			},
-			{
-				path: 'focus',
-				element: <Navigate replace to='../views' />,
-			},
-			{
-				path: 'all-tasks',
-				element: <AllTasksPage />,
-			},
-			{
-				path: 'views',
-				element: <ViewsPage />,
-			},
-			{
-				path: 'projects',
-				element: <ProjectOverviewPage />,
-			},
-			{
-				path: 'project/:projectId',
-				element: <ProjectPage />,
-			},
-			{
-				path: 'archive',
-				element: <ArchivePage />,
-			},
-			{
-				path: 'trash',
-				element: <TrashPage />,
-			},
-			{
-				path: 'settings',
-				element: <SettingsPage />,
-			},
-			{
-				path: 'debug/activity',
-				element: <ActivityDebugPage />,
-			},
-		],
+		children: shellChildren,
 	},
 ])

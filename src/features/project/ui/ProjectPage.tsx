@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
+import { getScopeLabel } from '@/app/layouts/shell/config'
 import {
 	selectActiveDrawerId,
 	selectActiveDrawerKind,
@@ -13,6 +14,8 @@ import {
 } from '@/app/layouts/main-card/MainCardLayout'
 import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
 import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
+import { useScopeRoute } from '@/features/space/model/scopeRoute'
+import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import type { ProjectExecutionTask } from '@/features/project/model/types'
 import { PROJECT_RECORDS, getProjectTasks } from '@/features/workspace'
@@ -28,7 +31,9 @@ import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Box, FolderIcon } from 'lucide-react'
 
 export function ProjectPage() {
-	const { projectId = 'shell-project-stoneflow', spaceId = 'work' } = useParams()
+	const { projectId = 'shell-project-stoneflow' } = useParams()
+	const { scope } = useScopeRoute()
+	const spaces = useSpaceStore(selectSpaces)
 	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
 	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
 	const openDrawer = useDrawerStore((state) => state.openDrawer)
@@ -79,7 +84,7 @@ export function ProjectPage() {
 		>
 			<div className='flex min-h-0 flex-1 flex-col'>
 				<StatusNotice className='mb-3' size='sm'>
-					{bannerMessage} 当前 Space：{spaceId}。
+					{bannerMessage} 当前 Scope：{getScopeLabel(scope, spaces)}。
 				</StatusNotice>
 
 				<div className='flex min-h-0 flex-1 flex-col'>

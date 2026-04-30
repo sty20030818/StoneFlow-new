@@ -5,6 +5,7 @@ use tauri::ipc::Invoke;
 pub(crate) mod activity;
 pub(crate) mod quick_capture;
 pub(crate) mod settings;
+pub(crate) mod spaces;
 pub(crate) mod workspace;
 
 /// 生成命令处理器。
@@ -16,8 +17,15 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         settings::update_sidebar_width,
         settings::update_sidebar_project_section,
         settings::update_sidebar_desktop_preference,
+        spaces::list_visible_spaces,
+        spaces::create_space,
+        spaces::update_space,
+        spaces::set_default_space,
+        spaces::archive_space,
+        spaces::restore_space,
+        spaces::delete_space,
         workspace::healthcheck,
-        workspace::set_active_space,
+        workspace::set_active_scope,
         quick_capture::restore_main_window,
         quick_capture::quit_stoneflow,
         quick_capture::get_command_helper_status

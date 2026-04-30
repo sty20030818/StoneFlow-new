@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react'
 import type * as TauriEvent from '@tauri-apps/api/event'
 
 import {
-	isTaskChangedForSpace,
+	isTaskChangedForScope,
 	normalizeTaskChangedPayload,
 	subscribeToTaskChanged,
 	TASKS_CHANGED_EVENT,
@@ -38,8 +38,9 @@ describe('taskChanged event helpers', () => {
 			source: 'quick_capture',
 			spaceFallback: false,
 		})
-		expect(payload ? isTaskChangedForSpace(payload, 'work') : false).toBe(true)
-		expect(payload ? isTaskChangedForSpace(payload, 'other') : true).toBe(false)
+		expect(payload ? isTaskChangedForScope(payload, { type: 'space', spaceId: 'space-uuid' }) : false).toBe(true)
+		expect(payload ? isTaskChangedForScope(payload, { type: 'space', spaceId: 'space-other' }) : true).toBe(false)
+		expect(payload ? isTaskChangedForScope(payload, { type: 'all' }) : false).toBe(true)
 	})
 
 	it('忽略不完整事件载荷', () => {
@@ -86,7 +87,7 @@ describe('taskChanged event helpers', () => {
 		expect(unlisten).toHaveBeenCalledTimes(1)
 	})
 
-	it('hook 只响应当前 Space 的任务变更', async () => {
+	it('hook 只响应当前 Scope 的任务变更', async () => {
 		const unlisten = vi.fn<() => void>()
 		const onTaskChanged = vi.fn<(payload: TaskChangedPayload) => void>()
 		let callback: TauriEvent.EventCallback<unknown> = () => undefined
@@ -96,7 +97,9 @@ describe('taskChanged event helpers', () => {
 			return unlisten
 		})
 
-		const { unmount } = renderHook(() => useTaskChangedListener('work', onTaskChanged))
+		const { unmount } = renderHook(() =>
+			useTaskChangedListener({ type: 'space', spaceId: 'space-default' }, onTaskChanged),
+		)
 		await Promise.resolve()
 
 		callback({

@@ -12,6 +12,6 @@ pub use activity_repository::{
 };
 pub use project_repository::ProjectRepository;
 pub use settings_repository::SettingsRepository;
-pub use space_repository::SpaceRepository;
+pub use space_repository::{CreateSpaceRecord, SpaceRepository, UpdateSpacePatch};
 pub use task_repository::TaskRepository;
 pub use view_repository::ViewRepository;

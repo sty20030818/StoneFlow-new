@@ -6,28 +6,37 @@ use serde::Serialize;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-/// 当前被主应用选中的 Space。
+/// 当前被主应用选中的 Scope 类型。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ActiveScopeKind {
+    All,
+    Space,
+}
+
+/// 当前 Scope 的轻量运行时快照。
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ActiveSpaceSnapshot {
+pub struct ActiveScopeSnapshot {
     pub id: Uuid,
-    pub slug: String,
+    pub kind: ActiveScopeKind,
+    pub space_id: Option<Uuid>,
 }
 
-/// 当前 Space 的轻量运行时状态。
+/// 当前 Scope 的轻量运行时状态。
 #[derive(Debug, Default)]
-pub struct ActiveSpaceState {
-    inner: RwLock<Option<ActiveSpaceSnapshot>>,
+pub struct ActiveScopeState {
+    inner: RwLock<Option<ActiveScopeSnapshot>>,
 }
 
-impl ActiveSpaceState {
-    /// 覆盖当前 Space。
-    pub async fn set(&self, snapshot: ActiveSpaceSnapshot) {
+impl ActiveScopeState {
+    /// 覆盖当前 Scope。
+    pub async fn set(&self, snapshot: ActiveScopeSnapshot) {
         let mut guard = self.inner.write().await;
         *guard = Some(snapshot);
     }
 
-    /// 读取当前 Space。
-    pub async fn get(&self) -> Option<ActiveSpaceSnapshot> {
+    /// 读取当前 Scope。
+    pub async fn get(&self) -> Option<ActiveScopeSnapshot> {
         self.inner.read().await.clone()
     }
 }

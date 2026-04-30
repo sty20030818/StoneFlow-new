@@ -1,12 +1,14 @@
 import { type FormEvent, useEffect, useState } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import {
 	type ActivityEntityType,
 	type ActivityTimelineEntry,
 	getEntityActivities,
 } from '@/features/activity/api/getEntityActivities'
+import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { MainCardHeader, MainCardLayout } from '@/app/layouts/main-card/MainCardLayout'
+import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import {
@@ -37,7 +39,7 @@ type LoadState =
  * 隐藏调试页：只用于按实体读取 Activity timeline，不接正式业务入口。
  */
 export function ActivityDebugPage() {
-	const { spaceId = 'work' } = useParams()
+	const { scope, spaceId } = useScopeRoute()
 	const [searchParams, setSearchParams] = useSearchParams()
 	const [entityType, setEntityType] = useState<ActivityEntityType>(
 		(searchParams.get('entityType') as ActivityEntityType | null) ?? 'task',
@@ -171,7 +173,7 @@ export function ActivityDebugPage() {
 							查询 Activity
 						</Button>
 						<Button asChild className='h-10 rounded-lg' type='button' variant='ghost'>
-							<Link to={`/space/${spaceId}/inbox`}>返回</Link>
+							<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回</Link>
 						</Button>
 					</div>
 				</form>

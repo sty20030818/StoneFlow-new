@@ -19,10 +19,30 @@ describe('ShellFooter', () => {
 			title: '/tmp/StoneFlow/app.db',
 		})
 
-		render(<ShellFooter activeSection='trash' currentSpaceId='work' />)
+		render(
+			<ShellFooter
+				activeSection='trash'
+				currentScope={{ type: 'space', spaceId: 'space-personal' }}
+				currentSpaceId='space-personal'
+				spaces={[
+					{
+						id: 'space-personal',
+						name: '个人',
+						iconKey: 'user',
+						colorKey: 'blue',
+						isDefault: true,
+						sortOrder: 100,
+						archivedAt: null,
+						deletedAt: null,
+						createdAt: '2026-04-30T00:00:00.000Z',
+						updatedAt: '2026-04-30T00:00:00.000Z',
+					},
+				]}
+			/>,
+		)
 
 		expect(screen.getByText('本地数据库已连接')).toBeInTheDocument()
-		expect(screen.getByText('工作')).toBeInTheDocument()
+		expect(screen.getByText('个人')).toBeInTheDocument()
 		expect(screen.getAllByText('Trash')[0]).toBeInTheDocument()
 		expect(screen.queryByRole('button')).not.toBeInTheDocument()
 	})

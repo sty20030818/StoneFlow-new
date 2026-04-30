@@ -2,14 +2,16 @@ import { startTransition, useEffect, useLayoutEffect, useMemo, useState } from '
 import { useNavigate } from 'react-router-dom'
 
 import {
+	buildScopedProjectPath,
 	getSectionLabel,
-	getSpaceLabel,
+	getScopeLabel,
 	SHELL_COMMAND_ROUTE_ITEMS,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
 import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
+import type { Scope, Space } from '@/shared/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -60,9 +62,11 @@ import {
 } from 'lucide-react'
 
 type ShellHeaderProps = {
-	currentSpaceId: string
+	currentScope: Scope
+	currentSpaceId: string | null
 	activeSection: ShellSectionKey
 	isCommandOpen: boolean
+	spaces: Space[]
 	projects: ShellProjectLink[]
 	onCommandOpenChange: (open: boolean) => void
 	onOpenTaskCreateDialog: () => void
@@ -72,6 +76,7 @@ type ShellHeaderProps = {
 }
 
 export function ShellHeader({
+	currentScope,
 	currentSpaceId,
 	activeSection,
 	isCommandOpen,
@@ -81,6 +86,7 @@ export function ShellHeader({
 	onOpenDrawer,
 	onCloseDrawer,
 	projects,
+	spaces,
 }: ShellHeaderProps) {
 	const navigate = useNavigate()
 	const [isMaximized, setIsMaximized] = useState(false)
@@ -97,7 +103,7 @@ export function ShellHeader({
 		goBack,
 		goForward,
 		navigateToHistoryEntry,
-	} = useShellRouteHistory({ currentSpaceId, projects })
+	} = useShellRouteHistory({ currentScope, currentSpaceId, spaces, projects })
 	const { toggleSidebar, visualState: sidebarVisualState, isMobile: isLayoutNarrow } = useSidebar()
 	const sidebarToggleOpen =
 		sidebarVisualState === 'desktop-expanded' || sidebarVisualState === 'mobile-open'
@@ -178,7 +184,7 @@ export function ShellHeader({
 	const handleOpenProjectFromSearch = (projectId: string) => {
 		onCloseDrawer()
 		startTransition(() => {
-			navigate(`/space/${currentSpaceId}/project/${projectId}`)
+			navigate(buildScopedProjectPath(currentScope, projectId, currentSpaceId))
 		})
 	}
 
@@ -377,13 +383,13 @@ export function ShellHeader({
 							}
 						}}
 					>
-						<div className='min-w-0 w-full max-w-100'>
-							<GlobalSearchInput
-								currentSpaceId={currentSpaceId}
-								onOpenProject={handleOpenProjectFromSearch}
-								onOpenTask={(taskId) => onOpenDrawer('task', taskId)}
-							/>
-						</div>
+							<div className='min-w-0 w-full max-w-100'>
+								<GlobalSearchInput
+									currentSpaceId={currentSpaceId ?? ''}
+									onOpenProject={handleOpenProjectFromSearch}
+									onOpenTask={(taskId) => onOpenDrawer('task', taskId)}
+								/>
+							</div>
 					</div>
 					<div
 						className={`flex h-full shrink-0 items-center ${isMac ? 'gap-2 pl-1.5 pr-3' : 'gap-0 pl-0 pr-0'}`}
@@ -480,12 +486,12 @@ export function ShellHeader({
 				</div>
 			</header>
 
-			<CommandDialog
-				className='max-w-2xl border border-border/80 bg-popover/98 shadow-(--sf-shadow-float)'
-				description={`${getSpaceLabel(currentSpaceId)} · ${getSectionLabel(activeSection)}`}
-				onOpenChange={onCommandOpenChange}
-				open={isCommandOpen}
-				title='StoneFlow Command'
+				<CommandDialog
+					className='max-w-2xl border border-border/80 bg-popover/98 shadow-(--sf-shadow-float)'
+					description={`${getScopeLabel(currentScope, spaces)} · ${getSectionLabel(activeSection)}`}
+					onOpenChange={onCommandOpenChange}
+					open={isCommandOpen}
+					title='StoneFlow Command'
 			>
 				<Command className='bg-transparent'>
 					<CommandInput placeholder='创建任务、跳转页面或打开详情…' />
@@ -530,13 +536,13 @@ export function ShellHeader({
 
 						<CommandSeparator />
 
-						<CommandGroup heading='Navigate'>
-							{SHELL_COMMAND_ROUTE_ITEMS.map((item) => (
-								<CommandItem
-									key={item.key}
-									onSelect={() => handleNavigate(item.to(currentSpaceId))}
-									value={item.label}
-								>
+							<CommandGroup heading='Navigate'>
+								{SHELL_COMMAND_ROUTE_ITEMS.map((item) => (
+									<CommandItem
+										key={item.key}
+										onSelect={() => handleNavigate(item.to(currentScope, currentSpaceId))}
+										value={item.label}
+									>
 									<item.icon />
 									{item.label}
 								</CommandItem>
@@ -552,14 +558,16 @@ export function ShellHeader({
 									当前 Space 还没有项目
 								</CommandItem>
 							) : (
-								projects.map((project) => (
-									<CommandItem
-										key={project.id}
-										onSelect={() =>
-											handleNavigate(`/space/${currentSpaceId}/project/${project.id}`)
-										}
-										value={project.label}
-									>
+									projects.map((project) => (
+										<CommandItem
+											key={project.id}
+											onSelect={() =>
+												handleNavigate(
+													buildScopedProjectPath(currentScope, project.id, currentSpaceId),
+												)
+											}
+											value={project.label}
+										>
 										<SearchIcon />
 										{project.label}
 										{project.badge ? (

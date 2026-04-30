@@ -42,24 +42,44 @@ describe('ShellSidebar', () => {
 
 function renderShellSidebar(settings: Parameters<typeof ShellSidebar>[0]['settings']) {
 	return render(
-		<MemoryRouter initialEntries={['/space/work/inbox']}>
+		<MemoryRouter initialEntries={['/space/space-personal/inbox']}>
 			<TooltipProvider>
 				<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
 					<ShellSidebar
-						currentSpaceId='work'
+						currentScope={{ type: 'space', spaceId: 'space-personal' }}
+						currentSpaceId='space-personal'
+						onArchiveSpace={async () => mockSpace}
+						onCreateSpace={async () => mockSpace}
+						onDeleteSpace={async () => mockSpace}
 						onOpenProjectCreateDialog={() => undefined}
 						onResetMainItemsVisibility={() => undefined}
+						onSetDefaultSpace={async () => mockSpace}
 						onUpdateItemVisibility={() => undefined}
+						onUpdateSpace={async () => mockSpace}
 						projects={[
 							{
 								id: 'project-1',
 								label: 'StoneFlow VNext',
 							},
 						]}
+						spaces={[mockSpace]}
 						settings={settings}
 					/>
 				</SidebarProvider>
 			</TooltipProvider>
 		</MemoryRouter>,
 	)
+}
+
+const mockSpace = {
+	id: 'space-personal',
+	name: '个人',
+	iconKey: 'user',
+	colorKey: 'blue',
+	isDefault: true,
+	sortOrder: 100,
+	archivedAt: null,
+	deletedAt: null,
+	createdAt: '2026-04-30T00:00:00.000Z',
+	updatedAt: '2026-04-30T00:00:00.000Z',
 }

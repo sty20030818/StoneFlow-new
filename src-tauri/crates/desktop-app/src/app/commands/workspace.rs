@@ -2,22 +2,34 @@
 
 use serde::{Deserialize, Serialize};
 use tauri::State;
+use uuid::Uuid;
 
 use crate::app::error::AppError;
-use crate::app::state::{ActiveSpaceSnapshot, ActiveSpaceState};
-use crate::domain::{next_runtime_id, normalize_slug, DEFAULT_SPACE_NAME, DEFAULT_SPACE_SLUG};
+use crate::app::state::{ActiveScopeKind, ActiveScopeSnapshot, ActiveScopeState};
+use crate::domain::next_runtime_id;
 use crate::infrastructure::database::DatabaseRuntimeState;
 use crate::infrastructure::runtime::{healthcheck_payload, RuntimeHealthcheckPayload};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScopeType {
+    All,
+    Space,
+}
+
 #[derive(Debug, Clone, Deserialize)]
-pub struct SetActiveSpaceInput {
-    pub space_slug: String,
+#[serde(rename_all = "camelCase")]
+pub struct SetActiveScopeInput {
+    pub scope_type: ScopeType,
+    pub space_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct ActiveSpacePayload {
-    pub active_space_id: String,
-    pub space_slug: String,
+#[serde(rename_all = "camelCase")]
+pub struct ActiveScopePayload {
+    pub active_scope_id: String,
+    pub scope_type: ScopeType,
+    pub space_id: Option<String>,
 }
 
 #[tauri::command]
@@ -26,31 +38,36 @@ pub fn healthcheck(database: State<'_, DatabaseRuntimeState>) -> RuntimeHealthch
 }
 
 #[tauri::command]
-pub async fn set_active_space(
-    input: SetActiveSpaceInput,
-    active_space: State<'_, ActiveSpaceState>,
-) -> Result<ActiveSpacePayload, AppError> {
-    let resolved_slug = {
-        let slug = normalize_slug(&input.space_slug);
-        if slug.is_empty() {
-            DEFAULT_SPACE_SLUG.to_owned()
-        } else {
-            slug
+pub async fn set_active_scope(
+    input: SetActiveScopeInput,
+    active_scope: State<'_, ActiveScopeState>,
+) -> Result<ActiveScopePayload, AppError> {
+    let (kind, space_id) = match input.scope_type {
+        ScopeType::All => (ActiveScopeKind::All, None),
+        ScopeType::Space => {
+            let raw_space_id = input
+                .space_id
+                .as_deref()
+                .ok_or_else(|| AppError::validation("scopeType=space 时必须提供 spaceId"))?;
+            let space_id = Uuid::parse_str(raw_space_id)
+                .map_err(|_| AppError::validation("spaceId 必须是合法 UUID"))?;
+            (ActiveScopeKind::Space, Some(space_id))
         }
     };
 
-    let snapshot = ActiveSpaceSnapshot {
+    let snapshot = ActiveScopeSnapshot {
         id: next_runtime_id(),
-        slug: resolved_slug.clone(),
+        kind,
+        space_id,
     };
-    active_space.set(snapshot.clone()).await;
+    active_scope.set(snapshot.clone()).await;
 
-    Ok(ActiveSpacePayload {
-        active_space_id: snapshot.id.to_string(),
-        space_slug: if snapshot.slug.is_empty() {
-            DEFAULT_SPACE_NAME.to_owned()
-        } else {
-            snapshot.slug
+    Ok(ActiveScopePayload {
+        active_scope_id: snapshot.id.to_string(),
+        scope_type: match snapshot.kind {
+            ActiveScopeKind::All => ScopeType::All,
+            ActiveScopeKind::Space => ScopeType::Space,
         },
+        space_id: snapshot.space_id.map(|value| value.to_string()),
     })
 }

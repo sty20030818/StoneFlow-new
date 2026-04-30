@@ -14,7 +14,7 @@ import { cn } from '@/shared/lib/utils'
 import { FolderPlusIcon, SquarePenIcon } from 'lucide-react'
 
 type ShellMainProps = PropsWithChildren<{
-	currentSpaceId: string
+	currentSpaceLabel: string
 	activeDrawerKind: ShellDrawerKind | null
 	activeDrawerId: string | null
 	onCloseDrawer: () => void
@@ -50,7 +50,7 @@ const INTERACTIVE_TARGET_SELECTOR = [
 
 export function ShellMain({
 	children,
-	currentSpaceId,
+	currentSpaceLabel,
 	activeDrawerKind,
 	activeDrawerId,
 	onCloseDrawer,
@@ -145,13 +145,13 @@ export function ShellMain({
 								<div className='flex min-h-full min-w-0 flex-1 flex-col'>{children}</div>
 							</div>
 
-							<ShellDrawer
-								activeDrawerId={activeDrawerId}
-								activeDrawerKind={activeDrawerKind}
-								currentSpaceId={currentSpaceId}
-								onClose={onCloseDrawer}
-								open={isDrawerOpen}
-							/>
+								<ShellDrawer
+									activeDrawerId={activeDrawerId}
+									activeDrawerKind={activeDrawerKind}
+									currentSpaceLabel={currentSpaceLabel}
+									onClose={onCloseDrawer}
+									open={isDrawerOpen}
+								/>
 						</div>
 					</ContextMenuTrigger>
 					<ContextMenuContent className='w-40'>

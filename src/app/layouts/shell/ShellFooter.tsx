@@ -1,17 +1,24 @@
-import { getSectionLabel, getSpaceLabel } from '@/app/layouts/shell/config'
+import { getScopeLabel, getSectionLabel } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
+import type { Scope, Space } from '@/shared/types'
 import { useHealthcheckStatus } from '@/features/healthcheck/model/useHealthcheckStatus'
 
 type ShellFooterProps = {
-	currentSpaceId: string
+	currentScope: Scope
+	currentSpaceId: string | null
+	spaces: Space[]
 	activeSection: ShellSectionKey
 }
 
 /**
  * Shell 底栏：全宽单行，与侧栏槽解耦（底栏不参与双列 grid）。
  */
-export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps) {
+export function ShellFooter({ currentScope, currentSpaceId, spaces, activeSection }: ShellFooterProps) {
 	const healthcheckStatus = useHealthcheckStatus()
+	const footerScope =
+		currentScope.type === 'space' && currentSpaceId
+			? { type: 'space' as const, spaceId: currentSpaceId }
+			: currentScope
 
 	return (
 		<footer className='relative z-32 isolate flex h-9.5 shrink-0 items-center justify-between gap-3 overflow-x-clip bg-(--sf-color-shell-chrome) px-4 shadow-none'>
@@ -32,7 +39,7 @@ export function ShellFooter({ currentSpaceId, activeSection }: ShellFooterProps)
 
 			<div className='flex min-w-0 shrink-0 items-center gap-2 text-[11px] text-(--sf-color-shell-tertiary) sm:gap-3'>
 				<span className='rounded-md border border-(--sf-color-border-subtle) bg-card px-2 py-1 text-[10.5px] text-(--sf-color-text-secondary)'>
-					{getSpaceLabel(currentSpaceId)}
+					{getScopeLabel(footerScope, spaces)}
 				</span>
 				<span className='text-(--sf-color-border-strong)'>•</span>
 				<span className='max-w-[28vw] truncate sm:max-w-none'>

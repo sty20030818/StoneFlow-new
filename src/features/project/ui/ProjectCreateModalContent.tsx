@@ -6,7 +6,7 @@ import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Textarea } from '@/shared/ui/base/textarea'
 
 type ProjectCreateModalContentProps = {
-	currentSpaceId: string
+	currentSpaceLabel: string
 	parentProjectId?: string | null
 	onClose: () => void
 }
@@ -15,7 +15,7 @@ type ProjectCreateModalContentProps = {
  * 保留项目创建弹窗的完整外观，在前置阶段 B 只使用本地表单状态。
  */
 export function ProjectCreateModalContent({
-	currentSpaceId,
+	currentSpaceLabel,
 	parentProjectId = null,
 	onClose,
 }: ProjectCreateModalContentProps) {
@@ -86,13 +86,13 @@ export function ProjectCreateModalContent({
 				</label>
 			</div>
 
-			{status === 'success' ? (
-				<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
-					已保留{isSubproject ? '子项目' : '项目'}创建弹窗壳层。
-					{name.trim() ? ` 示例名称：${name.trim()}。` : ''}
-					当前 Space：{currentSpaceId}。
-				</StatusNotice>
-			) : (
+				{status === 'success' ? (
+					<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
+						已保留{isSubproject ? '子项目' : '项目'}创建弹窗壳层。
+						{name.trim() ? ` 示例名称：${name.trim()}。` : ''}
+						当前 Scope：{currentSpaceLabel}。
+					</StatusNotice>
+				) : (
 				<StatusNotice className='text-[12px] leading-5' role='status' size='sm'>
 					前置阶段 B 只保留表单交互和视觉层，真实项目创建逻辑将在后续阶段接入。
 				</StatusNotice>

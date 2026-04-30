@@ -17,7 +17,7 @@ import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Textarea } from '@/shared/ui/base/textarea'
 
 type TaskCreateModalContentProps = {
-	currentSpaceId: string
+	currentSpaceLabel: string
 	initialProjectId: string | null
 	initialStatus: TaskStatus
 	onClose: () => void
@@ -35,7 +35,7 @@ const EMPTY_PROJECT_VALUE = '__project-empty__'
  * 保留任务创建弹窗的完整表单外观，但在前置阶段 B 只做本地表单状态演示。
  */
 export function TaskCreateModalContent({
-	currentSpaceId,
+	currentSpaceLabel,
 	initialProjectId,
 	initialStatus,
 	onClose,
@@ -170,13 +170,13 @@ export function TaskCreateModalContent({
 				</label>
 			</div>
 
-			{status === 'success' ? (
-				<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
-					已保留“新建任务”弹窗壳层。
-					{title.trim() ? ` 任务标题示例：${title.trim()}。` : ''}
-					当前 Space：{currentSpaceId} · 目标状态：{initialStatus === 'done' ? 'Done' : 'Todo'}。
-				</StatusNotice>
-			) : (
+				{status === 'success' ? (
+					<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
+						已保留“新建任务”弹窗壳层。
+						{title.trim() ? ` 任务标题示例：${title.trim()}。` : ''}
+						当前 Scope：{currentSpaceLabel} · 目标状态：{initialStatus === 'done' ? 'Done' : 'Todo'}。
+					</StatusNotice>
+				) : (
 				<StatusNotice className='text-[12px] leading-5' role='status' size='sm'>
 					前置阶段 B 只保留表单交互与视觉层，真实任务创建逻辑将在后续阶段接入。
 				</StatusNotice>

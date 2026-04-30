@@ -1,13 +1,11 @@
 import type { ComponentType } from 'react'
 
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
+import type { Scope, Space } from '@/shared/types'
 import type { BadgeVariant } from '@/shared/ui/base/badge'
 import {
 	ArchiveIcon,
-	BriefcaseBusinessIcon,
 	FolderIcon,
-	GraduationCapIcon,
-	HouseIcon,
 	InboxIcon,
 	ListTodoIcon,
 	Layers3Icon,
@@ -27,7 +25,7 @@ type ShellNavItem<TKey extends string = ShellCommandNavKey> = {
 	section: ShellSectionKey
 	label: string
 	icon: ShellIcon
-	to: (spaceId: string) => string
+	to: (scope: Scope, fallbackSpaceId?: string | null) => string
 }
 
 export type ShellProjectLink = {
@@ -62,14 +60,6 @@ export const SHELL_NAV_BADGES: Partial<Record<ShellSectionKey, string>> = {
 	trash: '2',
 }
 
-type ShellSpace = {
-	id: string
-	label: string
-	icon: ShellIcon
-	iconClassName: string
-	iconBadgeClassName: string
-}
-
 type DrawerDetailBadge = {
 	label: string
 	variant?: BadgeVariant
@@ -93,58 +83,34 @@ export type DrawerDetail = {
 	sections: DrawerDetailSection[]
 }
 
-export const SHELL_SPACES: ShellSpace[] = [
-	{
-		id: 'work',
-		label: '工作',
-		icon: BriefcaseBusinessIcon,
-		iconClassName: 'text-[#5e6ad2]',
-		iconBadgeClassName: 'bg-[#5e6ad2]',
-	},
-	{
-		id: 'studio',
-		label: '学习',
-		icon: GraduationCapIcon,
-		iconClassName: 'text-[#e58a00]',
-		iconBadgeClassName: 'bg-[#e58a00]',
-	},
-	{
-		id: 'life',
-		label: '生活',
-		icon: HouseIcon,
-		iconClassName: 'text-[#2da44e]',
-		iconBadgeClassName: 'bg-[#2da44e]',
-	},
-]
-
 export const SHELL_NAV_ITEMS: ShellNavItem<ShellMainNavKey>[] = [
 	{
 		key: 'inbox',
 		section: 'inbox',
 		label: 'Inbox',
 		icon: InboxIcon,
-		to: (spaceId) => `/space/${spaceId}/inbox`,
+		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'inbox', fallbackSpaceId),
 	},
 	{
 		key: 'allTasks',
 		section: 'allTasks',
 		label: 'All Tasks',
 		icon: ListTodoIcon,
-		to: (spaceId) => `/space/${spaceId}/all-tasks`,
+		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'all-tasks', fallbackSpaceId),
 	},
 	{
 		key: 'views',
 		section: 'views',
 		label: 'Views',
 		icon: TargetIcon,
-		to: (spaceId) => `/space/${spaceId}/views`,
+		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'views', fallbackSpaceId),
 	},
 	{
 		key: 'projectOverview',
 		section: 'projects',
 		label: 'Project Overview',
 		icon: FolderIcon,
-		to: (spaceId) => `/space/${spaceId}/projects`,
+		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'projects', fallbackSpaceId),
 	},
 ]
 
@@ -154,14 +120,14 @@ export const SHELL_FOOTER_ITEMS: ShellNavItem<ShellFooterNavKey>[] = [
 		section: 'archive',
 		label: 'Archive',
 		icon: ArchiveIcon,
-		to: (spaceId) => `/space/${spaceId}/archive`,
+		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'archive', fallbackSpaceId),
 	},
 	{
 		key: 'trash',
 		section: 'trash',
 		label: 'Trash',
 		icon: Trash2Icon,
-		to: (spaceId) => `/space/${spaceId}/trash`,
+		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'trash', fallbackSpaceId),
 	},
 ]
 
@@ -170,7 +136,7 @@ export const SHELL_SETTINGS_ITEM: ShellNavItem<'settings'> = {
 	section: 'settings',
 	label: 'Settings',
 	icon: Settings2Icon,
-	to: (spaceId) => `/space/${spaceId}/settings`,
+	to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'settings', fallbackSpaceId),
 }
 
 export const SHELL_COMMAND_ROUTE_ITEMS = [
@@ -236,12 +202,45 @@ export function getSectionLabel(section: ShellSectionKey) {
 	}
 }
 
-export function getSpaceLabel(spaceId: string) {
-	return SHELL_SPACES.find((item) => item.id === spaceId)?.label ?? spaceId
+export function buildScopedSectionPath(
+	scope: Scope,
+	section: string,
+	fallbackSpaceId?: string | null,
+) {
+	if (scope.type === 'all') {
+		return `/spaces/${section}`
+	}
+
+	const spaceId = scope.spaceId || fallbackSpaceId
+	return spaceId ? `/space/${spaceId}/${section}` : `/spaces/${section}`
 }
 
-export function getProjectSectionPath(spaceId: string, projectId?: string | null) {
-	return projectId ? `/space/${spaceId}/project/${projectId}` : `/space/${spaceId}/inbox`
+export function buildScopedProjectPath(
+	scope: Scope,
+	projectId?: string | null,
+	fallbackSpaceId?: string | null,
+) {
+	const spaceId = scope.type === 'space' ? scope.spaceId : fallbackSpaceId
+	if (!projectId || !spaceId) {
+		return buildScopedSectionPath(scope, 'projects', fallbackSpaceId)
+	}
+	return `/space/${spaceId}/project/${projectId}`
+}
+
+export function getSpaceLabel(spaceId: string | null | undefined, spaces: Space[] = []) {
+	if (!spaceId) {
+		return '未选择 Space'
+	}
+
+	return spaces.find((item) => item.id === spaceId)?.name ?? spaceId
+}
+
+export function getScopeLabel(scope: Scope, spaces: Space[] = []) {
+	if (scope.type === 'all') {
+		return '全部 Spaces'
+	}
+
+	return getSpaceLabel(scope.spaceId, spaces)
 }
 
 const taskDetails: Record<string, DrawerDetail> = {

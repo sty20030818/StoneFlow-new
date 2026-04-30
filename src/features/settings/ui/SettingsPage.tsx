@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 
-import { selectCurrentSpaceId, useShellNavStore } from '@/app/layouts/shell/model/useShellNavStore'
+import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { MainCardHeader, MainCardLayout } from '@/app/layouts/main-card/MainCardLayout'
+import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Empty,
@@ -18,7 +19,7 @@ import { SettingsIcon } from 'lucide-react'
  * Shell 内的设置占位页，先承接路由与主内容区域，后续再拆分具体设置模块。
  */
 export function SettingsPage() {
-	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
+	const { scope, spaceId } = useScopeRoute()
 
 	return (
 		<MainCardLayout header={<MainCardHeader title='Settings' />} toolbar={null}>
@@ -33,7 +34,7 @@ export function SettingsPage() {
 					</EmptyHeader>
 					<EmptyContent>
 						<Button asChild>
-							<Link to={`/space/${currentSpaceId}/inbox`}>返回 Inbox</Link>
+							<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回 Inbox</Link>
 						</Button>
 					</EmptyContent>
 				</Empty>

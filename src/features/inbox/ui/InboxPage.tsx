@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 
-import { selectCurrentSpaceId, useShellNavStore } from '@/app/layouts/shell/model/useShellNavStore'
+import { getScopeLabel } from '@/app/layouts/shell/config'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import { useScopeRoute } from '@/features/space/model/scopeRoute'
+import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { getInboxTasks, getProjectOptions, type Task } from '@/features/workspace'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -57,7 +59,8 @@ type InboxDraft = {
 const EMPTY_PROJECT_VALUE = '__inbox-project-empty__'
 
 export function InboxPage() {
-	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
+	const { scope } = useScopeRoute()
+	const spaces = useSpaceStore(selectSpaces)
 	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
 	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
 	const openDrawer = useDrawerStore((state) => state.openDrawer)
@@ -216,7 +219,7 @@ export function InboxPage() {
 				)}
 
 				<div className='mt-auto pt-4 text-[12px] text-(--sf-color-shell-tertiary)'>
-					当前 Space：{currentSpaceId}
+					当前 Scope：{getScopeLabel(scope, spaces)}
 				</div>
 			</div>
 		</MainCardLayout>

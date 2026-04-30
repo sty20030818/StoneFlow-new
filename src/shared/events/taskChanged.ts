@@ -1,6 +1,8 @@
 import { useEffect, useEffectEvent } from 'react'
 import { listen } from '@tauri-apps/api/event'
 
+import type { Scope } from '@/shared/types'
+
 export const TASKS_CHANGED_EVENT = 'stoneflow://tasks/changed'
 
 export type TaskChangedPayload = {
@@ -44,8 +46,12 @@ export function normalizeTaskChangedPayload(payload: unknown): TaskChangedPayloa
 	}
 }
 
-export function isTaskChangedForSpace(payload: TaskChangedPayload, spaceSlug: string) {
-	return payload.spaceSlug === spaceSlug
+export function isTaskChangedForScope(payload: TaskChangedPayload, scope: Scope) {
+	if (scope.type === 'all') {
+		return true
+	}
+
+	return payload.spaceId === scope.spaceId
 }
 
 export function subscribeToTaskChanged(onTaskChanged: (payload: TaskChangedPayload) => void) {
@@ -76,16 +82,16 @@ export function subscribeToTaskChanged(onTaskChanged: (payload: TaskChangedPaylo
 }
 
 export function useTaskChangedListener(
-	spaceSlug: string,
+	scope: Scope,
 	onTaskChanged: (payload: TaskChangedPayload) => void,
 ) {
 	const handleTaskChanged = useEffectEvent((payload: TaskChangedPayload) => {
-		if (!isTaskChangedForSpace(payload, spaceSlug)) {
+		if (!isTaskChangedForScope(payload, scope)) {
 			return
 		}
 
 		onTaskChanged(payload)
 	})
 
-	useEffect(() => subscribeToTaskChanged(handleTaskChanged), [spaceSlug])
+	useEffect(() => subscribeToTaskChanged(handleTaskChanged), [scope])
 }

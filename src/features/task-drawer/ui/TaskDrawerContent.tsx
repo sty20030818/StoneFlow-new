@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ExternalLink, File, Folder, Link2, Trash2 } from 'lucide-react'
 
-import { getSpaceLabel } from '@/app/layouts/shell/config'
 import {
 	getProjectOptions,
 	getTaskRecord,
@@ -27,7 +26,7 @@ import { Textarea } from '@/shared/ui/base/textarea'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 
 type TaskDrawerContentProps = {
-	currentSpaceId: string
+	currentSpaceLabel: string
 	taskId: string
 	onClose: () => void
 }
@@ -43,7 +42,7 @@ const DRAWER_SECTION_TITLE_CLASS =
 /**
  * 保留任务详情抽屉的完整表单与资源区块，数据来自本地 mock。
  */
-export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawerContentProps) {
+export function TaskDrawerContent({ currentSpaceLabel, taskId, onClose }: TaskDrawerContentProps) {
 	const task = getTaskRecord(taskId)
 	const projectOptions = getProjectOptions()
 	const initialResources = useMemo(() => getTaskResources(taskId), [taskId])
@@ -108,9 +107,9 @@ export function TaskDrawerContent({ currentSpaceId, taskId, onClose }: TaskDrawe
 		<div className='space-y-4'>
 			<div className='space-y-1.5'>
 				<p className={DRAWER_SECTION_TITLE_CLASS}>任务详情</p>
-				<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
-					在 {getSpaceLabel(currentSpaceId)} 的主视图内直接编辑任务，不需要跳页。
-				</p>
+					<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
+						在 {currentSpaceLabel} 的主视图内直接编辑任务，不需要跳页。
+					</p>
 			</div>
 
 			<div className={`${DRAWER_SECTION_CLASS} space-y-3 px-3.5 py-3.5`}>

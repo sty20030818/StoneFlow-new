@@ -1,6 +1,8 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useState } from 'react'
 
+import { buildScopedSectionPath } from '@/app/layouts/shell/config'
+import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
@@ -24,7 +26,7 @@ import { Trash2Icon } from 'lucide-react'
 import { TRASH_ENTRIES, type TrashEntry } from '@/features/workspace'
 
 export function TrashPage() {
-	const { spaceId = 'work' } = useParams()
+	const { scope, spaceId } = useScopeRoute()
 	const [entries, setEntries] = useState(TRASH_ENTRIES)
 	const [pendingEntryId, setPendingEntryId] = useState<string | null>(null)
 	const [bannerMessage, setBannerMessage] = useState(
@@ -78,7 +80,7 @@ export function TrashPage() {
 								</EmptyHeader>
 								<EmptyContent>
 									<Button asChild>
-										<Link to={`/space/${spaceId}/inbox`}>返回 Inbox</Link>
+										<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回 Inbox</Link>
 									</Button>
 								</EmptyContent>
 							</Empty>

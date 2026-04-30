@@ -1,6 +1,7 @@
 import { useEffect, type PropsWithChildren } from 'react'
 
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
+import type { Scope } from '@/shared/types'
 import { SHELL_NAV_BADGES, SHELL_PROJECT_LINKS } from '@/app/layouts/shell/config'
 import {
 	selectActiveDrawerId,
@@ -26,17 +27,29 @@ import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
+import {
+	selectSpaceError,
+	selectSpaces,
+	selectSpaceStatus,
+	useSpaceStore,
+} from '@/features/space/model/useSpaceStore'
 import { getProjectOptions } from '@/features/workspace'
 import { ProjectCreateDialog } from '@/features/project/ui/ProjectCreateDialog'
 import { TaskCreateDialog } from '@/features/task/ui/TaskCreateDialog'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 
 type ShellLayoutProps = PropsWithChildren<{
-	currentSpaceId: string
+	currentScope: Scope
+	currentSpaceId: string | null
 	activeSection: ShellSectionKey
 }>
 
-export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLayoutProps) {
+export function ShellLayout({
+	children,
+	currentScope,
+	currentSpaceId,
+	activeSection,
+}: ShellLayoutProps) {
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
 	const isTaskCreateOpen = useDialogStore(selectIsTaskCreateOpen)
 	const taskCreateProjectId = useDialogStore(selectTaskCreateProjectId)
@@ -55,7 +68,16 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 	const sidebarSettingsStatus = useSidebarSettingsStore(selectSidebarSettingsStatus)
 	const sidebarSettings = useSidebarSettingsStore(selectSidebarSettings)
 	const sidebarSettingsError = useSidebarSettingsStore(selectSidebarSettingsError)
+	const spaces = useSpaceStore(selectSpaces)
+	const spaceStatus = useSpaceStore(selectSpaceStatus)
+	const spaceError = useSpaceStore(selectSpaceError)
 	const loadSidebarSettings = useSidebarSettingsStore((state) => state.load)
+	const loadSpaces = useSpaceStore((state) => state.load)
+	const createSpace = useSpaceStore((state) => state.createSpace)
+	const updateSpace = useSpaceStore((state) => state.updateSpace)
+	const setDefaultSpace = useSpaceStore((state) => state.setDefaultSpace)
+	const archiveSpace = useSpaceStore((state) => state.archiveSpace)
+	const deleteSpace = useSpaceStore((state) => state.deleteSpace)
 	const setSidebarWidth = useSidebarSettingsStore((state) => state.setSidebarWidth)
 	const setDesktopPreference = useSidebarSettingsStore((state) => state.setDesktopPreference)
 	const setSidebarItemVisibility = useSidebarSettingsStore((state) => state.setItemVisibility)
@@ -69,9 +91,25 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 		}
 	}, [loadSidebarSettings, sidebarSettingsStatus])
 
-	if (!sidebarSettings) {
-		return <ShellLayoutSkeleton message={sidebarSettingsError} status={sidebarSettingsStatus} />
+	useEffect(() => {
+		if (spaceStatus === 'idle') {
+			void loadSpaces()
+		}
+	}, [loadSpaces, spaceStatus])
+
+	if (!sidebarSettings || spaceStatus === 'loading' || (spaceStatus === 'ready' && spaces.length === 0)) {
+		return (
+			<ShellLayoutSkeleton
+				message={sidebarSettingsError ?? spaceError}
+				status={sidebarSettings ? spaceStatus : sidebarSettingsStatus}
+			/>
+		)
 	}
+
+	const currentSpaceLabel =
+		currentScope.type === 'all'
+			? '全部 Spaces'
+			: spaces.find((space) => space.id === currentSpaceId)?.name ?? currentSpaceId ?? '未选择 Space'
 
 	return (
 		<SidebarProvider
@@ -88,6 +126,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 			<ShellHeader
 				activeSection={activeSection}
 				currentSpaceId={currentSpaceId}
+				currentScope={currentScope}
 				isCommandOpen={isCommandOpen}
 				onCloseDrawer={closeDrawer}
 				onCommandOpenChange={setCommandOpen}
@@ -95,21 +134,29 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 				onOpenProjectCreateDialog={() => openProjectCreateDialog()}
 				onOpenTaskCreateDialog={() => openTaskCreateDialog()}
 				projects={SHELL_PROJECT_LINKS}
+				spaces={spaces}
 			/>
 
 			<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-(--sf-color-shell-chrome)'>
 				<div className='flex min-h-0 w-(--sf-shell-sidebar-reserved-width) shrink-0 flex-col overflow-hidden transition-[width] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) motion-reduce:transition-none group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none'>
 					<ShellSidebar
+						currentScope={currentScope}
 						currentSpaceId={currentSpaceId}
 						navBadges={SHELL_NAV_BADGES}
+						onArchiveSpace={archiveSpace}
+						onCreateSpace={createSpace}
+						onDeleteSpace={deleteSpace}
 						onOpenProjectCreateDialog={openProjectCreateDialog}
 						onResetMainItemsVisibility={() => {
 							void resetSidebarMainItemsVisibility()
 						}}
+						onSetDefaultSpace={setDefaultSpace}
 						onUpdateItemVisibility={(target, visible) => {
 							void setSidebarItemVisibility(target, visible)
 						}}
+						onUpdateSpace={updateSpace}
 						projects={SHELL_PROJECT_LINKS}
+						spaces={spaces}
 						settings={sidebarSettings}
 					/>
 				</div>
@@ -118,7 +165,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 					<ShellMain
 						activeDrawerId={activeDrawerId}
 						activeDrawerKind={activeDrawerKind}
-						currentSpaceId={currentSpaceId}
+						currentSpaceLabel={currentSpaceLabel}
 						onCloseDrawer={closeDrawer}
 						onOpenProjectCreateDialog={() => openProjectCreateDialog()}
 						onOpenTaskCreateDialog={() => openTaskCreateDialog()}
@@ -129,7 +176,7 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 			</div>
 
 			<TaskCreateDialog
-				currentSpaceId={currentSpaceId}
+				currentSpaceLabel={currentSpaceLabel}
 				initialProjectId={taskCreateProjectId}
 				initialStatus={taskCreateStatus}
 				onClose={closeTaskCreateDialog}
@@ -139,13 +186,18 @@ export function ShellLayout({ children, currentSpaceId, activeSection }: ShellLa
 			/>
 
 			<ProjectCreateDialog
-				currentSpaceId={currentSpaceId}
+				currentSpaceLabel={currentSpaceLabel}
 				onClose={closeProjectCreateDialog}
 				open={isProjectCreateOpen}
 				parentProjectId={projectCreateParentId}
 			/>
 
-			<ShellFooter activeSection={activeSection} currentSpaceId={currentSpaceId} />
+			<ShellFooter
+				activeSection={activeSection}
+				currentScope={currentScope}
+				currentSpaceId={currentSpaceId}
+				spaces={spaces}
+			/>
 		</SidebarProvider>
 	)
 }

@@ -1,9 +1,10 @@
 //! 基座回归测试。
 
-use crate::app::state::{ActiveSpaceSnapshot, ActiveSpaceState};
+use crate::app::state::{ActiveScopeKind, ActiveScopeSnapshot, ActiveScopeState};
 use crate::domain::next_runtime_id;
 use crate::infrastructure::database::DatabaseRuntimeSnapshot;
 use crate::infrastructure::runtime::healthcheck_payload;
+use uuid::Uuid;
 
 #[test]
 fn healthcheck_should_report_stage_0_runtime() {
@@ -20,15 +21,17 @@ fn healthcheck_should_report_stage_0_runtime() {
 }
 
 #[tokio::test]
-async fn active_space_state_should_store_latest_slug() {
-    let state = ActiveSpaceState::default();
+async fn active_scope_state_should_store_latest_scope_snapshot() {
+    let state = ActiveScopeState::default();
     state
-        .set(ActiveSpaceSnapshot {
+        .set(ActiveScopeSnapshot {
             id: next_runtime_id(),
-            slug: "work".to_owned(),
+            kind: ActiveScopeKind::Space,
+            space_id: Some(Uuid::new_v4()),
         })
         .await;
 
-    let snapshot = state.get().await.expect("active space should exist");
-    assert_eq!(snapshot.slug, "work");
+    let snapshot = state.get().await.expect("active scope should exist");
+    assert_eq!(snapshot.kind, ActiveScopeKind::Space);
+    assert!(snapshot.space_id.is_some());
 }

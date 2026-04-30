@@ -9,7 +9,7 @@ import {
 
 type ProjectCreateDialogProps = {
 	open: boolean
-	currentSpaceId: string
+	currentSpaceLabel: string
 	parentProjectId?: string | null
 	onClose: () => void
 }
@@ -19,7 +19,7 @@ type ProjectCreateDialogProps = {
  */
 export function ProjectCreateDialog({
 	open,
-	currentSpaceId,
+	currentSpaceLabel,
 	parentProjectId = null,
 	onClose,
 }: ProjectCreateDialogProps) {
@@ -39,12 +39,12 @@ export function ProjectCreateDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className='px-6 py-5'>
-					<ProjectCreateModalContent
-						currentSpaceId={currentSpaceId}
-						onClose={onClose}
-						parentProjectId={parentProjectId}
-					/>
+					<div className='px-6 py-5'>
+						<ProjectCreateModalContent
+							currentSpaceLabel={currentSpaceLabel}
+							onClose={onClose}
+							parentProjectId={parentProjectId}
+						/>
 				</div>
 			</DialogContent>
 		</Dialog>

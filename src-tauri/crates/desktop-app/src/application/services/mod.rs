@@ -13,6 +13,8 @@ pub use settings_service::{
     UpdateSidebarDesktopPreferenceInput, UpdateSidebarItemVisibilityInput,
     UpdateSidebarProjectSectionInput, UpdateSidebarWidthInput,
 };
-pub use space_service::SpaceService;
+pub use space_service::{
+    CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService, UpdateSpaceInput,
+};
 pub use task_service::TaskService;
 pub use view_service::ViewService;

@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 
 import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
+import type { Scope, Space } from '@/shared/types'
 
 export type ShellRouteHistoryEntry = {
 	id: string
@@ -17,7 +18,9 @@ type ShellRouteHistoryState = {
 }
 
 type UseShellRouteHistoryOptions = {
-	currentSpaceId: string
+	currentScope: Scope
+	currentSpaceId: string | null
+	spaces: Space[]
 	projects: ShellProjectLink[]
 	maxEntries?: number
 }
@@ -28,7 +31,9 @@ const DEFAULT_MAX_HISTORY_ENTRIES = 8
  * 收集当前应用会话内访问过的 Shell 路由，供 Header 的历史下拉使用。
  */
 export function useShellRouteHistory({
+	currentScope,
 	currentSpaceId,
+	spaces,
 	projects,
 	maxEntries = DEFAULT_MAX_HISTORY_ENTRIES,
 }: UseShellRouteHistoryOptions) {
@@ -37,8 +42,8 @@ export function useShellRouteHistory({
 	const navigate = useNavigate()
 	const currentPath = `${location.pathname}${location.search}${location.hash}`
 	const currentEntry = useMemo(
-		() => buildShellRouteHistoryEntry(currentPath, currentSpaceId, projects),
-		[currentPath, currentSpaceId, projects],
+		() => buildShellRouteHistoryEntry(currentPath, currentScope, currentSpaceId, spaces, projects),
+		[currentPath, currentScope, currentSpaceId, spaces, projects],
 	)
 	const [historyState, setHistoryState] = useState<ShellRouteHistoryState>({
 		entries: [],
@@ -96,7 +101,9 @@ export function useShellRouteHistory({
 
 export function buildShellRouteHistoryEntry(
 	path: string,
-	currentSpaceId: string,
+	currentScope: Scope,
+	currentSpaceId: string | null,
+	spaces: Space[],
 	projects: ShellProjectLink[],
 ): ShellRouteHistoryEntry {
 	const pathname = path.split(/[?#]/)[0] || '/'
@@ -106,13 +113,22 @@ export function buildShellRouteHistoryEntry(
 		return createHistoryEntry(path, 'Quick Capture', '快速捕获')
 	}
 
+	if (parts[0] === 'spaces') {
+		const section = parts[1]
+		return createHistoryEntry(
+			path,
+			getSectionLabel((section ?? 'inbox') as ShellSectionKey),
+			'全部 Spaces',
+		)
+	}
+
 	if (parts[0] !== 'space') {
 		return createHistoryEntry(path, 'Workspace', path)
 	}
 
-	const spaceId = parts[1] ?? currentSpaceId
+	const spaceId = parts[1] ?? currentSpaceId ?? (currentScope.type === 'space' ? currentScope.spaceId : null)
 	const section = parts[2]
-	const spaceLabel = getSpaceLabel(spaceId)
+	const spaceLabel = getSpaceLabel(spaceId, spaces)
 
 	if (section === 'project') {
 		const projectId = parts[3]

@@ -1,4 +1,5 @@
 import { useTaskChangedListener, useEventSubscription, type AppEvent } from '@/shared/events'
+import type { Scope } from '@/shared/types'
 
 /**
  * 工作区数据同步 hook
@@ -6,9 +7,9 @@ import { useTaskChangedListener, useEventSubscription, type AppEvent } from '@/s
  *
  * 当前为骨架实现，待数据层（API / store）接入后补充刷新逻辑
  */
-export function useWorkspaceSync(spaceSlug: string) {
+export function useWorkspaceSync(scope: Scope) {
 	// 监听 Tauri IPC: stoneflow://tasks/changed
-	useTaskChangedListener(spaceSlug, (payload) => {
+	useTaskChangedListener(scope, (payload) => {
 		console.info('[useWorkspaceSync] task changed via Tauri IPC', payload)
 		// TODO: 刷新 inbox、focus、project 等数据
 	})

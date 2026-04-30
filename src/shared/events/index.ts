@@ -3,7 +3,7 @@ export {
 	TASKS_CHANGED_EVENT,
 	type TaskChangedPayload,
 	normalizeTaskChangedPayload,
-	isTaskChangedForSpace,
+	isTaskChangedForScope,
 	subscribeToTaskChanged,
 	useTaskChangedListener,
 } from './taskChanged'

@@ -10,7 +10,7 @@ type ShellDrawerProps = {
 	open: boolean
 	activeDrawerKind: ShellDrawerKind | null
 	activeDrawerId: string | null
-	currentSpaceId: string
+	currentSpaceLabel: string
 	onClose: () => void
 }
 
@@ -18,7 +18,7 @@ export function ShellDrawer({
 	open,
 	activeDrawerKind,
 	activeDrawerId,
-	currentSpaceId,
+	currentSpaceLabel,
 	onClose,
 }: ShellDrawerProps) {
 	const detail = getDrawerDetail(activeDrawerKind, activeDrawerId)
@@ -48,12 +48,12 @@ export function ShellDrawer({
 				</SheetHeader>
 
 				<div className='no-scrollbar flex-1 overflow-y-auto px-4 py-4'>
-					{isRealTaskDrawer && activeDrawerId ? (
-						<TaskDrawerContent
-							currentSpaceId={currentSpaceId}
-							onClose={onClose}
-							taskId={activeDrawerId}
-						/>
+						{isRealTaskDrawer && activeDrawerId ? (
+							<TaskDrawerContent
+								currentSpaceLabel={currentSpaceLabel}
+								onClose={onClose}
+								taskId={activeDrawerId}
+							/>
 					) : detail ? (
 						<div className='space-y-4'>
 							<div className='space-y-2'>
