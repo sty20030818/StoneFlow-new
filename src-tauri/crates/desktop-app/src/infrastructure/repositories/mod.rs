@@ -10,8 +10,10 @@ mod view_repository;
 pub use activity_repository::{
     ActivityChangeRecord, ActivityEventRecord, ActivityQuery, ActivityRepository,
 };
-pub use project_repository::ProjectRepository;
+pub use project_repository::{
+    CreateProjectRecord, ProjectOverviewView, ProjectRepository, UpdateProjectPatch,
+};
 pub use settings_repository::SettingsRepository;
 pub use space_repository::{CreateSpaceRecord, SpaceRepository, UpdateSpacePatch};
-pub use task_repository::TaskRepository;
+pub use task_repository::{ProjectTaskCount, TaskRepository};
 pub use view_repository::ViewRepository;

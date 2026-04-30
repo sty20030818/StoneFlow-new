@@ -1,6 +1,6 @@
 export type { TaskPriority } from './taskPriority'
 export type { TaskStatus, Task, TaskView } from './task'
-export type { ProjectStatus, Project, ProjectTreeNode } from './project'
+export type { Project, ProjectOverviewItem, ProjectSidebarItem } from './project'
 export type { Space, Scope } from './space'
 export type { TrashEntry } from './trash'
 export type { TaskResource } from './resource'

@@ -2,7 +2,7 @@ import { useEffect, type PropsWithChildren } from 'react'
 
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
-import { SHELL_NAV_BADGES, SHELL_PROJECT_LINKS } from '@/app/layouts/shell/config'
+import { SHELL_NAV_BADGES } from '@/app/layouts/shell/config'
 import {
 	selectActiveDrawerId,
 	selectActiveDrawerKind,
@@ -12,7 +12,6 @@ import {
 	selectIsCommandOpen,
 	selectIsProjectCreateOpen,
 	selectIsTaskCreateOpen,
-	selectProjectCreateParentId,
 	selectTaskCreateProjectId,
 	selectTaskCreateStatus,
 	useDialogStore,
@@ -28,12 +27,16 @@ import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
 import {
+	selectProjectOptions,
+	selectProjectSidebar,
+	useProjectStore,
+} from '@/features/project/model/useProjectStore'
+import {
 	selectSpaceError,
 	selectSpaces,
 	selectSpaceStatus,
 	useSpaceStore,
 } from '@/features/space/model/useSpaceStore'
-import { getProjectOptions } from '@/features/workspace'
 import { ProjectCreateDialog } from '@/features/project/ui/ProjectCreateDialog'
 import { TaskCreateDialog } from '@/features/task/ui/TaskCreateDialog'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
@@ -55,7 +58,6 @@ export function ShellLayout({
 	const taskCreateProjectId = useDialogStore(selectTaskCreateProjectId)
 	const taskCreateStatus = useDialogStore(selectTaskCreateStatus)
 	const isProjectCreateOpen = useDialogStore(selectIsProjectCreateOpen)
-	const projectCreateParentId = useDialogStore(selectProjectCreateParentId)
 	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
 	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
@@ -71,8 +73,12 @@ export function ShellLayout({
 	const spaces = useSpaceStore(selectSpaces)
 	const spaceStatus = useSpaceStore(selectSpaceStatus)
 	const spaceError = useSpaceStore(selectSpaceError)
+	const sidebarProjects = useProjectStore(selectProjectSidebar)
+	const projectOptions = useProjectStore(selectProjectOptions)
+	const scopeKey = currentScope.type === 'all' ? 'all' : `space:${currentScope.spaceId}`
 	const loadSidebarSettings = useSidebarSettingsStore((state) => state.load)
 	const loadSpaces = useSpaceStore((state) => state.load)
+	const loadSidebarProjects = useProjectStore((state) => state.loadSidebar)
 	const createSpace = useSpaceStore((state) => state.createSpace)
 	const updateSpace = useSpaceStore((state) => state.updateSpace)
 	const setDefaultSpace = useSpaceStore((state) => state.setDefaultSpace)
@@ -97,7 +103,17 @@ export function ShellLayout({
 		}
 	}, [loadSpaces, spaceStatus])
 
-	if (!sidebarSettings || spaceStatus === 'loading' || (spaceStatus === 'ready' && spaces.length === 0)) {
+	useEffect(() => {
+		if (spaceStatus === 'ready') {
+			void loadSidebarProjects(currentScope)
+		}
+	}, [currentScope, loadSidebarProjects, scopeKey, spaceStatus])
+
+	if (
+		!sidebarSettings ||
+		spaceStatus === 'loading' ||
+		(spaceStatus === 'ready' && spaces.length === 0)
+	) {
 		return (
 			<ShellLayoutSkeleton
 				message={sidebarSettingsError ?? spaceError}
@@ -109,7 +125,18 @@ export function ShellLayout({
 	const currentSpaceLabel =
 		currentScope.type === 'all'
 			? '全部 Spaces'
-			: spaces.find((space) => space.id === currentSpaceId)?.name ?? currentSpaceId ?? '未选择 Space'
+			: (spaces.find((space) => space.id === currentSpaceId)?.name ??
+				currentSpaceId ??
+				'未选择 Space')
+	const projectLinks = sidebarProjects.items.map((project) => ({
+		id: project.id,
+		label: project.name,
+		badge: sidebarSettings.projectSection.showCounts
+			? String(project.activeTaskCount)
+			: project.completedAt
+				? 'done'
+				: undefined,
+	}))
 
 	return (
 		<SidebarProvider
@@ -133,7 +160,7 @@ export function ShellLayout({
 				onOpenDrawer={openDrawer}
 				onOpenProjectCreateDialog={() => openProjectCreateDialog()}
 				onOpenTaskCreateDialog={() => openTaskCreateDialog()}
-				projects={SHELL_PROJECT_LINKS}
+				projects={projectLinks}
 				spaces={spaces}
 			/>
 
@@ -155,7 +182,7 @@ export function ShellLayout({
 							void setSidebarItemVisibility(target, visible)
 						}}
 						onUpdateSpace={updateSpace}
-						projects={SHELL_PROJECT_LINKS}
+						projects={projectLinks}
 						spaces={spaces}
 						settings={sidebarSettings}
 					/>
@@ -181,15 +208,15 @@ export function ShellLayout({
 				initialStatus={taskCreateStatus}
 				onClose={closeTaskCreateDialog}
 				open={isTaskCreateOpen}
-				projects={getProjectOptions()}
-				projectsLoading={false}
+				projects={projectOptions}
+				projectsLoading={sidebarProjects.status === 'loading'}
 			/>
 
 			<ProjectCreateDialog
 				currentSpaceLabel={currentSpaceLabel}
 				onClose={closeProjectCreateDialog}
 				open={isProjectCreateOpen}
-				parentProjectId={projectCreateParentId}
+				spaceId={currentScope.type === 'space' ? currentScope.spaceId : null}
 			/>
 
 			<ShellFooter
@@ -248,7 +275,7 @@ function ShellLayoutSkeleton({
 						<div className='mt-6 grid gap-3'>
 							<div className='h-16 rounded-2xl bg-(--sf-color-bg-surface-muted)' />
 							<div className='h-16 rounded-2xl bg-(--sf-color-bg-surface-muted)' />
-							<div className='h-28 rounded-[24px] bg-(--sf-color-bg-surface-muted)' />
+							<div className='h-28 rounded-3xl bg-(--sf-color-bg-surface-muted)' />
 						</div>
 						<div className='mt-auto pt-5 text-[12px] text-(--sf-color-shell-secondary)'>
 							{status === 'error' ? (message ?? 'Sidebar 设置加载失败') : '正在读取 Sidebar 配置…'}

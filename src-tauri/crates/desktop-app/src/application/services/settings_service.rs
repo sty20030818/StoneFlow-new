@@ -217,7 +217,7 @@ impl SettingsService {
             .repository
             .get_json_setting::<SidebarSettings>(SIDEBAR_SETTING_KEY)
             .await?;
-        Ok(normalize_sidebar_settings(settings)?)
+        normalize_sidebar_settings(settings)
     }
 
     /// 更新单个可见性开关。

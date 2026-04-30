@@ -3,6 +3,7 @@
 use tauri::ipc::Invoke;
 
 pub(crate) mod activity;
+pub(crate) mod projects;
 pub(crate) mod quick_capture;
 pub(crate) mod settings;
 pub(crate) mod spaces;
@@ -12,6 +13,16 @@ pub(crate) mod workspace;
 pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
         activity::get_entity_activities,
+        projects::list_project_overview,
+        projects::list_sidebar_projects,
+        projects::get_project_detail,
+        projects::create_project,
+        projects::update_project,
+        projects::complete_project,
+        projects::reopen_project,
+        projects::archive_project,
+        projects::restore_project,
+        projects::delete_project,
         settings::get_sidebar_settings,
         settings::update_sidebar_item_visibility,
         settings::update_sidebar_width,

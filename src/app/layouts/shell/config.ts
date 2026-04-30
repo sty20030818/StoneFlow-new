@@ -32,28 +32,7 @@ export type ShellProjectLink = {
 	id: string
 	label: string
 	badge?: string
-	children?: ShellProjectLink[]
 }
-
-export const SHELL_PROJECT_LINKS: ShellProjectLink[] = [
-	{
-		id: 'shell-project-stoneflow',
-		label: 'StoneFlow VNext',
-		badge: 'active',
-		children: [
-			{
-				id: 'shell-project-shell',
-				label: 'Workspace shell',
-				badge: 'ui',
-			},
-		],
-	},
-	{
-		id: 'shell-project-personal',
-		label: 'Personal planning',
-		badge: 'draft',
-	},
-]
 
 export const SHELL_NAV_BADGES: Partial<Record<ShellSectionKey, string>> = {
 	inbox: '3',

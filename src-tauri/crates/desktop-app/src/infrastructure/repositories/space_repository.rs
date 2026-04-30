@@ -74,6 +74,19 @@ impl SpaceRepository {
             .map_err(AppError::from)
     }
 
+    /// 根据一组 ID 查询 Space。
+    pub async fn list_by_ids(&self, space_ids: &[String]) -> Result<Vec<space::Model>, AppError> {
+        if space_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        Space::find()
+            .filter(space::Column::Id.is_in(space_ids.iter().cloned()))
+            .all(self.connection())
+            .await
+            .map_err(AppError::from)
+    }
+
     /// 计算下一条 Space 的排序值。
     pub async fn next_sort_order<C>(&self, connection: &C) -> Result<i32, AppError>
     where
@@ -126,7 +139,10 @@ impl SpaceRepository {
     where
         C: ConnectionTrait,
     {
-        let Some(model) = Space::find_by_id(space_id.to_owned()).one(connection).await? else {
+        let Some(model) = Space::find_by_id(space_id.to_owned())
+            .one(connection)
+            .await?
+        else {
             return Ok(None);
         };
 
@@ -141,7 +157,11 @@ impl SpaceRepository {
             active_model.color_key = Set(color_key);
         }
         active_model.updated_at = Set(updated_at.to_owned());
-        active_model.update(connection).await.map(Some).map_err(AppError::from)
+        active_model
+            .update(connection)
+            .await
+            .map(Some)
+            .map_err(AppError::from)
     }
 
     /// 清除所有活跃 Space 的默认标记。
@@ -170,14 +190,21 @@ impl SpaceRepository {
     where
         C: ConnectionTrait,
     {
-        let Some(model) = Space::find_by_id(space_id.to_owned()).one(connection).await? else {
+        let Some(model) = Space::find_by_id(space_id.to_owned())
+            .one(connection)
+            .await?
+        else {
             return Ok(None);
         };
 
         let mut active_model: space::ActiveModel = model.into();
         active_model.is_default = Set(true);
         active_model.updated_at = Set(updated_at.to_owned());
-        active_model.update(connection).await.map(Some).map_err(AppError::from)
+        active_model
+            .update(connection)
+            .await
+            .map(Some)
+            .map_err(AppError::from)
     }
 
     /// 原始归档：只更新 Space 自身。
@@ -191,14 +218,21 @@ impl SpaceRepository {
     where
         C: ConnectionTrait,
     {
-        let Some(model) = Space::find_by_id(space_id.to_owned()).one(connection).await? else {
+        let Some(model) = Space::find_by_id(space_id.to_owned())
+            .one(connection)
+            .await?
+        else {
             return Ok(None);
         };
 
         let mut active_model: space::ActiveModel = model.into();
         active_model.archived_at = Set(Some(archived_at.to_owned()));
         active_model.updated_at = Set(updated_at.to_owned());
-        active_model.update(connection).await.map(Some).map_err(AppError::from)
+        active_model
+            .update(connection)
+            .await
+            .map(Some)
+            .map_err(AppError::from)
     }
 
     /// 原始恢复：只恢复 Space 自身。
@@ -211,7 +245,10 @@ impl SpaceRepository {
     where
         C: ConnectionTrait,
     {
-        let Some(model) = Space::find_by_id(space_id.to_owned()).one(connection).await? else {
+        let Some(model) = Space::find_by_id(space_id.to_owned())
+            .one(connection)
+            .await?
+        else {
             return Ok(None);
         };
 
@@ -219,7 +256,11 @@ impl SpaceRepository {
         active_model.archived_at = Set(None);
         active_model.deleted_at = Set(None);
         active_model.updated_at = Set(updated_at.to_owned());
-        active_model.update(connection).await.map(Some).map_err(AppError::from)
+        active_model
+            .update(connection)
+            .await
+            .map(Some)
+            .map_err(AppError::from)
     }
 
     /// 原始删除：只更新 Space 自身。
@@ -233,13 +274,20 @@ impl SpaceRepository {
     where
         C: ConnectionTrait,
     {
-        let Some(model) = Space::find_by_id(space_id.to_owned()).one(connection).await? else {
+        let Some(model) = Space::find_by_id(space_id.to_owned())
+            .one(connection)
+            .await?
+        else {
             return Ok(None);
         };
 
         let mut active_model: space::ActiveModel = model.into();
         active_model.deleted_at = Set(Some(deleted_at.to_owned()));
         active_model.updated_at = Set(updated_at.to_owned());
-        active_model.update(connection).await.map(Some).map_err(AppError::from)
+        active_model
+            .update(connection)
+            .await
+            .map(Some)
+            .map_err(AppError::from)
     }
 }

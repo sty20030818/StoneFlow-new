@@ -16,14 +16,13 @@ type DialogState = {
 	taskCreateProjectId: string | null
 	taskCreateStatus: TaskStatus
 	isProjectCreateOpen: boolean
-	projectCreateParentId: string | null
 
 	openCommand: () => void
 	closeCommand: () => void
 	setCommandOpen: (open: boolean) => void
 	openTaskCreateDialog: (draft?: TaskCreateDialogDraft) => void
 	closeTaskCreateDialog: () => void
-	openProjectCreateDialog: (parentProjectId?: string | null) => void
+	openProjectCreateDialog: () => void
 	closeProjectCreateDialog: () => void
 }
 
@@ -34,7 +33,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 	taskCreateProjectId: null,
 	taskCreateStatus: 'todo',
 	isProjectCreateOpen: false,
-	projectCreateParentId: null,
 
 	openCommand: () => {
 		// 互斥：关闭 drawer
@@ -45,7 +43,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 			taskCreateProjectId: null,
 			taskCreateStatus: 'todo',
 			isProjectCreateOpen: false,
-			projectCreateParentId: null,
 		})
 	},
 	closeCommand: () => set({ isCommandOpen: false }),
@@ -66,7 +63,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 			taskCreateProjectId: draft?.projectId ?? null,
 			taskCreateStatus: draft?.status ?? 'todo',
 			isProjectCreateOpen: false,
-			projectCreateParentId: null,
 		})
 	},
 	closeTaskCreateDialog: () =>
@@ -76,7 +72,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			taskCreateStatus: 'todo',
 		}),
 
-	openProjectCreateDialog: (parentProjectId = null) => {
+	openProjectCreateDialog: () => {
 		// 互斥：关闭 drawer
 		useDrawerStore.getState().closeDrawer()
 		set({
@@ -85,13 +81,11 @@ export const useDialogStore = create<DialogState>((set) => ({
 			taskCreateProjectId: null,
 			taskCreateStatus: 'todo',
 			isProjectCreateOpen: true,
-			projectCreateParentId: parentProjectId,
 		})
 	},
 	closeProjectCreateDialog: () =>
 		set({
 			isProjectCreateOpen: false,
-			projectCreateParentId: null,
 		}),
 }))
 
@@ -101,4 +95,3 @@ export const selectIsTaskCreateOpen = (state: DialogState) => state.isTaskCreate
 export const selectTaskCreateProjectId = (state: DialogState) => state.taskCreateProjectId
 export const selectTaskCreateStatus = (state: DialogState) => state.taskCreateStatus
 export const selectIsProjectCreateOpen = (state: DialogState) => state.isProjectCreateOpen
-export const selectProjectCreateParentId = (state: DialogState) => state.projectCreateParentId

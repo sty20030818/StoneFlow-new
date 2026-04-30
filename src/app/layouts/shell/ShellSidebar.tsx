@@ -7,11 +7,6 @@ import {
 	SHELL_NAV_ITEMS,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
-import {
-	selectProjectTreeCollapsed,
-	toProjectTreeKey,
-	useShellPreferenceStore,
-} from '@/app/layouts/shell/model/useShellPreferenceStore'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type {
 	SidebarItemVisibilityTarget,
@@ -22,7 +17,6 @@ import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
 import { SpaceEditorDialog } from '@/features/space/ui/SpaceEditorDialog'
 import type { Scope, Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/ui/base/button'
 import {
 	ContextMenu,
 	ContextMenuCheckboxItem,
@@ -58,20 +52,14 @@ import {
 	SidebarMenuBadge,
 	SidebarMenuButton,
 	SidebarMenuItem,
-	SidebarMenuSub,
-	SidebarMenuSubButton,
-	SidebarMenuSubItem,
 	SidebarRail,
 } from '@/shared/ui/base/sidebar'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
 import {
 	CheckIcon,
-	ChevronRightIcon,
 	ChevronsUpDownIcon,
 	ExternalLinkIcon,
 	FolderIcon,
-	FolderPlusIcon,
 	PanelLeftIcon,
 	PlusIcon,
 	RotateCcwIcon,
@@ -97,7 +85,7 @@ type ShellSidebarProps = {
 	onSetDefaultSpace: (spaceId: string) => Promise<Space>
 	onArchiveSpace: (spaceId: string) => Promise<Space>
 	onDeleteSpace: (spaceId: string) => Promise<Space>
-	onOpenProjectCreateDialog: (parentProjectId?: string | null) => void
+	onOpenProjectCreateDialog: () => void
 	onUpdateItemVisibility: (target: SidebarItemVisibilityTarget, visible: boolean) => void
 	onResetMainItemsVisibility: () => void
 }
@@ -142,19 +130,21 @@ export function ShellSidebar({
 }: ShellSidebarProps) {
 	const navigate = useNavigate()
 	const { isMobile } = useSidebar()
-	const projectTreeCollapsed = useShellPreferenceStore(selectProjectTreeCollapsed)
-	const setProjectTreeCollapsed = useShellPreferenceStore((state) => state.setProjectTreeCollapsed)
 	const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create')
 	const [editorOpen, setEditorOpen] = useState(false)
 	const [dropdownError, setDropdownError] = useState<string | null>(null)
-	const fallbackSpaceId = currentSpaceId ?? spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
+	const fallbackSpaceId =
+		currentSpaceId ?? spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
 	const activeSpace =
 		(currentScope.type === 'space'
 			? spaces.find((space) => space.id === currentScope.spaceId)
-			: spaces.find((space) => space.id === fallbackSpaceId)) ?? spaces[0] ?? null
+			: spaces.find((space) => space.id === fallbackSpaceId)) ??
+		spaces[0] ??
+		null
 	const canArchiveOrDeleteActiveSpace = !activeSpace?.isDefault
 	const scopedProjectLinks = currentScope.type === 'all' ? [] : projects
-	const currentScopeLabel = currentScope.type === 'all' ? '全部 Spaces' : activeSpace?.name ?? '未选择 Space'
+	const currentScopeLabel =
+		currentScope.type === 'all' ? '全部 Spaces' : (activeSpace?.name ?? '未选择 Space')
 
 	const mainNavItems = SHELL_NAV_ITEMS.map((item) => ({
 		...item,
@@ -254,137 +244,138 @@ export function ShellSidebar({
 											align='start'
 											side={isMobile ? 'bottom' : 'right'}
 											sideOffset={6}
-											>
-												<DropdownMenuLabel>Spaces</DropdownMenuLabel>
-												<DropdownMenuGroup>
-													<DropdownMenuItem
-														className='gap-2 p-2'
-														onSelect={() => navigate('/spaces/inbox')}
-													>
-														<span className='text-(--sf-color-shell-secondary)'>全部 Spaces</span>
-														{currentScope.type === 'all' ? (
-															<CheckIcon className='ml-auto size-3.5 text-(--sf-color-icon-secondary)' />
-														) : null}
-													</DropdownMenuItem>
-													{spaces.map((space) => {
-														const isActive = currentScope.type === 'space' && space.id === currentScope.spaceId
-														const visual = getSpaceVisual(space)
-														const SpaceIcon = visual.icon
+										>
+											<DropdownMenuLabel>Spaces</DropdownMenuLabel>
+											<DropdownMenuGroup>
+												<DropdownMenuItem
+													className='gap-2 p-2'
+													onSelect={() => navigate('/spaces/inbox')}
+												>
+													<span className='text-(--sf-color-shell-secondary)'>全部 Spaces</span>
+													{currentScope.type === 'all' ? (
+														<CheckIcon className='ml-auto size-3.5 text-(--sf-color-icon-secondary)' />
+													) : null}
+												</DropdownMenuItem>
+												{spaces.map((space) => {
+													const isActive =
+														currentScope.type === 'space' && space.id === currentScope.spaceId
+													const visual = getSpaceVisual(space)
+													const SpaceIcon = visual.icon
 
-														return (
-															<DropdownMenuItem
-																className='gap-2 p-2'
-																key={space.id}
-																onSelect={() => {
-																	navigate(`/space/${space.id}/inbox`)
-																}}
-															>
-																<SpaceIcon className={cn('shrink-0', visual.iconClassName)} />
-																<div className='flex min-w-0 items-center gap-2'>
-																	<span className='truncate'>{space.name}</span>
-																	{space.isDefault ? (
-																		<span className='rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-(--sf-color-shell-secondary)'>
-																			默认
-																		</span>
-																	) : null}
-																</div>
-																{isActive ? (
-																	<CheckIcon className='ml-auto size-3.5 text-(--sf-color-icon-secondary)' />
+													return (
+														<DropdownMenuItem
+															className='gap-2 p-2'
+															key={space.id}
+															onSelect={() => {
+																navigate(`/space/${space.id}/inbox`)
+															}}
+														>
+															<SpaceIcon className={cn('shrink-0', visual.iconClassName)} />
+															<div className='flex min-w-0 items-center gap-2'>
+																<span className='truncate'>{space.name}</span>
+																{space.isDefault ? (
+																	<span className='rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-(--sf-color-shell-secondary)'>
+																		默认
+																	</span>
 																) : null}
-															</DropdownMenuItem>
-														)
-													})}
-												</DropdownMenuGroup>
-												<DropdownMenuSeparator />
-												<DropdownMenuGroup>
-													<DropdownMenuItem
-														className='gap-2 p-2'
-														onSelect={() => {
-															setEditorMode('create')
-															setEditorOpen(true)
-														}}
-													>
-														<PlusIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
-														<span>新建 Space</span>
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														className='gap-2 p-2'
-														disabled={!activeSpace}
-														onSelect={() => {
-															setEditorMode('edit')
-															setEditorOpen(true)
-														}}
-													>
-														<FolderIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
-														<span>编辑当前 Space</span>
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														className='gap-2 p-2'
-														disabled={!activeSpace || activeSpace.isDefault}
-														onSelect={() => {
-															if (!activeSpace) {
-																return
+															</div>
+															{isActive ? (
+																<CheckIcon className='ml-auto size-3.5 text-(--sf-color-icon-secondary)' />
+															) : null}
+														</DropdownMenuItem>
+													)
+												})}
+											</DropdownMenuGroup>
+											<DropdownMenuSeparator />
+											<DropdownMenuGroup>
+												<DropdownMenuItem
+													className='gap-2 p-2'
+													onSelect={() => {
+														setEditorMode('create')
+														setEditorOpen(true)
+													}}
+												>
+													<PlusIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
+													<span>新建 Space</span>
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													className='gap-2 p-2'
+													disabled={!activeSpace}
+													onSelect={() => {
+														setEditorMode('edit')
+														setEditorOpen(true)
+													}}
+												>
+													<FolderIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
+													<span>编辑当前 Space</span>
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													className='gap-2 p-2'
+													disabled={!activeSpace || activeSpace.isDefault}
+													onSelect={() => {
+														if (!activeSpace) {
+															return
+														}
+														void runSpaceMutation(async () => {
+															await onSetDefaultSpace(activeSpace.id)
+														})
+													}}
+												>
+													<CheckIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
+													<span>设为默认 Space</span>
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													className='gap-2 p-2'
+													disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
+													onSelect={() => {
+														if (!activeSpace) {
+															return
+														}
+														if (!window.confirm(`确认归档「${activeSpace.name}」吗？`)) {
+															return
+														}
+														void runSpaceMutation(async () => {
+															await onArchiveSpace(activeSpace.id)
+															if (currentScope.type === 'space') {
+																navigate('/spaces/inbox')
 															}
-															void runSpaceMutation(async () => {
-																await onSetDefaultSpace(activeSpace.id)
-															})
-														}}
-													>
-														<CheckIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
-														<span>设为默认 Space</span>
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														className='gap-2 p-2'
-														disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
-														onSelect={() => {
-															if (!activeSpace) {
-																return
+														})
+													}}
+												>
+													<ExternalLinkIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
+													<span>归档当前 Space</span>
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													className='gap-2 p-2 text-[#d9485f]'
+													disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
+													onSelect={() => {
+														if (!activeSpace) {
+															return
+														}
+														if (!window.confirm(`确认删除「${activeSpace.name}」吗？`)) {
+															return
+														}
+														void runSpaceMutation(async () => {
+															await onDeleteSpace(activeSpace.id)
+															if (currentScope.type === 'space') {
+																navigate('/spaces/inbox')
 															}
-															if (!window.confirm(`确认归档「${activeSpace.name}」吗？`)) {
-																return
-															}
-															void runSpaceMutation(async () => {
-																await onArchiveSpace(activeSpace.id)
-																if (currentScope.type === 'space') {
-																	navigate('/spaces/inbox')
-																}
-															})
-														}}
-													>
-														<ExternalLinkIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
-														<span>归档当前 Space</span>
-													</DropdownMenuItem>
-													<DropdownMenuItem
-														className='gap-2 p-2 text-[#d9485f]'
-														disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
-														onSelect={() => {
-															if (!activeSpace) {
-																return
-															}
-															if (!window.confirm(`确认删除「${activeSpace.name}」吗？`)) {
-																return
-															}
-															void runSpaceMutation(async () => {
-																await onDeleteSpace(activeSpace.id)
-																if (currentScope.type === 'space') {
-																	navigate('/spaces/inbox')
-																}
-															})
-														}}
-													>
-														<Trash2Icon className='shrink-0' />
-														<span>删除当前 Space</span>
-													</DropdownMenuItem>
-												</DropdownMenuGroup>
-												{dropdownError ? (
-													<>
-														<DropdownMenuSeparator />
-														<DropdownMenuLabel className='max-w-64 whitespace-normal text-[#d9485f]'>
-															{dropdownError}
-														</DropdownMenuLabel>
-													</>
-												) : null}
-											</DropdownMenuContent>
+														})
+													}}
+												>
+													<Trash2Icon className='shrink-0' />
+													<span>删除当前 Space</span>
+												</DropdownMenuItem>
+											</DropdownMenuGroup>
+											{dropdownError ? (
+												<>
+													<DropdownMenuSeparator />
+													<DropdownMenuLabel className='max-w-64 whitespace-normal text-[#d9485f]'>
+														{dropdownError}
+													</DropdownMenuLabel>
+												</>
+											) : null}
+										</DropdownMenuContent>
 									</DropdownMenu>
 								</SidebarMenuItem>
 							</SidebarMenu>
@@ -439,10 +430,7 @@ export function ShellSidebar({
 														currentScope={currentScope}
 														currentSpaceId={currentSpaceId}
 														key={project.id}
-														onOpenProjectCreateDialog={onOpenProjectCreateDialog}
-														onToggleProjectCollapsed={(payload) => setProjectTreeCollapsed(payload)}
 														project={project}
-														projectTreeCollapsed={projectTreeCollapsed}
 													/>
 												))}
 											</SidebarMenu>
@@ -497,99 +485,25 @@ type ProjectSidebarMenuItemProps = {
 	currentScope: Scope
 	currentSpaceId: string | null
 	project: ShellProjectLink
-	projectTreeCollapsed: Record<string, boolean>
-	onOpenProjectCreateDialog: (parentProjectId?: string | null) => void
-	onToggleProjectCollapsed: (payload: {
-		spaceId: string
-		projectId: string
-		collapsed: boolean
-	}) => void
 }
 
 function ProjectSidebarMenuItem({
 	currentScope,
 	currentSpaceId,
 	project,
-	projectTreeCollapsed,
-	onOpenProjectCreateDialog,
-	onToggleProjectCollapsed,
 }: ProjectSidebarMenuItemProps) {
-	const resolvedSpaceId =
-		currentScope.type === 'space' ? currentScope.spaceId : currentSpaceId
+	const resolvedSpaceId = currentScope.type === 'space' ? currentScope.spaceId : currentSpaceId
 
 	if (!resolvedSpaceId) {
 		return null
 	}
 
 	const projectPath = buildScopedProjectPath(currentScope, project.id, resolvedSpaceId)
-	const hasChildren = !!project.children?.length
-	const isCollapsed = projectTreeCollapsed[toProjectTreeKey(resolvedSpaceId, project.id)] ?? true
-	const isOpen = hasChildren ? !isCollapsed : false
 
 	return (
-		<Collapsible
-			asChild
-			onOpenChange={(nextOpen) => {
-				if (!hasChildren) {
-					return
-				}
-				onToggleProjectCollapsed({
-					spaceId: resolvedSpaceId,
-					projectId: project.id,
-					collapsed: !nextOpen,
-				})
-			}}
-			open={hasChildren ? isOpen : undefined}
-		>
-			<SidebarMenuItem className='flex flex-col gap-0.5'>
-				<div className='flex items-center gap-1'>
-					<div className='min-w-0 flex-1'>
-						<ProjectSidebarRouteMenuItem
-							label={project.label}
-							onCreateChildProject={() => onOpenProjectCreateDialog(project.id)}
-							onOpenProject={() => undefined}
-							to={projectPath}
-						/>
-					</div>
-
-					{hasChildren ? (
-						<CollapsibleTrigger asChild>
-							<Button
-								aria-label={isOpen ? '收起子项目' : '展开子项目'}
-								className='shrink-0 hover:bg-(--sf-color-shell-hover) aria-expanded:bg-(--sf-color-shell-hover-strong)'
-								onClick={(event) => event.stopPropagation()}
-								size='icon'
-								variant='ghost'
-							>
-								<ChevronRightIcon
-									className={cn(
-										'size-3.5 text-(--sf-color-icon-subtle) transition-transform',
-										isOpen ? 'rotate-90' : undefined,
-									)}
-								/>
-							</Button>
-						</CollapsibleTrigger>
-					) : null}
-				</div>
-
-				{hasChildren ? (
-					<CollapsibleContent>
-						<SidebarMenuSub>
-							{project.children?.map((childProject) => (
-								<SidebarMenuSubItem key={childProject.id}>
-									<ProjectSidebarSubRouteMenuItem
-										label={childProject.label}
-										onCreateChildProject={() => onOpenProjectCreateDialog(childProject.id)}
-										onOpenProject={() => undefined}
-										to={buildScopedProjectPath(currentScope, childProject.id, resolvedSpaceId)}
-									/>
-								</SidebarMenuSubItem>
-							))}
-						</SidebarMenuSub>
-					</CollapsibleContent>
-				) : null}
-			</SidebarMenuItem>
-		</Collapsible>
+		<SidebarMenuItem>
+			<ProjectSidebarRouteMenuItem badge={project.badge} label={project.label} to={projectPath} />
+		</SidebarMenuItem>
 	)
 }
 
@@ -735,17 +649,15 @@ function SidebarRouteMenuItem({
 type ProjectSidebarRouteMenuItemProps = {
 	to: string
 	label: string
+	badge?: string
 	size?: 'default' | 'sm'
-	onOpenProject: () => void
-	onCreateChildProject: () => void
 }
 
 function ProjectSidebarRouteMenuItem({
 	to,
 	label,
+	badge,
 	size = 'default',
-	onOpenProject,
-	onCreateChildProject,
 }: ProjectSidebarRouteMenuItemProps) {
 	const isActive = !!useMatch({ end: true, path: to })
 
@@ -761,18 +673,15 @@ function ProjectSidebarRouteMenuItem({
 							)}
 						/>
 						<span className='min-w-0 truncate'>{label}</span>
+						{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
 					</NavLink>
 				</SidebarMenuButton>
 			</ContextMenuTrigger>
 			<ContextMenuContent className='w-44'>
 				<ContextMenuGroup>
-					<ContextMenuItem onSelect={onOpenProject}>
+					<ContextMenuItem onSelect={() => undefined}>
 						<ExternalLinkIcon />
 						打开项目
-					</ContextMenuItem>
-					<ContextMenuItem onSelect={onCreateChildProject}>
-						<FolderPlusIcon />
-						新建子项目
 					</ContextMenuItem>
 				</ContextMenuGroup>
 				<ContextMenuSeparator />
@@ -787,48 +696,7 @@ function ProjectSidebarRouteMenuItem({
 	)
 }
 
-function ProjectSidebarSubRouteMenuItem(props: ProjectSidebarRouteMenuItemProps) {
-	const { to, label, onOpenProject, onCreateChildProject } = props
-	const isActive = !!useMatch({ end: true, path: to })
-
-	return (
-		<ContextMenu>
-			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
-				<SidebarMenuSubButton asChild isActive={isActive}>
-					<NavLink to={to}>
-						<FolderIcon className='shrink-0 text-(--sf-color-shell-secondary)' />
-						<span className='min-w-0 truncate'>{label}</span>
-					</NavLink>
-				</SidebarMenuSubButton>
-			</ContextMenuTrigger>
-			<ContextMenuContent className='w-44'>
-				<ContextMenuGroup>
-					<ContextMenuItem onSelect={onOpenProject}>
-						<ExternalLinkIcon />
-						打开项目
-					</ContextMenuItem>
-					<ContextMenuItem onSelect={onCreateChildProject}>
-						<FolderPlusIcon />
-						新建子项目
-					</ContextMenuItem>
-				</ContextMenuGroup>
-				<ContextMenuSeparator />
-				<ContextMenuGroup>
-					<ContextMenuItem disabled variant='destructive'>
-						<Trash2Icon />
-						移入回收站
-					</ContextMenuItem>
-				</ContextMenuGroup>
-			</ContextMenuContent>
-		</ContextMenu>
-	)
-}
-
-function SpaceIconBadge({
-	visual,
-}: {
-	visual: ReturnType<typeof getSpaceVisual>
-}) {
+function SpaceIconBadge({ visual }: { visual: ReturnType<typeof getSpaceVisual> }) {
 	const SpaceIcon = visual.icon
 
 	return (

@@ -259,7 +259,9 @@ impl SpaceService {
 
         let updated_at = now_utc().to_rfc3339();
         let transaction = self.repository.connection().begin().await?;
-        self.repository.clear_default(&transaction, &updated_at).await?;
+        self.repository
+            .clear_default(&transaction, &updated_at)
+            .await?;
         let updated = self
             .repository
             .set_default(&transaction, &space_id, &updated_at)
@@ -497,7 +499,9 @@ fn normalize_optional_required_text(
     value: Option<&str>,
     field: &str,
 ) -> Result<Option<String>, AppError> {
-    value.map(|value| normalize_required_text(value, field)).transpose()
+    value
+        .map(|value| normalize_required_text(value, field))
+        .transpose()
 }
 
 fn ensure_space_mutable(space: &space::Model) -> Result<(), AppError> {

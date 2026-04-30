@@ -8,13 +8,12 @@ import {
 	ContextMenuSeparator,
 	ContextMenuTrigger,
 } from '@/shared/ui/base/context-menu'
-import { ExternalLinkIcon, FolderPlusIcon, Trash2Icon } from 'lucide-react'
+import { ExternalLinkIcon, Trash2Icon } from 'lucide-react'
 
 type ProjectContextMenuProps = {
 	children: ReactNode
 	isBusy?: boolean
 	onOpenProject: () => void
-	onCreateChildProject: () => void
 	onMoveToTrash: () => void
 }
 
@@ -25,7 +24,6 @@ export function ProjectContextMenu({
 	children,
 	isBusy,
 	onOpenProject,
-	onCreateChildProject,
 	onMoveToTrash,
 }: ProjectContextMenuProps) {
 	return (
@@ -38,10 +36,6 @@ export function ProjectContextMenu({
 					<ContextMenuItem onSelect={onOpenProject}>
 						<ExternalLinkIcon />
 						打开项目
-					</ContextMenuItem>
-					<ContextMenuItem onSelect={onCreateChildProject}>
-						<FolderPlusIcon />
-						新建子项目
 					</ContextMenuItem>
 				</ContextMenuGroup>
 				<ContextMenuSeparator />

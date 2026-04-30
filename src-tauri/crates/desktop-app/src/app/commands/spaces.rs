@@ -31,7 +31,9 @@ pub async fn create_space(
     input: CreateSpaceInput,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<SpaceDto, AppError> {
-    build_space_service(database.inner()).create_space(input).await
+    build_space_service(database.inner())
+        .create_space(input)
+        .await
 }
 
 #[tauri::command]
@@ -39,7 +41,9 @@ pub async fn update_space(
     input: UpdateSpaceInput,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<SpaceDto, AppError> {
-    build_space_service(database.inner()).update_space(input).await
+    build_space_service(database.inner())
+        .update_space(input)
+        .await
 }
 
 #[tauri::command]
@@ -57,7 +61,9 @@ pub async fn archive_space(
     input: SpaceIdInput,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<SpaceDto, AppError> {
-    build_space_service(database.inner()).archive_space(input).await
+    build_space_service(database.inner())
+        .archive_space(input)
+        .await
 }
 
 #[tauri::command]
@@ -65,7 +71,9 @@ pub async fn restore_space(
     input: SpaceIdInput,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<SpaceDto, AppError> {
-    build_space_service(database.inner()).restore_space(input).await
+    build_space_service(database.inner())
+        .restore_space(input)
+        .await
 }
 
 #[tauri::command]
@@ -73,7 +81,9 @@ pub async fn delete_space(
     input: SpaceIdInput,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<SpaceDto, AppError> {
-    build_space_service(database.inner()).delete_space(input).await
+    build_space_service(database.inner())
+        .delete_space(input)
+        .await
 }
 
 fn build_space_service(database: &DatabaseRuntimeState) -> SpaceService {

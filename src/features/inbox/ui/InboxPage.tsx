@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 import { getScopeLabel } from '@/app/layouts/shell/config'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { getInboxTasks, getProjectOptions, type Task } from '@/features/workspace'
+import { getInboxTasks, type Task } from '@/features/workspace'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
@@ -67,7 +68,7 @@ export function InboxPage() {
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const [tasks, setTasks] = useState(() => getInboxTasks())
-	const projects = useMemo(() => getProjectOptions(), [])
+	const projects = useProjectStore(selectProjectOptions)
 	const [drafts, setDrafts] = useState<Record<string, InboxDraft>>(() =>
 		Object.fromEntries(
 			getInboxTasks().map((task) => [

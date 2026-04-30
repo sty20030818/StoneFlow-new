@@ -6,7 +6,11 @@ mod space_service;
 mod task_service;
 mod view_service;
 
-pub use project_service::ProjectService;
+pub use project_service::{
+    CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput, ProjectDetailDto,
+    ProjectIdInput, ProjectOverviewItemDto, ProjectScopeInput, ProjectScopeKind, ProjectService,
+    ProjectSidebarItemDto, UpdateProjectInput,
+};
 pub use settings_service::{
     GetSidebarSettingsOutput, SettingsService, SidebarDesktopPreference, SidebarFooterItemKey,
     SidebarItemVisibilityTarget, SidebarMainItemKey, SidebarProjectSectionConfig, SidebarSettings,

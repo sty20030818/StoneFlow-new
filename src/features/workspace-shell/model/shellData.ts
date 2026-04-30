@@ -1,39 +1,11 @@
 import type {
 	FocusViewKey,
-	Project,
 	SearchProjectItem,
 	SearchTaskItem,
 	TaskResource,
 	TaskView,
 	TrashEntry,
 } from '@/shared/types'
-
-export const PROJECT_RECORDS: Project[] = [
-	{
-		id: 'shell-project-stoneflow',
-		name: 'StoneFlow VNext',
-		note: '承接新的数据模型和阶段化重构方案。',
-		status: 'active',
-		parentProjectId: null,
-		sortOrder: 0,
-	},
-	{
-		id: 'shell-project-shell',
-		name: 'Workspace shell',
-		note: '只保留完整 UI 壳，不承载旧业务逻辑。',
-		status: 'active',
-		parentProjectId: 'shell-project-stoneflow',
-		sortOrder: 1,
-	},
-	{
-		id: 'shell-project-personal',
-		name: 'Personal planning',
-		note: '示例个人项目，用来保留导航和筛选 UI。',
-		status: 'draft',
-		parentProjectId: null,
-		sortOrder: 2,
-	},
-]
 
 export const TASK_RECORDS: TaskView[] = [
 	{
@@ -165,35 +137,6 @@ export const FOCUS_VIEWS: Array<{ key: FocusViewKey; name: string }> = [
 	{ key: 'recent', name: 'Recent' },
 ]
 
-export function getProjectOptions() {
-	return PROJECT_RECORDS.map((project) => ({
-		id: project.id,
-		name: project.name,
-	}))
-}
-
-export function getProjectTree() {
-	return PROJECT_RECORDS.filter((project) => project.parentProjectId === null)
-		.sort((left, right) => left.sortOrder - right.sortOrder)
-		.map((project) => ({
-			id: project.id,
-			name: project.name,
-			status: project.status,
-			parentProjectId: project.parentProjectId,
-			sortOrder: project.sortOrder,
-			children: PROJECT_RECORDS.filter((candidate) => candidate.parentProjectId === project.id)
-				.sort((left, right) => left.sortOrder - right.sortOrder)
-				.map((childProject) => ({
-					id: childProject.id,
-					name: childProject.name,
-					status: childProject.status,
-					parentProjectId: childProject.parentProjectId,
-					sortOrder: childProject.sortOrder,
-					children: [],
-				})),
-		}))
-}
-
 export function getInboxTasks() {
 	return TASK_RECORDS.filter((task) =>
 		['task-inbox-triage', 'task-inbox-command', 'task-inbox-drawer'].includes(task.id),
@@ -202,10 +145,6 @@ export function getInboxTasks() {
 
 export function getFocusTasks(viewKey: FocusViewKey) {
 	return TASK_RECORDS.filter((task) => task.viewKeys.includes(viewKey))
-}
-
-export function getProjectTasks(projectId: string) {
-	return TASK_RECORDS.filter((task) => task.projectId === projectId)
 }
 
 export function getSearchResults(query: string) {
@@ -230,14 +169,7 @@ export function getSearchResults(query: string) {
 		projectName: task.projectName,
 	}))
 
-	const projects = PROJECT_RECORDS.filter((project) =>
-		[project.name, project.note].some((value) => value.toLowerCase().includes(normalizedQuery)),
-	).map((project) => ({
-		id: project.id,
-		name: project.name,
-		note: project.note,
-		status: project.status,
-	}))
+	const projects: SearchProjectItem[] = []
 
 	return { tasks, projects }
 }

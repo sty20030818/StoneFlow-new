@@ -1,4 +1,4 @@
-import type { TaskStatus } from '@/features/workspace'
+import type { TaskStatus } from '@/shared/types'
 import { TaskCreateModalContent } from '@/features/task/ui/TaskCreateModalContent'
 import {
 	Dialog,
@@ -45,12 +45,12 @@ export function TaskCreateDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-					<div className='px-6 pb-5 pt-4'>
-						<TaskCreateModalContent
-							currentSpaceLabel={currentSpaceLabel}
-							initialProjectId={initialProjectId}
-							initialStatus={initialStatus}
-							onClose={onClose}
+				<div className='px-6 pb-5 pt-4'>
+					<TaskCreateModalContent
+						currentSpaceLabel={currentSpaceLabel}
+						initialProjectId={initialProjectId}
+						initialStatus={initialStatus}
+						onClose={onClose}
 						projects={projects}
 						projectsLoading={projectsLoading}
 					/>

@@ -1,12 +1,17 @@
+import type { Project, ProjectOverviewItem, ProjectSidebarItem } from '@/shared/types'
 import type { TaskStatus } from '@/shared/types'
 
-export type ProjectRecord = {
+export type ProjectOverviewViewKey = 'active' | 'completed' | 'archived' | 'all'
+
+export type ProjectDetail = Project & {
+	spaceName: string
+	taskCount: number
+	activeTaskCount: number
+}
+
+export type ProjectOption = {
 	id: string
-	parentProjectId: string | null
 	name: string
-	status: string
-	sortOrder: number
-	children: ProjectRecord[]
 }
 
 export type ProjectExecutionTask = {
@@ -22,15 +27,19 @@ export type ProjectExecutionTask = {
 	updatedAt: string
 }
 
-export type ProjectExecutionView = {
-	project: ProjectRecord
-	childProjects: ProjectRecord[]
-	tasks: ProjectExecutionTask[]
+export type ProjectFormInput = {
+	spaceId: string
+	name: string
+	description?: string | null
+	dueAt?: string | null
 }
 
-/**
- * 将一层 Project 树压平，供 Command、Task 创建选择器等扁平入口使用。
- */
-export function flattenProjectTree(projects: ProjectRecord[]) {
-	return projects.flatMap((project) => [project, ...project.children])
+export type ProjectUpdateInput = {
+	projectId: string
+	name?: string
+	description?: string | null
+	dueAt?: string | null
+	sortOrder?: number
 }
+
+export type { Project, ProjectOverviewItem, ProjectSidebarItem }

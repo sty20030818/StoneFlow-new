@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_PRIORITY_OPTIONS } from '@/features/task/model/taskPriority'
-import type { TaskStatus } from '@/features/workspace'
+import type { TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import {
@@ -170,13 +170,13 @@ export function TaskCreateModalContent({
 				</label>
 			</div>
 
-				{status === 'success' ? (
-					<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
-						已保留“新建任务”弹窗壳层。
-						{title.trim() ? ` 任务标题示例：${title.trim()}。` : ''}
-						当前 Scope：{currentSpaceLabel} · 目标状态：{initialStatus === 'done' ? 'Done' : 'Todo'}。
-					</StatusNotice>
-				) : (
+			{status === 'success' ? (
+				<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
+					已保留“新建任务”弹窗壳层。
+					{title.trim() ? ` 任务标题示例：${title.trim()}。` : ''}
+					当前 Scope：{currentSpaceLabel} · 目标状态：{initialStatus === 'done' ? 'Done' : 'Todo'}。
+				</StatusNotice>
+			) : (
 				<StatusNotice className='text-[12px] leading-5' role='status' size='sm'>
 					前置阶段 B 只保留表单交互与视觉层，真实任务创建逻辑将在后续阶段接入。
 				</StatusNotice>

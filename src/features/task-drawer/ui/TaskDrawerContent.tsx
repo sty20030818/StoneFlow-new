@@ -1,12 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ExternalLink, File, Folder, Link2, Trash2 } from 'lucide-react'
 
-import {
-	getProjectOptions,
-	getTaskRecord,
-	getTaskResources,
-	type TaskResource,
-} from '@/features/workspace'
+import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
+import { getTaskRecord, getTaskResources, type TaskResource } from '@/features/workspace'
 import {
 	EMPTY_TASK_PRIORITY_VALUE,
 	TASK_PRIORITY_OPTIONS,
@@ -44,12 +40,14 @@ const DRAWER_SECTION_TITLE_CLASS =
  */
 export function TaskDrawerContent({ currentSpaceLabel, taskId, onClose }: TaskDrawerContentProps) {
 	const task = getTaskRecord(taskId)
-	const projectOptions = getProjectOptions()
+	const projectOptions = useProjectStore(selectProjectOptions)
 	const initialResources = useMemo(() => getTaskResources(taskId), [taskId])
 	const [draftTitle, setDraftTitle] = useState(task?.title ?? '')
 	const [draftNote, setDraftNote] = useState(task?.note ?? '')
 	const [draftPriority, setDraftPriority] = useState<TaskPriorityValue>(task?.priority ?? '')
-	const [draftProjectId, setDraftProjectId] = useState(task?.projectId ?? '')
+	const [draftProjectId, setDraftProjectId] = useState(() =>
+		projectOptions.some((project) => project.id === task?.projectId) ? (task?.projectId ?? '') : '',
+	)
 	const [draftStatus, setDraftStatus] = useState<'todo' | 'done'>(task?.status ?? 'todo')
 	const [docLinkTitle, setDocLinkTitle] = useState('')
 	const [docLinkUrl, setDocLinkUrl] = useState('')
@@ -70,6 +68,15 @@ export function TaskDrawerContent({ currentSpaceLabel, taskId, onClose }: TaskDr
 			</div>
 		)
 	}
+
+	useEffect(() => {
+		if (!task?.projectId) {
+			return
+		}
+		if (!projectOptions.some((project) => project.id === task.projectId)) {
+			setDraftProjectId('')
+		}
+	}, [projectOptions, task?.projectId])
 
 	const canCreateDocLink = docLinkTitle.trim().length > 0 && docLinkUrl.trim().length > 0
 
@@ -107,9 +114,9 @@ export function TaskDrawerContent({ currentSpaceLabel, taskId, onClose }: TaskDr
 		<div className='space-y-4'>
 			<div className='space-y-1.5'>
 				<p className={DRAWER_SECTION_TITLE_CLASS}>任务详情</p>
-					<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
-						在 {currentSpaceLabel} 的主视图内直接编辑任务，不需要跳页。
-					</p>
+				<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
+					在 {currentSpaceLabel} 的主视图内直接编辑任务，不需要跳页。
+				</p>
 			</div>
 
 			<div className={`${DRAWER_SECTION_CLASS} space-y-3 px-3.5 py-3.5`}>

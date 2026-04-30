@@ -1,24 +1,17 @@
-import { useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 
-import { getScopeLabel } from '@/app/layouts/shell/config'
-import {
-	selectActiveDrawerId,
-	selectActiveDrawerKind,
-	useDrawerStore,
-} from '@/app/layouts/shell/model/useDrawerStore'
+import { buildScopedSectionPath, getScopeLabel } from '@/app/layouts/shell/config'
 import {
 	MainCardHeader,
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
-import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
-import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
+import type { ProjectDetail } from '@/features/project/model/types'
+import { selectProjectDetail, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import type { ProjectExecutionTask } from '@/features/project/model/types'
-import { PROJECT_RECORDS, getProjectTasks } from '@/features/workspace'
+import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
@@ -27,124 +20,215 @@ import {
 	BreadcrumbPage,
 	BreadcrumbSeparator,
 } from '@/shared/ui/base/breadcrumb'
+import {
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyPage,
+	EmptyTitle,
+} from '@/shared/ui/base/empty'
+import { Input } from '@/shared/ui/base/input'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
-import { Box, FolderIcon } from 'lucide-react'
+import { Textarea } from '@/shared/ui/base/textarea'
+import { FolderIcon, ListTodoIcon } from 'lucide-react'
 
 export function ProjectPage() {
-	const { projectId = 'shell-project-stoneflow' } = useParams()
-	const { scope } = useScopeRoute()
+	const navigate = useNavigate()
+	const { projectId = '' } = useParams()
+	const { scope, spaceId } = useScopeRoute()
 	const spaces = useSpaceStore(selectSpaces)
-	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
-	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
-	const openDrawer = useDrawerStore((state) => state.openDrawer)
-	const project = PROJECT_RECORDS.find((item) => item.id === projectId) ?? PROJECT_RECORDS[0]
-	const initialTasks = useMemo(
-		() => toProjectExecutionTasks(getProjectTasks(project.id)),
-		[project.id],
-	)
-	const [tasks, setTasks] = useState<ProjectExecutionTask[]>(initialTasks)
-	const [bannerMessage, setBannerMessage] = useState(
-		'Project 页面保留了面包屑、任务分栏和底部多选条外观，数据来自本地 mock。',
-	)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
-		useTaskSelection(tasks.map((task) => task.id))
+	const detail = useProjectStore(selectProjectDetail)
+	const loadDetail = useProjectStore((state) => state.loadDetail)
+	const clearDetail = useProjectStore((state) => state.clearDetail)
+	const updateProject = useProjectStore((state) => state.updateProject)
+	const completeProject = useProjectStore((state) => state.completeProject)
+	const reopenProject = useProjectStore((state) => state.reopenProject)
+	const archiveProject = useProjectStore((state) => state.archiveProject)
+	const deleteProject = useProjectStore((state) => state.deleteProject)
+	const [isEditing, setIsEditing] = useState(false)
+	const [draftName, setDraftName] = useState('')
+	const [draftDescription, setDraftDescription] = useState('')
+	const [draftDueAt, setDraftDueAt] = useState('')
+	const [busyAction, setBusyAction] = useState<string | null>(null)
 
-	function updateTask(
-		task: ProjectExecutionTask,
-		updater: (currentTask: ProjectExecutionTask) => ProjectExecutionTask,
-		message: string,
-	) {
-		setTasks((currentTasks) =>
-			currentTasks.map((currentTask) =>
-				currentTask.id === task.id ? updater(currentTask) : currentTask,
-			),
-		)
-		setBannerMessage(message)
-		return Promise.resolve()
+	useEffect(() => {
+		if (projectId) {
+			void loadDetail(projectId)
+		}
+		return () => {
+			clearDetail()
+		}
+	}, [clearDetail, loadDetail, projectId])
+
+	useEffect(() => {
+		if (!detail.item) {
+			return
+		}
+		setDraftName(detail.item.name)
+		setDraftDescription(detail.item.description ?? '')
+		setDraftDueAt(detail.item.dueAt ?? '')
+	}, [detail.item])
+
+	async function runAction(action: string, runner: () => Promise<unknown>) {
+		setBusyAction(action)
+		try {
+			await runner()
+		} finally {
+			setBusyAction(null)
+		}
 	}
 
-	function moveTaskToTrash(task: ProjectExecutionTask) {
-		setTasks((currentTasks) => currentTasks.filter((currentTask) => currentTask.id !== task.id))
-		setBannerMessage(`已从本地 mock Project board 中移除「${task.title}」。`)
-		return Promise.resolve()
+	async function handleSave(project: ProjectDetail) {
+		await runAction('save', async () => {
+			await updateProject({
+				projectId: project.id,
+				name: draftName,
+				description: draftDescription || null,
+				dueAt: draftDueAt || null,
+			})
+			setIsEditing(false)
+		})
 	}
+
+	const project = detail.item
 
 	return (
 		<MainCardLayout
-			header={<MainCardHeader breadcrumb={<ProjectBreadcrumb projectName={project.name} />} />}
+			header={
+				<MainCardHeader
+					breadcrumb={<ProjectBreadcrumb projectName={project?.name ?? 'Project'} />}
+					action={
+						project ? (
+							<div className='flex items-center gap-2'>
+								<Button
+									disabled={busyAction !== null}
+									onClick={() => setIsEditing((current) => !current)}
+									size='sm'
+									variant='outline'
+								>
+									{isEditing ? '取消编辑' : '编辑'}
+								</Button>
+								<Button
+									disabled={busyAction !== null}
+									onClick={() => {
+										void runAction(project.completedAt ? 'reopen' : 'complete', async () => {
+											if (project.completedAt) {
+												await reopenProject(project.id)
+												return
+											}
+											await completeProject(project.id)
+										})
+									}}
+									size='sm'
+									variant='outline'
+								>
+									{project.completedAt ? '重开' : '完成'}
+								</Button>
+								<Button
+									disabled={busyAction !== null}
+									onClick={() => {
+										void runAction('archive', async () => {
+											await archiveProject(project.id)
+											navigate(buildScopedSectionPath(scope, 'projects', spaceId))
+										})
+									}}
+									size='sm'
+									variant='outline'
+								>
+									归档
+								</Button>
+								<Button
+									disabled={busyAction !== null}
+									onClick={() => {
+										void runAction('delete', async () => {
+											await deleteProject(project.id)
+											navigate(buildScopedSectionPath(scope, 'projects', spaceId))
+										})
+									}}
+									size='sm'
+									variant='outline'
+								>
+									删除
+								</Button>
+							</div>
+						) : null
+					}
+				/>
+			}
 			toolbar={
 				<MainCardToolbar
+					left={
+						project ? (
+							<div className='flex flex-wrap items-center gap-2 text-[12px] text-(--sf-color-shell-secondary)'>
+								<Badge variant='secondary'>{project.activeTaskCount} active</Badge>
+								<Badge variant='outline'>{project.taskCount} tasks</Badge>
+								{project.dueAt ? <Badge variant='outline'>Due {project.dueAt}</Badge> : null}
+								{project.completedAt ? <Badge variant='success'>Completed</Badge> : null}
+							</div>
+						) : undefined
+					}
 					onRefresh={() => {
-						setTasks(toProjectExecutionTasks(getProjectTasks(project.id)))
-						setBannerMessage('已刷新本地 mock Project board 数据。')
+						if (projectId) {
+							void loadDetail(projectId)
+						}
 					}}
-					pills={[{ label: 'All issues', active: true }, { label: 'Active' }, { label: 'Backlog' }]}
 				/>
 			}
 		>
-			<div className='flex min-h-0 flex-1 flex-col'>
-				<StatusNotice className='mb-3' size='sm'>
-					{bannerMessage} 当前 Scope：{getScopeLabel(scope, spaces)}。
-				</StatusNotice>
+			<div className='flex min-h-0 flex-1 flex-col gap-3'>
+				{detail.error ? (
+					<StatusNotice role='alert' size='sm' variant='danger'>
+						{detail.error}
+					</StatusNotice>
+				) : (
+					<StatusNotice size='sm'>
+						当前 Scope：{getScopeLabel(scope, spaces)}。Project Detail 已接入真实后端，Task
+						区域仍保留阶段 6 占位。
+					</StatusNotice>
+				)}
 
-				<div className='flex min-h-0 flex-1 flex-col'>
-					<ProjectTaskBoard
-						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-						onMoveTaskToTrash={moveTaskToTrash}
-						onOpenTask={(taskId) => openDrawer('task', taskId)}
-						onToggleTaskSelection={toggleTaskSelection}
-						onToggleTaskStatus={(task) =>
-							updateTask(
-								task,
-								(currentTask) => ({
-									...currentTask,
-									status: currentTask.status === 'done' ? 'todo' : 'done',
-								}),
-								'已切换本地 mock 任务状态。',
-							)
-						}
-						onUpdateTaskPriority={(task, priority) =>
-							updateTask(
-								task,
-								(currentTask) => ({ ...currentTask, priority }),
-								'已更新本地 mock 优先级。',
-							)
-						}
-						onUpdateTaskStatus={(task, status) =>
-							updateTask(
-								task,
-								(currentTask) => ({ ...currentTask, status }),
-								'已更新本地 mock 状态。',
-							)
-						}
-						pendingTaskId={null}
-						projectId={project.id}
-						selectedTaskIdSet={selectedTaskIdSet}
-						tasks={tasks}
-					/>
-				</div>
+				{!project ? (
+					<EmptyPage>
+						<Empty>
+							<EmptyHeader>
+								<EmptyMedia variant='icon'>
+									<FolderIcon />
+								</EmptyMedia>
+								<EmptyTitle>当前 Project 不可见</EmptyTitle>
+								<EmptyDescription>它可能已被归档、删除，或当前 Scope 已切走。</EmptyDescription>
+							</EmptyHeader>
+							<EmptyContent>
+								<Button
+									onClick={() => navigate(buildScopedSectionPath(scope, 'projects', spaceId))}
+									type='button'
+								>
+									返回 Project Overview
+								</Button>
+							</EmptyContent>
+						</Empty>
+					</EmptyPage>
+				) : (
+					<>
+						<ProjectDetailCard
+							draftDescription={draftDescription}
+							draftDueAt={draftDueAt}
+							draftName={draftName}
+							isBusy={busyAction !== null}
+							isEditing={isEditing}
+							onChangeDescription={setDraftDescription}
+							onChangeDueAt={setDraftDueAt}
+							onChangeName={setDraftName}
+							onSave={() => {
+								void handleSave(project)
+							}}
+							project={project}
+						/>
 
-				<TaskBulkActionBar
-					action={
-						<Button
-							className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
-							onClick={() => setBannerMessage('批量动作条已保留，真实批量命令将在后续阶段接回。')}
-							size='sm'
-							type='button'
-							variant='outline'
-						>
-							<span
-								aria-hidden
-								className='text-sm leading-none text-(--sf-color-sidebar-action-foreground)'
-							>
-								⌘
-							</span>
-							指令
-						</Button>
-					}
-					onClear={clearTaskSelection}
-					selectedCount={selectedCount}
-				/>
+						<ProjectTaskPlaceholder />
+					</>
+				)}
 			</div>
 		</MainCardLayout>
 	)
@@ -156,35 +240,147 @@ function ProjectBreadcrumb({ projectName }: { projectName: string }) {
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
 					<span className='inline-flex items-center gap-1.5 text-foreground'>
-						<Box aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						<FolderIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
 						Projects
 					</span>
 				</BreadcrumbItem>
 				<BreadcrumbSeparator />
 				<BreadcrumbItem className='min-w-0'>
-					<BreadcrumbPage className='flex min-w-0 items-center gap-2 font-semibold'>
-						<FolderIcon className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
-						<span className='truncate'>{projectName}</span>
-					</BreadcrumbPage>
+					<BreadcrumbPage className='truncate'>{projectName}</BreadcrumbPage>
 				</BreadcrumbItem>
 			</BreadcrumbList>
 		</Breadcrumb>
 	)
 }
 
-function toProjectExecutionTasks(
-	tasks: ReturnType<typeof getProjectTasks>,
-): ProjectExecutionTask[] {
-	return tasks.map((task, index) => ({
-		id: task.id,
-		title: task.title,
-		note: task.note,
-		priority: task.priority,
-		status: task.status,
-		tags: index === 0 ? ['UI shell', 'Mock data'] : ['Static'],
-		dueAt: index === 0 ? '2026-04-30T10:00:00.000Z' : null,
-		completedAt: task.status === 'done' ? '2026-04-28T20:00:00.000Z' : null,
-		createdAt: `2026-04-2${index + 5}T09:00:00.000Z`,
-		updatedAt: `2026-04-2${index + 7}T11:30:00.000Z`,
-	}))
+type ProjectDetailCardProps = {
+	project: ProjectDetail
+	isEditing: boolean
+	isBusy: boolean
+	draftName: string
+	draftDescription: string
+	draftDueAt: string
+	onChangeName: (value: string) => void
+	onChangeDescription: (value: string) => void
+	onChangeDueAt: (value: string) => void
+	onSave: () => void
+}
+
+function ProjectDetailCard({
+	project,
+	isEditing,
+	isBusy,
+	draftName,
+	draftDescription,
+	draftDueAt,
+	onChangeName,
+	onChangeDescription,
+	onChangeDueAt,
+	onSave,
+}: ProjectDetailCardProps) {
+	return (
+		<div className='rounded-[28px] border border-(--sf-color-border-subtle) bg-white/90 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.05)]'>
+			<div className='grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px]'>
+				<div className='space-y-4'>
+					<div className='space-y-1.5'>
+						<p className='text-[11px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'>
+							Project
+						</p>
+						{isEditing ? (
+							<Input
+								className='h-11 rounded-md border-input bg-card'
+								disabled={isBusy}
+								onChange={(event) => onChangeName(event.currentTarget.value)}
+								value={draftName}
+							/>
+						) : (
+							<h2 className='text-[24px] font-semibold tracking-[-0.03em] text-foreground'>
+								{project.name}
+							</h2>
+						)}
+					</div>
+
+					<div className='space-y-1.5'>
+						<p className='text-[11px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'>
+							Description
+						</p>
+						{isEditing ? (
+							<Textarea
+								className='min-h-28 rounded-md border-input bg-card'
+								disabled={isBusy}
+								onChange={(event) => onChangeDescription(event.currentTarget.value)}
+								value={draftDescription}
+							/>
+						) : (
+							<p className='text-[14px] leading-7 text-(--sf-color-shell-secondary)'>
+								{project.description ?? '当前还没有项目说明。'}
+							</p>
+						)}
+					</div>
+
+					{isEditing ? (
+						<div className='flex justify-end'>
+							<Button disabled={isBusy || draftName.trim().length === 0} onClick={onSave} size='sm'>
+								{isBusy ? '保存中...' : '保存修改'}
+							</Button>
+						</div>
+					) : null}
+				</div>
+
+				<div className='rounded-[24px] border border-(--sf-color-border-subtle) bg-(--sf-color-bg-surface-muted) p-4'>
+					<p className='text-[11px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'>
+						Meta
+					</p>
+					<div className='mt-3 grid gap-3 text-[13px] text-(--sf-color-shell-secondary)'>
+						<div>
+							<p className='text-[11px] uppercase tracking-[0.06em] text-(--sf-color-shell-tertiary)'>
+								Space
+							</p>
+							<p className='mt-1'>{project.spaceName}</p>
+						</div>
+						<div>
+							<p className='text-[11px] uppercase tracking-[0.06em] text-(--sf-color-shell-tertiary)'>
+								Due At
+							</p>
+							{isEditing ? (
+								<Input
+									className='mt-1 h-10 rounded-md border-input bg-white'
+									disabled={isBusy}
+									onChange={(event) => onChangeDueAt(event.currentTarget.value)}
+									value={draftDueAt}
+								/>
+							) : (
+								<p className='mt-1'>{project.dueAt ?? '未设置'}</p>
+							)}
+						</div>
+						<div>
+							<p className='text-[11px] uppercase tracking-[0.06em] text-(--sf-color-shell-tertiary)'>
+								Updated
+							</p>
+							<p className='mt-1'>{project.updatedAt}</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	)
+}
+
+function ProjectTaskPlaceholder() {
+	return (
+		<div className='rounded-[28px] border border-dashed border-(--sf-color-border-subtle) bg-white/70 p-6'>
+			<div className='flex items-start gap-3'>
+				<span className='mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-(--sf-color-bg-surface-muted) text-(--sf-color-shell-secondary)'>
+					<ListTodoIcon className='size-4' />
+				</span>
+				<div className='space-y-2'>
+					<h3 className='text-[15px] font-semibold text-foreground'>Task List 将在阶段 6 接入</h3>
+					<p className='max-w-2xl text-[13px] leading-6 text-(--sf-color-shell-secondary)'>
+						当前阶段只交付真实 Project Detail 与项目生命周期，任务列表、任务编辑和 Drawer
+						读写仍保持阶段 6 占位，不提前把 Task CRUD 混进来。
+					</p>
+				</div>
+			</div>
+		</div>
+	)
 }
