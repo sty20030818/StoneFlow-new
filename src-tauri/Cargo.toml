@@ -26,7 +26,7 @@ sea-orm-migration = { version = "1.1.20", default-features = false, features = [
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 stoneflow-ipc-protocol = { path = "crates/ipc-protocol" }
-tauri = { version = "2.10.3", features = ["macos-private-api"] }
+tauri = { version = "2.11.0", features = ["macos-private-api"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
 tauri-plugin-global-shortcut = "2"

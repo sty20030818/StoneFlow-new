@@ -19,7 +19,7 @@ import {
 	SearchIcon,
 } from 'lucide-react'
 
-import { getSearchResults, type SearchProjectItem, type SearchTaskItem } from '@/features/workspace'
+import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { Kbd } from '@/shared/ui/base/kbd'
 import { cn } from '@/shared/lib/utils'
@@ -49,6 +49,14 @@ const PRIORITY_CLASS: Record<CommandPriority, string> = {
 	P1: 'border-(--sf-color-warning-soft-border) bg-(--sf-color-warning-soft) text-(--sf-color-warning-soft-text)',
 	P2: 'border-(--sf-color-accent-soft-border) bg-accent text-accent-foreground',
 	P3: 'border-(--sf-color-border-subtle) bg-muted text-(--sf-color-text-secondary)',
+}
+
+// TODO: 接入真实搜索 API（后端需要 search_entities 命令）
+function emptySearchResults(_query: string) {
+	return {
+		tasks: [] as SearchTaskItem[],
+		projects: [] as SearchProjectItem[],
+	}
 }
 
 function closeCurrentWindow() {
@@ -83,7 +91,7 @@ export function QuickCaptureSurface({
 	const [status, setStatus] = useState<CommandStatus>('idle')
 	const [message, setMessage] = useState('输入标题创建，或搜索已有任务与项目')
 	const normalizedQuery = query.trim()
-	const results = useMemo(() => getSearchResults(query), [query])
+	const results = useMemo(() => emptySearchResults(query), [query])
 	const hasResults = results.tasks.length > 0 || results.projects.length > 0
 	const mode: CommandMode = !normalizedQuery
 		? 'idle'

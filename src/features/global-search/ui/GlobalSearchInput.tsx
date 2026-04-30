@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { getSearchResults } from '@/features/workspace'
+import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { GlobalSearchResults } from '@/features/global-search/ui/GlobalSearchResults'
 import { InputGroup, InputGroupAddon } from '@/shared/ui/base/input-group'
 import { Kbd } from '@/shared/ui/base/kbd'
@@ -12,9 +12,16 @@ type GlobalSearchInputProps = {
 	onOpenProject: (projectId: string) => void
 }
 
-/**
- * 保留 Header 中间搜索框的完整 UI，结果来自本地 mock 数据。
- */
+// TODO: 接入真实搜索 API（后端需要 search_entities 命令）
+// 当前搜索结果固定返回空，保留 UI 壳层。
+
+function emptySearchResults(_query: string) {
+	return {
+		tasks: [] as SearchTaskItem[],
+		projects: [] as SearchProjectItem[],
+	}
+}
+
 export function GlobalSearchInput({
 	currentSpaceId: _currentSpaceId,
 	onOpenTask,
@@ -27,7 +34,7 @@ export function GlobalSearchInput({
 	const [highlightedIndex, setHighlightedIndex] = useState(0)
 	const [isLoading, setIsLoading] = useState(false)
 	const normalizedQuery = query.trim()
-	const searchResult = useMemo(() => getSearchResults(query), [query])
+	const searchResult = useMemo(() => emptySearchResults(query), [query])
 	const taskItems = useMemo(
 		() => searchResult.tasks.map((item, index) => ({ index, item })),
 		[searchResult.tasks],

@@ -1,4 +1,4 @@
-import type { SearchProjectItem, SearchTaskItem } from '@/features/workspace'
+import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
 import { SearchIcon } from 'lucide-react'
 
@@ -13,9 +13,6 @@ type GlobalSearchResultsProps = {
 	onSelectProject: (item: SearchProjectItem) => void
 }
 
-/**
- * 保留 Header 搜索结果面板的完整视觉层，结果来自本地 mock 数据。
- */
 export function GlobalSearchResults({
 	isLoading,
 	errorMessage,

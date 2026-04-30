@@ -9,7 +9,6 @@ import {
 	setDefaultSpace,
 	updateSpace,
 } from '@/features/space/api/spaces'
-import { MOCK_SPACE } from '@/features/workspace-shell/model/shellData'
 import type { Space } from '@/shared/types'
 
 type SpaceStoreState = {
@@ -47,19 +46,17 @@ export const useSpaceStore = create<SpaceStoreState>((set) => ({
 	load: async () => {
 		set({ status: 'loading', error: null })
 		try {
-			const realSpaces = await listVisibleSpaces()
-			// mock space 始终追加，和真实数据并存
-			const hasMock = realSpaces.some((s) => s.id === MOCK_SPACE.id)
+			const spaces = await listVisibleSpaces()
 			set({
-				spaces: hasMock ? realSpaces : [...realSpaces, MOCK_SPACE],
+				spaces,
 				status: 'ready',
 				error: null,
 			})
-		} catch {
+		} catch (error) {
 			set({
-				spaces: [MOCK_SPACE],
-				status: 'ready',
-				error: null,
+				spaces: [],
+				status: 'error',
+				error: error instanceof Error ? error.message : '加载 Space 列表失败',
 			})
 		}
 	},

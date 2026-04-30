@@ -1,5 +1,4 @@
 /**
  * Workspace 模块
- * 统一的数据访问入口
+ * mock 数据已清理，等待接入真实 API 后重新导出。
  */
-export * from './api/index'

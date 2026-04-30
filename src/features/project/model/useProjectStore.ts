@@ -21,7 +21,6 @@ import type {
 	ProjectSidebarItem,
 	ProjectUpdateInput,
 } from '@/features/project/model/types'
-import { MOCK_PROJECT, TASK_RECORDS } from '@/features/workspace-shell/model/shellData'
 import type { Scope } from '@/shared/types'
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -171,25 +170,21 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
 			try {
 				const items = await listProjectOverview(scope, viewKey)
-				// mock project 始终追加（active/all 视图下）
-				const showMock = viewKey === 'active' || viewKey === 'all'
-				const hasMock = items.some((p) => p.id === MOCK_PROJECT.id)
 				set((state) => ({
 					overview: {
 						...state.overview,
-						items: showMock && !hasMock ? [...items, MOCK_PROJECT] : items,
+						items,
 						status: 'ready',
 						error: null,
 					},
 				}))
-			} catch {
-				const mockItems = viewKey === 'active' || viewKey === 'all' ? [MOCK_PROJECT] : []
+			} catch (error) {
 				set((state) => ({
 					overview: {
 						...state.overview,
-						items: mockItems,
-						status: 'ready',
-						error: null,
+						items: [],
+						status: 'error',
+						error: error instanceof Error ? error.message : 'Project Overview 加载失败',
 					},
 				}))
 			}
@@ -207,20 +202,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 
 			try {
 				const items = await listSidebarProjects(scope)
-				// mock project 追加到 sidebar
-				const hasMock = items.some((p) => p.id === MOCK_PROJECT.id)
-				const mockSidebarItem: ProjectSidebarItem = {
-					id: MOCK_PROJECT.id,
-					spaceId: MOCK_PROJECT.spaceId,
-					name: MOCK_PROJECT.name,
-					sortOrder: MOCK_PROJECT.sortOrder,
-					taskCount: MOCK_PROJECT.taskCount,
-					activeTaskCount: MOCK_PROJECT.activeTaskCount,
-					completedAt: MOCK_PROJECT.completedAt,
-					updatedAt: MOCK_PROJECT.updatedAt,
-				}
-				const allItems = hasMock ? items : [...items, mockSidebarItem]
-				const options: ProjectOption[] = allItems.map((project) => ({
+				const options: ProjectOption[] = items.map((project) => ({
 					id: project.id,
 					spaceId: project.spaceId,
 					name: project.name,
@@ -228,32 +210,20 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 				set((state) => ({
 					sidebar: {
 						...state.sidebar,
-						items: allItems,
+						items,
 						options,
 						status: 'ready',
 						error: null,
 					},
 				}))
-			} catch {
-				const mockSidebarItem: ProjectSidebarItem = {
-					id: MOCK_PROJECT.id,
-					spaceId: MOCK_PROJECT.spaceId,
-					name: MOCK_PROJECT.name,
-					sortOrder: MOCK_PROJECT.sortOrder,
-					taskCount: MOCK_PROJECT.taskCount,
-					activeTaskCount: MOCK_PROJECT.activeTaskCount,
-					completedAt: MOCK_PROJECT.completedAt,
-					updatedAt: MOCK_PROJECT.updatedAt,
-				}
+			} catch (error) {
 				set((state) => ({
 					sidebar: {
 						...state.sidebar,
-						items: [mockSidebarItem],
-						options: [
-							{ id: MOCK_PROJECT.id, spaceId: MOCK_PROJECT.spaceId, name: MOCK_PROJECT.name },
-						],
-						status: 'ready',
-						error: null,
+						items: [],
+						options: [],
+						status: 'error',
+						error: error instanceof Error ? error.message : 'Projects 快捷区加载失败',
 					},
 				}))
 			}
@@ -279,34 +249,13 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 						error: null,
 					},
 				}))
-			} catch {
-				// Tauri IPC 失败时 fallback 到 mock 数据
-				const activeTasks = TASK_RECORDS.filter(
-					(t) => t.projectId === projectId && t.status === 'todo',
-				)
-				const allTasks = TASK_RECORDS.filter((t) => t.projectId === projectId)
-				const mockDetail: ProjectDetail = {
-					id: MOCK_PROJECT.id,
-					spaceId: MOCK_PROJECT.spaceId,
-					name: MOCK_PROJECT.name,
-					description: MOCK_PROJECT.description,
-					dueAt: MOCK_PROJECT.dueAt,
-					sortOrder: MOCK_PROJECT.sortOrder,
-					completedAt: MOCK_PROJECT.completedAt,
-					archivedAt: MOCK_PROJECT.archivedAt,
-					deletedAt: MOCK_PROJECT.deletedAt,
-					createdAt: MOCK_PROJECT.createdAt,
-					updatedAt: MOCK_PROJECT.updatedAt,
-					spaceName: MOCK_PROJECT.spaceName,
-					taskCount: allTasks.length,
-					activeTaskCount: activeTasks.length,
-				}
+			} catch (error) {
 				set((state) => ({
 					detail: {
 						...state.detail,
-						item: mockDetail,
-						status: 'ready',
-						error: null,
+						item: null,
+						status: 'error',
+						error: error instanceof Error ? error.message : 'Project 详情加载失败',
 					},
 				}))
 			}
