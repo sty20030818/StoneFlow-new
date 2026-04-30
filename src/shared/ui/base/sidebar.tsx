@@ -17,10 +17,6 @@ import {
 
 // Shell 响应式断点：>=1024 视作 desktop（桌面态），<1024 视作 mobile（抽屉态）
 const SIDEBAR_DESKTOP_BREAKPOINT_PX = 1024
-// 桌面态展开/折叠的持久化 key，刷新后保留用户上次的选择
-const SIDEBAR_STATE_STORAGE_KEY = 'sf:sidebar:state'
-// 桌面态可变宽（px）
-const SIDEBAR_WIDTH_STORAGE_KEY = 'sf:sidebar:width'
 const SIDEBAR_WIDTH_MIN = 220
 const SIDEBAR_WIDTH_MAX = 330
 /** 移动端 offcanvas 抽屉宽度（固定，不参与桌面可变宽） */
@@ -30,64 +26,8 @@ const SIDEBAR_ICON_RAIL_PX = 48
 // 桌面态切换快捷键（对齐 VS Code / shadcn 惯例）
 const SIDEBAR_TOGGLE_SHORTCUT_KEY = 'b'
 
-function readStoredSidebarState(): SidebarDesktopState {
-	if (typeof window === 'undefined') {
-		return 'expanded'
-	}
-
-	try {
-		const stored = window.localStorage.getItem(SIDEBAR_STATE_STORAGE_KEY)
-		if (stored === 'collapsed' || stored === 'expanded') {
-			return stored
-		}
-	} catch {
-		// 隐私模式或存储不可用时保底
-	}
-	return 'expanded'
-}
-
 function clampSidebarWidth(width: number) {
 	return Math.max(SIDEBAR_WIDTH_MIN, Math.min(SIDEBAR_WIDTH_MAX, Math.round(width)))
-}
-
-function readStoredSidebarWidth() {
-	if (typeof window === 'undefined') {
-		return 245
-	}
-
-	try {
-		const stored = window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY)
-		const parsed = stored ? Number.parseInt(stored, 10) : Number.NaN
-		if (Number.isFinite(parsed)) {
-			return clampSidebarWidth(parsed)
-		}
-	} catch {
-		// 存储不可用时保底
-	}
-
-	return 245
-}
-
-function writeStoredSidebarWidth(width: number) {
-	if (typeof window === 'undefined') {
-		return
-	}
-	try {
-		window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(clampSidebarWidth(width)))
-	} catch {
-		// 存储失败时静默
-	}
-}
-
-function writeStoredSidebarState(state: SidebarDesktopState) {
-	if (typeof window === 'undefined') {
-		return
-	}
-	try {
-		window.localStorage.setItem(SIDEBAR_STATE_STORAGE_KEY, state)
-	} catch {
-		// 存储失败时静默，桌面态记忆只是增强体验
-	}
 }
 
 // 根据当前窗口宽度判断布局模式；SSR/测试环境下保守返回 desktop
@@ -173,15 +113,27 @@ function resolveGeometry(
 	}
 }
 
-function SidebarProvider({ className, children, ...props }: React.ComponentProps<'div'>) {
+type SidebarProviderProps = React.ComponentProps<'div'> & {
+	desktopPreference?: SidebarDesktopState
+	sidebarWidth?: number
+	onDesktopPreferenceChange?: (next: SidebarDesktopState) => void
+	onSidebarWidthCommit?: (width: number) => void
+}
+
+function SidebarProvider({
+	className,
+	children,
+	desktopPreference = 'expanded',
+	sidebarWidth = 245,
+	onDesktopPreferenceChange,
+	onSidebarWidthCommit,
+	...props
+}: SidebarProviderProps) {
 	const [layoutMode, setLayoutMode] = React.useState<SidebarLayoutMode>(() => resolveLayoutMode())
-	const [desktopPreference, setDesktopPreference] = React.useState<SidebarDesktopState>(() =>
-		readStoredSidebarState(),
-	)
-	const [sidebarWidth, setSidebarWidth] = React.useState(() => readStoredSidebarWidth())
 	const [mobileOpen, setMobileOpen] = React.useState(false)
 	const [isBreakpointSwitching, setIsBreakpointSwitching] = React.useState(false)
 	const layoutModeRef = React.useRef<SidebarLayoutMode | null>(null)
+	const resolvedSidebarWidth = clampSidebarWidth(sidebarWidth)
 
 	// 断点只改变目标几何状态；sidebar 面板本体始终保持同一套 DOM。
 	React.useEffect(() => {
@@ -232,22 +184,13 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 		}
 	}, [layoutMode])
 
-	// 每次变化时写回本地存储；只在桌面态这项决策是有效的
-	React.useEffect(() => {
-		writeStoredSidebarState(desktopPreference)
-	}, [desktopPreference])
-
-	React.useEffect(() => {
-		writeStoredSidebarWidth(sidebarWidth)
-	}, [sidebarWidth])
-
 	const toggleSidebar = React.useCallback(() => {
 		if (layoutMode === 'mobile') {
 			setMobileOpen((prev) => !prev)
 			return
 		}
-		setDesktopPreference((prev) => (prev === 'expanded' ? 'collapsed' : 'expanded'))
-	}, [layoutMode])
+		onDesktopPreferenceChange?.(desktopPreference === 'expanded' ? 'collapsed' : 'expanded')
+	}, [desktopPreference, layoutMode, onDesktopPreferenceChange])
 
 	// 全局快捷键：Cmd/Ctrl + B，忽略输入态，防止覆盖文字输入时的组合键
 	React.useEffect(() => {
@@ -276,15 +219,18 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 		return () => window.removeEventListener('keydown', handleKeyDown)
 	}, [toggleSidebar])
 
-	const setSidebarWidthClamped = React.useCallback((width: number) => {
-		setSidebarWidth(clampSidebarWidth(width))
-	}, [])
+	const setSidebarWidthClamped = React.useCallback(
+		(width: number) => {
+			onSidebarWidthCommit?.(clampSidebarWidth(width))
+		},
+		[onSidebarWidthCommit],
+	)
 	const setDrawerOpen = React.useCallback((open: boolean) => {
 		setMobileOpen(open)
 	}, [])
 
 	const visualState = resolveVisualState(layoutMode, desktopPreference, mobileOpen)
-	const geometry = resolveGeometry(visualState, sidebarWidth, desktopPreference)
+	const geometry = resolveGeometry(visualState, resolvedSidebarWidth, desktopPreference)
 
 	const value = React.useMemo<SidebarContextValue>(
 		() => ({
@@ -299,7 +245,7 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 			overlayOpacity: geometry.overlayOpacity,
 			isBreakpointSwitching,
 			sidebarState: desktopPreference,
-			sidebarWidth,
+			sidebarWidth: resolvedSidebarWidth,
 			drawerOpen: mobileOpen,
 			isMobile: layoutMode === 'mobile',
 			toggleSidebar,
@@ -313,7 +259,7 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 			visualState,
 			geometry,
 			isBreakpointSwitching,
-			sidebarWidth,
+			resolvedSidebarWidth,
 			toggleSidebar,
 			setDrawerOpen,
 			setSidebarWidthClamped,
@@ -335,7 +281,7 @@ function SidebarProvider({ className, children, ...props }: React.ComponentProps
 				style={
 					{
 						// 布局与面板动画共用同一组几何变量，断点切换时只换目标值。
-						'--sf-shell-sidebar-width-current': `${sidebarWidth}px`,
+						'--sf-shell-sidebar-width-current': `${resolvedSidebarWidth}px`,
 						'--sf-shell-sidebar-panel-width': geometry.panelWidth,
 						'--sf-shell-sidebar-panel-offset-x': geometry.panelOffsetX,
 						'--sf-shell-sidebar-reserved-width': geometry.reservedWidth,
@@ -795,6 +741,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 					desktopPreference === 'expanded' &&
 					dragStateRef.current.dragged
 				) {
+					// 只在松手时通知外层提交宽度，拖动过程仍然只改 CSS 变量以保持丝滑。
 					setSidebarWidth(dragStateRef.current.lastWidth)
 				}
 			}}

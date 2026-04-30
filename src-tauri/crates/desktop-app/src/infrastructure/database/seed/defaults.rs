@@ -205,7 +205,8 @@ pub fn default_settings() -> Vec<DefaultSettingSeed> {
                     "archive": { "visible": true, "order": 900 },
                     "trash": { "visible": true, "order": 1000 }
                 },
-                "width": 256
+                "width": 256,
+                "desktopPreference": "expanded"
             }),
         },
         DefaultSettingSeed {
@@ -234,7 +235,6 @@ pub fn default_settings() -> Vec<DefaultSettingSeed> {
             value: json!({
                 "theme": "system",
                 "density": "comfortable",
-                "sidebarWidth": 256,
                 "taskDrawerWidth": 420
             }),
         },

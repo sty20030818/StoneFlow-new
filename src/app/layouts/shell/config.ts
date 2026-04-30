@@ -3,11 +3,13 @@ import type { ComponentType } from 'react'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import type { BadgeVariant } from '@/shared/ui/base/badge'
 import {
+	ArchiveIcon,
 	BriefcaseBusinessIcon,
 	FolderIcon,
 	GraduationCapIcon,
 	HouseIcon,
 	InboxIcon,
+	ListTodoIcon,
 	Layers3Icon,
 	Settings2Icon,
 	SparklesIcon,
@@ -16,9 +18,13 @@ import {
 } from 'lucide-react'
 
 type ShellIcon = ComponentType<{ className?: string }>
+type ShellMainNavKey = 'inbox' | 'allTasks' | 'views' | 'projectOverview'
+type ShellFooterNavKey = 'archive' | 'trash'
+type ShellCommandNavKey = ShellMainNavKey | ShellFooterNavKey | 'settings'
 
-type ShellNavItem = {
-	key: ShellSectionKey
+type ShellNavItem<TKey extends string = ShellCommandNavKey> = {
+	key: TKey
+	section: ShellSectionKey
 	label: string
 	icon: ShellIcon
 	to: (spaceId: string) => string
@@ -111,45 +117,89 @@ export const SHELL_SPACES: ShellSpace[] = [
 	},
 ]
 
-export const SHELL_NAV_ITEMS: ShellNavItem[] = [
+export const SHELL_NAV_ITEMS: ShellNavItem<ShellMainNavKey>[] = [
 	{
 		key: 'inbox',
+		section: 'inbox',
 		label: 'Inbox',
 		icon: InboxIcon,
 		to: (spaceId) => `/space/${spaceId}/inbox`,
 	},
 	{
-		key: 'focus',
+		key: 'allTasks',
+		section: 'allTasks',
+		label: 'All Tasks',
+		icon: ListTodoIcon,
+		to: (spaceId) => `/space/${spaceId}/all-tasks`,
+	},
+	{
+		key: 'views',
+		section: 'views',
 		label: 'Views',
 		icon: TargetIcon,
-		to: (spaceId) => `/space/${spaceId}/focus`,
+		to: (spaceId) => `/space/${spaceId}/views`,
+	},
+	{
+		key: 'projectOverview',
+		section: 'projects',
+		label: 'Project Overview',
+		icon: FolderIcon,
+		to: (spaceId) => `/space/${spaceId}/projects`,
 	},
 ]
 
-export const SHELL_FOOTER_ITEMS: ShellNavItem[] = [
+export const SHELL_FOOTER_ITEMS: ShellNavItem<ShellFooterNavKey>[] = [
+	{
+		key: 'archive',
+		section: 'archive',
+		label: 'Archive',
+		icon: ArchiveIcon,
+		to: (spaceId) => `/space/${spaceId}/archive`,
+	},
 	{
 		key: 'trash',
+		section: 'trash',
 		label: 'Trash',
 		icon: Trash2Icon,
 		to: (spaceId) => `/space/${spaceId}/trash`,
 	},
-	{
-		key: 'settings',
-		label: 'Settings',
-		icon: Settings2Icon,
-		to: (spaceId) => `/space/${spaceId}/settings`,
-	},
 ]
 
-export const SHELL_ROUTE_ITEMS = [...SHELL_NAV_ITEMS, ...SHELL_FOOTER_ITEMS]
+export const SHELL_SETTINGS_ITEM: ShellNavItem<'settings'> = {
+	key: 'settings',
+	section: 'settings',
+	label: 'Settings',
+	icon: Settings2Icon,
+	to: (spaceId) => `/space/${spaceId}/settings`,
+}
+
+export const SHELL_COMMAND_ROUTE_ITEMS = [
+	...SHELL_NAV_ITEMS,
+	...SHELL_FOOTER_ITEMS,
+	SHELL_SETTINGS_ITEM,
+]
+
+export const SHELL_ROUTE_ITEMS = SHELL_COMMAND_ROUTE_ITEMS
 
 export function resolveShellSection(pathname: string): ShellSectionKey {
-	if (pathname.includes('/focus')) {
-		return 'focus'
+	if (pathname.includes('/all-tasks')) {
+		return 'allTasks'
+	}
+
+	if (pathname.includes('/views') || pathname.includes('/focus')) {
+		return 'views'
+	}
+
+	if (pathname.includes('/projects')) {
+		return 'projects'
 	}
 
 	if (pathname.includes('/project/')) {
 		return 'project'
+	}
+
+	if (pathname.includes('/archive')) {
+		return 'archive'
 	}
 
 	if (pathname.includes('/trash')) {
@@ -167,10 +217,16 @@ export function getSectionLabel(section: ShellSectionKey) {
 	switch (section) {
 		case 'inbox':
 			return 'Inbox'
-		case 'focus':
+		case 'allTasks':
+			return 'All Tasks'
+		case 'views':
 			return 'Views'
+		case 'projects':
+			return 'Project Overview'
 		case 'project':
 			return 'Projects'
+		case 'archive':
+			return 'Archive'
 		case 'trash':
 			return 'Trash'
 		case 'settings':

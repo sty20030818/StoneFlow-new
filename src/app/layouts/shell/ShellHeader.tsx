@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import {
 	getSectionLabel,
 	getSpaceLabel,
-	SHELL_ROUTE_ITEMS,
+	SHELL_COMMAND_ROUTE_ITEMS,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
 import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
@@ -44,6 +44,7 @@ import {
 	FolderPlusIcon,
 	HistoryIcon,
 	InboxIcon,
+	ListTodoIcon,
 	MinusIcon,
 	PanelLeftCloseIcon,
 	PanelLeftOpenIcon,
@@ -52,6 +53,7 @@ import {
 	SquarePenIcon,
 	SquareIcon,
 	TargetIcon,
+	ArchiveIcon,
 	Trash2Icon,
 	XIcon,
 	type LucideIcon,
@@ -529,7 +531,7 @@ export function ShellHeader({
 						<CommandSeparator />
 
 						<CommandGroup heading='Navigate'>
-							{SHELL_ROUTE_ITEMS.map((item) => (
+							{SHELL_COMMAND_ROUTE_ITEMS.map((item) => (
 								<CommandItem
 									key={item.key}
 									onSelect={() => handleNavigate(item.to(currentSpaceId))}
@@ -585,8 +587,16 @@ function resolveHistoryIcon(path: string): LucideIcon {
 		return FolderIcon
 	}
 
-	if (path.includes('/focus')) {
+	if (path.includes('/all-tasks')) {
+		return ListTodoIcon
+	}
+
+	if (path.includes('/views') || path.includes('/focus')) {
 		return TargetIcon
+	}
+
+	if (path.includes('/archive')) {
+		return ArchiveIcon
 	}
 
 	if (path.includes('/trash')) {

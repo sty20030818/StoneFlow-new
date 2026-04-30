@@ -8,15 +8,16 @@ import {
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
 import {
-	selectHiddenNavItemKeys,
-	useShellNavStore,
-} from '@/app/layouts/shell/model/useShellNavStore'
-import {
 	selectProjectTreeCollapsed,
 	toProjectTreeKey,
 	useShellPreferenceStore,
 } from '@/app/layouts/shell/model/useShellPreferenceStore'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
+import type {
+	SidebarItemVisibilityTarget,
+	SidebarMainItemKey,
+	SidebarSettings,
+} from '@/features/settings/api/sidebarSettings'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -79,8 +80,25 @@ type ShellNavBadges = Partial<Record<ShellSectionKey, string>>
 type ShellSidebarProps = {
 	currentSpaceId: string
 	projects: ShellProjectLink[]
+	settings: SidebarSettings
 	navBadges?: ShellNavBadges
 	onOpenProjectCreateDialog: (parentProjectId?: string | null) => void
+	onUpdateItemVisibility: (target: SidebarItemVisibilityTarget, visible: boolean) => void
+	onResetMainItemsVisibility: () => void
+}
+
+type SidebarRouteItem = {
+	label: string
+	icon: ComponentType<{ className?: string }>
+	to: string
+	badge?: string
+	size?: 'default' | 'sm'
+}
+
+type MainNavItemViewModel = SidebarRouteItem & {
+	key: SidebarMainItemKey
+	visible: boolean
+	order: number
 }
 
 const SIDEBAR_ENTITY_SELECTOR = [
@@ -91,35 +109,45 @@ const SIDEBAR_ENTITY_SELECTOR = [
 	'[data-slot="context-menu-content"]',
 ].join(', ')
 
-type SidebarRouteItem = {
-	label: string
-	icon: ComponentType<{ className?: string }>
-	to: string
-	badge?: string
-	size?: 'default' | 'sm'
-}
-
 export function ShellSidebar({
 	currentSpaceId,
 	projects,
+	settings,
 	navBadges = {},
 	onOpenProjectCreateDialog,
+	onUpdateItemVisibility,
+	onResetMainItemsVisibility,
 }: ShellSidebarProps) {
 	const navigate = useNavigate()
 	const { isMobile } = useSidebar()
 	const activeSpace = SHELL_SPACES.find((space) => space.id === currentSpaceId) ?? SHELL_SPACES[0]
-	const hiddenNavItemKeys = useShellNavStore(selectHiddenNavItemKeys)
 	const projectTreeCollapsed = useShellPreferenceStore(selectProjectTreeCollapsed)
-	const setNavItemVisible = useShellNavStore((state) => state.setNavItemVisible)
-	const resetNavItemVisibility = useShellNavStore((state) => state.resetNavItemVisibility)
 	const setProjectTreeCollapsed = useShellPreferenceStore((state) => state.setProjectTreeCollapsed)
-	const visibleNavItems = SHELL_NAV_ITEMS.filter((item) => !hiddenNavItemKeys.includes(item.key))
-	const visibleNavItemCount = visibleNavItems.length
-	const footerItems = SHELL_FOOTER_ITEMS.map((item) => ({
+
+	const mainNavItems = SHELL_NAV_ITEMS.map((item) => ({
 		...item,
-		badge: navBadges[item.key],
+		badge: navBadges[item.section],
 		to: item.to(currentSpaceId),
-	}))
+		visible: settings.mainItems[item.key as SidebarMainItemKey].visible,
+		order: settings.mainItems[item.key as SidebarMainItemKey].order,
+	})) satisfies MainNavItemViewModel[]
+	const visibleNavItems = [...mainNavItems]
+		.filter((item) => item.visible)
+		.sort((left, right) => left.order - right.order)
+	const visibleNavItemCount = visibleNavItems.length
+	const footerItems = [...SHELL_FOOTER_ITEMS]
+		.map((item) => ({
+			...item,
+			badge: navBadges[item.section],
+			to: item.to(currentSpaceId),
+			visible: settings.footerItems[item.key].visible,
+			order: settings.footerItems[item.key].order,
+		}))
+		.filter((item) => item.visible)
+		.sort((left, right) => left.order - right.order)
+	const projectLinks = settings.projectSection.maxVisible
+		? projects.slice(0, settings.projectSection.maxVisible)
+		: projects
 
 	const handleSidebarContextMenu = (event: React.MouseEvent<HTMLElement>) => {
 		const target = event.target
@@ -203,49 +231,53 @@ export function ShellSidebar({
 								<SidebarMenu>
 									{visibleNavItems.map((item) => (
 										<SidebarNavMenuItem
-											badge={navBadges[item.key]}
-											hiddenNavItemKeys={hiddenNavItemKeys}
-											icon={item.icon}
+											badge={item.badge}
 											itemKey={item.key}
 											key={item.key}
 											label={item.label}
-											onResetNavItemVisibility={resetNavItemVisibility}
-											onSetNavItemVisible={setNavItemVisible}
-											to={item.to(currentSpaceId)}
+											navItems={mainNavItems}
+											onResetMainItemsVisibility={onResetMainItemsVisibility}
+											onUpdateItemVisibility={onUpdateItemVisibility}
+											to={item.to}
 											visibleNavItemCount={visibleNavItemCount}
+											icon={item.icon}
 										/>
 									))}
 								</SidebarMenu>
 							</SidebarGroupContent>
 						</SidebarGroup>
 
-						<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
-							<div className='flex items-center justify-between px-2.5'>
-								<SidebarGroupLabel className='px-0'>Projects</SidebarGroupLabel>
-								<SidebarGroupAction
-									aria-label='创建项目'
-									onClick={() => onOpenProjectCreateDialog()}
-									type='button'
-								>
-									<PlusIcon />
-								</SidebarGroupAction>
-							</div>
+						{settings.projectSection.visible ? (
+							<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
+								<div className='flex items-center justify-between px-2.5'>
+									<SidebarGroupLabel className='px-0'>Projects</SidebarGroupLabel>
+									<SidebarGroupAction
+										aria-label='创建项目'
+										onClick={() => onOpenProjectCreateDialog()}
+										type='button'
+									>
+										<PlusIcon />
+									</SidebarGroupAction>
+								</div>
 
-							<SidebarGroupContent>
-								<SidebarMenu>
-									{projects.map((project) => (
-										<ProjectSidebarMenuItem
-											currentSpaceId={currentSpaceId}
-											key={project.id}
-											onOpenProjectCreateDialog={onOpenProjectCreateDialog}
-											onToggleProjectCollapsed={(payload) => setProjectTreeCollapsed(payload)}
-											project={project}
-											projectTreeCollapsed={projectTreeCollapsed}
-										/>
-									))}
-								</SidebarMenu>
-							</SidebarGroupContent>
-						</SidebarGroup>
+								{!settings.projectSection.collapsed ? (
+									<SidebarGroupContent>
+										<SidebarMenu>
+											{projectLinks.map((project) => (
+												<ProjectSidebarMenuItem
+													currentSpaceId={currentSpaceId}
+													key={project.id}
+													onOpenProjectCreateDialog={onOpenProjectCreateDialog}
+													onToggleProjectCollapsed={(payload) => setProjectTreeCollapsed(payload)}
+													project={project}
+													projectTreeCollapsed={projectTreeCollapsed}
+												/>
+											))}
+										</SidebarMenu>
+									</SidebarGroupContent>
+								) : null}
+							</SidebarGroup>
+						) : null}
 					</SidebarContent>
 
 					<SidebarFooter className='border-t border-(--sf-color-divider) px-3 py-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
@@ -269,9 +301,9 @@ export function ShellSidebar({
 			<ContextMenuContent className='w-52'>
 				<ContextMenuGroup>
 					<SidebarCustomizeMenu
-						hiddenNavItemKeys={hiddenNavItemKeys}
-						onResetNavItemVisibility={resetNavItemVisibility}
-						onSetNavItemVisible={setNavItemVisible}
+						navItems={mainNavItems}
+						onResetMainItemsVisibility={onResetMainItemsVisibility}
+						onUpdateItemVisibility={onUpdateItemVisibility}
 						visibleNavItemCount={visibleNavItemCount}
 					/>
 				</ContextMenuGroup>
@@ -372,17 +404,17 @@ function ProjectSidebarMenuItem({
 }
 
 type SidebarCustomizeMenuProps = {
-	hiddenNavItemKeys: ShellSectionKey[]
+	navItems: MainNavItemViewModel[]
 	visibleNavItemCount: number
-	onSetNavItemVisible: (section: ShellSectionKey, visible: boolean) => void
-	onResetNavItemVisibility: () => void
+	onUpdateItemVisibility: (target: SidebarItemVisibilityTarget, visible: boolean) => void
+	onResetMainItemsVisibility: () => void
 }
 
 function SidebarCustomizeMenu({
-	hiddenNavItemKeys,
+	navItems,
 	visibleNavItemCount,
-	onSetNavItemVisible,
-	onResetNavItemVisibility,
+	onUpdateItemVisibility,
+	onResetMainItemsVisibility,
 }: SidebarCustomizeMenuProps) {
 	return (
 		<ContextMenuSub>
@@ -393,16 +425,17 @@ function SidebarCustomizeMenu({
 			<ContextMenuSubContent className='w-52'>
 				<ContextMenuLabel>显示入口</ContextMenuLabel>
 				<ContextMenuGroup>
-					{SHELL_NAV_ITEMS.map((item) => {
-						const isVisible = !hiddenNavItemKeys.includes(item.key)
-						const isLastVisibleItem = isVisible && visibleNavItemCount === 1
+					{navItems.map((item) => {
+						const isLastVisibleItem = item.visible && visibleNavItemCount === 1
 
 						return (
 							<ContextMenuCheckboxItem
-								checked={isVisible}
+								checked={item.visible}
 								disabled={isLastVisibleItem}
 								key={item.key}
-								onCheckedChange={(checked) => onSetNavItemVisible(item.key, checked === true)}
+								onCheckedChange={(checked) =>
+									onUpdateItemVisibility({ kind: 'main', key: item.key }, checked === true)
+								}
 							>
 								{item.label}
 							</ContextMenuCheckboxItem>
@@ -411,7 +444,10 @@ function SidebarCustomizeMenu({
 				</ContextMenuGroup>
 				<ContextMenuSeparator />
 				<ContextMenuGroup>
-					<ContextMenuItem disabled={!hiddenNavItemKeys.length} onSelect={onResetNavItemVisibility}>
+					<ContextMenuItem
+						disabled={navItems.every((item) => item.visible)}
+						onSelect={onResetMainItemsVisibility}
+					>
 						<RotateCcwIcon />
 						恢复默认侧栏
 					</ContextMenuItem>
@@ -421,18 +457,13 @@ function SidebarCustomizeMenu({
 	)
 }
 
-type ShellNavContextMenuProps = {
-	itemKey: ShellSectionKey
-	hiddenNavItemKeys: ShellSectionKey[]
+type SidebarNavMenuItemProps = SidebarRouteItem & {
+	itemKey: SidebarMainItemKey
+	navItems: MainNavItemViewModel[]
 	visibleNavItemCount: number
-	onSetNavItemVisible: (section: ShellSectionKey, visible: boolean) => void
-	onResetNavItemVisibility: () => void
+	onUpdateItemVisibility: (target: SidebarItemVisibilityTarget, visible: boolean) => void
+	onResetMainItemsVisibility: () => void
 }
-
-type SidebarNavMenuItemProps = ShellNavContextMenuProps &
-	SidebarRouteItem & {
-		badge?: string
-	}
 
 function SidebarNavMenuItem({
 	itemKey,
@@ -440,12 +471,12 @@ function SidebarNavMenuItem({
 	icon: Icon,
 	to,
 	badge,
-	hiddenNavItemKeys,
+	navItems,
 	visibleNavItemCount,
-	onSetNavItemVisible,
-	onResetNavItemVisibility,
+	onUpdateItemVisibility,
+	onResetMainItemsVisibility,
 }: SidebarNavMenuItemProps) {
-	const currentItem = SHELL_NAV_ITEMS.find((item) => item.key === itemKey)
+	const currentItem = navItems.find((item) => item.key === itemKey)
 	const isActive = !!useMatch({ end: true, path: to })
 
 	return (
@@ -463,9 +494,9 @@ function SidebarNavMenuItem({
 				<ContextMenuContent className='w-52'>
 					<ContextMenuGroup>
 						<SidebarCustomizeMenu
-							hiddenNavItemKeys={hiddenNavItemKeys}
-							onResetNavItemVisibility={onResetNavItemVisibility}
-							onSetNavItemVisible={onSetNavItemVisible}
+							navItems={navItems}
+							onResetMainItemsVisibility={onResetMainItemsVisibility}
+							onUpdateItemVisibility={onUpdateItemVisibility}
 							visibleNavItemCount={visibleNavItemCount}
 						/>
 					</ContextMenuGroup>
@@ -474,12 +505,10 @@ function SidebarNavMenuItem({
 							<ContextMenuSeparator />
 							<ContextMenuGroup>
 								<ContextMenuCheckboxItem
-									checked={!hiddenNavItemKeys.includes(currentItem.key)}
-									disabled={
-										visibleNavItemCount === 1 && !hiddenNavItemKeys.includes(currentItem.key)
-									}
+									checked={currentItem.visible}
+									disabled={visibleNavItemCount === 1 && currentItem.visible}
 									onCheckedChange={(checked) =>
-										onSetNavItemVisible(currentItem.key, checked === true)
+										onUpdateItemVisibility({ kind: 'main', key: currentItem.key }, checked === true)
 									}
 								>
 									显示当前入口

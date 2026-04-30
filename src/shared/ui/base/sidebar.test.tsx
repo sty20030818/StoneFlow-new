@@ -1,3 +1,4 @@
+import * as React from 'react'
 import { act, fireEvent, render, waitFor } from '@testing-library/react'
 
 import {
@@ -13,10 +14,6 @@ type MatchMediaController = {
 }
 
 describe('Sidebar primitive', () => {
-	afterEach(() => {
-		window.localStorage.clear()
-	})
-
 	it('desktop 初始态产出展开几何变量且只渲染 sidebar（无遮罩 DOM）', () => {
 		installMatchMedia(true)
 		renderSidebarFixture()
@@ -62,9 +59,8 @@ describe('Sidebar primitive', () => {
 	})
 
 	it('mobile 使用固定 220px 抽屉宽，不继承 desktop 当前可变宽', () => {
-		window.localStorage.setItem('sf:sidebar:width', '220')
 		const media = installMatchMedia(true)
-		renderSidebarFixture()
+		renderSidebarFixture({ sidebarWidth: 220 })
 
 		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-panel-width')).toBe('220px')
 
@@ -127,7 +123,7 @@ describe('Sidebar primitive', () => {
 		expect(getTrigger()).toHaveAccessibleName('收起侧边栏')
 	})
 
-	it('desktop rail resize 只在 pointerup 后提交持久化宽度', async () => {
+	it('desktop rail resize 只在 pointerup 后提交宽度', async () => {
 		installMatchMedia(true)
 		const originalRequestAnimationFrame = window.requestAnimationFrame
 		const originalCancelAnimationFrame = window.cancelAnimationFrame
@@ -150,19 +146,20 @@ describe('Sidebar primitive', () => {
 			value: () => undefined,
 		})
 
-		renderSidebarFixture()
+		const onSidebarWidthCommit = vi.fn()
+		renderSidebarFixture({ onSidebarWidthCommit })
 		const rail = document.querySelector('[data-slot="sidebar-rail"]') as HTMLElement
 
 		fireEvent.pointerDown(rail, { clientX: 0, pointerId: 1 })
 		fireEvent.pointerMove(rail, { clientX: 50, pointerId: 1 })
 
 		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-panel-width')).toBe('295px')
-		expect(window.localStorage.getItem('sf:sidebar:width')).toBe('245')
+		expect(onSidebarWidthCommit).not.toHaveBeenCalled()
 
 		fireEvent.pointerUp(rail, { pointerId: 1 })
 
 		await waitFor(() => {
-			expect(window.localStorage.getItem('sf:sidebar:width')).toBe('295')
+			expect(onSidebarWidthCommit).toHaveBeenCalledWith(295)
 		})
 
 		window.requestAnimationFrame = originalRequestAnimationFrame
@@ -170,9 +167,46 @@ describe('Sidebar primitive', () => {
 	})
 })
 
-function renderSidebarFixture() {
+function renderSidebarFixture({
+	desktopPreference = 'expanded',
+	sidebarWidth = 245,
+	onSidebarWidthCommit,
+}: {
+	desktopPreference?: 'expanded' | 'collapsed'
+	sidebarWidth?: number
+	onSidebarWidthCommit?: (width: number) => void
+} = {}) {
 	return render(
-		<SidebarProvider>
+		<SidebarProviderHarness
+			desktopPreference={desktopPreference}
+			onSidebarWidthCommit={onSidebarWidthCommit}
+			sidebarWidth={sidebarWidth}
+		/>,
+	)
+}
+
+function SidebarProviderHarness({
+	desktopPreference: initialDesktopPreference,
+	sidebarWidth: initialSidebarWidth,
+	onSidebarWidthCommit,
+}: {
+	desktopPreference: 'expanded' | 'collapsed'
+	sidebarWidth: number
+	onSidebarWidthCommit?: (width: number) => void
+}) {
+	const [desktopPreference, setDesktopPreference] = React.useState(initialDesktopPreference)
+	const [sidebarWidth, setSidebarWidth] = React.useState(initialSidebarWidth)
+
+	return (
+		<SidebarProvider
+			desktopPreference={desktopPreference}
+			onDesktopPreferenceChange={setDesktopPreference}
+			onSidebarWidthCommit={(width) => {
+				setSidebarWidth(width)
+				onSidebarWidthCommit?.(width)
+			}}
+			sidebarWidth={sidebarWidth}
+		>
 			<Sidebar collapsible='icon'>
 				<SidebarMenuButton>
 					<span>sidebar content</span>
@@ -180,7 +214,7 @@ function renderSidebarFixture() {
 				<SidebarRail />
 			</Sidebar>
 			<SidebarTrigger />
-		</SidebarProvider>,
+		</SidebarProvider>
 	)
 }
 
@@ -238,7 +272,7 @@ function installMatchMedia(initialMatches: boolean): MatchMediaController {
 			listeners.delete(listener)
 		},
 		dispatchEvent: () => false,
-	} as MediaQueryList
+	}
 
 	Object.defineProperty(window, 'matchMedia', {
 		configurable: true,
@@ -248,7 +282,7 @@ function installMatchMedia(initialMatches: boolean): MatchMediaController {
 	return {
 		setMatches: (nextMatches: boolean) => {
 			matches = nextMatches
-			const event = { matches: nextMatches, media: mediaQueryList.media } as MediaQueryListEvent
+			const event = { matches } as MediaQueryListEvent
 			listeners.forEach((listener) => listener(event))
 		},
 	}

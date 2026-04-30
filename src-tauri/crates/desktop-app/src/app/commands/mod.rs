@@ -4,12 +4,18 @@ use tauri::ipc::Invoke;
 
 pub(crate) mod activity;
 pub(crate) mod quick_capture;
+pub(crate) mod settings;
 pub(crate) mod workspace;
 
 /// 生成命令处理器。
 pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
         activity::get_entity_activities,
+        settings::get_sidebar_settings,
+        settings::update_sidebar_item_visibility,
+        settings::update_sidebar_width,
+        settings::update_sidebar_project_section,
+        settings::update_sidebar_desktop_preference,
         workspace::healthcheck,
         workspace::set_active_space,
         quick_capture::restore_main_window,
