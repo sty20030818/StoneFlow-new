@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { buildScopedSectionPath, getScopeLabel } from '@/app/layouts/shell/config'
@@ -7,11 +7,13 @@ import {
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
-import type { ProjectDetail } from '@/features/project/model/types'
+import type { ProjectExecutionTask } from '@/features/project/model/types'
 import { selectProjectDetail, useProjectStore } from '@/features/project/model/useProjectStore'
+import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
+import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { Badge } from '@/shared/ui/base/badge'
+import { TASK_RECORDS } from '@/features/workspace-shell/model/shellData'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
@@ -29,10 +31,8 @@ import {
 	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
-import { Input } from '@/shared/ui/base/input'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
-import { Textarea } from '@/shared/ui/base/textarea'
-import { FolderIcon, ListTodoIcon } from 'lucide-react'
+import { FolderIcon } from 'lucide-react'
 
 export function ProjectPage() {
 	const navigate = useNavigate()
@@ -42,15 +42,11 @@ export function ProjectPage() {
 	const detail = useProjectStore(selectProjectDetail)
 	const loadDetail = useProjectStore((state) => state.loadDetail)
 	const clearDetail = useProjectStore((state) => state.clearDetail)
-	const updateProject = useProjectStore((state) => state.updateProject)
 	const completeProject = useProjectStore((state) => state.completeProject)
 	const reopenProject = useProjectStore((state) => state.reopenProject)
 	const archiveProject = useProjectStore((state) => state.archiveProject)
 	const deleteProject = useProjectStore((state) => state.deleteProject)
 	const [isEditing, setIsEditing] = useState(false)
-	const [draftName, setDraftName] = useState('')
-	const [draftDescription, setDraftDescription] = useState('')
-	const [draftDueAt, setDraftDueAt] = useState('')
 	const [busyAction, setBusyAction] = useState<string | null>(null)
 
 	useEffect(() => {
@@ -62,15 +58,6 @@ export function ProjectPage() {
 		}
 	}, [clearDetail, loadDetail, projectId])
 
-	useEffect(() => {
-		if (!detail.item) {
-			return
-		}
-		setDraftName(detail.item.name)
-		setDraftDescription(detail.item.description ?? '')
-		setDraftDueAt(detail.item.dueAt ?? '')
-	}, [detail.item])
-
 	async function runAction(action: string, runner: () => Promise<unknown>) {
 		setBusyAction(action)
 		try {
@@ -78,18 +65,6 @@ export function ProjectPage() {
 		} finally {
 			setBusyAction(null)
 		}
-	}
-
-	async function handleSave(project: ProjectDetail) {
-		await runAction('save', async () => {
-			await updateProject({
-				projectId: project.id,
-				name: draftName,
-				description: draftDescription || null,
-				dueAt: draftDueAt || null,
-			})
-			setIsEditing(false)
-		})
 	}
 
 	const project = detail.item
@@ -159,21 +134,16 @@ export function ProjectPage() {
 			}
 			toolbar={
 				<MainCardToolbar
-					left={
-						project ? (
-							<div className='flex flex-wrap items-center gap-2 text-[12px] text-(--sf-color-shell-secondary)'>
-								<Badge variant='secondary'>{project.activeTaskCount} active</Badge>
-								<Badge variant='outline'>{project.taskCount} tasks</Badge>
-								{project.dueAt ? <Badge variant='outline'>Due {project.dueAt}</Badge> : null}
-								{project.completedAt ? <Badge variant='success'>Completed</Badge> : null}
-							</div>
-						) : undefined
-					}
 					onRefresh={() => {
 						if (projectId) {
 							void loadDetail(projectId)
 						}
 					}}
+					pills={[
+						{ label: 'All tasks', active: true },
+						{ label: 'Todo' },
+						{ label: 'Done' },
+					]}
 				/>
 			}
 		>
@@ -184,8 +154,7 @@ export function ProjectPage() {
 					</StatusNotice>
 				) : (
 					<StatusNotice size='sm'>
-						当前 Scope：{getScopeLabel(scope, spaces)}。Project Detail 已接入真实后端，Task
-						区域仍保留阶段 6 占位。
+						当前 Scope：{getScopeLabel(scope, spaces)}
 					</StatusNotice>
 				)}
 
@@ -210,24 +179,7 @@ export function ProjectPage() {
 						</Empty>
 					</EmptyPage>
 				) : (
-					<>
-						<ProjectDetailCard
-							draftDescription={draftDescription}
-							draftDueAt={draftDueAt}
-							draftName={draftName}
-							isBusy={busyAction !== null}
-							isEditing={isEditing}
-							onChangeDescription={setDraftDescription}
-							onChangeDueAt={setDraftDueAt}
-							onChangeName={setDraftName}
-							onSave={() => {
-								void handleSave(project)
-							}}
-							project={project}
-						/>
-
-						<ProjectTaskPlaceholder />
-					</>
+					<ProjectTaskBoardMock projectId={project.id} />
 				)}
 			</div>
 		</MainCardLayout>
@@ -253,134 +205,77 @@ function ProjectBreadcrumb({ projectName }: { projectName: string }) {
 	)
 }
 
-type ProjectDetailCardProps = {
-	project: ProjectDetail
-	isEditing: boolean
-	isBusy: boolean
-	draftName: string
-	draftDescription: string
-	draftDueAt: string
-	onChangeName: (value: string) => void
-	onChangeDescription: (value: string) => void
-	onChangeDueAt: (value: string) => void
-	onSave: () => void
-}
+function ProjectTaskBoardMock({ projectId }: { projectId: string }) {
+	const openDrawer = useDrawerStore((state) => state.openDrawer)
+	const [pendingTaskId] = useState<string | null>(null)
+	const [activeTaskId] = useState<string | null>(null)
+	const [selectedTaskIdSet, setSelectedTaskIdSet] = useState<Set<string>>(new Set())
 
-function ProjectDetailCard({
-	project,
-	isEditing,
-	isBusy,
-	draftName,
-	draftDescription,
-	draftDueAt,
-	onChangeName,
-	onChangeDescription,
-	onChangeDueAt,
-	onSave,
-}: ProjectDetailCardProps) {
+	// 从 mock 数据中筛选属于当前项目的任务
+	const tasks = useMemo(() => {
+		return TASK_RECORDS.filter((task) => task.projectId === projectId).map((task) => ({
+			id: task.id,
+			title: task.title,
+			note: task.note,
+			priority: task.priority,
+			status: task.status,
+			tags: [],
+			dueAt: task.dueLabel,
+			completedAt: task.completedLabel,
+			createdAt: task.createdLabel,
+			updatedAt: task.updatedLabel,
+		})) satisfies ProjectExecutionTask[]
+	}, [projectId])
+
+	function handleToggleTaskSelection(taskId: string) {
+		setSelectedTaskIdSet((prev) => {
+			const next = new Set(prev)
+			if (next.has(taskId)) {
+				next.delete(taskId)
+			} else {
+				next.add(taskId)
+			}
+			return next
+		})
+	}
+
+	async function handleUpdateTaskPriority(task: ProjectExecutionTask, priority: string) {
+		// mock 模式：仅打印日志
+		console.log('Update task priority:', task.id, priority)
+	}
+
+	async function handleUpdateTaskStatus(task: ProjectExecutionTask, status: string) {
+		// mock 模式：仅打印日志
+		console.log('Update task status:', task.id, status)
+	}
+
+	async function handleToggleTaskStatus(task: ProjectExecutionTask) {
+		// mock 模式：仅打印日志
+		console.log('Toggle task status:', task.id)
+	}
+
+	async function handleMoveTaskToTrash(task: ProjectExecutionTask) {
+		// mock 模式：仅打印日志
+		console.log('Move task to trash:', task.id)
+	}
+
+	function handleOpenTask(taskId: string) {
+		openDrawer('task', taskId)
+	}
+
 	return (
-		<div className='rounded-[28px] border border-(--sf-color-border-subtle) bg-white/90 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.05)]'>
-			<div className='grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px]'>
-				<div className='space-y-4'>
-					<div className='space-y-1.5'>
-						<p className='text-[11px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'>
-							Project
-						</p>
-						{isEditing ? (
-							<Input
-								className='h-11 rounded-md border-input bg-card'
-								disabled={isBusy}
-								onChange={(event) => onChangeName(event.currentTarget.value)}
-								value={draftName}
-							/>
-						) : (
-							<h2 className='text-[24px] font-semibold tracking-[-0.03em] text-foreground'>
-								{project.name}
-							</h2>
-						)}
-					</div>
-
-					<div className='space-y-1.5'>
-						<p className='text-[11px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'>
-							Description
-						</p>
-						{isEditing ? (
-							<Textarea
-								className='min-h-28 rounded-md border-input bg-card'
-								disabled={isBusy}
-								onChange={(event) => onChangeDescription(event.currentTarget.value)}
-								value={draftDescription}
-							/>
-						) : (
-							<p className='text-[14px] leading-7 text-(--sf-color-shell-secondary)'>
-								{project.description ?? '当前还没有项目说明。'}
-							</p>
-						)}
-					</div>
-
-					{isEditing ? (
-						<div className='flex justify-end'>
-							<Button disabled={isBusy || draftName.trim().length === 0} onClick={onSave} size='sm'>
-								{isBusy ? '保存中...' : '保存修改'}
-							</Button>
-						</div>
-					) : null}
-				</div>
-
-				<div className='rounded-[24px] border border-(--sf-color-border-subtle) bg-(--sf-color-bg-surface-muted) p-4'>
-					<p className='text-[11px] font-medium tracking-[0.06em] text-(--sf-color-shell-tertiary) uppercase'>
-						Meta
-					</p>
-					<div className='mt-3 grid gap-3 text-[13px] text-(--sf-color-shell-secondary)'>
-						<div>
-							<p className='text-[11px] uppercase tracking-[0.06em] text-(--sf-color-shell-tertiary)'>
-								Space
-							</p>
-							<p className='mt-1'>{project.spaceName}</p>
-						</div>
-						<div>
-							<p className='text-[11px] uppercase tracking-[0.06em] text-(--sf-color-shell-tertiary)'>
-								Due At
-							</p>
-							{isEditing ? (
-								<Input
-									className='mt-1 h-10 rounded-md border-input bg-white'
-									disabled={isBusy}
-									onChange={(event) => onChangeDueAt(event.currentTarget.value)}
-									value={draftDueAt}
-								/>
-							) : (
-								<p className='mt-1'>{project.dueAt ?? '未设置'}</p>
-							)}
-						</div>
-						<div>
-							<p className='text-[11px] uppercase tracking-[0.06em] text-(--sf-color-shell-tertiary)'>
-								Updated
-							</p>
-							<p className='mt-1'>{project.updatedAt}</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	)
-}
-
-function ProjectTaskPlaceholder() {
-	return (
-		<div className='rounded-[28px] border border-dashed border-(--sf-color-border-subtle) bg-white/70 p-6'>
-			<div className='flex items-start gap-3'>
-				<span className='mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-(--sf-color-bg-surface-muted) text-(--sf-color-shell-secondary)'>
-					<ListTodoIcon className='size-4' />
-				</span>
-				<div className='space-y-2'>
-					<h3 className='text-[15px] font-semibold text-foreground'>Task List 将在阶段 6 接入</h3>
-					<p className='max-w-2xl text-[13px] leading-6 text-(--sf-color-shell-secondary)'>
-						当前阶段只交付真实 Project Detail 与项目生命周期，任务列表、任务编辑和 Drawer
-						读写仍保持阶段 6 占位，不提前把 Task CRUD 混进来。
-					</p>
-				</div>
-			</div>
-		</div>
+		<ProjectTaskBoard
+			activeTaskId={activeTaskId}
+			onMoveTaskToTrash={handleMoveTaskToTrash}
+			onOpenTask={handleOpenTask}
+			onToggleTaskSelection={handleToggleTaskSelection}
+			onToggleTaskStatus={handleToggleTaskStatus}
+			onUpdateTaskPriority={handleUpdateTaskPriority}
+			onUpdateTaskStatus={handleUpdateTaskStatus}
+			pendingTaskId={pendingTaskId}
+			projectId={projectId}
+			selectedTaskIdSet={selectedTaskIdSet}
+			tasks={tasks}
+		/>
 	)
 }

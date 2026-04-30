@@ -24,4 +24,6 @@ export {
 	FOCUS_VIEWS,
 	TRASH_ENTRIES,
 	TASK_RECORDS,
+	MOCK_SPACE,
+	MOCK_PROJECT,
 } from '@/features/workspace-shell/model/shellData'

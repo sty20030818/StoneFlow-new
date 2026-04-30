@@ -12,12 +12,18 @@ import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
 import { ProjectOverviewEmptyState } from '@/features/project-overview/ui/ProjectOverviewEmptyState'
 import { ProjectOverviewList } from '@/features/project-overview/ui/ProjectOverviewList'
-import { ProjectOverviewTabs } from '@/features/project-overview/ui/ProjectOverviewTabs'
 import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { PlusIcon } from 'lucide-react'
+
+const PROJECT_OVERVIEW_TABS: Array<{ key: ProjectOverviewViewKey; label: string }> = [
+	{ key: 'active', label: 'Active' },
+	{ key: 'completed', label: 'Completed' },
+	{ key: 'archived', label: 'Archived' },
+	{ key: 'all', label: 'All' },
+]
 
 export function ProjectOverviewPage() {
 	const navigate = useNavigate()
@@ -61,10 +67,14 @@ export function ProjectOverviewPage() {
 			}
 			toolbar={
 				<MainCardToolbar
-					left={<ProjectOverviewTabs onChange={setViewKey} value={viewKey} />}
 					onRefresh={() => {
 						void loadOverview(scope, viewKey)
 					}}
+					pills={PROJECT_OVERVIEW_TABS.map((tab) => ({
+						active: tab.key === viewKey,
+						label: tab.label,
+						onClick: () => setViewKey(tab.key),
+					}))}
 				/>
 			}
 		>

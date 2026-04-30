@@ -1,6 +1,8 @@
 import type { ProjectOverviewItem } from '@/shared/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
+import { cn } from '@/shared/lib/utils'
+import { LINEAR_CARD_BASE_CLASS, LINEAR_CARD_IDLE_CLASS } from '@/shared/ui/linearSurface'
 import { FolderIcon } from 'lucide-react'
 
 type ProjectOverviewRowProps = {
@@ -23,7 +25,7 @@ export function ProjectOverviewRow({
 	onDelete,
 }: ProjectOverviewRowProps) {
 	return (
-		<div className='rounded-[28px] border border-(--sf-color-border-subtle) bg-white/90 p-5 shadow-[0_20px_50px_rgba(15,23,42,0.05)]'>
+		<div className={cn(LINEAR_CARD_BASE_CLASS, LINEAR_CARD_IDLE_CLASS)}>
 			<div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
 				<div className='min-w-0 space-y-2'>
 					<div className='flex items-center gap-2'>
