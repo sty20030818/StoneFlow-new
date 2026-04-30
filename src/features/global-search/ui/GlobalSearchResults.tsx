@@ -166,15 +166,15 @@ function buildProjectContext(item: SearchProjectItem) {
 	return item.status === 'active' ? '进行中' : '草稿'
 }
 
-function formatPriority(priority: string | null) {
+function formatPriority(priority: number | null) {
 	switch (priority) {
-		case 'urgent':
+		case 4:
 			return '紧急'
-		case 'high':
+		case 3:
 			return '高优先级'
-		case 'medium':
+		case 2:
 			return '中优先级'
-		case 'low':
+		case 1:
 			return '低优先级'
 		default:
 			return '未设优先级'

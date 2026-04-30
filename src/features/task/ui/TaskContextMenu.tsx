@@ -1,3 +1,4 @@
+import type { TaskStatus } from '@/shared/types'
 import type { ReactNode } from 'react'
 
 import {
@@ -18,13 +19,14 @@ import {
 
 type TaskContextMenuProps = {
 	children: ReactNode
-	status?: 'todo' | 'done' | string
+	status?: TaskStatus | string
 	isPinned?: boolean
 	isBusy?: boolean
 	onOpenDetails: () => void
 	onTogglePin?: () => void
 	onToggleStatus?: () => void
 	onMoveToTrash?: () => void
+	destructiveActionLabel?: string
 }
 
 /**
@@ -39,6 +41,7 @@ export function TaskContextMenu({
 	onTogglePin,
 	onToggleStatus,
 	onMoveToTrash,
+	destructiveActionLabel = '移入回收站',
 }: TaskContextMenuProps) {
 	const canToggleStatus = !!onToggleStatus
 	const canTogglePin = !!onTogglePin
@@ -63,8 +66,12 @@ export function TaskContextMenu({
 					) : null}
 					{canToggleStatus ? (
 						<ContextMenuItem disabled={isBusy} onSelect={onToggleStatus}>
-							{status === 'done' ? <RotateCcwIcon /> : <CheckCircle2Icon />}
-							{status === 'done' ? '恢复待执行' : '标记完成'}
+							{status === 'done' || status === 'canceled' ? (
+								<RotateCcwIcon />
+							) : (
+								<CheckCircle2Icon />
+							)}
+							{status === 'done' || status === 'canceled' ? '恢复待执行' : '标记完成'}
 						</ContextMenuItem>
 					) : null}
 				</ContextMenuGroup>
@@ -74,7 +81,7 @@ export function TaskContextMenu({
 						<ContextMenuGroup>
 							<ContextMenuItem disabled={isBusy} onSelect={onMoveToTrash} variant='destructive'>
 								<Trash2Icon />
-								移入回收站
+								{destructiveActionLabel}
 							</ContextMenuItem>
 						</ContextMenuGroup>
 					</>

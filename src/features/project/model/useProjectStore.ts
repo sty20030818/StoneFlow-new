@@ -222,6 +222,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 				const allItems = hasMock ? items : [...items, mockSidebarItem]
 				const options: ProjectOption[] = allItems.map((project) => ({
 					id: project.id,
+					spaceId: project.spaceId,
 					name: project.name,
 				}))
 				set((state) => ({
@@ -248,7 +249,9 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 					sidebar: {
 						...state.sidebar,
 						items: [mockSidebarItem],
-						options: [{ id: MOCK_PROJECT.id, name: MOCK_PROJECT.name }],
+						options: [
+							{ id: MOCK_PROJECT.id, spaceId: MOCK_PROJECT.spaceId, name: MOCK_PROJECT.name },
+						],
 						status: 'ready',
 						error: null,
 					},

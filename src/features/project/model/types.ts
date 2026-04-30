@@ -1,5 +1,4 @@
-import type { Project, ProjectOverviewItem, ProjectSidebarItem } from '@/shared/types'
-import type { TaskStatus } from '@/shared/types'
+import type { Project, ProjectOverviewItem, ProjectSidebarItem, TaskListItem } from '@/shared/types'
 
 export type ProjectOverviewViewKey = 'active' | 'completed' | 'archived' | 'all'
 
@@ -11,21 +10,11 @@ export type ProjectDetail = Project & {
 
 export type ProjectOption = {
 	id: string
+	spaceId: string
 	name: string
 }
 
-export type ProjectExecutionTask = {
-	id: string
-	title: string
-	note: string | null
-	priority: string
-	status: TaskStatus
-	tags?: string[]
-	dueAt: string | null
-	completedAt: string | null
-	createdAt: string
-	updatedAt: string
-}
+export type ProjectExecutionTask = TaskListItem
 
 export type ProjectFormInput = {
 	spaceId: string

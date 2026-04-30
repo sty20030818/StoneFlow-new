@@ -1,4 +1,5 @@
-import type { TaskStatus } from '@/shared/types'
+import type { Scope, Space, TaskStatus } from '@/shared/types'
+import type { ProjectOption } from '@/features/project/model/types'
 import { TaskCreateModalContent } from '@/features/task/ui/TaskCreateModalContent'
 import {
 	Dialog,
@@ -11,10 +12,9 @@ import {
 type TaskCreateDialogProps = {
 	open: boolean
 	currentSpaceLabel: string
-	projects: Array<{
-		id: string
-		name: string
-	}>
+	currentScope: Scope
+	spaces: Space[]
+	projects: ProjectOption[]
 	projectsLoading: boolean
 	initialProjectId: string | null
 	initialStatus: TaskStatus
@@ -27,6 +27,8 @@ type TaskCreateDialogProps = {
 export function TaskCreateDialog({
 	open,
 	currentSpaceLabel,
+	currentScope,
+	spaces,
 	projects,
 	projectsLoading,
 	initialProjectId,
@@ -48,11 +50,13 @@ export function TaskCreateDialog({
 				<div className='px-6 pb-5 pt-4'>
 					<TaskCreateModalContent
 						currentSpaceLabel={currentSpaceLabel}
+						currentScope={currentScope}
 						initialProjectId={initialProjectId}
 						initialStatus={initialStatus}
 						onClose={onClose}
 						projects={projects}
 						projectsLoading={projectsLoading}
+						spaces={spaces}
 					/>
 				</div>
 			</DialogContent>

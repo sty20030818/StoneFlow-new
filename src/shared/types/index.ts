@@ -1,5 +1,15 @@
 export type { TaskPriority } from './taskPriority'
-export type { TaskStatus, Task, TaskView } from './task'
+export type {
+	CreateTaskInput,
+	ListTasksInput,
+	TaskStatus,
+	Task,
+	TaskDetail,
+	TaskListItem,
+	TaskListViewKey,
+	TaskView,
+	UpdateTaskInput,
+} from './task'
 export type { Project, ProjectOverviewItem, ProjectSidebarItem } from './project'
 export type { Space, Scope } from './space'
 export type { TrashEntry } from './trash'

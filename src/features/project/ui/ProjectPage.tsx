@@ -7,13 +7,14 @@ import {
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
-import type { ProjectExecutionTask } from '@/features/project/model/types'
+import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { selectProjectDetail, useProjectStore } from '@/features/project/model/useProjectStore'
 import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
-import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { TASK_RECORDS } from '@/features/workspace-shell/model/shellData'
+import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
+import type { TaskListItem } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
@@ -39,6 +40,9 @@ export function ProjectPage() {
 	const { projectId = '' } = useParams()
 	const { scope, spaceId } = useScopeRoute()
 	const spaces = useSpaceStore(selectSpaces)
+	const openDrawer = useDrawerStore((state) => state.openDrawer)
+	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
+	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
 	const detail = useProjectStore(selectProjectDetail)
 	const loadDetail = useProjectStore((state) => state.loadDetail)
 	const clearDetail = useProjectStore((state) => state.clearDetail)
@@ -46,17 +50,34 @@ export function ProjectPage() {
 	const reopenProject = useProjectStore((state) => state.reopenProject)
 	const archiveProject = useProjectStore((state) => state.archiveProject)
 	const deleteProject = useProjectStore((state) => state.deleteProject)
-	const [isEditing, setIsEditing] = useState(false)
+	const taskList = useTaskStore(selectTaskList)
+	const loadTaskList = useTaskStore((state) => state.loadList)
+	const updateTask = useTaskStore((state) => state.updateTask)
+	const archiveTask = useTaskStore((state) => state.archiveTask)
 	const [busyAction, setBusyAction] = useState<string | null>(null)
+	const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
 
 	useEffect(() => {
 		if (projectId) {
 			void loadDetail(projectId)
+			void loadTaskList({
+				scope,
+				projectId,
+				viewKey: 'all',
+			})
 		}
 		return () => {
 			clearDetail()
 		}
-	}, [clearDetail, loadDetail, projectId])
+	}, [clearDetail, loadDetail, loadTaskList, projectId, scope])
+
+	const visibleTasks = useMemo(
+		() => taskList.items.filter((task) => task.archivedAt === null),
+		[taskList.items],
+	)
+	const { selectedTaskIdSet, toggleTaskSelection } = useTaskSelection(
+		visibleTasks.map((task) => task.id),
+	)
 
 	async function runAction(action: string, runner: () => Promise<unknown>) {
 		setBusyAction(action)
@@ -65,6 +86,44 @@ export function ProjectPage() {
 		} finally {
 			setBusyAction(null)
 		}
+	}
+
+	async function runTaskAction(taskId: string, runner: () => Promise<unknown>) {
+		setPendingTaskId(taskId)
+		try {
+			await runner()
+		} finally {
+			setPendingTaskId(null)
+		}
+	}
+
+	async function handleUpdateTaskStatus(task: TaskListItem, status: TaskListItem['status']) {
+		await runTaskAction(task.id, () =>
+			updateTask({
+				taskId: task.id,
+				status,
+			}),
+		)
+	}
+
+	async function handleUpdateTaskPriority(task: TaskListItem, priority: TaskListItem['priority']) {
+		await runTaskAction(task.id, () =>
+			updateTask({
+				taskId: task.id,
+				priority,
+			}),
+		)
+	}
+
+	async function handleToggleTaskStatus(task: TaskListItem) {
+		await handleUpdateTaskStatus(
+			task,
+			task.status === 'done' || task.status === 'canceled' ? 'todo' : 'done',
+		)
+	}
+
+	async function handleArchiveTask(task: TaskListItem) {
+		await runTaskAction(task.id, () => archiveTask(task.id))
 	}
 
 	const project = detail.item
@@ -77,14 +136,6 @@ export function ProjectPage() {
 					action={
 						project ? (
 							<div className='flex items-center gap-2'>
-								<Button
-									disabled={busyAction !== null}
-									onClick={() => setIsEditing((current) => !current)}
-									size='sm'
-									variant='outline'
-								>
-									{isEditing ? '取消编辑' : '编辑'}
-								</Button>
 								<Button
 									disabled={busyAction !== null}
 									onClick={() => {
@@ -135,14 +186,21 @@ export function ProjectPage() {
 			toolbar={
 				<MainCardToolbar
 					onRefresh={() => {
-						if (projectId) {
-							void loadDetail(projectId)
+						if (!projectId) {
+							return
 						}
+						void loadDetail(projectId)
+						void loadTaskList({
+							scope,
+							projectId,
+							viewKey: 'all',
+						})
 					}}
 					pills={[
-						{ label: 'All tasks', active: true },
-						{ label: 'Todo' },
-						{ label: 'Done' },
+						{
+							label: 'Project tasks',
+							active: true,
+						},
 					]}
 				/>
 			}
@@ -153,9 +211,7 @@ export function ProjectPage() {
 						{detail.error}
 					</StatusNotice>
 				) : (
-					<StatusNotice size='sm'>
-						当前 Scope：{getScopeLabel(scope, spaces)}
-					</StatusNotice>
+					<StatusNotice size='sm'>当前 Scope：{getScopeLabel(scope, spaces)}</StatusNotice>
 				)}
 
 				{!project ? (
@@ -179,7 +235,19 @@ export function ProjectPage() {
 						</Empty>
 					</EmptyPage>
 				) : (
-					<ProjectTaskBoardMock projectId={project.id} />
+					<ProjectTaskBoard
+						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
+						onArchiveTask={handleArchiveTask}
+						onOpenTask={(taskId) => openDrawer('task', taskId)}
+						onToggleTaskSelection={toggleTaskSelection}
+						onToggleTaskStatus={handleToggleTaskStatus}
+						onUpdateTaskPriority={handleUpdateTaskPriority}
+						onUpdateTaskStatus={handleUpdateTaskStatus}
+						pendingTaskId={pendingTaskId}
+						projectId={project.id}
+						selectedTaskIdSet={selectedTaskIdSet}
+						tasks={visibleTasks}
+					/>
 				)}
 			</div>
 		</MainCardLayout>
@@ -202,80 +270,5 @@ function ProjectBreadcrumb({ projectName }: { projectName: string }) {
 				</BreadcrumbItem>
 			</BreadcrumbList>
 		</Breadcrumb>
-	)
-}
-
-function ProjectTaskBoardMock({ projectId }: { projectId: string }) {
-	const openDrawer = useDrawerStore((state) => state.openDrawer)
-	const [pendingTaskId] = useState<string | null>(null)
-	const [activeTaskId] = useState<string | null>(null)
-	const [selectedTaskIdSet, setSelectedTaskIdSet] = useState<Set<string>>(new Set())
-
-	// 从 mock 数据中筛选属于当前项目的任务
-	const tasks = useMemo(() => {
-		return TASK_RECORDS.filter((task) => task.projectId === projectId).map((task) => ({
-			id: task.id,
-			title: task.title,
-			note: task.note,
-			priority: task.priority,
-			status: task.status,
-			tags: [],
-			dueAt: task.dueLabel,
-			completedAt: task.completedLabel,
-			createdAt: task.createdLabel,
-			updatedAt: task.updatedLabel,
-		})) satisfies ProjectExecutionTask[]
-	}, [projectId])
-
-	function handleToggleTaskSelection(taskId: string) {
-		setSelectedTaskIdSet((prev) => {
-			const next = new Set(prev)
-			if (next.has(taskId)) {
-				next.delete(taskId)
-			} else {
-				next.add(taskId)
-			}
-			return next
-		})
-	}
-
-	async function handleUpdateTaskPriority(task: ProjectExecutionTask, priority: string) {
-		// mock 模式：仅打印日志
-		console.log('Update task priority:', task.id, priority)
-	}
-
-	async function handleUpdateTaskStatus(task: ProjectExecutionTask, status: string) {
-		// mock 模式：仅打印日志
-		console.log('Update task status:', task.id, status)
-	}
-
-	async function handleToggleTaskStatus(task: ProjectExecutionTask) {
-		// mock 模式：仅打印日志
-		console.log('Toggle task status:', task.id)
-	}
-
-	async function handleMoveTaskToTrash(task: ProjectExecutionTask) {
-		// mock 模式：仅打印日志
-		console.log('Move task to trash:', task.id)
-	}
-
-	function handleOpenTask(taskId: string) {
-		openDrawer('task', taskId)
-	}
-
-	return (
-		<ProjectTaskBoard
-			activeTaskId={activeTaskId}
-			onMoveTaskToTrash={handleMoveTaskToTrash}
-			onOpenTask={handleOpenTask}
-			onToggleTaskSelection={handleToggleTaskSelection}
-			onToggleTaskStatus={handleToggleTaskStatus}
-			onUpdateTaskPriority={handleUpdateTaskPriority}
-			onUpdateTaskStatus={handleUpdateTaskStatus}
-			pendingTaskId={pendingTaskId}
-			projectId={projectId}
-			selectedTaskIdSet={selectedTaskIdSet}
-			tasks={tasks}
-		/>
 	)
 }

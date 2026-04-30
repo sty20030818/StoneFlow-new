@@ -7,13 +7,14 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
-import { CheckIcon, type LucideIcon } from 'lucide-react'
+import { CheckIcon, CircleIcon, PauseIcon, PlayIcon, type LucideIcon, XIcon } from 'lucide-react'
 
 import {
 	getTaskPriorityOption,
 	TASK_PRIORITY_OPTIONS,
 	type TaskPriorityValue,
 } from '@/features/task/model/taskPriority'
+import { getTaskStatusOption, TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 import type { TaskStatus } from '@/shared/types'
 
 const TASK_LEAD_RAIL_CLASS = 'flex shrink-0 items-center gap-1.5'
@@ -29,7 +30,7 @@ const TASK_PRIORITY_SURFACE_CLASS =
 	'inline-flex size-[18px] shrink-0 items-center justify-center rounded-[5px] leading-none overflow-visible'
 
 type TaskPrioritySelectProps = {
-	value: string | null | undefined
+	value: number | null | undefined
 	disabled?: boolean
 	ariaLabel: string
 	onValueChange: (value: TaskPriorityValue) => void
@@ -48,14 +49,6 @@ type TaskSelectionCheckboxProps = {
 	ariaLabel: string
 	onCheckedChange: () => void
 }
-
-const TASK_STATUS_OPTIONS: Array<{
-	value: TaskStatus
-	label: string
-}> = [
-	{ value: 'todo', label: '待执行' },
-	{ value: 'done', label: '已完成' },
-]
 
 /**
  * 统一任务行前导轨道，承载选择、优先级和状态三类微控件。
@@ -123,7 +116,7 @@ export function TaskPrioritySelect({
 	onValueChange,
 }: TaskPrioritySelectProps) {
 	const option = getTaskPriorityOption(value)
-	const emptyOption = getTaskPriorityOption('')
+	const emptyOption = getTaskPriorityOption(0)
 
 	return (
 		<div
@@ -157,7 +150,7 @@ export function TaskPrioritySelect({
 						<DropdownMenuItem
 							className='gap-2 p-2'
 							onSelect={() => {
-								onValueChange('')
+								onValueChange(0)
 							}}
 						>
 							<TaskPriorityIcon
@@ -166,14 +159,14 @@ export function TaskPrioritySelect({
 								surfaceClassName={emptyOption.surfaceClassName}
 							/>
 							<span className='min-w-0 flex-1 truncate'>{emptyOption.label}</span>
-							{option.value === '' ? (
+							{option.value === 0 ? (
 								<CheckIcon
 									aria-hidden
 									className='ml-auto size-3.5 shrink-0 text-(--sf-color-icon-secondary)'
 								/>
 							) : null}
 						</DropdownMenuItem>
-						{TASK_PRIORITY_OPTIONS.filter((priorityOption) => priorityOption.value !== '').map(
+						{TASK_PRIORITY_OPTIONS.filter((priorityOption) => priorityOption.value !== 0).map(
 							(priorityOption) => (
 								<DropdownMenuItem
 									key={priorityOption.value}
@@ -213,8 +206,7 @@ export function TaskStatusSelect({
 	ariaLabel,
 	onValueChange,
 }: TaskStatusSelectProps) {
-	const currentOption =
-		TASK_STATUS_OPTIONS.find((option) => option.value === value) ?? TASK_STATUS_OPTIONS[0]
+	const currentOption = getTaskStatusOption(value)
 
 	return (
 		<div
@@ -267,17 +259,38 @@ export function TaskStatusSelect({
 }
 
 export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
-	if (status === 'done') {
-		return (
-			<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-(--sf-color-project-task-status-done) text-white'>
-				<CheckIcon className='size-3' />
-			</span>
-		)
+	switch (status) {
+		case 'done':
+			return (
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-(--sf-color-project-task-status-done) text-white'>
+					<CheckIcon className='size-3' />
+				</span>
+			)
+		case 'doing':
+			return (
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white'>
+					<PlayIcon className='size-2.75 fill-current' />
+				</span>
+			)
+		case 'waiting':
+			return (
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white'>
+					<PauseIcon className='size-2.75 fill-current' />
+				</span>
+			)
+		case 'canceled':
+			return (
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-(--sf-color-text-secondary)'>
+					<XIcon className='size-2.75' />
+				</span>
+			)
+		default:
+			return (
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full text-(--sf-color-text-secondary)'>
+					<CircleIcon className='size-3.5' />
+				</span>
+			)
 	}
-
-	return (
-		<span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-(--sf-color-border-strong)' />
-	)
 }
 
 function TaskPriorityIcon({

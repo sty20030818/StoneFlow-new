@@ -204,12 +204,14 @@ export function ShellLayout({
 
 			<TaskCreateDialog
 				currentSpaceLabel={currentSpaceLabel}
+				currentScope={currentScope}
 				initialProjectId={taskCreateProjectId}
 				initialStatus={taskCreateStatus}
 				onClose={closeTaskCreateDialog}
 				open={isTaskCreateOpen}
 				projects={projectOptions}
 				projectsLoading={sidebarProjects.status === 'loading'}
+				spaces={spaces}
 			/>
 
 			<ProjectCreateDialog

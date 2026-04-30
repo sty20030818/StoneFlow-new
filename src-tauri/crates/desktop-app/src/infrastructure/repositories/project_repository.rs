@@ -76,6 +76,22 @@ impl ProjectRepository {
             .map_err(AppError::from)
     }
 
+    /// 根据一组 ID 查询 Project。
+    pub async fn list_by_ids(
+        &self,
+        project_ids: &[String],
+    ) -> Result<Vec<project::Model>, AppError> {
+        if project_ids.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        Project::find()
+            .filter(project::Column::Id.is_in(project_ids.iter().cloned()))
+            .all(self.connection())
+            .await
+            .map_err(AppError::from)
+    }
+
     /// 计算某个 Space 下下一条 Project 的排序值。
     pub async fn next_sort_order<C>(&self, connection: &C, space_id: &str) -> Result<i32, AppError>
     where

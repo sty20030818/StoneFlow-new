@@ -9,6 +9,7 @@ import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStor
 import { getInboxTasks, type Task } from '@/features/workspace'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import {
 	TaskLeadRail,
@@ -49,6 +50,7 @@ import {
 } from '@/app/layouts/main-card/MainCardLayout'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import { InboxIcon, PlusIcon } from 'lucide-react'
+import type { TaskStatus } from '@/shared/types'
 
 type InboxDraft = {
 	projectId: string
@@ -97,11 +99,11 @@ export function InboxPage() {
 		}))
 	}
 
-	function updateTaskStatus(taskId: string, status: 'todo' | 'done') {
+	function updateTaskStatus(taskId: string, status: TaskStatus) {
 		setTasks((currentTasks) =>
 			currentTasks.map((task) => (task.id === taskId ? { ...task, status } : task)),
 		)
-		setBannerMessage(`已在本地 mock 数据中切换任务状态：${status === 'done' ? 'Done' : 'Todo'}。`)
+		setBannerMessage(`已在本地 mock 数据中切换任务状态：${formatTaskStatusLabel(status)}。`)
 	}
 
 	function submitTriage(taskId: string) {
@@ -238,7 +240,7 @@ type InboxTaskRowProps = {
 	selected: boolean
 	onProjectChange: (projectId: string) => void
 	onPriorityChange: (priority: TaskPriorityValue) => void
-	onStatusChange: (status: 'todo' | 'done') => void
+	onStatusChange: (status: TaskStatus) => void
 	onSubmit: () => void
 	onOpenTask: () => void
 	onMoveTaskToTrash: () => void
@@ -300,7 +302,7 @@ function InboxTaskRow({
 								ariaLabel={`${task.title} 状态`}
 								disabled={draft.isSubmitting}
 								onValueChange={onStatusChange}
-								value={task.status === 'done' ? 'done' : 'todo'}
+								value={task.status}
 							/>
 						</TaskLeadRail>
 						<div className='min-w-0 space-y-2'>

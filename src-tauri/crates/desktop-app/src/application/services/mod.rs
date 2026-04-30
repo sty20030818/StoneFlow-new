@@ -20,5 +20,8 @@ pub use settings_service::{
 pub use space_service::{
     CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService, UpdateSpaceInput,
 };
-pub use task_service::TaskService;
+pub use task_service::{
+    CreateTaskInput, ListTasksInput, TaskDetailDto, TaskIdInput, TaskListItemDto, TaskScopeInput,
+    TaskScopeKind, TaskService, UpdateTaskInput,
+};
 pub use view_service::ViewService;

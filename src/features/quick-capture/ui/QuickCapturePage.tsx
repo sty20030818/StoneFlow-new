@@ -491,7 +491,7 @@ function CommandResultRow({
 					{subtitle}
 				</span>
 			</span>
-			{isTask && item.priority ? <PriorityBadge priority={item.priority} /> : null}
+			{isTask && item.priority > 0 ? <PriorityBadge priority={item.priority} /> : null}
 			<span className='rounded-md border border-(--sf-color-border-subtle) bg-muted/70 px-1.5 py-0.5 text-[11px] text-(--sf-color-text-quaternary)'>
 				{isTask ? '任务' : '项目'}
 			</span>
@@ -499,7 +499,7 @@ function CommandResultRow({
 	)
 }
 
-function PriorityBadge({ priority }: { priority: string }) {
+function PriorityBadge({ priority }: { priority: number }) {
 	const label = priorityToLabel(priority)
 	const className =
 		label === 'P0'
@@ -564,15 +564,15 @@ function Hint({ keys, label }: { keys: string; label: string }) {
 	)
 }
 
-function priorityToLabel(priority: string) {
+function priorityToLabel(priority: number) {
 	switch (priority) {
-		case 'urgent':
+		case 4:
 			return 'P0'
-		case 'high':
+		case 3:
 			return 'P1'
-		case 'medium':
+		case 2:
 			return 'P2'
-		case 'low':
+		case 1:
 			return 'P3'
 		default:
 			return 'P3'

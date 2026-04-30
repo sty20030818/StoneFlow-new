@@ -9,3 +9,4 @@ mod project_tests;
 mod runtime_tests;
 mod settings_tests;
 mod space_tests;
+mod task_tests;

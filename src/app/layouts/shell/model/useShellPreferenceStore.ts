@@ -5,7 +5,13 @@ import type { TaskStatus } from '@/shared/types'
 
 // ----- 常量 -----
 const PROJECT_TASK_BOARD_OPEN_SECTIONS_STORAGE_KEY = 'stoneflow:project-task-board-open-sections:v2'
-const DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS: TaskStatus[] = ['todo', 'done']
+const DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS: TaskStatus[] = [
+	'todo',
+	'doing',
+	'waiting',
+	'done',
+	'canceled',
+]
 
 // ----- 类型 -----
 type ShellPreferenceState = {
@@ -38,7 +44,11 @@ export const useShellPreferenceStore = create<ShellPreferenceState>()(
 				set(() => {
 					const normalizedSections = sections.length
 						? Array.from(
-								new Set(sections.filter((section) => section === 'todo' || section === 'done')),
+								new Set(
+									sections.filter((section) =>
+										['todo', 'doing', 'waiting', 'done', 'canceled'].includes(section),
+									),
+								),
 							)
 						: DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS
 					return {

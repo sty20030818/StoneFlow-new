@@ -1,4 +1,11 @@
-import { CircleAlert, Minus, Wifi, WifiHigh, WifiLow, type LucideIcon } from 'lucide-react'
+import {
+	CircleAlert,
+	Minus,
+	SignalHigh,
+	SignalLow,
+	SignalMedium,
+	type LucideIcon,
+} from 'lucide-react'
 
 import type { TaskPriority } from '@/shared/types'
 
@@ -16,35 +23,35 @@ export const EMPTY_TASK_PRIORITY_VALUE = '__task-priority-empty__'
 
 export const TASK_PRIORITY_OPTIONS: TaskPriorityOption[] = [
 	{
-		value: '',
+		value: 0,
 		label: '无优先级',
 		icon: Minus,
 		iconClassName: 'text-white',
 		surfaceClassName: 'bg-(--sf-color-priority-none)',
 	},
 	{
-		value: 'low',
+		value: 1,
 		label: '低',
-		icon: WifiLow,
+		icon: SignalLow,
 		iconClassName: 'text-white',
 		surfaceClassName: 'bg-(--sf-color-priority-low)',
 	},
 	{
-		value: 'medium',
+		value: 2,
 		label: '中',
-		icon: WifiHigh,
+		icon: SignalMedium,
 		iconClassName: 'text-white',
 		surfaceClassName: 'bg-(--sf-color-priority-medium)',
 	},
 	{
-		value: 'high',
+		value: 3,
 		label: '高',
-		icon: Wifi,
+		icon: SignalHigh,
 		iconClassName: 'text-white',
 		surfaceClassName: 'bg-(--sf-color-priority-high)',
 	},
 	{
-		value: 'urgent',
+		value: 4,
 		label: '紧急',
 		icon: CircleAlert,
 		iconClassName: 'text-white',
@@ -53,21 +60,17 @@ export const TASK_PRIORITY_OPTIONS: TaskPriorityOption[] = [
 ]
 
 /**
- * 将后端值收口到前端任务优先级枚举，避免各页面重复兜底。
+ * 将任意来源的值收口到前端任务优先级枚举，避免各页面重复兜底。
  */
-export function normalizeTaskPriorityValue(priority: string | null | undefined): TaskPriorityValue {
-	switch (priority) {
-		case 'low':
-		case 'medium':
-		case 'high':
-		case 'urgent':
-			return priority
-		default:
-			return ''
+export function normalizeTaskPriorityValue(priority: number | null | undefined): TaskPriorityValue {
+	if (priority === 1 || priority === 2 || priority === 3 || priority === 4) {
+		return priority
 	}
+
+	return 0
 }
 
-export function getTaskPriorityOption(priority: string | null | undefined) {
+export function getTaskPriorityOption(priority: number | null | undefined) {
 	const normalizedPriority = normalizeTaskPriorityValue(priority)
 
 	return (
@@ -76,6 +79,6 @@ export function getTaskPriorityOption(priority: string | null | undefined) {
 	)
 }
 
-export function formatTaskPriorityLabel(priority: string | null | undefined) {
+export function formatTaskPriorityLabel(priority: number | null | undefined) {
 	return getTaskPriorityOption(priority).label
 }

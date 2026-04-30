@@ -1,18 +1,965 @@
-//! Task Service：后续承载 Task 业务规则，不在阶段 0 提前实现 CRUD。
+//! Task Service：集中承载阶段 6 的 Task 规则、事务与 Activity 编排。
 
-use crate::infrastructure::repositories::TaskRepository;
+use std::collections::HashMap;
+
+use sea_orm::TransactionTrait;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use stoneflow_entity::{
+    common::{ActivityEntityKind, TaskStatus},
+    project, space, task,
+};
+
+use crate::{
+    app::error::AppError,
+    application::activity::{ActivityAction, ActivityChangeInput, ActivityService, RecordActivityInput},
+    domain::{create_id, normalize_required_text, normalize_slug, now_utc},
+    infrastructure::repositories::{
+        CreateTaskRecord, ProjectRepository, SpaceRepository, TaskLifecycleView, TaskListQuery,
+        TaskRepository, UpdateTaskPatch,
+    },
+};
+
+/// 前端 Scope 在 Task 命令边界的序列化形状。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskScopeInput {
+    #[serde(rename = "type")]
+    pub kind: TaskScopeKind,
+    pub space_id: Option<String>,
+}
+
+/// Scope 类型。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TaskScopeKind {
+    All,
+    Space,
+}
+
+/// Task 列表查询输入。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListTasksInput {
+    pub scope: TaskScopeInput,
+    pub view_key: String,
+    pub project_id: Option<String>,
+}
+
+/// Task 列表单条记录。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskListItemDto {
+    pub id: String,
+    pub space_id: String,
+    pub space_name: String,
+    pub space_slug: String,
+    pub project_id: Option<String>,
+    pub project_name: Option<String>,
+    pub title: String,
+    pub note: Option<String>,
+    pub status: TaskStatus,
+    pub status_changed_at: String,
+    pub priority: i32,
+    pub due_at: Option<String>,
+    pub scheduled_at: Option<String>,
+    pub reminder_at: Option<String>,
+    pub completed_at: Option<String>,
+    pub canceled_at: Option<String>,
+    pub archived_at: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// Task 详情载荷。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskDetailDto {
+    pub id: String,
+    pub space_id: String,
+    pub space_name: String,
+    pub space_slug: String,
+    pub project_id: Option<String>,
+    pub project_name: Option<String>,
+    pub title: String,
+    pub note: Option<String>,
+    pub status: TaskStatus,
+    pub status_changed_at: String,
+    pub priority: i32,
+    pub inbox_at: Option<String>,
+    pub due_at: Option<String>,
+    pub scheduled_at: Option<String>,
+    pub reminder_at: Option<String>,
+    pub sort_order: i32,
+    pub completed_at: Option<String>,
+    pub canceled_at: Option<String>,
+    pub archived_at: Option<String>,
+    pub deleted_at: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// 创建 Task 的输入。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTaskInput {
+    pub space_id: Option<String>,
+    pub project_id: Option<String>,
+    pub title: String,
+    pub note: Option<String>,
+    pub status: Option<TaskStatus>,
+    pub priority: Option<i32>,
+    pub due_at: Option<String>,
+    pub scheduled_at: Option<String>,
+    pub reminder_at: Option<String>,
+}
+
+/// 更新 Task 的输入。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateTaskInput {
+    pub task_id: String,
+    pub title: Option<String>,
+    #[serde(default)]
+    pub note: Option<Option<String>>,
+    pub status: Option<TaskStatus>,
+    pub priority: Option<i32>,
+    pub space_id: Option<String>,
+    #[serde(default)]
+    pub project_id: Option<Option<String>>,
+    #[serde(default)]
+    pub due_at: Option<Option<String>>,
+    #[serde(default)]
+    pub scheduled_at: Option<Option<String>>,
+    #[serde(default)]
+    pub reminder_at: Option<Option<String>>,
+}
+
+/// 仅携带 Task ID 的输入。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskIdInput {
+    pub task_id: String,
+}
+
+#[derive(Debug, Clone)]
+struct TaskScope {
+    space_id: Option<String>,
+}
 
 #[derive(Debug, Clone)]
 pub struct TaskService {
+    space_repository: SpaceRepository,
+    project_repository: ProjectRepository,
     repository: TaskRepository,
+    activity_service: ActivityService,
 }
 
 impl TaskService {
-    pub fn new(repository: TaskRepository) -> Self {
-        Self { repository }
+    pub fn new(
+        space_repository: SpaceRepository,
+        project_repository: ProjectRepository,
+        repository: TaskRepository,
+        activity_service: ActivityService,
+    ) -> Self {
+        Self {
+            space_repository,
+            project_repository,
+            repository,
+            activity_service,
+        }
     }
 
     pub fn repository(&self) -> &TaskRepository {
         &self.repository
+    }
+
+    /// 列出 Task 列表。
+    pub async fn list_tasks(&self, input: ListTasksInput) -> Result<Vec<TaskListItemDto>, AppError> {
+        let scope = normalize_scope(&input.scope)?;
+        let lifecycle = parse_view_key(&input.view_key)?;
+        let project_id = normalize_optional_id(input.project_id);
+        let tasks = self
+            .repository
+            .list(TaskListQuery {
+                space_id: scope.space_id,
+                project_id,
+                lifecycle,
+            })
+            .await?;
+
+        self.build_task_list(tasks).await
+    }
+
+    /// 读取 Task 详情。
+    pub async fn get_task_detail(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
+        let task_id = normalize_task_id(&input.task_id)?;
+        let current = self
+            .repository
+            .get(&task_id)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        if current.deleted_at.is_some() {
+            return Err(AppError::not_found("Task 不存在"));
+        }
+
+        self.build_task_detail(current).await
+    }
+
+    /// 创建 Task。
+    pub async fn create_task(&self, input: CreateTaskInput) -> Result<TaskDetailDto, AppError> {
+        let title = normalize_required_text(&input.title, "Task title")?;
+        let note = normalize_optional_text(input.note);
+        let due_at = normalize_optional_text(input.due_at);
+        let scheduled_at = normalize_optional_text(input.scheduled_at);
+        let reminder_at = normalize_optional_text(input.reminder_at);
+        let status = input.status.unwrap_or(TaskStatus::Todo);
+        let priority = normalize_priority(input.priority.unwrap_or(0))?;
+        let project = match input.project_id {
+            Some(project_id) => Some(self.require_visible_project(&project_id).await?),
+            None => None,
+        };
+        let space = match &project {
+            Some(project) => self.require_visible_space(&project.space_id).await?,
+            None => {
+                let raw_space_id = input
+                    .space_id
+                    .as_deref()
+                    .ok_or_else(|| AppError::validation("创建 Task 时必须提供 spaceId"))?;
+                self.require_visible_space(raw_space_id).await?
+            }
+        };
+
+        let now = now_utc().to_rfc3339();
+        let transaction = self.repository.connection().begin().await?;
+        let sort_order = self
+            .repository
+            .next_sort_order(&transaction, &space.id, project.as_ref().map(|item| item.id.as_str()))
+            .await?;
+        let (completed_at, canceled_at) = timestamps_for_status(status, &now);
+        let created = self
+            .repository
+            .create(
+                &transaction,
+                CreateTaskRecord {
+                    id: create_id().to_string(),
+                    space_id: space.id.clone(),
+                    project_id: project.as_ref().map(|item| item.id.clone()),
+                    title: title.clone(),
+                    note: note.clone(),
+                    status,
+                    status_changed_at: now.clone(),
+                    priority,
+                    inbox_at: None,
+                    due_at: due_at.clone(),
+                    scheduled_at: scheduled_at.clone(),
+                    reminder_at: reminder_at.clone(),
+                    sort_order,
+                    completed_at: completed_at.clone(),
+                    canceled_at: canceled_at.clone(),
+                    created_at: now.clone(),
+                    updated_at: now.clone(),
+                },
+            )
+            .await?;
+
+        self.activity_service
+            .record_activity_in_txn(
+                &transaction,
+                RecordActivityInput {
+                    entity_type: ActivityEntityKind::Task,
+                    entity_id: created.id.clone(),
+                    action: ActivityAction::TaskCreated,
+                    actor_type: None,
+                    source: None,
+                    summary: Some(format!("创建任务「{}」", created.title)),
+                    metadata: Some(json!({
+                        "taskId": created.id,
+                        "spaceId": created.space_id,
+                        "spaceName": space.name,
+                        "projectId": created.project_id,
+                    })),
+                    changes: Vec::new(),
+                },
+            )
+            .await?;
+
+        transaction.commit().await?;
+        self.build_task_detail(created).await
+    }
+
+    /// 更新 Task 基础字段。
+    pub async fn update_task(&self, input: UpdateTaskInput) -> Result<TaskDetailDto, AppError> {
+        let task_id = normalize_task_id(&input.task_id)?;
+        let current = self
+            .repository
+            .get(&task_id)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        if current.deleted_at.is_some() {
+            return Err(AppError::not_found("Task 不存在"));
+        }
+
+        let mut patch = UpdateTaskPatch::default();
+        let mut changes = Vec::new();
+        let now = now_utc().to_rfc3339();
+
+        let current_project = self.load_current_project(current.project_id.as_deref()).await?;
+        let mut next_space_id = current.space_id.clone();
+        let mut next_project_id = current.project_id.clone();
+
+        if let Some(project_patch) = input.project_id {
+            match project_patch {
+                Some(project_id) => {
+                    let project = self.require_visible_project(&project_id).await?;
+                    next_space_id = project.space_id.clone();
+                    next_project_id = Some(project.id.clone());
+                }
+                None => {
+                    next_project_id = None;
+                }
+            }
+        } else if let Some(space_id) = input.space_id.as_deref() {
+            let space = self.require_visible_space(space_id).await?;
+            next_space_id = space.id.clone();
+
+            if let Some(project) = &current_project {
+                if project.space_id != next_space_id || project.archived_at.is_some() || project.deleted_at.is_some() {
+                    next_project_id = None;
+                }
+            }
+        }
+
+        if let Some(title) = input.title {
+            let title = normalize_required_text(&title, "Task title")?;
+            if title != current.title {
+                push_change(&mut changes, "title", Some(json!(current.title)), Some(json!(title.clone())));
+                patch.title = Some(title);
+            }
+        }
+
+        if let Some(note) = input.note {
+            let note = normalize_optional_text_option(note);
+            if note != current.note {
+                push_change(&mut changes, "note", json_option_string(&current.note), json_option_string(&note));
+                patch.note = Some(note);
+            }
+        }
+
+        if let Some(priority) = input.priority {
+            let priority = normalize_priority(priority)?;
+            if priority != current.priority {
+                push_change(&mut changes, "priority", Some(json!(current.priority)), Some(json!(priority)));
+                patch.priority = Some(priority);
+            }
+        }
+
+        if next_space_id != current.space_id {
+            push_change(
+                &mut changes,
+                "space_id",
+                Some(json!(current.space_id)),
+                Some(json!(next_space_id.clone())),
+            );
+            patch.space_id = Some(next_space_id.clone());
+        }
+
+        if next_project_id != current.project_id {
+            push_change(
+                &mut changes,
+                "project_id",
+                json_option_string(&current.project_id),
+                json_option_string(&next_project_id),
+            );
+            patch.project_id = Some(next_project_id.clone());
+        }
+
+        if let Some(due_at) = input.due_at {
+            let due_at = normalize_optional_text_option(due_at);
+            if due_at != current.due_at {
+                push_change(&mut changes, "due_at", json_option_string(&current.due_at), json_option_string(&due_at));
+                patch.due_at = Some(due_at);
+            }
+        }
+
+        if let Some(scheduled_at) = input.scheduled_at {
+            let scheduled_at = normalize_optional_text_option(scheduled_at);
+            if scheduled_at != current.scheduled_at {
+                push_change(
+                    &mut changes,
+                    "scheduled_at",
+                    json_option_string(&current.scheduled_at),
+                    json_option_string(&scheduled_at),
+                );
+                patch.scheduled_at = Some(scheduled_at);
+            }
+        }
+
+        if let Some(reminder_at) = input.reminder_at {
+            let reminder_at = normalize_optional_text_option(reminder_at);
+            if reminder_at != current.reminder_at {
+                push_change(
+                    &mut changes,
+                    "reminder_at",
+                    json_option_string(&current.reminder_at),
+                    json_option_string(&reminder_at),
+                );
+                patch.reminder_at = Some(reminder_at);
+            }
+        }
+
+        if let Some(status) = input.status {
+            if status != current.status {
+                push_change(
+                    &mut changes,
+                    "status",
+                    Some(json!(status_key(current.status))),
+                    Some(json!(status_key(status))),
+                );
+                patch.status = Some(status);
+
+                if current.status_changed_at != now {
+                    push_change(
+                        &mut changes,
+                        "status_changed_at",
+                        Some(json!(current.status_changed_at)),
+                        Some(json!(now.clone())),
+                    );
+                }
+                patch.status_changed_at = Some(now.clone());
+
+                let (next_completed_at, next_canceled_at) = timestamps_for_status(status, &now);
+                if next_completed_at != current.completed_at {
+                    push_change(
+                        &mut changes,
+                        "completed_at",
+                        json_option_string(&current.completed_at),
+                        json_option_string(&next_completed_at),
+                    );
+                    patch.completed_at = Some(next_completed_at);
+                }
+                if next_canceled_at != current.canceled_at {
+                    push_change(
+                        &mut changes,
+                        "canceled_at",
+                        json_option_string(&current.canceled_at),
+                        json_option_string(&next_canceled_at),
+                    );
+                    patch.canceled_at = Some(next_canceled_at);
+                }
+            }
+        }
+
+        if changes.is_empty() {
+            return self.build_task_detail(current).await;
+        }
+
+        let action = select_update_action(&current, patch.status, &changes);
+        let summary = Some(build_update_summary(action, &current.title));
+        let transaction = self.repository.connection().begin().await?;
+        let updated = self
+            .repository
+            .update(&transaction, &task_id, patch, &now)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        self.activity_service
+            .record_activity_in_txn(
+                &transaction,
+                RecordActivityInput {
+                    entity_type: ActivityEntityKind::Task,
+                    entity_id: updated.id.clone(),
+                    action,
+                    actor_type: None,
+                    source: None,
+                    summary,
+                    metadata: Some(json!({
+                        "taskId": updated.id,
+                        "spaceId": updated.space_id,
+                        "projectId": updated.project_id,
+                    })),
+                    changes,
+                },
+            )
+            .await?;
+
+        transaction.commit().await?;
+        self.build_task_detail(updated).await
+    }
+
+    /// 归档 Task。
+    pub async fn archive_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
+        let task_id = normalize_task_id(&input.task_id)?;
+        let current = self
+            .repository
+            .get(&task_id)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        if current.deleted_at.is_some() {
+            return Err(AppError::not_found("Task 不存在"));
+        }
+        if current.archived_at.is_some() {
+            return self.build_task_detail(current).await;
+        }
+
+        let now = now_utc().to_rfc3339();
+        let transaction = self.repository.connection().begin().await?;
+        let updated = self
+            .repository
+            .archive_raw(&transaction, &task_id, &now, &task_id, &now)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        self.activity_service
+            .record_activity_in_txn(
+                &transaction,
+                RecordActivityInput {
+                    entity_type: ActivityEntityKind::Task,
+                    entity_id: updated.id.clone(),
+                    action: ActivityAction::TaskArchived,
+                    actor_type: None,
+                    source: None,
+                    summary: Some(format!("归档任务「{}」", updated.title)),
+                    metadata: Some(json!({
+                        "taskId": updated.id,
+                        "spaceId": updated.space_id,
+                    })),
+                    changes: vec![ActivityChangeInput {
+                        field: "archived_at".to_owned(),
+                        old_value: None,
+                        new_value: Some(json!(now.clone())),
+                    }],
+                },
+            )
+            .await?;
+
+        transaction.commit().await?;
+        self.build_task_detail(updated).await
+    }
+
+    /// 恢复 Task。
+    pub async fn restore_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
+        let task_id = normalize_task_id(&input.task_id)?;
+        let _current = self
+            .repository
+            .get(&task_id)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        let now = now_utc().to_rfc3339();
+        let transaction = self.repository.connection().begin().await?;
+        let updated = self
+            .repository
+            .restore_raw(&transaction, &task_id, &now)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        self.activity_service
+            .record_activity_in_txn(
+                &transaction,
+                RecordActivityInput {
+                    entity_type: ActivityEntityKind::Task,
+                    entity_id: updated.id.clone(),
+                    action: ActivityAction::TaskRestored,
+                    actor_type: None,
+                    source: None,
+                    summary: Some(format!("恢复任务「{}」", updated.title)),
+                    metadata: Some(json!({
+                        "taskId": updated.id,
+                        "spaceId": updated.space_id,
+                    })),
+                    changes: Vec::new(),
+                },
+            )
+            .await?;
+
+        transaction.commit().await?;
+        self.build_task_detail(updated).await
+    }
+
+    /// 删除 Task。
+    pub async fn delete_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
+        let task_id = normalize_task_id(&input.task_id)?;
+        let current = self
+            .repository
+            .get(&task_id)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        if current.deleted_at.is_some() {
+            return self.build_task_detail(current).await;
+        }
+
+        let now = now_utc().to_rfc3339();
+        let transaction = self.repository.connection().begin().await?;
+        let updated = self
+            .repository
+            .delete_raw(&transaction, &task_id, &now, &task_id, &now)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        self.activity_service
+            .record_activity_in_txn(
+                &transaction,
+                RecordActivityInput {
+                    entity_type: ActivityEntityKind::Task,
+                    entity_id: updated.id.clone(),
+                    action: ActivityAction::TaskDeleted,
+                    actor_type: None,
+                    source: None,
+                    summary: Some(format!("删除任务「{}」", updated.title)),
+                    metadata: Some(json!({
+                        "taskId": updated.id,
+                        "spaceId": updated.space_id,
+                    })),
+                    changes: vec![ActivityChangeInput {
+                        field: "deleted_at".to_owned(),
+                        old_value: None,
+                        new_value: Some(json!(now.clone())),
+                    }],
+                },
+            )
+            .await?;
+
+        transaction.commit().await?;
+        self.build_task_detail(updated).await
+    }
+
+    async fn build_task_list(&self, tasks: Vec<task::Model>) -> Result<Vec<TaskListItemDto>, AppError> {
+        let space_map = self.load_space_map(&tasks).await?;
+        let project_map = self.load_project_map(&tasks).await?;
+
+        Ok(tasks
+            .into_iter()
+            .map(|item| {
+                let (space_name, space_slug) = space_map
+                    .get(&item.space_id)
+                    .map(|space| (space.name.clone(), normalize_slug(&space.name)))
+                    .unwrap_or_else(|| (item.space_id.clone(), "unknown".to_owned()));
+                let project_name = item
+                    .project_id
+                    .as_ref()
+                    .and_then(|project_id| project_map.get(project_id))
+                    .map(|project| project.name.clone());
+
+                TaskListItemDto {
+                    id: item.id,
+                    space_id: item.space_id,
+                    space_name,
+                    space_slug,
+                    project_id: item.project_id,
+                    project_name,
+                    title: item.title,
+                    note: item.note,
+                    status: item.status,
+                    status_changed_at: item.status_changed_at,
+                    priority: item.priority,
+                    due_at: item.due_at,
+                    scheduled_at: item.scheduled_at,
+                    reminder_at: item.reminder_at,
+                    completed_at: item.completed_at,
+                    canceled_at: item.canceled_at,
+                    archived_at: item.archived_at,
+                    created_at: item.created_at,
+                    updated_at: item.updated_at,
+                }
+            })
+            .collect())
+    }
+
+    async fn build_task_detail(&self, item: task::Model) -> Result<TaskDetailDto, AppError> {
+        let space = self
+            .space_repository
+            .get(&item.space_id)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 所属 Space 不存在"))?;
+        let project = match item.project_id.as_deref() {
+            Some(project_id) => self.project_repository.get(project_id).await?,
+            None => None,
+        };
+
+        Ok(TaskDetailDto {
+            id: item.id,
+            space_id: item.space_id,
+            space_name: space.name.clone(),
+            space_slug: normalize_slug(&space.name),
+            project_id: item.project_id,
+            project_name: project.map(|project| project.name),
+            title: item.title,
+            note: item.note,
+            status: item.status,
+            status_changed_at: item.status_changed_at,
+            priority: item.priority,
+            inbox_at: item.inbox_at,
+            due_at: item.due_at,
+            scheduled_at: item.scheduled_at,
+            reminder_at: item.reminder_at,
+            sort_order: item.sort_order,
+            completed_at: item.completed_at,
+            canceled_at: item.canceled_at,
+            archived_at: item.archived_at,
+            deleted_at: item.deleted_at,
+            created_at: item.created_at,
+            updated_at: item.updated_at,
+        })
+    }
+
+    async fn load_current_project(
+        &self,
+        project_id: Option<&str>,
+    ) -> Result<Option<project::Model>, AppError> {
+        match project_id {
+            Some(project_id) => self.project_repository.get(project_id).await,
+            None => Ok(None),
+        }
+    }
+
+    async fn require_visible_space(&self, space_id: &str) -> Result<space::Model, AppError> {
+        let space_id = normalize_space_id(space_id)?;
+        let space = self
+            .space_repository
+            .get(&space_id)
+            .await?
+            .ok_or_else(|| AppError::not_found("Space 不存在"))?;
+
+        if space.archived_at.is_some() || space.deleted_at.is_some() {
+            return Err(AppError::not_found("Space 不存在"));
+        }
+
+        Ok(space)
+    }
+
+    async fn require_visible_project(&self, project_id: &str) -> Result<project::Model, AppError> {
+        let project_id = normalize_project_id(project_id)?;
+        let project = self
+            .project_repository
+            .get(&project_id)
+            .await?
+            .ok_or_else(|| AppError::not_found("Project 不存在"))?;
+
+        if project.archived_at.is_some() || project.deleted_at.is_some() {
+            return Err(AppError::not_found("Project 不存在"));
+        }
+
+        Ok(project)
+    }
+
+    async fn load_space_map(
+        &self,
+        tasks: &[task::Model],
+    ) -> Result<HashMap<String, space::Model>, AppError> {
+        let space_ids = tasks
+            .iter()
+            .map(|item| item.space_id.clone())
+            .collect::<Vec<_>>();
+        let spaces = self.space_repository.list_by_ids(&space_ids).await?;
+
+        Ok(spaces
+            .into_iter()
+            .map(|item| (item.id.clone(), item))
+            .collect::<HashMap<_, _>>())
+    }
+
+    async fn load_project_map(
+        &self,
+        tasks: &[task::Model],
+    ) -> Result<HashMap<String, project::Model>, AppError> {
+        let project_ids = tasks
+            .iter()
+            .filter_map(|item| item.project_id.clone())
+            .collect::<Vec<_>>();
+        let projects = self.project_repository.list_by_ids(&project_ids).await?;
+
+        Ok(projects
+            .into_iter()
+            .map(|item| (item.id.clone(), item))
+            .collect::<HashMap<_, _>>())
+    }
+}
+
+fn normalize_scope(input: &TaskScopeInput) -> Result<TaskScope, AppError> {
+    match input.kind {
+        TaskScopeKind::All => Ok(TaskScope { space_id: None }),
+        TaskScopeKind::Space => {
+            let space_id = input
+                .space_id
+                .as_deref()
+                .ok_or_else(|| AppError::validation("type=space 时必须提供 spaceId"))?;
+            Ok(TaskScope {
+                space_id: Some(normalize_space_id(space_id)?),
+            })
+        }
+    }
+}
+
+fn parse_view_key(view_key: &str) -> Result<TaskLifecycleView, AppError> {
+    match view_key.trim().to_ascii_lowercase().as_str() {
+        "active" => Ok(TaskLifecycleView::Active),
+        "completed" => Ok(TaskLifecycleView::Completed),
+        "canceled" => Ok(TaskLifecycleView::Canceled),
+        "archived" => Ok(TaskLifecycleView::Archived),
+        "all" => Ok(TaskLifecycleView::All),
+        _ => Err(AppError::validation("未知 Task viewKey")),
+    }
+}
+
+fn normalize_task_id(value: &str) -> Result<String, AppError> {
+    normalize_required_text(value, "Task id")
+}
+
+fn normalize_space_id(value: &str) -> Result<String, AppError> {
+    normalize_required_text(value, "Space id")
+}
+
+fn normalize_project_id(value: &str) -> Result<String, AppError> {
+    normalize_required_text(value, "Project id")
+}
+
+fn normalize_optional_id(value: Option<String>) -> Option<String> {
+    value.and_then(|raw| {
+        let normalized = raw.trim();
+        if normalized.is_empty() {
+            None
+        } else {
+            Some(normalized.to_owned())
+        }
+    })
+}
+
+fn normalize_priority(priority: i32) -> Result<i32, AppError> {
+    if (0..=4).contains(&priority) {
+        Ok(priority)
+    } else {
+        Err(AppError::validation("Task priority 必须在 0 到 4 之间"))
+    }
+}
+
+fn normalize_optional_text(value: Option<String>) -> Option<String> {
+    value.and_then(|text| {
+        let trimmed = text.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_owned())
+        }
+    })
+}
+
+fn normalize_optional_text_option(value: Option<String>) -> Option<String> {
+    value.and_then(|text| {
+        let trimmed = text.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_owned())
+        }
+    })
+}
+
+fn json_option_string(value: &Option<String>) -> Option<serde_json::Value> {
+    value.as_ref().map(|item| json!(item))
+}
+
+fn status_key(status: TaskStatus) -> &'static str {
+    match status {
+        TaskStatus::Todo => "todo",
+        TaskStatus::Doing => "doing",
+        TaskStatus::Waiting => "waiting",
+        TaskStatus::Done => "done",
+        TaskStatus::Canceled => "canceled",
+    }
+}
+
+fn timestamps_for_status(status: TaskStatus, now: &str) -> (Option<String>, Option<String>) {
+    match status {
+        TaskStatus::Done => (Some(now.to_owned()), None),
+        TaskStatus::Canceled => (None, Some(now.to_owned())),
+        TaskStatus::Todo | TaskStatus::Doing | TaskStatus::Waiting => (None, None),
+    }
+}
+
+fn push_change(
+    changes: &mut Vec<ActivityChangeInput>,
+    field: &str,
+    old_value: Option<serde_json::Value>,
+    new_value: Option<serde_json::Value>,
+) {
+    if old_value == new_value {
+        return;
+    }
+
+    changes.push(ActivityChangeInput {
+        field: field.to_owned(),
+        old_value,
+        new_value,
+    });
+}
+
+fn select_update_action(
+    current: &task::Model,
+    next_status: Option<TaskStatus>,
+    changes: &[ActivityChangeInput],
+) -> ActivityAction {
+    if let Some(status) = next_status {
+        return match status {
+            TaskStatus::Done => ActivityAction::TaskCompleted,
+            TaskStatus::Canceled => ActivityAction::TaskCanceled,
+            TaskStatus::Todo | TaskStatus::Doing | TaskStatus::Waiting
+                if matches!(current.status, TaskStatus::Done | TaskStatus::Canceled) =>
+            {
+                ActivityAction::TaskReopened
+            }
+            TaskStatus::Todo | TaskStatus::Doing | TaskStatus::Waiting => {
+                ActivityAction::TaskStatusChanged
+            }
+        };
+    }
+
+    let changed_fields = changes
+        .iter()
+        .map(|change| change.field.as_str())
+        .collect::<Vec<_>>();
+    if changed_fields.contains(&"project_id") {
+        return ActivityAction::TaskMovedProject;
+    }
+    if changed_fields.contains(&"space_id") {
+        return ActivityAction::TaskMovedSpace;
+    }
+    if changed_fields.contains(&"priority") {
+        return ActivityAction::TaskPriorityChanged;
+    }
+    if changed_fields.contains(&"due_at") {
+        return ActivityAction::TaskDueUpdated;
+    }
+    if changed_fields.contains(&"scheduled_at") {
+        return ActivityAction::TaskScheduledUpdated;
+    }
+    if changed_fields.contains(&"reminder_at") {
+        return ActivityAction::TaskReminderUpdated;
+    }
+    if changed_fields.contains(&"note") {
+        return ActivityAction::TaskNoteUpdated;
+    }
+
+    ActivityAction::TaskTitleUpdated
+}
+
+fn build_update_summary(action: ActivityAction, title: &str) -> String {
+    match action {
+        ActivityAction::TaskCompleted => format!("完成任务「{title}」"),
+        ActivityAction::TaskCanceled => format!("取消任务「{title}」"),
+        ActivityAction::TaskReopened => format!("重新打开任务「{title}」"),
+        ActivityAction::TaskStatusChanged => format!("更新任务状态「{title}」"),
+        ActivityAction::TaskMovedProject => format!("调整任务所属项目「{title}」"),
+        ActivityAction::TaskMovedSpace => format!("调整任务所属 Space「{title}」"),
+        ActivityAction::TaskPriorityChanged => format!("更新任务优先级「{title}」"),
+        ActivityAction::TaskDueUpdated => format!("更新任务截止时间「{title}」"),
+        ActivityAction::TaskScheduledUpdated => format!("更新任务计划时间「{title}」"),
+        ActivityAction::TaskReminderUpdated => format!("更新任务提醒时间「{title}」"),
+        ActivityAction::TaskNoteUpdated => format!("更新任务备注「{title}」"),
+        _ => format!("更新任务「{title}」"),
     }
 }

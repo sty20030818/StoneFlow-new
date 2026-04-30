@@ -14,6 +14,7 @@ import {
 } from '@/app/layouts/main-card/MainCardLayout'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import {
 	TaskLeadRail,
@@ -147,7 +148,10 @@ export function FocusPage() {
 								task.id,
 								(currentTask) => ({
 									...currentTask,
-									status: currentTask.status === 'done' ? 'todo' : 'done',
+									status:
+										currentTask.status === 'done' || currentTask.status === 'canceled'
+											? 'todo'
+											: 'done',
 								}),
 								'已切换本地 mock 任务状态。',
 							)
@@ -188,7 +192,7 @@ type FocusTaskPanelProps = {
 	onToggleTaskSelection: (taskId: string) => void
 	onToggleTaskPin: (task: TaskView) => void
 	onUpdateTaskPriority: (task: TaskView, priority: TaskPriorityValue) => void
-	onUpdateTaskStatus: (task: TaskView, status: 'todo' | 'done') => void
+	onUpdateTaskStatus: (task: TaskView, status: TaskView['status']) => void
 	onToggleTaskStatus: (task: TaskView) => void
 	onMoveTaskToTrash: (task: TaskView) => void
 }
@@ -271,7 +275,7 @@ type FocusTaskRowProps = {
 	onToggleTaskSelection: (taskId: string) => void
 	onToggleTaskPin: (task: TaskView) => void
 	onUpdateTaskPriority: (task: TaskView, priority: TaskPriorityValue) => void
-	onUpdateTaskStatus: (task: TaskView, status: 'todo' | 'done') => void
+	onUpdateTaskStatus: (task: TaskView, status: TaskView['status']) => void
 	onToggleTaskStatus: (task: TaskView) => void
 	onMoveTaskToTrash: (task: TaskView) => void
 }
@@ -307,7 +311,9 @@ function FocusTaskRow({
 					LINEAR_CARD_BASE_CLASS,
 					TASK_CARD_INTERACTIVE_CLASS,
 					TASK_CARD_GRID_CLASS,
-					task.status === 'done' ? LINEAR_CARD_DONE_CLASS : LINEAR_CARD_IDLE_CLASS,
+					task.status === 'done' || task.status === 'canceled'
+						? LINEAR_CARD_DONE_CLASS
+						: LINEAR_CARD_IDLE_CLASS,
 					isSelected && !isActive ? TASK_ROW_BULK_SELECTED_CLASS : null,
 					isActive ? LINEAR_CARD_ACTIVE_CLASS : null,
 				)}
@@ -351,7 +357,9 @@ function FocusTaskRow({
 								<p
 									className={cn(
 										'text-sm font-semibold text-foreground',
-										task.status === 'done' ? 'line-through text-muted-foreground' : null,
+										task.status === 'done' || task.status === 'canceled'
+											? 'line-through text-muted-foreground'
+											: null,
 									)}
 								>
 									{task.title}
@@ -370,6 +378,7 @@ function FocusTaskRow({
 
 				<div className='flex shrink-0 items-center gap-2'>
 					{task.projectName ? <Badge variant='outline'>{task.projectName}</Badge> : null}
+					<Badge variant='secondary'>{formatTaskStatusLabel(task.status)}</Badge>
 					<Button
 						className='rounded-md'
 						onClick={(event) => {

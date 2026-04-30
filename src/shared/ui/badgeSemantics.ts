@@ -21,6 +21,14 @@ export function getProjectStatusBadgeVariant(status?: string | null): BadgeVaria
 /**
  * 执行态任务只区分待执行与已完成，两者分别映射为中性与 soft success。
  */
-export function getTaskStatusBadgeVariant(status: 'todo' | 'done'): BadgeVariant {
-	return status === 'done' ? 'success' : 'secondary'
+export function getTaskStatusBadgeVariant(
+	status: 'todo' | 'doing' | 'waiting' | 'done' | 'canceled',
+): BadgeVariant {
+	if (status === 'done') {
+		return 'success'
+	}
+	if (status === 'canceled') {
+		return 'secondary'
+	}
+	return 'warning'
 }

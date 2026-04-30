@@ -1,0 +1,522 @@
+//! 阶段 6 Task 服务回归测试。
+
+use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
+use stoneflow_entity::{common::TaskStatus, task};
+use stoneflow_test_support::TempDatabaseDir;
+
+use crate::{
+    application::{
+        activity::ActivityService,
+        services::{
+            CreateTaskInput, ListTasksInput, TaskIdInput, TaskScopeInput, TaskScopeKind,
+            TaskService, UpdateTaskInput,
+        },
+    },
+    domain::create_id,
+    infrastructure::{
+        database::bootstrap_database,
+        repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
+    },
+};
+
+#[tokio::test]
+async fn create_task_should_fail_when_title_is_blank() {
+    let temp_dir = TempDatabaseDir::new("stoneflow-stage6-create-task-invalid").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_task_service(&database);
+    let space = default_space(&database).await;
+
+    let error = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id),
+            project_id: None,
+            title: "   ".to_owned(),
+            note: None,
+            status: None,
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect_err("blank title should fail");
+
+    assert_eq!(error.to_string(), "验证失败: Task title 不能为空");
+}
+
+#[tokio::test]
+async fn create_task_should_follow_selected_project_space() {
+    let temp_dir =
+        TempDatabaseDir::new("stoneflow-stage6-create-task-project-space").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_task_service(&database);
+    let default_space = default_space(&database).await;
+    let another_space = insert_space(&database, "学习", false).await;
+    let project = insert_project(&database, &another_space.id, "阶段 6").await;
+
+    let created = service
+        .create_task(CreateTaskInput {
+            space_id: Some(default_space.id),
+            project_id: Some(project.id.clone()),
+            title: "接 Task 真链路".to_owned(),
+            note: None,
+            status: None,
+            priority: Some(3),
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create task should succeed");
+
+    assert_eq!(created.project_id, Some(project.id));
+    assert_eq!(created.space_id, another_space.id);
+    assert_eq!(created.space_name, another_space.name);
+}
+
+#[tokio::test]
+async fn update_task_should_manage_status_timestamps() {
+    let temp_dir =
+        TempDatabaseDir::new("stoneflow-stage6-update-task-status-timestamps").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_task_service(&database);
+    let space = default_space(&database).await;
+
+    let created = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id),
+            project_id: None,
+            title: "状态流转".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Todo),
+            priority: Some(2),
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create task should succeed");
+
+    let doing = service
+        .update_task(UpdateTaskInput {
+            task_id: created.id.clone(),
+            title: None,
+            note: None,
+            status: Some(TaskStatus::Doing),
+            priority: None,
+            space_id: None,
+            project_id: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("move to doing should succeed");
+    let done = service
+        .update_task(UpdateTaskInput {
+            task_id: created.id.clone(),
+            title: None,
+            note: None,
+            status: Some(TaskStatus::Done),
+            priority: None,
+            space_id: None,
+            project_id: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("move to done should succeed");
+    let canceled = service
+        .update_task(UpdateTaskInput {
+            task_id: created.id.clone(),
+            title: None,
+            note: None,
+            status: Some(TaskStatus::Canceled),
+            priority: None,
+            space_id: None,
+            project_id: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("move to canceled should succeed");
+    let reopened = service
+        .update_task(UpdateTaskInput {
+            task_id: created.id,
+            title: None,
+            note: None,
+            status: Some(TaskStatus::Todo),
+            priority: None,
+            space_id: None,
+            project_id: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("reopen should succeed");
+
+    assert_eq!(doing.status, TaskStatus::Doing);
+    assert!(doing.completed_at.is_none());
+    assert!(doing.canceled_at.is_none());
+    assert_ne!(doing.status_changed_at, created.status_changed_at);
+
+    assert_eq!(done.status, TaskStatus::Done);
+    assert!(done.completed_at.is_some());
+    assert!(done.canceled_at.is_none());
+
+    assert_eq!(canceled.status, TaskStatus::Canceled);
+    assert!(canceled.completed_at.is_none());
+    assert!(canceled.canceled_at.is_some());
+
+    assert_eq!(reopened.status, TaskStatus::Todo);
+    assert!(reopened.completed_at.is_none());
+    assert!(reopened.canceled_at.is_none());
+}
+
+#[tokio::test]
+async fn list_tasks_should_filter_scope_project_and_lifecycle() {
+    let temp_dir = TempDatabaseDir::new("stoneflow-stage6-list-tasks-filters").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_task_service(&database);
+    let default_space = default_space(&database).await;
+    let another_space = insert_space(&database, "副空间", false).await;
+    let project = insert_project(&database, &default_space.id, "Project A").await;
+
+    let active = service
+        .create_task(CreateTaskInput {
+            space_id: Some(default_space.id.clone()),
+            project_id: Some(project.id.clone()),
+            title: "Active".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Todo),
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create active should succeed");
+    let completed = service
+        .create_task(CreateTaskInput {
+            space_id: Some(default_space.id.clone()),
+            project_id: Some(project.id.clone()),
+            title: "Completed".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Done),
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create completed should succeed");
+    let canceled = service
+        .create_task(CreateTaskInput {
+            space_id: Some(default_space.id.clone()),
+            project_id: None,
+            title: "Canceled".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Canceled),
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create canceled should succeed");
+    let archived = service
+        .create_task(CreateTaskInput {
+            space_id: Some(another_space.id.clone()),
+            project_id: None,
+            title: "Archived".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Todo),
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create archived should succeed");
+    service
+        .archive_task(TaskIdInput {
+            task_id: archived.id.clone(),
+        })
+        .await
+        .expect("archive should succeed");
+
+    let active_rows = service
+        .list_tasks(ListTasksInput {
+            scope: TaskScopeInput {
+                kind: TaskScopeKind::Space,
+                space_id: Some(default_space.id.clone()),
+            },
+            view_key: "active".to_owned(),
+            project_id: Some(project.id.clone()),
+        })
+        .await
+        .expect("active list should succeed");
+    let completed_rows = service
+        .list_tasks(ListTasksInput {
+            scope: TaskScopeInput {
+                kind: TaskScopeKind::Space,
+                space_id: Some(default_space.id.clone()),
+            },
+            view_key: "completed".to_owned(),
+            project_id: Some(project.id.clone()),
+        })
+        .await
+        .expect("completed list should succeed");
+    let canceled_rows = service
+        .list_tasks(ListTasksInput {
+            scope: TaskScopeInput {
+                kind: TaskScopeKind::Space,
+                space_id: Some(default_space.id),
+            },
+            view_key: "canceled".to_owned(),
+            project_id: None,
+        })
+        .await
+        .expect("canceled list should succeed");
+    let archived_rows = service
+        .list_tasks(ListTasksInput {
+            scope: TaskScopeInput {
+                kind: TaskScopeKind::Space,
+                space_id: Some(another_space.id),
+            },
+            view_key: "archived".to_owned(),
+            project_id: None,
+        })
+        .await
+        .expect("archived list should succeed");
+
+    assert_eq!(active_rows.len(), 1);
+    assert_eq!(active_rows[0].id, active.id);
+    assert_eq!(completed_rows.len(), 1);
+    assert_eq!(completed_rows[0].id, completed.id);
+    assert_eq!(canceled_rows.len(), 1);
+    assert_eq!(canceled_rows[0].id, canceled.id);
+    assert_eq!(archived_rows.len(), 1);
+    assert_eq!(archived_rows[0].id, archived.id);
+}
+
+#[tokio::test]
+async fn archive_restore_delete_task_should_record_activity_and_return_consistent_payload() {
+    let temp_dir = TempDatabaseDir::new("stoneflow-stage6-task-activity-chain").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_task_service(&database);
+    let space = default_space(&database).await;
+
+    let created = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id),
+            project_id: None,
+            title: "Task 生命周期".to_owned(),
+            note: None,
+            status: None,
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create task should succeed");
+    let archived = service
+        .archive_task(TaskIdInput {
+            task_id: created.id.clone(),
+        })
+        .await
+        .expect("archive should succeed");
+    let restored = service
+        .restore_task(TaskIdInput {
+            task_id: created.id.clone(),
+        })
+        .await
+        .expect("restore should succeed");
+    let deleted = service
+        .delete_task(TaskIdInput {
+            task_id: created.id.clone(),
+        })
+        .await
+        .expect("delete should succeed");
+
+    let activity_count = scalar_i64_with_arg(
+        database.connection(),
+        "SELECT COUNT(*) AS value FROM activity_events WHERE entity_id = ?",
+        created.id.clone(),
+    )
+    .await
+    .expect("activity count query should succeed");
+
+    assert!(archived.archived_at.is_some());
+    assert!(restored.archived_at.is_none());
+    assert!(deleted.deleted_at.is_some());
+    assert_eq!(activity_count, 4);
+}
+
+fn build_task_service(database: &crate::infrastructure::database::DatabaseRuntimeState) -> TaskService {
+    let connection = database.connection().clone();
+    TaskService::new(
+        SpaceRepository::new(connection.clone()),
+        ProjectRepository::new(connection.clone()),
+        TaskRepository::new(connection.clone()),
+        ActivityService::new(ActivityRepository::new(connection)),
+    )
+}
+
+async fn default_space(
+    database: &crate::infrastructure::database::DatabaseRuntimeState,
+) -> stoneflow_entity::space::Model {
+    SpaceRepository::new(database.connection().clone())
+        .list_visible()
+        .await
+        .expect("list visible spaces should succeed")
+        .into_iter()
+        .next()
+        .expect("default space should exist")
+}
+
+async fn insert_space(
+    database: &crate::infrastructure::database::DatabaseRuntimeState,
+    name: &str,
+    is_default: bool,
+) -> stoneflow_entity::space::Model {
+    let repository = SpaceRepository::new(database.connection().clone());
+    let transaction = repository
+        .connection()
+        .begin()
+        .await
+        .expect("transaction should begin");
+    let sort_order = repository
+        .next_sort_order(&transaction)
+        .await
+        .expect("next sort order should succeed");
+    let now = "2026-04-30T00:00:00Z".to_owned();
+    let created = repository
+        .create(
+            &transaction,
+            crate::infrastructure::repositories::CreateSpaceRecord {
+                id: create_id().to_string(),
+                name: name.to_owned(),
+                icon_key: "folder".to_owned(),
+                color_key: "blue".to_owned(),
+                is_default,
+                sort_order,
+                created_at: now.clone(),
+                updated_at: now,
+            },
+        )
+        .await
+        .expect("create space should succeed");
+    transaction
+        .commit()
+        .await
+        .expect("transaction commit should succeed");
+    created
+}
+
+async fn insert_project(
+    database: &crate::infrastructure::database::DatabaseRuntimeState,
+    space_id: &str,
+    name: &str,
+) -> stoneflow_entity::project::Model {
+    let repository = ProjectRepository::new(database.connection().clone());
+    let transaction = repository
+        .connection()
+        .begin()
+        .await
+        .expect("transaction should begin");
+    let sort_order = repository
+        .next_sort_order(&transaction, space_id)
+        .await
+        .expect("next sort order should succeed");
+    let now = "2026-04-30T00:00:00Z".to_owned();
+    let created = repository
+        .create(
+            &transaction,
+            crate::infrastructure::repositories::CreateProjectRecord {
+                id: create_id().to_string(),
+                space_id: space_id.to_owned(),
+                name: name.to_owned(),
+                description: None,
+                due_at: None,
+                sort_order,
+                created_at: now.clone(),
+                updated_at: now,
+            },
+        )
+        .await
+        .expect("create project should succeed");
+    transaction
+        .commit()
+        .await
+        .expect("transaction commit should succeed");
+    created
+}
+
+async fn scalar_i64_with_arg<C>(
+    connection: &C,
+    sql: &str,
+    arg: String,
+) -> Result<i64, sea_orm::DbErr>
+where
+    C: ConnectionTrait,
+{
+    let statement = Statement::from_sql_and_values(DatabaseBackend::Sqlite, sql, [arg.into()]);
+    let row = connection.query_one(statement).await?.expect("row should exist");
+    row.try_get::<i64>("", "value")
+}
+
+#[allow(dead_code)]
+async fn insert_task_for_test(
+    database: &crate::infrastructure::database::DatabaseRuntimeState,
+    space_id: &str,
+    project_id: Option<&str>,
+    title: &str,
+) -> task::Model {
+    let repository = TaskRepository::new(database.connection().clone());
+    repository
+        .insert_for_test(
+            repository.connection(),
+            task::ActiveModel {
+                id: Set(create_id().to_string()),
+                space_id: Set(space_id.to_owned()),
+                project_id: Set(project_id.map(str::to_owned)),
+                title: Set(title.to_owned()),
+                note: Set(None),
+                status: Set(TaskStatus::Todo),
+                status_changed_at: Set("2026-04-30T00:00:00Z".to_owned()),
+                priority: Set(0),
+                inbox_at: Set(None),
+                due_at: Set(None),
+                scheduled_at: Set(None),
+                reminder_at: Set(None),
+                sort_order: Set(1000),
+                completed_at: Set(None),
+                canceled_at: Set(None),
+                archived_at: Set(None),
+                archived_by_type: Set(None),
+                archived_by_id: Set(None),
+                deleted_at: Set(None),
+                deleted_by_type: Set(None),
+                deleted_by_id: Set(None),
+                created_at: Set("2026-04-30T00:00:00Z".to_owned()),
+                updated_at: Set("2026-04-30T00:00:00Z".to_owned()),
+            },
+        )
+        .await
+        .expect("insert task should succeed")
+}
