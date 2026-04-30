@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { getEntityActivities } from '@/features/activity/api/getEntityActivities'
 
 vi.mock('@tauri-apps/api/core', () => ({
-	invoke: vi.fn(),
+	invoke: vi.fn<(cmd: string, args?: Record<string, unknown>) => Promise<unknown>>(),
 }))
 
 const mockedInvoke = vi.mocked(invoke)

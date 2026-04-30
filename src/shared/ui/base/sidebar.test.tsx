@@ -146,7 +146,7 @@ describe('Sidebar primitive', () => {
 			value: () => undefined,
 		})
 
-		const onSidebarWidthCommit = vi.fn()
+		const onSidebarWidthCommit = vi.fn<(width: number) => void>()
 		renderSidebarFixture({ onSidebarWidthCommit })
 		const rail = document.querySelector('[data-slot="sidebar-rail"]') as HTMLElement
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_PRIORITY_OPTIONS } from '@/features/task/model/taskPriority'
@@ -52,6 +52,14 @@ export function TaskCreateModalContent({
 		setProjectId(initialProjectId ?? '')
 	}, [initialProjectId])
 
+	const handleReset = useCallback(() => {
+		setTitle('')
+		setNote('')
+		setPriority('high')
+		setProjectId(initialProjectId ?? '')
+		setStatus('idle')
+	}, [initialProjectId])
+
 	useEffect(() => {
 		if (status !== 'success') {
 			return undefined
@@ -65,15 +73,7 @@ export function TaskCreateModalContent({
 		return () => {
 			window.clearTimeout(timer)
 		}
-	}, [onClose, status])
-
-	function handleReset() {
-		setTitle('')
-		setNote('')
-		setPriority('high')
-		setProjectId(initialProjectId ?? '')
-		setStatus('idle')
-	}
+	}, [handleReset, onClose, status])
 
 	function handleSubmit() {
 		setStatus('submitting')

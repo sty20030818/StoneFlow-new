@@ -9,7 +9,7 @@ import {
 } from '@/features/settings/api/sidebarSettings'
 
 vi.mock('@tauri-apps/api/core', () => ({
-	invoke: vi.fn(),
+	invoke: vi.fn<(cmd: string, args?: Record<string, unknown>) => Promise<unknown>>(),
 }))
 
 const mockedInvoke = vi.mocked(invoke)

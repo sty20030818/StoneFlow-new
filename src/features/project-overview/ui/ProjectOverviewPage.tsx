@@ -36,7 +36,7 @@ export function ProjectOverviewPage() {
 
 	useEffect(() => {
 		void loadOverview(scope, viewKey)
-	}, [loadOverview, scopeKey, viewKey])
+	}, [loadOverview, scope, scopeKey, viewKey])
 
 	async function runRowAction(projectId: string, runner: () => Promise<unknown>) {
 		setBusyProjectId(projectId)

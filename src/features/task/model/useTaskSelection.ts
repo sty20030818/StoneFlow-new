@@ -22,7 +22,7 @@ export function useTaskSelection(taskIds: string[]) {
 
 			return nextSelectedTaskIds
 		})
-	}, [taskIdSignature])
+	}, [taskIdSignature, taskIds])
 
 	const selectedTaskIdSet = useMemo(() => new Set(selectedTaskIds), [selectedTaskIds])
 	const selectedCount = selectedTaskIds.length
