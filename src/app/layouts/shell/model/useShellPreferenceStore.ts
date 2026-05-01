@@ -6,8 +6,8 @@ import type { TaskStatus } from '@/shared/types'
 // ----- 常量 -----
 const PROJECT_TASK_BOARD_OPEN_SECTIONS_STORAGE_KEY = 'stoneflow:project-task-board-open-sections:v2'
 const DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS: TaskStatus[] = [
-	'todo',
 	'doing',
+	'todo',
 	'waiting',
 	'done',
 	'canceled',

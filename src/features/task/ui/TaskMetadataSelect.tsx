@@ -7,7 +7,7 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
-import { CheckIcon, CircleIcon, PauseIcon, PlayIcon, type LucideIcon, XIcon } from 'lucide-react'
+import { CheckIcon, PauseIcon, PlayIcon, type LucideIcon, XIcon } from 'lucide-react'
 
 import {
 	getTaskPriorityOption,
@@ -268,28 +268,24 @@ export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 			)
 		case 'doing':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white'>
-					<PlayIcon className='size-2.75 fill-current' />
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-sky-500/45 text-sky-500'>
+					<PlayIcon className='size-2.5 fill-current' />
 				</span>
 			)
 		case 'waiting':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white'>
-					<PauseIcon className='size-2.75 fill-current' />
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-amber-500/45 text-amber-500'>
+					<PauseIcon className='size-2.5 fill-current' />
 				</span>
 			)
 		case 'canceled':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-muted text-(--sf-color-text-secondary)'>
-					<XIcon className='size-2.75' />
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-(--sf-color-border-strong) text-(--sf-color-text-secondary)'>
+					<XIcon className='size-2.5' />
 				</span>
 			)
 		default:
-			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full text-(--sf-color-text-secondary)'>
-					<CircleIcon className='size-3.5' />
-				</span>
-			)
+			return <span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-(--sf-color-border-strong)' />
 	}
 }
 

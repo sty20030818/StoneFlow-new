@@ -15,6 +15,7 @@ type ProjectTaskBoardProps = {
 	onUpdateTaskStatus: (task: ProjectExecutionTask, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: ProjectExecutionTask) => Promise<void>
 	onArchiveTask: (task: ProjectExecutionTask) => Promise<void>
+	onDeleteTask: (task: ProjectExecutionTask) => Promise<void>
 	onOpenTask: (taskId: string) => void
 }
 
@@ -29,6 +30,7 @@ export function ProjectTaskBoard({
 	onUpdateTaskStatus,
 	onToggleTaskStatus,
 	onArchiveTask,
+	onDeleteTask,
 	onOpenTask,
 }: ProjectTaskBoardProps) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
@@ -40,7 +42,9 @@ export function ProjectTaskBoard({
 			emptyActionLabel='创建任务'
 			emptyDescription='当前 Project 还没有任何任务，阶段 6 先在这里完成最小真实闭环。'
 			emptyTitle='当前 Project 还没有任务'
+			hideEmptySections
 			onArchiveTask={onArchiveTask}
+			onDeleteTask={onDeleteTask}
 			onEmptyAction={() => openTaskCreateDialog({ projectId, status: 'todo' })}
 			onOpenTask={onOpenTask}
 			onToggleTaskSelection={onToggleTaskSelection}
@@ -48,7 +52,10 @@ export function ProjectTaskBoard({
 			onUpdateTaskPriority={onUpdateTaskPriority}
 			onUpdateTaskStatus={onUpdateTaskStatus}
 			pendingTaskId={pendingTaskId}
+			rowVariant='project'
 			selectedTaskIdSet={selectedTaskIdSet}
+			sectionVariant='project'
+			statusOrder={['doing', 'todo', 'waiting', 'done', 'canceled']}
 			tasks={tasks}
 		/>
 	)

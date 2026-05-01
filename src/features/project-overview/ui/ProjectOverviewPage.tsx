@@ -15,7 +15,6 @@ import { ProjectOverviewList } from '@/features/project-overview/ui/ProjectOverv
 import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { PlusIcon } from 'lucide-react'
 
 const PROJECT_OVERVIEW_TABS: Array<{ key: ProjectOverviewViewKey; label: string }> = [
@@ -79,17 +78,6 @@ export function ProjectOverviewPage() {
 			}
 		>
 			<div className='flex min-h-0 flex-1 flex-col gap-3'>
-				{overview.error ? (
-					<StatusNotice role='alert' size='sm' variant='danger'>
-						{overview.error}
-					</StatusNotice>
-				) : (
-					<StatusNotice size='sm'>
-						当前 Scope：{getScopeLabel(scope, spaces)}。Active / Completed / Archived / All
-						全部来自真实 Project 数据。
-					</StatusNotice>
-				)}
-
 				{overview.status === 'ready' && overview.items.length === 0 ? (
 					<ProjectOverviewEmptyState
 						onCreateProject={() => openProjectCreateDialog()}

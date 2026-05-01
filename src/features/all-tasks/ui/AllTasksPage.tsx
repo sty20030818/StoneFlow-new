@@ -12,9 +12,7 @@ import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import { TaskBoard } from '@/features/task/ui/TaskBoard'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import type { TaskListItem, TaskListViewKey } from '@/shared/types'
-import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { PlusIcon } from 'lucide-react'
 
 const TASK_VIEW_PILLS: Array<{ key: TaskListViewKey; label: string }> = [
@@ -27,7 +25,6 @@ const TASK_VIEW_PILLS: Array<{ key: TaskListViewKey; label: string }> = [
 
 export function AllTasksPage() {
 	const { scope } = useScopeRoute()
-	const spaces = useSpaceStore(selectSpaces)
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
 	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
@@ -119,19 +116,6 @@ export function AllTasksPage() {
 			}
 		>
 			<div className='flex min-h-0 flex-1 flex-col gap-3'>
-				{taskList.error ? (
-					<StatusNotice role='alert' size='sm' variant='danger'>
-						{taskList.error}
-					</StatusNotice>
-				) : (
-					<StatusNotice size='sm'>
-						当前任务范围：
-						{scope.type === 'space'
-							? (spaces.find((space) => space.id === scope.spaceId)?.name ?? '当前 Space')
-							: '全部 Space'}
-					</StatusNotice>
-				)}
-
 				<TaskBoard
 					activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
 					emptyActionLabel='创建任务'

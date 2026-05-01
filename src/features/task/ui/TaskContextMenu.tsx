@@ -10,6 +10,7 @@ import {
 	ContextMenuTrigger,
 } from '@/shared/ui/base/context-menu'
 import {
+	ArchiveIcon,
 	CheckCircle2Icon,
 	ExternalLinkIcon,
 	PinIcon,
@@ -26,7 +27,9 @@ type TaskContextMenuProps = {
 	onTogglePin?: () => void
 	onToggleStatus?: () => void
 	onMoveToTrash?: () => void
-	destructiveActionLabel?: string
+	onArchive?: () => void
+	moveToTrashLabel?: string
+	archiveActionLabel?: string
 }
 
 /**
@@ -41,11 +44,14 @@ export function TaskContextMenu({
 	onTogglePin,
 	onToggleStatus,
 	onMoveToTrash,
-	destructiveActionLabel = '移入回收站',
+	onArchive,
+	moveToTrashLabel = '移入回收站',
+	archiveActionLabel = '归档任务',
 }: TaskContextMenuProps) {
 	const canToggleStatus = !!onToggleStatus
 	const canTogglePin = !!onTogglePin
 	const canMoveToTrash = !!onMoveToTrash
+	const canArchive = !!onArchive
 
 	return (
 		<ContextMenu>
@@ -75,14 +81,22 @@ export function TaskContextMenu({
 						</ContextMenuItem>
 					) : null}
 				</ContextMenuGroup>
-				{canMoveToTrash ? (
+				{canMoveToTrash || canArchive ? (
 					<>
 						<ContextMenuSeparator />
 						<ContextMenuGroup>
-							<ContextMenuItem disabled={isBusy} onSelect={onMoveToTrash} variant='destructive'>
-								<Trash2Icon />
-								{destructiveActionLabel}
-							</ContextMenuItem>
+							{canArchive ? (
+								<ContextMenuItem disabled={isBusy} onSelect={onArchive} variant='destructive'>
+									<ArchiveIcon />
+									{archiveActionLabel}
+								</ContextMenuItem>
+							) : null}
+							{canMoveToTrash ? (
+								<ContextMenuItem disabled={isBusy} onSelect={onMoveToTrash} variant='destructive'>
+									<Trash2Icon />
+									{moveToTrashLabel}
+								</ContextMenuItem>
+							) : null}
 						</ContextMenuGroup>
 					</>
 				) : null}

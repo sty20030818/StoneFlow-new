@@ -39,6 +39,11 @@ const TASK_ROW_ACTIVE_CLASS =
 	'border-(--sf-color-border-subtle) bg-(--sf-color-project-task-row-selected)'
 const TASK_ROW_DONE_CLASS = 'text-muted-foreground'
 const TASK_SECTION_META_CLASS = 'text-xs font-medium text-(--sf-color-text-tertiary)'
+const PROJECT_TASK_SECTION_HEADER_CLASS =
+	'flex items-center gap-2 rounded-md bg-(--sf-color-project-task-section-header) py-1 pl-3 pr-1'
+
+type TaskBoardSectionVariant = 'compact' | 'project'
+type TaskBoardRowVariant = 'stacked' | 'project'
 
 const TASK_SECTIONS: TaskStatus[] = ['todo', 'doing', 'waiting', 'done', 'canceled']
 
@@ -57,8 +62,13 @@ type TaskBoardProps = {
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
-	onArchiveTask: (task: TaskListItem) => Promise<void>
+	onArchiveTask?: (task: TaskListItem) => Promise<void>
+	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
+	statusOrder?: TaskStatus[]
+	hideEmptySections?: boolean
+	sectionVariant?: TaskBoardSectionVariant
+	rowVariant?: TaskBoardRowVariant
 }
 
 export function TaskBoard({
@@ -77,7 +87,12 @@ export function TaskBoard({
 	onUpdateTaskStatus,
 	onToggleTaskStatus,
 	onArchiveTask,
+	onDeleteTask,
 	onOpenTask,
+	statusOrder = TASK_SECTIONS,
+	hideEmptySections = false,
+	sectionVariant = 'compact',
+	rowVariant = 'stacked',
 }: TaskBoardProps) {
 	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
 	const setProjectTaskBoardOpenSections = useShellPreferenceStore(
@@ -104,7 +119,7 @@ export function TaskBoard({
 	if (tasks.length === 0) {
 		return (
 			<EmptyPage>
-				<Empty>
+				<Empty className={sectionVariant === 'project' ? 'rounded-md bg-transparent' : undefined}>
 					<EmptyHeader>
 						<EmptyMedia variant='icon'>
 							<ListTodoIcon />
@@ -122,14 +137,24 @@ export function TaskBoard({
 		)
 	}
 
+	const visibleStatuses = statusOrder.filter(
+		(status) => !hideEmptySections || groupedTasks[status].length > 0,
+	)
+
 	return (
-		<div className='flex min-h-0 flex-1 flex-col gap-3'>
-			{TASK_SECTIONS.map((status) => (
+		<div
+			className={cn(
+				'flex min-h-0 flex-1 flex-col',
+				sectionVariant === 'project' ? 'gap-1' : 'gap-3',
+			)}
+		>
+			{visibleStatuses.map((status) => (
 				<TaskStatusSection
 					activeTaskId={activeTaskId}
 					createProjectId={createProjectId}
 					key={status}
 					label={formatTaskStatusLabel(status)}
+					onDeleteTask={onDeleteTask}
 					onArchiveTask={onArchiveTask}
 					onOpenChange={(open) => handleSectionOpenChange(status, open)}
 					onOpenTask={onOpenTask}
@@ -139,7 +164,9 @@ export function TaskBoard({
 					onUpdateTaskStatus={onUpdateTaskStatus}
 					open={openSections.includes(status)}
 					pendingTaskId={pendingTaskId}
+					rowVariant={rowVariant}
 					selectedTaskIdSet={selectedTaskIdSet}
+					sectionVariant={sectionVariant}
 					showProjectName={showProjectName}
 					status={status}
 					tasks={groupedTasks[status]}
@@ -164,8 +191,11 @@ type TaskStatusSectionProps = {
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
-	onArchiveTask: (task: TaskListItem) => Promise<void>
+	onArchiveTask?: (task: TaskListItem) => Promise<void>
+	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
+	sectionVariant: TaskBoardSectionVariant
+	rowVariant: TaskBoardRowVariant
 }
 
 function TaskStatusSection({
@@ -183,31 +213,35 @@ function TaskStatusSection({
 	onUpdateTaskPriority,
 	onUpdateTaskStatus,
 	onToggleTaskStatus,
+	onDeleteTask,
 	onArchiveTask,
 	onOpenTask,
+	sectionVariant,
+	rowVariant,
 }: TaskStatusSectionProps) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
 	return (
-		<Collapsible onOpenChange={onOpenChange} open={open}>
-			<div className='flex items-center justify-between gap-3 px-1'>
-				<CollapsibleTrigger asChild>
-					<button className='flex min-w-0 items-center gap-2 text-left' type='button'>
-						<ChevronRightIcon
-							className={cn('size-4 shrink-0 transition-transform', open ? 'rotate-90' : '')}
-						/>
+		<Collapsible
+			className={sectionVariant === 'project' ? 'flex flex-col gap-1 [&[data-state=open]_[data-chevron]]:rotate-90' : undefined}
+			onOpenChange={onOpenChange}
+			open={open}
+		>
+			{sectionVariant === 'project' ? (
+				<div className={PROJECT_TASK_SECTION_HEADER_CLASS}>
+					<CollapsibleTrigger
+						aria-label={`切换 ${label} 分区折叠状态`}
+						className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-(--sf-color-icon-subtle) outline-none transition-none hover:bg-transparent hover:text-(--sf-color-icon-subtle) focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
+					>
+						<ChevronRightIcon className='size-4 shrink-0' data-chevron />
+					</CollapsibleTrigger>
+					<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-foreground'>
 						<TaskStatusIndicator status={status} />
-						<span className='text-sm font-medium text-foreground'>{label}</span>
-						<Badge className='h-5 rounded-full px-2 text-[11px]' variant='secondary'>
+						<span className='truncate'>{label}</span>
+						<Badge className='ml-1 border-transparent shadow-none' variant='secondary'>
 							{tasks.length}
 						</Badge>
-					</button>
-				</CollapsibleTrigger>
-
-				<div className='flex items-center gap-2'>
-					<span className={TASK_SECTION_META_CLASS}>
-						{tasks.length === 0 ? '暂无任务' : `${tasks.length} 条`}
-					</span>
+					</div>
 					<Button
 						aria-label={`在 ${label} 中创建任务`}
 						className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
@@ -226,15 +260,54 @@ function TaskStatusSection({
 						<PlusIcon />
 					</Button>
 				</div>
-			</div>
+			) : (
+				<div className='flex items-center justify-between gap-3 px-1'>
+					<CollapsibleTrigger asChild>
+						<button className='flex min-w-0 items-center gap-2 text-left' type='button'>
+							<ChevronRightIcon
+								className={cn('size-4 shrink-0 transition-transform', open ? 'rotate-90' : '')}
+							/>
+							<TaskStatusIndicator status={status} />
+							<span className='text-sm font-medium text-foreground'>{label}</span>
+							<Badge className='h-5 rounded-full px-2 text-[11px]' variant='secondary'>
+								{tasks.length}
+							</Badge>
+						</button>
+					</CollapsibleTrigger>
+
+					<div className='flex items-center gap-2'>
+						<span className={TASK_SECTION_META_CLASS}>
+							{tasks.length === 0 ? '暂无任务' : `${tasks.length} 条`}
+						</span>
+						<Button
+							aria-label={`在 ${label} 中创建任务`}
+							className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
+							onClick={(event) => {
+								event.preventDefault()
+								event.stopPropagation()
+								openTaskCreateDialog({
+									projectId: createProjectId,
+									status,
+								})
+							}}
+							size='icon-xs'
+							type='button'
+							variant='ghost'
+						>
+							<PlusIcon />
+						</Button>
+					</div>
+				</div>
+			)}
 
 			<CollapsibleContent className='overflow-hidden px-0'>
-				<div className='mt-2 flex flex-col gap-1'>
+				<div className={cn('flex flex-col gap-1', sectionVariant === 'project' ? undefined : 'mt-2')}>
 					{tasks.map((task) => (
 						<TaskBoardRow
 							activeTaskId={activeTaskId}
 							isProjectNameVisible={showProjectName}
 							key={task.id}
+							onDeleteTask={onDeleteTask}
 							onArchiveTask={onArchiveTask}
 							onOpenTask={onOpenTask}
 							onToggleTaskSelection={onToggleTaskSelection}
@@ -242,6 +315,7 @@ function TaskStatusSection({
 							onUpdateTaskPriority={onUpdateTaskPriority}
 							onUpdateTaskStatus={onUpdateTaskStatus}
 							pendingTaskId={pendingTaskId}
+							rowVariant={rowVariant}
 							selectedTaskIdSet={selectedTaskIdSet}
 							task={task}
 						/>
@@ -262,8 +336,10 @@ function TaskBoardRow({
 	onUpdateTaskPriority,
 	onUpdateTaskStatus,
 	onToggleTaskStatus,
+	onDeleteTask,
 	onArchiveTask,
 	onOpenTask,
+	rowVariant,
 }: {
 	task: TaskListItem
 	pendingTaskId: string | null
@@ -274,8 +350,10 @@ function TaskBoardRow({
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
-	onArchiveTask: (task: TaskListItem) => Promise<void>
+	onArchiveTask?: (task: TaskListItem) => Promise<void>
+	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
+	rowVariant: TaskBoardRowVariant
 }) {
 	const isPending = pendingTaskId === task.id
 	const isActive = activeTaskId === task.id
@@ -284,9 +362,9 @@ function TaskBoardRow({
 
 	return (
 		<TaskContextMenu
-			destructiveActionLabel='归档任务'
 			isBusy={isPending}
-			onMoveToTrash={() => void onArchiveTask(task)}
+			onArchive={onArchiveTask ? () => void onArchiveTask(task) : undefined}
+			onMoveToTrash={onDeleteTask ? () => void onDeleteTask(task) : undefined}
 			onOpenDetails={() => onOpenTask(task.id)}
 			onToggleStatus={() => void onToggleTaskStatus(task)}
 			status={task.status}
@@ -337,30 +415,70 @@ function TaskBoardRow({
 						/>
 					</TaskLeadRail>
 
-					<div className='min-w-0 flex-1'>
-						<div className='flex min-w-0 items-center gap-2'>
-							<p
+					{rowVariant === 'project' ? (
+						<>
+							<span
 								className={cn(
-									'truncate text-sm font-medium text-foreground',
+									'min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
 									isDoneLike ? 'text-(--sf-color-text-tertiary) line-through' : null,
 								)}
 							>
 								{task.title}
-							</p>
-							{isProjectNameVisible && task.projectName ? (
-								<Badge className='h-5 rounded-full px-2 text-[11px]' variant='outline'>
-									{task.projectName}
-								</Badge>
-							) : null}
+							</span>
+							<TaskMetaRail createdAt={task.createdAt} dueAt={task.dueAt} />
+						</>
+					) : (
+						<div className='min-w-0 flex-1'>
+							<div className='flex min-w-0 items-center gap-2'>
+								<p
+									className={cn(
+										'truncate text-sm font-medium text-foreground',
+										isDoneLike ? 'text-(--sf-color-text-tertiary) line-through' : null,
+									)}
+								>
+									{task.title}
+								</p>
+								{isProjectNameVisible && task.projectName ? (
+									<Badge className='h-5 rounded-full px-2 text-[11px]' variant='outline'>
+										{task.projectName}
+									</Badge>
+								) : null}
+							</div>
+							<div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-(--sf-color-text-tertiary)'>
+								{task.note ? <span className='truncate'>{task.note}</span> : null}
+								{task.dueAt ? <span>Due {task.dueAt}</span> : null}
+								{task.archivedAt ? <span>已归档</span> : null}
+							</div>
 						</div>
-						<div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-(--sf-color-text-tertiary)'>
-							{task.note ? <span className='truncate'>{task.note}</span> : null}
-							{task.dueAt ? <span>Due {task.dueAt}</span> : null}
-							{task.archivedAt ? <span>已归档</span> : null}
-						</div>
-					</div>
+					)}
 				</div>
 			</div>
 		</TaskContextMenu>
 	)
+}
+
+function TaskMetaRail({
+	dueAt,
+	createdAt,
+}: {
+	dueAt: string | null
+	createdAt: string
+}) {
+	return (
+		<div className='ml-auto hidden shrink-0 items-center justify-end gap-2 text-right md:flex'>
+			{dueAt ? <span className={TASK_SECTION_META_CLASS}>{formatTaskDate(dueAt)}</span> : null}
+			<span className={TASK_SECTION_META_CLASS}>{formatTaskDate(createdAt)}</span>
+		</div>
+	)
+}
+
+function formatTaskDate(value: string) {
+	const date = new Date(value)
+	if (Number.isNaN(date.getTime())) {
+		return value
+	}
+	return new Intl.DateTimeFormat('en-US', {
+		month: 'short',
+		day: 'numeric',
+	}).format(date)
 }
