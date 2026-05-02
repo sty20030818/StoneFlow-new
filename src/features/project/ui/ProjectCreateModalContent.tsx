@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useProjectStore } from '@/features/project/model/useProjectStore'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { Button } from '@/shared/ui/base/button'
+import { DatePicker } from '@/shared/ui/base/date-picker'
 import { Input } from '@/shared/ui/base/input'
 import {
 	Select,
@@ -122,12 +123,10 @@ export function ProjectCreateModalContent({
 
 				<label className='flex flex-col gap-1.5' htmlFor='project-create-due-at'>
 					<span className='text-[12px] font-medium text-foreground'>截止日期</span>
-					<Input
-						className='h-11 rounded-md border-input bg-card'
+					<DatePicker
 						disabled={status === 'submitting'}
-						id='project-create-due-at'
-						onChange={(event) => setDueAt(event.currentTarget.value)}
-						placeholder='例如：2026-05-10'
+						onChange={(value) => setDueAt(value)}
+						placeholder='选择日期'
 						value={dueAt}
 					/>
 				</label>

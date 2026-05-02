@@ -10,6 +10,7 @@ import { selectTaskDetail, useTaskStore } from '@/features/task/model/useTaskSto
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { Button } from '@/shared/ui/base/button'
+import { DatePicker } from '@/shared/ui/base/date-picker'
 import { Input } from '@/shared/ui/base/input'
 import {
 	Select,
@@ -370,44 +371,40 @@ export function TaskDrawerContent({ currentSpaceLabel, taskId, onClose, activeTa
 							</DrawerField>
 
 							<DrawerField label='截止日期'>
-								<Input
-									className='h-7 border-0 bg-transparent px-0 text-[12px] shadow-none focus-visible:ring-0'
-									onChange={(event) =>
+								<DatePicker
+									className='h-7 border-0 bg-transparent px-0 shadow-none hover:bg-transparent focus:ring-0'
+									onChange={(value) =>
 										setDraft((current) =>
-											current ? { ...current, dueAt: event.currentTarget.value } : current,
+											current ? { ...current, dueAt: value } : current,
 										)
 									}
-									placeholder='YYYY-MM-DD'
+									placeholder='选择日期'
 									value={draft.dueAt}
 								/>
 							</DrawerField>
 
 							<DrawerField label='计划日期'>
-								<Input
-									className='h-7 border-0 bg-transparent px-0 text-[12px] shadow-none focus-visible:ring-0'
-									onChange={(event) =>
+								<DatePicker
+									className='h-7 border-0 bg-transparent px-0 shadow-none hover:bg-transparent focus:ring-0'
+									onChange={(value) =>
 										setDraft((current) =>
-											current
-												? { ...current, scheduledAt: event.currentTarget.value }
-												: current,
+											current ? { ...current, scheduledAt: value } : current,
 										)
 									}
-									placeholder='YYYY-MM-DD'
+									placeholder='选择日期'
 									value={draft.scheduledAt}
 								/>
 							</DrawerField>
 
 							<DrawerField label='提醒时间'>
-								<Input
-									className='h-7 border-0 bg-transparent px-0 text-[12px] shadow-none focus-visible:ring-0'
-									onChange={(event) =>
+								<DatePicker
+									className='h-7 border-0 bg-transparent px-0 shadow-none hover:bg-transparent focus:ring-0'
+									onChange={(value) =>
 										setDraft((current) =>
-											current
-												? { ...current, reminderAt: event.currentTarget.value }
-												: current,
+											current ? { ...current, reminderAt: value } : current,
 										)
 									}
-									placeholder='YYYY-MM-DD HH:mm'
+									placeholder='选择日期'
 									value={draft.reminderAt}
 								/>
 							</DrawerField>
