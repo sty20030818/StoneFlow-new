@@ -10,10 +10,12 @@ import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import { TaskBoard } from '@/features/task/ui/TaskBoard'
+import { Button } from '@/shared/ui/base/button'
 import type { TaskListItem, TaskListViewKey } from '@/shared/types'
-import { PlusIcon } from 'lucide-react'
+import { CommandIcon, PlusIcon } from 'lucide-react'
 
 const TASK_VIEW_PILLS: Array<{ key: TaskListViewKey; label: string }> = [
 	{ key: 'active', label: 'Active' },
@@ -35,7 +37,7 @@ export function AllTasksPage() {
 	const archiveTask = useTaskStore((state) => state.archiveTask)
 	const [viewKey, setViewKey] = useState<TaskListViewKey>('active')
 	const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
-	const { selectedTaskIdSet, toggleTaskSelection } = useTaskSelection(
+	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } = useTaskSelection(
 		taskList.items.map((task) => task.id),
 	)
 
@@ -132,6 +134,20 @@ export function AllTasksPage() {
 					selectedTaskIdSet={selectedTaskIdSet}
 					showProjectName
 					tasks={taskList.items}
+				/>
+				<TaskBulkActionBar
+					action={
+						<Button
+							className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
+							size='sm'
+							variant='outline'
+						>
+							<CommandIcon className='size-3.5' />
+							批量操作
+						</Button>
+					}
+					onClear={clearTaskSelection}
+					selectedCount={selectedCount}
 				/>
 			</div>
 		</MainCardLayout>

@@ -30,7 +30,7 @@ import {
 	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
-import { ChevronRightIcon, ListTodoIcon, PlusIcon } from 'lucide-react'
+import { ListTodoIcon, PlusIcon, TriangleIcon } from 'lucide-react'
 
 const TASK_ROW_BASE_CLASS =
 	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-3 text-left transition-colors'
@@ -223,7 +223,11 @@ function TaskStatusSection({
 
 	return (
 		<Collapsible
-			className={sectionVariant === 'project' ? 'flex flex-col gap-1 [&[data-state=open]_[data-chevron]]:rotate-90' : undefined}
+			className={
+				sectionVariant === 'project'
+					? 'flex flex-col gap-1 [&[data-state=open]_[data-chevron]]:rotate-90'
+					: undefined
+			}
 			onOpenChange={onOpenChange}
 			open={open}
 		>
@@ -233,12 +237,15 @@ function TaskStatusSection({
 						aria-label={`切换 ${label} 分区折叠状态`}
 						className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-(--sf-color-icon-subtle) outline-none transition-none hover:bg-transparent hover:text-(--sf-color-icon-subtle) focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
 					>
-						<ChevronRightIcon className='size-4 shrink-0' data-chevron />
+						<SectionChevron data-chevron />
 					</CollapsibleTrigger>
 					<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-foreground'>
 						<TaskStatusIndicator status={status} />
 						<span className='truncate'>{label}</span>
-						<Badge className='ml-1 border-transparent shadow-none' variant='secondary'>
+						<Badge
+							className='ml-1 border-transparent bg-transparent shadow-none'
+							variant='secondary'
+						>
 							{tasks.length}
 						</Badge>
 					</div>
@@ -264,12 +271,13 @@ function TaskStatusSection({
 				<div className='flex items-center justify-between gap-3 px-1'>
 					<CollapsibleTrigger asChild>
 						<button className='flex min-w-0 items-center gap-2 text-left' type='button'>
-							<ChevronRightIcon
-								className={cn('size-4 shrink-0 transition-transform', open ? 'rotate-90' : '')}
-							/>
+							<SectionChevron className={open ? 'rotate-90' : ''} />
 							<TaskStatusIndicator status={status} />
 							<span className='text-sm font-medium text-foreground'>{label}</span>
-							<Badge className='h-5 rounded-full px-2 text-[11px]' variant='secondary'>
+							<Badge
+								className='h-5 rounded-full bg-transparent px-2 text-[11px]'
+								variant='secondary'
+							>
 								{tasks.length}
 							</Badge>
 						</button>
@@ -301,7 +309,9 @@ function TaskStatusSection({
 			)}
 
 			<CollapsibleContent className='overflow-hidden px-0'>
-				<div className={cn('flex flex-col gap-1', sectionVariant === 'project' ? undefined : 'mt-2')}>
+				<div
+					className={cn('flex flex-col gap-1', sectionVariant === 'project' ? undefined : 'mt-2')}
+				>
 					{tasks.map((task) => (
 						<TaskBoardRow
 							activeTaskId={activeTaskId}
@@ -457,13 +467,7 @@ function TaskBoardRow({
 	)
 }
 
-function TaskMetaRail({
-	dueAt,
-	createdAt,
-}: {
-	dueAt: string | null
-	createdAt: string
-}) {
+function TaskMetaRail({ dueAt, createdAt }: { dueAt: string | null; createdAt: string }) {
 	return (
 		<div className='ml-auto hidden shrink-0 items-center justify-end gap-2 text-right md:flex'>
 			{dueAt ? <span className={TASK_SECTION_META_CLASS}>{formatTaskDate(dueAt)}</span> : null}
@@ -481,4 +485,18 @@ function formatTaskDate(value: string) {
 		month: 'short',
 		day: 'numeric',
 	}).format(date)
+}
+
+function SectionChevron({ className, ...props }: React.ComponentProps<'span'>) {
+	return (
+		<span
+			{...props}
+			className={cn('inline-flex size-3 shrink-0 items-center justify-center', className)}
+		>
+			<TriangleIcon
+				className='size-1.5 rotate-90 text-(--sf-color-icon-subtle)'
+				fill='currentColor'
+			/>
+		</span>
+	)
 }

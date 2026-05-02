@@ -7,27 +7,23 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
-import { CheckIcon, PauseIcon, PlayIcon, type LucideIcon, XIcon } from 'lucide-react'
+import { CheckIcon, PauseIcon, PlayIcon, XIcon } from 'lucide-react'
 
 import {
 	getTaskPriorityOption,
 	TASK_PRIORITY_OPTIONS,
 	type TaskPriorityValue,
 } from '@/features/task/model/taskPriority'
+import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
 import { getTaskStatusOption, TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 import type { TaskStatus } from '@/shared/types'
 
-const TASK_LEAD_RAIL_CLASS = 'flex shrink-0 items-center gap-1.5'
-/** 与复选框同级：flex 子项 + 垂直居中，避免外壳高度/对齐与按钮不一致 */
-const TASK_LEAD_MENU_WRAP_CLASS = 'flex shrink-0 items-center'
-// 与 TaskSelectionCheckbox 外圈一致：20×20 + 主轴/交叉轴双居中（原先缺 items-center，子项在 stretch 下易视觉上移）
+const TASK_LEAD_RAIL_CLASS = 'flex shrink-0 items-center gap-1'
+const TASK_LEAD_MENU_WRAP_CLASS = 'flex size-5 shrink-0 items-center justify-center'
 const TASK_LEAD_TRIGGER_BASE_CLASS =
-	'flex size-5 shrink-0 items-center justify-center rounded-[5px] border-none bg-transparent p-0 text-foreground shadow-none transition-opacity hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/14 data-[state=open]:bg-transparent'
+	'flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-foreground shadow-none transition-colors outline-none focus-visible:border-(--sf-color-border) focus-visible:ring-0'
 const TASK_CHECKBOX_BOX_CLASS =
-	'flex size-4 items-center justify-center rounded-[4px] border transition-colors'
-// 18px 色块 + 14px 图标，四边各 2px 整数留白
-const TASK_PRIORITY_SURFACE_CLASS =
-	'inline-flex size-[18px] shrink-0 items-center justify-center rounded-[5px] leading-none overflow-visible'
+	'flex size-4 items-center justify-center rounded-[5px] border transition-colors'
 
 type TaskPrioritySelectProps = {
 	value: number | null | undefined
@@ -77,8 +73,11 @@ export function TaskSelectionCheckbox({
 			aria-checked={checked}
 			aria-label={ariaLabel}
 			className={cn(
-				'group/task-selection flex size-5 shrink-0 items-center justify-center rounded-[5px] bg-transparent p-0 outline-none transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring/14 disabled:pointer-events-none disabled:opacity-40',
-				checked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+				'group/task-selection flex size-5 shrink-0 items-center justify-center rounded-full bg-transparent p-0 outline-none transition-colors disabled:pointer-events-none disabled:opacity-40',
+				checked
+					? 'opacity-100'
+					: 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+				'focus-visible:border-(--sf-color-border) focus-visible:ring-0',
 			)}
 			data-checked={checked}
 			disabled={disabled}
@@ -96,7 +95,7 @@ export function TaskSelectionCheckbox({
 					TASK_CHECKBOX_BOX_CLASS,
 					checked
 						? 'border-primary bg-primary text-primary-foreground'
-						: 'border-(--sf-color-border-strong) bg-transparent text-transparent group-hover/task-selection:border-(--sf-color-text-secondary)',
+						: 'border-(--sf-color-border-strong) bg-transparent text-transparent group-hover/task-selection:border-(--sf-color-border)',
 				)}
 			>
 				<CheckIcon className='size-3' />
@@ -116,7 +115,6 @@ export function TaskPrioritySelect({
 	onValueChange,
 }: TaskPrioritySelectProps) {
 	const option = getTaskPriorityOption(value)
-	const emptyOption = getTaskPriorityOption(0)
 
 	return (
 		<div
@@ -136,11 +134,7 @@ export function TaskPrioritySelect({
 						)}
 						onKeyDownCapture={stopTaskRowEvent}
 					>
-						<TaskPriorityIcon
-							icon={option.icon}
-							iconClassName={option.iconClassName}
-							surfaceClassName={option.surfaceClassName}
-						/>
+						<PriorityIcon priority={option.value} size='md' />
 						<span className='sr-only'>{option.label}</span>
 					</button>
 				</DropdownMenuTrigger>
@@ -153,12 +147,8 @@ export function TaskPrioritySelect({
 								onValueChange(0)
 							}}
 						>
-							<TaskPriorityIcon
-								icon={emptyOption.icon}
-								iconClassName={emptyOption.iconClassName}
-								surfaceClassName={emptyOption.surfaceClassName}
-							/>
-							<span className='min-w-0 flex-1 truncate'>{emptyOption.label}</span>
+							<PriorityIcon priority={0} size='md' />
+							<span className='min-w-0 flex-1 truncate'>无优先级</span>
 							{option.value === 0 ? (
 								<CheckIcon
 									aria-hidden
@@ -175,11 +165,7 @@ export function TaskPrioritySelect({
 										onValueChange(priorityOption.value)
 									}}
 								>
-									<TaskPriorityIcon
-										icon={priorityOption.icon}
-										iconClassName={priorityOption.iconClassName}
-										surfaceClassName={priorityOption.surfaceClassName}
-									/>
+									<PriorityIcon priority={priorityOption.value} size='md' />
 									<span className='min-w-0 flex-1 truncate'>{priorityOption.label}</span>
 									{option.value === priorityOption.value ? (
 										<CheckIcon
@@ -268,41 +254,27 @@ export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 			)
 		case 'doing':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-sky-500/45 text-sky-500'>
-					<PlayIcon className='size-2.5 fill-current' />
+				<span className='flex size-4 shrink-0 items-center justify-center text-(--sf-color-info-soft-text)'>
+					<PlayIcon className='size-3 fill-current' />
 				</span>
 			)
 		case 'waiting':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-amber-500/45 text-amber-500'>
-					<PauseIcon className='size-2.5 fill-current' />
+				<span className='flex size-4 shrink-0 items-center justify-center text-(--sf-color-warning-soft-text)'>
+					<PauseIcon className='size-3 fill-current' />
 				</span>
 			)
 		case 'canceled':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-(--sf-color-border-strong) text-(--sf-color-text-secondary)'>
-					<XIcon className='size-2.5' />
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-(--sf-color-border-strong) text-white'>
+					<XIcon className='size-3' />
 				</span>
 			)
 		default:
-			return <span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-(--sf-color-border-strong)' />
+			return (
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-(--sf-color-border-strong)' />
+			)
 	}
-}
-
-function TaskPriorityIcon({
-	icon: Icon,
-	iconClassName,
-	surfaceClassName,
-}: {
-	icon: LucideIcon
-	iconClassName: string
-	surfaceClassName: string
-}) {
-	return (
-		<span className={cn(TASK_PRIORITY_SURFACE_CLASS, surfaceClassName)}>
-			<Icon className={cn('block size-3.5 shrink-0', iconClassName)} aria-hidden />
-		</span>
-	)
 }
 
 function stopTaskRowEvent(event: { stopPropagation: () => void }) {

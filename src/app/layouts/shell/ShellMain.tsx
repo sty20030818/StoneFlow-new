@@ -124,8 +124,8 @@ export function ShellMain({
 
 	return (
 		<main className='relative flex min-w-0 flex-1 overflow-hidden bg-transparent'>
-			{/* mobile：仅去掉主卡左右 gutter（pr-3）与圆角；卡片边框/阴影/底色保持不动 */}
-			<div className='flex min-w-0 flex-1 overflow-hidden px-0 pr-3 group-data-[sidebar-layout=mobile]/sidebar-wrapper:px-0'>
+			{/* mobile：仅去掉主卡左右 gutter（pr-2）与圆角；卡片边框/阴影/底色保持不动 */}
+			<div className='flex min-w-0 flex-1 overflow-hidden px-0 pr-2 group-data-[sidebar-layout=mobile]/sidebar-wrapper:px-0'>
 				<ContextMenu>
 					<ContextMenuTrigger asChild onContextMenu={handleGlobalContextMenu}>
 						<div
@@ -145,13 +145,13 @@ export function ShellMain({
 								<div className='flex min-h-full min-w-0 flex-1 flex-col'>{children}</div>
 							</div>
 
-								<ShellDrawer
-									activeDrawerId={activeDrawerId}
-									activeDrawerKind={activeDrawerKind}
-									currentSpaceLabel={currentSpaceLabel}
-									onClose={onCloseDrawer}
-									open={isDrawerOpen}
-								/>
+							<ShellDrawer
+								activeDrawerId={activeDrawerId}
+								activeDrawerKind={activeDrawerKind}
+								currentSpaceLabel={currentSpaceLabel}
+								onClose={onCloseDrawer}
+								open={isDrawerOpen}
+							/>
 						</div>
 					</ContextMenuTrigger>
 					<ContextMenuContent className='w-40'>

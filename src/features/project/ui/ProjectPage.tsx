@@ -13,6 +13,8 @@ import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
+import { CommandIcon } from 'lucide-react'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
@@ -93,7 +95,7 @@ export function ProjectPage() {
 				: visibleTasks.filter((task) => task.status === taskFilter),
 		[taskFilter, visibleTasks],
 	)
-	const { selectedTaskIdSet, toggleTaskSelection } = useTaskSelection(
+	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } = useTaskSelection(
 		filteredTasks.map((task) => task.id),
 	)
 
@@ -248,20 +250,36 @@ export function ProjectPage() {
 						</Empty>
 					</EmptyPage>
 				) : (
-					<ProjectTaskBoard
-						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-						onArchiveTask={handleArchiveTask}
-						onDeleteTask={handleDeleteTask}
-						onOpenTask={(taskId) => openDrawer('task', taskId)}
-						onToggleTaskSelection={toggleTaskSelection}
-						onToggleTaskStatus={handleToggleTaskStatus}
-						onUpdateTaskPriority={handleUpdateTaskPriority}
-						onUpdateTaskStatus={handleUpdateTaskStatus}
-						pendingTaskId={pendingTaskId}
-						projectId={project.id}
-						selectedTaskIdSet={selectedTaskIdSet}
-						tasks={filteredTasks}
-					/>
+					<>
+						<ProjectTaskBoard
+							activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
+							onArchiveTask={handleArchiveTask}
+							onDeleteTask={handleDeleteTask}
+							onOpenTask={(taskId) => openDrawer('task', taskId)}
+							onToggleTaskSelection={toggleTaskSelection}
+							onToggleTaskStatus={handleToggleTaskStatus}
+							onUpdateTaskPriority={handleUpdateTaskPriority}
+							onUpdateTaskStatus={handleUpdateTaskStatus}
+							pendingTaskId={pendingTaskId}
+							projectId={project.id}
+							selectedTaskIdSet={selectedTaskIdSet}
+							tasks={filteredTasks}
+						/>
+						<TaskBulkActionBar
+							action={
+								<Button
+									className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
+									size='sm'
+									variant='outline'
+								>
+									<CommandIcon className='size-3.5' />
+									批量操作
+								</Button>
+							}
+							onClear={clearTaskSelection}
+							selectedCount={selectedCount}
+						/>
+					</>
 				)}
 			</div>
 		</MainCardLayout>

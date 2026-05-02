@@ -49,11 +49,11 @@ type MainCardIconAction = {
 const MAIN_CARD_GHOST_ACTION_CLASS =
 	'border-transparent bg-[#ffffff] text-[#5d5d5f] shadow-none hover:bg-[#f3f3f4] hover:text-[#5d5d5f] hover:font-semibold'
 const MAIN_CARD_TOOLBAR_PILL_CLASS =
-	'h-7.5 rounded-full px-3 shadow-none'
+	'h-7.5 rounded-full px-3 shadow-none focus-visible:border-(--sf-color-border) focus-visible:bg-(--sf-color-bg-surface-active) focus-visible:text-foreground'
 const MAIN_CARD_TOOLBAR_PILL_ACTIVE_CLASS =
 	'border-(--sf-color-border-subtle) bg-(--sf-color-bg-surface-hover) text-foreground'
 const MAIN_CARD_TOOLBAR_PILL_INACTIVE_CLASS =
-	'border-(--sf-color-border-subtle)'
+	'border-(--sf-color-border-subtle) text-(--sf-color-text-secondary)'
 
 export function MainCardLayout({ header, toolbar, children, className }: MainCardLayoutProps) {
 	return (
@@ -111,7 +111,9 @@ export function MainCardToolbar({
 							aria-pressed={pill.role === 'tab' ? undefined : pill.active ? true : undefined}
 							aria-selected={pill.role === 'tab' ? !!pill.active : undefined}
 							className={cn(
-								pill.active ? MAIN_CARD_TOOLBAR_PILL_ACTIVE_CLASS : MAIN_CARD_TOOLBAR_PILL_INACTIVE_CLASS,
+								pill.active
+									? MAIN_CARD_TOOLBAR_PILL_ACTIVE_CLASS
+									: MAIN_CARD_TOOLBAR_PILL_INACTIVE_CLASS,
 								MAIN_CARD_TOOLBAR_PILL_CLASS,
 							)}
 							key={pill.label}
