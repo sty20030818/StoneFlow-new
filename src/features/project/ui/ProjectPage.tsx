@@ -1,15 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
+import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
-import {
-	MainCardHeader,
-	MainCardLayout,
-	MainCardToolbar,
-} from '@/app/layouts/main-card/MainCardLayout'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { selectProjectDetail, useProjectStore } from '@/features/project/model/useProjectStore'
-import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
@@ -118,86 +113,39 @@ export function ProjectPage() {
 	const project = detail.item
 
 	return (
-		<MainCardLayout
-			header={
-				<MainCardHeader
-					breadcrumb={<ProjectBreadcrumb projectName={project?.name ?? '项目'} />}
-					action={
-						project ? (
-							<div className='flex items-center gap-2'>
-								<Button
-									disabled={busyAction !== null}
-									onClick={() => {
-										void runAction(project.completedAt ? 'reopen' : 'complete', async () => {
-											if (project.completedAt) {
-												await reopenProject(project.id)
-												return
-											}
-											await completeProject(project.id)
-										})
-									}}
-									size='sm'
-									variant='outline'
-								>
-									{project.completedAt ? '重开' : '完成'}
-								</Button>
-								<Button
-									disabled={busyAction !== null}
-									onClick={() => {
-										void runAction('archive', async () => {
-											await archiveProject(project.id)
-											navigate(buildScopedSectionPath(scope, 'projects', spaceId))
-										})
-									}}
-									size='sm'
-									variant='outline'
-								>
-									归档
-								</Button>
-								<Button
-									disabled={busyAction !== null}
-									onClick={() => {
-										void runAction('delete', async () => {
-											await deleteProject(project.id)
-											navigate(buildScopedSectionPath(scope, 'projects', spaceId))
-										})
-									}}
-									size='sm'
-									variant='outline'
-								>
-									删除
-								</Button>
-							</div>
-						) : null
-					}
-				/>
-			}
-			toolbar={
-				<MainCardToolbar
-					onRefresh={() => {
-						if (!projectId) {
-							return
-						}
-						void loadDetail(projectId)
-						void loadTaskList({
-							scope,
-							viewKey: 'all',
-							placement: {
-								kind: 'project',
-								projectId,
-							},
-						})
-					}}
-					pills={PROJECT_TASK_FILTERS.map((filter) => ({
-						label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
-						active: taskFilter === filter,
-						onClick: () => setTaskFilter(filter),
-					}))}
-				/>
-			}
-		>
-			<div className='flex min-h-0 flex-1 flex-col gap-3'>
-				{!project ? (
+		<EntityScene
+			board={{
+				boardKind: 'task',
+				boardConfig: {
+					variant: 'project-detail',
+					emptyActionLabel: '返回项目总览',
+					emptyDescription: '它可能已被归档、删除，或当前 Scope 已切走。',
+					emptyTitle: '当前项目不可见',
+					hideEmptySections: true,
+					rowVariant: 'project',
+					sectionVariant: 'project',
+					statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
+				},
+				boardData: {
+					items: project ? filteredTasks : [],
+					activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
+					pendingItemId: pendingTaskId,
+					selectedTaskIdSet,
+				},
+				boardActions: {
+					onArchiveTask: archiveListTask,
+					onDeleteTask: deleteListTask,
+					onEmptyAction: () => navigate(buildScopedSectionPath(scope, 'projects', spaceId)),
+					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onToggleTaskSelection: toggleTaskSelection,
+					onToggleTaskStatus: toggleTaskStatus,
+					onUpdateTaskPriority: updateTaskPriority,
+					onUpdateTaskStatus: updateTaskStatus,
+				},
+			}}
+			breadcrumb={<ProjectBreadcrumb projectName={project?.name ?? '项目'} />}
+			beforeBoard={
+				!project ? (
 					<EmptyPage>
 						<Empty>
 							<EmptyHeader>
@@ -217,40 +165,95 @@ export function ProjectPage() {
 							</EmptyContent>
 						</Empty>
 					</EmptyPage>
-				) : (
-					<>
-						<ProjectTaskBoard
-							activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-							onArchiveTask={archiveListTask}
-							onDeleteTask={deleteListTask}
-							onOpenTask={(taskId) => openDrawer('task', taskId)}
-							onToggleTaskSelection={toggleTaskSelection}
-							onToggleTaskStatus={toggleTaskStatus}
-							onUpdateTaskPriority={updateTaskPriority}
-							onUpdateTaskStatus={updateTaskStatus}
-							pendingTaskId={pendingTaskId}
-							projectId={project.id}
-							selectedTaskIdSet={selectedTaskIdSet}
-							tasks={filteredTasks}
-						/>
-						<TaskBulkActionBar
-							action={
-								<Button
-									className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
-									size='sm'
-									variant='outline'
-								>
-									<CommandIcon className='size-3.5' />
-									批量操作
-								</Button>
-							}
-							onClear={clearTaskSelection}
-							selectedCount={selectedCount}
-						/>
-					</>
-				)}
-			</div>
-		</MainCardLayout>
+				) : null
+			}
+			bulkActions={
+				project ? (
+					<TaskBulkActionBar
+						action={
+							<Button
+								className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
+								size='sm'
+								variant='outline'
+							>
+								<CommandIcon className='size-3.5' />
+								批量操作
+							</Button>
+						}
+						onClear={clearTaskSelection}
+						selectedCount={selectedCount}
+					/>
+				) : null
+			}
+			headerActions={
+				project ? (
+					<div className='flex items-center gap-2'>
+						<Button
+							disabled={busyAction !== null}
+							onClick={() => {
+								void runAction(project.completedAt ? 'reopen' : 'complete', async () => {
+									if (project.completedAt) {
+										await reopenProject(project.id)
+										return
+									}
+									await completeProject(project.id)
+								})
+							}}
+							size='sm'
+							variant='outline'
+						>
+							{project.completedAt ? '重开' : '完成'}
+						</Button>
+						<Button
+							disabled={busyAction !== null}
+							onClick={() => {
+								void runAction('archive', async () => {
+									await archiveProject(project.id)
+									navigate(buildScopedSectionPath(scope, 'projects', spaceId))
+								})
+							}}
+							size='sm'
+							variant='outline'
+						>
+							归档
+						</Button>
+						<Button
+							disabled={busyAction !== null}
+							onClick={() => {
+								void runAction('delete', async () => {
+									await deleteProject(project.id)
+									navigate(buildScopedSectionPath(scope, 'projects', spaceId))
+								})
+							}}
+							size='sm'
+							variant='outline'
+						>
+							删除
+						</Button>
+					</div>
+				) : null
+			}
+			onRefresh={() => {
+				if (!projectId) {
+					return
+				}
+				void loadDetail(projectId)
+				void loadTaskList({
+					scope,
+					viewKey: 'all',
+					placement: {
+						kind: 'project',
+						projectId,
+					},
+				})
+			}}
+			sceneVariant='project-detail'
+			toolbarPills={PROJECT_TASK_FILTERS.map((filter) => ({
+				label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
+				active: taskFilter === filter,
+				onClick: () => setTaskFilter(filter),
+			}))}
+		/>
 	)
 }
 

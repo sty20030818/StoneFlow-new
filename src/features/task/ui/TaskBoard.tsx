@@ -4,6 +4,16 @@ import {
 	selectProjectTaskBoardOpenSections,
 	useShellPreferenceStore,
 } from '@/app/layouts/shell/model/useShellPreferenceStore'
+import {
+	CANONICAL_BOARD_COLLAPSIBLE_CLASS,
+	CANONICAL_BOARD_META_TEXT_CLASS,
+	CANONICAL_BOARD_ROW_ACTIVE_CLASS,
+	CANONICAL_BOARD_ROW_BASE_CLASS,
+	CANONICAL_BOARD_ROW_IDLE_CLASS,
+	CANONICAL_BOARD_SECTION_HEADER_CLASS,
+	CANONICAL_BOARD_STACK_CLASS,
+	CanonicalBoard,
+} from '@/app/layouts/entity-scene/CanonicalBoard'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
@@ -30,17 +40,9 @@ import {
 	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
-import { ListTodoIcon, PlusIcon, TriangleIcon } from 'lucide-react'
+import { ListTodoIcon, PlusIcon } from 'lucide-react'
 
-const TASK_ROW_BASE_CLASS =
-	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-3 text-left transition-colors'
-const TASK_ROW_IDLE_CLASS = 'hover:bg-(--sf-color-project-task-row-hover)'
-const TASK_ROW_ACTIVE_CLASS =
-	'border-(--sf-color-border-subtle) bg-(--sf-color-project-task-row-selected)'
 const TASK_ROW_DONE_CLASS = 'text-muted-foreground'
-const TASK_SECTION_META_CLASS = 'text-xs font-medium text-(--sf-color-text-tertiary)'
-const PROJECT_TASK_SECTION_HEADER_CLASS =
-	'flex items-center gap-2 rounded-md bg-(--sf-color-project-task-section-header) py-1 pl-3 pr-1'
 
 type TaskBoardSectionVariant = 'compact' | 'project'
 type TaskBoardRowVariant = 'stacked' | 'project'
@@ -149,7 +151,7 @@ export function TaskBoard({
 		return (
 			<div
 				className={cn(
-					'flex min-h-0 flex-1 flex-col',
+					CANONICAL_BOARD_STACK_CLASS,
 					sectionVariant === 'project' ? 'gap-2' : 'gap-3',
 				)}
 			>
@@ -170,7 +172,6 @@ export function TaskBoard({
 						renderRowActions={renderRowActions}
 						rowVariant={rowVariant}
 						selectedTaskIdSet={selectedTaskIdSet}
-						sectionVariant={sectionVariant}
 						showProjectName={showProjectName}
 						tasks={section.tasks}
 					/>
@@ -185,10 +186,7 @@ export function TaskBoard({
 
 	return (
 		<div
-			className={cn(
-				'flex min-h-0 flex-1 flex-col',
-				sectionVariant === 'project' ? 'gap-1' : 'gap-3',
-			)}
+			className={cn(CANONICAL_BOARD_STACK_CLASS, sectionVariant === 'project' ? 'gap-1' : 'gap-3')}
 		>
 			{visibleStatuses.map((status) => (
 				<TaskStatusSection
@@ -234,7 +232,6 @@ function TaskCustomSection({
 	onDeleteTask,
 	onArchiveTask,
 	onOpenTask,
-	sectionVariant,
 	rowVariant,
 	renderRowActions,
 }: {
@@ -252,46 +249,37 @@ function TaskCustomSection({
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onArchiveTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
-	sectionVariant: TaskBoardSectionVariant
 	rowVariant: TaskBoardRowVariant
 	renderRowActions?: (task: TaskListItem) => ReactNode
 }) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
 	return (
-		<div className='flex flex-col gap-1'>
-			<div
-				className={cn(
-					'flex items-center justify-between gap-3 px-1',
-					sectionVariant === 'project'
-						? 'rounded-md bg-(--sf-color-project-task-section-header) py-1 pl-3 pr-1'
-						: undefined,
-				)}
-			>
-				<div className='flex min-w-0 items-center gap-2'>
-					<span className='truncate text-sm font-semibold text-foreground'>{label}</span>
-					<Badge className='h-5 rounded-full px-2 text-[11px]' variant='secondary'>
-						{tasks.length}
-					</Badge>
-				</div>
-				<Button
-					aria-label={`在 ${label} 中创建任务`}
-					className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
-					onClick={(event) => {
-						event.preventDefault()
-						event.stopPropagation()
-						openTaskCreateDialog({
-							projectId: createProjectId,
-						})
-					}}
-					size='icon-xs'
-					type='button'
-					variant='ghost'
-				>
-					<PlusIcon />
-				</Button>
-			</div>
-			<div className='flex flex-col gap-1'>
+		<CanonicalBoard.Section>
+			<CanonicalBoard.SectionHeader
+				className={CANONICAL_BOARD_SECTION_HEADER_CLASS}
+				count={tasks.length}
+				title={label}
+				trailing={
+					<Button
+						aria-label={`在 ${label} 中创建任务`}
+						className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
+						onClick={(event) => {
+							event.preventDefault()
+							event.stopPropagation()
+							openTaskCreateDialog({
+								projectId: createProjectId,
+							})
+						}}
+						size='icon-xs'
+						type='button'
+						variant='ghost'
+					>
+						<PlusIcon />
+					</Button>
+				}
+			/>
+			<CanonicalBoard.Rows>
 				{tasks.map((task) => (
 					<TaskBoardRow
 						activeTaskId={activeTaskId}
@@ -311,8 +299,8 @@ function TaskCustomSection({
 						task={task}
 					/>
 				))}
-			</div>
-		</div>
+			</CanonicalBoard.Rows>
+		</CanonicalBoard.Section>
 	)
 }
 
@@ -357,7 +345,6 @@ function TaskStatusSection({
 	onDeleteTask,
 	onArchiveTask,
 	onOpenTask,
-	sectionVariant,
 	rowVariant,
 	renderRowActions,
 }: TaskStatusSectionProps) {
@@ -365,95 +352,45 @@ function TaskStatusSection({
 
 	return (
 		<Collapsible
-			className={
-				sectionVariant === 'project'
-					? 'flex flex-col gap-1 [&[data-state=open]_[data-chevron]]:rotate-90'
-					: undefined
-			}
+			className={CANONICAL_BOARD_COLLAPSIBLE_CLASS}
 			onOpenChange={onOpenChange}
 			open={open}
 		>
-			{sectionVariant === 'project' ? (
-				<div className={PROJECT_TASK_SECTION_HEADER_CLASS}>
-					<CollapsibleTrigger
-						aria-label={`切换 ${label} 分区折叠状态`}
-						className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-(--sf-color-icon-subtle) outline-none transition-none hover:bg-transparent hover:text-(--sf-color-icon-subtle) focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
-					>
-						<SectionChevron data-chevron />
-					</CollapsibleTrigger>
-					<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-foreground'>
-						<TaskStatusIndicator status={status} />
-						<span className='truncate'>{label}</span>
-						<Badge
-							className='ml-1 border-transparent bg-transparent shadow-none'
-							variant='secondary'
-						>
-							{tasks.length}
-						</Badge>
-					</div>
-					<Button
-						aria-label={`在 ${label} 中创建任务`}
-						className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
-						onClick={(event) => {
-							event.preventDefault()
-							event.stopPropagation()
-							openTaskCreateDialog({
-								projectId: createProjectId,
-								status,
-							})
-						}}
-						size='icon-xs'
-						type='button'
-						variant='ghost'
-					>
-						<PlusIcon />
-					</Button>
+			<div className={CANONICAL_BOARD_SECTION_HEADER_CLASS}>
+				<CollapsibleTrigger
+					aria-label={`切换 ${label} 分区折叠状态`}
+					className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-(--sf-color-icon-subtle) outline-none transition-none hover:bg-transparent hover:text-(--sf-color-icon-subtle) focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
+				>
+					<CanonicalBoard.Chevron data-chevron />
+				</CollapsibleTrigger>
+				<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-foreground'>
+					<TaskStatusIndicator status={status} />
+					<span className='truncate'>{label}</span>
+					<Badge className='ml-1 border-transparent bg-transparent shadow-none' variant='secondary'>
+						{tasks.length}
+					</Badge>
 				</div>
-			) : (
-				<div className='flex items-center justify-between gap-3 px-1'>
-					<CollapsibleTrigger asChild>
-						<button className='flex min-w-0 items-center gap-2 text-left' type='button'>
-							<SectionChevron className={open ? 'rotate-90' : ''} />
-							<TaskStatusIndicator status={status} />
-							<span className='text-sm font-medium text-foreground'>{label}</span>
-							<Badge
-								className='h-5 rounded-full bg-transparent px-2 text-[11px]'
-								variant='secondary'
-							>
-								{tasks.length}
-							</Badge>
-						</button>
-					</CollapsibleTrigger>
-
-					<div className='flex items-center gap-2'>
-						<span className={TASK_SECTION_META_CLASS}>
-							{tasks.length === 0 ? '暂无任务' : `${tasks.length} 条`}
-						</span>
-						<Button
-							aria-label={`在 ${label} 中创建任务`}
-							className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
-							onClick={(event) => {
-								event.preventDefault()
-								event.stopPropagation()
-								openTaskCreateDialog({
-									projectId: createProjectId,
-									status,
-								})
-							}}
-							size='icon-xs'
-							type='button'
-							variant='ghost'
-						>
-							<PlusIcon />
-						</Button>
-					</div>
-				</div>
-			)}
+				<Button
+					aria-label={`在 ${label} 中创建任务`}
+					className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
+					onClick={(event) => {
+						event.preventDefault()
+						event.stopPropagation()
+						openTaskCreateDialog({
+							projectId: createProjectId,
+							status,
+						})
+					}}
+					size='icon-xs'
+					type='button'
+					variant='ghost'
+				>
+					<PlusIcon />
+				</Button>
+			</div>
 
 			<CollapsibleContent className='overflow-hidden px-0'>
-				<div
-					className={cn('flex flex-col gap-1', sectionVariant === 'project' ? undefined : 'mt-2')}
-				>
+				<CanonicalBoard.Rows>
 					{tasks.map((task) => (
 						<TaskBoardRow
 							activeTaskId={activeTaskId}
@@ -473,7 +410,7 @@ function TaskStatusSection({
 							task={task}
 						/>
 					))}
-				</div>
+				</CanonicalBoard.Rows>
 			</CollapsibleContent>
 		</Collapsible>
 	)
@@ -527,12 +464,12 @@ function TaskBoardRow({
 			<div
 				aria-label={`打开任务 ${task.title}`}
 				className={cn(
-					TASK_ROW_BASE_CLASS,
+					CANONICAL_BOARD_ROW_BASE_CLASS,
 					isActive
-						? TASK_ROW_ACTIVE_CLASS
+						? CANONICAL_BOARD_ROW_ACTIVE_CLASS
 						: isSelected
 							? TASK_ROW_BULK_SELECTED_CLASS
-							: TASK_ROW_IDLE_CLASS,
+							: CANONICAL_BOARD_ROW_IDLE_CLASS,
 					isDoneLike ? TASK_ROW_DONE_CLASS : null,
 					isPending ? 'opacity-75' : null,
 				)}
@@ -624,8 +561,10 @@ function TaskBoardRow({
 function TaskMetaRail({ dueAt, createdAt }: { dueAt: string | null; createdAt: string }) {
 	return (
 		<div className='ml-auto hidden shrink-0 items-center justify-end gap-2 text-right md:flex'>
-			{dueAt ? <span className={TASK_SECTION_META_CLASS}>{formatTaskDate(dueAt)}</span> : null}
-			<span className={TASK_SECTION_META_CLASS}>{formatTaskDate(createdAt)}</span>
+			{dueAt ? (
+				<span className={CANONICAL_BOARD_META_TEXT_CLASS}>{formatTaskDate(dueAt)}</span>
+			) : null}
+			<span className={CANONICAL_BOARD_META_TEXT_CLASS}>{formatTaskDate(createdAt)}</span>
 		</div>
 	)
 }
@@ -639,18 +578,4 @@ function formatTaskDate(value: string) {
 		month: 'numeric',
 		day: 'numeric',
 	}).format(date)
-}
-
-function SectionChevron({ className, ...props }: React.ComponentProps<'span'>) {
-	return (
-		<span
-			{...props}
-			className={cn('inline-flex size-3 shrink-0 items-center justify-center', className)}
-		>
-			<TriangleIcon
-				className='size-1.5 rotate-90 text-(--sf-color-icon-subtle)'
-				fill='currentColor'
-			/>
-		</span>
-	)
 }

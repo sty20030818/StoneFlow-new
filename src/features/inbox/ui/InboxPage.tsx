@@ -1,11 +1,7 @@
 import { useEffect } from 'react'
 
-import {
-	MainCardGhostAction,
-	MainCardHeader,
-	MainCardLayout,
-	MainCardToolbar,
-} from '@/app/layouts/main-card/MainCardLayout'
+import { EntityScene } from '@/app/layouts/entity-scene'
+import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -23,7 +19,6 @@ import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
-import { TaskBoard } from '@/features/task/ui/TaskBoard'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Select,
@@ -70,52 +65,16 @@ export function InboxPage() {
 	}, [loadList, scope])
 
 	return (
-		<MainCardLayout
-			header={
-				<MainCardHeader
-					action={
-						<MainCardGhostAction aria-label='创建任务' onClick={() => openTaskCreateDialog()}>
-							<PlusIcon />
-						</MainCardGhostAction>
-					}
-					breadcrumb={<InboxBreadcrumb />}
-				/>
-			}
-			toolbar={
-				<MainCardToolbar
-					onRefresh={() => {
-						void loadList({
-							scope,
-							viewKey: 'active',
-							placement: { kind: 'inbox' },
-						})
-					}}
-					pills={[
-						{
-							label: `待整理 ${taskList.items.length}`,
-							active: true,
-						},
-					]}
-				/>
-			}
-		>
-			<div className='flex min-h-0 flex-1 flex-col gap-3'>
-				<TaskBoard
-					activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-					emptyActionLabel='创建任务'
-					emptyDescription='新捕获的任务会先进入 Inbox，补齐项目后再离开。'
-					emptyTitle='当前 Inbox 已清空'
-					hideEmptySections
-					onArchiveTask={archiveListTask}
-					onDeleteTask={deleteListTask}
-					onEmptyAction={() => openTaskCreateDialog()}
-					onOpenTask={(taskId) => openDrawer('task', taskId)}
-					onToggleTaskSelection={toggleTaskSelection}
-					onToggleTaskStatus={toggleTaskStatus}
-					onUpdateTaskPriority={updateTaskPriority}
-					onUpdateTaskStatus={updateTaskStatus}
-					pendingTaskId={pendingTaskId}
-					renderRowActions={(task) => (
+		<EntityScene
+			board={{
+				boardKind: 'task',
+				boardConfig: {
+					variant: 'inbox',
+					emptyActionLabel: '创建任务',
+					emptyDescription: '新捕获的任务会先进入 Inbox，补齐项目后再离开。',
+					emptyTitle: '当前 Inbox 已清空',
+					hideEmptySections: true,
+					renderRowActions: (task) => (
 						<InboxPlacementActions
 							isBusy={pendingTaskId === task.id}
 							onLeaveAsNoProject={() => void leaveListTaskAsNoProject(task)}
@@ -123,15 +82,49 @@ export function InboxPage() {
 							projects={projectOptions.filter((project) => project.spaceId === task.spaceId)}
 							projectsLoading={projectSidebar.status === 'loading'}
 						/>
-					)}
-					rowVariant='stacked'
-					selectedTaskIdSet={selectedTaskIdSet}
-					sectionVariant='compact'
-					statusOrder={[...INBOX_STATUS_ORDER]}
-					tasks={taskList.items}
-				/>
-			</div>
-		</MainCardLayout>
+					),
+					rowVariant: 'stacked',
+					sectionVariant: 'compact',
+					statusOrder: [...INBOX_STATUS_ORDER],
+				},
+				boardData: {
+					items: taskList.items,
+					activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
+					pendingItemId: pendingTaskId,
+					selectedTaskIdSet,
+				},
+				boardActions: {
+					onArchiveTask: archiveListTask,
+					onDeleteTask: deleteListTask,
+					onEmptyAction: () => openTaskCreateDialog(),
+					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onToggleTaskSelection: toggleTaskSelection,
+					onToggleTaskStatus: toggleTaskStatus,
+					onUpdateTaskPriority: updateTaskPriority,
+					onUpdateTaskStatus: updateTaskStatus,
+				},
+			}}
+			breadcrumb={<InboxBreadcrumb />}
+			headerActions={
+				<MainCard.GhostAction aria-label='创建任务' onClick={() => openTaskCreateDialog()}>
+					<PlusIcon />
+				</MainCard.GhostAction>
+			}
+			onRefresh={() => {
+				void loadList({
+					scope,
+					viewKey: 'active',
+					placement: { kind: 'inbox' },
+				})
+			}}
+			sceneVariant='inbox'
+			toolbarPills={[
+				{
+					label: `待整理 ${taskList.items.length}`,
+					active: true,
+				},
+			]}
+		/>
 	)
 }
 

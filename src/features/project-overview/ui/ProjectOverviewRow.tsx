@@ -1,8 +1,7 @@
+import { CanonicalBoard } from '@/app/layouts/entity-scene/CanonicalBoard'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
-import { cn } from '@/shared/lib/utils'
-import { LINEAR_CARD_BASE_CLASS, LINEAR_CARD_IDLE_CLASS } from '@/shared/ui/linearSurface'
 import { FolderIcon } from 'lucide-react'
 
 type ProjectOverviewRowProps = {
@@ -25,52 +24,55 @@ export function ProjectOverviewRow({
 	onDelete,
 }: ProjectOverviewRowProps) {
 	return (
-		<div className={cn(LINEAR_CARD_BASE_CLASS, LINEAR_CARD_IDLE_CLASS)}>
-			<div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
-				<div className='min-w-0 space-y-2'>
-					<div className='flex items-center gap-2'>
-						<span className='flex h-8 w-8 items-center justify-center rounded-2xl bg-(--sf-color-bg-surface-muted) text-(--sf-color-shell-secondary)'>
-							<FolderIcon className='size-4' />
-						</span>
+		<CanonicalBoard.Row className='items-start px-4 py-4' isPending={busy}>
+			<div className='flex min-w-0 flex-1 items-start gap-3'>
+				<CanonicalBoard.RowLead className='pt-0.5'>
+					<span className='inline-flex size-8 items-center justify-center rounded-xl bg-(--sf-color-bg-surface-muted) text-(--sf-color-shell-secondary)'>
+						<FolderIcon className='size-4' />
+					</span>
+				</CanonicalBoard.RowLead>
+
+				<CanonicalBoard.RowMain>
+					<div className='min-w-0 space-y-2'>
 						<div className='min-w-0'>
-							<p className='truncate text-[15px] font-semibold text-foreground'>{project.name}</p>
+							<p className='truncate text-sm font-semibold text-foreground'>{project.name}</p>
 							<p className='text-[12px] text-(--sf-color-shell-secondary)'>{project.spaceName}</p>
 						</div>
+						{project.description ? (
+							<p className='text-[13px] leading-6 text-(--sf-color-shell-secondary)'>
+								{project.description}
+							</p>
+						) : null}
+						<div className='flex flex-wrap items-center gap-2 text-[12px] text-(--sf-color-shell-secondary)'>
+							<Badge variant='secondary'>{project.activeTaskCount} 个活跃</Badge>
+							<Badge variant='outline'>{project.taskCount} 个任务</Badge>
+							{project.dueAt ? <Badge variant='outline'>截止 {project.dueAt}</Badge> : null}
+							{project.completedAt ? <Badge variant='success'>已完成</Badge> : null}
+						</div>
 					</div>
-					{project.description ? (
-						<p className='text-[13px] leading-6 text-(--sf-color-shell-secondary)'>
-							{project.description}
-						</p>
-					) : null}
-					<div className='flex flex-wrap items-center gap-2 text-[12px] text-(--sf-color-shell-secondary)'>
-						<Badge variant='secondary'>{project.activeTaskCount} 个活跃</Badge>
-						<Badge variant='outline'>{project.taskCount} 个任务</Badge>
-						{project.dueAt ? <Badge variant='outline'>截止 {project.dueAt}</Badge> : null}
-						{project.completedAt ? <Badge variant='success'>已完成</Badge> : null}
-					</div>
-				</div>
-
-				<div className='flex flex-wrap items-center gap-2'>
-					<Button disabled={busy} onClick={onOpen} size='sm' variant='outline'>
-						打开
-					</Button>
-					{project.completedAt ? (
-						<Button disabled={busy} onClick={onReopen} size='sm' variant='outline'>
-							重开
-						</Button>
-					) : (
-						<Button disabled={busy} onClick={onComplete} size='sm' variant='outline'>
-							完成
-						</Button>
-					)}
-					<Button disabled={busy} onClick={onArchive} size='sm' variant='outline'>
-						归档
-					</Button>
-					<Button disabled={busy} onClick={onDelete} size='sm' variant='outline'>
-						删除
-					</Button>
-				</div>
+				</CanonicalBoard.RowMain>
 			</div>
-		</div>
+
+			<CanonicalBoard.RowActions className='flex-wrap'>
+				<Button disabled={busy} onClick={onOpen} size='sm' variant='outline'>
+					打开
+				</Button>
+				{project.completedAt ? (
+					<Button disabled={busy} onClick={onReopen} size='sm' variant='outline'>
+						重开
+					</Button>
+				) : (
+					<Button disabled={busy} onClick={onComplete} size='sm' variant='outline'>
+						完成
+					</Button>
+				)}
+				<Button disabled={busy} onClick={onArchive} size='sm' variant='outline'>
+					归档
+				</Button>
+				<Button disabled={busy} onClick={onDelete} size='sm' variant='outline'>
+					删除
+				</Button>
+			</CanonicalBoard.RowActions>
+		</CanonicalBoard.Row>
 	)
 }

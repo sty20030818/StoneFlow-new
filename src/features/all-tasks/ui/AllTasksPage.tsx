@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import {
-	MainCardGhostAction,
-	MainCardHeader,
-	MainCardLayout,
-	MainCardToolbar,
-} from '@/app/layouts/main-card/MainCardLayout'
+import { EntityScene } from '@/app/layouts/entity-scene'
+import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
@@ -15,7 +11,6 @@ import { useTaskListController } from '@/features/task/model/useTaskListControll
 import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
-import { TaskBoard } from '@/features/task/ui/TaskBoard'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
@@ -81,65 +76,39 @@ export function AllTasksPage() {
 	}, [loadList, scope])
 
 	return (
-		<MainCardLayout
-			header={
-				<MainCardHeader
-					breadcrumb={<AllTasksBreadcrumb />}
-					action={
-						<MainCardGhostAction
-							aria-label='创建任务'
-							onClick={() => openTaskCreateDialog({ status: 'todo' })}
-						>
-							<PlusIcon />
-						</MainCardGhostAction>
-					}
-				/>
-			}
-			toolbar={
-				<MainCardToolbar
-					onRefresh={() => {
-						void loadList({
-							scope,
-							viewKey: 'all',
-							placement: { kind: 'all' },
-						})
-					}}
-					pills={TASK_FILTERS.map((filter) => ({
-						label:
-							filter === 'all'
-								? '所有任务'
-								: filter === 'noProject'
-									? '独立事项'
-									: formatTaskStatusLabel(filter),
-						active: taskFilter === filter,
-						onClick: () => setTaskFilter(filter),
-					}))}
-				/>
-			}
-		>
-			<div className='flex min-h-0 flex-1 flex-col gap-3'>
-				<TaskBoard
-					activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-					emptyActionLabel='创建任务'
-					emptyDescription='当前筛选下没有任务，尝试切换筛选或创建新任务。'
-					emptyTitle='暂无任务'
-					hideEmptySections
-					onArchiveTask={archiveListTask}
-					onDeleteTask={deleteListTask}
-					onEmptyAction={() => openTaskCreateDialog({ status: 'todo' })}
-					onOpenTask={(taskId) => openDrawer('task', taskId)}
-					onToggleTaskSelection={toggleTaskSelection}
-					onToggleTaskStatus={toggleTaskStatus}
-					onUpdateTaskPriority={updateTaskPriority}
-					onUpdateTaskStatus={updateTaskStatus}
-					pendingTaskId={pendingTaskId}
-					rowVariant='project'
-					selectedTaskIdSet={selectedTaskIdSet}
-					sectionVariant='project'
-					showProjectName
-					statusOrder={['doing', 'todo', 'waiting', 'done', 'canceled']}
-					tasks={filteredTasks}
-				/>
+		<EntityScene
+			board={{
+				boardKind: 'task',
+				boardConfig: {
+					variant: 'all-tasks',
+					emptyActionLabel: '创建任务',
+					emptyDescription: '当前筛选下没有任务，尝试切换筛选或创建新任务。',
+					emptyTitle: '暂无任务',
+					hideEmptySections: true,
+					rowVariant: 'project',
+					sectionVariant: 'project',
+					showProjectName: true,
+					statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
+				},
+				boardData: {
+					items: filteredTasks,
+					activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
+					pendingItemId: pendingTaskId,
+					selectedTaskIdSet,
+				},
+				boardActions: {
+					onArchiveTask: archiveListTask,
+					onDeleteTask: deleteListTask,
+					onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
+					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onToggleTaskSelection: toggleTaskSelection,
+					onToggleTaskStatus: toggleTaskStatus,
+					onUpdateTaskPriority: updateTaskPriority,
+					onUpdateTaskStatus: updateTaskStatus,
+				},
+			}}
+			breadcrumb={<AllTasksBreadcrumb />}
+			bulkActions={
 				<TaskBulkActionBar
 					action={
 						<Button
@@ -154,8 +123,34 @@ export function AllTasksPage() {
 					onClear={clearTaskSelection}
 					selectedCount={selectedCount}
 				/>
-			</div>
-		</MainCardLayout>
+			}
+			headerActions={
+				<MainCard.GhostAction
+					aria-label='创建任务'
+					onClick={() => openTaskCreateDialog({ status: 'todo' })}
+				>
+					<PlusIcon />
+				</MainCard.GhostAction>
+			}
+			onRefresh={() => {
+				void loadList({
+					scope,
+					viewKey: 'all',
+					placement: { kind: 'all' },
+				})
+			}}
+			sceneVariant='all-tasks'
+			toolbarPills={TASK_FILTERS.map((filter) => ({
+				label:
+					filter === 'all'
+						? '所有任务'
+						: filter === 'noProject'
+							? '独立事项'
+							: formatTaskStatusLabel(filter),
+				active: taskFilter === filter,
+				onClick: () => setTaskFilter(filter),
+			}))}
+		/>
 	)
 }
 

@@ -7,7 +7,7 @@ import {
 	getEntityActivities,
 } from '@/features/activity/api/getEntityActivities'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
-import { MainCardHeader, MainCardLayout } from '@/app/layouts/main-card/MainCardLayout'
+import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
@@ -114,8 +114,9 @@ export function ActivityDebugPage() {
 	}
 
 	return (
-		<MainCardLayout header={<MainCardHeader title='Activity Debug' />} toolbar={null}>
-			<div className='flex min-h-full flex-1 flex-col gap-4 p-4'>
+		<MainCard.Root>
+			<MainCard.Header title='Activity Debug' />
+			<MainCard.Body className='gap-4 p-4'>
 				<form
 					className='grid gap-3 rounded-xl border border-(--sf-color-border-subtle) bg-card p-4 md:grid-cols-[180px_minmax(0,1fr)_120px_auto]'
 					onSubmit={handleSubmit}
@@ -275,7 +276,7 @@ export function ActivityDebugPage() {
 						))}
 					</div>
 				) : null}
-			</div>
-		</MainCardLayout>
+			</MainCard.Body>
+		</MainCard.Root>
 	)
 }

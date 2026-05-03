@@ -17,29 +17,22 @@ let mockScope: Scope = { type: 'all' }
 let storeState = createStoreState()
 
 vi.mock('@/app/layouts/main-card/MainCardLayout', () => ({
-	MainCardLayout: ({
-		header,
-		toolbar,
-		children,
-	}: {
-		header: ReactNode
-		toolbar: ReactNode
-		children: ReactNode
-	}) => (
-		<div>
-			<div>{header}</div>
-			<div>{toolbar}</div>
-			<div>{children}</div>
-		</div>
-	),
-	MainCardHeader: ({ breadcrumb }: { breadcrumb: ReactNode }) => <div>{breadcrumb}</div>,
-	MainCardToolbar: ({ pills }: { pills: Array<{ label: string }> }) => (
-		<div>
-			{pills.map((pill) => (
-				<span key={pill.label}>{pill.label}</span>
-			))}
-		</div>
-	),
+	MainCard: {
+		Root: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+		Header: ({ breadcrumb }: { breadcrumb: ReactNode }) => <div>{breadcrumb}</div>,
+		Toolbar: ({ pills }: { pills: Array<{ label: string }> }) => (
+			<div>
+				{pills.map((pill) => (
+					<span key={pill.label}>{pill.label}</span>
+				))}
+			</div>
+		),
+		Body: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+		Footer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+		Empty: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+		NoticeGroup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+		GhostAction: ({ children }: { children: ReactNode }) => <button type='button'>{children}</button>,
+	},
 }))
 
 vi.mock('@/app/layouts/shell/model/useDrawerStore', () => ({
@@ -93,12 +86,12 @@ describe('LifecycleList', () => {
 			expect(loadArchiveSpy).toHaveBeenCalledWith({ type: 'all' })
 		})
 
-		expect(screen.getByText('Archived Spaces')).toBeInTheDocument()
-		expect(screen.getByText('Archived Projects')).toBeInTheDocument()
-		expect(screen.getByText('Archived Tasks')).toBeInTheDocument()
+		expect(screen.getByText('已归档的空间')).toBeInTheDocument()
+		expect(screen.getByText('已归档的项目')).toBeInTheDocument()
+		expect(screen.getByText('已归档的任务')).toBeInTheDocument()
 		expect(screen.getAllByRole('button', { name: '恢复' })).toHaveLength(3)
 		expect(screen.getAllByRole('button', { name: '删除' })).toHaveLength(3)
-		expect(screen.getAllByRole('button', { name: '打开详情' })).toHaveLength(3)
+		expect(screen.getAllByRole('button', { name: '打开' })).toHaveLength(3)
 		expect(screen.queryByRole('button', { name: '永久删除' })).not.toBeInTheDocument()
 	})
 
@@ -124,9 +117,7 @@ describe('LifecycleList', () => {
 		})
 
 		expect(screen.getByText('回收站为空')).toBeInTheDocument()
-		expect(
-			screen.getByText('删除后的 Space / Project / Task 会在这里等待恢复或永久删除。'),
-		).toBeInTheDocument()
+		expect(screen.getByText('删除后的内容会统一出现在这里，等待恢复或永久删除。')).toBeInTheDocument()
 	})
 })
 

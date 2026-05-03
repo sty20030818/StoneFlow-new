@@ -2,7 +2,7 @@ import { useEffect, useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
 
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
-import { MainCardHeader, MainCardLayout } from '@/app/layouts/main-card/MainCardLayout'
+import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import {
 	selectSidebarSettings,
 	selectSidebarSettingsError,
@@ -213,9 +213,8 @@ export function SettingsPage() {
 	}
 
 	return (
-		<MainCardLayout
-			header={
-				<MainCardHeader
+		<MainCard.Root>
+			<MainCard.Header
 					action={
 						<Button asChild size='sm' variant='ghost'>
 							<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回收件箱</Link>
@@ -237,10 +236,7 @@ export function SettingsPage() {
 						</Breadcrumb>
 					}
 				/>
-			}
-			toolbar={null}
-		>
-			<div className='flex min-h-full flex-1 flex-col gap-4 p-4'>
+			<MainCard.Body className='gap-4 p-4'>
 				<StatusNotice
 					description='阶段 11 只开放最小可用设置：侧边栏入口、Projects 分区、Sidebar 宽度和默认 Space。所有变更都会即时保存。'
 					title='V1 页面设置'
@@ -461,8 +457,8 @@ export function SettingsPage() {
 						</StatusNotice>
 					) : null}
 				</SettingsSection>
-			</div>
-		</MainCardLayout>
+			</MainCard.Body>
+		</MainCard.Root>
 	)
 }
 

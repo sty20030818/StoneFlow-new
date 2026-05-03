@@ -1,11 +1,7 @@
-import { useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-import {
-	MainCardHeader,
-	MainCardLayout,
-	MainCardToolbar,
-} from '@/app/layouts/main-card/MainCardLayout'
+import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { deleteLifecycleEntry } from '@/features/lifecycle/api/lifecycle'
@@ -16,26 +12,14 @@ import {
 } from '@/features/lifecycle/model/useLifecycleStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { emitEvent } from '@/shared/events'
-import type { LifecycleEntry, LifecycleEntityType, LifecycleMode } from '@/shared/types'
-import { Button } from '@/shared/ui/base/button'
+import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
 	BreadcrumbList,
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
-import {
-	Empty,
-	EmptyContent,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyPage,
-	EmptyTitle,
-} from '@/shared/ui/base/empty'
 import type { LucideIcon } from 'lucide-react'
-
-import { LifecycleEntitySection } from './LifecycleEntitySection'
 
 type LifecycleListProps = {
 	mode: LifecycleMode
@@ -43,11 +27,7 @@ type LifecycleListProps = {
 	icon: LucideIcon
 }
 
-const ENTITY_SECTIONS: Array<{ type: LifecycleEntityType; label: string }> = [
-	{ type: 'space', label: 'Spaces' },
-	{ type: 'project', label: 'Projects' },
-	{ type: 'task', label: 'Tasks' },
-]
+type LifecycleFilter = 'all' | 'space' | 'project' | 'task'
 
 export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	const navigate = useNavigate()
@@ -61,13 +41,24 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	const restoreEntry = useLifecycleStore((state) => state.restoreEntry)
 	const permanentlyDeleteEntry = useLifecycleStore((state) => state.permanentlyDeleteEntry)
 	const refreshLoadedSlices = useLifecycleStore((state) => state.refreshLoadedSlices)
+	const [entityFilter, setEntityFilter] = useState<LifecycleFilter>('all')
 
 	const slice = mode === 'archive' ? archiveEntries : trashEntries
-	const groupedEntries = ENTITY_SECTIONS.map((section) => ({
-		...section,
-		entries: slice.items.filter((entry) => entry.entityType === section.type),
-	}))
-	const totalCount = slice.items.length
+	const lifecyclePills = [
+		{ key: 'all', label: `全部 ${slice.items.length}` },
+		{
+			key: 'space',
+			label: `Spaces ${slice.items.filter((entry) => entry.entityType === 'space').length}`,
+		},
+		{
+			key: 'project',
+			label: `Projects ${slice.items.filter((entry) => entry.entityType === 'project').length}`,
+		},
+		{
+			key: 'task',
+			label: `Tasks ${slice.items.filter((entry) => entry.entityType === 'task').length}`,
+		},
+	] as const
 
 	useEffect(() => {
 		if (mode === 'archive') {
@@ -104,75 +95,60 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 		}
 	}
 
+	const sections = useMemo(
+		() => buildLifecycleSections(slice.items, entityFilter, mode),
+		[entityFilter, mode, slice.items],
+	)
+
 	return (
-		<MainCardLayout
-			header={<MainCardHeader breadcrumb={<LifecycleBreadcrumb icon={Icon} title={title} />} />}
-			toolbar={
-				<MainCardToolbar
-					pills={groupedEntries.map((section, index) => ({
-						label: `${section.label} ${section.entries.length}`,
-						active: index === 0,
-					}))}
-					onRefresh={() => {
-						void refreshLoadedSlices()
-					}}
-				/>
-			}
-		>
-			<div className='flex min-h-0 flex-1 flex-col gap-3'>
-				{slice.status === 'ready' && totalCount === 0 ? (
-					<EmptyPage>
-						<Empty>
-							<EmptyHeader>
-								<EmptyMedia variant='icon'>
-									<Icon />
-								</EmptyMedia>
-								<EmptyTitle>{title}为空</EmptyTitle>
-								<EmptyDescription>
-									{mode === 'archive'
-										? '归档后的 Space / Project / Task 会在这里集中管理。'
-										: '删除后的 Space / Project / Task 会在这里等待恢复或永久删除。'}
-								</EmptyDescription>
-							</EmptyHeader>
-							<EmptyContent>
-								<Button asChild>
-									<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回收件箱</Link>
-								</Button>
-							</EmptyContent>
-						</Empty>
-					</EmptyPage>
-				) : (
-					groupedEntries.map((section) => (
-						<LifecycleEntitySection
-							entries={section.entries}
-							error={slice.error}
-							key={section.type}
-							mode={mode}
-							onDeleteFromArchive={
-								mode === 'archive' ? (entry) => void handleDeleteFromArchive(entry) : undefined
-							}
-							onOpenDetail={mode === 'archive' ? handleOpenDetail : undefined}
-							onPermanentlyDelete={
-								mode === 'trash'
-									? (entry) => {
-											if (!window.confirm(`确认永久删除「${entry.title}」吗？此操作不可恢复。`)) {
-												return
-											}
-											void permanentlyDeleteEntry(entry)
-										}
-									: undefined
-							}
-							onRestore={(entry) => {
-								void restoreEntry(entry)
-							}}
-							pendingEntryId={pendingEntryId}
-							status={slice.status}
-							title={buildSectionTitle(mode, section.label)}
-						/>
-					))
-				)}
-			</div>
-		</MainCardLayout>
+		<EntityScene
+			board={{
+				boardKind: 'lifecycle',
+				boardConfig: {
+					emptyActionLabel: '返回收件箱',
+					emptyDescription:
+						mode === 'archive'
+							? '归档后的内容会统一出现在这里。'
+							: '删除后的内容会统一出现在这里，等待恢复或永久删除。',
+					emptyTitle: `${title}为空`,
+					mode,
+				},
+				boardData: {
+					sections,
+					pendingEntryId,
+				},
+				boardActions: {
+					onDeleteFromArchive:
+						mode === 'archive' ? (entry: LifecycleEntry) => void handleDeleteFromArchive(entry) : undefined,
+					onEmptyAction: () => {
+						void navigate(buildScopedSectionPath(scope, 'inbox', spaceId))
+					},
+					onOpenDetail: mode === 'archive' ? handleOpenDetail : undefined,
+					onPermanentlyDelete:
+						mode === 'trash'
+							? (entry: LifecycleEntry) => {
+									if (!window.confirm(`确认永久删除「${entry.title}」吗？此操作不可恢复。`)) {
+										return
+									}
+									void permanentlyDeleteEntry(entry)
+								}
+							: undefined,
+					onRestore: (entry: LifecycleEntry) => {
+						void restoreEntry(entry)
+					},
+				},
+			}}
+			breadcrumb={<LifecycleBreadcrumb icon={Icon} title={title} />}
+			onRefresh={() => {
+				void refreshLoadedSlices()
+			}}
+			sceneVariant={mode}
+			toolbarPills={lifecyclePills.map((pill) => ({
+				label: pill.label,
+				active: entityFilter === pill.key,
+				onClick: () => setEntityFilter(pill.key),
+			}))}
+		/>
 	)
 }
 
@@ -191,8 +167,58 @@ function LifecycleBreadcrumb({ icon: Icon, title }: { icon: LucideIcon; title: s
 	)
 }
 
-function buildSectionTitle(mode: LifecycleMode, entityLabel: string) {
-	return mode === 'archive' ? `Archived ${entityLabel}` : `Deleted ${entityLabel}`
+function buildLifecycleSections(
+	entries: LifecycleEntry[],
+	filter: LifecycleFilter,
+	mode: LifecycleMode,
+) {
+	if (filter === 'space') {
+		return [
+			{
+				key: 'space',
+				label: mode === 'archive' ? '已归档的空间' : '已删除的空间',
+				items: entries.filter((entry) => entry.entityType === 'space'),
+			},
+		]
+	}
+
+	if (filter === 'project') {
+		return [
+			{
+				key: 'project',
+				label: mode === 'archive' ? '已归档的项目' : '已删除的项目',
+				items: entries.filter((entry) => entry.entityType === 'project'),
+			},
+		]
+	}
+
+	if (filter === 'task') {
+		return [
+			{
+				key: 'task',
+				label: mode === 'archive' ? '已归档的任务' : '已删除的任务',
+				items: entries.filter((entry) => entry.entityType === 'task'),
+			},
+		]
+	}
+
+	return [
+		{
+			key: 'space',
+			label: mode === 'archive' ? '已归档的空间' : '已删除的空间',
+			items: entries.filter((entry) => entry.entityType === 'space'),
+		},
+		{
+			key: 'project',
+			label: mode === 'archive' ? '已归档的项目' : '已删除的项目',
+			items: entries.filter((entry) => entry.entityType === 'project'),
+		},
+		{
+			key: 'task',
+			label: mode === 'archive' ? '已归档的任务' : '已删除的任务',
+			items: entries.filter((entry) => entry.entityType === 'task'),
+		},
+	]
 }
 
 function emitEntryEvent(entry: LifecycleEntry, deleted: boolean) {

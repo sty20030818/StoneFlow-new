@@ -1,12 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import {
-	MainCardGhostAction,
-	MainCardHeader,
-	MainCardLayout,
-	MainCardToolbar,
-} from '@/app/layouts/main-card/MainCardLayout'
+import { EntityScene } from '@/app/layouts/entity-scene'
+import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
@@ -14,7 +10,6 @@ import { selectProjectOptions, useProjectStore } from '@/features/project/model/
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import { TaskBoard } from '@/features/task/ui/TaskBoard'
 import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
 import {
 	selectTaskViewRun,
@@ -25,7 +20,6 @@ import { ViewActionsMenu } from '@/features/view/ui/ViewActionsMenu'
 import { ViewEditorDialog } from '@/features/view/ui/ViewEditorDialog'
 import { useTaskChangedListener } from '@/shared/events'
 import type { TaskListItem, View } from '@/shared/types'
-import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -33,6 +27,8 @@ import {
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
 import { Layers2Icon, PlusIcon } from 'lucide-react'
+
+import { createPendingBulkAction } from '@/app/layouts/entity-scene/TaskBoardAdapter'
 
 export function ViewsPage() {
 	const { scope, spaceId } = useScopeRoute()
@@ -192,97 +188,90 @@ export function ViewsPage() {
 
 	return (
 		<>
-			<MainCardLayout
-				header={
-					<MainCardHeader
-						action={
-							<MainCardGhostAction
-								aria-label='创建任务'
-								onClick={() => openTaskCreateDialog({ status: 'todo' })}
-							>
-								<PlusIcon />
-							</MainCardGhostAction>
-						}
-						breadcrumb={<ViewsBreadcrumb />}
-					/>
-				}
-				toolbar={
-					<MainCardToolbar
-						filterAction={
-							<ViewActionsMenu
-								activeView={activeView}
-								onCreate={() => {
-									setEditingView(null)
-									setEditorOpen(true)
-								}}
-								onDelete={(view) => void handleDeleteView(view)}
-								onEdit={(view) => {
-									setEditingView(view)
-									setEditorOpen(true)
-								}}
-								onReorder={(orderedIds) => void handleReorder(orderedIds)}
-								onToggleVisible={(view, visible) => void handleToggleVisible(view, visible)}
-								views={taskViews.items}
-							/>
-						}
-						onRefresh={() => {
-							void refreshTaskRun()
-						}}
-						pills={visibleViews.map((view) => ({
-							label: view.name,
-							active: view.id === activeView?.id,
-							onClick: () => navigateToView(view),
-							role: 'tab' as const,
-						}))}
-					/>
-				}
-			>
-				<div className='flex min-h-0 flex-1 flex-col gap-3'>
-					<TaskBoard
-						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-						customSections={sections}
-						emptyActionLabel='创建任务'
-						emptyDescription={activeView?.description ?? '当前视图下没有符合条件的任务。'}
-						emptyTitle={activeView ? `${activeView.name} 暂无任务` : '暂无视图'}
-						hideEmptySections
-						onArchiveTask={archiveListTask}
-						onDeleteTask={deleteListTask}
-						onEmptyAction={() => openTaskCreateDialog({ status: 'todo' })}
-						onOpenTask={(taskId) => openDrawer('task', taskId)}
-						onToggleTaskSelection={toggleTaskSelection}
-						onToggleTaskStatus={toggleTaskStatus}
-						onUpdateTaskPriority={updateTaskPriority}
-						onUpdateTaskStatus={updateTaskStatus}
-						pendingTaskId={pendingTaskId}
-						rowVariant='project'
-						selectedTaskIdSet={selectedTaskIdSet}
-						sectionVariant='project'
-						showProjectName
-						statusOrder={['doing', 'todo', 'waiting', 'done', 'canceled']}
-						tasks={visibleTasks}
-					/>
+			<EntityScene
+				board={{
+					boardKind: 'task',
+					boardConfig: {
+						variant: 'view',
+						customSections: sections,
+						emptyActionLabel: '创建任务',
+						emptyDescription: activeView?.description ?? '当前视图下没有符合条件的任务。',
+						emptyTitle: activeView ? `${activeView.name} 暂无任务` : '暂无视图',
+						hideEmptySections: true,
+						rowVariant: 'project',
+						sectionVariant: 'project',
+						showProjectName: true,
+						statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
+					},
+					boardData: {
+						items: visibleTasks,
+						activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
+						pendingItemId: pendingTaskId,
+						selectedTaskIdSet,
+					},
+					boardActions: {
+						onArchiveTask: archiveListTask,
+						onDeleteTask: deleteListTask,
+						onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
+						onOpenTask: (taskId) => openDrawer('task', taskId),
+						onToggleTaskSelection: toggleTaskSelection,
+						onToggleTaskStatus: toggleTaskStatus,
+						onUpdateTaskPriority: updateTaskPriority,
+						onUpdateTaskStatus: updateTaskStatus,
+					},
+				}}
+				breadcrumb={<ViewsBreadcrumb />}
+				bulkActions={
 					<TaskBulkActionBar
-						action={
-							<Button
-								className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) opacity-70'
-								disabled
-								size='sm'
-								variant='outline'
-							>
-								批量能力后续接入
-							</Button>
-						}
+						action={createPendingBulkAction('批量能力后续接入')}
 						onClear={clearTaskSelection}
 						selectedCount={selectedCount}
 					/>
-					<div className='mt-auto px-1 text-[12px] text-(--sf-color-text-tertiary)'>
+				}
+				footer={
+					<div className='px-1 text-[12px] text-(--sf-color-text-tertiary)'>
 						{taskRun.item?.view.description ??
 							(taskRun.item
 								? `当前视图共 ${taskRun.item.items.length} 条任务`
 								: '正在准备视图数据')}
 					</div>
-				</div>
-			</MainCardLayout>
+				}
+				headerActions={
+					<MainCard.GhostAction
+						aria-label='创建任务'
+						onClick={() => openTaskCreateDialog({ status: 'todo' })}
+					>
+						<PlusIcon />
+					</MainCard.GhostAction>
+				}
+				onRefresh={() => {
+					void refreshTaskRun()
+				}}
+				sceneVariant='view'
+				toolbarFilterAction={
+					<ViewActionsMenu
+						activeView={activeView}
+						onCreate={() => {
+							setEditingView(null)
+							setEditorOpen(true)
+						}}
+						onDelete={(view) => void handleDeleteView(view)}
+						onEdit={(view) => {
+							setEditingView(view)
+							setEditorOpen(true)
+						}}
+						onReorder={(orderedIds) => void handleReorder(orderedIds)}
+						onToggleVisible={(view, visible) => void handleToggleVisible(view, visible)}
+						views={taskViews.items}
+					/>
+				}
+				toolbarPills={visibleViews.map((view) => ({
+					label: view.name,
+					active: view.id === activeView?.id,
+					onClick: () => navigateToView(view),
+					role: 'tab' as const,
+				}))}
+			/>
 
 			<ViewEditorDialog
 				isSubmitting={isSavingView}

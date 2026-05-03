@@ -1,21 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { EntityScene } from '@/app/layouts/entity-scene'
+import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import {
 	buildScopedProjectPath,
-	buildScopedSectionPath,
 	getScopeLabel,
 } from '@/app/layouts/shell/config'
-import {
-	MainCardGhostAction,
-	MainCardHeader,
-	MainCardLayout,
-	MainCardToolbar,
-} from '@/app/layouts/main-card/MainCardLayout'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
-import { ProjectOverviewEmptyState } from '@/features/project-overview/ui/ProjectOverviewEmptyState'
-import { ProjectOverviewList } from '@/features/project-overview/ui/ProjectOverviewList'
 import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
@@ -26,7 +19,7 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
-import { BoxIcon, Layers3Icon, PlusIcon } from 'lucide-react'
+import { BoxIcon, PlusIcon } from 'lucide-react'
 
 export function ProjectOverviewPage() {
 	const navigate = useNavigate()
@@ -77,87 +70,62 @@ export function ProjectOverviewPage() {
 	}
 
 	return (
-		<MainCardLayout
-			header={
-				<MainCardHeader
-					action={
-						<MainCardGhostAction aria-label='创建项目' onClick={() => openProjectCreateDialog()}>
-							<PlusIcon />
-						</MainCardGhostAction>
-					}
-					breadcrumb={<ProjectOverviewBreadcrumb />}
-				/>
+		<EntityScene
+			board={{
+				boardKind: 'project',
+				boardConfig: {
+					variant: 'overview',
+					emptyActionLabel: '创建项目',
+					emptyDescription: `当前 Scope：${getScopeLabel(scope, spaces)}。这里还没有满足当前筛选条件的项目。`,
+					emptyTitle: getProjectOverviewEmptyTitle(viewKey),
+				},
+				boardData: {
+					items: overview.items,
+					status: overview.status,
+					busyProjectId,
+				},
+				boardActions: {
+					onArchiveProject: (projectId) => {
+						void runRowAction(projectId, async () => {
+							await archiveProject(projectId)
+						})
+					},
+					onCompleteProject: (projectId) => {
+						void runRowAction(projectId, async () => {
+							await completeProject(projectId)
+						})
+					},
+					onDeleteProject: (projectId) => {
+						void runRowAction(projectId, async () => {
+							await deleteProject(projectId)
+						})
+					},
+					onEmptyAction: () => openProjectCreateDialog(),
+					onOpenProject: (projectId) =>
+						navigate(buildScopedProjectPath(scope, projectId, spaceId)),
+					onReopenProject: (projectId) => {
+						void runRowAction(projectId, async () => {
+							await reopenProject(projectId)
+						})
+					},
+				},
+			}}
+			breadcrumb={<ProjectOverviewBreadcrumb />}
+			headerActions={
+				<MainCard.GhostAction aria-label='创建项目' onClick={() => openProjectCreateDialog()}>
+					<PlusIcon />
+				</MainCard.GhostAction>
 			}
-			toolbar={
-				<MainCardToolbar
-					onRefresh={() => {
-						void loadOverview(scope, viewKey)
-					}}
-					pills={visibleProjectViews.map((view) => ({
-						active: (view.key ?? view.id) === viewKey,
-						label: view.name,
-						onClick: () => setViewKey((view.key ?? view.id) as ProjectOverviewViewKey),
-					}))}
-				/>
-			}
-		>
-			<div className='flex min-h-0 flex-1 flex-col gap-3'>
-				<button
-					className='flex items-center justify-between gap-4 rounded-2xl border border-(--sf-color-border-subtle) bg-white/80 px-4 py-3 text-left shadow-none transition-colors hover:border-(--sf-color-border-secondary) hover:bg-(--sf-color-bg-surface-muted)'
-					onClick={() => navigate(buildScopedSectionPath(scope, 'no-project', spaceId))}
-					type='button'
-				>
-					<div className='flex items-center gap-3'>
-						<span className='inline-flex size-9 items-center justify-center rounded-xl bg-(--sf-color-project-task-section-header) text-(--sf-color-text-secondary)'>
-							<Layers3Icon className='size-4' />
-						</span>
-						<div className='min-w-0'>
-							<p className='text-sm font-semibold text-foreground'>独立事项</p>
-							<p className='text-[12px] text-(--sf-color-text-tertiary)'>
-								查看已经离开收件箱、但尚未归属到任何项目的任务。
-							</p>
-						</div>
-					</div>
-					<span className='rounded-md border border-(--sf-color-border-subtle) bg-white px-3 py-1.5 text-[12px] font-medium text-foreground'>
-						打开
-					</span>
-				</button>
-				{overview.status === 'ready' && overview.items.length === 0 ? (
-					<ProjectOverviewEmptyState
-						onCreateProject={() => openProjectCreateDialog()}
-						scopeLabel={getScopeLabel(scope, spaces)}
-						viewKey={viewKey}
-					/>
-				) : (
-					<ProjectOverviewList
-						busyProjectId={busyProjectId}
-						items={overview.items}
-						onArchive={(projectId) => {
-							void runRowAction(projectId, async () => {
-								await archiveProject(projectId)
-							})
-						}}
-						onComplete={(projectId) => {
-							void runRowAction(projectId, async () => {
-								await completeProject(projectId)
-							})
-						}}
-						onDelete={(projectId) => {
-							void runRowAction(projectId, async () => {
-								await deleteProject(projectId)
-							})
-						}}
-						onOpen={(projectId) => navigate(buildScopedProjectPath(scope, projectId, spaceId))}
-						onReopen={(projectId) => {
-							void runRowAction(projectId, async () => {
-								await reopenProject(projectId)
-							})
-						}}
-						status={overview.status}
-					/>
-				)}
-			</div>
-		</MainCardLayout>
+			onRefresh={() => {
+				void loadOverview(scope, viewKey)
+			}}
+			sceneVariant='project-overview'
+			toolbarPills={visibleProjectViews.map((view) => ({
+				active: (view.key ?? view.id) === viewKey,
+				label: view.name,
+				onClick: () => setViewKey((view.key ?? view.id) as ProjectOverviewViewKey),
+			}))}
+		/>
 	)
 }
 
@@ -174,4 +142,20 @@ function ProjectOverviewBreadcrumb() {
 			</BreadcrumbList>
 		</Breadcrumb>
 	)
+}
+
+function getProjectOverviewEmptyTitle(viewKey: ProjectOverviewViewKey) {
+	switch (viewKey) {
+		case 'completed':
+		case 'completed_projects':
+			return '当前没有已完成项目'
+		case 'archived':
+		case 'archived_projects':
+			return '当前没有已归档项目'
+		case 'all':
+		case 'all_projects':
+			return '当前 Scope 还没有项目'
+		default:
+			return '当前没有活跃项目'
+	}
 }

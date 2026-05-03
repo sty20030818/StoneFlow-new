@@ -9,9 +9,14 @@ import {
 	SlidersHorizontalIcon,
 } from 'lucide-react'
 
-type MainCardLayoutProps = {
-	header: ReactNode
-	toolbar: ReactNode
+export type MainCardToolbarPill = {
+	label: string
+	active?: boolean
+	onClick?: () => void
+	role?: 'tab'
+}
+
+type MainCardRootProps = {
 	children: ReactNode
 	className?: string
 }
@@ -32,11 +37,9 @@ type MainCardToolbarProps = {
 	className?: string
 }
 
-type MainCardToolbarPill = {
-	label: string
-	active?: boolean
-	onClick?: () => void
-	role?: 'tab'
+type MainCardShellSlotProps = {
+	children: ReactNode
+	className?: string
 }
 
 type MainCardIconAction = {
@@ -55,26 +58,18 @@ const MAIN_CARD_TOOLBAR_PILL_ACTIVE_CLASS =
 const MAIN_CARD_TOOLBAR_PILL_INACTIVE_CLASS =
 	'border-(--sf-color-border-subtle) text-(--sf-color-text-secondary)'
 
-export function MainCardLayout({ header, toolbar, children, className }: MainCardLayoutProps) {
+function MainCardRoot({ children, className }: MainCardRootProps) {
 	return (
-		<div
-			className={cn(
-				// 作为 ShellMain 滚动区域内的主容器：既要至少铺满一屏（min-h-full），
-				// 也要在父级是纵向 flex 时吃掉剩余高度（flex-1），避免短内容底部留白。
-				'flex min-h-full min-w-0 flex-1 flex-col',
-				className,
-			)}
-		>
-			{header}
-			<MainCardContentInset>
-				{toolbar}
-				<MainCardBody>{children}</MainCardBody>
-			</MainCardContentInset>
-		</div>
+		<div className={cn('flex min-h-full min-w-0 flex-1 flex-col', className)}>{children}</div>
 	)
 }
 
-export function MainCardHeader({ title, breadcrumb, action, className }: MainCardHeaderProps) {
+function MainCardHeader({
+	title,
+	breadcrumb,
+	action,
+	className,
+}: MainCardHeaderProps) {
 	return (
 		<header
 			className={cn(
@@ -92,7 +87,7 @@ export function MainCardHeader({ title, breadcrumb, action, className }: MainCar
 	)
 }
 
-export function MainCardToolbar({
+function MainCardToolbar({
 	pills,
 	left,
 	filterAction,
@@ -127,6 +122,7 @@ export function MainCardToolbar({
 						</Button>
 					))}
 			</div>
+
 			<div className='flex shrink-0 items-center gap-2'>
 				{filterAction ?? (
 					<MainCardToolbarIconButton
@@ -141,25 +137,38 @@ export function MainCardToolbar({
 	)
 }
 
-function MainCardContentInset({
-	children,
-	className,
-}: {
-	children: ReactNode
-	className?: string
-}) {
+function MainCardBody({ children, className }: MainCardShellSlotProps) {
 	return (
-		<div className={cn('flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2', className)}>
-			{children}
-		</div>
+		<div className={cn('flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2', className)}>{children}</div>
 	)
 }
 
-export function MainCardBody({ children, className }: { children: ReactNode; className?: string }) {
-	return <div className={cn('flex min-h-0 min-w-0 flex-1 flex-col', className)}>{children}</div>
+function MainCardFooter({ children, className }: MainCardShellSlotProps) {
+	return <div className={cn('mt-auto flex flex-col gap-3', className)}>{children}</div>
 }
 
-export function MainCardGhostAction({
+function MainCardNoticeGroup({ children, className }: MainCardShellSlotProps) {
+	return <div className={cn('flex flex-col gap-3', className)}>{children}</div>
+}
+
+function MainCardSection({ children, className }: MainCardShellSlotProps) {
+	return (
+		<section
+			className={cn(
+				'rounded-2xl border border-(--sf-color-border-subtle) bg-card p-4 shadow-[0_8px_30px_rgba(15,23,42,0.04)]',
+				className,
+			)}
+		>
+			{children}
+		</section>
+	)
+}
+
+function MainCardEmpty({ children, className }: MainCardShellSlotProps) {
+	return <div className={cn('flex min-h-0 flex-1 flex-col', className)}>{children}</div>
+}
+
+function MainCardGhostAction({
 	children,
 	className,
 	...props
@@ -210,4 +219,28 @@ function createToolbarActions(
 			disabled: refreshDisabled,
 		},
 	]
+}
+
+export const MainCard = {
+	Root: MainCardRoot,
+	Header: MainCardHeader,
+	Toolbar: MainCardToolbar,
+	Body: MainCardBody,
+	Footer: MainCardFooter,
+	NoticeGroup: MainCardNoticeGroup,
+	Section: MainCardSection,
+	Empty: MainCardEmpty,
+	GhostAction: MainCardGhostAction,
+}
+
+export {
+	MainCardBody,
+	MainCardEmpty,
+	MainCardFooter,
+	MainCardGhostAction,
+	MainCardHeader,
+	MainCardNoticeGroup,
+	MainCardRoot,
+	MainCardSection,
+	MainCardToolbar,
 }
