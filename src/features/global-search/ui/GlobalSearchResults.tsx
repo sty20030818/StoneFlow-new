@@ -38,7 +38,7 @@ export function GlobalSearchResults({
 					<div className='space-y-3'>
 						{taskItems.length > 0 ? (
 							<section className='space-y-1.5'>
-								<SearchGroupHeading title='Tasks' />
+								<SearchGroupHeading title='任务' />
 								<div className='space-y-1'>
 									{taskItems.map(({ index, item }) => (
 										<SearchResultButton
@@ -47,7 +47,7 @@ export function GlobalSearchResults({
 											key={item.id}
 											note={item.note}
 											title={item.title}
-											typeLabel='Task'
+											typeLabel='任务'
 											onHighlight={() => onHighlightIndex(index)}
 											onSelect={() => onSelectTask(item)}
 										/>
@@ -58,7 +58,7 @@ export function GlobalSearchResults({
 
 						{projectItems.length > 0 ? (
 							<section className='space-y-1.5'>
-								<SearchGroupHeading title='Projects' />
+								<SearchGroupHeading title='项目' />
 								<div className='space-y-1'>
 									{projectItems.map(({ index, item }) => (
 										<SearchResultButton
@@ -67,7 +67,7 @@ export function GlobalSearchResults({
 											key={item.id}
 											note={item.note}
 											title={item.name}
-											typeLabel='Project'
+											typeLabel='项目'
 											onHighlight={() => onHighlightIndex(index)}
 											onSelect={() => onSelectProject(item)}
 										/>

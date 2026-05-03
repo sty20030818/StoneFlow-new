@@ -10,7 +10,7 @@ export function ArchivePage() {
 	return (
 		<ShellPlaceholderPage
 			backTo={buildScopedSectionPath(scope, 'inbox', spaceId)}
-			description='阶段 3 先提供 Archive 导航与主内容骨架，生命周期回收规则会在后续阶段接入。'
+			description='归档页面，生命周期回收规则会在后续阶段接入。'
 			icon={ArchiveIcon}
 			title='归档'
 		/>

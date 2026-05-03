@@ -37,9 +37,9 @@ export function TrashPage() {
 			toolbar={
 				<MainCardToolbar
 					pills={[
-						{ label: 'All deleted', active: true },
-						{ label: 'Tasks' },
-						{ label: 'Projects' },
+						{ label: '全部已删除', active: true },
+						{ label: '任务' },
+						{ label: '项目' },
 					]}
 				/>
 			}

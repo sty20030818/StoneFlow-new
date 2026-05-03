@@ -121,7 +121,7 @@ export function ProjectPage() {
 		<MainCardLayout
 			header={
 				<MainCardHeader
-					breadcrumb={<ProjectBreadcrumb projectName={project?.name ?? 'Project'} />}
+					breadcrumb={<ProjectBreadcrumb projectName={project?.name ?? '项目'} />}
 					action={
 						project ? (
 							<div className='flex items-center gap-2'>
@@ -204,7 +204,7 @@ export function ProjectPage() {
 								<EmptyMedia variant='icon'>
 									<FolderIcon />
 								</EmptyMedia>
-								<EmptyTitle>当前 Project 不可见</EmptyTitle>
+								<EmptyTitle>当前项目不可见</EmptyTitle>
 								<EmptyDescription>它可能已被归档、删除，或当前 Scope 已切走。</EmptyDescription>
 							</EmptyHeader>
 							<EmptyContent>
@@ -212,7 +212,7 @@ export function ProjectPage() {
 									onClick={() => navigate(buildScopedSectionPath(scope, 'projects', spaceId))}
 									type='button'
 								>
-									返回 Project Overview
+									返回项目总览
 								</Button>
 							</EmptyContent>
 						</Empty>

@@ -161,7 +161,7 @@ export function TaskCreateModalContent({
 
 				<div className='grid gap-4 sm:grid-cols-2'>
 					<label className='flex flex-col gap-1.5'>
-						<span className='text-[12px] font-medium text-foreground'>Space</span>
+						<span className='text-[12px] font-medium text-foreground'>空间</span>
 						<Select
 							disabled={lockedProject || placement === 'project' || status !== 'idle'}
 							onValueChange={(value) => {

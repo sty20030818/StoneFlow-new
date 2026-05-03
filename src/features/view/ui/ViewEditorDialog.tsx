@@ -234,7 +234,7 @@ export function ViewEditorDialog({
 						{title}
 					</DialogTitle>
 					<DialogDescription className='max-w-140 text-[13px] leading-5 text-muted-foreground'>
-						自定义 View 只保存筛选、排序与分组规则，不会拥有任务本身。
+						自定义视图只保存筛选、排序与分组规则，不会拥有任务本身。
 					</DialogDescription>
 				</DialogHeader>
 
@@ -294,7 +294,7 @@ export function ViewEditorDialog({
 							value={priorityMode}
 						/>
 						<DialogSelect
-							label='Inbox'
+							label='收件箱'
 							onValueChange={(value) => setInboxMode(value as InboxMode)}
 							options={[
 								{ value: 'any', label: '不限' },

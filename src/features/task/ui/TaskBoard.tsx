@@ -601,7 +601,7 @@ function TaskBoardRow({
 							</div>
 							<div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-(--sf-color-text-tertiary)'>
 								{task.note ? <span className='truncate'>{task.note}</span> : null}
-								{task.dueAt ? <span>Due {task.dueAt}</span> : null}
+								{task.dueAt ? <span>截止 {task.dueAt}</span> : null}
 								{task.archivedAt ? <span>已归档</span> : null}
 							</div>
 							{renderRowActions ? (
@@ -635,8 +635,8 @@ function formatTaskDate(value: string) {
 	if (Number.isNaN(date.getTime())) {
 		return value
 	}
-	return new Intl.DateTimeFormat('en-US', {
-		month: 'short',
+	return new Intl.DateTimeFormat('zh-CN', {
+		month: 'numeric',
 		day: 'numeric',
 	}).format(date)
 }

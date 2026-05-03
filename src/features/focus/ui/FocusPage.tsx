@@ -26,9 +26,9 @@ import { Layers2Icon } from 'lucide-react'
 // 当前为空壳，等待后续阶段实现 Today/Pinned/Recent 视图数据拉取。
 
 const FOCUS_VIEW_TABS = [
-	{ key: 'today', label: 'Today' },
-	{ key: 'pinned', label: 'Pinned' },
-	{ key: 'recent', label: 'Recent' },
+	{ key: 'today', label: '今天' },
+	{ key: 'pinned', label: '已置顶' },
+	{ key: 'recent', label: '最近' },
 ]
 
 export function FocusPage() {

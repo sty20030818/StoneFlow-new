@@ -158,7 +158,7 @@ function InboxPlacementActions({
 					aria-label='整理到项目'
 					className='h-8 w-36 rounded-md border-input bg-card text-[12px]'
 				>
-					<SelectValue placeholder={projectsLoading ? '读取项目中...' : '移到 Project'} />
+					<SelectValue placeholder={projectsLoading ? '读取项目中...' : '移到项目'} />
 				</SelectTrigger>
 				<SelectContent position='popper'>
 					<SelectGroup>

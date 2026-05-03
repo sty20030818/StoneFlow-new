@@ -75,7 +75,7 @@ export function ProjectCreateModalContent({
 		<div className='flex flex-col gap-4'>
 			<div className='flex flex-col gap-4'>
 				<label className='flex flex-col gap-1.5'>
-					<span className='text-[12px] font-medium text-foreground'>Space</span>
+					<span className='text-[12px] font-medium text-foreground'>空间</span>
 					<Select
 						disabled={status === 'submitting' || spaces.length === 0 || spaceId !== null}
 						onValueChange={(value) => setSelectedSpaceId(value === EMPTY_SPACE_VALUE ? '' : value)}
@@ -104,7 +104,7 @@ export function ProjectCreateModalContent({
 						disabled={status === 'submitting'}
 						id='project-create-name'
 						onChange={(event) => setName(event.currentTarget.value)}
-						placeholder='例如：Workspace shell polish'
+						placeholder='例如：工作区打磨'
 						value={name}
 					/>
 				</label>

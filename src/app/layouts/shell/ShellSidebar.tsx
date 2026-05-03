@@ -247,7 +247,7 @@ export function ShellSidebar({
 											side={isMobile ? 'bottom' : 'right'}
 											sideOffset={6}
 										>
-											<DropdownMenuLabel>Spaces</DropdownMenuLabel>
+											<DropdownMenuLabel>空间</DropdownMenuLabel>
 											<DropdownMenuGroup>
 												<DropdownMenuItem
 													className='gap-2 p-2'

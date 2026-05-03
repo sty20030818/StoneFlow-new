@@ -41,7 +41,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
     vec![
         DefaultViewSeed {
             key: "today",
-            name: "Today",
+            name: "今天",
             entity_type: ViewEntityKind::Task,
             filters: json!({
                 "status": ["todo", "doing", "waiting"],
@@ -56,7 +56,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
         },
         DefaultViewSeed {
             key: "focus",
-            name: "Focus",
+            name: "聚焦",
             entity_type: ViewEntityKind::Task,
             filters: json!({
                 "status": ["todo", "doing", "waiting"],
@@ -71,7 +71,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
         },
         DefaultViewSeed {
             key: "upcoming",
-            name: "Upcoming",
+            name: "即将到来",
             entity_type: ViewEntityKind::Task,
             filters: json!({
                 "status": ["todo", "doing", "waiting"],
@@ -86,7 +86,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
         },
         DefaultViewSeed {
             key: "recently_added",
-            name: "Recently Added",
+            name: "最近添加",
             entity_type: ViewEntityKind::Task,
             filters: json!({
                 "archived": false,
@@ -99,7 +99,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
         },
         DefaultViewSeed {
             key: "waiting",
-            name: "Waiting",
+            name: "等待中",
             entity_type: ViewEntityKind::Task,
             filters: json!({
                 "status": ["waiting"],
@@ -113,7 +113,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
         },
         DefaultViewSeed {
             key: "overdue",
-            name: "Overdue",
+            name: "已逾期",
             entity_type: ViewEntityKind::Task,
             filters: json!({
                 "status": ["todo", "doing", "waiting"],
@@ -128,7 +128,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
         },
         DefaultViewSeed {
             key: "active_projects",
-            name: "Active",
+            name: "进行中",
             entity_type: ViewEntityKind::Project,
             filters: json!({
                 "completed": false,
@@ -142,7 +142,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
         },
         DefaultViewSeed {
             key: "completed_projects",
-            name: "Completed",
+            name: "已完成",
             entity_type: ViewEntityKind::Project,
             filters: json!({
                 "completed": true,
@@ -156,7 +156,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
         },
         DefaultViewSeed {
             key: "archived_projects",
-            name: "Archived",
+            name: "已归档",
             entity_type: ViewEntityKind::Project,
             filters: json!({
                 "archived": true,
@@ -169,7 +169,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
         },
         DefaultViewSeed {
             key: "all_projects",
-            name: "All",
+            name: "全部",
             entity_type: ViewEntityKind::Project,
             filters: json!({
                 "deleted": false

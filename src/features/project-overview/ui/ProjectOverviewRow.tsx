@@ -43,10 +43,10 @@ export function ProjectOverviewRow({
 						</p>
 					) : null}
 					<div className='flex flex-wrap items-center gap-2 text-[12px] text-(--sf-color-shell-secondary)'>
-						<Badge variant='secondary'>{project.activeTaskCount} active</Badge>
-						<Badge variant='outline'>{project.taskCount} tasks</Badge>
-						{project.dueAt ? <Badge variant='outline'>Due {project.dueAt}</Badge> : null}
-						{project.completedAt ? <Badge variant='success'>Completed</Badge> : null}
+						<Badge variant='secondary'>{project.activeTaskCount} 个活跃</Badge>
+						<Badge variant='outline'>{project.taskCount} 个任务</Badge>
+						{project.dueAt ? <Badge variant='outline'>截止 {project.dueAt}</Badge> : null}
+						{project.completedAt ? <Badge variant='success'>已完成</Badge> : null}
 					</div>
 				</div>
 

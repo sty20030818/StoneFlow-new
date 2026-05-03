@@ -40,8 +40,8 @@ export function ProjectTaskBoard({
 			activeTaskId={activeTaskId}
 			createProjectId={projectId}
 			emptyActionLabel='创建任务'
-			emptyDescription='当前 Project 还没有任何任务，阶段 6 先在这里完成最小真实闭环。'
-			emptyTitle='当前 Project 还没有任务'
+			emptyDescription='当前项目还没有任何任务。'
+			emptyTitle='当前项目还没有任务'
 			hideEmptySections
 			onArchiveTask={onArchiveTask}
 			onDeleteTask={onDeleteTask}

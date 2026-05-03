@@ -6,6 +6,7 @@ pub use sea_orm_migration::prelude::*;
 
 mod m20260429_000001_bootstrap_smoke;
 mod m20260429_000002_v1_schema;
+mod m20260503_000003_localize_system_view_names;
 
 pub struct Migrator;
 
@@ -15,6 +16,7 @@ impl MigratorTrait for Migrator {
         vec![
             Box::new(m20260429_000001_bootstrap_smoke::Migration),
             Box::new(m20260429_000002_v1_schema::Migration),
+            Box::new(m20260503_000003_localize_system_view_names::Migration),
         ]
     }
 }

@@ -290,7 +290,7 @@ export function QuickCaptureSurface({
 
 	return (
 		<section
-			aria-label='StoneFlow Command'
+			aria-label='StoneFlow 命令'
 			className='flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-(--sf-color-border-secondary) bg-card text-foreground'
 			onPointerDown={handleSurfacePointerDown}
 		>

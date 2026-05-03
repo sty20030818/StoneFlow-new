@@ -24,7 +24,7 @@ export function ShellDrawer({
 }: ShellDrawerProps) {
 	const detail = getDrawerDetail(activeDrawerKind, activeDrawerId)
 	const isRealTaskDrawer = activeDrawerKind === 'task' && !!activeDrawerId && !detail
-	const drawerTitle = activeDrawerKind === 'project' ? 'Project detail' : 'Task detail'
+	const drawerTitle = activeDrawerKind === 'project' ? '项目详情' : '任务详情'
 	const [activeTab, setActiveTab] = useState<'details' | 'activity'>('details')
 
 	return (
