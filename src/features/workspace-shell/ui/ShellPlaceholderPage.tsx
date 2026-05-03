@@ -1,7 +1,14 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { MainCardHeader, MainCardLayout } from '@/app/layouts/main-card/MainCardLayout'
 import { Button } from '@/shared/ui/base/button'
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbList,
+	BreadcrumbPage,
+} from '@/shared/ui/base/breadcrumb'
 import {
 	Empty,
 	EmptyContent,
@@ -19,6 +26,7 @@ type ShellPlaceholderPageProps = {
 	icon: LucideIcon
 	backTo: string
 	backLabel?: string
+	headerBreadcrumb?: ReactNode
 }
 
 /**
@@ -29,10 +37,24 @@ export function ShellPlaceholderPage({
 	description,
 	icon: Icon,
 	backTo,
-	backLabel = '返回 Inbox',
+	backLabel = '返回收件箱',
+	headerBreadcrumb,
 }: ShellPlaceholderPageProps) {
+	const header = headerBreadcrumb ?? (
+		<Breadcrumb>
+			<BreadcrumbList className='text-sm font-semibold leading-5'>
+				<BreadcrumbItem>
+					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
+						<Icon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						{title}
+					</BreadcrumbPage>
+				</BreadcrumbItem>
+			</BreadcrumbList>
+		</Breadcrumb>
+	)
+
 	return (
-		<MainCardLayout header={<MainCardHeader title={title} />} toolbar={null}>
+		<MainCardLayout header={<MainCardHeader breadcrumb={header} />} toolbar={null}>
 			<EmptyPage>
 				<Empty>
 					<EmptyHeader>

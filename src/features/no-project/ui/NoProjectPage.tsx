@@ -16,7 +16,13 @@ import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
 import { TaskBoard } from '@/features/task/ui/TaskBoard'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { Button } from '@/shared/ui/base/button'
-import { CommandIcon, Layers3Icon, PlusIcon } from 'lucide-react'
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbList,
+	BreadcrumbPage,
+} from '@/shared/ui/base/breadcrumb'
+import { CommandIcon, Layers3Icon, PlusIcon, TargetIcon } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
 
 type NoProjectFilter = 'all' | TaskStatus
@@ -68,7 +74,7 @@ export function NoProjectPage() {
 							<PlusIcon />
 						</MainCardGhostAction>
 					}
-					title='No Project'
+					breadcrumb={<NoProjectBreadcrumb />}
 				/>
 			}
 			toolbar={
@@ -93,7 +99,7 @@ export function NoProjectPage() {
 					activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
 					emptyActionLabel='创建任务'
 					emptyDescription='这里展示已经离开 Inbox、但仍不属于任何 Project 的任务。'
-					emptyTitle='当前没有 No Project 任务'
+					emptyTitle='当前没有独立事项任务'
 					hideEmptySections
 					onArchiveTask={archiveListTask}
 					onDeleteTask={deleteListTask}
@@ -129,5 +135,20 @@ export function NoProjectPage() {
 				</div>
 			</div>
 		</MainCardLayout>
+	)
+}
+
+function NoProjectBreadcrumb() {
+	return (
+		<Breadcrumb>
+			<BreadcrumbList className='text-sm font-semibold leading-5'>
+				<BreadcrumbItem>
+					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
+						<TargetIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						独立事项
+					</BreadcrumbPage>
+				</BreadcrumbItem>
+			</BreadcrumbList>
+		</Breadcrumb>
 	)
 }

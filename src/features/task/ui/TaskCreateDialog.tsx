@@ -43,7 +43,7 @@ export function TaskCreateDialog({
 						新建任务
 					</DialogTitle>
 					<DialogDescription className='max-w-136 text-[13px] leading-5 text-muted-foreground'>
-						先记录任务标题，再决定进入 Inbox、No Project 或具体 Project，并补充优先级与备注。
+						先记录任务标题，再决定进入收件箱、独立事项或具体项目，并补充优先级与备注。
 					</DialogDescription>
 				</DialogHeader>
 

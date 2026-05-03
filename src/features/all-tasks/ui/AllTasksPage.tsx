@@ -102,7 +102,7 @@ export function AllTasksPage() {
 							filter === 'all'
 								? '所有任务'
 								: filter === 'noProject'
-									? 'No Project'
+									? '独立事项'
 									: formatTaskStatusLabel(filter),
 						active: taskFilter === filter,
 						onClick: () => setTaskFilter(filter),
@@ -159,7 +159,7 @@ function AllTasksBreadcrumb() {
 				<BreadcrumbItem>
 					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
 						<ListTodoIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
-						All Tasks
+						全部任务
 					</BreadcrumbPage>
 				</BreadcrumbItem>
 			</BreadcrumbList>

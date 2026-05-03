@@ -43,7 +43,7 @@ describe('ShellFooter', () => {
 
 		expect(screen.getByText('本地数据库已连接')).toBeInTheDocument()
 		expect(screen.getByText('个人')).toBeInTheDocument()
-		expect(screen.getAllByText('Trash')[0]).toBeInTheDocument()
+		expect(screen.getAllByText('回收站')[0]).toBeInTheDocument()
 		expect(screen.queryByRole('button')).not.toBeInTheDocument()
 	})
 })

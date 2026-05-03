@@ -3,6 +3,12 @@ import {
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbList,
+	BreadcrumbPage,
+} from '@/shared/ui/base/breadcrumb'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
 	Empty,
@@ -14,7 +20,7 @@ import {
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
 import { Button } from '@/shared/ui/base/button'
-import { TargetIcon } from 'lucide-react'
+import { Layers2Icon } from 'lucide-react'
 
 // TODO: 接入真实 Views/Focus API（后端需要按 viewKey 筛选的 list_tasks 扩展）
 // 当前为空壳，等待后续阶段实现 Today/Pinned/Recent 视图数据拉取。
@@ -30,7 +36,7 @@ export function FocusPage() {
 
 	return (
 		<MainCardLayout
-			header={<MainCardHeader title='Views' />}
+			header={<MainCardHeader breadcrumb={<ViewsBreadcrumb />} />}
 			toolbar={
 				<MainCardToolbar
 					pills={FOCUS_VIEW_TABS.map((view) => ({
@@ -45,7 +51,7 @@ export function FocusPage() {
 					<Empty>
 						<EmptyHeader>
 							<EmptyMedia variant='icon'>
-								<TargetIcon />
+								<Layers2Icon />
 							</EmptyMedia>
 							<EmptyTitle>今天没有任务</EmptyTitle>
 							<EmptyDescription>
@@ -61,5 +67,20 @@ export function FocusPage() {
 				</EmptyPage>
 			</div>
 		</MainCardLayout>
+	)
+}
+
+function ViewsBreadcrumb() {
+	return (
+		<Breadcrumb>
+			<BreadcrumbList className='text-sm font-semibold leading-5'>
+				<BreadcrumbItem>
+					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
+						<Layers2Icon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						视图
+					</BreadcrumbPage>
+				</BreadcrumbItem>
+			</BreadcrumbList>
+		</Breadcrumb>
 	)
 }

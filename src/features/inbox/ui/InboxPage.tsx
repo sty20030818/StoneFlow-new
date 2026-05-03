@@ -6,6 +6,12 @@ import {
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbList,
+	BreadcrumbPage,
+} from '@/shared/ui/base/breadcrumb'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { selectProjectOptions, selectProjectSidebar, useProjectStore } from '@/features/project/model/useProjectStore'
@@ -66,7 +72,7 @@ export function InboxPage() {
 							<PlusIcon />
 						</MainCardGhostAction>
 					}
-					title='Inbox'
+					breadcrumb={<InboxBreadcrumb />}
 				/>
 			}
 			toolbar={
@@ -162,12 +168,27 @@ function InboxPlacementActions({
 				type='button'
 				variant='outline'
 			>
-				标记 No Project
+				标记独立事项
 			</Button>
 			<span className='inline-flex items-center gap-1 text-[11px] text-(--sf-color-text-tertiary)'>
 				<InboxIcon className='size-3' />
 				离开 Inbox
 			</span>
 		</div>
+	)
+}
+
+function InboxBreadcrumb() {
+	return (
+		<Breadcrumb>
+			<BreadcrumbList className='text-sm font-semibold leading-5'>
+				<BreadcrumbItem>
+					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
+						<InboxIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						收件箱
+					</BreadcrumbPage>
+				</BreadcrumbItem>
+			</BreadcrumbList>
+		</Breadcrumb>
 	)
 }

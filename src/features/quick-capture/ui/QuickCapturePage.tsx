@@ -466,7 +466,7 @@ function CommandResultRow({
 }) {
 	const isTask = item.kind === 'task'
 	const title = isTask ? item.title : item.name
-	const subtitle = isTask ? (item.projectName ?? 'Inbox') : formatProjectStatus(item.status)
+	const subtitle = isTask ? (item.projectName ?? '收件箱') : formatProjectStatus(item.status)
 
 	return (
 		<button

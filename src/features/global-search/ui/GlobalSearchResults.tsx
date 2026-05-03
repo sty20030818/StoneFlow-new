@@ -156,7 +156,7 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 }
 
 function buildTaskContext(item: SearchTaskItem) {
-	return `${formatPriority(item.priority)} / ${item.projectName ?? 'Inbox'}`
+	return `${formatPriority(item.priority)} / ${item.projectName ?? '收件箱'}`
 }
 
 function buildProjectContext(item: SearchProjectItem) {

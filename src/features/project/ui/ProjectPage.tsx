@@ -35,7 +35,7 @@ import {
 	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
-import { FolderIcon } from 'lucide-react'
+import { BoxIcon, FolderIcon } from 'lucide-react'
 
 type ProjectTaskFilter = 'all' | TaskStatus
 
@@ -103,9 +103,8 @@ export function ProjectPage() {
 				: visibleTasks.filter((task) => task.status === taskFilter),
 		[taskFilter, visibleTasks],
 	)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } = useTaskSelection(
-		filteredTasks.map((task) => task.id),
-	)
+	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
+		useTaskSelection(filteredTasks.map((task) => task.id))
 
 	async function runAction(action: string, runner: () => Promise<unknown>) {
 		setBusyAction(action)
@@ -261,8 +260,8 @@ function ProjectBreadcrumb({ projectName }: { projectName: string }) {
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
 					<span className='inline-flex items-center gap-1.5 text-foreground'>
-						<FolderIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
-						Projects
+						<BoxIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						项目总览
 					</span>
 				</BreadcrumbItem>
 				<BreadcrumbSeparator />

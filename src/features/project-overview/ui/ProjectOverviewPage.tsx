@@ -15,7 +15,13 @@ import { ProjectOverviewList } from '@/features/project-overview/ui/ProjectOverv
 import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { Layers3Icon, PlusIcon } from 'lucide-react'
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbList,
+	BreadcrumbPage,
+} from '@/shared/ui/base/breadcrumb'
+import { BoxIcon, Layers3Icon, PlusIcon } from 'lucide-react'
 
 const PROJECT_OVERVIEW_TABS: Array<{ key: ProjectOverviewViewKey; label: string }> = [
 	{ key: 'active', label: 'Active' },
@@ -61,7 +67,7 @@ export function ProjectOverviewPage() {
 							<PlusIcon />
 						</MainCardGhostAction>
 					}
-					title='Project Overview'
+					breadcrumb={<ProjectOverviewBreadcrumb />}
 				/>
 			}
 			toolbar={
@@ -88,9 +94,9 @@ export function ProjectOverviewPage() {
 							<Layers3Icon className='size-4' />
 						</span>
 						<div className='min-w-0'>
-							<p className='text-sm font-semibold text-foreground'>No Project</p>
+							<p className='text-sm font-semibold text-foreground'>独立事项</p>
 							<p className='text-[12px] text-(--sf-color-text-tertiary)'>
-								查看已经离开 Inbox、但尚未归属到任何 Project 的任务。
+								查看已经离开收件箱、但尚未归属到任何项目的任务。
 							</p>
 						</div>
 					</div>
@@ -134,5 +140,20 @@ export function ProjectOverviewPage() {
 				)}
 			</div>
 		</MainCardLayout>
+	)
+}
+
+function ProjectOverviewBreadcrumb() {
+	return (
+		<Breadcrumb>
+			<BreadcrumbList className='text-sm font-semibold leading-5'>
+				<BreadcrumbItem>
+					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
+						<BoxIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						项目总览
+					</BreadcrumbPage>
+				</BreadcrumbItem>
+			</BreadcrumbList>
+		</Breadcrumb>
 	)
 }

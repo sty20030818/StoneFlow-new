@@ -4,6 +4,7 @@ export type ShellSectionKey =
 	| 'views'
 	| 'projects'
 	| 'project'
+	| 'noProject'
 	| 'archive'
 	| 'trash'
 	| 'settings'

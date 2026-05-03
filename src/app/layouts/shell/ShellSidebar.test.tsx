@@ -30,13 +30,13 @@ describe('ShellSidebar', () => {
 			desktopPreference: 'expanded',
 		})
 
-		expect(screen.getByRole('link', { name: 'Inbox' })).toBeInTheDocument()
-		expect(screen.queryByRole('link', { name: 'All Tasks' })).not.toBeInTheDocument()
-		expect(screen.getByRole('link', { name: 'Views' })).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: 'Project Overview' })).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: 'Archive' })).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: 'Trash' })).toBeInTheDocument()
-		expect(screen.queryByRole('link', { name: 'Settings' })).not.toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '收件箱' })).toBeInTheDocument()
+		expect(screen.queryByRole('link', { name: '全部任务' })).not.toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '项目总览' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '归档' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '回收站' })).toBeInTheDocument()
+		expect(screen.queryByRole('link', { name: '设置' })).not.toBeInTheDocument()
 	})
 })
 

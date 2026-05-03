@@ -11,8 +11,8 @@ describe('SettingsPage', () => {
 			</MemoryRouter>,
 		)
 
-		expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument()
+		expect(screen.getByText('设置')).toBeInTheDocument()
 		expect(screen.getByText('设置功能建设中')).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: '返回 Inbox' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '返回收件箱' })).toBeInTheDocument()
 	})
 })

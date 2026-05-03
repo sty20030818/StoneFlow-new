@@ -14,8 +14,8 @@ export const TASK_CREATE_PLACEMENT_OPTIONS: Array<{
 	},
 	{
 		value: 'noProject',
-		label: 'No Project',
-		description: '明确不归属任何项目，直接离开 Inbox。',
+		label: '独立事项',
+		description: '明确不归属任何项目，直接离开收件箱。',
 	},
 	{
 		value: 'project',
@@ -39,13 +39,13 @@ export function getTaskPlacement(task: TaskPlacementLike): TaskPlacement {
 export function formatTaskPlacementLabel(placement: TaskPlacement) {
 	switch (placement) {
 		case 'inbox':
-			return 'Inbox'
+			return '收件箱'
 		case 'noProject':
-			return 'No Project'
+			return '独立事项'
 		case 'project':
-			return 'Project'
+			return '项目'
 		default:
-			return 'Task'
+			return '任务'
 	}
 }
 

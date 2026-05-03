@@ -5,9 +5,11 @@ import type { Scope, Space } from '@/shared/types'
 import type { BadgeVariant } from '@/shared/ui/base/badge'
 import {
 	ArchiveIcon,
+	BoxIcon,
 	FolderIcon,
 	InboxIcon,
 	ListTodoIcon,
+	Layers2Icon,
 	Layers3Icon,
 	Settings2Icon,
 	SparklesIcon,
@@ -66,29 +68,29 @@ export const SHELL_NAV_ITEMS: ShellNavItem<ShellMainNavKey>[] = [
 	{
 		key: 'inbox',
 		section: 'inbox',
-		label: 'Inbox',
+		label: '收件箱',
 		icon: InboxIcon,
 		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'inbox', fallbackSpaceId),
 	},
 	{
 		key: 'allTasks',
 		section: 'allTasks',
-		label: 'All Tasks',
+		label: '全部任务',
 		icon: ListTodoIcon,
 		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'all-tasks', fallbackSpaceId),
 	},
 	{
 		key: 'views',
 		section: 'views',
-		label: 'Views',
-		icon: TargetIcon,
+		label: '视图',
+		icon: Layers2Icon,
 		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'views', fallbackSpaceId),
 	},
 	{
 		key: 'projectOverview',
 		section: 'projects',
-		label: 'Project Overview',
-		icon: FolderIcon,
+		label: '项目总览',
+		icon: BoxIcon,
 		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'projects', fallbackSpaceId),
 	},
 ]
@@ -97,14 +99,14 @@ export const SHELL_FOOTER_ITEMS: ShellNavItem<ShellFooterNavKey>[] = [
 	{
 		key: 'archive',
 		section: 'archive',
-		label: 'Archive',
+		label: '归档',
 		icon: ArchiveIcon,
 		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'archive', fallbackSpaceId),
 	},
 	{
 		key: 'trash',
 		section: 'trash',
-		label: 'Trash',
+		label: '回收站',
 		icon: Trash2Icon,
 		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'trash', fallbackSpaceId),
 	},
@@ -113,7 +115,7 @@ export const SHELL_FOOTER_ITEMS: ShellNavItem<ShellFooterNavKey>[] = [
 export const SHELL_SETTINGS_ITEM: ShellNavItem<'settings'> = {
 	key: 'settings',
 	section: 'settings',
-	label: 'Settings',
+	label: '设置',
 	icon: Settings2Icon,
 	to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'settings', fallbackSpaceId),
 }
@@ -132,7 +134,7 @@ export function resolveShellSection(pathname: string): ShellSectionKey {
 	}
 
 	if (pathname.includes('/no-project')) {
-		return 'allTasks'
+		return 'noProject'
 	}
 
 	if (pathname.includes('/views') || pathname.includes('/focus')) {
@@ -165,23 +167,25 @@ export function resolveShellSection(pathname: string): ShellSectionKey {
 export function getSectionLabel(section: ShellSectionKey) {
 	switch (section) {
 		case 'inbox':
-			return 'Inbox'
+			return '收件箱'
 		case 'allTasks':
-			return 'All Tasks'
+			return '全部任务'
 		case 'views':
-			return 'Views'
+			return '视图'
 		case 'projects':
-			return 'Project Overview'
+			return '项目总览'
 		case 'project':
-			return 'Projects'
+			return '项目列表'
+		case 'noProject':
+			return '独立事项'
 		case 'archive':
-			return 'Archive'
+			return '归档'
 		case 'trash':
-			return 'Trash'
+			return '回收站'
 		case 'settings':
-			return 'Settings'
+			return '设置'
 		default:
-			return 'Workspace'
+			return '工作区'
 	}
 }
 

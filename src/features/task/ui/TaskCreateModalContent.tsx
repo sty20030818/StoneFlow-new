@@ -99,7 +99,7 @@ export function TaskCreateModalContent({
 	async function handleSubmit() {
 		if (placement === 'project' && !projectId) {
 			setStatus('error')
-			setErrorMessage('请选择一个 Project，或改为进入 Inbox / No Project。')
+			setErrorMessage('请选择一个项目，或改为进入收件箱 / 独立事项。')
 			return
 		}
 
@@ -261,8 +261,8 @@ export function TaskCreateModalContent({
 								<SelectGroup>
 									{!lockedProject ? (
 										<>
-											<SelectItem value={INBOX_PLACEMENT_VALUE}>进入 Inbox</SelectItem>
-											<SelectItem value={NO_PROJECT_PLACEMENT_VALUE}>No Project</SelectItem>
+											<SelectItem value={INBOX_PLACEMENT_VALUE}>进入收件箱</SelectItem>
+											<SelectItem value={NO_PROJECT_PLACEMENT_VALUE}>独立事项</SelectItem>
 										</>
 									) : null}
 									{visibleProjects.map((project) => (
@@ -293,7 +293,7 @@ export function TaskCreateModalContent({
 				<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
 					已创建任务。
 					{title.trim() ? ` 任务：${title.trim()}。` : ''}
-					归属：{placement === 'project' ? 'Project' : formatTaskPlacementLabel(placement)}。
+					归属：{placement === 'project' ? '项目' : formatTaskPlacementLabel(placement)}。
 				</StatusNotice>
 			) : status === 'error' ? (
 				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
@@ -301,7 +301,7 @@ export function TaskCreateModalContent({
 				</StatusNotice>
 			) : (
 				<StatusNotice className='text-[12px] leading-5' role='status' size='sm'>
-					阶段 7 使用归属三态：进入 Inbox、No Project、具体 Project。在 Project 内创建时会锁定项目。
+					阶段 7 使用归属三态：进入收件箱、独立事项、具体项目。在项目内创建时会锁定项目。
 				</StatusNotice>
 			)}
 

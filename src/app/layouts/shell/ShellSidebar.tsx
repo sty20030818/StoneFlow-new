@@ -3,6 +3,7 @@ import { NavLink, useMatch, useNavigate } from 'react-router-dom'
 
 import {
 	buildScopedProjectPath,
+	buildScopedSectionPath,
 	SHELL_FOOTER_ITEMS,
 	SHELL_NAV_ITEMS,
 	type ShellProjectLink,
@@ -63,6 +64,7 @@ import {
 	PanelLeftIcon,
 	PlusIcon,
 	RotateCcwIcon,
+	TargetIcon,
 	Trash2Icon,
 } from 'lucide-react'
 
@@ -407,7 +409,7 @@ export function ShellSidebar({
 						{settings.projectSection.visible ? (
 							<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
 								<div className='flex items-center justify-between px-2.5'>
-									<SidebarGroupLabel className='px-0'>Projects</SidebarGroupLabel>
+									<SidebarGroupLabel className='px-0'>项目列表</SidebarGroupLabel>
 									<SidebarGroupAction
 										aria-label='创建项目'
 										onClick={() => onOpenProjectCreateDialog()}
@@ -425,6 +427,10 @@ export function ShellSidebar({
 											</div>
 										) : (
 											<SidebarMenu>
+												<NoProjectSidebarMenuItem
+													currentScope={currentScope}
+													fallbackSpaceId={fallbackSpaceId}
+												/>
 												{projectLinks.map((project) => (
 													<ProjectSidebarMenuItem
 														currentScope={currentScope}
@@ -503,6 +509,30 @@ function ProjectSidebarMenuItem({
 	return (
 		<SidebarMenuItem>
 			<ProjectSidebarRouteMenuItem badge={project.badge} label={project.label} to={projectPath} />
+		</SidebarMenuItem>
+	)
+}
+
+type NoProjectSidebarMenuItemProps = {
+	currentScope: Scope
+	fallbackSpaceId: string | null
+}
+
+function NoProjectSidebarMenuItem({
+	currentScope,
+	fallbackSpaceId,
+}: NoProjectSidebarMenuItemProps) {
+	const noProjectPath = buildScopedSectionPath(currentScope, 'no-project', fallbackSpaceId)
+	const isActive = !!useMatch({ end: true, path: noProjectPath })
+
+	return (
+		<SidebarMenuItem>
+			<SidebarMenuButton asChild isActive={isActive} tooltip='独立事项'>
+				<NavLink to={noProjectPath}>
+					<TargetIcon className='size-3.5 shrink-0 text-(--sf-color-shell-secondary)' />
+					<span className='min-w-0 truncate'>独立事项</span>
+				</NavLink>
+			</SidebarMenuButton>
 		</SidebarMenuItem>
 	)
 }

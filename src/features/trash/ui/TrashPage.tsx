@@ -17,6 +17,12 @@ import {
 	MainCardLayout,
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
+import {
+	Breadcrumb,
+	BreadcrumbItem,
+	BreadcrumbList,
+	BreadcrumbPage,
+} from '@/shared/ui/base/breadcrumb'
 import { Trash2Icon } from 'lucide-react'
 
 // TODO: 接入真实 Trash API（后端需要 list_deleted_entities 命令）
@@ -27,7 +33,7 @@ export function TrashPage() {
 
 	return (
 		<MainCardLayout
-			header={<MainCardHeader title='Trash' />}
+			header={<MainCardHeader breadcrumb={<TrashBreadcrumb />} />}
 			toolbar={
 				<MainCardToolbar
 					pills={[
@@ -50,12 +56,27 @@ export function TrashPage() {
 						</EmptyHeader>
 						<EmptyContent>
 							<Button asChild>
-								<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回 Inbox</Link>
+								<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回收件箱</Link>
 							</Button>
 						</EmptyContent>
 					</Empty>
 				</EmptyPage>
 			</div>
 		</MainCardLayout>
+	)
+}
+
+function TrashBreadcrumb() {
+	return (
+		<Breadcrumb>
+			<BreadcrumbList className='text-sm font-semibold leading-5'>
+				<BreadcrumbItem>
+					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
+						<Trash2Icon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						回收站
+					</BreadcrumbPage>
+				</BreadcrumbItem>
+			</BreadcrumbList>
+		</Breadcrumb>
 	)
 }
