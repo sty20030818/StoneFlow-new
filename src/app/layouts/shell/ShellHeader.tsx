@@ -266,9 +266,14 @@ export function ShellHeader({
 					>
 						<div className='flex min-w-0 flex-1 items-center gap-1' data-tauri-drag-region>
 							{!isMac && (!isWin || !isLayoutNarrow) ? (
-								<Avatar className='size-7 shrink-0 ring-1 ring-(--sf-color-border-strong)'>
-									<AvatarImage alt='StoneFlow' draggable={false} src='/StoneFlow.png' />
-									<AvatarFallback>SF</AvatarFallback>
+								<Avatar className='size-7 shrink-0 rounded-lg ring-1 ring-(--sf-color-border-strong)'>
+									<AvatarImage
+										alt='StoneFlow'
+										className='rounded-lg'
+										draggable={false}
+										src='/StoneFlow.png'
+									/>
+									<AvatarFallback className='rounded-lg'>SF</AvatarFallback>
 								</Avatar>
 							) : null}
 

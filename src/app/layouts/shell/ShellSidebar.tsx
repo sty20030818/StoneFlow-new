@@ -6,6 +6,7 @@ import {
 	buildScopedSectionPath,
 	SHELL_FOOTER_ITEMS,
 	SHELL_NAV_ITEMS,
+	SHELL_SETTINGS_ITEM,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -169,6 +170,10 @@ export function ShellSidebar({
 		}))
 		.filter((item) => item.visible)
 		.sort((left, right) => left.order - right.order)
+	const settingsItem = {
+		...SHELL_SETTINGS_ITEM,
+		to: SHELL_SETTINGS_ITEM.to(currentScope, currentSpaceId),
+	}
 	const projectLinks = settings.projectSection.maxVisible
 		? scopedProjectLinks.slice(0, settings.projectSection.maxVisible)
 		: scopedProjectLinks
@@ -459,6 +464,13 @@ export function ShellSidebar({
 									/>
 								</SidebarMenuItem>
 							))}
+							<SidebarMenuItem key={settingsItem.key}>
+								<SidebarRouteMenuItem
+									icon={settingsItem.icon}
+									label={settingsItem.label}
+									to={settingsItem.to}
+								/>
+							</SidebarMenuItem>
 						</SidebarMenu>
 					</SidebarFooter>
 					<SidebarRail />

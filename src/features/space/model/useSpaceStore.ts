@@ -30,6 +30,8 @@ type SpaceStoreState = {
 	deleteSpace: (spaceId: string) => Promise<Space>
 }
 
+let pendingSpaceLoad: Promise<void> | null = null
+
 async function reloadSpaces(set: (updater: Partial<SpaceStoreState>) => void) {
 	const spaces = await listVisibleSpaces()
 	set({
@@ -40,26 +42,42 @@ async function reloadSpaces(set: (updater: Partial<SpaceStoreState>) => void) {
 	return spaces
 }
 
-export const useSpaceStore = create<SpaceStoreState>((set) => ({
+export const useSpaceStore = create<SpaceStoreState>((set, get) => ({
 	spaces: [],
 	status: 'idle',
 	error: null,
 	load: async () => {
-		set({ status: 'loading', error: null })
-		try {
-			const spaces = await listVisibleSpaces()
-			set({
-				spaces,
-				status: 'ready',
-				error: null,
-			})
-		} catch (error) {
-			set({
-				spaces: [],
-				status: 'error',
-				error: error instanceof Error ? error.message : '加载 Space 列表失败',
-			})
+		const currentStatus = get().status
+		if (currentStatus === 'ready') {
+			return
 		}
+
+		if (pendingSpaceLoad) {
+			return pendingSpaceLoad
+		}
+
+		set({ status: 'loading', error: null })
+
+		pendingSpaceLoad = (async () => {
+			try {
+				const spaces = await listVisibleSpaces()
+				set({
+					spaces,
+					status: 'ready',
+					error: null,
+				})
+			} catch (error) {
+				set({
+					spaces: [],
+					status: 'error',
+					error: error instanceof Error ? error.message : '加载 Space 列表失败',
+				})
+			} finally {
+				pendingSpaceLoad = null
+			}
+		})()
+
+		return pendingSpaceLoad
 	},
 	createSpace: async (input) => {
 		const created = await createSpace(input)

@@ -6,7 +6,7 @@ import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import { TooltipProvider } from '@/shared/ui/base/tooltip'
 
 describe('ShellSidebar', () => {
-	it('按 settings 渲染主导航和固定 footer 入口', () => {
+	it('按 settings 渲染主导航，并把设置固定放在回收站之后', () => {
 		renderShellSidebar({
 			mainItems: {
 				inbox: { visible: true, order: 100 },
@@ -34,9 +34,16 @@ describe('ShellSidebar', () => {
 		expect(screen.queryByRole('link', { name: '全部任务' })).not.toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '项目总览' })).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: '归档' })).toBeInTheDocument()
-		expect(screen.getByRole('link', { name: '回收站' })).toBeInTheDocument()
-		expect(screen.queryByRole('link', { name: '设置' })).not.toBeInTheDocument()
+		const archiveLink = screen.getByRole('link', { name: '归档' })
+		const trashLink = screen.getByRole('link', { name: '回收站' })
+		const settingsLink = screen.getByRole('link', { name: '设置' })
+
+		expect(archiveLink).toBeInTheDocument()
+		expect(trashLink).toBeInTheDocument()
+		expect(settingsLink).toBeInTheDocument()
+		expect(
+			trashLink.compareDocumentPosition(settingsLink) & Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy()
 	})
 })
 
