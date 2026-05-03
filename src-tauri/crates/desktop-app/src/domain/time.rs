@@ -1,6 +1,6 @@
 //! 统一时间工具。
 
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono::{DateTime, Duration, Local, NaiveDate, Utc};
 
 /// 返回当前 UTC 时间。
 pub fn now_utc() -> DateTime<Utc> {
@@ -35,4 +35,26 @@ pub fn date_only(value: DateTime<Utc>) -> NaiveDate {
 /// 判断给定时间是否属于当前 UTC 日期。
 pub fn is_today(value: DateTime<Utc>) -> bool {
     stoneflow_core::is_same_utc_day(value, now_utc())
+}
+
+/// 返回当前本地日历日。
+pub fn today_local_date() -> NaiveDate {
+    Local::now().date_naive()
+}
+
+/// 解析阶段 8 使用的日期字符串。
+/// 优先按 `yyyy-MM-dd` 处理，兼容旧值时回退到 RFC3339 时间戳。
+pub fn parse_calendar_date(value: &str) -> Option<NaiveDate> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    NaiveDate::parse_from_str(trimmed, "%Y-%m-%d")
+        .ok()
+        .or_else(|| {
+            chrono::DateTime::parse_from_rfc3339(trimmed)
+                .ok()
+                .map(|date_time| date_time.with_timezone(&Local).date_naive())
+        })
 }

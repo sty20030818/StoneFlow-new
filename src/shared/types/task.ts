@@ -3,7 +3,16 @@ import type { TaskPriority } from './taskPriority'
 
 export type TaskStatus = 'todo' | 'doing' | 'waiting' | 'done' | 'canceled'
 
-export type TaskListViewKey = 'active' | 'completed' | 'canceled' | 'archived' | 'all'
+export type TaskListViewKey =
+	| 'active'
+	| 'completed'
+	| 'canceled'
+	| 'archived'
+	| 'all'
+	| 'today'
+	| 'focus'
+	| 'upcoming'
+	| 'overdue'
 
 export type TaskPlacement = 'project' | 'inbox' | 'noProject'
 

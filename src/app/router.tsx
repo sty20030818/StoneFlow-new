@@ -24,7 +24,7 @@ const shellChildren = [
 	},
 	{
 		path: 'focus',
-		element: <Navigate replace to='../views' />,
+		element: <Navigate replace to='../views?view=focus' />,
 	},
 	{
 		path: 'all-tasks',

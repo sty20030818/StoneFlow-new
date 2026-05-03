@@ -1,7 +1,9 @@
 //! Task Service：集中承载阶段 6 的 Task 规则、事务与 Activity 编排。
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
+use chrono::NaiveDate;
 use sea_orm::TransactionTrait;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -12,8 +14,13 @@ use stoneflow_entity::{
 
 use crate::{
     app::error::AppError,
-    application::activity::{ActivityAction, ActivityChangeInput, ActivityService, RecordActivityInput},
-    domain::{create_id, normalize_required_text, normalize_slug, now_utc},
+    application::activity::{
+        ActivityAction, ActivityChangeInput, ActivityService, RecordActivityInput,
+    },
+    domain::{
+        create_id, normalize_required_text, normalize_slug, now_utc, parse_calendar_date,
+        today_local_date,
+    },
     infrastructure::repositories::{
         CreateTaskRecord, ProjectRepository, SpaceRepository, TaskLifecycleView, TaskListQuery,
         TaskPlacementQuery, TaskRepository, UpdateTaskPatch,
@@ -201,6 +208,15 @@ enum TaskPlacement {
     NoProject,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum TaskViewPreset {
+    Lifecycle(TaskLifecycleView),
+    Today,
+    Focus,
+    Upcoming,
+    Overdue,
+}
+
 #[derive(Debug, Clone)]
 pub struct TaskService {
     space_repository: SpaceRepository,
@@ -229,18 +245,22 @@ impl TaskService {
     }
 
     /// 列出 Task 列表。
-    pub async fn list_tasks(&self, input: ListTasksInput) -> Result<Vec<TaskListItemDto>, AppError> {
+    pub async fn list_tasks(
+        &self,
+        input: ListTasksInput,
+    ) -> Result<Vec<TaskListItemDto>, AppError> {
         let scope = normalize_scope(&input.scope)?;
-        let lifecycle = parse_view_key(&input.view_key)?;
+        let view_preset = parse_view_key(&input.view_key)?;
         let placement = normalize_list_placement(&input.placement)?;
         let tasks = self
             .repository
             .list(TaskListQuery {
                 space_id: scope.space_id,
                 placement: to_placement_query(&placement),
-                lifecycle,
+                lifecycle: repository_lifecycle_for_preset(view_preset),
             })
             .await?;
+        let tasks = apply_view_preset(tasks, view_preset);
 
         self.build_task_list(tasks).await
     }
@@ -272,7 +292,9 @@ impl TaskService {
         let priority = normalize_priority(input.priority.unwrap_or(0))?;
         let placement = normalize_create_placement(&input.placement)?;
         let project = match &placement {
-            TaskPlacement::Project(project_id) => Some(self.require_visible_project(project_id).await?),
+            TaskPlacement::Project(project_id) => {
+                Some(self.require_visible_project(project_id).await?)
+            }
             TaskPlacement::Inbox | TaskPlacement::NoProject | TaskPlacement::All => None,
         };
         let space = match (&placement, &project) {
@@ -293,7 +315,11 @@ impl TaskService {
         let transaction = self.repository.connection().begin().await?;
         let sort_order = self
             .repository
-            .next_sort_order(&transaction, &space.id, project.as_ref().map(|item| item.id.as_str()))
+            .next_sort_order(
+                &transaction,
+                &space.id,
+                project.as_ref().map(|item| item.id.as_str()),
+            )
             .await?;
         let (completed_at, canceled_at) = timestamps_for_status(status, &now);
         let inbox_at = match &placement {
@@ -369,7 +395,9 @@ impl TaskService {
         let mut changes = Vec::new();
         let now = now_utc().to_rfc3339();
 
-        let current_project = self.load_current_project(current.project_id.as_deref()).await?;
+        let current_project = self
+            .load_current_project(current.project_id.as_deref())
+            .await?;
         let mut next_space_id = current.space_id.clone();
         let mut next_project_id = current.project_id.clone();
         let mut next_inbox_at = current.inbox_at.clone();
@@ -392,7 +420,10 @@ impl TaskService {
             next_space_id = space.id.clone();
 
             if let Some(project) = &current_project {
-                if project.space_id != next_space_id || project.archived_at.is_some() || project.deleted_at.is_some() {
+                if project.space_id != next_space_id
+                    || project.archived_at.is_some()
+                    || project.deleted_at.is_some()
+                {
                     next_project_id = None;
                 }
             }
@@ -401,7 +432,12 @@ impl TaskService {
         if let Some(title) = input.title {
             let title = normalize_required_text(&title, "Task title")?;
             if title != current.title {
-                push_change(&mut changes, "title", Some(json!(current.title)), Some(json!(title.clone())));
+                push_change(
+                    &mut changes,
+                    "title",
+                    Some(json!(current.title)),
+                    Some(json!(title.clone())),
+                );
                 patch.title = Some(title);
             }
         }
@@ -409,7 +445,12 @@ impl TaskService {
         if let Some(note) = input.note {
             let note = normalize_optional_text_option(note);
             if note != current.note {
-                push_change(&mut changes, "note", json_option_string(&current.note), json_option_string(&note));
+                push_change(
+                    &mut changes,
+                    "note",
+                    json_option_string(&current.note),
+                    json_option_string(&note),
+                );
                 patch.note = Some(note);
             }
         }
@@ -417,7 +458,12 @@ impl TaskService {
         if let Some(priority) = input.priority {
             let priority = normalize_priority(priority)?;
             if priority != current.priority {
-                push_change(&mut changes, "priority", Some(json!(current.priority)), Some(json!(priority)));
+                push_change(
+                    &mut changes,
+                    "priority",
+                    Some(json!(current.priority)),
+                    Some(json!(priority)),
+                );
                 patch.priority = Some(priority);
             }
         }
@@ -461,7 +507,12 @@ impl TaskService {
         if let Some(due_at) = input.due_at {
             let due_at = normalize_optional_text_option(due_at);
             if due_at != current.due_at {
-                push_change(&mut changes, "due_at", json_option_string(&current.due_at), json_option_string(&due_at));
+                push_change(
+                    &mut changes,
+                    "due_at",
+                    json_option_string(&current.due_at),
+                    json_option_string(&due_at),
+                );
                 patch.due_at = Some(due_at);
             }
         }
@@ -898,7 +949,10 @@ impl TaskService {
         Ok(current)
     }
 
-    async fn build_task_list(&self, tasks: Vec<task::Model>) -> Result<Vec<TaskListItemDto>, AppError> {
+    async fn build_task_list(
+        &self,
+        tasks: Vec<task::Model>,
+    ) -> Result<Vec<TaskListItemDto>, AppError> {
         let space_map = self.load_space_map(&tasks).await?;
         let project_map = self.load_project_map(&tasks).await?;
 
@@ -1113,14 +1167,57 @@ fn placement_key(placement: &TaskPlacement) -> &'static str {
     }
 }
 
-fn parse_view_key(view_key: &str) -> Result<TaskLifecycleView, AppError> {
+fn parse_view_key(view_key: &str) -> Result<TaskViewPreset, AppError> {
     match view_key.trim().to_ascii_lowercase().as_str() {
-        "active" => Ok(TaskLifecycleView::Active),
-        "completed" => Ok(TaskLifecycleView::Completed),
-        "canceled" => Ok(TaskLifecycleView::Canceled),
-        "archived" => Ok(TaskLifecycleView::Archived),
-        "all" => Ok(TaskLifecycleView::All),
+        "active" => Ok(TaskViewPreset::Lifecycle(TaskLifecycleView::Active)),
+        "completed" => Ok(TaskViewPreset::Lifecycle(TaskLifecycleView::Completed)),
+        "canceled" => Ok(TaskViewPreset::Lifecycle(TaskLifecycleView::Canceled)),
+        "archived" => Ok(TaskViewPreset::Lifecycle(TaskLifecycleView::Archived)),
+        "all" => Ok(TaskViewPreset::Lifecycle(TaskLifecycleView::All)),
+        "today" => Ok(TaskViewPreset::Today),
+        "focus" => Ok(TaskViewPreset::Focus),
+        "upcoming" => Ok(TaskViewPreset::Upcoming),
+        "overdue" => Ok(TaskViewPreset::Overdue),
         _ => Err(AppError::validation("未知 Task viewKey")),
+    }
+}
+
+fn repository_lifecycle_for_preset(view_preset: TaskViewPreset) -> TaskLifecycleView {
+    match view_preset {
+        TaskViewPreset::Lifecycle(lifecycle) => lifecycle,
+        TaskViewPreset::Today
+        | TaskViewPreset::Focus
+        | TaskViewPreset::Upcoming
+        | TaskViewPreset::Overdue => TaskLifecycleView::Active,
+    }
+}
+
+fn apply_view_preset(mut tasks: Vec<task::Model>, view_preset: TaskViewPreset) -> Vec<task::Model> {
+    match view_preset {
+        TaskViewPreset::Lifecycle(_) => tasks,
+        TaskViewPreset::Today => {
+            let today = today_local_date();
+            tasks.retain(|task| matches_today(task, today));
+            tasks.sort_by(|left, right| compare_today_tasks(left, right, today));
+            tasks
+        }
+        TaskViewPreset::Focus => {
+            tasks.retain(matches_focus);
+            tasks.sort_by(compare_focus_tasks);
+            tasks
+        }
+        TaskViewPreset::Upcoming => {
+            let today = today_local_date();
+            tasks.retain(|task| matches_upcoming(task, today));
+            tasks.sort_by(|left, right| compare_upcoming_tasks(left, right, today));
+            tasks
+        }
+        TaskViewPreset::Overdue => {
+            let today = today_local_date();
+            tasks.retain(|task| matches_overdue(task, today));
+            tasks.sort_by(compare_overdue_tasks);
+            tasks
+        }
     }
 }
 
@@ -1186,6 +1283,112 @@ fn timestamps_for_status(status: TaskStatus, now: &str) -> (Option<String>, Opti
         TaskStatus::Canceled => (None, Some(now.to_owned())),
         TaskStatus::Todo | TaskStatus::Doing | TaskStatus::Waiting => (None, None),
     }
+}
+
+fn matches_focus(task: &task::Model) -> bool {
+    matches!(task.status, TaskStatus::Todo | TaskStatus::Doing) && task.priority >= 3
+}
+
+fn matches_today(task: &task::Model, today: NaiveDate) -> bool {
+    let due_date = due_date(task);
+    let scheduled_date = scheduled_date(task);
+    scheduled_date == Some(today)
+        || due_date == Some(today)
+        || due_date.is_some_and(|value| value < today)
+}
+
+fn matches_upcoming(task: &task::Model, today: NaiveDate) -> bool {
+    due_date(task).is_some_and(|value| value > today)
+        || scheduled_date(task).is_some_and(|value| value > today)
+}
+
+fn matches_overdue(task: &task::Model, today: NaiveDate) -> bool {
+    due_date(task).is_some_and(|value| value < today)
+}
+
+fn compare_today_tasks(left: &task::Model, right: &task::Model, today: NaiveDate) -> Ordering {
+    compare_ordering_chain([
+        today_bucket(left, today).cmp(&today_bucket(right, today)),
+        right.priority.cmp(&left.priority),
+        left.sort_order.cmp(&right.sort_order),
+        right.updated_at.cmp(&left.updated_at),
+    ])
+}
+
+fn compare_focus_tasks(left: &task::Model, right: &task::Model) -> Ordering {
+    compare_ordering_chain([
+        right.priority.cmp(&left.priority),
+        compare_option_date_asc(due_date(left), due_date(right)),
+        compare_option_date_asc(scheduled_date(left), scheduled_date(right)),
+        left.sort_order.cmp(&right.sort_order),
+        right.updated_at.cmp(&left.updated_at),
+    ])
+}
+
+fn compare_upcoming_tasks(left: &task::Model, right: &task::Model, today: NaiveDate) -> Ordering {
+    compare_ordering_chain([
+        compare_option_date_asc(
+            next_upcoming_date(left, today),
+            next_upcoming_date(right, today),
+        ),
+        right.priority.cmp(&left.priority),
+        left.sort_order.cmp(&right.sort_order),
+        right.updated_at.cmp(&left.updated_at),
+    ])
+}
+
+fn compare_overdue_tasks(left: &task::Model, right: &task::Model) -> Ordering {
+    compare_ordering_chain([
+        compare_option_date_asc(due_date(left), due_date(right)),
+        right.priority.cmp(&left.priority),
+        left.sort_order.cmp(&right.sort_order),
+        right.updated_at.cmp(&left.updated_at),
+    ])
+}
+
+fn today_bucket(task: &task::Model, today: NaiveDate) -> u8 {
+    if due_date(task).is_some_and(|value| value < today) {
+        return 0;
+    }
+    if due_date(task) == Some(today) {
+        return 1;
+    }
+    if scheduled_date(task) == Some(today) {
+        return 2;
+    }
+    3
+}
+
+fn next_upcoming_date(task: &task::Model, today: NaiveDate) -> Option<NaiveDate> {
+    [scheduled_date(task), due_date(task)]
+        .into_iter()
+        .flatten()
+        .filter(|date| *date > today)
+        .min()
+}
+
+fn due_date(task: &task::Model) -> Option<NaiveDate> {
+    task.due_at.as_deref().and_then(parse_calendar_date)
+}
+
+fn scheduled_date(task: &task::Model) -> Option<NaiveDate> {
+    task.scheduled_at.as_deref().and_then(parse_calendar_date)
+}
+
+fn compare_option_date_asc(left: Option<NaiveDate>, right: Option<NaiveDate>) -> Ordering {
+    match (left, right) {
+        (Some(left), Some(right)) => left.cmp(&right),
+        (Some(_), None) => Ordering::Less,
+        (None, Some(_)) => Ordering::Greater,
+        (None, None) => Ordering::Equal,
+    }
+}
+
+fn compare_ordering_chain<const N: usize>(orderings: [Ordering; N]) -> Ordering {
+    orderings
+        .into_iter()
+        .find(|ordering| *ordering != Ordering::Equal)
+        .unwrap_or(Ordering::Equal)
 }
 
 fn push_change(

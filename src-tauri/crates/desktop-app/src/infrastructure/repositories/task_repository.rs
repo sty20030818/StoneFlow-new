@@ -390,11 +390,17 @@ impl TaskRepository {
     }
 
     /// 永久删除 Task 记录。
-    pub async fn permanently_delete<C>(&self, connection: &C, task_id: &str) -> Result<u64, AppError>
+    pub async fn permanently_delete<C>(
+        &self,
+        connection: &C,
+        task_id: &str,
+    ) -> Result<u64, AppError>
     where
         C: ConnectionTrait,
     {
-        let result = Task::delete_by_id(task_id.to_owned()).exec(connection).await?;
+        let result = Task::delete_by_id(task_id.to_owned())
+            .exec(connection)
+            .await?;
         Ok(result.rows_affected)
     }
 
@@ -411,9 +417,18 @@ impl TaskRepository {
         C: ConnectionTrait,
     {
         let result = Task::update_many()
-            .col_expr(task::Column::ArchivedAt, Expr::value(archived_at.to_owned()))
-            .col_expr(task::Column::ArchivedByType, Expr::value("space".to_owned()))
-            .col_expr(task::Column::ArchivedById, Expr::value(archived_by_id.to_owned()))
+            .col_expr(
+                task::Column::ArchivedAt,
+                Expr::value(archived_at.to_owned()),
+            )
+            .col_expr(
+                task::Column::ArchivedByType,
+                Expr::value("space".to_owned()),
+            )
+            .col_expr(
+                task::Column::ArchivedById,
+                Expr::value(archived_by_id.to_owned()),
+            )
             .col_expr(task::Column::UpdatedAt, Expr::value(updated_at.to_owned()))
             .filter(task::Column::SpaceId.eq(space_id))
             .filter(task::Column::ArchivedAt.is_null())
@@ -438,7 +453,10 @@ impl TaskRepository {
         let result = Task::update_many()
             .col_expr(task::Column::DeletedAt, Expr::value(deleted_at.to_owned()))
             .col_expr(task::Column::DeletedByType, Expr::value("space".to_owned()))
-            .col_expr(task::Column::DeletedById, Expr::value(deleted_by_id.to_owned()))
+            .col_expr(
+                task::Column::DeletedById,
+                Expr::value(deleted_by_id.to_owned()),
+            )
             .col_expr(task::Column::UpdatedAt, Expr::value(updated_at.to_owned()))
             .filter(task::Column::SpaceId.eq(space_id))
             .filter(task::Column::DeletedAt.is_null())
@@ -460,9 +478,18 @@ impl TaskRepository {
         C: ConnectionTrait,
     {
         let result = Task::update_many()
-            .col_expr(task::Column::ArchivedAt, Expr::value(archived_at.to_owned()))
-            .col_expr(task::Column::ArchivedByType, Expr::value("project".to_owned()))
-            .col_expr(task::Column::ArchivedById, Expr::value(archived_by_id.to_owned()))
+            .col_expr(
+                task::Column::ArchivedAt,
+                Expr::value(archived_at.to_owned()),
+            )
+            .col_expr(
+                task::Column::ArchivedByType,
+                Expr::value("project".to_owned()),
+            )
+            .col_expr(
+                task::Column::ArchivedById,
+                Expr::value(archived_by_id.to_owned()),
+            )
             .col_expr(task::Column::UpdatedAt, Expr::value(updated_at.to_owned()))
             .filter(task::Column::ProjectId.eq(project_id))
             .filter(task::Column::ArchivedAt.is_null())
@@ -486,8 +513,14 @@ impl TaskRepository {
     {
         let result = Task::update_many()
             .col_expr(task::Column::DeletedAt, Expr::value(deleted_at.to_owned()))
-            .col_expr(task::Column::DeletedByType, Expr::value("project".to_owned()))
-            .col_expr(task::Column::DeletedById, Expr::value(deleted_by_id.to_owned()))
+            .col_expr(
+                task::Column::DeletedByType,
+                Expr::value("project".to_owned()),
+            )
+            .col_expr(
+                task::Column::DeletedById,
+                Expr::value(deleted_by_id.to_owned()),
+            )
             .col_expr(task::Column::UpdatedAt, Expr::value(updated_at.to_owned()))
             .filter(task::Column::ProjectId.eq(project_id))
             .filter(task::Column::DeletedAt.is_null())

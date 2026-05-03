@@ -42,7 +42,9 @@ pub async fn get_task_detail(
     input: TaskIdInput,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<TaskDetailDto, AppError> {
-    build_task_service(database.inner()).get_task_detail(input).await
+    build_task_service(database.inner())
+        .get_task_detail(input)
+        .await
 }
 
 #[tauri::command]
@@ -51,7 +53,9 @@ pub async fn create_task(
     app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner()).create_task(input).await?;
+    let detail = build_task_service(database.inner())
+        .create_task(input)
+        .await?;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }
@@ -62,7 +66,9 @@ pub async fn update_task(
     app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner()).update_task(input).await?;
+    let detail = build_task_service(database.inner())
+        .update_task(input)
+        .await?;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }
@@ -73,7 +79,9 @@ pub async fn archive_task(
     app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner()).archive_task(input).await?;
+    let detail = build_task_service(database.inner())
+        .archive_task(input)
+        .await?;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }
@@ -123,7 +131,9 @@ pub async fn restore_task(
     app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner()).restore_task(input).await?;
+    let detail = build_task_service(database.inner())
+        .restore_task(input)
+        .await?;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }
@@ -134,12 +144,17 @@ pub async fn delete_task(
     app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner()).delete_task(input).await?;
+    let detail = build_task_service(database.inner())
+        .delete_task(input)
+        .await?;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }
 
-fn emit_task_changed(app_handle: &tauri::AppHandle, detail: &TaskDetailDto) -> Result<(), AppError> {
+fn emit_task_changed(
+    app_handle: &tauri::AppHandle,
+    detail: &TaskDetailDto,
+) -> Result<(), AppError> {
     app_handle
         .emit(
             TASKS_CHANGED_EVENT,

@@ -14,7 +14,11 @@ import {
 } from '@/shared/ui/base/breadcrumb'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
-import { selectProjectOptions, selectProjectSidebar, useProjectStore } from '@/features/project/model/useProjectStore'
+import {
+	selectProjectOptions,
+	selectProjectSidebar,
+	useProjectStore,
+} from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
@@ -53,7 +57,9 @@ export function InboxPage() {
 		leaveListTaskToProject,
 		leaveListTaskAsNoProject,
 	} = useTaskListController()
-	const { selectedTaskIdSet, toggleTaskSelection } = useTaskSelection(taskList.items.map((task) => task.id))
+	const { selectedTaskIdSet, toggleTaskSelection } = useTaskSelection(
+		taskList.items.map((task) => task.id),
+	)
 
 	useEffect(() => {
 		void loadList({
@@ -144,7 +150,10 @@ function InboxPlacementActions({
 }) {
 	return (
 		<div className='flex flex-wrap items-center gap-2'>
-			<Select disabled={isBusy || projectsLoading || projects.length === 0} onValueChange={onLeaveToProject}>
+			<Select
+				disabled={isBusy || projectsLoading || projects.length === 0}
+				onValueChange={onLeaveToProject}
+			>
 				<SelectTrigger
 					aria-label='整理到项目'
 					className='h-8 w-36 rounded-md border-input bg-card text-[12px]'
@@ -168,7 +177,7 @@ function InboxPlacementActions({
 				type='button'
 				variant='outline'
 			>
-				标记独立事项
+				设为独立事项
 			</Button>
 			<span className='inline-flex items-center gap-1 text-[11px] text-(--sf-color-text-tertiary)'>
 				<InboxIcon className='size-3' />

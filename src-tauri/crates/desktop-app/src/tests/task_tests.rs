@@ -1,5 +1,6 @@
 //! 阶段 6 Task 服务回归测试。
 
+use chrono::Duration;
 use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
 use stoneflow_entity::{common::TaskStatus, task};
 use stoneflow_test_support::TempDatabaseDir;
@@ -9,12 +10,11 @@ use crate::{
         activity::ActivityService,
         services::{
             CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
-            InboxTaskProjectInput, ListTasksInput, ListTasksPlacementInput,
-            ListTasksPlacementKind, TaskIdInput, TaskScopeInput, TaskScopeKind, TaskService,
-            UpdateTaskInput,
+            InboxTaskProjectInput, ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind,
+            TaskIdInput, TaskScopeInput, TaskScopeKind, TaskService, UpdateTaskInput,
         },
     },
-    domain::create_id,
+    domain::{create_id, today_local_date},
     infrastructure::{
         database::bootstrap_database,
         repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
@@ -479,8 +479,7 @@ async fn list_tasks_should_filter_scope_project_and_lifecycle() {
 
 #[tokio::test]
 async fn list_tasks_should_filter_inbox_and_no_project_placement() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage7-list-task-placement").expect("temp dir");
+    let temp_dir = TempDatabaseDir::new("stoneflow-stage7-list-task-placement").expect("temp dir");
     let database = bootstrap_database(temp_dir.path())
         .await
         .expect("database bootstrap should succeed");
@@ -583,7 +582,13 @@ async fn list_tasks_should_filter_inbox_and_no_project_placement() {
         .await
         .expect("list project tasks should succeed");
 
-    assert_eq!(inbox_rows.iter().map(|item| item.id.as_str()).collect::<Vec<_>>(), vec![inbox_task.id.as_str()]);
+    assert_eq!(
+        inbox_rows
+            .iter()
+            .map(|item| item.id.as_str())
+            .collect::<Vec<_>>(),
+        vec![inbox_task.id.as_str()]
+    );
     assert!(inbox_rows[0].inbox_at.is_some());
     assert_eq!(
         no_project_rows
@@ -594,7 +599,10 @@ async fn list_tasks_should_filter_inbox_and_no_project_placement() {
     );
     assert!(no_project_rows[0].inbox_at.is_none());
     assert_eq!(
-        project_rows.iter().map(|item| item.id.as_str()).collect::<Vec<_>>(),
+        project_rows
+            .iter()
+            .map(|item| item.id.as_str())
+            .collect::<Vec<_>>(),
         vec![project_task.id.as_str()]
     );
     assert!(project_rows[0].inbox_at.is_none());
@@ -659,7 +667,200 @@ async fn archive_restore_delete_task_should_record_activity_and_return_consisten
     assert_eq!(activity_count, 4);
 }
 
-fn build_task_service(database: &crate::infrastructure::database::DatabaseRuntimeState) -> TaskService {
+#[tokio::test]
+async fn system_task_views_should_filter_and_sort_by_stage8_rules() {
+    let temp_dir = TempDatabaseDir::new("stoneflow-stage8-system-task-views").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_task_service(&database);
+    let space = default_space(&database).await;
+    let today = today_local_date();
+    let overdue_date = (today - Duration::days(1)).format("%Y-%m-%d").to_string();
+    let due_today_date = today.format("%Y-%m-%d").to_string();
+    let scheduled_today_date = today.format("%Y-%m-%d").to_string();
+    let upcoming_soon_date = (today + Duration::days(2)).format("%Y-%m-%d").to_string();
+    let upcoming_later_date = (today + Duration::days(5)).format("%Y-%m-%d").to_string();
+
+    service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::NoProject,
+                project_id: None,
+            },
+            title: "Overdue".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Todo),
+            priority: Some(2),
+            due_at: Some(overdue_date.clone()),
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create overdue task should succeed");
+    service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::NoProject,
+                project_id: None,
+            },
+            title: "Due Today".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Todo),
+            priority: Some(4),
+            due_at: Some(due_today_date.clone()),
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create due today task should succeed");
+    service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::NoProject,
+                project_id: None,
+            },
+            title: "Scheduled Today".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Doing),
+            priority: Some(1),
+            due_at: None,
+            scheduled_at: Some(scheduled_today_date.clone()),
+            reminder_at: None,
+        })
+        .await
+        .expect("create scheduled today task should succeed");
+    service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::NoProject,
+                project_id: None,
+            },
+            title: "Upcoming Soon".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Todo),
+            priority: Some(3),
+            due_at: None,
+            scheduled_at: Some(upcoming_soon_date.clone()),
+            reminder_at: None,
+        })
+        .await
+        .expect("create upcoming soon task should succeed");
+    service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::NoProject,
+                project_id: None,
+            },
+            title: "Upcoming Later".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Todo),
+            priority: Some(4),
+            due_at: Some(upcoming_later_date.clone()),
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create upcoming later task should succeed");
+    service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::NoProject,
+                project_id: None,
+            },
+            title: "Waiting P4".to_owned(),
+            note: None,
+            status: Some(TaskStatus::Waiting),
+            priority: Some(4),
+            due_at: None,
+            scheduled_at: Some(upcoming_soon_date),
+            reminder_at: None,
+        })
+        .await
+        .expect("create waiting task should succeed");
+
+    let base_input = ListTasksInput {
+        scope: TaskScopeInput {
+            kind: TaskScopeKind::Space,
+            space_id: Some(space.id),
+        },
+        view_key: String::new(),
+        placement: ListTasksPlacementInput {
+            kind: ListTasksPlacementKind::All,
+            project_id: None,
+        },
+    };
+
+    let today_rows = service
+        .list_tasks(ListTasksInput {
+            view_key: "today".to_owned(),
+            ..base_input.clone()
+        })
+        .await
+        .expect("today list should succeed");
+    let overdue_rows = service
+        .list_tasks(ListTasksInput {
+            view_key: "overdue".to_owned(),
+            ..base_input.clone()
+        })
+        .await
+        .expect("overdue list should succeed");
+    let focus_rows = service
+        .list_tasks(ListTasksInput {
+            view_key: "focus".to_owned(),
+            ..base_input.clone()
+        })
+        .await
+        .expect("focus list should succeed");
+    let upcoming_rows = service
+        .list_tasks(ListTasksInput {
+            view_key: "upcoming".to_owned(),
+            ..base_input
+        })
+        .await
+        .expect("upcoming list should succeed");
+
+    assert_eq!(
+        today_rows
+            .iter()
+            .map(|item| item.title.as_str())
+            .collect::<Vec<_>>(),
+        vec!["Overdue", "Due Today", "Scheduled Today"]
+    );
+    assert_eq!(
+        overdue_rows
+            .iter()
+            .map(|item| item.title.as_str())
+            .collect::<Vec<_>>(),
+        vec!["Overdue"]
+    );
+    assert_eq!(
+        focus_rows
+            .iter()
+            .map(|item| item.title.as_str())
+            .collect::<Vec<_>>(),
+        vec!["Due Today", "Upcoming Later", "Upcoming Soon"]
+    );
+    assert_eq!(
+        upcoming_rows
+            .iter()
+            .map(|item| item.title.as_str())
+            .collect::<Vec<_>>(),
+        vec!["Upcoming Soon", "Waiting P4", "Upcoming Later"]
+    );
+    assert!(!upcoming_rows.iter().any(|item| item.title == "Due Today"));
+    assert!(!focus_rows.iter().any(|item| item.title == "Waiting P4"));
+}
+
+fn build_task_service(
+    database: &crate::infrastructure::database::DatabaseRuntimeState,
+) -> TaskService {
     let connection = database.connection().clone();
     TaskService::new(
         SpaceRepository::new(connection.clone()),
@@ -768,7 +969,10 @@ where
     C: ConnectionTrait,
 {
     let statement = Statement::from_sql_and_values(DatabaseBackend::Sqlite, sql, [arg.into()]);
-    let row = connection.query_one(statement).await?.expect("row should exist");
+    let row = connection
+        .query_one(statement)
+        .await?
+        .expect("row should exist");
     row.try_get::<i64>("", "value")
 }
 

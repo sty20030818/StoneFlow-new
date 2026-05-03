@@ -1,1 +1,1 @@
-export type FocusViewKey = 'today' | 'pinned' | 'recent'
+export type FocusViewKey = 'today' | 'focus' | 'upcoming' | 'overdue'
