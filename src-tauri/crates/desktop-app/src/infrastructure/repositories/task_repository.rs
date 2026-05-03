@@ -62,10 +62,18 @@ pub enum TaskLifecycleView {
 }
 
 /// Task 列表查询条件。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TaskPlacementQuery {
+    All,
+    Project(String),
+    Inbox,
+    NoProject,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct TaskListQuery {
     pub space_id: Option<String>,
-    pub project_id: Option<String>,
+    pub placement: TaskPlacementQuery,
     pub lifecycle: TaskLifecycleView,
 }
 
@@ -84,6 +92,12 @@ pub struct ProjectTaskCount {
 impl Default for TaskLifecycleView {
     fn default() -> Self {
         Self::Active
+    }
+}
+
+impl Default for TaskPlacementQuery {
+    fn default() -> Self {
+        Self::All
     }
 }
 
@@ -246,9 +260,18 @@ impl TaskRepository {
         if let Some(space_id) = query.space_id.as_deref() {
             task_query = task_query.filter(task::Column::SpaceId.eq(space_id));
         }
-        if let Some(project_id) = query.project_id.as_deref() {
-            task_query = task_query.filter(task::Column::ProjectId.eq(project_id));
-        }
+        task_query = match &query.placement {
+            TaskPlacementQuery::All => task_query,
+            TaskPlacementQuery::Project(project_id) => {
+                task_query.filter(task::Column::ProjectId.eq(project_id.as_str()))
+            }
+            TaskPlacementQuery::Inbox => task_query
+                .filter(task::Column::ProjectId.is_null())
+                .filter(task::Column::InboxAt.is_not_null()),
+            TaskPlacementQuery::NoProject => task_query
+                .filter(task::Column::ProjectId.is_null())
+                .filter(task::Column::InboxAt.is_null()),
+        };
 
         task_query = task_query.filter(task::Column::DeletedAt.is_null());
         task_query = match query.lifecycle {
@@ -299,6 +322,7 @@ impl TaskRepository {
         active_model.archived_at = Set(Some(archived_at.to_owned()));
         active_model.archived_by_type = Set(Some("self".to_owned()));
         active_model.archived_by_id = Set(Some(archived_by_id.to_owned()));
+        active_model.inbox_at = Set(None);
         active_model.updated_at = Set(updated_at.to_owned());
         active_model
             .update(connection)
@@ -356,6 +380,7 @@ impl TaskRepository {
         active_model.deleted_at = Set(Some(deleted_at.to_owned()));
         active_model.deleted_by_type = Set(Some("self".to_owned()));
         active_model.deleted_by_id = Set(Some(deleted_by_id.to_owned()));
+        active_model.inbox_at = Set(None);
         active_model.updated_at = Set(updated_at.to_owned());
         active_model
             .update(connection)

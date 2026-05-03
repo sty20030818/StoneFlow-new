@@ -4,6 +4,7 @@ import { AllTasksPage } from '../features/all-tasks/ui/AllTasksPage'
 import { ArchivePage } from '../features/archive/ui/ArchivePage'
 import { SpaceLayout } from './layouts/SpaceLayout'
 import { InboxPage } from '../features/inbox/ui/InboxPage'
+import { NoProjectPage } from '../features/no-project/ui/NoProjectPage'
 import { ProjectPage } from '../features/project/ui/ProjectPage'
 import { ProjectOverviewPage } from '../features/project-overview/ui/ProjectOverviewPage'
 import { QuickCapturePage } from '../features/quick-capture/ui/QuickCapturePage'
@@ -28,6 +29,10 @@ const shellChildren = [
 	{
 		path: 'all-tasks',
 		element: <AllTasksPage />,
+	},
+	{
+		path: 'no-project',
+		element: <NoProjectPage />,
 	},
 	{
 		path: 'views',

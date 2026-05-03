@@ -131,6 +131,10 @@ export function resolveShellSection(pathname: string): ShellSectionKey {
 		return 'allTasks'
 	}
 
+	if (pathname.includes('/no-project')) {
+		return 'allTasks'
+	}
+
 	if (pathname.includes('/views') || pathname.includes('/focus')) {
 		return 'views'
 	}

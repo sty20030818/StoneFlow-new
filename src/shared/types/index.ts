@@ -1,12 +1,18 @@
 export type { TaskPriority } from './taskPriority'
 export type {
 	CreateTaskInput,
+	LeaveInboxAsNoProjectInput,
+	LeaveInboxToProjectInput,
 	ListTasksInput,
+	MoveTaskToInboxInput,
 	TaskStatus,
 	Task,
 	TaskDetail,
 	TaskListItem,
+	TaskListPlacementInput,
 	TaskListViewKey,
+	TaskPlacement,
+	TaskCreatePlacementInput,
 	TaskView,
 	UpdateTaskInput,
 } from './task'

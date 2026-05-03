@@ -11,12 +11,13 @@ import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { selectProjectDetail, useProjectStore } from '@/features/project/model/useProjectStore'
 import { ProjectTaskBoard } from '@/features/project/ui/ProjectTaskBoard'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
+import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
 import { CommandIcon } from 'lucide-react'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
-import type { TaskListItem, TaskStatus } from '@/shared/types'
+import type { TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
@@ -63,11 +64,15 @@ export function ProjectPage() {
 	const deleteProject = useProjectStore((state) => state.deleteProject)
 	const taskList = useTaskStore(selectTaskList)
 	const loadTaskList = useTaskStore((state) => state.loadList)
-	const updateTask = useTaskStore((state) => state.updateTask)
-	const archiveTask = useTaskStore((state) => state.archiveTask)
-	const deleteTask = useTaskStore((state) => state.deleteTask)
+	const {
+		pendingTaskId,
+		updateTaskStatus,
+		updateTaskPriority,
+		toggleTaskStatus,
+		archiveListTask,
+		deleteListTask,
+	} = useTaskListController()
 	const [busyAction, setBusyAction] = useState<string | null>(null)
-	const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
 	const [taskFilter, setTaskFilter] = useState<ProjectTaskFilter>('all')
 
 	useEffect(() => {
@@ -75,8 +80,11 @@ export function ProjectPage() {
 			void loadDetail(projectId)
 			void loadTaskList({
 				scope,
-				projectId,
 				viewKey: 'all',
+				placement: {
+					kind: 'project',
+					projectId,
+				},
 			})
 		}
 		return () => {
@@ -106,48 +114,6 @@ export function ProjectPage() {
 		} finally {
 			setBusyAction(null)
 		}
-	}
-
-	async function runTaskAction(taskId: string, runner: () => Promise<unknown>) {
-		setPendingTaskId(taskId)
-		try {
-			await runner()
-		} finally {
-			setPendingTaskId(null)
-		}
-	}
-
-	async function handleUpdateTaskStatus(task: TaskListItem, status: TaskListItem['status']) {
-		await runTaskAction(task.id, () =>
-			updateTask({
-				taskId: task.id,
-				status,
-			}),
-		)
-	}
-
-	async function handleUpdateTaskPriority(task: TaskListItem, priority: TaskListItem['priority']) {
-		await runTaskAction(task.id, () =>
-			updateTask({
-				taskId: task.id,
-				priority,
-			}),
-		)
-	}
-
-	async function handleToggleTaskStatus(task: TaskListItem) {
-		await handleUpdateTaskStatus(
-			task,
-			task.status === 'done' || task.status === 'canceled' ? 'todo' : 'done',
-		)
-	}
-
-	async function handleArchiveTask(task: TaskListItem) {
-		await runTaskAction(task.id, () => archiveTask(task.id))
-	}
-
-	async function handleDeleteTask(task: TaskListItem) {
-		await runTaskAction(task.id, () => deleteTask(task.id))
 	}
 
 	const project = detail.item
@@ -216,8 +182,11 @@ export function ProjectPage() {
 						void loadDetail(projectId)
 						void loadTaskList({
 							scope,
-							projectId,
 							viewKey: 'all',
+							placement: {
+								kind: 'project',
+								projectId,
+							},
 						})
 					}}
 					pills={PROJECT_TASK_FILTERS.map((filter) => ({
@@ -253,13 +222,13 @@ export function ProjectPage() {
 					<>
 						<ProjectTaskBoard
 							activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-							onArchiveTask={handleArchiveTask}
-							onDeleteTask={handleDeleteTask}
+							onArchiveTask={archiveListTask}
+							onDeleteTask={deleteListTask}
 							onOpenTask={(taskId) => openDrawer('task', taskId)}
 							onToggleTaskSelection={toggleTaskSelection}
-							onToggleTaskStatus={handleToggleTaskStatus}
-							onUpdateTaskPriority={handleUpdateTaskPriority}
-							onUpdateTaskStatus={handleUpdateTaskStatus}
+							onToggleTaskStatus={toggleTaskStatus}
+							onUpdateTaskPriority={updateTaskPriority}
+							onUpdateTaskStatus={updateTaskStatus}
 							pendingTaskId={pendingTaskId}
 							projectId={project.id}
 							selectedTaskIdSet={selectedTaskIdSet}

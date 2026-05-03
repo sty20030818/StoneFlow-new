@@ -16,7 +16,7 @@ use crate::{
     domain::{create_id, normalize_required_text, normalize_slug, now_utc},
     infrastructure::repositories::{
         CreateTaskRecord, ProjectRepository, SpaceRepository, TaskLifecycleView, TaskListQuery,
-        TaskRepository, UpdateTaskPatch,
+        TaskPlacementQuery, TaskRepository, UpdateTaskPatch,
     },
 };
 
@@ -43,7 +43,26 @@ pub enum TaskScopeKind {
 pub struct ListTasksInput {
     pub scope: TaskScopeInput,
     pub view_key: String,
+    pub placement: ListTasksPlacementInput,
+}
+
+/// Task 列表 placement 查询输入。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListTasksPlacementInput {
+    #[serde(rename = "kind")]
+    pub kind: ListTasksPlacementKind,
     pub project_id: Option<String>,
+}
+
+/// Task 列表 placement 类型。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ListTasksPlacementKind {
+    All,
+    Project,
+    Inbox,
+    NoProject,
 }
 
 /// Task 列表单条记录。
@@ -56,6 +75,7 @@ pub struct TaskListItemDto {
     pub space_slug: String,
     pub project_id: Option<String>,
     pub project_name: Option<String>,
+    pub inbox_at: Option<String>,
     pub title: String,
     pub note: Option<String>,
     pub status: TaskStatus,
@@ -104,7 +124,7 @@ pub struct TaskDetailDto {
 #[serde(rename_all = "camelCase")]
 pub struct CreateTaskInput {
     pub space_id: Option<String>,
-    pub project_id: Option<String>,
+    pub placement: CreateTaskPlacementInput,
     pub title: String,
     pub note: Option<String>,
     pub status: Option<TaskStatus>,
@@ -112,6 +132,24 @@ pub struct CreateTaskInput {
     pub due_at: Option<String>,
     pub scheduled_at: Option<String>,
     pub reminder_at: Option<String>,
+}
+
+/// 创建 Task 时的归属策略输入。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTaskPlacementInput {
+    #[serde(rename = "kind")]
+    pub kind: CreateTaskPlacementKind,
+    pub project_id: Option<String>,
+}
+
+/// 创建 Task 时的 placement 类型。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum CreateTaskPlacementKind {
+    Project,
+    Inbox,
+    NoProject,
 }
 
 /// 更新 Task 的输入。
@@ -142,9 +180,25 @@ pub struct TaskIdInput {
     pub task_id: String,
 }
 
+/// Inbox -> Project 的语义化输入。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InboxTaskProjectInput {
+    pub task_id: String,
+    pub project_id: String,
+}
+
 #[derive(Debug, Clone)]
 struct TaskScope {
     space_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum TaskPlacement {
+    All,
+    Project(String),
+    Inbox,
+    NoProject,
 }
 
 #[derive(Debug, Clone)]
@@ -178,12 +232,12 @@ impl TaskService {
     pub async fn list_tasks(&self, input: ListTasksInput) -> Result<Vec<TaskListItemDto>, AppError> {
         let scope = normalize_scope(&input.scope)?;
         let lifecycle = parse_view_key(&input.view_key)?;
-        let project_id = normalize_optional_id(input.project_id);
+        let placement = normalize_list_placement(&input.placement)?;
         let tasks = self
             .repository
             .list(TaskListQuery {
                 space_id: scope.space_id,
-                project_id,
+                placement: to_placement_query(&placement),
                 lifecycle,
             })
             .await?;
@@ -216,19 +270,23 @@ impl TaskService {
         let reminder_at = normalize_optional_text(input.reminder_at);
         let status = input.status.unwrap_or(TaskStatus::Todo);
         let priority = normalize_priority(input.priority.unwrap_or(0))?;
-        let project = match input.project_id {
-            Some(project_id) => Some(self.require_visible_project(&project_id).await?),
-            None => None,
+        let placement = normalize_create_placement(&input.placement)?;
+        let project = match &placement {
+            TaskPlacement::Project(project_id) => Some(self.require_visible_project(project_id).await?),
+            TaskPlacement::Inbox | TaskPlacement::NoProject | TaskPlacement::All => None,
         };
-        let space = match &project {
-            Some(project) => self.require_visible_space(&project.space_id).await?,
-            None => {
+        let space = match (&placement, &project) {
+            (TaskPlacement::Project(_), Some(project)) => {
+                self.require_visible_space(&project.space_id).await?
+            }
+            (TaskPlacement::Inbox | TaskPlacement::NoProject, None) => {
                 let raw_space_id = input
                     .space_id
                     .as_deref()
                     .ok_or_else(|| AppError::validation("创建 Task 时必须提供 spaceId"))?;
                 self.require_visible_space(raw_space_id).await?
             }
+            _ => return Err(AppError::validation("创建 Task placement 非法")),
         };
 
         let now = now_utc().to_rfc3339();
@@ -238,6 +296,10 @@ impl TaskService {
             .next_sort_order(&transaction, &space.id, project.as_ref().map(|item| item.id.as_str()))
             .await?;
         let (completed_at, canceled_at) = timestamps_for_status(status, &now);
+        let inbox_at = match &placement {
+            TaskPlacement::Inbox => Some(now.clone()),
+            TaskPlacement::Project(_) | TaskPlacement::NoProject | TaskPlacement::All => None,
+        };
         let created = self
             .repository
             .create(
@@ -251,7 +313,7 @@ impl TaskService {
                     status,
                     status_changed_at: now.clone(),
                     priority,
-                    inbox_at: None,
+                    inbox_at,
                     due_at: due_at.clone(),
                     scheduled_at: scheduled_at.clone(),
                     reminder_at: reminder_at.clone(),
@@ -279,6 +341,7 @@ impl TaskService {
                         "spaceId": created.space_id,
                         "spaceName": space.name,
                         "projectId": created.project_id,
+                        "placement": placement_key(&placement),
                     })),
                     changes: Vec::new(),
                 },
@@ -309,6 +372,7 @@ impl TaskService {
         let current_project = self.load_current_project(current.project_id.as_deref()).await?;
         let mut next_space_id = current.space_id.clone();
         let mut next_project_id = current.project_id.clone();
+        let mut next_inbox_at = current.inbox_at.clone();
 
         if let Some(project_patch) = input.project_id {
             match project_patch {
@@ -316,9 +380,11 @@ impl TaskService {
                     let project = self.require_visible_project(&project_id).await?;
                     next_space_id = project.space_id.clone();
                     next_project_id = Some(project.id.clone());
+                    next_inbox_at = None;
                 }
                 None => {
                     next_project_id = None;
+                    next_inbox_at = None;
                 }
             }
         } else if let Some(space_id) = input.space_id.as_deref() {
@@ -374,6 +440,22 @@ impl TaskService {
                 json_option_string(&next_project_id),
             );
             patch.project_id = Some(next_project_id.clone());
+        }
+
+        if let Some(status) = input.status {
+            if matches!(status, TaskStatus::Done | TaskStatus::Canceled) {
+                next_inbox_at = None;
+            }
+        }
+
+        if next_inbox_at != current.inbox_at {
+            push_change(
+                &mut changes,
+                "inbox_at",
+                json_option_string(&current.inbox_at),
+                json_option_string(&next_inbox_at),
+            );
+            patch.inbox_at = Some(next_inbox_at.clone());
         }
 
         if let Some(due_at) = input.due_at {
@@ -487,6 +569,140 @@ impl TaskService {
 
         transaction.commit().await?;
         self.build_task_detail(updated).await
+    }
+
+    /// 把任务重新放回 Inbox。
+    pub async fn move_task_to_inbox(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
+        let task_id = normalize_task_id(&input.task_id)?;
+        let current = self.require_active_task(&task_id).await?;
+
+        if current.inbox_at.is_some() && current.project_id.is_none() {
+            return self.build_task_detail(current).await;
+        }
+
+        let now = now_utc().to_rfc3339();
+        let mut patch = UpdateTaskPatch {
+            project_id: Some(None),
+            inbox_at: Some(Some(now.clone())),
+            ..Default::default()
+        };
+        let changes = vec![
+            ActivityChangeInput {
+                field: "project_id".to_owned(),
+                old_value: json_option_string(&current.project_id),
+                new_value: None,
+            },
+            ActivityChangeInput {
+                field: "inbox_at".to_owned(),
+                old_value: json_option_string(&current.inbox_at),
+                new_value: Some(json!(now.clone())),
+            },
+        ]
+        .into_iter()
+        .filter(|change| change.old_value != change.new_value)
+        .collect::<Vec<_>>();
+
+        if changes.is_empty() {
+            patch.project_id = None;
+            patch.inbox_at = None;
+            return self.build_task_detail(current).await;
+        }
+
+        self.persist_task_transition(
+            &task_id,
+            patch,
+            changes,
+            ActivityAction::TaskInboxEntered,
+            Some(format!("将任务「{}」放回 Inbox", current.title)),
+            &now,
+        )
+        .await
+    }
+
+    /// 把 Inbox 任务整理进 Project。
+    pub async fn leave_inbox_to_project(
+        &self,
+        input: InboxTaskProjectInput,
+    ) -> Result<TaskDetailDto, AppError> {
+        let task_id = normalize_task_id(&input.task_id)?;
+        let current = self.require_active_task(&task_id).await?;
+        let project = self.require_visible_project(&input.project_id).await?;
+        let now = now_utc().to_rfc3339();
+
+        let changes = vec![
+            ActivityChangeInput {
+                field: "space_id".to_owned(),
+                old_value: Some(json!(current.space_id)),
+                new_value: Some(json!(project.space_id.clone())),
+            },
+            ActivityChangeInput {
+                field: "project_id".to_owned(),
+                old_value: json_option_string(&current.project_id),
+                new_value: Some(json!(project.id.clone())),
+            },
+            ActivityChangeInput {
+                field: "inbox_at".to_owned(),
+                old_value: json_option_string(&current.inbox_at),
+                new_value: None,
+            },
+        ]
+        .into_iter()
+        .filter(|change| change.old_value != change.new_value)
+        .collect::<Vec<_>>();
+
+        if changes.is_empty() {
+            return self.build_task_detail(current).await;
+        }
+
+        self.persist_task_transition(
+            &task_id,
+            UpdateTaskPatch {
+                space_id: Some(project.space_id.clone()),
+                project_id: Some(Some(project.id.clone())),
+                inbox_at: Some(None),
+                ..Default::default()
+            },
+            changes,
+            ActivityAction::TaskInboxLeft,
+            Some(format!("将任务「{}」整理进项目", current.title)),
+            &now,
+        )
+        .await
+    }
+
+    /// 把 Inbox 任务标记为 No Project。
+    pub async fn leave_inbox_as_no_project(
+        &self,
+        input: TaskIdInput,
+    ) -> Result<TaskDetailDto, AppError> {
+        let task_id = normalize_task_id(&input.task_id)?;
+        let current = self.require_active_task(&task_id).await?;
+        let now = now_utc().to_rfc3339();
+        let changes = vec![ActivityChangeInput {
+            field: "inbox_at".to_owned(),
+            old_value: json_option_string(&current.inbox_at),
+            new_value: None,
+        }]
+        .into_iter()
+        .filter(|change| change.old_value != change.new_value)
+        .collect::<Vec<_>>();
+
+        if changes.is_empty() {
+            return self.build_task_detail(current).await;
+        }
+
+        self.persist_task_transition(
+            &task_id,
+            UpdateTaskPatch {
+                inbox_at: Some(None),
+                ..Default::default()
+            },
+            changes,
+            ActivityAction::TaskInboxLeft,
+            Some(format!("将任务「{}」标记为 No Project", current.title)),
+            &now,
+        )
+        .await
     }
 
     /// 归档 Task。
@@ -628,6 +844,60 @@ impl TaskService {
         self.build_task_detail(updated).await
     }
 
+    async fn persist_task_transition(
+        &self,
+        task_id: &str,
+        patch: UpdateTaskPatch,
+        changes: Vec<ActivityChangeInput>,
+        action: ActivityAction,
+        summary: Option<String>,
+        now: &str,
+    ) -> Result<TaskDetailDto, AppError> {
+        let transaction = self.repository.connection().begin().await?;
+        let updated = self
+            .repository
+            .update(&transaction, task_id, patch, now)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        self.activity_service
+            .record_activity_in_txn(
+                &transaction,
+                RecordActivityInput {
+                    entity_type: ActivityEntityKind::Task,
+                    entity_id: updated.id.clone(),
+                    action,
+                    actor_type: None,
+                    source: None,
+                    summary,
+                    metadata: Some(json!({
+                        "taskId": updated.id,
+                        "spaceId": updated.space_id,
+                        "projectId": updated.project_id,
+                    })),
+                    changes,
+                },
+            )
+            .await?;
+
+        transaction.commit().await?;
+        self.build_task_detail(updated).await
+    }
+
+    async fn require_active_task(&self, task_id: &str) -> Result<task::Model, AppError> {
+        let current = self
+            .repository
+            .get(task_id)
+            .await?
+            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
+
+        if current.deleted_at.is_some() {
+            return Err(AppError::not_found("Task 不存在"));
+        }
+
+        Ok(current)
+    }
+
     async fn build_task_list(&self, tasks: Vec<task::Model>) -> Result<Vec<TaskListItemDto>, AppError> {
         let space_map = self.load_space_map(&tasks).await?;
         let project_map = self.load_project_map(&tasks).await?;
@@ -652,6 +922,7 @@ impl TaskService {
                     space_slug,
                     project_id: item.project_id,
                     project_name,
+                    inbox_at: item.inbox_at,
                     title: item.title,
                     note: item.note,
                     status: item.status,
@@ -795,6 +1066,53 @@ fn normalize_scope(input: &TaskScopeInput) -> Result<TaskScope, AppError> {
     }
 }
 
+fn normalize_list_placement(input: &ListTasksPlacementInput) -> Result<TaskPlacement, AppError> {
+    match input.kind {
+        ListTasksPlacementKind::All => Ok(TaskPlacement::All),
+        ListTasksPlacementKind::Inbox => Ok(TaskPlacement::Inbox),
+        ListTasksPlacementKind::NoProject => Ok(TaskPlacement::NoProject),
+        ListTasksPlacementKind::Project => {
+            let project_id = input
+                .project_id
+                .as_deref()
+                .ok_or_else(|| AppError::validation("kind=project 时必须提供 projectId"))?;
+            Ok(TaskPlacement::Project(normalize_project_id(project_id)?))
+        }
+    }
+}
+
+fn normalize_create_placement(input: &CreateTaskPlacementInput) -> Result<TaskPlacement, AppError> {
+    match input.kind {
+        CreateTaskPlacementKind::Inbox => Ok(TaskPlacement::Inbox),
+        CreateTaskPlacementKind::NoProject => Ok(TaskPlacement::NoProject),
+        CreateTaskPlacementKind::Project => {
+            let project_id = input
+                .project_id
+                .as_deref()
+                .ok_or_else(|| AppError::validation("kind=project 时必须提供 projectId"))?;
+            Ok(TaskPlacement::Project(normalize_project_id(project_id)?))
+        }
+    }
+}
+
+fn to_placement_query(placement: &TaskPlacement) -> TaskPlacementQuery {
+    match placement {
+        TaskPlacement::All => TaskPlacementQuery::All,
+        TaskPlacement::Project(project_id) => TaskPlacementQuery::Project(project_id.clone()),
+        TaskPlacement::Inbox => TaskPlacementQuery::Inbox,
+        TaskPlacement::NoProject => TaskPlacementQuery::NoProject,
+    }
+}
+
+fn placement_key(placement: &TaskPlacement) -> &'static str {
+    match placement {
+        TaskPlacement::All => "all",
+        TaskPlacement::Project(_) => "project",
+        TaskPlacement::Inbox => "inbox",
+        TaskPlacement::NoProject => "noProject",
+    }
+}
+
 fn parse_view_key(view_key: &str) -> Result<TaskLifecycleView, AppError> {
     match view_key.trim().to_ascii_lowercase().as_str() {
         "active" => Ok(TaskLifecycleView::Active),
@@ -816,17 +1134,6 @@ fn normalize_space_id(value: &str) -> Result<String, AppError> {
 
 fn normalize_project_id(value: &str) -> Result<String, AppError> {
     normalize_required_text(value, "Project id")
-}
-
-fn normalize_optional_id(value: Option<String>) -> Option<String> {
-    value.and_then(|raw| {
-        let normalized = raw.trim();
-        if normalized.is_empty() {
-            None
-        } else {
-            Some(normalized.to_owned())
-        }
-    })
 }
 
 fn normalize_priority(priority: i32) -> Result<i32, AppError> {
@@ -922,6 +1229,13 @@ fn select_update_action(
         .iter()
         .map(|change| change.field.as_str())
         .collect::<Vec<_>>();
+    if changed_fields.contains(&"inbox_at") {
+        return if current.inbox_at.is_some() {
+            ActivityAction::TaskInboxLeft
+        } else {
+            ActivityAction::TaskInboxEntered
+        };
+    }
     if changed_fields.contains(&"project_id") {
         return ActivityAction::TaskMovedProject;
     }
@@ -956,6 +1270,8 @@ fn build_update_summary(action: ActivityAction, title: &str) -> String {
         ActivityAction::TaskMovedProject => format!("调整任务所属项目「{title}」"),
         ActivityAction::TaskMovedSpace => format!("调整任务所属 Space「{title}」"),
         ActivityAction::TaskPriorityChanged => format!("更新任务优先级「{title}」"),
+        ActivityAction::TaskInboxEntered => format!("将任务放回 Inbox「{title}」"),
+        ActivityAction::TaskInboxLeft => format!("将任务移出 Inbox「{title}」"),
         ActivityAction::TaskDueUpdated => format!("更新任务截止时间「{title}」"),
         ActivityAction::TaskScheduledUpdated => format!("更新任务计划时间「{title}」"),
         ActivityAction::TaskReminderUpdated => format!("更新任务提醒时间「{title}」"),

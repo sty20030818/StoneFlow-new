@@ -3,8 +3,12 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ProjectOption } from '@/features/project/model/types'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_PRIORITY_OPTIONS } from '@/features/task/model/taskPriority'
+import {
+	buildCreatePlacementInput,
+	formatTaskPlacementLabel,
+} from '@/features/task/model/taskPlacement'
 import { useTaskStore } from '@/features/task/model/useTaskStore'
-import type { Scope, Space, TaskStatus } from '@/shared/types'
+import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import {
@@ -19,7 +23,6 @@ import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Textarea } from '@/shared/ui/base/textarea'
 
 type TaskCreateModalContentProps = {
-	currentSpaceLabel: string
 	currentScope: Scope
 	spaces: Space[]
 	initialProjectId: string | null
@@ -30,14 +33,14 @@ type TaskCreateModalContentProps = {
 }
 
 const EMPTY_PRIORITY_VALUE = '__priority-empty__'
-const EMPTY_PROJECT_VALUE = '__project-empty__'
 const EMPTY_SPACE_VALUE = '__space-empty__'
+const INBOX_PLACEMENT_VALUE = '__task-placement-inbox__'
+const NO_PROJECT_PLACEMENT_VALUE = '__task-placement-no-project__'
 
 /**
  * 阶段 6：任务创建弹窗直连真实 Task 创建命令，规则在 UI 层只做最小输入约束。
  */
 export function TaskCreateModalContent({
-	currentSpaceLabel,
 	currentScope,
 	spaces,
 	initialProjectId,
@@ -51,15 +54,18 @@ export function TaskCreateModalContent({
 	const defaultSpaceId = getDefaultSpaceId(spaces)
 	const initialProject = projects.find((project) => project.id === initialProjectId) ?? null
 	const initialSpaceId = initialProject?.spaceId ?? getInitialSpaceId(currentScope, defaultSpaceId)
+	const initialPlacement: TaskPlacement = initialProjectId ? 'project' : 'inbox'
 	const [title, setTitle] = useState('')
 	const [note, setNote] = useState('')
 	const [priority, setPriority] = useState<TaskPriorityValue>(3)
 	const [spaceId, setSpaceId] = useState(initialSpaceId)
+	const [placement, setPlacement] = useState<TaskPlacement>(initialPlacement)
 	const [projectId, setProjectId] = useState(initialProjectId ?? '')
 	const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
 	useEffect(() => {
+		setPlacement(initialProjectId ? 'project' : 'inbox')
 		setProjectId(initialProjectId ?? '')
 		setSpaceId(initialProject?.spaceId ?? getInitialSpaceId(currentScope, defaultSpaceId))
 	}, [currentScope, defaultSpaceId, initialProject?.spaceId, initialProjectId])
@@ -68,6 +74,7 @@ export function TaskCreateModalContent({
 		setTitle('')
 		setNote('')
 		setPriority(3)
+		setPlacement(initialProjectId ? 'project' : 'inbox')
 		setSpaceId(initialProject?.spaceId ?? getInitialSpaceId(currentScope, defaultSpaceId))
 		setProjectId(initialProjectId ?? '')
 		setStatus('idle')
@@ -90,7 +97,13 @@ export function TaskCreateModalContent({
 	}, [handleReset, onClose, status])
 
 	async function handleSubmit() {
-		if (!spaceId) {
+		if (placement === 'project' && !projectId) {
+			setStatus('error')
+			setErrorMessage('请选择一个 Project，或改为进入 Inbox / No Project。')
+			return
+		}
+
+		if (placement !== 'project' && !spaceId) {
 			setStatus('error')
 			setErrorMessage('当前没有可用 Space，无法创建任务。')
 			return
@@ -101,8 +114,8 @@ export function TaskCreateModalContent({
 
 		try {
 			await createTask({
-				spaceId,
-				projectId: projectId || null,
+				spaceId: placement === 'project' ? null : spaceId,
+				placement: buildCreatePlacementInput(placement, projectId || null),
 				title: title.trim(),
 				note: note.trim() ? note.trim() : null,
 				status: initialStatus,
@@ -118,7 +131,17 @@ export function TaskCreateModalContent({
 	const visibleProjects = spaceId
 		? projects.filter((project) => project.spaceId === spaceId)
 		: projects
-	const canSubmit = status === 'idle' && title.trim().length > 0 && spaceId.length > 0
+	const canSubmit =
+		status === 'idle' &&
+		title.trim().length > 0 &&
+		(placement === 'project' ? projectId.length > 0 : spaceId.length > 0)
+
+	const placementSelectValue = (() => {
+		if (placement === 'project') {
+			return projectId || INBOX_PLACEMENT_VALUE
+		}
+		return placement === 'noProject' ? NO_PROJECT_PLACEMENT_VALUE : INBOX_PLACEMENT_VALUE
+	})()
 
 	return (
 		<div className='flex flex-col gap-4'>
@@ -140,7 +163,7 @@ export function TaskCreateModalContent({
 					<label className='flex flex-col gap-1.5'>
 						<span className='text-[12px] font-medium text-foreground'>Space</span>
 						<Select
-							disabled={lockedProject || status !== 'idle'}
+							disabled={lockedProject || placement === 'project' || status !== 'idle'}
 							onValueChange={(value) => {
 								const nextSpaceId = value === EMPTY_SPACE_VALUE ? '' : value
 								setSpaceId(nextSpaceId)
@@ -203,21 +226,45 @@ export function TaskCreateModalContent({
 					</label>
 
 					<label className='flex flex-col gap-1.5'>
-						<span className='text-[12px] font-medium text-foreground'>项目</span>
+						<span className='text-[12px] font-medium text-foreground'>归属目标</span>
 						<Select
 							disabled={lockedProject || projectsLoading || status !== 'idle'}
-							onValueChange={(value) => setProjectId(value === EMPTY_PROJECT_VALUE ? '' : value)}
-							value={projectId || EMPTY_PROJECT_VALUE}
+							onValueChange={(value) => {
+								if (value === INBOX_PLACEMENT_VALUE) {
+									setPlacement('inbox')
+									setProjectId('')
+									return
+								}
+
+								if (value === NO_PROJECT_PLACEMENT_VALUE) {
+									setPlacement('noProject')
+									setProjectId('')
+									return
+								}
+
+								const targetProject = projects.find((project) => project.id === value) ?? null
+								setPlacement('project')
+								setProjectId(value)
+								if (targetProject) {
+									setSpaceId(targetProject.spaceId)
+								}
+							}}
+							value={lockedProject ? initialProjectId ?? '' : placementSelectValue}
 						>
 							<SelectTrigger
-								aria-label='项目'
+								aria-label='归属目标'
 								className='h-11 w-full rounded-md border-input bg-card'
 							>
-								<SelectValue placeholder={projectsLoading ? '正在加载项目...' : '选择项目'} />
+								<SelectValue placeholder={projectsLoading ? '正在加载项目...' : '选择归属目标'} />
 							</SelectTrigger>
 							<SelectContent position='popper'>
 								<SelectGroup>
-									<SelectItem value={EMPTY_PROJECT_VALUE}>稍后归类</SelectItem>
+									{!lockedProject ? (
+										<>
+											<SelectItem value={INBOX_PLACEMENT_VALUE}>进入 Inbox</SelectItem>
+											<SelectItem value={NO_PROJECT_PLACEMENT_VALUE}>No Project</SelectItem>
+										</>
+									) : null}
 									{visibleProjects.map((project) => (
 										<SelectItem key={project.id} value={project.id}>
 											{project.name}
@@ -246,7 +293,7 @@ export function TaskCreateModalContent({
 				<StatusNotice className='text-[12px] leading-5' role='status' size='sm' variant='success'>
 					已创建任务。
 					{title.trim() ? ` 任务：${title.trim()}。` : ''}
-					当前入口：{currentSpaceLabel}。
+					归属：{placement === 'project' ? 'Project' : formatTaskPlacementLabel(placement)}。
 				</StatusNotice>
 			) : status === 'error' ? (
 				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
@@ -254,7 +301,7 @@ export function TaskCreateModalContent({
 				</StatusNotice>
 			) : (
 				<StatusNotice className='text-[12px] leading-5' role='status' size='sm'>
-					阶段 6 直接创建真实任务；在 Project 内创建时会锁定项目并自动跟随 Space。
+					阶段 7 使用归属三态：进入 Inbox、No Project、具体 Project。在 Project 内创建时会锁定项目。
 				</StatusNotice>
 			)}
 

@@ -5,6 +5,35 @@ export type TaskStatus = 'todo' | 'doing' | 'waiting' | 'done' | 'canceled'
 
 export type TaskListViewKey = 'active' | 'completed' | 'canceled' | 'archived' | 'all'
 
+export type TaskPlacement = 'project' | 'inbox' | 'noProject'
+
+export type TaskListPlacementInput =
+	| {
+			kind: 'all'
+	  }
+	| {
+			kind: 'project'
+			projectId: string
+	  }
+	| {
+			kind: 'inbox'
+	  }
+	| {
+			kind: 'noProject'
+	  }
+
+export type TaskCreatePlacementInput =
+	| {
+			kind: 'project'
+			projectId: string
+	  }
+	| {
+			kind: 'inbox'
+	  }
+	| {
+			kind: 'noProject'
+	  }
+
 export type Task = {
 	id: string
 	title: string
@@ -31,6 +60,7 @@ export type TaskListItem = {
 	spaceSlug: string
 	projectId: string | null
 	projectName: string | null
+	inboxAt: string | null
 	title: string
 	note: string | null
 	status: TaskStatus
@@ -47,7 +77,6 @@ export type TaskListItem = {
 }
 
 export type TaskDetail = TaskListItem & {
-	inboxAt: string | null
 	sortOrder: number
 	deletedAt: string | null
 }
@@ -55,12 +84,12 @@ export type TaskDetail = TaskListItem & {
 export type ListTasksInput = {
 	scope: Scope
 	viewKey: TaskListViewKey
-	projectId?: string | null
+	placement: TaskListPlacementInput
 }
 
 export type CreateTaskInput = {
 	spaceId?: string | null
-	projectId?: string | null
+	placement: TaskCreatePlacementInput
 	title: string
 	note?: string | null
 	status?: TaskStatus | null
@@ -81,4 +110,17 @@ export type UpdateTaskInput = {
 	dueAt?: string | null
 	scheduledAt?: string | null
 	reminderAt?: string | null
+}
+
+export type MoveTaskToInboxInput = {
+	taskId: string
+}
+
+export type LeaveInboxToProjectInput = {
+	taskId: string
+	projectId: string
+}
+
+export type LeaveInboxAsNoProjectInput = {
+	taskId: string
 }

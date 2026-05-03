@@ -9,7 +9,9 @@ import {
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
+import { getTaskPlacement } from '@/features/task/model/taskPlacement'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
@@ -21,12 +23,12 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
-import type { TaskListItem, TaskStatus } from '@/shared/types'
+import type { TaskStatus } from '@/shared/types'
 import { CommandIcon, ListTodoIcon, PlusIcon } from 'lucide-react'
 
-type TaskFilter = 'all' | TaskStatus
+type TaskFilter = 'all' | 'noProject' | TaskStatus
 
-const TASK_FILTERS: TaskFilter[] = ['all', 'doing', 'todo', 'waiting', 'done', 'canceled']
+const TASK_FILTERS: TaskFilter[] = ['all', 'noProject', 'doing', 'todo', 'waiting', 'done', 'canceled']
 
 export function AllTasksPage() {
 	const { scope } = useScopeRoute()
@@ -36,11 +38,15 @@ export function AllTasksPage() {
 	const openDrawer = useDrawerStore((state) => state.openDrawer)
 	const taskList = useTaskStore(selectTaskList)
 	const loadList = useTaskStore((state) => state.loadList)
-	const updateTask = useTaskStore((state) => state.updateTask)
-	const archiveTask = useTaskStore((state) => state.archiveTask)
-	const deleteTask = useTaskStore((state) => state.deleteTask)
+	const {
+		pendingTaskId,
+		updateTaskStatus,
+		updateTaskPriority,
+		toggleTaskStatus,
+		archiveListTask,
+		deleteListTask,
+	} = useTaskListController()
 	const [taskFilter, setTaskFilter] = useState<TaskFilter>('all')
-	const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
 
 	const visibleTasks = useMemo(
 		() => taskList.items.filter((task) => task.archivedAt === null),
@@ -50,7 +56,9 @@ export function AllTasksPage() {
 		() =>
 			taskFilter === 'all'
 				? visibleTasks
-				: visibleTasks.filter((task) => task.status === taskFilter),
+				: taskFilter === 'noProject'
+					? visibleTasks.filter((task) => getTaskPlacement(task) === 'noProject')
+					: visibleTasks.filter((task) => task.status === taskFilter),
 		[taskFilter, visibleTasks],
 	)
 	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } = useTaskSelection(
@@ -61,50 +69,9 @@ export function AllTasksPage() {
 		void loadList({
 			scope,
 			viewKey: 'all',
+			placement: { kind: 'all' },
 		})
 	}, [loadList, scope])
-
-	async function runTaskAction(taskId: string, runner: () => Promise<unknown>) {
-		setPendingTaskId(taskId)
-		try {
-			await runner()
-		} finally {
-			setPendingTaskId(null)
-		}
-	}
-
-	async function handleUpdateTaskStatus(task: TaskListItem, status: TaskListItem['status']) {
-		await runTaskAction(task.id, () =>
-			updateTask({
-				taskId: task.id,
-				status,
-			}),
-		)
-	}
-
-	async function handleUpdateTaskPriority(task: TaskListItem, priority: TaskListItem['priority']) {
-		await runTaskAction(task.id, () =>
-			updateTask({
-				taskId: task.id,
-				priority,
-			}),
-		)
-	}
-
-	async function handleToggleTaskStatus(task: TaskListItem) {
-		await handleUpdateTaskStatus(
-			task,
-			task.status === 'done' || task.status === 'canceled' ? 'todo' : 'done',
-		)
-	}
-
-	async function handleArchiveTask(task: TaskListItem) {
-		await runTaskAction(task.id, () => archiveTask(task.id))
-	}
-
-	async function handleDeleteTask(task: TaskListItem) {
-		await runTaskAction(task.id, () => deleteTask(task.id))
-	}
 
 	return (
 		<MainCardLayout
@@ -127,10 +94,16 @@ export function AllTasksPage() {
 						void loadList({
 							scope,
 							viewKey: 'all',
+							placement: { kind: 'all' },
 						})
 					}}
 					pills={TASK_FILTERS.map((filter) => ({
-						label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
+						label:
+							filter === 'all'
+								? '所有任务'
+								: filter === 'noProject'
+									? 'No Project'
+									: formatTaskStatusLabel(filter),
 						active: taskFilter === filter,
 						onClick: () => setTaskFilter(filter),
 					}))}
@@ -144,14 +117,14 @@ export function AllTasksPage() {
 					emptyDescription='当前筛选下没有任务，尝试切换筛选或创建新任务。'
 					emptyTitle='暂无任务'
 					hideEmptySections
-					onArchiveTask={handleArchiveTask}
-					onDeleteTask={handleDeleteTask}
+					onArchiveTask={archiveListTask}
+					onDeleteTask={deleteListTask}
 					onEmptyAction={() => openTaskCreateDialog({ status: 'todo' })}
 					onOpenTask={(taskId) => openDrawer('task', taskId)}
 					onToggleTaskSelection={toggleTaskSelection}
-					onToggleTaskStatus={handleToggleTaskStatus}
-					onUpdateTaskPriority={handleUpdateTaskPriority}
-					onUpdateTaskStatus={handleUpdateTaskStatus}
+					onToggleTaskStatus={toggleTaskStatus}
+					onUpdateTaskPriority={updateTaskPriority}
+					onUpdateTaskStatus={updateTaskStatus}
 					pendingTaskId={pendingTaskId}
 					rowVariant='project'
 					selectedTaskIdSet={selectedTaskIdSet}

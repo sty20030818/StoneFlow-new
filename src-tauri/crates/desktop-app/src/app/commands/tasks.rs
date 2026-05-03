@@ -8,8 +8,8 @@ use crate::{
     application::{
         activity::ActivityService,
         services::{
-            CreateTaskInput, ListTasksInput, TaskDetailDto, TaskIdInput, TaskListItemDto,
-            TaskService, UpdateTaskInput,
+            CreateTaskInput, InboxTaskProjectInput, ListTasksInput, TaskDetailDto, TaskIdInput,
+            TaskListItemDto, TaskService, UpdateTaskInput,
         },
     },
     infrastructure::{
@@ -74,6 +74,45 @@ pub async fn archive_task(
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<TaskDetailDto, AppError> {
     let detail = build_task_service(database.inner()).archive_task(input).await?;
+    emit_task_changed(&app_handle, &detail)?;
+    Ok(detail)
+}
+
+#[tauri::command]
+pub async fn move_task_to_inbox(
+    input: TaskIdInput,
+    app_handle: tauri::AppHandle,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<TaskDetailDto, AppError> {
+    let detail = build_task_service(database.inner())
+        .move_task_to_inbox(input)
+        .await?;
+    emit_task_changed(&app_handle, &detail)?;
+    Ok(detail)
+}
+
+#[tauri::command]
+pub async fn leave_inbox_to_project(
+    input: InboxTaskProjectInput,
+    app_handle: tauri::AppHandle,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<TaskDetailDto, AppError> {
+    let detail = build_task_service(database.inner())
+        .leave_inbox_to_project(input)
+        .await?;
+    emit_task_changed(&app_handle, &detail)?;
+    Ok(detail)
+}
+
+#[tauri::command]
+pub async fn leave_inbox_as_no_project(
+    input: TaskIdInput,
+    app_handle: tauri::AppHandle,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<TaskDetailDto, AppError> {
+    let detail = build_task_service(database.inner())
+        .leave_inbox_as_no_project(input)
+        .await?;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }

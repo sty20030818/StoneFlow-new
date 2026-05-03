@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 
 import {
 	selectProjectTaskBoardOpenSections,
@@ -69,6 +69,7 @@ type TaskBoardProps = {
 	hideEmptySections?: boolean
 	sectionVariant?: TaskBoardSectionVariant
 	rowVariant?: TaskBoardRowVariant
+	renderRowActions?: (task: TaskListItem) => ReactNode
 }
 
 export function TaskBoard({
@@ -93,6 +94,7 @@ export function TaskBoard({
 	hideEmptySections = false,
 	sectionVariant = 'compact',
 	rowVariant = 'stacked',
+	renderRowActions,
 }: TaskBoardProps) {
 	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
 	const setProjectTaskBoardOpenSections = useShellPreferenceStore(
@@ -164,6 +166,7 @@ export function TaskBoard({
 					onUpdateTaskStatus={onUpdateTaskStatus}
 					open={openSections.includes(status)}
 					pendingTaskId={pendingTaskId}
+					renderRowActions={renderRowActions}
 					rowVariant={rowVariant}
 					selectedTaskIdSet={selectedTaskIdSet}
 					sectionVariant={sectionVariant}
@@ -196,6 +199,7 @@ type TaskStatusSectionProps = {
 	onOpenTask: (taskId: string) => void
 	sectionVariant: TaskBoardSectionVariant
 	rowVariant: TaskBoardRowVariant
+	renderRowActions?: (task: TaskListItem) => ReactNode
 }
 
 function TaskStatusSection({
@@ -218,6 +222,7 @@ function TaskStatusSection({
 	onOpenTask,
 	sectionVariant,
 	rowVariant,
+	renderRowActions,
 }: TaskStatusSectionProps) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
@@ -325,6 +330,7 @@ function TaskStatusSection({
 							onUpdateTaskPriority={onUpdateTaskPriority}
 							onUpdateTaskStatus={onUpdateTaskStatus}
 							pendingTaskId={pendingTaskId}
+							renderRowActions={renderRowActions}
 							rowVariant={rowVariant}
 							selectedTaskIdSet={selectedTaskIdSet}
 							task={task}
@@ -350,6 +356,7 @@ function TaskBoardRow({
 	onArchiveTask,
 	onOpenTask,
 	rowVariant,
+	renderRowActions,
 }: {
 	task: TaskListItem
 	pendingTaskId: string | null
@@ -364,6 +371,7 @@ function TaskBoardRow({
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
 	rowVariant: TaskBoardRowVariant
+	renderRowActions?: (task: TaskListItem) => ReactNode
 }) {
 	const isPending = pendingTaskId === task.id
 	const isActive = activeTaskId === task.id
@@ -459,6 +467,15 @@ function TaskBoardRow({
 								{task.dueAt ? <span>Due {task.dueAt}</span> : null}
 								{task.archivedAt ? <span>已归档</span> : null}
 							</div>
+							{renderRowActions ? (
+								<div
+									className='mt-2'
+									onClick={(event) => event.stopPropagation()}
+									onKeyDown={(event) => event.stopPropagation()}
+								>
+									{renderRowActions(task)}
+								</div>
+							) : null}
 						</div>
 					)}
 				</div>

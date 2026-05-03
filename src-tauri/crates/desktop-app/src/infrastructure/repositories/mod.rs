@@ -16,7 +16,7 @@ pub use project_repository::{
 pub use settings_repository::SettingsRepository;
 pub use space_repository::{CreateSpaceRecord, SpaceRepository, UpdateSpacePatch};
 pub use task_repository::{
-    CreateTaskRecord, ProjectTaskCount, TaskLifecycleView, TaskListQuery, TaskRepository,
-    UpdateTaskPatch,
+    CreateTaskRecord, ProjectTaskCount, TaskLifecycleView, TaskListQuery, TaskPlacementQuery,
+    TaskRepository, UpdateTaskPatch,
 };
 pub use view_repository::ViewRepository;

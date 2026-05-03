@@ -43,7 +43,12 @@ type TaskDraft = {
 
 const EMPTY_PROJECT_VALUE = '__task-drawer-project-empty__'
 
-export function TaskDrawerContent({ currentSpaceLabel, taskId, onClose, activeTab }: TaskDrawerContentProps) {
+export function TaskDrawerContent({
+	currentSpaceLabel: _currentSpaceLabel,
+	taskId,
+	onClose: _onClose,
+	activeTab,
+}: TaskDrawerContentProps) {
 	const detail = useTaskStore(selectTaskDetail)
 	const loadDetail = useTaskStore((state) => state.loadDetail)
 	const clearDetail = useTaskStore((state) => state.clearDetail)
@@ -154,22 +159,39 @@ export function TaskDrawerContent({ currentSpaceLabel, taskId, onClose, activeTa
 			return
 		}
 
+		const normalizedTitle = draft.title.trim()
+		const normalizedNote = draft.note.trim() || null
+		const normalizedProjectId = draft.projectId || null
+		const normalizedDueAt = draft.dueAt.trim() || null
+		const normalizedScheduledAt = draft.scheduledAt.trim() || null
+		const normalizedReminderAt = draft.reminderAt.trim() || null
+		const updateInput = {
+			taskId: detail.item.id,
+			title: normalizedTitle !== detail.item.title ? normalizedTitle : undefined,
+			note: normalizedNote !== detail.item.note ? normalizedNote : undefined,
+			status: draft.status !== detail.item.status ? (draft.status as typeof detail.item.status) : undefined,
+			priority: draft.priority !== detail.item.priority ? (draft.priority as typeof detail.item.priority) : undefined,
+			spaceId: draft.spaceId !== detail.item.spaceId ? draft.spaceId : undefined,
+			projectId:
+				normalizedProjectId !== detail.item.projectId ? normalizedProjectId : undefined,
+			dueAt: normalizedDueAt !== detail.item.dueAt ? normalizedDueAt : undefined,
+			scheduledAt:
+				normalizedScheduledAt !== detail.item.scheduledAt ? normalizedScheduledAt : undefined,
+			reminderAt:
+				normalizedReminderAt !== detail.item.reminderAt ? normalizedReminderAt : undefined,
+		}
+
+		if (Object.values(updateInput).every((value, index) => index === 0 || value === undefined)) {
+			setSaveStatus('idle')
+			setSaveMessage('没有需要保存的改动')
+			return
+		}
+
 		setSaveStatus('saving')
 		setSaveMessage(null)
 
 		try {
-			await updateTask({
-				taskId: detail.item.id,
-				title: draft.title.trim(),
-				note: draft.note.trim() || null,
-				status: draft.status as typeof detail.item.status,
-				priority: draft.priority as typeof detail.item.priority,
-				spaceId: draft.spaceId,
-				projectId: draft.projectId || null,
-				dueAt: draft.dueAt.trim() || null,
-				scheduledAt: draft.scheduledAt.trim() || null,
-				reminderAt: draft.reminderAt.trim() || null,
-			})
+			await updateTask(updateInput)
 			setSaveStatus('idle')
 			setSaveMessage('已保存')
 		} catch (error) {

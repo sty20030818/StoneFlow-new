@@ -26,7 +26,7 @@ type TaskCreateDialogProps = {
  */
 export function TaskCreateDialog({
 	open,
-	currentSpaceLabel,
+	currentSpaceLabel: _currentSpaceLabel,
 	currentScope,
 	spaces,
 	projects,
@@ -43,13 +43,12 @@ export function TaskCreateDialog({
 						新建任务
 					</DialogTitle>
 					<DialogDescription className='max-w-136 text-[13px] leading-5 text-muted-foreground'>
-						先记录任务标题，再补充优先级、归属项目和备注，创建后会进入当前入口指定的执行状态。
+						先记录任务标题，再决定进入 Inbox、No Project 或具体 Project，并补充优先级与备注。
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className='px-6 pb-5 pt-4'>
 					<TaskCreateModalContent
-						currentSpaceLabel={currentSpaceLabel}
 						currentScope={currentScope}
 						initialProjectId={initialProjectId}
 						initialStatus={initialStatus}

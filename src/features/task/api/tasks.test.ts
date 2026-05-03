@@ -5,7 +5,10 @@ import {
 	createTask,
 	deleteTask,
 	getTaskDetail,
+	leaveInboxAsNoProject,
+	leaveInboxToProject,
 	listTasks,
+	moveTaskToInbox,
 	restoreTask,
 	updateTask,
 } from '@/features/task/api/tasks'
@@ -21,13 +24,16 @@ describe('tasks api', () => {
 		mockedInvoke.mockReset()
 	})
 
-	it('读取列表时发送 scope、viewKey 和 projectId', async () => {
+	it('读取列表时发送 scope、viewKey 和 placement', async () => {
 		mockedInvoke.mockResolvedValue([])
 
 		await listTasks({
 			scope: { type: 'space', spaceId: 'space-1' },
 			viewKey: 'completed',
-			projectId: 'project-1',
+			placement: {
+				kind: 'project',
+				projectId: 'project-1',
+			},
 		})
 
 		expect(mockedInvoke).toHaveBeenCalledWith('list_tasks', {
@@ -37,7 +43,10 @@ describe('tasks api', () => {
 					spaceId: 'space-1',
 				},
 				viewKey: 'completed',
-				projectId: 'project-1',
+				placement: {
+					kind: 'project',
+					projectId: 'project-1',
+				},
 			},
 		})
 	})
@@ -48,7 +57,10 @@ describe('tasks api', () => {
 		await getTaskDetail('task-1')
 		await createTask({
 			spaceId: 'space-1',
-			projectId: 'project-1',
+			placement: {
+				kind: 'project',
+				projectId: 'project-1',
+			},
 			title: '阶段 6',
 			note: '接入 task drawer',
 			status: 'doing',
@@ -70,7 +82,10 @@ describe('tasks api', () => {
 		expect(mockedInvoke).toHaveBeenNthCalledWith(2, 'create_task', {
 			input: {
 				spaceId: 'space-1',
-				projectId: 'project-1',
+				placement: {
+					kind: 'project',
+					projectId: 'project-1',
+				},
 				title: '阶段 6',
 				note: '接入 task drawer',
 				status: 'doing',
@@ -96,12 +111,15 @@ describe('tasks api', () => {
 		})
 	})
 
-	it('归档、恢复、删除都发送 taskId', async () => {
+	it('归档、恢复、删除和 Inbox 命令都发送正确载荷', async () => {
 		mockedInvoke.mockResolvedValue({})
 
 		await archiveTask('task-1')
 		await restoreTask('task-1')
 		await deleteTask('task-1')
+		await moveTaskToInbox({ taskId: 'task-1' })
+		await leaveInboxToProject({ taskId: 'task-1', projectId: 'project-1' })
+		await leaveInboxAsNoProject({ taskId: 'task-1' })
 
 		expect(mockedInvoke).toHaveBeenNthCalledWith(1, 'archive_task', {
 			input: { taskId: 'task-1' },
@@ -110,6 +128,18 @@ describe('tasks api', () => {
 			input: { taskId: 'task-1' },
 		})
 		expect(mockedInvoke).toHaveBeenNthCalledWith(3, 'delete_task', {
+			input: { taskId: 'task-1' },
+		})
+		expect(mockedInvoke).toHaveBeenNthCalledWith(4, 'move_task_to_inbox', {
+			input: { taskId: 'task-1' },
+		})
+		expect(mockedInvoke).toHaveBeenNthCalledWith(5, 'leave_inbox_to_project', {
+			input: {
+				taskId: 'task-1',
+				projectId: 'project-1',
+			},
+		})
+		expect(mockedInvoke).toHaveBeenNthCalledWith(6, 'leave_inbox_as_no_project', {
 			input: { taskId: 'task-1' },
 		})
 	})

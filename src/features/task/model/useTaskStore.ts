@@ -6,14 +6,20 @@ import {
 	deleteTask,
 	getDefaultTaskViewKey,
 	getTaskDetail,
+	leaveInboxAsNoProject,
+	leaveInboxToProject,
 	listTasks,
+	moveTaskToInbox,
 	restoreTask,
 	updateTask,
 } from '@/features/task/api/tasks'
 import { emitEvent } from '@/shared/events'
 import type {
 	CreateTaskInput,
+	LeaveInboxAsNoProjectInput,
+	LeaveInboxToProjectInput,
 	ListTasksInput,
+	MoveTaskToInboxInput,
 	TaskDetail,
 	TaskListItem,
 	TaskListViewKey,
@@ -48,6 +54,9 @@ type TaskStoreState = {
 	archiveTask: (taskId: string) => Promise<TaskDetail>
 	restoreTask: (taskId: string) => Promise<TaskDetail>
 	deleteTask: (taskId: string) => Promise<TaskDetail>
+	moveTaskToInbox: (input: MoveTaskToInboxInput) => Promise<TaskDetail>
+	leaveInboxToProject: (input: LeaveInboxToProjectInput) => Promise<TaskDetail>
+	leaveInboxAsNoProject: (input: LeaveInboxAsNoProjectInput) => Promise<TaskDetail>
 }
 
 async function fetchList(input: ListTasksInput) {
@@ -214,6 +223,11 @@ export const useTaskStore = create<TaskStoreState>((set, get) => {
 		archiveTask: async (taskId) => runMutation(() => archiveTask(taskId), 'task:updated'),
 		restoreTask: async (taskId) => runMutation(() => restoreTask(taskId), 'task:updated'),
 		deleteTask: async (taskId) => runMutation(() => deleteTask(taskId), 'task:deleted'),
+		moveTaskToInbox: async (input) => runMutation(() => moveTaskToInbox(input), 'task:updated'),
+		leaveInboxToProject: async (input) =>
+			runMutation(() => leaveInboxToProject(input), 'task:updated'),
+		leaveInboxAsNoProject: async (input) =>
+			runMutation(() => leaveInboxAsNoProject(input), 'task:updated'),
 	}
 })
 

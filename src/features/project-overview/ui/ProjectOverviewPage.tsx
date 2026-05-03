@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { buildScopedProjectPath, getScopeLabel } from '@/app/layouts/shell/config'
+import { buildScopedProjectPath, buildScopedSectionPath, getScopeLabel } from '@/app/layouts/shell/config'
 import {
 	MainCardGhostAction,
 	MainCardHeader,
@@ -15,7 +15,7 @@ import { ProjectOverviewList } from '@/features/project-overview/ui/ProjectOverv
 import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { PlusIcon } from 'lucide-react'
+import { Layers3Icon, PlusIcon } from 'lucide-react'
 
 const PROJECT_OVERVIEW_TABS: Array<{ key: ProjectOverviewViewKey; label: string }> = [
 	{ key: 'active', label: 'Active' },
@@ -78,6 +78,26 @@ export function ProjectOverviewPage() {
 			}
 		>
 			<div className='flex min-h-0 flex-1 flex-col gap-3'>
+				<button
+					className='flex items-center justify-between gap-4 rounded-2xl border border-(--sf-color-border-subtle) bg-white/80 px-4 py-3 text-left shadow-none transition-colors hover:border-(--sf-color-border-secondary) hover:bg-(--sf-color-bg-surface-muted)'
+					onClick={() => navigate(buildScopedSectionPath(scope, 'no-project', spaceId))}
+					type='button'
+				>
+					<div className='flex items-center gap-3'>
+						<span className='inline-flex size-9 items-center justify-center rounded-xl bg-(--sf-color-project-task-section-header) text-(--sf-color-text-secondary)'>
+							<Layers3Icon className='size-4' />
+						</span>
+						<div className='min-w-0'>
+							<p className='text-sm font-semibold text-foreground'>No Project</p>
+							<p className='text-[12px] text-(--sf-color-text-tertiary)'>
+								查看已经离开 Inbox、但尚未归属到任何 Project 的任务。
+							</p>
+						</div>
+					</div>
+					<span className='rounded-md border border-(--sf-color-border-subtle) bg-white px-3 py-1.5 text-[12px] font-medium text-foreground'>
+						打开
+					</span>
+				</button>
 				{overview.status === 'ready' && overview.items.length === 0 ? (
 					<ProjectOverviewEmptyState
 						onCreateProject={() => openProjectCreateDialog()}

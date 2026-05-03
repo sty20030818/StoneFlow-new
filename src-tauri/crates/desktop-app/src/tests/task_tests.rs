@@ -8,8 +8,10 @@ use crate::{
     application::{
         activity::ActivityService,
         services::{
-            CreateTaskInput, ListTasksInput, TaskIdInput, TaskScopeInput, TaskScopeKind,
-            TaskService, UpdateTaskInput,
+            CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
+            InboxTaskProjectInput, ListTasksInput, ListTasksPlacementInput,
+            ListTasksPlacementKind, TaskIdInput, TaskScopeInput, TaskScopeKind, TaskService,
+            UpdateTaskInput,
         },
     },
     domain::create_id,
@@ -31,7 +33,10 @@ async fn create_task_should_fail_when_title_is_blank() {
     let error = service
         .create_task(CreateTaskInput {
             space_id: Some(space.id),
-            project_id: None,
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Inbox,
+                project_id: None,
+            },
             title: "   ".to_owned(),
             note: None,
             status: None,
@@ -61,7 +66,10 @@ async fn create_task_should_follow_selected_project_space() {
     let created = service
         .create_task(CreateTaskInput {
             space_id: Some(default_space.id),
-            project_id: Some(project.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Project,
+                project_id: Some(project.id.clone()),
+            },
             title: "接 Task 真链路".to_owned(),
             note: None,
             status: None,
@@ -79,6 +87,115 @@ async fn create_task_should_follow_selected_project_space() {
 }
 
 #[tokio::test]
+async fn create_task_should_persist_inbox_and_no_project_placement() {
+    let temp_dir =
+        TempDatabaseDir::new("stoneflow-stage7-create-task-placement").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_task_service(&database);
+    let space = default_space(&database).await;
+
+    let inbox_task = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Inbox,
+                project_id: None,
+            },
+            title: "Inbox".to_owned(),
+            note: None,
+            status: None,
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create inbox task should succeed");
+    let no_project_task = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::NoProject,
+                project_id: None,
+            },
+            title: "No Project".to_owned(),
+            note: None,
+            status: None,
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create no project task should succeed");
+
+    assert!(inbox_task.inbox_at.is_some());
+    assert!(inbox_task.project_id.is_none());
+    assert!(no_project_task.inbox_at.is_none());
+    assert!(no_project_task.project_id.is_none());
+}
+
+#[tokio::test]
+async fn inbox_workflow_commands_should_move_task_between_project_and_no_project() {
+    let temp_dir =
+        TempDatabaseDir::new("stoneflow-stage7-inbox-workflow-commands").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_task_service(&database);
+    let space = default_space(&database).await;
+    let project = insert_project(&database, &space.id, "Inbox 整理").await;
+
+    let inbox_task = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Inbox,
+                project_id: None,
+            },
+            title: "整理链路".to_owned(),
+            note: None,
+            status: None,
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create inbox task should succeed");
+
+    let moved_to_project = service
+        .leave_inbox_to_project(InboxTaskProjectInput {
+            task_id: inbox_task.id.clone(),
+            project_id: project.id.clone(),
+        })
+        .await
+        .expect("leave inbox to project should succeed");
+    assert_eq!(moved_to_project.project_id, Some(project.id.clone()));
+    assert!(moved_to_project.inbox_at.is_none());
+
+    let moved_back_to_inbox = service
+        .move_task_to_inbox(TaskIdInput {
+            task_id: moved_to_project.id.clone(),
+        })
+        .await
+        .expect("move task back to inbox should succeed");
+    assert!(moved_back_to_inbox.project_id.is_none());
+    assert!(moved_back_to_inbox.inbox_at.is_some());
+
+    let no_project = service
+        .leave_inbox_as_no_project(TaskIdInput {
+            task_id: moved_back_to_inbox.id.clone(),
+        })
+        .await
+        .expect("leave inbox as no project should succeed");
+    assert!(no_project.project_id.is_none());
+    assert!(no_project.inbox_at.is_none());
+}
+
+#[tokio::test]
 async fn update_task_should_manage_status_timestamps() {
     let temp_dir =
         TempDatabaseDir::new("stoneflow-stage6-update-task-status-timestamps").expect("temp dir");
@@ -91,7 +208,10 @@ async fn update_task_should_manage_status_timestamps() {
     let created = service
         .create_task(CreateTaskInput {
             space_id: Some(space.id),
-            project_id: None,
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Inbox,
+                project_id: None,
+            },
             title: "状态流转".to_owned(),
             note: None,
             status: Some(TaskStatus::Todo),
@@ -102,6 +222,22 @@ async fn update_task_should_manage_status_timestamps() {
         })
         .await
         .expect("create task should succeed");
+    let reprioritized = service
+        .update_task(UpdateTaskInput {
+            task_id: created.id.clone(),
+            title: None,
+            note: None,
+            status: None,
+            priority: Some(4),
+            space_id: None,
+            project_id: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("update priority should succeed");
+    assert!(reprioritized.inbox_at.is_some());
 
     let doing = service
         .update_task(UpdateTaskInput {
@@ -118,6 +254,7 @@ async fn update_task_should_manage_status_timestamps() {
         })
         .await
         .expect("move to doing should succeed");
+    assert!(doing.inbox_at.is_some());
     let done = service
         .update_task(UpdateTaskInput {
             task_id: created.id.clone(),
@@ -133,6 +270,7 @@ async fn update_task_should_manage_status_timestamps() {
         })
         .await
         .expect("move to done should succeed");
+    assert!(done.inbox_at.is_none());
     let canceled = service
         .update_task(UpdateTaskInput {
             task_id: created.id.clone(),
@@ -196,7 +334,10 @@ async fn list_tasks_should_filter_scope_project_and_lifecycle() {
     let active = service
         .create_task(CreateTaskInput {
             space_id: Some(default_space.id.clone()),
-            project_id: Some(project.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Project,
+                project_id: Some(project.id.clone()),
+            },
             title: "Active".to_owned(),
             note: None,
             status: Some(TaskStatus::Todo),
@@ -210,7 +351,10 @@ async fn list_tasks_should_filter_scope_project_and_lifecycle() {
     let completed = service
         .create_task(CreateTaskInput {
             space_id: Some(default_space.id.clone()),
-            project_id: Some(project.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Project,
+                project_id: Some(project.id.clone()),
+            },
             title: "Completed".to_owned(),
             note: None,
             status: Some(TaskStatus::Done),
@@ -224,7 +368,10 @@ async fn list_tasks_should_filter_scope_project_and_lifecycle() {
     let canceled = service
         .create_task(CreateTaskInput {
             space_id: Some(default_space.id.clone()),
-            project_id: None,
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::NoProject,
+                project_id: None,
+            },
             title: "Canceled".to_owned(),
             note: None,
             status: Some(TaskStatus::Canceled),
@@ -238,7 +385,10 @@ async fn list_tasks_should_filter_scope_project_and_lifecycle() {
     let archived = service
         .create_task(CreateTaskInput {
             space_id: Some(another_space.id.clone()),
-            project_id: None,
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::NoProject,
+                project_id: None,
+            },
             title: "Archived".to_owned(),
             note: None,
             status: Some(TaskStatus::Todo),
@@ -263,7 +413,10 @@ async fn list_tasks_should_filter_scope_project_and_lifecycle() {
                 space_id: Some(default_space.id.clone()),
             },
             view_key: "active".to_owned(),
-            project_id: Some(project.id.clone()),
+            placement: ListTasksPlacementInput {
+                kind: ListTasksPlacementKind::Project,
+                project_id: Some(project.id.clone()),
+            },
         })
         .await
         .expect("active list should succeed");
@@ -274,7 +427,10 @@ async fn list_tasks_should_filter_scope_project_and_lifecycle() {
                 space_id: Some(default_space.id.clone()),
             },
             view_key: "completed".to_owned(),
-            project_id: Some(project.id.clone()),
+            placement: ListTasksPlacementInput {
+                kind: ListTasksPlacementKind::Project,
+                project_id: Some(project.id.clone()),
+            },
         })
         .await
         .expect("completed list should succeed");
@@ -285,7 +441,10 @@ async fn list_tasks_should_filter_scope_project_and_lifecycle() {
                 space_id: Some(default_space.id),
             },
             view_key: "canceled".to_owned(),
-            project_id: None,
+            placement: ListTasksPlacementInput {
+                kind: ListTasksPlacementKind::NoProject,
+                project_id: None,
+            },
         })
         .await
         .expect("canceled list should succeed");
@@ -296,19 +455,149 @@ async fn list_tasks_should_filter_scope_project_and_lifecycle() {
                 space_id: Some(another_space.id),
             },
             view_key: "archived".to_owned(),
-            project_id: None,
+            placement: ListTasksPlacementInput {
+                kind: ListTasksPlacementKind::NoProject,
+                project_id: None,
+            },
         })
         .await
         .expect("archived list should succeed");
 
     assert_eq!(active_rows.len(), 1);
     assert_eq!(active_rows[0].id, active.id);
+    assert!(active_rows[0].inbox_at.is_none());
     assert_eq!(completed_rows.len(), 1);
     assert_eq!(completed_rows[0].id, completed.id);
+    assert!(completed_rows[0].inbox_at.is_none());
     assert_eq!(canceled_rows.len(), 1);
     assert_eq!(canceled_rows[0].id, canceled.id);
+    assert!(canceled_rows[0].inbox_at.is_none());
     assert_eq!(archived_rows.len(), 1);
     assert_eq!(archived_rows[0].id, archived.id);
+    assert!(archived_rows[0].inbox_at.is_none());
+}
+
+#[tokio::test]
+async fn list_tasks_should_filter_inbox_and_no_project_placement() {
+    let temp_dir =
+        TempDatabaseDir::new("stoneflow-stage7-list-task-placement").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_task_service(&database);
+    let space = default_space(&database).await;
+    let project = insert_project(&database, &space.id, "Project Placement").await;
+
+    let inbox_task = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Inbox,
+                project_id: None,
+            },
+            title: "Inbox Task".to_owned(),
+            note: None,
+            status: None,
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create inbox task should succeed");
+    let no_project_task = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::NoProject,
+                project_id: None,
+            },
+            title: "No Project Task".to_owned(),
+            note: None,
+            status: None,
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create no project task should succeed");
+    let project_task = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Project,
+                project_id: Some(project.id.clone()),
+            },
+            title: "Project Task".to_owned(),
+            note: None,
+            status: None,
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create project task should succeed");
+
+    let inbox_rows = service
+        .list_tasks(ListTasksInput {
+            scope: TaskScopeInput {
+                kind: TaskScopeKind::Space,
+                space_id: Some(space.id.clone()),
+            },
+            view_key: "active".to_owned(),
+            placement: ListTasksPlacementInput {
+                kind: ListTasksPlacementKind::Inbox,
+                project_id: None,
+            },
+        })
+        .await
+        .expect("list inbox tasks should succeed");
+    let no_project_rows = service
+        .list_tasks(ListTasksInput {
+            scope: TaskScopeInput {
+                kind: TaskScopeKind::Space,
+                space_id: Some(space.id.clone()),
+            },
+            view_key: "active".to_owned(),
+            placement: ListTasksPlacementInput {
+                kind: ListTasksPlacementKind::NoProject,
+                project_id: None,
+            },
+        })
+        .await
+        .expect("list no project tasks should succeed");
+    let project_rows = service
+        .list_tasks(ListTasksInput {
+            scope: TaskScopeInput {
+                kind: TaskScopeKind::Space,
+                space_id: Some(space.id),
+            },
+            view_key: "active".to_owned(),
+            placement: ListTasksPlacementInput {
+                kind: ListTasksPlacementKind::Project,
+                project_id: Some(project.id),
+            },
+        })
+        .await
+        .expect("list project tasks should succeed");
+
+    assert_eq!(inbox_rows.iter().map(|item| item.id.as_str()).collect::<Vec<_>>(), vec![inbox_task.id.as_str()]);
+    assert!(inbox_rows[0].inbox_at.is_some());
+    assert_eq!(
+        no_project_rows
+            .iter()
+            .map(|item| item.id.as_str())
+            .collect::<Vec<_>>(),
+        vec![no_project_task.id.as_str()]
+    );
+    assert!(no_project_rows[0].inbox_at.is_none());
+    assert_eq!(
+        project_rows.iter().map(|item| item.id.as_str()).collect::<Vec<_>>(),
+        vec![project_task.id.as_str()]
+    );
+    assert!(project_rows[0].inbox_at.is_none());
 }
 
 #[tokio::test]
@@ -323,7 +612,10 @@ async fn archive_restore_delete_task_should_record_activity_and_return_consisten
     let created = service
         .create_task(CreateTaskInput {
             space_id: Some(space.id),
-            project_id: None,
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Inbox,
+                project_id: None,
+            },
             title: "Task 生命周期".to_owned(),
             note: None,
             status: None,
