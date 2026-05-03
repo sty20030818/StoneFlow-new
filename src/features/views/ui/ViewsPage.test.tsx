@@ -94,13 +94,8 @@ vi.mock('@/features/task/ui/TaskBoard', () => ({
 }))
 
 vi.mock('@/features/task/ui/TaskBulkActionBar', () => ({
-	TaskBulkActionBar: ({
-		selectedCount,
-		action,
-	}: {
-		selectedCount: number
-		action: ReactNode
-	}) => (selectedCount > 0 ? <div>{action}</div> : null),
+	TaskBulkActionBar: ({ selectedCount, action }: { selectedCount: number; action: ReactNode }) =>
+		selectedCount > 0 ? <div>{action}</div> : null,
 }))
 
 describe('ViewsPage', () => {

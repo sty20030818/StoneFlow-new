@@ -249,7 +249,7 @@ export function TaskCreateModalContent({
 									setSpaceId(targetProject.spaceId)
 								}
 							}}
-							value={lockedProject ? initialProjectId ?? '' : placementSelectValue}
+							value={lockedProject ? (initialProjectId ?? '') : placementSelectValue}
 						>
 							<SelectTrigger
 								aria-label='归属目标'

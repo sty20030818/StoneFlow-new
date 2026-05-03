@@ -22,6 +22,7 @@
 		"tauri:build": "tauri build"
 	},
 	"dependencies": {
+		"@radix-ui/react-avatar": "^1.1.11",
 		"@tauri-apps/api": "^2.11.0",
 		"@tauri-apps/plugin-dialog": "^2.7.1",
 		"class-variance-authority": "^0.7.1",

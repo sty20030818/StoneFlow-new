@@ -36,7 +36,10 @@ export function SettingsPage() {
 							<BreadcrumbList className='text-sm font-semibold leading-5'>
 								<BreadcrumbItem>
 									<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-										<Settings2Icon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+										<Settings2Icon
+											aria-hidden
+											className='size-4 shrink-0 text-(--sf-color-text-tertiary)'
+										/>
 										设置
 									</BreadcrumbPage>
 								</BreadcrumbItem>

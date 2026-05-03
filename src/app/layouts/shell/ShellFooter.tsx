@@ -13,7 +13,12 @@ type ShellFooterProps = {
 /**
  * Shell 底栏：全宽单行，与侧栏槽解耦（底栏不参与双列 grid）。
  */
-export function ShellFooter({ currentScope, currentSpaceId, spaces, activeSection }: ShellFooterProps) {
+export function ShellFooter({
+	currentScope,
+	currentSpaceId,
+	spaces,
+	activeSection,
+}: ShellFooterProps) {
 	const healthcheckStatus = useHealthcheckStatus()
 	const footerScope =
 		currentScope.type === 'space' && currentSpaceId

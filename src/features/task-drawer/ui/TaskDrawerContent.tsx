@@ -169,11 +169,16 @@ export function TaskDrawerContent({
 			taskId: detail.item.id,
 			title: normalizedTitle !== detail.item.title ? normalizedTitle : undefined,
 			note: normalizedNote !== detail.item.note ? normalizedNote : undefined,
-			status: draft.status !== detail.item.status ? (draft.status as typeof detail.item.status) : undefined,
-			priority: draft.priority !== detail.item.priority ? (draft.priority as typeof detail.item.priority) : undefined,
+			status:
+				draft.status !== detail.item.status
+					? (draft.status as typeof detail.item.status)
+					: undefined,
+			priority:
+				draft.priority !== detail.item.priority
+					? (draft.priority as typeof detail.item.priority)
+					: undefined,
 			spaceId: draft.spaceId !== detail.item.spaceId ? draft.spaceId : undefined,
-			projectId:
-				normalizedProjectId !== detail.item.projectId ? normalizedProjectId : undefined,
+			projectId: normalizedProjectId !== detail.item.projectId ? normalizedProjectId : undefined,
 			dueAt: normalizedDueAt !== detail.item.dueAt ? normalizedDueAt : undefined,
 			scheduledAt:
 				normalizedScheduledAt !== detail.item.scheduledAt ? normalizedScheduledAt : undefined,
@@ -274,9 +279,7 @@ export function TaskDrawerContent({
 							<DrawerField label='状态'>
 								<Select
 									onValueChange={(value) =>
-										setDraft((current) =>
-											current ? { ...current, status: value } : current,
-										)
+										setDraft((current) => (current ? { ...current, status: value } : current))
 									}
 									value={draft.status}
 								>
@@ -330,8 +333,7 @@ export function TaskDrawerContent({
 												current.projectId &&
 												!projects.some(
 													(project) =>
-														project.id === current.projectId &&
-														project.spaceId === value,
+														project.id === current.projectId && project.spaceId === value,
 												)
 													? ''
 													: current.projectId
@@ -396,9 +398,7 @@ export function TaskDrawerContent({
 								<DatePicker
 									className='h-7 border-0 bg-transparent px-0 shadow-none hover:bg-transparent focus:ring-0'
 									onChange={(value) =>
-										setDraft((current) =>
-											current ? { ...current, dueAt: value } : current,
-										)
+										setDraft((current) => (current ? { ...current, dueAt: value } : current))
 									}
 									placeholder='选择日期'
 									value={draft.dueAt}
@@ -409,9 +409,7 @@ export function TaskDrawerContent({
 								<DatePicker
 									className='h-7 border-0 bg-transparent px-0 shadow-none hover:bg-transparent focus:ring-0'
 									onChange={(value) =>
-										setDraft((current) =>
-											current ? { ...current, scheduledAt: value } : current,
-										)
+										setDraft((current) => (current ? { ...current, scheduledAt: value } : current))
 									}
 									placeholder='选择日期'
 									value={draft.scheduledAt}
@@ -422,9 +420,7 @@ export function TaskDrawerContent({
 								<DatePicker
 									className='h-7 border-0 bg-transparent px-0 shadow-none hover:bg-transparent focus:ring-0'
 									onChange={(value) =>
-										setDraft((current) =>
-											current ? { ...current, reminderAt: value } : current,
-										)
+										setDraft((current) => (current ? { ...current, reminderAt: value } : current))
 									}
 									placeholder='选择日期'
 									value={draft.reminderAt}
@@ -471,12 +467,9 @@ export function TaskDrawerContent({
 										<div className='mt-2 flex flex-col gap-1'>
 											{entry.changes.map((change) => (
 												<div className='text-[11px]' key={change.id}>
-													<span className='text-(--sf-color-text-tertiary)'>
-														{change.field}:
-													</span>{' '}
+													<span className='text-(--sf-color-text-tertiary)'>{change.field}:</span>{' '}
 													<span className='text-(--sf-color-text-secondary)'>
-														{JSON.stringify(change.oldValue)} →{' '}
-														{JSON.stringify(change.newValue)}
+														{JSON.stringify(change.oldValue)} → {JSON.stringify(change.newValue)}
 													</span>
 												</div>
 											))}
@@ -503,9 +496,7 @@ export function TaskDrawerContent({
 					{saveMessage ? (
 						<span
 							className={`text-[11px] ${
-								saveStatus === 'error'
-									? 'text-red-500'
-									: 'text-(--sf-color-text-tertiary)'
+								saveStatus === 'error' ? 'text-red-500' : 'text-(--sf-color-text-tertiary)'
 							}`}
 						>
 							{saveMessage}

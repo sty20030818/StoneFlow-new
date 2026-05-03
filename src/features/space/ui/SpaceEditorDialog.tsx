@@ -19,12 +19,7 @@ import {
 	DialogTitle,
 } from '@/shared/ui/base/dialog'
 import { Input } from '@/shared/ui/base/input'
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-} from '@/shared/ui/base/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/ui/base/select'
 
 type SpaceEditorDialogProps = {
 	open: boolean

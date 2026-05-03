@@ -1,4 +1,9 @@
-import type { TaskCreatePlacementInput, TaskDetail, TaskListItem, TaskPlacement } from '@/shared/types'
+import type {
+	TaskCreatePlacementInput,
+	TaskDetail,
+	TaskListItem,
+	TaskPlacement,
+} from '@/shared/types'
 
 type TaskPlacementLike = Pick<TaskListItem, 'projectId'> & Partial<Pick<TaskDetail, 'inboxAt'>>
 

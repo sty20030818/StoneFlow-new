@@ -69,13 +69,13 @@ export function ShellDrawer({
 				</SheetHeader>
 
 				<div className='no-scrollbar flex flex-1 flex-col overflow-hidden'>
-						{isRealTaskDrawer && activeDrawerId ? (
-							<TaskDrawerContent
-								activeTab={activeTab}
-								currentSpaceLabel={currentSpaceLabel}
-								onClose={onClose}
-								taskId={activeDrawerId}
-							/>
+					{isRealTaskDrawer && activeDrawerId ? (
+						<TaskDrawerContent
+							activeTab={activeTab}
+							currentSpaceLabel={currentSpaceLabel}
+							onClose={onClose}
+							taskId={activeDrawerId}
+						/>
 					) : detail ? (
 						<div className='space-y-4'>
 							<div className='space-y-2'>

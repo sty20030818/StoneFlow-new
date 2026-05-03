@@ -12,6 +12,7 @@ import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHis
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
 import type { Scope, Space } from '@/shared/types'
+import { Avatar, AvatarFallback, AvatarImage, AvatarBadge } from '@/shared/ui/base/avatar'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -265,22 +266,10 @@ export function ShellHeader({
 					>
 						<div className='flex min-w-0 flex-1 items-center gap-1' data-tauri-drag-region>
 							{!isMac && (!isWin || !isLayoutNarrow) ? (
-								<Button
-									aria-label='StoneFlow'
-									className='shrink-0 rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground focus-visible:ring-0'
-									size='icon-sm'
-									type='button'
-									variant='ghost'
-								>
-									{/* 与历史/前/后同一 icon-sm 槽；整段左条在 &lt;640 不挂载。Win 下 &lt;1024 不渲染由 isLayoutNarrow 控制 */}
-									<img
-										alt=''
-										aria-hidden='true'
-										className='size-full rounded-full object-cover'
-										draggable={false}
-										src='/avatar.jpg'
-									/>
-								</Button>
+								<Avatar className='size-7 shrink-0 ring-1 ring-(--sf-color-border-strong)'>
+									<AvatarImage alt='StoneFlow' draggable={false} src='/StoneFlow.png' />
+									<AvatarFallback>SF</AvatarFallback>
+								</Avatar>
 							) : null}
 
 							{/* 展开态把导航键推到 sidebar 右边界，拖拽空白只承担窗体 chrome。 */}
@@ -383,13 +372,13 @@ export function ShellHeader({
 							}
 						}}
 					>
-							<div className='min-w-0 w-full max-w-100'>
-								<GlobalSearchInput
-									currentSpaceId={currentSpaceId ?? ''}
-									onOpenProject={handleOpenProjectFromSearch}
-									onOpenTask={(taskId) => onOpenDrawer('task', taskId)}
-								/>
-							</div>
+						<div className='min-w-0 w-full max-w-100'>
+							<GlobalSearchInput
+								currentSpaceId={currentSpaceId ?? ''}
+								onOpenProject={handleOpenProjectFromSearch}
+								onOpenTask={(taskId) => onOpenDrawer('task', taskId)}
+							/>
+						</div>
 					</div>
 					<div
 						className={`flex h-full shrink-0 items-center ${isMac ? 'gap-2 pl-1.5 pr-3' : 'gap-0 pl-0 pr-0'}`}
@@ -445,12 +434,11 @@ export function ShellHeader({
 						</div>
 
 						<div className='ml-2 flex items-center gap-2' data-tauri-drag-region>
-							<img
-								alt='当前用户头像'
-								className='size-7.5 rounded-full border border-(--sf-color-border-subtle) object-cover'
-								data-tauri-drag-region
-								src='/avatar.jpg'
-							/>
+							<Avatar className='size-7.5'>
+								<AvatarImage alt='当前用户头像' src='/avatar.jpg' />
+								<AvatarFallback>U</AvatarFallback>
+								<AvatarBadge className='bg-green-600 dark:bg-green-800' />
+							</Avatar>
 						</div>
 
 						{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
@@ -486,12 +474,12 @@ export function ShellHeader({
 				</div>
 			</header>
 
-				<CommandDialog
-					className='max-w-2xl border border-border/80 bg-popover/98 shadow-(--sf-shadow-float)'
-					description={`${getScopeLabel(currentScope, spaces)} · ${getSectionLabel(activeSection)}`}
-					onOpenChange={onCommandOpenChange}
-					open={isCommandOpen}
-					title='StoneFlow Command'
+			<CommandDialog
+				className='max-w-2xl border border-border/80 bg-popover/98 shadow-(--sf-shadow-float)'
+				description={`${getScopeLabel(currentScope, spaces)} · ${getSectionLabel(activeSection)}`}
+				onOpenChange={onCommandOpenChange}
+				open={isCommandOpen}
+				title='StoneFlow Command'
 			>
 				<Command className='bg-transparent'>
 					<CommandInput placeholder='创建任务、跳转页面或打开详情…' />
@@ -536,13 +524,13 @@ export function ShellHeader({
 
 						<CommandSeparator />
 
-							<CommandGroup heading='Navigate'>
-								{SHELL_COMMAND_ROUTE_ITEMS.map((item) => (
-									<CommandItem
-										key={item.key}
-										onSelect={() => handleNavigate(item.to(currentScope, currentSpaceId))}
-										value={item.label}
-									>
+						<CommandGroup heading='Navigate'>
+							{SHELL_COMMAND_ROUTE_ITEMS.map((item) => (
+								<CommandItem
+									key={item.key}
+									onSelect={() => handleNavigate(item.to(currentScope, currentSpaceId))}
+									value={item.label}
+								>
 									<item.icon />
 									{item.label}
 								</CommandItem>
@@ -558,16 +546,16 @@ export function ShellHeader({
 									当前 Space 还没有项目
 								</CommandItem>
 							) : (
-									projects.map((project) => (
-										<CommandItem
-											key={project.id}
-											onSelect={() =>
-												handleNavigate(
-													buildScopedProjectPath(currentScope, project.id, currentSpaceId),
-												)
-											}
-											value={project.label}
-										>
+								projects.map((project) => (
+									<CommandItem
+										key={project.id}
+										onSelect={() =>
+											handleNavigate(
+												buildScopedProjectPath(currentScope, project.id, currentSpaceId),
+											)
+										}
+										value={project.label}
+									>
 										<SearchIcon />
 										{project.label}
 										{project.badge ? (

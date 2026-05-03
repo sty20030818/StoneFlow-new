@@ -27,7 +27,14 @@ import type { TaskStatus } from '@/shared/types'
 
 type NoProjectFilter = 'all' | TaskStatus
 
-const NO_PROJECT_FILTERS: NoProjectFilter[] = ['all', 'doing', 'todo', 'waiting', 'done', 'canceled']
+const NO_PROJECT_FILTERS: NoProjectFilter[] = [
+	'all',
+	'doing',
+	'todo',
+	'waiting',
+	'done',
+	'canceled',
+]
 
 export function NoProjectPage() {
 	const { scope } = useScopeRoute()
@@ -53,9 +60,8 @@ export function NoProjectPage() {
 				: taskList.items.filter((task) => task.archivedAt === null && task.status === taskFilter),
 		[taskFilter, taskList.items],
 	)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } = useTaskSelection(
-		filteredTasks.map((task) => task.id),
-	)
+	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
+		useTaskSelection(filteredTasks.map((task) => task.id))
 
 	useEffect(() => {
 		void loadList({

@@ -38,8 +38,12 @@ describe('taskChanged event helpers', () => {
 			source: 'quick_capture',
 			spaceFallback: false,
 		})
-		expect(payload ? isTaskChangedForScope(payload, { type: 'space', spaceId: 'space-uuid' }) : false).toBe(true)
-		expect(payload ? isTaskChangedForScope(payload, { type: 'space', spaceId: 'space-other' }) : true).toBe(false)
+		expect(
+			payload ? isTaskChangedForScope(payload, { type: 'space', spaceId: 'space-uuid' }) : false,
+		).toBe(true)
+		expect(
+			payload ? isTaskChangedForScope(payload, { type: 'space', spaceId: 'space-other' }) : true,
+		).toBe(false)
 		expect(payload ? isTaskChangedForScope(payload, { type: 'all' }) : false).toBe(true)
 	})
 

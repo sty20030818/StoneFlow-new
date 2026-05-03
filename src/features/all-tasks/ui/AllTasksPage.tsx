@@ -28,7 +28,15 @@ import { CommandIcon, ListTodoIcon, PlusIcon } from 'lucide-react'
 
 type TaskFilter = 'all' | 'noProject' | TaskStatus
 
-const TASK_FILTERS: TaskFilter[] = ['all', 'noProject', 'doing', 'todo', 'waiting', 'done', 'canceled']
+const TASK_FILTERS: TaskFilter[] = [
+	'all',
+	'noProject',
+	'doing',
+	'todo',
+	'waiting',
+	'done',
+	'canceled',
+]
 
 export function AllTasksPage() {
 	const { scope } = useScopeRoute()
@@ -61,9 +69,8 @@ export function AllTasksPage() {
 					: visibleTasks.filter((task) => task.status === taskFilter),
 		[taskFilter, visibleTasks],
 	)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } = useTaskSelection(
-		filteredTasks.map((task) => task.id),
-	)
+	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
+		useTaskSelection(filteredTasks.map((task) => task.id))
 
 	useEffect(() => {
 		void loadList({

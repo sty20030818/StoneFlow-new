@@ -13,9 +13,7 @@ export function useScopeRoute() {
 
 	const scope: Scope = useMemo(
 		() =>
-			pathname.startsWith('/spaces') || !spaceId
-				? { type: 'all' }
-				: { type: 'space', spaceId },
+			pathname.startsWith('/spaces') || !spaceId ? { type: 'all' } : { type: 'space', spaceId },
 		[pathname, spaceId],
 	)
 

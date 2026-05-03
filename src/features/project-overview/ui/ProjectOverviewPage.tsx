@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { buildScopedProjectPath, buildScopedSectionPath, getScopeLabel } from '@/app/layouts/shell/config'
+import {
+	buildScopedProjectPath,
+	buildScopedSectionPath,
+	getScopeLabel,
+} from '@/app/layouts/shell/config'
 import {
 	MainCardGhostAction,
 	MainCardHeader,

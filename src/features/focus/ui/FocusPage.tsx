@@ -54,9 +54,7 @@ export function FocusPage() {
 								<Layers2Icon />
 							</EmptyMedia>
 							<EmptyTitle>今天没有任务</EmptyTitle>
-							<EmptyDescription>
-								今天需要关注的任务会出现在这里。
-							</EmptyDescription>
+							<EmptyDescription>今天需要关注的任务会出现在这里。</EmptyDescription>
 						</EmptyHeader>
 						<EmptyContent>
 							<Button onClick={() => openTaskCreateDialog()} type='button'>

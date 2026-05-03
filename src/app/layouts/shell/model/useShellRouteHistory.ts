@@ -126,7 +126,8 @@ export function buildShellRouteHistoryEntry(
 		return createHistoryEntry(path, 'Workspace', path)
 	}
 
-	const spaceId = parts[1] ?? currentSpaceId ?? (currentScope.type === 'space' ? currentScope.spaceId : null)
+	const spaceId =
+		parts[1] ?? currentSpaceId ?? (currentScope.type === 'space' ? currentScope.spaceId : null)
 	const section = parts[2]
 	const spaceLabel = getSpaceLabel(spaceId, spaces)
 
