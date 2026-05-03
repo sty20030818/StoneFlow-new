@@ -16,6 +16,18 @@ const taskState = {
 	refreshLoadedSlices: vi.fn<() => Promise<void>>(),
 }
 
+const spaceState = {
+	load: vi.fn<() => Promise<void>>(),
+}
+
+const lifecycleState = {
+	refreshLoadedSlices: vi.fn<() => Promise<void>>(),
+}
+
+const viewState = {
+	refreshTaskRun: vi.fn<() => Promise<void>>(),
+}
+
 const taskChangedHandlers: Array<(payload: unknown) => void> = []
 const eventHandlers = new Map<string, (event: AppEvent) => void>()
 
@@ -44,6 +56,24 @@ vi.mock('@/features/task/model/useTaskStore', () => ({
 	},
 }))
 
+vi.mock('@/features/space/model/useSpaceStore', () => ({
+	useSpaceStore: {
+		getState: () => spaceState,
+	},
+}))
+
+vi.mock('@/features/lifecycle/model/useLifecycleStore', () => ({
+	useLifecycleStore: {
+		getState: () => lifecycleState,
+	},
+}))
+
+vi.mock('@/features/view/model/useViewStore', () => ({
+	useViewStore: {
+		getState: () => viewState,
+	},
+}))
+
 describe('useWorkspaceSync', () => {
 	beforeEach(() => {
 		taskChangedHandlers.length = 0
@@ -52,10 +82,16 @@ describe('useWorkspaceSync', () => {
 		projectState.loadDetail.mockReset()
 		projectState.loadSidebar.mockReset()
 		projectState.loadOverview.mockReset()
+		spaceState.load.mockReset()
+		lifecycleState.refreshLoadedSlices.mockReset()
+		viewState.refreshTaskRun.mockReset()
 		taskState.refreshLoadedSlices.mockResolvedValue()
 		projectState.loadDetail.mockResolvedValue()
 		projectState.loadSidebar.mockResolvedValue()
 		projectState.loadOverview.mockResolvedValue()
+		spaceState.load.mockResolvedValue()
+		lifecycleState.refreshLoadedSlices.mockResolvedValue()
+		viewState.refreshTaskRun.mockResolvedValue()
 	})
 
 	it('收到任务变更事件后刷新当前 Task 与 Project 切片', () => {
@@ -69,6 +105,9 @@ describe('useWorkspaceSync', () => {
 		expect(projectState.loadDetail).toHaveBeenCalledWith('project-1')
 		expect(projectState.loadSidebar).toHaveBeenCalledWith({ type: 'space', spaceId: 'space-1' })
 		expect(projectState.loadOverview).toHaveBeenCalledWith({ type: 'all' }, 'active')
+		expect(spaceState.load).toHaveBeenCalledTimes(1)
+		expect(lifecycleState.refreshLoadedSlices).toHaveBeenCalledTimes(1)
+		expect(viewState.refreshTaskRun).toHaveBeenCalledTimes(1)
 	})
 
 	it('收到前端内部 task 事件时也会走同一套刷新逻辑', () => {
@@ -83,5 +122,22 @@ describe('useWorkspaceSync', () => {
 		expect(projectState.loadDetail).toHaveBeenCalledWith('project-1')
 		expect(projectState.loadSidebar).toHaveBeenCalledWith({ type: 'space', spaceId: 'space-1' })
 		expect(projectState.loadOverview).toHaveBeenCalledWith({ type: 'all' }, 'active')
+		expect(spaceState.load).toHaveBeenCalledTimes(1)
+		expect(lifecycleState.refreshLoadedSlices).toHaveBeenCalledTimes(1)
+		expect(viewState.refreshTaskRun).toHaveBeenCalledTimes(1)
+	})
+
+	it('收到 lifecycle 事件时也会刷新 Space、View 与生命周期切片', () => {
+		renderHook(() => useWorkspaceSync({ type: 'all' }))
+
+		eventHandlers.get('lifecycle:changed')?.({
+			type: 'lifecycle:changed',
+			payload: { entityType: 'project', entityId: 'project-1' },
+		})
+
+		expect(taskState.refreshLoadedSlices).toHaveBeenCalledTimes(1)
+		expect(spaceState.load).toHaveBeenCalledTimes(1)
+		expect(lifecycleState.refreshLoadedSlices).toHaveBeenCalledTimes(1)
+		expect(viewState.refreshTaskRun).toHaveBeenCalledTimes(1)
 	})
 })

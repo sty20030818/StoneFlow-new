@@ -18,6 +18,8 @@ use crate::{
     },
 };
 
+use super::lifecycle::build_lifecycle_service;
+
 #[tauri::command]
 pub async fn list_project_overview(
     input: ListProjectOverviewInput,
@@ -115,6 +117,16 @@ pub async fn delete_project(
 ) -> Result<ProjectDetailDto, AppError> {
     build_project_service(database.inner())
         .delete_project(input)
+        .await
+}
+
+#[tauri::command]
+pub async fn permanently_delete_project(
+    input: ProjectIdInput,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<(), AppError> {
+    build_lifecycle_service(database.inner())
+        .permanently_delete_project(&input.project_id)
         .await
 }
 

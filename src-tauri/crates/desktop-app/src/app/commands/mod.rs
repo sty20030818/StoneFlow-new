@@ -3,6 +3,7 @@
 use tauri::ipc::Invoke;
 
 pub(crate) mod activity;
+pub(crate) mod lifecycle;
 pub(crate) mod projects;
 pub(crate) mod quick_capture;
 pub(crate) mod settings;
@@ -15,6 +16,8 @@ pub(crate) mod workspace;
 pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
         activity::get_entity_activities,
+        lifecycle::list_archive_entries,
+        lifecycle::list_trash_entries,
         projects::list_project_overview,
         projects::list_sidebar_projects,
         projects::get_project_detail,
@@ -25,6 +28,7 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         projects::archive_project,
         projects::restore_project,
         projects::delete_project,
+        projects::permanently_delete_project,
         tasks::list_tasks,
         tasks::get_task_detail,
         tasks::create_task,
@@ -35,6 +39,7 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         tasks::leave_inbox_as_no_project,
         tasks::restore_task,
         tasks::delete_task,
+        tasks::permanently_delete_task,
         views::list_views,
         views::run_task_view,
         views::create_view,
@@ -54,6 +59,7 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         spaces::archive_space,
         spaces::restore_space,
         spaces::delete_space,
+        spaces::permanently_delete_space,
         workspace::healthcheck,
         workspace::set_active_scope,
         quick_capture::restore_main_window,

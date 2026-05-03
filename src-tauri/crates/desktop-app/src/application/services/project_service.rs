@@ -13,6 +13,7 @@ use crate::{
     application::activity::{
         ActivityAction, ActivityChangeInput, ActivityService, RecordActivityInput,
     },
+    application::services::LifecycleService,
     domain::{create_id, normalize_required_text, now_utc},
     infrastructure::repositories::{
         CreateProjectRecord, ProjectOverviewView, ProjectRepository, ProjectTaskCount,
@@ -161,6 +162,15 @@ impl ProjectService {
 
     pub fn repository(&self) -> &ProjectRepository {
         &self.repository
+    }
+
+    fn lifecycle_service(&self) -> LifecycleService {
+        LifecycleService::new(
+            self.space_repository.clone(),
+            self.repository.clone(),
+            self.task_repository.clone(),
+            self.activity_service.clone(),
+        )
     }
 
     /// 列出 Project Overview。
@@ -550,51 +560,10 @@ impl ProjectService {
         input: ProjectIdInput,
     ) -> Result<ProjectDetailDto, AppError> {
         let project_id = normalize_project_id(&input.project_id)?;
-        let current = self.require_existing_project(&project_id).await?;
-
-        if current.archived_at.is_some() {
-            return self.build_project_detail(current).await;
-        }
-        if current.deleted_at.is_some() {
-            return Err(AppError::conflict("已删除 Project 不能归档"));
-        }
-
-        let now = now_utc().to_rfc3339();
-        let transaction = self.repository.connection().begin().await?;
         let updated = self
-            .repository
-            .archive_raw(&transaction, &project_id, &now, &project_id, &now)
-            .await?
-            .ok_or_else(|| AppError::not_found("Project 不存在"))?;
-        let archived_task_count = self
-            .task_repository
-            .archive_by_project_raw(&transaction, &project_id, &now, &project_id, &now)
+            .lifecycle_service()
+            .archive_project(&project_id)
             .await?;
-
-        self.activity_service
-            .record_activity_in_txn(
-                &transaction,
-                RecordActivityInput {
-                    entity_type: ActivityEntityKind::Project,
-                    entity_id: updated.id.clone(),
-                    action: ActivityAction::ProjectArchived,
-                    actor_type: None,
-                    source: None,
-                    summary: Some(format!("归档 Project「{}」", updated.name)),
-                    metadata: Some(json!({
-                        "projectId": updated.id,
-                        "archivedTaskCount": archived_task_count,
-                    })),
-                    changes: vec![ActivityChangeInput {
-                        field: "archivedAt".to_owned(),
-                        old_value: None,
-                        new_value: Some(json!(now)),
-                    }],
-                },
-            )
-            .await?;
-
-        transaction.commit().await?;
         self.build_project_detail(updated).await
     }
 
@@ -604,50 +573,10 @@ impl ProjectService {
         input: ProjectIdInput,
     ) -> Result<ProjectDetailDto, AppError> {
         let project_id = normalize_project_id(&input.project_id)?;
-        let current = self.require_existing_project(&project_id).await?;
-
-        if current.archived_at.is_none() && current.deleted_at.is_none() {
-            return self.build_project_detail(current).await;
-        }
-
-        self.require_visible_space(&current.space_id).await?;
-
-        let updated_at = now_utc().to_rfc3339();
-        let transaction = self.repository.connection().begin().await?;
         let updated = self
-            .repository
-            .restore_raw(&transaction, &project_id, &updated_at)
-            .await?
-            .ok_or_else(|| AppError::not_found("Project 不存在"))?;
-
-        self.activity_service
-            .record_activity_in_txn(
-                &transaction,
-                RecordActivityInput {
-                    entity_type: ActivityEntityKind::Project,
-                    entity_id: updated.id.clone(),
-                    action: ActivityAction::ProjectRestored,
-                    actor_type: None,
-                    source: None,
-                    summary: Some(format!("恢复 Project「{}」", updated.name)),
-                    metadata: Some(json!({ "projectId": updated.id })),
-                    changes: vec![
-                        ActivityChangeInput {
-                            field: "archivedAt".to_owned(),
-                            old_value: current.archived_at.clone().map(|value| json!(value)),
-                            new_value: None,
-                        },
-                        ActivityChangeInput {
-                            field: "deletedAt".to_owned(),
-                            old_value: current.deleted_at.clone().map(|value| json!(value)),
-                            new_value: None,
-                        },
-                    ],
-                },
-            )
+            .lifecycle_service()
+            .restore_project(&project_id)
             .await?;
-
-        transaction.commit().await?;
         self.build_project_detail(updated).await
     }
 
@@ -657,48 +586,7 @@ impl ProjectService {
         input: ProjectIdInput,
     ) -> Result<ProjectDetailDto, AppError> {
         let project_id = normalize_project_id(&input.project_id)?;
-        let current = self.require_existing_project(&project_id).await?;
-
-        if current.deleted_at.is_some() {
-            return self.build_project_detail(current).await;
-        }
-
-        let now = now_utc().to_rfc3339();
-        let transaction = self.repository.connection().begin().await?;
-        let updated = self
-            .repository
-            .delete_raw(&transaction, &project_id, &now, &project_id, &now)
-            .await?
-            .ok_or_else(|| AppError::not_found("Project 不存在"))?;
-        let deleted_task_count = self
-            .task_repository
-            .delete_by_project_raw(&transaction, &project_id, &now, &project_id, &now)
-            .await?;
-
-        self.activity_service
-            .record_activity_in_txn(
-                &transaction,
-                RecordActivityInput {
-                    entity_type: ActivityEntityKind::Project,
-                    entity_id: updated.id.clone(),
-                    action: ActivityAction::ProjectDeleted,
-                    actor_type: None,
-                    source: None,
-                    summary: Some(format!("删除 Project「{}」", updated.name)),
-                    metadata: Some(json!({
-                        "projectId": updated.id,
-                        "deletedTaskCount": deleted_task_count,
-                    })),
-                    changes: vec![ActivityChangeInput {
-                        field: "deletedAt".to_owned(),
-                        old_value: None,
-                        new_value: Some(json!(now)),
-                    }],
-                },
-            )
-            .await?;
-
-        transaction.commit().await?;
+        let updated = self.lifecycle_service().delete_project(&project_id).await?;
         self.build_project_detail(updated).await
     }
 

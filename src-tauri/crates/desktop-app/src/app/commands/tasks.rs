@@ -18,6 +18,8 @@ use crate::{
     },
 };
 
+use super::lifecycle::build_lifecycle_service;
+
 const TASKS_CHANGED_EVENT: &str = "stoneflow://tasks/changed";
 
 #[derive(Debug, Clone, Serialize)]
@@ -149,6 +151,16 @@ pub async fn delete_task(
         .await?;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
+}
+
+#[tauri::command]
+pub async fn permanently_delete_task(
+    input: TaskIdInput,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<(), AppError> {
+    build_lifecycle_service(database.inner())
+        .permanently_delete_task(&input.task_id)
+        .await
 }
 
 fn emit_task_changed(

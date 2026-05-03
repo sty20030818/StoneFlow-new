@@ -12,6 +12,7 @@ import {
 	restoreProject,
 	updateProject,
 } from '@/features/project/api/projects'
+import { emitEvent } from '@/shared/events'
 import type {
 	ProjectDetail,
 	ProjectFormInput,
@@ -271,13 +272,53 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 				},
 			}),
 
-		createProject: async (input) => runMutation(() => createProject(input)),
-		updateProject: async (input) => runMutation(() => updateProject(input)),
-		completeProject: async (projectId) => runMutation(() => completeProject(projectId)),
-		reopenProject: async (projectId) => runMutation(() => reopenProject(projectId)),
-		archiveProject: async (projectId) => runMutation(() => archiveProject(projectId)),
-		restoreProject: async (projectId) => runMutation(() => restoreProject(projectId)),
-		deleteProject: async (projectId) => runMutation(() => deleteProject(projectId)),
+		createProject: async (input) => {
+			const project = await runMutation(() => createProject(input))
+			emitEvent({ type: 'project:created', payload: { projectId: project.id } })
+			return project
+		},
+		updateProject: async (input) => {
+			const project = await runMutation(() => updateProject(input))
+			emitEvent({ type: 'project:updated', payload: { projectId: project.id } })
+			return project
+		},
+		completeProject: async (projectId) => {
+			const project = await runMutation(() => completeProject(projectId))
+			emitEvent({ type: 'project:updated', payload: { projectId: project.id } })
+			return project
+		},
+		reopenProject: async (projectId) => {
+			const project = await runMutation(() => reopenProject(projectId))
+			emitEvent({ type: 'project:updated', payload: { projectId: project.id } })
+			return project
+		},
+		archiveProject: async (projectId) => {
+			const project = await runMutation(() => archiveProject(projectId))
+			emitEvent({ type: 'project:updated', payload: { projectId: project.id } })
+			emitEvent({
+				type: 'lifecycle:changed',
+				payload: { entityType: 'project', entityId: project.id },
+			})
+			return project
+		},
+		restoreProject: async (projectId) => {
+			const project = await runMutation(() => restoreProject(projectId))
+			emitEvent({ type: 'project:updated', payload: { projectId: project.id } })
+			emitEvent({
+				type: 'lifecycle:changed',
+				payload: { entityType: 'project', entityId: project.id },
+			})
+			return project
+		},
+		deleteProject: async (projectId) => {
+			const project = await runMutation(() => deleteProject(projectId))
+			emitEvent({ type: 'project:deleted', payload: { projectId: project.id } })
+			emitEvent({
+				type: 'lifecycle:changed',
+				payload: { entityType: 'project', entityId: project.id },
+			})
+			return project
+		},
 	}
 })
 

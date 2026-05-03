@@ -5,6 +5,7 @@ mod database_bootstrap_tests;
 mod database_schema_tests;
 mod database_seed_tests;
 mod id_time_tests;
+mod lifecycle_tests;
 mod project_tests;
 mod runtime_tests;
 mod settings_tests;

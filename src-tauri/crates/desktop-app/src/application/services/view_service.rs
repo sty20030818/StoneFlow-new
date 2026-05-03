@@ -22,14 +22,13 @@ use crate::{
         today_local_date,
     },
     infrastructure::repositories::{
-        CreateViewRecord, ProjectRepository,
-        SpaceRepository, TaskPlacementQuery, TaskRepository, UpdateViewPatch, ViewListQuery,
-        ViewRepository,
+        CreateViewRecord, ProjectRepository, SpaceRepository, TaskPlacementQuery, TaskRepository,
+        UpdateViewPatch, ViewListQuery, ViewRepository,
     },
 };
 
 use super::{
-    project_service::{ProjectScopeInput},
+    project_service::ProjectScopeInput,
     task_service::{
         ListTasksPlacementInput, ListTasksPlacementKind, TaskListItemDto, TaskScopeInput,
         TaskScopeKind,
@@ -972,22 +971,12 @@ fn matches_task_view(
     }
 
     if let Some(filter) = &filters.created {
-        if !matches_date_filter(
-            Some(task.created_at.as_str()),
-            filter,
-            today,
-            true,
-        ) {
+        if !matches_date_filter(Some(task.created_at.as_str()), filter, today, true) {
             return false;
         }
     }
     if let Some(filter) = &filters.updated {
-        if !matches_date_filter(
-            Some(task.updated_at.as_str()),
-            filter,
-            today,
-            true,
-        ) {
+        if !matches_date_filter(Some(task.updated_at.as_str()), filter, today, true) {
             return false;
         }
     }

@@ -118,12 +118,19 @@ export const useTaskStore = create<TaskStoreState>((set, get) => {
 	async function runMutation(
 		runner: () => Promise<TaskDetail>,
 		eventType: 'task:created' | 'task:updated' | 'task:deleted',
+		lifecycleChanged = false,
 	) {
 		const detail = await runner()
 		emitEvent({
 			type: eventType,
 			payload: { taskId: detail.id },
 		})
+		if (lifecycleChanged) {
+			emitEvent({
+				type: 'lifecycle:changed',
+				payload: { entityType: 'task', entityId: detail.id },
+			})
+		}
 		await refreshLoadedSlices()
 		return detail
 	}
@@ -220,9 +227,9 @@ export const useTaskStore = create<TaskStoreState>((set, get) => {
 
 		createTask: async (input) => runMutation(() => createTask(input), 'task:created'),
 		updateTask: async (input) => runMutation(() => updateTask(input), 'task:updated'),
-		archiveTask: async (taskId) => runMutation(() => archiveTask(taskId), 'task:updated'),
-		restoreTask: async (taskId) => runMutation(() => restoreTask(taskId), 'task:updated'),
-		deleteTask: async (taskId) => runMutation(() => deleteTask(taskId), 'task:deleted'),
+		archiveTask: async (taskId) => runMutation(() => archiveTask(taskId), 'task:updated', true),
+		restoreTask: async (taskId) => runMutation(() => restoreTask(taskId), 'task:updated', true),
+		deleteTask: async (taskId) => runMutation(() => deleteTask(taskId), 'task:deleted', true),
 		moveTaskToInbox: async (input) => runMutation(() => moveTaskToInbox(input), 'task:updated'),
 		leaveInboxToProject: async (input) =>
 			runMutation(() => leaveInboxToProject(input), 'task:updated'),

@@ -17,6 +17,8 @@ use crate::{
     },
 };
 
+use super::lifecycle::build_lifecycle_service;
+
 #[tauri::command]
 pub async fn list_visible_spaces(
     database: State<'_, DatabaseRuntimeState>,
@@ -83,6 +85,16 @@ pub async fn delete_space(
 ) -> Result<SpaceDto, AppError> {
     build_space_service(database.inner())
         .delete_space(input)
+        .await
+}
+
+#[tauri::command]
+pub async fn permanently_delete_space(
+    input: SpaceIdInput,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<(), AppError> {
+    build_lifecycle_service(database.inner())
+        .permanently_delete_space(&input.space_id)
         .await
 }
 

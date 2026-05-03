@@ -92,6 +92,50 @@ impl ProjectRepository {
             .map_err(AppError::from)
     }
 
+    /// 列出某个 Space 下的全部 Project。
+    pub async fn list_by_space(&self, space_id: &str) -> Result<Vec<project::Model>, AppError> {
+        Project::find()
+            .filter(project::Column::SpaceId.eq(space_id))
+            .all(self.connection())
+            .await
+            .map_err(AppError::from)
+    }
+
+    /// 列出归档中的 Project。
+    pub async fn list_archived(
+        &self,
+        scope_space_id: Option<&str>,
+    ) -> Result<Vec<project::Model>, AppError> {
+        let mut query = Project::find()
+            .filter(project::Column::ArchivedAt.is_not_null())
+            .filter(project::Column::DeletedAt.is_null())
+            .order_by_desc(project::Column::ArchivedAt)
+            .order_by_desc(project::Column::UpdatedAt);
+
+        if let Some(space_id) = scope_space_id {
+            query = query.filter(project::Column::SpaceId.eq(space_id));
+        }
+
+        query.all(self.connection()).await.map_err(AppError::from)
+    }
+
+    /// 列出已删除的 Project。
+    pub async fn list_deleted(
+        &self,
+        scope_space_id: Option<&str>,
+    ) -> Result<Vec<project::Model>, AppError> {
+        let mut query = Project::find()
+            .filter(project::Column::DeletedAt.is_not_null())
+            .order_by_desc(project::Column::DeletedAt)
+            .order_by_desc(project::Column::UpdatedAt);
+
+        if let Some(space_id) = scope_space_id {
+            query = query.filter(project::Column::SpaceId.eq(space_id));
+        }
+
+        query.all(self.connection()).await.map_err(AppError::from)
+    }
+
     /// 计算某个 Space 下下一条 Project 的排序值。
     pub async fn next_sort_order<C>(&self, connection: &C, space_id: &str) -> Result<i32, AppError>
     where
@@ -458,6 +502,21 @@ impl ProjectRepository {
             )
             .filter(project::Column::SpaceId.eq(space_id))
             .filter(project::Column::DeletedAt.is_null())
+            .exec(connection)
+            .await?;
+        Ok(result.rows_affected)
+    }
+
+    /// 永久删除 Project。
+    pub async fn permanently_delete<C>(
+        &self,
+        connection: &C,
+        project_id: &str,
+    ) -> Result<u64, AppError>
+    where
+        C: ConnectionTrait,
+    {
+        let result = Project::delete_by_id(project_id.to_owned())
             .exec(connection)
             .await?;
         Ok(result.rows_affected)

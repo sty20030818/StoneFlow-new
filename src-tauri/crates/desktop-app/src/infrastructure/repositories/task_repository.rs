@@ -118,6 +118,59 @@ impl TaskRepository {
             .map_err(AppError::from)
     }
 
+    /// 列出某个 Space 下的全部 Task。
+    pub async fn list_by_space(&self, space_id: &str) -> Result<Vec<task::Model>, AppError> {
+        Task::find()
+            .filter(task::Column::SpaceId.eq(space_id))
+            .all(self.connection())
+            .await
+            .map_err(AppError::from)
+    }
+
+    /// 列出某个 Project 下的全部 Task。
+    pub async fn list_by_project(&self, project_id: &str) -> Result<Vec<task::Model>, AppError> {
+        Task::find()
+            .filter(task::Column::ProjectId.eq(project_id))
+            .all(self.connection())
+            .await
+            .map_err(AppError::from)
+    }
+
+    /// 列出归档中的 Task。
+    pub async fn list_archived(
+        &self,
+        scope_space_id: Option<&str>,
+    ) -> Result<Vec<task::Model>, AppError> {
+        let mut query = Task::find()
+            .filter(task::Column::ArchivedAt.is_not_null())
+            .filter(task::Column::DeletedAt.is_null())
+            .order_by_desc(task::Column::ArchivedAt)
+            .order_by_desc(task::Column::UpdatedAt);
+
+        if let Some(space_id) = scope_space_id {
+            query = query.filter(task::Column::SpaceId.eq(space_id));
+        }
+
+        query.all(self.connection()).await.map_err(AppError::from)
+    }
+
+    /// 列出已删除的 Task。
+    pub async fn list_deleted(
+        &self,
+        scope_space_id: Option<&str>,
+    ) -> Result<Vec<task::Model>, AppError> {
+        let mut query = Task::find()
+            .filter(task::Column::DeletedAt.is_not_null())
+            .order_by_desc(task::Column::DeletedAt)
+            .order_by_desc(task::Column::UpdatedAt);
+
+        if let Some(space_id) = scope_space_id {
+            query = query.filter(task::Column::SpaceId.eq(space_id));
+        }
+
+        query.all(self.connection()).await.map_err(AppError::from)
+    }
+
     /// 计算下一条 Task 的排序值。
     pub async fn next_sort_order<C>(
         &self,

@@ -9,6 +9,7 @@ import {
 	setDefaultSpace,
 	updateSpace,
 } from '@/features/space/api/spaces'
+import { emitEvent } from '@/shared/events'
 import type { Space } from '@/shared/types'
 
 type SpaceStoreState = {
@@ -63,31 +64,49 @@ export const useSpaceStore = create<SpaceStoreState>((set) => ({
 	createSpace: async (input) => {
 		const created = await createSpace(input)
 		await reloadSpaces(set)
+		emitEvent({ type: 'space:created', payload: { spaceId: created.id } })
 		return created
 	},
 	updateSpace: async (input) => {
 		const updated = await updateSpace(input)
 		await reloadSpaces(set)
+		emitEvent({ type: 'space:updated', payload: { spaceId: updated.id } })
 		return updated
 	},
 	setDefaultSpace: async (spaceId) => {
 		const updated = await setDefaultSpace(spaceId)
 		await reloadSpaces(set)
+		emitEvent({ type: 'space:updated', payload: { spaceId: updated.id } })
 		return updated
 	},
 	archiveSpace: async (spaceId) => {
 		const updated = await archiveSpace(spaceId)
 		await reloadSpaces(set)
+		emitEvent({ type: 'space:updated', payload: { spaceId: updated.id } })
+		emitEvent({
+			type: 'lifecycle:changed',
+			payload: { entityType: 'space', entityId: updated.id },
+		})
 		return updated
 	},
 	restoreSpace: async (spaceId) => {
 		const updated = await restoreSpace(spaceId)
 		await reloadSpaces(set)
+		emitEvent({ type: 'space:updated', payload: { spaceId: updated.id } })
+		emitEvent({
+			type: 'lifecycle:changed',
+			payload: { entityType: 'space', entityId: updated.id },
+		})
 		return updated
 	},
 	deleteSpace: async (spaceId) => {
 		const updated = await deleteSpace(spaceId)
 		await reloadSpaces(set)
+		emitEvent({ type: 'space:deleted', payload: { spaceId: updated.id } })
+		emitEvent({
+			type: 'lifecycle:changed',
+			payload: { entityType: 'space', entityId: updated.id },
+		})
 		return updated
 	},
 }))

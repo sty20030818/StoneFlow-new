@@ -8,7 +8,15 @@ export type AppEvent =
 	| { type: 'task:updated'; payload: { taskId: string } }
 	| { type: 'task:deleted'; payload: { taskId: string } }
 	| { type: 'project:created'; payload: { projectId: string } }
+	| { type: 'project:updated'; payload: { projectId: string } }
 	| { type: 'project:deleted'; payload: { projectId: string } }
+	| { type: 'space:created'; payload: { spaceId: string } }
+	| { type: 'space:updated'; payload: { spaceId: string } }
+	| { type: 'space:deleted'; payload: { spaceId: string } }
+	| {
+			type: 'lifecycle:changed'
+			payload: { entityType: 'space' | 'project' | 'task'; entityId: string }
+	  }
 
 export type AppEventType = AppEvent['type']
 

@@ -11,6 +11,7 @@ use crate::{
     application::activity::{
         ActivityAction, ActivityChangeInput, ActivityService, RecordActivityInput,
     },
+    application::services::LifecycleService,
     domain::{create_id, normalize_required_text, now_utc},
     infrastructure::repositories::{
         CreateSpaceRecord, ProjectRepository, SpaceRepository, TaskRepository, UpdateSpacePatch,
@@ -87,6 +88,15 @@ impl SpaceService {
 
     pub fn repository(&self) -> &SpaceRepository {
         &self.repository
+    }
+
+    fn lifecycle_service(&self) -> LifecycleService {
+        LifecycleService::new(
+            self.repository.clone(),
+            self.project_repository.clone(),
+            self.task_repository.clone(),
+            self.activity_service.clone(),
+        )
     }
 
     /// 列出所有可见 Space。
@@ -295,174 +305,21 @@ impl SpaceService {
     /// 归档一个 Space，并级联归档其下项目和任务。
     pub async fn archive_space(&self, input: SpaceIdInput) -> Result<SpaceDto, AppError> {
         let space_id = normalize_space_id(&input.space_id)?;
-        let current = self.require_existing_space(&space_id).await?;
-        ensure_space_mutable(&current)?;
-        ensure_not_only_active_default(
-            &current,
-            "当前唯一活跃默认 Space 不能直接归档，请先切换默认 Space",
-        )?;
-
-        if current.archived_at.is_some() {
-            return Ok(map_space_model(current));
-        }
-
-        let now = now_utc().to_rfc3339();
-        let transaction = self.repository.connection().begin().await?;
-        let updated = self
-            .repository
-            .archive_raw(&transaction, &space_id, &now, &now)
-            .await?
-            .ok_or_else(|| AppError::not_found("Space 不存在"))?;
-        let archived_projects = self
-            .project_repository
-            .archive_by_space_raw(&transaction, &space_id, &now, &space_id, &now)
-            .await?;
-        let archived_tasks = self
-            .task_repository
-            .archive_by_space_raw(&transaction, &space_id, &now, &space_id, &now)
-            .await?;
-
-        self.activity_service
-            .record_activity_in_txn(
-                &transaction,
-                RecordActivityInput {
-                    entity_type: ActivityEntityKind::Space,
-                    entity_id: updated.id.clone(),
-                    action: ActivityAction::SpaceArchived,
-                    actor_type: None,
-                    source: None,
-                    summary: Some(format!("归档 Space「{}」", updated.name)),
-                    metadata: Some(json!({
-                        "spaceId": updated.id,
-                        "archivedProjects": archived_projects,
-                        "archivedTasks": archived_tasks
-                    })),
-                    changes: vec![ActivityChangeInput {
-                        field: "archivedAt".to_owned(),
-                        old_value: None,
-                        new_value: Some(json!(now.clone())),
-                    }],
-                },
-            )
-            .await?;
-
-        transaction.commit().await?;
+        let updated = self.lifecycle_service().archive_space(&space_id).await?;
         Ok(map_space_model(updated))
     }
 
     /// 恢复一个已归档或已删除的 Space，仅恢复 Space 本身。
     pub async fn restore_space(&self, input: SpaceIdInput) -> Result<SpaceDto, AppError> {
         let space_id = normalize_space_id(&input.space_id)?;
-        let current = self.require_existing_space(&space_id).await?;
-        let existing_default = self.repository.get_default().await?;
-        if current.is_default
-            && current.deleted_at.is_some()
-            && existing_default
-                .as_ref()
-                .is_some_and(|space| space.id != current.id)
-        {
-            return Err(AppError::conflict(
-                "已存在其他活跃默认 Space，无法直接恢复该默认 Space",
-            ));
-        }
-
-        if current.archived_at.is_none() && current.deleted_at.is_none() {
-            return Ok(map_space_model(current));
-        }
-
-        let updated_at = now_utc().to_rfc3339();
-        let transaction = self.repository.connection().begin().await?;
-        let restored = self
-            .repository
-            .restore_raw(&transaction, &space_id, &updated_at)
-            .await?
-            .ok_or_else(|| AppError::not_found("Space 不存在"))?;
-
-        self.activity_service
-            .record_activity_in_txn(
-                &transaction,
-                RecordActivityInput {
-                    entity_type: ActivityEntityKind::Space,
-                    entity_id: restored.id.clone(),
-                    action: ActivityAction::SpaceRestored,
-                    actor_type: None,
-                    source: None,
-                    summary: Some(format!("恢复 Space「{}」", restored.name)),
-                    metadata: Some(json!({ "spaceId": restored.id })),
-                    changes: vec![
-                        ActivityChangeInput {
-                            field: "archivedAt".to_owned(),
-                            old_value: current.archived_at.as_ref().map(|value| json!(value)),
-                            new_value: Some(serde_json::Value::Null),
-                        },
-                        ActivityChangeInput {
-                            field: "deletedAt".to_owned(),
-                            old_value: current.deleted_at.as_ref().map(|value| json!(value)),
-                            new_value: Some(serde_json::Value::Null),
-                        },
-                    ],
-                },
-            )
-            .await?;
-
-        transaction.commit().await?;
+        let restored = self.lifecycle_service().restore_space(&space_id).await?;
         Ok(map_space_model(restored))
     }
 
     /// 删除一个 Space，并级联删除其下项目和任务。
     pub async fn delete_space(&self, input: SpaceIdInput) -> Result<SpaceDto, AppError> {
         let space_id = normalize_space_id(&input.space_id)?;
-        let current = self.require_existing_space(&space_id).await?;
-        ensure_not_only_active_default(
-            &current,
-            "当前唯一活跃默认 Space 不能直接删除，请先切换默认 Space",
-        )?;
-
-        if current.deleted_at.is_some() {
-            return Ok(map_space_model(current));
-        }
-
-        let now = now_utc().to_rfc3339();
-        let transaction = self.repository.connection().begin().await?;
-        let updated = self
-            .repository
-            .delete_raw(&transaction, &space_id, &now, &now)
-            .await?
-            .ok_or_else(|| AppError::not_found("Space 不存在"))?;
-        let deleted_projects = self
-            .project_repository
-            .delete_by_space_raw(&transaction, &space_id, &now, &space_id, &now)
-            .await?;
-        let deleted_tasks = self
-            .task_repository
-            .delete_by_space_raw(&transaction, &space_id, &now, &space_id, &now)
-            .await?;
-
-        self.activity_service
-            .record_activity_in_txn(
-                &transaction,
-                RecordActivityInput {
-                    entity_type: ActivityEntityKind::Space,
-                    entity_id: updated.id.clone(),
-                    action: ActivityAction::SpaceDeleted,
-                    actor_type: None,
-                    source: None,
-                    summary: Some(format!("删除 Space「{}」", updated.name)),
-                    metadata: Some(json!({
-                        "spaceId": updated.id,
-                        "deletedProjects": deleted_projects,
-                        "deletedTasks": deleted_tasks
-                    })),
-                    changes: vec![ActivityChangeInput {
-                        field: "deletedAt".to_owned(),
-                        old_value: None,
-                        new_value: Some(json!(now.clone())),
-                    }],
-                },
-            )
-            .await?;
-
-        transaction.commit().await?;
+        let updated = self.lifecycle_service().delete_space(&space_id).await?;
         Ok(map_space_model(updated))
     }
 

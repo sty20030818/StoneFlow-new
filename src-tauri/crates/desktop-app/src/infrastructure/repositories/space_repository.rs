@@ -87,6 +87,41 @@ impl SpaceRepository {
             .map_err(AppError::from)
     }
 
+    /// 列出归档中的 Space。
+    pub async fn list_archived(
+        &self,
+        scope_space_id: Option<&str>,
+    ) -> Result<Vec<space::Model>, AppError> {
+        let mut query = Space::find()
+            .filter(space::Column::ArchivedAt.is_not_null())
+            .filter(space::Column::DeletedAt.is_null())
+            .order_by_desc(space::Column::ArchivedAt)
+            .order_by_desc(space::Column::UpdatedAt);
+
+        if let Some(space_id) = scope_space_id {
+            query = query.filter(space::Column::Id.eq(space_id));
+        }
+
+        query.all(self.connection()).await.map_err(AppError::from)
+    }
+
+    /// 列出已删除的 Space。
+    pub async fn list_deleted(
+        &self,
+        scope_space_id: Option<&str>,
+    ) -> Result<Vec<space::Model>, AppError> {
+        let mut query = Space::find()
+            .filter(space::Column::DeletedAt.is_not_null())
+            .order_by_desc(space::Column::DeletedAt)
+            .order_by_desc(space::Column::UpdatedAt);
+
+        if let Some(space_id) = scope_space_id {
+            query = query.filter(space::Column::Id.eq(space_id));
+        }
+
+        query.all(self.connection()).await.map_err(AppError::from)
+    }
+
     /// 计算下一条 Space 的排序值。
     pub async fn next_sort_order<C>(&self, connection: &C) -> Result<i32, AppError>
     where
@@ -289,5 +324,20 @@ impl SpaceRepository {
             .await
             .map(Some)
             .map_err(AppError::from)
+    }
+
+    /// 永久删除 Space。
+    pub async fn permanently_delete<C>(
+        &self,
+        connection: &C,
+        space_id: &str,
+    ) -> Result<u64, AppError>
+    where
+        C: ConnectionTrait,
+    {
+        let result = Space::delete_by_id(space_id.to_owned())
+            .exec(connection)
+            .await?;
+        Ok(result.rows_affected)
     }
 }

@@ -17,6 +17,7 @@ use crate::{
     application::activity::{
         ActivityAction, ActivityChangeInput, ActivityService, RecordActivityInput,
     },
+    application::services::LifecycleService,
     domain::{
         create_id, normalize_required_text, normalize_slug, now_utc, parse_calendar_date,
         today_local_date,
@@ -238,6 +239,15 @@ impl TaskService {
             repository,
             activity_service,
         }
+    }
+
+    fn lifecycle_service(&self) -> LifecycleService {
+        LifecycleService::new(
+            self.space_repository.clone(),
+            self.project_repository.clone(),
+            self.repository.clone(),
+            self.activity_service.clone(),
+        )
     }
 
     pub fn repository(&self) -> &TaskRepository {
@@ -759,139 +769,21 @@ impl TaskService {
     /// 归档 Task。
     pub async fn archive_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
         let task_id = normalize_task_id(&input.task_id)?;
-        let current = self
-            .repository
-            .get(&task_id)
-            .await?
-            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
-
-        if current.deleted_at.is_some() {
-            return Err(AppError::not_found("Task 不存在"));
-        }
-        if current.archived_at.is_some() {
-            return self.build_task_detail(current).await;
-        }
-
-        let now = now_utc().to_rfc3339();
-        let transaction = self.repository.connection().begin().await?;
-        let updated = self
-            .repository
-            .archive_raw(&transaction, &task_id, &now, &task_id, &now)
-            .await?
-            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
-
-        self.activity_service
-            .record_activity_in_txn(
-                &transaction,
-                RecordActivityInput {
-                    entity_type: ActivityEntityKind::Task,
-                    entity_id: updated.id.clone(),
-                    action: ActivityAction::TaskArchived,
-                    actor_type: None,
-                    source: None,
-                    summary: Some(format!("归档任务「{}」", updated.title)),
-                    metadata: Some(json!({
-                        "taskId": updated.id,
-                        "spaceId": updated.space_id,
-                    })),
-                    changes: vec![ActivityChangeInput {
-                        field: "archived_at".to_owned(),
-                        old_value: None,
-                        new_value: Some(json!(now.clone())),
-                    }],
-                },
-            )
-            .await?;
-
-        transaction.commit().await?;
+        let updated = self.lifecycle_service().archive_task(&task_id).await?;
         self.build_task_detail(updated).await
     }
 
     /// 恢复 Task。
     pub async fn restore_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
         let task_id = normalize_task_id(&input.task_id)?;
-        let _current = self
-            .repository
-            .get(&task_id)
-            .await?
-            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
-
-        let now = now_utc().to_rfc3339();
-        let transaction = self.repository.connection().begin().await?;
-        let updated = self
-            .repository
-            .restore_raw(&transaction, &task_id, &now)
-            .await?
-            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
-
-        self.activity_service
-            .record_activity_in_txn(
-                &transaction,
-                RecordActivityInput {
-                    entity_type: ActivityEntityKind::Task,
-                    entity_id: updated.id.clone(),
-                    action: ActivityAction::TaskRestored,
-                    actor_type: None,
-                    source: None,
-                    summary: Some(format!("恢复任务「{}」", updated.title)),
-                    metadata: Some(json!({
-                        "taskId": updated.id,
-                        "spaceId": updated.space_id,
-                    })),
-                    changes: Vec::new(),
-                },
-            )
-            .await?;
-
-        transaction.commit().await?;
+        let updated = self.lifecycle_service().restore_task(&task_id).await?;
         self.build_task_detail(updated).await
     }
 
     /// 删除 Task。
     pub async fn delete_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
         let task_id = normalize_task_id(&input.task_id)?;
-        let current = self
-            .repository
-            .get(&task_id)
-            .await?
-            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
-
-        if current.deleted_at.is_some() {
-            return self.build_task_detail(current).await;
-        }
-
-        let now = now_utc().to_rfc3339();
-        let transaction = self.repository.connection().begin().await?;
-        let updated = self
-            .repository
-            .delete_raw(&transaction, &task_id, &now, &task_id, &now)
-            .await?
-            .ok_or_else(|| AppError::not_found("Task 不存在"))?;
-
-        self.activity_service
-            .record_activity_in_txn(
-                &transaction,
-                RecordActivityInput {
-                    entity_type: ActivityEntityKind::Task,
-                    entity_id: updated.id.clone(),
-                    action: ActivityAction::TaskDeleted,
-                    actor_type: None,
-                    source: None,
-                    summary: Some(format!("删除任务「{}」", updated.title)),
-                    metadata: Some(json!({
-                        "taskId": updated.id,
-                        "spaceId": updated.space_id,
-                    })),
-                    changes: vec![ActivityChangeInput {
-                        field: "deleted_at".to_owned(),
-                        old_value: None,
-                        new_value: Some(json!(now.clone())),
-                    }],
-                },
-            )
-            .await?;
-
-        transaction.commit().await?;
+        let updated = self.lifecycle_service().delete_task(&task_id).await?;
         self.build_task_detail(updated).await
     }
 
