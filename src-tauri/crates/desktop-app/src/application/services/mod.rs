@@ -25,4 +25,8 @@ pub use task_service::{
     ListTasksPlacementInput, TaskDetailDto, TaskIdInput, TaskListItemDto, TaskScopeInput,
     TaskScopeKind, TaskService, UpdateTaskInput,
 };
-pub use view_service::ViewService;
+pub use view_service::{
+    CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunProjectViewInput,
+    RunTaskViewInput, RunTaskViewOutput, TaskViewGroupDto, ToggleViewVisibleInput, UpdateViewInput,
+    ViewDto, ViewService, ViewSortDirection, ViewSortRuleDto,
+};

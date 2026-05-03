@@ -49,6 +49,11 @@ const TASK_SECTIONS: TaskStatus[] = ['todo', 'doing', 'waiting', 'done', 'cancel
 
 type TaskBoardProps = {
 	tasks: TaskListItem[]
+	customSections?: Array<{
+		key: string
+		label: string
+		tasks: TaskListItem[]
+	}>
 	createProjectId?: string | null
 	showProjectName?: boolean
 	pendingTaskId: string | null
@@ -74,6 +79,7 @@ type TaskBoardProps = {
 
 export function TaskBoard({
 	tasks,
+	customSections,
 	createProjectId = null,
 	showProjectName = false,
 	pendingTaskId,
@@ -139,6 +145,40 @@ export function TaskBoard({
 		)
 	}
 
+	if (customSections && customSections.length > 0) {
+		return (
+			<div
+				className={cn(
+					'flex min-h-0 flex-1 flex-col',
+					sectionVariant === 'project' ? 'gap-2' : 'gap-3',
+				)}
+			>
+				{customSections.map((section) => (
+					<TaskCustomSection
+						activeTaskId={activeTaskId}
+						createProjectId={createProjectId}
+						key={section.key}
+						label={section.label}
+						onArchiveTask={onArchiveTask}
+						onDeleteTask={onDeleteTask}
+						onOpenTask={onOpenTask}
+						onToggleTaskSelection={onToggleTaskSelection}
+						onToggleTaskStatus={onToggleTaskStatus}
+						onUpdateTaskPriority={onUpdateTaskPriority}
+						onUpdateTaskStatus={onUpdateTaskStatus}
+						pendingTaskId={pendingTaskId}
+						renderRowActions={renderRowActions}
+						rowVariant={rowVariant}
+						selectedTaskIdSet={selectedTaskIdSet}
+						sectionVariant={sectionVariant}
+						showProjectName={showProjectName}
+						tasks={section.tasks}
+					/>
+				))}
+			</div>
+		)
+	}
+
 	const visibleStatuses = statusOrder.filter(
 		(status) => !hideEmptySections || groupedTasks[status].length > 0,
 	)
@@ -175,6 +215,103 @@ export function TaskBoard({
 					tasks={groupedTasks[status]}
 				/>
 			))}
+		</div>
+	)
+}
+
+function TaskCustomSection({
+	label,
+	tasks,
+	createProjectId,
+	showProjectName,
+	pendingTaskId,
+	activeTaskId,
+	selectedTaskIdSet,
+	onToggleTaskSelection,
+	onUpdateTaskPriority,
+	onUpdateTaskStatus,
+	onToggleTaskStatus,
+	onDeleteTask,
+	onArchiveTask,
+	onOpenTask,
+	sectionVariant,
+	rowVariant,
+	renderRowActions,
+}: {
+	label: string
+	tasks: TaskListItem[]
+	createProjectId: string | null
+	showProjectName: boolean
+	pendingTaskId: string | null
+	activeTaskId: string | null
+	selectedTaskIdSet: Set<string>
+	onToggleTaskSelection: (taskId: string) => void
+	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
+	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
+	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
+	onDeleteTask?: (task: TaskListItem) => Promise<void>
+	onArchiveTask?: (task: TaskListItem) => Promise<void>
+	onOpenTask: (taskId: string) => void
+	sectionVariant: TaskBoardSectionVariant
+	rowVariant: TaskBoardRowVariant
+	renderRowActions?: (task: TaskListItem) => ReactNode
+}) {
+	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
+
+	return (
+		<div className='flex flex-col gap-1'>
+			<div
+				className={cn(
+					'flex items-center justify-between gap-3 px-1',
+					sectionVariant === 'project'
+						? 'rounded-md bg-(--sf-color-project-task-section-header) py-1 pl-3 pr-1'
+						: undefined,
+				)}
+			>
+				<div className='flex min-w-0 items-center gap-2'>
+					<span className='truncate text-sm font-semibold text-foreground'>{label}</span>
+					<Badge className='h-5 rounded-full px-2 text-[11px]' variant='secondary'>
+						{tasks.length}
+					</Badge>
+				</div>
+				<Button
+					aria-label={`在 ${label} 中创建任务`}
+					className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
+					onClick={(event) => {
+						event.preventDefault()
+						event.stopPropagation()
+						openTaskCreateDialog({
+							projectId: createProjectId,
+						})
+					}}
+					size='icon-xs'
+					type='button'
+					variant='ghost'
+				>
+					<PlusIcon />
+				</Button>
+			</div>
+			<div className='flex flex-col gap-1'>
+				{tasks.map((task) => (
+					<TaskBoardRow
+						activeTaskId={activeTaskId}
+						isProjectNameVisible={showProjectName}
+						key={task.id}
+						onDeleteTask={onDeleteTask}
+						onArchiveTask={onArchiveTask}
+						onOpenTask={onOpenTask}
+						onToggleTaskSelection={onToggleTaskSelection}
+						onToggleTaskStatus={onToggleTaskStatus}
+						onUpdateTaskPriority={onUpdateTaskPriority}
+						onUpdateTaskStatus={onUpdateTaskStatus}
+						pendingTaskId={pendingTaskId}
+						renderRowActions={renderRowActions}
+						rowVariant={rowVariant}
+						selectedTaskIdSet={selectedTaskIdSet}
+						task={task}
+					/>
+				))}
+			</div>
 		</div>
 	)
 }

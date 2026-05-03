@@ -302,6 +302,44 @@ impl TaskRepository {
             .map_err(AppError::from)
     }
 
+    /// 按 scope / placement 读取 View 执行器所需候选集。
+    pub async fn list_candidates(
+        &self,
+        space_id: Option<String>,
+        placement: TaskPlacementQuery,
+        include_deleted: bool,
+    ) -> Result<Vec<task::Model>, AppError> {
+        let mut task_query = Task::find();
+
+        if let Some(space_id) = space_id.as_deref() {
+            task_query = task_query.filter(task::Column::SpaceId.eq(space_id));
+        }
+
+        task_query = match placement {
+            TaskPlacementQuery::All => task_query,
+            TaskPlacementQuery::Project(project_id) => {
+                task_query.filter(task::Column::ProjectId.eq(project_id))
+            }
+            TaskPlacementQuery::Inbox => task_query
+                .filter(task::Column::ProjectId.is_null())
+                .filter(task::Column::InboxAt.is_not_null()),
+            TaskPlacementQuery::NoProject => task_query
+                .filter(task::Column::ProjectId.is_null())
+                .filter(task::Column::InboxAt.is_null()),
+        };
+
+        if !include_deleted {
+            task_query = task_query.filter(task::Column::DeletedAt.is_null());
+        }
+
+        task_query
+            .order_by_asc(task::Column::SortOrder)
+            .order_by_desc(task::Column::UpdatedAt)
+            .all(self.connection())
+            .await
+            .map_err(AppError::from)
+    }
+
     /// 原始归档：只更新 Task 自身。
     pub async fn archive_raw<C>(
         &self,

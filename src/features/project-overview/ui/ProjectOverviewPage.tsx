@@ -19,6 +19,7 @@ import { ProjectOverviewList } from '@/features/project-overview/ui/ProjectOverv
 import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+import { selectProjectViews, useViewStore } from '@/features/view/model/useViewStore'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -27,27 +28,40 @@ import {
 } from '@/shared/ui/base/breadcrumb'
 import { BoxIcon, Layers3Icon, PlusIcon } from 'lucide-react'
 
-const PROJECT_OVERVIEW_TABS: Array<{ key: ProjectOverviewViewKey; label: string }> = [
-	{ key: 'active', label: 'Active' },
-	{ key: 'completed', label: 'Completed' },
-	{ key: 'archived', label: 'Archived' },
-	{ key: 'all', label: 'All' },
-]
-
 export function ProjectOverviewPage() {
 	const navigate = useNavigate()
 	const { scope, spaceId } = useScopeRoute()
 	const spaces = useSpaceStore(selectSpaces)
 	const overview = useProjectStore(selectProjectOverview)
 	const loadOverview = useProjectStore((state) => state.loadOverview)
+	const projectViews = useViewStore(selectProjectViews)
+	const loadProjectViews = useViewStore((state) => state.loadProjectViews)
 	const completeProject = useProjectStore((state) => state.completeProject)
 	const reopenProject = useProjectStore((state) => state.reopenProject)
 	const archiveProject = useProjectStore((state) => state.archiveProject)
 	const deleteProject = useProjectStore((state) => state.deleteProject)
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
-	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('active')
+	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('active_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
 	const scopeKey = scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
+	const visibleProjectViews = projectViews.items.filter((view) => view.isVisible)
+
+	useEffect(() => {
+		void loadProjectViews()
+	}, [loadProjectViews])
+
+	useEffect(() => {
+		if (visibleProjectViews.length === 0) {
+			return
+		}
+
+		const matched = visibleProjectViews.find((view) => view.key === viewKey || view.id === viewKey)
+		if (matched) {
+			return
+		}
+
+		setViewKey((visibleProjectViews[0].key ?? visibleProjectViews[0].id) as ProjectOverviewViewKey)
+	}, [viewKey, visibleProjectViews])
 
 	useEffect(() => {
 		void loadOverview(scope, viewKey)
@@ -79,10 +93,10 @@ export function ProjectOverviewPage() {
 					onRefresh={() => {
 						void loadOverview(scope, viewKey)
 					}}
-					pills={PROJECT_OVERVIEW_TABS.map((tab) => ({
-						active: tab.key === viewKey,
-						label: tab.label,
-						onClick: () => setViewKey(tab.key),
+					pills={visibleProjectViews.map((view) => ({
+						active: (view.key ?? view.id) === viewKey,
+						label: view.name,
+						onClick: () => setViewKey((view.key ?? view.id) as ProjectOverviewViewKey),
 					}))}
 				/>
 			}

@@ -1,6 +1,14 @@
 import type { Project, ProjectOverviewItem, ProjectSidebarItem, TaskListItem } from '@/shared/types'
 
-export type ProjectOverviewViewKey = 'active' | 'completed' | 'archived' | 'all'
+export type ProjectOverviewViewKey =
+	| 'active'
+	| 'completed'
+	| 'archived'
+	| 'all'
+	| 'active_projects'
+	| 'completed_projects'
+	| 'archived_projects'
+	| 'all_projects'
 
 export type ProjectDetail = Project & {
 	spaceName: string

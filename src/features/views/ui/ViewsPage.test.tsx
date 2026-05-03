@@ -5,12 +5,55 @@ import { vi } from 'vitest'
 
 import { ViewsPage } from '@/features/views/ui/ViewsPage'
 
-const loadListSpy = vi.fn()
-const openDrawerSpy = vi.fn()
-const openTaskCreateDialogSpy = vi.fn()
+const loadTaskViewsSpy = vi.fn<() => Promise<void>>()
+const runTaskViewSpy =
+	vi.fn<(input: { scope: { type: string }; viewId: string }) => Promise<void>>()
+const refreshTaskRunSpy = vi.fn<() => Promise<void>>()
+const createTaskViewSpy = vi.fn<(input: unknown) => Promise<unknown>>()
+const updateTaskViewSpy = vi.fn<(input: unknown) => Promise<unknown>>()
+const deleteTaskViewSpy = vi.fn<(viewId: string) => Promise<void>>()
+const toggleTaskViewVisibleSpy = vi.fn<(viewId: string, visible: boolean) => Promise<unknown>>()
+const reorderTaskViewsSpy = vi.fn<(input: unknown) => Promise<unknown>>()
+const loadSidebarSpy = vi.fn<(scope: { type: string }) => Promise<void>>()
+const openDrawerSpy = vi.fn<(kind: string, id: string) => void>()
+const openTaskCreateDialogSpy = vi.fn<(draft?: unknown) => void>()
 
-const mockTaskStoreState = {
-	list: {
+const mockViews = [
+	{
+		id: 'view-today',
+		name: 'Today',
+		description: '今天计划、今天截止和已经逾期的任务会显示在这里。',
+		type: 'system' as const,
+		entityType: 'task' as const,
+		key: 'today',
+		filters: {},
+		sort: [{ field: 'dueAt' as const, direction: 'asc' as const }],
+		groupBy: 'none' as const,
+		isVisible: true,
+		sortOrder: 100,
+		createdAt: '2026-05-03T10:00:00Z',
+		updatedAt: '2026-05-03T10:00:00Z',
+	},
+	{
+		id: 'view-upcoming',
+		name: 'Upcoming',
+		description: '未来计划和未来截止的任务会显示在这里。',
+		type: 'system' as const,
+		entityType: 'task' as const,
+		key: 'upcoming',
+		filters: {},
+		sort: [{ field: 'scheduledAt' as const, direction: 'asc' as const }],
+		groupBy: 'none' as const,
+		isVisible: true,
+		sortOrder: 200,
+		createdAt: '2026-05-03T10:00:00Z',
+		updatedAt: '2026-05-03T10:00:00Z',
+	},
+]
+
+const mockTaskRunState = {
+	item: {
+		view: mockViews[0],
 		items: [
 			{
 				id: 'task-1',
@@ -35,11 +78,29 @@ const mockTaskStoreState = {
 				updatedAt: '2026-05-03T10:00:00Z',
 			},
 		],
+		groups: [],
+	},
+	status: 'ready' as const,
+	error: null,
+	input: null,
+}
+
+const mockViewStoreState = {
+	taskViews: {
+		items: mockViews,
 		status: 'ready' as const,
 		error: null,
-		input: null,
+		entityType: 'task' as const,
 	},
-	loadList: loadListSpy,
+	taskRun: mockTaskRunState,
+	loadTaskViews: loadTaskViewsSpy,
+	runTaskView: runTaskViewSpy,
+	refreshTaskRun: refreshTaskRunSpy,
+	createTaskView: createTaskViewSpy,
+	updateTaskView: updateTaskViewSpy,
+	deleteTaskView: deleteTaskViewSpy,
+	toggleTaskViewVisible: toggleTaskViewVisibleSpy,
+	reorderTaskViews: reorderTaskViewsSpy,
 }
 
 vi.mock('@/app/layouts/shell/model/useDrawerStore', () => ({
@@ -58,20 +119,37 @@ vi.mock('@/app/layouts/shell/model/useDialogStore', () => ({
 		}),
 }))
 
-vi.mock('@/features/task/model/useTaskStore', () => ({
-	selectTaskList: (state: typeof mockTaskStoreState) => state.list,
-	useTaskStore: (selector: (state: typeof mockTaskStoreState) => unknown) =>
-		selector(mockTaskStoreState),
+vi.mock('@/features/project/model/useProjectStore', () => ({
+	selectProjectOptions: (state: {
+		options: Array<{ id: string; name: string; spaceId: string }>
+	}) => state.options,
+	useProjectStore: (selector: (state: unknown) => unknown) =>
+		selector({
+			options: [{ id: 'project-1', name: '阶段 8', spaceId: 'space-1' }],
+			loadSidebar: loadSidebarSpy,
+		}),
+}))
+
+vi.mock('@/features/view/model/useViewStore', () => ({
+	selectTaskViews: (state: typeof mockViewStoreState) => state.taskViews,
+	selectTaskViewRun: (state: typeof mockViewStoreState) => state.taskRun,
+	useViewStore: (selector: (state: typeof mockViewStoreState) => unknown) =>
+		selector(mockViewStoreState),
+}))
+
+vi.mock('@/shared/events', () => ({
+	useTaskChangedListener:
+		vi.fn<(scope: unknown, onTaskChanged: (payload: unknown) => void) => void>(),
 }))
 
 vi.mock('@/features/task/model/useTaskListController', () => ({
 	useTaskListController: () => ({
 		pendingTaskId: null,
-		updateTaskPriority: vi.fn(),
-		updateTaskStatus: vi.fn(),
-		toggleTaskStatus: vi.fn(),
-		archiveListTask: vi.fn(),
-		deleteListTask: vi.fn(),
+		updateTaskPriority: vi.fn<(task: unknown, priority: unknown) => Promise<void>>(),
+		updateTaskStatus: vi.fn<(task: unknown, status: unknown) => Promise<void>>(),
+		toggleTaskStatus: vi.fn<(task: unknown) => Promise<void>>(),
+		archiveListTask: vi.fn<(task: unknown) => Promise<void>>(),
+		deleteListTask: vi.fn<(task: unknown) => Promise<void>>(),
 	}),
 }))
 
@@ -79,8 +157,8 @@ vi.mock('@/features/task/model/useTaskSelection', () => ({
 	useTaskSelection: () => ({
 		selectedTaskIdSet: new Set(['task-1']),
 		selectedCount: 1,
-		toggleTaskSelection: vi.fn(),
-		clearTaskSelection: vi.fn(),
+		toggleTaskSelection: vi.fn<(taskId: string) => void>(),
+		clearTaskSelection: vi.fn<() => void>(),
 	}),
 }))
 
@@ -98,32 +176,18 @@ vi.mock('@/features/task/ui/TaskBulkActionBar', () => ({
 		selectedCount > 0 ? <div>{action}</div> : null,
 }))
 
+vi.mock('@/features/view/ui/ViewEditorDialog', () => ({
+	ViewEditorDialog: () => null,
+}))
+
 describe('ViewsPage', () => {
 	beforeEach(() => {
-		loadListSpy.mockReset()
+		loadTaskViewsSpy.mockReset()
+		runTaskViewSpy.mockReset()
+		loadSidebarSpy.mockReset()
 	})
 
-	it('根据 query viewKey 加载对应系统视图，并保留禁用批量说明', async () => {
-		render(
-			<MemoryRouter initialEntries={['/spaces/views?view=focus']}>
-				<Routes>
-					<Route path='/spaces/views' element={<ViewsPage />} />
-				</Routes>
-			</MemoryRouter>,
-		)
-
-		await waitFor(() => {
-			expect(loadListSpy).toHaveBeenCalledWith({
-				scope: { type: 'all' },
-				viewKey: 'focus',
-				placement: { kind: 'all' },
-			})
-		})
-
-		expect(screen.getByText('批量能力后续接入')).toBeDisabled()
-	})
-
-	it('点击系统视图 tab 后切换到新的 viewKey', async () => {
+	it('根据 query viewKey 解析真实 viewId，并触发视图执行', async () => {
 		render(
 			<MemoryRouter initialEntries={['/spaces/views?view=today']}>
 				<Routes>
@@ -133,20 +197,32 @@ describe('ViewsPage', () => {
 		)
 
 		await waitFor(() => {
-			expect(loadListSpy).toHaveBeenCalledWith({
+			expect(loadTaskViewsSpy).toHaveBeenCalled()
+			expect(loadSidebarSpy).toHaveBeenCalledWith({ type: 'all' })
+			expect(runTaskViewSpy).toHaveBeenCalledWith({
 				scope: { type: 'all' },
-				viewKey: 'today',
-				placement: { kind: 'all' },
+				viewId: 'view-today',
 			})
 		})
+
+		expect(screen.getByText('批量能力后续接入')).toBeDisabled()
+	})
+
+	it('点击系统视图 tab 后切换到新的视图 id', async () => {
+		render(
+			<MemoryRouter initialEntries={['/spaces/views?view=view-today']}>
+				<Routes>
+					<Route path='/spaces/views' element={<ViewsPage />} />
+				</Routes>
+			</MemoryRouter>,
+		)
 
 		fireEvent.click(screen.getByRole('tab', { name: 'Upcoming' }))
 
 		await waitFor(() => {
-			expect(loadListSpy).toHaveBeenLastCalledWith({
+			expect(runTaskViewSpy).toHaveBeenLastCalledWith({
 				scope: { type: 'all' },
-				viewKey: 'upcoming',
-				placement: { kind: 'all' },
+				viewId: 'view-upcoming',
 			})
 		})
 	})

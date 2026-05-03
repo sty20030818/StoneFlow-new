@@ -8,6 +8,7 @@ pub(crate) mod quick_capture;
 pub(crate) mod settings;
 pub(crate) mod spaces;
 pub(crate) mod tasks;
+pub(crate) mod views;
 pub(crate) mod workspace;
 
 /// 生成命令处理器。
@@ -34,6 +35,13 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         tasks::leave_inbox_as_no_project,
         tasks::restore_task,
         tasks::delete_task,
+        views::list_views,
+        views::run_task_view,
+        views::create_view,
+        views::update_view,
+        views::delete_view,
+        views::toggle_view_visible,
+        views::reorder_views,
         settings::get_sidebar_settings,
         settings::update_sidebar_item_visibility,
         settings::update_sidebar_width,

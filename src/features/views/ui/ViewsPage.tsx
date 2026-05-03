@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import {
@@ -8,14 +8,23 @@ import {
 	MainCardToolbar,
 } from '@/app/layouts/main-card/MainCardLayout'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
-import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
+import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import { TaskBoard } from '@/features/task/ui/TaskBoard'
 import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
+import {
+	selectTaskViewRun,
+	selectTaskViews,
+	useViewStore,
+} from '@/features/view/model/useViewStore'
+import { ViewActionsMenu } from '@/features/view/ui/ViewActionsMenu'
+import { ViewEditorDialog } from '@/features/view/ui/ViewEditorDialog'
+import { useTaskChangedListener } from '@/shared/events'
+import type { TaskListItem, View } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
@@ -25,63 +34,26 @@ import {
 } from '@/shared/ui/base/breadcrumb'
 import { Layers2Icon, PlusIcon } from 'lucide-react'
 
-type SystemTaskViewKey = 'today' | 'focus' | 'upcoming' | 'overdue'
-
-type SystemTaskViewConfig = {
-	key: SystemTaskViewKey
-	label: string
-	emptyTitle: string
-	emptyDescription: string
-	sortHint: string
-}
-
-const DEFAULT_SYSTEM_TASK_VIEW_KEY: SystemTaskViewKey = 'today'
-
-const SYSTEM_TASK_VIEW_CONFIG: SystemTaskViewConfig[] = [
-	{
-		key: 'today',
-		label: 'Today',
-		emptyTitle: '今天没有任务',
-		emptyDescription: '今天计划、今天截止和已经逾期的任务会显示在这里。',
-		sortHint: '逾期优先，然后是今天截止、今天计划，最后按优先级。',
-	},
-	{
-		key: 'focus',
-		label: 'Focus',
-		emptyTitle: '当前没有需要聚焦的任务',
-		emptyDescription: '高优先级且可执行的任务会显示在这里。',
-		sortHint: '按优先级倒序，再按最近截止和计划时间排序。',
-	},
-	{
-		key: 'upcoming',
-		label: 'Upcoming',
-		emptyTitle: '接下来没有待处理安排',
-		emptyDescription: '未来计划和未来截止的任务会显示在这里。',
-		sortHint: '按最近未来日期优先，再按优先级排序。',
-	},
-	{
-		key: 'overdue',
-		label: 'Overdue',
-		emptyTitle: '当前没有逾期任务',
-		emptyDescription: '已经逾期但尚未完成的任务会显示在这里。',
-		sortHint: '按最早逾期的截止时间优先，再按优先级排序。',
-	},
-]
-
-function isSystemTaskViewKey(value: string | null): value is SystemTaskViewKey {
-	return SYSTEM_TASK_VIEW_CONFIG.some((item) => item.key === value)
-}
-
 export function ViewsPage() {
 	const { scope, spaceId } = useScopeRoute()
 	const navigate = useNavigate()
 	const location = useLocation()
-	const taskList = useTaskStore(selectTaskList)
-	const loadList = useTaskStore((state) => state.loadList)
+	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const openDrawer = useDrawerStore((state) => state.openDrawer)
 	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
 	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
-	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
+	const taskViews = useViewStore(selectTaskViews)
+	const taskRun = useViewStore(selectTaskViewRun)
+	const loadTaskViews = useViewStore((state) => state.loadTaskViews)
+	const runTaskView = useViewStore((state) => state.runTaskView)
+	const refreshTaskRun = useViewStore((state) => state.refreshTaskRun)
+	const createTaskView = useViewStore((state) => state.createTaskView)
+	const updateTaskView = useViewStore((state) => state.updateTaskView)
+	const deleteTaskView = useViewStore((state) => state.deleteTaskView)
+	const toggleTaskViewVisible = useViewStore((state) => state.toggleTaskViewVisible)
+	const reorderTaskViews = useViewStore((state) => state.reorderTaskViews)
+	const loadSidebarProjects = useProjectStore((state) => state.loadSidebar)
+	const projectOptions = useProjectStore(selectProjectOptions)
 	const {
 		pendingTaskId,
 		updateTaskPriority,
@@ -91,123 +63,274 @@ export function ViewsPage() {
 		deleteListTask,
 	} = useTaskListController()
 
+	const [editorOpen, setEditorOpen] = useState(false)
+	const [editingView, setEditingView] = useState<View | null>(null)
+	const [isSavingView, setIsSavingView] = useState(false)
+
 	const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search])
-	const rawViewKey = searchParams.get('view')
-	const activeViewKey = isSystemTaskViewKey(rawViewKey) ? rawViewKey : DEFAULT_SYSTEM_TASK_VIEW_KEY
-	const activeView = useMemo(
-		() =>
-			SYSTEM_TASK_VIEW_CONFIG.find((item) => item.key === activeViewKey) ??
-			SYSTEM_TASK_VIEW_CONFIG[0],
-		[activeViewKey],
+	const rawViewValue = searchParams.get('view')
+	const visibleViews = useMemo(
+		() => taskViews.items.filter((view) => view.isVisible),
+		[taskViews.items],
 	)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
-		useTaskSelection(taskList.items.map((task) => task.id))
+	const activeView = useMemo(() => {
+		if (!rawViewValue) {
+			return visibleViews[0] ?? null
+		}
+
+		return (
+			taskViews.items.find(
+				(view) => view.id === rawViewValue || (view.key !== null && view.key === rawViewValue),
+			) ??
+			visibleViews[0] ??
+			null
+		)
+	}, [rawViewValue, taskViews.items, visibleViews])
+	const visibleTasks = useMemo(() => taskRun.item?.items ?? [], [taskRun.item?.items])
 
 	useEffect(() => {
-		if (rawViewKey && isSystemTaskViewKey(rawViewKey)) {
+		void loadTaskViews()
+		void loadSidebarProjects(scope)
+	}, [loadSidebarProjects, loadTaskViews, scope])
+
+	useEffect(() => {
+		if (taskViews.status !== 'ready' || visibleViews.length === 0 || !activeView) {
+			return
+		}
+
+		const nextViewValue = activeView.id
+		if (rawViewValue === nextViewValue) {
 			return
 		}
 
 		void navigate(
 			{
 				pathname: buildScopedSectionPath(scope, 'views', spaceId),
-				search: `?view=${DEFAULT_SYSTEM_TASK_VIEW_KEY}`,
+				search: `?view=${nextViewValue}`,
 			},
 			{ replace: true },
 		)
-	}, [navigate, rawViewKey, scope, spaceId])
+	}, [activeView, navigate, rawViewValue, scope, spaceId, taskViews.status, visibleViews.length])
 
 	useEffect(() => {
-		void loadList({
-			scope,
-			viewKey: activeView.key,
-			placement: { kind: 'all' },
-		})
-	}, [activeView.key, loadList, scope])
+		if (!activeView) {
+			return
+		}
 
-	function navigateToView(viewKey: SystemTaskViewKey) {
+		void runTaskView({
+			scope,
+			viewId: activeView.id,
+		})
+	}, [activeView, runTaskView, scope])
+
+	useTaskChangedListener(scope, () => {
+		void refreshTaskRun()
+	})
+
+	const sections = useMemo(
+		() => buildCustomSections(taskRun.item?.groups ?? [], visibleTasks),
+		[taskRun.item?.groups, visibleTasks],
+	)
+	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
+		useTaskSelection(visibleTasks.map((task) => task.id))
+
+	function navigateToView(view: View) {
 		void navigate({
 			pathname: buildScopedSectionPath(scope, 'views', spaceId),
-			search: `?view=${viewKey}`,
+			search: `?view=${view.id}`,
+		})
+	}
+
+	async function handleCreateView(input: Parameters<typeof createTaskView>[0]) {
+		setIsSavingView(true)
+		try {
+			const created = await createTaskView(input)
+			void navigate({
+				pathname: buildScopedSectionPath(scope, 'views', spaceId),
+				search: `?view=${created.id}`,
+			})
+		} finally {
+			setIsSavingView(false)
+		}
+	}
+
+	async function handleUpdateView(input: Parameters<typeof updateTaskView>[0]) {
+		setIsSavingView(true)
+		try {
+			await updateTaskView(input)
+		} finally {
+			setIsSavingView(false)
+		}
+	}
+
+	async function handleDeleteView(view: View) {
+		await deleteTaskView(view.id)
+		if (activeView?.id === view.id) {
+			const fallbackView = visibleViews.find((item) => item.id !== view.id)
+			if (fallbackView) {
+				navigateToView(fallbackView)
+			}
+		}
+	}
+
+	async function handleToggleVisible(view: View, visible: boolean) {
+		await toggleTaskViewVisible(view.id, visible)
+		if (!visible && activeView?.id === view.id) {
+			const fallbackView = visibleViews.find((item) => item.id !== view.id)
+			if (fallbackView) {
+				navigateToView(fallbackView)
+			}
+		}
+	}
+
+	async function handleReorder(orderedIds: string[]) {
+		await reorderTaskViews({
+			entityType: 'task',
+			orderedIds,
 		})
 	}
 
 	return (
-		<MainCardLayout
-			header={
-				<MainCardHeader
-					action={
-						<MainCardGhostAction
-							aria-label='创建任务'
-							onClick={() => openTaskCreateDialog({ status: 'todo' })}
-						>
-							<PlusIcon />
-						</MainCardGhostAction>
-					}
-					breadcrumb={<ViewsBreadcrumb />}
-				/>
-			}
-			toolbar={
-				<MainCardToolbar
-					onRefresh={() => {
-						void loadList({
-							scope,
-							viewKey: activeView.key,
-							placement: { kind: 'all' },
-						})
-					}}
-					pills={SYSTEM_TASK_VIEW_CONFIG.map((view) => ({
-						label: view.label,
-						active: view.key === activeView.key,
-						onClick: () => navigateToView(view.key),
-						role: 'tab',
-					}))}
-				/>
-			}
-		>
-			<div className='flex min-h-0 flex-1 flex-col gap-3'>
-				<TaskBoard
-					activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
-					emptyActionLabel='创建任务'
-					emptyDescription={activeView.emptyDescription}
-					emptyTitle={activeView.emptyTitle}
-					hideEmptySections
-					onArchiveTask={archiveListTask}
-					onDeleteTask={deleteListTask}
-					onEmptyAction={() => openTaskCreateDialog({ status: 'todo' })}
-					onOpenTask={(taskId) => openDrawer('task', taskId)}
-					onToggleTaskSelection={toggleTaskSelection}
-					onToggleTaskStatus={toggleTaskStatus}
-					onUpdateTaskPriority={updateTaskPriority}
-					onUpdateTaskStatus={updateTaskStatus}
-					pendingTaskId={pendingTaskId}
-					rowVariant='project'
-					selectedTaskIdSet={selectedTaskIdSet}
-					sectionVariant='project'
-					showProjectName
-					statusOrder={['doing', 'todo', 'waiting', 'done', 'canceled']}
-					tasks={taskList.items}
-				/>
-				<TaskBulkActionBar
-					action={
-						<Button
-							className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) opacity-70'
-							disabled
-							size='sm'
-							variant='outline'
-						>
-							批量能力后续接入
-						</Button>
-					}
-					onClear={clearTaskSelection}
-					selectedCount={selectedCount}
-				/>
-				<div className='mt-auto px-1 text-[12px] text-(--sf-color-text-tertiary)'>
-					{activeView.sortHint}
+		<>
+			<MainCardLayout
+				header={
+					<MainCardHeader
+						action={
+							<MainCardGhostAction
+								aria-label='创建任务'
+								onClick={() => openTaskCreateDialog({ status: 'todo' })}
+							>
+								<PlusIcon />
+							</MainCardGhostAction>
+						}
+						breadcrumb={<ViewsBreadcrumb />}
+					/>
+				}
+				toolbar={
+					<MainCardToolbar
+						filterAction={
+							<ViewActionsMenu
+								activeView={activeView}
+								onCreate={() => {
+									setEditingView(null)
+									setEditorOpen(true)
+								}}
+								onDelete={(view) => void handleDeleteView(view)}
+								onEdit={(view) => {
+									setEditingView(view)
+									setEditorOpen(true)
+								}}
+								onReorder={(orderedIds) => void handleReorder(orderedIds)}
+								onToggleVisible={(view, visible) => void handleToggleVisible(view, visible)}
+								views={taskViews.items}
+							/>
+						}
+						onRefresh={() => {
+							void refreshTaskRun()
+						}}
+						pills={visibleViews.map((view) => ({
+							label: view.name,
+							active: view.id === activeView?.id,
+							onClick: () => navigateToView(view),
+							role: 'tab' as const,
+						}))}
+					/>
+				}
+			>
+				<div className='flex min-h-0 flex-1 flex-col gap-3'>
+					<TaskBoard
+						activeTaskId={activeDrawerKind === 'task' ? activeDrawerId : null}
+						customSections={sections}
+						emptyActionLabel='创建任务'
+						emptyDescription={activeView?.description ?? '当前视图下没有符合条件的任务。'}
+						emptyTitle={activeView ? `${activeView.name} 暂无任务` : '暂无视图'}
+						hideEmptySections
+						onArchiveTask={archiveListTask}
+						onDeleteTask={deleteListTask}
+						onEmptyAction={() => openTaskCreateDialog({ status: 'todo' })}
+						onOpenTask={(taskId) => openDrawer('task', taskId)}
+						onToggleTaskSelection={toggleTaskSelection}
+						onToggleTaskStatus={toggleTaskStatus}
+						onUpdateTaskPriority={updateTaskPriority}
+						onUpdateTaskStatus={updateTaskStatus}
+						pendingTaskId={pendingTaskId}
+						rowVariant='project'
+						selectedTaskIdSet={selectedTaskIdSet}
+						sectionVariant='project'
+						showProjectName
+						statusOrder={['doing', 'todo', 'waiting', 'done', 'canceled']}
+						tasks={visibleTasks}
+					/>
+					<TaskBulkActionBar
+						action={
+							<Button
+								className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) opacity-70'
+								disabled
+								size='sm'
+								variant='outline'
+							>
+								批量能力后续接入
+							</Button>
+						}
+						onClear={clearTaskSelection}
+						selectedCount={selectedCount}
+					/>
+					<div className='mt-auto px-1 text-[12px] text-(--sf-color-text-tertiary)'>
+						{taskRun.item?.view.description ??
+							(taskRun.item
+								? `当前视图共 ${taskRun.item.items.length} 条任务`
+								: '正在准备视图数据')}
+					</div>
 				</div>
-			</div>
-		</MainCardLayout>
+			</MainCardLayout>
+
+			<ViewEditorDialog
+				isSubmitting={isSavingView}
+				onClose={() => {
+					setEditorOpen(false)
+					setEditingView(null)
+				}}
+				onCreate={handleCreateView}
+				onUpdate={handleUpdateView}
+				open={editorOpen}
+				projects={projectOptions}
+				view={editingView}
+			/>
+		</>
 	)
+}
+
+function buildCustomSections(
+	groups: Array<{ key: string; label: string; taskIds: string[] }>,
+	items: TaskListItem[],
+) {
+	if (groups.length === 0) {
+		return undefined
+	}
+
+	const itemMap = new Map(items.map((task) => [task.id, task]))
+	return groups
+		.map((group) => {
+			const tasks = group.taskIds
+				.map((taskId) => itemMap.get(taskId))
+				.filter((task): task is TaskListItem => task !== undefined)
+			if (tasks.length === 0) {
+				return null
+			}
+
+			const label =
+				group.key.startsWith('project:') && tasks[0]?.projectName
+					? tasks[0].projectName
+					: group.label
+			return {
+				key: group.key,
+				label,
+				tasks,
+			}
+		})
+		.filter(
+			(group): group is { key: string; label: string; tasks: TaskListItem[] } => group !== null,
+		)
 }
 
 function ViewsBreadcrumb() {

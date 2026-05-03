@@ -19,4 +19,4 @@ pub use task_repository::{
     CreateTaskRecord, ProjectTaskCount, TaskLifecycleView, TaskListQuery, TaskPlacementQuery,
     TaskRepository, UpdateTaskPatch,
 };
-pub use view_repository::ViewRepository;
+pub use view_repository::{CreateViewRecord, UpdateViewPatch, ViewListQuery, ViewRepository};
