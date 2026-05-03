@@ -12,7 +12,7 @@ import { ShellLayout } from './shell/ShellLayout'
 import { setActiveScope } from '@/features/space/api/spaces'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { useWorkspaceSync } from '@/features/workspace/model'
+import { useWorkspaceSync } from '@/features/workspace/model/useWorkspaceSync'
 
 export function SpaceLayout() {
 	const { scope } = useScopeRoute()

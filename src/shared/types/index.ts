@@ -24,9 +24,7 @@ export type {
 	LifecycleMode,
 	ListLifecycleEntriesInput,
 } from './lifecycle'
-export type { TaskResource } from './resource'
 export type { SearchTaskItem, SearchProjectItem } from './search'
-export type { FocusViewKey } from './focus'
 export type {
 	CreateViewInput,
 	DateFilter,

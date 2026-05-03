@@ -1,23 +1,17 @@
-//! 数据库迁移层占位 crate。
+//! 数据库迁移层 crate。
 //!
-//! 前置阶段 A 不提前定义 schema；阶段 0 再在这里落地 baseline migration。
+//! V1 阶段仅一个 migration：一次性建表并中文化系统视图名称。
 
 pub use sea_orm_migration::prelude::*;
 
-mod m20260429_000001_bootstrap_smoke;
-mod m20260429_000002_v1_schema;
-mod m20260503_000003_localize_system_view_names;
+mod m20260429_000001_v1_schema;
 
 pub struct Migrator;
 
 #[async_trait::async_trait]
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
-        vec![
-            Box::new(m20260429_000001_bootstrap_smoke::Migration),
-            Box::new(m20260429_000002_v1_schema::Migration),
-            Box::new(m20260503_000003_localize_system_view_names::Migration),
-        ]
+        vec![Box::new(m20260429_000001_v1_schema::Migration)]
     }
 }
 

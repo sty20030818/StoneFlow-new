@@ -1,4 +1,4 @@
-//! 阶段 1 完整 Schema：一次性建立 V1 核心表结构。
+//! V1 完整 Schema：一次性建立核心表结构并中文化系统视图名称。
 
 use sea_orm::ConnectionTrait;
 use sea_orm_migration::prelude::*;
@@ -148,6 +148,19 @@ CREATE INDEX IF NOT EXISTS idx_activity_changes_event_id
 ON activity_changes(event_id);
 "#;
 
+const LOCALIZE_VIEW_NAMES_SQL: &str = r#"
+UPDATE views SET name = '今天', updated_at = updated_at WHERE key = 'today' AND type = 'system';
+UPDATE views SET name = '聚焦', updated_at = updated_at WHERE key = 'focus' AND type = 'system';
+UPDATE views SET name = '即将到来', updated_at = updated_at WHERE key = 'upcoming' AND type = 'system';
+UPDATE views SET name = '最近添加', updated_at = updated_at WHERE key = 'recently_added' AND type = 'system';
+UPDATE views SET name = '等待中', updated_at = updated_at WHERE key = 'waiting' AND type = 'system';
+UPDATE views SET name = '已逾期', updated_at = updated_at WHERE key = 'overdue' AND type = 'system';
+UPDATE views SET name = '进行中', updated_at = updated_at WHERE key = 'active_projects' AND type = 'system';
+UPDATE views SET name = '已完成', updated_at = updated_at WHERE key = 'completed_projects' AND type = 'system';
+UPDATE views SET name = '已归档', updated_at = updated_at WHERE key = 'archived_projects' AND type = 'system';
+UPDATE views SET name = '全部', updated_at = updated_at WHERE key = 'all_projects' AND type = 'system';
+"#;
+
 const DROP_SCHEMA_SQL: &str = r#"
 DROP INDEX IF EXISTS idx_activity_changes_event_id;
 DROP INDEX IF EXISTS idx_activity_events_entity_created_at;
@@ -173,10 +186,9 @@ DROP TABLE IF EXISTS spaces;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        manager
-            .get_connection()
-            .execute_unprepared(CREATE_SCHEMA_SQL)
-            .await?;
+        let conn = manager.get_connection();
+        conn.execute_unprepared(CREATE_SCHEMA_SQL).await?;
+        conn.execute_unprepared(LOCALIZE_VIEW_NAMES_SQL).await?;
         Ok(())
     }
 

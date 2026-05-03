@@ -367,10 +367,3 @@ fn ensure_space_mutable(space: &space::Model) -> Result<(), AppError> {
     }
     Ok(())
 }
-
-fn ensure_not_only_active_default(space: &space::Model, message: &str) -> Result<(), AppError> {
-    if space.is_default && space.archived_at.is_none() && space.deleted_at.is_none() {
-        return Err(AppError::conflict(message));
-    }
-    Ok(())
-}

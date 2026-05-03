@@ -1,8 +1,8 @@
 //! 阶段 6 Task 服务回归测试。
 
 use chrono::Duration;
-use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
-use stoneflow_entity::{common::TaskStatus, task};
+use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
+use stoneflow_entity::common::TaskStatus;
 use stoneflow_test_support::TempDatabaseDir;
 
 use crate::{
@@ -974,45 +974,4 @@ where
         .await?
         .expect("row should exist");
     row.try_get::<i64>("", "value")
-}
-
-#[allow(dead_code)]
-async fn insert_task_for_test(
-    database: &crate::infrastructure::database::DatabaseRuntimeState,
-    space_id: &str,
-    project_id: Option<&str>,
-    title: &str,
-) -> task::Model {
-    let repository = TaskRepository::new(database.connection().clone());
-    repository
-        .insert_for_test(
-            repository.connection(),
-            task::ActiveModel {
-                id: Set(create_id().to_string()),
-                space_id: Set(space_id.to_owned()),
-                project_id: Set(project_id.map(str::to_owned)),
-                title: Set(title.to_owned()),
-                note: Set(None),
-                status: Set(TaskStatus::Todo),
-                status_changed_at: Set("2026-04-30T00:00:00Z".to_owned()),
-                priority: Set(0),
-                inbox_at: Set(None),
-                due_at: Set(None),
-                scheduled_at: Set(None),
-                reminder_at: Set(None),
-                sort_order: Set(1000),
-                completed_at: Set(None),
-                canceled_at: Set(None),
-                archived_at: Set(None),
-                archived_by_type: Set(None),
-                archived_by_id: Set(None),
-                deleted_at: Set(None),
-                deleted_by_type: Set(None),
-                deleted_by_id: Set(None),
-                created_at: Set("2026-04-30T00:00:00Z".to_owned()),
-                updated_at: Set("2026-04-30T00:00:00Z".to_owned()),
-            },
-        )
-        .await
-        .expect("insert task should succeed")
 }
