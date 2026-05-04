@@ -7,7 +7,9 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
-import { CheckIcon, PauseIcon, PlayIcon, XIcon } from 'lucide-react'
+import { CheckIcon, CircleCheckIcon, CircleIcon, CircleXIcon, PauseIcon, PlayIcon } from 'lucide-react'
+import type { LucideProps } from 'lucide-react'
+import { useEffect, useRef, type ComponentType } from 'react'
 
 import {
 	getTaskPriorityOption,
@@ -244,36 +246,65 @@ export function TaskStatusSelect({
 	)
 }
 
+function SolidCircleIcon({
+	icon: Icon,
+	color,
+	className,
+}: {
+	icon: ComponentType<LucideProps>
+	color: string
+	className?: string
+}) {
+	const ref = useRef<SVGSVGElement>(null)
+
+	useEffect(() => {
+		const svg = ref.current
+		if (!svg) return
+		const circle = svg.querySelector('circle')
+		if (circle) svg.insertBefore(circle, svg.firstChild)
+	}, [])
+
+	return (
+		<Icon
+			ref={ref}
+			className={cn('size-4 shrink-0 [&_circle]:fill-(--sci-color) [&_circle]:stroke-none', className)}
+			fill='white'
+			stroke='white'
+			style={{ '--sci-color': color } as React.CSSProperties}
+		/>
+	)
+}
+
 export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 	switch (status) {
 		case 'done':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-(--sf-color-project-task-status-done) text-white'>
-					<CheckIcon className='size-3' />
-				</span>
+				<SolidCircleIcon
+					icon={CircleCheckIcon}
+					color='var(--sf-color-project-task-status-done)'
+				/>
 			)
 		case 'doing':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center text-(--sf-color-info-soft-text)'>
-					<PlayIcon className='size-3 fill-current' />
+				<span className='flex size-4 shrink-0 items-center justify-center'>
+					<PlayIcon className='size-3 text-(--sf-color-info-soft-text)' fill='currentColor' />
 				</span>
 			)
 		case 'waiting':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center text-(--sf-color-warning-soft-text)'>
-					<PauseIcon className='size-3 fill-current' />
+				<span className='flex size-4 shrink-0 items-center justify-center'>
+					<PauseIcon className='size-3 text-(--sf-color-warning-soft-text)' fill='currentColor' />
 				</span>
 			)
 		case 'canceled':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-(--sf-color-border-strong) text-white'>
-					<XIcon className='size-3' />
-				</span>
+				<SolidCircleIcon
+					icon={CircleXIcon}
+					color='var(--sf-color-border-strong)'
+				/>
 			)
 		default:
-			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full border border-(--sf-color-border-strong)' />
-			)
+			return <CircleIcon className='size-4 shrink-0 text-(--sf-color-border-strong)' />
 	}
 }
 

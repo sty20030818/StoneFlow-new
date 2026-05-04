@@ -36,10 +36,6 @@ export type ShellProjectLink = {
 	badge?: string
 }
 
-export const SHELL_NAV_BADGES: Partial<Record<ShellSectionKey, string>> = {
-	inbox: '3',
-	trash: '2',
-}
 
 type DrawerDetailBadge = {
 	label: string

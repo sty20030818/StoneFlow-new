@@ -2,7 +2,7 @@ import { useEffect, type PropsWithChildren } from 'react'
 
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
-import { SHELL_NAV_BADGES } from '@/app/layouts/shell/config'
+import { useSidebarNavBadges } from '@/app/layouts/shell/model/useSidebarNavBadges'
 import {
 	selectActiveDrawerId,
 	selectActiveDrawerKind,
@@ -22,7 +22,7 @@ import {
 	selectSidebarSettingsStatus,
 	useSidebarSettingsStore,
 } from '@/app/layouts/shell/model/useSidebarSettingsStore'
-import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
+// import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
@@ -76,6 +76,7 @@ export function ShellLayout({
 	const sidebarProjects = useProjectStore(selectProjectSidebar)
 	const projectOptions = useProjectStore(selectProjectOptions)
 	const scopeKey = currentScope.type === 'all' ? 'all' : `space:${currentScope.spaceId}`
+	const navBadges = useSidebarNavBadges(currentScope)
 	const loadSidebarSettings = useSidebarSettingsStore((state) => state.load)
 	const loadSpaces = useSpaceStore((state) => state.load)
 	const loadSidebarProjects = useProjectStore((state) => state.loadSidebar)
@@ -132,7 +133,7 @@ export function ShellLayout({
 		id: project.id,
 		label: project.name,
 		badge: sidebarSettings.projectSection.showCounts
-			? String(project.activeTaskCount)
+			? String(project.taskCount)
 			: project.completedAt
 				? 'done'
 				: undefined,
@@ -169,7 +170,7 @@ export function ShellLayout({
 					<ShellSidebar
 						currentScope={currentScope}
 						currentSpaceId={currentSpaceId}
-						navBadges={SHELL_NAV_BADGES}
+						navBadges={navBadges}
 						onArchiveSpace={archiveSpace}
 						onCreateSpace={createSpace}
 						onDeleteSpace={deleteSpace}
@@ -221,12 +222,8 @@ export function ShellLayout({
 				spaceId={currentScope.type === 'space' ? currentScope.spaceId : null}
 			/>
 
-			<ShellFooter
-				activeSection={activeSection}
-				currentScope={currentScope}
-				currentSpaceId={currentSpaceId}
-				spaces={spaces}
-			/>
+			{/* <ShellFooter navBadges={navBadges} /> */}
+			<div className='h-2 shrink-0' />
 		</SidebarProvider>
 	)
 }

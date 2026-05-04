@@ -1,61 +1,47 @@
-import { getScopeLabel, getSectionLabel } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
-import type { Scope, Space } from '@/shared/types'
 import { useHealthcheckStatus } from '@/features/healthcheck/model/useHealthcheckStatus'
+import { Kbd, KbdGroup } from '@/shared/ui/base/kbd'
+
+type ShellNavBadges = Partial<Record<ShellSectionKey, string>>
 
 type ShellFooterProps = {
-	currentScope: Scope
-	currentSpaceId: string | null
-	spaces: Space[]
-	activeSection: ShellSectionKey
+	navBadges?: ShellNavBadges
 }
 
-/**
- * Shell 底栏：全宽单行，与侧栏槽解耦（底栏不参与双列 grid）。
- */
-export function ShellFooter({
-	currentScope,
-	currentSpaceId,
-	spaces,
-	activeSection,
-}: ShellFooterProps) {
+export function ShellFooter({ navBadges = {} }: ShellFooterProps) {
 	const healthcheckStatus = useHealthcheckStatus()
-	const footerScope =
-		currentScope.type === 'space' && currentSpaceId
-			? { type: 'space' as const, spaceId: currentSpaceId }
-			: currentScope
 
 	return (
-		<footer className='relative z-32 isolate flex h-9.5 shrink-0 items-center justify-between gap-3 overflow-x-clip bg-(--sf-color-shell-chrome) px-4 shadow-none'>
-			<div className='flex min-w-0 flex-1 items-center gap-2 text-[11px] text-(--sf-color-shell-tertiary)'>
+		<footer className='relative z-32 isolate flex h-7 shrink-0 items-center justify-between gap-3 overflow-x-clip bg-(--sf-color-shell-chrome) px-3'>
+			<div className='flex min-w-0 flex-1 items-center gap-3 text-[11px] text-(--sf-color-shell-tertiary)'>
 				<span
 					className={`size-1.5 shrink-0 rounded-full ${healthcheckStatus.indicatorClassName}`}
-				/>
-				<span className='min-w-0 truncate' title={healthcheckStatus.title}>
-					{healthcheckStatus.label}
-				</span>
-				<span
-					className='hidden max-w-[40%] truncate text-[10px] sm:inline'
 					title={healthcheckStatus.title}
-				>
-					{healthcheckStatus.detail}
-				</span>
+				/>
+				{navBadges.inbox ? (
+					<span className='flex items-center gap-1'>
+						<span>收件箱</span>
+						<span className='font-medium text-(--sf-color-shell-secondary)'>{navBadges.inbox}</span>
+					</span>
+				) : null}
+				{navBadges.allTasks ? (
+					<span className='flex items-center gap-1'>
+						<span>任务</span>
+						<span className='font-medium text-(--sf-color-shell-secondary)'>{navBadges.allTasks}</span>
+					</span>
+				) : null}
 			</div>
 
-			<div className='flex min-w-0 shrink-0 items-center gap-2 text-[11px] text-(--sf-color-shell-tertiary) sm:gap-3'>
-				<span className='rounded-md border border-(--sf-color-border-subtle) bg-card px-2 py-1 text-[10.5px] text-(--sf-color-text-secondary)'>
-					{getScopeLabel(footerScope, spaces)}
-				</span>
-				<span className='text-(--sf-color-border-strong)'>•</span>
-				<span className='max-w-[28vw] truncate sm:max-w-none'>
-					{getSectionLabel(activeSection)}
-				</span>
-			</div>
-
-			<div className='hidden items-center gap-3 text-[11px] text-(--sf-color-shell-tertiary) sm:flex'>
-				<span>Views</span>
-				<span className='text-(--sf-color-border-strong)'>•</span>
-				<span>Cmd/Ctrl + K</span>
+			<div className='flex shrink-0 items-center gap-2 text-[11px] text-(--sf-color-shell-tertiary)'>
+				<KbdGroup>
+					<Kbd>⌘K</Kbd>
+					<span>命令</span>
+				</KbdGroup>
+				<span className='text-(--sf-color-border-strong)'>·</span>
+				<KbdGroup>
+					<Kbd>C</Kbd>
+					<span>新建</span>
+				</KbdGroup>
 			</div>
 		</footer>
 	)
