@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import { listLifecycleEntries } from '@/features/lifecycle/api/lifecycle'
@@ -9,10 +9,13 @@ import type { Scope } from '@/shared/types'
 
 type NavBadges = Partial<Record<ShellSectionKey, string>>
 
+const DEBOUNCE_MS = 200
+
 export function useSidebarNavBadges(scope: Scope): NavBadges {
 	const [badges, setBadges] = useState<NavBadges>({})
+	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-	const refresh = useCallback(async () => {
+	const doRefresh = useCallback(async () => {
 		try {
 			const [allTasks, inboxItems, archiveItems, trashItems, projects] = await Promise.all([
 				listTasks({ scope, viewKey: 'active', placement: { kind: 'all' } }),
@@ -34,20 +37,35 @@ export function useSidebarNavBadges(scope: Scope): NavBadges {
 		}
 	}, [scope])
 
-	useEffect(() => {
-		void refresh()
-	}, [refresh])
+	const scheduleRefresh = useCallback(() => {
+		if (timerRef.current) {
+			clearTimeout(timerRef.current)
+		}
+		timerRef.current = setTimeout(() => {
+			timerRef.current = null
+			void doRefresh()
+		}, DEBOUNCE_MS)
+	}, [doRefresh])
 
-	useEventSubscription('task:created', () => void refresh())
-	useEventSubscription('task:updated', () => void refresh())
-	useEventSubscription('task:deleted', () => void refresh())
-	useEventSubscription('lifecycle:changed', () => void refresh())
-	useEventSubscription('project:created', () => void refresh())
-	useEventSubscription('project:updated', () => void refresh())
-	useEventSubscription('project:deleted', () => void refresh())
-	useEventSubscription('space:created', () => void refresh())
-	useEventSubscription('space:updated', () => void refresh())
-	useEventSubscription('space:deleted', () => void refresh())
+	useEffect(() => {
+		void doRefresh()
+		return () => {
+			if (timerRef.current) {
+				clearTimeout(timerRef.current)
+			}
+		}
+	}, [doRefresh])
+
+	useEventSubscription('task:created', scheduleRefresh)
+	useEventSubscription('task:updated', scheduleRefresh)
+	useEventSubscription('task:deleted', scheduleRefresh)
+	useEventSubscription('lifecycle:changed', scheduleRefresh)
+	useEventSubscription('project:created', scheduleRefresh)
+	useEventSubscription('project:updated', scheduleRefresh)
+	useEventSubscription('project:deleted', scheduleRefresh)
+	useEventSubscription('space:created', scheduleRefresh)
+	useEventSubscription('space:updated', scheduleRefresh)
+	useEventSubscription('space:deleted', scheduleRefresh)
 
 	return badges
 }

@@ -15,7 +15,11 @@ export type AppEvent =
 	| { type: 'space:deleted'; payload: { spaceId: string } }
 	| {
 			type: 'lifecycle:changed'
-			payload: { entityType: 'space' | 'project' | 'task'; entityId: string }
+			payload: {
+				entityType: 'space' | 'project' | 'task'
+				entityId: string
+				operation?: 'archive' | 'restore' | 'delete'
+			}
 	  }
 
 export type AppEventType = AppEvent['type']

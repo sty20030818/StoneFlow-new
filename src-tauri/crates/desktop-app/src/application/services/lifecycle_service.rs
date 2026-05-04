@@ -510,13 +510,17 @@ impl LifecycleService {
         )
         .await?;
 
-        for item in &affected_tasks {
-            self.record_task_activity(
-                &transaction,
-                item,
-                ActivityAction::TaskArchived,
-                format!("归档任务「{}」", item.title),
-                Some(json!({
+        // 收集所有任务活动日志，批量插入
+        let task_activity_inputs: Vec<RecordActivityInput> = affected_tasks
+            .iter()
+            .map(|item| RecordActivityInput {
+                entity_type: ActivityEntityKind::Task,
+                entity_id: item.id.clone(),
+                action: ActivityAction::TaskArchived,
+                actor_type: None,
+                source: None,
+                summary: Some(format!("归档任务「{}」", item.title)),
+                metadata: Some(json!({
                     "taskId": item.id,
                     "spaceId": item.space_id,
                     "projectId": item.project_id,
@@ -524,14 +528,17 @@ impl LifecycleService {
                     "sourceEntityId": updated.id,
                     "cascade": true,
                 })),
-                vec![ActivityChangeInput {
+                changes: vec![ActivityChangeInput {
                     field: "archivedAt".to_owned(),
                     old_value: item.archived_at.clone().map(|value| json!(value)),
                     new_value: Some(json!(now.clone())),
                 }],
-            )
+            })
+            .collect();
+
+        self.activity_service
+            .record_activities_in_txn(&transaction, task_activity_inputs)
             .await?;
-        }
 
         transaction.commit().await?;
         Ok(updated)

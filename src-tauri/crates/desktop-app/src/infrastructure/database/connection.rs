@@ -32,8 +32,10 @@ pub async fn connect_sqlite(database_path: &Path) -> Result<DatabaseConnection, 
         "sqlite://{}?mode=rwc",
         database_path.to_string_lossy()
     ));
-    options.max_connections(1);
+    options.max_connections(5);
     options.min_connections(1);
+    options.acquire_timeout(std::time::Duration::from_secs(10));
+    options.idle_timeout(std::time::Duration::from_secs(60));
     options.sqlx_logging(false);
 
     let connection = Database::connect(options).await?;

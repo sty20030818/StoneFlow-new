@@ -24,6 +24,15 @@ type ProjectCreateModalContentProps = {
 
 const EMPTY_SPACE_VALUE = '__project-space-empty__'
 
+function extractErrorMessage(error: unknown, fallback: string): string {
+	if (error instanceof Error) return error.message
+	if (typeof error === 'string') return error
+	if (error && typeof error === 'object' && 'message' in error) {
+		return String((error as { message: unknown }).message)
+	}
+	return fallback
+}
+
 /**
  * Project 创建表单：直接接真实后端写入。
  */
@@ -67,7 +76,7 @@ export function ProjectCreateModalContent({
 			onClose()
 		} catch (error) {
 			setStatus('error')
-			setErrorMessage(error instanceof Error ? error.message : '项目创建失败')
+			setErrorMessage(extractErrorMessage(error, '项目创建失败'))
 		}
 	}
 

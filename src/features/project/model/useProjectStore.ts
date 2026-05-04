@@ -297,7 +297,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 			emitEvent({ type: 'project:updated', payload: { projectId: project.id } })
 			emitEvent({
 				type: 'lifecycle:changed',
-				payload: { entityType: 'project', entityId: project.id },
+				payload: {
+					entityType: 'project',
+					entityId: project.id,
+					operation: 'archive',
+				},
 			})
 			return project
 		},
@@ -306,7 +310,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 			emitEvent({ type: 'project:updated', payload: { projectId: project.id } })
 			emitEvent({
 				type: 'lifecycle:changed',
-				payload: { entityType: 'project', entityId: project.id },
+				payload: {
+					entityType: 'project',
+					entityId: project.id,
+					operation: 'restore',
+				},
 			})
 			return project
 		},
@@ -315,7 +323,11 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 			emitEvent({ type: 'project:deleted', payload: { projectId: project.id } })
 			emitEvent({
 				type: 'lifecycle:changed',
-				payload: { entityType: 'project', entityId: project.id },
+				payload: {
+					entityType: 'project',
+					entityId: project.id,
+					operation: 'delete',
+				},
 			})
 			return project
 		},

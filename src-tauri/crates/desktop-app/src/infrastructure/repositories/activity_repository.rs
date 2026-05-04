@@ -114,6 +114,66 @@ impl ActivityRepository {
         Ok(())
     }
 
+    /// 批量插入多条 event 及其字段变化；事务由调用方控制。
+    pub async fn insert_events_with_changes<C>(
+        &self,
+        connection: &C,
+        records: &[(ActivityEventRecord, Vec<ActivityChangeRecord>)],
+    ) -> Result<(), AppError>
+    where
+        C: ConnectionTrait,
+    {
+        if records.is_empty() {
+            return Ok(());
+        }
+
+        // 批量插入所有 events
+        let event_models: Vec<activity_event::ActiveModel> = records
+            .iter()
+            .map(|(event, _)| {
+                Ok(activity_event::ActiveModel {
+                    id: Set(event.id.clone()),
+                    entity_type: Set(event.entity_type),
+                    entity_id: Set(event.entity_id.clone()),
+                    action: Set(event.action.clone()),
+                    actor_type: Set(event.actor_type),
+                    source: Set(event.source),
+                    summary: Set(event.summary.clone()),
+                    metadata: Set(serialize_optional_json(&event.metadata)?),
+                    created_at: Set(event.created_at.clone()),
+                })
+            })
+            .collect::<Result<Vec<_>, AppError>>()?;
+
+        ActivityEvent::insert_many(event_models)
+            .exec(connection)
+            .await?;
+
+        // 批量插入所有 changes
+        let all_change_models: Vec<activity_change::ActiveModel> = records
+            .iter()
+            .flat_map(|(_, changes)| changes.iter())
+            .map(|change| {
+                Ok(activity_change::ActiveModel {
+                    id: Set(change.id.clone()),
+                    event_id: Set(change.event_id.clone()),
+                    field: Set(change.field.clone()),
+                    old_value: Set(serialize_optional_json(&change.old_value)?),
+                    new_value: Set(serialize_optional_json(&change.new_value)?),
+                    created_at: Set(change.created_at.clone()),
+                })
+            })
+            .collect::<Result<Vec<_>, AppError>>()?;
+
+        if !all_change_models.is_empty() {
+            ActivityChange::insert_many(all_change_models)
+                .exec(connection)
+                .await?;
+        }
+
+        Ok(())
+    }
+
     /// 按实体查询 timeline，并聚合对应字段变化。
     pub async fn list_by_entity(
         &self,
