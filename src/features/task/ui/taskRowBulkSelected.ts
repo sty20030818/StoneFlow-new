@@ -3,4 +3,4 @@
  * 与 LINEAR_CARD_ACTIVE / Project 行 Drawer 激活态同时存在时，由页面将 ACTIVE 写在之后以覆盖。
  */
 export const TASK_ROW_BULK_SELECTED_CLASS =
-	'border-transparent bg-(--sf-color-task-bulk-selected-surface) hover:bg-(--sf-color-task-bulk-selected-surface-hover)'
+	'border-transparent bg-sf-selection-surface hover:bg-sf-selection-surface-hover'

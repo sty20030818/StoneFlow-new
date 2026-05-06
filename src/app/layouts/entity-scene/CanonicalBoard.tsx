@@ -1,6 +1,13 @@
 import type { ComponentProps, ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
+import {
+	TASK_ROW_ACTIVE_CLASS,
+	TASK_ROW_BASE_CLASS,
+	TASK_ROW_IDLE_CLASS,
+	TASK_ROW_META_TEXT_CLASS,
+	TASK_ROW_SECTION_HEADER_CLASS,
+} from '@/shared/ui/patterns/task-row'
 import { Badge } from '@/shared/ui/base/badge'
 import { TriangleIcon } from 'lucide-react'
 
@@ -34,14 +41,11 @@ export const CANONICAL_BOARD_SECTION_CLASS = 'flex flex-col gap-1'
 export const CANONICAL_BOARD_ROWS_CLASS = 'flex flex-col gap-1'
 export const CANONICAL_BOARD_COLLAPSIBLE_CLASS =
 	'flex flex-col gap-1 [&[data-state=open]_[data-chevron]]:rotate-90'
-export const CANONICAL_BOARD_SECTION_HEADER_CLASS =
-	'flex h-10 items-center gap-2 rounded-md bg-(--sf-color-project-task-section-header) pl-3 pr-1'
-export const CANONICAL_BOARD_META_TEXT_CLASS = 'text-xs font-medium text-(--sf-color-text-tertiary)'
-export const CANONICAL_BOARD_ROW_BASE_CLASS =
-	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-3 text-left transition-colors'
-export const CANONICAL_BOARD_ROW_IDLE_CLASS = 'hover:bg-(--sf-color-project-task-row-hover)'
-export const CANONICAL_BOARD_ROW_ACTIVE_CLASS =
-	'border-(--sf-color-border-subtle) bg-(--sf-color-project-task-row-selected)'
+export const CANONICAL_BOARD_SECTION_HEADER_CLASS = TASK_ROW_SECTION_HEADER_CLASS
+export const CANONICAL_BOARD_META_TEXT_CLASS = TASK_ROW_META_TEXT_CLASS
+export const CANONICAL_BOARD_ROW_BASE_CLASS = TASK_ROW_BASE_CLASS
+export const CANONICAL_BOARD_ROW_IDLE_CLASS = TASK_ROW_IDLE_CLASS
+export const CANONICAL_BOARD_ROW_ACTIVE_CLASS = TASK_ROW_ACTIVE_CLASS
 
 export function CanonicalBoardRoot({
 	children,
@@ -182,7 +186,7 @@ export function CanonicalBoardChevron({ className, ...props }: ComponentProps<'s
 			className={cn('inline-flex size-3 shrink-0 items-center justify-center', className)}
 		>
 			<TriangleIcon
-				className='size-1.5 rotate-90 text-(--sf-color-icon-subtle)'
+				className='size-1.5 rotate-90 text-sf-icon-subtle'
 				fill='currentColor'
 			/>
 		</span>

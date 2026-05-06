@@ -3,6 +3,11 @@ import type { ComponentProps, ComponentType, ReactNode } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
 import {
+	mainCardGhostActionClass,
+	mainCardSectionClass,
+	mainCardToolbarPillVariants,
+} from '@/shared/ui/patterns/main-card'
+import {
 	ListFilterIcon,
 	PanelRightOpenIcon,
 	RefreshCwIcon,
@@ -49,15 +54,6 @@ type MainCardIconAction = {
 	disabled?: boolean
 }
 
-const MAIN_CARD_GHOST_ACTION_CLASS =
-	'border-transparent bg-[#ffffff] text-[#5d5d5f] shadow-none hover:bg-[#f3f3f4] hover:text-[#5d5d5f] hover:font-semibold'
-const MAIN_CARD_TOOLBAR_PILL_CLASS =
-	'h-7.5 rounded-full px-3 shadow-none focus-visible:border-(--sf-color-border) focus-visible:bg-(--sf-color-bg-surface-active) focus-visible:text-foreground'
-const MAIN_CARD_TOOLBAR_PILL_ACTIVE_CLASS =
-	'border-(--sf-color-border-subtle) bg-(--sf-color-bg-surface-hover) text-foreground'
-const MAIN_CARD_TOOLBAR_PILL_INACTIVE_CLASS =
-	'border-(--sf-color-border-subtle) text-(--sf-color-text-secondary)'
-
 function MainCardRoot({ children, className }: MainCardRootProps) {
 	return <div className={cn('flex min-h-full min-w-0 flex-1 flex-col', className)}>{children}</div>
 }
@@ -98,12 +94,9 @@ function MainCardToolbar({
 						<Button
 							aria-pressed={pill.role === 'tab' ? undefined : pill.active ? true : undefined}
 							aria-selected={pill.role === 'tab' ? !!pill.active : undefined}
-							className={cn(
-								pill.active
-									? MAIN_CARD_TOOLBAR_PILL_ACTIVE_CLASS
-									: MAIN_CARD_TOOLBAR_PILL_INACTIVE_CLASS,
-								MAIN_CARD_TOOLBAR_PILL_CLASS,
-							)}
+							className={mainCardToolbarPillVariants({
+								state: pill.active ? 'active' : 'inactive',
+							})}
 							key={pill.label}
 							onClick={pill.onClick}
 							role={pill.role}
@@ -150,7 +143,7 @@ function MainCardSection({ children, className }: MainCardShellSlotProps) {
 	return (
 		<section
 			className={cn(
-				'rounded-2xl border border-(--sf-color-border-subtle) bg-card p-4 shadow-[0_8px_30px_rgba(15,23,42,0.04)]',
+				mainCardSectionClass,
 				className,
 			)}
 		>
@@ -166,7 +159,7 @@ function MainCardEmpty({ children, className }: MainCardShellSlotProps) {
 function MainCardGhostAction({ children, className, ...props }: ComponentProps<typeof Button>) {
 	return (
 		<Button
-			className={cn(MAIN_CARD_GHOST_ACTION_CLASS, className)}
+			className={cn(mainCardGhostActionClass, className)}
 			size='icon-sm'
 			type='button'
 			variant='ghost'

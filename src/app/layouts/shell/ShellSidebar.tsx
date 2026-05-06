@@ -58,6 +58,11 @@ import {
 } from '@/shared/ui/base/sidebar'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import {
+	sidebarHelperTextClass,
+	sidebarInlineBadgeClass,
+	sidebarItemIconVariants,
+} from '@/shared/ui/patterns/sidebar-item'
+import {
 	CheckIcon,
 	ChevronsUpDownIcon,
 	ExternalLinkIcon,
@@ -258,9 +263,9 @@ export function ShellSidebar({
 													className='gap-2 p-2'
 													onSelect={() => navigate('/spaces/inbox')}
 												>
-													<span className='text-(--sf-color-shell-secondary)'>全部 Spaces</span>
+													<span className='text-sf-shell-text-secondary'>全部 Spaces</span>
 													{currentScope.type === 'all' ? (
-														<CheckIcon className='ml-auto size-3.5 text-(--sf-color-icon-secondary)' />
+														<CheckIcon className='ml-auto size-3.5 text-sf-icon-secondary' />
 													) : null}
 												</DropdownMenuItem>
 												{spaces.map((space) => {
@@ -281,13 +286,13 @@ export function ShellSidebar({
 															<div className='flex min-w-0 items-center gap-2'>
 																<span className='truncate'>{space.name}</span>
 																{space.isDefault ? (
-																	<span className='rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-(--sf-color-shell-secondary)'>
+																	<span className={sidebarInlineBadgeClass}>
 																		默认
 																	</span>
 																) : null}
 															</div>
 															{isActive ? (
-																<CheckIcon className='ml-auto size-3.5 text-(--sf-color-icon-secondary)' />
+																<CheckIcon className='ml-auto size-3.5 text-sf-icon-secondary' />
 															) : null}
 														</DropdownMenuItem>
 													)
@@ -302,7 +307,7 @@ export function ShellSidebar({
 														setEditorOpen(true)
 													}}
 												>
-													<PlusIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
+													<PlusIcon className='shrink-0 text-sf-icon-secondary' />
 													<span>新建 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
@@ -313,7 +318,7 @@ export function ShellSidebar({
 														setEditorOpen(true)
 													}}
 												>
-													<FolderIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
+													<FolderIcon className='shrink-0 text-sf-icon-secondary' />
 													<span>编辑当前 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
@@ -328,7 +333,7 @@ export function ShellSidebar({
 														})
 													}}
 												>
-													<CheckIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
+													<CheckIcon className='shrink-0 text-sf-icon-secondary' />
 													<span>设为默认 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
@@ -349,11 +354,11 @@ export function ShellSidebar({
 														})
 													}}
 												>
-													<ExternalLinkIcon className='shrink-0 text-(--sf-color-icon-secondary)' />
+													<ExternalLinkIcon className='shrink-0 text-sf-icon-secondary' />
 													<span>归档当前 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
-													className='gap-2 p-2 text-[#d9485f]'
+													className='gap-2 p-2 text-destructive'
 													disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
 													onSelect={() => {
 														if (!activeSpace) {
@@ -377,7 +382,7 @@ export function ShellSidebar({
 											{dropdownError ? (
 												<>
 													<DropdownMenuSeparator />
-													<DropdownMenuLabel className='max-w-64 whitespace-normal text-[#d9485f]'>
+													<DropdownMenuLabel className='max-w-64 whitespace-normal text-destructive'>
 														{dropdownError}
 													</DropdownMenuLabel>
 												</>
@@ -427,7 +432,7 @@ export function ShellSidebar({
 								{!settings.projectSection.collapsed ? (
 									<SidebarGroupContent>
 										{currentScope.type === 'all' ? (
-											<div className='px-2.5 py-2 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
+											<div className={sidebarHelperTextClass}>
 												全局 Scope 下先不展开具体项目，切到单个 Space 后再查看项目列表。
 											</div>
 										) : (
@@ -538,13 +543,13 @@ function NoProjectSidebarMenuItem({
 	const isActive = !!useMatch({ end: true, path: noProjectPath })
 
 	return (
-		<SidebarMenuItem>
-			<SidebarMenuButton asChild isActive={isActive} tooltip='独立事项'>
-				<NavLink to={noProjectPath}>
-					<TargetIcon className='size-3.5 shrink-0 text-(--sf-color-shell-secondary)' />
-					<span className='min-w-0 truncate'>独立事项</span>
-				</NavLink>
-			</SidebarMenuButton>
+			<SidebarMenuItem>
+				<SidebarMenuButton asChild isActive={isActive} tooltip='独立事项'>
+					<NavLink to={noProjectPath}>
+						<TargetIcon className={sidebarItemIconVariants()} />
+						<span className='min-w-0 truncate'>独立事项</span>
+					</NavLink>
+				</SidebarMenuButton>
 		</SidebarMenuItem>
 	)
 }
@@ -706,14 +711,13 @@ function ProjectSidebarRouteMenuItem({
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
-				<SidebarMenuButton asChild isActive={isActive} size={size}>
-					<NavLink to={to}>
-						<FolderIcon
-							className={cn(
-								'shrink-0 text-(--sf-color-shell-secondary)',
-								size === 'sm' ? 'size-3' : 'size-3.5',
-							)}
-						/>
+					<SidebarMenuButton asChild isActive={isActive} size={size}>
+						<NavLink to={to}>
+							<FolderIcon
+								className={sidebarItemIconVariants({
+									size: size === 'sm' ? 'sm' : 'default',
+								})}
+							/>
 						<span className='min-w-0 truncate'>{label}</span>
 						{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
 					</NavLink>
