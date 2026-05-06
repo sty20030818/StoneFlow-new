@@ -10,7 +10,7 @@ vi.mock('@/features/healthcheck/model/useHealthcheckStatus', () => ({
 const mockedUseHealthcheckStatus = vi.mocked(useHealthcheckStatus)
 
 describe('ShellFooter', () => {
-	it('保留状态与页面信息，但不再渲染 Trash 和 Settings 按钮', () => {
+	it('渲染健康状态与导航计数', () => {
 		mockedUseHealthcheckStatus.mockReturnValue({
 			detail: '...\\StoneFlow\\app.db',
 			indicatorClassName: 'bg-(--sf-color-shell-online)',
@@ -19,31 +19,12 @@ describe('ShellFooter', () => {
 			title: '/tmp/StoneFlow/app.db',
 		})
 
-		render(
-			<ShellFooter
-				activeSection='trash'
-				currentScope={{ type: 'space', spaceId: 'space-personal' }}
-				currentSpaceId='space-personal'
-				spaces={[
-					{
-						id: 'space-personal',
-						name: '个人',
-						iconKey: 'user',
-						colorKey: 'blue',
-						isDefault: true,
-						sortOrder: 100,
-						archivedAt: null,
-						deletedAt: null,
-						createdAt: '2026-04-30T00:00:00.000Z',
-						updatedAt: '2026-04-30T00:00:00.000Z',
-					},
-				]}
-			/>,
-		)
+		render(<ShellFooter navBadges={{ inbox: '3', allTasks: '12' }} />)
 
 		expect(screen.getByText('本地数据库已连接')).toBeInTheDocument()
-		expect(screen.getByText('个人')).toBeInTheDocument()
-		expect(screen.getAllByText('回收站')[0]).toBeInTheDocument()
-		expect(screen.queryByRole('button')).not.toBeInTheDocument()
+		expect(screen.getByText('收件箱')).toBeInTheDocument()
+		expect(screen.getByText('3')).toBeInTheDocument()
+		expect(screen.getByText('任务')).toBeInTheDocument()
+		expect(screen.getByText('12')).toBeInTheDocument()
 	})
 })

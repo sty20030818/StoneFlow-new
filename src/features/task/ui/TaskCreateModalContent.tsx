@@ -215,8 +215,6 @@ export function TaskCreateModalContent({
 						placement={placement}
 						projectId={projectId}
 						projects={visibleProjects}
-						spaceId={spaceId}
-						spaces={spaces}
 						onPlacementChange={(newPlacement, newProjectId) => {
 							setPlacement(newPlacement)
 							setProjectId(newProjectId ?? '')
@@ -391,16 +389,12 @@ function ProjectMetaAction({
 	placement,
 	projectId,
 	projects,
-	spaceId,
-	spaces,
 	onPlacementChange,
 }: {
 	disabled: boolean
 	placement: TaskPlacement
 	projectId: string
 	projects: ProjectOption[]
-	spaceId: string
-	spaces: Space[]
 	onPlacementChange: (placement: TaskPlacement, projectId: string | null) => void
 }) {
 	const currentProject = projects.find((p) => p.id === projectId)
