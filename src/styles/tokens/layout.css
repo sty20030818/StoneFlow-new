@@ -1,0 +1,133 @@
+:root {
+	/* Shell structure */
+	--sf-shell-bg: var(--sf-surface-app);
+	--sf-shell-chrome-bg: var(--sf-surface-app);
+	--sf-shell-drawer-bg: var(--sf-surface-raised);
+	--sf-shell-hover: var(--sf-neutral-175);
+	--sf-shell-hover-strong: var(--sf-surface-app-strong);
+	--sf-shell-text-secondary: var(--sf-text-secondary);
+	--sf-shell-text-tertiary: var(--sf-text-quaternary);
+
+	/* Header / sidebar / footer */
+	--sf-header-bg: var(--sf-shell-bg);
+	--sf-header-hover: var(--sf-shell-hover);
+	--sf-sidebar-bg: var(--sf-shell-bg);
+	--sf-sidebar-hover: var(--sf-shell-hover);
+	--sf-sidebar-active: var(--sf-surface-active);
+	--sf-footer-bg: var(--sf-shell-bg);
+	--sf-footer-hover: var(--sf-shell-hover);
+
+	/* Main content */
+	--sf-main-bg: var(--sf-surface-panel);
+	--sf-main-text: var(--sf-text-primary);
+	--sf-main-hover: var(--sf-surface-hover);
+	--sf-main-active: var(--sf-surface-active);
+
+	/* Shared control surfaces */
+	--sf-control-bg: var(--sf-surface-raised);
+	--sf-control-hover: var(--sf-surface-panel-muted);
+	--sf-control-active: var(--sf-surface-active);
+	--sf-control-text: var(--sf-text-strong);
+	--sf-control-text-secondary: var(--sf-icon-emphasis);
+
+	/* Reusable list surfaces */
+	--sf-list-section-bg: var(--sf-surface-app);
+	--sf-list-row-hover: var(--sf-surface-hover);
+	--sf-list-row-selected: var(--sf-surface-active);
+	--sf-selection-surface: color-mix(in srgb, var(--sf-accent-soft) 90%, var(--sf-accent-primary) 10%);
+	--sf-selection-surface-hover: color-mix(
+		in srgb,
+		var(--sf-accent-soft) 78%,
+		var(--sf-accent-primary) 22%
+	);
+
+	/* Shared geometry and motion */
+	--sf-shell-sidebar-width: 245px;
+	--sf-shell-sidebar-width-icon: 3rem;
+	--sf-shell-drawer-width: 32rem;
+	--sf-shell-layout-sync-duration: var(--sf-motion-duration-layout-sync);
+	--sf-shell-layout-sync-easing: var(--sf-motion-easing-layout-sync);
+
+	/* Temporary P2 compatibility aliases. Delete in P3+. */
+	--sf-font-sans: var(--sf-font-family-sans);
+	--sf-font-mono: var(--sf-font-family-mono);
+
+	--sf-color-bg-app: var(--sf-surface-app);
+	--sf-color-bg-app-alt: var(--sf-surface-app-strong);
+	--sf-color-bg-sidebar: var(--sf-sidebar-bg);
+	--sf-color-bg-surface: var(--sf-surface-panel);
+	--sf-color-bg-surface-muted: var(--sf-surface-panel-muted);
+	--sf-color-bg-surface-tertiary: var(--sf-surface-panel-subtle);
+	--sf-color-bg-surface-hover: var(--sf-surface-hover);
+	--sf-color-bg-surface-active: var(--sf-surface-active);
+	--sf-color-bg-elevated: var(--sf-surface-raised);
+
+	--sf-color-border: var(--sf-border-default);
+	--sf-color-border-subtle: var(--sf-border-subtle);
+	--sf-color-border-secondary: var(--sf-border-secondary);
+	--sf-color-divider: var(--sf-divider);
+	--sf-color-border-strong: var(--sf-border-strong);
+
+	--sf-color-text-primary: var(--sf-text-primary);
+	--sf-color-text-secondary: var(--sf-text-secondary);
+	--sf-color-text-tertiary: var(--sf-text-tertiary);
+	--sf-color-text-quaternary: var(--sf-text-quaternary);
+	--sf-color-text-disabled: var(--sf-text-disabled);
+
+	--sf-color-icon-primary: var(--sf-icon-primary);
+	--sf-color-icon-secondary: var(--sf-icon-secondary);
+	--sf-color-icon-subtle: var(--sf-icon-subtle);
+
+	--sf-color-accent-primary: var(--sf-accent-primary);
+	--sf-color-accent-hover: var(--sf-accent-hover);
+	--sf-color-accent-active: var(--sf-accent-active);
+	--sf-color-accent-primary-soft: var(--sf-accent-soft);
+	--sf-color-accent-soft-border: var(--sf-accent-soft-border);
+	--sf-color-accent-soft-text: var(--sf-accent-soft-text);
+	--sf-color-focus-ring: var(--sf-focus-ring);
+
+	--sf-color-warning: var(--sf-warning-strong);
+	--sf-color-warning-soft: var(--sf-warning-surface);
+	--sf-color-warning-soft-border: var(--sf-warning-surface-border);
+	--sf-color-warning-soft-text: var(--sf-warning-surface-text);
+
+	--sf-color-success: var(--sf-success-strong);
+	--sf-color-success-soft: var(--sf-success-surface);
+	--sf-color-success-soft-border: var(--sf-success-surface-border);
+	--sf-color-success-soft-text: var(--sf-success-surface-text);
+
+	--sf-color-danger: var(--sf-danger-strong);
+	--sf-color-danger-soft: var(--sf-danger-surface);
+	--sf-color-danger-soft-border: var(--sf-danger-surface-border);
+	--sf-color-danger-soft-text: var(--sf-danger-surface-text);
+
+	--sf-color-info: var(--sf-info-strong);
+	--sf-color-info-soft: var(--sf-info-surface);
+	--sf-color-info-soft-border: var(--sf-info-surface-border);
+	--sf-color-info-soft-text: var(--sf-info-surface-text);
+
+	--sf-color-priority-muted: var(--sf-priority-muted);
+	--sf-color-overlay: var(--sf-overlay-scrim);
+
+	--sf-color-shell-chrome: var(--sf-shell-chrome-bg);
+	--sf-color-shell-drawer: var(--sf-shell-drawer-bg);
+	--sf-color-shell-hover: var(--sf-shell-hover);
+	--sf-color-shell-hover-strong: var(--sf-shell-hover-strong);
+	--sf-color-shell-secondary: var(--sf-shell-text-secondary);
+	--sf-color-shell-tertiary: var(--sf-shell-text-tertiary);
+	--sf-color-shell-online: var(--sf-status-online);
+
+	--sf-color-sidebar-action-bg: var(--sf-control-bg);
+	--sf-color-sidebar-action-foreground: var(--sf-control-text);
+	--sf-color-sidebar-action-hover: var(--sf-control-hover);
+	--sf-color-main-icon-button-bg: var(--sf-control-bg);
+	--sf-color-main-icon-button-foreground: var(--sf-control-text-secondary);
+	--sf-color-main-icon-button-hover: var(--sf-control-hover);
+
+	--sf-color-project-task-section-header: var(--sf-list-section-bg);
+	--sf-color-project-task-row-hover: var(--sf-list-row-hover);
+	--sf-color-project-task-row-selected: var(--sf-list-row-selected);
+	--sf-color-project-task-status-done: var(--sf-success-strong);
+	--sf-color-task-bulk-selected-surface: var(--sf-selection-surface);
+	--sf-color-task-bulk-selected-surface-hover: var(--sf-selection-surface-hover);
+}

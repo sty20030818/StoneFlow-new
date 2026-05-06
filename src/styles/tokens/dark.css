@@ -1,0 +1,5 @@
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+	/* P2 scaffold only. Full dark token remap deferred to P6+. */
+}

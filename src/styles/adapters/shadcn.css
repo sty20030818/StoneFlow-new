@@ -1,0 +1,115 @@
+:root {
+	--radius: 0.5rem;
+
+	/* shadcn compatibility */
+	--background: var(--sf-main-bg);
+	--foreground: var(--sf-main-text);
+
+	--card: var(--sf-surface-panel);
+	--card-foreground: var(--sf-text-primary);
+
+	--popover: var(--sf-surface-raised);
+	--popover-foreground: var(--sf-text-primary);
+
+	--primary: var(--sf-accent-primary);
+	--primary-foreground: var(--sf-white);
+
+	--secondary: var(--sf-surface-panel-muted);
+	--secondary-foreground: var(--sf-text-secondary);
+
+	--muted: var(--sf-surface-panel-muted);
+	--muted-foreground: var(--sf-text-secondary);
+
+	--accent: var(--sf-accent-soft);
+	--accent-foreground: var(--sf-accent-soft-text);
+
+	--destructive: var(--sf-danger-strong);
+	--destructive-foreground: var(--sf-white);
+
+	--border: var(--sf-border-secondary);
+	--input: var(--sf-border-default);
+	--ring: var(--sf-focus-ring);
+
+	--sidebar: var(--sf-sidebar-bg);
+	--sidebar-foreground: var(--sf-text-primary);
+	--sidebar-primary: var(--sf-accent-primary);
+	--sidebar-primary-foreground: var(--sf-white);
+	--sidebar-accent: var(--sf-surface-app-strong);
+	--sidebar-accent-foreground: var(--sf-text-primary);
+	--sidebar-border: var(--sf-border-subtle);
+	--sidebar-ring: var(--sf-focus-ring);
+
+	--warning: var(--sf-warning-surface);
+	--warning-foreground: var(--sf-warning-surface-text);
+	--success: var(--sf-success-surface);
+	--success-foreground: var(--sf-success-surface-text);
+}
+
+@theme inline {
+	--font-sans: var(--sf-font-family-sans);
+	--font-mono: var(--sf-font-family-mono);
+
+	/* shadcn compatibility */
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-destructive-foreground: var(--destructive-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-warning: var(--warning);
+	--color-warning-foreground: var(--warning-foreground);
+	--color-success: var(--success);
+	--color-success-foreground: var(--success-foreground);
+
+	/* StoneFlow semantic and layout */
+	--color-sf-text-primary: var(--sf-text-primary);
+	--color-sf-text-secondary: var(--sf-text-secondary);
+	--color-sf-text-tertiary: var(--sf-text-tertiary);
+	--color-sf-text-quaternary: var(--sf-text-quaternary);
+	--color-sf-surface-panel: var(--sf-surface-panel);
+	--color-sf-surface-panel-muted: var(--sf-surface-panel-muted);
+	--color-sf-surface-hover: var(--sf-surface-hover);
+	--color-sf-surface-active: var(--sf-surface-active);
+	--color-sf-surface-raised: var(--sf-surface-raised);
+	--color-sf-border-default: var(--sf-border-default);
+	--color-sf-border-subtle: var(--sf-border-subtle);
+	--color-sf-border-strong: var(--sf-border-strong);
+	--color-sf-shell: var(--sf-shell-bg);
+	--color-sf-shell-hover: var(--sf-shell-hover);
+	--color-sf-shell-hover-strong: var(--sf-shell-hover-strong);
+	--color-sf-header: var(--sf-header-bg);
+	--color-sf-sidebar: var(--sf-sidebar-bg);
+	--color-sf-sidebar-hover: var(--sf-sidebar-hover);
+	--color-sf-sidebar-active: var(--sf-sidebar-active);
+	--color-sf-footer: var(--sf-footer-bg);
+	--color-sf-main: var(--sf-main-bg);
+	--color-sf-control: var(--sf-control-bg);
+	--color-sf-control-hover: var(--sf-control-hover);
+	--color-sf-control-active: var(--sf-control-active);
+
+	--radius-sm: calc(var(--radius) - 0.1875rem);
+	--radius-md: calc(var(--radius) - 0.0625rem);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 0.25rem);
+}

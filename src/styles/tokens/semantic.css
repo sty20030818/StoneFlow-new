@@ -1,0 +1,73 @@
+:root {
+	/* Text */
+	--sf-text-primary: var(--sf-neutral-950);
+	--sf-text-secondary: var(--sf-neutral-900);
+	--sf-text-tertiary: var(--sf-neutral-800);
+	--sf-text-quaternary: var(--sf-neutral-700);
+	--sf-text-disabled: var(--sf-neutral-600);
+	--sf-text-strong: var(--sf-neutral-975);
+
+	/* Icon */
+	--sf-icon-primary: var(--sf-neutral-900);
+	--sf-icon-secondary: var(--sf-neutral-800);
+	--sf-icon-subtle: var(--sf-neutral-700);
+	--sf-icon-emphasis: var(--sf-neutral-850);
+
+	/* Surface */
+	--sf-surface-app: var(--sf-neutral-100);
+	--sf-surface-app-strong: var(--sf-neutral-250);
+	--sf-surface-panel: var(--sf-neutral-25);
+	--sf-surface-panel-muted: var(--sf-neutral-75);
+	--sf-surface-panel-subtle: var(--sf-neutral-50);
+	--sf-surface-hover: var(--sf-neutral-75);
+	--sf-surface-active: var(--sf-neutral-125);
+	--sf-surface-raised: var(--sf-white);
+
+	/* Border */
+	--sf-border-default: var(--sf-neutral-350);
+	--sf-border-subtle: var(--sf-neutral-200);
+	--sf-border-secondary: var(--sf-neutral-300);
+	--sf-border-strong: var(--sf-neutral-500);
+	--sf-divider: var(--sf-neutral-150);
+
+	/* Accent */
+	--sf-accent-primary: var(--sf-brand-500);
+	--sf-accent-hover: var(--sf-brand-450);
+	--sf-accent-active: var(--sf-brand-550);
+	--sf-accent-soft: var(--sf-brand-soft);
+	--sf-accent-soft-border: var(--sf-brand-soft-border);
+	--sf-accent-soft-text: var(--sf-brand-soft-text);
+
+	/* Focus */
+	--sf-focus-ring: var(--sf-brand-500);
+
+	/* Status */
+	--sf-warning-strong: var(--sf-warning-700);
+	--sf-warning-surface: var(--sf-warning-soft);
+	--sf-warning-surface-border: var(--sf-warning-soft-border);
+	--sf-warning-surface-text: var(--sf-warning-soft-text);
+
+	--sf-success-strong: var(--sf-success-600);
+	--sf-success-surface: var(--sf-success-soft);
+	--sf-success-surface-border: var(--sf-success-soft-border);
+	--sf-success-surface-text: var(--sf-success-soft-text);
+
+	--sf-danger-strong: var(--sf-danger-600);
+	--sf-danger-surface: var(--sf-danger-soft);
+	--sf-danger-surface-border: var(--sf-danger-soft-border);
+	--sf-danger-surface-text: var(--sf-danger-soft-text);
+
+	--sf-info-strong: var(--sf-info-600);
+	--sf-info-surface: var(--sf-info-soft);
+	--sf-info-surface-border: var(--sf-info-soft-border);
+	--sf-info-surface-text: var(--sf-info-soft-text);
+
+	--sf-status-online: var(--sf-online-500);
+	--sf-priority-muted: var(--sf-neutral-500);
+
+	/* Overlay and shadow */
+	--sf-overlay-scrim: var(--sf-overlay-strong);
+	--sf-shadow-panel: var(--sf-shadow-raw-panel);
+	--sf-shadow-popover: var(--sf-shadow-raw-popover);
+	--sf-shadow-float: var(--sf-shadow-raw-float);
+}

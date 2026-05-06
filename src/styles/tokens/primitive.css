@@ -1,0 +1,72 @@
+:root {
+	/* Fonts */
+	--sf-font-family-sans:
+		"Inter Variable", "Inter", "SF Pro Display", "PingFang SC", "Segoe UI", system-ui, sans-serif;
+	--sf-font-family-mono:
+		"Berkeley Mono", "SF Mono", "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+	/* Neutral palette */
+	--sf-white: #ffffff;
+	--sf-neutral-25: #fcfcfd;
+	--sf-neutral-50: #f7f7f7;
+	--sf-neutral-75: #f6f6f7;
+	--sf-neutral-100: #f3f3f4;
+	--sf-neutral-125: #efeff0;
+	--sf-neutral-150: #ececed;
+	--sf-neutral-175: #ebebec;
+	--sf-neutral-200: #e5e5e6;
+	--sf-neutral-250: #e4e4e5;
+	--sf-neutral-300: #dedee0;
+	--sf-neutral-350: #d8d8da;
+	--sf-neutral-500: #bfc0c2;
+	--sf-neutral-600: #a8b0bb;
+	--sf-neutral-700: #8f9093;
+	--sf-neutral-800: #6f7072;
+	--sf-neutral-850: #5d5d5f;
+	--sf-neutral-900: #5a5a5c;
+	--sf-neutral-950: #303032;
+	--sf-neutral-975: #1b1b1b;
+
+	/* Brand */
+	--sf-brand-500: #5e6ad2;
+	--sf-brand-450: #7170ff;
+	--sf-brand-550: #5562c4;
+	--sf-brand-soft: #eef0ff;
+	--sf-brand-soft-border: #d9ddff;
+	--sf-brand-soft-text: #4f5ccf;
+
+	/* Status */
+	--sf-warning-700: #b7791f;
+	--sf-warning-soft: #fff7e8;
+	--sf-warning-soft-border: #f4dfb4;
+	--sf-warning-soft-text: #8c6419;
+
+	--sf-success-600: #27a644;
+	--sf-success-soft: #ecf8ef;
+	--sf-success-soft-border: #cdebd4;
+	--sf-success-soft-text: #1f8a38;
+	--sf-online-500: #4ade80;
+
+	--sf-danger-600: #d14343;
+	--sf-danger-soft: #fff1f1;
+	--sf-danger-soft-border: #f3caca;
+	--sf-danger-soft-text: #b83737;
+	--sf-danger-window-close: #e81123;
+
+	--sf-info-600: #3a72d8;
+	--sf-info-soft: #eff5ff;
+	--sf-info-soft-border: #d3e3ff;
+	--sf-info-soft-text: #2f63c0;
+
+	/* Shadow primitives */
+	--sf-shadow-raw-panel: 0 1px 2px rgb(16 24 40 / 0.04);
+	--sf-shadow-raw-popover: 0 8px 24px rgb(16 24 40 / 0.08), 0 2px 6px rgb(16 24 40 / 0.04);
+	--sf-shadow-raw-float: 0 16px 40px rgb(16 24 40 / 0.1), 0 4px 12px rgb(16 24 40 / 0.06);
+
+	/* Overlay primitive */
+	--sf-overlay-strong: rgb(17 19 24 / 0.48);
+
+	/* Motion primitives */
+	--sf-motion-duration-layout-sync: 175ms;
+	--sf-motion-easing-layout-sync: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
