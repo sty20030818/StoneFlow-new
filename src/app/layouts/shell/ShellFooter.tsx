@@ -27,7 +27,9 @@ export function ShellFooter({ navBadges = {} }: ShellFooterProps) {
 				{navBadges.allTasks ? (
 					<span className='flex items-center gap-1'>
 						<span>任务</span>
-						<span className='font-medium text-(--sf-color-shell-secondary)'>{navBadges.allTasks}</span>
+						<span className='font-medium text-(--sf-color-shell-secondary)'>
+							{navBadges.allTasks}
+						</span>
 					</span>
 				) : null}
 			</div>

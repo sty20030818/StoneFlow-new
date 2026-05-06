@@ -18,11 +18,7 @@ function EntitySceneHeader({
 	headerClassName,
 }: Pick<EntitySceneProps, 'breadcrumb' | 'headerActions' | 'headerClassName'>) {
 	return (
-		<MainCard.Header
-			action={headerActions}
-			breadcrumb={breadcrumb}
-			className={headerClassName}
-		/>
+		<MainCard.Header action={headerActions} breadcrumb={breadcrumb} className={headerClassName} />
 	)
 }
 
@@ -89,13 +85,7 @@ function EntitySceneBoardSlot(board: EntitySceneBoardSlotProps) {
 	)
 }
 
-function EntitySceneBody({
-	children,
-	className,
-}: {
-	children: ReactNode
-	className?: string
-}) {
+function EntitySceneBody({ children, className }: { children: ReactNode; className?: string }) {
 	return <div className={cn('flex min-h-0 flex-1 flex-col gap-3', className)}>{children}</div>
 }
 

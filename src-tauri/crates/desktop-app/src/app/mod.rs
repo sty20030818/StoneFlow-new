@@ -1,6 +1,6 @@
 //! Tauri 宿主层：负责窗口、插件、命令注册与最小运行时状态。
 
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{LogicalPosition, Manager, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
 
 use crate::app::state::{ActiveScopeState, CommandHelperState};
 use crate::infrastructure::database::bootstrap_database;

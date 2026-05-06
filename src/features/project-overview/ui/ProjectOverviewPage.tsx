@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import {
-	buildScopedProjectPath,
-	getScopeLabel,
-} from '@/app/layouts/shell/config'
+import { buildScopedProjectPath, getScopeLabel } from '@/app/layouts/shell/config'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
 import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
@@ -101,8 +98,7 @@ export function ProjectOverviewPage() {
 						})
 					},
 					onEmptyAction: () => openProjectCreateDialog(),
-					onOpenProject: (projectId) =>
-						navigate(buildScopedProjectPath(scope, projectId, spaceId)),
+					onOpenProject: (projectId) => navigate(buildScopedProjectPath(scope, projectId, spaceId)),
 					onReopenProject: (projectId) => {
 						void runRowAction(projectId, async () => {
 							await reopenProject(projectId)

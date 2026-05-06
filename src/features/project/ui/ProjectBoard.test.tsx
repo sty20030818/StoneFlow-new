@@ -49,7 +49,9 @@ describe('ProjectBoard', () => {
 	})
 })
 
-function createProject(overrides: Partial<ProjectOverviewItem> & Pick<ProjectOverviewItem, 'id' | 'name'>): ProjectOverviewItem {
+function createProject(
+	overrides: Partial<ProjectOverviewItem> & Pick<ProjectOverviewItem, 'id' | 'name'>,
+): ProjectOverviewItem {
 	return {
 		id: overrides.id,
 		spaceId: overrides.spaceId ?? 'space-1',

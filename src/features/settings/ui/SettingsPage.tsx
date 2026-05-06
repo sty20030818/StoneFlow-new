@@ -34,6 +34,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/shared/ui/base/select'
+import { Switch } from '@/shared/ui/base/switch'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Settings2Icon } from 'lucide-react'
 
@@ -84,6 +85,8 @@ export function SettingsPage() {
 		defaultSpace: false,
 	})
 	const [sectionErrors, setSectionErrors] = useState<SectionErrorMap>({})
+	const [switchDemoDefault, setSwitchDemoDefault] = useState(false)
+	const [switchDemoSmall, setSwitchDemoSmall] = useState(false)
 
 	useEffect(() => {
 		void loadSidebarSettings().catch(() => undefined)
@@ -215,27 +218,27 @@ export function SettingsPage() {
 	return (
 		<MainCard.Root>
 			<MainCard.Header
-					action={
-						<Button asChild size='sm' variant='ghost'>
-							<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回收件箱</Link>
-						</Button>
-					}
-					breadcrumb={
-						<Breadcrumb>
-							<BreadcrumbList className='text-sm font-semibold leading-5'>
-								<BreadcrumbItem>
-									<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-										<Settings2Icon
-											aria-hidden
-											className='size-4 shrink-0 text-(--sf-color-text-tertiary)'
-										/>
-										设置
-									</BreadcrumbPage>
-								</BreadcrumbItem>
-							</BreadcrumbList>
-						</Breadcrumb>
-					}
-				/>
+				action={
+					<Button asChild size='sm' variant='ghost'>
+						<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回收件箱</Link>
+					</Button>
+				}
+				breadcrumb={
+					<Breadcrumb>
+						<BreadcrumbList className='text-sm font-semibold leading-5'>
+							<BreadcrumbItem>
+								<BreadcrumbPage className='inline-flex items-center gap-1.5'>
+									<Settings2Icon
+										aria-hidden
+										className='size-4 shrink-0 text-(--sf-color-text-tertiary)'
+									/>
+									设置
+								</BreadcrumbPage>
+							</BreadcrumbItem>
+						</BreadcrumbList>
+					</Breadcrumb>
+				}
+			/>
 			<MainCard.Body className='gap-4 p-4'>
 				<StatusNotice
 					description='阶段 11 只开放最小可用设置：侧边栏入口、Projects 分区、Sidebar 宽度和默认 Space。所有变更都会即时保存。'
@@ -456,6 +459,40 @@ export function SettingsPage() {
 							{sectionErrors.defaultSpace}
 						</StatusNotice>
 					) : null}
+				</SettingsSection>
+
+				<SettingsSection
+					description='临时验证当前 Switch 组件在常规页面里是否能正常点击与切换，方便定位问题是否只出现在任务弹窗。'
+					title='Switch 调试'
+				>
+					<div className='grid gap-3 md:grid-cols-2'>
+						<div className='flex items-center justify-between rounded-xl border border-(--sf-color-border-subtle) bg-muted/25 p-3'>
+							<div className='min-w-0'>
+								<p className='text-sm font-medium text-foreground'>默认尺寸</p>
+								<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
+									当前值：{switchDemoDefault ? '开' : '关'}
+								</p>
+							</div>
+							<Switch
+								checked={switchDemoDefault}
+								onCheckedChange={(checked) => setSwitchDemoDefault(checked === true)}
+							/>
+						</div>
+
+						<div className='flex items-center justify-between rounded-xl border border-(--sf-color-border-subtle) bg-muted/25 p-3'>
+							<div className='min-w-0'>
+								<p className='text-sm font-medium text-foreground'>小号尺寸</p>
+								<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
+									当前值：{switchDemoSmall ? '开' : '关'}
+								</p>
+							</div>
+							<Switch
+								checked={switchDemoSmall}
+								onCheckedChange={(checked) => setSwitchDemoSmall(checked === true)}
+								size='sm'
+							/>
+						</div>
+					</div>
 				</SettingsSection>
 			</MainCard.Body>
 		</MainCard.Root>

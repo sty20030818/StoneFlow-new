@@ -154,7 +154,9 @@ function LifecycleBoardSectionBlock({
 					</Badge>
 				</div>
 				{selectedCount > 0 ? (
-					<span className={cn('pr-1', CANONICAL_BOARD_META_TEXT_CLASS)}>已选 {selectedCount} 项</span>
+					<span className={cn('pr-1', CANONICAL_BOARD_META_TEXT_CLASS)}>
+						已选 {selectedCount} 项
+					</span>
 				) : (
 					<span className='pr-1' />
 				)}
@@ -215,7 +217,9 @@ function LifecycleBoardRow({
 	}, [entry.entityType])
 
 	const canOpenDetail = mode === 'archive' && typeof onOpenDetail === 'function'
-	const formattedDateLabel = formatLifecycleDate(mode === 'archive' ? entry.archivedAt : entry.deletedAt)
+	const formattedDateLabel = formatLifecycleDate(
+		mode === 'archive' ? entry.archivedAt : entry.deletedAt,
+	)
 
 	return (
 		<CanonicalBoard.Row

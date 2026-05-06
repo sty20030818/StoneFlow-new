@@ -31,7 +31,9 @@ vi.mock('@/app/layouts/main-card/MainCardLayout', () => ({
 		Footer: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 		Empty: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 		NoticeGroup: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-		GhostAction: ({ children }: { children: ReactNode }) => <button type='button'>{children}</button>,
+		GhostAction: ({ children }: { children: ReactNode }) => (
+			<button type='button'>{children}</button>
+		),
 	},
 }))
 
@@ -117,7 +119,9 @@ describe('LifecycleList', () => {
 		})
 
 		expect(screen.getByText('回收站为空')).toBeInTheDocument()
-		expect(screen.getByText('删除后的内容会统一出现在这里，等待恢复或永久删除。')).toBeInTheDocument()
+		expect(
+			screen.getByText('删除后的内容会统一出现在这里，等待恢复或永久删除。'),
+		).toBeInTheDocument()
 	})
 })
 

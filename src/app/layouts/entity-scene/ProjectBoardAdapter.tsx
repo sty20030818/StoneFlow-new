@@ -16,11 +16,7 @@ type ProjectBoardAdapterProps = {
  * 项目实体适配层。
  * scene 层只提供数据和动作，不感知项目 board 的具体列表结构。
  */
-export function ProjectBoardAdapter({
-	config,
-	data,
-	actions,
-}: ProjectBoardAdapterProps) {
+export function ProjectBoardAdapter({ config, data, actions }: ProjectBoardAdapterProps) {
 	return (
 		<ProjectBoard
 			busyProjectId={data.busyProjectId ?? null}

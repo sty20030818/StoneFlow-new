@@ -2,7 +2,13 @@ import type { ReactNode } from 'react'
 
 import type { MainCardToolbarPill } from '@/app/layouts/main-card/MainCardLayout'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
-import type { LifecycleEntry, LifecycleMode, ProjectOverviewItem, TaskListItem, TaskStatus } from '@/shared/types'
+import type {
+	LifecycleEntry,
+	LifecycleMode,
+	ProjectOverviewItem,
+	TaskListItem,
+	TaskStatus,
+} from '@/shared/types'
 import type { CanonicalBoardSection } from './CanonicalBoard'
 
 export type EntitySceneVariant =

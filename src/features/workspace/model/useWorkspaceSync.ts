@@ -106,9 +106,10 @@ export function useWorkspaceSync(scope: Scope) {
 	useEventSubscription('lifecycle:changed', (event: AppEvent) => {
 		console.info('[useWorkspaceSync] lifecycle:changed', event.payload)
 		if (event.type === 'lifecycle:changed') {
-			const isHeavyOperation = event.payload.operation === 'archive'
-				|| event.payload.operation === 'restore'
-				|| event.payload.operation === 'delete'
+			const isHeavyOperation =
+				event.payload.operation === 'archive' ||
+				event.payload.operation === 'restore' ||
+				event.payload.operation === 'delete'
 			scheduleRefresh(isHeavyOperation ? LIFECYCLE_DEBOUNCE_MS : DEBOUNCE_MS)
 		} else {
 			scheduleRefresh()

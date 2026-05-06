@@ -16,11 +16,7 @@ type LifecycleBoardAdapterProps = {
  * 生命周期实体适配层。
  * archive / trash 都走这一套，避免再借道 task/project board。
  */
-export function LifecycleBoardAdapter({
-	config,
-	data,
-	actions,
-}: LifecycleBoardAdapterProps) {
+export function LifecycleBoardAdapter({ config, data, actions }: LifecycleBoardAdapterProps) {
 	return (
 		<LifecycleBoard
 			emptyActionLabel={config.emptyActionLabel}

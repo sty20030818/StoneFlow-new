@@ -119,7 +119,9 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 				},
 				boardActions: {
 					onDeleteFromArchive:
-						mode === 'archive' ? (entry: LifecycleEntry) => void handleDeleteFromArchive(entry) : undefined,
+						mode === 'archive'
+							? (entry: LifecycleEntry) => void handleDeleteFromArchive(entry)
+							: undefined,
 					onEmptyAction: () => {
 						void navigate(buildScopedSectionPath(scope, 'inbox', spaceId))
 					},

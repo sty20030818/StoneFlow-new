@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-import type { TaskStatus } from '@/shared/types'
+import type { TaskPlacement, TaskStatus } from '@/shared/types'
 
 import { useDrawerStore } from './useDrawerStore'
 
@@ -8,6 +8,7 @@ import { useDrawerStore } from './useDrawerStore'
 type TaskCreateDialogDraft = {
 	projectId?: string | null
 	status?: TaskStatus
+	placement?: TaskPlacement
 }
 
 type DialogState = {
@@ -15,6 +16,7 @@ type DialogState = {
 	isTaskCreateOpen: boolean
 	taskCreateProjectId: string | null
 	taskCreateStatus: TaskStatus
+	taskCreateInitialPlacement: TaskPlacement | null
 	isProjectCreateOpen: boolean
 
 	openCommand: () => void
@@ -32,6 +34,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 	isTaskCreateOpen: false,
 	taskCreateProjectId: null,
 	taskCreateStatus: 'todo',
+	taskCreateInitialPlacement: null,
 	isProjectCreateOpen: false,
 
 	openCommand: () => {
@@ -42,6 +45,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isTaskCreateOpen: false,
 			taskCreateProjectId: null,
 			taskCreateStatus: 'todo',
+			taskCreateInitialPlacement: null,
 			isProjectCreateOpen: false,
 		})
 	},
@@ -62,6 +66,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isTaskCreateOpen: true,
 			taskCreateProjectId: draft?.projectId ?? null,
 			taskCreateStatus: draft?.status ?? 'todo',
+			taskCreateInitialPlacement: draft?.placement ?? null,
 			isProjectCreateOpen: false,
 		})
 	},
@@ -70,6 +75,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isTaskCreateOpen: false,
 			taskCreateProjectId: null,
 			taskCreateStatus: 'todo',
+			taskCreateInitialPlacement: null,
 		}),
 
 	openProjectCreateDialog: () => {
@@ -80,6 +86,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isTaskCreateOpen: false,
 			taskCreateProjectId: null,
 			taskCreateStatus: 'todo',
+			taskCreateInitialPlacement: null,
 			isProjectCreateOpen: true,
 		})
 	},
@@ -94,4 +101,6 @@ export const selectIsCommandOpen = (state: DialogState) => state.isCommandOpen
 export const selectIsTaskCreateOpen = (state: DialogState) => state.isTaskCreateOpen
 export const selectTaskCreateProjectId = (state: DialogState) => state.taskCreateProjectId
 export const selectTaskCreateStatus = (state: DialogState) => state.taskCreateStatus
+export const selectTaskCreateInitialPlacement = (state: DialogState) =>
+	state.taskCreateInitialPlacement
 export const selectIsProjectCreateOpen = (state: DialogState) => state.isProjectCreateOpen

@@ -94,7 +94,7 @@ export function NoProjectPage() {
 				boardActions: {
 					onArchiveTask: archiveListTask,
 					onDeleteTask: deleteListTask,
-					onEmptyAction: () => openTaskCreateDialog(),
+					onEmptyAction: () => openTaskCreateDialog({ placement: 'noProject' }),
 					onOpenTask: (taskId) => openDrawer('task', taskId),
 					onToggleTaskSelection: toggleTaskSelection,
 					onToggleTaskStatus: toggleTaskStatus,
@@ -120,7 +120,10 @@ export function NoProjectPage() {
 				/>
 			}
 			headerActions={
-				<MainCard.GhostAction aria-label='创建任务' onClick={() => openTaskCreateDialog()}>
+				<MainCard.GhostAction
+					aria-label='创建任务'
+					onClick={() => openTaskCreateDialog({ placement: 'noProject' })}
+				>
 					<PlusIcon />
 				</MainCard.GhostAction>
 			}

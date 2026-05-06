@@ -59,17 +59,10 @@ const MAIN_CARD_TOOLBAR_PILL_INACTIVE_CLASS =
 	'border-(--sf-color-border-subtle) text-(--sf-color-text-secondary)'
 
 function MainCardRoot({ children, className }: MainCardRootProps) {
-	return (
-		<div className={cn('flex min-h-full min-w-0 flex-1 flex-col', className)}>{children}</div>
-	)
+	return <div className={cn('flex min-h-full min-w-0 flex-1 flex-col', className)}>{children}</div>
 }
 
-function MainCardHeader({
-	title,
-	breadcrumb,
-	action,
-	className,
-}: MainCardHeaderProps) {
+function MainCardHeader({ title, breadcrumb, action, className }: MainCardHeaderProps) {
 	return (
 		<header
 			className={cn(
@@ -139,7 +132,9 @@ function MainCardToolbar({
 
 function MainCardBody({ children, className }: MainCardShellSlotProps) {
 	return (
-		<div className={cn('flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2', className)}>{children}</div>
+		<div className={cn('flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2', className)}>
+			{children}
+		</div>
 	)
 }
 
@@ -168,11 +163,7 @@ function MainCardEmpty({ children, className }: MainCardShellSlotProps) {
 	return <div className={cn('flex min-h-0 flex-1 flex-col', className)}>{children}</div>
 }
 
-function MainCardGhostAction({
-	children,
-	className,
-	...props
-}: ComponentProps<typeof Button>) {
+function MainCardGhostAction({ children, className, ...props }: ComponentProps<typeof Button>) {
 	return (
 		<Button
 			className={cn(MAIN_CARD_GHOST_ACTION_CLASS, className)}

@@ -36,7 +36,6 @@ export type ShellProjectLink = {
 	badge?: string
 }
 
-
 type DrawerDetailBadge = {
 	label: string
 	variant?: BadgeVariant

@@ -34,5 +34,4 @@ Thumbs.db
 *.sln
 *.sw?
 
-src-tauri/*.md
-src/*.md
+ARCHITECTURE.md

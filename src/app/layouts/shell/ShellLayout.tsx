@@ -1,4 +1,5 @@
-import { useEffect, type PropsWithChildren } from 'react'
+import { useEffect, useMemo, type PropsWithChildren } from 'react'
+import { useLocation } from 'react-router-dom'
 
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
@@ -12,6 +13,7 @@ import {
 	selectIsCommandOpen,
 	selectIsProjectCreateOpen,
 	selectIsTaskCreateOpen,
+	selectTaskCreateInitialPlacement,
 	selectTaskCreateProjectId,
 	selectTaskCreateStatus,
 	useDialogStore,
@@ -57,11 +59,29 @@ export function ShellLayout({
 	const isTaskCreateOpen = useDialogStore(selectIsTaskCreateOpen)
 	const taskCreateProjectId = useDialogStore(selectTaskCreateProjectId)
 	const taskCreateStatus = useDialogStore(selectTaskCreateStatus)
+	const taskCreateInitialPlacement = useDialogStore(selectTaskCreateInitialPlacement)
 	const isProjectCreateOpen = useDialogStore(selectIsProjectCreateOpen)
 	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
 	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
+
+	const { pathname } = useLocation()
+	const routeProjectId = useMemo(() => {
+		const match = pathname.match(/\/project\/([^/]+)/)
+		return match?.[1] ?? null
+	}, [pathname])
+	const isNoProjectPage = pathname.endsWith('/no-project')
+
+	const handleOpenTaskCreate = useMemo(() => {
+		if (routeProjectId) {
+			return () => openTaskCreateDialog({ projectId: routeProjectId })
+		}
+		if (isNoProjectPage) {
+			return () => openTaskCreateDialog({ placement: 'noProject' })
+		}
+		return () => openTaskCreateDialog()
+	}, [isNoProjectPage, openTaskCreateDialog, routeProjectId])
 	const closeTaskCreateDialog = useDialogStore((state) => state.closeTaskCreateDialog)
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
 	const closeProjectCreateDialog = useDialogStore((state) => state.closeProjectCreateDialog)
@@ -160,7 +180,7 @@ export function ShellLayout({
 				onCommandOpenChange={setCommandOpen}
 				onOpenDrawer={openDrawer}
 				onOpenProjectCreateDialog={() => openProjectCreateDialog()}
-				onOpenTaskCreateDialog={() => openTaskCreateDialog()}
+				onOpenTaskCreateDialog={handleOpenTaskCreate}
 				projects={projectLinks}
 				spaces={spaces}
 			/>
@@ -196,7 +216,7 @@ export function ShellLayout({
 						currentSpaceLabel={currentSpaceLabel}
 						onCloseDrawer={closeDrawer}
 						onOpenProjectCreateDialog={() => openProjectCreateDialog()}
-						onOpenTaskCreateDialog={() => openTaskCreateDialog()}
+						onOpenTaskCreateDialog={handleOpenTaskCreate}
 					>
 						{children}
 					</ShellMain>
@@ -204,8 +224,8 @@ export function ShellLayout({
 			</div>
 
 			<TaskCreateDialog
-				currentSpaceLabel={currentSpaceLabel}
 				currentScope={currentScope}
+				initialPlacement={taskCreateInitialPlacement}
 				initialProjectId={taskCreateProjectId}
 				initialStatus={taskCreateStatus}
 				onClose={closeTaskCreateDialog}

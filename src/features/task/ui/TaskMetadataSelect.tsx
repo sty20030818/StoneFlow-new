@@ -7,7 +7,14 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
-import { CheckIcon, CircleCheckIcon, CircleIcon, CircleXIcon, PauseIcon, PlayIcon } from 'lucide-react'
+import {
+	CheckIcon,
+	CircleCheckIcon,
+	CircleIcon,
+	CircleXIcon,
+	PauseIcon,
+	PlayIcon,
+} from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
 import { useEffect, useRef, type ComponentType } from 'react'
 
@@ -267,7 +274,10 @@ function SolidCircleIcon({
 	return (
 		<Icon
 			ref={ref}
-			className={cn('size-4 shrink-0 [&_circle]:fill-(--sci-color) [&_circle]:stroke-none', className)}
+			className={cn(
+				'size-4 shrink-0 [&_circle]:fill-(--sci-color) [&_circle]:stroke-none',
+				className,
+			)}
 			fill='white'
 			stroke='white'
 			style={{ '--sci-color': color } as React.CSSProperties}
@@ -279,10 +289,7 @@ export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 	switch (status) {
 		case 'done':
 			return (
-				<SolidCircleIcon
-					icon={CircleCheckIcon}
-					color='var(--sf-color-project-task-status-done)'
-				/>
+				<SolidCircleIcon icon={CircleCheckIcon} color='var(--sf-color-project-task-status-done)' />
 			)
 		case 'doing':
 			return (
@@ -297,12 +304,7 @@ export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 				</span>
 			)
 		case 'canceled':
-			return (
-				<SolidCircleIcon
-					icon={CircleXIcon}
-					color='var(--sf-color-border-strong)'
-				/>
-			)
+			return <SolidCircleIcon icon={CircleXIcon} color='var(--sf-color-border-strong)' />
 		default:
 			return <CircleIcon className='size-4 shrink-0 text-(--sf-color-border-strong)' />
 	}
