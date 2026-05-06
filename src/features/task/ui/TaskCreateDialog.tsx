@@ -4,6 +4,7 @@ import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
 import type { ProjectOption } from '@/features/project/model/types'
 import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
 import { TaskCreateModalContent } from '@/features/task/ui/TaskCreateModalContent'
+import { cn } from '@/shared/lib/utils'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/base/dialog'
 import {
 	DropdownMenu,
@@ -14,6 +15,7 @@ import {
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
 import { Button } from '@/shared/ui/base/button'
+import { dialogShellFloatingBaseClass } from '@/shared/ui/patterns/dialog-shell'
 import { CheckIcon, ChevronRightIcon, Maximize2Icon, XIcon } from 'lucide-react'
 
 type TaskCreateDialogProps = {
@@ -56,7 +58,10 @@ export function TaskCreateDialog({
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
 			<DialogContent
-				className='flex max-h-[85vh] max-w-[calc(100%-1.5rem)] flex-col gap-0 rounded-3xl border border-border bg-popover p-0 shadow-(--sf-shadow-float) sm:max-w-2xl'
+				className={cn(
+					'flex max-h-[85vh] max-w-[calc(100%-1.5rem)] flex-col gap-0 rounded-3xl border border-border sm:max-w-2xl',
+					dialogShellFloatingBaseClass,
+				)}
 				showCloseButton={false}
 			>
 				<DialogTitle className='sr-only'>新建任务</DialogTitle>
@@ -79,11 +84,7 @@ export function TaskCreateDialog({
 					</div>
 
 					<div className='flex items-center gap-0.5'>
-						<Button
-							className='size-7 text-sf-icon-secondary'
-							size='icon-sm'
-							variant='ghost'
-						>
+						<Button className='size-7 text-sf-icon-secondary' size='icon-sm' variant='ghost'>
 							<Maximize2Icon className='size-3.5' />
 						</Button>
 						<Button

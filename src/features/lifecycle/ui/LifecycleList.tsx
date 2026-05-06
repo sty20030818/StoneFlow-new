@@ -19,6 +19,7 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
+import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import type { LucideIcon } from 'lucide-react'
 
 type LifecycleListProps = {
@@ -159,8 +160,8 @@ function LifecycleBreadcrumb({ icon: Icon, title }: { icon: LucideIcon; title: s
 		<Breadcrumb>
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
-					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-						<Icon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+					<BreadcrumbPage className={breadcrumbLeadClass}>
+						<Icon aria-hidden className={breadcrumbLeadIconClass} />
 						{title}
 					</BreadcrumbPage>
 				</BreadcrumbItem>

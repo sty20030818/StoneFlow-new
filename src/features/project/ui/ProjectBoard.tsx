@@ -19,6 +19,14 @@ import {
 } from '@/shared/ui/base/empty'
 import { Badge } from '@/shared/ui/base/badge'
 import { ArchiveIcon, FolderIcon, PlayIcon, CheckIcon } from 'lucide-react'
+import {
+	entityBoardLoadingCardClass,
+	entityBoardMutedIconClass,
+	entityBoardSectionCountBadgeClass,
+	entityBoardSectionHeadingClass,
+	entityBoardSectionRightSpacerClass,
+	entityBoardSectionToggleClass,
+} from '@/shared/ui/patterns/entity-board'
 
 import { ProjectOverviewRow } from '@/features/project-overview/ui/ProjectOverviewRow'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
@@ -51,9 +59,7 @@ export function ProjectBoard(props: ProjectBoardProps) {
 	if (props.status === 'loading' && props.items.length === 0) {
 		return (
 			<EmptyPage>
-				<div className='rounded-[28px] border border-(--sf-color-border-subtle) bg-white/90 p-6 text-[13px] text-(--sf-color-shell-secondary)'>
-					正在读取项目列表…
-				</div>
+				<div className={entityBoardLoadingCardClass}>正在读取项目列表…</div>
 			</EmptyPage>
 		)
 	}
@@ -127,18 +133,18 @@ function ProjectBoardSectionBlock({
 			<div className={CANONICAL_BOARD_SECTION_HEADER_CLASS}>
 				<CollapsibleTrigger
 					aria-label={`切换 ${section.label} 分区折叠状态`}
-					className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-(--sf-color-icon-subtle) outline-none transition-none hover:bg-transparent hover:text-(--sf-color-icon-subtle) focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
+					className={entityBoardSectionToggleClass}
 				>
 					<CanonicalBoard.Chevron data-chevron />
 				</CollapsibleTrigger>
-				<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-foreground'>
+				<div className={entityBoardSectionHeadingClass}>
 					<ProjectSectionStatusIcon sectionKey={section.key} />
 					<span className='truncate'>{section.label}</span>
-					<Badge className='ml-1 border-transparent bg-transparent shadow-none' variant='secondary'>
+					<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
 						{section.items.length}
 					</Badge>
 				</div>
-				<span className='pr-1' />
+				<span className={entityBoardSectionRightSpacerClass} />
 			</div>
 
 			<CollapsibleContent className='overflow-hidden px-0'>
@@ -206,19 +212,19 @@ function ProjectSectionStatusIcon({ sectionKey }: { sectionKey: ProjectBoardSect
 	switch (sectionKey) {
 		case 'completed':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-(--sf-color-project-task-status-done) text-white'>
+				<span className='flex size-4 shrink-0 items-center justify-center rounded-full bg-sf-success-surface-text text-white'>
 					<CheckIcon className='size-3' />
 				</span>
 			)
 		case 'archived':
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center text-(--sf-color-text-secondary)'>
+				<span className={entityBoardMutedIconClass}>
 					<ArchiveIcon className='size-3.5' />
 				</span>
 			)
 		default:
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center text-(--sf-color-info-soft-text)'>
+				<span className='flex size-4 shrink-0 items-center justify-center text-sf-info-soft-text'>
 					<PlayIcon className='size-3 fill-current' />
 				</span>
 			)

@@ -123,9 +123,7 @@ function SearchResultButton({
 			</div>
 			<div className='truncate text-[13px] font-medium text-foreground'>{title}</div>
 			{note?.trim() ? (
-				<div className='truncate text-[12px] text-sf-shell-text-tertiary'>
-					{toSnippet(note)}
-				</div>
+				<div className='truncate text-[12px] text-sf-shell-text-tertiary'>{toSnippet(note)}</div>
 			) : null}
 		</button>
 	)

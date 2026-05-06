@@ -16,6 +16,7 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
+import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import { BoxIcon, PlusIcon } from 'lucide-react'
 
 export function ProjectOverviewPage() {
@@ -130,8 +131,8 @@ function ProjectOverviewBreadcrumb() {
 		<Breadcrumb>
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
-					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-						<BoxIcon aria-hidden className='size-4 shrink-0 text-sf-text-tertiary' />
+					<BreadcrumbPage className={breadcrumbLeadClass}>
+						<BoxIcon aria-hidden className={breadcrumbLeadIconClass} />
 						项目总览
 					</BreadcrumbPage>
 				</BreadcrumbItem>

@@ -18,4 +18,5 @@ export const sidebarItemIconVariants = cva('shrink-0 text-sf-shell-text-secondar
 export const sidebarInlineBadgeClass =
 	'rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-sf-shell-text-secondary'
 
-export const sidebarHelperTextClass = 'px-2.5 py-2 text-[12px] leading-5 text-sf-shell-text-tertiary'
+export const sidebarHelperTextClass =
+	'px-2.5 py-2 text-[12px] leading-5 text-sf-shell-text-tertiary'

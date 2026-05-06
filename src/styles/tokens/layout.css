@@ -34,7 +34,11 @@
 	--sf-list-section-bg: var(--sf-surface-app);
 	--sf-list-row-hover: var(--sf-surface-hover);
 	--sf-list-row-selected: var(--sf-surface-active);
-	--sf-selection-surface: color-mix(in srgb, var(--sf-accent-soft) 90%, var(--sf-accent-primary) 10%);
+	--sf-selection-surface: color-mix(
+		in srgb,
+		var(--sf-accent-soft) 90%,
+		var(--sf-accent-primary) 10%
+	);
 	--sf-selection-surface-hover: color-mix(
 		in srgb,
 		var(--sf-accent-soft) 78%,

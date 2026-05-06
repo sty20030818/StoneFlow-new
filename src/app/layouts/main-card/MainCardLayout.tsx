@@ -4,6 +4,7 @@ import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
 import {
 	mainCardGhostActionClass,
+	mainCardInlineActionsClass,
 	mainCardSectionClass,
 	mainCardToolbarPillVariants,
 } from '@/shared/ui/patterns/main-card'
@@ -71,7 +72,7 @@ function MainCardHeader({ title, breadcrumb, action, className }: MainCardHeader
 					<h1 className='truncate text-sm font-semibold leading-5 text-foreground'>{title}</h1>
 				)}
 			</div>
-			{action ? <div className='flex shrink-0 items-center gap-2'>{action}</div> : null}
+			{action ? <div className={mainCardInlineActionsClass}>{action}</div> : null}
 		</header>
 	)
 }
@@ -109,7 +110,7 @@ function MainCardToolbar({
 					))}
 			</div>
 
-			<div className='flex shrink-0 items-center gap-2'>
+			<div className={mainCardInlineActionsClass}>
 				{filterAction ?? (
 					<MainCardToolbarIconButton
 						action={{ label: '筛选', icon: ListFilterIcon, onClick: () => undefined }}
@@ -140,16 +141,7 @@ function MainCardNoticeGroup({ children, className }: MainCardShellSlotProps) {
 }
 
 function MainCardSection({ children, className }: MainCardShellSlotProps) {
-	return (
-		<section
-			className={cn(
-				mainCardSectionClass,
-				className,
-			)}
-		>
-			{children}
-		</section>
-	)
+	return <section className={cn(mainCardSectionClass, className)}>{children}</section>
 }
 
 function MainCardEmpty({ children, className }: MainCardShellSlotProps) {

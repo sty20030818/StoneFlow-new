@@ -6,6 +6,11 @@ import type { ShellDrawerKind } from '@/app/layouts/shell/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/base/sheet'
+import {
+	shellDrawerCaptionClass,
+	shellDrawerEmptyStateClass,
+	shellDrawerItemLabelClass,
+} from '@/shared/ui/patterns/shell-drawer'
 
 type ShellDrawerProps = {
 	open: boolean
@@ -96,16 +101,14 @@ export function ShellDrawer({
 
 							{detail.sections.map((section) => (
 								<section className='space-y-2' key={section.title}>
-									<p className='text-[11px] font-medium tracking-[0.06em] text-sf-shell-text-tertiary uppercase'>
-										{section.title}
-									</p>
+									<p className={shellDrawerCaptionClass}>{section.title}</p>
 									<div className='space-y-1.5'>
 										{section.items.map((item) => (
 											<div
 												className='rounded-lg border border-sf-border-subtle bg-muted/45 px-3 py-2.5'
 												key={`${section.title}-${item.label}`}
 											>
-												<p className='text-[11px] text-sf-shell-text-tertiary'>{item.label}</p>
+												<p className={shellDrawerItemLabelClass}>{item.label}</p>
 												<p className='mt-1 text-[12px] leading-5 text-foreground'>{item.value}</p>
 											</div>
 										))}
@@ -114,9 +117,7 @@ export function ShellDrawer({
 							))}
 						</div>
 					) : (
-						<div className='rounded-lg border border-sf-border-subtle bg-muted/45 px-3 py-2.5 text-[12px] text-sf-shell-text-tertiary'>
-							当前没有可展示的详情数据。
-						</div>
+						<div className={shellDrawerEmptyStateClass}>当前没有可展示的详情数据。</div>
 					)}
 				</div>
 			</SheetContent>

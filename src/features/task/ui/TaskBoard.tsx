@@ -41,6 +41,13 @@ import {
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
 import { ListTodoIcon, PlusIcon } from 'lucide-react'
+import {
+	entityBoardCompactBadgeClass,
+	entityBoardSectionActionButtonClass,
+	entityBoardSectionHeadingClass,
+	entityBoardSectionCountBadgeClass,
+	entityBoardSectionToggleClass,
+} from '@/shared/ui/patterns/entity-board'
 
 const TASK_ROW_DONE_CLASS = 'text-muted-foreground'
 
@@ -263,7 +270,7 @@ function TaskCustomSection({
 				trailing={
 					<Button
 						aria-label={`在 ${label} 中创建任务`}
-						className='hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
+						className={entityBoardSectionActionButtonClass}
 						onClick={(event) => {
 							event.preventDefault()
 							event.stopPropagation()
@@ -359,20 +366,20 @@ function TaskStatusSection({
 			<div className={CANONICAL_BOARD_SECTION_HEADER_CLASS}>
 				<CollapsibleTrigger
 					aria-label={`切换 ${label} 分区折叠状态`}
-					className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-sf-icon-subtle outline-none transition-none hover:bg-transparent hover:text-sf-icon-subtle focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
+					className={entityBoardSectionToggleClass}
 				>
 					<CanonicalBoard.Chevron data-chevron />
 				</CollapsibleTrigger>
-				<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-foreground'>
+				<div className={entityBoardSectionHeadingClass}>
 					<TaskStatusIndicator status={status} />
 					<span className='truncate'>{label}</span>
-					<Badge className='ml-1 border-transparent bg-transparent shadow-none' variant='secondary'>
+					<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
 						{tasks.length}
 					</Badge>
 				</div>
 				<Button
 					aria-label={`在 ${label} 中创建任务`}
-					className='hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
+					className={entityBoardSectionActionButtonClass}
 					onClick={(event) => {
 						event.preventDefault()
 						event.stopPropagation()
@@ -531,7 +538,7 @@ function TaskBoardRow({
 									{task.title}
 								</p>
 								{isProjectNameVisible && task.projectName ? (
-									<Badge className='h-5 rounded-full px-2 text-[11px]' variant='outline'>
+									<Badge className={entityBoardCompactBadgeClass} variant='outline'>
 										{task.projectName}
 									</Badge>
 								) : null}

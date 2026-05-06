@@ -35,6 +35,19 @@ import {
 	SelectValue,
 } from '@/shared/ui/base/select'
 import { Switch } from '@/shared/ui/base/switch'
+import {
+	formFieldHintClass,
+	formFieldLabelVariants,
+	formFieldStackClass,
+} from '@/shared/ui/patterns/form-field'
+import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
+import {
+	settingsPanelDescriptionClass,
+	settingsPanelHeaderWrapClass,
+	settingsPanelSectionClass,
+	settingsPanelTitleClass,
+} from '@/shared/ui/patterns/settings-panel'
+import { statusNoticeCompactTextClass } from '@/shared/ui/patterns/status-notice'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Settings2Icon } from 'lucide-react'
 
@@ -227,11 +240,8 @@ export function SettingsPage() {
 					<Breadcrumb>
 						<BreadcrumbList className='text-sm font-semibold leading-5'>
 							<BreadcrumbItem>
-								<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-									<Settings2Icon
-										aria-hidden
-										className='size-4 shrink-0 text-(--sf-color-text-tertiary)'
-									/>
+								<BreadcrumbPage className={breadcrumbLeadClass}>
+									<Settings2Icon aria-hidden className={breadcrumbLeadIconClass} />
 									设置
 								</BreadcrumbPage>
 							</BreadcrumbItem>
@@ -302,7 +312,7 @@ export function SettingsPage() {
 							</div>
 							{sectionErrors.mainItems ? (
 								<StatusNotice
-									className='mt-4 text-[12px] leading-5'
+									className={`mt-4 ${statusNoticeCompactTextClass}`}
 									role='alert'
 									size='sm'
 									variant='danger'
@@ -343,7 +353,7 @@ export function SettingsPage() {
 							</div>
 							{sectionErrors.projectSection ? (
 								<StatusNotice
-									className='mt-4 text-[12px] leading-5'
+									className={`mt-4 ${statusNoticeCompactTextClass}`}
 									role='alert'
 									size='sm'
 									variant='danger'
@@ -358,8 +368,8 @@ export function SettingsPage() {
 							title='Sidebar Width'
 						>
 							<div className='flex flex-col gap-3 md:max-w-sm'>
-								<label className='flex flex-col gap-1.5' htmlFor='sidebar-width'>
-									<span className='text-[12px] font-medium text-foreground'>宽度（px）</span>
+								<label className={formFieldStackClass} htmlFor='sidebar-width'>
+									<span className={formFieldLabelVariants()}>宽度（px）</span>
 									<Input
 										className='h-10'
 										disabled={pendingSections.sidebarWidth}
@@ -372,13 +382,11 @@ export function SettingsPage() {
 										value={sidebarWidthDraft}
 									/>
 								</label>
-								<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
-									当前保存值：{sidebarSettings.width}px
-								</p>
+								<p className={formFieldHintClass}>当前保存值：{sidebarSettings.width}px</p>
 							</div>
 							{sectionErrors.sidebarWidth ? (
 								<StatusNotice
-									className='mt-4 text-[12px] leading-5'
+									className={`mt-4 ${statusNoticeCompactTextClass}`}
 									role='alert'
 									size='sm'
 									variant='danger'
@@ -418,8 +426,8 @@ export function SettingsPage() {
 						/>
 					) : (
 						<div className='flex flex-col gap-3 md:max-w-sm'>
-							<label className='flex flex-col gap-1.5'>
-								<span className='text-[12px] font-medium text-foreground'>选择默认 Space</span>
+							<label className={formFieldStackClass}>
+								<span className={formFieldLabelVariants()}>选择默认 Space</span>
 								<Select
 									disabled={
 										pendingSections.defaultSpace ||
@@ -444,14 +452,14 @@ export function SettingsPage() {
 									</SelectContent>
 								</Select>
 							</label>
-							<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
+							<p className={formFieldHintClass}>
 								当前默认值：{spaces.find((space) => space.id === defaultSpaceId)?.name ?? '未设置'}
 							</p>
 						</div>
 					)}
 					{sectionErrors.defaultSpace ? (
 						<StatusNotice
-							className='mt-4 text-[12px] leading-5'
+							className={`mt-4 ${statusNoticeCompactTextClass}`}
 							role='alert'
 							size='sm'
 							variant='danger'
@@ -466,12 +474,10 @@ export function SettingsPage() {
 					title='Switch 调试'
 				>
 					<div className='grid gap-3 md:grid-cols-2'>
-						<div className='flex items-center justify-between rounded-xl border border-(--sf-color-border-subtle) bg-muted/25 p-3'>
+						<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-3'>
 							<div className='min-w-0'>
 								<p className='text-sm font-medium text-foreground'>默认尺寸</p>
-								<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
-									当前值：{switchDemoDefault ? '开' : '关'}
-								</p>
+								<p className={formFieldHintClass}>当前值：{switchDemoDefault ? '开' : '关'}</p>
 							</div>
 							<Switch
 								checked={switchDemoDefault}
@@ -479,12 +485,10 @@ export function SettingsPage() {
 							/>
 						</div>
 
-						<div className='flex items-center justify-between rounded-xl border border-(--sf-color-border-subtle) bg-muted/25 p-3'>
+						<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-3'>
 							<div className='min-w-0'>
 								<p className='text-sm font-medium text-foreground'>小号尺寸</p>
-								<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>
-									当前值：{switchDemoSmall ? '开' : '关'}
-								</p>
+								<p className={formFieldHintClass}>当前值：{switchDemoSmall ? '开' : '关'}</p>
 							</div>
 							<Switch
 								checked={switchDemoSmall}
@@ -509,10 +513,10 @@ function SettingsSection({
 	children: React.ReactNode
 }) {
 	return (
-		<section className='rounded-2xl border border-(--sf-color-border-subtle) bg-card p-4 shadow-[0_8px_30px_rgba(15,23,42,0.04)]'>
-			<div className='mb-4 flex flex-col gap-1'>
-				<h2 className='text-sm font-semibold text-foreground'>{title}</h2>
-				<p className='text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>{description}</p>
+		<section className={settingsPanelSectionClass}>
+			<div className={settingsPanelHeaderWrapClass}>
+				<h2 className={settingsPanelTitleClass}>{title}</h2>
+				<p className={settingsPanelDescriptionClass}>{description}</p>
 			</div>
 			{children}
 		</section>
@@ -537,14 +541,14 @@ function SettingCheckboxRow({
 	return (
 		<label
 			className={cn(
-				'flex items-start gap-3 rounded-xl border border-(--sf-color-border-subtle) bg-muted/25 p-3 transition-colors',
+				'flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-muted/25 p-3 transition-colors',
 				disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-muted/45',
 			)}
 			htmlFor={inputId}
 		>
 			<input
 				checked={checked}
-				className='mt-0.5 size-4 rounded border-(--sf-color-border-strong)'
+				className='mt-0.5 size-4 rounded border-sf-border-strong'
 				disabled={disabled}
 				id={inputId}
 				onChange={(event) => onChange(event.currentTarget.checked)}
@@ -552,7 +556,7 @@ function SettingCheckboxRow({
 			/>
 			<div className='min-w-0'>
 				<p className='text-sm font-medium text-foreground'>{label}</p>
-				<p className='mt-1 text-[12px] leading-5 text-(--sf-color-shell-tertiary)'>{description}</p>
+				<p className={formFieldHintClass}>{description}</p>
 			</div>
 		</label>
 	)

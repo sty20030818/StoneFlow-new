@@ -48,7 +48,12 @@ export function ProjectOverviewRow({
 								{project.description}
 							</p>
 						) : null}
-						<div className={cn('flex flex-wrap items-center gap-2 text-[12px]', TASK_ROW_META_TEXT_CLASS)}>
+						<div
+							className={cn(
+								'flex flex-wrap items-center gap-2 text-[12px]',
+								TASK_ROW_META_TEXT_CLASS,
+							)}
+						>
 							<Badge variant='secondary'>{project.activeTaskCount} 个活跃</Badge>
 							<Badge variant='outline'>{project.taskCount} 个任务</Badge>
 							{project.dueAt ? <Badge variant='outline'>截止 {project.dueAt}</Badge> : null}

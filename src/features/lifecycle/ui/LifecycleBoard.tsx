@@ -8,6 +8,15 @@ import {
 	type CanonicalBoardSection,
 } from '@/app/layouts/entity-scene/CanonicalBoard'
 import { TaskSelectionCheckbox } from '@/features/task/ui/TaskMetadataSelect'
+import {
+	entityBoardMutedIconClass,
+	entityBoardRowActionsClass,
+	entityBoardSectionCountBadgeClass,
+	entityBoardSectionHeadingClass,
+	entityBoardSectionRightSpacerClass,
+	entityBoardSectionToggleClass,
+	entityBoardShellSecondaryIconClass,
+} from '@/shared/ui/patterns/entity-board'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import { cn } from '@/shared/lib/utils'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
@@ -142,23 +151,23 @@ function LifecycleBoardSectionBlock({
 			<div className={CANONICAL_BOARD_SECTION_HEADER_CLASS}>
 				<CollapsibleTrigger
 					aria-label={`切换 ${label} 分区折叠状态`}
-					className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-(--sf-color-icon-subtle) outline-none transition-none hover:bg-transparent hover:text-(--sf-color-icon-subtle) focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
+					className={entityBoardSectionToggleClass}
 				>
 					<CanonicalBoard.Chevron data-chevron />
 				</CollapsibleTrigger>
-				<div className='flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-foreground'>
+				<div className={entityBoardSectionHeadingClass}>
 					<LifecycleModeIcon mode={mode} />
 					<span className='truncate'>{label}</span>
-					<Badge className='ml-1 border-transparent bg-transparent shadow-none' variant='secondary'>
+					<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
 						{items.length}
 					</Badge>
 				</div>
 				{selectedCount > 0 ? (
-					<span className={cn('pr-1', CANONICAL_BOARD_META_TEXT_CLASS)}>
+					<span className={cn(entityBoardSectionRightSpacerClass, CANONICAL_BOARD_META_TEXT_CLASS)}>
 						已选 {selectedCount} 项
 					</span>
 				) : (
-					<span className='pr-1' />
+					<span className={entityBoardSectionRightSpacerClass} />
 				)}
 			</div>
 
@@ -253,7 +262,7 @@ function LifecycleBoardRow({
 					/>
 				</CanonicalBoard.RowLead>
 
-				<span className='flex size-4 shrink-0 items-center justify-center text-(--sf-color-shell-secondary)'>
+				<span className={entityBoardShellSecondaryIconClass}>
 					<Icon className='size-4' />
 				</span>
 
@@ -267,7 +276,7 @@ function LifecycleBoardRow({
 			</div>
 
 			<CanonicalBoard.RowActions
-				className='flex shrink-0 items-center gap-2'
+				className={entityBoardRowActionsClass}
 				onClick={(event) => event.stopPropagation()}
 				onKeyDown={(event) => event.stopPropagation()}
 			>
@@ -337,7 +346,7 @@ function formatLifecycleDate(value: string | null) {
 function LifecycleModeIcon({ mode }: { mode: LifecycleMode }) {
 	const Icon = mode === 'archive' ? ArchiveIcon : TrashIcon
 	return (
-		<span className='flex size-4 shrink-0 items-center justify-center text-(--sf-color-text-secondary)'>
+		<span className={entityBoardMutedIconClass}>
 			<Icon className='size-3.5' />
 		</span>
 	)

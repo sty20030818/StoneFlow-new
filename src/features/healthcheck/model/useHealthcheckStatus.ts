@@ -59,7 +59,7 @@ function resolveReadyState(payload: HealthcheckPayload): HealthcheckStatus {
 			kind: 'ready',
 			label: '本地数据库已连接',
 			detail,
-			indicatorClassName: 'bg-(--sf-color-shell-online)',
+			indicatorClassName: 'bg-sf-shell-online',
 			title: payload.databasePath,
 		}
 	}

@@ -26,6 +26,7 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
+import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import { Layers2Icon, PlusIcon } from 'lucide-react'
 
 import { createPendingBulkAction } from '@/app/layouts/entity-scene/TaskBoardAdapter'
@@ -327,8 +328,8 @@ function ViewsBreadcrumb() {
 		<Breadcrumb>
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
-					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-						<Layers2Icon aria-hidden className='size-4 shrink-0 text-sf-text-tertiary' />
+					<BreadcrumbPage className={breadcrumbLeadClass}>
+						<Layers2Icon aria-hidden className={breadcrumbLeadIconClass} />
 						视图
 					</BreadcrumbPage>
 				</BreadcrumbItem>

@@ -1,5 +1,6 @@
 import type { LifecycleEntry } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
+import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
 
 import { TaskBoard } from '@/features/task/ui/TaskBoard'
 
@@ -52,7 +53,7 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 export function createPendingBulkAction(label: string) {
 	return (
 		<Button
-			className='border-border bg-white text-sf-sidebar-action-foreground opacity-70'
+			className={`${TASK_BULK_ACTION_BUTTON_CLASS} opacity-70`}
 			disabled
 			size='sm'
 			variant='outline'

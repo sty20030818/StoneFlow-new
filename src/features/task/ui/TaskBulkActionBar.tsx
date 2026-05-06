@@ -4,6 +4,7 @@ import { XIcon } from 'lucide-react'
 
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
+import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
 
 type TaskBulkActionBarProps = {
 	selectedCount: number
@@ -43,7 +44,7 @@ export function TaskBulkActionBar({
 					</span>
 					<Button
 						aria-label='清空已选任务'
-						className='border-border bg-white text-sf-sidebar-action-foreground hover:border-sf-border-strong hover:bg-sf-bg-surface-muted hover:text-sf-sidebar-action-foreground'
+						className={TASK_BULK_ACTION_BUTTON_CLASS}
 						onClick={onClear}
 						size='icon-sm'
 						type='button'

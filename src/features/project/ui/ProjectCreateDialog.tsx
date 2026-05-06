@@ -6,6 +6,13 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/shared/ui/base/dialog'
+import {
+	dialogShellBodyClass,
+	dialogShellContentVariants,
+	dialogShellDescriptionClass,
+	dialogShellHeaderClass,
+	dialogShellTitleClass,
+} from '@/shared/ui/patterns/dialog-shell'
 
 type ProjectCreateDialogProps = {
 	open: boolean
@@ -25,17 +32,15 @@ export function ProjectCreateDialog({
 }: ProjectCreateDialogProps) {
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
-			<DialogContent className='max-w-[calc(100%-1.5rem)] gap-0 border-(--sf-color-border-secondary) bg-popover p-0 shadow-(--sf-shadow-float) sm:max-w-xl'>
-				<DialogHeader className='gap-1.5 border-b border-(--sf-color-divider) px-6 py-4 pr-14'>
-					<DialogTitle className='text-[1.0625rem] font-semibold tracking-[-0.02em] text-foreground'>
-						新建项目
-					</DialogTitle>
-					<DialogDescription className='max-w-120 text-[13px] leading-5 text-muted-foreground'>
+			<DialogContent className={dialogShellContentVariants({ size: 'xl' })}>
+				<DialogHeader className={dialogShellHeaderClass}>
+					<DialogTitle className={dialogShellTitleClass}>新建项目</DialogTitle>
+					<DialogDescription className={`max-w-120 ${dialogShellDescriptionClass}`}>
 						在目标 Space 中创建一个新的项目，后续任务可以继续归类到这里。
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className='px-6 py-5'>
+				<div className={dialogShellBodyClass}>
 					<ProjectCreateModalContent
 						currentSpaceLabel={currentSpaceLabel}
 						onClose={onClose}

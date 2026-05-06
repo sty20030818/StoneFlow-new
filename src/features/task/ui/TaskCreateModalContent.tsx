@@ -423,10 +423,7 @@ function ProjectMetaAction({
 						<InboxIcon className='size-4 text-sf-icon-secondary' />
 						<span className='min-w-0 flex-1 truncate'>收件箱</span>
 						{placement === 'inbox' ? (
-							<CheckIcon
-								aria-hidden
-								className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
-							/>
+							<CheckIcon aria-hidden className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary' />
 						) : null}
 					</DropdownMenuItem>
 					<DropdownMenuItem
@@ -436,10 +433,7 @@ function ProjectMetaAction({
 						<FileIcon className='size-4 text-sf-icon-secondary' />
 						<span className='min-w-0 flex-1 truncate'>独立事项</span>
 						{placement === 'noProject' ? (
-							<CheckIcon
-								aria-hidden
-								className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
-							/>
+							<CheckIcon aria-hidden className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary' />
 						) : null}
 					</DropdownMenuItem>
 					{projects.map((project) => (

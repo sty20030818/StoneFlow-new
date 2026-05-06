@@ -8,6 +8,11 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
+import {
+	breadcrumbCaptionClass,
+	breadcrumbLeadClass,
+	breadcrumbLeadIconClass,
+} from '@/shared/ui/patterns/breadcrumb'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import {
@@ -172,7 +177,7 @@ function InboxPlacementActions({
 			>
 				设为独立事项
 			</Button>
-			<span className='inline-flex items-center gap-1 text-[11px] text-(--sf-color-text-tertiary)'>
+			<span className={breadcrumbCaptionClass}>
 				<InboxIcon className='size-3' />
 				离开 Inbox
 			</span>
@@ -185,8 +190,8 @@ function InboxBreadcrumb() {
 		<Breadcrumb>
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
-					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-						<InboxIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+					<BreadcrumbPage className={breadcrumbLeadClass}>
+						<InboxIcon aria-hidden className={breadcrumbLeadIconClass} />
 						收件箱
 					</BreadcrumbPage>
 				</BreadcrumbItem>

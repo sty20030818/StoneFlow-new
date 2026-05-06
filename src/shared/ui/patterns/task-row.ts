@@ -15,6 +15,8 @@ export const TASK_ROW_SECTION_HEADER_CLASS =
 export const TASK_ROW_META_TEXT_CLASS = 'text-xs font-medium text-sf-text-tertiary'
 export const TASK_ROW_PROJECT_LEAD_CLASS =
 	'inline-flex size-8 items-center justify-center rounded-xl bg-sf-surface-panel-muted text-sf-shell-text-secondary'
+export const TASK_BULK_ACTION_BUTTON_CLASS =
+	'border-border bg-white text-sf-sidebar-action-foreground hover:border-sf-border-strong hover:bg-sf-bg-surface-muted hover:text-sf-sidebar-action-foreground'
 
 export const taskRowVariants = cva(TASK_ROW_BASE_CLASS, {
 	variants: {

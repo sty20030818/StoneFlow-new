@@ -31,6 +31,13 @@ import {
 	SelectValue,
 } from '@/shared/ui/base/select'
 import { Textarea } from '@/shared/ui/base/textarea'
+import {
+	dialogShellContentVariants,
+	dialogShellDescriptionClass,
+	dialogShellHeaderClass,
+	dialogShellTitleClass,
+} from '@/shared/ui/patterns/dialog-shell'
+import { formFieldGridClass, formFieldLabelVariants } from '@/shared/ui/patterns/form-field'
 
 const STATUS_OPTIONS: Array<{ key: TaskStatus; label: string }> = [
 	{ key: 'todo', label: '待办' },
@@ -228,28 +235,22 @@ export function ViewEditorDialog({
 
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
-			<DialogContent className='max-w-3xl gap-0 border-(--sf-color-border-secondary) bg-popover p-0 shadow-(--sf-shadow-float)'>
-				<DialogHeader className='gap-1.5 border-b border-(--sf-color-divider) px-6 py-4 pr-14'>
-					<DialogTitle className='text-[1.0625rem] font-semibold tracking-[-0.02em] text-foreground'>
-						{title}
-					</DialogTitle>
-					<DialogDescription className='max-w-140 text-[13px] leading-5 text-muted-foreground'>
+			<DialogContent className={dialogShellContentVariants({ size: 'wide' })}>
+				<DialogHeader className={dialogShellHeaderClass}>
+					<DialogTitle className={dialogShellTitleClass}>{title}</DialogTitle>
+					<DialogDescription className={`max-w-140 ${dialogShellDescriptionClass}`}>
 						自定义视图只保存筛选、排序与分组规则，不会拥有任务本身。
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className='grid gap-5 px-6 py-5'>
 					<section className='grid gap-3'>
-						<div className='grid gap-1.5'>
-							<label className='text-[12px] font-medium text-(--sf-color-text-secondary)'>
-								名称
-							</label>
+						<div className={formFieldGridClass}>
+							<label className={formFieldLabelVariants({ tone: 'muted' })}>名称</label>
 							<Input onChange={(event) => setName(event.target.value)} value={name} />
 						</div>
-						<div className='grid gap-1.5'>
-							<label className='text-[12px] font-medium text-(--sf-color-text-secondary)'>
-								说明
-							</label>
+						<div className={formFieldGridClass}>
+							<label className={formFieldLabelVariants({ tone: 'muted' })}>说明</label>
 							<Textarea
 								onChange={(event) => setDescription(event.target.value)}
 								placeholder='给这个视图留一句简短说明'
@@ -259,7 +260,7 @@ export function ViewEditorDialog({
 					</section>
 
 					<section className='grid gap-2'>
-						<div className='text-[12px] font-medium text-(--sf-color-text-secondary)'>状态筛选</div>
+						<div className={formFieldLabelVariants({ tone: 'muted' })}>状态筛选</div>
 						<div className='flex flex-wrap gap-2'>
 							{STATUS_OPTIONS.map((status) => (
 								<Button
@@ -394,7 +395,7 @@ export function ViewEditorDialog({
 					</section>
 				</div>
 
-				<DialogFooter className='border-t border-(--sf-color-divider) bg-muted/60 px-6 py-4'>
+				<DialogFooter className='border-t border-sf-divider bg-muted/60 px-6 py-4'>
 					<Button onClick={onClose} type='button' variant='outline'>
 						取消
 					</Button>
@@ -425,8 +426,8 @@ function DialogSelect({
 	disabled?: boolean
 }) {
 	return (
-		<div className='grid gap-1.5'>
-			<label className='text-[12px] font-medium text-(--sf-color-text-secondary)'>{label}</label>
+		<div className={formFieldGridClass}>
+			<label className={formFieldLabelVariants({ tone: 'muted' })}>{label}</label>
 			<Select disabled={disabled} onValueChange={onValueChange} value={value}>
 				<SelectTrigger className='w-full'>
 					<SelectValue />

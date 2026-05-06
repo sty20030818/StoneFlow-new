@@ -11,6 +11,7 @@ import { useTaskListController } from '@/features/task/model/useTaskListControll
 import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
+import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
@@ -18,6 +19,7 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
+import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import type { TaskStatus } from '@/shared/types'
 import { CommandIcon, ListTodoIcon, PlusIcon } from 'lucide-react'
 
@@ -111,11 +113,7 @@ export function AllTasksPage() {
 			bulkActions={
 				<TaskBulkActionBar
 					action={
-						<Button
-							className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
-							size='sm'
-							variant='outline'
-						>
+						<Button className={TASK_BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
 							<CommandIcon className='size-3.5' />
 							批量操作
 						</Button>
@@ -159,8 +157,8 @@ function AllTasksBreadcrumb() {
 		<Breadcrumb>
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
-					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-						<ListTodoIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+					<BreadcrumbPage className={breadcrumbLeadClass}>
+						<ListTodoIcon aria-hidden className={breadcrumbLeadIconClass} />
 						全部任务
 					</BreadcrumbPage>
 				</BreadcrumbItem>

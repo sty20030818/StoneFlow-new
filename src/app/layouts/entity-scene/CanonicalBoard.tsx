@@ -2,6 +2,11 @@ import type { ComponentProps, ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 import {
+	entityBoardCompactBadgeClass,
+	entityBoardRowActionsClass,
+	entityBoardSectionCountBadgeClass,
+} from '@/shared/ui/patterns/entity-board'
+import {
 	TASK_ROW_ACTIVE_CLASS,
 	TASK_ROW_BASE_CLASS,
 	TASK_ROW_IDLE_CLASS,
@@ -83,7 +88,10 @@ export function CanonicalBoardSectionHeader({
 					{title}
 				</span>
 				{typeof count === 'number' ? (
-					<Badge className='h-5 rounded-full px-2 text-[11px]' variant='secondary'>
+					<Badge
+						className={cn(entityBoardSectionCountBadgeClass, entityBoardCompactBadgeClass)}
+						variant='secondary'
+					>
 						{count}
 					</Badge>
 				) : null}
@@ -173,7 +181,7 @@ export function CanonicalBoardMeta({
 
 export function CanonicalBoardActions({ children, className, ...props }: ComponentProps<'div'>) {
 	return (
-		<div {...props} className={cn('flex shrink-0 items-center gap-2', className)}>
+		<div {...props} className={cn(entityBoardRowActionsClass, className)}>
 			{children}
 		</div>
 	)
@@ -185,10 +193,7 @@ export function CanonicalBoardChevron({ className, ...props }: ComponentProps<'s
 			{...props}
 			className={cn('inline-flex size-3 shrink-0 items-center justify-center', className)}
 		>
-			<TriangleIcon
-				className='size-1.5 rotate-90 text-sf-icon-subtle'
-				fill='currentColor'
-			/>
+			<TriangleIcon className='size-1.5 rotate-90 text-sf-icon-subtle' fill='currentColor' />
 		</span>
 	)
 }

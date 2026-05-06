@@ -7,13 +7,10 @@ import { cn } from '@/shared/lib/utils'
 const statusNoticeVariants = cva('rounded-lg border', {
 	variants: {
 		variant: {
-			neutral: 'border-(--sf-color-border-subtle) bg-muted/60 text-(--sf-color-shell-tertiary)',
-			success:
-				'border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) text-(--sf-color-success-soft-text)',
-			warning:
-				'border-(--sf-color-warning-soft-border) bg-(--sf-color-warning-soft) text-(--sf-color-warning-soft-text)',
-			danger:
-				'border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) text-(--sf-color-danger-soft-text)',
+			neutral: 'border-sf-border-subtle bg-muted/60 text-sf-shell-tertiary',
+			success: 'border-sf-success-soft-border bg-sf-success-soft text-sf-success-soft-text',
+			warning: 'border-sf-warning-soft-border bg-sf-warning-soft text-sf-warning-soft-text',
+			danger: 'border-sf-danger-soft-border bg-sf-danger-soft text-sf-danger-soft-text',
 		},
 		size: {
 			default: 'px-4 py-4',

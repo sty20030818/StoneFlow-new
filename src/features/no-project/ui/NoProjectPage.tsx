@@ -17,6 +17,7 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
+import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import { CommandIcon, Layers3Icon, PlusIcon, TargetIcon } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
 
@@ -149,8 +150,8 @@ function NoProjectBreadcrumb() {
 		<Breadcrumb>
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
-					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-						<TargetIcon aria-hidden className='size-4 shrink-0 text-sf-text-tertiary' />
+					<BreadcrumbPage className={breadcrumbLeadClass}>
+						<TargetIcon aria-hidden className={breadcrumbLeadIconClass} />
 						独立事项
 					</BreadcrumbPage>
 				</BreadcrumbItem>

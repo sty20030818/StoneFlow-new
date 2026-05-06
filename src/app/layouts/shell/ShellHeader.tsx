@@ -38,6 +38,10 @@ import {
 import { Kbd } from '@/shared/ui/base/kbd'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
+import {
+	shellChromeInlineGroupClass,
+	shellChromeWindowControlClass,
+} from '@/shared/ui/patterns/shell-chrome'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
 	ChevronLeftIcon,
@@ -390,7 +394,7 @@ export function ShellHeader({
 						data-slot='shell-header-right'
 						data-tauri-drag-region
 					>
-						<div className='flex items-center gap-1.5' data-tauri-drag-region>
+						<div className={shellChromeInlineGroupClass} data-tauri-drag-region>
 							<Button
 								className='border-border bg-card px-3 text-[12px] font-medium text-foreground shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden'
 								onClick={onOpenTaskCreateDialog}
@@ -451,7 +455,7 @@ export function ShellHeader({
 							<div className='flex h-full items-center gap-1 p-1' data-tauri-drag-region>
 								<Button
 									aria-label='最小化窗口'
-									className='h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-sf-shell-text-secondary hover:bg-sf-shell-hover-strong hover:text-foreground focus-visible:ring-0'
+									className={shellChromeWindowControlClass}
 									onClick={() => void handleMinimize()}
 									variant='ghost'
 								>
@@ -459,7 +463,7 @@ export function ShellHeader({
 								</Button>
 								<Button
 									aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
-									className='h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-sf-shell-text-secondary hover:bg-sf-shell-hover-strong hover:text-foreground focus-visible:ring-0'
+									className={shellChromeWindowControlClass}
 									onClick={() => void handleToggleMaximize()}
 									variant='ghost'
 								>
@@ -467,7 +471,7 @@ export function ShellHeader({
 								</Button>
 								<Button
 									aria-label='关闭窗口'
-									className='h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-sf-shell-text-secondary hover:bg-destructive hover:text-white focus-visible:ring-0'
+									className={`${shellChromeWindowControlClass} hover:bg-destructive hover:text-white`}
 									onClick={() => void handleClose()}
 									variant='ghost'
 								>

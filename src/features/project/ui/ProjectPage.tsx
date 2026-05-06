@@ -22,6 +22,10 @@ import {
 	BreadcrumbSeparator,
 } from '@/shared/ui/base/breadcrumb'
 import {
+	breadcrumbLeadForegroundClass,
+	breadcrumbLeadIconClass,
+} from '@/shared/ui/patterns/breadcrumb'
+import {
 	Empty,
 	EmptyContent,
 	EmptyDescription,
@@ -31,6 +35,7 @@ import {
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
 import { BoxIcon, FolderIcon } from 'lucide-react'
+import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
 
 type ProjectTaskFilter = 'all' | TaskStatus
 
@@ -171,11 +176,7 @@ export function ProjectPage() {
 				project ? (
 					<TaskBulkActionBar
 						action={
-							<Button
-								className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
-								size='sm'
-								variant='outline'
-							>
+							<Button className={TASK_BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
 								<CommandIcon className='size-3.5' />
 								批量操作
 							</Button>
@@ -260,16 +261,16 @@ export function ProjectPage() {
 function ProjectBreadcrumb({ projectName }: { projectName: string }) {
 	return (
 		<Breadcrumb>
-			<BreadcrumbList className='text-sm font-semibold leading-5'>
+			<BreadcrumbList className='text-sm leading-5'>
 				<BreadcrumbItem>
-					<span className='inline-flex items-center gap-1.5 text-foreground'>
-						<BoxIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+					<span className={breadcrumbLeadForegroundClass}>
+						<BoxIcon aria-hidden className={breadcrumbLeadIconClass} />
 						项目总览
 					</span>
 				</BreadcrumbItem>
 				<BreadcrumbSeparator />
 				<BreadcrumbItem className='min-w-0'>
-					<BreadcrumbPage className='truncate'>{projectName}</BreadcrumbPage>
+					<BreadcrumbPage className='truncate font-semibold'>{projectName}</BreadcrumbPage>
 				</BreadcrumbItem>
 			</BreadcrumbList>
 		</Breadcrumb>

@@ -63,6 +63,11 @@ import {
 	sidebarItemIconVariants,
 } from '@/shared/ui/patterns/sidebar-item'
 import {
+	shellChromeIconSecondaryClass,
+	shellChromeIconSubtleClass,
+	shellChromeInlineGroupClass,
+} from '@/shared/ui/patterns/shell-chrome'
+import {
 	CheckIcon,
 	ChevronsUpDownIcon,
 	ExternalLinkIcon,
@@ -235,7 +240,7 @@ export function ShellSidebar({
 			<ContextMenuTrigger asChild onContextMenu={handleSidebarContextMenu}>
 				<Sidebar collapsible='icon'>
 					<SidebarHeader className='px-3 pb-4 pt-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
-						<div className='flex items-center gap-1.5'>
+						<div className={shellChromeInlineGroupClass}>
 							<SidebarMenu className='flex-1'>
 								<SidebarMenuItem>
 									<DropdownMenu>
@@ -249,7 +254,9 @@ export function ShellSidebar({
 												<span className='min-w-0 flex-1 truncate text-left font-semibold'>
 													{currentScopeLabel}
 												</span>
-												<ChevronsUpDownIcon className='shrink-0 text-sf-icon-subtle group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden' />
+												<ChevronsUpDownIcon
+													className={`${shellChromeIconSubtleClass} group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden`}
+												/>
 											</SidebarMenuButton>
 										</DropdownMenuTrigger>
 										<DropdownMenuContent
@@ -265,7 +272,9 @@ export function ShellSidebar({
 												>
 													<span className='text-sf-shell-text-secondary'>全部 Spaces</span>
 													{currentScope.type === 'all' ? (
-														<CheckIcon className='ml-auto size-3.5 text-sf-icon-secondary' />
+														<CheckIcon
+															className={`ml-auto size-3.5 ${shellChromeIconSecondaryClass}`}
+														/>
 													) : null}
 												</DropdownMenuItem>
 												{spaces.map((space) => {
@@ -286,13 +295,13 @@ export function ShellSidebar({
 															<div className='flex min-w-0 items-center gap-2'>
 																<span className='truncate'>{space.name}</span>
 																{space.isDefault ? (
-																	<span className={sidebarInlineBadgeClass}>
-																		默认
-																	</span>
+																	<span className={sidebarInlineBadgeClass}>默认</span>
 																) : null}
 															</div>
 															{isActive ? (
-																<CheckIcon className='ml-auto size-3.5 text-sf-icon-secondary' />
+																<CheckIcon
+																	className={`ml-auto size-3.5 ${shellChromeIconSecondaryClass}`}
+																/>
 															) : null}
 														</DropdownMenuItem>
 													)
@@ -307,7 +316,7 @@ export function ShellSidebar({
 														setEditorOpen(true)
 													}}
 												>
-													<PlusIcon className='shrink-0 text-sf-icon-secondary' />
+													<PlusIcon className={shellChromeIconSecondaryClass} />
 													<span>新建 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
@@ -318,7 +327,7 @@ export function ShellSidebar({
 														setEditorOpen(true)
 													}}
 												>
-													<FolderIcon className='shrink-0 text-sf-icon-secondary' />
+													<FolderIcon className={shellChromeIconSecondaryClass} />
 													<span>编辑当前 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
@@ -333,7 +342,7 @@ export function ShellSidebar({
 														})
 													}}
 												>
-													<CheckIcon className='shrink-0 text-sf-icon-secondary' />
+													<CheckIcon className={shellChromeIconSecondaryClass} />
 													<span>设为默认 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
@@ -354,7 +363,7 @@ export function ShellSidebar({
 														})
 													}}
 												>
-													<ExternalLinkIcon className='shrink-0 text-sf-icon-secondary' />
+													<ExternalLinkIcon className={shellChromeIconSecondaryClass} />
 													<span>归档当前 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
@@ -543,13 +552,13 @@ function NoProjectSidebarMenuItem({
 	const isActive = !!useMatch({ end: true, path: noProjectPath })
 
 	return (
-			<SidebarMenuItem>
-				<SidebarMenuButton asChild isActive={isActive} tooltip='独立事项'>
-					<NavLink to={noProjectPath}>
-						<TargetIcon className={sidebarItemIconVariants()} />
-						<span className='min-w-0 truncate'>独立事项</span>
-					</NavLink>
-				</SidebarMenuButton>
+		<SidebarMenuItem>
+			<SidebarMenuButton asChild isActive={isActive} tooltip='独立事项'>
+				<NavLink to={noProjectPath}>
+					<TargetIcon className={sidebarItemIconVariants()} />
+					<span className='min-w-0 truncate'>独立事项</span>
+				</NavLink>
+			</SidebarMenuButton>
 		</SidebarMenuItem>
 	)
 }
@@ -711,13 +720,13 @@ function ProjectSidebarRouteMenuItem({
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
-					<SidebarMenuButton asChild isActive={isActive} size={size}>
-						<NavLink to={to}>
-							<FolderIcon
-								className={sidebarItemIconVariants({
-									size: size === 'sm' ? 'sm' : 'default',
-								})}
-							/>
+				<SidebarMenuButton asChild isActive={isActive} size={size}>
+					<NavLink to={to}>
+						<FolderIcon
+							className={sidebarItemIconVariants({
+								size: size === 'sm' ? 'sm' : 'default',
+							})}
+						/>
 						<span className='min-w-0 truncate'>{label}</span>
 						{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
 					</NavLink>

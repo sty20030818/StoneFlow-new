@@ -450,18 +450,13 @@ export function TaskDrawerContent({
 							<p className='text-[12px] text-sf-text-tertiary'>暂无动态</p>
 						) : (
 							activityEntries.map((entry) => (
-								<div
-									className='rounded-md border border-sf-border-subtle p-2.5'
-									key={entry.id}
-								>
+								<div className='rounded-md border border-sf-border-subtle p-2.5' key={entry.id}>
 									<div className='flex items-center gap-2 text-[11px] text-sf-text-tertiary'>
 										<span className='font-medium text-foreground'>{entry.action}</span>
 										<span>{formatDate(entry.createdAt)}</span>
 									</div>
 									{entry.summary ? (
-										<p className='mt-1 text-[12px] text-sf-text-secondary'>
-											{entry.summary}
-										</p>
+										<p className='mt-1 text-[12px] text-sf-text-secondary'>{entry.summary}</p>
 									) : null}
 									{entry.changes.length > 0 ? (
 										<div className='mt-2 flex flex-col gap-1'>

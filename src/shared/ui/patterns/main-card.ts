@@ -9,7 +9,8 @@ export const mainCardToolbarPillVariants = cva(
 		variants: {
 			state: {
 				active: 'border-sf-border-subtle bg-sf-surface-hover text-foreground',
-				inactive: 'border-sf-border-subtle text-sf-text-secondary hover:bg-muted/60 hover:text-foreground',
+				inactive:
+					'border-sf-border-subtle text-sf-text-secondary hover:bg-muted/60 hover:text-foreground',
 			},
 		},
 		defaultVariants: {
@@ -23,3 +24,5 @@ export const mainCardGhostActionClass =
 
 export const mainCardSectionClass =
 	'rounded-2xl border border-sf-border-subtle bg-card p-4 shadow-(--sf-shadow-panel)'
+
+export const mainCardInlineActionsClass = 'flex shrink-0 items-center gap-2'

@@ -20,6 +20,15 @@ import {
 } from '@/shared/ui/base/dialog'
 import { Input } from '@/shared/ui/base/input'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/shared/ui/base/select'
+import {
+	dialogShellBodyClass,
+	dialogShellContentVariants,
+	dialogShellDescriptionClass,
+	dialogShellFooterClass,
+	dialogShellHeaderClass,
+	dialogShellTitleClass,
+} from '@/shared/ui/patterns/dialog-shell'
+import { formFieldLabelVariants, formFieldStackClass } from '@/shared/ui/patterns/form-field'
 
 type SpaceEditorDialogProps = {
 	open: boolean
@@ -77,18 +86,18 @@ export function SpaceEditorDialog({
 
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
-			<DialogContent className='max-w-[calc(100%-1.5rem)] gap-0 border-(--sf-color-border-secondary) bg-popover p-0 shadow-(--sf-shadow-float) sm:max-w-lg'>
-				<DialogHeader className='gap-1.5 border-b border-(--sf-color-divider) px-6 py-4 pr-14'>
-					<DialogTitle className='text-[1.0625rem] font-semibold tracking-[-0.02em] text-foreground'>
+			<DialogContent className={dialogShellContentVariants({ size: 'lg' })}>
+				<DialogHeader className={dialogShellHeaderClass}>
+					<DialogTitle className={dialogShellTitleClass}>
 						{mode === 'create' ? '新建 Space' : '编辑 Space'}
 					</DialogTitle>
-					<DialogDescription className='text-[13px] leading-5 text-muted-foreground'>
+					<DialogDescription className={dialogShellDescriptionClass}>
 						Space 只承载顶级上下文。先收口名称、图标和颜色，后续再承接更多真实业务。
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className='flex flex-col gap-4 px-6 py-5'>
-					<div className='flex items-center gap-3 rounded-xl border border-(--sf-color-divider) bg-card/70 px-4 py-3'>
+				<div className={cn('flex flex-col gap-4', dialogShellBodyClass)}>
+					<div className='flex items-center gap-3 rounded-xl border border-sf-divider bg-card/70 px-4 py-3'>
 						<span
 							className={cn(
 								'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-(--sf-shadow-panel)',
@@ -107,8 +116,8 @@ export function SpaceEditorDialog({
 						</div>
 					</div>
 
-					<label className='flex flex-col gap-1.5' htmlFor='space-editor-name'>
-						<span className='text-[12px] font-medium text-foreground'>名称</span>
+					<label className={formFieldStackClass} htmlFor='space-editor-name'>
+						<span className={formFieldLabelVariants()}>名称</span>
 						<Input
 							autoFocus
 							className='h-11 rounded-md border-input bg-card'
@@ -121,8 +130,8 @@ export function SpaceEditorDialog({
 					</label>
 
 					<div className='grid gap-4 sm:grid-cols-2'>
-						<label className='flex flex-col gap-1.5'>
-							<span className='text-[12px] font-medium text-foreground'>图标</span>
+						<label className={formFieldStackClass}>
+							<span className={formFieldLabelVariants()}>图标</span>
 							<Select disabled={submitting} onValueChange={setIconKey} value={iconKey}>
 								<SelectTrigger className='h-11 rounded-md border-input bg-card'>
 									<div className='flex min-w-0 items-center gap-2'>
@@ -145,8 +154,8 @@ export function SpaceEditorDialog({
 							</Select>
 						</label>
 
-						<label className='flex flex-col gap-1.5'>
-							<span className='text-[12px] font-medium text-foreground'>颜色</span>
+						<label className={formFieldStackClass}>
+							<span className={formFieldLabelVariants()}>颜色</span>
 							<Select disabled={submitting} onValueChange={setColorKey} value={colorKey}>
 								<SelectTrigger className='h-11 rounded-md border-input bg-card'>
 									<div className='flex min-w-0 items-center gap-2'>
@@ -184,7 +193,7 @@ export function SpaceEditorDialog({
 						</StatusNotice>
 					) : null}
 
-					<div className='flex items-center justify-end gap-2 border-t border-(--sf-color-divider) pt-3'>
+					<div className={dialogShellFooterClass}>
 						<Button disabled={submitting} onClick={onClose} variant='ghost'>
 							取消
 						</Button>

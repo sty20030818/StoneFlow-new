@@ -15,6 +15,9 @@ import {
 } from '@/shared/ui/base/select'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Textarea } from '@/shared/ui/base/textarea'
+import { dialogShellFooterClass } from '@/shared/ui/patterns/dialog-shell'
+import { formFieldLabelVariants, formFieldStackClass } from '@/shared/ui/patterns/form-field'
+import { statusNoticeCompactTextClass } from '@/shared/ui/patterns/status-notice'
 
 type ProjectCreateModalContentProps = {
 	currentSpaceLabel: string
@@ -83,8 +86,8 @@ export function ProjectCreateModalContent({
 	return (
 		<div className='flex flex-col gap-4'>
 			<div className='flex flex-col gap-4'>
-				<label className='flex flex-col gap-1.5'>
-					<span className='text-[12px] font-medium text-foreground'>空间</span>
+				<label className={formFieldStackClass}>
+					<span className={formFieldLabelVariants()}>空间</span>
 					<Select
 						disabled={status === 'submitting' || spaces.length === 0 || spaceId !== null}
 						onValueChange={(value) => setSelectedSpaceId(value === EMPTY_SPACE_VALUE ? '' : value)}
@@ -105,8 +108,8 @@ export function ProjectCreateModalContent({
 					</Select>
 				</label>
 
-				<label className='flex flex-col gap-1.5' htmlFor='project-create-name'>
-					<span className='text-[12px] font-medium text-foreground'>项目名称</span>
+				<label className={formFieldStackClass} htmlFor='project-create-name'>
+					<span className={formFieldLabelVariants()}>项目名称</span>
 					<Input
 						autoFocus
 						className='h-11 rounded-md border-input bg-card'
@@ -118,8 +121,8 @@ export function ProjectCreateModalContent({
 					/>
 				</label>
 
-				<label className='flex flex-col gap-1.5' htmlFor='project-create-description'>
-					<span className='text-[12px] font-medium text-foreground'>项目说明</span>
+				<label className={formFieldStackClass} htmlFor='project-create-description'>
+					<span className={formFieldLabelVariants()}>项目说明</span>
 					<Textarea
 						className='min-h-24 rounded-md border-input bg-card'
 						disabled={status === 'submitting'}
@@ -130,8 +133,8 @@ export function ProjectCreateModalContent({
 					/>
 				</label>
 
-				<label className='flex flex-col gap-1.5' htmlFor='project-create-due-at'>
-					<span className='text-[12px] font-medium text-foreground'>截止日期</span>
+				<label className={formFieldStackClass} htmlFor='project-create-due-at'>
+					<span className={formFieldLabelVariants()}>截止日期</span>
 					<DatePicker
 						disabled={status === 'submitting'}
 						onChange={(value) => setDueAt(value)}
@@ -142,16 +145,21 @@ export function ProjectCreateModalContent({
 			</div>
 
 			{errorMessage ? (
-				<StatusNotice className='text-[12px] leading-5' role='alert' size='sm' variant='danger'>
+				<StatusNotice
+					className={statusNoticeCompactTextClass}
+					role='alert'
+					size='sm'
+					variant='danger'
+				>
 					{errorMessage}
 				</StatusNotice>
 			) : (
-				<StatusNotice className='text-[12px] leading-5' role='status' size='sm'>
+				<StatusNotice className={statusNoticeCompactTextClass} role='status' size='sm'>
 					创建后会立即写入当前数据模型。当前入口：{currentSpace?.name ?? currentSpaceLabel}。
 				</StatusNotice>
 			)}
 
-			<div className='flex items-center justify-end gap-2 border-t border-(--sf-color-divider) pt-3'>
+			<div className={dialogShellFooterClass}>
 				<Button disabled={status === 'submitting'} onClick={onClose} variant='ghost'>
 					取消
 				</Button>
