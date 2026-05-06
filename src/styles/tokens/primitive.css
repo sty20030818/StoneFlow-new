@@ -16,8 +16,11 @@
 	--sf-neutral-175: #ebebec;
 	--sf-neutral-200: #e5e5e6;
 	--sf-neutral-250: #e4e4e5;
+	--sf-neutral-310: #dbdbdb;
+	--sf-neutral-340: #d6d6d7;
 	--sf-neutral-300: #dedee0;
 	--sf-neutral-350: #d8d8da;
+	--sf-neutral-420: #cccccc;
 	--sf-neutral-500: #bfc0c2;
 	--sf-neutral-600: #a8b0bb;
 	--sf-neutral-700: #8f9093;
@@ -59,6 +62,7 @@
 	--sf-info-soft-text: #2f63c0;
 
 	/* Shadow primitives */
+	--sf-shadow-raw-interactive: 0 1px 0 rgb(16 24 40 / 0.05);
 	--sf-shadow-raw-panel: 0 1px 2px rgb(16 24 40 / 0.04);
 	--sf-shadow-raw-popover: 0 8px 24px rgb(16 24 40 / 0.08), 0 2px 6px rgb(16 24 40 / 0.04);
 	--sf-shadow-raw-float: 0 16px 40px rgb(16 24 40 / 0.1), 0 4px 12px rgb(16 24 40 / 0.06);

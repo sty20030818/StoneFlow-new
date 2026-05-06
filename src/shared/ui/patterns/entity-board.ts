@@ -24,5 +24,5 @@ export const entityBoardSectionCountBadgeClass =
 export const entityBoardSectionRightSpacerClass = 'pr-1'
 export const entityBoardCompactBadgeClass = 'h-5 rounded-full px-2 text-[11px]'
 export const entityBoardSectionActionButtonClass =
-	'hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
+	'hover:bg-sf-surface-interactive-hover-strong focus-visible:bg-sf-surface-interactive-hover-strong aria-expanded:bg-sf-surface-interactive-hover-strong'
 export const entityBoardRowActionsClass = 'flex shrink-0 items-center gap-2'

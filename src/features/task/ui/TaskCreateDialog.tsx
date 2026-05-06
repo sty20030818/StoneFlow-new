@@ -136,7 +136,7 @@ function SpaceDropdownMenu({
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button size='sm' variant='secondary'>
+				<Button size='sm' variant='outline'>
 					{SpaceIcon && currentSpace ? <SpaceIcon className={visual.iconClassName} /> : null}
 					{currentSpaceLabel}
 				</Button>

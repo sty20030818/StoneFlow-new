@@ -3,7 +3,6 @@ import type { ComponentProps, ComponentType, ReactNode } from 'react'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
 import {
-	mainCardGhostActionClass,
 	mainCardInlineActionsClass,
 	mainCardSectionClass,
 	mainCardToolbarPillVariants,
@@ -103,7 +102,7 @@ function MainCardToolbar({
 							role={pill.role}
 							size='sm'
 							type='button'
-							variant={pill.active ? 'secondary' : 'ghost'}
+							variant='outline'
 						>
 							{pill.label}
 						</Button>
@@ -151,7 +150,7 @@ function MainCardEmpty({ children, className }: MainCardShellSlotProps) {
 function MainCardGhostAction({ children, className, ...props }: ComponentProps<typeof Button>) {
 	return (
 		<Button
-			className={cn(mainCardGhostActionClass, className)}
+			className={className}
 			size='icon-sm'
 			type='button'
 			variant='ghost'

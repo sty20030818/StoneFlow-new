@@ -19,16 +19,28 @@
 	--sf-surface-panel: var(--sf-neutral-25);
 	--sf-surface-panel-muted: var(--sf-neutral-75);
 	--sf-surface-panel-subtle: var(--sf-neutral-50);
+	--sf-surface-interactive: var(--sf-white);
+	--sf-surface-interactive-hover: var(--sf-neutral-100);
+	--sf-surface-interactive-hover-strong: var(--sf-neutral-250);
+	--sf-surface-interactive-active: var(--sf-neutral-125);
 	--sf-surface-hover: var(--sf-neutral-75);
 	--sf-surface-active: var(--sf-neutral-125);
 	--sf-surface-raised: var(--sf-white);
 
 	/* Border */
+	--sf-border-interactive: var(--sf-neutral-310);
+	--sf-border-interactive-hover: var(--sf-neutral-420);
+	--sf-border-interactive-active: var(--sf-neutral-340);
 	--sf-border-default: var(--sf-neutral-350);
 	--sf-border-subtle: var(--sf-neutral-200);
 	--sf-border-secondary: var(--sf-neutral-300);
 	--sf-border-strong: var(--sf-neutral-500);
 	--sf-divider: var(--sf-neutral-150);
+
+	/* Interactive text */
+	--sf-text-interactive: var(--sf-neutral-850);
+	--sf-text-interactive-hover: var(--sf-neutral-950);
+	--sf-text-interactive-active: var(--sf-neutral-975);
 
 	/* Accent */
 	--sf-accent-primary: var(--sf-brand-500);
@@ -67,6 +79,7 @@
 
 	/* Overlay and shadow */
 	--sf-overlay-scrim: var(--sf-overlay-strong);
+	--sf-shadow-interactive: var(--sf-shadow-raw-interactive);
 	--sf-shadow-panel: var(--sf-shadow-raw-panel);
 	--sf-shadow-popover: var(--sf-shadow-raw-popover);
 	--sf-shadow-float: var(--sf-shadow-raw-float);

@@ -12,11 +12,11 @@ const buttonVariants = cva(
 				default:
 					'border-primary bg-primary text-primary-foreground hover:opacity-95 [a]:hover:opacity-95',
 				outline:
-					'border-border bg-card text-muted-foreground shadow-(--sf-shadow-panel) hover:border-sf-border-secondary hover:bg-muted/70 hover:text-foreground aria-expanded:border-sf-border-secondary aria-expanded:bg-muted/70 aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50',
+					'border-sf-border-interactive bg-sf-surface-interactive text-sf-text-interactive shadow-(--sf-shadow-interactive) hover:border-sf-border-interactive-hover hover:bg-sf-surface-interactive-hover hover:text-sf-text-interactive-hover focus-visible:border-sf-border-interactive-active focus-visible:bg-sf-surface-interactive-active focus-visible:text-sf-text-interactive-active aria-expanded:border-sf-border-interactive-active aria-expanded:bg-sf-surface-interactive-active aria-expanded:text-sf-text-interactive-active aria-pressed:border-sf-border-interactive-active aria-pressed:bg-sf-surface-interactive-active aria-pressed:text-sf-text-interactive-active data-[state=open]:border-sf-border-interactive-active data-[state=open]:bg-sf-surface-interactive-active data-[state=open]:text-sf-text-interactive-active',
 				secondary:
 					'border-border bg-secondary text-secondary-foreground hover:bg-muted/80 hover:text-foreground aria-expanded:bg-muted/80 aria-expanded:text-foreground',
 				ghost:
-					'text-muted-foreground hover:bg-muted/80 hover:text-foreground aria-expanded:bg-muted/80 aria-expanded:text-foreground dark:hover:bg-muted/50',
+					'text-muted-foreground hover:bg-sf-surface-interactive-hover hover:text-sf-text-interactive-hover focus-visible:bg-sf-surface-interactive-hover focus-visible:text-sf-text-interactive-hover aria-expanded:bg-sf-surface-interactive-hover aria-expanded:text-sf-text-interactive-hover aria-pressed:bg-sf-surface-interactive-hover aria-pressed:text-sf-text-interactive-hover data-[state=open]:bg-sf-surface-interactive-hover data-[state=open]:text-sf-text-interactive-hover',
 				destructive:
 					'border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/15 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40',
 				link: 'text-primary underline-offset-4 hover:underline',

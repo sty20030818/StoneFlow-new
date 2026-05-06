@@ -230,7 +230,7 @@ export function TaskCreateModalContent({
 						disabled={submitState !== 'idle'}
 						onClick={() => toast.info('标签功能即将支持')}
 						size='sm'
-						variant='secondary'
+						variant='outline'
 					>
 						<TagIcon />
 						标签
@@ -239,7 +239,7 @@ export function TaskCreateModalContent({
 						disabled={submitState !== 'idle'}
 						onClick={() => toast.info('更多属性即将支持')}
 						size='icon-sm'
-						variant='secondary'
+						variant='outline'
 					>
 						<MoreHorizontalIcon />
 					</Button>
@@ -257,7 +257,7 @@ export function TaskCreateModalContent({
 					disabled={submitState !== 'idle'}
 					onClick={() => toast.info('附件上传功能即将支持')}
 					size='icon-sm'
-					variant='secondary'
+					variant='outline'
 				>
 					<PaperclipIcon />
 				</Button>
@@ -287,7 +287,7 @@ export function TaskCreateModalContent({
 // ─── 元数据下拉组件 ─────────────────────────────────────────────────────
 
 /**
- * 状态元数据下拉 — secondary button + DropdownMenu。
+ * 状态元数据下拉 — outline button + DropdownMenu。
  */
 function StatusMetaAction({
 	status,
@@ -303,7 +303,7 @@ function StatusMetaAction({
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button disabled={disabled} size='sm' variant='secondary'>
+				<Button disabled={disabled} size='sm' variant='outline'>
 					<TaskStatusIndicator status={status} />
 					{currentOption.label}
 				</Button>
@@ -334,7 +334,7 @@ function StatusMetaAction({
 }
 
 /**
- * 优先级元数据下拉 — secondary button + DropdownMenu。
+ * 优先级元数据下拉 — outline button + DropdownMenu。
  */
 function PriorityMetaAction({
 	priority,
@@ -351,7 +351,7 @@ function PriorityMetaAction({
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button disabled={disabled} size='sm' variant='secondary'>
+				<Button disabled={disabled} size='sm' variant='outline'>
 					<PriorityIcon priority={priority} size='sm' />
 					{currentOption.label}
 				</Button>
@@ -382,7 +382,7 @@ function PriorityMetaAction({
 }
 
 /**
- * 项目元数据下拉 — secondary button + DropdownMenu。
+ * 项目元数据下拉 — outline button + DropdownMenu。
  */
 function ProjectMetaAction({
 	disabled,
@@ -407,7 +407,7 @@ function ProjectMetaAction({
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button disabled={disabled} size='sm' variant='secondary'>
+				<Button disabled={disabled} size='sm' variant='outline'>
 					{placement === 'inbox' ? (
 						<InboxIcon className='size-4' />
 					) : (
