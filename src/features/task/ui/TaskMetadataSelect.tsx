@@ -30,7 +30,7 @@ import type { TaskStatus } from '@/shared/types'
 const TASK_LEAD_RAIL_CLASS = 'flex shrink-0 items-center gap-1'
 const TASK_LEAD_MENU_WRAP_CLASS = 'flex size-5 shrink-0 items-center justify-center'
 const TASK_LEAD_TRIGGER_BASE_CLASS =
-	'flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-foreground shadow-none transition-colors outline-none focus-visible:border-(--sf-color-border) focus-visible:ring-0'
+	'flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-foreground shadow-none transition-colors outline-none focus-visible:border-border focus-visible:ring-0'
 const TASK_CHECKBOX_BOX_CLASS =
 	'flex size-4 items-center justify-center rounded-[5px] border transition-colors'
 
@@ -86,7 +86,7 @@ export function TaskSelectionCheckbox({
 				checked
 					? 'opacity-100'
 					: 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
-				'focus-visible:border-(--sf-color-border) focus-visible:ring-0',
+				'focus-visible:border-border focus-visible:ring-0',
 			)}
 			data-checked={checked}
 			disabled={disabled}
@@ -104,7 +104,7 @@ export function TaskSelectionCheckbox({
 					TASK_CHECKBOX_BOX_CLASS,
 					checked
 						? 'border-primary bg-primary text-primary-foreground'
-						: 'border-(--sf-color-border-strong) bg-transparent text-transparent group-hover/task-selection:border-(--sf-color-border)',
+						: 'border-sf-border-strong bg-transparent text-transparent group-hover/task-selection:border-border',
 				)}
 			>
 				<CheckIcon className='size-3' />
@@ -161,7 +161,7 @@ export function TaskPrioritySelect({
 							{option.value === 0 ? (
 								<CheckIcon
 									aria-hidden
-									className='ml-auto size-3.5 shrink-0 text-(--sf-color-icon-secondary)'
+									className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
 								/>
 							) : null}
 						</DropdownMenuItem>
@@ -179,7 +179,7 @@ export function TaskPrioritySelect({
 									{option.value === priorityOption.value ? (
 										<CheckIcon
 											aria-hidden
-											className='ml-auto size-3.5 shrink-0 text-(--sf-color-icon-secondary)'
+											className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
 										/>
 									) : null}
 								</DropdownMenuItem>
@@ -241,7 +241,7 @@ export function TaskStatusSelect({
 								{value === option.value ? (
 									<CheckIcon
 										aria-hidden
-										className='ml-auto size-3.5 shrink-0 text-(--sf-color-icon-secondary)'
+										className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
 									/>
 								) : null}
 							</DropdownMenuItem>
@@ -289,24 +289,24 @@ export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 	switch (status) {
 		case 'done':
 			return (
-				<SolidCircleIcon icon={CircleCheckIcon} color='var(--sf-color-project-task-status-done)' />
+				<SolidCircleIcon icon={CircleCheckIcon} color='var(--color-sf-project-task-status-done)' />
 			)
 		case 'doing':
 			return (
 				<span className='flex size-4 shrink-0 items-center justify-center'>
-					<PlayIcon className='size-3 text-(--sf-color-info-soft-text)' fill='currentColor' />
+					<PlayIcon className='size-3 text-sf-info-soft-text' fill='currentColor' />
 				</span>
 			)
 		case 'waiting':
 			return (
 				<span className='flex size-4 shrink-0 items-center justify-center'>
-					<PauseIcon className='size-3 text-(--sf-color-warning-soft-text)' fill='currentColor' />
+					<PauseIcon className='size-3 text-sf-warning-soft-text' fill='currentColor' />
 				</span>
 			)
 		case 'canceled':
-			return <SolidCircleIcon icon={CircleXIcon} color='var(--sf-color-border-strong)' />
+			return <SolidCircleIcon icon={CircleXIcon} color='var(--color-sf-border-strong)' />
 		default:
-			return <CircleIcon className='size-4 shrink-0 text-(--sf-color-border-strong)' />
+			return <CircleIcon className='size-4 shrink-0 text-sf-border-strong' />
 	}
 }
 

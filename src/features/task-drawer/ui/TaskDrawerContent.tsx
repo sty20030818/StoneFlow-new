@@ -231,7 +231,7 @@ export function TaskDrawerContent({
 	if (detail.status === 'loading' || !draft) {
 		return (
 			<div className='flex h-full items-center justify-center'>
-				<p className='text-[12px] text-(--sf-color-text-tertiary)'>加载中...</p>
+				<p className='text-[12px] text-sf-text-tertiary'>加载中...</p>
 			</div>
 		)
 	}
@@ -239,7 +239,7 @@ export function TaskDrawerContent({
 	if (!detail.item) {
 		return (
 			<div className='flex h-full items-center justify-center'>
-				<p className='text-[12px] text-(--sf-color-text-tertiary)'>任务不存在</p>
+				<p className='text-[12px] text-sf-text-tertiary'>任务不存在</p>
 			</div>
 		)
 	}
@@ -429,12 +429,12 @@ export function TaskDrawerContent({
 						</div>
 
 						{/* 只读信息 */}
-						<div className='flex flex-col gap-1 border-t border-(--sf-color-divider) pt-3'>
-							<div className='flex items-center justify-between text-[11px] text-(--sf-color-text-tertiary)'>
+						<div className='flex flex-col gap-1 border-t border-sf-divider pt-3'>
+							<div className='flex items-center justify-between text-[11px] text-sf-text-tertiary'>
 								<span>创建于</span>
 								<span>{formatDate(detail.item.createdAt)}</span>
 							</div>
-							<div className='flex items-center justify-between text-[11px] text-(--sf-color-text-tertiary)'>
+							<div className='flex items-center justify-between text-[11px] text-sf-text-tertiary'>
 								<span>更新于</span>
 								<span>{formatDate(detail.item.updatedAt)}</span>
 							</div>
@@ -443,23 +443,23 @@ export function TaskDrawerContent({
 				) : (
 					<div className='flex flex-col gap-2 p-4'>
 						{activityStatus === 'loading' ? (
-							<p className='text-[12px] text-(--sf-color-text-tertiary)'>加载中...</p>
+							<p className='text-[12px] text-sf-text-tertiary'>加载中...</p>
 						) : activityStatus === 'error' ? (
 							<p className='text-[12px] text-red-500'>加载失败</p>
 						) : activityEntries.length === 0 ? (
-							<p className='text-[12px] text-(--sf-color-text-tertiary)'>暂无动态</p>
+							<p className='text-[12px] text-sf-text-tertiary'>暂无动态</p>
 						) : (
 							activityEntries.map((entry) => (
 								<div
-									className='rounded-md border border-(--sf-color-border-subtle) p-2.5'
+									className='rounded-md border border-sf-border-subtle p-2.5'
 									key={entry.id}
 								>
-									<div className='flex items-center gap-2 text-[11px] text-(--sf-color-text-tertiary)'>
+									<div className='flex items-center gap-2 text-[11px] text-sf-text-tertiary'>
 										<span className='font-medium text-foreground'>{entry.action}</span>
 										<span>{formatDate(entry.createdAt)}</span>
 									</div>
 									{entry.summary ? (
-										<p className='mt-1 text-[12px] text-(--sf-color-text-secondary)'>
+										<p className='mt-1 text-[12px] text-sf-text-secondary'>
 											{entry.summary}
 										</p>
 									) : null}
@@ -467,8 +467,8 @@ export function TaskDrawerContent({
 										<div className='mt-2 flex flex-col gap-1'>
 											{entry.changes.map((change) => (
 												<div className='text-[11px]' key={change.id}>
-													<span className='text-(--sf-color-text-tertiary)'>{change.field}:</span>{' '}
-													<span className='text-(--sf-color-text-secondary)'>
+													<span className='text-sf-text-tertiary'>{change.field}:</span>{' '}
+													<span className='text-sf-text-secondary'>
 														{JSON.stringify(change.oldValue)} → {JSON.stringify(change.newValue)}
 													</span>
 												</div>
@@ -483,7 +483,7 @@ export function TaskDrawerContent({
 			</div>
 
 			{/* Footer - 固定在底部 */}
-			<div className='flex shrink-0 items-center justify-between border-t border-(--sf-color-divider) px-4 py-2.5'>
+			<div className='flex shrink-0 items-center justify-between border-t border-sf-divider px-4 py-2.5'>
 				<Button
 					className='h-7 px-2 text-[12px]'
 					onClick={() => void handleArchiveOrRestore()}
@@ -496,7 +496,7 @@ export function TaskDrawerContent({
 					{saveMessage ? (
 						<span
 							className={`text-[11px] ${
-								saveStatus === 'error' ? 'text-red-500' : 'text-(--sf-color-text-tertiary)'
+								saveStatus === 'error' ? 'text-red-500' : 'text-sf-text-tertiary'
 							}`}
 						>
 							{saveMessage}
@@ -519,7 +519,7 @@ export function TaskDrawerContent({
 function DrawerField({ label, children }: { label: string; children: React.ReactNode }) {
 	return (
 		<div className='flex items-center gap-3'>
-			<span className='w-16 shrink-0 text-[11px] text-(--sf-color-text-tertiary)'>{label}</span>
+			<span className='w-16 shrink-0 text-[11px] text-sf-text-tertiary'>{label}</span>
 			<div className='min-w-0 flex-1'>{children}</div>
 		</div>
 	)

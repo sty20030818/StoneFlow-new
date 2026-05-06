@@ -52,7 +52,7 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 export function createPendingBulkAction(label: string) {
 	return (
 		<Button
-			className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) opacity-70'
+			className='border-border bg-white text-sf-sidebar-action-foreground opacity-70'
 			disabled
 			size='sm'
 			variant='outline'

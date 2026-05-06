@@ -34,16 +34,16 @@ export function TaskBulkActionBar({
 		>
 			<div
 				aria-label='任务批量操作'
-				className='pointer-events-auto inline-flex max-w-full items-center gap-1.5 rounded-full border border-(--sf-color-border) bg-(--sf-color-bg-elevated) p-1.5 text-(--sf-color-sidebar-action-foreground) shadow-(--sf-shadow-popover) transition-colors hover:border-(--sf-color-border-strong)'
+				className='pointer-events-auto inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-sf-bg-elevated p-1.5 text-sf-sidebar-action-foreground shadow-(--sf-shadow-popover) transition-colors hover:border-sf-border-strong'
 				role='toolbar'
 			>
 				<div className='inline-flex items-center gap-1.5'>
-					<span className='inline-flex h-7.5 items-center rounded-full border border-(--sf-color-border) bg-white px-3 text-[0.8rem] font-medium text-(--sf-color-sidebar-action-foreground) shadow-[inset_0_1px_0_rgb(255_255_255/0.9)] transition-colors hover:border-(--sf-color-border-strong)'>
+					<span className='inline-flex h-7.5 items-center rounded-full border border-border bg-white px-3 text-[0.8rem] font-medium text-sf-sidebar-action-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.9)] transition-colors hover:border-sf-border-strong'>
 						已选 {selectedCount} 项
 					</span>
 					<Button
 						aria-label='清空已选任务'
-						className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
+						className='border-border bg-white text-sf-sidebar-action-foreground hover:border-sf-border-strong hover:bg-sf-bg-surface-muted hover:text-sf-sidebar-action-foreground'
 						onClick={onClear}
 						size='icon-sm'
 						type='button'
@@ -53,7 +53,7 @@ export function TaskBulkActionBar({
 					</Button>
 				</div>
 
-				<div aria-hidden className='mx-0.5 h-5 w-px shrink-0 bg-(--sf-color-border)' />
+				<div aria-hidden className='mx-0.5 h-5 w-px shrink-0 bg-border' />
 
 				<div className='flex items-center truncate'>{action}</div>
 			</div>

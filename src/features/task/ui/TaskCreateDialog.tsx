@@ -56,7 +56,7 @@ export function TaskCreateDialog({
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
 			<DialogContent
-				className='flex max-h-[85vh] max-w-[calc(100%-1.5rem)] flex-col gap-0 rounded-3xl border-(--sf-color-border-secondary) bg-popover p-0 shadow-(--sf-shadow-float) sm:max-w-2xl'
+				className='flex max-h-[85vh] max-w-[calc(100%-1.5rem)] flex-col gap-0 rounded-3xl border border-border bg-popover p-0 shadow-(--sf-shadow-float) sm:max-w-2xl'
 				showCloseButton={false}
 			>
 				<DialogTitle className='sr-only'>新建任务</DialogTitle>
@@ -74,20 +74,20 @@ export function TaskCreateDialog({
 							selectedSpaceId={selectedSpaceId}
 							spaces={spaces}
 						/>
-						<ChevronRightIcon className='size-3.5 text-(--sf-color-icon-subtle)' />
+						<ChevronRightIcon className='size-3.5 text-sf-icon-subtle' />
 						<span className='font-black text-foreground'>新建任务</span>
 					</div>
 
 					<div className='flex items-center gap-0.5'>
 						<Button
-							className='size-7 text-(--sf-color-icon-secondary)'
+							className='size-7 text-sf-icon-secondary'
 							size='icon-sm'
 							variant='ghost'
 						>
 							<Maximize2Icon className='size-3.5' />
 						</Button>
 						<Button
-							className='size-7 text-(--sf-color-icon-secondary)'
+							className='size-7 text-sf-icon-secondary'
 							onClick={onClose}
 							size='icon-sm'
 							variant='ghost'
@@ -157,7 +157,7 @@ function SpaceDropdownMenu({
 								{selectedSpaceId === space.id ? (
 									<CheckIcon
 										aria-hidden
-										className='ml-auto size-3.5 shrink-0 text-(--sf-color-icon-secondary)'
+										className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
 									/>
 								) : null}
 							</DropdownMenuItem>

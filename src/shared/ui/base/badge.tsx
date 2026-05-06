@@ -10,19 +10,19 @@ const badgeVariants = cva(
 		variants: {
 			variant: {
 				default:
-					'border-(--sf-color-accent-soft-border) bg-accent text-accent-foreground [a]:hover:bg-accent/80',
+					'border-sf-accent-soft-border bg-accent text-accent-foreground [a]:hover:bg-accent/80',
 				primary:
-					'border-(--sf-color-accent-soft-border) bg-accent text-accent-foreground [a]:hover:bg-accent/80',
+					'border-sf-accent-soft-border bg-accent text-accent-foreground [a]:hover:bg-accent/80',
 				secondary:
-					'border-(--sf-color-border-subtle) bg-secondary text-secondary-foreground [a]:hover:bg-(--sf-color-bg-surface-hover)',
+					'border-sf-border-subtle bg-secondary text-secondary-foreground [a]:hover:bg-sf-bg-surface-hover',
 				destructive:
-					'border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) text-(--sf-color-danger-soft-text) focus-visible:ring-destructive/20 [a]:hover:bg-(--sf-color-danger-soft)',
+					'border-sf-danger-soft-border bg-sf-danger-soft text-sf-danger-soft-text focus-visible:ring-destructive/20 [a]:hover:bg-sf-danger-soft',
 				success:
-					'border-(--sf-color-success-soft-border) bg-(--sf-color-success-soft) text-(--sf-color-success-soft-text) [a]:hover:bg-(--sf-color-success-soft)',
+					'border-sf-success-soft-border bg-sf-success-soft text-sf-success-soft-text [a]:hover:bg-sf-success-soft',
 				warning:
-					'border-(--sf-color-warning-soft-border) bg-(--sf-color-warning-soft) text-(--sf-color-warning-soft-text) [a]:hover:bg-(--sf-color-warning-soft)',
+					'border-sf-warning-soft-border bg-sf-warning-soft text-sf-warning-soft-text [a]:hover:bg-sf-warning-soft',
 				outline:
-					'border-(--sf-color-border-subtle) bg-card text-(--sf-color-text-secondary) [a]:hover:bg-muted/70 [a]:hover:text-foreground',
+					'border-sf-border-subtle bg-card text-sf-text-secondary [a]:hover:bg-muted/70 [a]:hover:text-foreground',
 				ghost:
 					'border-transparent hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50',
 				link: 'text-primary underline-offset-4 hover:underline',

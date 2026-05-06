@@ -26,7 +26,7 @@ export function GlobalSearchResults({
 	const hasResults = taskItems.length > 0 || projectItems.length > 0
 
 	return (
-		<div className='absolute inset-x-0 top-full z-40 mt-1.5 overflow-hidden rounded-xl border border-(--sf-color-border-secondary) bg-popover/98 shadow-(--sf-shadow-popover) backdrop-blur'>
+		<div className='absolute inset-x-0 top-full z-40 mt-1.5 overflow-hidden rounded-xl border border-sf-border-secondary bg-popover/98 shadow-(--sf-shadow-popover) backdrop-blur'>
 			<div className='max-h-96 overflow-y-auto p-2.5'>
 				{isLoading && !hasResults ? (
 					<SearchPanelState label='正在搜索任务与项目...' />
@@ -106,8 +106,8 @@ function SearchResultButton({
 			className={cn(
 				'flex w-full flex-col gap-1.5 rounded-lg border px-3 py-2.5 text-left transition-colors',
 				isActive
-					? 'border-(--sf-color-accent-soft-border) bg-accent shadow-[inset_2px_0_0_var(--primary)]'
-					: 'border-transparent hover:border-(--sf-color-border-subtle) hover:bg-(--sf-color-bg-surface-hover)',
+					? 'border-sf-border-subtle bg-accent shadow-[inset_2px_0_0_var(--primary)]'
+					: 'border-transparent hover:border-sf-border-subtle hover:bg-sf-surface-hover',
 			)}
 			onClick={onSelect}
 			onMouseDown={(event) => {
@@ -117,13 +117,13 @@ function SearchResultButton({
 			onMouseEnter={onHighlight}
 			type='button'
 		>
-			<div className='flex items-center justify-between gap-3 text-[11px] text-(--sf-color-shell-secondary)'>
+			<div className='flex items-center justify-between gap-3 text-[11px] text-sf-shell-text-secondary'>
 				<span>{typeLabel}</span>
 				<span className='truncate'>{context}</span>
 			</div>
 			<div className='truncate text-[13px] font-medium text-foreground'>{title}</div>
 			{note?.trim() ? (
-				<div className='truncate text-[12px] text-(--sf-color-shell-tertiary)'>
+				<div className='truncate text-[12px] text-sf-shell-text-tertiary'>
 					{toSnippet(note)}
 				</div>
 			) : null}
@@ -133,7 +133,7 @@ function SearchResultButton({
 
 function SearchGroupHeading({ title }: { title: string }) {
 	return (
-		<div className='px-1 text-[10.5px] font-medium tracking-[0.06em] text-(--sf-color-shell-secondary) uppercase'>
+		<div className='px-1 text-[10.5px] font-medium tracking-[0.06em] text-sf-shell-text-secondary uppercase'>
 			{title}
 		</div>
 	)
@@ -145,8 +145,8 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 			className={cn(
 				'flex items-center gap-2 rounded-lg border px-3 py-3 text-[12px]',
 				tone === 'danger'
-					? 'border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) text-(--sf-color-danger-soft-text)'
-					: 'border-(--sf-color-border-subtle) bg-muted/60 text-(--sf-color-shell-secondary)',
+					? 'border-sf-danger-surface-border bg-sf-danger-surface text-sf-danger-surface-text'
+					: 'border-sf-border-subtle bg-muted/60 text-sf-shell-text-secondary',
 			)}
 		>
 			<SearchIcon className='size-3.5 shrink-0' />

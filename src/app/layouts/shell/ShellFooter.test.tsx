@@ -13,7 +13,7 @@ describe('ShellFooter', () => {
 	it('渲染健康状态与导航计数', () => {
 		mockedUseHealthcheckStatus.mockReturnValue({
 			detail: '...\\StoneFlow\\app.db',
-			indicatorClassName: 'bg-(--sf-color-shell-online)',
+			indicatorClassName: 'bg-sf-shell-online',
 			kind: 'ready',
 			label: '本地数据库已连接',
 			title: '/tmp/StoneFlow/app.db',

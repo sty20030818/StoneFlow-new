@@ -191,7 +191,7 @@ export function TaskCreateModalContent({
 
 				{/* 描述 */}
 				<Textarea
-					className='min-h-25 flex-1 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-(--sf-color-text-quaternary) focus-visible:ring-0'
+					className='min-h-25 flex-1 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
 					disabled={submitState !== 'idle'}
 					onChange={(event) => setNote(event.currentTarget.value)}
 					placeholder='添加描述...'
@@ -247,7 +247,7 @@ export function TaskCreateModalContent({
 
 				{/* 错误提示 */}
 				{submitState === 'error' && errorMessage ? (
-					<p className='text-[12px] text-(--sf-color-danger-soft-text)'>{errorMessage}</p>
+					<p className='text-[12px] text-sf-danger-soft-text'>{errorMessage}</p>
 				) : null}
 			</div>
 
@@ -263,7 +263,7 @@ export function TaskCreateModalContent({
 				</Button>
 
 				<div className='flex items-center gap-3'>
-					<div className='flex items-center gap-1.5 text-[12px] text-(--sf-color-text-secondary) select-none'>
+					<div className='flex items-center gap-1.5 text-[12px] text-sf-text-secondary select-none'>
 						<Switch
 							checked={createMore}
 							onCheckedChange={(checked) => setCreateMore(checked === true)}
@@ -322,7 +322,7 @@ function StatusMetaAction({
 							{status === option.value ? (
 								<CheckIcon
 									aria-hidden
-									className='ml-auto size-3.5 shrink-0 text-(--sf-color-icon-secondary)'
+									className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
 								/>
 							) : null}
 						</DropdownMenuItem>
@@ -370,7 +370,7 @@ function PriorityMetaAction({
 							{priority === option.value ? (
 								<CheckIcon
 									aria-hidden
-									className='ml-auto size-3.5 shrink-0 text-(--sf-color-icon-secondary)'
+									className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
 								/>
 							) : null}
 						</DropdownMenuItem>
@@ -420,12 +420,12 @@ function ProjectMetaAction({
 				<DropdownMenuLabel>归属</DropdownMenuLabel>
 				<DropdownMenuGroup>
 					<DropdownMenuItem className='gap-2 p-2' onSelect={() => onPlacementChange('inbox', null)}>
-						<InboxIcon className='size-4 text-(--sf-color-icon-secondary)' />
+						<InboxIcon className='size-4 text-sf-icon-secondary' />
 						<span className='min-w-0 flex-1 truncate'>收件箱</span>
 						{placement === 'inbox' ? (
 							<CheckIcon
 								aria-hidden
-								className='ml-auto size-3.5 shrink-0 text-(--sf-color-icon-secondary)'
+								className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
 							/>
 						) : null}
 					</DropdownMenuItem>
@@ -433,12 +433,12 @@ function ProjectMetaAction({
 						className='gap-2 p-2'
 						onSelect={() => onPlacementChange('noProject', null)}
 					>
-						<FileIcon className='size-4 text-(--sf-color-icon-secondary)' />
+						<FileIcon className='size-4 text-sf-icon-secondary' />
 						<span className='min-w-0 flex-1 truncate'>独立事项</span>
 						{placement === 'noProject' ? (
 							<CheckIcon
 								aria-hidden
-								className='ml-auto size-3.5 shrink-0 text-(--sf-color-icon-secondary)'
+								className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
 							/>
 						) : null}
 					</DropdownMenuItem>
@@ -448,12 +448,12 @@ function ProjectMetaAction({
 							key={project.id}
 							onSelect={() => onPlacementChange('project', project.id)}
 						>
-							<FolderIcon className='size-4 text-(--sf-color-icon-secondary)' />
+							<FolderIcon className='size-4 text-sf-icon-secondary' />
 							<span className='min-w-0 flex-1 truncate'>{project.name}</span>
 							{placement === 'project' && projectId === project.id ? (
 								<CheckIcon
 									aria-hidden
-									className='ml-auto size-3.5 shrink-0 text-(--sf-color-icon-secondary)'
+									className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
 								/>
 							) : null}
 						</DropdownMenuItem>

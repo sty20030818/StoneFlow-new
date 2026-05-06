@@ -249,7 +249,7 @@ export function ShellSidebar({
 												<span className='min-w-0 flex-1 truncate text-left font-semibold'>
 													{currentScopeLabel}
 												</span>
-												<ChevronsUpDownIcon className='shrink-0 text-(--sf-color-icon-subtle) group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden' />
+												<ChevronsUpDownIcon className='shrink-0 text-sf-icon-subtle group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden' />
 											</SidebarMenuButton>
 										</DropdownMenuTrigger>
 										<DropdownMenuContent
@@ -457,7 +457,7 @@ export function ShellSidebar({
 						) : null}
 					</SidebarContent>
 
-					<SidebarFooter className='border-t border-(--sf-color-divider) px-3 py-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
+					<SidebarFooter className='border-t border-sf-divider px-3 py-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
 						<SidebarMenu>
 							{footerItems.map((item) => (
 								<SidebarMenuItem key={item.key}>

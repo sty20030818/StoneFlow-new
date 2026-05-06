@@ -263,7 +263,7 @@ function TaskCustomSection({
 				trailing={
 					<Button
 						aria-label={`在 ${label} 中创建任务`}
-						className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
+						className='hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
 						onClick={(event) => {
 							event.preventDefault()
 							event.stopPropagation()
@@ -359,7 +359,7 @@ function TaskStatusSection({
 			<div className={CANONICAL_BOARD_SECTION_HEADER_CLASS}>
 				<CollapsibleTrigger
 					aria-label={`切换 ${label} 分区折叠状态`}
-					className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-(--sf-color-icon-subtle) outline-none transition-none hover:bg-transparent hover:text-(--sf-color-icon-subtle) focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
+					className='inline-flex size-4 shrink-0 items-center justify-center border-none bg-transparent p-0 text-sf-icon-subtle outline-none transition-none hover:bg-transparent hover:text-sf-icon-subtle focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:outline-none'
 				>
 					<CanonicalBoard.Chevron data-chevron />
 				</CollapsibleTrigger>
@@ -372,7 +372,7 @@ function TaskStatusSection({
 				</div>
 				<Button
 					aria-label={`在 ${label} 中创建任务`}
-					className='hover:bg-(--sf-color-shell-hover-strong) focus-visible:bg-(--sf-color-shell-hover-strong)'
+					className='hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
 					onClick={(event) => {
 						event.preventDefault()
 						event.stopPropagation()
@@ -512,7 +512,7 @@ function TaskBoardRow({
 							<span
 								className={cn(
 									'min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
-									isDoneLike ? 'text-(--sf-color-text-tertiary) line-through' : null,
+									isDoneLike ? 'text-sf-text-tertiary line-through' : null,
 								)}
 							>
 								{task.title}
@@ -525,7 +525,7 @@ function TaskBoardRow({
 								<p
 									className={cn(
 										'truncate text-sm font-medium text-foreground',
-										isDoneLike ? 'text-(--sf-color-text-tertiary) line-through' : null,
+										isDoneLike ? 'text-sf-text-tertiary line-through' : null,
 									)}
 								>
 									{task.title}
@@ -536,7 +536,7 @@ function TaskBoardRow({
 									</Badge>
 								) : null}
 							</div>
-							<div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-(--sf-color-text-tertiary)'>
+							<div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-sf-text-tertiary'>
 								{task.note ? <span className='truncate'>{task.note}</span> : null}
 								{task.dueAt ? <span>截止 {task.dueAt}</span> : null}
 								{task.archivedAt ? <span>已归档</span> : null}

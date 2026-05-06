@@ -176,8 +176,8 @@ export function GlobalSearchInput({
 	return (
 		<div className='relative w-full min-w-0 max-w-100' data-sf-search-root='true'>
 			<div ref={rootRef}>
-				<InputGroup className='h-8 border-(--sf-color-border-subtle) bg-card/94 shadow-(--sf-shadow-panel) transition-colors hover:border-(--sf-color-border) focus-within:border-ring'>
-					<InputGroupAddon align='inline-start' className='px-2.5 text-(--sf-color-icon-subtle)'>
+				<InputGroup className='h-8 border-sf-border-subtle bg-card/94 shadow-(--sf-shadow-panel) transition-colors hover:border-border focus-within:border-ring'>
+					<InputGroupAddon align='inline-start' className='px-2.5 text-sf-icon-subtle'>
 						<SearchIcon className='size-3.5' />
 					</InputGroupAddon>
 
@@ -185,7 +185,7 @@ export function GlobalSearchInput({
 						aria-expanded={isOpen}
 						aria-label='全局搜索'
 						autoComplete='off'
-						className='flex h-full min-w-0 flex-1 bg-transparent px-0 py-1 text-[12.5px] text-foreground outline-none placeholder:text-(--sf-color-text-quaternary)'
+						className='flex h-full min-w-0 flex-1 bg-transparent px-0 py-1 text-[12.5px] text-foreground outline-none placeholder:text-sf-text-quaternary'
 						data-slot='input-group-control'
 						onChange={(event) => {
 							setQuery(event.target.value)

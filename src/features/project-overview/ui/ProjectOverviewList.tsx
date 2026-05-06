@@ -27,7 +27,7 @@ export function ProjectOverviewList({
 	if (status === 'loading' && items.length === 0) {
 		return (
 			<EmptyPage>
-				<div className='rounded-[28px] border border-(--sf-color-border-subtle) bg-white/90 p-6 text-[13px] text-(--sf-color-shell-secondary)'>
+				<div className='rounded-[28px] border border-sf-border-subtle bg-card/90 p-6 text-[13px] text-sf-shell-text-secondary'>
 					正在读取 Project Overview…
 				</div>
 			</EmptyPage>

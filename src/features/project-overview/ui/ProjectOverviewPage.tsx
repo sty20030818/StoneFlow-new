@@ -131,7 +131,7 @@ function ProjectOverviewBreadcrumb() {
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
 					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-						<BoxIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						<BoxIcon aria-hidden className='size-4 shrink-0 text-sf-text-tertiary' />
 						项目总览
 					</BreadcrumbPage>
 				</BreadcrumbItem>

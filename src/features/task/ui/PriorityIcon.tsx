@@ -17,8 +17,8 @@ type PriorityIconProps = {
  */
 export function PriorityIcon({ priority, size = 'md', className }: PriorityIconProps) {
 	const dimension = PRIORITY_ICON_SIZE_MAP[size]
-	const stroke = 'var(--sf-color-main-icon-button-foreground)'
-	const muted = 'var(--sf-color-priority-muted)'
+	const stroke = 'var(--color-sf-main-icon-button-foreground)'
+	const muted = 'var(--color-sf-priority-muted)'
 
 	return (
 		<svg

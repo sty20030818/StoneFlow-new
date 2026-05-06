@@ -235,7 +235,7 @@ export function ShellHeader({
 		<>
 			<header
 				className={cn(
-					'relative z-30 flex h-12 shrink-0 flex-nowrap items-center gap-3 bg-(--sf-color-shell-chrome) pr-0',
+					'relative z-30 flex h-12 shrink-0 flex-nowrap items-center gap-3 bg-sf-shell pr-0',
 					// 左条整块 <640 不渲染时，为刘海/窗口区补左侧内边，避免主带贴边
 					!isAtLeastSm && (isMac ? 'pl-24' : 'pl-3'),
 				)}
@@ -266,7 +266,7 @@ export function ShellHeader({
 					>
 						<div className='flex min-w-0 flex-1 items-center gap-1' data-tauri-drag-region>
 							{!isMac && (!isWin || !isLayoutNarrow) ? (
-								<Avatar className='size-7 shrink-0 rounded-lg ring-1 ring-(--sf-color-border-strong)'>
+								<Avatar className='size-7 shrink-0 rounded-lg ring-1 ring-sf-border-strong'>
 									<AvatarImage
 										alt='StoneFlow'
 										className='rounded-lg'
@@ -294,7 +294,7 @@ export function ShellHeader({
 								aria-label={sidebarToggleOpen ? '收起侧边栏' : '展开侧边栏'}
 								className={cn(
 									'hidden shrink-0 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:inline-flex',
-									'rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground focus-visible:ring-0',
+									'rounded-full bg-transparent text-sf-shell-text-secondary shadow-none hover:bg-sf-shell-hover hover:text-foreground focus-visible:ring-0',
 								)}
 								data-slot='sidebar-trigger'
 								onClick={toggleSidebar}
@@ -309,7 +309,7 @@ export function ShellHeader({
 								<DropdownMenuTrigger asChild>
 									<Button
 										aria-label='打开历史记录'
-										className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground aria-expanded:bg-(--sf-color-shell-hover)'
+										className='rounded-full bg-transparent text-sf-shell-text-secondary shadow-none hover:bg-sf-shell-hover hover:text-foreground aria-expanded:bg-sf-shell-hover'
 										size='icon-sm'
 										variant='ghost'
 									>
@@ -340,7 +340,7 @@ export function ShellHeader({
 							</DropdownMenu>
 							<Button
 								aria-label='后退'
-								className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
+								className='rounded-full bg-transparent text-sf-shell-text-secondary shadow-none hover:bg-sf-shell-hover hover:text-foreground'
 								disabled={!canGoBack}
 								onClick={goBack}
 								size='icon-sm'
@@ -350,7 +350,7 @@ export function ShellHeader({
 							</Button>
 							<Button
 								aria-label='前进'
-								className='rounded-full bg-transparent text-(--sf-color-shell-secondary) shadow-none hover:bg-(--sf-color-shell-hover) hover:text-foreground'
+								className='rounded-full bg-transparent text-sf-shell-text-secondary shadow-none hover:bg-sf-shell-hover hover:text-foreground'
 								disabled={!canGoForward}
 								onClick={goForward}
 								size='icon-sm'
@@ -392,7 +392,7 @@ export function ShellHeader({
 					>
 						<div className='flex items-center gap-1.5' data-tauri-drag-region>
 							<Button
-								className='border-border bg-card px-3 text-[12px] font-medium text-foreground shadow-(--sf-shadow-panel) hover:bg-(--sf-color-bg-surface-tertiary) group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden'
+								className='border-border bg-card px-3 text-[12px] font-medium text-foreground shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden'
 								onClick={onOpenTaskCreateDialog}
 								size='default'
 								variant='outline'
@@ -402,7 +402,7 @@ export function ShellHeader({
 							</Button>
 							<Button
 								aria-label='新建任务'
-								className='hidden border-border bg-card text-(--sf-color-shell-secondary) shadow-(--sf-shadow-panel) hover:bg-(--sf-color-bg-surface-tertiary) hover:text-foreground group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex'
+								className='hidden border-border bg-card text-sf-shell-text-secondary shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle hover:text-foreground group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex'
 								onClick={onOpenTaskCreateDialog}
 								size='icon'
 								variant='outline'
@@ -415,7 +415,7 @@ export function ShellHeader({
 									<DropdownMenuTrigger asChild>
 										<Button
 											aria-label='打开创建菜单'
-											className='border-border bg-card text-(--sf-color-shell-secondary) shadow-(--sf-shadow-panel) hover:bg-(--sf-color-bg-surface-tertiary) hover:text-foreground'
+											className='border-border bg-card text-sf-shell-text-secondary shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle hover:text-foreground'
 											size='icon'
 											variant='outline'
 										>
@@ -451,7 +451,7 @@ export function ShellHeader({
 							<div className='flex h-full items-center gap-1 p-1' data-tauri-drag-region>
 								<Button
 									aria-label='最小化窗口'
-									className='h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover-strong) hover:text-foreground focus-visible:ring-0'
+									className='h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-sf-shell-text-secondary hover:bg-sf-shell-hover-strong hover:text-foreground focus-visible:ring-0'
 									onClick={() => void handleMinimize()}
 									variant='ghost'
 								>
@@ -459,7 +459,7 @@ export function ShellHeader({
 								</Button>
 								<Button
 									aria-label={isMaximized ? '还原窗口' : '最大化窗口'}
-									className='h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-(--sf-color-shell-hover-strong) hover:text-foreground focus-visible:ring-0'
+									className='h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-sf-shell-text-secondary hover:bg-sf-shell-hover-strong hover:text-foreground focus-visible:ring-0'
 									onClick={() => void handleToggleMaximize()}
 									variant='ghost'
 								>
@@ -467,7 +467,7 @@ export function ShellHeader({
 								</Button>
 								<Button
 									aria-label='关闭窗口'
-									className='h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-(--sf-color-shell-secondary) hover:bg-[#E81123] hover:text-white focus-visible:ring-0'
+									className='h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-sf-shell-text-secondary hover:bg-destructive hover:text-white focus-visible:ring-0'
 									onClick={() => void handleClose()}
 									variant='ghost'
 								>

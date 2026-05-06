@@ -130,7 +130,7 @@ export function ShellMain({
 					<ContextMenuTrigger asChild onContextMenu={handleGlobalContextMenu}>
 						<div
 							className={cn(
-								'relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-(--sf-color-border-subtle) bg-card group-data-[sidebar-layout=mobile]/sidebar-wrapper:rounded-none',
+								'relative flex min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border border-sf-border-subtle bg-card group-data-[sidebar-layout=mobile]/sidebar-wrapper:rounded-none',
 								// 桌面：外阴影会落到下方 Footer；壳内主卡保持平面（mobile 仍保留轻微层次）
 								'group-data-[sidebar-layout=desktop]/sidebar-wrapper:shadow-none',
 								'group-data-[sidebar-layout=mobile]/sidebar-wrapper:shadow-(--sf-shadow-panel)',

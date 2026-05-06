@@ -118,11 +118,11 @@ export function ActivityDebugPage() {
 			<MainCard.Header title='Activity Debug' />
 			<MainCard.Body className='gap-4 p-4'>
 				<form
-					className='grid gap-3 rounded-xl border border-(--sf-color-border-subtle) bg-card p-4 md:grid-cols-[180px_minmax(0,1fr)_120px_auto]'
+					className='grid gap-3 rounded-xl border border-sf-border-subtle bg-card p-4 md:grid-cols-[180px_minmax(0,1fr)_120px_auto]'
 					onSubmit={handleSubmit}
 				>
 					<label className='space-y-1.5'>
-						<span className='text-[11px] font-medium uppercase tracking-[0.06em] text-(--sf-color-shell-tertiary)'>
+						<span className='text-[11px] font-medium uppercase tracking-[0.06em] text-sf-shell-text-tertiary'>
 							Entity Type
 						</span>
 						<Select
@@ -145,7 +145,7 @@ export function ActivityDebugPage() {
 					</label>
 
 					<label className='space-y-1.5'>
-						<span className='text-[11px] font-medium uppercase tracking-[0.06em] text-(--sf-color-shell-tertiary)'>
+						<span className='text-[11px] font-medium uppercase tracking-[0.06em] text-sf-shell-text-tertiary'>
 							Entity ID
 						</span>
 						<Input
@@ -157,7 +157,7 @@ export function ActivityDebugPage() {
 					</label>
 
 					<label className='space-y-1.5'>
-						<span className='text-[11px] font-medium uppercase tracking-[0.06em] text-(--sf-color-shell-tertiary)'>
+						<span className='text-[11px] font-medium uppercase tracking-[0.06em] text-sf-shell-text-tertiary'>
 							Limit
 						</span>
 						<Input
@@ -211,10 +211,10 @@ export function ActivityDebugPage() {
 					<div className='space-y-3'>
 						{loadState.entries.map((entry) => (
 							<article
-								className='space-y-3 rounded-xl border border-(--sf-color-border-subtle) bg-card p-4'
+								className='space-y-3 rounded-xl border border-sf-border-subtle bg-card p-4'
 								key={entry.id}
 							>
-								<div className='flex flex-wrap items-center gap-2 text-[12px] text-(--sf-color-shell-tertiary)'>
+								<div className='flex flex-wrap items-center gap-2 text-[12px] text-sf-shell-text-tertiary'>
 									<span className='rounded-full bg-muted px-2.5 py-1 font-medium text-foreground'>
 										{entry.action}
 									</span>
@@ -231,39 +231,39 @@ export function ActivityDebugPage() {
 
 								{entry.metadata ? (
 									<div className='space-y-1.5'>
-										<p className='text-[11px] font-medium uppercase tracking-[0.06em] text-(--sf-color-shell-tertiary)'>
+										<p className='text-[11px] font-medium uppercase tracking-[0.06em] text-sf-shell-text-tertiary'>
 											Metadata
 										</p>
-										<pre className='overflow-x-auto rounded-lg bg-muted/60 p-3 text-[12px] leading-5 text-(--sf-color-shell-secondary)'>
+										<pre className='overflow-x-auto rounded-lg bg-muted/60 p-3 text-[12px] leading-5 text-sf-shell-text-secondary'>
 											{JSON.stringify(entry.metadata, null, 2)}
 										</pre>
 									</div>
 								) : null}
 
-								<details className='rounded-lg border border-(--sf-color-border-subtle) bg-muted/35 p-3'>
+								<details className='rounded-lg border border-sf-border-subtle bg-muted/35 p-3'>
 									<summary className='cursor-pointer text-sm font-medium text-foreground'>
 										字段变化 ({entry.changes.length})
 									</summary>
 									{entry.changes.length === 0 ? (
-										<p className='mt-3 text-sm text-(--sf-color-shell-tertiary)'>
+										<p className='mt-3 text-sm text-sf-shell-text-tertiary'>
 											这条事件没有附带字段变化。
 										</p>
 									) : (
 										<div className='mt-3 space-y-3'>
 											{entry.changes.map((change) => (
 												<div
-													className='rounded-lg border border-(--sf-color-border-subtle) bg-card p-3'
+													className='rounded-lg border border-sf-border-subtle bg-card p-3'
 													key={change.id}
 												>
-													<div className='flex flex-wrap items-center gap-2 text-[12px] text-(--sf-color-shell-tertiary)'>
+													<div className='flex flex-wrap items-center gap-2 text-[12px] text-sf-shell-text-tertiary'>
 														<span className='font-medium text-foreground'>{change.field}</span>
 														<span>{change.createdAt}</span>
 													</div>
 													<div className='mt-2 grid gap-2 md:grid-cols-2'>
-														<pre className='overflow-x-auto rounded-md bg-muted/60 p-2 text-[12px] leading-5 text-(--sf-color-shell-secondary)'>
+														<pre className='overflow-x-auto rounded-md bg-muted/60 p-2 text-[12px] leading-5 text-sf-shell-text-secondary'>
 															{JSON.stringify(change.oldValue, null, 2)}
 														</pre>
-														<pre className='overflow-x-auto rounded-md bg-muted/60 p-2 text-[12px] leading-5 text-(--sf-color-shell-secondary)'>
+														<pre className='overflow-x-auto rounded-md bg-muted/60 p-2 text-[12px] leading-5 text-sf-shell-text-secondary'>
 															{JSON.stringify(change.newValue, null, 2)}
 														</pre>
 													</div>

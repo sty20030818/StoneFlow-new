@@ -69,7 +69,7 @@ export function NoProjectPage() {
 	return (
 		<EntityScene
 			afterBoard={
-				<div className='mt-auto flex items-center gap-2 px-1 text-[12px] text-(--sf-color-text-tertiary)'>
+				<div className='mt-auto flex items-center gap-2 px-1 text-[12px] text-sf-text-tertiary'>
 					<Layers3Icon className='size-3.5' />
 					这些任务已经离开 Inbox，但还没有归属到任何 Project。
 				</div>
@@ -107,7 +107,7 @@ export function NoProjectPage() {
 				<TaskBulkActionBar
 					action={
 						<Button
-							className='border-(--sf-color-border) bg-white text-(--sf-color-sidebar-action-foreground) hover:border-(--sf-color-border-strong) hover:bg-(--sf-color-bg-surface-muted) hover:text-(--sf-color-sidebar-action-foreground)'
+							className='border-border bg-card text-sf-control-text hover:border-sf-border-strong hover:bg-sf-surface-panel-muted hover:text-sf-control-text'
 							size='sm'
 							variant='outline'
 						>
@@ -150,7 +150,7 @@ function NoProjectBreadcrumb() {
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
 					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-						<TargetIcon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						<TargetIcon aria-hidden className='size-4 shrink-0 text-sf-text-tertiary' />
 						独立事项
 					</BreadcrumbPage>
 				</BreadcrumbItem>

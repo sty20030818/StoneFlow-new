@@ -229,7 +229,7 @@ export function ViewsPage() {
 					/>
 				}
 				footer={
-					<div className='px-1 text-[12px] text-(--sf-color-text-tertiary)'>
+					<div className='px-1 text-[12px] text-sf-text-tertiary'>
 						{taskRun.item?.view.description ??
 							(taskRun.item
 								? `当前视图共 ${taskRun.item.items.length} 条任务`
@@ -328,7 +328,7 @@ function ViewsBreadcrumb() {
 			<BreadcrumbList className='text-sm font-semibold leading-5'>
 				<BreadcrumbItem>
 					<BreadcrumbPage className='inline-flex items-center gap-1.5'>
-						<Layers2Icon aria-hidden className='size-4 shrink-0 text-(--sf-color-text-tertiary)' />
+						<Layers2Icon aria-hidden className='size-4 shrink-0 text-sf-text-tertiary' />
 						视图
 					</BreadcrumbPage>
 				</BreadcrumbItem>

@@ -45,10 +45,10 @@ const PRIORITY_TO_PAYLOAD: Record<CommandPriority, string> = {
 	P3: 'low',
 }
 const PRIORITY_CLASS: Record<CommandPriority, string> = {
-	P0: 'border-(--sf-color-danger-soft-border) bg-(--sf-color-danger-soft) text-(--sf-color-danger-soft-text)',
-	P1: 'border-(--sf-color-warning-soft-border) bg-(--sf-color-warning-soft) text-(--sf-color-warning-soft-text)',
-	P2: 'border-(--sf-color-accent-soft-border) bg-accent text-accent-foreground',
-	P3: 'border-(--sf-color-border-subtle) bg-muted text-(--sf-color-text-secondary)',
+	P0: 'border-sf-danger-surface-border bg-sf-danger-surface text-sf-danger-surface-text',
+	P1: 'border-sf-warning-surface-border bg-sf-warning-surface text-sf-warning-surface-text',
+	P2: 'border-sf-border-subtle bg-accent text-accent-foreground',
+	P3: 'border-sf-border-subtle bg-muted text-sf-text-secondary',
 }
 
 // TODO: 接入真实搜索 API（后端需要 search_entities 命令）
@@ -291,17 +291,17 @@ export function QuickCaptureSurface({
 	return (
 		<section
 			aria-label='StoneFlow 命令'
-			className='flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-(--sf-color-border-secondary) bg-card text-foreground'
+			className='flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-sf-border-secondary bg-card text-foreground'
 			onPointerDown={handleSurfacePointerDown}
 		>
-			<div className='flex items-center gap-2 border-b border-(--sf-color-divider) px-4 py-3'>
+			<div className='flex items-center gap-2 border-b border-sf-divider px-4 py-3'>
 				<div className='flex h-9 flex-1 items-center gap-2 rounded-md border border-input bg-card px-3 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/14'>
-					<SearchIcon className='size-3.5 shrink-0 text-(--sf-color-icon-subtle)' />
+					<SearchIcon className='size-3.5 shrink-0 text-sf-icon-subtle' />
 					<input
 						ref={inputRef}
 						aria-label='Command 输入'
 						autoComplete='off'
-						className='min-w-0 flex-1 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-(--sf-color-text-quaternary)'
+						className='min-w-0 flex-1 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-sf-text-quaternary'
 						disabled={status === 'submitting'}
 						onChange={(event) => {
 							setQuery(event.target.value)
@@ -321,8 +321,8 @@ export function QuickCaptureSurface({
 					className={cn(
 						'h-9 min-w-22 rounded-md px-3 text-[12px]',
 						mode === 'create'
-							? 'bg-primary text-primary-foreground hover:bg-(--sf-color-accent-hover)'
-							: 'border border-border bg-card text-(--sf-color-text-secondary) hover:border-(--sf-color-accent-soft-border) hover:bg-accent hover:text-accent-foreground',
+							? 'bg-primary text-primary-foreground hover:opacity-95'
+							: 'border border-border bg-card text-sf-text-secondary hover:border-sf-border-subtle hover:bg-accent hover:text-accent-foreground',
 					)}
 					disabled={status === 'submitting' || mode === 'idle'}
 					onClick={executePrimaryAction}
@@ -333,8 +333,8 @@ export function QuickCaptureSurface({
 			</div>
 
 			{mode === 'create' ? (
-				<div className='flex h-11 items-center gap-2 overflow-hidden border-b border-(--sf-color-divider) bg-muted/45 px-4'>
-					<span className='shrink-0 text-[11.5px] text-(--sf-color-text-quaternary)'>优先级</span>
+				<div className='flex h-11 items-center gap-2 overflow-hidden border-b border-sf-divider bg-muted/45 px-4'>
+					<span className='shrink-0 text-[11.5px] text-sf-text-quaternary'>优先级</span>
 					{PRIORITIES.map((item) => (
 						<button
 							key={item}
@@ -349,14 +349,14 @@ export function QuickCaptureSurface({
 							{item}
 						</button>
 					))}
-					<div className='mx-1 h-4 w-px bg-(--sf-color-divider)' />
-					<span className='shrink-0 text-[11.5px] text-(--sf-color-text-quaternary)'>所属空间</span>
-					<span className='rounded-md border border-border bg-card px-2.5 py-1 text-[12px] text-(--sf-color-text-secondary)'>
+					<div className='mx-1 h-4 w-px bg-sf-divider' />
+					<span className='shrink-0 text-[11.5px] text-sf-text-quaternary'>所属空间</span>
+					<span className='rounded-md border border-border bg-card px-2.5 py-1 text-[12px] text-sf-text-secondary'>
 						工作
 					</span>
-					<div className='mx-1 h-4 w-px bg-(--sf-color-divider)' />
-					<span className='shrink-0 text-[11.5px] text-(--sf-color-text-quaternary)'>所属项目</span>
-					<span className='rounded-md border border-border bg-card px-2.5 py-1 text-[12px] text-(--sf-color-text-secondary)'>
+					<div className='mx-1 h-4 w-px bg-sf-divider' />
+					<span className='shrink-0 text-[11.5px] text-sf-text-quaternary'>所属项目</span>
+					<span className='rounded-md border border-border bg-card px-2.5 py-1 text-[12px] text-sf-text-secondary'>
 						稍后归类
 					</span>
 				</div>
@@ -380,7 +380,7 @@ export function QuickCaptureSurface({
 				)}
 			</div>
 
-			<div className='flex min-h-10 items-center gap-3 border-t border-(--sf-color-divider) bg-muted/70 px-4 text-[11px] text-(--sf-color-text-quaternary)'>
+			<div className='flex min-h-10 items-center gap-3 border-t border-sf-divider bg-muted/70 px-4 text-[11px] text-sf-text-quaternary'>
 				<StatusMessage message={message} status={status} />
 				<div className='ml-auto flex items-center gap-3'>
 					<Hint keys='↑↓' label='选择' />
@@ -444,8 +444,8 @@ function CommandResults({
 
 function CommandResultSection({ title, children }: { title: string; children: ReactNode }) {
 	return (
-		<section className='border-b border-(--sf-color-divider) last:border-b-0'>
-			<div className='px-4 pb-1 pt-2 text-[10.5px] font-medium tracking-[0.06em] text-(--sf-color-text-quaternary) uppercase'>
+		<section className='border-b border-sf-divider last:border-b-0'>
+			<div className='px-4 pb-1 pt-2 text-[10.5px] font-medium tracking-[0.06em] text-sf-text-quaternary uppercase'>
 				{title}
 			</div>
 			<div>{children}</div>
@@ -472,7 +472,7 @@ function CommandResultRow({
 		<button
 			className={cn(
 				'relative flex w-full items-center gap-2.5 px-4 py-2 text-left transition-colors',
-				isActive ? 'bg-accent' : 'hover:bg-(--sf-color-bg-surface-hover)',
+				isActive ? 'bg-accent' : 'hover:bg-sf-surface-hover',
 			)}
 			onClick={onOpen}
 			onMouseEnter={onHighlight}
@@ -487,20 +487,20 @@ function CommandResultRow({
 					isActive
 						? isTask
 							? 'bg-accent text-accent-foreground'
-							: 'bg-(--sf-color-success-soft) text-(--sf-color-success-soft-text)'
-						: 'bg-muted/70 text-(--sf-color-text-secondary)',
+							: 'bg-sf-success-surface text-sf-success-surface-text'
+						: 'bg-muted/70 text-sf-text-secondary',
 				)}
 			>
 				{isTask ? <CircleIcon className='size-3' /> : <FolderIcon className='size-3.5' />}
 			</span>
 			<span className='min-w-0 flex-1'>
 				<span className='block truncate text-[13px] text-foreground'>{title}</span>
-				<span className='mt-0.5 block truncate text-[11.5px] text-(--sf-color-text-quaternary)'>
+				<span className='mt-0.5 block truncate text-[11.5px] text-sf-text-quaternary'>
 					{subtitle}
 				</span>
 			</span>
 			{isTask && item.priority > 0 ? <PriorityBadge priority={item.priority} /> : null}
-			<span className='rounded-md border border-(--sf-color-border-subtle) bg-muted/70 px-1.5 py-0.5 text-[11px] text-(--sf-color-text-quaternary)'>
+			<span className='rounded-md border border-sf-border-subtle bg-muted/70 px-1.5 py-0.5 text-[11px] text-sf-text-quaternary'>
 				{isTask ? '任务' : '项目'}
 			</span>
 		</button>
@@ -528,7 +528,7 @@ function PriorityBadge({ priority }: { priority: number }) {
 function CommandPanelState({ label, loading = false }: { label: string; loading?: boolean }) {
 	return (
 		<div className='flex h-full min-h-44 items-center justify-center px-5'>
-			<div className='flex items-center gap-2 rounded-lg border border-(--sf-color-border-subtle) bg-muted/60 px-3.5 py-3 text-center text-[12.5px] text-(--sf-color-text-quaternary)'>
+			<div className='flex items-center gap-2 rounded-lg border border-sf-border-subtle bg-muted/60 px-3.5 py-3 text-center text-[12.5px] text-sf-text-quaternary'>
 				{loading ? (
 					<LoaderCircleIcon className='size-4 animate-spin' />
 				) : (
@@ -547,10 +547,10 @@ function StatusMessage({ status, message }: { status: CommandStatus; message: st
 			className={cn(
 				'flex min-w-0 items-center gap-1.5',
 				status === 'error'
-					? 'text-(--sf-color-danger-soft-text)'
+					? 'text-sf-danger-surface-text'
 					: status === 'success'
-						? 'text-(--sf-color-success-soft-text)'
-						: 'text-(--sf-color-text-quaternary)',
+						? 'text-sf-success-surface-text'
+						: 'text-sf-text-quaternary',
 			)}
 		>
 			{status === 'error' ? <AlertTriangleIcon className='size-3.5 shrink-0' /> : null}

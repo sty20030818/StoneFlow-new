@@ -45,7 +45,7 @@ const emptyMediaVariants = cva(
 		variants: {
 			variant: {
 				default: 'bg-transparent',
-				icon: 'size-9 rounded-lg bg-(--sf-color-shell-hover) text-(--sf-color-text-primary) [&_svg:not([class*=size-])]:size-4.5',
+				icon: 'size-9 rounded-lg bg-sf-shell-hover text-sf-text-primary [&_svg:not([class*=size-])]:size-4.5',
 			},
 		},
 		defaultVariants: {

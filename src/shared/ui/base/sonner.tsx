@@ -20,7 +20,7 @@ function Toaster({ position = 'bottom-right', ...props }: ToasterProps) {
 			toastOptions={{
 				classNames: {
 					toast:
-						'rounded-lg border border-(--sf-color-border-secondary) bg-popover text-popover-foreground shadow-(--sf-shadow-popover)',
+						'rounded-lg border border-border bg-popover text-popover-foreground shadow-(--sf-shadow-popover)',
 					title: 'text-[13px] font-medium text-foreground',
 					description: 'text-[12px] text-muted-foreground',
 				},
