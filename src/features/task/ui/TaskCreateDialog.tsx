@@ -59,7 +59,8 @@ export function TaskCreateDialog({
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
 			<DialogContent
 				className={cn(
-					'flex max-h-[85vh] max-w-[calc(100%-1.5rem)] flex-col gap-0 rounded-3xl border border-border sm:max-w-2xl',
+					// 顶留白 15dvh、底最多留白 15dvh → max-h = 视口 - 上下各 15dvh；只向下长
+					'flex max-h-[70dvh] min-h-0 max-w-[calc(100%-1.5rem)] flex-col gap-0 overflow-hidden rounded-3xl border border-border sm:max-w-3xl top-[15dvh] translate-y-0',
 					dialogShellFloatingBaseClass,
 				)}
 				showCloseButton={false}
@@ -70,7 +71,7 @@ export function TaskCreateDialog({
 				</DialogDescription>
 
 				{/* Header: 面包屑 + 操作按钮，无分割线 */}
-				<div className='flex items-center justify-between p-4'>
+				<div className='flex shrink-0 items-center justify-between p-4'>
 					<div className='flex items-center gap-1 text-[13px]'>
 						<SpaceDropdownMenu
 							currentSpace={currentSpace}
@@ -98,17 +99,19 @@ export function TaskCreateDialog({
 					</div>
 				</div>
 
-				<TaskCreateModalContent
-					currentScope={currentScope}
-					initialPlacement={initialPlacement}
-					initialProjectId={initialProjectId}
-					initialSpaceId={selectedSpaceId}
-					initialStatus={initialStatus}
-					onClose={onClose}
-					projects={projects}
-					projectsLoading={projectsLoading}
-					spaces={spaces}
-				/>
+				<div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
+					<TaskCreateModalContent
+						currentScope={currentScope}
+						initialPlacement={initialPlacement}
+						initialProjectId={initialProjectId}
+						initialSpaceId={selectedSpaceId}
+						initialStatus={initialStatus}
+						onClose={onClose}
+						projects={projects}
+						projectsLoading={projectsLoading}
+						spaces={spaces}
+					/>
+				</div>
 			</DialogContent>
 		</Dialog>
 	)

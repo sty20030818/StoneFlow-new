@@ -67,8 +67,9 @@
 	--sf-shadow-raw-popover: 0 8px 24px rgb(16 24 40 / 0.08), 0 2px 6px rgb(16 24 40 / 0.04);
 	--sf-shadow-raw-float: 0 16px 40px rgb(16 24 40 / 0.1), 0 4px 12px rgb(16 24 40 / 0.06);
 
-	/* Overlay primitive */
-	--sf-overlay-strong: rgb(17 19 24 / 0.48);
+	/* Overlay primitive：默认全透明；需要轻微压暗时改为 rgb(193 193 194 / α)，勿在遮罩层叠加强 blur */
+	/* --sf-overlay-strong: transparent; */
+	--sf-overlay-strong: rgba(0, 0, 0, 0.2);
 
 	/* Motion primitives */
 	--sf-motion-duration-layout-sync: 175ms;

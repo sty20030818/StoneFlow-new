@@ -176,10 +176,9 @@ export function TaskCreateModalContent({
 		(placement === 'project' ? projectId.length > 0 : spaceId.length > 0)
 
 	return (
-		<div className='flex flex-1 flex-col'>
-			{/* 表单主体 */}
-			<div className='flex flex-1 flex-col gap-1.5 px-4 pb-4'>
-				{/* 标题 */}
+		<div className='flex min-h-0 flex-1 flex-col gap-1.5'>
+			{/* 标题：固定，不随描述滚动 */}
+			<div className='shrink-0 px-4'>
 				<Input
 					autoFocus
 					className='h-auto border-none bg-transparent px-0 text-lg font-black shadow-none focus-visible:ring-0 md:text-lg md:font-black'
@@ -188,17 +187,21 @@ export function TaskCreateModalContent({
 					placeholder='任务标题'
 					value={title}
 				/>
+			</div>
 
-				{/* 描述 */}
+			{/* 仅描述区：先随 Textarea 长高，弹窗触 max-h 后此处滚动（系统滚动条） */}
+			<div className='min-h-0 flex-1 overflow-y-auto px-4'>
 				<Textarea
-					className='min-h-25 flex-1 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
+					className='min-h-20 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
 					disabled={submitState !== 'idle'}
 					onChange={(event) => setNote(event.currentTarget.value)}
 					placeholder='添加描述...'
 					value={note}
 				/>
+			</div>
 
-				{/* 元数据 Action Buttons */}
+			{/* 元数据 + 错误：固定，不随描述滚动 */}
+			<div className='shrink-0 space-y-1.5 px-4'>
 				<div className='flex flex-wrap items-center gap-1.5'>
 					<StatusMetaAction
 						disabled={submitState !== 'idle'}
@@ -245,14 +248,13 @@ export function TaskCreateModalContent({
 					</Button>
 				</div>
 
-				{/* 错误提示 */}
 				{submitState === 'error' && errorMessage ? (
 					<p className='text-[12px] text-sf-danger-soft-text'>{errorMessage}</p>
 				) : null}
 			</div>
 
 			{/* 底部操作栏 */}
-			<div className='flex items-center justify-between px-4 pb-4'>
+			<div className='flex shrink-0 items-center justify-between border-t border-sf-divider px-4 pb-4 pt-3'>
 				<Button
 					disabled={submitState !== 'idle'}
 					onClick={() => toast.info('附件上传功能即将支持')}
