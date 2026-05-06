@@ -17,17 +17,20 @@ export function useSidebarNavBadges(scope: Scope): NavBadges {
 
 	const doRefresh = useCallback(async () => {
 		try {
-			const [allTasks, inboxItems, archiveItems, trashItems, projects] = await Promise.all([
-				listTasks({ scope, viewKey: 'active', placement: { kind: 'all' } }),
-				listTasks({ scope, viewKey: 'active', placement: { kind: 'inbox' } }),
-				listLifecycleEntries({ mode: 'archive', scope, entityFilter: 'task' }),
-				listLifecycleEntries({ mode: 'trash', scope, entityFilter: 'task' }),
-				listSidebarProjects(scope),
-			])
+			const [allTasks, inboxItems, noProjectItems, archiveItems, trashItems, projects] =
+				await Promise.all([
+					listTasks({ scope, viewKey: 'active', placement: { kind: 'all' } }),
+					listTasks({ scope, viewKey: 'active', placement: { kind: 'inbox' } }),
+					listTasks({ scope, viewKey: 'active', placement: { kind: 'noProject' } }),
+					listLifecycleEntries({ mode: 'archive', scope, entityFilter: 'task' }),
+					listLifecycleEntries({ mode: 'trash', scope, entityFilter: 'task' }),
+					listSidebarProjects(scope),
+				])
 
 			const next: NavBadges = {}
 			if (allTasks.length > 0) next.allTasks = String(allTasks.length)
 			if (inboxItems.length > 0) next.inbox = String(inboxItems.length)
+			if (noProjectItems.length > 0) next.noProject = String(noProjectItems.length)
 			if (projects.length > 0) next.projects = String(projects.length)
 			if (archiveItems.length > 0) next.archive = String(archiveItems.length)
 			if (trashItems.length > 0) next.trash = String(trashItems.length)

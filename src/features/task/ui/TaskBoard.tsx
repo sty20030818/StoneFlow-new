@@ -68,9 +68,9 @@ type TaskBoardProps = {
 	pendingTaskId: string | null
 	activeTaskId: string | null
 	selectedTaskIdSet: Set<string>
-	emptyTitle: string
-	emptyDescription: string
-	emptyActionLabel: string
+	emptyTitle?: string
+	emptyDescription?: string
+	emptyActionLabel?: string
 	onEmptyAction: () => void
 	onToggleTaskSelection: (taskId: string) => void
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
@@ -133,7 +133,7 @@ export function TaskBoard({
 		setProjectTaskBoardOpenSections(nextSections)
 	}
 
-	if (tasks.length === 0) {
+	if (tasks.length === 0 && emptyTitle) {
 		return (
 			<EmptyPage>
 				<Empty className={sectionVariant === 'project' ? 'rounded-md bg-transparent' : undefined}>

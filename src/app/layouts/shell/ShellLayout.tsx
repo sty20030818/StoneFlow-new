@@ -157,7 +157,9 @@ export function ShellLayout({
 		id: project.id,
 		label: project.name,
 		badge: sidebarSettings.projectSection.showCounts
-			? String(project.taskCount)
+			? project.taskCount > 0
+				? String(project.taskCount)
+				: undefined
 			: project.completedAt
 				? 'done'
 				: undefined,

@@ -560,7 +560,7 @@ function SidebarMenuBadge({ className, ...props }: React.ComponentProps<'span'>)
 	return (
 		<span
 			className={cn(
-				'ml-auto shrink-0 text-[12px] font-semibold text-sf-shell-secondary group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden',
+				'shrink-0 text-[12px] font-semibold text-sf-shell-secondary group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden',
 				className,
 			)}
 			data-slot='sidebar-menu-badge'

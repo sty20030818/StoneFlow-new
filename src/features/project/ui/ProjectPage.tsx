@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
+import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { selectProjectDetail, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
@@ -52,6 +53,7 @@ export function ProjectPage() {
 	const navigate = useNavigate()
 	const { projectId = '' } = useParams()
 	const { scope, spaceId } = useScopeRoute()
+	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const openDrawer = useDrawerStore((state) => state.openDrawer)
 	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
 	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
@@ -123,9 +125,13 @@ export function ProjectPage() {
 				boardKind: 'task',
 				boardConfig: {
 					variant: 'project-detail',
-					emptyActionLabel: '返回项目总览',
-					emptyDescription: '它可能已被归档、删除，或当前 Scope 已切走。',
-					emptyTitle: '当前项目不可见',
+					...(project
+						? {
+								emptyActionLabel: '创建任务',
+								emptyDescription: '创建第一个任务来推进项目叭。',
+								emptyTitle: '当前项目没有任务',
+							}
+						: {}),
 					hideEmptySections: true,
 					rowVariant: 'project',
 					sectionVariant: 'project',
@@ -140,7 +146,7 @@ export function ProjectPage() {
 				boardActions: {
 					onArchiveTask: archiveListTask,
 					onDeleteTask: deleteListTask,
-					onEmptyAction: () => navigate(buildScopedSectionPath(scope, 'projects', spaceId)),
+					onEmptyAction: () => openTaskCreateDialog({ projectId }),
 					onOpenTask: (taskId) => openDrawer('task', taskId),
 					onToggleTaskSelection: toggleTaskSelection,
 					onToggleTaskStatus: toggleTaskStatus,

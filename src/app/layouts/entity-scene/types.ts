@@ -25,8 +25,8 @@ export type BoardKind = 'task' | 'project' | 'lifecycle'
 
 export type EntitySceneTaskBoardConfig = {
 	variant: 'inbox' | 'all-tasks' | 'view' | 'no-project' | 'project-detail'
-	emptyTitle: string
-	emptyDescription: string
+	emptyTitle?: string
+	emptyDescription?: string
 	emptyActionLabel?: string
 	hideEmptySections?: boolean
 	showProjectName?: boolean

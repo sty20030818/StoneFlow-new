@@ -24,7 +24,7 @@ type SpaceColorDefinition = {
 	swatchClassName: string
 }
 
-type SpaceVisualDefinition = SpaceIconDefinition & SpaceColorDefinition
+export type SpaceVisualDefinition = SpaceIconDefinition & SpaceColorDefinition
 
 const SPACE_ICON_VISUALS: Record<string, SpaceIconDefinition> = {
 	user: {

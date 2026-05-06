@@ -1,14 +1,22 @@
-import { useMemo, useState, type ComponentType } from 'react'
-import { NavLink, useMatch, useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import {
-	buildScopedProjectPath,
-	buildScopedSectionPath,
 	SHELL_FOOTER_ITEMS,
 	SHELL_NAV_ITEMS,
 	SHELL_SETTINGS_ITEM,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
+import {
+	SIDEBAR_ENTITY_SELECTOR,
+	MainNavSidebarMenuItem,
+	NoProjectNavMenuItem,
+	ProjectNavMenuItem,
+	SidebarCustomizeSubmenu,
+	SidebarNavRow,
+	SpaceIconBadge,
+	type MainNavItemViewModel,
+} from '@/app/layouts/shell/sidebar'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type {
 	SidebarItemVisibilityTarget,
@@ -19,17 +27,11 @@ import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
 import { SpaceEditorDialog } from '@/features/space/ui/SpaceEditorDialog'
 import type { Scope, Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
+import { Button } from '@/shared/ui/base/button'
 import {
 	ContextMenu,
-	ContextMenuCheckboxItem,
 	ContextMenuContent,
 	ContextMenuGroup,
-	ContextMenuItem,
-	ContextMenuLabel,
-	ContextMenuSeparator,
-	ContextMenuSub,
-	ContextMenuSubContent,
-	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from '@/shared/ui/base/context-menu'
 import {
@@ -46,12 +48,10 @@ import {
 	SidebarContent,
 	SidebarFooter,
 	SidebarGroup,
-	SidebarGroupAction,
 	SidebarGroupContent,
 	SidebarGroupLabel,
 	SidebarHeader,
 	SidebarMenu,
-	SidebarMenuBadge,
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
@@ -61,29 +61,16 @@ import {
 	sidebarDropdownItemClass,
 	sidebarFooterContainerClass,
 	sidebarHelperTextClass,
-	sidebarMenuIconClass,
-	sidebarMenuLabelClass,
 	sidebarSecondaryTextClass,
 	sidebarSectionHeaderRowClass,
 	sidebarInlineBadgeClass,
-	sidebarItemIconVariants,
 } from '@/shared/ui/patterns/sidebar-item'
 import {
 	shellChromeIconSecondaryClass,
 	shellChromeIconSubtleClass,
 	shellChromeInlineGroupClass,
 } from '@/shared/ui/patterns/shell-chrome'
-import {
-	CheckIcon,
-	ChevronsUpDownIcon,
-	ExternalLinkIcon,
-	FolderIcon,
-	PanelLeftIcon,
-	PlusIcon,
-	RotateCcwIcon,
-	TargetIcon,
-	Trash2Icon,
-} from 'lucide-react'
+import { CheckIcon, ChevronsUpDownIcon, ExternalLinkIcon, FolderIcon, PlusIcon, Trash2Icon } from 'lucide-react'
 
 type ShellNavBadges = Partial<Record<ShellSectionKey, string>>
 
@@ -108,28 +95,6 @@ type ShellSidebarProps = {
 	onUpdateItemVisibility: (target: SidebarItemVisibilityTarget, visible: boolean) => void
 	onResetMainItemsVisibility: () => void
 }
-
-type SidebarRouteItem = {
-	label: string
-	icon: ComponentType<{ className?: string }>
-	to: string
-	badge?: string
-	size?: 'default' | 'sm'
-}
-
-type MainNavItemViewModel = SidebarRouteItem & {
-	key: SidebarMainItemKey
-	visible: boolean
-	order: number
-}
-
-const SIDEBAR_ENTITY_SELECTOR = [
-	'a[href]',
-	'button',
-	'[data-slot="dropdown-menu-trigger"]',
-	'[data-slot="dropdown-menu-content"]',
-	'[data-slot="context-menu-content"]',
-].join(', ')
 
 export function ShellSidebar({
 	currentScope,
@@ -414,8 +379,9 @@ export function ShellSidebar({
 							<SidebarGroupContent>
 								<SidebarMenu>
 									{visibleNavItems.map((item) => (
-										<SidebarNavMenuItem
+										<MainNavSidebarMenuItem
 											badge={item.badge}
+											icon={item.icon}
 											itemKey={item.key}
 											key={item.key}
 											label={item.label}
@@ -424,7 +390,6 @@ export function ShellSidebar({
 											onUpdateItemVisibility={onUpdateItemVisibility}
 											to={item.to}
 											visibleNavItemCount={visibleNavItemCount}
-											icon={item.icon}
 										/>
 									))}
 								</SidebarMenu>
@@ -435,13 +400,16 @@ export function ShellSidebar({
 							<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
 								<div className={sidebarSectionHeaderRowClass}>
 									<SidebarGroupLabel className='px-0'>项目列表</SidebarGroupLabel>
-									<SidebarGroupAction
+									<Button
 										aria-label='创建项目'
+										className='size-6 hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
 										onClick={() => onOpenProjectCreateDialog()}
+										size='icon'
 										type='button'
+										variant='ghost'
 									>
 										<PlusIcon />
-									</SidebarGroupAction>
+									</Button>
 								</div>
 
 								{!settings.projectSection.collapsed ? (
@@ -452,12 +420,13 @@ export function ShellSidebar({
 											</div>
 										) : (
 											<SidebarMenu>
-												<NoProjectSidebarMenuItem
+												<NoProjectNavMenuItem
+													badge={navBadges.noProject}
 													currentScope={currentScope}
 													fallbackSpaceId={fallbackSpaceId}
 												/>
 												{projectLinks.map((project) => (
-													<ProjectSidebarMenuItem
+													<ProjectNavMenuItem
 														currentScope={currentScope}
 														currentSpaceId={currentSpaceId}
 														key={project.id}
@@ -476,7 +445,7 @@ export function ShellSidebar({
 						<SidebarMenu>
 							{footerItems.map((item) => (
 								<SidebarMenuItem key={item.key}>
-									<SidebarRouteMenuItem
+									<SidebarNavRow
 										badge={item.badge}
 										icon={item.icon}
 										label={item.label}
@@ -485,7 +454,7 @@ export function ShellSidebar({
 								</SidebarMenuItem>
 							))}
 							<SidebarMenuItem key={settingsItem.key}>
-								<SidebarRouteMenuItem
+								<SidebarNavRow
 									icon={settingsItem.icon}
 									label={settingsItem.label}
 									to={settingsItem.to}
@@ -499,7 +468,7 @@ export function ShellSidebar({
 
 			<ContextMenuContent className='w-52'>
 				<ContextMenuGroup>
-					<SidebarCustomizeMenu
+					<SidebarCustomizeSubmenu
 						navItems={mainNavItems}
 						onResetMainItemsVisibility={onResetMainItemsVisibility}
 						onUpdateItemVisibility={onUpdateItemVisibility}
@@ -516,260 +485,5 @@ export function ShellSidebar({
 				space={editorMode === 'edit' ? activeSpace : null}
 			/>
 		</ContextMenu>
-	)
-}
-
-type ProjectSidebarMenuItemProps = {
-	currentScope: Scope
-	currentSpaceId: string | null
-	project: ShellProjectLink
-}
-
-function ProjectSidebarMenuItem({
-	currentScope,
-	currentSpaceId,
-	project,
-}: ProjectSidebarMenuItemProps) {
-	const resolvedSpaceId = currentScope.type === 'space' ? currentScope.spaceId : currentSpaceId
-
-	if (!resolvedSpaceId) {
-		return null
-	}
-
-	const projectPath = buildScopedProjectPath(currentScope, project.id, resolvedSpaceId)
-
-	return (
-		<SidebarMenuItem>
-			<ProjectSidebarRouteMenuItem badge={project.badge} label={project.label} to={projectPath} />
-		</SidebarMenuItem>
-	)
-}
-
-type NoProjectSidebarMenuItemProps = {
-	currentScope: Scope
-	fallbackSpaceId: string | null
-}
-
-function NoProjectSidebarMenuItem({
-	currentScope,
-	fallbackSpaceId,
-}: NoProjectSidebarMenuItemProps) {
-	const noProjectPath = buildScopedSectionPath(currentScope, 'no-project', fallbackSpaceId)
-	const isActive = !!useMatch({ end: true, path: noProjectPath })
-
-	return (
-		<SidebarMenuItem>
-			<SidebarMenuButton asChild isActive={isActive} tooltip='独立事项'>
-				<NavLink to={noProjectPath}>
-					<TargetIcon className={sidebarItemIconVariants()} />
-					<span className={sidebarMenuLabelClass}>独立事项</span>
-				</NavLink>
-			</SidebarMenuButton>
-		</SidebarMenuItem>
-	)
-}
-
-type SidebarCustomizeMenuProps = {
-	navItems: MainNavItemViewModel[]
-	visibleNavItemCount: number
-	onUpdateItemVisibility: (target: SidebarItemVisibilityTarget, visible: boolean) => void
-	onResetMainItemsVisibility: () => void
-}
-
-function SidebarCustomizeMenu({
-	navItems,
-	visibleNavItemCount,
-	onUpdateItemVisibility,
-	onResetMainItemsVisibility,
-}: SidebarCustomizeMenuProps) {
-	return (
-		<ContextMenuSub>
-			<ContextMenuSubTrigger>
-				<PanelLeftIcon />
-				自定义侧边栏
-			</ContextMenuSubTrigger>
-			<ContextMenuSubContent className='w-52'>
-				<ContextMenuLabel>显示入口</ContextMenuLabel>
-				<ContextMenuGroup>
-					{navItems.map((item) => {
-						const isLastVisibleItem = item.visible && visibleNavItemCount === 1
-
-						return (
-							<ContextMenuCheckboxItem
-								checked={item.visible}
-								disabled={isLastVisibleItem}
-								key={item.key}
-								onCheckedChange={(checked) =>
-									onUpdateItemVisibility({ kind: 'main', key: item.key }, checked === true)
-								}
-							>
-								{item.label}
-							</ContextMenuCheckboxItem>
-						)
-					})}
-				</ContextMenuGroup>
-				<ContextMenuSeparator />
-				<ContextMenuGroup>
-					<ContextMenuItem
-						disabled={navItems.every((item) => item.visible)}
-						onSelect={onResetMainItemsVisibility}
-					>
-						<RotateCcwIcon />
-						恢复默认侧栏
-					</ContextMenuItem>
-				</ContextMenuGroup>
-			</ContextMenuSubContent>
-		</ContextMenuSub>
-	)
-}
-
-type SidebarNavMenuItemProps = SidebarRouteItem & {
-	itemKey: SidebarMainItemKey
-	navItems: MainNavItemViewModel[]
-	visibleNavItemCount: number
-	onUpdateItemVisibility: (target: SidebarItemVisibilityTarget, visible: boolean) => void
-	onResetMainItemsVisibility: () => void
-}
-
-function SidebarNavMenuItem({
-	itemKey,
-	label,
-	icon: Icon,
-	to,
-	badge,
-	navItems,
-	visibleNavItemCount,
-	onUpdateItemVisibility,
-	onResetMainItemsVisibility,
-}: SidebarNavMenuItemProps) {
-	const currentItem = navItems.find((item) => item.key === itemKey)
-	const isActive = !!useMatch({ end: true, path: to })
-
-	return (
-		<SidebarMenuItem>
-			<ContextMenu>
-				<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
-						<SidebarMenuButton asChild isActive={isActive} tooltip={label}>
-							<NavLink to={to}>
-								<Icon className={sidebarMenuIconClass} />
-								<span className={sidebarMenuLabelClass}>{label}</span>
-								{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
-							</NavLink>
-						</SidebarMenuButton>
-				</ContextMenuTrigger>
-				<ContextMenuContent className='w-52'>
-					<ContextMenuGroup>
-						<SidebarCustomizeMenu
-							navItems={navItems}
-							onResetMainItemsVisibility={onResetMainItemsVisibility}
-							onUpdateItemVisibility={onUpdateItemVisibility}
-							visibleNavItemCount={visibleNavItemCount}
-						/>
-					</ContextMenuGroup>
-					{currentItem ? (
-						<>
-							<ContextMenuSeparator />
-							<ContextMenuGroup>
-								<ContextMenuCheckboxItem
-									checked={currentItem.visible}
-									disabled={visibleNavItemCount === 1 && currentItem.visible}
-									onCheckedChange={(checked) =>
-										onUpdateItemVisibility({ kind: 'main', key: currentItem.key }, checked === true)
-									}
-								>
-									显示当前入口
-								</ContextMenuCheckboxItem>
-							</ContextMenuGroup>
-						</>
-					) : null}
-				</ContextMenuContent>
-			</ContextMenu>
-		</SidebarMenuItem>
-	)
-}
-
-function SidebarRouteMenuItem({
-	label,
-	icon: Icon,
-	to,
-	badge,
-	size = 'default',
-}: SidebarRouteItem) {
-	const isActive = !!useMatch({ end: true, path: to })
-
-	return (
-		<SidebarMenuButton asChild isActive={isActive} size={size} tooltip={label}>
-			<NavLink to={to}>
-				<Icon className={sidebarMenuIconClass} />
-				<span className={sidebarMenuLabelClass}>{label}</span>
-				{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
-			</NavLink>
-		</SidebarMenuButton>
-	)
-}
-
-type ProjectSidebarRouteMenuItemProps = {
-	to: string
-	label: string
-	badge?: string
-	size?: 'default' | 'sm'
-}
-
-function ProjectSidebarRouteMenuItem({
-	to,
-	label,
-	badge,
-	size = 'default',
-}: ProjectSidebarRouteMenuItemProps) {
-	const isActive = !!useMatch({ end: true, path: to })
-
-	return (
-		<ContextMenu>
-			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
-				<SidebarMenuButton asChild isActive={isActive} size={size}>
-					<NavLink to={to}>
-						<FolderIcon
-							className={sidebarItemIconVariants({
-								size: size === 'sm' ? 'sm' : 'default',
-							})}
-						/>
-						<span className={sidebarMenuLabelClass}>{label}</span>
-						{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
-					</NavLink>
-				</SidebarMenuButton>
-			</ContextMenuTrigger>
-			<ContextMenuContent className='w-44'>
-				<ContextMenuGroup>
-					<ContextMenuItem onSelect={() => undefined}>
-						<ExternalLinkIcon />
-						打开项目
-					</ContextMenuItem>
-				</ContextMenuGroup>
-				<ContextMenuSeparator />
-				<ContextMenuGroup>
-					<ContextMenuItem disabled variant='destructive'>
-						<Trash2Icon />
-						移入回收站
-					</ContextMenuItem>
-				</ContextMenuGroup>
-			</ContextMenuContent>
-		</ContextMenu>
-	)
-}
-
-function SpaceIconBadge({ visual }: { visual: ReturnType<typeof getSpaceVisual> }) {
-	const SpaceIcon = visual.icon
-
-	return (
-		<span
-			className={cn(
-				'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white shadow-(--sf-shadow-panel)',
-				visual.iconBadgeClassName,
-			)}
-			data-sidebar-keep='true'
-			data-space-icon-badge='true'
-		>
-			<SpaceIcon className='size-4 text-white' />
-		</span>
 	)
 }
