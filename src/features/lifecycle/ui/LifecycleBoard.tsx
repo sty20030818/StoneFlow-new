@@ -10,7 +10,6 @@ import {
 import { TaskSelectionCheckbox } from '@/features/task/ui/TaskMetadataSelect'
 import {
 	entityBoardMutedIconClass,
-	entityBoardRowActionsClass,
 	entityBoardSectionCountBadgeClass,
 	entityBoardSectionHeadingClass,
 	entityBoardSectionRightSpacerClass,
@@ -270,59 +269,58 @@ function LifecycleBoardRow({
 					<p className='truncate text-sm font-medium text-foreground'>{entry.title}</p>
 				</CanonicalBoard.RowMain>
 
-				<div className={cn('hidden shrink-0 text-right md:block', CANONICAL_BOARD_META_TEXT_CLASS)}>
-					{formattedDateLabel}
+				<div
+					className='ml-auto flex shrink-0 items-center gap-2'
+					onClick={(event) => event.stopPropagation()}
+					onKeyDown={(event) => event.stopPropagation()}
+				>
+					<Button
+						disabled={isPending}
+						onClick={() => onRestore(entry)}
+						size='sm'
+						type='button'
+						variant='outline'
+					>
+						恢复
+					</Button>
+					{mode === 'archive' && onDeleteFromArchive ? (
+						<Button
+							disabled={isPending}
+							onClick={() => onDeleteFromArchive(entry)}
+							size='sm'
+							type='button'
+							variant='outline'
+						>
+							删除
+						</Button>
+					) : null}
+					{mode === 'trash' && onPermanentlyDelete ? (
+						<Button
+							disabled={isPending}
+							onClick={() => onPermanentlyDelete(entry)}
+							size='sm'
+							type='button'
+							variant='outline'
+						>
+							永久删除
+						</Button>
+					) : null}
+					{mode === 'archive' && onOpenDetail ? (
+						<Button
+							disabled={isPending}
+							onClick={() => onOpenDetail(entry)}
+							size='sm'
+							type='button'
+							variant='ghost'
+						>
+							打开
+						</Button>
+					) : null}
+					<div className={cn('hidden text-right md:block', CANONICAL_BOARD_META_TEXT_CLASS)}>
+						{formattedDateLabel}
+					</div>
 				</div>
 			</div>
-
-			<CanonicalBoard.RowActions
-				className={entityBoardRowActionsClass}
-				onClick={(event) => event.stopPropagation()}
-				onKeyDown={(event) => event.stopPropagation()}
-			>
-				<Button
-					disabled={isPending}
-					onClick={() => onRestore(entry)}
-					size='sm'
-					type='button'
-					variant='outline'
-				>
-					恢复
-				</Button>
-				{mode === 'archive' && onDeleteFromArchive ? (
-					<Button
-						disabled={isPending}
-						onClick={() => onDeleteFromArchive(entry)}
-						size='sm'
-						type='button'
-						variant='outline'
-					>
-						删除
-					</Button>
-				) : null}
-				{mode === 'trash' && onPermanentlyDelete ? (
-					<Button
-						disabled={isPending}
-						onClick={() => onPermanentlyDelete(entry)}
-						size='sm'
-						type='button'
-						variant='outline'
-					>
-						永久删除
-					</Button>
-				) : null}
-				{mode === 'archive' && onOpenDetail ? (
-					<Button
-						disabled={isPending}
-						onClick={() => onOpenDetail(entry)}
-						size='sm'
-						type='button'
-						variant='ghost'
-					>
-						打开
-					</Button>
-				) : null}
-			</CanonicalBoard.RowActions>
 		</CanonicalBoard.Row>
 	)
 }

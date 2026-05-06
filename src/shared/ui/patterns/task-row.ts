@@ -4,7 +4,7 @@ import { cva } from 'class-variance-authority'
  * Task row pattern 统一 CanonicalBoard 和任务列表行容器的表面语义。
  */
 export const TASK_ROW_BASE_CLASS =
-	'group flex min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 py-3 text-left transition-colors'
+	'group flex h-12 min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 text-left transition-colors'
 
 export const TASK_ROW_IDLE_CLASS = 'hover:bg-sf-list-row-hover'
 export const TASK_ROW_ACTIVE_CLASS = 'border-sf-border-subtle bg-sf-list-row-selected'

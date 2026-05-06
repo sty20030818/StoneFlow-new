@@ -4,6 +4,10 @@ import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import {
+	selectProjectOptions,
+	useProjectStore,
+} from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { getTaskPlacement } from '@/features/task/model/taskPlacement'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
@@ -50,7 +54,10 @@ export function AllTasksPage() {
 		toggleTaskStatus,
 		archiveListTask,
 		deleteListTask,
+		leaveListTaskToProject,
+		leaveListTaskAsNoProject,
 	} = useTaskListController()
+	const projectOptions = useProjectStore(selectProjectOptions)
 	const [taskFilter, setTaskFilter] = useState<TaskFilter>('all')
 
 	const visibleTasks = useMemo(
@@ -87,7 +94,6 @@ export function AllTasksPage() {
 					emptyDescription: '当前筛选下没有任务，尝试切换筛选或创建新任务。',
 					emptyTitle: '暂无任务',
 					hideEmptySections: true,
-					rowVariant: 'project',
 					sectionVariant: 'project',
 					showProjectName: true,
 					statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
@@ -103,10 +109,13 @@ export function AllTasksPage() {
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
 					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onSelectNoProject: (task) => void leaveListTaskAsNoProject(task),
+					onSelectProject: (task, projectId) => void leaveListTaskToProject(task, projectId),
 					onToggleTaskSelection: toggleTaskSelection,
 					onToggleTaskStatus: toggleTaskStatus,
 					onUpdateTaskPriority: updateTaskPriority,
 					onUpdateTaskStatus: updateTaskStatus,
+					projectOptions,
 				},
 			}}
 			breadcrumb={<AllTasksBreadcrumb />}

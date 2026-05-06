@@ -1,4 +1,5 @@
 import { cn } from '@/shared/lib/utils'
+import { Button } from '@/shared/ui/base/button'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -312,4 +313,63 @@ export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 
 function stopTaskRowEvent(event: { stopPropagation: () => void }) {
 	event.stopPropagation()
+}
+
+type ProjectSelectProps = {
+	projects: Array<{ id: string; name: string }>
+	currentProjectName?: string | null
+	disabled?: boolean
+	onSelectProject: (projectId: string) => void
+	onSelectNoProject: () => void
+}
+
+/**
+ * 任务行项目选择下拉，outline 按钮样式。
+ */
+export function ProjectSelect({
+	projects,
+	currentProjectName,
+	disabled,
+	onSelectProject,
+	onSelectNoProject,
+}: ProjectSelectProps) {
+	return (
+		<div onClick={stopTaskRowEvent} onPointerDown={stopTaskRowEvent}>
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
+					<Button disabled={disabled} type='button' variant='outline'>
+						{currentProjectName || '暂无项目'}
+					</Button>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align='start' sideOffset={6}>
+					<DropdownMenuGroup>
+						<DropdownMenuItem className='gap-2 p-2' onSelect={onSelectNoProject}>
+							<span className='min-w-0 flex-1 truncate'>独立事项</span>
+							{!currentProjectName ? (
+								<CheckIcon
+									aria-hidden
+									className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
+								/>
+							) : null}
+						</DropdownMenuItem>
+						{projects.map((project) => (
+							<DropdownMenuItem
+								className='gap-2 p-2'
+								key={project.id}
+								onSelect={() => onSelectProject(project.id)}
+							>
+								<span className='min-w-0 flex-1 truncate'>{project.name}</span>
+								{currentProjectName === project.name ? (
+									<CheckIcon
+										aria-hidden
+										className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
+									/>
+								) : null}
+							</DropdownMenuItem>
+						))}
+					</DropdownMenuGroup>
+				</DropdownMenuContent>
+			</DropdownMenu>
+		</div>
+	)
 }

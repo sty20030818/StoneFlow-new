@@ -199,7 +199,6 @@ export function ViewsPage() {
 						emptyDescription: activeView?.description ?? '当前视图下没有符合条件的任务。',
 						emptyTitle: activeView ? `${activeView.name} 暂无任务` : '暂无视图',
 						hideEmptySections: true,
-						rowVariant: 'project',
 						sectionVariant: 'project',
 						showProjectName: true,
 						statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],

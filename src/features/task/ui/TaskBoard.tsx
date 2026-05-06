@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo } from 'react'
 
 import {
 	selectProjectTaskBoardOpenSections,
@@ -20,6 +20,7 @@ import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import {
+	ProjectSelect,
 	TaskLeadRail,
 	TaskPrioritySelect,
 	TaskSelectionCheckbox,
@@ -52,7 +53,6 @@ import {
 const TASK_ROW_DONE_CLASS = 'text-muted-foreground'
 
 type TaskBoardSectionVariant = 'compact' | 'project'
-type TaskBoardRowVariant = 'stacked' | 'project'
 
 const TASK_SECTIONS: TaskStatus[] = ['todo', 'doing', 'waiting', 'done', 'canceled']
 
@@ -82,8 +82,9 @@ type TaskBoardProps = {
 	statusOrder?: TaskStatus[]
 	hideEmptySections?: boolean
 	sectionVariant?: TaskBoardSectionVariant
-	rowVariant?: TaskBoardRowVariant
-	renderRowActions?: (task: TaskListItem) => ReactNode
+	projectOptions?: Array<{ id: string; name: string }>
+	onSelectProject?: (task: TaskListItem, projectId: string) => void
+	onSelectNoProject?: (task: TaskListItem) => void
 }
 
 export function TaskBoard({
@@ -108,8 +109,9 @@ export function TaskBoard({
 	statusOrder = TASK_SECTIONS,
 	hideEmptySections = false,
 	sectionVariant = 'compact',
-	rowVariant = 'stacked',
-	renderRowActions,
+	projectOptions,
+	onSelectProject,
+	onSelectNoProject,
 }: TaskBoardProps) {
 	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
 	const setProjectTaskBoardOpenSections = useShellPreferenceStore(
@@ -176,11 +178,12 @@ export function TaskBoard({
 						onUpdateTaskPriority={onUpdateTaskPriority}
 						onUpdateTaskStatus={onUpdateTaskStatus}
 						pendingTaskId={pendingTaskId}
-						renderRowActions={renderRowActions}
-						rowVariant={rowVariant}
 						selectedTaskIdSet={selectedTaskIdSet}
 						showProjectName={showProjectName}
 						tasks={section.tasks}
+						projectOptions={projectOptions}
+						onSelectProject={onSelectProject}
+						onSelectNoProject={onSelectNoProject}
 					/>
 				))}
 			</div>
@@ -211,13 +214,14 @@ export function TaskBoard({
 					onUpdateTaskStatus={onUpdateTaskStatus}
 					open={openSections.includes(status)}
 					pendingTaskId={pendingTaskId}
-					renderRowActions={renderRowActions}
-					rowVariant={rowVariant}
 					selectedTaskIdSet={selectedTaskIdSet}
 					sectionVariant={sectionVariant}
 					showProjectName={showProjectName}
 					status={status}
 					tasks={groupedTasks[status]}
+					projectOptions={projectOptions}
+					onSelectProject={onSelectProject}
+					onSelectNoProject={onSelectNoProject}
 				/>
 			))}
 		</div>
@@ -239,8 +243,9 @@ function TaskCustomSection({
 	onDeleteTask,
 	onArchiveTask,
 	onOpenTask,
-	rowVariant,
-	renderRowActions,
+	projectOptions,
+	onSelectProject,
+	onSelectNoProject,
 }: {
 	label: string
 	tasks: TaskListItem[]
@@ -256,8 +261,9 @@ function TaskCustomSection({
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onArchiveTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
-	rowVariant: TaskBoardRowVariant
-	renderRowActions?: (task: TaskListItem) => ReactNode
+	projectOptions?: Array<{ id: string; name: string }>
+	onSelectProject?: (task: TaskListItem, projectId: string) => void
+	onSelectNoProject?: (task: TaskListItem) => void
 }) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
@@ -300,10 +306,11 @@ function TaskCustomSection({
 						onUpdateTaskPriority={onUpdateTaskPriority}
 						onUpdateTaskStatus={onUpdateTaskStatus}
 						pendingTaskId={pendingTaskId}
-						renderRowActions={renderRowActions}
-						rowVariant={rowVariant}
 						selectedTaskIdSet={selectedTaskIdSet}
 						task={task}
+						projectOptions={projectOptions}
+						onSelectProject={onSelectProject}
+						onSelectNoProject={onSelectNoProject}
 					/>
 				))}
 			</CanonicalBoard.Rows>
@@ -330,8 +337,9 @@ type TaskStatusSectionProps = {
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
 	sectionVariant: TaskBoardSectionVariant
-	rowVariant: TaskBoardRowVariant
-	renderRowActions?: (task: TaskListItem) => ReactNode
+	projectOptions?: Array<{ id: string; name: string }>
+	onSelectProject?: (task: TaskListItem, projectId: string) => void
+	onSelectNoProject?: (task: TaskListItem) => void
 }
 
 function TaskStatusSection({
@@ -352,8 +360,9 @@ function TaskStatusSection({
 	onDeleteTask,
 	onArchiveTask,
 	onOpenTask,
-	rowVariant,
-	renderRowActions,
+	projectOptions,
+	onSelectProject,
+	onSelectNoProject,
 }: TaskStatusSectionProps) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
@@ -411,10 +420,11 @@ function TaskStatusSection({
 							onUpdateTaskPriority={onUpdateTaskPriority}
 							onUpdateTaskStatus={onUpdateTaskStatus}
 							pendingTaskId={pendingTaskId}
-							renderRowActions={renderRowActions}
-							rowVariant={rowVariant}
 							selectedTaskIdSet={selectedTaskIdSet}
 							task={task}
+							projectOptions={projectOptions}
+							onSelectProject={onSelectProject}
+							onSelectNoProject={onSelectNoProject}
 						/>
 					))}
 				</CanonicalBoard.Rows>
@@ -436,8 +446,9 @@ function TaskBoardRow({
 	onDeleteTask,
 	onArchiveTask,
 	onOpenTask,
-	rowVariant,
-	renderRowActions,
+	projectOptions,
+	onSelectProject,
+	onSelectNoProject,
 }: {
 	task: TaskListItem
 	pendingTaskId: string | null
@@ -451,8 +462,9 @@ function TaskBoardRow({
 	onArchiveTask?: (task: TaskListItem) => Promise<void>
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
-	rowVariant: TaskBoardRowVariant
-	renderRowActions?: (task: TaskListItem) => ReactNode
+	projectOptions?: Array<{ id: string; name: string }>
+	onSelectProject?: (task: TaskListItem, projectId: string) => void
+	onSelectNoProject?: (task: TaskListItem) => void
 }) {
 	const isPending = pendingTaskId === task.id
 	const isActive = activeTaskId === task.id
@@ -514,51 +526,28 @@ function TaskBoardRow({
 						/>
 					</TaskLeadRail>
 
-					{rowVariant === 'project' ? (
-						<>
-							<span
-								className={cn(
-									'min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
-									isDoneLike ? 'text-sf-text-tertiary line-through' : null,
-								)}
-							>
-								{task.title}
-							</span>
-							<TaskMetaRail createdAt={task.createdAt} dueAt={task.dueAt} />
-						</>
-					) : (
-						<div className='min-w-0 flex-1'>
-							<div className='flex min-w-0 items-center gap-2'>
-								<p
-									className={cn(
-										'truncate text-sm font-medium text-foreground',
-										isDoneLike ? 'text-sf-text-tertiary line-through' : null,
-									)}
-								>
-									{task.title}
-								</p>
-								{isProjectNameVisible && task.projectName ? (
-									<Badge className={entityBoardCompactBadgeClass} variant='outline'>
-										{task.projectName}
-									</Badge>
-								) : null}
-							</div>
-							<div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-sf-text-tertiary'>
-								{task.note ? <span className='truncate'>{task.note}</span> : null}
-								{task.dueAt ? <span>截止 {task.dueAt}</span> : null}
-								{task.archivedAt ? <span>已归档</span> : null}
-							</div>
-							{renderRowActions ? (
-								<div
-									className='mt-2'
-									onClick={(event) => event.stopPropagation()}
-									onKeyDown={(event) => event.stopPropagation()}
-								>
-									{renderRowActions(task)}
-								</div>
-							) : null}
-						</div>
-					)}
+					<span
+						className={cn(
+							'min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
+							isDoneLike ? 'text-sf-text-tertiary line-through' : null,
+						)}
+					>
+						{task.title}
+					</span>
+					{projectOptions && onSelectProject && onSelectNoProject ? (
+						<ProjectSelect
+							currentProjectName={task.projectName}
+							disabled={isPending}
+							onSelectNoProject={() => onSelectNoProject(task)}
+							onSelectProject={(projectId) => onSelectProject(task, projectId)}
+							projects={projectOptions}
+						/>
+					) : isProjectNameVisible && task.projectName ? (
+						<Badge className={entityBoardCompactBadgeClass} variant='outline'>
+							{task.projectName}
+						</Badge>
+					) : null}
+					<TaskMetaRail createdAt={task.createdAt} dueAt={task.dueAt} />
 				</div>
 			</div>
 		</TaskContextMenu>

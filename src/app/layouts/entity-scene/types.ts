@@ -32,8 +32,6 @@ export type EntitySceneTaskBoardConfig = {
 	showProjectName?: boolean
 	statusOrder?: TaskStatus[]
 	sectionVariant?: 'compact' | 'project'
-	rowVariant?: 'stacked' | 'project'
-	renderRowActions?: (task: TaskListItem) => ReactNode
 	customSections?: Array<{
 		key: string
 		label: string
@@ -58,6 +56,9 @@ export type EntitySceneTaskBoardActions = {
 	onArchiveTask?: (task: TaskListItem) => Promise<void>
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask?: (taskId: string) => void
+	projectOptions?: Array<{ id: string; name: string }>
+	onSelectProject?: (task: TaskListItem, projectId: string) => void
+	onSelectNoProject?: (task: TaskListItem) => void
 }
 
 export type EntitySceneProjectBoardConfig = {

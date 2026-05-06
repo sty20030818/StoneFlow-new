@@ -84,8 +84,7 @@ export function NoProjectPage() {
 					emptyDescription: '这里展示已经离开 Inbox、但仍不属于任何 Project 的任务。',
 					emptyTitle: '当前没有独立事项任务',
 					hideEmptySections: true,
-					rowVariant: 'stacked',
-					sectionVariant: 'compact',
+					sectionVariant: 'project',
 				},
 				boardData: {
 					items: filteredTasks,

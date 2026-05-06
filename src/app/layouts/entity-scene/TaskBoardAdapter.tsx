@@ -39,13 +39,14 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			onUpdateTaskPriority={actions.onUpdateTaskPriority ?? (async () => undefined)}
 			onUpdateTaskStatus={actions.onUpdateTaskStatus ?? (async () => undefined)}
 			pendingTaskId={data.pendingItemId ?? null}
-			renderRowActions={config.renderRowActions}
-			rowVariant={config.rowVariant}
 			sectionVariant={config.sectionVariant}
 			selectedTaskIdSet={data.selectedTaskIdSet ?? new Set<string>()}
 			showProjectName={config.showProjectName}
 			statusOrder={config.statusOrder}
 			tasks={data.items ?? []}
+			projectOptions={actions.projectOptions}
+			onSelectProject={actions.onSelectProject}
+			onSelectNoProject={actions.onSelectNoProject}
 		/>
 	)
 }

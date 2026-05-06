@@ -133,7 +133,6 @@ export function ProjectPage() {
 							}
 						: {}),
 					hideEmptySections: true,
-					rowVariant: 'project',
 					sectionVariant: 'project',
 					statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
 				},
