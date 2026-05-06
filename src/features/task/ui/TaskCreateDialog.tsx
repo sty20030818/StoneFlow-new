@@ -2,21 +2,13 @@ import { useState } from 'react'
 
 import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
 import type { ProjectOption } from '@/features/project/model/types'
-import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
+import { SpaceDropdownMenu } from '@/features/space/ui/SpaceDropdownMenu'
 import { TaskCreateModalContent } from '@/features/task/ui/TaskCreateModalContent'
 import { cn } from '@/shared/lib/utils'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/base/dialog'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuTrigger,
-} from '@/shared/ui/base/dropdown-menu'
 import { Button } from '@/shared/ui/base/button'
 import { dialogShellFloatingBaseClass } from '@/shared/ui/patterns/dialog-shell'
-import { CheckIcon, ChevronRightIcon, Maximize2Icon, XIcon } from 'lucide-react'
+import { ChevronRightIcon, Maximize2Icon, XIcon } from 'lucide-react'
 
 type TaskCreateDialogProps = {
 	open: boolean
@@ -60,7 +52,7 @@ export function TaskCreateDialog({
 			<DialogContent
 				className={cn(
 					// 顶留白 15dvh、底最多留白 15dvh → max-h = 视口 - 上下各 15dvh；只向下长
-					'flex max-h-[70dvh] min-h-0 max-w-[calc(100%-1.5rem)] flex-col gap-0 overflow-hidden rounded-3xl border border-border sm:max-w-3xl top-[15dvh] translate-y-0',
+					'flex max-h-[70dvh] min-h-0 max-w-[calc(100%-1.5rem+8px)] flex-col gap-0 overflow-hidden rounded-3xl border border-border sm:max-w-3xl top-[15dvh] translate-y-0',
 					dialogShellFloatingBaseClass,
 				)}
 				showCloseButton={false}
@@ -71,7 +63,7 @@ export function TaskCreateDialog({
 				</DialogDescription>
 
 				{/* Header: 面包屑 + 操作按钮，无分割线 */}
-				<div className='flex shrink-0 items-center justify-between p-4'>
+				<div className='flex shrink-0 items-center justify-between p-3'>
 					<div className='flex items-center gap-1 text-[13px]'>
 						<SpaceDropdownMenu
 							currentSpace={currentSpace}
@@ -114,61 +106,5 @@ export function TaskCreateDialog({
 				</div>
 			</DialogContent>
 		</Dialog>
-	)
-}
-
-/**
- * Space 下拉选择器 — 副按钮风格，space 自带 icon + 名称。
- */
-function SpaceDropdownMenu({
-	currentSpace,
-	currentSpaceLabel,
-	selectedSpaceId,
-	spaces,
-	onSelectSpace,
-}: {
-	currentSpace: Space | null
-	currentSpaceLabel: string
-	selectedSpaceId: string | null
-	spaces: Space[]
-	onSelectSpace: (spaceId: string | null) => void
-}) {
-	const visual = currentSpace ? getSpaceVisual(currentSpace) : null
-	const SpaceIcon = visual?.icon
-
-	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button size='sm' variant='outline'>
-					{SpaceIcon && currentSpace ? <SpaceIcon className={visual.iconClassName} /> : null}
-					{currentSpaceLabel}
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align='start' sideOffset={6}>
-				<DropdownMenuLabel>Space</DropdownMenuLabel>
-				<DropdownMenuGroup>
-					{spaces.map((space) => {
-						const spaceVisual = getSpaceVisual(space)
-						const Icon = spaceVisual.icon
-						return (
-							<DropdownMenuItem
-								className='gap-2 p-2'
-								key={space.id}
-								onSelect={() => onSelectSpace(space.id)}
-							>
-								<Icon className={spaceVisual.iconClassName} />
-								<span className='min-w-0 flex-1 truncate'>{space.name}</span>
-								{selectedSpaceId === space.id ? (
-									<CheckIcon
-										aria-hidden
-										className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
-									/>
-								) : null}
-							</DropdownMenuItem>
-						)
-					})}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
 	)
 }

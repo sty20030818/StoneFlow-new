@@ -178,7 +178,7 @@ export function TaskCreateModalContent({
 	return (
 		<div className='flex min-h-0 flex-1 flex-col gap-1.5'>
 			{/* 标题：固定，不随描述滚动 */}
-			<div className='shrink-0 px-4'>
+			<div className='shrink-0 px-3'>
 				<Input
 					autoFocus
 					className='h-auto border-none bg-transparent px-0 text-lg font-black shadow-none focus-visible:ring-0 md:text-lg md:font-black'
@@ -190,7 +190,7 @@ export function TaskCreateModalContent({
 			</div>
 
 			{/* 仅描述区：先随 Textarea 长高，弹窗触 max-h 后此处滚动（系统滚动条） */}
-			<div className='min-h-0 flex-1 overflow-y-auto px-4'>
+			<div className='min-h-0 flex-1 overflow-y-auto px-3'>
 				<Textarea
 					className='min-h-20 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
 					disabled={submitState !== 'idle'}
@@ -201,7 +201,7 @@ export function TaskCreateModalContent({
 			</div>
 
 			{/* 元数据 + 错误：固定，不随描述滚动 */}
-			<div className='shrink-0 space-y-1.5 px-4'>
+			<div className='shrink-0 space-y-1.5 px-3'>
 				<div className='flex flex-wrap items-center gap-1.5'>
 					<StatusMetaAction
 						disabled={submitState !== 'idle'}
@@ -254,7 +254,7 @@ export function TaskCreateModalContent({
 			</div>
 
 			{/* 底部操作栏 */}
-			<div className='flex shrink-0 items-center justify-between border-t border-sf-divider px-4 pb-4 pt-3'>
+			<div className='flex shrink-0 items-center justify-between px-3 pb-3 pt-2'>
 				<Button
 					disabled={submitState !== 'idle'}
 					onClick={() => toast.info('附件上传功能即将支持')}

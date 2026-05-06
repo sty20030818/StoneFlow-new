@@ -1,31 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { useProjectStore } from '@/features/project/model/useProjectStore'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { Button } from '@/shared/ui/base/button'
-import { DatePicker } from '@/shared/ui/base/date-picker'
 import { Input } from '@/shared/ui/base/input'
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/shared/ui/base/select'
-import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Textarea } from '@/shared/ui/base/textarea'
-import { dialogShellFooterClass } from '@/shared/ui/patterns/dialog-shell'
-import { formFieldLabelVariants, formFieldStackClass } from '@/shared/ui/patterns/form-field'
-import { statusNoticeCompactTextClass } from '@/shared/ui/patterns/status-notice'
+import { MoreHorizontalIcon, PaperclipIcon } from 'lucide-react'
 
 type ProjectCreateModalContentProps = {
-	currentSpaceLabel: string
-	spaceId: string | null
+	/** 当前选中的 Space（顶栏下拉与表单提交共用） */
+	selectedSpaceId: string | null
 	onClose: () => void
 }
-
-const EMPTY_SPACE_VALUE = '__project-space-empty__'
 
 function extractErrorMessage(error: unknown, fallback: string): string {
 	if (error instanceof Error) return error.message
@@ -37,140 +23,101 @@ function extractErrorMessage(error: unknown, fallback: string): string {
 }
 
 /**
- * Project 创建表单：直接接真实后端写入。
+ * 项目创建表单主体 — 与任务创建弹窗同一分区：标题 / 描述滚动 / 元数据行 / 底栏。
  */
 export function ProjectCreateModalContent({
-	currentSpaceLabel,
-	spaceId,
+	selectedSpaceId,
 	onClose,
 }: ProjectCreateModalContentProps) {
-	const spaces = useSpaceStore(selectSpaces)
 	const createProject = useProjectStore((state) => state.createProject)
-	const [selectedSpaceId, setSelectedSpaceId] = useState(spaceId ?? spaces[0]?.id ?? '')
 	const [name, setName] = useState('')
 	const [description, setDescription] = useState('')
-	const [dueAt, setDueAt] = useState('')
-	const [status, setStatus] = useState<'idle' | 'submitting' | 'error'>('idle')
+	const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-	const currentSpace = useMemo(
-		() => spaces.find((item) => item.id === selectedSpaceId) ?? null,
-		[selectedSpaceId, spaces],
-	)
 
 	async function handleSubmit() {
 		if (!selectedSpaceId || name.trim().length === 0) {
 			return
 		}
 
-		setStatus('submitting')
+		setSubmitState('submitting')
 		setErrorMessage(null)
 		try {
 			await createProject({
 				spaceId: selectedSpaceId,
 				name: name.trim(),
 				description: description.trim() || null,
-				dueAt: dueAt.trim() || null,
+				dueAt: null,
 			})
 			setName('')
 			setDescription('')
-			setDueAt('')
-			setStatus('idle')
+			setSubmitState('idle')
 			onClose()
 		} catch (error) {
-			setStatus('error')
+			setSubmitState('error')
 			setErrorMessage(extractErrorMessage(error, '项目创建失败'))
 		}
 	}
 
+	const canSubmit =
+		submitState === 'idle' && name.trim().length > 0 && Boolean(selectedSpaceId)
+
 	return (
-		<div className='flex flex-col gap-4'>
-			<div className='flex flex-col gap-4'>
-				<label className={formFieldStackClass}>
-					<span className={formFieldLabelVariants()}>空间</span>
-					<Select
-						disabled={status === 'submitting' || spaces.length === 0 || spaceId !== null}
-						onValueChange={(value) => setSelectedSpaceId(value === EMPTY_SPACE_VALUE ? '' : value)}
-						value={selectedSpaceId || EMPTY_SPACE_VALUE}
-					>
-						<SelectTrigger className='h-11 w-full rounded-md border-input bg-card'>
-							<SelectValue placeholder={spaceId ? currentSpaceLabel : '选择要承载该项目的 Space'} />
-						</SelectTrigger>
-						<SelectContent position='popper'>
-							<SelectGroup>
-								{spaces.map((space) => (
-									<SelectItem key={space.id} value={space.id}>
-										{space.name}
-									</SelectItem>
-								))}
-							</SelectGroup>
-						</SelectContent>
-					</Select>
-				</label>
-
-				<label className={formFieldStackClass} htmlFor='project-create-name'>
-					<span className={formFieldLabelVariants()}>项目名称</span>
-					<Input
-						autoFocus
-						className='h-11 rounded-md border-input bg-card'
-						disabled={status === 'submitting'}
-						id='project-create-name'
-						onChange={(event) => setName(event.currentTarget.value)}
-						placeholder='例如：工作区打磨'
-						value={name}
-					/>
-				</label>
-
-				<label className={formFieldStackClass} htmlFor='project-create-description'>
-					<span className={formFieldLabelVariants()}>项目说明</span>
-					<Textarea
-						className='min-h-24 rounded-md border-input bg-card'
-						disabled={status === 'submitting'}
-						id='project-create-description'
-						onChange={(event) => setDescription(event.currentTarget.value)}
-						placeholder='可选，写一句这个项目承接什么工作。'
-						value={description}
-					/>
-				</label>
-
-				<label className={formFieldStackClass} htmlFor='project-create-due-at'>
-					<span className={formFieldLabelVariants()}>截止日期</span>
-					<DatePicker
-						disabled={status === 'submitting'}
-						onChange={(value) => setDueAt(value)}
-						placeholder='选择日期'
-						value={dueAt}
-					/>
-				</label>
+		<div className='flex min-h-0 flex-1 flex-col gap-1.5'>
+			<div className='shrink-0 px-3'>
+				<Input
+					autoFocus
+					className='h-auto border-none bg-transparent px-0 text-lg font-black shadow-none focus-visible:ring-0 md:text-lg md:font-black'
+					disabled={submitState === 'submitting'}
+					onChange={(event) => setName(event.currentTarget.value)}
+					placeholder='项目名称'
+					value={name}
+				/>
 			</div>
 
-			{errorMessage ? (
-				<StatusNotice
-					className={statusNoticeCompactTextClass}
-					role='alert'
-					size='sm'
-					variant='danger'
-				>
-					{errorMessage}
-				</StatusNotice>
-			) : (
-				<StatusNotice className={statusNoticeCompactTextClass} role='status' size='sm'>
-					创建后会立即写入当前数据模型。当前入口：{currentSpace?.name ?? currentSpaceLabel}。
-				</StatusNotice>
-			)}
+			<div className='min-h-0 flex-1 overflow-y-auto px-3'>
+				<Textarea
+					className='min-h-20 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
+					disabled={submitState === 'submitting'}
+					onChange={(event) => setDescription(event.currentTarget.value)}
+					placeholder='添加项目说明…'
+					value={description}
+				/>
+			</div>
 
-			<div className={dialogShellFooterClass}>
-				<Button disabled={status === 'submitting'} onClick={onClose} variant='ghost'>
-					取消
-				</Button>
+			<div className='shrink-0 space-y-1.5 px-3'>
+				<div className='flex flex-wrap items-center gap-1.5'>
+					<Button
+						disabled={submitState === 'submitting'}
+						onClick={() => toast.info('更多属性即将支持')}
+						size='icon-sm'
+						variant='outline'
+					>
+						<MoreHorizontalIcon />
+					</Button>
+				</div>
+
+				{submitState === 'error' && errorMessage ? (
+					<p className='text-[12px] text-sf-danger-soft-text'>{errorMessage}</p>
+				) : null}
+			</div>
+
+			<div className='flex shrink-0 items-center justify-between px-3 pb-3 pt-2'>
 				<Button
-					disabled={status === 'submitting' || name.trim().length === 0 || !selectedSpaceId}
-					onClick={() => {
-						void handleSubmit()
-					}}
+					className='text-sf-icon-secondary'
+					disabled={submitState === 'submitting'}
+					onClick={() => toast.info('附件上传功能即将支持')}
+					size='icon-sm'
+					variant='outline'
 				>
-					{status === 'submitting' ? '创建中...' : '创建项目'}
+					<PaperclipIcon />
 				</Button>
+
+				<div className='flex items-center gap-3'>
+					<Button disabled={!canSubmit} onClick={() => void handleSubmit()} size='sm'>
+						{submitState === 'submitting' ? '创建中…' : '创建项目'}
+					</Button>
+				</div>
 			</div>
 		</div>
 	)

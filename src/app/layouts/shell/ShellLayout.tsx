@@ -242,10 +242,10 @@ export function ShellLayout({
 			/>
 
 			<ProjectCreateDialog
-				currentSpaceLabel={currentSpaceLabel}
+				currentScope={currentScope}
 				onClose={closeProjectCreateDialog}
 				open={isProjectCreateOpen}
-				spaceId={currentScope.type === 'space' ? currentScope.spaceId : null}
+				spaces={spaces}
 			/>
 
 			{/* <ShellFooter navBadges={navBadges} /> */}
