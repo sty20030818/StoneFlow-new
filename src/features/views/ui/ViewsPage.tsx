@@ -200,7 +200,6 @@ export function ViewsPage() {
 						emptyTitle: activeView ? `${activeView.name} 暂无任务` : '暂无视图',
 						hideEmptySections: true,
 						sectionVariant: 'project',
-						showProjectName: true,
 						statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
 					},
 					boardData: {

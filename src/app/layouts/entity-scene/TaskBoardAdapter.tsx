@@ -41,7 +41,6 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			pendingTaskId={data.pendingItemId ?? null}
 			sectionVariant={config.sectionVariant}
 			selectedTaskIdSet={data.selectedTaskIdSet ?? new Set<string>()}
-			showProjectName={config.showProjectName}
 			statusOrder={config.statusOrder}
 			tasks={data.items ?? []}
 			projectOptions={actions.projectOptions}

@@ -27,6 +27,7 @@ import {
 	TaskStatusIndicator,
 	TaskStatusSelect,
 } from '@/features/task/ui/TaskMetadataSelect'
+import { TaskRowProvider, useTaskRowContext } from '@/features/task/ui/TaskRowContext'
 import { cn } from '@/shared/lib/utils'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Badge } from '@/shared/ui/base/badge'
@@ -64,7 +65,6 @@ type TaskBoardProps = {
 		tasks: TaskListItem[]
 	}>
 	createProjectId?: string | null
-	showProjectName?: boolean
 	pendingTaskId: string | null
 	activeTaskId: string | null
 	selectedTaskIdSet: Set<string>
@@ -91,7 +91,6 @@ export function TaskBoard({
 	tasks,
 	customSections,
 	createProjectId = null,
-	showProjectName = false,
 	pendingTaskId,
 	activeTaskId,
 	selectedTaskIdSet,
@@ -116,6 +115,39 @@ export function TaskBoard({
 	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
 	const setProjectTaskBoardOpenSections = useShellPreferenceStore(
 		(state) => state.setProjectTaskBoardOpenSections,
+	)
+
+	const contextValue = useMemo(
+		() => ({
+			activeTaskId,
+			pendingTaskId,
+			selectedTaskIdSet,
+			projectOptions,
+			onToggleTaskSelection,
+			onUpdateTaskPriority,
+			onUpdateTaskStatus,
+			onToggleTaskStatus,
+			onArchiveTask,
+			onDeleteTask,
+			onOpenTask,
+			onSelectProject,
+			onSelectNoProject,
+		}),
+		[
+			activeTaskId,
+			pendingTaskId,
+			selectedTaskIdSet,
+			projectOptions,
+			onToggleTaskSelection,
+			onUpdateTaskPriority,
+			onUpdateTaskStatus,
+			onToggleTaskStatus,
+			onArchiveTask,
+			onDeleteTask,
+			onOpenTask,
+			onSelectProject,
+			onSelectNoProject,
+		],
 	)
 
 	const groupedTasks = useMemo(() => {
@@ -156,75 +188,47 @@ export function TaskBoard({
 		)
 	}
 
-	if (customSections && customSections.length > 0) {
-		return (
-			<div
-				className={cn(
-					CANONICAL_BOARD_STACK_CLASS,
-					sectionVariant === 'project' ? 'gap-2' : 'gap-3',
-				)}
-			>
-				{customSections.map((section) => (
-					<TaskCustomSection
-						activeTaskId={activeTaskId}
-						createProjectId={createProjectId}
-						key={section.key}
-						label={section.label}
-						onArchiveTask={onArchiveTask}
-						onDeleteTask={onDeleteTask}
-						onOpenTask={onOpenTask}
-						onToggleTaskSelection={onToggleTaskSelection}
-						onToggleTaskStatus={onToggleTaskStatus}
-						onUpdateTaskPriority={onUpdateTaskPriority}
-						onUpdateTaskStatus={onUpdateTaskStatus}
-						pendingTaskId={pendingTaskId}
-						selectedTaskIdSet={selectedTaskIdSet}
-						showProjectName={showProjectName}
-						tasks={section.tasks}
-						projectOptions={projectOptions}
-						onSelectProject={onSelectProject}
-						onSelectNoProject={onSelectNoProject}
-					/>
-				))}
-			</div>
-		)
-	}
-
-	const visibleStatuses = statusOrder.filter(
-		(status) => !hideEmptySections || groupedTasks[status].length > 0,
-	)
-
 	return (
-		<div
-			className={cn(CANONICAL_BOARD_STACK_CLASS, sectionVariant === 'project' ? 'gap-1' : 'gap-3')}
-		>
-			{visibleStatuses.map((status) => (
-				<TaskStatusSection
-					activeTaskId={activeTaskId}
-					createProjectId={createProjectId}
-					key={status}
-					label={formatTaskStatusLabel(status)}
-					onDeleteTask={onDeleteTask}
-					onArchiveTask={onArchiveTask}
-					onOpenChange={(open) => handleSectionOpenChange(status, open)}
-					onOpenTask={onOpenTask}
-					onToggleTaskSelection={onToggleTaskSelection}
-					onToggleTaskStatus={onToggleTaskStatus}
-					onUpdateTaskPriority={onUpdateTaskPriority}
-					onUpdateTaskStatus={onUpdateTaskStatus}
-					open={openSections.includes(status)}
-					pendingTaskId={pendingTaskId}
-					selectedTaskIdSet={selectedTaskIdSet}
-					sectionVariant={sectionVariant}
-					showProjectName={showProjectName}
-					status={status}
-					tasks={groupedTasks[status]}
-					projectOptions={projectOptions}
-					onSelectProject={onSelectProject}
-					onSelectNoProject={onSelectNoProject}
-				/>
-			))}
-		</div>
+		<TaskRowProvider value={contextValue}>
+			{customSections && customSections.length > 0 ? (
+				<div
+					className={cn(
+						CANONICAL_BOARD_STACK_CLASS,
+						sectionVariant === 'project' ? 'gap-2' : 'gap-3',
+					)}
+				>
+					{customSections.map((section) => (
+						<TaskCustomSection
+							createProjectId={createProjectId}
+							key={section.key}
+							label={section.label}
+							tasks={section.tasks}
+						/>
+					))}
+				</div>
+			) : (
+				<div
+					className={cn(
+						CANONICAL_BOARD_STACK_CLASS,
+						sectionVariant === 'project' ? 'gap-1' : 'gap-3',
+					)}
+				>
+					{statusOrder
+						.filter((status) => !hideEmptySections || groupedTasks[status].length > 0)
+						.map((status) => (
+							<TaskStatusSection
+								createProjectId={createProjectId}
+								key={status}
+								label={formatTaskStatusLabel(status)}
+								onOpenChange={(open) => handleSectionOpenChange(status, open)}
+								open={openSections.includes(status)}
+								status={status}
+								tasks={groupedTasks[status]}
+							/>
+						))}
+				</div>
+			)}
+		</TaskRowProvider>
 	)
 }
 
@@ -232,38 +236,10 @@ function TaskCustomSection({
 	label,
 	tasks,
 	createProjectId,
-	showProjectName,
-	pendingTaskId,
-	activeTaskId,
-	selectedTaskIdSet,
-	onToggleTaskSelection,
-	onUpdateTaskPriority,
-	onUpdateTaskStatus,
-	onToggleTaskStatus,
-	onDeleteTask,
-	onArchiveTask,
-	onOpenTask,
-	projectOptions,
-	onSelectProject,
-	onSelectNoProject,
 }: {
 	label: string
 	tasks: TaskListItem[]
 	createProjectId: string | null
-	showProjectName: boolean
-	pendingTaskId: string | null
-	activeTaskId: string | null
-	selectedTaskIdSet: Set<string>
-	onToggleTaskSelection: (taskId: string) => void
-	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
-	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
-	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
-	onDeleteTask?: (task: TaskListItem) => Promise<void>
-	onArchiveTask?: (task: TaskListItem) => Promise<void>
-	onOpenTask: (taskId: string) => void
-	projectOptions?: Array<{ id: string; name: string }>
-	onSelectProject?: (task: TaskListItem, projectId: string) => void
-	onSelectNoProject?: (task: TaskListItem) => void
 }) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
@@ -294,52 +270,11 @@ function TaskCustomSection({
 			/>
 			<CanonicalBoard.Rows>
 				{tasks.map((task) => (
-					<TaskBoardRow
-						activeTaskId={activeTaskId}
-						isProjectNameVisible={showProjectName}
-						key={task.id}
-						onDeleteTask={onDeleteTask}
-						onArchiveTask={onArchiveTask}
-						onOpenTask={onOpenTask}
-						onToggleTaskSelection={onToggleTaskSelection}
-						onToggleTaskStatus={onToggleTaskStatus}
-						onUpdateTaskPriority={onUpdateTaskPriority}
-						onUpdateTaskStatus={onUpdateTaskStatus}
-						pendingTaskId={pendingTaskId}
-						selectedTaskIdSet={selectedTaskIdSet}
-						task={task}
-						projectOptions={projectOptions}
-						onSelectProject={onSelectProject}
-						onSelectNoProject={onSelectNoProject}
-					/>
+					<TaskBoardRow key={task.id} task={task} />
 				))}
 			</CanonicalBoard.Rows>
 		</CanonicalBoard.Section>
 	)
-}
-
-type TaskStatusSectionProps = {
-	status: TaskStatus
-	label: string
-	tasks: TaskListItem[]
-	open: boolean
-	createProjectId: string | null
-	showProjectName: boolean
-	pendingTaskId: string | null
-	activeTaskId: string | null
-	selectedTaskIdSet: Set<string>
-	onOpenChange: (open: boolean) => void
-	onToggleTaskSelection: (taskId: string) => void
-	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
-	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
-	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
-	onArchiveTask?: (task: TaskListItem) => Promise<void>
-	onDeleteTask?: (task: TaskListItem) => Promise<void>
-	onOpenTask: (taskId: string) => void
-	sectionVariant: TaskBoardSectionVariant
-	projectOptions?: Array<{ id: string; name: string }>
-	onSelectProject?: (task: TaskListItem, projectId: string) => void
-	onSelectNoProject?: (task: TaskListItem) => void
 }
 
 function TaskStatusSection({
@@ -348,22 +283,15 @@ function TaskStatusSection({
 	tasks,
 	open,
 	createProjectId,
-	showProjectName,
-	pendingTaskId,
-	activeTaskId,
-	selectedTaskIdSet,
 	onOpenChange,
-	onToggleTaskSelection,
-	onUpdateTaskPriority,
-	onUpdateTaskStatus,
-	onToggleTaskStatus,
-	onDeleteTask,
-	onArchiveTask,
-	onOpenTask,
-	projectOptions,
-	onSelectProject,
-	onSelectNoProject,
-}: TaskStatusSectionProps) {
+}: {
+	status: TaskStatus
+	label: string
+	tasks: TaskListItem[]
+	open: boolean
+	createProjectId: string | null
+	onOpenChange: (open: boolean) => void
+}) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
 	return (
@@ -408,24 +336,7 @@ function TaskStatusSection({
 			<CollapsibleContent className='overflow-hidden px-0'>
 				<CanonicalBoard.Rows>
 					{tasks.map((task) => (
-						<TaskBoardRow
-							activeTaskId={activeTaskId}
-							isProjectNameVisible={showProjectName}
-							key={task.id}
-							onDeleteTask={onDeleteTask}
-							onArchiveTask={onArchiveTask}
-							onOpenTask={onOpenTask}
-							onToggleTaskSelection={onToggleTaskSelection}
-							onToggleTaskStatus={onToggleTaskStatus}
-							onUpdateTaskPriority={onUpdateTaskPriority}
-							onUpdateTaskStatus={onUpdateTaskStatus}
-							pendingTaskId={pendingTaskId}
-							selectedTaskIdSet={selectedTaskIdSet}
-							task={task}
-							projectOptions={projectOptions}
-							onSelectProject={onSelectProject}
-							onSelectNoProject={onSelectNoProject}
-						/>
+						<TaskBoardRow key={task.id} task={task} />
 					))}
 				</CanonicalBoard.Rows>
 			</CollapsibleContent>
@@ -433,51 +344,21 @@ function TaskStatusSection({
 	)
 }
 
-function TaskBoardRow({
-	task,
-	pendingTaskId,
-	activeTaskId,
-	selectedTaskIdSet,
-	isProjectNameVisible,
-	onToggleTaskSelection,
-	onUpdateTaskPriority,
-	onUpdateTaskStatus,
-	onToggleTaskStatus,
-	onDeleteTask,
-	onArchiveTask,
-	onOpenTask,
-	projectOptions,
-	onSelectProject,
-	onSelectNoProject,
-}: {
-	task: TaskListItem
-	pendingTaskId: string | null
-	activeTaskId: string | null
-	selectedTaskIdSet: Set<string>
-	isProjectNameVisible: boolean
-	onToggleTaskSelection: (taskId: string) => void
-	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
-	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
-	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
-	onArchiveTask?: (task: TaskListItem) => Promise<void>
-	onDeleteTask?: (task: TaskListItem) => Promise<void>
-	onOpenTask: (taskId: string) => void
-	projectOptions?: Array<{ id: string; name: string }>
-	onSelectProject?: (task: TaskListItem, projectId: string) => void
-	onSelectNoProject?: (task: TaskListItem) => void
-}) {
-	const isPending = pendingTaskId === task.id
-	const isActive = activeTaskId === task.id
-	const isSelected = selectedTaskIdSet.has(task.id)
+function TaskBoardRow({ task }: { task: TaskListItem }) {
+	const ctx = useTaskRowContext()
+	const isPending = ctx.pendingTaskId === task.id
+	const isActive = ctx.activeTaskId === task.id
+	const isSelected = ctx.selectedTaskIdSet.has(task.id)
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
+	const hasProjectOptions = ctx.projectOptions && ctx.onSelectProject && ctx.onSelectNoProject
 
 	return (
 		<TaskContextMenu
 			isBusy={isPending}
-			onArchive={onArchiveTask ? () => void onArchiveTask(task) : undefined}
-			onMoveToTrash={onDeleteTask ? () => void onDeleteTask(task) : undefined}
-			onOpenDetails={() => onOpenTask(task.id)}
-			onToggleStatus={() => void onToggleTaskStatus(task)}
+			onArchive={ctx.onArchiveTask ? () => void ctx.onArchiveTask!(task) : undefined}
+			onMoveToTrash={ctx.onDeleteTask ? () => void ctx.onDeleteTask!(task) : undefined}
+			onOpenDetails={() => ctx.onOpenTask(task.id)}
+			onToggleStatus={() => void ctx.onToggleTaskStatus(task)}
 			status={task.status}
 		>
 			<div
@@ -494,61 +375,59 @@ function TaskBoardRow({
 				)}
 				data-shell-task-card='true'
 				data-task-id={task.id}
-				onClick={() => onOpenTask(task.id)}
+				onClick={() => ctx.onOpenTask(task.id)}
 				onKeyDown={(event) => {
 					if (event.key === 'Enter' || event.key === ' ') {
 						event.preventDefault()
-						onOpenTask(task.id)
+						ctx.onOpenTask(task.id)
 					}
 				}}
 				role='button'
 				tabIndex={0}
 			>
-				<div className='flex min-w-0 flex-1 items-center gap-2.5'>
-					<TaskLeadRail>
-						<TaskSelectionCheckbox
-							ariaLabel={`选择任务 ${task.title}`}
-							checked={isSelected}
-							disabled={isPending}
-							onCheckedChange={() => onToggleTaskSelection(task.id)}
-						/>
-						<TaskPrioritySelect
-							ariaLabel={`设置任务 ${task.title} 的优先级`}
-							disabled={isPending}
-							onValueChange={(priority) => void onUpdateTaskPriority(task, priority)}
-							value={task.priority}
-						/>
-						<TaskStatusSelect
-							ariaLabel={`设置任务 ${task.title} 的状态`}
-							disabled={isPending}
-							onValueChange={(status) => void onUpdateTaskStatus(task, status)}
-							value={task.status}
-						/>
-					</TaskLeadRail>
+				<TaskLeadRail>
+					<TaskSelectionCheckbox
+						ariaLabel={`选择任务 ${task.title}`}
+						checked={isSelected}
+						disabled={isPending}
+						onCheckedChange={() => ctx.onToggleTaskSelection(task.id)}
+					/>
+					<TaskPrioritySelect
+						ariaLabel={`设置任务 ${task.title} 的优先级`}
+						disabled={isPending}
+						onValueChange={(priority) => void ctx.onUpdateTaskPriority(task, priority)}
+						value={task.priority}
+					/>
+					<TaskStatusSelect
+						ariaLabel={`设置任务 ${task.title} 的状态`}
+						disabled={isPending}
+						onValueChange={(status) => void ctx.onUpdateTaskStatus(task, status)}
+						value={task.status}
+					/>
+				</TaskLeadRail>
 
-					<span
-						className={cn(
-							'min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
-							isDoneLike ? 'text-sf-text-tertiary line-through' : null,
-						)}
-					>
-						{task.title}
-					</span>
-					{projectOptions && onSelectProject && onSelectNoProject ? (
-						<ProjectSelect
-							currentProjectName={task.projectName}
-							disabled={isPending}
-							onSelectNoProject={() => onSelectNoProject(task)}
-							onSelectProject={(projectId) => onSelectProject(task, projectId)}
-							projects={projectOptions}
-						/>
-					) : isProjectNameVisible && task.projectName ? (
-						<Badge className={entityBoardCompactBadgeClass} variant='outline'>
-							{task.projectName}
-						</Badge>
-					) : null}
-					<TaskMetaRail createdAt={task.createdAt} dueAt={task.dueAt} />
-				</div>
+				<span
+					className={cn(
+						'min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
+						isDoneLike ? 'text-sf-text-tertiary line-through' : null,
+					)}
+				>
+					{task.title}
+				</span>
+				{hasProjectOptions ? (
+					<ProjectSelect
+						currentProjectName={task.projectName}
+						disabled={isPending}
+						onSelectNoProject={() => ctx.onSelectNoProject!(task)}
+						onSelectProject={(projectId) => ctx.onSelectProject!(task, projectId)}
+						projects={ctx.projectOptions!}
+					/>
+				) : task.projectName ? (
+					<Badge className={entityBoardCompactBadgeClass} variant='outline'>
+						{task.projectName}
+					</Badge>
+				) : null}
+				<TaskMetaRail createdAt={task.createdAt} dueAt={task.dueAt} />
 			</div>
 		</TaskContextMenu>
 	)

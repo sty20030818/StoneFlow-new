@@ -95,7 +95,6 @@ export function AllTasksPage() {
 					emptyTitle: '暂无任务',
 					hideEmptySections: true,
 					sectionVariant: 'project',
-					showProjectName: true,
 					statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
 				},
 				boardData: {
