@@ -5,30 +5,19 @@ import { useProjectStore } from '@/features/project/model/useProjectStore'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import { Textarea } from '@/shared/ui/base/textarea'
+import { CreateModalContent } from '@/shared/ui/create-modal-content'
 import { MoreHorizontalIcon, PaperclipIcon } from 'lucide-react'
 
-type ProjectCreateModalContentProps = {
-	/** 当前选中的 Space（顶栏下拉与表单提交共用） */
+type ProjectCreateContentProps = {
 	selectedSpaceId: string | null
 	onClose: () => void
 }
 
-function extractErrorMessage(error: unknown, fallback: string): string {
-	if (error instanceof Error) return error.message
-	if (typeof error === 'string') return error
-	if (error && typeof error === 'object' && 'message' in error) {
-		return String((error as { message: unknown }).message)
-	}
-	return fallback
-}
-
 /**
- * 项目创建表单主体 — 与任务创建弹窗同一分区：标题 / 描述滚动 / 元数据行 / 底栏。
+ * 项目创建表单 — 使用 CreateModalContent 组合 layout。
+ * 壳层（Dialog + Header）由 CreateDialogShell 统一提供。
  */
-export function ProjectCreateModalContent({
-	selectedSpaceId,
-	onClose,
-}: ProjectCreateModalContentProps) {
+export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreateContentProps) {
 	const createProject = useProjectStore((state) => state.createProject)
 	const [name, setName] = useState('')
 	const [description, setDescription] = useState('')
@@ -63,8 +52,8 @@ export function ProjectCreateModalContent({
 		submitState === 'idle' && name.trim().length > 0 && Boolean(selectedSpaceId)
 
 	return (
-		<div className='flex min-h-0 flex-1 flex-col gap-1.5'>
-			<div className='shrink-0 px-3'>
+		<CreateModalContent>
+			<CreateModalContent.Title>
 				<Input
 					autoFocus
 					className='h-auto border-none bg-transparent px-0 text-lg font-black shadow-none focus-visible:ring-0 md:text-lg md:font-black'
@@ -73,9 +62,9 @@ export function ProjectCreateModalContent({
 					placeholder='项目名称'
 					value={name}
 				/>
-			</div>
+			</CreateModalContent.Title>
 
-			<div className='min-h-0 flex-1 overflow-y-auto px-3'>
+			<CreateModalContent.Body>
 				<Textarea
 					className='min-h-20 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
 					disabled={submitState === 'submitting'}
@@ -83,26 +72,20 @@ export function ProjectCreateModalContent({
 					placeholder='添加项目说明…'
 					value={description}
 				/>
-			</div>
+			</CreateModalContent.Body>
 
-			<div className='shrink-0 space-y-1.5 px-3'>
-				<div className='flex flex-wrap items-center gap-1.5'>
-					<Button
-						disabled={submitState === 'submitting'}
-						onClick={() => toast.info('更多属性即将支持')}
-						size='icon-sm'
-						variant='outline'
-					>
-						<MoreHorizontalIcon />
-					</Button>
-				</div>
+			<CreateModalContent.Metadata error={submitState === 'error' ? errorMessage : null}>
+				<Button
+					disabled={submitState === 'submitting'}
+					onClick={() => toast.info('更多属性即将支持')}
+					size='icon-sm'
+					variant='outline'
+				>
+					<MoreHorizontalIcon />
+				</Button>
+			</CreateModalContent.Metadata>
 
-				{submitState === 'error' && errorMessage ? (
-					<p className='text-[12px] text-sf-danger-soft-text'>{errorMessage}</p>
-				) : null}
-			</div>
-
-			<div className='flex shrink-0 items-center justify-between px-3 pb-3 pt-2'>
+			<CreateModalContent.Footer>
 				<Button
 					className='text-sf-icon-secondary'
 					disabled={submitState === 'submitting'}
@@ -118,7 +101,16 @@ export function ProjectCreateModalContent({
 						{submitState === 'submitting' ? '创建中…' : '创建项目'}
 					</Button>
 				</div>
-			</div>
-		</div>
+			</CreateModalContent.Footer>
+		</CreateModalContent>
 	)
+}
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+	if (error instanceof Error) return error.message
+	if (typeof error === 'string') return error
+	if (error && typeof error === 'object' && 'message' in error) {
+		return String((error as { message: unknown }).message)
+	}
+	return fallback
 }

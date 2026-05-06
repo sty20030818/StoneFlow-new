@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type PropsWithChildren } from 'react'
+import { useEffect, useMemo, useState, type PropsWithChildren } from 'react'
 import { useLocation } from 'react-router-dom'
 
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -10,12 +10,9 @@ import {
 	useDrawerStore,
 } from '@/app/layouts/shell/model/useDrawerStore'
 import {
+	selectCreateDialogType,
 	selectIsCommandOpen,
-	selectIsProjectCreateOpen,
-	selectIsTaskCreateOpen,
-	selectTaskCreateInitialPlacement,
-	selectTaskCreateProjectId,
-	selectTaskCreateStatus,
+	selectTaskCreateDraft,
 	useDialogStore,
 } from '@/app/layouts/shell/model/useDialogStore'
 import {
@@ -39,8 +36,9 @@ import {
 	selectSpaceStatus,
 	useSpaceStore,
 } from '@/features/space/model/useSpaceStore'
-import { ProjectCreateDialog } from '@/features/project/ui/ProjectCreateDialog'
-import { TaskCreateDialog } from '@/features/task/ui/TaskCreateDialog'
+import { ProjectCreateContent } from '@/features/project/ui/ProjectCreateContent'
+import { TaskCreateContent } from '@/features/task/ui/TaskCreateContent'
+import { CreateDialogShell } from '@/shared/ui/create-dialog-shell'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import {
 	shellChromeSkeletonMainCardClass,
@@ -60,15 +58,13 @@ export function ShellLayout({
 	activeSection,
 }: ShellLayoutProps) {
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
-	const isTaskCreateOpen = useDialogStore(selectIsTaskCreateOpen)
-	const taskCreateProjectId = useDialogStore(selectTaskCreateProjectId)
-	const taskCreateStatus = useDialogStore(selectTaskCreateStatus)
-	const taskCreateInitialPlacement = useDialogStore(selectTaskCreateInitialPlacement)
-	const isProjectCreateOpen = useDialogStore(selectIsProjectCreateOpen)
+	const createDialogType = useDialogStore(selectCreateDialogType)
+	const taskCreateDraft = useDialogStore(selectTaskCreateDraft)
 	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
 	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
+	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
 
 	const { pathname } = useLocation()
 	const routeProjectId = useMemo(() => {
@@ -86,15 +82,25 @@ export function ShellLayout({
 		}
 		return () => openTaskCreateDialog()
 	}, [isNoProjectPage, openTaskCreateDialog, routeProjectId])
-	const closeTaskCreateDialog = useDialogStore((state) => state.closeTaskCreateDialog)
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
+	const closeTaskCreateDialog = useDialogStore((state) => state.closeTaskCreateDialog)
 	const closeProjectCreateDialog = useDialogStore((state) => state.closeProjectCreateDialog)
+	const spaces = useSpaceStore(selectSpaces)
+
+	// 弹窗打开时同步默认 Space
+	useEffect(() => {
+		if (!createDialogType) return
+		const defaultSpaceId =
+			currentScope.type === 'space'
+				? currentScope.spaceId
+				: (spaces.find((s) => s.isDefault)?.id ?? spaces[0]?.id ?? null)
+		setSelectedSpaceId(defaultSpaceId)
+	}, [createDialogType, currentScope, spaces])
 	const openDrawer = useDrawerStore((state) => state.openDrawer)
 	const closeDrawer = useDrawerStore((state) => state.closeDrawer)
 	const sidebarSettingsStatus = useSidebarSettingsStore(selectSidebarSettingsStatus)
 	const sidebarSettings = useSidebarSettingsStore(selectSidebarSettings)
 	const sidebarSettingsError = useSidebarSettingsStore(selectSidebarSettingsError)
-	const spaces = useSpaceStore(selectSpaces)
 	const spaceStatus = useSpaceStore(selectSpaceStatus)
 	const spaceError = useSpaceStore(selectSpaceError)
 	const sidebarProjects = useProjectStore(selectProjectSidebar)
@@ -229,24 +235,44 @@ export function ShellLayout({
 				</div>
 			</div>
 
-			<TaskCreateDialog
-				currentScope={currentScope}
-				initialPlacement={taskCreateInitialPlacement}
-				initialProjectId={taskCreateProjectId}
-				initialStatus={taskCreateStatus}
-				onClose={closeTaskCreateDialog}
-				open={isTaskCreateOpen}
-				projects={projectOptions}
-				projectsLoading={sidebarProjects.status === 'loading'}
+			<CreateDialogShell
+				description={
+					createDialogType === 'task'
+						? '创建新任务，设置标题、描述、状态、优先级与归属。'
+						: '在目标 Space 中创建新项目，填写名称与说明。'
+				}
+				onClose={() => {
+					if (createDialogType === 'task') {
+						closeTaskCreateDialog()
+					} else {
+						closeProjectCreateDialog()
+					}
+				}}
+				onSelectSpace={setSelectedSpaceId}
+				open={createDialogType !== null}
+				selectedSpaceId={selectedSpaceId}
 				spaces={spaces}
-			/>
-
-			<ProjectCreateDialog
-				currentScope={currentScope}
-				onClose={closeProjectCreateDialog}
-				open={isProjectCreateOpen}
-				spaces={spaces}
-			/>
+				title={createDialogType === 'task' ? '新建任务' : '新建项目'}
+			>
+				{createDialogType === 'task' ? (
+					<TaskCreateContent
+						currentScope={currentScope}
+						initialPlacement={taskCreateDraft.placement ?? null}
+						initialProjectId={taskCreateDraft.projectId ?? null}
+						initialStatus={taskCreateDraft.status ?? 'todo'}
+						onClose={closeTaskCreateDialog}
+						projects={projectOptions}
+						projectsLoading={sidebarProjects.status === 'loading'}
+						selectedSpaceId={selectedSpaceId}
+						spaces={spaces}
+					/>
+				) : (
+					<ProjectCreateContent
+						onClose={closeProjectCreateDialog}
+						selectedSpaceId={selectedSpaceId}
+					/>
+				)}
+			</CreateDialogShell>
 
 			{/* <ShellFooter navBadges={navBadges} /> */}
 			<div className='h-2 shrink-0' />

@@ -11,13 +11,12 @@ type TaskCreateDialogDraft = {
 	placement?: TaskPlacement
 }
 
+type CreateDialogType = 'task' | 'project' | null
+
 type DialogState = {
 	isCommandOpen: boolean
-	isTaskCreateOpen: boolean
-	taskCreateProjectId: string | null
-	taskCreateStatus: TaskStatus
-	taskCreateInitialPlacement: TaskPlacement | null
-	isProjectCreateOpen: boolean
+	createDialogType: CreateDialogType
+	taskCreateDraft: TaskCreateDialogDraft
 
 	openCommand: () => void
 	closeCommand: () => void
@@ -28,79 +27,75 @@ type DialogState = {
 	closeProjectCreateDialog: () => void
 }
 
+const defaultTaskDraft: TaskCreateDialogDraft = {
+	projectId: null,
+	status: 'todo',
+	placement: undefined,
+}
+
 // ----- Store -----
 export const useDialogStore = create<DialogState>((set) => ({
 	isCommandOpen: false,
-	isTaskCreateOpen: false,
-	taskCreateProjectId: null,
-	taskCreateStatus: 'todo',
-	taskCreateInitialPlacement: null,
-	isProjectCreateOpen: false,
+	createDialogType: null,
+	taskCreateDraft: { ...defaultTaskDraft },
 
 	openCommand: () => {
-		// 互斥：关闭 drawer
 		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: true,
-			isTaskCreateOpen: false,
-			taskCreateProjectId: null,
-			taskCreateStatus: 'todo',
-			taskCreateInitialPlacement: null,
-			isProjectCreateOpen: false,
+			createDialogType: null,
+			taskCreateDraft: { ...defaultTaskDraft },
 		})
 	},
 	closeCommand: () => set({ isCommandOpen: false }),
 	setCommandOpen: (open) => {
 		if (open) {
-			// 互斥：关闭 drawer
 			useDrawerStore.getState().closeDrawer()
 		}
 		set({ isCommandOpen: open })
 	},
 
 	openTaskCreateDialog: (draft) => {
-		// 互斥：关闭 drawer
 		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: false,
-			isTaskCreateOpen: true,
-			taskCreateProjectId: draft?.projectId ?? null,
-			taskCreateStatus: draft?.status ?? 'todo',
-			taskCreateInitialPlacement: draft?.placement ?? null,
-			isProjectCreateOpen: false,
+			createDialogType: 'task',
+			taskCreateDraft: {
+				projectId: draft?.projectId ?? null,
+				status: draft?.status ?? 'todo',
+				placement: draft?.placement ?? undefined,
+			},
 		})
 	},
 	closeTaskCreateDialog: () =>
 		set({
-			isTaskCreateOpen: false,
-			taskCreateProjectId: null,
-			taskCreateStatus: 'todo',
-			taskCreateInitialPlacement: null,
+			createDialogType: null,
+			taskCreateDraft: { ...defaultTaskDraft },
 		}),
 
 	openProjectCreateDialog: () => {
-		// 互斥：关闭 drawer
 		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: false,
-			isTaskCreateOpen: false,
-			taskCreateProjectId: null,
-			taskCreateStatus: 'todo',
-			taskCreateInitialPlacement: null,
-			isProjectCreateOpen: true,
+			createDialogType: 'project',
+			taskCreateDraft: { ...defaultTaskDraft },
 		})
 	},
 	closeProjectCreateDialog: () =>
 		set({
-			isProjectCreateOpen: false,
+			createDialogType: null,
 		}),
 }))
 
 // ----- Selectors -----
 export const selectIsCommandOpen = (state: DialogState) => state.isCommandOpen
-export const selectIsTaskCreateOpen = (state: DialogState) => state.isTaskCreateOpen
-export const selectTaskCreateProjectId = (state: DialogState) => state.taskCreateProjectId
-export const selectTaskCreateStatus = (state: DialogState) => state.taskCreateStatus
+export const selectCreateDialogType = (state: DialogState) => state.createDialogType
+export const selectTaskCreateDraft = (state: DialogState) => state.taskCreateDraft
+
+// 向后兼容 selectors（供未迁移的调用方使用）
+export const selectIsTaskCreateOpen = (state: DialogState) => state.createDialogType === 'task'
+export const selectIsProjectCreateOpen = (state: DialogState) => state.createDialogType === 'project'
+export const selectTaskCreateProjectId = (state: DialogState) => state.taskCreateDraft.projectId ?? null
+export const selectTaskCreateStatus = (state: DialogState) => state.taskCreateDraft.status ?? 'todo'
 export const selectTaskCreateInitialPlacement = (state: DialogState) =>
-	state.taskCreateInitialPlacement
-export const selectIsProjectCreateOpen = (state: DialogState) => state.isProjectCreateOpen
+	state.taskCreateDraft.placement ?? null

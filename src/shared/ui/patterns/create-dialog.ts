@@ -1,0 +1,29 @@
+import { cn } from '@/shared/lib/utils'
+
+import { dialogShellFloatingBaseClass } from './dialog-shell'
+
+/**
+ * 创建弹窗壳层 — 浮动 Dialog 统一 className。
+ * 顶留白 15dvh、底最多留白 15dvh → max-h = 视口 - 上下各 15dvh。
+ */
+export const createDialogShellClass = cn(
+	'flex max-h-[70dvh] min-h-0 max-w-[calc(100%-1.5rem+8px)]',
+	'flex-col gap-0 overflow-hidden rounded-3xl border border-border',
+	'sm:max-w-3xl top-[15dvh] translate-y-0',
+	dialogShellFloatingBaseClass,
+)
+
+/** 创建弹窗 Header — 面包屑 + 操作按钮 */
+export const createDialogHeaderClass = 'flex shrink-0 items-center justify-between p-3'
+
+/** 创建弹窗标题区 — 固定，不随描述滚动 */
+export const createDialogSectionClass = 'shrink-0 px-4'
+
+/** 创建弹窗描述区 — 可滚动 */
+export const createDialogScrollClass = 'min-h-0 flex-1 overflow-y-auto px-5'
+
+/** 创建弹窗元数据区 — 固定，含错误信息 */
+export const createDialogMetaClass = 'shrink-0 space-y-1.5 px-3'
+
+/** 创建弹窗底部操作栏 */
+export const createDialogFooterClass = 'flex shrink-0 items-center justify-between px-3 pb-3 pt-2'
