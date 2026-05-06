@@ -1,5 +1,12 @@
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
+import {
+	globalSearchGroupHeadingClass,
+	globalSearchResultMetaClass,
+	globalSearchResultNoteClass,
+	globalSearchResultsPopoverClass,
+	globalSearchStateMutedClass,
+} from '@/shared/ui/patterns/global-search'
 import { SearchIcon } from 'lucide-react'
 
 type GlobalSearchResultsProps = {
@@ -26,7 +33,7 @@ export function GlobalSearchResults({
 	const hasResults = taskItems.length > 0 || projectItems.length > 0
 
 	return (
-		<div className='absolute inset-x-0 top-full z-40 mt-1.5 overflow-hidden rounded-xl border border-sf-border-secondary bg-popover/98 shadow-(--sf-shadow-popover) backdrop-blur'>
+		<div className={globalSearchResultsPopoverClass}>
 			<div className='max-h-96 overflow-y-auto p-2.5'>
 				{isLoading && !hasResults ? (
 					<SearchPanelState label='正在搜索任务与项目...' />
@@ -117,13 +124,13 @@ function SearchResultButton({
 			onMouseEnter={onHighlight}
 			type='button'
 		>
-			<div className='flex items-center justify-between gap-3 text-[11px] text-sf-shell-text-secondary'>
+			<div className={globalSearchResultMetaClass}>
 				<span>{typeLabel}</span>
 				<span className='truncate'>{context}</span>
 			</div>
 			<div className='truncate text-[13px] font-medium text-foreground'>{title}</div>
 			{note?.trim() ? (
-				<div className='truncate text-[12px] text-sf-shell-text-tertiary'>{toSnippet(note)}</div>
+				<div className={globalSearchResultNoteClass}>{toSnippet(note)}</div>
 			) : null}
 		</button>
 	)
@@ -131,7 +138,7 @@ function SearchResultButton({
 
 function SearchGroupHeading({ title }: { title: string }) {
 	return (
-		<div className='px-1 text-[10.5px] font-medium tracking-[0.06em] text-sf-shell-text-secondary uppercase'>
+		<div className={globalSearchGroupHeadingClass}>
 			{title}
 		</div>
 	)
@@ -144,7 +151,7 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 				'flex items-center gap-2 rounded-lg border px-3 py-3 text-[12px]',
 				tone === 'danger'
 					? 'border-sf-danger-surface-border bg-sf-danger-surface text-sf-danger-surface-text'
-					: 'border-sf-border-subtle bg-muted/60 text-sf-shell-text-secondary',
+					: globalSearchStateMutedClass,
 			)}
 		>
 			<SearchIcon className='size-3.5 shrink-0' />

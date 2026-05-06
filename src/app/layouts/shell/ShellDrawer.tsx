@@ -10,6 +10,7 @@ import {
 	shellDrawerCaptionClass,
 	shellDrawerEmptyStateClass,
 	shellDrawerItemLabelClass,
+	shellDrawerSectionItemCardClass,
 } from '@/shared/ui/patterns/shell-drawer'
 
 type ShellDrawerProps = {
@@ -105,7 +106,7 @@ export function ShellDrawer({
 									<div className='space-y-1.5'>
 										{section.items.map((item) => (
 											<div
-												className='rounded-lg border border-sf-border-subtle bg-muted/45 px-3 py-2.5'
+												className={shellDrawerSectionItemCardClass}
 												key={`${section.title}-${item.label}`}
 											>
 												<p className={shellDrawerItemLabelClass}>{item.label}</p>

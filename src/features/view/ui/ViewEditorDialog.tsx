@@ -34,6 +34,7 @@ import { Textarea } from '@/shared/ui/base/textarea'
 import {
 	dialogShellContentVariants,
 	dialogShellDescriptionClass,
+	dialogShellPanelFooterClass,
 	dialogShellHeaderClass,
 	dialogShellTitleClass,
 } from '@/shared/ui/patterns/dialog-shell'
@@ -395,7 +396,7 @@ export function ViewEditorDialog({
 					</section>
 				</div>
 
-				<DialogFooter className='border-t border-sf-divider bg-muted/60 px-6 py-4'>
+				<DialogFooter className={dialogShellPanelFooterClass}>
 					<Button onClick={onClose} type='button' variant='outline'>
 						取消
 					</Button>

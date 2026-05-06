@@ -1,5 +1,6 @@
 import type { ProjectOverviewItem } from '@/shared/types'
 import { EmptyPage } from '@/shared/ui/base/empty'
+import { entityBoardLoadingCardClass } from '@/shared/ui/patterns/entity-board'
 
 import { ProjectOverviewRow } from '@/features/project-overview/ui/ProjectOverviewRow'
 
@@ -27,7 +28,7 @@ export function ProjectOverviewList({
 	if (status === 'loading' && items.length === 0) {
 		return (
 			<EmptyPage>
-				<div className='rounded-[28px] border border-sf-border-subtle bg-card/90 p-6 text-[13px] text-sf-shell-text-secondary'>
+				<div className={entityBoardLoadingCardClass}>
 					正在读取 Project Overview…
 				</div>
 			</EmptyPage>

@@ -4,6 +4,7 @@ import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { GlobalSearchResults } from '@/features/global-search/ui/GlobalSearchResults'
 import { InputGroup, InputGroupAddon } from '@/shared/ui/base/input-group'
 import { Kbd } from '@/shared/ui/base/kbd'
+import { globalSearchInputShellClass } from '@/shared/ui/patterns/global-search'
 import { SearchIcon } from 'lucide-react'
 
 type GlobalSearchInputProps = {
@@ -176,7 +177,7 @@ export function GlobalSearchInput({
 	return (
 		<div className='relative w-full min-w-0 max-w-100' data-sf-search-root='true'>
 			<div ref={rootRef}>
-				<InputGroup className='h-8 border-sf-border-subtle bg-card/94 shadow-(--sf-shadow-panel) transition-colors hover:border-border focus-within:border-ring'>
+				<InputGroup className={globalSearchInputShellClass}>
 					<InputGroupAddon align='inline-start' className='px-2.5 text-sf-icon-subtle'>
 						<SearchIcon className='size-3.5' />
 					</InputGroupAddon>

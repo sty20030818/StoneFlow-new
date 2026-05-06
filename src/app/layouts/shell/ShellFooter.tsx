@@ -3,6 +3,7 @@ import { useHealthcheckStatus } from '@/features/healthcheck/model/useHealthchec
 import { Kbd, KbdGroup } from '@/shared/ui/base/kbd'
 import {
 	shellFooterBadgePairClass,
+	shellFooterBadgeValueClass,
 	shellFooterLeftTrackClass,
 	shellFooterRightTrackClass,
 } from '@/shared/ui/patterns/shell-footer'
@@ -26,13 +27,13 @@ export function ShellFooter({ navBadges = {} }: ShellFooterProps) {
 				{navBadges.inbox ? (
 					<span className={shellFooterBadgePairClass}>
 						<span>收件箱</span>
-						<span className='font-medium text-sf-shell-text-secondary'>{navBadges.inbox}</span>
+						<span className={shellFooterBadgeValueClass}>{navBadges.inbox}</span>
 					</span>
 				) : null}
 				{navBadges.allTasks ? (
 					<span className={shellFooterBadgePairClass}>
 						<span>任务</span>
-						<span className='font-medium text-sf-shell-text-secondary'>{navBadges.allTasks}</span>
+						<span className={shellFooterBadgeValueClass}>{navBadges.allTasks}</span>
 					</span>
 				) : null}
 			</div>

@@ -18,6 +18,7 @@ import {
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
 import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
+import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
 import { CommandIcon, Layers3Icon, PlusIcon, TargetIcon } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
 
@@ -108,7 +109,7 @@ export function NoProjectPage() {
 				<TaskBulkActionBar
 					action={
 						<Button
-							className='border-border bg-card text-sf-control-text hover:border-sf-border-strong hover:bg-sf-surface-panel-muted hover:text-sf-control-text'
+							className={TASK_BULK_ACTION_BUTTON_CLASS}
 							size='sm'
 							variant='outline'
 						>

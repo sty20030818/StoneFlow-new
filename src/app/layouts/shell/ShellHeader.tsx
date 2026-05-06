@@ -39,7 +39,15 @@ import { Kbd } from '@/shared/ui/base/kbd'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
 import {
+	shellChromeAvatarClusterClass,
+	shellChromeCommandDialogClass,
+	shellChromeIconActionClass,
 	shellChromeInlineGroupClass,
+	shellChromeNavCircleButtonClass,
+	shellChromeNavCircleButtonExpandedClass,
+	shellChromePrimaryActionClass,
+	shellChromeTruncateLabelClass,
+	shellChromeWindowControlsRowClass,
 	shellChromeWindowControlClass,
 } from '@/shared/ui/patterns/shell-chrome'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -298,7 +306,8 @@ export function ShellHeader({
 								aria-label={sidebarToggleOpen ? '收起侧边栏' : '展开侧边栏'}
 								className={cn(
 									'hidden shrink-0 group-data-[sidebar-mode=desktop-expanded]/sidebar-wrapper:hidden group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:inline-flex',
-									'rounded-full bg-transparent text-sf-shell-text-secondary shadow-none hover:bg-sf-shell-hover hover:text-foreground focus-visible:ring-0',
+									shellChromeNavCircleButtonClass,
+									'focus-visible:ring-0',
 								)}
 								data-slot='sidebar-trigger'
 								onClick={toggleSidebar}
@@ -313,7 +322,7 @@ export function ShellHeader({
 								<DropdownMenuTrigger asChild>
 									<Button
 										aria-label='打开历史记录'
-										className='rounded-full bg-transparent text-sf-shell-text-secondary shadow-none hover:bg-sf-shell-hover hover:text-foreground aria-expanded:bg-sf-shell-hover'
+										className={`${shellChromeNavCircleButtonClass} ${shellChromeNavCircleButtonExpandedClass}`}
 										size='icon-sm'
 										variant='ghost'
 									>
@@ -332,7 +341,9 @@ export function ShellHeader({
 														onSelect={() => navigateToHistoryEntry(entry)}
 													>
 														<EntryIcon />
-														<span className='min-w-0 truncate'>{entry.label}</span>
+														<span className={shellChromeTruncateLabelClass}>
+															{entry.label}
+														</span>
 													</DropdownMenuItem>
 												)
 											})
@@ -344,7 +355,7 @@ export function ShellHeader({
 							</DropdownMenu>
 							<Button
 								aria-label='后退'
-								className='rounded-full bg-transparent text-sf-shell-text-secondary shadow-none hover:bg-sf-shell-hover hover:text-foreground'
+								className={shellChromeNavCircleButtonClass}
 								disabled={!canGoBack}
 								onClick={goBack}
 								size='icon-sm'
@@ -354,7 +365,7 @@ export function ShellHeader({
 							</Button>
 							<Button
 								aria-label='前进'
-								className='rounded-full bg-transparent text-sf-shell-text-secondary shadow-none hover:bg-sf-shell-hover hover:text-foreground'
+								className={shellChromeNavCircleButtonClass}
 								disabled={!canGoForward}
 								onClick={goForward}
 								size='icon-sm'
@@ -396,7 +407,7 @@ export function ShellHeader({
 					>
 						<div className={shellChromeInlineGroupClass} data-tauri-drag-region>
 							<Button
-								className='border-border bg-card px-3 text-[12px] font-medium text-foreground shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden'
+								className={`${shellChromePrimaryActionClass} group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden`}
 								onClick={onOpenTaskCreateDialog}
 								size='default'
 								variant='outline'
@@ -406,7 +417,7 @@ export function ShellHeader({
 							</Button>
 							<Button
 								aria-label='新建任务'
-								className='hidden border-border bg-card text-sf-shell-text-secondary shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle hover:text-foreground group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex'
+								className={`hidden ${shellChromeIconActionClass} group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex`}
 								onClick={onOpenTaskCreateDialog}
 								size='icon'
 								variant='outline'
@@ -419,7 +430,7 @@ export function ShellHeader({
 									<DropdownMenuTrigger asChild>
 										<Button
 											aria-label='打开创建菜单'
-											className='border-border bg-card text-sf-shell-text-secondary shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle hover:text-foreground'
+											className={shellChromeIconActionClass}
 											size='icon'
 											variant='outline'
 										>
@@ -442,7 +453,7 @@ export function ShellHeader({
 							</div>
 						</div>
 
-						<div className='ml-2 flex items-center gap-2' data-tauri-drag-region>
+						<div className={shellChromeAvatarClusterClass} data-tauri-drag-region>
 							<Avatar className='size-7.5'>
 								<AvatarImage alt='当前用户头像' src='/avatar.jpg' />
 								<AvatarFallback>U</AvatarFallback>
@@ -452,7 +463,7 @@ export function ShellHeader({
 
 						{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 						{!isMac ? (
-							<div className='flex h-full items-center gap-1 p-1' data-tauri-drag-region>
+							<div className={shellChromeWindowControlsRowClass} data-tauri-drag-region>
 								<Button
 									aria-label='最小化窗口'
 									className={shellChromeWindowControlClass}
@@ -484,7 +495,7 @@ export function ShellHeader({
 			</header>
 
 			<CommandDialog
-				className='max-w-2xl border border-border/80 bg-popover/98 shadow-(--sf-shadow-float)'
+				className={shellChromeCommandDialogClass}
 				description={`${getScopeLabel(currentScope, spaces)} · ${getSectionLabel(activeSection)}`}
 				onOpenChange={onCommandOpenChange}
 				open={isCommandOpen}

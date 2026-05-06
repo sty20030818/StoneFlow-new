@@ -7,6 +7,11 @@ import {
 	TASK_ROW_META_TEXT_CLASS,
 	TASK_ROW_PROJECT_LEAD_CLASS,
 } from '@/shared/ui/patterns/task-row'
+import {
+	projectOverviewActionButtonClass,
+	projectOverviewDescriptionClass,
+	projectOverviewSecondaryTextClass,
+} from '@/shared/ui/patterns/project-overview'
 import { FolderIcon } from 'lucide-react'
 
 type ProjectOverviewRowProps = {
@@ -41,12 +46,12 @@ export function ProjectOverviewRow({
 					<div className='min-w-0 space-y-2'>
 						<div className='min-w-0'>
 							<p className='truncate text-sm font-semibold text-foreground'>{project.name}</p>
-							<p className='text-[12px] text-sf-shell-text-secondary'>{project.spaceName}</p>
+							<p className={`text-[12px] ${projectOverviewSecondaryTextClass}`}>
+								{project.spaceName}
+							</p>
 						</div>
 						{project.description ? (
-							<p className='text-[13px] leading-6 text-sf-shell-text-secondary'>
-								{project.description}
-							</p>
+							<p className={projectOverviewDescriptionClass}>{project.description}</p>
 						) : null}
 						<div
 							className={cn(
@@ -64,22 +69,52 @@ export function ProjectOverviewRow({
 			</div>
 
 			<CanonicalBoard.RowActions className='flex-wrap'>
-				<Button disabled={busy} onClick={onOpen} size='sm' variant='outline'>
+				<Button
+					className={projectOverviewActionButtonClass}
+					disabled={busy}
+					onClick={onOpen}
+					size='sm'
+					variant='outline'
+				>
 					打开
 				</Button>
 				{project.completedAt ? (
-					<Button disabled={busy} onClick={onReopen} size='sm' variant='outline'>
+					<Button
+						className={projectOverviewActionButtonClass}
+						disabled={busy}
+						onClick={onReopen}
+						size='sm'
+						variant='outline'
+					>
 						重开
 					</Button>
 				) : (
-					<Button disabled={busy} onClick={onComplete} size='sm' variant='outline'>
+					<Button
+						className={projectOverviewActionButtonClass}
+						disabled={busy}
+						onClick={onComplete}
+						size='sm'
+						variant='outline'
+					>
 						完成
 					</Button>
 				)}
-				<Button disabled={busy} onClick={onArchive} size='sm' variant='outline'>
+				<Button
+					className={projectOverviewActionButtonClass}
+					disabled={busy}
+					onClick={onArchive}
+					size='sm'
+					variant='outline'
+				>
 					归档
 				</Button>
-				<Button disabled={busy} onClick={onDelete} size='sm' variant='outline'>
+				<Button
+					className={projectOverviewActionButtonClass}
+					disabled={busy}
+					onClick={onDelete}
+					size='sm'
+					variant='outline'
+				>
 					删除
 				</Button>
 			</CanonicalBoard.RowActions>

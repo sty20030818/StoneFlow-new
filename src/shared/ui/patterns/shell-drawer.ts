@@ -6,3 +6,5 @@ export const shellDrawerCaptionClass =
 export const shellDrawerItemLabelClass = 'text-[11px] text-sf-shell-text-tertiary'
 export const shellDrawerEmptyStateClass =
 	'rounded-lg border border-sf-border-subtle bg-muted/45 px-3 py-2.5 text-[12px] text-sf-shell-text-tertiary'
+export const shellDrawerSectionItemCardClass =
+	'rounded-lg border border-sf-border-subtle bg-muted/45 px-3 py-2.5'

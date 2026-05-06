@@ -12,6 +12,14 @@ import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import {
+	activityDebugCompactCodeBlockClass,
+	activityDebugCodeBlockClass,
+	activityDebugDetailsEmptyTextClass,
+	activityDebugDetailsClass,
+	activityDebugFieldLabelClass,
+	activityDebugMetaRowClass,
+} from '@/shared/ui/patterns/activity-debug'
+import {
 	Select,
 	SelectContent,
 	SelectGroup,
@@ -122,9 +130,7 @@ export function ActivityDebugPage() {
 					onSubmit={handleSubmit}
 				>
 					<label className='space-y-1.5'>
-						<span className='text-[11px] font-medium uppercase tracking-[0.06em] text-sf-shell-text-tertiary'>
-							Entity Type
-						</span>
+						<span className={activityDebugFieldLabelClass}>Entity Type</span>
 						<Select
 							onValueChange={(value) => setEntityType(value as ActivityEntityType)}
 							value={entityType}
@@ -145,9 +151,7 @@ export function ActivityDebugPage() {
 					</label>
 
 					<label className='space-y-1.5'>
-						<span className='text-[11px] font-medium uppercase tracking-[0.06em] text-sf-shell-text-tertiary'>
-							Entity ID
-						</span>
+						<span className={activityDebugFieldLabelClass}>Entity ID</span>
 						<Input
 							className='h-10'
 							onChange={(event) => setEntityId(event.currentTarget.value)}
@@ -157,9 +161,7 @@ export function ActivityDebugPage() {
 					</label>
 
 					<label className='space-y-1.5'>
-						<span className='text-[11px] font-medium uppercase tracking-[0.06em] text-sf-shell-text-tertiary'>
-							Limit
-						</span>
+						<span className={activityDebugFieldLabelClass}>Limit</span>
 						<Input
 							className='h-10'
 							inputMode='numeric'
@@ -214,7 +216,7 @@ export function ActivityDebugPage() {
 								className='space-y-3 rounded-xl border border-sf-border-subtle bg-card p-4'
 								key={entry.id}
 							>
-								<div className='flex flex-wrap items-center gap-2 text-[12px] text-sf-shell-text-tertiary'>
+								<div className={activityDebugMetaRowClass}>
 									<span className='rounded-full bg-muted px-2.5 py-1 font-medium text-foreground'>
 										{entry.action}
 									</span>
@@ -231,21 +233,19 @@ export function ActivityDebugPage() {
 
 								{entry.metadata ? (
 									<div className='space-y-1.5'>
-										<p className='text-[11px] font-medium uppercase tracking-[0.06em] text-sf-shell-text-tertiary'>
-											Metadata
-										</p>
-										<pre className='overflow-x-auto rounded-lg bg-muted/60 p-3 text-[12px] leading-5 text-sf-shell-text-secondary'>
+										<p className={activityDebugFieldLabelClass}>Metadata</p>
+										<pre className={activityDebugCodeBlockClass}>
 											{JSON.stringify(entry.metadata, null, 2)}
 										</pre>
 									</div>
 								) : null}
 
-								<details className='rounded-lg border border-sf-border-subtle bg-muted/35 p-3'>
+								<details className={activityDebugDetailsClass}>
 									<summary className='cursor-pointer text-sm font-medium text-foreground'>
 										字段变化 ({entry.changes.length})
 									</summary>
 									{entry.changes.length === 0 ? (
-										<p className='mt-3 text-sm text-sf-shell-text-tertiary'>
+										<p className={activityDebugDetailsEmptyTextClass}>
 											这条事件没有附带字段变化。
 										</p>
 									) : (
@@ -255,15 +255,15 @@ export function ActivityDebugPage() {
 													className='rounded-lg border border-sf-border-subtle bg-card p-3'
 													key={change.id}
 												>
-													<div className='flex flex-wrap items-center gap-2 text-[12px] text-sf-shell-text-tertiary'>
+													<div className={activityDebugMetaRowClass}>
 														<span className='font-medium text-foreground'>{change.field}</span>
 														<span>{change.createdAt}</span>
 													</div>
 													<div className='mt-2 grid gap-2 md:grid-cols-2'>
-														<pre className='overflow-x-auto rounded-md bg-muted/60 p-2 text-[12px] leading-5 text-sf-shell-text-secondary'>
+														<pre className={activityDebugCompactCodeBlockClass}>
 															{JSON.stringify(change.oldValue, null, 2)}
 														</pre>
-														<pre className='overflow-x-auto rounded-md bg-muted/60 p-2 text-[12px] leading-5 text-sf-shell-text-secondary'>
+														<pre className={activityDebugCompactCodeBlockClass}>
 															{JSON.stringify(change.newValue, null, 2)}
 														</pre>
 													</div>

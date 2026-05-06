@@ -23,6 +23,13 @@ import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { Kbd } from '@/shared/ui/base/kbd'
 import { cn } from '@/shared/lib/utils'
+import {
+	quickCaptureMetaPillClass,
+	quickCaptureSearchInputShellClass,
+	quickCaptureStatePanelClass,
+	quickCaptureSurfaceClass,
+	quickCaptureTypePillClass,
+} from '@/shared/ui/patterns/quick-capture'
 
 type CommandMode = 'idle' | 'search' | 'create'
 type CommandPriority = 'P0' | 'P1' | 'P2' | 'P3'
@@ -291,11 +298,11 @@ export function QuickCaptureSurface({
 	return (
 		<section
 			aria-label='StoneFlow 命令'
-			className='flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-sf-border-secondary bg-card text-foreground'
+			className={quickCaptureSurfaceClass}
 			onPointerDown={handleSurfacePointerDown}
 		>
 			<div className='flex items-center gap-2 border-b border-sf-divider px-4 py-3'>
-				<div className='flex h-9 flex-1 items-center gap-2 rounded-md border border-input bg-card px-3 transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/14'>
+				<div className={quickCaptureSearchInputShellClass}>
 					<SearchIcon className='size-3.5 shrink-0 text-sf-icon-subtle' />
 					<input
 						ref={inputRef}
@@ -351,12 +358,12 @@ export function QuickCaptureSurface({
 					))}
 					<div className='mx-1 h-4 w-px bg-sf-divider' />
 					<span className='shrink-0 text-[11.5px] text-sf-text-quaternary'>所属空间</span>
-					<span className='rounded-md border border-border bg-card px-2.5 py-1 text-[12px] text-sf-text-secondary'>
+					<span className={quickCaptureMetaPillClass}>
 						工作
 					</span>
 					<div className='mx-1 h-4 w-px bg-sf-divider' />
 					<span className='shrink-0 text-[11.5px] text-sf-text-quaternary'>所属项目</span>
-					<span className='rounded-md border border-border bg-card px-2.5 py-1 text-[12px] text-sf-text-secondary'>
+					<span className={quickCaptureMetaPillClass}>
 						稍后归类
 					</span>
 				</div>
@@ -500,7 +507,7 @@ function CommandResultRow({
 				</span>
 			</span>
 			{isTask && item.priority > 0 ? <PriorityBadge priority={item.priority} /> : null}
-			<span className='rounded-md border border-sf-border-subtle bg-muted/70 px-1.5 py-0.5 text-[11px] text-sf-text-quaternary'>
+			<span className={quickCaptureTypePillClass}>
 				{isTask ? '任务' : '项目'}
 			</span>
 		</button>
@@ -528,7 +535,7 @@ function PriorityBadge({ priority }: { priority: number }) {
 function CommandPanelState({ label, loading = false }: { label: string; loading?: boolean }) {
 	return (
 		<div className='flex h-full min-h-44 items-center justify-center px-5'>
-			<div className='flex items-center gap-2 rounded-lg border border-sf-border-subtle bg-muted/60 px-3.5 py-3 text-center text-[12.5px] text-sf-text-quaternary'>
+			<div className={quickCaptureStatePanelClass}>
 				{loading ? (
 					<LoaderCircleIcon className='size-4 animate-spin' />
 				) : (

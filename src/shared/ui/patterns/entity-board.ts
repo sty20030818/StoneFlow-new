@@ -14,7 +14,7 @@ export const entityBoardShellSecondaryIconClass =
 	'flex size-4 shrink-0 items-center justify-center text-sf-shell-secondary'
 
 export const entityBoardLoadingCardClass =
-	'rounded-[28px] border border-sf-border-subtle bg-white/90 p-6 text-[13px] text-sf-shell-secondary'
+	'rounded-[28px] border border-sf-border-subtle bg-card/90 p-6 text-[13px] text-sf-shell-text-secondary'
 
 export const entityBoardSectionHeadingClass =
 	'flex min-w-0 flex-1 items-center gap-2 px-1 text-sm font-semibold text-foreground'

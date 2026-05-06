@@ -16,7 +16,11 @@ export const TASK_ROW_META_TEXT_CLASS = 'text-xs font-medium text-sf-text-tertia
 export const TASK_ROW_PROJECT_LEAD_CLASS =
 	'inline-flex size-8 items-center justify-center rounded-xl bg-sf-surface-panel-muted text-sf-shell-text-secondary'
 export const TASK_BULK_ACTION_BUTTON_CLASS =
-	'border-border bg-white text-sf-sidebar-action-foreground hover:border-sf-border-strong hover:bg-sf-bg-surface-muted hover:text-sf-sidebar-action-foreground'
+	'border-border bg-white text-sf-control-text hover:border-sf-border-strong hover:bg-sf-surface-panel-muted hover:text-sf-control-text'
+export const TASK_BULK_ACTION_BAR_CLASS =
+	'pointer-events-auto inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-sf-surface-raised p-1.5 text-sf-control-text shadow-(--sf-shadow-popover) transition-colors hover:border-sf-border-strong'
+export const TASK_BULK_ACTION_COUNT_PILL_CLASS =
+	'inline-flex h-7.5 items-center rounded-full border border-border bg-white px-3 text-[0.8rem] font-medium text-sf-control-text shadow-[inset_0_1px_0_rgb(255_255_255/0.9)] transition-colors hover:border-sf-border-strong'
 
 export const taskRowVariants = cva(TASK_ROW_BASE_CLASS, {
 	variants: {

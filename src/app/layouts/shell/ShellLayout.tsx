@@ -42,6 +42,10 @@ import {
 import { ProjectCreateDialog } from '@/features/project/ui/ProjectCreateDialog'
 import { TaskCreateDialog } from '@/features/task/ui/TaskCreateDialog'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
+import {
+	shellChromeSkeletonMainCardClass,
+	shellChromeSkeletonStatusTextClass,
+} from '@/shared/ui/patterns/shell-chrome'
 
 type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
@@ -289,14 +293,14 @@ function ShellLayoutSkeleton({
 				</aside>
 
 				<div className='flex min-h-0 flex-1 flex-col bg-sf-shell p-4'>
-					<div className='flex min-h-0 flex-1 flex-col rounded-[28px] border border-sf-border-subtle bg-card/85 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.06)]'>
+					<div className={shellChromeSkeletonMainCardClass}>
 						<div className='h-6 w-48 rounded-full bg-sf-surface-panel-muted' />
 						<div className='mt-6 grid gap-3'>
 							<div className='h-16 rounded-2xl bg-sf-surface-panel-muted' />
 							<div className='h-16 rounded-2xl bg-sf-surface-panel-muted' />
 							<div className='h-28 rounded-3xl bg-sf-surface-panel-muted' />
 						</div>
-						<div className='mt-auto pt-5 text-[12px] text-sf-shell-text-secondary'>
+						<div className={shellChromeSkeletonStatusTextClass}>
 							{status === 'error' ? (message ?? 'Sidebar 设置加载失败') : '正在读取 Sidebar 配置…'}
 						</div>
 					</div>

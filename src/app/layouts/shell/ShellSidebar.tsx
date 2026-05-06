@@ -58,7 +58,13 @@ import {
 } from '@/shared/ui/base/sidebar'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import {
+	sidebarDropdownItemClass,
+	sidebarFooterContainerClass,
 	sidebarHelperTextClass,
+	sidebarMenuIconClass,
+	sidebarMenuLabelClass,
+	sidebarSecondaryTextClass,
+	sidebarSectionHeaderRowClass,
 	sidebarInlineBadgeClass,
 	sidebarItemIconVariants,
 } from '@/shared/ui/patterns/sidebar-item'
@@ -267,10 +273,10 @@ export function ShellSidebar({
 											<DropdownMenuLabel>空间</DropdownMenuLabel>
 											<DropdownMenuGroup>
 												<DropdownMenuItem
-													className='gap-2 p-2'
+													className={sidebarDropdownItemClass}
 													onSelect={() => navigate('/spaces/inbox')}
 												>
-													<span className='text-sf-shell-text-secondary'>全部 Spaces</span>
+													<span className={sidebarSecondaryTextClass}>全部 Spaces</span>
 													{currentScope.type === 'all' ? (
 														<CheckIcon
 															className={`ml-auto size-3.5 ${shellChromeIconSecondaryClass}`}
@@ -285,7 +291,7 @@ export function ShellSidebar({
 
 													return (
 														<DropdownMenuItem
-															className='gap-2 p-2'
+															className={sidebarDropdownItemClass}
 															key={space.id}
 															onSelect={() => {
 																navigate(`/space/${space.id}/inbox`)
@@ -310,7 +316,7 @@ export function ShellSidebar({
 											<DropdownMenuSeparator />
 											<DropdownMenuGroup>
 												<DropdownMenuItem
-													className='gap-2 p-2'
+													className={sidebarDropdownItemClass}
 													onSelect={() => {
 														setEditorMode('create')
 														setEditorOpen(true)
@@ -320,7 +326,7 @@ export function ShellSidebar({
 													<span>新建 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
-													className='gap-2 p-2'
+													className={sidebarDropdownItemClass}
 													disabled={!activeSpace}
 													onSelect={() => {
 														setEditorMode('edit')
@@ -331,7 +337,7 @@ export function ShellSidebar({
 													<span>编辑当前 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
-													className='gap-2 p-2'
+													className={sidebarDropdownItemClass}
 													disabled={!activeSpace || activeSpace.isDefault}
 													onSelect={() => {
 														if (!activeSpace) {
@@ -346,7 +352,7 @@ export function ShellSidebar({
 													<span>设为默认 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
-													className='gap-2 p-2'
+													className={sidebarDropdownItemClass}
 													disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
 													onSelect={() => {
 														if (!activeSpace) {
@@ -367,7 +373,7 @@ export function ShellSidebar({
 													<span>归档当前 Space</span>
 												</DropdownMenuItem>
 												<DropdownMenuItem
-													className='gap-2 p-2 text-destructive'
+													className={`${sidebarDropdownItemClass} text-destructive`}
 													disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
 													onSelect={() => {
 														if (!activeSpace) {
@@ -427,7 +433,7 @@ export function ShellSidebar({
 
 						{settings.projectSection.visible ? (
 							<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
-								<div className='flex items-center justify-between px-2.5'>
+								<div className={sidebarSectionHeaderRowClass}>
 									<SidebarGroupLabel className='px-0'>项目列表</SidebarGroupLabel>
 									<SidebarGroupAction
 										aria-label='创建项目'
@@ -466,7 +472,7 @@ export function ShellSidebar({
 						) : null}
 					</SidebarContent>
 
-					<SidebarFooter className='border-t border-sf-divider px-3 py-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
+					<SidebarFooter className={sidebarFooterContainerClass}>
 						<SidebarMenu>
 							{footerItems.map((item) => (
 								<SidebarMenuItem key={item.key}>
@@ -556,7 +562,7 @@ function NoProjectSidebarMenuItem({
 			<SidebarMenuButton asChild isActive={isActive} tooltip='独立事项'>
 				<NavLink to={noProjectPath}>
 					<TargetIcon className={sidebarItemIconVariants()} />
-					<span className='min-w-0 truncate'>独立事项</span>
+					<span className={sidebarMenuLabelClass}>独立事项</span>
 				</NavLink>
 			</SidebarMenuButton>
 		</SidebarMenuItem>
@@ -643,13 +649,13 @@ function SidebarNavMenuItem({
 		<SidebarMenuItem>
 			<ContextMenu>
 				<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
-					<SidebarMenuButton asChild isActive={isActive} tooltip={label}>
-						<NavLink to={to}>
-							<Icon className='size-3.5 shrink-0' />
-							<span className='min-w-0 truncate'>{label}</span>
-							{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
-						</NavLink>
-					</SidebarMenuButton>
+						<SidebarMenuButton asChild isActive={isActive} tooltip={label}>
+							<NavLink to={to}>
+								<Icon className={sidebarMenuIconClass} />
+								<span className={sidebarMenuLabelClass}>{label}</span>
+								{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
+							</NavLink>
+						</SidebarMenuButton>
 				</ContextMenuTrigger>
 				<ContextMenuContent className='w-52'>
 					<ContextMenuGroup>
@@ -694,8 +700,8 @@ function SidebarRouteMenuItem({
 	return (
 		<SidebarMenuButton asChild isActive={isActive} size={size} tooltip={label}>
 			<NavLink to={to}>
-				<Icon className='size-3.5 shrink-0' />
-				<span className='min-w-0 truncate'>{label}</span>
+				<Icon className={sidebarMenuIconClass} />
+				<span className={sidebarMenuLabelClass}>{label}</span>
 				{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
 			</NavLink>
 		</SidebarMenuButton>
@@ -727,7 +733,7 @@ function ProjectSidebarRouteMenuItem({
 								size: size === 'sm' ? 'sm' : 'default',
 							})}
 						/>
-						<span className='min-w-0 truncate'>{label}</span>
+						<span className={sidebarMenuLabelClass}>{label}</span>
 						{badge ? <SidebarMenuBadge>{badge}</SidebarMenuBadge> : null}
 					</NavLink>
 				</SidebarMenuButton>

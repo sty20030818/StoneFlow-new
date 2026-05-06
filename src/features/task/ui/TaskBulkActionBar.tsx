@@ -4,7 +4,11 @@ import { XIcon } from 'lucide-react'
 
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
-import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
+import {
+	TASK_BULK_ACTION_BAR_CLASS,
+	TASK_BULK_ACTION_BUTTON_CLASS,
+	TASK_BULK_ACTION_COUNT_PILL_CLASS,
+} from '@/shared/ui/patterns/task-row'
 
 type TaskBulkActionBarProps = {
 	selectedCount: number
@@ -35,11 +39,11 @@ export function TaskBulkActionBar({
 		>
 			<div
 				aria-label='任务批量操作'
-				className='pointer-events-auto inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-sf-bg-elevated p-1.5 text-sf-sidebar-action-foreground shadow-(--sf-shadow-popover) transition-colors hover:border-sf-border-strong'
+				className={TASK_BULK_ACTION_BAR_CLASS}
 				role='toolbar'
 			>
 				<div className='inline-flex items-center gap-1.5'>
-					<span className='inline-flex h-7.5 items-center rounded-full border border-border bg-white px-3 text-[0.8rem] font-medium text-sf-sidebar-action-foreground shadow-[inset_0_1px_0_rgb(255_255_255/0.9)] transition-colors hover:border-sf-border-strong'>
+					<span className={TASK_BULK_ACTION_COUNT_PILL_CLASS}>
 						已选 {selectedCount} 项
 					</span>
 					<Button
