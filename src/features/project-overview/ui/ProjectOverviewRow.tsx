@@ -1,13 +1,17 @@
 import type { ProjectOverviewItem } from '@/shared/types'
 import {
+	CreatedAtCell,
+	DueDateCell,
+	ReminderCell,
 	RowActionButton,
-	RowMetaButton,
 	RowShell,
 	RowTitleCell,
 	ROW_SHELL_ENTITY_ICON_CLASS,
+	ScheduledDateCell,
+	TagsCell,
 } from '@/shared/ui/row'
 import { projectOverviewActionButtonClass } from '@/shared/ui/patterns/project-overview'
-import { BellIcon, CalendarIcon, Clock3Icon, FolderIcon, TagIcon } from 'lucide-react'
+import { FolderIcon } from 'lucide-react'
 
 type ProjectOverviewRowProps = {
 	project: ProjectOverviewItem
@@ -44,32 +48,11 @@ export function ProjectOverviewRow({
 
 			<RowShell.Right>
 				<RowShell.Fields>
-					<RowMetaButton disabled icon={<TagIcon className='size-3.5' />} label='标签' type='button' />
-					<RowMetaButton
-						disabled={!project.dueAt}
-						icon={<CalendarIcon className='size-3.5' />}
-						label={project.dueAt ? `截止 ${project.dueAt}` : '截止'}
-						type='button'
-					/>
-					<RowMetaButton
-						disabled
-						icon={<CalendarIcon className='size-3.5' />}
-						label='计划'
-						type='button'
-					/>
-					<RowMetaButton
-						disabled
-						icon={<BellIcon className='size-3.5' />}
-						label='提醒'
-						type='button'
-					/>
-					<RowMetaButton
-						disabled
-						icon={<Clock3Icon className='size-3.5' />}
-						label={formatProjectDate(project.createdAt)}
-						trailing={null}
-						type='button'
-					/>
+					<TagsCell />
+					<DueDateCell formatter={formatProjectDate} value={project.dueAt} />
+					<ScheduledDateCell value={null} />
+					<ReminderCell value={null} />
+					<CreatedAtCell formatter={formatProjectDate} value={project.createdAt} />
 				</RowShell.Fields>
 
 				<RowShell.Actions className='flex-wrap'>

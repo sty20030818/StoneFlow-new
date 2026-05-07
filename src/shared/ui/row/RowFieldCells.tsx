@@ -108,52 +108,54 @@ export function RowTitleCell({ title, doneLike = false, className }: RowTitleCel
 /**
  * 统一行字段按钮壳：outline + icon + text + chevron，默认阻断事件冒泡，避免触发行点击。
  */
-export const RowMetaButton = forwardRef<HTMLButtonElement, RowMetaButtonProps>(function RowMetaButton(
-	{
-		icon,
-		label,
-		trailing = <ChevronDownIcon className='size-3.5 text-sf-icon-subtle' />,
-		children,
-		className,
-		variant = 'outline',
-		size = 'sm',
-		onClick,
-		onPointerDown,
-		onKeyDownCapture,
-		...props
+export const RowMetaButton = forwardRef<HTMLButtonElement, RowMetaButtonProps>(
+	function RowMetaButton(
+		{
+			icon,
+			label,
+			trailing = <ChevronDownIcon className='size-3.5 text-sf-icon-subtle' />,
+			children,
+			className,
+			variant = 'outline',
+			size = 'sm',
+			onClick,
+			onPointerDown,
+			onKeyDownCapture,
+			...props
+		},
+		ref,
+	) {
+		return (
+			<button
+				{...props}
+				className={cn(buttonVariants({ className: cn('max-w-45', className), size, variant }))}
+				data-size={size}
+				data-variant={variant}
+				onClick={(event) => {
+					stopRowEventPropagation(event)
+					onClick?.(event)
+				}}
+				onKeyDownCapture={(event) => {
+					stopRowEventPropagation(event)
+					onKeyDownCapture?.(event)
+				}}
+				onPointerDown={(event) => {
+					stopRowEventPropagation(event)
+					onPointerDown?.(event)
+				}}
+				ref={ref}
+			>
+				{children ?? (
+					<>
+						{icon}
+						<span className='min-w-0 truncate'>{label}</span>
+						{trailing}
+					</>
+				)}
+			</button>
+		)
 	},
-	ref,
-) {
-	return (
-		<button
-			{...props}
-			className={cn(buttonVariants({ className: cn('max-w-[180px]', className), size, variant }))}
-			data-size={size}
-			data-variant={variant}
-			onClick={(event) => {
-				stopRowEventPropagation(event)
-				onClick?.(event)
-			}}
-			onKeyDownCapture={(event) => {
-				stopRowEventPropagation(event)
-				onKeyDownCapture?.(event)
-			}}
-			onPointerDown={(event) => {
-				stopRowEventPropagation(event)
-				onPointerDown?.(event)
-			}}
-			ref={ref}
-		>
-			{children ?? (
-				<>
-					{icon}
-					<span className='min-w-0 truncate'>{label}</span>
-					{trailing}
-				</>
-			)}
-		</button>
-	)
-})
+)
 
 export function RowActionButton({
 	className,

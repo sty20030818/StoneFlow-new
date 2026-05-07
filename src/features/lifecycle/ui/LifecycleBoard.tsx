@@ -22,10 +22,10 @@ import { cn } from '@/shared/lib/utils'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
-import { ArchiveIcon, BoxIcon, Clock3Icon, FolderIcon, ListTodoIcon, TrashIcon } from 'lucide-react'
+import { ArchiveIcon, BoxIcon, FolderIcon, ListTodoIcon, TrashIcon } from 'lucide-react'
 import {
-	RowActionButton,
-	RowMetaButton,
+	CreatedAtCell,
+	RestoreActionCell,
 	RowSelectionCell,
 	RowShell,
 	RowTitleCell,
@@ -201,9 +201,7 @@ function LifecycleBoardRow({
 	}, [entry.entityType])
 
 	const canOpenDetail = mode === 'archive' && typeof onOpenDetail === 'function'
-	const formattedDateLabel = formatLifecycleDate(
-		mode === 'archive' ? entry.archivedAt : entry.deletedAt,
-	)
+	const createdAtValue = mode === 'archive' ? entry.archivedAt : entry.deletedAt
 
 	return (
 		<RowShell.Root
@@ -247,44 +245,17 @@ function LifecycleBoardRow({
 
 			<RowShell.Right>
 				<RowShell.Fields>
-					<RowMetaButton
-						disabled
-						icon={<Clock3Icon className='size-3.5' />}
-						label={formattedDateLabel}
-						trailing={null}
-						type='button'
-					/>
+					<CreatedAtCell value={createdAtValue} />
 				</RowShell.Fields>
 				<RowShell.Actions>
-					<RowActionButton
+					<RestoreActionCell
 						disabled={isPending}
-						onClick={() => onRestore(entry)}
-						size='sm'
-						type='button'
-						variant='outline'
-					>
-						恢复
-					</RowActionButton>
+						onRestore={() => onRestore(entry)}
+					/>
 				</RowShell.Actions>
 			</RowShell.Right>
 		</RowShell.Root>
 	)
-}
-
-function formatLifecycleDate(value: string | null) {
-	if (!value) {
-		return '-'
-	}
-
-	const date = new Date(value)
-	if (Number.isNaN(date.getTime())) {
-		return value
-	}
-
-	return new Intl.DateTimeFormat('zh-CN', {
-		month: 'numeric',
-		day: 'numeric',
-	}).format(date)
 }
 
 function LifecycleModeIcon({ mode }: { mode: LifecycleMode }) {

@@ -14,17 +14,11 @@ import {
 	BoardRows,
 } from '@/shared/ui/board'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
-import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
+import { TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
+import { formatTaskStatusLabel, TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
-import {
-	ProjectSelect,
-	TaskPrioritySelect,
-	TaskSelectionCheckbox,
-	TaskStatusIndicator,
-	TaskStatusSelect,
-} from '@/features/task/ui/TaskMetadataSelect'
+import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
 import { TaskRowProvider, useTaskRowContext } from '@/features/task/ui/TaskRowContext'
 import { cn } from '@/shared/lib/utils'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
@@ -40,7 +34,7 @@ import {
 	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
-import { BellIcon, CalendarIcon, Clock3Icon, FolderIcon, ListTodoIcon, PlusIcon, TagIcon } from 'lucide-react'
+import { ListTodoIcon, PlusIcon } from 'lucide-react'
 import {
 	entityBoardSectionActionButtonClass,
 	entityBoardSectionHeadingClass,
@@ -48,10 +42,19 @@ import {
 	entityBoardSectionToggleClass,
 } from '@/shared/ui/patterns/entity-board'
 import {
-	RowMetaButton,
+	CreatedAtCell,
+	DueDateCell,
+	PriorityCell,
+	ProjectCell,
+	ReminderCell,
+	RowSelectionCell,
 	RowShell,
+	ScheduledDateCell,
+	StatusCell,
+	TagsCell,
 	RowTitleCell,
 } from '@/shared/ui/row'
+import { PriorityIcon } from './PriorityIcon'
 
 type TaskBoardSectionVariant = 'compact' | 'project'
 
@@ -382,22 +385,32 @@ function TaskBoardRow({ task }: { task: TaskListItem }) {
 			>
 				<RowShell.Left>
 					<RowShell.Leading>
-						<TaskSelectionCheckbox
+						<RowSelectionCell
 							ariaLabel={`选择任务 ${task.title}`}
 							checked={isSelected}
 							disabled={isPending}
 							onCheckedChange={() => ctx.onToggleTaskSelection(task.id)}
 						/>
-						<TaskPrioritySelect
+						<PriorityCell
 							ariaLabel={`设置任务 ${task.title} 的优先级`}
 							disabled={isPending}
-							onValueChange={(priority) => void ctx.onUpdateTaskPriority(task, priority)}
+							onChange={(priority) => void ctx.onUpdateTaskPriority(task, priority)}
+							options={TASK_PRIORITY_OPTIONS.map((option) => ({
+								value: option.value,
+								label: option.label,
+								icon: <PriorityIcon priority={option.value} size='md' />,
+							}))}
 							value={task.priority}
 						/>
-						<TaskStatusSelect
+						<StatusCell
 							ariaLabel={`设置任务 ${task.title} 的状态`}
 							disabled={isPending}
-							onValueChange={(status) => void ctx.onUpdateTaskStatus(task, status)}
+							onChange={(status) => void ctx.onUpdateTaskStatus(task, status)}
+							options={TASK_STATUS_OPTIONS.map((option) => ({
+								value: option.value,
+								label: option.label,
+								icon: <TaskStatusIndicator status={option.value} />,
+							}))}
 							value={task.status}
 						/>
 					</RowShell.Leading>
@@ -413,6 +426,7 @@ function TaskBoardRow({ task }: { task: TaskListItem }) {
 						dueAt={task.dueAt}
 						hasProjectOptions={hasProjectOptions}
 						isPending={isPending}
+						reminderAt={task.reminderAt}
 						onSelectNoProject={
 							hasProjectOptions ? () => ctx.onSelectNoProject!(task) : undefined
 						}
@@ -423,6 +437,7 @@ function TaskBoardRow({ task }: { task: TaskListItem }) {
 						}
 						projectName={task.projectName}
 						projects={ctx.projectOptions}
+						scheduledAt={task.scheduledAt}
 					/>
 				</RowShell.Right>
 			</RowShell.Root>
@@ -437,6 +452,8 @@ function TaskFieldRail({
 	projects,
 	hasProjectOptions,
 	isPending,
+	reminderAt,
+	scheduledAt,
 	onSelectProject,
 	onSelectNoProject,
 }: {
@@ -446,48 +463,25 @@ function TaskFieldRail({
 	projects?: Array<{ id: string; name: string }>
 	hasProjectOptions: boolean
 	isPending: boolean
+	reminderAt: string | null
+	scheduledAt: string | null
 	onSelectProject?: (projectId: string) => void
 	onSelectNoProject?: () => void
 }) {
 	return (
 		<RowShell.Fields>
-			<RowMetaButton disabled icon={<TagIcon className='size-3.5' />} label='标签' type='button' />
-			<RowMetaButton
-				disabled={!dueAt}
-				icon={<CalendarIcon className='size-3.5' />}
-				label={dueAt ? `截止 ${formatTaskDate(dueAt)}` : '截止'}
-				type='button'
+			<TagsCell />
+			<DueDateCell formatter={formatTaskDate} value={dueAt} />
+			<ScheduledDateCell formatter={formatTaskDate} value={scheduledAt} />
+			<ReminderCell formatter={formatTaskDate} value={reminderAt} />
+			<ProjectCell
+				disabled={isPending}
+				onSelectNone={hasProjectOptions ? onSelectNoProject : undefined}
+				onSelectProject={hasProjectOptions ? onSelectProject : undefined}
+				options={hasProjectOptions ? projects : undefined}
+				projectName={projectName}
 			/>
-			<RowMetaButton
-				disabled
-				icon={<CalendarIcon className='size-3.5' />}
-				label='计划'
-				type='button'
-			/>
-			<RowMetaButton disabled icon={<BellIcon className='size-3.5' />} label='提醒' type='button' />
-			{hasProjectOptions && projects && onSelectProject && onSelectNoProject ? (
-				<ProjectSelect
-					currentProjectName={projectName}
-					disabled={isPending}
-					onSelectNoProject={onSelectNoProject}
-					onSelectProject={onSelectProject}
-					projects={projects}
-				/>
-			) : (
-				<RowMetaButton
-					disabled={!projectName}
-					icon={<FolderIcon className='size-3.5' />}
-					label={projectName || '项目'}
-					type='button'
-				/>
-			)}
-			<RowMetaButton
-				disabled
-				icon={<Clock3Icon className='size-3.5' />}
-				label={formatTaskDate(createdAt)}
-				trailing={null}
-				type='button'
-			/>
+			<CreatedAtCell value={createdAt} />
 		</RowShell.Fields>
 	)
 }
