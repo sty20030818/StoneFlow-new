@@ -1,15 +1,14 @@
 import type { ComponentProps } from 'react'
 
 import { cn } from '@/shared/lib/utils'
-import { entityBoardRowActionsClass } from '@/shared/ui/patterns/entity-board'
 import {
-	TASK_ROW_ACTIVE_CLASS,
-	TASK_ROW_BASE_CLASS,
-	TASK_ROW_IDLE_CLASS,
-	TASK_ROW_META_TEXT_CLASS,
-	TASK_ROW_PROJECT_LEAD_CLASS,
-	TASK_ROW_SELECTED_CLASS,
-} from '@/shared/ui/patterns/task-row'
+	ROW_SHELL_ACTIONS_CLASS,
+	ROW_SHELL_ACTIVE_CLASS,
+	ROW_SHELL_BASE_CLASS,
+	ROW_SHELL_IDLE_CLASS,
+	ROW_SHELL_PROJECT_LEAD_CLASS,
+	ROW_SHELL_SELECTED_CLASS,
+} from '@/shared/ui/patterns/row-tokens'
 
 export type RowShellRootProps = ComponentProps<'div'> & {
 	active?: boolean
@@ -19,12 +18,7 @@ export type RowShellRootProps = ComponentProps<'div'> & {
 	selectedClassName?: string
 }
 
-export const ROW_SHELL_BASE_CLASS = TASK_ROW_BASE_CLASS
-export const ROW_SHELL_IDLE_CLASS = TASK_ROW_IDLE_CLASS
-export const ROW_SHELL_ACTIVE_CLASS = TASK_ROW_ACTIVE_CLASS
-export const ROW_SHELL_SELECTED_CLASS = TASK_ROW_SELECTED_CLASS
-export const ROW_SHELL_META_TEXT_CLASS = TASK_ROW_META_TEXT_CLASS
-export const ROW_SHELL_ENTITY_ICON_CLASS = TASK_ROW_PROJECT_LEAD_CLASS
+export const ROW_SHELL_ENTITY_ICON_CLASS = ROW_SHELL_PROJECT_LEAD_CLASS
 
 export function RowShellRoot({
 	children,
@@ -116,7 +110,7 @@ export function RowShellFields({ children, className, ...props }: ComponentProps
 
 export function RowShellActions({ children, className, ...props }: ComponentProps<'div'>) {
 	return (
-		<div {...props} className={cn(entityBoardRowActionsClass, className)}>
+		<div {...props} className={cn(ROW_SHELL_ACTIONS_CLASS, className)}>
 			{children}
 		</div>
 	)

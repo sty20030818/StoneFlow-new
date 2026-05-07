@@ -1,4 +1,5 @@
 import type { ProjectOverviewItem } from '@/shared/types'
+import { formatShortDate } from '@/shared/lib/date'
 import {
 	CreatedAtCell,
 	DueDateCell,
@@ -82,7 +83,7 @@ export function ProjectRowAdapter({ project, rowState, projectBinding, actions }
 				<RowShell.Right>
 					<RowShell.Fields>
 						<TagsCell />
-						<DueDateCell formatter={formatProjectDate} value={project.dueAt} />
+						<DueDateCell formatter={formatShortDate} value={project.dueAt} />
 						<ScheduledDateCell value={null} />
 						<ReminderCell value={null} />
 						{showProjectCell ? (
@@ -96,49 +97,16 @@ export function ProjectRowAdapter({ project, rowState, projectBinding, actions }
 								projectName={null}
 							/>
 						) : null}
-						<CreatedAtCell formatter={formatProjectDate} value={project.createdAt} />
+						<CreatedAtCell formatter={formatShortDate} value={project.createdAt} />
 					</RowShell.Fields>
 
 					<RowShell.Actions className='flex-wrap'>
-						{project.completedAt ? (
-							<RowActionButton
-								className={projectOverviewActionButtonClass}
-								disabled={rowState.isPending}
-								onClick={() => actions.onReopenProject(project.id)}
-								size='sm'
-								variant='outline'
-							>
-								重开
-							</RowActionButton>
-						) : (
-							<RowActionButton
-								className={projectOverviewActionButtonClass}
-								disabled={rowState.isPending}
-								onClick={() => actions.onCompleteProject(project.id)}
-								size='sm'
-								variant='outline'
-							>
-								完成
-							</RowActionButton>
-						)}
-						<RowActionButton
-							className={projectOverviewActionButtonClass}
+						<ProjectActions
+							completedAt={project.completedAt}
 							disabled={rowState.isPending}
-							onClick={() => actions.onArchiveProject(project.id)}
-							size='sm'
-							variant='outline'
-						>
-							归档
-						</RowActionButton>
-						<RowActionButton
-							className={projectOverviewActionButtonClass}
-							disabled={rowState.isPending}
-							onClick={() => actions.onDeleteProject(project.id)}
-							size='sm'
-							variant='outline'
-						>
-							删除
-						</RowActionButton>
+							projectId={project.id}
+							actions={actions}
+						/>
 					</RowShell.Actions>
 				</RowShell.Right>
 			</RowShell.Root>
@@ -146,15 +114,49 @@ export function ProjectRowAdapter({ project, rowState, projectBinding, actions }
 	)
 }
 
-function formatProjectDate(value: string) {
-	const date = new Date(value)
-	if (Number.isNaN(date.getTime())) {
-		return value
-	}
-	return new Intl.DateTimeFormat('zh-CN', {
-		month: 'numeric',
-		day: 'numeric',
-	}).format(date)
+const actionButtonProps = {
+	className: projectOverviewActionButtonClass,
+	size: 'sm' as const,
+	variant: 'outline' as const,
+}
+
+function ProjectActions({
+	completedAt,
+	disabled,
+	projectId,
+	actions,
+}: {
+	completedAt: string | null
+	disabled: boolean
+	projectId: string
+	actions: ProjectRowAdapterProps['actions']
+}) {
+	const toggleLabel = completedAt ? '重开' : '完成'
+	const onToggle = completedAt
+		? () => actions.onReopenProject(projectId)
+		: () => actions.onCompleteProject(projectId)
+
+	return (
+		<>
+			<RowActionButton {...actionButtonProps} disabled={disabled} onClick={onToggle}>
+				{toggleLabel}
+			</RowActionButton>
+			<RowActionButton
+				{...actionButtonProps}
+				disabled={disabled}
+				onClick={() => actions.onArchiveProject(projectId)}
+			>
+				归档
+			</RowActionButton>
+			<RowActionButton
+				{...actionButtonProps}
+				disabled={disabled}
+				onClick={() => actions.onDeleteProject(projectId)}
+			>
+				删除
+			</RowActionButton>
+		</>
+	)
 }
 
 export type { ProjectRowAdapterProps }

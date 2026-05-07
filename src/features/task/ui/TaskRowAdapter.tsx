@@ -1,3 +1,4 @@
+import { formatShortDate } from '@/shared/lib/date'
 import { TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
@@ -120,9 +121,9 @@ export function TaskRowAdapter({ task, rowState, projectBinding, actions }: Task
 				<RowShell.Right>
 					<RowShell.Fields>
 						<TagsCell />
-						<DueDateCell formatter={formatTaskDate} value={task.dueAt} />
-						<ScheduledDateCell formatter={formatTaskDate} value={task.scheduledAt} />
-						<ReminderCell formatter={formatTaskDate} value={task.reminderAt} />
+						<DueDateCell formatter={formatShortDate} value={task.dueAt} />
+						<ScheduledDateCell formatter={formatShortDate} value={task.scheduledAt} />
+						<ReminderCell formatter={formatShortDate} value={task.reminderAt} />
 						<ProjectCell
 							disabled={isPending}
 							onSelectNone={
@@ -144,17 +145,6 @@ export function TaskRowAdapter({ task, rowState, projectBinding, actions }: Task
 			</RowShell.Root>
 		</TaskContextMenu>
 	)
-}
-
-function formatTaskDate(value: string) {
-	const date = new Date(value)
-	if (Number.isNaN(date.getTime())) {
-		return value
-	}
-	return new Intl.DateTimeFormat('zh-CN', {
-		month: 'numeric',
-		day: 'numeric',
-	}).format(date)
 }
 
 export type { TaskRowAdapterProps }

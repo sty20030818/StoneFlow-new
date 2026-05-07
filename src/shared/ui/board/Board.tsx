@@ -17,7 +17,7 @@ import {
 	entityBoardLoadingCardClass,
 	entityBoardSectionCountBadgeClass,
 } from '@/shared/ui/patterns/entity-board'
-import { TASK_ROW_SECTION_HEADER_CLASS } from '@/shared/ui/patterns/task-row'
+import { ROW_SHELL_SECTION_HEADER_CLASS } from '@/shared/ui/patterns/row-tokens'
 import { TriangleIcon } from 'lucide-react'
 
 export type BoardSection<T> = {
@@ -42,7 +42,7 @@ export const BOARD_GROUP_CLASS = 'flex flex-col gap-1'
 export const BOARD_ROWS_CLASS = 'flex flex-col gap-1'
 export const BOARD_COLLAPSIBLE_CLASS =
 	'flex flex-col gap-1 [&[data-state=open]_[data-chevron]]:rotate-90'
-export const BOARD_GROUP_HEADER_CLASS = TASK_ROW_SECTION_HEADER_CLASS
+export const BOARD_GROUP_HEADER_CLASS = ROW_SHELL_SECTION_HEADER_CLASS
 
 /**
  * 页级 board 主容器，只负责纵向堆叠分组。

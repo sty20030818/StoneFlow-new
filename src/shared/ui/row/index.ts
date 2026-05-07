@@ -35,10 +35,12 @@ export {
 export {
 	ROW_SHELL_ACTIVE_CLASS,
 	ROW_SHELL_BASE_CLASS,
-	ROW_SHELL_ENTITY_ICON_CLASS,
 	ROW_SHELL_IDLE_CLASS,
 	ROW_SHELL_META_TEXT_CLASS,
 	ROW_SHELL_SELECTED_CLASS,
+} from '@/shared/ui/patterns/row-tokens'
+export {
+	ROW_SHELL_ENTITY_ICON_CLASS,
 	RowShell,
 	RowShellActions,
 	RowShellFields,
