@@ -1,5 +1,4 @@
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/shared/ui/base/button'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -13,6 +12,7 @@ import {
 	CircleCheckIcon,
 	CircleIcon,
 	CircleXIcon,
+	FolderIcon,
 	PauseIcon,
 	PlayIcon,
 } from 'lucide-react'
@@ -27,13 +27,12 @@ import {
 import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
 import { getTaskStatusOption, TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 import type { TaskStatus } from '@/shared/types'
+import { RowMetaButton, RowSelectionCell } from '@/shared/ui/row'
 
 const TASK_LEAD_RAIL_CLASS = 'flex shrink-0 items-center gap-1'
 const TASK_LEAD_MENU_WRAP_CLASS = 'flex size-5 shrink-0 items-center justify-center'
 const TASK_LEAD_TRIGGER_BASE_CLASS =
 	'flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-foreground shadow-none transition-colors outline-none focus-visible:border-border focus-visible:ring-0'
-const TASK_CHECKBOX_BOX_CLASS =
-	'flex size-4 items-center justify-center rounded-[5px] border transition-colors'
 
 type TaskPrioritySelectProps = {
 	value: number | null | undefined
@@ -79,38 +78,12 @@ export function TaskSelectionCheckbox({
 	onCheckedChange,
 }: TaskSelectionCheckboxProps) {
 	return (
-		<button
-			aria-checked={checked}
-			aria-label={ariaLabel}
-			className={cn(
-				'group/task-selection flex size-5 shrink-0 items-center justify-center rounded-full bg-transparent p-0 outline-none transition-colors disabled:pointer-events-none disabled:opacity-40',
-				checked
-					? 'opacity-100'
-					: 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
-				'focus-visible:border-border focus-visible:ring-0',
-			)}
-			data-checked={checked}
+		<RowSelectionCell
+			ariaLabel={ariaLabel}
+			checked={checked}
 			disabled={disabled}
-			onClick={(event) => {
-				stopTaskRowEvent(event)
-				onCheckedChange()
-			}}
-			onKeyDownCapture={stopTaskRowEvent}
-			onPointerDownCapture={stopTaskRowEvent}
-			role='checkbox'
-			type='button'
-		>
-			<span
-				className={cn(
-					TASK_CHECKBOX_BOX_CLASS,
-					checked
-						? 'border-primary bg-primary text-primary-foreground'
-						: 'border-sf-border-strong bg-transparent text-transparent group-hover/task-selection:border-border',
-				)}
-			>
-				<CheckIcon className='size-3' />
-			</span>
-		</button>
+			onCheckedChange={onCheckedChange}
+		/>
 	)
 }
 
@@ -337,9 +310,12 @@ export function ProjectSelect({
 		<div onClick={stopTaskRowEvent} onPointerDown={stopTaskRowEvent}>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
-					<Button disabled={disabled} type='button' variant='outline'>
-						{currentProjectName || '暂无项目'}
-					</Button>
+					<RowMetaButton
+						disabled={disabled}
+						icon={<FolderIcon className='size-3.5' />}
+						label={currentProjectName || '独立事项'}
+						type='button'
+					/>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align='start' sideOffset={6}>
 					<DropdownMenuGroup>

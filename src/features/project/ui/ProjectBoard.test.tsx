@@ -46,6 +46,8 @@ describe('ProjectBoard', () => {
 		expect(screen.getByText('进行中项目', { selector: 'p' })).toBeInTheDocument()
 		expect(screen.getByText('已完成项目 A')).toBeInTheDocument()
 		expect(screen.getByText('已归档项目 A')).toBeInTheDocument()
+		expect(screen.queryByText('个活跃')).not.toBeInTheDocument()
+		expect(screen.queryByText('个任务')).not.toBeInTheDocument()
 	})
 })
 

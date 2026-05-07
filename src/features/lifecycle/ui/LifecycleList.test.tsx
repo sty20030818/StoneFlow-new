@@ -92,8 +92,8 @@ describe('LifecycleList', () => {
 		expect(screen.getByText('已归档的项目')).toBeInTheDocument()
 		expect(screen.getByText('已归档的任务')).toBeInTheDocument()
 		expect(screen.getAllByRole('button', { name: '恢复' })).toHaveLength(3)
-		expect(screen.getAllByRole('button', { name: '删除' })).toHaveLength(3)
-		expect(screen.getAllByRole('button', { name: '打开' })).toHaveLength(3)
+		expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '打开' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '永久删除' })).not.toBeInTheDocument()
 	})
 

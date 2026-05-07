@@ -9,7 +9,6 @@ import {
 	BoardRows,
 	type BoardSection,
 } from '@/shared/ui/board'
-import { TaskSelectionCheckbox } from '@/features/task/ui/TaskMetadataSelect'
 import {
 	entityBoardMutedIconClass,
 	entityBoardSectionCountBadgeClass,
@@ -22,10 +21,16 @@ import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSele
 import { cn } from '@/shared/lib/utils'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { Badge } from '@/shared/ui/base/badge'
-import { Button } from '@/shared/ui/base/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
-import { ArchiveIcon, BoxIcon, FolderIcon, ListTodoIcon, TrashIcon } from 'lucide-react'
-import { LEGACY_ROW_META_TEXT_CLASS, LegacyRowLead, LegacyRowMain, LegacyRowSurface } from '@/shared/ui/row'
+import { ArchiveIcon, BoxIcon, Clock3Icon, FolderIcon, ListTodoIcon, TrashIcon } from 'lucide-react'
+import {
+	RowActionButton,
+	RowMetaButton,
+	RowSelectionCell,
+	RowShell,
+	RowTitleCell,
+	ROW_SHELL_META_TEXT_CLASS,
+} from '@/shared/ui/row'
 
 export type LifecycleBoardSection = BoardSection<LifecycleEntry>
 
@@ -56,8 +61,8 @@ export function LifecycleBoard({
 	emptyActionLabel,
 	onEmptyAction,
 	onRestore,
-	onDeleteFromArchive,
-	onPermanentlyDelete,
+	onDeleteFromArchive: _onDeleteFromArchive,
+	onPermanentlyDelete: _onPermanentlyDelete,
 	onOpenDetail,
 }: LifecycleBoardProps) {
 	const visibleSections = sections.filter((section) => section.items.length > 0)
@@ -82,9 +87,7 @@ export function LifecycleBoard({
 					key={section.key}
 					label={section.label}
 					mode={mode}
-					onDeleteFromArchive={onDeleteFromArchive}
 					onOpenDetail={onOpenDetail}
-					onPermanentlyDelete={onPermanentlyDelete}
 					onRestore={onRestore}
 					pendingEntryId={pendingEntryId}
 				/>
@@ -99,8 +102,6 @@ function LifecycleBoardSectionBlock({
 	mode,
 	pendingEntryId,
 	onRestore,
-	onDeleteFromArchive,
-	onPermanentlyDelete,
 	onOpenDetail,
 }: {
 	label: string
@@ -108,8 +109,6 @@ function LifecycleBoardSectionBlock({
 	mode: LifecycleMode
 	pendingEntryId: string | null
 	onRestore: (entry: LifecycleEntry) => void
-	onDeleteFromArchive?: (entry: LifecycleEntry) => void
-	onPermanentlyDelete?: (entry: LifecycleEntry) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
 }) {
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -145,7 +144,7 @@ function LifecycleBoardSectionBlock({
 					</Badge>
 				</div>
 				{selectedCount > 0 ? (
-					<span className={cn(entityBoardSectionRightSpacerClass, LEGACY_ROW_META_TEXT_CLASS)}>
+					<span className={cn(entityBoardSectionRightSpacerClass, ROW_SHELL_META_TEXT_CLASS)}>
 						已选 {selectedCount} 项
 					</span>
 				) : (
@@ -162,9 +161,7 @@ function LifecycleBoardSectionBlock({
 							isSelected={selectedIds.has(entry.id)}
 							key={entry.id}
 							mode={mode}
-							onDeleteFromArchive={onDeleteFromArchive}
 							onOpenDetail={onOpenDetail}
-							onPermanentlyDelete={onPermanentlyDelete}
 							onRestore={onRestore}
 							onToggleSelected={() => toggleEntry(entry.id)}
 						/>
@@ -182,8 +179,6 @@ function LifecycleBoardRow({
 	isPending,
 	onToggleSelected,
 	onRestore,
-	onDeleteFromArchive,
-	onPermanentlyDelete,
 	onOpenDetail,
 }: {
 	entry: LifecycleEntry
@@ -192,8 +187,6 @@ function LifecycleBoardRow({
 	isPending: boolean
 	onToggleSelected: () => void
 	onRestore: (entry: LifecycleEntry) => void
-	onDeleteFromArchive?: (entry: LifecycleEntry) => void
-	onPermanentlyDelete?: (entry: LifecycleEntry) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
 }) {
 	const Icon = useMemo(() => {
@@ -213,12 +206,13 @@ function LifecycleBoardRow({
 	)
 
 	return (
-		<LegacyRowSurface
+		<RowShell.Root
 			aria-label={canOpenDetail ? `打开 ${entry.title}` : undefined}
-			className='cursor-default'
+			className={canOpenDetail ? undefined : 'cursor-default'}
 			data-lifecycle-entity={entry.entityType}
-			isPending={isPending}
-			isSelected={isSelected}
+			interactive={canOpenDetail}
+			pending={isPending}
+			selected={isSelected}
 			onClick={canOpenDetail ? () => onOpenDetail?.(entry) : undefined}
 			onKeyDown={
 				canOpenDetail
@@ -230,34 +224,39 @@ function LifecycleBoardRow({
 						}
 					: undefined
 			}
-			role={canOpenDetail ? 'button' : undefined}
 			selectedClassName={TASK_ROW_BULK_SELECTED_CLASS}
-			tabIndex={canOpenDetail ? 0 : undefined}
 		>
-			<div className='flex min-w-0 flex-1 items-center gap-2.5'>
-				<LegacyRowLead>
-					<TaskSelectionCheckbox
+			<RowShell.Left>
+				<RowShell.Leading>
+					<RowSelectionCell
 						ariaLabel={`选择 ${entry.title}`}
 						checked={isSelected}
 						disabled={isPending}
 						onCheckedChange={onToggleSelected}
 					/>
-				</LegacyRowLead>
+				</RowShell.Leading>
 
-				<span className={entityBoardShellSecondaryIconClass}>
+				<RowShell.Icon className={entityBoardShellSecondaryIconClass}>
 					<Icon className='size-4' />
-				</span>
+				</RowShell.Icon>
 
-				<LegacyRowMain>
-					<p className='truncate text-sm font-medium text-foreground'>{entry.title}</p>
-				</LegacyRowMain>
+				<RowShell.Title>
+					<RowTitleCell title={entry.title} />
+				</RowShell.Title>
+			</RowShell.Left>
 
-				<div
-					className='ml-auto flex shrink-0 items-center gap-2'
-					onClick={(event) => event.stopPropagation()}
-					onKeyDown={(event) => event.stopPropagation()}
-				>
-					<Button
+			<RowShell.Right>
+				<RowShell.Fields>
+					<RowMetaButton
+						disabled
+						icon={<Clock3Icon className='size-3.5' />}
+						label={formattedDateLabel}
+						trailing={null}
+						type='button'
+					/>
+				</RowShell.Fields>
+				<RowShell.Actions>
+					<RowActionButton
 						disabled={isPending}
 						onClick={() => onRestore(entry)}
 						size='sm'
@@ -265,46 +264,10 @@ function LifecycleBoardRow({
 						variant='outline'
 					>
 						恢复
-					</Button>
-					{mode === 'archive' && onDeleteFromArchive ? (
-						<Button
-							disabled={isPending}
-							onClick={() => onDeleteFromArchive(entry)}
-							size='sm'
-							type='button'
-							variant='outline'
-						>
-							删除
-						</Button>
-					) : null}
-					{mode === 'trash' && onPermanentlyDelete ? (
-						<Button
-							disabled={isPending}
-							onClick={() => onPermanentlyDelete(entry)}
-							size='sm'
-							type='button'
-							variant='outline'
-						>
-							永久删除
-						</Button>
-					) : null}
-					{mode === 'archive' && onOpenDetail ? (
-						<Button
-							disabled={isPending}
-							onClick={() => onOpenDetail(entry)}
-							size='sm'
-							type='button'
-							variant='ghost'
-						>
-							打开
-						</Button>
-					) : null}
-					<div className={cn('hidden text-right md:block', LEGACY_ROW_META_TEXT_CLASS)}>
-						{formattedDateLabel}
-					</div>
-				</div>
-			</div>
-		</LegacyRowSurface>
+					</RowActionButton>
+				</RowShell.Actions>
+			</RowShell.Right>
+		</RowShell.Root>
 	)
 }
 

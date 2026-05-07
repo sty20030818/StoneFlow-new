@@ -1,23 +1,13 @@
-import { cn } from '@/shared/lib/utils'
 import type { ProjectOverviewItem } from '@/shared/types'
-import { Badge } from '@/shared/ui/base/badge'
-import { Button } from '@/shared/ui/base/button'
 import {
-	TASK_ROW_META_TEXT_CLASS,
-	TASK_ROW_PROJECT_LEAD_CLASS,
-} from '@/shared/ui/patterns/task-row'
-import {
-	projectOverviewActionButtonClass,
-	projectOverviewDescriptionClass,
-	projectOverviewSecondaryTextClass,
-} from '@/shared/ui/patterns/project-overview'
-import {
-	LegacyRowActions,
-	LegacyRowLead,
-	LegacyRowMain,
-	LegacyRowSurface,
+	RowActionButton,
+	RowMetaButton,
+	RowShell,
+	RowTitleCell,
+	ROW_SHELL_ENTITY_ICON_CLASS,
 } from '@/shared/ui/row'
-import { FolderIcon } from 'lucide-react'
+import { projectOverviewActionButtonClass } from '@/shared/ui/patterns/project-overview'
+import { BellIcon, CalendarIcon, Clock3Icon, FolderIcon, TagIcon } from 'lucide-react'
 
 type ProjectOverviewRowProps = {
 	project: ProjectOverviewItem
@@ -39,90 +29,111 @@ export function ProjectOverviewRow({
 	onDelete,
 }: ProjectOverviewRowProps) {
 	return (
-		<LegacyRowSurface className='items-start px-4 py-4' isPending={busy}>
-			<div className='flex min-w-0 flex-1 items-start gap-3'>
-				<LegacyRowLead className='pt-0.5'>
-					<span className={TASK_ROW_PROJECT_LEAD_CLASS}>
+		<RowShell.Root pending={busy}>
+			<RowShell.Left className='gap-3'>
+				<RowShell.Leading className='pt-0.5'>
+					<span className={ROW_SHELL_ENTITY_ICON_CLASS}>
 						<FolderIcon className='size-4' />
 					</span>
-				</LegacyRowLead>
+				</RowShell.Leading>
 
-				<LegacyRowMain>
-					<div className='min-w-0 space-y-2'>
-						<div className='min-w-0'>
-							<p className='truncate text-sm font-semibold text-foreground'>{project.name}</p>
-							<p className={`text-[12px] ${projectOverviewSecondaryTextClass}`}>
-								{project.spaceName}
-							</p>
-						</div>
-						{project.description ? (
-							<p className={projectOverviewDescriptionClass}>{project.description}</p>
-						) : null}
-						<div
-							className={cn(
-								'flex flex-wrap items-center gap-2 text-[12px]',
-								TASK_ROW_META_TEXT_CLASS,
-							)}
+				<RowShell.Title>
+					<RowTitleCell title={project.name} />
+				</RowShell.Title>
+			</RowShell.Left>
+
+			<RowShell.Right>
+				<RowShell.Fields>
+					<RowMetaButton disabled icon={<TagIcon className='size-3.5' />} label='标签' type='button' />
+					<RowMetaButton
+						disabled={!project.dueAt}
+						icon={<CalendarIcon className='size-3.5' />}
+						label={project.dueAt ? `截止 ${project.dueAt}` : '截止'}
+						type='button'
+					/>
+					<RowMetaButton
+						disabled
+						icon={<CalendarIcon className='size-3.5' />}
+						label='计划'
+						type='button'
+					/>
+					<RowMetaButton
+						disabled
+						icon={<BellIcon className='size-3.5' />}
+						label='提醒'
+						type='button'
+					/>
+					<RowMetaButton
+						disabled
+						icon={<Clock3Icon className='size-3.5' />}
+						label={formatProjectDate(project.createdAt)}
+						trailing={null}
+						type='button'
+					/>
+				</RowShell.Fields>
+
+				<RowShell.Actions className='flex-wrap'>
+					<RowActionButton
+						className={projectOverviewActionButtonClass}
+						disabled={busy}
+						onClick={onOpen}
+						size='sm'
+						variant='outline'
+					>
+						打开
+					</RowActionButton>
+					{project.completedAt ? (
+						<RowActionButton
+							className={projectOverviewActionButtonClass}
+							disabled={busy}
+							onClick={onReopen}
+							size='sm'
+							variant='outline'
 						>
-							<Badge variant='secondary'>{project.activeTaskCount} 个活跃</Badge>
-							<Badge variant='outline'>{project.taskCount} 个任务</Badge>
-							{project.dueAt ? <Badge variant='outline'>截止 {project.dueAt}</Badge> : null}
-							{project.completedAt ? <Badge variant='success'>已完成</Badge> : null}
-						</div>
-					</div>
-				</LegacyRowMain>
-			</div>
-
-			<LegacyRowActions className='flex-wrap'>
-				<Button
-					className={projectOverviewActionButtonClass}
-					disabled={busy}
-					onClick={onOpen}
-					size='sm'
-					variant='outline'
-				>
-					打开
-				</Button>
-				{project.completedAt ? (
-					<Button
+							重开
+						</RowActionButton>
+					) : (
+						<RowActionButton
+							className={projectOverviewActionButtonClass}
+							disabled={busy}
+							onClick={onComplete}
+							size='sm'
+							variant='outline'
+						>
+							完成
+						</RowActionButton>
+					)}
+					<RowActionButton
 						className={projectOverviewActionButtonClass}
 						disabled={busy}
-						onClick={onReopen}
+						onClick={onArchive}
 						size='sm'
 						variant='outline'
 					>
-						重开
-					</Button>
-				) : (
-					<Button
+						归档
+					</RowActionButton>
+					<RowActionButton
 						className={projectOverviewActionButtonClass}
 						disabled={busy}
-						onClick={onComplete}
+						onClick={onDelete}
 						size='sm'
 						variant='outline'
 					>
-						完成
-					</Button>
-				)}
-				<Button
-					className={projectOverviewActionButtonClass}
-					disabled={busy}
-					onClick={onArchive}
-					size='sm'
-					variant='outline'
-				>
-					归档
-				</Button>
-				<Button
-					className={projectOverviewActionButtonClass}
-					disabled={busy}
-					onClick={onDelete}
-					size='sm'
-					variant='outline'
-				>
-					删除
-				</Button>
-			</LegacyRowActions>
-		</LegacyRowSurface>
+						删除
+					</RowActionButton>
+				</RowShell.Actions>
+			</RowShell.Right>
+		</RowShell.Root>
 	)
+}
+
+function formatProjectDate(value: string) {
+	const date = new Date(value)
+	if (Number.isNaN(date.getTime())) {
+		return value
+	}
+	return new Intl.DateTimeFormat('zh-CN', {
+		month: 'numeric',
+		day: 'numeric',
+	}).format(date)
 }

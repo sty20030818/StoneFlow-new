@@ -20,7 +20,6 @@ import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import {
 	ProjectSelect,
-	TaskLeadRail,
 	TaskPrioritySelect,
 	TaskSelectionCheckbox,
 	TaskStatusIndicator,
@@ -41,22 +40,18 @@ import {
 	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
-import { ListTodoIcon, PlusIcon } from 'lucide-react'
+import { BellIcon, CalendarIcon, Clock3Icon, FolderIcon, ListTodoIcon, PlusIcon, TagIcon } from 'lucide-react'
 import {
-	entityBoardCompactBadgeClass,
 	entityBoardSectionActionButtonClass,
 	entityBoardSectionHeadingClass,
 	entityBoardSectionCountBadgeClass,
 	entityBoardSectionToggleClass,
 } from '@/shared/ui/patterns/entity-board'
 import {
-	LEGACY_ROW_ACTIVE_CLASS,
-	LEGACY_ROW_BASE_CLASS,
-	LEGACY_ROW_IDLE_CLASS,
-	LEGACY_ROW_META_TEXT_CLASS,
+	RowMetaButton,
+	RowShell,
+	RowTitleCell,
 } from '@/shared/ui/row'
-
-const TASK_ROW_DONE_CLASS = 'text-muted-foreground'
 
 type TaskBoardSectionVariant = 'compact' | 'project'
 
@@ -355,7 +350,9 @@ function TaskBoardRow({ task }: { task: TaskListItem }) {
 	const isActive = ctx.activeTaskId === task.id
 	const isSelected = ctx.selectedTaskIdSet.has(task.id)
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
-	const hasProjectOptions = ctx.projectOptions && ctx.onSelectProject && ctx.onSelectNoProject
+	const hasProjectOptions = Boolean(
+		ctx.projectOptions && ctx.onSelectProject && ctx.onSelectNoProject,
+	)
 
 	return (
 		<TaskContextMenu
@@ -366,20 +363,14 @@ function TaskBoardRow({ task }: { task: TaskListItem }) {
 			onToggleStatus={() => void ctx.onToggleTaskStatus(task)}
 			status={task.status}
 		>
-			<div
+			<RowShell.Root
 				aria-label={`打开任务 ${task.title}`}
-				className={cn(
-					LEGACY_ROW_BASE_CLASS,
-					isActive
-						? LEGACY_ROW_ACTIVE_CLASS
-						: isSelected
-							? TASK_ROW_BULK_SELECTED_CLASS
-							: LEGACY_ROW_IDLE_CLASS,
-					isDoneLike ? TASK_ROW_DONE_CLASS : null,
-					isPending ? 'opacity-75' : null,
-				)}
 				data-shell-task-card='true'
 				data-task-id={task.id}
+				interactive
+				active={isActive}
+				pending={isPending}
+				selected={isSelected}
 				onClick={() => ctx.onOpenTask(task.id)}
 				onKeyDown={(event) => {
 					if (event.key === 'Enter' || event.key === ' ') {
@@ -387,65 +378,117 @@ function TaskBoardRow({ task }: { task: TaskListItem }) {
 						ctx.onOpenTask(task.id)
 					}
 				}}
-				role='button'
-				tabIndex={0}
+				selectedClassName={TASK_ROW_BULK_SELECTED_CLASS}
 			>
-				<TaskLeadRail>
-					<TaskSelectionCheckbox
-						ariaLabel={`选择任务 ${task.title}`}
-						checked={isSelected}
-						disabled={isPending}
-						onCheckedChange={() => ctx.onToggleTaskSelection(task.id)}
-					/>
-					<TaskPrioritySelect
-						ariaLabel={`设置任务 ${task.title} 的优先级`}
-						disabled={isPending}
-						onValueChange={(priority) => void ctx.onUpdateTaskPriority(task, priority)}
-						value={task.priority}
-					/>
-					<TaskStatusSelect
-						ariaLabel={`设置任务 ${task.title} 的状态`}
-						disabled={isPending}
-						onValueChange={(status) => void ctx.onUpdateTaskStatus(task, status)}
-						value={task.status}
-					/>
-				</TaskLeadRail>
+				<RowShell.Left>
+					<RowShell.Leading>
+						<TaskSelectionCheckbox
+							ariaLabel={`选择任务 ${task.title}`}
+							checked={isSelected}
+							disabled={isPending}
+							onCheckedChange={() => ctx.onToggleTaskSelection(task.id)}
+						/>
+						<TaskPrioritySelect
+							ariaLabel={`设置任务 ${task.title} 的优先级`}
+							disabled={isPending}
+							onValueChange={(priority) => void ctx.onUpdateTaskPriority(task, priority)}
+							value={task.priority}
+						/>
+						<TaskStatusSelect
+							ariaLabel={`设置任务 ${task.title} 的状态`}
+							disabled={isPending}
+							onValueChange={(status) => void ctx.onUpdateTaskStatus(task, status)}
+							value={task.status}
+						/>
+					</RowShell.Leading>
 
-				<span
-					className={cn(
-						'min-w-0 flex-1 truncate text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
-						isDoneLike ? 'text-sf-text-tertiary line-through' : null,
-					)}
-				>
-					{task.title}
-				</span>
-				{hasProjectOptions ? (
-					<ProjectSelect
-						currentProjectName={task.projectName}
-						disabled={isPending}
-						onSelectNoProject={() => ctx.onSelectNoProject!(task)}
-						onSelectProject={(projectId) => ctx.onSelectProject!(task, projectId)}
-						projects={ctx.projectOptions!}
+					<RowShell.Title>
+						<RowTitleCell doneLike={isDoneLike} title={task.title} />
+					</RowShell.Title>
+				</RowShell.Left>
+
+				<RowShell.Right>
+					<TaskFieldRail
+						createdAt={task.createdAt}
+						dueAt={task.dueAt}
+						hasProjectOptions={hasProjectOptions}
+						isPending={isPending}
+						onSelectNoProject={
+							hasProjectOptions ? () => ctx.onSelectNoProject!(task) : undefined
+						}
+						onSelectProject={
+							hasProjectOptions
+								? (projectId) => ctx.onSelectProject!(task, projectId)
+								: undefined
+						}
+						projectName={task.projectName}
+						projects={ctx.projectOptions}
 					/>
-				) : task.projectName ? (
-					<Badge className={entityBoardCompactBadgeClass} variant='outline'>
-						{task.projectName}
-					</Badge>
-				) : null}
-				<TaskMetaRail createdAt={task.createdAt} dueAt={task.dueAt} />
-			</div>
+				</RowShell.Right>
+			</RowShell.Root>
 		</TaskContextMenu>
 	)
 }
 
-function TaskMetaRail({ dueAt, createdAt }: { dueAt: string | null; createdAt: string }) {
+function TaskFieldRail({
+	dueAt,
+	createdAt,
+	projectName,
+	projects,
+	hasProjectOptions,
+	isPending,
+	onSelectProject,
+	onSelectNoProject,
+}: {
+	dueAt: string | null
+	createdAt: string
+	projectName: string | null | undefined
+	projects?: Array<{ id: string; name: string }>
+	hasProjectOptions: boolean
+	isPending: boolean
+	onSelectProject?: (projectId: string) => void
+	onSelectNoProject?: () => void
+}) {
 	return (
-		<div className='ml-auto hidden shrink-0 items-center justify-end gap-2 text-right md:flex'>
-			{dueAt ? (
-				<span className={LEGACY_ROW_META_TEXT_CLASS}>{formatTaskDate(dueAt)}</span>
-			) : null}
-			<span className={LEGACY_ROW_META_TEXT_CLASS}>{formatTaskDate(createdAt)}</span>
-		</div>
+		<RowShell.Fields>
+			<RowMetaButton disabled icon={<TagIcon className='size-3.5' />} label='标签' type='button' />
+			<RowMetaButton
+				disabled={!dueAt}
+				icon={<CalendarIcon className='size-3.5' />}
+				label={dueAt ? `截止 ${formatTaskDate(dueAt)}` : '截止'}
+				type='button'
+			/>
+			<RowMetaButton
+				disabled
+				icon={<CalendarIcon className='size-3.5' />}
+				label='计划'
+				type='button'
+			/>
+			<RowMetaButton disabled icon={<BellIcon className='size-3.5' />} label='提醒' type='button' />
+			{hasProjectOptions && projects && onSelectProject && onSelectNoProject ? (
+				<ProjectSelect
+					currentProjectName={projectName}
+					disabled={isPending}
+					onSelectNoProject={onSelectNoProject}
+					onSelectProject={onSelectProject}
+					projects={projects}
+				/>
+			) : (
+				<RowMetaButton
+					disabled={!projectName}
+					icon={<FolderIcon className='size-3.5' />}
+					label={projectName || '项目'}
+					type='button'
+				/>
+			)}
+			<RowMetaButton
+				disabled
+				icon={<Clock3Icon className='size-3.5' />}
+				label={formatTaskDate(createdAt)}
+				trailing={null}
+				type='button'
+			/>
+		</RowShell.Fields>
 	)
 }
 
