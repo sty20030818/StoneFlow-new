@@ -1,4 +1,3 @@
-import type { LifecycleEntry } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
 
@@ -62,5 +61,3 @@ export function createPendingBulkAction(label: string) {
 		</Button>
 	)
 }
-
-export type { LifecycleEntry }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 import {
 	BOARD_COLLAPSIBLE_CLASS,
@@ -15,22 +15,16 @@ import {
 	entityBoardSectionHeadingClass,
 	entityBoardSectionRightSpacerClass,
 	entityBoardSectionToggleClass,
-	entityBoardShellSecondaryIconClass,
 } from '@/shared/ui/patterns/entity-board'
-import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import { cn } from '@/shared/lib/utils'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
-import { ArchiveIcon, BoxIcon, FolderIcon, ListTodoIcon, TrashIcon } from 'lucide-react'
+import { ArchiveIcon, BoxIcon, FolderIcon, TrashIcon } from 'lucide-react'
 import {
-	CreatedAtCell,
-	RestoreActionCell,
-	RowSelectionCell,
-	RowShell,
-	RowTitleCell,
 	ROW_SHELL_META_TEXT_CLASS,
 } from '@/shared/ui/row'
+import { LifecycleRowAdapter } from '@/features/lifecycle/ui/LifecycleRowAdapter'
 
 export type LifecycleBoardSection = BoardSection<LifecycleEntry>
 
@@ -43,8 +37,6 @@ type LifecycleBoardProps = {
 	emptyActionLabel?: string
 	onEmptyAction?: () => void
 	onRestore: (entry: LifecycleEntry) => void
-	onDeleteFromArchive?: (entry: LifecycleEntry) => void
-	onPermanentlyDelete?: (entry: LifecycleEntry) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
 }
 
@@ -61,8 +53,6 @@ export function LifecycleBoard({
 	emptyActionLabel,
 	onEmptyAction,
 	onRestore,
-	onDeleteFromArchive: _onDeleteFromArchive,
-	onPermanentlyDelete: _onPermanentlyDelete,
 	onOpenDetail,
 }: LifecycleBoardProps) {
 	const visibleSections = sections.filter((section) => section.items.length > 0)
@@ -155,106 +145,24 @@ function LifecycleBoardSectionBlock({
 			<CollapsibleContent className='overflow-hidden px-0'>
 				<BoardRows>
 					{items.map((entry) => (
-						<LifecycleBoardRow
-							entry={entry}
-							isPending={pendingEntryId === entry.id}
-							isSelected={selectedIds.has(entry.id)}
+						<LifecycleRowAdapter
+							actions={{
+								onOpenDetail,
+								onRestore,
+								onToggleSelected: () => toggleEntry(entry.id),
+							}}
 							key={entry.id}
 							mode={mode}
-							onOpenDetail={onOpenDetail}
-							onRestore={onRestore}
-							onToggleSelected={() => toggleEntry(entry.id)}
+							entry={entry}
+							rowState={{
+								isPending: pendingEntryId === entry.id,
+								isSelected: selectedIds.has(entry.id),
+							}}
 						/>
 					))}
 				</BoardRows>
 			</CollapsibleContent>
 		</Collapsible>
-	)
-}
-
-function LifecycleBoardRow({
-	entry,
-	mode,
-	isSelected,
-	isPending,
-	onToggleSelected,
-	onRestore,
-	onOpenDetail,
-}: {
-	entry: LifecycleEntry
-	mode: LifecycleMode
-	isSelected: boolean
-	isPending: boolean
-	onToggleSelected: () => void
-	onRestore: (entry: LifecycleEntry) => void
-	onOpenDetail?: (entry: LifecycleEntry) => void
-}) {
-	const Icon = useMemo(() => {
-		switch (entry.entityType) {
-			case 'space':
-				return FolderIcon
-			case 'project':
-				return BoxIcon
-			default:
-				return ListTodoIcon
-		}
-	}, [entry.entityType])
-
-	const canOpenDetail = mode === 'archive' && typeof onOpenDetail === 'function'
-	const createdAtValue = mode === 'archive' ? entry.archivedAt : entry.deletedAt
-
-	return (
-		<RowShell.Root
-			aria-label={canOpenDetail ? `打开 ${entry.title}` : undefined}
-			className={canOpenDetail ? undefined : 'cursor-default'}
-			data-lifecycle-entity={entry.entityType}
-			interactive={canOpenDetail}
-			pending={isPending}
-			selected={isSelected}
-			onClick={canOpenDetail ? () => onOpenDetail?.(entry) : undefined}
-			onKeyDown={
-				canOpenDetail
-					? (event) => {
-							if (event.key === 'Enter' || event.key === ' ') {
-								event.preventDefault()
-								onOpenDetail?.(entry)
-							}
-						}
-					: undefined
-			}
-			selectedClassName={TASK_ROW_BULK_SELECTED_CLASS}
-		>
-			<RowShell.Left>
-				<RowShell.Leading>
-					<RowSelectionCell
-						ariaLabel={`选择 ${entry.title}`}
-						checked={isSelected}
-						disabled={isPending}
-						onCheckedChange={onToggleSelected}
-					/>
-				</RowShell.Leading>
-
-				<RowShell.Icon className={entityBoardShellSecondaryIconClass}>
-					<Icon className='size-4' />
-				</RowShell.Icon>
-
-				<RowShell.Title>
-					<RowTitleCell title={entry.title} />
-				</RowShell.Title>
-			</RowShell.Left>
-
-			<RowShell.Right>
-				<RowShell.Fields>
-					<CreatedAtCell value={createdAtValue} />
-				</RowShell.Fields>
-				<RowShell.Actions>
-					<RestoreActionCell
-						disabled={isPending}
-						onRestore={() => onRestore(entry)}
-					/>
-				</RowShell.Actions>
-			</RowShell.Right>
-		</RowShell.Root>
 	)
 }
 

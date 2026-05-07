@@ -4,14 +4,12 @@ import { useNavigate } from 'react-router-dom'
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
-import { deleteLifecycleEntry } from '@/features/lifecycle/api/lifecycle'
 import {
 	selectArchiveEntries,
 	selectTrashEntries,
 	useLifecycleStore,
 } from '@/features/lifecycle/model/useLifecycleStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
-import { emitEvent } from '@/shared/events'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import {
 	Breadcrumb,
@@ -40,7 +38,6 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	const loadArchive = useLifecycleStore((state) => state.loadArchive)
 	const loadTrash = useLifecycleStore((state) => state.loadTrash)
 	const restoreEntry = useLifecycleStore((state) => state.restoreEntry)
-	const permanentlyDeleteEntry = useLifecycleStore((state) => state.permanentlyDeleteEntry)
 	const refreshLoadedSlices = useLifecycleStore((state) => state.refreshLoadedSlices)
 	const [entityFilter, setEntityFilter] = useState<LifecycleFilter>('all')
 
@@ -69,16 +66,6 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 
 		void loadTrash(scope)
 	}, [loadArchive, loadTrash, mode, scope])
-
-	async function handleDeleteFromArchive(entry: LifecycleEntry) {
-		if (!window.confirm(`确认将「${entry.title}」移入回收站吗？`)) {
-			return
-		}
-
-		await deleteLifecycleEntry(entry)
-		emitEntryEvent(entry, true)
-		await refreshLoadedSlices()
-	}
 
 	function handleOpenDetail(entry: LifecycleEntry) {
 		if (entry.entityType === 'task') {
@@ -119,23 +106,10 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 					pendingEntryId,
 				},
 				boardActions: {
-					onDeleteFromArchive:
-						mode === 'archive'
-							? (entry: LifecycleEntry) => void handleDeleteFromArchive(entry)
-							: undefined,
 					onEmptyAction: () => {
 						void navigate(buildScopedSectionPath(scope, 'inbox', spaceId))
 					},
 					onOpenDetail: mode === 'archive' ? handleOpenDetail : undefined,
-					onPermanentlyDelete:
-						mode === 'trash'
-							? (entry: LifecycleEntry) => {
-									if (!window.confirm(`确认永久删除「${entry.title}」吗？此操作不可恢复。`)) {
-										return
-									}
-									void permanentlyDeleteEntry(entry)
-								}
-							: undefined,
 					onRestore: (entry: LifecycleEntry) => {
 						void restoreEntry(entry)
 					},
@@ -222,28 +196,4 @@ function buildLifecycleSections(
 			items: entries.filter((entry) => entry.entityType === 'task'),
 		},
 	]
-}
-
-function emitEntryEvent(entry: LifecycleEntry, deleted: boolean) {
-	if (entry.entityType === 'space') {
-		emitEvent({
-			type: deleted ? 'space:deleted' : 'space:updated',
-			payload: { spaceId: entry.id },
-		})
-	} else if (entry.entityType === 'project') {
-		emitEvent({
-			type: deleted ? 'project:deleted' : 'project:updated',
-			payload: { projectId: entry.id },
-		})
-	} else {
-		emitEvent({
-			type: deleted ? 'task:deleted' : 'task:updated',
-			payload: { taskId: entry.id },
-		})
-	}
-
-	emitEvent({
-		type: 'lifecycle:changed',
-		payload: { entityType: entry.entityType, entityId: entry.id },
-	})
 }

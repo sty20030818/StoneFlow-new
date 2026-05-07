@@ -2,7 +2,7 @@ import type { ProjectOverviewItem } from '@/shared/types'
 import { EmptyPage } from '@/shared/ui/base/empty'
 import { entityBoardLoadingCardClass } from '@/shared/ui/patterns/entity-board'
 
-import { ProjectOverviewRow } from '@/features/project-overview/ui/ProjectOverviewRow'
+import { ProjectRowAdapter } from '@/features/project/ui/ProjectRowAdapter'
 
 type ProjectOverviewListProps = {
 	items: ProjectOverviewItem[]
@@ -38,15 +38,19 @@ export function ProjectOverviewList({
 	return (
 		<div className='grid gap-3'>
 			{items.map((project) => (
-				<ProjectOverviewRow
-					busy={busyProjectId === project.id}
+				<ProjectRowAdapter
+					actions={{
+						onArchiveProject: onArchive,
+						onCompleteProject: onComplete,
+						onDeleteProject: onDelete,
+						onOpenProject: onOpen,
+						onReopenProject: onReopen,
+					}}
 					key={project.id}
-					onArchive={() => onArchive(project.id)}
-					onComplete={() => onComplete(project.id)}
-					onDelete={() => onDelete(project.id)}
-					onOpen={() => onOpen(project.id)}
-					onReopen={() => onReopen(project.id)}
 					project={project}
+					rowState={{
+						isPending: busyProjectId === project.id,
+					}}
 				/>
 			))}
 		</div>

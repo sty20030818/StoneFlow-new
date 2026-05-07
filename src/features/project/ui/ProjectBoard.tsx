@@ -21,7 +21,7 @@ import {
 	entityBoardSectionToggleClass,
 } from '@/shared/ui/patterns/entity-board'
 
-import { ProjectOverviewRow } from '@/features/project-overview/ui/ProjectOverviewRow'
+import { ProjectRowAdapter } from '@/features/project/ui/ProjectRowAdapter'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
 
 type ProjectBoardSectionKey = 'active' | 'completed' | 'archived'
@@ -128,15 +128,19 @@ function ProjectBoardSectionBlock({
 			<CollapsibleContent className='overflow-hidden px-0'>
 				<BoardRows>
 					{section.items.map((project) => (
-						<ProjectOverviewRow
-							busy={busyProjectId === project.id}
+						<ProjectRowAdapter
+							actions={{
+								onArchiveProject: onArchive,
+								onCompleteProject: onComplete,
+								onDeleteProject: onDelete,
+								onOpenProject: onOpen,
+								onReopenProject: onReopen,
+							}}
 							key={project.id}
-							onArchive={() => onArchive(project.id)}
-							onComplete={() => onComplete(project.id)}
-							onDelete={() => onDelete(project.id)}
-							onOpen={() => onOpen(project.id)}
-							onReopen={() => onReopen(project.id)}
 							project={project}
+							rowState={{
+								isPending: busyProjectId === project.id,
+							}}
 						/>
 					))}
 				</BoardRows>

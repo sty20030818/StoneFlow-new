@@ -23,10 +23,8 @@ export function LifecycleBoardAdapter({ config, data, actions }: LifecycleBoardA
 			emptyDescription={config.emptyDescription}
 			emptyTitle={config.emptyTitle}
 			mode={config.mode}
-			onDeleteFromArchive={actions.onDeleteFromArchive}
 			onEmptyAction={actions.onEmptyAction}
 			onOpenDetail={actions.onOpenDetail}
-			onPermanentlyDelete={actions.onPermanentlyDelete}
 			onRestore={(entry) => actions.onRestore(entry)}
 			pendingEntryId={data.pendingEntryId ?? null}
 			sections={data.sections}

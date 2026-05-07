@@ -98,8 +98,6 @@ export type EntitySceneLifecycleBoardData = {
 export type EntitySceneLifecycleBoardActions = {
 	onEmptyAction?: () => void
 	onRestore: (entry: LifecycleEntry) => void
-	onDeleteFromArchive?: (entry: LifecycleEntry) => void
-	onPermanentlyDelete?: (entry: LifecycleEntry) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
 }
 

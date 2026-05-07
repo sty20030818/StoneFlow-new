@@ -9,7 +9,6 @@ import type { LifecycleEntry, Scope } from '@/shared/types'
 const loadArchiveSpy = vi.fn<(scope: Scope) => Promise<void>>()
 const loadTrashSpy = vi.fn<(scope: Scope) => Promise<void>>()
 const restoreEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<void>>()
-const permanentlyDeleteEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<void>>()
 const refreshLoadedSlicesSpy = vi.fn<() => Promise<void>>()
 const openDrawerSpy = vi.fn<(kind: string, id: string) => void>()
 
@@ -44,10 +43,6 @@ vi.mock('@/app/layouts/shell/model/useDrawerStore', () => ({
 		}),
 }))
 
-vi.mock('@/features/lifecycle/api/lifecycle', () => ({
-	deleteLifecycleEntry: vi.fn<(entry: LifecycleEntry) => Promise<void>>(),
-}))
-
 vi.mock('@/features/lifecycle/model/useLifecycleStore', () => ({
 	selectArchiveEntries: (state: typeof storeState) => state.archiveEntries,
 	selectTrashEntries: (state: typeof storeState) => state.trashEntries,
@@ -72,7 +67,6 @@ describe('LifecycleList', () => {
 		loadArchiveSpy.mockReset()
 		loadTrashSpy.mockReset()
 		restoreEntrySpy.mockReset()
-		permanentlyDeleteEntrySpy.mockReset()
 		refreshLoadedSlicesSpy.mockReset()
 		openDrawerSpy.mockReset()
 	})
@@ -188,7 +182,6 @@ function createStoreStateBase() {
 		loadArchive: loadArchiveSpy,
 		loadTrash: loadTrashSpy,
 		restoreEntry: restoreEntrySpy,
-		permanentlyDeleteEntry: permanentlyDeleteEntrySpy,
 		refreshLoadedSlices: refreshLoadedSlicesSpy,
 	}
 }

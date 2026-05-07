@@ -1,7 +1,5 @@
-import { cva } from 'class-variance-authority'
-
 /**
- * Task row pattern 统一 legacy row surface 和任务列表行容器的表面语义。
+ * RowShell 统一行表面 token 与批量操作 token。
  */
 export const TASK_ROW_BASE_CLASS =
 	'group flex h-12 min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 text-left transition-colors'
@@ -20,16 +18,3 @@ export const TASK_BULK_ACTION_BAR_CLASS =
 	'pointer-events-auto inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-sf-surface-raised p-1.5 text-sf-control-text shadow-(--sf-shadow-popover)'
 export const TASK_BULK_ACTION_COUNT_PILL_CLASS =
 	'inline-flex h-7.5 items-center rounded-full border border-border bg-white px-3 text-[0.8rem] font-medium text-sf-control-text shadow-[inset_0_1px_0_rgb(255_255_255/0.9)]'
-
-export const taskRowVariants = cva(TASK_ROW_BASE_CLASS, {
-	variants: {
-		state: {
-			idle: TASK_ROW_IDLE_CLASS,
-			active: TASK_ROW_ACTIVE_CLASS,
-			selected: TASK_ROW_SELECTED_CLASS,
-		},
-	},
-	defaultVariants: {
-		state: 'idle',
-	},
-})
