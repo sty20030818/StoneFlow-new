@@ -5,15 +5,14 @@ import {
 	useShellPreferenceStore,
 } from '@/app/layouts/shell/model/useShellPreferenceStore'
 import {
-	CANONICAL_BOARD_COLLAPSIBLE_CLASS,
-	CANONICAL_BOARD_META_TEXT_CLASS,
-	CANONICAL_BOARD_ROW_ACTIVE_CLASS,
-	CANONICAL_BOARD_ROW_BASE_CLASS,
-	CANONICAL_BOARD_ROW_IDLE_CLASS,
-	CANONICAL_BOARD_SECTION_HEADER_CLASS,
-	CANONICAL_BOARD_STACK_CLASS,
-	CanonicalBoard,
-} from '@/app/layouts/entity-scene/CanonicalBoard'
+	BOARD_COLLAPSIBLE_CLASS,
+	BOARD_GROUP_HEADER_CLASS,
+	BOARD_STACK_CLASS,
+	BoardChevron,
+	BoardGroup,
+	BoardGroupHeader,
+	BoardRows,
+} from '@/shared/ui/board'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
@@ -50,6 +49,12 @@ import {
 	entityBoardSectionCountBadgeClass,
 	entityBoardSectionToggleClass,
 } from '@/shared/ui/patterns/entity-board'
+import {
+	LEGACY_ROW_ACTIVE_CLASS,
+	LEGACY_ROW_BASE_CLASS,
+	LEGACY_ROW_IDLE_CLASS,
+	LEGACY_ROW_META_TEXT_CLASS,
+} from '@/shared/ui/row'
 
 const TASK_ROW_DONE_CLASS = 'text-muted-foreground'
 
@@ -193,7 +198,7 @@ export function TaskBoard({
 			{customSections && customSections.length > 0 ? (
 				<div
 					className={cn(
-						CANONICAL_BOARD_STACK_CLASS,
+						BOARD_STACK_CLASS,
 						sectionVariant === 'project' ? 'gap-2' : 'gap-3',
 					)}
 				>
@@ -209,7 +214,7 @@ export function TaskBoard({
 			) : (
 				<div
 					className={cn(
-						CANONICAL_BOARD_STACK_CLASS,
+						BOARD_STACK_CLASS,
 						sectionVariant === 'project' ? 'gap-1' : 'gap-3',
 					)}
 				>
@@ -244,9 +249,9 @@ function TaskCustomSection({
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
 	return (
-		<CanonicalBoard.Section>
-			<CanonicalBoard.SectionHeader
-				className={CANONICAL_BOARD_SECTION_HEADER_CLASS}
+		<BoardGroup>
+			<BoardGroupHeader
+				className={BOARD_GROUP_HEADER_CLASS}
 				count={tasks.length}
 				title={label}
 				trailing={
@@ -268,12 +273,12 @@ function TaskCustomSection({
 					</Button>
 				}
 			/>
-			<CanonicalBoard.Rows>
+			<BoardRows>
 				{tasks.map((task) => (
 					<TaskBoardRow key={task.id} task={task} />
 				))}
-			</CanonicalBoard.Rows>
-		</CanonicalBoard.Section>
+			</BoardRows>
+		</BoardGroup>
 	)
 }
 
@@ -296,16 +301,16 @@ function TaskStatusSection({
 
 	return (
 		<Collapsible
-			className={CANONICAL_BOARD_COLLAPSIBLE_CLASS}
+			className={BOARD_COLLAPSIBLE_CLASS}
 			onOpenChange={onOpenChange}
 			open={open}
 		>
-			<div className={CANONICAL_BOARD_SECTION_HEADER_CLASS}>
+			<div className={BOARD_GROUP_HEADER_CLASS}>
 				<CollapsibleTrigger
 					aria-label={`切换 ${label} 分区折叠状态`}
 					className={entityBoardSectionToggleClass}
 				>
-					<CanonicalBoard.Chevron data-chevron />
+					<BoardChevron data-chevron />
 				</CollapsibleTrigger>
 				<div className={entityBoardSectionHeadingClass}>
 					<TaskStatusIndicator status={status} />
@@ -334,11 +339,11 @@ function TaskStatusSection({
 			</div>
 
 			<CollapsibleContent className='overflow-hidden px-0'>
-				<CanonicalBoard.Rows>
+				<BoardRows>
 					{tasks.map((task) => (
 						<TaskBoardRow key={task.id} task={task} />
 					))}
-				</CanonicalBoard.Rows>
+				</BoardRows>
 			</CollapsibleContent>
 		</Collapsible>
 	)
@@ -364,12 +369,12 @@ function TaskBoardRow({ task }: { task: TaskListItem }) {
 			<div
 				aria-label={`打开任务 ${task.title}`}
 				className={cn(
-					CANONICAL_BOARD_ROW_BASE_CLASS,
+					LEGACY_ROW_BASE_CLASS,
 					isActive
-						? CANONICAL_BOARD_ROW_ACTIVE_CLASS
+						? LEGACY_ROW_ACTIVE_CLASS
 						: isSelected
 							? TASK_ROW_BULK_SELECTED_CLASS
-							: CANONICAL_BOARD_ROW_IDLE_CLASS,
+							: LEGACY_ROW_IDLE_CLASS,
 					isDoneLike ? TASK_ROW_DONE_CLASS : null,
 					isPending ? 'opacity-75' : null,
 				)}
@@ -437,9 +442,9 @@ function TaskMetaRail({ dueAt, createdAt }: { dueAt: string | null; createdAt: s
 	return (
 		<div className='ml-auto hidden shrink-0 items-center justify-end gap-2 text-right md:flex'>
 			{dueAt ? (
-				<span className={CANONICAL_BOARD_META_TEXT_CLASS}>{formatTaskDate(dueAt)}</span>
+				<span className={LEGACY_ROW_META_TEXT_CLASS}>{formatTaskDate(dueAt)}</span>
 			) : null}
-			<span className={CANONICAL_BOARD_META_TEXT_CLASS}>{formatTaskDate(createdAt)}</span>
+			<span className={LEGACY_ROW_META_TEXT_CLASS}>{formatTaskDate(createdAt)}</span>
 		</div>
 	)
 }

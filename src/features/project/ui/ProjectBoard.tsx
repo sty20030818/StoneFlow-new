@@ -1,26 +1,19 @@
 import { useState } from 'react'
 
 import {
-	CANONICAL_BOARD_COLLAPSIBLE_CLASS,
-	CANONICAL_BOARD_SECTION_HEADER_CLASS,
-	CanonicalBoard,
-	type CanonicalBoardSection,
-} from '@/app/layouts/entity-scene/CanonicalBoard'
+	BOARD_COLLAPSIBLE_CLASS,
+	BOARD_GROUP_HEADER_CLASS,
+	BoardChevron,
+	BoardEmptyState,
+	BoardLoadingState,
+	BoardRows,
+	BoardRoot,
+	type BoardSection,
+} from '@/shared/ui/board'
 import type { ProjectOverviewItem } from '@/shared/types'
-import { Button } from '@/shared/ui/base/button'
-import {
-	Empty,
-	EmptyContent,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyPage,
-	EmptyTitle,
-} from '@/shared/ui/base/empty'
 import { Badge } from '@/shared/ui/base/badge'
 import { ArchiveIcon, FolderIcon, PlayIcon, CheckIcon } from 'lucide-react'
 import {
-	entityBoardLoadingCardClass,
 	entityBoardMutedIconClass,
 	entityBoardSectionCountBadgeClass,
 	entityBoardSectionHeadingClass,
@@ -53,44 +46,29 @@ const PROJECT_SECTION_ORDER: ProjectBoardSectionKey[] = ['active', 'completed', 
 
 /**
  * 项目实体侧统一 board。
- * 项目总览不再使用独立卡片，而是映射到 canonical board 的 section + row 结构。
+ * 项目总览映射到共享 board 的 section + row 结构。
  */
 export function ProjectBoard(props: ProjectBoardProps) {
 	if (props.status === 'loading' && props.items.length === 0) {
-		return (
-			<EmptyPage>
-				<div className={entityBoardLoadingCardClass}>正在读取项目列表…</div>
-			</EmptyPage>
-		)
+		return <BoardLoadingState label='正在读取项目列表…' />
 	}
 
 	if (props.status === 'ready' && props.items.length === 0) {
 		return (
-			<EmptyPage>
-				<Empty>
-					<EmptyHeader>
-						<EmptyMedia variant='icon'>
-							<FolderIcon />
-						</EmptyMedia>
-						<EmptyTitle>{props.emptyTitle}</EmptyTitle>
-						<EmptyDescription>{props.emptyDescription}</EmptyDescription>
-					</EmptyHeader>
-					{props.onEmptyAction && props.emptyActionLabel ? (
-						<EmptyContent>
-							<Button onClick={props.onEmptyAction} type='button'>
-								{props.emptyActionLabel}
-							</Button>
-						</EmptyContent>
-					) : null}
-				</Empty>
-			</EmptyPage>
+			<BoardEmptyState
+				actionLabel={props.emptyActionLabel}
+				description={props.emptyDescription}
+				icon={<FolderIcon />}
+				onAction={props.onEmptyAction}
+				title={props.emptyTitle}
+			/>
 		)
 	}
 
 	const sections = buildProjectSections(props.items).filter((section) => section.items.length > 0)
 
 	return (
-		<CanonicalBoard.Root>
+		<BoardRoot>
 			{sections.map((section) => (
 				<ProjectBoardSectionBlock
 					busyProjectId={props.busyProjectId}
@@ -103,7 +81,7 @@ export function ProjectBoard(props: ProjectBoardProps) {
 					section={section}
 				/>
 			))}
-		</CanonicalBoard.Root>
+		</BoardRoot>
 	)
 }
 
@@ -116,7 +94,7 @@ function ProjectBoardSectionBlock({
 	onArchive,
 	onDelete,
 }: {
-	section: CanonicalBoardSection<ProjectOverviewItem> & {
+	section: BoardSection<ProjectOverviewItem> & {
 		key: ProjectBoardSectionKey
 	}
 	busyProjectId: string | null
@@ -129,13 +107,13 @@ function ProjectBoardSectionBlock({
 	const [open, setOpen] = useState(true)
 
 	return (
-		<Collapsible className={CANONICAL_BOARD_COLLAPSIBLE_CLASS} onOpenChange={setOpen} open={open}>
-			<div className={CANONICAL_BOARD_SECTION_HEADER_CLASS}>
+		<Collapsible className={BOARD_COLLAPSIBLE_CLASS} onOpenChange={setOpen} open={open}>
+			<div className={BOARD_GROUP_HEADER_CLASS}>
 				<CollapsibleTrigger
 					aria-label={`切换 ${section.label} 分区折叠状态`}
 					className={entityBoardSectionToggleClass}
 				>
-					<CanonicalBoard.Chevron data-chevron />
+					<BoardChevron data-chevron />
 				</CollapsibleTrigger>
 				<div className={entityBoardSectionHeadingClass}>
 					<ProjectSectionStatusIcon sectionKey={section.key} />
@@ -148,7 +126,7 @@ function ProjectBoardSectionBlock({
 			</div>
 
 			<CollapsibleContent className='overflow-hidden px-0'>
-				<CanonicalBoard.Rows>
+				<BoardRows>
 					{section.items.map((project) => (
 						<ProjectOverviewRow
 							busy={busyProjectId === project.id}
@@ -161,7 +139,7 @@ function ProjectBoardSectionBlock({
 							project={project}
 						/>
 					))}
-				</CanonicalBoard.Rows>
+				</BoardRows>
 			</CollapsibleContent>
 		</Collapsible>
 	)
@@ -169,7 +147,7 @@ function ProjectBoardSectionBlock({
 
 function buildProjectSections(
 	items: ProjectOverviewItem[],
-): Array<CanonicalBoardSection<ProjectOverviewItem> & { key: ProjectBoardSectionKey }> {
+): Array<BoardSection<ProjectOverviewItem> & { key: ProjectBoardSectionKey }> {
 	const grouped = new Map<ProjectBoardSectionKey, ProjectOverviewItem[]>([
 		['active', []],
 		['completed', []],

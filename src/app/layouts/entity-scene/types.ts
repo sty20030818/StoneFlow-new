@@ -9,7 +9,7 @@ import type {
 	TaskListItem,
 	TaskStatus,
 } from '@/shared/types'
-import type { CanonicalBoardSection } from './CanonicalBoard'
+import type { BoardSection } from '@/shared/ui/board'
 
 export type EntitySceneVariant =
 	| 'inbox'
@@ -91,7 +91,7 @@ export type EntitySceneLifecycleBoardConfig = {
 }
 
 export type EntitySceneLifecycleBoardData = {
-	sections: CanonicalBoardSection<LifecycleEntry>[]
+	sections: BoardSection<LifecycleEntry>[]
 	pendingEntryId?: string | null
 }
 

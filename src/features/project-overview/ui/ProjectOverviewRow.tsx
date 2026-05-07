@@ -1,4 +1,3 @@
-import { CanonicalBoard } from '@/app/layouts/entity-scene/CanonicalBoard'
 import { cn } from '@/shared/lib/utils'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { Badge } from '@/shared/ui/base/badge'
@@ -12,6 +11,12 @@ import {
 	projectOverviewDescriptionClass,
 	projectOverviewSecondaryTextClass,
 } from '@/shared/ui/patterns/project-overview'
+import {
+	LegacyRowActions,
+	LegacyRowLead,
+	LegacyRowMain,
+	LegacyRowSurface,
+} from '@/shared/ui/row'
 import { FolderIcon } from 'lucide-react'
 
 type ProjectOverviewRowProps = {
@@ -34,15 +39,15 @@ export function ProjectOverviewRow({
 	onDelete,
 }: ProjectOverviewRowProps) {
 	return (
-		<CanonicalBoard.Row className='items-start px-4 py-4' isPending={busy}>
+		<LegacyRowSurface className='items-start px-4 py-4' isPending={busy}>
 			<div className='flex min-w-0 flex-1 items-start gap-3'>
-				<CanonicalBoard.RowLead className='pt-0.5'>
+				<LegacyRowLead className='pt-0.5'>
 					<span className={TASK_ROW_PROJECT_LEAD_CLASS}>
 						<FolderIcon className='size-4' />
 					</span>
-				</CanonicalBoard.RowLead>
+				</LegacyRowLead>
 
-				<CanonicalBoard.RowMain>
+				<LegacyRowMain>
 					<div className='min-w-0 space-y-2'>
 						<div className='min-w-0'>
 							<p className='truncate text-sm font-semibold text-foreground'>{project.name}</p>
@@ -65,10 +70,10 @@ export function ProjectOverviewRow({
 							{project.completedAt ? <Badge variant='success'>已完成</Badge> : null}
 						</div>
 					</div>
-				</CanonicalBoard.RowMain>
+				</LegacyRowMain>
 			</div>
 
-			<CanonicalBoard.RowActions className='flex-wrap'>
+			<LegacyRowActions className='flex-wrap'>
 				<Button
 					className={projectOverviewActionButtonClass}
 					disabled={busy}
@@ -117,7 +122,7 @@ export function ProjectOverviewRow({
 				>
 					删除
 				</Button>
-			</CanonicalBoard.RowActions>
-		</CanonicalBoard.Row>
+			</LegacyRowActions>
+		</LegacyRowSurface>
 	)
 }

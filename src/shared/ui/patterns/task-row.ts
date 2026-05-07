@@ -1,7 +1,7 @@
 import { cva } from 'class-variance-authority'
 
 /**
- * Task row pattern 统一 CanonicalBoard 和任务列表行容器的表面语义。
+ * Task row pattern 统一 legacy row surface 和任务列表行容器的表面语义。
  */
 export const TASK_ROW_BASE_CLASS =
 	'group flex h-12 min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 text-left transition-colors'

@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
 
 import {
-	CANONICAL_BOARD_COLLAPSIBLE_CLASS,
-	CANONICAL_BOARD_META_TEXT_CLASS,
-	CANONICAL_BOARD_SECTION_HEADER_CLASS,
-	CanonicalBoard,
-	type CanonicalBoardSection,
-} from '@/app/layouts/entity-scene/CanonicalBoard'
+	BOARD_COLLAPSIBLE_CLASS,
+	BOARD_GROUP_HEADER_CLASS,
+	BoardChevron,
+	BoardEmptyState,
+	BoardRoot,
+	BoardRows,
+	type BoardSection,
+} from '@/shared/ui/board'
 import { TaskSelectionCheckbox } from '@/features/task/ui/TaskMetadataSelect'
 import {
 	entityBoardMutedIconClass,
@@ -22,18 +24,10 @@ import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
-import {
-	Empty,
-	EmptyContent,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyPage,
-	EmptyTitle,
-} from '@/shared/ui/base/empty'
 import { ArchiveIcon, BoxIcon, FolderIcon, ListTodoIcon, TrashIcon } from 'lucide-react'
+import { LEGACY_ROW_META_TEXT_CLASS, LegacyRowLead, LegacyRowMain, LegacyRowSurface } from '@/shared/ui/row'
 
-export type LifecycleBoardSection = CanonicalBoardSection<LifecycleEntry>
+export type LifecycleBoardSection = BoardSection<LifecycleEntry>
 
 type LifecycleBoardProps = {
 	mode: LifecycleMode
@@ -70,29 +64,18 @@ export function LifecycleBoard({
 
 	if (visibleSections.length === 0) {
 		return (
-			<EmptyPage>
-				<Empty>
-					<EmptyHeader>
-						<EmptyMedia variant='icon'>
-							{mode === 'archive' ? <BoxIcon /> : <FolderIcon />}
-						</EmptyMedia>
-						<EmptyTitle>{emptyTitle}</EmptyTitle>
-						<EmptyDescription>{emptyDescription}</EmptyDescription>
-					</EmptyHeader>
-					{onEmptyAction && emptyActionLabel ? (
-						<EmptyContent>
-							<Button onClick={onEmptyAction} type='button'>
-								{emptyActionLabel}
-							</Button>
-						</EmptyContent>
-					) : null}
-				</Empty>
-			</EmptyPage>
+			<BoardEmptyState
+				actionLabel={emptyActionLabel}
+				description={emptyDescription}
+				icon={mode === 'archive' ? <BoxIcon /> : <FolderIcon />}
+				onAction={onEmptyAction}
+				title={emptyTitle}
+			/>
 		)
 	}
 
 	return (
-		<CanonicalBoard.Root>
+		<BoardRoot>
 			{visibleSections.map((section) => (
 				<LifecycleBoardSectionBlock
 					items={section.items}
@@ -106,7 +89,7 @@ export function LifecycleBoard({
 					pendingEntryId={pendingEntryId}
 				/>
 			))}
-		</CanonicalBoard.Root>
+		</BoardRoot>
 	)
 }
 
@@ -146,13 +129,13 @@ function LifecycleBoardSectionBlock({
 	}
 
 	return (
-		<Collapsible className={CANONICAL_BOARD_COLLAPSIBLE_CLASS} onOpenChange={setOpen} open={open}>
-			<div className={CANONICAL_BOARD_SECTION_HEADER_CLASS}>
+		<Collapsible className={BOARD_COLLAPSIBLE_CLASS} onOpenChange={setOpen} open={open}>
+			<div className={BOARD_GROUP_HEADER_CLASS}>
 				<CollapsibleTrigger
 					aria-label={`切换 ${label} 分区折叠状态`}
 					className={entityBoardSectionToggleClass}
 				>
-					<CanonicalBoard.Chevron data-chevron />
+					<BoardChevron data-chevron />
 				</CollapsibleTrigger>
 				<div className={entityBoardSectionHeadingClass}>
 					<LifecycleModeIcon mode={mode} />
@@ -162,7 +145,7 @@ function LifecycleBoardSectionBlock({
 					</Badge>
 				</div>
 				{selectedCount > 0 ? (
-					<span className={cn(entityBoardSectionRightSpacerClass, CANONICAL_BOARD_META_TEXT_CLASS)}>
+					<span className={cn(entityBoardSectionRightSpacerClass, LEGACY_ROW_META_TEXT_CLASS)}>
 						已选 {selectedCount} 项
 					</span>
 				) : (
@@ -171,7 +154,7 @@ function LifecycleBoardSectionBlock({
 			</div>
 
 			<CollapsibleContent className='overflow-hidden px-0'>
-				<CanonicalBoard.Rows>
+				<BoardRows>
 					{items.map((entry) => (
 						<LifecycleBoardRow
 							entry={entry}
@@ -186,7 +169,7 @@ function LifecycleBoardSectionBlock({
 							onToggleSelected={() => toggleEntry(entry.id)}
 						/>
 					))}
-				</CanonicalBoard.Rows>
+				</BoardRows>
 			</CollapsibleContent>
 		</Collapsible>
 	)
@@ -230,7 +213,7 @@ function LifecycleBoardRow({
 	)
 
 	return (
-		<CanonicalBoard.Row
+		<LegacyRowSurface
 			aria-label={canOpenDetail ? `打开 ${entry.title}` : undefined}
 			className='cursor-default'
 			data-lifecycle-entity={entry.entityType}
@@ -252,22 +235,22 @@ function LifecycleBoardRow({
 			tabIndex={canOpenDetail ? 0 : undefined}
 		>
 			<div className='flex min-w-0 flex-1 items-center gap-2.5'>
-				<CanonicalBoard.RowLead>
+				<LegacyRowLead>
 					<TaskSelectionCheckbox
 						ariaLabel={`选择 ${entry.title}`}
 						checked={isSelected}
 						disabled={isPending}
 						onCheckedChange={onToggleSelected}
 					/>
-				</CanonicalBoard.RowLead>
+				</LegacyRowLead>
 
 				<span className={entityBoardShellSecondaryIconClass}>
 					<Icon className='size-4' />
 				</span>
 
-				<CanonicalBoard.RowMain>
+				<LegacyRowMain>
 					<p className='truncate text-sm font-medium text-foreground'>{entry.title}</p>
-				</CanonicalBoard.RowMain>
+				</LegacyRowMain>
 
 				<div
 					className='ml-auto flex shrink-0 items-center gap-2'
@@ -316,12 +299,12 @@ function LifecycleBoardRow({
 							打开
 						</Button>
 					) : null}
-					<div className={cn('hidden text-right md:block', CANONICAL_BOARD_META_TEXT_CLASS)}>
+					<div className={cn('hidden text-right md:block', LEGACY_ROW_META_TEXT_CLASS)}>
 						{formattedDateLabel}
 					</div>
 				</div>
 			</div>
-		</CanonicalBoard.Row>
+		</LegacyRowSurface>
 	)
 }
 
