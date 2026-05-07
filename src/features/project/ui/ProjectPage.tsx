@@ -177,7 +177,7 @@ export function ProjectPage() {
 					</EmptyPage>
 				) : null
 			}
-			bulkActions={
+			bulkBar={
 				project ? (
 					<TaskBulkActionBar
 						action={

@@ -2,7 +2,7 @@ import { useEffect, useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
 
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
-import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
+import { EntityScene } from '@/app/layouts/entity-scene'
 import {
 	selectSidebarSettings,
 	selectSidebarSettingsError,
@@ -229,184 +229,265 @@ export function SettingsPage() {
 	}
 
 	return (
-		<MainCard.Root>
-			<MainCard.Header
-				action={
-					<Button asChild size='sm' variant='ghost'>
-						<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回收件箱</Link>
-					</Button>
-				}
-				breadcrumb={
-					<Breadcrumb>
-						<BreadcrumbList className='text-sm font-semibold leading-5'>
-							<BreadcrumbItem>
-								<BreadcrumbPage className={breadcrumbLeadClass}>
-									<Settings2Icon aria-hidden className={breadcrumbLeadIconClass} />
-									设置
-								</BreadcrumbPage>
-							</BreadcrumbItem>
-						</BreadcrumbList>
-					</Breadcrumb>
-				}
-			/>
-			<MainCard.Body className='gap-4 p-4'>
-				<StatusNotice
-					description='阶段 11 只开放最小可用设置：侧边栏入口、Projects 分区、Sidebar 宽度和默认 Space。所有变更都会即时保存。'
-					title='V1 页面设置'
-				/>
-
-				{isSettingsLoading ? (
-					<StatusNotice
-						description='正在读取 Sidebar 设置与可见 Space。'
-						title='加载中'
-						variant='warning'
-					/>
-				) : null}
-
-				{sidebarStatus === 'error' && sidebarSettings === null ? (
-					<StatusNotice
-						actions={
-							<Button
-								onClick={() => {
-									void loadSidebarSettings().catch(() => undefined)
-								}}
-								size='sm'
-								type='button'
-								variant='secondary'
+		<EntityScene
+			breadcrumb={
+				<Breadcrumb>
+					<BreadcrumbList className='text-sm font-semibold leading-5'>
+						<BreadcrumbItem>
+							<BreadcrumbPage className={breadcrumbLeadClass}>
+								<Settings2Icon aria-hidden className={breadcrumbLeadIconClass} />
+								设置
+							</BreadcrumbPage>
+						</BreadcrumbItem>
+					</BreadcrumbList>
+				</Breadcrumb>
+			}
+			beforeBoard={
+				<div className='flex flex-col gap-4'>
+					{sidebarSettings ? (
+						<>
+							<SettingsSection
+								description='控制 Shell 顶部主导航入口是否显示。至少保留一个主入口，避免侧边栏失去导航能力。'
+								title='Sidebar 主入口'
 							>
-								重试
-							</Button>
-						}
-						description={sidebarError ?? 'Sidebar 设置加载失败。'}
-						layout='split'
-						title='无法读取设置'
-						variant='danger'
-					/>
-				) : null}
+								<div className='grid gap-3 md:grid-cols-2'>
+									{MAIN_ITEM_OPTIONS.map((item) => {
+										const checked = sidebarSettings.mainItems[item.key].visible
+										const disabled =
+											pendingSections.mainItems || (checked && visibleMainItemCount === 1)
 
-				{sidebarSettings ? (
-					<>
-						<SettingsSection
-							description='控制 Shell 顶部主导航入口是否显示。至少保留一个主入口，避免侧边栏失去导航能力。'
-							title='Sidebar 主入口'
-						>
-							<div className='grid gap-3 md:grid-cols-2'>
-								{MAIN_ITEM_OPTIONS.map((item) => {
-									const checked = sidebarSettings.mainItems[item.key].visible
-									const disabled =
-										pendingSections.mainItems || (checked && visibleMainItemCount === 1)
+										return (
+											<SettingCheckboxRow
+												checked={checked}
+												description={item.description}
+												disabled={disabled}
+												key={item.key}
+												label={item.label}
+												onChange={(nextChecked) =>
+													handleMainItemVisibilityChange(item.key, nextChecked)
+												}
+											/>
+										)
+									})}
+								</div>
+								{sectionErrors.mainItems ? (
+									<StatusNotice
+										className={`mt-4 ${statusNoticeCompactTextClass}`}
+										role='alert'
+										size='sm'
+										variant='danger'
+									>
+										{sectionErrors.mainItems}
+									</StatusNotice>
+								) : null}
+							</SettingsSection>
 
-									return (
-										<SettingCheckboxRow
-											checked={checked}
-											description={item.description}
-											disabled={disabled}
-											key={item.key}
-											label={item.label}
-											onChange={(nextChecked) =>
-												handleMainItemVisibilityChange(item.key, nextChecked)
-											}
-										/>
-									)
-								})}
-							</div>
-							{sectionErrors.mainItems ? (
-								<StatusNotice
-									className={`mt-4 ${statusNoticeCompactTextClass}`}
-									role='alert'
-									size='sm'
-									variant='danger'
-								>
-									{sectionErrors.mainItems}
-								</StatusNotice>
-							) : null}
-						</SettingsSection>
-
-						<SettingsSection
-							description='只暴露 V1 真正会影响导航认知的 Projects 配置，不把 drawer、theme、density 混进本期。'
-							title='Projects Section'
-						>
-							<div className='grid gap-3 md:grid-cols-3'>
-								<SettingCheckboxRow
-									checked={sidebarSettings.projectSection.visible}
-									description='决定 Sidebar 中是否展示项目列表分区。'
-									disabled={pendingSections.projectSection}
-									label='显示 Projects'
-									onChange={(nextChecked) => handleProjectSectionChange('visible', nextChecked)}
-								/>
-								<SettingCheckboxRow
-									checked={sidebarSettings.projectSection.showCompleted}
-									description='控制项目列表是否包含已完成项目。'
-									disabled={pendingSections.projectSection}
-									label='显示已完成项目'
-									onChange={(nextChecked) =>
-										handleProjectSectionChange('showCompleted', nextChecked)
-									}
-								/>
-								<SettingCheckboxRow
-									checked={sidebarSettings.projectSection.showCounts}
-									description='控制项目列表是否显示任务数量徽标。'
-									disabled={pendingSections.projectSection}
-									label='显示数量'
-									onChange={(nextChecked) => handleProjectSectionChange('showCounts', nextChecked)}
-								/>
-							</div>
-							{sectionErrors.projectSection ? (
-								<StatusNotice
-									className={`mt-4 ${statusNoticeCompactTextClass}`}
-									role='alert'
-									size='sm'
-									variant='danger'
-								>
-									{sectionErrors.projectSection}
-								</StatusNotice>
-							) : null}
-						</SettingsSection>
-
-						<SettingsSection
-							description='输入桌面侧边栏宽度，按 Enter 或失焦后立即保存。服务端会做最终约束。'
-							title='Sidebar Width'
-						>
-							<div className='flex flex-col gap-3 md:max-w-sm'>
-								<label className={formFieldStackClass} htmlFor='sidebar-width'>
-									<span className={formFieldLabelVariants()}>宽度（px）</span>
-									<Input
-										className='h-10'
-										disabled={pendingSections.sidebarWidth}
-										id='sidebar-width'
-										inputMode='numeric'
-										onBlur={handleSidebarWidthCommit}
-										onChange={(event) => setSidebarWidthDraft(event.currentTarget.value)}
-										onKeyDown={handleSidebarWidthKeyDown}
-										placeholder='例如 256'
-										value={sidebarWidthDraft}
+							<SettingsSection
+								description='只暴露 V1 真正会影响导航认知的 Projects 配置，不把 drawer、theme、density 混进本期。'
+								title='Projects Section'
+							>
+								<div className='grid gap-3 md:grid-cols-3'>
+									<SettingCheckboxRow
+										checked={sidebarSettings.projectSection.visible}
+										description='决定 Sidebar 中是否展示项目列表分区。'
+										disabled={pendingSections.projectSection}
+										label='显示 Projects'
+										onChange={(nextChecked) => handleProjectSectionChange('visible', nextChecked)}
 									/>
-								</label>
-								<p className={formFieldHintClass}>当前保存值：{sidebarSettings.width}px</p>
-							</div>
-							{sectionErrors.sidebarWidth ? (
-								<StatusNotice
-									className={`mt-4 ${statusNoticeCompactTextClass}`}
-									role='alert'
-									size='sm'
-									variant='danger'
-								>
-									{sectionErrors.sidebarWidth}
-								</StatusNotice>
-							) : null}
-						</SettingsSection>
-					</>
-				) : null}
+									<SettingCheckboxRow
+										checked={sidebarSettings.projectSection.showCompleted}
+										description='控制项目列表是否包含已完成项目。'
+										disabled={pendingSections.projectSection}
+										label='显示已完成项目'
+										onChange={(nextChecked) =>
+											handleProjectSectionChange('showCompleted', nextChecked)
+										}
+									/>
+									<SettingCheckboxRow
+										checked={sidebarSettings.projectSection.showCounts}
+										description='控制项目列表是否显示任务数量徽标。'
+										disabled={pendingSections.projectSection}
+										label='显示数量'
+										onChange={(nextChecked) => handleProjectSectionChange('showCounts', nextChecked)}
+									/>
+								</div>
+								{sectionErrors.projectSection ? (
+									<StatusNotice
+										className={`mt-4 ${statusNoticeCompactTextClass}`}
+										role='alert'
+										size='sm'
+										variant='danger'
+									>
+										{sectionErrors.projectSection}
+									</StatusNotice>
+								) : null}
+							</SettingsSection>
 
-				<SettingsSection
-					description='默认 Space 决定全局新建和兜底恢复时优先落点，本期直接复用现有 Space store。'
-					title='默认 Space'
-				>
-					{spaceStatus === 'error' ? (
+							<SettingsSection
+								description='输入桌面侧边栏宽度，按 Enter 或失焦后立即保存。服务端会做最终约束。'
+								title='Sidebar Width'
+							>
+								<div className='flex flex-col gap-3 md:max-w-sm'>
+									<label className={formFieldStackClass} htmlFor='sidebar-width'>
+										<span className={formFieldLabelVariants()}>宽度（px）</span>
+										<Input
+											className='h-10'
+											disabled={pendingSections.sidebarWidth}
+											id='sidebar-width'
+											inputMode='numeric'
+											onBlur={handleSidebarWidthCommit}
+											onChange={(event) => setSidebarWidthDraft(event.currentTarget.value)}
+											onKeyDown={handleSidebarWidthKeyDown}
+											placeholder='例如 256'
+											value={sidebarWidthDraft}
+										/>
+									</label>
+									<p className={formFieldHintClass}>当前保存值：{sidebarSettings.width}px</p>
+								</div>
+								{sectionErrors.sidebarWidth ? (
+									<StatusNotice
+										className={`mt-4 ${statusNoticeCompactTextClass}`}
+										role='alert'
+										size='sm'
+										variant='danger'
+									>
+										{sectionErrors.sidebarWidth}
+									</StatusNotice>
+								) : null}
+							</SettingsSection>
+						</>
+					) : null}
+
+					<SettingsSection
+						description='默认 Space 决定全局新建和兜底恢复时优先落点，本期直接复用现有 Space store。'
+						title='默认 Space'
+					>
+						{spaceStatus === 'error' ? (
+							<StatusNotice
+								actions={
+									<Button
+										onClick={() => void loadSpaces()}
+										size='sm'
+										type='button'
+										variant='secondary'
+									>
+										重试
+									</Button>
+								}
+								description={spaceError ?? 'Space 列表加载失败。'}
+								layout='split'
+								title='无法读取 Space'
+								variant='danger'
+							/>
+						) : spaces.length === 0 && spaceStatus === 'ready' ? (
+							<StatusNotice
+								description='当前没有可见 Space，暂时无法设置默认 Space。'
+								title='暂无可用 Space'
+							/>
+						) : (
+							<div className='flex flex-col gap-3 md:max-w-sm'>
+								<label className={formFieldStackClass}>
+									<span className={formFieldLabelVariants()}>选择默认 Space</span>
+									<Select
+										disabled={
+											pendingSections.defaultSpace ||
+											spaceStatus === 'loading' ||
+											spaceStatus === 'idle' ||
+											spaces.length === 0
+										}
+										onValueChange={handleDefaultSpaceChange}
+										value={defaultSpaceId}
+									>
+										<SelectTrigger aria-label='默认 Space' className='h-10 w-full'>
+											<SelectValue placeholder='选择默认 Space' />
+										</SelectTrigger>
+										<SelectContent position='popper'>
+											<SelectGroup>
+												{spaces.map((space) => (
+													<SelectItem key={space.id} value={space.id}>
+														{space.name}
+													</SelectItem>
+												))}
+											</SelectGroup>
+										</SelectContent>
+									</Select>
+								</label>
+								<p className={formFieldHintClass}>
+									当前默认值：{spaces.find((space) => space.id === defaultSpaceId)?.name ?? '未设置'}
+								</p>
+							</div>
+						)}
+						{sectionErrors.defaultSpace ? (
+							<StatusNotice
+								className={`mt-4 ${statusNoticeCompactTextClass}`}
+								role='alert'
+								size='sm'
+								variant='danger'
+							>
+								{sectionErrors.defaultSpace}
+							</StatusNotice>
+						) : null}
+					</SettingsSection>
+
+					<SettingsSection
+						description='临时验证当前 Switch 组件在常规页面里是否能正常点击与切换，方便定位问题是否只出现在任务弹窗。'
+						title='Switch 调试'
+					>
+						<div className='grid gap-3 md:grid-cols-2'>
+							<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-3'>
+								<div className='min-w-0'>
+									<p className='text-sm font-medium text-foreground'>默认尺寸</p>
+									<p className={formFieldHintClass}>当前值：{switchDemoDefault ? '开' : '关'}</p>
+								</div>
+								<Switch
+									checked={switchDemoDefault}
+									onCheckedChange={(checked) => setSwitchDemoDefault(checked === true)}
+								/>
+							</div>
+
+							<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-3'>
+								<div className='min-w-0'>
+									<p className='text-sm font-medium text-foreground'>小号尺寸</p>
+									<p className={formFieldHintClass}>当前值：{switchDemoSmall ? '开' : '关'}</p>
+								</div>
+								<Switch
+									checked={switchDemoSmall}
+									onCheckedChange={(checked) => setSwitchDemoSmall(checked === true)}
+									size='sm'
+								/>
+							</div>
+						</div>
+					</SettingsSection>
+				</div>
+			}
+			bodyClassName='gap-4 p-2'
+			headerActions={
+				<Button asChild size='sm' variant='ghost'>
+					<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回收件箱</Link>
+				</Button>
+			}
+			notices={
+				<>
+					<StatusNotice
+						description='阶段 11 只开放最小可用设置：侧边栏入口、Projects 分区、Sidebar 宽度和默认 Space。所有变更都会即时保存。'
+						title='V1 页面设置'
+					/>
+
+					{isSettingsLoading ? (
+						<StatusNotice
+							description='正在读取 Sidebar 设置与可见 Space。'
+							title='加载中'
+							variant='warning'
+						/>
+					) : null}
+
+					{sidebarStatus === 'error' && sidebarSettings === null ? (
 						<StatusNotice
 							actions={
 								<Button
-									onClick={() => void loadSpaces()}
+									onClick={() => {
+										void loadSidebarSettings().catch(() => undefined)
+									}}
 									size='sm'
 									type='button'
 									variant='secondary'
@@ -414,92 +495,16 @@ export function SettingsPage() {
 									重试
 								</Button>
 							}
-							description={spaceError ?? 'Space 列表加载失败。'}
+							description={sidebarError ?? 'Sidebar 设置加载失败。'}
 							layout='split'
-							title='无法读取 Space'
+							title='无法读取设置'
 							variant='danger'
 						/>
-					) : spaces.length === 0 && spaceStatus === 'ready' ? (
-						<StatusNotice
-							description='当前没有可见 Space，暂时无法设置默认 Space。'
-							title='暂无可用 Space'
-						/>
-					) : (
-						<div className='flex flex-col gap-3 md:max-w-sm'>
-							<label className={formFieldStackClass}>
-								<span className={formFieldLabelVariants()}>选择默认 Space</span>
-								<Select
-									disabled={
-										pendingSections.defaultSpace ||
-										spaceStatus === 'loading' ||
-										spaceStatus === 'idle' ||
-										spaces.length === 0
-									}
-									onValueChange={handleDefaultSpaceChange}
-									value={defaultSpaceId}
-								>
-									<SelectTrigger aria-label='默认 Space' className='h-10 w-full'>
-										<SelectValue placeholder='选择默认 Space' />
-									</SelectTrigger>
-									<SelectContent position='popper'>
-										<SelectGroup>
-											{spaces.map((space) => (
-												<SelectItem key={space.id} value={space.id}>
-													{space.name}
-												</SelectItem>
-											))}
-										</SelectGroup>
-									</SelectContent>
-								</Select>
-							</label>
-							<p className={formFieldHintClass}>
-								当前默认值：{spaces.find((space) => space.id === defaultSpaceId)?.name ?? '未设置'}
-							</p>
-						</div>
-					)}
-					{sectionErrors.defaultSpace ? (
-						<StatusNotice
-							className={`mt-4 ${statusNoticeCompactTextClass}`}
-							role='alert'
-							size='sm'
-							variant='danger'
-						>
-							{sectionErrors.defaultSpace}
-						</StatusNotice>
 					) : null}
-				</SettingsSection>
-
-				<SettingsSection
-					description='临时验证当前 Switch 组件在常规页面里是否能正常点击与切换，方便定位问题是否只出现在任务弹窗。'
-					title='Switch 调试'
-				>
-					<div className='grid gap-3 md:grid-cols-2'>
-						<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-3'>
-							<div className='min-w-0'>
-								<p className='text-sm font-medium text-foreground'>默认尺寸</p>
-								<p className={formFieldHintClass}>当前值：{switchDemoDefault ? '开' : '关'}</p>
-							</div>
-							<Switch
-								checked={switchDemoDefault}
-								onCheckedChange={(checked) => setSwitchDemoDefault(checked === true)}
-							/>
-						</div>
-
-						<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-3'>
-							<div className='min-w-0'>
-								<p className='text-sm font-medium text-foreground'>小号尺寸</p>
-								<p className={formFieldHintClass}>当前值：{switchDemoSmall ? '开' : '关'}</p>
-							</div>
-							<Switch
-								checked={switchDemoSmall}
-								onCheckedChange={(checked) => setSwitchDemoSmall(checked === true)}
-								size='sm'
-							/>
-						</div>
-					</div>
-				</SettingsSection>
-			</MainCard.Body>
-		</MainCard.Root>
+				</>
+			}
+			sceneVariant='settings'
+		/>
 	)
 }
 

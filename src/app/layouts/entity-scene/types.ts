@@ -20,6 +20,7 @@ export type EntitySceneVariant =
 	| 'trash'
 	| 'project-overview'
 	| 'project-detail'
+	| 'settings'
 
 export type BoardKind = 'task' | 'project' | 'lifecycle'
 
@@ -132,11 +133,19 @@ export type EntitySceneProps = {
 	toolbarFilterAction?: ReactNode
 	onRefresh?: () => void
 	refreshDisabled?: boolean
+	/** 页级状态提示区 */
 	notices?: ReactNode
+	/** Board 区块头部（位于 notices 与 board slot 之间） */
+	boardHeader?: ReactNode
+	/** Board 之前的扩展内容 */
 	beforeBoard?: ReactNode
+	/** Board 之后的扩展内容 */
 	afterBoard?: ReactNode
+	/** 页级尾部区域 */
 	footer?: ReactNode
-	bulkActions?: ReactNode
+	/** 批量操作条（固定在 scene 的 board 之后） */
+	bulkBar?: ReactNode
 	bodyClassName?: string
-	board: EntitySceneBoardSlotProps
+	/** 非 board 页面可省略，例如 settings */
+	board?: EntitySceneBoardSlotProps
 }

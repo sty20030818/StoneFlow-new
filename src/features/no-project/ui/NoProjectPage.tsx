@@ -104,7 +104,7 @@ export function NoProjectPage() {
 				},
 			}}
 			breadcrumb={<NoProjectBreadcrumb />}
-			bulkActions={
+			bulkBar={
 				<TaskBulkActionBar
 					action={
 						<Button

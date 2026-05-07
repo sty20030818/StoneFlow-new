@@ -14,6 +14,10 @@ import {
 	SlidersHorizontalIcon,
 } from 'lucide-react'
 
+/**
+ * MainCard 是页级骨架：Root / Header / Body 为正式必选结构。
+ * 其余导出仅作为扩展插槽，不承载实体业务分叉。
+ */
 export type MainCardToolbarPill = {
 	label: string
 	active?: boolean

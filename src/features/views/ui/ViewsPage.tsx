@@ -220,7 +220,7 @@ export function ViewsPage() {
 					},
 				}}
 				breadcrumb={<ViewsBreadcrumb />}
-				bulkActions={
+				bulkBar={
 					<TaskBulkActionBar
 						action={createPendingBulkAction('批量能力后续接入')}
 						onClear={clearTaskSelection}

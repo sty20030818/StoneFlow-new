@@ -55,6 +55,14 @@ function EntitySceneNotices({ notices }: { notices?: ReactNode }) {
 	return <MainCard.NoticeGroup>{notices}</MainCard.NoticeGroup>
 }
 
+function EntitySceneBoardHeader({ boardHeader }: { boardHeader?: ReactNode }) {
+	if (!boardHeader) {
+		return null
+	}
+
+	return <>{boardHeader}</>
+}
+
 function EntitySceneBoardSlot(board: EntitySceneBoardSlotProps) {
 	if (board.boardKind === 'task') {
 		return (
@@ -85,6 +93,14 @@ function EntitySceneBoardSlot(board: EntitySceneBoardSlotProps) {
 	)
 }
 
+function EntitySceneBoardContent({ board }: { board?: EntitySceneBoardSlotProps }) {
+	if (!board) {
+		return null
+	}
+
+	return <EntitySceneBoardSlot {...board} />
+}
+
 function EntitySceneBody({ children, className }: { children: ReactNode; className?: string }) {
 	return <div className={cn('flex min-h-0 flex-1 flex-col gap-3', className)}>{children}</div>
 }
@@ -97,12 +113,12 @@ function EntitySceneFooter({ footer }: { footer?: ReactNode }) {
 	return <MainCard.Footer>{footer}</MainCard.Footer>
 }
 
-function EntitySceneBulkActions({ bulkActions }: { bulkActions?: ReactNode }) {
-	if (!bulkActions) {
+function EntitySceneBulkBar({ bulkBar }: { bulkBar?: ReactNode }) {
+	if (!bulkBar) {
 		return null
 	}
 
-	return <>{bulkActions}</>
+	return <>{bulkBar}</>
 }
 
 function EntitySceneComponent({
@@ -115,10 +131,11 @@ function EntitySceneComponent({
 	onRefresh,
 	refreshDisabled,
 	notices,
+	boardHeader,
 	beforeBoard,
 	afterBoard,
 	footer,
-	bulkActions,
+	bulkBar,
 	bodyClassName,
 	board,
 }: EntitySceneProps) {
@@ -141,10 +158,11 @@ function EntitySceneComponent({
 
 				<EntitySceneBody className={bodyClassName}>
 					<EntitySceneNotices notices={notices} />
+					<EntitySceneBoardHeader boardHeader={boardHeader} />
 					{beforeBoard}
-					<EntitySceneBoardSlot {...board} />
+					<EntitySceneBoardContent board={board} />
 					{afterBoard}
-					<EntitySceneBulkActions bulkActions={bulkActions} />
+					<EntitySceneBulkBar bulkBar={bulkBar} />
 					<EntitySceneFooter footer={footer} />
 				</EntitySceneBody>
 			</MainCard.Body>
@@ -156,11 +174,11 @@ export const EntityScene = Object.assign(EntitySceneComponent, {
 	Root: EntitySceneRoot,
 	Header: EntitySceneHeader,
 	Toolbar: EntitySceneToolbar,
-	Filters: EntitySceneToolbar,
 	Body: EntitySceneBody,
 	Footer: EntitySceneFooter,
 	Empty: MainCard.Empty,
-	BulkActions: EntitySceneBulkActions,
+	BulkBar: EntitySceneBulkBar,
 	Notices: EntitySceneNotices,
+	BoardHeader: EntitySceneBoardHeader,
 	BoardSlot: EntitySceneBoardSlot,
 })

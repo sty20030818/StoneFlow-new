@@ -118,7 +118,7 @@ export function AllTasksPage() {
 				},
 			}}
 			breadcrumb={<AllTasksBreadcrumb />}
-			bulkActions={
+			bulkBar={
 				<TaskBulkActionBar
 					action={
 						<Button className={TASK_BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
