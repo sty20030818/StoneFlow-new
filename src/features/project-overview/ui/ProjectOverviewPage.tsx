@@ -3,10 +3,14 @@ import { useNavigate } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
+import { Button } from '@/shared/ui/base/button'
+import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
+import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import { buildScopedProjectPath, getScopeLabel } from '@/app/layouts/shell/config'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
 import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
+import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { selectProjectViews, useViewStore } from '@/features/view/model/useViewStore'
@@ -34,8 +38,9 @@ export function ProjectOverviewPage() {
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
 	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('active_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
-	const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set())
 	const scopeKey = scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
+	const { selectedTaskIdSet: selectedProjectIds, selectedCount, toggleTaskSelection: toggleProjectSelection, clearTaskSelection } =
+		useTaskSelection(overview.items.map((item) => item.id))
 	const visibleProjectViews = projectViews.items.filter((view) => view.isVisible)
 
 	useEffect(() => {
@@ -58,18 +63,6 @@ export function ProjectOverviewPage() {
 	useEffect(() => {
 		void loadOverview(scope, viewKey)
 	}, [loadOverview, scope, scopeKey, viewKey])
-
-	function handleToggleProjectSelection(projectId: string) {
-		setSelectedProjectIds((prev) => {
-			const next = new Set(prev)
-			if (next.has(projectId)) {
-				next.delete(projectId)
-			} else {
-				next.add(projectId)
-			}
-			return next
-		})
-	}
 
 	async function runRowAction(projectId: string, runner: () => Promise<unknown>) {
 		setBusyProjectId(projectId)
@@ -97,7 +90,7 @@ export function ProjectOverviewPage() {
 					selectedProjectIds,
 				},
 				boardActions: {
-					onToggleProjectSelection: handleToggleProjectSelection,
+					onToggleProjectSelection: toggleProjectSelection,
 					onArchiveProject: (projectId) => {
 						void runRowAction(projectId, async () => {
 							await archiveProject(projectId)
@@ -123,6 +116,17 @@ export function ProjectOverviewPage() {
 				},
 			}}
 			breadcrumb={<ProjectOverviewBreadcrumb />}
+			bulkBar={
+				<BulkActionBar
+					action={
+						<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
+							批量操作
+						</Button>
+					}
+					onClear={clearTaskSelection}
+					selectedCount={selectedCount}
+				/>
+			}
 			headerActions={
 				<MainCard.GhostAction aria-label='创建项目' onClick={() => openProjectCreateDialog()}>
 					<PlusIcon />

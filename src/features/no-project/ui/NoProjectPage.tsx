@@ -8,7 +8,7 @@ import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
-import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
+import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -18,7 +18,7 @@ import {
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
 import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
-import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
+import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import { CommandIcon, Layers3Icon, PlusIcon, TargetIcon } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
 
@@ -105,10 +105,10 @@ export function NoProjectPage() {
 			}}
 			breadcrumb={<NoProjectBreadcrumb />}
 			bulkBar={
-				<TaskBulkActionBar
+				<BulkActionBar
 					action={
 						<Button
-							className={TASK_BULK_ACTION_BUTTON_CLASS}
+							className={BULK_ACTION_BUTTON_CLASS}
 							size='sm'
 							variant='outline'
 						>

@@ -1,9 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 
-import { ROW_SHELL_ACTIVE_CLASS } from '@/shared/ui/row'
+import { ROW_SHELL_ACTIVE_CLASS, ROW_SHELL_SELECTED_CLASS } from '@/shared/ui/row'
 import type { TaskListItem } from '@/shared/types'
 import { TaskRowAdapter, type TaskRowAdapterProps } from './TaskRowAdapter'
-import { TASK_ROW_BULK_SELECTED_CLASS } from './taskRowBulkSelected'
 
 function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
 	return {
@@ -155,6 +154,6 @@ describe('TaskRowAdapter', () => {
 		)
 
 		const selectedRow = screen.getByRole('button', { name: '打开任务 任务 A' })
-		expect(selectedRow.className).toContain(TASK_ROW_BULK_SELECTED_CLASS)
+		expect(selectedRow.className).toContain(ROW_SHELL_SELECTED_CLASS)
 	})
 })

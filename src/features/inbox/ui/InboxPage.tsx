@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
+import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -21,6 +22,8 @@ import {
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
+import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import { InboxIcon, PlusIcon } from 'lucide-react'
 
@@ -53,9 +56,8 @@ export function InboxPage() {
 				: projectOptions,
 		[projectOptions, spaceId],
 	)
-	const { selectedTaskIdSet, toggleTaskSelection } = useTaskSelection(
-		taskList.items.map((task) => task.id),
-	)
+	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
+		useTaskSelection(taskList.items.map((task) => task.id))
 
 	useEffect(() => {
 		void loadList({
@@ -99,6 +101,17 @@ export function InboxPage() {
 				},
 			}}
 			breadcrumb={<InboxBreadcrumb />}
+			bulkBar={
+				<BulkActionBar
+					action={
+						<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
+							批量操作
+						</Button>
+					}
+					onClear={clearTaskSelection}
+					selectedCount={selectedCount}
+				/>
+			}
 			headerActions={
 				<MainCard.GhostAction aria-label='创建任务' onClick={() => openTaskCreateDialog()}>
 					<PlusIcon />

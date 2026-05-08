@@ -10,7 +10,7 @@ import { selectProjectOptions, useProjectStore } from '@/features/project/model/
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
+import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import {
 	selectTaskViewRun,
 	selectTaskViews,
@@ -221,7 +221,7 @@ export function ViewsPage() {
 				}}
 				breadcrumb={<ViewsBreadcrumb />}
 				bulkBar={
-					<TaskBulkActionBar
+					<BulkActionBar
 						action={createPendingBulkAction('批量能力后续接入')}
 						onClear={clearTaskSelection}
 						selectedCount={selectedCount}

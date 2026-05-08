@@ -1,4 +1,3 @@
-import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import {
 	CreatedAtCell,
@@ -57,7 +56,6 @@ export function LifecycleRowAdapter({
 						}
 					: undefined
 			}
-			selectedClassName={TASK_ROW_BULK_SELECTED_CLASS}
 		>
 			<RowShell.Left>
 				<RowShell.Leading>

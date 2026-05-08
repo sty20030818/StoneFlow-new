@@ -95,12 +95,14 @@ export type EntitySceneLifecycleBoardConfig = {
 export type EntitySceneLifecycleBoardData = {
 	sections: BoardSection<LifecycleEntry>[]
 	pendingEntryId?: string | null
+	selectedEntryIdSet?: Set<string>
 }
 
 export type EntitySceneLifecycleBoardActions = {
 	onEmptyAction?: () => void
 	onRestore: (entry: LifecycleEntry) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
+	onToggleEntrySelection?: (entryId: string) => void
 }
 
 export type EntitySceneBoardSlotProps =

@@ -1,5 +1,5 @@
 import { Button } from '@/shared/ui/base/button'
-import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
+import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 
 import { TaskBoard } from '@/features/task/ui/TaskBoard'
 
@@ -57,7 +57,7 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 export function createPendingBulkAction(label: string) {
 	return (
 		<Button
-			className={`${TASK_BULK_ACTION_BUTTON_CLASS} opacity-70`}
+			className={`${BULK_ACTION_BUTTON_CLASS} opacity-70`}
 			disabled
 			size='sm'
 			variant='outline'

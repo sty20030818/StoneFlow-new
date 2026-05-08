@@ -10,7 +10,7 @@ import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
+import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import { CommandIcon } from 'lucide-react'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import type { TaskStatus } from '@/shared/types'
@@ -36,7 +36,7 @@ import {
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
 import { BoxIcon, FolderIcon } from 'lucide-react'
-import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
+import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 
 type ProjectTaskFilter = 'all' | TaskStatus
 
@@ -179,9 +179,9 @@ export function ProjectPage() {
 			}
 			bulkBar={
 				project ? (
-					<TaskBulkActionBar
+					<BulkActionBar
 						action={
-							<Button className={TASK_BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
+							<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
 								<CommandIcon className='size-3.5' />
 								批量操作
 							</Button>

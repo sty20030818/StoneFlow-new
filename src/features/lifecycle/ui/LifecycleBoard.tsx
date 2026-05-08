@@ -38,6 +38,8 @@ type LifecycleBoardProps = {
 	onEmptyAction?: () => void
 	onRestore: (entry: LifecycleEntry) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
+	selectedEntryIdSet?: Set<string>
+	onToggleEntrySelection?: (entryId: string) => void
 }
 
 /**
@@ -54,6 +56,8 @@ export function LifecycleBoard({
 	onEmptyAction,
 	onRestore,
 	onOpenDetail,
+	selectedEntryIdSet,
+	onToggleEntrySelection,
 }: LifecycleBoardProps) {
 	const visibleSections = sections.filter((section) => section.items.length > 0)
 
@@ -79,7 +83,9 @@ export function LifecycleBoard({
 					mode={mode}
 					onOpenDetail={onOpenDetail}
 					onRestore={onRestore}
+					onToggleEntrySelection={onToggleEntrySelection}
 					pendingEntryId={pendingEntryId}
+					selectedEntryIdSet={selectedEntryIdSet}
 				/>
 			))}
 		</BoardRoot>
@@ -93,6 +99,8 @@ function LifecycleBoardSectionBlock({
 	pendingEntryId,
 	onRestore,
 	onOpenDetail,
+	selectedEntryIdSet,
+	onToggleEntrySelection,
 }: {
 	label: string
 	items: LifecycleEntry[]
@@ -100,22 +108,13 @@ function LifecycleBoardSectionBlock({
 	pendingEntryId: string | null
 	onRestore: (entry: LifecycleEntry) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
+	selectedEntryIdSet?: Set<string>
+	onToggleEntrySelection?: (entryId: string) => void
 }) {
-	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-	const selectedCount = selectedIds.size
 	const [open, setOpen] = useState(true)
-
-	function toggleEntry(entryId: string) {
-		setSelectedIds((prev) => {
-			const next = new Set(prev)
-			if (next.has(entryId)) {
-				next.delete(entryId)
-			} else {
-				next.add(entryId)
-			}
-			return next
-		})
-	}
+	const selectedCount = selectedEntryIdSet
+		? items.filter((item) => selectedEntryIdSet.has(item.id)).length
+		: 0
 
 	return (
 		<Collapsible className={BOARD_COLLAPSIBLE_CLASS} onOpenChange={setOpen} open={open}>
@@ -149,14 +148,16 @@ function LifecycleBoardSectionBlock({
 							actions={{
 								onOpenDetail,
 								onRestore,
-								onToggleSelected: () => toggleEntry(entry.id),
+								onToggleSelected: onToggleEntrySelection
+									? () => onToggleEntrySelection(entry.id)
+									: () => undefined,
 							}}
 							key={entry.id}
 							mode={mode}
 							entry={entry}
 							rowState={{
 								isPending: pendingEntryId === entry.id,
-								isSelected: selectedIds.has(entry.id),
+								isSelected: selectedEntryIdSet?.has(entry.id) ?? false,
 							}}
 						/>
 					))}

@@ -26,8 +26,10 @@ export function LifecycleBoardAdapter({ config, data, actions }: LifecycleBoardA
 			onEmptyAction={actions.onEmptyAction}
 			onOpenDetail={actions.onOpenDetail}
 			onRestore={(entry) => actions.onRestore(entry)}
+			onToggleEntrySelection={actions.onToggleEntrySelection}
 			pendingEntryId={data.pendingEntryId ?? null}
 			sections={data.sections}
+			selectedEntryIdSet={data.selectedEntryIdSet}
 		/>
 	)
 }

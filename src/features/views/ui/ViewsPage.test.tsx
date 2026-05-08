@@ -171,8 +171,8 @@ vi.mock('@/features/task/ui/TaskBoard', () => ({
 	),
 }))
 
-vi.mock('@/features/task/ui/TaskBulkActionBar', () => ({
-	TaskBulkActionBar: ({ selectedCount, action }: { selectedCount: number; action: ReactNode }) =>
+vi.mock('@/shared/ui/bulk-action-bar', () => ({
+	BulkActionBar: ({ selectedCount, action }: { selectedCount: number; action: ReactNode }) =>
 		selectedCount > 0 ? <div>{action}</div> : null,
 }))
 

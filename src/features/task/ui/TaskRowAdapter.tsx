@@ -4,7 +4,6 @@ import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
-import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSelected'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import {
 	CreatedAtCell,
@@ -79,7 +78,6 @@ export function TaskRowAdapter({ task, rowState, projectBinding, actions }: Task
 						actions.onOpenTask(task.id)
 					}
 				}}
-				selectedClassName={TASK_ROW_BULK_SELECTED_CLASS}
 			>
 				<RowShell.Left>
 					<RowShell.Leading>

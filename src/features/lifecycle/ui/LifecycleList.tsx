@@ -9,8 +9,12 @@ import {
 	selectTrashEntries,
 	useLifecycleStore,
 } from '@/features/lifecycle/model/useLifecycleStore'
+import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
+import { Button } from '@/shared/ui/base/button'
+import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
+import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -42,6 +46,8 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	const [entityFilter, setEntityFilter] = useState<LifecycleFilter>('all')
 
 	const slice = mode === 'archive' ? archiveEntries : trashEntries
+	const { selectedTaskIdSet: selectedEntryIdSet, selectedCount, toggleTaskSelection: toggleEntrySelection, clearTaskSelection } =
+		useTaskSelection(slice.items.map((entry) => entry.id))
 	const lifecyclePills = [
 		{ key: 'all', label: `全部 ${slice.items.length}` },
 		{
@@ -104,6 +110,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 				boardData: {
 					sections,
 					pendingEntryId,
+					selectedEntryIdSet,
 				},
 				boardActions: {
 					onEmptyAction: () => {
@@ -113,9 +120,21 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 					onRestore: (entry: LifecycleEntry) => {
 						void restoreEntry(entry)
 					},
+					onToggleEntrySelection: toggleEntrySelection,
 				},
 			}}
 			breadcrumb={<LifecycleBreadcrumb icon={Icon} title={title} />}
+			bulkBar={
+				<BulkActionBar
+					action={
+						<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
+							批量操作
+						</Button>
+					}
+					onClear={clearTaskSelection}
+					selectedCount={selectedCount}
+				/>
+			}
 			onRefresh={() => {
 				void refreshLoadedSlices()
 			}}

@@ -5,12 +5,12 @@ import { XIcon } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
 import {
-	TASK_BULK_ACTION_BAR_CLASS,
-	TASK_BULK_ACTION_BUTTON_CLASS,
-	TASK_BULK_ACTION_COUNT_PILL_CLASS,
-} from '@/shared/ui/patterns/task-row'
+	BULK_ACTION_BAR_CLASS,
+	BULK_ACTION_BUTTON_CLASS,
+	BULK_ACTION_COUNT_PILL_CLASS,
+} from '@/shared/ui/patterns/bulk-action'
 
-type TaskBulkActionBarProps = {
+type BulkActionBarProps = {
 	selectedCount: number
 	onClear: () => void
 	action: ReactNode
@@ -18,14 +18,14 @@ type TaskBulkActionBarProps = {
 }
 
 /**
- * 统一任务多选后的底部浮动操作条；页面只负责传入计数、清空动作和右侧操作内容。
+ * 统一多选后的底部浮动操作条；页面只负责传入计数、清空动作和右侧操作内容。
  */
-export function TaskBulkActionBar({
+export function BulkActionBar({
 	selectedCount,
 	onClear,
 	action,
 	className,
-}: TaskBulkActionBarProps) {
+}: BulkActionBarProps) {
 	if (selectedCount < 1) {
 		return null
 	}
@@ -38,17 +38,17 @@ export function TaskBulkActionBar({
 			)}
 		>
 			<div
-				aria-label='任务批量操作'
-				className={TASK_BULK_ACTION_BAR_CLASS}
+				aria-label='批量操作'
+				className={BULK_ACTION_BAR_CLASS}
 				role='toolbar'
 			>
 				<div className='inline-flex items-center gap-1.5'>
-					<span className={TASK_BULK_ACTION_COUNT_PILL_CLASS}>
+					<span className={BULK_ACTION_COUNT_PILL_CLASS}>
 						已选 {selectedCount} 项
 					</span>
 					<Button
-						aria-label='清空已选任务'
-						className={TASK_BULK_ACTION_BUTTON_CLASS}
+						aria-label='清空已选'
+						className={BULK_ACTION_BUTTON_CLASS}
 						onClick={onClear}
 						size='icon-sm'
 						type='button'

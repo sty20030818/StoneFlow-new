@@ -12,10 +12,10 @@ import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { getTaskPlacement } from '@/features/task/model/taskPlacement'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
-import { TaskBulkActionBar } from '@/features/task/ui/TaskBulkActionBar'
+import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
-import { TASK_BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/task-row'
+import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
@@ -119,9 +119,9 @@ export function AllTasksPage() {
 			}}
 			breadcrumb={<AllTasksBreadcrumb />}
 			bulkBar={
-				<TaskBulkActionBar
+				<BulkActionBar
 					action={
-						<Button className={TASK_BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
+						<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
 							<CommandIcon className='size-3.5' />
 							批量操作
 						</Button>
