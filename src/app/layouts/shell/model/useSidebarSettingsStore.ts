@@ -163,6 +163,8 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 				get().setItemVisibility({ kind: 'main', key: 'allTasks' }, true),
 				get().setItemVisibility({ kind: 'main', key: 'views' }, true),
 				get().setItemVisibility({ kind: 'main', key: 'projectOverview' }, true),
+				get().setItemVisibility({ kind: 'footer', key: 'archive' }, true),
+				get().setItemVisibility({ kind: 'footer', key: 'trash' }, true),
 			])
 		},
 

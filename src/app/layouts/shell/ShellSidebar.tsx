@@ -13,6 +13,7 @@ import {
 	NoProjectNavMenuItem,
 	ProjectNavMenuItem,
 	SidebarCustomizeSubmenu,
+	SidebarItemContextMenu,
 	SidebarNavRow,
 	SpaceIconBadge,
 	type MainNavItemViewModel,
@@ -155,6 +156,12 @@ export function ShellSidebar({
 		.filter((item) => item.visible)
 		.sort((left, right) => left.order - right.order)
 	const visibleNavItemCount = visibleNavItems.length
+	const footerCustomizeItems = SHELL_FOOTER_ITEMS.map((item) => ({
+		key: item.key,
+		label: item.label,
+		icon: item.icon,
+		visible: settings.footerItems[item.key].visible,
+	}))
 	const footerItems = [...SHELL_FOOTER_ITEMS]
 		.map((item) => ({
 			...item,
@@ -426,6 +433,7 @@ export function ShellSidebar({
 									{visibleNavItems.map((item) => (
 										<MainNavSidebarMenuItem
 											badge={item.badge}
+											footerItems={footerCustomizeItems}
 											icon={item.icon}
 											itemKey={item.key}
 											key={item.key}
@@ -467,6 +475,19 @@ export function ShellSidebar({
 											<SidebarMenu>
 												<NoProjectNavMenuItem
 													badge={navBadges.noProject}
+													contextMenuContent={
+														<ContextMenuContent className='w-52'>
+															<ContextMenuGroup>
+																<SidebarCustomizeSubmenu
+																	footerItems={footerCustomizeItems}
+																	navItems={mainNavItems}
+																	onResetMainItemsVisibility={onResetMainItemsVisibility}
+																	onUpdateItemVisibility={onUpdateItemVisibility}
+																	visibleNavItemCount={visibleNavItemCount}
+																/>
+															</ContextMenuGroup>
+														</ContextMenuContent>
+													}
 													currentScope={currentScope}
 													fallbackSpaceId={fallbackSpaceId}
 												/>
@@ -492,6 +513,20 @@ export function ShellSidebar({
 								<SidebarMenuItem key={item.key}>
 									<SidebarNavRow
 										badge={item.badge}
+										contextMenuContent={
+											<SidebarItemContextMenu
+												footerItems={footerCustomizeItems}
+												isLastVisible={
+													visibleNavItemCount === 1 && settings.footerItems[item.key].visible
+												}
+												navItems={mainNavItems}
+												onResetMainItemsVisibility={onResetMainItemsVisibility}
+												onUpdateItemVisibility={onUpdateItemVisibility}
+												target={{ kind: 'footer', key: item.key }}
+												visible={settings.footerItems[item.key].visible}
+												visibleNavItemCount={visibleNavItemCount}
+											/>
+										}
 										icon={item.icon}
 										label={item.label}
 										to={item.to}
@@ -514,6 +549,7 @@ export function ShellSidebar({
 			<ContextMenuContent className='w-52'>
 				<ContextMenuGroup>
 					<SidebarCustomizeSubmenu
+						footerItems={footerCustomizeItems}
 						navItems={mainNavItems}
 						onResetMainItemsVisibility={onResetMainItemsVisibility}
 						onUpdateItemVisibility={onUpdateItemVisibility}

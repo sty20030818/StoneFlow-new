@@ -18,7 +18,16 @@ import {
 	shellChromeNavCircleButtonExpandedClass,
 	shellChromeTruncateLabelClass,
 } from '@/shared/ui/patterns/shell-chrome'
-import { HistoryIcon } from 'lucide-react'
+import type { SpaceVisualDefinition } from '@/features/space/model/spaceVisuals'
+import { HistoryIcon, OrbitIcon } from 'lucide-react'
+
+const ALL_SPACES_VISUAL: SpaceVisualDefinition = {
+	label: '所有空间',
+	icon: OrbitIcon,
+	iconClassName: 'text-[#8b5cf6]',
+	iconBadgeClassName: 'bg-[#8b5cf6]',
+	swatchClassName: 'bg-[#8b5cf6]',
+}
 
 type HistoryDropdownProps = {
 	entries: ShellRouteHistoryEntry[]
@@ -39,7 +48,7 @@ export function HistoryDropdown({ entries, spaces, onNavigate }: HistoryDropdown
 					<HistoryIcon className='size-3.5' />
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align='start'>
+			<DropdownMenuContent align='start' className='min-w-68'>
 				<DropdownMenuLabel>最近浏览</DropdownMenuLabel>
 				<DropdownMenuGroup>
 					{entries.length > 0 ? (
@@ -73,7 +82,11 @@ const HistoryEntryItem = memo(function HistoryEntryItem({
 }: HistoryEntryItemProps) {
 	const EntryIcon = entry.entryIcon
 	const entrySpace = entry.spaceId ? spaces.find((s) => s.id === entry.spaceId) : null
-	const entryVisual = entrySpace ? getSpaceVisual(entrySpace) : null
+	const entryVisual = entrySpace
+		? getSpaceVisual(entrySpace)
+		: !entry.spaceId
+			? ALL_SPACES_VISUAL
+			: null
 	const SpaceIcon = entryVisual?.icon
 
 	return (
@@ -84,10 +97,6 @@ const HistoryEntryItem = memo(function HistoryEntryItem({
 				<span className='ml-auto flex shrink-0 items-center gap-1 text-xs text-muted-foreground'>
 					<SpaceIcon className={cn('size-3', entryVisual.iconClassName)} />
 					<span className='max-w-20 truncate'>{entry.spaceName}</span>
-				</span>
-			) : entry.spaceName ? (
-				<span className='ml-auto max-w-20 shrink-0 truncate text-xs text-muted-foreground'>
-					{entry.spaceName}
 				</span>
 			) : null}
 		</DropdownMenuItem>

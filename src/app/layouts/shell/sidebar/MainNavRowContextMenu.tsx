@@ -1,29 +1,33 @@
 import type {
+	SidebarFooterItemKey,
 	SidebarItemVisibilityTarget,
 	SidebarMainItemKey,
 } from '@/features/settings/api/sidebarSettings'
-import {
-	ContextMenuCheckboxItem,
-	ContextMenuContent,
-	ContextMenuGroup,
-	ContextMenuSeparator,
-} from '@/shared/ui/base/context-menu'
 
-import { SidebarCustomizeSubmenu } from './SidebarCustomizeSubmenu'
-import type { MainNavItemViewModel } from '@/app/layouts/shell/sidebar/types'
+import { SidebarItemContextMenu } from './SidebarItemContextMenu'
+import type { MainNavItemViewModel } from './types'
+
+type FooterCustomizeItem = {
+	key: SidebarFooterItemKey
+	label: string
+	visible: boolean
+	icon: React.ComponentType<{ className?: string }>
+}
 
 export type MainNavRowContextMenuProps = {
 	itemKey: SidebarMainItemKey
 	navItems: MainNavItemViewModel[]
+	footerItems: FooterCustomizeItem[]
 	visibleNavItemCount: number
 	onUpdateItemVisibility: (target: SidebarItemVisibilityTarget, visible: boolean) => void
 	onResetMainItemsVisibility: () => void
 }
 
-/** 主导航行右键：自定义侧栏 + 当前入口显示开关 */
+/** 主导航行右键：可见性 + 自定义侧栏 */
 export function MainNavRowContextMenu({
 	itemKey,
 	navItems,
+	footerItems,
 	visibleNavItemCount,
 	onUpdateItemVisibility,
 	onResetMainItemsVisibility,
@@ -31,31 +35,15 @@ export function MainNavRowContextMenu({
 	const currentItem = navItems.find((item) => item.key === itemKey)
 
 	return (
-		<ContextMenuContent className='w-52'>
-			<ContextMenuGroup>
-				<SidebarCustomizeSubmenu
-					navItems={navItems}
-					onResetMainItemsVisibility={onResetMainItemsVisibility}
-					onUpdateItemVisibility={onUpdateItemVisibility}
-					visibleNavItemCount={visibleNavItemCount}
-				/>
-			</ContextMenuGroup>
-			{currentItem ? (
-				<>
-					<ContextMenuSeparator />
-					<ContextMenuGroup>
-						<ContextMenuCheckboxItem
-							checked={currentItem.visible}
-							disabled={visibleNavItemCount === 1 && currentItem.visible}
-							onCheckedChange={(checked) =>
-								onUpdateItemVisibility({ kind: 'main', key: currentItem.key }, checked === true)
-							}
-						>
-							显示当前入口
-						</ContextMenuCheckboxItem>
-					</ContextMenuGroup>
-				</>
-			) : null}
-		</ContextMenuContent>
+		<SidebarItemContextMenu
+			footerItems={footerItems}
+			isLastVisible={visibleNavItemCount === 1 && !!currentItem?.visible}
+			navItems={navItems}
+			onResetMainItemsVisibility={onResetMainItemsVisibility}
+			onUpdateItemVisibility={onUpdateItemVisibility}
+			target={{ kind: 'main', key: itemKey }}
+			visible={currentItem?.visible ?? false}
+			visibleNavItemCount={visibleNavItemCount}
+		/>
 	)
 }
