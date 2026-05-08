@@ -11,6 +11,7 @@ import {
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
 import {
 	Empty,
 	EmptyContent,
@@ -24,6 +25,9 @@ import {
 	entityBoardCompactBadgeClass,
 	entityBoardLoadingCardClass,
 	entityBoardSectionCountBadgeClass,
+	entityBoardSectionHeadingClass,
+	entityBoardSectionRightSpacerClass,
+	entityBoardSectionToggleClass,
 } from '@/shared/ui/patterns/entity-board'
 import {
 	ROW_SHELL_SECTION_HEADER_CLASS,
@@ -51,7 +55,7 @@ export type BoardRowsProps = ComponentProps<'div'> & {
 	getItemId?: (child: ReactNode, index: number) => string | undefined
 }
 
-export const BOARD_STACK_CLASS = 'flex min-h-0 flex-1 flex-col gap-3'
+export const BOARD_STACK_CLASS = 'flex min-h-0 flex-1 flex-col gap-0.5'
 export const BOARD_GROUP_CLASS = 'flex flex-col gap-0.5'
 export const BOARD_ROWS_CLASS = 'flex flex-col gap-0.5'
 export const BOARD_COLLAPSIBLE_CLASS =
@@ -210,6 +214,61 @@ function getSelectionGroupPosition(
 	}
 
 	return 'middle'
+}
+
+export type BoardCollapsibleSectionProps = {
+	label: string
+	count: number
+	icon: ReactNode
+	trailing?: ReactNode
+	open: boolean
+	onOpenChange: (open: boolean) => void
+	selectedIdSet?: Set<string>
+	getItemId?: (child: ReactNode, index: number) => string | undefined
+	children: ReactNode
+}
+
+/**
+ * 折叠 section 共享骨架。
+ * 封装 Collapsible + header(chevron + icon + label + count + trailing) + BoardRows。
+ * 各 board 只需传 icon 和 trailing 的差异部分。
+ */
+export function BoardCollapsibleSection({
+	label,
+	count,
+	icon,
+	trailing,
+	open,
+	onOpenChange,
+	selectedIdSet,
+	getItemId,
+	children,
+}: BoardCollapsibleSectionProps) {
+	return (
+		<Collapsible className={BOARD_COLLAPSIBLE_CLASS} onOpenChange={onOpenChange} open={open}>
+			<div className={BOARD_GROUP_HEADER_CLASS} onDoubleClick={() => onOpenChange(!open)}>
+				<CollapsibleTrigger
+					aria-label={`切换 ${label} 分区折叠状态`}
+					className={entityBoardSectionToggleClass}
+				>
+					<BoardChevron data-chevron />
+				</CollapsibleTrigger>
+				<div className={entityBoardSectionHeadingClass}>
+					{icon}
+					<span className='truncate'>{label}</span>
+					<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
+						{count}
+					</Badge>
+				</div>
+				{trailing ?? <span className={entityBoardSectionRightSpacerClass} />}
+			</div>
+			<CollapsibleContent className='overflow-hidden px-0'>
+				<BoardRows getItemId={getItemId} selectedIdSet={selectedIdSet}>
+					{children}
+				</BoardRows>
+			</CollapsibleContent>
+		</Collapsible>
+	)
 }
 
 export function BoardChevron({ className, ...props }: ComponentProps<'span'>) {

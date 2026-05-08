@@ -1,29 +1,16 @@
 import { useState } from 'react'
 
 import {
-	BOARD_COLLAPSIBLE_CLASS,
-	BOARD_GROUP_HEADER_CLASS,
-	BoardChevron,
+	BoardCollapsibleSection,
 	BoardEmptyState,
 	BoardRoot,
-	BoardRows,
 	type BoardSection,
 } from '@/shared/ui/board'
-import {
-	entityBoardMutedIconClass,
-	entityBoardSectionCountBadgeClass,
-	entityBoardSectionHeadingClass,
-	entityBoardSectionRightSpacerClass,
-	entityBoardSectionToggleClass,
-} from '@/shared/ui/patterns/entity-board'
+import { entityBoardMutedIconClass } from '@/shared/ui/patterns/entity-board'
 import { cn } from '@/shared/lib/utils'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
-import { Badge } from '@/shared/ui/base/badge'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
 import { ArchiveIcon, BoxIcon, FolderIcon, TrashIcon } from 'lucide-react'
-import {
-	ROW_SHELL_META_TEXT_CLASS,
-} from '@/shared/ui/row'
+import { ROW_SHELL_META_TEXT_CLASS } from '@/shared/ui/row'
 import { LifecycleRowAdapter } from '@/features/lifecycle/ui/LifecycleRowAdapter'
 
 export type LifecycleBoardSection = BoardSection<LifecycleEntry>
@@ -117,56 +104,41 @@ function LifecycleBoardSectionBlock({
 		: 0
 
 	return (
-		<Collapsible className={BOARD_COLLAPSIBLE_CLASS} onOpenChange={setOpen} open={open}>
-			<div className={BOARD_GROUP_HEADER_CLASS} onDoubleClick={() => setOpen(!open)}>
-				<CollapsibleTrigger
-					aria-label={`切换 ${label} 分区折叠状态`}
-					className={entityBoardSectionToggleClass}
-				>
-					<BoardChevron data-chevron />
-				</CollapsibleTrigger>
-				<div className={entityBoardSectionHeadingClass}>
-					<LifecycleModeIcon mode={mode} />
-					<span className='truncate'>{label}</span>
-					<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
-						{items.length}
-					</Badge>
-				</div>
-				{selectedCount > 0 ? (
-					<span className={cn(entityBoardSectionRightSpacerClass, ROW_SHELL_META_TEXT_CLASS)}>
+		<BoardCollapsibleSection
+			count={items.length}
+			getItemId={(_child, index) => items[index]?.id}
+			icon={<LifecycleModeIcon mode={mode} />}
+			label={label}
+			onOpenChange={setOpen}
+			open={open}
+			selectedIdSet={selectedEntryIdSet}
+			trailing={
+				selectedCount > 0 ? (
+					<span className={cn('pr-1', ROW_SHELL_META_TEXT_CLASS)}>
 						已选 {selectedCount} 项
 					</span>
-				) : (
-					<span className={entityBoardSectionRightSpacerClass} />
-				)}
-			</div>
-
-			<CollapsibleContent className='overflow-hidden px-0'>
-				<BoardRows
-					getItemId={(_child, index) => items[index]?.id}
-					selectedIdSet={selectedEntryIdSet}
-				>
-					{items.map((entry) => (
-						<LifecycleRowAdapter
-							actions={{
-								onOpenDetail,
-								onRestore,
-								onToggleSelected: onToggleEntrySelection
-									? () => onToggleEntrySelection(entry.id)
-									: () => undefined,
-							}}
-							key={entry.id}
-							mode={mode}
-							entry={entry}
-							rowState={{
-								isPending: pendingEntryId === entry.id,
-								isSelected: selectedEntryIdSet?.has(entry.id) ?? false,
-							}}
-						/>
-					))}
-				</BoardRows>
-			</CollapsibleContent>
-		</Collapsible>
+				) : undefined
+			}
+		>
+			{items.map((entry) => (
+				<LifecycleRowAdapter
+					actions={{
+						onOpenDetail,
+						onRestore,
+						onToggleSelected: onToggleEntrySelection
+							? () => onToggleEntrySelection(entry.id)
+							: () => undefined,
+					}}
+					key={entry.id}
+					mode={mode}
+					entry={entry}
+					rowState={{
+						isPending: pendingEntryId === entry.id,
+						isSelected: selectedEntryIdSet?.has(entry.id) ?? false,
+					}}
+				/>
+			))}
+		</BoardCollapsibleSection>
 	)
 }
 

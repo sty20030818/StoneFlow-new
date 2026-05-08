@@ -1,28 +1,17 @@
 import { useState } from 'react'
 
 import {
-	BOARD_COLLAPSIBLE_CLASS,
-	BOARD_GROUP_HEADER_CLASS,
-	BoardChevron,
+	BoardCollapsibleSection,
 	BoardEmptyState,
 	BoardLoadingState,
-	BoardRows,
 	BoardRoot,
 	type BoardSection,
 } from '@/shared/ui/board'
 import type { ProjectOverviewItem } from '@/shared/types'
-import { Badge } from '@/shared/ui/base/badge'
 import { ArchiveIcon, FolderIcon, PlayIcon, CheckIcon } from 'lucide-react'
-import {
-	entityBoardMutedIconClass,
-	entityBoardSectionCountBadgeClass,
-	entityBoardSectionHeadingClass,
-	entityBoardSectionRightSpacerClass,
-	entityBoardSectionToggleClass,
-} from '@/shared/ui/patterns/entity-board'
+import { entityBoardMutedIconClass } from '@/shared/ui/patterns/entity-board'
 
 import { ProjectRowAdapter } from '@/features/project/ui/ProjectRowAdapter'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
 
 type ProjectBoardSectionKey = 'active' | 'completed' | 'archived'
 
@@ -115,50 +104,34 @@ function ProjectBoardSectionBlock({
 	const [open, setOpen] = useState(true)
 
 	return (
-		<Collapsible className={BOARD_COLLAPSIBLE_CLASS} onOpenChange={setOpen} open={open}>
-			<div className={BOARD_GROUP_HEADER_CLASS} onDoubleClick={() => setOpen(!open)}>
-				<CollapsibleTrigger
-					aria-label={`切换 ${section.label} 分区折叠状态`}
-					className={entityBoardSectionToggleClass}
-				>
-					<BoardChevron data-chevron />
-				</CollapsibleTrigger>
-				<div className={entityBoardSectionHeadingClass}>
-					<ProjectSectionStatusIcon sectionKey={section.key} />
-					<span className='truncate'>{section.label}</span>
-					<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
-						{section.items.length}
-					</Badge>
-				</div>
-				<span className={entityBoardSectionRightSpacerClass} />
-			</div>
-
-			<CollapsibleContent className='overflow-hidden px-0'>
-				<BoardRows
-					getItemId={(_child, index) => section.items[index]?.id}
-					selectedIdSet={selectedProjectIds}
-				>
-					{section.items.map((project) => (
-						<ProjectRowAdapter
-							actions={{
-								onArchiveProject: onArchive,
-								onCompleteProject: onComplete,
-								onDeleteProject: onDelete,
-								onOpenProject: onOpen,
-								onReopenProject: onReopen,
-								onToggleSelected: onToggleProjectSelection,
-							}}
-							key={project.id}
-							project={project}
-							rowState={{
-								isPending: busyProjectId === project.id,
-								isSelected: selectedProjectIds?.has(project.id) ?? false,
-							}}
-						/>
-					))}
-				</BoardRows>
-			</CollapsibleContent>
-		</Collapsible>
+		<BoardCollapsibleSection
+			count={section.items.length}
+			getItemId={(_child, index) => section.items[index]?.id}
+			icon={<ProjectSectionStatusIcon sectionKey={section.key} />}
+			label={section.label}
+			onOpenChange={setOpen}
+			open={open}
+			selectedIdSet={selectedProjectIds}
+		>
+			{section.items.map((project) => (
+				<ProjectRowAdapter
+					actions={{
+						onArchiveProject: onArchive,
+						onCompleteProject: onComplete,
+						onDeleteProject: onDelete,
+						onOpenProject: onOpen,
+						onReopenProject: onReopen,
+						onToggleSelected: onToggleProjectSelection,
+					}}
+					key={project.id}
+					project={project}
+					rowState={{
+						isPending: busyProjectId === project.id,
+						isSelected: selectedProjectIds?.has(project.id) ?? false,
+					}}
+				/>
+			))}
+		</BoardCollapsibleSection>
 	)
 }
 

@@ -6,9 +6,9 @@ import {
 	useShellPreferenceStore,
 } from '@/app/layouts/shell/model/useShellPreferenceStore'
 import {
-	BOARD_COLLAPSIBLE_CLASS,
 	BOARD_GROUP_HEADER_CLASS,
-	BoardChevron,
+	BoardCollapsibleSection,
+	BoardEmptyState,
 	BoardGroup,
 	BoardGroupHeader,
 	BoardRoot,
@@ -20,25 +20,9 @@ import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { TaskRowAdapter, type TaskRowAdapterProps } from '@/features/task/ui/TaskRowAdapter'
 import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
-import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
-import {
-	Empty,
-	EmptyContent,
-	EmptyDescription,
-	EmptyHeader,
-	EmptyMedia,
-	EmptyPage,
-	EmptyTitle,
-} from '@/shared/ui/base/empty'
 import { ListTodoIcon, PlusIcon } from 'lucide-react'
-import {
-	entityBoardSectionActionButtonClass,
-	entityBoardSectionHeadingClass,
-	entityBoardSectionCountBadgeClass,
-	entityBoardSectionToggleClass,
-} from '@/shared/ui/patterns/entity-board'
+import { entityBoardSectionActionButtonClass } from '@/shared/ui/patterns/entity-board'
 
 const TASK_SECTIONS: TaskStatus[] = ['todo', 'doing', 'waiting', 'done', 'canceled']
 
@@ -149,22 +133,13 @@ export function TaskBoard({
 
 	if (tasks.length === 0 && emptyTitle) {
 		return (
-			<EmptyPage>
-				<Empty className='rounded-md bg-transparent'>
-					<EmptyHeader>
-						<EmptyMedia variant='icon'>
-							<ListTodoIcon />
-						</EmptyMedia>
-						<EmptyTitle>{emptyTitle}</EmptyTitle>
-						<EmptyDescription>{emptyDescription}</EmptyDescription>
-					</EmptyHeader>
-					<EmptyContent>
-						<Button onClick={onEmptyAction} type='button'>
-							{emptyActionLabel}
-						</Button>
-					</EmptyContent>
-				</Empty>
-			</EmptyPage>
+			<BoardEmptyState
+				actionLabel={emptyActionLabel}
+				description={emptyDescription}
+				icon={<ListTodoIcon />}
+				onAction={onEmptyAction}
+				title={emptyTitle}
+			/>
 		)
 	}
 
@@ -182,7 +157,7 @@ export function TaskBoard({
 			))}
 		</BoardRoot>
 	) : (
-		<BoardRoot className='gap-0.5'>
+		<BoardRoot>
 			{statusOrder
 				.filter((status) => !hideEmptySections || groupedTasks[status].length > 0)
 				.map((status) => (
@@ -274,25 +249,15 @@ function TaskStatusSection({
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
 	return (
-		<Collapsible
-			className={BOARD_COLLAPSIBLE_CLASS}
+		<BoardCollapsibleSection
+			count={tasks.length}
+			getItemId={(_child, i) => tasks[i]?.id}
+			icon={<TaskStatusIndicator status={status} />}
+			label={label}
 			onOpenChange={onOpenChange}
 			open={open}
-		>
-			<div className={BOARD_GROUP_HEADER_CLASS} onDoubleClick={() => onOpenChange(!open)}>
-				<CollapsibleTrigger
-					aria-label={`切换 ${label} 分区折叠状态`}
-					className={entityBoardSectionToggleClass}
-				>
-					<BoardChevron data-chevron />
-				</CollapsibleTrigger>
-				<div className={entityBoardSectionHeadingClass}>
-					<TaskStatusIndicator status={status} />
-					<span className='truncate'>{label}</span>
-					<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
-						{tasks.length}
-					</Badge>
-				</div>
+			selectedIdSet={selectedTaskIdSet}
+			trailing={
 				<Button
 					aria-label={`在 ${label} 中创建任务`}
 					className={entityBoardSectionActionButtonClass}
@@ -310,16 +275,9 @@ function TaskStatusSection({
 				>
 					<PlusIcon />
 				</Button>
-			</div>
-
-			<CollapsibleContent className='overflow-hidden px-0'>
-				<BoardRows
-					selectedIdSet={selectedTaskIdSet}
-					getItemId={(_child, i) => tasks[i]?.id}
-				>
-					{tasks.map((task) => renderTaskRow(task))}
-				</BoardRows>
-			</CollapsibleContent>
-		</Collapsible>
+			}
+		>
+			{tasks.map((task) => renderTaskRow(task))}
+		</BoardCollapsibleSection>
 	)
 }

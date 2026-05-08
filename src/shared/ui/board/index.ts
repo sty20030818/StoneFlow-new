@@ -5,6 +5,7 @@ export {
 	BOARD_ROWS_CLASS,
 	BOARD_STACK_CLASS,
 	BoardChevron,
+	BoardCollapsibleSection,
 	BoardEmptyState,
 	BoardGroup,
 	BoardGroupHeader,
@@ -12,4 +13,4 @@ export {
 	BoardRoot,
 	BoardRows,
 } from './Board'
-export type { BoardGroupHeaderProps, BoardRowsProps, BoardSection } from './Board'
+export type { BoardCollapsibleSectionProps, BoardGroupHeaderProps, BoardRowsProps, BoardSection } from './Board'
