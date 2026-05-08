@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import type { ProjectOption } from '@/features/project/model/types'
@@ -62,6 +62,7 @@ export function TaskCreateContent({
 	)
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [createMore, setCreateMore] = useState(false)
+	const titleInputRef = useRef<HTMLInputElement>(null)
 
 	// 同步外部 selectedSpaceId 变化（Shell 层 Space 面包屑切换）
 	useEffect(() => {
@@ -98,22 +99,17 @@ export function TaskCreateContent({
 	])
 
 	useEffect(() => {
-		if (submitState !== 'success') {
-			return undefined
-		}
+		if (submitState !== 'success') return
 
 		if (createMore) {
-			const timer = window.setTimeout(() => {
-				handleReset()
-			}, 900)
-			return () => window.clearTimeout(timer)
+			handleReset()
+			// 重置后聚焦标题输入框
+			requestAnimationFrame(() => titleInputRef.current?.focus())
+			return
 		}
 
-		const timer = window.setTimeout(() => {
-			handleReset()
-			onClose()
-		}, 900)
-		return () => window.clearTimeout(timer)
+		handleReset()
+		onClose()
 	}, [createMore, handleReset, onClose, submitState])
 
 	async function handleSubmit() {
@@ -157,10 +153,25 @@ export function TaskCreateContent({
 		title.trim().length > 0 &&
 		(placement === 'project' ? projectId.length > 0 : spaceId.length > 0)
 
+	// Cmd+Enter / Ctrl+Enter 提交
+	const handleSubmitRef = useRef(handleSubmit)
+	useEffect(() => { handleSubmitRef.current = handleSubmit })
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+				event.preventDefault()
+				if (canSubmit) void handleSubmitRef.current()
+			}
+		}
+		window.addEventListener('keydown', handleKeyDown)
+		return () => window.removeEventListener('keydown', handleKeyDown)
+	}, [canSubmit])
+
 	return (
 		<CreateModalContent>
 			<CreateModalContent.Title>
 				<Input
+					ref={titleInputRef}
 					autoFocus
 					className='h-auto border-none bg-transparent px-0 text-lg font-black shadow-none focus-visible:ring-0 md:text-lg md:font-black'
 					disabled={submitState !== 'idle'}
