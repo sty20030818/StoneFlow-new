@@ -30,6 +30,8 @@ export function ProjectBoardAdapter({ config, data, actions }: ProjectBoardAdapt
 			onEmptyAction={actions.onEmptyAction}
 			onOpen={(projectId) => actions.onOpenProject?.(projectId)}
 			onReopen={(projectId) => actions.onReopenProject?.(projectId)}
+			onToggleProjectSelection={actions.onToggleProjectSelection}
+			selectedProjectIds={data.selectedProjectIds}
 			status={data.status ?? 'ready'}
 			variant='overview'
 		/>

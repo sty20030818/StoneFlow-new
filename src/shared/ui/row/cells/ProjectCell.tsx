@@ -33,14 +33,7 @@ export function ProjectCell({
 	emptyLabel = '独立事项',
 }: ProjectCellProps) {
 	if (!options || options.length === 0 || !onSelectProject || !onSelectNone) {
-		return (
-			<RowMetaButton
-				disabled={disabled ?? !projectName}
-				icon={<FolderIcon className='size-3.5' />}
-				label={projectName || emptyLabel}
-				type='button'
-			/>
-		)
+		return null
 	}
 
 	return (

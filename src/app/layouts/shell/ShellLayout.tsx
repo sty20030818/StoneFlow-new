@@ -196,7 +196,6 @@ export function ShellLayout({
 				projects={projectLinks}
 				spaces={spaces}
 			/>
-
 			<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-sf-shell'>
 				<div className='flex min-h-0 w-(--sf-shell-sidebar-reserved-width) shrink-0 flex-col overflow-hidden transition-[width] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) motion-reduce:transition-none group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none'>
 					<ShellSidebar
@@ -234,7 +233,6 @@ export function ShellLayout({
 					</ShellMain>
 				</div>
 			</div>
-
 			<CreateDialogShell
 				description={
 					createDialogType === 'task'
@@ -273,9 +271,9 @@ export function ShellLayout({
 					/>
 				)}
 			</CreateDialogShell>
-
 			{/* <ShellFooter navBadges={navBadges} /> */}
-			<div className='h-2 shrink-0' />
+			{/* 占位，保持底部边距 */}
+			<div className='h-2 shrink-0 bg-sf-shell' />
 		</SidebarProvider>
 	)
 }

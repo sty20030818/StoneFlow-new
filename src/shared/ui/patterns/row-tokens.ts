@@ -12,8 +12,6 @@ export const ROW_SHELL_SELECTED_CLASS =
 export const ROW_SHELL_SECTION_HEADER_CLASS =
 	'flex h-10 items-center gap-2 rounded-md bg-sf-list-section-bg pl-3 pr-1'
 export const ROW_SHELL_META_TEXT_CLASS = 'text-xs font-medium text-sf-text-tertiary'
-export const ROW_SHELL_PROJECT_LEAD_CLASS =
-	'inline-flex size-8 items-center justify-center rounded-xl bg-sf-surface-panel-muted text-sf-shell-text-secondary'
 
 /** RowShell.Actions 布局 class，内联于 row 层，不依赖 entity-board。 */
 export const ROW_SHELL_ACTIONS_CLASS = 'flex shrink-0 items-center gap-2'

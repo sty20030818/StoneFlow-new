@@ -31,6 +31,7 @@ type ProjectBoardProps = {
 	items: ProjectOverviewItem[]
 	status: 'idle' | 'loading' | 'ready' | 'error'
 	busyProjectId: string | null
+	selectedProjectIds?: Set<string>
 	emptyTitle: string
 	emptyDescription: string
 	emptyActionLabel?: string
@@ -40,6 +41,7 @@ type ProjectBoardProps = {
 	onReopen: (projectId: string) => void
 	onArchive: (projectId: string) => void
 	onDelete: (projectId: string) => void
+	onToggleProjectSelection?: (projectId: string) => void
 }
 
 const PROJECT_SECTION_ORDER: ProjectBoardSectionKey[] = ['active', 'completed', 'archived']
@@ -78,7 +80,9 @@ export function ProjectBoard(props: ProjectBoardProps) {
 					onDelete={props.onDelete}
 					onOpen={props.onOpen}
 					onReopen={props.onReopen}
+					onToggleProjectSelection={props.onToggleProjectSelection}
 					section={section}
+					selectedProjectIds={props.selectedProjectIds}
 				/>
 			))}
 		</BoardRoot>
@@ -88,21 +92,25 @@ export function ProjectBoard(props: ProjectBoardProps) {
 function ProjectBoardSectionBlock({
 	section,
 	busyProjectId,
+	selectedProjectIds,
 	onOpen,
 	onComplete,
 	onReopen,
 	onArchive,
 	onDelete,
+	onToggleProjectSelection,
 }: {
 	section: BoardSection<ProjectOverviewItem> & {
 		key: ProjectBoardSectionKey
 	}
 	busyProjectId: string | null
+	selectedProjectIds?: Set<string>
 	onOpen: (projectId: string) => void
 	onComplete: (projectId: string) => void
 	onReopen: (projectId: string) => void
 	onArchive: (projectId: string) => void
 	onDelete: (projectId: string) => void
+	onToggleProjectSelection?: (projectId: string) => void
 }) {
 	const [open, setOpen] = useState(true)
 
@@ -135,11 +143,13 @@ function ProjectBoardSectionBlock({
 								onDeleteProject: onDelete,
 								onOpenProject: onOpen,
 								onReopenProject: onReopen,
+								onToggleSelected: onToggleProjectSelection,
 							}}
 							key={project.id}
 							project={project}
 							rowState={{
 								isPending: busyProjectId === project.id,
+								isSelected: selectedProjectIds?.has(project.id) ?? false,
 							}}
 						/>
 					))}

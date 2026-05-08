@@ -2,12 +2,12 @@ import { TASK_ROW_BULK_SELECTED_CLASS } from '@/features/task/ui/taskRowBulkSele
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import {
 	CreatedAtCell,
+	IconCell,
 	RestoreActionCell,
 	RowSelectionCell,
 	RowShell,
 	RowTitleCell,
 } from '@/shared/ui/row'
-import { entityBoardShellSecondaryIconClass } from '@/shared/ui/patterns/entity-board'
 import { BoxIcon, FolderIcon, ListTodoIcon } from 'lucide-react'
 
 type LifecycleRowAdapterProps = {
@@ -69,9 +69,7 @@ export function LifecycleRowAdapter({
 					/>
 				</RowShell.Leading>
 
-				<RowShell.Icon className={entityBoardShellSecondaryIconClass}>
-					<Icon className='size-4' />
-				</RowShell.Icon>
+				<IconCell icon={<Icon className='size-4' />} />
 
 				<RowShell.Title>
 					<RowTitleCell title={entry.title} />
@@ -79,15 +77,15 @@ export function LifecycleRowAdapter({
 			</RowShell.Left>
 
 			<RowShell.Right>
-				<RowShell.Fields>
-					<CreatedAtCell value={createdAtValue} />
-				</RowShell.Fields>
 				<RowShell.Actions>
 					<RestoreActionCell
 						disabled={rowState.isPending}
 						onRestore={() => actions.onRestore(entry)}
 					/>
 				</RowShell.Actions>
+				<RowShell.Fields>
+					<CreatedAtCell value={createdAtValue} />
+				</RowShell.Fields>
 			</RowShell.Right>
 		</RowShell.Root>
 	)

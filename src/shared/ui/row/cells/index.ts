@@ -1,3 +1,4 @@
+export { IconCell, type IconCellProps } from './IconCell'
 export {
 	PriorityCell,
 	type PriorityCellOption,

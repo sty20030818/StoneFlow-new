@@ -6,7 +6,6 @@ import {
 	ROW_SHELL_ACTIVE_CLASS,
 	ROW_SHELL_BASE_CLASS,
 	ROW_SHELL_IDLE_CLASS,
-	ROW_SHELL_PROJECT_LEAD_CLASS,
 	ROW_SHELL_SELECTED_CLASS,
 } from '@/shared/ui/patterns/row-tokens'
 
@@ -17,8 +16,6 @@ export type RowShellRootProps = ComponentProps<'div'> & {
 	interactive?: boolean
 	selectedClassName?: string
 }
-
-export const ROW_SHELL_ENTITY_ICON_CLASS = ROW_SHELL_PROJECT_LEAD_CLASS
 
 export function RowShellRoot({
 	children,

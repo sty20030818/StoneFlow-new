@@ -34,6 +34,7 @@ export function ProjectOverviewPage() {
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
 	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('active_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
+	const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set())
 	const scopeKey = scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
 	const visibleProjectViews = projectViews.items.filter((view) => view.isVisible)
 
@@ -58,6 +59,18 @@ export function ProjectOverviewPage() {
 		void loadOverview(scope, viewKey)
 	}, [loadOverview, scope, scopeKey, viewKey])
 
+	function handleToggleProjectSelection(projectId: string) {
+		setSelectedProjectIds((prev) => {
+			const next = new Set(prev)
+			if (next.has(projectId)) {
+				next.delete(projectId)
+			} else {
+				next.add(projectId)
+			}
+			return next
+		})
+	}
+
 	async function runRowAction(projectId: string, runner: () => Promise<unknown>) {
 		setBusyProjectId(projectId)
 		try {
@@ -81,8 +94,10 @@ export function ProjectOverviewPage() {
 					items: overview.items,
 					status: overview.status,
 					busyProjectId,
+					selectedProjectIds,
 				},
 				boardActions: {
+					onToggleProjectSelection: handleToggleProjectSelection,
 					onArchiveProject: (projectId) => {
 						void runRowAction(projectId, async () => {
 							await archiveProject(projectId)

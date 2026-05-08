@@ -1,4 +1,3 @@
-import { ChevronDownIcon } from 'lucide-react'
 import { forwardRef } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 
@@ -113,7 +112,7 @@ export const RowMetaButton = forwardRef<HTMLButtonElement, RowMetaButtonProps>(
 		{
 			icon,
 			label,
-			trailing = <ChevronDownIcon className='size-3.5 text-sf-icon-subtle' />,
+			trailing = null,
 			children,
 			className,
 			variant = 'outline',

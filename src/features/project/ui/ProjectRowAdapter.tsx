@@ -3,14 +3,12 @@ import { formatShortDate } from '@/shared/lib/date'
 import {
 	CreatedAtCell,
 	DueDateCell,
+	IconCell,
 	ProjectCell,
-	ReminderCell,
 	RowActionButton,
+	RowSelectionCell,
 	RowShell,
 	RowTitleCell,
-	ROW_SHELL_ENTITY_ICON_CLASS,
-	ScheduledDateCell,
-	TagsCell,
 } from '@/shared/ui/row'
 import { FolderIcon } from 'lucide-react'
 
@@ -21,6 +19,7 @@ type ProjectRowAdapterProps = {
 	project: ProjectOverviewItem
 	rowState: {
 		isPending: boolean
+		isSelected?: boolean
 	}
 	projectBinding?: {
 		showProjectCell?: boolean
@@ -34,6 +33,7 @@ type ProjectRowAdapterProps = {
 		onReopenProject: (projectId: string) => void
 		onArchiveProject: (projectId: string) => void
 		onDeleteProject: (projectId: string) => void
+		onToggleSelected?: (projectId: string) => void
 	}
 }
 
@@ -48,6 +48,8 @@ export function ProjectRowAdapter({ project, rowState, projectBinding, actions }
 			projectBinding.onSelectProject &&
 			projectBinding.onSelectNoProject,
 	)
+	const hasSelection = typeof actions.onToggleSelected === 'function'
+	const isSelected = rowState.isSelected ?? false
 
 	return (
 		<ProjectContextMenu
@@ -59,6 +61,7 @@ export function ProjectRowAdapter({ project, rowState, projectBinding, actions }
 				aria-label={`打开项目 ${project.name}`}
 				data-project-id={project.id}
 				interactive
+				selected={isSelected}
 				onClick={() => actions.onOpenProject(project.id)}
 				onKeyDown={(event) => {
 					if (event.key === 'Enter' || event.key === ' ') {
@@ -69,10 +72,16 @@ export function ProjectRowAdapter({ project, rowState, projectBinding, actions }
 				pending={rowState.isPending}
 			>
 				<RowShell.Left className='gap-3'>
-					<RowShell.Leading className='pt-0.5'>
-						<span className={ROW_SHELL_ENTITY_ICON_CLASS}>
-							<FolderIcon className='size-4' />
-						</span>
+					<RowShell.Leading>
+						{hasSelection ? (
+							<RowSelectionCell
+								ariaLabel={`选择项目 ${project.name}`}
+								checked={isSelected}
+								disabled={rowState.isPending}
+								onCheckedChange={() => actions.onToggleSelected?.(project.id)}
+							/>
+						) : null}
+						<IconCell icon={<FolderIcon className='size-4' />} />
 					</RowShell.Leading>
 
 					<RowShell.Title>
@@ -81,11 +90,15 @@ export function ProjectRowAdapter({ project, rowState, projectBinding, actions }
 				</RowShell.Left>
 
 				<RowShell.Right>
+					<RowShell.Actions className='flex-wrap'>
+						<ProjectActions
+							completedAt={project.completedAt}
+							disabled={rowState.isPending}
+							projectId={project.id}
+							actions={actions}
+						/>
+					</RowShell.Actions>
 					<RowShell.Fields>
-						<TagsCell />
-						<DueDateCell formatter={formatShortDate} value={project.dueAt} />
-						<ScheduledDateCell value={null} />
-						<ReminderCell value={null} />
 						{showProjectCell ? (
 							<ProjectCell
 								disabled={rowState.isPending}
@@ -97,17 +110,9 @@ export function ProjectRowAdapter({ project, rowState, projectBinding, actions }
 								projectName={null}
 							/>
 						) : null}
+						<DueDateCell formatter={formatShortDate} value={project.dueAt} />
 						<CreatedAtCell formatter={formatShortDate} value={project.createdAt} />
 					</RowShell.Fields>
-
-					<RowShell.Actions className='flex-wrap'>
-						<ProjectActions
-							completedAt={project.completedAt}
-							disabled={rowState.isPending}
-							projectId={project.id}
-							actions={actions}
-						/>
-					</RowShell.Actions>
 				</RowShell.Right>
 			</RowShell.Root>
 		</ProjectContextMenu>

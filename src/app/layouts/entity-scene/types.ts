@@ -72,6 +72,7 @@ export type EntitySceneProjectBoardData = {
 	items?: ProjectOverviewItem[]
 	status?: 'idle' | 'loading' | 'ready' | 'error'
 	busyProjectId?: string | null
+	selectedProjectIds?: Set<string>
 }
 
 export type EntitySceneProjectBoardActions = {
@@ -81,6 +82,7 @@ export type EntitySceneProjectBoardActions = {
 	onReopenProject?: (projectId: string) => void
 	onArchiveProject?: (projectId: string) => void
 	onDeleteProject?: (projectId: string) => void
+	onToggleProjectSelection?: (projectId: string) => void
 }
 
 export type EntitySceneLifecycleBoardConfig = {

@@ -1,32 +1,24 @@
-import { Clock3Icon } from 'lucide-react'
-
+import { cn } from '@/shared/lib/utils'
 import { formatShortDate } from '@/shared/lib/date'
-import { RowMetaButton, type RowMetaButtonProps } from '@/shared/ui/row/RowFieldCells'
 
-export type CreatedAtCellProps = Omit<
-	RowMetaButtonProps,
-	'icon' | 'label' | 'trailing' | 'value'
-> & {
+export type CreatedAtCellProps = {
 	value: string | null | undefined
 	formatter?: (value: string) => string
-	emptyLabel?: string
+	className?: string
 }
 
 export function CreatedAtCell({
 	value,
 	formatter = formatShortDate,
-	emptyLabel = '-',
-	disabled = true,
-	...props
+	className,
 }: CreatedAtCellProps) {
+	if (!value) {
+		return null
+	}
+
 	return (
-		<RowMetaButton
-			{...props}
-			disabled={disabled}
-			icon={<Clock3Icon className='size-3.5' />}
-			label={value ? formatter(value) : emptyLabel}
-			trailing={null}
-			type='button'
-		/>
+		<span className={cn('shrink-0 text-xs tabular-nums text-sf-text-tertiary', className)}>
+			{formatter(value)}
+		</span>
 	)
 }

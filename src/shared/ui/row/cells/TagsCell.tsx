@@ -13,14 +13,17 @@ export function TagsCell({
 	placeholder = '标签',
 	...props
 }: TagsCellProps) {
-	const label = tags && tags.length > 0 ? tags.join(', ') : placeholder
+	if (!tags || tags.length === 0) {
+		return null
+	}
 
 	return (
 		<RowMetaButton
 			{...props}
-			disabled={disabled ?? (!tags || tags.length === 0)}
+			disabled={disabled ?? false}
 			icon={<TagIcon className='size-3.5' />}
-			label={label}
+			label={tags.join(', ')}
+			trailing={null}
 			type='button'
 		/>
 	)

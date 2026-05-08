@@ -12,6 +12,7 @@ export {
 export {
 	CreatedAtCell,
 	DueDateCell,
+	IconCell,
 	PriorityCell,
 	ProjectCell,
 	ReminderCell,
@@ -21,6 +22,7 @@ export {
 	TagsCell,
 	type CreatedAtCellProps,
 	type DueDateCellProps,
+	type IconCellProps,
 	type PriorityCellOption,
 	type PriorityCellProps,
 	type ProjectCellOption,
@@ -40,7 +42,6 @@ export {
 	ROW_SHELL_SELECTED_CLASS,
 } from '@/shared/ui/patterns/row-tokens'
 export {
-	ROW_SHELL_ENTITY_ICON_CLASS,
 	RowShell,
 	RowShellActions,
 	RowShellFields,
