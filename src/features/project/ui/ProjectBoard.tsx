@@ -116,7 +116,7 @@ function ProjectBoardSectionBlock({
 
 	return (
 		<Collapsible className={BOARD_COLLAPSIBLE_CLASS} onOpenChange={setOpen} open={open}>
-			<div className={BOARD_GROUP_HEADER_CLASS}>
+			<div className={BOARD_GROUP_HEADER_CLASS} onDoubleClick={() => setOpen(!open)}>
 				<CollapsibleTrigger
 					aria-label={`切换 ${section.label} 分区折叠状态`}
 					className={entityBoardSectionToggleClass}
@@ -134,7 +134,10 @@ function ProjectBoardSectionBlock({
 			</div>
 
 			<CollapsibleContent className='overflow-hidden px-0'>
-				<BoardRows>
+				<BoardRows
+					getItemId={(_child, index) => section.items[index]?.id}
+					selectedIdSet={selectedProjectIds}
+				>
 					{section.items.map((project) => (
 						<ProjectRowAdapter
 							actions={{

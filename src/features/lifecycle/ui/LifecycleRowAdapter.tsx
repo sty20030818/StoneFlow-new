@@ -6,6 +6,7 @@ import {
 	RowSelectionCell,
 	RowShell,
 	RowTitleCell,
+	type RowSelectionGroupPosition,
 } from '@/shared/ui/row'
 import { BoxIcon, FolderIcon, ListTodoIcon } from 'lucide-react'
 
@@ -16,6 +17,7 @@ type LifecycleRowAdapterProps = {
 		isSelected: boolean
 		isPending: boolean
 	}
+	selectionGroupPosition?: RowSelectionGroupPosition
 	actions: {
 		onToggleSelected: () => void
 		onRestore: (entry: LifecycleEntry) => void
@@ -31,6 +33,7 @@ export function LifecycleRowAdapter({
 	entry,
 	mode,
 	rowState,
+	selectionGroupPosition,
 	actions,
 }: LifecycleRowAdapterProps) {
 	const Icon = getLifecycleEntityIcon(entry.entityType)
@@ -45,6 +48,7 @@ export function LifecycleRowAdapter({
 			interactive={canOpenDetail}
 			pending={rowState.isPending}
 			selected={rowState.isSelected}
+			selectionGroupPosition={selectionGroupPosition}
 			onClick={canOpenDetail ? () => actions.onOpenDetail?.(entry) : undefined}
 			onKeyDown={
 				canOpenDetail

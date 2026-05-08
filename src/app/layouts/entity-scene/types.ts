@@ -31,7 +31,6 @@ export type EntitySceneTaskBoardConfig = {
 	emptyActionLabel?: string
 	hideEmptySections?: boolean
 	statusOrder?: TaskStatus[]
-	sectionVariant?: 'compact' | 'project'
 	customSections?: Array<{
 		key: string
 		label: string

@@ -40,8 +40,6 @@ import {
 	entityBoardSectionToggleClass,
 } from '@/shared/ui/patterns/entity-board'
 
-type TaskBoardSectionVariant = 'compact' | 'project'
-
 const TASK_SECTIONS: TaskStatus[] = ['todo', 'doing', 'waiting', 'done', 'canceled']
 
 type TaskBoardProps = {
@@ -68,7 +66,6 @@ type TaskBoardProps = {
 	onOpenTask: (taskId: string) => void
 	statusOrder?: TaskStatus[]
 	hideEmptySections?: boolean
-	sectionVariant?: TaskBoardSectionVariant
 	projectOptions?: Array<{ id: string; name: string }>
 	onSelectProject?: (task: TaskListItem, projectId: string) => void
 	onSelectNoProject?: (task: TaskListItem) => void
@@ -94,7 +91,6 @@ export function TaskBoard({
 	onOpenTask,
 	statusOrder = TASK_SECTIONS,
 	hideEmptySections = false,
-	sectionVariant = 'compact',
 	projectOptions,
 	onSelectProject,
 	onSelectNoProject,
@@ -154,7 +150,7 @@ export function TaskBoard({
 	if (tasks.length === 0 && emptyTitle) {
 		return (
 			<EmptyPage>
-				<Empty className={sectionVariant === 'project' ? 'rounded-md bg-transparent' : undefined}>
+				<Empty className='rounded-md bg-transparent'>
 					<EmptyHeader>
 						<EmptyMedia variant='icon'>
 							<ListTodoIcon />
@@ -173,19 +169,20 @@ export function TaskBoard({
 	}
 
 	return customSections && customSections.length > 0 ? (
-		<BoardRoot className={sectionVariant === 'project' ? 'gap-2' : 'gap-3'}>
+		<BoardRoot className='gap-2'>
 			{customSections.map((section) => (
 				<TaskCustomSection
 					createProjectId={createProjectId}
 					key={section.key}
 					label={section.label}
 					renderTaskRow={renderTaskRow}
+					selectedTaskIdSet={selectedTaskIdSet}
 					tasks={section.tasks}
 				/>
 			))}
 		</BoardRoot>
 	) : (
-		<BoardRoot className={sectionVariant === 'project' ? 'gap-1' : 'gap-3'}>
+		<BoardRoot className='gap-0.5'>
 			{statusOrder
 				.filter((status) => !hideEmptySections || groupedTasks[status].length > 0)
 				.map((status) => (
@@ -196,6 +193,7 @@ export function TaskBoard({
 						onOpenChange={(open) => handleSectionOpenChange(status, open)}
 						open={openSections.includes(status)}
 						renderTaskRow={renderTaskRow}
+						selectedTaskIdSet={selectedTaskIdSet}
 						status={status}
 						tasks={groupedTasks[status]}
 					/>
@@ -209,11 +207,13 @@ function TaskCustomSection({
 	tasks,
 	createProjectId,
 	renderTaskRow,
+	selectedTaskIdSet,
 }: {
 	label: string
 	tasks: TaskListItem[]
 	createProjectId: string | null
 	renderTaskRow: (task: TaskListItem) => ReactNode
+	selectedTaskIdSet: Set<string>
 }) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
@@ -242,7 +242,10 @@ function TaskCustomSection({
 					</Button>
 				}
 			/>
-			<BoardRows>
+			<BoardRows
+				selectedIdSet={selectedTaskIdSet}
+				getItemId={(_child, i) => tasks[i]?.id}
+			>
 				{tasks.map((task) => renderTaskRow(task))}
 			</BoardRows>
 		</BoardGroup>
@@ -257,6 +260,7 @@ function TaskStatusSection({
 	createProjectId,
 	onOpenChange,
 	renderTaskRow,
+	selectedTaskIdSet,
 }: {
 	status: TaskStatus
 	label: string
@@ -265,6 +269,7 @@ function TaskStatusSection({
 	createProjectId: string | null
 	onOpenChange: (open: boolean) => void
 	renderTaskRow: (task: TaskListItem) => ReactNode
+	selectedTaskIdSet: Set<string>
 }) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
@@ -274,7 +279,7 @@ function TaskStatusSection({
 			onOpenChange={onOpenChange}
 			open={open}
 		>
-			<div className={BOARD_GROUP_HEADER_CLASS}>
+			<div className={BOARD_GROUP_HEADER_CLASS} onDoubleClick={() => onOpenChange(!open)}>
 				<CollapsibleTrigger
 					aria-label={`切换 ${label} 分区折叠状态`}
 					className={entityBoardSectionToggleClass}
@@ -308,7 +313,10 @@ function TaskStatusSection({
 			</div>
 
 			<CollapsibleContent className='overflow-hidden px-0'>
-				<BoardRows>
+				<BoardRows
+					selectedIdSet={selectedTaskIdSet}
+					getItemId={(_child, i) => tasks[i]?.id}
+				>
 					{tasks.map((task) => renderTaskRow(task))}
 				</BoardRows>
 			</CollapsibleContent>

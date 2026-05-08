@@ -17,6 +17,7 @@ import {
 	ScheduledDateCell,
 	StatusCell,
 	TagsCell,
+	type RowSelectionGroupPosition,
 } from '@/shared/ui/row'
 
 type TaskRowAdapterProps = {
@@ -26,6 +27,7 @@ type TaskRowAdapterProps = {
 		isSelected: boolean
 		isPending: boolean
 	}
+	selectionGroupPosition?: RowSelectionGroupPosition
 	projectBinding?: {
 		projectOptions?: Array<{ id: string; name: string }>
 		onSelectProject?: (task: TaskListItem, projectId: string) => void
@@ -45,7 +47,13 @@ type TaskRowAdapterProps = {
 /**
  * TaskRowAdapter 负责把任务实体语义翻译为统一 RowShell + 功能型 field cells。
  */
-export function TaskRowAdapter({ task, rowState, projectBinding, actions }: TaskRowAdapterProps) {
+export function TaskRowAdapter({
+	task,
+	rowState,
+	selectionGroupPosition,
+	projectBinding,
+	actions,
+}: TaskRowAdapterProps) {
 	const { isActive, isSelected, isPending } = rowState
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
 	const hasProjectOptions = Boolean(
@@ -62,16 +70,17 @@ export function TaskRowAdapter({ task, rowState, projectBinding, actions }: Task
 			onOpenDetails={() => actions.onOpenTask(task.id)}
 			onToggleStatus={() => void actions.onToggleTaskStatus(task)}
 			status={task.status}
-		>
-			<RowShell.Root
-				aria-label={`打开任务 ${task.title}`}
-				data-shell-task-card='true'
-				data-task-id={task.id}
-				interactive
-				active={isActive}
-				pending={isPending}
-				selected={isSelected}
-				onClick={() => actions.onOpenTask(task.id)}
+			>
+				<RowShell.Root
+					aria-label={`打开任务 ${task.title}`}
+					data-shell-task-card='true'
+					data-task-id={task.id}
+					interactive
+					active={isActive}
+					pending={isPending}
+					selected={isSelected}
+					selectionGroupPosition={selectionGroupPosition}
+					onClick={() => actions.onOpenTask(task.id)}
 				onKeyDown={(event) => {
 					if (event.key === 'Enter' || event.key === ' ') {
 						event.preventDefault()

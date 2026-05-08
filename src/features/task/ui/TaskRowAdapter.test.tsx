@@ -156,4 +156,30 @@ describe('TaskRowAdapter', () => {
 		const selectedRow = screen.getByRole('button', { name: '打开任务 任务 A' })
 		expect(selectedRow.className).toContain(ROW_SHELL_SELECTED_CLASS)
 	})
+
+	it('透传显式 selection group position 到真正的 surface', () => {
+		render(
+			<TaskRowAdapter
+				actions={buildActions()}
+				projectBinding={{
+					projectOptions: [{ id: 'project-1', name: '项目 A' }],
+					onSelectProject: vi.fn(),
+					onSelectNoProject: vi.fn(),
+				}}
+				rowState={{
+					isActive: false,
+					isPending: false,
+					isSelected: true,
+				}}
+				selectionGroupPosition='first'
+				task={buildTask()}
+			/>,
+		)
+
+		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
+		expect(row).toHaveAttribute('data-selection-group-position', 'first')
+		expect(row.className).toContain('rounded-none')
+		expect(row.className).toContain('rounded-t-md')
+		expect(row.className).toContain('bg-transparent')
+	})
 })

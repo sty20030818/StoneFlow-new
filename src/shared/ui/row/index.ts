@@ -37,9 +37,11 @@ export {
 export {
 	ROW_SHELL_ACTIVE_CLASS,
 	ROW_SHELL_BASE_CLASS,
+	ROW_SHELL_GROUP_POSITION_CLASS,
 	ROW_SHELL_IDLE_CLASS,
 	ROW_SHELL_META_TEXT_CLASS,
 	ROW_SHELL_SELECTED_CLASS,
+	type RowSelectionGroupPosition,
 } from '@/shared/ui/patterns/row-tokens'
 export {
 	RowShell,

@@ -94,7 +94,6 @@ export function AllTasksPage() {
 					emptyDescription: '当前筛选下没有任务，尝试切换筛选或创建新任务。',
 					emptyTitle: '暂无任务',
 					hideEmptySections: true,
-					sectionVariant: 'project',
 					statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
 				},
 				boardData: {

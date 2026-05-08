@@ -1,4 +1,12 @@
-import type { ComponentProps, ReactNode } from 'react'
+import {
+	Children,
+	cloneElement,
+	Fragment,
+	isValidElement,
+	type ComponentProps,
+	type ReactElement,
+	type ReactNode,
+} from 'react'
 
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
@@ -17,7 +25,10 @@ import {
 	entityBoardLoadingCardClass,
 	entityBoardSectionCountBadgeClass,
 } from '@/shared/ui/patterns/entity-board'
-import { ROW_SHELL_SECTION_HEADER_CLASS } from '@/shared/ui/patterns/row-tokens'
+import {
+	ROW_SHELL_SECTION_HEADER_CLASS,
+	type RowSelectionGroupPosition,
+} from '@/shared/ui/patterns/row-tokens'
 import { TriangleIcon } from 'lucide-react'
 
 export type BoardSection<T> = {
@@ -35,19 +46,21 @@ export type BoardGroupHeaderProps = {
 	titleClassName?: string
 }
 
-export type BoardRowsProps = ComponentProps<'div'>
+export type BoardRowsProps = ComponentProps<'div'> & {
+	selectedIdSet?: Set<string>
+	getItemId?: (child: ReactNode, index: number) => string | undefined
+}
 
 export const BOARD_STACK_CLASS = 'flex min-h-0 flex-1 flex-col gap-3'
-export const BOARD_GROUP_CLASS = 'flex flex-col gap-1'
-export const BOARD_ROWS_CLASS = 'flex flex-col gap-1'
+export const BOARD_GROUP_CLASS = 'flex flex-col gap-0.5'
+export const BOARD_ROWS_CLASS = 'flex flex-col gap-0.5'
 export const BOARD_COLLAPSIBLE_CLASS =
-	'flex flex-col gap-1 [&[data-state=open]_[data-chevron]]:rotate-90'
+	'flex flex-col gap-0.5 [&[data-state=open]_[data-chevron]]:rotate-90'
 /**
  * 分组 header 保持原来的 sticky 几何关系。
  * row 的遮挡由 board 顶部独立 mask 负责，避免把补底区域绑定到某个 header 上。
  */
-export const BOARD_GROUP_HEADER_CLASS =
-	`sticky top-0 z-10 ${ROW_SHELL_SECTION_HEADER_CLASS}`
+export const BOARD_GROUP_HEADER_CLASS = `sticky top-0 z-10 ${ROW_SHELL_SECTION_HEADER_CLASS}`
 export const BOARD_TOP_MASK_CLASS =
 	'pointer-events-none sticky top-0 z-5 -mb-3 h-3 shrink-0 bg-card'
 
@@ -105,12 +118,98 @@ export function BoardGroupHeader({
 	)
 }
 
-export function BoardRows({ children, className, ...props }: BoardRowsProps) {
+export function BoardRows({
+	children,
+	className,
+	selectedIdSet,
+	getItemId,
+	...props
+}: BoardRowsProps) {
+	if (!selectedIdSet || !getItemId) {
+		return (
+			<div {...props} className={cn(BOARD_ROWS_CLASS, className)}>
+				{children}
+			</div>
+		)
+	}
+
+	const childArray = Children.toArray(children)
+	const groups: Array<
+		{
+			selected: boolean
+			items: Array<{ child: ReactNode; id?: string; index: number }>
+		}
+	> = []
+
+	for (let i = 0; i < childArray.length; i++) {
+		const child = childArray[i]
+		const id = getItemId(child, i)
+		const isSelected = !!id && selectedIdSet.has(id)
+		const lastGroup = groups[groups.length - 1]
+		const groupItem = { child, id, index: i }
+
+		if (lastGroup && lastGroup.selected === isSelected) {
+			lastGroup.items.push(groupItem)
+		} else {
+			groups.push({ selected: isSelected, items: [groupItem] })
+		}
+	}
+
 	return (
 		<div {...props} className={cn(BOARD_ROWS_CLASS, className)}>
-			{children}
+			{groups.map((group, gi) => {
+				if (!group.selected) {
+					return group.items.map((item, ii) => {
+						return <Fragment key={item.id ?? gi * 100 + ii}>{item.child}</Fragment>
+					})
+				}
+
+				return (
+					<div
+						className='flex flex-col gap-0.5 overflow-hidden rounded-md bg-sf-selection-surface'
+						key={`sel-${gi}`}
+					>
+						{group.items.map((item, ii) => {
+							if (!isValidElement(item.child)) {
+								return <Fragment key={item.id ?? ii}>{item.child}</Fragment>
+							}
+
+							const childElement = item.child as ReactElement<{
+								className?: string
+								selectionGroupPosition?: RowSelectionGroupPosition
+							}>
+							const selectionGroupPosition = getSelectionGroupPosition(ii, group.items.length)
+							return cloneElement(
+								childElement,
+								{
+									selectionGroupPosition,
+								},
+							)
+						})}
+					</div>
+				)
+			})}
 		</div>
 	)
+}
+
+function getSelectionGroupPosition(
+	index: number,
+	groupSize: number,
+): RowSelectionGroupPosition {
+	if (groupSize <= 1) {
+		return 'single'
+	}
+
+	if (index === 0) {
+		return 'first'
+	}
+
+	if (index === groupSize - 1) {
+		return 'last'
+	}
+
+	return 'middle'
 }
 
 export function BoardChevron({ className, ...props }: ComponentProps<'span'>) {

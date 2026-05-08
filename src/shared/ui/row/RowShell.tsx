@@ -5,8 +5,11 @@ import {
 	ROW_SHELL_ACTIONS_CLASS,
 	ROW_SHELL_ACTIVE_CLASS,
 	ROW_SHELL_BASE_CLASS,
+	ROW_SHELL_GROUP_POSITION_CLASS,
+	ROW_SHELL_GROUP_SELECTED_CLASS,
 	ROW_SHELL_IDLE_CLASS,
 	ROW_SHELL_SELECTED_CLASS,
+	type RowSelectionGroupPosition,
 } from '@/shared/ui/patterns/row-tokens'
 
 export type RowShellRootProps = ComponentProps<'div'> & {
@@ -14,7 +17,7 @@ export type RowShellRootProps = ComponentProps<'div'> & {
 	selected?: boolean
 	pending?: boolean
 	interactive?: boolean
-	selectedClassName?: string
+	selectionGroupPosition?: RowSelectionGroupPosition
 }
 
 export function RowShellRoot({
@@ -24,21 +27,27 @@ export function RowShellRoot({
 	selected = false,
 	pending = false,
 	interactive = false,
-	selectedClassName,
+	selectionGroupPosition,
 	role,
 	tabIndex,
 	...props
 }: RowShellRootProps) {
+	const groupedSelected = selected && !!selectionGroupPosition
+
 	return (
 		<div
 			{...props}
+			data-selection-group-position={selectionGroupPosition}
 			className={cn(
 				ROW_SHELL_BASE_CLASS,
 				active
 					? ROW_SHELL_ACTIVE_CLASS
 					: selected
-						? selectedClassName ?? ROW_SHELL_SELECTED_CLASS
+						? groupedSelected
+							? ROW_SHELL_GROUP_SELECTED_CLASS
+							: ROW_SHELL_SELECTED_CLASS
 						: ROW_SHELL_IDLE_CLASS,
+				groupedSelected ? ROW_SHELL_GROUP_POSITION_CLASS[selectionGroupPosition] : null,
 				interactive ? 'cursor-pointer' : null,
 				pending ? 'opacity-75' : null,
 				className,

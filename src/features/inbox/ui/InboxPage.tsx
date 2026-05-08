@@ -77,7 +77,6 @@ export function InboxPage() {
 					emptyDescription: '新捕获的任务会先进入 Inbox，补齐项目后再离开。',
 					emptyTitle: '当前 Inbox 已清空',
 					hideEmptySections: true,
-					sectionVariant: 'compact',
 					statusOrder: [...INBOX_STATUS_ORDER],
 				},
 				boardData: {

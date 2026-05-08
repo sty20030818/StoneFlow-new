@@ -118,7 +118,7 @@ function LifecycleBoardSectionBlock({
 
 	return (
 		<Collapsible className={BOARD_COLLAPSIBLE_CLASS} onOpenChange={setOpen} open={open}>
-			<div className={BOARD_GROUP_HEADER_CLASS}>
+			<div className={BOARD_GROUP_HEADER_CLASS} onDoubleClick={() => setOpen(!open)}>
 				<CollapsibleTrigger
 					aria-label={`切换 ${label} 分区折叠状态`}
 					className={entityBoardSectionToggleClass}
@@ -142,7 +142,10 @@ function LifecycleBoardSectionBlock({
 			</div>
 
 			<CollapsibleContent className='overflow-hidden px-0'>
-				<BoardRows>
+				<BoardRows
+					getItemId={(_child, index) => items[index]?.id}
+					selectedIdSet={selectedEntryIdSet}
+				>
 					{items.map((entry) => (
 						<LifecycleRowAdapter
 							actions={{

@@ -49,6 +49,38 @@ describe('ProjectBoard', () => {
 		expect(screen.queryByText('个活跃')).not.toBeInTheDocument()
 		expect(screen.queryByText('个任务')).not.toBeInTheDocument()
 	})
+
+	it('连续选中的项目行透传显式 group position', () => {
+		render(
+			<ProjectBoard
+				busyProjectId={null}
+				emptyDescription='empty'
+				emptyTitle='empty'
+				items={[
+					createProject({ id: 'project-1', name: '项目 A' }),
+					createProject({ id: 'project-2', name: '项目 B' }),
+					createProject({ id: 'project-3', name: '项目 C' }),
+				]}
+				onArchive={() => undefined}
+				onComplete={() => undefined}
+				onDelete={() => undefined}
+				onOpen={() => undefined}
+				onReopen={() => undefined}
+				selectedProjectIds={new Set(['project-2', 'project-3'])}
+				status='ready'
+				variant='overview'
+			/>,
+		)
+
+		expect(screen.getByRole('button', { name: '打开项目 项目 B' })).toHaveAttribute(
+			'data-selection-group-position',
+			'first',
+		)
+		expect(screen.getByRole('button', { name: '打开项目 项目 C' })).toHaveAttribute(
+			'data-selection-group-position',
+			'last',
+		)
+	})
 })
 
 function createProject(

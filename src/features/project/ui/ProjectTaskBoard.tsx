@@ -53,7 +53,6 @@ export function ProjectTaskBoard({
 			onUpdateTaskStatus={onUpdateTaskStatus}
 			pendingTaskId={pendingTaskId}
 			selectedTaskIdSet={selectedTaskIdSet}
-			sectionVariant='project'
 			statusOrder={['doing', 'todo', 'waiting', 'done', 'canceled']}
 			tasks={tasks}
 		/>
