@@ -58,10 +58,10 @@ export type BoardRowsProps = ComponentProps<'div'> & {
 }
 
 export const BOARD_STACK_CLASS = 'flex min-h-0 flex-1 flex-col gap-0.5'
-export const BOARD_GROUP_CLASS = 'flex flex-col gap-0.5'
+export const BOARD_GROUP_CLASS = 'flex flex-col gap-0.5 last:pb-2'
 export const BOARD_ROWS_CLASS = 'flex flex-col gap-0.5'
 export const BOARD_COLLAPSIBLE_CLASS =
-	'flex flex-col gap-0.5 [&[data-state=open]_[data-chevron]]:rotate-90'
+	'flex flex-col gap-0.5 last:pb-2 [&[data-state=open]_[data-chevron]]:rotate-90'
 /**
  * 分组 header 保持原来的 sticky 几何关系。
  * row 的遮挡由 board 顶部独立 mask 负责，避免把补底区域绑定到某个 header 上。

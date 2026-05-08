@@ -19,6 +19,8 @@ type BulkActionBarProps = {
 
 /**
  * 统一多选后的底部浮动操作条；页面只负责传入计数、清空动作和右侧操作内容。
+ *
+ * 使用 `fixed` 定位悬浮在视口底部，不随页面滚动消失。
  */
 export function BulkActionBar({
 	selectedCount,
@@ -33,7 +35,7 @@ export function BulkActionBar({
 	return (
 		<div
 			className={cn(
-				'pointer-events-none sticky bottom-4 z-20 mt-auto flex justify-center px-4 pt-4 pb-1',
+				'pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-4',
 				className,
 			)}
 		>

@@ -27,6 +27,7 @@ export const shellChromeNavCircleButtonExpandedClass =
 
 export const shellChromeAvatarClusterClass = 'ml-2 flex items-center gap-2'
 
-export const shellChromeWindowControlsRowClass = 'flex h-full items-center gap-1 p-1'
-export const shellChromeSkeletonStatusTextClass = 'mt-auto pt-5 text-[12px] text-sf-shell-text-secondary'
+export const shellChromeWindowControlsRowClass = 'flex h-full items-center gap-0.5 p-1'
+export const shellChromeSkeletonStatusTextClass =
+	'mt-auto pt-5 text-[12px] text-sf-shell-text-secondary'
 export const shellChromeTruncateLabelClass = 'min-w-0 truncate'

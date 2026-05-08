@@ -341,9 +341,7 @@ export function ShellHeader({
 														onSelect={() => navigateToHistoryEntry(entry)}
 													>
 														<EntryIcon />
-														<span className={shellChromeTruncateLabelClass}>
-															{entry.label}
-														</span>
+														<span className={shellChromeTruncateLabelClass}>{entry.label}</span>
 													</DropdownMenuItem>
 												)
 											})
@@ -460,6 +458,10 @@ export function ShellHeader({
 								<AvatarBadge className='bg-green-600 dark:bg-green-800' />
 							</Avatar>
 						</div>
+
+						{!isMac && (
+							<div className='ml-2 h-5 w-px bg-sf-shell-text-secondary/20' data-tauri-drag-region />
+						)}
 
 						{/* macOS 使用系统原生窗体控制，避免与页面内自绘按钮重复。 */}
 						{!isMac ? (

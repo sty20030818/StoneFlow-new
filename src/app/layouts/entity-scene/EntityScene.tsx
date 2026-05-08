@@ -164,10 +164,11 @@ function EntitySceneComponent({
 					{beforeBoard}
 					<EntitySceneBoardContent board={board} />
 					{afterBoard}
-					<EntitySceneBulkBar bulkBar={bulkBar} />
 					<EntitySceneFooter footer={footer} />
 				</EntitySceneBody>
 			</MainCard.Body>
+
+			<EntitySceneBulkBar bulkBar={bulkBar} />
 		</EntitySceneRoot>
 	)
 }
