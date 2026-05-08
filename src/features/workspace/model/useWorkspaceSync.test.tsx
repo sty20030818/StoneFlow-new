@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 
 import { useWorkspaceSync } from '@/features/workspace/model/useWorkspaceSync'
 import type { AppEvent } from '@/shared/events'
@@ -76,6 +76,7 @@ vi.mock('@/features/view/model/useViewStore', () => ({
 
 describe('useWorkspaceSync', () => {
 	beforeEach(() => {
+		vi.useFakeTimers()
 		taskChangedHandlers.length = 0
 		eventHandlers.clear()
 		taskState.refreshLoadedSlices.mockReset()
@@ -94,11 +95,19 @@ describe('useWorkspaceSync', () => {
 		viewState.refreshTaskRun.mockResolvedValue()
 	})
 
+	afterEach(() => {
+		vi.runOnlyPendingTimers()
+		vi.useRealTimers()
+	})
+
 	it('收到任务变更事件后刷新当前 Task 与 Project 切片', () => {
 		renderHook(() => useWorkspaceSync({ type: 'space', spaceId: 'space-1' }))
 
-		taskChangedHandlers[0]?.({
-			taskId: 'task-1',
+		act(() => {
+			taskChangedHandlers[0]?.({
+				taskId: 'task-1',
+			})
+			vi.advanceTimersByTime(80)
 		})
 
 		expect(taskState.refreshLoadedSlices).toHaveBeenCalledTimes(1)
@@ -113,9 +122,12 @@ describe('useWorkspaceSync', () => {
 	it('收到前端内部 task 事件时也会走同一套刷新逻辑', () => {
 		renderHook(() => useWorkspaceSync({ type: 'all' }))
 
-		eventHandlers.get('task:updated')?.({
-			type: 'task:updated',
-			payload: { taskId: 'task-2' },
+		act(() => {
+			eventHandlers.get('task:updated')?.({
+				type: 'task:updated',
+				payload: { taskId: 'task-2' },
+			})
+			vi.advanceTimersByTime(80)
 		})
 
 		expect(taskState.refreshLoadedSlices).toHaveBeenCalledTimes(1)
@@ -130,9 +142,12 @@ describe('useWorkspaceSync', () => {
 	it('收到 lifecycle 事件时也会刷新 Space、View 与生命周期切片', () => {
 		renderHook(() => useWorkspaceSync({ type: 'all' }))
 
-		eventHandlers.get('lifecycle:changed')?.({
-			type: 'lifecycle:changed',
-			payload: { entityType: 'project', entityId: 'project-1' },
+		act(() => {
+			eventHandlers.get('lifecycle:changed')?.({
+				type: 'lifecycle:changed',
+				payload: { entityType: 'project', entityId: 'project-1' },
+			})
+			vi.advanceTimersByTime(80)
 		})
 
 		expect(taskState.refreshLoadedSlices).toHaveBeenCalledTimes(1)

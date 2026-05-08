@@ -1,4 +1,5 @@
 import { startTransition, useEffect, useMemo, useState } from 'react'
+import { compact } from 'es-toolkit/array'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 
 import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
@@ -107,7 +108,7 @@ export function buildShellRouteHistoryEntry(
 	projects: ShellProjectLink[],
 ): ShellRouteHistoryEntry {
 	const pathname = path.split(/[?#]/)[0] || '/'
-	const parts = pathname.split('/').filter(Boolean)
+	const parts = compact(pathname.split('/'))
 
 	if (parts[0] === 'quick-capture') {
 		return createHistoryEntry(path, 'Quick Capture', '快速捕获')

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { compact } from 'es-toolkit/array'
 
 import { type HealthcheckPayload, fetchHealthcheck } from '@/features/healthcheck/api/healthcheck'
 
@@ -42,7 +43,7 @@ function isTauriRuntimeAvailable() {
 }
 
 function formatDatabasePath(databasePath: string) {
-	const segments = databasePath.split(/[\\/]/).filter(Boolean)
+	const segments = compact(databasePath.split(/[\\/]/))
 
 	if (segments.length <= 3) {
 		return databasePath

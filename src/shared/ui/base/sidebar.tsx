@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { clamp } from 'es-toolkit/math'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { Slot } from 'radix-ui'
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react'
@@ -27,7 +28,7 @@ const SIDEBAR_ICON_RAIL_PX = 48
 const SIDEBAR_TOGGLE_SHORTCUT_KEY = 'b'
 
 function clampSidebarWidth(width: number) {
-	return Math.max(SIDEBAR_WIDTH_MIN, Math.min(SIDEBAR_WIDTH_MAX, Math.round(width)))
+	return clamp(Math.round(width), SIDEBAR_WIDTH_MIN, SIDEBAR_WIDTH_MAX)
 }
 
 // 根据当前窗口宽度判断布局模式；SSR/测试环境下保守返回 desktop

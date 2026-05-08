@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { uniq } from 'es-toolkit/array'
 import { persist } from 'zustand/middleware'
 
 import type { TaskStatus } from '@/shared/types'
@@ -40,19 +41,17 @@ export const useShellPreferenceStore = create<ShellPreferenceState>()(
 						[toProjectTreeKey(spaceId, projectId)]: collapsed,
 					},
 				})),
-			setProjectTaskBoardOpenSections: (sections) =>
-				set(() => {
-					const normalizedSections = sections.length
-						? Array.from(
-								new Set(
+				setProjectTaskBoardOpenSections: (sections) =>
+					set(() => {
+						const normalizedSections = sections.length
+							? uniq(
 									sections.filter((section) =>
 										['todo', 'doing', 'waiting', 'done', 'canceled'].includes(section),
 									),
-								),
-							)
-						: DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS
-					return {
-						projectTaskBoardOpenSections: normalizedSections,
+								)
+							: DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS
+						return {
+							projectTaskBoardOpenSections: normalizedSections,
 					}
 				}),
 		}),

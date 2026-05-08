@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from 'react'
+import { groupBy, uniq } from 'es-toolkit/array'
 
 import {
 	selectProjectTaskBoardOpenSections,
@@ -105,19 +106,19 @@ export function TaskBoard({
 	)
 
 	const groupedTasks = useMemo(() => {
+		const tasksByStatus = groupBy(tasks, (task) => task.status)
+
 		return {
-			todo: tasks.filter((task) => task.status === 'todo'),
-			doing: tasks.filter((task) => task.status === 'doing'),
-			waiting: tasks.filter((task) => task.status === 'waiting'),
-			done: tasks.filter((task) => task.status === 'done'),
-			canceled: tasks.filter((task) => task.status === 'canceled'),
+			todo: tasksByStatus.todo ?? [],
+			doing: tasksByStatus.doing ?? [],
+			waiting: tasksByStatus.waiting ?? [],
+			done: tasksByStatus.done ?? [],
+			canceled: tasksByStatus.canceled ?? [],
 		} satisfies Record<TaskStatus, TaskListItem[]>
 	}, [tasks])
 
 	function handleSectionOpenChange(status: TaskStatus, open: boolean) {
-		const nextSections = open
-			? Array.from(new Set([...openSections, status]))
-			: openSections.filter((section) => section !== status)
+		const nextSections = open ? uniq([...openSections, status]) : openSections.filter((section) => section !== status)
 		setProjectTaskBoardOpenSections(nextSections)
 	}
 

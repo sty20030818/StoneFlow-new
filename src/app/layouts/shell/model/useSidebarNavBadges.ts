@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { debounce } from 'es-toolkit/function'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import { listLifecycleEntries } from '@/features/lifecycle/api/lifecycle'
@@ -13,7 +14,6 @@ const DEBOUNCE_MS = 200
 
 export function useSidebarNavBadges(scope: Scope): NavBadges {
 	const [badges, setBadges] = useState<NavBadges>({})
-	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
 	const doRefresh = useCallback(async () => {
 		try {
@@ -40,24 +40,14 @@ export function useSidebarNavBadges(scope: Scope): NavBadges {
 		}
 	}, [scope])
 
-	const scheduleRefresh = useCallback(() => {
-		if (timerRef.current) {
-			clearTimeout(timerRef.current)
-		}
-		timerRef.current = setTimeout(() => {
-			timerRef.current = null
-			void doRefresh()
-		}, DEBOUNCE_MS)
-	}, [doRefresh])
+	const scheduleRefresh = useMemo(() => debounce(() => void doRefresh(), DEBOUNCE_MS), [doRefresh])
 
 	useEffect(() => {
 		void doRefresh()
 		return () => {
-			if (timerRef.current) {
-				clearTimeout(timerRef.current)
-			}
+			scheduleRefresh.cancel()
 		}
-	}, [doRefresh])
+	}, [doRefresh, scheduleRefresh])
 
 	useEventSubscription('task:created', scheduleRefresh)
 	useEventSubscription('task:updated', scheduleRefresh)
