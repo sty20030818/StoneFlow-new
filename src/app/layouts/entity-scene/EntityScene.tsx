@@ -37,7 +37,7 @@ function EntitySceneToolbar({
 	}
 
 	return (
-		<div className='px-2 pt-2'>
+		<div className='px-2'>
 			<MainCard.Toolbar
 				filterAction={toolbarFilterAction}
 				left={toolbarLeft}
