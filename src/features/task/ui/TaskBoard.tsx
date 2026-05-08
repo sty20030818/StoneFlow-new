@@ -6,13 +6,15 @@ import {
 	useShellPreferenceStore,
 } from '@/app/layouts/shell/model/useShellPreferenceStore'
 import {
-	BOARD_GROUP_HEADER_CLASS,
 	BoardCollapsibleSection,
 	BoardEmptyState,
 	BoardGroup,
 	BoardGroupHeader,
 	BoardRoot,
 	BoardRows,
+	BoardSectionContextMenu,
+	BOARD_GROUP_HEADER_CLASS,
+	useSectionSelection,
 } from '@/shared/ui/board'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -101,6 +103,15 @@ export function TaskBoard({
 		setProjectTaskBoardOpenSections(nextSections)
 	}
 
+	function handleCollapseAll() {
+		setProjectTaskBoardOpenSections([])
+	}
+
+	function handleExpandAll() {
+		const allVisible = statusOrder.filter((status) => groupedTasks[status].length > 0)
+		setProjectTaskBoardOpenSections(allVisible)
+	}
+
 	function renderTaskRow(task: TaskListItem) {
 		const actions: TaskRowAdapterProps['actions'] = {
 			onOpenTask,
@@ -165,7 +176,10 @@ export function TaskBoard({
 						createProjectId={createProjectId}
 						key={status}
 						label={formatTaskStatusLabel(status)}
+						onCollapseAll={handleCollapseAll}
+						onExpandAll={handleExpandAll}
 						onOpenChange={(open) => handleSectionOpenChange(status, open)}
+						onToggleTaskSelection={onToggleTaskSelection}
 						open={openSections.includes(status)}
 						renderTaskRow={renderTaskRow}
 						selectedTaskIdSet={selectedTaskIdSet}
@@ -234,6 +248,9 @@ function TaskStatusSection({
 	open,
 	createProjectId,
 	onOpenChange,
+	onCollapseAll,
+	onExpandAll,
+	onToggleTaskSelection,
 	renderTaskRow,
 	selectedTaskIdSet,
 }: {
@@ -243,13 +260,35 @@ function TaskStatusSection({
 	open: boolean
 	createProjectId: string | null
 	onOpenChange: (open: boolean) => void
+	onCollapseAll: () => void
+	onExpandAll: () => void
+	onToggleTaskSelection: (taskId: string) => void
 	renderTaskRow: (task: TaskListItem) => ReactNode
 	selectedTaskIdSet: Set<string>
 }) {
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 
+	const sectionIds = useMemo(() => tasks.map((t) => t.id), [tasks])
+	const { selectedCount, handleSelectAll, handleDeselectAll } = useSectionSelection({
+		sectionIds,
+		selectedIdSet: selectedTaskIdSet,
+		onToggleSelection: onToggleTaskSelection,
+	})
+
 	return (
 		<BoardCollapsibleSection
+			contextMenuContent={
+				<BoardSectionContextMenu
+					onCollapse={() => onOpenChange(false)}
+					onCollapseAll={onCollapseAll}
+					onDeselectAll={handleDeselectAll}
+					onExpand={() => onOpenChange(true)}
+					onExpandAll={onExpandAll}
+					onSelectAll={handleSelectAll}
+					open={open}
+					selectedCount={selectedCount}
+				/>
+			}
 			count={tasks.length}
 			getItemId={(_child, i) => tasks[i]?.id}
 			icon={<TaskStatusIndicator status={status} />}

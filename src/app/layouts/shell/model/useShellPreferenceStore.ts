@@ -42,18 +42,13 @@ export const useShellPreferenceStore = create<ShellPreferenceState>()(
 					},
 				})),
 				setProjectTaskBoardOpenSections: (sections) =>
-					set(() => {
-						const normalizedSections = sections.length
-							? uniq(
-									sections.filter((section) =>
-										['todo', 'doing', 'waiting', 'done', 'canceled'].includes(section),
-									),
-								)
-							: DEFAULT_PROJECT_TASK_BOARD_OPEN_SECTIONS
-						return {
-							projectTaskBoardOpenSections: normalizedSections,
-					}
-				}),
+					set(() => ({
+						projectTaskBoardOpenSections: uniq(
+							sections.filter((section) =>
+								['todo', 'doing', 'waiting', 'done', 'canceled'].includes(section),
+							),
+						),
+					})),
 		}),
 		{
 			name: PROJECT_TASK_BOARD_OPEN_SECTIONS_STORAGE_KEY,

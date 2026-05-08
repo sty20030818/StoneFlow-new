@@ -8,6 +8,8 @@ import {
 	type ReactNode,
 } from 'react'
 
+import { ContextMenu, ContextMenuTrigger } from '@/shared/ui/base/context-menu'
+
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
@@ -222,6 +224,7 @@ export type BoardCollapsibleSectionProps = {
 	onOpenChange: (open: boolean) => void
 	selectedIdSet?: Set<string>
 	getItemId?: (child: ReactNode, index: number) => string | undefined
+	contextMenuContent?: ReactNode
 	children: ReactNode
 }
 
@@ -239,26 +242,38 @@ export function BoardCollapsibleSection({
 	onOpenChange,
 	selectedIdSet,
 	getItemId,
+	contextMenuContent,
 	children,
 }: BoardCollapsibleSectionProps) {
+	const header = (
+		<div className={BOARD_GROUP_HEADER_CLASS} onDoubleClick={() => onOpenChange(!open)}>
+			<CollapsibleTrigger
+				aria-label={`切换 ${label} 分区折叠状态`}
+				className={entityBoardSectionToggleClass}
+			>
+				<BoardChevron data-chevron />
+			</CollapsibleTrigger>
+			<div className={entityBoardSectionHeadingClass}>
+				{icon}
+				<span className='truncate'>{label}</span>
+				<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
+					{count}
+				</Badge>
+			</div>
+			{trailing ?? <span className={entityBoardSectionRightSpacerClass} />}
+		</div>
+	)
+
 	return (
 		<Collapsible className={BOARD_COLLAPSIBLE_CLASS} onOpenChange={onOpenChange} open={open}>
-			<div className={BOARD_GROUP_HEADER_CLASS} onDoubleClick={() => onOpenChange(!open)}>
-				<CollapsibleTrigger
-					aria-label={`切换 ${label} 分区折叠状态`}
-					className={entityBoardSectionToggleClass}
-				>
-					<BoardChevron data-chevron />
-				</CollapsibleTrigger>
-				<div className={entityBoardSectionHeadingClass}>
-					{icon}
-					<span className='truncate'>{label}</span>
-					<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
-						{count}
-					</Badge>
-				</div>
-				{trailing ?? <span className={entityBoardSectionRightSpacerClass} />}
-			</div>
+			{contextMenuContent ? (
+				<ContextMenu>
+					<ContextMenuTrigger asChild>{header}</ContextMenuTrigger>
+					{contextMenuContent}
+				</ContextMenu>
+			) : (
+				header
+			)}
 			<CollapsibleContent className='overflow-hidden px-0'>
 				<BoardRows getItemId={getItemId} selectedIdSet={selectedIdSet}>
 					{children}

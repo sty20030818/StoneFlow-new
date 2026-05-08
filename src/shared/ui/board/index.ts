@@ -14,3 +14,5 @@ export {
 	BoardRows,
 } from './Board'
 export type { BoardCollapsibleSectionProps, BoardGroupHeaderProps, BoardRowsProps, BoardSection } from './Board'
+export { BoardSectionContextMenu } from './BoardSectionContextMenu'
+export { useSectionSelection } from './useSectionSelection'

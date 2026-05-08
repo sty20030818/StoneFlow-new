@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import {
 	BoardCollapsibleSection,
 	BoardEmptyState,
 	BoardLoadingState,
 	BoardRoot,
+	BoardSectionContextMenu,
 	type BoardSection,
+	useSectionSelection,
 } from '@/shared/ui/board'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { ArchiveIcon, FolderIcon, PlayIcon, CheckIcon } from 'lucide-react'
@@ -40,6 +42,10 @@ const PROJECT_SECTION_ORDER: ProjectBoardSectionKey[] = ['active', 'completed', 
  * 项目总览映射到共享 board 的 section + row 结构。
  */
 export function ProjectBoard(props: ProjectBoardProps) {
+	const [openSections, setOpenSections] = useState<Set<string>>(
+		() => new Set(PROJECT_SECTION_ORDER),
+	)
+
 	if (props.status === 'loading' && props.items.length === 0) {
 		return <BoardLoadingState label='正在读取项目列表…' />
 	}
@@ -58,6 +64,23 @@ export function ProjectBoard(props: ProjectBoardProps) {
 
 	const sections = buildProjectSections(props.items).filter((section) => section.items.length > 0)
 
+	function handleOpenChange(key: string, open: boolean) {
+		setOpenSections((prev) => {
+			const next = new Set(prev)
+			if (open) next.add(key)
+			else next.delete(key)
+			return next
+		})
+	}
+
+	function handleCollapseAll() {
+		setOpenSections(new Set())
+	}
+
+	function handleExpandAll() {
+		setOpenSections(new Set(sections.map((s) => s.key)))
+	}
+
 	return (
 		<BoardRoot>
 			{sections.map((section) => (
@@ -65,11 +88,15 @@ export function ProjectBoard(props: ProjectBoardProps) {
 					busyProjectId={props.busyProjectId}
 					key={section.key}
 					onArchive={props.onArchive}
+					onCollapseAll={handleCollapseAll}
 					onComplete={props.onComplete}
 					onDelete={props.onDelete}
+					onExpandAll={handleExpandAll}
 					onOpen={props.onOpen}
+					onOpenChange={(open) => handleOpenChange(section.key, open)}
 					onReopen={props.onReopen}
 					onToggleProjectSelection={props.onToggleProjectSelection}
+					open={openSections.has(section.key)}
 					section={section}
 					selectedProjectIds={props.selectedProjectIds}
 				/>
@@ -82,34 +109,61 @@ function ProjectBoardSectionBlock({
 	section,
 	busyProjectId,
 	selectedProjectIds,
+	open,
+	onOpenChange,
 	onOpen,
 	onComplete,
 	onReopen,
 	onArchive,
 	onDelete,
 	onToggleProjectSelection,
+	onCollapseAll,
+	onExpandAll,
 }: {
 	section: BoardSection<ProjectOverviewItem> & {
 		key: ProjectBoardSectionKey
 	}
 	busyProjectId: string | null
 	selectedProjectIds?: Set<string>
+	open: boolean
+	onOpenChange: (open: boolean) => void
 	onOpen: (projectId: string) => void
 	onComplete: (projectId: string) => void
 	onReopen: (projectId: string) => void
 	onArchive: (projectId: string) => void
 	onDelete: (projectId: string) => void
 	onToggleProjectSelection?: (projectId: string) => void
+	onCollapseAll: () => void
+	onExpandAll: () => void
 }) {
-	const [open, setOpen] = useState(true)
+	const sectionIds = useMemo(() => section.items.map((p) => p.id), [section.items])
+	const { selectedCount, handleSelectAll, handleDeselectAll } = useSectionSelection({
+		sectionIds,
+		selectedIdSet: selectedProjectIds,
+		onToggleSelection: onToggleProjectSelection,
+	})
 
 	return (
 		<BoardCollapsibleSection
+			contextMenuContent={
+				onToggleProjectSelection ? (
+					<BoardSectionContextMenu
+						onCollapse={() => onOpenChange(false)}
+						onCollapseAll={onCollapseAll}
+						onDeselectAll={handleDeselectAll}
+						onExpand={() => onOpenChange(true)}
+						onExpandAll={onExpandAll}
+						onSelectAll={handleSelectAll}
+						open={open}
+						selectedCount={selectedCount}
+					/>
+				) : undefined
+			}
 			count={section.items.length}
 			getItemId={(_child, index) => section.items[index]?.id}
 			icon={<ProjectSectionStatusIcon sectionKey={section.key} />}
 			label={section.label}
-			onOpenChange={setOpen}
+			onOpenChange={onOpenChange}
 			open={open}
 			selectedIdSet={selectedProjectIds}
 		>

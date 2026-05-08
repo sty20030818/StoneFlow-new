@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import {
 	BoardCollapsibleSection,
 	BoardEmptyState,
 	BoardRoot,
+	BoardSectionContextMenu,
 	type BoardSection,
+	useSectionSelection,
 } from '@/shared/ui/board'
 import { entityBoardMutedIconClass } from '@/shared/ui/patterns/entity-board'
 import { cn } from '@/shared/lib/utils'
@@ -47,6 +49,9 @@ export function LifecycleBoard({
 	onToggleEntrySelection,
 }: LifecycleBoardProps) {
 	const visibleSections = sections.filter((section) => section.items.length > 0)
+	const [openSections, setOpenSections] = useState<Set<string>>(
+		() => new Set(visibleSections.map((s) => s.key)),
+	)
 
 	if (visibleSections.length === 0) {
 		return (
@@ -60,6 +65,23 @@ export function LifecycleBoard({
 		)
 	}
 
+	function handleOpenChange(key: string, open: boolean) {
+		setOpenSections((prev) => {
+			const next = new Set(prev)
+			if (open) next.add(key)
+			else next.delete(key)
+			return next
+		})
+	}
+
+	function handleCollapseAll() {
+		setOpenSections(new Set())
+	}
+
+	function handleExpandAll() {
+		setOpenSections(new Set(visibleSections.map((s) => s.key)))
+	}
+
 	return (
 		<BoardRoot>
 			{visibleSections.map((section) => (
@@ -68,9 +90,13 @@ export function LifecycleBoard({
 					key={section.key}
 					label={section.label}
 					mode={mode}
+					onCollapseAll={handleCollapseAll}
+					onExpandAll={handleExpandAll}
+					onOpenChange={(open) => handleOpenChange(section.key, open)}
 					onOpenDetail={onOpenDetail}
 					onRestore={onRestore}
 					onToggleEntrySelection={onToggleEntrySelection}
+					open={openSections.has(section.key)}
 					pendingEntryId={pendingEntryId}
 					selectedEntryIdSet={selectedEntryIdSet}
 				/>
@@ -83,33 +109,57 @@ function LifecycleBoardSectionBlock({
 	label,
 	items,
 	mode,
+	open,
+	onOpenChange,
 	pendingEntryId,
 	onRestore,
 	onOpenDetail,
 	selectedEntryIdSet,
 	onToggleEntrySelection,
+	onCollapseAll,
+	onExpandAll,
 }: {
 	label: string
 	items: LifecycleEntry[]
 	mode: LifecycleMode
+	open: boolean
+	onOpenChange: (open: boolean) => void
 	pendingEntryId: string | null
 	onRestore: (entry: LifecycleEntry) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
 	selectedEntryIdSet?: Set<string>
 	onToggleEntrySelection?: (entryId: string) => void
+	onCollapseAll: () => void
+	onExpandAll: () => void
 }) {
-	const [open, setOpen] = useState(true)
-	const selectedCount = selectedEntryIdSet
-		? items.filter((item) => selectedEntryIdSet.has(item.id)).length
-		: 0
+	const sectionIds = useMemo(() => items.map((item) => item.id), [items])
+	const { selectedCount, handleSelectAll, handleDeselectAll } = useSectionSelection({
+		sectionIds,
+		selectedIdSet: selectedEntryIdSet,
+		onToggleSelection: onToggleEntrySelection,
+	})
 
 	return (
 		<BoardCollapsibleSection
+			contextMenuContent={
+				onToggleEntrySelection ? (
+					<BoardSectionContextMenu
+						onCollapse={() => onOpenChange(false)}
+						onCollapseAll={onCollapseAll}
+						onDeselectAll={handleDeselectAll}
+						onExpand={() => onOpenChange(true)}
+						onExpandAll={onExpandAll}
+						onSelectAll={handleSelectAll}
+						open={open}
+						selectedCount={selectedCount}
+					/>
+				) : undefined
+			}
 			count={items.length}
 			getItemId={(_child, index) => items[index]?.id}
 			icon={<LifecycleModeIcon mode={mode} />}
 			label={label}
-			onOpenChange={setOpen}
+			onOpenChange={onOpenChange}
 			open={open}
 			selectedIdSet={selectedEntryIdSet}
 			trailing={
