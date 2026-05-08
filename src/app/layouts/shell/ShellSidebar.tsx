@@ -18,7 +18,10 @@ import {
 	type MainNavItemViewModel,
 } from '@/app/layouts/shell/sidebar'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
-import type { SidebarItemVisibilityTarget, SidebarMainItemKey } from '@/features/settings/api/sidebarSettings'
+import type {
+	SidebarItemVisibilityTarget,
+	SidebarMainItemKey,
+} from '@/features/settings/api/sidebarSettings'
 import {
 	resolveRememberedPathForScope,
 	type ShellSidebarSettings,
@@ -41,6 +44,9 @@ import {
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
 import {
@@ -61,7 +67,6 @@ import {
 	sidebarDropdownItemClass,
 	sidebarFooterContainerClass,
 	sidebarHelperTextClass,
-	sidebarSecondaryTextClass,
 	sidebarSectionHeaderRowClass,
 	sidebarInlineBadgeClass,
 } from '@/shared/ui/patterns/sidebar-item'
@@ -70,7 +75,16 @@ import {
 	shellChromeIconSubtleClass,
 	shellChromeInlineGroupClass,
 } from '@/shared/ui/patterns/shell-chrome'
-import { CheckIcon, ChevronsUpDownIcon, ExternalLinkIcon, FolderIcon, PlusIcon, Trash2Icon } from 'lucide-react'
+import {
+	CheckIcon,
+	ChevronsUpDownIcon,
+	ExternalLinkIcon,
+	FolderIcon,
+	OrbitIcon,
+	PlusIcon,
+	Settings2Icon,
+	Trash2Icon,
+} from 'lucide-react'
 
 type ShellNavBadges = Partial<Record<ShellSectionKey, string>>
 
@@ -128,7 +142,7 @@ export function ShellSidebar({
 	const canArchiveOrDeleteActiveSpace = !activeSpace?.isDefault
 	const scopedProjectLinks = currentScope.type === 'all' ? [] : projects
 	const currentScopeLabel =
-		currentScope.type === 'all' ? '全部 Spaces' : (activeSpace?.name ?? '未选择 Space')
+		currentScope.type === 'all' ? '所有空间' : (activeSpace?.name ?? '未选择 Space')
 
 	const mainNavItems = SHELL_NAV_ITEMS.map((item) => ({
 		...item,
@@ -221,7 +235,19 @@ export function ShellSidebar({
 												size='lg'
 												tooltip={currentScopeLabel}
 											>
-												{activeSpaceVisual ? <SpaceIconBadge visual={activeSpaceVisual} /> : null}
+												{currentScope.type === 'all' ? (
+													<SpaceIconBadge
+														visual={{
+															label: '所有空间',
+															icon: OrbitIcon,
+															iconClassName: 'text-[#8b5cf6]',
+															iconBadgeClassName: 'bg-[#8b5cf6]',
+															swatchClassName: 'bg-[#8b5cf6]',
+														}}
+													/>
+												) : activeSpaceVisual ? (
+													<SpaceIconBadge visual={activeSpaceVisual} />
+												) : null}
 												<span className='min-w-0 flex-1 truncate text-left font-semibold'>
 													{currentScopeLabel}
 												</span>
@@ -235,7 +261,6 @@ export function ShellSidebar({
 											side={isMobile ? 'bottom' : 'right'}
 											sideOffset={6}
 										>
-											<DropdownMenuLabel>空间</DropdownMenuLabel>
 											<DropdownMenuGroup>
 												<DropdownMenuItem
 													className={sidebarDropdownItemClass}
@@ -249,7 +274,8 @@ export function ShellSidebar({
 														})
 													}}
 												>
-													<span className={sidebarSecondaryTextClass}>全部 Spaces</span>
+													<OrbitIcon className='size-3.5 shrink-0 text-[#8b5cf6]' />
+													<span>所有空间</span>
 													{currentScope.type === 'all' ? (
 														<CheckIcon
 															className={`ml-auto size-3.5 ${shellChromeIconSecondaryClass}`}
@@ -263,19 +289,19 @@ export function ShellSidebar({
 													const SpaceIcon = visual.icon
 
 													return (
-															<DropdownMenuItem
-																className={sidebarDropdownItemClass}
-																key={space.id}
-																onSelect={() => {
-																	void resolveRememberedPathForScope({
-																		scopeKey: `space:${space.id}`,
-																		spaces,
-																		defaultPath: `/space/${space.id}/inbox`,
-																	}).then((path) => {
-																		navigate(path)
-																	})
-																}}
-															>
+														<DropdownMenuItem
+															className={sidebarDropdownItemClass}
+															key={space.id}
+															onSelect={() => {
+																void resolveRememberedPathForScope({
+																	scopeKey: `space:${space.id}`,
+																	spaces,
+																	defaultPath: `/space/${space.id}/inbox`,
+																}).then((path) => {
+																	navigate(path)
+																})
+															}}
+														>
 															<SpaceIcon className={cn('shrink-0', visual.iconClassName)} />
 															<div className='flex min-w-0 items-center gap-2'>
 																<span className='truncate'>{space.name}</span>
@@ -302,76 +328,81 @@ export function ShellSidebar({
 													}}
 												>
 													<PlusIcon className={shellChromeIconSecondaryClass} />
-													<span>新建 Space</span>
+													<span>新建空间</span>
 												</DropdownMenuItem>
-												<DropdownMenuItem
-													className={sidebarDropdownItemClass}
-													disabled={!activeSpace}
-													onSelect={() => {
-														setEditorMode('edit')
-														setEditorOpen(true)
-													}}
-												>
-													<FolderIcon className={shellChromeIconSecondaryClass} />
-													<span>编辑当前 Space</span>
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													className={sidebarDropdownItemClass}
-													disabled={!activeSpace || activeSpace.isDefault}
-													onSelect={() => {
-														if (!activeSpace) {
-															return
-														}
-														void runSpaceMutation(async () => {
-															await onSetDefaultSpace(activeSpace.id)
-														})
-													}}
-												>
-													<CheckIcon className={shellChromeIconSecondaryClass} />
-													<span>设为默认 Space</span>
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													className={sidebarDropdownItemClass}
-													disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
-													onSelect={() => {
-														if (!activeSpace) {
-															return
-														}
-														if (!window.confirm(`确认归档「${activeSpace.name}」吗？`)) {
-															return
-														}
-														void runSpaceMutation(async () => {
-															await onArchiveSpace(activeSpace.id)
-															if (currentScope.type === 'space') {
-																navigate('/spaces/inbox')
-															}
-														})
-													}}
-												>
-													<ExternalLinkIcon className={shellChromeIconSecondaryClass} />
-													<span>归档当前 Space</span>
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													className={`${sidebarDropdownItemClass} text-destructive`}
-													disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
-													onSelect={() => {
-														if (!activeSpace) {
-															return
-														}
-														if (!window.confirm(`确认删除「${activeSpace.name}」吗？`)) {
-															return
-														}
-														void runSpaceMutation(async () => {
-															await onDeleteSpace(activeSpace.id)
-															if (currentScope.type === 'space') {
-																navigate('/spaces/inbox')
-															}
-														})
-													}}
-												>
-													<Trash2Icon className='shrink-0' />
-													<span>删除当前 Space</span>
-												</DropdownMenuItem>
+												<DropdownMenuSub>
+													<DropdownMenuSubTrigger className={sidebarDropdownItemClass}>
+														<Settings2Icon className={shellChromeIconSecondaryClass} />
+														<span>编辑空间</span>
+													</DropdownMenuSubTrigger>
+													<DropdownMenuSubContent>
+														<DropdownMenuItem
+															disabled={!activeSpace}
+															onSelect={() => {
+																setEditorMode('edit')
+																setEditorOpen(true)
+															}}
+														>
+															<FolderIcon className={shellChromeIconSecondaryClass} />
+															<span>编辑当前空间</span>
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															disabled={!activeSpace || activeSpace.isDefault}
+															onSelect={() => {
+																if (!activeSpace) {
+																	return
+																}
+																void runSpaceMutation(async () => {
+																	await onSetDefaultSpace(activeSpace.id)
+																})
+															}}
+														>
+															<CheckIcon className={shellChromeIconSecondaryClass} />
+															<span>设为默认</span>
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
+															onSelect={() => {
+																if (!activeSpace) {
+																	return
+																}
+																if (!window.confirm(`确认归档「${activeSpace.name}」吗？`)) {
+																	return
+																}
+																void runSpaceMutation(async () => {
+																	await onArchiveSpace(activeSpace.id)
+																	if (currentScope.type === 'space') {
+																		navigate('/spaces/inbox')
+																	}
+																})
+															}}
+														>
+															<ExternalLinkIcon className={shellChromeIconSecondaryClass} />
+															<span>归档</span>
+														</DropdownMenuItem>
+														<DropdownMenuItem
+															className='text-destructive'
+															disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
+															onSelect={() => {
+																if (!activeSpace) {
+																	return
+																}
+																if (!window.confirm(`确认删除「${activeSpace.name}」吗？`)) {
+																	return
+																}
+																void runSpaceMutation(async () => {
+																	await onDeleteSpace(activeSpace.id)
+																	if (currentScope.type === 'space') {
+																		navigate('/spaces/inbox')
+																	}
+																})
+															}}
+														>
+															<Trash2Icon className='shrink-0' />
+															<span>删除</span>
+														</DropdownMenuItem>
+													</DropdownMenuSubContent>
+												</DropdownMenuSub>
 											</DropdownMenuGroup>
 											{dropdownError ? (
 												<>

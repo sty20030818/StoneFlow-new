@@ -219,7 +219,7 @@ export function getSpaceLabel(spaceId: string | null | undefined, spaces: Space[
 
 export function getScopeLabel(scope: Scope, spaces: Space[] = []) {
 	if (scope.type === 'all') {
-		return '全部 Spaces'
+		return '所有空间'
 	}
 
 	return getSpaceLabel(scope.spaceId, spaces)
