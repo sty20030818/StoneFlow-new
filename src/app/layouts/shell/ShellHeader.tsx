@@ -9,6 +9,8 @@ import {
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
 import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
+import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
+import { NavBackForward } from '@/app/layouts/shell/header/NavBackForward'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
 import type { Scope, Space } from '@/shared/types'
@@ -32,7 +34,6 @@ import {
 	DropdownMenuContent,
 	DropdownMenuGroup,
 	DropdownMenuItem,
-	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
 import { Kbd } from '@/shared/ui/base/kbd'
@@ -44,34 +45,21 @@ import {
 	shellChromeIconActionClass,
 	shellChromeInlineGroupClass,
 	shellChromeNavCircleButtonClass,
-	shellChromeNavCircleButtonExpandedClass,
 	shellChromePrimaryActionClass,
-	shellChromeTruncateLabelClass,
 	shellChromeWindowControlsRowClass,
 	shellChromeWindowControlClass,
 } from '@/shared/ui/patterns/shell-chrome'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
-	ChevronLeftIcon,
 	ChevronDownIcon,
-	ChevronRightIcon,
-	FolderIcon,
 	FolderPlusIcon,
-	HistoryIcon,
-	InboxIcon,
-	ListTodoIcon,
 	MinusIcon,
 	PanelLeftCloseIcon,
 	PanelLeftOpenIcon,
 	SearchIcon,
-	Settings2Icon,
 	SquarePenIcon,
 	SquareIcon,
-	TargetIcon,
-	ArchiveIcon,
-	Trash2Icon,
 	XIcon,
-	type LucideIcon,
 } from 'lucide-react'
 
 type ShellHeaderProps = {
@@ -318,59 +306,17 @@ export function ShellHeader({
 								<SidebarToggleIcon className='size-3.5' />
 							</Button>
 
-							<DropdownMenu>
-								<DropdownMenuTrigger asChild>
-									<Button
-										aria-label='打开历史记录'
-										className={`${shellChromeNavCircleButtonClass} ${shellChromeNavCircleButtonExpandedClass}`}
-										size='icon-sm'
-										variant='ghost'
-									>
-										<HistoryIcon className='size-3.5' />
-									</Button>
-								</DropdownMenuTrigger>
-								<DropdownMenuContent align='start'>
-									<DropdownMenuLabel>最近浏览</DropdownMenuLabel>
-									<DropdownMenuGroup>
-										{routeHistoryEntries.length > 0 ? (
-											routeHistoryEntries.map((entry) => {
-												const EntryIcon = resolveHistoryIcon(entry.path)
-												return (
-													<DropdownMenuItem
-														key={entry.id}
-														onSelect={() => navigateToHistoryEntry(entry)}
-													>
-														<EntryIcon />
-														<span className={shellChromeTruncateLabelClass}>{entry.label}</span>
-													</DropdownMenuItem>
-												)
-											})
-										) : (
-											<DropdownMenuItem disabled>暂无历史记录</DropdownMenuItem>
-										)}
-									</DropdownMenuGroup>
-								</DropdownMenuContent>
-							</DropdownMenu>
-							<Button
-								aria-label='后退'
-								className={shellChromeNavCircleButtonClass}
-								disabled={!canGoBack}
-								onClick={goBack}
-								size='icon-sm'
-								variant='ghost'
-							>
-								<ChevronLeftIcon className='size-3.5' />
-							</Button>
-							<Button
-								aria-label='前进'
-								className={shellChromeNavCircleButtonClass}
-								disabled={!canGoForward}
-								onClick={goForward}
-								size='icon-sm'
-								variant='ghost'
-							>
-								<ChevronRightIcon className='size-3.5' />
-							</Button>
+							<HistoryDropdown
+								entries={routeHistoryEntries}
+								spaces={spaces}
+								onNavigate={navigateToHistoryEntry}
+							/>
+							<NavBackForward
+								canGoBack={canGoBack}
+								canGoForward={canGoForward}
+								onBack={goBack}
+								onForward={goForward}
+							/>
 						</div>
 					</div>
 				) : null}
@@ -597,35 +543,6 @@ export function ShellHeader({
 			</CommandDialog>
 		</>
 	)
-}
-
-// 根据历史条目的路径推断对应的语义 icon，与 Sidebar 主导航保持一致
-function resolveHistoryIcon(path: string): LucideIcon {
-	if (path.includes('/project/')) {
-		return FolderIcon
-	}
-
-	if (path.includes('/all-tasks')) {
-		return ListTodoIcon
-	}
-
-	if (path.includes('/views') || path.includes('/focus')) {
-		return TargetIcon
-	}
-
-	if (path.includes('/archive')) {
-		return ArchiveIcon
-	}
-
-	if (path.includes('/trash')) {
-		return Trash2Icon
-	}
-
-	if (path.includes('/settings')) {
-		return Settings2Icon
-	}
-
-	return InboxIcon
 }
 
 function isTextInputTarget(target: EventTarget | null) {

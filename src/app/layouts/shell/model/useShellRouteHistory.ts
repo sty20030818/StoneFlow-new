@@ -5,12 +5,26 @@ import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope, Space } from '@/shared/types'
+import {
+	ArchiveIcon,
+	BoxIcon,
+	FolderIcon,
+	InboxIcon,
+	Layers2Icon,
+	ListTodoIcon,
+	Settings2Icon,
+	SparklesIcon,
+	SquarePenIcon,
+	Trash2Icon,
+	type LucideIcon,
+} from 'lucide-react'
 
 export type ShellRouteHistoryEntry = {
-	id: string
 	path: string
 	label: string
-	description: string
+	spaceId: string | null
+	spaceName: string
+	entryIcon: LucideIcon
 }
 
 type ShellRouteHistoryState = {
@@ -27,6 +41,51 @@ type UseShellRouteHistoryOptions = {
 }
 
 const DEFAULT_MAX_HISTORY_ENTRIES = 8
+
+/** 路径段 → icon 映射，与 Sidebar 主导航保持一致 */
+const PATH_ICON_MAP: Record<string, LucideIcon> = {
+	'all-tasks': ListTodoIcon,
+	views: Layers2Icon,
+	projects: BoxIcon,
+	'no-project': SparklesIcon,
+	archive: ArchiveIcon,
+	trash: Trash2Icon,
+	settings: Settings2Icon,
+	'quick-capture': SquarePenIcon,
+}
+
+/** URL 路径段（kebab-case）→ ShellSectionKey（camelCase） */
+const SECTION_KEY_MAP: Record<string, ShellSectionKey> = {
+	inbox: 'inbox',
+	'all-tasks': 'allTasks',
+	views: 'views',
+	projects: 'projects',
+	project: 'project',
+	'no-project': 'noProject',
+	archive: 'archive',
+	trash: 'trash',
+	settings: 'settings',
+}
+
+function resolveSectionKey(segment: string | undefined): ShellSectionKey {
+	return SECTION_KEY_MAP[segment ?? ''] ?? 'inbox'
+}
+
+/** 从路径中提取语义 icon：优先匹配路径段，再处理 project 详情页 */
+function resolveEntryIcon(path: string): LucideIcon {
+	const segments = path.split(/[?#]/)[0]?.split('/').filter(Boolean) ?? []
+	const last = segments[segments.length - 1] ?? ''
+
+	if (PATH_ICON_MAP[last]) {
+		return PATH_ICON_MAP[last]
+	}
+
+	if (segments.includes('project')) {
+		return FolderIcon
+	}
+
+	return InboxIcon
+}
 
 /**
  * 收集当前应用会话内访问过的 Shell 路由，供 Header 的历史下拉使用。
@@ -111,20 +170,16 @@ export function buildShellRouteHistoryEntry(
 	const parts = compact(pathname.split('/'))
 
 	if (parts[0] === 'quick-capture') {
-		return createHistoryEntry(path, 'Quick Capture', '快速捕获')
+		return createHistoryEntry(path, '快速捕获', null, '所有空间')
 	}
 
 	if (parts[0] === 'spaces') {
-		const section = parts[1]
-		return createHistoryEntry(
-			path,
-			getSectionLabel((section ?? 'inbox') as ShellSectionKey),
-			'全部 Spaces',
-		)
+		const section = resolveSectionKey(parts[1])
+		return createHistoryEntry(path, getSectionLabel(section), null, '所有空间')
 	}
 
 	if (parts[0] !== 'space') {
-		return createHistoryEntry(path, 'Workspace', path)
+		return createHistoryEntry(path, '工作区', null, '所有空间')
 	}
 
 	const spaceId =
@@ -135,15 +190,10 @@ export function buildShellRouteHistoryEntry(
 	if (section === 'project') {
 		const projectId = parts[3]
 		const projectLabel = projects.find((project) => project.id === projectId)?.label
-
-		return createHistoryEntry(path, projectLabel ?? 'Projects', spaceLabel)
+		return createHistoryEntry(path, projectLabel ?? '项目', spaceId, spaceLabel)
 	}
 
-	return createHistoryEntry(
-		path,
-		getSectionLabel((section ?? 'inbox') as ShellSectionKey),
-		spaceLabel,
-	)
+	return createHistoryEntry(path, getSectionLabel(resolveSectionKey(section)), spaceId, spaceLabel)
 }
 
 function reduceRouteHistory(
@@ -201,12 +251,8 @@ function replaceEntry(
 function createHistoryEntry(
 	path: string,
 	label: string,
-	description: string,
+	spaceId: string | null,
+	spaceName: string,
 ): ShellRouteHistoryEntry {
-	return {
-		id: path,
-		path,
-		label,
-		description,
-	}
+	return { path, label, spaceId, spaceName, entryIcon: resolveEntryIcon(path) }
 }
