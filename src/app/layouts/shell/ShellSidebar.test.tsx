@@ -31,7 +31,7 @@ describe('ShellSidebar', () => {
 		})
 
 		expect(screen.getByRole('link', { name: '收件箱' })).toBeInTheDocument()
-		expect(screen.queryByRole('link', { name: '全部任务' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('link', { name: '所有任务' })).not.toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '项目总览' })).toBeInTheDocument()
 		const archiveLink = screen.getByRole('link', { name: '归档' })

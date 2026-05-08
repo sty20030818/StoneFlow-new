@@ -11,7 +11,7 @@ import {
 } from '@/features/lifecycle/model/useLifecycleStore'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
-import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
+import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
@@ -46,23 +46,35 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	const [entityFilter, setEntityFilter] = useState<LifecycleFilter>('all')
 
 	const slice = mode === 'archive' ? archiveEntries : trashEntries
-	const { selectedTaskIdSet: selectedEntryIdSet, selectedCount, toggleTaskSelection: toggleEntrySelection, clearTaskSelection } =
-		useTaskSelection(slice.items.map((entry) => entry.id))
+	const {
+		selectedTaskIdSet: selectedEntryIdSet,
+		selectedCount,
+		toggleTaskSelection: toggleEntrySelection,
+		clearTaskSelection,
+	} = useTaskSelection(slice.items.map((entry) => entry.id))
+	const showSpacePill = scope.type === 'all'
+	const scopeItems = showSpacePill
+		? slice.items
+		: slice.items.filter((entry) => entry.entityType !== 'space')
 	const lifecyclePills = [
-		{ key: 'all', label: `全部 ${slice.items.length}` },
-		{
-			key: 'space',
-			label: `Spaces ${slice.items.filter((entry) => entry.entityType === 'space').length}`,
-		},
+		{ key: 'all', label: `${mode === 'archive' ? '所有归档' : '所有删除'} ${scopeItems.length}` },
+		...(showSpacePill
+			? [
+					{
+						key: 'space' as const,
+						label: `空间 ${slice.items.filter((entry) => entry.entityType === 'space').length}`,
+					},
+				]
+			: []),
 		{
 			key: 'project',
-			label: `Projects ${slice.items.filter((entry) => entry.entityType === 'project').length}`,
+			label: `项目 ${scopeItems.filter((entry) => entry.entityType === 'project').length}`,
 		},
 		{
 			key: 'task',
-			label: `Tasks ${slice.items.filter((entry) => entry.entityType === 'task').length}`,
+			label: `任务 ${scopeItems.filter((entry) => entry.entityType === 'task').length}`,
 		},
-	] as const
+	]
 
 	useEffect(() => {
 		if (mode === 'archive') {
@@ -90,8 +102,8 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	}
 
 	const sections = useMemo(
-		() => buildLifecycleSections(slice.items, entityFilter, mode),
-		[entityFilter, mode, slice.items],
+		() => buildLifecycleSections(slice.items, entityFilter, mode, scope),
+		[entityFilter, mode, slice.items, scope],
 	)
 
 	return (
@@ -142,7 +154,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 			toolbarPills={lifecyclePills.map((pill) => ({
 				label: pill.label,
 				active: entityFilter === pill.key,
-				onClick: () => setEntityFilter(pill.key),
+				onClick: () => setEntityFilter(pill.key as LifecycleFilter),
 			}))}
 		/>
 	)
@@ -167,8 +179,15 @@ function buildLifecycleSections(
 	entries: LifecycleEntry[],
 	filter: LifecycleFilter,
 	mode: LifecycleMode,
+	scope: Scope,
 ) {
+	const showSpace = scope.type === 'all'
+	const filteredEntries = showSpace
+		? entries
+		: entries.filter((entry) => entry.entityType !== 'space')
+
 	if (filter === 'space') {
+		if (!showSpace) return []
 		return [
 			{
 				key: 'space',
@@ -183,7 +202,7 @@ function buildLifecycleSections(
 			{
 				key: 'project',
 				label: mode === 'archive' ? '已归档的项目' : '已删除的项目',
-				items: entries.filter((entry) => entry.entityType === 'project'),
+				items: filteredEntries.filter((entry) => entry.entityType === 'project'),
 			},
 		]
 	}
@@ -193,26 +212,28 @@ function buildLifecycleSections(
 			{
 				key: 'task',
 				label: mode === 'archive' ? '已归档的任务' : '已删除的任务',
-				items: entries.filter((entry) => entry.entityType === 'task'),
+				items: filteredEntries.filter((entry) => entry.entityType === 'task'),
 			},
 		]
 	}
 
-	return [
-		{
+	const sections = []
+	if (showSpace) {
+		sections.push({
 			key: 'space',
 			label: mode === 'archive' ? '已归档的空间' : '已删除的空间',
 			items: entries.filter((entry) => entry.entityType === 'space'),
-		},
-		{
-			key: 'project',
-			label: mode === 'archive' ? '已归档的项目' : '已删除的项目',
-			items: entries.filter((entry) => entry.entityType === 'project'),
-		},
-		{
-			key: 'task',
-			label: mode === 'archive' ? '已归档的任务' : '已删除的任务',
-			items: entries.filter((entry) => entry.entityType === 'task'),
-		},
-	]
+		})
+	}
+	sections.push({
+		key: 'project',
+		label: mode === 'archive' ? '已归档的项目' : '已删除的项目',
+		items: filteredEntries.filter((entry) => entry.entityType === 'project'),
+	})
+	sections.push({
+		key: 'task',
+		label: mode === 'archive' ? '已归档的任务' : '已删除的任务',
+		items: filteredEntries.filter((entry) => entry.entityType === 'task'),
+	})
+	return sections
 }

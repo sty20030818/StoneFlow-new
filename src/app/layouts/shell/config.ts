@@ -70,7 +70,7 @@ export const SHELL_NAV_ITEMS: ShellNavItem<ShellMainNavKey>[] = [
 	{
 		key: 'allTasks',
 		section: 'allTasks',
-		label: '全部任务',
+		label: '所有任务',
 		icon: ListTodoIcon,
 		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'all-tasks', fallbackSpaceId),
 	},
@@ -164,7 +164,7 @@ export function getSectionLabel(section: ShellSectionKey) {
 		case 'inbox':
 			return '收件箱'
 		case 'allTasks':
-			return '全部任务'
+			return '所有任务'
 		case 'views':
 			return '视图'
 		case 'projects':

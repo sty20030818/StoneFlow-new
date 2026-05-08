@@ -22,8 +22,8 @@ export function useSidebarNavBadges(scope: Scope): NavBadges {
 					listTasks({ scope, viewKey: 'active', placement: { kind: 'all' } }),
 					listTasks({ scope, viewKey: 'active', placement: { kind: 'inbox' } }),
 					listTasks({ scope, viewKey: 'active', placement: { kind: 'noProject' } }),
-					listLifecycleEntries({ mode: 'archive', scope, entityFilter: 'task' }),
-					listLifecycleEntries({ mode: 'trash', scope, entityFilter: 'task' }),
+					listLifecycleEntries({ mode: 'archive', scope }),
+					listLifecycleEntries({ mode: 'trash', scope }),
 					listSidebarProjects(scope),
 				])
 

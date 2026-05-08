@@ -36,7 +36,7 @@ export function ProjectOverviewPage() {
 	const archiveProject = useProjectStore((state) => state.archiveProject)
 	const deleteProject = useProjectStore((state) => state.deleteProject)
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
-	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('active_projects')
+	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('all_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
 	const scopeKey = scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
 	const { selectedTaskIdSet: selectedProjectIds, selectedCount, toggleTaskSelection: toggleProjectSelection, clearTaskSelection } =
@@ -136,11 +136,18 @@ export function ProjectOverviewPage() {
 				void loadOverview(scope, viewKey)
 			}}
 			sceneVariant='project-overview'
-			toolbarPills={visibleProjectViews.map((view) => ({
-				active: (view.key ?? view.id) === viewKey,
-				label: view.name,
-				onClick: () => setViewKey((view.key ?? view.id) as ProjectOverviewViewKey),
-			}))}
+			toolbarPills={[
+				{
+					active: viewKey === 'all_projects',
+					label: '所有项目',
+					onClick: () => setViewKey('all_projects'),
+				},
+				...visibleProjectViews.map((view) => ({
+					active: (view.key ?? view.id) === viewKey,
+					label: view.name,
+					onClick: () => setViewKey((view.key ?? view.id) as ProjectOverviewViewKey),
+				})),
+			]}
 		/>
 	)
 }

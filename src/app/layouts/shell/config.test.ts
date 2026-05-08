@@ -36,7 +36,7 @@ describe('shell config helpers', () => {
 
 	it('为已知分区和空间返回标签', () => {
 		expect(getSectionLabel('inbox')).toBe('收件箱')
-		expect(getSectionLabel('allTasks')).toBe('全部任务')
+		expect(getSectionLabel('allTasks')).toBe('所有任务')
 		expect(getSectionLabel('views')).toBe('视图')
 		expect(getSectionLabel('projects')).toBe('项目总览')
 		expect(getSectionLabel('archive')).toBe('归档')

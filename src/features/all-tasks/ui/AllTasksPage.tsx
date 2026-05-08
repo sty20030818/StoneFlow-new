@@ -4,10 +4,7 @@ import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
-import {
-	selectProjectOptions,
-	useProjectStore,
-} from '@/features/project/model/useProjectStore'
+import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { getTaskPlacement } from '@/features/task/model/taskPlacement'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
@@ -166,7 +163,7 @@ function AllTasksBreadcrumb() {
 				<BreadcrumbItem>
 					<BreadcrumbPage className={breadcrumbLeadClass}>
 						<ListTodoIcon aria-hidden className={breadcrumbLeadIconClass} />
-						全部任务
+						所有任务
 					</BreadcrumbPage>
 				</BreadcrumbItem>
 			</BreadcrumbList>

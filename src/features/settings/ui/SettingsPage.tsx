@@ -57,7 +57,7 @@ const MAIN_ITEM_OPTIONS: Array<{
 	description: string
 }> = [
 	{ key: 'inbox', label: 'Inbox', description: '保留任务收集入口，支持快速回到待整理列表。' },
-	{ key: 'allTasks', label: 'All Tasks', description: '统一查看当前范围内全部任务。' },
+	{ key: 'allTasks', label: 'All Tasks', description: '统一查看当前范围内所有任务。' },
 	{ key: 'views', label: 'Views', description: '展示视图入口，承接列表和看板等任务视图。' },
 	{
 		key: 'projectOverview',
@@ -308,7 +308,9 @@ export function SettingsPage() {
 										description='控制项目列表是否显示任务数量徽标。'
 										disabled={pendingSections.projectSection}
 										label='显示数量'
-										onChange={(nextChecked) => handleProjectSectionChange('showCounts', nextChecked)}
+										onChange={(nextChecked) =>
+											handleProjectSectionChange('showCounts', nextChecked)
+										}
 									/>
 								</div>
 								{sectionErrors.projectSection ? (
@@ -413,7 +415,8 @@ export function SettingsPage() {
 									</Select>
 								</label>
 								<p className={formFieldHintClass}>
-									当前默认值：{spaces.find((space) => space.id === defaultSpaceId)?.name ?? '未设置'}
+									当前默认值：
+									{spaces.find((space) => space.id === defaultSpaceId)?.name ?? '未设置'}
 								</p>
 							</div>
 						)}

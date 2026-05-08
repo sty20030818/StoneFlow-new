@@ -106,11 +106,7 @@ export function NoProjectPage() {
 			bulkBar={
 				<BulkActionBar
 					action={
-						<Button
-							className={BULK_ACTION_BUTTON_CLASS}
-							size='sm'
-							variant='outline'
-						>
+						<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
 							<CommandIcon className='size-3.5' />
 							批量操作
 						</Button>
@@ -136,7 +132,7 @@ export function NoProjectPage() {
 			}}
 			sceneVariant='no-project'
 			toolbarPills={NO_PROJECT_FILTERS.map((filter) => ({
-				label: filter === 'all' ? '全部' : formatTaskStatusLabel(filter),
+				label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
 				active: taskFilter === filter,
 				onClick: () => setTaskFilter(filter),
 			}))}
