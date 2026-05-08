@@ -59,7 +59,7 @@ type MainCardIconAction = {
 }
 
 function MainCardRoot({ children, className }: MainCardRootProps) {
-	return <div className={cn('flex min-h-full min-w-0 flex-1 flex-col', className)}>{children}</div>
+	return <div className={cn('flex h-full min-w-0 flex-1 flex-col', className)}>{children}</div>
 }
 
 function MainCardHeader({ title, breadcrumb, action, className }: MainCardHeaderProps) {
@@ -129,7 +129,7 @@ function MainCardToolbar({
 
 function MainCardBody({ children, className }: MainCardShellSlotProps) {
 	return (
-		<div className={cn('flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2', className)}>
+		<div className={cn('no-scrollbar flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto p-2', className)}>
 			{children}
 		</div>
 	)

@@ -37,13 +37,15 @@ function EntitySceneToolbar({
 	}
 
 	return (
-		<MainCard.Toolbar
-			filterAction={toolbarFilterAction}
-			left={toolbarLeft}
-			onRefresh={onRefresh}
-			pills={toolbarPills}
-			refreshDisabled={refreshDisabled}
-		/>
+		<div className='px-2 pt-2'>
+			<MainCard.Toolbar
+				filterAction={toolbarFilterAction}
+				left={toolbarLeft}
+				onRefresh={onRefresh}
+				pills={toolbarPills}
+				refreshDisabled={refreshDisabled}
+			/>
+		</div>
 	)
 }
 
@@ -147,15 +149,15 @@ function EntitySceneComponent({
 				headerClassName={headerClassName}
 			/>
 
-			<MainCard.Body>
-				<EntitySceneToolbar
-					onRefresh={onRefresh}
-					refreshDisabled={refreshDisabled}
-					toolbarFilterAction={toolbarFilterAction}
-					toolbarLeft={toolbarLeft}
-					toolbarPills={toolbarPills}
-				/>
+			<EntitySceneToolbar
+				onRefresh={onRefresh}
+				refreshDisabled={refreshDisabled}
+				toolbarFilterAction={toolbarFilterAction}
+				toolbarLeft={toolbarLeft}
+				toolbarPills={toolbarPills}
+			/>
 
+			<MainCard.Body>
 				<EntitySceneBody className={bodyClassName}>
 					<EntitySceneNotices notices={notices} />
 					<EntitySceneBoardHeader boardHeader={boardHeader} />

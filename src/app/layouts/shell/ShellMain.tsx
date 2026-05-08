@@ -136,13 +136,8 @@ export function ShellMain({
 								'group-data-[sidebar-layout=mobile]/sidebar-wrapper:shadow-(--sf-shadow-panel)',
 							)}
 						>
-							<div className='no-scrollbar min-w-0 flex-1 overflow-y-auto'>
-								{/*
-								 * 关键：这里必须是纵向 flex，才能让子页面（例如 MainCardLayout）用 flex-1
-								 * 吃掉滚动视口的剩余高度；否则短内容时主卡高度会“贴着内容走”，
-								 * 滚动区域底部会出现一大块空白（看起来像 body 空了一样）。
-								 */}
-								<div className='flex min-h-full min-w-0 flex-1 flex-col'>{children}</div>
+							<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+								{children}
 							</div>
 
 							<ShellDrawer

@@ -42,15 +42,25 @@ export const BOARD_GROUP_CLASS = 'flex flex-col gap-1'
 export const BOARD_ROWS_CLASS = 'flex flex-col gap-1'
 export const BOARD_COLLAPSIBLE_CLASS =
 	'flex flex-col gap-1 [&[data-state=open]_[data-chevron]]:rotate-90'
-export const BOARD_GROUP_HEADER_CLASS = ROW_SHELL_SECTION_HEADER_CLASS
+/**
+ * 分组 header 保持原来的 sticky 几何关系。
+ * row 的遮挡由 board 顶部独立 mask 负责，避免把补底区域绑定到某个 header 上。
+ */
+export const BOARD_GROUP_HEADER_CLASS =
+	`sticky top-0 z-10 ${ROW_SHELL_SECTION_HEADER_CLASS}`
+export const BOARD_TOP_MASK_CLASS =
+	'pointer-events-none sticky top-0 z-5 -mb-3 h-3 shrink-0 bg-card'
 
 /**
  * 页级 board 主容器，只负责纵向堆叠分组。
  */
 export function BoardRoot({ children, className, ...props }: ComponentProps<'div'>) {
 	return (
-		<div {...props} className={cn(BOARD_STACK_CLASS, className)}>
-			{children}
+		<div className='relative isolate flex min-h-0 flex-1 flex-col'>
+			<div aria-hidden className={BOARD_TOP_MASK_CLASS} />
+			<div {...props} className={cn(BOARD_STACK_CLASS, className)}>
+				{children}
+			</div>
 		</div>
 	)
 }

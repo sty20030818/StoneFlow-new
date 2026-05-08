@@ -8,10 +8,10 @@ import {
 import {
 	BOARD_COLLAPSIBLE_CLASS,
 	BOARD_GROUP_HEADER_CLASS,
-	BOARD_STACK_CLASS,
 	BoardChevron,
 	BoardGroup,
 	BoardGroupHeader,
+	BoardRoot,
 	BoardRows,
 } from '@/shared/ui/board'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
@@ -19,7 +19,6 @@ import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { TaskRowAdapter, type TaskRowAdapterProps } from '@/features/task/ui/TaskRowAdapter'
 import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
-import { cn } from '@/shared/lib/utils'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
@@ -174,12 +173,7 @@ export function TaskBoard({
 	}
 
 	return customSections && customSections.length > 0 ? (
-		<div
-			className={cn(
-				BOARD_STACK_CLASS,
-				sectionVariant === 'project' ? 'gap-2' : 'gap-3',
-			)}
-		>
+		<BoardRoot className={sectionVariant === 'project' ? 'gap-2' : 'gap-3'}>
 			{customSections.map((section) => (
 				<TaskCustomSection
 					createProjectId={createProjectId}
@@ -189,14 +183,9 @@ export function TaskBoard({
 					tasks={section.tasks}
 				/>
 			))}
-		</div>
+		</BoardRoot>
 	) : (
-		<div
-			className={cn(
-				BOARD_STACK_CLASS,
-				sectionVariant === 'project' ? 'gap-1' : 'gap-3',
-			)}
-		>
+		<BoardRoot className={sectionVariant === 'project' ? 'gap-1' : 'gap-3'}>
 			{statusOrder
 				.filter((status) => !hideEmptySections || groupedTasks[status].length > 0)
 				.map((status) => (
@@ -211,7 +200,7 @@ export function TaskBoard({
 						tasks={groupedTasks[status]}
 					/>
 				))}
-		</div>
+		</BoardRoot>
 	)
 }
 
