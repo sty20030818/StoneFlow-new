@@ -2,10 +2,8 @@ import { invoke } from '@tauri-apps/api/core'
 
 import {
 	getSidebarSettings,
-	updateSidebarDesktopPreference,
 	updateSidebarItemVisibility,
 	updateSidebarProjectSection,
-	updateSidebarWidth,
 } from '@/features/settings/api/sidebarSettings'
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -31,25 +29,21 @@ describe('sidebarSettings api', () => {
 				projectSection: {
 					visible: true,
 					order: 500,
-					collapsed: false,
 					showCounts: true,
 					showCompleted: true,
-					maxVisible: null,
 				},
 				footerItems: {
 					archive: { visible: true, order: 900 },
 					trash: { visible: true, order: 1000 },
 				},
-				width: 256,
-				desktopPreference: 'expanded',
 			},
 		})
 
 		const result = await getSidebarSettings()
 
 		expect(mockedInvoke).toHaveBeenCalledWith('get_sidebar_settings')
-		expect(result.width).toBe(256)
 		expect(result.mainItems.projectOverview.visible).toBe(true)
+		expect(result.projectSection.showCounts).toBe(true)
 	})
 
 	it('更新可见性时发送 typed target', async () => {
@@ -64,17 +58,13 @@ describe('sidebarSettings api', () => {
 				projectSection: {
 					visible: true,
 					order: 500,
-					collapsed: false,
 					showCounts: true,
 					showCompleted: true,
-					maxVisible: null,
 				},
 				footerItems: {
 					archive: { visible: true, order: 900 },
 					trash: { visible: true, order: 1000 },
 				},
-				width: 256,
-				desktopPreference: 'expanded',
 			},
 		})
 
@@ -88,7 +78,7 @@ describe('sidebarSettings api', () => {
 		})
 	})
 
-	it('更新宽度、project section 和桌面偏好时使用 camelCase 输入', async () => {
+	it('更新 project section 时使用 camelCase 输入', async () => {
 		mockedInvoke.mockResolvedValue({
 			settings: {
 				mainItems: {
@@ -100,48 +90,32 @@ describe('sidebarSettings api', () => {
 				projectSection: {
 					visible: true,
 					order: 520,
-					collapsed: true,
 					showCounts: false,
 					showCompleted: false,
-					maxVisible: 5,
 				},
 				footerItems: {
 					archive: { visible: true, order: 900 },
 					trash: { visible: true, order: 1000 },
 				},
-				width: 320,
-				desktopPreference: 'collapsed',
 			},
 		})
 
-		await updateSidebarWidth(320)
 		await updateSidebarProjectSection({
 			visible: true,
 			order: 520,
-			collapsed: true,
 			showCounts: false,
 			showCompleted: false,
-			maxVisible: 5,
 		})
-		await updateSidebarDesktopPreference('collapsed')
 
-		expect(mockedInvoke).toHaveBeenNthCalledWith(1, 'update_sidebar_width', {
-			input: { width: 320 },
-		})
-		expect(mockedInvoke).toHaveBeenNthCalledWith(2, 'update_sidebar_project_section', {
+		expect(mockedInvoke).toHaveBeenNthCalledWith(1, 'update_sidebar_project_section', {
 			input: {
 				config: {
 					visible: true,
 					order: 520,
-					collapsed: true,
 					showCounts: false,
 					showCompleted: false,
-					maxVisible: 5,
 				},
 			},
-		})
-		expect(mockedInvoke).toHaveBeenNthCalledWith(3, 'update_sidebar_desktop_preference', {
-			input: { desktopPreference: 'collapsed' },
 		})
 	})
 })

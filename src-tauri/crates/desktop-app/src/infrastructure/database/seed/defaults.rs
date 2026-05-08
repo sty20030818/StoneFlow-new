@@ -185,7 +185,7 @@ pub fn default_views() -> Vec<DefaultViewSeed> {
 pub fn default_settings() -> Vec<DefaultSettingSeed> {
     vec![
         DefaultSettingSeed {
-            key: "app.sidebar",
+            key: "app.sidebar.preferences",
             value: json!({
                 "mainItems": {
                     "inbox": { "visible": true, "order": 100 },
@@ -196,17 +196,13 @@ pub fn default_settings() -> Vec<DefaultSettingSeed> {
                 "projectSection": {
                     "visible": true,
                     "order": 500,
-                    "collapsed": false,
                     "showCounts": true,
-                    "showCompleted": true,
-                    "maxVisible": null
+                    "showCompleted": true
                 },
                 "footerItems": {
                     "archive": { "visible": true, "order": 900 },
                     "trash": { "visible": true, "order": 1000 }
-                },
-                "width": 256,
-                "desktopPreference": "expanded"
+                }
             }),
         },
         DefaultSettingSeed {
@@ -231,11 +227,10 @@ pub fn default_settings() -> Vec<DefaultSettingSeed> {
             }),
         },
         DefaultSettingSeed {
-            key: "app.ui",
+            key: "app.ui.preferences",
             value: json!({
                 "theme": "system",
-                "density": "comfortable",
-                "taskDrawerWidth": 420
+                "density": "comfortable"
             }),
         },
     ]

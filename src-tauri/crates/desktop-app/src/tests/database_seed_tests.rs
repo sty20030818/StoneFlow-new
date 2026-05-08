@@ -78,13 +78,11 @@ async fn bootstrap_should_preserve_existing_setting_value_on_rebootstrap() {
         .connection()
         .execute(Statement::from_sql_and_values(
             DatabaseBackend::Sqlite,
-            "UPDATE settings SET value = ?, updated_at = ? WHERE key = 'app.ui'",
+            "UPDATE settings SET value = ?, updated_at = ? WHERE key = 'app.ui.preferences'",
             [
                 serde_json::json!({
                     "theme": "dark",
-                    "density": "compact",
-                    "sidebarWidth": 320,
-                    "taskDrawerWidth": 520
+                    "density": "compact"
                 })
                 .to_string()
                 .into(),
@@ -99,13 +97,13 @@ async fn bootstrap_should_preserve_existing_setting_value_on_rebootstrap() {
         .expect("second bootstrap should succeed");
     let app_ui_value = scalar_string(
         second.connection(),
-        "SELECT value AS value FROM settings WHERE key = 'app.ui'",
+        "SELECT value AS value FROM settings WHERE key = 'app.ui.preferences'",
     )
     .await
-    .expect("app.ui query should succeed");
+    .expect("app.ui.preferences query should succeed");
 
     assert!(app_ui_value.contains("\"theme\":\"dark\""));
-    assert!(app_ui_value.contains("\"sidebarWidth\":320"));
+    assert!(app_ui_value.contains("\"density\":\"compact\""));
 }
 
 #[tokio::test]

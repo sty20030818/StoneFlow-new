@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
 import { resolveShellSection } from './shell/config'
+import { rememberShellRoute } from './shell/model/shellDevicePreferences'
 import {
 	selectActiveSection,
 	selectCurrentSpaceId,
@@ -16,7 +17,7 @@ import { useWorkspaceSync } from '@/features/workspace/model/useWorkspaceSync'
 
 export function SpaceLayout() {
 	const { scope } = useScopeRoute()
-	const { pathname } = useLocation()
+	const { pathname, search, hash } = useLocation()
 	const spaces = useSpaceStore(selectSpaces)
 	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
 	const currentScopeType = useShellNavStore(selectCurrentScopeType)
@@ -59,6 +60,18 @@ export function SpaceLayout() {
 			})
 		})
 	}, [scope])
+
+	useEffect(() => {
+		void rememberShellRoute(scope, `${pathname}${search}${hash}`).catch((error) => {
+			console.error('shell route restore save failed', {
+				scope,
+				pathname,
+				search,
+				hash,
+				error,
+			})
+		})
+	}, [hash, pathname, scope, search])
 
 	return (
 		<ShellLayout

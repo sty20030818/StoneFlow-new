@@ -18,11 +18,11 @@ import {
 	type MainNavItemViewModel,
 } from '@/app/layouts/shell/sidebar'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
-import type {
-	SidebarItemVisibilityTarget,
-	SidebarMainItemKey,
-	SidebarSettings,
-} from '@/features/settings/api/sidebarSettings'
+import type { SidebarItemVisibilityTarget, SidebarMainItemKey } from '@/features/settings/api/sidebarSettings'
+import {
+	resolveRememberedPathForScope,
+	type ShellSidebarSettings,
+} from '@/app/layouts/shell/model/shellDevicePreferences'
 import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
 import { SpaceEditorDialog } from '@/features/space/ui/SpaceEditorDialog'
 import type { Scope, Space } from '@/shared/types'
@@ -79,7 +79,7 @@ type ShellSidebarProps = {
 	currentSpaceId: string | null
 	spaces: Space[]
 	projects: ShellProjectLink[]
-	settings: SidebarSettings
+	settings: ShellSidebarSettings
 	navBadges?: ShellNavBadges
 	onCreateSpace: (input: { name: string; iconKey: string; colorKey: string }) => Promise<Space>
 	onUpdateSpace: (input: {
@@ -239,7 +239,15 @@ export function ShellSidebar({
 											<DropdownMenuGroup>
 												<DropdownMenuItem
 													className={sidebarDropdownItemClass}
-													onSelect={() => navigate('/spaces/inbox')}
+													onSelect={() => {
+														void resolveRememberedPathForScope({
+															scopeKey: 'all',
+															spaces,
+															defaultPath: '/spaces/inbox',
+														}).then((path) => {
+															navigate(path)
+														})
+													}}
 												>
 													<span className={sidebarSecondaryTextClass}>全部 Spaces</span>
 													{currentScope.type === 'all' ? (
@@ -255,13 +263,19 @@ export function ShellSidebar({
 													const SpaceIcon = visual.icon
 
 													return (
-														<DropdownMenuItem
-															className={sidebarDropdownItemClass}
-															key={space.id}
-															onSelect={() => {
-																navigate(`/space/${space.id}/inbox`)
-															}}
-														>
+															<DropdownMenuItem
+																className={sidebarDropdownItemClass}
+																key={space.id}
+																onSelect={() => {
+																	void resolveRememberedPathForScope({
+																		scopeKey: `space:${space.id}`,
+																		spaces,
+																		defaultPath: `/space/${space.id}/inbox`,
+																	}).then((path) => {
+																		navigate(path)
+																	})
+																}}
+															>
 															<SpaceIcon className={cn('shrink-0', visual.iconClassName)} />
 															<div className='flex min-w-0 items-center gap-2'>
 																<span className='truncate'>{space.name}</span>

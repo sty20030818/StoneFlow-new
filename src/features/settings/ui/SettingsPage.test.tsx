@@ -2,15 +2,15 @@ import React from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
+import type { ShellSidebarSettings } from '@/app/layouts/shell/model/shellDevicePreferences'
 import { SettingsPage } from '@/features/settings/ui/SettingsPage'
-import type { SidebarSettings } from '@/features/settings/api/sidebarSettings'
 import type { Space } from '@/shared/types'
 
 const loadSidebarSettingsSpy = vi.fn<() => Promise<void>>()
 const setItemVisibilitySpy =
 	vi.fn<(target: { kind: 'main'; key: string }, visible: boolean) => Promise<void>>()
 const setProjectSectionConfigSpy =
-	vi.fn<(config: SidebarSettings['projectSection']) => Promise<void>>()
+	vi.fn<(config: ShellSidebarSettings['projectSection']) => Promise<void>>()
 const setSidebarWidthSpy = vi.fn<(width: number) => Promise<void>>()
 const loadSpacesSpy = vi.fn<() => Promise<void>>()
 const setDefaultSpaceSpy = vi.fn<(spaceId: string) => Promise<Space>>()
@@ -275,7 +275,7 @@ function createSpaceStoreState() {
 	}
 }
 
-function createSidebarSettings(): SidebarSettings {
+function createSidebarSettings(): ShellSidebarSettings {
 	return {
 		mainItems: {
 			inbox: { visible: true, order: 100 },

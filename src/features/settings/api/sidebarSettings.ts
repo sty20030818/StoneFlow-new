@@ -2,32 +2,27 @@ import { invoke } from '@tauri-apps/api/core'
 
 export type SidebarMainItemKey = 'inbox' | 'allTasks' | 'views' | 'projectOverview'
 export type SidebarFooterItemKey = 'archive' | 'trash'
-export type SidebarDesktopPreference = 'expanded' | 'collapsed'
 
 export type SidebarItemConfig = {
 	visible: boolean
 	order: number
 }
 
-export type SidebarProjectSectionConfig = {
+export type SidebarProjectSectionPreferenceConfig = {
 	visible: boolean
 	order: number
-	collapsed: boolean
 	showCounts: boolean
 	showCompleted: boolean
-	maxVisible: number | null
 }
 
-export type SidebarSettings = {
+export type SidebarPreferenceSettings = {
 	mainItems: Record<SidebarMainItemKey, SidebarItemConfig>
-	projectSection: SidebarProjectSectionConfig
+	projectSection: SidebarProjectSectionPreferenceConfig
 	footerItems: Record<SidebarFooterItemKey, SidebarItemConfig>
-	width: number
-	desktopPreference: SidebarDesktopPreference
 }
 
 type SidebarSettingsResponse = {
-	settings: SidebarSettings
+	settings: SidebarPreferenceSettings
 }
 
 export type SidebarItemVisibilityTarget =
@@ -41,7 +36,7 @@ export type SidebarItemVisibilityTarget =
 	  }
 
 /**
- * 读取当前 Shell 使用的 Sidebar 配置。
+ * 读取当前 Shell 使用的 Sidebar 可同步偏好。
  */
 export async function getSidebarSettings() {
 	const payload = await invoke<SidebarSettingsResponse>('get_sidebar_settings')
@@ -65,31 +60,11 @@ export async function updateSidebarItemVisibility(
 }
 
 /**
- * 更新桌面态 Sidebar 宽度。
+ * 更新可同步的 Projects 分区配置。
  */
-export async function updateSidebarWidth(width: number) {
-	const payload = await invoke<SidebarSettingsResponse>('update_sidebar_width', {
-		input: { width },
-	})
-	return payload.settings
-}
-
-/**
- * 更新 Projects 分区配置。
- */
-export async function updateSidebarProjectSection(config: SidebarProjectSectionConfig) {
+export async function updateSidebarProjectSection(config: SidebarProjectSectionPreferenceConfig) {
 	const payload = await invoke<SidebarSettingsResponse>('update_sidebar_project_section', {
 		input: { config },
-	})
-	return payload.settings
-}
-
-/**
- * 更新桌面态展开/收起偏好。
- */
-export async function updateSidebarDesktopPreference(desktopPreference: SidebarDesktopPreference) {
-	const payload = await invoke<SidebarSettingsResponse>('update_sidebar_desktop_preference', {
-		input: { desktopPreference },
 	})
 	return payload.settings
 }

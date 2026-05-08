@@ -7,10 +7,9 @@ use crate::{
     application::{
         activity::{ActivityService, GetEntityActivitiesInput},
         services::{
-            SettingsService, SidebarDesktopPreference, SidebarItemVisibilityTarget,
-            SidebarMainItemKey, SidebarProjectSectionConfig, UpdateSidebarDesktopPreferenceInput,
-            UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
-            UpdateSidebarWidthInput,
+            SettingsService, SidebarItemVisibilityTarget, SidebarMainItemKey,
+            SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
+            UpdateSidebarProjectSectionInput,
         },
     },
     infrastructure::{
@@ -33,36 +32,90 @@ async fn settings_service_should_read_sidebar_settings() {
         .await
         .expect("get sidebar settings should succeed");
 
-    assert_eq!(settings.width, 256);
     assert!(settings.main_items.inbox.visible);
-    assert_eq!(
-        settings.desktop_preference,
-        SidebarDesktopPreference::Expanded
-    );
+    assert!(settings.project_section.show_counts);
 }
 
 #[tokio::test]
-async fn settings_service_should_persist_clamped_sidebar_width() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage3-settings-width").expect("temporary dir");
+async fn settings_service_should_read_legacy_device_preferences() {
+    let temp_dir = TempDatabaseDir::new("stoneflow-stage3-settings-legacy-device")
+        .expect("temporary dir");
     let database = bootstrap_database(temp_dir.path())
         .await
         .expect("database bootstrap should succeed");
     let service = build_settings_service(&database);
 
-    let settings = service
-        .update_sidebar_width(UpdateSidebarWidthInput { width: 999 })
+    database
+        .connection()
+        .execute(Statement::from_sql_and_values(
+            DatabaseBackend::Sqlite,
+            "INSERT INTO settings (key, value, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            [
+                "app.sidebar".into(),
+                serde_json::json!({
+                    "mainItems": {
+                        "inbox": { "visible": true, "order": 100 },
+                        "allTasks": { "visible": true, "order": 200 },
+                        "views": { "visible": true, "order": 300 },
+                        "projectOverview": { "visible": true, "order": 400 }
+                    },
+                    "projectSection": {
+                        "visible": true,
+                        "order": 500,
+                        "collapsed": false,
+                        "showCounts": true,
+                        "showCompleted": true,
+                        "maxVisible": 6
+                    },
+                    "footerItems": {
+                        "archive": { "visible": true, "order": 900 },
+                        "trash": { "visible": true, "order": 1000 }
+                    },
+                    "width": 256,
+                    "desktopPreference": "expanded"
+                })
+                .to_string()
+                .into(),
+                "2026-04-29T00:00:00+00:00".into(),
+                "2026-04-29T00:00:00+00:00".into(),
+            ],
+        ))
         .await
-        .expect("update width should succeed");
+        .expect("legacy sidebar setting should be inserted");
+    database
+        .connection()
+        .execute(Statement::from_sql_and_values(
+            DatabaseBackend::Sqlite,
+            "INSERT INTO settings (key, value, created_at, updated_at) VALUES (?, ?, ?, ?)",
+            [
+                "app.ui".into(),
+                serde_json::json!({
+                    "theme": "system",
+                    "density": "comfortable",
+                    "taskDrawerWidth": 420
+                })
+                .to_string()
+                .into(),
+                "2026-04-29T00:00:00+00:00".into(),
+                "2026-04-29T00:00:00+00:00".into(),
+            ],
+        ))
+        .await
+        .expect("legacy ui setting should be inserted");
 
-    assert_eq!(settings.width, 330);
+    let device_preferences = service
+        .get_legacy_shell_device_preferences()
+        .await
+        .expect("get legacy device preferences should succeed");
 
-    let raw = scalar_string(
-        database.connection(),
-        "SELECT value AS value FROM settings WHERE key = 'app.sidebar'",
-    )
-    .await
-    .expect("raw sidebar setting query should succeed");
-    assert!(raw.contains("\"width\":330"));
+    assert_eq!(
+        device_preferences.sidebar.expect("sidebar should exist").width,
+        256
+    );
+    assert_eq!(
+        device_preferences.ui.expect("ui should exist").task_drawer_width,
+        420
+    );
 }
 
 #[tokio::test]
@@ -78,7 +131,7 @@ async fn settings_service_should_reject_hiding_last_visible_main_item() {
         .connection()
         .execute(Statement::from_sql_and_values(
             DatabaseBackend::Sqlite,
-            "UPDATE settings SET value = ? WHERE key = 'app.sidebar'",
+            "UPDATE settings SET value = ? WHERE key = 'app.sidebar.preferences'",
             [serde_json::json!({
                 "mainItems": {
                     "inbox": { "visible": true, "order": 100 },
@@ -89,17 +142,13 @@ async fn settings_service_should_reject_hiding_last_visible_main_item() {
                 "projectSection": {
                     "visible": true,
                     "order": 500,
-                    "collapsed": false,
                     "showCounts": true,
-                    "showCompleted": true,
-                    "maxVisible": null
+                    "showCompleted": true
                 },
                 "footerItems": {
                     "archive": { "visible": true, "order": 900 },
                     "trash": { "visible": true, "order": 1000 }
-                },
-                "width": 256,
-                "desktopPreference": "expanded"
+                }
             })
             .to_string()
             .into()],
@@ -143,7 +192,7 @@ async fn settings_service_should_record_settings_updated_activity_with_field_pat
     let timeline = activity_service
         .get_entity_activities(GetEntityActivitiesInput {
             entity_type: stoneflow_entity::common::ActivityEntityKind::Setting,
-            entity_id: "app.sidebar".to_owned(),
+            entity_id: "app.sidebar.preferences".to_owned(),
             limit: Some(10),
         })
         .await
@@ -151,7 +200,7 @@ async fn settings_service_should_record_settings_updated_activity_with_field_pat
 
     let latest = timeline.first().expect("should record one activity");
     assert_eq!(latest.action, "settings.updated");
-    assert_eq!(latest.entity_id, "app.sidebar");
+    assert_eq!(latest.entity_id, "app.sidebar.preferences");
     assert_eq!(latest.changes.len(), 1);
     assert_eq!(latest.changes[0].field, "mainItems.views.visible");
     assert_eq!(latest.changes[0].old_value, Some(serde_json::json!(true)));
@@ -169,32 +218,18 @@ async fn settings_service_should_update_project_section_and_desktop_preference()
 
     let settings = service
         .update_sidebar_project_section(UpdateSidebarProjectSectionInput {
-            config: SidebarProjectSectionConfig {
+            config: SidebarProjectSectionPreferenceConfig {
                 visible: true,
                 order: 520,
-                collapsed: true,
                 show_counts: false,
                 show_completed: false,
-                max_visible: Some(5),
             },
         })
         .await
         .expect("update project section should succeed");
 
-    assert!(settings.project_section.collapsed);
-    assert_eq!(settings.project_section.max_visible, Some(5));
-
-    let settings = service
-        .update_sidebar_desktop_preference(UpdateSidebarDesktopPreferenceInput {
-            desktop_preference: SidebarDesktopPreference::Collapsed,
-        })
-        .await
-        .expect("update desktop preference should succeed");
-
-    assert_eq!(
-        settings.desktop_preference,
-        SidebarDesktopPreference::Collapsed
-    );
+    assert!(!settings.project_section.show_counts);
+    assert!(!settings.project_section.show_completed);
 }
 
 fn build_settings_service(
@@ -205,19 +240,4 @@ fn build_settings_service(
         SettingsRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
-}
-
-async fn scalar_string(
-    connection: &sea_orm::DatabaseConnection,
-    sql: &str,
-) -> Result<String, sea_orm::DbErr> {
-    let row = connection
-        .query_one(Statement::from_string(
-            DatabaseBackend::Sqlite,
-            sql.to_owned(),
-        ))
-        .await?
-        .expect("scalar query should always return one row");
-
-    row.try_get("", "value")
 }

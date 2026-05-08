@@ -81,3 +81,13 @@ where
     model.insert(connection).await?;
     Ok(())
 }
+
+pub async fn get_setting_value<C>(connection: &C, key: &str) -> Result<Option<String>, sea_orm::DbErr>
+where
+    C: ConnectionTrait,
+{
+    setting::Entity::find_by_id(key.to_owned())
+        .one(connection)
+        .await
+        .map(|model| model.map(|item| item.value))
+}

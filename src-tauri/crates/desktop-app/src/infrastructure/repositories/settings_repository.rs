@@ -20,16 +20,23 @@ impl SettingsRepository {
         &self.db
     }
 
-    /// 读取原始 JSON 字符串。
-    pub async fn get_raw_setting(&self, key: &str) -> Result<String, crate::app::error::AppError> {
+    /// 按 key 查找原始 JSON 字符串；不存在时返回 None。
+    pub async fn find_raw_setting(
+        &self,
+        key: &str,
+    ) -> Result<Option<String>, crate::app::error::AppError> {
         let model = Setting::find_by_id(key.to_owned())
             .one(self.connection())
-            .await?
-            .ok_or_else(|| {
-                crate::app::error::AppError::not_found(format!("setting `{key}` 不存在"))
-            })?;
+            .await?;
 
-        Ok(model.value)
+        Ok(model.map(|item| item.value))
+    }
+
+    /// 读取原始 JSON 字符串。
+    pub async fn get_raw_setting(&self, key: &str) -> Result<String, crate::app::error::AppError> {
+        self.find_raw_setting(key).await?.ok_or_else(|| {
+            crate::app::error::AppError::not_found(format!("setting `{key}` 不存在"))
+        })
     }
 
     /// 读取并反序列化 JSON setting。
@@ -39,6 +46,21 @@ impl SettingsRepository {
     {
         let raw = self.get_raw_setting(key).await?;
         deserialize_setting(key, &raw)
+    }
+
+    /// 读取并反序列化 JSON setting；不存在时返回 None。
+    pub async fn find_json_setting<T>(
+        &self,
+        key: &str,
+    ) -> Result<Option<T>, crate::app::error::AppError>
+    where
+        T: DeserializeOwned,
+    {
+        let Some(raw) = self.find_raw_setting(key).await? else {
+            return Ok(None);
+        };
+
+        deserialize_setting(key, &raw).map(Some)
     }
 
     /// 直接在主连接上写回 JSON setting。

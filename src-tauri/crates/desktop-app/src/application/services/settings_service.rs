@@ -1,4 +1,4 @@
-//! Settings Service：阶段 3 只承载 Sidebar 配置的业务规则。
+//! Settings Service：只承载可同步 settings 的业务规则；设备私有偏好交给前端本地 store。
 
 use sea_orm::TransactionTrait;
 use serde::{Deserialize, Serialize};
@@ -14,9 +14,9 @@ use crate::{
     infrastructure::repositories::SettingsRepository,
 };
 
-const SIDEBAR_SETTING_KEY: &str = "app.sidebar";
-const SIDEBAR_WIDTH_MIN: u16 = 220;
-const SIDEBAR_WIDTH_MAX: u16 = 330;
+const SIDEBAR_PREFERENCE_SETTING_KEY: &str = "app.sidebar.preferences";
+const LEGACY_SIDEBAR_SETTING_KEY: &str = "app.sidebar";
+const LEGACY_UI_SETTING_KEY: &str = "app.ui";
 
 /// Sidebar 主区单项开关。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -129,35 +129,55 @@ impl SidebarFooterItems {
     }
 }
 
-/// Projects 分区配置。
+/// 可同步的 Projects 分区配置。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SidebarProjectSectionConfig {
+pub struct SidebarProjectSectionPreferenceConfig {
     pub visible: bool,
     pub order: i32,
-    pub collapsed: bool,
     pub show_counts: bool,
     pub show_completed: bool,
-    pub max_visible: Option<u16>,
 }
 
-/// Sidebar setting 完整结构。
+/// Sidebar 可同步 setting 完整结构。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct SidebarSettings {
+pub struct SidebarPreferenceSettings {
     pub main_items: SidebarMainItems,
-    pub project_section: SidebarProjectSectionConfig,
+    pub project_section: SidebarProjectSectionPreferenceConfig,
     pub footer_items: SidebarFooterItems,
+}
+
+/// 供前端迁移一次性读取的 legacy sidebar 设备偏好。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LegacySidebarDevicePreferences {
     pub width: u16,
-    #[serde(default)]
     pub desktop_preference: SidebarDesktopPreference,
+    pub project_section_collapsed: bool,
+    pub project_section_max_visible: Option<u16>,
+}
+
+/// 供前端迁移一次性读取的 legacy UI 设备偏好。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LegacyUiDevicePreferences {
+    pub task_drawer_width: u16,
 }
 
 /// Rust command 返回的 typed payload。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetSidebarSettingsOutput {
-    pub settings: SidebarSettings,
+    pub settings: SidebarPreferenceSettings,
+}
+
+/// 只读 legacy 设备偏好，供前端首次迁移本地 JSON store。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GetLegacyShellDevicePreferencesOutput {
+    pub sidebar: Option<LegacySidebarDevicePreferences>,
+    pub ui: Option<LegacyUiDevicePreferences>,
 }
 
 /// 更新主区或 footer 某一项的可见性。
@@ -177,20 +197,8 @@ pub struct UpdateSidebarItemVisibilityInput {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UpdateSidebarWidthInput {
-    pub width: u16,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct UpdateSidebarProjectSectionInput {
-    pub config: SidebarProjectSectionConfig,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UpdateSidebarDesktopPreferenceInput {
-    pub desktop_preference: SidebarDesktopPreference,
+    pub config: SidebarProjectSectionPreferenceConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -211,20 +219,52 @@ impl SettingsService {
         &self.repository
     }
 
-    /// 读取 Sidebar settings，并对旧数据做阶段 3 规范化。
-    pub async fn get_sidebar_settings(&self) -> Result<SidebarSettings, AppError> {
-        let settings = self
+    /// 读取 Sidebar sync settings，并对 legacy DB 做只读兼容。
+    pub async fn get_sidebar_settings(&self) -> Result<SidebarPreferenceSettings, AppError> {
+        if let Some(settings) = self
             .repository
-            .get_json_setting::<SidebarSettings>(SIDEBAR_SETTING_KEY)
-            .await?;
-        normalize_sidebar_settings(settings)
+            .find_json_setting::<SidebarPreferenceSettings>(SIDEBAR_PREFERENCE_SETTING_KEY)
+            .await?
+        {
+            return normalize_sidebar_settings(settings);
+        }
+
+        if let Some(legacy_settings) = self
+            .repository
+            .find_json_setting::<LegacySidebarSettings>(LEGACY_SIDEBAR_SETTING_KEY)
+            .await?
+        {
+            return normalize_sidebar_settings(extract_sidebar_preferences(legacy_settings));
+        }
+
+        Err(AppError::not_found(format!(
+            "setting `{SIDEBAR_PREFERENCE_SETTING_KEY}` 不存在"
+        )))
+    }
+
+    /// 读取 legacy 设备偏好，供前端首次迁移本地 JSON store。
+    pub async fn get_legacy_shell_device_preferences(
+        &self,
+    ) -> Result<GetLegacyShellDevicePreferencesOutput, AppError> {
+        let sidebar = self
+            .repository
+            .find_json_setting::<LegacySidebarSettings>(LEGACY_SIDEBAR_SETTING_KEY)
+            .await?
+            .map(extract_legacy_sidebar_device_preferences);
+        let ui = self
+            .repository
+            .find_json_setting::<LegacyUiSettings>(LEGACY_UI_SETTING_KEY)
+            .await?
+            .map(extract_legacy_ui_device_preferences);
+
+        Ok(GetLegacyShellDevicePreferencesOutput { sidebar, ui })
     }
 
     /// 更新单个可见性开关。
     pub async fn update_sidebar_item_visibility(
         &self,
         input: UpdateSidebarItemVisibilityInput,
-    ) -> Result<SidebarSettings, AppError> {
+    ) -> Result<SidebarPreferenceSettings, AppError> {
         let mut settings = self.get_sidebar_settings().await?;
         let mut changes = Vec::new();
 
@@ -260,36 +300,11 @@ impl SettingsService {
         self.persist_sidebar_settings(settings, changes).await
     }
 
-    /// 更新 Sidebar 宽度，并统一夹紧到既有 UI 范围。
-    pub async fn update_sidebar_width(
-        &self,
-        input: UpdateSidebarWidthInput,
-    ) -> Result<SidebarSettings, AppError> {
-        let mut settings = self.get_sidebar_settings().await?;
-        let next_width = clamp_sidebar_width(input.width);
-
-        let changes = if settings.width == next_width {
-            Vec::new()
-        } else {
-            let previous = settings.width;
-            settings.width = next_width;
-            vec![ActivityChangeInput {
-                field: "width".to_owned(),
-                old_value: Some(json!(previous)),
-                new_value: Some(json!(next_width)),
-            }]
-        };
-
-        self.persist_sidebar_settings(settings, changes).await
-    }
-
-    /// 更新 Projects 分区配置。
+    /// 更新可同步的 Projects 分区配置。
     pub async fn update_sidebar_project_section(
         &self,
         input: UpdateSidebarProjectSectionInput,
-    ) -> Result<SidebarSettings, AppError> {
-        validate_project_section(&input.config)?;
-
+    ) -> Result<SidebarPreferenceSettings, AppError> {
         let mut settings = self.get_sidebar_settings().await?;
         let previous = settings.project_section.clone();
         settings.project_section = input.config;
@@ -309,12 +324,6 @@ impl SettingsService {
         );
         push_change_if_needed(
             &mut changes,
-            "projectSection.collapsed",
-            json!(previous.collapsed),
-            json!(settings.project_section.collapsed),
-        );
-        push_change_if_needed(
-            &mut changes,
             "projectSection.showCounts",
             json!(previous.show_counts),
             json!(settings.project_section.show_counts),
@@ -325,42 +334,15 @@ impl SettingsService {
             json!(previous.show_completed),
             json!(settings.project_section.show_completed),
         );
-        push_change_if_needed(
-            &mut changes,
-            "projectSection.maxVisible",
-            json!(previous.max_visible),
-            json!(settings.project_section.max_visible),
-        );
-
-        self.persist_sidebar_settings(settings, changes).await
-    }
-
-    /// 更新桌面态展开/收起偏好。
-    pub async fn update_sidebar_desktop_preference(
-        &self,
-        input: UpdateSidebarDesktopPreferenceInput,
-    ) -> Result<SidebarSettings, AppError> {
-        let mut settings = self.get_sidebar_settings().await?;
-        let changes = if settings.desktop_preference == input.desktop_preference {
-            Vec::new()
-        } else {
-            let previous = settings.desktop_preference;
-            settings.desktop_preference = input.desktop_preference;
-            vec![ActivityChangeInput {
-                field: "desktopPreference".to_owned(),
-                old_value: Some(json!(previous)),
-                new_value: Some(json!(input.desktop_preference)),
-            }]
-        };
 
         self.persist_sidebar_settings(settings, changes).await
     }
 
     async fn persist_sidebar_settings(
         &self,
-        settings: SidebarSettings,
+        settings: SidebarPreferenceSettings,
         changes: Vec<ActivityChangeInput>,
-    ) -> Result<SidebarSettings, AppError> {
+    ) -> Result<SidebarPreferenceSettings, AppError> {
         let normalized = normalize_sidebar_settings(settings)?;
         let updated_at = now_utc().to_rfc3339();
         let transaction = self.repository.connection().begin().await?;
@@ -368,7 +350,7 @@ impl SettingsService {
         self.repository
             .set_json_setting_in_connection(
                 &transaction,
-                SIDEBAR_SETTING_KEY,
+                SIDEBAR_PREFERENCE_SETTING_KEY,
                 &normalized,
                 &updated_at,
             )
@@ -380,12 +362,12 @@ impl SettingsService {
                     &transaction,
                     RecordActivityInput {
                         entity_type: ActivityEntityKind::Setting,
-                        entity_id: SIDEBAR_SETTING_KEY.to_owned(),
+                        entity_id: SIDEBAR_PREFERENCE_SETTING_KEY.to_owned(),
                         action: ActivityAction::SettingsUpdated,
                         actor_type: None,
                         source: None,
                         summary: Some("更新 Sidebar 设置".to_owned()),
-                        metadata: Some(json!({ "settingKey": SIDEBAR_SETTING_KEY })),
+                        metadata: Some(json!({ "settingKey": SIDEBAR_PREFERENCE_SETTING_KEY })),
                         changes,
                     },
                 )
@@ -397,15 +379,40 @@ impl SettingsService {
     }
 }
 
-fn normalize_sidebar_settings(mut settings: SidebarSettings) -> Result<SidebarSettings, AppError> {
-    settings.width = clamp_sidebar_width(settings.width);
-    validate_project_section(&settings.project_section)?;
-    validate_main_items(&settings.main_items)?;
-    Ok(settings)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LegacySidebarProjectSectionConfig {
+    visible: bool,
+    order: i32,
+    collapsed: bool,
+    show_counts: bool,
+    show_completed: bool,
+    max_visible: Option<u16>,
 }
 
-fn clamp_sidebar_width(width: u16) -> u16 {
-    width.clamp(SIDEBAR_WIDTH_MIN, SIDEBAR_WIDTH_MAX)
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LegacySidebarSettings {
+    main_items: SidebarMainItems,
+    project_section: LegacySidebarProjectSectionConfig,
+    footer_items: SidebarFooterItems,
+    width: u16,
+    #[serde(default)]
+    desktop_preference: SidebarDesktopPreference,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LegacyUiSettings {
+    #[serde(default = "default_task_drawer_width")]
+    task_drawer_width: u16,
+}
+
+fn normalize_sidebar_settings(
+    settings: SidebarPreferenceSettings,
+) -> Result<SidebarPreferenceSettings, AppError> {
+    validate_main_items(&settings.main_items)?;
+    Ok(settings)
 }
 
 fn validate_main_items(main_items: &SidebarMainItems) -> Result<(), AppError> {
@@ -416,14 +423,34 @@ fn validate_main_items(main_items: &SidebarMainItems) -> Result<(), AppError> {
     Ok(())
 }
 
-fn validate_project_section(config: &SidebarProjectSectionConfig) -> Result<(), AppError> {
-    if matches!(config.max_visible, Some(0)) {
-        return Err(AppError::validation(
-            "Sidebar Projects maxVisible 必须大于 0 或为 null",
-        ));
+fn extract_sidebar_preferences(legacy: LegacySidebarSettings) -> SidebarPreferenceSettings {
+    SidebarPreferenceSettings {
+        main_items: legacy.main_items,
+        project_section: SidebarProjectSectionPreferenceConfig {
+            visible: legacy.project_section.visible,
+            order: legacy.project_section.order,
+            show_counts: legacy.project_section.show_counts,
+            show_completed: legacy.project_section.show_completed,
+        },
+        footer_items: legacy.footer_items,
     }
+}
 
-    Ok(())
+fn extract_legacy_sidebar_device_preferences(
+    legacy: LegacySidebarSettings,
+) -> LegacySidebarDevicePreferences {
+    LegacySidebarDevicePreferences {
+        width: legacy.width,
+        desktop_preference: legacy.desktop_preference,
+        project_section_collapsed: legacy.project_section.collapsed,
+        project_section_max_visible: legacy.project_section.max_visible,
+    }
+}
+
+fn extract_legacy_ui_device_preferences(legacy: LegacyUiSettings) -> LegacyUiDevicePreferences {
+    LegacyUiDevicePreferences {
+        task_drawer_width: legacy.task_drawer_width,
+    }
 }
 
 fn push_change_if_needed(
@@ -441,4 +468,8 @@ fn push_change_if_needed(
         old_value: Some(old_value),
         new_value: Some(new_value),
     });
+}
+
+fn default_task_drawer_width() -> u16 {
+    420
 }

@@ -1,65 +1,88 @@
 import { useSidebarSettingsStore } from '@/app/layouts/shell/model/useSidebarSettingsStore'
-import type { SidebarSettings } from '@/features/settings/api/sidebarSettings'
+import type {
+	ShellSidebarDevicePreferences,
+	ShellSidebarProjectSectionSettings,
+	ShellSidebarSettings,
+	ShellUiDevicePreferences,
+} from '@/app/layouts/shell/model/shellDevicePreferences'
+import {
+	loadShellDeviceState,
+	updateShellSidebarDevicePreferences,
+} from '@/app/layouts/shell/model/shellDevicePreferences'
+import type { SidebarPreferenceSettings } from '@/features/settings/api/sidebarSettings'
 import {
 	getSidebarSettings,
 	updateSidebarItemVisibility,
 	updateSidebarProjectSection,
-	updateSidebarWidth,
 } from '@/features/settings/api/sidebarSettings'
 
 vi.mock('@/features/settings/api/sidebarSettings', () => ({
-	getSidebarSettings: vi.fn<() => Promise<SidebarSettings>>(),
+	getSidebarSettings: vi.fn<() => Promise<SidebarPreferenceSettings>>(),
 	updateSidebarItemVisibility:
 		vi.fn<
 			(
 				target: { kind: 'main' | 'footer'; key: string },
 				visible: boolean,
-			) => Promise<SidebarSettings>
+			) => Promise<SidebarPreferenceSettings>
 		>(),
-	updateSidebarWidth: vi.fn<(width: number) => Promise<SidebarSettings>>(),
-	updateSidebarDesktopPreference: vi.fn(),
 	updateSidebarProjectSection:
-		vi.fn<(config: SidebarSettings['projectSection']) => Promise<SidebarSettings>>(),
+		vi.fn<(config: SidebarPreferenceSettings['projectSection']) => Promise<SidebarPreferenceSettings>>(),
 }))
+
+vi.mock('@/app/layouts/shell/model/shellDevicePreferences', async () => {
+	const actual = await vi.importActual<
+		typeof import('@/app/layouts/shell/model/shellDevicePreferences')
+	>('@/app/layouts/shell/model/shellDevicePreferences')
+
+	return {
+		...actual,
+		loadShellDeviceState: vi.fn(),
+		updateShellSidebarDevicePreferences: vi.fn(),
+	}
+})
 
 const mockedGetSidebarSettings = vi.mocked(getSidebarSettings)
 const mockedUpdateSidebarItemVisibility = vi.mocked(updateSidebarItemVisibility)
 const mockedUpdateSidebarProjectSection = vi.mocked(updateSidebarProjectSection)
-const mockedUpdateSidebarWidth = vi.mocked(updateSidebarWidth)
+const mockedLoadShellDeviceState = vi.mocked(loadShellDeviceState)
+const mockedUpdateShellSidebarDevicePreferences = vi.mocked(updateShellSidebarDevicePreferences)
 
 describe('useSidebarSettingsStore', () => {
 	beforeEach(() => {
 		mockedGetSidebarSettings.mockReset()
 		mockedUpdateSidebarItemVisibility.mockReset()
 		mockedUpdateSidebarProjectSection.mockReset()
-		mockedUpdateSidebarWidth.mockReset()
+		mockedLoadShellDeviceState.mockReset()
+		mockedUpdateShellSidebarDevicePreferences.mockReset()
 
 		useSidebarSettingsStore.setState({
 			status: 'idle',
 			settings: null,
+			syncSettings: null,
+			sidebarDevicePreferences: null,
+			uiDevicePreferences: null,
 			errorMessage: null,
 		})
 	})
 
-	it('load 会拉取并缓存 sidebar settings', async () => {
-		mockedGetSidebarSettings.mockResolvedValue(createSidebarSettings())
+	it('load 会并行拉取 sync settings 和 device state', async () => {
+		mockedGetSidebarSettings.mockResolvedValue(createSidebarPreferenceSettings())
+		mockedLoadShellDeviceState.mockResolvedValue(createShellDeviceState())
 
 		await useSidebarSettingsStore.getState().load()
 
 		const state = useSidebarSettingsStore.getState()
 		expect(mockedGetSidebarSettings).toHaveBeenCalledTimes(1)
+		expect(mockedLoadShellDeviceState).toHaveBeenCalledTimes(1)
 		expect(state.status).toBe('ready')
 		expect(state.settings?.width).toBe(256)
+		expect(state.settings?.desktopPreference).toBe('expanded')
 	})
 
-	it('setItemVisibility 会提交更新后的设置', async () => {
-		useSidebarSettingsStore.setState({
-			status: 'ready',
-			settings: createSidebarSettings(),
-			errorMessage: null,
-		})
+	it('setItemVisibility 会提交更新后的 sync settings', async () => {
+		useSidebarSettingsStore.setState(createReadyStoreState())
 		mockedUpdateSidebarItemVisibility.mockResolvedValue(
-			createSidebarSettings({
+			createSidebarPreferenceSettings({
 				mainItems: {
 					inbox: { visible: true, order: 100 },
 					allTasks: { visible: false, order: 200 },
@@ -79,23 +102,18 @@ describe('useSidebarSettingsStore', () => {
 			false,
 		)
 		expect(state.settings?.mainItems.allTasks.visible).toBe(false)
+		expect(state.settings?.width).toBe(256)
 	})
 
-	it('setProjectSectionConfig 会更新 Projects 分区配置', async () => {
-		useSidebarSettingsStore.setState({
-			status: 'ready',
-			settings: createSidebarSettings(),
-			errorMessage: null,
-		})
+	it('setProjectSectionConfig 会只更新 sync project section 字段', async () => {
+		useSidebarSettingsStore.setState(createReadyStoreState())
 		mockedUpdateSidebarProjectSection.mockResolvedValue(
-			createSidebarSettings({
+			createSidebarPreferenceSettings({
 				projectSection: {
 					visible: true,
 					order: 500,
-					collapsed: false,
 					showCounts: false,
 					showCompleted: false,
-					maxVisible: null,
 				},
 			}),
 		)
@@ -113,23 +131,18 @@ describe('useSidebarSettingsStore', () => {
 		expect(mockedUpdateSidebarProjectSection).toHaveBeenCalledWith({
 			visible: true,
 			order: 500,
-			collapsed: false,
 			showCounts: false,
 			showCompleted: false,
-			maxVisible: null,
 		})
 		expect(state.settings?.projectSection.showCompleted).toBe(false)
 		expect(state.settings?.projectSection.showCounts).toBe(false)
+		expect(mockedUpdateShellSidebarDevicePreferences).not.toHaveBeenCalled()
 	})
 
-	it('setSidebarWidth 会应用服务端返回的宽度设置', async () => {
-		useSidebarSettingsStore.setState({
-			status: 'ready',
-			settings: createSidebarSettings(),
-			errorMessage: null,
-		})
-		mockedUpdateSidebarWidth.mockResolvedValue(
-			createSidebarSettings({
+	it('setSidebarWidth 会写入 device preferences 并保留 sync settings', async () => {
+		useSidebarSettingsStore.setState(createReadyStoreState())
+		mockedUpdateShellSidebarDevicePreferences.mockResolvedValue(
+			createSidebarDevicePreferences({
 				width: 320,
 			}),
 		)
@@ -137,12 +150,48 @@ describe('useSidebarSettingsStore', () => {
 		await useSidebarSettingsStore.getState().setSidebarWidth(320)
 
 		const state = useSidebarSettingsStore.getState()
-		expect(mockedUpdateSidebarWidth).toHaveBeenCalledWith(320)
+		expect(mockedUpdateShellSidebarDevicePreferences).toHaveBeenCalledWith({
+			width: 320,
+		})
 		expect(state.settings?.width).toBe(320)
+		expect(state.settings?.mainItems.allTasks.visible).toBe(true)
 	})
 })
 
-function createSidebarSettings(overrides?: Partial<SidebarSettings>): SidebarSettings {
+function createReadyStoreState() {
+	const syncSettings = createSidebarPreferenceSettings()
+	const sidebarDevicePreferences = createSidebarDevicePreferences()
+	const uiDevicePreferences = createUiDevicePreferences()
+
+	return {
+		status: 'ready' as const,
+		syncSettings,
+		sidebarDevicePreferences,
+		uiDevicePreferences,
+		settings: createShellSidebarSettings({
+			width: sidebarDevicePreferences.width,
+			desktopPreference: sidebarDevicePreferences.desktopPreference,
+			projectSection: {
+				...syncSettings.projectSection,
+				collapsed: sidebarDevicePreferences.projectSectionCollapsed,
+				maxVisible: sidebarDevicePreferences.projectSectionMaxVisible,
+			},
+		}),
+		errorMessage: null,
+	}
+}
+
+function createShellDeviceState() {
+	return {
+		sidebar: createSidebarDevicePreferences(),
+		ui: createUiDevicePreferences(),
+		navigationRestore: null,
+	}
+}
+
+function createSidebarPreferenceSettings(
+	overrides?: Partial<SidebarPreferenceSettings>,
+): SidebarPreferenceSettings {
 	return {
 		mainItems: {
 			inbox: { visible: true, order: 100 },
@@ -154,9 +203,56 @@ function createSidebarSettings(overrides?: Partial<SidebarSettings>): SidebarSet
 		projectSection: {
 			visible: true,
 			order: 500,
-			collapsed: false,
 			showCounts: true,
 			showCompleted: true,
+			...overrides?.projectSection,
+		},
+		footerItems: {
+			archive: { visible: true, order: 900 },
+			trash: { visible: true, order: 1000 },
+			...overrides?.footerItems,
+		},
+	}
+}
+
+function createSidebarDevicePreferences(
+	overrides?: Partial<ShellSidebarDevicePreferences>,
+): ShellSidebarDevicePreferences {
+	return {
+		width: overrides?.width ?? 256,
+		desktopPreference: overrides?.desktopPreference ?? 'expanded',
+		projectSectionCollapsed: overrides?.projectSectionCollapsed ?? false,
+		projectSectionMaxVisible: overrides?.projectSectionMaxVisible ?? null,
+	}
+}
+
+function createUiDevicePreferences(
+	overrides?: Partial<ShellUiDevicePreferences>,
+): ShellUiDevicePreferences {
+	return {
+		taskDrawerWidth: overrides?.taskDrawerWidth ?? 420,
+	}
+}
+
+function createShellSidebarSettings(
+	overrides?: Partial<ShellSidebarSettings> & {
+		projectSection?: Partial<ShellSidebarProjectSectionSettings>
+	},
+): ShellSidebarSettings {
+	return {
+		mainItems: {
+			inbox: { visible: true, order: 100 },
+			allTasks: { visible: true, order: 200 },
+			views: { visible: true, order: 300 },
+			projectOverview: { visible: true, order: 400 },
+			...overrides?.mainItems,
+		},
+		projectSection: {
+			visible: true,
+			order: 500,
+			showCounts: true,
+			showCompleted: true,
+			collapsed: false,
 			maxVisible: null,
 			...overrides?.projectSection,
 		},

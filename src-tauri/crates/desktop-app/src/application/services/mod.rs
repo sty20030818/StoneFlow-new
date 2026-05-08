@@ -17,10 +17,11 @@ pub use project_service::{
     ProjectSidebarItemDto, UpdateProjectInput,
 };
 pub use settings_service::{
-    GetSidebarSettingsOutput, SettingsService, SidebarDesktopPreference, SidebarFooterItemKey,
-    SidebarItemVisibilityTarget, SidebarMainItemKey, SidebarProjectSectionConfig, SidebarSettings,
-    UpdateSidebarDesktopPreferenceInput, UpdateSidebarItemVisibilityInput,
-    UpdateSidebarProjectSectionInput, UpdateSidebarWidthInput,
+    GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput, LegacySidebarDevicePreferences,
+    LegacyUiDevicePreferences, SettingsService, SidebarDesktopPreference, SidebarFooterItemKey,
+    SidebarItemConfig, SidebarItemVisibilityTarget, SidebarMainItemKey, SidebarMainItems,
+    SidebarPreferenceSettings, SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
+    UpdateSidebarProjectSectionInput,
 };
 pub use space_service::{
     CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService, UpdateSpaceInput,

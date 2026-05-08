@@ -1,5 +1,6 @@
 import { Navigate, createHashRouter } from 'react-router-dom'
 
+import { RootRestoreRedirect } from './RootRestoreRedirect'
 import { AllTasksPage } from '../features/all-tasks/ui/AllTasksPage'
 import { ArchivePage } from '../features/archive/ui/ArchivePage'
 import { SpaceLayout } from './layouts/SpaceLayout'
@@ -71,7 +72,7 @@ export const router = createHashRouter([
 	},
 	{
 		path: '/',
-		element: <Navigate to='/spaces/inbox' replace />,
+		element: <RootRestoreRedirect />,
 	},
 	{
 		path: '/spaces',
