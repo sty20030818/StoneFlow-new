@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use sea_orm::{
-    sea_query::Expr, ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait,
+    sea_query::Expr, ActiveModelTrait, ActiveValue::Set, ColumnTrait, Condition, ConnectionTrait,
     DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect,
 };
 use stoneflow_entity::{common::TaskStatus, prelude::Task, task};
@@ -59,6 +59,13 @@ pub enum TaskLifecycleView {
     Canceled,
     Archived,
     All,
+}
+
+/// 搜索结果的生命周期过滤。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TaskSearchLifecycle {
+    Active,
+    Closed,
 }
 
 /// Task 列表查询条件。
@@ -131,6 +138,41 @@ impl TaskRepository {
     pub async fn list_by_project(&self, project_id: &str) -> Result<Vec<task::Model>, AppError> {
         Task::find()
             .filter(task::Column::ProjectId.eq(project_id))
+            .all(self.connection())
+            .await
+            .map_err(AppError::from)
+    }
+
+    /// 搜索符合查询文本的可见 Task。
+    pub async fn search_by_query(
+        &self,
+        query: &str,
+        lifecycle: TaskSearchLifecycle,
+    ) -> Result<Vec<task::Model>, AppError> {
+        let pattern = format!("%{query}%");
+        let mut task_query = Task::find()
+            .filter(task::Column::DeletedAt.is_null())
+            .filter(task::Column::ArchivedAt.is_null())
+            .filter(
+                Condition::any()
+                    .add(task::Column::Title.like(pattern.clone()))
+                    .add(task::Column::Note.like(pattern)),
+            )
+            .order_by_desc(task::Column::UpdatedAt);
+
+        task_query = match lifecycle {
+            TaskSearchLifecycle::Active => task_query.filter(task::Column::Status.is_in([
+                TaskStatus::Doing,
+                TaskStatus::Todo,
+                TaskStatus::Waiting,
+            ])),
+            TaskSearchLifecycle::Closed => task_query.filter(task::Column::Status.is_in([
+                TaskStatus::Done,
+                TaskStatus::Canceled,
+            ])),
+        };
+
+        task_query
             .all(self.connection())
             .await
             .map_err(AppError::from)

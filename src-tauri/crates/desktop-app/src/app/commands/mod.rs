@@ -6,6 +6,7 @@ pub(crate) mod activity;
 pub(crate) mod lifecycle;
 pub(crate) mod projects;
 pub(crate) mod quick_capture;
+pub(crate) mod search;
 pub(crate) mod settings;
 pub(crate) mod spaces;
 pub(crate) mod tasks;
@@ -18,6 +19,7 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         activity::get_entity_activities,
         lifecycle::list_archive_entries,
         lifecycle::list_trash_entries,
+        search::search_entities,
         projects::list_project_overview,
         projects::list_sidebar_projects,
         projects::get_project_detail,

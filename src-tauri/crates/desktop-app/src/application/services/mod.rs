@@ -2,6 +2,7 @@
 
 mod lifecycle_service;
 mod project_service;
+mod search_service;
 mod settings_service;
 mod space_service;
 mod task_service;
@@ -16,11 +17,16 @@ pub use project_service::{
     ProjectIdInput, ProjectOverviewItemDto, ProjectScopeInput, ProjectScopeKind, ProjectService,
     ProjectSidebarItemDto, UpdateProjectInput,
 };
+pub use search_service::{
+    SearchEntitiesInput, SearchEntitiesResultDto, SearchProjectItemDto, SearchService,
+    SearchTaskItemDto,
+};
 pub use settings_service::{
-    GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput, LegacySidebarDevicePreferences,
-    LegacyUiDevicePreferences, SettingsService, SidebarDesktopPreference, SidebarFooterItemKey,
-    SidebarItemConfig, SidebarItemVisibilityTarget, SidebarMainItemKey, SidebarMainItems,
-    SidebarPreferenceSettings, SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
+    GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput,
+    LegacySidebarDevicePreferences, LegacyUiDevicePreferences, SettingsService,
+    SidebarDesktopPreference, SidebarFooterItemKey, SidebarItemConfig, SidebarItemVisibilityTarget,
+    SidebarMainItemKey, SidebarMainItems, SidebarPreferenceSettings,
+    SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
     UpdateSidebarProjectSectionInput,
 };
 pub use space_service::{

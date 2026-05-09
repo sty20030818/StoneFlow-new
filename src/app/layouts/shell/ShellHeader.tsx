@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import {
 	buildScopedProjectPath,
@@ -13,6 +13,12 @@ import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
 import { NavBackForward } from '@/app/layouts/shell/header/NavBackForward'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
+import {
+	resolveProjectSearchTargetPath,
+	resolveTaskSearchTargetPath,
+} from '@/features/global-search/model/searchNavigation'
+import { useSearchOpenIntentStore } from '@/features/global-search/model/useSearchOpenIntentStore'
+import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import type { Scope, Space } from '@/shared/types'
 import { Avatar, AvatarFallback, AvatarImage, AvatarBadge } from '@/shared/ui/base/avatar'
 import { Badge } from '@/shared/ui/base/badge'
@@ -90,6 +96,7 @@ export function ShellHeader({
 	spaces,
 }: ShellHeaderProps) {
 	const navigate = useNavigate()
+	const location = useLocation()
 	const [isMaximized, setIsMaximized] = useState(false)
 	const isMac = useMemo(() => /Mac|iPhone|iPad|iPod/i.test(window.navigator.userAgent), [])
 	const isWin = useMemo(
@@ -97,6 +104,9 @@ export function ShellHeader({
 		[],
 	)
 	const defaultProjectId = projects[0]?.id ?? null
+	const setPendingTaskOpenIntent = useSearchOpenIntentStore(
+		(state) => state.setPendingTaskOpenIntent,
+	)
 	const {
 		entries: routeHistoryEntries,
 		canGoBack,
@@ -182,10 +192,28 @@ export function ShellHeader({
 		})
 	}
 
-	const handleOpenProjectFromSearch = (projectId: string) => {
+	const handleOpenProjectFromSearch = (project: SearchProjectItem) => {
 		onCloseDrawer()
+		const targetPath = resolveProjectSearchTargetPath(project)
 		startTransition(() => {
-			navigate(buildScopedProjectPath(currentScope, projectId, currentSpaceId))
+			navigate(targetPath)
+		})
+	}
+
+	const handleOpenTaskFromSearch = (task: SearchTaskItem) => {
+		onCloseDrawer()
+		const targetPath = resolveTaskSearchTargetPath(task)
+		setPendingTaskOpenIntent({
+			taskId: task.id,
+			targetPath,
+		})
+
+		if (location.pathname === targetPath) {
+			return
+		}
+
+		startTransition(() => {
+			navigate(targetPath)
 		})
 	}
 
@@ -336,11 +364,10 @@ export function ShellHeader({
 							}
 						}}
 					>
-						<div className='min-w-0 w-full max-w-100'>
+						<div className='min-w-0 w-full'>
 							<GlobalSearchInput
-								currentSpaceId={currentSpaceId ?? ''}
 								onOpenProject={handleOpenProjectFromSearch}
-								onOpenTask={(taskId) => onOpenDrawer('task', taskId)}
+								onOpenTask={handleOpenTaskFromSearch}
 							/>
 						</div>
 					</div>

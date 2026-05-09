@@ -8,6 +8,7 @@ mod id_time_tests;
 mod lifecycle_tests;
 mod project_tests;
 mod runtime_tests;
+mod search_tests;
 mod settings_tests;
 mod space_tests;
 mod task_tests;

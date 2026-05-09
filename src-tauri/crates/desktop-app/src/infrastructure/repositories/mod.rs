@@ -11,12 +11,13 @@ pub use activity_repository::{
     ActivityChangeRecord, ActivityEventRecord, ActivityQuery, ActivityRepository,
 };
 pub use project_repository::{
-    CreateProjectRecord, ProjectOverviewView, ProjectRepository, UpdateProjectPatch,
+    CreateProjectRecord, ProjectOverviewView, ProjectRepository, ProjectSearchLifecycle,
+    UpdateProjectPatch,
 };
 pub use settings_repository::SettingsRepository;
 pub use space_repository::{CreateSpaceRecord, SpaceRepository, UpdateSpacePatch};
 pub use task_repository::{
     CreateTaskRecord, ProjectTaskCount, TaskLifecycleView, TaskListQuery, TaskPlacementQuery,
-    TaskRepository, UpdateTaskPatch,
+    TaskRepository, TaskSearchLifecycle, UpdateTaskPatch,
 };
 pub use view_repository::{CreateViewRecord, UpdateViewPatch, ViewListQuery, ViewRepository};

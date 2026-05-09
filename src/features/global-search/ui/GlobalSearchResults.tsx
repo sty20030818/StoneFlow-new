@@ -1,16 +1,20 @@
+import { useEffect, useRef } from 'react'
+
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
+import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
+import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
+import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
+import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
 import {
 	globalSearchGroupHeadingClass,
-	globalSearchResultMetaClass,
-	globalSearchResultNoteClass,
 	globalSearchResultsPopoverClass,
 	globalSearchStateMutedClass,
 } from '@/shared/ui/patterns/global-search'
-import { SearchIcon } from 'lucide-react'
+import { ROW_SHELL_ACTIVE_CLASS, ROW_SHELL_BASE_CLASS, ROW_SHELL_IDLE_CLASS } from '@/shared/ui/patterns/row-tokens'
+import { FolderIcon, SearchIcon } from 'lucide-react'
 
 type GlobalSearchResultsProps = {
-	isLoading: boolean
 	errorMessage: string | null
 	highlightedIndex: number
 	taskItems: Array<{ index: number; item: SearchTaskItem }>
@@ -21,7 +25,6 @@ type GlobalSearchResultsProps = {
 }
 
 export function GlobalSearchResults({
-	isLoading,
 	errorMessage,
 	highlightedIndex,
 	taskItems,
@@ -30,118 +33,174 @@ export function GlobalSearchResults({
 	onSelectTask,
 	onSelectProject,
 }: GlobalSearchResultsProps) {
+	const rootRef = useRef<HTMLDivElement>(null)
 	const hasResults = taskItems.length > 0 || projectItems.length > 0
+
+	useEffect(() => {
+		const target = rootRef.current?.querySelector<HTMLElement>(
+			`[data-search-index="${highlightedIndex}"]`,
+		)
+		target?.scrollIntoView({ block: 'nearest' })
+	}, [highlightedIndex])
 
 	return (
 		<div className={globalSearchResultsPopoverClass}>
 			<div className='max-h-96 overflow-y-auto p-2.5'>
-				{isLoading && !hasResults ? (
-					<SearchPanelState label='正在搜索任务与项目...' />
-				) : errorMessage ? (
-					<SearchPanelState label={errorMessage} tone='danger' />
-				) : !hasResults ? (
-					<SearchPanelState label='没有匹配结果' />
-				) : (
-					<div className='space-y-3'>
-						{taskItems.length > 0 ? (
-							<section className='space-y-1.5'>
-								<SearchGroupHeading title='任务' />
-								<div className='space-y-1'>
-									{taskItems.map(({ index, item }) => (
-										<SearchResultButton
-											context={buildTaskContext(item)}
-											isActive={highlightedIndex === index}
-											key={item.id}
-											note={item.note}
-											title={item.title}
-											typeLabel='任务'
-											onHighlight={() => onHighlightIndex(index)}
-											onSelect={() => onSelectTask(item)}
-										/>
-									))}
-								</div>
-							</section>
-						) : null}
+				<div ref={rootRef}>
+					{errorMessage && !hasResults ? (
+						<SearchPanelState label={errorMessage} tone='danger' />
+					) : !hasResults ? (
+						<SearchPanelState label='没有匹配的任务或项目' />
+					) : (
+						<div className='space-y-3'>
+							{errorMessage ? <SearchPanelState label={errorMessage} tone='danger' /> : null}
+							
+							{taskItems.length > 0 ? (
+								<section className='space-y-1'>
+									<SearchGroupHeading title='任务' />
+									<div className='space-y-0.5'>
+										{taskItems.map(({ index, item }) => (
+											<SearchTaskResultRow
+												isActive={highlightedIndex === index}
+												key={item.id}
+												task={item}
+												taskIndex={index}
+												onHighlight={() => onHighlightIndex(index)}
+												onSelect={() => onSelectTask(item)}
+											/>
+										))}
+									</div>
+								</section>
+							) : null}
 
-						{projectItems.length > 0 ? (
-							<section className='space-y-1.5'>
-								<SearchGroupHeading title='项目' />
-								<div className='space-y-1'>
-									{projectItems.map(({ index, item }) => (
-										<SearchResultButton
-											context={buildProjectContext(item)}
-											isActive={highlightedIndex === index}
-											key={item.id}
-											note={item.note}
-											title={item.name}
-											typeLabel='项目'
-											onHighlight={() => onHighlightIndex(index)}
-											onSelect={() => onSelectProject(item)}
-										/>
-									))}
-								</div>
-							</section>
-						) : null}
-					</div>
-				)}
+							{projectItems.length > 0 ? (
+								<section className='space-y-1'>
+									<SearchGroupHeading title='项目' />
+									<div className='space-y-0.5'>
+										{projectItems.map(({ index, item }) => (
+											<SearchProjectResultRow
+												isActive={highlightedIndex === index}
+												key={item.id}
+												project={item}
+												projectIndex={index}
+												onHighlight={() => onHighlightIndex(index)}
+												onSelect={() => onSelectProject(item)}
+											/>
+										))}
+									</div>
+								</section>
+							) : null}
+						</div>
+					)}
+				</div>
 			</div>
 		</div>
 	)
 }
 
-type SearchResultButtonProps = {
-	typeLabel: string
-	title: string
-	context: string
-	note: string | null
+type SearchTaskResultRowProps = {
+	task: SearchTaskItem
+	taskIndex: number
 	isActive: boolean
 	onHighlight: () => void
 	onSelect: () => void
 }
 
-function SearchResultButton({
-	typeLabel,
-	title,
-	context,
-	note,
+function SearchTaskResultRow({
+	task,
+	taskIndex,
 	isActive,
 	onHighlight,
 	onSelect,
-}: SearchResultButtonProps) {
+}: SearchTaskResultRowProps) {
+	const placementLabel = task.projectName ?? (task.inboxAt ? 'Inbox' : '独立事项')
+
 	return (
 		<button
+			aria-label={`打开任务 ${task.title}`}
 			className={cn(
-				'flex w-full flex-col gap-1.5 rounded-lg border px-3 py-2.5 text-left transition-colors',
-				isActive
-					? 'border-sf-border-subtle bg-accent shadow-[inset_2px_0_0_var(--primary)]'
-					: 'border-transparent hover:border-sf-border-subtle hover:bg-sf-surface-hover',
+				ROW_SHELL_BASE_CLASS,
+				'h-11 w-full gap-2.5 px-3',
+				isActive ? ROW_SHELL_ACTIVE_CLASS : ROW_SHELL_IDLE_CLASS,
 			)}
+			data-search-index={taskIndex}
 			onClick={onSelect}
-			onMouseDown={(event) => {
-				event.preventDefault()
-				event.stopPropagation()
-			}}
 			onMouseEnter={onHighlight}
 			type='button'
 		>
-			<div className={globalSearchResultMetaClass}>
-				<span>{typeLabel}</span>
-				<span className='truncate'>{context}</span>
+			<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+				<EntityLabel label='任务' />
+				<span
+					aria-label={`优先级 ${formatTaskPriorityLabel(task.priority)}`}
+					className='flex shrink-0 items-center justify-center text-sf-shell-text-secondary'
+				>
+					<PriorityIcon priority={task.priority} size='sm' />
+				</span>
+				<span
+					aria-label={`状态 ${formatTaskStatusLabel(task.status)}`}
+					className='flex shrink-0 items-center justify-center'
+				>
+					<TaskStatusIndicator status={task.status} />
+				</span>
+				<div className='min-w-0 flex-1'>
+					<div className='truncate text-[13px] font-medium text-foreground'>{task.title}</div>
+				</div>
 			</div>
-			<div className='truncate text-[13px] font-medium text-foreground'>{title}</div>
-			{note?.trim() ? (
-				<div className={globalSearchResultNoteClass}>{toSnippet(note)}</div>
-			) : null}
+			<div className='ml-auto hidden shrink-0 items-center gap-1.5 md:flex'>
+				<ContextPill label={placementLabel} />
+				<ContextPill label={task.spaceName} />
+			</div>
+		</button>
+	)
+}
+
+type SearchProjectResultRowProps = {
+	project: SearchProjectItem
+	projectIndex: number
+	isActive: boolean
+	onHighlight: () => void
+	onSelect: () => void
+}
+
+function SearchProjectResultRow({
+	project,
+	projectIndex,
+	isActive,
+	onHighlight,
+	onSelect,
+}: SearchProjectResultRowProps) {
+	return (
+		<button
+			aria-label={`打开项目 ${project.name}`}
+			className={cn(
+				ROW_SHELL_BASE_CLASS,
+				'h-11 w-full gap-2.5 px-3',
+				isActive ? ROW_SHELL_ACTIVE_CLASS : ROW_SHELL_IDLE_CLASS,
+			)}
+			data-search-index={projectIndex}
+			onClick={onSelect}
+			onMouseEnter={onHighlight}
+			type='button'
+		>
+			<div className='flex min-w-0 flex-1 items-center gap-2.5'>
+				<EntityLabel label='项目' />
+				<span className='flex shrink-0 items-center justify-center text-sf-shell-text-secondary'>
+					<FolderIcon className='size-3.5' />
+				</span>
+				<div className='min-w-0 flex-1'>
+					<div className='truncate text-[13px] font-medium text-foreground'>{project.name}</div>
+				</div>
+			</div>
+			<div className='ml-auto hidden shrink-0 items-center gap-1.5 md:flex'>
+				{project.completedAt ? <ContextPill label='已完成' /> : null}
+				<ContextPill label={project.spaceName} />
+			</div>
 		</button>
 	)
 }
 
 function SearchGroupHeading({ title }: { title: string }) {
-	return (
-		<div className={globalSearchGroupHeadingClass}>
-			{title}
-		</div>
-	)
+	return <div className={globalSearchGroupHeadingClass}>{title}</div>
 }
 
 function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'muted' | 'danger' }) {
@@ -160,30 +219,18 @@ function SearchPanelState({ label, tone = 'muted' }: { label: string; tone?: 'mu
 	)
 }
 
-function buildTaskContext(item: SearchTaskItem) {
-	return `${formatPriority(item.priority)} / ${item.projectName ?? '收件箱'}`
+function EntityLabel({ label }: { label: string }) {
+	return (
+		<span className='shrink-0 text-[10px] font-medium tracking-[0.08em] text-sf-shell-text-secondary uppercase'>
+			{label}
+		</span>
+	)
 }
 
-function buildProjectContext(item: SearchProjectItem) {
-	return item.status === 'active' ? '进行中' : '草稿'
-}
-
-function formatPriority(priority: number | null) {
-	switch (priority) {
-		case 4:
-			return '紧急'
-		case 3:
-			return '高优先级'
-		case 2:
-			return '中优先级'
-		case 1:
-			return '低优先级'
-		default:
-			return '未设优先级'
-	}
-}
-
-function toSnippet(value: string) {
-	const normalized = value.trim().replace(/\s+/g, ' ')
-	return normalized.length > 72 ? `${normalized.slice(0, 72)}...` : normalized
+function ContextPill({ label }: { label: string }) {
+	return (
+		<span className='inline-flex max-w-36 items-center truncate rounded-md bg-sf-list-section-bg px-2 py-1 text-[11px] font-medium text-sf-shell-text-secondary'>
+			{label}
+		</span>
+	)
 }

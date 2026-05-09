@@ -26,6 +26,10 @@ import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
 import {
+	selectPendingTaskOpenIntent,
+	useSearchOpenIntentStore,
+} from '@/features/global-search/model/useSearchOpenIntentStore'
+import {
 	selectProjectOptions,
 	selectProjectSidebar,
 	useProjectStore,
@@ -65,6 +69,10 @@ export function ShellLayout({
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
+	const pendingTaskOpenIntent = useSearchOpenIntentStore(selectPendingTaskOpenIntent)
+	const consumePendingTaskOpenIntent = useSearchOpenIntentStore(
+		(state) => state.consumePendingTaskOpenIntent,
+	)
 
 	const { pathname } = useLocation()
 	const routeProjectId = useMemo(() => {
@@ -139,6 +147,23 @@ export function ShellLayout({
 			void loadSidebarProjects(currentScope)
 		}
 	}, [currentScope, loadSidebarProjects, scopeKey, spaceStatus])
+
+	useEffect(() => {
+		if (
+			spaceStatus !== 'ready' ||
+			!pendingTaskOpenIntent ||
+			pendingTaskOpenIntent.targetPath !== pathname
+		) {
+			return
+		}
+
+		const consumedIntent = consumePendingTaskOpenIntent(pathname)
+		if (!consumedIntent) {
+			return
+		}
+
+		openDrawer('task', consumedIntent.taskId)
+	}, [consumePendingTaskOpenIntent, openDrawer, pathname, pendingTaskOpenIntent, spaceStatus])
 
 	if (
 		!sidebarSettings ||

@@ -1,52 +1,38 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
+import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
 import { GlobalSearchResults } from '@/features/global-search/ui/GlobalSearchResults'
+import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { InputGroup, InputGroupAddon } from '@/shared/ui/base/input-group'
 import { Kbd } from '@/shared/ui/base/kbd'
 import { globalSearchInputShellClass } from '@/shared/ui/patterns/global-search'
 import { SearchIcon } from 'lucide-react'
 
 type GlobalSearchInputProps = {
-	currentSpaceId: string | null
-	onOpenTask: (taskId: string) => void
-	onOpenProject: (projectId: string) => void
+	onOpenTask: (task: SearchTaskItem) => void
+	onOpenProject: (project: SearchProjectItem) => void
 }
 
-// TODO: 接入真实搜索 API（后端需要 search_entities 命令）
-// 当前搜索结果固定返回空，保留 UI 壳层。
-
-function emptySearchResults(_query: string) {
-	return {
-		tasks: [] as SearchTaskItem[],
-		projects: [] as SearchProjectItem[],
-	}
-}
-
-export function GlobalSearchInput({
-	currentSpaceId: _currentSpaceId,
-	onOpenTask,
-	onOpenProject,
-}: GlobalSearchInputProps) {
+export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInputProps) {
 	const rootRef = useRef<HTMLDivElement>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
+	const lastKeyboardMoveAtRef = useRef(0)
 	const [query, setQuery] = useState('')
 	const [isFocused, setIsFocused] = useState(false)
 	const [highlightedIndex, setHighlightedIndex] = useState(0)
-	const [isLoading, setIsLoading] = useState(false)
 	const normalizedQuery = query.trim()
-	const searchResult = useMemo(() => emptySearchResults(query), [query])
+	const { result, errorMessage, hasResolvedQuery } = useGlobalSearch(query)
 	const taskItems = useMemo(
-		() => searchResult.tasks.map((item, index) => ({ index, item })),
-		[searchResult.tasks],
+		() => [...result.tasks, ...result.completedTasks].map((item, index) => ({ index, item })),
+		[result.completedTasks, result.tasks],
 	)
 	const projectItems = useMemo(
 		() =>
-			searchResult.projects.map((item, index) => ({
+			[...result.projects, ...result.completedProjects].map((item, index) => ({
 				index: taskItems.length + index,
 				item,
 			})),
-		[searchResult.projects, taskItems.length],
+		[result.completedProjects, result.projects, taskItems.length],
 	)
 	const flatItems = useMemo(
 		() => [
@@ -57,24 +43,42 @@ export function GlobalSearchInput({
 	)
 	const isOpen = isFocused && normalizedQuery.length > 0
 	const shouldShowClearHint = isOpen || normalizedQuery.length > 0
+	const shouldShowResults =
+		isOpen && (flatItems.length > 0 || Boolean(errorMessage) || hasResolvedQuery)
 
 	useEffect(() => {
-		if (!normalizedQuery) {
-			setIsLoading(false)
+		if (!isOpen) {
 			setHighlightedIndex(0)
 			return
 		}
 
-		setIsLoading(true)
+		setHighlightedIndex((currentIndex) => {
+			if (flatItems.length === 0) {
+				return 0
+			}
+			return currentIndex >= flatItems.length ? 0 : currentIndex
+		})
+	}, [flatItems.length, isOpen])
+
+	useEffect(() => {
+		if (!normalizedQuery) {
+			setHighlightedIndex(0)
+		}
+	}, [normalizedQuery])
+
+	useEffect(() => {
+		if (!isOpen || flatItems.length > 0) {
+			return
+		}
+
 		const timer = window.setTimeout(() => {
-			setIsLoading(false)
 			setHighlightedIndex(0)
 		}, 120)
 
 		return () => {
 			window.clearTimeout(timer)
 		}
-	}, [normalizedQuery])
+	}, [flatItems.length, isOpen])
 
 	useEffect(() => {
 		const handleDocumentPointerDown = (event: PointerEvent) => {
@@ -135,9 +139,9 @@ export function GlobalSearchInput({
 		}
 
 		if (activeItem.kind === 'task') {
-			onOpenTask(activeItem.item.id)
+			onOpenTask(activeItem.item)
 		} else {
-			onOpenProject(activeItem.item.id)
+			onOpenProject(activeItem.item)
 		}
 
 		clearSearch()
@@ -156,12 +160,18 @@ export function GlobalSearchInput({
 
 		if (event.key === 'ArrowDown') {
 			event.preventDefault()
+			if (shouldThrottleKeyboardMove(lastKeyboardMoveAtRef)) {
+				return
+			}
 			setHighlightedIndex((currentIndex) => (currentIndex + 1) % flatItems.length)
 			return
 		}
 
 		if (event.key === 'ArrowUp') {
 			event.preventDefault()
+			if (shouldThrottleKeyboardMove(lastKeyboardMoveAtRef)) {
+				return
+			}
 			setHighlightedIndex(
 				(currentIndex) => (currentIndex - 1 + flatItems.length) % flatItems.length,
 			)
@@ -175,7 +185,7 @@ export function GlobalSearchInput({
 	}
 
 	return (
-		<div className='relative w-full min-w-0 max-w-100' data-sf-search-root='true'>
+		<div className='relative mx-auto w-full min-w-0 max-w-100' data-sf-search-root='true'>
 			<div ref={rootRef}>
 				<InputGroup className={globalSearchInputShellClass}>
 					<InputGroupAddon align='inline-start' className='px-2.5 text-sf-icon-subtle'>
@@ -219,24 +229,35 @@ export function GlobalSearchInput({
 				</InputGroup>
 			</div>
 
-			{isOpen ? (
+			{shouldShowResults ? (
 				<GlobalSearchResults
-					errorMessage={null}
+					errorMessage={errorMessage}
 					highlightedIndex={highlightedIndex}
-					isLoading={isLoading}
 					projectItems={projectItems}
 					taskItems={taskItems}
 					onHighlightIndex={setHighlightedIndex}
 					onSelectProject={(item) => {
-						onOpenProject(item.id)
+						onOpenProject(item)
 						clearSearch()
 					}}
 					onSelectTask={(item) => {
-						onOpenTask(item.id)
+						onOpenTask(item)
 						clearSearch()
 					}}
 				/>
 			) : null}
 		</div>
 	)
+}
+
+const KEYBOARD_NAV_THROTTLE_MS = 100
+
+function shouldThrottleKeyboardMove(lastKeyboardMoveAtRef: React.MutableRefObject<number>) {
+	const now = performance.now()
+	if (now - lastKeyboardMoveAtRef.current < KEYBOARD_NAV_THROTTLE_MS) {
+		return true
+	}
+
+	lastKeyboardMoveAtRef.current = now
+	return false
 }

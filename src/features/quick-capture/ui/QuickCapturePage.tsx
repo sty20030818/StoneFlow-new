@@ -358,14 +358,10 @@ export function QuickCaptureSurface({
 					))}
 					<div className='mx-1 h-4 w-px bg-sf-divider' />
 					<span className='shrink-0 text-[11.5px] text-sf-text-quaternary'>所属空间</span>
-					<span className={quickCaptureMetaPillClass}>
-						工作
-					</span>
+					<span className={quickCaptureMetaPillClass}>工作</span>
 					<div className='mx-1 h-4 w-px bg-sf-divider' />
 					<span className='shrink-0 text-[11.5px] text-sf-text-quaternary'>所属项目</span>
-					<span className={quickCaptureMetaPillClass}>
-						稍后归类
-					</span>
+					<span className={quickCaptureMetaPillClass}>稍后归类</span>
 				</div>
 			) : null}
 
@@ -473,7 +469,9 @@ function CommandResultRow({
 }) {
 	const isTask = item.kind === 'task'
 	const title = isTask ? item.title : item.name
-	const subtitle = isTask ? (item.projectName ?? '收件箱') : formatProjectStatus(item.status)
+	const subtitle = isTask
+		? `${item.spaceName} / ${item.projectName ?? (item.inboxAt ? 'Inbox' : '独立事项')}`
+		: item.spaceName
 
 	return (
 		<button
@@ -507,9 +505,7 @@ function CommandResultRow({
 				</span>
 			</span>
 			{isTask && item.priority > 0 ? <PriorityBadge priority={item.priority} /> : null}
-			<span className={quickCaptureTypePillClass}>
-				{isTask ? '任务' : '项目'}
-			</span>
+			<span className={quickCaptureTypePillClass}>{isTask ? '任务' : '项目'}</span>
 		</button>
 	)
 }
@@ -592,8 +588,4 @@ function priorityToLabel(priority: number) {
 		default:
 			return 'P3'
 	}
-}
-
-function formatProjectStatus(status: string) {
-	return status === 'active' ? '进行中' : '草稿'
 }

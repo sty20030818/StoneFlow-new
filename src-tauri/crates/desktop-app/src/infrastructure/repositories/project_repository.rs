@@ -1,7 +1,7 @@
 //! Project Repository：只负责 Project 数据持久化与原始状态变更。
 
 use sea_orm::{
-    sea_query::Expr, ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection,
+    sea_query::Expr, ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
     EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set,
 };
 use stoneflow_entity::{prelude::Project, project};
@@ -37,6 +37,13 @@ pub enum ProjectOverviewView {
     Completed,
     Archived,
     All,
+}
+
+/// 搜索结果的生命周期过滤。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProjectSearchLifecycle {
+    Active,
+    Completed,
 }
 
 #[derive(Debug, Clone)]
@@ -96,6 +103,38 @@ impl ProjectRepository {
     pub async fn list_by_space(&self, space_id: &str) -> Result<Vec<project::Model>, AppError> {
         Project::find()
             .filter(project::Column::SpaceId.eq(space_id))
+            .all(self.connection())
+            .await
+            .map_err(AppError::from)
+    }
+
+    /// 搜索符合查询文本的可见 Project。
+    pub async fn search_by_query(
+        &self,
+        query: &str,
+        lifecycle: ProjectSearchLifecycle,
+    ) -> Result<Vec<project::Model>, AppError> {
+        let pattern = format!("%{query}%");
+        let mut project_query = Project::find()
+            .filter(project::Column::DeletedAt.is_null())
+            .filter(project::Column::ArchivedAt.is_null())
+            .filter(
+                Condition::any()
+                    .add(project::Column::Name.like(pattern.clone()))
+                    .add(project::Column::Description.like(pattern)),
+            )
+            .order_by_desc(project::Column::UpdatedAt);
+
+        project_query = match lifecycle {
+            ProjectSearchLifecycle::Active => {
+                project_query.filter(project::Column::CompletedAt.is_null())
+            }
+            ProjectSearchLifecycle::Completed => {
+                project_query.filter(project::Column::CompletedAt.is_not_null())
+            }
+        };
+
+        project_query
             .all(self.connection())
             .await
             .map_err(AppError::from)

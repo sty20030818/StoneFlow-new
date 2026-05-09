@@ -24,7 +24,7 @@ export type {
 	LifecycleMode,
 	ListLifecycleEntriesInput,
 } from './lifecycle'
-export type { SearchTaskItem, SearchProjectItem } from './search'
+export type { SearchEntitiesResult, SearchTaskItem, SearchProjectItem } from './search'
 export type {
 	CreateViewInput,
 	DateFilter,
