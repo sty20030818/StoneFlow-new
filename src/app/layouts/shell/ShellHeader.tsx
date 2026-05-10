@@ -364,7 +364,7 @@ export function ShellHeader({
 							}
 						}}
 					>
-						<div className='min-w-0 w-full'>
+						<div className='min-w-0 w-full' data-tauri-drag-region>
 							<GlobalSearchInput
 								onOpenProject={handleOpenProjectFromSearch}
 								onOpenTask={handleOpenTaskFromSearch}
