@@ -6,29 +6,32 @@ describe('commandOpen event helpers', () => {
 			normalizeCommandOpenPayload({
 				kind: 'task',
 				id: 'task-uuid',
-				space_slug: 'work',
+				space_id: 'space-uuid',
 				project_id: 'project-uuid',
+				placement: 'project',
 			}),
 		).toEqual({
 			kind: 'task',
 			id: 'task-uuid',
-			spaceSlug: 'work',
+			spaceId: 'space-uuid',
 			projectId: 'project-uuid',
+			placement: 'project',
 		})
 	})
 
-	it('没有项目归属时 projectId 为 null', () => {
+	it('没有项目归属时使用 no_project 作为默认 placement', () => {
 		expect(
 			normalizeCommandOpenPayload({
 				kind: 'task',
 				id: 'task-uuid',
-				space_slug: 'work',
+				space_id: 'space-uuid',
 			}),
 		).toEqual({
 			kind: 'task',
 			id: 'task-uuid',
-			spaceSlug: 'work',
+			spaceId: 'space-uuid',
 			projectId: null,
+			placement: 'no_project',
 		})
 	})
 
@@ -38,7 +41,7 @@ describe('commandOpen event helpers', () => {
 			normalizeCommandOpenPayload({
 				kind: 'space',
 				id: 'space-uuid',
-				space_slug: 'work',
+				space_id: 'space-uuid',
 			}),
 		).toBeNull()
 	})

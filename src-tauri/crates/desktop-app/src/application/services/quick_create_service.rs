@@ -33,7 +33,24 @@ use crate::{
     },
 };
 
-const DEFAULT_RECENT_LIMIT: usize = 5;
+const DEFAULT_RECENT_LIMIT: usize = 3;
+const QUICK_CREATE_SEARCH_LIMIT: u64 = 3;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QuickResolvedPlacement {
+    Project,
+    Inbox,
+    NoProject,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuickResolvedOpenTarget {
+    pub kind: &'static str,
+    pub id: String,
+    pub space_id: String,
+    pub project_id: Option<String>,
+    pub placement: QuickResolvedPlacement,
+}
 
 #[derive(Debug, Clone)]
 pub struct QuickCreateService {
@@ -180,7 +197,7 @@ impl QuickCreateService {
             .search_service
             .search_entities(SearchEntitiesInput {
                 query: input.query,
-                limit_per_section: Some(input.limit.max(1)),
+                limit_per_section: Some(input.limit.max(1).min(QUICK_CREATE_SEARCH_LIMIT)),
             })
             .await?;
 
@@ -230,6 +247,22 @@ impl QuickCreateService {
             .await
     }
 
+    pub async fn resolve_task_open_target(
+        &self,
+        task_id: &str,
+    ) -> Result<QuickResolvedOpenTarget, AppError> {
+        let detail = self.get_task_detail(task_id).await?;
+        let placement = resolve_task_placement(&detail);
+
+        Ok(QuickResolvedOpenTarget {
+            kind: "task",
+            id: detail.id,
+            space_id: detail.space_id,
+            project_id: detail.project_id.clone(),
+            placement,
+        })
+    }
+
     pub async fn get_project_detail(
         &self,
         project_id: &str,
@@ -239,6 +272,21 @@ impl QuickCreateService {
                 project_id: project_id.to_owned(),
             })
             .await
+    }
+
+    pub async fn resolve_project_open_target(
+        &self,
+        project_id: &str,
+    ) -> Result<QuickResolvedOpenTarget, AppError> {
+        let detail = self.get_project_detail(project_id).await?;
+
+        Ok(QuickResolvedOpenTarget {
+            kind: "project",
+            id: detail.id,
+            space_id: detail.space_id,
+            project_id: None,
+            placement: QuickResolvedPlacement::Project,
+        })
     }
 
     async fn list_recent_entities(
@@ -384,6 +432,18 @@ fn map_created_payload(detail: TaskDetailDto, space_fallback: bool) -> QuickCrea
         inbox_at: detail.inbox_at,
         space_fallback,
     }
+}
+
+fn resolve_task_placement(detail: &TaskDetailDto) -> QuickResolvedPlacement {
+    if detail.project_id.is_some() {
+        return QuickResolvedPlacement::Project;
+    }
+
+    if detail.inbox_at.is_some() {
+        return QuickResolvedPlacement::Inbox;
+    }
+
+    QuickResolvedPlacement::NoProject
 }
 
 fn map_search_task(task: SearchTaskItemDto) -> QuickTaskItemPayload {

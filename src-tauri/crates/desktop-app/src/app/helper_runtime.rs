@@ -248,19 +248,19 @@ async fn open_created_task(
     service: &QuickCreateService,
     created: &QuickCreatedPayload,
 ) -> Result<(), AppError> {
-    let detail = service.get_task_detail(&created.id).await?;
+    let target = service.resolve_task_open_target(&created.id).await?;
     restore_main_window(app_handle).await?;
     emit_command_open(
         app_handle,
         CommandOpenPayload {
-            kind: "task",
-            id: detail.id,
-            space_id: detail.space_id,
-            project_id: detail.project_id,
-            placement: match detail.inbox_at {
-                Some(_) => "inbox",
-                None if detail.project_name.is_none() => "no_project",
-                None => "project",
+            kind: target.kind,
+            id: target.id,
+            space_id: target.space_id,
+            project_id: target.project_id,
+            placement: match target.placement {
+                crate::application::services::QuickResolvedPlacement::Project => "project",
+                crate::application::services::QuickResolvedPlacement::Inbox => "inbox",
+                crate::application::services::QuickResolvedPlacement::NoProject => "no_project",
             },
         },
     )
@@ -275,31 +275,33 @@ async fn open_existing_target(
 
     match payload.kind {
         QuickOpenTargetKind::Task => {
-            let detail = service.get_task_detail(&payload.id).await?;
+            let target = service.resolve_task_open_target(&payload.id).await?;
             emit_command_open(
                 app_handle,
                 CommandOpenPayload {
-                    kind: "task",
-                    id: detail.id,
-                    space_id: detail.space_id,
-                    project_id: detail.project_id,
-                    placement: match detail.inbox_at {
-                        Some(_) => "inbox",
-                        None if detail.project_name.is_none() => "no_project",
-                        None => "project",
+                    kind: target.kind,
+                    id: target.id,
+                    space_id: target.space_id,
+                    project_id: target.project_id,
+                    placement: match target.placement {
+                        crate::application::services::QuickResolvedPlacement::Project => "project",
+                        crate::application::services::QuickResolvedPlacement::Inbox => "inbox",
+                        crate::application::services::QuickResolvedPlacement::NoProject => {
+                            "no_project"
+                        }
                     },
                 },
             )
         }
         QuickOpenTargetKind::Project => {
-            let detail = service.get_project_detail(&payload.id).await?;
+            let target = service.resolve_project_open_target(&payload.id).await?;
             emit_command_open(
                 app_handle,
                 CommandOpenPayload {
-                    kind: "project",
-                    id: detail.id,
-                    space_id: detail.space_id,
-                    project_id: None,
+                    kind: target.kind,
+                    id: target.id,
+                    space_id: target.space_id,
+                    project_id: target.project_id,
                     placement: "project",
                 },
             )

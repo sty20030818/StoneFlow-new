@@ -7,6 +7,7 @@ mod database_seed_tests;
 mod id_time_tests;
 mod lifecycle_tests;
 mod project_tests;
+mod quick_create_tests;
 mod runtime_tests;
 mod search_tests;
 mod settings_tests;

@@ -18,7 +18,9 @@ pub use project_service::{
     ProjectIdInput, ProjectOverviewItemDto, ProjectScopeInput, ProjectScopeKind, ProjectService,
     ProjectSidebarItemDto, UpdateProjectInput,
 };
-pub use quick_create_service::QuickCreateService;
+pub use quick_create_service::{
+    QuickCreateService, QuickResolvedOpenTarget, QuickResolvedPlacement,
+};
 pub use search_service::{
     SearchEntitiesInput, SearchEntitiesResultDto, SearchProjectItemDto, SearchService,
     SearchTaskItemDto,
