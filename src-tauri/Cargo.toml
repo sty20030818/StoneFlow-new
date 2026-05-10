@@ -34,7 +34,7 @@ tauri-plugin-opener = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-window-state = "2"
 thiserror = "1"
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "io-util", "time", "net"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "io-util", "time", "net", "process"] }
 uuid = { version = "1", features = ["v4", "v7", "serde"] }
 
 [package]

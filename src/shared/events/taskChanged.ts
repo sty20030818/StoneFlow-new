@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent } from 'react'
+import { useEffect, useRef } from 'react'
 import { listen } from '@tauri-apps/api/event'
 
 import type { Scope } from '@/shared/types'
@@ -85,13 +85,19 @@ export function useTaskChangedListener(
 	scope: Scope,
 	onTaskChanged: (payload: TaskChangedPayload) => void,
 ) {
-	const handleTaskChanged = useEffectEvent((payload: TaskChangedPayload) => {
-		if (!isTaskChangedForScope(payload, scope)) {
-			return
-		}
+	const onTaskChangedRef = useRef(onTaskChanged)
+	onTaskChangedRef.current = onTaskChanged
+	const scopeRef = useRef(scope)
+	scopeRef.current = scope
 
-		onTaskChanged(payload)
-	})
-
-	useEffect(() => subscribeToTaskChanged(handleTaskChanged), [scope])
+	useEffect(
+		() =>
+			subscribeToTaskChanged((payload) => {
+				if (!isTaskChangedForScope(payload, scopeRef.current)) {
+					return
+				}
+				onTaskChangedRef.current(payload)
+			}),
+		[],
+	)
 }

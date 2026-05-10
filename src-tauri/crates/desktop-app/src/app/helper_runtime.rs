@@ -1,9 +1,7 @@
-//! Helper runtime：负责 IPC server、Helper spawn/supervise 与主窗口打开编排。
+//! Helper IPC Server：只负责 IPC 监听与请求分发。
 
 use std::io;
-use std::path::PathBuf;
-use std::process::{Command, ExitStatus};
-use std::time::Duration;
+use std::sync::Arc;
 
 use interprocess::local_socket::{
     tokio::{prelude::*, Listener},
@@ -15,17 +13,15 @@ use stoneflow_ipc_protocol::{
 };
 use tauri::{Emitter, Manager};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::sync::Notify;
 
 use crate::{
     app::{
         error::AppError,
-        state::{
-            ActiveScopeState, CommandHelperState, HelperRuntimeStatus, IpcServerStatus,
-        },
+        state::{ActiveScopeState, CommandHelperState, PendingCommandOpenIntent},
         MAIN_WINDOW_LABEL,
     },
     application::services::QuickCreateService,
-    domain::now_utc,
     infrastructure::{
         database::DatabaseRuntimeState,
         repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
@@ -33,8 +29,6 @@ use crate::{
 };
 
 const COMMAND_OPEN_EVENT: &str = "stoneflow://command/open";
-const HELPER_MONITOR_INTERVAL_MS: u64 = 500;
-const HELPER_RESTART_BACKOFF_MS: u64 = 1_500;
 
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -46,71 +40,64 @@ struct CommandOpenPayload {
     placement: &'static str,
 }
 
-pub async fn start(
+/// IPC Server 句柄，持有 listener 和 handshake 通知器。
+pub struct IpcServerHandle {
+    pub handshake_notify: Arc<Notify>,
+}
+
+/// 启动 IPC server，返回句柄供 supervisor 使用。
+pub async fn start_ipc_server(
     app_handle: tauri::AppHandle,
     database: DatabaseRuntimeState,
     active_scope: ActiveScopeState,
     helper_state: CommandHelperState,
-) -> Result<(), AppError> {
+) -> Result<IpcServerHandle, AppError> {
     helper_state
-        .set_ipc_status(IpcServerStatus::Starting, None)
+        .set_ipc_status(crate::app::state::IpcServerStatus::Starting, None)
         .await;
 
     let listener = bind_listener(&socket_name())
         .map_err(|error| AppError::initialization(format!("IPC server bind 失败: {error}")))?;
 
+    let handshake_notify = Arc::new(Notify::new());
+    let server_handle = IpcServerHandle {
+        handshake_notify: handshake_notify.clone(),
+    };
+
     helper_state
-        .set_ipc_status(IpcServerStatus::Ready, None)
+        .set_ipc_status(crate::app::state::IpcServerStatus::Ready, None)
         .await;
-    helper_state.set_shutdown_requested(false).await;
 
     tauri::async_runtime::spawn(run_ipc_server(
         listener,
-        app_handle.clone(),
-        database.clone(),
-        active_scope.clone(),
-        helper_state.clone(),
-    ));
-
-    if let Err(error) = spawn_helper_process(&app_handle, &helper_state).await {
-        log::warn!("helper 启动失败: {error}");
-        helper_state
-            .mark_helper_disconnected(error.to_string())
-            .await;
-    }
-
-    tauri::async_runtime::spawn(monitor_helper_process(
         app_handle,
+        database,
+        active_scope,
         helper_state,
+        handshake_notify,
     ));
 
-    Ok(())
+    Ok(server_handle)
 }
 
+/// 优雅关闭 IPC server。
 pub async fn shutdown(helper_state: CommandHelperState) {
-    helper_state.set_shutdown_requested(true).await;
-    helper_state.mark_shutting_down().await;
     helper_state
-        .set_ipc_status(IpcServerStatus::Stopped, None)
+        .set_ipc_status(crate::app::state::IpcServerStatus::Stopped, None)
         .await;
-
-    if let Some(mut child) = helper_state.take_child().await {
-        let _ = child.kill();
-        let _ = child.wait();
-    }
 }
 
 pub async fn restore_main_window(app_handle: &tauri::AppHandle) -> Result<(), AppError> {
     if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
         window
             .show()
-            .map_err(|error| AppError::internal(error.to_string()))?;
+            .map_err(|error: tauri::Error| AppError::internal(error.to_string()))?;
         window
             .unminimize()
-            .map_err(|error| AppError::internal(error.to_string()))?;
+            .map_err(|error: tauri::Error| AppError::internal(error.to_string()))?;
         window
             .set_focus()
-            .map_err(|error| AppError::internal(error.to_string()))?;
+            .map_err(|error: tauri::Error| AppError::internal(error.to_string()))?;
     }
 
     Ok(())
@@ -122,13 +109,17 @@ async fn run_ipc_server(
     database: DatabaseRuntimeState,
     active_scope: ActiveScopeState,
     helper_state: CommandHelperState,
+    handshake_notify: Arc<Notify>,
 ) {
     loop {
         let stream = match listener.accept().await {
             Ok(stream) => stream,
             Err(error) => {
                 helper_state
-                    .set_ipc_status(IpcServerStatus::Error, Some(error.to_string()))
+                    .set_ipc_status(
+                        crate::app::state::IpcServerStatus::Error,
+                        Some(error.to_string()),
+                    )
                     .await;
                 log::error!("IPC accept 失败: {error}");
                 break;
@@ -139,11 +130,23 @@ async fn run_ipc_server(
         let database = database.clone();
         let active_scope = active_scope.clone();
         let helper_state = helper_state.clone();
+        let handshake_notify = handshake_notify.clone();
         tauri::async_runtime::spawn(async move {
-            if let Err(error) =
-                handle_ipc_connection(stream, app_handle, database, active_scope, helper_state).await
+            if let Err(error) = handle_ipc_connection(
+                stream,
+                app_handle,
+                database,
+                active_scope,
+                helper_state,
+                handshake_notify,
+            )
+            .await
             {
-                log::warn!("IPC 请求处理失败: {error}");
+                if error.kind() == io::ErrorKind::UnexpectedEof {
+                    log::debug!("IPC 连接 early eof（客户端提前断开）");
+                } else {
+                    log::warn!("IPC 请求处理失败: {error}");
+                }
             }
         });
     }
@@ -155,6 +158,7 @@ async fn handle_ipc_connection(
     database: DatabaseRuntimeState,
     active_scope: ActiveScopeState,
     helper_state: CommandHelperState,
+    handshake_notify: Arc<Notify>,
 ) -> Result<(), io::Error> {
     let (mut reader, mut writer) = stream.split();
     let mut len_buf = [0_u8; 4];
@@ -191,6 +195,7 @@ async fn handle_ipc_connection(
         &service,
         &active_scope,
         &helper_state,
+        &handshake_notify,
     )
     .await;
 
@@ -210,10 +215,10 @@ async fn dispatch_request(
     service: &QuickCreateService,
     active_scope: &ActiveScopeState,
     helper_state: &CommandHelperState,
+    handshake_notify: &Notify,
 ) -> Result<IpcResponse, AppError> {
-    helper_state
-        .mark_helper_ready(PROTOCOL_VERSION, now_utc().to_rfc3339())
-        .await;
+    // 首个请求到达 = 握手成功，通知 supervisor
+    handshake_notify.notify_one();
 
     match request {
         IpcRequest::Ping => Ok(IpcResponse::Pong {
@@ -233,11 +238,11 @@ async fn dispatch_request(
         )),
         IpcRequest::QuickCreateAndOpen(payload) => {
             let created = service.create(payload, active_scope.get().await).await?;
-            open_created_task(app_handle, service, &created).await?;
+            open_created_task(app_handle, service, helper_state, &created).await?;
             Ok(IpcResponse::QuickCreated(created))
         }
         IpcRequest::QuickOpenTarget(payload) => {
-            open_existing_target(app_handle, service, payload).await?;
+            open_existing_target(app_handle, service, helper_state, payload).await?;
             Ok(IpcResponse::Opened)
         }
     }
@@ -246,12 +251,14 @@ async fn dispatch_request(
 async fn open_created_task(
     app_handle: &tauri::AppHandle,
     service: &QuickCreateService,
+    helper_state: &CommandHelperState,
     created: &QuickCreatedPayload,
 ) -> Result<(), AppError> {
     let target = service.resolve_task_open_target(&created.id).await?;
     restore_main_window(app_handle).await?;
-    emit_command_open(
+    dispatch_command_open(
         app_handle,
+        helper_state,
         CommandOpenPayload {
             kind: target.kind,
             id: target.id,
@@ -264,11 +271,13 @@ async fn open_created_task(
             },
         },
     )
+    .await
 }
 
 async fn open_existing_target(
     app_handle: &tauri::AppHandle,
     service: &QuickCreateService,
+    helper_state: &CommandHelperState,
     payload: QuickOpenTargetPayload,
 ) -> Result<(), AppError> {
     restore_main_window(app_handle).await?;
@@ -276,8 +285,9 @@ async fn open_existing_target(
     match payload.kind {
         QuickOpenTargetKind::Task => {
             let target = service.resolve_task_open_target(&payload.id).await?;
-            emit_command_open(
+            dispatch_command_open(
                 app_handle,
+                helper_state,
                 CommandOpenPayload {
                     kind: target.kind,
                     id: target.id,
@@ -292,11 +302,13 @@ async fn open_existing_target(
                     },
                 },
             )
+            .await
         }
         QuickOpenTargetKind::Project => {
             let target = service.resolve_project_open_target(&payload.id).await?;
-            emit_command_open(
+            dispatch_command_open(
                 app_handle,
+                helper_state,
                 CommandOpenPayload {
                     kind: target.kind,
                     id: target.id,
@@ -305,6 +317,7 @@ async fn open_existing_target(
                     placement: "project",
                 },
             )
+            .await
         }
     }
 }
@@ -318,89 +331,27 @@ fn emit_command_open(
         .map_err(|error| AppError::internal(error.to_string()))
 }
 
-async fn spawn_helper_process(
+async fn dispatch_command_open(
     app_handle: &tauri::AppHandle,
     helper_state: &CommandHelperState,
+    payload: CommandOpenPayload,
 ) -> Result<(), AppError> {
-    let helper_binary_path = resolve_helper_binary_path()?;
     helper_state
-        .mark_helper_starting(Some(helper_binary_path.clone()))
+        .set_pending_command_open(PendingCommandOpenIntent {
+            kind: payload.kind.to_owned(),
+            id: payload.id.clone(),
+            space_id: payload.space_id.clone(),
+            project_id: payload.project_id.clone(),
+            placement: payload.placement.to_owned(),
+        })
         .await;
 
-    let mut command = Command::new(&helper_binary_path);
-    if let Some(parent_dir) = helper_binary_path.parent() {
-        command.current_dir(parent_dir);
-    }
-    command.env("STONEFLOW_MAIN_APP", "1");
-
-    let child = command
-        .spawn()
-        .map_err(|error| AppError::initialization(format!("spawn helper 失败: {error}")))?;
-    let pid = child.id();
-
-    helper_state.store_child(child).await;
-    helper_state.mark_helper_spawned(pid).await;
-
-    if app_handle.get_webview_window(MAIN_WINDOW_LABEL).is_none() {
-        log::warn!("helper 已启动，但主窗口未找到");
-    }
-
-    Ok(())
-}
-
-async fn monitor_helper_process(
-    app_handle: tauri::AppHandle,
-    helper_state: CommandHelperState,
-) {
-    loop {
-        if helper_state.is_shutdown_requested().await {
-            break;
+    match emit_command_open(app_handle, payload) {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            log::warn!("command open 事件即时投递失败，将保留待消费意图: {error}");
+            Err(error)
         }
-
-        match helper_state.with_child_mut(|child| child.try_wait()).await {
-            Some(Ok(Some(status))) => {
-                let error = format_exit_status(status);
-                helper_state.mark_helper_restarting(error.clone()).await;
-                let _ = helper_state.take_child().await;
-
-                tokio::time::sleep(Duration::from_millis(HELPER_RESTART_BACKOFF_MS)).await;
-                if helper_state.is_shutdown_requested().await {
-                    break;
-                }
-
-                if let Err(spawn_error) = spawn_helper_process(&app_handle, &helper_state).await {
-                    helper_state
-                        .mark_helper_crashed(spawn_error.to_string())
-                        .await;
-                }
-            }
-            Some(Ok(None)) => {}
-            Some(Err(error)) => {
-                helper_state
-                    .mark_helper_restarting(format!("helper try_wait 失败: {error}"))
-                    .await;
-                let _ = helper_state.take_child().await;
-            }
-            None => {
-                let snapshot = helper_state.snapshot().await;
-                if matches!(
-                    snapshot.helper_status,
-                    HelperRuntimeStatus::Disconnected
-                        | HelperRuntimeStatus::Crashed
-                        | HelperRuntimeStatus::Restarting
-                ) {
-                    tokio::time::sleep(Duration::from_millis(HELPER_RESTART_BACKOFF_MS)).await;
-                    if helper_state.is_shutdown_requested().await {
-                        break;
-                    }
-                    if let Err(error) = spawn_helper_process(&app_handle, &helper_state).await {
-                        helper_state.mark_helper_crashed(error.to_string()).await;
-                    }
-                }
-            }
-        }
-
-        tokio::time::sleep(Duration::from_millis(HELPER_MONITOR_INTERVAL_MS)).await;
     }
 }
 
@@ -442,61 +393,6 @@ async fn write_response(
         .await?;
     writer.write_all(&payload).await?;
     writer.flush().await
-}
-
-fn resolve_helper_binary_path() -> Result<PathBuf, AppError> {
-    let current_exe =
-        std::env::current_exe().map_err(|error| AppError::initialization(error.to_string()))?;
-    let exe_dir = current_exe
-        .parent()
-        .ok_or_else(|| AppError::initialization("无法解析主程序目录"))?;
-    let helper_binary_name = if cfg!(windows) {
-        "stoneflow-helper.exe"
-    } else {
-        "stoneflow-helper"
-    };
-
-    let candidates = vec![exe_dir.join(helper_binary_name)];
-
-    #[cfg(target_os = "macos")]
-    {
-        let login_item = exe_dir
-            .parent()
-            .and_then(|path| path.parent())
-            .map(|contents_dir| {
-                contents_dir.join("Library")
-                    .join("LoginItems")
-                    .join("StoneFlow Helper.app")
-                    .join("Contents")
-                    .join("MacOS")
-                    .join("stoneflow-helper")
-            });
-        if let Some(path) = login_item {
-            candidates.insert(0, path);
-        }
-    }
-
-    for path in &candidates {
-        if path.exists() {
-            return Ok(path.clone());
-        }
-    }
-
-    Err(AppError::initialization(format!(
-        "找不到 Helper 二进制，已检查: {}",
-        candidates
-            .into_iter()
-            .map(|path| path.display().to_string())
-            .collect::<Vec<_>>()
-            .join(", ")
-    )))
-}
-
-fn format_exit_status(status: ExitStatus) -> String {
-    match status.code() {
-        Some(code) => format!("helper 意外退出，code={code}"),
-        None => "helper 被外部终止".to_owned(),
-    }
 }
 
 fn map_app_error(error: AppError) -> IpcError {

@@ -1,9 +1,9 @@
-//! 全局快捷键注册：Option+Space 触发 Quick Capture 面板 toggle。
+//! 全局快捷键注册：Option+Space 触发 Quick Create 面板 toggle。
 
 use tauri::AppHandle;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
-use crate::window_spec::QUICK_CAPTURE_SHORTCUT;
+use crate::window_spec::QUICK_CREATE_SHORTCUT;
 
 /// 注册全局快捷键，失败时只记录 warn，不阻塞 Helper 启动。
 ///
@@ -12,7 +12,7 @@ pub fn register_global_shortcut(app_handle: &AppHandle<tauri::Wry>) {
     let handle = app_handle.clone();
 
     let result = app_handle.global_shortcut().on_shortcut(
-        QUICK_CAPTURE_SHORTCUT,
+        QUICK_CREATE_SHORTCUT,
         move |_app, _shortcut, event| {
             // 只响应 key-down，避免 key-up 重复唤起。
             if event.state != ShortcutState::Pressed {
@@ -20,22 +20,22 @@ pub fn register_global_shortcut(app_handle: &AppHandle<tauri::Wry>) {
             }
 
             #[cfg(target_os = "macos")]
-            crate::panel::toggle_quick_capture_panel(&handle);
+            crate::panel::toggle_quick_create_panel(&handle);
 
             #[cfg(target_os = "windows")]
-            crate::panel_windows::toggle_quick_capture_panel(&handle);
+            crate::panel_windows::toggle_quick_create_panel(&handle);
 
-            // 其他平台暂未定义 Quick Capture 浮窗语义。
+            // 其他平台暂未定义 Quick Create 浮窗语义。
             #[cfg(not(any(target_os = "macos", target_os = "windows")))]
             {
                 let _ = &handle; // 消除未使用警告
-                log::warn!("helper: 当前平台暂不支持 Quick Capture 浮窗");
+                log::warn!("helper: 当前平台暂不支持 Quick Create 浮窗");
             }
         },
     );
 
     match result {
-        Ok(()) => log::info!("helper: 全局快捷键 {QUICK_CAPTURE_SHORTCUT} 注册成功"),
-        Err(error) => log::warn!("helper: 全局快捷键 {QUICK_CAPTURE_SHORTCUT} 注册失败: {error}"),
+        Ok(()) => log::info!("helper: 全局快捷键 {QUICK_CREATE_SHORTCUT} 注册成功"),
+        Err(error) => log::warn!("helper: 全局快捷键 {QUICK_CREATE_SHORTCUT} 注册失败: {error}"),
     }
 }

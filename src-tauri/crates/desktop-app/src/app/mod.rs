@@ -11,6 +11,7 @@ pub mod commands;
 pub mod error;
 pub mod helper_runtime;
 pub mod state;
+pub mod supervisor;
 
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
 const MAIN_WINDOW_WIDTH: f64 = 1360.0;
@@ -89,12 +90,24 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             app.manage(database_state.clone());
 
             build_main_window(app)?;
-            tauri::async_runtime::block_on(helper_runtime::start(
+
+            // 启动 IPC server
+            let ipc_handle = tauri::async_runtime::block_on(helper_runtime::start_ipc_server(
                 app.handle().clone(),
                 database_state,
                 active_scope_state,
-                helper_state,
+                helper_state.clone(),
             ))?;
+
+            // 启动 supervisor
+            let supervisor = supervisor::HelperSupervisor::new(
+                app.handle().clone(),
+                helper_state.clone(),
+                ipc_handle.handshake_notify,
+            );
+            let supervisor_handle = supervisor.handle();
+            app.manage(supervisor_handle);
+            tauri::async_runtime::spawn(supervisor.run());
             Ok(())
         })
         .invoke_handler(commands::handler())
@@ -107,8 +120,9 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
         .expect("failed to build StoneFlow Tauri application");
     app.run(|app_handle, event| {
         if matches!(event, tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit) {
-            let helper_state = app_handle.state::<CommandHelperState>().inner().clone();
-            tauri::async_runtime::block_on(helper_runtime::shutdown(helper_state));
+            if let Some(handle) = app_handle.try_state::<supervisor::SupervisorHandle>() {
+                handle.request_shutdown();
+            }
         }
     });
 }

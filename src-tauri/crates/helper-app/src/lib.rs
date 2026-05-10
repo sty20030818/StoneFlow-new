@@ -47,11 +47,11 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
 
         // macOS：在 setup（主线程）创建 NSPanel。
         #[cfg(target_os = "macos")]
-        panel::init_quick_capture_panel(app.handle());
+        panel::init_quick_create_panel(app.handle());
 
         // Windows：预创建标准 Tauri 浮窗，后续快捷键只负责 toggle。
         #[cfg(target_os = "windows")]
-        panel_windows::init_quick_capture_panel(app.handle());
+        panel_windows::init_quick_create_panel(app.handle());
 
         shortcut::register_global_shortcut(app.handle());
 
@@ -62,7 +62,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
                 Ok(version) => log::info!("helper: 与主 App IPC 连通，协议版本={version}"),
                 Err(error) => log::warn!(
                     "helper: IPC 自检失败（主 App 可能未就绪）：{error}。\
-                         稍后用户触发 Quick Capture 时会重试。"
+                         稍后用户触发 Quick Create 时会重试。"
                 ),
             }
         });

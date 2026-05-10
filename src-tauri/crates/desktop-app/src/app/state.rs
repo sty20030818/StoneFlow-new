@@ -103,6 +103,18 @@ pub struct CommandHelperState {
     snapshot: Arc<RwLock<CommandHelperSnapshot>>,
     child: Arc<Mutex<Option<Child>>>,
     shutdown_requested: Arc<RwLock<bool>>,
+    pending_command_open: Arc<RwLock<Option<PendingCommandOpenIntent>>>,
+}
+
+/// 主窗口尚未 ready 时暂存的打开意图。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingCommandOpenIntent {
+    pub kind: String,
+    pub id: String,
+    pub space_id: String,
+    pub project_id: Option<String>,
+    pub placement: String,
 }
 
 impl CommandHelperState {
@@ -205,5 +217,14 @@ impl CommandHelperState {
 
     pub async fn is_shutdown_requested(&self) -> bool {
         *self.shutdown_requested.read().await
+    }
+
+    pub async fn set_pending_command_open(&self, intent: PendingCommandOpenIntent) {
+        let mut guard = self.pending_command_open.write().await;
+        *guard = Some(intent);
+    }
+
+    pub async fn take_pending_command_open(&self) -> Option<PendingCommandOpenIntent> {
+        self.pending_command_open.write().await.take()
     }
 }

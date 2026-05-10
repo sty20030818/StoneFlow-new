@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
-# Helper 独占轻量职责：全局快捷键 + Quick Capture NSPanel + 通过 IPC 向主 App 下发请求。
+# Helper 独占轻量职责：全局快捷键 + Quick Create 面板 + 通过 IPC 向主 App 下发请求。
 # 刻意不引入 sea-orm / stoneflow-entity / stoneflow-migration / stoneflow-core 里任何业务依赖，
 # 保证 Helper 启动毫秒级、二进制体积最小。
 

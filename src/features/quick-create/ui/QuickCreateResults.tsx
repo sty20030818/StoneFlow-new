@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { FolderIcon, LoaderCircleIcon, SearchIcon } from 'lucide-react'
+import { FolderIcon, SearchIcon } from 'lucide-react'
 
 import { useQuickCreate } from '@/features/quick-create/model/QuickCreateProvider'
 import type { QuickCreateResultItem, QuickCreateTaskItem } from '@/features/quick-create/model/types'
@@ -9,7 +9,7 @@ export function QuickCreateResults() {
 	const { derived, state } = useQuickCreate()
 
 	if (state.isBootstrapping) {
-		return <PanelState icon={<LoaderCircleIcon className='size-4 animate-spin' />} label='正在初始化 Quick Create...' />
+		return null
 	}
 
 	if (derived.isShowingRecent) {
@@ -41,11 +41,7 @@ export function QuickCreateResults() {
 		)
 	}
 
-	if (state.isSearching && derived.flatItems.length === 0) {
-		return <PanelState icon={<LoaderCircleIcon className='size-4 animate-spin' />} label='正在搜索任务与项目...' />
-	}
-
-	if (derived.flatItems.length === 0) {
+	if (derived.flatItems.length === 0 && !state.isSearching && !derived.isSearchingMode) {
 		return <PanelState icon={<SearchIcon className='size-4' />} label={`没有匹配结果，按 Enter 创建“${state.draft.title.trim()}”。`} />
 	}
 

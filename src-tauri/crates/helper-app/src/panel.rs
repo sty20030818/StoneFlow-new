@@ -1,4 +1,4 @@
-//! Quick Capture NSPanel 生命周期（macOS-only）。
+//! Quick Create NSPanel 生命周期（macOS-only）。
 //!
 //! 遵循 tauri-nspanel 官方 `panel_builder` / `fullscreen` 示例组合：
 //!   - Accessory App + NonActivatingPanel + can_become_key_window + is_floating_panel
@@ -23,22 +23,22 @@
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, Wry};
 use tauri_nspanel::{CollectionBehavior, ManagerExt, StyleMask, WebviewWindowExt};
 
-use crate::window_spec::{QUICK_CAPTURE_LABEL, QUICK_CAPTURE_TITLE, QUICK_CAPTURE_URL};
-use crate::window_spec::{QUICK_CAPTURE_WINDOW_HEIGHT, QUICK_CAPTURE_WINDOW_WIDTH};
+use crate::window_spec::{QUICK_CREATE_LABEL, QUICK_CREATE_TITLE, QUICK_CREATE_URL};
+use crate::window_spec::{QUICK_CREATE_WINDOW_HEIGHT, QUICK_CREATE_WINDOW_WIDTH};
 
 // 同时声明 NSPanel 子类 + NSWindowDelegate 子类：
-//  - QuickCapturePanel：can_become_key_window + is_floating_panel。
-//  - QuickCapturePanelEvents：监听 `windowDidBecomeKey:` / `windowDidResignKey:`，
+//  - QuickCreatePanel：can_become_key_window + is_floating_panel。
+//  - QuickCreatePanelEvents：监听 `windowDidBecomeKey:` / `windowDidResignKey:`，
 //    驱动「前端 focus」与「失焦自动隐藏」两件事。
 tauri_nspanel::tauri_panel! {
-    panel!(QuickCapturePanel {
+    panel!(QuickCreatePanel {
         config: {
             can_become_key_window: true,
             is_floating_panel: true
         }
     })
 
-    panel_event!(QuickCapturePanelEvents {
+    panel_event!(QuickCreatePanelEvents {
         window_did_become_key(notification: &NSNotification) -> (),
         window_did_resign_key(notification: &NSNotification) -> ()
     })
@@ -48,20 +48,20 @@ tauri_nspanel::tauri_panel! {
 ///
 /// 必须在主线程调用：AppKit 所有 ObjC 操作（`to_panel`、`set_collection_behavior`
 /// 等）都需要主线程语义，否则 `CanJoinAllSpaces` 等 flag 不会生效。
-pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
-    if app_handle.get_webview_panel(QUICK_CAPTURE_LABEL).is_ok() {
+pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
+    if app_handle.get_webview_panel(QUICK_CREATE_LABEL).is_ok() {
         return;
     }
 
     let window = match WebviewWindowBuilder::new(
         app_handle,
-        QUICK_CAPTURE_LABEL,
-        WebviewUrl::App(QUICK_CAPTURE_URL.into()),
+        QUICK_CREATE_LABEL,
+        WebviewUrl::App(QUICK_CREATE_URL.into()),
     )
-    .title(QUICK_CAPTURE_TITLE)
-    .inner_size(QUICK_CAPTURE_WINDOW_WIDTH, QUICK_CAPTURE_WINDOW_HEIGHT)
-    .min_inner_size(QUICK_CAPTURE_WINDOW_WIDTH, QUICK_CAPTURE_WINDOW_HEIGHT)
-    .max_inner_size(QUICK_CAPTURE_WINDOW_WIDTH, QUICK_CAPTURE_WINDOW_HEIGHT)
+    .title(QUICK_CREATE_TITLE)
+    .inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
+    .min_inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
+    .max_inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
     .resizable(false)
     .fullscreen(false)
     .always_on_top(true)
@@ -75,15 +75,15 @@ pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
     {
         Ok(w) => w,
         Err(error) => {
-            log::error!("helper: quick capture 窗口创建失败: {error}");
+            log::error!("helper: quick create 窗口创建失败: {error}");
             return;
         }
     };
 
-    let panel = match window.to_panel::<QuickCapturePanel>() {
+    let panel = match window.to_panel::<QuickCreatePanel>() {
         Ok(p) => p,
         Err(error) => {
-            log::error!("helper: quick capture 转换 NSPanel 失败: {error}");
+            log::error!("helper: quick create 转换 NSPanel 失败: {error}");
             return;
         }
     };
@@ -106,12 +106,12 @@ pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
     // 注：tauri-nspanel 的 `set_event_handler` 会内部 `retain` 这个 handler
     // 并存进 panel 的 ivar（见 src/panel.rs 的实现），因此本地 `handler`
     // 绑定离开作用域后 ObjC delegate 仍然活着，无需额外 leak。
-    let handler = QuickCapturePanelEvents::new();
+    let handler = QuickCreatePanelEvents::new();
 
     let app_for_show = app_handle.clone();
     handler.window_did_become_key(move |_notification| {
         log::info!("helper: windowDidBecomeKey → emit quick-create:shown");
-        if let Some(window) = app_for_show.get_webview_window(QUICK_CAPTURE_LABEL) {
+        if let Some(window) = app_for_show.get_webview_window(QUICK_CREATE_LABEL) {
             if let Err(error) = window.emit("quick-create:shown", ()) {
                 log::warn!("helper: quick-create:shown 事件发送失败: {error}");
             }
@@ -122,7 +122,7 @@ pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
     handler.window_did_resign_key(move |_notification| {
         // 失去 key 就意味着用户已经在别处操作，直接隐藏面板。
         // 用 get_webview_panel 重新取引用，避免跨闭包搬运非 Send 类型。
-        if let Ok(panel) = app_for_hide.get_webview_panel(QUICK_CAPTURE_LABEL) {
+        if let Ok(panel) = app_for_hide.get_webview_panel(QUICK_CREATE_LABEL) {
             log::info!("helper: windowDidResignKey → hide panel");
             panel.hide();
         }
@@ -131,16 +131,16 @@ pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
     panel.set_event_handler(Some(handler.as_ref()));
 
     log::info!(
-        "helper: quick capture NSPanel 初始化完成 \
-         [level=101/PopUpMenu, style=NonActivating, collection=MoveToActiveSpace+FullScreenAuxiliary+IgnoresCycle, delegate=QuickCapturePanelEvents]"
+        "helper: quick create NSPanel 初始化完成 \
+         [level=101/PopUpMenu, style=NonActivating, collection=MoveToActiveSpace+FullScreenAuxiliary+IgnoresCycle, delegate=QuickCreatePanelEvents]"
     );
 }
 
 /// Toggle 面板：可见则隐藏，否则定位到当前屏并 `orderFrontRegardless`。
 ///
 /// 所有 AppKit 操作通过 `run_on_main_thread` 派发，符合线程安全要求。
-pub fn toggle_quick_capture_panel(app_handle: &AppHandle<Wry>) {
-    let panel = match app_handle.get_webview_panel(QUICK_CAPTURE_LABEL) {
+pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
+    let panel = match app_handle.get_webview_panel(QUICK_CREATE_LABEL) {
         Ok(p) => p,
         Err(_) => {
             log::error!("helper: Option+Space 触发，但 panel 未初始化");
@@ -218,8 +218,8 @@ fn center_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel) {
         unsafe { objc2::msg_send![&*screen, visibleFrame] };
     let ns_panel = panel.as_panel();
 
-    let x = screen_frame.origin.x + (screen_frame.size.width - QUICK_CAPTURE_WINDOW_WIDTH) / 2.0;
-    let y = screen_frame.origin.y + (screen_frame.size.height - QUICK_CAPTURE_WINDOW_HEIGHT) / 2.0;
+    let x = screen_frame.origin.x + (screen_frame.size.width - QUICK_CREATE_WINDOW_WIDTH) / 2.0;
+    let y = screen_frame.origin.y + (screen_frame.size.height - QUICK_CREATE_WINDOW_HEIGHT) / 2.0;
 
     unsafe {
         let _: () =

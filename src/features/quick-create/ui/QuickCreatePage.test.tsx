@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import type { PropsWithChildren } from 'react'
 
 import {
 	create,
@@ -14,12 +15,15 @@ import type {
 	QuickCreateInitialState,
 	QuickCreateProjectItem,
 	QuickCreateProjectOption,
+	QuickCreateProjectsBySpace,
 	QuickCreateTaskItem,
 } from '@/features/quick-create/model/types'
 import { formatDateLabel } from '@/features/quick-create/model/QuickCreateProvider'
 
 const hideMock = vi.fn()
 const listenMock = vi.fn()
+const originalRequestAnimationFrame = window.requestAnimationFrame
+const originalCancelAnimationFrame = window.cancelAnimationFrame
 
 vi.mock('@/features/quick-create/api/quickCreate', () => ({
 	create: vi.fn<typeof create>(),
@@ -40,6 +44,51 @@ vi.mock('@tauri-apps/api/window', () => ({
 	}),
 }))
 
+vi.mock('@/shared/ui/base/popover', () => {
+	function Popover({
+		open,
+		onOpenChange,
+		children,
+	}: PropsWithChildren<{ open?: boolean; onOpenChange?: (open: boolean) => void }>) {
+		const content = Array.isArray(children) ? children[1] : null
+		const trigger = Array.isArray(children) ? children[0] : children
+
+		return (
+			<>
+				<span
+					onClick={() => onOpenChange?.(!open)}
+					onKeyDown={(event) => {
+						if (event.key === 'Enter' || event.key === ' ') {
+							onOpenChange?.(!open)
+						}
+					}}
+				>
+					{trigger}
+				</span>
+				{open ? content : null}
+			</>
+		)
+	}
+
+	function PopoverTrigger({ children }: PropsWithChildren<{ asChild?: boolean }>) {
+		return <>{children}</>
+	}
+
+	function PopoverContent({ children }: PropsWithChildren) {
+		return <div data-testid='popover-content'>{children}</div>
+	}
+
+	return {
+		Popover,
+		PopoverTrigger,
+		PopoverContent,
+	}
+})
+
+vi.mock('@/shared/ui/base/calendar', () => ({
+	Calendar: () => <div data-testid='calendar' />,
+}))
+
 const mockedCreate = vi.mocked(create)
 const mockedCreateAndOpen = vi.mocked(createAndOpen)
 const mockedGetInitialState = vi.mocked(getInitialState)
@@ -49,7 +98,12 @@ const mockedSearch = vi.mocked(search)
 
 describe('QuickCreatePage', () => {
 	beforeEach(() => {
-		vi.useFakeTimers()
+		window.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+			return window.setTimeout(() => callback(performance.now()), 0)
+		}) as typeof window.requestAnimationFrame
+		window.cancelAnimationFrame = ((id: number) => {
+			window.clearTimeout(id)
+		}) as typeof window.cancelAnimationFrame
 		hideMock.mockReset()
 		listenMock.mockReset()
 		listenMock.mockResolvedValue(() => undefined)
@@ -71,8 +125,9 @@ describe('QuickCreatePage', () => {
 	})
 
 	afterEach(async () => {
-		await vi.runOnlyPendingTimersAsync()
-		vi.useRealTimers()
+		cleanup()
+		window.requestAnimationFrame = originalRequestAnimationFrame
+		window.cancelAnimationFrame = originalCancelAnimationFrame
 	})
 
 	it('初始打开显示 recent 区并聚焦输入框', async () => {
@@ -94,7 +149,6 @@ describe('QuickCreatePage', () => {
 
 		const input = screen.getByLabelText('Quick Create 输入')
 		fireEvent.change(input, { target: { value: 'Stone' } })
-		await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS)
 		await waitFor(() => {
 			expect(mockedSearch).toHaveBeenCalledWith('Stone', 3)
 		})
@@ -108,7 +162,6 @@ describe('QuickCreatePage', () => {
 
 		mockedCreate.mockClear()
 		fireEvent.change(input, { target: { value: 'Again' } })
-		await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS)
 		await waitFor(() => {
 			expect(mockedSearch).toHaveBeenCalledWith('Again', 3)
 		})
@@ -212,7 +265,6 @@ describe('QuickCreatePage', () => {
 
 		const input = screen.getByLabelText('Quick Create 输入')
 		fireEvent.change(input, { target: { value: 'Only Task' } })
-		await vi.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS)
 
 		await waitFor(() => {
 			expect(screen.getByText('任务')).toBeInTheDocument()
@@ -226,8 +278,6 @@ describe('formatDateLabel', () => {
 		expect(formatDateLabel('2026-05-01')).toBe('5/1')
 	})
 })
-
-const SEARCH_DEBOUNCE_MS = 120
 
 function createInitialState(): QuickCreateInitialState {
 	return {
@@ -254,7 +304,7 @@ function createInitialState(): QuickCreateInitialState {
 	}
 }
 
-function createProjectsBySpace(spaceId: string) {
+function createProjectsBySpace(spaceId: string): QuickCreateProjectsBySpace {
 	return {
 		spaceId,
 		inboxProject: createProjectOption({ kind: 'inbox', id: null, name: 'Inbox', spaceId }),
@@ -269,22 +319,42 @@ function createProjectsBySpace(spaceId: string) {
 }
 
 function createProjectOption(
+	overrides: Partial<Extract<QuickCreateProjectOption, { kind: 'project' }>> &
+		Pick<Extract<QuickCreateProjectOption, { kind: 'project' }>, 'kind' | 'id' | 'name'>,
+): Extract<QuickCreateProjectOption, { kind: 'project' }>
+function createProjectOption(
+	overrides: Partial<Extract<QuickCreateProjectOption, { kind: 'inbox' }>> &
+		Pick<Extract<QuickCreateProjectOption, { kind: 'inbox' }>, 'kind' | 'id' | 'name'>,
+): Extract<QuickCreateProjectOption, { kind: 'inbox' }>
+function createProjectOption(
+	overrides: Partial<Extract<QuickCreateProjectOption, { kind: 'noProject' }>> &
+		Pick<Extract<QuickCreateProjectOption, { kind: 'noProject' }>, 'kind' | 'id' | 'name'>,
+): Extract<QuickCreateProjectOption, { kind: 'noProject' }>
+function createProjectOption(
 	overrides: Partial<QuickCreateProjectOption> & Pick<QuickCreateProjectOption, 'kind' | 'id' | 'name'>,
 ): QuickCreateProjectOption {
-	if (overrides.kind === 'project') {
-		return {
-			kind: 'project',
-			id: overrides.id ?? 'project-1',
-			spaceId: overrides.spaceId ?? 'space-1',
-			name: overrides.name,
-		}
-	}
-
-	return {
-		kind: overrides.kind,
-		id: null,
-		spaceId: overrides.spaceId ?? 'space-1',
-		name: overrides.name,
+	switch (overrides.kind) {
+		case 'project':
+			return {
+				kind: 'project',
+				id: overrides.id ?? 'project-1',
+				spaceId: overrides.spaceId ?? 'space-1',
+				name: overrides.name,
+			}
+		case 'inbox':
+			return {
+				kind: 'inbox',
+				id: null,
+				spaceId: overrides.spaceId ?? 'space-1',
+				name: overrides.name,
+			}
+		default:
+			return {
+				kind: 'noProject',
+				id: null,
+				spaceId: overrides.spaceId ?? 'space-1',
+				name: overrides.name,
+			}
 	}
 }
 

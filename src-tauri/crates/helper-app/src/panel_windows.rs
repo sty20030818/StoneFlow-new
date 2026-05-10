@@ -1,4 +1,4 @@
-//! Quick Capture Windows 浮窗生命周期。
+//! Quick Create Windows 浮窗生命周期。
 //!
 //! Windows 没有 macOS `NSPanel` 等价物；v1 先使用 Tauri 标准 `WebviewWindow`
 //! 补齐可用体验，后续如需更接近原生工具窗，可在本模块追加 HWND 扩展样式。
@@ -9,25 +9,25 @@ use tauri::{
 };
 
 use crate::window_spec::{
-    QUICK_CAPTURE_LABEL, QUICK_CAPTURE_TITLE, QUICK_CAPTURE_URL, QUICK_CAPTURE_WINDOW_HEIGHT,
-    QUICK_CAPTURE_WINDOW_WIDTH,
+    QUICK_CREATE_LABEL, QUICK_CREATE_TITLE, QUICK_CREATE_URL, QUICK_CREATE_WINDOW_HEIGHT,
+    QUICK_CREATE_WINDOW_WIDTH,
 };
 
-/// 在 Tauri `setup()` 阶段预创建 Quick Capture 浮窗，默认隐藏等待快捷键唤起。
-pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
-    if app_handle.get_webview_window(QUICK_CAPTURE_LABEL).is_some() {
+/// 在 Tauri `setup()` 阶段预创建 Quick Create 浮窗，默认隐藏等待快捷键唤起。
+pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
+    if app_handle.get_webview_window(QUICK_CREATE_LABEL).is_some() {
         return;
     }
 
     let window = match WebviewWindowBuilder::new(
         app_handle,
-        QUICK_CAPTURE_LABEL,
-        WebviewUrl::App(QUICK_CAPTURE_URL.into()),
+        QUICK_CREATE_LABEL,
+        WebviewUrl::App(QUICK_CREATE_URL.into()),
     )
-    .title(QUICK_CAPTURE_TITLE)
-    .inner_size(QUICK_CAPTURE_WINDOW_WIDTH, QUICK_CAPTURE_WINDOW_HEIGHT)
-    .min_inner_size(QUICK_CAPTURE_WINDOW_WIDTH, QUICK_CAPTURE_WINDOW_HEIGHT)
-    .max_inner_size(QUICK_CAPTURE_WINDOW_WIDTH, QUICK_CAPTURE_WINDOW_HEIGHT)
+    .title(QUICK_CREATE_TITLE)
+    .inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
+    .min_inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
+    .max_inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
     .resizable(false)
     .fullscreen(false)
     .always_on_top(true)
@@ -42,32 +42,32 @@ pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
     {
         Ok(window) => window,
         Err(error) => {
-            log::error!("helper: windows quick capture 窗口创建失败: {error}");
+            log::error!("helper: windows quick create 窗口创建失败: {error}");
             return;
         }
     };
 
     install_focus_auto_hide(&window);
     if let Err(error) = window.set_shadow(false) {
-        log::warn!("helper: 关闭 windows quick capture 窗口阴影失败: {error}");
+        log::warn!("helper: 关闭 windows quick create 窗口阴影失败: {error}");
     }
     if let Err(error) = window.set_background_color(Some(Color(0, 0, 0, 0))) {
-        log::warn!("helper: 设置 windows quick capture 透明背景失败: {error}");
+        log::warn!("helper: 设置 windows quick create 透明背景失败: {error}");
     }
-    log::info!("helper: windows quick capture 浮窗初始化完成 [Tauri WebviewWindow]");
+    log::info!("helper: windows quick create 浮窗初始化完成 [Tauri WebviewWindow]");
 }
 
 /// Toggle 浮窗：可见则隐藏，不可见则定位、显示、聚焦并通知前端重置输入框。
-pub fn toggle_quick_capture_panel(app_handle: &AppHandle<Wry>) {
-    let Some(window) = app_handle.get_webview_window(QUICK_CAPTURE_LABEL) else {
-        log::error!("helper: Option+Space 触发，但 windows quick capture 窗口未初始化");
+pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
+    let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
+        log::error!("helper: Option+Space 触发，但 windows quick create 窗口未初始化");
         return;
     };
 
     let visible = match window.is_visible() {
         Ok(visible) => visible,
         Err(error) => {
-            log::warn!("helper: 读取 windows quick capture 可见状态失败: {error}");
+            log::warn!("helper: 读取 windows quick create 可见状态失败: {error}");
             false
         }
     };
@@ -76,7 +76,7 @@ pub fn toggle_quick_capture_panel(app_handle: &AppHandle<Wry>) {
 
     if visible {
         if let Err(error) = window.hide() {
-            log::warn!("helper: 隐藏 windows quick capture 失败: {error}");
+            log::warn!("helper: 隐藏 windows quick create 失败: {error}");
         }
         return;
     }
@@ -84,12 +84,12 @@ pub fn toggle_quick_capture_panel(app_handle: &AppHandle<Wry>) {
     center_window_on_active_monitor(&window);
 
     if let Err(error) = window.show() {
-        log::warn!("helper: 显示 windows quick capture 失败: {error}");
+        log::warn!("helper: 显示 windows quick create 失败: {error}");
         return;
     }
 
     if let Err(error) = window.set_focus() {
-        log::warn!("helper: 聚焦 windows quick capture 失败: {error}");
+        log::warn!("helper: 聚焦 windows quick create 失败: {error}");
     }
 
     if let Err(error) = window.emit("quick-create:shown", ()) {
@@ -107,13 +107,13 @@ fn install_focus_auto_hide(window: &WebviewWindow<Wry>) {
 
         match window_for_hide.is_visible() {
             Ok(true) => {
-                log::info!("helper: windows quick capture 失焦 → hide window");
+                log::info!("helper: windows quick create 失焦 → hide window");
                 if let Err(error) = window_for_hide.hide() {
-                    log::warn!("helper: 失焦隐藏 windows quick capture 失败: {error}");
+                    log::warn!("helper: 失焦隐藏 windows quick create 失败: {error}");
                 }
             }
             Ok(false) => {}
-            Err(error) => log::warn!("helper: 读取 windows quick capture 可见状态失败: {error}"),
+            Err(error) => log::warn!("helper: 读取 windows quick create 可见状态失败: {error}"),
         }
     });
 }
@@ -125,7 +125,7 @@ fn center_window_on_active_monitor(window: &WebviewWindow<Wry>) {
         None => {
             log::warn!("helper: 未识别鼠标所在屏幕，退回窗口 center()");
             if let Err(error) = window.center() {
-                log::warn!("helper: windows quick capture center 失败: {error}");
+                log::warn!("helper: windows quick create center 失败: {error}");
             }
             return;
         }
@@ -133,22 +133,22 @@ fn center_window_on_active_monitor(window: &WebviewWindow<Wry>) {
 
     let work_area = monitor.work_area();
     let scale_factor = monitor.scale_factor();
-    let width = QUICK_CAPTURE_WINDOW_WIDTH * scale_factor;
-    let height = QUICK_CAPTURE_WINDOW_HEIGHT * scale_factor;
+    let width = QUICK_CREATE_WINDOW_WIDTH * scale_factor;
+    let height = QUICK_CREATE_WINDOW_HEIGHT * scale_factor;
     let x = work_area.position.x as f64 + (work_area.size.width as f64 - width) / 2.0;
     let y = work_area.position.y as f64 + (work_area.size.height as f64 - height) / 2.0;
 
     let position = PhysicalPosition::new(x.round() as i32, y.round() as i32);
     if let Err(error) = window.set_position(position) {
-        log::warn!("helper: 定位 windows quick capture 失败: {error}");
+        log::warn!("helper: 定位 windows quick create 失败: {error}");
         if let Err(error) = window.center() {
-            log::warn!("helper: windows quick capture center 失败: {error}");
+            log::warn!("helper: windows quick create center 失败: {error}");
         }
         return;
     }
 
     log::info!(
-        "helper: windows quick capture 定位到鼠标所在屏 cursor=({},{}) work_area=({},{},{}×{}) scale={} → origin=({},{})",
+        "helper: windows quick create 定位到鼠标所在屏 cursor=({},{}) work_area=({},{},{}×{}) scale={} → origin=({},{})",
         cursor_position
             .as_ref()
             .map(|position| position.x.round() as i32)

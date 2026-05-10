@@ -5,7 +5,6 @@ import {
 	useContext,
 	useDeferredValue,
 	useEffect,
-	useEffectEvent,
 	useMemo,
 	useReducer,
 	useRef,
@@ -54,6 +53,7 @@ type QuickCreateContextValue = {
 	state: QuickCreatePanelState
 	derived: {
 		hasTitle: boolean
+		isSearchingMode: boolean
 		spaceName: string
 		placementLabel: string
 		flatItems: QuickCreateResultItem[]
@@ -99,20 +99,25 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 	const titleInputRef = useRef<HTMLInputElement>(null)
 	const projectSearchRef = useRef<HTMLInputElement>(null)
 	const closeTimerRef = useRef<number | null>(null)
+	const focusFrameRefs = useRef<number[]>([])
+	const projectFocusFrameRef = useRef<number | null>(null)
 	const searchRequestIdRef = useRef(0)
 	const bootstrapRequestIdRef = useRef(0)
 	const deferredTitle = useDeferredValue(state.draft.title)
 
 	const focusInput = useCallback(() => {
-		window.requestAnimationFrame(() => {
-			window.requestAnimationFrame(() => {
+		const frameA = window.requestAnimationFrame(() => {
+			const frameB = window.requestAnimationFrame(() => {
+				focusFrameRefs.current = focusFrameRefs.current.filter((id) => id !== frameB)
 				titleInputRef.current?.focus()
 				titleInputRef.current?.setSelectionRange(
 					titleInputRef.current.value.length,
 					titleInputRef.current.value.length,
 				)
 			})
+			focusFrameRefs.current.push(frameB)
 		})
+		focusFrameRefs.current.push(frameA)
 	}, [])
 
 	const closeWindow = useCallback(async () => {
@@ -153,61 +158,82 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 		}
 	}, [])
 
-	const resetPanel = useEffectEvent(async () => {
+	const resetPanelRef = useRef<() => void>(() => {})
+	resetPanelRef.current = () => {
 		const requestId = ++bootstrapRequestIdRef.current
 		dispatch({ type: 'bootstrapStarted' })
 
-		try {
-			const initialState = await getInitialState()
-			if (requestId !== bootstrapRequestIdRef.current) {
-				return
-			}
+		void getInitialState()
+			.then((initialState) => {
+				if (requestId !== bootstrapRequestIdRef.current) {
+					return
+				}
 
-			startTransition(() => {
-				dispatch({ type: 'bootstrapSucceeded', payload: initialState })
+				startTransition(() => {
+					dispatch({ type: 'bootstrapSucceeded', payload: initialState })
+				})
+				focusInput()
 			})
-			focusInput()
-		} catch (error) {
-			dispatch({
-				type: 'bootstrapFailed',
-				message: error instanceof Error ? error.message : 'Quick Create 初始化失败',
+			.catch((error) => {
+				if (requestId !== bootstrapRequestIdRef.current) {
+					return
+				}
+				dispatch({
+					type: 'bootstrapFailed',
+					message: error instanceof Error ? error.message : 'Quick Create 初始化失败',
+				})
 			})
-		}
-	})
+	}
 
 	useEffect(() => {
-		void resetPanel()
+		resetPanelRef.current()
 
+		let disposed = false
 		let unlisten: (() => void) | undefined
 		listen<void>(QUICK_CREATE_SHOWN_EVENT, () => {
-			void resetPanel()
+			resetPanelRef.current()
 		}).then((dispose) => {
+			if (disposed) {
+				dispose()
+				return
+			}
 			unlisten = dispose
 		})
 
 		return () => {
+			disposed = true
 			unlisten?.()
 			if (closeTimerRef.current !== null) {
 				window.clearTimeout(closeTimerRef.current)
 			}
+			for (const frameId of focusFrameRefs.current) {
+				window.cancelAnimationFrame(frameId)
+			}
+			focusFrameRefs.current = []
+			if (projectFocusFrameRef.current !== null) {
+				window.cancelAnimationFrame(projectFocusFrameRef.current)
+				projectFocusFrameRef.current = null
+			}
 		}
-	}, [resetPanel])
+	}, [])
 
-	const handleDocumentKeyDown = useEffectEvent((event: globalThis.KeyboardEvent) => {
+	const handleDocumentKeyDownRef = useRef<(event: globalThis.KeyboardEvent) => void>(() => {})
+	handleDocumentKeyDownRef.current = (event: globalThis.KeyboardEvent) => {
 		if (event.defaultPrevented || event.key !== 'Escape') {
 			return
 		}
 
 		event.preventDefault()
 		handleEscape()
-	})
+	}
 
 	useEffect(() => {
-		document.addEventListener('keydown', handleDocumentKeyDown)
+		const handler = (event: globalThis.KeyboardEvent) => handleDocumentKeyDownRef.current(event)
+		document.addEventListener('keydown', handler)
 		return () => {
-			document.removeEventListener('keydown', handleDocumentKeyDown)
+			document.removeEventListener('keydown', handler)
 		}
-	}, [handleDocumentKeyDown])
+	}, [])
 
 	useEffect(() => {
 		const query = deferredTitle.trim()
@@ -248,9 +274,15 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 
 	useEffect(() => {
 		if (state.activePopover === 'project') {
-			window.requestAnimationFrame(() => {
+			projectFocusFrameRef.current = window.requestAnimationFrame(() => {
 				projectSearchRef.current?.focus()
 			})
+			return () => {
+				if (projectFocusFrameRef.current !== null) {
+					window.cancelAnimationFrame(projectFocusFrameRef.current)
+					projectFocusFrameRef.current = null
+				}
+			}
 		}
 	}, [state.activePopover])
 
@@ -311,10 +343,15 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 
 	const normalizedTitle = state.draft.title.trim()
 	const hasTitle = normalizedTitle.length > 0
-	const displayTasks = hasTitle ? state.searchResults.tasks : state.initialState?.recentTasks ?? []
-	const displayProjects = hasTitle
-		? state.searchResults.projects
-		: state.initialState?.recentProjects ?? []
+	const isSearchingMode = deferredTitle.trim().length > 0
+	const displayTasks = useMemo(
+		() => (isSearchingMode ? state.searchResults.tasks : state.initialState?.recentTasks ?? []),
+		[isSearchingMode, state.searchResults.tasks, state.initialState?.recentTasks],
+	)
+	const displayProjects = useMemo(
+		() => (isSearchingMode ? state.searchResults.projects : state.initialState?.recentProjects ?? []),
+		[isSearchingMode, state.searchResults.projects, state.initialState?.recentProjects],
+	)
 	const flatItems = useMemo<QuickCreateResultItem[]>(
 		() => [
 			...displayTasks.map((item) => ({ kind: 'task' as const, ...item })),
@@ -587,12 +624,13 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			state,
 			derived: {
 				hasTitle,
+				isSearchingMode,
 				spaceName: currentSpace?.name ?? '加载中...',
 				placementLabel,
 				flatItems,
 				displayTasks,
 				displayProjects,
-				isShowingRecent: !hasTitle,
+				isShowingRecent: !isSearchingMode,
 				isCreateFocused: state.focusTarget === 'create',
 				activeResultIndex:
 					state.focusTarget !== 'none' && state.focusTarget !== 'create'
@@ -640,6 +678,7 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			handleEscape,
 			handleInputKeyDown,
 			hasTitle,
+			isSearchingMode,
 			moveFocus,
 			openQuickResult,
 			placementLabel,

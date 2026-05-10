@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent } from 'react'
+import { useEffect, useRef } from 'react'
 import { listen } from '@tauri-apps/api/event'
 
 export const COMMAND_OPEN_EVENT = 'stoneflow://command/open'
@@ -77,9 +77,8 @@ export function subscribeToCommandOpen(onCommandOpen: (payload: CommandOpenPaylo
 }
 
 export function useCommandOpenListener(onCommandOpen: (payload: CommandOpenPayload) => void) {
-	const handleCommandOpen = useEffectEvent((payload: CommandOpenPayload) => {
-		onCommandOpen(payload)
-	})
+	const onCommandOpenRef = useRef(onCommandOpen)
+	onCommandOpenRef.current = onCommandOpen
 
-	useEffect(() => subscribeToCommandOpen(handleCommandOpen), [])
+	useEffect(() => subscribeToCommandOpen((payload) => onCommandOpenRef.current(payload)), [])
 }

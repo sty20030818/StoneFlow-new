@@ -29,12 +29,13 @@ import {
 	selectPendingTaskOpenIntent,
 	useSearchOpenIntentStore,
 } from '@/features/global-search/model/useSearchOpenIntentStore'
-import { useCommandOpenListener } from '@/shared/events'
+import { type CommandOpenPayload, useCommandOpenListener } from '@/shared/events'
 import {
 	selectProjectOptions,
 	selectProjectSidebar,
 	useProjectStore,
 } from '@/features/project/model/useProjectStore'
+import { takePendingCommandOpenIntent } from '@/features/space/api/spaces'
 import {
 	selectSpaceError,
 	selectSpaces,
@@ -170,7 +171,8 @@ export function ShellLayout({
 		openDrawer('task', consumedIntent.taskId)
 	}, [consumePendingTaskOpenIntent, openDrawer, pathname, pendingTaskOpenIntent, spaceStatus])
 
-	useCommandOpenListener((payload) => {
+	const handleCommandOpen = useMemo(
+		() => (payload: CommandOpenPayload) => {
 		const targetPath = payload.projectId
 			? `/space/${payload.spaceId}/project/${payload.projectId}`
 			: payload.kind === 'project'
@@ -204,7 +206,34 @@ export function ShellLayout({
 		startTransition(() => {
 			navigate(targetPath)
 		})
-	})
+		},
+		[closeDrawer, navigate, openDrawer, pathname, setPendingTaskOpenIntent],
+	)
+
+	useCommandOpenListener(handleCommandOpen)
+
+	useEffect(() => {
+		if (spaceStatus !== 'ready') {
+			return
+		}
+
+		let cancelled = false
+		void takePendingCommandOpenIntent()
+			.then((payload) => {
+				if (cancelled || !payload) {
+					return
+				}
+
+				handleCommandOpen(payload)
+			})
+			.catch((error) => {
+				console.error('take pending command open intent failed', { error })
+			})
+
+		return () => {
+			cancelled = true
+		}
+	}, [handleCommandOpen, spaceStatus])
 
 	if (
 		!sidebarSettings ||

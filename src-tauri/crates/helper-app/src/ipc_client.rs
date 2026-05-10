@@ -92,13 +92,37 @@ pub async fn quick_open_target(payload: QuickOpenTargetPayload) -> Result<(), Ip
     }
 }
 
+const IPC_MAX_RETRIES: u32 = 2;
+const IPC_RETRY_DELAY_MS: u64 = 100;
+
 async fn round_trip(request: IpcRequest) -> Result<IpcResponse, IpcError> {
+    let mut last_error = None;
+
+    for attempt in 0..=IPC_MAX_RETRIES {
+        if attempt > 0 {
+            tokio::time::sleep(Duration::from_millis(IPC_RETRY_DELAY_MS)).await;
+            log::debug!("helper: IPC 重试第 {attempt} 次");
+        }
+
+        match try_round_trip(&request).await {
+            Ok(response) => return Ok(response),
+            Err(error) => {
+                log::debug!("helper: IPC 请求失败 (attempt {attempt}): {error}");
+                last_error = Some(error);
+            }
+        }
+    }
+
+    Err(last_error.unwrap_or_else(|| IpcError::Internal("ipc unknown error".into())))
+}
+
+async fn try_round_trip(request: &IpcRequest) -> Result<IpcResponse, IpcError> {
     let socket = socket_name();
     let stream = connect_with_timeout(&socket).await?;
     let (mut reader, mut writer) = stream.split();
 
     let payload =
-        serde_json::to_vec(&request).map_err(|error| IpcError::Internal(format!("serialize: {error}")))?;
+        serde_json::to_vec(request).map_err(|error| IpcError::Internal(format!("serialize: {error}")))?;
     if payload.len() > MAX_FRAME_BYTES {
         return Err(IpcError::Internal(format!(
             "request payload too large: {}",

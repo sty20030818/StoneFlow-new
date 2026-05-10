@@ -12,13 +12,13 @@ use stoneflow_ipc_protocol::{
 use crate::ipc_client;
 
 #[derive(Debug, Clone, Serialize)]
-pub struct HelperCaptureErrorPayload {
+pub struct QuickCreateErrorPayload {
     #[serde(rename = "type")]
     pub type_: &'static str,
     pub message: String,
 }
 
-impl From<IpcError> for HelperCaptureErrorPayload {
+impl From<IpcError> for QuickCreateErrorPayload {
     fn from(error: IpcError) -> Self {
         let (type_, message) = match error {
             IpcError::Validation(message) => ("Validation", message),
@@ -26,9 +26,9 @@ impl From<IpcError> for HelperCaptureErrorPayload {
             IpcError::Forbidden(message) => ("Forbidden", message),
             IpcError::Conflict(message) => ("Conflict", message),
             IpcError::Internal(message) => ("Internal", message),
-            IpcError::CaptureSpaceUnavailable(message) => ("CaptureSpaceUnavailable", message),
+            IpcError::CaptureSpaceUnavailable(message) => ("QuickCreateSpaceUnavailable", message),
             IpcError::DefaultSpaceUnavailable(message) => ("DefaultSpaceUnavailable", message),
-            IpcError::CapturePersistence(message) => ("CapturePersistence", message),
+            IpcError::CapturePersistence(message) => ("QuickCreatePersistence", message),
         };
 
         Self { type_, message }
@@ -191,10 +191,10 @@ const fn default_search_limit() -> u64 {
 
 #[tauri::command]
 pub async fn helper_quick_get_initial_state(
-) -> Result<HelperQuickInitialStateResponse, HelperCaptureErrorPayload> {
+) -> Result<HelperQuickInitialStateResponse, QuickCreateErrorPayload> {
     let payload = ipc_client::quick_get_initial_state()
         .await
-        .map_err(HelperCaptureErrorPayload::from)?;
+        .map_err(QuickCreateErrorPayload::from)?;
 
     Ok(map_initial_state(payload))
 }
@@ -202,12 +202,12 @@ pub async fn helper_quick_get_initial_state(
 #[tauri::command]
 pub async fn helper_quick_list_projects_by_space(
     input: HelperQuickListProjectsBySpaceInput,
-) -> Result<HelperQuickProjectsBySpaceResponse, HelperCaptureErrorPayload> {
+) -> Result<HelperQuickProjectsBySpaceResponse, QuickCreateErrorPayload> {
     let payload = ipc_client::quick_list_projects_by_space(QuickListProjectsBySpacePayload {
         space_id: input.space_id,
     })
     .await
-    .map_err(HelperCaptureErrorPayload::from)?;
+    .map_err(QuickCreateErrorPayload::from)?;
 
     Ok(map_projects_by_space(payload))
 }
@@ -215,13 +215,13 @@ pub async fn helper_quick_list_projects_by_space(
 #[tauri::command]
 pub async fn helper_quick_search(
     input: HelperQuickSearchInput,
-) -> Result<HelperQuickSearchResponse, HelperCaptureErrorPayload> {
+) -> Result<HelperQuickSearchResponse, QuickCreateErrorPayload> {
     let payload = ipc_client::quick_search(QuickSearchPayload {
         query: input.query,
         limit: input.limit,
     })
     .await
-    .map_err(HelperCaptureErrorPayload::from)?;
+    .map_err(QuickCreateErrorPayload::from)?;
 
     Ok(map_search_response(payload))
 }
@@ -229,25 +229,25 @@ pub async fn helper_quick_search(
 #[tauri::command]
 pub async fn helper_quick_create(
     input: HelperQuickCreateInput,
-) -> Result<(), HelperCaptureErrorPayload> {
+) -> Result<(), QuickCreateErrorPayload> {
     ipc_client::quick_create(map_create_payload(input))
         .await
-        .map_err(HelperCaptureErrorPayload::from)
+        .map_err(QuickCreateErrorPayload::from)
 }
 
 #[tauri::command]
 pub async fn helper_quick_create_and_open(
     input: HelperQuickCreateInput,
-) -> Result<(), HelperCaptureErrorPayload> {
+) -> Result<(), QuickCreateErrorPayload> {
     ipc_client::quick_create_and_open(map_create_payload(input))
         .await
-        .map_err(HelperCaptureErrorPayload::from)
+        .map_err(QuickCreateErrorPayload::from)
 }
 
 #[tauri::command]
 pub async fn helper_quick_open_target(
     input: HelperQuickOpenTargetInput,
-) -> Result<(), HelperCaptureErrorPayload> {
+) -> Result<(), QuickCreateErrorPayload> {
     ipc_client::quick_open_target(QuickOpenTargetPayload {
         kind: match input.kind {
             HelperQuickOpenTargetKind::Task => QuickOpenTargetKind::Task,
@@ -256,7 +256,7 @@ pub async fn helper_quick_open_target(
         id: input.id,
     })
     .await
-    .map_err(HelperCaptureErrorPayload::from)
+    .map_err(QuickCreateErrorPayload::from)
 }
 
 fn map_create_payload(input: HelperQuickCreateInput) -> QuickCreatePayload {
@@ -390,7 +390,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn maps_ipc_errors_to_frontend_capture_error_contract() {
+    fn maps_ipc_errors_to_frontend_quick_create_error_contract() {
         let cases = [
             (
                 IpcError::Validation("blank title".to_owned()),
@@ -399,7 +399,7 @@ mod tests {
             ),
             (
                 IpcError::CaptureSpaceUnavailable("active space missing".to_owned()),
-                "CaptureSpaceUnavailable",
+                "QuickCreateSpaceUnavailable",
                 "active space missing",
             ),
             (
@@ -409,7 +409,7 @@ mod tests {
             ),
             (
                 IpcError::CapturePersistence("sqlite write failed".to_owned()),
-                "CapturePersistence",
+                "QuickCreatePersistence",
                 "sqlite write failed",
             ),
             (
@@ -420,7 +420,7 @@ mod tests {
         ];
 
         for (error, expected_type, expected_message) in cases {
-            let payload = HelperCaptureErrorPayload::from(error);
+            let payload = QuickCreateErrorPayload::from(error);
             assert_eq!(payload.type_, expected_type);
             assert_eq!(payload.message, expected_message);
         }
