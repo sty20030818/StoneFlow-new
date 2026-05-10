@@ -9,8 +9,9 @@ use tauri::{
 };
 
 use crate::window_spec::{
-    QUICK_CREATE_LABEL, QUICK_CREATE_TITLE, QUICK_CREATE_URL, QUICK_CREATE_WINDOW_HEIGHT,
-    QUICK_CREATE_WINDOW_WIDTH,
+    QUICK_CREATE_LABEL, QUICK_CREATE_PANEL_HEIGHT, QUICK_CREATE_PANEL_TOP_RATIO,
+    QUICK_CREATE_PANEL_WIDTH, QUICK_CREATE_SHADOW_PADDING, QUICK_CREATE_TITLE,
+    QUICK_CREATE_URL, QUICK_CREATE_WINDOW_HEIGHT, QUICK_CREATE_WINDOW_WIDTH,
 };
 
 /// 在 Tauri `setup()` 阶段预创建 Quick Create 浮窗，默认隐藏等待快捷键唤起。
@@ -49,7 +50,7 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
 
     install_focus_auto_hide(&window);
     if let Err(error) = window.set_shadow(false) {
-        log::warn!("helper: 关闭 windows quick create 窗口阴影失败: {error}");
+        log::warn!("helper: 关闭 windows quick create 原生阴影失败: {error}");
     }
     if let Err(error) = window.set_background_color(Some(Color(0, 0, 0, 0))) {
         log::warn!("helper: 设置 windows quick create 透明背景失败: {error}");
@@ -81,7 +82,7 @@ pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
         return;
     }
 
-    center_window_on_active_monitor(&window);
+    position_window_on_active_monitor(&window);
 
     if let Err(error) = window.show() {
         log::warn!("helper: 显示 windows quick create 失败: {error}");
@@ -118,8 +119,8 @@ fn install_focus_auto_hide(window: &WebviewWindow<Wry>) {
     });
 }
 
-/// 将窗口居中到鼠标所在屏幕；隐藏窗口的 `current_monitor()` 容易停留在旧屏，所以优先跟随鼠标。
-fn center_window_on_active_monitor(window: &WebviewWindow<Wry>) {
+/// 将窗口定位到鼠标所在屏幕，并保证视觉 panel 顶部稳定停在工作区上方 20% 附近。
+fn position_window_on_active_monitor(window: &WebviewWindow<Wry>) {
     let (monitor, cursor_position) = match active_monitor_from_cursor(window) {
         Some(result) => result,
         None => {
@@ -133,10 +134,14 @@ fn center_window_on_active_monitor(window: &WebviewWindow<Wry>) {
 
     let work_area = monitor.work_area();
     let scale_factor = monitor.scale_factor();
-    let width = QUICK_CREATE_WINDOW_WIDTH * scale_factor;
-    let height = QUICK_CREATE_WINDOW_HEIGHT * scale_factor;
-    let x = work_area.position.x as f64 + (work_area.size.width as f64 - width) / 2.0;
-    let y = work_area.position.y as f64 + (work_area.size.height as f64 - height) / 2.0;
+    let panel_width = QUICK_CREATE_PANEL_WIDTH * scale_factor;
+    let panel_height = QUICK_CREATE_PANEL_HEIGHT * scale_factor;
+    let shadow_padding = QUICK_CREATE_SHADOW_PADDING * scale_factor;
+    let panel_x = work_area.position.x as f64 + (work_area.size.width as f64 - panel_width) / 2.0;
+    let panel_y =
+        work_area.position.y as f64 + work_area.size.height as f64 * QUICK_CREATE_PANEL_TOP_RATIO;
+    let x = panel_x - shadow_padding;
+    let y = panel_y - shadow_padding;
 
     let position = PhysicalPosition::new(x.round() as i32, y.round() as i32);
     if let Err(error) = window.set_position(position) {
@@ -148,7 +153,7 @@ fn center_window_on_active_monitor(window: &WebviewWindow<Wry>) {
     }
 
     log::info!(
-        "helper: windows quick create 定位到鼠标所在屏 cursor=({},{}) work_area=({},{},{}×{}) scale={} → origin=({},{})",
+        "helper: windows quick create 定位到鼠标所在屏 cursor=({},{}) work_area=({},{},{}×{}) scale={} panel=({}×{}) shadow_padding={} → origin=({},{})",
         cursor_position
             .as_ref()
             .map(|position| position.x.round() as i32)
@@ -162,6 +167,9 @@ fn center_window_on_active_monitor(window: &WebviewWindow<Wry>) {
         work_area.size.width,
         work_area.size.height,
         scale_factor,
+        panel_width.round() as i32,
+        panel_height.round() as i32,
+        shadow_padding.round() as i32,
         position.x,
         position.y
     );
