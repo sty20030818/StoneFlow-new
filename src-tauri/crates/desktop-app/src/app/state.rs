@@ -1,9 +1,11 @@
 //! 主应用运行时状态。
 
-use std::sync::Mutex;
+use std::path::PathBuf;
+use std::process::Child;
+use std::sync::Arc;
 
 use serde::Serialize;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use uuid::Uuid;
 
 /// 当前被主应用选中的 Scope 类型。
@@ -23,9 +25,9 @@ pub struct ActiveScopeSnapshot {
 }
 
 /// 当前 Scope 的轻量运行时状态。
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct ActiveScopeState {
-    inner: RwLock<Option<ActiveScopeSnapshot>>,
+    inner: Arc<RwLock<Option<ActiveScopeSnapshot>>>,
 }
 
 impl ActiveScopeState {
@@ -41,56 +43,167 @@ impl ActiveScopeState {
     }
 }
 
+/// Helper 进程状态。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HelperRuntimeStatus {
+    Idle,
+    Starting,
+    Ready,
+    Disconnected,
+    Crashed,
+    Restarting,
+    ShuttingDown,
+}
+
+/// IPC Server 状态。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IpcServerStatus {
+    Stopped,
+    Starting,
+    Ready,
+    Error,
+}
+
 /// Helper 运行态快照。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CommandHelperSnapshot {
     pub initialized: bool,
-    pub helper_enabled: bool,
-    pub last_invoke_success: Option<bool>,
-    pub last_invoke_error: Option<String>,
+    pub helper_status: HelperRuntimeStatus,
+    pub ipc_status: IpcServerStatus,
+    pub helper_pid: Option<u32>,
+    pub helper_binary_path: Option<String>,
+    pub last_protocol_version: Option<u16>,
+    pub last_handshake_at: Option<String>,
+    pub last_helper_error: Option<String>,
+    pub restart_count: u32,
 }
 
+impl Default for CommandHelperSnapshot {
+    fn default() -> Self {
+        Self {
+            initialized: false,
+            helper_status: HelperRuntimeStatus::Idle,
+            ipc_status: IpcServerStatus::Stopped,
+            helper_pid: None,
+            helper_binary_path: None,
+            last_protocol_version: None,
+            last_handshake_at: None,
+            last_helper_error: None,
+            restart_count: 0,
+        }
+    }
+}
+
+/// 主 App 持有的 Helper runtime 状态。
 #[derive(Debug, Clone, Default)]
-struct CommandHelperRuntime {
-    initialized: bool,
-    helper_enabled: bool,
-    last_invoke_success: Option<bool>,
-    last_invoke_error: Option<String>,
-}
-
-/// Helper 最小占位状态。
-#[derive(Debug, Default)]
 pub struct CommandHelperState {
-    runtime: Mutex<CommandHelperRuntime>,
+    snapshot: Arc<RwLock<CommandHelperSnapshot>>,
+    child: Arc<Mutex<Option<Child>>>,
+    shutdown_requested: Arc<RwLock<bool>>,
 }
 
 impl CommandHelperState {
     /// 读取运行态快照。
-    pub fn snapshot(&self) -> anyhow::Result<CommandHelperSnapshot> {
-        let runtime = self
-            .runtime
-            .lock()
-            .map_err(|_| anyhow::anyhow!("command helper state lock is poisoned"))?;
-
-        Ok(CommandHelperSnapshot {
-            initialized: runtime.initialized,
-            helper_enabled: runtime.helper_enabled,
-            last_invoke_success: runtime.last_invoke_success,
-            last_invoke_error: runtime.last_invoke_error.clone(),
-        })
+    pub async fn snapshot(&self) -> CommandHelperSnapshot {
+        self.snapshot.read().await.clone()
     }
 
-    /// 记录最近一次 helper 相关动作。
-    pub fn record(&self, success: bool, error: Option<String>) -> anyhow::Result<()> {
-        let mut runtime = self
-            .runtime
-            .lock()
-            .map_err(|_| anyhow::anyhow!("command helper state lock is poisoned"))?;
-        runtime.initialized = true;
-        runtime.helper_enabled = false;
-        runtime.last_invoke_success = Some(success);
-        runtime.last_invoke_error = error;
-        Ok(())
+    /// 更新 IPC server 状态。
+    pub async fn set_ipc_status(&self, status: IpcServerStatus, error: Option<String>) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.ipc_status = status;
+        if let Some(error) = error {
+            snapshot.last_helper_error = Some(error);
+        }
+    }
+
+    /// 记录 helper 即将启动。
+    pub async fn mark_helper_starting(&self, helper_binary_path: Option<PathBuf>) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.helper_status = HelperRuntimeStatus::Starting;
+        snapshot.helper_binary_path =
+            helper_binary_path.map(|path| path.display().to_string());
+        snapshot.helper_pid = None;
+        snapshot.last_helper_error = None;
+    }
+
+    /// 记录 helper 已成功 spawn。
+    pub async fn mark_helper_spawned(&self, pid: u32) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.helper_pid = Some(pid);
+    }
+
+    /// 记录 helper 完成握手。
+    pub async fn mark_helper_ready(&self, protocol_version: u16, handshake_at: String) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.helper_status = HelperRuntimeStatus::Ready;
+        snapshot.last_protocol_version = Some(protocol_version);
+        snapshot.last_handshake_at = Some(handshake_at);
+        snapshot.last_helper_error = None;
+    }
+
+    /// 记录 helper 断开。
+    pub async fn mark_helper_disconnected(&self, error: impl Into<String>) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.helper_status = HelperRuntimeStatus::Disconnected;
+        snapshot.helper_pid = None;
+        snapshot.last_helper_error = Some(error.into());
+    }
+
+    /// 记录 helper 崩溃。
+    pub async fn mark_helper_crashed(&self, error: impl Into<String>) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.helper_status = HelperRuntimeStatus::Crashed;
+        snapshot.helper_pid = None;
+        snapshot.last_helper_error = Some(error.into());
+    }
+
+    /// 记录 helper 进入重启流程。
+    pub async fn mark_helper_restarting(&self, error: impl Into<String>) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.helper_status = HelperRuntimeStatus::Restarting;
+        snapshot.helper_pid = None;
+        snapshot.restart_count += 1;
+        snapshot.last_helper_error = Some(error.into());
+    }
+
+    /// 记录主进程正在退出。
+    pub async fn mark_shutting_down(&self) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.helper_status = HelperRuntimeStatus::ShuttingDown;
+    }
+
+    pub async fn store_child(&self, child: Child) {
+        let mut guard = self.child.lock().await;
+        *guard = Some(child);
+    }
+
+    pub async fn take_child(&self) -> Option<Child> {
+        self.child.lock().await.take()
+    }
+
+    pub async fn with_child_mut<T>(&self, f: impl FnOnce(&mut Child) -> T) -> Option<T> {
+        let mut guard = self.child.lock().await;
+        guard.as_mut().map(f)
+    }
+
+    pub async fn set_shutdown_requested(&self, value: bool) {
+        let mut guard = self.shutdown_requested.write().await;
+        *guard = value;
+    }
+
+    pub async fn is_shutdown_requested(&self) -> bool {
+        *self.shutdown_requested.read().await
     }
 }

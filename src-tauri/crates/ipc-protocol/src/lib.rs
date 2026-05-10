@@ -1,22 +1,21 @@
 //! StoneFlow Helper ↔ 主 App IPC 协议（纯 DTO，不依赖 tauri / sea-orm）。
 //!
 //! 设计取舍：
-//! - 协议 crate 只定义「请求 / 响应 / 错误」三个 enum 和套接字命名规则，
-//!   具体的连接、监听、异步收发由 server / client 侧各自实现。
-//! - 传输帧格式：`u32 BE` 长度前缀 + JSON 字节；防止半包粘包，约束单帧 ≤ `MAX_FRAME_BYTES`。
-//! - 跨平台命名：Unix 用文件系统路径（`$TMPDIR/…`），Windows 用命名空间（`\\.\pipe\…`）。
+//! - 协议 crate 只定义请求 / 响应 / 错误 / 套接字命名；
+//! - Helper 只表达意图，不承载业务规则；
+//! - 传输帧格式保持为 `u32 BE` 长度前缀 + JSON；
+//! - v2 直接围绕 Quick Create 建模，不再保留旧的 capture DTO 作为主路径。
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use uuid::Uuid;
 
 /// 协议语义版本，双方握手时使用。
-pub const PROTOCOL_VERSION: u16 = 1;
+pub const PROTOCOL_VERSION: u16 = 2;
 
-/// 单帧最大字节数（1 MiB）。正常负载远小于此值，超过视为异常。
+/// 单帧最大字节数（1 MiB）。
 pub const MAX_FRAME_BYTES: usize = 1024 * 1024;
 
-/// 连接/读写默认超时（毫秒）。调用方可在其基础上自行叠加策略。
+/// 连接/读写默认超时（毫秒）。
 pub const DEFAULT_CONNECT_TIMEOUT_MS: u64 = 2_000;
 pub const DEFAULT_REQUEST_TIMEOUT_MS: u64 = 5_000;
 
@@ -24,119 +23,208 @@ pub const DEFAULT_REQUEST_TIMEOUT_MS: u64 = 5_000;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum IpcRequest {
-    /// 连通性探测。
     Ping,
-    /// 当前 Space 查询（初版保留，前端暂不强依赖）。
-    GetActiveSpace,
-    /// 请求创建一条 Quick Capture 任务。
-    CreateTask(CreateTaskPayload),
-    /// 在当前捕获 Space 内搜索 Task / Project。
-    SearchWorkspace(SearchWorkspacePayload),
-    /// 请求主 App 打开一个 Task。
-    OpenTask(OpenTaskPayload),
-    /// 请求主 App 打开一个 Project。
-    OpenProject(OpenProjectPayload),
+    QuickGetInitialState,
+    QuickListProjectsBySpace(QuickListProjectsBySpacePayload),
+    QuickSearch(QuickSearchPayload),
+    QuickCreate(QuickCreatePayload),
+    QuickCreateAndOpen(QuickCreatePayload),
+    /// 打开已存在的 Task / Project。
+    QuickOpenTarget(QuickOpenTargetPayload),
 }
 
-/// 创建任务的输入载荷，语义对应主 App `create_capture_task_usecase` 的入参。
+/// 主 App → Helper 的响应。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct CreateTaskPayload {
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum IpcResponse {
+    Pong { protocol_version: u16 },
+    QuickInitialState(QuickInitialStatePayload),
+    QuickProjectsBySpace(QuickProjectsBySpaceResponsePayload),
+    QuickSearch(QuickSearchResponsePayload),
+    QuickCreated(QuickCreatedPayload),
+    Opened,
+    Error(IpcError),
+}
+
+/// 当前 Scope 的轻量载荷。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickScopePayload {
+    #[serde(rename = "type")]
+    pub kind: QuickScopeKind,
+    pub space_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum QuickScopeKind {
+    All,
+    Space,
+}
+
+/// Quick Create 的 placement 联合类型。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickPlacementPayload {
+    #[serde(rename = "kind")]
+    pub kind: QuickPlacementKind,
+    pub project_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum QuickPlacementKind {
+    Inbox,
+    NoProject,
+    Project,
+}
+
+/// Space 摘要。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickSpaceSummaryPayload {
+    pub id: String,
+    pub name: String,
+    pub is_default: bool,
+}
+
+/// Project 选择项。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickProjectOptionPayload {
+    #[serde(rename = "kind")]
+    pub kind: QuickProjectOptionKind,
+    pub id: Option<String>,
+    pub space_id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum QuickProjectOptionKind {
+    Inbox,
+    NoProject,
+    Project,
+}
+
+/// Quick Create 搜索/最近列表里的 Task 项。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickTaskItemPayload {
+    pub id: String,
+    pub space_id: String,
+    pub space_name: String,
+    pub project_id: Option<String>,
+    pub project_name: Option<String>,
+    pub inbox_at: Option<String>,
     pub title: String,
-    #[serde(default)]
     pub note: Option<String>,
-    #[serde(default)]
-    pub priority: Option<String>,
+    pub priority: i32,
+    pub status: String,
+    pub updated_at: String,
+    pub completed_at: Option<String>,
 }
 
-/// Helper 搜索请求。
+/// Quick Create 搜索/最近列表里的 Project 项。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct SearchWorkspacePayload {
+#[serde(rename_all = "camelCase")]
+pub struct QuickProjectItemPayload {
+    pub id: String,
+    pub space_id: String,
+    pub space_name: String,
+    pub name: String,
+    pub note: Option<String>,
+    pub updated_at: String,
+    pub completed_at: Option<String>,
+}
+
+/// Quick Create 初始态。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickInitialStatePayload {
+    pub current_scope: QuickScopePayload,
+    pub default_space_id: String,
+    pub default_placement: QuickPlacementPayload,
+    pub spaces: Vec<QuickSpaceSummaryPayload>,
+    pub projects: Vec<QuickProjectOptionPayload>,
+    pub recent_tasks: Vec<QuickTaskItemPayload>,
+    pub recent_projects: Vec<QuickProjectItemPayload>,
+}
+
+/// 按 Space 拉取项目选项。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickListProjectsBySpacePayload {
+    pub space_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickProjectsBySpaceResponsePayload {
+    pub space_id: String,
+    pub inbox_project: QuickProjectOptionPayload,
+    pub no_project_option: QuickProjectOptionPayload,
+    pub projects: Vec<QuickProjectOptionPayload>,
+}
+
+/// Quick Search 输入。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickSearchPayload {
     pub query: String,
     pub limit: u64,
 }
 
-/// 打开 Task 的请求。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct OpenTaskPayload {
-    pub task_id: Uuid,
+#[serde(rename_all = "camelCase")]
+pub struct QuickSearchResponsePayload {
+    pub tasks: Vec<QuickTaskItemPayload>,
+    pub projects: Vec<QuickProjectItemPayload>,
 }
 
-/// 打开 Project 的请求。
+/// Quick Create / Quick Create And Open 共用输入。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct OpenProjectPayload {
-    pub project_id: Uuid,
-}
-
-/// 主 App → Helper 的响应。
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(tag = "kind", rename_all = "snake_case")]
-pub enum IpcResponse {
-    /// Ping 回应。
-    Pong { protocol_version: u16 },
-    /// 当前 Space slug。
-    ActiveSpace { space_slug: Option<String> },
-    /// 创建成功的任务摘要。
-    TaskCreated(TaskCreatedPayload),
-    /// 当前捕获 Space 内的轻量搜索结果。
-    WorkspaceSearch(WorkspaceSearchResultPayload),
-    /// 打开请求已转交主 App。
-    Opened,
-    /// 处理失败，返回结构化错误。
-    Error(IpcError),
-}
-
-/// 任务创建结果摘要（只保留 Helper 需要向用户反馈的最小字段）。
-///
-/// `space_slug` 可能为空：主 App 当前用例返回的 payload 不携带 slug，
-/// Helper 初版仅用于日志，不展示给用户，因此保留可选。
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct TaskCreatedPayload {
-    pub id: Uuid,
+#[serde(rename_all = "camelCase")]
+pub struct QuickCreatePayload {
+    pub space_id: Option<String>,
+    pub placement: QuickPlacementPayload,
     pub title: String,
-    #[serde(default)]
-    pub space_slug: Option<String>,
+    pub note: Option<String>,
+    pub status: Option<String>,
+    pub priority: Option<i32>,
+    pub due_at: Option<String>,
+    pub scheduled_at: Option<String>,
+    pub reminder_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct QuickCreatedPayload {
+    pub id: String,
+    pub title: String,
+    pub space_id: String,
+    pub project_id: Option<String>,
+    pub inbox_at: Option<String>,
     pub space_fallback: bool,
 }
 
-/// Helper 侧搜索结果。
+/// 打开既有目标。
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct WorkspaceSearchResultPayload {
-    pub space_slug: String,
-    pub tasks: Vec<WorkspaceTaskSearchItemPayload>,
-    pub projects: Vec<WorkspaceProjectSearchItemPayload>,
+#[serde(rename_all = "camelCase")]
+pub struct QuickOpenTargetPayload {
+    #[serde(rename = "kind")]
+    pub kind: QuickOpenTargetKind,
+    pub id: String,
 }
 
-/// Task 搜索结果的 IPC 载荷。
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct WorkspaceTaskSearchItemPayload {
-    pub id: Uuid,
-    pub title: String,
-    #[serde(default)]
-    pub note: Option<String>,
-    #[serde(default)]
-    pub priority: Option<String>,
-    #[serde(default)]
-    pub project_id: Option<Uuid>,
-    #[serde(default)]
-    pub project_name: Option<String>,
-    pub updated_at: String,
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum QuickOpenTargetKind {
+    Task,
+    Project,
 }
 
-/// Project 搜索结果的 IPC 载荷。
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct WorkspaceProjectSearchItemPayload {
-    pub id: Uuid,
-    pub name: String,
-    #[serde(default)]
-    pub note: Option<String>,
-    pub status: String,
-    pub sort_order: i32,
-}
-
-/// IPC 通道上承载的业务错误。
-///
-/// 刻意与主 App `AppError` 保持同构的字符串标签，
-/// 便于后续若需要统一错误分类，只需在主 App 侧做一次 `From` 转换。
+/// IPC 通道承载的业务错误。
 #[derive(Debug, Clone, Serialize, Deserialize, Error, PartialEq, Eq)]
 #[serde(tag = "code", content = "message", rename_all = "snake_case")]
 pub enum IpcError {
@@ -161,20 +249,11 @@ pub enum IpcError {
 /// 套接字命名抽象，屏蔽 Unix 文件路径 / Windows 命名空间差异。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SocketName {
-    /// Unix 下是文件系统绝对路径；Windows 下是命名空间名（不含 `\\.\pipe\` 前缀）。
     pub raw: String,
-    /// true = 命名空间（Windows Named Pipe / Linux abstract socket）；false = 文件路径（Unix domain socket file）。
     pub namespaced: bool,
 }
 
-/// 返回主 App 与 Helper 双方应当使用的套接字名称。
-///
-/// 路径规则：
-/// - Windows：命名空间 `com.stonefish.stoneflow`（由 interprocess 侧转成 `\\.\pipe\…`）
-/// - macOS / Linux：`$TMPDIR/com.stonefish.stoneflow-$USER.sock`；
-///     - 使用用户 `TMPDIR`（macOS 天然按用户隔离），避免多用户共用 `/tmp` 时互相抢占；
-///     - 文件名带用户名做二次兜底；
-///     - UDS 路径在 macOS 限制为 104 字节，`$TMPDIR` 本身不会超长。
+/// 返回主 App 与 Helper 双方共同使用的套接字名称。
 pub fn socket_name() -> SocketName {
     #[cfg(windows)]
     {
@@ -207,23 +286,58 @@ mod tests {
     use super::*;
 
     #[test]
-    fn request_roundtrip() {
-        let req = IpcRequest::CreateTask(CreateTaskPayload {
-            title: "写 plan".to_owned(),
-            note: Some("备注".to_owned()),
-            priority: None,
+    fn request_roundtrip_uses_v2_quick_shape() {
+        let request = IpcRequest::QuickCreate(QuickCreatePayload {
+            space_id: Some("space-1".to_owned()),
+            placement: QuickPlacementPayload {
+                kind: QuickPlacementKind::Project,
+                project_id: Some("project-1".to_owned()),
+            },
+            title: "写 quick create".to_owned(),
+            note: Some("补主链".to_owned()),
+            status: Some("todo".to_owned()),
+            priority: Some(3),
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
         });
-        let json = serde_json::to_string(&req).unwrap();
-        let back: IpcRequest = serde_json::from_str(&json).unwrap();
-        assert_eq!(req, back);
-        // 序列化格式应符合「tag = kind」约定，方便未来扩展
-        assert!(json.contains(r#""kind":"create_task""#));
+
+        let json = serde_json::to_string(&request).expect("request should serialize");
+        let decoded: IpcRequest = serde_json::from_str(&json).expect("request should deserialize");
+
+        assert_eq!(request, decoded);
+        assert!(json.contains(r#""kind":"quick_create""#));
+    }
+
+    #[test]
+    fn placement_roundtrip_covers_all_variants() {
+        let variants = [
+            QuickPlacementPayload {
+                kind: QuickPlacementKind::Inbox,
+                project_id: None,
+            },
+            QuickPlacementPayload {
+                kind: QuickPlacementKind::NoProject,
+                project_id: None,
+            },
+            QuickPlacementPayload {
+                kind: QuickPlacementKind::Project,
+                project_id: Some("project-1".to_owned()),
+            },
+        ];
+
+        for variant in variants {
+            let json = serde_json::to_string(&variant).expect("placement should serialize");
+            let decoded: QuickPlacementPayload =
+                serde_json::from_str(&json).expect("placement should deserialize");
+            assert_eq!(variant, decoded);
+        }
     }
 
     #[test]
     fn error_serializes_with_code_and_message() {
         let err = IpcError::Validation("title empty".to_owned());
-        let value = serde_json::to_value(&err).unwrap();
+        let value = serde_json::to_value(&err).expect("error should serialize");
         assert_eq!(value["code"], "validation");
         assert_eq!(value["message"], "title empty");
     }

@@ -8,6 +8,7 @@ import {
 	type PointerEvent as ReactPointerEvent,
 	type ReactNode,
 } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
@@ -19,7 +20,6 @@ import {
 	SearchIcon,
 } from 'lucide-react'
 
-import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { Kbd } from '@/shared/ui/base/kbd'
 import { cn } from '@/shared/lib/utils'
@@ -35,21 +35,90 @@ type CommandMode = 'idle' | 'search' | 'create'
 type CommandPriority = 'P0' | 'P1' | 'P2' | 'P3'
 type CommandStatus = 'idle' | 'submitting' | 'success' | 'error'
 type CommandResultItem =
-	| ({ kind: 'task' } & SearchTaskItem)
-	| ({ kind: 'project' } & SearchProjectItem)
+	| ({ kind: 'task' } & HelperQuickTaskItem)
+	| ({ kind: 'project' } & HelperQuickProjectItem)
 
-type QuickCaptureSurfaceProps = {
+type QuickCreateSurfaceProps = {
 	closeWindow?: () => Promise<void> | void
 	closeDelayMs?: number
 }
 
+type HelperQuickScope = {
+	type: 'all' | 'space'
+	spaceId: string | null
+}
+
+type HelperQuickPlacement = {
+	kind: 'inbox' | 'noProject' | 'project'
+	projectId: string | null
+}
+
+type HelperQuickSpaceSummary = {
+	id: string
+	name: string
+	isDefault: boolean
+}
+
+type HelperQuickProjectOption = {
+	kind: 'inbox' | 'noProject' | 'project'
+	id: string | null
+	spaceId: string
+	name: string
+}
+
+type HelperQuickTaskItem = {
+	id: string
+	spaceId: string
+	spaceName: string
+	projectId: string | null
+	projectName: string | null
+	inboxAt: string | null
+	title: string
+	note: string | null
+	priority: number
+	status: string
+	updatedAt: string
+	completedAt: string | null
+}
+
+type HelperQuickProjectItem = {
+	id: string
+	spaceId: string
+	spaceName: string
+	name: string
+	note: string | null
+	updatedAt: string
+	completedAt: string | null
+}
+
+type HelperQuickInitialState = {
+	currentScope: HelperQuickScope
+	defaultSpaceId: string
+	defaultPlacement: HelperQuickPlacement
+	spaces: HelperQuickSpaceSummary[]
+	projects: HelperQuickProjectOption[]
+	recentTasks: HelperQuickTaskItem[]
+	recentProjects: HelperQuickProjectItem[]
+}
+
+type HelperQuickSearchResponse = {
+	tasks: HelperQuickTaskItem[]
+	projects: HelperQuickProjectItem[]
+}
+
 const DEFAULT_CLOSE_DELAY_MS = 900
 const PRIORITIES: CommandPriority[] = ['P0', 'P1', 'P2', 'P3']
-const PRIORITY_TO_PAYLOAD: Record<CommandPriority, string> = {
-	P0: 'urgent',
-	P1: 'high',
-	P2: 'medium',
-	P3: 'low',
+const PRIORITY_TO_LABEL: Record<CommandPriority, string> = {
+	P0: '紧急',
+	P1: '高',
+	P2: '中',
+	P3: '低',
+}
+const PRIORITY_TO_VALUE: Record<CommandPriority, number> = {
+	P0: 4,
+	P1: 3,
+	P2: 2,
+	P3: 1,
 }
 const PRIORITY_CLASS: Record<CommandPriority, string> = {
 	P0: 'border-sf-danger-surface-border bg-sf-danger-surface text-sf-danger-surface-text',
@@ -58,37 +127,29 @@ const PRIORITY_CLASS: Record<CommandPriority, string> = {
 	P3: 'border-sf-border-subtle bg-muted text-sf-text-secondary',
 }
 
-// TODO: 接入真实搜索 API（后端需要 search_entities 命令）
-function emptySearchResults(_query: string) {
-	return {
-		tasks: [] as SearchTaskItem[],
-		projects: [] as SearchProjectItem[],
-	}
-}
-
 function closeCurrentWindow() {
 	return getCurrentWindow().hide()
 }
 
-export function QuickCapturePage() {
+export function QuickCreatePage() {
 	useEffect(() => {
-		document.body.dataset.quickCapture = 'true'
+		document.body.dataset.quickCreate = 'true'
 		return () => {
-			delete document.body.dataset.quickCapture
+			delete document.body.dataset.quickCreate
 		}
 	}, [])
 
 	return (
 		<div className='flex h-full min-h-0 items-stretch bg-transparent p-0.75'>
-			<QuickCaptureSurface />
+			<QuickCreateSurface />
 		</div>
 	)
 }
 
-export function QuickCaptureSurface({
+export function QuickCreateSurface({
 	closeWindow = closeCurrentWindow,
 	closeDelayMs = DEFAULT_CLOSE_DELAY_MS,
-}: QuickCaptureSurfaceProps) {
+}: QuickCreateSurfaceProps) {
 	const inputRef = useRef<HTMLInputElement>(null)
 	const closeTimerRef = useRef<number | null>(null)
 	const [query, setQuery] = useState('')
@@ -97,9 +158,13 @@ export function QuickCaptureSurface({
 	const [isLoading, setIsLoading] = useState(false)
 	const [status, setStatus] = useState<CommandStatus>('idle')
 	const [message, setMessage] = useState('输入标题创建，或搜索已有任务与项目')
+	const [initialState, setInitialState] = useState<HelperQuickInitialState | null>(null)
+	const [searchResults, setSearchResults] = useState<HelperQuickSearchResponse>({
+		tasks: [],
+		projects: [],
+	})
 	const normalizedQuery = query.trim()
-	const results = useMemo(() => emptySearchResults(query), [query])
-	const hasResults = results.tasks.length > 0 || results.projects.length > 0
+	const hasResults = searchResults.tasks.length > 0 || searchResults.projects.length > 0
 	const mode: CommandMode = !normalizedQuery
 		? 'idle'
 		: hasResults || isLoading
@@ -107,10 +172,10 @@ export function QuickCaptureSurface({
 			: 'create'
 	const flatItems = useMemo<CommandResultItem[]>(
 		() => [
-			...results.tasks.map((item) => ({ kind: 'task' as const, ...item })),
-			...results.projects.map((item) => ({ kind: 'project' as const, ...item })),
+			...searchResults.tasks.map((item) => ({ kind: 'task' as const, ...item })),
+			...searchResults.projects.map((item) => ({ kind: 'project' as const, ...item })),
 		],
-		[results.projects, results.tasks],
+		[searchResults.projects, searchResults.tasks],
 	)
 
 	const focusInput = useCallback(() => {
@@ -131,21 +196,29 @@ export function QuickCaptureSurface({
 		void closeWindow()
 	}, [closeWindow])
 
+	const loadInitialState = useCallback(async () => {
+		const payload = await invoke<HelperQuickInitialState>('helper_quick_get_initial_state')
+		setInitialState(payload)
+	}, [])
+
 	const resetPanel = useCallback(() => {
 		setQuery('')
 		setPriority('P1')
 		setHighlightedIndex(0)
 		setIsLoading(false)
+		setSearchResults({ tasks: [], projects: [] })
 		setStatus('idle')
 		setMessage('输入标题创建，或搜索已有任务与项目')
-		focusInput()
-	}, [focusInput])
+		void loadInitialState().finally(() => {
+			focusInput()
+		})
+	}, [focusInput, loadInitialState])
 
 	useEffect(() => {
 		resetPanel()
 
 		let unlistenTauri: (() => void) | undefined
-		listen<void>('quick-capture:shown', resetPanel).then((fn) => {
+		listen<void>('quick-create:shown', resetPanel).then((fn) => {
 			unlistenTauri = fn
 		})
 
@@ -172,20 +245,51 @@ export function QuickCaptureSurface({
 
 	useEffect(() => {
 		if (!normalizedQuery) {
+			setSearchResults({ tasks: [], projects: [] })
 			setIsLoading(false)
 			setHighlightedIndex(0)
 			return
 		}
 
+		let cancelled = false
 		setIsLoading(true)
+
 		const timerId = window.setTimeout(() => {
-			setIsLoading(false)
-			setHighlightedIndex(0)
-			setStatus('idle')
-			setMessage('输入标题创建，或搜索已有任务与项目')
+			void invoke<HelperQuickSearchResponse>('helper_quick_search', {
+				input: {
+					query: normalizedQuery,
+					limit: 5,
+				},
+			})
+				.then((payload) => {
+					if (cancelled) {
+						return
+					}
+					setSearchResults(payload)
+					setHighlightedIndex(0)
+					setStatus('idle')
+					setMessage('输入标题创建，或搜索已有任务与项目')
+				})
+				.catch((error) => {
+					if (cancelled) {
+						return
+					}
+					console.error('helper quick search failed', { error })
+					setSearchResults({ tasks: [], projects: [] })
+					setStatus('error')
+					setMessage(error instanceof Error ? error.message : '搜索失败')
+				})
+				.finally(() => {
+					if (!cancelled) {
+						setIsLoading(false)
+					}
+				})
 		}, 120)
 
-		return () => window.clearTimeout(timerId)
+		return () => {
+			cancelled = true
+			window.clearTimeout(timerId)
+		}
 	}, [normalizedQuery])
 
 	const cyclePriority = useCallback(() => {
@@ -208,62 +312,102 @@ export function QuickCaptureSurface({
 		[flatItems.length],
 	)
 
-	const submitCreate = useCallback(async () => {
-		if (status === 'submitting') return
-		if (!normalizedQuery) {
-			setStatus('error')
-			setMessage('请输入任务标题')
-			focusInput()
-			return
+	const buildCreateInput = useCallback(() => {
+		if (!initialState) {
+			throw new Error('Quick Create 初始态尚未就绪')
 		}
 
-		setStatus('submitting')
-		setMessage('正在保留创建交互...')
+		return {
+			spaceId: initialState.defaultSpaceId,
+			placement: initialState.defaultPlacement,
+			title: normalizedQuery,
+			note: null,
+			status: 'todo',
+			priority: PRIORITY_TO_VALUE[priority],
+			dueAt: null,
+			scheduledAt: null,
+			reminderAt: null,
+		}
+	}, [initialState, normalizedQuery, priority])
 
-		window.setTimeout(() => {
-			setQuery('')
-			setStatus('success')
-			setMessage(`已保留创建动作 UI：${normalizedQuery} · ${PRIORITY_TO_PAYLOAD[priority]}`)
-			closeTimerRef.current = window.setTimeout(requestClose, closeDelayMs)
-		}, 320)
-	}, [closeDelayMs, focusInput, normalizedQuery, priority, requestClose, status])
+	const submitCreate = useCallback(
+		async (andOpen: boolean) => {
+			if (status === 'submitting') return
+			if (!normalizedQuery) {
+				setStatus('error')
+				setMessage('请输入任务标题')
+				focusInput()
+				return
+			}
+
+			setStatus('submitting')
+			setMessage(andOpen ? '正在创建并打开任务...' : '正在创建任务...')
+
+			try {
+				const input = buildCreateInput()
+				await invoke(andOpen ? 'helper_quick_create_and_open' : 'helper_quick_create', {
+					input,
+				})
+				setStatus('success')
+				setMessage(
+					andOpen
+						? `已创建并打开「${normalizedQuery}」`
+						: `已创建「${normalizedQuery}」 · ${PRIORITY_TO_LABEL[priority]}`,
+				)
+				setQuery('')
+				closeTimerRef.current = window.setTimeout(requestClose, closeDelayMs)
+			} catch (error) {
+				setStatus('error')
+				setMessage(error instanceof Error ? error.message : '创建失败')
+			}
+		},
+		[buildCreateInput, closeDelayMs, focusInput, normalizedQuery, priority, requestClose, status],
+	)
 
 	const openResult = useCallback(
 		async (item: CommandResultItem) => {
 			setStatus('submitting')
 			setMessage(item.kind === 'task' ? '正在打开任务...' : '正在打开项目...')
 
-			window.setTimeout(() => {
+			try {
+				await invoke('helper_quick_open_target', {
+					input: {
+						kind: item.kind,
+						id: item.id,
+					},
+				})
 				setStatus('success')
-				setMessage(
-					item.kind === 'task'
-						? `已保留打开任务交互：${item.title}`
-						: `已保留打开项目交互：${item.name}`,
-				)
+				setMessage(item.kind === 'task' ? `已打开任务：${item.title}` : `已打开项目：${item.name}`)
 				requestClose()
-			}, 220)
+			} catch (error) {
+				setStatus('error')
+				setMessage(error instanceof Error ? error.message : '打开失败')
+			}
 		},
 		[requestClose],
 	)
 
-	const executePrimaryAction = useCallback(() => {
-		if (mode === 'search') {
-			const activeItem = flatItems[highlightedIndex]
-			if (activeItem) {
-				void openResult(activeItem)
+	const executePrimaryAction = useCallback(
+		(andOpen = false) => {
+			if (mode === 'search') {
+				const activeItem = flatItems[highlightedIndex]
+				if (activeItem) {
+					void openResult(activeItem)
+				}
+				return
 			}
-			return
-		}
 
-		if (mode === 'create') {
-			void submitCreate()
-		}
-	}, [flatItems, highlightedIndex, mode, openResult, submitCreate])
+			if (mode === 'create') {
+				void submitCreate(andOpen)
+			}
+		},
+		[flatItems, highlightedIndex, mode, openResult, submitCreate],
+	)
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
 		if (event.key === 'Enter') {
 			event.preventDefault()
-			executePrimaryAction()
+			executePrimaryAction(event.metaKey || event.ctrlKey)
 			return
 		}
 
@@ -295,9 +439,13 @@ export function QuickCaptureSurface({
 		inputRef.current?.focus()
 	}, [])
 
+	const spaceLabel =
+		initialState?.spaces.find((space) => space.id === initialState.defaultSpaceId)?.name ?? '加载中...'
+	const placementLabel = formatPlacementLabel(initialState)
+
 	return (
 		<section
-			aria-label='StoneFlow 命令'
+			aria-label='StoneFlow Quick Create'
 			className={quickCaptureSurfaceClass}
 			onPointerDown={handleSurfacePointerDown}
 		>
@@ -306,7 +454,7 @@ export function QuickCaptureSurface({
 					<SearchIcon className='size-3.5 shrink-0 text-sf-icon-subtle' />
 					<input
 						ref={inputRef}
-						aria-label='Command 输入'
+						aria-label='Quick Create 输入'
 						autoComplete='off'
 						className='min-w-0 flex-1 bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-sf-text-quaternary'
 						disabled={status === 'submitting'}
@@ -332,7 +480,7 @@ export function QuickCaptureSurface({
 							: 'border border-border bg-card text-sf-text-secondary hover:border-sf-border-subtle hover:bg-accent hover:text-accent-foreground',
 					)}
 					disabled={status === 'submitting' || mode === 'idle'}
-					onClick={executePrimaryAction}
+					onClick={() => executePrimaryAction(false)}
 					variant={mode === 'create' ? 'default' : 'ghost'}
 				>
 					{status === 'submitting' ? '处理中...' : mode === 'create' ? '创建任务' : '打开'}
@@ -358,10 +506,10 @@ export function QuickCaptureSurface({
 					))}
 					<div className='mx-1 h-4 w-px bg-sf-divider' />
 					<span className='shrink-0 text-[11.5px] text-sf-text-quaternary'>所属空间</span>
-					<span className={quickCaptureMetaPillClass}>工作</span>
+					<span className={quickCaptureMetaPillClass}>{spaceLabel}</span>
 					<div className='mx-1 h-4 w-px bg-sf-divider' />
 					<span className='shrink-0 text-[11.5px] text-sf-text-quaternary'>所属项目</span>
-					<span className={quickCaptureMetaPillClass}>稍后归类</span>
+					<span className={quickCaptureMetaPillClass}>{placementLabel}</span>
 				</div>
 			) : null}
 
@@ -369,14 +517,14 @@ export function QuickCaptureSurface({
 				{mode === 'idle' ? (
 					<CommandPanelState label='输入关键词搜索任务 / 项目；无匹配时直接创建任务。' />
 				) : isLoading && !hasResults ? (
-					<CommandPanelState label='正在搜索当前 Space...' loading />
+					<CommandPanelState label='正在搜索当前 Scope...' loading />
 				) : mode === 'create' ? (
 					<CommandPanelState label={`没有匹配结果，按 Enter 创建“${normalizedQuery}”。`} />
 				) : (
 					<CommandResults
 						highlightedIndex={highlightedIndex}
-						projectItems={results.projects}
-						taskItems={results.tasks}
+						projectItems={searchResults.projects}
+						taskItems={searchResults.tasks}
 						onHighlightIndex={setHighlightedIndex}
 						onOpenResult={(item) => void openResult(item)}
 					/>
@@ -388,11 +536,30 @@ export function QuickCaptureSurface({
 				<div className='ml-auto flex items-center gap-3'>
 					<Hint keys='↑↓' label='选择' />
 					<Hint keys='↵' label={mode === 'create' ? '创建' : '打开'} />
+					{mode === 'create' ? <Hint keys='⌘/Ctrl+↵' label='创建并打开' /> : null}
 					{mode === 'create' ? <Hint keys='Tab' label='切优先级' /> : null}
 					<Hint keys='Esc' label='关闭' />
 				</div>
 			</div>
 		</section>
+	)
+}
+
+function formatPlacementLabel(initialState: HelperQuickInitialState | null) {
+	if (!initialState) {
+		return '加载中...'
+	}
+
+	const placement = initialState.defaultPlacement
+	if (placement.kind === 'inbox') {
+		return 'Inbox'
+	}
+	if (placement.kind === 'noProject') {
+		return '独立事项'
+	}
+
+	return (
+		initialState.projects.find((project) => project.id === placement.projectId)?.name ?? '指定项目'
 	)
 }
 
@@ -403,8 +570,8 @@ function CommandResults({
 	onHighlightIndex,
 	onOpenResult,
 }: {
-	taskItems: SearchTaskItem[]
-	projectItems: SearchProjectItem[]
+	taskItems: HelperQuickTaskItem[]
+	projectItems: HelperQuickProjectItem[]
 	highlightedIndex: number
 	onHighlightIndex: (index: number) => void
 	onOpenResult: (item: CommandResultItem) => void
@@ -483,9 +650,7 @@ function CommandResultRow({
 			onMouseEnter={onHighlight}
 			type='button'
 		>
-			{isActive ? (
-				<span className='absolute inset-y-0 left-0 w-0.75 rounded-r-sm bg-primary' />
-			) : null}
+			{isActive ? <span className='absolute inset-y-0 left-0 w-0.75 rounded-r-sm bg-primary' /> : null}
 			<span
 				className={cn(
 					'flex size-6 shrink-0 items-center justify-center rounded-md',
@@ -558,9 +723,7 @@ function StatusMessage({ status, message }: { status: CommandStatus; message: st
 		>
 			{status === 'error' ? <AlertTriangleIcon className='size-3.5 shrink-0' /> : null}
 			{status === 'success' ? <CheckCircle2Icon className='size-3.5 shrink-0' /> : null}
-			{status === 'submitting' ? (
-				<LoaderCircleIcon className='size-3.5 shrink-0 animate-spin' />
-			) : null}
+			{status === 'submitting' ? <LoaderCircleIcon className='size-3.5 shrink-0 animate-spin' /> : null}
 			<span className='truncate'>{message}</span>
 		</div>
 	)

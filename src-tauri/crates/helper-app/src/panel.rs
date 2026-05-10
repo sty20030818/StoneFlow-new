@@ -7,7 +7,7 @@
 //!   - 失焦隐藏：走 NSWindowDelegate 原生 `windowDidResignKey:` 通知，
 //!     **不依赖** Tauri 的 `WindowEvent::Focused(false)`——
 //!     NonActivating 面板不会让 owning app 激活，Tauri 的 focus 事件链不可靠。
-//!   - 前端 focus 同步：`windowDidBecomeKey:` 回调里才 emit `quick-capture:shown`。
+//!   - 前端 focus 同步：`windowDidBecomeKey:` 回调里才 emit `quick-create:shown`。
 //!     此时 panel 已真正成为 key window，前端 `input.focus()` 才能命中；
 //!     如果在 `show_and_make_key()` 返回后立刻 emit，key 状态可能还没 flush。
 //!
@@ -110,10 +110,10 @@ pub fn init_quick_capture_panel(app_handle: &AppHandle<Wry>) {
 
     let app_for_show = app_handle.clone();
     handler.window_did_become_key(move |_notification| {
-        log::info!("helper: windowDidBecomeKey → emit quick-capture:shown");
+        log::info!("helper: windowDidBecomeKey → emit quick-create:shown");
         if let Some(window) = app_for_show.get_webview_window(QUICK_CAPTURE_LABEL) {
-            if let Err(error) = window.emit("quick-capture:shown", ()) {
-                log::warn!("helper: quick-capture:shown 事件发送失败: {error}");
+            if let Err(error) = window.emit("quick-create:shown", ()) {
+                log::warn!("helper: quick-create:shown 事件发送失败: {error}");
             }
         }
     });
@@ -168,7 +168,7 @@ pub fn toggle_quick_capture_panel(app_handle: &AppHandle<Wry>) {
             log::info!("helper: show_and_make_key（进入 key window 状态）");
             panel.show_and_make_key();
 
-            // 此处不 emit `quick-capture:shown`：前端 focus 时机改由
+            // 此处不 emit `quick-create:shown`：前端 focus 时机改由
             // `windowDidBecomeKey:` delegate 回调触发，避免 key 状态未 flush
             // 时前端先 focus 的时序竞争。
         }

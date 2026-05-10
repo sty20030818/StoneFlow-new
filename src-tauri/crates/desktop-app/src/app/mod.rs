@@ -1,12 +1,15 @@
-//! Tauri 宿主层：负责窗口、插件、命令注册与最小运行时状态。
+//! Tauri 宿主层：负责窗口、插件、命令注册与主运行时编排。
 
-use tauri::{LogicalPosition, Manager, TitleBarStyle, WebviewUrl, WebviewWindowBuilder};
+#[cfg(target_os = "macos")]
+use tauri::{LogicalPosition, TitleBarStyle};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 use crate::app::state::{ActiveScopeState, CommandHelperState};
 use crate::infrastructure::database::bootstrap_database;
 
 pub mod commands;
 pub mod error;
+pub mod helper_runtime;
 pub mod state;
 
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
@@ -50,6 +53,13 @@ fn build_main_window(app: &tauri::App) -> tauri::Result<()> {
 /// 组装主应用 Builder。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -62,8 +72,10 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
                 )?;
             }
 
-            app.manage(ActiveScopeState::default());
-            app.manage(CommandHelperState::default());
+            let active_scope_state = ActiveScopeState::default();
+            let helper_state = CommandHelperState::default();
+            app.manage(active_scope_state.clone());
+            app.manage(helper_state.clone());
             let database_state = tauri::async_runtime::block_on(async {
                 let app_data_dir = app
                     .path()
@@ -74,9 +86,15 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
                     .map_err(|error| error.to_string())
             })
             .map_err(anyhow::Error::msg)?;
-            app.manage(database_state);
+            app.manage(database_state.clone());
 
             build_main_window(app)?;
+            tauri::async_runtime::block_on(helper_runtime::start(
+                app.handle().clone(),
+                database_state,
+                active_scope_state,
+                helper_state,
+            ))?;
             Ok(())
         })
         .invoke_handler(commands::handler())
@@ -87,5 +105,10 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
     let app = builder()
         .build(context)
         .expect("failed to build StoneFlow Tauri application");
-    app.run(|_, _| {});
+    app.run(|app_handle, event| {
+        if matches!(event, tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit) {
+            let helper_state = app_handle.state::<CommandHelperState>().inner().clone();
+            tauri::async_runtime::block_on(helper_runtime::shutdown(helper_state));
+        }
+    });
 }

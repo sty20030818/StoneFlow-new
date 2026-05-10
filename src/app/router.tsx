@@ -8,7 +8,7 @@ import { InboxPage } from '../features/inbox/ui/InboxPage'
 import { NoProjectPage } from '../features/no-project/ui/NoProjectPage'
 import { ProjectPage } from '../features/project/ui/ProjectPage'
 import { ProjectOverviewPage } from '../features/project-overview/ui/ProjectOverviewPage'
-import { QuickCapturePage } from '../features/quick-capture/ui/QuickCapturePage'
+import { QuickCreatePage } from '../features/quick-capture/ui/QuickCapturePage'
 import { SettingsPage } from '../features/settings/ui/SettingsPage'
 import { ActivityDebugPage } from '../features/activity/ui/ActivityDebugPage'
 import { TrashPage } from '../features/trash/ui/TrashPage'
@@ -67,8 +67,8 @@ const shellChildren = [
 
 export const router = createHashRouter([
 	{
-		path: '/quick-capture',
-		element: <QuickCapturePage />,
+		path: '/quick-create',
+		element: <QuickCreatePage />,
 	},
 	{
 		path: '/',

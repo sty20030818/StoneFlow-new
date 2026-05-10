@@ -1,9 +1,9 @@
-//! StoneFlow Command Helper：独立 Accessory 进程，仅承担全局快捷键与 Quick Capture 浮窗。
+//! StoneFlow Command Helper：独立 Accessory 进程，仅承担全局快捷键与 Quick Create 浮窗。
 //!
 //! 与主 App 的关系：
 //! - Helper 不拥有数据库；所有写入动作经 IPC 下发到主 App 的 `ipc::server`；
 //! - Helper 随主 App 生命周期启动/退出（主 App 侧负责 spawn/kill）；
-//! - 前端资源复用主 App 的 `dist/`，Quick Capture 仍走 `#/quick-capture` 路由。
+//! - 前端资源复用主 App 的 `dist/`，Quick Create 走 `#/quick-create` 路由。
 
 pub mod commands;
 pub mod ipc_client;
@@ -25,7 +25,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
     #[cfg(target_os = "macos")]
     let b = b.plugin(tauri_nspanel::init());
 
-    // 说明：Quick Capture 面板的「点外面自动隐藏」不在这里处理。
+    // 说明：Quick Create 面板的「点外面自动隐藏」不在这里处理。
     // NonActivatingPanel 不会让 owning app 激活，Tauri 的 `WindowEvent::Focused(false)`
     // 对它并不稳定派发。正确做法是在 `panel.rs` 里通过 tauri-nspanel 的
     // `panel_event!` 监听 NSWindowDelegate 原生 `windowDidResignKey:` 通知——
@@ -70,9 +70,11 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         Ok(())
     })
     .invoke_handler(tauri::generate_handler![
-        commands::helper_create_task,
-        commands::helper_search_workspace,
-        commands::helper_open_task,
-        commands::helper_open_project
+        commands::helper_quick_get_initial_state,
+        commands::helper_quick_list_projects_by_space,
+        commands::helper_quick_search,
+        commands::helper_quick_create,
+        commands::helper_quick_create_and_open,
+        commands::helper_quick_open_target
     ])
 }

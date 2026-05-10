@@ -1,26 +1,16 @@
-//! Helper 前端（Quick Capture 页面）可调的 Tauri Command。
+//! Helper 前端（Quick Create 页面）可调用的 Tauri Command。
 
 use serde::{Deserialize, Serialize};
 use stoneflow_ipc_protocol::{
-    CreateTaskPayload, IpcError, OpenProjectPayload, OpenTaskPayload, SearchWorkspacePayload,
+    IpcError, QuickCreatePayload, QuickInitialStatePayload, QuickListProjectsBySpacePayload,
+    QuickOpenTargetKind, QuickOpenTargetPayload, QuickPlacementKind, QuickPlacementPayload,
+    QuickProjectItemPayload, QuickProjectOptionKind, QuickProjectOptionPayload,
+    QuickProjectsBySpaceResponsePayload, QuickScopeKind, QuickScopePayload, QuickSearchPayload,
+    QuickSearchResponsePayload, QuickSpaceSummaryPayload, QuickTaskItemPayload,
 };
-use uuid::Uuid;
 
 use crate::ipc_client;
 
-/// 前端输入；字段命名与主 App 的 `create_capture_task` Command 保持一致，
-/// 方便前端复用同一个 payload 结构。
-#[derive(Debug, Clone, Deserialize)]
-pub struct HelperCreateTaskInput {
-    pub title: String,
-    #[serde(default)]
-    pub note: Option<String>,
-    #[serde(default)]
-    pub priority: Option<String>,
-}
-
-/// 前端可观察到的错误载荷，保持与主 App `CaptureTaskErrorPayload` 的 `{type, message}`
-/// 契约一致，前端侧不需要分支处理。
 #[derive(Debug, Clone, Serialize)]
 pub struct HelperCaptureErrorPayload {
     #[serde(rename = "type")]
@@ -31,184 +21,368 @@ pub struct HelperCaptureErrorPayload {
 impl From<IpcError> for HelperCaptureErrorPayload {
     fn from(error: IpcError) -> Self {
         let (type_, message) = match error {
-            IpcError::Validation(msg) => ("Validation", msg),
-            IpcError::NotFound(msg) => ("NotFound", msg),
-            IpcError::Forbidden(msg) => ("Forbidden", msg),
-            IpcError::Conflict(msg) => ("Conflict", msg),
-            IpcError::Internal(msg) => ("Internal", msg),
-            IpcError::CaptureSpaceUnavailable(msg) => ("CaptureSpaceUnavailable", msg),
-            IpcError::DefaultSpaceUnavailable(msg) => ("DefaultSpaceUnavailable", msg),
-            IpcError::CapturePersistence(msg) => ("CapturePersistence", msg),
+            IpcError::Validation(message) => ("Validation", message),
+            IpcError::NotFound(message) => ("NotFound", message),
+            IpcError::Forbidden(message) => ("Forbidden", message),
+            IpcError::Conflict(message) => ("Conflict", message),
+            IpcError::Internal(message) => ("Internal", message),
+            IpcError::CaptureSpaceUnavailable(message) => ("CaptureSpaceUnavailable", message),
+            IpcError::DefaultSpaceUnavailable(message) => ("DefaultSpaceUnavailable", message),
+            IpcError::CapturePersistence(message) => ("CapturePersistence", message),
         };
+
         Self { type_, message }
     }
 }
 
-/// 前端成功回传 payload；字段名使用 snake_case，与主 App `create_capture_task`
-/// 的响应保持同构（前端解析逻辑不用分支）。
-#[derive(Debug, Clone, Serialize)]
-pub struct HelperCreatedTaskResponse {
-    pub id: String,
-    pub title: String,
-    pub space_fallback: bool,
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickListProjectsBySpaceInput {
+    pub space_id: String,
 }
 
-/// Helper 搜索输入；不暴露 Space，Space 由主 App 的 ActiveSpaceState 决定。
 #[derive(Debug, Clone, Deserialize)]
-pub struct HelperSearchWorkspaceInput {
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickSearchInput {
     pub query: String,
     #[serde(default = "default_search_limit")]
     pub limit: u64,
 }
 
-/// Helper Task 搜索响应，字段名对齐主 App `search_workspace`。
-#[derive(Debug, Clone, Serialize)]
-pub struct HelperTaskSearchItemResponse {
-    pub id: String,
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickCreateInput {
+    pub space_id: Option<String>,
+    pub placement: HelperQuickPlacementInput,
     pub title: String,
     pub note: Option<String>,
-    pub priority: Option<String>,
-    pub project_id: Option<String>,
-    pub project_name: Option<String>,
-    pub updated_at: String,
+    pub status: Option<String>,
+    pub priority: Option<i32>,
+    pub due_at: Option<String>,
+    pub scheduled_at: Option<String>,
+    pub reminder_at: Option<String>,
 }
 
-/// Helper Project 搜索响应，字段名对齐主 App `search_workspace`。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickPlacementInput {
+    #[serde(rename = "kind")]
+    pub kind: HelperQuickPlacementKind,
+    pub project_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum HelperQuickPlacementKind {
+    Inbox,
+    NoProject,
+    Project,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickOpenTargetInput {
+    #[serde(rename = "kind")]
+    pub kind: HelperQuickOpenTargetKind,
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum HelperQuickOpenTargetKind {
+    Task,
+    Project,
+}
+
 #[derive(Debug, Clone, Serialize)]
-pub struct HelperProjectSearchItemResponse {
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickInitialStateResponse {
+    pub current_scope: HelperQuickScopeResponse,
+    pub default_space_id: String,
+    pub default_placement: HelperQuickPlacementResponse,
+    pub spaces: Vec<HelperQuickSpaceSummaryResponse>,
+    pub projects: Vec<HelperQuickProjectOptionResponse>,
+    pub recent_tasks: Vec<HelperQuickTaskItemResponse>,
+    pub recent_projects: Vec<HelperQuickProjectItemResponse>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickProjectsBySpaceResponse {
+    pub space_id: String,
+    pub inbox_project: HelperQuickProjectOptionResponse,
+    pub no_project_option: HelperQuickProjectOptionResponse,
+    pub projects: Vec<HelperQuickProjectOptionResponse>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickSearchResponse {
+    pub tasks: Vec<HelperQuickTaskItemResponse>,
+    pub projects: Vec<HelperQuickProjectItemResponse>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickScopeResponse {
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+    pub space_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickPlacementResponse {
+    #[serde(rename = "kind")]
+    pub kind: &'static str,
+    pub project_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickSpaceSummaryResponse {
     pub id: String,
     pub name: String,
-    pub note: Option<String>,
-    pub status: String,
-    pub sort_order: i32,
+    pub is_default: bool,
 }
 
-/// Helper 搜索响应。
 #[derive(Debug, Clone, Serialize)]
-pub struct HelperSearchWorkspaceResponse {
-    pub space_slug: String,
-    pub tasks: Vec<HelperTaskSearchItemResponse>,
-    pub projects: Vec<HelperProjectSearchItemResponse>,
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickProjectOptionResponse {
+    #[serde(rename = "kind")]
+    pub kind: &'static str,
+    pub id: Option<String>,
+    pub space_id: String,
+    pub name: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct HelperOpenTaskInput {
-    pub task_id: Uuid,
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickTaskItemResponse {
+    pub id: String,
+    pub space_id: String,
+    pub space_name: String,
+    pub project_id: Option<String>,
+    pub project_name: Option<String>,
+    pub inbox_at: Option<String>,
+    pub title: String,
+    pub note: Option<String>,
+    pub priority: i32,
+    pub status: String,
+    pub updated_at: String,
+    pub completed_at: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct HelperOpenProjectInput {
-    pub project_id: Uuid,
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickProjectItemResponse {
+    pub id: String,
+    pub space_id: String,
+    pub space_name: String,
+    pub name: String,
+    pub note: Option<String>,
+    pub updated_at: String,
+    pub completed_at: Option<String>,
 }
 
 const fn default_search_limit() -> u64 {
     5
 }
 
-/// Helper 侧的「创建任务」入口：转换前端输入 → 经 IPC 发给主 App。
 #[tauri::command]
-pub async fn helper_create_task(
-    input: HelperCreateTaskInput,
-) -> Result<HelperCreatedTaskResponse, HelperCaptureErrorPayload> {
-    // 清洗：空白 priority 归一为 None，与主 App 前端逻辑保持一致。
-    let priority = input.priority.and_then(|value| {
-        if value.trim().is_empty() {
-            None
-        } else {
-            Some(value)
-        }
-    });
+pub async fn helper_quick_get_initial_state(
+) -> Result<HelperQuickInitialStateResponse, HelperCaptureErrorPayload> {
+    let payload = ipc_client::quick_get_initial_state()
+        .await
+        .map_err(HelperCaptureErrorPayload::from)?;
 
-    let payload = CreateTaskPayload {
-        title: input.title,
-        note: input.note,
-        priority,
-    };
-
-    let created = ipc_client::create_task(payload).await.map_err(|error| {
-        log::warn!("helper_create_task 失败: {error}");
-        HelperCaptureErrorPayload::from(error)
-    })?;
-
-    Ok(HelperCreatedTaskResponse {
-        id: created.id.to_string(),
-        title: created.title,
-        space_fallback: created.space_fallback,
-    })
+    Ok(map_initial_state(payload))
 }
 
-/// Helper 侧搜索入口：经 IPC 转发给主 App，复用主 App 搜索规则。
 #[tauri::command]
-pub async fn helper_search_workspace(
-    input: HelperSearchWorkspaceInput,
-) -> Result<HelperSearchWorkspaceResponse, HelperCaptureErrorPayload> {
-    let payload = SearchWorkspacePayload {
+pub async fn helper_quick_list_projects_by_space(
+    input: HelperQuickListProjectsBySpaceInput,
+) -> Result<HelperQuickProjectsBySpaceResponse, HelperCaptureErrorPayload> {
+    let payload = ipc_client::quick_list_projects_by_space(QuickListProjectsBySpacePayload {
+        space_id: input.space_id,
+    })
+    .await
+    .map_err(HelperCaptureErrorPayload::from)?;
+
+    Ok(map_projects_by_space(payload))
+}
+
+#[tauri::command]
+pub async fn helper_quick_search(
+    input: HelperQuickSearchInput,
+) -> Result<HelperQuickSearchResponse, HelperCaptureErrorPayload> {
+    let payload = ipc_client::quick_search(QuickSearchPayload {
         query: input.query,
         limit: input.limit,
-    };
-
-    let result = ipc_client::search_workspace(payload)
-        .await
-        .map_err(|error| {
-            log::warn!("helper_search_workspace 失败: {error}");
-            HelperCaptureErrorPayload::from(error)
-        })?;
-
-    Ok(HelperSearchWorkspaceResponse {
-        space_slug: result.space_slug,
-        tasks: result
-            .tasks
-            .into_iter()
-            .map(|task| HelperTaskSearchItemResponse {
-                id: task.id.to_string(),
-                title: task.title,
-                note: task.note,
-                priority: task.priority,
-                project_id: task.project_id.map(|id| id.to_string()),
-                project_name: task.project_name,
-                updated_at: task.updated_at,
-            })
-            .collect(),
-        projects: result
-            .projects
-            .into_iter()
-            .map(|project| HelperProjectSearchItemResponse {
-                id: project.id.to_string(),
-                name: project.name,
-                note: project.note,
-                status: project.status,
-                sort_order: project.sort_order,
-            })
-            .collect(),
-    })
-}
-
-/// Helper 侧打开 Task：交给主 App 恢复窗口并处理 Drawer。
-#[tauri::command]
-pub async fn helper_open_task(input: HelperOpenTaskInput) -> Result<(), HelperCaptureErrorPayload> {
-    ipc_client::open_task(OpenTaskPayload {
-        task_id: input.task_id,
     })
     .await
-    .map_err(|error| {
-        log::warn!("helper_open_task 失败: {error}");
-        HelperCaptureErrorPayload::from(error)
-    })
+    .map_err(HelperCaptureErrorPayload::from)?;
+
+    Ok(map_search_response(payload))
 }
 
-/// Helper 侧打开 Project：交给主 App 恢复窗口并导航。
 #[tauri::command]
-pub async fn helper_open_project(
-    input: HelperOpenProjectInput,
+pub async fn helper_quick_create(
+    input: HelperQuickCreateInput,
 ) -> Result<(), HelperCaptureErrorPayload> {
-    ipc_client::open_project(OpenProjectPayload {
-        project_id: input.project_id,
+    ipc_client::quick_create(map_create_payload(input))
+        .await
+        .map_err(HelperCaptureErrorPayload::from)
+}
+
+#[tauri::command]
+pub async fn helper_quick_create_and_open(
+    input: HelperQuickCreateInput,
+) -> Result<(), HelperCaptureErrorPayload> {
+    ipc_client::quick_create_and_open(map_create_payload(input))
+        .await
+        .map_err(HelperCaptureErrorPayload::from)
+}
+
+#[tauri::command]
+pub async fn helper_quick_open_target(
+    input: HelperQuickOpenTargetInput,
+) -> Result<(), HelperCaptureErrorPayload> {
+    ipc_client::quick_open_target(QuickOpenTargetPayload {
+        kind: match input.kind {
+            HelperQuickOpenTargetKind::Task => QuickOpenTargetKind::Task,
+            HelperQuickOpenTargetKind::Project => QuickOpenTargetKind::Project,
+        },
+        id: input.id,
     })
     .await
-    .map_err(|error| {
-        log::warn!("helper_open_project 失败: {error}");
-        HelperCaptureErrorPayload::from(error)
-    })
+    .map_err(HelperCaptureErrorPayload::from)
+}
+
+fn map_create_payload(input: HelperQuickCreateInput) -> QuickCreatePayload {
+    QuickCreatePayload {
+        space_id: input.space_id,
+        placement: QuickPlacementPayload {
+            kind: match input.placement.kind {
+                HelperQuickPlacementKind::Inbox => QuickPlacementKind::Inbox,
+                HelperQuickPlacementKind::NoProject => QuickPlacementKind::NoProject,
+                HelperQuickPlacementKind::Project => QuickPlacementKind::Project,
+            },
+            project_id: input.placement.project_id,
+        },
+        title: input.title,
+        note: input.note,
+        status: input.status,
+        priority: input.priority,
+        due_at: input.due_at,
+        scheduled_at: input.scheduled_at,
+        reminder_at: input.reminder_at,
+    }
+}
+
+fn map_initial_state(payload: QuickInitialStatePayload) -> HelperQuickInitialStateResponse {
+    HelperQuickInitialStateResponse {
+        current_scope: map_scope(payload.current_scope),
+        default_space_id: payload.default_space_id,
+        default_placement: map_placement(payload.default_placement),
+        spaces: payload.spaces.into_iter().map(map_space).collect(),
+        projects: payload.projects.into_iter().map(map_project_option).collect(),
+        recent_tasks: payload.recent_tasks.into_iter().map(map_task_item).collect(),
+        recent_projects: payload
+            .recent_projects
+            .into_iter()
+            .map(map_project_item)
+            .collect(),
+    }
+}
+
+fn map_projects_by_space(
+    payload: QuickProjectsBySpaceResponsePayload,
+) -> HelperQuickProjectsBySpaceResponse {
+    HelperQuickProjectsBySpaceResponse {
+        space_id: payload.space_id,
+        inbox_project: map_project_option(payload.inbox_project),
+        no_project_option: map_project_option(payload.no_project_option),
+        projects: payload.projects.into_iter().map(map_project_option).collect(),
+    }
+}
+
+fn map_search_response(payload: QuickSearchResponsePayload) -> HelperQuickSearchResponse {
+    HelperQuickSearchResponse {
+        tasks: payload.tasks.into_iter().map(map_task_item).collect(),
+        projects: payload.projects.into_iter().map(map_project_item).collect(),
+    }
+}
+
+fn map_scope(payload: QuickScopePayload) -> HelperQuickScopeResponse {
+    HelperQuickScopeResponse {
+        kind: match payload.kind {
+            QuickScopeKind::All => "all",
+            QuickScopeKind::Space => "space",
+        },
+        space_id: payload.space_id,
+    }
+}
+
+fn map_placement(payload: QuickPlacementPayload) -> HelperQuickPlacementResponse {
+    HelperQuickPlacementResponse {
+        kind: match payload.kind {
+            QuickPlacementKind::Inbox => "inbox",
+            QuickPlacementKind::NoProject => "noProject",
+            QuickPlacementKind::Project => "project",
+        },
+        project_id: payload.project_id,
+    }
+}
+
+fn map_space(payload: QuickSpaceSummaryPayload) -> HelperQuickSpaceSummaryResponse {
+    HelperQuickSpaceSummaryResponse {
+        id: payload.id,
+        name: payload.name,
+        is_default: payload.is_default,
+    }
+}
+
+fn map_project_option(payload: QuickProjectOptionPayload) -> HelperQuickProjectOptionResponse {
+    HelperQuickProjectOptionResponse {
+        kind: match payload.kind {
+            QuickProjectOptionKind::Inbox => "inbox",
+            QuickProjectOptionKind::NoProject => "noProject",
+            QuickProjectOptionKind::Project => "project",
+        },
+        id: payload.id,
+        space_id: payload.space_id,
+        name: payload.name,
+    }
+}
+
+fn map_task_item(payload: QuickTaskItemPayload) -> HelperQuickTaskItemResponse {
+    HelperQuickTaskItemResponse {
+        id: payload.id,
+        space_id: payload.space_id,
+        space_name: payload.space_name,
+        project_id: payload.project_id,
+        project_name: payload.project_name,
+        inbox_at: payload.inbox_at,
+        title: payload.title,
+        note: payload.note,
+        priority: payload.priority,
+        status: payload.status,
+        updated_at: payload.updated_at,
+        completed_at: payload.completed_at,
+    }
+}
+
+fn map_project_item(payload: QuickProjectItemPayload) -> HelperQuickProjectItemResponse {
+    HelperQuickProjectItemResponse {
+        id: payload.id,
+        space_id: payload.space_id,
+        space_name: payload.space_name,
+        name: payload.name,
+        note: payload.note,
+        updated_at: payload.updated_at,
+        completed_at: payload.completed_at,
+    }
 }
 
 #[cfg(test)]

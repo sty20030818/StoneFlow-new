@@ -6,15 +6,17 @@ export const COMMAND_OPEN_EVENT = 'stoneflow://command/open'
 export type CommandOpenPayload = {
 	kind: 'task' | 'project'
 	id: string
-	spaceSlug: string
+	spaceId: string
 	projectId: string | null
+	placement: 'project' | 'inbox' | 'no_project'
 }
 
 type RawCommandOpenPayload = {
 	kind?: unknown
 	id?: unknown
-	space_slug?: unknown
+	space_id?: unknown
 	project_id?: unknown
+	placement?: unknown
 }
 
 export function normalizeCommandOpenPayload(payload: unknown): CommandOpenPayload | null {
@@ -26,7 +28,7 @@ export function normalizeCommandOpenPayload(payload: unknown): CommandOpenPayloa
 	if (
 		(candidate.kind !== 'task' && candidate.kind !== 'project') ||
 		typeof candidate.id !== 'string' ||
-		typeof candidate.space_slug !== 'string'
+		typeof candidate.space_id !== 'string'
 	) {
 		return null
 	}
@@ -34,8 +36,16 @@ export function normalizeCommandOpenPayload(payload: unknown): CommandOpenPayloa
 	return {
 		kind: candidate.kind,
 		id: candidate.id,
-		spaceSlug: candidate.space_slug,
+		spaceId: candidate.space_id,
 		projectId: typeof candidate.project_id === 'string' ? candidate.project_id : null,
+		placement:
+			candidate.placement === 'project' ||
+			candidate.placement === 'inbox' ||
+			candidate.placement === 'no_project'
+				? candidate.placement
+				: typeof candidate.project_id === 'string'
+					? 'project'
+					: 'no_project',
 	}
 }
 

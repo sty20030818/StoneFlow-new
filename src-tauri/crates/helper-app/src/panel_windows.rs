@@ -92,8 +92,8 @@ pub fn toggle_quick_capture_panel(app_handle: &AppHandle<Wry>) {
         log::warn!("helper: 聚焦 windows quick capture 失败: {error}");
     }
 
-    if let Err(error) = window.emit("quick-capture:shown", ()) {
-        log::warn!("helper: quick-capture:shown 事件发送失败: {error}");
+    if let Err(error) = window.emit("quick-create:shown", ()) {
+        log::warn!("helper: quick-create:shown 事件发送失败: {error}");
     }
 }
 

@@ -2,6 +2,7 @@
 
 mod lifecycle_service;
 mod project_service;
+mod quick_create_service;
 mod search_service;
 mod settings_service;
 mod space_service;
@@ -17,6 +18,7 @@ pub use project_service::{
     ProjectIdInput, ProjectOverviewItemDto, ProjectScopeInput, ProjectScopeKind, ProjectService,
     ProjectSidebarItemDto, UpdateProjectInput,
 };
+pub use quick_create_service::QuickCreateService;
 pub use search_service::{
     SearchEntitiesInput, SearchEntitiesResultDto, SearchProjectItemDto, SearchService,
     SearchTaskItemDto,

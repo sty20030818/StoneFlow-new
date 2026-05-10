@@ -51,7 +51,7 @@ const PATH_ICON_MAP: Record<string, LucideIcon> = {
 	archive: ArchiveIcon,
 	trash: Trash2Icon,
 	settings: Settings2Icon,
-	'quick-capture': SquarePenIcon,
+	'quick-create': SquarePenIcon,
 }
 
 /** URL 路径段（kebab-case）→ ShellSectionKey（camelCase） */
@@ -169,8 +169,8 @@ export function buildShellRouteHistoryEntry(
 	const pathname = path.split(/[?#]/)[0] || '/'
 	const parts = compact(pathname.split('/'))
 
-	if (parts[0] === 'quick-capture') {
-		return createHistoryEntry(path, '快速捕获', null, '所有空间')
+	if (parts[0] === 'quick-create') {
+		return createHistoryEntry(path, '快捷创建', null, '所有空间')
 	}
 
 	if (parts[0] === 'spaces') {

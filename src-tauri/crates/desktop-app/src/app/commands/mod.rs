@@ -5,7 +5,7 @@ use tauri::ipc::Invoke;
 pub(crate) mod activity;
 pub(crate) mod lifecycle;
 pub(crate) mod projects;
-pub(crate) mod quick_capture;
+pub(crate) mod quick_create;
 pub(crate) mod search;
 pub(crate) mod settings;
 pub(crate) mod spaces;
@@ -63,8 +63,8 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         spaces::permanently_delete_space,
         workspace::healthcheck,
         workspace::set_active_scope,
-        quick_capture::restore_main_window,
-        quick_capture::quit_stoneflow,
-        quick_capture::get_command_helper_status
+        quick_create::restore_main_window,
+        quick_create::quit_stoneflow,
+        quick_create::get_quick_create_runtime_status
     ]
 }

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type PropsWithChildren } from 'react'
-import { useLocation } from 'react-router-dom'
+import { startTransition, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
@@ -29,6 +29,7 @@ import {
 	selectPendingTaskOpenIntent,
 	useSearchOpenIntentStore,
 } from '@/features/global-search/model/useSearchOpenIntentStore'
+import { useCommandOpenListener } from '@/shared/events'
 import {
 	selectProjectOptions,
 	selectProjectSidebar,
@@ -61,6 +62,7 @@ export function ShellLayout({
 	currentSpaceId,
 	activeSection,
 }: ShellLayoutProps) {
+	const navigate = useNavigate()
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
 	const createDialogType = useDialogStore(selectCreateDialogType)
 	const taskCreateDraft = useDialogStore(selectTaskCreateDraft)
@@ -72,6 +74,9 @@ export function ShellLayout({
 	const pendingTaskOpenIntent = useSearchOpenIntentStore(selectPendingTaskOpenIntent)
 	const consumePendingTaskOpenIntent = useSearchOpenIntentStore(
 		(state) => state.consumePendingTaskOpenIntent,
+	)
+	const setPendingTaskOpenIntent = useSearchOpenIntentStore(
+		(state) => state.setPendingTaskOpenIntent,
 	)
 
 	const { pathname } = useLocation()
@@ -164,6 +169,42 @@ export function ShellLayout({
 
 		openDrawer('task', consumedIntent.taskId)
 	}, [consumePendingTaskOpenIntent, openDrawer, pathname, pendingTaskOpenIntent, spaceStatus])
+
+	useCommandOpenListener((payload) => {
+		const targetPath = payload.projectId
+			? `/space/${payload.spaceId}/project/${payload.projectId}`
+			: payload.kind === 'project'
+				? `/space/${payload.spaceId}/project/${payload.id}`
+				: payload.placement === 'inbox'
+					? `/space/${payload.spaceId}/inbox`
+					: `/space/${payload.spaceId}/no-project`
+
+		closeDrawer()
+
+		if (payload.kind === 'project') {
+			if (pathname === targetPath) {
+				return
+			}
+			startTransition(() => {
+				navigate(targetPath)
+			})
+			return
+		}
+
+		setPendingTaskOpenIntent({
+			taskId: payload.id,
+			targetPath,
+		})
+
+		if (pathname === targetPath) {
+			openDrawer('task', payload.id)
+			return
+		}
+
+		startTransition(() => {
+			navigate(targetPath)
+		})
+	})
 
 	if (
 		!sidebarSettings ||
