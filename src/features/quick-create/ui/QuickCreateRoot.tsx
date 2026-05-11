@@ -14,7 +14,7 @@ export function QuickCreateRoot() {
 			<section
 				aria-label='StoneFlow Quick Create'
 				className={cn(
-					'relative z-10 flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background shadow-[0_0_28px_rgba(0,0,0,0.5)]',
+					'relative z-10 flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background shadow-[0_0_28px_rgba(0,0,0,0.35)]',
 				)}
 				style={{ borderColor: '#bababa' }}
 			>

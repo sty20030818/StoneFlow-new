@@ -366,6 +366,11 @@ fn build_quick_create_service(database: &DatabaseRuntimeState) -> QuickCreateSer
 }
 
 fn bind_listener(socket: &SocketName) -> Result<Listener, io::Error> {
+    // 清理残留 socket 文件，避免 "Address already in use"
+    if !socket.namespaced {
+        let _ = std::fs::remove_file(&socket.raw);
+    }
+
     let name = if socket.namespaced {
         socket.raw.clone().to_ns_name::<GenericNamespaced>()
     } else {

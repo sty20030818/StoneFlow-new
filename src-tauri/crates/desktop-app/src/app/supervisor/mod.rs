@@ -323,7 +323,7 @@ fn find_helper_binary() -> Result<PathBuf, AppError> {
         "stoneflow-helper"
     };
 
-    let candidates = vec![exe_dir.join(helper_binary_name)];
+    let mut candidates = vec![exe_dir.join(helper_binary_name)];
 
     #[cfg(target_os = "macos")]
     {
