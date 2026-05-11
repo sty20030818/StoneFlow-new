@@ -199,6 +199,25 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			})
 	}
 
+	const refreshShownStateRef = useRef<() => void>(() => {})
+	refreshShownStateRef.current = () => {
+		const requestId = ++bootstrapRequestIdRef.current
+
+		void getInitialState()
+			.then((initialState) => {
+				if (requestId !== bootstrapRequestIdRef.current) {
+					return
+				}
+
+				startTransition(() => {
+					dispatch({ type: 'panelShownRefreshed', payload: initialState })
+				})
+			})
+			.catch((error) => {
+				logRefreshRecentError(error)
+			})
+	}
+
 	useEffect(() => {
 		initialStateRef.current = state.initialState
 	}, [state.initialState])
@@ -219,7 +238,7 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 				dispatch({ type: 'bootstrapSucceeded', payload: cachedInitialState })
 			})
 			focusInput()
-			refreshRecentRef.current()
+			refreshShownStateRef.current()
 		}).then((dispose) => {
 			if (disposed) {
 				dispose()

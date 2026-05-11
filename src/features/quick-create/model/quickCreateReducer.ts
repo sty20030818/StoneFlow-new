@@ -45,6 +45,7 @@ export function createQuickCreateInitialState(): QuickCreatePanelState {
 type QuickCreateAction =
 	| { type: 'bootstrapStarted' }
 	| { type: 'bootstrapSucceeded'; payload: QuickCreateInitialState }
+	| { type: 'panelShownRefreshed'; payload: QuickCreateInitialState }
 	| { type: 'recentRefreshed'; payload: QuickCreateInitialState }
 	| { type: 'bootstrapFailed'; message: string }
 	| { type: 'titleChanged'; title: string }
@@ -118,6 +119,28 @@ export function quickCreateReducer(
 				message: action.message,
 				errorMessage: action.message,
 			}
+		case 'panelShownRefreshed': {
+			const previousDefaultSpaceId = state.initialState?.defaultSpaceId ?? null
+			const previousDefaultPlacement = state.initialState?.defaultPlacement ?? null
+			const shouldAdoptFreshDefaults =
+				state.draft.title.trim().length === 0 &&
+				state.draft.spaceId === previousDefaultSpaceId &&
+				state.draft.placement.kind === previousDefaultPlacement?.kind &&
+				state.draft.placement.projectId === previousDefaultPlacement?.projectId
+
+			return {
+				...state,
+				initialState: action.payload,
+				draft: shouldAdoptFreshDefaults
+					? {
+							...state.draft,
+							spaceId: action.payload.defaultSpaceId,
+							placement: action.payload.defaultPlacement,
+					  }
+					: state.draft,
+				projectOptions: shouldAdoptFreshDefaults ? action.payload.projects : state.projectOptions,
+			}
+		}
 		case 'recentRefreshed':
 			return {
 				...state,

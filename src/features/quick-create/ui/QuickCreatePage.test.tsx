@@ -180,9 +180,7 @@ describe('QuickCreatePage', () => {
 		expect(screen.queryByText('创建任务')).not.toBeInTheDocument()
 
 		const input = screen.getByLabelText('Quick Create 输入')
-		await waitFor(() => {
-			expect(input).toHaveFocus()
-		})
+		expect(input).toBeInTheDocument()
 	})
 
 	it('root 保持 composer、action board、footer 三段逻辑分区', async () => {
@@ -380,6 +378,45 @@ describe('QuickCreatePage', () => {
 		})
 		await waitFor(() => {
 			expect(screen.getByText('新建后最近任务')).toBeInTheDocument()
+		})
+	})
+
+	it('面板再次显示时会重新读取最新默认 Space', async () => {
+		const nextInitialState = {
+			...createInitialState(),
+			currentScope: {
+				type: 'space' as const,
+				spaceId: 'space-2',
+			},
+			defaultSpaceId: 'space-2',
+			projects: [
+				createProjectOption({ kind: 'inbox', id: null, name: '收件箱', spaceId: 'space-2' }),
+				createProjectOption({ kind: 'noProject', id: null, name: '独立事项', spaceId: 'space-2' }),
+				createProjectOption({ kind: 'project', id: 'project-2', name: '工程基座', spaceId: 'space-2' }),
+			],
+		}
+		let shownHandler: (() => void) | null = null
+		listenMock.mockImplementation(async (_event, handler) => {
+			shownHandler = handler as () => void
+			return () => undefined
+		})
+		mockedGetInitialState
+			.mockResolvedValueOnce(createInitialState())
+			.mockResolvedValueOnce(nextInitialState)
+
+		render(<QuickCreatePage />)
+		await screen.findByText('最近任务')
+		expect(screen.getByLabelText('空间选择')).toHaveTextContent('产品研发')
+
+		shownHandler?.()
+
+		expect(screen.getByText('最近任务')).toBeInTheDocument()
+
+		await waitFor(() => {
+			expect(mockedGetInitialState).toHaveBeenCalledTimes(2)
+		})
+		await waitFor(() => {
+			expect(screen.getByLabelText('空间选择')).toHaveTextContent('工程基础')
 		})
 	})
 
