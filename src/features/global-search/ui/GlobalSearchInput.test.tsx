@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 
 import { searchEntities } from '@/features/global-search/api/searchEntities'
+import { useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
 
@@ -15,12 +16,15 @@ describe('GlobalSearchInput', () => {
 	beforeEach(() => {
 		mockedSearchEntities.mockReset()
 		HTMLElement.prototype.scrollIntoView = vi.fn()
+		useSearchFocusIntentStore.setState({ focusRequestVersion: 0 })
 	})
 
-	it('按下 / 会聚焦搜索框', () => {
+	it('收到统一聚焦意图时会聚焦搜索框', () => {
 		renderSearch()
 
-		fireEvent.keyDown(window, { key: '/' })
+		act(() => {
+			useSearchFocusIntentStore.getState().requestFocus()
+		})
 
 		expect(screen.getByLabelText('全局搜索')).toHaveFocus()
 	})

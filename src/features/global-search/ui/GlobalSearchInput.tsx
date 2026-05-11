@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { selectSearchFocusRequestVersion, useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
 import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
 import { GlobalSearchResults } from '@/features/global-search/ui/GlobalSearchResults'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
@@ -17,6 +18,7 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 	const rootRef = useRef<HTMLDivElement>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
 	const lastKeyboardMoveAtRef = useRef(0)
+	const focusRequestVersion = useSearchFocusIntentStore(selectSearchFocusRequestVersion)
 	const [query, setQuery] = useState('')
 	const [isFocused, setIsFocused] = useState(false)
 	const [highlightedIndex, setHighlightedIndex] = useState(0)
@@ -101,29 +103,13 @@ export function GlobalSearchInput({ onOpenTask, onOpenProject }: GlobalSearchInp
 	}, [])
 
 	useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) {
-				return
-			}
-
-			const target = event.target
-			if (
-				target instanceof HTMLElement &&
-				(target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
-			) {
-				return
-			}
-
-			event.preventDefault()
-			inputRef.current?.focus()
-			setIsFocused(true)
+		if (focusRequestVersion === 0) {
+			return
 		}
 
-		window.addEventListener('keydown', handleKeyDown)
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown)
-		}
-	}, [])
+		inputRef.current?.focus()
+		setIsFocused(true)
+	}, [focusRequestVersion])
 
 	function clearSearch() {
 		setQuery('')

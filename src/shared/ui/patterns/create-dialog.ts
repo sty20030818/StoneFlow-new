@@ -13,6 +13,13 @@ export const createDialogShellClass = cn(
 	dialogShellFloatingBaseClass,
 )
 
+export const createDialogShellFullscreenClass = cn(
+	'flex h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-1.5rem)] max-w-[calc(100vw-1.5rem)]',
+	'flex-col gap-0 overflow-hidden rounded-3xl border border-border',
+	'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
+	dialogShellFloatingBaseClass,
+)
+
 /** 创建弹窗 Header — 面包屑 + 操作按钮 */
 export const createDialogHeaderClass = 'flex shrink-0 items-center justify-between p-3'
 

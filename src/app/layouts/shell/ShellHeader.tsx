@@ -45,6 +45,7 @@ import {
 import { Kbd } from '@/shared/ui/base/kbd'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
+import { getShortcutDisplay } from '@/app/shortcuts/shortcutDisplay'
 import {
 	shellChromeAvatarClusterClass,
 	shellChromeCommandDialogClass,
@@ -119,6 +120,7 @@ export function ShellHeader({
 	const sidebarToggleOpen =
 		sidebarVisualState === 'desktop-expanded' || sidebarVisualState === 'mobile-open'
 	const SidebarToggleIcon = sidebarToggleOpen ? PanelLeftCloseIcon : PanelLeftOpenIcon
+	const taskCreateShortcutDisplay = getShortcutDisplay('task-create.open')
 
 	/** 与 `max-sm` 同为 640px 阈；`display: contents` 与变体并用时纯 CSS 不可靠，故用媒体查询做显示开关 */
 	const [isAtLeastSm, setIsAtLeastSm] = useState(() => {
@@ -159,31 +161,6 @@ export function ShellHeader({
 			disposed = true
 		}
 	}, [])
-
-	useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (isTextInputTarget(event.target)) {
-				return
-			}
-
-			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-				event.preventDefault()
-				onCommandOpenChange(true)
-				return
-			}
-
-			if (!event.metaKey && !event.ctrlKey && !event.altKey && event.key.toLowerCase() === 'c') {
-				event.preventDefault()
-				onOpenTaskCreateDialog()
-			}
-		}
-
-		window.addEventListener('keydown', handleKeyDown)
-
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown)
-		}
-	}, [onCommandOpenChange, onOpenTaskCreateDialog])
 
 	const handleNavigate = (to: string) => {
 		onCommandOpenChange(false)
@@ -384,7 +361,7 @@ export function ShellHeader({
 								variant='outline'
 							>
 								<span>新建任务</span>
-								<Kbd>C</Kbd>
+								{taskCreateShortcutDisplay ? <Kbd>{taskCreateShortcutDisplay}</Kbd> : null}
 							</Button>
 							<Button
 								aria-label='新建任务'
@@ -569,18 +546,5 @@ export function ShellHeader({
 				</Command>
 			</CommandDialog>
 		</>
-	)
-}
-
-function isTextInputTarget(target: EventTarget | null) {
-	if (!(target instanceof HTMLElement)) {
-		return false
-	}
-
-	return (
-		target.isContentEditable ||
-		target.tagName === 'INPUT' ||
-		target.tagName === 'TEXTAREA' ||
-		target.tagName === 'SELECT'
 	)
 }

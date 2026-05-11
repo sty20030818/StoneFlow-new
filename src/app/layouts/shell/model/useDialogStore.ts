@@ -11,18 +11,25 @@ type TaskCreateDialogDraft = {
 	placement?: TaskPlacement
 }
 
+export type CreateDialogPresentation = 'default' | 'fullscreen'
+
 type CreateDialogType = 'task' | 'project' | null
 
 type DialogState = {
 	isCommandOpen: boolean
 	createDialogType: CreateDialogType
 	taskCreateDraft: TaskCreateDialogDraft
+	taskCreatePresentation: CreateDialogPresentation
 
 	openCommand: () => void
 	closeCommand: () => void
 	setCommandOpen: (open: boolean) => void
-	openTaskCreateDialog: (draft?: TaskCreateDialogDraft) => void
+	openTaskCreateDialog: (
+		draft?: TaskCreateDialogDraft,
+		presentation?: CreateDialogPresentation,
+	) => void
 	closeTaskCreateDialog: () => void
+	toggleTaskCreatePresentation: () => void
 	openProjectCreateDialog: () => void
 	closeProjectCreateDialog: () => void
 }
@@ -38,6 +45,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 	isCommandOpen: false,
 	createDialogType: null,
 	taskCreateDraft: { ...defaultTaskDraft },
+	taskCreatePresentation: 'default',
 
 	openCommand: () => {
 		useDrawerStore.getState().closeDrawer()
@@ -45,6 +53,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isCommandOpen: true,
 			createDialogType: null,
 			taskCreateDraft: { ...defaultTaskDraft },
+			taskCreatePresentation: 'default',
 		})
 	},
 	closeCommand: () => set({ isCommandOpen: false }),
@@ -55,7 +64,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 		set({ isCommandOpen: open })
 	},
 
-	openTaskCreateDialog: (draft) => {
+	openTaskCreateDialog: (draft, presentation = 'default') => {
 		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: false,
@@ -65,13 +74,20 @@ export const useDialogStore = create<DialogState>((set) => ({
 				status: draft?.status ?? 'todo',
 				placement: draft?.placement ?? undefined,
 			},
+			taskCreatePresentation: presentation,
 		})
 	},
 	closeTaskCreateDialog: () =>
 		set({
 			createDialogType: null,
 			taskCreateDraft: { ...defaultTaskDraft },
+			taskCreatePresentation: 'default',
 		}),
+	toggleTaskCreatePresentation: () =>
+		set((state) => ({
+			taskCreatePresentation:
+				state.taskCreatePresentation === 'fullscreen' ? 'default' : 'fullscreen',
+		})),
 
 	openProjectCreateDialog: () => {
 		useDrawerStore.getState().closeDrawer()
@@ -79,11 +95,13 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isCommandOpen: false,
 			createDialogType: 'project',
 			taskCreateDraft: { ...defaultTaskDraft },
+			taskCreatePresentation: 'default',
 		})
 	},
 	closeProjectCreateDialog: () =>
 		set({
 			createDialogType: null,
+			taskCreatePresentation: 'default',
 		}),
 }))
 
@@ -91,6 +109,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 export const selectIsCommandOpen = (state: DialogState) => state.isCommandOpen
 export const selectCreateDialogType = (state: DialogState) => state.createDialogType
 export const selectTaskCreateDraft = (state: DialogState) => state.taskCreateDraft
+export const selectTaskCreatePresentation = (state: DialogState) => state.taskCreatePresentation
 
 // 向后兼容 selectors（供未迁移的调用方使用）
 export const selectIsTaskCreateOpen = (state: DialogState) => state.createDialogType === 'task'

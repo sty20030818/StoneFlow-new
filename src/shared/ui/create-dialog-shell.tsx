@@ -3,8 +3,13 @@ import type { Space } from '@/shared/types'
 import { SpaceDropdownMenu } from '@/features/space/ui/SpaceDropdownMenu'
 import { Button } from '@/shared/ui/base/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/base/dialog'
-import { createDialogHeaderClass, createDialogShellClass } from '@/shared/ui/patterns/create-dialog'
-import { ChevronRightIcon, Maximize2Icon, XIcon } from 'lucide-react'
+import {
+	createDialogHeaderClass,
+	createDialogShellClass,
+	createDialogShellFullscreenClass,
+} from '@/shared/ui/patterns/create-dialog'
+import { cn } from '@/shared/lib/utils'
+import { ChevronRightIcon, Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react'
 
 type CreateDialogShellProps = {
 	open: boolean
@@ -14,7 +19,10 @@ type CreateDialogShellProps = {
 	description: string
 	spaces: Space[]
 	selectedSpaceId: string | null
+	fullscreen?: boolean
+	showFullscreenToggle?: boolean
 	onSelectSpace: (spaceId: string | null) => void
+	onToggleFullscreen?: () => void
 	onClose: () => void
 	children: React.ReactNode
 }
@@ -29,7 +37,10 @@ export function CreateDialogShell({
 	description,
 	spaces,
 	selectedSpaceId,
+	fullscreen = false,
+	showFullscreenToggle = false,
 	onSelectSpace,
+	onToggleFullscreen,
 	onClose,
 	children,
 }: CreateDialogShellProps) {
@@ -38,10 +49,12 @@ export function CreateDialogShell({
 		: null
 	const currentSpaceLabel = currentSpace?.name ?? '全部 Spaces'
 
-		return (
+	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
 			<DialogContent
-				className={createDialogShellClass}
+				className={cn(
+					fullscreen ? createDialogShellFullscreenClass : createDialogShellClass,
+				)}
 				disableAnimation
 				showCloseButton={false}
 			>
@@ -62,9 +75,22 @@ export function CreateDialogShell({
 					</div>
 
 					<div className='flex items-center gap-0.5'>
-						<Button className='size-7 text-sf-icon-secondary' size='icon-sm' variant='ghost'>
-							<Maximize2Icon className='size-3.5' />
-						</Button>
+						{showFullscreenToggle ? (
+							<Button
+								aria-label={fullscreen ? '退出全屏创建' : '全屏创建'}
+								className='size-7 text-sf-icon-secondary'
+								onClick={onToggleFullscreen}
+								size='icon-sm'
+								type='button'
+								variant='ghost'
+							>
+								{fullscreen ? (
+									<Minimize2Icon className='size-3.5' />
+								) : (
+									<Maximize2Icon className='size-3.5' />
+								)}
+							</Button>
+						) : null}
 						<Button
 							className='size-7 text-sf-icon-secondary'
 							onClick={onClose}

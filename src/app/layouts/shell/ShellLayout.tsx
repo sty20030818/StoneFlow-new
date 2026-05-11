@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
+import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
 import { useSidebarNavBadges } from '@/app/layouts/shell/model/useSidebarNavBadges'
@@ -13,8 +14,10 @@ import {
 	selectCreateDialogType,
 	selectIsCommandOpen,
 	selectTaskCreateDraft,
+	selectTaskCreatePresentation,
 	useDialogStore,
 } from '@/app/layouts/shell/model/useDialogStore'
+import { ShortcutManager } from '@/app/shortcuts/ShortcutManager'
 import {
 	selectSidebarSettings,
 	selectSidebarSettingsError,
@@ -29,6 +32,7 @@ import {
 	selectPendingTaskOpenIntent,
 	useSearchOpenIntentStore,
 } from '@/features/global-search/model/useSearchOpenIntentStore'
+import { useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
 import { type CommandOpenPayload, useCommandOpenListener } from '@/shared/events'
 import {
 	selectProjectOptions,
@@ -50,6 +54,7 @@ import {
 	shellChromeSkeletonMainCardClass,
 	shellChromeSkeletonStatusTextClass,
 } from '@/shared/ui/patterns/shell-chrome'
+import type { ShortcutId } from '@/shared/shortcuts'
 
 type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
@@ -67,10 +72,14 @@ export function ShellLayout({
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
 	const createDialogType = useDialogStore(selectCreateDialogType)
 	const taskCreateDraft = useDialogStore(selectTaskCreateDraft)
+	const taskCreatePresentation = useDialogStore(selectTaskCreatePresentation)
 	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
 	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
+	const toggleTaskCreatePresentation = useDialogStore(
+		(state) => state.toggleTaskCreatePresentation,
+	)
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
 	const pendingTaskOpenIntent = useSearchOpenIntentStore(selectPendingTaskOpenIntent)
 	const consumePendingTaskOpenIntent = useSearchOpenIntentStore(
@@ -79,6 +88,7 @@ export function ShellLayout({
 	const setPendingTaskOpenIntent = useSearchOpenIntentStore(
 		(state) => state.setPendingTaskOpenIntent,
 	)
+	const requestSearchFocus = useSearchFocusIntentStore((state) => state.requestFocus)
 
 	const { pathname } = useLocation()
 	const routeProjectId = useMemo(() => {
@@ -89,12 +99,12 @@ export function ShellLayout({
 
 	const handleOpenTaskCreate = useMemo(() => {
 		if (routeProjectId) {
-			return () => openTaskCreateDialog({ projectId: routeProjectId })
+			return () => openTaskCreateDialog({ projectId: routeProjectId }, 'default')
 		}
 		if (isNoProjectPage) {
-			return () => openTaskCreateDialog({ placement: 'noProject' })
+			return () => openTaskCreateDialog({ placement: 'noProject' }, 'default')
 		}
-		return () => openTaskCreateDialog()
+		return () => openTaskCreateDialog(undefined, 'default')
 	}, [isNoProjectPage, openTaskCreateDialog, routeProjectId])
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
 	const closeTaskCreateDialog = useDialogStore((state) => state.closeTaskCreateDialog)
@@ -219,6 +229,64 @@ export function ShellLayout({
 		[closeDrawer, navigate, openDrawer, pathname, setPendingTaskOpenIntent],
 	)
 
+	const handleShortcutTrigger = useMemo(
+		() =>
+			(id: ShortcutId) => {
+				switch (id) {
+					case 'search.open':
+						requestSearchFocus()
+						return
+					case 'command.open':
+						setCommandOpen(true)
+						return
+					case 'task-create.open':
+						handleOpenTaskCreate()
+						return
+					case 'task-create.open-fullscreen':
+						if (routeProjectId) {
+							openTaskCreateDialog({ projectId: routeProjectId }, 'fullscreen')
+							return
+						}
+						if (isNoProjectPage) {
+							openTaskCreateDialog({ placement: 'noProject' }, 'fullscreen')
+							return
+						}
+						openTaskCreateDialog(undefined, 'fullscreen')
+						return
+					case 'project-create.open':
+						openProjectCreateDialog()
+						return
+					case 'goto.inbox':
+						startTransition(() => {
+							navigate(buildScopedSectionPath(currentScope, 'inbox', currentSpaceId))
+						})
+						return
+					case 'goto.projects':
+						startTransition(() => {
+							navigate(buildScopedSectionPath(currentScope, 'projects', currentSpaceId))
+						})
+						return
+					case 'goto.views':
+						startTransition(() => {
+							navigate(buildScopedSectionPath(currentScope, 'views', currentSpaceId))
+						})
+						return
+				}
+			},
+		[
+			currentScope,
+			currentSpaceId,
+			handleOpenTaskCreate,
+			isNoProjectPage,
+			navigate,
+			openProjectCreateDialog,
+			openTaskCreateDialog,
+			requestSearchFocus,
+			routeProjectId,
+			setCommandOpen,
+		],
+	)
+
 	useCommandOpenListener(handleCommandOpen)
 
 	useEffect(() => {
@@ -287,6 +355,7 @@ export function ShellLayout({
 			}}
 			sidebarWidth={sidebarSettings.width}
 		>
+			<ShortcutManager onTrigger={handleShortcutTrigger} />
 			<ShellHeader
 				activeSection={activeSection}
 				currentSpaceId={currentSpaceId}
@@ -353,6 +422,9 @@ export function ShellLayout({
 				onSelectSpace={setSelectedSpaceId}
 				open={createDialogType !== null && !shouldDelayTaskCreateDialog}
 				selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
+				fullscreen={createDialogType === 'task' && taskCreatePresentation === 'fullscreen'}
+				showFullscreenToggle={createDialogType === 'task'}
+				onToggleFullscreen={toggleTaskCreatePresentation}
 				spaces={spaces}
 				title={createDialogType === 'task' ? '新建任务' : '新建项目'}
 			>
