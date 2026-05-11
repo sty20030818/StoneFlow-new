@@ -85,6 +85,8 @@ pub enum QuickPlacementKind {
 pub struct QuickSpaceSummaryPayload {
     pub id: String,
     pub name: String,
+    pub icon_key: String,
+    pub color_key: String,
     pub is_default: bool,
 }
 

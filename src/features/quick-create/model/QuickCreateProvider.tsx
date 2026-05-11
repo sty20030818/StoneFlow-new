@@ -103,6 +103,7 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 	const projectFocusFrameRef = useRef<number | null>(null)
 	const searchRequestIdRef = useRef(0)
 	const bootstrapRequestIdRef = useRef(0)
+	const initialStateRef = useRef<QuickCreatePanelState['initialState']>(null)
 	const deferredTitle = useDeferredValue(state.draft.title)
 
 	const focusInput = useCallback(() => {
@@ -185,13 +186,40 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			})
 	}
 
+	const refreshRecentRef = useRef<() => void>(() => {})
+	refreshRecentRef.current = () => {
+		void getInitialState()
+			.then((initialState) => {
+				startTransition(() => {
+					dispatch({ type: 'recentRefreshed', payload: initialState })
+				})
+			})
+			.catch((error) => {
+				logRefreshRecentError(error)
+			})
+	}
+
+	useEffect(() => {
+		initialStateRef.current = state.initialState
+	}, [state.initialState])
+
 	useEffect(() => {
 		resetPanelRef.current()
 
 		let disposed = false
 		let unlisten: (() => void) | undefined
 		listen<void>(QUICK_CREATE_SHOWN_EVENT, () => {
-			resetPanelRef.current()
+			const cachedInitialState = initialStateRef.current
+			if (!cachedInitialState) {
+				resetPanelRef.current()
+				return
+			}
+
+			startTransition(() => {
+				dispatch({ type: 'bootstrapSucceeded', payload: cachedInitialState })
+			})
+			focusInput()
+			refreshRecentRef.current()
 		}).then((dispose) => {
 			if (disposed) {
 				dispose()
@@ -216,6 +244,14 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			}
 		}
 	}, [])
+
+	useEffect(() => {
+		if (!state.initialState) {
+			return
+		}
+
+		console.debug('[quick-create] initial spaces', state.initialState.spaces)
+	}, [state.initialState])
 
 	const handleDocumentKeyDownRef = useRef<(event: globalThis.KeyboardEvent) => void>(() => {})
 	handleDocumentKeyDownRef.current = (event: globalThis.KeyboardEvent) => {
@@ -345,10 +381,12 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 	const hasTitle = normalizedTitle.length > 0
 	const isSearchingMode = deferredTitle.trim().length > 0
 	const displayTasks = useMemo(
+		// recent 列表固定使用全局最近；space 只影响创建落点和项目候选。
 		() => (isSearchingMode ? state.searchResults.tasks : state.initialState?.recentTasks ?? []),
 		[isSearchingMode, state.searchResults.tasks, state.initialState?.recentTasks],
 	)
 	const displayProjects = useMemo(
+		// recent 列表固定使用全局最近；space 只影响创建落点和项目候选。
 		() => (isSearchingMode ? state.searchResults.projects : state.initialState?.recentProjects ?? []),
 		[isSearchingMode, state.searchResults.projects, state.initialState?.recentProjects],
 	)
@@ -469,12 +507,14 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			try {
 				if (action === 'createAndOpen') {
 					await createAndOpen(input)
+					refreshRecentRef.current()
 					dispatch({ type: 'submitCompleted', message: `已创建并打开「${input.title}」` })
 					scheduleClose()
 					return
 				}
 
 				await create(input)
+				refreshRecentRef.current()
 				if (action === 'createAndContinue') {
 					dispatch({
 						type: 'continuousCreateSucceeded',
@@ -725,6 +765,15 @@ export function getQuickDatePreset(
 
 export function formatDateValue(date: Date) {
 	return format(date, 'yyyy-MM-dd')
+}
+
+function logRefreshRecentError(error: unknown) {
+	if (error instanceof Error) {
+		console.warn('[quick-create] recent refresh failed:', error.message)
+		return
+	}
+
+	console.warn('[quick-create] recent refresh failed')
 }
 
 export function formatDateLabel(value: string) {

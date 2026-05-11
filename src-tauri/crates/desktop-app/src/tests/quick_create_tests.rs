@@ -134,6 +134,8 @@ async fn quick_create_initial_state_should_keep_all_scope_and_default_space() {
     assert_eq!(state.current_scope.space_id, None);
     assert_eq!(state.default_space_id, default_space.id);
     assert_eq!(state.spaces.len(), 2);
+    assert_eq!(state.spaces[0].icon_key, default_space.icon_key);
+    assert_eq!(state.spaces[0].color_key, default_space.color_key);
 }
 
 #[tokio::test]

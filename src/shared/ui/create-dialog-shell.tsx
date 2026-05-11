@@ -38,9 +38,13 @@ export function CreateDialogShell({
 		: null
 	const currentSpaceLabel = currentSpace?.name ?? '全部 Spaces'
 
-	return (
+		return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
-			<DialogContent className={createDialogShellClass} showCloseButton={false}>
+			<DialogContent
+				className={createDialogShellClass}
+				disableAnimation
+				showCloseButton={false}
+			>
 				<DialogTitle className='sr-only'>{title}</DialogTitle>
 				<DialogDescription className='sr-only'>{description}</DialogDescription>
 

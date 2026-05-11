@@ -1,11 +1,10 @@
 //! 主应用运行时状态。
 
 use std::path::PathBuf;
-use std::process::Child;
 use std::sync::Arc;
 
 use serde::Serialize;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 /// 当前被主应用选中的 Scope 类型。
@@ -101,7 +100,6 @@ impl Default for CommandHelperSnapshot {
 #[derive(Debug, Clone, Default)]
 pub struct CommandHelperState {
     snapshot: Arc<RwLock<CommandHelperSnapshot>>,
-    child: Arc<Mutex<Option<Child>>>,
     shutdown_requested: Arc<RwLock<bool>>,
     pending_command_open: Arc<RwLock<Option<PendingCommandOpenIntent>>>,
 }
@@ -194,20 +192,6 @@ impl CommandHelperState {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
         snapshot.helper_status = HelperRuntimeStatus::ShuttingDown;
-    }
-
-    pub async fn store_child(&self, child: Child) {
-        let mut guard = self.child.lock().await;
-        *guard = Some(child);
-    }
-
-    pub async fn take_child(&self) -> Option<Child> {
-        self.child.lock().await.take()
-    }
-
-    pub async fn with_child_mut<T>(&self, f: impl FnOnce(&mut Child) -> T) -> Option<T> {
-        let mut guard = self.child.lock().await;
-        guard.as_mut().map(f)
     }
 
     pub async fn set_shutdown_requested(&self, value: bool) {

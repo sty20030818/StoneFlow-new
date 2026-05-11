@@ -30,6 +30,8 @@ export type QuickCreatePlacement =
 export type QuickCreateSpaceSummary = {
 	id: string
 	name: string
+	iconKey: string
+	colorKey: string
 	isDefault: boolean
 }
 
@@ -88,7 +90,9 @@ export type QuickCreateInitialState = {
 	defaultPlacement: QuickCreatePlacement
 	spaces: QuickCreateSpaceSummary[]
 	projects: QuickCreateProjectOption[]
+	/** 全局最近任务，不随 Quick Create 当前选中的 space 切换而变化。 */
 	recentTasks: QuickCreateTaskItem[]
+	/** 全局最近项目，不随 Quick Create 当前选中的 space 切换而变化。 */
 	recentProjects: QuickCreateProjectItem[]
 }
 

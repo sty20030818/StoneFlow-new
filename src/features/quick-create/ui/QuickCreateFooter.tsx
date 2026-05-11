@@ -8,7 +8,10 @@ export function QuickCreateFooter() {
 	const { derived, state } = useQuickCreate()
 
 	return (
-		<div className='flex min-h-11 items-center gap-3 border-t border-sf-divider bg-muted/65 px-4 text-[11px] text-sf-text-quaternary'>
+		<div
+			className='flex min-h-11 items-center gap-3 border-t border-sf-divider bg-muted/65 px-4 text-[11px] text-sf-text-quaternary'
+			data-testid='quick-create-footer'
+		>
 			<div
 				aria-live='polite'
 				className={cn(

@@ -45,6 +45,7 @@ export function createQuickCreateInitialState(): QuickCreatePanelState {
 type QuickCreateAction =
 	| { type: 'bootstrapStarted' }
 	| { type: 'bootstrapSucceeded'; payload: QuickCreateInitialState }
+	| { type: 'recentRefreshed'; payload: QuickCreateInitialState }
 	| { type: 'bootstrapFailed'; message: string }
 	| { type: 'titleChanged'; title: string }
 	| { type: 'priorityChanged'; priority: QuickCreatePriority }
@@ -116,6 +117,18 @@ export function quickCreateReducer(
 				submitState: 'error',
 				message: action.message,
 				errorMessage: action.message,
+			}
+		case 'recentRefreshed':
+			return {
+				...state,
+				initialState: {
+					...action.payload,
+					currentScope: state.initialState?.currentScope ?? action.payload.currentScope,
+					defaultSpaceId: state.initialState?.defaultSpaceId ?? action.payload.defaultSpaceId,
+					defaultPlacement:
+						state.initialState?.defaultPlacement ?? action.payload.defaultPlacement,
+					projects: state.initialState?.projects ?? action.payload.projects,
+				},
 			}
 		case 'titleChanged': {
 			const hasTitle = action.title.trim().length > 0

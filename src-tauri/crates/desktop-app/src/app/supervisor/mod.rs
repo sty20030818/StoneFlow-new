@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use tokio::process::{Child, Command};
 use tokio::sync::Notify;
-use tokio::time::timeout;
+use tokio::time::{sleep, timeout};
 
 use crate::app::error::AppError;
 use crate::app::state::{CommandHelperState, IpcServerStatus};
@@ -52,9 +52,7 @@ pub struct HelperSupervisor {
     policy: RestartPolicy,
     handshake_notify: Arc<Notify>,
     shutdown_notify: Arc<Notify>,
-    /// 进程退出通知 channel。
-    process_exit_tx: tokio::sync::mpsc::Sender<()>,
-    process_exit_rx: tokio::sync::mpsc::Receiver<()>,
+    current_child: Option<Child>,
     state: SupervisorState,
 }
 
@@ -64,15 +62,13 @@ impl HelperSupervisor {
         helper_state: CommandHelperState,
         handshake_notify: Arc<Notify>,
     ) -> Self {
-        let (process_exit_tx, process_exit_rx) = tokio::sync::mpsc::channel(1);
         Self {
             app_handle,
             helper_state,
             policy: RestartPolicy::new(RestartPolicyConfig::default()),
             handshake_notify,
             shutdown_notify: Arc::new(Notify::new()),
-            process_exit_tx,
-            process_exit_rx,
+            current_child: None,
             state: SupervisorState::Idle,
         }
     }
@@ -107,7 +103,7 @@ impl HelperSupervisor {
                     self.transition_to(SupervisorState::Starting).await;
                 }
                 SupervisorState::Starting => {
-                    if self.try_spawn_and_wait().await {
+                    if self.try_spawn().await {
                         // 进程已启动，等待握手
                         self.transition_to(SupervisorState::WaitingHandshake).await;
                     } else {
@@ -155,11 +151,16 @@ impl HelperSupervisor {
 
     async fn transition_to(&mut self, new_state: SupervisorState) {
         log::debug!("supervisor: {:?} → {:?}", self.state, new_state);
+        if new_state == SupervisorState::Stopped {
+            self.helper_state.mark_shutting_down().await;
+            self.helper_state.set_shutdown_requested(true).await;
+            self.shutdown_helper_process("supervisor 停止").await;
+        }
         self.state = new_state;
     }
 
-    /// 启动 helper 进程并等待退出。返回 true 表示进程已启动（需要后续握手），false 表示启动失败。
-    async fn try_spawn_and_wait(&mut self) -> bool {
+    /// 启动 helper 进程。返回 true 表示进程已启动（需要后续握手），false 表示启动失败。
+    async fn try_spawn(&mut self) -> bool {
         let helper_path = match resolve_or_build_helper().await {
             Ok(path) => path,
             Err(error) => {
@@ -189,39 +190,20 @@ impl HelperSupervisor {
         let pid = child.id().unwrap_or(0);
         self.helper_state.mark_helper_spawned(pid).await;
         log::info!("helper 已启动, pid={pid}");
-
-        // 后台等待进程退出
-        let exit_tx = self.process_exit_tx.clone();
-        tokio::spawn(async move {
-            let exit_status = child.wait_with_output().await;
-            match exit_status {
-                Ok(output) => {
-                    let code = output.status.code().unwrap_or(-1);
-                    if code != 0 {
-                        log::warn!("helper 进程退出, code={code}");
-                        if !output.stderr.is_empty() {
-                            log::warn!(
-                                "helper stderr: {}",
-                                String::from_utf8_lossy(&output.stderr)
-                            );
-                        }
-                    }
-                }
-                Err(error) => {
-                    log::error!("等待 helper 进程退出失败: {error}");
-                }
-            }
-            // 通知 supervisor 进程已退出
-            let _ = exit_tx.send(()).await;
-        });
+        self.current_child = Some(child);
 
         true
     }
 
     /// 等待 helper 握手（首个 IPC 请求）。返回 true 表示握手成功。
     async fn wait_handshake(&mut self) -> bool {
-        match timeout(HANDSHAKE_TIMEOUT, self.handshake_notify.notified()).await {
-            Ok(()) => {
+        let started_at = std::time::Instant::now();
+
+        loop {
+            if timeout(Duration::from_millis(1), self.handshake_notify.notified())
+                .await
+                .is_ok()
+            {
                 log::info!("helper 握手成功");
                 self.helper_state
                     .mark_helper_ready(
@@ -230,13 +212,56 @@ impl HelperSupervisor {
                     )
                     .await;
                 self.policy.record_stable();
-                true
+                return true;
             }
-            Err(_) => {
+
+            if started_at.elapsed() >= HANDSHAKE_TIMEOUT {
                 log::warn!("helper 握手超时 ({HANDSHAKE_TIMEOUT:?})");
-                false
+                return false;
+            }
+
+            if self.check_child_exit("等待握手").await {
+                return false;
+            }
+
+            if timeout(Duration::from_millis(1), self.shutdown_notify.notified())
+                .await
+                .is_ok()
+            {
+                log::info!("helper 等待握手时收到关闭请求");
+                self.transition_to(SupervisorState::Stopped).await;
+                return false;
+            }
+
+            sleep(Duration::from_millis(200)).await;
+        }
+    }
+
+    /// 在主 App 退出时显式关闭 helper，避免残留旧进程继续服务。
+    async fn shutdown_helper_process(&mut self, reason: &str) {
+        let Some(mut child) = self.current_child.take() else {
+            return;
+        };
+
+        let pid = child.id().unwrap_or(0);
+        log::info!("准备关闭 helper 进程, pid={pid}, reason={reason}");
+
+        if let Err(error) = child.kill().await {
+            log::warn!("关闭 helper 进程失败, pid={pid}: {error}");
+        }
+
+        match child.wait().await {
+            Ok(status) => {
+                log::info!("helper 进程已关闭, pid={pid}, status={status}");
+            }
+            Err(error) => {
+                log::warn!("等待 helper 进程退出失败, pid={pid}: {error}");
             }
         }
+
+        self.helper_state
+            .mark_helper_disconnected(format!("helper 已关闭: {reason}"))
+            .await;
     }
 
     /// 健康检查循环，直到进程退出或关闭请求。
@@ -244,18 +269,46 @@ impl HelperSupervisor {
         loop {
             tokio::select! {
                 _ = tokio::time::sleep(HEALTH_CHECK_INTERVAL) => {
-                    // 简化实现：进程还活着就认为健康
-                    // 实际的 IPC ping 由 helper 主动发起
-                }
-                _ = self.process_exit_rx.recv() => {
-                    log::info!("helper 进程已退出，准备重启");
-                    self.transition_to(SupervisorState::Restarting).await;
-                    return;
+                    if self.check_child_exit("运行中").await {
+                        log::info!("helper 进程已退出，准备重启");
+                        self.transition_to(SupervisorState::Restarting).await;
+                        return;
+                    }
                 }
                 _ = self.shutdown_notify.notified() => {
                     self.transition_to(SupervisorState::Stopped).await;
                     return;
                 }
+            }
+        }
+    }
+
+    async fn check_child_exit(&mut self, phase: &str) -> bool {
+        let Some(child) = self.current_child.as_mut() else {
+            self.helper_state
+                .mark_helper_disconnected(format!("helper 进程句柄缺失: {phase}"))
+                .await;
+            return true;
+        };
+
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let code = status.code().unwrap_or(-1);
+                log::warn!("helper 进程已退出, phase={phase}, code={code}");
+                self.current_child.take();
+                self.helper_state
+                    .mark_helper_disconnected(format!("helper 进程已退出，phase={phase}, code={code}"))
+                    .await;
+                true
+            }
+            Ok(None) => false,
+            Err(error) => {
+                log::error!("检查 helper 进程状态失败, phase={phase}: {error}");
+                self.current_child.take();
+                self.helper_state
+                    .mark_helper_disconnected(format!("检查 helper 状态失败: {error}"))
+                    .await;
+                true
             }
         }
     }
@@ -301,6 +354,12 @@ fn spawn_helper(path: &PathBuf) -> Result<Child, AppError> {
 
 /// 查找 helper 二进制，找不到则尝试自动编译（dev 模式）。
 async fn resolve_or_build_helper() -> Result<PathBuf, AppError> {
+    if cfg!(debug_assertions) {
+        log::info!("dev 模式：启动前强制重新编译 helper");
+        build_helper_binary().await?;
+        return find_helper_binary();
+    }
+
     if let Ok(path) = find_helper_binary() {
         return Ok(path);
     }

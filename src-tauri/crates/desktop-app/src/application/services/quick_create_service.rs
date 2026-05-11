@@ -110,15 +110,12 @@ impl QuickCreateService {
         let visible_spaces = self.space_repository.list_visible().await?;
         let default_space = resolve_default_space(&active_scope, &visible_spaces)?;
         let current_scope = map_scope_payload(active_scope, default_space.id.clone());
-        let projects = self
+        let projects_payload = self
             .list_projects_by_space(QuickListProjectsBySpacePayload {
                 space_id: default_space.id.clone(),
             })
-            .await?
-            .projects;
-        let (recent_tasks, recent_projects) = self
-            .list_recent_entities(current_scope.space_id.as_deref())
             .await?;
+        let (recent_tasks, recent_projects) = self.list_recent_entities().await?;
 
         Ok(QuickInitialStatePayload {
             current_scope,
@@ -132,10 +129,15 @@ impl QuickCreateService {
                 .map(|space| QuickSpaceSummaryPayload {
                     id: space.id,
                     name: space.name,
+                    icon_key: space.icon_key,
+                    color_key: space.color_key,
                     is_default: space.is_default,
                 })
                 .collect(),
-            projects,
+            projects: std::iter::once(projects_payload.inbox_project)
+                .chain(std::iter::once(projects_payload.no_project_option))
+                .chain(projects_payload.projects.into_iter())
+                .collect(),
             recent_tasks,
             recent_projects,
         })
@@ -169,7 +171,7 @@ impl QuickCreateService {
                 kind: QuickProjectOptionKind::Inbox,
                 id: None,
                 space_id: space.id.clone(),
-                name: "Inbox".to_owned(),
+                name: "收件箱".to_owned(),
             },
             no_project_option: QuickProjectOptionPayload {
                 kind: QuickProjectOptionKind::NoProject,
@@ -289,10 +291,7 @@ impl QuickCreateService {
         })
     }
 
-    async fn list_recent_entities(
-        &self,
-        scope_space_id: Option<&str>,
-    ) -> Result<(Vec<QuickTaskItemPayload>, Vec<QuickProjectItemPayload>), AppError> {
+    async fn list_recent_entities(&self) -> Result<(Vec<QuickTaskItemPayload>, Vec<QuickProjectItemPayload>), AppError> {
         let spaces = self.space_repository.list_visible().await?;
         let space_map: HashMap<String, space::Model> = spaces
             .into_iter()
@@ -301,11 +300,7 @@ impl QuickCreateService {
 
         let mut tasks = self
             .task_repository
-            .list_candidates(
-                scope_space_id.map(ToOwned::to_owned),
-                TaskPlacementQuery::All,
-                false,
-            )
+            .list_candidates(None, TaskPlacementQuery::All, false)
             .await?;
         tasks.retain(|item| item.archived_at.is_none());
         tasks.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
@@ -330,7 +325,7 @@ impl QuickCreateService {
 
         let mut projects = self
             .project_repository
-            .list_sidebar_by_scope(scope_space_id, true, None)
+            .list_sidebar_by_scope(None, true, None)
             .await?;
         projects.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
         projects.truncate(DEFAULT_RECENT_LIMIT);

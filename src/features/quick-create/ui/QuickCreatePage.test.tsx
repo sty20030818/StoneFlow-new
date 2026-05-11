@@ -44,44 +44,86 @@ vi.mock('@tauri-apps/api/window', () => ({
 	}),
 }))
 
-vi.mock('@/shared/ui/base/popover', () => {
-	function Popover({
+vi.mock('@/shared/ui/base/dropdown-menu', async () => {
+	const React = await import('react')
+	const DropdownMenuContext = React.createContext<(() => void) | null>(null)
+
+	function DropdownMenu({
+		children,
 		open,
 		onOpenChange,
-		children,
 	}: PropsWithChildren<{ open?: boolean; onOpenChange?: (open: boolean) => void }>) {
-		const content = Array.isArray(children) ? children[1] : null
-		const trigger = Array.isArray(children) ? children[0] : children
+		const [uncontrolledOpen, setUncontrolledOpen] = React.useState(false)
+		const isControlled = typeof open === 'boolean'
+		const visible = isControlled ? open : uncontrolledOpen
+		const setOpen = (nextOpen: boolean) => {
+			onOpenChange?.(nextOpen)
+			if (!isControlled) {
+				setUncontrolledOpen(nextOpen)
+			}
+		}
+		const childArray = React.Children.toArray(children)
+		const trigger = childArray[0]
+		const content = childArray[1]
 
 		return (
-			<>
+			<DropdownMenuContext.Provider value={() => setOpen(false)}>
 				<span
-					onClick={() => onOpenChange?.(!open)}
+					onClick={() => setOpen(!visible)}
 					onKeyDown={(event) => {
 						if (event.key === 'Enter' || event.key === ' ') {
-							onOpenChange?.(!open)
+							setOpen(!visible)
 						}
 					}}
 				>
 					{trigger}
 				</span>
-				{open ? content : null}
-			</>
+				{visible ? content : null}
+			</DropdownMenuContext.Provider>
 		)
 	}
 
-	function PopoverTrigger({ children }: PropsWithChildren<{ asChild?: boolean }>) {
+	function DropdownMenuTrigger({ children }: PropsWithChildren<{ asChild?: boolean }>) {
 		return <>{children}</>
 	}
 
-	function PopoverContent({ children }: PropsWithChildren) {
-		return <div data-testid='popover-content'>{children}</div>
+	function DropdownMenuContent({ children }: PropsWithChildren) {
+		return <div data-testid='dropdown-menu-content'>{children}</div>
+	}
+
+	function DropdownMenuGroup({ children }: PropsWithChildren) {
+		return <div>{children}</div>
+	}
+
+	function DropdownMenuLabel({ children }: PropsWithChildren) {
+		return <div>{children}</div>
+	}
+
+	function DropdownMenuItem({
+		children,
+		onSelect,
+	}: PropsWithChildren<{ onSelect?: () => void }>) {
+		const close = React.useContext(DropdownMenuContext)
+		return (
+			<button
+				onClick={() => {
+					onSelect?.()
+					close?.()
+				}}
+				type='button'
+			>
+				{children}
+			</button>
+		)
 	}
 
 	return {
-		Popover,
-		PopoverTrigger,
-		PopoverContent,
+		DropdownMenu,
+		DropdownMenuTrigger,
+		DropdownMenuContent,
+		DropdownMenuGroup,
+		DropdownMenuLabel,
+		DropdownMenuItem,
 	}
 })
 
@@ -143,6 +185,49 @@ describe('QuickCreatePage', () => {
 		})
 	})
 
+	it('root 保持 composer、action board、footer 三段逻辑分区', async () => {
+		render(<QuickCreatePage />)
+
+		await screen.findByText('最近任务')
+
+		expect(screen.getByTestId('quick-create-composer')).toBeInTheDocument()
+		expect(screen.getByTestId('quick-create-action-board')).toBeInTheDocument()
+		expect(screen.getByTestId('quick-create-footer')).toBeInTheDocument()
+	})
+
+	it('composer 保持 primary/advanced 分区，展开 advanced 不影响基础输入区', async () => {
+		render(<QuickCreatePage />)
+		await screen.findByText('最近任务')
+
+		expect(screen.getByTestId('quick-create-primary-meta-bar')).toBeInTheDocument()
+		expect(screen.queryByTestId('quick-create-advanced-meta-bar')).not.toBeInTheDocument()
+
+		fireEvent.click(screen.getByLabelText('更多参数'))
+
+		expect(screen.getByTestId('quick-create-advanced-meta-bar')).toBeInTheDocument()
+		expect(screen.getByLabelText('Quick Create 输入')).toBeInTheDocument()
+	})
+
+	it('action board 会按 recent/search 模式切换 section', async () => {
+		mockedSearch.mockResolvedValueOnce({
+			tasks: [createTaskResult({ id: 'task-only', title: '只有任务结果' })],
+			projects: [],
+		})
+
+		render(<QuickCreatePage />)
+		await screen.findByText('最近任务')
+
+		expect(screen.getByTestId('quick-create-recent-tasks-section')).toBeInTheDocument()
+		expect(screen.getByTestId('quick-create-recent-projects-section')).toBeInTheDocument()
+
+		fireEvent.change(screen.getByLabelText('Quick Create 输入'), { target: { value: 'Only Task' } })
+
+		await waitFor(() => {
+			expect(screen.getByTestId('quick-create-tasks-section')).toBeInTheDocument()
+		})
+		expect(screen.queryByTestId('quick-create-projects-section')).not.toBeInTheDocument()
+	})
+
 	it('有搜索结果时 Enter 仍默认创建，ArrowDown 后 Enter 才打开结果', async () => {
 		render(<QuickCreatePage />)
 		await screen.findByText('最近任务')
@@ -202,10 +287,10 @@ describe('QuickCreatePage', () => {
 		})
 
 		await waitFor(() => {
-			expect(screen.getByText('已连续创建 1 条')).toBeInTheDocument()
+			expect(screen.getAllByText('已连续创建 1 条').length).toBeGreaterThan(0)
 		})
 		expect(input).toHaveValue('')
-		expect(screen.getByLabelText('优先级')).toHaveTextContent('P0')
+		expect(screen.getByLabelText('优先级').querySelector('svg')).not.toBeNull()
 		expect(screen.getByRole('button', { name: /已完成/ })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: /截止/ })).not.toHaveTextContent('截止时间')
 	})
@@ -242,8 +327,7 @@ describe('QuickCreatePage', () => {
 		fireEvent.click(screen.getByText('StoneFlow 开发'))
 		expect(screen.getByLabelText('项目选择')).toHaveTextContent('StoneFlow 开发')
 
-		fireEvent.click(screen.getByLabelText('更多参数'))
-		fireEvent.click(screen.getByRole('button', { name: /产品研发/ }))
+		fireEvent.click(screen.getByLabelText('空间选择'))
 		fireEvent.click(screen.getByText('工程基础'))
 
 		await waitFor(() => {
@@ -251,6 +335,51 @@ describe('QuickCreatePage', () => {
 		})
 		await waitFor(() => {
 			expect(screen.getByLabelText('项目选择')).toHaveTextContent('收件箱')
+		})
+	})
+
+	it('切换 Space 不会改变全局最近任务和最近项目', async () => {
+		render(<QuickCreatePage />)
+		await screen.findByText('最近任务')
+
+		expect(screen.getByText('最近任务 A')).toBeInTheDocument()
+		expect(screen.getByText('最近项目 A')).toBeInTheDocument()
+
+		fireEvent.click(screen.getByLabelText('空间选择'))
+		fireEvent.click(screen.getByText('工程基础'))
+
+		await waitFor(() => {
+			expect(mockedListProjectsBySpace).toHaveBeenCalledWith('space-2')
+		})
+
+		expect(screen.getByText('最近任务 A')).toBeInTheDocument()
+		expect(screen.getByText('最近项目 A')).toBeInTheDocument()
+	})
+
+	it('创建成功后会静默刷新全局最近任务', async () => {
+		mockedGetInitialState
+			.mockResolvedValueOnce(createInitialState())
+			.mockResolvedValueOnce({
+				...createInitialState(),
+				recentTasks: [createTaskResult({ id: 'task-new', title: '新建后最近任务' })],
+				recentProjects: [createProjectResult({ id: 'project-recent', name: '最近项目 A' })],
+			})
+
+		render(<QuickCreatePage />)
+		await screen.findByText('最近任务 A')
+
+		const input = screen.getByLabelText('Quick Create 输入')
+		fireEvent.change(input, { target: { value: '刚创建的任务' } })
+		fireEvent.keyDown(input, { key: 'Enter', shiftKey: true })
+
+		await waitFor(() => {
+			expect(mockedCreate).toHaveBeenCalledWith(expect.objectContaining({ title: '刚创建的任务' }))
+		})
+		await waitFor(() => {
+			expect(mockedGetInitialState).toHaveBeenCalledTimes(2)
+		})
+		await waitFor(() => {
+			expect(screen.getByText('新建后最近任务')).toBeInTheDocument()
 		})
 	})
 
@@ -267,9 +396,9 @@ describe('QuickCreatePage', () => {
 		fireEvent.change(input, { target: { value: 'Only Task' } })
 
 		await waitFor(() => {
-			expect(screen.getByText('任务')).toBeInTheDocument()
+			expect(screen.getByTestId('quick-create-tasks-section')).toBeInTheDocument()
 		})
-		expect(screen.queryByText('项目')).not.toBeInTheDocument()
+		expect(screen.queryByTestId('quick-create-projects-section')).not.toBeInTheDocument()
 	})
 })
 
@@ -291,11 +420,11 @@ function createInitialState(): QuickCreateInitialState {
 			projectId: null,
 		},
 		spaces: [
-			{ id: 'space-1', name: '产品研发', isDefault: true },
-			{ id: 'space-2', name: '工程基础', isDefault: false },
+			{ id: 'space-1', name: '产品研发', iconKey: 'briefcase', colorKey: 'blue', isDefault: true },
+			{ id: 'space-2', name: '工程基础', iconKey: 'sparkles', colorKey: 'amber', isDefault: false },
 		],
 		projects: [
-			createProjectOption({ kind: 'inbox', id: null, name: 'Inbox' }),
+			createProjectOption({ kind: 'inbox', id: null, name: '收件箱' }),
 			createProjectOption({ kind: 'noProject', id: null, name: '独立事项' }),
 			createProjectOption({ kind: 'project', id: 'project-1', name: 'StoneFlow 开发' }),
 		],
@@ -307,7 +436,7 @@ function createInitialState(): QuickCreateInitialState {
 function createProjectsBySpace(spaceId: string): QuickCreateProjectsBySpace {
 	return {
 		spaceId,
-		inboxProject: createProjectOption({ kind: 'inbox', id: null, name: 'Inbox', spaceId }),
+		inboxProject: createProjectOption({ kind: 'inbox', id: null, name: '收件箱', spaceId }),
 		noProjectOption: createProjectOption({
 			kind: 'noProject',
 			id: null,

@@ -143,6 +143,8 @@ pub struct HelperQuickPlacementResponse {
 pub struct HelperQuickSpaceSummaryResponse {
     pub id: String,
     pub name: String,
+    pub icon_key: String,
+    pub color_key: String,
     pub is_default: bool,
 }
 
@@ -339,6 +341,8 @@ fn map_space(payload: QuickSpaceSummaryPayload) -> HelperQuickSpaceSummaryRespon
     HelperQuickSpaceSummaryResponse {
         id: payload.id,
         name: payload.name,
+        icon_key: payload.icon_key,
+        color_key: payload.color_key,
         is_default: payload.is_default,
     }
 }

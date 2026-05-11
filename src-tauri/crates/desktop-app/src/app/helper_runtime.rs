@@ -29,6 +29,7 @@ use crate::{
 };
 
 const COMMAND_OPEN_EVENT: &str = "stoneflow://command/open";
+const TASKS_CHANGED_EVENT: &str = "stoneflow://tasks/changed";
 
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -38,6 +39,16 @@ struct CommandOpenPayload {
     space_id: String,
     project_id: Option<String>,
     placement: &'static str,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+struct TaskChangedPayload {
+    space_id: String,
+    space_slug: String,
+    task_id: String,
+    source: String,
+    space_fallback: bool,
 }
 
 /// IPC Server 句柄，持有 listener 和 handshake 通知器。
@@ -233,11 +244,14 @@ async fn dispatch_request(
         IpcRequest::QuickSearch(payload) => {
             Ok(IpcResponse::QuickSearch(service.search(payload).await?))
         }
-        IpcRequest::QuickCreate(payload) => Ok(IpcResponse::QuickCreated(
-            service.create(payload, active_scope.get().await).await?,
-        )),
+        IpcRequest::QuickCreate(payload) => {
+            let created = service.create(payload, active_scope.get().await).await?;
+            emit_task_changed(app_handle, &created)?;
+            Ok(IpcResponse::QuickCreated(created))
+        }
         IpcRequest::QuickCreateAndOpen(payload) => {
             let created = service.create(payload, active_scope.get().await).await?;
+            emit_task_changed(app_handle, &created)?;
             open_created_task(app_handle, service, helper_state, &created).await?;
             Ok(IpcResponse::QuickCreated(created))
         }
@@ -328,6 +342,24 @@ fn emit_command_open(
 ) -> Result<(), AppError> {
     app_handle
         .emit(COMMAND_OPEN_EVENT, payload)
+        .map_err(|error| AppError::internal(error.to_string()))
+}
+
+fn emit_task_changed(
+    app_handle: &tauri::AppHandle,
+    created: &QuickCreatedPayload,
+) -> Result<(), AppError> {
+    app_handle
+        .emit(
+            TASKS_CHANGED_EVENT,
+            TaskChangedPayload {
+                space_id: created.space_id.clone(),
+                space_slug: String::new(),
+                task_id: created.id.clone(),
+                source: "helper".to_owned(),
+                space_fallback: created.space_fallback,
+            },
+        )
         .map_err(|error| AppError::internal(error.to_string()))
 }
 

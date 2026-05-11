@@ -100,16 +100,21 @@ export function ShellLayout({
 	const closeTaskCreateDialog = useDialogStore((state) => state.closeTaskCreateDialog)
 	const closeProjectCreateDialog = useDialogStore((state) => state.closeProjectCreateDialog)
 	const spaces = useSpaceStore(selectSpaces)
-
-	// 弹窗打开时同步默认 Space
-	useEffect(() => {
-		if (!createDialogType) return
-		const defaultSpaceId =
+	const defaultCreateSpaceId = useMemo(
+		() =>
 			currentScope.type === 'space'
 				? currentScope.spaceId
-				: (spaces.find((s) => s.isDefault)?.id ?? spaces[0]?.id ?? null)
-		setSelectedSpaceId(defaultSpaceId)
-	}, [createDialogType, currentScope, spaces])
+				: (spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null),
+		[currentScope, spaces],
+	)
+
+	useEffect(() => {
+		if (!createDialogType) {
+			setSelectedSpaceId(null)
+			return
+		}
+		setSelectedSpaceId((current) => current ?? defaultCreateSpaceId)
+	}, [createDialogType, defaultCreateSpaceId])
 	const openDrawer = useDrawerStore((state) => state.openDrawer)
 	const closeDrawer = useDrawerStore((state) => state.closeDrawer)
 	const sidebarSettingsStatus = useSidebarSettingsStore(selectSidebarSettingsStatus)
@@ -121,6 +126,10 @@ export function ShellLayout({
 	const projectOptions = useProjectStore(selectProjectOptions)
 	const scopeKey = currentScope.type === 'all' ? 'all' : `space:${currentScope.spaceId}`
 	const navBadges = useSidebarNavBadges(currentScope)
+	const shouldDelayTaskCreateDialog =
+		createDialogType === 'task' &&
+		Boolean(taskCreateDraft.projectId) &&
+		sidebarProjects.status === 'loading'
 	const loadSidebarSettings = useSidebarSettingsStore((state) => state.load)
 	const loadSpaces = useSpaceStore((state) => state.load)
 	const loadSidebarProjects = useProjectStore((state) => state.loadSidebar)
@@ -342,8 +351,8 @@ export function ShellLayout({
 					}
 				}}
 				onSelectSpace={setSelectedSpaceId}
-				open={createDialogType !== null}
-				selectedSpaceId={selectedSpaceId}
+				open={createDialogType !== null && !shouldDelayTaskCreateDialog}
+				selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
 				spaces={spaces}
 				title={createDialogType === 'task' ? '新建任务' : '新建项目'}
 			>
@@ -356,7 +365,7 @@ export function ShellLayout({
 						onClose={closeTaskCreateDialog}
 						projects={projectOptions}
 						projectsLoading={sidebarProjects.status === 'loading'}
-						selectedSpaceId={selectedSpaceId}
+						selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
 						spaces={spaces}
 					/>
 				) : (
