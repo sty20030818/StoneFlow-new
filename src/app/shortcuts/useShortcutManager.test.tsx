@@ -28,6 +28,9 @@ describe('useShortcutManager', () => {
 
 		fireKey('c')
 		fireKey('v')
+		act(() => {
+			vi.runAllTimers()
+		})
 
 		expect(onTrigger).toHaveBeenNthCalledWith(1, 'task-create.open')
 		expect(onTrigger).toHaveBeenNthCalledWith(2, 'task-create.open-fullscreen')
@@ -57,6 +60,9 @@ describe('useShortcutManager', () => {
 			vi.advanceTimersByTime(600)
 		})
 		fireKey('p')
+		act(() => {
+			vi.runAllTimers()
+		})
 
 		expect(onTrigger).toHaveBeenCalledWith('project-create.open')
 	})
@@ -95,6 +101,9 @@ describe('useShortcutManager', () => {
 		fireKey('p')
 		fireKey('g')
 		fireKey('v')
+		act(() => {
+			vi.runAllTimers()
+		})
 
 		expect(onTrigger).toHaveBeenNthCalledWith(1, 'goto.inbox')
 		expect(onTrigger).toHaveBeenNthCalledWith(2, 'goto.projects')
@@ -108,6 +117,9 @@ describe('useShortcutManager', () => {
 		fireKey('/')
 		fireKey('k', document.body, { metaKey: true })
 		fireKey('k', document.body, { ctrlKey: true })
+		act(() => {
+			vi.runAllTimers()
+		})
 
 		expect(onTrigger).toHaveBeenNthCalledWith(1, 'search.open')
 		expect(onTrigger).toHaveBeenNthCalledWith(2, 'command.open')

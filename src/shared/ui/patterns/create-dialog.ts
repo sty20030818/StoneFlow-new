@@ -7,17 +7,17 @@ import { dialogShellFloatingBaseClass } from './dialog-shell'
  * 顶留白 15dvh、底最多留白 15dvh → max-h = 视口 - 上下各 15dvh。
  */
 export const createDialogShellClass = cn(
-	'flex max-h-[70dvh] min-h-0 max-w-[calc(100%-1.5rem+8px)]',
+	'flex min-h-[30dvh] max-h-[70dvh] max-w-[calc(100%-1.5rem+8px)]',
 	'flex-col gap-0 overflow-hidden rounded-3xl border border-border',
 	'sm:max-w-3xl top-[15dvh] translate-y-0',
+	'transition-[width,max-width,height,max-height,top,border-radius] duration-200 ease-out motion-reduce:transition-none',
 	dialogShellFloatingBaseClass,
 )
 
 export const createDialogShellFullscreenClass = cn(
-	'flex h-[calc(100dvh-1.5rem)] w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-1.5rem)] max-w-[calc(100vw-1.5rem)]',
-	'flex-col gap-0 overflow-hidden rounded-3xl border border-border',
-	'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
-	dialogShellFloatingBaseClass,
+	createDialogShellClass,
+	'h-[70dvh] max-h-[70dvh]',
+	'w-[min(72rem,calc(100vw-1.5rem))] sm:max-w-[min(72rem,calc(100vw-1.5rem))]',
 )
 
 /** 创建弹窗 Header — 面包屑 + 操作按钮 */

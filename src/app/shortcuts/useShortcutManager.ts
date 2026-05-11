@@ -26,6 +26,12 @@ export function useShortcutManager({ bindings, onTrigger }: UseShortcutManagerOp
 	onTriggerRef.current = onTrigger
 
 	useEffect(() => {
+		function scheduleTrigger(id: ShortcutId) {
+			window.setTimeout(() => {
+				onTriggerRef.current(id)
+			}, 0)
+		}
+
 		function clearPrefixState() {
 			prefixStateRef.current = null
 			if (timeoutRef.current !== null) {
@@ -53,7 +59,7 @@ export function useShortcutManager({ bindings, onTrigger }: UseShortcutManagerOp
 
 			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
 				event.preventDefault()
-				onTriggerRef.current('command.open')
+				scheduleTrigger('command.open')
 				clearPrefixState()
 				return
 			}
@@ -65,7 +71,7 @@ export function useShortcutManager({ bindings, onTrigger }: UseShortcutManagerOp
 				!event.altKey
 			) {
 				event.preventDefault()
-				onTriggerRef.current('search.open')
+				scheduleTrigger('search.open')
 				clearPrefixState()
 				return
 			}
@@ -90,20 +96,17 @@ export function useShortcutManager({ bindings, onTrigger }: UseShortcutManagerOp
 					return
 				}
 
-				event.preventDefault()
-				onTriggerRef.current(binding.id)
+				scheduleTrigger(binding.id)
 				return
 			}
 
 			const singleKeyBinding = findSingleKeyBinding(bindings, key)
 			if (singleKeyBinding) {
-				event.preventDefault()
-				onTriggerRef.current(singleKeyBinding.id)
+				scheduleTrigger(singleKeyBinding.id)
 				return
 			}
 
 			if (isRegisteredPrefix(bindings, key)) {
-				event.preventDefault()
 				prefixStateRef.current = {
 					prefix: key,
 					startedAt: now,
