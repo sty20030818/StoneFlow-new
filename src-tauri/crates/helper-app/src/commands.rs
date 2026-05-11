@@ -8,8 +8,16 @@ use stoneflow_ipc_protocol::{
     QuickProjectsBySpaceResponsePayload, QuickScopeKind, QuickScopePayload, QuickSearchPayload,
     QuickSearchResponsePayload, QuickSpaceSummaryPayload, QuickTaskItemPayload,
 };
+use tauri::{LogicalSize, Manager, Size};
 
-use crate::ipc_client;
+use crate::{
+    ipc_client,
+    window_spec::{
+        QUICK_CREATE_LABEL, QUICK_CREATE_PANEL_MAX_HEIGHT, QUICK_CREATE_PANEL_MIN_HEIGHT,
+        QUICK_CREATE_SHADOW_PADDING, QUICK_CREATE_WINDOW_MAX_HEIGHT, QUICK_CREATE_WINDOW_MIN_HEIGHT,
+        QUICK_CREATE_WINDOW_VISUAL_BUFFER, QUICK_CREATE_WINDOW_WIDTH,
+    },
+};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct QuickCreateErrorPayload {
@@ -85,6 +93,12 @@ pub struct HelperQuickOpenTargetInput {
     #[serde(rename = "kind")]
     pub kind: HelperQuickOpenTargetKind,
     pub id: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickResizeWindowInput {
+    pub height: f64,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -259,6 +273,57 @@ pub async fn helper_quick_open_target(
     })
     .await
     .map_err(QuickCreateErrorPayload::from)
+}
+
+#[tauri::command]
+pub async fn helper_quick_resize_window(
+    app_handle: tauri::AppHandle,
+    input: HelperQuickResizeWindowInput,
+) -> Result<(), QuickCreateErrorPayload> {
+    let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
+        return Err(QuickCreateErrorPayload {
+            type_: "Internal",
+            message: "quick create 窗口未初始化".to_owned(),
+        });
+    };
+
+    let clamped_panel_height = input
+        .height
+        .clamp(QUICK_CREATE_PANEL_MIN_HEIGHT, QUICK_CREATE_PANEL_MAX_HEIGHT);
+    let target_window_height =
+        clamped_panel_height + QUICK_CREATE_SHADOW_PADDING * 2.0 + QUICK_CREATE_WINDOW_VISUAL_BUFFER;
+
+    window
+        .set_min_size(Some(Size::Logical(LogicalSize::new(
+            QUICK_CREATE_WINDOW_WIDTH,
+            QUICK_CREATE_WINDOW_MIN_HEIGHT,
+        ))))
+        .map_err(|error| QuickCreateErrorPayload {
+            type_: "Internal",
+            message: format!("设置 quick create 最小窗口尺寸失败: {error}"),
+        })?;
+
+    window
+        .set_max_size(Some(Size::Logical(LogicalSize::new(
+            QUICK_CREATE_WINDOW_WIDTH,
+            QUICK_CREATE_WINDOW_MAX_HEIGHT,
+        ))))
+        .map_err(|error| QuickCreateErrorPayload {
+            type_: "Internal",
+            message: format!("设置 quick create 最大窗口尺寸失败: {error}"),
+        })?;
+
+    window
+        .set_size(Size::Logical(LogicalSize::new(
+            QUICK_CREATE_WINDOW_WIDTH,
+            target_window_height,
+        )))
+        .map_err(|error| QuickCreateErrorPayload {
+            type_: "Internal",
+            message: format!("调整 quick create 窗口高度失败: {error}"),
+        })?;
+
+    Ok(())
 }
 
 fn map_create_payload(input: HelperQuickCreateInput) -> QuickCreatePayload {

@@ -8,6 +8,7 @@ import {
 	getInitialState,
 	listProjectsBySpace,
 	openTarget,
+	resizeWindow,
 	search,
 } from '@/features/quick-create/api/quickCreate'
 import { QuickCreatePage } from '@/features/quick-create/ui/QuickCreatePage'
@@ -21,6 +22,8 @@ import type {
 import { formatDateLabel } from '@/features/quick-create/model/QuickCreateProvider'
 
 const hideMock = vi.fn()
+const setSizeMock = vi.fn()
+const setSizeConstraintsMock = vi.fn()
 const listenMock = vi.fn()
 const originalRequestAnimationFrame = window.requestAnimationFrame
 const originalCancelAnimationFrame = window.cancelAnimationFrame
@@ -31,6 +34,7 @@ vi.mock('@/features/quick-create/api/quickCreate', () => ({
 	getInitialState: vi.fn<typeof getInitialState>(),
 	listProjectsBySpace: vi.fn<typeof listProjectsBySpace>(),
 	openTarget: vi.fn<typeof openTarget>(),
+	resizeWindow: vi.fn<typeof resizeWindow>(),
 	search: vi.fn<typeof search>(),
 }))
 
@@ -41,6 +45,8 @@ vi.mock('@tauri-apps/api/event', () => ({
 vi.mock('@tauri-apps/api/window', () => ({
 	getCurrentWindow: () => ({
 		hide: hideMock,
+		setSize: setSizeMock,
+		setSizeConstraints: setSizeConstraintsMock,
 	}),
 }))
 
@@ -136,6 +142,7 @@ const mockedCreateAndOpen = vi.mocked(createAndOpen)
 const mockedGetInitialState = vi.mocked(getInitialState)
 const mockedListProjectsBySpace = vi.mocked(listProjectsBySpace)
 const mockedOpenTarget = vi.mocked(openTarget)
+const mockedResizeWindow = vi.mocked(resizeWindow)
 const mockedSearch = vi.mocked(search)
 
 describe('QuickCreatePage', () => {
@@ -147,6 +154,10 @@ describe('QuickCreatePage', () => {
 			window.clearTimeout(id)
 		}) as typeof window.cancelAnimationFrame
 		hideMock.mockReset()
+		setSizeMock.mockReset()
+		setSizeMock.mockResolvedValue(undefined)
+		setSizeConstraintsMock.mockReset()
+		setSizeConstraintsMock.mockResolvedValue(undefined)
 		listenMock.mockReset()
 		listenMock.mockResolvedValue(() => undefined)
 		mockedCreate.mockReset()
@@ -159,6 +170,8 @@ describe('QuickCreatePage', () => {
 		mockedListProjectsBySpace.mockResolvedValue(createProjectsBySpace('space-2'))
 		mockedOpenTarget.mockReset()
 		mockedOpenTarget.mockResolvedValue(undefined)
+		mockedResizeWindow.mockReset()
+		mockedResizeWindow.mockResolvedValue(undefined)
 		mockedSearch.mockReset()
 		mockedSearch.mockResolvedValue({
 			tasks: [createTaskResult({ id: 'task-search', title: 'Stone 搜索任务' })],
@@ -408,7 +421,9 @@ describe('QuickCreatePage', () => {
 		await screen.findByText('最近任务')
 		expect(screen.getByLabelText('空间选择')).toHaveTextContent('产品研发')
 
-		shownHandler?.()
+		if (shownHandler) {
+			(shownHandler as () => void)()
+		}
 
 		expect(screen.getByText('最近任务')).toBeInTheDocument()
 

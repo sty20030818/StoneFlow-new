@@ -24,6 +24,12 @@ export type QuickOpenTargetInput = {
 	id: string
 }
 
+export async function resizeWindow(height: number) {
+	return invoke('helper_quick_resize_window', {
+		input: { height },
+	})
+}
+
 export async function getInitialState() {
 	return invoke<QuickCreateInitialState>('helper_quick_get_initial_state')
 }

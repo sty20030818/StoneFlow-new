@@ -9,14 +9,18 @@ import { cn } from '@/shared/lib/utils'
 export function QuickCreateSurface({
 	children,
 	className,
+	isScrollLocked = false,
 	...props
-}: ComponentProps<'section'>) {
+}: ComponentProps<'section'> & {
+	isScrollLocked?: boolean
+}) {
 	return (
 		<section
 			{...props}
 			aria-label='StoneFlow Quick Create'
 			className={cn(
-				'relative z-10 flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background shadow-[0_0_28px_rgba(0,0,0,0.35)]',
+				'relative z-10 flex w-full flex-col overflow-hidden rounded-xl border bg-background shadow-[0_0_28px_rgba(0,0,0,0.35)]',
+				isScrollLocked ? 'max-h-full shrink-0 self-start' : 'shrink-0 self-start',
 				className,
 			)}
 			style={{ borderColor: '#bababa' }}

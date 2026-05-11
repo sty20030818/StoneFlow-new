@@ -35,6 +35,7 @@ export function QuickCreateTaskResultsSection({
 
 	return (
 		<BoardCollapsibleSection
+			className='last:pb-0'
 			count={items.length}
 			getItemId={(_child, index) => items[index]?.id}
 			icon={

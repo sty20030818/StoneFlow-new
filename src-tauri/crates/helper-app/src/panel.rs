@@ -60,8 +60,6 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
     )
     .title(QUICK_CREATE_TITLE)
     .inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
-    .min_inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
-    .max_inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
     .resizable(false)
     .fullscreen(false)
     .always_on_top(true)

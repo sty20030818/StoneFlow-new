@@ -220,6 +220,7 @@ export type BoardCollapsibleSectionProps = {
 	count: number
 	icon: ReactNode
 	trailing?: ReactNode
+	className?: string
 	open: boolean
 	onOpenChange: (open: boolean) => void
 	selectedIdSet?: Set<string>
@@ -238,6 +239,7 @@ export function BoardCollapsibleSection({
 	count,
 	icon,
 	trailing,
+	className,
 	open,
 	onOpenChange,
 	selectedIdSet,
@@ -265,7 +267,11 @@ export function BoardCollapsibleSection({
 	)
 
 	return (
-		<Collapsible className={BOARD_COLLAPSIBLE_CLASS} onOpenChange={onOpenChange} open={open}>
+		<Collapsible
+			className={cn(BOARD_COLLAPSIBLE_CLASS, className)}
+			onOpenChange={onOpenChange}
+			open={open}
+		>
 			{contextMenuContent ? (
 				<ContextMenu>
 					<ContextMenuTrigger asChild>{header}</ContextMenuTrigger>
