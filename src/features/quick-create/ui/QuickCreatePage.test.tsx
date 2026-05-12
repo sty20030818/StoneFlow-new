@@ -8,6 +8,7 @@ import {
 	getInitialState,
 	listProjectsBySpace,
 	openTarget,
+	presentWindow,
 	resizeWindow,
 	search,
 } from '@/features/quick-create/api/quickCreate'
@@ -34,6 +35,7 @@ vi.mock('@/features/quick-create/api/quickCreate', () => ({
 	getInitialState: vi.fn<typeof getInitialState>(),
 	listProjectsBySpace: vi.fn<typeof listProjectsBySpace>(),
 	openTarget: vi.fn<typeof openTarget>(),
+	presentWindow: vi.fn<typeof presentWindow>(),
 	resizeWindow: vi.fn<typeof resizeWindow>(),
 	search: vi.fn<typeof search>(),
 }))
@@ -105,10 +107,7 @@ vi.mock('@/shared/ui/base/dropdown-menu', async () => {
 		return <div>{children}</div>
 	}
 
-	function DropdownMenuItem({
-		children,
-		onSelect,
-	}: PropsWithChildren<{ onSelect?: () => void }>) {
+	function DropdownMenuItem({ children, onSelect }: PropsWithChildren<{ onSelect?: () => void }>) {
 		const close = React.useContext(DropdownMenuContext)
 		return (
 			<button
@@ -142,6 +141,7 @@ const mockedCreateAndOpen = vi.mocked(createAndOpen)
 const mockedGetInitialState = vi.mocked(getInitialState)
 const mockedListProjectsBySpace = vi.mocked(listProjectsBySpace)
 const mockedOpenTarget = vi.mocked(openTarget)
+const mockedPresentWindow = vi.mocked(presentWindow)
 const mockedResizeWindow = vi.mocked(resizeWindow)
 const mockedSearch = vi.mocked(search)
 
@@ -170,6 +170,8 @@ describe('QuickCreatePage', () => {
 		mockedListProjectsBySpace.mockResolvedValue(createProjectsBySpace('space-2'))
 		mockedOpenTarget.mockReset()
 		mockedOpenTarget.mockResolvedValue(undefined)
+		mockedPresentWindow.mockReset()
+		mockedPresentWindow.mockResolvedValue(undefined)
 		mockedResizeWindow.mockReset()
 		mockedResizeWindow.mockResolvedValue(undefined)
 		mockedSearch.mockReset()
@@ -221,10 +223,19 @@ describe('QuickCreatePage', () => {
 
 	it('搜索时先保留旧结果，不显示正在搜索状态', async () => {
 		mockedSearch.mockImplementation(
-			() => new Promise((resolve) => window.setTimeout(() => resolve({
-				tasks: [createTaskResult({ id: 'task-search-next', title: 'Stone 新搜索任务' })],
-				projects: [createProjectResult({ id: 'project-search-next', name: 'Stone 新搜索项目' })],
-			}), 10)),
+			() =>
+				new Promise((resolve) =>
+					window.setTimeout(
+						() =>
+							resolve({
+								tasks: [createTaskResult({ id: 'task-search-next', title: 'Stone 新搜索任务' })],
+								projects: [
+									createProjectResult({ id: 'project-search-next', name: 'Stone 新搜索项目' }),
+								],
+							}),
+						10,
+					),
+				),
 		)
 
 		render(<QuickCreatePage />)
@@ -261,9 +272,8 @@ describe('QuickCreatePage', () => {
 		await waitFor(() => {
 			expect(screen.getByText('没有匹配结果')).toBeInTheDocument()
 		})
-		await waitFor(() => {
-			expect(screen.getByText('按 Enter 创建“xxx”')).toBeInTheDocument()
-		})
+		expect(screen.getByText('Enter')).toBeInTheDocument()
+		expect(screen.getByText('创建“xxx”')).toBeInTheDocument()
 		expect(screen.queryByTestId('quick-create-recent-tasks-section')).not.toBeInTheDocument()
 		expect(screen.queryByTestId('quick-create-recent-projects-section')).not.toBeInTheDocument()
 	})
@@ -417,13 +427,11 @@ describe('QuickCreatePage', () => {
 	})
 
 	it('创建成功后会静默刷新全局最近任务', async () => {
-		mockedGetInitialState
-			.mockResolvedValueOnce(createInitialState())
-			.mockResolvedValueOnce({
-				...createInitialState(),
-				recentTasks: [createTaskResult({ id: 'task-new', title: '新建后最近任务' })],
-				recentProjects: [createProjectResult({ id: 'project-recent', name: '最近项目 A' })],
-			})
+		mockedGetInitialState.mockResolvedValueOnce(createInitialState()).mockResolvedValueOnce({
+			...createInitialState(),
+			recentTasks: [createTaskResult({ id: 'task-new', title: '新建后最近任务' })],
+			recentProjects: [createProjectResult({ id: 'project-recent', name: '最近项目 A' })],
+		})
 
 		render(<QuickCreatePage />)
 		await screen.findByText('最近任务 A')
@@ -454,12 +462,19 @@ describe('QuickCreatePage', () => {
 			projects: [
 				createProjectOption({ kind: 'inbox', id: null, name: '收件箱', spaceId: 'space-2' }),
 				createProjectOption({ kind: 'noProject', id: null, name: '独立事项', spaceId: 'space-2' }),
-				createProjectOption({ kind: 'project', id: 'project-2', name: '工程基座', spaceId: 'space-2' }),
+				createProjectOption({
+					kind: 'project',
+					id: 'project-2',
+					name: '工程基座',
+					spaceId: 'space-2',
+				}),
 			],
 		}
-		let shownHandler: (() => void) | null = null
-		listenMock.mockImplementation(async (_event, handler) => {
-			shownHandler = handler as () => void
+		let prepareHandler: (() => void) | null = null
+		listenMock.mockImplementation(async (event, handler) => {
+			if (event === 'quick-create:prepare') {
+				prepareHandler = handler as () => void
+			}
 			return () => undefined
 		})
 		mockedGetInitialState
@@ -470,8 +485,8 @@ describe('QuickCreatePage', () => {
 		await screen.findByTestId('quick-create-recent-tasks-section')
 		expect(screen.getByLabelText('空间选择')).toHaveTextContent('产品研发')
 
-		if (shownHandler) {
-			(shownHandler as () => void)()
+		if (prepareHandler) {
+			;(prepareHandler as () => void)()
 		}
 
 		expect(screen.getByTestId('quick-create-recent-tasks-section')).toBeInTheDocument()
@@ -544,7 +559,9 @@ function createProjectsBySpace(spaceId: string): QuickCreateProjectsBySpace {
 			name: '独立事项',
 			spaceId,
 		}),
-		projects: [createProjectOption({ kind: 'project', id: 'project-2', name: '工程基座', spaceId })],
+		projects: [
+			createProjectOption({ kind: 'project', id: 'project-2', name: '工程基座', spaceId }),
+		],
 	}
 }
 
@@ -561,7 +578,8 @@ function createProjectOption(
 		Pick<Extract<QuickCreateProjectOption, { kind: 'noProject' }>, 'kind' | 'id' | 'name'>,
 ): Extract<QuickCreateProjectOption, { kind: 'noProject' }>
 function createProjectOption(
-	overrides: Partial<QuickCreateProjectOption> & Pick<QuickCreateProjectOption, 'kind' | 'id' | 'name'>,
+	overrides: Partial<QuickCreateProjectOption> &
+		Pick<QuickCreateProjectOption, 'kind' | 'id' | 'name'>,
 ): QuickCreateProjectOption {
 	switch (overrides.kind) {
 		case 'project':
@@ -606,7 +624,9 @@ function createTaskResult(overrides: Partial<QuickCreateTaskItem> = {}): QuickCr
 	}
 }
 
-function createProjectResult(overrides: Partial<QuickCreateProjectItem> = {}): QuickCreateProjectItem {
+function createProjectResult(
+	overrides: Partial<QuickCreateProjectItem> = {},
+): QuickCreateProjectItem {
 	return {
 		id: 'project-1',
 		spaceId: 'space-1',
