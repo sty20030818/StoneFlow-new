@@ -4,6 +4,7 @@ mod restart_policy;
 
 use std::path::PathBuf;
 use std::process::Stdio;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -19,6 +20,7 @@ use restart_policy::{RestartDecision, RestartPolicy, RestartPolicyConfig};
 const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(10);
 const HEALTH_CHECK_INTERVAL: Duration = Duration::from_secs(30);
 const HELPER_RESTART_BACKOFF_MS: u64 = 1_500;
+const HELPER_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Supervisor 状态机。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -36,11 +38,18 @@ enum SupervisorState {
 #[derive(Clone)]
 pub struct SupervisorHandle {
     shutdown_notify: Arc<Notify>,
+    stopped: Arc<AtomicBool>,
 }
 
 impl SupervisorHandle {
     pub fn request_shutdown(&self) {
         self.shutdown_notify.notify_one();
+    }
+
+    pub fn wait_stopped(&self) {
+        while !self.stopped.load(Ordering::SeqCst) {
+            std::thread::sleep(Duration::from_millis(20));
+        }
     }
 }
 
@@ -52,6 +61,7 @@ pub struct HelperSupervisor {
     policy: RestartPolicy,
     handshake_notify: Arc<Notify>,
     shutdown_notify: Arc<Notify>,
+    stopped: Arc<AtomicBool>,
     current_child: Option<Child>,
     state: SupervisorState,
 }
@@ -68,6 +78,7 @@ impl HelperSupervisor {
             policy: RestartPolicy::new(RestartPolicyConfig::default()),
             handshake_notify,
             shutdown_notify: Arc::new(Notify::new()),
+            stopped: Arc::new(AtomicBool::new(false)),
             current_child: None,
             state: SupervisorState::Idle,
         }
@@ -77,6 +88,7 @@ impl HelperSupervisor {
     pub fn handle(&self) -> SupervisorHandle {
         SupervisorHandle {
             shutdown_notify: self.shutdown_notify.clone(),
+            stopped: self.stopped.clone(),
         }
     }
 
@@ -143,6 +155,7 @@ impl HelperSupervisor {
                 }
                 SupervisorState::Stopped => {
                     log::info!("helper supervisor 已停止");
+                    self.stopped.store(true, Ordering::SeqCst);
                     break;
                 }
             }
@@ -246,16 +259,33 @@ impl HelperSupervisor {
         let pid = child.id().unwrap_or(0);
         log::info!("准备关闭 helper 进程, pid={pid}, reason={reason}");
 
-        if let Err(error) = child.kill().await {
-            log::warn!("关闭 helper 进程失败, pid={pid}: {error}");
+        if let Err(error) = request_helper_shutdown(pid).await {
+            log::warn!("请求 helper 优雅退出失败, pid={pid}: {error}");
         }
 
-        match child.wait().await {
-            Ok(status) => {
+        match timeout(HELPER_SHUTDOWN_TIMEOUT, child.wait()).await {
+            Ok(Ok(status)) => {
                 log::info!("helper 进程已关闭, pid={pid}, status={status}");
             }
-            Err(error) => {
+            Ok(Err(error)) => {
                 log::warn!("等待 helper 进程退出失败, pid={pid}: {error}");
+            }
+            Err(_) => {
+                log::warn!(
+                    "helper 未在 {:?} 内退出，回退到强制结束, pid={pid}",
+                    HELPER_SHUTDOWN_TIMEOUT
+                );
+                if let Err(error) = child.kill().await {
+                    log::warn!("强制关闭 helper 进程失败, pid={pid}: {error}");
+                }
+                match child.wait().await {
+                    Ok(status) => {
+                        log::info!("helper 进程已强制关闭, pid={pid}, status={status}");
+                    }
+                    Err(error) => {
+                        log::warn!("等待 helper 强制退出失败, pid={pid}: {error}");
+                    }
+                }
             }
         }
 
@@ -335,6 +365,57 @@ impl HelperSupervisor {
     }
 }
 
+#[cfg(target_os = "windows")]
+async fn request_helper_shutdown(pid: u32) -> Result<(), AppError> {
+    let output = tokio::process::Command::new("taskkill")
+        .args(["/PID", &pid.to_string()])
+        .output()
+        .await
+        .map_err(|error| AppError::initialization(format!("taskkill 执行失败: {error}")))?;
+
+    if output.status.success() {
+        return Ok(());
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+    Err(AppError::initialization(format!(
+        "taskkill 请求 helper 退出失败: {}",
+        if stderr.is_empty() {
+            output.status.to_string()
+        } else {
+            stderr
+        }
+    )))
+}
+
+#[cfg(target_os = "macos")]
+async fn request_helper_shutdown(pid: u32) -> Result<(), AppError> {
+    let output = tokio::process::Command::new("kill")
+        .args(["-TERM", &pid.to_string()])
+        .output()
+        .await
+        .map_err(|error| AppError::initialization(format!("kill -TERM 执行失败: {error}")))?;
+
+    if output.status.success() {
+        return Ok(());
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+    Err(AppError::initialization(format!(
+        "kill -TERM 请求 helper 退出失败: {}",
+        if stderr.is_empty() {
+            output.status.to_string()
+        } else {
+            stderr
+        }
+    )))
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+async fn request_helper_shutdown(_pid: u32) -> Result<(), AppError> {
+    Ok(())
+}
+
 fn spawn_helper(path: &PathBuf) -> Result<Child, AppError> {
     let mut command = Command::new(path);
     if let Some(parent_dir) = path.parent() {
@@ -382,6 +463,10 @@ fn find_helper_binary() -> Result<PathBuf, AppError> {
         "stoneflow-helper"
     };
 
+    #[cfg(not(target_os = "macos"))]
+    let candidates = vec![exe_dir.join(helper_binary_name)];
+
+    #[cfg(target_os = "macos")]
     let mut candidates = vec![exe_dir.join(helper_binary_name)];
 
     #[cfg(target_os = "macos")]

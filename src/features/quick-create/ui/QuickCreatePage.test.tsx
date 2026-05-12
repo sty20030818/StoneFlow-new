@@ -219,6 +219,44 @@ describe('QuickCreatePage', () => {
 		expect(screen.getByLabelText('Quick Create 输入')).toBeInTheDocument()
 	})
 
+	it('搜索时先保留旧结果，不显示正在搜索状态', async () => {
+		mockedSearch.mockImplementation(
+			() => new Promise((resolve) => window.setTimeout(() => resolve({
+				tasks: [createTaskResult({ id: 'task-search-next', title: 'Stone 新搜索任务' })],
+				projects: [createProjectResult({ id: 'project-search-next', name: 'Stone 新搜索项目' })],
+			}), 10)),
+		)
+
+		render(<QuickCreatePage />)
+		await screen.findByText('最近任务')
+
+		const input = screen.getByLabelText('Quick Create 输入')
+		fireEvent.change(input, { target: { value: 'stone' } })
+
+		expect(screen.queryByText('正在搜索…')).not.toBeInTheDocument()
+		expect(screen.getByText('没有匹配结果，按 Enter 创建“stone”。')).toBeInTheDocument()
+		expect(screen.queryByText('任务')).not.toBeInTheDocument()
+		expect(screen.queryByText('项目')).not.toBeInTheDocument()
+	})
+
+	it('没有匹配结果时直接显示空态，不回 recent', async () => {
+		mockedSearch.mockResolvedValueOnce({
+			tasks: [],
+			projects: [],
+		})
+
+		render(<QuickCreatePage />)
+		await screen.findByText('最近任务')
+
+		fireEvent.change(screen.getByLabelText('Quick Create 输入'), { target: { value: 'xxx' } })
+
+		await waitFor(() => {
+			expect(screen.getByText('没有匹配结果，按 Enter 创建“xxx”。')).toBeInTheDocument()
+		})
+		expect(screen.queryByText('最近任务')).not.toBeInTheDocument()
+		expect(screen.queryByText('最近项目')).not.toBeInTheDocument()
+	})
+
 	it('action board 会按 recent/search 模式切换 section', async () => {
 		mockedSearch.mockResolvedValueOnce({
 			tasks: [createTaskResult({ id: 'task-only', title: '只有任务结果' })],

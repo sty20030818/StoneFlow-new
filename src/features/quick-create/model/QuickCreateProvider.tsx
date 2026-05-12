@@ -345,15 +345,21 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 		dispatch({ type: 'titleChanged', title })
 	}, [])
 
-	const setPriority = useCallback((priority: QuickCreatePriority) => {
-		dispatch({ type: 'priorityChanged', priority })
-		focusInput()
-	}, [focusInput])
+	const setPriority = useCallback(
+		(priority: QuickCreatePriority) => {
+			dispatch({ type: 'priorityChanged', priority })
+			focusInput()
+		},
+		[focusInput],
+	)
 
-	const setStatus = useCallback((status: QuickCreateStatus) => {
-		dispatch({ type: 'statusChanged', status })
-		focusInput()
-	}, [focusInput])
+	const setStatus = useCallback(
+		(status: QuickCreateStatus) => {
+			dispatch({ type: 'statusChanged', status })
+			focusInput()
+		},
+		[focusInput],
+	)
 
 	const setPopover = useCallback((key: QuickCreatePopoverKey | null) => {
 		dispatch({ type: 'activePopoverChanged', key })
@@ -398,16 +404,28 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 
 	const normalizedTitle = state.draft.title.trim()
 	const hasTitle = normalizedTitle.length > 0
-	const isSearchingMode = deferredTitle.trim().length > 0
+	const isSearchingMode = normalizedTitle.length > 0
+	const hasSearchResults = state.searchResults.tasks.length > 0 || state.searchResults.projects.length > 0
+	const shouldShowSearchResults = isSearchingMode && hasSearchResults
 	const displayTasks = useMemo(
 		// recent 列表固定使用全局最近；space 只影响创建落点和项目候选。
-		() => (isSearchingMode ? state.searchResults.tasks : state.initialState?.recentTasks ?? []),
-		[isSearchingMode, state.searchResults.tasks, state.initialState?.recentTasks],
+		() =>
+			shouldShowSearchResults
+				? state.searchResults.tasks
+				: isSearchingMode
+					? []
+					: state.initialState?.recentTasks ?? [],
+		[shouldShowSearchResults, isSearchingMode, state.searchResults.tasks, state.initialState?.recentTasks],
 	)
 	const displayProjects = useMemo(
 		// recent 列表固定使用全局最近；space 只影响创建落点和项目候选。
-		() => (isSearchingMode ? state.searchResults.projects : state.initialState?.recentProjects ?? []),
-		[isSearchingMode, state.searchResults.projects, state.initialState?.recentProjects],
+		() =>
+			shouldShowSearchResults
+				? state.searchResults.projects
+				: isSearchingMode
+					? []
+					: state.initialState?.recentProjects ?? [],
+		[shouldShowSearchResults, isSearchingMode, state.searchResults.projects, state.initialState?.recentProjects],
 	)
 	const flatItems = useMemo<QuickCreateResultItem[]>(
 		() => [
@@ -552,7 +570,15 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 				})
 			}
 		},
-		[buildCreateInput, focusInput, hasTitle, scheduleClose, state.continuousCreateCount, state.draft, state.submitState],
+		[
+			buildCreateInput,
+			focusInput,
+			hasTitle,
+			scheduleClose,
+			state.continuousCreateCount,
+			state.draft,
+			state.submitState,
+		],
 	)
 
 	const handleEscape = useCallback(() => {
@@ -623,7 +649,8 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 		[flatItems, handleEscape, hasTitle, moveFocus, openQuickResult, state.focusTarget, submit],
 	)
 
-	const currentSpace = state.initialState?.spaces.find((space) => space.id === state.draft.spaceId) ?? null
+	const currentSpace =
+		state.initialState?.spaces.find((space) => space.id === state.draft.spaceId) ?? null
 	const projectOptions = useMemo(() => {
 		if (!state.projectSearch.trim()) {
 			return state.projectOptions
@@ -737,6 +764,7 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			handleEscape,
 			handleInputKeyDown,
 			hasTitle,
+			hasSearchResults,
 			isSearchingMode,
 			moveFocus,
 			openQuickResult,

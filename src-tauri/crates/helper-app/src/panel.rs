@@ -215,9 +215,20 @@ fn center_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel) {
     let screen_frame: objc2_foundation::NSRect =
         unsafe { objc2::msg_send![&*screen, visibleFrame] };
     let ns_panel = panel.as_panel();
+    let panel_frame = ns_panel.frame();
+    let panel_width = if panel_frame.size.width > 0.0 {
+        panel_frame.size.width
+    } else {
+        QUICK_CREATE_WINDOW_WIDTH
+    };
+    let panel_height = if panel_frame.size.height > 0.0 {
+        panel_frame.size.height
+    } else {
+        QUICK_CREATE_WINDOW_HEIGHT
+    };
 
-    let x = screen_frame.origin.x + (screen_frame.size.width - QUICK_CREATE_WINDOW_WIDTH) / 2.0;
-    let y = screen_frame.origin.y + (screen_frame.size.height - QUICK_CREATE_WINDOW_HEIGHT) / 2.0;
+    let x = screen_frame.origin.x + (screen_frame.size.width - panel_width) / 2.0;
+    let y = screen_frame.origin.y + (screen_frame.size.height - panel_height) / 2.0;
 
     unsafe {
         let _: () =
@@ -225,12 +236,30 @@ fn center_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel) {
     }
 
     log::info!(
-        "helper: 鼠标在 ({:.0},{:.0}) → 定位到屏 visible_frame=({:.0},{:.0},{:.0}×{:.0}) → panel origin=({x:.0},{y:.0})",
+        "helper: 鼠标在 ({:.0},{:.0}) → 定位到屏 visible_frame=({:.0},{:.0},{:.0}×{:.0}) panel_frame=({:.0}×{:.0}) → origin=({x:.0},{y:.0})",
         mouse_loc.x,
         mouse_loc.y,
         screen_frame.origin.x,
         screen_frame.origin.y,
         screen_frame.size.width,
         screen_frame.size.height,
+        panel_width,
+        panel_height,
     );
+}
+
+pub fn recenter_quick_create_panel(app_handle: &AppHandle<Wry>) {
+    let Some(panel) = app_handle.get_webview_panel(QUICK_CREATE_LABEL).ok() else {
+        return;
+    };
+
+    let dispatch_result = app_handle.run_on_main_thread(move || {
+        if panel.is_visible() {
+            center_panel_on_active_screen(panel.as_ref());
+        }
+    });
+
+    if let Err(error) = dispatch_result {
+        log::warn!("helper: quick create 重居中失败: {error}");
+    }
 }

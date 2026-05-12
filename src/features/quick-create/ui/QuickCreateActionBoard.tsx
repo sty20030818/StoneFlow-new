@@ -40,13 +40,7 @@ export function QuickCreateActionBoard({
 		derived.displayTasks.length === 0 &&
 		derived.displayProjects.length === 0
 	const showSearchingEmpty =
-		derived.isSearchingMode &&
-		!state.isSearching &&
-		derived.displayTasks.length === 0 &&
-		derived.displayProjects.length === 0
-	const showSearchingPending =
-		derived.isSearchingMode &&
-		state.isSearching &&
+		!derived.isShowingRecent &&
 		derived.displayTasks.length === 0 &&
 		derived.displayProjects.length === 0
 
@@ -97,9 +91,7 @@ export function QuickCreateActionBoard({
 				<div className='flex w-full flex-col px-2 pb-0.5' ref={contentRef}>
 					<BoardRoot className={cn(isScrollLocked ? null : '!flex-none')}>
 						<QuickCreateCreateSection />
-						{showSearchingPending ? (
-							<QuickCreateBoardState isScrollLocked={isScrollLocked} label='正在搜索…' />
-						) : showRecentEmpty ? (
+						{showRecentEmpty ? (
 							<QuickCreateBoardState isScrollLocked={isScrollLocked} label='还没有最近任务或项目' />
 						) : showSearchingEmpty ? (
 							<QuickCreateBoardState

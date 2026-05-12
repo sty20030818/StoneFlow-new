@@ -258,12 +258,13 @@ export function quickCreateReducer(
 				...state,
 				isSearching: false,
 				searchResults: { tasks: [], projects: [] },
+				errorMessage: null,
+				submitState: 'idle',
 			}
 		case 'searchFailed':
 			return {
 				...state,
 				isSearching: false,
-				searchResults: { tasks: [], projects: [] },
 				submitState: 'error',
 				message: action.message,
 				errorMessage: action.message,

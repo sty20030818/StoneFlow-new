@@ -12,6 +12,7 @@ use tauri::{LogicalSize, Manager, Size};
 
 use crate::{
     ipc_client,
+    panel,
     window_spec::{
         QUICK_CREATE_LABEL, QUICK_CREATE_PANEL_MAX_HEIGHT, QUICK_CREATE_PANEL_MIN_HEIGHT,
         QUICK_CREATE_SHADOW_PADDING, QUICK_CREATE_WINDOW_MAX_HEIGHT, QUICK_CREATE_WINDOW_MIN_HEIGHT,
@@ -320,8 +321,11 @@ pub async fn helper_quick_resize_window(
         )))
         .map_err(|error| QuickCreateErrorPayload {
             type_: "Internal",
-            message: format!("调整 quick create 窗口高度失败: {error}"),
+        message: format!("调整 quick create 窗口高度失败: {error}"),
         })?;
+
+    #[cfg(target_os = "macos")]
+    panel::recenter_quick_create_panel(&app_handle);
 
     Ok(())
 }
