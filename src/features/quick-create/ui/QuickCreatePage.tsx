@@ -12,7 +12,7 @@ export function QuickCreatePage() {
 	}, [])
 
 	return (
-		<div className='flex h-full min-h-0 items-start p-9'>
+		<div className='flex h-full min-h-0 items-start bg-transparent p-9'>
 			<QuickCreateProvider>
 				<QuickCreateRoot />
 			</QuickCreateProvider>

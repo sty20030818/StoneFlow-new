@@ -12,6 +12,7 @@ import {
 	type PropsWithChildren,
 	type RefObject,
 } from 'react'
+import { flushSync } from 'react-dom'
 import { listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { addDays, endOfWeek, format } from 'date-fns'
@@ -45,9 +46,11 @@ import type {
 import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
 import { formatTaskPlacementLabel } from '@/features/task/model/taskPlacement'
 
-const QUICK_CREATE_SHOWN_EVENT = 'quick-create:shown'
+const QUICK_CREATE_PREPARE_EVENT = 'quick-create:prepare'
+const QUICK_CREATE_PRESENTED_EVENT = 'quick-create:presented'
 const SEARCH_DEBOUNCE_MS = 120
 const PANEL_CLOSE_DELAY_MS = 220
+const QUICK_CREATE_MAX_ROWS_PER_BOARD = 3
 
 type QuickCreateContextValue = {
 	state: QuickCreatePanelState
@@ -60,6 +63,7 @@ type QuickCreateContextValue = {
 		displayTasks: QuickCreateTaskItem[]
 		displayProjects: QuickCreateProjectItem[]
 		isShowingRecent: boolean
+		isSearchEmpty: boolean
 		isCreateFocused: boolean
 		activeResultIndex: number
 		projectOptions: QuickCreateProjectOption[]
@@ -159,21 +163,20 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 		}
 	}, [])
 
-	const resetPanelRef = useRef<() => void>(() => {})
+	const resetPanelRef = useRef<() => Promise<void>>(() => Promise.resolve())
 	resetPanelRef.current = () => {
 		const requestId = ++bootstrapRequestIdRef.current
 		dispatch({ type: 'bootstrapStarted' })
 
-		void getInitialState()
+		return getInitialState()
 			.then((initialState) => {
 				if (requestId !== bootstrapRequestIdRef.current) {
 					return
 				}
 
-				startTransition(() => {
+				flushSync(() => {
 					dispatch({ type: 'bootstrapSucceeded', payload: initialState })
 				})
-				focusInput()
 			})
 			.catch((error) => {
 				if (requestId !== bootstrapRequestIdRef.current) {
@@ -199,17 +202,17 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			})
 	}
 
-	const refreshShownStateRef = useRef<() => void>(() => {})
+	const refreshShownStateRef = useRef<() => Promise<void>>(() => Promise.resolve())
 	refreshShownStateRef.current = () => {
 		const requestId = ++bootstrapRequestIdRef.current
 
-		void getInitialState()
+		return getInitialState()
 			.then((initialState) => {
 				if (requestId !== bootstrapRequestIdRef.current) {
 					return
 				}
 
-				startTransition(() => {
+				flushSync(() => {
 					dispatch({ type: 'panelShownRefreshed', payload: initialState })
 				})
 			})
@@ -227,18 +230,18 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 
 		let disposed = false
 		let unlisten: (() => void) | undefined
-		listen<void>(QUICK_CREATE_SHOWN_EVENT, () => {
-			const cachedInitialState = initialStateRef.current
-			if (!cachedInitialState) {
-				resetPanelRef.current()
-				return
-			}
+		listen<void>(QUICK_CREATE_PREPARE_EVENT, () => {
+			void (async () => {
+				if (!initialStateRef.current) {
+					await resetPanelRef.current()
+				} else {
+					await refreshShownStateRef.current()
+				}
 
-			startTransition(() => {
-				dispatch({ type: 'bootstrapSucceeded', payload: cachedInitialState })
-			})
-			focusInput()
-			refreshShownStateRef.current()
+				if (!disposed) {
+					dispatch({ type: 'presentationRequested' })
+				}
+			})()
 		}).then((dispose) => {
 			if (disposed) {
 				dispose()
@@ -247,9 +250,22 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			unlisten = dispose
 		})
 
+		let unlistenPresented: (() => void) | undefined
+		listen<void>(QUICK_CREATE_PRESENTED_EVENT, () => {
+			dispatch({ type: 'presentationCompleted' })
+			focusInput()
+		}).then((dispose) => {
+			if (disposed) {
+				dispose()
+				return
+			}
+			unlistenPresented = dispose
+		})
+
 		return () => {
 			disposed = true
 			unlisten?.()
+			unlistenPresented?.()
 			if (closeTimerRef.current !== null) {
 				window.clearTimeout(closeTimerRef.current)
 			}
@@ -405,28 +421,36 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 	const normalizedTitle = state.draft.title.trim()
 	const hasTitle = normalizedTitle.length > 0
 	const isSearchingMode = normalizedTitle.length > 0
-	const hasSearchResults = state.searchResults.tasks.length > 0 || state.searchResults.projects.length > 0
-	const shouldShowSearchResults = isSearchingMode && hasSearchResults
-	const displayTasks = useMemo(
-		// recent 列表固定使用全局最近；space 只影响创建落点和项目候选。
-		() =>
-			shouldShowSearchResults
+	const isShowingRecent = !isSearchingMode || state.searchView === 'recent'
+	const isSearchEmpty = isSearchingMode && state.searchView === 'empty'
+	const displayTasks = useMemo(() => {
+		const sourceTasks = isShowingRecent
+			? (state.initialState?.recentTasks ?? [])
+			: state.searchView === 'results'
 				? state.searchResults.tasks
-				: isSearchingMode
-					? []
-					: state.initialState?.recentTasks ?? [],
-		[shouldShowSearchResults, isSearchingMode, state.searchResults.tasks, state.initialState?.recentTasks],
-	)
-	const displayProjects = useMemo(
-		// recent 列表固定使用全局最近；space 只影响创建落点和项目候选。
-		() =>
-			shouldShowSearchResults
+				: []
+
+		return sourceTasks.slice(0, QUICK_CREATE_MAX_ROWS_PER_BOARD)
+	}, [
+		isShowingRecent,
+		state.initialState?.recentTasks,
+		state.searchResults.tasks,
+		state.searchView,
+	])
+	const displayProjects = useMemo(() => {
+		const sourceProjects = isShowingRecent
+			? (state.initialState?.recentProjects ?? [])
+			: state.searchView === 'results'
 				? state.searchResults.projects
-				: isSearchingMode
-					? []
-					: state.initialState?.recentProjects ?? [],
-		[shouldShowSearchResults, isSearchingMode, state.searchResults.projects, state.initialState?.recentProjects],
-	)
+				: []
+
+		return sourceProjects.slice(0, QUICK_CREATE_MAX_ROWS_PER_BOARD)
+	}, [
+		isShowingRecent,
+		state.initialState?.recentProjects,
+		state.searchResults.projects,
+		state.searchView,
+	])
 	const flatItems = useMemo<QuickCreateResultItem[]>(
 		() => [
 			...displayTasks.map((item) => ({ kind: 'task' as const, ...item })),
@@ -716,7 +740,8 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 				flatItems,
 				displayTasks,
 				displayProjects,
-				isShowingRecent: !isSearchingMode,
+				isShowingRecent,
+				isSearchEmpty,
 				isCreateFocused: state.focusTarget === 'create',
 				activeResultIndex:
 					state.focusTarget !== 'none' && state.focusTarget !== 'create'
@@ -764,8 +789,9 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			handleEscape,
 			handleInputKeyDown,
 			hasTitle,
-			hasSearchResults,
 			isSearchingMode,
+			isShowingRecent,
+			isSearchEmpty,
 			moveFocus,
 			openQuickResult,
 			placementLabel,

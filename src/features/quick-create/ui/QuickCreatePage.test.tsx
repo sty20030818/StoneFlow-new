@@ -188,8 +188,8 @@ describe('QuickCreatePage', () => {
 	it('初始打开显示 recent 区并聚焦输入框', async () => {
 		render(<QuickCreatePage />)
 
-		expect(await screen.findByText('最近任务')).toBeInTheDocument()
-		expect(screen.getByText('最近项目')).toBeInTheDocument()
+		expect(await screen.findByTestId('quick-create-recent-tasks-section')).toBeInTheDocument()
+		expect(screen.getByTestId('quick-create-recent-projects-section')).toBeInTheDocument()
 		expect(screen.queryByText('创建任务')).not.toBeInTheDocument()
 
 		const input = screen.getByLabelText('Quick Create 输入')
@@ -199,7 +199,7 @@ describe('QuickCreatePage', () => {
 	it('root 保持 composer、action board、footer 三段逻辑分区', async () => {
 		render(<QuickCreatePage />)
 
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		expect(screen.getByTestId('quick-create-composer')).toBeInTheDocument()
 		expect(screen.getByTestId('quick-create-action-board')).toBeInTheDocument()
@@ -208,7 +208,7 @@ describe('QuickCreatePage', () => {
 
 	it('composer 保持 primary/advanced 分区，展开 advanced 不影响基础输入区', async () => {
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		expect(screen.getByTestId('quick-create-primary-meta-bar')).toBeInTheDocument()
 		expect(screen.queryByTestId('quick-create-advanced-meta-bar')).not.toBeInTheDocument()
@@ -228,15 +228,23 @@ describe('QuickCreatePage', () => {
 		)
 
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		const input = screen.getByLabelText('Quick Create 输入')
 		fireEvent.change(input, { target: { value: 'stone' } })
 
 		expect(screen.queryByText('正在搜索…')).not.toBeInTheDocument()
-		expect(screen.getByText('没有匹配结果，按 Enter 创建“stone”。')).toBeInTheDocument()
-		expect(screen.queryByText('任务')).not.toBeInTheDocument()
-		expect(screen.queryByText('项目')).not.toBeInTheDocument()
+		expect(screen.getByTestId('quick-create-recent-tasks-section')).toBeInTheDocument()
+		expect(screen.getByTestId('quick-create-recent-projects-section')).toBeInTheDocument()
+		expect(screen.getByText('最近任务 A')).toBeInTheDocument()
+		expect(screen.getByText('最近项目 A')).toBeInTheDocument()
+
+		await waitFor(() => {
+			expect(screen.getByTestId('quick-create-tasks-section')).toBeInTheDocument()
+		})
+		expect(screen.getByTestId('quick-create-projects-section')).toBeInTheDocument()
+		expect(screen.getByText('Stone 新搜索任务')).toBeInTheDocument()
+		expect(screen.getByText('Stone 新搜索项目')).toBeInTheDocument()
 	})
 
 	it('没有匹配结果时直接显示空态，不回 recent', async () => {
@@ -246,15 +254,18 @@ describe('QuickCreatePage', () => {
 		})
 
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		fireEvent.change(screen.getByLabelText('Quick Create 输入'), { target: { value: 'xxx' } })
 
 		await waitFor(() => {
-			expect(screen.getByText('没有匹配结果，按 Enter 创建“xxx”。')).toBeInTheDocument()
+			expect(screen.getByText('没有匹配结果')).toBeInTheDocument()
 		})
-		expect(screen.queryByText('最近任务')).not.toBeInTheDocument()
-		expect(screen.queryByText('最近项目')).not.toBeInTheDocument()
+		await waitFor(() => {
+			expect(screen.getByText('按 Enter 创建“xxx”')).toBeInTheDocument()
+		})
+		expect(screen.queryByTestId('quick-create-recent-tasks-section')).not.toBeInTheDocument()
+		expect(screen.queryByTestId('quick-create-recent-projects-section')).not.toBeInTheDocument()
 	})
 
 	it('action board 会按 recent/search 模式切换 section', async () => {
@@ -264,7 +275,7 @@ describe('QuickCreatePage', () => {
 		})
 
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		expect(screen.getByTestId('quick-create-recent-tasks-section')).toBeInTheDocument()
 		expect(screen.getByTestId('quick-create-recent-projects-section')).toBeInTheDocument()
@@ -279,7 +290,7 @@ describe('QuickCreatePage', () => {
 
 	it('有搜索结果时 Enter 仍默认创建，ArrowDown 后 Enter 才打开结果', async () => {
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		const input = screen.getByLabelText('Quick Create 输入')
 		fireEvent.change(input, { target: { value: 'Stone' } })
@@ -311,7 +322,7 @@ describe('QuickCreatePage', () => {
 
 	it('Shift+Enter 会连续创建并保留已选参数', async () => {
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		fireEvent.click(screen.getByLabelText('优先级'))
 		fireEvent.click(screen.getByText('紧急'))
@@ -346,7 +357,7 @@ describe('QuickCreatePage', () => {
 
 	it('Esc 按优先级先关弹层、再清空输入、最后关闭窗口', async () => {
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		const input = screen.getByLabelText('Quick Create 输入')
 		fireEvent.change(input, { target: { value: 'Stone' } })
@@ -370,7 +381,7 @@ describe('QuickCreatePage', () => {
 
 	it('切换 Space 后会把项目重置为收件箱', async () => {
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		fireEvent.click(screen.getByLabelText('项目选择'))
 		fireEvent.click(screen.getByText('StoneFlow 开发'))
@@ -389,7 +400,7 @@ describe('QuickCreatePage', () => {
 
 	it('切换 Space 不会改变全局最近任务和最近项目', async () => {
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		expect(screen.getByText('最近任务 A')).toBeInTheDocument()
 		expect(screen.getByText('最近项目 A')).toBeInTheDocument()
@@ -456,14 +467,14 @@ describe('QuickCreatePage', () => {
 			.mockResolvedValueOnce(nextInitialState)
 
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 		expect(screen.getByLabelText('空间选择')).toHaveTextContent('产品研发')
 
 		if (shownHandler) {
 			(shownHandler as () => void)()
 		}
 
-		expect(screen.getByText('最近任务')).toBeInTheDocument()
+		expect(screen.getByTestId('quick-create-recent-tasks-section')).toBeInTheDocument()
 
 		await waitFor(() => {
 			expect(mockedGetInitialState).toHaveBeenCalledTimes(2)
@@ -480,7 +491,7 @@ describe('QuickCreatePage', () => {
 		})
 
 		render(<QuickCreatePage />)
-		await screen.findByText('最近任务')
+		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		const input = screen.getByLabelText('Quick Create 输入')
 		fireEvent.change(input, { target: { value: 'Only Task' } })

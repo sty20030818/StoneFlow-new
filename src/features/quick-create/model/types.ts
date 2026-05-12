@@ -140,7 +140,9 @@ export type QuickCreateSubmitState = 'idle' | 'submitting' | 'success' | 'error'
 
 export type QuickCreatePanelState = {
 	isBootstrapping: boolean
+	isPresentationPending: boolean
 	initialState: QuickCreateInitialState | null
+	layoutVersion: number
 	draft: QuickCreateDraft
 	projectOptions: QuickCreateProjectOption[]
 	projectSearch: string
@@ -148,6 +150,7 @@ export type QuickCreatePanelState = {
 	activePopover: QuickCreatePopoverKey | null
 	isAdvancedOpen: boolean
 	searchResults: QuickCreateSearchResponse
+	searchView: 'recent' | 'results' | 'empty'
 	isSearching: boolean
 	focusTarget: QuickCreateFocusTarget
 	submitState: QuickCreateSubmitState

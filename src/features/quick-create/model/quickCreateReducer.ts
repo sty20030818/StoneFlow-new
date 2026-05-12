@@ -25,7 +25,9 @@ const defaultDraft: QuickCreateDraft = {
 export function createQuickCreateInitialState(): QuickCreatePanelState {
 	return {
 		isBootstrapping: true,
+		isPresentationPending: false,
 		initialState: null,
+		layoutVersion: 0,
 		draft: defaultDraft,
 		projectOptions: [],
 		projectSearch: '',
@@ -33,6 +35,7 @@ export function createQuickCreateInitialState(): QuickCreatePanelState {
 		activePopover: null,
 		isAdvancedOpen: false,
 		searchResults: { tasks: [], projects: [] },
+		searchView: 'recent',
 		isSearching: false,
 		focusTarget: 'none',
 		submitState: 'idle',
@@ -47,6 +50,8 @@ type QuickCreateAction =
 	| { type: 'bootstrapSucceeded'; payload: QuickCreateInitialState }
 	| { type: 'panelShownRefreshed'; payload: QuickCreateInitialState }
 	| { type: 'recentRefreshed'; payload: QuickCreateInitialState }
+	| { type: 'presentationRequested' }
+	| { type: 'presentationCompleted' }
 	| { type: 'bootstrapFailed'; message: string }
 	| { type: 'titleChanged'; title: string }
 	| { type: 'priorityChanged'; priority: QuickCreatePriority }
@@ -81,12 +86,15 @@ export function quickCreateReducer(
 			return {
 				...createQuickCreateInitialState(),
 				isBootstrapping: true,
+				isPresentationPending: state.isPresentationPending,
 			}
 		case 'bootstrapSucceeded':
 			return {
 				...state,
 				isBootstrapping: false,
+				isPresentationPending: state.isPresentationPending,
 				initialState: action.payload,
+				layoutVersion: state.layoutVersion + 1,
 				draft: {
 					...state.draft,
 					title: '',
@@ -104,6 +112,7 @@ export function quickCreateReducer(
 				activePopover: null,
 				isAdvancedOpen: false,
 				searchResults: { tasks: [], projects: [] },
+				searchView: 'recent',
 				isSearching: false,
 				focusTarget: 'none',
 				submitState: 'idle',
@@ -131,6 +140,7 @@ export function quickCreateReducer(
 			return {
 				...state,
 				initialState: action.payload,
+				layoutVersion: state.layoutVersion + 1,
 				draft: shouldAdoptFreshDefaults
 					? {
 							...state.draft,
@@ -141,6 +151,16 @@ export function quickCreateReducer(
 				projectOptions: shouldAdoptFreshDefaults ? action.payload.projects : state.projectOptions,
 			}
 		}
+		case 'presentationRequested':
+			return {
+				...state,
+				isPresentationPending: true,
+			}
+		case 'presentationCompleted':
+			return {
+				...state,
+				isPresentationPending: false,
+			}
 		case 'recentRefreshed':
 			return {
 				...state,
@@ -251,12 +271,17 @@ export function quickCreateReducer(
 			return {
 				...state,
 				isSearching: false,
+				searchView:
+					action.payload.tasks.length > 0 || action.payload.projects.length > 0
+						? 'results'
+						: 'empty',
 				searchResults: action.payload,
 			}
 		case 'searchCleared':
 			return {
 				...state,
 				isSearching: false,
+				searchView: 'recent',
 				searchResults: { tasks: [], projects: [] },
 				errorMessage: null,
 				submitState: 'idle',
@@ -302,6 +327,7 @@ export function quickCreateReducer(
 					...state.draft,
 					title: '',
 				},
+				searchView: 'recent',
 				searchResults: { tasks: [], projects: [] },
 				isSearching: false,
 				focusTarget: 'none',
@@ -317,6 +343,7 @@ export function quickCreateReducer(
 					...state.draft,
 					title: '',
 				},
+				searchView: 'recent',
 				searchResults: { tasks: [], projects: [] },
 				isSearching: false,
 				focusTarget: 'none',

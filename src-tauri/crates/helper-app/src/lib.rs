@@ -76,6 +76,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         commands::helper_quick_create,
         commands::helper_quick_create_and_open,
         commands::helper_quick_open_target,
-        commands::helper_quick_resize_window
+        commands::helper_quick_resize_window,
+        commands::helper_quick_present_window
     ])
 }

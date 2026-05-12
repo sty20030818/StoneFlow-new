@@ -7,7 +7,9 @@
 //!   - 失焦隐藏：走 NSWindowDelegate 原生 `windowDidResignKey:` 通知，
 //!     **不依赖** Tauri 的 `WindowEvent::Focused(false)`——
 //!     NonActivating 面板不会让 owning app 激活，Tauri 的 focus 事件链不可靠。
-//!   - 前端 focus 同步：`windowDidBecomeKey:` 回调里才 emit `quick-create:shown`。
+//!   - 前端准备阶段：快捷键触发后先 emit `quick-create:prepare`，
+//!     由前端在隐藏态完成首轮布局测量与 resize，再由 Rust 执行真正的 show。
+//!   - 前端呈现同步：`windowDidBecomeKey:` 回调里才 emit `quick-create:presented`。
 //!     此时 panel 已真正成为 key window，前端 `input.focus()` 才能命中；
 //!     如果在 `show_and_make_key()` 返回后立刻 emit，key 状态可能还没 flush。
 //!
@@ -24,7 +26,9 @@ use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, Wry};
 use tauri_nspanel::{CollectionBehavior, ManagerExt, StyleMask, WebviewWindowExt};
 
 use crate::window_spec::{QUICK_CREATE_LABEL, QUICK_CREATE_TITLE, QUICK_CREATE_URL};
-use crate::window_spec::{QUICK_CREATE_WINDOW_HEIGHT, QUICK_CREATE_WINDOW_WIDTH};
+use crate::window_spec::{
+    QUICK_CREATE_SCREEN_TOP_OFFSET_RATIO, QUICK_CREATE_WINDOW_HEIGHT, QUICK_CREATE_WINDOW_WIDTH,
+};
 
 // 同时声明 NSPanel 子类 + NSWindowDelegate 子类：
 //  - QuickCreatePanel：can_become_key_window + is_floating_panel。
@@ -67,7 +71,6 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
     .decorations(false)
     .shadow(false)
     .transparent(true)
-    .center()
     .visible(false)
     .build()
     {
@@ -106,12 +109,12 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
     // 绑定离开作用域后 ObjC delegate 仍然活着，无需额外 leak。
     let handler = QuickCreatePanelEvents::new();
 
-    let app_for_show = app_handle.clone();
+    let app_for_prepare = app_handle.clone();
     handler.window_did_become_key(move |_notification| {
-        log::info!("helper: windowDidBecomeKey → emit quick-create:shown");
-        if let Some(window) = app_for_show.get_webview_window(QUICK_CREATE_LABEL) {
-            if let Err(error) = window.emit("quick-create:shown", ()) {
-                log::warn!("helper: quick-create:shown 事件发送失败: {error}");
+        log::info!("helper: windowDidBecomeKey → emit quick-create:presented");
+        if let Some(window) = app_for_prepare.get_webview_window(QUICK_CREATE_LABEL) {
+            if let Err(error) = window.emit("quick-create:presented", ()) {
+                log::warn!("helper: quick-create:presented 事件发送失败: {error}");
             }
         }
     });
@@ -129,12 +132,11 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
     panel.set_event_handler(Some(handler.as_ref()));
 
     log::info!(
-        "helper: quick create NSPanel 初始化完成 \
-         [level=101/PopUpMenu, style=NonActivating, collection=MoveToActiveSpace+FullScreenAuxiliary+IgnoresCycle, delegate=QuickCreatePanelEvents]"
+        "helper: quick create NSPanel 初始化完成 [level=101/PopUpMenu, style=NonActivating, collection=MoveToActiveSpace+FullScreenAuxiliary+IgnoresCycle, delegate=QuickCreatePanelEvents]"
     );
 }
 
-/// Toggle 面板：可见则隐藏，否则定位到当前屏并 `orderFrontRegardless`。
+/// Toggle 面板：可见则隐藏，否则只触发前端准备流程，等待 resize 完成后再真正显示。
 ///
 /// 所有 AppKit 操作通过 `run_on_main_thread` 派发，符合线程安全要求。
 pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
@@ -145,6 +147,7 @@ pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
             return;
         }
     };
+    let emit_handle = app_handle.clone();
 
     let dispatch_result = app_handle.run_on_main_thread(move || {
         let visible = panel.is_visible();
@@ -155,20 +158,10 @@ pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
             log::info!("helper: 隐藏面板");
             panel.hide();
         } else {
-            center_panel_on_active_screen(panel.as_ref());
-
-            // 关键：Accessory + NonActivating + show_and_make_key 三件套，
-            // NSPanel 直接成为 key window 接收键盘，不需要（也不应该）
-            // 再调 `NSApp.activateIgnoringOtherApps` —— 它与 NonActivating 语义
-            // 相抵，会互相抵消导致 becomeKey 不稳定、输入框拿不到焦点。
-            //
-            // 对齐 tauri-nspanel 官方 panel_builder / fullscreen 示例的用法。
-            log::info!("helper: show_and_make_key（进入 key window 状态）");
-            panel.show_and_make_key();
-
-            // 此处不 emit `quick-create:shown`：前端 focus 时机改由
-            // `windowDidBecomeKey:` delegate 回调触发，避免 key 状态未 flush
-            // 时前端先 focus 的时序竞争。
+            log::info!("helper: emit quick-create:prepare（保持隐藏态）");
+            if let Err(error) = emit_handle.emit("quick-create:prepare", ()) {
+                log::warn!("helper: quick-create:prepare 事件发送失败: {error}");
+            }
         }
     });
 
@@ -177,12 +170,58 @@ pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
     }
 }
 
+/// 真正呈现面板：先定位到当前屏，再执行 show_and_make_key。
+pub fn present_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<(), String> {
+    let panel = app_handle
+        .get_webview_panel(QUICK_CREATE_LABEL)
+        .map_err(|error| format!("获取 quick create panel 失败: {error:?}"))?;
+
+    app_handle
+        .run_on_main_thread(move || {
+            place_panel_on_active_screen(panel.as_ref());
+            log::info!(
+                "helper: Quick Create 弹窗已准备完毕，执行 show_and_make_key（快捷键={}）",
+                crate::window_spec::QUICK_CREATE_SHORTCUT
+            );
+            panel.show_and_make_key();
+        })
+        .map_err(|error| format!("主线程显示 quick create panel 失败: {error}"))
+}
+
+/// macOS 下调整 Quick Create 高度时，保持窗口顶部边界不变。
+pub fn resize_quick_create_panel_preserving_top(
+    app_handle: &AppHandle<Wry>,
+    target_window_height: f64,
+) -> Result<(), String> {
+    let panel = app_handle
+        .get_webview_panel(QUICK_CREATE_LABEL)
+        .map_err(|error| format!("获取 quick create panel 失败: {error:?}"))?;
+
+    app_handle
+        .run_on_main_thread(move || {
+            let ns_panel = panel.as_panel();
+            let current_frame: objc2_foundation::NSRect =
+                unsafe { objc2::msg_send![ns_panel, frame] };
+            let current_top = current_frame.origin.y + current_frame.size.height;
+            let next_origin_y = current_top - target_window_height;
+            let next_frame = objc2_foundation::NSRect::new(
+                objc2_foundation::NSPoint::new(current_frame.origin.x, next_origin_y),
+                objc2_foundation::NSSize::new(current_frame.size.width, target_window_height),
+            );
+
+            unsafe {
+                let _: () = objc2::msg_send![ns_panel, setFrame: next_frame, display: false];
+            }
+        })
+        .map_err(|error| format!("主线程调整 quick create frame 失败: {error}"))
+}
+
 /// 将面板居中到「用户当前正在操作」的屏幕（以鼠标所在屏为准）。
 ///
 /// 不用 `NSScreen.mainScreen()` 的原因：Helper 虽然是 Accessory，但 Tauri 宿主
 /// 启动的瞬间其 key window 仍指向进程创建时的初始屏幕；多屏切换后 `mainScreen`
 /// 会退化为物理主屏，无法跟随用户视线。遍历所有 NSScreen 找鼠标命中屏才正确。
-fn center_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel) {
+fn place_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel) {
     // SAFETY: 仅在 run_on_main_thread 闭包内调用，已保证处于主线程。
     let mtm = unsafe { objc2::MainThreadMarker::new_unchecked() };
 
@@ -215,51 +254,35 @@ fn center_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel) {
     let screen_frame: objc2_foundation::NSRect =
         unsafe { objc2::msg_send![&*screen, visibleFrame] };
     let ns_panel = panel.as_panel();
-    let panel_frame = ns_panel.frame();
-    let panel_width = if panel_frame.size.width > 0.0 {
-        panel_frame.size.width
-    } else {
-        QUICK_CREATE_WINDOW_WIDTH
-    };
-    let panel_height = if panel_frame.size.height > 0.0 {
-        panel_frame.size.height
-    } else {
-        QUICK_CREATE_WINDOW_HEIGHT
-    };
-
+    let current_frame: objc2_foundation::NSRect = unsafe { objc2::msg_send![ns_panel, frame] };
+    // present 阶段只负责定位，不再重置尺寸。
+    // 尺寸真相源是前端 prepare 阶段完成的实测 resize；这里如果回写默认高度，
+    // 首次打开会把刚算好的高度覆盖掉，直到后续交互再次触发 resize 才恢复。
+    let panel_width = current_frame.size.width.max(QUICK_CREATE_WINDOW_WIDTH);
+    let panel_height = current_frame.size.height;
     let x = screen_frame.origin.x + (screen_frame.size.width - panel_width) / 2.0;
-    let y = screen_frame.origin.y + (screen_frame.size.height - panel_height) / 2.0;
+    let top_offset = screen_frame.size.height * QUICK_CREATE_SCREEN_TOP_OFFSET_RATIO;
+    let panel_top = screen_frame.origin.y + screen_frame.size.height - top_offset;
+    let y = panel_top - panel_height;
+    let next_frame = objc2_foundation::NSRect::new(
+        objc2_foundation::NSPoint::new(x, y),
+        objc2_foundation::NSSize::new(panel_width, panel_height),
+    );
 
     unsafe {
-        let _: () =
-            objc2::msg_send![ns_panel, setFrameOrigin: objc2_foundation::NSPoint::new(x, y)];
+        let _: () = objc2::msg_send![ns_panel, setFrame: next_frame, display: false];
     }
 
     log::info!(
-        "helper: 鼠标在 ({:.0},{:.0}) → 定位到屏 visible_frame=({:.0},{:.0},{:.0}×{:.0}) panel_frame=({:.0}×{:.0}) → origin=({x:.0},{y:.0})",
+        "helper: 鼠标在 ({:.0},{:.0}) → 定位到屏 visible_frame=({:.0},{:.0},{:.0}×{:.0}) top_offset={:.0} panel=({:.0}×{:.0}) → origin=({x:.0},{y:.0})",
         mouse_loc.x,
         mouse_loc.y,
         screen_frame.origin.x,
         screen_frame.origin.y,
         screen_frame.size.width,
         screen_frame.size.height,
+        top_offset,
         panel_width,
         panel_height,
     );
-}
-
-pub fn recenter_quick_create_panel(app_handle: &AppHandle<Wry>) {
-    let Some(panel) = app_handle.get_webview_panel(QUICK_CREATE_LABEL).ok() else {
-        return;
-    };
-
-    let dispatch_result = app_handle.run_on_main_thread(move || {
-        if panel.is_visible() {
-            center_panel_on_active_screen(panel.as_ref());
-        }
-    });
-
-    if let Err(error) = dispatch_result {
-        log::warn!("helper: quick create 重居中失败: {error}");
-    }
 }

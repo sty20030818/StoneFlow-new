@@ -133,10 +133,8 @@ fn position_window_on_active_monitor(window: &WebviewWindow<Wry>) {
     let scale_factor = monitor.scale_factor();
     let window_width = QUICK_CREATE_WINDOW_WIDTH * scale_factor;
     let window_height = QUICK_CREATE_WINDOW_HEIGHT * scale_factor;
-    let x =
-        work_area.position.x as f64 + (work_area.size.width as f64 - window_width) / 2.0;
-    let y =
-        work_area.position.y as f64 + (work_area.size.height as f64 - window_height) / 2.0;
+    let x = work_area.position.x as f64 + (work_area.size.width as f64 - window_width) / 2.0;
+    let y = work_area.position.y as f64 + (work_area.size.height as f64 - window_height) / 2.0;
 
     let position = PhysicalPosition::new(x.round() as i32, y.round() as i32);
     if let Err(error) = window.set_position(position) {

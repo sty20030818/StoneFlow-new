@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::Notify;
 use tokio::time::{sleep, timeout};
@@ -189,7 +190,7 @@ impl HelperSupervisor {
             .mark_helper_starting(Some(helper_path.clone()))
             .await;
 
-        let child = match spawn_helper(&helper_path) {
+        let mut child = match spawn_helper(&helper_path) {
             Ok(child) => child,
             Err(error) => {
                 log::error!("spawn helper 失败: {error}");
@@ -203,6 +204,7 @@ impl HelperSupervisor {
         let pid = child.id().unwrap_or(0);
         self.helper_state.mark_helper_spawned(pid).await;
         log::info!("helper 已启动, pid={pid}");
+        self.forward_helper_output(child.stdout.take(), child.stderr.take(), pid);
         self.current_child = Some(child);
 
         true
@@ -360,6 +362,40 @@ impl HelperSupervisor {
             RestartDecision::CircuitOpen => {
                 log::error!("helper 重启次数达到上限，进入熔断");
                 self.transition_to(SupervisorState::CircuitOpen).await;
+            }
+        }
+    }
+}
+
+impl HelperSupervisor {
+    fn forward_helper_output(
+        &self,
+        stdout: Option<impl tokio::io::AsyncRead + Unpin + Send + 'static>,
+        stderr: Option<impl tokio::io::AsyncRead + Unpin + Send + 'static>,
+        pid: u32,
+    ) {
+        if let Some(stdout) = stdout {
+            tokio::spawn(forward_lines(stdout, "STDOUT", pid));
+        }
+
+        if let Some(stderr) = stderr {
+            tokio::spawn(forward_lines(stderr, "STDERR", pid));
+        }
+    }
+}
+
+async fn forward_lines<R>(reader: R, stream_name: &'static str, pid: u32)
+where
+    R: tokio::io::AsyncRead + Unpin + Send + 'static,
+{
+    let mut lines = BufReader::new(reader).lines();
+    loop {
+        match lines.next_line().await {
+            Ok(Some(line)) => log::info!("helper[{pid}][{stream_name}] {line}"),
+            Ok(None) => break,
+            Err(error) => {
+                log::warn!("helper[{pid}][{stream_name}] 读取失败: {error}");
+                break;
             }
         }
     }

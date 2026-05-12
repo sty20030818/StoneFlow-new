@@ -10,10 +10,10 @@ use interprocess::local_socket::{
     GenericFilePath, GenericNamespaced, ToFsName, ToNsName,
 };
 use stoneflow_ipc_protocol::{
-    socket_name, IpcError, IpcRequest, IpcResponse, QuickCreatePayload,
-    QuickInitialStatePayload, QuickListProjectsBySpacePayload, QuickOpenTargetPayload,
-    QuickProjectsBySpaceResponsePayload, QuickSearchPayload, QuickSearchResponsePayload,
-    SocketName, DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS, MAX_FRAME_BYTES,
+    socket_name, IpcError, IpcRequest, IpcResponse, QuickCreatePayload, QuickInitialStatePayload,
+    QuickListProjectsBySpacePayload, QuickOpenTargetPayload, QuickProjectsBySpaceResponsePayload,
+    QuickSearchPayload, QuickSearchResponsePayload, SocketName, DEFAULT_CONNECT_TIMEOUT_MS,
+    DEFAULT_REQUEST_TIMEOUT_MS, MAX_FRAME_BYTES,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::time::timeout;
@@ -121,8 +121,8 @@ async fn try_round_trip(request: &IpcRequest) -> Result<IpcResponse, IpcError> {
     let stream = connect_with_timeout(&socket).await?;
     let (mut reader, mut writer) = stream.split();
 
-    let payload =
-        serde_json::to_vec(request).map_err(|error| IpcError::Internal(format!("serialize: {error}")))?;
+    let payload = serde_json::to_vec(request)
+        .map_err(|error| IpcError::Internal(format!("serialize: {error}")))?;
     if payload.len() > MAX_FRAME_BYTES {
         return Err(IpcError::Internal(format!(
             "request payload too large: {}",
@@ -184,7 +184,8 @@ async fn connect_with_timeout(socket: &SocketName) -> Result<Stream, IpcError> {
         socket.raw.clone().to_fs_name::<GenericFilePath>()
     };
 
-    let name = name_result.map_err(|error| IpcError::Internal(format!("invalid socket name: {error}")))?;
+    let name =
+        name_result.map_err(|error| IpcError::Internal(format!("invalid socket name: {error}")))?;
 
     match timeout(
         Duration::from_millis(DEFAULT_CONNECT_TIMEOUT_MS),

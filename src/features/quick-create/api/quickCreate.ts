@@ -30,6 +30,10 @@ export async function resizeWindow(height: number) {
 	})
 }
 
+export async function presentWindow() {
+	return invoke('helper_quick_present_window')
+}
+
 export async function getInitialState() {
 	return invoke<QuickCreateInitialState>('helper_quick_get_initial_state')
 }

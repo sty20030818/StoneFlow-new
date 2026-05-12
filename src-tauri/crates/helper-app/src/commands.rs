@@ -12,13 +12,11 @@ use tauri::{LogicalSize, Manager, Size};
 
 use crate::{
     ipc_client,
-    panel,
-    window_spec::{
-        QUICK_CREATE_LABEL, QUICK_CREATE_PANEL_MAX_HEIGHT, QUICK_CREATE_PANEL_MIN_HEIGHT,
-        QUICK_CREATE_SHADOW_PADDING, QUICK_CREATE_WINDOW_MAX_HEIGHT, QUICK_CREATE_WINDOW_MIN_HEIGHT,
-        QUICK_CREATE_WINDOW_VISUAL_BUFFER, QUICK_CREATE_WINDOW_WIDTH,
-    },
+    window_spec::{QUICK_CREATE_LABEL, QUICK_CREATE_WINDOW_MIN_HEIGHT, QUICK_CREATE_WINDOW_WIDTH},
 };
+
+#[cfg(target_os = "macos")]
+use crate::panel;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct QuickCreateErrorPayload {
@@ -288,11 +286,13 @@ pub async fn helper_quick_resize_window(
         });
     };
 
-    let clamped_panel_height = input
-        .height
-        .clamp(QUICK_CREATE_PANEL_MIN_HEIGHT, QUICK_CREATE_PANEL_MAX_HEIGHT);
-    let target_window_height =
-        clamped_panel_height + QUICK_CREATE_SHADOW_PADDING * 2.0 + QUICK_CREATE_WINDOW_VISUAL_BUFFER;
+    let target_window_height = input.height.max(QUICK_CREATE_WINDOW_MIN_HEIGHT);
+
+    log::info!(
+        "helper: quick create resize 请求 height={:.1} -> applied={:.1}",
+        input.height,
+        target_window_height
+    );
 
     window
         .set_min_size(Some(Size::Logical(LogicalSize::new(
@@ -304,16 +304,15 @@ pub async fn helper_quick_resize_window(
             message: format!("设置 quick create 最小窗口尺寸失败: {error}"),
         })?;
 
-    window
-        .set_max_size(Some(Size::Logical(LogicalSize::new(
-            QUICK_CREATE_WINDOW_WIDTH,
-            QUICK_CREATE_WINDOW_MAX_HEIGHT,
-        ))))
-        .map_err(|error| QuickCreateErrorPayload {
+    #[cfg(target_os = "macos")]
+    panel::resize_quick_create_panel_preserving_top(&app_handle, target_window_height).map_err(
+        |message| QuickCreateErrorPayload {
             type_: "Internal",
-            message: format!("设置 quick create 最大窗口尺寸失败: {error}"),
-        })?;
+            message,
+        },
+    )?;
 
+    #[cfg(not(target_os = "macos"))]
     window
         .set_size(Size::Logical(LogicalSize::new(
             QUICK_CREATE_WINDOW_WIDTH,
@@ -321,11 +320,42 @@ pub async fn helper_quick_resize_window(
         )))
         .map_err(|error| QuickCreateErrorPayload {
             type_: "Internal",
-        message: format!("调整 quick create 窗口高度失败: {error}"),
+            message: format!("调整 quick create 窗口高度失败: {error}"),
         })?;
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn helper_quick_present_window(
+    app_handle: tauri::AppHandle,
+) -> Result<(), QuickCreateErrorPayload> {
     #[cfg(target_os = "macos")]
-    panel::recenter_quick_create_panel(&app_handle);
+    panel::present_quick_create_panel(&app_handle).map_err(|message| QuickCreateErrorPayload {
+        type_: "Internal",
+        message,
+    })?;
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
+            return Err(QuickCreateErrorPayload {
+                type_: "Internal",
+                message: "quick create 窗口未初始化".to_owned(),
+            });
+        };
+
+        window.show().map_err(|error| QuickCreateErrorPayload {
+            type_: "Internal",
+            message: format!("显示 quick create 窗口失败: {error}"),
+        })?;
+        window
+            .set_focus()
+            .map_err(|error| QuickCreateErrorPayload {
+                type_: "Internal",
+                message: format!("聚焦 quick create 窗口失败: {error}"),
+            })?;
+    }
 
     Ok(())
 }
@@ -357,8 +387,16 @@ fn map_initial_state(payload: QuickInitialStatePayload) -> HelperQuickInitialSta
         default_space_id: payload.default_space_id,
         default_placement: map_placement(payload.default_placement),
         spaces: payload.spaces.into_iter().map(map_space).collect(),
-        projects: payload.projects.into_iter().map(map_project_option).collect(),
-        recent_tasks: payload.recent_tasks.into_iter().map(map_task_item).collect(),
+        projects: payload
+            .projects
+            .into_iter()
+            .map(map_project_option)
+            .collect(),
+        recent_tasks: payload
+            .recent_tasks
+            .into_iter()
+            .map(map_task_item)
+            .collect(),
         recent_projects: payload
             .recent_projects
             .into_iter()
@@ -374,7 +412,11 @@ fn map_projects_by_space(
         space_id: payload.space_id,
         inbox_project: map_project_option(payload.inbox_project),
         no_project_option: map_project_option(payload.no_project_option),
-        projects: payload.projects.into_iter().map(map_project_option).collect(),
+        projects: payload
+            .projects
+            .into_iter()
+            .map(map_project_option)
+            .collect(),
     }
 }
 
