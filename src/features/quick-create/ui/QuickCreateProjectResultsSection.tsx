@@ -2,6 +2,7 @@ import { FolderIcon } from 'lucide-react'
 
 import { BoardCollapsibleSection } from '@/shared/ui/board'
 import { entityBoardMutedIconClass } from '@/shared/ui/patterns/entity-board'
+import { quickCreateBoardCollapsibleClass } from '@/shared/ui/patterns/quick-create'
 
 import type { QuickCreateProjectItem } from '@/features/quick-create/model/types'
 import { QuickCreateProjectResultRowAdapter } from '@/features/quick-create/ui/adapters/QuickCreateProjectResultRowAdapter'
@@ -35,7 +36,7 @@ export function QuickCreateProjectResultsSection({
 
 	return (
 		<BoardCollapsibleSection
-			className='last:pb-0'
+			className={quickCreateBoardCollapsibleClass}
 			count={items.length}
 			getItemId={(_child, index) => items[index]?.id}
 			icon={

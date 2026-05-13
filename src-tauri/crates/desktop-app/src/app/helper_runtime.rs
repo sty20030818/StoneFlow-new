@@ -21,7 +21,9 @@ use crate::{
         state::{ActiveScopeState, CommandHelperState, PendingCommandOpenIntent},
         MAIN_WINDOW_LABEL,
     },
-    application::services::QuickCreateService,
+    application::services::{
+        QuickCreateOpenContextService, QuickCreateService, QuickCreateSessionBridge,
+    },
     infrastructure::{
         database::DatabaseRuntimeState,
         repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
@@ -200,10 +202,12 @@ async fn handle_ipc_connection(
     };
 
     let service = build_quick_create_service(&database);
+    let session_bridge = build_quick_create_session_bridge(&database);
     let response = dispatch_request(
         request,
         &app_handle,
         &service,
+        &session_bridge,
         &active_scope,
         &helper_state,
         &handshake_notify,
@@ -224,6 +228,7 @@ async fn dispatch_request(
     request: IpcRequest,
     app_handle: &tauri::AppHandle,
     service: &QuickCreateService,
+    session_bridge: &QuickCreateSessionBridge,
     active_scope: &ActiveScopeState,
     helper_state: &CommandHelperState,
     handshake_notify: &Notify,
@@ -236,7 +241,9 @@ async fn dispatch_request(
             protocol_version: PROTOCOL_VERSION,
         }),
         IpcRequest::QuickGetInitialState => Ok(IpcResponse::QuickInitialState(
-            service.get_initial_state(active_scope.get().await).await?,
+            session_bridge
+                .prepare_initial_state(active_scope.get().await)
+                .await?,
         )),
         IpcRequest::QuickListProjectsBySpace(payload) => Ok(IpcResponse::QuickProjectsBySpace(
             service.list_projects_by_space(payload).await?,
@@ -395,6 +402,26 @@ fn build_quick_create_service(database: &DatabaseRuntimeState) -> QuickCreateSer
         TaskRepository::new(connection.clone()),
         ActivityRepository::new(connection),
     )
+}
+
+fn build_quick_create_session_bridge(database: &DatabaseRuntimeState) -> QuickCreateSessionBridge {
+    let connection = database.connection().clone();
+    let space_repository = SpaceRepository::new(connection.clone());
+    let project_repository = ProjectRepository::new(connection.clone());
+    let task_repository = TaskRepository::new(connection.clone());
+    let quick_create_service = QuickCreateService::new(
+        space_repository.clone(),
+        project_repository.clone(),
+        task_repository.clone(),
+        ActivityRepository::new(connection),
+    );
+
+    QuickCreateSessionBridge::new(QuickCreateOpenContextService::new(
+        quick_create_service,
+        space_repository,
+        project_repository,
+        task_repository,
+    ))
 }
 
 fn bind_listener(socket: &SocketName) -> Result<Listener, io::Error> {

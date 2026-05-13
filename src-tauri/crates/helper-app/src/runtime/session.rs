@@ -122,7 +122,13 @@ impl QuickPopupRuntimeState {
         session_id: &str,
     ) -> Result<QuickPopupSession, &'static str> {
         let mut guard = self.inner.write().await;
-        if guard.phase != QuickPopupPhase::Preparing {
+        if !matches!(
+            guard.phase,
+            QuickPopupPhase::Preparing
+                | QuickPopupPhase::WaitingLayout
+                | QuickPopupPhase::Presenting
+                | QuickPopupPhase::Visible
+        ) {
             return Err("popup runtime cannot wait for layout from current phase");
         }
         validate_active_session(&guard, session_id)?;
@@ -334,5 +340,94 @@ mod tests {
             .await
             .expect_err("mismatched session should fail");
         assert_eq!(err, "popup runtime session mismatch");
+    }
+
+    #[tokio::test]
+    async fn runtime_should_require_frontend_ready_before_prepare() {
+        let runtime = QuickPopupRuntimeState::default();
+        assert!(!runtime.is_frontend_ready().await);
+        runtime.mark_frontend_ready().await;
+        assert!(runtime.is_frontend_ready().await);
+    }
+
+    #[tokio::test]
+    async fn runtime_should_reject_finish_close_for_stale_session() {
+        let runtime = QuickPopupRuntimeState::default();
+        let session = runtime
+            .begin_open(QuickPopupOpenReason::GlobalShortcut)
+            .await
+            .expect("open should succeed");
+        let err = runtime
+            .finish_close_for("stale-session")
+            .await
+            .expect_err("stale session should fail");
+        assert_eq!(err, "popup runtime session mismatch");
+
+        runtime
+            .begin_close_for(&session.session_id, QuickPopupCloseReason::Invalidated)
+            .await
+            .expect("close should succeed");
+        runtime
+            .finish_close_for(&session.session_id)
+            .await
+            .expect("finish close should succeed");
+    }
+
+    #[tokio::test]
+    async fn runtime_should_allow_close_while_visible() {
+        let runtime = QuickPopupRuntimeState::default();
+        let session = runtime
+            .begin_open(QuickPopupOpenReason::GlobalShortcut)
+            .await
+            .expect("open should succeed");
+        runtime
+            .mark_waiting_layout_for(&session.session_id)
+            .await
+            .expect("waiting layout should succeed");
+        runtime
+            .mark_presenting_for(&session.session_id)
+            .await
+            .expect("presenting should succeed");
+        runtime
+            .mark_visible_for(&session.session_id)
+            .await
+            .expect("visible should succeed");
+
+        let closing_session = runtime
+            .begin_close_for(&session.session_id, QuickPopupCloseReason::Toggle)
+            .await
+            .expect("close should succeed")
+            .expect("visible session should exist");
+        assert_eq!(closing_session.session_id, session.session_id);
+    }
+
+    #[tokio::test]
+    async fn runtime_should_allow_recommit_layout_while_visible() {
+        let runtime = QuickPopupRuntimeState::default();
+        let session = runtime
+            .begin_open(QuickPopupOpenReason::GlobalShortcut)
+            .await
+            .expect("open should succeed");
+        runtime
+            .mark_waiting_layout_for(&session.session_id)
+            .await
+            .expect("waiting layout should succeed");
+        runtime
+            .mark_presenting_for(&session.session_id)
+            .await
+            .expect("presenting should succeed");
+        runtime
+            .mark_visible_for(&session.session_id)
+            .await
+            .expect("visible should succeed");
+
+        let waiting_session = runtime
+            .mark_waiting_layout_for(&session.session_id)
+            .await
+            .expect("visible session should allow recommit layout");
+        assert_eq!(waiting_session.session_id, session.session_id);
+
+        let snapshot = runtime.snapshot().await;
+        assert_eq!(snapshot.phase, QuickPopupPhase::WaitingLayout);
     }
 }

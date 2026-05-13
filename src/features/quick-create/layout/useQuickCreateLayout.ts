@@ -19,6 +19,7 @@ export type QuickCreateLayoutRegion =
 export type QuickCreateLayoutController = {
 	isReady: boolean
 	targetHeight: number | null
+	measureKey: unknown
 	lastMeasurements: QuickCreateLayoutMeasurements | null
 	lastResult: QuickCreateLayoutMeasureResult | null
 	getNode: (region: QuickCreateLayoutRegion) => HTMLElement | null
@@ -40,8 +41,10 @@ const REGION_LIST: QuickCreateLayoutRegion[] = [
 export function useQuickCreateLayout(measureKey: unknown): QuickCreateLayoutController {
 	const [targetHeight, setTargetHeight] = useState<number | null>(null)
 	const [isReady, setReady] = useState(false)
+	const [readyMeasureKey, setReadyMeasureKey] = useState<unknown>(null)
 	const [lastMeasurements, setLastMeasurements] = useState<QuickCreateLayoutMeasurements | null>(null)
 	const [lastResult, setLastResult] = useState<QuickCreateLayoutMeasureResult | null>(null)
+	const measureKeyRef = useRef(measureKey)
 	const nodeMapRef = useRef(new Map<QuickCreateLayoutRegion, HTMLElement>())
 	const observerRef = useRef<ResizeObserver | null>(null)
 	const frameRef = useRef<number | null>(null)
@@ -62,14 +65,17 @@ export function useQuickCreateLayout(measureKey: unknown): QuickCreateLayoutCont
 			return
 		}
 
+		const currentMeasureKey = measureKeyRef.current
 		const surface = nodeMapRef.current.get('surface')
 		const measurements: QuickCreateLayoutMeasurements = {
 			contentHeight: readFullHeight(nodeMapRef.current.get('content')),
 			composerHeight: readOffsetHeight(nodeMapRef.current.get('composer')),
 			toastHeight: readOffsetHeight(nodeMapRef.current.get('toast')),
 			createRowHeight: readOffsetHeight(nodeMapRef.current.get('createRow')),
-			taskBoardHeight: readOffsetHeight(nodeMapRef.current.get('taskBoard')),
-			projectBoardHeight: readOffsetHeight(nodeMapRef.current.get('projectBoard')),
+			// Board section 首帧可能还在展开过渡里，offsetHeight 会暂时只有 header。
+			// 这里改用完整 scrollHeight，避免 session 首次测量被错误压成最小高度。
+			taskBoardHeight: readFullHeight(nodeMapRef.current.get('taskBoard')),
+			projectBoardHeight: readFullHeight(nodeMapRef.current.get('projectBoard')),
 			footerHeight: readOffsetHeight(nodeMapRef.current.get('footer')),
 			surfaceOffsetHeight: readOffsetHeight(surface),
 			surfaceClientHeight: surface?.clientHeight ?? 0,
@@ -81,6 +87,7 @@ export function useQuickCreateLayout(measureKey: unknown): QuickCreateLayoutCont
 		}
 		setLastMeasurements(measurements)
 		setLastResult(result)
+		setReadyMeasureKey(currentMeasureKey)
 
 		setTargetHeight((current) => {
 			const next = result.targetHeight
@@ -163,7 +170,9 @@ export function useQuickCreateLayout(measureKey: unknown): QuickCreateLayoutCont
 	}, [requestMeasure])
 
 	useLayoutEffect(() => {
+		measureKeyRef.current = measureKey
 		setReady(false)
+		setReadyMeasureKey(null)
 		setTargetHeight(null)
 		setLastMeasurements(null)
 		setLastResult(null)
@@ -175,10 +184,11 @@ export function useQuickCreateLayout(measureKey: unknown): QuickCreateLayoutCont
 	}, [])
 
 	return {
-		isReady,
+		isReady: isReady && Object.is(readyMeasureKey, measureKey),
 		getNode,
 		lastMeasurements,
 		lastResult,
+		measureKey: readyMeasureKey,
 		targetHeight,
 		registerRegion,
 		requestMeasure,

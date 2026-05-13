@@ -10,7 +10,7 @@ pub const QUICK_CREATE_URL: &str = "index.html#/quick-create";
 pub const QUICK_CREATE_PANEL_WIDTH: f64 = 688.0;
 pub const QUICK_CREATE_PANEL_HEIGHT: f64 = 408.0;
 pub const QUICK_CREATE_PANEL_MIN_HEIGHT: f64 = 292.0;
-pub const QUICK_CREATE_SHADOW_PADDING: f64 = 36.0;
+pub const QUICK_CREATE_SHADOW_PADDING: f64 = 28.0;
 
 /// 原生窗口尺寸 = 视觉 panel 尺寸 + CSS 阴影透明安全区。
 ///

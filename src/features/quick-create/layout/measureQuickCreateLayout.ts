@@ -10,7 +10,8 @@ export type QuickCreateLayoutMeasurements = {
 	surfaceClientHeight?: number
 }
 
-export const QUICK_CREATE_SHADOW_PADDING_PX = 36
+// 必须和 QuickCreateFrame 外层透明 padding 保持一致，避免底部安全区被原生窗口裁切。
+export const QUICK_CREATE_SHADOW_PADDING_PX = 28
 
 export type QuickCreateLayoutMeasureResult = {
 	contentHeight: number

@@ -2,7 +2,9 @@
 
 mod lifecycle_service;
 mod project_service;
+mod quick_create_open_context_service;
 mod quick_create_service;
+mod quick_create_session_bridge;
 mod search_service;
 mod settings_service;
 mod space_service;
@@ -21,6 +23,8 @@ pub use project_service::{
 pub use quick_create_service::{
     QuickCreateService, QuickResolvedOpenTarget, QuickResolvedPlacement,
 };
+pub use quick_create_open_context_service::QuickCreateOpenContextService;
+pub use quick_create_session_bridge::QuickCreateSessionBridge;
 pub use search_service::{
     SearchEntitiesInput, SearchEntitiesResultDto, SearchProjectItemDto, SearchService,
     SearchTaskItemDto,

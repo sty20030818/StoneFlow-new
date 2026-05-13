@@ -42,7 +42,6 @@ export function QuickCreateDomainProvider({ children }: PropsWithChildren) {
 		dispatch,
 		fetchSnapshot: getOpenContextSnapshot,
 		focusInput,
-		hasInitialState: state.initialState !== null,
 		nextOpenContext:
 			'openContext' in sessionState.phase ? sessionState.phase.openContext : null,
 		onRefreshRecentError: logRefreshRecentError,

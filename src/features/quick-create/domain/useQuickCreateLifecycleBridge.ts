@@ -1,5 +1,4 @@
-import { startTransition, useEffect, useRef } from 'react'
-import { flushSync } from 'react-dom'
+import { startTransition, useEffect, useLayoutEffect, useRef } from 'react'
 
 import type { QuickCreateInitialState } from '@/features/quick-create/model/types'
 import type { QuickCreateOpenSessionResponse } from '@/features/quick-create/api/quickCreate'
@@ -9,7 +8,6 @@ type UseQuickCreateLifecycleBridgeArgs = {
 	dispatch: React.ActionDispatch<[action: QuickCreateAction]>
 	fetchSnapshot: () => Promise<QuickCreateInitialState>
 	focusInput: () => void
-	hasInitialState: boolean
 	nextOpenContext: QuickCreateOpenSessionResponse | null
 	shouldFocusInput: boolean
 	onRefreshRecentError: (error: unknown) => void
@@ -19,7 +17,6 @@ export function useQuickCreateLifecycleBridge({
 	dispatch,
 	fetchSnapshot,
 	focusInput,
-	hasInitialState,
 	nextOpenContext,
 	onRefreshRecentError,
 	shouldFocusInput,
@@ -31,7 +28,7 @@ export function useQuickCreateLifecycleBridge({
 			.then((openContext) => {
 				startTransition(() => {
 					dispatch({
-						type: 'recentRefreshed',
+						type: 'recentDataRefreshed',
 						payload: {
 							currentScope: openContext.currentScope,
 							defaultSpaceId: openContext.defaultSpaceId,
@@ -49,7 +46,7 @@ export function useQuickCreateLifecycleBridge({
 			})
 	}
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (!nextOpenContext) {
 			return
 		}
@@ -64,17 +61,8 @@ export function useQuickCreateLifecycleBridge({
 			recentProjects: nextOpenContext.recentProjects,
 		}
 
-		if (!hasInitialState) {
-			flushSync(() => {
-				dispatch({ type: 'bootstrapSucceeded', payload })
-			})
-			return
-		}
-
-		flushSync(() => {
-			dispatch({ type: 'panelShownRefreshed', payload })
-		})
-	}, [dispatch, hasInitialState, nextOpenContext])
+		dispatch({ type: 'sessionOpened', payload })
+	}, [dispatch, nextOpenContext])
 
 	useEffect(() => {
 		if (!shouldFocusInput) {

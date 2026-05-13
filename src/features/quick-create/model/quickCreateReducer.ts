@@ -43,9 +43,8 @@ export function createQuickCreateInitialState(): QuickCreatePanelState {
 }
 
 type QuickCreateAction =
-	| { type: 'bootstrapSucceeded'; payload: QuickCreateInitialState }
-	| { type: 'panelShownRefreshed'; payload: QuickCreateInitialState }
-	| { type: 'recentRefreshed'; payload: QuickCreateInitialState }
+	| { type: 'sessionOpened'; payload: QuickCreateInitialState }
+	| { type: 'recentDataRefreshed'; payload: QuickCreateInitialState }
 	| { type: 'bootstrapFailed'; message: string }
 	| { type: 'titleChanged'; title: string }
 	| { type: 'priorityChanged'; priority: QuickCreatePriority }
@@ -76,50 +75,47 @@ export function quickCreateReducer(
 	action: QuickCreateAction,
 ): QuickCreatePanelState {
 	switch (action.type) {
-		case 'bootstrapSucceeded':
-			return {
-				...state,
-				initialState: action.payload,
-				draft: {
-					...state.draft,
-					title: '',
-					priority: 0,
-					status: 'todo',
-					spaceId: action.payload.defaultSpaceId,
-					placement: action.payload.defaultPlacement,
-					dueAt: null,
-					scheduledAt: null,
-					reminderAt: null,
-				},
-				projectOptions: action.payload.projects,
-				projectSearch: '',
-				isProjectOptionsLoading: false,
-				activePopover: null,
-				isAdvancedOpen: false,
-				searchResults: { tasks: [], projects: [] },
-				searchView: 'recent',
-				isSearching: false,
-				focusTarget: 'none',
-				submitState: 'idle',
-				message: '输入标题创建，或打开最近任务、项目',
-				continuousCreateCount: 0,
-				errorMessage: null,
-			}
-		case 'bootstrapFailed':
-			return {
-				...state,
-				submitState: 'error',
-				message: action.message,
-				errorMessage: action.message,
-			}
-		case 'panelShownRefreshed': {
+		case 'sessionOpened': {
 			const previousDefaultSpaceId = state.initialState?.defaultSpaceId ?? null
 			const previousDefaultPlacement = state.initialState?.defaultPlacement ?? null
+			const shouldResetDraft = state.initialState === null
 			const shouldAdoptFreshDefaults =
+				!shouldResetDraft &&
 				state.draft.title.trim().length === 0 &&
 				state.draft.spaceId === previousDefaultSpaceId &&
 				state.draft.placement.kind === previousDefaultPlacement?.kind &&
 				state.draft.placement.projectId === previousDefaultPlacement?.projectId
+
+			if (shouldResetDraft) {
+				return {
+					...state,
+					initialState: action.payload,
+					draft: {
+						...state.draft,
+						title: '',
+						priority: 0,
+						status: 'todo',
+						spaceId: action.payload.defaultSpaceId,
+						placement: action.payload.defaultPlacement,
+						dueAt: null,
+						scheduledAt: null,
+						reminderAt: null,
+					},
+					projectOptions: action.payload.projects,
+					projectSearch: '',
+					isProjectOptionsLoading: false,
+					activePopover: null,
+					isAdvancedOpen: false,
+					searchResults: { tasks: [], projects: [] },
+					searchView: 'recent',
+					isSearching: false,
+					focusTarget: 'none',
+					submitState: 'idle',
+					message: '输入标题创建，或打开最近任务、项目',
+					continuousCreateCount: 0,
+					errorMessage: null,
+				}
+			}
 
 			return {
 				...state,
@@ -132,19 +128,27 @@ export function quickCreateReducer(
 					  }
 					: state.draft,
 				projectOptions: shouldAdoptFreshDefaults ? action.payload.projects : state.projectOptions,
+				isProjectOptionsLoading: false,
+				projectSearch: shouldAdoptFreshDefaults ? '' : state.projectSearch,
 			}
 		}
-		case 'recentRefreshed':
+		case 'bootstrapFailed':
 			return {
 				...state,
-				initialState: {
-					...action.payload,
-					currentScope: state.initialState?.currentScope ?? action.payload.currentScope,
-					defaultSpaceId: state.initialState?.defaultSpaceId ?? action.payload.defaultSpaceId,
-					defaultPlacement:
-						state.initialState?.defaultPlacement ?? action.payload.defaultPlacement,
-					projects: state.initialState?.projects ?? action.payload.projects,
-				},
+				submitState: 'error',
+				message: action.message,
+				errorMessage: action.message,
+			}
+		case 'recentDataRefreshed':
+			return {
+				...state,
+				initialState: state.initialState
+					? {
+							...state.initialState,
+							recentTasks: action.payload.recentTasks,
+							recentProjects: action.payload.recentProjects,
+					  }
+					: action.payload,
 			}
 		case 'titleChanged': {
 			const hasTitle = action.title.trim().length > 0

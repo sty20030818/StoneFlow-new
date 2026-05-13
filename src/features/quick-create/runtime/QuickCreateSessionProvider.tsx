@@ -33,8 +33,8 @@ type QuickCreateSessionPhase =
 	| { type: 'error'; sessionId?: string; message: string }
 
 type QuickCreateSessionState = {
+	closedSessionIds: string[]
 	phase: QuickCreateSessionPhase
-	layoutVersion: number
 }
 
 type QuickCreateSessionContextValue = {
@@ -69,8 +69,8 @@ const QuickCreateSessionContext = createContext<QuickCreateSessionContextValue |
 
 function createQuickCreateSessionState(): QuickCreateSessionState {
 	return {
+		closedSessionIds: [],
 		phase: { type: 'booting' },
-		layoutVersion: 0,
 	}
 }
 
@@ -85,8 +85,14 @@ function quickCreateSessionReducer(
 				phase: { type: 'hidden' },
 			}
 		case 'sessionPrepared':
+			if (
+				state.closedSessionIds.includes(action.payload.sessionId) ||
+				matchesActiveSession(state.phase, action.payload.sessionId)
+			) {
+				return state
+			}
 			return {
-				layoutVersion: state.layoutVersion + 1,
+				closedSessionIds: state.closedSessionIds,
 				phase: {
 					type: 'preparing',
 					sessionId: action.payload.sessionId,
@@ -94,10 +100,7 @@ function quickCreateSessionReducer(
 				},
 			}
 		case 'sessionMeasuring':
-			if (
-				state.phase.type !== 'preparing' ||
-				state.phase.sessionId !== action.sessionId
-			) {
+			if (state.phase.type !== 'preparing' || state.phase.sessionId !== action.sessionId) {
 				return state
 			}
 			return {
@@ -109,10 +112,7 @@ function quickCreateSessionReducer(
 				},
 			}
 		case 'sessionReadyToPresent':
-			if (
-				state.phase.type !== 'measuring' ||
-				state.phase.sessionId !== action.sessionId
-			) {
+			if (state.phase.type !== 'measuring' || state.phase.sessionId !== action.sessionId) {
 				return state
 			}
 			return {
@@ -124,10 +124,7 @@ function quickCreateSessionReducer(
 				},
 			}
 		case 'sessionPresented':
-			if (
-				state.phase.type !== 'readyToPresent' ||
-				state.phase.sessionId !== action.sessionId
-			) {
+			if (state.phase.type !== 'readyToPresent' || state.phase.sessionId !== action.sessionId) {
 				return state
 			}
 			return {
@@ -139,6 +136,9 @@ function quickCreateSessionReducer(
 				},
 			}
 		case 'sessionClosing':
+			if (!matchesActiveSession(state.phase, action.sessionId)) {
+				return state
+			}
 			return {
 				...state,
 				phase: {
@@ -148,12 +148,10 @@ function quickCreateSessionReducer(
 				},
 			}
 		case 'sessionHidden':
-			if (
-				state.phase.type === 'closing' &&
-				state.phase.sessionId === action.sessionId
-			) {
+			if (matchesActiveSession(state.phase, action.sessionId)) {
 				return {
 					...state,
+					closedSessionIds: rememberClosedSession(state.closedSessionIds, action.sessionId),
 					phase: { type: 'hidden' },
 				}
 			}
@@ -161,6 +159,9 @@ function quickCreateSessionReducer(
 		case 'sessionError':
 			return {
 				...state,
+				closedSessionIds: action.sessionId
+					? rememberClosedSession(state.closedSessionIds, action.sessionId)
+					: state.closedSessionIds,
 				phase: {
 					type: 'error',
 					sessionId: action.sessionId,
@@ -224,13 +225,15 @@ export function QuickCreateSessionProvider({ children }: PropsWithChildren) {
 				dispatch({ type: 'sessionPrepared', payload: event.payload })
 			},
 		)
-		preparedListener.then((dispose) => {
-			if (disposed) {
-				dispose()
-				return
-			}
-			unlistenPrepared = dispose
-		}).catch(logQuickCreateSessionError)
+		preparedListener
+			.then((dispose) => {
+				if (disposed) {
+					dispose()
+					return
+				}
+				unlistenPrepared = dispose
+			})
+			.catch(logQuickCreateSessionError)
 
 		const presentedListener = listen<QuickCreateSessionEventPayload>(
 			QUICK_CREATE_SESSION_PRESENTED_EVENT,
@@ -241,13 +244,15 @@ export function QuickCreateSessionProvider({ children }: PropsWithChildren) {
 				dispatch({ type: 'sessionPresented', sessionId: event.payload.sessionId })
 			},
 		)
-		presentedListener.then((dispose) => {
-			if (disposed) {
-				dispose()
-				return
-			}
-			unlistenPresented = dispose
-		}).catch(logQuickCreateSessionError)
+		presentedListener
+			.then((dispose) => {
+				if (disposed) {
+					dispose()
+					return
+				}
+				unlistenPresented = dispose
+			})
+			.catch(logQuickCreateSessionError)
 
 		const closeRequestedListener = listen<QuickCreateSessionClosePayload>(
 			QUICK_CREATE_SESSION_CLOSE_REQUESTED_EVENT,
@@ -272,19 +277,20 @@ export function QuickCreateSessionProvider({ children }: PropsWithChildren) {
 						dispatch({
 							type: 'sessionError',
 							sessionId,
-							message:
-								error instanceof Error ? error.message : 'Quick Create 关闭失败',
+							message: error instanceof Error ? error.message : 'Quick Create 关闭失败',
 						})
 					})
 			},
 		)
-		closeRequestedListener.then((dispose) => {
-			if (disposed) {
-				dispose()
-				return
-			}
-			unlistenCloseRequested = dispose
-		}).catch(logQuickCreateSessionError)
+		closeRequestedListener
+			.then((dispose) => {
+				if (disposed) {
+					dispose()
+					return
+				}
+				unlistenCloseRequested = dispose
+			})
+			.catch(logQuickCreateSessionError)
 
 		const invalidatedListener = listen<QuickCreateSessionClosePayload>(
 			QUICK_CREATE_SESSION_INVALIDATED_EVENT,
@@ -301,20 +307,17 @@ export function QuickCreateSessionProvider({ children }: PropsWithChildren) {
 				dispatch({ type: 'sessionHidden', sessionId: event.payload.sessionId })
 			},
 		)
-		invalidatedListener.then((dispose) => {
-			if (disposed) {
-				dispose()
-				return
-			}
-			unlistenInvalidated = dispose
-		}).catch(logQuickCreateSessionError)
+		invalidatedListener
+			.then((dispose) => {
+				if (disposed) {
+					dispose()
+					return
+				}
+				unlistenInvalidated = dispose
+			})
+			.catch(logQuickCreateSessionError)
 
-		Promise.all([
-			preparedListener,
-			presentedListener,
-			closeRequestedListener,
-			invalidatedListener,
-		])
+		Promise.all([preparedListener, presentedListener, closeRequestedListener, invalidatedListener])
 			.then(() => {
 				if (disposed) {
 					return
@@ -375,4 +378,13 @@ function logQuickCreateSessionError(error: unknown) {
 	}
 
 	console.warn('[quick-create] session runtime failed')
+}
+
+function matchesActiveSession(phase: QuickCreateSessionPhase, sessionId: string) {
+	return 'sessionId' in phase && phase.sessionId === sessionId
+}
+
+function rememberClosedSession(closedSessionIds: string[], sessionId: string) {
+	const next = [...closedSessionIds.filter((id) => id !== sessionId), sessionId]
+	return next.slice(-8)
 }

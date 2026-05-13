@@ -16,7 +16,10 @@ import {
 	reportLayoutDiagnostics,
 	search,
 } from '@/features/quick-create/api/quickCreate'
-import { measureQuickCreateTargetHeight } from '@/features/quick-create/layout/measureQuickCreateLayout'
+import {
+	QUICK_CREATE_SHADOW_PADDING_PX,
+	measureQuickCreateTargetHeight,
+} from '@/features/quick-create/layout/measureQuickCreateLayout'
 import { QuickCreatePage } from '@/features/quick-create/ui/QuickCreatePage'
 import type {
 	QuickCreateInitialState,
@@ -148,6 +151,19 @@ const mockedPresentSession = vi.mocked(presentSession)
 const mockedReportLayoutDiagnostics = vi.mocked(reportLayoutDiagnostics)
 const mockedSearch = vi.mocked(search)
 
+type PreparedSessionHandler = (event: {
+	payload: ReturnType<typeof createOpenSessionResponse>
+}) => void
+type PresentedSessionHandler = (event: { payload: { sessionId: string } }) => void
+
+function unregisteredPreparedHandler(): never {
+	throw new Error('preparedHandler 未注册')
+}
+
+function unregisteredPresentedHandler(): never {
+	throw new Error('presentedHandler 未注册')
+}
+
 describe('QuickCreatePage', () => {
 	beforeEach(() => {
 		window.requestAnimationFrame = ((callback: FrameRequestCallback) => {
@@ -234,7 +250,7 @@ describe('QuickCreatePage', () => {
 		const regionSumHeight = 96 + 44 + 118 + 120 + 46
 		const contentFlowHeight = regionSumHeight + 24
 		const surfaceHeight = contentFlowHeight + 2
-		const expectedHeight = surfaceHeight + 72
+		const expectedHeight = surfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
 		const offsetHeightSpy = vi
 			.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
 			.mockImplementation(function (this: HTMLElement) {
@@ -296,6 +312,270 @@ describe('QuickCreatePage', () => {
 			expect(mockedCommitLayout).not.toHaveBeenCalledWith(
 				expect.objectContaining({ height: surfaceHeight }),
 			)
+		} finally {
+			offsetHeightSpy.mockRestore()
+			scrollHeightSpy.mockRestore()
+			clientHeightSpy.mockRestore()
+		}
+	})
+
+	it('首次打开会等待 open context 驱动的完整内容高度，不会先提交最小窗口高度', async () => {
+		let measurePass = 0
+		const minimalHeight = 364
+		const fullContentHeight = 96 + 44 + 118 + 120 + 46 + 24
+		const fullSurfaceHeight = fullContentHeight + 2
+		const fullWindowHeight = fullSurfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
+		const offsetHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
+					return measurePass === 0 ? 180 : fullSurfaceHeight
+				}
+				if (this.dataset.testid === 'quick-create-content-flow') {
+					return measurePass === 0 ? 180 : fullContentHeight
+				}
+				if (this.querySelector('[data-testid="quick-create-composer"]')) {
+					return 96
+				}
+				if (this.querySelector('[data-testid="quick-create-create-section"]')) {
+					return 44
+				}
+				if (this.dataset.testid === 'quick-create-task-board-region') {
+					return measurePass === 0 ? 0 : 118
+				}
+				if (this.dataset.testid === 'quick-create-project-board-region') {
+					return measurePass === 0 ? 0 : 120
+				}
+				if (this.querySelector('[data-testid="quick-create-footer"]')) {
+					return 46
+				}
+
+				return 0
+			})
+		const scrollHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.dataset.testid === 'quick-create-content-flow') {
+					return measurePass === 0 ? 180 : fullContentHeight
+				}
+
+				return 0
+			})
+		const clientHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
+					return measurePass === 0 ? 178 : fullSurfaceHeight - 2
+				}
+
+				return 0
+			})
+
+		try {
+			render(<QuickCreatePage />)
+
+			measurePass = 1
+			await screen.findByTestId('quick-create-recent-tasks-section')
+			await waitFor(() => {
+				expect(mockedCommitLayout).toHaveBeenCalledWith({
+					devicePixelRatio: 1,
+					height: fullWindowHeight,
+					sessionId: DEFAULT_SESSION_ID,
+				})
+			})
+			expect(mockedCommitLayout).not.toHaveBeenCalledWith(
+				expect.objectContaining({
+					height: minimalHeight,
+				}),
+			)
+		} finally {
+			offsetHeightSpy.mockRestore()
+			scrollHeightSpy.mockRestore()
+			clientHeightSpy.mockRestore()
+		}
+	})
+
+	it('可见后内容变高会再次提交 layout，避免 advanced/create row/双 board 裁切', async () => {
+		let measurePass = 0
+		const initialRegionSumHeight = 96 + 118 + 120 + 46
+		const initialContentFlowHeight = initialRegionSumHeight + 24
+		const initialSurfaceHeight = initialContentFlowHeight + 2
+		const initialWindowHeight = initialSurfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
+		const expandedRegionSumHeight = 104 + 48 + 126 + 126 + 46
+		const expandedContentFlowHeight = expandedRegionSumHeight + 24
+		const expandedSurfaceHeight = expandedContentFlowHeight + 2
+		const expandedWindowHeight = expandedSurfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
+
+		const offsetHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
+					return measurePass === 0 ? initialSurfaceHeight : expandedSurfaceHeight
+				}
+				if (this.dataset.testid === 'quick-create-content-flow') {
+					return measurePass === 0 ? initialContentFlowHeight : expandedContentFlowHeight
+				}
+				if (this.querySelector('[data-testid="quick-create-composer"]')) {
+					return measurePass === 0 ? 96 : 104
+				}
+				if (this.querySelector('[data-testid="quick-create-create-section"]')) {
+					return measurePass === 0 ? 0 : 48
+				}
+				if (this.dataset.testid === 'quick-create-task-board-region') {
+					return measurePass === 0 ? 118 : 126
+				}
+				if (this.dataset.testid === 'quick-create-project-board-region') {
+					return measurePass === 0 ? 120 : 126
+				}
+				if (this.querySelector('[data-testid="quick-create-footer"]')) {
+					return 46
+				}
+
+				return 0
+			})
+		const scrollHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.dataset.testid === 'quick-create-content-flow') {
+					return measurePass === 0 ? initialContentFlowHeight : expandedContentFlowHeight
+				}
+
+				return 0
+			})
+		const clientHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
+					return (measurePass === 0 ? initialSurfaceHeight : expandedSurfaceHeight) - 2
+				}
+
+				return 0
+			})
+
+		try {
+			render(<QuickCreatePage />)
+
+			await screen.findByTestId('quick-create-recent-tasks-section')
+			await waitFor(() => {
+				expect(mockedCommitLayout).toHaveBeenCalledWith({
+					devicePixelRatio: 1,
+					height: initialWindowHeight,
+					sessionId: DEFAULT_SESSION_ID,
+				})
+			})
+
+			measurePass = 1
+			fireEvent.click(screen.getByLabelText('更多参数'))
+			fireEvent.change(screen.getByLabelText('Quick Create 输入'), { target: { value: '需要创建' } })
+
+			await waitFor(() => {
+				expect(mockedCommitLayout).toHaveBeenCalledWith({
+					devicePixelRatio: 1,
+					height: expandedWindowHeight,
+					sessionId: DEFAULT_SESSION_ID,
+				})
+			})
+		} finally {
+			offsetHeightSpy.mockRestore()
+			scrollHeightSpy.mockRestore()
+			clientHeightSpy.mockRestore()
+		}
+	})
+
+	it('recent 静默刷新导致内容变高时会再次提交 layout，避免 reopen 后底部裁切', async () => {
+		mockedGetOpenContextSnapshot.mockResolvedValueOnce({
+			...createInitialState(),
+			recentTasks: [
+				createTaskResult({ id: 'task-1', title: '新任务 1' }),
+				createTaskResult({ id: 'task-2', title: '新任务 2' }),
+				createTaskResult({ id: 'task-3', title: '新任务 3' }),
+			],
+			recentProjects: [
+				createProjectResult({ id: 'project-1', name: '新项目 1' }),
+				createProjectResult({ id: 'project-2', name: '新项目 2' }),
+				createProjectResult({ id: 'project-3', name: '新项目 3' }),
+			],
+		})
+
+		let measurePass = 0
+		const initialRegionSumHeight = 96 + 118 + 120 + 46
+		const initialContentFlowHeight = initialRegionSumHeight + 24
+		const initialSurfaceHeight = initialContentFlowHeight + 2
+		const initialWindowHeight = initialSurfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
+		const refreshedRegionSumHeight = 96 + 126 + 126 + 46
+		const refreshedContentFlowHeight = refreshedRegionSumHeight + 24
+		const refreshedSurfaceHeight = refreshedContentFlowHeight + 2
+		const refreshedWindowHeight = refreshedSurfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
+
+		const offsetHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
+					return measurePass === 0 ? initialSurfaceHeight : refreshedSurfaceHeight
+				}
+				if (this.dataset.testid === 'quick-create-content-flow') {
+					return measurePass === 0 ? initialContentFlowHeight : refreshedContentFlowHeight
+				}
+				if (this.querySelector('[data-testid="quick-create-composer"]')) {
+					return 96
+				}
+				if (this.querySelector('[data-testid="quick-create-create-section"]')) {
+					return 0
+				}
+				if (this.dataset.testid === 'quick-create-task-board-region') {
+					return measurePass === 0 ? 118 : 126
+				}
+				if (this.dataset.testid === 'quick-create-project-board-region') {
+					return measurePass === 0 ? 120 : 126
+				}
+				if (this.querySelector('[data-testid="quick-create-footer"]')) {
+					return 46
+				}
+
+				return 0
+			})
+		const scrollHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.dataset.testid === 'quick-create-content-flow') {
+					return measurePass === 0 ? initialContentFlowHeight : refreshedContentFlowHeight
+				}
+
+				return 0
+			})
+		const clientHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
+					return (measurePass === 0 ? initialSurfaceHeight : refreshedSurfaceHeight) - 2
+				}
+
+				return 0
+			})
+
+		try {
+			render(<QuickCreatePage />)
+
+			await screen.findByTestId('quick-create-recent-tasks-section')
+			await waitFor(() => {
+				expect(mockedCommitLayout).toHaveBeenCalledWith({
+					devicePixelRatio: 1,
+					height: initialWindowHeight,
+					sessionId: DEFAULT_SESSION_ID,
+				})
+			})
+
+			measurePass = 1
+			fireEvent.change(screen.getByLabelText('Quick Create 输入'), { target: { value: '连续创建任务' } })
+			fireEvent.keyDown(screen.getByLabelText('Quick Create 输入'), { key: 'Enter', shiftKey: true })
+
+			await waitFor(() => {
+				expect(mockedCommitLayout).toHaveBeenCalledWith({
+					devicePixelRatio: 1,
+					height: refreshedWindowHeight,
+					sessionId: DEFAULT_SESSION_ID,
+				})
+			})
 		} finally {
 			offsetHeightSpy.mockRestore()
 			scrollHeightSpy.mockRestore()
@@ -550,10 +830,10 @@ describe('QuickCreatePage', () => {
 	})
 
 	it('面板再次显示时会重新读取最新默认 Space', async () => {
-		const nextInitialState = {
-			...createInitialState(),
+		const nextOpenContext = createOpenSessionResponse({
+			sessionId: 'session-2',
 			currentScope: {
-				type: 'space' as const,
+				type: 'space',
 				spaceId: 'space-2',
 			},
 			defaultSpaceId: 'space-2',
@@ -567,16 +847,20 @@ describe('QuickCreatePage', () => {
 					spaceId: 'space-2',
 				}),
 			],
-		}
-		let preparedHandler: ((event: { payload: ReturnType<typeof createOpenSessionResponse> }) => void) | null =
-			null
+		})
+		let preparedHandler: PreparedSessionHandler = unregisteredPreparedHandler
 		listenMock.mockImplementation(async (event, handler) => {
 			if (event === 'quick-create:session-prepared') {
-				preparedHandler = handler as (event: {
-					payload: ReturnType<typeof createOpenSessionResponse>
-				}) => void
+				preparedHandler = handler as PreparedSessionHandler
 				queueMicrotask(() => {
 					preparedHandler?.({ payload: createOpenSessionResponse() })
+				})
+			}
+			if (event === 'quick-create:session-presented') {
+				queueMicrotask(() => {
+					void (handler as (event: { payload: { sessionId: string } }) => void)({
+						payload: { sessionId: DEFAULT_SESSION_ID },
+					})
 				})
 			}
 			return () => undefined
@@ -586,22 +870,100 @@ describe('QuickCreatePage', () => {
 		await screen.findByTestId('quick-create-recent-tasks-section')
 		expect(screen.getByLabelText('空间选择')).toHaveTextContent('产品研发')
 
-		if (preparedHandler) {
-			;(preparedHandler as (event: {
-				payload: ReturnType<typeof createOpenSessionResponse>
-			}) => void)({
-				payload: createOpenSessionResponse({
-					currentScope: nextInitialState.currentScope,
-					defaultSpaceId: nextInitialState.defaultSpaceId,
-					projects: nextInitialState.projects,
-				}),
+		fireEvent.keyDown(document, { key: 'Escape' })
+		await waitFor(() => {
+			expect(mockedCloseSession).toHaveBeenCalledWith({
+				reason: 'escape',
+				sessionId: DEFAULT_SESSION_ID,
 			})
-		}
+		})
 
-		expect(screen.getByTestId('quick-create-recent-tasks-section')).toBeInTheDocument()
+		preparedHandler({ payload: nextOpenContext })
 
 		await waitFor(() => {
 			expect(screen.getByLabelText('空间选择')).toHaveTextContent('工程基础')
+		})
+	})
+
+	it('面板再次显示时不会覆盖已编辑草稿', async () => {
+		let preparedHandler: PreparedSessionHandler = unregisteredPreparedHandler
+		listenMock.mockImplementation(async (event, handler) => {
+			if (event === 'quick-create:session-prepared') {
+				preparedHandler = handler as PreparedSessionHandler
+				queueMicrotask(() => {
+					preparedHandler?.({ payload: createOpenSessionResponse() })
+				})
+			}
+			return () => undefined
+		})
+
+		render(<QuickCreatePage />)
+		await screen.findByTestId('quick-create-recent-tasks-section')
+
+		const input = screen.getByLabelText('Quick Create 输入')
+		fireEvent.change(input, { target: { value: '用户已编辑草稿' } })
+
+		preparedHandler({
+			payload: createOpenSessionResponse({
+				sessionId: 'session-2',
+				currentScope: { type: 'space', spaceId: 'space-2' },
+				defaultSpaceId: 'space-2',
+				projects: [
+					createProjectOption({ kind: 'inbox', id: null, name: '收件箱', spaceId: 'space-2' }),
+					createProjectOption({
+						kind: 'noProject',
+						id: null,
+						name: '独立事项',
+						spaceId: 'space-2',
+					}),
+				],
+			}),
+		})
+
+		await waitFor(() => {
+			expect(screen.getByLabelText('Quick Create 输入')).toHaveValue('用户已编辑草稿')
+		})
+		expect(screen.getByLabelText('空间选择')).toHaveTextContent('产品研发')
+	})
+
+	it('stale session 的 presented 事件不会重新显示已关闭面板', async () => {
+		let preparedHandler: PreparedSessionHandler = unregisteredPreparedHandler
+		let presentedHandler: PresentedSessionHandler = unregisteredPresentedHandler
+		listenMock.mockImplementation(async (event, handler) => {
+			if (event === 'quick-create:session-prepared') {
+				preparedHandler = handler as PreparedSessionHandler
+				queueMicrotask(() => {
+					preparedHandler?.({ payload: createOpenSessionResponse() })
+				})
+			}
+			if (event === 'quick-create:session-presented') {
+				presentedHandler = handler as PresentedSessionHandler
+				queueMicrotask(() => {
+					presentedHandler?.({ payload: { sessionId: DEFAULT_SESSION_ID } })
+				})
+			}
+			return () => undefined
+		})
+
+		render(<QuickCreatePage />)
+		await screen.findByTestId('quick-create-recent-tasks-section')
+
+		fireEvent.keyDown(document, { key: 'Escape' })
+		await waitFor(() => {
+			expect(mockedCloseSession).toHaveBeenCalledWith({
+				reason: 'escape',
+				sessionId: DEFAULT_SESSION_ID,
+			})
+		})
+
+		await waitFor(() => {
+			expect(screen.getByLabelText('StoneFlow Quick Create')).toHaveClass('opacity-0')
+		})
+
+		presentedHandler({ payload: { sessionId: DEFAULT_SESSION_ID } })
+
+		await waitFor(() => {
+			expect(screen.getByLabelText('StoneFlow Quick Create')).toHaveClass('opacity-0')
 		})
 	})
 
@@ -650,7 +1012,7 @@ describe('measureQuickCreateTargetHeight', () => {
 				surfaceOffsetHeight: 406,
 				surfaceClientHeight: 404,
 			}),
-		).toBe(478)
+		).toBe(462)
 	})
 
 	it('内容流高度高于分区求和时，以内容流为准', () => {
@@ -665,7 +1027,7 @@ describe('measureQuickCreateTargetHeight', () => {
 				surfaceOffsetHeight: 432,
 				surfaceClientHeight: 430,
 			}),
-		).toBe(504)
+		).toBe(488)
 	})
 
 	it('含 toast 时把 toast 自然高度纳入窗口高度', () => {
@@ -680,7 +1042,7 @@ describe('measureQuickCreateTargetHeight', () => {
 				surfaceOffsetHeight: 434,
 				surfaceClientHeight: 432,
 			}),
-		).toBe(506)
+		).toBe(490)
 	})
 
 	it('只有 task board 时 project board 按 0 计算', () => {
@@ -693,7 +1055,7 @@ describe('measureQuickCreateTargetHeight', () => {
 				surfaceOffsetHeight: 290,
 				surfaceClientHeight: 288,
 			}),
-		).toBe(362)
+		).toBe(346)
 	})
 
 	it('task 和 project 双 board 时完整展开求和', () => {
@@ -707,7 +1069,7 @@ describe('measureQuickCreateTargetHeight', () => {
 				surfaceOffsetHeight: 406,
 				surfaceClientHeight: 404,
 			}),
-		).toBe(478)
+		).toBe(462)
 	})
 
 	it('空态缺 board 时只计算固定区域', () => {
@@ -719,7 +1081,7 @@ describe('measureQuickCreateTargetHeight', () => {
 				surfaceOffsetHeight: 180,
 				surfaceClientHeight: 178,
 			}),
-		).toBe(252)
+		).toBe(236)
 	})
 })
 

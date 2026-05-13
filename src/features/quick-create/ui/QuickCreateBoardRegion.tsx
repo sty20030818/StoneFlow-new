@@ -12,6 +12,10 @@ import { QuickCreateCreateSection } from '@/features/quick-create/ui/QuickCreate
 import { QuickCreateProjectResultsSection } from '@/features/quick-create/ui/QuickCreateProjectResultsSection'
 import { QuickCreateTaskResultsSection } from '@/features/quick-create/ui/QuickCreateTaskResultsSection'
 import { cn } from '@/shared/lib/utils'
+import {
+	quickCreateBoardResultsStackClass,
+	quickCreateBoardStackClass,
+} from '@/shared/ui/patterns/quick-create'
 import { BoardRoot } from '@/shared/ui/board'
 
 type QuickCreateBoardRegionProps = {
@@ -52,7 +56,7 @@ export function QuickCreateBoardRegion({
 		showRecentEmpty,
 		showSearchingEmpty,
 		showTaskBoard,
-		sessionState.layoutVersion,
+		sessionState.phase,
 		taskSectionOpen,
 	])
 
@@ -60,8 +64,8 @@ export function QuickCreateBoardRegion({
 		<div className='w-full min-h-0 shrink-0 overflow-visible' data-testid='quick-create-action-board'>
 			<div className='w-full overflow-x-hidden overflow-y-visible'>
 				<div className='flex w-full flex-col px-2'>
-					<BoardRoot className='flex-none! gap-0'>
-						<div className='shrink-0' ref={createRowRef}>
+					<BoardRoot className={quickCreateBoardStackClass}>
+						<div className='shrink-0 pb-0.5' ref={createRowRef}>
 							<QuickCreateCreateSection />
 						</div>
 						{showRecentEmpty ? (
@@ -81,7 +85,7 @@ export function QuickCreateBoardRegion({
 								<QuickCreateSearchEmptyState title={state.draft.title.trim()} />
 							</div>
 						) : (
-							<>
+							<div className={quickCreateBoardResultsStackClass}>
 								{showTaskBoard ? (
 									<div
 										className='shrink-0'
@@ -131,7 +135,7 @@ export function QuickCreateBoardRegion({
 										/>
 									</div>
 								) : null}
-							</>
+							</div>
 						)}
 					</BoardRoot>
 				</div>

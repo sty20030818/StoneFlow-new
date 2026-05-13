@@ -23,30 +23,27 @@ type LastAppliedResize = {
 export function QuickCreateWindowShell() {
 	const { derived, state } = useQuickCreate()
 	const { actions: sessionActions, state: sessionState } = useQuickCreateSession()
-	const layout = useQuickCreateLayout(sessionState.layoutVersion)
+	const measureKey =
+		'openContext' in sessionState.phase ? sessionState.phase.sessionId : sessionState.phase.type
+	const layout = useQuickCreateLayout(measureKey)
 	const [isWindowReady, setWindowReady] = useState(false)
 	const viewportResizeRevision = useQuickCreateViewportResizeRevision(layout.requestMeasure)
 	const lastAppliedResizeRef = useRef<LastAppliedResize | null>(null)
 	const presentationSentRef = useRef(false)
-	const lastLayoutVersionRef = useRef<number>(sessionState.layoutVersion)
-	const activeSessionId =
-		'openContext' in sessionState.phase ? sessionState.phase.sessionId : null
+	const lastSessionIdRef = useRef<string | null>(null)
+	const activeSessionId = readActiveSessionId(sessionState.phase)
 
 	useLayoutEffect(() => {
-		if (lastLayoutVersionRef.current !== sessionState.layoutVersion) {
-			lastLayoutVersionRef.current = sessionState.layoutVersion
+		if (lastSessionIdRef.current !== activeSessionId) {
+			lastSessionIdRef.current = activeSessionId
 			lastAppliedResizeRef.current = null
 			presentationSentRef.current = false
 			setWindowReady(false)
 		}
-	}, [sessionState.layoutVersion])
+	}, [activeSessionId])
 
 	useEffect(() => {
-		if (
-			sessionState.phase.type !== 'preparing' ||
-			!layout.isReady ||
-			layout.targetHeight === null
-		) {
+		if (!isActiveLayoutPhase(sessionState.phase) || !layout.isReady || layout.targetHeight === null) {
 			return
 		}
 
@@ -105,7 +102,6 @@ export function QuickCreateWindowShell() {
 		layout.targetHeight,
 		state.draft.title,
 		state.isAdvancedOpen,
-		sessionState.layoutVersion,
 		sessionState.phase,
 		sessionActions,
 		viewportResizeRevision,
@@ -131,6 +127,20 @@ export function QuickCreateWindowShell() {
 	}
 
 	return <QuickCreateFrame isVisible={isWindowReady && activeSessionId !== null} layout={layout} />
+}
+
+function isActiveLayoutPhase(
+	phase: ReturnType<typeof useQuickCreateSession>['state']['phase'],
+): phase is Extract<
+	ReturnType<typeof useQuickCreateSession>['state']['phase'],
+	{ type: 'preparing' | 'measuring' | 'readyToPresent' | 'visible' }
+> {
+	return (
+		phase.type === 'preparing' ||
+		phase.type === 'measuring' ||
+		phase.type === 'readyToPresent' ||
+		phase.type === 'visible'
+	)
 }
 
 function useQuickCreateViewportResizeRevision(requestMeasure: () => void) {
@@ -201,6 +211,12 @@ function readDevicePixelRatio() {
 	return Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0
 		? window.devicePixelRatio
 		: 1
+}
+
+function readActiveSessionId(
+	phase: ReturnType<typeof useQuickCreateSession>['state']['phase'],
+): string | null {
+	return 'sessionId' in phase ? phase.sessionId ?? null : null
 }
 
 function reportQuickCreateLayoutDiagnostics(

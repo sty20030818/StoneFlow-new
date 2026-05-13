@@ -22,7 +22,7 @@ export function QuickCreateSurface({
 			{...props}
 			aria-label='StoneFlow Quick Create'
 			className={cn(
-				'relative z-10 flex w-full flex-col overflow-hidden rounded-xl border bg-background shadow-[0_0_28px_rgb(15_23_42/0.18)]',
+				'relative z-10 flex w-full flex-col overflow-hidden rounded-xl border bg-background shadow-[0_0_28px_rgba(0,0,0,0.35)]',
 				isScrollLocked ? 'max-h-full shrink-0 self-start' : 'shrink-0 self-start',
 				className,
 			)}

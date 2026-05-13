@@ -38,10 +38,6 @@ export type QuickCreateOpenSessionResponse = {
 	recentProjects: QuickCreateInitialState['recentProjects']
 }
 
-export async function prepareSession() {
-	return invoke<QuickCreateOpenSessionResponse>('helper_quick_prepare_session')
-}
-
 export async function getOpenContextSnapshot() {
 	return invoke<QuickCreateInitialState>('helper_quick_get_initial_state')
 }

@@ -181,7 +181,7 @@ pub fn present_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<(), Str
 
     app_handle
         .run_on_main_thread(move || {
-            place_panel_on_active_screen(panel.as_ref());
+            place_panel_on_active_screen(panel.as_ref(), "present");
             log::info!(
                 "helper: Quick Create 弹窗已准备完毕，执行 show_and_make_key（快捷键={}）",
                 crate::window_spec::QUICK_CREATE_SHORTCUT
@@ -217,7 +217,7 @@ pub fn prepare_hidden_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<
     app_handle
         .run_on_main_thread(move || {
             panel.hide();
-            place_panel_on_active_screen(panel.as_ref());
+            place_panel_on_active_screen(panel.as_ref(), "prepare-hidden");
         })
         .map_err(|error| format!("主线程准备 hidden quick create panel 失败: {error}"))
 }
@@ -263,7 +263,7 @@ fn set_panel_shadow(panel: &dyn tauri_nspanel::Panel, enabled: bool) {
 /// 不用 `NSScreen.mainScreen()` 的原因：Helper 虽然是 Accessory，但 Tauri 宿主
 /// 启动的瞬间其 key window 仍指向进程创建时的初始屏幕；多屏切换后 `mainScreen`
 /// 会退化为物理主屏，无法跟随用户视线。遍历所有 NSScreen 找鼠标命中屏才正确。
-fn place_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel) {
+fn place_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel, phase: &str) {
     // SAFETY: 仅在 run_on_main_thread 闭包内调用，已保证处于主线程。
     let mtm = unsafe { objc2::MainThreadMarker::new_unchecked() };
 
@@ -316,7 +316,8 @@ fn place_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel) {
     }
 
     log::info!(
-        "helper: quick create panel 已定位 origin=({x:.0},{y:.0}) size=({:.0}×{:.0})",
+        "helper: quick create panel 已定位 phase={} origin=({x:.0},{y:.0}) size=({:.0}×{:.0})",
+        phase,
         panel_width,
         panel_height,
     );

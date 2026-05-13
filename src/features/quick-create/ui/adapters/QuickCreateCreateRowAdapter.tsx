@@ -2,7 +2,6 @@ import { formatDateLabel, useQuickCreate } from '@/features/quick-create/model/Q
 import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
 import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
 import { RowShell } from '@/shared/ui/row'
-import { cn } from '@/shared/lib/utils'
 
 /**
  * 创建动作行 adapter。
@@ -19,12 +18,7 @@ export function QuickCreateCreateRowAdapter() {
 		<RowShell.Root
 			active={derived.isCreateFocused}
 			aria-label={`创建任务 ${state.draft.title.trim()}`}
-			className={cn(
-				'border-transparent bg-transparent hover:bg-sf-list-row-hover',
-				derived.isCreateFocused
-					? 'border-transparent bg-sf-selection-surface hover:bg-sf-selection-surface-hover'
-					: null,
-			)}
+			className='border-transparent bg-sf-selection-surface hover:bg-sf-selection-surface-hover'
 			interactive
 			onClick={() => void actions.submit('create')}
 			onKeyDown={(event) => {
@@ -43,9 +37,7 @@ export function QuickCreateCreateRowAdapter() {
 
 				<RowShell.Title>
 					<div className='min-w-0'>
-						<div className='truncate text-[12.5px] text-foreground'>
-							{state.draft.title.trim()}
-						</div>
+						<div className='truncate text-[12.5px] text-foreground'>{state.draft.title.trim()}</div>
 						<div className='mt-0.5 truncate text-[11px] text-sf-text-quaternary'>
 							{buildCreateRowMeta({
 								spaceName: derived.spaceName,

@@ -12,7 +12,7 @@ type QuickCreateFrameProps = {
 
 export function QuickCreateFrame({ isVisible, layout }: QuickCreateFrameProps) {
 	return (
-		<div className='relative flex w-full min-h-0 bg-transparent p-9'>
+		<div className='relative flex w-full min-h-0 bg-transparent p-7'>
 			<QuickCreateSurface
 				className={`w-full transition-opacity duration-150 ${
 					isVisible ? 'opacity-100' : 'pointer-events-none opacity-0'

@@ -2,6 +2,7 @@ import { ListTodoIcon } from 'lucide-react'
 
 import { BoardCollapsibleSection } from '@/shared/ui/board'
 import { entityBoardMutedIconClass } from '@/shared/ui/patterns/entity-board'
+import { quickCreateBoardCollapsibleClass } from '@/shared/ui/patterns/quick-create'
 
 import type { QuickCreateTaskItem } from '@/features/quick-create/model/types'
 import { QuickCreateTaskResultRowAdapter } from '@/features/quick-create/ui/adapters/QuickCreateTaskResultRowAdapter'
@@ -35,7 +36,7 @@ export function QuickCreateTaskResultsSection({
 
 	return (
 		<BoardCollapsibleSection
-			className='last:pb-0'
+			className={quickCreateBoardCollapsibleClass}
 			count={items.length}
 			getItemId={(_child, index) => items[index]?.id}
 			icon={

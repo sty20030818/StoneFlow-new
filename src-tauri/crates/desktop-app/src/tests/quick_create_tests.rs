@@ -11,7 +11,10 @@ use uuid::Uuid;
 
 use crate::{
     app::state::{ActiveScopeKind, ActiveScopeSnapshot},
-    application::services::{QuickCreateService, QuickResolvedPlacement},
+    application::services::{
+        QuickCreateOpenContextService, QuickCreateService, QuickCreateSessionBridge,
+        QuickResolvedPlacement,
+    },
     infrastructure::{
         database::bootstrap_database,
         repositories::{
@@ -27,7 +30,7 @@ async fn quick_create_initial_state_should_use_space_scope_and_trim_recent_lists
     let database = bootstrap_database(temp_dir.path())
         .await
         .expect("database bootstrap should succeed");
-    let service = build_quick_create_service(&database);
+    let service = build_quick_create_session_bridge(&database);
     let default_space = default_space(&database).await;
 
     for index in 0..4 {
@@ -73,7 +76,7 @@ async fn quick_create_initial_state_should_use_space_scope_and_trim_recent_lists
     }
 
     let state = service
-        .get_initial_state(Some(ActiveScopeSnapshot {
+        .prepare_initial_state(Some(ActiveScopeSnapshot {
             id: Uuid::new_v4(),
             kind: ActiveScopeKind::Space,
             space_id: Some(Uuid::parse_str(&default_space.id).expect("space id should be uuid")),
@@ -103,7 +106,7 @@ async fn quick_create_initial_state_should_keep_all_scope_and_default_space() {
     let database = bootstrap_database(temp_dir.path())
         .await
         .expect("database bootstrap should succeed");
-    let service = build_quick_create_service(&database);
+    let service = build_quick_create_session_bridge(&database);
     let default_space = default_space(&database).await;
 
     insert_space(
@@ -122,7 +125,7 @@ async fn quick_create_initial_state_should_keep_all_scope_and_default_space() {
     .await;
 
     let state = service
-        .get_initial_state(Some(ActiveScopeSnapshot {
+        .prepare_initial_state(Some(ActiveScopeSnapshot {
             id: Uuid::new_v4(),
             kind: ActiveScopeKind::All,
             space_id: None,
@@ -368,6 +371,28 @@ fn build_quick_create_service(
         TaskRepository::new(connection.clone()),
         ActivityRepository::new(connection),
     )
+}
+
+fn build_quick_create_session_bridge(
+    database: &crate::infrastructure::database::DatabaseRuntimeState,
+) -> QuickCreateSessionBridge {
+    let connection = database.connection().clone();
+    let space_repository = SpaceRepository::new(connection.clone());
+    let project_repository = ProjectRepository::new(connection.clone());
+    let task_repository = TaskRepository::new(connection.clone());
+    let quick_create_service = QuickCreateService::new(
+        space_repository.clone(),
+        project_repository.clone(),
+        task_repository.clone(),
+        ActivityRepository::new(connection),
+    );
+
+    QuickCreateSessionBridge::new(QuickCreateOpenContextService::new(
+        quick_create_service,
+        space_repository,
+        project_repository,
+        task_repository,
+    ))
 }
 
 async fn default_space(
