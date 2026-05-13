@@ -139,10 +139,7 @@ export type QuickCreateSubmitAction =
 export type QuickCreateSubmitState = 'idle' | 'submitting' | 'success' | 'error'
 
 export type QuickCreatePanelState = {
-	isBootstrapping: boolean
-	isPresentationPending: boolean
 	initialState: QuickCreateInitialState | null
-	layoutVersion: number
 	draft: QuickCreateDraft
 	projectOptions: QuickCreateProjectOption[]
 	projectSearch: string

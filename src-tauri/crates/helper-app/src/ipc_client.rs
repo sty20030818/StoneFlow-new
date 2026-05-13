@@ -19,7 +19,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::time::timeout;
 
 pub async fn ping() -> Result<u16, IpcError> {
-    match round_trip(IpcRequest::Ping).await? {
+    match round_trip_with_policy(IpcRequest::Ping, RetryPolicy::startup_probe("Ping")).await? {
         IpcResponse::Pong { protocol_version } => Ok(protocol_version),
         IpcResponse::Error(error) => Err(error),
         other => Err(IpcError::Internal(format!(
@@ -29,7 +29,12 @@ pub async fn ping() -> Result<u16, IpcError> {
 }
 
 pub async fn quick_get_initial_state() -> Result<QuickInitialStatePayload, IpcError> {
-    match round_trip(IpcRequest::QuickGetInitialState).await? {
+    match round_trip_with_policy(
+        IpcRequest::QuickGetInitialState,
+        RetryPolicy::startup_probe("QuickGetInitialState"),
+    )
+    .await?
+    {
         IpcResponse::QuickInitialState(payload) => Ok(payload),
         IpcResponse::Error(error) => Err(error),
         other => Err(IpcError::Internal(format!(
@@ -41,7 +46,12 @@ pub async fn quick_get_initial_state() -> Result<QuickInitialStatePayload, IpcEr
 pub async fn quick_list_projects_by_space(
     payload: QuickListProjectsBySpacePayload,
 ) -> Result<QuickProjectsBySpaceResponsePayload, IpcError> {
-    match round_trip(IpcRequest::QuickListProjectsBySpace(payload)).await? {
+    match round_trip_with_policy(
+        IpcRequest::QuickListProjectsBySpace(payload),
+        RetryPolicy::single_attempt("QuickListProjectsBySpace"),
+    )
+    .await?
+    {
         IpcResponse::QuickProjectsBySpace(payload) => Ok(payload),
         IpcResponse::Error(error) => Err(error),
         other => Err(IpcError::Internal(format!(
@@ -53,7 +63,12 @@ pub async fn quick_list_projects_by_space(
 pub async fn quick_search(
     payload: QuickSearchPayload,
 ) -> Result<QuickSearchResponsePayload, IpcError> {
-    match round_trip(IpcRequest::QuickSearch(payload)).await? {
+    match round_trip_with_policy(
+        IpcRequest::QuickSearch(payload),
+        RetryPolicy::single_attempt("QuickSearch"),
+    )
+    .await?
+    {
         IpcResponse::QuickSearch(payload) => Ok(payload),
         IpcResponse::Error(error) => Err(error),
         other => Err(IpcError::Internal(format!(
@@ -63,7 +78,12 @@ pub async fn quick_search(
 }
 
 pub async fn quick_create(payload: QuickCreatePayload) -> Result<(), IpcError> {
-    match round_trip(IpcRequest::QuickCreate(payload)).await? {
+    match round_trip_with_policy(
+        IpcRequest::QuickCreate(payload),
+        RetryPolicy::single_attempt("QuickCreate"),
+    )
+    .await?
+    {
         IpcResponse::QuickCreated(_) => Ok(()),
         IpcResponse::Error(error) => Err(error),
         other => Err(IpcError::Internal(format!(
@@ -73,7 +93,12 @@ pub async fn quick_create(payload: QuickCreatePayload) -> Result<(), IpcError> {
 }
 
 pub async fn quick_create_and_open(payload: QuickCreatePayload) -> Result<(), IpcError> {
-    match round_trip(IpcRequest::QuickCreateAndOpen(payload)).await? {
+    match round_trip_with_policy(
+        IpcRequest::QuickCreateAndOpen(payload),
+        RetryPolicy::single_attempt("QuickCreateAndOpen"),
+    )
+    .await?
+    {
         IpcResponse::QuickCreated(_) => Ok(()),
         IpcResponse::Error(error) => Err(error),
         other => Err(IpcError::Internal(format!(
@@ -83,7 +108,12 @@ pub async fn quick_create_and_open(payload: QuickCreatePayload) -> Result<(), Ip
 }
 
 pub async fn quick_open_target(payload: QuickOpenTargetPayload) -> Result<(), IpcError> {
-    match round_trip(IpcRequest::QuickOpenTarget(payload)).await? {
+    match round_trip_with_policy(
+        IpcRequest::QuickOpenTarget(payload),
+        RetryPolicy::single_attempt("QuickOpenTarget"),
+    )
+    .await?
+    {
         IpcResponse::Opened => Ok(()),
         IpcResponse::Error(error) => Err(error),
         other => Err(IpcError::Internal(format!(
@@ -92,22 +122,59 @@ pub async fn quick_open_target(payload: QuickOpenTargetPayload) -> Result<(), Ip
     }
 }
 
-const IPC_MAX_RETRIES: u32 = 2;
-const IPC_RETRY_DELAY_MS: u64 = 100;
+const STARTUP_RETRY_ATTEMPTS: u32 = 3;
+const STARTUP_RETRY_DELAY_MS: u64 = 120;
 
-async fn round_trip(request: IpcRequest) -> Result<IpcResponse, IpcError> {
+#[derive(Debug, Clone, Copy)]
+struct RetryPolicy {
+    operation: &'static str,
+    max_attempts: u32,
+    retry_delay: Duration,
+}
+
+impl RetryPolicy {
+    fn startup_probe(operation: &'static str) -> Self {
+        Self {
+            operation,
+            max_attempts: STARTUP_RETRY_ATTEMPTS,
+            retry_delay: Duration::from_millis(STARTUP_RETRY_DELAY_MS),
+        }
+    }
+
+    fn single_attempt(operation: &'static str) -> Self {
+        Self {
+            operation,
+            max_attempts: 1,
+            retry_delay: Duration::from_millis(0),
+        }
+    }
+}
+
+async fn round_trip_with_policy(
+    request: IpcRequest,
+    policy: RetryPolicy,
+) -> Result<IpcResponse, IpcError> {
     let mut last_error = None;
 
-    for attempt in 0..=IPC_MAX_RETRIES {
-        if attempt > 0 {
-            tokio::time::sleep(Duration::from_millis(IPC_RETRY_DELAY_MS)).await;
-            log::debug!("helper: IPC 重试第 {attempt} 次");
+    for attempt in 1..=policy.max_attempts {
+        if attempt > 1 {
+            tokio::time::sleep(policy.retry_delay).await;
+            log::debug!(
+                "helper: {} 第 {} 次重试（共 {} 次）",
+                policy.operation,
+                attempt - 1,
+                policy.max_attempts - 1
+            );
         }
 
         match try_round_trip(&request).await {
             Ok(response) => return Ok(response),
             Err(error) => {
-                log::debug!("helper: IPC 请求失败 (attempt {attempt}): {error}");
+                log::debug!(
+                    "helper: {} 请求失败 (attempt {attempt}/{}): {error}",
+                    policy.operation,
+                    policy.max_attempts
+                );
                 last_error = Some(error);
             }
         }
@@ -194,9 +261,11 @@ async fn connect_with_timeout(socket: &SocketName) -> Result<Stream, IpcError> {
     .await
     {
         Ok(Ok(stream)) => Ok(stream),
-        Ok(Err(error)) => Err(IpcError::Internal(format!("connect main app: {error}"))),
+        Ok(Err(error)) => Err(IpcError::Internal(format!(
+            "connect main app socket failed: {error}"
+        ))),
         Err(_) => Err(IpcError::Internal(format!(
-            "connect main app timed out after {DEFAULT_CONNECT_TIMEOUT_MS} ms"
+            "connect main app socket timed out after {DEFAULT_CONNECT_TIMEOUT_MS} ms"
         ))),
     }
 }

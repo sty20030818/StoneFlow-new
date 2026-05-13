@@ -7,6 +7,7 @@ import {
 } from '@/features/quick-create/api/quickCreate'
 import { useQuickCreateLayout } from '@/features/quick-create/layout/useQuickCreateLayout'
 import { useQuickCreate } from '@/features/quick-create/model/QuickCreateProvider'
+import { useQuickCreateSession } from '@/features/quick-create/runtime/useQuickCreateSession'
 import { QuickCreateFrame } from '@/features/quick-create/ui/QuickCreateFrame'
 
 const QUICK_CREATE_MIN_WINDOW_HEIGHT = 364
@@ -20,24 +21,25 @@ type LastAppliedResize = {
 
 export function QuickCreateWindowShell() {
 	const { derived, state } = useQuickCreate()
-	const layout = useQuickCreateLayout(state.layoutVersion)
+	const { state: sessionState } = useQuickCreateSession()
+	const layout = useQuickCreateLayout(sessionState.layoutVersion)
 	const [isWindowReady, setWindowReady] = useState(false)
 	const viewportResizeRevision = useQuickCreateViewportResizeRevision(layout.requestMeasure)
 	const lastAppliedResizeRef = useRef<LastAppliedResize | null>(null)
 	const presentationSentRef = useRef(false)
-	const lastLayoutVersionRef = useRef<number>(state.layoutVersion)
+	const lastLayoutVersionRef = useRef<number>(sessionState.layoutVersion)
 
 	useLayoutEffect(() => {
-		if (lastLayoutVersionRef.current !== state.layoutVersion) {
-			lastLayoutVersionRef.current = state.layoutVersion
+		if (lastLayoutVersionRef.current !== sessionState.layoutVersion) {
+			lastLayoutVersionRef.current = sessionState.layoutVersion
 			lastAppliedResizeRef.current = null
 			presentationSentRef.current = false
 			setWindowReady(false)
 		}
-	}, [state.layoutVersion])
+	}, [sessionState.layoutVersion])
 
 	useEffect(() => {
-		if (state.isBootstrapping || !layout.isReady || layout.targetHeight === null) {
+		if (sessionState.isBootstrapping || !layout.isReady || layout.targetHeight === null) {
 			return
 		}
 
@@ -82,32 +84,33 @@ export function QuickCreateWindowShell() {
 		derived.displayTasks.length,
 		derived.isSearchEmpty,
 		derived.isShowingRecent,
+		layout,
 		layout.isReady,
 		layout.targetHeight,
 		state.draft.title,
 		state.isAdvancedOpen,
-		state.isBootstrapping,
-		state.layoutVersion,
+		sessionState.isBootstrapping,
+		sessionState.layoutVersion,
 		viewportResizeRevision,
 	])
 
 	useEffect(() => {
 		if (
-			!state.isPresentationPending ||
+			!sessionState.isPresentationPending ||
 			!isWindowReady ||
 			presentationSentRef.current ||
-			state.isBootstrapping
+			sessionState.isBootstrapping
 		) {
 			return
 		}
 
 		presentationSentRef.current = true
 		void presentWindow().catch(() => {
-				presentationSentRef.current = false
-			})
-	}, [isWindowReady, state.isBootstrapping, state.isPresentationPending])
+			presentationSentRef.current = false
+		})
+	}, [isWindowReady, sessionState.isBootstrapping, sessionState.isPresentationPending])
 
-	if (state.isBootstrapping) {
+	if (sessionState.isBootstrapping) {
 		return <div className='flex h-full min-h-0 flex-1 bg-transparent' />
 	}
 

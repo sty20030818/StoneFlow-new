@@ -3,6 +3,7 @@ import { useEffect, useState, type RefCallback } from 'react'
 import { SearchIcon } from 'lucide-react'
 
 import { useQuickCreate } from '@/features/quick-create/model/QuickCreateProvider'
+import { useQuickCreateSession } from '@/features/quick-create/runtime/useQuickCreateSession'
 import type {
 	QuickCreateProjectItem,
 	QuickCreateTaskItem,
@@ -27,6 +28,7 @@ export function QuickCreateBoardRegion({
 	taskBoardRef,
 }: QuickCreateBoardRegionProps) {
 	const { actions, derived, state } = useQuickCreate()
+	const { state: sessionState } = useQuickCreateSession()
 	const [taskSectionOpen, setTaskSectionOpen] = useState(true)
 	const [projectSectionOpen, setProjectSectionOpen] = useState(true)
 
@@ -50,7 +52,7 @@ export function QuickCreateBoardRegion({
 		showRecentEmpty,
 		showSearchingEmpty,
 		showTaskBoard,
-		state.layoutVersion,
+		sessionState.layoutVersion,
 		taskSectionOpen,
 	])
 

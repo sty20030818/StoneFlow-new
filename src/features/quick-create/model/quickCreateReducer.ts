@@ -24,10 +24,7 @@ const defaultDraft: QuickCreateDraft = {
 
 export function createQuickCreateInitialState(): QuickCreatePanelState {
 	return {
-		isBootstrapping: true,
-		isPresentationPending: false,
 		initialState: null,
-		layoutVersion: 0,
 		draft: defaultDraft,
 		projectOptions: [],
 		projectSearch: '',
@@ -46,12 +43,9 @@ export function createQuickCreateInitialState(): QuickCreatePanelState {
 }
 
 type QuickCreateAction =
-	| { type: 'bootstrapStarted' }
 	| { type: 'bootstrapSucceeded'; payload: QuickCreateInitialState }
 	| { type: 'panelShownRefreshed'; payload: QuickCreateInitialState }
 	| { type: 'recentRefreshed'; payload: QuickCreateInitialState }
-	| { type: 'presentationRequested' }
-	| { type: 'presentationCompleted' }
 	| { type: 'bootstrapFailed'; message: string }
 	| { type: 'titleChanged'; title: string }
 	| { type: 'priorityChanged'; priority: QuickCreatePriority }
@@ -82,19 +76,10 @@ export function quickCreateReducer(
 	action: QuickCreateAction,
 ): QuickCreatePanelState {
 	switch (action.type) {
-		case 'bootstrapStarted':
-			return {
-				...createQuickCreateInitialState(),
-				isBootstrapping: true,
-				isPresentationPending: state.isPresentationPending,
-			}
 		case 'bootstrapSucceeded':
 			return {
 				...state,
-				isBootstrapping: false,
-				isPresentationPending: state.isPresentationPending,
 				initialState: action.payload,
-				layoutVersion: state.layoutVersion + 1,
 				draft: {
 					...state.draft,
 					title: '',
@@ -123,7 +108,6 @@ export function quickCreateReducer(
 		case 'bootstrapFailed':
 			return {
 				...state,
-				isBootstrapping: false,
 				submitState: 'error',
 				message: action.message,
 				errorMessage: action.message,
@@ -140,7 +124,6 @@ export function quickCreateReducer(
 			return {
 				...state,
 				initialState: action.payload,
-				layoutVersion: state.layoutVersion + 1,
 				draft: shouldAdoptFreshDefaults
 					? {
 							...state.draft,
@@ -151,16 +134,6 @@ export function quickCreateReducer(
 				projectOptions: shouldAdoptFreshDefaults ? action.payload.projects : state.projectOptions,
 			}
 		}
-		case 'presentationRequested':
-			return {
-				...state,
-				isPresentationPending: true,
-			}
-		case 'presentationCompleted':
-			return {
-				...state,
-				isPresentationPending: false,
-			}
 		case 'recentRefreshed':
 			return {
 				...state,

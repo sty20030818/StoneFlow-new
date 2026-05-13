@@ -3,7 +3,6 @@ import {
 	startTransition,
 	useCallback,
 	useContext,
-	useDeferredValue,
 	useEffect,
 	useMemo,
 	useReducer,
@@ -13,17 +12,13 @@ import {
 	type RefObject,
 } from 'react'
 import { flushSync } from 'react-dom'
-import { listen } from '@tauri-apps/api/event'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { addDays, endOfWeek, format } from 'date-fns'
 
 import {
 	create,
 	createAndOpen,
-	getInitialState,
 	listProjectsBySpace,
-	notifyFrontendReady,
-	notifyFrontendUnready,
 	openTarget,
 	search,
 	type QuickCreateInput,
@@ -45,11 +40,9 @@ import type {
 	QuickCreateSubmitAction,
 	QuickCreateTaskItem,
 } from '@/features/quick-create/model/types'
+import { useQuickCreateSession } from '@/features/quick-create/runtime/useQuickCreateSession'
 import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
 import { formatTaskPlacementLabel } from '@/features/task/model/taskPlacement'
-
-const QUICK_CREATE_PREPARE_EVENT = 'quick-create:prepare'
-const QUICK_CREATE_PRESENTED_EVENT = 'quick-create:presented'
 const SEARCH_DEBOUNCE_MS = 120
 const PANEL_CLOSE_DELAY_MS = 220
 const QUICK_CREATE_MAX_ROWS_PER_BOARD = 3
@@ -101,6 +94,7 @@ type QuickCreateContextValue = {
 const QuickCreateContext = createContext<QuickCreateContextValue | null>(null)
 
 export function QuickCreateProvider({ children }: PropsWithChildren) {
+	const { actions: sessionActions, state: sessionState } = useQuickCreateSession()
 	const [state, dispatch] = useReducer(quickCreateReducer, undefined, createQuickCreateInitialState)
 	const titleInputRef = useRef<HTMLInputElement>(null)
 	const projectSearchRef = useRef<HTMLInputElement>(null)
@@ -108,9 +102,6 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 	const focusFrameRefs = useRef<number[]>([])
 	const projectFocusFrameRef = useRef<number | null>(null)
 	const searchRequestIdRef = useRef(0)
-	const bootstrapRequestIdRef = useRef(0)
-	const initialStateRef = useRef<QuickCreatePanelState['initialState']>(null)
-	const deferredTitle = useDeferredValue(state.draft.title)
 
 	const focusInput = useCallback(() => {
 		const frameA = window.requestAnimationFrame(() => {
@@ -165,35 +156,10 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 		}
 	}, [])
 
-	const resetPanelRef = useRef<() => Promise<void>>(() => Promise.resolve())
-	resetPanelRef.current = () => {
-		const requestId = ++bootstrapRequestIdRef.current
-		dispatch({ type: 'bootstrapStarted' })
-
-		return getInitialState()
-			.then((initialState) => {
-				if (requestId !== bootstrapRequestIdRef.current) {
-					return
-				}
-
-				flushSync(() => {
-					dispatch({ type: 'bootstrapSucceeded', payload: initialState })
-				})
-			})
-			.catch((error) => {
-				if (requestId !== bootstrapRequestIdRef.current) {
-					return
-				}
-				dispatch({
-					type: 'bootstrapFailed',
-					message: error instanceof Error ? error.message : 'Quick Create 初始化失败',
-				})
-			})
-	}
-
 	const refreshRecentRef = useRef<() => void>(() => {})
 	refreshRecentRef.current = () => {
-		void getInitialState()
+		void sessionActions
+			.fetchSnapshot()
 			.then((initialState) => {
 				startTransition(() => {
 					dispatch({ type: 'recentRefreshed', payload: initialState })
@@ -204,96 +170,8 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			})
 	}
 
-	const refreshShownStateRef = useRef<() => Promise<void>>(() => Promise.resolve())
-	refreshShownStateRef.current = () => {
-		const requestId = ++bootstrapRequestIdRef.current
-
-		return getInitialState()
-			.then((initialState) => {
-				if (requestId !== bootstrapRequestIdRef.current) {
-					return
-				}
-
-				flushSync(() => {
-					dispatch({ type: 'panelShownRefreshed', payload: initialState })
-				})
-			})
-			.catch((error) => {
-				logRefreshRecentError(error)
-			})
-	}
-
 	useEffect(() => {
-		initialStateRef.current = state.initialState
-	}, [state.initialState])
-
-	useEffect(() => {
-		resetPanelRef.current()
-
-		let disposed = false
-		let unlisten: (() => void) | undefined
-		const prepareListener = listen<void>(QUICK_CREATE_PREPARE_EVENT, () => {
-			void (async () => {
-				try {
-					if (!initialStateRef.current) {
-						await resetPanelRef.current()
-					} else {
-						await refreshShownStateRef.current()
-					}
-
-					if (!disposed) {
-						dispatch({ type: 'presentationRequested' })
-					}
-				} catch (error) {
-					logRefreshRecentError(error)
-				}
-			})()
-		})
-		prepareListener.then((dispose) => {
-			if (disposed) {
-				dispose()
-				return
-			}
-			unlisten = dispose
-		}).catch((error) => {
-			logRefreshRecentError(error)
-		})
-
-		let unlistenPresented: (() => void) | undefined
-		const presentedListener = listen<void>(QUICK_CREATE_PRESENTED_EVENT, () => {
-			dispatch({ type: 'presentationCompleted' })
-			focusInput()
-		})
-		presentedListener.then((dispose) => {
-			if (disposed) {
-				dispose()
-				return
-			}
-			unlistenPresented = dispose
-		}).catch((error) => {
-			logRefreshRecentError(error)
-		})
-
-		Promise.all([prepareListener, presentedListener])
-			.then(() => {
-				if (disposed) {
-					return
-				}
-				void notifyFrontendReady().catch(() => {
-					// helper 不可用或预览环境下允许静默失败。
-				})
-			})
-			.catch(() => {
-				// 单个 listener 已分别记录失败原因。
-			})
-
 		return () => {
-			disposed = true
-			unlisten?.()
-			unlistenPresented?.()
-			void notifyFrontendUnready().catch(() => {
-				// helper 不可用或预览环境下允许静默失败。
-			})
 			if (closeTimerRef.current !== null) {
 				window.clearTimeout(closeTimerRef.current)
 			}
@@ -307,6 +185,32 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 			}
 		}
 	}, [])
+
+	useEffect(() => {
+		if (!sessionState.initialState) {
+			return
+		}
+
+		const hadInitialState = state.initialState !== null
+		if (!hadInitialState) {
+			flushSync(() => {
+				dispatch({ type: 'bootstrapSucceeded', payload: sessionState.initialState! })
+			})
+			return
+		}
+
+		flushSync(() => {
+			dispatch({ type: 'panelShownRefreshed', payload: sessionState.initialState! })
+		})
+	}, [sessionState.initialState, state.initialState])
+
+	useEffect(() => {
+		if (!sessionState.isPresentationPending) {
+			return
+		}
+
+		focusInput()
+	}, [focusInput, sessionState.isPresentationPending])
 
 	useEffect(() => {
 		if (!state.initialState) {
@@ -335,7 +239,7 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 	}, [])
 
 	useEffect(() => {
-		const query = deferredTitle.trim()
+		const query = state.draft.title.trim()
 		if (!query) {
 			dispatch({ type: 'searchCleared' })
 			return
@@ -369,7 +273,7 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 		return () => {
 			window.clearTimeout(timerId)
 		}
-	}, [deferredTitle])
+	}, [state.draft.title])
 
 	useEffect(() => {
 		if (state.activePopover === 'project') {
