@@ -25,7 +25,7 @@
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, Wry};
 use tauri_nspanel::{CollectionBehavior, ManagerExt, StyleMask, WebviewWindowExt};
 
-use crate::QuickCreateFrontendState;
+use crate::runtime::QuickPopupRuntimeState;
 use crate::window_spec::{QUICK_CREATE_LABEL, QUICK_CREATE_TITLE, QUICK_CREATE_URL};
 use crate::window_spec::{
     QUICK_CREATE_SCREEN_TOP_OFFSET_RATIO, QUICK_CREATE_WINDOW_HEIGHT, QUICK_CREATE_WINDOW_WIDTH,
@@ -113,6 +113,14 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
 
     let app_for_prepare = app_handle.clone();
     handler.window_did_become_key(move |_notification| {
+        if let Some(runtime) = app_for_prepare.try_state::<QuickPopupRuntimeState>() {
+            let runtime = runtime.inner().clone();
+            tauri::async_runtime::spawn(async move {
+                if let Err(error) = runtime.mark_visible().await {
+                    log::warn!("helper: quick create 标记 visible 失败: {error}");
+                }
+            });
+        }
         log::debug!("helper: windowDidBecomeKey → emit quick-create:presented");
         if let Some(window) = app_for_prepare.get_webview_window(QUICK_CREATE_LABEL) {
             if let Err(error) = window.emit("quick-create:presented", ()) {
@@ -129,6 +137,12 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
             log::debug!("helper: windowDidResignKey → hide panel");
             panel.hide();
         }
+        if let Some(runtime) = app_for_hide.try_state::<QuickPopupRuntimeState>() {
+            let runtime = runtime.inner().clone();
+            tauri::async_runtime::spawn(async move {
+                runtime.finish_close().await;
+            });
+        }
     });
 
     panel.set_event_handler(Some(handler.as_ref()));
@@ -139,51 +153,6 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
 /// Toggle 面板：可见则隐藏，否则只触发前端准备流程，等待 resize 完成后再真正显示。
 ///
 /// 所有 AppKit 操作通过 `run_on_main_thread` 派发，符合线程安全要求。
-pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
-    let panel = match app_handle.get_webview_panel(QUICK_CREATE_LABEL) {
-        Ok(p) => p,
-        Err(_) => {
-            log::error!("helper: Option+Space 触发，但 panel 未初始化");
-            return;
-        }
-    };
-    let Some(emit_window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
-        log::error!("helper: Option+Space 触发，但 quick create window 未初始化");
-        return;
-    };
-    let frontend_ready = app_handle
-        .try_state::<QuickCreateFrontendState>()
-        .map(|state| state.is_listener_ready())
-        .unwrap_or(false);
-
-    let dispatch_result = app_handle.run_on_main_thread(move || {
-        let visible = panel.is_visible();
-        log::debug!("helper: Option+Space 触发 → panel.is_visible()={visible}");
-
-        if visible {
-            // 直接 hide 即可——panel 的 resignKey delegate 回调还会再兜底一次，幂等。
-            log::debug!("helper: 隐藏面板");
-            panel.hide();
-        } else {
-            if frontend_ready {
-                log::debug!("helper: emit quick-create:prepare（保持隐藏态）");
-                if let Err(error) = emit_window.emit("quick-create:prepare", ()) {
-                    log::warn!("helper: quick-create:prepare 事件发送失败: {error}");
-                }
-                return;
-            }
-
-            log::warn!("helper: quick create 前端监听器未就绪，回退为直接 show_and_make_key");
-            place_panel_on_active_screen(panel.as_ref());
-            panel.show_and_make_key();
-        }
-    });
-
-    if let Err(error) = dispatch_result {
-        log::warn!("helper: 主线程派发失败: {error}");
-    }
-}
-
 /// 真正呈现面板：先定位到当前屏，再执行 show_and_make_key。
 pub fn present_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<(), String> {
     let panel = app_handle
@@ -200,6 +169,37 @@ pub fn present_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<(), Str
             panel.show_and_make_key();
         })
         .map_err(|error| format!("主线程显示 quick create panel 失败: {error}"))
+}
+
+pub fn is_quick_create_panel_visible(app_handle: &AppHandle<Wry>) -> Result<bool, String> {
+    let panel = app_handle
+        .get_webview_panel(QUICK_CREATE_LABEL)
+        .map_err(|error| format!("获取 quick create panel 失败: {error:?}"))?;
+    Ok(panel.is_visible())
+}
+
+pub fn hide_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<(), String> {
+    let panel = app_handle
+        .get_webview_panel(QUICK_CREATE_LABEL)
+        .map_err(|error| format!("获取 quick create panel 失败: {error:?}"))?;
+    app_handle
+        .run_on_main_thread(move || {
+            panel.hide();
+        })
+        .map_err(|error| format!("主线程隐藏 quick create panel 失败: {error}"))
+}
+
+pub fn prepare_hidden_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<(), String> {
+    let panel = app_handle
+        .get_webview_panel(QUICK_CREATE_LABEL)
+        .map_err(|error| format!("获取 quick create panel 失败: {error:?}"))?;
+
+    app_handle
+        .run_on_main_thread(move || {
+            panel.hide();
+            place_panel_on_active_screen(panel.as_ref());
+        })
+        .map_err(|error| format!("主线程准备 hidden quick create panel 失败: {error}"))
 }
 
 /// macOS 下调整 Quick Create 高度时，保持窗口顶部边界不变。

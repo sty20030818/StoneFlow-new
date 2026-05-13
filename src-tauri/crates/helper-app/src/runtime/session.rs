@@ -1,0 +1,237 @@
+use std::sync::Arc;
+
+use chrono::{DateTime, Utc};
+use tokio::sync::RwLock;
+use uuid::Uuid;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QuickPopupPhase {
+    Idle,
+    Preparing,
+    WaitingLayout,
+    Presenting,
+    Visible,
+    Closing,
+    Error,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QuickPopupOpenReason {
+    GlobalShortcut,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuickPopupSession {
+    pub session_id: String,
+    pub opened_at: DateTime<Utc>,
+    pub trigger: QuickPopupOpenReason,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuickPopupRuntimeSnapshot {
+    pub frontend_ready: bool,
+    pub phase: QuickPopupPhase,
+    pub current_session: Option<QuickPopupSession>,
+}
+
+impl Default for QuickPopupRuntimeSnapshot {
+    fn default() -> Self {
+        Self {
+            frontend_ready: false,
+            phase: QuickPopupPhase::Idle,
+            current_session: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct QuickPopupRuntimeState {
+    inner: Arc<RwLock<QuickPopupRuntimeSnapshot>>,
+}
+
+impl QuickPopupRuntimeState {
+    pub async fn snapshot(&self) -> QuickPopupRuntimeSnapshot {
+        self.inner.read().await.clone()
+    }
+
+    pub async fn is_frontend_ready(&self) -> bool {
+        self.inner.read().await.frontend_ready
+    }
+
+    pub async fn mark_frontend_ready(&self) {
+        let mut guard = self.inner.write().await;
+        guard.frontend_ready = true;
+    }
+
+    pub async fn mark_frontend_unready(&self) {
+        let mut guard = self.inner.write().await;
+        guard.frontend_ready = false;
+    }
+
+    pub async fn begin_open(
+        &self,
+        trigger: QuickPopupOpenReason,
+    ) -> Result<QuickPopupSession, &'static str> {
+        let mut guard = self.inner.write().await;
+        if guard.phase != QuickPopupPhase::Idle {
+            return Err("popup runtime is not idle");
+        }
+
+        let session = QuickPopupSession {
+            session_id: Uuid::now_v7().to_string(),
+            opened_at: Utc::now(),
+            trigger,
+        };
+        guard.phase = QuickPopupPhase::Preparing;
+        guard.current_session = Some(session.clone());
+        Ok(session)
+    }
+
+    pub async fn begin_close(&self) -> Result<Option<QuickPopupSession>, &'static str> {
+        let mut guard = self.inner.write().await;
+        match guard.phase {
+            QuickPopupPhase::Visible => {
+                guard.phase = QuickPopupPhase::Closing;
+                Ok(guard.current_session.clone())
+            }
+            QuickPopupPhase::Idle => Ok(None),
+            _ => Err("popup runtime cannot close from current phase"),
+        }
+    }
+
+    pub async fn mark_waiting_layout(&self) -> Result<QuickPopupSession, &'static str> {
+        let mut guard = self.inner.write().await;
+        if guard.phase != QuickPopupPhase::Preparing {
+            return Err("popup runtime cannot wait for layout from current phase");
+        }
+        let Some(session) = guard.current_session.clone() else {
+            return Err("popup runtime missing current session");
+        };
+        guard.phase = QuickPopupPhase::WaitingLayout;
+        Ok(session)
+    }
+
+    pub async fn mark_presenting(&self) -> Result<QuickPopupSession, &'static str> {
+        let mut guard = self.inner.write().await;
+        if guard.phase != QuickPopupPhase::WaitingLayout {
+            return Err("popup runtime cannot present from current phase");
+        }
+        let Some(session) = guard.current_session.clone() else {
+            return Err("popup runtime missing current session");
+        };
+        guard.phase = QuickPopupPhase::Presenting;
+        Ok(session)
+    }
+
+    pub async fn mark_visible(&self) -> Result<QuickPopupSession, &'static str> {
+        let mut guard = self.inner.write().await;
+        if guard.phase != QuickPopupPhase::Presenting {
+            return Err("popup runtime cannot become visible from current phase");
+        }
+        let Some(session) = guard.current_session.clone() else {
+            return Err("popup runtime missing current session");
+        };
+        guard.phase = QuickPopupPhase::Visible;
+        Ok(session)
+    }
+
+    pub async fn finish_close(&self) {
+        let mut guard = self.inner.write().await;
+        guard.phase = QuickPopupPhase::Idle;
+        guard.current_session = None;
+    }
+
+    pub async fn mark_error(&self) {
+        let mut guard = self.inner.write().await;
+        guard.phase = QuickPopupPhase::Error;
+    }
+
+    pub async fn reset_to_idle(&self) {
+        let mut guard = self.inner.write().await;
+        guard.phase = QuickPopupPhase::Idle;
+        guard.current_session = None;
+    }
+
+    pub async fn active_session_id(&self) -> Option<String> {
+        self.inner
+            .read()
+            .await
+            .current_session
+            .as_ref()
+            .map(|session| session.session_id.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn runtime_should_start_idle() {
+        let runtime = QuickPopupRuntimeState::default();
+        let snapshot = runtime.snapshot().await;
+        assert_eq!(snapshot.phase, QuickPopupPhase::Idle);
+        assert!(!snapshot.frontend_ready);
+        assert!(snapshot.current_session.is_none());
+    }
+
+    #[tokio::test]
+    async fn runtime_should_toggle_frontend_ready() {
+        let runtime = QuickPopupRuntimeState::default();
+        runtime.mark_frontend_ready().await;
+        assert!(runtime.is_frontend_ready().await);
+        runtime.mark_frontend_unready().await;
+        assert!(!runtime.is_frontend_ready().await);
+    }
+
+    #[tokio::test]
+    async fn runtime_should_allow_happy_path_transitions() {
+        let runtime = QuickPopupRuntimeState::default();
+        runtime
+            .begin_open(QuickPopupOpenReason::GlobalShortcut)
+            .await
+            .expect("open should succeed");
+        runtime
+            .mark_waiting_layout()
+            .await
+            .expect("waiting layout should succeed");
+        runtime
+            .mark_presenting()
+            .await
+            .expect("presenting should succeed");
+        runtime
+            .mark_visible()
+            .await
+            .expect("visible should succeed");
+        runtime.begin_close().await.expect("close should succeed");
+        runtime.finish_close().await;
+
+        let snapshot = runtime.snapshot().await;
+        assert_eq!(snapshot.phase, QuickPopupPhase::Idle);
+        assert!(snapshot.current_session.is_none());
+    }
+
+    #[tokio::test]
+    async fn runtime_should_reject_invalid_transition() {
+        let runtime = QuickPopupRuntimeState::default();
+        let err = runtime
+            .mark_presenting()
+            .await
+            .expect_err("presenting from idle should fail");
+        assert_eq!(err, "popup runtime cannot present from current phase");
+    }
+
+    #[tokio::test]
+    async fn runtime_should_reject_open_when_session_active() {
+        let runtime = QuickPopupRuntimeState::default();
+        runtime
+            .begin_open(QuickPopupOpenReason::GlobalShortcut)
+            .await
+            .expect("first open should succeed");
+        let err = runtime
+            .begin_open(QuickPopupOpenReason::GlobalShortcut)
+            .await
+            .expect_err("second open should fail");
+        assert_eq!(err, "popup runtime is not idle");
+    }
+}

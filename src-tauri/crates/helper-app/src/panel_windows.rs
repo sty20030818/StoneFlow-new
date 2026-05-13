@@ -8,6 +8,7 @@ use tauri::{
     WebviewWindowBuilder, WindowEvent, Wry,
 };
 
+use crate::runtime::QuickPopupRuntimeState;
 use crate::window_spec::{
     QUICK_CREATE_LABEL, QUICK_CREATE_TITLE, QUICK_CREATE_URL, QUICK_CREATE_WINDOW_HEIGHT,
     QUICK_CREATE_WINDOW_WIDTH,
@@ -54,35 +55,6 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
     log::info!("helper: windows quick create 浮窗初始化完成 [Tauri WebviewWindow]");
 }
 
-/// Toggle 浮窗：可见则隐藏，不可见则先通知前端准备布局。
-pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
-    let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
-        log::error!("helper: Option+Space 触发，但 windows quick create 窗口未初始化");
-        return;
-    };
-
-    let visible = match window.is_visible() {
-        Ok(visible) => visible,
-        Err(error) => {
-            log::warn!("helper: 读取 windows quick create 可见状态失败: {error}");
-            false
-        }
-    };
-
-    log::info!("helper: Option+Space 触发 → windows window.is_visible()={visible}");
-
-    if visible {
-        if let Err(error) = window.hide() {
-            log::warn!("helper: 隐藏 windows quick create 失败: {error}");
-        }
-        return;
-    }
-
-    if let Err(error) = window.emit("quick-create:prepare", ()) {
-        log::warn!("helper: quick-create:prepare 事件发送失败: {error}");
-    }
-}
-
 /// 前端完成刷新与 resize 后调用，真正显示并聚焦窗口。
 pub fn present_quick_create_window(app_handle: &AppHandle<Wry>) -> Result<(), String> {
     let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
@@ -100,9 +72,74 @@ pub fn present_quick_create_window(app_handle: &AppHandle<Wry>) -> Result<(), St
         log::warn!("helper: 聚焦 windows quick create 失败: {error}");
     }
 
+    if let Some(runtime) = app_handle.try_state::<QuickPopupRuntimeState>() {
+        let runtime = runtime.inner().clone();
+        tauri::async_runtime::spawn(async move {
+            if let Err(error) = runtime.mark_visible().await {
+                log::warn!("helper: quick create 标记 visible 失败: {error}");
+            }
+        });
+    }
+
     if let Err(error) = window.emit("quick-create:presented", ()) {
         log::warn!("helper: quick-create:presented 事件发送失败: {error}");
     }
+
+    Ok(())
+}
+
+pub fn is_quick_create_window_visible(app_handle: &AppHandle<Wry>) -> Result<bool, String> {
+    let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
+        return Err("quick create 窗口未初始化".to_owned());
+    };
+
+    window
+        .is_visible()
+        .map_err(|error| format!("读取 windows quick create 可见状态失败: {error}"))
+}
+
+pub fn hide_quick_create_window(app_handle: &AppHandle<Wry>) -> Result<(), String> {
+    let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
+        return Err("quick create 窗口未初始化".to_owned());
+    };
+
+    window
+        .hide()
+        .map_err(|error| format!("隐藏 windows quick create 失败: {error}"))
+}
+
+pub fn prepare_hidden_quick_create_window(app_handle: &AppHandle<Wry>) -> Result<(), String> {
+    let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
+        return Err("quick create 窗口未初始化".to_owned());
+    };
+
+    if let Err(error) = window.hide() {
+        log::debug!("helper: windows prepare hidden 时 hide 失败，继续定位: {error}");
+    }
+    reset_webview_zoom(&window);
+    position_window_on_active_monitor(&window);
+    Ok(())
+}
+
+pub fn apply_quick_create_window_height(
+    app_handle: &AppHandle<Wry>,
+    target_window_height: f64,
+) -> Result<(), String> {
+    let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
+        return Err("quick create 窗口未初始化".to_owned());
+    };
+
+    let target_size = tauri::Size::Logical(tauri::LogicalSize::new(
+        crate::window_spec::QUICK_CREATE_WINDOW_WIDTH,
+        target_window_height,
+    ));
+    window
+        .set_size(target_size)
+        .map_err(|error| format!("调整 quick create 窗口高度失败: {error}"))?;
+    window
+        .as_ref()
+        .set_size(target_size)
+        .map_err(|error| format!("调整 quick create WebView 高度失败: {error}"))?;
 
     Ok(())
 }
@@ -116,6 +153,7 @@ fn reset_webview_zoom(window: &WebviewWindow<Wry>) {
 /// Windows 标准窗口可以可靠收到 Tauri focus 事件；失焦即隐藏，贴近面板语义。
 fn install_focus_auto_hide(window: &WebviewWindow<Wry>) {
     let window_for_hide = window.clone();
+    let app_handle = window.app_handle().clone();
     window.on_window_event(move |event| {
         if !matches!(event, WindowEvent::Focused(false)) {
             return;
@@ -126,6 +164,12 @@ fn install_focus_auto_hide(window: &WebviewWindow<Wry>) {
                 log::info!("helper: windows quick create 失焦 → hide window");
                 if let Err(error) = window_for_hide.hide() {
                     log::warn!("helper: 失焦隐藏 windows quick create 失败: {error}");
+                }
+                if let Some(runtime) = app_handle.try_state::<QuickPopupRuntimeState>() {
+                    let runtime = runtime.inner().clone();
+                    tauri::async_runtime::spawn(async move {
+                        runtime.finish_close().await;
+                    });
                 }
             }
             Ok(false) => {}
