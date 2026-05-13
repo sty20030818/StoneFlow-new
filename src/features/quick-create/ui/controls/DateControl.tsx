@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react'
 
-import {
-	formatDateLabel,
-	getQuickDatePreset,
-} from '@/features/quick-create/model/QuickCreateProvider'
+import { formatDateLabel, getQuickDatePreset } from '@/features/quick-create/model/quickCreateFormatters'
 import type { QuickCreatePopoverKey } from '@/features/quick-create/model/types'
 import { Button } from '@/shared/ui/base/button'
 import { Calendar } from '@/shared/ui/base/calendar'

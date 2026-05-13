@@ -1,4 +1,4 @@
-import { useQuickCreate } from '@/features/quick-create/model/QuickCreateProvider'
+import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import { Input } from '@/shared/ui/base/input'
 
 /**

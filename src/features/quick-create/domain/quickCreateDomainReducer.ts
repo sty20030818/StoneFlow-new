@@ -9,7 +9,7 @@ import type {
 	QuickCreateProjectOption,
 	QuickCreateSearchResponse,
 	QuickCreateStatus,
-} from './types'
+} from '@/features/quick-create/model/types'
 
 const defaultDraft: QuickCreateDraft = {
 	title: '',
@@ -42,7 +42,7 @@ export function createQuickCreateInitialState(): QuickCreatePanelState {
 	}
 }
 
-type QuickCreateAction =
+export type QuickCreateAction =
 	| { type: 'sessionOpened'; payload: QuickCreateInitialState }
 	| { type: 'recentDataRefreshed'; payload: QuickCreateInitialState }
 	| { type: 'bootstrapFailed'; message: string }
@@ -70,7 +70,7 @@ type QuickCreateAction =
 	| { type: 'titleCleared' }
 	| { type: 'activePopoverClosed' }
 
-export function quickCreateReducer(
+export function quickCreateDomainReducer(
 	state: QuickCreatePanelState,
 	action: QuickCreateAction,
 ): QuickCreatePanelState {
@@ -260,8 +260,7 @@ export function quickCreateReducer(
 				isSearching: false,
 				searchView: 'recent',
 				searchResults: { tasks: [], projects: [] },
-				errorMessage: null,
-				submitState: 'idle',
+				focusTarget: state.draft.title.trim().length > 0 ? 'create' : 'none',
 			}
 		case 'searchFailed':
 			return {
@@ -293,7 +292,7 @@ export function quickCreateReducer(
 		case 'submitCompleted':
 			return {
 				...state,
-				submitState: 'success',
+				submitState: 'idle',
 				message: action.message,
 				errorMessage: null,
 			}
@@ -304,14 +303,14 @@ export function quickCreateReducer(
 					...state.draft,
 					title: '',
 				},
-				searchView: 'recent',
 				searchResults: { tasks: [], projects: [] },
+				searchView: 'recent',
 				isSearching: false,
 				focusTarget: 'none',
-				submitState: 'success',
+				submitState: 'idle',
 				message: action.message,
-				errorMessage: null,
 				continuousCreateCount: state.continuousCreateCount + 1,
+				errorMessage: null,
 			}
 		case 'titleCleared':
 			return {
@@ -319,18 +318,18 @@ export function quickCreateReducer(
 				draft: {
 					...state.draft,
 					title: '',
+					priority: 0,
+					status: 'todo',
+					dueAt: null,
+					scheduledAt: null,
+					reminderAt: null,
 				},
-				searchView: 'recent',
 				searchResults: { tasks: [], projects: [] },
+				searchView: 'recent',
 				isSearching: false,
 				focusTarget: 'none',
-				submitState: 'idle',
-				message: '输入标题创建，或打开最近任务、项目',
-				errorMessage: null,
 			}
 		default:
 			return state
 	}
 }
-
-export type { QuickCreateAction }

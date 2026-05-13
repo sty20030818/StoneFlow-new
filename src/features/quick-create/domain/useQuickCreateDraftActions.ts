@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 
-import type { QuickCreateAction } from '@/features/quick-create/model/quickCreateReducer'
+import type { QuickCreateAction } from '@/features/quick-create/domain/quickCreateDomainReducer'
 import type {
 	QuickCreateFocusTarget,
 	QuickCreatePlacement,

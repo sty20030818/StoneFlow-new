@@ -2,7 +2,7 @@ import { useEffect, useState, type RefCallback } from 'react'
 
 import { SearchIcon } from 'lucide-react'
 
-import { useQuickCreate } from '@/features/quick-create/model/QuickCreateProvider'
+import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import { useQuickCreateSession } from '@/features/quick-create/runtime/useQuickCreateSession'
 import type {
 	QuickCreateProjectItem,

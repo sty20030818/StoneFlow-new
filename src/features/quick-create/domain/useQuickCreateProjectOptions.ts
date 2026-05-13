@@ -1,7 +1,7 @@
 import { startTransition, useCallback } from 'react'
 
 import { listProjectsBySpace } from '@/features/quick-create/api/quickCreate'
-import type { QuickCreateAction } from '@/features/quick-create/model/quickCreateReducer'
+import type { QuickCreateAction } from '@/features/quick-create/domain/quickCreateDomainReducer'
 
 type UseQuickCreateProjectOptionsArgs = {
 	dispatch: React.ActionDispatch<[action: QuickCreateAction]>

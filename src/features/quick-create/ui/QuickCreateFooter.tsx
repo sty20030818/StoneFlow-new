@@ -1,6 +1,6 @@
 import { AlertTriangleIcon, CheckCircle2Icon, LoaderCircleIcon } from 'lucide-react'
 
-import { useQuickCreate } from '@/features/quick-create/model/QuickCreateProvider'
+import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import { cn } from '@/shared/lib/utils'
 import { Kbd } from '@/shared/ui/base/kbd'
 

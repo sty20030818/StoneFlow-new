@@ -22,15 +22,19 @@ import { useQuickCreateSubmitActions } from '@/features/quick-create/domain/useQ
 import { useQuickCreateTransientUi } from '@/features/quick-create/domain/useQuickCreateTransientUi'
 import {
 	createQuickCreateInitialState,
-	quickCreateReducer,
-} from '@/features/quick-create/model/quickCreateReducer'
+	quickCreateDomainReducer,
+} from '@/features/quick-create/domain/quickCreateDomainReducer'
 import { useQuickCreateSession } from '@/features/quick-create/runtime/useQuickCreateSession'
 
 const QuickCreateDomainContext = createContext<QuickCreateContextValue | null>(null)
 
 export function QuickCreateDomainProvider({ children }: PropsWithChildren) {
 	const { actions: sessionActions, state: sessionState } = useQuickCreateSession()
-	const [state, dispatch] = useReducer(quickCreateReducer, undefined, createQuickCreateInitialState)
+	const [state, dispatch] = useReducer(
+		quickCreateDomainReducer,
+		undefined,
+		createQuickCreateInitialState,
+	)
 	const { closeWindow, focusInput, projectSearchRef, registerHandleEscape, scheduleClose, titleInputRef } =
 		useQuickCreateTransientUi({
 			activePopover: state.activePopover,
@@ -185,6 +189,8 @@ export function useQuickCreateDomain() {
 	}
 	return context
 }
+
+export const useQuickCreate = useQuickCreateDomain
 
 function logRefreshRecentError(error: unknown) {
 	if (error instanceof Error) {

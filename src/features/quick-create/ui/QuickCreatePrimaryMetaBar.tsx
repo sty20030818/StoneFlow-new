@@ -1,6 +1,6 @@
 import { ChevronDownIcon } from 'lucide-react'
 
-import { useQuickCreate } from '@/features/quick-create/model/QuickCreateProvider'
+import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import { PlacementControl } from '@/features/quick-create/ui/controls/PlacementControl'
 import { PriorityControl } from '@/features/quick-create/ui/controls/PriorityControl'
 import { QuickCreateTitleInput } from '@/features/quick-create/ui/QuickCreateTitleInput'

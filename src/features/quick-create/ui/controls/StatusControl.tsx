@@ -1,6 +1,6 @@
 import { CheckIcon } from 'lucide-react'
 
-import { formatStatusLabel } from '@/features/quick-create/model/QuickCreateProvider'
+import { formatStatusLabel } from '@/features/quick-create/model/quickCreateFormatters'
 import type { QuickCreateStatus } from '@/features/quick-create/model/types'
 import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
 import { Button } from '@/shared/ui/base/button'

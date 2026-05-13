@@ -28,7 +28,7 @@ import type {
 	QuickCreateProjectsBySpace,
 	QuickCreateTaskItem,
 } from '@/features/quick-create/model/types'
-import { formatDateLabel } from '@/features/quick-create/model/QuickCreateProvider'
+import { formatDateLabel } from '@/features/quick-create/model/quickCreateFormatters'
 
 const listenMock = vi.fn()
 const originalRequestAnimationFrame = window.requestAnimationFrame

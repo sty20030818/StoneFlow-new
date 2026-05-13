@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react'
 
-import { useQuickCreate } from '@/features/quick-create/model/QuickCreateProvider'
+import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import { cn } from '@/shared/lib/utils'
 
 export function QuickCreateFeedbackRegion({
