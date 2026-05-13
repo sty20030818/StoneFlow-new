@@ -5,53 +5,72 @@ import {
 	useEffect,
 	useMemo,
 	useReducer,
-	useRef,
 	type PropsWithChildren,
 } from 'react'
 import { listen } from '@tauri-apps/api/event'
 
 import {
-	getInitialState,
+	closeSession,
+	type QuickCreateCloseReason,
+	type QuickCreateOpenSessionResponse,
 	notifyFrontendReady,
 	notifyFrontendUnready,
 } from '@/features/quick-create/api/quickCreate'
-import type { QuickCreateInitialState } from '@/features/quick-create/model/types'
 
-const QUICK_CREATE_PREPARE_EVENT = 'quick-create:prepare'
-const QUICK_CREATE_PRESENTED_EVENT = 'quick-create:presented'
+const QUICK_CREATE_SESSION_PREPARED_EVENT = 'quick-create:session-prepared'
+const QUICK_CREATE_SESSION_PRESENTED_EVENT = 'quick-create:session-presented'
+const QUICK_CREATE_SESSION_CLOSE_REQUESTED_EVENT = 'quick-create:session-close-requested'
+const QUICK_CREATE_SESSION_INVALIDATED_EVENT = 'quick-create:session-invalidated'
+
+type QuickCreateSessionPhase =
+	| { type: 'booting' }
+	| { type: 'hidden' }
+	| { type: 'preparing'; sessionId: string; openContext: QuickCreateOpenSessionResponse }
+	| { type: 'measuring'; sessionId: string; openContext: QuickCreateOpenSessionResponse }
+	| { type: 'readyToPresent'; sessionId: string; openContext: QuickCreateOpenSessionResponse }
+	| { type: 'visible'; sessionId: string; openContext: QuickCreateOpenSessionResponse }
+	| { type: 'closing'; sessionId: string; reason: QuickCreateCloseReason }
+	| { type: 'error'; sessionId?: string; message: string }
 
 type QuickCreateSessionState = {
-	isBootstrapping: boolean
-	isPresentationPending: boolean
-	initialState: QuickCreateInitialState | null
+	phase: QuickCreateSessionPhase
 	layoutVersion: number
-	errorMessage: string | null
 }
 
 type QuickCreateSessionContextValue = {
 	state: QuickCreateSessionState
 	actions: {
-		fetchSnapshot: () => Promise<QuickCreateInitialState>
+		commitMeasured: (sessionId: string) => void
+		markReadyToPresent: (sessionId: string) => void
+		requestClose: (reason: QuickCreateCloseReason) => Promise<void>
 	}
 }
 
+type QuickCreateSessionEventPayload = {
+	sessionId: string
+}
+
+type QuickCreateSessionClosePayload = {
+	sessionId: string
+	reason: QuickCreateCloseReason
+}
+
 type QuickCreateSessionAction =
-	| { type: 'bootstrapStarted' }
-	| { type: 'bootstrapSucceeded'; payload: QuickCreateInitialState }
-	| { type: 'bootstrapFailed'; message: string }
-	| { type: 'panelShownRefreshed'; payload: QuickCreateInitialState }
-	| { type: 'presentationRequested' }
-	| { type: 'presentationCompleted' }
+	| { type: 'frontendBooted' }
+	| { type: 'sessionPrepared'; payload: QuickCreateOpenSessionResponse }
+	| { type: 'sessionMeasuring'; sessionId: string }
+	| { type: 'sessionReadyToPresent'; sessionId: string }
+	| { type: 'sessionPresented'; sessionId: string }
+	| { type: 'sessionClosing'; sessionId: string; reason: QuickCreateCloseReason }
+	| { type: 'sessionHidden'; sessionId: string }
+	| { type: 'sessionError'; sessionId?: string; message: string }
 
 const QuickCreateSessionContext = createContext<QuickCreateSessionContextValue | null>(null)
 
 function createQuickCreateSessionState(): QuickCreateSessionState {
 	return {
-		isBootstrapping: true,
-		isPresentationPending: false,
-		initialState: null,
+		phase: { type: 'booting' },
 		layoutVersion: 0,
-		errorMessage: null,
 	}
 }
 
@@ -60,42 +79,93 @@ function quickCreateSessionReducer(
 	action: QuickCreateSessionAction,
 ): QuickCreateSessionState {
 	switch (action.type) {
-		case 'bootstrapStarted':
+		case 'frontendBooted':
 			return {
 				...state,
-				isBootstrapping: true,
-				errorMessage: null,
+				phase: { type: 'hidden' },
 			}
-		case 'bootstrapSucceeded':
+		case 'sessionPrepared':
 			return {
-				...state,
-				isBootstrapping: false,
-				initialState: action.payload,
 				layoutVersion: state.layoutVersion + 1,
-				errorMessage: null,
+				phase: {
+					type: 'preparing',
+					sessionId: action.payload.sessionId,
+					openContext: action.payload,
+				},
 			}
-		case 'bootstrapFailed':
+		case 'sessionMeasuring':
+			if (
+				state.phase.type !== 'preparing' ||
+				state.phase.sessionId !== action.sessionId
+			) {
+				return state
+			}
 			return {
 				...state,
-				isBootstrapping: false,
-				errorMessage: action.message,
+				phase: {
+					type: 'measuring',
+					sessionId: action.sessionId,
+					openContext: state.phase.openContext,
+				},
 			}
-		case 'panelShownRefreshed':
+		case 'sessionReadyToPresent':
+			if (
+				state.phase.type !== 'measuring' ||
+				state.phase.sessionId !== action.sessionId
+			) {
+				return state
+			}
 			return {
 				...state,
-				initialState: action.payload,
-				layoutVersion: state.layoutVersion + 1,
-				errorMessage: null,
+				phase: {
+					type: 'readyToPresent',
+					sessionId: action.sessionId,
+					openContext: state.phase.openContext,
+				},
 			}
-		case 'presentationRequested':
+		case 'sessionPresented':
+			if (
+				state.phase.type !== 'readyToPresent' ||
+				state.phase.sessionId !== action.sessionId
+			) {
+				return state
+			}
 			return {
 				...state,
-				isPresentationPending: true,
+				phase: {
+					type: 'visible',
+					sessionId: action.sessionId,
+					openContext: state.phase.openContext,
+				},
 			}
-		case 'presentationCompleted':
+		case 'sessionClosing':
 			return {
 				...state,
-				isPresentationPending: false,
+				phase: {
+					type: 'closing',
+					sessionId: action.sessionId,
+					reason: action.reason,
+				},
+			}
+		case 'sessionHidden':
+			if (
+				state.phase.type === 'closing' &&
+				state.phase.sessionId === action.sessionId
+			) {
+				return {
+					...state,
+					phase: { type: 'hidden' },
+				}
+			}
+			return state
+		case 'sessionError':
+			return {
+				...state,
+				phase: {
+					type: 'error',
+					sessionId: action.sessionId,
+					message: action.message,
+				},
 			}
 		default:
 			return state
@@ -108,124 +178,179 @@ export function QuickCreateSessionProvider({ children }: PropsWithChildren) {
 		undefined,
 		createQuickCreateSessionState,
 	)
-	const bootstrapRequestIdRef = useRef(0)
-	const initialStateRef = useRef<QuickCreateInitialState | null>(null)
 
-	useEffect(() => {
-		initialStateRef.current = state.initialState
-	}, [state.initialState])
-
-	const loadInitialState = useCallback(async (mode: 'reset' | 'refreshShown') => {
-		const requestId = ++bootstrapRequestIdRef.current
-
-		if (mode === 'reset') {
-			dispatch({ type: 'bootstrapStarted' })
-		}
-
-		try {
-			const initialState = await getInitialState()
-			if (requestId !== bootstrapRequestIdRef.current) {
+	const requestClose = useCallback(
+		async (reason: QuickCreateCloseReason) => {
+			const phase = state.phase
+			if (
+				phase.type !== 'visible' &&
+				phase.type !== 'readyToPresent' &&
+				phase.type !== 'measuring' &&
+				phase.type !== 'preparing'
+			) {
 				return
 			}
 
-			dispatch({
-				type: mode === 'reset' ? 'bootstrapSucceeded' : 'panelShownRefreshed',
-				payload: initialState,
-			})
-		} catch (error) {
-			if (requestId !== bootstrapRequestIdRef.current) {
-				return
+			dispatch({ type: 'sessionClosing', sessionId: phase.sessionId, reason })
+			try {
+				await closeSession({ sessionId: phase.sessionId, reason })
+				dispatch({ type: 'sessionHidden', sessionId: phase.sessionId })
+			} catch (error) {
+				dispatch({
+					type: 'sessionError',
+					sessionId: phase.sessionId,
+					message: error instanceof Error ? error.message : 'Quick Create 关闭失败',
+				})
 			}
-
-			dispatch({
-				type: 'bootstrapFailed',
-				message: error instanceof Error ? error.message : 'Quick Create 初始化失败',
-			})
-		}
-	}, [])
-
-	const fetchSnapshot = useCallback(async () => getInitialState(), [])
+		},
+		[state.phase],
+	)
 
 	useEffect(() => {
-		void loadInitialState('reset')
+		dispatch({ type: 'frontendBooted' })
 
 		let disposed = false
-		let unlistenPrepare: (() => void) | undefined
+		let unlistenPrepared: (() => void) | undefined
 		let unlistenPresented: (() => void) | undefined
+		let unlistenCloseRequested: (() => void) | undefined
+		let unlistenInvalidated: (() => void) | undefined
 
-		const prepareListener = listen<void>(QUICK_CREATE_PREPARE_EVENT, () => {
-			void (async () => {
-				try {
-					await loadInitialState(initialStateRef.current ? 'refreshShown' : 'reset')
-					if (!disposed) {
-						dispatch({ type: 'presentationRequested' })
-					}
-				} catch (error) {
-					logQuickCreateSessionError(error)
-				}
-			})()
-		})
-
-		prepareListener
-			.then((dispose) => {
+		const preparedListener = listen<QuickCreateOpenSessionResponse>(
+			QUICK_CREATE_SESSION_PREPARED_EVENT,
+			(event) => {
 				if (disposed) {
-					dispose()
 					return
 				}
-				unlistenPrepare = dispose
-			})
-			.catch((error) => {
-				logQuickCreateSessionError(error)
-			})
+				dispatch({ type: 'sessionPrepared', payload: event.payload })
+			},
+		)
+		preparedListener.then((dispose) => {
+			if (disposed) {
+				dispose()
+				return
+			}
+			unlistenPrepared = dispose
+		}).catch(logQuickCreateSessionError)
 
-		const presentedListener = listen<void>(QUICK_CREATE_PRESENTED_EVENT, () => {
-			dispatch({ type: 'presentationCompleted' })
-		})
-
-		presentedListener
-			.then((dispose) => {
+		const presentedListener = listen<QuickCreateSessionEventPayload>(
+			QUICK_CREATE_SESSION_PRESENTED_EVENT,
+			(event) => {
 				if (disposed) {
-					dispose()
 					return
 				}
-				unlistenPresented = dispose
-			})
-			.catch((error) => {
-				logQuickCreateSessionError(error)
-			})
+				dispatch({ type: 'sessionPresented', sessionId: event.payload.sessionId })
+			},
+		)
+		presentedListener.then((dispose) => {
+			if (disposed) {
+				dispose()
+				return
+			}
+			unlistenPresented = dispose
+		}).catch(logQuickCreateSessionError)
 
-		Promise.all([prepareListener, presentedListener])
+		const closeRequestedListener = listen<QuickCreateSessionClosePayload>(
+			QUICK_CREATE_SESSION_CLOSE_REQUESTED_EVENT,
+			(event) => {
+				if (disposed) {
+					return
+				}
+
+				const { reason, sessionId } = event.payload
+				dispatch({ type: 'sessionClosing', sessionId, reason })
+				void closeSession({ sessionId, reason })
+					.then(() => {
+						if (disposed) {
+							return
+						}
+						dispatch({ type: 'sessionHidden', sessionId })
+					})
+					.catch((error) => {
+						if (disposed) {
+							return
+						}
+						dispatch({
+							type: 'sessionError',
+							sessionId,
+							message:
+								error instanceof Error ? error.message : 'Quick Create 关闭失败',
+						})
+					})
+			},
+		)
+		closeRequestedListener.then((dispose) => {
+			if (disposed) {
+				dispose()
+				return
+			}
+			unlistenCloseRequested = dispose
+		}).catch(logQuickCreateSessionError)
+
+		const invalidatedListener = listen<QuickCreateSessionClosePayload>(
+			QUICK_CREATE_SESSION_INVALIDATED_EVENT,
+			(event) => {
+				if (disposed) {
+					return
+				}
+
+				dispatch({
+					type: 'sessionClosing',
+					sessionId: event.payload.sessionId,
+					reason: event.payload.reason,
+				})
+				dispatch({ type: 'sessionHidden', sessionId: event.payload.sessionId })
+			},
+		)
+		invalidatedListener.then((dispose) => {
+			if (disposed) {
+				dispose()
+				return
+			}
+			unlistenInvalidated = dispose
+		}).catch(logQuickCreateSessionError)
+
+		Promise.all([
+			preparedListener,
+			presentedListener,
+			closeRequestedListener,
+			invalidatedListener,
+		])
 			.then(() => {
 				if (disposed) {
 					return
 				}
-
 				void notifyFrontendReady().catch(() => {
-					// 预览环境或 helper 不可用时允许静默失败。
+					// helper 不可用时允许静默失败。
 				})
 			})
-			.catch(() => {
-				// 单个 listener 的失败已分别记录。
-			})
+			.catch(() => {})
 
 		return () => {
 			disposed = true
-			unlistenPrepare?.()
+			unlistenPrepared?.()
 			unlistenPresented?.()
+			unlistenCloseRequested?.()
+			unlistenInvalidated?.()
 			void notifyFrontendUnready().catch(() => {
-				// 预览环境或 helper 不可用时允许静默失败。
+				// helper 不可用时允许静默失败。
 			})
 		}
-	}, [loadInitialState])
+	}, [])
 
 	const value = useMemo<QuickCreateSessionContextValue>(
 		() => ({
 			state,
 			actions: {
-				fetchSnapshot,
+				commitMeasured: (sessionId) => {
+					dispatch({ type: 'sessionMeasuring', sessionId })
+				},
+				markReadyToPresent: (sessionId) => {
+					dispatch({ type: 'sessionReadyToPresent', sessionId })
+				},
+				requestClose,
 			},
 		}),
-		[fetchSnapshot, state],
+		[requestClose, state],
 	)
 
 	return (

@@ -7,9 +7,9 @@
 //!   - 失焦隐藏：走 NSWindowDelegate 原生 `windowDidResignKey:` 通知，
 //!     **不依赖** Tauri 的 `WindowEvent::Focused(false)`——
 //!     NonActivating 面板不会让 owning app 激活，Tauri 的 focus 事件链不可靠。
-//!   - 前端准备阶段：快捷键触发后先 emit `quick-create:prepare`，
-//!     由前端在隐藏态完成首轮布局测量与 resize，再由 Rust 执行真正的 show。
-//!   - 前端呈现同步：`windowDidBecomeKey:` 回调里才 emit `quick-create:presented`。
+//!   - 前端准备阶段：快捷键触发后先 emit `quick-create:session-prepared`，
+//!     由前端在隐藏态完成首轮布局测量与 `commit_layout`，再由 Rust 执行真正的 show。
+//!   - 前端呈现同步：`windowDidBecomeKey:` 回调里才 emit `quick-create:session-presented`。
 //!     此时 panel 已真正成为 key window，前端 `input.focus()` 才能命中；
 //!     如果在 `show_and_make_key()` 返回后立刻 emit，key 状态可能还没 flush。
 //!
@@ -25,6 +25,7 @@
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, Wry};
 use tauri_nspanel::{CollectionBehavior, ManagerExt, StyleMask, WebviewWindowExt};
 
+use crate::commands::window::emit_quick_create_session_invalidated;
 use crate::runtime::QuickPopupRuntimeState;
 use crate::window_spec::{QUICK_CREATE_LABEL, QUICK_CREATE_TITLE, QUICK_CREATE_URL};
 use crate::window_spec::{
@@ -115,17 +116,26 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
     handler.window_did_become_key(move |_notification| {
         if let Some(runtime) = app_for_prepare.try_state::<QuickPopupRuntimeState>() {
             let runtime = runtime.inner().clone();
+            let app_for_presented = app_for_prepare.clone();
             tauri::async_runtime::spawn(async move {
-                if let Err(error) = runtime.mark_visible().await {
+                let Some(session_id) = runtime.active_session_id().await else {
+                    log::warn!("helper: quick create visible 时缺少 active session");
+                    return;
+                };
+                if let Err(error) = runtime.mark_visible_for(&session_id).await {
                     log::warn!("helper: quick create 标记 visible 失败: {error}");
+                    return;
+                }
+                log::debug!("helper: windowDidBecomeKey → emit quick-create:session-presented");
+                if let Some(window) = app_for_presented.get_webview_window(QUICK_CREATE_LABEL) {
+                    if let Err(error) = window.emit(
+                        "quick-create:session-presented",
+                        serde_json::json!({ "sessionId": session_id }),
+                    ) {
+                        log::warn!("helper: quick-create:session-presented 事件发送失败: {error}");
+                    }
                 }
             });
-        }
-        log::debug!("helper: windowDidBecomeKey → emit quick-create:presented");
-        if let Some(window) = app_for_prepare.get_webview_window(QUICK_CREATE_LABEL) {
-            if let Err(error) = window.emit("quick-create:presented", ()) {
-                log::warn!("helper: quick-create:presented 事件发送失败: {error}");
-            }
         }
     });
 
@@ -139,8 +149,18 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
         }
         if let Some(runtime) = app_for_hide.try_state::<QuickPopupRuntimeState>() {
             let runtime = runtime.inner().clone();
+            let app_for_close = app_for_hide.clone();
             tauri::async_runtime::spawn(async move {
-                runtime.finish_close().await;
+                let Some(session_id) = runtime.active_session_id().await else {
+                    return;
+                };
+                emit_quick_create_session_invalidated(
+                    &app_for_close,
+                    &runtime,
+                    &session_id,
+                    crate::runtime::QuickPopupCloseReason::Blur,
+                )
+                .await;
             });
         }
     });

@@ -14,6 +14,8 @@ pub use domain::{
     HelperQuickSearchResponse,
 };
 pub use window::{
-    helper_quick_frontend_ready, helper_quick_frontend_unready, helper_quick_present_window,
-    helper_quick_resize_window, HelperQuickResizeWindowInput,
+    helper_quick_close_session, helper_quick_commit_layout, helper_quick_frontend_ready,
+    helper_quick_frontend_unready, helper_quick_prepare_session, helper_quick_present_session,
+    HelperQuickCloseReasonInput, HelperQuickCloseSessionInput, HelperQuickCommitLayoutInput,
+    HelperQuickOpenSessionResponse, HelperQuickSessionInput,
 };

@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import {
-	presentWindow,
+	commitLayout,
+	presentSession,
 	reportLayoutDiagnostics,
-	resizeWindow,
 } from '@/features/quick-create/api/quickCreate'
 import { useQuickCreateLayout } from '@/features/quick-create/layout/useQuickCreateLayout'
 import { useQuickCreate } from '@/features/quick-create/model/QuickCreateProvider'
@@ -17,17 +17,20 @@ const QUICK_CREATE_DPR_THRESHOLD = 0.001
 type LastAppliedResize = {
 	devicePixelRatio: number
 	height: number
+	sessionId: string
 }
 
 export function QuickCreateWindowShell() {
 	const { derived, state } = useQuickCreate()
-	const { state: sessionState } = useQuickCreateSession()
+	const { actions: sessionActions, state: sessionState } = useQuickCreateSession()
 	const layout = useQuickCreateLayout(sessionState.layoutVersion)
 	const [isWindowReady, setWindowReady] = useState(false)
 	const viewportResizeRevision = useQuickCreateViewportResizeRevision(layout.requestMeasure)
 	const lastAppliedResizeRef = useRef<LastAppliedResize | null>(null)
 	const presentationSentRef = useRef(false)
 	const lastLayoutVersionRef = useRef<number>(sessionState.layoutVersion)
+	const activeSessionId =
+		'openContext' in sessionState.phase ? sessionState.phase.sessionId : null
 
 	useLayoutEffect(() => {
 		if (lastLayoutVersionRef.current !== sessionState.layoutVersion) {
@@ -39,16 +42,22 @@ export function QuickCreateWindowShell() {
 	}, [sessionState.layoutVersion])
 
 	useEffect(() => {
-		if (sessionState.isBootstrapping || !layout.isReady || layout.targetHeight === null) {
+		if (
+			sessionState.phase.type !== 'preparing' ||
+			!layout.isReady ||
+			layout.targetHeight === null
+		) {
 			return
 		}
 
 		const targetHeight = Math.max(layout.targetHeight, QUICK_CREATE_MIN_WINDOW_HEIGHT)
 		const devicePixelRatio = readDevicePixelRatio()
 		const lastAppliedResize = lastAppliedResizeRef.current
+		const sessionId = sessionState.phase.sessionId
 
 		if (
 			lastAppliedResize !== null &&
+			lastAppliedResize.sessionId === sessionId &&
 			Math.abs(lastAppliedResize.height - targetHeight) < QUICK_CREATE_RESIZE_THRESHOLD &&
 			Math.abs(lastAppliedResize.devicePixelRatio - devicePixelRatio) <
 				QUICK_CREATE_DPR_THRESHOLD
@@ -59,16 +68,20 @@ export function QuickCreateWindowShell() {
 		lastAppliedResizeRef.current = {
 			devicePixelRatio,
 			height: targetHeight,
+			sessionId,
 		}
 
+		sessionActions.commitMeasured(sessionId)
 		void reportQuickCreateLayoutDiagnostics('before-resize', targetHeight, layout).catch(() => {
 			// 诊断日志不能影响窗口呈现。
 		})
-		void resizeWindow(targetHeight)
-			.catch(() => {
-				// 预览环境或受限平台允许静默失败。
-			})
-			.finally(() => {
+		void commitLayout({
+			devicePixelRatio,
+			height: targetHeight,
+			sessionId,
+		})
+			.then(() => {
+				sessionActions.markReadyToPresent(sessionId)
 				setWindowReady(true)
 				window.requestAnimationFrame(() => {
 					void reportQuickCreateLayoutDiagnostics('after-resize', targetHeight, layout).catch(
@@ -77,6 +90,9 @@ export function QuickCreateWindowShell() {
 						},
 					)
 				})
+			})
+			.catch(() => {
+				// 预览环境或受限平台允许静默失败。
 			})
 	}, [
 		derived.continuousToastVisible,
@@ -89,32 +105,32 @@ export function QuickCreateWindowShell() {
 		layout.targetHeight,
 		state.draft.title,
 		state.isAdvancedOpen,
-		sessionState.isBootstrapping,
 		sessionState.layoutVersion,
+		sessionState.phase,
+		sessionActions,
 		viewportResizeRevision,
 	])
 
 	useEffect(() => {
 		if (
-			!sessionState.isPresentationPending ||
+			sessionState.phase.type !== 'readyToPresent' ||
 			!isWindowReady ||
-			presentationSentRef.current ||
-			sessionState.isBootstrapping
+			presentationSentRef.current
 		) {
 			return
 		}
 
 		presentationSentRef.current = true
-		void presentWindow().catch(() => {
+		void presentSession({ sessionId: sessionState.phase.sessionId }).catch(() => {
 			presentationSentRef.current = false
 		})
-	}, [isWindowReady, sessionState.isBootstrapping, sessionState.isPresentationPending])
+	}, [isWindowReady, sessionState.phase])
 
-	if (sessionState.isBootstrapping) {
+	if (sessionState.phase.type === 'booting') {
 		return <div className='flex h-full min-h-0 flex-1 bg-transparent' />
 	}
 
-	return <QuickCreateFrame isVisible={isWindowReady} layout={layout} />
+	return <QuickCreateFrame isVisible={isWindowReady && activeSessionId !== null} layout={layout} />
 }
 
 function useQuickCreateViewportResizeRevision(requestMeasure: () => void) {

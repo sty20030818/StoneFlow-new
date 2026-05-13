@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { getCurrentWindow } from '@tauri-apps/api/window'
 
 const PANEL_CLOSE_DELAY_MS = 220
 
 type UseQuickCreateTransientUiArgs = {
 	activePopover: string | null
+	requestClose: (reason: 'escape' | 'submit') => Promise<void>
 }
 
-export function useQuickCreateTransientUi({ activePopover }: UseQuickCreateTransientUiArgs) {
+export function useQuickCreateTransientUi({
+	activePopover,
+	requestClose,
+}: UseQuickCreateTransientUiArgs) {
 	const titleInputRef = useRef<HTMLInputElement>(null)
 	const projectSearchRef = useRef<HTMLInputElement>(null)
 	const closeTimerRef = useRef<number | null>(null)
@@ -36,8 +39,8 @@ export function useQuickCreateTransientUi({ activePopover }: UseQuickCreateTrans
 			closeTimerRef.current = null
 		}
 
-		await getCurrentWindow().hide()
-	}, [])
+		await requestClose('escape')
+	}, [requestClose])
 
 	const scheduleClose = useCallback(() => {
 		if (closeTimerRef.current !== null) {
@@ -45,9 +48,9 @@ export function useQuickCreateTransientUi({ activePopover }: UseQuickCreateTrans
 		}
 
 		closeTimerRef.current = window.setTimeout(() => {
-			void closeWindow()
+			void requestClose('submit')
 		}, PANEL_CLOSE_DELAY_MS)
-	}, [closeWindow])
+	}, [requestClose])
 
 	useEffect(() => {
 		if (activePopover !== 'project') {

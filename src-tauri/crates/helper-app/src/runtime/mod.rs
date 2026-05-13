@@ -1,5 +1,6 @@
 pub mod session;
 
 pub use session::{
-    QuickPopupOpenReason, QuickPopupPhase, QuickPopupRuntimeState, QuickPopupSession,
+    QuickPopupCloseReason, QuickPopupOpenReason, QuickPopupPhase, QuickPopupRuntimeState,
+    QuickPopupSession,
 };

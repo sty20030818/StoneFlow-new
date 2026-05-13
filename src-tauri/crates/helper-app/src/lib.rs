@@ -81,9 +81,11 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         commands::domain::helper_quick_create,
         commands::domain::helper_quick_create_and_open,
         commands::domain::helper_quick_open_target,
-        commands::window::helper_quick_resize_window,
+        commands::window::helper_quick_prepare_session,
+        commands::window::helper_quick_commit_layout,
+        commands::window::helper_quick_present_session,
+        commands::window::helper_quick_close_session,
         commands::diagnostics::helper_quick_report_layout_diagnostics,
-        commands::window::helper_quick_present_window,
         commands::window::helper_quick_frontend_ready,
         commands::window::helper_quick_frontend_unready
     ])

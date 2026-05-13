@@ -8,6 +8,7 @@ use tauri::{
     WebviewWindowBuilder, WindowEvent, Wry,
 };
 
+use crate::commands::window::emit_quick_create_session_invalidated;
 use crate::runtime::QuickPopupRuntimeState;
 use crate::window_spec::{
     QUICK_CREATE_LABEL, QUICK_CREATE_TITLE, QUICK_CREATE_URL, QUICK_CREATE_WINDOW_HEIGHT,
@@ -74,15 +75,25 @@ pub fn present_quick_create_window(app_handle: &AppHandle<Wry>) -> Result<(), St
 
     if let Some(runtime) = app_handle.try_state::<QuickPopupRuntimeState>() {
         let runtime = runtime.inner().clone();
+        let app_for_presented = app_handle.clone();
         tauri::async_runtime::spawn(async move {
-            if let Err(error) = runtime.mark_visible().await {
+            let Some(session_id) = runtime.active_session_id().await else {
+                log::warn!("helper: quick create visible 时缺少 active session");
+                return;
+            };
+            if let Err(error) = runtime.mark_visible_for(&session_id).await {
                 log::warn!("helper: quick create 标记 visible 失败: {error}");
+                return;
+            }
+            if let Some(window) = app_for_presented.get_webview_window(QUICK_CREATE_LABEL) {
+                if let Err(error) = window.emit(
+                    "quick-create:session-presented",
+                    serde_json::json!({ "sessionId": session_id }),
+                ) {
+                    log::warn!("helper: quick-create:session-presented 事件发送失败: {error}");
+                }
             }
         });
-    }
-
-    if let Err(error) = window.emit("quick-create:presented", ()) {
-        log::warn!("helper: quick-create:presented 事件发送失败: {error}");
     }
 
     Ok(())
@@ -167,8 +178,18 @@ fn install_focus_auto_hide(window: &WebviewWindow<Wry>) {
                 }
                 if let Some(runtime) = app_handle.try_state::<QuickPopupRuntimeState>() {
                     let runtime = runtime.inner().clone();
+                    let app_for_close = app_handle.clone();
                     tauri::async_runtime::spawn(async move {
-                        runtime.finish_close().await;
+                        let Some(session_id) = runtime.active_session_id().await else {
+                            return;
+                        };
+                        emit_quick_create_session_invalidated(
+                            &app_for_close,
+                            &runtime,
+                            &session_id,
+                            crate::runtime::QuickPopupCloseReason::Blur,
+                        )
+                        .await;
                     });
                 }
             }

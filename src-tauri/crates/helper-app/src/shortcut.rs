@@ -1,10 +1,10 @@
 //! 全局快捷键注册：Option+Space 触发 Quick Create 面板 toggle。
 
 use tauri::{AppHandle, Manager};
-use tauri::Emitter;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
-use crate::runtime::{QuickPopupOpenReason, QuickPopupRuntimeState};
+use crate::commands::window::prepare_quick_create_session;
+use crate::runtime::{QuickPopupCloseReason, QuickPopupRuntimeState};
 use crate::window_controller;
 use crate::window_spec::QUICK_CREATE_SHORTCUT;
 
@@ -55,7 +55,15 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
     };
 
     if visible {
-        match runtime.begin_close().await {
+        let Some(session_id) = runtime.active_session_id().await else {
+            log::debug!("helper: quick create 已经是 idle，忽略关闭");
+            return;
+        };
+
+        match runtime
+            .begin_close_for(&session_id, QuickPopupCloseReason::Toggle)
+            .await
+        {
             Ok(Some(session)) => {
                 log::info!("helper: 关闭 quick create session={}", session.session_id);
                 if let Err(error) = controller.hide() {
@@ -63,7 +71,9 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
                     runtime.mark_error().await;
                     return;
                 }
-                runtime.finish_close().await;
+                if let Err(error) = runtime.finish_close_for(&session.session_id).await {
+                    log::warn!("helper: 关闭 quick create session 清理失败: {error}");
+                }
             }
             Ok(None) => {
                 log::debug!("helper: quick create 已经是 idle，忽略关闭");
@@ -82,38 +92,12 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
         return;
     }
 
-    let session = match runtime.begin_open(QuickPopupOpenReason::GlobalShortcut).await {
-        Ok(session) => session,
-        Err(error) => {
-            log::warn!("helper: 当前阶段不能打开 quick create: {error}");
-            return;
+    match prepare_quick_create_session(app_handle.clone(), runtime.inner()).await {
+        Ok(response) => {
+            log::info!("helper: 打开 quick create session={}", response.session_id);
         }
-    };
-
-    if let Err(error) = controller.prepare_hidden() {
-        log::warn!("helper: quick create prepare hidden 失败: {error}");
-        runtime.mark_error().await;
-        runtime.reset_to_idle().await;
-        return;
-    }
-
-    if let Err(error) = runtime.mark_waiting_layout().await {
-        log::warn!("helper: quick create 进入 waiting_layout 失败: {error}");
-        runtime.mark_error().await;
-        runtime.reset_to_idle().await;
-        return;
-    }
-
-    log::info!("helper: 打开 quick create session={}", session.session_id);
-    let Some(window) = app_handle.get_webview_window(crate::window_spec::QUICK_CREATE_LABEL) else {
-        log::error!("helper: quick create window 未初始化");
-        runtime.mark_error().await;
-        runtime.reset_to_idle().await;
-        return;
-    };
-    if let Err(error) = window.emit("quick-create:prepare", ()) {
-        log::warn!("helper: quick-create:prepare 事件发送失败: {error}");
-        runtime.mark_error().await;
-        runtime.reset_to_idle().await;
+        Err(error) => {
+            log::warn!("helper: quick create prepare session 失败: {}", error.message);
+        }
     }
 }

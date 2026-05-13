@@ -24,9 +24,35 @@ export type QuickOpenTargetInput = {
 	id: string
 }
 
-export async function resizeWindow(height: number) {
-	return invoke('helper_quick_resize_window', {
-		input: { devicePixelRatio: window.devicePixelRatio, height },
+export type QuickCreateCloseReason = 'escape' | 'blur' | 'submit' | 'toggle' | 'invalidated'
+
+export type QuickCreateOpenSessionResponse = {
+	sessionId: string
+	openedAt: string
+	currentScope: QuickCreateInitialState['currentScope']
+	defaultSpaceId: string
+	defaultPlacement: QuickCreatePlacement
+	spaces: QuickCreateInitialState['spaces']
+	projects: QuickCreateInitialState['projects']
+	recentTasks: QuickCreateInitialState['recentTasks']
+	recentProjects: QuickCreateInitialState['recentProjects']
+}
+
+export async function prepareSession() {
+	return invoke<QuickCreateOpenSessionResponse>('helper_quick_prepare_session')
+}
+
+export async function getOpenContextSnapshot() {
+	return invoke<QuickCreateInitialState>('helper_quick_get_initial_state')
+}
+
+export async function commitLayout(input: {
+	sessionId: string
+	height: number
+	devicePixelRatio: number
+}) {
+	return invoke('helper_quick_commit_layout', {
+		input,
 	})
 }
 
@@ -56,8 +82,15 @@ export async function reportLayoutDiagnostics(input: QuickCreateLayoutDiagnostic
 	return invoke('helper_quick_report_layout_diagnostics', { input })
 }
 
-export async function presentWindow() {
-	return invoke('helper_quick_present_window')
+export async function presentSession(input: { sessionId: string }) {
+	return invoke('helper_quick_present_session', { input })
+}
+
+export async function closeSession(input: {
+	sessionId: string
+	reason: QuickCreateCloseReason
+}) {
+	return invoke('helper_quick_close_session', { input })
 }
 
 export async function notifyFrontendReady() {
@@ -66,10 +99,6 @@ export async function notifyFrontendReady() {
 
 export async function notifyFrontendUnready() {
 	return invoke('helper_quick_frontend_unready')
-}
-
-export async function getInitialState() {
-	return invoke<QuickCreateInitialState>('helper_quick_get_initial_state')
 }
 
 export async function listProjectsBySpace(spaceId: string) {

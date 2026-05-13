@@ -20,6 +20,15 @@ pub enum QuickPopupOpenReason {
     GlobalShortcut,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QuickPopupCloseReason {
+    Escape,
+    Blur,
+    Submit,
+    Toggle,
+    Invalidated,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuickPopupSession {
     pub session_id: String,
@@ -87,23 +96,36 @@ impl QuickPopupRuntimeState {
         Ok(session)
     }
 
-    pub async fn begin_close(&self) -> Result<Option<QuickPopupSession>, &'static str> {
+    pub async fn begin_close_for(
+        &self,
+        session_id: &str,
+        _reason: QuickPopupCloseReason,
+    ) -> Result<Option<QuickPopupSession>, &'static str> {
         let mut guard = self.inner.write().await;
         match guard.phase {
-            QuickPopupPhase::Visible => {
+            QuickPopupPhase::Idle => Ok(None),
+            QuickPopupPhase::Closing => Err("popup runtime is already closing"),
+            QuickPopupPhase::Preparing
+            | QuickPopupPhase::WaitingLayout
+            | QuickPopupPhase::Presenting
+            | QuickPopupPhase::Visible
+            | QuickPopupPhase::Error => {
+                validate_active_session(&guard, session_id)?;
                 guard.phase = QuickPopupPhase::Closing;
                 Ok(guard.current_session.clone())
             }
-            QuickPopupPhase::Idle => Ok(None),
-            _ => Err("popup runtime cannot close from current phase"),
         }
     }
 
-    pub async fn mark_waiting_layout(&self) -> Result<QuickPopupSession, &'static str> {
+    pub async fn mark_waiting_layout_for(
+        &self,
+        session_id: &str,
+    ) -> Result<QuickPopupSession, &'static str> {
         let mut guard = self.inner.write().await;
         if guard.phase != QuickPopupPhase::Preparing {
             return Err("popup runtime cannot wait for layout from current phase");
         }
+        validate_active_session(&guard, session_id)?;
         let Some(session) = guard.current_session.clone() else {
             return Err("popup runtime missing current session");
         };
@@ -111,11 +133,15 @@ impl QuickPopupRuntimeState {
         Ok(session)
     }
 
-    pub async fn mark_presenting(&self) -> Result<QuickPopupSession, &'static str> {
+    pub async fn mark_presenting_for(
+        &self,
+        session_id: &str,
+    ) -> Result<QuickPopupSession, &'static str> {
         let mut guard = self.inner.write().await;
         if guard.phase != QuickPopupPhase::WaitingLayout {
             return Err("popup runtime cannot present from current phase");
         }
+        validate_active_session(&guard, session_id)?;
         let Some(session) = guard.current_session.clone() else {
             return Err("popup runtime missing current session");
         };
@@ -123,11 +149,15 @@ impl QuickPopupRuntimeState {
         Ok(session)
     }
 
-    pub async fn mark_visible(&self) -> Result<QuickPopupSession, &'static str> {
+    pub async fn mark_visible_for(
+        &self,
+        session_id: &str,
+    ) -> Result<QuickPopupSession, &'static str> {
         let mut guard = self.inner.write().await;
         if guard.phase != QuickPopupPhase::Presenting {
             return Err("popup runtime cannot become visible from current phase");
         }
+        validate_active_session(&guard, session_id)?;
         let Some(session) = guard.current_session.clone() else {
             return Err("popup runtime missing current session");
         };
@@ -135,10 +165,12 @@ impl QuickPopupRuntimeState {
         Ok(session)
     }
 
-    pub async fn finish_close(&self) {
+    pub async fn finish_close_for(&self, session_id: &str) -> Result<(), &'static str> {
         let mut guard = self.inner.write().await;
+        validate_active_session(&guard, session_id)?;
         guard.phase = QuickPopupPhase::Idle;
         guard.current_session = None;
+        Ok(())
     }
 
     pub async fn mark_error(&self) {
@@ -160,6 +192,33 @@ impl QuickPopupRuntimeState {
             .as_ref()
             .map(|session| session.session_id.clone())
     }
+
+    pub async fn require_active_session(
+        &self,
+        session_id: &str,
+    ) -> Result<QuickPopupSession, &'static str> {
+        let guard = self.inner.read().await;
+        validate_active_session(&guard, session_id)?;
+        guard
+            .current_session
+            .clone()
+            .ok_or("popup runtime missing current session")
+    }
+}
+
+fn validate_active_session(
+    snapshot: &QuickPopupRuntimeSnapshot,
+    session_id: &str,
+) -> Result<(), &'static str> {
+    let Some(current_session) = snapshot.current_session.as_ref() else {
+        return Err("popup runtime missing current session");
+    };
+
+    if current_session.session_id != session_id {
+        return Err("popup runtime session mismatch");
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -187,24 +246,52 @@ mod tests {
     #[tokio::test]
     async fn runtime_should_allow_happy_path_transitions() {
         let runtime = QuickPopupRuntimeState::default();
-        runtime
+        let session = runtime
             .begin_open(QuickPopupOpenReason::GlobalShortcut)
             .await
             .expect("open should succeed");
         runtime
-            .mark_waiting_layout()
+            .mark_waiting_layout_for(&session.session_id)
             .await
             .expect("waiting layout should succeed");
         runtime
-            .mark_presenting()
+            .mark_presenting_for(&session.session_id)
             .await
             .expect("presenting should succeed");
         runtime
-            .mark_visible()
+            .mark_visible_for(&session.session_id)
             .await
             .expect("visible should succeed");
-        runtime.begin_close().await.expect("close should succeed");
-        runtime.finish_close().await;
+        runtime
+            .begin_close_for(&session.session_id, QuickPopupCloseReason::Toggle)
+            .await
+            .expect("close should succeed");
+        runtime
+            .finish_close_for(&session.session_id)
+            .await
+            .expect("finish close should succeed");
+
+        let snapshot = runtime.snapshot().await;
+        assert_eq!(snapshot.phase, QuickPopupPhase::Idle);
+        assert!(snapshot.current_session.is_none());
+    }
+
+    #[tokio::test]
+    async fn runtime_should_allow_close_from_intermediate_phase() {
+        let runtime = QuickPopupRuntimeState::default();
+        let session = runtime
+            .begin_open(QuickPopupOpenReason::GlobalShortcut)
+            .await
+            .expect("open should succeed");
+
+        runtime
+            .begin_close_for(&session.session_id, QuickPopupCloseReason::Toggle)
+            .await
+            .expect("close should succeed from preparing");
+        runtime
+            .finish_close_for(&session.session_id)
+            .await
+            .expect("finish close should succeed");
 
         let snapshot = runtime.snapshot().await;
         assert_eq!(snapshot.phase, QuickPopupPhase::Idle);
@@ -215,7 +302,7 @@ mod tests {
     async fn runtime_should_reject_invalid_transition() {
         let runtime = QuickPopupRuntimeState::default();
         let err = runtime
-            .mark_presenting()
+            .mark_presenting_for("missing-session")
             .await
             .expect_err("presenting from idle should fail");
         assert_eq!(err, "popup runtime cannot present from current phase");
@@ -233,5 +320,19 @@ mod tests {
             .await
             .expect_err("second open should fail");
         assert_eq!(err, "popup runtime is not idle");
+    }
+
+    #[tokio::test]
+    async fn runtime_should_reject_mismatched_session() {
+        let runtime = QuickPopupRuntimeState::default();
+        runtime
+            .begin_open(QuickPopupOpenReason::GlobalShortcut)
+            .await
+            .expect("open should succeed");
+        let err = runtime
+            .mark_waiting_layout_for("wrong-session")
+            .await
+            .expect_err("mismatched session should fail");
+        assert_eq!(err, "popup runtime session mismatch");
     }
 }

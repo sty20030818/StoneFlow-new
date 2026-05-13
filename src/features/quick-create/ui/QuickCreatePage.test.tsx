@@ -3,16 +3,17 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import type { PropsWithChildren } from 'react'
 
 import {
+	closeSession,
+	commitLayout,
 	create,
 	createAndOpen,
-	getInitialState,
+	getOpenContextSnapshot,
 	listProjectsBySpace,
 	notifyFrontendReady,
 	notifyFrontendUnready,
 	openTarget,
-	presentWindow,
+	presentSession,
 	reportLayoutDiagnostics,
-	resizeWindow,
 	search,
 } from '@/features/quick-create/api/quickCreate'
 import { measureQuickCreateTargetHeight } from '@/features/quick-create/layout/measureQuickCreateLayout'
@@ -26,37 +27,28 @@ import type {
 } from '@/features/quick-create/model/types'
 import { formatDateLabel } from '@/features/quick-create/model/QuickCreateProvider'
 
-const hideMock = vi.fn()
-const setSizeMock = vi.fn()
-const setSizeConstraintsMock = vi.fn()
 const listenMock = vi.fn()
 const originalRequestAnimationFrame = window.requestAnimationFrame
 const originalCancelAnimationFrame = window.cancelAnimationFrame
+const DEFAULT_SESSION_ID = 'session-1'
 
 vi.mock('@/features/quick-create/api/quickCreate', () => ({
+	closeSession: vi.fn<typeof closeSession>(),
+	commitLayout: vi.fn<typeof commitLayout>(),
 	create: vi.fn<typeof create>(),
 	createAndOpen: vi.fn<typeof createAndOpen>(),
-	getInitialState: vi.fn<typeof getInitialState>(),
+	getOpenContextSnapshot: vi.fn<typeof getOpenContextSnapshot>(),
 	listProjectsBySpace: vi.fn<typeof listProjectsBySpace>(),
 	notifyFrontendReady: vi.fn<typeof notifyFrontendReady>(),
 	notifyFrontendUnready: vi.fn<typeof notifyFrontendUnready>(),
 	openTarget: vi.fn<typeof openTarget>(),
-	presentWindow: vi.fn<typeof presentWindow>(),
+	presentSession: vi.fn<typeof presentSession>(),
 	reportLayoutDiagnostics: vi.fn<typeof reportLayoutDiagnostics>(),
-	resizeWindow: vi.fn<typeof resizeWindow>(),
 	search: vi.fn<typeof search>(),
 }))
 
 vi.mock('@tauri-apps/api/event', () => ({
 	listen: (...args: unknown[]) => listenMock(...args),
-}))
-
-vi.mock('@tauri-apps/api/window', () => ({
-	getCurrentWindow: () => ({
-		hide: hideMock,
-		setSize: setSizeMock,
-		setSizeConstraints: setSizeConstraintsMock,
-	}),
 }))
 
 vi.mock('@/shared/ui/base/dropdown-menu', async () => {
@@ -143,16 +135,17 @@ vi.mock('@/shared/ui/base/calendar', () => ({
 	Calendar: () => <div data-testid='calendar' />,
 }))
 
+const mockedCloseSession = vi.mocked(closeSession)
+const mockedCommitLayout = vi.mocked(commitLayout)
 const mockedCreate = vi.mocked(create)
 const mockedCreateAndOpen = vi.mocked(createAndOpen)
-const mockedGetInitialState = vi.mocked(getInitialState)
+const mockedGetOpenContextSnapshot = vi.mocked(getOpenContextSnapshot)
 const mockedListProjectsBySpace = vi.mocked(listProjectsBySpace)
 const mockedNotifyFrontendReady = vi.mocked(notifyFrontendReady)
 const mockedNotifyFrontendUnready = vi.mocked(notifyFrontendUnready)
 const mockedOpenTarget = vi.mocked(openTarget)
-const mockedPresentWindow = vi.mocked(presentWindow)
+const mockedPresentSession = vi.mocked(presentSession)
 const mockedReportLayoutDiagnostics = vi.mocked(reportLayoutDiagnostics)
-const mockedResizeWindow = vi.mocked(resizeWindow)
 const mockedSearch = vi.mocked(search)
 
 describe('QuickCreatePage', () => {
@@ -163,19 +156,34 @@ describe('QuickCreatePage', () => {
 		window.cancelAnimationFrame = ((id: number) => {
 			window.clearTimeout(id)
 		}) as typeof window.cancelAnimationFrame
-		hideMock.mockReset()
-		setSizeMock.mockReset()
-		setSizeMock.mockResolvedValue(undefined)
-		setSizeConstraintsMock.mockReset()
-		setSizeConstraintsMock.mockResolvedValue(undefined)
 		listenMock.mockReset()
-		listenMock.mockResolvedValue(() => undefined)
+		listenMock.mockImplementation(async (event, handler) => {
+			if (event === 'quick-create:session-prepared') {
+				queueMicrotask(() => {
+					void (handler as (event: { payload: ReturnType<typeof createOpenSessionResponse> }) => void)({
+						payload: createOpenSessionResponse(),
+					})
+				})
+			}
+			if (event === 'quick-create:session-presented') {
+				queueMicrotask(() => {
+					void (handler as (event: { payload: { sessionId: string } }) => void)({
+						payload: { sessionId: DEFAULT_SESSION_ID },
+					})
+				})
+			}
+			return () => undefined
+		})
+		mockedCloseSession.mockReset()
+		mockedCloseSession.mockResolvedValue(undefined)
+		mockedCommitLayout.mockReset()
+		mockedCommitLayout.mockResolvedValue(undefined)
 		mockedCreate.mockReset()
 		mockedCreate.mockResolvedValue(undefined)
 		mockedCreateAndOpen.mockReset()
 		mockedCreateAndOpen.mockResolvedValue(undefined)
-		mockedGetInitialState.mockReset()
-		mockedGetInitialState.mockResolvedValue(createInitialState())
+		mockedGetOpenContextSnapshot.mockReset()
+		mockedGetOpenContextSnapshot.mockResolvedValue(createInitialState())
 		mockedListProjectsBySpace.mockReset()
 		mockedListProjectsBySpace.mockResolvedValue(createProjectsBySpace('space-2'))
 		mockedNotifyFrontendReady.mockReset()
@@ -184,12 +192,10 @@ describe('QuickCreatePage', () => {
 		mockedNotifyFrontendUnready.mockResolvedValue(undefined)
 		mockedOpenTarget.mockReset()
 		mockedOpenTarget.mockResolvedValue(undefined)
-		mockedPresentWindow.mockReset()
-		mockedPresentWindow.mockResolvedValue(undefined)
+		mockedPresentSession.mockReset()
+		mockedPresentSession.mockResolvedValue(undefined)
 		mockedReportLayoutDiagnostics.mockReset()
 		mockedReportLayoutDiagnostics.mockResolvedValue(undefined)
-		mockedResizeWindow.mockReset()
-		mockedResizeWindow.mockResolvedValue(undefined)
 		mockedSearch.mockReset()
 		mockedSearch.mockResolvedValue({
 			tasks: [createTaskResult({ id: 'task-search', title: 'Stone 搜索任务' })],
@@ -280,10 +286,16 @@ describe('QuickCreatePage', () => {
 
 			await screen.findByTestId('quick-create-recent-tasks-section')
 			await waitFor(() => {
-				expect(mockedResizeWindow).toHaveBeenCalledWith(expectedHeight)
+				expect(mockedCommitLayout).toHaveBeenCalledWith({
+					devicePixelRatio: 1,
+					height: expectedHeight,
+					sessionId: DEFAULT_SESSION_ID,
+				})
 			})
 
-			expect(mockedResizeWindow).not.toHaveBeenCalledWith(surfaceHeight)
+			expect(mockedCommitLayout).not.toHaveBeenCalledWith(
+				expect.objectContaining({ height: surfaceHeight }),
+			)
 		} finally {
 			offsetHeightSpy.mockRestore()
 			scrollHeightSpy.mockRestore()
@@ -468,7 +480,10 @@ describe('QuickCreatePage', () => {
 
 		fireEvent.keyDown(document, { key: 'Escape' })
 		await waitFor(() => {
-			expect(hideMock).toHaveBeenCalled()
+			expect(mockedCloseSession).toHaveBeenCalledWith({
+				reason: 'escape',
+				sessionId: DEFAULT_SESSION_ID,
+			})
 		})
 	})
 
@@ -510,7 +525,7 @@ describe('QuickCreatePage', () => {
 	})
 
 	it('创建成功后会静默刷新全局最近任务', async () => {
-		mockedGetInitialState.mockResolvedValueOnce(createInitialState()).mockResolvedValueOnce({
+		mockedGetOpenContextSnapshot.mockResolvedValueOnce({
 			...createInitialState(),
 			recentTasks: [createTaskResult({ id: 'task-new', title: '新建后最近任务' })],
 			recentProjects: [createProjectResult({ id: 'project-recent', name: '最近项目 A' })],
@@ -527,7 +542,7 @@ describe('QuickCreatePage', () => {
 			expect(mockedCreate).toHaveBeenCalledWith(expect.objectContaining({ title: '刚创建的任务' }))
 		})
 		await waitFor(() => {
-			expect(mockedGetInitialState).toHaveBeenCalledTimes(2)
+			expect(mockedGetOpenContextSnapshot).toHaveBeenCalledTimes(1)
 		})
 		await waitFor(() => {
 			expect(screen.getByText('新建后最近任务')).toBeInTheDocument()
@@ -553,30 +568,38 @@ describe('QuickCreatePage', () => {
 				}),
 			],
 		}
-		let prepareHandler: (() => void) | null = null
+		let preparedHandler: ((event: { payload: ReturnType<typeof createOpenSessionResponse> }) => void) | null =
+			null
 		listenMock.mockImplementation(async (event, handler) => {
-			if (event === 'quick-create:prepare') {
-				prepareHandler = handler as () => void
+			if (event === 'quick-create:session-prepared') {
+				preparedHandler = handler as (event: {
+					payload: ReturnType<typeof createOpenSessionResponse>
+				}) => void
+				queueMicrotask(() => {
+					preparedHandler?.({ payload: createOpenSessionResponse() })
+				})
 			}
 			return () => undefined
 		})
-		mockedGetInitialState
-			.mockResolvedValueOnce(createInitialState())
-			.mockResolvedValueOnce(nextInitialState)
 
 		render(<QuickCreatePage />)
 		await screen.findByTestId('quick-create-recent-tasks-section')
 		expect(screen.getByLabelText('空间选择')).toHaveTextContent('产品研发')
 
-		if (prepareHandler) {
-			;(prepareHandler as () => void)()
+		if (preparedHandler) {
+			;(preparedHandler as (event: {
+				payload: ReturnType<typeof createOpenSessionResponse>
+			}) => void)({
+				payload: createOpenSessionResponse({
+					currentScope: nextInitialState.currentScope,
+					defaultSpaceId: nextInitialState.defaultSpaceId,
+					projects: nextInitialState.projects,
+				}),
+			})
 		}
 
 		expect(screen.getByTestId('quick-create-recent-tasks-section')).toBeInTheDocument()
 
-		await waitFor(() => {
-			expect(mockedGetInitialState).toHaveBeenCalledTimes(2)
-		})
 		await waitFor(() => {
 			expect(screen.getByLabelText('空间选择')).toHaveTextContent('工程基础')
 		})
@@ -722,6 +745,27 @@ function createInitialState(): QuickCreateInitialState {
 		],
 		recentTasks: [createTaskResult({ id: 'task-recent', title: '最近任务 A' })],
 		recentProjects: [createProjectResult({ id: 'project-recent', name: '最近项目 A' })],
+	}
+}
+
+function createOpenSessionResponse(
+	overrides: Partial<QuickCreateInitialState & { sessionId: string; openedAt: string }> = {},
+) {
+	const initialState = {
+		...createInitialState(),
+		...overrides,
+	}
+
+	return {
+		sessionId: overrides.sessionId ?? DEFAULT_SESSION_ID,
+		openedAt: overrides.openedAt ?? '2026-05-13T08:00:00.000Z',
+		currentScope: initialState.currentScope,
+		defaultSpaceId: initialState.defaultSpaceId,
+		defaultPlacement: initialState.defaultPlacement,
+		spaces: initialState.spaces,
+		projects: initialState.projects,
+		recentTasks: initialState.recentTasks,
+		recentProjects: initialState.recentProjects,
 	}
 }
 

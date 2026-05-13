@@ -7,7 +7,7 @@ import {
 	type PropsWithChildren,
 } from 'react'
 
-import { search } from '@/features/quick-create/api/quickCreate'
+import { getOpenContextSnapshot, search } from '@/features/quick-create/api/quickCreate'
 import type {
 	QuickCreateContextValue,
 	QuickCreateDomainActions,
@@ -34,17 +34,19 @@ export function QuickCreateDomainProvider({ children }: PropsWithChildren) {
 	const { closeWindow, focusInput, projectSearchRef, registerHandleEscape, scheduleClose, titleInputRef } =
 		useQuickCreateTransientUi({
 			activePopover: state.activePopover,
+			requestClose: (reason) => sessionActions.requestClose(reason),
 		})
 	const loadProjectsForSpace = useQuickCreateProjectOptions({ dispatch })
 
 	const { refreshRecent } = useQuickCreateLifecycleBridge({
 		dispatch,
-		fetchSnapshot: sessionActions.fetchSnapshot,
+		fetchSnapshot: getOpenContextSnapshot,
 		focusInput,
 		hasInitialState: state.initialState !== null,
-		isPresentationPending: sessionState.isPresentationPending,
-		nextInitialState: sessionState.initialState,
+		nextOpenContext:
+			'openContext' in sessionState.phase ? sessionState.phase.openContext : null,
 		onRefreshRecentError: logRefreshRecentError,
+		shouldFocusInput: sessionState.phase.type === 'visible',
 	})
 
 	useQuickCreateSearchEffect({
