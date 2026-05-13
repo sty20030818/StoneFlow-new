@@ -103,8 +103,8 @@ export function QuickCreateWindowShell() {
 
 		presentationSentRef.current = true
 		void presentWindow().catch(() => {
-			presentationSentRef.current = false
-		})
+				presentationSentRef.current = false
+			})
 	}, [isWindowReady, state.isBootstrapping, state.isPresentationPending])
 
 	if (state.isBootstrapping) {

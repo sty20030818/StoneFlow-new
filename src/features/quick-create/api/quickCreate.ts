@@ -60,6 +60,14 @@ export async function presentWindow() {
 	return invoke('helper_quick_present_window')
 }
 
+export async function notifyFrontendReady() {
+	return invoke('helper_quick_frontend_ready')
+}
+
+export async function notifyFrontendUnready() {
+	return invoke('helper_quick_frontend_unready')
+}
+
 export async function getInitialState() {
 	return invoke<QuickCreateInitialState>('helper_quick_get_initial_state')
 }

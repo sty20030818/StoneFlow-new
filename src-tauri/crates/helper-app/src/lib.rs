@@ -16,6 +16,28 @@ pub mod panel;
 #[cfg(target_os = "windows")]
 pub mod panel_windows;
 
+use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::Manager;
+
+#[derive(Default)]
+pub struct QuickCreateFrontendState {
+    listener_ready: AtomicBool,
+}
+
+impl QuickCreateFrontendState {
+    pub fn is_listener_ready(&self) -> bool {
+        self.listener_ready.load(Ordering::SeqCst)
+    }
+
+    pub fn mark_listener_ready(&self) {
+        self.listener_ready.store(true, Ordering::SeqCst);
+    }
+
+    pub fn mark_listener_unready(&self) {
+        self.listener_ready.store(false, Ordering::SeqCst);
+    }
+}
+
 /// 组装 Helper 的 Tauri Builder。调用方（`src-tauri/helper-bin` 宿主）
 /// 负责调用 `.run(tauri::generate_context!())` 并处理 panic。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
@@ -54,6 +76,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         panel_windows::init_quick_create_panel(app.handle());
 
         shortcut::register_global_shortcut(app.handle());
+        app.manage(QuickCreateFrontendState::default());
 
         // 启动时做一次 Ping 自检，失败仅告警：主 App 还在启动可能晚于 Helper 连通，
         // 用户真正按下快捷键时重试连接即可。
@@ -78,6 +101,8 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         commands::helper_quick_open_target,
         commands::helper_quick_resize_window,
         commands::helper_quick_report_layout_diagnostics,
-        commands::helper_quick_present_window
+        commands::helper_quick_present_window,
+        commands::helper_quick_frontend_ready,
+        commands::helper_quick_frontend_unready
     ])
 }

@@ -25,6 +25,7 @@
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, Wry};
 use tauri_nspanel::{CollectionBehavior, ManagerExt, StyleMask, WebviewWindowExt};
 
+use crate::QuickCreateFrontendState;
 use crate::window_spec::{QUICK_CREATE_LABEL, QUICK_CREATE_TITLE, QUICK_CREATE_URL};
 use crate::window_spec::{
     QUICK_CREATE_SCREEN_TOP_OFFSET_RATIO, QUICK_CREATE_WINDOW_HEIGHT, QUICK_CREATE_WINDOW_WIDTH,
@@ -112,7 +113,7 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
 
     let app_for_prepare = app_handle.clone();
     handler.window_did_become_key(move |_notification| {
-        log::info!("helper: windowDidBecomeKey → emit quick-create:presented");
+        log::debug!("helper: windowDidBecomeKey → emit quick-create:presented");
         if let Some(window) = app_for_prepare.get_webview_window(QUICK_CREATE_LABEL) {
             if let Err(error) = window.emit("quick-create:presented", ()) {
                 log::warn!("helper: quick-create:presented 事件发送失败: {error}");
@@ -125,16 +126,14 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
         // 失去 key 就意味着用户已经在别处操作，直接隐藏面板。
         // 用 get_webview_panel 重新取引用，避免跨闭包搬运非 Send 类型。
         if let Ok(panel) = app_for_hide.get_webview_panel(QUICK_CREATE_LABEL) {
-            log::info!("helper: windowDidResignKey → hide panel");
+            log::debug!("helper: windowDidResignKey → hide panel");
             panel.hide();
         }
     });
 
     panel.set_event_handler(Some(handler.as_ref()));
 
-    log::info!(
-        "helper: quick create NSPanel 初始化完成 [level=101/PopUpMenu, style=NonActivating, collection=MoveToActiveSpace+FullScreenAuxiliary+IgnoresCycle, delegate=QuickCreatePanelEvents]"
-    );
+    log::info!("helper: quick create NSPanel 初始化完成");
 }
 
 /// Toggle 面板：可见则隐藏，否则只触发前端准备流程，等待 resize 完成后再真正显示。
@@ -148,21 +147,35 @@ pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
             return;
         }
     };
-    let emit_handle = app_handle.clone();
+    let Some(emit_window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
+        log::error!("helper: Option+Space 触发，但 quick create window 未初始化");
+        return;
+    };
+    let frontend_ready = app_handle
+        .try_state::<QuickCreateFrontendState>()
+        .map(|state| state.is_listener_ready())
+        .unwrap_or(false);
 
     let dispatch_result = app_handle.run_on_main_thread(move || {
         let visible = panel.is_visible();
-        log::info!("helper: Option+Space 触发 → panel.is_visible()={visible}");
+        log::debug!("helper: Option+Space 触发 → panel.is_visible()={visible}");
 
         if visible {
             // 直接 hide 即可——panel 的 resignKey delegate 回调还会再兜底一次，幂等。
-            log::info!("helper: 隐藏面板");
+            log::debug!("helper: 隐藏面板");
             panel.hide();
         } else {
-            log::info!("helper: emit quick-create:prepare（保持隐藏态）");
-            if let Err(error) = emit_handle.emit("quick-create:prepare", ()) {
-                log::warn!("helper: quick-create:prepare 事件发送失败: {error}");
+            if frontend_ready {
+                log::debug!("helper: emit quick-create:prepare（保持隐藏态）");
+                if let Err(error) = emit_window.emit("quick-create:prepare", ()) {
+                    log::warn!("helper: quick-create:prepare 事件发送失败: {error}");
+                }
+                return;
             }
+
+            log::warn!("helper: quick create 前端监听器未就绪，回退为直接 show_and_make_key");
+            place_panel_on_active_screen(panel.as_ref());
+            panel.show_and_make_key();
         }
     });
 
@@ -283,7 +296,12 @@ fn place_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel) {
     }
 
     log::info!(
-        "helper: 鼠标在 ({:.0},{:.0}) → 定位到屏 visible_frame=({:.0},{:.0},{:.0}×{:.0}) top_offset={:.0} panel=({:.0}×{:.0}) → origin=({x:.0},{y:.0})",
+        "helper: quick create panel 已定位 origin=({x:.0},{y:.0}) size=({:.0}×{:.0})",
+        panel_width,
+        panel_height,
+    );
+    log::debug!(
+        "helper: 鼠标在 ({:.0},{:.0}) → 屏幕 visible_frame=({:.0},{:.0},{:.0}×{:.0}) top_offset={:.0}",
         mouse_loc.x,
         mouse_loc.y,
         screen_frame.origin.x,
@@ -291,7 +309,5 @@ fn place_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel) {
         screen_frame.size.width,
         screen_frame.size.height,
         top_offset,
-        panel_width,
-        panel_height,
     );
 }

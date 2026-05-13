@@ -7,6 +7,8 @@ import {
 	createAndOpen,
 	getInitialState,
 	listProjectsBySpace,
+	notifyFrontendReady,
+	notifyFrontendUnready,
 	openTarget,
 	presentWindow,
 	reportLayoutDiagnostics,
@@ -36,6 +38,8 @@ vi.mock('@/features/quick-create/api/quickCreate', () => ({
 	createAndOpen: vi.fn<typeof createAndOpen>(),
 	getInitialState: vi.fn<typeof getInitialState>(),
 	listProjectsBySpace: vi.fn<typeof listProjectsBySpace>(),
+	notifyFrontendReady: vi.fn<typeof notifyFrontendReady>(),
+	notifyFrontendUnready: vi.fn<typeof notifyFrontendUnready>(),
 	openTarget: vi.fn<typeof openTarget>(),
 	presentWindow: vi.fn<typeof presentWindow>(),
 	reportLayoutDiagnostics: vi.fn<typeof reportLayoutDiagnostics>(),
@@ -143,6 +147,8 @@ const mockedCreate = vi.mocked(create)
 const mockedCreateAndOpen = vi.mocked(createAndOpen)
 const mockedGetInitialState = vi.mocked(getInitialState)
 const mockedListProjectsBySpace = vi.mocked(listProjectsBySpace)
+const mockedNotifyFrontendReady = vi.mocked(notifyFrontendReady)
+const mockedNotifyFrontendUnready = vi.mocked(notifyFrontendUnready)
 const mockedOpenTarget = vi.mocked(openTarget)
 const mockedPresentWindow = vi.mocked(presentWindow)
 const mockedReportLayoutDiagnostics = vi.mocked(reportLayoutDiagnostics)
@@ -172,6 +178,10 @@ describe('QuickCreatePage', () => {
 		mockedGetInitialState.mockResolvedValue(createInitialState())
 		mockedListProjectsBySpace.mockReset()
 		mockedListProjectsBySpace.mockResolvedValue(createProjectsBySpace('space-2'))
+		mockedNotifyFrontendReady.mockReset()
+		mockedNotifyFrontendReady.mockResolvedValue(undefined)
+		mockedNotifyFrontendUnready.mockReset()
+		mockedNotifyFrontendUnready.mockResolvedValue(undefined)
 		mockedOpenTarget.mockReset()
 		mockedOpenTarget.mockResolvedValue(undefined)
 		mockedPresentWindow.mockReset()
@@ -570,6 +580,14 @@ describe('QuickCreatePage', () => {
 		await waitFor(() => {
 			expect(screen.getByLabelText('空间选择')).toHaveTextContent('工程基础')
 		})
+	})
+
+	it('挂载后会通知 helper 前端监听器已就绪', async () => {
+		render(<QuickCreatePage />)
+
+		await screen.findByTestId('quick-create-recent-tasks-section')
+
+		expect(mockedNotifyFrontendReady).toHaveBeenCalledTimes(1)
 	})
 
 	it('搜索结果只显示有内容的分组标题', async () => {

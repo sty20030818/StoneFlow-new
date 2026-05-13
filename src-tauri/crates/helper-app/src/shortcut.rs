@@ -19,7 +19,7 @@ pub fn register_global_shortcut(app_handle: &AppHandle<tauri::Wry>) {
                 return;
             }
 
-            log::info!("helper: 快捷键触发 -> {QUICK_CREATE_SHORTCUT}");
+            log::debug!("helper: 快捷键触发 -> {QUICK_CREATE_SHORTCUT}");
 
             #[cfg(target_os = "macos")]
             crate::panel::toggle_quick_create_panel(&handle);
@@ -38,7 +38,7 @@ pub fn register_global_shortcut(app_handle: &AppHandle<tauri::Wry>) {
 
     match result {
         Ok(()) => {
-            log::info!("helper: 全局快捷键 {QUICK_CREATE_SHORTCUT} 注册成功（Quick Create 弹窗）")
+            log::info!("helper: 全局快捷键 {QUICK_CREATE_SHORTCUT} 注册成功")
         }
         Err(error) => log::warn!("helper: 全局快捷键 {QUICK_CREATE_SHORTCUT} 注册失败: {error}"),
     }

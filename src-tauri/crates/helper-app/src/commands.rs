@@ -11,6 +11,7 @@ use stoneflow_ipc_protocol::{
 use tauri::{LogicalSize, Manager, Size};
 
 use crate::{
+    QuickCreateFrontendState,
     ipc_client,
     window_spec::{QUICK_CREATE_LABEL, QUICK_CREATE_WINDOW_MIN_HEIGHT, QUICK_CREATE_WINDOW_WIDTH},
 };
@@ -325,7 +326,7 @@ pub async fn helper_quick_resize_window(
     let target_window_width = QUICK_CREATE_WINDOW_WIDTH * css_to_native_logical_ratio;
     let target_window_height = target_css_height * css_to_native_logical_ratio;
 
-    log::info!(
+    log::debug!(
         "helper: quick create resize 请求 css_size={:.1}×{:.1} dpr={} native_scale={:.3} ratio={:.4} -> applied_logical={:.1}×{:.1}",
         QUICK_CREATE_WINDOW_WIDTH,
         input.height,
@@ -442,7 +443,7 @@ pub async fn helper_quick_report_layout_diagnostics(
         })
         .unwrap_or_else(|| "native(window=missing)".to_owned());
 
-    log::info!(
+    log::debug!(
         "helper: quick create layout diagnostics phase={} target={:.1} viewport={:.1} dpr={:.3} visualViewport(width/height/scale)={:.1}/{:.1}/{:.3} document(client/scroll)={:.1}/{:.1} body(client/scroll)={:.1}/{:.1} root(client/scroll)={:.1}/{:.1} surface(offset/scroll)={:.1}/{:.1} content(offset/scroll)={:.1}/{:.1} footer(offset/scroll)={:.1}/{:.1} {}",
         input.phase,
         input.target_height,
@@ -508,6 +509,24 @@ pub async fn helper_quick_present_window(
             })?;
     }
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn helper_quick_frontend_ready(
+    frontend_state: tauri::State<'_, QuickCreateFrontendState>,
+) -> Result<(), QuickCreateErrorPayload> {
+    frontend_state.mark_listener_ready();
+    log::debug!("helper: quick create 前端监听器已就绪");
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn helper_quick_frontend_unready(
+    frontend_state: tauri::State<'_, QuickCreateFrontendState>,
+) -> Result<(), QuickCreateErrorPayload> {
+    frontend_state.mark_listener_unready();
+    log::debug!("helper: quick create 前端监听器已卸载");
     Ok(())
 }
 

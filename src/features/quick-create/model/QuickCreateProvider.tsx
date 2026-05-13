@@ -22,6 +22,8 @@ import {
 	createAndOpen,
 	getInitialState,
 	listProjectsBySpace,
+	notifyFrontendReady,
+	notifyFrontendUnready,
 	openTarget,
 	search,
 	type QuickCreateInput,
@@ -230,42 +232,68 @@ export function QuickCreateProvider({ children }: PropsWithChildren) {
 
 		let disposed = false
 		let unlisten: (() => void) | undefined
-		listen<void>(QUICK_CREATE_PREPARE_EVENT, () => {
+		const prepareListener = listen<void>(QUICK_CREATE_PREPARE_EVENT, () => {
 			void (async () => {
-				if (!initialStateRef.current) {
-					await resetPanelRef.current()
-				} else {
-					await refreshShownStateRef.current()
-				}
+				try {
+					if (!initialStateRef.current) {
+						await resetPanelRef.current()
+					} else {
+						await refreshShownStateRef.current()
+					}
 
-				if (!disposed) {
-					dispatch({ type: 'presentationRequested' })
+					if (!disposed) {
+						dispatch({ type: 'presentationRequested' })
+					}
+				} catch (error) {
+					logRefreshRecentError(error)
 				}
 			})()
-		}).then((dispose) => {
+		})
+		prepareListener.then((dispose) => {
 			if (disposed) {
 				dispose()
 				return
 			}
 			unlisten = dispose
+		}).catch((error) => {
+			logRefreshRecentError(error)
 		})
 
 		let unlistenPresented: (() => void) | undefined
-		listen<void>(QUICK_CREATE_PRESENTED_EVENT, () => {
+		const presentedListener = listen<void>(QUICK_CREATE_PRESENTED_EVENT, () => {
 			dispatch({ type: 'presentationCompleted' })
 			focusInput()
-		}).then((dispose) => {
+		})
+		presentedListener.then((dispose) => {
 			if (disposed) {
 				dispose()
 				return
 			}
 			unlistenPresented = dispose
+		}).catch((error) => {
+			logRefreshRecentError(error)
 		})
+
+		Promise.all([prepareListener, presentedListener])
+			.then(() => {
+				if (disposed) {
+					return
+				}
+				void notifyFrontendReady().catch(() => {
+					// helper 不可用或预览环境下允许静默失败。
+				})
+			})
+			.catch(() => {
+				// 单个 listener 已分别记录失败原因。
+			})
 
 		return () => {
 			disposed = true
 			unlisten?.()
 			unlistenPresented?.()
+			void notifyFrontendUnready().catch(() => {
+				// helper 不可用或预览环境下允许静默失败。
+			})
 			if (closeTimerRef.current !== null) {
 				window.clearTimeout(closeTimerRef.current)
 			}

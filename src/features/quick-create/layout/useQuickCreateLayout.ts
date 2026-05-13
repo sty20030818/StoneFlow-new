@@ -45,11 +45,19 @@ export function useQuickCreateLayout(measureKey: unknown): QuickCreateLayoutCont
 	const nodeMapRef = useRef(new Map<QuickCreateLayoutRegion, HTMLElement>())
 	const observerRef = useRef<ResizeObserver | null>(null)
 	const frameRef = useRef<number | null>(null)
+	const fallbackTimerRef = useRef<number | null>(null)
 	const mountedRef = useRef(false)
 	const refCallbacksRef = useRef(new Map<QuickCreateLayoutRegion, RefCallback<HTMLElement>>())
 
 	const measureNow = useCallback(() => {
-		frameRef.current = null
+		if (frameRef.current !== null) {
+			window.cancelAnimationFrame(frameRef.current)
+			frameRef.current = null
+		}
+		if (fallbackTimerRef.current !== null) {
+			window.clearTimeout(fallbackTimerRef.current)
+			fallbackTimerRef.current = null
+		}
 		if (!mountedRef.current) {
 			return
 		}
@@ -87,6 +95,7 @@ export function useQuickCreateLayout(measureKey: unknown): QuickCreateLayoutCont
 		}
 
 		frameRef.current = window.requestAnimationFrame(measureNow)
+		fallbackTimerRef.current = window.setTimeout(measureNow, 0)
 	}, [measureNow])
 
 	const registerRegion = useCallback(
@@ -145,6 +154,10 @@ export function useQuickCreateLayout(measureKey: unknown): QuickCreateLayoutCont
 			if (frameRef.current !== null) {
 				window.cancelAnimationFrame(frameRef.current)
 				frameRef.current = null
+			}
+			if (fallbackTimerRef.current !== null) {
+				window.clearTimeout(fallbackTimerRef.current)
+				fallbackTimerRef.current = null
 			}
 		}
 	}, [requestMeasure])
