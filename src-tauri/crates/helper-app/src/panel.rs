@@ -92,6 +92,7 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
     // 层级、样式、集合行为三件套（缺一不可）。
     panel.set_level(101); // NSPopUpMenuWindowLevel
     panel.set_style_mask(StyleMask::empty().nonactivating_panel().into());
+    set_panel_shadow(panel.as_ref(), false);
     panel.set_collection_behavior(
         CollectionBehavior::new()
             .move_to_active_space()
@@ -214,6 +215,14 @@ pub fn resize_quick_create_panel_preserving_top(
             }
         })
         .map_err(|error| format!("主线程调整 quick create frame 失败: {error}"))
+}
+
+fn set_panel_shadow(panel: &dyn tauri_nspanel::Panel, enabled: bool) {
+    let ns_panel = panel.as_panel();
+    unsafe {
+        let _: () = objc2::msg_send![ns_panel, setHasShadow: enabled];
+        let _: () = objc2::msg_send![ns_panel, invalidateShadow];
+    }
 }
 
 /// 将面板居中到「用户当前正在操作」的屏幕（以鼠标所在屏为准）。

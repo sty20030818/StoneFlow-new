@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 import { QuickCreateProvider } from '@/features/quick-create/model/QuickCreateProvider'
-import { QuickCreateRoot } from '@/features/quick-create/ui/QuickCreateRoot'
+import { QuickCreateWindowShell } from '@/features/quick-create/shell/QuickCreateWindowShell'
 
 export function QuickCreatePage() {
 	useEffect(() => {
@@ -12,9 +12,9 @@ export function QuickCreatePage() {
 	}, [])
 
 	return (
-		<div className='flex h-full min-h-0 items-start bg-transparent p-9'>
+		<div className='flex h-full min-h-0 items-start bg-transparent'>
 			<QuickCreateProvider>
-				<QuickCreateRoot />
+				<QuickCreateWindowShell />
 			</QuickCreateProvider>
 		</div>
 	)

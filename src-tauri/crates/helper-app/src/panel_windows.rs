@@ -1,11 +1,11 @@
 //! Quick Create Windows 浮窗生命周期。
 //!
-//! Windows 没有 macOS `NSPanel` 等价物；v1 先使用 Tauri 标准 `WebviewWindow`
-//! 补齐可用体验，后续如需更接近原生工具窗，可在本模块追加 HWND 扩展样式。
+//! Windows 没有 macOS `NSPanel` 等价物；这里使用标准 `WebviewWindow`
+//! 承载透明 WebView，阴影由前端 CSS 在安全区内绘制。
 
 use tauri::{
-    webview::Color, AppHandle, Emitter, Manager, Monitor, PhysicalPosition, WebviewUrl,
-    WebviewWindow, WebviewWindowBuilder, WindowEvent, Wry,
+    AppHandle, Emitter, Manager, Monitor, PhysicalPosition, WebviewUrl, WebviewWindow,
+    WebviewWindowBuilder, WindowEvent, Wry,
 };
 
 use crate::window_spec::{
@@ -26,6 +26,7 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
     )
     .title(QUICK_CREATE_TITLE)
     .inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
+    .auto_resize()
     .resizable(false)
     .fullscreen(false)
     .always_on_top(true)
@@ -33,7 +34,7 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
     .decorations(false)
     .shadow(false)
     .transparent(true)
-    .background_color(Color(0, 0, 0, 0))
+    .zoom_hotkeys_enabled(false)
     .center()
     .visible(false)
     .build()
@@ -49,13 +50,11 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>) {
     if let Err(error) = window.set_shadow(false) {
         log::warn!("helper: 关闭 windows quick create 原生阴影失败: {error}");
     }
-    if let Err(error) = window.set_background_color(Some(Color(0, 0, 0, 0))) {
-        log::warn!("helper: 设置 windows quick create 透明背景失败: {error}");
-    }
+    reset_webview_zoom(&window);
     log::info!("helper: windows quick create 浮窗初始化完成 [Tauri WebviewWindow]");
 }
 
-/// Toggle 浮窗：可见则隐藏，不可见则定位、显示、聚焦并通知前端重置输入框。
+/// Toggle 浮窗：可见则隐藏，不可见则先通知前端准备布局。
 pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
     let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
         log::error!("helper: Option+Space 触发，但 windows quick create 窗口未初始化");
@@ -79,19 +78,38 @@ pub fn toggle_quick_create_panel(app_handle: &AppHandle<Wry>) {
         return;
     }
 
+    if let Err(error) = window.emit("quick-create:prepare", ()) {
+        log::warn!("helper: quick-create:prepare 事件发送失败: {error}");
+    }
+}
+
+/// 前端完成刷新与 resize 后调用，真正显示并聚焦窗口。
+pub fn present_quick_create_window(app_handle: &AppHandle<Wry>) -> Result<(), String> {
+    let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
+        return Err("quick create 窗口未初始化".to_owned());
+    };
+
+    reset_webview_zoom(&window);
     position_window_on_active_monitor(&window);
 
-    if let Err(error) = window.show() {
-        log::warn!("helper: 显示 windows quick create 失败: {error}");
-        return;
-    }
+    window
+        .show()
+        .map_err(|error| format!("显示 windows quick create 失败: {error}"))?;
 
     if let Err(error) = window.set_focus() {
         log::warn!("helper: 聚焦 windows quick create 失败: {error}");
     }
 
-    if let Err(error) = window.emit("quick-create:shown", ()) {
-        log::warn!("helper: quick-create:shown 事件发送失败: {error}");
+    if let Err(error) = window.emit("quick-create:presented", ()) {
+        log::warn!("helper: quick-create:presented 事件发送失败: {error}");
+    }
+
+    Ok(())
+}
+
+fn reset_webview_zoom(window: &WebviewWindow<Wry>) {
+    if let Err(error) = window.set_zoom(1.0) {
+        log::warn!("helper: 重置 windows quick create WebView zoom 失败: {error}");
     }
 }
 
@@ -131,8 +149,18 @@ fn position_window_on_active_monitor(window: &WebviewWindow<Wry>) {
 
     let work_area = monitor.work_area();
     let scale_factor = monitor.scale_factor();
-    let window_width = QUICK_CREATE_WINDOW_WIDTH * scale_factor;
-    let window_height = QUICK_CREATE_WINDOW_HEIGHT * scale_factor;
+    let (window_width, window_height) = match window.inner_size() {
+        Ok(size) => (size.width as f64, size.height as f64),
+        Err(error) => {
+            log::warn!(
+                "helper: 读取 windows quick create 当前 inner_size 失败，回退默认尺寸: {error}"
+            );
+            (
+                QUICK_CREATE_WINDOW_WIDTH * scale_factor,
+                QUICK_CREATE_WINDOW_HEIGHT * scale_factor,
+            )
+        }
+    };
     let x = work_area.position.x as f64 + (work_area.size.width as f64 - window_width) / 2.0;
     let y = work_area.position.y as f64 + (work_area.size.height as f64 - window_height) / 2.0;
 

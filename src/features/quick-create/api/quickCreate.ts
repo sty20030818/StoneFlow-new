@@ -26,8 +26,34 @@ export type QuickOpenTargetInput = {
 
 export async function resizeWindow(height: number) {
 	return invoke('helper_quick_resize_window', {
-		input: { height },
+		input: { devicePixelRatio: window.devicePixelRatio, height },
 	})
+}
+
+export type QuickCreateLayoutDiagnostics = {
+	phase: string
+	targetHeight: number
+	viewportHeight: number
+	devicePixelRatio: number
+	visualViewportWidth: number
+	visualViewportHeight: number
+	visualViewportScale: number
+	documentClientHeight: number
+	documentScrollHeight: number
+	bodyClientHeight: number
+	bodyScrollHeight: number
+	rootClientHeight: number
+	rootScrollHeight: number
+	surfaceOffsetHeight: number
+	surfaceScrollHeight: number
+	contentOffsetHeight: number
+	contentScrollHeight: number
+	footerOffsetHeight: number
+	footerScrollHeight: number
+}
+
+export async function reportLayoutDiagnostics(input: QuickCreateLayoutDiagnostics) {
+	return invoke('helper_quick_report_layout_diagnostics', { input })
 }
 
 export async function presentWindow() {

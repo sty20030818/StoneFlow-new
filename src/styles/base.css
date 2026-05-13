@@ -32,10 +32,15 @@
 	/* Quick Create 浮层：窗口透明由面板自身圆角裁切，避免 body/#root 在圆角外露出白底。 */
 	body[data-quick-create] {
 		background: transparent !important;
+		height: auto;
+		min-height: 0;
 	}
 
 	body[data-quick-create] #root {
 		background: transparent !important;
+		height: auto;
+		min-height: 0;
+		overflow: visible;
 	}
 
 	a {

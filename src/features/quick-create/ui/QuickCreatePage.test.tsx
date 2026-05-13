@@ -9,9 +9,11 @@ import {
 	listProjectsBySpace,
 	openTarget,
 	presentWindow,
+	reportLayoutDiagnostics,
 	resizeWindow,
 	search,
 } from '@/features/quick-create/api/quickCreate'
+import { measureQuickCreateTargetHeight } from '@/features/quick-create/layout/measureQuickCreateLayout'
 import { QuickCreatePage } from '@/features/quick-create/ui/QuickCreatePage'
 import type {
 	QuickCreateInitialState,
@@ -36,6 +38,7 @@ vi.mock('@/features/quick-create/api/quickCreate', () => ({
 	listProjectsBySpace: vi.fn<typeof listProjectsBySpace>(),
 	openTarget: vi.fn<typeof openTarget>(),
 	presentWindow: vi.fn<typeof presentWindow>(),
+	reportLayoutDiagnostics: vi.fn<typeof reportLayoutDiagnostics>(),
 	resizeWindow: vi.fn<typeof resizeWindow>(),
 	search: vi.fn<typeof search>(),
 }))
@@ -142,6 +145,7 @@ const mockedGetInitialState = vi.mocked(getInitialState)
 const mockedListProjectsBySpace = vi.mocked(listProjectsBySpace)
 const mockedOpenTarget = vi.mocked(openTarget)
 const mockedPresentWindow = vi.mocked(presentWindow)
+const mockedReportLayoutDiagnostics = vi.mocked(reportLayoutDiagnostics)
 const mockedResizeWindow = vi.mocked(resizeWindow)
 const mockedSearch = vi.mocked(search)
 
@@ -172,6 +176,8 @@ describe('QuickCreatePage', () => {
 		mockedOpenTarget.mockResolvedValue(undefined)
 		mockedPresentWindow.mockReset()
 		mockedPresentWindow.mockResolvedValue(undefined)
+		mockedReportLayoutDiagnostics.mockReset()
+		mockedReportLayoutDiagnostics.mockResolvedValue(undefined)
 		mockedResizeWindow.mockReset()
 		mockedResizeWindow.mockResolvedValue(undefined)
 		mockedSearch.mockReset()
@@ -198,7 +204,7 @@ describe('QuickCreatePage', () => {
 		expect(input).toBeInTheDocument()
 	})
 
-	it('root 保持 composer、action board、footer 三段逻辑分区', async () => {
+	it('页面保持 composer、action board、footer 三段逻辑分区', async () => {
 		render(<QuickCreatePage />)
 
 		await screen.findByTestId('quick-create-recent-tasks-section')
@@ -206,6 +212,73 @@ describe('QuickCreatePage', () => {
 		expect(screen.getByTestId('quick-create-composer')).toBeInTheDocument()
 		expect(screen.getByTestId('quick-create-action-board')).toBeInTheDocument()
 		expect(screen.getByTestId('quick-create-footer')).toBeInTheDocument()
+	})
+
+	it('resize 使用完整内容流高度和前端阴影安全区，避免 footer 或阴影被裁切', async () => {
+		const regionSumHeight = 96 + 44 + 118 + 120 + 46
+		const contentFlowHeight = regionSumHeight + 24
+		const surfaceHeight = contentFlowHeight + 2
+		const expectedHeight = surfaceHeight + 72
+		const offsetHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
+					return surfaceHeight
+				}
+				if (this.dataset.testid === 'quick-create-content-flow') {
+					return contentFlowHeight
+				}
+				if (this.querySelector('[data-testid="quick-create-composer"]')) {
+					return 96
+				}
+				if (this.querySelector('[data-testid="quick-create-create-section"]')) {
+					return 44
+				}
+				if (this.dataset.testid === 'quick-create-task-board-region') {
+					return 118
+				}
+				if (this.dataset.testid === 'quick-create-project-board-region') {
+					return 120
+				}
+				if (this.querySelector('[data-testid="quick-create-footer"]')) {
+					return 46
+				}
+
+				return 0
+			})
+		const scrollHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.dataset.testid === 'quick-create-content-flow') {
+					return contentFlowHeight
+				}
+
+				return 0
+			})
+		const clientHeightSpy = vi
+			.spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
+					return surfaceHeight - 2
+				}
+
+				return 0
+			})
+
+		try {
+			render(<QuickCreatePage />)
+
+			await screen.findByTestId('quick-create-recent-tasks-section')
+			await waitFor(() => {
+				expect(mockedResizeWindow).toHaveBeenCalledWith(expectedHeight)
+			})
+
+			expect(mockedResizeWindow).not.toHaveBeenCalledWith(surfaceHeight)
+		} finally {
+			offsetHeightSpy.mockRestore()
+			scrollHeightSpy.mockRestore()
+			clientHeightSpy.mockRestore()
+		}
 	})
 
 	it('composer 保持 primary/advanced 分区，展开 advanced 不影响基础输入区', async () => {
@@ -521,6 +594,91 @@ describe('QuickCreatePage', () => {
 describe('formatDateLabel', () => {
 	it('按本地日期解析 yyyy-MM-dd，避免 UTC 偏移', () => {
 		expect(formatDateLabel('2026-05-01')).toBe('5/1')
+	})
+})
+
+describe('measureQuickCreateTargetHeight', () => {
+	it('缺 toast 时按固定区域和 surface chrome 求和', () => {
+		expect(
+			measureQuickCreateTargetHeight({
+				composerHeight: 92,
+				createRowHeight: 42,
+				taskBoardHeight: 110,
+				projectBoardHeight: 116,
+				footerHeight: 44,
+				surfaceOffsetHeight: 406,
+				surfaceClientHeight: 404,
+			}),
+		).toBe(478)
+	})
+
+	it('内容流高度高于分区求和时，以内容流为准', () => {
+		expect(
+			measureQuickCreateTargetHeight({
+				contentHeight: 430,
+				composerHeight: 92,
+				createRowHeight: 42,
+				taskBoardHeight: 110,
+				projectBoardHeight: 116,
+				footerHeight: 44,
+				surfaceOffsetHeight: 432,
+				surfaceClientHeight: 430,
+			}),
+		).toBe(504)
+	})
+
+	it('含 toast 时把 toast 自然高度纳入窗口高度', () => {
+		expect(
+			measureQuickCreateTargetHeight({
+				composerHeight: 92,
+				toastHeight: 28,
+				createRowHeight: 42,
+				taskBoardHeight: 110,
+				projectBoardHeight: 116,
+				footerHeight: 44,
+				surfaceOffsetHeight: 434,
+				surfaceClientHeight: 432,
+			}),
+		).toBe(506)
+	})
+
+	it('只有 task board 时 project board 按 0 计算', () => {
+		expect(
+			measureQuickCreateTargetHeight({
+				composerHeight: 92,
+				createRowHeight: 42,
+				taskBoardHeight: 110,
+				footerHeight: 44,
+				surfaceOffsetHeight: 290,
+				surfaceClientHeight: 288,
+			}),
+		).toBe(362)
+	})
+
+	it('task 和 project 双 board 时完整展开求和', () => {
+		expect(
+			measureQuickCreateTargetHeight({
+				composerHeight: 92,
+				createRowHeight: 42,
+				taskBoardHeight: 110,
+				projectBoardHeight: 116,
+				footerHeight: 44,
+				surfaceOffsetHeight: 406,
+				surfaceClientHeight: 404,
+			}),
+		).toBe(478)
+	})
+
+	it('空态缺 board 时只计算固定区域', () => {
+		expect(
+			measureQuickCreateTargetHeight({
+				composerHeight: 92,
+				createRowHeight: 42,
+				footerHeight: 44,
+				surfaceOffsetHeight: 180,
+				surfaceClientHeight: 178,
+			}),
+		).toBe(252)
 	})
 })
 

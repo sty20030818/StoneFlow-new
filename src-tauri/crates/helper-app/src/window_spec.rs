@@ -10,11 +10,12 @@ pub const QUICK_CREATE_URL: &str = "index.html#/quick-create";
 pub const QUICK_CREATE_PANEL_WIDTH: f64 = 688.0;
 pub const QUICK_CREATE_PANEL_HEIGHT: f64 = 408.0;
 pub const QUICK_CREATE_PANEL_MIN_HEIGHT: f64 = 292.0;
-
-/// 透明安全区：专门给 CSS 阴影留出可绘制空间，也是 helper 唯一的 frame 常量来源。
 pub const QUICK_CREATE_SHADOW_PADDING: f64 = 36.0;
 
-/// 真实窗口尺寸 = 视觉 panel + 透明安全区 * 2。
+/// 原生窗口尺寸 = 视觉 panel 尺寸 + CSS 阴影透明安全区。
+///
+/// Quick Create 的阴影由前端 box-shadow 绘制，WebView 必须保留透明安全区，
+/// 否则阴影会被窗口边界裁切。
 pub const QUICK_CREATE_WINDOW_WIDTH: f64 =
     QUICK_CREATE_PANEL_WIDTH + QUICK_CREATE_SHADOW_PADDING * 2.0;
 pub const QUICK_CREATE_WINDOW_HEIGHT: f64 =

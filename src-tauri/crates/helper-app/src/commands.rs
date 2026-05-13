@@ -18,6 +18,9 @@ use crate::{
 #[cfg(target_os = "macos")]
 use crate::panel;
 
+#[cfg(target_os = "windows")]
+use crate::panel_windows;
+
 #[derive(Debug, Clone, Serialize)]
 pub struct QuickCreateErrorPayload {
     #[serde(rename = "type")]
@@ -98,6 +101,32 @@ pub struct HelperQuickOpenTargetInput {
 #[serde(rename_all = "camelCase")]
 pub struct HelperQuickResizeWindowInput {
     pub height: f64,
+    #[serde(default)]
+    pub device_pixel_ratio: Option<f64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperQuickLayoutDiagnosticsInput {
+    pub phase: String,
+    pub target_height: f64,
+    pub viewport_height: f64,
+    pub device_pixel_ratio: f64,
+    pub visual_viewport_width: f64,
+    pub visual_viewport_height: f64,
+    pub visual_viewport_scale: f64,
+    pub document_client_height: f64,
+    pub document_scroll_height: f64,
+    pub body_client_height: f64,
+    pub body_scroll_height: f64,
+    pub root_client_height: f64,
+    pub root_scroll_height: f64,
+    pub surface_offset_height: f64,
+    pub surface_scroll_height: f64,
+    pub content_offset_height: f64,
+    pub content_scroll_height: f64,
+    pub footer_offset_height: f64,
+    pub footer_scroll_height: f64,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize)]
@@ -286,18 +315,28 @@ pub async fn helper_quick_resize_window(
         });
     };
 
-    let target_window_height = input.height.max(QUICK_CREATE_WINDOW_MIN_HEIGHT);
+    let native_scale_factor = window.scale_factor().unwrap_or(1.0);
+    let css_to_native_logical_ratio =
+        quick_create_css_to_native_logical_ratio(input.device_pixel_ratio, native_scale_factor);
+    let target_css_height = input.height.max(QUICK_CREATE_WINDOW_MIN_HEIGHT);
+    let target_window_width = QUICK_CREATE_WINDOW_WIDTH * css_to_native_logical_ratio;
+    let target_window_height = target_css_height * css_to_native_logical_ratio;
 
     log::info!(
-        "helper: quick create resize 请求 height={:.1} -> applied={:.1}",
+        "helper: quick create resize 请求 css_size={:.1}×{:.1} dpr={} native_scale={:.3} ratio={:.4} -> applied_logical={:.1}×{:.1}",
+        QUICK_CREATE_WINDOW_WIDTH,
         input.height,
+        format_optional_f64(input.device_pixel_ratio),
+        native_scale_factor,
+        css_to_native_logical_ratio,
+        target_window_width,
         target_window_height
     );
 
     window
         .set_min_size(Some(Size::Logical(LogicalSize::new(
-            QUICK_CREATE_WINDOW_WIDTH,
-            QUICK_CREATE_WINDOW_MIN_HEIGHT,
+            QUICK_CREATE_WINDOW_WIDTH * css_to_native_logical_ratio,
+            QUICK_CREATE_WINDOW_MIN_HEIGHT * css_to_native_logical_ratio,
         ))))
         .map_err(|error| QuickCreateErrorPayload {
             type_: "Internal",
@@ -312,7 +351,26 @@ pub async fn helper_quick_resize_window(
         },
     )?;
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    {
+        let target_size =
+            Size::Logical(LogicalSize::new(target_window_width, target_window_height));
+        window
+            .set_size(target_size)
+            .map_err(|error| QuickCreateErrorPayload {
+                type_: "Internal",
+                message: format!("调整 quick create 窗口高度失败: {error}"),
+            })?;
+        window
+            .as_ref()
+            .set_size(target_size)
+            .map_err(|error| QuickCreateErrorPayload {
+                type_: "Internal",
+                message: format!("调整 quick create WebView 高度失败: {error}"),
+            })?;
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     window
         .set_size(Size::Logical(LogicalSize::new(
             QUICK_CREATE_WINDOW_WIDTH,
@@ -322,6 +380,88 @@ pub async fn helper_quick_resize_window(
             type_: "Internal",
             message: format!("调整 quick create 窗口高度失败: {error}"),
         })?;
+
+    Ok(())
+}
+
+fn quick_create_css_to_native_logical_ratio(
+    device_pixel_ratio: Option<f64>,
+    native_scale_factor: f64,
+) -> f64 {
+    let safe_native_scale_factor = positive_or_one(native_scale_factor);
+    let safe_device_pixel_ratio = device_pixel_ratio
+        .filter(|ratio| ratio.is_finite() && *ratio > 0.0)
+        .unwrap_or(safe_native_scale_factor);
+
+    // 前端测量值是 CSS px；Tauri LogicalSize 是 native logical px。
+    // 在 Windows WebView2 中 devicePixelRatio 可能与窗口 scale_factor 不完全相等。
+    safe_device_pixel_ratio / safe_native_scale_factor
+}
+
+fn positive_or_one(value: f64) -> f64 {
+    if value.is_finite() && value > 0.0 {
+        value
+    } else {
+        1.0
+    }
+}
+
+fn format_optional_f64(value: Option<f64>) -> String {
+    value
+        .map(|value| format!("{value:.3}"))
+        .unwrap_or_else(|| "missing".to_owned())
+}
+
+#[tauri::command]
+pub async fn helper_quick_report_layout_diagnostics(
+    app_handle: tauri::AppHandle,
+    input: HelperQuickLayoutDiagnosticsInput,
+) -> Result<(), QuickCreateErrorPayload> {
+    let native_metrics = app_handle
+        .get_webview_window(QUICK_CREATE_LABEL)
+        .map(|window| {
+            let scale_factor = window.scale_factor().unwrap_or(1.0);
+            let inner = window
+                .inner_size()
+                .map(|size| format!("{}×{}", size.width, size.height))
+                .unwrap_or_else(|error| format!("err:{error}"));
+            let outer = window
+                .outer_size()
+                .map(|size| format!("{}×{}", size.width, size.height))
+                .unwrap_or_else(|error| format!("err:{error}"));
+            let webview = window
+                .as_ref()
+                .size()
+                .map(|size| format!("{}×{}", size.width, size.height))
+                .unwrap_or_else(|error| format!("err:{error}"));
+
+            format!("native(scale={scale_factor:.2} inner={inner} outer={outer} webview={webview})")
+        })
+        .unwrap_or_else(|| "native(window=missing)".to_owned());
+
+    log::info!(
+        "helper: quick create layout diagnostics phase={} target={:.1} viewport={:.1} dpr={:.3} visualViewport(width/height/scale)={:.1}/{:.1}/{:.3} document(client/scroll)={:.1}/{:.1} body(client/scroll)={:.1}/{:.1} root(client/scroll)={:.1}/{:.1} surface(offset/scroll)={:.1}/{:.1} content(offset/scroll)={:.1}/{:.1} footer(offset/scroll)={:.1}/{:.1} {}",
+        input.phase,
+        input.target_height,
+        input.viewport_height,
+        input.device_pixel_ratio,
+        input.visual_viewport_width,
+        input.visual_viewport_height,
+        input.visual_viewport_scale,
+        input.document_client_height,
+        input.document_scroll_height,
+        input.body_client_height,
+        input.body_scroll_height,
+        input.root_client_height,
+        input.root_scroll_height,
+        input.surface_offset_height,
+        input.surface_scroll_height,
+        input.content_offset_height,
+        input.content_scroll_height,
+        input.footer_offset_height,
+        input.footer_scroll_height,
+        native_metrics,
+    );
 
     Ok(())
 }
@@ -336,7 +476,15 @@ pub async fn helper_quick_present_window(
         message,
     })?;
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
+    panel_windows::present_quick_create_window(&app_handle).map_err(|message| {
+        QuickCreateErrorPayload {
+            type_: "Internal",
+            message,
+        }
+    })?;
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
         let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
             return Err(QuickCreateErrorPayload {
