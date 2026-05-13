@@ -315,6 +315,9 @@ pub async fn helper_quick_resize_window(
         });
     };
 
+    #[cfg(target_os = "windows")]
+    panel_windows::position_window_on_active_monitor(&window);
+
     let native_scale_factor = window.scale_factor().unwrap_or(1.0);
     let css_to_native_logical_ratio =
         quick_create_css_to_native_logical_ratio(input.device_pixel_ratio, native_scale_factor);

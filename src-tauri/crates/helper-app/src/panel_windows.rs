@@ -135,7 +135,7 @@ fn install_focus_auto_hide(window: &WebviewWindow<Wry>) {
 }
 
 /// 将窗口定位到鼠标所在屏幕的工作区中央，与 macOS helper 的居中语义保持一致。
-fn position_window_on_active_monitor(window: &WebviewWindow<Wry>) {
+pub(crate) fn position_window_on_active_monitor(window: &WebviewWindow<Wry>) {
     let (monitor, cursor_position) = match active_monitor_from_cursor(window) {
         Some(result) => result,
         None => {

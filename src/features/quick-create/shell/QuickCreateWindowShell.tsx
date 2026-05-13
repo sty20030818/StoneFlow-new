@@ -11,19 +11,26 @@ import { QuickCreateFrame } from '@/features/quick-create/ui/QuickCreateFrame'
 
 const QUICK_CREATE_MIN_WINDOW_HEIGHT = 364
 const QUICK_CREATE_RESIZE_THRESHOLD = 2
+const QUICK_CREATE_DPR_THRESHOLD = 0.001
+
+type LastAppliedResize = {
+	devicePixelRatio: number
+	height: number
+}
 
 export function QuickCreateWindowShell() {
 	const { derived, state } = useQuickCreate()
 	const layout = useQuickCreateLayout(state.layoutVersion)
 	const [isWindowReady, setWindowReady] = useState(false)
-	const lastAppliedHeightRef = useRef<number | null>(null)
+	const viewportResizeRevision = useQuickCreateViewportResizeRevision(layout.requestMeasure)
+	const lastAppliedResizeRef = useRef<LastAppliedResize | null>(null)
 	const presentationSentRef = useRef(false)
 	const lastLayoutVersionRef = useRef<number>(state.layoutVersion)
 
 	useLayoutEffect(() => {
 		if (lastLayoutVersionRef.current !== state.layoutVersion) {
 			lastLayoutVersionRef.current = state.layoutVersion
-			lastAppliedHeightRef.current = null
+			lastAppliedResizeRef.current = null
 			presentationSentRef.current = false
 			setWindowReady(false)
 		}
@@ -35,15 +42,22 @@ export function QuickCreateWindowShell() {
 		}
 
 		const targetHeight = Math.max(layout.targetHeight, QUICK_CREATE_MIN_WINDOW_HEIGHT)
+		const devicePixelRatio = readDevicePixelRatio()
+		const lastAppliedResize = lastAppliedResizeRef.current
 
 		if (
-			lastAppliedHeightRef.current !== null &&
-			Math.abs(lastAppliedHeightRef.current - targetHeight) < QUICK_CREATE_RESIZE_THRESHOLD
+			lastAppliedResize !== null &&
+			Math.abs(lastAppliedResize.height - targetHeight) < QUICK_CREATE_RESIZE_THRESHOLD &&
+			Math.abs(lastAppliedResize.devicePixelRatio - devicePixelRatio) <
+				QUICK_CREATE_DPR_THRESHOLD
 		) {
 			return
 		}
 
-		lastAppliedHeightRef.current = targetHeight
+		lastAppliedResizeRef.current = {
+			devicePixelRatio,
+			height: targetHeight,
+		}
 
 		void reportQuickCreateLayoutDiagnostics('before-resize', targetHeight, layout).catch(() => {
 			// 诊断日志不能影响窗口呈现。
@@ -74,6 +88,7 @@ export function QuickCreateWindowShell() {
 		state.isAdvancedOpen,
 		state.isBootstrapping,
 		state.layoutVersion,
+		viewportResizeRevision,
 	])
 
 	useEffect(() => {
@@ -97,6 +112,76 @@ export function QuickCreateWindowShell() {
 	}
 
 	return <QuickCreateFrame isVisible={isWindowReady} layout={layout} />
+}
+
+function useQuickCreateViewportResizeRevision(requestMeasure: () => void) {
+	const [revision, setRevision] = useState(0)
+	const requestMeasureRef = useRef(requestMeasure)
+
+	useEffect(() => {
+		requestMeasureRef.current = requestMeasure
+	}, [requestMeasure])
+
+	useEffect(() => {
+		let disposed = false
+		let removeResolutionListener = () => {}
+
+		const notifyViewportChanged = () => {
+			if (disposed) {
+				return
+			}
+
+			requestMeasureRef.current()
+			setRevision((current) => current + 1)
+		}
+
+		const installResolutionListener = () => {
+			removeResolutionListener()
+
+			if (typeof window.matchMedia !== 'function') {
+				removeResolutionListener = () => {}
+				return
+			}
+
+			const mediaQuery = window.matchMedia(`(resolution: ${readDevicePixelRatio()}dppx)`)
+			const handleResolutionChange = () => {
+				notifyViewportChanged()
+				installResolutionListener()
+			}
+
+			if (typeof mediaQuery.addEventListener === 'function') {
+				mediaQuery.addEventListener('change', handleResolutionChange)
+				removeResolutionListener = () => {
+					mediaQuery.removeEventListener('change', handleResolutionChange)
+				}
+				return
+			}
+
+			mediaQuery.addListener(handleResolutionChange)
+			removeResolutionListener = () => {
+				mediaQuery.removeListener(handleResolutionChange)
+			}
+		}
+
+		window.addEventListener('resize', notifyViewportChanged)
+		window.visualViewport?.addEventListener('resize', notifyViewportChanged)
+		installResolutionListener()
+
+		return () => {
+			disposed = true
+			removeResolutionListener()
+			window.removeEventListener('resize', notifyViewportChanged)
+			window.visualViewport?.removeEventListener('resize', notifyViewportChanged)
+		}
+	}, [])
+
+	return revision
+}
+
+function readDevicePixelRatio() {
+	return Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0
+		? window.devicePixelRatio
+		: 1
 }
 
 function reportQuickCreateLayoutDiagnostics(
