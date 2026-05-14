@@ -33,6 +33,16 @@ describe('CommandMenu', () => {
 		expect(screen.getByText('项目 A')).toBeInTheDocument()
 	})
 
+	it('渲染 V1 command-only 命令面', () => {
+		renderCommandMenu()
+
+		expect(screen.getByText('完成任务')).toBeInTheDocument()
+		expect(screen.getByText('重命名任务')).toBeInTheDocument()
+		expect(screen.getByText('按项目筛选')).toBeInTheDocument()
+		expect(screen.getByText('切换侧边栏')).toBeInTheDocument()
+		expect(screen.getByText('打开数据文件夹')).toBeInTheDocument()
+	})
+
 	it('选择命令后执行 command id 并关闭菜单', () => {
 		const onRunCommand = vi.fn<(id: CommandId) => void>()
 		const onOpenChange = vi.fn<(open: boolean) => void>()
@@ -52,6 +62,16 @@ describe('CommandMenu', () => {
 
 		expect(onRunCommand).not.toHaveBeenCalled()
 		expect(screen.getByText('视图创建入口尚未接入')).toBeInTheDocument()
+	})
+
+	it('command-only disabled 命令不触发执行', () => {
+		const onRunCommand = vi.fn<(id: CommandId) => void>()
+		renderCommandMenu({ onRunCommand })
+
+		fireEvent.click(screen.getByText('完成任务'))
+
+		expect(onRunCommand).not.toHaveBeenCalled()
+		expect(screen.getAllByText('Row 上下文尚未接入').length).toBeGreaterThan(0)
 	})
 
 	it('动态项目区沿用外部导航回调', () => {

@@ -1,7 +1,19 @@
 import { COMMAND_IDS, type Command, type CommandContext, type CommandId, type CommandRuntime } from '@/features/command/core'
 import { DEFAULT_KEYBINDINGS, formatKeybindingSequence, KeybindingRegistry } from '@/features/command/keybinding'
 
-export type CommandMenuGroupKey = 'open' | 'new' | 'navigation' | 'general'
+export type CommandMenuGroupKey =
+	| 'open'
+	| 'new'
+	| 'task'
+	| 'move'
+	| 'project'
+	| 'view'
+	| 'filter'
+	| 'inbox'
+	| 'layout'
+	| 'navigation'
+	| 'general'
+	| 'system'
 
 export type CommandMenuEntry = {
 	command: Command
@@ -19,8 +31,16 @@ export type CommandMenuGroup = {
 const GROUPS: Array<{ key: CommandMenuGroupKey; heading: string }> = [
 	{ key: 'open', heading: '打开' },
 	{ key: 'new', heading: '新建' },
+	{ key: 'task', heading: '任务' },
+	{ key: 'move', heading: '移动' },
+	{ key: 'project', heading: '项目' },
+	{ key: 'view', heading: '视图' },
+	{ key: 'filter', heading: '筛选' },
+	{ key: 'inbox', heading: '收件箱' },
+	{ key: 'layout', heading: '布局' },
 	{ key: 'navigation', heading: '导航' },
 	{ key: 'general', heading: '通用' },
+	{ key: 'system', heading: '系统' },
 ]
 
 const DEFAULT_HIDDEN_COMMAND_IDS: ReadonlySet<CommandId> = new Set([COMMAND_IDS.openCommandMenu])

@@ -137,6 +137,26 @@ describe('Shell command adapter', () => {
 		})
 	})
 
+	it.each([
+		[COMMAND_IDS.taskComplete, 'Row 上下文尚未接入'],
+		[COMMAND_IDS.taskSetPriority, 'Row 菜单快捷操作尚未接入'],
+		[COMMAND_IDS.taskMoveToProject, 'Row 上下文尚未接入'],
+		[COMMAND_IDS.projectRename, '项目命令尚未接入'],
+		[COMMAND_IDS.filterToggleCompleted, '筛选命令尚未接入'],
+		[COMMAND_IDS.layoutToggleSidebar, '布局命令尚未接入'],
+		[COMMAND_IDS.systemOpenDataFolder, '系统命令尚未接入'],
+		[COMMAND_IDS.inboxClean, 'Inbox 清理命令尚未接入'],
+		[COMMAND_IDS.viewSuggestFilters, '视图建议命令尚未接入'],
+	] as const)('command-only 命令 %s 返回 disabled', async (commandId, reason) => {
+		const runtime = createRuntime(createActions())
+
+		await expect(runtime.execute(commandId)).resolves.toMatchObject({
+			status: 'disabled',
+			commandId,
+			reason,
+		})
+	})
+
 	it('Shell action 抛错时 Runtime 返回 failed', async () => {
 		const error = new Error('search failed')
 		const actions = createActions({

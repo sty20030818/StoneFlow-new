@@ -57,6 +57,36 @@ describe('buildCommandMenuGroups', () => {
 		expect(getCommandMenuShortcut(COMMAND_IDS.newQuickTask)).toBe('C')
 		expect(getCommandMenuShortcut(COMMAND_IDS.newFullTask)).toBe('N T')
 	})
+
+	it('完整 V1 分类会生成菜单分组', () => {
+		const runtime = createRuntime([
+			createCommand('test.task', { category: 'task' }),
+			createCommand('test.move', { category: 'move' }),
+			createCommand('test.project', { category: 'project' }),
+			createCommand('test.view', { category: 'view' }),
+			createCommand('test.filter', { category: 'filter' }),
+			createCommand('test.inbox', { category: 'inbox' }),
+			createCommand('test.layout', { category: 'layout' }),
+			createCommand('test.system', { category: 'system' }),
+		])
+
+		const groups = buildCommandMenuGroups(runtime, context)
+
+		expect(groups.map((group) => group.key)).toEqual([
+			'task',
+			'move',
+			'project',
+			'view',
+			'filter',
+			'inbox',
+			'layout',
+			'system',
+		])
+	})
+
+	it('未绑定命令没有快捷键文案', () => {
+		expect(getCommandMenuShortcut(COMMAND_IDS.taskComplete)).toBeNull()
+	})
 })
 
 function createRuntime(commands: Command[]) {
