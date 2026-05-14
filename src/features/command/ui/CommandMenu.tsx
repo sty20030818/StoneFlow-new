@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { Badge } from '@/shared/ui/base/badge'
 import {
@@ -14,9 +14,13 @@ import {
 } from '@/shared/ui/base/command'
 import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
 import { SearchIcon } from 'lucide-react'
+import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
 import type { CommandContext, CommandId, CommandRuntime } from '@/features/command/core'
+import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 
 import { buildCommandMenuGroups, type CommandMenuEntry } from './command-menu-model'
+
+export type CommandMenuMode = 'default' | 'task-picker' | 'project-picker'
 
 export type CommandMenuProject = {
 	id: string
@@ -28,8 +32,11 @@ type CommandMenuProps = {
 	className?: string
 	context: CommandContext
 	description: string
+	mode: CommandMenuMode
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
+	onSelectProject: (project: SearchProjectItem) => void
+	onSelectTask: (task: SearchTaskItem) => void
 	onRunCommand: (id: CommandId) => void
 	open: boolean
 	projects: CommandMenuProject[]
@@ -41,15 +48,25 @@ export function CommandMenu({
 	className,
 	context,
 	description,
+	mode,
 	onNavigateProject,
 	onOpenChange,
+	onSelectProject,
+	onSelectTask,
 	onRunCommand,
 	open,
 	projects,
 	runtime,
 	title,
 }: CommandMenuProps) {
+	const [query, setQuery] = useState('')
 	const groups = useMemo(() => buildCommandMenuGroups(runtime, context), [context, runtime])
+	const scopedSearch = useGlobalSearch(mode === 'default' ? '' : query)
+	const isScopedMode = mode !== 'default'
+
+	useEffect(() => {
+		setQuery('')
+	}, [mode, open])
 
 	return (
 		<CommandDialog
@@ -59,19 +76,62 @@ export function CommandMenu({
 			open={open}
 			title={title}
 		>
-			<Command className='bg-transparent'>
-				<CommandInput placeholder='创建任务、跳转页面或打开详情…' />
+			<Command className='bg-transparent' shouldFilter={!isScopedMode}>
+				<CommandInput
+					placeholder={getCommandMenuPlaceholder(mode)}
+					value={query}
+					onValueChange={setQuery}
+				/>
 				<CommandList className='no-scrollbar max-h-96 overflow-y-auto'>
-					<CommandEmpty>没有结果</CommandEmpty>
-					<CommandMenuList groups={groups} onOpenChange={onOpenChange} onRunCommand={onRunCommand} />
-					<ProjectsCommandGroup
-						onNavigateProject={onNavigateProject}
-						projects={projects}
-					/>
+					<CommandEmpty>{getCommandMenuEmptyText(mode, query)}</CommandEmpty>
+					{isScopedMode ? (
+						<ScopedPickerCommandGroup
+							mode={mode}
+							onOpenChange={onOpenChange}
+							onSelectProject={onSelectProject}
+							onSelectTask={onSelectTask}
+							result={scopedSearch.result}
+						/>
+					) : (
+						<>
+							<CommandMenuList groups={groups} onOpenChange={onOpenChange} onRunCommand={onRunCommand} />
+							<ProjectsCommandGroup
+								onNavigateProject={onNavigateProject}
+								projects={projects}
+							/>
+						</>
+					)}
 				</CommandList>
 			</Command>
 		</CommandDialog>
 	)
+}
+
+function getCommandMenuPlaceholder(mode: CommandMenuMode) {
+	switch (mode) {
+		case 'task-picker':
+			return '搜索任务…'
+		case 'project-picker':
+			return '搜索项目…'
+		default:
+			return '创建任务、跳转页面或打开详情…'
+	}
+}
+
+function getCommandMenuEmptyText(mode: CommandMenuMode, query: string) {
+	if (!query.trim()) {
+		return mode === 'task-picker'
+			? '输入关键词搜索任务'
+			: mode === 'project-picker'
+				? '输入关键词搜索项目'
+				: '没有结果'
+	}
+
+	return mode === 'task-picker'
+		? '没有匹配的任务'
+		: mode === 'project-picker'
+			? '没有匹配的项目'
+			: '没有结果'
 }
 
 function CommandMenuList({
@@ -160,6 +220,64 @@ function CommandMenuItem({
 
 function CommandMenuShortcut({ shortcut }: { shortcut: string | null }) {
 	return shortcut ? <CommandShortcut>{shortcut}</CommandShortcut> : null
+}
+
+function ScopedPickerCommandGroup({
+	mode,
+	onOpenChange,
+	onSelectProject,
+	onSelectTask,
+	result,
+}: {
+	mode: Exclude<CommandMenuMode, 'default'>
+	onOpenChange: (open: boolean) => void
+	onSelectProject: (project: SearchProjectItem) => void
+	onSelectTask: (task: SearchTaskItem) => void
+	result: ReturnType<typeof useGlobalSearch>['result']
+}) {
+	if (mode === 'task-picker') {
+		const tasks = [...result.tasks, ...result.completedTasks]
+		return (
+			<CommandGroup heading='任务'>
+				{tasks.map((task) => (
+					<CommandItem
+						key={task.id}
+						onSelect={() => {
+							onOpenChange(false)
+							onSelectTask(task)
+						}}
+						value={`${task.title} ${task.note ?? ''} ${task.projectName ?? ''} ${task.spaceName}`}
+					>
+						<SearchIcon />
+						<span className='min-w-0 flex-1 truncate'>{task.title}</span>
+						<span className='ml-auto truncate text-xs text-muted-foreground'>
+							{task.projectName ?? (task.inboxAt ? 'Inbox' : '独立事项')}
+						</span>
+					</CommandItem>
+				))}
+			</CommandGroup>
+		)
+	}
+
+	const projects = [...result.projects, ...result.completedProjects]
+	return (
+		<CommandGroup heading='项目'>
+			{projects.map((project) => (
+				<CommandItem
+					key={project.id}
+					onSelect={() => {
+						onOpenChange(false)
+						onSelectProject(project)
+					}}
+					value={`${project.name} ${project.note ?? ''} ${project.spaceName}`}
+				>
+					<SearchIcon />
+					<span className='min-w-0 flex-1 truncate'>{project.name}</span>
+					<span className='ml-auto truncate text-xs text-muted-foreground'>{project.spaceName}</span>
+				</CommandItem>
+			))}
+		</CommandGroup>
+	)
 }
 
 function ProjectsCommandGroup({

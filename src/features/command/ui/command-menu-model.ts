@@ -1,7 +1,7 @@
 import { COMMAND_IDS, type Command, type CommandContext, type CommandId, type CommandRuntime } from '@/features/command/core'
 import { DEFAULT_KEYBINDINGS, formatKeybindingSequence, KeybindingRegistry } from '@/features/command/keybinding'
 
-export type CommandMenuGroupKey = 'new' | 'navigation' | 'general'
+export type CommandMenuGroupKey = 'open' | 'new' | 'navigation' | 'general'
 
 export type CommandMenuEntry = {
 	command: Command
@@ -17,6 +17,7 @@ export type CommandMenuGroup = {
 }
 
 const GROUPS: Array<{ key: CommandMenuGroupKey; heading: string }> = [
+	{ key: 'open', heading: '打开' },
 	{ key: 'new', heading: '新建' },
 	{ key: 'navigation', heading: '导航' },
 	{ key: 'general', heading: '通用' },

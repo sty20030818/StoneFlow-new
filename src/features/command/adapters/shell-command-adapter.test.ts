@@ -37,6 +37,17 @@ describe('Shell command adapter', () => {
 		expect(actions.openProjectCreate).toHaveBeenCalledTimes(1)
 	})
 
+	it('执行 open 任务和项目命令时打开 scoped picker', async () => {
+		const actions = createActions()
+		const runtime = createRuntime(actions)
+
+		await runtime.execute(COMMAND_IDS.openTask)
+		await runtime.execute(COMMAND_IDS.openProject)
+
+		expect(actions.openTaskPicker).toHaveBeenCalledTimes(1)
+		expect(actions.openProjectPicker).toHaveBeenCalledTimes(1)
+	})
+
 	it.each(['archive', 'trash', 'settings'] as const)(
 		'在 %s 页面禁用快速新建任务',
 		async (page) => {
@@ -112,6 +123,20 @@ describe('Shell command adapter', () => {
 		})
 	})
 
+	it.each([
+		[COMMAND_IDS.openView, '视图搜索尚未接入'],
+		[COMMAND_IDS.openSpace, 'Space 搜索尚未接入'],
+		[COMMAND_IDS.openRecent, '最近访问选择尚未接入'],
+	] as const)('未接入搜索能力的 open 命令 %s 返回 disabled', async (commandId, reason) => {
+		const runtime = createRuntime(createActions())
+
+		await expect(runtime.execute(commandId)).resolves.toMatchObject({
+			status: 'disabled',
+			commandId,
+			reason,
+		})
+	})
+
 	it('Shell action 抛错时 Runtime 返回 failed', async () => {
 		const error = new Error('search failed')
 		const actions = createActions({
@@ -144,6 +169,8 @@ function createActions(overrides: Partial<ShellCommandActions> = {}): ShellComma
 		openFullTaskCreate: vi.fn(),
 		openInboxTaskCreate: vi.fn(),
 		openProjectCreate: vi.fn(),
+		openTaskPicker: vi.fn(),
+		openProjectPicker: vi.fn(),
 		navigateTo: vi.fn(),
 		goBack: vi.fn(),
 		goForward: vi.fn(),

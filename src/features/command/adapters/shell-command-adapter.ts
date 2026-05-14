@@ -18,6 +18,8 @@ export type ShellCommandActions = {
 	openFullTaskCreate: () => void
 	openInboxTaskCreate: () => void
 	openProjectCreate: () => void
+	openTaskPicker: () => void
+	openProjectPicker: () => void
 	navigateTo: (target: ShellNavigationTarget) => void
 	goBack: () => void
 	goForward: () => void
@@ -50,6 +52,16 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return { ...command, run: adapter.goBack }
 		case COMMAND_IDS.goForward:
 			return { ...command, run: adapter.goForward }
+		case COMMAND_IDS.openTask:
+			return { ...command, run: adapter.openTaskPicker }
+		case COMMAND_IDS.openProject:
+			return { ...command, run: adapter.openProjectPicker }
+		case COMMAND_IDS.openView:
+			return createDisabledCommand(command, '视图搜索尚未接入')
+		case COMMAND_IDS.openSpace:
+			return createDisabledCommand(command, 'Space 搜索尚未接入')
+		case COMMAND_IDS.openRecent:
+			return createDisabledCommand(command, '最近访问选择尚未接入')
 		case COMMAND_IDS.newQuickTask:
 			return { ...command, run: adapter.openQuickTaskCreate }
 		case COMMAND_IDS.newFullTask:

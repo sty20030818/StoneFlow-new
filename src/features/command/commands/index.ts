@@ -4,9 +4,11 @@ import { bindShellCommand, type ShellCommandAdapter } from '@/features/command/a
 import { generalCommands } from './general.commands'
 import { navigationCommands } from './navigation.commands'
 import { newCommands } from './new.commands'
+import { openCommands } from './open.commands'
 
 export const allCommands = [
 	...generalCommands,
+	...openCommands,
 	...newCommands,
 	...navigationCommands,
 ]
@@ -20,3 +22,4 @@ export function createShellCommandRegistry(adapter: ShellCommandAdapter) {
 export { generalCommands } from './general.commands'
 export { navigationCommands } from './navigation.commands'
 export { newCommands } from './new.commands'
+export { openCommands } from './open.commands'

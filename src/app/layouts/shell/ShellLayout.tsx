@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
@@ -56,6 +56,7 @@ import {
 } from '@/shared/ui/patterns/shell-chrome'
 import {
 	CommandShortcutLayer,
+	type CommandMenuMode,
 	useCommandContext,
 	useCommandRunner,
 	useCommandRuntime,
@@ -90,6 +91,7 @@ export function ShellLayout({
 		(state) => state.toggleTaskCreatePresentation,
 	)
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
+	const [commandMenuMode, setCommandMenuMode] = useState<CommandMenuMode>('default')
 	const pendingTaskOpenIntent = useSearchOpenIntentStore(selectPendingTaskOpenIntent)
 	const consumePendingTaskOpenIntent = useSearchOpenIntentStore(
 		(state) => state.consumePendingTaskOpenIntent,
@@ -262,15 +264,35 @@ export function ShellLayout({
 		spaces,
 		projects: projectLinks,
 	})
+	const handleCommandMenuOpenChange = useCallback(
+		(open: boolean) => {
+			setCommandOpen(open)
+			if (!open) {
+				setCommandMenuMode('default')
+			}
+		},
+		[setCommandOpen],
+	)
 
 	const shellCommandActions = useMemo<ShellCommandActions>(
 		() => ({
-			openCommandMenu: () => setCommandOpen(true),
+			openCommandMenu: () => {
+				setCommandMenuMode('default')
+				setCommandOpen(true)
+			},
 			focusSearch: requestSearchFocus,
 			openQuickTaskCreate: handleOpenTaskCreate,
 			openFullTaskCreate: () => openTaskCreateDialog(undefined, 'default'),
 			openInboxTaskCreate: () => openTaskCreateDialog({ placement: 'inbox' }, 'default'),
 			openProjectCreate: () => openProjectCreateDialog(),
+			openTaskPicker: () => {
+				setCommandMenuMode('task-picker')
+				setCommandOpen(true)
+			},
+			openProjectPicker: () => {
+				setCommandMenuMode('project-picker')
+				setCommandOpen(true)
+			},
 			navigateTo: (target: ShellNavigationTarget) => {
 				startTransition(() => {
 					navigate(buildScopedSectionPath(currentScope, target, currentSpaceId))
@@ -290,6 +312,7 @@ export function ShellLayout({
 			openTaskCreateDialog,
 			requestSearchFocus,
 			setCommandOpen,
+			setCommandMenuMode,
 		],
 	)
 	const commandRoutePage = resolveCommandRoutePage(activeSection)
@@ -406,12 +429,13 @@ export function ShellLayout({
 				canGoBack={canGoBack}
 				canGoForward={canGoForward}
 				commandContext={commandContext}
+				commandMenuMode={commandMenuMode}
 				commandRuntime={commandRuntime}
 				currentSpaceId={currentSpaceId}
 				currentScope={currentScope}
 				isCommandOpen={isCommandOpen}
 				onCloseDrawer={closeDrawer}
-				onCommandOpenChange={setCommandOpen}
+				onCommandOpenChange={handleCommandMenuOpenChange}
 				onNavigateToHistoryEntry={navigateToHistoryEntry}
 				onRunCommand={runCommand}
 				projects={projectLinks}

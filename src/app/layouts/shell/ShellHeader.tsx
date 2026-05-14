@@ -31,7 +31,7 @@ import {
 import { Kbd } from '@/shared/ui/base/kbd'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
-import { CommandMenu } from '@/features/command/ui'
+import { CommandMenu, type CommandMenuMode } from '@/features/command/ui'
 import { getCommandShortcutDisplay } from '@/features/command/shortcuts'
 import {
 	COMMAND_IDS,
@@ -67,6 +67,7 @@ type ShellHeaderProps = {
 	activeSection: ShellSectionKey
 	isCommandOpen: boolean
 	commandContext: CommandContext
+	commandMenuMode: CommandMenuMode
 	commandRuntime: CommandRuntime
 	routeHistoryEntries: ShellRouteHistoryEntry[]
 	canGoBack: boolean
@@ -84,6 +85,7 @@ export function ShellHeader({
 	currentSpaceId,
 	activeSection,
 	commandContext,
+	commandMenuMode,
 	commandRuntime,
 	routeHistoryEntries,
 	canGoBack,
@@ -441,11 +443,14 @@ export function ShellHeader({
 				className={shellChromeCommandDialogClass}
 				context={commandContext}
 				description={`${getScopeLabel(currentScope, spaces)} · ${getSectionLabel(activeSection)}`}
+				mode={commandMenuMode}
 				onOpenChange={onCommandOpenChange}
 				onNavigateProject={(projectId) => {
 					handleNavigate(buildScopedProjectPath(currentScope, projectId, currentSpaceId))
 				}}
 				onRunCommand={onRunCommand}
+				onSelectProject={handleOpenProjectFromSearch}
+				onSelectTask={handleOpenTaskFromSearch}
 				open={isCommandOpen}
 				projects={projects}
 				runtime={commandRuntime}

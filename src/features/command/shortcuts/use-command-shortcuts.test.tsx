@@ -10,6 +10,11 @@ const bindings: Keybinding[] = [
 	createBinding(COMMAND_IDS.newTaskInInbox, [{ key: 'n' }, { key: 'i' }]),
 	createBinding(COMMAND_IDS.newProject, [{ key: 'n' }, { key: 'p' }]),
 	createBinding(COMMAND_IDS.newView, [{ key: 'n' }, { key: 'v' }]),
+	createBinding(COMMAND_IDS.openTask, [{ key: 'o' }, { key: 't' }]),
+	createBinding(COMMAND_IDS.openProject, [{ key: 'o' }, { key: 'p' }]),
+	createBinding(COMMAND_IDS.openView, [{ key: 'o' }, { key: 'v' }]),
+	createBinding(COMMAND_IDS.openSpace, [{ key: 'o' }, { key: 's' }]),
+	createBinding(COMMAND_IDS.openRecent, [{ key: 'o' }, { key: 'r' }]),
 	createBinding(COMMAND_IDS.goInbox, [{ key: 'g' }, { key: 'i' }]),
 	createBinding(COMMAND_IDS.goAllTasks, [{ key: 'g' }, { key: 't' }]),
 	createBinding(COMMAND_IDS.goToday, [{ key: 'g' }, { key: 'd' }]),
@@ -133,6 +138,38 @@ describe('useCommandShortcuts', () => {
 		expect(onTrigger).toHaveBeenNthCalledWith(9, COMMAND_IDS.goTrash)
 		expect(onTrigger).toHaveBeenNthCalledWith(10, COMMAND_IDS.goSettings)
 		expect(onTrigger).toHaveBeenNthCalledWith(11, COMMAND_IDS.goRecent)
+	})
+
+	it('支持 O 组打开序列', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
+
+		for (const key of ['t', 'p', 'v', 's', 'r']) {
+			fireKey('o')
+			fireKey(key)
+		}
+		act(() => {
+			vi.runAllTimers()
+		})
+
+		expect(onTrigger).toHaveBeenNthCalledWith(1, COMMAND_IDS.openTask)
+		expect(onTrigger).toHaveBeenNthCalledWith(2, COMMAND_IDS.openProject)
+		expect(onTrigger).toHaveBeenNthCalledWith(3, COMMAND_IDS.openView)
+		expect(onTrigger).toHaveBeenNthCalledWith(4, COMMAND_IDS.openSpace)
+		expect(onTrigger).toHaveBeenNthCalledWith(5, COMMAND_IDS.openRecent)
+	})
+
+	it('输入态聚焦时忽略 O 组前缀', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
+		const input = document.createElement('input')
+		document.body.appendChild(input)
+
+		fireKey('o', input)
+		fireKey('t')
+
+		expect(onTrigger).not.toHaveBeenCalled()
+		document.body.removeChild(input)
 	})
 
 	it('保留 / 与 Cmd/Ctrl+K 的统一入口分发', () => {
