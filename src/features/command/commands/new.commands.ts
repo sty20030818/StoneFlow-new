@@ -8,7 +8,7 @@ export const newCommands: Command[] = [
 		scope: ['global'],
 		description: '根据当前上下文快速创建任务。',
 		keywords: ['task', 'create', 'new', 'quick', '任务'],
-		// 批次一不接入 CreateDialog，避免提前改动用户可见行为。
+		// 静态命令只承载元数据；Shell 运行时会通过 adapter 绑定真实动作。
 		run: () => {},
 	},
 	{

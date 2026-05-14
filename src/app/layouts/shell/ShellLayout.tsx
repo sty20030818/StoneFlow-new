@@ -54,7 +54,14 @@ import {
 	shellChromeSkeletonMainCardClass,
 	shellChromeSkeletonStatusTextClass,
 } from '@/shared/ui/patterns/shell-chrome'
-import { COMMAND_IDS, type CommandId } from '@/features/command/core'
+import {
+	useCommandContext,
+	useCommandRunner,
+	useCommandRuntime,
+	type CommandRouteContext,
+	type ShellCommandActions,
+	type ShellNavigationTarget,
+} from '@/features/command'
 
 type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
@@ -229,83 +236,72 @@ export function ShellLayout({
 		[closeDrawer, navigate, openDrawer, pathname, setPendingTaskOpenIntent],
 	)
 
-	const handleShortcutTrigger = useMemo(
-		() =>
-			(id: CommandId) => {
-				switch (id) {
-					case COMMAND_IDS.openSearch:
-						requestSearchFocus()
-						return
-					case COMMAND_IDS.openCommandMenu:
-						setCommandOpen(true)
-						return
-					case COMMAND_IDS.newQuickTask:
-						handleOpenTaskCreate()
-						return
-					case COMMAND_IDS.newFullTask:
-						openTaskCreateDialog(undefined, 'default')
-						return
-					case COMMAND_IDS.newTaskInInbox:
-						openTaskCreateDialog({ placement: 'inbox' }, 'default')
-						return
-					case COMMAND_IDS.newProject:
-						openProjectCreateDialog()
-						return
-					case COMMAND_IDS.goInbox:
-						startTransition(() => {
-							navigate(buildScopedSectionPath(currentScope, 'inbox', currentSpaceId))
-						})
-						return
-					case COMMAND_IDS.goAllTasks:
-						startTransition(() => {
-							navigate(buildScopedSectionPath(currentScope, 'all-tasks', currentSpaceId))
-						})
-						return
-					case COMMAND_IDS.goFocus:
-						startTransition(() => {
-							navigate(buildScopedSectionPath(currentScope, 'focus', currentSpaceId))
-						})
-						return
-					case COMMAND_IDS.goViews:
-						startTransition(() => {
-							navigate(buildScopedSectionPath(currentScope, 'views', currentSpaceId))
-						})
-						return
-					case COMMAND_IDS.goProjects:
-						startTransition(() => {
-							navigate(buildScopedSectionPath(currentScope, 'projects', currentSpaceId))
-						})
-						return
-					case COMMAND_IDS.goArchive:
-						startTransition(() => {
-							navigate(buildScopedSectionPath(currentScope, 'archive', currentSpaceId))
-						})
-						return
-					case COMMAND_IDS.goTrash:
-						startTransition(() => {
-							navigate(buildScopedSectionPath(currentScope, 'trash', currentSpaceId))
-						})
-						return
-					case COMMAND_IDS.goSettings:
-						startTransition(() => {
-							navigate(buildScopedSectionPath(currentScope, 'settings', currentSpaceId))
-						})
-						return
-				}
+	const shellCommandActions = useMemo<ShellCommandActions>(
+		() => ({
+			openCommandMenu: () => setCommandOpen(true),
+			focusSearch: requestSearchFocus,
+			openQuickTaskCreate: handleOpenTaskCreate,
+			openFullTaskCreate: () => openTaskCreateDialog(undefined, 'default'),
+			openInboxTaskCreate: () => openTaskCreateDialog({ placement: 'inbox' }, 'default'),
+			openProjectCreate: () => openProjectCreateDialog(),
+			navigateTo: (target: ShellNavigationTarget) => {
+				startTransition(() => {
+					navigate(buildScopedSectionPath(currentScope, target, currentSpaceId))
+				})
 			},
+			goBack: () => navigate(-1),
+			goForward: () => navigate(1),
+		}),
 		[
 			currentScope,
 			currentSpaceId,
 			handleOpenTaskCreate,
-			isNoProjectPage,
 			navigate,
 			openProjectCreateDialog,
 			openTaskCreateDialog,
 			requestSearchFocus,
-			routeProjectId,
 			setCommandOpen,
 		],
 	)
+	const commandRoutePage = resolveCommandRoutePage(activeSection)
+	const commandRoute = useMemo(
+		() => ({
+			page: commandRoutePage,
+			projectId: routeProjectId ?? undefined,
+		}),
+		[commandRoutePage, routeProjectId],
+	)
+	const commandUi = useMemo(
+		() => ({
+			isCommandMenuOpen: isCommandOpen,
+			isDetailOpen: Boolean(activeDrawerId),
+			isModalOpen: createDialogType !== null,
+		}),
+		[activeDrawerId, createDialogType, isCommandOpen],
+	)
+	const commandSpace = useMemo(
+		() => ({
+			currentSpaceId: currentSpaceId ?? undefined,
+		}),
+		[currentSpaceId],
+	)
+	const commandProject = useMemo(
+		() => ({
+			currentProjectId: routeProjectId ?? undefined,
+		}),
+		[routeProjectId],
+	)
+	const commandContext = useCommandContext({
+		route: commandRoute,
+		ui: commandUi,
+		space: commandSpace,
+		project: commandProject,
+	})
+	const commandRuntime = useCommandRuntime({
+		actions: shellCommandActions,
+		context: commandContext,
+	})
+	const runCommand = useCommandRunner({ runtime: commandRuntime })
 
 	useCommandOpenListener(handleCommandOpen)
 
@@ -375,7 +371,7 @@ export function ShellLayout({
 			}}
 			sidebarWidth={sidebarSettings.width}
 		>
-			<ShortcutManager onTrigger={handleShortcutTrigger} />
+			<ShortcutManager onTrigger={runCommand} />
 			<ShellHeader
 				activeSection={activeSection}
 				currentSpaceId={currentSpaceId}
@@ -532,4 +528,28 @@ function ShellLayoutSkeleton({
 			<div className='h-9.5 shrink-0 border-t border-sf-border-subtle bg-sf-shell' />
 		</div>
 	)
+}
+
+function resolveCommandRoutePage(section: ShellSectionKey): CommandRouteContext['page'] {
+	switch (section) {
+		case 'allTasks':
+			return 'allTasks'
+		case 'views':
+			return 'views'
+		case 'projects':
+			return 'projects'
+		case 'project':
+			return 'project'
+		case 'archive':
+			return 'archive'
+		case 'trash':
+			return 'trash'
+		case 'settings':
+			return 'settings'
+		case 'inbox':
+		case 'noProject':
+			return 'inbox'
+		default:
+			return 'unknown'
+	}
 }

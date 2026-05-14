@@ -8,7 +8,7 @@ export const generalCommands: Command[] = [
 		scope: ['global'],
 		description: '打开 StoneFlow 的全局命令入口。',
 		keywords: ['command', 'cmdk', '命令'],
-		// 批次一只建立注册表数据；真实 Shell 行为在后续批次通过 adapter 注入。
+		// 静态命令只承载元数据；Shell 运行时会通过 adapter 绑定真实动作。
 		run: () => {},
 	},
 	{
