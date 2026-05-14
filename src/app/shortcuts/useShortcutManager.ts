@@ -1,127 +1,105 @@
 import { useEffect, useRef } from 'react'
 
 import {
-	findSequenceBinding,
-	findSingleKeyBinding,
-	isPrefixExpired,
-	isRegisteredPrefix,
-	normalizeShortcutKey,
-	PREFIX_TIMEOUT_MS,
-	shouldIgnoreShortcutEvent,
-	type ShortcutBinding,
-	type ShortcutId,
-	type ShortcutPrefixState,
-} from '@/shared/shortcuts'
+	KEYBINDING_CHORD_TIMEOUT_MS,
+	matchKeybindingEvent,
+	type Keybinding,
+	type KeybindingChordState,
+	type NormalizedKeyEvent,
+} from '@/features/command/keybinding'
+import type { CommandId } from '@/features/command/core'
 
 type UseShortcutManagerOptions = {
-	bindings: ShortcutBinding[]
-	onTrigger: (id: ShortcutId) => void
+	bindings: Keybinding[]
+	onTrigger: (id: CommandId) => void
 }
 
 export function useShortcutManager({ bindings, onTrigger }: UseShortcutManagerOptions) {
 	const onTriggerRef = useRef(onTrigger)
-	const prefixStateRef = useRef<ShortcutPrefixState | null>(null)
+	const chordStateRef = useRef<KeybindingChordState | null>(null)
 	const timeoutRef = useRef<number | null>(null)
 
 	onTriggerRef.current = onTrigger
 
 	useEffect(() => {
-		function scheduleTrigger(id: ShortcutId) {
+		function scheduleTrigger(id: CommandId) {
 			window.setTimeout(() => {
 				onTriggerRef.current(id)
 			}, 0)
 		}
 
-		function clearPrefixState() {
-			prefixStateRef.current = null
+		function clearChordState() {
+			chordStateRef.current = null
 			if (timeoutRef.current !== null) {
 				window.clearTimeout(timeoutRef.current)
 				timeoutRef.current = null
 			}
 		}
 
-		function armPrefixTimeout() {
+		function armChordTimeout() {
 			if (timeoutRef.current !== null) {
 				window.clearTimeout(timeoutRef.current)
 			}
 
 			timeoutRef.current = window.setTimeout(() => {
-				prefixStateRef.current = null
+				chordStateRef.current = null
 				timeoutRef.current = null
-			}, PREFIX_TIMEOUT_MS)
+			}, KEYBINDING_CHORD_TIMEOUT_MS)
 		}
 
 		function handleKeyDown(event: KeyboardEvent) {
-			if (shouldIgnoreShortcutEvent(event)) {
-				clearPrefixState()
-				return
-			}
+			const result = matchKeybindingEvent({
+				bindings,
+				event: normalizeKeyboardEvent(event),
+				chordState: chordStateRef.current,
+				now: performance.now(),
+			})
 
-			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-				event.preventDefault()
-				scheduleTrigger('command.open')
-				clearPrefixState()
-				return
-			}
-
-			if (
-				event.key === '/' &&
-				!event.metaKey &&
-				!event.ctrlKey &&
-				!event.altKey
-			) {
-				event.preventDefault()
-				scheduleTrigger('search.open')
-				clearPrefixState()
-				return
-			}
-
-			const key = normalizeShortcutKey(event)
-			if (!key) {
-				clearPrefixState()
-				return
-			}
-
-			const now = performance.now()
-			const prefixState = prefixStateRef.current
-			if (prefixState && isPrefixExpired(prefixState, now)) {
-				clearPrefixState()
-			}
-
-			const activePrefix = prefixStateRef.current
-			if (activePrefix) {
-				const binding = findSequenceBinding(bindings, activePrefix.prefix, key)
-				clearPrefixState()
-				if (!binding) {
-					return
+			if (result.status === 'matched') {
+				if (result.keybinding.preventDefault) {
+					event.preventDefault()
 				}
-
-				scheduleTrigger(binding.id)
+				clearChordState()
+				scheduleTrigger(result.keybinding.commandId)
 				return
 			}
 
-			const singleKeyBinding = findSingleKeyBinding(bindings, key)
-			if (singleKeyBinding) {
-				scheduleTrigger(singleKeyBinding.id)
-				return
-			}
-
-			if (isRegisteredPrefix(bindings, key)) {
-				prefixStateRef.current = {
-					prefix: key,
-					startedAt: now,
+			if (result.status === 'pending') {
+				event.preventDefault()
+				chordStateRef.current = {
+					prefix: result.prefix,
+					scope: result.scope,
+					startedAt: performance.now(),
 				}
-				armPrefixTimeout()
+				armChordTimeout()
 				return
 			}
 
-			clearPrefixState()
+			if (result.status === 'ignored') {
+				clearChordState()
+				return
+			}
+
+			clearChordState()
 		}
 
 		window.addEventListener('keydown', handleKeyDown)
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown)
-			clearPrefixState()
+			clearChordState()
 		}
 	}, [bindings])
+}
+
+function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent {
+	return {
+		key: event.key,
+		metaKey: event.metaKey,
+		ctrlKey: event.ctrlKey,
+		altKey: event.altKey,
+		shiftKey: event.shiftKey,
+		defaultPrevented: event.defaultPrevented,
+		isComposing: event.isComposing,
+		target: event.target,
+	}
 }

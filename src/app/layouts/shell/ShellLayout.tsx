@@ -54,7 +54,7 @@ import {
 	shellChromeSkeletonMainCardClass,
 	shellChromeSkeletonStatusTextClass,
 } from '@/shared/ui/patterns/shell-chrome'
-import type { ShortcutId } from '@/shared/shortcuts'
+import { COMMAND_IDS, type CommandId } from '@/features/command/core'
 
 type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
@@ -231,18 +231,18 @@ export function ShellLayout({
 
 	const handleShortcutTrigger = useMemo(
 		() =>
-			(id: ShortcutId) => {
+			(id: CommandId) => {
 				switch (id) {
-					case 'search.open':
+					case COMMAND_IDS.openSearch:
 						requestSearchFocus()
 						return
-					case 'command.open':
+					case COMMAND_IDS.openCommandMenu:
 						setCommandOpen(true)
 						return
-					case 'task-create.open':
+					case COMMAND_IDS.newTask:
 						handleOpenTaskCreate()
 						return
-					case 'task-create.open-fullscreen':
+					case COMMAND_IDS.newTaskFullscreen:
 						if (routeProjectId) {
 							openTaskCreateDialog({ projectId: routeProjectId }, 'fullscreen')
 							return
@@ -253,22 +253,42 @@ export function ShellLayout({
 						}
 						openTaskCreateDialog(undefined, 'fullscreen')
 						return
-					case 'project-create.open':
+					case COMMAND_IDS.newProject:
 						openProjectCreateDialog()
 						return
-					case 'goto.inbox':
+					case COMMAND_IDS.goInbox:
 						startTransition(() => {
 							navigate(buildScopedSectionPath(currentScope, 'inbox', currentSpaceId))
 						})
 						return
-					case 'goto.projects':
+					case COMMAND_IDS.goAllTasks:
+						startTransition(() => {
+							navigate(buildScopedSectionPath(currentScope, 'all-tasks', currentSpaceId))
+						})
+						return
+					case COMMAND_IDS.goViews:
+						startTransition(() => {
+							navigate(buildScopedSectionPath(currentScope, 'views', currentSpaceId))
+						})
+						return
+					case COMMAND_IDS.goProjects:
 						startTransition(() => {
 							navigate(buildScopedSectionPath(currentScope, 'projects', currentSpaceId))
 						})
 						return
-					case 'goto.views':
+					case COMMAND_IDS.goArchive:
 						startTransition(() => {
-							navigate(buildScopedSectionPath(currentScope, 'views', currentSpaceId))
+							navigate(buildScopedSectionPath(currentScope, 'archive', currentSpaceId))
+						})
+						return
+					case COMMAND_IDS.goTrash:
+						startTransition(() => {
+							navigate(buildScopedSectionPath(currentScope, 'trash', currentSpaceId))
+						})
+						return
+					case COMMAND_IDS.goSettings:
+						startTransition(() => {
+							navigate(buildScopedSectionPath(currentScope, 'settings', currentSpaceId))
 						})
 						return
 				}

@@ -1,9 +1,9 @@
 import { useShortcutManager } from '@/app/shortcuts/useShortcutManager'
 import { APP_SHORTCUT_BINDINGS } from '@/app/shortcuts/shortcutRegistry'
-import type { ShortcutId } from '@/shared/shortcuts'
+import type { CommandId } from '@/features/command/core'
 
 type ShortcutManagerProps = {
-	onTrigger: (id: ShortcutId) => void
+	onTrigger: (id: CommandId) => void
 }
 
 export function ShortcutManager({ onTrigger }: ShortcutManagerProps) {
