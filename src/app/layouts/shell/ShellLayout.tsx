@@ -386,14 +386,16 @@ export function ShellLayout({
 			<CommandShortcutLayer onTrigger={runCommand} />
 			<ShellHeader
 				activeSection={activeSection}
+				commandContext={commandContext}
+				commandRuntime={commandRuntime}
 				currentSpaceId={currentSpaceId}
 				currentScope={currentScope}
 				isCommandOpen={isCommandOpen}
 				onCloseDrawer={closeDrawer}
 				onCommandOpenChange={setCommandOpen}
-				onOpenDrawer={openDrawer}
 				onOpenProjectCreateDialog={() => openProjectCreateDialog()}
 				onOpenTaskCreateDialog={handleOpenTaskCreate}
+				onRunCommand={runCommand}
 				projects={projectLinks}
 				spaces={spaces}
 			/>

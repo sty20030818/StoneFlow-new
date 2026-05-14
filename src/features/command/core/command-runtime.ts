@@ -39,6 +39,22 @@ export class CommandRuntime {
 		return command.getDisabledReason?.(ctx)
 	}
 
+	getCommands() {
+		return this.registry.getAll()
+	}
+
+	getCommandState(command: Command, ctx = this.getContext()) {
+		const visible = this.isVisible(command, ctx)
+		const enabled = visible && this.isEnabled(command, ctx)
+
+		return {
+			visible,
+			enabled,
+			disabledReason: enabled ? undefined : this.getDisabledReason(command, ctx),
+			priority: this.getPriority(command, ctx),
+		}
+	}
+
 	async execute(commandId: CommandId): Promise<CommandExecutionResult> {
 		const command = this.registry.get(commandId)
 		if (!command) {

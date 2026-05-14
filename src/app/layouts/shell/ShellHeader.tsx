@@ -5,13 +5,12 @@ import {
 	buildScopedProjectPath,
 	getSectionLabel,
 	getScopeLabel,
-	SHELL_COMMAND_ROUTE_ITEMS,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
 import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
 import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
 import { NavBackForward } from '@/app/layouts/shell/header/NavBackForward'
-import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
+import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
 import {
 	resolveProjectSearchTargetPath,
@@ -21,20 +20,7 @@ import { useSearchOpenIntentStore } from '@/features/global-search/model/useSear
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import type { Scope, Space } from '@/shared/types'
 import { Avatar, AvatarFallback, AvatarImage, AvatarBadge } from '@/shared/ui/base/avatar'
-import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
-import {
-	Command,
-	CommandDialog,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
-	CommandSeparator,
-	CommandShortcut,
-} from '@/shared/ui/base/command'
-import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -45,8 +31,14 @@ import {
 import { Kbd } from '@/shared/ui/base/kbd'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
+import { CommandMenu } from '@/features/command/ui'
 import { getCommandShortcutDisplay } from '@/features/command/shortcuts'
-import { COMMAND_IDS } from '@/features/command/core'
+import {
+	COMMAND_IDS,
+	type CommandContext,
+	type CommandId,
+	type CommandRuntime,
+} from '@/features/command/core'
 import {
 	shellChromeAvatarClusterClass,
 	shellChromeCommandDialogClass,
@@ -64,7 +56,6 @@ import {
 	MinusIcon,
 	PanelLeftCloseIcon,
 	PanelLeftOpenIcon,
-	SearchIcon,
 	SquarePenIcon,
 	SquareIcon,
 	XIcon,
@@ -75,12 +66,14 @@ type ShellHeaderProps = {
 	currentSpaceId: string | null
 	activeSection: ShellSectionKey
 	isCommandOpen: boolean
+	commandContext: CommandContext
+	commandRuntime: CommandRuntime
 	spaces: Space[]
 	projects: ShellProjectLink[]
 	onCommandOpenChange: (open: boolean) => void
+	onRunCommand: (id: CommandId) => void
 	onOpenTaskCreateDialog: () => void
 	onOpenProjectCreateDialog: () => void
-	onOpenDrawer: (kind: ShellDrawerKind, id: string) => void
 	onCloseDrawer: () => void
 }
 
@@ -88,11 +81,13 @@ export function ShellHeader({
 	currentScope,
 	currentSpaceId,
 	activeSection,
+	commandContext,
+	commandRuntime,
 	isCommandOpen,
 	onCommandOpenChange,
+	onRunCommand,
 	onOpenProjectCreateDialog,
 	onOpenTaskCreateDialog,
-	onOpenDrawer,
 	onCloseDrawer,
 	projects,
 	spaces,
@@ -105,7 +100,6 @@ export function ShellHeader({
 		() => /Windows/i.test(window.navigator.userAgent) || window.navigator.platform === 'Win32',
 		[],
 	)
-	const defaultProjectId = projects[0]?.id ?? null
 	const setPendingTaskOpenIntent = useSearchOpenIntentStore(
 		(state) => state.setPendingTaskOpenIntent,
 	)
@@ -447,105 +441,20 @@ export function ShellHeader({
 				</div>
 			</header>
 
-			<CommandDialog
+			<CommandMenu
 				className={shellChromeCommandDialogClass}
+				context={commandContext}
 				description={`${getScopeLabel(currentScope, spaces)} · ${getSectionLabel(activeSection)}`}
 				onOpenChange={onCommandOpenChange}
+				onNavigateProject={(projectId) => {
+					handleNavigate(buildScopedProjectPath(currentScope, projectId, currentSpaceId))
+				}}
+				onRunCommand={onRunCommand}
 				open={isCommandOpen}
+				projects={projects}
+				runtime={commandRuntime}
 				title='StoneFlow Command'
-			>
-				<Command className='bg-transparent'>
-					<CommandInput placeholder='创建任务、跳转页面或打开详情…' />
-					<CommandList className='no-scrollbar max-h-96 overflow-y-auto'>
-						<CommandEmpty>没有结果</CommandEmpty>
-
-						<CommandGroup heading='Quick Actions'>
-							<CommandItem
-								onSelect={() => {
-									onCommandOpenChange(false)
-									onOpenTaskCreateDialog()
-								}}
-							>
-								<SquarePenIcon />
-								创建任务
-								<CommandShortcut>C</CommandShortcut>
-							</CommandItem>
-							<CommandItem
-								onSelect={() => {
-									onCommandOpenChange(false)
-									onOpenProjectCreateDialog()
-								}}
-							>
-								<FolderPlusIcon />
-								创建项目
-								<CommandShortcut>⇧↵</CommandShortcut>
-							</CommandItem>
-							<CommandItem
-								disabled={!defaultProjectId}
-								onSelect={() => {
-									onCommandOpenChange(false)
-									if (defaultProjectId) {
-										onOpenDrawer('project', defaultProjectId)
-									}
-								}}
-							>
-								<SearchIcon />
-								打开当前项目摘要
-								<CommandShortcut>⌥P</CommandShortcut>
-							</CommandItem>
-						</CommandGroup>
-
-						<CommandSeparator />
-
-						<CommandGroup heading='Navigate'>
-							{SHELL_COMMAND_ROUTE_ITEMS.map((item) => (
-								<CommandItem
-									key={item.key}
-									onSelect={() => handleNavigate(item.to(currentScope, currentSpaceId))}
-									value={item.label}
-								>
-									<item.icon />
-									{item.label}
-								</CommandItem>
-							))}
-						</CommandGroup>
-
-						<CommandSeparator />
-
-						<CommandGroup heading='Projects'>
-							{projects.length === 0 ? (
-								<CommandItem disabled value='empty-projects'>
-									<SearchIcon />
-									当前 Space 还没有项目
-								</CommandItem>
-							) : (
-								projects.map((project) => (
-									<CommandItem
-										key={project.id}
-										onSelect={() =>
-											handleNavigate(
-												buildScopedProjectPath(currentScope, project.id, currentSpaceId),
-											)
-										}
-										value={project.label}
-									>
-										<SearchIcon />
-										{project.label}
-										{project.badge ? (
-											<Badge
-												className='ml-auto h-4 rounded-md px-1.5 text-[10.5px]'
-												variant={getProjectStatusBadgeVariant(project.badge)}
-											>
-												{project.badge}
-											</Badge>
-										) : null}
-									</CommandItem>
-								))
-							)}
-						</CommandGroup>
-					</CommandList>
-				</Command>
-			</CommandDialog>
+			/>
 		</>
 	)
 }
