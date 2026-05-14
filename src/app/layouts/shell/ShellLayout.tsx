@@ -239,19 +239,14 @@ export function ShellLayout({
 					case COMMAND_IDS.openCommandMenu:
 						setCommandOpen(true)
 						return
-					case COMMAND_IDS.newTask:
+					case COMMAND_IDS.newQuickTask:
 						handleOpenTaskCreate()
 						return
-					case COMMAND_IDS.newTaskFullscreen:
-						if (routeProjectId) {
-							openTaskCreateDialog({ projectId: routeProjectId }, 'fullscreen')
-							return
-						}
-						if (isNoProjectPage) {
-							openTaskCreateDialog({ placement: 'noProject' }, 'fullscreen')
-							return
-						}
-						openTaskCreateDialog(undefined, 'fullscreen')
+					case COMMAND_IDS.newFullTask:
+						openTaskCreateDialog(undefined, 'default')
+						return
+					case COMMAND_IDS.newTaskInInbox:
+						openTaskCreateDialog({ placement: 'inbox' }, 'default')
 						return
 					case COMMAND_IDS.newProject:
 						openProjectCreateDialog()
@@ -264,6 +259,11 @@ export function ShellLayout({
 					case COMMAND_IDS.goAllTasks:
 						startTransition(() => {
 							navigate(buildScopedSectionPath(currentScope, 'all-tasks', currentSpaceId))
+						})
+						return
+					case COMMAND_IDS.goFocus:
+						startTransition(() => {
+							navigate(buildScopedSectionPath(currentScope, 'focus', currentSpaceId))
 						})
 						return
 					case COMMAND_IDS.goViews:

@@ -121,7 +121,7 @@ export function ShellHeader({
 	const sidebarToggleOpen =
 		sidebarVisualState === 'desktop-expanded' || sidebarVisualState === 'mobile-open'
 	const SidebarToggleIcon = sidebarToggleOpen ? PanelLeftCloseIcon : PanelLeftOpenIcon
-	const taskCreateShortcutDisplay = getShortcutDisplay(COMMAND_IDS.newTask)
+	const taskCreateShortcutDisplay = getShortcutDisplay(COMMAND_IDS.newQuickTask)
 
 	/** 与 `max-sm` 同为 640px 阈；`display: contents` 与变体并用时纯 CSS 不可靠，故用媒体查询做显示开关 */
 	const [isAtLeastSm, setIsAtLeastSm] = useState(() => {

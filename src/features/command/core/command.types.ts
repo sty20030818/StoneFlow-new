@@ -1,16 +1,28 @@
 export const COMMAND_IDS = {
 	openCommandMenu: 'general.openCommandMenu',
 	openSearch: 'general.openSearch',
-	newTask: 'new.task',
-	newTaskFullscreen: 'new.taskFullscreen',
+	close: 'general.close',
+	saveOrSubmit: 'general.saveOrSubmit',
+	openShortcutHelp: 'general.openShortcutHelp',
+	openSettings: 'general.openSettings',
+	goBack: 'general.goBack',
+	goForward: 'general.goForward',
+	newQuickTask: 'new.quickTask',
+	newFullTask: 'new.fullTask',
+	newTaskInInbox: 'new.taskInInbox',
 	newProject: 'new.project',
+	newView: 'new.view',
 	goInbox: 'navigation.goInbox',
 	goAllTasks: 'navigation.goAllTasks',
+	goToday: 'navigation.goToday',
+	goUpcoming: 'navigation.goUpcoming',
+	goFocus: 'navigation.goFocus',
 	goViews: 'navigation.goViews',
 	goProjects: 'navigation.goProjects',
 	goArchive: 'navigation.goArchive',
 	goTrash: 'navigation.goTrash',
 	goSettings: 'navigation.goSettings',
+	goRecent: 'navigation.goRecent',
 } as const
 
 export type KnownCommandId = (typeof COMMAND_IDS)[keyof typeof COMMAND_IDS]
@@ -23,6 +35,7 @@ export type CommandCategory =
 	| 'new'
 	| 'list'
 	| 'task'
+	| 'move'
 	| 'project'
 	| 'view'
 	| 'filter'
@@ -32,6 +45,7 @@ export type CommandCategory =
 
 export type CommandScope =
 	| 'global'
+	| 'app'
 	| 'task-list'
 	| 'project-list'
 	| 'project-page'
@@ -41,6 +55,7 @@ export type CommandScope =
 	| 'preview-drawer'
 	| 'detail-drawer'
 	| 'modal'
+	| 'dropdown'
 
 export type CommandRouteContext = {
 	page:

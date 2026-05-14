@@ -11,12 +11,12 @@ import {
 } from '@/features/command/keybinding'
 
 describe('keybinding', () => {
-	it('匹配 C / V 单键命令', () => {
-		expect(matchCommand('c')).toBe(COMMAND_IDS.newTask)
-		expect(matchCommand('v')).toBe(COMMAND_IDS.newTaskFullscreen)
+	it('匹配 C 快速创建任务，并解绑 V 全局创建', () => {
+		expect(matchCommand('c')).toBe(COMMAND_IDS.newQuickTask)
+		expect(matchCommand('v')).toBeNull()
 	})
 
-	it('匹配 N P 前缀命令', () => {
+	it('匹配 N 组创建命令', () => {
 		const pending = matchKeybindingEvent({
 			bindings: DEFAULT_KEYBINDINGS,
 			event: createKeyEvent('n'),
@@ -26,18 +26,25 @@ describe('keybinding', () => {
 		expect(pending).toMatchObject({ status: 'pending' })
 
 		const chordState = toChordState(pending, 100)
+		expect(matchCommand('t', chordState, 600)).toBe(COMMAND_IDS.newFullTask)
+		expect(matchCommand('i', chordState, 600)).toBe(COMMAND_IDS.newTaskInInbox)
 		expect(matchCommand('p', chordState, 600)).toBe(COMMAND_IDS.newProject)
+		expect(matchCommand('v', chordState, 600)).toBe(COMMAND_IDS.newView)
 	})
 
 	it('匹配 G 组导航命令', () => {
 		const cases = [
 			['i', COMMAND_IDS.goInbox],
 			['t', COMMAND_IDS.goAllTasks],
+			['d', COMMAND_IDS.goToday],
+			['u', COMMAND_IDS.goUpcoming],
+			['f', COMMAND_IDS.goFocus],
 			['v', COMMAND_IDS.goViews],
 			['p', COMMAND_IDS.goProjects],
 			['a', COMMAND_IDS.goArchive],
 			['x', COMMAND_IDS.goTrash],
 			['s', COMMAND_IDS.goSettings],
+			['r', COMMAND_IDS.goRecent],
 		] as const
 
 		for (const [key, commandId] of cases) {
@@ -102,7 +109,7 @@ describe('keybinding', () => {
 			{
 				scope: 'global',
 				sequence: [{ key: 'c' }],
-				commandIds: [COMMAND_IDS.newTask, 'test.duplicate'],
+				commandIds: [COMMAND_IDS.newQuickTask, 'test.duplicate'],
 			},
 		])
 	})
