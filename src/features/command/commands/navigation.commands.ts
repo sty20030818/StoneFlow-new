@@ -1,0 +1,60 @@
+import { COMMAND_IDS, type Command } from '@/features/command/core'
+
+export const navigationCommands: Command[] = [
+	{
+		id: COMMAND_IDS.goInbox,
+		title: '前往收件箱',
+		category: 'navigation',
+		scope: ['global'],
+		keywords: ['inbox', 'go', '收件箱'],
+		run: () => {},
+	},
+	{
+		id: COMMAND_IDS.goAllTasks,
+		title: '前往所有任务',
+		category: 'navigation',
+		scope: ['global'],
+		keywords: ['tasks', 'all', 'go', '所有任务'],
+		run: () => {},
+	},
+	{
+		id: COMMAND_IDS.goViews,
+		title: '前往视图',
+		category: 'navigation',
+		scope: ['global'],
+		keywords: ['views', 'go', '视图'],
+		run: () => {},
+	},
+	{
+		id: COMMAND_IDS.goProjects,
+		title: '前往项目总览',
+		category: 'navigation',
+		scope: ['global'],
+		keywords: ['projects', 'go', '项目'],
+		run: () => {},
+	},
+	{
+		id: COMMAND_IDS.goArchive,
+		title: '前往归档',
+		category: 'navigation',
+		scope: ['global'],
+		keywords: ['archive', 'go', '归档'],
+		run: () => {},
+	},
+	{
+		id: COMMAND_IDS.goTrash,
+		title: '前往回收站',
+		category: 'navigation',
+		scope: ['global'],
+		keywords: ['trash', 'go', '回收站'],
+		run: () => {},
+	},
+	{
+		id: COMMAND_IDS.goSettings,
+		title: '前往设置',
+		category: 'navigation',
+		scope: ['global'],
+		keywords: ['settings', 'go', '设置'],
+		run: () => {},
+	},
+]

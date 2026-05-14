@@ -1,0 +1,97 @@
+import { COMMAND_IDS } from '@/features/command/core'
+
+import type { Keybinding } from './keybinding.types'
+
+export const DEFAULT_KEYBINDINGS: Keybinding[] = [
+	{
+		commandId: COMMAND_IDS.openCommandMenu,
+		sequence: [{ key: 'k', meta: true }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: true,
+	},
+	{
+		commandId: COMMAND_IDS.openCommandMenu,
+		sequence: [{ key: 'k', ctrl: true }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: true,
+	},
+	{
+		commandId: COMMAND_IDS.openSearch,
+		sequence: [{ key: '/' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.newTask,
+		sequence: [{ key: 'c' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.newTaskFullscreen,
+		sequence: [{ key: 'v' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.newProject,
+		sequence: [{ key: 'n' }, { key: 'p' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.goInbox,
+		sequence: [{ key: 'g' }, { key: 'i' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.goAllTasks,
+		sequence: [{ key: 'g' }, { key: 't' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.goViews,
+		sequence: [{ key: 'g' }, { key: 'v' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.goProjects,
+		sequence: [{ key: 'g' }, { key: 'p' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.goArchive,
+		sequence: [{ key: 'g' }, { key: 'a' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.goTrash,
+		sequence: [{ key: 'g' }, { key: 'x' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.goSettings,
+		sequence: [{ key: 'g' }, { key: 's' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+]
