@@ -8,6 +8,11 @@ export const newCommands: Command[] = [
 		scope: ['global'],
 		description: '根据当前上下文快速创建任务。',
 		keywords: ['task', 'create', 'new', 'quick', '任务'],
+		isEnabled: (ctx) => !['archive', 'trash', 'settings'].includes(ctx.route.page),
+		getDisabledReason: (ctx) =>
+			['archive', 'trash', 'settings'].includes(ctx.route.page)
+				? '当前页面不支持快速新建任务'
+				: undefined,
 		// 静态命令只承载元数据；Shell 运行时会通过 adapter 绑定真实动作。
 		run: () => {},
 	},

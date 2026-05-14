@@ -7,7 +7,7 @@ import {
 	getScopeLabel,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
-import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
+import type { ShellRouteHistoryEntry } from '@/app/layouts/shell/model/useShellRouteHistory'
 import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
 import { NavBackForward } from '@/app/layouts/shell/header/NavBackForward'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -68,12 +68,14 @@ type ShellHeaderProps = {
 	isCommandOpen: boolean
 	commandContext: CommandContext
 	commandRuntime: CommandRuntime
+	routeHistoryEntries: ShellRouteHistoryEntry[]
+	canGoBack: boolean
+	canGoForward: boolean
 	spaces: Space[]
 	projects: ShellProjectLink[]
 	onCommandOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
-	onOpenTaskCreateDialog: () => void
-	onOpenProjectCreateDialog: () => void
+	onNavigateToHistoryEntry: (entry: ShellRouteHistoryEntry) => void
 	onCloseDrawer: () => void
 }
 
@@ -83,11 +85,13 @@ export function ShellHeader({
 	activeSection,
 	commandContext,
 	commandRuntime,
+	routeHistoryEntries,
+	canGoBack,
+	canGoForward,
 	isCommandOpen,
 	onCommandOpenChange,
 	onRunCommand,
-	onOpenProjectCreateDialog,
-	onOpenTaskCreateDialog,
+	onNavigateToHistoryEntry,
 	onCloseDrawer,
 	projects,
 	spaces,
@@ -103,14 +107,6 @@ export function ShellHeader({
 	const setPendingTaskOpenIntent = useSearchOpenIntentStore(
 		(state) => state.setPendingTaskOpenIntent,
 	)
-	const {
-		entries: routeHistoryEntries,
-		canGoBack,
-		canGoForward,
-		goBack,
-		goForward,
-		navigateToHistoryEntry,
-	} = useShellRouteHistory({ currentScope, currentSpaceId, spaces, projects })
 	const { toggleSidebar, visualState: sidebarVisualState, isMobile: isLayoutNarrow } = useSidebar()
 	const sidebarToggleOpen =
 		sidebarVisualState === 'desktop-expanded' || sidebarVisualState === 'mobile-open'
@@ -309,13 +305,13 @@ export function ShellHeader({
 							<HistoryDropdown
 								entries={routeHistoryEntries}
 								spaces={spaces}
-								onNavigate={navigateToHistoryEntry}
+								onNavigate={onNavigateToHistoryEntry}
 							/>
 							<NavBackForward
 								canGoBack={canGoBack}
 								canGoForward={canGoForward}
-								onBack={goBack}
-								onForward={goForward}
+								onBack={() => onRunCommand(COMMAND_IDS.goBack)}
+								onForward={() => onRunCommand(COMMAND_IDS.goForward)}
 							/>
 						</div>
 					</div>
@@ -351,7 +347,7 @@ export function ShellHeader({
 						<div className={shellChromeInlineGroupClass} data-tauri-drag-region>
 							<Button
 								className={`${shellChromePrimaryActionClass} group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden`}
-								onClick={onOpenTaskCreateDialog}
+								onClick={() => onRunCommand(COMMAND_IDS.newQuickTask)}
 								size='default'
 								variant='outline'
 							>
@@ -361,7 +357,7 @@ export function ShellHeader({
 							<Button
 								aria-label='新建任务'
 								className={`hidden ${shellChromeIconActionClass} group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex`}
-								onClick={onOpenTaskCreateDialog}
+								onClick={() => onRunCommand(COMMAND_IDS.newQuickTask)}
 								size='icon'
 								variant='outline'
 							>
@@ -382,11 +378,11 @@ export function ShellHeader({
 									</DropdownMenuTrigger>
 									<DropdownMenuContent align='end'>
 										<DropdownMenuGroup>
-											<DropdownMenuItem onSelect={onOpenTaskCreateDialog}>
+											<DropdownMenuItem onSelect={() => onRunCommand(COMMAND_IDS.newFullTask)}>
 												<SquarePenIcon />
 												新建任务
 											</DropdownMenuItem>
-											<DropdownMenuItem onSelect={onOpenProjectCreateDialog}>
+											<DropdownMenuItem onSelect={() => onRunCommand(COMMAND_IDS.newProject)}>
 												<FolderPlusIcon />
 												新建项目
 											</DropdownMenuItem>

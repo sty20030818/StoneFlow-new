@@ -3,6 +3,7 @@ import {
 	CommandRuntime,
 	COMMAND_IDS,
 	createEmptyCommandContext,
+	type CommandContext,
 } from '@/features/command/core'
 import type { ShellCommandActions } from './shell-command-adapter'
 
@@ -36,6 +37,26 @@ describe('Shell command adapter', () => {
 		expect(actions.openProjectCreate).toHaveBeenCalledTimes(1)
 	})
 
+	it.each(['archive', 'trash', 'settings'] as const)(
+		'在 %s 页面禁用快速新建任务',
+		async (page) => {
+			const actions = createActions()
+			const runtime = createRuntime(actions, {
+				...createEmptyCommandContext(),
+				route: {
+					page,
+				},
+			})
+
+			await expect(runtime.execute(COMMAND_IDS.newQuickTask)).resolves.toEqual({
+				status: 'disabled',
+				commandId: COMMAND_IDS.newQuickTask,
+				reason: '当前页面不支持快速新建任务',
+			})
+			expect(actions.openQuickTaskCreate).not.toHaveBeenCalled()
+		},
+	)
+
 	it('未接入 UI 的 new.view 返回 disabled 且不产生副作用', async () => {
 		const actions = createActions()
 		const runtime = createRuntime(actions)
@@ -64,6 +85,17 @@ describe('Shell command adapter', () => {
 		await runtime.execute(commandId)
 
 		expect(actions.navigateTo).toHaveBeenCalledWith(target)
+	})
+
+	it('执行历史导航命令时调用 Shell history action', async () => {
+		const actions = createActions()
+		const runtime = createRuntime(actions)
+
+		await runtime.execute(COMMAND_IDS.goBack)
+		await runtime.execute(COMMAND_IDS.goForward)
+
+		expect(actions.goBack).toHaveBeenCalledTimes(1)
+		expect(actions.goForward).toHaveBeenCalledTimes(1)
 	})
 
 	it.each([
@@ -97,10 +129,10 @@ describe('Shell command adapter', () => {
 	})
 })
 
-function createRuntime(actions: ShellCommandActions) {
+function createRuntime(actions: ShellCommandActions, context: CommandContext = createEmptyCommandContext()) {
 	return new CommandRuntime({
 		registry: createShellCommandRegistry(actions),
-		getContext: createEmptyCommandContext,
+		getContext: () => context,
 	})
 }
 

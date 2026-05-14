@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
+import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
 import { useSidebarNavBadges } from '@/app/layouts/shell/model/useSidebarNavBadges'
 import {
 	selectActiveDrawerId,
@@ -237,6 +238,31 @@ export function ShellLayout({
 		[closeDrawer, navigate, openDrawer, pathname, setPendingTaskOpenIntent],
 	)
 
+	const projectLinks = sidebarProjects.items.map((project) => ({
+		id: project.id,
+		label: project.name,
+		badge: sidebarSettings?.projectSection.showCounts
+			? project.taskCount > 0
+				? String(project.taskCount)
+				: undefined
+			: project.completedAt
+				? 'done'
+				: undefined,
+	}))
+	const {
+		entries: routeHistoryEntries,
+		canGoBack,
+		canGoForward,
+		goBack,
+		goForward,
+		navigateToHistoryEntry,
+	} = useShellRouteHistory({
+		currentScope,
+		currentSpaceId,
+		spaces,
+		projects: projectLinks,
+	})
+
 	const shellCommandActions = useMemo<ShellCommandActions>(
 		() => ({
 			openCommandMenu: () => setCommandOpen(true),
@@ -250,12 +276,14 @@ export function ShellLayout({
 					navigate(buildScopedSectionPath(currentScope, target, currentSpaceId))
 				})
 			},
-			goBack: () => navigate(-1),
-			goForward: () => navigate(1),
+			goBack,
+			goForward,
 		}),
 		[
 			currentScope,
 			currentSpaceId,
+			goBack,
+			goForward,
 			handleOpenTaskCreate,
 			navigate,
 			openProjectCreateDialog,
@@ -359,17 +387,6 @@ export function ShellLayout({
 			: (spaces.find((space) => space.id === currentSpaceId)?.name ??
 				currentSpaceId ??
 				'未选择 Space')
-	const projectLinks = sidebarProjects.items.map((project) => ({
-		id: project.id,
-		label: project.name,
-		badge: sidebarSettings.projectSection.showCounts
-			? project.taskCount > 0
-				? String(project.taskCount)
-				: undefined
-			: project.completedAt
-				? 'done'
-				: undefined,
-	}))
 
 	return (
 		<SidebarProvider
@@ -386,6 +403,8 @@ export function ShellLayout({
 			<CommandShortcutLayer onTrigger={runCommand} />
 			<ShellHeader
 				activeSection={activeSection}
+				canGoBack={canGoBack}
+				canGoForward={canGoForward}
 				commandContext={commandContext}
 				commandRuntime={commandRuntime}
 				currentSpaceId={currentSpaceId}
@@ -393,10 +412,10 @@ export function ShellLayout({
 				isCommandOpen={isCommandOpen}
 				onCloseDrawer={closeDrawer}
 				onCommandOpenChange={setCommandOpen}
-				onOpenProjectCreateDialog={() => openProjectCreateDialog()}
-				onOpenTaskCreateDialog={handleOpenTaskCreate}
+				onNavigateToHistoryEntry={navigateToHistoryEntry}
 				onRunCommand={runCommand}
 				projects={projectLinks}
+				routeHistoryEntries={routeHistoryEntries}
 				spaces={spaces}
 			/>
 			<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-sf-shell'>
