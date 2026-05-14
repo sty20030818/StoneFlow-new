@@ -1,0 +1,35 @@
+import {
+	createEmptyCommandContext,
+	createEmptyCommandRowTargetContext,
+	type CommandFocusContext,
+} from '@/features/command/core'
+
+describe('CommandContext', () => {
+	it('createEmptyCommandContext 返回完整 v2 默认值', () => {
+		const context = createEmptyCommandContext()
+
+		expect(context.rowTarget).toEqual({
+			source: 'none',
+			hasTarget: false,
+			isTaskTarget: false,
+			isProjectTarget: false,
+		})
+		expect(context.ui.isContextMenuOpen).toBe(false)
+		expect(context.view.showCompleted).toBe(false)
+	})
+
+	it('createEmptyCommandRowTargetContext 返回无目标状态', () => {
+		expect(createEmptyCommandRowTargetContext()).toEqual({
+			source: 'none',
+			hasTarget: false,
+			isTaskTarget: false,
+			isProjectTarget: false,
+		})
+	})
+
+	it('focus activePanel 类型允许 dropdown', () => {
+		const activePanel: CommandFocusContext['activePanel'] = 'dropdown'
+
+		expect(activePanel).toBe('dropdown')
+	})
+})

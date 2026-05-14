@@ -94,7 +94,16 @@ export type CommandFocusContext = {
 		| 'button'
 		| 'list'
 		| 'menu'
-	activePanel: 'main' | 'sidebar' | 'preview' | 'detail' | 'modal' | 'command-menu'
+		| 'dropdown-item'
+		| 'row'
+	activePanel:
+		| 'main'
+		| 'sidebar'
+		| 'preview'
+		| 'detail'
+		| 'modal'
+		| 'command-menu'
+		| 'dropdown'
 }
 
 export type CommandUiContext = {
@@ -103,6 +112,7 @@ export type CommandUiContext = {
 	isDetailOpen: boolean
 	isModalOpen: boolean
 	isDropdownOpen: boolean
+	isContextMenuOpen: boolean
 	isLeftSidebarOpen: boolean
 	isRightPreviewOpen: boolean
 }
@@ -118,6 +128,16 @@ export type CommandProjectContext = {
 export type CommandViewContext = {
 	currentViewId?: string
 	hasActiveFilters: boolean
+	showCompleted: boolean
+}
+
+export type CommandRowTargetContext = {
+	targetId?: string
+	targetType?: 'task' | 'project' | 'view'
+	source: 'none' | 'selection' | 'hover' | 'focus' | 'context-menu' | 'drawer'
+	hasTarget: boolean
+	isTaskTarget: boolean
+	isProjectTarget: boolean
 }
 
 export type CommandContext = {
@@ -128,6 +148,7 @@ export type CommandContext = {
 	space: CommandSpaceContext
 	project: CommandProjectContext
 	view: CommandViewContext
+	rowTarget: CommandRowTargetContext
 }
 
 export type Command = {

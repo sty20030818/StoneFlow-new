@@ -4,18 +4,24 @@ import { createEmptyCommandContext, type CommandContext } from '@/features/comma
 
 type UseCommandContextOptions = {
 	route?: Partial<CommandContext['route']>
+	selection?: Partial<CommandContext['selection']>
+	focus?: Partial<CommandContext['focus']>
 	ui?: Partial<CommandContext['ui']>
 	space?: Partial<CommandContext['space']>
 	project?: Partial<CommandContext['project']>
 	view?: Partial<CommandContext['view']>
+	rowTarget?: Partial<CommandContext['rowTarget']>
 }
 
 export function useCommandContext({
 	route,
+	selection,
+	focus,
 	ui,
 	space,
 	project,
 	view,
+	rowTarget,
 }: UseCommandContextOptions = {}) {
 	return useMemo<CommandContext>(() => {
 		const base = createEmptyCommandContext()
@@ -25,6 +31,14 @@ export function useCommandContext({
 			route: {
 				...base.route,
 				...route,
+			},
+			selection: {
+				...base.selection,
+				...selection,
+			},
+			focus: {
+				...base.focus,
+				...focus,
 			},
 			ui: {
 				...base.ui,
@@ -42,6 +56,10 @@ export function useCommandContext({
 				...base.view,
 				...view,
 			},
+			rowTarget: {
+				...base.rowTarget,
+				...rowTarget,
+			},
 		}
-	}, [project, route, space, ui, view])
+	}, [focus, project, route, rowTarget, selection, space, ui, view])
 }

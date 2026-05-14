@@ -1,4 +1,13 @@
-import type { CommandContext } from './command.types'
+import type { CommandContext, CommandRowTargetContext } from './command.types'
+
+export function createEmptyCommandRowTargetContext(): CommandRowTargetContext {
+	return {
+		source: 'none',
+		hasTarget: false,
+		isTaskTarget: false,
+		isProjectTarget: false,
+	}
+}
 
 export function createEmptyCommandContext(): CommandContext {
 	return {
@@ -21,6 +30,7 @@ export function createEmptyCommandContext(): CommandContext {
 			isDetailOpen: false,
 			isModalOpen: false,
 			isDropdownOpen: false,
+			isContextMenuOpen: false,
 			isLeftSidebarOpen: true,
 			isRightPreviewOpen: false,
 		},
@@ -28,6 +38,8 @@ export function createEmptyCommandContext(): CommandContext {
 		project: {},
 		view: {
 			hasActiveFilters: false,
+			showCompleted: false,
 		},
+		rowTarget: createEmptyCommandRowTargetContext(),
 	}
 }

@@ -58,6 +58,7 @@ import {
 	useCommandContext,
 	useCommandRunner,
 	useCommandRuntime,
+	type CommandFocusContext,
 	type CommandRouteContext,
 	type ShellCommandActions,
 	type ShellNavigationTarget,
@@ -279,6 +280,16 @@ export function ShellLayout({
 		}),
 		[activeDrawerId, createDialogType, isCommandOpen],
 	)
+	const commandFocus = useMemo(
+		() => ({
+			activePanel: resolveCommandActivePanel({
+				isCommandOpen,
+				isModalOpen: createDialogType !== null,
+				isDetailOpen: Boolean(activeDrawerId),
+			}),
+		}),
+		[activeDrawerId, createDialogType, isCommandOpen],
+	)
 	const commandSpace = useMemo(
 		() => ({
 			currentSpaceId: currentSpaceId ?? undefined,
@@ -293,6 +304,7 @@ export function ShellLayout({
 	)
 	const commandContext = useCommandContext({
 		route: commandRoute,
+		focus: commandFocus,
 		ui: commandUi,
 		space: commandSpace,
 		project: commandProject,
@@ -552,4 +564,25 @@ function resolveCommandRoutePage(section: ShellSectionKey): CommandRouteContext[
 		default:
 			return 'unknown'
 	}
+}
+
+function resolveCommandActivePanel({
+	isCommandOpen,
+	isModalOpen,
+	isDetailOpen,
+}: {
+	isCommandOpen: boolean
+	isModalOpen: boolean
+	isDetailOpen: boolean
+}): CommandFocusContext['activePanel'] {
+	if (isCommandOpen) {
+		return 'command-menu'
+	}
+	if (isModalOpen) {
+		return 'modal'
+	}
+	if (isDetailOpen) {
+		return 'detail'
+	}
+	return 'main'
 }
