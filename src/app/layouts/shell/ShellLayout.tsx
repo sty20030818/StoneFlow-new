@@ -17,7 +17,6 @@ import {
 	selectTaskCreatePresentation,
 	useDialogStore,
 } from '@/app/layouts/shell/model/useDialogStore'
-import { ShortcutManager } from '@/app/shortcuts/ShortcutManager'
 import {
 	selectSidebarSettings,
 	selectSidebarSettingsError,
@@ -55,6 +54,7 @@ import {
 	shellChromeSkeletonStatusTextClass,
 } from '@/shared/ui/patterns/shell-chrome'
 import {
+	CommandShortcutLayer,
 	useCommandContext,
 	useCommandRunner,
 	useCommandRuntime,
@@ -371,7 +371,7 @@ export function ShellLayout({
 			}}
 			sidebarWidth={sidebarSettings.width}
 		>
-			<ShortcutManager onTrigger={runCommand} />
+			<CommandShortcutLayer onTrigger={runCommand} />
 			<ShellHeader
 				activeSection={activeSection}
 				currentSpaceId={currentSpaceId}

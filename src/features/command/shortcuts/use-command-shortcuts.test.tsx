@@ -1,8 +1,8 @@
 import { act, renderHook } from '@testing-library/react'
 
-import { useShortcutManager } from '@/app/shortcuts/useShortcutManager'
 import { COMMAND_IDS, type CommandId } from '@/features/command/core'
 import type { Keybinding } from '@/features/command/keybinding'
+import { useCommandShortcuts } from './use-command-shortcuts'
 
 const bindings: Keybinding[] = [
 	createBinding(COMMAND_IDS.newQuickTask, [{ key: 'c' }]),
@@ -26,7 +26,7 @@ const bindings: Keybinding[] = [
 	createBinding(COMMAND_IDS.openCommandMenu, [{ key: 'k', ctrl: true }], true),
 ]
 
-describe('useShortcutManager', () => {
+describe('useCommandShortcuts', () => {
 	beforeEach(() => {
 		vi.useFakeTimers()
 	})
@@ -38,7 +38,7 @@ describe('useShortcutManager', () => {
 
 	it('在非输入态下触发 C 快速创建任务，V 不再触发全局创建', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useShortcutManager({ bindings, onTrigger }))
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
 		fireKey('c')
 		fireKey('v')
@@ -52,7 +52,7 @@ describe('useShortcutManager', () => {
 
 	it('输入态聚焦时忽略 c / v / n / g', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useShortcutManager({ bindings, onTrigger }))
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 		const input = document.createElement('input')
 		document.body.appendChild(input)
 
@@ -67,7 +67,7 @@ describe('useShortcutManager', () => {
 
 	it('在 1000ms 内命中 N 组创建序列时触发动作', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useShortcutManager({ bindings, onTrigger }))
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
 		for (const key of ['t', 'i', 'p', 'v']) {
 			fireKey('n')
@@ -88,7 +88,7 @@ describe('useShortcutManager', () => {
 
 	it('前缀超时后自动取消', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useShortcutManager({ bindings, onTrigger }))
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
 		fireKey('n')
 		act(() => {
@@ -101,7 +101,7 @@ describe('useShortcutManager', () => {
 
 	it('非法第二键会直接退出前缀态', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useShortcutManager({ bindings, onTrigger }))
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
 		fireKey('g')
 		fireKey('x')
@@ -112,7 +112,7 @@ describe('useShortcutManager', () => {
 
 	it('支持 G 组导航序列', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useShortcutManager({ bindings, onTrigger }))
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
 		for (const key of ['i', 't', 'd', 'u', 'f', 'v', 'p', 'a', 'x', 's', 'r']) {
 			fireKey('g')
@@ -137,7 +137,7 @@ describe('useShortcutManager', () => {
 
 	it('保留 / 与 Cmd/Ctrl+K 的统一入口分发', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useShortcutManager({ bindings, onTrigger }))
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
 		fireKey('/')
 		fireKey('k', document.body, { metaKey: true })
@@ -153,7 +153,7 @@ describe('useShortcutManager', () => {
 
 	it('输入态仍允许 Cmd/Ctrl+K', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
-		renderHook(() => useShortcutManager({ bindings, onTrigger }))
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 		const input = document.createElement('input')
 		document.body.appendChild(input)
 

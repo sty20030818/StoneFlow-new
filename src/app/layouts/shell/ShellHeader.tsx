@@ -45,7 +45,7 @@ import {
 import { Kbd } from '@/shared/ui/base/kbd'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
-import { getShortcutDisplay } from '@/app/shortcuts/shortcutDisplay'
+import { getCommandShortcutDisplay } from '@/features/command/shortcuts'
 import { COMMAND_IDS } from '@/features/command/core'
 import {
 	shellChromeAvatarClusterClass,
@@ -121,7 +121,7 @@ export function ShellHeader({
 	const sidebarToggleOpen =
 		sidebarVisualState === 'desktop-expanded' || sidebarVisualState === 'mobile-open'
 	const SidebarToggleIcon = sidebarToggleOpen ? PanelLeftCloseIcon : PanelLeftOpenIcon
-	const taskCreateShortcutDisplay = getShortcutDisplay(COMMAND_IDS.newQuickTask)
+	const taskCreateShortcutDisplay = getCommandShortcutDisplay(COMMAND_IDS.newQuickTask)
 
 	/** 与 `max-sm` 同为 640px 阈；`display: contents` 与变体并用时纯 CSS 不可靠，故用媒体查询做显示开关 */
 	const [isAtLeastSm, setIsAtLeastSm] = useState(() => {

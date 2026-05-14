@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 
+import type { CommandId } from '@/features/command/core'
 import {
 	KEYBINDING_CHORD_TIMEOUT_MS,
 	matchKeybindingEvent,
@@ -7,14 +8,13 @@ import {
 	type KeybindingChordState,
 	type NormalizedKeyEvent,
 } from '@/features/command/keybinding'
-import type { CommandId } from '@/features/command/core'
 
-type UseShortcutManagerOptions = {
+type UseCommandShortcutsOptions = {
 	bindings: Keybinding[]
 	onTrigger: (id: CommandId) => void
 }
 
-export function useShortcutManager({ bindings, onTrigger }: UseShortcutManagerOptions) {
+export function useCommandShortcuts({ bindings, onTrigger }: UseCommandShortcutsOptions) {
 	const onTriggerRef = useRef(onTrigger)
 	const chordStateRef = useRef<KeybindingChordState | null>(null)
 	const timeoutRef = useRef<number | null>(null)
@@ -72,11 +72,6 @@ export function useShortcutManager({ bindings, onTrigger }: UseShortcutManagerOp
 					startedAt: performance.now(),
 				}
 				armChordTimeout()
-				return
-			}
-
-			if (result.status === 'ignored') {
-				clearChordState()
 				return
 			}
 
