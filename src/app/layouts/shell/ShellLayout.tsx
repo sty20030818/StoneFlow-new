@@ -240,17 +240,21 @@ export function ShellLayout({
 		[closeDrawer, navigate, openDrawer, pathname, setPendingTaskOpenIntent],
 	)
 
-	const projectLinks = sidebarProjects.items.map((project) => ({
-		id: project.id,
-		label: project.name,
-		badge: sidebarSettings?.projectSection.showCounts
-			? project.taskCount > 0
-				? String(project.taskCount)
-				: undefined
-			: project.completedAt
-				? 'done'
-				: undefined,
-	}))
+	const projectLinks = useMemo(
+		() =>
+			sidebarProjects.items.map((project) => ({
+				id: project.id,
+				label: project.name,
+				badge: sidebarSettings?.projectSection.showCounts
+					? project.taskCount > 0
+						? String(project.taskCount)
+						: undefined
+					: project.completedAt
+						? 'done'
+						: undefined,
+			})),
+		[sidebarProjects.items, sidebarSettings?.projectSection.showCounts],
+	)
 	const {
 		entries: routeHistoryEntries,
 		canGoBack,
