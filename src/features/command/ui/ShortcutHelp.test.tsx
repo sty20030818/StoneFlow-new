@@ -22,12 +22,13 @@ describe('ShortcutHelp', () => {
 			/>,
 		)
 
-		expect(screen.getByText('通用')).toBeInTheDocument()
+		expect(screen.getByText('创建')).toBeInTheDocument()
 		expect(screen.getByText('打开命令菜单')).toBeInTheDocument()
 		expect(screen.getByText('完成任务')).toBeInTheDocument()
-		expect(screen.getAllByText('Command Only').length).toBeGreaterThan(0)
-		expect(screen.getAllByText(/\/|Ctrl \/|⌘\//).length).toBeGreaterThan(0)
-		expect(screen.getAllByText('无默认快捷键').length).toBeGreaterThan(0)
+		expect(screen.getByRole('button', { name: '关闭快捷键帮助' })).toBeInTheDocument()
+		expect(screen.getAllByText('命令内').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('/').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('未绑定').length).toBeGreaterThan(0)
 	})
 })
 

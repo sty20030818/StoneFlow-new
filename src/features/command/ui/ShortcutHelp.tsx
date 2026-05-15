@@ -1,20 +1,12 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
+
+import { XIcon } from 'lucide-react'
 
 import type { CommandContext, CommandRuntime } from '@/features/command/core'
 import { Button } from '@/shared/ui/base/button'
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-} from '@/shared/ui/base/dialog'
-import {
-	createDialogHeaderClass,
-	createDialogScrollClass,
-	createDialogShellClass,
-} from '@/shared/ui/patterns/create-dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/base/dialog'
 import { cn } from '@/shared/lib/utils'
-import { ChevronRightIcon, XIcon } from 'lucide-react'
+import { OverlayScrollbar } from '@/shared/ui/OverlayScrollbar'
 
 import { buildShortcutHelpGroups } from './shortcut-help-model'
 import { ShortcutTokens } from './ShortcutTokens'
@@ -39,90 +31,99 @@ export function ShortcutHelp({
 	title,
 }: ShortcutHelpProps) {
 	const groups = useMemo(() => buildShortcutHelpGroups(runtime, context), [context, runtime])
+	const contentRef = useRef<HTMLDivElement>(null)
+	const scrollRef = useRef<HTMLDivElement>(null)
 
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent
 				className={cn(
-					createDialogShellClass,
-					'sm:max-w-4xl',
+					'top-[18%] translate-y-0 overflow-hidden rounded-lg border border-sf-border-subtle bg-background/98 p-0 text-popover-foreground shadow-(--sf-shadow-popover) max-sm:max-w-[calc(100%-1.5rem)] max-lg:max-w-[calc(100%-1.5rem)] sm:max-w-190',
 					className,
 				)}
 				disableAnimation
+				onOpenAutoFocus={(event) => {
+					event.preventDefault()
+					contentRef.current?.focus({ preventScroll: true })
+				}}
+				ref={contentRef}
 				showCloseButton={false}
+				tabIndex={-1}
 			>
 				<DialogTitle className='sr-only'>{title}</DialogTitle>
 				<DialogDescription className='sr-only'>{description}</DialogDescription>
 
-				<div className={cn(createDialogHeaderClass, 'border-b border-border/70')}>
-					<div className='flex min-w-0 items-center gap-1 text-[13px]'>
-						<span className='shrink-0 text-sf-text-secondary'>StoneFlow</span>
-						<ChevronRightIcon className='size-3.5 shrink-0 text-sf-icon-subtle' />
-						<span className='truncate font-black text-foreground'>{title}</span>
-					</div>
-					<Button
-						className='size-7 text-sf-icon-secondary'
-						onClick={() => onOpenChange(false)}
-						size='icon-sm'
-						variant='ghost'
-					>
-						<XIcon className='size-3.5' />
-					</Button>
+				<Button
+					aria-label='关闭快捷键帮助'
+					className='absolute top-3 right-3 size-8'
+					onClick={() => onOpenChange(false)}
+					variant='ghost'
+				>
+					<XIcon className='size-4' />
+				</Button>
+				<div className='px-5 pt-4 pb-3'>
+					<h2 className='truncate pr-9 text-[16px] font-medium text-foreground'>{title}</h2>
+					<p className='mt-1 truncate text-[12px] text-sf-text-tertiary'>{description}</p>
 				</div>
-				<div className={cn(createDialogScrollClass, 'space-y-3 py-3')}>
-					<p className='text-[12px] leading-5 text-sf-text-secondary'>
-						{description}
-					</p>
-					<div className='space-y-6'>
+				<div className='relative min-h-0'>
+					<div ref={scrollRef} className='no-scrollbar max-h-120 overflow-y-auto px-1 pb-2'>
 						{groups.map((group) => (
-							<section key={group.key} className='space-y-2.5'>
-								<h3 className='text-[10.5px] font-medium tracking-[0.06em] text-muted-foreground uppercase'>
+							<section key={group.key} className='pt-1 first:pt-0'>
+								<h3 className='px-3 pt-1 pb-2 text-[13px] font-medium tracking-normal text-sf-text-secondary'>
 									{group.heading}
 								</h3>
-								<div className='overflow-hidden rounded-xl border border-border/70 bg-card/55'>
-									{group.entries.map((entry, index) => (
-										<article
-											className={cn(
-												'flex items-start gap-4 px-4 py-3.5',
-												index > 0 && 'border-t border-border/60',
-											)}
-											key={entry.id}
-										>
-											<div className='min-w-0 flex-1 space-y-1'>
-												<div className='flex items-center gap-2'>
-													<span className='truncate text-sm font-medium text-foreground'>
-														{entry.title}
-													</span>
-													{entry.isCommandOnly ? (
-														<span className='shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium tracking-[0.04em] text-muted-foreground uppercase'>
-															Command Only
-														</span>
-													) : null}
-												</div>
-												{entry.description ? (
-													<p className='text-xs leading-5 text-muted-foreground'>
-														{entry.description}
-													</p>
-												) : null}
-											</div>
-											<div className='shrink-0 self-center'>
-												{entry.shortcut ? (
-													<ShortcutTokens
-														kbdClassName='h-6 min-w-6 rounded-md border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] text-sf-text-secondary'
-														tokens={entry.shortcut}
-													/>
-												) : (
-													<span className='text-xs text-muted-foreground'>无默认快捷键</span>
-												)}
-											</div>
-										</article>
+								<div className='flex flex-col'>
+									{group.entries.map((entry) => (
+										<ShortcutHelpRow entry={entry} key={entry.id} />
 									))}
 								</div>
 							</section>
 						))}
 					</div>
+					<OverlayScrollbar
+						minThumbHeight={28}
+						scrollRef={scrollRef}
+						thumbLengthRatio={0.58}
+						trackInsetBottom={8}
+						trackInsetTop={4}
+					/>
 				</div>
 			</DialogContent>
 		</Dialog>
+	)
+}
+
+function ShortcutHelpRow({
+	entry,
+}: {
+	entry: ReturnType<typeof buildShortcutHelpGroups>[number]['entries'][number]
+}) {
+	return (
+		<article className='mx-1 flex min-h-11 items-center gap-3 rounded-md bg-transparent px-3 py-2'>
+			<div className='min-w-0 flex-1'>
+				<div className='flex min-w-0 items-center gap-2'>
+					<span className='truncate text-[14px] font-medium text-foreground'>{entry.title}</span>
+					{entry.isCommandOnly ? (
+						<span className='shrink-0 rounded-sm bg-sf-surface-app px-1.5 py-0.5 text-[10px] font-medium tracking-normal text-sf-text-tertiary'>
+							命令内
+						</span>
+					) : null}
+				</div>
+				{entry.description ? (
+					<p className='mt-0.5 truncate text-[12px] text-sf-text-tertiary'>{entry.description}</p>
+				) : null}
+			</div>
+			<div className='ml-auto flex shrink-0 items-center justify-end'>
+				{entry.shortcut ? (
+					<ShortcutTokens
+						kbdClassName='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] text-sf-text-secondary'
+						separatorClassName='text-sf-text-quaternary'
+						tokens={entry.shortcut}
+					/>
+				) : (
+					<span className='text-[12px] text-sf-text-quaternary'>未绑定</span>
+				)}
+			</div>
+		</article>
 	)
 }
