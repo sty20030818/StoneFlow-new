@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 
 import type { CommandContext, CommandRuntime } from '@/features/command/core'
-import { Kbd } from '@/shared/ui/base/kbd'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Dialog,
@@ -18,6 +17,7 @@ import { cn } from '@/shared/lib/utils'
 import { ChevronRightIcon, XIcon } from 'lucide-react'
 
 import { buildShortcutHelpGroups } from './shortcut-help-model'
+import { ShortcutTokens } from './ShortcutTokens'
 
 type ShortcutHelpProps = {
 	className?: string
@@ -107,7 +107,10 @@ export function ShortcutHelp({
 											</div>
 											<div className='shrink-0 self-center'>
 												{entry.shortcut ? (
-													<Kbd>{entry.shortcut}</Kbd>
+													<ShortcutTokens
+														kbdClassName='h-6 min-w-6 rounded-md border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] text-sf-text-secondary'
+														tokens={entry.shortcut}
+													/>
 												) : (
 													<span className='text-xs text-muted-foreground'>无默认快捷键</span>
 												)}

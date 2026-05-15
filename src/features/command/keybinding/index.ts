@@ -7,7 +7,12 @@ export {
 	normalizeKeybindingStroke,
 } from './keybinding-match'
 export { KeybindingRegistry } from './keybinding-registry'
-export { formatKeybindingSequence, formatKeybindingStroke } from './keybinding-format'
+export {
+	formatKeybindingSequence,
+	formatKeybindingStroke,
+	tokenizeKeybindingSequence,
+	tokenizeKeybindingStroke,
+} from './keybinding-format'
 export { isEditableTarget, shouldIgnoreKeybindingEvent } from './input-guard'
 export type {
 	Keybinding,
@@ -20,3 +25,4 @@ export type {
 	KeybindingStroke,
 	NormalizedKeyEvent,
 } from './keybinding.types'
+export type { ShortcutToken } from './keybinding-format'

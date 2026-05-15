@@ -28,11 +28,16 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
-import { Kbd } from '@/shared/ui/base/kbd'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
-import { ChordHint, CommandMenu, ShortcutHelp, type CommandMenuMode } from '@/features/command/ui'
-import { getCommandShortcutDisplay, type CommandChordSession } from '@/features/command/shortcuts'
+import {
+	ChordHint,
+	CommandMenu,
+	ShortcutHelp,
+	ShortcutTokens,
+	type CommandMenuMode,
+} from '@/features/command/ui'
+import { getCommandShortcutTokens, type CommandChordSession } from '@/features/command/shortcuts'
 import {
 	COMMAND_IDS,
 	type CommandContext,
@@ -119,7 +124,7 @@ export function ShellHeader({
 	const sidebarToggleOpen =
 		sidebarVisualState === 'desktop-expanded' || sidebarVisualState === 'mobile-open'
 	const SidebarToggleIcon = sidebarToggleOpen ? PanelLeftCloseIcon : PanelLeftOpenIcon
-	const taskCreateShortcutDisplay = getCommandShortcutDisplay(COMMAND_IDS.newQuickTask)
+	const taskCreateShortcutTokens = getCommandShortcutTokens(COMMAND_IDS.newQuickTask)
 
 	/** 与 `max-sm` 同为 640px 阈；`display: contents` 与变体并用时纯 CSS 不可靠，故用媒体查询做显示开关 */
 	const [isAtLeastSm, setIsAtLeastSm] = useState(() => {
@@ -361,7 +366,12 @@ export function ShellHeader({
 								variant='outline'
 							>
 								<span>新建任务</span>
-								{taskCreateShortcutDisplay ? <Kbd>{taskCreateShortcutDisplay}</Kbd> : null}
+								{taskCreateShortcutTokens ? (
+									<ShortcutTokens
+										kbdClassName='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-background/90 px-1 text-[11px] text-sf-text-secondary'
+										tokens={taskCreateShortcutTokens}
+									/>
+								) : null}
 							</Button>
 							<Button
 								aria-label='新建任务'

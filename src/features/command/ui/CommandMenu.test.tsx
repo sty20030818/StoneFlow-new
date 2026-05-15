@@ -16,7 +16,7 @@ vi.mock('@/features/global-search/api/searchEntities', () => ({
 	searchEntities: vi.fn<typeof searchEntities>(),
 }))
 
-const mockedSearchEntities = vi.mocked(searchEntities)
+const mockedSearchEntities = searchEntities as ReturnType<typeof vi.fn<typeof searchEntities>>
 
 describe('CommandMenu', () => {
 	beforeEach(() => {
@@ -31,6 +31,8 @@ describe('CommandMenu', () => {
 		expect(screen.getByText('完整新建任务')).toBeInTheDocument()
 		expect(screen.getByText('前往收件箱')).toBeInTheDocument()
 		expect(screen.getByText('项目 A')).toBeInTheDocument()
+		expect(screen.getByText('创建')).toBeInTheDocument()
+		expect(screen.getByText('导航')).toBeInTheDocument()
 	})
 
 	it('渲染 V1 command-only 命令面', () => {
@@ -41,6 +43,15 @@ describe('CommandMenu', () => {
 		expect(screen.getByText('按项目筛选')).toBeInTheDocument()
 		expect(screen.getByText('切换侧边栏')).toBeInTheDocument()
 		expect(screen.getByText('打开数据文件夹')).toBeInTheDocument()
+	})
+
+	it('普通组合键和 chord 都按拆键方式渲染', () => {
+		renderCommandMenu()
+
+		expect(screen.getAllByText('C').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('N').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('T').length).toBeGreaterThan(0)
+		expect(document.querySelectorAll('svg').length).toBeGreaterThan(0)
 	})
 
 	it('选择命令后执行 command id 并关闭菜单', () => {

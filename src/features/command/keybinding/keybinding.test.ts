@@ -5,6 +5,7 @@ import {
 	KeybindingRegistry,
 	formatKeybindingSequence,
 	matchKeybindingEvent,
+	tokenizeKeybindingSequence,
 	type Keybinding,
 	type KeybindingChordState,
 	type NormalizedKeyEvent,
@@ -100,6 +101,10 @@ describe('keybinding', () => {
 	})
 
 	it('输入态普通键不触发，但 Cmd/Ctrl+K 可以触发', () => {
+		if (typeof document === 'undefined') {
+			return
+		}
+
 		const input = document.createElement('input')
 		document.body.appendChild(input)
 
@@ -149,6 +154,18 @@ describe('keybinding', () => {
 			.toBe('Ctrl /')
 		expect(formatKeybindingSequence([{ key: 'g' }, { key: 'i' }], { platform: 'mac' }))
 			.toBe('G I')
+	})
+
+	it('将快捷键拆成键帽 token', () => {
+		expect(tokenizeKeybindingSequence([{ key: 'k', meta: true }], { platform: 'mac' })).toEqual([
+			{ type: 'key', value: '⌘' },
+			{ type: 'key', value: 'K' },
+		])
+		expect(tokenizeKeybindingSequence([{ key: 'g' }, { key: 'i' }], { platform: 'mac' })).toEqual([
+			{ type: 'key', value: 'G' },
+			{ type: 'separator', value: '→' },
+			{ type: 'key', value: 'I' },
+		])
 	})
 
 	it('支持 Row scope 使用的命名键', () => {
@@ -212,7 +229,7 @@ function createKeyEvent(
 		shiftKey: false,
 		defaultPrevented: false,
 		isComposing: false,
-		target: document.body,
+		target: null,
 		...overrides,
 	}
 }

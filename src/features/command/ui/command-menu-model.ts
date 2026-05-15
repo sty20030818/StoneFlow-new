@@ -1,25 +1,18 @@
 import { COMMAND_IDS, type Command, type CommandContext, type CommandId, type CommandRuntime } from '@/features/command/core'
-import { DEFAULT_KEYBINDINGS, formatKeybindingSequence, KeybindingRegistry } from '@/features/command/keybinding'
+import { DEFAULT_KEYBINDINGS, KeybindingRegistry, tokenizeKeybindingSequence, type ShortcutToken } from '@/features/command/keybinding'
 
 export type CommandMenuGroupKey =
-	| 'open'
-	| 'new'
-	| 'task'
-	| 'move'
+	| 'create'
+	| 'navigate'
+	| 'action'
 	| 'project'
-	| 'view'
-	| 'filter'
-	| 'inbox'
-	| 'layout'
-	| 'navigation'
-	| 'general'
-	| 'system'
+	| 'task'
 
 export type CommandMenuEntry = {
 	command: Command
 	disabled: boolean
 	disabledReason?: string
-	shortcut: string | null
+	shortcut: ShortcutToken[] | null
 }
 
 export type CommandMenuGroup = {
@@ -28,25 +21,22 @@ export type CommandMenuGroup = {
 	entries: CommandMenuEntry[]
 }
 
-const GROUPS: Array<{ key: CommandMenuGroupKey; heading: string }> = [
-	{ key: 'open', heading: '打开' },
-	{ key: 'new', heading: '新建' },
-	{ key: 'task', heading: '任务' },
-	{ key: 'move', heading: '移动' },
-	{ key: 'project', heading: '项目' },
-	{ key: 'view', heading: '视图' },
-	{ key: 'filter', heading: '筛选' },
-	{ key: 'inbox', heading: '收件箱' },
-	{ key: 'layout', heading: '布局' },
-	{ key: 'navigation', heading: '导航' },
-	{ key: 'general', heading: '通用' },
-	{ key: 'system', heading: '系统' },
+const GROUPS: Array<{
+	key: CommandMenuGroupKey
+	heading: string
+	categories: Command['category'][]
+}> = [
+	{ key: 'create', heading: '创建', categories: ['new'] },
+	{ key: 'navigate', heading: '导航', categories: ['navigation', 'open'] },
+	{ key: 'action', heading: '操作', categories: ['general', 'layout', 'filter', 'inbox', 'view', 'system', 'move'] },
+	{ key: 'project', heading: '项目', categories: ['project'] },
+	{ key: 'task', heading: '任务', categories: ['task'] },
 ]
 
 const DEFAULT_HIDDEN_COMMAND_IDS: ReadonlySet<CommandId> = new Set([COMMAND_IDS.openCommandMenu])
 const keybindingRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
-export function buildCommandMenuGroups(runtime: CommandRuntime, context: CommandContext) {
+export function buildCommandMenuGroups(runtime: CommandRuntime, context: CommandContext): CommandMenuGroup[] {
 	const entries = runtime
 		.getCommands()
 		.map((command) => {
@@ -59,11 +49,11 @@ export function buildCommandMenuGroups(runtime: CommandRuntime, context: Command
 		.filter(({ command, state }) => state.visible && !DEFAULT_HIDDEN_COMMAND_IDS.has(command.id))
 		.sort((left, right) => right.state.priority - left.state.priority)
 
-	return GROUPS.map<CommandMenuGroup>(({ key, heading }) => ({
+	return GROUPS.map<CommandMenuGroup>(({ key, heading, categories }) => ({
 		key,
 		heading,
 		entries: entries
-			.filter(({ command }) => command.category === key)
+			.filter(({ command }) => categories.includes(command.category))
 			.map(({ command, state }) => ({
 				command,
 				disabled: !state.enabled,
@@ -75,5 +65,5 @@ export function buildCommandMenuGroups(runtime: CommandRuntime, context: Command
 
 export function getCommandMenuShortcut(commandId: Command['id']) {
 	const binding = keybindingRegistry.getByCommandId(commandId)[0]
-	return binding ? formatKeybindingSequence(binding.sequence) : null
+	return binding ? tokenizeKeybindingSequence(binding.sequence) : null
 }

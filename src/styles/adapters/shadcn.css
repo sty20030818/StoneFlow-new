@@ -91,6 +91,7 @@
 	--color-sf-icon-primary: var(--sf-icon-primary);
 	--color-sf-icon-secondary: var(--sf-icon-secondary);
 	--color-sf-icon-subtle: var(--sf-icon-subtle);
+	--color-sf-surface-app: var(--sf-surface-app);
 	--color-sf-surface-panel: var(--sf-surface-panel);
 	--color-sf-surface-panel-muted: var(--sf-surface-panel-muted);
 	--color-sf-surface-panel-subtle: var(--sf-surface-panel-subtle);

@@ -190,6 +190,7 @@ export type Command = {
 	title: string
 	category: CommandCategory
 	scope: CommandScope[]
+	icon?: string
 	description?: string
 	keywords?: string[]
 	isVisible?: (ctx: CommandContext) => boolean

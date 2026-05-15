@@ -1,6 +1,8 @@
 import {
 	areStrokesEqual,
 	formatKeybindingStroke,
+	tokenizeKeybindingStroke,
+	type ShortcutToken,
 	type Keybinding,
 	type KeybindingChordState,
 	type KeybindingScope,
@@ -11,12 +13,14 @@ export type ChordHintOption = {
 	commandId: string
 	stroke: KeybindingStroke
 	display: string
+	tokens: ShortcutToken[]
 }
 
 export type CommandChordSession = {
 	prefix: KeybindingStroke
 	scope: KeybindingScope
 	prefixDisplay: string
+	prefixTokens: ShortcutToken[]
 	options: ChordHintOption[]
 }
 
@@ -45,6 +49,7 @@ export function buildChordSession(
 				commandId: binding.commandId,
 				stroke,
 				display: formatKeybindingStroke(stroke),
+				tokens: tokenizeKeybindingStroke(stroke),
 			}
 		})
 		.filter((option): option is ChordHintOption => option !== null)
@@ -53,6 +58,7 @@ export function buildChordSession(
 		prefix: chordState.prefix,
 		scope: chordState.scope,
 		prefixDisplay: formatKeybindingStroke(chordState.prefix),
+		prefixTokens: tokenizeKeybindingStroke(chordState.prefix),
 		options,
 	}
 }

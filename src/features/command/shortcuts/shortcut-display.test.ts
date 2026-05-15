@@ -1,5 +1,6 @@
+import { DEFAULT_KEYBINDINGS, tokenizeKeybindingSequence } from '@/features/command/keybinding'
 import { COMMAND_IDS } from '@/features/command/core'
-import { getCommandShortcutDisplay } from './shortcut-display'
+import { getCommandShortcutDisplay, getCommandShortcutTokens } from './shortcut-display'
 
 describe('getCommandShortcutDisplay', () => {
 	it('返回默认命令快捷键显示文案', () => {
@@ -9,5 +10,24 @@ describe('getCommandShortcutDisplay', () => {
 
 	it('未绑定命令返回 null', () => {
 		expect(getCommandShortcutDisplay('test.unbound')).toBeNull()
+	})
+})
+
+describe('getCommandShortcutTokens', () => {
+	it('返回拆键后的快捷键 token', () => {
+		expect(getCommandShortcutTokens(COMMAND_IDS.openCommandMenu)).toEqual(
+			tokenizeKeybindingSequence(
+				DEFAULT_KEYBINDINGS.find((binding) => binding.commandId === COMMAND_IDS.openCommandMenu)!.sequence,
+			),
+		)
+		expect(getCommandShortcutTokens(COMMAND_IDS.goInbox)).toEqual(
+			tokenizeKeybindingSequence(
+				DEFAULT_KEYBINDINGS.find((binding) => binding.commandId === COMMAND_IDS.goInbox)!.sequence,
+			),
+		)
+	})
+
+	it('未绑定命令返回 null', () => {
+		expect(getCommandShortcutTokens('test.unbound')).toBeNull()
 	})
 })

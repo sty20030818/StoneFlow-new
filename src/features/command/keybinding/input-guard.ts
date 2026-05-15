@@ -1,6 +1,10 @@
 import type { NormalizedKeyEvent } from './keybinding.types'
 
 export function isEditableTarget(target: EventTarget | null) {
+	if (typeof HTMLElement === 'undefined') {
+		return false
+	}
+
 	if (!(target instanceof HTMLElement)) {
 		return false
 	}

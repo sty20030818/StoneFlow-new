@@ -1,5 +1,26 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
 
+import {
+	ArrowRightIcon,
+	CheckCircle2Icon,
+	CircleIcon,
+	CompassIcon,
+	CommandIcon,
+	FolderIcon,
+	FolderOpenIcon,
+	FolderPlusIcon,
+	FoldersIcon,
+	LayoutGridIcon,
+	ListTodoIcon,
+	PanelLeftIcon,
+	PlusIcon,
+	SearchIcon,
+	SquarePlusIcon,
+	Trash2Icon,
+	type LucideProps,
+} from 'lucide-react'
+
+import { OverlayScrollbar } from '@/shared/ui/OverlayScrollbar'
 import { Badge } from '@/shared/ui/base/badge'
 import {
 	Command,
@@ -9,15 +30,13 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-	CommandSeparator,
-	CommandShortcut,
 } from '@/shared/ui/base/command'
 import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
-import { SearchIcon } from 'lucide-react'
 import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
 import type { CommandContext, CommandId, CommandRuntime } from '@/features/command/core'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 
+import { ShortcutTokens } from './ShortcutTokens'
 import { buildCommandMenuGroups, type CommandMenuEntry } from './command-menu-model'
 
 export type CommandMenuMode = 'default' | 'task-picker' | 'project-picker'
@@ -60,6 +79,7 @@ export function CommandMenu({
 	title,
 }: CommandMenuProps) {
 	const [query, setQuery] = useState('')
+	const inputRef = useRef<HTMLInputElement>(null)
 	const groups = useMemo(() => buildCommandMenuGroups(runtime, context), [context, runtime])
 	const scopedSearch = useGlobalSearch(mode === 'default' ? '' : query)
 	const isScopedMode = mode !== 'default'
@@ -67,6 +87,33 @@ export function CommandMenu({
 	useEffect(() => {
 		setQuery('')
 	}, [mode, open])
+
+	useEffect(() => {
+		if (!open) {
+			return
+		}
+
+		requestAnimationFrame(() => {
+			inputRef.current?.focus()
+			inputRef.current?.setSelectionRange(query.length, query.length)
+		})
+	}, [open, query.length])
+
+	const handleSurfacePointerDownCapture = (event: React.PointerEvent<HTMLDivElement>) => {
+		const target = event.target
+		if (!(target instanceof HTMLElement)) {
+			return
+		}
+
+		if (target.closest('[data-slot="command-input"]')) {
+			return
+		}
+
+		requestAnimationFrame(() => {
+			inputRef.current?.focus()
+			inputRef.current?.setSelectionRange(query.length, query.length)
+		})
+	}
 
 	return (
 		<CommandDialog
@@ -76,13 +123,14 @@ export function CommandMenu({
 			open={open}
 			title={title}
 		>
-			<Command className='bg-transparent' shouldFilter={!isScopedMode}>
+			<Command onPointerDownCapture={handleSurfacePointerDownCapture} shouldFilter={!isScopedMode}>
 				<CommandInput
+					ref={inputRef}
 					placeholder={getCommandMenuPlaceholder(mode)}
 					value={query}
 					onValueChange={setQuery}
 				/>
-				<CommandList className='no-scrollbar max-h-96 overflow-y-auto'>
+				<CommandScrollableList>
 					<CommandEmpty>{getCommandMenuEmptyText(mode, query)}</CommandEmpty>
 					{isScopedMode ? (
 						<ScopedPickerCommandGroup
@@ -94,16 +142,36 @@ export function CommandMenu({
 						/>
 					) : (
 						<>
-							<CommandMenuList groups={groups} onOpenChange={onOpenChange} onRunCommand={onRunCommand} />
-							<ProjectsCommandGroup
-								onNavigateProject={onNavigateProject}
-								projects={projects}
+							<CommandMenuList
+								groups={groups}
+								onOpenChange={onOpenChange}
+								onRunCommand={onRunCommand}
 							/>
+							<ProjectsCommandGroup onNavigateProject={onNavigateProject} projects={projects} />
 						</>
 					)}
-				</CommandList>
+				</CommandScrollableList>
 			</Command>
 		</CommandDialog>
+	)
+}
+
+function CommandScrollableList({ children }: { children: React.ReactNode }) {
+	const listRef = useRef<React.ElementRef<typeof CommandList>>(null)
+
+	return (
+		<div className='relative min-h-0'>
+			<CommandList className='no-scrollbar max-h-120 overflow-y-auto px-1 pb-2' ref={listRef}>
+				{children}
+			</CommandList>
+			<OverlayScrollbar
+				minThumbHeight={48}
+				scrollRef={listRef}
+				thumbLengthRatio={0.58}
+				trackInsetBottom={8}
+				trackInsetTop={4}
+			/>
+		</div>
 	)
 }
 
@@ -114,7 +182,7 @@ function getCommandMenuPlaceholder(mode: CommandMenuMode) {
 		case 'project-picker':
 			return '搜索项目…'
 		default:
-			return '创建任务、跳转页面或打开详情…'
+			return '输入命令 或 搜索 …'
 	}
 }
 
@@ -124,14 +192,14 @@ function getCommandMenuEmptyText(mode: CommandMenuMode, query: string) {
 			? '输入关键词搜索任务'
 			: mode === 'project-picker'
 				? '输入关键词搜索项目'
-				: '没有结果'
+				: '没有可用命令'
 	}
 
 	return mode === 'task-picker'
 		? '没有匹配的任务'
 		: mode === 'project-picker'
 			? '没有匹配的项目'
-			: '没有结果'
+			: '没有匹配的命令'
 }
 
 function CommandMenuList({
@@ -145,16 +213,14 @@ function CommandMenuList({
 }) {
 	return (
 		<>
-			{groups.map((group, index) => (
+			{groups.map((group) => (
 				<CommandMenuGroup
 					group={group}
 					key={group.key}
 					onOpenChange={onOpenChange}
 					onRunCommand={onRunCommand}
-					showSeparator={index > 0}
 				/>
 			))}
-			{groups.length > 0 ? <CommandSeparator /> : null}
 		</>
 	)
 }
@@ -163,27 +229,22 @@ function CommandMenuGroup({
 	group,
 	onOpenChange,
 	onRunCommand,
-	showSeparator,
 }: {
 	group: ReturnType<typeof buildCommandMenuGroups>[number]
 	onOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
-	showSeparator: boolean
 }) {
 	return (
-		<>
-			{showSeparator ? <CommandSeparator /> : null}
-			<CommandGroup heading={group.heading}>
-				{group.entries.map((entry) => (
-					<CommandMenuItem
-						entry={entry}
-						key={entry.command.id}
-						onOpenChange={onOpenChange}
-						onRunCommand={onRunCommand}
-					/>
-				))}
-			</CommandGroup>
-		</>
+		<CommandGroup className='pt-1 first:pt-0' heading={group.heading}>
+			{group.entries.map((entry) => (
+				<CommandMenuItem
+					entry={entry}
+					key={entry.command.id}
+					onOpenChange={onOpenChange}
+					onRunCommand={onRunCommand}
+				/>
+			))}
+		</CommandGroup>
 	)
 }
 
@@ -208,18 +269,33 @@ function CommandMenuItem({
 			}}
 			value={`${entry.command.title} ${entry.command.keywords?.join(' ') ?? ''}`}
 		>
-			<span className='min-w-0 flex-1 truncate'>{entry.command.title}</span>
-			{entry.disabled && entry.disabledReason ? (
-				<span className='ml-auto truncate text-xs text-muted-foreground'>{entry.disabledReason}</span>
-			) : (
-				<CommandMenuShortcut shortcut={entry.shortcut} />
-			)}
+			<CommandRow
+				leadingIcon={resolveCommandIcon(entry.command.id)}
+				title={entry.command.title}
+				trailing={
+					entry.disabled && entry.disabledReason ? (
+						<CommandRowMeta>{entry.disabledReason}</CommandRowMeta>
+					) : (
+						<CommandMenuShortcut shortcut={entry.shortcut} />
+					)
+				}
+			/>
 		</CommandItem>
 	)
 }
 
-function CommandMenuShortcut({ shortcut }: { shortcut: string | null }) {
-	return shortcut ? <CommandShortcut>{shortcut}</CommandShortcut> : null
+function CommandMenuShortcut({ shortcut }: { shortcut: CommandMenuEntry['shortcut'] }) {
+	if (!shortcut) {
+		return null
+	}
+
+	return (
+		<ShortcutTokens
+			kbdClassName='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] text-sf-text-secondary'
+			separatorClassName='text-sf-text-quaternary'
+			tokens={shortcut}
+		/>
+	)
 }
 
 function ScopedPickerCommandGroup({
@@ -238,7 +314,7 @@ function ScopedPickerCommandGroup({
 	if (mode === 'task-picker') {
 		const tasks = [...result.tasks, ...result.completedTasks]
 		return (
-			<CommandGroup heading='任务'>
+			<CommandGroup className='pt-2' heading='任务'>
 				{tasks.map((task) => (
 					<CommandItem
 						key={task.id}
@@ -248,11 +324,15 @@ function ScopedPickerCommandGroup({
 						}}
 						value={`${task.title} ${task.note ?? ''} ${task.projectName ?? ''} ${task.spaceName}`}
 					>
-						<SearchIcon />
-						<span className='min-w-0 flex-1 truncate'>{task.title}</span>
-						<span className='ml-auto truncate text-xs text-muted-foreground'>
-							{task.projectName ?? (task.inboxAt ? 'Inbox' : '独立事项')}
-						</span>
+						<CommandRow
+							leadingIcon={CircleIcon}
+							title={task.title}
+							trailing={
+								<CommandRowMeta>
+									{task.projectName ?? (task.inboxAt ? 'Task · Inbox' : 'Task · 独立事项')}
+								</CommandRowMeta>
+							}
+						/>
 					</CommandItem>
 				))}
 			</CommandGroup>
@@ -261,7 +341,7 @@ function ScopedPickerCommandGroup({
 
 	const projects = [...result.projects, ...result.completedProjects]
 	return (
-		<CommandGroup heading='项目'>
+		<CommandGroup className='pt-2' heading='项目'>
 			{projects.map((project) => (
 				<CommandItem
 					key={project.id}
@@ -271,9 +351,11 @@ function ScopedPickerCommandGroup({
 					}}
 					value={`${project.name} ${project.note ?? ''} ${project.spaceName}`}
 				>
-					<SearchIcon />
-					<span className='min-w-0 flex-1 truncate'>{project.name}</span>
-					<span className='ml-auto truncate text-xs text-muted-foreground'>{project.spaceName}</span>
+					<CommandRow
+						leadingIcon={FolderIcon}
+						title={project.name}
+						trailing={<CommandRowMeta>{`Project · ${project.spaceName}`}</CommandRowMeta>}
+					/>
 				</CommandItem>
 			))}
 		</CommandGroup>
@@ -288,11 +370,10 @@ function ProjectsCommandGroup({
 	projects: CommandMenuProject[]
 }) {
 	return (
-		<CommandGroup heading='Projects'>
+		<CommandGroup className='pt-4' heading='项目'>
 			{projects.length === 0 ? (
 				<CommandItem disabled value='empty-projects'>
-					<SearchIcon />
-					当前 Space 还没有项目
+					<CommandRow leadingIcon={FolderOpenIcon} title='当前 Space 还没有项目' />
 				</CommandItem>
 			) : (
 				projects.map((project) => (
@@ -301,19 +382,114 @@ function ProjectsCommandGroup({
 						onSelect={() => onNavigateProject(project.id)}
 						value={project.label}
 					>
-						<SearchIcon />
-						{project.label}
-						{project.badge ? (
-							<Badge
-								className='ml-auto h-4 rounded-md px-1.5 text-[10.5px]'
-								variant={getProjectStatusBadgeVariant(project.badge)}
-							>
-								{project.badge}
-							</Badge>
-						) : null}
+						<CommandRow
+							leadingIcon={FoldersIcon}
+							title={project.label}
+							trailing={
+								project.badge ? (
+									<Badge
+										className='ml-auto h-5 rounded-full px-2 text-[10.5px]'
+										variant={getProjectStatusBadgeVariant(project.badge)}
+									>
+										{project.badge}
+									</Badge>
+								) : null
+							}
+						/>
 					</CommandItem>
 				))
 			)}
 		</CommandGroup>
 	)
+}
+
+function CommandRow({
+	leadingIcon: LeadingIcon,
+	title,
+	trailing,
+}: {
+	leadingIcon: ComponentType<LucideProps>
+	title: string
+	trailing?: React.ReactNode
+}) {
+	return (
+		<div className='flex w-full min-w-0 items-center gap-3'>
+			<div className='flex size-4 shrink-0 items-center justify-center text-sf-icon-secondary'>
+				<LeadingIcon className='size-4' />
+			</div>
+			<span className='min-w-0 flex-1 truncate text-[14px] font-medium text-foreground'>
+				{title}
+			</span>
+			<div className='ml-auto flex shrink-0 items-center justify-end'>{trailing}</div>
+		</div>
+	)
+}
+
+function CommandRowMeta({ children }: { children: React.ReactNode }) {
+	return (
+		<span className='block max-w-48 truncate text-right text-[12px] text-sf-text-tertiary'>
+			{children}
+		</span>
+	)
+}
+
+function resolveCommandIcon(commandId: CommandId): ComponentType<LucideProps> {
+	if (commandId.startsWith('new.')) {
+		if (commandId.includes('project')) {
+			return FolderPlusIcon
+		}
+		if (commandId.includes('view')) {
+			return SquarePlusIcon
+		}
+		return PlusIcon
+	}
+
+	if (commandId.startsWith('navigation.')) {
+		if (commandId.includes('project')) {
+			return LayoutGridIcon
+		}
+		if (commandId.includes('settings')) {
+			return CommandIcon
+		}
+		return ArrowRightIcon
+	}
+
+	if (commandId.startsWith('open.')) {
+		if (commandId.includes('project')) {
+			return FolderOpenIcon
+		}
+		if (commandId.includes('space')) {
+			return CompassIcon
+		}
+		return SearchIcon
+	}
+
+	if (commandId.startsWith('task.')) {
+		if (commandId.includes('complete')) {
+			return CheckCircle2Icon
+		}
+		return ListTodoIcon
+	}
+
+	if (commandId.startsWith('project.')) {
+		return FolderIcon
+	}
+
+	if (commandId.startsWith('layout.')) {
+		return PanelLeftIcon
+	}
+
+	if (commandId.startsWith('inbox.')) {
+		return CircleIcon
+	}
+
+	if (commandId.startsWith('system.')) {
+		return CommandIcon
+	}
+
+	if (commandId === 'general.close') {
+		return Trash2Icon
+	}
+
+	return CommandIcon
 }

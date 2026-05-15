@@ -1,4 +1,4 @@
-import { DEFAULT_KEYBINDINGS, formatKeybindingSequence, KeybindingRegistry } from '@/features/command/keybinding'
+import { DEFAULT_KEYBINDINGS, KeybindingRegistry, tokenizeKeybindingSequence, type ShortcutToken } from '@/features/command/keybinding'
 import type { CommandContext, CommandRuntime } from '@/features/command/core'
 
 import type { CommandMenuGroupKey } from './command-menu-model'
@@ -7,7 +7,7 @@ export type ShortcutHelpEntry = {
 	id: string
 	title: string
 	description?: string
-	shortcut: string | null
+	shortcut: ShortcutToken[] | null
 	isCommandOnly: boolean
 }
 
@@ -18,18 +18,11 @@ export type ShortcutHelpGroup = {
 }
 
 const GROUPS: Array<{ key: CommandMenuGroupKey; heading: string }> = [
-	{ key: 'open', heading: '打开' },
-	{ key: 'new', heading: '新建' },
-	{ key: 'task', heading: '任务' },
-	{ key: 'move', heading: '移动' },
+	{ key: 'create', heading: '创建' },
+	{ key: 'navigate', heading: '导航' },
+	{ key: 'action', heading: '操作' },
 	{ key: 'project', heading: '项目' },
-	{ key: 'view', heading: '视图' },
-	{ key: 'filter', heading: '筛选' },
-	{ key: 'inbox', heading: '收件箱' },
-	{ key: 'layout', heading: '布局' },
-	{ key: 'navigation', heading: '导航' },
-	{ key: 'general', heading: '通用' },
-	{ key: 'system', heading: '系统' },
+	{ key: 'task', heading: '任务' },
 ]
 
 const keybindingRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
@@ -48,7 +41,7 @@ export function buildShortcutHelpGroups(runtime: CommandRuntime, context: Comman
 		key,
 		heading,
 		entries: entries
-			.filter(({ command }) => command.category === key)
+			.filter(({ command }) => mapCommandCategoryToHelpGroup(command.category) === key)
 			.map(({ command }) => ({
 				id: command.id,
 				title: command.title,
@@ -61,5 +54,21 @@ export function buildShortcutHelpGroups(runtime: CommandRuntime, context: Comman
 
 export function getShortcutHelpShortcut(commandId: string) {
 	const binding = keybindingRegistry.getByCommandId(commandId)[0]
-	return binding ? formatKeybindingSequence(binding.sequence) : null
+	return binding ? tokenizeKeybindingSequence(binding.sequence) : null
+}
+
+function mapCommandCategoryToHelpGroup(category: string): CommandMenuGroupKey {
+	if (category === 'new') {
+		return 'create'
+	}
+	if (category === 'navigation' || category === 'open') {
+		return 'navigate'
+	}
+	if (category === 'project') {
+		return 'project'
+	}
+	if (category === 'task') {
+		return 'task'
+	}
+	return 'action'
 }
