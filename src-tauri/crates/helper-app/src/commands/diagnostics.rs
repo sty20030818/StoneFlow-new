@@ -85,3 +85,21 @@ pub async fn helper_quick_report_layout_diagnostics(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::QuickCreateErrorPayload;
+
+    #[test]
+    fn quick_create_error_payload_serializes_type_and_message() {
+        let payload = QuickCreateErrorPayload {
+            type_: "Validation",
+            message: "title empty".to_owned(),
+        };
+
+        let value = serde_json::to_value(payload).expect("error payload should serialize");
+
+        assert_eq!(value["type"], "Validation");
+        assert_eq!(value["message"], "title empty");
+    }
+}

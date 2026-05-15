@@ -4,6 +4,7 @@ import type { CommandId } from '@/features/command/core'
 import {
 	KEYBINDING_CHORD_TIMEOUT_MS,
 	matchKeybindingEvent,
+	type KeybindingStroke,
 	type KeybindingScope,
 	type Keybinding,
 	type KeybindingChordState,
@@ -74,7 +75,7 @@ export function useCommandShortcuts({
 			})
 
 			if (result.status === 'matched') {
-				if (result.keybinding.preventDefault) {
+				if (shouldPreventDefaultForMatchedKeybinding(result.keybinding.sequence)) {
 					event.preventDefault()
 				}
 				clearChordState()
@@ -83,7 +84,6 @@ export function useCommandShortcuts({
 			}
 
 			if (result.status === 'pending') {
-				event.preventDefault()
 				chordStateRef.current = {
 					prefix: result.prefix,
 					scope: result.scope,
@@ -103,6 +103,18 @@ export function useCommandShortcuts({
 				clearChordState()
 			}
 	}, [bindings, scope])
+}
+
+function shouldPreventDefaultForMatchedKeybinding(sequence: Keybinding['sequence']) {
+	return sequence.some((stroke) => shouldPreventDefaultForStroke(stroke))
+}
+
+function shouldPreventDefaultForStroke(stroke: KeybindingStroke) {
+	if (stroke.meta || stroke.ctrl || stroke.alt) {
+		return true
+	}
+
+	return stroke.key === 'Enter' || stroke.key === 'Delete' || stroke.key === 'Backspace' || stroke.key === 'Space'
 }
 
 function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent {

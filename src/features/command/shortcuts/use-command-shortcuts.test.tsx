@@ -243,6 +243,64 @@ describe('useCommandShortcuts', () => {
 		expect(onChordStateChange).toHaveBeenCalledWith(null)
 		expect(onChordStateChange).toHaveBeenLastCalledWith(null)
 	})
+
+	it('进入 pending 时不强行 preventDefault 前缀键', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
+
+		const event = new KeyboardEvent('keydown', {
+			key: 'g',
+			bubbles: true,
+			cancelable: true,
+		})
+
+		Object.defineProperty(event, 'target', {
+			configurable: true,
+			value: document.body,
+		})
+
+		act(() => {
+			window.dispatchEvent(event)
+		})
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(onTrigger).not.toHaveBeenCalled()
+	})
+
+	it('命中可打印 chord 后不强行 preventDefault 第二键', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
+
+		const prefixEvent = new KeyboardEvent('keydown', {
+			key: 'g',
+			bubbles: true,
+			cancelable: true,
+		})
+		Object.defineProperty(prefixEvent, 'target', {
+			configurable: true,
+			value: document.body,
+		})
+
+		const secondEvent = new KeyboardEvent('keydown', {
+			key: 'i',
+			bubbles: true,
+			cancelable: true,
+		})
+		Object.defineProperty(secondEvent, 'target', {
+			configurable: true,
+			value: document.body,
+		})
+
+		act(() => {
+			window.dispatchEvent(prefixEvent)
+			window.dispatchEvent(secondEvent)
+			vi.runAllTimers()
+		})
+
+		expect(prefixEvent.defaultPrevented).toBe(false)
+		expect(secondEvent.defaultPrevented).toBe(false)
+		expect(onTrigger).toHaveBeenCalledWith(COMMAND_IDS.goInbox)
+	})
 })
 
 function fireKey(

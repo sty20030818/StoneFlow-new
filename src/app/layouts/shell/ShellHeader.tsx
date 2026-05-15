@@ -237,7 +237,8 @@ export function ShellHeader({
 
 	return (
 		<>
-			<header
+			<div className='relative'>
+				<header
 				className={cn(
 					'relative z-30 flex h-12 shrink-0 flex-nowrap items-center gap-3 bg-sf-shell pr-0',
 					// 左条整块 <640 不渲染时，为刘海/窗口区补左侧内边，避免主带贴边
@@ -443,8 +444,9 @@ export function ShellHeader({
 						) : null}
 					</div>
 				</div>
-			</header>
-			<ChordHint session={chordSession} />
+				</header>
+				<ChordHint session={chordSession} />
+			</div>
 
 			<CommandMenu
 				className={shellChromeCommandDialogClass}
