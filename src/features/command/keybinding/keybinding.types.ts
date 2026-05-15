@@ -11,6 +11,7 @@ export type KeybindingKey =
 	| 'Enter'
 	| 'Escape'
 	| 'Delete'
+	| 'Backspace'
 	| 'Space'
 
 export type KeybindingStroke = {

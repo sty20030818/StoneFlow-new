@@ -84,17 +84,31 @@ export function isChordExpired(chordState: KeybindingChordState, now: number) {
 }
 
 export function normalizeKeybindingStroke(event: NormalizedKeyEvent): KeybindingStroke | null {
-	if (event.key.length !== 1 && event.key !== ' ') {
+	if (event.key.length !== 1 && event.key !== ' ' && !isSupportedNamedKey(event.key)) {
 		return null
 	}
 
 	return {
-		key: event.key === ' ' ? 'Space' : event.key.toLowerCase(),
+		key: normalizeKeyName(event.key),
 		meta: event.metaKey || undefined,
 		ctrl: event.ctrlKey || undefined,
 		alt: event.altKey || undefined,
 		shift: event.shiftKey || undefined,
 	}
+}
+
+function isSupportedNamedKey(key: string) {
+	return key === 'Enter' || key === 'Delete' || key === 'Backspace'
+}
+
+function normalizeKeyName(key: string) {
+	if (key === ' ') {
+		return 'Space'
+	}
+	if (isSupportedNamedKey(key)) {
+		return key
+	}
+	return key.toLowerCase()
 }
 
 export function areStrokesEqual(left: KeybindingStroke, right: KeybindingStroke) {

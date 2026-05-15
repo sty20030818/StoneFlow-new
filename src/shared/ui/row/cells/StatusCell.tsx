@@ -25,6 +25,7 @@ export type StatusCellProps<TValue extends string | number = string | number> = 
 	value: TValue
 	disabled?: boolean
 	ariaLabel: string
+	triggerDataAttribute?: string
 	options: Array<StatusCellOption<TValue>>
 	onChange?: (value: TValue) => void
 }
@@ -33,6 +34,7 @@ export function StatusCell<TValue extends string | number = string | number>({
 	value,
 	disabled,
 	ariaLabel,
+	triggerDataAttribute,
 	options,
 	onChange,
 }: StatusCellProps<TValue>) {
@@ -48,6 +50,7 @@ export function StatusCell<TValue extends string | number = string | number>({
 					<button
 						aria-label={ariaLabel}
 						className={STATUS_TRIGGER_CLASS}
+						data-task-row-menu-trigger={triggerDataAttribute}
 						disabled={disabled}
 						onKeyDownCapture={stopRowEventPropagation}
 						type='button'

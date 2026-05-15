@@ -27,6 +27,10 @@ type TaskRowAdapterProps = {
 		isSelected: boolean
 		isPending: boolean
 	}
+	rowShortcutHandlers?: {
+		onHover: (taskId: string | null) => void
+		onFocus: (taskId: string | null) => void
+	}
 	selectionGroupPosition?: RowSelectionGroupPosition
 	projectBinding?: {
 		projectOptions?: Array<{ id: string; name: string }>
@@ -50,6 +54,7 @@ type TaskRowAdapterProps = {
 export function TaskRowAdapter({
 	task,
 	rowState,
+	rowShortcutHandlers,
 	selectionGroupPosition,
 	projectBinding,
 	actions,
@@ -81,12 +86,10 @@ export function TaskRowAdapter({
 					selected={isSelected}
 					selectionGroupPosition={selectionGroupPosition}
 					onClick={() => actions.onOpenTask(task.id)}
-				onKeyDown={(event) => {
-					if (event.key === 'Enter' || event.key === ' ') {
-						event.preventDefault()
-						actions.onOpenTask(task.id)
-					}
-				}}
+					onBlur={() => rowShortcutHandlers?.onFocus(null)}
+					onFocus={() => rowShortcutHandlers?.onFocus(task.id)}
+					onMouseEnter={() => rowShortcutHandlers?.onHover(task.id)}
+					onMouseLeave={() => rowShortcutHandlers?.onHover(null)}
 			>
 				<RowShell.Left>
 					<RowShell.Leading>
@@ -105,6 +108,7 @@ export function TaskRowAdapter({
 								label: option.label,
 								icon: <PriorityIcon priority={option.value} size='md' />,
 							}))}
+							triggerDataAttribute='priority'
 							value={task.priority}
 						/>
 						<StatusCell
@@ -116,6 +120,7 @@ export function TaskRowAdapter({
 								label: option.label,
 								icon: <TaskStatusIndicator status={option.value} />,
 							}))}
+							triggerDataAttribute='status'
 							value={task.status}
 						/>
 					</RowShell.Leading>

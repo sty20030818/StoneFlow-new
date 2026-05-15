@@ -19,6 +19,7 @@ import {
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
+import { TaskRowShortcutScope, type TaskRowShortcutState } from '@/features/task/shortcuts'
 import { TaskRowAdapter, type TaskRowAdapterProps } from '@/features/task/ui/TaskRowAdapter'
 import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
@@ -112,7 +113,7 @@ export function TaskBoard({
 		setProjectTaskBoardOpenSections(allVisible)
 	}
 
-	function renderTaskRow(task: TaskListItem) {
+	function renderTaskRow(task: TaskListItem, rowShortcutState?: TaskRowShortcutState) {
 		const actions: TaskRowAdapterProps['actions'] = {
 			onOpenTask,
 			onToggleTaskSelection,
@@ -137,6 +138,14 @@ export function TaskBoard({
 					isPending: pendingTaskId === task.id,
 					isSelected: selectedTaskIdSet.has(task.id),
 				}}
+				rowShortcutHandlers={
+					rowShortcutState
+						? {
+								onFocus: rowShortcutState.onRowFocus,
+								onHover: rowShortcutState.onRowHover,
+							}
+						: undefined
+				}
 				task={task}
 			/>
 		)
@@ -154,40 +163,55 @@ export function TaskBoard({
 		)
 	}
 
-	return customSections && customSections.length > 0 ? (
-		<BoardRoot className='gap-2'>
-			{customSections.map((section) => (
-				<TaskCustomSection
-					createProjectId={createProjectId}
-					key={section.key}
-					label={section.label}
-					renderTaskRow={renderTaskRow}
-					selectedTaskIdSet={selectedTaskIdSet}
-					tasks={section.tasks}
-				/>
-			))}
-		</BoardRoot>
-	) : (
-		<BoardRoot>
-			{statusOrder
-				.filter((status) => !hideEmptySections || groupedTasks[status].length > 0)
-				.map((status) => (
-					<TaskStatusSection
-						createProjectId={createProjectId}
-						key={status}
-						label={formatTaskStatusLabel(status)}
-						onCollapseAll={handleCollapseAll}
-						onExpandAll={handleExpandAll}
-						onOpenChange={(open) => handleSectionOpenChange(status, open)}
-						onToggleTaskSelection={onToggleTaskSelection}
-						open={openSections.includes(status)}
-						renderTaskRow={renderTaskRow}
-						selectedTaskIdSet={selectedTaskIdSet}
-						status={status}
-						tasks={groupedTasks[status]}
-					/>
-				))}
-		</BoardRoot>
+	return (
+		<TaskRowShortcutScope
+			activeTaskId={activeTaskId}
+			onArchiveTask={onArchiveTask}
+			onDeleteTask={onDeleteTask}
+			onOpenTask={onOpenTask}
+			onToggleTaskSelection={onToggleTaskSelection}
+			onToggleTaskStatus={onToggleTaskStatus}
+			selectedTaskIdSet={selectedTaskIdSet}
+			tasks={tasks}
+		>
+			{(rowShortcutState) =>
+				customSections && customSections.length > 0 ? (
+					<BoardRoot className='gap-2'>
+						{customSections.map((section) => (
+							<TaskCustomSection
+								createProjectId={createProjectId}
+								key={section.key}
+								label={section.label}
+								renderTaskRow={(task) => renderTaskRow(task, rowShortcutState)}
+								selectedTaskIdSet={selectedTaskIdSet}
+								tasks={section.tasks}
+							/>
+						))}
+					</BoardRoot>
+				) : (
+					<BoardRoot>
+						{statusOrder
+							.filter((status) => !hideEmptySections || groupedTasks[status].length > 0)
+							.map((status) => (
+								<TaskStatusSection
+									createProjectId={createProjectId}
+									key={status}
+									label={formatTaskStatusLabel(status)}
+									onCollapseAll={handleCollapseAll}
+									onExpandAll={handleExpandAll}
+									onOpenChange={(open) => handleSectionOpenChange(status, open)}
+									onToggleTaskSelection={onToggleTaskSelection}
+									open={openSections.includes(status)}
+									renderTaskRow={(task) => renderTaskRow(task, rowShortcutState)}
+									selectedTaskIdSet={selectedTaskIdSet}
+									status={status}
+									tasks={groupedTasks[status]}
+								/>
+							))}
+					</BoardRoot>
+				)
+			}
+		</TaskRowShortcutScope>
 	)
 }
 

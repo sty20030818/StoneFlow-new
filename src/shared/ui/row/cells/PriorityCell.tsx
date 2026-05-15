@@ -26,6 +26,7 @@ export type PriorityCellProps<TValue extends string | number = string | number> 
 	value: TValue | null | undefined
 	disabled?: boolean
 	ariaLabel: string
+	triggerDataAttribute?: string
 	options: Array<PriorityCellOption<TValue>>
 	onChange?: (value: TValue) => void
 }
@@ -34,6 +35,7 @@ export function PriorityCell<TValue extends string | number = string | number>({
 	value,
 	disabled,
 	ariaLabel,
+	triggerDataAttribute,
 	options,
 	onChange,
 }: PriorityCellProps<TValue>) {
@@ -49,6 +51,7 @@ export function PriorityCell<TValue extends string | number = string | number>({
 					<button
 						aria-label={ariaLabel}
 						className={PRIORITY_TRIGGER_CLASS}
+						data-task-row-menu-trigger={triggerDataAttribute}
 						disabled={disabled}
 						onKeyDownCapture={stopRowEventPropagation}
 						type='button'

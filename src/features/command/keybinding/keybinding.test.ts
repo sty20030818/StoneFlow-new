@@ -146,6 +146,38 @@ describe('keybinding', () => {
 		expect(formatKeybindingSequence([{ key: 'g' }, { key: 'i' }], { platform: 'mac' }))
 			.toBe('G I')
 	})
+
+	it('支持 Row scope 使用的命名键', () => {
+		const bindings: Keybinding[] = [
+			{
+				commandId: COMMAND_IDS.taskOpenDetail,
+				sequence: [{ key: 'Enter' }],
+				scope: 'row',
+				preventDefault: true,
+				allowInEditable: false,
+			},
+			{
+				commandId: COMMAND_IDS.taskDelete,
+				sequence: [{ key: 'Delete' }],
+				scope: 'row',
+				preventDefault: true,
+				allowInEditable: false,
+			},
+			{
+				commandId: COMMAND_IDS.taskDelete,
+				sequence: [{ key: 'Backspace', meta: true }],
+				scope: 'row',
+				preventDefault: true,
+				allowInEditable: false,
+			},
+		]
+
+		expect(matchScopedCommand(bindings, 'Enter')).toBe(COMMAND_IDS.taskOpenDetail)
+		expect(matchScopedCommand(bindings, 'Delete')).toBe(COMMAND_IDS.taskDelete)
+		expect(matchScopedCommand(bindings, 'Backspace', { metaKey: true })).toBe(
+			COMMAND_IDS.taskDelete,
+		)
+	})
 })
 
 function matchCommand(
@@ -194,4 +226,20 @@ function toChordState(
 		scope: result.scope,
 		startedAt,
 	}
+}
+
+function matchScopedCommand(
+	bindings: Keybinding[],
+	key: string,
+	eventOverrides: Partial<NormalizedKeyEvent> = {},
+) {
+	const result = matchKeybindingEvent({
+		bindings,
+		event: createKeyEvent(key, eventOverrides),
+		scope: 'row',
+		chordState: null,
+		now: 100,
+	})
+
+	return result.status === 'matched' ? result.keybinding.commandId : null
 }
