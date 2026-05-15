@@ -5,6 +5,7 @@ describe('useDialogStore', () => {
 	beforeEach(() => {
 		useDialogStore.setState({
 			isCommandOpen: false,
+			isShortcutHelpOpen: false,
 			createDialogType: null,
 			taskCreateDraft: {
 				projectId: null,
@@ -66,5 +67,19 @@ describe('useDialogStore', () => {
 
 		expect(useDialogStore.getState().createDialogType).toBe('project')
 		expect(useDialogStore.getState().taskCreatePresentation).toBe('default')
+	})
+
+	it('快捷键帮助和命令菜单互斥，并支持 toggle', () => {
+		useDialogStore.getState().openCommand()
+		useDialogStore.getState().openShortcutHelp()
+
+		expect(useDialogStore.getState().isCommandOpen).toBe(false)
+		expect(useDialogStore.getState().isShortcutHelpOpen).toBe(true)
+
+		useDialogStore.getState().toggleShortcutHelp()
+		expect(useDialogStore.getState().isShortcutHelpOpen).toBe(false)
+
+		useDialogStore.getState().toggleShortcutHelp()
+		expect(useDialogStore.getState().isShortcutHelpOpen).toBe(true)
 	})
 })

@@ -1,4 +1,8 @@
+export { ChordHint } from './ChordHint'
 export { CommandMenu } from './CommandMenu'
 export type { CommandMenuMode, CommandMenuProject } from './CommandMenu'
 export { buildCommandMenuGroups, getCommandMenuShortcut } from './command-menu-model'
 export type { CommandMenuEntry, CommandMenuGroup, CommandMenuGroupKey } from './command-menu-model'
+export { ShortcutHelp } from './ShortcutHelp'
+export { buildShortcutHelpGroups, getShortcutHelpShortcut } from './shortcut-help-model'
+export type { ShortcutHelpEntry, ShortcutHelpGroup } from './shortcut-help-model'

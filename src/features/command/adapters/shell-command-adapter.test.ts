@@ -17,9 +17,11 @@ describe('Shell command adapter', () => {
 			commandId: COMMAND_IDS.openSearch,
 		})
 		await runtime.execute(COMMAND_IDS.openCommandMenu)
+		await runtime.execute(COMMAND_IDS.openShortcutHelp)
 
 		expect(actions.focusSearch).toHaveBeenCalledTimes(1)
 		expect(actions.openCommandMenu).toHaveBeenCalledTimes(1)
+		expect(actions.openShortcutHelp).toHaveBeenCalledTimes(1)
 	})
 
 	it('执行 new 命令时调用对应创建 action', async () => {
@@ -184,6 +186,7 @@ function createRuntime(actions: ShellCommandActions, context: CommandContext = c
 function createActions(overrides: Partial<ShellCommandActions> = {}): ShellCommandActions {
 	return {
 		openCommandMenu: vi.fn(),
+		openShortcutHelp: vi.fn(),
 		focusSearch: vi.fn(),
 		openQuickTaskCreate: vi.fn(),
 		openFullTaskCreate: vi.fn(),

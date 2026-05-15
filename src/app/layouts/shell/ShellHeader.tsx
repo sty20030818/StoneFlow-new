@@ -31,8 +31,8 @@ import {
 import { Kbd } from '@/shared/ui/base/kbd'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
-import { CommandMenu, type CommandMenuMode } from '@/features/command/ui'
-import { getCommandShortcutDisplay } from '@/features/command/shortcuts'
+import { ChordHint, CommandMenu, ShortcutHelp, type CommandMenuMode } from '@/features/command/ui'
+import { getCommandShortcutDisplay, type CommandChordSession } from '@/features/command/shortcuts'
 import {
 	COMMAND_IDS,
 	type CommandContext,
@@ -65,7 +65,9 @@ type ShellHeaderProps = {
 	currentScope: Scope
 	currentSpaceId: string | null
 	activeSection: ShellSectionKey
+	chordSession: CommandChordSession | null
 	isCommandOpen: boolean
+	isShortcutHelpOpen: boolean
 	commandContext: CommandContext
 	commandMenuMode: CommandMenuMode
 	commandRuntime: CommandRuntime
@@ -76,6 +78,7 @@ type ShellHeaderProps = {
 	projects: ShellProjectLink[]
 	onCommandOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
+	onShortcutHelpOpenChange: (open: boolean) => void
 	onNavigateToHistoryEntry: (entry: ShellRouteHistoryEntry) => void
 	onCloseDrawer: () => void
 }
@@ -84,6 +87,7 @@ export function ShellHeader({
 	currentScope,
 	currentSpaceId,
 	activeSection,
+	chordSession,
 	commandContext,
 	commandMenuMode,
 	commandRuntime,
@@ -91,8 +95,10 @@ export function ShellHeader({
 	canGoBack,
 	canGoForward,
 	isCommandOpen,
+	isShortcutHelpOpen,
 	onCommandOpenChange,
 	onRunCommand,
+	onShortcutHelpOpenChange,
 	onNavigateToHistoryEntry,
 	onCloseDrawer,
 	projects,
@@ -438,6 +444,7 @@ export function ShellHeader({
 					</div>
 				</div>
 			</header>
+			<ChordHint session={chordSession} />
 
 			<CommandMenu
 				className={shellChromeCommandDialogClass}
@@ -455,6 +462,14 @@ export function ShellHeader({
 				projects={projects}
 				runtime={commandRuntime}
 				title='StoneFlow Command'
+			/>
+			<ShortcutHelp
+				context={commandContext}
+				description='所有快捷键和命令能力均来自当前 registry 与 keybinding。'
+				onOpenChange={onShortcutHelpOpenChange}
+				open={isShortcutHelpOpen}
+				runtime={commandRuntime}
+				title='StoneFlow 快捷键'
 			/>
 		</>
 	)

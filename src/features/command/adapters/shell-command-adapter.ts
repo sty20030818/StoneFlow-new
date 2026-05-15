@@ -13,6 +13,7 @@ export type ShellNavigationTarget =
 
 export type ShellCommandActions = {
 	openCommandMenu: () => void
+	openShortcutHelp: () => void
 	focusSearch: () => void
 	openQuickTaskCreate: () => void
 	openFullTaskCreate: () => void
@@ -44,6 +45,8 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 	switch (command.id) {
 		case COMMAND_IDS.openCommandMenu:
 			return { ...command, run: adapter.openCommandMenu }
+		case COMMAND_IDS.openShortcutHelp:
+			return { ...command, run: adapter.openShortcutHelp }
 		case COMMAND_IDS.openSearch:
 			return { ...command, run: adapter.focusSearch }
 		case COMMAND_IDS.openSettings:

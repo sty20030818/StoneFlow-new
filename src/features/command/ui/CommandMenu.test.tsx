@@ -202,6 +202,7 @@ function createRuntime() {
 function createActions(): ShellCommandActions {
 	return {
 		openCommandMenu: vi.fn(),
+		openShortcutHelp: vi.fn(),
 		focusSearch: vi.fn(),
 		openQuickTaskCreate: vi.fn(),
 		openFullTaskCreate: vi.fn(),

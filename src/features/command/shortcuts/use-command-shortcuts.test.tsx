@@ -27,6 +27,8 @@ const bindings: Keybinding[] = [
 	createBinding(COMMAND_IDS.goSettings, [{ key: 'g' }, { key: 's' }]),
 	createBinding(COMMAND_IDS.goRecent, [{ key: 'g' }, { key: 'r' }]),
 	createBinding(COMMAND_IDS.openSearch, [{ key: '/' }]),
+	createBinding(COMMAND_IDS.openShortcutHelp, [{ key: '/', meta: true }], true),
+	createBinding(COMMAND_IDS.openShortcutHelp, [{ key: '/', ctrl: true }], true),
 	createBinding(COMMAND_IDS.openCommandMenu, [{ key: 'k', meta: true }], true),
 	createBinding(COMMAND_IDS.openCommandMenu, [{ key: 'k', ctrl: true }], true),
 ]
@@ -203,6 +205,43 @@ describe('useCommandShortcuts', () => {
 		expect(onTrigger).toHaveBeenNthCalledWith(1, COMMAND_IDS.openCommandMenu)
 		expect(onTrigger).toHaveBeenNthCalledWith(2, COMMAND_IDS.openCommandMenu)
 		document.body.removeChild(input)
+	})
+
+	it('上抛当前 chord 前缀和真实第二键候选', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		const onChordStateChange = vi.fn()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger, onChordStateChange }))
+
+		fireKey('g')
+
+		expect(onChordStateChange).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				prefixDisplay: 'G',
+				options: expect.arrayContaining([
+					expect.objectContaining({ display: 'I' }),
+					expect.objectContaining({ display: 'T' }),
+					expect.objectContaining({ display: 'D' }),
+				]),
+			}),
+		)
+	})
+
+	it('命中、取消和超时后清空 chord 状态', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		const onChordStateChange = vi.fn()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger, onChordStateChange }))
+
+		fireKey('n')
+		fireKey('t')
+		fireKey('g')
+		fireKey('z')
+		fireKey('o')
+		act(() => {
+			vi.advanceTimersByTime(1001)
+		})
+
+		expect(onChordStateChange).toHaveBeenCalledWith(null)
+		expect(onChordStateChange).toHaveBeenLastCalledWith(null)
 	})
 })
 

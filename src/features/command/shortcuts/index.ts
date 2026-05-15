@@ -1,3 +1,5 @@
 export { CommandShortcutLayer } from './CommandShortcutLayer'
+export { buildChordSession } from './chord-session'
+export type { CommandChordSession, ChordHintOption } from './chord-session'
 export { getCommandShortcutDisplay } from './shortcut-display'
 export { useCommandShortcuts } from './use-command-shortcuts'

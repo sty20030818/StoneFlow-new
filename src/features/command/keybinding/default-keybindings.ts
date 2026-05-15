@@ -25,6 +25,20 @@ export const DEFAULT_KEYBINDINGS: Keybinding[] = [
 		allowInEditable: false,
 	},
 	{
+		commandId: COMMAND_IDS.openShortcutHelp,
+		sequence: [{ key: '/', meta: true }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: true,
+	},
+	{
+		commandId: COMMAND_IDS.openShortcutHelp,
+		sequence: [{ key: '/', ctrl: true }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: true,
+	},
+	{
 		commandId: COMMAND_IDS.newQuickTask,
 		sequence: [{ key: 'c' }],
 		scope: 'global',

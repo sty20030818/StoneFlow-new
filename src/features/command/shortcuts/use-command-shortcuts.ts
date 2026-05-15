@@ -4,24 +4,39 @@ import type { CommandId } from '@/features/command/core'
 import {
 	KEYBINDING_CHORD_TIMEOUT_MS,
 	matchKeybindingEvent,
+	type KeybindingScope,
 	type Keybinding,
 	type KeybindingChordState,
 	type NormalizedKeyEvent,
 } from '@/features/command/keybinding'
+import { buildChordSession, type CommandChordSession } from './chord-session'
 
 type UseCommandShortcutsOptions = {
 	bindings: Keybinding[]
 	onTrigger: (id: CommandId) => void
+	onChordStateChange?: (session: CommandChordSession | null) => void
+	scope?: KeybindingScope
 }
 
-export function useCommandShortcuts({ bindings, onTrigger }: UseCommandShortcutsOptions) {
+export function useCommandShortcuts({
+	bindings,
+	onTrigger,
+	onChordStateChange,
+	scope = 'global',
+}: UseCommandShortcutsOptions) {
 	const onTriggerRef = useRef(onTrigger)
+	const onChordStateChangeRef = useRef(onChordStateChange)
 	const chordStateRef = useRef<KeybindingChordState | null>(null)
 	const timeoutRef = useRef<number | null>(null)
 
 	onTriggerRef.current = onTrigger
+	onChordStateChangeRef.current = onChordStateChange
 
 	useEffect(() => {
+		function emitChordState(chordState: KeybindingChordState | null) {
+			onChordStateChangeRef.current?.(chordState ? buildChordSession(bindings, chordState) : null)
+		}
+
 		function scheduleTrigger(id: CommandId) {
 			window.setTimeout(() => {
 				onTriggerRef.current(id)
@@ -30,6 +45,7 @@ export function useCommandShortcuts({ bindings, onTrigger }: UseCommandShortcuts
 
 		function clearChordState() {
 			chordStateRef.current = null
+			emitChordState(null)
 			if (timeoutRef.current !== null) {
 				window.clearTimeout(timeoutRef.current)
 				timeoutRef.current = null
@@ -43,6 +59,7 @@ export function useCommandShortcuts({ bindings, onTrigger }: UseCommandShortcuts
 
 			timeoutRef.current = window.setTimeout(() => {
 				chordStateRef.current = null
+				emitChordState(null)
 				timeoutRef.current = null
 			}, KEYBINDING_CHORD_TIMEOUT_MS)
 		}
@@ -51,6 +68,7 @@ export function useCommandShortcuts({ bindings, onTrigger }: UseCommandShortcuts
 			const result = matchKeybindingEvent({
 				bindings,
 				event: normalizeKeyboardEvent(event),
+				scope,
 				chordState: chordStateRef.current,
 				now: performance.now(),
 			})
@@ -71,6 +89,7 @@ export function useCommandShortcuts({ bindings, onTrigger }: UseCommandShortcuts
 					scope: result.scope,
 					startedAt: performance.now(),
 				}
+				emitChordState(chordStateRef.current)
 				armChordTimeout()
 				return
 			}
@@ -79,11 +98,11 @@ export function useCommandShortcuts({ bindings, onTrigger }: UseCommandShortcuts
 		}
 
 		window.addEventListener('keydown', handleKeyDown)
-		return () => {
-			window.removeEventListener('keydown', handleKeyDown)
-			clearChordState()
-		}
-	}, [bindings])
+			return () => {
+				window.removeEventListener('keydown', handleKeyDown)
+				clearChordState()
+			}
+	}, [bindings, scope])
 }
 
 function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent {

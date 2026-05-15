@@ -14,6 +14,7 @@ import {
 import {
 	selectCreateDialogType,
 	selectIsCommandOpen,
+	selectIsShortcutHelpOpen,
 	selectTaskCreateDraft,
 	selectTaskCreatePresentation,
 	useDialogStore,
@@ -56,7 +57,10 @@ import {
 } from '@/shared/ui/patterns/shell-chrome'
 import {
 	CommandShortcutLayer,
+	DEFAULT_KEYBINDINGS,
 	type CommandMenuMode,
+	type CommandChordSession,
+	type Keybinding,
 	useCommandContext,
 	useCommandRunner,
 	useCommandRuntime,
@@ -65,6 +69,7 @@ import {
 	type ShellCommandActions,
 	type ShellNavigationTarget,
 } from '@/features/command'
+import { COMMAND_IDS } from '@/features/command/core'
 
 type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
@@ -80,18 +85,22 @@ export function ShellLayout({
 }: ShellLayoutProps) {
 	const navigate = useNavigate()
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
+	const isShortcutHelpOpen = useDialogStore(selectIsShortcutHelpOpen)
 	const createDialogType = useDialogStore(selectCreateDialogType)
 	const taskCreateDraft = useDialogStore(selectTaskCreateDraft)
 	const taskCreatePresentation = useDialogStore(selectTaskCreatePresentation)
 	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
 	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
+	const setShortcutHelpOpen = useDialogStore((state) => state.setShortcutHelpOpen)
+	const toggleShortcutHelp = useDialogStore((state) => state.toggleShortcutHelp)
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const toggleTaskCreatePresentation = useDialogStore(
 		(state) => state.toggleTaskCreatePresentation,
 	)
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
 	const [commandMenuMode, setCommandMenuMode] = useState<CommandMenuMode>('default')
+	const [chordSession, setChordSession] = useState<CommandChordSession | null>(null)
 	const pendingTaskOpenIntent = useSearchOpenIntentStore(selectPendingTaskOpenIntent)
 	const consumePendingTaskOpenIntent = useSearchOpenIntentStore(
 		(state) => state.consumePendingTaskOpenIntent,
@@ -284,6 +293,10 @@ export function ShellLayout({
 				setCommandMenuMode('default')
 				setCommandOpen(true)
 			},
+			openShortcutHelp: () => {
+				toggleShortcutHelp()
+				setCommandMenuMode('default')
+			},
 			focusSearch: requestSearchFocus,
 			openQuickTaskCreate: handleOpenTaskCreate,
 			openFullTaskCreate: () => openTaskCreateDialog(undefined, 'default'),
@@ -317,7 +330,15 @@ export function ShellLayout({
 			requestSearchFocus,
 			setCommandOpen,
 			setCommandMenuMode,
+			toggleShortcutHelp,
 		],
+	)
+	const activeShortcutBindings = useMemo<Keybinding[]>(
+		() =>
+			isShortcutHelpOpen
+				? DEFAULT_KEYBINDINGS.filter((binding) => binding.commandId === COMMAND_IDS.openShortcutHelp)
+				: DEFAULT_KEYBINDINGS,
+		[isShortcutHelpOpen],
 	)
 	const commandRoutePage = resolveCommandRoutePage(activeSection)
 	const commandRoute = useMemo(
@@ -331,19 +352,20 @@ export function ShellLayout({
 		() => ({
 			isCommandMenuOpen: isCommandOpen,
 			isDetailOpen: Boolean(activeDrawerId),
-			isModalOpen: createDialogType !== null,
+			isModalOpen: createDialogType !== null || isShortcutHelpOpen,
 		}),
-		[activeDrawerId, createDialogType, isCommandOpen],
+		[activeDrawerId, createDialogType, isCommandOpen, isShortcutHelpOpen],
 	)
 	const commandFocus = useMemo(
 		() => ({
 			activePanel: resolveCommandActivePanel({
 				isCommandOpen,
+				isShortcutHelpOpen,
 				isModalOpen: createDialogType !== null,
 				isDetailOpen: Boolean(activeDrawerId),
 			}),
 		}),
-		[activeDrawerId, createDialogType, isCommandOpen],
+		[activeDrawerId, createDialogType, isCommandOpen, isShortcutHelpOpen],
 	)
 	const commandSpace = useMemo(
 		() => ({
@@ -427,10 +449,15 @@ export function ShellLayout({
 			}}
 			sidebarWidth={sidebarSettings.width}
 		>
-			<CommandShortcutLayer onTrigger={runCommand} />
+			<CommandShortcutLayer
+				bindings={activeShortcutBindings}
+				onChordStateChange={setChordSession}
+				onTrigger={runCommand}
+			/>
 			<ShellHeader
 				activeSection={activeSection}
 				canGoBack={canGoBack}
+				chordSession={chordSession}
 				canGoForward={canGoForward}
 				commandContext={commandContext}
 				commandMenuMode={commandMenuMode}
@@ -438,10 +465,12 @@ export function ShellLayout({
 				currentSpaceId={currentSpaceId}
 				currentScope={currentScope}
 				isCommandOpen={isCommandOpen}
+				isShortcutHelpOpen={isShortcutHelpOpen}
 				onCloseDrawer={closeDrawer}
 				onCommandOpenChange={handleCommandMenuOpenChange}
 				onNavigateToHistoryEntry={navigateToHistoryEntry}
 				onRunCommand={runCommand}
+				onShortcutHelpOpenChange={setShortcutHelpOpen}
 				projects={projectLinks}
 				routeHistoryEntries={routeHistoryEntries}
 				spaces={spaces}
@@ -617,15 +646,20 @@ function resolveCommandRoutePage(section: ShellSectionKey): CommandRouteContext[
 
 function resolveCommandActivePanel({
 	isCommandOpen,
+	isShortcutHelpOpen,
 	isModalOpen,
 	isDetailOpen,
 }: {
 	isCommandOpen: boolean
+	isShortcutHelpOpen: boolean
 	isModalOpen: boolean
 	isDetailOpen: boolean
 }): CommandFocusContext['activePanel'] {
 	if (isCommandOpen) {
 		return 'command-menu'
+	}
+	if (isShortcutHelpOpen) {
+		return 'modal'
 	}
 	if (isModalOpen) {
 		return 'modal'
