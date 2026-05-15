@@ -22,7 +22,8 @@ export function useTaskSelection(taskIds: string[]) {
 
 			return nextSelectedTaskIds
 		})
-	}, [taskIdSignature, taskIds])
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [taskIdSignature])
 
 	const selectedTaskIdSet = useMemo(() => new Set(selectedTaskIds), [selectedTaskIds])
 	const selectedCount = selectedTaskIds.length
