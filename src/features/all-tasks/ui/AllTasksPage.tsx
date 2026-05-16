@@ -5,6 +5,7 @@ import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
+import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { getTaskPlacement } from '@/features/task/model/taskPlacement'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
@@ -71,8 +72,23 @@ export function AllTasksPage() {
 					: visibleTasks.filter((task) => task.status === taskFilter),
 		[taskFilter, visibleTasks],
 	)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
-		useTaskSelection(filteredTasks.map((task) => task.id))
+	const {
+		selectedTaskIdSet,
+		selectionSnapshot,
+		selectedCount,
+		toggleTaskSelection,
+		clearTaskSelection,
+	} = useTaskSelection(filteredTasks.map((task) => task.id))
+	const commandSelection = useMemo(
+		() =>
+			buildTaskCommandSelection({
+				selectedIds: selectionSnapshot.ids,
+				tasks: filteredTasks,
+				fallbackSubtitle: (task) => (task.inboxAt ? 'Inbox' : '独立事项'),
+			}),
+		[filteredTasks, selectionSnapshot.ids],
+	)
+	useRegisterCommandSelection(commandSelection)
 	useTaskSelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearTaskSelection,

@@ -9,16 +9,11 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
-import {
-	breadcrumbLeadClass,
-	breadcrumbLeadIconClass,
-} from '@/shared/ui/patterns/breadcrumb'
+import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
-import {
-	selectProjectOptions,
-	useProjectStore,
-} from '@/features/project/model/useProjectStore'
+import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
+import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
@@ -52,13 +47,26 @@ export function InboxPage() {
 
 	const inboxProjectOptions = useMemo(
 		() =>
-			spaceId
-				? projectOptions.filter((project) => project.spaceId === spaceId)
-				: projectOptions,
+			spaceId ? projectOptions.filter((project) => project.spaceId === spaceId) : projectOptions,
 		[projectOptions, spaceId],
 	)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
-		useTaskSelection(taskList.items.map((task) => task.id))
+	const {
+		selectedTaskIdSet,
+		selectionSnapshot,
+		selectedCount,
+		toggleTaskSelection,
+		clearTaskSelection,
+	} = useTaskSelection(taskList.items.map((task) => task.id))
+	const commandSelection = useMemo(
+		() =>
+			buildTaskCommandSelection({
+				selectedIds: selectionSnapshot.ids,
+				tasks: taskList.items,
+				fallbackSubtitle: 'Inbox',
+			}),
+		[selectionSnapshot.ids, taskList.items],
+	)
+	useRegisterCommandSelection(commandSelection)
 	useTaskSelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearTaskSelection,
@@ -138,7 +146,6 @@ export function InboxPage() {
 		/>
 	)
 }
-
 
 function InboxBreadcrumb() {
 	return (

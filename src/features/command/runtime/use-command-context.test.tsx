@@ -32,8 +32,13 @@ describe('useCommandContext', () => {
 				selection: {
 					type: 'task',
 					ids: ['task-1', 'task-2'],
+					entities: [
+						{ id: 'task-1', type: 'task', title: '任务 1' },
+						{ id: 'task-2', type: 'task', title: '任务 2' },
+					],
 					hasSelection: true,
 					isMultiSelection: true,
+					source: 'task-list',
 				},
 				focus: {
 					activePanel: 'dropdown',
@@ -51,6 +56,11 @@ describe('useCommandContext', () => {
 		expect(result.current.selection).toMatchObject({
 			type: 'task',
 			ids: ['task-1', 'task-2'],
+			entities: [
+				{ id: 'task-1', type: 'task', title: '任务 1' },
+				{ id: 'task-2', type: 'task', title: '任务 2' },
+			],
+			source: 'task-list',
 			hasSelection: true,
 			isMultiSelection: true,
 			isSingleSelection: false,

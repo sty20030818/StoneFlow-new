@@ -1,4 +1,8 @@
-import type { CommandContext, CommandRowTargetContext } from './command.types'
+import type {
+	CommandContext,
+	CommandRowTargetContext,
+	CommandSelectionContext,
+} from './command.types'
 
 export function createEmptyCommandRowTargetContext(): CommandRowTargetContext {
 	return {
@@ -9,17 +13,23 @@ export function createEmptyCommandRowTargetContext(): CommandRowTargetContext {
 	}
 }
 
+export function createEmptyCommandSelectionContext(): CommandSelectionContext {
+	return {
+		ids: [],
+		entities: [],
+		source: 'none',
+		hasSelection: false,
+		isSingleSelection: false,
+		isMultiSelection: false,
+	}
+}
+
 export function createEmptyCommandContext(): CommandContext {
 	return {
 		route: {
 			page: 'unknown',
 		},
-		selection: {
-			ids: [],
-			hasSelection: false,
-			isSingleSelection: false,
-			isMultiSelection: false,
-		},
+		selection: createEmptyCommandSelectionContext(),
 		focus: {
 			isInputFocused: false,
 			activePanel: 'main',

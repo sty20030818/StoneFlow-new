@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { vi } from 'vitest'
 
+import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection/model'
 import { ViewsPage } from '@/features/views/ui/ViewsPage'
 
 const loadTaskViewsSpy = vi.fn<() => Promise<void>>()
@@ -156,6 +157,15 @@ vi.mock('@/features/task/model/useTaskListController', () => ({
 vi.mock('@/features/task/model/useTaskSelection', () => ({
 	useTaskSelection: () => ({
 		selectedTaskIdSet: new Set(['task-1']),
+		selectionSnapshot: {
+			type: 'task',
+			ids: ['task-1'],
+			idSet: new Set(['task-1']),
+			count: 1,
+			hasSelection: true,
+			isSingleSelection: true,
+			isMultiSelection: false,
+		},
 		selectedCount: 1,
 		toggleTaskSelection: vi.fn<(taskId: string) => void>(),
 		clearTaskSelection: vi.fn<() => void>(),
@@ -226,4 +236,58 @@ describe('ViewsPage', () => {
 			})
 		})
 	})
+
+	it('注册当前视图选择到 Command selection context', async () => {
+		render(
+			<CommandSelectionProvider>
+				<MemoryRouter initialEntries={['/spaces/views?view=view-today']}>
+					<Routes>
+						<Route
+							path='/spaces/views'
+							element={
+								<>
+									<ViewsPage />
+									<CommandSelectionProbe />
+								</>
+							}
+						/>
+					</Routes>
+				</MemoryRouter>
+			</CommandSelectionProvider>,
+		)
+
+		await waitFor(() => {
+			expect(screen.getByTestId('command-selection-probe')).toHaveTextContent(
+				JSON.stringify({
+					ids: ['task-1'],
+					entities: [
+						{
+							id: 'task-1',
+							type: 'task',
+							title: '系统视图任务',
+							subtitle: '阶段 8',
+							status: 'todo',
+							priority: '4',
+						},
+					],
+					source: 'task-list',
+					hasSelection: true,
+				}),
+			)
+		})
+	})
 })
+
+function CommandSelectionProbe() {
+	const selection = useCommandSelectionContext()
+	return (
+		<output data-testid='command-selection-probe'>
+			{JSON.stringify({
+				ids: selection.ids,
+				entities: selection.entities,
+				source: selection.source,
+				hasSelection: selection.hasSelection,
+			})}
+		</output>
+	)
+}

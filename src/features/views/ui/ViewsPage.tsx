@@ -7,6 +7,7 @@ import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
+import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
@@ -129,8 +130,23 @@ export function ViewsPage() {
 		() => buildCustomSections(taskRun.item?.groups ?? [], visibleTasks),
 		[taskRun.item?.groups, visibleTasks],
 	)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
-		useTaskSelection(visibleTasks.map((task) => task.id))
+	const {
+		selectedTaskIdSet,
+		selectionSnapshot,
+		selectedCount,
+		toggleTaskSelection,
+		clearTaskSelection,
+	} = useTaskSelection(visibleTasks.map((task) => task.id))
+	const commandSelection = useMemo(
+		() =>
+			buildTaskCommandSelection({
+				selectedIds: selectionSnapshot.ids,
+				tasks: visibleTasks,
+				fallbackSubtitle: activeView?.name ?? '当前视图',
+			}),
+		[activeView?.name, selectionSnapshot.ids, visibleTasks],
+	)
+	useRegisterCommandSelection(commandSelection)
 	useTaskSelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearTaskSelection,

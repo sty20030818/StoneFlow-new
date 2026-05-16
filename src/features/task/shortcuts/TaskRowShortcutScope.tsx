@@ -67,10 +67,11 @@ export function TaskRowShortcutScope({
 	const taskById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks])
 	const selectedTaskIds = useMemo(() => [...selectedTaskIdSet], [selectedTaskIdSet])
 	const selectedTasks = useMemo(
-		() => selectedTaskIds.flatMap((taskId) => {
-			const task = taskById.get(taskId)
-			return task ? [task] : []
-		}),
+		() =>
+			selectedTaskIds.flatMap((taskId) => {
+				const task = taskById.get(taskId)
+				return task ? [task] : []
+			}),
 		[selectedTaskIds, taskById],
 	)
 	const selection = useMemo(
@@ -177,8 +178,21 @@ function createTaskRowCommandContext(
 		...createEmptyCommandContext(),
 		rowTarget,
 		selection: {
-			type: selectedTaskIds.length > 0 ? 'task' as const : undefined,
+			type: selectedTaskIds.length > 0 ? ('task' as const) : undefined,
 			ids: selectedTaskIds,
+			entities: selectedTaskIds.map((taskId) => ({
+				id: taskId,
+				type: 'task' as const,
+				title: taskId,
+			})),
+			primaryEntity: selectedTaskIds[0]
+				? {
+						id: selectedTaskIds[0],
+						type: 'task' as const,
+						title: selectedTaskIds[0],
+					}
+				: undefined,
+			source: selectedTaskIds.length > 0 ? ('row' as const) : ('none' as const),
 			hasSelection: selectedTaskIds.length > 0,
 			isSingleSelection: selectedTaskIds.length === 1,
 			isMultiSelection: selectedTaskIds.length > 1,
@@ -195,7 +209,9 @@ function createTaskRowCommands(actions: TaskRowCommandActions): Command[] {
 		bindTaskRowCommand(COMMAND_IDS.taskComplete, actions.complete),
 		bindTaskRowCommand(COMMAND_IDS.taskSelect, actions.select),
 		bindTaskRowCommand(COMMAND_IDS.taskPeek, actions.peek, { allowMultiSelection: false }),
-		bindTaskRowCommand(COMMAND_IDS.taskOpenDetail, actions.openDetail, { allowMultiSelection: false }),
+		bindTaskRowCommand(COMMAND_IDS.taskOpenDetail, actions.openDetail, {
+			allowMultiSelection: false,
+		}),
 		bindTaskRowCommand(COMMAND_IDS.taskArchive, actions.archive),
 		bindTaskRowCommand(COMMAND_IDS.taskDelete, actions.deleteTask),
 		bindTaskRowCommand(COMMAND_IDS.taskSetPriority, actions.openPriorityMenu),
@@ -214,7 +230,8 @@ function bindTaskRowCommand(
 		category: 'task',
 		scope: ['task-list'],
 		isEnabled: (ctx) =>
-			ctx.rowTarget.hasTarget && (options.allowMultiSelection !== false || !ctx.selection.isMultiSelection),
+			ctx.rowTarget.hasTarget &&
+			(options.allowMultiSelection !== false || !ctx.selection.isMultiSelection),
 		getDisabledReason: () => ROW_COMMAND_DISABLED_REASON,
 		run,
 	}

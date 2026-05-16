@@ -112,11 +112,23 @@ export type CommandRouteContext = {
 export type CommandSelectionContext = {
 	type?: 'task' | 'project' | 'view'
 	ids: string[]
+	entities: CommandSelectedEntity[]
+	primaryEntity?: CommandSelectedEntity
 	focusedId?: string
 	focusedType?: 'task' | 'project' | 'view'
+	source: 'none' | 'task-list' | 'project-list' | 'bulk-bar' | 'row' | 'drawer'
 	hasSelection: boolean
 	isSingleSelection: boolean
 	isMultiSelection: boolean
+}
+
+export type CommandSelectedEntity = {
+	id: string
+	type: 'task' | 'project' | 'view'
+	title: string
+	subtitle?: string
+	status?: string
+	priority?: string
 }
 
 export type CommandFocusContext = {
@@ -130,14 +142,7 @@ export type CommandFocusContext = {
 		| 'menu'
 		| 'dropdown-item'
 		| 'row'
-	activePanel:
-		| 'main'
-		| 'sidebar'
-		| 'preview'
-		| 'detail'
-		| 'modal'
-		| 'command-menu'
-		| 'dropdown'
+	activePanel: 'main' | 'sidebar' | 'preview' | 'detail' | 'modal' | 'command-menu' | 'dropdown'
 }
 
 export type CommandUiContext = {

@@ -1,4 +1,11 @@
-import { startTransition, useCallback, useEffect, useMemo, useState, type PropsWithChildren } from 'react'
+import {
+	startTransition,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+	type PropsWithChildren,
+} from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
@@ -40,6 +47,7 @@ import {
 	selectProjectSidebar,
 	useProjectStore,
 } from '@/features/project/model/useProjectStore'
+import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection/model'
 import { takePendingCommandOpenIntent } from '@/features/space/api/spaces'
 import {
 	selectSpaceError,
@@ -83,6 +91,25 @@ export function ShellLayout({
 	currentSpaceId,
 	activeSection,
 }: ShellLayoutProps) {
+	return (
+		<CommandSelectionProvider>
+			<ShellLayoutContent
+				activeSection={activeSection}
+				currentScope={currentScope}
+				currentSpaceId={currentSpaceId}
+			>
+				{children}
+			</ShellLayoutContent>
+		</CommandSelectionProvider>
+	)
+}
+
+function ShellLayoutContent({
+	children,
+	currentScope,
+	currentSpaceId,
+	activeSection,
+}: ShellLayoutProps) {
 	const navigate = useNavigate()
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
 	const isShortcutHelpOpen = useDialogStore(selectIsShortcutHelpOpen)
@@ -95,9 +122,7 @@ export function ShellLayout({
 	const setShortcutHelpOpen = useDialogStore((state) => state.setShortcutHelpOpen)
 	const toggleShortcutHelp = useDialogStore((state) => state.toggleShortcutHelp)
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
-	const toggleTaskCreatePresentation = useDialogStore(
-		(state) => state.toggleTaskCreatePresentation,
-	)
+	const toggleTaskCreatePresentation = useDialogStore((state) => state.toggleTaskCreatePresentation)
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
 	const [commandMenuMode, setCommandMenuMode] = useState<CommandMenuMode>('default')
 	const [chordSession, setChordSession] = useState<CommandChordSession | null>(null)
@@ -212,39 +237,39 @@ export function ShellLayout({
 
 	const handleCommandOpen = useMemo(
 		() => (payload: CommandOpenPayload) => {
-		const targetPath = payload.projectId
-			? `/space/${payload.spaceId}/project/${payload.projectId}`
-			: payload.kind === 'project'
-				? `/space/${payload.spaceId}/project/${payload.id}`
-				: payload.placement === 'inbox'
-					? `/space/${payload.spaceId}/inbox`
-					: `/space/${payload.spaceId}/no-project`
+			const targetPath = payload.projectId
+				? `/space/${payload.spaceId}/project/${payload.projectId}`
+				: payload.kind === 'project'
+					? `/space/${payload.spaceId}/project/${payload.id}`
+					: payload.placement === 'inbox'
+						? `/space/${payload.spaceId}/inbox`
+						: `/space/${payload.spaceId}/no-project`
 
-		closeDrawer()
+			closeDrawer()
 
-		if (payload.kind === 'project') {
-			if (pathname === targetPath) {
+			if (payload.kind === 'project') {
+				if (pathname === targetPath) {
+					return
+				}
+				startTransition(() => {
+					navigate(targetPath)
+				})
 				return
 			}
+
+			setPendingTaskOpenIntent({
+				taskId: payload.id,
+				targetPath,
+			})
+
+			if (pathname === targetPath) {
+				openDrawer('task', payload.id)
+				return
+			}
+
 			startTransition(() => {
 				navigate(targetPath)
 			})
-			return
-		}
-
-		setPendingTaskOpenIntent({
-			taskId: payload.id,
-			targetPath,
-		})
-
-		if (pathname === targetPath) {
-			openDrawer('task', payload.id)
-			return
-		}
-
-		startTransition(() => {
-			navigate(targetPath)
-		})
 		},
 		[closeDrawer, navigate, openDrawer, pathname, setPendingTaskOpenIntent],
 	)
@@ -336,7 +361,9 @@ export function ShellLayout({
 	const activeShortcutBindings = useMemo<Keybinding[]>(
 		() =>
 			isShortcutHelpOpen
-				? DEFAULT_KEYBINDINGS.filter((binding) => binding.commandId === COMMAND_IDS.openShortcutHelp)
+				? DEFAULT_KEYBINDINGS.filter(
+						(binding) => binding.commandId === COMMAND_IDS.openShortcutHelp,
+					)
 				: DEFAULT_KEYBINDINGS,
 		[isShortcutHelpOpen],
 	)
@@ -379,8 +406,10 @@ export function ShellLayout({
 		}),
 		[routeProjectId],
 	)
+	const commandSelection = useCommandSelectionContext()
 	const commandContext = useCommandContext({
 		route: commandRoute,
+		selection: commandSelection,
 		focus: commandFocus,
 		ui: commandUi,
 		space: commandSpace,

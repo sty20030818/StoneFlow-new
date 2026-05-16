@@ -6,6 +6,7 @@ import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { selectProjectDetail, useProjectStore } from '@/features/project/model/useProjectStore'
+import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
@@ -106,8 +107,24 @@ export function ProjectPage() {
 				: visibleTasks.filter((task) => task.status === taskFilter),
 		[taskFilter, visibleTasks],
 	)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
-		useTaskSelection(filteredTasks.map((task) => task.id))
+	const project = detail.item
+	const {
+		selectedTaskIdSet,
+		selectionSnapshot,
+		selectedCount,
+		toggleTaskSelection,
+		clearTaskSelection,
+	} = useTaskSelection(filteredTasks.map((task) => task.id))
+	const commandSelection = useMemo(
+		() =>
+			buildTaskCommandSelection({
+				selectedIds: selectionSnapshot.ids,
+				tasks: filteredTasks,
+				fallbackSubtitle: project?.name ?? '当前项目',
+			}),
+		[filteredTasks, project?.name, selectionSnapshot.ids],
+	)
+	useRegisterCommandSelection(commandSelection)
 	useTaskSelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearTaskSelection,
@@ -121,8 +138,6 @@ export function ProjectPage() {
 			setBusyAction(null)
 		}
 	}
-
-	const project = detail.item
 
 	return (
 		<EntityScene

@@ -4,6 +4,7 @@ import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
+import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
@@ -58,8 +59,23 @@ export function NoProjectPage() {
 				: taskList.items.filter((task) => task.archivedAt === null && task.status === taskFilter),
 		[taskFilter, taskList.items],
 	)
-	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
-		useTaskSelection(filteredTasks.map((task) => task.id))
+	const {
+		selectedTaskIdSet,
+		selectionSnapshot,
+		selectedCount,
+		toggleTaskSelection,
+		clearTaskSelection,
+	} = useTaskSelection(filteredTasks.map((task) => task.id))
+	const commandSelection = useMemo(
+		() =>
+			buildTaskCommandSelection({
+				selectedIds: selectionSnapshot.ids,
+				tasks: filteredTasks,
+				fallbackSubtitle: '独立事项',
+			}),
+		[filteredTasks, selectionSnapshot.ids],
+	)
+	useRegisterCommandSelection(commandSelection)
 	useTaskSelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearTaskSelection,

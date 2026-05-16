@@ -14,6 +14,14 @@ describe('CommandContext', () => {
 			isTaskTarget: false,
 			isProjectTarget: false,
 		})
+		expect(context.selection).toEqual({
+			ids: [],
+			entities: [],
+			source: 'none',
+			hasSelection: false,
+			isSingleSelection: false,
+			isMultiSelection: false,
+		})
 		expect(context.ui.isContextMenuOpen).toBe(false)
 		expect(context.view.showCompleted).toBe(false)
 	})

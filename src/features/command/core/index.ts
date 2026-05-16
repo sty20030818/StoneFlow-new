@@ -1,4 +1,8 @@
-export { createEmptyCommandContext, createEmptyCommandRowTargetContext } from './command-context'
+export {
+	createEmptyCommandContext,
+	createEmptyCommandRowTargetContext,
+	createEmptyCommandSelectionContext,
+} from './command-context'
 export { CommandRegistry } from './command-registry'
 export { CommandRuntime } from './command-runtime'
 export { getVisibleCommands, sortCommandsByPriority } from './command-query'
@@ -14,6 +18,7 @@ export type {
 	CommandRouteContext,
 	CommandRowTargetContext,
 	CommandScope,
+	CommandSelectedEntity,
 	CommandSelectionContext,
 	CommandSpaceContext,
 	CommandUiContext,
