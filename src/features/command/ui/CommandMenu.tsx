@@ -39,12 +39,22 @@ import type {
 	CommandRuntime,
 	CommandSelectedEntity,
 } from '@/features/command/core'
-import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
+import type { SearchProjectItem, SearchTaskItem, TaskStatus } from '@/shared/types'
+import {
+	TASK_PRIORITY_OPTIONS,
+	type TaskPriorityValue,
+} from '@/features/task/model/taskPriority'
+import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 
 import { ShortcutTokens } from './ShortcutTokens'
 import { buildCommandMenuGroups, type CommandMenuEntry } from './command-menu-model'
+import {
+	isCommandMenuSearchMode,
+	isCommandMenuTaskPropertyMode,
+	type CommandMenuMode,
+} from './command-menu-types'
 
-export type CommandMenuMode = 'default' | 'task-picker' | 'project-picker'
+export type { CommandMenuMode } from './command-menu-types'
 
 export type CommandMenuProject = {
 	id: string
@@ -61,6 +71,9 @@ type CommandMenuProps = {
 	onOpenChange: (open: boolean) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTask: (task: SearchTaskItem) => void
+	onSelectTaskDate: (dueAt: string | null) => void
+	onSelectTaskPriority: (priority: TaskPriorityValue) => void
+	onSelectTaskStatus: (status: TaskStatus) => void
 	onRunCommand: (id: CommandId) => void
 	open: boolean
 	projects: CommandMenuProject[]
@@ -77,6 +90,9 @@ export function CommandMenu({
 	onOpenChange,
 	onSelectProject,
 	onSelectTask,
+	onSelectTaskDate,
+	onSelectTaskPriority,
+	onSelectTaskStatus,
 	onRunCommand,
 	open,
 	projects,
@@ -86,7 +102,7 @@ export function CommandMenu({
 	const [query, setQuery] = useState('')
 	const inputRef = useRef<HTMLInputElement>(null)
 	const groups = useMemo(() => buildCommandMenuGroups(runtime, context), [context, runtime])
-	const scopedSearch = useGlobalSearch(mode === 'default' ? '' : query)
+	const scopedSearch = useGlobalSearch(isCommandMenuSearchMode(mode) ? query : '')
 	const isScopedMode = mode !== 'default'
 
 	useEffect(() => {
@@ -128,7 +144,10 @@ export function CommandMenu({
 			open={open}
 			title={title}
 		>
-			<Command onPointerDownCapture={handleSurfacePointerDownCapture} shouldFilter={!isScopedMode}>
+			<Command
+				onPointerDownCapture={handleSurfacePointerDownCapture}
+				shouldFilter={!isCommandMenuSearchMode(mode)}
+			>
 				<CommandInput
 					ref={inputRef}
 					placeholder={getCommandMenuPlaceholder(mode)}
@@ -144,6 +163,9 @@ export function CommandMenu({
 							onOpenChange={onOpenChange}
 							onSelectProject={onSelectProject}
 							onSelectTask={onSelectTask}
+							onSelectTaskDate={onSelectTaskDate}
+							onSelectTaskPriority={onSelectTaskPriority}
+							onSelectTaskStatus={onSelectTaskStatus}
 							result={scopedSearch.result}
 						/>
 					) : (
@@ -222,12 +244,22 @@ function getCommandMenuPlaceholder(mode: CommandMenuMode) {
 			return '搜索任务…'
 		case 'project-picker':
 			return '搜索项目…'
+		case 'task-priority-picker':
+			return '选择优先级…'
+		case 'task-status-picker':
+			return '选择状态…'
+		case 'task-date-picker':
+			return '选择日期…'
 		default:
 			return '输入命令 或 搜索 …'
 	}
 }
 
 function getCommandMenuEmptyText(mode: CommandMenuMode, query: string) {
+	if (isCommandMenuTaskPropertyMode(mode)) {
+		return '没有可用选项'
+	}
+
 	if (!query.trim()) {
 		return mode === 'task-picker'
 			? '输入关键词搜索任务'
@@ -344,14 +376,96 @@ function ScopedPickerCommandGroup({
 	onOpenChange,
 	onSelectProject,
 	onSelectTask,
+	onSelectTaskDate,
+	onSelectTaskPriority,
+	onSelectTaskStatus,
 	result,
 }: {
 	mode: Exclude<CommandMenuMode, 'default'>
 	onOpenChange: (open: boolean) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTask: (task: SearchTaskItem) => void
+	onSelectTaskDate: (dueAt: string | null) => void
+	onSelectTaskPriority: (priority: TaskPriorityValue) => void
+	onSelectTaskStatus: (status: TaskStatus) => void
 	result: ReturnType<typeof useGlobalSearch>['result']
 }) {
+	if (mode === 'task-priority-picker') {
+		return (
+			<CommandGroup className='pt-2' heading='优先级'>
+				{TASK_PRIORITY_OPTIONS.map((option) => (
+					<CommandItem
+						key={option.value}
+						onSelect={() => {
+							onOpenChange(false)
+							onSelectTaskPriority(option.value)
+						}}
+						value={`priority ${option.label} ${option.value}`}
+					>
+						<CommandRow
+							leadingIcon={ListTodoIcon}
+							title={option.label}
+							trailing={<CommandRowMeta>{`P${option.value}`}</CommandRowMeta>}
+						/>
+					</CommandItem>
+				))}
+			</CommandGroup>
+		)
+	}
+
+	if (mode === 'task-status-picker') {
+		return (
+			<CommandGroup className='pt-2' heading='状态'>
+				{TASK_STATUS_OPTIONS.map((option) => (
+					<CommandItem
+						key={option.value}
+						onSelect={() => {
+							onOpenChange(false)
+							onSelectTaskStatus(option.value)
+						}}
+						value={`status ${option.label} ${option.value}`}
+					>
+						<CommandRow leadingIcon={CircleIcon} title={option.label} />
+					</CommandItem>
+				))}
+			</CommandGroup>
+		)
+	}
+
+	if (mode === 'task-date-picker') {
+		const options = getTaskDateOptions()
+		return (
+			<CommandGroup className='pt-2' heading='日期'>
+				{options.map((option) => (
+					<CommandItem
+						disabled={option.disabled}
+						key={option.key}
+						onSelect={() => {
+							if (option.disabled) {
+								return
+							}
+							onOpenChange(false)
+							onSelectTaskDate(option.value)
+						}}
+						value={`date ${option.label} ${option.key}`}
+					>
+						<CommandRow
+							leadingIcon={CommandIcon}
+							title={option.label}
+							trailing={
+								option.disabled && option.disabledReason ? (
+									<CommandRowMeta>{option.disabledReason}</CommandRowMeta>
+								) : option.value ? (
+									<CommandRowMeta>{option.value}</CommandRowMeta>
+								) : null
+							}
+						/>
+					</CommandItem>
+				))}
+			</CommandGroup>
+		)
+	}
+
 	if (mode === 'task-picker') {
 		const tasks = [...result.tasks, ...result.completedTasks]
 		return (
@@ -401,6 +515,57 @@ function ScopedPickerCommandGroup({
 			))}
 		</CommandGroup>
 	)
+}
+
+type TaskDateOption = {
+	key: string
+	label: string
+	value: string | null
+	disabled?: boolean
+	disabledReason?: string
+}
+
+function getTaskDateOptions(): TaskDateOption[] {
+	const today = startOfLocalDay(new Date())
+	const tomorrow = addLocalDays(today, 1)
+	const endOfWeek = getEndOfLocalWeek(today)
+
+	return [
+		{ key: 'none', label: '无时间', value: null },
+		{ key: 'today', label: '今天', value: formatLocalDate(today) },
+		{ key: 'tomorrow', label: '明天', value: formatLocalDate(tomorrow) },
+		{ key: 'week', label: '本周', value: formatLocalDate(endOfWeek) },
+		{
+			key: 'custom',
+			label: '自定义日期',
+			value: null,
+			disabled: true,
+			disabledReason: '完整日期选择后续接入',
+		},
+	]
+}
+
+function startOfLocalDay(date: Date) {
+	return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function addLocalDays(date: Date, days: number) {
+	const next = new Date(date)
+	next.setDate(next.getDate() + days)
+	return next
+}
+
+function getEndOfLocalWeek(date: Date) {
+	const day = date.getDay()
+	const daysUntilSunday = (7 - day) % 7
+	return addLocalDays(date, daysUntilSunday)
+}
+
+function formatLocalDate(date: Date) {
+	const year = date.getFullYear()
+	const month = String(date.getMonth() + 1).padStart(2, '0')
+	const day = String(date.getDate()).padStart(2, '0')
+	return `${year}-${month}-${day}`
 }
 
 function ProjectsCommandGroup({

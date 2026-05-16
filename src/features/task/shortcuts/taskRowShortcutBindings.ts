@@ -72,4 +72,11 @@ export const TASK_ROW_SHORTCUT_BINDINGS: Keybinding[] = [
 		preventDefault: true,
 		allowInEditable: false,
 	},
+	{
+		commandId: COMMAND_IDS.taskOpenDateMenu,
+		sequence: [{ key: 'd' }],
+		scope: 'row',
+		preventDefault: true,
+		allowInEditable: false,
+	},
 ]

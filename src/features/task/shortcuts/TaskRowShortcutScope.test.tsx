@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 
+import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { TaskListItem } from '@/shared/types'
 
 import { TaskRowShortcutScope } from './TaskRowShortcutScope'
@@ -7,6 +8,11 @@ import { TaskRowShortcutScope } from './TaskRowShortcutScope'
 describe('TaskRowShortcutScope', () => {
 	beforeEach(() => {
 		vi.useFakeTimers()
+		useDialogStore.setState({
+			isCommandOpen: false,
+			commandMenuMode: 'default',
+			commandSelectionOverride: null,
+		})
 	})
 
 	afterEach(() => {
@@ -64,17 +70,30 @@ describe('TaskRowShortcutScope', () => {
 		)
 	})
 
-	it('P / S 打开目标行已有优先级和状态菜单', () => {
+	it('P / S / D 打开目标行的 Command scoped picker', () => {
 		const actions = createActions()
 		renderScope({ actions })
 
 		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
 		fireKey('p')
+		flushShortcutTimers()
+		expect(useDialogStore.getState().isCommandOpen).toBe(true)
+		expect(useDialogStore.getState().commandMenuMode).toBe('task-priority-picker')
+		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a'])
+
+		useDialogStore.getState().closeCommand()
 		fireKey('s')
 		flushShortcutTimers()
+		expect(useDialogStore.getState().isCommandOpen).toBe(true)
+		expect(useDialogStore.getState().commandMenuMode).toBe('task-status-picker')
+		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a'])
 
-		expect(screen.getByTestId('priority-trigger-task-a')).toHaveAttribute('data-clicked', 'true')
-		expect(screen.getByTestId('status-trigger-task-a')).toHaveAttribute('data-clicked', 'true')
+		useDialogStore.getState().closeCommand()
+		fireKey('d')
+		flushShortcutTimers()
+		expect(useDialogStore.getState().isCommandOpen).toBe(true)
+		expect(useDialogStore.getState().commandMenuMode).toBe('task-date-picker')
+		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a'])
 	})
 
 	it('输入态和上层菜单打开时不触发', () => {
@@ -109,6 +128,21 @@ describe('TaskRowShortcutScope', () => {
 		expect(actions.onArchiveTask).toHaveBeenCalledTimes(2)
 		expect(actions.onDeleteTask).toHaveBeenCalledTimes(2)
 		expect(actions.onOpenTask).not.toHaveBeenCalled()
+	})
+
+	it('多选时 P 使用 selection 作为 scoped picker 上下文', () => {
+		const actions = createActions()
+		renderScope({
+			actions,
+			selectedTaskIds: ['task-a', 'task-b'],
+		})
+
+		fireEvent.focus(screen.getByTestId('row-task-a'))
+		fireKey('p')
+		flushShortcutTimers()
+
+		expect(useDialogStore.getState().commandMenuMode).toBe('task-priority-picker')
+		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a', 'task-b'])
 	})
 })
 
@@ -151,22 +185,6 @@ function renderScope({
 								onMouseEnter={() => state.onRowHover(task.id)}
 								tabIndex={0}
 							>
-								<button
-									data-task-row-menu-trigger='priority'
-									data-testid={`priority-trigger-${task.id}`}
-									onClick={(event) => {
-										event.currentTarget.setAttribute('data-clicked', 'true')
-									}}
-									type='button'
-								/>
-								<button
-									data-task-row-menu-trigger='status'
-									data-testid={`status-trigger-${task.id}`}
-									onClick={(event) => {
-										event.currentTarget.setAttribute('data-clicked', 'true')
-									}}
-									type='button'
-								/>
 							</div>
 						))}
 					</div>

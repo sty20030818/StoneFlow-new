@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
+import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
 	COMMAND_IDS,
 	CommandRegistry,
@@ -45,6 +46,7 @@ type TaskRowCommandActions = {
 	deleteTask: () => void | Promise<void>
 	openPriorityMenu: () => void
 	openStatusMenu: () => void
+	openDateMenu: () => void
 }
 
 const ROW_COMMAND_DISABLED_REASON = 'Row 上下文尚未接入'
@@ -216,6 +218,7 @@ function createTaskRowCommands(actions: TaskRowCommandActions): Command[] {
 		bindTaskRowCommand(COMMAND_IDS.taskDelete, actions.deleteTask),
 		bindTaskRowCommand(COMMAND_IDS.taskSetPriority, actions.openPriorityMenu),
 		bindTaskRowCommand(COMMAND_IDS.taskSetStatus, actions.openStatusMenu),
+		bindTaskRowCommand(COMMAND_IDS.taskOpenDateMenu, actions.openDateMenu),
 	]
 }
 
@@ -290,21 +293,49 @@ function createTaskRowCommandActions({
 			await Promise.all(batchTasks.map((task) => onDeleteTask(task)))
 		},
 		openPriorityMenu: () => {
-			clickRowMenuTrigger(rowTarget.targetId, 'priority')
+			openTaskPropertyPicker('task-priority-picker', batchTasks)
 		},
 		openStatusMenu: () => {
-			clickRowMenuTrigger(rowTarget.targetId, 'status')
+			openTaskPropertyPicker('task-status-picker', batchTasks)
+		},
+		openDateMenu: () => {
+			openTaskPropertyPicker('task-date-picker', batchTasks)
 		},
 	}
 }
 
-function clickRowMenuTrigger(taskId: string | undefined, menu: 'priority' | 'status') {
-	if (!taskId) {
+function openTaskPropertyPicker(
+	mode: 'task-priority-picker' | 'task-status-picker' | 'task-date-picker',
+	tasks: TaskListItem[],
+) {
+	if (tasks.length === 0) {
 		return
 	}
-	const selector = `[data-task-id="${window.CSS.escape(taskId)}"] [data-task-row-menu-trigger="${menu}"]`
-	const trigger = document.querySelector<HTMLButtonElement>(selector)
-	trigger?.click()
+
+	useDialogStore.getState().openCommand(mode, {
+		type: 'task',
+		ids: tasks.map((task) => task.id),
+		entities: tasks.map((task) => ({
+			id: task.id,
+			type: 'task',
+			title: task.title,
+			subtitle: task.projectName ?? (task.inboxAt ? 'Inbox' : '独立事项'),
+			status: task.status,
+			priority: String(task.priority),
+		})),
+		primaryEntity: {
+			id: tasks[0].id,
+			type: 'task',
+			title: tasks[0].title,
+			subtitle: tasks[0].projectName ?? (tasks[0].inboxAt ? 'Inbox' : '独立事项'),
+			status: tasks[0].status,
+			priority: String(tasks[0].priority),
+		},
+		source: 'row',
+		hasSelection: true,
+		isSingleSelection: tasks.length === 1,
+		isMultiSelection: tasks.length > 1,
+	})
 }
 
 function isBlockedByHigherLayer() {

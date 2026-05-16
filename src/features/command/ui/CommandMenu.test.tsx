@@ -12,6 +12,7 @@ import {
 import type { ShellCommandActions } from '@/features/command/adapters'
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { CommandMenu } from './CommandMenu'
+import type { CommandMenuMode } from './command-menu-types'
 
 vi.mock('@/features/global-search/api/searchEntities', () => ({
 	searchEntities: vi.fn<typeof searchEntities>(),
@@ -159,6 +160,44 @@ describe('CommandMenu', () => {
 		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(2))
 		expect(await screen.findByText('没有匹配的项目')).toBeInTheDocument()
 	})
+
+	it('task-priority-picker 选择优先级后回调并关闭菜单', () => {
+		const onOpenChange = vi.fn<(open: boolean) => void>()
+		const onSelectTaskPriority = vi.fn<(priority: number) => void>()
+		renderCommandMenu({ mode: 'task-priority-picker', onOpenChange, onSelectTaskPriority })
+
+		fireEvent.click(screen.getByText('高'))
+
+		expect(onOpenChange).toHaveBeenCalledWith(false)
+		expect(onSelectTaskPriority).toHaveBeenCalledWith(3)
+	})
+
+	it('task-status-picker 选择状态后回调并关闭菜单', () => {
+		const onOpenChange = vi.fn<(open: boolean) => void>()
+		const onSelectTaskStatus = vi.fn<(status: string) => void>()
+		renderCommandMenu({ mode: 'task-status-picker', onOpenChange, onSelectTaskStatus })
+
+		fireEvent.click(screen.getByText('进行中'))
+
+		expect(onOpenChange).toHaveBeenCalledWith(false)
+		expect(onSelectTaskStatus).toHaveBeenCalledWith('doing')
+	})
+
+	it('task-date-picker 选择日期 preset 后回调并关闭菜单，自定义日期保持 disabled', () => {
+		const onOpenChange = vi.fn<(open: boolean) => void>()
+		const onSelectTaskDate = vi.fn<(dueAt: string | null) => void>()
+		const { unmount } = renderCommandMenu({ mode: 'task-date-picker', onOpenChange, onSelectTaskDate })
+
+		fireEvent.click(screen.getByText('无时间'))
+		expect(onOpenChange).toHaveBeenCalledWith(false)
+		expect(onSelectTaskDate).toHaveBeenCalledWith(null)
+
+		unmount()
+		renderCommandMenu({ mode: 'task-date-picker', onSelectTaskDate })
+		fireEvent.click(screen.getByText('自定义日期'))
+		expect(screen.getByText('完整日期选择后续接入')).toBeInTheDocument()
+		expect(onSelectTaskDate).toHaveBeenCalledTimes(1)
+	})
 })
 
 function renderCommandMenu({
@@ -166,15 +205,21 @@ function renderCommandMenu({
 	onNavigateProject = vi.fn(),
 	onOpenChange = vi.fn(),
 	onRunCommand = vi.fn(),
+	onSelectTaskDate = vi.fn(),
+	onSelectTaskPriority = vi.fn(),
+	onSelectTaskStatus = vi.fn(),
 	onSelectProject = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
 }: Partial<{
-	mode: 'default' | 'task-picker' | 'project-picker'
+	mode: CommandMenuMode
 	context: CommandContext
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
+	onSelectTaskDate: (dueAt: string | null) => void
+	onSelectTaskPriority: (priority: number) => void
+	onSelectTaskStatus: (status: string) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTask: (task: SearchTaskItem) => void
 }> = {}) {
@@ -184,6 +229,9 @@ function renderCommandMenu({
 			onNavigateProject,
 			onOpenChange,
 			onRunCommand,
+			onSelectTaskDate,
+			onSelectTaskPriority,
+			onSelectTaskStatus,
 			onSelectProject,
 			onSelectTask,
 			context,
@@ -196,15 +244,21 @@ function createCommandMenuElement({
 	onNavigateProject = vi.fn(),
 	onOpenChange = vi.fn(),
 	onRunCommand = vi.fn(),
+	onSelectTaskDate = vi.fn(),
+	onSelectTaskPriority = vi.fn(),
+	onSelectTaskStatus = vi.fn(),
 	onSelectProject = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
 }: Partial<{
-	mode: 'default' | 'task-picker' | 'project-picker'
+	mode: CommandMenuMode
 	context: CommandContext
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
+	onSelectTaskDate: (dueAt: string | null) => void
+	onSelectTaskPriority: (priority: number) => void
+	onSelectTaskStatus: (status: string) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTask: (task: SearchTaskItem) => void
 }> = {}) {
@@ -216,6 +270,9 @@ function createCommandMenuElement({
 			onNavigateProject={onNavigateProject}
 			onOpenChange={onOpenChange}
 			onRunCommand={onRunCommand}
+			onSelectTaskDate={onSelectTaskDate}
+			onSelectTaskPriority={onSelectTaskPriority}
+			onSelectTaskStatus={onSelectTaskStatus}
 			onSelectProject={onSelectProject}
 			onSelectTask={onSelectTask}
 			open
@@ -244,6 +301,9 @@ function createActions(): ShellCommandActions {
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		openTaskPriorityPicker: vi.fn(),
+		openTaskStatusPicker: vi.fn(),
+		openTaskDatePicker: vi.fn(),
 		completeSelectedTasks: vi.fn(),
 		requestArchiveSelectedTasks: vi.fn(),
 		requestDeleteSelectedTasks: vi.fn(),

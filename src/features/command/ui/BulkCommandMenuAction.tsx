@@ -10,7 +10,7 @@ export function BulkCommandMenuAction() {
 	return (
 		<Button
 			className={BULK_ACTION_BUTTON_CLASS}
-			onClick={openCommand}
+			onClick={() => openCommand('default')}
 			size='sm'
 			type='button'
 			variant='outline'

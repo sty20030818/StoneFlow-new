@@ -18,7 +18,7 @@ import {
 } from '@/features/global-search/model/searchNavigation'
 import { useSearchOpenIntentStore } from '@/features/global-search/model/useSearchOpenIntentStore'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
-import type { Scope, Space } from '@/shared/types'
+import type { Scope, Space, TaskStatus } from '@/shared/types'
 import { Avatar, AvatarFallback, AvatarImage, AvatarBadge } from '@/shared/ui/base/avatar'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -44,6 +44,7 @@ import {
 	type CommandId,
 	type CommandRuntime,
 } from '@/features/command/core'
+import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import {
 	shellChromeAvatarClusterClass,
 	shellChromeCommandDialogClass,
@@ -86,6 +87,9 @@ type ShellHeaderProps = {
 	onShortcutHelpOpenChange: (open: boolean) => void
 	onNavigateToHistoryEntry: (entry: ShellRouteHistoryEntry) => void
 	onCloseDrawer: () => void
+	onSelectTaskDate: (dueAt: string | null) => void
+	onSelectTaskPriority: (priority: TaskPriorityValue) => void
+	onSelectTaskStatus: (status: TaskStatus) => void
 }
 
 export function ShellHeader({
@@ -106,6 +110,9 @@ export function ShellHeader({
 	onShortcutHelpOpenChange,
 	onNavigateToHistoryEntry,
 	onCloseDrawer,
+	onSelectTaskDate,
+	onSelectTaskPriority,
+	onSelectTaskStatus,
 	projects,
 	spaces,
 }: ShellHeaderProps) {
@@ -471,6 +478,9 @@ export function ShellHeader({
 					handleNavigate(buildScopedProjectPath(currentScope, projectId, currentSpaceId))
 				}}
 				onRunCommand={onRunCommand}
+				onSelectTaskDate={onSelectTaskDate}
+				onSelectTaskPriority={onSelectTaskPriority}
+				onSelectTaskStatus={onSelectTaskStatus}
 				onSelectProject={handleOpenProjectFromSearch}
 				onSelectTask={handleOpenTaskFromSearch}
 				open={isCommandOpen}

@@ -136,7 +136,6 @@ describe('Shell command adapter', () => {
 	})
 
 	it.each([
-		[COMMAND_IDS.taskSetPriority, 'Row 菜单快捷操作尚未接入'],
 		[COMMAND_IDS.taskMoveToProject, 'Row 上下文尚未接入'],
 		[COMMAND_IDS.projectRename, '项目命令尚未接入'],
 		[COMMAND_IDS.filterToggleCompleted, '筛选命令尚未接入'],
@@ -156,6 +155,9 @@ describe('Shell command adapter', () => {
 
 	it.each([
 		[COMMAND_IDS.taskComplete, 'completeSelectedTasks'],
+		[COMMAND_IDS.taskSetPriority, 'openTaskPriorityPicker'],
+		[COMMAND_IDS.taskSetStatus, 'openTaskStatusPicker'],
+		[COMMAND_IDS.taskOpenDateMenu, 'openTaskDatePicker'],
 		[COMMAND_IDS.taskArchive, 'requestArchiveSelectedTasks'],
 		[COMMAND_IDS.taskDelete, 'requestDeleteSelectedTasks'],
 	] as const)('有 task selection 时执行批量任务命令 %s', async (commandId, actionName) => {
@@ -185,7 +187,14 @@ describe('Shell command adapter', () => {
 		expect(actions[actionName]).toHaveBeenCalledWith(context)
 	})
 
-	it.each([COMMAND_IDS.taskComplete, COMMAND_IDS.taskArchive, COMMAND_IDS.taskDelete])(
+	it.each([
+		COMMAND_IDS.taskComplete,
+		COMMAND_IDS.taskSetPriority,
+		COMMAND_IDS.taskSetStatus,
+		COMMAND_IDS.taskOpenDateMenu,
+		COMMAND_IDS.taskArchive,
+		COMMAND_IDS.taskDelete,
+	])(
 		'没有 task selection 时禁用批量任务命令 %s',
 		async (commandId) => {
 			const runtime = createRuntime(createActions())
@@ -236,6 +245,9 @@ function createActions(overrides: Partial<ShellCommandActions> = {}): ShellComma
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		openTaskPriorityPicker: vi.fn(),
+		openTaskStatusPicker: vi.fn(),
+		openTaskDatePicker: vi.fn(),
 		completeSelectedTasks: vi.fn(),
 		requestArchiveSelectedTasks: vi.fn(),
 		requestDeleteSelectedTasks: vi.fn(),

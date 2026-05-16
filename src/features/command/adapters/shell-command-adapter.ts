@@ -21,6 +21,9 @@ export type ShellCommandActions = {
 	openProjectCreate: () => void
 	openTaskPicker: () => void
 	openProjectPicker: () => void
+	openTaskPriorityPicker: (ctx: CommandContext) => void
+	openTaskStatusPicker: (ctx: CommandContext) => void
+	openTaskDatePicker: (ctx: CommandContext) => void
 	completeSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	requestArchiveSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	requestDeleteSelectedTasks: (ctx: CommandContext) => void | Promise<void>
@@ -64,6 +67,12 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return { ...command, run: adapter.openProjectPicker }
 		case COMMAND_IDS.taskComplete:
 			return bindSelectionTaskCommand(command, adapter.completeSelectedTasks)
+		case COMMAND_IDS.taskSetPriority:
+			return bindSelectionTaskCommand(command, adapter.openTaskPriorityPicker)
+		case COMMAND_IDS.taskSetStatus:
+			return bindSelectionTaskCommand(command, adapter.openTaskStatusPicker)
+		case COMMAND_IDS.taskOpenDateMenu:
+			return bindSelectionTaskCommand(command, adapter.openTaskDatePicker)
 		case COMMAND_IDS.taskArchive:
 			return bindSelectionTaskCommand(command, adapter.requestArchiveSelectedTasks)
 		case COMMAND_IDS.taskDelete:

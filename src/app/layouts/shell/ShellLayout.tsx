@@ -20,6 +20,8 @@ import {
 	useDrawerStore,
 } from '@/app/layouts/shell/model/useDrawerStore'
 import {
+	selectCommandMenuMode,
+	selectCommandSelectionOverride,
 	selectCreateDialogType,
 	selectIsCommandOpen,
 	selectIsShortcutHelpOpen,
@@ -78,7 +80,6 @@ import {
 import {
 	CommandShortcutLayer,
 	DEFAULT_KEYBINDINGS,
-	type CommandMenuMode,
 	type CommandChordSession,
 	type Keybinding,
 	useCommandContext,
@@ -90,6 +91,8 @@ import {
 	type ShellNavigationTarget,
 } from '@/features/command'
 import { COMMAND_IDS } from '@/features/command/core'
+import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskStatus } from '@/shared/types'
 
 type PendingBulkTaskConfirmation = {
 	kind: 'archive' | 'delete'
@@ -131,6 +134,8 @@ function ShellLayoutContent({
 }: ShellLayoutProps) {
 	const navigate = useNavigate()
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
+	const commandMenuMode = useDialogStore(selectCommandMenuMode)
+	const commandSelectionOverride = useDialogStore(selectCommandSelectionOverride)
 	const isShortcutHelpOpen = useDialogStore(selectIsShortcutHelpOpen)
 	const createDialogType = useDialogStore(selectCreateDialogType)
 	const taskCreateDraft = useDialogStore(selectTaskCreateDraft)
@@ -143,7 +148,6 @@ function ShellLayoutContent({
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const toggleTaskCreatePresentation = useDialogStore((state) => state.toggleTaskCreatePresentation)
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
-	const [commandMenuMode, setCommandMenuMode] = useState<CommandMenuMode>('default')
 	const [chordSession, setChordSession] = useState<CommandChordSession | null>(null)
 	const [pendingBulkTaskConfirmation, setPendingBulkTaskConfirmation] =
 		useState<PendingBulkTaskConfirmation | null>(null)
@@ -329,9 +333,6 @@ function ShellLayoutContent({
 	const handleCommandMenuOpenChange = useCallback(
 		(open: boolean) => {
 			setCommandOpen(open)
-			if (!open) {
-				setCommandMenuMode('default')
-			}
 		},
 		[setCommandOpen],
 	)
@@ -339,12 +340,10 @@ function ShellLayoutContent({
 	const shellCommandActions = useMemo<ShellCommandActions>(
 		() => ({
 			openCommandMenu: () => {
-				setCommandMenuMode('default')
-				setCommandOpen(true)
+				useDialogStore.getState().openCommand('default')
 			},
 			openShortcutHelp: () => {
 				toggleShortcutHelp()
-				setCommandMenuMode('default')
 			},
 			focusSearch: requestSearchFocus,
 			openQuickTaskCreate: handleOpenTaskCreate,
@@ -352,12 +351,19 @@ function ShellLayoutContent({
 			openInboxTaskCreate: () => openTaskCreateDialog({ placement: 'inbox' }, 'default'),
 			openProjectCreate: () => openProjectCreateDialog(),
 			openTaskPicker: () => {
-				setCommandMenuMode('task-picker')
-				setCommandOpen(true)
+				useDialogStore.getState().openCommand('task-picker')
 			},
 			openProjectPicker: () => {
-				setCommandMenuMode('project-picker')
-				setCommandOpen(true)
+				useDialogStore.getState().openCommand('project-picker')
+			},
+			openTaskPriorityPicker: (ctx) => {
+				useDialogStore.getState().openCommand('task-priority-picker', ctx.selection)
+			},
+			openTaskStatusPicker: (ctx) => {
+				useDialogStore.getState().openCommand('task-status-picker', ctx.selection)
+			},
+			openTaskDatePicker: (ctx) => {
+				useDialogStore.getState().openCommand('task-date-picker', ctx.selection)
 			},
 			completeSelectedTasks: async (ctx) => {
 				const taskEntities = ctx.selection.entities.filter((entity) => entity.type === 'task')
@@ -418,8 +424,6 @@ function ShellLayoutContent({
 			openProjectCreateDialog,
 			openTaskCreateDialog,
 			requestSearchFocus,
-			setCommandOpen,
-			setCommandMenuMode,
 			setPendingBulkTaskConfirmation,
 			toggleShortcutHelp,
 			updateTask,
@@ -499,7 +503,8 @@ function ShellLayoutContent({
 		}),
 		[routeProjectId],
 	)
-	const commandSelection = useCommandSelectionContext()
+	const registeredCommandSelection = useCommandSelectionContext()
+	const commandSelection = commandSelectionOverride ?? registeredCommandSelection
 	const commandContext = useCommandContext({
 		route: commandRoute,
 		selection: commandSelection,
@@ -513,6 +518,49 @@ function ShellLayoutContent({
 		context: commandContext,
 	})
 	const runCommand = useCommandRunner({ runtime: commandRuntime })
+
+	const updateSelectedTasks = useCallback(
+		async (input: { priority?: TaskPriorityValue; status?: TaskStatus; dueAt?: string | null }) => {
+			if (commandContext.selection.type !== 'task' || commandContext.selection.ids.length === 0) {
+				return
+			}
+
+			try {
+				for (const taskId of commandContext.selection.ids) {
+					await updateTask({
+						taskId,
+						...input,
+					})
+				}
+				toast.success(`已更新 ${commandContext.selection.ids.length} 个任务`)
+			} catch (error) {
+				toast.error('批量更新任务失败')
+				throw error
+			}
+		},
+		[commandContext.selection.ids, commandContext.selection.type, updateTask],
+	)
+
+	const handleSelectTaskPriority = useCallback(
+		(priority: TaskPriorityValue) => {
+			void updateSelectedTasks({ priority }).catch(() => undefined)
+		},
+		[updateSelectedTasks],
+	)
+
+	const handleSelectTaskStatus = useCallback(
+		(status: TaskStatus) => {
+			void updateSelectedTasks({ status }).catch(() => undefined)
+		},
+		[updateSelectedTasks],
+	)
+
+	const handleSelectTaskDate = useCallback(
+		(dueAt: string | null) => {
+			void updateSelectedTasks({ dueAt }).catch(() => undefined)
+		},
+		[updateSelectedTasks],
+	)
 
 	useCommandOpenListener(handleCommandOpen)
 
@@ -592,6 +640,9 @@ function ShellLayoutContent({
 				onCommandOpenChange={handleCommandMenuOpenChange}
 				onNavigateToHistoryEntry={navigateToHistoryEntry}
 				onRunCommand={runCommand}
+				onSelectTaskDate={handleSelectTaskDate}
+				onSelectTaskPriority={handleSelectTaskPriority}
+				onSelectTaskStatus={handleSelectTaskStatus}
 				onShortcutHelpOpenChange={setShortcutHelpOpen}
 				projects={projectLinks}
 				routeHistoryEntries={routeHistoryEntries}
