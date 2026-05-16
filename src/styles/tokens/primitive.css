@@ -1,7 +1,6 @@
 :root {
 	/* Fonts */
-	--sf-font-family-sans:
-		"StoneFlow Sans", "PingFang SC", "Segoe UI", system-ui, sans-serif;
+	--sf-font-family-sans: "StoneFlow Sans", "PingFang SC", "Segoe UI", system-ui, sans-serif;
 	--sf-font-family-mono:
 		"Berkeley Mono", "SF Mono", "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
 

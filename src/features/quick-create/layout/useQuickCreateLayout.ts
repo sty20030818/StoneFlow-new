@@ -42,7 +42,9 @@ export function useQuickCreateLayout(measureKey: unknown): QuickCreateLayoutCont
 	const [targetHeight, setTargetHeight] = useState<number | null>(null)
 	const [isReady, setReady] = useState(false)
 	const [readyMeasureKey, setReadyMeasureKey] = useState<unknown>(null)
-	const [lastMeasurements, setLastMeasurements] = useState<QuickCreateLayoutMeasurements | null>(null)
+	const [lastMeasurements, setLastMeasurements] = useState<QuickCreateLayoutMeasurements | null>(
+		null,
+	)
 	const [lastResult, setLastResult] = useState<QuickCreateLayoutMeasureResult | null>(null)
 	const measureKeyRef = useRef(measureKey)
 	const nodeMapRef = useRef(new Map<QuickCreateLayoutRegion, HTMLElement>())

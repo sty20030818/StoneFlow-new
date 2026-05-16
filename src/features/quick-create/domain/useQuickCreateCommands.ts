@@ -14,10 +14,7 @@ type UseQuickCreateCommandsArgs = {
 	scheduleClose: () => void
 }
 
-export function useQuickCreateCommands({
-	dispatch,
-	scheduleClose,
-}: UseQuickCreateCommandsArgs) {
+export function useQuickCreateCommands({ dispatch, scheduleClose }: UseQuickCreateCommandsArgs) {
 	const buildCreateInput = useCallback(
 		(draft: QuickCreateDraft): QuickCreateInput => ({
 			spaceId: draft.spaceId,

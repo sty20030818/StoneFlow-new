@@ -26,9 +26,12 @@ export function useQuickCreateDraftActions({
 	hasTitle,
 	loadProjectsForSpace,
 }: UseQuickCreateDraftActionsArgs) {
-	const setTitle = useCallback((title: string) => {
-		dispatch({ type: 'titleChanged', title })
-	}, [dispatch])
+	const setTitle = useCallback(
+		(title: string) => {
+			dispatch({ type: 'titleChanged', title })
+		},
+		[dispatch],
+	)
 
 	const setPriority = useCallback(
 		(priority: QuickCreatePriority) => {
@@ -46,9 +49,12 @@ export function useQuickCreateDraftActions({
 		[dispatch, focusInput],
 	)
 
-	const setPopover = useCallback((key: QuickCreatePopoverKey | null) => {
-		dispatch({ type: 'activePopoverChanged', key })
-	}, [dispatch])
+	const setPopover = useCallback(
+		(key: QuickCreatePopoverKey | null) => {
+			dispatch({ type: 'activePopoverChanged', key })
+		},
+		[dispatch],
+	)
 
 	const selectPlacement = useCallback(
 		(placement: QuickCreatePlacement) => {
@@ -83,9 +89,12 @@ export function useQuickCreateDraftActions({
 		focusInput()
 	}, [dispatch, focusInput])
 
-	const setProjectSearch = useCallback((query: string) => {
-		dispatch({ type: 'projectSearchChanged', query })
-	}, [dispatch])
+	const setProjectSearch = useCallback(
+		(query: string) => {
+			dispatch({ type: 'projectSearchChanged', query })
+		},
+		[dispatch],
+	)
 
 	const moveFocus = useCallback(
 		(direction: 1 | -1) => {
@@ -124,9 +133,12 @@ export function useQuickCreateDraftActions({
 		focusInput()
 	}, [dispatch, focusInput, hasTitle])
 
-	const focusResult = useCallback((index: number) => {
-		dispatch({ type: 'focusChanged', focusTarget: { kind: 'result', index } })
-	}, [dispatch])
+	const focusResult = useCallback(
+		(index: number) => {
+			dispatch({ type: 'focusChanged', focusTarget: { kind: 'result', index } })
+		},
+		[dispatch],
+	)
 
 	return {
 		focusCreate,

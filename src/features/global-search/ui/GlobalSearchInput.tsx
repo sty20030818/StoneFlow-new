@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { selectSearchFocusRequestVersion, useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
+import {
+	selectSearchFocusRequestVersion,
+	useSearchFocusIntentStore,
+} from '@/features/global-search/model/useSearchFocusIntentStore'
 import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
 import { GlobalSearchResults } from '@/features/global-search/ui/GlobalSearchResults'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'

@@ -57,7 +57,11 @@ export function StatusCell<TValue extends string | number = string | number>({
 	}
 
 	return (
-		<div className='flex size-5 shrink-0 items-center justify-center' onClick={stopRowEventPropagation} onPointerDown={stopRowEventPropagation}>
+		<div
+			className='flex size-5 shrink-0 items-center justify-center'
+			onClick={stopRowEventPropagation}
+			onPointerDown={stopRowEventPropagation}
+		>
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<button

@@ -28,7 +28,10 @@ export class KeybindingRegistry {
 	}
 
 	detectConflicts(): KeybindingConflict[] {
-		const groups = new Map<string, { scope: KeybindingScope; sequence: KeybindingSequence; commandIds: CommandId[] }>()
+		const groups = new Map<
+			string,
+			{ scope: KeybindingScope; sequence: KeybindingSequence; commandIds: CommandId[] }
+		>()
 
 		for (const binding of this.bindings) {
 			const key = getConflictKey(binding)

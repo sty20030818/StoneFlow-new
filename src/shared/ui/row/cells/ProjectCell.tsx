@@ -10,7 +10,11 @@ import {
 } from '@/shared/ui/base/dropdown-menu'
 import { RowMetaButton } from '@/shared/ui/row/RowFieldCells'
 import { stopRowEventPropagation } from '@/shared/ui/row/RowFieldCells'
-import { buildDigitShortcutMap, ShortcutDigitSelectLayer, ShortcutMenuItemHint } from '@/shared/ui/shortcut-menu'
+import {
+	buildDigitShortcutMap,
+	ShortcutDigitSelectLayer,
+	ShortcutMenuItemHint,
+} from '@/shared/ui/shortcut-menu'
 
 export type ProjectCellOption = {
 	id: string
@@ -77,10 +81,7 @@ export function ProjectCell({
 						}}
 					/>
 					<DropdownMenuGroup>
-						<DropdownMenuItem
-							className='gap-2 p-2'
-							onSelect={onSelectNone}
-						>
+						<DropdownMenuItem className='gap-2 p-2' onSelect={onSelectNone}>
 							<span className='min-w-0 flex-1 truncate'>{emptyLabel}</span>
 							<ShortcutMenuItemHint digit={digitShortcutMap[0]?.digit ?? ''} />
 							{!projectName ? (

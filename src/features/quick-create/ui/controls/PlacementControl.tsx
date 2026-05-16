@@ -1,6 +1,9 @@
 import { CheckIcon, FolderIcon, InboxIcon, TargetIcon } from 'lucide-react'
 
-import type { QuickCreatePlacement, QuickCreateProjectOption } from '@/features/quick-create/model/types'
+import type {
+	QuickCreatePlacement,
+	QuickCreateProjectOption,
+} from '@/features/quick-create/model/types'
 import { Button } from '@/shared/ui/base/button'
 import {
 	DropdownMenu,

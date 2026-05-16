@@ -24,7 +24,9 @@ export function QuickCreateFooter() {
 				)}
 			>
 				{state.submitState === 'error' ? <AlertTriangleIcon className='size-3.5 shrink-0' /> : null}
-				{state.submitState === 'success' ? <CheckCircle2Icon className='size-3.5 shrink-0' /> : null}
+				{state.submitState === 'success' ? (
+					<CheckCircle2Icon className='size-3.5 shrink-0' />
+				) : null}
 				{state.submitState === 'submitting' ? (
 					<LoaderCircleIcon className='size-3.5 shrink-0 animate-spin' />
 				) : null}

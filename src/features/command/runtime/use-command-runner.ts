@@ -1,10 +1,6 @@
 import { useCallback } from 'react'
 
-import type {
-	CommandExecutionResult,
-	CommandId,
-	CommandRuntime,
-} from '@/features/command/core'
+import type { CommandExecutionResult, CommandId, CommandRuntime } from '@/features/command/core'
 
 type UseCommandRunnerOptions = {
 	runtime: CommandRuntime

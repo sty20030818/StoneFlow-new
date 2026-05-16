@@ -32,7 +32,9 @@ type SidebarSettingsState = {
 	resetMainItemsVisibility: () => Promise<void>
 	setItemVisibility: (target: SidebarItemVisibilityTarget, visible: boolean) => Promise<void>
 	setSidebarWidth: (width: number) => Promise<void>
-	setDesktopPreference: (desktopPreference: ShellSidebarDevicePreferences['desktopPreference']) => Promise<void>
+	setDesktopPreference: (
+		desktopPreference: ShellSidebarDevicePreferences['desktopPreference'],
+	) => Promise<void>
 	setProjectSectionConfig: (config: ShellSidebarProjectSectionSettings) => Promise<void>
 }
 
@@ -78,9 +80,7 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 		}
 	}
 
-	const commitDeviceUpdate = async (
-		runner: () => Promise<ShellSidebarDevicePreferences>,
-	) => {
+	const commitDeviceUpdate = async (runner: () => Promise<ShellSidebarDevicePreferences>) => {
 		try {
 			const sidebarDevicePreferences = await runner()
 			const syncSettings = get().syncSettings
@@ -177,9 +177,7 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 		},
 
 		setDesktopPreference: async (desktopPreference) => {
-			await commitDeviceUpdate(() =>
-				updateShellSidebarDevicePreferences({ desktopPreference }),
-			)
+			await commitDeviceUpdate(() => updateShellSidebarDevicePreferences({ desktopPreference }))
 		},
 
 		setProjectSectionConfig: async (config) => {

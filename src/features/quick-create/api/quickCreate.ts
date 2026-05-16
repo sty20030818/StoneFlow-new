@@ -82,10 +82,7 @@ export async function presentSession(input: { sessionId: string }) {
 	return invoke('helper_quick_present_session', { input })
 }
 
-export async function closeSession(input: {
-	sessionId: string
-	reason: QuickCreateCloseReason
-}) {
+export async function closeSession(input: { sessionId: string; reason: QuickCreateCloseReason }) {
 	return invoke('helper_quick_close_session', { input })
 }
 

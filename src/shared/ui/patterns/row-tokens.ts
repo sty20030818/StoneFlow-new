@@ -12,7 +12,8 @@ export const ROW_SHELL_ACTIVE_CLASS = 'border-sf-border-subtle bg-sf-list-row-se
 export const ROW_SHELL_SELECTED_CLASS =
 	'border-transparent bg-sf-selection-surface hover:bg-sf-selection-surface-hover'
 /** 选中 row 被合并到分组 wrapper 内时，去掉自身背景，只保留 hover。 */
-export const ROW_SHELL_GROUP_SELECTED_CLASS = 'border-transparent bg-transparent hover:bg-sf-selection-surface-hover'
+export const ROW_SHELL_GROUP_SELECTED_CLASS =
+	'border-transparent bg-transparent hover:bg-sf-selection-surface-hover'
 export const ROW_SHELL_SECTION_HEADER_CLASS =
 	'flex h-10 items-center gap-2 rounded-md bg-sf-list-section-bg pl-3 pr-1'
 export const ROW_SHELL_META_TEXT_CLASS = 'text-xs font-medium text-sf-text-tertiary'

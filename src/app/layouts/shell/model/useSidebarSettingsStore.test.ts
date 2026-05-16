@@ -26,7 +26,9 @@ vi.mock('@/features/settings/api/sidebarSettings', () => ({
 			) => Promise<SidebarPreferenceSettings>
 		>(),
 	updateSidebarProjectSection:
-		vi.fn<(config: SidebarPreferenceSettings['projectSection']) => Promise<SidebarPreferenceSettings>>(),
+		vi.fn<
+			(config: SidebarPreferenceSettings['projectSection']) => Promise<SidebarPreferenceSettings>
+		>(),
 }))
 
 vi.mock('@/app/layouts/shell/model/shellDevicePreferences', async () => {

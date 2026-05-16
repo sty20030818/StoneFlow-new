@@ -98,10 +98,10 @@ export function useCommandShortcuts({
 		}
 
 		window.addEventListener('keydown', handleKeyDown)
-			return () => {
-				window.removeEventListener('keydown', handleKeyDown)
-				clearChordState()
-			}
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown)
+			clearChordState()
+		}
 	}, [bindings, scope])
 }
 
@@ -114,7 +114,12 @@ function shouldPreventDefaultForStroke(stroke: KeybindingStroke) {
 		return true
 	}
 
-	return stroke.key === 'Enter' || stroke.key === 'Delete' || stroke.key === 'Backspace' || stroke.key === 'Space'
+	return (
+		stroke.key === 'Enter' ||
+		stroke.key === 'Delete' ||
+		stroke.key === 'Backspace' ||
+		stroke.key === 'Space'
+	)
 }
 
 function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent {

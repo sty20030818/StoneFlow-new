@@ -63,7 +63,7 @@ export function SidebarCustomizeSubmenu({
 									onUpdateItemVisibility({ kind: 'main', key: item.key }, checked === true)
 								}
 							>
-								<item.icon className="size-4" />
+								<item.icon className='size-4' />
 								{item.label}
 							</ContextMenuCheckboxItem>
 						)
@@ -83,7 +83,7 @@ export function SidebarCustomizeSubmenu({
 										onUpdateItemVisibility({ kind: 'footer', key: item.key }, checked === true)
 									}
 								>
-									<item.icon className="size-4" />
+									<item.icon className='size-4' />
 									{item.label}
 								</ContextMenuCheckboxItem>
 							)

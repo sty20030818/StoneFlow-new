@@ -79,10 +79,12 @@ export async function loadShellDeviceState(): Promise<ShellDeviceState> {
 		shellDeviceStore.get<ShellNavigationRestore>(NAVIGATION_RESTORE_KEY),
 	])
 
-	const { sidebar: resolvedSidebar, ui: resolvedUi } = await migrateLegacyDevicePreferencesIfNeeded({
-		sidebar: sidebar ?? null,
-		ui: ui ?? null,
-	})
+	const { sidebar: resolvedSidebar, ui: resolvedUi } = await migrateLegacyDevicePreferencesIfNeeded(
+		{
+			sidebar: sidebar ?? null,
+			ui: ui ?? null,
+		},
+	)
 
 	return {
 		sidebar: normalizeSidebarDevicePreferences(resolvedSidebar),
@@ -110,7 +112,9 @@ export function buildShellSidebarSettings(
 export async function updateShellSidebarDevicePreferences(
 	patch: Partial<ShellSidebarDevicePreferences>,
 ): Promise<ShellSidebarDevicePreferences> {
-	const current = (await shellDeviceStore.get<ShellSidebarDevicePreferences>(SIDEBAR_DEVICE_KEY)) ?? {
+	const current = (await shellDeviceStore.get<ShellSidebarDevicePreferences>(
+		SIDEBAR_DEVICE_KEY,
+	)) ?? {
 		...defaultShellSidebarDevicePreferences(),
 	}
 	const next = normalizeSidebarDevicePreferences({
@@ -183,9 +187,7 @@ export async function resolveRememberedPathForScope({
 	})
 }
 
-export async function resolveStartupPath({
-	spaces,
-}: ResolveStartupPathInput): Promise<string> {
+export async function resolveStartupPath({ spaces }: ResolveStartupPathInput): Promise<string> {
 	const navigationRestore = normalizeNavigationRestore(
 		(await shellDeviceStore.get<ShellNavigationRestore>(NAVIGATION_RESTORE_KEY)) ?? null,
 	)
@@ -195,12 +197,10 @@ export async function resolveStartupPath({
 
 	const defaultSpaceId = resolveDefaultSpaceId(spaces)
 	if (navigationRestore.lastScopeKey === 'all') {
-		return (
-			await normalizeRememberedShellPath(
+		return await normalizeRememberedShellPath(
 			navigationRestore.lastRouteByScopeKey.all,
 			spaces,
 			'/spaces/inbox',
-			)
 		)
 	}
 
@@ -251,9 +251,13 @@ async function migrateLegacyDevicePreferencesIfNeeded(input: {
 		}
 	}
 
-	const legacy = await invoke<LegacyShellDevicePreferencesPayload>('get_legacy_shell_device_preferences')
+	const legacy = await invoke<LegacyShellDevicePreferencesPayload>(
+		'get_legacy_shell_device_preferences',
+	)
 	if (!nextSidebar) {
-		nextSidebar = normalizeSidebarDevicePreferences(legacy.sidebar ?? defaultShellSidebarDevicePreferences())
+		nextSidebar = normalizeSidebarDevicePreferences(
+			legacy.sidebar ?? defaultShellSidebarDevicePreferences(),
+		)
 		await shellDeviceStore.set(SIDEBAR_DEVICE_KEY, nextSidebar)
 	}
 	if (!nextUi) {
@@ -335,8 +339,7 @@ function normalizeSidebarDevicePreferences(
 ): ShellSidebarDevicePreferences {
 	return {
 		width: clamp(Math.round(candidate.width), SIDEBAR_WIDTH_MIN, SIDEBAR_WIDTH_MAX),
-		desktopPreference:
-			candidate.desktopPreference === 'collapsed' ? 'collapsed' : 'expanded',
+		desktopPreference: candidate.desktopPreference === 'collapsed' ? 'collapsed' : 'expanded',
 		projectSectionCollapsed: candidate.projectSectionCollapsed === true,
 		projectSectionMaxVisible:
 			typeof candidate.projectSectionMaxVisible === 'number' &&
@@ -346,7 +349,9 @@ function normalizeSidebarDevicePreferences(
 	}
 }
 
-function normalizeUiDevicePreferences(candidate: ShellUiDevicePreferences): ShellUiDevicePreferences {
+function normalizeUiDevicePreferences(
+	candidate: ShellUiDevicePreferences,
+): ShellUiDevicePreferences {
 	return {
 		taskDrawerWidth:
 			typeof candidate.taskDrawerWidth === 'number' && candidate.taskDrawerWidth > 0
@@ -365,7 +370,8 @@ function normalizeNavigationRestore(
 	const lastScopeKey = isShellScopeKey(candidate.lastScopeKey) ? candidate.lastScopeKey : 'all'
 	const lastRouteByScopeKey = Object.fromEntries(
 		Object.entries(candidate.lastRouteByScopeKey ?? {}).filter(
-			([scopeKey, path]) => isShellScopeKey(scopeKey) && typeof path === 'string' && path.length > 0,
+			([scopeKey, path]) =>
+				isShellScopeKey(scopeKey) && typeof path === 'string' && path.length > 0,
 		),
 	)
 

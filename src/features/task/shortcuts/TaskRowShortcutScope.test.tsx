@@ -23,7 +23,9 @@ describe('TaskRowShortcutScope', () => {
 		fireKey('x')
 		flushShortcutTimers()
 
-		expect(actions.onToggleTaskStatus).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-a' }))
+		expect(actions.onToggleTaskStatus).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 'task-a' }),
+		)
 		expect(actions.onToggleTaskSelection).toHaveBeenCalledWith('task-a')
 	})
 
@@ -52,8 +54,14 @@ describe('TaskRowShortcutScope', () => {
 
 		expect(actions.onArchiveTask).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-a' }))
 		expect(actions.onDeleteTask).toHaveBeenCalledTimes(2)
-		expect(actions.onDeleteTask).toHaveBeenNthCalledWith(1, expect.objectContaining({ id: 'task-a' }))
-		expect(actions.onDeleteTask).toHaveBeenNthCalledWith(2, expect.objectContaining({ id: 'task-a' }))
+		expect(actions.onDeleteTask).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({ id: 'task-a' }),
+		)
+		expect(actions.onDeleteTask).toHaveBeenNthCalledWith(
+			2,
+			expect.objectContaining({ id: 'task-a' }),
+		)
 	})
 
 	it('P / S 打开目标行已有优先级和状态菜单', () => {
@@ -113,7 +121,10 @@ function renderScope({
 	selectedTaskIds?: string[]
 	withBlockingLayer?: boolean
 } = {}) {
-	const tasks = [createTask({ id: 'task-a', title: '任务 A' }), createTask({ id: 'task-b', title: '任务 B' })]
+	const tasks = [
+		createTask({ id: 'task-a', title: '任务 A' }),
+		createTask({ id: 'task-b', title: '任务 B' }),
+	]
 
 	render(
 		<>

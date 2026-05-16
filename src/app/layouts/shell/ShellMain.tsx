@@ -136,9 +136,7 @@ export function ShellMain({
 								'group-data-[sidebar-layout=mobile]/sidebar-wrapper:shadow-(--sf-shadow-panel)',
 							)}
 						>
-							<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
-								{children}
-							</div>
+							<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>{children}</div>
 
 							<ShellDrawer
 								activeDrawerId={activeDrawerId}

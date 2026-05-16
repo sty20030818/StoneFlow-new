@@ -245,9 +245,7 @@ export function ActivityDebugPage() {
 										字段变化 ({entry.changes.length})
 									</summary>
 									{entry.changes.length === 0 ? (
-										<p className={activityDebugDetailsEmptyTextClass}>
-											这条事件没有附带字段变化。
-										</p>
+										<p className={activityDebugDetailsEmptyTextClass}>这条事件没有附带字段变化。</p>
 									) : (
 										<div className='mt-3 space-y-3'>
 											{entry.changes.map((change) => (

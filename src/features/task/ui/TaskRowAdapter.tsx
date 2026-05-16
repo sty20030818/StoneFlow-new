@@ -63,8 +63,8 @@ export function TaskRowAdapter({
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
 	const hasProjectOptions = Boolean(
 		projectBinding?.projectOptions &&
-			projectBinding.onSelectProject &&
-			projectBinding.onSelectNoProject,
+		projectBinding.onSelectProject &&
+		projectBinding.onSelectNoProject,
 	)
 
 	return (
@@ -75,21 +75,21 @@ export function TaskRowAdapter({
 			onOpenDetails={() => actions.onOpenTask(task.id)}
 			onToggleStatus={() => void actions.onToggleTaskStatus(task)}
 			status={task.status}
-			>
-				<RowShell.Root
-					aria-label={`打开任务 ${task.title}`}
-					data-shell-task-card='true'
-					data-task-id={task.id}
-					interactive
-					active={isActive}
-					pending={isPending}
-					selected={isSelected}
-					selectionGroupPosition={selectionGroupPosition}
-					onClick={() => actions.onOpenTask(task.id)}
-					onBlur={() => rowShortcutHandlers?.onFocus(null)}
-					onFocus={() => rowShortcutHandlers?.onFocus(task.id)}
-					onMouseEnter={() => rowShortcutHandlers?.onHover(task.id)}
-					onMouseLeave={() => rowShortcutHandlers?.onHover(null)}
+		>
+			<RowShell.Root
+				aria-label={`打开任务 ${task.title}`}
+				data-shell-task-card='true'
+				data-task-id={task.id}
+				interactive
+				active={isActive}
+				pending={isPending}
+				selected={isSelected}
+				selectionGroupPosition={selectionGroupPosition}
+				onClick={() => actions.onOpenTask(task.id)}
+				onBlur={() => rowShortcutHandlers?.onFocus(null)}
+				onFocus={() => rowShortcutHandlers?.onFocus(task.id)}
+				onMouseEnter={() => rowShortcutHandlers?.onHover(task.id)}
+				onMouseLeave={() => rowShortcutHandlers?.onHover(null)}
 			>
 				<RowShell.Left>
 					<RowShell.Leading>
@@ -139,9 +139,7 @@ export function TaskRowAdapter({
 						<ProjectCell
 							disabled={isPending}
 							onSelectNone={
-								hasProjectOptions
-									? () => projectBinding?.onSelectNoProject?.(task)
-									: undefined
+								hasProjectOptions ? () => projectBinding?.onSelectNoProject?.(task) : undefined
 							}
 							onSelectProject={
 								hasProjectOptions

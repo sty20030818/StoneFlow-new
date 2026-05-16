@@ -137,12 +137,10 @@ export function BoardRows({
 	}
 
 	const childArray = Children.toArray(children)
-	const groups: Array<
-		{
-			selected: boolean
-			items: Array<{ child: ReactNode; id?: string; index: number }>
-		}
-	> = []
+	const groups: Array<{
+		selected: boolean
+		items: Array<{ child: ReactNode; id?: string; index: number }>
+	}> = []
 
 	for (let i = 0; i < childArray.length; i++) {
 		const child = childArray[i]
@@ -182,12 +180,9 @@ export function BoardRows({
 								selectionGroupPosition?: RowSelectionGroupPosition
 							}>
 							const selectionGroupPosition = getSelectionGroupPosition(ii, group.items.length)
-							return cloneElement(
-								childElement,
-								{
-									selectionGroupPosition,
-								},
-							)
+							return cloneElement(childElement, {
+								selectionGroupPosition,
+							})
 						})}
 					</div>
 				)
@@ -196,10 +191,7 @@ export function BoardRows({
 	)
 }
 
-function getSelectionGroupPosition(
-	index: number,
-	groupSize: number,
-): RowSelectionGroupPosition {
+function getSelectionGroupPosition(index: number, groupSize: number): RowSelectionGroupPosition {
 	if (groupSize <= 1) {
 		return 'single'
 	}

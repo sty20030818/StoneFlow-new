@@ -164,9 +164,7 @@ function LifecycleBoardSectionBlock({
 			selectedIdSet={selectedEntryIdSet}
 			trailing={
 				selectedCount > 0 ? (
-					<span className={cn('pr-1', ROW_SHELL_META_TEXT_CLASS)}>
-						已选 {selectedCount} 项
-					</span>
+					<span className={cn('pr-1', ROW_SHELL_META_TEXT_CLASS)}>已选 {selectedCount} 项</span>
 				) : undefined
 			}
 		>

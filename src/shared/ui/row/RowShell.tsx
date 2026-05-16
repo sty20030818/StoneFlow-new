@@ -52,8 +52,8 @@ export function RowShellRoot({
 				pending ? 'opacity-75' : null,
 				className,
 			)}
-			role={interactive ? role ?? 'button' : role}
-			tabIndex={interactive ? tabIndex ?? 0 : tabIndex}
+			role={interactive ? (role ?? 'button') : role}
+			tabIndex={interactive ? (tabIndex ?? 0) : tabIndex}
 		>
 			{children}
 		</div>
@@ -80,7 +80,10 @@ export function RowShellIcon({ children, className, ...props }: ComponentProps<'
 	return (
 		<span
 			{...props}
-			className={cn('flex size-4 shrink-0 items-center justify-center text-sf-shell-secondary', className)}
+			className={cn(
+				'flex size-4 shrink-0 items-center justify-center text-sf-shell-secondary',
+				className,
+			)}
 		>
 			{children}
 		</span>

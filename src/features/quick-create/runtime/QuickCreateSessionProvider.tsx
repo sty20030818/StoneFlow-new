@@ -7,18 +7,13 @@ import {
 	type PropsWithChildren,
 } from 'react'
 
-import {
-	closeSession,
-	type QuickCreateCloseReason,
-} from '@/features/quick-create/api/quickCreate'
+import { closeSession, type QuickCreateCloseReason } from '@/features/quick-create/api/quickCreate'
 import {
 	createQuickCreateSessionState,
 	quickCreateSessionReducer,
 } from '@/features/quick-create/runtime/quickCreateSessionReducer'
 import { useQuickCreateSessionBridge } from '@/features/quick-create/runtime/quickCreateSessionBridge'
-import type {
-	QuickCreateSessionContextValue,
-} from '@/features/quick-create/runtime/quickCreateSessionTypes'
+import type { QuickCreateSessionContextValue } from '@/features/quick-create/runtime/quickCreateSessionTypes'
 
 const QuickCreateSessionContext = createContext<QuickCreateSessionContextValue | null>(null)
 

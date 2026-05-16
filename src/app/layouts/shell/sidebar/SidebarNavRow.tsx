@@ -1,14 +1,8 @@
 import type { ComponentType, ReactNode } from 'react'
 import { NavLink, useMatch } from 'react-router-dom'
 
-import {
-	ContextMenu,
-	ContextMenuTrigger,
-} from '@/shared/ui/base/context-menu'
-import {
-	SidebarMenuBadge,
-	SidebarMenuButton,
-} from '@/shared/ui/base/sidebar'
+import { ContextMenu, ContextMenuTrigger } from '@/shared/ui/base/context-menu'
+import { SidebarMenuBadge, SidebarMenuButton } from '@/shared/ui/base/sidebar'
 import {
 	sidebarMenuIconClass,
 	sidebarMenuLabelClass,
@@ -70,9 +64,7 @@ export function SidebarNavRow({
 		</SidebarMenuButton>
 	)
 
-	const stretchedRow = (
-		<div className={sidebarShellNavLinkStretchClass}>{buttonRow}</div>
-	)
+	const stretchedRow = <div className={sidebarShellNavLinkStretchClass}>{buttonRow}</div>
 
 	if (!contextMenuContent) {
 		return stretchedRow

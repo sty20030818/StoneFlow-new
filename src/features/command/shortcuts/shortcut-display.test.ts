@@ -17,7 +17,8 @@ describe('getCommandShortcutTokens', () => {
 	it('返回拆键后的快捷键 token', () => {
 		expect(getCommandShortcutTokens(COMMAND_IDS.openCommandMenu)).toEqual(
 			tokenizeKeybindingSequence(
-				DEFAULT_KEYBINDINGS.find((binding) => binding.commandId === COMMAND_IDS.openCommandMenu)!.sequence,
+				DEFAULT_KEYBINDINGS.find((binding) => binding.commandId === COMMAND_IDS.openCommandMenu)!
+					.sequence,
 			),
 		)
 		expect(getCommandShortcutTokens(COMMAND_IDS.goInbox)).toEqual(

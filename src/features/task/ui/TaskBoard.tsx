@@ -100,7 +100,9 @@ export function TaskBoard({
 	}, [tasks])
 
 	function handleSectionOpenChange(status: TaskStatus, open: boolean) {
-		const nextSections = open ? uniq([...openSections, status]) : openSections.filter((section) => section !== status)
+		const nextSections = open
+			? uniq([...openSections, status])
+			: openSections.filter((section) => section !== status)
 		setProjectTaskBoardOpenSections(nextSections)
 	}
 
@@ -255,10 +257,7 @@ function TaskCustomSection({
 					</Button>
 				}
 			/>
-			<BoardRows
-				selectedIdSet={selectedTaskIdSet}
-				getItemId={(_child, i) => tasks[i]?.id}
-			>
+			<BoardRows selectedIdSet={selectedTaskIdSet} getItemId={(_child, i) => tasks[i]?.id}>
 				{tasks.map((task) => renderTaskRow(task))}
 			</BoardRows>
 		</BoardGroup>

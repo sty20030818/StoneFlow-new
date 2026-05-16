@@ -5,7 +5,10 @@ import {
 	formatDateLabel,
 	formatStatusLabel,
 } from '@/features/quick-create/model/quickCreateFormatters'
-import type { QuickCreatePanelState, QuickCreateResultItem } from '@/features/quick-create/model/types'
+import type {
+	QuickCreatePanelState,
+	QuickCreateResultItem,
+} from '@/features/quick-create/model/types'
 import { formatTaskPlacementLabel } from '@/features/task/model/taskPlacement'
 import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
 
@@ -116,15 +119,12 @@ export function useQuickCreateDerivedState(state: QuickCreatePanelState): QuickC
 
 	return {
 		activeResultIndex:
-			state.focusTarget !== 'none' && state.focusTarget !== 'create'
-				? state.focusTarget.index
-				: -1,
+			state.focusTarget !== 'none' && state.focusTarget !== 'create' ? state.focusTarget.index : -1,
 		continuousToastVisible: state.continuousCreateCount > 0 && !hasTitle,
 		createMeta,
 		displayProjects,
 		displayTasks,
-		enterLabel:
-			state.focusTarget !== 'none' && state.focusTarget !== 'create' ? '打开' : '创建',
+		enterLabel: state.focusTarget !== 'none' && state.focusTarget !== 'create' ? '打开' : '创建',
 		flatItems,
 		hasTitle,
 		isCreateFocused: state.focusTarget === 'create',

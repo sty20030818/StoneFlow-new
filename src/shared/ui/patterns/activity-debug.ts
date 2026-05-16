@@ -13,8 +13,7 @@ export const activityDebugMetaRowClass =
 export const activityDebugCodeBlockClass =
 	'overflow-x-auto rounded-lg bg-muted/60 p-3 text-[12px] leading-5 text-sf-shell-text-secondary'
 
-export const activityDebugDetailsClass =
-	'rounded-lg border border-sf-border-subtle bg-muted/35 p-3'
+export const activityDebugDetailsClass = 'rounded-lg border border-sf-border-subtle bg-muted/35 p-3'
 
 export const activityDebugCompactCodeBlockClass =
 	'overflow-x-auto rounded-md bg-muted/60 p-2 text-[12px] leading-5 text-sf-shell-text-secondary'

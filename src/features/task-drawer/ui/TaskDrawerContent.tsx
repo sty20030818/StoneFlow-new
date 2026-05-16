@@ -474,9 +474,7 @@ export function TaskDrawerContent({
 										<div className='mt-2 flex flex-col gap-1'>
 											{entry.changes.map((change) => (
 												<div className='text-[11px]' key={change.id}>
-													<span className={taskDrawerChangeFieldLabelClass}>
-														{change.field}:
-													</span>{' '}
+													<span className={taskDrawerChangeFieldLabelClass}>{change.field}:</span>{' '}
 													<span className='text-sf-text-secondary'>
 														{JSON.stringify(change.oldValue)} → {JSON.stringify(change.newValue)}
 													</span>

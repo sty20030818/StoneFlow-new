@@ -28,9 +28,7 @@ export function ProjectOverviewList({
 	if (status === 'loading' && items.length === 0) {
 		return (
 			<EmptyPage>
-				<div className={entityBoardLoadingCardClass}>
-					正在读取 Project Overview…
-				</div>
+				<div className={entityBoardLoadingCardClass}>正在读取 Project Overview…</div>
 			</EmptyPage>
 		)
 	}

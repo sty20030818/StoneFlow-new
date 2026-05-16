@@ -42,7 +42,9 @@ export function QuickCreateProjectResultRowAdapter({
 				<RowShell.Title>
 					<div className='min-w-0'>
 						<div className='truncate text-[12.5px] text-foreground'>{item.name}</div>
-						<div className='mt-0.5 truncate text-[11px] text-sf-text-quaternary'>{item.spaceName}</div>
+						<div className='mt-0.5 truncate text-[11px] text-sf-text-quaternary'>
+							{item.spaceName}
+						</div>
 					</div>
 				</RowShell.Title>
 			</RowShell.Left>

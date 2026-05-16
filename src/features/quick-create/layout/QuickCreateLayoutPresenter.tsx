@@ -28,9 +28,7 @@ type QuickCreateLayoutPresenterProps = {
  * layout presenter 只负责测量、resize、present 这条窗口编排链路。
  * shell 层只保留 feature state 到 presenter 的装配关系。
  */
-export function QuickCreateLayoutPresenter({
-	layoutRevisionKey,
-}: QuickCreateLayoutPresenterProps) {
+export function QuickCreateLayoutPresenter({ layoutRevisionKey }: QuickCreateLayoutPresenterProps) {
 	const { actions: sessionActions, state: sessionState } = useQuickCreateSession()
 	const measureKey =
 		'openContext' in sessionState.phase ? sessionState.phase.sessionId : sessionState.phase.type
@@ -52,7 +50,11 @@ export function QuickCreateLayoutPresenter({
 	}, [activeSessionId])
 
 	useEffect(() => {
-		if (!isActiveLayoutPhase(sessionState.phase) || !layout.isReady || layout.targetHeight === null) {
+		if (
+			!isActiveLayoutPhase(sessionState.phase) ||
+			!layout.isReady ||
+			layout.targetHeight === null
+		) {
 			return
 		}
 
@@ -65,8 +67,7 @@ export function QuickCreateLayoutPresenter({
 			lastAppliedResize !== null &&
 			lastAppliedResize.sessionId === sessionId &&
 			Math.abs(lastAppliedResize.height - targetHeight) < QUICK_CREATE_RESIZE_THRESHOLD &&
-			Math.abs(lastAppliedResize.devicePixelRatio - devicePixelRatio) <
-				QUICK_CREATE_DPR_THRESHOLD
+			Math.abs(lastAppliedResize.devicePixelRatio - devicePixelRatio) < QUICK_CREATE_DPR_THRESHOLD
 		) {
 			return
 		}
@@ -207,7 +208,7 @@ function readDevicePixelRatio() {
 }
 
 function readActiveSessionId(phase: QuickCreateSessionPhase): string | null {
-	return 'sessionId' in phase ? phase.sessionId ?? null : null
+	return 'sessionId' in phase ? (phase.sessionId ?? null) : null
 }
 
 function reportQuickCreateLayoutDiagnostics(

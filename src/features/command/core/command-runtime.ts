@@ -1,9 +1,4 @@
-import type {
-	Command,
-	CommandContext,
-	CommandExecutionResult,
-	CommandId,
-} from './command.types'
+import type { Command, CommandContext, CommandExecutionResult, CommandId } from './command.types'
 import type { CommandRegistry } from './command-registry'
 
 type CommandRuntimeOptions = {

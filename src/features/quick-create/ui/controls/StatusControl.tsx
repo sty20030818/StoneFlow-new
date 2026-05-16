@@ -40,11 +40,7 @@ export function StatusControl({
 	return (
 		<DropdownMenu onOpenChange={onOpenChange} open={open}>
 			<DropdownMenuTrigger asChild>
-				<Button
-					disabled={disabled}
-					size='sm'
-					variant='outline'
-				>
+				<Button disabled={disabled} size='sm' variant='outline'>
 					<TaskStatusIndicator status={status} />
 					{formatStatusLabel(status)}
 				</Button>

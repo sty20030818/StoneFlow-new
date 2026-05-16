@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react'
 
-import { formatDateLabel, getQuickDatePreset } from '@/features/quick-create/model/quickCreateFormatters'
+import {
+	formatDateLabel,
+	getQuickDatePreset,
+} from '@/features/quick-create/model/quickCreateFormatters'
 import type { QuickCreatePopoverKey } from '@/features/quick-create/model/types'
 import { Button } from '@/shared/ui/base/button'
 import { Calendar } from '@/shared/ui/base/calendar'
@@ -34,9 +37,7 @@ export function DateControl({
 		<Popover onOpenChange={(nextOpen) => onOpenChange(nextOpen, popoverKey)} open={open}>
 			<PopoverTrigger asChild>
 				<Button
-					className={cn(
-						value ? 'text-foreground' : 'text-sf-text-quaternary',
-					)}
+					className={cn(value ? 'text-foreground' : 'text-sf-text-quaternary')}
 					size='sm'
 					variant='outline'
 				>

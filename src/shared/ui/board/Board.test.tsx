@@ -45,14 +45,12 @@ describe('BoardRows', () => {
 		]
 
 		render(
-			<BoardRows selectedIdSet={new Set(['row-b', 'row-c', 'row-d'])} getItemId={(_child, i) => items[i]?.id}>
+			<BoardRows
+				selectedIdSet={new Set(['row-b', 'row-c', 'row-d'])}
+				getItemId={(_child, i) => items[i]?.id}
+			>
 				{items.map((item) => (
-					<WrappedRow
-						id={item.id}
-						key={item.id}
-						label={item.label}
-						selected={item.selected}
-					/>
+					<WrappedRow id={item.id} key={item.id} label={item.label} selected={item.selected} />
 				))}
 			</BoardRows>,
 		)

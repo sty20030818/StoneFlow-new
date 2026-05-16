@@ -2,7 +2,9 @@ import { COMMAND_IDS, type Command } from '@/features/command/core'
 
 const FILTER_COMMAND_DISABLED_REASON = '筛选命令尚未接入'
 
-function disabledCommand(command: Omit<Command, 'run' | 'isEnabled' | 'getDisabledReason'>): Command {
+function disabledCommand(
+	command: Omit<Command, 'run' | 'isEnabled' | 'getDisabledReason'>,
+): Command {
 	return {
 		...command,
 		isEnabled: () => false,

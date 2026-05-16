@@ -25,7 +25,13 @@ export function useShortcutDigitSelect<TValue>({
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
-			if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.isComposing) {
+			if (
+				event.defaultPrevented ||
+				event.altKey ||
+				event.ctrlKey ||
+				event.metaKey ||
+				event.isComposing
+			) {
 				return
 			}
 

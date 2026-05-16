@@ -35,19 +35,24 @@ export function QuickCreateDomainProvider({ children }: PropsWithChildren) {
 		undefined,
 		createQuickCreateInitialState,
 	)
-	const { closeWindow, focusInput, projectSearchRef, registerHandleEscape, scheduleClose, titleInputRef } =
-		useQuickCreateTransientUi({
-			activePopover: state.activePopover,
-			requestClose: (reason) => sessionActions.requestClose(reason),
-		})
+	const {
+		closeWindow,
+		focusInput,
+		projectSearchRef,
+		registerHandleEscape,
+		scheduleClose,
+		titleInputRef,
+	} = useQuickCreateTransientUi({
+		activePopover: state.activePopover,
+		requestClose: (reason) => sessionActions.requestClose(reason),
+	})
 	const loadProjectsForSpace = useQuickCreateProjectOptions({ dispatch })
 
 	const { refreshRecent } = useQuickCreateLifecycleBridge({
 		dispatch,
 		fetchSnapshot: getOpenContextSnapshot,
 		focusInput,
-		nextOpenContext:
-			'openContext' in sessionState.phase ? sessionState.phase.openContext : null,
+		nextOpenContext: 'openContext' in sessionState.phase ? sessionState.phase.openContext : null,
 		onRefreshRecentError: logRefreshRecentError,
 		shouldFocusInput: sessionState.phase.type === 'visible',
 	})
@@ -88,26 +93,28 @@ export function QuickCreateDomainProvider({ children }: PropsWithChildren) {
 		loadProjectsForSpace,
 	})
 
-	const { handleEscape: baseHandleEscape, handleInputKeyDown, submit } = useQuickCreateSubmitActions(
-		{
-			buildCreateInput,
-			closeWindow,
-			continuousCreateCount: state.continuousCreateCount,
-			createAndOpenTask,
-			createTask,
-			dispatch,
-			draft: state.draft,
-			flatItems,
-			focusInput,
-			focusTarget: state.focusTarget,
-			hasTitle,
-			moveFocus,
-			openTargetResult,
-			refreshRecent,
-			scheduleClose,
-			submitState: state.submitState,
-		},
-	)
+	const {
+		handleEscape: baseHandleEscape,
+		handleInputKeyDown,
+		submit,
+	} = useQuickCreateSubmitActions({
+		buildCreateInput,
+		closeWindow,
+		continuousCreateCount: state.continuousCreateCount,
+		createAndOpenTask,
+		createTask,
+		dispatch,
+		draft: state.draft,
+		flatItems,
+		focusInput,
+		focusTarget: state.focusTarget,
+		hasTitle,
+		moveFocus,
+		openTargetResult,
+		refreshRecent,
+		scheduleClose,
+		submitState: state.submitState,
+	})
 
 	const handleEscape = useCallback(() => {
 		if (state.activePopover) {
@@ -176,9 +183,7 @@ export function QuickCreateDomainProvider({ children }: PropsWithChildren) {
 	)
 
 	return (
-		<QuickCreateDomainContext.Provider value={value}>
-			{children}
-		</QuickCreateDomainContext.Provider>
+		<QuickCreateDomainContext.Provider value={value}>{children}</QuickCreateDomainContext.Provider>
 	)
 }
 

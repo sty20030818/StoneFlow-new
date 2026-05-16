@@ -1,4 +1,9 @@
-import { DEFAULT_KEYBINDINGS, KeybindingRegistry, tokenizeKeybindingSequence, type ShortcutToken } from '@/features/command/keybinding'
+import {
+	DEFAULT_KEYBINDINGS,
+	KeybindingRegistry,
+	tokenizeKeybindingSequence,
+	type ShortcutToken,
+} from '@/features/command/keybinding'
 import type { CommandContext, CommandRuntime } from '@/features/command/core'
 
 import type { CommandMenuGroupKey } from './command-menu-model'
@@ -27,7 +32,10 @@ const GROUPS: Array<{ key: CommandMenuGroupKey; heading: string }> = [
 
 const keybindingRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
-export function buildShortcutHelpGroups(runtime: CommandRuntime, context: CommandContext): ShortcutHelpGroup[] {
+export function buildShortcutHelpGroups(
+	runtime: CommandRuntime,
+	context: CommandContext,
+): ShortcutHelpGroup[] {
 	const entries = runtime
 		.getCommands()
 		.map((command) => ({

@@ -9,7 +9,12 @@ type NavBackForwardProps = {
 	onForward: () => void
 }
 
-export function NavBackForward({ canGoBack, canGoForward, onBack, onForward }: NavBackForwardProps) {
+export function NavBackForward({
+	canGoBack,
+	canGoForward,
+	onBack,
+	onForward,
+}: NavBackForwardProps) {
 	return (
 		<>
 			<Button

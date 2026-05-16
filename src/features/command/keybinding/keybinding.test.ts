@@ -49,8 +49,9 @@ describe('keybinding', () => {
 		] as const
 
 		for (const [key, commandId] of cases) {
-			expect(matchCommand(key, { prefix: { key: 'g' }, scope: 'global', startedAt: 100 }, 200))
-				.toBe(commandId)
+			expect(
+				matchCommand(key, { prefix: { key: 'g' }, scope: 'global', startedAt: 100 }, 200),
+			).toBe(commandId)
 		}
 	})
 
@@ -64,18 +65,21 @@ describe('keybinding', () => {
 		] as const
 
 		for (const [key, commandId] of cases) {
-			expect(matchCommand(key, { prefix: { key: 'o' }, scope: 'global', startedAt: 100 }, 200))
-				.toBe(commandId)
+			expect(
+				matchCommand(key, { prefix: { key: 'o' }, scope: 'global', startedAt: 100 }, 200),
+			).toBe(commandId)
 		}
 	})
 
 	it('格式化 O 组打开命令显示', () => {
 		const registry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
-		expect(formatKeybindingSequence(registry.getByCommandId(COMMAND_IDS.openTask)[0].sequence))
-			.toBe('O T')
-		expect(formatKeybindingSequence(registry.getByCommandId(COMMAND_IDS.openProject)[0].sequence))
-			.toBe('O P')
+		expect(
+			formatKeybindingSequence(registry.getByCommandId(COMMAND_IDS.openTask)[0].sequence),
+		).toBe('O T')
+		expect(
+			formatKeybindingSequence(registry.getByCommandId(COMMAND_IDS.openProject)[0].sequence),
+		).toBe('O P')
 	})
 
 	it('非法第二键取消 chord', () => {
@@ -144,16 +148,15 @@ describe('keybinding', () => {
 	})
 
 	it('格式化平台快捷键显示', () => {
-		expect(formatKeybindingSequence([{ key: 'k', meta: true }], { platform: 'mac' }))
-			.toBe('⌘K')
-		expect(formatKeybindingSequence([{ key: 'k', meta: true }], { platform: 'windows' }))
-			.toBe('Ctrl K')
-		expect(formatKeybindingSequence([{ key: '/', meta: true }], { platform: 'mac' }))
-			.toBe('⌘/')
-		expect(formatKeybindingSequence([{ key: '/', ctrl: true }], { platform: 'windows' }))
-			.toBe('Ctrl /')
-		expect(formatKeybindingSequence([{ key: 'g' }, { key: 'i' }], { platform: 'mac' }))
-			.toBe('G I')
+		expect(formatKeybindingSequence([{ key: 'k', meta: true }], { platform: 'mac' })).toBe('⌘K')
+		expect(formatKeybindingSequence([{ key: 'k', meta: true }], { platform: 'windows' })).toBe(
+			'Ctrl K',
+		)
+		expect(formatKeybindingSequence([{ key: '/', meta: true }], { platform: 'mac' })).toBe('⌘/')
+		expect(formatKeybindingSequence([{ key: '/', ctrl: true }], { platform: 'windows' })).toBe(
+			'Ctrl /',
+		)
+		expect(formatKeybindingSequence([{ key: 'g' }, { key: 'i' }], { platform: 'mac' })).toBe('G I')
 	})
 
 	it('将快捷键拆成键帽 token', () => {

@@ -1,4 +1,8 @@
-import type { QuickCreateSessionAction, QuickCreateSessionPhase, QuickCreateSessionState } from './quickCreateSessionTypes'
+import type {
+	QuickCreateSessionAction,
+	QuickCreateSessionPhase,
+	QuickCreateSessionState,
+} from './quickCreateSessionTypes'
 
 export function createQuickCreateSessionState(): QuickCreateSessionState {
 	return {

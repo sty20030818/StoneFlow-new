@@ -39,8 +39,12 @@ export function ProjectOverviewPage() {
 	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('all_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
 	const scopeKey = scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
-	const { selectedTaskIdSet: selectedProjectIds, selectedCount, toggleTaskSelection: toggleProjectSelection, clearTaskSelection } =
-		useTaskSelection(overview.items.map((item) => item.id))
+	const {
+		selectedTaskIdSet: selectedProjectIds,
+		selectedCount,
+		toggleTaskSelection: toggleProjectSelection,
+		clearTaskSelection,
+	} = useTaskSelection(overview.items.map((item) => item.id))
 	const visibleProjectViews = projectViews.items.filter((view) => view.isVisible)
 
 	useEffect(() => {

@@ -11,7 +11,11 @@ import {
 	globalSearchResultsPopoverClass,
 	globalSearchStateMutedClass,
 } from '@/shared/ui/patterns/global-search'
-import { ROW_SHELL_ACTIVE_CLASS, ROW_SHELL_BASE_CLASS, ROW_SHELL_IDLE_CLASS } from '@/shared/ui/patterns/row-tokens'
+import {
+	ROW_SHELL_ACTIVE_CLASS,
+	ROW_SHELL_BASE_CLASS,
+	ROW_SHELL_IDLE_CLASS,
+} from '@/shared/ui/patterns/row-tokens'
 import { FolderIcon, SearchIcon } from 'lucide-react'
 
 type GlobalSearchResultsProps = {
@@ -54,7 +58,7 @@ export function GlobalSearchResults({
 					) : (
 						<div className='space-y-3'>
 							{errorMessage ? <SearchPanelState label={errorMessage} tone='danger' /> : null}
-							
+
 							{taskItems.length > 0 ? (
 								<section className='space-y-1'>
 									<SearchGroupHeading title='任务' />

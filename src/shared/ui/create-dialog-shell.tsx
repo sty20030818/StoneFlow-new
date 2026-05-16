@@ -52,9 +52,7 @@ export function CreateDialogShell({
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
 			<DialogContent
-				className={cn(
-					fullscreen ? createDialogShellFullscreenClass : createDialogShellClass,
-				)}
+				className={cn(fullscreen ? createDialogShellFullscreenClass : createDialogShellClass)}
 				disableAnimation
 				showCloseButton={false}
 			>
@@ -102,9 +100,7 @@ export function CreateDialogShell({
 					</div>
 				</div>
 
-				<div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
-					{children}
-				</div>
+				<div className='flex min-h-0 flex-1 flex-col overflow-hidden'>{children}</div>
 			</DialogContent>
 		</Dialog>
 	)

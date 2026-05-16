@@ -56,7 +56,11 @@ export function QuickCreateTaskResultRowAdapter({
 					<span className='flex size-7 items-center justify-center rounded-md bg-primary/10 text-primary'>
 						<FolderIcon className='size-3.5' />
 					</span>
-					<span className={cn('rounded border border-sf-border-subtle px-1.5 py-0.5 text-[10.5px] text-sf-text-quaternary')}>
+					<span
+						className={cn(
+							'rounded border border-sf-border-subtle px-1.5 py-0.5 text-[10.5px] text-sf-text-quaternary',
+						)}
+					>
 						任务
 					</span>
 				</RowShell.Actions>

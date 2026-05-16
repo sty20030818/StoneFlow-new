@@ -14,10 +14,7 @@ export function QuickCreateAdvancedMetaBar() {
 	}
 
 	return (
-		<div
-			className={quickCreateAdvancedRowClass}
-			data-testid='quick-create-advanced-meta-bar'
-		>
+		<div className={quickCreateAdvancedRowClass} data-testid='quick-create-advanced-meta-bar'>
 			<StatusControl
 				onOpenChange={(open) => actions.setPopover(open ? 'status' : null)}
 				onStatusChange={actions.setStatus}
@@ -59,9 +56,7 @@ export function QuickCreateAdvancedMetaBar() {
 	)
 }
 
-function handleDatePopoverChange(
-	setPopover: (key: QuickCreatePopoverKey | null) => void,
-) {
+function handleDatePopoverChange(setPopover: (key: QuickCreatePopoverKey | null) => void) {
 	return (open: boolean, key: QuickCreatePopoverKey) => {
 		setPopover(open ? key : null)
 	}

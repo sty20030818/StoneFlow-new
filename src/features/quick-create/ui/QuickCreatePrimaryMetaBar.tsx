@@ -7,9 +7,7 @@ import { QuickCreateTitleInput } from '@/features/quick-create/ui/QuickCreateTit
 import { SpaceControl } from '@/features/quick-create/ui/controls/SpaceControl'
 import { Button } from '@/shared/ui/base/button'
 import { cn } from '@/shared/lib/utils'
-import {
-	quickCreateToolbarRowClass,
-} from '@/shared/ui/patterns/quick-create'
+import { quickCreateToolbarRowClass } from '@/shared/ui/patterns/quick-create'
 
 export function QuickCreatePrimaryMetaBar() {
 	const { actions, derived, state } = useQuickCreate()
@@ -55,7 +53,9 @@ export function QuickCreatePrimaryMetaBar() {
 				size='icon-sm'
 				variant='outline'
 			>
-				<ChevronDownIcon className={cn('size-4 transition-transform', state.isAdvancedOpen ? 'rotate-180' : '')} />
+				<ChevronDownIcon
+					className={cn('size-4 transition-transform', state.isAdvancedOpen ? 'rotate-180' : '')}
+				/>
 			</Button>
 		</div>
 	)

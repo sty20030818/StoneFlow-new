@@ -5,7 +5,11 @@ import type { ProjectOption } from '@/features/project/model/types'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { buildCreatePlacementInput } from '@/features/task/model/taskPlacement'
 import { useTaskStore } from '@/features/task/model/useTaskStore'
-import { PriorityMetaAction, ProjectMetaAction, StatusMetaAction } from '@/features/task/ui/TaskCreateMetaActions'
+import {
+	PriorityMetaAction,
+	ProjectMetaAction,
+	StatusMetaAction,
+} from '@/features/task/ui/TaskCreateMetaActions'
 import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
@@ -155,7 +159,9 @@ export function TaskCreateContent({
 
 	// Cmd+Enter / Ctrl+Enter 提交
 	const handleSubmitRef = useRef(handleSubmit)
-	useEffect(() => { handleSubmitRef.current = handleSubmit })
+	useEffect(() => {
+		handleSubmitRef.current = handleSubmit
+	})
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {

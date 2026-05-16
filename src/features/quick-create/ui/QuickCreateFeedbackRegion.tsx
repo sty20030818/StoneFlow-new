@@ -3,11 +3,7 @@ import type { ComponentProps } from 'react'
 import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import { cn } from '@/shared/lib/utils'
 
-export function QuickCreateFeedbackRegion({
-	className,
-	ref,
-	...props
-}: ComponentProps<'div'>) {
+export function QuickCreateFeedbackRegion({ className, ref, ...props }: ComponentProps<'div'>) {
 	const { derived, state } = useQuickCreate()
 
 	if (!derived.continuousToastVisible) {

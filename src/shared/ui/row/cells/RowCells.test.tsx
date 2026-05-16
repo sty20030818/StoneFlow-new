@@ -198,5 +198,7 @@ describe('Row Cells', () => {
 })
 
 function getShortcutHintDigits() {
-	return [...document.querySelectorAll('[data-slot="shortcut-menu-item-hint"]')].map((item) => item.textContent)
+	return [...document.querySelectorAll('[data-slot="shortcut-menu-item-hint"]')].map(
+		(item) => item.textContent,
+	)
 }

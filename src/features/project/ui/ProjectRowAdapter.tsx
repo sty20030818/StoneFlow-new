@@ -52,9 +52,9 @@ export function ProjectRowAdapter({
 	const showProjectCell = projectBinding?.showProjectCell ?? false
 	const hasProjectOptions = Boolean(
 		showProjectCell &&
-			projectBinding?.projectOptions &&
-			projectBinding.onSelectProject &&
-			projectBinding.onSelectNoProject,
+		projectBinding?.projectOptions &&
+		projectBinding.onSelectProject &&
+		projectBinding.onSelectNoProject,
 	)
 	const hasSelection = typeof actions.onToggleSelected === 'function'
 	const isSelected = rowState.isSelected ?? false
@@ -64,14 +64,14 @@ export function ProjectRowAdapter({
 			isBusy={rowState.isPending}
 			onMoveToTrash={() => actions.onDeleteProject(project.id)}
 			onOpenProject={() => actions.onOpenProject(project.id)}
-			>
-				<RowShell.Root
-					aria-label={`打开项目 ${project.name}`}
-					data-project-id={project.id}
-					interactive
-					selected={isSelected}
-					selectionGroupPosition={selectionGroupPosition}
-					onClick={() => actions.onOpenProject(project.id)}
+		>
+			<RowShell.Root
+				aria-label={`打开项目 ${project.name}`}
+				data-project-id={project.id}
+				interactive
+				selected={isSelected}
+				selectionGroupPosition={selectionGroupPosition}
+				onClick={() => actions.onOpenProject(project.id)}
 				onKeyDown={(event) => {
 					if (event.key === 'Enter' || event.key === ' ') {
 						event.preventDefault()
@@ -112,9 +112,7 @@ export function ProjectRowAdapter({
 							<ProjectCell
 								disabled={rowState.isPending}
 								onSelectNone={hasProjectOptions ? projectBinding?.onSelectNoProject : undefined}
-								onSelectProject={
-									hasProjectOptions ? projectBinding?.onSelectProject : undefined
-								}
+								onSelectProject={hasProjectOptions ? projectBinding?.onSelectProject : undefined}
 								options={hasProjectOptions ? projectBinding?.projectOptions : undefined}
 								projectName={null}
 							/>

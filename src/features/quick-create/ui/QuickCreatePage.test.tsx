@@ -176,7 +176,9 @@ describe('QuickCreatePage', () => {
 		listenMock.mockImplementation(async (event, handler) => {
 			if (event === 'quick-create:session-prepared') {
 				queueMicrotask(() => {
-					void (handler as (event: { payload: ReturnType<typeof createOpenSessionResponse> }) => void)({
+					void (
+						handler as (event: { payload: ReturnType<typeof createOpenSessionResponse> }) => void
+					)({
 						payload: createOpenSessionResponse(),
 					})
 				})
@@ -466,7 +468,9 @@ describe('QuickCreatePage', () => {
 
 			measurePass = 1
 			fireEvent.click(screen.getByLabelText('更多参数'))
-			fireEvent.change(screen.getByLabelText('Quick Create 输入'), { target: { value: '需要创建' } })
+			fireEvent.change(screen.getByLabelText('Quick Create 输入'), {
+				target: { value: '需要创建' },
+			})
 
 			await waitFor(() => {
 				expect(mockedCommitLayout).toHaveBeenCalledWith({
@@ -566,8 +570,13 @@ describe('QuickCreatePage', () => {
 			})
 
 			measurePass = 1
-			fireEvent.change(screen.getByLabelText('Quick Create 输入'), { target: { value: '连续创建任务' } })
-			fireEvent.keyDown(screen.getByLabelText('Quick Create 输入'), { key: 'Enter', shiftKey: true })
+			fireEvent.change(screen.getByLabelText('Quick Create 输入'), {
+				target: { value: '连续创建任务' },
+			})
+			fireEvent.keyDown(screen.getByLabelText('Quick Create 输入'), {
+				key: 'Enter',
+				shiftKey: true,
+			})
 
 			await waitFor(() => {
 				expect(mockedCommitLayout).toHaveBeenCalledWith({

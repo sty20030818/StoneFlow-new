@@ -125,7 +125,7 @@ export function quickCreateDomainReducer(
 							...state.draft,
 							spaceId: action.payload.defaultSpaceId,
 							placement: action.payload.defaultPlacement,
-					  }
+						}
 					: state.draft,
 				projectOptions: shouldAdoptFreshDefaults ? action.payload.projects : state.projectOptions,
 				isProjectOptionsLoading: false,
@@ -147,7 +147,7 @@ export function quickCreateDomainReducer(
 							...state.initialState,
 							recentTasks: action.payload.recentTasks,
 							recentProjects: action.payload.recentProjects,
-					  }
+						}
 					: action.payload,
 			}
 		case 'titleChanged': {
@@ -159,9 +159,7 @@ export function quickCreateDomainReducer(
 				submitState: state.submitState === 'error' ? 'idle' : state.submitState,
 				errorMessage: state.submitState === 'error' ? null : state.errorMessage,
 				message:
-					state.submitState === 'error'
-						? '输入标题创建，或打开最近任务、项目'
-						: state.message,
+					state.submitState === 'error' ? '输入标题创建，或打开最近任务、项目' : state.message,
 			}
 		}
 		case 'priorityChanged':

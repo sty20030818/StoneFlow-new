@@ -61,7 +61,10 @@ export function QuickCreateBoardRegion({
 	])
 
 	return (
-		<div className='w-full min-h-0 shrink-0 overflow-visible' data-testid='quick-create-action-board'>
+		<div
+			className='w-full min-h-0 shrink-0 overflow-visible'
+			data-testid='quick-create-action-board'
+		>
 			<div className='w-full overflow-x-hidden overflow-y-visible'>
 				<div className='flex w-full flex-col px-2'>
 					<BoardRoot className={quickCreateBoardStackClass}>

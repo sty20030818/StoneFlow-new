@@ -1,6 +1,4 @@
-import {
-	shouldIgnoreKeybindingEvent,
-} from './input-guard'
+import { shouldIgnoreKeybindingEvent } from './input-guard'
 import type {
 	Keybinding,
 	KeybindingChordState,

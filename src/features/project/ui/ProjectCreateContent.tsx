@@ -22,7 +22,9 @@ export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreate
 	const createProject = useProjectStore((state) => state.createProject)
 	const [name, setName] = useState('')
 	const [description, setDescription] = useState('')
-	const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
+	const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>(
+		'idle',
+	)
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [createMore, setCreateMore] = useState(false)
 	const titleInputRef = useRef<HTMLInputElement>(null)
@@ -66,12 +68,13 @@ export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreate
 		}
 	}
 
-	const canSubmit =
-		submitState === 'idle' && name.trim().length > 0 && Boolean(selectedSpaceId)
+	const canSubmit = submitState === 'idle' && name.trim().length > 0 && Boolean(selectedSpaceId)
 
 	// Cmd+Enter / Ctrl+Enter 提交
 	const handleSubmitRef = useRef(handleSubmit)
-	useEffect(() => { handleSubmitRef.current = handleSubmit })
+	useEffect(() => {
+		handleSubmitRef.current = handleSubmit
+	})
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {

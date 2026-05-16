@@ -25,8 +25,7 @@ export const dialogShellHeaderClass = 'gap-1.5 border-b border-sf-divider px-6 p
 export const dialogShellBodyClass = 'px-6 py-5'
 export const dialogShellFooterClass =
 	'flex items-center justify-end gap-2 border-t border-sf-divider pt-3'
-export const dialogShellPanelFooterClass =
-	'border-t border-sf-divider bg-muted/60 px-6 py-4'
+export const dialogShellPanelFooterClass = 'border-t border-sf-divider bg-muted/60 px-6 py-4'
 export const dialogShellFloatingBaseClass = 'bg-popover p-0 shadow-(--sf-shadow-float)'
 export const dialogShellTitleClass =
 	'text-[1.0625rem] font-semibold tracking-[-0.02em] text-foreground'

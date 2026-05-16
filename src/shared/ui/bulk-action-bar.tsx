@@ -22,12 +22,7 @@ type BulkActionBarProps = {
  *
  * 使用 `fixed` 定位悬浮在视口底部，不随页面滚动消失。
  */
-export function BulkActionBar({
-	selectedCount,
-	onClear,
-	action,
-	className,
-}: BulkActionBarProps) {
+export function BulkActionBar({ selectedCount, onClear, action, className }: BulkActionBarProps) {
 	if (selectedCount < 1) {
 		return null
 	}
@@ -39,15 +34,9 @@ export function BulkActionBar({
 				className,
 			)}
 		>
-			<div
-				aria-label='批量操作'
-				className={BULK_ACTION_BAR_CLASS}
-				role='toolbar'
-			>
+			<div aria-label='批量操作' className={BULK_ACTION_BAR_CLASS} role='toolbar'>
 				<div className='inline-flex items-center gap-1.5'>
-					<span className={BULK_ACTION_COUNT_PILL_CLASS}>
-						已选 {selectedCount} 项
-					</span>
+					<span className={BULK_ACTION_COUNT_PILL_CLASS}>已选 {selectedCount} 项</span>
 					<Button
 						aria-label='清空已选'
 						className={BULK_ACTION_BUTTON_CLASS}
