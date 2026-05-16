@@ -22,6 +22,7 @@ import {
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
@@ -58,6 +59,10 @@ export function InboxPage() {
 	)
 	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
 		useTaskSelection(taskList.items.map((task) => task.id))
+	useTaskSelectionEscape({
+		hasSelection: selectedCount > 0,
+		clearSelection: clearTaskSelection,
+	})
 
 	useEffect(() => {
 		void loadList({

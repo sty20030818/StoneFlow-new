@@ -1,13 +1,13 @@
 //! Tauri 宿主层：负责窗口、插件、命令注册与主运行时编排。
 
-#[cfg(target_os = "macos")]
-use tauri::{LogicalPosition, TitleBarStyle};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
     Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent,
 };
-use std::sync::atomic::{AtomicBool, Ordering};
+#[cfg(target_os = "macos")]
+use tauri::{LogicalPosition, TitleBarStyle};
 
 use crate::app::state::{ActiveScopeState, CommandHelperState};
 use crate::infrastructure::database::bootstrap_database;
@@ -22,9 +22,9 @@ pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
 const MAIN_TRAY_SHOW_ID: &str = "tray-show-main";
 const MAIN_TRAY_QUIT_ID: &str = "tray-quit";
 const MAIN_WINDOW_WIDTH: f64 = 1360.0;
-const MAIN_WINDOW_HEIGHT: f64 = 900.0;
+const MAIN_WINDOW_HEIGHT: f64 = 980.0;
 const MAIN_WINDOW_MIN_WIDTH: f64 = 500.0;
-const MAIN_WINDOW_MIN_HEIGHT: f64 = 520.0; 
+const MAIN_WINDOW_MIN_HEIGHT: f64 = 520.0;
 
 #[derive(Default)]
 struct ExitControl {
@@ -64,34 +64,45 @@ fn build_main_window(app: &tauri::App) -> tauri::Result<()> {
 }
 
 fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
-    let show = MenuItem::with_id(app, MAIN_TRAY_SHOW_ID, "显示/隐藏主窗口", true, None::<&str>)?;
+    let show = MenuItem::with_id(
+        app,
+        MAIN_TRAY_SHOW_ID,
+        "显示/隐藏主窗口",
+        true,
+        None::<&str>,
+    )?;
     let quit = MenuItem::with_id(app, MAIN_TRAY_QUIT_ID, "退出 StoneFlow", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show, &quit])?;
     TrayIconBuilder::new()
-        .icon(app.default_window_icon().cloned().expect("missing default app icon"))
+        .icon(
+            app.default_window_icon()
+                .cloned()
+                .expect("missing default app icon"),
+        )
         .show_menu_on_left_click(false)
         .menu(&menu)
         .on_menu_event(
             move |app_handle: &tauri::AppHandle<tauri::Wry>, event: tauri::menu::MenuEvent| {
                 match event.id.as_ref() {
-            MAIN_TRAY_SHOW_ID => {
-                if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
-                    toggle_main_window(&window);
-                }
-            }
-            MAIN_TRAY_QUIT_ID => {
-                if let Some(exit_control) = app_handle.try_state::<ExitControl>() {
-                    exit_control.allow_exit.store(true, Ordering::SeqCst);
-                }
-                if let Some(handle) = app_handle.try_state::<supervisor::SupervisorHandle>() {
-                    handle.request_shutdown();
-                    handle.wait_stopped();
-                    app_handle.exit(0);
-                } else {
-                    app_handle.exit(0);
-                }
-            }
-            _ => {}
+                    MAIN_TRAY_SHOW_ID => {
+                        if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
+                            toggle_main_window(&window);
+                        }
+                    }
+                    MAIN_TRAY_QUIT_ID => {
+                        if let Some(exit_control) = app_handle.try_state::<ExitControl>() {
+                            exit_control.allow_exit.store(true, Ordering::SeqCst);
+                        }
+                        if let Some(handle) = app_handle.try_state::<supervisor::SupervisorHandle>()
+                        {
+                            handle.request_shutdown();
+                            handle.wait_stopped();
+                            app_handle.exit(0);
+                        } else {
+                            app_handle.exit(0);
+                        }
+                    }
+                    _ => {}
                 }
             },
         )
@@ -106,7 +117,8 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
                     if button == tauri::tray::MouseButton::Left
                         && button_state == tauri::tray::MouseButtonState::Up
                     {
-                        if let Some(window) = tray.app_handle().get_webview_window(MAIN_WINDOW_LABEL)
+                        if let Some(window) =
+                            tray.app_handle().get_webview_window(MAIN_WINDOW_LABEL)
                         {
                             toggle_main_window(&window);
                         }
@@ -216,27 +228,25 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
     let app = builder()
         .build(context)
         .expect("failed to build StoneFlow Tauri application");
-    app.run(|app_handle, event| {
-        match event {
-            tauri::RunEvent::ExitRequested { ref api, .. } => {
-                let should_allow_exit = app_handle
-                    .try_state::<ExitControl>()
-                    .map(|state| state.allow_exit.load(Ordering::SeqCst))
-                    .unwrap_or(false);
+    app.run(|app_handle, event| match event {
+        tauri::RunEvent::ExitRequested { ref api, .. } => {
+            let should_allow_exit = app_handle
+                .try_state::<ExitControl>()
+                .map(|state| state.allow_exit.load(Ordering::SeqCst))
+                .unwrap_or(false);
 
-                if !should_allow_exit {
-                    api.prevent_exit();
-                    if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
-                        let _ = window.hide();
-                    }
+            if !should_allow_exit {
+                api.prevent_exit();
+                if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
+                    let _ = window.hide();
                 }
             }
-            tauri::RunEvent::Exit => {
-                if let Some(handle) = app_handle.try_state::<supervisor::SupervisorHandle>() {
-                    handle.request_shutdown();
-                }
-            }
-            _ => {}
         }
+        tauri::RunEvent::Exit => {
+            if let Some(handle) = app_handle.try_state::<supervisor::SupervisorHandle>() {
+                handle.request_shutdown();
+            }
+        }
+        _ => {}
     });
 }

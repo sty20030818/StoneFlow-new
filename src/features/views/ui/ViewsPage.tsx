@@ -10,6 +10,7 @@ import { selectProjectOptions, useProjectStore } from '@/features/project/model/
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import {
 	selectTaskViewRun,
@@ -130,6 +131,10 @@ export function ViewsPage() {
 	)
 	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
 		useTaskSelection(visibleTasks.map((task) => task.id))
+	useTaskSelectionEscape({
+		hasSelection: selectedCount > 0,
+		clearSelection: clearTaskSelection,
+	})
 
 	function navigateToView(view: View) {
 		void navigate({

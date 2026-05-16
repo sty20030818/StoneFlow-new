@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+
+import {
+	buildTaskSelectionSnapshot,
+	pruneTaskSelection,
+	toggleTaskIdSelection,
+} from './taskSelection'
 
 /**
  * 为任务列表提供最小可用的本地选择状态，并在数据刷新后自动剔除失效项。
@@ -8,10 +14,8 @@ export function useTaskSelection(taskIds: string[]) {
 	const taskIdSignature = taskIds.join('\u0000')
 
 	useEffect(() => {
-		const nextTaskIdSet = new Set(taskIds)
-
 		setSelectedTaskIds((currentIds) => {
-			const nextSelectedTaskIds = currentIds.filter((taskId) => nextTaskIdSet.has(taskId))
+			const nextSelectedTaskIds = pruneTaskSelection(currentIds, taskIds)
 
 			if (
 				nextSelectedTaskIds.length === currentIds.length &&
@@ -26,23 +30,24 @@ export function useTaskSelection(taskIds: string[]) {
 	}, [taskIdSignature])
 
 	const selectedTaskIdSet = useMemo(() => new Set(selectedTaskIds), [selectedTaskIds])
+	const selectionSnapshot = useMemo(
+		() => buildTaskSelectionSnapshot(selectedTaskIds),
+		[selectedTaskIds],
+	)
 	const selectedCount = selectedTaskIds.length
 
-	function toggleTaskSelection(taskId: string) {
-		setSelectedTaskIds((currentIds) =>
-			currentIds.includes(taskId)
-				? currentIds.filter((currentTaskId) => currentTaskId !== taskId)
-				: [...currentIds, taskId],
-		)
-	}
+	const toggleTaskSelection = useCallback((taskId: string) => {
+		setSelectedTaskIds((currentIds) => toggleTaskIdSelection(currentIds, taskId))
+	}, [])
 
-	function clearTaskSelection() {
+	const clearTaskSelection = useCallback(() => {
 		setSelectedTaskIds((currentIds) => (currentIds.length === 0 ? currentIds : []))
-	}
+	}, [])
 
 	return {
 		selectedTaskIds,
 		selectedTaskIdSet,
+		selectionSnapshot,
 		selectedCount,
 		toggleTaskSelection,
 		clearTaskSelection,

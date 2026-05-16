@@ -10,6 +10,7 @@ import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import { CommandIcon } from 'lucide-react'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
@@ -107,6 +108,10 @@ export function ProjectPage() {
 	)
 	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
 		useTaskSelection(filteredTasks.map((task) => task.id))
+	useTaskSelectionEscape({
+		hasSelection: selectedCount > 0,
+		clearSelection: clearTaskSelection,
+	})
 
 	async function runAction(action: string, runner: () => Promise<unknown>) {
 		setBusyAction(action)

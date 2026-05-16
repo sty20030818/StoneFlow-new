@@ -8,6 +8,7 @@ import { selectProjectOptions, useProjectStore } from '@/features/project/model/
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { getTaskPlacement } from '@/features/task/model/taskPlacement'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
@@ -72,6 +73,10 @@ export function AllTasksPage() {
 	)
 	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
 		useTaskSelection(filteredTasks.map((task) => task.id))
+	useTaskSelectionEscape({
+		hasSelection: selectedCount > 0,
+		clearSelection: clearTaskSelection,
+	})
 
 	useEffect(() => {
 		void loadList({

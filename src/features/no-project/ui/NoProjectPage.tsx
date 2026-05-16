@@ -7,6 +7,7 @@ import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
@@ -59,6 +60,10 @@ export function NoProjectPage() {
 	)
 	const { selectedTaskIdSet, selectedCount, toggleTaskSelection, clearTaskSelection } =
 		useTaskSelection(filteredTasks.map((task) => task.id))
+	useTaskSelectionEscape({
+		hasSelection: selectedCount > 0,
+		clearSelection: clearTaskSelection,
+	})
 
 	useEffect(() => {
 		void loadList({
