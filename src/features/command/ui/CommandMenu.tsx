@@ -33,7 +33,12 @@ import {
 } from '@/shared/ui/base/command'
 import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
 import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
-import type { CommandContext, CommandId, CommandRuntime } from '@/features/command/core'
+import type {
+	CommandContext,
+	CommandId,
+	CommandRuntime,
+	CommandSelectedEntity,
+} from '@/features/command/core'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 
 import { ShortcutTokens } from './ShortcutTokens'
@@ -130,6 +135,7 @@ export function CommandMenu({
 					value={query}
 					onValueChange={setQuery}
 				/>
+				<CommandMenuSelectionChips entities={context.selection.entities} />
 				<CommandScrollableList>
 					<CommandEmpty>{getCommandMenuEmptyText(mode, query)}</CommandEmpty>
 					{isScopedMode ? (
@@ -153,6 +159,41 @@ export function CommandMenu({
 				</CommandScrollableList>
 			</Command>
 		</CommandDialog>
+	)
+}
+
+function CommandMenuSelectionChips({ entities }: { entities: CommandSelectedEntity[] }) {
+	if (entities.length === 0) {
+		return null
+	}
+
+	const visibleEntities = entities.slice(0, 4)
+	const hiddenCount = entities.length - visibleEntities.length
+
+	return (
+		<div
+			aria-label='当前选中对象'
+			className='no-scrollbar flex max-h-15 flex-nowrap gap-1.5 overflow-x-auto border-b border-sf-divider px-3 py-2'
+		>
+			{visibleEntities.map((entity) => (
+				<Badge
+					className='max-w-48 justify-start rounded-full px-2.5 text-[11px]'
+					key={`${entity.type}:${entity.id}`}
+					title={entity.subtitle ? `${entity.title} · ${entity.subtitle}` : entity.title}
+					variant='outline'
+				>
+					<span className='truncate'>{entity.title}</span>
+					{entity.subtitle ? (
+						<span className='shrink-0 text-sf-text-tertiary'>· {entity.subtitle}</span>
+					) : null}
+				</Badge>
+			))}
+			{hiddenCount > 0 ? (
+				<Badge className='rounded-full px-2.5 text-[11px]' variant='secondary'>
+					还有 {hiddenCount} 项
+				</Badge>
+			) : null}
+		</div>
 	)
 }
 

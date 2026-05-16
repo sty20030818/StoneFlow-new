@@ -13,7 +13,7 @@ import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
-import { CommandIcon } from 'lucide-react'
+import { BulkCommandMenuAction } from '@/features/command/ui'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import type { TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
@@ -38,7 +38,6 @@ import {
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
 import { BoxIcon, FolderIcon } from 'lucide-react'
-import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 
 type ProjectTaskFilter = 'all' | TaskStatus
 
@@ -121,8 +120,9 @@ export function ProjectPage() {
 				selectedIds: selectionSnapshot.ids,
 				tasks: filteredTasks,
 				fallbackSubtitle: project?.name ?? '当前项目',
+				clearSelection: clearTaskSelection,
 			}),
-		[filteredTasks, project?.name, selectionSnapshot.ids],
+		[clearTaskSelection, filteredTasks, project?.name, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
 	useTaskSelectionEscape({
@@ -199,12 +199,7 @@ export function ProjectPage() {
 			bulkBar={
 				project ? (
 					<BulkActionBar
-						action={
-							<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
-								<CommandIcon className='size-3.5' />
-								批量操作
-							</Button>
-						}
+						action={<BulkCommandMenuAction />}
 						onClear={clearTaskSelection}
 						selectedCount={selectedCount}
 					/>

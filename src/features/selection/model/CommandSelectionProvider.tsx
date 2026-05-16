@@ -110,6 +110,7 @@ function normalizeCommandSelection(
 		ids,
 		entities: selection.entities,
 		primaryEntity: selection.entities[0],
+		clearSelection: selection.clearSelection,
 		source: selection.source,
 		hasSelection: true,
 		isSingleSelection: count === 1,

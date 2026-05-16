@@ -1,9 +1,5 @@
 import { createShellCommandRegistry } from '@/features/command/commands'
-import {
-	CommandRuntime,
-	COMMAND_IDS,
-	createEmptyCommandContext,
-} from '@/features/command/core'
+import { CommandRuntime, COMMAND_IDS, createEmptyCommandContext } from '@/features/command/core'
 import type { ShellCommandActions } from '@/features/command/adapters'
 
 import { buildShortcutHelpGroups, getShortcutHelpShortcut } from './shortcut-help-model'
@@ -14,7 +10,9 @@ describe('shortcut-help-model', () => {
 		const entries = groups.flatMap((group) => group.entries)
 
 		expect(entries.some((entry) => entry.id === COMMAND_IDS.openCommandMenu)).toBe(true)
-		expect(entries.some((entry) => entry.id === COMMAND_IDS.taskComplete && entry.isCommandOnly)).toBe(true)
+		expect(
+			entries.some((entry) => entry.id === COMMAND_IDS.taskComplete && entry.isCommandOnly),
+		).toBe(true)
 	})
 
 	it('快捷键文案来自 registry，未绑定命令返回空', () => {
@@ -41,6 +39,9 @@ function createActions(): ShellCommandActions {
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		completeSelectedTasks: vi.fn(),
+		requestArchiveSelectedTasks: vi.fn(),
+		requestDeleteSelectedTasks: vi.fn(),
 		navigateTo: vi.fn(),
 		goBack: vi.fn(),
 		goForward: vi.fn(),

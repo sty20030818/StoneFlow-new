@@ -1,10 +1,7 @@
 import { render, screen } from '@testing-library/react'
 
 import { createShellCommandRegistry } from '@/features/command/commands'
-import {
-	CommandRuntime,
-	createEmptyCommandContext,
-} from '@/features/command/core'
+import { CommandRuntime, createEmptyCommandContext } from '@/features/command/core'
 import type { ShellCommandActions } from '@/features/command/adapters'
 
 import { ShortcutHelp } from './ShortcutHelp'
@@ -50,6 +47,9 @@ function createActions(): ShellCommandActions {
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		completeSelectedTasks: vi.fn(),
+		requestArchiveSelectedTasks: vi.fn(),
+		requestDeleteSelectedTasks: vi.fn(),
 		navigateTo: vi.fn(),
 		goBack: vi.fn(),
 		goForward: vi.fn(),

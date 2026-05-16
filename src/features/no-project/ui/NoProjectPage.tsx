@@ -11,8 +11,8 @@ import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
+import { BulkCommandMenuAction } from '@/features/command/ui'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
-import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -20,8 +20,7 @@ import {
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
 import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
-import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
-import { CommandIcon, Layers3Icon, PlusIcon, TargetIcon } from 'lucide-react'
+import { Layers3Icon, PlusIcon, TargetIcon } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
 
 type NoProjectFilter = 'all' | TaskStatus
@@ -72,8 +71,9 @@ export function NoProjectPage() {
 				selectedIds: selectionSnapshot.ids,
 				tasks: filteredTasks,
 				fallbackSubtitle: '独立事项',
+				clearSelection: clearTaskSelection,
 			}),
-		[filteredTasks, selectionSnapshot.ids],
+		[clearTaskSelection, filteredTasks, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
 	useTaskSelectionEscape({
@@ -126,12 +126,7 @@ export function NoProjectPage() {
 			breadcrumb={<NoProjectBreadcrumb />}
 			bulkBar={
 				<BulkActionBar
-					action={
-						<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
-							<CommandIcon className='size-3.5' />
-							批量操作
-						</Button>
-					}
+					action={<BulkCommandMenuAction />}
 					onClear={clearTaskSelection}
 					selectedCount={selectedCount}
 				/>

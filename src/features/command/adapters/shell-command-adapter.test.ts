@@ -50,25 +50,22 @@ describe('Shell command adapter', () => {
 		expect(actions.openProjectPicker).toHaveBeenCalledTimes(1)
 	})
 
-	it.each(['archive', 'trash', 'settings'] as const)(
-		'在 %s 页面禁用快速新建任务',
-		async (page) => {
-			const actions = createActions()
-			const runtime = createRuntime(actions, {
-				...createEmptyCommandContext(),
-				route: {
-					page,
-				},
-			})
+	it.each(['archive', 'trash', 'settings'] as const)('在 %s 页面禁用快速新建任务', async (page) => {
+		const actions = createActions()
+		const runtime = createRuntime(actions, {
+			...createEmptyCommandContext(),
+			route: {
+				page,
+			},
+		})
 
-			await expect(runtime.execute(COMMAND_IDS.newQuickTask)).resolves.toEqual({
-				status: 'disabled',
-				commandId: COMMAND_IDS.newQuickTask,
-				reason: '当前页面不支持快速新建任务',
-			})
-			expect(actions.openQuickTaskCreate).not.toHaveBeenCalled()
-		},
-	)
+		await expect(runtime.execute(COMMAND_IDS.newQuickTask)).resolves.toEqual({
+			status: 'disabled',
+			commandId: COMMAND_IDS.newQuickTask,
+			reason: '当前页面不支持快速新建任务',
+		})
+		expect(actions.openQuickTaskCreate).not.toHaveBeenCalled()
+	})
 
 	it('未接入 UI 的 new.view 返回 disabled 且不产生副作用', async () => {
 		const actions = createActions()
@@ -111,19 +108,18 @@ describe('Shell command adapter', () => {
 		expect(actions.goForward).toHaveBeenCalledTimes(1)
 	})
 
-	it.each([
-		COMMAND_IDS.goToday,
-		COMMAND_IDS.goUpcoming,
-		COMMAND_IDS.goRecent,
-	])('未确认真实页面的导航命令 %s 返回 disabled', async (commandId) => {
-		const runtime = createRuntime(createActions())
+	it.each([COMMAND_IDS.goToday, COMMAND_IDS.goUpcoming, COMMAND_IDS.goRecent])(
+		'未确认真实页面的导航命令 %s 返回 disabled',
+		async (commandId) => {
+			const runtime = createRuntime(createActions())
 
-		await expect(runtime.execute(commandId)).resolves.toMatchObject({
-			status: 'disabled',
-			commandId,
-			reason: '目标页面尚未接入',
-		})
-	})
+			await expect(runtime.execute(commandId)).resolves.toMatchObject({
+				status: 'disabled',
+				commandId,
+				reason: '目标页面尚未接入',
+			})
+		},
+	)
 
 	it.each([
 		[COMMAND_IDS.openView, '视图搜索尚未接入'],
@@ -140,7 +136,6 @@ describe('Shell command adapter', () => {
 	})
 
 	it.each([
-		[COMMAND_IDS.taskComplete, 'Row 上下文尚未接入'],
 		[COMMAND_IDS.taskSetPriority, 'Row 菜单快捷操作尚未接入'],
 		[COMMAND_IDS.taskMoveToProject, 'Row 上下文尚未接入'],
 		[COMMAND_IDS.projectRename, '项目命令尚未接入'],
@@ -159,6 +154,50 @@ describe('Shell command adapter', () => {
 		})
 	})
 
+	it.each([
+		[COMMAND_IDS.taskComplete, 'completeSelectedTasks'],
+		[COMMAND_IDS.taskArchive, 'requestArchiveSelectedTasks'],
+		[COMMAND_IDS.taskDelete, 'requestDeleteSelectedTasks'],
+	] as const)('有 task selection 时执行批量任务命令 %s', async (commandId, actionName) => {
+		const actions = createActions()
+		const context = {
+			...createEmptyCommandContext(),
+			selection: {
+				type: 'task' as const,
+				ids: ['task-a', 'task-b'],
+				entities: [
+					{ id: 'task-a', type: 'task' as const, title: '任务 A' },
+					{ id: 'task-b', type: 'task' as const, title: '任务 B' },
+				],
+				primaryEntity: { id: 'task-a', type: 'task' as const, title: '任务 A' },
+				source: 'task-list' as const,
+				hasSelection: true,
+				isSingleSelection: false,
+				isMultiSelection: true,
+			},
+		}
+		const runtime = createRuntime(actions, context)
+
+		await expect(runtime.execute(commandId)).resolves.toMatchObject({
+			status: 'success',
+			commandId,
+		})
+		expect(actions[actionName]).toHaveBeenCalledWith(context)
+	})
+
+	it.each([COMMAND_IDS.taskComplete, COMMAND_IDS.taskArchive, COMMAND_IDS.taskDelete])(
+		'没有 task selection 时禁用批量任务命令 %s',
+		async (commandId) => {
+			const runtime = createRuntime(createActions())
+
+			await expect(runtime.execute(commandId)).resolves.toMatchObject({
+				status: 'disabled',
+				commandId,
+				reason: '需要先选择任务',
+			})
+		},
+	)
+
 	it('Shell action 抛错时 Runtime 返回 failed', async () => {
 		const error = new Error('search failed')
 		const actions = createActions({
@@ -176,7 +215,10 @@ describe('Shell command adapter', () => {
 	})
 })
 
-function createRuntime(actions: ShellCommandActions, context: CommandContext = createEmptyCommandContext()) {
+function createRuntime(
+	actions: ShellCommandActions,
+	context: CommandContext = createEmptyCommandContext(),
+) {
 	return new CommandRuntime({
 		registry: createShellCommandRegistry(actions),
 		getContext: () => context,
@@ -194,6 +236,9 @@ function createActions(overrides: Partial<ShellCommandActions> = {}): ShellComma
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		completeSelectedTasks: vi.fn(),
+		requestArchiveSelectedTasks: vi.fn(),
+		requestDeleteSelectedTasks: vi.fn(),
 		navigateTo: vi.fn(),
 		goBack: vi.fn(),
 		goForward: vi.fn(),

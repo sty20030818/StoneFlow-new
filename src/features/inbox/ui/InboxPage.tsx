@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -19,7 +18,7 @@ import { useTaskListController } from '@/features/task/model/useTaskListControll
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
-import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
+import { BulkCommandMenuAction } from '@/features/command/ui'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import { InboxIcon, PlusIcon } from 'lucide-react'
 
@@ -63,8 +62,9 @@ export function InboxPage() {
 				selectedIds: selectionSnapshot.ids,
 				tasks: taskList.items,
 				fallbackSubtitle: 'Inbox',
+				clearSelection: clearTaskSelection,
 			}),
-		[selectionSnapshot.ids, taskList.items],
+		[clearTaskSelection, selectionSnapshot.ids, taskList.items],
 	)
 	useRegisterCommandSelection(commandSelection)
 	useTaskSelectionEscape({
@@ -115,11 +115,7 @@ export function InboxPage() {
 			breadcrumb={<InboxBreadcrumb />}
 			bulkBar={
 				<BulkActionBar
-					action={
-						<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
-							批量操作
-						</Button>
-					}
+					action={<BulkCommandMenuAction />}
 					onClear={clearTaskSelection}
 					selectedCount={selectedCount}
 				/>

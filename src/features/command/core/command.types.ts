@@ -114,6 +114,7 @@ export type CommandSelectionContext = {
 	ids: string[]
 	entities: CommandSelectedEntity[]
 	primaryEntity?: CommandSelectedEntity
+	clearSelection?: () => void
 	focusedId?: string
 	focusedType?: 'task' | 'project' | 'view'
 	source: 'none' | 'task-list' | 'project-list' | 'bulk-bar' | 'row' | 'drawer'

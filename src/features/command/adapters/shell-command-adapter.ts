@@ -1,4 +1,4 @@
-import type { Command } from '@/features/command/core'
+import type { Command, CommandContext } from '@/features/command/core'
 import { COMMAND_IDS } from '@/features/command/core'
 
 export type ShellNavigationTarget =
@@ -21,6 +21,9 @@ export type ShellCommandActions = {
 	openProjectCreate: () => void
 	openTaskPicker: () => void
 	openProjectPicker: () => void
+	completeSelectedTasks: (ctx: CommandContext) => void | Promise<void>
+	requestArchiveSelectedTasks: (ctx: CommandContext) => void | Promise<void>
+	requestDeleteSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	navigateTo: (target: ShellNavigationTarget) => void
 	goBack: () => void
 	goForward: () => void
@@ -59,6 +62,12 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return { ...command, run: adapter.openTaskPicker }
 		case COMMAND_IDS.openProject:
 			return { ...command, run: adapter.openProjectPicker }
+		case COMMAND_IDS.taskComplete:
+			return bindSelectionTaskCommand(command, adapter.completeSelectedTasks)
+		case COMMAND_IDS.taskArchive:
+			return bindSelectionTaskCommand(command, adapter.requestArchiveSelectedTasks)
+		case COMMAND_IDS.taskDelete:
+			return bindSelectionTaskCommand(command, adapter.requestDeleteSelectedTasks)
 		case COMMAND_IDS.openView:
 			return createDisabledCommand(command, '视图搜索尚未接入')
 		case COMMAND_IDS.openSpace:
@@ -98,4 +107,21 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 		default:
 			return command
 	}
+}
+
+function bindSelectionTaskCommand(
+	command: Command,
+	run: (ctx: CommandContext) => void | Promise<void>,
+): Command {
+	return {
+		...command,
+		isEnabled: (ctx) => hasTaskSelection(ctx),
+		getDisabledReason: (ctx) => (hasTaskSelection(ctx) ? undefined : '需要先选择任务'),
+		getPriority: (ctx) => (ctx.selection.isMultiSelection ? 120 : 90),
+		run,
+	}
+}
+
+function hasTaskSelection(ctx: CommandContext) {
+	return ctx.selection.type === 'task' && ctx.selection.ids.length > 0
 }

@@ -5,6 +5,7 @@ import {
 	COMMAND_IDS,
 	createEmptyCommandContext,
 	type Command,
+	type CommandContext,
 } from '@/features/command/core'
 
 const context = createEmptyCommandContext()
@@ -54,8 +55,14 @@ describe('buildCommandMenuGroups', () => {
 	})
 
 	it('快捷键文案来自默认 keybinding registry', () => {
-		expect(getCommandMenuShortcut(COMMAND_IDS.newQuickTask)).toBe('C')
-		expect(getCommandMenuShortcut(COMMAND_IDS.newFullTask)).toBe('N T')
+		expect(getCommandMenuShortcut(COMMAND_IDS.newQuickTask)?.map((token) => token.value)).toEqual([
+			'C',
+		])
+		expect(getCommandMenuShortcut(COMMAND_IDS.newFullTask)?.map((token) => token.value)).toEqual([
+			'N',
+			'→',
+			'T',
+		])
 	})
 
 	it('完整 V1 分类会生成菜单分组', () => {
@@ -72,16 +79,36 @@ describe('buildCommandMenuGroups', () => {
 
 		const groups = buildCommandMenuGroups(runtime, context)
 
-		expect(groups.map((group) => group.key)).toEqual([
-			'task',
-			'move',
-			'project',
-			'view',
-			'filter',
-			'inbox',
-			'layout',
-			'system',
+		expect(groups.map((group) => group.key)).toEqual(['action', 'project', 'task'])
+	})
+
+	it('有 task selection 时前置批量操作分组，并保留 disabled reason', () => {
+		const runtime = createRuntime([
+			createCommand(COMMAND_IDS.taskComplete, { category: 'task' }),
+			createCommand(COMMAND_IDS.taskArchive, { category: 'task' }),
+			createCommand(COMMAND_IDS.taskSetPriority, {
+				category: 'task',
+				isEnabled: () => false,
+				getDisabledReason: () => '优先级 scoped picker 尚未接入',
+			}),
+			createCommand('test.normalTask', { category: 'task' }),
 		])
+
+		const groups = buildCommandMenuGroups(runtime, createTaskSelectionContext())
+
+		expect(groups[0]?.key).toBe('bulk')
+		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
+			COMMAND_IDS.taskComplete,
+			COMMAND_IDS.taskArchive,
+			COMMAND_IDS.taskSetPriority,
+		])
+		expect(groups[0]?.entries[2]).toMatchObject({
+			disabled: true,
+			disabledReason: '优先级 scoped picker 尚未接入',
+		})
+		expect(
+			groups.find((group) => group.key === 'task')?.entries.map((entry) => entry.command.id),
+		).toEqual(['test.normalTask'])
 	})
 
 	it('未绑定命令没有快捷键文案', () => {
@@ -94,6 +121,22 @@ function createRuntime(commands: Command[]) {
 		registry: new CommandRegistry(commands),
 		getContext: () => context,
 	})
+}
+
+function createTaskSelectionContext(): CommandContext {
+	return {
+		...context,
+		selection: {
+			type: 'task',
+			ids: ['task-a'],
+			entities: [{ id: 'task-a', type: 'task', title: '任务 A' }],
+			primaryEntity: { id: 'task-a', type: 'task', title: '任务 A' },
+			source: 'task-list',
+			hasSelection: true,
+			isSingleSelection: true,
+			isMultiSelection: false,
+		},
+	}
 }
 
 function createCommand(id: string, overrides: Partial<Command> = {}): Command {

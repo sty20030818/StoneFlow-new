@@ -12,10 +12,9 @@ import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
+import { BulkCommandMenuAction } from '@/features/command/ui'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
-import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
-import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -24,7 +23,7 @@ import {
 } from '@/shared/ui/base/breadcrumb'
 import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import type { TaskStatus } from '@/shared/types'
-import { CommandIcon, ListTodoIcon, PlusIcon } from 'lucide-react'
+import { ListTodoIcon, PlusIcon } from 'lucide-react'
 
 type TaskFilter = 'all' | 'noProject' | TaskStatus
 
@@ -85,8 +84,9 @@ export function AllTasksPage() {
 				selectedIds: selectionSnapshot.ids,
 				tasks: filteredTasks,
 				fallbackSubtitle: (task) => (task.inboxAt ? 'Inbox' : '独立事项'),
+				clearSelection: clearTaskSelection,
 			}),
-		[filteredTasks, selectionSnapshot.ids],
+		[clearTaskSelection, filteredTasks, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
 	useTaskSelectionEscape({
@@ -137,12 +137,7 @@ export function AllTasksPage() {
 			breadcrumb={<AllTasksBreadcrumb />}
 			bulkBar={
 				<BulkActionBar
-					action={
-						<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
-							<CommandIcon className='size-3.5' />
-							批量操作
-						</Button>
-					}
+					action={<BulkCommandMenuAction />}
 					onClear={clearTaskSelection}
 					selectedCount={selectedCount}
 				/>

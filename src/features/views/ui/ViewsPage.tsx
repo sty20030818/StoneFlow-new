@@ -13,6 +13,7 @@ import { useTaskListController } from '@/features/task/model/useTaskListControll
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
+import { BulkCommandMenuAction } from '@/features/command/ui'
 import {
 	selectTaskViewRun,
 	selectTaskViews,
@@ -30,8 +31,6 @@ import {
 } from '@/shared/ui/base/breadcrumb'
 import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import { Layers2Icon, PlusIcon } from 'lucide-react'
-
-import { createPendingBulkAction } from '@/app/layouts/entity-scene/TaskBoardAdapter'
 
 export function ViewsPage() {
 	const { scope, spaceId } = useScopeRoute()
@@ -143,8 +142,9 @@ export function ViewsPage() {
 				selectedIds: selectionSnapshot.ids,
 				tasks: visibleTasks,
 				fallbackSubtitle: activeView?.name ?? '当前视图',
+				clearSelection: clearTaskSelection,
 			}),
-		[activeView?.name, selectionSnapshot.ids, visibleTasks],
+		[activeView?.name, clearTaskSelection, selectionSnapshot.ids, visibleTasks],
 	)
 	useRegisterCommandSelection(commandSelection)
 	useTaskSelectionEscape({
@@ -242,7 +242,7 @@ export function ViewsPage() {
 				breadcrumb={<ViewsBreadcrumb />}
 				bulkBar={
 					<BulkActionBar
-						action={createPendingBulkAction('批量能力后续接入')}
+						action={<BulkCommandMenuAction />}
 						onClear={clearTaskSelection}
 						selectedCount={selectedCount}
 					/>

@@ -7,6 +7,7 @@ import {
 	type PropsWithChildren,
 } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -57,7 +58,18 @@ import {
 } from '@/features/space/model/useSpaceStore'
 import { ProjectCreateContent } from '@/features/project/ui/ProjectCreateContent'
 import { TaskCreateContent } from '@/features/task/ui/TaskCreateContent'
+import { useTaskStore } from '@/features/task/model/useTaskStore'
 import { CreateDialogShell } from '@/shared/ui/create-dialog-shell'
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/shared/ui/base/alert-dialog'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import {
 	shellChromeSkeletonMainCardClass,
@@ -78,6 +90,13 @@ import {
 	type ShellNavigationTarget,
 } from '@/features/command'
 import { COMMAND_IDS } from '@/features/command/core'
+
+type PendingBulkTaskConfirmation = {
+	kind: 'archive' | 'delete'
+	ids: string[]
+	count: number
+	clearSelection?: () => void
+}
 
 type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
@@ -126,6 +145,8 @@ function ShellLayoutContent({
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
 	const [commandMenuMode, setCommandMenuMode] = useState<CommandMenuMode>('default')
 	const [chordSession, setChordSession] = useState<CommandChordSession | null>(null)
+	const [pendingBulkTaskConfirmation, setPendingBulkTaskConfirmation] =
+		useState<PendingBulkTaskConfirmation | null>(null)
 	const pendingTaskOpenIntent = useSearchOpenIntentStore(selectPendingTaskOpenIntent)
 	const consumePendingTaskOpenIntent = useSearchOpenIntentStore(
 		(state) => state.consumePendingTaskOpenIntent,
@@ -199,6 +220,9 @@ function ShellLayoutContent({
 	const resetSidebarMainItemsVisibility = useSidebarSettingsStore(
 		(state) => state.resetMainItemsVisibility,
 	)
+	const updateTask = useTaskStore((state) => state.updateTask)
+	const archiveTask = useTaskStore((state) => state.archiveTask)
+	const deleteTask = useTaskStore((state) => state.deleteTask)
 
 	useEffect(() => {
 		if (sidebarSettingsStatus === 'idle') {
@@ -335,6 +359,47 @@ function ShellLayoutContent({
 				setCommandMenuMode('project-picker')
 				setCommandOpen(true)
 			},
+			completeSelectedTasks: async (ctx) => {
+				const taskEntities = ctx.selection.entities.filter((entity) => entity.type === 'task')
+				if (taskEntities.length === 0) {
+					return
+				}
+
+				try {
+					for (const entity of taskEntities) {
+						await updateTask({
+							taskId: entity.id,
+							status: entity.status === 'done' || entity.status === 'canceled' ? 'todo' : 'done',
+						})
+					}
+					toast.success(`已更新 ${taskEntities.length} 个任务`)
+				} catch (error) {
+					toast.error('批量完成任务失败')
+					throw error
+				}
+			},
+			requestArchiveSelectedTasks: (ctx) => {
+				if (ctx.selection.type !== 'task' || ctx.selection.ids.length === 0) {
+					return
+				}
+				setPendingBulkTaskConfirmation({
+					kind: 'archive',
+					ids: [...ctx.selection.ids],
+					count: ctx.selection.ids.length,
+					clearSelection: ctx.selection.clearSelection,
+				})
+			},
+			requestDeleteSelectedTasks: (ctx) => {
+				if (ctx.selection.type !== 'task' || ctx.selection.ids.length === 0) {
+					return
+				}
+				setPendingBulkTaskConfirmation({
+					kind: 'delete',
+					ids: [...ctx.selection.ids],
+					count: ctx.selection.ids.length,
+					clearSelection: ctx.selection.clearSelection,
+				})
+			},
 			navigateTo: (target: ShellNavigationTarget) => {
 				startTransition(() => {
 					navigate(buildScopedSectionPath(currentScope, target, currentSpaceId))
@@ -355,9 +420,37 @@ function ShellLayoutContent({
 			requestSearchFocus,
 			setCommandOpen,
 			setCommandMenuMode,
+			setPendingBulkTaskConfirmation,
 			toggleShortcutHelp,
+			updateTask,
 		],
 	)
+	const confirmPendingBulkTaskAction = useCallback(async () => {
+		const confirmation = pendingBulkTaskConfirmation
+		if (!confirmation) {
+			return
+		}
+
+		try {
+			for (const taskId of confirmation.ids) {
+				if (confirmation.kind === 'archive') {
+					await archiveTask(taskId)
+				} else {
+					await deleteTask(taskId)
+				}
+			}
+			confirmation.clearSelection?.()
+			setPendingBulkTaskConfirmation(null)
+			toast.success(
+				confirmation.kind === 'archive'
+					? `已归档 ${confirmation.count} 个任务`
+					: `已删除 ${confirmation.count} 个任务`,
+			)
+		} catch (error) {
+			toast.error(confirmation.kind === 'archive' ? '批量归档任务失败' : '批量删除任务失败')
+			throw error
+		}
+	}, [archiveTask, deleteTask, pendingBulkTaskConfirmation])
 	const activeShortcutBindings = useMemo<Keybinding[]>(
 		() =>
 			isShortcutHelpOpen
@@ -582,6 +675,43 @@ function ShellLayoutContent({
 					/>
 				)}
 			</CreateDialogShell>
+			<AlertDialog
+				open={pendingBulkTaskConfirmation !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setPendingBulkTaskConfirmation(null)
+					}
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							{pendingBulkTaskConfirmation?.kind === 'delete' ? '删除选中任务？' : '归档选中任务？'}
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							{pendingBulkTaskConfirmation?.kind === 'delete'
+								? `将删除 ${pendingBulkTaskConfirmation.count} 个任务。删除后可在回收站中恢复。`
+								: `将归档 ${pendingBulkTaskConfirmation?.count ?? 0} 个任务。归档后可在归档页中恢复。`}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>取消</AlertDialogCancel>
+						<AlertDialogAction
+							className={
+								pendingBulkTaskConfirmation?.kind === 'delete'
+									? 'border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/15 focus-visible:border-destructive/40 focus-visible:ring-destructive/20'
+									: undefined
+							}
+							onClick={(event) => {
+								event.preventDefault()
+								void confirmPendingBulkTaskAction().catch(() => undefined)
+							}}
+						>
+							{pendingBulkTaskConfirmation?.kind === 'delete' ? '确认删除' : '确认归档'}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 			{/* <ShellFooter navBadges={navBadges} /> */}
 			{/* 占位，保持底部边距 */}
 			<div className='h-2 shrink-0 bg-sf-shell' />

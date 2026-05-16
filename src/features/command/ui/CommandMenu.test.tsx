@@ -6,6 +6,7 @@ import {
 	CommandRuntime,
 	COMMAND_IDS,
 	createEmptyCommandContext,
+	type CommandContext,
 	type CommandId,
 } from '@/features/command/core'
 import type { ShellCommandActions } from '@/features/command/adapters'
@@ -82,7 +83,18 @@ describe('CommandMenu', () => {
 		fireEvent.click(screen.getByText('完成任务'))
 
 		expect(onRunCommand).not.toHaveBeenCalled()
-		expect(screen.getAllByText('Row 上下文尚未接入').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('需要先选择任务').length).toBeGreaterThan(0)
+	})
+
+	it('有任务选择时显示 chips 和批量操作分组', () => {
+		renderCommandMenu({ context: createTaskSelectionContext() })
+
+		expect(screen.getByLabelText('当前选中对象')).toHaveTextContent('任务 A')
+		expect(screen.getByLabelText('当前选中对象')).toHaveTextContent('任务 B')
+		expect(screen.getByText('批量操作')).toBeInTheDocument()
+		expect(screen.getByText('完成任务')).toBeInTheDocument()
+		expect(screen.getByText('归档任务')).toBeInTheDocument()
+		expect(screen.getByText('删除任务')).toBeInTheDocument()
 	})
 
 	it('动态项目区沿用外部导航回调', () => {
@@ -97,10 +109,12 @@ describe('CommandMenu', () => {
 	it('task-picker mode 只渲染任务结果，选择任务后回调并关闭菜单', async () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTask = vi.fn<(task: SearchTaskItem) => void>()
-		mockedSearchEntities.mockResolvedValue(createSearchResult({
-			tasks: [createTaskResult({ id: 'task-a', title: '任务 A' })],
-			projects: [createProjectResult({ id: 'project-a', name: '项目结果 A' })],
-		}))
+		mockedSearchEntities.mockResolvedValue(
+			createSearchResult({
+				tasks: [createTaskResult({ id: 'task-a', title: '任务 A' })],
+				projects: [createProjectResult({ id: 'project-a', name: '项目结果 A' })],
+			}),
+		)
 		renderCommandMenu({ mode: 'task-picker', onOpenChange, onSelectTask })
 
 		fireEvent.change(screen.getByPlaceholderText('搜索任务…'), { target: { value: 'A' } })
@@ -115,10 +129,12 @@ describe('CommandMenu', () => {
 	it('project-picker mode 只渲染项目结果，选择项目后回调并关闭菜单', async () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectProject = vi.fn<(project: SearchProjectItem) => void>()
-		mockedSearchEntities.mockResolvedValue(createSearchResult({
-			tasks: [createTaskResult({ id: 'task-a', title: '任务 A' })],
-			projects: [createProjectResult({ id: 'project-a', name: '项目 A' })],
-		}))
+		mockedSearchEntities.mockResolvedValue(
+			createSearchResult({
+				tasks: [createTaskResult({ id: 'task-a', title: '任务 A' })],
+				projects: [createProjectResult({ id: 'project-a', name: '项目 A' })],
+			}),
+		)
 		renderCommandMenu({ mode: 'project-picker', onOpenChange, onSelectProject })
 
 		fireEvent.change(screen.getByPlaceholderText('搜索项目…'), { target: { value: 'A' } })
@@ -152,22 +168,27 @@ function renderCommandMenu({
 	onRunCommand = vi.fn(),
 	onSelectProject = vi.fn(),
 	onSelectTask = vi.fn(),
+	context = createEmptyCommandContext(),
 }: Partial<{
 	mode: 'default' | 'task-picker' | 'project-picker'
+	context: CommandContext
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTask: (task: SearchTaskItem) => void
 }> = {}) {
-	return render(createCommandMenuElement({
-		mode,
-		onNavigateProject,
-		onOpenChange,
-		onRunCommand,
-		onSelectProject,
-		onSelectTask,
-	}))
+	return render(
+		createCommandMenuElement({
+			mode,
+			onNavigateProject,
+			onOpenChange,
+			onRunCommand,
+			onSelectProject,
+			onSelectTask,
+			context,
+		}),
+	)
 }
 
 function createCommandMenuElement({
@@ -177,8 +198,10 @@ function createCommandMenuElement({
 	onRunCommand = vi.fn(),
 	onSelectProject = vi.fn(),
 	onSelectTask = vi.fn(),
+	context = createEmptyCommandContext(),
 }: Partial<{
 	mode: 'default' | 'task-picker' | 'project-picker'
+	context: CommandContext
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
@@ -187,7 +210,7 @@ function createCommandMenuElement({
 }> = {}) {
 	return (
 		<CommandMenu
-			context={createEmptyCommandContext()}
+			context={context}
 			description='测试'
 			mode={mode}
 			onNavigateProject={onNavigateProject}
@@ -206,7 +229,7 @@ function createCommandMenuElement({
 function createRuntime() {
 	return new CommandRuntime({
 		registry: createShellCommandRegistry(createActions()),
-		getContext: createEmptyCommandContext,
+		getContext: () => createEmptyCommandContext(),
 	})
 }
 
@@ -221,9 +244,31 @@ function createActions(): ShellCommandActions {
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		completeSelectedTasks: vi.fn(),
+		requestArchiveSelectedTasks: vi.fn(),
+		requestDeleteSelectedTasks: vi.fn(),
 		navigateTo: vi.fn(),
 		goBack: vi.fn(),
 		goForward: vi.fn(),
+	}
+}
+
+function createTaskSelectionContext(): CommandContext {
+	return {
+		...createEmptyCommandContext(),
+		selection: {
+			type: 'task',
+			ids: ['task-a', 'task-b'],
+			entities: [
+				{ id: 'task-a', type: 'task', title: '任务 A', subtitle: 'Inbox', status: 'todo' },
+				{ id: 'task-b', type: 'task', title: '任务 B', subtitle: '项目 B', status: 'done' },
+			],
+			primaryEntity: { id: 'task-a', type: 'task', title: '任务 A', subtitle: 'Inbox' },
+			source: 'task-list',
+			hasSelection: true,
+			isSingleSelection: false,
+			isMultiSelection: true,
+		},
 	}
 }
 
