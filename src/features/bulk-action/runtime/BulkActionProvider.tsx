@@ -16,6 +16,7 @@ import {
 	type BulkActionConfirmationRequest,
 	type BulkActionContext as BulkActionRuntimeContextValue,
 	type BulkActionId,
+	type BulkActionPayload,
 	type BulkActionResult,
 	type BulkSelectionSnapshot,
 } from '@/features/bulk-action/core'
@@ -27,6 +28,7 @@ type BulkActionContextValue = {
 	runBulkAction: (
 		actionId: BulkActionId,
 		snapshot: BulkSelectionSnapshot,
+		payload?: BulkActionPayload,
 	) => Promise<BulkActionResult>
 	pendingConfirmation: PendingConfirmation | null
 	isExecuting: boolean
@@ -102,10 +104,14 @@ export function BulkActionProvider({
 	}, [resolvePendingConfirmation])
 
 	const runBulkAction = useCallback(
-		async (actionId: BulkActionId, snapshot: BulkSelectionSnapshot) => {
+		async (
+			actionId: BulkActionId,
+			snapshot: BulkSelectionSnapshot,
+			payload?: BulkActionPayload,
+		) => {
 			setIsExecuting(true)
 			try {
-				const result = await runtime.execute(actionId, snapshot)
+				const result = await runtime.execute(actionId, snapshot, payload)
 				onResult?.(result)
 				return result
 			} finally {

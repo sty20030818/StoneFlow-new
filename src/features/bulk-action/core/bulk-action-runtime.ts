@@ -4,6 +4,7 @@ import type {
 	BulkActionConfirmationRequest,
 	BulkActionContext,
 	BulkActionId,
+	BulkActionPayload,
 	BulkActionResult,
 	BulkSelectionSnapshot,
 } from './bulk-action.types'
@@ -43,6 +44,7 @@ export class BulkActionRuntime {
 	async execute(
 		actionId: BulkActionId,
 		snapshot: BulkSelectionSnapshot,
+		payload?: BulkActionPayload,
 	): Promise<BulkActionResult> {
 		const action = this.registry.get(actionId)
 		if (!action) {
@@ -88,7 +90,7 @@ export class BulkActionRuntime {
 		}
 
 		try {
-			return await action.run(snapshot, this.context)
+			return await action.run(snapshot, this.context, payload)
 		} catch (error) {
 			this.onError?.(error, action, snapshot)
 			return createBulkActionResult({

@@ -122,7 +122,7 @@ describe('BulkActionRuntime', () => {
 			actionId: action.id,
 			succeededIds: ['task-a', 'task-b'],
 		})
-		expect(run).toHaveBeenCalledWith(snapshot, {})
+		expect(run).toHaveBeenCalledWith(snapshot, {}, undefined)
 	})
 
 	it('requiresConfirm 的 action 在取消后返回 cancelled 且不执行', async () => {

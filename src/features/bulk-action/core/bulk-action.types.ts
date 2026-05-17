@@ -23,6 +23,8 @@ export type BulkSelectionEntity = {
 	id: string
 	title: string
 	subtitle?: string
+	status?: string
+	priority?: string
 }
 
 export type BulkSelectionSnapshot = {
@@ -60,7 +62,8 @@ export type BulkActionContext = {
 	meta?: Record<string, unknown>
 }
 
-export type BulkActionAdapter = Record<string, unknown>
+export type BulkActionAdapter = unknown
+export type BulkActionPayload = unknown
 
 export type BulkAction = {
 	id: BulkActionId
@@ -76,7 +79,11 @@ export type BulkAction = {
 		snapshot: BulkSelectionSnapshot,
 		context: BulkActionContext,
 	) => string | undefined
-	run: (snapshot: BulkSelectionSnapshot, context: BulkActionContext) => Promise<BulkActionResult>
+	run: (
+		snapshot: BulkSelectionSnapshot,
+		context: BulkActionContext,
+		payload?: BulkActionPayload,
+	) => Promise<BulkActionResult>
 }
 
 export type BulkActionConfirmationRequest = {

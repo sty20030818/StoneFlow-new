@@ -47,7 +47,7 @@ describe('BulkActionProvider', () => {
 		await waitFor(() => {
 			expect(screen.getByTestId('result-status')).toHaveTextContent('success')
 		})
-		expect(run).toHaveBeenCalledWith(snapshot, {})
+		expect(run).toHaveBeenCalledWith(snapshot, {}, undefined)
 	})
 
 	it('requiresConfirm 的 action 不会立即执行', async () => {
@@ -113,7 +113,7 @@ describe('BulkActionProvider', () => {
 		await waitFor(() => {
 			expect(screen.getByTestId('result-status')).toHaveTextContent('success')
 		})
-		expect(run).toHaveBeenCalledWith(snapshot, {})
+		expect(run).toHaveBeenCalledWith(snapshot, {}, undefined)
 	})
 
 	it('cancel 后返回 cancelled', async () => {

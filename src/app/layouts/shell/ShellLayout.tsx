@@ -62,16 +62,6 @@ import { ProjectCreateContent } from '@/features/project/ui/ProjectCreateContent
 import { TaskCreateContent } from '@/features/task/ui/TaskCreateContent'
 import { useTaskStore } from '@/features/task/model/useTaskStore'
 import { CreateDialogShell } from '@/shared/ui/create-dialog-shell'
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from '@/shared/ui/base/alert-dialog'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import {
 	shellChromeSkeletonMainCardClass,
@@ -90,16 +80,20 @@ import {
 	type ShellCommandActions,
 	type ShellNavigationTarget,
 } from '@/features/command'
-import { COMMAND_IDS } from '@/features/command/core'
+import { COMMAND_IDS, type CommandContext } from '@/features/command/core'
+import {
+	BulkActionConfirmDialog,
+	BulkActionProvider,
+	TASK_BULK_ACTION_IDS,
+	createTaskBulkAdapter,
+	createTaskBulkSelectionSnapshot,
+	taskBulkActions,
+	useBulkActionContext,
+	type BulkActionId,
+	type BulkActionPayload,
+} from '@/features/bulk-action'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskStatus } from '@/shared/types'
-
-type PendingBulkTaskConfirmation = {
-	kind: 'archive' | 'delete'
-	ids: string[]
-	count: number
-	clearSelection?: () => void
-}
 
 type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
@@ -115,6 +109,34 @@ export function ShellLayout({
 }: ShellLayoutProps) {
 	return (
 		<CommandSelectionProvider>
+			<ShellLayoutBulkActionBoundary
+				activeSection={activeSection}
+				currentScope={currentScope}
+				currentSpaceId={currentSpaceId}
+			>
+				{children}
+			</ShellLayoutBulkActionBoundary>
+		</CommandSelectionProvider>
+	)
+}
+
+function ShellLayoutBulkActionBoundary({
+	children,
+	currentScope,
+	currentSpaceId,
+	activeSection,
+}: ShellLayoutProps) {
+	const refreshLoadedTaskSlices = useTaskStore((state) => state.refreshLoadedSlices)
+	const taskBulkAdapter = useMemo(
+		() =>
+			createTaskBulkAdapter({
+				refreshLoadedSlices: refreshLoadedTaskSlices,
+			}),
+		[refreshLoadedTaskSlices],
+	)
+
+	return (
+		<BulkActionProvider actions={taskBulkActions} context={{ adapter: taskBulkAdapter }}>
 			<ShellLayoutContent
 				activeSection={activeSection}
 				currentScope={currentScope}
@@ -122,7 +144,7 @@ export function ShellLayout({
 			>
 				{children}
 			</ShellLayoutContent>
-		</CommandSelectionProvider>
+		</BulkActionProvider>
 	)
 }
 
@@ -149,8 +171,13 @@ function ShellLayoutContent({
 	const toggleTaskCreatePresentation = useDialogStore((state) => state.toggleTaskCreatePresentation)
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
 	const [chordSession, setChordSession] = useState<CommandChordSession | null>(null)
-	const [pendingBulkTaskConfirmation, setPendingBulkTaskConfirmation] =
-		useState<PendingBulkTaskConfirmation | null>(null)
+	const {
+		cancelPendingAction,
+		confirmPendingAction,
+		isExecuting: isBulkActionExecuting,
+		pendingConfirmation: pendingBulkActionConfirmation,
+		runBulkAction,
+	} = useBulkActionContext()
 	const pendingTaskOpenIntent = useSearchOpenIntentStore(selectPendingTaskOpenIntent)
 	const consumePendingTaskOpenIntent = useSearchOpenIntentStore(
 		(state) => state.consumePendingTaskOpenIntent,
@@ -224,10 +251,6 @@ function ShellLayoutContent({
 	const resetSidebarMainItemsVisibility = useSidebarSettingsStore(
 		(state) => state.resetMainItemsVisibility,
 	)
-	const updateTask = useTaskStore((state) => state.updateTask)
-	const archiveTask = useTaskStore((state) => state.archiveTask)
-	const deleteTask = useTaskStore((state) => state.deleteTask)
-
 	useEffect(() => {
 		if (sidebarSettingsStatus === 'idle') {
 			void loadSidebarSettings()
@@ -336,6 +359,43 @@ function ShellLayoutContent({
 		},
 		[setCommandOpen],
 	)
+	const runTaskBulkActionFromCommand = useCallback(
+		async (ctx: CommandContext, actionId: BulkActionId, payload?: BulkActionPayload) => {
+			if (ctx.selection.type !== 'task' || ctx.selection.ids.length === 0) {
+				return
+			}
+
+			const snapshot = createTaskBulkSelectionSnapshot(ctx.selection, 'command-menu')
+			const result = await runBulkAction(actionId, snapshot, payload)
+
+			if (result.status === 'success') {
+				if (result.shouldClearSelection) {
+					ctx.selection.clearSelection?.()
+				}
+				toast.success(result.message ?? `已更新 ${result.succeededIds.length} 个任务`)
+				return
+			}
+
+			if (result.status === 'partial') {
+				toast.error(
+					result.message ??
+						`已更新 ${result.succeededIds.length} 个任务，${result.failedIds.length} 个失败`,
+				)
+				return
+			}
+
+			if (result.status === 'disabled') {
+				toast.error(result.message ?? '批量操作不可用')
+				return
+			}
+
+			if (result.status === 'failed') {
+				toast.error(result.message ?? '批量操作失败')
+				throw result.error
+			}
+		},
+		[runBulkAction],
+	)
 
 	const shellCommandActions = useMemo<ShellCommandActions>(
 		() => ({
@@ -365,47 +425,12 @@ function ShellLayoutContent({
 			openTaskDatePicker: (ctx) => {
 				useDialogStore.getState().openCommand('task-date-picker', ctx.selection)
 			},
-			completeSelectedTasks: async (ctx) => {
-				const taskEntities = ctx.selection.entities.filter((entity) => entity.type === 'task')
-				if (taskEntities.length === 0) {
-					return
-				}
-
-				try {
-					for (const entity of taskEntities) {
-						await updateTask({
-							taskId: entity.id,
-							status: entity.status === 'done' || entity.status === 'canceled' ? 'todo' : 'done',
-						})
-					}
-					toast.success(`已更新 ${taskEntities.length} 个任务`)
-				} catch (error) {
-					toast.error('批量完成任务失败')
-					throw error
-				}
-			},
-			requestArchiveSelectedTasks: (ctx) => {
-				if (ctx.selection.type !== 'task' || ctx.selection.ids.length === 0) {
-					return
-				}
-				setPendingBulkTaskConfirmation({
-					kind: 'archive',
-					ids: [...ctx.selection.ids],
-					count: ctx.selection.ids.length,
-					clearSelection: ctx.selection.clearSelection,
-				})
-			},
-			requestDeleteSelectedTasks: (ctx) => {
-				if (ctx.selection.type !== 'task' || ctx.selection.ids.length === 0) {
-					return
-				}
-				setPendingBulkTaskConfirmation({
-					kind: 'delete',
-					ids: [...ctx.selection.ids],
-					count: ctx.selection.ids.length,
-					clearSelection: ctx.selection.clearSelection,
-				})
-			},
+			completeSelectedTasks: (ctx) =>
+				runTaskBulkActionFromCommand(ctx, TASK_BULK_ACTION_IDS.completeSelected),
+			requestArchiveSelectedTasks: (ctx) =>
+				runTaskBulkActionFromCommand(ctx, TASK_BULK_ACTION_IDS.archiveSelected),
+			requestDeleteSelectedTasks: (ctx) =>
+				runTaskBulkActionFromCommand(ctx, TASK_BULK_ACTION_IDS.deleteSelected),
 			navigateTo: (target: ShellNavigationTarget) => {
 				startTransition(() => {
 					navigate(buildScopedSectionPath(currentScope, target, currentSpaceId))
@@ -424,37 +449,10 @@ function ShellLayoutContent({
 			openProjectCreateDialog,
 			openTaskCreateDialog,
 			requestSearchFocus,
-			setPendingBulkTaskConfirmation,
+			runTaskBulkActionFromCommand,
 			toggleShortcutHelp,
-			updateTask,
 		],
 	)
-	const confirmPendingBulkTaskAction = useCallback(async () => {
-		const confirmation = pendingBulkTaskConfirmation
-		if (!confirmation) {
-			return
-		}
-
-		try {
-			for (const taskId of confirmation.ids) {
-				if (confirmation.kind === 'archive') {
-					await archiveTask(taskId)
-				} else {
-					await deleteTask(taskId)
-				}
-			}
-			confirmation.clearSelection?.()
-			setPendingBulkTaskConfirmation(null)
-			toast.success(
-				confirmation.kind === 'archive'
-					? `已归档 ${confirmation.count} 个任务`
-					: `已删除 ${confirmation.count} 个任务`,
-			)
-		} catch (error) {
-			toast.error(confirmation.kind === 'archive' ? '批量归档任务失败' : '批量删除任务失败')
-			throw error
-		}
-	}, [archiveTask, deleteTask, pendingBulkTaskConfirmation])
 	const activeShortcutBindings = useMemo<Keybinding[]>(
 		() =>
 			isShortcutHelpOpen
@@ -520,44 +518,42 @@ function ShellLayoutContent({
 	const runCommand = useCommandRunner({ runtime: commandRuntime })
 
 	const updateSelectedTasks = useCallback(
-		async (input: { priority?: TaskPriorityValue; status?: TaskStatus; dueAt?: string | null }) => {
+		async (
+			actionId: BulkActionId,
+			payload: { priority?: TaskPriorityValue; status?: TaskStatus; dueAt?: string | null },
+		) => {
 			if (commandContext.selection.type !== 'task' || commandContext.selection.ids.length === 0) {
 				return
 			}
 
-			try {
-				for (const taskId of commandContext.selection.ids) {
-					await updateTask({
-						taskId,
-						...input,
-					})
-				}
-				toast.success(`已更新 ${commandContext.selection.ids.length} 个任务`)
-			} catch (error) {
-				toast.error('批量更新任务失败')
-				throw error
-			}
+			await runTaskBulkActionFromCommand(commandContext, actionId, payload)
 		},
-		[commandContext.selection.ids, commandContext.selection.type, updateTask],
+		[commandContext, runTaskBulkActionFromCommand],
 	)
 
 	const handleSelectTaskPriority = useCallback(
 		(priority: TaskPriorityValue) => {
-			void updateSelectedTasks({ priority }).catch(() => undefined)
+			void updateSelectedTasks(TASK_BULK_ACTION_IDS.setPrioritySelected, { priority }).catch(
+				() => undefined,
+			)
 		},
 		[updateSelectedTasks],
 	)
 
 	const handleSelectTaskStatus = useCallback(
 		(status: TaskStatus) => {
-			void updateSelectedTasks({ status }).catch(() => undefined)
+			void updateSelectedTasks(TASK_BULK_ACTION_IDS.setStatusSelected, { status }).catch(
+				() => undefined,
+			)
 		},
 		[updateSelectedTasks],
 	)
 
 	const handleSelectTaskDate = useCallback(
 		(dueAt: string | null) => {
-			void updateSelectedTasks({ dueAt }).catch(() => undefined)
+			void updateSelectedTasks(TASK_BULK_ACTION_IDS.setDateSelected, { dueAt }).catch(
+				() => undefined,
+			)
 		},
 		[updateSelectedTasks],
 	)
@@ -726,43 +722,14 @@ function ShellLayoutContent({
 					/>
 				)}
 			</CreateDialogShell>
-			<AlertDialog
-				open={pendingBulkTaskConfirmation !== null}
-				onOpenChange={(open) => {
-					if (!open) {
-						setPendingBulkTaskConfirmation(null)
-					}
-				}}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>
-							{pendingBulkTaskConfirmation?.kind === 'delete' ? '删除选中任务？' : '归档选中任务？'}
-						</AlertDialogTitle>
-						<AlertDialogDescription>
-							{pendingBulkTaskConfirmation?.kind === 'delete'
-								? `将删除 ${pendingBulkTaskConfirmation.count} 个任务。删除后可在回收站中恢复。`
-								: `将归档 ${pendingBulkTaskConfirmation?.count ?? 0} 个任务。归档后可在归档页中恢复。`}
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>取消</AlertDialogCancel>
-						<AlertDialogAction
-							className={
-								pendingBulkTaskConfirmation?.kind === 'delete'
-									? 'border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/15 focus-visible:border-destructive/40 focus-visible:ring-destructive/20'
-									: undefined
-							}
-							onClick={(event) => {
-								event.preventDefault()
-								void confirmPendingBulkTaskAction().catch(() => undefined)
-							}}
-						>
-							{pendingBulkTaskConfirmation?.kind === 'delete' ? '确认删除' : '确认归档'}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+			<BulkActionConfirmDialog
+				isExecuting={isBulkActionExecuting}
+				onCancel={cancelPendingAction}
+				onConfirm={confirmPendingAction}
+				onOpenChange={() => undefined}
+				open={pendingBulkActionConfirmation !== null}
+				request={pendingBulkActionConfirmation}
+			/>
 			{/* <ShellFooter navBadges={navBadges} /> */}
 			{/* 占位，保持底部边距 */}
 			<div className='h-2 shrink-0 bg-sf-shell' />

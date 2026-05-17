@@ -1,1 +1,6 @@
-export { getTaskBulkActionDefinition, taskBulkActionDefinitions } from './task.bulk-actions'
+export {
+	getTaskBulkActionDefinition,
+	taskBulkActionDefinitions,
+	taskBulkActions,
+	type TaskBulkActionPayload,
+} from './task.bulk-actions'

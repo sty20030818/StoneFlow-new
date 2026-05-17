@@ -2,9 +2,19 @@ import {
 	TASK_BULK_ACTION_IDS,
 	type BulkAction,
 	type BulkActionId,
+	type BulkActionPayload,
+	createBulkActionResult,
 } from '@/features/bulk-action/core'
+import type { TaskBulkAdapter, TaskBulkMutationReport } from '@/features/bulk-action/adapters'
+import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskStatus } from '@/shared/types'
 
 type TaskBulkActionDefinition = Omit<BulkAction, 'run'>
+
+export type TaskBulkActionPayload =
+	| { priority: TaskPriorityValue }
+	| { status: TaskStatus }
+	| { dueAt: string | null }
 
 export const taskBulkActionDefinitions: TaskBulkActionDefinition[] = [
 	{
@@ -64,6 +74,148 @@ export const taskBulkActionDefinitions: TaskBulkActionDefinition[] = [
 	},
 ]
 
+export const taskBulkActions: BulkAction[] = taskBulkActionDefinitions.map((definition) => ({
+	...definition,
+	run: async (snapshot, context, payload) => {
+		const adapter = getTaskBulkAdapter(context.adapter)
+		if (!adapter) {
+			return createBulkActionResult({
+				status: 'failed',
+				actionId: definition.id,
+				snapshot,
+				error: new Error('task bulk adapter is not available'),
+			})
+		}
+
+		switch (definition.id) {
+			case TASK_BULK_ACTION_IDS.completeSelected:
+				return toBulkActionResult(definition.id, snapshot, await adapter.complete(snapshot), {
+					getMessage: (report) => `已更新 ${report.succeededIds.length} 个任务`,
+				})
+			case TASK_BULK_ACTION_IDS.archiveSelected:
+				return toBulkActionResult(definition.id, snapshot, await adapter.archive(snapshot.ids), {
+					getMessage: (report) => `已归档 ${report.succeededIds.length} 个任务`,
+					shouldClearSelection: true,
+				})
+			case TASK_BULK_ACTION_IDS.deleteSelected:
+				return toBulkActionResult(definition.id, snapshot, await adapter.delete(snapshot.ids), {
+					getMessage: (report) => `已删除 ${report.succeededIds.length} 个任务`,
+					shouldClearSelection: true,
+				})
+			case TASK_BULK_ACTION_IDS.setPrioritySelected: {
+				if (!isPriorityPayload(payload)) {
+					return createMissingPayloadResult(definition.id, snapshot, 'priority')
+				}
+				return toBulkActionResult(
+					definition.id,
+					snapshot,
+					await adapter.updatePriority(snapshot.ids, payload.priority),
+					{ getMessage: (report) => `已更新 ${report.succeededIds.length} 个任务` },
+				)
+			}
+			case TASK_BULK_ACTION_IDS.setStatusSelected: {
+				if (!isStatusPayload(payload)) {
+					return createMissingPayloadResult(definition.id, snapshot, 'status')
+				}
+				return toBulkActionResult(
+					definition.id,
+					snapshot,
+					await adapter.updateStatus(snapshot.ids, payload.status),
+					{ getMessage: (report) => `已更新 ${report.succeededIds.length} 个任务` },
+				)
+			}
+			case TASK_BULK_ACTION_IDS.setDateSelected: {
+				if (!isDatePayload(payload)) {
+					return createMissingPayloadResult(definition.id, snapshot, 'dueAt')
+				}
+				return toBulkActionResult(
+					definition.id,
+					snapshot,
+					await adapter.updateDate(snapshot.ids, payload.dueAt),
+					{ getMessage: (report) => `已更新 ${report.succeededIds.length} 个任务` },
+				)
+			}
+			default:
+				return createBulkActionResult({
+					status: 'failed',
+					actionId: definition.id,
+					snapshot,
+					error: new Error(`unsupported task bulk action: ${definition.id}`),
+				})
+		}
+	},
+}))
+
 export function getTaskBulkActionDefinition(actionId: BulkActionId) {
 	return taskBulkActionDefinitions.find((action) => action.id === actionId) ?? null
+}
+
+function getTaskBulkAdapter(adapter: unknown): TaskBulkAdapter | null {
+	if (
+		adapter &&
+		typeof adapter === 'object' &&
+		'complete' in adapter &&
+		'archive' in adapter &&
+		'delete' in adapter &&
+		'updatePriority' in adapter &&
+		'updateStatus' in adapter &&
+		'updateDate' in adapter
+	) {
+		return adapter as TaskBulkAdapter
+	}
+
+	return null
+}
+
+function toBulkActionResult(
+	actionId: BulkActionId,
+	snapshot: Parameters<BulkAction['run']>[0],
+	report: TaskBulkMutationReport,
+	options: {
+		getMessage?: (report: TaskBulkMutationReport) => string
+		shouldClearSelection?: boolean
+	} = {},
+) {
+	const status =
+		report.failedIds.length === 0
+			? 'success'
+			: report.succeededIds.length > 0
+				? 'partial'
+				: 'failed'
+
+	return createBulkActionResult({
+		status,
+		actionId,
+		snapshot,
+		succeededIds: report.succeededIds,
+		failedIds: report.failedIds,
+		message: status === 'success' ? options.getMessage?.(report) : undefined,
+		skippedIds: report.skippedIds,
+		shouldClearSelection: status === 'success' ? options.shouldClearSelection : false,
+	})
+}
+
+function createMissingPayloadResult(
+	actionId: BulkActionId,
+	snapshot: Parameters<BulkAction['run']>[0],
+	fieldName: string,
+) {
+	return createBulkActionResult({
+		status: 'disabled',
+		actionId,
+		snapshot,
+		message: `缺少批量任务参数：${fieldName}`,
+	})
+}
+
+function isPriorityPayload(payload: BulkActionPayload): payload is { priority: TaskPriorityValue } {
+	return Boolean(payload && typeof payload === 'object' && 'priority' in payload)
+}
+
+function isStatusPayload(payload: BulkActionPayload): payload is { status: TaskStatus } {
+	return Boolean(payload && typeof payload === 'object' && 'status' in payload)
+}
+
+function isDatePayload(payload: BulkActionPayload): payload is { dueAt: string | null } {
+	return Boolean(payload && typeof payload === 'object' && 'dueAt' in payload)
 }

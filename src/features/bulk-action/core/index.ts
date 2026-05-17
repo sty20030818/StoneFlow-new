@@ -6,6 +6,7 @@ export {
 	type BulkActionConfirmationRequest,
 	type BulkActionContext,
 	type BulkActionId,
+	type BulkActionPayload,
 	type BulkActionResult,
 	type BulkActionStatus,
 	type BulkEntityType,
@@ -22,3 +23,4 @@ export {
 	shouldConfirmAction,
 } from './bulk-action-runtime'
 export { createBulkSelectionSnapshot } from './bulk-selection-snapshot'
+export { createTaskBulkSelectionSnapshot } from './task-bulk-selection-snapshot'

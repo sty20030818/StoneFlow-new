@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 
 import type {
 	BulkActionId,
+	BulkActionPayload,
 	BulkActionResult,
 	BulkActionRuntime,
 	BulkSelectionSnapshot,
@@ -14,8 +15,12 @@ type UseBulkActionRunnerOptions = {
 
 export function useBulkActionRunner({ runtime, onResult }: UseBulkActionRunnerOptions) {
 	return useCallback(
-		async (actionId: BulkActionId, snapshot: BulkSelectionSnapshot) => {
-			const result = await runtime.execute(actionId, snapshot)
+		async (
+			actionId: BulkActionId,
+			snapshot: BulkSelectionSnapshot,
+			payload?: BulkActionPayload,
+		) => {
+			const result = await runtime.execute(actionId, snapshot, payload)
 			onResult?.(result)
 			return result
 		},
