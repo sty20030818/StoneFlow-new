@@ -4,15 +4,17 @@ import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
-import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
+import {
+	buildTaskCommandSelection,
+	useEntitySelectionEscape,
+	useRegisterCommandSelection,
+} from '@/features/selection/model'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
-import { BulkActionBar } from '@/features/bulk-action'
-import { BulkCommandMenuAction } from '@/features/command/ui'
+import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import {
 	Breadcrumb,
@@ -84,7 +86,7 @@ export function NoProjectPage() {
 		[clearTaskSelection, filteredTasks, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useTaskSelectionEscape({
+	useEntitySelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearTaskSelection,
 	})

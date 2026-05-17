@@ -7,7 +7,6 @@ import {
 	type PropsWithChildren,
 } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
 
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -87,16 +86,20 @@ import {
 	LIFECYCLE_BULK_ACTION_IDS,
 	PROJECT_BULK_ACTION_IDS,
 	TASK_BULK_ACTION_IDS,
+	createCommandBulkSelectionSnapshot,
 	createLifecycleBulkAdapter,
 	createProjectBulkAdapter,
 	createTaskBulkAdapter,
-	createTaskBulkSelectionSnapshot,
 	lifecycleBulkActions,
 	projectBulkActions,
+	shouldClearBulkSelection,
+	showBulkActionResultToast,
 	taskBulkActions,
 	useBulkActionContext,
 	type BulkActionId,
 	type BulkActionPayload,
+	type BulkActionResultMessageLabels,
+	type BulkEntityType,
 } from '@/features/bulk-action'
 import {
 	selectArchiveEntries,
@@ -403,132 +406,25 @@ function ShellLayoutContent({
 		},
 		[setCommandOpen],
 	)
-	const runTaskBulkActionFromCommand = useCallback(
-		async (ctx: CommandContext, actionId: BulkActionId, payload?: BulkActionPayload) => {
-			if (ctx.selection.type !== 'task' || ctx.selection.ids.length === 0) {
+	const runEntityBulkActionFromCommand = useCallback(
+		async (
+			ctx: CommandContext,
+			entity: BulkEntityType,
+			actionId: BulkActionId,
+			labels: BulkActionResultMessageLabels,
+			payload?: BulkActionPayload,
+		) => {
+			if (ctx.selection.type !== entity || ctx.selection.ids.length === 0) {
 				return
 			}
 
-			const snapshot = createTaskBulkSelectionSnapshot(ctx.selection, 'command-menu')
+			const snapshot = createCommandBulkSelectionSnapshot(ctx.selection, entity, 'command-menu')
 			const result = await runBulkAction(actionId, snapshot, payload)
-
-			if (result.status === 'success') {
-				if (result.shouldClearSelection) {
-					ctx.selection.clearSelection?.()
-				}
-				toast.success(result.message ?? `已更新 ${result.succeededIds.length} 个任务`)
-				return
+			if (shouldClearBulkSelection(result)) {
+				ctx.selection.clearSelection?.()
 			}
-
-			if (result.status === 'partial') {
-				toast.error(
-					result.message ??
-						`已更新 ${result.succeededIds.length} 个任务，${result.failedIds.length} 个失败`,
-				)
-				return
-			}
-
-			if (result.status === 'disabled') {
-				toast.error(result.message ?? '批量操作不可用')
-				return
-			}
-
-			if (result.status === 'failed') {
-				toast.error(result.message ?? '批量操作失败')
-				throw result.error
-			}
-		},
-		[runBulkAction],
-	)
-	const runLifecycleBulkActionFromCommand = useCallback(
-		async (ctx: CommandContext, actionId: BulkActionId) => {
-			if (ctx.selection.type !== 'lifecycle' || ctx.selection.ids.length === 0) {
-				return
-			}
-
-			const snapshot = {
-				entity: 'lifecycle' as const,
-				ids: ctx.selection.entities.map((entity) => entity.id),
-				entities: ctx.selection.entities.map((entity) => ({
-					id: entity.id,
-					title: entity.title,
-					subtitle: entity.subtitle,
-				})),
-				source: 'command-menu' as const,
-				createdAt: Date.now(),
-			}
-			const result = await runBulkAction(actionId, snapshot)
-
-			if (result.status === 'success') {
-				if (result.shouldClearSelection) {
-					ctx.selection.clearSelection?.()
-				}
-				toast.success(result.message ?? `已处理 ${result.succeededIds.length} 个条目`)
-				return
-			}
-
-			if (result.status === 'partial') {
-				toast.error(
-					result.message ??
-						`已处理 ${result.succeededIds.length} 个条目，${result.failedIds.length + result.skippedIds.length} 个失败`,
-				)
-				return
-			}
-
-			if (result.status === 'disabled') {
-				toast.error(result.message ?? '批量操作不可用')
-				return
-			}
-
-			if (result.status === 'failed') {
-				toast.error(result.message ?? '批量操作失败')
-				throw result.error
-			}
-		},
-		[runBulkAction],
-	)
-	const runProjectBulkActionFromCommand = useCallback(
-		async (ctx: CommandContext, actionId: BulkActionId) => {
-			if (ctx.selection.type !== 'project' || ctx.selection.ids.length === 0) {
-				return
-			}
-
-			const snapshot = {
-				entity: 'project' as const,
-				ids: ctx.selection.entities.map((entity) => entity.id),
-				entities: ctx.selection.entities.map((entity) => ({
-					id: entity.id,
-					title: entity.title,
-					subtitle: entity.subtitle,
-				})),
-				source: 'command-menu' as const,
-				createdAt: Date.now(),
-			}
-			const result = await runBulkAction(actionId, snapshot)
-
-			if (result.status === 'success') {
-				if (result.shouldClearSelection) {
-					ctx.selection.clearSelection?.()
-				}
-				toast.success(result.message ?? `已处理 ${result.succeededIds.length} 个项目`)
-				return
-			}
-
-			if (result.status === 'partial') {
-				toast.error(
-					result.message ??
-						`已处理 ${result.succeededIds.length} 个项目，${result.failedIds.length + result.skippedIds.length} 个失败`,
-				)
-				return
-			}
-
-			if (result.status === 'disabled') {
-				toast.error(result.message ?? '批量操作不可用')
-				return
-			}
-
-			if (result.status === 'failed') {
-				toast.error(result.message ?? '批量操作失败')
+			const feedback = showBulkActionResultToast(result, labels)
+			if (feedback.shouldThrow) {
 				throw result.error
 			}
 		},
@@ -564,23 +460,48 @@ function ShellLayoutContent({
 				useDialogStore.getState().openCommand('task-date-picker', ctx.selection)
 			},
 			completeSelectedTasks: (ctx) =>
-				runTaskBulkActionFromCommand(ctx, TASK_BULK_ACTION_IDS.completeSelected),
+				runEntityBulkActionFromCommand(ctx, 'task', TASK_BULK_ACTION_IDS.completeSelected, {
+					successVerb: '更新',
+					entityLabel: '任务',
+				}),
 			requestArchiveSelectedTasks: (ctx) =>
-				runTaskBulkActionFromCommand(ctx, TASK_BULK_ACTION_IDS.archiveSelected),
+				runEntityBulkActionFromCommand(ctx, 'task', TASK_BULK_ACTION_IDS.archiveSelected, {
+					successVerb: '更新',
+					entityLabel: '任务',
+				}),
 			requestDeleteSelectedTasks: (ctx) =>
-				runTaskBulkActionFromCommand(ctx, TASK_BULK_ACTION_IDS.deleteSelected),
+				runEntityBulkActionFromCommand(ctx, 'task', TASK_BULK_ACTION_IDS.deleteSelected, {
+					successVerb: '更新',
+					entityLabel: '任务',
+				}),
 			requestArchiveSelectedProjects: (ctx) =>
-				runProjectBulkActionFromCommand(ctx, PROJECT_BULK_ACTION_IDS.archiveSelected),
+				runEntityBulkActionFromCommand(ctx, 'project', PROJECT_BULK_ACTION_IDS.archiveSelected, {
+					successVerb: '处理',
+					entityLabel: '项目',
+				}),
 			requestDeleteSelectedProjects: (ctx) =>
-				runProjectBulkActionFromCommand(ctx, PROJECT_BULK_ACTION_IDS.deleteSelected),
+				runEntityBulkActionFromCommand(ctx, 'project', PROJECT_BULK_ACTION_IDS.deleteSelected, {
+					successVerb: '处理',
+					entityLabel: '项目',
+				}),
 			restoreSelectedLifecycleEntries: (ctx) =>
-				runLifecycleBulkActionFromCommand(ctx, LIFECYCLE_BULK_ACTION_IDS.restoreSelected),
-			requestDeleteSelectedLifecycleEntries: (ctx) =>
-				runLifecycleBulkActionFromCommand(ctx, LIFECYCLE_BULK_ACTION_IDS.deleteSelected),
-			requestDeletePermanentlySelectedLifecycleEntries: (ctx) =>
-				runLifecycleBulkActionFromCommand(
+				runEntityBulkActionFromCommand(
 					ctx,
+					'lifecycle',
+					LIFECYCLE_BULK_ACTION_IDS.restoreSelected,
+					{ successVerb: '处理', entityLabel: '条目' },
+				),
+			requestDeleteSelectedLifecycleEntries: (ctx) =>
+				runEntityBulkActionFromCommand(ctx, 'lifecycle', LIFECYCLE_BULK_ACTION_IDS.deleteSelected, {
+					successVerb: '处理',
+					entityLabel: '条目',
+				}),
+			requestDeletePermanentlySelectedLifecycleEntries: (ctx) =>
+				runEntityBulkActionFromCommand(
+					ctx,
+					'lifecycle',
 					LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected,
+					{ successVerb: '处理', entityLabel: '条目' },
 				),
 			navigateTo: (target: ShellNavigationTarget) => {
 				startTransition(() => {
@@ -600,9 +521,7 @@ function ShellLayoutContent({
 			openProjectCreateDialog,
 			openTaskCreateDialog,
 			requestSearchFocus,
-			runTaskBulkActionFromCommand,
-			runLifecycleBulkActionFromCommand,
-			runProjectBulkActionFromCommand,
+			runEntityBulkActionFromCommand,
 			toggleShortcutHelp,
 		],
 	)
@@ -679,9 +598,18 @@ function ShellLayoutContent({
 				return
 			}
 
-			await runTaskBulkActionFromCommand(commandContext, actionId, payload)
+			await runEntityBulkActionFromCommand(
+				commandContext,
+				'task',
+				actionId,
+				{
+					successVerb: '更新',
+					entityLabel: '任务',
+				},
+				payload,
+			)
 		},
-		[commandContext, runTaskBulkActionFromCommand],
+		[commandContext, runEntityBulkActionFromCommand],
 	)
 
 	const handleSelectTaskPriority = useCallback(

@@ -12,7 +12,11 @@ import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patter
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
-import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
+import {
+	buildTaskCommandSelection,
+	useEntitySelectionEscape,
+	useRegisterCommandSelection,
+} from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import {
@@ -20,9 +24,7 @@ import {
 	getTaskBoardVisualOrderIds,
 } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import { useTaskSelectionEscape } from '@/features/task/shortcuts'
-import { BulkActionBar } from '@/features/bulk-action'
-import { BulkCommandMenuAction } from '@/features/command/ui'
+import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import { InboxIcon, PlusIcon } from 'lucide-react'
 
@@ -79,7 +81,7 @@ export function InboxPage() {
 		[clearTaskSelection, selectionSnapshot.ids, taskList.items],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useTaskSelectionEscape({
+	useEntitySelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearTaskSelection,
 	})

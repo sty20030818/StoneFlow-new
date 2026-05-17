@@ -7,14 +7,16 @@ import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
-import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
+import {
+	buildTaskCommandSelection,
+	useEntitySelectionEscape,
+	useRegisterCommandSelection,
+} from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import { useTaskSelectionEscape } from '@/features/task/shortcuts'
-import { BulkActionBar } from '@/features/bulk-action'
-import { BulkCommandMenuAction } from '@/features/command/ui'
+import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import {
 	selectTaskViewRun,
 	selectTaskViews,
@@ -155,7 +157,7 @@ export function ViewsPage() {
 		[activeView?.name, clearTaskSelection, selectionSnapshot.ids, visibleTasks],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useTaskSelectionEscape({
+	useEntitySelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearTaskSelection,
 	})

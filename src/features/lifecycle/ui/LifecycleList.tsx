@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
@@ -8,6 +7,9 @@ import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import {
 	BulkActionBar,
 	LIFECYCLE_BULK_ACTION_IDS,
+	createLifecycleBulkSelectionSnapshot,
+	shouldClearBulkSelection,
+	showBulkActionResultToast,
 	useBulkActionContext,
 	type BulkActionId,
 } from '@/features/bulk-action'
@@ -19,9 +21,9 @@ import {
 import {
 	buildLifecycleCommandSelection,
 	useEntitySelection,
+	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
-import { useTaskSelectionEscape } from '@/features/task/shortcuts/useTaskSelectionEscape'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
@@ -83,7 +85,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 		[clearEntrySelection, mode, selectionSnapshot.ids, slice.items],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useTaskSelectionEscape({
+	useEntitySelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearEntrySelection,
 	})
@@ -138,32 +140,14 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 
 	const runLifecycleBulkAction = useCallback(
 		async (actionId: BulkActionId) => {
-			const result = await runBulkAction(actionId, createLifecycleSnapshot(selectedEntries))
-
-			if (result.status === 'success') {
-				if (result.shouldClearSelection) {
-					clearEntrySelection()
-				}
-				toast.success(result.message ?? `已处理 ${result.succeededIds.length} 个条目`)
-				return
+			const result = await runBulkAction(
+				actionId,
+				createLifecycleBulkSelectionSnapshot(selectedEntries, 'bulk-bar'),
+			)
+			if (shouldClearBulkSelection(result)) {
+				clearEntrySelection()
 			}
-
-			if (result.status === 'partial') {
-				toast.error(
-					result.message ??
-						`已处理 ${result.succeededIds.length} 个条目，${result.failedIds.length + result.skippedIds.length} 个失败`,
-				)
-				return
-			}
-
-			if (result.status === 'disabled') {
-				toast.error(result.message ?? '批量操作不可用')
-				return
-			}
-
-			if (result.status === 'failed') {
-				toast.error(result.message ?? '批量操作失败')
-			}
+			showBulkActionResultToast(result, { successVerb: '处理', entityLabel: '条目' })
 		},
 		[clearEntrySelection, runBulkAction, selectedEntries],
 	)
@@ -214,9 +198,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 							<LifecycleBulkBarActions
 								mode={mode}
 								onDeletePermanently={() => {
-									void runLifecycleBulkAction(
-										LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected,
-									)
+									void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected)
 								}}
 								onDelete={() => {
 									void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deleteSelected)
@@ -289,20 +271,6 @@ function LifecycleBulkBarActions({
 			)}
 		</div>
 	)
-}
-
-function createLifecycleSnapshot(entries: LifecycleEntry[]) {
-	return {
-		entity: 'lifecycle' as const,
-		ids: entries.map((entry) => entry.id),
-		entities: entries.map((entry) => ({
-			id: entry.id,
-			title: entry.title,
-			subtitle: entry.projectName ?? entry.spaceName ?? entry.entityType,
-		})),
-		source: 'bulk-bar' as const,
-		createdAt: Date.now(),
-	}
 }
 
 function LifecycleBreadcrumb({ icon: Icon, title }: { icon: LucideIcon; title: string }) {

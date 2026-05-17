@@ -1,5 +1,4 @@
 export { ChordHint } from './ChordHint'
-export { BulkCommandMenuAction } from './BulkCommandMenuAction'
 export { CommandMenu } from './CommandMenu'
 export type { CommandMenuProject } from './CommandMenu'
 export type { CommandMenuMode } from './command-menu-types'

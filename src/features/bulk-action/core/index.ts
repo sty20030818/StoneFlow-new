@@ -26,7 +26,18 @@ export {
 } from './bulk-action-runtime'
 export { createBulkSelectionSnapshot } from './bulk-selection-snapshot'
 export {
+	getBulkActionResultFeedback,
+	shouldClearBulkSelection,
+	type BulkActionResultMessageLabels,
+	type BulkActionResultFeedback,
+} from './bulk-action-result-handling'
+export { createCommandBulkSelectionSnapshot } from './command-bulk-selection-snapshot'
+export {
 	createTaskBulkSelectionSnapshot,
 	createTaskBulkSelectionSnapshotFromTasks,
 } from './task-bulk-selection-snapshot'
 export { createLifecycleBulkSelectionSnapshot } from './lifecycle-bulk-selection-snapshot'
+export {
+	createProjectBulkSelectionSnapshot,
+	createProjectBulkSelectionSnapshotFromProjects,
+} from './project-bulk-selection-snapshot'

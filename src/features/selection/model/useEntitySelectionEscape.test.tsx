@@ -1,11 +1,11 @@
 import { act, renderHook } from '@testing-library/react'
 
-import { useTaskSelectionEscape } from './useTaskSelectionEscape'
+import { useEntitySelectionEscape } from './useEntitySelectionEscape'
 
-describe('useTaskSelectionEscape', () => {
+describe('useEntitySelectionEscape', () => {
 	it('有选择时按 Escape 会清空选择并阻止默认行为', () => {
 		const clearSelection = vi.fn<() => void>()
-		renderHook(() => useTaskSelectionEscape({ hasSelection: true, clearSelection }))
+		renderHook(() => useEntitySelectionEscape({ hasSelection: true, clearSelection }))
 
 		const event = fireEscape()
 
@@ -15,7 +15,7 @@ describe('useTaskSelectionEscape', () => {
 
 	it('没有选择时不处理 Escape', () => {
 		const clearSelection = vi.fn<() => void>()
-		renderHook(() => useTaskSelectionEscape({ hasSelection: false, clearSelection }))
+		renderHook(() => useEntitySelectionEscape({ hasSelection: false, clearSelection }))
 
 		const event = fireEscape()
 
@@ -27,7 +27,7 @@ describe('useTaskSelectionEscape', () => {
 		const clearSelection = vi.fn<() => void>()
 		const input = document.createElement('input')
 		document.body.appendChild(input)
-		renderHook(() => useTaskSelectionEscape({ hasSelection: true, clearSelection }))
+		renderHook(() => useEntitySelectionEscape({ hasSelection: true, clearSelection }))
 
 		const event = fireEscape(input)
 
@@ -50,7 +50,7 @@ describe('useTaskSelectionEscape', () => {
 			const clearSelection = vi.fn<() => void>()
 			document.body.appendChild(blocker)
 			const { unmount } = renderHook(() =>
-				useTaskSelectionEscape({ hasSelection: true, clearSelection }),
+				useEntitySelectionEscape({ hasSelection: true, clearSelection }),
 			)
 
 			fireEscape()

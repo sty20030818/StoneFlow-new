@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-type UseTaskSelectionEscapeOptions = {
+type UseEntitySelectionEscapeOptions = {
 	hasSelection: boolean
 	clearSelection: () => void
 }
@@ -9,12 +9,12 @@ const HIGHER_LAYER_SELECTOR =
 	'[cmdk-root], [data-slot="dialog-content"], [data-slot="dropdown-menu-content"], [data-slot="context-menu-content"], [data-slot="select-content"], [data-slot="popover-content"], [data-slot="sheet-content"], [data-shell-drawer-root="true"]'
 
 /**
- * 任务列表选择态的 Esc 语义：仅在没有更高层弹层、且焦点不在输入态时清空选择。
+ * 实体列表选择态的 Esc 语义：仅在没有更高层弹层、且焦点不在输入态时清空选择。
  */
-export function useTaskSelectionEscape({
+export function useEntitySelectionEscape({
 	hasSelection,
 	clearSelection,
-}: UseTaskSelectionEscapeOptions) {
+}: UseEntitySelectionEscapeOptions) {
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
 			if (event.key !== 'Escape') {

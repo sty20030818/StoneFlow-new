@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { toast } from 'sonner'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import {
 	BulkActionBar,
 	PROJECT_BULK_ACTION_IDS,
+	createProjectBulkSelectionSnapshotFromProjects,
+	shouldClearBulkSelection,
+	showBulkActionResultToast,
 	useBulkActionContext,
 	type BulkActionId,
 } from '@/features/bulk-action'
@@ -19,9 +21,9 @@ import { selectProjectOverview, useProjectStore } from '@/features/project/model
 import {
 	buildProjectCommandSelection,
 	useEntitySelection,
+	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
-import { useTaskSelectionEscape } from '@/features/task/shortcuts/useTaskSelectionEscape'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { selectProjectViews, useViewStore } from '@/features/view/model/useViewStore'
@@ -75,7 +77,7 @@ export function ProjectOverviewPage() {
 		[clearProjectSelection, overview.items, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useTaskSelectionEscape({
+	useEntitySelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearProjectSelection,
 	})
@@ -113,32 +115,14 @@ export function ProjectOverviewPage() {
 
 	const runProjectBulkAction = useCallback(
 		async (actionId: BulkActionId) => {
-			const result = await runBulkAction(actionId, createProjectSnapshot(selectedProjects))
-
-			if (result.status === 'success') {
-				if (result.shouldClearSelection) {
-					clearProjectSelection()
-				}
-				toast.success(result.message ?? `已处理 ${result.succeededIds.length} 个项目`)
-				return
+			const result = await runBulkAction(
+				actionId,
+				createProjectBulkSelectionSnapshotFromProjects(selectedProjects, 'bulk-bar'),
+			)
+			if (shouldClearBulkSelection(result)) {
+				clearProjectSelection()
 			}
-
-			if (result.status === 'partial') {
-				toast.error(
-					result.message ??
-						`已处理 ${result.succeededIds.length} 个项目，${result.failedIds.length + result.skippedIds.length} 个失败`,
-				)
-				return
-			}
-
-			if (result.status === 'disabled') {
-				toast.error(result.message ?? '批量操作不可用')
-				return
-			}
-
-			if (result.status === 'failed') {
-				toast.error(result.message ?? '批量操作失败')
-			}
+			showBulkActionResultToast(result, { successVerb: '处理', entityLabel: '项目' })
 		},
 		[clearProjectSelection, runBulkAction, selectedProjects],
 	)
@@ -260,20 +244,6 @@ function ProjectBulkBarActions({
 			</Button>
 		</div>
 	)
-}
-
-function createProjectSnapshot(projects: Array<{ id: string; name: string; spaceName?: string }>) {
-	return {
-		entity: 'project' as const,
-		ids: projects.map((project) => project.id),
-		entities: projects.map((project) => ({
-			id: project.id,
-			title: project.name,
-			subtitle: project.spaceName,
-		})),
-		source: 'bulk-bar' as const,
-		createdAt: Date.now(),
-	}
 }
 
 function ProjectOverviewBreadcrumb() {

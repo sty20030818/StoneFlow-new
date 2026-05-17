@@ -20,4 +20,3 @@ export type {
 	BoardSection,
 } from './Board'
 export { BoardSectionContextMenu } from './BoardSectionContextMenu'
-export { useSectionSelection } from './useSectionSelection'
