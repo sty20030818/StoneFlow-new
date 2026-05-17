@@ -100,6 +100,7 @@ export function TaskRowAdapter({
 							ariaLabel={`选择任务 ${task.title}`}
 							checked={isSelected}
 							disabled={isPending}
+							visible={isSelected || isKeyboardFocused}
 							onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
 						/>
 						<PriorityCell

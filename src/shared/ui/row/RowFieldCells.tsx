@@ -15,6 +15,7 @@ function stopRowEventPropagation(event: StopEvent) {
 
 export type RowSelectionCellProps = {
 	checked: boolean
+	visible?: boolean
 	disabled?: boolean
 	ariaLabel: string
 	onCheckedChange: () => void
@@ -41,19 +42,20 @@ export type RowActionButtonProps = ComponentProps<typeof Button>
  */
 export function RowSelectionCell({
 	checked,
+	visible = false,
 	disabled,
 	ariaLabel,
 	onCheckedChange,
 }: RowSelectionCellProps) {
+	const isVisible = checked || visible
+
 	return (
 		<button
 			aria-checked={checked}
 			aria-label={ariaLabel}
 			className={cn(
-				'group/row-selection flex size-5 shrink-0 items-center justify-center rounded-full bg-transparent p-0 outline-none transition-colors disabled:pointer-events-none disabled:opacity-40',
-				checked
-					? 'opacity-100'
-					: 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+				'flex size-5 shrink-0 items-center justify-center rounded-full bg-transparent p-0 outline-none transition-colors disabled:pointer-events-none disabled:opacity-40',
+				isVisible ? 'opacity-100' : 'opacity-0',
 				'focus-visible:border-border focus-visible:ring-0',
 			)}
 			data-checked={checked}
@@ -72,7 +74,7 @@ export function RowSelectionCell({
 					'flex size-4 items-center justify-center rounded-[5px] border transition-colors',
 					checked
 						? 'border-primary bg-primary text-primary-foreground'
-						: 'border-sf-border-strong bg-transparent text-transparent group-hover/row-selection:border-border',
+						: 'border-sf-border-strong bg-transparent text-transparent hover:border-border',
 				)}
 			>
 				<svg
@@ -94,7 +96,7 @@ export function RowTitleCell({ title, doneLike = false, className }: RowTitleCel
 	return (
 		<p
 			className={cn(
-				'truncate text-sm font-medium text-foreground transition-colors group-hover:text-foreground',
+				'truncate text-sm font-medium text-foreground transition-colors group-hover/row-shell:text-foreground',
 				doneLike ? 'text-sf-text-tertiary line-through' : null,
 				className,
 			)}

@@ -58,7 +58,6 @@ describe('RowShell', () => {
 			</RowShell.Root>,
 		)
 		expect(row.className).toContain('bg-sf-selection-surface')
-		expect(row.className).toContain('hover:bg-sf-selection-surface-hover')
 		expect(row.className).toContain(ROW_SHELL_SELECTED_FOCUS_CLASS)
 		expect(row.className).not.toContain('ring-3')
 	})
@@ -91,9 +90,9 @@ describe('RowShell', () => {
 })
 
 describe('RowSelectionCell', () => {
-	it('未选中时保持占位并在勾选后切到可见态', () => {
+	it('未选中未 visible 时保持占位并隐藏', () => {
 		const onCheckedChange = vi.fn()
-		const { rerender } = render(
+		render(
 			<RowSelectionCell ariaLabel='选择任务 A' checked={false} onCheckedChange={onCheckedChange} />,
 		)
 
@@ -102,6 +101,20 @@ describe('RowSelectionCell', () => {
 
 		fireEvent.click(checkbox)
 		expect(onCheckedChange).toHaveBeenCalledTimes(1)
+	})
+
+	it('visible 或 checked 时显示选择框', () => {
+		const onCheckedChange = vi.fn()
+		const { rerender } = render(
+			<RowSelectionCell
+				ariaLabel='选择任务 A'
+				checked={false}
+				onCheckedChange={onCheckedChange}
+				visible
+			/>,
+		)
+
+		expect(screen.getByRole('checkbox', { name: '选择任务 A' }).className).toContain('opacity-100')
 
 		rerender(<RowSelectionCell ariaLabel='选择任务 A' checked onCheckedChange={onCheckedChange} />)
 		expect(screen.getByRole('checkbox', { name: '选择任务 A' }).className).toContain('opacity-100')

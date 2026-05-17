@@ -155,6 +155,24 @@ describe('TaskRowAdapter', () => {
 
 		const selectedRow = screen.getByRole('button', { name: '打开任务 任务 A' })
 		expect(selectedRow.className).toContain(ROW_SHELL_SELECTED_CLASS)
+		const selectedCheckbox = screen.getByRole('checkbox', { name: '选择任务 任务 A' })
+		expect(selectedCheckbox).toHaveAttribute('aria-checked', 'true')
+		expect(selectedCheckbox.className).toContain('opacity-100')
+	})
+
+	it('keyboard focus 行显示未勾选选择框', () => {
+		renderTaskRowAdapter({
+			rowState: {
+				isActive: false,
+				isPending: false,
+				isSelected: false,
+				isKeyboardFocused: true,
+			},
+		})
+
+		const checkbox = screen.getByRole('checkbox', { name: '选择任务 任务 A' })
+		expect(checkbox).toHaveAttribute('aria-checked', 'false')
+		expect(checkbox.className).toContain('opacity-100')
 	})
 
 	it('透传显式 selection group position 到真正的 surface', () => {
