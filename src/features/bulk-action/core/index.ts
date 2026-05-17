@@ -23,4 +23,7 @@ export {
 	shouldConfirmAction,
 } from './bulk-action-runtime'
 export { createBulkSelectionSnapshot } from './bulk-selection-snapshot'
-export { createTaskBulkSelectionSnapshot } from './task-bulk-selection-snapshot'
+export {
+	createTaskBulkSelectionSnapshot,
+	createTaskBulkSelectionSnapshotFromTasks,
+} from './task-bulk-selection-snapshot'

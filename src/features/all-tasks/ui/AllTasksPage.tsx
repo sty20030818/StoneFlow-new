@@ -129,6 +129,7 @@ export function AllTasksPage() {
 				},
 				boardActions: {
 					onArchiveTask: archiveListTask,
+					onClearTaskSelection: clearTaskSelection,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
 					onOpenTask: (taskId) => openDrawer('task', taskId),

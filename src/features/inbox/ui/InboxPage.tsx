@@ -113,6 +113,7 @@ export function InboxPage() {
 				},
 				boardActions: {
 					onArchiveTask: archiveListTask,
+					onClearTaskSelection: clearTaskSelection,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog(),
 					onOpenTask: (taskId) => openDrawer('task', taskId),

@@ -2,9 +2,23 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import {
+	BulkActionProvider,
+	TASK_BULK_ACTION_IDS,
+	useBulkActionContext,
+	type BulkAction,
+	type BulkActionId,
+	type BulkActionResult,
+	type BulkSelectionSnapshot,
+} from '@/features/bulk-action'
 import type { TaskListItem } from '@/shared/types'
 
 import { TaskRowShortcutScope } from './TaskRowShortcutScope'
+
+type BulkActionCall = {
+	actionId: BulkActionId
+	snapshot: BulkSelectionSnapshot
+}
 
 describe('TaskRowShortcutScope', () => {
 	beforeEach(() => {
@@ -23,16 +37,23 @@ describe('TaskRowShortcutScope', () => {
 
 	it('hover 行时 W 触发完成，X 触发选择', () => {
 		const actions = createActions()
-		renderScope({ actions })
+		const bulkCalls: BulkActionCall[] = []
+		renderScope({ actions, bulkCalls })
 
 		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
 		fireKey('w')
 		fireKey('x')
 		flushShortcutTimers()
 
-		expect(actions.onToggleTaskStatus).toHaveBeenCalledWith(
-			expect.objectContaining({ id: 'task-a' }),
-		)
+		expect(bulkCalls).toEqual([
+			expect.objectContaining({
+				actionId: TASK_BULK_ACTION_IDS.completeSelected,
+				snapshot: expect.objectContaining({
+					ids: ['task-a'],
+					source: 'row-shortcut',
+				}),
+			}),
+		])
 		expect(actions.onToggleTaskSelection).toHaveBeenCalledWith('task-a')
 	})
 
@@ -51,7 +72,8 @@ describe('TaskRowShortcutScope', () => {
 
 	it('A / Delete / Cmd+Backspace 执行归档和删除', () => {
 		const actions = createActions()
-		renderScope({ actions })
+		const bulkCalls: BulkActionCall[] = []
+		renderScope({ actions, bulkCalls })
 
 		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
 		fireKey('a')
@@ -59,16 +81,14 @@ describe('TaskRowShortcutScope', () => {
 		fireKey('Backspace', { metaKey: true })
 		flushShortcutTimers()
 
-		expect(actions.onArchiveTask).toHaveBeenCalledWith(expect.objectContaining({ id: 'task-a' }))
-		expect(actions.onDeleteTask).toHaveBeenCalledTimes(2)
-		expect(actions.onDeleteTask).toHaveBeenNthCalledWith(
-			1,
-			expect.objectContaining({ id: 'task-a' }),
-		)
-		expect(actions.onDeleteTask).toHaveBeenNthCalledWith(
-			2,
-			expect.objectContaining({ id: 'task-a' }),
-		)
+		expect(bulkCalls.map((call) => call.actionId)).toEqual([
+			TASK_BULK_ACTION_IDS.archiveSelected,
+			TASK_BULK_ACTION_IDS.deleteSelected,
+			TASK_BULK_ACTION_IDS.deleteSelected,
+		])
+		expect(bulkCalls.map((call) => call.snapshot.ids)).toEqual([['task-a'], ['task-a'], ['task-a']])
+		expect(actions.onArchiveTask).not.toHaveBeenCalled()
+		expect(actions.onDeleteTask).not.toHaveBeenCalled()
 	})
 
 	it('P / S / D 打开目标行的 Command scoped picker', () => {
@@ -112,8 +132,10 @@ describe('TaskRowShortcutScope', () => {
 
 	it('多选时 W / A / Delete 批量执行，Space / Enter 不执行', () => {
 		const actions = createActions()
+		const bulkCalls: BulkActionCall[] = []
 		renderScope({
 			actions,
+			bulkCalls,
 			selectedTaskIds: ['task-a', 'task-b'],
 		})
 
@@ -125,10 +147,126 @@ describe('TaskRowShortcutScope', () => {
 		fireKey('Enter')
 		flushShortcutTimers()
 
-		expect(actions.onToggleTaskStatus).toHaveBeenCalledTimes(2)
-		expect(actions.onArchiveTask).toHaveBeenCalledTimes(2)
-		expect(actions.onDeleteTask).toHaveBeenCalledTimes(2)
+		expect(bulkCalls.map((call) => call.actionId)).toEqual([
+			TASK_BULK_ACTION_IDS.completeSelected,
+			TASK_BULK_ACTION_IDS.archiveSelected,
+			TASK_BULK_ACTION_IDS.deleteSelected,
+		])
+		expect(bulkCalls.map((call) => call.snapshot.ids)).toEqual([
+			['task-a', 'task-b'],
+			['task-a', 'task-b'],
+			['task-a', 'task-b'],
+		])
 		expect(actions.onOpenTask).not.toHaveBeenCalled()
+	})
+
+	it('多选时 selection 优先于 hover row', () => {
+		const bulkCalls: BulkActionCall[] = []
+		renderScope({
+			bulkCalls,
+			selectedTaskIds: ['task-a'],
+		})
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-b'))
+		fireKey('w')
+		flushShortcutTimers()
+
+		expect(bulkCalls).toHaveLength(1)
+		expect(bulkCalls[0]?.snapshot.ids).toEqual(['task-a'])
+	})
+
+	it('多选且没有 row target 时仍使用 selection 执行', () => {
+		const bulkCalls: BulkActionCall[] = []
+		renderScope({
+			bulkCalls,
+			selectedTaskIds: ['task-a', 'task-b'],
+		})
+
+		fireKey('w')
+		flushShortcutTimers()
+
+		expect(bulkCalls).toHaveLength(1)
+		expect(bulkCalls[0]?.snapshot.ids).toEqual(['task-a', 'task-b'])
+	})
+
+	it('无 selection 且无 row target 时不执行 bulk action', () => {
+		const bulkCalls: BulkActionCall[] = []
+		renderScope({ bulkCalls })
+
+		fireKey('w')
+		flushShortcutTimers()
+
+		expect(bulkCalls).toHaveLength(0)
+	})
+
+	it('archive/delete 成功并要求清理 selection 时调用清理回调', async () => {
+		const actions = createActions()
+		renderScope({
+			actions,
+			bulkResults: {
+				[TASK_BULK_ACTION_IDS.archiveSelected]: { shouldClearSelection: true },
+				[TASK_BULK_ACTION_IDS.deleteSelected]: { shouldClearSelection: true },
+			},
+		})
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireKey('a')
+		fireKey('Delete')
+		await flushShortcutAsyncWork()
+
+		expect(actions.onClearTaskSelection).toHaveBeenCalledTimes(2)
+	})
+
+	it('partial / failed / cancelled 不清理 selection', async () => {
+		const actions = createActions()
+		renderScope({
+			actions,
+			bulkResults: {
+				[TASK_BULK_ACTION_IDS.archiveSelected]: {
+					status: 'partial',
+					shouldClearSelection: true,
+				},
+				[TASK_BULK_ACTION_IDS.deleteSelected]: {
+					status: 'failed',
+					shouldClearSelection: true,
+				},
+			},
+		})
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireKey('a')
+		fireKey('Delete')
+		await flushShortcutAsyncWork()
+
+		expect(actions.onClearTaskSelection).not.toHaveBeenCalled()
+	})
+
+	it('归档快捷键进入 bulk confirmation，确认后才执行 action', async () => {
+		const bulkCalls: BulkActionCall[] = []
+		const pendingActions: Array<BulkActionId | null> = []
+		let confirmPendingAction: (() => void) | null = null
+
+		renderScope({
+			bulkCalls,
+			confirmingActionIds: [TASK_BULK_ACTION_IDS.archiveSelected],
+			onBulkContext: (context) => {
+				pendingActions.push(context.pendingConfirmation?.action.id ?? null)
+				confirmPendingAction = context.confirmPendingAction
+			},
+		})
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireKey('a')
+		flushShortcutTimers()
+
+		expect(pendingActions).toContain(TASK_BULK_ACTION_IDS.archiveSelected)
+		expect(bulkCalls).toHaveLength(0)
+
+		await act(async () => {
+			confirmPendingAction?.()
+		})
+
+		expect(bulkCalls.map((call) => call.actionId)).toEqual([TASK_BULK_ACTION_IDS.archiveSelected])
 	})
 
 	it('多选时 P 使用 selection 作为 scoped picker 上下文', () => {
@@ -351,10 +489,18 @@ describe('TaskRowShortcutScope', () => {
 
 function renderScope({
 	actions = createActions(),
+	bulkCalls = [],
+	bulkResults,
+	confirmingActionIds = [],
+	onBulkContext,
 	selectedTaskIds = [],
 	withBlockingLayer = false,
 }: {
 	actions?: ReturnType<typeof createActions>
+	bulkCalls?: BulkActionCall[]
+	bulkResults?: Partial<Record<BulkActionId, Partial<BulkActionResult>>>
+	confirmingActionIds?: BulkActionId[]
+	onBulkContext?: (context: ReturnType<typeof useBulkActionContext>) => void
 	selectedTaskIds?: string[]
 	withBlockingLayer?: boolean
 } = {}) {
@@ -364,16 +510,21 @@ function renderScope({
 	]
 
 	render(
-		<>
+		<BulkActionProvider
+			actions={createTestBulkActions({
+				bulkCalls,
+				bulkResults,
+				confirmingActionIds,
+			})}
+		>
+			<BulkActionProbe onContext={onBulkContext} />
 			{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
 			<input aria-label='编辑标题' />
 			<TaskRowShortcutScope
 				activeTaskId={null}
-				onArchiveTask={actions.onArchiveTask}
-				onDeleteTask={actions.onDeleteTask}
+				onClearTaskSelection={actions.onClearTaskSelection}
 				onOpenTask={actions.onOpenTask}
 				onToggleTaskSelection={actions.onToggleTaskSelection}
-				onToggleTaskStatus={actions.onToggleTaskStatus}
 				selectedTaskIdSet={new Set(selectedTaskIds)}
 				tasks={tasks}
 			>
@@ -387,13 +538,12 @@ function renderScope({
 								onFocus={() => state.onRowFocus(task.id)}
 								onMouseEnter={() => state.onRowHover(task.id)}
 								tabIndex={0}
-							>
-							</div>
+							></div>
 						))}
 					</div>
 				)}
 			</TaskRowShortcutScope>
-		</>,
+		</BulkActionProvider>,
 	)
 
 	return actions
@@ -401,9 +551,11 @@ function renderScope({
 
 function renderSelectionScope({
 	actions = createActions(),
+	bulkCalls = [],
 	withBlockingLayer = false,
 }: {
 	actions?: ReturnType<typeof createActions>
+	bulkCalls?: BulkActionCall[]
 	withBlockingLayer?: boolean
 } = {}) {
 	const tasks = [
@@ -427,7 +579,12 @@ function renderSelectionScope({
 		} = useTaskSelection(tasks.map((task) => task.id))
 
 		return (
-			<>
+			<BulkActionProvider
+				actions={createTestBulkActions({
+					bulkCalls,
+					confirmingActionIds: [],
+				})}
+			>
 				{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
 				<div data-testid='focused-task'>{focusedTaskId ?? 'none'}</div>
 				<div data-testid='selected-count'>{selectedCount}</div>
@@ -435,13 +592,11 @@ function renderSelectionScope({
 				<TaskRowShortcutScope
 					activeTaskId={null}
 					focusedTaskId={focusedTaskId}
-					onArchiveTask={actions.onArchiveTask}
-					onDeleteTask={actions.onDeleteTask}
+					onClearTaskSelection={actions.onClearTaskSelection}
 					onMoveTaskFocus={moveFocus}
 					onOpenTask={actions.onOpenTask}
 					onSetFocusedTask={setFocusedTaskId}
 					onToggleTaskSelection={toggleTaskSelection}
-					onToggleTaskStatus={actions.onToggleTaskStatus}
 					selectedTaskIdSet={selectedTaskIdSet}
 					tasks={tasks}
 				>
@@ -460,7 +615,7 @@ function renderSelectionScope({
 						</div>
 					)}
 				</TaskRowShortcutScope>
-			</>
+			</BulkActionProvider>
 		)
 	}
 
@@ -468,13 +623,93 @@ function renderSelectionScope({
 	return actions
 }
 
+function BulkActionProbe({
+	onContext,
+}: {
+	onContext?: (context: ReturnType<typeof useBulkActionContext>) => void
+}) {
+	const context = useBulkActionContext()
+	onContext?.(context)
+
+	return null
+}
+
+function createTestBulkActions({
+	bulkCalls,
+	bulkResults,
+	confirmingActionIds,
+}: {
+	bulkCalls: BulkActionCall[]
+	bulkResults?: Partial<Record<BulkActionId, Partial<BulkActionResult>>>
+	confirmingActionIds: BulkActionId[]
+}): BulkAction[] {
+	return [
+		createTestBulkAction(TASK_BULK_ACTION_IDS.completeSelected, {
+			bulkCalls,
+			bulkResults,
+			confirmingActionIds,
+		}),
+		createTestBulkAction(TASK_BULK_ACTION_IDS.archiveSelected, {
+			bulkCalls,
+			bulkResults,
+			confirmingActionIds,
+		}),
+		createTestBulkAction(TASK_BULK_ACTION_IDS.deleteSelected, {
+			bulkCalls,
+			bulkResults,
+			confirmingActionIds,
+		}),
+	]
+}
+
+function createTestBulkAction(
+	actionId: BulkActionId,
+	{
+		bulkCalls,
+		bulkResults,
+		confirmingActionIds,
+	}: {
+		bulkCalls: BulkActionCall[]
+		bulkResults?: Partial<Record<BulkActionId, Partial<BulkActionResult>>>
+		confirmingActionIds: BulkActionId[]
+	},
+): BulkAction {
+	return {
+		id: actionId,
+		entity: 'task',
+		label: actionId,
+		intent: actionId === TASK_BULK_ACTION_IDS.completeSelected ? 'complete' : 'archive',
+		requiresConfirm: confirmingActionIds.includes(actionId),
+		getConfirmCopy: () => ({
+			title: actionId,
+			description: actionId,
+			confirmLabel: '确认',
+		}),
+		run: async (snapshot) => {
+			bulkCalls.push({ actionId, snapshot })
+
+			return {
+				status: 'success',
+				actionId,
+				entity: snapshot.entity,
+				requestedIds: [...snapshot.ids],
+				succeededIds: [...snapshot.ids],
+				failedIds: [],
+				skippedIds: [],
+				...bulkResults?.[actionId],
+			}
+		},
+	}
+}
+
 function createActions() {
 	return {
-		onToggleTaskSelection: vi.fn(),
-		onToggleTaskStatus: vi.fn().mockResolvedValue(undefined),
-		onArchiveTask: vi.fn().mockResolvedValue(undefined),
-		onDeleteTask: vi.fn().mockResolvedValue(undefined),
-		onOpenTask: vi.fn(),
+		onToggleTaskSelection: vi.fn<(taskId: string) => void>(),
+		onToggleTaskStatus: vi.fn<(task: TaskListItem) => Promise<void>>().mockResolvedValue(undefined),
+		onArchiveTask: vi.fn<(task: TaskListItem) => Promise<void>>().mockResolvedValue(undefined),
+		onDeleteTask: vi.fn<(task: TaskListItem) => Promise<void>>().mockResolvedValue(undefined),
+		onClearTaskSelection: vi.fn<() => void>(),
+		onOpenTask: vi.fn<(taskId: string) => void>(),
 	}
 }
 
@@ -533,5 +768,12 @@ function fireKey(
 function flushShortcutTimers() {
 	act(() => {
 		vi.runAllTimers()
+	})
+}
+
+async function flushShortcutAsyncWork() {
+	flushShortcutTimers()
+	await act(async () => {
+		await Promise.resolve()
 	})
 }

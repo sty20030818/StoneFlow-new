@@ -60,6 +60,7 @@ export type EntitySceneTaskBoardActions = {
 			resetAnchorToStart?: boolean
 		},
 	) => string | null
+	onClearTaskSelection?: () => void
 	onUpdateTaskPriority?: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus?: (task: TaskListItem, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus?: (task: TaskListItem) => Promise<void>

@@ -123,6 +123,7 @@ export function NoProjectPage() {
 				},
 				boardActions: {
 					onArchiveTask: archiveListTask,
+					onClearTaskSelection: clearTaskSelection,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ placement: 'noProject' }),
 					onOpenTask: (taskId) => openDrawer('task', taskId),

@@ -35,6 +35,7 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			emptyTitle={config.emptyTitle}
 			hideEmptySections={config.hideEmptySections}
 			onArchiveTask={actions.onArchiveTask}
+			onClearTaskSelection={actions.onClearTaskSelection}
 			onDeleteTask={actions.onDeleteTask}
 			onEmptyAction={actions.onEmptyAction ?? (() => undefined)}
 			onMoveTaskFocus={actions.onMoveTaskFocus}

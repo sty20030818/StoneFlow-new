@@ -2,6 +2,11 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
+	TASK_BULK_ACTION_IDS,
+	createTaskBulkSelectionSnapshotFromTasks,
+	useBulkActionContext,
+} from '@/features/bulk-action'
+import {
 	COMMAND_IDS,
 	CommandRegistry,
 	CommandRuntime,
@@ -37,9 +42,7 @@ type TaskRowShortcutScopeProps = {
 			resetAnchorToStart?: boolean
 		},
 	) => string | null
-	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
-	onArchiveTask?: (task: TaskListItem) => Promise<void>
-	onDeleteTask?: (task: TaskListItem) => Promise<void>
+	onClearTaskSelection?: () => void
 	onOpenTask: (taskId: string) => void
 }
 
@@ -85,14 +88,13 @@ export function TaskRowShortcutScope({
 	onToggleTaskSelection,
 	onSetFocusedTask,
 	onMoveTaskFocus,
-	onToggleTaskStatus,
-	onArchiveTask,
-	onDeleteTask,
+	onClearTaskSelection,
 	onOpenTask,
 }: TaskRowShortcutScopeProps) {
 	const [focusTaskId, setFocusTaskId] = useState<string | null>(externalFocusedTaskId)
 	const shiftToggleSessionRef = useRef<ShiftToggleSession>(EMPTY_SHIFT_TOGGLE_SESSION)
 	const chordStateRef = useRef<KeybindingChordState | null>(null)
+	const { runBulkAction } = useBulkActionContext()
 
 	useEffect(() => {
 		setFocusTaskId(externalFocusedTaskId)
@@ -133,11 +135,10 @@ export function TaskRowShortcutScope({
 			rowTarget,
 			targetTask,
 			selectedTasks,
-			onArchiveTask,
-			onDeleteTask,
+			runBulkAction,
+			onClearTaskSelection,
 			onOpenTask,
 			onToggleTaskSelection,
-			onToggleTaskStatus,
 		})
 		const context = createTaskRowCommandContext(rowTarget, selectedTaskIds)
 
@@ -146,12 +147,11 @@ export function TaskRowShortcutScope({
 			getContext: () => context,
 		})
 	}, [
-		onArchiveTask,
-		onDeleteTask,
+		onClearTaskSelection,
 		onOpenTask,
 		onToggleTaskSelection,
-		onToggleTaskStatus,
 		rowTarget,
+		runBulkAction,
 		selectedTaskIds,
 		selectedTasks,
 		targetTask,
@@ -179,7 +179,7 @@ export function TaskRowShortcutScope({
 				return
 			}
 
-			if (!rowTarget.hasTarget) {
+			if (!rowTarget.hasTarget && selectedTaskIds.length === 0) {
 				return
 			}
 
@@ -207,7 +207,15 @@ export function TaskRowShortcutScope({
 
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [focusTaskId, onMoveTaskFocus, onToggleTaskSelection, rowTarget.hasTarget, runtime, tasks])
+	}, [
+		focusTaskId,
+		onMoveTaskFocus,
+		onToggleTaskSelection,
+		rowTarget.hasTarget,
+		runtime,
+		selectedTaskIds.length,
+		tasks,
+	])
 
 	const state = useMemo<TaskRowShortcutState>(
 		() => ({
@@ -299,7 +307,7 @@ function bindTaskRowCommand(
 		category: 'task',
 		scope: ['task-list'],
 		isEnabled: (ctx) =>
-			ctx.rowTarget.hasTarget &&
+			(ctx.rowTarget.hasTarget || ctx.selection.hasSelection) &&
 			(options.allowMultiSelection !== false || !ctx.selection.isMultiSelection),
 		getDisabledReason: () => ROW_COMMAND_DISABLED_REASON,
 		run,
@@ -310,26 +318,32 @@ function createTaskRowCommandActions({
 	rowTarget,
 	targetTask,
 	selectedTasks,
-	onArchiveTask,
-	onDeleteTask,
+	runBulkAction,
+	onClearTaskSelection,
 	onOpenTask,
 	onToggleTaskSelection,
-	onToggleTaskStatus,
 }: {
 	rowTarget: CommandContext['rowTarget']
 	targetTask?: TaskListItem
 	selectedTasks: TaskListItem[]
+	runBulkAction: ReturnType<typeof useBulkActionContext>['runBulkAction']
+	onClearTaskSelection?: () => void
 	onToggleTaskSelection: (taskId: string) => void
-	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
-	onArchiveTask?: (task: TaskListItem) => Promise<void>
-	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
 }): TaskRowCommandActions {
-	const batchTasks = selectedTasks.length > 1 ? selectedTasks : targetTask ? [targetTask] : []
+	const batchTasks = selectedTasks.length > 0 ? selectedTasks : targetTask ? [targetTask] : []
+
+	async function runTaskBulkAction(actionId: string) {
+		const snapshot = createTaskBulkSelectionSnapshotFromTasks(batchTasks, 'row-shortcut')
+		const result = await runBulkAction(actionId, snapshot)
+		if (result.status === 'success' && result.shouldClearSelection) {
+			onClearTaskSelection?.()
+		}
+	}
 
 	return {
 		complete: async () => {
-			await Promise.all(batchTasks.map((task) => onToggleTaskStatus(task)))
+			await runTaskBulkAction(TASK_BULK_ACTION_IDS.completeSelected)
 		},
 		select: () => {
 			if (rowTarget.targetId) {
@@ -347,16 +361,10 @@ function createTaskRowCommandActions({
 			}
 		},
 		archive: async () => {
-			if (!onArchiveTask) {
-				return
-			}
-			await Promise.all(batchTasks.map((task) => onArchiveTask(task)))
+			await runTaskBulkAction(TASK_BULK_ACTION_IDS.archiveSelected)
 		},
 		deleteTask: async () => {
-			if (!onDeleteTask) {
-				return
-			}
-			await Promise.all(batchTasks.map((task) => onDeleteTask(task)))
+			await runTaskBulkAction(TASK_BULK_ACTION_IDS.deleteSelected)
 		},
 		openPriorityMenu: () => {
 			openTaskPropertyPicker('task-priority-picker', batchTasks)

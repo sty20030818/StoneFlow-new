@@ -58,6 +58,7 @@ type TaskBoardProps = {
 			resetAnchorToStart?: boolean
 		},
 	) => string | null
+	onClearTaskSelection?: () => void
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
@@ -86,6 +87,7 @@ export function TaskBoard({
 	onToggleTaskSelection,
 	onSetFocusedTask,
 	onMoveTaskFocus,
+	onClearTaskSelection,
 	onUpdateTaskPriority,
 	onUpdateTaskStatus,
 	onToggleTaskStatus,
@@ -190,13 +192,11 @@ export function TaskBoard({
 		<TaskRowShortcutScope
 			activeTaskId={activeTaskId}
 			focusedTaskId={focusedTaskId}
-			onArchiveTask={onArchiveTask}
-			onDeleteTask={onDeleteTask}
+			onClearTaskSelection={onClearTaskSelection}
 			onOpenTask={onOpenTask}
 			onMoveTaskFocus={onMoveTaskFocus}
 			onSetFocusedTask={onSetFocusedTask}
 			onToggleTaskSelection={onToggleTaskSelection}
-			onToggleTaskStatus={onToggleTaskStatus}
 			selectedTaskIdSet={selectedTaskIdSet}
 			tasks={taskShortcutOrder}
 		>

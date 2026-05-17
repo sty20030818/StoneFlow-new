@@ -171,6 +171,7 @@ export function ProjectPage() {
 				},
 				boardActions: {
 					onArchiveTask: archiveListTask,
+					onClearTaskSelection: clearTaskSelection,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ projectId }),
 					onOpenTask: (taskId) => openDrawer('task', taskId),
