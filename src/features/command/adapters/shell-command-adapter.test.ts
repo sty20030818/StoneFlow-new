@@ -188,6 +188,36 @@ describe('Shell command adapter', () => {
 	})
 
 	it.each([
+		[COMMAND_IDS.projectArchive, 'requestArchiveSelectedProjects'],
+		[COMMAND_IDS.projectDelete, 'requestDeleteSelectedProjects'],
+	] as const)('有 project selection 时执行批量项目命令 %s', async (commandId, actionName) => {
+		const actions = createActions()
+		const context = {
+			...createEmptyCommandContext(),
+			selection: {
+				type: 'project' as const,
+				ids: ['project-a', 'project-b'],
+				entities: [
+					{ id: 'project-a', type: 'project' as const, title: '项目 A' },
+					{ id: 'project-b', type: 'project' as const, title: '项目 B' },
+				],
+				primaryEntity: { id: 'project-a', type: 'project' as const, title: '项目 A' },
+				source: 'project-list' as const,
+				hasSelection: true,
+				isSingleSelection: false,
+				isMultiSelection: true,
+			},
+		}
+		const runtime = createRuntime(actions, context)
+
+		await expect(runtime.execute(commandId)).resolves.toMatchObject({
+			status: 'success',
+			commandId,
+		})
+		expect(actions[actionName]).toHaveBeenCalledWith(context)
+	})
+
+	it.each([
 		COMMAND_IDS.taskComplete,
 		COMMAND_IDS.taskSetPriority,
 		COMMAND_IDS.taskSetStatus,
@@ -251,6 +281,8 @@ function createActions(overrides: Partial<ShellCommandActions> = {}): ShellComma
 		completeSelectedTasks: vi.fn(),
 		requestArchiveSelectedTasks: vi.fn(),
 		requestDeleteSelectedTasks: vi.fn(),
+		requestArchiveSelectedProjects: vi.fn(),
+		requestDeleteSelectedProjects: vi.fn(),
 		restoreSelectedLifecycleEntries: vi.fn(),
 		requestDeleteSelectedLifecycleEntries: vi.fn(),
 		requestDeletePermanentlySelectedLifecycleEntries: vi.fn(),

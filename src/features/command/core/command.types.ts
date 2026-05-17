@@ -45,6 +45,7 @@ export const COMMAND_IDS = {
 	taskMoveToNoProject: 'task.moveToNoProject',
 	projectRename: 'project.rename',
 	projectArchive: 'project.archive',
+	projectDelete: 'project.delete',
 	filterAdd: 'filter.add',
 	filterByPriority: 'filter.byPriority',
 	filterByStatus: 'filter.byStatus',
@@ -136,6 +137,7 @@ export type CommandSelectedEntity = {
 	priority?: string
 	lifecycleMode?: 'archive' | 'trash'
 	lifecycleEntityType?: 'space' | 'project' | 'task'
+	projectStatus?: 'active' | 'completed' | 'archived'
 }
 
 export type CommandFocusContext = {

@@ -84,6 +84,7 @@ export type EntitySceneProjectBoardData = {
 	status?: 'idle' | 'loading' | 'ready' | 'error'
 	busyProjectId?: string | null
 	selectedProjectIds?: Set<string>
+	focusedProjectId?: string | null
 }
 
 export type EntitySceneProjectBoardActions = {
@@ -94,6 +95,17 @@ export type EntitySceneProjectBoardActions = {
 	onArchiveProject?: (projectId: string) => void
 	onDeleteProject?: (projectId: string) => void
 	onToggleProjectSelection?: (projectId: string) => void
+	onSetFocusedProject?: (projectId: string | null) => void
+	onMoveProjectFocus?: (
+		delta: number,
+		options?: {
+			preserveAnchor?: boolean
+			selectRange?: boolean
+			startFromId?: string | null
+			resetAnchorToStart?: boolean
+		},
+	) => string | null
+	onClearProjectSelection?: () => void
 }
 
 export type EntitySceneLifecycleBoardConfig = {

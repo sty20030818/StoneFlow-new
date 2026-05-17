@@ -1,16 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { BulkActionBar } from '@/features/bulk-action'
+import {
+	BulkActionBar,
+	PROJECT_BULK_ACTION_IDS,
+	useBulkActionContext,
+	type BulkActionId,
+} from '@/features/bulk-action'
 import { Button } from '@/shared/ui/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import { buildScopedProjectPath, getScopeLabel } from '@/app/layouts/shell/config'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
 import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
-import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import {
+	buildProjectCommandSelection,
+	useEntitySelection,
+	useRegisterCommandSelection,
+} from '@/features/selection/model'
+import { useTaskSelectionEscape } from '@/features/task/shortcuts/useTaskSelectionEscape'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { selectProjectViews, useViewStore } from '@/features/view/model/useViewStore'
@@ -35,16 +46,39 @@ export function ProjectOverviewPage() {
 	const reopenProject = useProjectStore((state) => state.reopenProject)
 	const archiveProject = useProjectStore((state) => state.archiveProject)
 	const deleteProject = useProjectStore((state) => state.deleteProject)
+	const { runBulkAction } = useBulkActionContext()
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
 	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('all_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
 	const scopeKey = scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
 	const {
-		selectedTaskIdSet: selectedProjectIds,
+		selectedIdSet: selectedProjectIds,
+		selectionSnapshot,
 		selectedCount,
-		toggleTaskSelection: toggleProjectSelection,
-		clearTaskSelection,
-	} = useTaskSelection(overview.items.map((item) => item.id))
+		focusedId: focusedProjectId,
+		toggleSelection: toggleProjectSelection,
+		clearSelection: clearProjectSelection,
+		setFocusedId: setFocusedProjectId,
+		moveFocus,
+	} = useEntitySelection(overview.items.map((item) => item.id))
+	const selectedProjects = useMemo(
+		() => overview.items.filter((project) => selectedProjectIds.has(project.id)),
+		[overview.items, selectedProjectIds],
+	)
+	const commandSelection = useMemo(
+		() =>
+			buildProjectCommandSelection({
+				selectedIds: selectionSnapshot.ids,
+				projects: overview.items,
+				clearSelection: clearProjectSelection,
+			}),
+		[clearProjectSelection, overview.items, selectionSnapshot.ids],
+	)
+	useRegisterCommandSelection(commandSelection)
+	useTaskSelectionEscape({
+		hasSelection: selectedCount > 0,
+		clearSelection: clearProjectSelection,
+	})
 	const visibleProjectViews = projectViews.items.filter((view) => view.isVisible)
 
 	useEffect(() => {
@@ -77,6 +111,38 @@ export function ProjectOverviewPage() {
 		}
 	}
 
+	const runProjectBulkAction = useCallback(
+		async (actionId: BulkActionId) => {
+			const result = await runBulkAction(actionId, createProjectSnapshot(selectedProjects))
+
+			if (result.status === 'success') {
+				if (result.shouldClearSelection) {
+					clearProjectSelection()
+				}
+				toast.success(result.message ?? `已处理 ${result.succeededIds.length} 个项目`)
+				return
+			}
+
+			if (result.status === 'partial') {
+				toast.error(
+					result.message ??
+						`已处理 ${result.succeededIds.length} 个项目，${result.failedIds.length + result.skippedIds.length} 个失败`,
+				)
+				return
+			}
+
+			if (result.status === 'disabled') {
+				toast.error(result.message ?? '批量操作不可用')
+				return
+			}
+
+			if (result.status === 'failed') {
+				toast.error(result.message ?? '批量操作失败')
+			}
+		},
+		[clearProjectSelection, runBulkAction, selectedProjects],
+	)
+
 	return (
 		<EntityScene
 			board={{
@@ -92,9 +158,13 @@ export function ProjectOverviewPage() {
 					status: overview.status,
 					busyProjectId,
 					selectedProjectIds,
+					focusedProjectId,
 				},
 				boardActions: {
 					onToggleProjectSelection: toggleProjectSelection,
+					onSetFocusedProject: setFocusedProjectId,
+					onMoveProjectFocus: moveFocus,
+					onClearProjectSelection: clearProjectSelection,
 					onArchiveProject: (projectId) => {
 						void runRowAction(projectId, async () => {
 							await archiveProject(projectId)
@@ -123,11 +193,16 @@ export function ProjectOverviewPage() {
 			bulkBar={
 				<BulkActionBar
 					action={
-						<Button className={BULK_ACTION_BUTTON_CLASS} size='sm' variant='outline'>
-							批量操作
-						</Button>
+						<ProjectBulkBarActions
+							onArchive={() => {
+								void runProjectBulkAction(PROJECT_BULK_ACTION_IDS.archiveSelected)
+							}}
+							onDelete={() => {
+								void runProjectBulkAction(PROJECT_BULK_ACTION_IDS.deleteSelected)
+							}}
+						/>
 					}
-					onClear={clearTaskSelection}
+					onClear={clearProjectSelection}
 					selectedCount={selectedCount}
 				/>
 			}
@@ -154,6 +229,51 @@ export function ProjectOverviewPage() {
 			]}
 		/>
 	)
+}
+
+function ProjectBulkBarActions({
+	onArchive,
+	onDelete,
+}: {
+	onArchive: () => void
+	onDelete: () => void
+}) {
+	return (
+		<div className='flex items-center gap-2'>
+			<Button
+				className={BULK_ACTION_BUTTON_CLASS}
+				onClick={onArchive}
+				size='sm'
+				type='button'
+				variant='outline'
+			>
+				归档
+			</Button>
+			<Button
+				className={BULK_ACTION_BUTTON_CLASS}
+				onClick={onDelete}
+				size='sm'
+				type='button'
+				variant='destructive'
+			>
+				删除
+			</Button>
+		</div>
+	)
+}
+
+function createProjectSnapshot(projects: Array<{ id: string; name: string; spaceName?: string }>) {
+	return {
+		entity: 'project' as const,
+		ids: projects.map((project) => project.id),
+		entities: projects.map((project) => ({
+			id: project.id,
+			title: project.name,
+			subtitle: project.spaceName,
+		})),
+		source: 'bulk-bar' as const,
+		createdAt: Date.now(),
+	}
 }
 
 function ProjectOverviewBreadcrumb() {

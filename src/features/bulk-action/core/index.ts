@@ -1,5 +1,6 @@
 export {
 	LIFECYCLE_BULK_ACTION_IDS,
+	PROJECT_BULK_ACTION_IDS,
 	TASK_BULK_ACTION_IDS,
 	type BulkAction,
 	type BulkActionAdapter,

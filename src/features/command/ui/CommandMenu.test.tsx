@@ -98,6 +98,17 @@ describe('CommandMenu', () => {
 		expect(screen.getByText('删除任务')).toBeInTheDocument()
 	})
 
+	it('有项目选择时显示项目批量操作分组', () => {
+		renderCommandMenu({ context: createProjectSelectionContext() })
+
+		expect(screen.getByLabelText('当前选中对象')).toHaveTextContent('项目 A')
+		expect(screen.getByLabelText('当前选中对象')).toHaveTextContent('项目 B')
+		expect(screen.getByText('批量操作')).toBeInTheDocument()
+		expect(screen.getByText('归档项目')).toBeInTheDocument()
+		expect(screen.getByText('删除项目')).toBeInTheDocument()
+		expect(screen.queryByText('完成任务')).not.toBeInTheDocument()
+	})
+
 	it('动态项目区沿用外部导航回调', () => {
 		const onNavigateProject = vi.fn<(projectId: string) => void>()
 		renderCommandMenu({ onNavigateProject })
@@ -307,6 +318,8 @@ function createActions(): ShellCommandActions {
 		completeSelectedTasks: vi.fn(),
 		requestArchiveSelectedTasks: vi.fn(),
 		requestDeleteSelectedTasks: vi.fn(),
+		requestArchiveSelectedProjects: vi.fn(),
+		requestDeleteSelectedProjects: vi.fn(),
 		restoreSelectedLifecycleEntries: vi.fn(),
 		requestDeleteSelectedLifecycleEntries: vi.fn(),
 		requestDeletePermanentlySelectedLifecycleEntries: vi.fn(),
@@ -328,6 +341,25 @@ function createTaskSelectionContext(): CommandContext {
 			],
 			primaryEntity: { id: 'task-a', type: 'task', title: '任务 A', subtitle: 'Inbox' },
 			source: 'task-list',
+			hasSelection: true,
+			isSingleSelection: false,
+			isMultiSelection: true,
+		},
+	}
+}
+
+function createProjectSelectionContext(): CommandContext {
+	return {
+		...createEmptyCommandContext(),
+		selection: {
+			type: 'project',
+			ids: ['project-a', 'project-b'],
+			entities: [
+				{ id: 'project-a', type: 'project', title: '项目 A', subtitle: '进行中项目' },
+				{ id: 'project-b', type: 'project', title: '项目 B', subtitle: '已完成项目' },
+			],
+			primaryEntity: { id: 'project-a', type: 'project', title: '项目 A' },
+			source: 'project-list',
 			hasSelection: true,
 			isSingleSelection: false,
 			isMultiSelection: true,

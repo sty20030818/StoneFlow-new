@@ -27,6 +27,8 @@ export type ShellCommandActions = {
 	completeSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	requestArchiveSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	requestDeleteSelectedTasks: (ctx: CommandContext) => void | Promise<void>
+	requestArchiveSelectedProjects: (ctx: CommandContext) => void | Promise<void>
+	requestDeleteSelectedProjects: (ctx: CommandContext) => void | Promise<void>
 	restoreSelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
 	requestDeleteSelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
 	requestDeletePermanentlySelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
@@ -80,6 +82,10 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return bindSelectionTaskCommand(command, adapter.requestArchiveSelectedTasks)
 		case COMMAND_IDS.taskDelete:
 			return bindSelectionTaskCommand(command, adapter.requestDeleteSelectedTasks)
+		case COMMAND_IDS.projectArchive:
+			return bindSelectionProjectCommand(command, adapter.requestArchiveSelectedProjects)
+		case COMMAND_IDS.projectDelete:
+			return bindSelectionProjectCommand(command, adapter.requestDeleteSelectedProjects)
 		case COMMAND_IDS.lifecycleRestore:
 			return bindSelectionLifecycleCommand(command, adapter.restoreSelectedLifecycleEntries)
 		case COMMAND_IDS.lifecycleDelete:
@@ -162,4 +168,21 @@ function bindSelectionLifecycleCommand(
 
 function hasLifecycleSelection(ctx: CommandContext) {
 	return ctx.selection.type === 'lifecycle' && ctx.selection.ids.length > 0
+}
+
+function bindSelectionProjectCommand(
+	command: Command,
+	run: (ctx: CommandContext) => void | Promise<void>,
+): Command {
+	return {
+		...command,
+		isEnabled: (ctx) => hasProjectSelection(ctx),
+		getDisabledReason: (ctx) => (hasProjectSelection(ctx) ? undefined : '需要先选择项目'),
+		getPriority: (ctx) => (ctx.selection.isMultiSelection ? 120 : 90),
+		run,
+	}
+}
+
+function hasProjectSelection(ctx: CommandContext) {
+	return ctx.selection.type === 'project' && ctx.selection.ids.length > 0
 }

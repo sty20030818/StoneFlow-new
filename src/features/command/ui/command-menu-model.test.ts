@@ -152,6 +152,25 @@ describe('buildCommandMenuGroups', () => {
 		])
 	})
 
+	it('project selection 显示归档和删除批量命令', () => {
+		const runtime = createRuntime([
+			createCommand(COMMAND_IDS.projectArchive, { category: 'project' }),
+			createCommand(COMMAND_IDS.projectDelete, { category: 'project' }),
+			createCommand('test.normalProject', { category: 'project' }),
+		])
+
+		const groups = buildCommandMenuGroups(runtime, createProjectSelectionContext())
+
+		expect(groups[0]?.key).toBe('bulk')
+		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
+			COMMAND_IDS.projectArchive,
+			COMMAND_IDS.projectDelete,
+		])
+		expect(
+			groups.find((group) => group.key === 'project')?.entries.map((entry) => entry.command.id),
+		).toEqual(['test.normalProject'])
+	})
+
 	it('未绑定命令没有快捷键文案', () => {
 		expect(getCommandMenuShortcut(COMMAND_IDS.taskComplete)).toBeNull()
 	})
@@ -210,6 +229,22 @@ function createLifecycleSelectionContext({
 				lifecycleEntityType: 'task',
 			},
 			source: 'task-list',
+			hasSelection: true,
+			isSingleSelection: true,
+			isMultiSelection: false,
+		},
+	}
+}
+
+function createProjectSelectionContext(): CommandContext {
+	return {
+		...context,
+		selection: {
+			type: 'project',
+			ids: ['project-a'],
+			entities: [{ id: 'project-a', type: 'project', title: '项目 A' }],
+			primaryEntity: { id: 'project-a', type: 'project', title: '项目 A' },
+			source: 'project-list',
 			hasSelection: true,
 			isSingleSelection: true,
 			isMultiSelection: false,

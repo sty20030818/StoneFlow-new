@@ -85,11 +85,14 @@ import {
 	BulkActionConfirmDialog,
 	BulkActionProvider,
 	LIFECYCLE_BULK_ACTION_IDS,
+	PROJECT_BULK_ACTION_IDS,
 	TASK_BULK_ACTION_IDS,
 	createLifecycleBulkAdapter,
+	createProjectBulkAdapter,
 	createTaskBulkAdapter,
 	createTaskBulkSelectionSnapshot,
 	lifecycleBulkActions,
+	projectBulkActions,
 	taskBulkActions,
 	useBulkActionContext,
 	type BulkActionId,
@@ -135,6 +138,8 @@ function ShellLayoutBulkActionBoundary({
 	activeSection,
 }: ShellLayoutProps) {
 	const refreshLoadedTaskSlices = useTaskStore((state) => state.refreshLoadedSlices)
+	const projectOverview = useProjectStore((state) => state.overview)
+	const refreshLoadedProjectSlices = useProjectStore((state) => state.refreshLoadedSlices)
 	const archiveEntries = useLifecycleStore(selectArchiveEntries)
 	const trashEntries = useLifecycleStore(selectTrashEntries)
 	const refreshLoadedLifecycleSlices = useLifecycleStore((state) => state.refreshLoadedSlices)
@@ -153,15 +158,24 @@ function ShellLayoutBulkActionBoundary({
 			}),
 		[archiveEntries.items, refreshLoadedLifecycleSlices, trashEntries.items],
 	)
+	const projectBulkAdapter = useMemo(
+		() =>
+			createProjectBulkAdapter({
+				availableProjectIds: projectOverview.items.map((project) => project.id),
+				refreshLoadedSlices: refreshLoadedProjectSlices,
+			}),
+		[projectOverview.items, refreshLoadedProjectSlices],
+	)
 	const bulkActionAdapter = useMemo(
 		() => ({
 			...taskBulkAdapter,
 			...lifecycleBulkAdapter,
+			...projectBulkAdapter,
 		}),
-		[lifecycleBulkAdapter, taskBulkAdapter],
+		[lifecycleBulkAdapter, projectBulkAdapter, taskBulkAdapter],
 	)
 	const bulkActions = useMemo(
-		() => [...taskBulkActions, ...lifecycleBulkActions],
+		() => [...taskBulkActions, ...lifecycleBulkActions, ...projectBulkActions],
 		[],
 	)
 
@@ -473,6 +487,53 @@ function ShellLayoutContent({
 		},
 		[runBulkAction],
 	)
+	const runProjectBulkActionFromCommand = useCallback(
+		async (ctx: CommandContext, actionId: BulkActionId) => {
+			if (ctx.selection.type !== 'project' || ctx.selection.ids.length === 0) {
+				return
+			}
+
+			const snapshot = {
+				entity: 'project' as const,
+				ids: ctx.selection.entities.map((entity) => entity.id),
+				entities: ctx.selection.entities.map((entity) => ({
+					id: entity.id,
+					title: entity.title,
+					subtitle: entity.subtitle,
+				})),
+				source: 'command-menu' as const,
+				createdAt: Date.now(),
+			}
+			const result = await runBulkAction(actionId, snapshot)
+
+			if (result.status === 'success') {
+				if (result.shouldClearSelection) {
+					ctx.selection.clearSelection?.()
+				}
+				toast.success(result.message ?? `已处理 ${result.succeededIds.length} 个项目`)
+				return
+			}
+
+			if (result.status === 'partial') {
+				toast.error(
+					result.message ??
+						`已处理 ${result.succeededIds.length} 个项目，${result.failedIds.length + result.skippedIds.length} 个失败`,
+				)
+				return
+			}
+
+			if (result.status === 'disabled') {
+				toast.error(result.message ?? '批量操作不可用')
+				return
+			}
+
+			if (result.status === 'failed') {
+				toast.error(result.message ?? '批量操作失败')
+				throw result.error
+			}
+		},
+		[runBulkAction],
+	)
 
 	const shellCommandActions = useMemo<ShellCommandActions>(
 		() => ({
@@ -508,6 +569,10 @@ function ShellLayoutContent({
 				runTaskBulkActionFromCommand(ctx, TASK_BULK_ACTION_IDS.archiveSelected),
 			requestDeleteSelectedTasks: (ctx) =>
 				runTaskBulkActionFromCommand(ctx, TASK_BULK_ACTION_IDS.deleteSelected),
+			requestArchiveSelectedProjects: (ctx) =>
+				runProjectBulkActionFromCommand(ctx, PROJECT_BULK_ACTION_IDS.archiveSelected),
+			requestDeleteSelectedProjects: (ctx) =>
+				runProjectBulkActionFromCommand(ctx, PROJECT_BULK_ACTION_IDS.deleteSelected),
 			restoreSelectedLifecycleEntries: (ctx) =>
 				runLifecycleBulkActionFromCommand(ctx, LIFECYCLE_BULK_ACTION_IDS.restoreSelected),
 			requestDeleteSelectedLifecycleEntries: (ctx) =>
@@ -537,6 +602,7 @@ function ShellLayoutContent({
 			requestSearchFocus,
 			runTaskBulkActionFromCommand,
 			runLifecycleBulkActionFromCommand,
+			runProjectBulkActionFromCommand,
 			toggleShortcutHelp,
 		],
 	)

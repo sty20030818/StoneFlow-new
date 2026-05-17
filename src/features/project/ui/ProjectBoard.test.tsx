@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 import { ProjectBoard } from '@/features/project/ui/ProjectBoard'
 import type { ProjectOverviewItem } from '@/shared/types'
@@ -80,6 +80,36 @@ describe('ProjectBoard', () => {
 			'data-selection-group-position',
 			'last',
 		)
+	})
+
+	it('Shift 上下键使用通用 row shortcut 选择项目', () => {
+		const onToggleProjectSelection = vi.fn()
+		render(
+			<ProjectBoard
+				busyProjectId={null}
+				emptyDescription='empty'
+				emptyTitle='empty'
+				focusedProjectId='project-1'
+				items={[
+					createProject({ id: 'project-1', name: '项目 A' }),
+					createProject({ id: 'project-2', name: '项目 B' }),
+				]}
+				onArchive={() => undefined}
+				onComplete={() => undefined}
+				onDelete={() => undefined}
+				onMoveProjectFocus={() => null}
+				onOpen={() => undefined}
+				onReopen={() => undefined}
+				onToggleProjectSelection={onToggleProjectSelection}
+				selectedProjectIds={new Set()}
+				status='ready'
+				variant='overview'
+			/>,
+		)
+
+		fireEvent.keyDown(window, { key: 'ArrowDown', shiftKey: true })
+
+		expect(onToggleProjectSelection).toHaveBeenCalledWith('project-1')
 	})
 })
 

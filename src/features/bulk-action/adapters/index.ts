@@ -9,3 +9,8 @@ export {
 	type LifecycleBulkAdapter,
 	type LifecycleBulkMutationReport,
 } from './lifecycle-bulk-adapter'
+export {
+	createProjectBulkAdapter,
+	type ProjectBulkAdapter,
+	type ProjectBulkMutationReport,
+} from './project-bulk-adapter'

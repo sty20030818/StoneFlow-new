@@ -53,6 +53,8 @@ function createActions(): ShellCommandActions {
 		completeSelectedTasks: vi.fn(),
 		requestArchiveSelectedTasks: vi.fn(),
 		requestDeleteSelectedTasks: vi.fn(),
+		requestArchiveSelectedProjects: vi.fn(),
+		requestDeleteSelectedProjects: vi.fn(),
 		restoreSelectedLifecycleEntries: vi.fn(),
 		requestDeleteSelectedLifecycleEntries: vi.fn(),
 		requestDeletePermanentlySelectedLifecycleEntries: vi.fn(),

@@ -13,9 +13,15 @@ export const LIFECYCLE_BULK_ACTION_IDS = {
 	deletePermanentlySelected: 'lifecycle.deletePermanentlySelected',
 } as const
 
+export const PROJECT_BULK_ACTION_IDS = {
+	archiveSelected: 'project.archiveSelected',
+	deleteSelected: 'project.deleteSelected',
+} as const
+
 export type KnownBulkActionId =
 	| (typeof TASK_BULK_ACTION_IDS)[keyof typeof TASK_BULK_ACTION_IDS]
 	| (typeof LIFECYCLE_BULK_ACTION_IDS)[keyof typeof LIFECYCLE_BULK_ACTION_IDS]
+	| (typeof PROJECT_BULK_ACTION_IDS)[keyof typeof PROJECT_BULK_ACTION_IDS]
 export type BulkActionId = KnownBulkActionId | (string & {})
 
 export type BulkEntityType = 'task' | 'project' | 'lifecycle'

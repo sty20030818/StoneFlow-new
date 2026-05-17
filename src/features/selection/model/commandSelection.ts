@@ -1,5 +1,5 @@
 import type { CommandSelectionContext } from '@/features/command/core'
-import type { LifecycleEntry, LifecycleMode, TaskListItem } from '@/shared/types'
+import type { LifecycleEntry, LifecycleMode, ProjectOverviewItem, TaskListItem } from '@/shared/types'
 
 type BuildTaskCommandSelectionInput = {
 	selectedIds: string[]
@@ -12,6 +12,12 @@ type BuildLifecycleCommandSelectionInput = {
 	selectedIds: string[]
 	entries: LifecycleEntry[]
 	mode: LifecycleMode
+	clearSelection?: () => void
+}
+
+type BuildProjectCommandSelectionInput = {
+	selectedIds: string[]
+	projects: ProjectOverviewItem[]
 	clearSelection?: () => void
 }
 
@@ -97,6 +103,44 @@ export function buildLifecycleCommandSelection({
 	}
 }
 
+export function buildProjectCommandSelection({
+	selectedIds,
+	projects,
+	clearSelection,
+}: BuildProjectCommandSelectionInput): CommandSelectionContext {
+	const projectById = new Map(projects.map((project) => [project.id, project]))
+	const entities = selectedIds.flatMap((projectId) => {
+		const project = projectById.get(projectId)
+		if (!project) {
+			return []
+		}
+
+		return [
+			{
+				id: project.id,
+				type: 'project' as const,
+				title: project.name,
+				subtitle: getProjectSubtitle(project),
+				projectStatus: getProjectStatus(project),
+			},
+		]
+	})
+	const ids = entities.map((entity) => entity.id)
+	const count = ids.length
+
+	return {
+		type: count > 0 ? 'project' : undefined,
+		ids,
+		entities,
+		primaryEntity: entities[0],
+		clearSelection,
+		source: count > 0 ? 'project-list' : 'none',
+		hasSelection: count > 0,
+		isSingleSelection: count === 1,
+		isMultiSelection: count > 1,
+	}
+}
+
 function getLifecycleEntrySubtitle(entry: LifecycleEntry) {
 	if (entry.entityType === 'space') {
 		return '空间'
@@ -107,4 +151,30 @@ function getLifecycleEntrySubtitle(entry: LifecycleEntry) {
 	}
 
 	return entry.projectName ?? entry.spaceName ?? '任务'
+}
+
+function getProjectSubtitle(project: ProjectOverviewItem) {
+	const statusLabel = getProjectStatusLabel(project)
+	return project.spaceName ? `${statusLabel} · ${project.spaceName}` : statusLabel
+}
+
+function getProjectStatus(project: ProjectOverviewItem) {
+	if (project.archivedAt) {
+		return 'archived' as const
+	}
+	if (project.completedAt) {
+		return 'completed' as const
+	}
+	return 'active' as const
+}
+
+function getProjectStatusLabel(project: ProjectOverviewItem) {
+	switch (getProjectStatus(project)) {
+		case 'archived':
+			return '已归档项目'
+		case 'completed':
+			return '已完成项目'
+		default:
+			return '进行中项目'
+	}
 }

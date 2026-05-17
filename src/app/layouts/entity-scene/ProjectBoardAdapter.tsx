@@ -30,7 +30,11 @@ export function ProjectBoardAdapter({ config, data, actions }: ProjectBoardAdapt
 			onEmptyAction={actions.onEmptyAction}
 			onOpen={(projectId) => actions.onOpenProject?.(projectId)}
 			onReopen={(projectId) => actions.onReopenProject?.(projectId)}
+			onClearProjectSelection={actions.onClearProjectSelection}
+			onMoveProjectFocus={actions.onMoveProjectFocus}
+			onSetFocusedProject={actions.onSetFocusedProject}
 			onToggleProjectSelection={actions.onToggleProjectSelection}
+			focusedProjectId={data.focusedProjectId ?? null}
 			selectedProjectIds={data.selectedProjectIds}
 			status={data.status ?? 'ready'}
 			variant='overview'

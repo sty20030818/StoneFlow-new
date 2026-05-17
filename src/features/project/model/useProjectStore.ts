@@ -58,6 +58,7 @@ type ProjectStoreState = {
 	loadSidebar: (scope: Scope) => Promise<void>
 	loadDetail: (projectId: string) => Promise<void>
 	clearDetail: () => void
+	refreshLoadedSlices: (updatedProject?: ProjectDetail) => Promise<void>
 
 	createProject: (input: ProjectFormInput) => Promise<ProjectDetail>
 	updateProject: (input: ProjectUpdateInput) => Promise<ProjectDetail>
@@ -271,6 +272,7 @@ export const useProjectStore = create<ProjectStoreState>((set, get) => {
 					projectId: null,
 				},
 			}),
+		refreshLoadedSlices,
 
 		createProject: async (input) => {
 			const project = await runMutation(() => createProject(input))

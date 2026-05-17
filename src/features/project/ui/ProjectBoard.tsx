@@ -14,6 +14,10 @@ import { ArchiveIcon, FolderIcon, PlayIcon, CheckIcon } from 'lucide-react'
 import { entityBoardMutedIconClass } from '@/shared/ui/patterns/entity-board'
 
 import { ProjectRowAdapter } from '@/features/project/ui/ProjectRowAdapter'
+import {
+	EntityRowShortcutScope,
+	type EntityRowShortcutState,
+} from '@/features/selection/ui/EntityRowShortcutScope'
 
 type ProjectBoardSectionKey = 'active' | 'completed' | 'archived'
 
@@ -23,6 +27,7 @@ type ProjectBoardProps = {
 	status: 'idle' | 'loading' | 'ready' | 'error'
 	busyProjectId: string | null
 	selectedProjectIds?: Set<string>
+	focusedProjectId?: string | null
 	emptyTitle: string
 	emptyDescription: string
 	emptyActionLabel?: string
@@ -33,6 +38,17 @@ type ProjectBoardProps = {
 	onArchive: (projectId: string) => void
 	onDelete: (projectId: string) => void
 	onToggleProjectSelection?: (projectId: string) => void
+	onSetFocusedProject?: (projectId: string | null) => void
+	onMoveProjectFocus?: (
+		delta: number,
+		options?: {
+			preserveAnchor?: boolean
+			selectRange?: boolean
+			startFromId?: string | null
+			resetAnchorToStart?: boolean
+		},
+	) => string | null
+	onClearProjectSelection?: () => void
 }
 
 const PROJECT_SECTION_ORDER: ProjectBoardSectionKey[] = ['active', 'completed', 'archived']
@@ -81,27 +97,43 @@ export function ProjectBoard(props: ProjectBoardProps) {
 		setOpenSections(new Set(sections.map((s) => s.key)))
 	}
 
+	const visibleProjects = sections.flatMap((section) => section.items)
+
 	return (
-		<BoardRoot>
-			{sections.map((section) => (
-				<ProjectBoardSectionBlock
-					busyProjectId={props.busyProjectId}
-					key={section.key}
-					onArchive={props.onArchive}
-					onCollapseAll={handleCollapseAll}
-					onComplete={props.onComplete}
-					onDelete={props.onDelete}
-					onExpandAll={handleExpandAll}
-					onOpen={props.onOpen}
-					onOpenChange={(open) => handleOpenChange(section.key, open)}
-					onReopen={props.onReopen}
-					onToggleProjectSelection={props.onToggleProjectSelection}
-					open={openSections.has(section.key)}
-					section={section}
-					selectedProjectIds={props.selectedProjectIds}
-				/>
-			))}
-		</BoardRoot>
+		<EntityRowShortcutScope
+			focusedId={props.focusedProjectId ?? null}
+			ids={visibleProjects.map((project) => project.id)}
+			onClearSelection={props.onClearProjectSelection}
+			onMoveFocus={props.onMoveProjectFocus}
+			onSetFocusedId={props.onSetFocusedProject}
+			onToggleSelection={props.onToggleProjectSelection}
+			selectedIdSet={props.selectedProjectIds}
+		>
+			{(rowShortcutState) => (
+				<BoardRoot>
+					{sections.map((section) => (
+						<ProjectBoardSectionBlock
+							busyProjectId={props.busyProjectId}
+							key={section.key}
+							onArchive={props.onArchive}
+							onCollapseAll={handleCollapseAll}
+							onComplete={props.onComplete}
+							onDelete={props.onDelete}
+							onExpandAll={handleExpandAll}
+							onOpen={props.onOpen}
+							onOpenChange={(open) => handleOpenChange(section.key, open)}
+							onReopen={props.onReopen}
+							onToggleProjectSelection={props.onToggleProjectSelection}
+							open={openSections.has(section.key)}
+							section={section}
+							selectedProjectIds={props.selectedProjectIds}
+							focusedProjectId={props.focusedProjectId ?? null}
+							rowShortcutState={rowShortcutState}
+						/>
+					))}
+				</BoardRoot>
+			)}
+		</EntityRowShortcutScope>
 	)
 }
 
@@ -119,6 +151,8 @@ function ProjectBoardSectionBlock({
 	onToggleProjectSelection,
 	onCollapseAll,
 	onExpandAll,
+	focusedProjectId,
+	rowShortcutState,
 }: {
 	section: BoardSection<ProjectOverviewItem> & {
 		key: ProjectBoardSectionKey
@@ -135,6 +169,8 @@ function ProjectBoardSectionBlock({
 	onToggleProjectSelection?: (projectId: string) => void
 	onCollapseAll: () => void
 	onExpandAll: () => void
+	focusedProjectId: string | null
+	rowShortcutState: EntityRowShortcutState
 }) {
 	const sectionIds = useMemo(() => section.items.map((p) => p.id), [section.items])
 	const { selectedCount, handleSelectAll, handleDeselectAll } = useSectionSelection({
@@ -182,6 +218,11 @@ function ProjectBoardSectionBlock({
 					rowState={{
 						isPending: busyProjectId === project.id,
 						isSelected: selectedProjectIds?.has(project.id) ?? false,
+						isKeyboardFocused: focusedProjectId === project.id,
+					}}
+					rowShortcutHandlers={{
+						onFocus: rowShortcutState.onRowFocus,
+						onHover: rowShortcutState.onRowHover,
 					}}
 				/>
 			))}
