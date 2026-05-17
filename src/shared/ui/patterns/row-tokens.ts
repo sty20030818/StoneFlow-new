@@ -9,6 +9,9 @@ export const ROW_SHELL_BASE_CLASS =
 
 export const ROW_SHELL_IDLE_CLASS = 'hover:bg-sf-list-row-hover'
 export const ROW_SHELL_ACTIVE_CLASS = 'border-sf-border-subtle bg-sf-list-row-selected'
+export const ROW_SHELL_FOCUS_CLASS = 'border-sf-border-subtle'
+export const ROW_SHELL_SELECTED_FOCUS_CLASS =
+	'border-[1.5px] border-[color-mix(in_srgb,color-mix(in_srgb,var(--sf-accent-active)_42%,var(--sf-border-strong))_44%,transparent)]'
 export const ROW_SHELL_SELECTED_CLASS =
 	'border-transparent bg-sf-selection-surface hover:bg-sf-selection-surface-hover'
 /** 选中 row 被合并到分组 wrapper 内时，去掉自身背景，只保留 hover。 */

@@ -467,7 +467,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
 // icon 态下隐藏文字/末端元素、压成正方形；展开态恢复正常
 // 带 data-sidebar-keep 的子 span 会在 icon 态保留（例如 Space 的 icon badge）
 const sidebarMenuButtonVariants = cva(
-	'flex w-full min-w-0 items-center gap-2 rounded-md border border-transparent text-sf-shell-secondary outline-none transition-colors select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:mx-auto group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:justify-center group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-0 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:[&>span:not([data-sidebar-keep])]:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:mx-auto group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:justify-center group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-0 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:[&>span:not([data-sidebar-keep])]:hidden',
+	'flex w-full min-w-0 items-center gap-2 rounded-md border border-transparent text-sf-shell-secondary outline-none transition-colors select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:mx-auto group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:justify-center group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-0 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:[&>span:not([data-sidebar-keep])]:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:mx-auto group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:justify-center group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-0 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:[&>span:not([data-sidebar-keep])]:hidden',
 	{
 		variants: {
 			size: {
@@ -588,7 +588,7 @@ function SidebarMenuSubItem({ className, ...props }: React.ComponentProps<'li'>)
 }
 
 const sidebarMenuSubButtonVariants = cva(
-	'relative flex w-full min-w-0 items-center gap-2 rounded-md border border-transparent text-sf-shell-secondary outline-none transition-colors select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 disabled:pointer-events-none disabled:opacity-50 before:absolute before:-left-3 before:top-1/2 before:h-px before:w-3 before:-translate-y-1/2 before:bg-sf-border-subtle [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
+	'relative flex w-full min-w-0 items-center gap-2 rounded-md border border-transparent text-sf-shell-secondary outline-none transition-colors select-none disabled:pointer-events-none disabled:opacity-50 before:absolute before:-left-3 before:top-1/2 before:h-px before:w-3 before:-translate-y-1/2 before:bg-sf-border-subtle [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
 	{
 		variants: {
 			size: {

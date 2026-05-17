@@ -24,8 +24,19 @@ type TaskRowShortcutScopeProps = {
 	children: (state: TaskRowShortcutState) => ReactNode
 	tasks: TaskListItem[]
 	activeTaskId: string | null
+	focusedTaskId?: string | null
 	selectedTaskIdSet: Set<string>
 	onToggleTaskSelection: (taskId: string) => void
+	onSetFocusedTask?: (taskId: string | null) => void
+	onMoveTaskFocus?: (
+		delta: number,
+		options?: {
+			preserveAnchor?: boolean
+			selectRange?: boolean
+			startFromId?: string | null
+			resetAnchorToStart?: boolean
+		},
+	) => string | null
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
 	onArchiveTask?: (task: TaskListItem) => Promise<void>
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
@@ -51,20 +62,41 @@ type TaskRowCommandActions = {
 
 const ROW_COMMAND_DISABLED_REASON = 'Row 上下文尚未接入'
 
+type ShiftToggleSession = {
+	active: boolean
+	cursorId: string | null
+	direction: -1 | 1 | null
+	lastToggledId: string | null
+}
+
+const EMPTY_SHIFT_TOGGLE_SESSION: ShiftToggleSession = {
+	active: false,
+	cursorId: null,
+	direction: null,
+	lastToggledId: null,
+}
+
 export function TaskRowShortcutScope({
 	children,
 	tasks,
 	activeTaskId,
+	focusedTaskId: externalFocusedTaskId = null,
 	selectedTaskIdSet,
 	onToggleTaskSelection,
+	onSetFocusedTask,
+	onMoveTaskFocus,
 	onToggleTaskStatus,
 	onArchiveTask,
 	onDeleteTask,
 	onOpenTask,
 }: TaskRowShortcutScopeProps) {
-	const [hoverTaskId, setHoverTaskId] = useState<string | null>(null)
-	const [focusTaskId, setFocusTaskId] = useState<string | null>(null)
+	const [focusTaskId, setFocusTaskId] = useState<string | null>(externalFocusedTaskId)
+	const shiftToggleSessionRef = useRef<ShiftToggleSession>(EMPTY_SHIFT_TOGGLE_SESSION)
 	const chordStateRef = useRef<KeybindingChordState | null>(null)
+
+	useEffect(() => {
+		setFocusTaskId(externalFocusedTaskId)
+	}, [externalFocusedTaskId])
 
 	const taskById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks])
 	const selectedTaskIds = useMemo(() => [...selectedTaskIdSet], [selectedTaskIdSet])
@@ -87,12 +119,12 @@ export function TaskRowShortcutScope({
 	const rowTarget = useMemo(
 		() =>
 			resolveTaskRowTarget({
-				hover: toTaskRowRef(hoverTaskId),
+				hover: null,
 				keyboardFocus: toTaskRowRef(focusTaskId),
 				active: toTaskRowRef(activeTaskId),
 				selection,
 			}),
-		[activeTaskId, focusTaskId, hoverTaskId, selection],
+		[activeTaskId, focusTaskId, selection],
 	)
 	const targetTask = rowTarget.targetId ? taskById.get(rowTarget.targetId) : undefined
 
@@ -127,7 +159,27 @@ export function TaskRowShortcutScope({
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
-			if (isBlockedByHigherLayer() || !rowTarget.hasTarget) {
+			if (isBlockedByHigherLayer()) {
+				return
+			}
+
+			const navigationResult = handleTaskRowNavigationKey({
+				event,
+				focusedTaskId: focusTaskId,
+				tasks,
+				moveFocus: onMoveTaskFocus,
+				onToggleTaskSelection,
+				shiftToggleSession: shiftToggleSessionRef.current,
+				setShiftToggleSession: (session) => {
+					shiftToggleSessionRef.current = session
+				},
+				setLocalFocusTaskId: setFocusTaskId,
+			})
+			if (navigationResult === 'handled') {
+				return
+			}
+
+			if (!rowTarget.hasTarget) {
 				return
 			}
 
@@ -155,14 +207,28 @@ export function TaskRowShortcutScope({
 
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [rowTarget.hasTarget, runtime])
+	}, [focusTaskId, onMoveTaskFocus, onToggleTaskSelection, rowTarget.hasTarget, runtime, tasks])
 
 	const state = useMemo<TaskRowShortcutState>(
 		() => ({
-			onRowHover: setHoverTaskId,
-			onRowFocus: setFocusTaskId,
+			onRowHover: (taskId) => {
+				if (!taskId) {
+					return
+				}
+				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+				setFocusTaskId(taskId)
+				onSetFocusedTask?.(taskId)
+			},
+			onRowFocus: (taskId) => {
+				if (!taskId) {
+					return
+				}
+				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+				setFocusTaskId(taskId)
+				onSetFocusedTask?.(taskId)
+			},
 		}),
-		[],
+		[onSetFocusedTask],
 	)
 
 	return <>{children(state)}</>
@@ -304,6 +370,172 @@ function createTaskRowCommandActions({
 	}
 }
 
+function handleTaskRowNavigationKey({
+	event,
+	focusedTaskId,
+	tasks,
+	moveFocus,
+	onToggleTaskSelection,
+	shiftToggleSession,
+	setShiftToggleSession,
+	setLocalFocusTaskId,
+}: {
+	event: KeyboardEvent
+	focusedTaskId: string | null
+	tasks: TaskListItem[]
+	moveFocus?: (
+		delta: number,
+		options?: {
+			preserveAnchor?: boolean
+			selectRange?: boolean
+			startFromId?: string | null
+			resetAnchorToStart?: boolean
+		},
+	) => string | null
+	onToggleTaskSelection: (taskId: string) => void
+	shiftToggleSession: ShiftToggleSession
+	setShiftToggleSession: (session: ShiftToggleSession) => void
+	setLocalFocusTaskId: (taskId: string | null) => void
+}) {
+	if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
+		return 'ignored'
+	}
+
+	if (event.defaultPrevented || event.isComposing || isEditableEventTarget(event.target)) {
+		return 'ignored'
+	}
+
+	if (!moveFocus) {
+		return 'ignored'
+	}
+
+	event.preventDefault()
+	const delta = event.key === 'ArrowDown' ? 1 : -1
+	if (event.shiftKey) {
+		const nextSession = handleShiftToggleNavigation({
+			delta,
+			focusedTaskId,
+			tasks,
+			shiftToggleSession,
+			onToggleTaskSelection,
+			setLocalFocusTaskId,
+		})
+		setShiftToggleSession(nextSession)
+
+		return 'handled'
+	}
+
+	const nextTaskId = moveFocus(event.key === 'ArrowDown' ? 1 : -1, {
+		preserveAnchor: false,
+		selectRange: false,
+	})
+	setShiftToggleSession(EMPTY_SHIFT_TOGGLE_SESSION)
+	setLocalFocusTaskId(nextTaskId)
+
+	return 'handled'
+}
+
+function handleShiftToggleNavigation({
+	delta,
+	focusedTaskId,
+	tasks,
+	shiftToggleSession,
+	onToggleTaskSelection,
+	setLocalFocusTaskId,
+}: {
+	delta: -1 | 1
+	focusedTaskId: string | null
+	tasks: TaskListItem[]
+	shiftToggleSession: ShiftToggleSession
+	onToggleTaskSelection: (taskId: string) => void
+	setLocalFocusTaskId: (taskId: string | null) => void
+}): ShiftToggleSession {
+	const visibleTaskIds = tasks.map((task) => task.id)
+	if (visibleTaskIds.length === 0) {
+		setLocalFocusTaskId(null)
+		return EMPTY_SHIFT_TOGGLE_SESSION
+	}
+
+	const cursorId = resolveShiftToggleCursorId({
+		delta,
+		focusedTaskId,
+		visibleTaskIds,
+		shiftToggleSession,
+	})
+	if (!cursorId) {
+		return EMPTY_SHIFT_TOGGLE_SESSION
+	}
+
+	if (
+		shiftToggleSession.active &&
+		shiftToggleSession.direction === delta &&
+		shiftToggleSession.lastToggledId === cursorId &&
+		isTaskSelectionBoundary(visibleTaskIds, cursorId, delta)
+	) {
+		setLocalFocusTaskId(cursorId)
+		return shiftToggleSession
+	}
+
+	onToggleTaskSelection(cursorId)
+	setLocalFocusTaskId(cursorId)
+
+	return {
+		active: true,
+		cursorId: getAdjacentTaskId(visibleTaskIds, cursorId, delta),
+		direction: delta,
+		lastToggledId: cursorId,
+	}
+}
+
+function resolveShiftToggleCursorId({
+	delta,
+	focusedTaskId,
+	visibleTaskIds,
+	shiftToggleSession,
+}: {
+	delta: -1 | 1
+	focusedTaskId: string | null
+	visibleTaskIds: string[]
+	shiftToggleSession: ShiftToggleSession
+}) {
+	if (!shiftToggleSession.active) {
+		return getValidTaskId(visibleTaskIds, focusedTaskId) ?? visibleTaskIds[0] ?? null
+	}
+
+	if (
+		shiftToggleSession.direction !== delta &&
+		getValidTaskId(visibleTaskIds, shiftToggleSession.lastToggledId)
+	) {
+		return shiftToggleSession.lastToggledId
+	}
+
+	return (
+		getValidTaskId(visibleTaskIds, shiftToggleSession.cursorId) ??
+		getValidTaskId(visibleTaskIds, focusedTaskId) ??
+		visibleTaskIds[0] ??
+		null
+	)
+}
+
+function getAdjacentTaskId(taskIds: string[], taskId: string, delta: -1 | 1) {
+	const index = taskIds.indexOf(taskId)
+	if (index < 0) {
+		return taskIds[0] ?? null
+	}
+
+	const nextIndex = Math.min(Math.max(index + delta, 0), taskIds.length - 1)
+	return taskIds[nextIndex] ?? null
+}
+
+function getValidTaskId(taskIds: string[], taskId: string | null) {
+	return taskId && taskIds.includes(taskId) ? taskId : null
+}
+
+function isTaskSelectionBoundary(taskIds: string[], taskId: string, delta: -1 | 1) {
+	const index = taskIds.indexOf(taskId)
+	return (delta < 0 && index === 0) || (delta > 0 && index === taskIds.length - 1)
+}
+
 function openTaskPropertyPicker(
 	mode: 'task-priority-picker' | 'task-status-picker' | 'task-date-picker',
 	tasks: TaskListItem[],
@@ -344,6 +576,19 @@ function isBlockedByHigherLayer() {
 			'[cmdk-root], [data-slot="dialog-content"], [data-slot="dropdown-menu-content"], [data-slot="context-menu-content"]',
 		),
 	)
+}
+
+function isEditableEventTarget(target: EventTarget | null) {
+	if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) {
+		return false
+	}
+
+	if (target.isContentEditable) {
+		return true
+	}
+
+	const tagName = target.tagName
+	return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT'
 }
 
 function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent {

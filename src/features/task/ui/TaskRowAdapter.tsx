@@ -26,6 +26,7 @@ type TaskRowAdapterProps = {
 		isActive: boolean
 		isSelected: boolean
 		isPending: boolean
+		isKeyboardFocused?: boolean
 	}
 	rowShortcutHandlers?: {
 		onHover: (taskId: string | null) => void
@@ -59,7 +60,7 @@ export function TaskRowAdapter({
 	projectBinding,
 	actions,
 }: TaskRowAdapterProps) {
-	const { isActive, isSelected, isPending } = rowState
+	const { isActive, isSelected, isPending, isKeyboardFocused = false } = rowState
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
 	const hasProjectOptions = Boolean(
 		projectBinding?.projectOptions &&
@@ -82,8 +83,10 @@ export function TaskRowAdapter({
 				data-task-id={task.id}
 				interactive
 				active={isActive}
+				controlledHover
 				pending={isPending}
 				selected={isSelected}
+				keyboardFocused={isKeyboardFocused}
 				selectionGroupPosition={selectionGroupPosition}
 				onClick={() => actions.onOpenTask(task.id)}
 				onBlur={() => rowShortcutHandlers?.onFocus(null)}

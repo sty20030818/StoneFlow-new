@@ -4,8 +4,10 @@ import {
 	RowSelectionCell,
 	RowShell,
 	ROW_SHELL_ACTIVE_CLASS,
+	ROW_SHELL_FOCUS_CLASS,
 	ROW_SHELL_IDLE_CLASS,
 	ROW_SHELL_SELECTED_CLASS,
+	ROW_SHELL_SELECTED_FOCUS_CLASS,
 } from '@/shared/ui/row'
 
 describe('RowShell', () => {
@@ -36,6 +38,55 @@ describe('RowShell', () => {
 
 		const row = screen.getByRole('button', { name: 'interactive row' })
 		expect(row).toHaveAttribute('tabindex', '0')
+	})
+
+	it('keyboard focus 复用 hover/selected 表面，只额外叠加边框', () => {
+		const { rerender } = render(
+			<RowShell.Root data-testid='row' keyboardFocused>
+				row
+			</RowShell.Root>,
+		)
+
+		const row = screen.getByTestId('row')
+		expect(row.className).toContain(ROW_SHELL_IDLE_CLASS)
+		expect(row.className).toContain('bg-sf-list-row-hover')
+		expect(row.className).toContain(ROW_SHELL_FOCUS_CLASS)
+
+		rerender(
+			<RowShell.Root data-testid='row' keyboardFocused selected>
+				row
+			</RowShell.Root>,
+		)
+		expect(row.className).toContain('bg-sf-selection-surface')
+		expect(row.className).toContain('hover:bg-sf-selection-surface-hover')
+		expect(row.className).toContain(ROW_SHELL_SELECTED_FOCUS_CLASS)
+		expect(row.className).not.toContain('ring-3')
+	})
+
+	it('controlled hover 关闭默认 CSS hover，只保留受控焦点表面', () => {
+		const { rerender } = render(
+			<RowShell.Root controlledHover data-testid='row'>
+				row
+			</RowShell.Root>,
+		)
+
+		expect(screen.getByTestId('row').className).not.toContain(ROW_SHELL_IDLE_CLASS)
+
+		rerender(
+			<RowShell.Root controlledHover data-testid='row' selected>
+				row
+			</RowShell.Root>,
+		)
+		expect(screen.getByTestId('row').className).toContain('bg-sf-selection-surface')
+		expect(screen.getByTestId('row').className).not.toContain('hover:bg-sf-selection-surface-hover')
+
+		rerender(
+			<RowShell.Root controlledHover data-testid='row' keyboardFocused selected>
+				row
+			</RowShell.Root>,
+		)
+		expect(screen.getByTestId('row').className).toContain('bg-sf-selection-surface-hover')
+		expect(screen.getByTestId('row').className).toContain(ROW_SHELL_SELECTED_FOCUS_CLASS)
 	})
 })
 

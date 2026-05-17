@@ -7,6 +7,7 @@ import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
+import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { getTaskPlacement } from '@/features/task/model/taskPlacement'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
@@ -36,7 +37,6 @@ const TASK_FILTERS: TaskFilter[] = [
 	'done',
 	'canceled',
 ]
-
 export function AllTasksPage() {
 	const { scope } = useScopeRoute()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
@@ -71,13 +71,20 @@ export function AllTasksPage() {
 					: visibleTasks.filter((task) => task.status === taskFilter),
 		[taskFilter, visibleTasks],
 	)
+	const taskSelectionOrderIds = useMemo(
+		() => getTaskBoardVisualOrderIds(filteredTasks),
+		[filteredTasks],
+	)
 	const {
 		selectedTaskIdSet,
 		selectionSnapshot,
 		selectedCount,
+		focusedTaskId,
 		toggleTaskSelection,
 		clearTaskSelection,
-	} = useTaskSelection(filteredTasks.map((task) => task.id))
+		setFocusedTaskId,
+		moveFocus,
+	} = useTaskSelection(taskSelectionOrderIds)
 	const commandSelection = useMemo(
 		() =>
 			buildTaskCommandSelection({
@@ -112,19 +119,21 @@ export function AllTasksPage() {
 					emptyDescription: '当前筛选下没有任务，尝试切换筛选或创建新任务。',
 					emptyTitle: '暂无任务',
 					hideEmptySections: true,
-					statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
 				},
 				boardData: {
 					items: filteredTasks,
 					activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
+					focusedTaskId,
 				},
 				boardActions: {
 					onArchiveTask: archiveListTask,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
 					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onSetFocusedTask: setFocusedTaskId,
+					onMoveTaskFocus: moveFocus,
 					onSelectNoProject: (task) => void leaveListTaskAsNoProject(task),
 					onSelectProject: (task, projectId) => void leaveListTaskToProject(task, projectId),
 					onToggleTaskSelection: toggleTaskSelection,

@@ -30,7 +30,7 @@ export type EntitySceneTaskBoardConfig = {
 	emptyDescription?: string
 	emptyActionLabel?: string
 	hideEmptySections?: boolean
-	statusOrder?: TaskStatus[]
+	statusOrder?: readonly TaskStatus[]
 	customSections?: Array<{
 		key: string
 		label: string
@@ -44,11 +44,22 @@ export type EntitySceneTaskBoardData = {
 	activeItemId?: string | null
 	pendingItemId?: string | null
 	selectedTaskIdSet?: Set<string>
+	focusedTaskId?: string | null
 }
 
 export type EntitySceneTaskBoardActions = {
 	onEmptyAction?: () => void
 	onToggleTaskSelection?: (taskId: string) => void
+	onSetFocusedTask?: (taskId: string | null) => void
+	onMoveTaskFocus?: (
+		delta: number,
+		options?: {
+			preserveAnchor?: boolean
+			selectRange?: boolean
+			startFromId?: string | null
+			resetAnchorToStart?: boolean
+		},
+	) => string | null
 	onUpdateTaskPriority?: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus?: (task: TaskListItem, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus?: (task: TaskListItem) => Promise<void>

@@ -17,6 +17,10 @@ import {
 	useSectionSelection,
 } from '@/shared/ui/board'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import {
+	TASK_BOARD_STATUS_ORDER,
+	orderTasksByTaskBoardVisualOrder,
+} from '@/features/task/model/taskBoardOrder'
 import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { TaskRowShortcutScope, type TaskRowShortcutState } from '@/features/task/shortcuts'
@@ -26,8 +30,6 @@ import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { ListTodoIcon, PlusIcon } from 'lucide-react'
 import { entityBoardSectionActionButtonClass } from '@/shared/ui/patterns/entity-board'
-
-const TASK_SECTIONS: TaskStatus[] = ['todo', 'doing', 'waiting', 'done', 'canceled']
 
 type TaskBoardProps = {
 	tasks: TaskListItem[]
@@ -40,18 +42,29 @@ type TaskBoardProps = {
 	pendingTaskId: string | null
 	activeTaskId: string | null
 	selectedTaskIdSet: Set<string>
+	focusedTaskId?: string | null
 	emptyTitle?: string
 	emptyDescription?: string
 	emptyActionLabel?: string
 	onEmptyAction: () => void
 	onToggleTaskSelection: (taskId: string) => void
+	onSetFocusedTask?: (taskId: string | null) => void
+	onMoveTaskFocus?: (
+		delta: number,
+		options?: {
+			preserveAnchor?: boolean
+			selectRange?: boolean
+			startFromId?: string | null
+			resetAnchorToStart?: boolean
+		},
+	) => string | null
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
 	onArchiveTask?: (task: TaskListItem) => Promise<void>
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
-	statusOrder?: TaskStatus[]
+	statusOrder?: readonly TaskStatus[]
 	hideEmptySections?: boolean
 	projectOptions?: Array<{ id: string; name: string }>
 	onSelectProject?: (task: TaskListItem, projectId: string) => void
@@ -65,18 +78,21 @@ export function TaskBoard({
 	pendingTaskId,
 	activeTaskId,
 	selectedTaskIdSet,
+	focusedTaskId = null,
 	emptyTitle,
 	emptyDescription,
 	emptyActionLabel,
 	onEmptyAction,
 	onToggleTaskSelection,
+	onSetFocusedTask,
+	onMoveTaskFocus,
 	onUpdateTaskPriority,
 	onUpdateTaskStatus,
 	onToggleTaskStatus,
 	onArchiveTask,
 	onDeleteTask,
 	onOpenTask,
-	statusOrder = TASK_SECTIONS,
+	statusOrder = TASK_BOARD_STATUS_ORDER,
 	hideEmptySections = false,
 	projectOptions,
 	onSelectProject,
@@ -98,6 +114,10 @@ export function TaskBoard({
 			canceled: tasksByStatus.canceled ?? [],
 		} satisfies Record<TaskStatus, TaskListItem[]>
 	}, [tasks])
+	const taskShortcutOrder = useMemo(
+		() => orderTasksByTaskBoardVisualOrder(tasks, { statusOrder, customSections }),
+		[customSections, statusOrder, tasks],
+	)
 
 	function handleSectionOpenChange(status: TaskStatus, open: boolean) {
 		const nextSections = open
@@ -139,6 +159,7 @@ export function TaskBoard({
 					isActive: activeTaskId === task.id,
 					isPending: pendingTaskId === task.id,
 					isSelected: selectedTaskIdSet.has(task.id),
+					isKeyboardFocused: focusedTaskId === task.id,
 				}}
 				rowShortcutHandlers={
 					rowShortcutState
@@ -168,13 +189,16 @@ export function TaskBoard({
 	return (
 		<TaskRowShortcutScope
 			activeTaskId={activeTaskId}
+			focusedTaskId={focusedTaskId}
 			onArchiveTask={onArchiveTask}
 			onDeleteTask={onDeleteTask}
 			onOpenTask={onOpenTask}
+			onMoveTaskFocus={onMoveTaskFocus}
+			onSetFocusedTask={onSetFocusedTask}
 			onToggleTaskSelection={onToggleTaskSelection}
 			onToggleTaskStatus={onToggleTaskStatus}
 			selectedTaskIdSet={selectedTaskIdSet}
-			tasks={tasks}
+			tasks={taskShortcutOrder}
 		>
 			{(rowShortcutState) =>
 				customSections && customSections.length > 0 ? (

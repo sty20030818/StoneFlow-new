@@ -5,6 +5,7 @@ import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
+import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
@@ -58,13 +59,20 @@ export function NoProjectPage() {
 				: taskList.items.filter((task) => task.archivedAt === null && task.status === taskFilter),
 		[taskFilter, taskList.items],
 	)
+	const taskSelectionOrderIds = useMemo(
+		() => getTaskBoardVisualOrderIds(filteredTasks),
+		[filteredTasks],
+	)
 	const {
 		selectedTaskIdSet,
 		selectionSnapshot,
 		selectedCount,
+		focusedTaskId,
 		toggleTaskSelection,
 		clearTaskSelection,
-	} = useTaskSelection(filteredTasks.map((task) => task.id))
+		setFocusedTaskId,
+		moveFocus,
+	} = useTaskSelection(taskSelectionOrderIds)
 	const commandSelection = useMemo(
 		() =>
 			buildTaskCommandSelection({
@@ -111,12 +119,15 @@ export function NoProjectPage() {
 					activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
+					focusedTaskId,
 				},
 				boardActions: {
 					onArchiveTask: archiveListTask,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ placement: 'noProject' }),
 					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onSetFocusedTask: setFocusedTaskId,
+					onMoveTaskFocus: moveFocus,
 					onToggleTaskSelection: toggleTaskSelection,
 					onToggleTaskStatus: toggleTaskStatus,
 					onUpdateTaskPriority: updateTaskPriority,

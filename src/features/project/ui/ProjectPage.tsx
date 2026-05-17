@@ -10,6 +10,7 @@ import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/featur
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
+import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
@@ -107,13 +108,20 @@ export function ProjectPage() {
 		[taskFilter, visibleTasks],
 	)
 	const project = detail.item
+	const taskSelectionOrderIds = useMemo(
+		() => getTaskBoardVisualOrderIds(filteredTasks),
+		[filteredTasks],
+	)
 	const {
 		selectedTaskIdSet,
 		selectionSnapshot,
 		selectedCount,
+		focusedTaskId,
 		toggleTaskSelection,
 		clearTaskSelection,
-	} = useTaskSelection(filteredTasks.map((task) => task.id))
+		setFocusedTaskId,
+		moveFocus,
+	} = useTaskSelection(taskSelectionOrderIds)
 	const commandSelection = useMemo(
 		() =>
 			buildTaskCommandSelection({
@@ -153,19 +161,21 @@ export function ProjectPage() {
 							}
 						: {}),
 					hideEmptySections: true,
-					statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
 				},
 				boardData: {
 					items: project ? filteredTasks : [],
 					activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
+					focusedTaskId,
 				},
 				boardActions: {
 					onArchiveTask: archiveListTask,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ projectId }),
 					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onSetFocusedTask: setFocusedTaskId,
+					onMoveTaskFocus: moveFocus,
 					onToggleTaskSelection: toggleTaskSelection,
 					onToggleTaskStatus: toggleTaskStatus,
 					onUpdateTaskPriority: updateTaskPriority,

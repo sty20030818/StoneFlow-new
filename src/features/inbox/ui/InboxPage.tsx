@@ -15,14 +15,16 @@ import { selectProjectOptions, useProjectStore } from '@/features/project/model/
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
+import {
+	ACTIVE_TASK_BOARD_STATUS_ORDER,
+	getTaskBoardVisualOrderIds,
+} from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import { BulkCommandMenuAction } from '@/features/command/ui'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import { InboxIcon, PlusIcon } from 'lucide-react'
-
-const INBOX_STATUS_ORDER = ['todo', 'doing', 'waiting'] as const
 
 export function InboxPage() {
 	const { scope, spaceId } = useScopeRoute()
@@ -49,13 +51,23 @@ export function InboxPage() {
 			spaceId ? projectOptions.filter((project) => project.spaceId === spaceId) : projectOptions,
 		[projectOptions, spaceId],
 	)
+	const taskSelectionOrderIds = useMemo(
+		() =>
+			getTaskBoardVisualOrderIds(taskList.items, {
+				statusOrder: ACTIVE_TASK_BOARD_STATUS_ORDER,
+			}),
+		[taskList.items],
+	)
 	const {
 		selectedTaskIdSet,
 		selectionSnapshot,
 		selectedCount,
+		focusedTaskId,
 		toggleTaskSelection,
 		clearTaskSelection,
-	} = useTaskSelection(taskList.items.map((task) => task.id))
+		setFocusedTaskId,
+		moveFocus,
+	} = useTaskSelection(taskSelectionOrderIds)
 	const commandSelection = useMemo(
 		() =>
 			buildTaskCommandSelection({
@@ -90,19 +102,22 @@ export function InboxPage() {
 					emptyDescription: '新捕获的任务会先进入 Inbox，补齐项目后再离开。',
 					emptyTitle: '当前 Inbox 已清空',
 					hideEmptySections: true,
-					statusOrder: [...INBOX_STATUS_ORDER],
+					statusOrder: ACTIVE_TASK_BOARD_STATUS_ORDER,
 				},
 				boardData: {
 					items: taskList.items,
 					activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
+					focusedTaskId,
 				},
 				boardActions: {
 					onArchiveTask: archiveListTask,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog(),
 					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onSetFocusedTask: setFocusedTaskId,
+					onMoveTaskFocus: moveFocus,
 					onToggleTaskSelection: toggleTaskSelection,
 					onToggleTaskStatus: toggleTaskStatus,
 					onUpdateTaskPriority: updateTaskPriority,

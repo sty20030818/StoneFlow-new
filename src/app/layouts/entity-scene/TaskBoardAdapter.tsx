@@ -37,7 +37,9 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			onArchiveTask={actions.onArchiveTask}
 			onDeleteTask={actions.onDeleteTask}
 			onEmptyAction={actions.onEmptyAction ?? (() => undefined)}
+			onMoveTaskFocus={actions.onMoveTaskFocus}
 			onOpenTask={actions.onOpenTask ?? (() => undefined)}
+			onSetFocusedTask={actions.onSetFocusedTask}
 			onSelectNoProject={showProjectOptions ? actions.onSelectNoProject : undefined}
 			onSelectProject={showProjectOptions ? actions.onSelectProject : undefined}
 			onToggleTaskSelection={actions.onToggleTaskSelection ?? (() => undefined)}
@@ -46,6 +48,7 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			onUpdateTaskStatus={actions.onUpdateTaskStatus ?? (async () => undefined)}
 			pendingTaskId={data.pendingItemId ?? null}
 			projectOptions={showProjectOptions ? actions.projectOptions : undefined}
+			focusedTaskId={data.focusedTaskId ?? null}
 			selectedTaskIdSet={data.selectedTaskIdSet ?? new Set<string>()}
 			statusOrder={config.statusOrder}
 			tasks={data.items ?? []}

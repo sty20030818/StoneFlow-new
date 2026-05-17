@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { TaskListItem } from '@/shared/types'
@@ -144,6 +145,208 @@ describe('TaskRowShortcutScope', () => {
 		expect(useDialogStore.getState().commandMenuMode).toBe('task-priority-picker')
 		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a', 'task-b'])
 	})
+
+	it('ArrowDown / ArrowUp 只移动 keyboard focus，不改变 selection', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+
+		fireKey('ArrowDown')
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
+
+		fireKey('ArrowDown')
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
+
+		fireKey('ArrowUp')
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
+	})
+
+	it('方向键优先从 hover 行开始移动 keyboard focus', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-b'))
+		fireKey('ArrowDown')
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
+
+		fireKey('ArrowUp')
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
+	})
+
+	it('Shift+ArrowDown / Shift+ArrowUp 会逐行切换选中状态', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		fireKey('ArrowDown', { shiftKey: true })
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a')
+
+		fireKey('ArrowDown', { shiftKey: true })
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b')
+
+		fireKey('ArrowUp', { shiftKey: true })
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a')
+
+		fireKey('ArrowUp', { shiftKey: true })
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
+	})
+
+	it('Shift+Arrow 从 hover 行开始时，先切换 hover 行再移动切换', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-b'))
+		fireKey('ArrowDown', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b')
+
+		fireKey('ArrowDown', { shiftKey: true })
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b,task-c')
+	})
+
+	it('Shift+Arrow 在已选中行上会取消该行', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		fireKey('ArrowDown', { shiftKey: true })
+		fireKey('ArrowDown', { shiftKey: true })
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b')
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireKey('ArrowDown', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b')
+	})
+
+	it('部分选区从下边界反向时先取消下边界', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-c'))
+		fireKey('ArrowDown', { shiftKey: true })
+		fireKey('ArrowDown', { shiftKey: true })
+		fireKey('ArrowDown', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-e')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d,task-e')
+
+		fireKey('ArrowUp', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-e')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d')
+	})
+
+	it('部分选区从上边界反向时先取消上边界', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-d'))
+		fireKey('ArrowUp', { shiftKey: true })
+		fireKey('ArrowUp', { shiftKey: true })
+		fireKey('ArrowUp', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b,task-c,task-d')
+
+		fireKey('ArrowDown', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d')
+	})
+
+	it('全选后 Shift+Arrow 先取消当前边界行，再继续取消下一行', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		for (let index = 0; index < 6; index += 1) {
+			fireKey('ArrowDown', { shiftKey: true })
+		}
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-f')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
+			'task-a,task-b,task-c,task-d,task-e,task-f',
+		)
+
+		fireKey('ArrowUp', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-f')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
+			'task-a,task-b,task-c,task-d,task-e',
+		)
+
+		fireKey('ArrowUp', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-e')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b,task-c,task-d')
+	})
+
+	it('全选后 hover 到第一行时 Shift+Arrow 先取消第一行', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		for (let index = 0; index < 6; index += 1) {
+			fireKey('ArrowDown', { shiftKey: true })
+		}
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireKey('ArrowDown', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
+			'task-b,task-c,task-d,task-e,task-f',
+		)
+
+		fireKey('ArrowDown', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d,task-e,task-f')
+	})
+
+	it('Shift+Arrow 取消到空选后再次开始时先切当前行', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		for (let index = 0; index < 6; index += 1) {
+			fireKey('ArrowDown', { shiftKey: true })
+		}
+
+		for (let index = 0; index < 6; index += 1) {
+			fireKey('ArrowUp', { shiftKey: true })
+		}
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
+
+		fireKey('ArrowDown', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a')
+	})
+
+	it('上层菜单打开时 Arrow 和 Shift+Arrow 不触发范围选择', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions, withBlockingLayer: true })
+
+		fireKey('ArrowDown')
+		fireKey('ArrowDown', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
+	})
 })
 
 function renderScope({
@@ -193,6 +396,75 @@ function renderScope({
 		</>,
 	)
 
+	return actions
+}
+
+function renderSelectionScope({
+	actions = createActions(),
+	withBlockingLayer = false,
+}: {
+	actions?: ReturnType<typeof createActions>
+	withBlockingLayer?: boolean
+} = {}) {
+	const tasks = [
+		createTask({ id: 'task-a', title: '任务 A' }),
+		createTask({ id: 'task-b', title: '任务 B' }),
+		createTask({ id: 'task-c', title: '任务 C' }),
+		createTask({ id: 'task-d', title: '任务 D' }),
+		createTask({ id: 'task-e', title: '任务 E' }),
+		createTask({ id: 'task-f', title: '任务 F' }),
+	]
+
+	function SelectionHarness() {
+		const {
+			selectedTaskIds,
+			selectedTaskIdSet,
+			selectedCount,
+			focusedTaskId,
+			setFocusedTaskId,
+			moveFocus,
+			toggleTaskSelection,
+		} = useTaskSelection(tasks.map((task) => task.id))
+
+		return (
+			<>
+				{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
+				<div data-testid='focused-task'>{focusedTaskId ?? 'none'}</div>
+				<div data-testid='selected-count'>{selectedCount}</div>
+				<div data-testid='selected-ids'>{selectedTaskIds.join(',')}</div>
+				<TaskRowShortcutScope
+					activeTaskId={null}
+					focusedTaskId={focusedTaskId}
+					onArchiveTask={actions.onArchiveTask}
+					onDeleteTask={actions.onDeleteTask}
+					onMoveTaskFocus={moveFocus}
+					onOpenTask={actions.onOpenTask}
+					onSetFocusedTask={setFocusedTaskId}
+					onToggleTaskSelection={toggleTaskSelection}
+					onToggleTaskStatus={actions.onToggleTaskStatus}
+					selectedTaskIdSet={selectedTaskIdSet}
+					tasks={tasks}
+				>
+					{(state) => (
+						<div>
+							{tasks.map((task) => (
+								<div
+									data-task-id={task.id}
+									data-testid={`row-${task.id}`}
+									key={task.id}
+									onFocus={() => state.onRowFocus(task.id)}
+									onMouseEnter={() => state.onRowHover(task.id)}
+									tabIndex={0}
+								/>
+							))}
+						</div>
+					)}
+				</TaskRowShortcutScope>
+			</>
+		)
+	}
+
+	render(<SelectionHarness />)
 	return actions
 }
 

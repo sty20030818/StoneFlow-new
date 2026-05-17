@@ -10,6 +10,7 @@ import { selectProjectOptions, useProjectStore } from '@/features/project/model/
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
+import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
@@ -129,13 +130,20 @@ export function ViewsPage() {
 		() => buildCustomSections(taskRun.item?.groups ?? [], visibleTasks),
 		[taskRun.item?.groups, visibleTasks],
 	)
+	const taskSelectionOrderIds = useMemo(
+		() => getTaskBoardVisualOrderIds(visibleTasks, { customSections: sections }),
+		[sections, visibleTasks],
+	)
 	const {
 		selectedTaskIdSet,
 		selectionSnapshot,
 		selectedCount,
+		focusedTaskId,
 		toggleTaskSelection,
 		clearTaskSelection,
-	} = useTaskSelection(visibleTasks.map((task) => task.id))
+		setFocusedTaskId,
+		moveFocus,
+	} = useTaskSelection(taskSelectionOrderIds)
 	const commandSelection = useMemo(
 		() =>
 			buildTaskCommandSelection({
@@ -220,19 +228,21 @@ export function ViewsPage() {
 						emptyDescription: activeView?.description ?? '当前视图下没有符合条件的任务。',
 						emptyTitle: activeView ? `${activeView.name} 暂无任务` : '暂无视图',
 						hideEmptySections: true,
-						statusOrder: ['doing', 'todo', 'waiting', 'done', 'canceled'],
 					},
 					boardData: {
 						items: visibleTasks,
 						activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
 						pendingItemId: pendingTaskId,
 						selectedTaskIdSet,
+						focusedTaskId,
 					},
 					boardActions: {
 						onArchiveTask: archiveListTask,
 						onDeleteTask: deleteListTask,
 						onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
 						onOpenTask: (taskId) => openDrawer('task', taskId),
+						onSetFocusedTask: setFocusedTaskId,
+						onMoveTaskFocus: moveFocus,
 						onToggleTaskSelection: toggleTaskSelection,
 						onToggleTaskStatus: toggleTaskStatus,
 						onUpdateTaskPriority: updateTaskPriority,
