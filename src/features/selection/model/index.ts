@@ -3,4 +3,5 @@ export {
 	useCommandSelectionContext,
 	useRegisterCommandSelection,
 } from './CommandSelectionProvider'
-export { buildTaskCommandSelection } from './commandSelection'
+export { buildLifecycleCommandSelection, buildTaskCommandSelection } from './commandSelection'
+export { useEntitySelection } from './useEntitySelection'

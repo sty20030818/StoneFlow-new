@@ -107,6 +107,7 @@ export type EntitySceneLifecycleBoardData = {
 	sections: BoardSection<LifecycleEntry>[]
 	pendingEntryId?: string | null
 	selectedEntryIdSet?: Set<string>
+	focusedEntryId?: string | null
 }
 
 export type EntitySceneLifecycleBoardActions = {
@@ -114,6 +115,17 @@ export type EntitySceneLifecycleBoardActions = {
 	onRestore: (entry: LifecycleEntry) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
 	onToggleEntrySelection?: (entryId: string) => void
+	onSetFocusedEntry?: (entryId: string | null) => void
+	onMoveEntryFocus?: (
+		delta: number,
+		options?: {
+			preserveAnchor?: boolean
+			selectRange?: boolean
+			startFromId?: string | null
+			resetAnchorToStart?: boolean
+		},
+	) => string | null
+	onClearEntrySelection?: () => void
 }
 
 export type EntitySceneBoardSlotProps =

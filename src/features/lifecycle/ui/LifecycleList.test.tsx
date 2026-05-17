@@ -3,6 +3,13 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { ArchiveIcon, Trash2Icon, type LucideIcon } from 'lucide-react'
 import { MemoryRouter } from 'react-router-dom'
 
+import {
+	BulkActionConfirmDialog,
+	BulkActionProvider,
+	createLifecycleBulkAdapter,
+	lifecycleBulkActions,
+	useBulkActionContext,
+} from '@/features/bulk-action'
 import { LifecycleList } from '@/features/lifecycle/ui/LifecycleList'
 import type { LifecycleEntry, Scope } from '@/shared/types'
 
@@ -54,6 +61,7 @@ vi.mock('@/features/lifecycle/model/useLifecycleStore', () => ({
 }))
 
 vi.mock('@/features/lifecycle/api/lifecycle', () => ({
+	deleteLifecycleEntry: vi.fn<(entry: LifecycleEntry) => Promise<unknown>>(),
 	restoreLifecycleEntry: (entry: LifecycleEntry) => restoreLifecycleEntrySpy(entry),
 	permanentlyDeleteLifecycleEntry: (entry: LifecycleEntry) =>
 		permanentlyDeleteLifecycleEntrySpy(entry),
@@ -110,7 +118,6 @@ describe('LifecycleList', () => {
 		expect(screen.getByText('已归档的项目')).toBeInTheDocument()
 		expect(screen.getByText('已归档的任务')).toBeInTheDocument()
 		expect(screen.getAllByRole('button', { name: '恢复' })).toHaveLength(3)
-		expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '打开' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '永久删除' })).not.toBeInTheDocument()
 	})
@@ -222,8 +229,53 @@ function renderLifecycleList(props: {
 }) {
 	return render(
 		<MemoryRouter>
-			<LifecycleList {...props} />
+			<TestBulkActionBoundary mode={props.mode}>
+				<LifecycleList {...props} />
+			</TestBulkActionBoundary>
 		</MemoryRouter>,
+	)
+}
+
+function TestBulkActionBoundary({
+	children,
+	mode,
+}: {
+	children: ReactNode
+	mode: 'archive' | 'trash'
+}) {
+	const archiveEntries = storeState.archiveEntries
+	const trashEntries = storeState.trashEntries
+	const slice = mode === 'archive' ? archiveEntries : trashEntries
+	const adapter = createLifecycleBulkAdapter({
+		entries: slice.items,
+		refreshLoadedSlices: refreshLoadedSlicesSpy,
+	})
+
+	return (
+		<BulkActionProvider actions={lifecycleBulkActions} context={{ adapter }}>
+			{children}
+			<TestBulkActionConfirmDialog />
+		</BulkActionProvider>
+	)
+}
+
+function TestBulkActionConfirmDialog() {
+	const {
+		cancelPendingAction,
+		confirmPendingAction,
+		isExecuting,
+		pendingConfirmation,
+	} = useBulkActionContext()
+
+	return (
+		<BulkActionConfirmDialog
+			isExecuting={isExecuting}
+			onCancel={cancelPendingAction}
+			onConfirm={confirmPendingAction}
+			onOpenChange={() => undefined}
+			open={Boolean(pendingConfirmation)}
+			request={pendingConfirmation}
+		/>
 	)
 }
 

@@ -104,6 +104,9 @@ function createAdapter(overrides: Partial<LifecycleBulkAdapter> = {}): Lifecycle
 
 	return {
 		restore: vi.fn<LifecycleBulkAdapter['restore']>(() => Promise.resolve(report)),
+		deleteLifecycle: vi.fn<LifecycleBulkAdapter['deleteLifecycle']>(() =>
+			Promise.resolve(report),
+		),
 		deletePermanently: vi.fn<LifecycleBulkAdapter['deletePermanently']>(() =>
 			Promise.resolve(report),
 		),

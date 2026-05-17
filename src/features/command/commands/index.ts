@@ -5,6 +5,7 @@ import { filterCommands } from './filter.commands'
 import { generalCommands } from './general.commands'
 import { inboxCommands } from './inbox.commands'
 import { layoutCommands } from './layout.commands'
+import { lifecycleCommands } from './lifecycle.commands'
 import { navigationCommands } from './navigation.commands'
 import { newCommands } from './new.commands'
 import { openCommands } from './open.commands'
@@ -23,6 +24,7 @@ export const allCommands = [
 	...filterCommands,
 	...inboxCommands,
 	...layoutCommands,
+	...lifecycleCommands,
 	...systemCommands,
 	...viewCommands,
 ]
@@ -37,6 +39,7 @@ export { filterCommands } from './filter.commands'
 export { generalCommands } from './general.commands'
 export { inboxCommands } from './inbox.commands'
 export { layoutCommands } from './layout.commands'
+export { lifecycleCommands } from './lifecycle.commands'
 export { navigationCommands } from './navigation.commands'
 export { newCommands } from './new.commands'
 export { openCommands } from './open.commands'

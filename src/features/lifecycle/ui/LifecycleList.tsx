@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -7,12 +7,7 @@ import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import {
 	BulkActionBar,
-	BulkActionConfirmDialog,
-	BulkActionProvider,
 	LIFECYCLE_BULK_ACTION_IDS,
-	createLifecycleBulkAdapter,
-	createLifecycleBulkSelectionSnapshot,
-	lifecycleBulkActions,
 	useBulkActionContext,
 	type BulkActionId,
 } from '@/features/bulk-action'
@@ -21,7 +16,12 @@ import {
 	selectTrashEntries,
 	useLifecycleStore,
 } from '@/features/lifecycle/model/useLifecycleStore'
-import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import {
+	buildLifecycleCommandSelection,
+	useEntitySelection,
+	useRegisterCommandSelection,
+} from '@/features/selection/model'
+import { useTaskSelectionEscape } from '@/features/task/shortcuts/useTaskSelectionEscape'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
@@ -44,44 +44,6 @@ type LifecycleListProps = {
 type LifecycleFilter = 'all' | 'space' | 'project' | 'task'
 
 export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
-	return (
-		<LifecycleBulkActionBoundary mode={mode}>
-			<LifecycleListContent icon={Icon} mode={mode} title={title} />
-		</LifecycleBulkActionBoundary>
-	)
-}
-
-function LifecycleBulkActionBoundary({
-	children,
-	mode,
-}: {
-	children: ReactNode
-	mode: LifecycleMode
-}) {
-	const archiveEntries = useLifecycleStore(selectArchiveEntries)
-	const trashEntries = useLifecycleStore(selectTrashEntries)
-	const refreshLoadedSlices = useLifecycleStore((state) => state.refreshLoadedSlices)
-	const slice = mode === 'archive' ? archiveEntries : trashEntries
-	const lifecycleBulkAdapter = useMemo(
-		() =>
-			createLifecycleBulkAdapter({
-				entries: slice.items,
-				refreshLoadedSlices,
-			}),
-		[refreshLoadedSlices, slice.items],
-	)
-
-	return (
-		<BulkActionProvider
-			actions={lifecycleBulkActions}
-			context={{ adapter: lifecycleBulkAdapter }}
-		>
-			{children}
-		</BulkActionProvider>
-	)
-}
-
-function LifecycleListContent({ mode, title, icon: Icon }: LifecycleListProps) {
 	const navigate = useNavigate()
 	const openDrawer = useDrawerStore((state) => state.openDrawer)
 	const { scope, spaceId } = useScopeRoute()
@@ -92,26 +54,39 @@ function LifecycleListContent({ mode, title, icon: Icon }: LifecycleListProps) {
 	const loadTrash = useLifecycleStore((state) => state.loadTrash)
 	const restoreEntry = useLifecycleStore((state) => state.restoreEntry)
 	const refreshLoadedSlices = useLifecycleStore((state) => state.refreshLoadedSlices)
-	const {
-		cancelPendingAction,
-		confirmPendingAction,
-		isExecuting: isBulkActionExecuting,
-		pendingConfirmation,
-		runBulkAction,
-	} = useBulkActionContext()
+	const { runBulkAction } = useBulkActionContext()
 	const [entityFilter, setEntityFilter] = useState<LifecycleFilter>('all')
 
 	const slice = mode === 'archive' ? archiveEntries : trashEntries
 	const {
-		selectedTaskIdSet: selectedEntryIdSet,
+		selectedIdSet: selectedEntryIdSet,
+		selectionSnapshot,
 		selectedCount,
-		toggleTaskSelection: toggleEntrySelection,
-		clearTaskSelection,
-	} = useTaskSelection(slice.items.map((entry) => entry.id))
+		focusedId: focusedEntryId,
+		toggleSelection: toggleEntrySelection,
+		clearSelection: clearEntrySelection,
+		setFocusedId: setFocusedEntryId,
+		moveFocus,
+	} = useEntitySelection(slice.items.map((entry) => entry.id))
 	const selectedEntries = useMemo(
 		() => slice.items.filter((entry) => selectedEntryIdSet.has(entry.id)),
 		[selectedEntryIdSet, slice.items],
 	)
+	const commandSelection = useMemo(
+		() =>
+			buildLifecycleCommandSelection({
+				selectedIds: selectionSnapshot.ids,
+				entries: slice.items,
+				mode,
+				clearSelection: clearEntrySelection,
+			}),
+		[clearEntrySelection, mode, selectionSnapshot.ids, slice.items],
+	)
+	useRegisterCommandSelection(commandSelection)
+	useTaskSelectionEscape({
+		hasSelection: selectedCount > 0,
+		clearSelection: clearEntrySelection,
+	})
 	const showSpacePill = scope.type === 'all'
 	const scopeItems = showSpacePill
 		? slice.items
@@ -163,12 +138,11 @@ function LifecycleListContent({ mode, title, icon: Icon }: LifecycleListProps) {
 
 	const runLifecycleBulkAction = useCallback(
 		async (actionId: BulkActionId) => {
-			const snapshot = createLifecycleBulkSelectionSnapshot(selectedEntries, 'bulk-bar')
-			const result = await runBulkAction(actionId, snapshot)
+			const result = await runBulkAction(actionId, createLifecycleSnapshot(selectedEntries))
 
 			if (result.status === 'success') {
 				if (result.shouldClearSelection) {
-					clearTaskSelection()
+					clearEntrySelection()
 				}
 				toast.success(result.message ?? `已处理 ${result.succeededIds.length} 个条目`)
 				return
@@ -191,7 +165,7 @@ function LifecycleListContent({ mode, title, icon: Icon }: LifecycleListProps) {
 				toast.error(result.message ?? '批量操作失败')
 			}
 		},
-		[clearTaskSelection, runBulkAction, selectedEntries],
+		[clearEntrySelection, runBulkAction, selectedEntries],
 	)
 
 	const sections = useMemo(
@@ -217,6 +191,7 @@ function LifecycleListContent({ mode, title, icon: Icon }: LifecycleListProps) {
 						sections,
 						pendingEntryId,
 						selectedEntryIdSet,
+						focusedEntryId,
 					},
 					boardActions: {
 						onEmptyAction: () => {
@@ -227,6 +202,9 @@ function LifecycleListContent({ mode, title, icon: Icon }: LifecycleListProps) {
 							void restoreEntry(entry)
 						},
 						onToggleEntrySelection: toggleEntrySelection,
+						onSetFocusedEntry: setFocusedEntryId,
+						onMoveEntryFocus: moveFocus,
+						onClearEntrySelection: clearEntrySelection,
 					},
 				}}
 				breadcrumb={<LifecycleBreadcrumb icon={Icon} title={title} />}
@@ -240,12 +218,15 @@ function LifecycleListContent({ mode, title, icon: Icon }: LifecycleListProps) {
 										LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected,
 									)
 								}}
+								onDelete={() => {
+									void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deleteSelected)
+								}}
 								onRestore={() => {
 									void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.restoreSelected)
 								}}
 							/>
 						}
-						onClear={clearTaskSelection}
+						onClear={clearEntrySelection}
 						selectedCount={selectedCount}
 					/>
 				}
@@ -259,24 +240,18 @@ function LifecycleListContent({ mode, title, icon: Icon }: LifecycleListProps) {
 					onClick: () => setEntityFilter(pill.key as LifecycleFilter),
 				}))}
 			/>
-			<BulkActionConfirmDialog
-				isExecuting={isBulkActionExecuting}
-				onCancel={cancelPendingAction}
-				onConfirm={confirmPendingAction}
-				onOpenChange={() => undefined}
-				open={Boolean(pendingConfirmation)}
-				request={pendingConfirmation}
-			/>
 		</>
 	)
 }
 
 function LifecycleBulkBarActions({
 	mode,
+	onDelete,
 	onDeletePermanently,
 	onRestore,
 }: {
 	mode: LifecycleMode
+	onDelete: () => void
 	onDeletePermanently: () => void
 	onRestore: () => void
 }) {
@@ -291,7 +266,17 @@ function LifecycleBulkBarActions({
 			>
 				恢复
 			</Button>
-			{mode === 'trash' ? (
+			{mode === 'archive' ? (
+				<Button
+					className={BULK_ACTION_BUTTON_CLASS}
+					onClick={onDelete}
+					size='sm'
+					type='button'
+					variant='outline'
+				>
+					删除
+				</Button>
+			) : (
 				<Button
 					className={BULK_ACTION_BUTTON_CLASS}
 					onClick={onDeletePermanently}
@@ -301,9 +286,23 @@ function LifecycleBulkBarActions({
 				>
 					永久删除
 				</Button>
-			) : null}
+			)}
 		</div>
 	)
+}
+
+function createLifecycleSnapshot(entries: LifecycleEntry[]) {
+	return {
+		entity: 'lifecycle' as const,
+		ids: entries.map((entry) => entry.id),
+		entities: entries.map((entry) => ({
+			id: entry.id,
+			title: entry.title,
+			subtitle: entry.projectName ?? entry.spaceName ?? entry.entityType,
+		})),
+		source: 'bulk-bar' as const,
+		createdAt: Date.now(),
+	}
 }
 
 function LifecycleBreadcrumb({ icon: Icon, title }: { icon: LucideIcon; title: string }) {

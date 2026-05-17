@@ -1,4 +1,5 @@
 import {
+	deleteLifecycleEntry as deleteLifecycleEntryApi,
 	permanentlyDeleteLifecycleEntry as permanentlyDeleteLifecycleEntryApi,
 	restoreLifecycleEntry as restoreLifecycleEntryApi,
 } from '@/features/lifecycle/api/lifecycle'
@@ -13,17 +14,20 @@ export type LifecycleBulkMutationReport = {
 
 export type LifecycleBulkAdapter = {
 	restore: (ids: string[]) => Promise<LifecycleBulkMutationReport>
+	deleteLifecycle: (ids: string[]) => Promise<LifecycleBulkMutationReport>
 	deletePermanently: (ids: string[]) => Promise<LifecycleBulkMutationReport>
 }
 
 type LifecycleBulkAdapterOptions = {
 	entries: LifecycleEntry[]
 	restoreLifecycleEntry?: typeof restoreLifecycleEntryApi
+	deleteLifecycleEntry?: typeof deleteLifecycleEntryApi
 	permanentlyDeleteLifecycleEntry?: typeof permanentlyDeleteLifecycleEntryApi
 	refreshLoadedSlices: () => Promise<void>
 }
 
 export function createLifecycleBulkAdapter({
+	deleteLifecycleEntry = deleteLifecycleEntryApi,
 	entries,
 	permanentlyDeleteLifecycleEntry = permanentlyDeleteLifecycleEntryApi,
 	refreshLoadedSlices,
@@ -74,6 +78,11 @@ export function createLifecycleBulkAdapter({
 			runLifecycleBulkMutation({
 				ids,
 				mutate: restoreLifecycleEntry,
+			}),
+		deleteLifecycle: (ids) =>
+			runLifecycleBulkMutation({
+				ids,
+				mutate: deleteLifecycleEntry,
 			}),
 		deletePermanently: (ids) =>
 			runLifecycleBulkMutation({

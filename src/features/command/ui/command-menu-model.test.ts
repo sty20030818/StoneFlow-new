@@ -111,6 +111,47 @@ describe('buildCommandMenuGroups', () => {
 		).toEqual(['test.normalTask'])
 	})
 
+	it('归档页 lifecycle selection 显示恢复和删除批量命令', () => {
+		const runtime = createRuntime([
+			createCommand(COMMAND_IDS.lifecycleRestore, { category: 'lifecycle' }),
+			createCommand(COMMAND_IDS.lifecycleDelete, { category: 'lifecycle' }),
+			createCommand(COMMAND_IDS.lifecycleDeletePermanently, {
+				category: 'lifecycle',
+				isVisible: (ctx) => ctx.route.page === 'trash',
+			}),
+		])
+
+		const groups = buildCommandMenuGroups(
+			runtime,
+			createLifecycleSelectionContext({ page: 'archive' }),
+		)
+
+		expect(groups[0]?.key).toBe('bulk')
+		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
+			COMMAND_IDS.lifecycleRestore,
+			COMMAND_IDS.lifecycleDelete,
+		])
+	})
+
+	it('回收站 lifecycle selection 显示恢复和永久删除批量命令', () => {
+		const runtime = createRuntime([
+			createCommand(COMMAND_IDS.lifecycleRestore, { category: 'lifecycle' }),
+			createCommand(COMMAND_IDS.lifecycleDelete, {
+				category: 'lifecycle',
+				isVisible: (ctx) => ctx.route.page === 'archive',
+			}),
+			createCommand(COMMAND_IDS.lifecycleDeletePermanently, { category: 'lifecycle' }),
+		])
+
+		const groups = buildCommandMenuGroups(runtime, createLifecycleSelectionContext({ page: 'trash' }))
+
+		expect(groups[0]?.key).toBe('bulk')
+		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
+			COMMAND_IDS.lifecycleRestore,
+			COMMAND_IDS.lifecycleDeletePermanently,
+		])
+	})
+
 	it('未绑定命令没有快捷键文案', () => {
 		expect(getCommandMenuShortcut(COMMAND_IDS.taskComplete)).toBeNull()
 	})
@@ -131,6 +172,43 @@ function createTaskSelectionContext(): CommandContext {
 			ids: ['task-a'],
 			entities: [{ id: 'task-a', type: 'task', title: '任务 A' }],
 			primaryEntity: { id: 'task-a', type: 'task', title: '任务 A' },
+			source: 'task-list',
+			hasSelection: true,
+			isSingleSelection: true,
+			isMultiSelection: false,
+		},
+	}
+}
+
+function createLifecycleSelectionContext({
+	page,
+}: {
+	page: 'archive' | 'trash'
+}): CommandContext {
+	return {
+		...context,
+		route: {
+			page,
+		},
+		selection: {
+			type: 'lifecycle',
+			ids: ['entry-a'],
+			entities: [
+				{
+					id: 'entry-a',
+					type: 'lifecycle',
+					title: '条目 A',
+					lifecycleMode: page,
+					lifecycleEntityType: 'task',
+				},
+			],
+			primaryEntity: {
+				id: 'entry-a',
+				type: 'lifecycle',
+				title: '条目 A',
+				lifecycleMode: page,
+				lifecycleEntityType: 'task',
+			},
 			source: 'task-list',
 			hasSelection: true,
 			isSingleSelection: true,

@@ -27,6 +27,9 @@ export type ShellCommandActions = {
 	completeSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	requestArchiveSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	requestDeleteSelectedTasks: (ctx: CommandContext) => void | Promise<void>
+	restoreSelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
+	requestDeleteSelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
+	requestDeletePermanentlySelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
 	navigateTo: (target: ShellNavigationTarget) => void
 	goBack: () => void
 	goForward: () => void
@@ -77,6 +80,15 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return bindSelectionTaskCommand(command, adapter.requestArchiveSelectedTasks)
 		case COMMAND_IDS.taskDelete:
 			return bindSelectionTaskCommand(command, adapter.requestDeleteSelectedTasks)
+		case COMMAND_IDS.lifecycleRestore:
+			return bindSelectionLifecycleCommand(command, adapter.restoreSelectedLifecycleEntries)
+		case COMMAND_IDS.lifecycleDelete:
+			return bindSelectionLifecycleCommand(command, adapter.requestDeleteSelectedLifecycleEntries)
+		case COMMAND_IDS.lifecycleDeletePermanently:
+			return bindSelectionLifecycleCommand(
+				command,
+				adapter.requestDeletePermanentlySelectedLifecycleEntries,
+			)
 		case COMMAND_IDS.openView:
 			return createDisabledCommand(command, '视图搜索尚未接入')
 		case COMMAND_IDS.openSpace:
@@ -133,4 +145,21 @@ function bindSelectionTaskCommand(
 
 function hasTaskSelection(ctx: CommandContext) {
 	return ctx.selection.type === 'task' && ctx.selection.ids.length > 0
+}
+
+function bindSelectionLifecycleCommand(
+	command: Command,
+	run: (ctx: CommandContext) => void | Promise<void>,
+): Command {
+	return {
+		...command,
+		isEnabled: (ctx) => hasLifecycleSelection(ctx),
+		getDisabledReason: (ctx) => (hasLifecycleSelection(ctx) ? undefined : '需要先选择条目'),
+		getPriority: (ctx) => (ctx.selection.isMultiSelection ? 120 : 90),
+		run,
+	}
+}
+
+function hasLifecycleSelection(ctx: CommandContext) {
+	return ctx.selection.type === 'lifecycle' && ctx.selection.ids.length > 0
 }

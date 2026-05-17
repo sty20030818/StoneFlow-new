@@ -23,6 +23,20 @@ export const lifecycleBulkActionDefinitions: LifecycleBulkActionDefinition[] = [
 		intent: 'restore',
 	},
 	{
+		id: LIFECYCLE_BULK_ACTION_IDS.deleteSelected,
+		entity: 'lifecycle',
+		label: '删除',
+		description: '将选中的归档条目移入回收站。',
+		intent: 'delete',
+		tone: 'destructive',
+		requiresConfirm: true,
+		getConfirmCopy: (snapshot) => ({
+			title: '删除选中条目？',
+			description: `将删除 ${snapshot.ids.length} 个条目。删除后可在回收站中恢复。`,
+			confirmLabel: '确认删除',
+		}),
+	},
+	{
 		id: LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected,
 		entity: 'lifecycle',
 		label: '永久删除',
@@ -63,6 +77,16 @@ export const lifecycleBulkActions: BulkAction[] = lifecycleBulkActionDefinitions
 							shouldClearSelection: true,
 						},
 					)
+				case LIFECYCLE_BULK_ACTION_IDS.deleteSelected:
+					return toBulkActionResult(
+						definition.id,
+						snapshot,
+						await adapter.deleteLifecycle(snapshot.ids),
+						{
+							getMessage: (report) => `已删除 ${report.succeededIds.length} 个条目`,
+							shouldClearSelection: true,
+						},
+					)
 				case LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected:
 					return toBulkActionResult(
 						definition.id,
@@ -94,6 +118,7 @@ function getLifecycleBulkAdapter(adapter: unknown): LifecycleBulkAdapter | null 
 		adapter &&
 		typeof adapter === 'object' &&
 		'restore' in adapter &&
+		'deleteLifecycle' in adapter &&
 		'deletePermanently' in adapter
 	) {
 		return adapter as LifecycleBulkAdapter

@@ -84,14 +84,22 @@ import { COMMAND_IDS, type CommandContext } from '@/features/command/core'
 import {
 	BulkActionConfirmDialog,
 	BulkActionProvider,
+	LIFECYCLE_BULK_ACTION_IDS,
 	TASK_BULK_ACTION_IDS,
+	createLifecycleBulkAdapter,
 	createTaskBulkAdapter,
 	createTaskBulkSelectionSnapshot,
+	lifecycleBulkActions,
 	taskBulkActions,
 	useBulkActionContext,
 	type BulkActionId,
 	type BulkActionPayload,
 } from '@/features/bulk-action'
+import {
+	selectArchiveEntries,
+	selectTrashEntries,
+	useLifecycleStore,
+} from '@/features/lifecycle/model/useLifecycleStore'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskStatus } from '@/shared/types'
 
@@ -127,6 +135,9 @@ function ShellLayoutBulkActionBoundary({
 	activeSection,
 }: ShellLayoutProps) {
 	const refreshLoadedTaskSlices = useTaskStore((state) => state.refreshLoadedSlices)
+	const archiveEntries = useLifecycleStore(selectArchiveEntries)
+	const trashEntries = useLifecycleStore(selectTrashEntries)
+	const refreshLoadedLifecycleSlices = useLifecycleStore((state) => state.refreshLoadedSlices)
 	const taskBulkAdapter = useMemo(
 		() =>
 			createTaskBulkAdapter({
@@ -134,9 +145,28 @@ function ShellLayoutBulkActionBoundary({
 			}),
 		[refreshLoadedTaskSlices],
 	)
+	const lifecycleBulkAdapter = useMemo(
+		() =>
+			createLifecycleBulkAdapter({
+				entries: [...archiveEntries.items, ...trashEntries.items],
+				refreshLoadedSlices: refreshLoadedLifecycleSlices,
+			}),
+		[archiveEntries.items, refreshLoadedLifecycleSlices, trashEntries.items],
+	)
+	const bulkActionAdapter = useMemo(
+		() => ({
+			...taskBulkAdapter,
+			...lifecycleBulkAdapter,
+		}),
+		[lifecycleBulkAdapter, taskBulkAdapter],
+	)
+	const bulkActions = useMemo(
+		() => [...taskBulkActions, ...lifecycleBulkActions],
+		[],
+	)
 
 	return (
-		<BulkActionProvider actions={taskBulkActions} context={{ adapter: taskBulkAdapter }}>
+		<BulkActionProvider actions={bulkActions} context={{ adapter: bulkActionAdapter }}>
 			<ShellLayoutContent
 				activeSection={activeSection}
 				currentScope={currentScope}
@@ -396,6 +426,53 @@ function ShellLayoutContent({
 		},
 		[runBulkAction],
 	)
+	const runLifecycleBulkActionFromCommand = useCallback(
+		async (ctx: CommandContext, actionId: BulkActionId) => {
+			if (ctx.selection.type !== 'lifecycle' || ctx.selection.ids.length === 0) {
+				return
+			}
+
+			const snapshot = {
+				entity: 'lifecycle' as const,
+				ids: ctx.selection.entities.map((entity) => entity.id),
+				entities: ctx.selection.entities.map((entity) => ({
+					id: entity.id,
+					title: entity.title,
+					subtitle: entity.subtitle,
+				})),
+				source: 'command-menu' as const,
+				createdAt: Date.now(),
+			}
+			const result = await runBulkAction(actionId, snapshot)
+
+			if (result.status === 'success') {
+				if (result.shouldClearSelection) {
+					ctx.selection.clearSelection?.()
+				}
+				toast.success(result.message ?? `已处理 ${result.succeededIds.length} 个条目`)
+				return
+			}
+
+			if (result.status === 'partial') {
+				toast.error(
+					result.message ??
+						`已处理 ${result.succeededIds.length} 个条目，${result.failedIds.length + result.skippedIds.length} 个失败`,
+				)
+				return
+			}
+
+			if (result.status === 'disabled') {
+				toast.error(result.message ?? '批量操作不可用')
+				return
+			}
+
+			if (result.status === 'failed') {
+				toast.error(result.message ?? '批量操作失败')
+				throw result.error
+			}
+		},
+		[runBulkAction],
+	)
 
 	const shellCommandActions = useMemo<ShellCommandActions>(
 		() => ({
@@ -431,6 +508,15 @@ function ShellLayoutContent({
 				runTaskBulkActionFromCommand(ctx, TASK_BULK_ACTION_IDS.archiveSelected),
 			requestDeleteSelectedTasks: (ctx) =>
 				runTaskBulkActionFromCommand(ctx, TASK_BULK_ACTION_IDS.deleteSelected),
+			restoreSelectedLifecycleEntries: (ctx) =>
+				runLifecycleBulkActionFromCommand(ctx, LIFECYCLE_BULK_ACTION_IDS.restoreSelected),
+			requestDeleteSelectedLifecycleEntries: (ctx) =>
+				runLifecycleBulkActionFromCommand(ctx, LIFECYCLE_BULK_ACTION_IDS.deleteSelected),
+			requestDeletePermanentlySelectedLifecycleEntries: (ctx) =>
+				runLifecycleBulkActionFromCommand(
+					ctx,
+					LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected,
+				),
 			navigateTo: (target: ShellNavigationTarget) => {
 				startTransition(() => {
 					navigate(buildScopedSectionPath(currentScope, target, currentSpaceId))
@@ -450,6 +536,7 @@ function ShellLayoutContent({
 			openTaskCreateDialog,
 			requestSearchFocus,
 			runTaskBulkActionFromCommand,
+			runLifecycleBulkActionFromCommand,
 			toggleShortcutHelp,
 		],
 	)

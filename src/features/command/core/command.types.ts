@@ -57,6 +57,9 @@ export const COMMAND_IDS = {
 	systemOpenDataFolder: 'system.openDataFolder',
 	inboxClean: 'inbox.clean',
 	viewSuggestFilters: 'view.suggestFilters',
+	lifecycleRestore: 'lifecycle.restore',
+	lifecycleDelete: 'lifecycle.delete',
+	lifecycleDeletePermanently: 'lifecycle.deletePermanently',
 } as const
 
 export type KnownCommandId = (typeof COMMAND_IDS)[keyof typeof COMMAND_IDS]
@@ -76,6 +79,7 @@ export type CommandCategory =
 	| 'inbox'
 	| 'layout'
 	| 'system'
+	| 'lifecycle'
 
 export type CommandScope =
 	| 'global'
@@ -110,14 +114,14 @@ export type CommandRouteContext = {
 }
 
 export type CommandSelectionContext = {
-	type?: 'task' | 'project' | 'view'
+	type?: 'task' | 'project' | 'view' | 'lifecycle'
 	ids: string[]
 	entities: CommandSelectedEntity[]
 	primaryEntity?: CommandSelectedEntity
 	clearSelection?: () => void
 	focusedId?: string
-	focusedType?: 'task' | 'project' | 'view'
-	source: 'none' | 'task-list' | 'project-list' | 'bulk-bar' | 'row' | 'drawer'
+	focusedType?: 'task' | 'project' | 'view' | 'lifecycle'
+	source: 'none' | 'task-list' | 'project-list' | 'lifecycle-list' | 'bulk-bar' | 'row' | 'drawer'
 	hasSelection: boolean
 	isSingleSelection: boolean
 	isMultiSelection: boolean
@@ -125,11 +129,13 @@ export type CommandSelectionContext = {
 
 export type CommandSelectedEntity = {
 	id: string
-	type: 'task' | 'project' | 'view'
+	type: 'task' | 'project' | 'view' | 'lifecycle'
 	title: string
 	subtitle?: string
 	status?: string
 	priority?: string
+	lifecycleMode?: 'archive' | 'trash'
+	lifecycleEntityType?: 'space' | 'project' | 'task'
 }
 
 export type CommandFocusContext = {

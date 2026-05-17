@@ -55,6 +55,11 @@ const BULK_TASK_COMMAND_IDS: ReadonlySet<CommandId> = new Set([
 	COMMAND_IDS.taskArchive,
 	COMMAND_IDS.taskDelete,
 ])
+const BULK_LIFECYCLE_COMMAND_IDS: ReadonlySet<CommandId> = new Set([
+	COMMAND_IDS.lifecycleRestore,
+	COMMAND_IDS.lifecycleDelete,
+	COMMAND_IDS.lifecycleDeletePermanently,
+])
 const keybindingRegistry = new KeybindingRegistry(DEFAULT_KEYBINDINGS)
 
 export function buildCommandMenuGroups(
@@ -103,12 +108,17 @@ function buildBulkCommandMenuGroup(
 	}>,
 	context: CommandContext,
 ): CommandMenuGroup | null {
-	if (context.selection.type !== 'task' || !context.selection.hasSelection) {
+	if (
+		(context.selection.type !== 'task' && context.selection.type !== 'lifecycle') ||
+		!context.selection.hasSelection
+	) {
 		return null
 	}
+	const bulkCommandIds =
+		context.selection.type === 'lifecycle' ? BULK_LIFECYCLE_COMMAND_IDS : BULK_TASK_COMMAND_IDS
 
 	const bulkEntries = entries
-		.filter(({ command }) => BULK_TASK_COMMAND_IDS.has(command.id))
+		.filter(({ command }) => bulkCommandIds.has(command.id))
 		.map(({ command, state }) => ({
 			command,
 			disabled: !state.enabled,
@@ -129,8 +139,8 @@ function buildBulkCommandMenuGroup(
 
 function shouldHideDefaultTaskCommand(commandId: CommandId, context: CommandContext) {
 	return (
-		context.selection.type === 'task' &&
+		(context.selection.type === 'task' || context.selection.type === 'lifecycle') &&
 		context.selection.hasSelection &&
-		BULK_TASK_COMMAND_IDS.has(commandId)
+		(BULK_TASK_COMMAND_IDS.has(commandId) || BULK_LIFECYCLE_COMMAND_IDS.has(commandId))
 	)
 }

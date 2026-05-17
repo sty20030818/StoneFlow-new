@@ -16,6 +16,11 @@ type LifecycleRowAdapterProps = {
 	rowState: {
 		isSelected: boolean
 		isPending: boolean
+		isKeyboardFocused?: boolean
+	}
+	rowShortcutHandlers?: {
+		onHover: (entryId: string | null) => void
+		onFocus: (entryId: string | null) => void
 	}
 	selectionGroupPosition?: RowSelectionGroupPosition
 	actions: {
@@ -33,12 +38,14 @@ export function LifecycleRowAdapter({
 	entry,
 	mode,
 	rowState,
+	rowShortcutHandlers,
 	selectionGroupPosition,
 	actions,
 }: LifecycleRowAdapterProps) {
 	const Icon = getLifecycleEntityIcon(entry.entityType)
 	const canOpenDetail = mode === 'archive' && typeof actions.onOpenDetail === 'function'
 	const createdAtValue = mode === 'archive' ? entry.archivedAt : entry.deletedAt
+	const isKeyboardFocused = rowState.isKeyboardFocused ?? false
 
 	return (
 		<RowShell.Root
@@ -46,10 +53,16 @@ export function LifecycleRowAdapter({
 			className={canOpenDetail ? undefined : 'cursor-default'}
 			data-lifecycle-entity={entry.entityType}
 			interactive={canOpenDetail}
+			controlledHover
+			keyboardFocused={isKeyboardFocused}
 			pending={rowState.isPending}
 			selected={rowState.isSelected}
 			selectionGroupPosition={selectionGroupPosition}
 			onClick={canOpenDetail ? () => actions.onOpenDetail?.(entry) : undefined}
+			onBlur={() => rowShortcutHandlers?.onFocus(null)}
+			onFocus={() => rowShortcutHandlers?.onFocus(entry.id)}
+			onMouseEnter={() => rowShortcutHandlers?.onHover(entry.id)}
+			onMouseLeave={() => rowShortcutHandlers?.onHover(null)}
 			onKeyDown={
 				canOpenDetail
 					? (event) => {
@@ -67,6 +80,7 @@ export function LifecycleRowAdapter({
 						ariaLabel={`选择 ${entry.title}`}
 						checked={rowState.isSelected}
 						disabled={rowState.isPending}
+						visible={rowState.isSelected || isKeyboardFocused}
 						onCheckedChange={actions.onToggleSelected}
 					/>
 				</RowShell.Leading>

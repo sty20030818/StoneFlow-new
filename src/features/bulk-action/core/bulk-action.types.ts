@@ -9,6 +9,7 @@ export const TASK_BULK_ACTION_IDS = {
 
 export const LIFECYCLE_BULK_ACTION_IDS = {
 	restoreSelected: 'lifecycle.restoreSelected',
+	deleteSelected: 'lifecycle.deleteSelected',
 	deletePermanentlySelected: 'lifecycle.deletePermanentlySelected',
 } as const
 
