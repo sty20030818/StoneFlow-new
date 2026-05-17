@@ -7,8 +7,8 @@ import {
 	BoardRoot,
 	BoardSectionContextMenu,
 	type BoardSection,
-	useSectionSelection,
 } from '@/shared/ui/board'
+import { useSectionSelection } from '@/features/bulk-action'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { ArchiveIcon, FolderIcon, PlayIcon, CheckIcon } from 'lucide-react'
 import { entityBoardMutedIconClass } from '@/shared/ui/patterns/entity-board'

@@ -6,8 +6,8 @@ import {
 	BoardRoot,
 	BoardSectionContextMenu,
 	type BoardSection,
-	useSectionSelection,
 } from '@/shared/ui/board'
+import { useSectionSelection } from '@/features/bulk-action'
 import { entityBoardMutedIconClass } from '@/shared/ui/patterns/entity-board'
 import { cn } from '@/shared/lib/utils'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'

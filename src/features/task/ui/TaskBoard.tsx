@@ -14,9 +14,9 @@ import {
 	BoardRows,
 	BoardSectionContextMenu,
 	BOARD_GROUP_HEADER_CLASS,
-	useSectionSelection,
 } from '@/shared/ui/board'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import { useSectionSelection } from '@/features/bulk-action'
 import {
 	TASK_BOARD_STATUS_ORDER,
 	orderTasksByTaskBoardVisualOrder,

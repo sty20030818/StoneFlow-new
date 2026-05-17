@@ -11,7 +11,7 @@ import { useTaskListController } from '@/features/task/model/useTaskListControll
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
-import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
+import { BulkActionBar } from '@/features/bulk-action'
 import { BulkCommandMenuAction } from '@/features/command/ui'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import {

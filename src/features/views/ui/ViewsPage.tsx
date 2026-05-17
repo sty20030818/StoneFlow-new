@@ -13,7 +13,7 @@ import { useTaskListController } from '@/features/task/model/useTaskListControll
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
-import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
+import { BulkActionBar } from '@/features/bulk-action'
 import { BulkCommandMenuAction } from '@/features/command/ui'
 import {
 	selectTaskViewRun,

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
+import { BulkActionBar } from '@/features/bulk-action'
 import {
 	selectArchiveEntries,
 	selectTrashEntries,
@@ -13,7 +14,6 @@ import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
-import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import {
 	Breadcrumb,

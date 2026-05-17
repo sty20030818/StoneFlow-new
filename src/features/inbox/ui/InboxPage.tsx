@@ -21,7 +21,7 @@ import {
 } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskSelectionEscape } from '@/features/task/shortcuts'
-import { BulkActionBar } from '@/shared/ui/bulk-action-bar'
+import { BulkActionBar } from '@/features/bulk-action'
 import { BulkCommandMenuAction } from '@/features/command/ui'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import { InboxIcon, PlusIcon } from 'lucide-react'

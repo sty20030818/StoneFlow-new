@@ -181,7 +181,7 @@ vi.mock('@/features/task/ui/TaskBoard', () => ({
 	),
 }))
 
-vi.mock('@/shared/ui/bulk-action-bar', () => ({
+vi.mock('@/features/bulk-action', () => ({
 	BulkActionBar: ({ selectedCount, action }: { selectedCount: number; action: ReactNode }) =>
 		selectedCount > 0 ? <div>{action}</div> : null,
 }))
@@ -215,7 +215,7 @@ describe('ViewsPage', () => {
 			})
 		})
 
-		expect(screen.getByText('批量能力后续接入')).toBeDisabled()
+		expect(screen.getByRole('button', { name: '操作' })).toBeInTheDocument()
 	})
 
 	it('点击系统视图 tab 后切换到新的视图 id', async () => {
