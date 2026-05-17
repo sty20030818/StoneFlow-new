@@ -7,7 +7,14 @@ export const TASK_BULK_ACTION_IDS = {
 	setDateSelected: 'task.setDateSelected',
 } as const
 
-export type KnownBulkActionId = (typeof TASK_BULK_ACTION_IDS)[keyof typeof TASK_BULK_ACTION_IDS]
+export const LIFECYCLE_BULK_ACTION_IDS = {
+	restoreSelected: 'lifecycle.restoreSelected',
+	deletePermanentlySelected: 'lifecycle.deletePermanentlySelected',
+} as const
+
+export type KnownBulkActionId =
+	| (typeof TASK_BULK_ACTION_IDS)[keyof typeof TASK_BULK_ACTION_IDS]
+	| (typeof LIFECYCLE_BULK_ACTION_IDS)[keyof typeof LIFECYCLE_BULK_ACTION_IDS]
 export type BulkActionId = KnownBulkActionId | (string & {})
 
 export type BulkEntityType = 'task' | 'project' | 'lifecycle'

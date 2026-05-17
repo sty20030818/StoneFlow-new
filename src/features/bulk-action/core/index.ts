@@ -1,4 +1,5 @@
 export {
+	LIFECYCLE_BULK_ACTION_IDS,
 	TASK_BULK_ACTION_IDS,
 	type BulkAction,
 	type BulkActionAdapter,
@@ -27,3 +28,4 @@ export {
 	createTaskBulkSelectionSnapshot,
 	createTaskBulkSelectionSnapshotFromTasks,
 } from './task-bulk-selection-snapshot'
+export { createLifecycleBulkSelectionSnapshot } from './lifecycle-bulk-selection-snapshot'

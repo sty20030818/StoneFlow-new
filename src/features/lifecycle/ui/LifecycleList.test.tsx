@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { ArchiveIcon, Trash2Icon, type LucideIcon } from 'lucide-react'
 import { MemoryRouter } from 'react-router-dom'
 
@@ -9,8 +9,12 @@ import type { LifecycleEntry, Scope } from '@/shared/types'
 const loadArchiveSpy = vi.fn<(scope: Scope) => Promise<void>>()
 const loadTrashSpy = vi.fn<(scope: Scope) => Promise<void>>()
 const restoreEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<void>>()
+const restoreLifecycleEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>()
+const permanentlyDeleteLifecycleEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>()
 const refreshLoadedSlicesSpy = vi.fn<() => Promise<void>>()
 const openDrawerSpy = vi.fn<(kind: string, id: string) => void>()
+const toastSuccessSpy = vi.fn<(message: string) => void>()
+const toastErrorSpy = vi.fn<(message: string) => void>()
 
 let mockScope: Scope = { type: 'all' }
 let storeState = createStoreState()
@@ -49,6 +53,12 @@ vi.mock('@/features/lifecycle/model/useLifecycleStore', () => ({
 	useLifecycleStore: (selector: (state: typeof storeState) => unknown) => selector(storeState),
 }))
 
+vi.mock('@/features/lifecycle/api/lifecycle', () => ({
+	restoreLifecycleEntry: (entry: LifecycleEntry) => restoreLifecycleEntrySpy(entry),
+	permanentlyDeleteLifecycleEntry: (entry: LifecycleEntry) =>
+		permanentlyDeleteLifecycleEntrySpy(entry),
+}))
+
 vi.mock('@/features/space/model/scopeRoute', () => ({
 	useScopeRoute: () => ({
 		scope: mockScope,
@@ -60,6 +70,13 @@ vi.mock('@/shared/events', () => ({
 	emitEvent: vi.fn(),
 }))
 
+vi.mock('sonner', () => ({
+	toast: {
+		success: (message: string) => toastSuccessSpy(message),
+		error: (message: string) => toastErrorSpy(message),
+	},
+}))
+
 describe('LifecycleList', () => {
 	beforeEach(() => {
 		mockScope = { type: 'all' }
@@ -67,8 +84,15 @@ describe('LifecycleList', () => {
 		loadArchiveSpy.mockReset()
 		loadTrashSpy.mockReset()
 		restoreEntrySpy.mockReset()
+		restoreLifecycleEntrySpy.mockReset()
+		restoreLifecycleEntrySpy.mockResolvedValue({})
+		permanentlyDeleteLifecycleEntrySpy.mockReset()
+		permanentlyDeleteLifecycleEntrySpy.mockResolvedValue({})
 		refreshLoadedSlicesSpy.mockReset()
+		refreshLoadedSlicesSpy.mockResolvedValue()
 		openDrawerSpy.mockReset()
+		toastSuccessSpy.mockReset()
+		toastErrorSpy.mockReset()
 	})
 
 	it('Archive 模式渲染三分区与对应操作按钮', async () => {
@@ -89,6 +113,36 @@ describe('LifecycleList', () => {
 		expect(screen.queryByRole('button', { name: '删除' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '打开' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '永久删除' })).not.toBeInTheDocument()
+	})
+
+	it('Archive 模式多选后通过批量条恢复并清空 selection', async () => {
+		renderLifecycleList({
+			mode: 'archive',
+			title: '归档',
+			icon: ArchiveIcon,
+		})
+
+		fireEvent.click(screen.getByRole('checkbox', { name: '选择 工作' }))
+		fireEvent.click(screen.getByRole('checkbox', { name: '选择 补齐生命周期页面' }))
+
+		expect(screen.getByText('已选 2 项')).toBeInTheDocument()
+		const bulkToolbar = screen.getByRole('toolbar', { name: '批量操作' })
+		fireEvent.click(within(bulkToolbar).getByRole('button', { name: '恢复' }))
+
+		await waitFor(() => {
+			expect(restoreLifecycleEntrySpy).toHaveBeenCalledTimes(2)
+		})
+		expect(restoreLifecycleEntrySpy).toHaveBeenNthCalledWith(
+			1,
+			expect.objectContaining({ id: 'space-1' }),
+		)
+		expect(restoreLifecycleEntrySpy).toHaveBeenNthCalledWith(
+			2,
+			expect.objectContaining({ id: 'task-1' }),
+		)
+		expect(refreshLoadedSlicesSpy).toHaveBeenCalledTimes(1)
+		expect(toastSuccessSpy).toHaveBeenCalledWith('已恢复 2 个条目')
+		expect(screen.queryByText('已选 2 项')).not.toBeInTheDocument()
 	})
 
 	it('Trash 模式在空列表时展示页面空状态', async () => {
@@ -116,6 +170,48 @@ describe('LifecycleList', () => {
 		expect(
 			screen.getByText('删除后的内容会统一出现在这里，等待恢复或永久删除。'),
 		).toBeInTheDocument()
+	})
+
+	it('Trash 模式多选后展示恢复与永久删除入口', () => {
+		renderLifecycleList({
+			mode: 'trash',
+			title: '回收站',
+			icon: Trash2Icon,
+		})
+
+		fireEvent.click(screen.getByRole('checkbox', { name: '选择 待永久删除任务' }))
+
+		expect(screen.getByRole('toolbar', { name: '批量操作' })).toBeInTheDocument()
+		expect(screen.getAllByRole('button', { name: '恢复' })).toHaveLength(2)
+		expect(screen.getByRole('button', { name: '永久删除' })).toBeInTheDocument()
+	})
+
+	it('Trash 模式永久删除先确认再执行', async () => {
+		renderLifecycleList({
+			mode: 'trash',
+			title: '回收站',
+			icon: Trash2Icon,
+		})
+
+		fireEvent.click(screen.getByRole('checkbox', { name: '选择 待永久删除任务' }))
+		fireEvent.click(screen.getByRole('button', { name: '永久删除' }))
+
+		expect(screen.getByRole('alertdialog')).toBeInTheDocument()
+		expect(screen.getByText('永久删除选中条目？')).toBeInTheDocument()
+		expect(permanentlyDeleteLifecycleEntrySpy).not.toHaveBeenCalled()
+
+		fireEvent.click(
+			within(screen.getByRole('alertdialog')).getByRole('button', { name: '永久删除' }),
+		)
+
+		await waitFor(() => {
+			expect(permanentlyDeleteLifecycleEntrySpy).toHaveBeenCalledWith(
+				expect.objectContaining({ id: 'task-2' }),
+			)
+		})
+		expect(refreshLoadedSlicesSpy).toHaveBeenCalledTimes(1)
+		expect(toastSuccessSpy).toHaveBeenCalledWith('已永久删除 1 个条目')
+		expect(screen.queryByText('已选 1 项')).not.toBeInTheDocument()
 	})
 })
 

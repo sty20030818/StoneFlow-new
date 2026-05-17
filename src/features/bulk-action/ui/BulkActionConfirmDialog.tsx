@@ -23,7 +23,6 @@ type BulkActionConfirmDialogProps = {
 export function BulkActionConfirmDialog({
 	request,
 	open,
-	isExecuting = false,
 	onCancel,
 	onConfirm,
 	onOpenChange,
@@ -35,9 +34,6 @@ export function BulkActionConfirmDialog({
 			open={open}
 			onOpenChange={(nextOpen) => {
 				onOpenChange(nextOpen)
-				if (!nextOpen) {
-					onCancel()
-				}
 			}}
 		>
 			<AlertDialogContent>
@@ -46,12 +42,11 @@ export function BulkActionConfirmDialog({
 					<AlertDialogDescription>{copy?.description ?? ''}</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel disabled={isExecuting} onClick={onCancel}>
+					<AlertDialogCancel onClick={onCancel}>
 						{copy?.cancelLabel ?? '取消'}
 					</AlertDialogCancel>
 					<AlertDialogAction
 						className={cn(request?.action.tone === 'destructive' && destructiveActionClass)}
-						disabled={isExecuting}
 						onClick={(event) => {
 							event.preventDefault()
 							onConfirm()

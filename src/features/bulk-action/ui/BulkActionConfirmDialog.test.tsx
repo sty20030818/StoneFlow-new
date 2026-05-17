@@ -56,6 +56,26 @@ describe('BulkActionConfirmDialog', () => {
 		expect(onCancel).toHaveBeenCalled()
 		expect(onConfirm).toHaveBeenCalled()
 	})
+
+	it('关闭 open state 只通知外层，不隐式取消 pending action', () => {
+		const onCancel = vi.fn<() => void>()
+		const onOpenChange = vi.fn<(open: boolean) => void>()
+
+		render(
+			<BulkActionConfirmDialog
+				onCancel={onCancel}
+				onConfirm={vi.fn<() => void>()}
+				onOpenChange={onOpenChange}
+				open
+				request={createRequest()}
+			/>,
+		)
+
+		fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' })
+
+		expect(onOpenChange).toHaveBeenCalled()
+		expect(onCancel).not.toHaveBeenCalled()
+	})
 })
 
 function createRequest(): BulkActionConfirmationRequest {
