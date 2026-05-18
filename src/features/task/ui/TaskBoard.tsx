@@ -171,13 +171,13 @@ export function TaskBoard({
 					isActive: activeTaskId === task.id,
 					isPending: pendingTaskId === task.id,
 					isSelected: selectedTaskIdSet.has(task.id),
-					isKeyboardFocused:
-						(rowShortcutState?.displayTargetId ?? focusedTaskId ?? null) === task.id,
+					isHovered: rowShortcutState?.hoveredId === task.id,
+					hoverSource:
+						rowShortcutState?.hoveredId === task.id ? rowShortcutState.hoverSource : null,
 				}}
 				rowShortcutHandlers={
 					rowShortcutState
 						? {
-							onFocus: rowShortcutState.onRowFocus,
 							onHover: rowShortcutState.onRowHover,
 							onPointerMove: rowShortcutState.onRowPointerMove,
 						}

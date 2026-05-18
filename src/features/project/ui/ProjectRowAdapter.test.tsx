@@ -96,14 +96,14 @@ describe('ProjectRowAdapter', () => {
 		)
 	})
 
-	it('选择框在选中或键盘聚焦时可见', () => {
+	it('选择框在选中或 hover 时可见', () => {
 		const actions = {
 			...buildActions(),
 			onToggleSelected: vi.fn(),
 		}
 		renderProjectRowAdapter({
 			actions,
-			rowState: { isPending: false, isKeyboardFocused: true },
+			rowState: { isPending: false, isHovered: true, hoverSource: 'keyboard' },
 		})
 
 		expect(screen.getByRole('checkbox', { name: '选择项目 项目 A' }).className).toContain(
@@ -111,10 +111,9 @@ describe('ProjectRowAdapter', () => {
 		)
 	})
 
-	it('hover 和 focus 会更新 row shortcut focus', () => {
+	it('hover 会更新 row shortcut hover', () => {
 		const rowShortcutHandlers = {
 			onHover: vi.fn(),
-			onFocus: vi.fn(),
 		}
 		const actions = {
 			...buildActions(),
@@ -131,9 +130,7 @@ describe('ProjectRowAdapter', () => {
 
 		const row = screen.getByRole('button', { name: '打开项目 项目 A' })
 		fireEvent.mouseEnter(row)
-		fireEvent.focus(row)
 
 		expect(rowShortcutHandlers.onHover).toHaveBeenCalledWith('project-1')
-		expect(rowShortcutHandlers.onFocus).toHaveBeenCalledWith('project-1')
 	})
 })

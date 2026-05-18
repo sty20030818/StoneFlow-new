@@ -17,8 +17,8 @@ import {
 export type RowShellRootProps = ComponentProps<'div'> & {
 	active?: boolean
 	selected?: boolean
-	keyboardFocused?: boolean
-	controlledHover?: boolean
+	hovered?: boolean
+	hoverSource?: 'pointer' | 'keyboard' | null
 	pending?: boolean
 	interactive?: boolean
 	selectionGroupPosition?: RowSelectionGroupPosition
@@ -29,8 +29,8 @@ export function RowShellRoot({
 	className,
 	active = false,
 	selected = false,
-	keyboardFocused = false,
-	controlledHover = false,
+	hovered = false,
+	hoverSource = null,
 	pending = false,
 	interactive = false,
 	selectionGroupPosition,
@@ -39,28 +39,24 @@ export function RowShellRoot({
 	...props
 }: RowShellRootProps) {
 	const groupedSelected = selected && !!selectionGroupPosition
+	const idleClass = hovered ? null : ROW_SHELL_IDLE_CLASS
 	const selectionClass = groupedSelected
-		? controlledHover
-			? 'border-transparent bg-transparent'
+		? hovered
+			? 'border-transparent bg-sf-selection-surface-hover'
 			: ROW_SHELL_GROUP_SELECTED_CLASS
 		: selected
-			? controlledHover
-				? 'border-transparent bg-sf-selection-surface'
+			? hovered
+				? 'border-transparent bg-sf-selection-surface-hover'
 				: ROW_SHELL_SELECTED_CLASS
-			: controlledHover
-				? null
-				: ROW_SHELL_IDLE_CLASS
-	const keyboardFocusSurfaceClass =
-		keyboardFocused && !active
+			: hovered && !active
+				? 'bg-sf-list-row-hover'
+				: idleClass
+	const focusBorderClass =
+		hovered && hoverSource === 'keyboard'
 			? selected
-				? 'bg-sf-selection-surface-hover'
-				: 'bg-sf-list-row-hover'
+				? ROW_SHELL_SELECTED_FOCUS_CLASS
+				: ROW_SHELL_FOCUS_CLASS
 			: null
-	const focusBorderClass = keyboardFocused
-		? selected
-			? ROW_SHELL_SELECTED_FOCUS_CLASS
-			: ROW_SHELL_FOCUS_CLASS
-		: null
 
 	return (
 		<div
@@ -69,7 +65,6 @@ export function RowShellRoot({
 			className={cn(
 				ROW_SHELL_BASE_CLASS,
 				active ? ROW_SHELL_ACTIVE_CLASS : selectionClass,
-				keyboardFocusSurfaceClass,
 				focusBorderClass,
 				groupedSelected ? ROW_SHELL_GROUP_POSITION_CLASS[selectionGroupPosition] : null,
 				interactive ? 'cursor-pointer' : null,
@@ -77,7 +72,7 @@ export function RowShellRoot({
 				className,
 			)}
 			role={interactive ? (role ?? 'button') : role}
-			tabIndex={interactive ? (tabIndex ?? 0) : tabIndex}
+			tabIndex={interactive ? (tabIndex ?? -1) : tabIndex}
 		>
 			{children}
 		</div>

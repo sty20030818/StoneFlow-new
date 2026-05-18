@@ -7,7 +7,7 @@ export type RowSelectionGroupPosition = 'single' | 'first' | 'middle' | 'last'
 export const ROW_SHELL_BASE_CLASS =
 	'group/row-shell flex h-12 min-w-0 items-center gap-3 rounded-md border border-transparent bg-transparent px-3 text-left transition-colors'
 
-export const ROW_SHELL_IDLE_CLASS = 'hover:bg-sf-list-row-hover'
+export const ROW_SHELL_IDLE_CLASS = ''
 export const ROW_SHELL_ACTIVE_CLASS = 'border-sf-border-subtle bg-sf-list-row-selected'
 export const ROW_SHELL_FOCUS_CLASS = 'border-sf-border-subtle'
 export const ROW_SHELL_SELECTED_FOCUS_CLASS =
@@ -16,7 +16,7 @@ export const ROW_SHELL_SELECTED_CLASS =
 	'border-transparent bg-sf-selection-surface'
 /** 选中 row 被合并到分组 wrapper 内时，去掉自身背景，只保留 hover。 */
 export const ROW_SHELL_GROUP_SELECTED_CLASS =
-	'border-transparent bg-transparent hover:bg-sf-selection-surface-hover'
+	'border-transparent bg-transparent'
 export const ROW_SHELL_SECTION_HEADER_CLASS =
 	'flex h-10 items-center gap-2 rounded-md bg-sf-list-section-bg pl-3 pr-1'
 export const ROW_SHELL_META_TEXT_CLASS = 'text-xs font-medium text-sf-text-tertiary'

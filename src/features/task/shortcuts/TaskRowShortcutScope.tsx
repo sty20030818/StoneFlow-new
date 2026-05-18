@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	type ReactNode,
+} from 'react'
 
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
@@ -51,6 +58,7 @@ type PointerPoint = {
 	y: number
 }
 
+type HoverSource = 'keyboard' | 'pointer'
 type KeyboardNavigationDirection = -1 | 1
 
 type ShiftToggleSession = {
@@ -60,12 +68,23 @@ type ShiftToggleSession = {
 	lastToggledId: string | null
 }
 
-type KeyboardNavigationOptions = {
-	direction?: KeyboardNavigationDirection
+type HoverUpdateOptions = {
 	syncExternal?: boolean
+	scrollIntoView?: boolean
+	direction?: KeyboardNavigationDirection
+	fromTaskId?: string | null
 }
 
-type TargetMode = 'keyboard' | 'pointer'
+export type TaskRowInteractionState = {
+	hoveredId: string | null
+	hoverSource: HoverSource | null
+	commandTargetId: string | null
+}
+
+export type TaskRowShortcutState = TaskRowInteractionState & {
+	onRowHover: (taskId: string | null) => void
+	onRowPointerMove: (taskId: string, point: PointerPoint) => void
+}
 
 type TaskRowCommandActions = {
 	complete: () => void | Promise<void>
@@ -79,18 +98,12 @@ type TaskRowCommandActions = {
 	openDateMenu: () => void
 }
 
-export type TaskRowShortcutState = {
-	onRowHover: (taskId: string | null) => void
-	onRowFocus: (taskId: string | null) => void
-	onRowPointerMove: (taskId: string, point: PointerPoint) => void
-	displayTargetId: string | null
-}
-
 const ROW_COMMAND_DISABLED_REASON = 'Row 上下文尚未接入'
 const MAIN_CARD_SCROLL_SELECTOR = '.no-scrollbar.overflow-y-auto'
-const KEYBOARD_SCROLL_BOTTOM_PADDING = 8
-const KEYBOARD_SCROLL_BEHAVIOR: ScrollBehavior = 'smooth'
+const KEYBOARD_SCROLL_BEHAVIOR: ScrollBehavior = 'auto'
 const POINTER_RECLAIM_THRESHOLD_PX = 12
+const BOTTOM_GAP_PX = 8
+const SECTION_HEADER_GAP_PX = 2
 
 const EMPTY_SHIFT_TOGGLE_SESSION: ShiftToggleSession = {
 	active: false,
@@ -110,22 +123,33 @@ function hasPointerMovedEnough(previous: PointerPoint | null, next: PointerPoint
 	)
 }
 
-function getActiveTargetId({
-	targetMode,
-	keyboardTargetId,
-	pointerTargetId,
-}: {
-	targetMode: TargetMode
-	keyboardTargetId: string | null
-	pointerTargetId: string | null
-}) {
-	return targetMode === 'pointer' ? pointerTargetId : keyboardTargetId
+function getOffsetTop(element: HTMLElement, ancestor: HTMLElement) {
+	const elementRect = element.getBoundingClientRect()
+	const ancestorRect = ancestor.getBoundingClientRect()
+	return elementRect.top - ancestorRect.top + ancestor.scrollTop
 }
 
-function scrollKeyboardTargetIntoView(
-	taskId: string | null,
-	direction: KeyboardNavigationDirection,
-) {
+function getCommandTargetId({
+	rowTargetId,
+	hoveredId,
+	activeTaskId,
+}: {
+	rowTargetId: string | null
+	hoveredId: string | null
+	activeTaskId: string | null
+}) {
+	return rowTargetId ?? hoveredId ?? activeTaskId ?? null
+}
+
+function scrollKeyboardTargetIntoView({
+	taskId,
+	direction,
+	fromTaskId = null,
+}: {
+	taskId: string | null
+	direction: KeyboardNavigationDirection
+	fromTaskId?: string | null
+}) {
 	if (!taskId || typeof document === 'undefined') {
 		return
 	}
@@ -140,18 +164,71 @@ function scrollKeyboardTargetIntoView(
 		return
 	}
 
-	const scrollRect = scrollContainer.getBoundingClientRect()
 	const rowRect = row.getBoundingClientRect()
 	const section = row.closest<HTMLElement>('[data-board-section="true"]')
-	const sectionRect = section?.getBoundingClientRect()
 	const boardRoot = row.closest<HTMLElement>('[data-board-root="true"]')
-	const scrollBottom = scrollRect.bottom - KEYBOARD_SCROLL_BOTTOM_PADDING
+	const currentSection = section instanceof HTMLElement ? section : null
+	const currentSectionHeader =
+		currentSection?.querySelector<HTMLElement>('[data-board-section-header="true"]') ?? null
+	const currentSectionRows = currentSection
+		? Array.from(currentSection.querySelectorAll<HTMLElement>('[data-task-id]'))
+		: []
+	const firstRowInSection = currentSectionRows[0] ?? null
+	const lastRowInSection = currentSectionRows[currentSectionRows.length - 1] ?? null
+	const fromRow = fromTaskId
+		? document.querySelector<HTMLElement>(`[data-task-id="${fromTaskId}"]`)
+		: null
+	const fromSection = fromRow?.closest<HTMLElement>('[data-board-section="true"]') ?? null
+	const fromSectionHeader =
+		fromSection?.querySelector<HTMLElement>('[data-board-section-header="true"]') ?? null
+	const visibleTop = scrollContainer.scrollTop
+	const visibleBottom = visibleTop + scrollContainer.clientHeight
+	const rowTop = getOffsetTop(row, scrollContainer)
+	const rowBottom = rowTop + rowRect.height
+	const currentHeaderTop = currentSectionHeader
+		? getOffsetTop(currentSectionHeader, scrollContainer)
+		: rowTop
+	const currentHeaderHeight = currentSectionHeader?.getBoundingClientRect().height ?? 0
+	const firstRowTop = firstRowInSection ? getOffsetTop(firstRowInSection, scrollContainer) : rowTop
+	const headerGap = firstRowInSection
+		? Math.max(0, firstRowTop - (currentHeaderTop + currentHeaderHeight))
+		: 0
+	const sectionHeaderGap = Math.max(SECTION_HEADER_GAP_PX, headerGap)
+	const safeTop = visibleTop + currentHeaderHeight + sectionHeaderGap
+	const safeBottom = visibleBottom - BOTTOM_GAP_PX
+	const boardBottom = boardRoot
+		? boardRoot === scrollContainer
+			? Math.max(scrollContainer.scrollHeight, rowBottom + BOTTOM_GAP_PX)
+			: getOffsetTop(boardRoot, scrollContainer) +
+				Math.max(boardRoot.scrollHeight, boardRoot.getBoundingClientRect().height)
+		: rowBottom + BOTTOM_GAP_PX
 
 	if (direction < 0) {
-		const targetTop = sectionRect?.top ?? rowRect.top
-		if (targetTop < scrollRect.top) {
+		let delta = 0
+		const didCrossSection = !!currentSection && currentSection !== fromSection
+
+		if (didCrossSection) {
+			const previewRow = lastRowInSection ?? row
+			const previewRowTop = getOffsetTop(previewRow, scrollContainer)
+			const previewSafeOffset = currentHeaderHeight + sectionHeaderGap
+			const fromHeaderTop = fromSectionHeader
+				? getOffsetTop(fromSectionHeader, scrollContainer)
+				: Number.POSITIVE_INFINITY
+			const desiredScrollTop = Math.max(
+				0,
+				Math.min(previewRowTop - previewSafeOffset, fromHeaderTop - 1),
+			)
+
+			if (desiredScrollTop < visibleTop) {
+				delta = desiredScrollTop - visibleTop
+			}
+		} else if (rowTop < safeTop) {
+			delta = rowTop - safeTop
+		}
+
+		if (delta !== 0) {
 			scrollContainer.scrollTo({
-				top: Math.max(0, scrollContainer.scrollTop + (targetTop - scrollRect.top)),
+				top: Math.max(0, scrollContainer.scrollTop + delta),
 				behavior: KEYBOARD_SCROLL_BEHAVIOR,
 			})
 		}
@@ -162,36 +239,39 @@ function scrollKeyboardTargetIntoView(
 		? Array.from(boardRoot.querySelectorAll<HTMLElement>('[data-task-id]'))
 		: []
 	const isLastRow = rows[rows.length - 1] === row
-	const boardBottom = boardRoot?.getBoundingClientRect().bottom ?? rowRect.bottom
-	const targetBottom = isLastRow ? Math.max(rowRect.bottom, boardBottom) : rowRect.bottom
+	const targetBottom = isLastRow ? boardBottom : rowBottom
 
-	if (targetBottom > scrollBottom) {
+	if (targetBottom > (isLastRow ? visibleBottom : safeBottom)) {
 		scrollContainer.scrollTo({
-			top: scrollContainer.scrollTop + (targetBottom - scrollBottom),
+			top: targetBottom - (isLastRow ? scrollContainer.clientHeight : scrollContainer.clientHeight - BOTTOM_GAP_PX),
 			behavior: KEYBOARD_SCROLL_BEHAVIOR,
 		})
 	}
+}
+
+function toTaskRowRef(taskId: string | null | undefined): TaskRowRef | null {
+	return taskId ? { targetId: taskId } : null
 }
 
 export function TaskRowShortcutScope({
 	children,
 	tasks,
 	activeTaskId,
-	focusedTaskId: externalFocusedTaskId = null,
+	focusedTaskId = null,
 	selectedTaskIdSet,
 	onToggleTaskSelection,
+	onMoveTaskFocus: _onMoveTaskFocus,
 	onSetFocusedTask,
-	onMoveTaskFocus,
 	onClearTaskSelection,
 	onOpenTask,
 }: TaskRowShortcutScopeProps) {
-	const [keyboardTargetId, setKeyboardTargetId] = useState<string | null>(externalFocusedTaskId)
-	const [pointerTargetId, setPointerTargetId] = useState<string | null>(null)
-	const [targetMode, setTargetMode] = useState<TargetMode>('keyboard')
+	const [hoveredId, setHoveredId] = useState<string | null>(focusedTaskId)
+	const [hoverSource, setHoverSource] = useState<HoverSource | null>(
+		focusedTaskId ? 'keyboard' : null,
+	)
 
-	const keyboardTargetIdRef = useRef<string | null>(externalFocusedTaskId)
-	const pointerTargetIdRef = useRef<string | null>(null)
-	const targetModeRef = useRef<TargetMode>('keyboard')
+	const hoveredIdRef = useRef<string | null>(focusedTaskId)
+	const hoverSourceRef = useRef<HoverSource | null>(focusedTaskId ? 'keyboard' : null)
 	const suppressPointerHoverRef = useRef(false)
 	const frozenPointerPointRef = useRef<PointerPoint | null>(null)
 	const lastPointerPointRef = useRef<PointerPoint | null>(null)
@@ -199,11 +279,6 @@ export function TaskRowShortcutScope({
 	const chordStateRef = useRef<KeybindingChordState | null>(null)
 
 	const { runBulkAction } = useBulkActionContext()
-
-	useEffect(() => {
-		keyboardTargetIdRef.current = externalFocusedTaskId
-		setKeyboardTargetId(externalFocusedTaskId)
-	}, [externalFocusedTaskId])
 
 	useEffect(() => {
 		function handleWindowPointerMove(event: PointerEvent) {
@@ -217,8 +292,18 @@ export function TaskRowShortcutScope({
 		return () => window.removeEventListener('pointermove', handleWindowPointerMove)
 	}, [])
 
-	const taskById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks])
+	useEffect(() => {
+		if (hoveredIdRef.current && !tasks.some((task) => task.id === hoveredIdRef.current)) {
+			hoveredIdRef.current = null
+			hoverSourceRef.current = null
+			setHoveredId(null)
+			setHoverSource(null)
+			onSetFocusedTask?.(null)
+		}
+	}, [onSetFocusedTask, tasks])
+
 	const selectedTaskIds = useMemo(() => [...selectedTaskIdSet], [selectedTaskIdSet])
+	const taskById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks])
 	const selectedTasks = useMemo(
 		() =>
 			selectedTaskIds.flatMap((taskId) => {
@@ -239,14 +324,22 @@ export function TaskRowShortcutScope({
 	const rowTarget = useMemo(
 		() =>
 			resolveTaskRowTarget({
-				pointer: targetMode === 'pointer' ? toTaskRowRef(pointerTargetId) : null,
-				keyboard: targetMode === 'keyboard' ? toTaskRowRef(keyboardTargetId) : null,
+				hover: toTaskRowRef(hoveredId),
 				active: toTaskRowRef(activeTaskId),
 				selection,
 			}),
-		[activeTaskId, keyboardTargetId, pointerTargetId, selection, targetMode],
+		[activeTaskId, hoveredId, selection],
 	)
 	const targetTask = rowTarget.targetId ? taskById.get(rowTarget.targetId) : undefined
+	const commandTargetId = useMemo(
+		() =>
+			getCommandTargetId({
+				rowTargetId: rowTarget.targetId ?? null,
+				hoveredId,
+				activeTaskId,
+			}),
+		[activeTaskId, hoveredId, rowTarget.targetId],
+	)
 
 	const runtime = useMemo(() => {
 		const actions = createTaskRowCommandActions({
@@ -275,58 +368,71 @@ export function TaskRowShortcutScope({
 		targetTask,
 	])
 
-	const updatePointerTarget = useCallback((taskId: string | null) => {
-		pointerTargetIdRef.current = taskId
-		setPointerTargetId(taskId)
-	}, [])
-
-	const updateKeyboardTarget = useCallback(
-		(taskId: string | null, options: KeyboardNavigationOptions = {}) => {
-			keyboardTargetIdRef.current = taskId
-			setKeyboardTargetId(taskId)
+	const updateHoveredRow = useCallback(
+		(taskId: string | null, source: HoverSource | null, options: HoverUpdateOptions = {}) => {
+			hoveredIdRef.current = taskId
+			hoverSourceRef.current = source
+			setHoveredId(taskId)
+			setHoverSource(source)
 
 			if (options.syncExternal !== false) {
 				onSetFocusedTask?.(taskId)
 			}
 
-			if (taskId && options.direction) {
-				scrollKeyboardTargetIntoView(taskId, options.direction)
+			if (
+				taskId &&
+				source === 'keyboard' &&
+				options.direction &&
+				options.scrollIntoView !== false
+			) {
+				scrollKeyboardTargetIntoView({
+					taskId,
+					direction: options.direction,
+					fromTaskId: options.fromTaskId ?? null,
+				})
 			}
 		},
 		[onSetFocusedTask],
 	)
 
-	const switchTargetMode = useCallback((mode: TargetMode) => {
-		targetModeRef.current = mode
-		setTargetMode(mode)
-	}, [])
+	useEffect(() => {
+		if (!focusedTaskId) {
+			return
+		}
+
+		if (hoverSourceRef.current === 'pointer') {
+			return
+		}
+
+		updateHoveredRow(focusedTaskId, 'keyboard', {
+			syncExternal: false,
+			scrollIntoView: false,
+		})
+	}, [focusedTaskId, updateHoveredRow])
 
 	useEffect(() => {
-		function handleKeyDown(event: KeyboardEvent) {
+		function handleWindowKeyDown(event: KeyboardEvent) {
 			if (isBlockedByHigherLayer()) {
 				return
 			}
 
 			const navigationResult = handleTaskRowNavigationKey({
 				event,
-				targetMode: targetModeRef.current,
-				keyboardTargetId: keyboardTargetIdRef.current,
-				pointerTargetId: pointerTargetIdRef.current,
+				hoveredId: hoveredIdRef.current,
 				tasks,
-				moveFocus: onMoveTaskFocus,
 				onToggleTaskSelection,
 				shiftToggleSession: shiftToggleSessionRef.current,
 				setShiftToggleSession: (session) => {
 					shiftToggleSessionRef.current = session
 				},
-				setKeyboardTargetId: (taskId, options) => {
+				setKeyboardHoveredId: (taskId, options) => {
+					const previousHoveredId = hoveredIdRef.current
 					suppressPointerHoverRef.current = true
 					frozenPointerPointRef.current = lastPointerPointRef.current
-					switchTargetMode('keyboard')
-					updateKeyboardTarget(taskId, options)
-				},
-				clearPointerTarget: () => {
-					updatePointerTarget(null)
+					updateHoveredRow(taskId, taskId ? 'keyboard' : null, {
+						...options,
+						fromTaskId: options?.fromTaskId ?? previousHoveredId,
+					})
 				},
 			})
 			if (navigationResult === 'handled') {
@@ -359,34 +465,29 @@ export function TaskRowShortcutScope({
 			}, 0)
 		}
 
-		window.addEventListener('keydown', handleKeyDown)
-		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [
-		onMoveTaskFocus,
-		onToggleTaskSelection,
-		rowTarget.hasTarget,
-		runtime,
-		selectedTaskIds.length,
-		tasks,
-		updateKeyboardTarget,
-		updatePointerTarget,
-		switchTargetMode,
-	])
+		window.addEventListener('keydown', handleWindowKeyDown)
+		return () => window.removeEventListener('keydown', handleWindowKeyDown)
+	}, [onToggleTaskSelection, rowTarget.hasTarget, runtime, selectedTaskIds.length, tasks, updateHoveredRow])
 
 	const state = useMemo<TaskRowShortcutState>(
 		() => ({
-			displayTargetId: getActiveTargetId({
-				targetMode,
-				keyboardTargetId,
-				pointerTargetId,
-			}),
+			hoveredId,
+			hoverSource,
+			commandTargetId,
 			onRowHover: (taskId) => {
-				if (!taskId || suppressPointerHoverRef.current) {
+				if (taskId === null) {
+					if (hoverSourceRef.current === 'pointer') {
+						updateHoveredRow(null, null)
+					}
 					return
 				}
 
-				switchTargetMode('pointer')
-				updatePointerTarget(taskId)
+				if (suppressPointerHoverRef.current) {
+					return
+				}
+
+				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+				updateHoveredRow(taskId, 'pointer')
 			},
 			onRowPointerMove: (taskId, point) => {
 				if (
@@ -399,35 +500,14 @@ export function TaskRowShortcutScope({
 				lastPointerPointRef.current = point
 				suppressPointerHoverRef.current = false
 				frozenPointerPointRef.current = null
-				switchTargetMode('pointer')
-				updatePointerTarget(taskId)
-			},
-			onRowFocus: (taskId) => {
-				if (!taskId) {
-					return
-				}
-
-				suppressPointerHoverRef.current = true
-				frozenPointerPointRef.current = lastPointerPointRef.current
-				switchTargetMode('keyboard')
-				updateKeyboardTarget(taskId, { direction: 1 })
+				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+				updateHoveredRow(taskId, 'pointer')
 			},
 		}),
-		[
-			keyboardTargetId,
-			pointerTargetId,
-			switchTargetMode,
-			targetMode,
-			updateKeyboardTarget,
-			updatePointerTarget,
-		],
+		[commandTargetId, hoveredId, hoverSource, updateHoveredRow],
 	)
 
 	return <>{children(state)}</>
-}
-
-function toTaskRowRef(taskId: string | null | undefined): TaskRowRef | null {
-	return taskId ? { targetId: taskId } : null
 }
 
 function createTaskRowCommandContext(
@@ -564,36 +644,20 @@ function createTaskRowCommandActions({
 
 function handleTaskRowNavigationKey({
 	event,
-	targetMode,
-	keyboardTargetId,
-	pointerTargetId,
+	hoveredId,
 	tasks,
-	moveFocus,
 	onToggleTaskSelection,
 	shiftToggleSession,
 	setShiftToggleSession,
-	setKeyboardTargetId,
-	clearPointerTarget,
+	setKeyboardHoveredId,
 }: {
 	event: KeyboardEvent
-	targetMode: TargetMode
-	keyboardTargetId: string | null
-	pointerTargetId: string | null
+	hoveredId: string | null
 	tasks: TaskListItem[]
-	moveFocus?: (
-		delta: number,
-		options?: {
-			preserveAnchor?: boolean
-			selectRange?: boolean
-			startFromId?: string | null
-			resetAnchorToStart?: boolean
-		},
-	) => string | null
 	onToggleTaskSelection: (taskId: string) => void
 	shiftToggleSession: ShiftToggleSession
 	setShiftToggleSession: (session: ShiftToggleSession) => void
-	setKeyboardTargetId: (taskId: string | null, options?: KeyboardNavigationOptions) => void
-	clearPointerTarget: () => void
+	setKeyboardHoveredId: (taskId: string | null, options?: HoverUpdateOptions) => void
 }) {
 	if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
 		return 'ignored'
@@ -603,19 +667,8 @@ function handleTaskRowNavigationKey({
 		return 'ignored'
 	}
 
-	if (!moveFocus) {
-		return 'ignored'
-	}
-
-	event.preventDefault()
-	clearPointerTarget()
-
 	const delta = event.key === 'ArrowDown' ? 1 : -1
-	const navigationStartId = getActiveTargetId({
-		targetMode,
-		keyboardTargetId,
-		pointerTargetId,
-	})
+	const navigationStartId = hoveredId
 
 	if (event.shiftKey) {
 		const nextSession = handleShiftToggleNavigation({
@@ -624,10 +677,9 @@ function handleTaskRowNavigationKey({
 			tasks,
 			shiftToggleSession,
 			onToggleTaskSelection,
-			setKeyboardTargetId,
+			setKeyboardTargetId: setKeyboardHoveredId,
 		})
 		setShiftToggleSession(nextSession)
-
 		return 'handled'
 	}
 
@@ -638,7 +690,7 @@ function handleTaskRowNavigationKey({
 		delta,
 	})
 	setShiftToggleSession(EMPTY_SHIFT_TOGGLE_SESSION)
-	setKeyboardTargetId(nextTaskId, { direction: delta })
+	setKeyboardHoveredId(nextTaskId, { direction: delta })
 
 	return 'handled'
 }
@@ -656,7 +708,7 @@ function handleShiftToggleNavigation({
 	tasks: TaskListItem[]
 	shiftToggleSession: ShiftToggleSession
 	onToggleTaskSelection: (taskId: string) => void
-	setKeyboardTargetId: (taskId: string | null, options?: KeyboardNavigationOptions) => void
+	setKeyboardTargetId: (taskId: string | null, options?: HoverUpdateOptions) => void
 }): ShiftToggleSession {
 	const visibleTaskIds = tasks.map((task) => task.id)
 	if (visibleTaskIds.length === 0) {
@@ -739,7 +791,12 @@ function moveVisibleTaskFocus({
 	}
 
 	if (!startTargetId) {
-		return delta > 0 ? (taskIds[0] ?? null) : (taskIds[taskIds.length - 1] ?? null)
+		return taskIds[0] ?? null
+	}
+
+	const index = taskIds.indexOf(startTargetId)
+	if (index < 0) {
+		return taskIds[0] ?? null
 	}
 
 	return getAdjacentTaskId(taskIds, startTargetId, delta)

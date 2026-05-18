@@ -21,11 +21,11 @@ type ProjectRowAdapterProps = {
 	rowState: {
 		isPending: boolean
 		isSelected?: boolean
-		isKeyboardFocused?: boolean
+		isHovered?: boolean
+		hoverSource?: 'pointer' | 'keyboard' | null
 	}
 	rowShortcutHandlers?: {
 		onHover: (projectId: string | null) => void
-		onFocus: (projectId: string | null) => void
 	}
 	selectionGroupPosition?: RowSelectionGroupPosition
 	projectBinding?: {
@@ -64,7 +64,8 @@ export function ProjectRowAdapter({
 	)
 	const hasSelection = typeof actions.onToggleSelected === 'function'
 	const isSelected = rowState.isSelected ?? false
-	const isKeyboardFocused = rowState.isKeyboardFocused ?? false
+	const isHovered = rowState.isHovered ?? false
+	const hoverSource = rowState.hoverSource ?? null
 
 	return (
 		<ProjectContextMenu
@@ -76,13 +77,11 @@ export function ProjectRowAdapter({
 				aria-label={`打开项目 ${project.name}`}
 				data-project-id={project.id}
 				interactive
-				controlledHover
-				keyboardFocused={isKeyboardFocused}
+				hovered={isHovered}
+				hoverSource={hoverSource}
 				selected={isSelected}
 				selectionGroupPosition={selectionGroupPosition}
 				onClick={() => actions.onOpenProject(project.id)}
-				onBlur={() => rowShortcutHandlers?.onFocus(null)}
-				onFocus={() => rowShortcutHandlers?.onFocus(project.id)}
 				onKeyDown={(event) => {
 					if (event.key === 'Enter' || event.key === ' ') {
 						event.preventDefault()
@@ -100,7 +99,7 @@ export function ProjectRowAdapter({
 								ariaLabel={`选择项目 ${project.name}`}
 								checked={isSelected}
 								disabled={rowState.isPending}
-								visible={isSelected || isKeyboardFocused}
+								visible={isSelected || isHovered}
 								onCheckedChange={() => actions.onToggleSelected?.(project.id)}
 							/>
 						) : null}

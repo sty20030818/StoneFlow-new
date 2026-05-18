@@ -71,7 +71,11 @@ export const BOARD_GROUP_HEADER_CLASS = `sticky top-0 z-10 ${ROW_SHELL_SECTION_H
 /**
  * 页级 board 主容器，只负责纵向堆叠分组。
  */
-export function BoardRoot({ children, className, ...props }: ComponentProps<'div'>) {
+export function BoardRoot({
+	children,
+	className,
+	...props
+}: ComponentProps<'div'>) {
 	return (
 		<div className='relative isolate flex min-h-0 flex-1 flex-col'>
 			<div {...props} className={cn(BOARD_STACK_CLASS, className)} data-board-root='true'>

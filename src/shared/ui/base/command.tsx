@@ -64,7 +64,6 @@ const CommandInput = React.forwardRef<
 	return (
 		<div data-slot='command-input-wrapper' className='px-5 py-4'>
 			<CommandPrimitive.Input
-				autoFocus
 				data-slot='command-input'
 				ref={ref}
 				className={cn(

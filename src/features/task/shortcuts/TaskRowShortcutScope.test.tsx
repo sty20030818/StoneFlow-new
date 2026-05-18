@@ -61,7 +61,7 @@ describe('TaskRowShortcutScope', () => {
 		const actions = createActions()
 		renderScope({ actions })
 
-		fireEvent.focus(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey(' ')
 		fireKey('Enter')
 		flushShortcutTimers()
@@ -139,7 +139,7 @@ describe('TaskRowShortcutScope', () => {
 			selectedTaskIds: ['task-a', 'task-b'],
 		})
 
-		fireEvent.focus(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('w')
 		fireKey('a')
 		fireKey('Delete')
@@ -276,7 +276,7 @@ describe('TaskRowShortcutScope', () => {
 			selectedTaskIds: ['task-a', 'task-b'],
 		})
 
-		fireEvent.focus(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('p')
 		flushShortcutTimers()
 
@@ -284,22 +284,23 @@ describe('TaskRowShortcutScope', () => {
 		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a', 'task-b'])
 	})
 
-	it('ArrowDown / ArrowUp 只移动 keyboard focus，不改变 selection', () => {
+	it('ArrowDown / ArrowUp 只移动唯一 hover，不改变 selection', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 
-		fireKey('ArrowDown')
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(fireKey('ArrowDown').defaultPrevented).toBe(false)
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hover-source')).toHaveTextContent('keyboard')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 
 		fireKey('ArrowDown')
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-c')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 
 		fireKey('ArrowUp')
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 	})
 
@@ -310,12 +311,12 @@ describe('TaskRowShortcutScope', () => {
 		fireEvent.mouseMove(screen.getByTestId('row-task-b'))
 		fireKey('ArrowDown')
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-c')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 
 		fireKey('ArrowUp')
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 	})
 
@@ -324,19 +325,19 @@ describe('TaskRowShortcutScope', () => {
 		renderSelectionScope({ actions })
 
 		fireKey('ArrowDown', { shiftKey: true })
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a')
 
 		fireKey('ArrowDown', { shiftKey: true })
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b')
 
 		fireKey('ArrowUp', { shiftKey: true })
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a')
 
 		fireKey('ArrowUp', { shiftKey: true })
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 	})
 
@@ -347,11 +348,11 @@ describe('TaskRowShortcutScope', () => {
 		fireEvent.mouseMove(screen.getByTestId('row-task-b'))
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b')
 
 		fireKey('ArrowDown', { shiftKey: true })
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-c')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b,task-c')
 	})
 
@@ -364,7 +365,7 @@ describe('TaskRowShortcutScope', () => {
 		fireEvent.pointerMove(screen.getByTestId('row-task-a'), { clientX: 8, clientY: 8 })
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b')
 	})
 
@@ -379,7 +380,7 @@ describe('TaskRowShortcutScope', () => {
 		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b')
 	})
 
@@ -392,12 +393,12 @@ describe('TaskRowShortcutScope', () => {
 		fireKey('ArrowDown', { shiftKey: true })
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-e')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-e')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d,task-e')
 
 		fireKey('ArrowUp', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-e')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-e')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d')
 	})
 
@@ -410,12 +411,12 @@ describe('TaskRowShortcutScope', () => {
 		fireKey('ArrowUp', { shiftKey: true })
 		fireKey('ArrowUp', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b,task-c,task-d')
 
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d')
 	})
 
@@ -427,21 +428,21 @@ describe('TaskRowShortcutScope', () => {
 			fireKey('ArrowDown', { shiftKey: true })
 		}
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-f')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-f')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
 			'task-a,task-b,task-c,task-d,task-e,task-f',
 		)
 
 		fireKey('ArrowUp', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-f')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-f')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
 			'task-a,task-b,task-c,task-d,task-e',
 		)
 
 		fireKey('ArrowUp', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-e')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-e')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b,task-c,task-d')
 	})
 
@@ -456,14 +457,14 @@ describe('TaskRowShortcutScope', () => {
 		fireEvent.pointerMove(screen.getByTestId('row-task-a'), { clientX: 8, clientY: 8 })
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
 			'task-b,task-c,task-d,task-e,task-f',
 		)
 
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d,task-e,task-f')
 	})
 
@@ -479,12 +480,12 @@ describe('TaskRowShortcutScope', () => {
 			fireKey('ArrowUp', { shiftKey: true })
 		}
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a')
 	})
 
@@ -493,18 +494,18 @@ describe('TaskRowShortcutScope', () => {
 		renderSelectionScope({ actions })
 
 		fireEvent.pointerMove(screen.getByTestId('row-task-b'), { clientX: 8, clientY: 8 })
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 
 		fireKey('ArrowDown', { shiftKey: true })
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-c')
 
 		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-c')
 
-		fireEvent.pointerMove(screen.getByTestId('row-task-a'), { clientX: 12, clientY: 12 })
-		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
+		fireEvent.pointerMove(screen.getByTestId('row-task-a'), { clientX: 24, clientY: 24 })
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 	})
 
 	it('上层菜单打开时 Arrow 和 Shift+Arrow 不触发范围选择', () => {
@@ -516,6 +517,111 @@ describe('TaskRowShortcutScope', () => {
 
 		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
+	})
+
+	it('向下到最后一条时保留 8px 底部留白，向上跨 section 时显示上一个 section 的 header 和最后一条 row', () => {
+		const actions = createActions()
+		const scrollTo = vi.fn()
+		renderSelectionScope({ actions })
+
+		const boardRoot = screen.getByTestId('scope-root')
+		boardRoot.dataset.boardRoot = 'true'
+		boardRoot.className = 'no-scrollbar overflow-y-auto'
+		Object.defineProperty(boardRoot, 'scrollTop', {
+			configurable: true,
+			writable: true,
+			value: 0,
+		})
+		Object.defineProperty(boardRoot, 'clientHeight', {
+			configurable: true,
+			value: 200,
+		})
+		Object.defineProperty(boardRoot, 'getBoundingClientRect', {
+			configurable: true,
+			value: () => makeDomRect(0, 200, 320),
+		})
+		Object.defineProperty(boardRoot, 'scrollTo', {
+			configurable: true,
+			value: scrollTo,
+		})
+
+		const rows = [
+			screen.getByTestId('row-task-a'),
+			screen.getByTestId('row-task-b'),
+			screen.getByTestId('row-task-c'),
+			screen.getByTestId('row-task-d'),
+			screen.getByTestId('row-task-e'),
+			screen.getByTestId('row-task-f'),
+		]
+
+		const sectionA = document.createElement('section')
+		sectionA.dataset.boardSection = 'true'
+		const headerA = document.createElement('div')
+		headerA.dataset.boardSectionHeader = 'true'
+		const sectionARows = document.createElement('div')
+		sectionARows.appendChild(rows[0]!)
+		sectionARows.appendChild(rows[1]!)
+		sectionARows.appendChild(rows[2]!)
+		sectionA.replaceChildren(headerA, sectionARows)
+
+		const sectionB = document.createElement('section')
+		sectionB.dataset.boardSection = 'true'
+		const headerB = document.createElement('div')
+		headerB.dataset.boardSectionHeader = 'true'
+		const sectionBRows = document.createElement('div')
+		sectionBRows.appendChild(rows[3]!)
+		sectionBRows.appendChild(rows[4]!)
+		sectionBRows.appendChild(rows[5]!)
+		sectionB.replaceChildren(headerB, sectionBRows)
+
+		boardRoot.replaceChildren(
+			screen.getByTestId('hovered-target'),
+			screen.getByTestId('hover-source'),
+			screen.getByTestId('command-target'),
+			sectionA,
+			sectionB,
+		)
+
+		const topMap = new Map<HTMLElement, number>([
+			[boardRoot, 0],
+			[sectionA, 0],
+			[headerA, 0],
+			[rows[0]!, 40],
+			[rows[1]!, 88],
+			[rows[2]!, 136],
+			[sectionB, 184],
+			[headerB, 184],
+			[rows[3]!, 224],
+			[rows[4]!, 272],
+			[rows[5]!, 320],
+		])
+
+		vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+			this: HTMLElement,
+		) {
+			const rawTop = topMap.get(this) ?? 0
+			const top = this === boardRoot ? rawTop : rawTop - boardRoot.scrollTop
+			const height = this === headerA || this === headerB ? 40 : this === boardRoot ? 376 : 48
+			return makeDomRect(top, height, 320)
+		})
+
+		fireEvent.mouseMove(rows[4]!)
+		fireKey('ArrowDown')
+
+		expect(scrollTo).toHaveBeenCalledWith({
+			top: 176,
+			behavior: 'auto',
+		})
+
+		scrollTo.mockClear()
+		boardRoot.scrollTop = 224
+		fireEvent.pointerMove(rows[3]!, { clientX: 24, clientY: 24 })
+		fireKey('ArrowUp')
+
+		expect(scrollTo).toHaveBeenCalledWith({
+			top: 94,
+			behavior: 'auto',
+		})
 	})
 })
 
@@ -561,13 +667,12 @@ function renderScope({
 				tasks={tasks}
 			>
 				{(state) => (
-					<div>
+					<div data-testid='scope-root'>
 						{tasks.map((task) => (
 							<div
 								data-task-id={task.id}
 								data-testid={`row-${task.id}`}
 								key={task.id}
-								onFocus={() => state.onRowFocus(task.id)}
 								onMouseEnter={() => state.onRowHover(task.id)}
 								onMouseMove={(event) =>
 									state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
@@ -575,7 +680,6 @@ function renderScope({
 								onPointerMove={(event) =>
 									state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
 								}
-								tabIndex={0}
 							></div>
 						))}
 					</div>
@@ -627,7 +731,7 @@ function renderSelectionScope({
 				<div data-testid='focused-task'>{focusedTaskId ?? 'none'}</div>
 				<div data-testid='selected-count'>{selectedCount}</div>
 				<div data-testid='selected-ids'>{selectedTaskIds.join(',')}</div>
-				<TaskRowShortcutScope
+			<TaskRowShortcutScope
 					activeTaskId={null}
 					focusedTaskId={focusedTaskId}
 					onClearTaskSelection={actions.onClearTaskSelection}
@@ -639,14 +743,15 @@ function renderSelectionScope({
 					tasks={tasks}
 				>
 					{(state) => (
-						<div>
-							<div data-testid='display-target'>{state.displayTargetId ?? 'none'}</div>
+						<div data-testid='scope-root'>
+							<div data-testid='hovered-target'>{state.hoveredId ?? 'none'}</div>
+							<div data-testid='hover-source'>{state.hoverSource ?? 'none'}</div>
+							<div data-testid='command-target'>{state.commandTargetId ?? 'none'}</div>
 							{tasks.map((task) => (
 								<div
 									data-task-id={task.id}
 									data-testid={`row-${task.id}`}
 									key={task.id}
-									onFocus={() => state.onRowFocus(task.id)}
 									onMouseEnter={() => state.onRowHover(task.id)}
 									onMouseMove={(event) =>
 										state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
@@ -654,7 +759,6 @@ function renderSelectionScope({
 									onPointerMove={(event) =>
 										state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
 									}
-									tabIndex={0}
 								/>
 							))}
 						</div>
@@ -808,6 +912,8 @@ function fireKey(
 	act(() => {
 		window.dispatchEvent(event)
 	})
+
+	return event
 }
 
 function flushShortcutTimers() {
@@ -821,4 +927,18 @@ async function flushShortcutAsyncWork() {
 	await act(async () => {
 		await Promise.resolve()
 	})
+}
+
+function makeDomRect(top: number, height: number, width: number): DOMRect {
+	return {
+		x: 0,
+		y: top,
+		top,
+		bottom: top + height,
+		left: 0,
+		right: width,
+		width,
+		height,
+		toJSON: () => ({}),
+	} as DOMRect
 }

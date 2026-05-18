@@ -37,55 +37,47 @@ describe('RowShell', () => {
 		render(<RowShell.Root interactive>interactive row</RowShell.Root>)
 
 		const row = screen.getByRole('button', { name: 'interactive row' })
-		expect(row).toHaveAttribute('tabindex', '0')
+		expect(row).toHaveAttribute('tabindex', '-1')
 	})
 
-	it('keyboard focus 复用 hover/selected 表面，只额外叠加边框', () => {
+	it('keyboard hover 复用 hover/selected 表面，只额外叠加边框', () => {
 		const { rerender } = render(
-			<RowShell.Root data-testid='row' keyboardFocused>
+			<RowShell.Root data-testid='row' hovered hoverSource='keyboard'>
 				row
 			</RowShell.Root>,
 		)
 
 		const row = screen.getByTestId('row')
-		expect(row.className).toContain(ROW_SHELL_IDLE_CLASS)
 		expect(row.className).toContain('bg-sf-list-row-hover')
 		expect(row.className).toContain(ROW_SHELL_FOCUS_CLASS)
 
 		rerender(
-			<RowShell.Root data-testid='row' keyboardFocused selected>
+			<RowShell.Root data-testid='row' hovered hoverSource='keyboard' selected>
 				row
 			</RowShell.Root>,
 		)
-		expect(row.className).toContain('bg-sf-selection-surface')
+		expect(row.className).toContain('bg-sf-selection-surface-hover')
 		expect(row.className).toContain(ROW_SHELL_SELECTED_FOCUS_CLASS)
 		expect(row.className).not.toContain('ring-3')
 	})
 
-	it('controlled hover 关闭默认 CSS hover，只保留受控焦点表面', () => {
+	it('pointer hover 和 selected-hover 使用统一视觉协议', () => {
 		const { rerender } = render(
-			<RowShell.Root controlledHover data-testid='row'>
+			<RowShell.Root data-testid='row' hovered hoverSource='pointer'>
 				row
 			</RowShell.Root>,
 		)
 
-		expect(screen.getByTestId('row').className).not.toContain(ROW_SHELL_IDLE_CLASS)
+		expect(screen.getByTestId('row').className).toContain('bg-sf-list-row-hover')
+		expect(screen.getByTestId('row').className).not.toContain(ROW_SHELL_FOCUS_CLASS)
 
 		rerender(
-			<RowShell.Root controlledHover data-testid='row' selected>
-				row
-			</RowShell.Root>,
-		)
-		expect(screen.getByTestId('row').className).toContain('bg-sf-selection-surface')
-		expect(screen.getByTestId('row').className).not.toContain('hover:bg-sf-selection-surface-hover')
-
-		rerender(
-			<RowShell.Root controlledHover data-testid='row' keyboardFocused selected>
+			<RowShell.Root data-testid='row' hovered hoverSource='pointer' selected>
 				row
 			</RowShell.Root>,
 		)
 		expect(screen.getByTestId('row').className).toContain('bg-sf-selection-surface-hover')
-		expect(screen.getByTestId('row').className).toContain(ROW_SHELL_SELECTED_FOCUS_CLASS)
+		expect(screen.getByTestId('row').className).not.toContain(ROW_SHELL_SELECTED_FOCUS_CLASS)
 	})
 })
 

@@ -160,13 +160,14 @@ describe('TaskRowAdapter', () => {
 		expect(selectedCheckbox.className).toContain('opacity-100')
 	})
 
-	it('keyboard focus 行显示未勾选选择框', () => {
+	it('hover 行显示未勾选选择框', () => {
 		renderTaskRowAdapter({
 			rowState: {
 				isActive: false,
 				isPending: false,
 				isSelected: false,
-				isKeyboardFocused: true,
+				isHovered: true,
+				hoverSource: 'pointer',
 			},
 		})
 

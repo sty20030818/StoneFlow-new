@@ -115,8 +115,15 @@ export function CommandMenu({
 		}
 
 		requestAnimationFrame(() => {
-			inputRef.current?.focus()
-			inputRef.current?.setSelectionRange(query.length, query.length)
+			const input = inputRef.current
+			if (!input) {
+				return
+			}
+
+			if (document.activeElement !== input) {
+				input.focus()
+			}
+			input.setSelectionRange(query.length, query.length)
 		})
 	}, [open, query.length])
 
@@ -131,8 +138,15 @@ export function CommandMenu({
 		}
 
 		requestAnimationFrame(() => {
-			inputRef.current?.focus()
-			inputRef.current?.setSelectionRange(query.length, query.length)
+			const input = inputRef.current
+			if (!input) {
+				return
+			}
+
+			if (document.activeElement !== input) {
+				input.focus()
+			}
+			input.setSelectionRange(query.length, query.length)
 		})
 	}
 

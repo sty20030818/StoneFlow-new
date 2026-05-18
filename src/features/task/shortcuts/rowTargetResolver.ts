@@ -5,32 +5,26 @@ export type TaskRowRef = {
 }
 
 export type ResolveTaskRowTargetInput = {
-	pointer?: TaskRowRef | null
-	keyboard?: TaskRowRef | null
+	hover?: TaskRowRef | null
 	active?: TaskRowRef | null
 	selection: Pick<CommandSelectionContext, 'ids' | 'isSingleSelection' | 'isMultiSelection'>
 }
 
 export function resolveTaskRowTarget({
-	pointer,
-	keyboard,
+	hover,
 	active,
 	selection,
 }: ResolveTaskRowTargetInput): CommandRowTargetContext {
-	if (keyboard) {
-		return toTaskRowTarget(keyboard, 'focus')
+	if (selection.isSingleSelection && selection.ids[0]) {
+		return toTaskRowTarget({ targetId: selection.ids[0] }, 'selection')
 	}
 
-	if (pointer) {
-		return toTaskRowTarget(pointer, 'hover')
+	if (hover) {
+		return toTaskRowTarget(hover, 'hover')
 	}
 
 	if (active) {
 		return toTaskRowTarget(active, 'drawer')
-	}
-
-	if (selection.isSingleSelection && selection.ids[0]) {
-		return toTaskRowTarget({ targetId: selection.ids[0] }, 'selection')
 	}
 
 	return {

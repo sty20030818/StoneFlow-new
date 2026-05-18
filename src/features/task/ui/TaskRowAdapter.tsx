@@ -26,11 +26,11 @@ type TaskRowAdapterProps = {
 		isActive: boolean
 		isSelected: boolean
 		isPending: boolean
-		isKeyboardFocused?: boolean
+		isHovered?: boolean
+		hoverSource?: 'pointer' | 'keyboard' | null
 	}
 	rowShortcutHandlers?: {
 		onHover: (taskId: string | null) => void
-		onFocus: (taskId: string | null) => void
 		onPointerMove: (taskId: string, point: { x: number; y: number }) => void
 	}
 	selectionGroupPosition?: RowSelectionGroupPosition
@@ -61,7 +61,13 @@ export function TaskRowAdapter({
 	projectBinding,
 	actions,
 }: TaskRowAdapterProps) {
-	const { isActive, isSelected, isPending, isKeyboardFocused = false } = rowState
+	const {
+		isActive,
+		isSelected,
+		isPending,
+		isHovered = false,
+		hoverSource = null,
+	} = rowState
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
 	const hasProjectOptions = Boolean(
 		projectBinding?.projectOptions &&
@@ -84,14 +90,12 @@ export function TaskRowAdapter({
 				data-task-id={task.id}
 				interactive
 				active={isActive}
-				controlledHover
 				pending={isPending}
+				hovered={isHovered}
+				hoverSource={hoverSource}
 				selected={isSelected}
-				keyboardFocused={isKeyboardFocused}
 				selectionGroupPosition={selectionGroupPosition}
 				onClick={() => actions.onOpenTask(task.id)}
-				onBlur={() => rowShortcutHandlers?.onFocus(null)}
-				onFocus={() => rowShortcutHandlers?.onFocus(task.id)}
 				onMouseEnter={() => rowShortcutHandlers?.onHover(task.id)}
 				onMouseLeave={() => rowShortcutHandlers?.onHover(null)}
 				onMouseMove={(event) =>
@@ -107,7 +111,7 @@ export function TaskRowAdapter({
 							ariaLabel={`选择任务 ${task.title}`}
 							checked={isSelected}
 							disabled={isPending}
-							visible={isSelected || isKeyboardFocused}
+							visible={isSelected || isHovered}
 							onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
 						/>
 						<PriorityCell

@@ -218,10 +218,10 @@ function ProjectBoardSectionBlock({
 					rowState={{
 						isPending: busyProjectId === project.id,
 						isSelected: selectedProjectIds?.has(project.id) ?? false,
-						isKeyboardFocused: focusedProjectId === project.id,
+						isHovered: focusedProjectId === project.id,
+						hoverSource: focusedProjectId === project.id ? 'keyboard' : null,
 					}}
 					rowShortcutHandlers={{
-						onFocus: rowShortcutState.onRowFocus,
 						onHover: rowShortcutState.onRowHover,
 					}}
 				/>

@@ -220,10 +220,10 @@ function LifecycleBoardSectionBlock({
 					rowState={{
 						isPending: pendingEntryId === entry.id,
 						isSelected: selectedEntryIdSet?.has(entry.id) ?? false,
-						isKeyboardFocused: focusedEntryId === entry.id,
+						isHovered: focusedEntryId === entry.id,
+						hoverSource: focusedEntryId === entry.id ? 'keyboard' : null,
 					}}
 					rowShortcutHandlers={{
-						onFocus: rowShortcutState.onRowFocus,
 						onHover: rowShortcutState.onRowHover,
 					}}
 				/>
