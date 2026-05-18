@@ -31,6 +31,7 @@ type TaskRowAdapterProps = {
 	rowShortcutHandlers?: {
 		onHover: (taskId: string | null) => void
 		onFocus: (taskId: string | null) => void
+		onPointerMove: (taskId: string, point: { x: number; y: number }) => void
 	}
 	selectionGroupPosition?: RowSelectionGroupPosition
 	projectBinding?: {
@@ -93,6 +94,12 @@ export function TaskRowAdapter({
 				onFocus={() => rowShortcutHandlers?.onFocus(task.id)}
 				onMouseEnter={() => rowShortcutHandlers?.onHover(task.id)}
 				onMouseLeave={() => rowShortcutHandlers?.onHover(null)}
+				onMouseMove={(event) =>
+					rowShortcutHandlers?.onPointerMove(task.id, { x: event.clientX, y: event.clientY })
+				}
+				onPointerMove={(event) =>
+					rowShortcutHandlers?.onPointerMove(task.id, { x: event.clientX, y: event.clientY })
+				}
 			>
 				<RowShell.Left>
 					<RowShell.Leading>

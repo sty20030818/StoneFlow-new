@@ -40,7 +40,7 @@ describe('TaskRowShortcutScope', () => {
 		const bulkCalls: BulkActionCall[] = []
 		renderScope({ actions, bulkCalls })
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('w')
 		fireKey('x')
 		flushShortcutTimers()
@@ -75,7 +75,7 @@ describe('TaskRowShortcutScope', () => {
 		const bulkCalls: BulkActionCall[] = []
 		renderScope({ actions, bulkCalls })
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('a')
 		fireKey('Delete')
 		fireKey('Backspace', { metaKey: true })
@@ -95,7 +95,7 @@ describe('TaskRowShortcutScope', () => {
 		const actions = createActions()
 		renderScope({ actions })
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('p')
 		flushShortcutTimers()
 		expect(useDialogStore.getState().isCommandOpen).toBe(true)
@@ -121,7 +121,7 @@ describe('TaskRowShortcutScope', () => {
 		const actions = createActions()
 		renderScope({ actions, withBlockingLayer: true })
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('w')
 		fireKey('x', { target: screen.getByLabelText('编辑标题') })
 		flushShortcutTimers()
@@ -167,7 +167,7 @@ describe('TaskRowShortcutScope', () => {
 			selectedTaskIds: ['task-a'],
 		})
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-b'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-b'))
 		fireKey('w')
 		flushShortcutTimers()
 
@@ -209,7 +209,7 @@ describe('TaskRowShortcutScope', () => {
 			},
 		})
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('a')
 		fireKey('Delete')
 		await flushShortcutAsyncWork()
@@ -233,7 +233,7 @@ describe('TaskRowShortcutScope', () => {
 			},
 		})
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('a')
 		fireKey('Delete')
 		await flushShortcutAsyncWork()
@@ -255,7 +255,7 @@ describe('TaskRowShortcutScope', () => {
 			},
 		})
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('a')
 		flushShortcutTimers()
 
@@ -288,18 +288,18 @@ describe('TaskRowShortcutScope', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
 
 		fireKey('ArrowDown')
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 
 		fireKey('ArrowDown')
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-c')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 
 		fireKey('ArrowUp')
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 	})
 
@@ -307,15 +307,15 @@ describe('TaskRowShortcutScope', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-b'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-b'))
 		fireKey('ArrowDown')
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-c')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 
 		fireKey('ArrowUp')
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 	})
 
@@ -324,19 +324,19 @@ describe('TaskRowShortcutScope', () => {
 		renderSelectionScope({ actions })
 
 		fireKey('ArrowDown', { shiftKey: true })
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a')
 
 		fireKey('ArrowDown', { shiftKey: true })
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b')
 
 		fireKey('ArrowUp', { shiftKey: true })
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a')
 
 		fireKey('ArrowUp', { shiftKey: true })
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 	})
 
@@ -344,14 +344,14 @@ describe('TaskRowShortcutScope', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-b'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-b'))
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b')
 
 		fireKey('ArrowDown', { shiftKey: true })
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-c')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b,task-c')
 	})
 
@@ -359,12 +359,12 @@ describe('TaskRowShortcutScope', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.pointerMove(screen.getByTestId('row-task-a'), { clientX: 8, clientY: 8 })
 		fireKey('ArrowDown', { shiftKey: true })
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.pointerMove(screen.getByTestId('row-task-a'), { clientX: 8, clientY: 8 })
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b')
 	})
 
@@ -376,10 +376,10 @@ describe('TaskRowShortcutScope', () => {
 		fireKey('ArrowDown', { shiftKey: true })
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b')
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b')
 	})
 
@@ -387,17 +387,17 @@ describe('TaskRowShortcutScope', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-c'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-c'))
 		fireKey('ArrowDown', { shiftKey: true })
 		fireKey('ArrowDown', { shiftKey: true })
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-e')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-e')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d,task-e')
 
 		fireKey('ArrowUp', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-e')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-e')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d')
 	})
 
@@ -405,17 +405,17 @@ describe('TaskRowShortcutScope', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-d'))
+		fireEvent.mouseMove(screen.getByTestId('row-task-d'))
 		fireKey('ArrowUp', { shiftKey: true })
 		fireKey('ArrowUp', { shiftKey: true })
 		fireKey('ArrowUp', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b,task-c,task-d')
 
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d')
 	})
 
@@ -427,25 +427,25 @@ describe('TaskRowShortcutScope', () => {
 			fireKey('ArrowDown', { shiftKey: true })
 		}
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-f')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-f')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
 			'task-a,task-b,task-c,task-d,task-e,task-f',
 		)
 
 		fireKey('ArrowUp', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-f')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-f')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
 			'task-a,task-b,task-c,task-d,task-e',
 		)
 
 		fireKey('ArrowUp', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-e')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-e')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b,task-c,task-d')
 	})
 
-	it('全选后 hover 到第一行时 Shift+Arrow 先取消第一行', () => {
+	it('全选后鼠标移动到第一行时 Shift+Arrow 先取消第一行', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
 
@@ -453,17 +453,17 @@ describe('TaskRowShortcutScope', () => {
 			fireKey('ArrowDown', { shiftKey: true })
 		}
 
-		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireEvent.pointerMove(screen.getByTestId('row-task-a'), { clientX: 8, clientY: 8 })
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
 			'task-b,task-c,task-d,task-e,task-f',
 		)
 
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d,task-e,task-f')
 	})
 
@@ -479,13 +479,32 @@ describe('TaskRowShortcutScope', () => {
 			fireKey('ArrowUp', { shiftKey: true })
 		}
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a')
+	})
+
+	it('键盘扩选滚动后，静止鼠标触发的 mouseenter 不会抢走焦点', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		fireEvent.pointerMove(screen.getByTestId('row-task-b'), { clientX: 8, clientY: 8 })
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-b')
+
+		fireKey('ArrowDown', { shiftKey: true })
+		fireKey('ArrowDown', { shiftKey: true })
+
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-c')
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-c')
+
+		fireEvent.pointerMove(screen.getByTestId('row-task-a'), { clientX: 12, clientY: 12 })
+		expect(screen.getByTestId('display-target')).toHaveTextContent('task-a')
 	})
 
 	it('上层菜单打开时 Arrow 和 Shift+Arrow 不触发范围选择', () => {
@@ -550,6 +569,12 @@ function renderScope({
 								key={task.id}
 								onFocus={() => state.onRowFocus(task.id)}
 								onMouseEnter={() => state.onRowHover(task.id)}
+								onMouseMove={(event) =>
+									state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
+								}
+								onPointerMove={(event) =>
+									state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
+								}
 								tabIndex={0}
 							></div>
 						))}
@@ -615,6 +640,7 @@ function renderSelectionScope({
 				>
 					{(state) => (
 						<div>
+							<div data-testid='display-target'>{state.displayTargetId ?? 'none'}</div>
 							{tasks.map((task) => (
 								<div
 									data-task-id={task.id}
@@ -622,6 +648,12 @@ function renderSelectionScope({
 									key={task.id}
 									onFocus={() => state.onRowFocus(task.id)}
 									onMouseEnter={() => state.onRowHover(task.id)}
+									onMouseMove={(event) =>
+										state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
+									}
+									onPointerMove={(event) =>
+										state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
+									}
 									tabIndex={0}
 								/>
 							))}

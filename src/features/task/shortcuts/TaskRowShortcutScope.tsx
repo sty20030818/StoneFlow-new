@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
@@ -46,10 +46,26 @@ type TaskRowShortcutScopeProps = {
 	onOpenTask: (taskId: string) => void
 }
 
-export type TaskRowShortcutState = {
-	onRowHover: (taskId: string | null) => void
-	onRowFocus: (taskId: string | null) => void
+type PointerPoint = {
+	x: number
+	y: number
 }
+
+type KeyboardNavigationDirection = -1 | 1
+
+type ShiftToggleSession = {
+	active: boolean
+	cursorId: string | null
+	direction: KeyboardNavigationDirection | null
+	lastToggledId: string | null
+}
+
+type KeyboardNavigationOptions = {
+	direction?: KeyboardNavigationDirection
+	syncExternal?: boolean
+}
+
+type TargetMode = 'keyboard' | 'pointer'
 
 type TaskRowCommandActions = {
 	complete: () => void | Promise<void>
@@ -63,22 +79,98 @@ type TaskRowCommandActions = {
 	openDateMenu: () => void
 }
 
-const ROW_COMMAND_DISABLED_REASON = 'Row 上下文尚未接入'
-
-type ShiftToggleSession = {
-	active: boolean
-	cursorId: string | null
-	direction: -1 | 1 | null
-	lastToggledId: string | null
+export type TaskRowShortcutState = {
+	onRowHover: (taskId: string | null) => void
+	onRowFocus: (taskId: string | null) => void
+	onRowPointerMove: (taskId: string, point: PointerPoint) => void
+	displayTargetId: string | null
 }
 
-type RowInputMode = 'keyboard' | 'pointer'
+const ROW_COMMAND_DISABLED_REASON = 'Row 上下文尚未接入'
+const MAIN_CARD_SCROLL_SELECTOR = '.no-scrollbar.overflow-y-auto'
+const KEYBOARD_SCROLL_BOTTOM_PADDING = 8
+const KEYBOARD_SCROLL_BEHAVIOR: ScrollBehavior = 'smooth'
+const POINTER_RECLAIM_THRESHOLD_PX = 12
 
 const EMPTY_SHIFT_TOGGLE_SESSION: ShiftToggleSession = {
 	active: false,
 	cursorId: null,
 	direction: null,
 	lastToggledId: null,
+}
+
+function hasPointerMovedEnough(previous: PointerPoint | null, next: PointerPoint) {
+	if (!previous) {
+		return true
+	}
+
+	return (
+		Math.abs(previous.x - next.x) >= POINTER_RECLAIM_THRESHOLD_PX ||
+		Math.abs(previous.y - next.y) >= POINTER_RECLAIM_THRESHOLD_PX
+	)
+}
+
+function getActiveTargetId({
+	targetMode,
+	keyboardTargetId,
+	pointerTargetId,
+}: {
+	targetMode: TargetMode
+	keyboardTargetId: string | null
+	pointerTargetId: string | null
+}) {
+	return targetMode === 'pointer' ? pointerTargetId : keyboardTargetId
+}
+
+function scrollKeyboardTargetIntoView(
+	taskId: string | null,
+	direction: KeyboardNavigationDirection,
+) {
+	if (!taskId || typeof document === 'undefined') {
+		return
+	}
+
+	const row = document.querySelector<HTMLElement>(`[data-task-id="${taskId}"]`)
+	if (!row) {
+		return
+	}
+
+	const scrollContainer = row.closest<HTMLElement>(MAIN_CARD_SCROLL_SELECTOR)
+	if (!scrollContainer) {
+		return
+	}
+
+	const scrollRect = scrollContainer.getBoundingClientRect()
+	const rowRect = row.getBoundingClientRect()
+	const section = row.closest<HTMLElement>('[data-board-section="true"]')
+	const sectionRect = section?.getBoundingClientRect()
+	const boardRoot = row.closest<HTMLElement>('[data-board-root="true"]')
+	const scrollBottom = scrollRect.bottom - KEYBOARD_SCROLL_BOTTOM_PADDING
+
+	if (direction < 0) {
+		const targetTop = sectionRect?.top ?? rowRect.top
+		if (targetTop < scrollRect.top) {
+			scrollContainer.scrollTo({
+				top: Math.max(0, scrollContainer.scrollTop + (targetTop - scrollRect.top)),
+				behavior: KEYBOARD_SCROLL_BEHAVIOR,
+			})
+		}
+		return
+	}
+
+	const rows = boardRoot
+		? Array.from(boardRoot.querySelectorAll<HTMLElement>('[data-task-id]'))
+		: []
+	const isLastRow = rows[rows.length - 1] === row
+	const boardBottom = boardRoot?.getBoundingClientRect().bottom ?? rowRect.bottom
+	const targetBottom = isLastRow ? Math.max(rowRect.bottom, boardBottom) : rowRect.bottom
+
+	if (targetBottom > scrollBottom) {
+		scrollContainer.scrollTo({
+			top: scrollContainer.scrollTop + (targetBottom - scrollBottom),
+			behavior: KEYBOARD_SCROLL_BEHAVIOR,
+		})
+	}
 }
 
 export function TaskRowShortcutScope({
@@ -93,16 +185,37 @@ export function TaskRowShortcutScope({
 	onClearTaskSelection,
 	onOpenTask,
 }: TaskRowShortcutScopeProps) {
-	const [focusTaskId, setFocusTaskId] = useState<string | null>(externalFocusedTaskId)
+	const [keyboardTargetId, setKeyboardTargetId] = useState<string | null>(externalFocusedTaskId)
+	const [pointerTargetId, setPointerTargetId] = useState<string | null>(null)
+	const [targetMode, setTargetMode] = useState<TargetMode>('keyboard')
+
+	const keyboardTargetIdRef = useRef<string | null>(externalFocusedTaskId)
+	const pointerTargetIdRef = useRef<string | null>(null)
+	const targetModeRef = useRef<TargetMode>('keyboard')
+	const suppressPointerHoverRef = useRef(false)
+	const frozenPointerPointRef = useRef<PointerPoint | null>(null)
+	const lastPointerPointRef = useRef<PointerPoint | null>(null)
 	const shiftToggleSessionRef = useRef<ShiftToggleSession>(EMPTY_SHIFT_TOGGLE_SESSION)
 	const chordStateRef = useRef<KeybindingChordState | null>(null)
-	const inputModeRef = useRef<RowInputMode>('keyboard')
-	const pointerHoverTaskIdRef = useRef<string | null>(null)
+
 	const { runBulkAction } = useBulkActionContext()
 
 	useEffect(() => {
-		setFocusTaskId(externalFocusedTaskId)
+		keyboardTargetIdRef.current = externalFocusedTaskId
+		setKeyboardTargetId(externalFocusedTaskId)
 	}, [externalFocusedTaskId])
+
+	useEffect(() => {
+		function handleWindowPointerMove(event: PointerEvent) {
+			lastPointerPointRef.current = {
+				x: event.clientX,
+				y: event.clientY,
+			}
+		}
+
+		window.addEventListener('pointermove', handleWindowPointerMove)
+		return () => window.removeEventListener('pointermove', handleWindowPointerMove)
+	}, [])
 
 	const taskById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks])
 	const selectedTaskIds = useMemo(() => [...selectedTaskIdSet], [selectedTaskIdSet])
@@ -122,15 +235,16 @@ export function TaskRowShortcutScope({
 		}),
 		[selectedTaskIds],
 	)
+
 	const rowTarget = useMemo(
 		() =>
 			resolveTaskRowTarget({
-				hover: null,
-				keyboardFocus: toTaskRowRef(focusTaskId),
+				pointer: targetMode === 'pointer' ? toTaskRowRef(pointerTargetId) : null,
+				keyboard: targetMode === 'keyboard' ? toTaskRowRef(keyboardTargetId) : null,
 				active: toTaskRowRef(activeTaskId),
 				selection,
 			}),
-		[activeTaskId, focusTaskId, selection],
+		[activeTaskId, keyboardTargetId, pointerTargetId, selection, targetMode],
 	)
 	const targetTask = rowTarget.targetId ? taskById.get(rowTarget.targetId) : undefined
 
@@ -161,6 +275,32 @@ export function TaskRowShortcutScope({
 		targetTask,
 	])
 
+	const updatePointerTarget = useCallback((taskId: string | null) => {
+		pointerTargetIdRef.current = taskId
+		setPointerTargetId(taskId)
+	}, [])
+
+	const updateKeyboardTarget = useCallback(
+		(taskId: string | null, options: KeyboardNavigationOptions = {}) => {
+			keyboardTargetIdRef.current = taskId
+			setKeyboardTargetId(taskId)
+
+			if (options.syncExternal !== false) {
+				onSetFocusedTask?.(taskId)
+			}
+
+			if (taskId && options.direction) {
+				scrollKeyboardTargetIntoView(taskId, options.direction)
+			}
+		},
+		[onSetFocusedTask],
+	)
+
+	const switchTargetMode = useCallback((mode: TargetMode) => {
+		targetModeRef.current = mode
+		setTargetMode(mode)
+	}, [])
+
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
 			if (isBlockedByHigherLayer()) {
@@ -169,7 +309,9 @@ export function TaskRowShortcutScope({
 
 			const navigationResult = handleTaskRowNavigationKey({
 				event,
-				focusedTaskId: focusTaskId,
+				targetMode: targetModeRef.current,
+				keyboardTargetId: keyboardTargetIdRef.current,
+				pointerTargetId: pointerTargetIdRef.current,
 				tasks,
 				moveFocus: onMoveTaskFocus,
 				onToggleTaskSelection,
@@ -177,12 +319,14 @@ export function TaskRowShortcutScope({
 				setShiftToggleSession: (session) => {
 					shiftToggleSessionRef.current = session
 				},
-				setFocusTaskId: (taskId, options) => {
-					inputModeRef.current = 'keyboard'
-					setFocusTaskId(taskId)
-					if (options?.syncExternal !== false) {
-						onSetFocusedTask?.(taskId)
-					}
+				setKeyboardTargetId: (taskId, options) => {
+					suppressPointerHoverRef.current = true
+					frozenPointerPointRef.current = lastPointerPointRef.current
+					switchTargetMode('keyboard')
+					updateKeyboardTarget(taskId, options)
+				},
+				clearPointerTarget: () => {
+					updatePointerTarget(null)
 				},
 			})
 			if (navigationResult === 'handled') {
@@ -218,42 +362,65 @@ export function TaskRowShortcutScope({
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
 	}, [
-		focusTaskId,
 		onMoveTaskFocus,
-		onSetFocusedTask,
 		onToggleTaskSelection,
 		rowTarget.hasTarget,
 		runtime,
 		selectedTaskIds.length,
 		tasks,
+		updateKeyboardTarget,
+		updatePointerTarget,
+		switchTargetMode,
 	])
 
 	const state = useMemo<TaskRowShortcutState>(
 		() => ({
+			displayTargetId: getActiveTargetId({
+				targetMode,
+				keyboardTargetId,
+				pointerTargetId,
+			}),
 			onRowHover: (taskId) => {
-				if (!taskId) {
+				if (!taskId || suppressPointerHoverRef.current) {
 					return
 				}
-				if (inputModeRef.current === 'keyboard' && pointerHoverTaskIdRef.current === taskId) {
+
+				switchTargetMode('pointer')
+				updatePointerTarget(taskId)
+			},
+			onRowPointerMove: (taskId, point) => {
+				if (
+					suppressPointerHoverRef.current &&
+					!hasPointerMovedEnough(frozenPointerPointRef.current, point)
+				) {
 					return
 				}
-				inputModeRef.current = 'pointer'
-				pointerHoverTaskIdRef.current = taskId
-				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
-				setFocusTaskId(taskId)
-				onSetFocusedTask?.(taskId)
+
+				lastPointerPointRef.current = point
+				suppressPointerHoverRef.current = false
+				frozenPointerPointRef.current = null
+				switchTargetMode('pointer')
+				updatePointerTarget(taskId)
 			},
 			onRowFocus: (taskId) => {
 				if (!taskId) {
 					return
 				}
-				inputModeRef.current = 'keyboard'
-				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
-				setFocusTaskId(taskId)
-				onSetFocusedTask?.(taskId)
+
+				suppressPointerHoverRef.current = true
+				frozenPointerPointRef.current = lastPointerPointRef.current
+				switchTargetMode('keyboard')
+				updateKeyboardTarget(taskId, { direction: 1 })
 			},
 		}),
-		[onSetFocusedTask],
+		[
+			keyboardTargetId,
+			pointerTargetId,
+			switchTargetMode,
+			targetMode,
+			updateKeyboardTarget,
+			updatePointerTarget,
+		],
 	)
 
 	return <>{children(state)}</>
@@ -397,16 +564,21 @@ function createTaskRowCommandActions({
 
 function handleTaskRowNavigationKey({
 	event,
-	focusedTaskId,
+	targetMode,
+	keyboardTargetId,
+	pointerTargetId,
 	tasks,
 	moveFocus,
 	onToggleTaskSelection,
 	shiftToggleSession,
 	setShiftToggleSession,
-	setFocusTaskId,
+	setKeyboardTargetId,
+	clearPointerTarget,
 }: {
 	event: KeyboardEvent
-	focusedTaskId: string | null
+	targetMode: TargetMode
+	keyboardTargetId: string | null
+	pointerTargetId: string | null
 	tasks: TaskListItem[]
 	moveFocus?: (
 		delta: number,
@@ -420,7 +592,8 @@ function handleTaskRowNavigationKey({
 	onToggleTaskSelection: (taskId: string) => void
 	shiftToggleSession: ShiftToggleSession
 	setShiftToggleSession: (session: ShiftToggleSession) => void
-	setFocusTaskId: (taskId: string | null, options?: { syncExternal?: boolean }) => void
+	setKeyboardTargetId: (taskId: string | null, options?: KeyboardNavigationOptions) => void
+	clearPointerTarget: () => void
 }) {
 	if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
 		return 'ignored'
@@ -435,55 +608,65 @@ function handleTaskRowNavigationKey({
 	}
 
 	event.preventDefault()
+	clearPointerTarget()
+
 	const delta = event.key === 'ArrowDown' ? 1 : -1
+	const navigationStartId = getActiveTargetId({
+		targetMode,
+		keyboardTargetId,
+		pointerTargetId,
+	})
+
 	if (event.shiftKey) {
 		const nextSession = handleShiftToggleNavigation({
 			delta,
-			focusedTaskId,
+			startTargetId: navigationStartId,
 			tasks,
 			shiftToggleSession,
 			onToggleTaskSelection,
-			setFocusTaskId,
+			setKeyboardTargetId,
 		})
 		setShiftToggleSession(nextSession)
 
 		return 'handled'
 	}
 
-	const nextTaskId = moveFocus(event.key === 'ArrowDown' ? 1 : -1, {
-		preserveAnchor: false,
-		selectRange: false,
+	const visibleTaskIds = tasks.map((task) => task.id)
+	const nextTaskId = moveVisibleTaskFocus({
+		taskIds: visibleTaskIds,
+		startTargetId: navigationStartId,
+		delta,
 	})
 	setShiftToggleSession(EMPTY_SHIFT_TOGGLE_SESSION)
-	setFocusTaskId(nextTaskId, { syncExternal: false })
+	setKeyboardTargetId(nextTaskId, { direction: delta })
 
 	return 'handled'
 }
 
 function handleShiftToggleNavigation({
 	delta,
-	focusedTaskId,
+	startTargetId,
 	tasks,
 	shiftToggleSession,
 	onToggleTaskSelection,
-	setFocusTaskId,
+	setKeyboardTargetId,
 }: {
-	delta: -1 | 1
-	focusedTaskId: string | null
+	delta: KeyboardNavigationDirection
+	startTargetId: string | null
 	tasks: TaskListItem[]
 	shiftToggleSession: ShiftToggleSession
 	onToggleTaskSelection: (taskId: string) => void
-	setFocusTaskId: (taskId: string | null) => void
+	setKeyboardTargetId: (taskId: string | null, options?: KeyboardNavigationOptions) => void
 }): ShiftToggleSession {
 	const visibleTaskIds = tasks.map((task) => task.id)
 	if (visibleTaskIds.length === 0) {
-		setFocusTaskId(null)
+		setKeyboardTargetId(null)
 		return EMPTY_SHIFT_TOGGLE_SESSION
 	}
 
 	const cursorId = resolveShiftToggleCursorId({
 		delta,
-		focusedTaskId,
+		startTargetId,
 		visibleTaskIds,
 		shiftToggleSession,
 	})
@@ -497,12 +680,12 @@ function handleShiftToggleNavigation({
 		shiftToggleSession.lastToggledId === cursorId &&
 		isTaskSelectionBoundary(visibleTaskIds, cursorId, delta)
 	) {
-		setFocusTaskId(cursorId)
+		setKeyboardTargetId(cursorId, { direction: delta })
 		return shiftToggleSession
 	}
 
 	onToggleTaskSelection(cursorId)
-	setFocusTaskId(cursorId)
+	setKeyboardTargetId(cursorId, { direction: delta })
 
 	return {
 		active: true,
@@ -514,17 +697,17 @@ function handleShiftToggleNavigation({
 
 function resolveShiftToggleCursorId({
 	delta,
-	focusedTaskId,
+	startTargetId,
 	visibleTaskIds,
 	shiftToggleSession,
 }: {
-	delta: -1 | 1
-	focusedTaskId: string | null
+	delta: KeyboardNavigationDirection
+	startTargetId: string | null
 	visibleTaskIds: string[]
 	shiftToggleSession: ShiftToggleSession
 }) {
 	if (!shiftToggleSession.active) {
-		return getValidTaskId(visibleTaskIds, focusedTaskId) ?? visibleTaskIds[0] ?? null
+		return getValidTaskId(visibleTaskIds, startTargetId) ?? visibleTaskIds[0] ?? null
 	}
 
 	if (
@@ -536,13 +719,33 @@ function resolveShiftToggleCursorId({
 
 	return (
 		getValidTaskId(visibleTaskIds, shiftToggleSession.cursorId) ??
-		getValidTaskId(visibleTaskIds, focusedTaskId) ??
+		getValidTaskId(visibleTaskIds, startTargetId) ??
 		visibleTaskIds[0] ??
 		null
 	)
 }
 
-function getAdjacentTaskId(taskIds: string[], taskId: string, delta: -1 | 1) {
+function moveVisibleTaskFocus({
+	taskIds,
+	startTargetId,
+	delta,
+}: {
+	taskIds: string[]
+	startTargetId: string | null
+	delta: KeyboardNavigationDirection
+}) {
+	if (taskIds.length === 0) {
+		return null
+	}
+
+	if (!startTargetId) {
+		return delta > 0 ? (taskIds[0] ?? null) : (taskIds[taskIds.length - 1] ?? null)
+	}
+
+	return getAdjacentTaskId(taskIds, startTargetId, delta)
+}
+
+function getAdjacentTaskId(taskIds: string[], taskId: string, delta: KeyboardNavigationDirection) {
 	const index = taskIds.indexOf(taskId)
 	if (index < 0) {
 		return taskIds[0] ?? null
@@ -556,7 +759,11 @@ function getValidTaskId(taskIds: string[], taskId: string | null) {
 	return taskId && taskIds.includes(taskId) ? taskId : null
 }
 
-function isTaskSelectionBoundary(taskIds: string[], taskId: string, delta: -1 | 1) {
+function isTaskSelectionBoundary(
+	taskIds: string[],
+	taskId: string,
+	delta: KeyboardNavigationDirection,
+) {
 	const index = taskIds.indexOf(taskId)
 	return (delta < 0 && index === 0) || (delta > 0 && index === taskIds.length - 1)
 }
@@ -574,7 +781,7 @@ function openTaskPropertyPicker(
 		ids: tasks.map((task) => task.id),
 		entities: tasks.map((task) => ({
 			id: task.id,
-			type: 'task',
+			type: 'task' as const,
 			title: task.title,
 			subtitle: task.projectName ?? (task.inboxAt ? 'Inbox' : '独立事项'),
 			status: task.status,
@@ -603,19 +810,6 @@ function isBlockedByHigherLayer() {
 	)
 }
 
-function isEditableEventTarget(target: EventTarget | null) {
-	if (typeof HTMLElement === 'undefined' || !(target instanceof HTMLElement)) {
-		return false
-	}
-
-	if (target.isContentEditable) {
-		return true
-	}
-
-	const tagName = target.tagName
-	return tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT'
-}
-
 function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent {
 	return {
 		key: event.key,
@@ -627,4 +821,17 @@ function normalizeKeyboardEvent(event: KeyboardEvent): NormalizedKeyEvent {
 		isComposing: event.isComposing,
 		target: event.target,
 	}
+}
+
+function isEditableEventTarget(target: EventTarget | null) {
+	if (!(target instanceof HTMLElement)) {
+		return false
+	}
+
+	return (
+		target.tagName === 'INPUT' ||
+		target.tagName === 'TEXTAREA' ||
+		target.isContentEditable ||
+		target.closest('[contenteditable="true"]') !== null
+	)
 }

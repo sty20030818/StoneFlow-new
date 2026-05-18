@@ -74,7 +74,7 @@ export const BOARD_GROUP_HEADER_CLASS = `sticky top-0 z-10 ${ROW_SHELL_SECTION_H
 export function BoardRoot({ children, className, ...props }: ComponentProps<'div'>) {
 	return (
 		<div className='relative isolate flex min-h-0 flex-1 flex-col'>
-			<div {...props} className={cn(BOARD_STACK_CLASS, className)}>
+			<div {...props} className={cn(BOARD_STACK_CLASS, className)} data-board-root='true'>
 				{children}
 			</div>
 		</div>
@@ -86,7 +86,7 @@ export function BoardRoot({ children, className, ...props }: ComponentProps<'div
  */
 export function BoardGroup({ children, className, ...props }: ComponentProps<'section'>) {
 	return (
-		<section {...props} className={cn(BOARD_GROUP_CLASS, className)}>
+		<section {...props} className={cn(BOARD_GROUP_CLASS, className)} data-board-section='true'>
 			{children}
 		</section>
 	)
@@ -101,7 +101,10 @@ export function BoardGroupHeader({
 	titleClassName,
 }: BoardGroupHeaderProps) {
 	return (
-		<div className={cn('flex items-center justify-between gap-3 px-1', className)}>
+		<div
+			className={cn('flex items-center justify-between gap-3 px-1', className)}
+			data-board-section-header='true'
+		>
 			<div className='flex min-w-0 items-center gap-2'>
 				{leading}
 				<span className={cn('truncate text-sm font-semibold text-foreground', titleClassName)}>
@@ -130,7 +133,7 @@ export function BoardRows({
 }: BoardRowsProps) {
 	if (!selectedIdSet || !getItemId) {
 		return (
-			<div {...props} className={cn(BOARD_ROWS_CLASS, className)}>
+			<div {...props} className={cn(BOARD_ROWS_CLASS, className)} data-board-rows='true'>
 				{children}
 			</div>
 		)
@@ -157,7 +160,7 @@ export function BoardRows({
 	}
 
 	return (
-		<div {...props} className={cn(BOARD_ROWS_CLASS, className)}>
+		<div {...props} className={cn(BOARD_ROWS_CLASS, className)} data-board-rows='true'>
 			{groups.map((group, gi) => {
 				if (!group.selected) {
 					return group.items.map((item, ii) => {
@@ -240,7 +243,11 @@ export function BoardCollapsibleSection({
 	children,
 }: BoardCollapsibleSectionProps) {
 	const header = (
-		<div className={BOARD_GROUP_HEADER_CLASS} onDoubleClick={() => onOpenChange(!open)}>
+		<div
+			className={BOARD_GROUP_HEADER_CLASS}
+			data-board-section-header='true'
+			onDoubleClick={() => onOpenChange(!open)}
+		>
 			<CollapsibleTrigger
 				aria-label={`切换 ${label} 分区折叠状态`}
 				className={entityBoardSectionToggleClass}
@@ -261,6 +268,7 @@ export function BoardCollapsibleSection({
 	return (
 		<Collapsible
 			className={cn(BOARD_COLLAPSIBLE_CLASS, className)}
+			data-board-section='true'
 			onOpenChange={onOpenChange}
 			open={open}
 		>

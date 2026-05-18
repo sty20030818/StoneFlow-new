@@ -117,8 +117,18 @@ export function TaskBoard({
 		} satisfies Record<TaskStatus, TaskListItem[]>
 	}, [tasks])
 	const taskShortcutOrder = useMemo(
-		() => orderTasksByTaskBoardVisualOrder(tasks, { statusOrder, customSections }),
-		[customSections, statusOrder, tasks],
+		() => {
+			if (customSections && customSections.length > 0) {
+				return orderTasksByTaskBoardVisualOrder(tasks, { statusOrder, customSections })
+			}
+
+			const visibleStatuses = new Set(openSections)
+			return orderTasksByTaskBoardVisualOrder(
+				tasks.filter((task) => visibleStatuses.has(task.status)),
+				{ statusOrder },
+			)
+		},
+		[customSections, openSections, statusOrder, tasks],
 	)
 
 	function handleSectionOpenChange(status: TaskStatus, open: boolean) {
@@ -161,15 +171,17 @@ export function TaskBoard({
 					isActive: activeTaskId === task.id,
 					isPending: pendingTaskId === task.id,
 					isSelected: selectedTaskIdSet.has(task.id),
-					isKeyboardFocused: focusedTaskId === task.id,
+					isKeyboardFocused:
+						(rowShortcutState?.displayTargetId ?? focusedTaskId ?? null) === task.id,
 				}}
 				rowShortcutHandlers={
 					rowShortcutState
 						? {
-								onFocus: rowShortcutState.onRowFocus,
-								onHover: rowShortcutState.onRowHover,
-							}
-						: undefined
+							onFocus: rowShortcutState.onRowFocus,
+							onHover: rowShortcutState.onRowHover,
+							onPointerMove: rowShortcutState.onRowPointerMove,
+						}
+					: undefined
 				}
 				task={task}
 			/>
