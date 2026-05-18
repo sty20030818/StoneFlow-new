@@ -1,4 +1,4 @@
-import type { Command, CommandContext } from '@/features/command/core'
+import type { Command, CommandContext, TaskPlacementTarget } from '@/features/command/core'
 import { COMMAND_IDS } from '@/features/command/core'
 
 export type ShellNavigationTarget =
@@ -21,13 +21,15 @@ export type ShellCommandActions = {
 	openProjectCreate: () => void
 	openTaskPicker: () => void
 	openProjectPicker: () => void
-	openTaskProjectPicker: (ctx: CommandContext) => void
+	openTaskPlacementPicker: (ctx: CommandContext) => void
+	applyTaskPlacement: (
+		target: TaskPlacementTarget,
+		ctx: CommandContext,
+	) => void | Promise<void>
 	openTaskPriorityPicker: (ctx: CommandContext) => void
 	openTaskStatusPicker: (ctx: CommandContext) => void
 	openTaskDatePicker: (ctx: CommandContext) => void
 	completeSelectedTasks: (ctx: CommandContext) => void | Promise<void>
-	moveSelectedTasksToInbox: (ctx: CommandContext) => void | Promise<void>
-	moveSelectedTasksToNoProject: (ctx: CommandContext) => void | Promise<void>
 	requestArchiveSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	requestDeleteSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	requestArchiveSelectedProjects: (ctx: CommandContext) => void | Promise<void>
@@ -81,12 +83,8 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return bindSelectionTaskCommand(command, adapter.openTaskStatusPicker)
 		case COMMAND_IDS.taskOpenDateMenu:
 			return bindSelectionTaskCommand(command, adapter.openTaskDatePicker)
-		case COMMAND_IDS.taskMoveToProject:
-			return bindSelectionTaskCommand(command, adapter.openTaskProjectPicker)
-		case COMMAND_IDS.taskMoveToInbox:
-			return bindSelectionTaskCommand(command, adapter.moveSelectedTasksToInbox)
-		case COMMAND_IDS.taskMoveToNoProject:
-			return bindSelectionTaskCommand(command, adapter.moveSelectedTasksToNoProject)
+		case COMMAND_IDS.taskChangePlacement:
+			return bindSelectionTaskPlacementCommand(command, adapter.openTaskPlacementPicker)
 		case COMMAND_IDS.taskArchive:
 			return bindSelectionTaskCommand(command, adapter.requestArchiveSelectedTasks)
 		case COMMAND_IDS.taskDelete:
@@ -160,6 +158,46 @@ function bindSelectionTaskCommand(
 
 function hasTaskSelection(ctx: CommandContext) {
 	return ctx.selection.type === 'task' && ctx.selection.ids.length > 0
+}
+
+function bindSelectionTaskPlacementCommand(
+	command: Command,
+	run: (ctx: CommandContext) => void | Promise<void>,
+): Command {
+	return {
+		...command,
+		isEnabled: (ctx) => getTaskPlacementDisabledReason(ctx) === undefined,
+		getDisabledReason: getTaskPlacementDisabledReason,
+		getPriority: (ctx) => (ctx.selection.isMultiSelection ? 120 : 90),
+		run,
+	}
+}
+
+function getTaskPlacementDisabledReason(ctx: CommandContext) {
+	if (!hasTaskSelection(ctx)) {
+		return '需要先选择任务'
+	}
+
+	if (!hasResolvedTaskPlacementSpaceId(ctx)) {
+		return '跨 Space 批量移动暂不支持'
+	}
+
+	return undefined
+}
+
+function hasResolvedTaskPlacementSpaceId(ctx: CommandContext) {
+	if (ctx.space.currentSpaceId) {
+		return true
+	}
+
+	const selectionSpaceIds = new Set(
+		ctx.selection.entities
+			.filter((entity) => entity.type === 'task')
+			.map((entity) => entity.spaceId ?? null),
+	)
+
+	selectionSpaceIds.delete(null)
+	return selectionSpaceIds.size === 1
 }
 
 function bindSelectionLifecycleCommand(

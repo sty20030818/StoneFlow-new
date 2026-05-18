@@ -49,9 +49,7 @@ const BULK_TASK_COMMAND_IDS: ReadonlySet<CommandId> = new Set([
 	COMMAND_IDS.taskSetPriority,
 	COMMAND_IDS.taskSetStatus,
 	COMMAND_IDS.taskOpenDateMenu,
-	COMMAND_IDS.taskMoveToProject,
-	COMMAND_IDS.taskMoveToInbox,
-	COMMAND_IDS.taskMoveToNoProject,
+	COMMAND_IDS.taskChangePlacement,
 	COMMAND_IDS.taskArchive,
 	COMMAND_IDS.taskDelete,
 ])

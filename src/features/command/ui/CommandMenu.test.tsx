@@ -8,6 +8,7 @@ import {
 	createEmptyCommandContext,
 	type CommandContext,
 	type CommandId,
+	type TaskPlacementTarget,
 } from '@/features/command/core'
 import type { ShellCommandActions } from '@/features/command/adapters'
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
@@ -158,31 +159,38 @@ describe('CommandMenu', () => {
 		expect(onSelectProject).toHaveBeenCalledWith(expect.objectContaining({ id: 'project-a' }))
 	})
 
-	it('task-project-picker mode 只渲染项目结果，选择项目后走任务移动 scoped picker 回调', async () => {
+	it('task-placement-picker mode 按 Space 分组渲染 placement targets，并回调选中的目标', async () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
-		const onSelectTaskProject = vi.fn<(project: SearchProjectItem) => void>()
-		const onSelectProject = vi.fn<(project: SearchProjectItem) => void>()
+		const onSelectTaskPlacement = vi.fn<(target: TaskPlacementTarget) => void>()
 		mockedSearchEntities.mockResolvedValue(
 			createSearchResult({
-				tasks: [createTaskResult({ id: 'task-a', title: '任务 A' })],
-				projects: [createProjectResult({ id: 'project-a', name: '项目 A' })],
+				projects: [
+					createProjectResult({ id: 'project-a', name: '项目 A', spaceId: 'space-a', spaceName: '工作' }),
+					createProjectResult({ id: 'project-b', name: '项目 B', spaceId: 'space-b', spaceName: '生活' }),
+				],
 			}),
 		)
 		renderCommandMenu({
-			mode: 'task-project-picker',
+			mode: 'task-placement-picker',
+			context: createTaskSelectionContext(),
 			onOpenChange,
-			onSelectProject,
-			onSelectTaskProject,
+			onSelectTaskPlacement,
 		})
 
-		fireEvent.change(screen.getByPlaceholderText('移动到项目…'), { target: { value: 'A' } })
+		fireEvent.change(screen.getByPlaceholderText('移动到项目或独立事项...'), {
+			target: { value: 'A' },
+		})
 		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
-		fireEvent.click(await screen.findByText('项目 A'))
+		expect(await screen.findByText('工作')).toBeInTheDocument()
+		expect(screen.getByText('生活')).toBeInTheDocument()
+		expect(screen.getByText('独立事项')).toBeInTheDocument()
+		fireEvent.click(screen.getByText('独立事项'))
 
-		expect(screen.queryByText('任务 A')).not.toBeInTheDocument()
 		expect(onOpenChange).toHaveBeenCalledWith(false)
-		expect(onSelectTaskProject).toHaveBeenCalledWith(expect.objectContaining({ id: 'project-a' }))
-		expect(onSelectProject).not.toHaveBeenCalled()
+		expect(onSelectTaskPlacement).toHaveBeenCalledWith({
+			kind: 'no_project',
+			spaceId: 'space-a',
+		})
 	})
 
 	it('scoped mode 空态文案区分任务和项目', async () => {
@@ -247,7 +255,7 @@ function renderCommandMenu({
 	onSelectTaskPriority = vi.fn(),
 	onSelectTaskStatus = vi.fn(),
 	onSelectProject = vi.fn(),
-	onSelectTaskProject = vi.fn(),
+	onSelectTaskPlacement = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
 }: Partial<{
@@ -260,7 +268,7 @@ function renderCommandMenu({
 	onSelectTaskPriority: (priority: number) => void
 	onSelectTaskStatus: (status: string) => void
 	onSelectProject: (project: SearchProjectItem) => void
-	onSelectTaskProject: (project: SearchProjectItem) => void
+	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
 }> = {}) {
 	return render(
@@ -273,7 +281,7 @@ function renderCommandMenu({
 			onSelectTaskPriority,
 			onSelectTaskStatus,
 			onSelectProject,
-			onSelectTaskProject,
+			onSelectTaskPlacement,
 			onSelectTask,
 			context,
 		}),
@@ -289,7 +297,7 @@ function createCommandMenuElement({
 	onSelectTaskPriority = vi.fn(),
 	onSelectTaskStatus = vi.fn(),
 	onSelectProject = vi.fn(),
-	onSelectTaskProject = vi.fn(),
+	onSelectTaskPlacement = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
 }: Partial<{
@@ -302,7 +310,7 @@ function createCommandMenuElement({
 	onSelectTaskPriority: (priority: number) => void
 	onSelectTaskStatus: (status: string) => void
 	onSelectProject: (project: SearchProjectItem) => void
-	onSelectTaskProject: (project: SearchProjectItem) => void
+	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
 }> = {}) {
 	return (
@@ -317,11 +325,15 @@ function createCommandMenuElement({
 			onSelectTaskPriority={onSelectTaskPriority}
 			onSelectTaskStatus={onSelectTaskStatus}
 			onSelectProject={onSelectProject}
-			onSelectTaskProject={onSelectTaskProject}
+			onSelectTaskPlacement={onSelectTaskPlacement}
 			onSelectTask={onSelectTask}
 			open
 			projects={[{ id: 'project-a', label: '项目 A', badge: '2' }]}
 			runtime={createRuntime()}
+			spaces={[
+				{ id: 'space-a', name: '工作', iconKey: 'briefcase', colorKey: 'blue', isDefault: true, sortOrder: 1, archivedAt: null, deletedAt: null, createdAt: '2026-05-15T00:00:00Z', updatedAt: '2026-05-15T00:00:00Z' },
+				{ id: 'space-b', name: '生活', iconKey: 'leaf', colorKey: 'green', isDefault: false, sortOrder: 2, archivedAt: null, deletedAt: null, createdAt: '2026-05-15T00:00:00Z', updatedAt: '2026-05-15T00:00:00Z' },
+			]}
 			title='StoneFlow Command'
 		/>
 	)
@@ -345,13 +357,12 @@ function createActions(): ShellCommandActions {
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
-		openTaskProjectPicker: vi.fn(),
+		openTaskPlacementPicker: vi.fn(),
+		applyTaskPlacement: vi.fn(),
 		openTaskPriorityPicker: vi.fn(),
 		openTaskStatusPicker: vi.fn(),
 		openTaskDatePicker: vi.fn(),
 		completeSelectedTasks: vi.fn(),
-		moveSelectedTasksToInbox: vi.fn(),
-		moveSelectedTasksToNoProject: vi.fn(),
 		requestArchiveSelectedTasks: vi.fn(),
 		requestDeleteSelectedTasks: vi.fn(),
 		requestArchiveSelectedProjects: vi.fn(),
@@ -372,10 +383,10 @@ function createTaskSelectionContext(): CommandContext {
 			type: 'task',
 			ids: ['task-a', 'task-b'],
 			entities: [
-				{ id: 'task-a', type: 'task', title: '任务 A', subtitle: 'Inbox', status: 'todo' },
-				{ id: 'task-b', type: 'task', title: '任务 B', subtitle: '项目 B', status: 'done' },
+				{ id: 'task-a', type: 'task', title: '任务 A', subtitle: 'Inbox', spaceId: 'space-a', projectId: null, inboxAt: '2026-05-15T00:00:00Z', status: 'todo' },
+				{ id: 'task-b', type: 'task', title: '任务 B', subtitle: '项目 B', spaceId: 'space-a', projectId: 'project-b', inboxAt: null, status: 'done' },
 			],
-			primaryEntity: { id: 'task-a', type: 'task', title: '任务 A', subtitle: 'Inbox' },
+			primaryEntity: { id: 'task-a', type: 'task', title: '任务 A', subtitle: 'Inbox', spaceId: 'space-a', projectId: null, inboxAt: '2026-05-15T00:00:00Z' },
 			source: 'task-list',
 			hasSelection: true,
 			isSingleSelection: false,

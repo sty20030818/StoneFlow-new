@@ -38,12 +38,10 @@ import type {
 	CommandId,
 	CommandRuntime,
 	CommandSelectedEntity,
+	TaskPlacementTarget,
 } from '@/features/command/core'
-import type { SearchProjectItem, SearchTaskItem, TaskStatus } from '@/shared/types'
-import {
-	TASK_PRIORITY_OPTIONS,
-	type TaskPriorityValue,
-} from '@/features/task/model/taskPriority'
+import type { SearchProjectItem, SearchTaskItem, Space, TaskStatus } from '@/shared/types'
+import { TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 
 import { ShortcutTokens } from './ShortcutTokens'
@@ -60,6 +58,9 @@ export type CommandMenuProject = {
 	id: string
 	label: string
 	badge?: string
+	spaceId?: string
+	spaceName?: string
+	completedAt?: string | null
 }
 
 type CommandMenuProps = {
@@ -70,7 +71,7 @@ type CommandMenuProps = {
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
 	onSelectProject: (project: SearchProjectItem) => void
-	onSelectTaskProject: (project: SearchProjectItem) => void
+	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
@@ -79,6 +80,7 @@ type CommandMenuProps = {
 	open: boolean
 	projects: CommandMenuProject[]
 	runtime: CommandRuntime
+	spaces?: Space[]
 	title: string
 }
 
@@ -90,15 +92,16 @@ export function CommandMenu({
 	onNavigateProject,
 	onOpenChange,
 	onSelectProject,
-	onSelectTaskProject,
+	onSelectTaskPlacement,
 	onSelectTask,
 	onSelectTaskDate,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
 	onRunCommand,
 	open,
-	projects,
+	projects: projectLinks,
 	runtime,
+	spaces = [],
 	title,
 }: CommandMenuProps) {
 	const [query, setQuery] = useState('')
@@ -175,15 +178,18 @@ export function CommandMenu({
 					<CommandEmpty>{getCommandMenuEmptyText(mode, query)}</CommandEmpty>
 					{isScopedMode ? (
 						<ScopedPickerCommandGroup
+							context={context}
 							mode={mode}
 							onOpenChange={onOpenChange}
 							onSelectProject={onSelectProject}
-							onSelectTaskProject={onSelectTaskProject}
+							onSelectTaskPlacement={onSelectTaskPlacement}
 							onSelectTask={onSelectTask}
 							onSelectTaskDate={onSelectTaskDate}
 							onSelectTaskPriority={onSelectTaskPriority}
 							onSelectTaskStatus={onSelectTaskStatus}
+							projectLinks={projectLinks}
 							result={scopedSearch.result}
+							spaces={spaces}
 						/>
 					) : (
 						<>
@@ -192,7 +198,7 @@ export function CommandMenu({
 								onOpenChange={onOpenChange}
 								onRunCommand={onRunCommand}
 							/>
-							<ProjectsCommandGroup onNavigateProject={onNavigateProject} projects={projects} />
+							<ProjectsCommandGroup onNavigateProject={onNavigateProject} projects={projectLinks} />
 						</>
 					)}
 				</CommandScrollableList>
@@ -261,8 +267,8 @@ function getCommandMenuPlaceholder(mode: CommandMenuMode) {
 			return '搜索任务…'
 		case 'project-picker':
 			return '搜索项目…'
-		case 'task-project-picker':
-			return '移动到项目…'
+		case 'task-placement-picker':
+			return '移动到项目或独立事项...'
 		case 'task-priority-picker':
 			return '选择优先级…'
 		case 'task-status-picker':
@@ -282,14 +288,14 @@ function getCommandMenuEmptyText(mode: CommandMenuMode, query: string) {
 	if (!query.trim()) {
 		return mode === 'task-picker'
 			? '输入关键词搜索任务'
-			: mode === 'project-picker' || mode === 'task-project-picker'
+			: mode === 'project-picker' || mode === 'task-placement-picker'
 				? '输入关键词搜索项目'
 				: '没有可用命令'
 	}
 
 	return mode === 'task-picker'
 		? '没有匹配的任务'
-		: mode === 'project-picker' || mode === 'task-project-picker'
+		: mode === 'project-picker' || mode === 'task-placement-picker'
 			? '没有匹配的项目'
 			: '没有匹配的命令'
 }
@@ -391,25 +397,31 @@ function CommandMenuShortcut({ shortcut }: { shortcut: CommandMenuEntry['shortcu
 }
 
 function ScopedPickerCommandGroup({
+	context,
 	mode,
 	onOpenChange,
 	onSelectProject,
-	onSelectTaskProject,
+	onSelectTaskPlacement,
 	onSelectTask,
 	onSelectTaskDate,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
+	projectLinks,
 	result,
+	spaces,
 }: {
+	context: CommandContext
 	mode: Exclude<CommandMenuMode, 'default'>
 	onOpenChange: (open: boolean) => void
 	onSelectProject: (project: SearchProjectItem) => void
-	onSelectTaskProject: (project: SearchProjectItem) => void
+	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
+	projectLinks: CommandMenuProject[]
 	result: ReturnType<typeof useGlobalSearch>['result']
+	spaces: Space[]
 }) {
 	if (mode === 'task-priority-picker') {
 		return (
@@ -515,6 +527,52 @@ function ScopedPickerCommandGroup({
 		)
 	}
 
+	if (mode === 'task-placement-picker') {
+		const fallbackProjects = projectLinks.map<SearchProjectItem>((project) => ({
+			id: project.id,
+			spaceId: project.spaceId ?? '',
+			spaceName: project.spaceName ?? project.spaceId ?? '',
+			spaceSlug: '',
+			name: project.label,
+			note: null,
+			updatedAt: '',
+			completedAt: project.completedAt ?? null,
+		}))
+		const groups = buildTaskPlacementGroups({
+			context,
+			projects:
+				result.projects.length > 0 || result.completedProjects.length > 0
+					? result.projects
+					: fallbackProjects,
+			spaces,
+		})
+
+		return (
+			<>
+				{groups.map((group) => (
+					<CommandGroup className='pt-1 first:pt-0' heading={group.heading} key={group.spaceId}>
+						{group.items.map((item) => (
+							<CommandItem
+								key={item.key}
+								onSelect={() => {
+									onOpenChange(false)
+									onSelectTaskPlacement(item.target)
+								}}
+								value={item.value}
+							>
+								<CommandRow
+									leadingIcon={item.icon}
+									title={item.title}
+									trailing={<CommandRowMeta>{item.meta}</CommandRowMeta>}
+								/>
+							</CommandItem>
+						))}
+					</CommandGroup>
+				))}
+			</>
+		)
+	}
+
 	const projects = [...result.projects, ...result.completedProjects]
 	return (
 		<CommandGroup className='pt-2' heading='项目'>
@@ -523,10 +581,6 @@ function ScopedPickerCommandGroup({
 					key={project.id}
 					onSelect={() => {
 						onOpenChange(false)
-						if (mode === 'task-project-picker') {
-							onSelectTaskProject(project)
-							return
-						}
 						onSelectProject(project)
 					}}
 					value={`${project.name} ${project.note ?? ''} ${project.spaceName}`}
@@ -578,6 +632,110 @@ function addLocalDays(date: Date, days: number) {
 	const next = new Date(date)
 	next.setDate(next.getDate() + days)
 	return next
+}
+
+type TaskPlacementGroup = {
+	spaceId: string
+	heading: string
+	items: Array<{
+		key: string
+		title: string
+		meta: string
+		value: string
+		target: TaskPlacementTarget
+		icon: ComponentType<LucideProps>
+	}>
+}
+
+function buildTaskPlacementGroups({
+	context,
+	projects,
+	spaces,
+}: {
+	context: CommandContext
+	projects: SearchProjectItem[]
+	spaces: Space[]
+}): TaskPlacementGroup[] {
+	const currentSpaceId = resolveTaskPlacementCurrentSpaceId(context)
+	if (!currentSpaceId) {
+		return []
+	}
+
+	const activeProjects = projects.filter((project) => project.completedAt === null)
+	const spaceNameById = new Map(spaces.map((space) => [space.id, space.name]))
+	const projectsBySpaceId = new Map<string, SearchProjectItem[]>()
+
+	for (const project of activeProjects) {
+		const bucket = projectsBySpaceId.get(project.spaceId)
+		if (bucket) {
+			bucket.push(project)
+		} else {
+			projectsBySpaceId.set(project.spaceId, [project])
+		}
+	}
+
+	const orderedSpaceIds = [
+		currentSpaceId,
+		...Array.from(projectsBySpaceId.keys()).filter((spaceId) => spaceId !== currentSpaceId),
+	]
+
+	return orderedSpaceIds.flatMap((spaceId) => {
+		const items: TaskPlacementGroup['items'] = []
+		const projectsInSpace = projectsBySpaceId.get(spaceId) ?? []
+
+		if (spaceId === currentSpaceId) {
+			items.push({
+				key: `no-project:${spaceId}`,
+				title: '独立事项',
+				meta: 'No Project',
+				value: `独立事项 ${spaceNameById.get(spaceId) ?? ''} no project`,
+				target: { kind: 'no_project', spaceId },
+				icon: CircleIcon,
+			})
+		}
+
+		items.push(
+			...projectsInSpace.map((project) => ({
+				key: `project:${project.id}`,
+				title: project.name,
+				meta: `Project · ${project.spaceName}`,
+				value: `${project.name} ${project.note ?? ''} ${project.spaceName}`,
+				target: {
+					kind: 'project' as const,
+					projectId: project.id,
+					spaceId: project.spaceId,
+				},
+				icon: FolderIcon,
+			})),
+		)
+
+		if (items.length === 0) {
+			return []
+		}
+
+		return [
+			{
+				spaceId,
+				heading: spaceNameById.get(spaceId) ?? projectsInSpace[0]?.spaceName ?? spaceId,
+				items,
+			},
+		]
+	})
+}
+
+function resolveTaskPlacementCurrentSpaceId(context: CommandContext) {
+	if (context.space.currentSpaceId) {
+		return context.space.currentSpaceId
+	}
+
+	const selectionSpaceIds = new Set(
+		context.selection.entities
+			.filter((entity) => entity.type === 'task')
+			.map((entity) => entity.spaceId)
+			.filter((spaceId): spaceId is string => Boolean(spaceId)),
+	)
+
+	return selectionSpaceIds.size === 1 ? (Array.from(selectionSpaceIds)[0] ?? null) : null
 }
 
 function getEndOfLocalWeek(date: Date) {

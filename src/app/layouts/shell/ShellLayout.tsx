@@ -44,6 +44,7 @@ import {
 } from '@/features/global-search/model/useSearchOpenIntentStore'
 import { useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
 import { type CommandOpenPayload, useCommandOpenListener } from '@/shared/events'
+import { listAllVisibleProjects } from '@/features/project/api/projects'
 import {
 	selectProjectOptions,
 	selectProjectSidebar,
@@ -78,6 +79,7 @@ import {
 	type CommandRouteContext,
 	type ShellCommandActions,
 	type ShellNavigationTarget,
+	type TaskPlacementTarget,
 } from '@/features/command'
 import { COMMAND_IDS, type CommandContext } from '@/features/command/core'
 import {
@@ -107,7 +109,7 @@ import {
 	useLifecycleStore,
 } from '@/features/lifecycle/model/useLifecycleStore'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
-import type { SearchProjectItem, TaskStatus } from '@/shared/types'
+import type { TaskStatus } from '@/shared/types'
 
 type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
@@ -218,6 +220,15 @@ function ShellLayoutContent({
 	const toggleTaskCreatePresentation = useDialogStore((state) => state.toggleTaskCreatePresentation)
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
 	const [chordSession, setChordSession] = useState<CommandChordSession | null>(null)
+	const [placementProjects, setPlacementProjects] = useState<
+		Array<{
+			id: string
+			label: string
+			spaceId: string
+			spaceName: string
+			completedAt: string | null
+		}>
+	>([])
 	const {
 		cancelPendingAction,
 		confirmPendingAction,
@@ -317,6 +328,39 @@ function ShellLayoutContent({
 	}, [currentScope, loadSidebarProjects, scopeKey, spaceStatus])
 
 	useEffect(() => {
+		if (spaceStatus !== 'ready') {
+			return
+		}
+
+		let cancelled = false
+		void listAllVisibleProjects()
+			.then((items) => {
+				if (cancelled) {
+					return
+				}
+				setPlacementProjects(
+					items.map((project) => ({
+						id: project.id,
+						label: project.name,
+						spaceId: project.spaceId,
+						spaceName: project.spaceName,
+						completedAt: project.completedAt,
+					})),
+				)
+			})
+			.catch(() => {
+				if (cancelled) {
+					return
+				}
+				setPlacementProjects([])
+			})
+
+		return () => {
+			cancelled = true
+		}
+	}, [spaceStatus])
+
+	useEffect(() => {
 		if (
 			spaceStatus !== 'ready' ||
 			!pendingTaskOpenIntent ||
@@ -374,16 +418,31 @@ function ShellLayoutContent({
 
 	const projectLinks = useMemo(
 		() =>
+			placementProjects.map((project) => ({
+				id: project.id,
+				label: project.label,
+				spaceId: project.spaceId,
+				spaceName: project.spaceName,
+				completedAt: project.completedAt,
+				badge: undefined,
+			})),
+		[placementProjects],
+	)
+	const sidebarProjectLinks = useMemo(
+		() =>
 			sidebarProjects.items.map((project) => ({
 				id: project.id,
 				label: project.name,
+				spaceId: project.spaceId,
+				spaceName: spaces.find((space) => space.id === project.spaceId)?.name ?? project.spaceId,
+				completedAt: project.completedAt,
 				badge: sidebarSettings?.projectSection.showCounts
 					? project.taskCount > 0
 						? String(project.taskCount)
 						: undefined
-					: project.completedAt
-						? 'done'
-						: undefined,
+						: project.completedAt
+							? 'done'
+							: undefined,
 			})),
 		[sidebarProjects.items, sidebarSettings?.projectSection.showCounts],
 	)
@@ -394,12 +453,12 @@ function ShellLayoutContent({
 		goBack,
 		goForward,
 		navigateToHistoryEntry,
-	} = useShellRouteHistory({
-		currentScope,
-		currentSpaceId,
-		spaces,
-		projects: projectLinks,
-	})
+		} = useShellRouteHistory({
+			currentScope,
+			currentSpaceId,
+			spaces,
+			projects: sidebarProjectLinks,
+		})
 	const handleCommandMenuOpenChange = useCallback(
 		(open: boolean) => {
 			setCommandOpen(open)
@@ -450,8 +509,38 @@ function ShellLayoutContent({
 			openProjectPicker: () => {
 				useDialogStore.getState().openCommand('project-picker')
 			},
-			openTaskProjectPicker: (ctx) => {
-				useDialogStore.getState().openCommand('task-project-picker', ctx.selection)
+			openTaskPlacementPicker: (ctx) => {
+				useDialogStore.getState().openCommand('task-placement-picker', ctx.selection)
+			},
+			applyTaskPlacement: (target, ctx) => {
+				if (target.kind === 'project') {
+					return runEntityBulkActionFromCommand(
+						ctx,
+						'task',
+						TASK_BULK_ACTION_IDS.moveToProjectSelected,
+						{
+							successVerb: '整理',
+							entityLabel: '任务',
+						},
+						{
+							projectId: target.projectId,
+							spaceId: target.spaceId,
+						},
+					)
+				}
+
+				return runEntityBulkActionFromCommand(
+					ctx,
+					'task',
+					TASK_BULK_ACTION_IDS.moveToNoProjectSelected,
+					{
+						successVerb: '整理',
+						entityLabel: '任务',
+					},
+					{
+						spaceId: target.spaceId,
+					},
+				)
 			},
 			openTaskPriorityPicker: (ctx) => {
 				useDialogStore.getState().openCommand('task-priority-picker', ctx.selection)
@@ -467,21 +556,6 @@ function ShellLayoutContent({
 					successVerb: '更新',
 					entityLabel: '任务',
 				}),
-			moveSelectedTasksToInbox: (ctx) =>
-				runEntityBulkActionFromCommand(ctx, 'task', TASK_BULK_ACTION_IDS.moveToInboxSelected, {
-					successVerb: '整理',
-					entityLabel: '任务',
-				}),
-			moveSelectedTasksToNoProject: (ctx) =>
-				runEntityBulkActionFromCommand(
-					ctx,
-					'task',
-					TASK_BULK_ACTION_IDS.moveToNoProjectSelected,
-					{
-						successVerb: '整理',
-						entityLabel: '任务',
-					},
-				),
 			requestArchiveSelectedTasks: (ctx) =>
 				runEntityBulkActionFromCommand(ctx, 'task', TASK_BULK_ACTION_IDS.archiveSelected, {
 					successVerb: '更新',
@@ -615,6 +689,7 @@ function ShellLayoutContent({
 				status?: TaskStatus
 				dueAt?: string | null
 				projectId?: string
+				spaceId?: string
 			},
 		) => {
 			if (commandContext.selection.type !== 'task' || commandContext.selection.ids.length === 0) {
@@ -653,10 +728,18 @@ function ShellLayoutContent({
 		[updateSelectedTasks],
 	)
 
-	const handleSelectTaskProject = useCallback(
-		(project: SearchProjectItem) => {
-			void updateSelectedTasks(TASK_BULK_ACTION_IDS.moveToProjectSelected, {
-				projectId: project.id,
+	const handleSelectTaskPlacement = useCallback(
+		(target: TaskPlacementTarget) => {
+			if (target.kind === 'project') {
+				void updateSelectedTasks(TASK_BULK_ACTION_IDS.moveToProjectSelected, {
+					projectId: target.projectId,
+					spaceId: target.spaceId,
+				}).catch(() => undefined)
+				return
+			}
+
+			void updateSelectedTasks(TASK_BULK_ACTION_IDS.moveToNoProjectSelected, {
+				spaceId: target.spaceId,
 			}).catch(() => undefined)
 		},
 		[updateSelectedTasks],
@@ -750,7 +833,7 @@ function ShellLayoutContent({
 				onNavigateToHistoryEntry={navigateToHistoryEntry}
 				onRunCommand={runCommand}
 				onSelectTaskDate={handleSelectTaskDate}
-				onSelectTaskProject={handleSelectTaskProject}
+				onSelectTaskPlacement={handleSelectTaskPlacement}
 				onSelectTaskPriority={handleSelectTaskPriority}
 				onSelectTaskStatus={handleSelectTaskStatus}
 				onShortcutHelpOpenChange={setShortcutHelpOpen}

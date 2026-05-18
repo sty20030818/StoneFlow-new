@@ -32,6 +32,13 @@ export async function listProjectOverview(scope: Scope, viewKey: ProjectOverview
 	})
 }
 
+/**
+ * 读取所有可见项目，供跨 Space 的轻量选择器使用。
+ */
+export async function listAllVisibleProjects() {
+	return listProjectOverview({ type: 'all' }, 'all')
+}
+
 export async function listSidebarProjects(scope: Scope) {
 	return invoke<ProjectSidebarItem[]>('list_sidebar_projects', {
 		input: {

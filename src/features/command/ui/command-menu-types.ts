@@ -2,13 +2,13 @@ export type CommandMenuMode =
 	| 'default'
 	| 'task-picker'
 	| 'project-picker'
-	| 'task-project-picker'
+	| 'task-placement-picker'
 	| 'task-priority-picker'
 	| 'task-status-picker'
 	| 'task-date-picker'
 
 export function isCommandMenuSearchMode(mode: CommandMenuMode) {
-	return mode === 'task-picker' || mode === 'project-picker' || mode === 'task-project-picker'
+	return mode === 'task-picker' || mode === 'project-picker' || mode === 'task-placement-picker'
 }
 
 export function isCommandMenuTaskPropertyMode(mode: CommandMenuMode) {

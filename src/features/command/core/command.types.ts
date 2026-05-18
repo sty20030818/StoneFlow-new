@@ -40,9 +40,7 @@ export const COMMAND_IDS = {
 	taskDelete: 'task.delete',
 	taskConvertToProject: 'task.convertToProject',
 	taskCreateProjectFromTask: 'task.createProjectFromTask',
-	taskMoveToProject: 'task.moveToProject',
-	taskMoveToInbox: 'task.moveToInbox',
-	taskMoveToNoProject: 'task.moveToNoProject',
+	taskChangePlacement: 'task.changePlacement',
 	projectRename: 'project.rename',
 	projectArchive: 'project.archive',
 	projectDelete: 'project.delete',
@@ -133,12 +131,26 @@ export type CommandSelectedEntity = {
 	type: 'task' | 'project' | 'view' | 'lifecycle'
 	title: string
 	subtitle?: string
+	spaceId?: string
+	projectId?: string | null
+	inboxAt?: string | null
 	status?: string
 	priority?: string
 	lifecycleMode?: 'archive' | 'trash'
 	lifecycleEntityType?: 'space' | 'project' | 'task'
 	projectStatus?: 'active' | 'completed' | 'archived'
 }
+
+export type TaskPlacementTarget =
+	| {
+			kind: 'no_project'
+			spaceId: string
+	  }
+	| {
+			kind: 'project'
+			projectId: string
+			spaceId: string
+	  }
 
 export type CommandFocusContext = {
 	isInputFocused: boolean

@@ -42,6 +42,9 @@ export function buildTaskCommandSelection({
 				subtitle:
 					task.projectName ??
 					(typeof fallbackSubtitle === 'function' ? fallbackSubtitle(task) : fallbackSubtitle),
+				spaceId: task.spaceId,
+				projectId: task.projectId,
+				inboxAt: task.inboxAt,
 				status: task.status,
 				priority: String(task.priority),
 			},

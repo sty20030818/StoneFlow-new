@@ -43,6 +43,7 @@ import {
 	type CommandContext,
 	type CommandId,
 	type CommandRuntime,
+	type TaskPlacementTarget,
 } from '@/features/command/core'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import {
@@ -88,7 +89,7 @@ type ShellHeaderProps = {
 	onNavigateToHistoryEntry: (entry: ShellRouteHistoryEntry) => void
 	onCloseDrawer: () => void
 	onSelectTaskDate: (dueAt: string | null) => void
-	onSelectTaskProject: (project: SearchProjectItem) => void
+	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
 }
@@ -112,7 +113,7 @@ export function ShellHeader({
 	onNavigateToHistoryEntry,
 	onCloseDrawer,
 	onSelectTaskDate,
-	onSelectTaskProject,
+	onSelectTaskPlacement,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
 	projects,
@@ -481,7 +482,7 @@ export function ShellHeader({
 				}}
 				onRunCommand={onRunCommand}
 				onSelectTaskDate={onSelectTaskDate}
-				onSelectTaskProject={onSelectTaskProject}
+				onSelectTaskPlacement={onSelectTaskPlacement}
 				onSelectTaskPriority={onSelectTaskPriority}
 				onSelectTaskStatus={onSelectTaskStatus}
 				onSelectProject={handleOpenProjectFromSearch}
@@ -489,6 +490,7 @@ export function ShellHeader({
 				open={isCommandOpen}
 				projects={projects}
 				runtime={commandRuntime}
+				spaces={spaces}
 				title='StoneFlow Command'
 			/>
 			<ShortcutHelp

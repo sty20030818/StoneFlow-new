@@ -22,6 +22,7 @@ export type {
 	CommandSelectionContext,
 	CommandSpaceContext,
 	CommandUiContext,
+	TaskPlacementTarget,
 	CommandViewContext,
 	KnownCommandId,
 } from './command.types'
