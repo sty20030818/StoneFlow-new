@@ -15,6 +15,7 @@ export type TaskBulkActionPayload =
 	| { priority: TaskPriorityValue }
 	| { status: TaskStatus }
 	| { dueAt: string | null }
+	| { projectId: string }
 
 export const taskBulkActionDefinitions: TaskBulkActionDefinition[] = [
 	{
@@ -71,6 +72,27 @@ export const taskBulkActionDefinitions: TaskBulkActionDefinition[] = [
 		label: '设置任务日期',
 		description: '批量更新选中任务的日期。',
 		intent: 'update',
+	},
+	{
+		id: TASK_BULK_ACTION_IDS.moveToProjectSelected,
+		entity: 'task',
+		label: '移动任务到项目',
+		description: '批量将选中任务移动到指定项目。',
+		intent: 'move',
+	},
+	{
+		id: TASK_BULK_ACTION_IDS.moveToInboxSelected,
+		entity: 'task',
+		label: '移动任务到收件箱',
+		description: '批量将选中任务移动到 Inbox。',
+		intent: 'move',
+	},
+	{
+		id: TASK_BULK_ACTION_IDS.moveToNoProjectSelected,
+		entity: 'task',
+		label: '移动任务到独立事项',
+		description: '批量将选中任务移出项目，设为独立事项。',
+		intent: 'move',
 	},
 ]
 
@@ -135,6 +157,31 @@ export const taskBulkActions: BulkAction[] = taskBulkActionDefinitions.map((defi
 					{ getMessage: (report) => `已更新 ${report.succeededIds.length} 个任务` },
 				)
 			}
+			case TASK_BULK_ACTION_IDS.moveToProjectSelected: {
+				if (!isProjectPayload(payload)) {
+					return createMissingPayloadResult(definition.id, snapshot, 'projectId')
+				}
+				return toBulkActionResult(
+					definition.id,
+					snapshot,
+					await adapter.moveToProject(snapshot.ids, payload.projectId),
+					{ getMessage: (report) => `已整理 ${report.succeededIds.length} 个任务` },
+				)
+			}
+			case TASK_BULK_ACTION_IDS.moveToInboxSelected:
+				return toBulkActionResult(
+					definition.id,
+					snapshot,
+					await adapter.moveToInbox(snapshot.ids),
+					{ getMessage: (report) => `已整理 ${report.succeededIds.length} 个任务` },
+				)
+			case TASK_BULK_ACTION_IDS.moveToNoProjectSelected:
+				return toBulkActionResult(
+					definition.id,
+					snapshot,
+					await adapter.moveToNoProject(snapshot.ids),
+					{ getMessage: (report) => `已整理 ${report.succeededIds.length} 个任务` },
+				)
 			default:
 				return createBulkActionResult({
 					status: 'failed',
@@ -218,4 +265,14 @@ function isStatusPayload(payload: BulkActionPayload): payload is { status: TaskS
 
 function isDatePayload(payload: BulkActionPayload): payload is { dueAt: string | null } {
 	return Boolean(payload && typeof payload === 'object' && 'dueAt' in payload)
+}
+
+function isProjectPayload(payload: BulkActionPayload): payload is { projectId: string } {
+	return Boolean(
+		payload &&
+			typeof payload === 'object' &&
+			'projectId' in payload &&
+			typeof payload.projectId === 'string' &&
+			payload.projectId.length > 0,
+	)
 }

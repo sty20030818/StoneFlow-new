@@ -112,6 +112,30 @@ describe('TaskBulkAdapter', () => {
 			payload: { entityType: 'task', entityId: 'task-b', operation: 'delete' },
 		})
 	})
+
+	it('moveToProject / moveToInbox / moveToNoProject 走各自最小 mutation 路径', async () => {
+		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
+		const updateTask = vi.fn<
+			(input: { taskId: string; projectId?: string | null }) => Promise<TaskDetail>
+		>((input) => Promise.resolve(createTaskDetail(input.taskId)))
+		const moveTaskToInbox = vi.fn<(input: { taskId: string }) => Promise<TaskDetail>>((input) =>
+			Promise.resolve(createTaskDetail(input.taskId)),
+		)
+		const adapter = createTaskBulkAdapter({
+			refreshLoadedSlices,
+			updateTask: updateTask as never,
+			moveTaskToInbox: moveTaskToInbox as never,
+		})
+
+		await adapter.moveToProject(['task-a'], 'project-a')
+		await adapter.moveToInbox(['task-b'])
+		await adapter.moveToNoProject(['task-c'])
+
+		expect(updateTask).toHaveBeenCalledWith({ taskId: 'task-a', projectId: 'project-a' })
+		expect(moveTaskToInbox).toHaveBeenCalledWith({ taskId: 'task-b' })
+		expect(updateTask).toHaveBeenCalledWith({ taskId: 'task-c', projectId: null })
+		expect(refreshLoadedSlices).toHaveBeenCalledTimes(3)
+	})
 })
 
 function createTaskDetail(taskId: string): TaskDetail {

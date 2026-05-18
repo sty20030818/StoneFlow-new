@@ -1,6 +1,7 @@
 import {
 	archiveTask as archiveTaskApi,
 	deleteTask as deleteTaskApi,
+	moveTaskToInbox as moveTaskToInboxApi,
 	updateTask as updateTaskApi,
 } from '@/features/task/api/tasks'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -22,18 +23,23 @@ export type TaskBulkAdapter = {
 	updatePriority: (ids: string[], priority: TaskPriorityValue) => Promise<TaskBulkMutationReport>
 	updateStatus: (ids: string[], status: TaskStatus) => Promise<TaskBulkMutationReport>
 	updateDate: (ids: string[], dueAt: string | null) => Promise<TaskBulkMutationReport>
+	moveToProject: (ids: string[], projectId: string) => Promise<TaskBulkMutationReport>
+	moveToInbox: (ids: string[]) => Promise<TaskBulkMutationReport>
+	moveToNoProject: (ids: string[]) => Promise<TaskBulkMutationReport>
 }
 
 type TaskBulkAdapterOptions = {
 	updateTask?: typeof updateTaskApi
 	archiveTask?: typeof archiveTaskApi
 	deleteTask?: typeof deleteTaskApi
+	moveTaskToInbox?: typeof moveTaskToInboxApi
 	refreshLoadedSlices: () => Promise<void>
 }
 
 export function createTaskBulkAdapter({
 	archiveTask = archiveTaskApi,
 	deleteTask = deleteTaskApi,
+	moveTaskToInbox = moveTaskToInboxApi,
 	refreshLoadedSlices,
 	updateTask = updateTaskApi,
 }: TaskBulkAdapterOptions): TaskBulkAdapter {
@@ -119,6 +125,21 @@ export function createTaskBulkAdapter({
 			runTaskBulkMutation({
 				ids,
 				mutate: (taskId) => updateTask({ taskId, dueAt }),
+			}),
+		moveToProject: (ids, projectId) =>
+			runTaskBulkMutation({
+				ids,
+				mutate: (taskId) => updateTask({ taskId, projectId }),
+			}),
+		moveToInbox: (ids) =>
+			runTaskBulkMutation({
+				ids,
+				mutate: (taskId) => moveTaskToInbox({ taskId }),
+			}),
+		moveToNoProject: (ids) =>
+			runTaskBulkMutation({
+				ids,
+				mutate: (taskId) => updateTask({ taskId, projectId: null }),
 			}),
 	}
 }

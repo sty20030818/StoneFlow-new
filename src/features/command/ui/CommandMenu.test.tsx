@@ -158,6 +158,33 @@ describe('CommandMenu', () => {
 		expect(onSelectProject).toHaveBeenCalledWith(expect.objectContaining({ id: 'project-a' }))
 	})
 
+	it('task-project-picker mode 只渲染项目结果，选择项目后走任务移动 scoped picker 回调', async () => {
+		const onOpenChange = vi.fn<(open: boolean) => void>()
+		const onSelectTaskProject = vi.fn<(project: SearchProjectItem) => void>()
+		const onSelectProject = vi.fn<(project: SearchProjectItem) => void>()
+		mockedSearchEntities.mockResolvedValue(
+			createSearchResult({
+				tasks: [createTaskResult({ id: 'task-a', title: '任务 A' })],
+				projects: [createProjectResult({ id: 'project-a', name: '项目 A' })],
+			}),
+		)
+		renderCommandMenu({
+			mode: 'task-project-picker',
+			onOpenChange,
+			onSelectProject,
+			onSelectTaskProject,
+		})
+
+		fireEvent.change(screen.getByPlaceholderText('移动到项目…'), { target: { value: 'A' } })
+		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
+		fireEvent.click(await screen.findByText('项目 A'))
+
+		expect(screen.queryByText('任务 A')).not.toBeInTheDocument()
+		expect(onOpenChange).toHaveBeenCalledWith(false)
+		expect(onSelectTaskProject).toHaveBeenCalledWith(expect.objectContaining({ id: 'project-a' }))
+		expect(onSelectProject).not.toHaveBeenCalled()
+	})
+
 	it('scoped mode 空态文案区分任务和项目', async () => {
 		mockedSearchEntities.mockResolvedValue(createSearchResult())
 		const { rerender } = renderCommandMenu({ mode: 'task-picker' })
@@ -220,6 +247,7 @@ function renderCommandMenu({
 	onSelectTaskPriority = vi.fn(),
 	onSelectTaskStatus = vi.fn(),
 	onSelectProject = vi.fn(),
+	onSelectTaskProject = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
 }: Partial<{
@@ -232,6 +260,7 @@ function renderCommandMenu({
 	onSelectTaskPriority: (priority: number) => void
 	onSelectTaskStatus: (status: string) => void
 	onSelectProject: (project: SearchProjectItem) => void
+	onSelectTaskProject: (project: SearchProjectItem) => void
 	onSelectTask: (task: SearchTaskItem) => void
 }> = {}) {
 	return render(
@@ -244,6 +273,7 @@ function renderCommandMenu({
 			onSelectTaskPriority,
 			onSelectTaskStatus,
 			onSelectProject,
+			onSelectTaskProject,
 			onSelectTask,
 			context,
 		}),
@@ -259,6 +289,7 @@ function createCommandMenuElement({
 	onSelectTaskPriority = vi.fn(),
 	onSelectTaskStatus = vi.fn(),
 	onSelectProject = vi.fn(),
+	onSelectTaskProject = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
 }: Partial<{
@@ -271,6 +302,7 @@ function createCommandMenuElement({
 	onSelectTaskPriority: (priority: number) => void
 	onSelectTaskStatus: (status: string) => void
 	onSelectProject: (project: SearchProjectItem) => void
+	onSelectTaskProject: (project: SearchProjectItem) => void
 	onSelectTask: (task: SearchTaskItem) => void
 }> = {}) {
 	return (
@@ -285,6 +317,7 @@ function createCommandMenuElement({
 			onSelectTaskPriority={onSelectTaskPriority}
 			onSelectTaskStatus={onSelectTaskStatus}
 			onSelectProject={onSelectProject}
+			onSelectTaskProject={onSelectTaskProject}
 			onSelectTask={onSelectTask}
 			open
 			projects={[{ id: 'project-a', label: '项目 A', badge: '2' }]}
@@ -312,10 +345,13 @@ function createActions(): ShellCommandActions {
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		openTaskProjectPicker: vi.fn(),
 		openTaskPriorityPicker: vi.fn(),
 		openTaskStatusPicker: vi.fn(),
 		openTaskDatePicker: vi.fn(),
 		completeSelectedTasks: vi.fn(),
+		moveSelectedTasksToInbox: vi.fn(),
+		moveSelectedTasksToNoProject: vi.fn(),
 		requestArchiveSelectedTasks: vi.fn(),
 		requestDeleteSelectedTasks: vi.fn(),
 		requestArchiveSelectedProjects: vi.fn(),

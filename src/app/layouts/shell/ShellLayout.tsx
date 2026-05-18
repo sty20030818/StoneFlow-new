@@ -107,7 +107,7 @@ import {
 	useLifecycleStore,
 } from '@/features/lifecycle/model/useLifecycleStore'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
-import type { TaskStatus } from '@/shared/types'
+import type { SearchProjectItem, TaskStatus } from '@/shared/types'
 
 type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
@@ -450,6 +450,9 @@ function ShellLayoutContent({
 			openProjectPicker: () => {
 				useDialogStore.getState().openCommand('project-picker')
 			},
+			openTaskProjectPicker: (ctx) => {
+				useDialogStore.getState().openCommand('task-project-picker', ctx.selection)
+			},
 			openTaskPriorityPicker: (ctx) => {
 				useDialogStore.getState().openCommand('task-priority-picker', ctx.selection)
 			},
@@ -464,6 +467,21 @@ function ShellLayoutContent({
 					successVerb: '更新',
 					entityLabel: '任务',
 				}),
+			moveSelectedTasksToInbox: (ctx) =>
+				runEntityBulkActionFromCommand(ctx, 'task', TASK_BULK_ACTION_IDS.moveToInboxSelected, {
+					successVerb: '整理',
+					entityLabel: '任务',
+				}),
+			moveSelectedTasksToNoProject: (ctx) =>
+				runEntityBulkActionFromCommand(
+					ctx,
+					'task',
+					TASK_BULK_ACTION_IDS.moveToNoProjectSelected,
+					{
+						successVerb: '整理',
+						entityLabel: '任务',
+					},
+				),
 			requestArchiveSelectedTasks: (ctx) =>
 				runEntityBulkActionFromCommand(ctx, 'task', TASK_BULK_ACTION_IDS.archiveSelected, {
 					successVerb: '更新',
@@ -592,7 +610,12 @@ function ShellLayoutContent({
 	const updateSelectedTasks = useCallback(
 		async (
 			actionId: BulkActionId,
-			payload: { priority?: TaskPriorityValue; status?: TaskStatus; dueAt?: string | null },
+			payload?: {
+				priority?: TaskPriorityValue
+				status?: TaskStatus
+				dueAt?: string | null
+				projectId?: string
+			},
 		) => {
 			if (commandContext.selection.type !== 'task' || commandContext.selection.ids.length === 0) {
 				return
@@ -626,6 +649,15 @@ function ShellLayoutContent({
 			void updateSelectedTasks(TASK_BULK_ACTION_IDS.setStatusSelected, { status }).catch(
 				() => undefined,
 			)
+		},
+		[updateSelectedTasks],
+	)
+
+	const handleSelectTaskProject = useCallback(
+		(project: SearchProjectItem) => {
+			void updateSelectedTasks(TASK_BULK_ACTION_IDS.moveToProjectSelected, {
+				projectId: project.id,
+			}).catch(() => undefined)
 		},
 		[updateSelectedTasks],
 	)
@@ -718,6 +750,7 @@ function ShellLayoutContent({
 				onNavigateToHistoryEntry={navigateToHistoryEntry}
 				onRunCommand={runCommand}
 				onSelectTaskDate={handleSelectTaskDate}
+				onSelectTaskProject={handleSelectTaskProject}
 				onSelectTaskPriority={handleSelectTaskPriority}
 				onSelectTaskStatus={handleSelectTaskStatus}
 				onShortcutHelpOpenChange={setShortcutHelpOpen}

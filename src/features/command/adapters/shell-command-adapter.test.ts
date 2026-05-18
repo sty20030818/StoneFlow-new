@@ -136,7 +136,6 @@ describe('Shell command adapter', () => {
 	})
 
 	it.each([
-		[COMMAND_IDS.taskMoveToProject, 'Row 上下文尚未接入'],
 		[COMMAND_IDS.projectRename, '项目命令尚未接入'],
 		[COMMAND_IDS.filterToggleCompleted, '筛选命令尚未接入'],
 		[COMMAND_IDS.layoutToggleSidebar, '布局命令尚未接入'],
@@ -155,6 +154,9 @@ describe('Shell command adapter', () => {
 
 	it.each([
 		[COMMAND_IDS.taskComplete, 'completeSelectedTasks'],
+		[COMMAND_IDS.taskMoveToProject, 'openTaskProjectPicker'],
+		[COMMAND_IDS.taskMoveToInbox, 'moveSelectedTasksToInbox'],
+		[COMMAND_IDS.taskMoveToNoProject, 'moveSelectedTasksToNoProject'],
 		[COMMAND_IDS.taskSetPriority, 'openTaskPriorityPicker'],
 		[COMMAND_IDS.taskSetStatus, 'openTaskStatusPicker'],
 		[COMMAND_IDS.taskOpenDateMenu, 'openTaskDatePicker'],
@@ -219,6 +221,9 @@ describe('Shell command adapter', () => {
 
 	it.each([
 		COMMAND_IDS.taskComplete,
+		COMMAND_IDS.taskMoveToProject,
+		COMMAND_IDS.taskMoveToInbox,
+		COMMAND_IDS.taskMoveToNoProject,
 		COMMAND_IDS.taskSetPriority,
 		COMMAND_IDS.taskSetStatus,
 		COMMAND_IDS.taskOpenDateMenu,
@@ -275,10 +280,13 @@ function createActions(overrides: Partial<ShellCommandActions> = {}): ShellComma
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
+		openTaskProjectPicker: vi.fn(),
 		openTaskPriorityPicker: vi.fn(),
 		openTaskStatusPicker: vi.fn(),
 		openTaskDatePicker: vi.fn(),
 		completeSelectedTasks: vi.fn(),
+		moveSelectedTasksToInbox: vi.fn(),
+		moveSelectedTasksToNoProject: vi.fn(),
 		requestArchiveSelectedTasks: vi.fn(),
 		requestDeleteSelectedTasks: vi.fn(),
 		requestArchiveSelectedProjects: vi.fn(),

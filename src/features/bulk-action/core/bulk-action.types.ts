@@ -5,6 +5,9 @@ export const TASK_BULK_ACTION_IDS = {
 	setPrioritySelected: 'task.setPrioritySelected',
 	setStatusSelected: 'task.setStatusSelected',
 	setDateSelected: 'task.setDateSelected',
+	moveToProjectSelected: 'task.moveToProjectSelected',
+	moveToInboxSelected: 'task.moveToInboxSelected',
+	moveToNoProjectSelected: 'task.moveToNoProjectSelected',
 } as const
 
 export const LIFECYCLE_BULK_ACTION_IDS = {

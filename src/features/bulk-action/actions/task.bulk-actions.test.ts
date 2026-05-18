@@ -58,6 +58,36 @@ describe('taskBulkActions', () => {
 		expect(adapter.updateDate).toHaveBeenCalledWith(['task-a', 'task-b'], null)
 	})
 
+	it('moveToProject 缺 payload 时不执行 adapter', async () => {
+		const adapter = createAdapter()
+
+		const result = await getAction(TASK_BULK_ACTION_IDS.moveToProjectSelected).run(snapshot, {
+			adapter,
+		})
+
+		expect(result).toMatchObject({
+			status: 'disabled',
+			actionId: TASK_BULK_ACTION_IDS.moveToProjectSelected,
+		})
+		expect(adapter.moveToProject).not.toHaveBeenCalled()
+	})
+
+	it('move 系列 action 调用对应 adapter', async () => {
+		const adapter = createAdapter()
+
+		await getAction(TASK_BULK_ACTION_IDS.moveToProjectSelected).run(
+			snapshot,
+			{ adapter },
+			{ projectId: 'project-a' },
+		)
+		await getAction(TASK_BULK_ACTION_IDS.moveToInboxSelected).run(snapshot, { adapter })
+		await getAction(TASK_BULK_ACTION_IDS.moveToNoProjectSelected).run(snapshot, { adapter })
+
+		expect(adapter.moveToProject).toHaveBeenCalledWith(['task-a', 'task-b'], 'project-a')
+		expect(adapter.moveToInbox).toHaveBeenCalledWith(['task-a', 'task-b'])
+		expect(adapter.moveToNoProject).toHaveBeenCalledWith(['task-a', 'task-b'])
+	})
+
 	it('archive/delete 成功时标记 shouldClearSelection', async () => {
 		const adapter = createAdapter()
 
@@ -121,6 +151,9 @@ function createAdapter(overrides: Partial<TaskBulkAdapter> = {}): TaskBulkAdapte
 		updatePriority: vi.fn<TaskBulkAdapter['updatePriority']>(() => Promise.resolve(report)),
 		updateStatus: vi.fn<TaskBulkAdapter['updateStatus']>(() => Promise.resolve(report)),
 		updateDate: vi.fn<TaskBulkAdapter['updateDate']>(() => Promise.resolve(report)),
+		moveToProject: vi.fn<TaskBulkAdapter['moveToProject']>(() => Promise.resolve(report)),
+		moveToInbox: vi.fn<TaskBulkAdapter['moveToInbox']>(() => Promise.resolve(report)),
+		moveToNoProject: vi.fn<TaskBulkAdapter['moveToNoProject']>(() => Promise.resolve(report)),
 		...overrides,
 	}
 }

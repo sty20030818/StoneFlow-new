@@ -70,6 +70,7 @@ type CommandMenuProps = {
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
 	onSelectProject: (project: SearchProjectItem) => void
+	onSelectTaskProject: (project: SearchProjectItem) => void
 	onSelectTask: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
@@ -89,6 +90,7 @@ export function CommandMenu({
 	onNavigateProject,
 	onOpenChange,
 	onSelectProject,
+	onSelectTaskProject,
 	onSelectTask,
 	onSelectTaskDate,
 	onSelectTaskPriority,
@@ -176,6 +178,7 @@ export function CommandMenu({
 							mode={mode}
 							onOpenChange={onOpenChange}
 							onSelectProject={onSelectProject}
+							onSelectTaskProject={onSelectTaskProject}
 							onSelectTask={onSelectTask}
 							onSelectTaskDate={onSelectTaskDate}
 							onSelectTaskPriority={onSelectTaskPriority}
@@ -258,6 +261,8 @@ function getCommandMenuPlaceholder(mode: CommandMenuMode) {
 			return '搜索任务…'
 		case 'project-picker':
 			return '搜索项目…'
+		case 'task-project-picker':
+			return '移动到项目…'
 		case 'task-priority-picker':
 			return '选择优先级…'
 		case 'task-status-picker':
@@ -277,14 +282,14 @@ function getCommandMenuEmptyText(mode: CommandMenuMode, query: string) {
 	if (!query.trim()) {
 		return mode === 'task-picker'
 			? '输入关键词搜索任务'
-			: mode === 'project-picker'
+			: mode === 'project-picker' || mode === 'task-project-picker'
 				? '输入关键词搜索项目'
 				: '没有可用命令'
 	}
 
 	return mode === 'task-picker'
 		? '没有匹配的任务'
-		: mode === 'project-picker'
+		: mode === 'project-picker' || mode === 'task-project-picker'
 			? '没有匹配的项目'
 			: '没有匹配的命令'
 }
@@ -389,6 +394,7 @@ function ScopedPickerCommandGroup({
 	mode,
 	onOpenChange,
 	onSelectProject,
+	onSelectTaskProject,
 	onSelectTask,
 	onSelectTaskDate,
 	onSelectTaskPriority,
@@ -398,6 +404,7 @@ function ScopedPickerCommandGroup({
 	mode: Exclude<CommandMenuMode, 'default'>
 	onOpenChange: (open: boolean) => void
 	onSelectProject: (project: SearchProjectItem) => void
+	onSelectTaskProject: (project: SearchProjectItem) => void
 	onSelectTask: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
@@ -516,6 +523,10 @@ function ScopedPickerCommandGroup({
 					key={project.id}
 					onSelect={() => {
 						onOpenChange(false)
+						if (mode === 'task-project-picker') {
+							onSelectTaskProject(project)
+							return
+						}
 						onSelectProject(project)
 					}}
 					value={`${project.name} ${project.note ?? ''} ${project.spaceName}`}

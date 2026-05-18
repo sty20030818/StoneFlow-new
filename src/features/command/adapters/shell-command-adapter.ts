@@ -21,10 +21,13 @@ export type ShellCommandActions = {
 	openProjectCreate: () => void
 	openTaskPicker: () => void
 	openProjectPicker: () => void
+	openTaskProjectPicker: (ctx: CommandContext) => void
 	openTaskPriorityPicker: (ctx: CommandContext) => void
 	openTaskStatusPicker: (ctx: CommandContext) => void
 	openTaskDatePicker: (ctx: CommandContext) => void
 	completeSelectedTasks: (ctx: CommandContext) => void | Promise<void>
+	moveSelectedTasksToInbox: (ctx: CommandContext) => void | Promise<void>
+	moveSelectedTasksToNoProject: (ctx: CommandContext) => void | Promise<void>
 	requestArchiveSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	requestDeleteSelectedTasks: (ctx: CommandContext) => void | Promise<void>
 	requestArchiveSelectedProjects: (ctx: CommandContext) => void | Promise<void>
@@ -78,6 +81,12 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return bindSelectionTaskCommand(command, adapter.openTaskStatusPicker)
 		case COMMAND_IDS.taskOpenDateMenu:
 			return bindSelectionTaskCommand(command, adapter.openTaskDatePicker)
+		case COMMAND_IDS.taskMoveToProject:
+			return bindSelectionTaskCommand(command, adapter.openTaskProjectPicker)
+		case COMMAND_IDS.taskMoveToInbox:
+			return bindSelectionTaskCommand(command, adapter.moveSelectedTasksToInbox)
+		case COMMAND_IDS.taskMoveToNoProject:
+			return bindSelectionTaskCommand(command, adapter.moveSelectedTasksToNoProject)
 		case COMMAND_IDS.taskArchive:
 			return bindSelectionTaskCommand(command, adapter.requestArchiveSelectedTasks)
 		case COMMAND_IDS.taskDelete:

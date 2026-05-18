@@ -109,6 +109,27 @@ export const DEFAULT_KEYBINDINGS: Keybinding[] = [
 		allowInEditable: false,
 	},
 	{
+		commandId: COMMAND_IDS.taskMoveToProject,
+		sequence: [{ key: 'm' }, { key: 'p' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.taskMoveToInbox,
+		sequence: [{ key: 'm' }, { key: 'i' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.taskMoveToNoProject,
+		sequence: [{ key: 'm' }, { key: 'n' }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
 		commandId: COMMAND_IDS.goInbox,
 		sequence: [{ key: 'g' }, { key: 'i' }],
 		scope: 'global',

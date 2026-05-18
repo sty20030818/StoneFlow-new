@@ -88,6 +88,7 @@ type ShellHeaderProps = {
 	onNavigateToHistoryEntry: (entry: ShellRouteHistoryEntry) => void
 	onCloseDrawer: () => void
 	onSelectTaskDate: (dueAt: string | null) => void
+	onSelectTaskProject: (project: SearchProjectItem) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
 }
@@ -111,6 +112,7 @@ export function ShellHeader({
 	onNavigateToHistoryEntry,
 	onCloseDrawer,
 	onSelectTaskDate,
+	onSelectTaskProject,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
 	projects,
@@ -479,6 +481,7 @@ export function ShellHeader({
 				}}
 				onRunCommand={onRunCommand}
 				onSelectTaskDate={onSelectTaskDate}
+				onSelectTaskProject={onSelectTaskProject}
 				onSelectTaskPriority={onSelectTaskPriority}
 				onSelectTaskStatus={onSelectTaskStatus}
 				onSelectProject={handleOpenProjectFromSearch}
