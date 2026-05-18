@@ -202,6 +202,22 @@ describe('keybinding', () => {
 			COMMAND_IDS.taskDelete,
 		)
 	})
+
+	it('支持 [ / ] / Escape / Cmd+Enter / Ctrl+[ / Ctrl+] / F 组筛选命令', () => {
+		expect(matchCommand('[')).toBe(COMMAND_IDS.layoutToggleSidebar)
+		expect(matchCommand(']')).toBe(COMMAND_IDS.layoutTogglePreview)
+		expect(matchCommand('Escape')).toBe(COMMAND_IDS.close)
+		expect(matchCommand('Enter', null, 100, { metaKey: true })).toBe(COMMAND_IDS.saveOrSubmit)
+		expect(matchCommand('[', null, 100, { ctrlKey: true })).toBe(COMMAND_IDS.goBack)
+		expect(matchCommand(']', null, 100, { ctrlKey: true })).toBe(COMMAND_IDS.goForward)
+
+		const filterChordState = { prefix: { key: 'f' }, scope: 'global' as const, startedAt: 100 }
+		expect(matchCommand('p', filterChordState, 200)).toBe(COMMAND_IDS.filterByPriority)
+		expect(matchCommand('s', filterChordState, 200)).toBe(COMMAND_IDS.filterByStatus)
+		expect(matchCommand('d', filterChordState, 200)).toBe(COMMAND_IDS.filterByDate)
+		expect(matchCommand('j', filterChordState, 200)).toBe(COMMAND_IDS.filterByProject)
+		expect(matchCommand('c', filterChordState, 200)).toBe(COMMAND_IDS.filterToggleCompleted)
+	})
 })
 
 function matchCommand(

@@ -34,6 +34,11 @@ import {
 import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
 import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
 import type {
+	PageDateFilterValue,
+	PageFilterApplyInput,
+	PageFilterKind,
+} from '@/features/filter/model'
+import type {
 	CommandContext,
 	CommandId,
 	CommandRuntime,
@@ -67,15 +72,20 @@ type CommandMenuProps = {
 	className?: string
 	context: CommandContext
 	description: string
+	filterKind: PageFilterKind
 	mode: CommandMenuMode
+	onApplyFilter: (input: PageFilterApplyInput) => void
+	onClearAllFilters: () => void
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
+	onSelectFilterKind: (kind: PageFilterKind) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
+	onToggleCompletedFilter: () => void
 	onRunCommand: (id: CommandId) => void
 	open: boolean
 	projects: CommandMenuProject[]
@@ -88,15 +98,20 @@ export function CommandMenu({
 	className,
 	context,
 	description,
+	filterKind,
 	mode,
+	onApplyFilter,
+	onClearAllFilters,
 	onNavigateProject,
 	onOpenChange,
+	onSelectFilterKind,
 	onSelectProject,
 	onSelectTaskPlacement,
 	onSelectTask,
 	onSelectTaskDate,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
+	onToggleCompletedFilter,
 	onRunCommand,
 	open,
 	projects: projectLinks,
@@ -169,7 +184,7 @@ export function CommandMenu({
 			>
 				<CommandInput
 					ref={inputRef}
-					placeholder={getCommandMenuPlaceholder(mode)}
+					placeholder={getCommandMenuPlaceholder(mode, filterKind)}
 					value={query}
 					onValueChange={setQuery}
 				/>
@@ -180,14 +195,20 @@ export function CommandMenu({
 						<ScopedPickerCommandGroup
 							context={context}
 							mode={mode}
+							filterKind={filterKind}
+							onApplyFilter={onApplyFilter}
+							onClearAllFilters={onClearAllFilters}
 							onOpenChange={onOpenChange}
+							onSelectFilterKind={onSelectFilterKind}
 							onSelectProject={onSelectProject}
 							onSelectTaskPlacement={onSelectTaskPlacement}
 							onSelectTask={onSelectTask}
 							onSelectTaskDate={onSelectTaskDate}
 							onSelectTaskPriority={onSelectTaskPriority}
 							onSelectTaskStatus={onSelectTaskStatus}
+							onToggleCompletedFilter={onToggleCompletedFilter}
 							projectLinks={projectLinks}
+							query={query}
 							result={scopedSearch.result}
 							spaces={spaces}
 						/>
@@ -261,7 +282,7 @@ function CommandScrollableList({ children }: { children: React.ReactNode }) {
 	)
 }
 
-function getCommandMenuPlaceholder(mode: CommandMenuMode) {
+function getCommandMenuPlaceholder(mode: CommandMenuMode, filterKind: PageFilterKind) {
 	switch (mode) {
 		case 'task-picker':
 			return '搜索任务…'
@@ -275,12 +296,18 @@ function getCommandMenuPlaceholder(mode: CommandMenuMode) {
 			return '选择状态…'
 		case 'task-date-picker':
 			return '选择日期…'
+		case 'filter-picker':
+			return getFilterPickerPlaceholder(mode, filterKind)
 		default:
 			return '输入命令 或 搜索 …'
 	}
 }
 
 function getCommandMenuEmptyText(mode: CommandMenuMode, query: string) {
+	if (mode === 'filter-picker') {
+		return query.trim() ? '没有匹配的筛选项' : '没有可用筛选项'
+	}
+
 	if (isCommandMenuTaskPropertyMode(mode)) {
 		return '没有可用选项'
 	}
@@ -398,31 +425,59 @@ function CommandMenuShortcut({ shortcut }: { shortcut: CommandMenuEntry['shortcu
 
 function ScopedPickerCommandGroup({
 	context,
+	filterKind,
 	mode,
+	onApplyFilter,
+	onClearAllFilters,
 	onOpenChange,
+	onSelectFilterKind,
 	onSelectProject,
 	onSelectTaskPlacement,
 	onSelectTask,
 	onSelectTaskDate,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
+	onToggleCompletedFilter,
 	projectLinks,
+	query,
 	result,
 	spaces,
 }: {
 	context: CommandContext
 	mode: Exclude<CommandMenuMode, 'default'>
+	filterKind: PageFilterKind
+	onApplyFilter: (input: PageFilterApplyInput) => void
+	onClearAllFilters: () => void
 	onOpenChange: (open: boolean) => void
+	onSelectFilterKind: (kind: PageFilterKind) => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
+	onToggleCompletedFilter: () => void
 	projectLinks: CommandMenuProject[]
+	query: string
 	result: ReturnType<typeof useGlobalSearch>['result']
 	spaces: Space[]
 }) {
+	if (mode === 'filter-picker') {
+		return (
+			<FilterPickerCommandGroup
+				context={context}
+				filterKind={filterKind}
+				onApplyFilter={onApplyFilter}
+				onClearAllFilters={onClearAllFilters}
+				onOpenChange={onOpenChange}
+				onSelectFilterKind={onSelectFilterKind}
+				onToggleCompletedFilter={onToggleCompletedFilter}
+				projects={projectLinks}
+				query={query}
+			/>
+		)
+	}
+
 	if (mode === 'task-priority-picker') {
 		return (
 			<CommandGroup className='pt-2' heading='优先级'>
@@ -596,6 +651,243 @@ function ScopedPickerCommandGroup({
 	)
 }
 
+function FilterPickerCommandGroup({
+	context,
+	filterKind,
+	onApplyFilter,
+	onClearAllFilters,
+	onOpenChange,
+	onSelectFilterKind,
+	onToggleCompletedFilter,
+	projects,
+	query,
+}: {
+	context: CommandContext
+	filterKind: PageFilterKind
+	onApplyFilter: (input: PageFilterApplyInput) => void
+	onClearAllFilters: () => void
+	onOpenChange: (open: boolean) => void
+	onSelectFilterKind: (kind: PageFilterKind) => void
+	onToggleCompletedFilter: () => void
+	projects: CommandMenuProject[]
+	query: string
+}) {
+	const capability = context.view.filterCapabilities
+
+	if (filterKind === 'root') {
+		const items = [
+			capability.supportsPriority
+				? { kind: 'priority' as const, title: '按优先级筛选', meta: formatPriorityMeta(context) }
+				: null,
+			capability.supportsStatus
+				? { kind: 'status' as const, title: '按状态筛选', meta: formatStatusMeta(context) }
+				: null,
+			capability.supportsDate
+				? { kind: 'date' as const, title: '按日期筛选', meta: formatDateMeta(context) }
+				: null,
+			capability.supportsProject
+				? { kind: 'project' as const, title: '按项目筛选', meta: formatProjectMeta(context, projects) }
+				: null,
+		].filter((item): item is NonNullable<typeof item> => item !== null)
+
+		return (
+			<>
+				<CommandGroup className='pt-2' heading='筛选维度'>
+					{items.map((item) => (
+						<CommandItem
+							key={item.kind}
+							onSelect={() => onSelectFilterKind(item.kind)}
+							value={`${item.title} ${item.kind}`}
+						>
+							<CommandRow
+								leadingIcon={CommandIcon}
+								title={item.title}
+								trailing={<CommandRowMeta>{item.meta}</CommandRowMeta>}
+							/>
+						</CommandItem>
+					))}
+				</CommandGroup>
+				<CommandGroup className='pt-2' heading='快捷操作'>
+					{capability.supportsToggleCompleted ? (
+						<CommandItem
+							onSelect={() => {
+								onToggleCompletedFilter()
+								onOpenChange(false)
+							}}
+							value='toggle completed'
+						>
+							<CommandRow
+								leadingIcon={CheckCircle2Icon}
+								title={context.view.showCompleted ? '隐藏已完成' : '显示已完成'}
+							/>
+						</CommandItem>
+					) : null}
+					{capability.supportsClearAll ? (
+						<CommandItem
+							onSelect={() => {
+								onClearAllFilters()
+								onOpenChange(false)
+							}}
+							value='clear filters'
+						>
+							<CommandRow leadingIcon={Trash2Icon} title='清除全部筛选' />
+						</CommandItem>
+					) : null}
+				</CommandGroup>
+			</>
+		)
+	}
+
+	if (filterKind === 'priority') {
+		return (
+			<CommandGroup className='pt-2' heading='优先级筛选'>
+				<CommandItem
+					onSelect={() => {
+						onApplyFilter({ kind: 'priority', values: [] })
+						onOpenChange(false)
+					}}
+					value='priority all'
+				>
+					<CommandRow leadingIcon={ListTodoIcon} title='不过滤优先级' />
+				</CommandItem>
+				{TASK_PRIORITY_OPTIONS.map((option) => {
+					const selected = context.view.priorityFilterValues.includes(option.value)
+					return (
+						<CommandItem
+							key={option.value}
+							onSelect={() => {
+								onApplyFilter({
+									kind: 'priority',
+									values: selected
+										? context.view.priorityFilterValues.filter((value) => value !== option.value)
+										: [...context.view.priorityFilterValues, option.value].sort((left, right) => right - left),
+								})
+							}}
+							value={`priority ${option.label} ${option.value}`}
+						>
+							<CommandRow
+								leadingIcon={ListTodoIcon}
+								title={option.label}
+								trailing={<CommandRowMeta>{selected ? '已选中' : `P${option.value}`}</CommandRowMeta>}
+							/>
+						</CommandItem>
+					)
+				})}
+			</CommandGroup>
+		)
+	}
+
+	if (filterKind === 'status') {
+		return (
+			<CommandGroup className='pt-2' heading='状态筛选'>
+				<CommandItem
+					onSelect={() => {
+						onApplyFilter({ kind: 'status', values: [] })
+						onOpenChange(false)
+					}}
+					value='status all'
+				>
+					<CommandRow leadingIcon={CircleIcon} title='不过滤状态' />
+				</CommandItem>
+				{TASK_STATUS_OPTIONS.map((option) => {
+					const selected = context.view.statusFilterValues.includes(option.value)
+					return (
+						<CommandItem
+							key={option.value}
+							onSelect={() => {
+								onApplyFilter({
+									kind: 'status',
+									values: selected
+										? context.view.statusFilterValues.filter((value) => value !== option.value)
+										: [...context.view.statusFilterValues, option.value],
+								})
+							}}
+							value={`status ${option.label} ${option.value}`}
+						>
+							<CommandRow
+								leadingIcon={CircleIcon}
+								title={option.label}
+								trailing={selected ? <CommandRowMeta>已选中</CommandRowMeta> : null}
+							/>
+						</CommandItem>
+					)
+				})}
+			</CommandGroup>
+		)
+	}
+
+	if (filterKind === 'date') {
+		return (
+			<CommandGroup className='pt-2' heading='日期筛选'>
+				{getFilterDateOptions().map((option) => {
+					const selected = context.view.dateFilterValue === option.value
+					return (
+						<CommandItem
+							key={option.value}
+							onSelect={() => {
+								onApplyFilter({
+									kind: 'date',
+									value: selected ? 'none' : option.value,
+								})
+								onOpenChange(false)
+							}}
+							value={`date ${option.label} ${option.value}`}
+						>
+							<CommandRow
+								leadingIcon={CommandIcon}
+								title={option.label}
+								trailing={selected ? <CommandRowMeta>已选中</CommandRowMeta> : null}
+							/>
+						</CommandItem>
+					)
+				})}
+			</CommandGroup>
+		)
+	}
+
+	const filteredProjects = projects.filter((project) => {
+		const text = `${project.label} ${project.spaceName ?? ''}`.toLowerCase()
+		return text.includes(query.trim().toLowerCase())
+	})
+	return (
+		<CommandGroup className='pt-2' heading='项目筛选'>
+			<CommandItem
+				onSelect={() => {
+					onApplyFilter({ kind: 'project', projectId: null })
+					onOpenChange(false)
+				}}
+				value='project all'
+			>
+				<CommandRow leadingIcon={FolderIcon} title='不过滤项目' />
+			</CommandItem>
+			{filteredProjects.map((project) => {
+				const selected = context.view.projectFilterId === project.id
+				return (
+					<CommandItem
+						key={project.id}
+						onSelect={() => {
+							onApplyFilter({
+								kind: 'project',
+								projectId: selected ? null : project.id,
+							})
+							onOpenChange(false)
+						}}
+						value={`${project.label} ${project.spaceName ?? ''}`}
+					>
+						<CommandRow
+							leadingIcon={FolderIcon}
+							title={project.label}
+							trailing={
+								<CommandRowMeta>{selected ? '已选中' : `Project · ${project.spaceName ?? ''}`}</CommandRowMeta>
+							}
+						/>
+					</CommandItem>
+				)
+			})}
+		</CommandGroup>
+	)
+}
+
 type TaskDateOption = {
 	key: string
 	label: string
@@ -622,6 +914,62 @@ function getTaskDateOptions(): TaskDateOption[] {
 			disabledReason: '完整日期选择后续接入',
 		},
 	]
+}
+
+function getFilterPickerPlaceholder(mode: CommandMenuMode, filterKind: PageFilterKind) {
+	if (mode !== 'filter-picker') {
+		return '输入命令 或 搜索 …'
+	}
+
+	switch (filterKind) {
+		case 'priority':
+			return '筛选优先级…'
+		case 'status':
+			return '筛选状态…'
+		case 'date':
+			return '筛选日期…'
+		case 'project':
+			return '搜索项目筛选…'
+		default:
+			return '选择筛选维度…'
+	}
+}
+
+function getFilterDateOptions(): Array<{ label: string; value: PageDateFilterValue }> {
+	return [
+		{ label: '不过滤日期', value: 'none' },
+		{ label: '今天', value: 'today' },
+		{ label: '明天', value: 'tomorrow' },
+		{ label: '本周', value: 'thisWeek' },
+		{ label: '已逾期', value: 'overdue' },
+		{ label: '有日期', value: 'hasDate' },
+		{ label: '无日期', value: 'noDate' },
+	]
+}
+
+function formatPriorityMeta(context: CommandContext) {
+	return context.view.priorityFilterValues.length > 0
+		? `已选 P${context.view.priorityFilterValues.join(', P')}`
+		: '未筛选'
+}
+
+function formatStatusMeta(context: CommandContext) {
+	return context.view.statusFilterValues.length > 0
+		? `已选 ${context.view.statusFilterValues.join(' / ')}`
+		: '未筛选'
+}
+
+function formatDateMeta(context: CommandContext) {
+	return context.view.dateFilterValue === 'none' ? '未筛选' : context.view.dateFilterValue
+}
+
+function formatProjectMeta(context: CommandContext, projects: CommandMenuProject[]) {
+	if (!context.view.projectFilterId) {
+		return context.view.projectlessOnly ? '仅独立事项' : '未筛选'
+	}
+
+	const project = projects.find((item) => item.id === context.view.projectFilterId)
+	return project?.label ?? '已选项目'
 }
 
 function startOfLocalDay(date: Date) {

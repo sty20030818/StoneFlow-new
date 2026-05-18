@@ -1,5 +1,6 @@
 import type { Command, CommandContext, TaskPlacementTarget } from '@/features/command/core'
 import { COMMAND_IDS } from '@/features/command/core'
+import type { PageFilterKind } from '@/features/filter/model'
 
 export type ShellNavigationTarget =
 	| 'inbox'
@@ -38,6 +39,13 @@ export type ShellCommandActions = {
 	requestDeleteSelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
 	requestDeletePermanentlySelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
 	navigateTo: (target: ShellNavigationTarget) => void
+	closeCurrentLayer: (ctx: CommandContext) => void | Promise<void>
+	submitActiveForm: (ctx: CommandContext) => void | Promise<void>
+	toggleSidebar: () => void
+	togglePreview: (ctx: CommandContext) => void | Promise<void>
+	openFilterPicker: (kind: PageFilterKind, ctx: CommandContext) => void
+	toggleCompletedFilter: (ctx: CommandContext) => void
+	clearAllFilters: (ctx: CommandContext) => void
 	goBack: () => void
 	goForward: () => void
 }
@@ -67,6 +75,16 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return { ...command, run: adapter.focusSearch }
 		case COMMAND_IDS.openSettings:
 			return { ...command, run: () => adapter.navigateTo('settings') }
+		case COMMAND_IDS.close:
+			return { ...command, run: adapter.closeCurrentLayer }
+		case COMMAND_IDS.saveOrSubmit:
+			return {
+				...command,
+				isEnabled: (ctx) => ctx.submit.hasActiveTarget,
+				getDisabledReason: (ctx) =>
+					ctx.submit.hasActiveTarget ? undefined : '当前没有可提交内容',
+				run: adapter.submitActiveForm,
+			}
 		case COMMAND_IDS.goBack:
 			return { ...command, run: adapter.goBack }
 		case COMMAND_IDS.goForward:
@@ -102,6 +120,36 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 				command,
 				adapter.requestDeletePermanentlySelectedLifecycleEntries,
 			)
+		case COMMAND_IDS.filterAdd:
+			return bindFilterPickerCommand(command, adapter, 'root')
+		case COMMAND_IDS.filterByPriority:
+			return bindFilterPickerCommand(command, adapter, 'priority')
+		case COMMAND_IDS.filterByStatus:
+			return bindFilterPickerCommand(command, adapter, 'status')
+		case COMMAND_IDS.filterByDate:
+			return bindFilterPickerCommand(command, adapter, 'date')
+		case COMMAND_IDS.filterByProject:
+			return bindFilterPickerCommand(command, adapter, 'project')
+		case COMMAND_IDS.filterToggleCompleted:
+			return {
+				...command,
+				isEnabled: (ctx) => ctx.view.filterCapabilities.supportsToggleCompleted,
+				getDisabledReason: (ctx) =>
+					ctx.view.filterCapabilities.supportsToggleCompleted ? undefined : '当前页面不支持完成筛选',
+				run: adapter.toggleCompletedFilter,
+			}
+		case COMMAND_IDS.filterClearAll:
+			return {
+				...command,
+				isEnabled: (ctx) => ctx.view.filterCapabilities.supportsClearAll,
+				getDisabledReason: (ctx) =>
+					ctx.view.filterCapabilities.supportsClearAll ? undefined : '当前页面没有可清除的筛选',
+				run: adapter.clearAllFilters,
+			}
+		case COMMAND_IDS.layoutToggleSidebar:
+			return { ...command, run: adapter.toggleSidebar }
+		case COMMAND_IDS.layoutTogglePreview:
+			return bindTogglePreviewCommand(command, adapter.togglePreview)
 		case COMMAND_IDS.openView:
 			return createDisabledCommand(command, '视图搜索尚未接入')
 		case COMMAND_IDS.openSpace:
@@ -232,4 +280,87 @@ function bindSelectionProjectCommand(
 
 function hasProjectSelection(ctx: CommandContext) {
 	return ctx.selection.type === 'project' && ctx.selection.ids.length > 0
+}
+
+function bindFilterPickerCommand(
+	command: Command,
+	adapter: ShellCommandAdapter,
+	kind: PageFilterKind,
+): Command {
+	return {
+		...command,
+		isEnabled: (ctx) => getFilterPickerDisabledReason(ctx, kind) === undefined,
+		getDisabledReason: (ctx) => getFilterPickerDisabledReason(ctx, kind),
+		run: (ctx) => adapter.openFilterPicker(kind, ctx),
+	}
+}
+
+function getFilterPickerDisabledReason(ctx: CommandContext, kind: PageFilterKind) {
+	const capabilities = ctx.view.filterCapabilities
+
+	switch (kind) {
+		case 'root':
+			return capabilities.supportsClearAll ||
+				capabilities.supportsDate ||
+				capabilities.supportsPriority ||
+				capabilities.supportsProject ||
+				capabilities.supportsStatus ||
+				capabilities.supportsToggleCompleted
+				? undefined
+				: '当前页面暂未接入筛选'
+		case 'priority':
+			return capabilities.supportsPriority ? undefined : '当前页面不支持优先级筛选'
+		case 'status':
+			return capabilities.supportsStatus ? undefined : '当前页面不支持状态筛选'
+		case 'date':
+			return capabilities.supportsDate ? undefined : '当前页面不支持日期筛选'
+		case 'project':
+			return capabilities.supportsProject ? undefined : '当前页面不支持项目筛选'
+		default:
+			return '当前页面暂未接入筛选'
+	}
+}
+
+function bindTogglePreviewCommand(
+	command: Command,
+	run: (ctx: CommandContext) => void | Promise<void>,
+): Command {
+	return {
+		...command,
+		isEnabled: (ctx) => getTogglePreviewDisabledReason(ctx) === undefined,
+		getDisabledReason: getTogglePreviewDisabledReason,
+		run,
+	}
+}
+
+function getTogglePreviewDisabledReason(ctx: CommandContext) {
+	if (ctx.ui.detailEntityType === 'task') {
+		return undefined
+	}
+
+	return resolveTaskDetailTargetId(ctx) ? undefined : '当前没有可打开的任务详情'
+}
+
+function resolveTaskDetailTargetId(ctx: CommandContext) {
+	if (ctx.rowTarget.isTaskTarget && ctx.rowTarget.targetId) {
+		return ctx.rowTarget.targetId
+	}
+
+	if (ctx.selection.focusedType === 'task' && ctx.selection.focusedId) {
+		return ctx.selection.focusedId
+	}
+
+	if (ctx.selection.primaryEntity?.type === 'task') {
+		return ctx.selection.primaryEntity.id
+	}
+
+	if (
+		ctx.selection.type === 'task' &&
+		ctx.selection.isSingleSelection &&
+		ctx.selection.ids.length === 1
+	) {
+		return ctx.selection.ids[0]
+	}
+
+	return null
 }

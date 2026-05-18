@@ -96,7 +96,7 @@ export function normalizeKeybindingStroke(event: NormalizedKeyEvent): Keybinding
 }
 
 function isSupportedNamedKey(key: string) {
-	return key === 'Enter' || key === 'Delete' || key === 'Backspace'
+	return key === 'Enter' || key === 'Delete' || key === 'Backspace' || key === 'Escape'
 }
 
 function normalizeKeyName(key: string) {

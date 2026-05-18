@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useProjectStore } from '@/features/project/model/useProjectStore'
+import { useRegisterSubmitTarget } from '@/features/submit/model'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import { Switch } from '@/shared/ui/base/switch'
@@ -49,7 +50,7 @@ export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreate
 		onClose()
 	}, [createMore, handleReset, onClose, submitState])
 
-	async function handleSubmit() {
+	const handleSubmit = useCallback(async () => {
 		if (!selectedSpaceId || name.trim().length === 0) return
 
 		setSubmitState('submitting')
@@ -66,25 +67,21 @@ export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreate
 			setSubmitState('error')
 			setErrorMessage(extractErrorMessage(error, '项目创建失败'))
 		}
-	}
+	}, [createProject, description, name, selectedSpaceId])
 
 	const canSubmit = submitState === 'idle' && name.trim().length > 0 && Boolean(selectedSpaceId)
-
-	// Cmd+Enter / Ctrl+Enter 提交
-	const handleSubmitRef = useRef(handleSubmit)
-	useEffect(() => {
-		handleSubmitRef.current = handleSubmit
-	})
-	useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-				event.preventDefault()
-				if (canSubmit) void handleSubmitRef.current()
-			}
-		}
-		window.addEventListener('keydown', handleKeyDown)
-		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [canSubmit])
+	const submitTarget = useMemo(
+		() => ({
+			id: 'project-create',
+			title: '创建项目',
+			priority: 110,
+			canSubmit,
+			submit: handleSubmit,
+			context: { source: 'project-create' as const },
+		}),
+		[canSubmit, handleSubmit],
+	)
+	useRegisterSubmitTarget(submitTarget)
 
 	return (
 		<CreateModalContent>

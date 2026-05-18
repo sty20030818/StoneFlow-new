@@ -24,8 +24,15 @@ const SIDEBAR_WIDTH_MAX = 330
 const SIDEBAR_MOBILE_DRAWER_WIDTH_PX = 220
 /** 与 index.css `--sf-shell-sidebar-width-icon: 3rem` 对齐，几何内联用 px 以便与展开宽度插值动画 */
 const SIDEBAR_ICON_RAIL_PX = 48
-// 桌面态切换快捷键（对齐 VS Code / shadcn 惯例）
-const SIDEBAR_TOGGLE_SHORTCUT_KEY = 'b'
+const SIDEBAR_TOGGLE_EVENT = 'stoneflow:sidebar-toggle'
+
+export function requestSidebarToggle() {
+	if (typeof window === 'undefined') {
+		return
+	}
+
+	window.dispatchEvent(new Event(SIDEBAR_TOGGLE_EVENT))
+}
 
 function clampSidebarWidth(width: number) {
 	return clamp(Math.round(width), SIDEBAR_WIDTH_MIN, SIDEBAR_WIDTH_MAX)
@@ -193,31 +200,17 @@ function SidebarProvider({
 		onDesktopPreferenceChange?.(desktopPreference === 'expanded' ? 'collapsed' : 'expanded')
 	}, [desktopPreference, layoutMode, onDesktopPreferenceChange])
 
-	// 全局快捷键：Cmd/Ctrl + B，忽略输入态，防止覆盖文字输入时的组合键
 	React.useEffect(() => {
-		if (typeof window === 'undefined') return
+		if (typeof window === 'undefined') {
+			return
+		}
 
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (!(event.metaKey || event.ctrlKey)) return
-			if (event.key.toLowerCase() !== SIDEBAR_TOGGLE_SHORTCUT_KEY) return
-
-			const target = event.target
-			if (
-				target instanceof HTMLElement &&
-				(target.isContentEditable ||
-					target.tagName === 'INPUT' ||
-					target.tagName === 'TEXTAREA' ||
-					target.tagName === 'SELECT')
-			) {
-				return
-			}
-
-			event.preventDefault()
+		const handleToggleRequest = () => {
 			toggleSidebar()
 		}
 
-		window.addEventListener('keydown', handleKeyDown)
-		return () => window.removeEventListener('keydown', handleKeyDown)
+		window.addEventListener(SIDEBAR_TOGGLE_EVENT, handleToggleRequest)
+		return () => window.removeEventListener(SIDEBAR_TOGGLE_EVENT, handleToggleRequest)
 	}, [toggleSidebar])
 
 	const setSidebarWidthClamped = React.useCallback(

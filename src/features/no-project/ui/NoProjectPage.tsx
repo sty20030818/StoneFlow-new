@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import {
+	useRegisterPageFilterController,
+	useTaskPageFilterController,
+} from '@/features/filter/model'
+import {
 	buildTaskCommandSelection,
-	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
@@ -26,9 +29,7 @@ import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patter
 import { Layers3Icon, PlusIcon, TargetIcon } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
 
-type NoProjectFilter = 'all' | TaskStatus
-
-const NO_PROJECT_FILTERS: NoProjectFilter[] = [
+const NO_PROJECT_FILTERS: Array<'all' | TaskStatus> = [
 	'all',
 	'doing',
 	'todo',
@@ -53,14 +54,18 @@ export function NoProjectPage() {
 		archiveListTask,
 		deleteListTask,
 	} = useTaskListController()
-	const [taskFilter, setTaskFilter] = useState<NoProjectFilter>('all')
-	const filteredTasks = useMemo(
-		() =>
-			taskFilter === 'all'
-				? taskList.items.filter((task) => task.archivedAt === null)
-				: taskList.items.filter((task) => task.archivedAt === null && task.status === taskFilter),
-		[taskFilter, taskList.items],
-	)
+	const { controller, filteredTasks } = useTaskPageFilterController({
+		tasks: taskList.items,
+		capabilities: {
+			supportsPriority: true,
+			supportsStatus: true,
+			supportsDate: true,
+			supportsProject: false,
+			supportsToggleCompleted: true,
+			supportsClearAll: true,
+		},
+	})
+	useRegisterPageFilterController(controller)
 	const taskSelectionOrderIds = useMemo(
 		() => getTaskBoardVisualOrderIds(filteredTasks),
 		[filteredTasks],
@@ -86,10 +91,6 @@ export function NoProjectPage() {
 		[clearTaskSelection, filteredTasks, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useEntitySelectionEscape({
-		hasSelection: selectedCount > 0,
-		clearSelection: clearTaskSelection,
-	})
 
 	useEffect(() => {
 		void loadList({
@@ -163,8 +164,16 @@ export function NoProjectPage() {
 			sceneVariant='no-project'
 			toolbarPills={NO_PROJECT_FILTERS.map((filter) => ({
 				label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
-				active: taskFilter === filter,
-				onClick: () => setTaskFilter(filter),
+				active:
+					filter === 'all'
+						? controller.state.statusValues.length === 0
+						: controller.state.statusValues.length === 1 &&
+							controller.state.statusValues[0] === filter,
+				onClick: () =>
+					controller.actions.applyFilter({
+						kind: 'status',
+						values: filter === 'all' ? [] : [filter],
+					}),
 			}))}
 		/>
 	)

@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { useRegisterSubmitTarget } from '@/features/submit/model'
 import type { ProjectOption } from '@/features/project/model/types'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { buildCreatePlacementInput } from '@/features/task/model/taskPlacement'
@@ -116,7 +117,7 @@ export function TaskCreateContent({
 		onClose()
 	}, [createMore, handleReset, onClose, submitState])
 
-	async function handleSubmit() {
+	const handleSubmit = useCallback(async () => {
 		if (placement === 'project' && !projectId) {
 			setSubmitState('error')
 			setErrorMessage('请选择一个项目，或改为进入收件箱 / 独立事项。')
@@ -146,7 +147,7 @@ export function TaskCreateContent({
 			setSubmitState('error')
 			setErrorMessage(error instanceof Error ? error.message : '创建任务失败')
 		}
-	}
+	}, [createTask, placement, projectId, spaceId, status, priority, title, note])
 
 	const visibleProjects = spaceId
 		? projects.filter((project) => project.spaceId === spaceId)
@@ -156,22 +157,18 @@ export function TaskCreateContent({
 		submitState === 'idle' &&
 		title.trim().length > 0 &&
 		(placement === 'project' ? projectId.length > 0 : spaceId.length > 0)
-
-	// Cmd+Enter / Ctrl+Enter 提交
-	const handleSubmitRef = useRef(handleSubmit)
-	useEffect(() => {
-		handleSubmitRef.current = handleSubmit
-	})
-	useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-				event.preventDefault()
-				if (canSubmit) void handleSubmitRef.current()
-			}
-		}
-		window.addEventListener('keydown', handleKeyDown)
-		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [canSubmit])
+	const submitTarget = useMemo(
+		() => ({
+			id: 'task-create',
+			title: '创建任务',
+			priority: 120,
+			canSubmit,
+			submit: handleSubmit,
+			context: { source: 'task-create' as const },
+		}),
+		[canSubmit, handleSubmit],
+	)
+	useRegisterSubmitTarget(submitTarget)
 
 	return (
 		<CreateModalContent>

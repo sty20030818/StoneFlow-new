@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 import type { CommandSelectionContext } from '@/features/command/core'
+import type { PageFilterKind } from '@/features/filter/model'
 import type { CommandMenuMode } from '@/features/command/ui/command-menu-types'
 import type { TaskPlacement, TaskStatus } from '@/shared/types'
 
@@ -21,14 +22,20 @@ type DialogState = {
 	isCommandOpen: boolean
 	commandMenuMode: CommandMenuMode
 	commandSelectionOverride: CommandSelectionContext | null
+	commandMenuFilterKind: PageFilterKind
 	isShortcutHelpOpen: boolean
 	createDialogType: CreateDialogType
 	taskCreateDraft: TaskCreateDialogDraft
 	taskCreatePresentation: CreateDialogPresentation
 
-	openCommand: (mode?: CommandMenuMode, selectionOverride?: CommandSelectionContext | null) => void
+	openCommand: (
+		mode?: CommandMenuMode,
+		selectionOverride?: CommandSelectionContext | null,
+		filterKind?: PageFilterKind,
+	) => void
 	closeCommand: () => void
 	setCommandOpen: (open: boolean) => void
+	setCommandMenuFilterKind: (kind: PageFilterKind) => void
 	openShortcutHelp: () => void
 	closeShortcutHelp: () => void
 	toggleShortcutHelp: () => void
@@ -54,17 +61,19 @@ export const useDialogStore = create<DialogState>((set) => ({
 	isCommandOpen: false,
 	commandMenuMode: 'default',
 	commandSelectionOverride: null,
+	commandMenuFilterKind: 'root',
 	isShortcutHelpOpen: false,
 	createDialogType: null,
 	taskCreateDraft: { ...defaultTaskDraft },
 	taskCreatePresentation: 'default',
 
-	openCommand: (mode = 'default', selectionOverride = null) => {
+	openCommand: (mode = 'default', selectionOverride = null, filterKind = 'root') => {
 		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: true,
 			commandMenuMode: mode,
 			commandSelectionOverride: selectionOverride,
+			commandMenuFilterKind: filterKind,
 			isShortcutHelpOpen: false,
 			createDialogType: null,
 			taskCreateDraft: { ...defaultTaskDraft },
@@ -72,7 +81,12 @@ export const useDialogStore = create<DialogState>((set) => ({
 		})
 	},
 	closeCommand: () =>
-		set({ isCommandOpen: false, commandMenuMode: 'default', commandSelectionOverride: null }),
+		set({
+			isCommandOpen: false,
+			commandMenuMode: 'default',
+			commandSelectionOverride: null,
+			commandMenuFilterKind: 'root',
+		}),
 	setCommandOpen: (open) => {
 		if (open) {
 			useDrawerStore.getState().closeDrawer()
@@ -81,15 +95,18 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isCommandOpen: open,
 			commandMenuMode: open ? useDialogStore.getState().commandMenuMode : 'default',
 			commandSelectionOverride: open ? useDialogStore.getState().commandSelectionOverride : null,
+			commandMenuFilterKind: open ? useDialogStore.getState().commandMenuFilterKind : 'root',
 			isShortcutHelpOpen: open ? false : useDialogStore.getState().isShortcutHelpOpen,
 		})
 	},
+	setCommandMenuFilterKind: (kind) => set({ commandMenuFilterKind: kind }),
 	openShortcutHelp: () => {
 		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: false,
 			commandMenuMode: 'default',
 			commandSelectionOverride: null,
+			commandMenuFilterKind: 'root',
 			isShortcutHelpOpen: true,
 			createDialogType: null,
 			taskCreateDraft: { ...defaultTaskDraft },
@@ -102,6 +119,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isCommandOpen: false,
 			commandMenuMode: 'default',
 			commandSelectionOverride: null,
+			commandMenuFilterKind: 'root',
 			isShortcutHelpOpen: !state.isShortcutHelpOpen,
 		})),
 	setShortcutHelpOpen: (open) => {
@@ -112,6 +130,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isCommandOpen: open ? false : useDialogStore.getState().isCommandOpen,
 			commandMenuMode: open ? 'default' : useDialogStore.getState().commandMenuMode,
 			commandSelectionOverride: open ? null : useDialogStore.getState().commandSelectionOverride,
+			commandMenuFilterKind: open ? 'root' : useDialogStore.getState().commandMenuFilterKind,
 			isShortcutHelpOpen: open,
 		})
 	},
@@ -122,6 +141,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isCommandOpen: false,
 			commandMenuMode: 'default',
 			commandSelectionOverride: null,
+			commandMenuFilterKind: 'root',
 			isShortcutHelpOpen: false,
 			createDialogType: 'task',
 			taskCreateDraft: {
@@ -150,6 +170,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isCommandOpen: false,
 			commandMenuMode: 'default',
 			commandSelectionOverride: null,
+			commandMenuFilterKind: 'root',
 			isShortcutHelpOpen: false,
 			createDialogType: 'project',
 			taskCreateDraft: { ...defaultTaskDraft },
@@ -168,6 +189,7 @@ export const selectIsCommandOpen = (state: DialogState) => state.isCommandOpen
 export const selectCommandMenuMode = (state: DialogState) => state.commandMenuMode
 export const selectCommandSelectionOverride = (state: DialogState) =>
 	state.commandSelectionOverride
+export const selectCommandMenuFilterKind = (state: DialogState) => state.commandMenuFilterKind
 export const selectIsShortcutHelpOpen = (state: DialogState) => state.isShortcutHelpOpen
 export const selectCreateDialogType = (state: DialogState) => state.createDialogType
 export const selectTaskCreateDraft = (state: DialogState) => state.taskCreateDraft

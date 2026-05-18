@@ -21,6 +21,7 @@ export type {
 	CommandSelectedEntity,
 	CommandSelectionContext,
 	CommandSpaceContext,
+	CommandSubmitContext,
 	CommandUiContext,
 	TaskPlacementTarget,
 	CommandViewContext,

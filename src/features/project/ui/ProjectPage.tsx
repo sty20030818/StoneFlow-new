@@ -5,10 +5,13 @@ import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
+import {
+	useRegisterPageFilterController,
+	useTaskPageFilterController,
+} from '@/features/filter/model'
 import { selectProjectDetail, useProjectStore } from '@/features/project/model/useProjectStore'
 import {
 	buildTaskCommandSelection,
-	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
@@ -42,9 +45,7 @@ import {
 } from '@/shared/ui/base/empty'
 import { BoxIcon, FolderIcon } from 'lucide-react'
 
-type ProjectTaskFilter = 'all' | TaskStatus
-
-const PROJECT_TASK_FILTERS: ProjectTaskFilter[] = [
+const PROJECT_TASK_FILTERS: Array<'all' | TaskStatus> = [
 	'all',
 	'doing',
 	'todo',
@@ -79,7 +80,6 @@ export function ProjectPage() {
 		deleteListTask,
 	} = useTaskListController()
 	const [busyAction, setBusyAction] = useState<string | null>(null)
-	const [taskFilter, setTaskFilter] = useState<ProjectTaskFilter>('all')
 
 	useEffect(() => {
 		if (projectId) {
@@ -102,13 +102,18 @@ export function ProjectPage() {
 		() => taskList.items.filter((task) => task.archivedAt === null),
 		[taskList.items],
 	)
-	const filteredTasks = useMemo(
-		() =>
-			taskFilter === 'all'
-				? visibleTasks
-				: visibleTasks.filter((task) => task.status === taskFilter),
-		[taskFilter, visibleTasks],
-	)
+	const { controller, filteredTasks } = useTaskPageFilterController({
+		tasks: visibleTasks,
+		capabilities: {
+			supportsPriority: true,
+			supportsStatus: true,
+			supportsDate: true,
+			supportsProject: false,
+			supportsToggleCompleted: true,
+			supportsClearAll: true,
+		},
+	})
+	useRegisterPageFilterController(controller)
 	const project = detail.item
 	const taskSelectionOrderIds = useMemo(
 		() => getTaskBoardVisualOrderIds(filteredTasks),
@@ -135,10 +140,6 @@ export function ProjectPage() {
 		[clearTaskSelection, filteredTasks, project?.name, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useEntitySelectionEscape({
-		hasSelection: selectedCount > 0,
-		clearSelection: clearTaskSelection,
-	})
 
 	async function runAction(action: string, runner: () => Promise<unknown>) {
 		setBusyAction(action)
@@ -283,8 +284,16 @@ export function ProjectPage() {
 			sceneVariant='project-detail'
 			toolbarPills={PROJECT_TASK_FILTERS.map((filter) => ({
 				label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
-				active: taskFilter === filter,
-				onClick: () => setTaskFilter(filter),
+				active:
+					filter === 'all'
+						? controller.state.statusValues.length === 0
+						: controller.state.statusValues.length === 1 &&
+							controller.state.statusValues[0] === filter,
+				onClick: () =>
+					controller.actions.applyFilter({
+						kind: 'status',
+						values: filter === 'all' ? [] : [filter],
+					}),
 			}))}
 		/>
 	)

@@ -65,6 +65,10 @@ export function EntityRowShortcutScope({
 				return
 			}
 
+			if (event.defaultPrevented || event.isComposing) {
+				return
+			}
+
 			if (event.key === 'Escape' && selectedIdSet && selectedIdSet.size > 0) {
 				event.preventDefault()
 				onClearSelection?.()
@@ -76,7 +80,7 @@ export function EntityRowShortcutScope({
 				return
 			}
 
-			if (event.defaultPrevented || event.isComposing || !onMoveFocus) {
+			if (!onMoveFocus) {
 				return
 			}
 

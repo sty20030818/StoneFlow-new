@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { ProjectOption } from '@/features/project/model/types'
+import { useRegisterSubmitTarget } from '@/features/submit/model'
 import { cn } from '@/shared/lib/utils'
 import type {
 	CreateViewInput,
@@ -187,7 +188,7 @@ export function ViewEditorDialog({
 		)
 	}
 
-	async function handleSubmit() {
+	const handleSubmit = useCallback(async () => {
 		if (!canSubmit) {
 			return
 		}
@@ -232,7 +233,39 @@ export function ViewEditorDialog({
 		}
 
 		onClose()
-	}
+	}, [
+		canSubmit,
+		description,
+		dueMode,
+		groupBy,
+		inboxMode,
+		name,
+		onClose,
+		onCreate,
+		onUpdate,
+		priorityMode,
+		projectMode,
+		scheduledMode,
+		sortRule,
+		specificProjectId,
+		statusList,
+		view,
+	])
+	const submitTarget = useMemo(
+		() =>
+			open
+				? {
+						id: view ? `view-editor:${view.id}` : 'view-editor:create',
+						title: view ? '保存视图' : '创建视图',
+						priority: 100,
+						canSubmit: canSubmit && !isSubmitting,
+						submit: handleSubmit,
+						context: { source: 'view-editor' as const },
+					}
+				: null,
+		[canSubmit, handleSubmit, isSubmitting, open, view],
+	)
+	useRegisterSubmitTarget(submitTarget)
 
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>

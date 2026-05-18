@@ -1,18 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import {
+	useRegisterPageFilterController,
+	useTaskPageFilterController,
+} from '@/features/filter/model'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import {
 	buildTaskCommandSelection,
-	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
-import { getTaskPlacement } from '@/features/task/model/taskPlacement'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
@@ -28,9 +30,7 @@ import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patter
 import type { TaskStatus } from '@/shared/types'
 import { ListTodoIcon, PlusIcon } from 'lucide-react'
 
-type TaskFilter = 'all' | 'noProject' | TaskStatus
-
-const TASK_FILTERS: TaskFilter[] = [
+const TASK_FILTERS: Array<'all' | 'noProject' | TaskStatus> = [
 	'all',
 	'noProject',
 	'doing',
@@ -58,21 +58,19 @@ export function AllTasksPage() {
 		leaveListTaskAsNoProject,
 	} = useTaskListController()
 	const projectOptions = useProjectStore(selectProjectOptions)
-	const [taskFilter, setTaskFilter] = useState<TaskFilter>('all')
-
-	const visibleTasks = useMemo(
-		() => taskList.items.filter((task) => task.archivedAt === null),
-		[taskList.items],
-	)
-	const filteredTasks = useMemo(
-		() =>
-			taskFilter === 'all'
-				? visibleTasks
-				: taskFilter === 'noProject'
-					? visibleTasks.filter((task) => getTaskPlacement(task) === 'noProject')
-					: visibleTasks.filter((task) => task.status === taskFilter),
-		[taskFilter, visibleTasks],
-	)
+	const { controller, filteredTasks } = useTaskPageFilterController({
+		tasks: taskList.items,
+		projects: projectOptions,
+		capabilities: {
+			supportsPriority: true,
+			supportsStatus: true,
+			supportsDate: true,
+			supportsProject: true,
+			supportsToggleCompleted: true,
+			supportsClearAll: true,
+		},
+	})
+	useRegisterPageFilterController(controller)
 	const taskSelectionOrderIds = useMemo(
 		() => getTaskBoardVisualOrderIds(filteredTasks),
 		[filteredTasks],
@@ -98,10 +96,6 @@ export function AllTasksPage() {
 		[clearTaskSelection, filteredTasks, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useEntitySelectionEscape({
-		hasSelection: selectedCount > 0,
-		clearSelection: clearTaskSelection,
-	})
 
 	useEffect(() => {
 		void loadList({
@@ -177,8 +171,30 @@ export function AllTasksPage() {
 						: filter === 'noProject'
 							? '独立事项'
 							: formatTaskStatusLabel(filter),
-				active: taskFilter === filter,
-				onClick: () => setTaskFilter(filter),
+				active:
+					filter === 'all'
+						? controller.state.statusValues.length === 0 && !controller.state.projectlessOnly
+						: filter === 'noProject'
+							? controller.state.projectlessOnly
+							: controller.state.statusValues.length === 1 &&
+								controller.state.statusValues[0] === filter &&
+								!controller.state.projectlessOnly,
+				onClick: () => {
+					if (filter === 'all') {
+						controller.actions.applyFilter({ kind: 'status', values: [] })
+						controller.actions.applyFilter({ kind: 'projectlessOnly', enabled: false })
+						return
+					}
+
+					if (filter === 'noProject') {
+						controller.actions.applyFilter({ kind: 'status', values: [] })
+						controller.actions.applyFilter({ kind: 'projectlessOnly', enabled: true })
+						return
+					}
+
+					controller.actions.applyFilter({ kind: 'projectlessOnly', enabled: false })
+					controller.actions.applyFilter({ kind: 'status', values: [filter] })
+				},
 			}))}
 		/>
 	)

@@ -3,6 +3,10 @@ import { useEffect, useMemo } from 'react'
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import {
+	useRegisterPageFilterController,
+	useTaskPageFilterController,
+} from '@/features/filter/model'
+import {
 	Breadcrumb,
 	BreadcrumbItem,
 	BreadcrumbList,
@@ -14,7 +18,6 @@ import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import {
 	buildTaskCommandSelection,
-	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
@@ -53,12 +56,26 @@ export function InboxPage() {
 			spaceId ? projectOptions.filter((project) => project.spaceId === spaceId) : projectOptions,
 		[projectOptions, spaceId],
 	)
+	const { controller, filteredTasks } = useTaskPageFilterController({
+		tasks: taskList.items,
+		projects: inboxProjectOptions,
+		capabilities: {
+			supportsPriority: true,
+			supportsStatus: true,
+			supportsDate: true,
+			supportsProject: true,
+			supportsToggleCompleted: true,
+			supportsClearAll: true,
+		},
+		initialShowCompleted: false,
+	})
+	useRegisterPageFilterController(controller)
 	const taskSelectionOrderIds = useMemo(
 		() =>
-			getTaskBoardVisualOrderIds(taskList.items, {
+			getTaskBoardVisualOrderIds(filteredTasks, {
 				statusOrder: ACTIVE_TASK_BOARD_STATUS_ORDER,
 			}),
-		[taskList.items],
+		[filteredTasks],
 	)
 	const {
 		selectedTaskIdSet,
@@ -74,22 +91,18 @@ export function InboxPage() {
 		() =>
 			buildTaskCommandSelection({
 				selectedIds: selectionSnapshot.ids,
-				tasks: taskList.items,
+				tasks: filteredTasks,
 				fallbackSubtitle: 'Inbox',
 				clearSelection: clearTaskSelection,
 			}),
-		[clearTaskSelection, selectionSnapshot.ids, taskList.items],
+		[clearTaskSelection, filteredTasks, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
-	useEntitySelectionEscape({
-		hasSelection: selectedCount > 0,
-		clearSelection: clearTaskSelection,
-	})
 
 	useEffect(() => {
 		void loadList({
 			scope,
-			viewKey: 'active',
+			viewKey: 'all',
 			placement: { kind: 'inbox' },
 		})
 	}, [loadList, scope])
@@ -107,7 +120,7 @@ export function InboxPage() {
 					statusOrder: ACTIVE_TASK_BOARD_STATUS_ORDER,
 				},
 				boardData: {
-					items: taskList.items,
+					items: filteredTasks,
 					activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
@@ -146,14 +159,14 @@ export function InboxPage() {
 			onRefresh={() => {
 				void loadList({
 					scope,
-					viewKey: 'active',
+					viewKey: 'all',
 					placement: { kind: 'inbox' },
 				})
 			}}
 			sceneVariant='inbox'
 			toolbarPills={[
 				{
-					label: `待整理 ${taskList.items.length}`,
+					label: `待整理 ${filteredTasks.length}`,
 					active: true,
 				},
 			]}

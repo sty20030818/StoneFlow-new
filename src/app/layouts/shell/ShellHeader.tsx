@@ -17,6 +17,7 @@ import {
 	resolveTaskSearchTargetPath,
 } from '@/features/global-search/model/searchNavigation'
 import { useSearchOpenIntentStore } from '@/features/global-search/model/useSearchOpenIntentStore'
+import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter/model'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import type { Scope, Space, TaskStatus } from '@/shared/types'
 import { Avatar, AvatarFallback, AvatarImage, AvatarBadge } from '@/shared/ui/base/avatar'
@@ -89,9 +90,14 @@ type ShellHeaderProps = {
 	onNavigateToHistoryEntry: (entry: ShellRouteHistoryEntry) => void
 	onCloseDrawer: () => void
 	onSelectTaskDate: (dueAt: string | null) => void
+	onSelectFilterKind: (kind: PageFilterKind) => void
+	onApplyFilter: (input: PageFilterApplyInput) => void
+	onToggleCompletedFilter: () => void
+	onClearAllFilters: () => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
+	commandMenuFilterKind: PageFilterKind
 }
 
 export function ShellHeader({
@@ -112,12 +118,17 @@ export function ShellHeader({
 	onShortcutHelpOpenChange,
 	onNavigateToHistoryEntry,
 	onCloseDrawer,
+	onApplyFilter,
+	onClearAllFilters,
 	onSelectTaskDate,
+	onSelectFilterKind,
 	onSelectTaskPlacement,
 	onSelectTaskPriority,
 	onSelectTaskStatus,
+	onToggleCompletedFilter,
 	projects,
 	spaces,
+	commandMenuFilterKind,
 }: ShellHeaderProps) {
 	const navigate = useNavigate()
 	const location = useLocation()
@@ -475,16 +486,21 @@ export function ShellHeader({
 				className={shellChromeCommandDialogClass}
 				context={commandContext}
 				description={`${getScopeLabel(currentScope, spaces)} · ${getSectionLabel(activeSection)}`}
+				filterKind={commandMenuFilterKind}
 				mode={commandMenuMode}
+				onApplyFilter={onApplyFilter}
+				onClearAllFilters={onClearAllFilters}
 				onOpenChange={onCommandOpenChange}
 				onNavigateProject={(projectId) => {
 					handleNavigate(buildScopedProjectPath(currentScope, projectId, currentSpaceId))
 				}}
+				onSelectFilterKind={onSelectFilterKind}
 				onRunCommand={onRunCommand}
 				onSelectTaskDate={onSelectTaskDate}
 				onSelectTaskPlacement={onSelectTaskPlacement}
 				onSelectTaskPriority={onSelectTaskPriority}
 				onSelectTaskStatus={onSelectTaskStatus}
+				onToggleCompletedFilter={onToggleCompletedFilter}
 				onSelectProject={handleOpenProjectFromSearch}
 				onSelectTask={handleOpenTaskFromSearch}
 				open={isCommandOpen}

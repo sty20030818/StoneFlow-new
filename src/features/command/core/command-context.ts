@@ -38,6 +38,7 @@ export function createEmptyCommandContext(): CommandContext {
 			isCommandMenuOpen: false,
 			isPreviewOpen: false,
 			isDetailOpen: false,
+			detailEntityType: undefined,
 			isModalOpen: false,
 			isDropdownOpen: false,
 			isContextMenuOpen: false,
@@ -48,7 +49,23 @@ export function createEmptyCommandContext(): CommandContext {
 		project: {},
 		view: {
 			hasActiveFilters: false,
-			showCompleted: false,
+			showCompleted: true,
+			priorityFilterValues: [],
+			statusFilterValues: [],
+			dateFilterValue: 'none',
+			projectFilterId: null,
+			projectlessOnly: false,
+			filterCapabilities: {
+				supportsPriority: false,
+				supportsStatus: false,
+				supportsDate: false,
+				supportsProject: false,
+				supportsToggleCompleted: false,
+				supportsClearAll: false,
+			},
+		},
+		submit: {
+			hasActiveTarget: false,
 		},
 		rowTarget: createEmptyCommandRowTargetContext(),
 	}

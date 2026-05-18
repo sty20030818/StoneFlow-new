@@ -108,6 +108,29 @@ describe('Shell command adapter', () => {
 		expect(actions.goForward).toHaveBeenCalledTimes(1)
 	})
 
+	it('执行布局命令时调用 sidebar / 任务详情切换 action', async () => {
+		const actions = createActions()
+		const runtime = createRuntime(actions, {
+			...createEmptyCommandContext(),
+			selection: {
+				type: 'task',
+				ids: ['task-a'],
+				entities: [{ id: 'task-a', type: 'task', title: '任务 A' }],
+				primaryEntity: { id: 'task-a', type: 'task', title: '任务 A' },
+				source: 'task-list',
+				hasSelection: true,
+				isSingleSelection: true,
+				isMultiSelection: false,
+			},
+		})
+
+		await runtime.execute(COMMAND_IDS.layoutToggleSidebar)
+		await runtime.execute(COMMAND_IDS.layoutTogglePreview)
+
+		expect(actions.toggleSidebar).toHaveBeenCalledTimes(1)
+		expect(actions.togglePreview).toHaveBeenCalledTimes(1)
+	})
+
 	it.each([COMMAND_IDS.goToday, COMMAND_IDS.goUpcoming, COMMAND_IDS.goRecent])(
 		'未确认真实页面的导航命令 %s 返回 disabled',
 		async (commandId) => {
@@ -137,8 +160,7 @@ describe('Shell command adapter', () => {
 
 	it.each([
 		[COMMAND_IDS.projectRename, '项目命令尚未接入'],
-		[COMMAND_IDS.filterToggleCompleted, '筛选命令尚未接入'],
-		[COMMAND_IDS.layoutToggleSidebar, '布局命令尚未接入'],
+		[COMMAND_IDS.filterToggleCompleted, '当前页面不支持完成筛选'],
 		[COMMAND_IDS.systemOpenDataFolder, '系统命令尚未接入'],
 		[COMMAND_IDS.inboxClean, 'Inbox 清理命令尚未接入'],
 		[COMMAND_IDS.viewSuggestFilters, '视图建议命令尚未接入'],
@@ -243,6 +265,16 @@ describe('Shell command adapter', () => {
 		},
 	)
 
+	it('没有任务上下文时禁用任务详情切换命令', async () => {
+		const runtime = createRuntime(createActions())
+
+		await expect(runtime.execute(COMMAND_IDS.layoutTogglePreview)).resolves.toMatchObject({
+			status: 'disabled',
+			commandId: COMMAND_IDS.layoutTogglePreview,
+			reason: '当前没有可打开的任务详情',
+		})
+	})
+
 	it('Shell action 抛错时 Runtime 返回 failed', async () => {
 		const error = new Error('search failed')
 		const actions = createActions({
@@ -295,6 +327,13 @@ function createActions(overrides: Partial<ShellCommandActions> = {}): ShellComma
 		requestDeleteSelectedLifecycleEntries: vi.fn(),
 		requestDeletePermanentlySelectedLifecycleEntries: vi.fn(),
 		navigateTo: vi.fn(),
+		closeCurrentLayer: vi.fn(),
+		submitActiveForm: vi.fn(),
+		toggleSidebar: vi.fn(),
+		togglePreview: vi.fn(),
+		openFilterPicker: vi.fn(),
+		toggleCompletedFilter: vi.fn(),
+		clearAllFilters: vi.fn(),
 		goBack: vi.fn(),
 		goForward: vi.fn(),
 		...overrides,

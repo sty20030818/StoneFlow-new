@@ -23,7 +23,9 @@ describe('CommandContext', () => {
 			isMultiSelection: false,
 		})
 		expect(context.ui.isContextMenuOpen).toBe(false)
-		expect(context.view.showCompleted).toBe(false)
+		expect(context.view.showCompleted).toBe(true)
+		expect(context.view.priorityFilterValues).toEqual([])
+		expect(context.submit.hasActiveTarget).toBe(false)
 	})
 
 	it('createEmptyCommandRowTargetContext 返回无目标状态', () => {

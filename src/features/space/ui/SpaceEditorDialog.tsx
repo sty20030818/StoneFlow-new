@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import {
 	getSpaceColorOption,
@@ -7,6 +7,7 @@ import {
 	SPACE_COLOR_OPTIONS,
 	SPACE_ICON_OPTIONS,
 } from '@/features/space/model/spaceVisuals'
+import { useRegisterSubmitTarget } from '@/features/submit/model'
 import type { Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
@@ -67,7 +68,7 @@ export function SpaceEditorDialog({
 		setError(null)
 	}, [open, space])
 
-	async function handleSubmit() {
+	const handleSubmit = useCallback(async () => {
 		setSubmitting(true)
 		setError(null)
 		try {
@@ -82,7 +83,22 @@ export function SpaceEditorDialog({
 		} finally {
 			setSubmitting(false)
 		}
-	}
+	}, [colorKey, iconKey, name, onClose, onSubmit])
+	const submitTarget = useMemo(
+		() =>
+			open
+				? {
+						id: mode === 'create' ? 'space-editor:create' : `space-editor:${space?.id ?? 'edit'}`,
+						title: mode === 'create' ? '创建 Space' : '保存 Space',
+						priority: 100,
+						canSubmit: !submitting && name.trim().length > 0,
+						submit: handleSubmit,
+						context: { source: 'space-editor' as const },
+					}
+				: null,
+		[handleSubmit, mode, name, open, space?.id, submitting],
+	)
+	useRegisterSubmitTarget(submitTarget)
 
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>

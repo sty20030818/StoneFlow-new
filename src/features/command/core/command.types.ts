@@ -170,6 +170,7 @@ export type CommandUiContext = {
 	isCommandMenuOpen: boolean
 	isPreviewOpen: boolean
 	isDetailOpen: boolean
+	detailEntityType?: 'task' | 'project'
 	isModalOpen: boolean
 	isDropdownOpen: boolean
 	isContextMenuOpen: boolean
@@ -189,6 +190,24 @@ export type CommandViewContext = {
 	currentViewId?: string
 	hasActiveFilters: boolean
 	showCompleted: boolean
+	priorityFilterValues: number[]
+	statusFilterValues: string[]
+	dateFilterValue: string
+	projectFilterId: string | null
+	projectlessOnly: boolean
+	filterCapabilities: {
+		supportsPriority: boolean
+		supportsStatus: boolean
+		supportsDate: boolean
+		supportsProject: boolean
+		supportsToggleCompleted: boolean
+		supportsClearAll: boolean
+	}
+	filterKind?: 'root' | 'priority' | 'status' | 'date' | 'project'
+}
+
+export type CommandSubmitContext = {
+	hasActiveTarget: boolean
 }
 
 export type CommandRowTargetContext = {
@@ -208,6 +227,7 @@ export type CommandContext = {
 	space: CommandSpaceContext
 	project: CommandProjectContext
 	view: CommandViewContext
+	submit: CommandSubmitContext
 	rowTarget: CommandRowTargetContext
 }
 

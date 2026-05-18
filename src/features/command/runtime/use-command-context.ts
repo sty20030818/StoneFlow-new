@@ -10,6 +10,7 @@ type UseCommandContextOptions = {
 	space?: Partial<CommandContext['space']>
 	project?: Partial<CommandContext['project']>
 	view?: Partial<CommandContext['view']>
+	submit?: Partial<CommandContext['submit']>
 	rowTarget?: Partial<CommandContext['rowTarget']>
 }
 
@@ -21,6 +22,7 @@ export function useCommandContext({
 	space,
 	project,
 	view,
+	submit,
 	rowTarget,
 }: UseCommandContextOptions = {}) {
 	return useMemo<CommandContext>(() => {
@@ -56,10 +58,14 @@ export function useCommandContext({
 				...base.view,
 				...view,
 			},
+			submit: {
+				...base.submit,
+				...submit,
+			},
 			rowTarget: {
 				...base.rowTarget,
 				...rowTarget,
 			},
 		}
-	}, [focus, project, route, rowTarget, selection, space, ui, view])
+	}, [focus, project, route, rowTarget, selection, space, submit, ui, view])
 }

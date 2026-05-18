@@ -118,6 +118,7 @@ function shouldPreventDefaultForStroke(stroke: KeybindingStroke) {
 		stroke.key === 'Enter' ||
 		stroke.key === 'Delete' ||
 		stroke.key === 'Backspace' ||
+		stroke.key === 'Escape' ||
 		stroke.key === 'Space'
 	)
 }

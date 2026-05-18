@@ -53,6 +53,13 @@ function createActions(): ShellCommandActions {
 		requestDeleteSelectedLifecycleEntries: vi.fn(),
 		requestDeletePermanentlySelectedLifecycleEntries: vi.fn(),
 		navigateTo: vi.fn(),
+		closeCurrentLayer: vi.fn(),
+		submitActiveForm: vi.fn(),
+		toggleSidebar: vi.fn(),
+		togglePreview: vi.fn(),
+		openFilterPicker: vi.fn(),
+		toggleCompletedFilter: vi.fn(),
+		clearAllFilters: vi.fn(),
 		goBack: vi.fn(),
 		goForward: vi.fn(),
 	}

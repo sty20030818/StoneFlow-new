@@ -11,6 +11,7 @@ import {
 	type TaskPlacementTarget,
 } from '@/features/command/core'
 import type { ShellCommandActions } from '@/features/command/adapters'
+import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter/model'
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { CommandMenu } from './CommandMenu'
 import type { CommandMenuMode } from './command-menu-types'
@@ -251,22 +252,32 @@ function renderCommandMenu({
 	onNavigateProject = vi.fn(),
 	onOpenChange = vi.fn(),
 	onRunCommand = vi.fn(),
+	onApplyFilter = vi.fn(),
+	onClearAllFilters = vi.fn(),
 	onSelectTaskDate = vi.fn(),
+	onSelectFilterKind = vi.fn(),
 	onSelectTaskPriority = vi.fn(),
 	onSelectTaskStatus = vi.fn(),
+	onToggleCompletedFilter = vi.fn(),
 	onSelectProject = vi.fn(),
 	onSelectTaskPlacement = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
+	filterKind = 'root',
 }: Partial<{
 	mode: CommandMenuMode
 	context: CommandContext
+	filterKind: PageFilterKind
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
+	onApplyFilter: (input: PageFilterApplyInput) => void
+	onClearAllFilters: () => void
 	onSelectTaskDate: (dueAt: string | null) => void
+	onSelectFilterKind: (kind: PageFilterKind) => void
 	onSelectTaskPriority: (priority: number) => void
 	onSelectTaskStatus: (status: string) => void
+	onToggleCompletedFilter: () => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
@@ -274,12 +285,17 @@ function renderCommandMenu({
 	return render(
 		createCommandMenuElement({
 			mode,
+			filterKind,
 			onNavigateProject,
 			onOpenChange,
 			onRunCommand,
+			onApplyFilter,
+			onClearAllFilters,
 			onSelectTaskDate,
+			onSelectFilterKind,
 			onSelectTaskPriority,
 			onSelectTaskStatus,
+			onToggleCompletedFilter,
 			onSelectProject,
 			onSelectTaskPlacement,
 			onSelectTask,
@@ -293,22 +309,32 @@ function createCommandMenuElement({
 	onNavigateProject = vi.fn(),
 	onOpenChange = vi.fn(),
 	onRunCommand = vi.fn(),
+	onApplyFilter = vi.fn(),
+	onClearAllFilters = vi.fn(),
 	onSelectTaskDate = vi.fn(),
+	onSelectFilterKind = vi.fn(),
 	onSelectTaskPriority = vi.fn(),
 	onSelectTaskStatus = vi.fn(),
+	onToggleCompletedFilter = vi.fn(),
 	onSelectProject = vi.fn(),
 	onSelectTaskPlacement = vi.fn(),
 	onSelectTask = vi.fn(),
 	context = createEmptyCommandContext(),
+	filterKind = 'root',
 }: Partial<{
 	mode: CommandMenuMode
 	context: CommandContext
+	filterKind: PageFilterKind
 	onNavigateProject: (projectId: string) => void
 	onOpenChange: (open: boolean) => void
 	onRunCommand: (id: CommandId) => void
+	onApplyFilter: (input: PageFilterApplyInput) => void
+	onClearAllFilters: () => void
 	onSelectTaskDate: (dueAt: string | null) => void
+	onSelectFilterKind: (kind: PageFilterKind) => void
 	onSelectTaskPriority: (priority: number) => void
 	onSelectTaskStatus: (status: string) => void
+	onToggleCompletedFilter: () => void
 	onSelectProject: (project: SearchProjectItem) => void
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
@@ -317,13 +343,18 @@ function createCommandMenuElement({
 		<CommandMenu
 			context={context}
 			description='测试'
+			filterKind={filterKind}
 			mode={mode}
+			onApplyFilter={onApplyFilter}
+			onClearAllFilters={onClearAllFilters}
 			onNavigateProject={onNavigateProject}
 			onOpenChange={onOpenChange}
+			onSelectFilterKind={onSelectFilterKind}
 			onRunCommand={onRunCommand}
 			onSelectTaskDate={onSelectTaskDate}
 			onSelectTaskPriority={onSelectTaskPriority}
 			onSelectTaskStatus={onSelectTaskStatus}
+			onToggleCompletedFilter={onToggleCompletedFilter}
 			onSelectProject={onSelectProject}
 			onSelectTaskPlacement={onSelectTaskPlacement}
 			onSelectTask={onSelectTask}
@@ -371,6 +402,13 @@ function createActions(): ShellCommandActions {
 		requestDeleteSelectedLifecycleEntries: vi.fn(),
 		requestDeletePermanentlySelectedLifecycleEntries: vi.fn(),
 		navigateTo: vi.fn(),
+		closeCurrentLayer: vi.fn(),
+		submitActiveForm: vi.fn(),
+		toggleSidebar: vi.fn(),
+		togglePreview: vi.fn(),
+		openFilterPicker: vi.fn(),
+		toggleCompletedFilter: vi.fn(),
+		clearAllFilters: vi.fn(),
 		goBack: vi.fn(),
 		goForward: vi.fn(),
 	}

@@ -20,6 +20,7 @@ import {
 } from '@/app/layouts/shell/model/useDrawerStore'
 import {
 	selectCommandMenuMode,
+	selectCommandMenuFilterKind,
 	selectCommandSelectionOverride,
 	selectCreateDialogType,
 	selectIsCommandOpen,
@@ -51,6 +52,12 @@ import {
 	useProjectStore,
 } from '@/features/project/model/useProjectStore'
 import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection/model'
+import { PageFilterProvider, usePageFilterContext } from '@/features/filter/model'
+import {
+	SubmitRegistryProvider,
+	useSubmitRegistryActions,
+	useSubmitRegistryContext,
+} from '@/features/submit/model'
 import { takePendingCommandOpenIntent } from '@/features/space/api/spaces'
 import {
 	selectSpaceError,
@@ -62,7 +69,7 @@ import { ProjectCreateContent } from '@/features/project/ui/ProjectCreateContent
 import { TaskCreateContent } from '@/features/task/ui/TaskCreateContent'
 import { useTaskStore } from '@/features/task/model/useTaskStore'
 import { CreateDialogShell } from '@/shared/ui/create-dialog-shell'
-import { SidebarProvider } from '@/shared/ui/base/sidebar'
+import { requestSidebarToggle, SidebarProvider } from '@/shared/ui/base/sidebar'
 import {
 	shellChromeSkeletonMainCardClass,
 	shellChromeSkeletonStatusTextClass,
@@ -125,13 +132,17 @@ export function ShellLayout({
 }: ShellLayoutProps) {
 	return (
 		<CommandSelectionProvider>
-			<ShellLayoutBulkActionBoundary
-				activeSection={activeSection}
-				currentScope={currentScope}
-				currentSpaceId={currentSpaceId}
-			>
-				{children}
-			</ShellLayoutBulkActionBoundary>
+			<SubmitRegistryProvider>
+				<PageFilterProvider>
+					<ShellLayoutBulkActionBoundary
+						activeSection={activeSection}
+						currentScope={currentScope}
+						currentSpaceId={currentSpaceId}
+					>
+						{children}
+					</ShellLayoutBulkActionBoundary>
+				</PageFilterProvider>
+			</SubmitRegistryProvider>
 		</CommandSelectionProvider>
 	)
 }
@@ -206,6 +217,7 @@ function ShellLayoutContent({
 	const navigate = useNavigate()
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
 	const commandMenuMode = useDialogStore(selectCommandMenuMode)
+	const commandMenuFilterKind = useDialogStore(selectCommandMenuFilterKind)
 	const commandSelectionOverride = useDialogStore(selectCommandSelectionOverride)
 	const isShortcutHelpOpen = useDialogStore(selectIsShortcutHelpOpen)
 	const createDialogType = useDialogStore(selectCreateDialogType)
@@ -214,6 +226,7 @@ function ShellLayoutContent({
 	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
 	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
+	const setCommandMenuFilterKind = useDialogStore((state) => state.setCommandMenuFilterKind)
 	const setShortcutHelpOpen = useDialogStore((state) => state.setShortcutHelpOpen)
 	const toggleShortcutHelp = useDialogStore((state) => state.toggleShortcutHelp)
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
@@ -236,6 +249,9 @@ function ShellLayoutContent({
 		pendingConfirmation: pendingBulkActionConfirmation,
 		runBulkAction,
 	} = useBulkActionContext()
+	const pageFilter = usePageFilterContext()
+	const submitRegistry = useSubmitRegistryContext()
+	const submitRegistryActions = useSubmitRegistryActions()
 	const pendingTaskOpenIntent = useSearchOpenIntentStore(selectPendingTaskOpenIntent)
 	const consumePendingTaskOpenIntent = useSearchOpenIntentStore(
 		(state) => state.consumePendingTaskOpenIntent,
@@ -509,6 +525,65 @@ function ShellLayoutContent({
 			openProjectPicker: () => {
 				useDialogStore.getState().openCommand('project-picker')
 			},
+			closeCurrentLayer: (ctx) => {
+				if (pendingBulkActionConfirmation) {
+					cancelPendingAction()
+					return
+				}
+
+				if (isShortcutHelpOpen) {
+					useDialogStore.getState().closeShortcutHelp()
+					return
+				}
+
+				if (createDialogType === 'task') {
+					closeTaskCreateDialog()
+					return
+				}
+
+				if (createDialogType === 'project') {
+					closeProjectCreateDialog()
+					return
+				}
+
+				if (activeDrawerId) {
+					closeDrawer()
+					return
+				}
+
+				if (isCommandOpen) {
+					useDialogStore.getState().closeCommand()
+					return
+				}
+
+				if (ctx.selection.hasSelection) {
+					ctx.selection.clearSelection?.()
+					return
+				}
+
+				if (canGoBack) {
+					goBack()
+				}
+			},
+			submitActiveForm: async () => {
+				await submitRegistryActions.submitActiveTarget()
+			},
+			toggleSidebar: () => {
+				requestSidebarToggle()
+			},
+			togglePreview: (ctx) => {
+				if (activeDrawerKind === 'task' && activeDrawerId) {
+					closeDrawer()
+					return
+				}
+
+				const targetTaskId = resolveTaskDetailTargetId(ctx)
+				if (!targetTaskId) {
+					return
+				}
+
+				openDrawer('task', targetTaskId)
+			},
 			openTaskPlacementPicker: (ctx) => {
 				useDialogStore.getState().openCommand('task-placement-picker', ctx.selection)
 			},
@@ -550,6 +625,17 @@ function ShellLayoutContent({
 			},
 			openTaskDatePicker: (ctx) => {
 				useDialogStore.getState().openCommand('task-date-picker', ctx.selection)
+			},
+			openFilterPicker: (kind) => {
+				pageFilter.actions.openFilterPicker(kind)
+				setCommandMenuFilterKind(kind)
+				useDialogStore.getState().openCommand('filter-picker', null, kind)
+			},
+			toggleCompletedFilter: () => {
+				pageFilter.actions.toggleCompleted()
+			},
+			clearAllFilters: () => {
+				pageFilter.actions.clearAll()
 			},
 			completeSelectedTasks: (ctx) =>
 				runEntityBulkActionFromCommand(ctx, 'task', TASK_BULK_ACTION_IDS.completeSelected, {
@@ -606,14 +692,28 @@ function ShellLayoutContent({
 		[
 			currentScope,
 			currentSpaceId,
+			activeDrawerId,
+			cancelPendingAction,
 			goBack,
 			goForward,
+			canGoBack,
+			closeDrawer,
+			closeProjectCreateDialog,
+			closeTaskCreateDialog,
+			commandMenuFilterKind,
+			createDialogType,
 			handleOpenTaskCreate,
+			isCommandOpen,
+			isShortcutHelpOpen,
 			navigate,
 			openProjectCreateDialog,
 			openTaskCreateDialog,
+			pageFilter,
+			pendingBulkActionConfirmation,
 			requestSearchFocus,
 			runEntityBulkActionFromCommand,
+			setCommandMenuFilterKind,
+			submitRegistryActions,
 			toggleShortcutHelp,
 		],
 	)
@@ -621,7 +721,9 @@ function ShellLayoutContent({
 		() =>
 			isShortcutHelpOpen
 				? DEFAULT_KEYBINDINGS.filter(
-						(binding) => binding.commandId === COMMAND_IDS.openShortcutHelp,
+						(binding) =>
+							binding.commandId === COMMAND_IDS.openShortcutHelp ||
+							binding.commandId === COMMAND_IDS.close,
 					)
 				: DEFAULT_KEYBINDINGS,
 		[isShortcutHelpOpen],
@@ -638,9 +740,10 @@ function ShellLayoutContent({
 		() => ({
 			isCommandMenuOpen: isCommandOpen,
 			isDetailOpen: Boolean(activeDrawerId),
+			detailEntityType: activeDrawerId ? activeDrawerKind ?? undefined : undefined,
 			isModalOpen: createDialogType !== null || isShortcutHelpOpen,
 		}),
-		[activeDrawerId, createDialogType, isCommandOpen, isShortcutHelpOpen],
+		[activeDrawerId, activeDrawerKind, createDialogType, isCommandOpen, isShortcutHelpOpen],
 	)
 	const commandFocus = useMemo(
 		() => ({
@@ -667,6 +770,30 @@ function ShellLayoutContent({
 	)
 	const registeredCommandSelection = useCommandSelectionContext()
 	const commandSelection = commandSelectionOverride ?? registeredCommandSelection
+	const commandView = useMemo(
+		() => ({
+			hasActiveFilters: pageFilter.state.hasActiveFilters,
+			showCompleted: pageFilter.state.showCompleted,
+			priorityFilterValues: pageFilter.state.priorityValues,
+			statusFilterValues: pageFilter.state.statusValues,
+			dateFilterValue: pageFilter.state.dateValue,
+			projectFilterId: pageFilter.state.projectId,
+			projectlessOnly: pageFilter.state.projectlessOnly,
+			filterCapabilities: pageFilter.capabilities,
+			filterKind: commandMenuFilterKind,
+		}),
+		[
+			commandMenuFilterKind,
+			pageFilter.capabilities,
+			pageFilter.state.dateValue,
+			pageFilter.state.hasActiveFilters,
+			pageFilter.state.priorityValues,
+			pageFilter.state.projectId,
+			pageFilter.state.projectlessOnly,
+			pageFilter.state.showCompleted,
+			pageFilter.state.statusValues,
+		],
+	)
 	const commandContext = useCommandContext({
 		route: commandRoute,
 		selection: commandSelection,
@@ -674,6 +801,10 @@ function ShellLayoutContent({
 		ui: commandUi,
 		space: commandSpace,
 		project: commandProject,
+		view: commandView,
+		submit: {
+			hasActiveTarget: submitRegistry.hasActiveTarget,
+		},
 	})
 	const commandRuntime = useCommandRuntime({
 		actions: shellCommandActions,
@@ -823,6 +954,7 @@ function ShellLayoutContent({
 				canGoForward={canGoForward}
 				commandContext={commandContext}
 				commandMenuMode={commandMenuMode}
+				commandMenuFilterKind={commandMenuFilterKind}
 				commandRuntime={commandRuntime}
 				currentSpaceId={currentSpaceId}
 				currentScope={currentScope}
@@ -832,6 +964,19 @@ function ShellLayoutContent({
 				onCommandOpenChange={handleCommandMenuOpenChange}
 				onNavigateToHistoryEntry={navigateToHistoryEntry}
 				onRunCommand={runCommand}
+				onSelectFilterKind={(kind) => {
+					pageFilter.actions.openFilterPicker(kind)
+					setCommandMenuFilterKind(kind)
+				}}
+				onApplyFilter={(input) => {
+					pageFilter.actions.applyFilter(input)
+				}}
+				onClearAllFilters={() => {
+					pageFilter.actions.clearAll()
+				}}
+				onToggleCompletedFilter={() => {
+					pageFilter.actions.toggleCompleted()
+				}}
 				onSelectTaskDate={handleSelectTaskDate}
 				onSelectTaskPlacement={handleSelectTaskPlacement}
 				onSelectTaskPriority={handleSelectTaskPriority}
@@ -932,6 +1077,30 @@ function ShellLayoutContent({
 			<div className='h-2 shrink-0 bg-sf-shell' />
 		</SidebarProvider>
 	)
+}
+
+function resolveTaskDetailTargetId(ctx: CommandContext) {
+	if (ctx.rowTarget.isTaskTarget && ctx.rowTarget.targetId) {
+		return ctx.rowTarget.targetId
+	}
+
+	if (ctx.selection.focusedType === 'task' && ctx.selection.focusedId) {
+		return ctx.selection.focusedId
+	}
+
+	if (ctx.selection.primaryEntity?.type === 'task') {
+		return ctx.selection.primaryEntity.id
+	}
+
+	if (
+		ctx.selection.type === 'task' &&
+		ctx.selection.isSingleSelection &&
+		ctx.selection.ids.length === 1
+	) {
+		return ctx.selection.ids[0]
+	}
+
+	return null
 }
 
 function ShellLayoutSkeleton({
