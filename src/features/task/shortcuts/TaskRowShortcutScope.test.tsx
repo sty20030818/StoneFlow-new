@@ -355,6 +355,19 @@ describe('TaskRowShortcutScope', () => {
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-b,task-c')
 	})
 
+	it('键盘接管后静止 hover 不会抢回 Shift+Arrow 焦点', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireKey('ArrowDown', { shiftKey: true })
+		fireEvent.mouseEnter(screen.getByTestId('row-task-a'))
+		fireKey('ArrowDown', { shiftKey: true })
+
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-a,task-b')
+	})
+
 	it('Shift+Arrow 在已选中行上会取消该行', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })

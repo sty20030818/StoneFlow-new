@@ -31,6 +31,8 @@ type ShiftToggleSession = {
 	lastToggledId: string | null
 }
 
+type RowInputMode = 'keyboard' | 'pointer'
+
 const EMPTY_SHIFT_TOGGLE_SESSION: ShiftToggleSession = {
 	active: false,
 	cursorId: null,
@@ -50,6 +52,8 @@ export function EntityRowShortcutScope({
 }: EntityRowShortcutScopeProps) {
 	const [focusId, setFocusId] = useState<string | null>(externalFocusedId)
 	const shiftToggleSessionRef = useRef<ShiftToggleSession>(EMPTY_SHIFT_TOGGLE_SESSION)
+	const inputModeRef = useRef<RowInputMode>('keyboard')
+	const pointerHoverIdRef = useRef<string | null>(null)
 
 	useEffect(() => {
 		setFocusId(externalFocusedId)
@@ -85,7 +89,13 @@ export function EntityRowShortcutScope({
 					ids,
 					shiftToggleSession: shiftToggleSessionRef.current,
 					onToggleSelection,
-					setLocalFocusId: setFocusId,
+					setFocusId: (id, options) => {
+						inputModeRef.current = 'keyboard'
+						setFocusId(id)
+						if (options?.syncExternal !== false) {
+							onSetFocusedId?.(id)
+						}
+					},
 				})
 				shiftToggleSessionRef.current = nextSession
 				return
@@ -96,12 +106,21 @@ export function EntityRowShortcutScope({
 				selectRange: false,
 			})
 			shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+			inputModeRef.current = 'keyboard'
 			setFocusId(nextId)
 		}
 
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
-	}, [focusId, ids, onClearSelection, onMoveFocus, onToggleSelection, selectedIdSet])
+	}, [
+		focusId,
+		ids,
+		onClearSelection,
+		onMoveFocus,
+		onSetFocusedId,
+		onToggleSelection,
+		selectedIdSet,
+	])
 
 	const state = useMemo<EntityRowShortcutState>(
 		() => ({
@@ -109,6 +128,11 @@ export function EntityRowShortcutScope({
 				if (!id) {
 					return
 				}
+				if (inputModeRef.current === 'keyboard' && pointerHoverIdRef.current === id) {
+					return
+				}
+				inputModeRef.current = 'pointer'
+				pointerHoverIdRef.current = id
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
 				setFocusId(id)
 				onSetFocusedId?.(id)
@@ -117,6 +141,7 @@ export function EntityRowShortcutScope({
 				if (!id) {
 					return
 				}
+				inputModeRef.current = 'keyboard'
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
 				setFocusId(id)
 				onSetFocusedId?.(id)
@@ -134,17 +159,17 @@ function handleShiftToggleNavigation({
 	ids,
 	shiftToggleSession,
 	onToggleSelection,
-	setLocalFocusId,
+	setFocusId,
 }: {
 	delta: -1 | 1
 	focusedId: string | null
 	ids: string[]
 	shiftToggleSession: ShiftToggleSession
 	onToggleSelection: (id: string) => void
-	setLocalFocusId: (id: string | null) => void
+	setFocusId: (id: string | null, options?: { syncExternal?: boolean }) => void
 }): ShiftToggleSession {
 	if (ids.length === 0) {
-		setLocalFocusId(null)
+		setFocusId(null)
 		return EMPTY_SHIFT_TOGGLE_SESSION
 	}
 
@@ -164,12 +189,12 @@ function handleShiftToggleNavigation({
 		shiftToggleSession.lastToggledId === cursorId &&
 		isSelectionBoundary(ids, cursorId, delta)
 	) {
-		setLocalFocusId(cursorId)
+		setFocusId(cursorId)
 		return shiftToggleSession
 	}
 
 	onToggleSelection(cursorId)
-	setLocalFocusId(cursorId)
+	setFocusId(cursorId)
 
 	return {
 		active: true,

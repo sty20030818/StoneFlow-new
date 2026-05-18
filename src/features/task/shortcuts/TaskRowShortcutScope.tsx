@@ -72,6 +72,8 @@ type ShiftToggleSession = {
 	lastToggledId: string | null
 }
 
+type RowInputMode = 'keyboard' | 'pointer'
+
 const EMPTY_SHIFT_TOGGLE_SESSION: ShiftToggleSession = {
 	active: false,
 	cursorId: null,
@@ -94,6 +96,8 @@ export function TaskRowShortcutScope({
 	const [focusTaskId, setFocusTaskId] = useState<string | null>(externalFocusedTaskId)
 	const shiftToggleSessionRef = useRef<ShiftToggleSession>(EMPTY_SHIFT_TOGGLE_SESSION)
 	const chordStateRef = useRef<KeybindingChordState | null>(null)
+	const inputModeRef = useRef<RowInputMode>('keyboard')
+	const pointerHoverTaskIdRef = useRef<string | null>(null)
 	const { runBulkAction } = useBulkActionContext()
 
 	useEffect(() => {
@@ -173,7 +177,13 @@ export function TaskRowShortcutScope({
 				setShiftToggleSession: (session) => {
 					shiftToggleSessionRef.current = session
 				},
-				setLocalFocusTaskId: setFocusTaskId,
+				setFocusTaskId: (taskId, options) => {
+					inputModeRef.current = 'keyboard'
+					setFocusTaskId(taskId)
+					if (options?.syncExternal !== false) {
+						onSetFocusedTask?.(taskId)
+					}
+				},
 			})
 			if (navigationResult === 'handled') {
 				return
@@ -210,6 +220,7 @@ export function TaskRowShortcutScope({
 	}, [
 		focusTaskId,
 		onMoveTaskFocus,
+		onSetFocusedTask,
 		onToggleTaskSelection,
 		rowTarget.hasTarget,
 		runtime,
@@ -223,6 +234,11 @@ export function TaskRowShortcutScope({
 				if (!taskId) {
 					return
 				}
+				if (inputModeRef.current === 'keyboard' && pointerHoverTaskIdRef.current === taskId) {
+					return
+				}
+				inputModeRef.current = 'pointer'
+				pointerHoverTaskIdRef.current = taskId
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
 				setFocusTaskId(taskId)
 				onSetFocusedTask?.(taskId)
@@ -231,6 +247,7 @@ export function TaskRowShortcutScope({
 				if (!taskId) {
 					return
 				}
+				inputModeRef.current = 'keyboard'
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
 				setFocusTaskId(taskId)
 				onSetFocusedTask?.(taskId)
@@ -386,7 +403,7 @@ function handleTaskRowNavigationKey({
 	onToggleTaskSelection,
 	shiftToggleSession,
 	setShiftToggleSession,
-	setLocalFocusTaskId,
+	setFocusTaskId,
 }: {
 	event: KeyboardEvent
 	focusedTaskId: string | null
@@ -403,7 +420,7 @@ function handleTaskRowNavigationKey({
 	onToggleTaskSelection: (taskId: string) => void
 	shiftToggleSession: ShiftToggleSession
 	setShiftToggleSession: (session: ShiftToggleSession) => void
-	setLocalFocusTaskId: (taskId: string | null) => void
+	setFocusTaskId: (taskId: string | null, options?: { syncExternal?: boolean }) => void
 }) {
 	if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') {
 		return 'ignored'
@@ -426,7 +443,7 @@ function handleTaskRowNavigationKey({
 			tasks,
 			shiftToggleSession,
 			onToggleTaskSelection,
-			setLocalFocusTaskId,
+			setFocusTaskId,
 		})
 		setShiftToggleSession(nextSession)
 
@@ -438,7 +455,7 @@ function handleTaskRowNavigationKey({
 		selectRange: false,
 	})
 	setShiftToggleSession(EMPTY_SHIFT_TOGGLE_SESSION)
-	setLocalFocusTaskId(nextTaskId)
+	setFocusTaskId(nextTaskId, { syncExternal: false })
 
 	return 'handled'
 }
@@ -449,18 +466,18 @@ function handleShiftToggleNavigation({
 	tasks,
 	shiftToggleSession,
 	onToggleTaskSelection,
-	setLocalFocusTaskId,
+	setFocusTaskId,
 }: {
 	delta: -1 | 1
 	focusedTaskId: string | null
 	tasks: TaskListItem[]
 	shiftToggleSession: ShiftToggleSession
 	onToggleTaskSelection: (taskId: string) => void
-	setLocalFocusTaskId: (taskId: string | null) => void
+	setFocusTaskId: (taskId: string | null) => void
 }): ShiftToggleSession {
 	const visibleTaskIds = tasks.map((task) => task.id)
 	if (visibleTaskIds.length === 0) {
-		setLocalFocusTaskId(null)
+		setFocusTaskId(null)
 		return EMPTY_SHIFT_TOGGLE_SESSION
 	}
 
@@ -480,12 +497,12 @@ function handleShiftToggleNavigation({
 		shiftToggleSession.lastToggledId === cursorId &&
 		isTaskSelectionBoundary(visibleTaskIds, cursorId, delta)
 	) {
-		setLocalFocusTaskId(cursorId)
+		setFocusTaskId(cursorId)
 		return shiftToggleSession
 	}
 
 	onToggleTaskSelection(cursorId)
-	setLocalFocusTaskId(cursorId)
+	setFocusTaskId(cursorId)
 
 	return {
 		active: true,
