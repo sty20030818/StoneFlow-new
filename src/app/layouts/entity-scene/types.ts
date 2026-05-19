@@ -61,6 +61,7 @@ export type EntitySceneTaskBoardActions = {
 		},
 	) => string | null
 	onClearTaskSelection?: () => void
+	onSelectAllTasks?: (taskIds: string[]) => void
 	onUpdateTaskPriority?: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus?: (task: TaskListItem, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus?: (task: TaskListItem) => Promise<void>
@@ -106,6 +107,7 @@ export type EntitySceneProjectBoardActions = {
 		},
 	) => string | null
 	onClearProjectSelection?: () => void
+	onSelectAllProjects?: (projectIds: string[]) => void
 }
 
 export type EntitySceneLifecycleBoardConfig = {
@@ -138,6 +140,7 @@ export type EntitySceneLifecycleBoardActions = {
 		},
 	) => string | null
 	onClearEntrySelection?: () => void
+	onSelectAllEntries?: (entryIds: string[]) => void
 }
 
 export type EntitySceneBoardSlotProps =

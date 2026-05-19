@@ -23,5 +23,7 @@ export function useTaskSelection(taskIds: string[]) {
 		selectOnly: selection.selectOnly,
 		toggleTaskSelection: selection.toggleSelection,
 		clearTaskSelection: selection.clearSelection,
+		selectTaskIds: selection.selectIds,
+		selectAllTasks: selection.selectAll,
 	}
 }

@@ -69,6 +69,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 		clearSelection: clearEntrySelection,
 		setFocusedId: setFocusedEntryId,
 		moveFocus,
+		selectIds: selectEntryIds,
 	} = useEntitySelection(slice.items.map((entry) => entry.id))
 	const selectedEntries = useMemo(
 		() => slice.items.filter((entry) => selectedEntryIdSet.has(entry.id)),
@@ -185,6 +186,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 						onRestore: (entry: LifecycleEntry) => {
 							void restoreEntry(entry)
 						},
+						onSelectAllEntries: selectEntryIds,
 						onToggleEntrySelection: toggleEntrySelection,
 						onSetFocusedEntry: setFocusedEntryId,
 						onMoveEntryFocus: moveFocus,

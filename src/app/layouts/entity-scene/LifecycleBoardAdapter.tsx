@@ -29,6 +29,7 @@ export function LifecycleBoardAdapter({ config, data, actions }: LifecycleBoardA
 			onClearEntrySelection={actions.onClearEntrySelection}
 			onMoveEntryFocus={actions.onMoveEntryFocus}
 			onSetFocusedEntry={actions.onSetFocusedEntry}
+			onSelectAllEntries={actions.onSelectAllEntries}
 			onToggleEntrySelection={actions.onToggleEntrySelection}
 			focusedEntryId={data.focusedEntryId ?? null}
 			pendingEntryId={data.pendingEntryId ?? null}

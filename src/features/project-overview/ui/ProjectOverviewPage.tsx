@@ -62,6 +62,7 @@ export function ProjectOverviewPage() {
 		clearSelection: clearProjectSelection,
 		setFocusedId: setFocusedProjectId,
 		moveFocus,
+		selectIds: selectProjectIds,
 	} = useEntitySelection(overview.items.map((item) => item.id))
 	const selectedProjects = useMemo(
 		() => overview.items.filter((project) => selectedProjectIds.has(project.id)),
@@ -166,6 +167,7 @@ export function ProjectOverviewPage() {
 					},
 					onEmptyAction: () => openProjectCreateDialog(),
 					onOpenProject: (projectId) => navigate(buildScopedProjectPath(scope, projectId, spaceId)),
+					onSelectAllProjects: selectProjectIds,
 					onReopenProject: (projectId) => {
 						void runRowAction(projectId, async () => {
 							await reopenProject(projectId)

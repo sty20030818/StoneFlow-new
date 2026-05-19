@@ -45,6 +45,7 @@ type LifecycleBoardProps = {
 		},
 	) => string | null
 	onClearEntrySelection?: () => void
+	onSelectAllEntries?: (entryIds: string[]) => void
 }
 
 /**
@@ -67,6 +68,7 @@ export function LifecycleBoard({
 	onSetFocusedEntry,
 	onMoveEntryFocus,
 	onClearEntrySelection,
+	onSelectAllEntries,
 }: LifecycleBoardProps) {
 	const visibleSections = sections.filter((section) => section.items.length > 0)
 	const [openSections, setOpenSections] = useState<Set<string>>(
@@ -117,7 +119,9 @@ export function LifecycleBoard({
 		setOpenSections(new Set(visibleSections.map((s) => s.key)))
 	}
 
-	const visibleEntries = visibleSections.flatMap((section) => section.items)
+	const visibleEntries = visibleSections
+		.filter((section) => openSections.has(section.key))
+		.flatMap((section) => section.items)
 
 	return (
 		<EntityRowShortcutScope
@@ -125,6 +129,7 @@ export function LifecycleBoard({
 			ids={visibleEntries.map((entry) => entry.id)}
 			onClearSelection={onClearEntrySelection}
 			onMoveFocus={onMoveEntryFocus}
+			onSelectAll={onSelectAllEntries}
 			onSetFocusedId={onSetFocusedEntry}
 			onToggleSelection={onToggleEntrySelection}
 			selectedIdSet={selectedEntryIdSet}

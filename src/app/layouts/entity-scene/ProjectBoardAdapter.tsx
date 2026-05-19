@@ -33,6 +33,7 @@ export function ProjectBoardAdapter({ config, data, actions }: ProjectBoardAdapt
 			onClearProjectSelection={actions.onClearProjectSelection}
 			onMoveProjectFocus={actions.onMoveProjectFocus}
 			onSetFocusedProject={actions.onSetFocusedProject}
+			onSelectAllProjects={actions.onSelectAllProjects}
 			onToggleProjectSelection={actions.onToggleProjectSelection}
 			focusedProjectId={data.focusedProjectId ?? null}
 			selectedProjectIds={data.selectedProjectIds}

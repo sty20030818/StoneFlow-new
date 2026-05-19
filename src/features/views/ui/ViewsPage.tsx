@@ -145,6 +145,7 @@ export function ViewsPage() {
 		clearTaskSelection,
 		setFocusedTaskId,
 		moveFocus,
+		selectTaskIds,
 	} = useTaskSelection(taskSelectionOrderIds)
 	const commandSelection = useMemo(
 		() =>
@@ -244,6 +245,7 @@ export function ViewsPage() {
 						onDeleteTask: deleteListTask,
 						onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
 						onOpenTask: (taskId) => openDrawer('task', taskId),
+						onSelectAllTasks: selectTaskIds,
 						onSetFocusedTask: setFocusedTaskId,
 						onMoveTaskFocus: moveFocus,
 						onToggleTaskSelection: toggleTaskSelection,

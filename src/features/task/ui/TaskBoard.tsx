@@ -59,6 +59,7 @@ type TaskBoardProps = {
 		},
 	) => string | null
 	onClearTaskSelection?: () => void
+	onSelectAllTasks?: (taskIds: string[]) => void
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
@@ -88,6 +89,7 @@ export function TaskBoard({
 	onSetFocusedTask,
 	onMoveTaskFocus,
 	onClearTaskSelection,
+	onSelectAllTasks,
 	onUpdateTaskPriority,
 	onUpdateTaskStatus,
 	onToggleTaskStatus,
@@ -204,6 +206,7 @@ export function TaskBoard({
 			onClearTaskSelection={onClearTaskSelection}
 			onOpenTask={onOpenTask}
 			onMoveTaskFocus={onMoveTaskFocus}
+			onSelectAllTasks={onSelectAllTasks}
 			onSetFocusedTask={onSetFocusedTask}
 			onToggleTaskSelection={onToggleTaskSelection}
 			selectedTaskIdSet={selectedTaskIdSet}

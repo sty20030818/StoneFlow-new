@@ -17,6 +17,7 @@ type EntityRowShortcutScopeProps = {
 		},
 	) => string | null
 	onClearSelection?: () => void
+	onSelectAll?: (ids: string[]) => void
 }
 
 export type EntityRowShortcutState = {
@@ -49,6 +50,7 @@ export function EntityRowShortcutScope({
 	onSetFocusedId,
 	onMoveFocus,
 	onClearSelection,
+	onSelectAll,
 }: EntityRowShortcutScopeProps) {
 	const [focusId, setFocusId] = useState<string | null>(externalFocusedId)
 	const shiftToggleSessionRef = useRef<ShiftToggleSession>(EMPTY_SHIFT_TOGGLE_SESSION)
@@ -66,6 +68,22 @@ export function EntityRowShortcutScope({
 			}
 
 			if (event.defaultPrevented || event.isComposing) {
+				return
+			}
+
+			if (
+				(event.metaKey || event.ctrlKey) &&
+				!event.altKey &&
+				!event.shiftKey &&
+				event.key.toLowerCase() === 'a'
+			) {
+				event.preventDefault()
+				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+				onSelectAll?.(ids)
+				inputModeRef.current = 'keyboard'
+				const nextFocusId = getValidId(ids, focusId) ?? ids[0] ?? null
+				setFocusId(nextFocusId)
+				onSetFocusedId?.(nextFocusId)
 				return
 			}
 
@@ -121,6 +139,7 @@ export function EntityRowShortcutScope({
 		ids,
 		onClearSelection,
 		onMoveFocus,
+		onSelectAll,
 		onSetFocusedId,
 		onToggleSelection,
 		selectedIdSet,

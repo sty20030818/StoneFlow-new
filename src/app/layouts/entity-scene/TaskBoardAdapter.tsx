@@ -40,6 +40,7 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			onEmptyAction={actions.onEmptyAction ?? (() => undefined)}
 			onMoveTaskFocus={actions.onMoveTaskFocus}
 			onOpenTask={actions.onOpenTask ?? (() => undefined)}
+			onSelectAllTasks={actions.onSelectAllTasks}
 			onSetFocusedTask={actions.onSetFocusedTask}
 			onSelectNoProject={showProjectOptions ? actions.onSelectNoProject : undefined}
 			onSelectProject={showProjectOptions ? actions.onSelectProject : undefined}

@@ -69,6 +69,57 @@ export function useEntitySelection(entityIds: string[]) {
 		)
 	}, [])
 
+	const selectIds = useCallback((nextSelectedIds: string[]) => {
+		setSelectionState((currentState) => {
+			if (nextSelectedIds.length === 0) {
+				return currentState.selectedIds.length === 0 &&
+					currentState.focusedId === null &&
+					currentState.selectionAnchorId === null
+					? currentState
+					: {
+							selectedIds: [],
+							focusedId: null,
+							selectionAnchorId: null,
+						}
+			}
+
+			const currentFocusedId =
+				currentState.focusedId && nextSelectedIds.includes(currentState.focusedId)
+					? currentState.focusedId
+					: null
+			const currentAnchorId =
+				currentState.selectionAnchorId &&
+				nextSelectedIds.includes(currentState.selectionAnchorId)
+					? currentState.selectionAnchorId
+					: null
+			const nextFocusedId = currentFocusedId ?? nextSelectedIds[0] ?? null
+			const nextAnchorId = currentAnchorId ?? nextFocusedId
+			const hasSameSelection =
+				currentState.selectedIds.length === nextSelectedIds.length &&
+				currentState.selectedIds.every(
+					(entityId, index) => entityId === nextSelectedIds[index],
+				)
+
+			if (
+				hasSameSelection &&
+				currentState.focusedId === nextFocusedId &&
+				currentState.selectionAnchorId === nextAnchorId
+			) {
+				return currentState
+			}
+
+			return {
+				selectedIds: [...nextSelectedIds],
+				focusedId: nextFocusedId,
+				selectionAnchorId: nextAnchorId,
+			}
+		})
+	}, [])
+
+	const selectAll = useCallback(() => {
+		selectIds(entityIds)
+	}, [entityIds, selectIds])
+
 	const setFocusedId = useCallback((entityId: string | null) => {
 		setSelectionState((currentState) => ({
 			...currentState,
@@ -176,5 +227,7 @@ export function useEntitySelection(entityIds: string[]) {
 		selectOnly,
 		toggleSelection,
 		clearSelection,
+		selectIds,
+		selectAll,
 	}
 }

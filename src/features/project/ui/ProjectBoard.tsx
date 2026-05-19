@@ -49,6 +49,7 @@ type ProjectBoardProps = {
 		},
 	) => string | null
 	onClearProjectSelection?: () => void
+	onSelectAllProjects?: (projectIds: string[]) => void
 }
 
 const PROJECT_SECTION_ORDER: ProjectBoardSectionKey[] = ['active', 'completed', 'archived']
@@ -97,7 +98,9 @@ export function ProjectBoard(props: ProjectBoardProps) {
 		setOpenSections(new Set(sections.map((s) => s.key)))
 	}
 
-	const visibleProjects = sections.flatMap((section) => section.items)
+	const visibleProjects = sections
+		.filter((section) => openSections.has(section.key))
+		.flatMap((section) => section.items)
 
 	return (
 		<EntityRowShortcutScope
@@ -105,6 +108,7 @@ export function ProjectBoard(props: ProjectBoardProps) {
 			ids={visibleProjects.map((project) => project.id)}
 			onClearSelection={props.onClearProjectSelection}
 			onMoveFocus={props.onMoveProjectFocus}
+			onSelectAll={props.onSelectAllProjects}
 			onSetFocusedId={props.onSetFocusedProject}
 			onToggleSelection={props.onToggleProjectSelection}
 			selectedIdSet={props.selectedProjectIds}

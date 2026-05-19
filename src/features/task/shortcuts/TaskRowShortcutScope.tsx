@@ -44,6 +44,7 @@ type TaskRowShortcutScopeProps = {
 		},
 	) => string | null
 	onClearTaskSelection?: () => void
+	onSelectAllTasks?: (taskIds: string[]) => void
 	onOpenTask: (taskId: string) => void
 }
 
@@ -261,6 +262,7 @@ export function TaskRowShortcutScope({
 	onMoveTaskFocus: _onMoveTaskFocus,
 	onSetFocusedTask,
 	onClearTaskSelection,
+	onSelectAllTasks,
 	onOpenTask,
 }: TaskRowShortcutScopeProps) {
 	const [hoveredId, setHoveredId] = useState<string | null>(focusedTaskId)
@@ -414,6 +416,29 @@ export function TaskRowShortcutScope({
 				return
 			}
 
+			if (
+				(event.metaKey || event.ctrlKey) &&
+				!event.altKey &&
+				!event.shiftKey &&
+				event.key.toLowerCase() === 'a' &&
+				!event.defaultPrevented &&
+				!event.isComposing &&
+				!isEditableEventTarget(event.target)
+			) {
+				event.preventDefault()
+				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
+				onSelectAllTasks?.(tasks.map((task) => task.id))
+				if (tasks.length > 0) {
+					suppressPointerHoverRef.current = true
+					frozenPointerPointRef.current = lastPointerPointRef.current
+					updateHoveredRow(hoveredIdRef.current ?? tasks[0]?.id ?? null, 'keyboard', {
+						syncExternal: true,
+						scrollIntoView: false,
+					})
+				}
+				return
+			}
+
 			const navigationResult = handleTaskRowNavigationKey({
 				event,
 				hoveredId: hoveredIdRef.current,
@@ -467,6 +492,7 @@ export function TaskRowShortcutScope({
 		return () => window.removeEventListener('keydown', handleWindowKeyDown)
 	}, [
 		onToggleTaskSelection,
+		onSelectAllTasks,
 		rowTarget.hasTarget,
 		runtime,
 		selectedTaskIds.length,

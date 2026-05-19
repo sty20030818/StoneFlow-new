@@ -83,6 +83,7 @@ export function InboxPage() {
 		clearTaskSelection,
 		setFocusedTaskId,
 		moveFocus,
+		selectTaskIds,
 	} = useTaskSelection(taskSelectionOrderIds)
 	const commandSelection = useMemo(
 		() =>
@@ -129,6 +130,7 @@ export function InboxPage() {
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog(),
 					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,
 					onToggleTaskSelection: toggleTaskSelection,

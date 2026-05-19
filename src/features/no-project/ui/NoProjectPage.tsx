@@ -76,6 +76,7 @@ export function NoProjectPage() {
 		clearTaskSelection,
 		setFocusedTaskId,
 		moveFocus,
+		selectTaskIds,
 	} = useTaskSelection(taskSelectionOrderIds)
 	const commandSelection = useMemo(
 		() =>
@@ -127,6 +128,7 @@ export function NoProjectPage() {
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ placement: 'noProject' }),
 					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,
 					onToggleTaskSelection: toggleTaskSelection,
