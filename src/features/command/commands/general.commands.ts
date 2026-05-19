@@ -30,6 +30,15 @@ export const generalCommands: Command[] = [
 		run: () => {},
 	},
 	{
+		id: COMMAND_IDS.selectionDeleteByRoute,
+		title: '删除选中项',
+		category: 'general',
+		scope: ['global'],
+		description: '删除当前选中的任务、项目、归档或回收站条目。',
+		keywords: ['delete', 'trash', '删除', '回收站', '永久删除'],
+		run: () => {},
+	},
+	{
 		id: COMMAND_IDS.saveOrSubmit,
 		title: '保存或提交',
 		category: 'general',

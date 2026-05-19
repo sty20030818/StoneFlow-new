@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 type EntityRowShortcutScopeProps = {
 	children: (state: EntityRowShortcutState) => ReactNode
@@ -21,6 +21,8 @@ type EntityRowShortcutScopeProps = {
 }
 
 export type EntityRowShortcutState = {
+	hoveredId: string | null
+	hoverSource: 'pointer' | 'keyboard' | null
 	onRowHover: (id: string | null) => void
 	onRowFocus: (id: string | null) => void
 }
@@ -53,13 +55,54 @@ export function EntityRowShortcutScope({
 	onSelectAll,
 }: EntityRowShortcutScopeProps) {
 	const [focusId, setFocusId] = useState<string | null>(externalFocusedId)
+	const [hoverSource, setHoverSource] = useState<'pointer' | 'keyboard' | null>(
+		externalFocusedId ? 'keyboard' : null,
+	)
 	const shiftToggleSessionRef = useRef<ShiftToggleSession>(EMPTY_SHIFT_TOGGLE_SESSION)
-	const inputModeRef = useRef<RowInputMode>('keyboard')
-	const pointerHoverIdRef = useRef<string | null>(null)
+	const inputModeRef = useRef<RowInputMode>(externalFocusedId ? 'keyboard' : 'pointer')
+	const hoverSourceRef = useRef<'pointer' | 'keyboard' | null>(externalFocusedId ? 'keyboard' : null)
 
 	useEffect(() => {
+		if (externalFocusedId === null) {
+			if (hoverSourceRef.current === 'pointer') {
+				return
+			}
+			hoverSourceRef.current = null
+			setHoverSource(null)
+			setFocusId(null)
+			return
+		}
+
+		if (hoverSourceRef.current === 'pointer') {
+			return
+		}
+
+		hoverSourceRef.current = 'keyboard'
+		setHoverSource('keyboard')
 		setFocusId(externalFocusedId)
 	}, [externalFocusedId])
+
+	useEffect(() => {
+		if (focusId && !ids.includes(focusId)) {
+			hoverSourceRef.current = null
+			setHoverSource(null)
+			setFocusId(null)
+			onSetFocusedId?.(null)
+		}
+	}, [focusId, ids, onSetFocusedId])
+
+	const updateHoveredRow = useCallback(
+		(id: string | null, source: RowInputMode | null, options: { syncExternal?: boolean } = {}) => {
+			inputModeRef.current = source ?? 'pointer'
+			hoverSourceRef.current = source
+			setHoverSource(source)
+			setFocusId(id)
+			if (options.syncExternal !== false) {
+				onSetFocusedId?.(id)
+			}
+		},
+		[onSetFocusedId],
+	)
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {
@@ -80,10 +123,8 @@ export function EntityRowShortcutScope({
 				event.preventDefault()
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
 				onSelectAll?.(ids)
-				inputModeRef.current = 'keyboard'
 				const nextFocusId = getValidId(ids, focusId) ?? ids[0] ?? null
-				setFocusId(nextFocusId)
-				onSetFocusedId?.(nextFocusId)
+				updateHoveredRow(nextFocusId, 'keyboard')
 				return
 			}
 
@@ -112,11 +153,7 @@ export function EntityRowShortcutScope({
 					shiftToggleSession: shiftToggleSessionRef.current,
 					onToggleSelection,
 					setFocusId: (id, options) => {
-						inputModeRef.current = 'keyboard'
-						setFocusId(id)
-						if (options?.syncExternal !== false) {
-							onSetFocusedId?.(id)
-						}
+						updateHoveredRow(id, 'keyboard', options)
 					},
 				})
 				shiftToggleSessionRef.current = nextSession
@@ -128,8 +165,7 @@ export function EntityRowShortcutScope({
 				selectRange: false,
 			})
 			shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
-			inputModeRef.current = 'keyboard'
-			setFocusId(nextId)
+			updateHoveredRow(nextId, 'keyboard', { syncExternal: false })
 		}
 
 		window.addEventListener('keydown', handleKeyDown)
@@ -140,37 +176,37 @@ export function EntityRowShortcutScope({
 		onClearSelection,
 		onMoveFocus,
 		onSelectAll,
-		onSetFocusedId,
 		onToggleSelection,
 		selectedIdSet,
+		updateHoveredRow,
 	])
 
 	const state = useMemo<EntityRowShortcutState>(
 		() => ({
+			hoveredId: focusId,
+			hoverSource,
 			onRowHover: (id) => {
 				if (!id) {
+					if (hoverSourceRef.current === 'pointer') {
+						updateHoveredRow(null, null)
+					}
 					return
 				}
-				if (inputModeRef.current === 'keyboard' && pointerHoverIdRef.current === id) {
+				if (inputModeRef.current === 'keyboard' && hoverSourceRef.current === 'pointer') {
 					return
 				}
-				inputModeRef.current = 'pointer'
-				pointerHoverIdRef.current = id
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
-				setFocusId(id)
-				onSetFocusedId?.(id)
+				updateHoveredRow(id, 'pointer')
 			},
 			onRowFocus: (id) => {
 				if (!id) {
 					return
 				}
-				inputModeRef.current = 'keyboard'
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
-				setFocusId(id)
-				onSetFocusedId?.(id)
+				updateHoveredRow(id, 'keyboard')
 			},
 		}),
-		[onSetFocusedId],
+		[focusId, hoverSource, updateHoveredRow],
 	)
 
 	return <>{children(state)}</>

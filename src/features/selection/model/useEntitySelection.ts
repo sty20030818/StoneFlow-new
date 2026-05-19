@@ -13,8 +13,8 @@ import {
 export function useEntitySelection(entityIds: string[]) {
 	const [selectionState, setSelectionState] = useState<EntitySelectionState>(() => ({
 		selectedIds: [],
-		focusedId: entityIds[0] ?? null,
-		selectionAnchorId: entityIds[0] ?? null,
+		focusedId: null,
+		selectionAnchorId: null,
 	}))
 	const entityIdSignature = entityIds.join('\u0000')
 

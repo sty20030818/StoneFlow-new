@@ -1,5 +1,4 @@
-import { debounce } from 'es-toolkit/function'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import { listLifecycleEntries } from '@/features/lifecycle/api/lifecycle'
@@ -9,8 +8,6 @@ import { useEventSubscription } from '@/shared/events'
 import type { Scope } from '@/shared/types'
 
 type NavBadges = Partial<Record<ShellSectionKey, string>>
-
-const DEBOUNCE_MS = 200
 
 export function useSidebarNavBadges(scope: Scope): NavBadges {
 	const [badges, setBadges] = useState<NavBadges>({})
@@ -40,14 +37,13 @@ export function useSidebarNavBadges(scope: Scope): NavBadges {
 		}
 	}, [scope])
 
-	const scheduleRefresh = useMemo(() => debounce(() => void doRefresh(), DEBOUNCE_MS), [doRefresh])
+	const scheduleRefresh = useCallback(() => {
+		void doRefresh()
+	}, [doRefresh])
 
 	useEffect(() => {
 		void doRefresh()
-		return () => {
-			scheduleRefresh.cancel()
-		}
-	}, [doRefresh, scheduleRefresh])
+	}, [doRefresh])
 
 	useEventSubscription('task:created', scheduleRefresh)
 	useEventSubscription('task:updated', scheduleRefresh)

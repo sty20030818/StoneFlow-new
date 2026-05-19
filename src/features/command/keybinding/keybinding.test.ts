@@ -207,6 +207,12 @@ describe('keybinding', () => {
 		expect(matchCommand('[')).toBe(COMMAND_IDS.layoutToggleSidebar)
 		expect(matchCommand(']')).toBe(COMMAND_IDS.layoutTogglePreview)
 		expect(matchCommand('Escape')).toBe(COMMAND_IDS.close)
+		expect(matchCommand('Backspace', null, 100, { metaKey: true })).toBe(
+			COMMAND_IDS.selectionDeleteByRoute,
+		)
+		expect(matchCommand('Backspace', null, 100, { ctrlKey: true })).toBe(
+			COMMAND_IDS.selectionDeleteByRoute,
+		)
 		expect(matchCommand('Enter', null, 100, { metaKey: true })).toBe(COMMAND_IDS.saveOrSubmit)
 		expect(matchCommand('Enter', null, 100, { metaKey: true, shiftKey: true })).toBe(
 			COMMAND_IDS.submitAndContinue,

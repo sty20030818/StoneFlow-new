@@ -76,6 +76,8 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return { ...command, run: () => adapter.navigateTo('settings') }
 		case COMMAND_IDS.close:
 			return { ...command, run: adapter.closeCurrentLayer }
+		case COMMAND_IDS.selectionDeleteByRoute:
+			return bindDeleteSelectionCommand(command, adapter)
 		case COMMAND_IDS.saveOrSubmit:
 			return {
 				...command,
@@ -278,6 +280,54 @@ function bindSelectionLifecycleCommand(
 
 function hasLifecycleSelection(ctx: CommandContext) {
 	return ctx.selection.type === 'lifecycle' && ctx.selection.ids.length > 0
+}
+
+function bindDeleteSelectionCommand(command: Command, adapter: ShellCommandAdapter): Command {
+	return {
+		...command,
+		isEnabled: (ctx) => getDeleteSelectionDisabledReason(ctx) === undefined,
+		getDisabledReason: getDeleteSelectionDisabledReason,
+		getPriority: (ctx) => (ctx.selection.isMultiSelection ? 120 : 90),
+		run: (ctx) => {
+			if (hasTaskSelection(ctx)) {
+				return adapter.requestDeleteSelectedTasks(ctx)
+			}
+
+			if (hasProjectSelection(ctx)) {
+				return adapter.requestDeleteSelectedProjects(ctx)
+			}
+
+			if (!hasLifecycleSelection(ctx)) {
+				return
+			}
+
+			if (ctx.route.page === 'archive') {
+				return adapter.requestDeleteSelectedLifecycleEntries(ctx)
+			}
+
+			if (ctx.route.page === 'trash') {
+				return adapter.requestDeletePermanentlySelectedLifecycleEntries(ctx)
+			}
+		},
+	}
+}
+
+function getDeleteSelectionDisabledReason(ctx: CommandContext) {
+	if (hasTaskSelection(ctx)) {
+		return undefined
+	}
+
+	if (hasProjectSelection(ctx)) {
+		return undefined
+	}
+
+	if (!hasLifecycleSelection(ctx)) {
+		return '需要先选择任务、项目或归档/回收站条目'
+	}
+
+	return ctx.route.page === 'archive' || ctx.route.page === 'trash'
+		? undefined
+		: '当前页面不支持删除选中条目'
 }
 
 function bindSelectionProjectCommand(

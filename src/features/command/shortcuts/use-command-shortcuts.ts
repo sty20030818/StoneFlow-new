@@ -17,6 +17,7 @@ import { buildChordSession, type CommandChordSession } from './chord-session'
 type UseCommandShortcutsOptions = {
 	bindings: Keybinding[]
 	onTrigger: (id: CommandId) => void
+	shouldTrigger?: (id: CommandId) => boolean
 	onChordStateChange?: (session: CommandChordSession | null) => void
 	scope?: KeybindingScope
 }
@@ -24,15 +25,18 @@ type UseCommandShortcutsOptions = {
 export function useCommandShortcuts({
 	bindings,
 	onTrigger,
+	shouldTrigger,
 	onChordStateChange,
 	scope = 'global',
 }: UseCommandShortcutsOptions) {
 	const onTriggerRef = useRef(onTrigger)
+	const shouldTriggerRef = useRef(shouldTrigger)
 	const onChordStateChangeRef = useRef(onChordStateChange)
 	const chordStateRef = useRef<KeybindingChordState | null>(null)
 	const timeoutRef = useRef<number | null>(null)
 
 	onTriggerRef.current = onTrigger
+	shouldTriggerRef.current = shouldTrigger
 	onChordStateChangeRef.current = onChordStateChange
 
 	useEffect(() => {
@@ -88,6 +92,11 @@ export function useCommandShortcuts({
 			})
 
 			if (result.status === 'matched') {
+				if (shouldTriggerRef.current && !shouldTriggerRef.current(result.keybinding.commandId)) {
+					clearChordState()
+					return
+				}
+
 				// 只对修饰键组合和特殊键调用 preventDefault，避免对普通字母键 preventDefault
 				// 触发 macOS 的"输入时自动隐藏光标"行为。
 				// 字母 chord（f→p、g→p 等）的 Row 双触发问题由 GlobalChordGuard（方案 C）独立解决，

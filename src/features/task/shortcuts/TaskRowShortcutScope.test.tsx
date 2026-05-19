@@ -327,19 +327,19 @@ describe('TaskRowShortcutScope', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
 
-		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('none')
 
 		expect(fireKey('ArrowDown').defaultPrevented).toBe(false)
-		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('hover-source')).toHaveTextContent('keyboard')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 
 		fireKey('ArrowDown')
-		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-c')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 
 		fireKey('ArrowUp')
-		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-a')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 	})
 
@@ -554,7 +554,7 @@ describe('TaskRowShortcutScope', () => {
 		fireKey('ArrowDown')
 		fireKey('ArrowDown', { shiftKey: true })
 
-		expect(screen.getByTestId('focused-task')).toHaveTextContent('task-a')
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('none')
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 	})
 

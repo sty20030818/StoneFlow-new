@@ -2,6 +2,7 @@ export const COMMAND_IDS = {
 	openCommandMenu: 'general.openCommandMenu',
 	openSearch: 'general.openSearch',
 	close: 'general.close',
+	selectionDeleteByRoute: 'selection.deleteByRoute',
 	saveOrSubmit: 'general.saveOrSubmit',
 	submitAndContinue: 'general.submitAndContinue',
 	submitAndOpen: 'general.submitAndOpen',

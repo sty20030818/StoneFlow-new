@@ -88,7 +88,7 @@ import {
 	type ShellNavigationTarget,
 	type TaskPlacementTarget,
 } from '@/features/command'
-import { COMMAND_IDS, type CommandContext } from '@/features/command/core'
+import { COMMAND_IDS, type CommandContext, type CommandId } from '@/features/command/core'
 import {
 	BulkActionConfirmDialog,
 	BulkActionProvider,
@@ -826,6 +826,17 @@ function ShellLayoutContent({
 		context: commandContext,
 	})
 	const runCommand = useCommandRunner({ runtime: commandRuntime })
+	const shouldTriggerCommandShortcut = useCallback(
+		(commandId: CommandId) => {
+			const command = commandRuntime.getCommands().find((item) => item.id === commandId)
+			if (!command) {
+				return true
+			}
+
+			return commandRuntime.getCommandState(command, commandContext).enabled
+		},
+		[commandContext, commandRuntime],
+	)
 
 	const updateSelectedTasks = useCallback(
 		async (
@@ -961,6 +972,7 @@ function ShellLayoutContent({
 				bindings={activeShortcutBindings}
 				onChordStateChange={setChordSession}
 				onTrigger={runCommand}
+				shouldTrigger={shouldTriggerCommandShortcut}
 			/>
 			<ShellHeader
 				activeSection={activeSection}

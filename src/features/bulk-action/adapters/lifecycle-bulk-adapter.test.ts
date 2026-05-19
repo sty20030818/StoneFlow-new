@@ -1,8 +1,13 @@
 import type { LifecycleEntry } from '@/shared/types'
+import { useEventBus, type AppEvent } from '@/shared/events'
 
 import { createLifecycleBulkAdapter } from './lifecycle-bulk-adapter'
 
 describe('LifecycleBulkAdapter', () => {
+	afterEach(() => {
+		useEventBus.setState({ listeners: new Map() })
+	})
+
 	it('restore 多 id 后只刷新一次', async () => {
 		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
 		const restoreLifecycleEntry = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>(() =>
@@ -79,6 +84,37 @@ describe('LifecycleBulkAdapter', () => {
 		})
 		expect(restoreLifecycleEntry).toHaveBeenCalledTimes(1)
 		expect(refreshLoadedSlices).toHaveBeenCalledTimes(1)
+	})
+
+	it('成功变更后发实体事件和 lifecycle 事件，驱动 sidebar badge 刷新', async () => {
+		const events: AppEvent[] = []
+		const unsubscribeTaskDeleted = useEventBus
+			.getState()
+			.subscribe('task:deleted', (event) => events.push(event))
+		const unsubscribeLifecycleChanged = useEventBus
+			.getState()
+			.subscribe('lifecycle:changed', (event) => events.push(event))
+		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
+		const deleteLifecycleEntry = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>(() =>
+			Promise.resolve({}),
+		)
+		const adapter = createLifecycleBulkAdapter({
+			entries: [createEntry({ id: 'entry-a', entityType: 'task' })],
+			deleteLifecycleEntry: deleteLifecycleEntry as never,
+			refreshLoadedSlices,
+		})
+
+		await adapter.deleteLifecycle(['entry-a'])
+
+		unsubscribeTaskDeleted()
+		unsubscribeLifecycleChanged()
+		expect(events).toEqual([
+			{ type: 'task:deleted', payload: { taskId: 'entry-a' } },
+			{
+				type: 'lifecycle:changed',
+				payload: { entityType: 'task', entityId: 'entry-a', operation: 'delete' },
+			},
+		])
 	})
 })
 

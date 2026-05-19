@@ -32,6 +32,20 @@ export const DEFAULT_KEYBINDINGS: Keybinding[] = [
 		allowInEditable: true,
 	},
 	{
+		commandId: COMMAND_IDS.selectionDeleteByRoute,
+		sequence: [{ key: 'Backspace', meta: true }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
+		commandId: COMMAND_IDS.selectionDeleteByRoute,
+		sequence: [{ key: 'Backspace', ctrl: true }],
+		scope: 'global',
+		preventDefault: true,
+		allowInEditable: false,
+	},
+	{
 		commandId: COMMAND_IDS.layoutToggleSidebar,
 		sequence: [{ key: '[' }],
 		scope: 'global',

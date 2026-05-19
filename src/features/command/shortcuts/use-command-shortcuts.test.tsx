@@ -190,6 +190,36 @@ describe('useCommandShortcuts', () => {
 		expect(onTrigger).toHaveBeenNthCalledWith(3, COMMAND_IDS.openCommandMenu)
 	})
 
+	it('shouldTrigger 返回 false 时不触发也不 preventDefault', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		renderHook(() =>
+			useCommandShortcuts({
+				bindings,
+				onTrigger,
+				shouldTrigger: () => false,
+			}),
+		)
+
+		const event = new KeyboardEvent('keydown', {
+			key: 'k',
+			metaKey: true,
+			bubbles: true,
+			cancelable: true,
+		})
+		Object.defineProperty(event, 'target', {
+			configurable: true,
+			value: document.body,
+		})
+
+		act(() => {
+			window.dispatchEvent(event)
+			vi.runAllTimers()
+		})
+
+		expect(event.defaultPrevented).toBe(false)
+		expect(onTrigger).not.toHaveBeenCalled()
+	})
+
 	it('输入态仍允许 Cmd/Ctrl+K', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
 		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))

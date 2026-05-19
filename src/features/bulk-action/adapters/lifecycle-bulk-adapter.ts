@@ -3,6 +3,7 @@ import {
 	permanentlyDeleteLifecycleEntry as permanentlyDeleteLifecycleEntryApi,
 	restoreLifecycleEntry as restoreLifecycleEntryApi,
 } from '@/features/lifecycle/api/lifecycle'
+import { emitEvent } from '@/shared/events'
 import type { LifecycleEntry } from '@/shared/types'
 
 export type LifecycleBulkMutationReport = {
@@ -37,9 +38,11 @@ export function createLifecycleBulkAdapter({
 
 	async function runLifecycleBulkMutation({
 		ids,
+		operation,
 		mutate,
 	}: {
 		ids: string[]
+		operation: 'restore' | 'delete'
 		mutate: (entry: LifecycleEntry) => Promise<unknown>
 	}): Promise<LifecycleBulkMutationReport> {
 		const succeededIds: string[] = []
@@ -56,6 +59,7 @@ export function createLifecycleBulkAdapter({
 			try {
 				await mutate(entry)
 				succeededIds.push(entryId)
+				emitLifecycleMutationEvents(entry, operation)
 			} catch {
 				failedIds.push(entryId)
 			}
@@ -77,17 +81,48 @@ export function createLifecycleBulkAdapter({
 		restore: (ids) =>
 			runLifecycleBulkMutation({
 				ids,
+				operation: 'restore',
 				mutate: restoreLifecycleEntry,
 			}),
 		deleteLifecycle: (ids) =>
 			runLifecycleBulkMutation({
 				ids,
+				operation: 'delete',
 				mutate: deleteLifecycleEntry,
 			}),
 		deletePermanently: (ids) =>
 			runLifecycleBulkMutation({
 				ids,
+				operation: 'delete',
 				mutate: permanentlyDeleteLifecycleEntry,
 			}),
 	}
+}
+
+function emitLifecycleMutationEvents(entry: LifecycleEntry, operation: 'restore' | 'delete') {
+	if (entry.entityType === 'space') {
+		emitEvent({
+			type: operation === 'delete' ? 'space:deleted' : 'space:updated',
+			payload: { spaceId: entry.id },
+		})
+	} else if (entry.entityType === 'project') {
+		emitEvent({
+			type: operation === 'delete' ? 'project:deleted' : 'project:updated',
+			payload: { projectId: entry.id },
+		})
+	} else {
+		emitEvent({
+			type: operation === 'delete' ? 'task:deleted' : 'task:updated',
+			payload: { taskId: entry.id },
+		})
+	}
+
+	emitEvent({
+		type: 'lifecycle:changed',
+		payload: {
+			entityType: entry.entityType,
+			entityId: entry.id,
+			operation,
+		},
+	})
 }

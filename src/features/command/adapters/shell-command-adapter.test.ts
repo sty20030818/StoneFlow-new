@@ -284,6 +284,84 @@ describe('Shell command adapter', () => {
 		expect(actions[actionName]).toHaveBeenCalledWith(context)
 	})
 
+	it('Cmd+Backspace 分发 task selection 到任务删除', async () => {
+		const actions = createActions()
+		const context = {
+			...createEmptyCommandContext(),
+			route: { page: 'project' as const },
+			selection: {
+				type: 'task' as const,
+				ids: ['task-a'],
+				entities: [{ id: 'task-a', type: 'task' as const, title: '任务 A' }],
+				primaryEntity: { id: 'task-a', type: 'task' as const, title: '任务 A' },
+				source: 'task-list' as const,
+				hasSelection: true,
+				isSingleSelection: true,
+				isMultiSelection: false,
+			},
+		}
+		const runtime = createRuntime(actions, context)
+
+		await expect(runtime.execute(COMMAND_IDS.selectionDeleteByRoute)).resolves.toMatchObject({
+			status: 'success',
+			commandId: COMMAND_IDS.selectionDeleteByRoute,
+		})
+		expect(actions.requestDeleteSelectedTasks).toHaveBeenCalledWith(context)
+	})
+
+	it('Cmd+Backspace 分发 project selection 到项目删除', async () => {
+		const actions = createActions()
+		const context = {
+			...createEmptyCommandContext(),
+			route: { page: 'projects' as const },
+			selection: {
+				type: 'project' as const,
+				ids: ['project-a'],
+				entities: [{ id: 'project-a', type: 'project' as const, title: '项目 A' }],
+				primaryEntity: { id: 'project-a', type: 'project' as const, title: '项目 A' },
+				source: 'project-list' as const,
+				hasSelection: true,
+				isSingleSelection: true,
+				isMultiSelection: false,
+			},
+		}
+		const runtime = createRuntime(actions, context)
+
+		await expect(runtime.execute(COMMAND_IDS.selectionDeleteByRoute)).resolves.toMatchObject({
+			status: 'success',
+			commandId: COMMAND_IDS.selectionDeleteByRoute,
+		})
+		expect(actions.requestDeleteSelectedProjects).toHaveBeenCalledWith(context)
+	})
+
+	it.each([
+		['archive', 'requestDeleteSelectedLifecycleEntries'],
+		['trash', 'requestDeletePermanentlySelectedLifecycleEntries'],
+	] as const)('Cmd+Backspace 在 %s 页分发生命周期删除动作', async (page, actionName) => {
+		const actions = createActions()
+		const context = {
+			...createEmptyCommandContext(),
+			route: { page },
+			selection: {
+				type: 'lifecycle' as const,
+				ids: ['entry-a'],
+				entities: [{ id: 'entry-a', type: 'lifecycle' as const, title: '条目 A' }],
+				primaryEntity: { id: 'entry-a', type: 'lifecycle' as const, title: '条目 A' },
+				source: 'lifecycle-list' as const,
+				hasSelection: true,
+				isSingleSelection: true,
+				isMultiSelection: false,
+			},
+		}
+		const runtime = createRuntime(actions, context)
+
+		await expect(runtime.execute(COMMAND_IDS.selectionDeleteByRoute)).resolves.toMatchObject({
+			status: 'success',
+			commandId: COMMAND_IDS.selectionDeleteByRoute,
+		})
+		expect(actions[actionName]).toHaveBeenCalledWith(context)
+	})
+
 	it.each([
 		COMMAND_IDS.taskComplete,
 		COMMAND_IDS.taskChangePlacement,

@@ -3,6 +3,13 @@ import { act, renderHook } from '@testing-library/react'
 import { useEntitySelection } from './useEntitySelection'
 
 describe('useEntitySelection', () => {
+	it('初始不自动聚焦第一项', () => {
+		const { result } = renderHook(() => useEntitySelection(['a', 'b', 'c']))
+
+		expect(result.current.focusedId).toBeNull()
+		expect(result.current.selectionAnchorId).toBeNull()
+	})
+
 	it('按可见顺序 toggle selection', () => {
 		const { result } = renderHook(() => useEntitySelection(['a', 'b', 'c']))
 
@@ -49,7 +56,7 @@ describe('useEntitySelection', () => {
 			result.current.moveFocus(1, { selectRange: true, preserveAnchor: true })
 		})
 
-		expect(result.current.selectedIds).toEqual(['b', 'c'])
-		expect(result.current.focusedId).toBe('c')
+		expect(result.current.selectedIds).toEqual(['a', 'b'])
+		expect(result.current.focusedId).toBe('b')
 	})
 })

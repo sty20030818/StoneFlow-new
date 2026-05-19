@@ -53,6 +53,20 @@ describe('LifecycleBoard', () => {
 			expect(screen.getByRole('button', { name: '打开 任务 A' })).toBeInTheDocument()
 		})
 	})
+
+	it('鼠标 hover 生命周期行时不显示键盘边框，移开后清除 hover', () => {
+		render(<LifecycleBoardHoverHarness />)
+
+		const row = screen.getByRole('button', { name: '打开 任务 A' })
+
+		fireEvent.mouseEnter(row)
+		expect(row.className).toContain('bg-sf-list-row-hover')
+		expect(row.className).not.toContain('border-sf-border-subtle')
+
+		fireEvent.mouseLeave(row)
+		expect(row.className).not.toContain('bg-sf-list-row-hover')
+		expect(row.className).not.toContain('border-sf-border-subtle')
+	})
 })
 
 function LifecycleBoardAsyncHarness() {
@@ -84,6 +98,30 @@ function LifecycleBoardAsyncHarness() {
 				sections={sections}
 			/>
 		</div>
+	)
+}
+
+function LifecycleBoardHoverHarness() {
+	const [focusedEntryId, setFocusedEntryId] = useState<string | null>(null)
+
+	return (
+		<LifecycleBoard
+			emptyDescription='empty'
+			emptyTitle='empty'
+			focusedEntryId={focusedEntryId}
+			mode='archive'
+			onOpenDetail={() => undefined}
+			onRestore={() => undefined}
+			onSetFocusedEntry={setFocusedEntryId}
+			pendingEntryId={null}
+			sections={[
+				{
+					key: 'task',
+					label: '已归档的任务',
+					items: [createEntry({ id: 'task-1', entityType: 'task', title: '任务 A' })],
+				},
+			]}
+		/>
 	)
 }
 

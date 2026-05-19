@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { useState } from 'react'
 
 import { ProjectBoard } from '@/features/project/ui/ProjectBoard'
 import type { ProjectOverviewItem } from '@/shared/types'
@@ -111,7 +112,44 @@ describe('ProjectBoard', () => {
 
 		expect(onToggleProjectSelection).toHaveBeenCalledWith('project-1')
 	})
+
+	it('鼠标 hover 项目行时不显示键盘边框，移开后清除 hover', () => {
+		render(<ProjectBoardHoverHarness />)
+
+		const row = screen.getByRole('button', { name: '打开项目 项目 A' })
+
+		fireEvent.mouseEnter(row)
+		expect(row.className).toContain('bg-sf-list-row-hover')
+		expect(row.className).not.toContain('border-sf-border-subtle')
+
+		fireEvent.mouseLeave(row)
+		expect(row.className).not.toContain('bg-sf-list-row-hover')
+		expect(row.className).not.toContain('border-sf-border-subtle')
+	})
 })
+
+function ProjectBoardHoverHarness() {
+	const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null)
+
+	return (
+		<ProjectBoard
+			busyProjectId={null}
+			emptyDescription='empty'
+			emptyTitle='empty'
+			focusedProjectId={focusedProjectId}
+			items={[createProject({ id: 'project-1', name: '项目 A' })]}
+			onArchive={() => undefined}
+			onComplete={() => undefined}
+			onDelete={() => undefined}
+			onMoveProjectFocus={() => null}
+			onOpen={() => undefined}
+			onReopen={() => undefined}
+			onSetFocusedProject={setFocusedProjectId}
+			status='ready'
+			variant='overview'
+		/>
+	)
+}
 
 function createProject(
 	overrides: Partial<ProjectOverviewItem> & Pick<ProjectOverviewItem, 'id' | 'name'>,

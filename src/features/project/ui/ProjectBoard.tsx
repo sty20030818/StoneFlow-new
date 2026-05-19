@@ -126,15 +126,14 @@ export function ProjectBoard(props: ProjectBoardProps) {
 							onExpandAll={handleExpandAll}
 							onOpen={props.onOpen}
 							onOpenChange={(open) => handleOpenChange(section.key, open)}
-							onReopen={props.onReopen}
-							onToggleProjectSelection={props.onToggleProjectSelection}
-							open={openSections.has(section.key)}
-							section={section}
-							selectedProjectIds={props.selectedProjectIds}
-							focusedProjectId={props.focusedProjectId ?? null}
-							rowShortcutState={rowShortcutState}
-						/>
-					))}
+						onReopen={props.onReopen}
+						onToggleProjectSelection={props.onToggleProjectSelection}
+						open={openSections.has(section.key)}
+						section={section}
+						selectedProjectIds={props.selectedProjectIds}
+						rowShortcutState={rowShortcutState}
+					/>
+				))}
 				</BoardRoot>
 			)}
 		</EntityRowShortcutScope>
@@ -155,7 +154,6 @@ function ProjectBoardSectionBlock({
 	onToggleProjectSelection,
 	onCollapseAll,
 	onExpandAll,
-	focusedProjectId,
 	rowShortcutState,
 }: {
 	section: BoardSection<ProjectOverviewItem> & {
@@ -173,7 +171,6 @@ function ProjectBoardSectionBlock({
 	onToggleProjectSelection?: (projectId: string) => void
 	onCollapseAll: () => void
 	onExpandAll: () => void
-	focusedProjectId: string | null
 	rowShortcutState: EntityRowShortcutState
 }) {
 	const sectionIds = useMemo(() => section.items.map((p) => p.id), [section.items])
@@ -223,8 +220,9 @@ function ProjectBoardSectionBlock({
 					rowState={{
 						isPending: busyProjectId === project.id,
 						isSelected: selectedProjectIds?.has(project.id) ?? false,
-						isHovered: focusedProjectId === project.id,
-						hoverSource: focusedProjectId === project.id ? 'keyboard' : null,
+						isHovered: rowShortcutState.hoveredId === project.id,
+						hoverSource:
+							rowShortcutState.hoveredId === project.id ? rowShortcutState.hoverSource : null,
 					}}
 					rowShortcutHandlers={{
 						onHover: rowShortcutState.onRowHover,

@@ -149,7 +149,6 @@ export function LifecycleBoard({
 							open={openSections.has(section.key)}
 							pendingEntryId={pendingEntryId}
 							rowShortcutState={rowShortcutState}
-							focusedEntryId={focusedEntryId}
 							selectedEntryIdSet={selectedEntryIdSet}
 						/>
 					))}
@@ -172,7 +171,6 @@ function LifecycleBoardSectionBlock({
 	onToggleEntrySelection,
 	onCollapseAll,
 	onExpandAll,
-	focusedEntryId,
 	rowShortcutState,
 }: {
 	label: string
@@ -187,7 +185,6 @@ function LifecycleBoardSectionBlock({
 	onToggleEntrySelection?: (entryId: string) => void
 	onCollapseAll: () => void
 	onExpandAll: () => void
-	focusedEntryId: string | null
 	rowShortcutState: EntityRowShortcutState
 }) {
 	const sectionIds = useMemo(() => items.map((item) => item.id), [items])
@@ -237,8 +234,9 @@ function LifecycleBoardSectionBlock({
 					rowState={{
 						isPending: pendingEntryId === entry.id,
 						isSelected: selectedEntryIdSet?.has(entry.id) ?? false,
-						isHovered: focusedEntryId === entry.id,
-						hoverSource: focusedEntryId === entry.id ? 'keyboard' : null,
+						isHovered: rowShortcutState.hoveredId === entry.id,
+						hoverSource:
+							rowShortcutState.hoveredId === entry.id ? rowShortcutState.hoverSource : null,
 					}}
 					rowShortcutHandlers={{
 						onHover: rowShortcutState.onRowHover,

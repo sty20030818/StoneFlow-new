@@ -43,7 +43,10 @@ const GROUPS: Array<{
 	{ key: 'task', heading: '任务', categories: ['task'] },
 ]
 
-const DEFAULT_HIDDEN_COMMAND_IDS: ReadonlySet<CommandId> = new Set([COMMAND_IDS.openCommandMenu])
+const DEFAULT_HIDDEN_COMMAND_IDS: ReadonlySet<CommandId> = new Set([
+	COMMAND_IDS.openCommandMenu,
+	COMMAND_IDS.selectionDeleteByRoute,
+])
 const BULK_TASK_COMMAND_IDS: ReadonlySet<CommandId> = new Set([
 	COMMAND_IDS.taskComplete,
 	COMMAND_IDS.taskSetPriority,
