@@ -526,7 +526,8 @@ describe('TaskRowShortcutScope', () => {
 
 		const boardRoot = screen.getByTestId('scope-root')
 		boardRoot.dataset.boardRoot = 'true'
-		boardRoot.className = 'no-scrollbar overflow-y-auto'
+		boardRoot.dataset.scrollContainer = 'true'
+		boardRoot.dataset.scrollContainerRole = 'main-card'
 		Object.defineProperty(boardRoot, 'scrollTop', {
 			configurable: true,
 			writable: true,

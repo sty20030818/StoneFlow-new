@@ -92,7 +92,8 @@ type TaskRowCommandActions = {
 }
 
 const ROW_COMMAND_DISABLED_REASON = 'Row 上下文尚未接入'
-const MAIN_CARD_SCROLL_SELECTOR = '.no-scrollbar.overflow-y-auto'
+const MAIN_CARD_SCROLL_SELECTOR =
+	'[data-scroll-container="true"][data-scroll-container-role="main-card"]'
 const KEYBOARD_SCROLL_BEHAVIOR: ScrollBehavior = 'auto'
 const POINTER_RECLAIM_THRESHOLD_PX = 12
 const BOTTOM_GAP_PX = 8
