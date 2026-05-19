@@ -188,12 +188,15 @@ export type CommandProjectContext = {
 	currentProjectId?: string
 }
 
+import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskStatus } from '@/shared/types'
+
 export type CommandViewContext = {
 	currentViewId?: string
 	hasActiveFilters: boolean
 	showCompleted: boolean
-	priorityFilterValues: number[]
-	statusFilterValues: string[]
+	priorityFilterValues: TaskPriorityValue[]
+	statusFilterValues: TaskStatus[]
 	dateFilterValue: string
 	projectFilterId: string | null
 	projectlessOnly: boolean

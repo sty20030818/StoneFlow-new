@@ -51,6 +51,17 @@ describe('ProjectCreateContent', () => {
 		await waitFor(() => expect(createProjectMock).toHaveBeenCalledTimes(1))
 		expect(screen.getByText('已创建 1 个项目')).toBeInTheDocument()
 	})
+
+	it('描述输入区位于统一滚动容器内', () => {
+		renderProjectCreate()
+
+		const scrollContainer = screen
+			.getByPlaceholderText('添加项目说明…')
+			.closest('[data-scroll-container="true"]')
+
+		expect(scrollContainer).toHaveAttribute('data-scroll-container', 'true')
+		expect(scrollContainer?.className).toContain('px-5')
+	})
 })
 
 function renderProjectCreate({

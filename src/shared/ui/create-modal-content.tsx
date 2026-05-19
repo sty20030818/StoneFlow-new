@@ -4,6 +4,7 @@ import {
 	createDialogScrollClass,
 	createDialogSectionClass,
 } from '@/shared/ui/patterns/create-dialog'
+import { AppScrollArea } from '@/shared/ui/AppScrollArea'
 
 /** 创建弹窗表单 layout 容器 */
 function Root({ children }: { children: React.ReactNode }) {
@@ -17,7 +18,11 @@ function Title({ children }: { children: React.ReactNode }) {
 
 /** 描述区 — 可滚动 */
 function Body({ children }: { children: React.ReactNode }) {
-	return <div className={createDialogScrollClass}>{children}</div>
+	return (
+		<AppScrollArea className='min-h-0 flex-1' viewportClassName={createDialogScrollClass}>
+			{children}
+		</AppScrollArea>
+	)
 }
 
 /** 元数据区 — 固定，含可选错误信息 */

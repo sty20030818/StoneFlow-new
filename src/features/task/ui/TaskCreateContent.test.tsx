@@ -67,6 +67,17 @@ describe('TaskCreateContent', () => {
 		expect(onClose).toHaveBeenCalledTimes(1)
 		expect(openDrawerMock).toHaveBeenCalledWith('task', 'task-created')
 	})
+
+	it('描述输入区位于统一滚动容器内', () => {
+		renderTaskCreate()
+
+		const scrollContainer = screen
+			.getByPlaceholderText('添加描述...')
+			.closest('[data-scroll-container="true"]')
+
+		expect(scrollContainer).toHaveAttribute('data-scroll-container', 'true')
+		expect(scrollContainer?.className).toContain('px-5')
+	})
 })
 
 function renderTaskCreate({
@@ -97,8 +108,10 @@ function renderTaskCreate({
 					{
 						id: 'space-a',
 						name: '工作',
-						slug: 'work',
+						iconKey: 'folder',
+						colorKey: 'blue',
 						isDefault: true,
+						sortOrder: 0,
 						archivedAt: null,
 						deletedAt: null,
 						createdAt: '2026-05-19T10:00:00.000Z',

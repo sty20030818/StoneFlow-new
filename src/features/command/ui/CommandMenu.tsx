@@ -754,21 +754,26 @@ function FilterPickerCommandGroup({
 				</CommandItem>
 				{TASK_PRIORITY_OPTIONS.map((option) => {
 					const selected = context.view.priorityFilterValues.includes(option.value)
-					return (
-						<CommandItem
-							key={option.value}
-							onSelect={() => {
-								onApplyFilter({
-									kind: 'priority',
-									values: selected
-										? context.view.priorityFilterValues.filter((value) => value !== option.value)
+						return (
+							<CommandItem
+								key={option.value}
+								onSelect={() => {
+									const nextValues: TaskPriorityValue[] = selected
+										? context.view.priorityFilterValues.filter(
+												(value): value is (typeof context.view.priorityFilterValues)[number] =>
+													value !== option.value,
+											)
 										: [...context.view.priorityFilterValues, option.value].sort(
 												(left, right) => right - left,
-											),
-								})
-							}}
-							value={`priority ${option.label} ${option.value}`}
-						>
+											)
+
+									onApplyFilter({
+										kind: 'priority',
+										values: nextValues,
+									})
+								}}
+								value={`priority ${option.label} ${option.value}`}
+							>
 							<CommandRow
 								leadingIcon={ListTodoIcon}
 								title={option.label}
@@ -797,19 +802,24 @@ function FilterPickerCommandGroup({
 				</CommandItem>
 				{TASK_STATUS_OPTIONS.map((option) => {
 					const selected = context.view.statusFilterValues.includes(option.value)
-					return (
-						<CommandItem
-							key={option.value}
-							onSelect={() => {
-								onApplyFilter({
-									kind: 'status',
-									values: selected
-										? context.view.statusFilterValues.filter((value) => value !== option.value)
-										: [...context.view.statusFilterValues, option.value],
-								})
-							}}
-							value={`status ${option.label} ${option.value}`}
-						>
+						return (
+							<CommandItem
+								key={option.value}
+								onSelect={() => {
+									const nextValues: TaskStatus[] = selected
+										? context.view.statusFilterValues.filter(
+												(value): value is (typeof context.view.statusFilterValues)[number] =>
+													value !== option.value,
+											)
+										: [...context.view.statusFilterValues, option.value]
+
+									onApplyFilter({
+										kind: 'status',
+										values: nextValues,
+									})
+								}}
+								value={`status ${option.label} ${option.value}`}
+							>
 							<CommandRow
 								leadingIcon={CircleIcon}
 								title={option.label}
