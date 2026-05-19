@@ -60,7 +60,9 @@ export function EntityRowShortcutScope({
 	)
 	const shiftToggleSessionRef = useRef<ShiftToggleSession>(EMPTY_SHIFT_TOGGLE_SESSION)
 	const inputModeRef = useRef<RowInputMode>(externalFocusedId ? 'keyboard' : 'pointer')
-	const hoverSourceRef = useRef<'pointer' | 'keyboard' | null>(externalFocusedId ? 'keyboard' : null)
+	const hoverSourceRef = useRef<'pointer' | 'keyboard' | null>(
+		externalFocusedId ? 'keyboard' : null,
+	)
 
 	useEffect(() => {
 		if (externalFocusedId === null) {
@@ -123,8 +125,7 @@ export function EntityRowShortcutScope({
 				event.preventDefault()
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
 				onSelectAll?.(ids)
-				const nextFocusId = getValidId(ids, focusId) ?? ids[0] ?? null
-				updateHoveredRow(nextFocusId, 'keyboard')
+				updateHoveredRow(null, null)
 				return
 			}
 

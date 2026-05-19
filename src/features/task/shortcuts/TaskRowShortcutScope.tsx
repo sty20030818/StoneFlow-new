@@ -428,14 +428,9 @@ export function TaskRowShortcutScope({
 				event.preventDefault()
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
 				onSelectAllTasks?.(tasks.map((task) => task.id))
-				if (tasks.length > 0) {
-					suppressPointerHoverRef.current = true
-					frozenPointerPointRef.current = lastPointerPointRef.current
-					updateHoveredRow(hoveredIdRef.current ?? tasks[0]?.id ?? null, 'keyboard', {
-						syncExternal: true,
-						scrollIntoView: false,
-					})
-				}
+				updateHoveredRow(null, null, {
+					scrollIntoView: false,
+				})
 				return
 			}
 

@@ -29,6 +29,18 @@ describe('useEntitySelection', () => {
 		})
 	})
 
+	it('selectAll 只更新选区，不默认聚焦第一项', () => {
+		const { result } = renderHook(() => useEntitySelection(['a', 'b', 'c']))
+
+		act(() => {
+			result.current.selectAll()
+		})
+
+		expect(result.current.selectedIds).toEqual(['a', 'b', 'c'])
+		expect(result.current.focusedId).toBeNull()
+		expect(result.current.selectionAnchorId).toBeNull()
+	})
+
 	it('数据刷新后剔除失效 selection 并保持可用 focus', () => {
 		const { result, rerender } = renderHook(
 			({ ids }: { ids: string[] }) => useEntitySelection(ids),

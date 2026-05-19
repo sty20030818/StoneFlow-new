@@ -83,22 +83,17 @@ export function useEntitySelection(entityIds: string[]) {
 						}
 			}
 
-			const currentFocusedId =
+			const nextFocusedId =
 				currentState.focusedId && nextSelectedIds.includes(currentState.focusedId)
 					? currentState.focusedId
 					: null
-			const currentAnchorId =
-				currentState.selectionAnchorId &&
-				nextSelectedIds.includes(currentState.selectionAnchorId)
+			const nextAnchorId =
+				currentState.selectionAnchorId && nextSelectedIds.includes(currentState.selectionAnchorId)
 					? currentState.selectionAnchorId
 					: null
-			const nextFocusedId = currentFocusedId ?? nextSelectedIds[0] ?? null
-			const nextAnchorId = currentAnchorId ?? nextFocusedId
 			const hasSameSelection =
 				currentState.selectedIds.length === nextSelectedIds.length &&
-				currentState.selectedIds.every(
-					(entityId, index) => entityId === nextSelectedIds[index],
-				)
+				currentState.selectedIds.every((entityId, index) => entityId === nextSelectedIds[index])
 
 			if (
 				hasSameSelection &&

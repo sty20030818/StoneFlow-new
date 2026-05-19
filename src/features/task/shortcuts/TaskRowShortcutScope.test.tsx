@@ -507,6 +507,23 @@ describe('TaskRowShortcutScope', () => {
 		expect(screen.getByTestId('selected-ids')).toHaveTextContent('task-c,task-d,task-e,task-f')
 	})
 
+	it('Cmd+A 全选后不制造键盘 hover 行', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions })
+
+		fireEvent.pointerMove(screen.getByTestId('row-task-c'), { clientX: 8, clientY: 8 })
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-c')
+
+		fireKey('a', { metaKey: true })
+
+		expect(screen.getByTestId('selected-ids')).toHaveTextContent(
+			'task-a,task-b,task-c,task-d,task-e,task-f',
+		)
+		expect(screen.getByTestId('focused-task')).toHaveTextContent('none')
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('none')
+		expect(screen.getByTestId('hover-source')).toHaveTextContent('none')
+	})
+
 	it('Shift+Arrow 取消到空选后再次开始时先切当前行', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
@@ -755,6 +772,7 @@ function renderSelectionScope({
 			selectedTaskIdSet,
 			selectedCount,
 			focusedTaskId,
+			selectTaskIds,
 			setFocusedTaskId,
 			moveFocus,
 			toggleTaskSelection,
@@ -778,6 +796,7 @@ function renderSelectionScope({
 					onMoveTaskFocus={moveFocus}
 					onOpenTask={actions.onOpenTask}
 					onSetFocusedTask={setFocusedTaskId}
+					onSelectAllTasks={selectTaskIds}
 					onToggleTaskSelection={toggleTaskSelection}
 					selectedTaskIdSet={selectedTaskIdSet}
 					tasks={tasks}
