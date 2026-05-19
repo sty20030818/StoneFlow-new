@@ -354,6 +354,7 @@ function TaskStatusSection({
 			label={label}
 			onOpenChange={onOpenChange}
 			open={open}
+			selectedCount={selectedCount}
 			selectedIdSet={selectedTaskIdSet}
 			trailing={
 				<Button

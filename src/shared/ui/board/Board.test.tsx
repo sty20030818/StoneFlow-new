@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 
-import { BoardRows } from '@/shared/ui/board'
+import { BoardCollapsibleSection, BoardRows } from '@/shared/ui/board'
 import { RowShell } from '@/shared/ui/row'
 
 function Wrapper({ children }: { children: ReactNode }) {
@@ -74,5 +74,25 @@ describe('BoardRows', () => {
 		expect(last.className).toContain('rounded-b-md')
 		expect(last.className).toContain('bg-transparent')
 		expect(last).toHaveAttribute('data-selection-group-position', 'last')
+	})
+})
+
+describe('BoardCollapsibleSection', () => {
+	it('在数量 badge 右侧渲染选中数量 badge', () => {
+		render(
+			<BoardCollapsibleSection
+				count={12}
+				icon={<span data-testid='icon' />}
+				label='进行中'
+				onOpenChange={() => undefined}
+				open
+				selectedCount={3}
+			>
+				<div>row</div>
+			</BoardCollapsibleSection>,
+		)
+
+		expect(screen.getByText('12')).toBeInTheDocument()
+		expect(screen.getByText('已选 3')).toBeInTheDocument()
 	})
 })

@@ -205,6 +205,7 @@ function ProjectBoardSectionBlock({
 			label={section.label}
 			onOpenChange={onOpenChange}
 			open={open}
+			selectedCount={selectedCount}
 			selectedIdSet={selectedProjectIds}
 		>
 			{section.items.map((project) => (

@@ -18,6 +18,8 @@ export const entityBoardSectionHeadingClass =
 
 export const entityBoardSectionCountBadgeClass =
 	'ml-1 border-transparent bg-transparent shadow-none'
+export const entityBoardSectionSelectedBadgeClass =
+	'border-transparent bg-sf-selection-surface text-foreground shadow-none'
 export const entityBoardSectionRightSpacerClass = 'pr-1'
 export const entityBoardCompactBadgeClass = 'h-5 rounded-full px-2 text-[11px]'
 export const entityBoardSectionActionButtonClass =

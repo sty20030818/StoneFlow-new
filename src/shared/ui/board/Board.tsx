@@ -29,6 +29,7 @@ import {
 	entityBoardSectionCountBadgeClass,
 	entityBoardSectionHeadingClass,
 	entityBoardSectionRightSpacerClass,
+	entityBoardSectionSelectedBadgeClass,
 	entityBoardSectionToggleClass,
 } from '@/shared/ui/patterns/entity-board'
 import {
@@ -213,6 +214,7 @@ function getSelectionGroupPosition(index: number, groupSize: number): RowSelecti
 export type BoardCollapsibleSectionProps = {
 	label: string
 	count: number
+	selectedCount?: number
 	icon: ReactNode
 	trailing?: ReactNode
 	className?: string
@@ -232,6 +234,7 @@ export type BoardCollapsibleSectionProps = {
 export function BoardCollapsibleSection({
 	label,
 	count,
+	selectedCount = 0,
 	icon,
 	trailing,
 	className,
@@ -260,6 +263,17 @@ export function BoardCollapsibleSection({
 				<Badge className={entityBoardSectionCountBadgeClass} variant='secondary'>
 					{count}
 				</Badge>
+				{selectedCount > 0 ? (
+					<Badge
+						className={cn(
+							entityBoardSectionSelectedBadgeClass,
+							entityBoardCompactBadgeClass,
+						)}
+						variant='secondary'
+					>
+						已选 {selectedCount}
+					</Badge>
+				) : null}
 			</div>
 			{trailing ?? <span className={entityBoardSectionRightSpacerClass} />}
 		</div>

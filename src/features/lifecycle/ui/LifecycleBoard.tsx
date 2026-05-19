@@ -9,10 +9,8 @@ import {
 } from '@/shared/ui/board'
 import { useSectionSelection } from '@/features/bulk-action'
 import { entityBoardMutedIconClass } from '@/shared/ui/patterns/entity-board'
-import { cn } from '@/shared/lib/utils'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { ArchiveIcon, BoxIcon, FolderIcon, TrashIcon } from 'lucide-react'
-import { ROW_SHELL_META_TEXT_CLASS } from '@/shared/ui/row'
 import { LifecycleRowAdapter } from '@/features/lifecycle/ui/LifecycleRowAdapter'
 import {
 	EntityRowShortcutScope,
@@ -221,12 +219,8 @@ function LifecycleBoardSectionBlock({
 			label={label}
 			onOpenChange={onOpenChange}
 			open={open}
+			selectedCount={selectedCount}
 			selectedIdSet={selectedEntryIdSet}
-			trailing={
-				selectedCount > 0 ? (
-					<span className={cn('pr-1', ROW_SHELL_META_TEXT_CLASS)}>已选 {selectedCount} 项</span>
-				) : undefined
-			}
 		>
 			{items.map((entry) => (
 				<LifecycleRowAdapter
