@@ -143,7 +143,10 @@ describe('buildCommandMenuGroups', () => {
 			createCommand(COMMAND_IDS.lifecycleDeletePermanently, { category: 'lifecycle' }),
 		])
 
-		const groups = buildCommandMenuGroups(runtime, createLifecycleSelectionContext({ page: 'trash' }))
+		const groups = buildCommandMenuGroups(
+			runtime,
+			createLifecycleSelectionContext({ page: 'trash' }),
+		)
 
 		expect(groups[0]?.key).toBe('bulk')
 		expect(groups[0]?.entries.map((entry) => entry.command.id)).toEqual([
@@ -199,11 +202,7 @@ function createTaskSelectionContext(): CommandContext {
 	}
 }
 
-function createLifecycleSelectionContext({
-	page,
-}: {
-	page: 'archive' | 'trash'
-}): CommandContext {
+function createLifecycleSelectionContext({ page }: { page: 'archive' | 'trash' }): CommandContext {
 	return {
 		...context,
 		route: {

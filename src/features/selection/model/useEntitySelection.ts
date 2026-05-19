@@ -23,7 +23,9 @@ export function useEntitySelection(entityIds: string[]) {
 			const nextState = pruneEntitySelectionFocusState(currentState, entityIds)
 			if (
 				nextState.selectedIds.length === currentState.selectedIds.length &&
-				nextState.selectedIds.every((entityId, index) => entityId === currentState.selectedIds[index]) &&
+				nextState.selectedIds.every(
+					(entityId, index) => entityId === currentState.selectedIds[index],
+				) &&
 				nextState.focusedId === currentState.focusedId &&
 				nextState.selectionAnchorId === currentState.selectionAnchorId
 			) {
@@ -37,10 +39,7 @@ export function useEntitySelection(entityIds: string[]) {
 
 	const { selectedIds, focusedId, selectionAnchorId } = selectionState
 	const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds])
-	const selectionSnapshot = useMemo(
-		() => buildEntitySelectionSnapshot(selectedIds),
-		[selectedIds],
-	)
+	const selectionSnapshot = useMemo(() => buildEntitySelectionSnapshot(selectedIds), [selectedIds])
 	const selectedCount = selectedIds.length
 	const focusedIndex = focusedId ? entityIds.indexOf(focusedId) : -1
 

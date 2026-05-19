@@ -61,13 +61,7 @@ export function TaskRowAdapter({
 	projectBinding,
 	actions,
 }: TaskRowAdapterProps) {
-	const {
-		isActive,
-		isSelected,
-		isPending,
-		isHovered = false,
-		hoverSource = null,
-	} = rowState
+	const { isActive, isSelected, isPending, isHovered = false, hoverSource = null } = rowState
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
 	const hasProjectOptions = Boolean(
 		projectBinding?.projectOptions &&

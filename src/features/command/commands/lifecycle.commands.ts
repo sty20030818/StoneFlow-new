@@ -2,7 +2,9 @@ import { COMMAND_IDS, type Command } from '@/features/command/core'
 
 const LIFECYCLE_SELECTION_DISABLED_REASON = '需要先选择归档或回收站条目'
 
-function lifecycleCommand(command: Omit<Command, 'run' | 'isEnabled' | 'getDisabledReason'>): Command {
+function lifecycleCommand(
+	command: Omit<Command, 'run' | 'isEnabled' | 'getDisabledReason'>,
+): Command {
 	return {
 		...command,
 		isEnabled: (ctx) => ctx.selection.type === 'lifecycle' && ctx.selection.ids.length > 0,

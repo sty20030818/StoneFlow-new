@@ -1,5 +1,10 @@
 import type { CommandSelectionContext } from '@/features/command/core'
-import type { LifecycleEntry, LifecycleMode, ProjectOverviewItem, TaskListItem } from '@/shared/types'
+import type {
+	LifecycleEntry,
+	LifecycleMode,
+	ProjectOverviewItem,
+	TaskListItem,
+} from '@/shared/types'
 
 type BuildTaskCommandSelectionInput = {
 	selectedIds: string[]

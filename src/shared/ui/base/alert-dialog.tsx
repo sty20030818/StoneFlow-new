@@ -136,11 +136,7 @@ function AlertDialogContent({
 				// 不依赖"原生 Enter 激活 button"，是为了在测试与实际行为保持一致。
 				const focused = document.activeElement
 				const dialogEl = event.currentTarget
-				if (
-					focused instanceof HTMLElement &&
-					focused !== dialogEl &&
-					dialogEl.contains(focused)
-				) {
+				if (focused instanceof HTMLElement && focused !== dialogEl && dialogEl.contains(focused)) {
 					event.preventDefault()
 					event.stopPropagation()
 					focused.click()
@@ -158,9 +154,7 @@ function AlertDialogContent({
 			}
 
 			if (key === 'Escape') {
-				const cancel = event.currentTarget.querySelector<HTMLElement>(
-					ALERT_DIALOG_CANCEL_SELECTOR,
-				)
+				const cancel = event.currentTarget.querySelector<HTMLElement>(ALERT_DIALOG_CANCEL_SELECTOR)
 				if (cancel) {
 					event.preventDefault()
 					event.stopPropagation()

@@ -459,9 +459,9 @@ function ShellLayoutContent({
 					? project.taskCount > 0
 						? String(project.taskCount)
 						: undefined
-						: project.completedAt
-							? 'done'
-							: undefined,
+					: project.completedAt
+						? 'done'
+						: undefined,
 			})),
 		[sidebarProjects.items, sidebarSettings?.projectSection.showCounts, spaces],
 	)
@@ -472,12 +472,12 @@ function ShellLayoutContent({
 		goBack,
 		goForward,
 		navigateToHistoryEntry,
-		} = useShellRouteHistory({
-			currentScope,
-			currentSpaceId,
-			spaces,
-			projects: sidebarProjectLinks,
-		})
+	} = useShellRouteHistory({
+		currentScope,
+		currentSpaceId,
+		spaces,
+		projects: sidebarProjectLinks,
+	})
 	const handleCommandMenuOpenChange = useCallback(
 		(open: boolean) => {
 			setCommandOpen(open)
@@ -750,7 +750,7 @@ function ShellLayoutContent({
 		() => ({
 			isCommandMenuOpen: isCommandOpen,
 			isDetailOpen: Boolean(activeDrawerId),
-			detailEntityType: activeDrawerId ? activeDrawerKind ?? undefined : undefined,
+			detailEntityType: activeDrawerId ? (activeDrawerKind ?? undefined) : undefined,
 			isModalOpen: createDialogType !== null || isShortcutHelpOpen,
 		}),
 		[activeDrawerId, activeDrawerKind, createDialogType, isCommandOpen, isShortcutHelpOpen],

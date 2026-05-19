@@ -19,8 +19,6 @@ export function isCommandMenuSearchMode(mode: CommandMenuMode) {
 
 export function isCommandMenuTaskPropertyMode(mode: CommandMenuMode) {
 	return (
-		mode === 'task-priority-picker' ||
-		mode === 'task-status-picker' ||
-		mode === 'task-date-picker'
+		mode === 'task-priority-picker' || mode === 'task-status-picker' || mode === 'task-date-picker'
 	)
 }

@@ -686,7 +686,11 @@ function FilterPickerCommandGroup({
 				? { kind: 'date' as const, title: '按日期筛选', meta: formatDateMeta(context) }
 				: null,
 			capability.supportsProject
-				? { kind: 'project' as const, title: '按项目筛选', meta: formatProjectMeta(context, projects) }
+				? {
+						kind: 'project' as const,
+						title: '按项目筛选',
+						meta: formatProjectMeta(context, projects),
+					}
 				: null,
 		].filter((item): item is NonNullable<typeof item> => item !== null)
 
@@ -760,7 +764,9 @@ function FilterPickerCommandGroup({
 									kind: 'priority',
 									values: selected
 										? context.view.priorityFilterValues.filter((value) => value !== option.value)
-										: [...context.view.priorityFilterValues, option.value].sort((left, right) => right - left),
+										: [...context.view.priorityFilterValues, option.value].sort(
+												(left, right) => right - left,
+											),
 								})
 							}}
 							value={`priority ${option.label} ${option.value}`}
@@ -768,7 +774,9 @@ function FilterPickerCommandGroup({
 							<CommandRow
 								leadingIcon={ListTodoIcon}
 								title={option.label}
-								trailing={<CommandRowMeta>{selected ? '已选中' : `P${option.value}`}</CommandRowMeta>}
+								trailing={
+									<CommandRowMeta>{selected ? '已选中' : `P${option.value}`}</CommandRowMeta>
+								}
 							/>
 						</CommandItem>
 					)
@@ -878,7 +886,9 @@ function FilterPickerCommandGroup({
 							leadingIcon={FolderIcon}
 							title={project.label}
 							trailing={
-								<CommandRowMeta>{selected ? '已选中' : `Project · ${project.spaceName ?? ''}`}</CommandRowMeta>
+								<CommandRowMeta>
+									{selected ? '已选中' : `Project · ${project.spaceName ?? ''}`}
+								</CommandRowMeta>
 							}
 						/>
 					</CommandItem>

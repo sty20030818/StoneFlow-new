@@ -14,7 +14,10 @@ import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { ArchiveIcon, BoxIcon, FolderIcon, TrashIcon } from 'lucide-react'
 import { ROW_SHELL_META_TEXT_CLASS } from '@/shared/ui/row'
 import { LifecycleRowAdapter } from '@/features/lifecycle/ui/LifecycleRowAdapter'
-import { EntityRowShortcutScope, type EntityRowShortcutState } from '@/features/selection/ui/EntityRowShortcutScope'
+import {
+	EntityRowShortcutScope,
+	type EntityRowShortcutState,
+} from '@/features/selection/ui/EntityRowShortcutScope'
 
 export type LifecycleBoardSection = BoardSection<LifecycleEntry>
 

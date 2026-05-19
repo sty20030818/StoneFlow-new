@@ -186,12 +186,8 @@ function TestBulkActionBoundary({ children }: { children: ReactNode }) {
 }
 
 function TestBulkActionConfirmDialog() {
-	const {
-		cancelPendingAction,
-		confirmPendingAction,
-		isExecuting,
-		pendingConfirmation,
-	} = useBulkActionContext()
+	const { cancelPendingAction, confirmPendingAction, isExecuting, pendingConfirmation } =
+		useBulkActionContext()
 
 	return (
 		<BulkActionConfirmDialog

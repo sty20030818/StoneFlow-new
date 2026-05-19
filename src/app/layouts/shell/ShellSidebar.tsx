@@ -156,9 +156,8 @@ export function ShellSidebar({
 	const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create')
 	const [editorOpen, setEditorOpen] = useState(false)
 	const [dropdownError, setDropdownError] = useState<string | null>(null)
-	const [pendingSpaceConfirmAction, setPendingSpaceConfirmAction] = useState<SpaceConfirmAction | null>(
-		null,
-	)
+	const [pendingSpaceConfirmAction, setPendingSpaceConfirmAction] =
+		useState<SpaceConfirmAction | null>(null)
 	const confirmActionRef = useRef<HTMLButtonElement>(null)
 	const fallbackSpaceId =
 		currentSpaceId ?? spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
@@ -425,7 +424,8 @@ export function ShellSidebar({
 																setPendingSpaceConfirmAction({
 																	kind: 'archive',
 																	title: `确认归档「${activeSpace.name}」吗？`,
-																	description: '归档后这个 Space 会从当前侧栏移除，但数据仍可在归档列表中恢复。',
+																	description:
+																		'归档后这个 Space 会从当前侧栏移除，但数据仍可在归档列表中恢复。',
 																	confirmLabel: '归档',
 																})
 															}}
@@ -443,7 +443,8 @@ export function ShellSidebar({
 																setPendingSpaceConfirmAction({
 																	kind: 'delete',
 																	title: `确认删除「${activeSpace.name}」吗？`,
-																	description: '删除后这个 Space 会进入回收站，后续仍可从回收站恢复。',
+																	description:
+																		'删除后这个 Space 会进入回收站，后续仍可从回收站恢复。',
 																	confirmLabel: '删除',
 																})
 															}}

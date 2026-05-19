@@ -292,18 +292,15 @@ describe('Shell command adapter', () => {
 		COMMAND_IDS.taskOpenDateMenu,
 		COMMAND_IDS.taskArchive,
 		COMMAND_IDS.taskDelete,
-	])(
-		'没有 task selection 时禁用批量任务命令 %s',
-		async (commandId) => {
-			const runtime = createRuntime(createActions())
+	])('没有 task selection 时禁用批量任务命令 %s', async (commandId) => {
+		const runtime = createRuntime(createActions())
 
-			await expect(runtime.execute(commandId)).resolves.toMatchObject({
-				status: 'disabled',
-				commandId,
-				reason: '需要先选择任务',
-			})
-		},
-	)
+		await expect(runtime.execute(commandId)).resolves.toMatchObject({
+			status: 'disabled',
+			commandId,
+			reason: '需要先选择任务',
+		})
+	})
 
 	it('没有任务上下文时禁用任务详情切换命令', async () => {
 		const runtime = createRuntime(createActions())

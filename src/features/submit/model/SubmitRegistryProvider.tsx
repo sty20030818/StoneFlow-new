@@ -9,12 +9,7 @@ import {
 } from 'react'
 
 export type SubmitTargetContext = {
-	source:
-		| 'task-create'
-		| 'project-create'
-		| 'view-editor'
-		| 'space-editor'
-		| (string & {})
+	source: 'task-create' | 'project-create' | 'view-editor' | 'space-editor' | (string & {})
 }
 
 export type SubmitIntent = 'default' | 'continue' | 'open'
@@ -51,9 +46,10 @@ export function SubmitRegistryProvider({ children }: PropsWithChildren) {
 	const [activeTarget, setActiveTarget] = useState<SubmitTarget | null>(null)
 
 	function syncActiveTarget() {
-		const nextTarget = Array.from(registrationsRef.current.values())
-			.filter((target) => target.canSubmit)
-			.sort((left, right) => right.priority - left.priority)[0] ?? null
+		const nextTarget =
+			Array.from(registrationsRef.current.values())
+				.filter((target) => target.canSubmit)
+				.sort((left, right) => right.priority - left.priority)[0] ?? null
 
 		setActiveTarget(nextTarget)
 	}

@@ -228,10 +228,7 @@ function resolveShiftToggleCursorId({
 	}
 
 	return (
-		getValidId(ids, shiftToggleSession.cursorId) ??
-		getValidId(ids, focusedId) ??
-		ids[0] ??
-		null
+		getValidId(ids, shiftToggleSession.cursorId) ?? getValidId(ids, focusedId) ?? ids[0] ?? null
 	)
 }
 

@@ -23,10 +23,7 @@ export type ShellCommandActions = {
 	openTaskPicker: () => void
 	openProjectPicker: () => void
 	openTaskPlacementPicker: (ctx: CommandContext) => void
-	applyTaskPlacement: (
-		target: TaskPlacementTarget,
-		ctx: CommandContext,
-	) => void | Promise<void>
+	applyTaskPlacement: (target: TaskPlacementTarget, ctx: CommandContext) => void | Promise<void>
 	openTaskPriorityPicker: (ctx: CommandContext) => void
 	openTaskStatusPicker: (ctx: CommandContext) => void
 	openTaskDatePicker: (ctx: CommandContext) => void
@@ -151,7 +148,9 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 				...command,
 				isEnabled: (ctx) => ctx.view.filterCapabilities.supportsToggleCompleted,
 				getDisabledReason: (ctx) =>
-					ctx.view.filterCapabilities.supportsToggleCompleted ? undefined : '当前页面不支持完成筛选',
+					ctx.view.filterCapabilities.supportsToggleCompleted
+						? undefined
+						: '当前页面不支持完成筛选',
 				run: adapter.toggleCompletedFilter,
 			}
 		case COMMAND_IDS.filterClearAll:

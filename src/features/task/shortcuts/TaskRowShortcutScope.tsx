@@ -1,11 +1,4 @@
-import {
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-	type ReactNode,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
@@ -243,7 +236,9 @@ function scrollKeyboardTargetIntoView({
 
 	if (targetBottom > (isLastRow ? visibleBottom : safeBottom)) {
 		scrollContainer.scrollTo({
-			top: targetBottom - (isLastRow ? scrollContainer.clientHeight : scrollContainer.clientHeight - BOTTOM_GAP_PX),
+			top:
+				targetBottom -
+				(isLastRow ? scrollContainer.clientHeight : scrollContainer.clientHeight - BOTTOM_GAP_PX),
 			behavior: KEYBOARD_SCROLL_BEHAVIOR,
 		})
 	}
@@ -467,7 +462,14 @@ export function TaskRowShortcutScope({
 
 		window.addEventListener('keydown', handleWindowKeyDown)
 		return () => window.removeEventListener('keydown', handleWindowKeyDown)
-	}, [onToggleTaskSelection, rowTarget.hasTarget, runtime, selectedTaskIds.length, tasks, updateHoveredRow])
+	}, [
+		onToggleTaskSelection,
+		rowTarget.hasTarget,
+		runtime,
+		selectedTaskIds.length,
+		tasks,
+		updateHoveredRow,
+	])
 
 	const state = useMemo<TaskRowShortcutState>(
 		() => ({

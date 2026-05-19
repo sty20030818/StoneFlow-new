@@ -166,8 +166,18 @@ describe('CommandMenu', () => {
 		mockedSearchEntities.mockResolvedValue(
 			createSearchResult({
 				projects: [
-					createProjectResult({ id: 'project-a', name: '项目 A', spaceId: 'space-a', spaceName: '工作' }),
-					createProjectResult({ id: 'project-b', name: '项目 B', spaceId: 'space-b', spaceName: '生活' }),
+					createProjectResult({
+						id: 'project-a',
+						name: '项目 A',
+						spaceId: 'space-a',
+						spaceName: '工作',
+					}),
+					createProjectResult({
+						id: 'project-b',
+						name: '项目 B',
+						spaceId: 'space-b',
+						spaceName: '生活',
+					}),
 				],
 			}),
 		)
@@ -233,7 +243,11 @@ describe('CommandMenu', () => {
 	it('task-date-picker 选择日期 preset 后回调并关闭菜单，自定义日期保持 disabled', () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTaskDate = vi.fn<(dueAt: string | null) => void>()
-		const { unmount } = renderCommandMenu({ mode: 'task-date-picker', onOpenChange, onSelectTaskDate })
+		const { unmount } = renderCommandMenu({
+			mode: 'task-date-picker',
+			onOpenChange,
+			onSelectTaskDate,
+		})
 
 		fireEvent.click(screen.getByText('无时间'))
 		expect(onOpenChange).toHaveBeenCalledWith(false)
@@ -362,8 +376,30 @@ function createCommandMenuElement({
 			projects={[{ id: 'project-a', label: '项目 A', badge: '2' }]}
 			runtime={createRuntime()}
 			spaces={[
-				{ id: 'space-a', name: '工作', iconKey: 'briefcase', colorKey: 'blue', isDefault: true, sortOrder: 1, archivedAt: null, deletedAt: null, createdAt: '2026-05-15T00:00:00Z', updatedAt: '2026-05-15T00:00:00Z' },
-				{ id: 'space-b', name: '生活', iconKey: 'leaf', colorKey: 'green', isDefault: false, sortOrder: 2, archivedAt: null, deletedAt: null, createdAt: '2026-05-15T00:00:00Z', updatedAt: '2026-05-15T00:00:00Z' },
+				{
+					id: 'space-a',
+					name: '工作',
+					iconKey: 'briefcase',
+					colorKey: 'blue',
+					isDefault: true,
+					sortOrder: 1,
+					archivedAt: null,
+					deletedAt: null,
+					createdAt: '2026-05-15T00:00:00Z',
+					updatedAt: '2026-05-15T00:00:00Z',
+				},
+				{
+					id: 'space-b',
+					name: '生活',
+					iconKey: 'leaf',
+					colorKey: 'green',
+					isDefault: false,
+					sortOrder: 2,
+					archivedAt: null,
+					deletedAt: null,
+					createdAt: '2026-05-15T00:00:00Z',
+					updatedAt: '2026-05-15T00:00:00Z',
+				},
 			]}
 			title='StoneFlow Command'
 		/>
@@ -423,10 +459,36 @@ function createTaskSelectionContext(): CommandContext {
 			type: 'task',
 			ids: ['task-a', 'task-b'],
 			entities: [
-				{ id: 'task-a', type: 'task', title: '任务 A', subtitle: 'Inbox', spaceId: 'space-a', projectId: null, inboxAt: '2026-05-15T00:00:00Z', status: 'todo' },
-				{ id: 'task-b', type: 'task', title: '任务 B', subtitle: '项目 B', spaceId: 'space-a', projectId: 'project-b', inboxAt: null, status: 'done' },
+				{
+					id: 'task-a',
+					type: 'task',
+					title: '任务 A',
+					subtitle: 'Inbox',
+					spaceId: 'space-a',
+					projectId: null,
+					inboxAt: '2026-05-15T00:00:00Z',
+					status: 'todo',
+				},
+				{
+					id: 'task-b',
+					type: 'task',
+					title: '任务 B',
+					subtitle: '项目 B',
+					spaceId: 'space-a',
+					projectId: 'project-b',
+					inboxAt: null,
+					status: 'done',
+				},
 			],
-			primaryEntity: { id: 'task-a', type: 'task', title: '任务 A', subtitle: 'Inbox', spaceId: 'space-a', projectId: null, inboxAt: '2026-05-15T00:00:00Z' },
+			primaryEntity: {
+				id: 'task-a',
+				type: 'task',
+				title: '任务 A',
+				subtitle: 'Inbox',
+				spaceId: 'space-a',
+				projectId: null,
+				inboxAt: '2026-05-15T00:00:00Z',
+			},
 			source: 'task-list',
 			hasSelection: true,
 			isSingleSelection: false,

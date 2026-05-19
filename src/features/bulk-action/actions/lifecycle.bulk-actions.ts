@@ -1,12 +1,5 @@
-import type {
-	BulkAction,
-	BulkActionId,
-	BulkSelectionSnapshot,
-} from '@/features/bulk-action/core'
-import {
-	LIFECYCLE_BULK_ACTION_IDS,
-	createBulkActionResult,
-} from '@/features/bulk-action/core'
+import type { BulkAction, BulkActionId, BulkSelectionSnapshot } from '@/features/bulk-action/core'
+import { LIFECYCLE_BULK_ACTION_IDS, createBulkActionResult } from '@/features/bulk-action/core'
 import type {
 	LifecycleBulkAdapter,
 	LifecycleBulkMutationReport,
@@ -68,15 +61,10 @@ export const lifecycleBulkActions: BulkAction[] = lifecycleBulkActionDefinitions
 
 			switch (definition.id) {
 				case LIFECYCLE_BULK_ACTION_IDS.restoreSelected:
-					return toBulkActionResult(
-						definition.id,
-						snapshot,
-						await adapter.restore(snapshot.ids),
-						{
-							getMessage: (report) => `已恢复 ${report.succeededIds.length} 个条目`,
-							shouldClearSelection: true,
-						},
-					)
+					return toBulkActionResult(definition.id, snapshot, await adapter.restore(snapshot.ids), {
+						getMessage: (report) => `已恢复 ${report.succeededIds.length} 个条目`,
+						shouldClearSelection: true,
+					})
 				case LIFECYCLE_BULK_ACTION_IDS.deleteSelected:
 					return toBulkActionResult(
 						definition.id,

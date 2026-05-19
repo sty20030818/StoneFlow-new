@@ -270,9 +270,9 @@ function isDatePayload(payload: BulkActionPayload): payload is { dueAt: string |
 function isProjectPayload(payload: BulkActionPayload): payload is { projectId: string } {
 	return Boolean(
 		payload &&
-			typeof payload === 'object' &&
-			'projectId' in payload &&
-			typeof payload.projectId === 'string' &&
-			payload.projectId.length > 0,
+		typeof payload === 'object' &&
+		'projectId' in payload &&
+		typeof payload.projectId === 'string' &&
+		payload.projectId.length > 0,
 	)
 }

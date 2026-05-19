@@ -49,10 +49,7 @@ describe('taskBoardOrder', () => {
 
 		expect(
 			getTaskBoardVisualOrderIds([todo, doing], {
-				customSections: [
-					{ tasks: [doing] },
-					{ tasks: [todo] },
-				],
+				customSections: [{ tasks: [doing] }, { tasks: [todo] }],
 			}),
 		).toEqual(['doing-1', 'todo-1'])
 	})

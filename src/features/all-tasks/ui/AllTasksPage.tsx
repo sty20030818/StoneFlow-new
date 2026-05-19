@@ -9,10 +9,7 @@ import {
 	useTaskPageFilterController,
 } from '@/features/filter/model'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
-import {
-	buildTaskCommandSelection,
-	useRegisterCommandSelection,
-} from '@/features/selection/model'
+import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'

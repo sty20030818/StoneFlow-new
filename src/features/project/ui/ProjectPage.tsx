@@ -10,10 +10,7 @@ import {
 	useTaskPageFilterController,
 } from '@/features/filter/model'
 import { selectProjectDetail, useProjectStore } from '@/features/project/model/useProjectStore'
-import {
-	buildTaskCommandSelection,
-	useRegisterCommandSelection,
-} from '@/features/selection/model'
+import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'

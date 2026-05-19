@@ -187,8 +187,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 // ----- Selectors -----
 export const selectIsCommandOpen = (state: DialogState) => state.isCommandOpen
 export const selectCommandMenuMode = (state: DialogState) => state.commandMenuMode
-export const selectCommandSelectionOverride = (state: DialogState) =>
-	state.commandSelectionOverride
+export const selectCommandSelectionOverride = (state: DialogState) => state.commandSelectionOverride
 export const selectCommandMenuFilterKind = (state: DialogState) => state.commandMenuFilterKind
 export const selectIsShortcutHelpOpen = (state: DialogState) => state.isShortcutHelpOpen
 export const selectCreateDialogType = (state: DialogState) => state.createDialogType

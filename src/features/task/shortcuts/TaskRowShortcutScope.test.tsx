@@ -596,14 +596,14 @@ describe('TaskRowShortcutScope', () => {
 			[rows[5]!, 320],
 		])
 
-		vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
-			this: HTMLElement,
-		) {
-			const rawTop = topMap.get(this) ?? 0
-			const top = this === boardRoot ? rawTop : rawTop - boardRoot.scrollTop
-			const height = this === headerA || this === headerB ? 40 : this === boardRoot ? 376 : 48
-			return makeDomRect(top, height, 320)
-		})
+		vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+			function (this: HTMLElement) {
+				const rawTop = topMap.get(this) ?? 0
+				const top = this === boardRoot ? rawTop : rawTop - boardRoot.scrollTop
+				const height = this === headerA || this === headerB ? 40 : this === boardRoot ? 376 : 48
+				return makeDomRect(top, height, 320)
+			},
+		)
 
 		fireEvent.mouseMove(rows[4]!)
 		fireKey('ArrowDown')
@@ -731,7 +731,7 @@ function renderSelectionScope({
 				<div data-testid='focused-task'>{focusedTaskId ?? 'none'}</div>
 				<div data-testid='selected-count'>{selectedCount}</div>
 				<div data-testid='selected-ids'>{selectedTaskIds.join(',')}</div>
-			<TaskRowShortcutScope
+				<TaskRowShortcutScope
 					activeTaskId={null}
 					focusedTaskId={focusedTaskId}
 					onClearTaskSelection={actions.onClearTaskSelection}

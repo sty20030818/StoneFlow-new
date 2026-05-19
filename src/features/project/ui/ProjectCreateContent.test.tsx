@@ -40,7 +40,11 @@ describe('ProjectCreateContent', () => {
 		fireEvent.change(screen.getByPlaceholderText('项目名称'), { target: { value: '项目 B' } })
 		fireEvent.click(screen.getByRole('button', { name: '执行打开提交' }))
 
-		await waitFor(() => expect(screen.getByTestId('open-disabled-reason')).toHaveTextContent('当前表单不支持创建并打开'))
+		await waitFor(() =>
+			expect(screen.getByTestId('open-disabled-reason')).toHaveTextContent(
+				'当前表单不支持创建并打开',
+			),
+		)
 		expect(createProjectMock).not.toHaveBeenCalled()
 
 		fireEvent.click(screen.getByRole('button', { name: '执行继续提交' }))

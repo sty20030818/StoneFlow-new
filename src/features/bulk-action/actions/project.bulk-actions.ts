@@ -1,16 +1,6 @@
-import type {
-	BulkAction,
-	BulkActionId,
-	BulkSelectionSnapshot,
-} from '@/features/bulk-action/core'
-import {
-	PROJECT_BULK_ACTION_IDS,
-	createBulkActionResult,
-} from '@/features/bulk-action/core'
-import type {
-	ProjectBulkAdapter,
-	ProjectBulkMutationReport,
-} from '@/features/bulk-action/adapters'
+import type { BulkAction, BulkActionId, BulkSelectionSnapshot } from '@/features/bulk-action/core'
+import { PROJECT_BULK_ACTION_IDS, createBulkActionResult } from '@/features/bulk-action/core'
+import type { ProjectBulkAdapter, ProjectBulkMutationReport } from '@/features/bulk-action/adapters'
 
 type ProjectBulkActionDefinition = Omit<BulkAction, 'run'>
 
@@ -44,52 +34,50 @@ export const projectBulkActionDefinitions: ProjectBulkActionDefinition[] = [
 	},
 ]
 
-export const projectBulkActions: BulkAction[] = projectBulkActionDefinitions.map(
-	(definition) => ({
-		...definition,
-		run: async (snapshot, context) => {
-			const adapter = getProjectBulkAdapter(context.adapter)
-			if (!adapter) {
+export const projectBulkActions: BulkAction[] = projectBulkActionDefinitions.map((definition) => ({
+	...definition,
+	run: async (snapshot, context) => {
+		const adapter = getProjectBulkAdapter(context.adapter)
+		if (!adapter) {
+			return createBulkActionResult({
+				status: 'failed',
+				actionId: definition.id,
+				snapshot,
+				error: new Error('project bulk adapter is not available'),
+			})
+		}
+
+		switch (definition.id) {
+			case PROJECT_BULK_ACTION_IDS.archiveSelected:
+				return toBulkActionResult(
+					definition.id,
+					snapshot,
+					await adapter.archiveProject(snapshot.ids),
+					{
+						getMessage: (report) => `已归档 ${report.succeededIds.length} 个项目`,
+						shouldClearSelection: true,
+					},
+				)
+			case PROJECT_BULK_ACTION_IDS.deleteSelected:
+				return toBulkActionResult(
+					definition.id,
+					snapshot,
+					await adapter.deleteProject(snapshot.ids),
+					{
+						getMessage: (report) => `已删除 ${report.succeededIds.length} 个项目`,
+						shouldClearSelection: true,
+					},
+				)
+			default:
 				return createBulkActionResult({
 					status: 'failed',
 					actionId: definition.id,
 					snapshot,
-					error: new Error('project bulk adapter is not available'),
+					error: new Error(`unsupported project bulk action: ${definition.id}`),
 				})
-			}
-
-			switch (definition.id) {
-				case PROJECT_BULK_ACTION_IDS.archiveSelected:
-					return toBulkActionResult(
-						definition.id,
-						snapshot,
-						await adapter.archiveProject(snapshot.ids),
-						{
-							getMessage: (report) => `已归档 ${report.succeededIds.length} 个项目`,
-							shouldClearSelection: true,
-						},
-					)
-				case PROJECT_BULK_ACTION_IDS.deleteSelected:
-					return toBulkActionResult(
-						definition.id,
-						snapshot,
-						await adapter.deleteProject(snapshot.ids),
-						{
-							getMessage: (report) => `已删除 ${report.succeededIds.length} 个项目`,
-							shouldClearSelection: true,
-						},
-					)
-				default:
-					return createBulkActionResult({
-						status: 'failed',
-						actionId: definition.id,
-						snapshot,
-						error: new Error(`unsupported project bulk action: ${definition.id}`),
-					})
-			}
-		},
-	}),
-)
+		}
+	},
+}))
 
 export function getProjectBulkActionDefinition(actionId: BulkActionId) {
 	return projectBulkActionDefinitions.find((action) => action.id === actionId) ?? null

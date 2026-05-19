@@ -16,10 +16,7 @@ import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patter
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
-import {
-	buildTaskCommandSelection,
-	useRegisterCommandSelection,
-} from '@/features/selection/model'
+import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import {

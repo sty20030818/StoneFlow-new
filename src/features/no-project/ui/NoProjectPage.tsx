@@ -8,10 +8,7 @@ import {
 	useRegisterPageFilterController,
 	useTaskPageFilterController,
 } from '@/features/filter/model'
-import {
-	buildTaskCommandSelection,
-	useRegisterCommandSelection,
-} from '@/features/selection/model'
+import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
