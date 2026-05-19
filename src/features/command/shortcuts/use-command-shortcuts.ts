@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
 
 import { isAnyModalOpen } from '@/shared/lib/modal-guard'
+import { setGlobalChordPending } from '@/shared/lib/global-chord-guard'
 import type { CommandId } from '@/features/command/core'
 import {
 	KEYBINDING_CHORD_TIMEOUT_MS,
 	matchKeybindingEvent,
-	type KeybindingStroke,
 	type KeybindingScope,
+	type KeybindingStroke,
 	type Keybinding,
 	type KeybindingChordState,
 	type NormalizedKeyEvent,
@@ -48,6 +49,9 @@ export function useCommandShortcuts({
 		function clearChordState() {
 			chordStateRef.current = null
 			emitChordState(null)
+			// 延迟到下一个宏任务再重置 Guard，确保本次 keydown 的其他 handler（如 TaskRowShortcutScope）
+			// 在当前事件循环内仍能读到 pending=true，从而正确让位给全局 chord 命令。
+			window.setTimeout(() => setGlobalChordPending(false), 0)
 			if (timeoutRef.current !== null) {
 				window.clearTimeout(timeoutRef.current)
 				timeoutRef.current = null
@@ -62,6 +66,7 @@ export function useCommandShortcuts({
 			timeoutRef.current = window.setTimeout(() => {
 				chordStateRef.current = null
 				emitChordState(null)
+				setGlobalChordPending(false)
 				timeoutRef.current = null
 			}, KEYBINDING_CHORD_TIMEOUT_MS)
 		}
@@ -83,6 +88,10 @@ export function useCommandShortcuts({
 			})
 
 			if (result.status === 'matched') {
+				// 只对修饰键组合和特殊键调用 preventDefault，避免对普通字母键 preventDefault
+				// 触发 macOS 的"输入时自动隐藏光标"行为。
+				// 字母 chord（f→p、g→p 等）的 Row 双触发问题由 GlobalChordGuard（方案 C）独立解决，
+				// 不再依赖 preventDefault 来隔离。
 				if (shouldPreventDefaultForMatchedKeybinding(result.keybinding.sequence)) {
 					event.preventDefault()
 				}
@@ -98,6 +107,8 @@ export function useCommandShortcuts({
 					startedAt: performance.now(),
 				}
 				emitChordState(chordStateRef.current)
+				// 方案 C：将 chord 状态写入全局 Guard，供 Row 等作用域在 isBlockedByHigherLayer 中读取。
+				setGlobalChordPending(true)
 				armChordTimeout()
 				return
 			}
@@ -113,6 +124,8 @@ export function useCommandShortcuts({
 	}, [bindings, scope])
 }
 
+// 只对"有修饰键"或"特殊功能键"的绑定 preventDefault，普通字母键不 prevent，
+// 避免 macOS 把 preventDefault 解读为"用户在输入"而隐藏光标。
 function shouldPreventDefaultForMatchedKeybinding(sequence: Keybinding['sequence']) {
 	return sequence.some((stroke) => shouldPreventDefaultForStroke(stroke))
 }

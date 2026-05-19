@@ -244,7 +244,7 @@ describe('useCommandShortcuts', () => {
 		expect(onChordStateChange).toHaveBeenLastCalledWith(null)
 	})
 
-	it('进入 pending 时不强行 preventDefault 前缀键', () => {
+	it('进入 pending 时不 preventDefault 前缀键（避免触发 macOS 光标隐藏）', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
 		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
@@ -267,7 +267,7 @@ describe('useCommandShortcuts', () => {
 		expect(onTrigger).not.toHaveBeenCalled()
 	})
 
-	it('命中可打印 chord 后不强行 preventDefault 第二键', () => {
+	it('命中可打印 chord 后不 preventDefault 字母键（避免光标隐藏），Row 双触发由 GlobalChordGuard 防御', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
 		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
 
@@ -297,6 +297,7 @@ describe('useCommandShortcuts', () => {
 			vi.runAllTimers()
 		})
 
+		// 字母键 chord（g→i）两键均不 preventDefault，GlobalChordGuard 负责隔离 Row
 		expect(prefixEvent.defaultPrevented).toBe(false)
 		expect(secondEvent.defaultPrevented).toBe(false)
 		expect(onTrigger).toHaveBeenCalledWith(COMMAND_IDS.goInbox)

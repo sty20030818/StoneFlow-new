@@ -20,6 +20,7 @@ import {
 	type KeybindingChordState,
 	type NormalizedKeyEvent,
 } from '@/features/command/keybinding'
+import { isGlobalChordPending } from '@/shared/lib/global-chord-guard'
 import type { TaskListItem } from '@/shared/types'
 
 import { resolveTaskRowTarget, type TaskRowRef } from './rowTargetResolver'
@@ -880,6 +881,12 @@ function openTaskPropertyPicker(
 }
 
 function isBlockedByHigherLayer() {
+	// 全局 chord 进行中时让位给全局命令系统，防止 chord 第二键（如 f→p 中的 p）
+	// 被 Row 单键命令（如 taskSetPriority）同时消费。
+	if (isGlobalChordPending()) {
+		return true
+	}
+
 	return Boolean(
 		document.querySelector(
 			'[cmdk-root], [data-slot="dialog-content"], [data-slot="dropdown-menu-content"], [data-slot="context-menu-content"]',

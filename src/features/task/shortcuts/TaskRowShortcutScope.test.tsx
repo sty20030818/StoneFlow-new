@@ -3,6 +3,10 @@ import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
+	setGlobalChordPending,
+	__resetGlobalChordGuardForTests,
+} from '@/shared/lib/global-chord-guard'
+import {
 	BulkActionProvider,
 	TASK_BULK_ACTION_IDS,
 	useBulkActionContext,
@@ -33,6 +37,7 @@ describe('TaskRowShortcutScope', () => {
 	afterEach(() => {
 		vi.runOnlyPendingTimers()
 		vi.useRealTimers()
+		__resetGlobalChordGuardForTests()
 	})
 
 	it('hover 行时 W 触发完成，X 触发选择', () => {
@@ -122,6 +127,33 @@ describe('TaskRowShortcutScope', () => {
 		expect(useDialogStore.getState().isCommandOpen).toBe(true)
 		expect(useDialogStore.getState().commandMenuMode).toBe('task-placement-picker')
 		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a'])
+	})
+
+	it('全局 chord 进行中时 Row 单键命令不触发（防止 f→p 同时触发 filterByPriority 和 taskSetPriority）', () => {
+		const actions = createActions()
+		const bulkCalls: BulkActionCall[] = []
+		renderScope({ actions, bulkCalls })
+
+		fireEvent.mouseMove(screen.getByTestId('row-task-a'))
+
+		// 模拟全局 chord 进入 pending（例如用户按下了 f、g、n 等前缀键）
+		setGlobalChordPending(true)
+
+		// chord 进行中时，p / s / d 等 Row 单键命令不应触发
+		fireKey('p')
+		fireKey('s')
+		fireKey('d')
+		flushShortcutTimers()
+
+		expect(useDialogStore.getState().isCommandOpen).toBe(false)
+
+		// chord 完成后（guard 重置），Row 单键命令恢复正常
+		setGlobalChordPending(false)
+		fireKey('p')
+		flushShortcutTimers()
+
+		expect(useDialogStore.getState().isCommandOpen).toBe(true)
+		expect(useDialogStore.getState().commandMenuMode).toBe('task-priority-picker')
 	})
 
 	it('输入态和上层菜单打开时不触发', () => {
