@@ -3,6 +3,8 @@ export const COMMAND_IDS = {
 	openSearch: 'general.openSearch',
 	close: 'general.close',
 	saveOrSubmit: 'general.saveOrSubmit',
+	submitAndContinue: 'general.submitAndContinue',
+	submitAndOpen: 'general.submitAndOpen',
 	openShortcutHelp: 'general.openShortcutHelp',
 	openSettings: 'general.openSettings',
 	goBack: 'general.goBack',
@@ -208,6 +210,11 @@ export type CommandViewContext = {
 
 export type CommandSubmitContext = {
 	hasActiveTarget: boolean
+	canSubmitDefault: boolean
+	canSubmitContinue: boolean
+	canSubmitOpen: boolean
+	submitContinueDisabledReason?: string
+	submitOpenDisabledReason?: string
 }
 
 export type CommandRowTargetContext = {

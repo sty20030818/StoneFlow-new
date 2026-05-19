@@ -4,4 +4,4 @@ export {
 	useSubmitRegistryActions,
 	useSubmitRegistryContext,
 } from './SubmitRegistryProvider'
-export type { SubmitTarget, SubmitTargetContext } from './SubmitRegistryProvider'
+export type { SubmitIntent, SubmitTarget, SubmitTargetContext } from './SubmitRegistryProvider'

@@ -404,6 +404,8 @@ function createActions(): ShellCommandActions {
 		navigateTo: vi.fn(),
 		closeCurrentLayer: vi.fn(),
 		submitActiveForm: vi.fn(),
+		submitAndContinue: vi.fn(),
+		submitAndOpen: vi.fn(),
 		toggleSidebar: vi.fn(),
 		togglePreview: vi.fn(),
 		openFilterPicker: vi.fn(),

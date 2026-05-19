@@ -203,11 +203,17 @@ describe('keybinding', () => {
 		)
 	})
 
-	it('支持 [ / ] / Escape / Cmd+Enter / Ctrl+[ / Ctrl+] / F 组筛选命令', () => {
+	it('支持 [ / ] / Escape / 提交快捷键 / Ctrl+[ / Ctrl+] / F 组筛选命令', () => {
 		expect(matchCommand('[')).toBe(COMMAND_IDS.layoutToggleSidebar)
 		expect(matchCommand(']')).toBe(COMMAND_IDS.layoutTogglePreview)
 		expect(matchCommand('Escape')).toBe(COMMAND_IDS.close)
 		expect(matchCommand('Enter', null, 100, { metaKey: true })).toBe(COMMAND_IDS.saveOrSubmit)
+		expect(matchCommand('Enter', null, 100, { metaKey: true, shiftKey: true })).toBe(
+			COMMAND_IDS.submitAndContinue,
+		)
+		expect(matchCommand('Enter', null, 100, { metaKey: true, altKey: true })).toBe(
+			COMMAND_IDS.submitAndOpen,
+		)
 		expect(matchCommand('[', null, 100, { ctrlKey: true })).toBe(COMMAND_IDS.goBack)
 		expect(matchCommand(']', null, 100, { ctrlKey: true })).toBe(COMMAND_IDS.goForward)
 

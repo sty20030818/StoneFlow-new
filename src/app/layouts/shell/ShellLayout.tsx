@@ -307,9 +307,13 @@ function ShellLayoutContent({
 	const projectOptions = useProjectStore(selectProjectOptions)
 	const scopeKey = currentScope.type === 'all' ? 'all' : `space:${currentScope.spaceId}`
 	const navBadges = useSidebarNavBadges(currentScope)
+	const hasResolvedTaskDraftProject =
+		Boolean(taskCreateDraft.projectId) &&
+		projectOptions.some((project) => project.id === taskCreateDraft.projectId)
 	const shouldDelayTaskCreateDialog =
 		createDialogType === 'task' &&
 		Boolean(taskCreateDraft.projectId) &&
+		!hasResolvedTaskDraftProject &&
 		sidebarProjects.status === 'loading'
 	const loadSidebarSettings = useSidebarSettingsStore((state) => state.load)
 	const loadSpaces = useSpaceStore((state) => state.load)
@@ -567,6 +571,12 @@ function ShellLayoutContent({
 			submitActiveForm: async () => {
 				await submitRegistryActions.submitActiveTarget()
 			},
+			submitAndContinue: async () => {
+				await submitRegistryActions.submitActiveTarget('continue')
+			},
+			submitAndOpen: async () => {
+				await submitRegistryActions.submitActiveTarget('open')
+			},
 			toggleSidebar: () => {
 				requestSidebarToggle()
 			},
@@ -804,6 +814,11 @@ function ShellLayoutContent({
 		view: commandView,
 		submit: {
 			hasActiveTarget: submitRegistry.hasActiveTarget,
+			canSubmitDefault: submitRegistry.canSubmitIntent('default'),
+			canSubmitContinue: submitRegistry.canSubmitIntent('continue'),
+			canSubmitOpen: submitRegistry.canSubmitIntent('open'),
+			submitContinueDisabledReason: submitRegistry.getIntentDisabledReason('continue'),
+			submitOpenDisabledReason: submitRegistry.getIntentDisabledReason('open'),
 		},
 	})
 	const commandRuntime = useCommandRuntime({
@@ -1057,12 +1072,12 @@ function ShellLayoutContent({
 						selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
 						spaces={spaces}
 					/>
-				) : (
+				) : createDialogType === 'project' ? (
 					<ProjectCreateContent
 						onClose={closeProjectCreateDialog}
 						selectedSpaceId={selectedSpaceId}
 					/>
-				)}
+				) : null}
 			</CreateDialogShell>
 			<BulkActionConfirmDialog
 				isExecuting={isBulkActionExecuting}

@@ -41,6 +41,8 @@ export type ShellCommandActions = {
 	navigateTo: (target: ShellNavigationTarget) => void
 	closeCurrentLayer: (ctx: CommandContext) => void | Promise<void>
 	submitActiveForm: (ctx: CommandContext) => void | Promise<void>
+	submitAndContinue: (ctx: CommandContext) => void | Promise<void>
+	submitAndOpen: (ctx: CommandContext) => void | Promise<void>
 	toggleSidebar: () => void
 	togglePreview: (ctx: CommandContext) => void | Promise<void>
 	openFilterPicker: (kind: PageFilterKind, ctx: CommandContext) => void
@@ -80,10 +82,24 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 		case COMMAND_IDS.saveOrSubmit:
 			return {
 				...command,
-				isEnabled: (ctx) => ctx.submit.hasActiveTarget,
+				isEnabled: (ctx) => ctx.submit.canSubmitDefault,
 				getDisabledReason: (ctx) =>
-					ctx.submit.hasActiveTarget ? undefined : '当前没有可提交内容',
+					ctx.submit.canSubmitDefault ? undefined : '当前没有可提交内容',
 				run: adapter.submitActiveForm,
+			}
+		case COMMAND_IDS.submitAndContinue:
+			return {
+				...command,
+				isEnabled: (ctx) => ctx.submit.canSubmitContinue,
+				getDisabledReason: (ctx) => ctx.submit.submitContinueDisabledReason,
+				run: adapter.submitAndContinue,
+			}
+		case COMMAND_IDS.submitAndOpen:
+			return {
+				...command,
+				isEnabled: (ctx) => ctx.submit.canSubmitOpen,
+				getDisabledReason: (ctx) => ctx.submit.submitOpenDisabledReason,
+				run: adapter.submitAndOpen,
 			}
 		case COMMAND_IDS.goBack:
 			return { ...command, run: adapter.goBack }

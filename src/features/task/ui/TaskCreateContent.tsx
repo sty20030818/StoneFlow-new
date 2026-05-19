@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
-import { useRegisterSubmitTarget } from '@/features/submit/model'
+import { useRegisterSubmitTarget, type SubmitIntent } from '@/features/submit/model'
 import type { ProjectOption } from '@/features/project/model/types'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { buildCreatePlacementInput } from '@/features/task/model/taskPlacement'
@@ -18,6 +18,7 @@ import { Switch } from '@/shared/ui/base/switch'
 import { Textarea } from '@/shared/ui/base/textarea'
 import { CreateModalContent } from '@/shared/ui/create-modal-content'
 import { MoreHorizontalIcon, PaperclipIcon, TagIcon } from 'lucide-react'
+import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 
 type TaskCreateContentProps = {
 	currentScope: Scope
@@ -47,14 +48,15 @@ export function TaskCreateContent({
 	projectsLoading,
 }: TaskCreateContentProps) {
 	const createTask = useTaskStore((state) => state.createTask)
+	const openDrawer = useDrawerStore((state) => state.openDrawer)
 	const defaultSpaceId = getDefaultSpaceId(spaces)
 	const initialProject = projects.find((project) => project.id === initialProjectId) ?? null
 	const resolvedInitialSpaceId =
 		selectedSpaceId ?? initialProject?.spaceId ?? getInitialSpaceId(currentScope, defaultSpaceId)
-
 	const resolvedInitialPlacement: TaskPlacement = initialProjectId
 		? 'project'
 		: (initialPlacement ?? 'inbox')
+
 	const [title, setTitle] = useState('')
 	const [note, setNote] = useState('')
 	const [priority, setPriority] = useState<TaskPriorityValue>(0)
@@ -62,28 +64,14 @@ export function TaskCreateContent({
 	const [placement, setPlacement] = useState<TaskPlacement>(resolvedInitialPlacement)
 	const [projectId, setProjectId] = useState(initialProjectId ?? '')
 	const [status, setStatus] = useState<TaskStatus>(initialStatus)
-	const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'success' | 'error'>(
-		'idle',
-	)
+	const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [createMore, setCreateMore] = useState(false)
+	const [createdCount, setCreatedCount] = useState(0)
 	const titleInputRef = useRef<HTMLInputElement>(null)
+	const isSubmitting = submitState === 'submitting'
 
-	// 同步外部 selectedSpaceId 变化（Shell 层 Space 面包屑切换）
-	useEffect(() => {
-		setSpaceId(
-			selectedSpaceId ?? initialProject?.spaceId ?? getInitialSpaceId(currentScope, defaultSpaceId),
-		)
-	}, [currentScope, defaultSpaceId, initialProject?.spaceId, selectedSpaceId])
-
-	// 同步外部 initialStatus 变化
-	useEffect(() => {
-		setStatus(initialStatus)
-	}, [initialStatus])
-
-	const handleReset = useCallback(() => {
-		setTitle('')
-		setNote('')
+	const resetContextFields = useCallback(() => {
 		setPriority(0)
 		setPlacement(resolvedInitialPlacement)
 		setSpaceId(
@@ -91,82 +79,119 @@ export function TaskCreateContent({
 		)
 		setProjectId(initialProjectId ?? '')
 		setStatus(initialStatus)
-		setSubmitState('idle')
-		setErrorMessage(null)
 	}, [
 		currentScope,
 		defaultSpaceId,
 		initialProject?.spaceId,
 		initialProjectId,
-		selectedSpaceId,
 		initialStatus,
 		resolvedInitialPlacement,
+		selectedSpaceId,
 	])
 
-	useEffect(() => {
-		if (submitState !== 'success') return
-
-		if (createMore) {
-			handleReset()
-			// 重置后聚焦标题输入框
-			requestAnimationFrame(() => titleInputRef.current?.focus())
-			return
-		}
-
-		handleReset()
-		onClose()
-	}, [createMore, handleReset, onClose, submitState])
-
-	const handleSubmit = useCallback(async () => {
-		if (placement === 'project' && !projectId) {
-			setSubmitState('error')
-			setErrorMessage('请选择一个项目，或改为进入收件箱 / 独立事项。')
-			return
-		}
-
-		if (placement !== 'project' && !spaceId) {
-			setSubmitState('error')
-			setErrorMessage('当前没有可用 Space，无法创建任务。')
-			return
-		}
-
-		setSubmitState('submitting')
+	const resetFieldsOnly = useCallback(() => {
+		setTitle('')
+		setNote('')
+		setSubmitState('idle')
 		setErrorMessage(null)
+	}, [])
 
-		try {
-			await createTask({
-				spaceId: placement === 'project' ? null : spaceId,
-				placement: buildCreatePlacementInput(placement, projectId || null),
-				title: title.trim(),
-				note: note.trim() ? note.trim() : null,
-				status,
-				priority,
-			})
-			setSubmitState('success')
-		} catch (error) {
-			setSubmitState('error')
-			setErrorMessage(error instanceof Error ? error.message : '创建任务失败')
-		}
-	}, [createTask, placement, projectId, spaceId, status, priority, title, note])
+	const resetAllToContextDefaults = useCallback(() => {
+		resetFieldsOnly()
+		resetContextFields()
+		setCreateMore(false)
+		setCreatedCount(0)
+	}, [resetContextFields, resetFieldsOnly])
+
+	useEffect(() => {
+		resetAllToContextDefaults()
+		// 这里只在弹窗挂载时初始化一次，避免编辑中的草稿被外部 context 变更误清空。
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
 
 	const visibleProjects = spaceId
 		? projects.filter((project) => project.spaceId === spaceId)
 		: projects
 
 	const canSubmit =
-		submitState === 'idle' &&
+		!isSubmitting &&
 		title.trim().length > 0 &&
 		(placement === 'project' ? projectId.length > 0 : spaceId.length > 0)
+
+	const submitTask = useCallback(
+		async (intent: SubmitIntent = 'default') => {
+			if (placement === 'project' && !projectId) {
+				setSubmitState('error')
+				setErrorMessage('请选择一个项目，或改为进入收件箱 / 独立事项。')
+				return
+			}
+
+			if (placement !== 'project' && !spaceId) {
+				setSubmitState('error')
+				setErrorMessage('当前没有可用 Space，无法创建任务。')
+				return
+			}
+
+			const effectiveIntent = intent === 'default' && createMore ? 'continue' : intent
+
+			setSubmitState('submitting')
+			setErrorMessage(null)
+
+			try {
+				const createdTask = await createTask({
+					spaceId: placement === 'project' ? null : spaceId,
+					placement: buildCreatePlacementInput(placement, projectId || null),
+					title: title.trim(),
+					note: note.trim() ? note.trim() : null,
+					status,
+					priority,
+				})
+
+				if (effectiveIntent === 'continue') {
+					resetFieldsOnly()
+					setCreateMore(false)
+					setCreatedCount((count) => count + 1)
+					requestAnimationFrame(() => titleInputRef.current?.focus())
+					return
+				}
+
+				resetFieldsOnly()
+				onClose()
+				if (effectiveIntent === 'open') {
+					openDrawer('task', createdTask.id)
+				}
+			} catch (error) {
+				setSubmitState('error')
+				setErrorMessage(error instanceof Error ? error.message : '创建任务失败')
+			}
+		},
+		[
+			createMore,
+			createTask,
+			note,
+			onClose,
+			openDrawer,
+			placement,
+			priority,
+			projectId,
+			resetFieldsOnly,
+			spaceId,
+			status,
+			title,
+		],
+	)
+
 	const submitTarget = useMemo(
 		() => ({
 			id: 'task-create',
 			title: '创建任务',
 			priority: 120,
 			canSubmit,
-			submit: handleSubmit,
+			supportedIntents: ['continue', 'open'] satisfies SubmitIntent[],
+			submit: submitTask,
 			context: { source: 'task-create' as const },
 		}),
-		[canSubmit, handleSubmit],
+		[canSubmit, submitTask],
 	)
 	useRegisterSubmitTarget(submitTarget)
 
@@ -177,7 +202,6 @@ export function TaskCreateContent({
 					ref={titleInputRef}
 					autoFocus
 					className='h-auto border-none bg-transparent px-0 text-lg font-black shadow-none focus-visible:ring-0 md:text-lg md:font-black'
-					disabled={submitState !== 'idle'}
 					onChange={(event) => setTitle(event.currentTarget.value)}
 					placeholder='任务标题'
 					value={title}
@@ -187,7 +211,6 @@ export function TaskCreateContent({
 			<CreateModalContent.Body>
 				<Textarea
 					className='min-h-20 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
-					disabled={submitState !== 'idle'}
 					onChange={(event) => setNote(event.currentTarget.value)}
 					placeholder='添加描述...'
 					value={note}
@@ -195,18 +218,10 @@ export function TaskCreateContent({
 			</CreateModalContent.Body>
 
 			<CreateModalContent.Metadata error={submitState === 'error' ? errorMessage : null}>
-				<StatusMetaAction
-					disabled={submitState !== 'idle'}
-					status={status}
-					onStatusChange={setStatus}
-				/>
-				<PriorityMetaAction
-					disabled={submitState !== 'idle'}
-					priority={priority}
-					onPriorityChange={setPriority}
-				/>
+				<StatusMetaAction disabled={false} status={status} onStatusChange={setStatus} />
+				<PriorityMetaAction disabled={false} priority={priority} onPriorityChange={setPriority} />
 				<ProjectMetaAction
-					disabled={projectsLoading || submitState !== 'idle'}
+					disabled={projectsLoading}
 					placement={placement}
 					projectId={projectId}
 					projects={visibleProjects}
@@ -214,57 +229,45 @@ export function TaskCreateContent({
 						setPlacement(newPlacement)
 						setProjectId(newProjectId ?? '')
 						if (newPlacement === 'project' && newProjectId) {
-							const targetProject = projects.find((p) => p.id === newProjectId)
+							const targetProject = projects.find((project) => project.id === newProjectId)
 							if (targetProject) {
 								setSpaceId(targetProject.spaceId)
 							}
 						}
 					}}
 				/>
-				<Button
-					disabled={submitState !== 'idle'}
-					onClick={() => toast.info('标签功能即将支持')}
-					size='sm'
-					variant='outline'
-				>
+				<Button onClick={() => toast.info('标签功能即将支持')} size='sm' variant='outline'>
 					<TagIcon />
 					标签
 				</Button>
-				<Button
-					disabled={submitState !== 'idle'}
-					onClick={() => toast.info('更多属性即将支持')}
-					size='icon-sm'
-					variant='outline'
-				>
+				<Button onClick={() => toast.info('更多属性即将支持')} size='icon-sm' variant='outline'>
 					<MoreHorizontalIcon />
 				</Button>
 			</CreateModalContent.Metadata>
 
 			<CreateModalContent.Footer>
-				<Button
-					disabled={submitState !== 'idle'}
-					onClick={() => toast.info('附件上传功能即将支持')}
-					size='icon-sm'
-					variant='outline'
-				>
+				<Button onClick={() => toast.info('附件上传功能即将支持')} size='icon-sm' variant='outline'>
 					<PaperclipIcon />
 				</Button>
 
 				<div className='flex items-center gap-3'>
+					<p
+						aria-live='polite'
+						className='min-w-30 text-right text-[11px] font-medium tabular-nums text-sf-text-tertiary'
+					>
+						{createdCount > 0 ? `已创建 ${createdCount} 条任务` : '\u00A0'}
+					</p>
 					<div className='flex items-center gap-1.5 text-[12px] text-sf-text-secondary select-none'>
 						<Switch
 							checked={createMore}
 							onCheckedChange={(checked) => setCreateMore(checked === true)}
+							disabled={isSubmitting}
 							size='sm'
 						/>
 						创建更多
 					</div>
-					<Button disabled={!canSubmit} onClick={() => void handleSubmit()} size='sm'>
-						{submitState === 'submitting'
-							? '创建中...'
-							: submitState === 'success'
-								? '已创建'
-								: '创建任务'}
+					<Button disabled={!canSubmit} onClick={() => void submitTask('default')} size='sm'>
+						{submitState === 'submitting' ? '创建中…' : '创建任务'}
 					</Button>
 				</div>
 			</CreateModalContent.Footer>
@@ -272,12 +275,10 @@ export function TaskCreateContent({
 	)
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────
-
 function getDefaultSpaceId(spaces: Space[]) {
 	return spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? ''
 }
 
-function getInitialSpaceId(currentScope: Scope, defaultSpaceId: string) {
-	return currentScope.type === 'space' ? currentScope.spaceId : defaultSpaceId
+function getInitialSpaceId(currentScope: Scope, fallbackSpaceId: string) {
+	return currentScope.type === 'space' ? currentScope.spaceId : fallbackSpaceId
 }

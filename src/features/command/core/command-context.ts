@@ -66,6 +66,11 @@ export function createEmptyCommandContext(): CommandContext {
 		},
 		submit: {
 			hasActiveTarget: false,
+			canSubmitDefault: false,
+			canSubmitContinue: false,
+			canSubmitOpen: false,
+			submitContinueDisabledReason: '当前没有可提交内容',
+			submitOpenDisabledReason: '当前没有可提交内容',
 		},
 		rowTarget: createEmptyCommandRowTargetContext(),
 	}

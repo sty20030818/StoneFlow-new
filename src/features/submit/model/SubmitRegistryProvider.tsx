@@ -17,24 +17,30 @@ export type SubmitTargetContext = {
 		| (string & {})
 }
 
+export type SubmitIntent = 'default' | 'continue' | 'open'
+
 export type SubmitTarget = {
 	id: string
 	title: string
 	priority: number
 	canSubmit: boolean
-	submit: () => void | Promise<void>
+	supportedIntents?: SubmitIntent[]
+	getIntentDisabledReason?: (intent: SubmitIntent) => string | undefined
+	submit: (intent?: SubmitIntent) => void | Promise<void>
 	context: SubmitTargetContext
 }
 
 type SubmitRegistryActions = {
 	registerTarget: (token: symbol, target: SubmitTarget) => void
 	clearTargetRegistration: (token: symbol) => void
-	submitActiveTarget: () => Promise<boolean>
+	submitActiveTarget: (intent?: SubmitIntent) => Promise<boolean>
 }
 
 type SubmitRegistryState = {
 	activeTarget: SubmitTarget | null
 	hasActiveTarget: boolean
+	canSubmitIntent: (intent: SubmitIntent) => boolean
+	getIntentDisabledReason: (intent: SubmitIntent) => string | undefined
 }
 
 const SubmitRegistryStateContext = createContext<SubmitRegistryState | null>(null)
@@ -52,6 +58,22 @@ export function SubmitRegistryProvider({ children }: PropsWithChildren) {
 		setActiveTarget(nextTarget)
 	}
 
+	function resolveIntentDisabledReason(target: SubmitTarget | null, intent: SubmitIntent) {
+		if (!target || !target.canSubmit) {
+			return '当前没有可提交内容'
+		}
+
+		if (intent === 'default') {
+			return undefined
+		}
+
+		if (!target.supportedIntents?.includes(intent)) {
+			return intent === 'continue' ? '当前表单不支持创建下一条' : '当前表单不支持创建并打开'
+		}
+
+		return target.getIntentDisabledReason?.(intent)
+	}
+
 	const actions = useMemo<SubmitRegistryActions>(
 		() => ({
 			registerTarget: (token, target) => {
@@ -62,7 +84,7 @@ export function SubmitRegistryProvider({ children }: PropsWithChildren) {
 				registrationsRef.current.delete(token)
 				syncActiveTarget()
 			},
-			submitActiveTarget: async () => {
+			submitActiveTarget: async (intent = 'default') => {
 				const target =
 					Array.from(registrationsRef.current.values())
 						.filter((candidate) => candidate.canSubmit)
@@ -73,8 +95,13 @@ export function SubmitRegistryProvider({ children }: PropsWithChildren) {
 					return false
 				}
 
+				if (resolveIntentDisabledReason(target, intent)) {
+					setActiveTarget(target)
+					return false
+				}
+
 				setActiveTarget(target)
-				await target.submit()
+				await target.submit(intent)
 				return true
 			},
 		}),
@@ -85,6 +112,8 @@ export function SubmitRegistryProvider({ children }: PropsWithChildren) {
 		() => ({
 			activeTarget,
 			hasActiveTarget: activeTarget !== null,
+			canSubmitIntent: (intent) => resolveIntentDisabledReason(activeTarget, intent) === undefined,
+			getIntentDisabledReason: (intent) => resolveIntentDisabledReason(activeTarget, intent),
 		}),
 		[activeTarget],
 	)
@@ -100,7 +129,14 @@ export function SubmitRegistryProvider({ children }: PropsWithChildren) {
 
 export function useSubmitRegistryContext() {
 	const context = useContext(SubmitRegistryStateContext)
-	return context ?? { activeTarget: null, hasActiveTarget: false }
+	return (
+		context ?? {
+			activeTarget: null,
+			hasActiveTarget: false,
+			canSubmitIntent: () => false,
+			getIntentDisabledReason: () => '当前没有可提交内容',
+		}
+	)
 }
 
 export function useSubmitRegistryActions() {

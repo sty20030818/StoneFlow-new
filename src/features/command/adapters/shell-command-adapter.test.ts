@@ -24,6 +24,46 @@ describe('Shell command adapter', () => {
 		expect(actions.openShortcutHelp).toHaveBeenCalledTimes(1)
 	})
 
+	it('提交类命令走统一 submit action，并按 intent 分流', async () => {
+		const actions = createActions()
+		const runtime = createRuntime(actions, {
+			...createEmptyCommandContext(),
+			submit: {
+				hasActiveTarget: true,
+				canSubmitDefault: true,
+				canSubmitContinue: true,
+				canSubmitOpen: true,
+			},
+		})
+
+		await runtime.execute(COMMAND_IDS.saveOrSubmit)
+		await runtime.execute(COMMAND_IDS.submitAndContinue)
+		await runtime.execute(COMMAND_IDS.submitAndOpen)
+
+		expect(actions.submitActiveForm).toHaveBeenCalledTimes(1)
+		expect(actions.submitAndContinue).toHaveBeenCalledTimes(1)
+		expect(actions.submitAndOpen).toHaveBeenCalledTimes(1)
+	})
+
+	it('不支持的提交 intent 返回 disabled reason', async () => {
+		const runtime = createRuntime(createActions(), {
+			...createEmptyCommandContext(),
+			submit: {
+				hasActiveTarget: true,
+				canSubmitDefault: true,
+				canSubmitContinue: true,
+				canSubmitOpen: false,
+				submitOpenDisabledReason: '当前表单不支持创建并打开',
+			},
+		})
+
+		await expect(runtime.execute(COMMAND_IDS.submitAndOpen)).resolves.toEqual({
+			status: 'disabled',
+			commandId: COMMAND_IDS.submitAndOpen,
+			reason: '当前表单不支持创建并打开',
+		})
+	})
+
 	it('执行 new 命令时调用对应创建 action', async () => {
 		const actions = createActions()
 		const runtime = createRuntime(actions)
@@ -329,6 +369,8 @@ function createActions(overrides: Partial<ShellCommandActions> = {}): ShellComma
 		navigateTo: vi.fn(),
 		closeCurrentLayer: vi.fn(),
 		submitActiveForm: vi.fn(),
+		submitAndContinue: vi.fn(),
+		submitAndOpen: vi.fn(),
 		toggleSidebar: vi.fn(),
 		togglePreview: vi.fn(),
 		openFilterPicker: vi.fn(),
