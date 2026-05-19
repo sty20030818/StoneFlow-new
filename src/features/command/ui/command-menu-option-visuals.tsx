@@ -42,6 +42,7 @@ export function getCommandMenuDateLeading(key: string): ReactNode {
 		case 'custom':
 			return <CalendarClockIcon className='size-4 text-sf-icon-secondary' />
 		case 'week':
+		case 'one-week':
 		case 'thisWeek':
 			return <CalendarDaysIcon className='size-4 text-sf-icon-secondary' />
 		case 'none':

@@ -9,7 +9,11 @@ import {
 	useRegisterPageFilterController,
 	useTaskPageFilterController,
 } from '@/features/filter/model'
-import { selectProjectDetail, useProjectStore } from '@/features/project/model/useProjectStore'
+import {
+	selectProjectDetail,
+	selectProjectOptions,
+	useProjectStore,
+} from '@/features/project/model/useProjectStore'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
@@ -60,6 +64,7 @@ export function ProjectPage() {
 	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
 	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
 	const detail = useProjectStore(selectProjectDetail)
+	const projectOptions = useProjectStore(selectProjectOptions)
 	const loadDetail = useProjectStore((state) => state.loadDetail)
 	const clearDetail = useProjectStore((state) => state.clearDetail)
 	const completeProject = useProjectStore((state) => state.completeProject)
@@ -72,6 +77,8 @@ export function ProjectPage() {
 		pendingTaskId,
 		updateTaskStatus,
 		updateTaskPriority,
+		updateTaskDueDate,
+		updateTaskProject,
 		toggleTaskStatus,
 		archiveListTask,
 		deleteListTask,
@@ -112,6 +119,13 @@ export function ProjectPage() {
 	})
 	useRegisterPageFilterController(controller)
 	const project = detail.item
+	const projectMoveOptions = useMemo(
+		() =>
+			project
+				? projectOptions.filter((option) => option.spaceId === project.spaceId)
+				: projectOptions,
+		[project, projectOptions],
+	)
 	const taskSelectionOrderIds = useMemo(
 		() => getTaskBoardVisualOrderIds(filteredTasks),
 		[filteredTasks],
@@ -179,10 +193,14 @@ export function ProjectPage() {
 					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,
+					onSelectNoProject: (task) => void updateTaskProject(task, null),
+					onSelectProject: (task, nextProjectId) => void updateTaskProject(task, nextProjectId),
 					onToggleTaskSelection: toggleTaskSelection,
 					onToggleTaskStatus: toggleTaskStatus,
+					onUpdateTaskDueDate: updateTaskDueDate,
 					onUpdateTaskPriority: updateTaskPriority,
 					onUpdateTaskStatus: updateTaskStatus,
+					projectOptions: projectMoveOptions,
 				},
 			}}
 			breadcrumb={<ProjectBreadcrumb projectName={project?.name ?? '项目'} />}

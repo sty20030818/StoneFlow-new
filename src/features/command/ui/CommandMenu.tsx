@@ -726,21 +726,8 @@ function ScopedPickerCommandGroup({
 
 	if (mode === 'task-date-picker') {
 		const options = getTaskDateOptions(context)
-		const shortcutItems: ShortcutMenuItem<string | null>[] = options.map((option) => ({
-			label: option.label,
-			value: option.value,
-			disabled: Boolean(option.disabled),
-			isEmptyValue: option.key === 'none',
-		}))
 		return (
 			<CommandGroup className='pt-2' heading='日期'>
-				<ShortcutDigitSelectLayer
-					items={shortcutItems}
-					onSelect={(item) => {
-						onOpenChange(false)
-						onSelectTaskDate(item.value)
-					}}
-				/>
 				{options.map((option) => (
 					<CommandItem
 						disabled={option.disabled}
@@ -762,6 +749,8 @@ function ScopedPickerCommandGroup({
 									<CommandRowMeta>{option.disabledReason}</CommandRowMeta>
 								) : option.digit ? (
 									<CommandRowDigitHint digit={option.digit} />
+								) : option.value ? (
+									<CommandRowMeta>{option.value}</CommandRowMeta>
 								) : null
 							}
 						/>
@@ -1242,9 +1231,9 @@ function getTaskDateOptions(context: CommandContext): TaskDateOption[] {
 	}
 
 	options.push(
-		{ key: 'tomorrow', label: '明天', value: formatLocalDate(tomorrow), digit: '1' },
-		{ key: 'week', label: '本周', value: formatLocalDate(getEndOfLocalWeek(today)), digit: '2' },
-		{ key: 'one-week', label: '一周', value: formatLocalDate(oneWeek), digit: '3' },
+		{ key: 'tomorrow', label: '明天', value: formatLocalDate(tomorrow) },
+		{ key: 'week', label: '本周', value: formatLocalDate(getEndOfLocalWeek(today)) },
+		{ key: 'one-week', label: '一周', value: formatLocalDate(oneWeek) },
 		{
 			key: 'custom',
 			label: '自定义日期',
@@ -1253,11 +1242,6 @@ function getTaskDateOptions(context: CommandContext): TaskDateOption[] {
 			disabledReason: '完整日期选择后续接入',
 		},
 	)
-
-	const customOption = options.find((option) => option.key === 'custom')
-	if (customOption) {
-		customOption.digit = '4'
-	}
 
 	return options
 }

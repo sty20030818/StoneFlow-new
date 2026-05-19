@@ -36,6 +36,7 @@ function buildActions(): TaskRowAdapterProps['actions'] {
 		onToggleTaskSelection: vi.fn(),
 		onUpdateTaskPriority: vi.fn().mockResolvedValue(undefined),
 		onUpdateTaskStatus: vi.fn().mockResolvedValue(undefined),
+		onUpdateTaskDueDate: vi.fn().mockResolvedValue(undefined),
 		onToggleTaskStatus: vi.fn().mockResolvedValue(undefined),
 		onArchiveTask: vi.fn().mockResolvedValue(undefined),
 		onDeleteTask: vi.fn().mockResolvedValue(undefined),
@@ -98,20 +99,27 @@ describe('TaskRowAdapter', () => {
 		expect(actions.onUpdateTaskStatus).toHaveBeenCalledWith(task, 'done')
 	})
 
-	it('右键菜单动作触发任务动作回调', async () => {
+	it('右键菜单显示属性子菜单入口', async () => {
+		renderTaskRowAdapter()
+		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
+
+		fireEvent.contextMenu(row)
+		expect(await screen.findByRole('menuitem', { name: /状态/ })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: /优先级/ })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: /时间/ })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: /项目/ })).toBeInTheDocument()
+	})
+
+	it('右键菜单危险动作触发任务动作回调', async () => {
 		const { actions } = renderTaskRowAdapter()
 		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
 
 		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: '标记完成' }))
-		expect(actions.onToggleTaskStatus).toHaveBeenCalledTimes(1)
-
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: '归档任务' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /归档任务/ }))
 		expect(actions.onArchiveTask).toHaveBeenCalledTimes(1)
 
 		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /移入回收站/ }))
 		expect(actions.onDeleteTask).toHaveBeenCalledTimes(1)
 	})
 

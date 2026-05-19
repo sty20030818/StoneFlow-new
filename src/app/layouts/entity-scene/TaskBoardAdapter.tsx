@@ -15,15 +15,15 @@ type TaskBoardAdapterProps = {
 	actions: EntitySceneTaskBoardActions
 }
 
-/** 独立事项和项目详情页不显示 ProjectCell 下拉选项 */
-const HIDE_PROJECT_OPTIONS_VARIANTS = new Set(['no-project', 'project-detail'])
+/** 独立事项和项目详情页不显示行内 ProjectCell 下拉选项 */
+const HIDE_PROJECT_CELL_OPTIONS_VARIANTS = new Set(['no-project', 'project-detail'])
 
 /**
  * 任务实体适配层。
  * scene 层只提供数据和动作，不感知任务 board 的具体实现。
  */
 export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProps) {
-	const showProjectOptions = !HIDE_PROJECT_OPTIONS_VARIANTS.has(config.variant)
+	const showProjectCellOptions = !HIDE_PROJECT_CELL_OPTIONS_VARIANTS.has(config.variant)
 
 	return (
 		<TaskBoard
@@ -42,14 +42,16 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			onOpenTask={actions.onOpenTask ?? (() => undefined)}
 			onSelectAllTasks={actions.onSelectAllTasks}
 			onSetFocusedTask={actions.onSetFocusedTask}
-			onSelectNoProject={showProjectOptions ? actions.onSelectNoProject : undefined}
-			onSelectProject={showProjectOptions ? actions.onSelectProject : undefined}
+			onSelectNoProject={actions.onSelectNoProject}
+			onSelectProject={actions.onSelectProject}
 			onToggleTaskSelection={actions.onToggleTaskSelection ?? (() => undefined)}
 			onToggleTaskStatus={actions.onToggleTaskStatus ?? (async () => undefined)}
+			onUpdateTaskDueDate={actions.onUpdateTaskDueDate}
 			onUpdateTaskPriority={actions.onUpdateTaskPriority ?? (async () => undefined)}
 			onUpdateTaskStatus={actions.onUpdateTaskStatus ?? (async () => undefined)}
 			pendingTaskId={data.pendingItemId ?? null}
-			projectOptions={showProjectOptions ? actions.projectOptions : undefined}
+			projectOptions={actions.projectOptions}
+			showProjectCellOptions={actions.showProjectCellOptions ?? showProjectCellOptions}
 			focusedTaskId={data.focusedTaskId ?? null}
 			selectedTaskIdSet={data.selectedTaskIdSet ?? new Set<string>()}
 			statusOrder={config.statusOrder}

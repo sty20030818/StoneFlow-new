@@ -62,6 +62,7 @@ type TaskBoardProps = {
 	onSelectAllTasks?: (taskIds: string[]) => void
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
+	onUpdateTaskDueDate?: (task: TaskListItem, dueAt: string | null) => Promise<void>
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
 	onArchiveTask?: (task: TaskListItem) => Promise<void>
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
@@ -71,6 +72,7 @@ type TaskBoardProps = {
 	projectOptions?: Array<{ id: string; name: string }>
 	onSelectProject?: (task: TaskListItem, projectId: string) => void
 	onSelectNoProject?: (task: TaskListItem) => void
+	showProjectCellOptions?: boolean
 }
 
 export function TaskBoard({
@@ -92,6 +94,7 @@ export function TaskBoard({
 	onSelectAllTasks,
 	onUpdateTaskPriority,
 	onUpdateTaskStatus,
+	onUpdateTaskDueDate,
 	onToggleTaskStatus,
 	onArchiveTask,
 	onDeleteTask,
@@ -101,6 +104,7 @@ export function TaskBoard({
 	projectOptions,
 	onSelectProject,
 	onSelectNoProject,
+	showProjectCellOptions = true,
 }: TaskBoardProps) {
 	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
 	const setProjectTaskBoardOpenSections = useShellPreferenceStore(
@@ -152,6 +156,7 @@ export function TaskBoard({
 			onToggleTaskSelection,
 			onUpdateTaskPriority,
 			onUpdateTaskStatus,
+			onUpdateTaskDueDate,
 			onToggleTaskStatus,
 			onArchiveTask,
 			onDeleteTask,
@@ -160,6 +165,7 @@ export function TaskBoard({
 			projectOptions,
 			onSelectProject,
 			onSelectNoProject,
+			showProjectCellOptions,
 		}
 		return (
 			<TaskRowAdapter

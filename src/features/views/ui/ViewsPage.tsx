@@ -59,9 +59,12 @@ export function ViewsPage() {
 		pendingTaskId,
 		updateTaskPriority,
 		updateTaskStatus,
+		updateTaskDueDate,
 		toggleTaskStatus,
 		archiveListTask,
 		deleteListTask,
+		leaveListTaskToProject,
+		leaveListTaskAsNoProject,
 	} = useTaskListController()
 
 	const [editorOpen, setEditorOpen] = useState(false)
@@ -248,10 +251,15 @@ export function ViewsPage() {
 						onSelectAllTasks: selectTaskIds,
 						onSetFocusedTask: setFocusedTaskId,
 						onMoveTaskFocus: moveFocus,
+						onSelectNoProject: (task) => void leaveListTaskAsNoProject(task),
+						onSelectProject: (task, projectId) => void leaveListTaskToProject(task, projectId),
 						onToggleTaskSelection: toggleTaskSelection,
 						onToggleTaskStatus: toggleTaskStatus,
+						onUpdateTaskDueDate: updateTaskDueDate,
 						onUpdateTaskPriority: updateTaskPriority,
 						onUpdateTaskStatus: updateTaskStatus,
+						projectOptions,
+						showProjectCellOptions: false,
 					},
 				}}
 				breadcrumb={<ViewsBreadcrumb />}

@@ -9,6 +9,7 @@ import {
 	useTaskPageFilterController,
 } from '@/features/filter/model'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
+import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
@@ -39,6 +40,7 @@ export function NoProjectPage() {
 	const { scope } = useScopeRoute()
 	const taskList = useTaskStore(selectTaskList)
 	const loadList = useTaskStore((state) => state.loadList)
+	const projectOptions = useProjectStore(selectProjectOptions)
 	const openDrawer = useDrawerStore((state) => state.openDrawer)
 	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
 	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
@@ -47,9 +49,12 @@ export function NoProjectPage() {
 		pendingTaskId,
 		updateTaskPriority,
 		updateTaskStatus,
+		updateTaskDueDate,
 		toggleTaskStatus,
 		archiveListTask,
 		deleteListTask,
+		leaveListTaskToProject,
+		leaveListTaskAsNoProject,
 	} = useTaskListController()
 	const { controller, filteredTasks } = useTaskPageFilterController({
 		tasks: taskList.items,
@@ -131,10 +136,14 @@ export function NoProjectPage() {
 					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,
+					onSelectNoProject: (task) => void leaveListTaskAsNoProject(task),
+					onSelectProject: (task, projectId) => void leaveListTaskToProject(task, projectId),
 					onToggleTaskSelection: toggleTaskSelection,
 					onToggleTaskStatus: toggleTaskStatus,
+					onUpdateTaskDueDate: updateTaskDueDate,
 					onUpdateTaskPriority: updateTaskPriority,
 					onUpdateTaskStatus: updateTaskStatus,
+					projectOptions,
 				},
 			}}
 			breadcrumb={<NoProjectBreadcrumb />}

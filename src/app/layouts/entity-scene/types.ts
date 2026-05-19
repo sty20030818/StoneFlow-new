@@ -64,6 +64,7 @@ export type EntitySceneTaskBoardActions = {
 	onSelectAllTasks?: (taskIds: string[]) => void
 	onUpdateTaskPriority?: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus?: (task: TaskListItem, status: TaskStatus) => Promise<void>
+	onUpdateTaskDueDate?: (task: TaskListItem, dueAt: string | null) => Promise<void>
 	onToggleTaskStatus?: (task: TaskListItem) => Promise<void>
 	onArchiveTask?: (task: TaskListItem) => Promise<void>
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
@@ -71,6 +72,7 @@ export type EntitySceneTaskBoardActions = {
 	projectOptions?: Array<{ id: string; name: string }>
 	onSelectProject?: (task: TaskListItem, projectId: string) => void
 	onSelectNoProject?: (task: TaskListItem) => void
+	showProjectCellOptions?: boolean
 }
 
 export type EntitySceneProjectBoardConfig = {

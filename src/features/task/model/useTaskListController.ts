@@ -44,6 +44,24 @@ export function useTaskListController() {
 		)
 	}
 
+	async function updateTaskDueDate(task: TaskListItem, dueAt: string | null) {
+		await runTaskAction(task.id, () =>
+			updateTask({
+				taskId: task.id,
+				dueAt,
+			}),
+		)
+	}
+
+	async function updateTaskProject(task: TaskListItem, projectId: string | null) {
+		await runTaskAction(task.id, () =>
+			updateTask({
+				taskId: task.id,
+				projectId,
+			}),
+		)
+	}
+
 	async function toggleTaskStatus(task: TaskListItem) {
 		await updateTaskStatus(
 			task,
@@ -88,6 +106,8 @@ export function useTaskListController() {
 		pendingTaskId,
 		updateTaskStatus,
 		updateTaskPriority,
+		updateTaskDueDate,
+		updateTaskProject,
 		toggleTaskStatus,
 		archiveListTask,
 		deleteListTask,

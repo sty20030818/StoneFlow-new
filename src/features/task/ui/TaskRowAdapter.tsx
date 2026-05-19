@@ -38,12 +38,14 @@ type TaskRowAdapterProps = {
 		projectOptions?: Array<{ id: string; name: string }>
 		onSelectProject?: (task: TaskListItem, projectId: string) => void
 		onSelectNoProject?: (task: TaskListItem) => void
+		showProjectCellOptions?: boolean
 	}
 	actions: {
 		onOpenTask: (taskId: string) => void
 		onToggleTaskSelection: (taskId: string) => void
 		onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 		onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
+		onUpdateTaskDueDate?: (task: TaskListItem, dueAt: string | null) => Promise<void>
 		onToggleTaskStatus: (task: TaskListItem) => Promise<void>
 		onArchiveTask?: (task: TaskListItem) => Promise<void>
 		onDeleteTask?: (task: TaskListItem) => Promise<void>
@@ -68,15 +70,34 @@ export function TaskRowAdapter({
 		projectBinding.onSelectProject &&
 		projectBinding.onSelectNoProject,
 	)
+	const showProjectCellOptions = hasProjectOptions && projectBinding?.showProjectCellOptions !== false
 
 	return (
 		<TaskContextMenu
 			isBusy={isPending}
 			onArchive={actions.onArchiveTask ? () => void actions.onArchiveTask!(task) : undefined}
 			onMoveToTrash={actions.onDeleteTask ? () => void actions.onDeleteTask!(task) : undefined}
-			onOpenDetails={() => actions.onOpenTask(task.id)}
-			onToggleStatus={() => void actions.onToggleTaskStatus(task)}
+			onSelectDueDate={
+				actions.onUpdateTaskDueDate
+					? (dueAt) => void actions.onUpdateTaskDueDate?.(task, dueAt)
+					: undefined
+			}
+			onSelectNoProject={
+				hasProjectOptions ? () => projectBinding?.onSelectNoProject?.(task) : undefined
+			}
+			onSelectPriority={(priority) => void actions.onUpdateTaskPriority(task, priority)}
+			onSelectProject={
+				hasProjectOptions
+					? (projectId) => projectBinding?.onSelectProject?.(task, projectId)
+					: undefined
+			}
+			onSelectStatus={(status) => void actions.onUpdateTaskStatus(task, status)}
+			priority={task.priority}
+			projectId={task.projectId}
+			projectName={task.projectName}
+			projectOptions={hasProjectOptions ? projectBinding?.projectOptions : undefined}
 			status={task.status}
+			dueAt={task.dueAt}
 		>
 			<RowShell.Root
 				aria-label={`打开任务 ${task.title}`}
@@ -148,14 +169,14 @@ export function TaskRowAdapter({
 						<ProjectCell
 							disabled={isPending}
 							onSelectNone={
-								hasProjectOptions ? () => projectBinding?.onSelectNoProject?.(task) : undefined
+								showProjectCellOptions ? () => projectBinding?.onSelectNoProject?.(task) : undefined
 							}
 							onSelectProject={
-								hasProjectOptions
+								showProjectCellOptions
 									? (projectId) => projectBinding?.onSelectProject?.(task, projectId)
 									: undefined
 							}
-							options={hasProjectOptions ? projectBinding?.projectOptions : undefined}
+							options={showProjectCellOptions ? projectBinding?.projectOptions : undefined}
 							projectName={task.projectName}
 						/>
 						<CreatedAtCell value={task.createdAt} />

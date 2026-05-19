@@ -407,15 +407,15 @@ describe('CommandMenu', () => {
 		expect(onSelectTaskDate).toHaveBeenCalledTimes(2)
 	})
 
-	it('task-date-picker 按数字键时直接选择 preset，而不是写入搜索框', () => {
+	it('task-date-picker 按数字键时不直接选择日期 preset', () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTaskDate = vi.fn<(dueAt: string | null) => void>()
 		renderCommandMenu({ mode: 'task-date-picker', onOpenChange, onSelectTaskDate })
 
 		fireEvent.keyDown(screen.getByRole('listbox'), { key: '1' })
 
-		expect(onOpenChange).toHaveBeenCalledWith(false)
-		expect(onSelectTaskDate).toHaveBeenCalledTimes(1)
+		expect(onOpenChange).not.toHaveBeenCalledWith(false)
+		expect(onSelectTaskDate).not.toHaveBeenCalled()
 		expect(screen.getByPlaceholderText('选择日期…')).toHaveValue('')
 	})
 })
