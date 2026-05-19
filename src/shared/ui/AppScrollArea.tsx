@@ -1,10 +1,4 @@
-import {
-	forwardRef,
-	useImperativeHandle,
-	useRef,
-	type ComponentProps,
-	type ReactNode,
-} from 'react'
+import { forwardRef, useImperativeHandle, useRef, type ComponentProps, type ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 
@@ -13,6 +7,7 @@ import { OverlayScrollbar } from './OverlayScrollbar'
 export type AppScrollAreaProps = {
 	className?: string
 	viewportClassName?: string
+	scrollbarClassName?: string
 	viewportProps?: Omit<ComponentProps<'div'>, 'children' | 'className' | 'ref'>
 	children: ReactNode
 	scrollContainerRole?: string
@@ -35,6 +30,7 @@ export const AppScrollArea = forwardRef<HTMLDivElement, AppScrollAreaProps>(
 		{
 			className,
 			viewportClassName,
+			scrollbarClassName,
 			viewportProps,
 			children,
 			scrollContainerRole,
@@ -54,10 +50,13 @@ export const AppScrollArea = forwardRef<HTMLDivElement, AppScrollAreaProps>(
 		useImperativeHandle(forwardedRef, () => viewportRef.current as HTMLDivElement, [])
 
 		return (
-			<div className={cn('relative min-h-0', className)}>
+			<div className={cn('relative flex min-h-0 flex-col overflow-hidden', className)}>
 				<div
 					{...viewportProps}
-					className={cn('no-scrollbar min-h-0 overflow-y-auto', viewportClassName)}
+					className={cn(
+						'no-scrollbar min-h-0 max-h-full flex-1 overflow-y-auto',
+						viewportClassName,
+					)}
 					data-scroll-container='true'
 					data-scroll-container-role={scrollContainerRole}
 					ref={viewportRef}
@@ -66,6 +65,7 @@ export const AppScrollArea = forwardRef<HTMLDivElement, AppScrollAreaProps>(
 				</div>
 				<OverlayScrollbar
 					activeThumbClassName={activeThumbClassName}
+					className={scrollbarClassName}
 					hoverThumbClassName={hoverThumbClassName}
 					idleThumbClassName={idleThumbClassName}
 					minThumbHeight={minThumbHeight}

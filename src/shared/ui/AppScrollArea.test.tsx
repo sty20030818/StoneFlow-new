@@ -1,6 +1,12 @@
 import { createRef } from 'react'
 import { render, screen } from '@testing-library/react'
 
+vi.mock('./OverlayScrollbar', () => ({
+	OverlayScrollbar: ({ className }: { className?: string }) => (
+		<div aria-hidden='true' className={className} data-testid='overlay-scrollbar' />
+	),
+}))
+
 import { AppScrollArea } from './AppScrollArea'
 
 describe('AppScrollArea', () => {
@@ -46,5 +52,21 @@ describe('AppScrollArea', () => {
 		expect(viewport?.className).toContain('viewport-class')
 		expect(viewport?.className).toContain('px-4')
 		expect(viewport?.className).not.toContain('wrapper-class')
+	})
+
+	it('区分 scrollbarClassName 与 viewportClassName', () => {
+		render(
+			<AppScrollArea scrollbarClassName='scrollbar-shell' viewportClassName='viewport-class'>
+				<div>content</div>
+			</AppScrollArea>,
+		)
+
+		const viewport = screen.getByText('content').parentElement
+		const scrollbar = screen.getByTestId('overlay-scrollbar')
+
+		expect(viewport?.className).toContain('viewport-class')
+		expect(viewport?.className).not.toContain('scrollbar-shell')
+		expect(scrollbar.className).toContain('scrollbar-shell')
+		expect(scrollbar.className).not.toContain('viewport-class')
 	})
 })

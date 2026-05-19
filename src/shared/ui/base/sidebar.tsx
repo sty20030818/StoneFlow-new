@@ -643,15 +643,14 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 		lastWidth: number
 		raf: number | null
 	}>({ startX: 0, startWidth: sidebarWidth, dragged: false, lastWidth: sidebarWidth, raf: null })
-
 	return (
 		<button
 			aria-label={desktopPreference === 'expanded' ? '收起侧边栏' : '展开侧边栏'}
 			className={cn(
-				// rail 热区跨过分界线左右各一半（更好命中，也让 hover 高亮“两边都亮”）
-				'group/sidebar-rail absolute inset-y-0 right-0 z-20 flex w-8 translate-x-1/2 items-stretch select-none group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden',
-				// 可变宽 resize 光标：左右一致
-				visualState !== 'desktop-expanded' ? 'cursor-pointer' : 'cursor-col-resize',
+				// rail 热区仍然跨过分界线，但缩窄到 8px，避免压住 sidebar 右侧滚动条。
+				'group/sidebar-rail absolute inset-y-0 right-0 z-20 flex w-2 translate-x-1/2 items-stretch select-none group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden',
+				// 展开态允许拖拽改宽；折叠态用向右展开语义的箭头 cursor。
+				visualState === 'desktop-expanded' ? 'cursor-col-resize' : 'cursor-pointer',
 				className,
 			)}
 			data-slot='sidebar-rail'
@@ -679,6 +678,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 				if (providerEl) {
 					providerEl.dataset.sidebarResizing = 'true'
 				}
+				document.body.style.cursor = 'col-resize'
 			}}
 			onPointerMove={(event) => {
 				if (visualState !== 'desktop-expanded') return
@@ -720,6 +720,7 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 				if (providerEl) {
 					providerEl.dataset.sidebarResizing = 'false'
 				}
+				document.body.style.cursor = ''
 
 				if ((event.currentTarget as HTMLButtonElement).hasPointerCapture(event.pointerId)) {
 					;(event.currentTarget as HTMLButtonElement).releasePointerCapture(event.pointerId)
@@ -738,6 +739,17 @@ function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
 					// 只在松手时通知外层提交宽度，拖动过程仍然只改 CSS 变量以保持丝滑。
 					setSidebarWidth(dragStateRef.current.lastWidth)
 				}
+			}}
+			onPointerCancel={() => {
+				document.body.style.cursor = ''
+			}}
+			style={{
+				cursor:
+					visualState === 'desktop-expanded'
+						? 'col-resize'
+						: visualState === 'desktop-collapsed'
+							? 'e-resize'
+							: undefined,
 			}}
 			tabIndex={-1}
 			type='button'

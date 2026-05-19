@@ -20,7 +20,7 @@ import {
 	type LucideProps,
 } from 'lucide-react'
 
-import { OverlayScrollbar } from '@/shared/ui/OverlayScrollbar'
+import { AppScrollArea } from '@/shared/ui/AppScrollArea'
 import { Badge } from '@/shared/ui/base/badge'
 import {
 	Command,
@@ -264,21 +264,19 @@ function CommandMenuSelectionChips({ entities }: { entities: CommandSelectedEnti
 }
 
 function CommandScrollableList({ children }: { children: React.ReactNode }) {
-	const listRef = useRef<React.ElementRef<typeof CommandList>>(null)
-
 	return (
-		<div className='relative min-h-0'>
-			<CommandList className='no-scrollbar max-h-120 overflow-y-auto px-1 pb-2' ref={listRef}>
+		<AppScrollArea
+			className='max-h-120'
+			minThumbHeight={48}
+			thumbLengthRatio={0.58}
+			trackInsetBottom={8}
+			trackInsetTop={4}
+			viewportClassName='px-1 pb-2'
+		>
+			<CommandList className='max-h-none scroll-py-2 overflow-x-hidden overflow-y-visible outline-none'>
 				{children}
 			</CommandList>
-			<OverlayScrollbar
-				minThumbHeight={48}
-				scrollRef={listRef}
-				thumbLengthRatio={0.58}
-				trackInsetBottom={8}
-				trackInsetTop={4}
-			/>
-		</div>
+		</AppScrollArea>
 	)
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
+import { AppScrollArea } from '@/shared/ui/AppScrollArea'
 import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
@@ -49,55 +50,53 @@ export function GlobalSearchResults({
 
 	return (
 		<div className={globalSearchResultsPopoverClass}>
-			<div className='max-h-96 overflow-y-auto p-2.5'>
-				<div ref={rootRef}>
-					{errorMessage && !hasResults ? (
-						<SearchPanelState label={errorMessage} tone='danger' />
-					) : !hasResults ? (
-						<SearchPanelState label='没有匹配的任务或项目' />
-					) : (
-						<div className='space-y-3'>
-							{errorMessage ? <SearchPanelState label={errorMessage} tone='danger' /> : null}
+			<AppScrollArea className='max-h-96' ref={rootRef} viewportClassName='p-2.5'>
+				{errorMessage && !hasResults ? (
+					<SearchPanelState label={errorMessage} tone='danger' />
+				) : !hasResults ? (
+					<SearchPanelState label='没有匹配的任务或项目' />
+				) : (
+					<div className='space-y-3'>
+						{errorMessage ? <SearchPanelState label={errorMessage} tone='danger' /> : null}
 
-							{taskItems.length > 0 ? (
-								<section className='space-y-1'>
-									<SearchGroupHeading title='任务' />
-									<div className='space-y-0.5'>
-										{taskItems.map(({ index, item }) => (
-											<SearchTaskResultRow
-												isActive={highlightedIndex === index}
-												key={item.id}
-												task={item}
-												taskIndex={index}
-												onHighlight={() => onHighlightIndex(index)}
-												onSelect={() => onSelectTask(item)}
-											/>
-										))}
-									</div>
-								</section>
-							) : null}
+						{taskItems.length > 0 ? (
+							<section className='space-y-1'>
+								<SearchGroupHeading title='任务' />
+								<div className='space-y-0.5'>
+									{taskItems.map(({ index, item }) => (
+										<SearchTaskResultRow
+											isActive={highlightedIndex === index}
+											key={item.id}
+											task={item}
+											taskIndex={index}
+											onHighlight={() => onHighlightIndex(index)}
+											onSelect={() => onSelectTask(item)}
+										/>
+									))}
+								</div>
+							</section>
+						) : null}
 
-							{projectItems.length > 0 ? (
-								<section className='space-y-1'>
-									<SearchGroupHeading title='项目' />
-									<div className='space-y-0.5'>
-										{projectItems.map(({ index, item }) => (
-											<SearchProjectResultRow
-												isActive={highlightedIndex === index}
-												key={item.id}
-												project={item}
-												projectIndex={index}
-												onHighlight={() => onHighlightIndex(index)}
-												onSelect={() => onSelectProject(item)}
-											/>
-										))}
-									</div>
-								</section>
-							) : null}
-						</div>
-					)}
-				</div>
-			</div>
+						{projectItems.length > 0 ? (
+							<section className='space-y-1'>
+								<SearchGroupHeading title='项目' />
+								<div className='space-y-0.5'>
+									{projectItems.map(({ index, item }) => (
+										<SearchProjectResultRow
+											isActive={highlightedIndex === index}
+											key={item.id}
+											project={item}
+											projectIndex={index}
+											onHighlight={() => onHighlightIndex(index)}
+											onSelect={() => onSelectProject(item)}
+										/>
+									))}
+								</div>
+							</section>
+						) : null}
+					</div>
+				)}
+			</AppScrollArea>
 		</div>
 	)
 }

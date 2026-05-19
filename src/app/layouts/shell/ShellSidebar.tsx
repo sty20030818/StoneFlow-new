@@ -31,6 +31,7 @@ import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
 import { SpaceEditorDialog } from '@/features/space/ui/SpaceEditorDialog'
 import type { Scope, Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
+import { AppScrollArea } from '@/shared/ui/AppScrollArea'
 import { Button } from '@/shared/ui/base/button'
 import {
 	AlertDialog,
@@ -470,122 +471,128 @@ export function ShellSidebar({
 						</div>
 					</SidebarHeader>
 
-					<SidebarContent className='no-scrollbar gap-4 pb-4'>
-						<SidebarGroup>
-							<SidebarGroupContent>
-								<SidebarMenu>
-									{visibleNavItems.map((item) => (
-										<MainNavSidebarMenuItem
-											badge={item.badge}
-											footerItems={footerCustomizeItems}
-											icon={item.icon}
-											itemKey={item.key}
-											key={item.key}
-											label={item.label}
-											navItems={mainNavItems}
-											onResetMainItemsVisibility={onResetMainItemsVisibility}
-											onUpdateItemVisibility={onUpdateItemVisibility}
-											to={item.to}
-											visibleNavItemCount={visibleNavItemCount}
-										/>
-									))}
-								</SidebarMenu>
-							</SidebarGroupContent>
-						</SidebarGroup>
-
-						{settings.projectSection.visible ? (
-							<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
-								<div className={sidebarSectionHeaderRowClass}>
-									<SidebarGroupLabel className='px-0'>项目列表</SidebarGroupLabel>
-									<Button
-										aria-label='创建项目'
-										className='size-6 hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
-										onClick={() => onOpenProjectCreateDialog()}
-										size='icon'
-										type='button'
-										variant='ghost'
-									>
-										<PlusIcon />
-									</Button>
-								</div>
-
-								{!settings.projectSection.collapsed ? (
-									<SidebarGroupContent>
-										{currentScope.type === 'all' ? (
-											<div className={sidebarHelperTextClass}>
-												全局 Scope 下先不展开具体项目，切到单个 Space 后再查看项目列表。
-											</div>
-										) : (
-											<SidebarMenu>
-												<NoProjectNavMenuItem
-													badge={navBadges.noProject}
-													contextMenuContent={
-														<ContextMenuContent className='w-52'>
-															<ContextMenuGroup>
-																<SidebarCustomizeSubmenu
-																	footerItems={footerCustomizeItems}
-																	navItems={mainNavItems}
-																	onResetMainItemsVisibility={onResetMainItemsVisibility}
-																	onUpdateItemVisibility={onUpdateItemVisibility}
-																	visibleNavItemCount={visibleNavItemCount}
-																/>
-															</ContextMenuGroup>
-														</ContextMenuContent>
-													}
-													currentScope={currentScope}
-													fallbackSpaceId={fallbackSpaceId}
-												/>
-												{projectLinks.map((project) => (
-													<ProjectNavMenuItem
-														currentScope={currentScope}
-														currentSpaceId={currentSpaceId}
-														key={project.id}
-														project={project}
-													/>
-												))}
-											</SidebarMenu>
-										)}
-									</SidebarGroupContent>
-								) : null}
-							</SidebarGroup>
-						) : null}
-					</SidebarContent>
-
-					<SidebarFooter className={sidebarFooterContainerClass}>
-						<SidebarMenu>
-							{footerItems.map((item) => (
-								<SidebarMenuItem key={item.key}>
-									<SidebarNavRow
-										badge={item.badge}
-										contextMenuContent={
-											<SidebarItemContextMenu
+					<SidebarContent className='overflow-y-hidden'>
+						<AppScrollArea
+							className='flex-1'
+							scrollbarClassName='right-1'
+							viewportClassName='flex min-h-0 flex-col gap-4'
+						>
+							<SidebarGroup>
+								<SidebarGroupContent>
+									<SidebarMenu>
+										{visibleNavItems.map((item) => (
+											<MainNavSidebarMenuItem
+												badge={item.badge}
 												footerItems={footerCustomizeItems}
-												isLastVisible={
-													visibleNavItemCount === 1 && settings.footerItems[item.key].visible
-												}
+												icon={item.icon}
+												itemKey={item.key}
+												key={item.key}
+												label={item.label}
 												navItems={mainNavItems}
 												onResetMainItemsVisibility={onResetMainItemsVisibility}
 												onUpdateItemVisibility={onUpdateItemVisibility}
-												target={{ kind: 'footer', key: item.key }}
-												visible={settings.footerItems[item.key].visible}
+												to={item.to}
 												visibleNavItemCount={visibleNavItemCount}
 											/>
-										}
-										icon={item.icon}
-										label={item.label}
-										to={item.to}
-									/>
-								</SidebarMenuItem>
-							))}
-							<SidebarMenuItem key={settingsItem.key}>
-								<SidebarNavRow
-									icon={settingsItem.icon}
-									label={settingsItem.label}
-									to={settingsItem.to}
-								/>
-							</SidebarMenuItem>
-						</SidebarMenu>
-					</SidebarFooter>
+										))}
+									</SidebarMenu>
+								</SidebarGroupContent>
+							</SidebarGroup>
+
+							{settings.projectSection.visible ? (
+								<SidebarGroup className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden'>
+									<div className={sidebarSectionHeaderRowClass}>
+										<SidebarGroupLabel className='px-0'>项目列表</SidebarGroupLabel>
+										<Button
+											aria-label='创建项目'
+											className='size-6 hover:bg-sf-shell-hover-strong focus-visible:bg-sf-shell-hover-strong'
+											onClick={() => onOpenProjectCreateDialog()}
+											size='icon'
+											type='button'
+											variant='ghost'
+										>
+											<PlusIcon />
+										</Button>
+									</div>
+
+									{!settings.projectSection.collapsed ? (
+										<SidebarGroupContent>
+											{currentScope.type === 'all' ? (
+												<div className={sidebarHelperTextClass}>
+													全局 Scope 下先不展开具体项目，切到单个 Space 后再查看项目列表。
+												</div>
+											) : (
+												<SidebarMenu>
+													<NoProjectNavMenuItem
+														badge={navBadges.noProject}
+														contextMenuContent={
+															<ContextMenuContent className='w-52'>
+																<ContextMenuGroup>
+																	<SidebarCustomizeSubmenu
+																		footerItems={footerCustomizeItems}
+																		navItems={mainNavItems}
+																		onResetMainItemsVisibility={onResetMainItemsVisibility}
+																		onUpdateItemVisibility={onUpdateItemVisibility}
+																		visibleNavItemCount={visibleNavItemCount}
+																	/>
+																</ContextMenuGroup>
+															</ContextMenuContent>
+														}
+														currentScope={currentScope}
+														fallbackSpaceId={fallbackSpaceId}
+													/>
+													{projectLinks.map((project) => (
+														<ProjectNavMenuItem
+															currentScope={currentScope}
+															currentSpaceId={currentSpaceId}
+															key={project.id}
+															project={project}
+														/>
+													))}
+												</SidebarMenu>
+											)}
+										</SidebarGroupContent>
+									) : null}
+								</SidebarGroup>
+							) : null}
+
+							<SidebarFooter className={`mt-auto ${sidebarFooterContainerClass}`}>
+								<SidebarMenu>
+									{footerItems.map((item) => (
+										<SidebarMenuItem key={item.key}>
+											<SidebarNavRow
+												badge={item.badge}
+												contextMenuContent={
+													<SidebarItemContextMenu
+														footerItems={footerCustomizeItems}
+														isLastVisible={
+															visibleNavItemCount === 1 && settings.footerItems[item.key].visible
+														}
+														navItems={mainNavItems}
+														onResetMainItemsVisibility={onResetMainItemsVisibility}
+														onUpdateItemVisibility={onUpdateItemVisibility}
+														target={{ kind: 'footer', key: item.key }}
+														visible={settings.footerItems[item.key].visible}
+														visibleNavItemCount={visibleNavItemCount}
+													/>
+												}
+												icon={item.icon}
+												label={item.label}
+												to={item.to}
+											/>
+										</SidebarMenuItem>
+									))}
+									<SidebarMenuItem key={settingsItem.key}>
+										<SidebarNavRow
+											icon={settingsItem.icon}
+											label={settingsItem.label}
+											to={settingsItem.to}
+										/>
+									</SidebarMenuItem>
+								</SidebarMenu>
+							</SidebarFooter>
+						</AppScrollArea>
+					</SidebarContent>
 					<SidebarRail />
 				</Sidebar>
 			</ContextMenuTrigger>

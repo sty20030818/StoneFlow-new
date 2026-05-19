@@ -39,6 +39,7 @@ describe('Sidebar primitive', () => {
 		expect(provider.style.getPropertyValue('--sf-shell-sidebar-panel-width').trim()).toBe('48px')
 		expect(provider.style.getPropertyValue('--sf-shell-sidebar-panel-offset-x').trim()).toBe('0px')
 		expect(provider.style.getPropertyValue('--sf-shell-sidebar-reserved-width').trim()).toBe('48px')
+		expect(getRail().style.cursor).toContain('e-resize')
 	})
 
 	it('从 desktop 进入 mobile 时默认 closed，再回 desktop 恢复桌面偏好态', () => {
@@ -151,12 +152,14 @@ describe('Sidebar primitive', () => {
 		const rail = document.querySelector('[data-slot="sidebar-rail"]') as HTMLElement
 
 		fireEvent.pointerDown(rail, { clientX: 0, pointerId: 1 })
+		expect(document.body.style.cursor).toBe('col-resize')
 		fireEvent.pointerMove(rail, { clientX: 50, pointerId: 1 })
 
 		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-panel-width')).toBe('295px')
 		expect(onSidebarWidthCommit).not.toHaveBeenCalled()
 
 		fireEvent.pointerUp(rail, { pointerId: 1 })
+		expect(document.body.style.cursor).toBe('')
 
 		await waitFor(() => {
 			expect(onSidebarWidthCommit).toHaveBeenCalledWith(295)
@@ -248,6 +251,14 @@ function getSidebar() {
 		throw new Error('缺少 sidebar')
 	}
 	return sidebar
+}
+
+function getRail() {
+	const rail = document.querySelector('[data-slot="sidebar-rail"]')
+	if (!(rail instanceof HTMLElement)) {
+		throw new Error('缺少 sidebar rail')
+	}
+	return rail
 }
 
 function installMatchMedia(initialMatches: boolean): MatchMediaController {

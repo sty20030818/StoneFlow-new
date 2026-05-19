@@ -1,6 +1,7 @@
 import type { ComponentProps, ComponentType, ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
+import { AppScrollArea } from '@/shared/ui/AppScrollArea'
 import { Button } from '@/shared/ui/base/button'
 import {
 	mainCardInlineActionsClass,
@@ -131,16 +132,13 @@ function MainCardToolbar({
 
 function MainCardBody({ children, className }: MainCardShellSlotProps) {
 	return (
-		<div
-			className={cn(
-				'no-scrollbar flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2',
-				className,
-			)}
-			data-scroll-container='true'
-			data-scroll-container-role='main-card'
+		<AppScrollArea
+			className='min-w-0 flex-1'
+			scrollContainerRole='main-card'
+			viewportClassName={cn('flex min-h-0 min-w-0 flex-col gap-2 px-2 pb-2', className)}
 		>
 			{children}
-		</div>
+		</AppScrollArea>
 	)
 }
 

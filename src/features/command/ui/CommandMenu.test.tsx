@@ -100,6 +100,20 @@ describe('CommandMenu', () => {
 		expect(screen.getByText('删除任务')).toBeInTheDocument()
 	})
 
+	it('命令列表滚动容器来自 AppScrollArea，chips 横向滚动区保持原样', () => {
+		renderCommandMenu({ context: createTaskSelectionContext() })
+
+		const commandItem = screen.getByText('完成任务')
+		const commandScrollContainer = commandItem.closest('[data-scroll-container="true"]')
+		const chipsRow = screen.getByLabelText('当前选中对象')
+		const commandList = commandItem.closest('[data-slot="command-list"]')
+
+		expect(commandScrollContainer).toHaveAttribute('data-scroll-container', 'true')
+		expect(commandList).toHaveClass('overflow-y-visible')
+		expect(chipsRow).toHaveClass('overflow-x-auto')
+		expect(chipsRow.closest('[data-scroll-container="true"]')).toBeNull()
+	})
+
 	it('有项目选择时显示项目批量操作分组', () => {
 		renderCommandMenu({ context: createProjectSelectionContext() })
 

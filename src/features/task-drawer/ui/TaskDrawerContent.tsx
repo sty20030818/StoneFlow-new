@@ -9,6 +9,7 @@ import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 import { selectTaskDetail, useTaskStore } from '@/features/task/model/useTaskStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+import { AppScrollArea } from '@/shared/ui/AppScrollArea'
 import { Button } from '@/shared/ui/base/button'
 import { DatePicker } from '@/shared/ui/base/date-picker'
 import { Input } from '@/shared/ui/base/input'
@@ -259,7 +260,7 @@ export function TaskDrawerContent({
 	return (
 		<div className='flex h-full flex-col'>
 			{/* 内容区 */}
-			<div className='no-scrollbar flex-1 overflow-y-auto'>
+			<AppScrollArea className='flex-1'>
 				{activeTab === 'details' ? (
 					<div className='flex flex-col gap-4 p-4'>
 						{/* 标题 */}
@@ -487,7 +488,7 @@ export function TaskDrawerContent({
 						)}
 					</div>
 				)}
-			</div>
+			</AppScrollArea>
 
 			{/* Footer - 固定在底部 */}
 			<div className={taskDrawerFooterClass}>

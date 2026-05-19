@@ -27,6 +27,26 @@ describe('ShortcutHelp', () => {
 		expect(screen.getAllByText('/').length).toBeGreaterThan(0)
 		expect(screen.getAllByText('未绑定').length).toBeGreaterThan(0)
 	})
+
+	it('列表区使用统一滚动容器，标题区不进入滚动层', () => {
+		render(
+			<ShortcutHelp
+				context={createEmptyCommandContext()}
+				description='测试'
+				onOpenChange={vi.fn()}
+				open
+				runtime={createRuntime()}
+				title='快捷键'
+			/>,
+		)
+
+		const title = screen.getAllByText('快捷键')[1]
+		const listItem = screen.getByText('打开命令菜单')
+		const scrollContainer = listItem.closest('[data-scroll-container="true"]')
+
+		expect(scrollContainer).toHaveAttribute('data-scroll-container', 'true')
+		expect(title.closest('[data-scroll-container="true"]')).toBeNull()
+	})
 })
 
 function createRuntime() {

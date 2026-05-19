@@ -128,6 +128,42 @@ describe('ShellSidebar', () => {
 			expect(onDeleteSpace).toHaveBeenCalledWith('space-personal')
 		})
 	})
+
+	it('项目区和 footer 一起位于 AppScrollArea 滚动容器内，内容不足时 footer 仍可贴底', () => {
+		renderShellSidebar({
+			mainItems: {
+				inbox: { visible: true, order: 100 },
+				allTasks: { visible: true, order: 200 },
+				views: { visible: true, order: 300 },
+				projectOverview: { visible: true, order: 400 },
+			},
+			projectSection: {
+				visible: true,
+				order: 500,
+				collapsed: false,
+				showCounts: true,
+				showCompleted: true,
+				maxVisible: null,
+			},
+			footerItems: {
+				archive: { visible: true, order: 900 },
+				trash: { visible: true, order: 1000 },
+			},
+			width: 256,
+			desktopPreference: 'expanded',
+		})
+
+		const projectLink = screen.getByRole('link', { name: 'StoneFlow VNext' })
+		const scrollContainer = projectLink.closest('[data-scroll-container="true"]')
+		const footerLink = screen.getByRole('link', { name: '归档' })
+		const sidebarContent = projectLink.closest('[data-slot="sidebar-content"]')
+		const footer = footerLink.closest('[data-slot="sidebar-footer"]')
+
+		expect(scrollContainer).toHaveAttribute('data-scroll-container', 'true')
+		expect(sidebarContent).toHaveClass('overflow-y-hidden')
+		expect(footerLink.closest('[data-scroll-container="true"]')).toBe(scrollContainer)
+		expect(footer).toHaveClass('mt-auto')
+	})
 })
 
 function renderShellSidebar(

@@ -3,10 +3,10 @@ import { useMemo, useRef } from 'react'
 import { XIcon } from 'lucide-react'
 
 import type { CommandContext, CommandRuntime } from '@/features/command/core'
+import { AppScrollArea } from '@/shared/ui/AppScrollArea'
 import { Button } from '@/shared/ui/base/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/base/dialog'
 import { cn } from '@/shared/lib/utils'
-import { OverlayScrollbar } from '@/shared/ui/OverlayScrollbar'
 
 import { buildShortcutHelpGroups } from './shortcut-help-model'
 import { ShortcutTokens } from './ShortcutTokens'
@@ -32,7 +32,6 @@ export function ShortcutHelp({
 }: ShortcutHelpProps) {
 	const groups = useMemo(() => buildShortcutHelpGroups(runtime, context), [context, runtime])
 	const contentRef = useRef<HTMLDivElement>(null)
-	const scrollRef = useRef<HTMLDivElement>(null)
 
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
@@ -65,29 +64,27 @@ export function ShortcutHelp({
 					<h2 className='truncate pr-9 text-[16px] font-medium text-foreground'>{title}</h2>
 					<p className='mt-1 truncate text-[12px] text-sf-text-tertiary'>{description}</p>
 				</div>
-				<div className='relative min-h-0'>
-					<div ref={scrollRef} className='no-scrollbar max-h-120 overflow-y-auto px-1 pb-2'>
-						{groups.map((group) => (
-							<section key={group.key} className='pt-1 first:pt-0'>
-								<h3 className='px-3 pt-1 pb-2 text-[13px] font-medium tracking-normal text-sf-text-secondary'>
-									{group.heading}
-								</h3>
-								<div className='flex flex-col'>
-									{group.entries.map((entry) => (
-										<ShortcutHelpRow entry={entry} key={entry.id} />
-									))}
-								</div>
-							</section>
-						))}
-					</div>
-					<OverlayScrollbar
-						minThumbHeight={28}
-						scrollRef={scrollRef}
-						thumbLengthRatio={0.58}
-						trackInsetBottom={8}
-						trackInsetTop={4}
-					/>
-				</div>
+				<AppScrollArea
+					className='max-h-120'
+					minThumbHeight={28}
+					thumbLengthRatio={0.58}
+					trackInsetBottom={8}
+					trackInsetTop={4}
+					viewportClassName='px-1 pb-2'
+				>
+					{groups.map((group) => (
+						<section key={group.key} className='pt-1 first:pt-0'>
+							<h3 className='px-3 pt-1 pb-2 text-[13px] font-medium tracking-normal text-sf-text-secondary'>
+								{group.heading}
+							</h3>
+							<div className='flex flex-col'>
+								{group.entries.map((entry) => (
+									<ShortcutHelpRow entry={entry} key={entry.id} />
+								))}
+							</div>
+						</section>
+					))}
+				</AppScrollArea>
 			</DialogContent>
 		</Dialog>
 	)
