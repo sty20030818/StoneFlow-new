@@ -136,6 +136,7 @@ export type CommandSelectedEntity = {
 	spaceId?: string
 	projectId?: string | null
 	inboxAt?: string | null
+	dueAt?: string | null
 	status?: string
 	priority?: string
 	lifecycleMode?: 'archive' | 'trash'

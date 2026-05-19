@@ -89,6 +89,7 @@ type TaskRowCommandActions = {
 	openPriorityMenu: () => void
 	openStatusMenu: () => void
 	openDateMenu: () => void
+	openPlacementMenu: () => void
 }
 
 const ROW_COMMAND_DISABLED_REASON = 'Row 上下文尚未接入'
@@ -560,6 +561,7 @@ function createTaskRowCommands(actions: TaskRowCommandActions): Command[] {
 		bindTaskRowCommand(COMMAND_IDS.taskSetPriority, actions.openPriorityMenu),
 		bindTaskRowCommand(COMMAND_IDS.taskSetStatus, actions.openStatusMenu),
 		bindTaskRowCommand(COMMAND_IDS.taskOpenDateMenu, actions.openDateMenu),
+		bindTaskRowCommand(COMMAND_IDS.taskChangePlacement, actions.openPlacementMenu),
 	]
 }
 
@@ -641,6 +643,9 @@ function createTaskRowCommandActions({
 		},
 		openDateMenu: () => {
 			openTaskPropertyPicker('task-date-picker', batchTasks)
+		},
+		openPlacementMenu: () => {
+			openTaskPropertyPicker('task-placement-picker', batchTasks)
 		},
 	}
 }
@@ -829,7 +834,11 @@ function isTaskSelectionBoundary(
 }
 
 function openTaskPropertyPicker(
-	mode: 'task-priority-picker' | 'task-status-picker' | 'task-date-picker',
+	mode:
+		| 'task-priority-picker'
+		| 'task-status-picker'
+		| 'task-date-picker'
+		| 'task-placement-picker',
 	tasks: TaskListItem[],
 ) {
 	if (tasks.length === 0) {
@@ -847,6 +856,7 @@ function openTaskPropertyPicker(
 			spaceId: task.spaceId,
 			projectId: task.projectId,
 			inboxAt: task.inboxAt,
+			dueAt: task.dueAt,
 			status: task.status,
 			priority: String(task.priority),
 		})),
@@ -858,6 +868,7 @@ function openTaskPropertyPicker(
 			spaceId: tasks[0].spaceId,
 			projectId: tasks[0].projectId,
 			inboxAt: tasks[0].inboxAt,
+			dueAt: tasks[0].dueAt,
 			status: tasks[0].status,
 			priority: String(tasks[0].priority),
 		},

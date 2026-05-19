@@ -91,7 +91,7 @@ describe('TaskRowShortcutScope', () => {
 		expect(actions.onDeleteTask).not.toHaveBeenCalled()
 	})
 
-	it('P / S / D 打开目标行的 Command scoped picker', () => {
+	it('P / S / D / Shift+P 打开目标行的 Command scoped picker', () => {
 		const actions = createActions()
 		renderScope({ actions })
 
@@ -114,6 +114,13 @@ describe('TaskRowShortcutScope', () => {
 		flushShortcutTimers()
 		expect(useDialogStore.getState().isCommandOpen).toBe(true)
 		expect(useDialogStore.getState().commandMenuMode).toBe('task-date-picker')
+		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a'])
+
+		useDialogStore.getState().closeCommand()
+		fireKey('P', { shiftKey: true })
+		flushShortcutTimers()
+		expect(useDialogStore.getState().isCommandOpen).toBe(true)
+		expect(useDialogStore.getState().commandMenuMode).toBe('task-placement-picker')
 		expect(useDialogStore.getState().commandSelectionOverride?.ids).toEqual(['task-a'])
 	})
 

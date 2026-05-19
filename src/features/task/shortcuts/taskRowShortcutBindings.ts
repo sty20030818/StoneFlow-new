@@ -79,4 +79,11 @@ export const TASK_ROW_SHORTCUT_BINDINGS: Keybinding[] = [
 		preventDefault: true,
 		allowInEditable: false,
 	},
+	{
+		commandId: COMMAND_IDS.taskChangePlacement,
+		sequence: [{ key: 'p', shift: true }],
+		scope: 'row',
+		preventDefault: true,
+		allowInEditable: false,
+	},
 ]

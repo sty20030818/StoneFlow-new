@@ -13,20 +13,20 @@ export const TASK_PRIORITY_OPTIONS: TaskPriorityOption[] = [
 		label: '无优先级',
 	},
 	{
-		value: 1,
-		label: '低',
-	},
-	{
-		value: 2,
-		label: '中',
+		value: 4,
+		label: '紧急',
 	},
 	{
 		value: 3,
 		label: '高',
 	},
 	{
-		value: 4,
-		label: '紧急',
+		value: 2,
+		label: '中',
+	},
+	{
+		value: 1,
+		label: '低',
 	},
 ]
 

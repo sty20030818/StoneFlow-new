@@ -50,6 +50,7 @@ export function buildTaskCommandSelection({
 				spaceId: task.spaceId,
 				projectId: task.projectId,
 				inboxAt: task.inboxAt,
+				dueAt: task.dueAt,
 				status: task.status,
 				priority: String(task.priority),
 			},

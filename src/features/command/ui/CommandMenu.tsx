@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react'
+import {
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+	type ComponentType,
+	type ReactNode,
+} from 'react'
 
 import {
 	ArrowRightIcon,
@@ -22,6 +30,10 @@ import {
 
 import { AppScrollArea } from '@/shared/ui/AppScrollArea'
 import { Badge } from '@/shared/ui/base/badge'
+import { Button } from '@/shared/ui/base/button'
+import { Kbd } from '@/shared/ui/base/kbd'
+import type { ShortcutMenuItem } from '@/shared/ui/shortcut-menu'
+import { ShortcutDigitSelectLayer } from '@/shared/ui/shortcut-menu'
 import {
 	Command,
 	CommandDialog,
@@ -46,11 +58,16 @@ import type {
 	TaskPlacementTarget,
 } from '@/features/command/core'
 import type { SearchProjectItem, SearchTaskItem, Space, TaskStatus } from '@/shared/types'
-import { TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
-import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
+import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
 
 import { ShortcutTokens } from './ShortcutTokens'
 import { buildCommandMenuGroups, type CommandMenuEntry } from './command-menu-model'
+import {
+	getCommandMenuDateLeading,
+	getCommandMenuPlacementLeading,
+	getCommandMenuPriorityOptions,
+	getCommandMenuStatusOptions,
+} from './command-menu-option-visuals'
 import {
 	isCommandMenuSearchMode,
 	isCommandMenuTaskPropertyMode,
@@ -94,6 +111,7 @@ type CommandMenuProps = {
 	title: string
 }
 
+const COMMAND_SELECTION_CHIP_GAP_PX = 6
 export function CommandMenu({
 	className,
 	context,
@@ -233,34 +251,174 @@ function CommandMenuSelectionChips({ entities }: { entities: CommandSelectedEnti
 		return null
 	}
 
-	const visibleEntities = entities.slice(0, 4)
+	const containerRef = useRef<HTMLDivElement>(null)
+	const measureRef = useRef<HTMLDivElement>(null)
+	const [visibleCount, setVisibleCount] = useState(entities.length)
+
+	useLayoutEffect(() => {
+		const container = containerRef.current
+		const measure = measureRef.current
+		if (!container || !measure) {
+			return
+		}
+
+		const recalculate = () => {
+			const nextVisibleCount = calculateVisibleSelectionChipCount({
+				container,
+				entityCount: entities.length,
+				measure,
+			})
+
+			setVisibleCount((current) => (current === nextVisibleCount ? current : nextVisibleCount))
+		}
+
+		recalculate()
+
+		if (typeof ResizeObserver === 'undefined') {
+			return
+		}
+
+		const observer = new ResizeObserver(recalculate)
+		observer.observe(container)
+
+		return () => {
+			observer.disconnect()
+		}
+	}, [entities])
+
+	const visibleEntities = entities.slice(0, visibleCount)
 	const hiddenCount = entities.length - visibleEntities.length
 
 	return (
-		<div
-			aria-label='当前选中对象'
-			className='no-scrollbar flex max-h-15 flex-nowrap gap-1.5 overflow-x-auto border-b border-sf-divider px-3 py-2'
-		>
-			{visibleEntities.map((entity) => (
-				<Badge
-					className='max-w-48 justify-start rounded-full px-2.5 text-[11px]'
-					key={`${entity.type}:${entity.id}`}
-					title={entity.subtitle ? `${entity.title} · ${entity.subtitle}` : entity.title}
-					variant='outline'
-				>
-					<span className='truncate'>{entity.title}</span>
-					{entity.subtitle ? (
-						<span className='shrink-0 text-sf-text-tertiary'>· {entity.subtitle}</span>
-					) : null}
-				</Badge>
-			))}
-			{hiddenCount > 0 ? (
-				<Badge className='rounded-full px-2.5 text-[11px]' variant='secondary'>
-					还有 {hiddenCount} 项
-				</Badge>
-			) : null}
-		</div>
+		<>
+			<div
+				aria-label='当前选中对象'
+				className='flex items-center gap-1.5 overflow-hidden border-b border-sf-divider px-3 py-2'
+				ref={containerRef}
+			>
+				{visibleEntities.map((entity) => (
+					<ReadonlySelectionSummaryChip
+						key={`${entity.type}:${entity.id}`}
+						label={formatCommandSelectionSummaryLabel(entity)}
+					/>
+				))}
+				{hiddenCount > 0 ? (
+					<ReadonlySelectionSummaryChip label={`+${hiddenCount}`} tabular />
+				) : null}
+			</div>
+			<div
+				aria-hidden='true'
+				className='pointer-events-none fixed top-0 left-0 -z-10 flex h-0 overflow-hidden opacity-0'
+				ref={measureRef}
+			>
+				{entities.map((entity) => (
+					<ReadonlySelectionSummaryChip
+						data-selection-chip=''
+						key={`measure-${entity.type}:${entity.id}`}
+						label={formatCommandSelectionSummaryLabel(entity)}
+					/>
+				))}
+				{Array.from({ length: entities.length }, (_, index) => index + 1).map((count) => (
+					<ReadonlySelectionSummaryChip
+						data-hidden-count={count}
+						data-selection-overflow=''
+						key={`measure-hidden-${count}`}
+						label={`+${count}`}
+						tabular
+					/>
+				))}
+			</div>
+		</>
 	)
+}
+
+function ReadonlySelectionSummaryChip({
+	label,
+	tabular = false,
+	...props
+}: React.ComponentProps<typeof Button> & {
+	label: string
+	tabular?: boolean
+}) {
+	return (
+		<Button
+			aria-hidden='true'
+			className={[
+				'pointer-events-none max-w-56 shrink-0 cursor-default overflow-hidden',
+				tabular ? 'tabular-nums' : null,
+			]
+				.filter(Boolean)
+				.join(' ')}
+			size='default'
+			tabIndex={-1}
+			type='button'
+			variant='outline'
+			{...props}
+		>
+			<span className='truncate'>{label}</span>
+		</Button>
+	)
+}
+
+function formatCommandSelectionSummaryLabel(entity: CommandSelectedEntity) {
+	return entity.subtitle ? `${entity.title} · ${entity.subtitle}` : entity.title
+}
+
+function calculateVisibleSelectionChipCount({
+	container,
+	entityCount,
+	measure,
+}: {
+	container: HTMLDivElement
+	entityCount: number
+	measure: HTMLDivElement
+}) {
+	if (entityCount === 0) {
+		return 0
+	}
+
+	const availableWidth = container.clientWidth
+	if (availableWidth <= 0) {
+		return entityCount
+	}
+
+	const chipWidths = Array.from(measure.querySelectorAll<HTMLElement>('[data-selection-chip]')).map(
+		(node) => node.getBoundingClientRect().width,
+	)
+	const overflowWidths = new Map(
+		Array.from(measure.querySelectorAll<HTMLElement>('[data-selection-overflow]')).map((node) => [
+			Number(node.dataset.hiddenCount ?? '0'),
+			node.getBoundingClientRect().width,
+		]),
+	)
+
+	let usedWidth = 0
+	let visibleCount = 0
+
+	for (let index = 0; index < entityCount; index += 1) {
+		const chipWidth = chipWidths[index] ?? 0
+		const nextUsedWidth =
+			usedWidth + (visibleCount > 0 ? COMMAND_SELECTION_CHIP_GAP_PX : 0) + chipWidth
+		const hiddenCount = entityCount - (index + 1)
+		const requiredWidth =
+			hiddenCount > 0
+				? nextUsedWidth + COMMAND_SELECTION_CHIP_GAP_PX + (overflowWidths.get(hiddenCount) ?? 0)
+				: nextUsedWidth
+
+		if (requiredWidth > availableWidth) {
+			break
+		}
+
+		usedWidth = nextUsedWidth
+		visibleCount = index + 1
+	}
+
+	if (visibleCount > 0 || entityCount === 1) {
+		return Math.max(visibleCount, 1)
+	}
+
+	const overflowOnlyWidth = overflowWidths.get(entityCount) ?? 0
+	return overflowOnlyWidth <= availableWidth ? 0 : 1
 }
 
 function CommandScrollableList({ children }: { children: React.ReactNode }) {
@@ -393,7 +551,7 @@ function CommandMenuItem({
 			value={`${entry.command.title} ${entry.command.keywords?.join(' ') ?? ''}`}
 		>
 			<CommandRow
-				leadingIcon={resolveCommandIcon(entry.command.id)}
+				leading={renderCommandIcon(resolveCommandIcon(entry.command.id))}
 				title={entry.command.title}
 				trailing={
 					entry.disabled && entry.disabledReason ? (
@@ -477,9 +635,23 @@ function ScopedPickerCommandGroup({
 	}
 
 	if (mode === 'task-priority-picker') {
+		const options = getCommandMenuPriorityOptions()
+		const shortcutItems: ShortcutMenuItem<TaskPriorityValue>[] = options.map((option) => ({
+			label: option.label,
+			value: option.value,
+			disabled: false,
+			isEmptyValue: option.value === 0,
+		}))
 		return (
 			<CommandGroup className='pt-2' heading='优先级'>
-				{TASK_PRIORITY_OPTIONS.map((option) => (
+				<ShortcutDigitSelectLayer
+					items={shortcutItems}
+					onSelect={(item) => {
+						onOpenChange(false)
+						onSelectTaskPriority(item.value)
+					}}
+				/>
+				{options.map((option, index) => (
 					<CommandItem
 						key={option.value}
 						onSelect={() => {
@@ -489,9 +661,9 @@ function ScopedPickerCommandGroup({
 						value={`priority ${option.label} ${option.value}`}
 					>
 						<CommandRow
-							leadingIcon={ListTodoIcon}
+							leading={option.leading}
 							title={option.label}
-							trailing={<CommandRowMeta>{`P${option.value}`}</CommandRowMeta>}
+							trailing={<CommandRowDigitHint digit={String(index)} />}
 						/>
 					</CommandItem>
 				))}
@@ -500,9 +672,22 @@ function ScopedPickerCommandGroup({
 	}
 
 	if (mode === 'task-status-picker') {
+		const options = getCommandMenuStatusOptions()
+		const shortcutItems: ShortcutMenuItem<TaskStatus>[] = options.map((option) => ({
+			label: option.label,
+			value: option.value,
+			disabled: false,
+		}))
 		return (
 			<CommandGroup className='pt-2' heading='状态'>
-				{TASK_STATUS_OPTIONS.map((option) => (
+				<ShortcutDigitSelectLayer
+					items={shortcutItems}
+					onSelect={(item) => {
+						onOpenChange(false)
+						onSelectTaskStatus(item.value)
+					}}
+				/>
+				{options.map((option, index) => (
 					<CommandItem
 						key={option.value}
 						onSelect={() => {
@@ -511,7 +696,11 @@ function ScopedPickerCommandGroup({
 						}}
 						value={`status ${option.label} ${option.value}`}
 					>
-						<CommandRow leadingIcon={CircleIcon} title={option.label} />
+						<CommandRow
+							leading={option.leading}
+							title={option.label}
+							trailing={<CommandRowDigitHint digit={String(index + 1)} />}
+						/>
 					</CommandItem>
 				))}
 			</CommandGroup>
@@ -519,9 +708,22 @@ function ScopedPickerCommandGroup({
 	}
 
 	if (mode === 'task-date-picker') {
-		const options = getTaskDateOptions()
+		const options = getTaskDateOptions(context)
+		const shortcutItems: ShortcutMenuItem<string | null>[] = options.map((option) => ({
+			label: option.label,
+			value: option.value,
+			disabled: Boolean(option.disabled),
+			isEmptyValue: option.key === 'none',
+		}))
 		return (
 			<CommandGroup className='pt-2' heading='日期'>
+				<ShortcutDigitSelectLayer
+					items={shortcutItems}
+					onSelect={(item) => {
+						onOpenChange(false)
+						onSelectTaskDate(item.value)
+					}}
+				/>
 				{options.map((option) => (
 					<CommandItem
 						disabled={option.disabled}
@@ -536,13 +738,13 @@ function ScopedPickerCommandGroup({
 						value={`date ${option.label} ${option.key}`}
 					>
 						<CommandRow
-							leadingIcon={CommandIcon}
+							leading={getCommandMenuDateLeading(option.key)}
 							title={option.label}
 							trailing={
 								option.disabled && option.disabledReason ? (
 									<CommandRowMeta>{option.disabledReason}</CommandRowMeta>
-								) : option.value ? (
-									<CommandRowMeta>{option.value}</CommandRowMeta>
+								) : option.digit ? (
+									<CommandRowDigitHint digit={option.digit} />
 								) : null
 							}
 						/>
@@ -566,7 +768,7 @@ function ScopedPickerCommandGroup({
 						value={`${task.title} ${task.note ?? ''} ${task.projectName ?? ''} ${task.spaceName}`}
 					>
 						<CommandRow
-							leadingIcon={CircleIcon}
+							leading={renderCommandIcon(CircleIcon)}
 							title={task.title}
 							trailing={
 								<CommandRowMeta>
@@ -599,9 +801,24 @@ function ScopedPickerCommandGroup({
 					: fallbackProjects,
 			spaces,
 		})
+		const shortcutItems: ShortcutMenuItem<TaskPlacementTarget>[] = groups.flatMap((group) =>
+			group.items.map((item) => ({
+				label: item.title,
+				value: item.target,
+				disabled: false,
+				isEmptyValue: item.target.kind === 'no_project',
+			})),
+		)
 
 		return (
 			<>
+				<ShortcutDigitSelectLayer
+					items={shortcutItems}
+					onSelect={(item) => {
+						onOpenChange(false)
+						onSelectTaskPlacement(item.value)
+					}}
+				/>
 				{groups.map((group) => (
 					<CommandGroup className='pt-1 first:pt-0' heading={group.heading} key={group.spaceId}>
 						{group.items.map((item) => (
@@ -614,9 +831,9 @@ function ScopedPickerCommandGroup({
 								value={item.value}
 							>
 								<CommandRow
-									leadingIcon={item.icon}
+									leading={item.leading}
 									title={item.title}
-									trailing={<CommandRowMeta>{item.meta}</CommandRowMeta>}
+									trailing={item.digit ? <CommandRowDigitHint digit={item.digit} /> : null}
 								/>
 							</CommandItem>
 						))}
@@ -639,7 +856,7 @@ function ScopedPickerCommandGroup({
 					value={`${project.name} ${project.note ?? ''} ${project.spaceName}`}
 				>
 					<CommandRow
-						leadingIcon={FolderIcon}
+						leading={renderCommandIcon(FolderIcon)}
 						title={project.name}
 						trailing={<CommandRowMeta>{`Project · ${project.spaceName}`}</CommandRowMeta>}
 					/>
@@ -675,19 +892,35 @@ function FilterPickerCommandGroup({
 	if (filterKind === 'root') {
 		const items = [
 			capability.supportsPriority
-				? { kind: 'priority' as const, title: '按优先级筛选', meta: formatPriorityMeta(context) }
+				? {
+						kind: 'priority' as const,
+						title: '按优先级筛选',
+						meta: formatPriorityMeta(context),
+						leading: getCommandMenuDateLeading('none'),
+					}
 				: null,
 			capability.supportsStatus
-				? { kind: 'status' as const, title: '按状态筛选', meta: formatStatusMeta(context) }
+				? {
+						kind: 'status' as const,
+						title: '按状态筛选',
+						meta: formatStatusMeta(context),
+						leading: <CircleIcon className='size-4 text-sf-icon-secondary' />,
+					}
 				: null,
 			capability.supportsDate
-				? { kind: 'date' as const, title: '按日期筛选', meta: formatDateMeta(context) }
+				? {
+						kind: 'date' as const,
+						title: '按日期筛选',
+						meta: formatDateMeta(context),
+						leading: getCommandMenuDateLeading('today'),
+					}
 				: null,
 			capability.supportsProject
 				? {
 						kind: 'project' as const,
 						title: '按项目筛选',
 						meta: formatProjectMeta(context, projects),
+						leading: getCommandMenuPlacementLeading('project'),
 					}
 				: null,
 		].filter((item): item is NonNullable<typeof item> => item !== null)
@@ -702,7 +935,7 @@ function FilterPickerCommandGroup({
 							value={`${item.title} ${item.kind}`}
 						>
 							<CommandRow
-								leadingIcon={CommandIcon}
+								leading={item.leading}
 								title={item.title}
 								trailing={<CommandRowMeta>{item.meta}</CommandRowMeta>}
 							/>
@@ -719,7 +952,7 @@ function FilterPickerCommandGroup({
 							value='toggle completed'
 						>
 							<CommandRow
-								leadingIcon={CheckCircle2Icon}
+								leading={renderCommandIcon(CheckCircle2Icon)}
 								title={context.view.showCompleted ? '隐藏已完成' : '显示已完成'}
 							/>
 						</CommandItem>
@@ -732,7 +965,7 @@ function FilterPickerCommandGroup({
 							}}
 							value='clear filters'
 						>
-							<CommandRow leadingIcon={Trash2Icon} title='清除全部筛选' />
+							<CommandRow leading={renderCommandIcon(Trash2Icon)} title='清除全部筛选' />
 						</CommandItem>
 					) : null}
 				</CommandGroup>
@@ -741,6 +974,7 @@ function FilterPickerCommandGroup({
 	}
 
 	if (filterKind === 'priority') {
+		const options = getCommandMenuPriorityOptions()
 		return (
 			<CommandGroup className='pt-2' heading='优先级筛选'>
 				<CommandItem
@@ -750,32 +984,32 @@ function FilterPickerCommandGroup({
 					}}
 					value='priority all'
 				>
-					<CommandRow leadingIcon={ListTodoIcon} title='不过滤优先级' />
+					<CommandRow leading={getCommandMenuDateLeading('none')} title='不过滤优先级' />
 				</CommandItem>
-				{TASK_PRIORITY_OPTIONS.map((option) => {
+				{options.map((option) => {
 					const selected = context.view.priorityFilterValues.includes(option.value)
-						return (
-							<CommandItem
-								key={option.value}
-								onSelect={() => {
-									const nextValues: TaskPriorityValue[] = selected
-										? context.view.priorityFilterValues.filter(
-												(value): value is (typeof context.view.priorityFilterValues)[number] =>
-													value !== option.value,
-											)
-										: [...context.view.priorityFilterValues, option.value].sort(
-												(left, right) => right - left,
-											)
+					return (
+						<CommandItem
+							key={option.value}
+							onSelect={() => {
+								const nextValues: TaskPriorityValue[] = selected
+									? context.view.priorityFilterValues.filter(
+											(value): value is (typeof context.view.priorityFilterValues)[number] =>
+												value !== option.value,
+										)
+									: [...context.view.priorityFilterValues, option.value].sort(
+											(left, right) => right - left,
+										)
 
-									onApplyFilter({
-										kind: 'priority',
-										values: nextValues,
-									})
-								}}
-								value={`priority ${option.label} ${option.value}`}
-							>
+								onApplyFilter({
+									kind: 'priority',
+									values: nextValues,
+								})
+							}}
+							value={`priority ${option.label} ${option.value}`}
+						>
 							<CommandRow
-								leadingIcon={ListTodoIcon}
+								leading={option.leading}
 								title={option.label}
 								trailing={
 									<CommandRowMeta>{selected ? '已选中' : `P${option.value}`}</CommandRowMeta>
@@ -789,6 +1023,7 @@ function FilterPickerCommandGroup({
 	}
 
 	if (filterKind === 'status') {
+		const options = getCommandMenuStatusOptions()
 		return (
 			<CommandGroup className='pt-2' heading='状态筛选'>
 				<CommandItem
@@ -798,30 +1033,30 @@ function FilterPickerCommandGroup({
 					}}
 					value='status all'
 				>
-					<CommandRow leadingIcon={CircleIcon} title='不过滤状态' />
+					<CommandRow leading={getCommandMenuDateLeading('none')} title='不过滤状态' />
 				</CommandItem>
-				{TASK_STATUS_OPTIONS.map((option) => {
+				{options.map((option) => {
 					const selected = context.view.statusFilterValues.includes(option.value)
-						return (
-							<CommandItem
-								key={option.value}
-								onSelect={() => {
-									const nextValues: TaskStatus[] = selected
-										? context.view.statusFilterValues.filter(
-												(value): value is (typeof context.view.statusFilterValues)[number] =>
-													value !== option.value,
-											)
-										: [...context.view.statusFilterValues, option.value]
+					return (
+						<CommandItem
+							key={option.value}
+							onSelect={() => {
+								const nextValues: TaskStatus[] = selected
+									? context.view.statusFilterValues.filter(
+											(value): value is (typeof context.view.statusFilterValues)[number] =>
+												value !== option.value,
+										)
+									: [...context.view.statusFilterValues, option.value]
 
-									onApplyFilter({
-										kind: 'status',
-										values: nextValues,
-									})
-								}}
-								value={`status ${option.label} ${option.value}`}
-							>
+								onApplyFilter({
+									kind: 'status',
+									values: nextValues,
+								})
+							}}
+							value={`status ${option.label} ${option.value}`}
+						>
 							<CommandRow
-								leadingIcon={CircleIcon}
+								leading={option.leading}
 								title={option.label}
 								trailing={selected ? <CommandRowMeta>已选中</CommandRowMeta> : null}
 							/>
@@ -850,7 +1085,7 @@ function FilterPickerCommandGroup({
 							value={`date ${option.label} ${option.value}`}
 						>
 							<CommandRow
-								leadingIcon={CommandIcon}
+								leading={getCommandMenuDateLeading(option.value)}
 								title={option.label}
 								trailing={selected ? <CommandRowMeta>已选中</CommandRowMeta> : null}
 							/>
@@ -874,7 +1109,7 @@ function FilterPickerCommandGroup({
 				}}
 				value='project all'
 			>
-				<CommandRow leadingIcon={FolderIcon} title='不过滤项目' />
+				<CommandRow leading={getCommandMenuDateLeading('none')} title='不过滤项目' />
 			</CommandItem>
 			{filteredProjects.map((project) => {
 				const selected = context.view.projectFilterId === project.id
@@ -891,7 +1126,7 @@ function FilterPickerCommandGroup({
 						value={`${project.label} ${project.spaceName ?? ''}`}
 					>
 						<CommandRow
-							leadingIcon={FolderIcon}
+							leading={getCommandMenuPlacementLeading('project')}
 							title={project.label}
 							trailing={
 								<CommandRowMeta>
@@ -910,20 +1145,29 @@ type TaskDateOption = {
 	key: string
 	label: string
 	value: string | null
+	digit?: string
 	disabled?: boolean
 	disabledReason?: string
 }
 
-function getTaskDateOptions(): TaskDateOption[] {
+function getTaskDateOptions(context: CommandContext): TaskDateOption[] {
 	const today = startOfLocalDay(new Date())
 	const tomorrow = addLocalDays(today, 1)
-	const endOfWeek = getEndOfLocalWeek(today)
+	const oneWeek = addLocalDays(today, 7)
+	const hasExistingDate = context.selection.entities.some(
+		(entity) => entity.type === 'task' && entity.dueAt !== undefined && entity.dueAt !== null,
+	)
 
-	return [
-		{ key: 'none', label: '无时间', value: null },
-		{ key: 'today', label: '今天', value: formatLocalDate(today) },
-		{ key: 'tomorrow', label: '明天', value: formatLocalDate(tomorrow) },
-		{ key: 'week', label: '本周', value: formatLocalDate(endOfWeek) },
+	const options: TaskDateOption[] = []
+
+	if (hasExistingDate) {
+		options.push({ key: 'none', label: '移除时间', value: null, digit: '0' })
+	}
+
+	options.push(
+		{ key: 'tomorrow', label: '明天', value: formatLocalDate(tomorrow), digit: '1' },
+		{ key: 'week', label: '本周', value: formatLocalDate(getEndOfLocalWeek(today)), digit: '2' },
+		{ key: 'one-week', label: '一周', value: formatLocalDate(oneWeek), digit: '3' },
 		{
 			key: 'custom',
 			label: '自定义日期',
@@ -931,7 +1175,14 @@ function getTaskDateOptions(): TaskDateOption[] {
 			disabled: true,
 			disabledReason: '完整日期选择后续接入',
 		},
-	]
+	)
+
+	const customOption = options.find((option) => option.key === 'custom')
+	if (customOption) {
+		customOption.digit = '4'
+	}
+
+	return options
 }
 
 function getFilterPickerPlaceholder(mode: CommandMenuMode, filterKind: PageFilterKind) {
@@ -1009,7 +1260,8 @@ type TaskPlacementGroup = {
 		meta: string
 		value: string
 		target: TaskPlacementTarget
-		icon: ComponentType<LucideProps>
+		leading: ReactNode
+		digit?: string
 	}>
 }
 
@@ -1056,7 +1308,8 @@ function buildTaskPlacementGroups({
 				meta: 'No Project',
 				value: `独立事项 ${spaceNameById.get(spaceId) ?? ''} no project`,
 				target: { kind: 'no_project', spaceId },
-				icon: CircleIcon,
+				leading: getCommandMenuPlacementLeading('no_project'),
+				digit: '0',
 			})
 		}
 
@@ -1071,7 +1324,8 @@ function buildTaskPlacementGroups({
 					projectId: project.id,
 					spaceId: project.spaceId,
 				},
-				icon: FolderIcon,
+				leading: getCommandMenuPlacementLeading('project'),
+				digit: undefined,
 			})),
 		)
 
@@ -1128,7 +1382,7 @@ function ProjectsCommandGroup({
 		<CommandGroup className='pt-4' heading='项目'>
 			{projects.length === 0 ? (
 				<CommandItem disabled value='empty-projects'>
-					<CommandRow leadingIcon={FolderOpenIcon} title='当前 Space 还没有项目' />
+					<CommandRow leading={renderCommandIcon(FolderOpenIcon)} title='当前 Space 还没有项目' />
 				</CommandItem>
 			) : (
 				projects.map((project) => (
@@ -1138,7 +1392,7 @@ function ProjectsCommandGroup({
 						value={project.label}
 					>
 						<CommandRow
-							leadingIcon={FoldersIcon}
+							leading={renderCommandIcon(FoldersIcon)}
 							title={project.label}
 							trailing={
 								project.badge ? (
@@ -1159,19 +1413,17 @@ function ProjectsCommandGroup({
 }
 
 function CommandRow({
-	leadingIcon: LeadingIcon,
+	leading,
 	title,
 	trailing,
 }: {
-	leadingIcon: ComponentType<LucideProps>
+	leading: ReactNode
 	title: string
 	trailing?: React.ReactNode
 }) {
 	return (
 		<div className='flex w-full min-w-0 items-center gap-3'>
-			<div className='flex size-4 shrink-0 items-center justify-center text-sf-icon-secondary'>
-				<LeadingIcon className='size-4' />
-			</div>
+			<div className='flex size-4 shrink-0 items-center justify-center'>{leading}</div>
 			<span className='min-w-0 flex-1 truncate text-[14px] font-medium text-foreground'>
 				{title}
 			</span>
@@ -1180,11 +1432,23 @@ function CommandRow({
 	)
 }
 
+function renderCommandIcon(Icon: ComponentType<LucideProps>) {
+	return <Icon className='size-4 text-sf-icon-secondary' />
+}
+
 function CommandRowMeta({ children }: { children: React.ReactNode }) {
 	return (
 		<span className='block max-w-48 truncate text-right text-[12px] text-sf-text-tertiary'>
 			{children}
 		</span>
+	)
+}
+
+function CommandRowDigitHint({ digit }: { digit: string }) {
+	return (
+		<Kbd className='h-6 min-w-6 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] text-sf-text-secondary'>
+			{digit}
+		</Kbd>
 	)
 }
 

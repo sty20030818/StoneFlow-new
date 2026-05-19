@@ -100,7 +100,7 @@ describe('CommandMenu', () => {
 		expect(screen.getByText('删除任务')).toBeInTheDocument()
 	})
 
-	it('命令列表滚动容器来自 AppScrollArea，chips 横向滚动区保持原样', () => {
+	it('命令列表滚动容器来自 AppScrollArea，chips 保持独立单行摘要区', () => {
 		renderCommandMenu({ context: createTaskSelectionContext() })
 
 		const commandItem = screen.getByText('完成任务')
@@ -110,7 +110,7 @@ describe('CommandMenu', () => {
 
 		expect(commandScrollContainer).toHaveAttribute('data-scroll-container', 'true')
 		expect(commandList).toHaveClass('overflow-y-visible')
-		expect(chipsRow).toHaveClass('overflow-x-auto')
+		expect(chipsRow).toHaveClass('overflow-hidden')
 		expect(chipsRow.closest('[data-scroll-container="true"]')).toBeNull()
 	})
 
@@ -254,24 +254,61 @@ describe('CommandMenu', () => {
 		expect(onSelectTaskStatus).toHaveBeenCalledWith('doing')
 	})
 
-	it('task-date-picker 选择日期 preset 后回调并关闭菜单，自定义日期保持 disabled', () => {
+	it('task-priority-picker 按数字键时直接选择对应项，而不是进入搜索', () => {
+		const onOpenChange = vi.fn<(open: boolean) => void>()
+		const onSelectTaskPriority = vi.fn<(priority: number) => void>()
+		renderCommandMenu({ mode: 'task-priority-picker', onOpenChange, onSelectTaskPriority })
+
+		fireEvent.keyDown(screen.getByRole('listbox'), { key: '0' })
+
+		expect(onOpenChange).toHaveBeenCalledWith(false)
+		expect(onSelectTaskPriority).toHaveBeenCalledWith(0)
+	})
+
+	it('task-date-picker 无日期时显示四个 preset，有日期时显示移除时间，自定义日期保持 disabled', () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTaskDate = vi.fn<(dueAt: string | null) => void>()
-		const { unmount } = renderCommandMenu({
+		const firstRender = renderCommandMenu({
 			mode: 'task-date-picker',
 			onOpenChange,
 			onSelectTaskDate,
 		})
 
-		fireEvent.click(screen.getByText('无时间'))
+		expect(screen.queryByText('移除时间')).not.toBeInTheDocument()
+		expect(screen.getByText('明天')).toBeInTheDocument()
+		expect(screen.getByText('本周')).toBeInTheDocument()
+		expect(screen.getByText('一周')).toBeInTheDocument()
+		fireEvent.click(screen.getByText('明天'))
 		expect(onOpenChange).toHaveBeenCalledWith(false)
+		expect(onSelectTaskDate).toHaveBeenCalledTimes(1)
+
+		firstRender.unmount()
+		const secondRender = renderCommandMenu({
+			mode: 'task-date-picker',
+			onSelectTaskDate,
+			context: createTaskSelectionContextWithDueAt(),
+		})
+		expect(screen.getByText('移除时间')).toBeInTheDocument()
+		fireEvent.click(screen.getByText('移除时间'))
 		expect(onSelectTaskDate).toHaveBeenCalledWith(null)
 
-		unmount()
+		secondRender.unmount()
 		renderCommandMenu({ mode: 'task-date-picker', onSelectTaskDate })
 		fireEvent.click(screen.getByText('自定义日期'))
 		expect(screen.getByText('完整日期选择后续接入')).toBeInTheDocument()
+		expect(onSelectTaskDate).toHaveBeenCalledTimes(2)
+	})
+
+	it('task-date-picker 按数字键时直接选择 preset，而不是写入搜索框', () => {
+		const onOpenChange = vi.fn<(open: boolean) => void>()
+		const onSelectTaskDate = vi.fn<(dueAt: string | null) => void>()
+		renderCommandMenu({ mode: 'task-date-picker', onOpenChange, onSelectTaskDate })
+
+		fireEvent.keyDown(screen.getByRole('listbox'), { key: '1' })
+
+		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(onSelectTaskDate).toHaveBeenCalledTimes(1)
+		expect(screen.getByPlaceholderText('选择日期…')).toHaveValue('')
 	})
 })
 
@@ -526,6 +563,31 @@ function createProjectSelectionContext(): CommandContext {
 			hasSelection: true,
 			isSingleSelection: false,
 			isMultiSelection: true,
+		},
+	}
+}
+
+function createTaskSelectionContextWithDueAt(): CommandContext {
+	const context = createTaskSelectionContext()
+	return {
+		...context,
+		selection: {
+			...context.selection,
+			entities: context.selection.entities.map((entity, index) =>
+				entity.type === 'task'
+					? {
+							...entity,
+							dueAt: index === 0 ? '2026-05-20' : null,
+						}
+					: entity,
+			),
+			primaryEntity:
+				context.selection.primaryEntity && context.selection.primaryEntity.type === 'task'
+					? {
+							...context.selection.primaryEntity,
+							dueAt: '2026-05-20',
+						}
+					: context.selection.primaryEntity,
 		},
 	}
 }
