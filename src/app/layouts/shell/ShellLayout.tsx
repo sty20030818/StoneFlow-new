@@ -440,7 +440,6 @@ function ShellLayoutContent({
 				spaceId: project.spaceId,
 				spaceName: project.spaceName,
 				completedAt: project.completedAt,
-				badge: undefined,
 			})),
 		[placementProjects],
 	)
@@ -460,7 +459,7 @@ function ShellLayoutContent({
 							? 'done'
 							: undefined,
 			})),
-		[sidebarProjects.items, sidebarSettings?.projectSection.showCounts],
+		[sidebarProjects.items, sidebarSettings?.projectSection.showCounts, spaces],
 	)
 	const {
 		entries: routeHistoryEntries,
@@ -692,6 +691,7 @@ function ShellLayoutContent({
 		[
 			currentScope,
 			currentSpaceId,
+			activeDrawerKind,
 			activeDrawerId,
 			cancelPendingAction,
 			goBack,
@@ -700,12 +700,12 @@ function ShellLayoutContent({
 			closeDrawer,
 			closeProjectCreateDialog,
 			closeTaskCreateDialog,
-			commandMenuFilterKind,
 			createDialogType,
 			handleOpenTaskCreate,
 			isCommandOpen,
 			isShortcutHelpOpen,
 			navigate,
+			openDrawer,
 			openProjectCreateDialog,
 			openTaskCreateDialog,
 			pageFilter,
@@ -1004,7 +1004,7 @@ function ShellLayoutContent({
 							void setSidebarItemVisibility(target, visible)
 						}}
 						onUpdateSpace={updateSpace}
-						projects={projectLinks}
+						projects={sidebarProjectLinks}
 						spaces={spaces}
 						settings={sidebarSettings}
 					/>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
@@ -32,6 +32,16 @@ import { SpaceEditorDialog } from '@/features/space/ui/SpaceEditorDialog'
 import type { Scope, Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/shared/ui/base/alert-dialog'
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -89,6 +99,20 @@ import {
 
 type ShellNavBadges = Partial<Record<ShellSectionKey, string>>
 
+type SpaceConfirmAction =
+	| {
+			kind: 'archive'
+			title: string
+			description: string
+			confirmLabel: string
+	  }
+	| {
+			kind: 'delete'
+			title: string
+			description: string
+			confirmLabel: string
+	  }
+
 type ShellSidebarProps = {
 	currentScope: Scope
 	currentSpaceId: string | null
@@ -132,6 +156,10 @@ export function ShellSidebar({
 	const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create')
 	const [editorOpen, setEditorOpen] = useState(false)
 	const [dropdownError, setDropdownError] = useState<string | null>(null)
+	const [pendingSpaceConfirmAction, setPendingSpaceConfirmAction] = useState<SpaceConfirmAction | null>(
+		null,
+	)
+	const confirmActionRef = useRef<HTMLButtonElement>(null)
 	const fallbackSpaceId =
 		currentSpaceId ?? spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
 	const activeSpace =
@@ -192,6 +220,27 @@ export function ShellSidebar({
 		} catch (error) {
 			setDropdownError(error instanceof Error ? error.message : 'Space 操作失败')
 		}
+	}
+
+	async function handleConfirmSpaceAction() {
+		if (!activeSpace || !pendingSpaceConfirmAction) {
+			return
+		}
+
+		const currentAction = pendingSpaceConfirmAction
+		setPendingSpaceConfirmAction(null)
+
+		await runSpaceMutation(async () => {
+			if (currentAction.kind === 'archive') {
+				await onArchiveSpace(activeSpace.id)
+			} else {
+				await onDeleteSpace(activeSpace.id)
+			}
+
+			if (currentScope.type === 'space') {
+				navigate('/spaces/inbox')
+			}
+		})
 	}
 
 	async function handleSpaceEditorSubmit(input: {
@@ -373,14 +422,11 @@ export function ShellSidebar({
 																if (!activeSpace) {
 																	return
 																}
-																if (!window.confirm(`确认归档「${activeSpace.name}」吗？`)) {
-																	return
-																}
-																void runSpaceMutation(async () => {
-																	await onArchiveSpace(activeSpace.id)
-																	if (currentScope.type === 'space') {
-																		navigate('/spaces/inbox')
-																	}
+																setPendingSpaceConfirmAction({
+																	kind: 'archive',
+																	title: `确认归档「${activeSpace.name}」吗？`,
+																	description: '归档后这个 Space 会从当前侧栏移除，但数据仍可在归档列表中恢复。',
+																	confirmLabel: '归档',
 																})
 															}}
 														>
@@ -394,14 +440,11 @@ export function ShellSidebar({
 																if (!activeSpace) {
 																	return
 																}
-																if (!window.confirm(`确认删除「${activeSpace.name}」吗？`)) {
-																	return
-																}
-																void runSpaceMutation(async () => {
-																	await onDeleteSpace(activeSpace.id)
-																	if (currentScope.type === 'space') {
-																		navigate('/spaces/inbox')
-																	}
+																setPendingSpaceConfirmAction({
+																	kind: 'delete',
+																	title: `确认删除「${activeSpace.name}」吗？`,
+																	description: '删除后这个 Space 会进入回收站，后续仍可从回收站恢复。',
+																	confirmLabel: '删除',
 																})
 															}}
 														>
@@ -565,6 +608,46 @@ export function ShellSidebar({
 				open={editorOpen}
 				space={editorMode === 'edit' ? activeSpace : null}
 			/>
+			<AlertDialog
+				onOpenChange={(open) => {
+					if (!open) {
+						setPendingSpaceConfirmAction(null)
+					}
+				}}
+				open={pendingSpaceConfirmAction !== null}
+			>
+				<AlertDialogContent
+					onOpenAutoFocus={(event) => {
+						event.preventDefault()
+						confirmActionRef.current?.focus({ preventScroll: true })
+					}}
+				>
+					<AlertDialogHeader>
+						<AlertDialogTitle>{pendingSpaceConfirmAction?.title ?? '确认操作'}</AlertDialogTitle>
+						<AlertDialogDescription>
+							{pendingSpaceConfirmAction?.description ?? ''}
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel onClick={() => setPendingSpaceConfirmAction(null)}>
+							取消
+						</AlertDialogCancel>
+						<AlertDialogAction
+							className={cn(
+								pendingSpaceConfirmAction?.kind === 'delete' &&
+									'border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/15 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40',
+							)}
+							onClick={(event) => {
+								event.preventDefault()
+								void handleConfirmSpaceAction()
+							}}
+							ref={confirmActionRef}
+						>
+							{pendingSpaceConfirmAction?.confirmLabel ?? '确认'}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</ContextMenu>
 	)
 }

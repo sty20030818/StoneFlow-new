@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 
+import { isAnyModalOpen } from '@/shared/lib/modal-guard'
 import type { CommandId } from '@/features/command/core'
 import {
 	KEYBINDING_CHORD_TIMEOUT_MS,
@@ -66,6 +67,13 @@ export function useCommandShortcuts({
 		}
 
 		function handleKeyDown(event: KeyboardEvent) {
+			// 模态层闸门：任意 AlertDialog 等模态层打开时，整体禁用全局命令快捷键，
+			// 避免弹窗状态下 Enter / Cmd+Backspace 等键继续触发背景命令。
+			// 弹窗内的键盘行为由 AlertDialogContent 的硬键盘合约接管（仅放行 Enter/Esc）。
+			if (isAnyModalOpen()) {
+				return
+			}
+
 			const result = matchKeybindingEvent({
 				bindings,
 				event: normalizeKeyboardEvent(event),

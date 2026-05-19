@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import {
 	BoardCollapsibleSection,
@@ -69,6 +69,21 @@ export function LifecycleBoard({
 	const [openSections, setOpenSections] = useState<Set<string>>(
 		() => new Set(visibleSections.map((s) => s.key)),
 	)
+	const hasInitializedFromDataRef = useRef(visibleSections.length > 0)
+
+	useEffect(() => {
+		if (visibleSections.length === 0) {
+			hasInitializedFromDataRef.current = false
+			return
+		}
+
+		if (hasInitializedFromDataRef.current) {
+			return
+		}
+
+		hasInitializedFromDataRef.current = true
+		setOpenSections(new Set(visibleSections.map((section) => section.key)))
+	}, [visibleSections])
 
 	if (visibleSections.length === 0) {
 		return (

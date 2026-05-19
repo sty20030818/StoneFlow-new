@@ -57,7 +57,7 @@ describe('BulkActionConfirmDialog', () => {
 		expect(onConfirm).toHaveBeenCalled()
 	})
 
-	it('关闭 open state 只通知外层，不隐式取消 pending action', () => {
+	it('Esc 显式触发取消按钮，同时通知外层关闭', () => {
 		const onCancel = vi.fn<() => void>()
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 
@@ -73,8 +73,51 @@ describe('BulkActionConfirmDialog', () => {
 
 		fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' })
 
-		expect(onOpenChange).toHaveBeenCalled()
-		expect(onCancel).not.toHaveBeenCalled()
+		expect(onCancel).toHaveBeenCalledTimes(1)
+		expect(onOpenChange).toHaveBeenCalledWith(false)
+	})
+
+	it('打开时无初始焦点，无焦点按 Enter 触发确认', () => {
+		const onConfirm = vi.fn<() => void>()
+
+		render(
+			<BulkActionConfirmDialog
+				onCancel={vi.fn<() => void>()}
+				onConfirm={onConfirm}
+				onOpenChange={vi.fn<(open: boolean) => void>()}
+				open
+				request={createRequest()}
+			/>,
+		)
+
+		// 打开时焦点不应落在任何按钮上（无可见 focus ring）
+		expect(screen.getByRole('button', { name: '确认删除' })).not.toHaveFocus()
+		expect(screen.getByRole('button', { name: '取消' })).not.toHaveFocus()
+
+		// 无焦点时 Enter 触发确认（默认行为）
+		fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Enter' })
+		expect(onConfirm).toHaveBeenCalledTimes(1)
+	})
+
+	it('Tab 聚焦取消按钮后，Enter 触发取消', () => {
+		const onCancel = vi.fn<() => void>()
+		const onConfirm = vi.fn<() => void>()
+
+		render(
+			<BulkActionConfirmDialog
+				onCancel={onCancel}
+				onConfirm={onConfirm}
+				onOpenChange={vi.fn<(open: boolean) => void>()}
+				open
+				request={createRequest()}
+			/>,
+		)
+
+		screen.getByRole('button', { name: '取消' }).focus()
+		fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Enter' })
+
+		expect(onCancel).toHaveBeenCalledTimes(1)
+		expect(onConfirm).not.toHaveBeenCalled()
 	})
 })
 

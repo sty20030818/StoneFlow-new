@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useState } from 'react'
 
 import { LifecycleBoard, type LifecycleBoardSection } from '@/features/lifecycle/ui/LifecycleBoard'
 import type { LifecycleEntry } from '@/shared/types'
@@ -39,7 +40,52 @@ describe('LifecycleBoard', () => {
 			'last',
 		)
 	})
+
+	it('异步加载到首批 section 后默认展开', async () => {
+		render(<LifecycleBoardAsyncHarness />)
+
+		expect(screen.queryByRole('button', { name: '打开 任务 A' })).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '加载数据' })).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '加载数据' }))
+
+		await waitFor(() => {
+			expect(screen.getByRole('button', { name: '打开 任务 A' })).toBeInTheDocument()
+		})
+	})
 })
+
+function LifecycleBoardAsyncHarness() {
+	const [sections, setSections] = useState<LifecycleBoardSection[]>([])
+
+	return (
+		<div>
+			<button
+				onClick={() =>
+					setSections([
+						{
+							key: 'task',
+							label: '已归档的任务',
+							items: [createEntry({ id: 'task-1', entityType: 'task', title: '任务 A' })],
+						},
+					])
+				}
+				type='button'
+			>
+				加载数据
+			</button>
+			<LifecycleBoard
+				emptyDescription='empty'
+				emptyTitle='empty'
+				mode='archive'
+				onOpenDetail={() => undefined}
+				onRestore={() => undefined}
+				pendingEntryId={null}
+				sections={sections}
+			/>
+		</div>
+	)
+}
 
 function createEntry(
 	overrides: Partial<LifecycleEntry> & Pick<LifecycleEntry, 'id' | 'entityType' | 'title'>,

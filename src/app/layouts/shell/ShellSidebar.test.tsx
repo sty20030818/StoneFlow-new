@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
@@ -45,9 +45,101 @@ describe('ShellSidebar', () => {
 			trashLink.compareDocumentPosition(settingsLink) & Node.DOCUMENT_POSITION_FOLLOWING,
 		).toBeTruthy()
 	})
+
+	it('项目 badge 会显示在 sidebar 项目行上', () => {
+		renderShellSidebar(
+			{
+				mainItems: {
+					inbox: { visible: true, order: 100 },
+					allTasks: { visible: true, order: 200 },
+					views: { visible: true, order: 300 },
+					projectOverview: { visible: true, order: 400 },
+				},
+				projectSection: {
+					visible: true,
+					order: 500,
+					collapsed: false,
+					showCounts: true,
+					showCompleted: true,
+					maxVisible: null,
+				},
+				footerItems: {
+					archive: { visible: true, order: 900 },
+					trash: { visible: true, order: 1000 },
+				},
+				width: 256,
+				desktopPreference: 'expanded',
+			},
+			[
+				{
+					id: 'project-1',
+					label: 'StoneFlow VNext',
+					badge: '7',
+				},
+			],
+		)
+
+		expect(screen.getByText('7')).toBeInTheDocument()
+	})
+
+	it('Space 删除会打开统一确认弹窗，并默认聚焦确认按钮', async () => {
+		const onDeleteSpace = vi.fn(async () => mockSpace)
+		renderShellSidebar(
+			{
+				mainItems: {
+					inbox: { visible: true, order: 100 },
+					allTasks: { visible: true, order: 200 },
+					views: { visible: true, order: 300 },
+					projectOverview: { visible: true, order: 400 },
+				},
+				projectSection: {
+					visible: true,
+					order: 500,
+					collapsed: false,
+					showCounts: true,
+					showCompleted: true,
+					maxVisible: null,
+				},
+				footerItems: {
+					archive: { visible: true, order: 900 },
+					trash: { visible: true, order: 1000 },
+				},
+				width: 256,
+				desktopPreference: 'expanded',
+			},
+			[{ id: 'project-1', label: 'StoneFlow VNext' }],
+			{
+				onDeleteSpace,
+				spaces: [{ ...mockSpace, isDefault: false }],
+			},
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑空间' }))
+		fireEvent.pointerMove(await screen.findByRole('menuitem', { name: '删除' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '删除' }))
+
+		const confirmButton = await screen.findByRole('button', { name: '删除' })
+		expect(confirmButton).toHaveFocus()
+
+		fireEvent.click(confirmButton)
+
+		await waitFor(() => {
+			expect(onDeleteSpace).toHaveBeenCalledWith('space-personal')
+		})
+	})
 })
 
-function renderShellSidebar(settings: Parameters<typeof ShellSidebar>[0]['settings']) {
+function renderShellSidebar(
+	settings: Parameters<typeof ShellSidebar>[0]['settings'],
+	projects: Parameters<typeof ShellSidebar>[0]['projects'] = [
+		{
+			id: 'project-1',
+			label: 'StoneFlow VNext',
+		},
+	],
+	overrides?: Partial<Parameters<typeof ShellSidebar>[0]>,
+) {
 	return render(
 		<MemoryRouter initialEntries={['/space/space-personal/inbox']}>
 			<TooltipProvider>
@@ -63,14 +155,10 @@ function renderShellSidebar(settings: Parameters<typeof ShellSidebar>[0]['settin
 						onSetDefaultSpace={async () => mockSpace}
 						onUpdateItemVisibility={() => undefined}
 						onUpdateSpace={async () => mockSpace}
-						projects={[
-							{
-								id: 'project-1',
-								label: 'StoneFlow VNext',
-							},
-						]}
+						projects={projects}
 						spaces={[mockSpace]}
 						settings={settings}
+						{...overrides}
 					/>
 				</SidebarProvider>
 			</TooltipProvider>
