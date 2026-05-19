@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 
 import { searchEntities } from '@/features/global-search/api/searchEntities'
 import { createShellCommandRegistry } from '@/features/command/commands'
@@ -209,6 +209,8 @@ describe('CommandMenu', () => {
 		expect(await screen.findByText('工作')).toBeInTheDocument()
 		expect(screen.getByText('生活')).toBeInTheDocument()
 		expect(screen.getByText('独立事项')).toBeInTheDocument()
+		expectCommandRowIndicator('独立事项', 'mixed', '0')
+		expectCommandRowIndicator('项目 B', 'mixed')
 		fireEvent.click(screen.getByText('独立事项'))
 
 		expect(onOpenChange).toHaveBeenCalledWith(false)
@@ -216,6 +218,43 @@ describe('CommandMenu', () => {
 			kind: 'no_project',
 			spaceId: 'space-a',
 		})
+	})
+
+	it('task-placement-picker 单个当前项目显示勾', async () => {
+		const context = createTaskSelectionContext()
+		mockedSearchEntities.mockResolvedValue(
+			createSearchResult({
+				projects: [
+					createProjectResult({
+						id: 'project-b',
+						name: '项目 B',
+						spaceId: 'space-a',
+						spaceName: '工作',
+					}),
+				],
+			}),
+		)
+		renderCommandMenu({
+			mode: 'task-placement-picker',
+			context: {
+				...context,
+				selection: {
+					...context.selection,
+					entities: context.selection.entities.map((entity) => ({
+						...entity,
+						projectId: 'project-b',
+						inboxAt: null,
+					})),
+				},
+			},
+		})
+
+		fireEvent.change(screen.getByPlaceholderText('移动到项目或独立事项...'), {
+			target: { value: 'B' },
+		})
+		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
+
+		expectCommandRowIndicator('项目 B', 'checked')
 	})
 
 	it('scoped mode 空态文案区分任务和项目', async () => {
@@ -254,6 +293,72 @@ describe('CommandMenu', () => {
 		expect(onSelectTaskStatus).toHaveBeenCalledWith('doing')
 	})
 
+	it('task-priority-picker 多个当前优先级显示减号，单个当前优先级显示勾且在数字前', () => {
+		const mixedContext = createTaskSelectionContext()
+		const mixedRender = renderCommandMenu({
+			mode: 'task-priority-picker',
+			context: {
+				...mixedContext,
+				selection: {
+					...mixedContext.selection,
+					entities: mixedContext.selection.entities.map((entity, index) => ({
+						...entity,
+						priority: index === 0 ? '3' : '2',
+					})),
+				},
+			},
+		})
+
+		expectCommandRowIndicator('高', 'mixed', '2')
+		expectCommandRowIndicator('中', 'mixed', '3')
+
+		mixedRender.unmount()
+		const singleContext = createTaskSelectionContext()
+		renderCommandMenu({
+			mode: 'task-priority-picker',
+			context: {
+				...singleContext,
+				selection: {
+					...singleContext.selection,
+					entities: singleContext.selection.entities.map((entity) => ({
+						...entity,
+						priority: '3',
+					})),
+				},
+			},
+		})
+
+		expectCommandRowIndicator('高', 'checked', '2')
+	})
+
+	it('task-status-picker 多个当前状态显示减号，单个当前状态显示勾且在数字前', () => {
+		const mixedRender = renderCommandMenu({
+			mode: 'task-status-picker',
+			context: createTaskSelectionContext(),
+		})
+
+		expectCommandRowIndicator('待执行', 'mixed', '1')
+		expectCommandRowIndicator('已完成', 'mixed', '4')
+
+		mixedRender.unmount()
+		const singleContext = createTaskSelectionContext()
+		renderCommandMenu({
+			mode: 'task-status-picker',
+			context: {
+				...singleContext,
+				selection: {
+					...singleContext.selection,
+					entities: singleContext.selection.entities.map((entity) => ({
+						...entity,
+						status: 'waiting',
+					})),
+				},
+			},
+		})
+
+		expectCommandRowIndicator('等待中', 'checked', '3')
+	})
+
 	it('task-priority-picker 按数字键时直接选择对应项，而不是进入搜索', () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTaskPriority = vi.fn<(priority: number) => void>()
@@ -275,6 +380,9 @@ describe('CommandMenu', () => {
 		})
 
 		expect(screen.queryByText('移除时间')).not.toBeInTheDocument()
+		expect(document.querySelectorAll('[data-slot="command-row-selected-indicator"]')).toHaveLength(
+			0,
+		)
 		expect(screen.getByText('明天')).toBeInTheDocument()
 		expect(screen.getByText('本周')).toBeInTheDocument()
 		expect(screen.getByText('一周')).toBeInTheDocument()
@@ -311,6 +419,31 @@ describe('CommandMenu', () => {
 		expect(screen.getByPlaceholderText('选择日期…')).toHaveValue('')
 	})
 })
+
+function expectCommandRowIndicator(
+	title: string,
+	indicatorState: 'checked' | 'mixed' | 'none',
+	shortcutDigit?: string,
+) {
+	const item = getCommandItemByTitle(title)
+	const indicator = item.querySelector('[data-slot="command-row-selected-indicator"]')
+
+	expect(indicator).not.toBeNull()
+	expect(indicator).toHaveAttribute('data-indicator', indicatorState)
+
+	if (!shortcutDigit) {
+		return
+	}
+
+	const shortcutHint = within(item).getByText(shortcutDigit)
+	expect(indicator!.compareDocumentPosition(shortcutHint)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+}
+
+function getCommandItemByTitle(title: string) {
+	const item = screen.getByText(title).closest('[data-slot="command-item"]')
+	expect(item).not.toBeNull()
+	return item as HTMLElement
+}
 
 function renderCommandMenu({
 	mode = 'default',

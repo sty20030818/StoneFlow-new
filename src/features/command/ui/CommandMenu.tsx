@@ -10,6 +10,7 @@ import {
 
 import {
 	ArrowRightIcon,
+	CheckIcon,
 	CheckCircle2Icon,
 	CircleIcon,
 	CompassIcon,
@@ -20,6 +21,7 @@ import {
 	FoldersIcon,
 	LayoutGridIcon,
 	ListTodoIcon,
+	MinusIcon,
 	PanelLeftIcon,
 	PlusIcon,
 	SearchIcon,
@@ -636,6 +638,7 @@ function ScopedPickerCommandGroup({
 
 	if (mode === 'task-priority-picker') {
 		const options = getCommandMenuPriorityOptions()
+		const selectedPriorityValues = getSelectedTaskPriorityValues(context)
 		const shortcutItems: ShortcutMenuItem<TaskPriorityValue>[] = options.map((option) => ({
 			label: option.label,
 			value: option.value,
@@ -663,7 +666,15 @@ function ScopedPickerCommandGroup({
 						<CommandRow
 							leading={option.leading}
 							title={option.label}
-							trailing={<CommandRowDigitHint digit={String(index)} />}
+							trailing={
+								<CommandRowSelectionTrailing
+									digit={String(index)}
+									indicator={getSelectionIndicatorForValue(
+										selectedPriorityValues,
+										String(option.value),
+									)}
+								/>
+							}
 						/>
 					</CommandItem>
 				))}
@@ -673,6 +684,7 @@ function ScopedPickerCommandGroup({
 
 	if (mode === 'task-status-picker') {
 		const options = getCommandMenuStatusOptions()
+		const selectedStatusValues = getSelectedTaskStatusValues(context)
 		const shortcutItems: ShortcutMenuItem<TaskStatus>[] = options.map((option) => ({
 			label: option.label,
 			value: option.value,
@@ -699,7 +711,12 @@ function ScopedPickerCommandGroup({
 						<CommandRow
 							leading={option.leading}
 							title={option.label}
-							trailing={<CommandRowDigitHint digit={String(index + 1)} />}
+							trailing={
+								<CommandRowSelectionTrailing
+									digit={String(index + 1)}
+									indicator={getSelectionIndicatorForValue(selectedStatusValues, option.value)}
+								/>
+							}
 						/>
 					</CommandItem>
 				))}
@@ -809,6 +826,7 @@ function ScopedPickerCommandGroup({
 				isEmptyValue: item.target.kind === 'no_project',
 			})),
 		)
+		const selectedPlacementValues = getSelectedTaskPlacementValues(context)
 
 		return (
 			<>
@@ -833,7 +851,15 @@ function ScopedPickerCommandGroup({
 								<CommandRow
 									leading={item.leading}
 									title={item.title}
-									trailing={item.digit ? <CommandRowDigitHint digit={item.digit} /> : null}
+									trailing={
+										<CommandRowSelectionTrailing
+											digit={item.digit}
+											indicator={getSelectionIndicatorForValue(
+												selectedPlacementValues,
+												getTaskPlacementTargetValue(item.target),
+											)}
+										/>
+									}
 								/>
 							</CommandItem>
 						))}
@@ -1150,6 +1176,57 @@ type TaskDateOption = {
 	disabledReason?: string
 }
 
+function getSelectedTaskPriorityValues(context: CommandContext) {
+	const values = new Set<string>()
+	for (const entity of context.selection.entities) {
+		if (entity.type === 'task' && entity.priority != null) {
+			values.add(String(entity.priority))
+		}
+	}
+	return values
+}
+
+function getSelectedTaskStatusValues(context: CommandContext) {
+	const values = new Set<string>()
+	for (const entity of context.selection.entities) {
+		if (entity.type === 'task' && entity.status) {
+			values.add(entity.status)
+		}
+	}
+	return values
+}
+
+function getSelectedTaskPlacementValues(context: CommandContext) {
+	const values = new Set<string>()
+	for (const entity of context.selection.entities) {
+		if (entity.type !== 'task') {
+			continue
+		}
+		if (entity.projectId) {
+			values.add(`project:${entity.projectId}`)
+			continue
+		}
+		if (entity.spaceId) {
+			values.add(`no_project:${entity.spaceId}`)
+		}
+	}
+	return values
+}
+
+function getTaskPlacementTargetValue(target: TaskPlacementTarget) {
+	return target.kind === 'project' ? `project:${target.projectId}` : `no_project:${target.spaceId}`
+}
+
+function getSelectionIndicatorForValue(
+	values: Set<string>,
+	value: string,
+): CommandRowSelectionIndicator {
+	if (!values.has(value)) {
+		return null
+	}
+	return values.size === 1 ? 'checked' : 'mixed'
+}
+
 function getTaskDateOptions(context: CommandContext): TaskDateOption[] {
 	const today = startOfLocalDay(new Date())
 	const tomorrow = addLocalDays(today, 1)
@@ -1441,6 +1518,38 @@ function CommandRowMeta({ children }: { children: React.ReactNode }) {
 		<span className='block max-w-48 truncate text-right text-[12px] text-sf-text-tertiary'>
 			{children}
 		</span>
+	)
+}
+
+type CommandRowSelectionIndicator = 'checked' | 'mixed' | null
+
+function CommandRowSelectionTrailing({
+	digit,
+	indicator,
+}: {
+	digit?: string
+	indicator: CommandRowSelectionIndicator
+}) {
+	if (!digit && !indicator) {
+		return null
+	}
+
+	return (
+		<div className='flex items-center gap-2'>
+			<span
+				aria-hidden
+				className='inline-flex size-3.5 shrink-0 items-center justify-center'
+				data-indicator={indicator ?? 'none'}
+				data-slot='command-row-selected-indicator'
+			>
+				{indicator === 'checked' ? (
+					<CheckIcon className='size-3.5 text-sf-icon-secondary' />
+				) : indicator === 'mixed' ? (
+					<MinusIcon className='size-3.5 text-sf-icon-secondary' />
+				) : null}
+			</span>
+			{digit ? <CommandRowDigitHint digit={digit} /> : null}
+		</div>
 	)
 }
 

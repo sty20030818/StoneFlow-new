@@ -64,6 +64,23 @@ describe('Row Cells', () => {
 		expect(onChange).toHaveBeenCalledTimes(1)
 	})
 
+	it('PriorityCell 选中勾位于数字快捷键前面', async () => {
+		render(
+			<PriorityCell
+				ariaLabel='优先级'
+				options={[
+					{ value: 0, label: '无优先级', icon: <span>0</span> },
+					{ value: 2, label: '中', icon: <span>2</span> },
+				]}
+				value={0}
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }))
+
+		expectSelectedIndicatorBeforeShortcut(await screen.findByRole('menuitem', { name: /无优先级/ }))
+	})
+
 	it('StatusCell 触发回调且不冒泡', async () => {
 		const onParentClick = vi.fn()
 		const onChange = vi.fn()
@@ -113,6 +130,23 @@ describe('Row Cells', () => {
 
 		fireEvent.keyDown(screen.getByRole('menu'), { key: '2' })
 		expect(onChange).toHaveBeenCalledWith('done')
+	})
+
+	it('StatusCell 选中勾位于数字快捷键前面', async () => {
+		render(
+			<StatusCell
+				ariaLabel='状态'
+				options={[
+					{ value: 'todo', label: '待执行', icon: <span>T</span> },
+					{ value: 'done', label: '已完成', icon: <span>D</span> },
+				]}
+				value='todo'
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '状态' }))
+
+		expectSelectedIndicatorBeforeShortcut(await screen.findByRole('menuitem', { name: /待执行/ }))
 	})
 
 	it('ProjectCell 触发选择回调且不冒泡', async () => {
@@ -200,5 +234,16 @@ describe('Row Cells', () => {
 function getShortcutHintDigits() {
 	return [...document.querySelectorAll('[data-slot="shortcut-menu-item-hint"]')].map(
 		(item) => item.textContent,
+	)
+}
+
+function expectSelectedIndicatorBeforeShortcut(menuItem: HTMLElement) {
+	const selectedIndicator = menuItem.querySelector('[data-slot="row-cell-selected-indicator"]')
+	const shortcutHint = menuItem.querySelector('[data-slot="shortcut-menu-item-hint"]')
+
+	expect(selectedIndicator).not.toBeNull()
+	expect(shortcutHint).not.toBeNull()
+	expect(selectedIndicator!.compareDocumentPosition(shortcutHint!)).toBe(
+		Node.DOCUMENT_POSITION_FOLLOWING,
 	)
 }

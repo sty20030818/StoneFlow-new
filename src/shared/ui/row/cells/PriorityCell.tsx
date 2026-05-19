@@ -3,7 +3,6 @@ import { useMemo } from 'react'
 
 import { CheckIcon } from 'lucide-react'
 
-import { cn } from '@/shared/lib/utils'
 import { buildDigitShortcutMap } from '@/shared/ui/shortcut-menu'
 import {
 	DropdownMenu,
@@ -93,13 +92,19 @@ export function PriorityCell<TValue extends string | number = string | number>({
 							>
 								{option.icon}
 								<span className='min-w-0 flex-1 truncate'>{option.label}</span>
+								<span
+									aria-hidden
+									className='inline-flex size-3.5 shrink-0 items-center justify-center'
+									data-slot='row-cell-selected-indicator'
+								>
+									{currentOption.value === option.value ? (
+										<CheckIcon
+											aria-hidden
+											className='size-3.5 shrink-0 text-sf-icon-secondary'
+										/>
+									) : null}
+								</span>
 								<ShortcutMenuItemHint digit={digitShortcutMap[index]?.digit ?? ''} />
-								{currentOption.value === option.value ? (
-									<CheckIcon
-										aria-hidden
-										className={cn('ml-auto size-3.5 shrink-0 text-sf-icon-secondary')}
-									/>
-								) : null}
 							</DropdownMenuItem>
 						))}
 					</DropdownMenuGroup>
