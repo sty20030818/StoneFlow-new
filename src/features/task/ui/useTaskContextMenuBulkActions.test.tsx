@@ -1,0 +1,172 @@
+import { act, renderHook } from '@testing-library/react'
+import type { PropsWithChildren } from 'react'
+
+import {
+	BulkActionProvider,
+	TASK_BULK_ACTION_IDS,
+	createBulkActionResult,
+	type BulkAction,
+	type BulkActionId,
+	type BulkActionPayload,
+	type BulkSelectionSnapshot,
+} from '@/features/bulk-action'
+import type { TaskListItem } from '@/shared/types'
+
+import { useTaskContextMenuBulkActions } from './useTaskContextMenuBulkActions'
+
+const toastSuccessSpy = vi.fn()
+const toastErrorSpy = vi.fn()
+
+vi.mock('sonner', () => ({
+	toast: {
+		success: (message: string) => toastSuccessSpy(message),
+		error: (message: string) => toastErrorSpy(message),
+	},
+}))
+
+type BulkActionCall = {
+	actionId: BulkActionId
+	payload?: BulkActionPayload
+	snapshot: BulkSelectionSnapshot
+}
+
+function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
+	return {
+		id: 'task-1',
+		spaceId: 'space-1',
+		spaceName: '个人',
+		spaceSlug: 'personal',
+		projectId: 'project-1',
+		projectName: '项目 A',
+		inboxAt: null,
+		title: '任务 A',
+		note: null,
+		status: 'todo',
+		statusChangedAt: '2026-05-07T08:00:00.000Z',
+		priority: 1,
+		dueAt: '2026-05-08T08:00:00.000Z',
+		scheduledAt: '2026-05-09T08:00:00.000Z',
+		reminderAt: '2026-05-07T09:00:00.000Z',
+		completedAt: null,
+		canceledAt: null,
+		archivedAt: null,
+		createdAt: '2026-05-06T08:00:00.000Z',
+		updatedAt: '2026-05-07T08:00:00.000Z',
+		...partial,
+	}
+}
+
+describe('useTaskContextMenuBulkActions', () => {
+	beforeEach(() => {
+		toastSuccessSpy.mockReset()
+		toastErrorSpy.mockReset()
+	})
+
+	it('把右键属性动作映射到任务 bulk action 和 payload', async () => {
+		const calls: BulkActionCall[] = []
+		const tasks = [buildTask(), buildTask({ id: 'task-2', title: '任务 B' })]
+		const { result } = renderTaskContextMenuBulkActions({ calls })
+
+		await act(async () => {
+			result.current.onSelectStatus(tasks, 'done')
+			result.current.onSelectPriority(tasks, 3)
+			result.current.onSelectDueDate(tasks, null)
+			result.current.onSelectProject(tasks, 'project-2')
+			result.current.onSelectNoProject(tasks)
+		})
+
+		expect(calls.map((call) => call.actionId)).toEqual([
+			TASK_BULK_ACTION_IDS.setStatusSelected,
+			TASK_BULK_ACTION_IDS.setPrioritySelected,
+			TASK_BULK_ACTION_IDS.setDateSelected,
+			TASK_BULK_ACTION_IDS.moveToProjectSelected,
+			TASK_BULK_ACTION_IDS.moveToNoProjectSelected,
+		])
+		expect(calls.map((call) => call.payload)).toEqual([
+			{ status: 'done' },
+			{ priority: 3 },
+			{ dueAt: null },
+			{ projectId: 'project-2' },
+			undefined,
+		])
+		expect(calls[0].snapshot).toMatchObject({
+			entity: 'task',
+			ids: ['task-1', 'task-2'],
+			source: 'context-menu',
+		})
+	})
+
+	it('把右键归档和删除映射到 bulk action，并按结果清空选区', async () => {
+		const calls: BulkActionCall[] = []
+		const onClearTaskSelection = vi.fn()
+		const tasks = [buildTask(), buildTask({ id: 'task-2', title: '任务 B' })]
+		const { result } = renderTaskContextMenuBulkActions({ calls, onClearTaskSelection })
+
+		await act(async () => {
+			result.current.onArchive(tasks)
+			result.current.onMoveToTrash(tasks)
+		})
+
+		expect(calls.map((call) => call.actionId)).toEqual([
+			TASK_BULK_ACTION_IDS.archiveSelected,
+			TASK_BULK_ACTION_IDS.deleteSelected,
+		])
+		expect(onClearTaskSelection).toHaveBeenCalledTimes(2)
+		expect(toastSuccessSpy).toHaveBeenCalledTimes(2)
+	})
+})
+
+function renderTaskContextMenuBulkActions({
+	calls,
+	onClearTaskSelection,
+}: {
+	calls: BulkActionCall[]
+	onClearTaskSelection?: () => void
+}) {
+	return renderHook(() => useTaskContextMenuBulkActions({ onClearTaskSelection }), {
+		wrapper: ({ children }: PropsWithChildren) => (
+			<BulkActionProvider actions={createTestBulkActions(calls)}>{children}</BulkActionProvider>
+		),
+	})
+}
+
+function createTestBulkActions(calls: BulkActionCall[]): BulkAction[] {
+	return Object.values(TASK_BULK_ACTION_IDS).map((actionId) => ({
+		id: actionId,
+		entity: 'task',
+		label: actionId,
+		intent: resolveBulkActionIntent(actionId),
+		run: async (snapshot, _context, payload) => {
+			calls.push({ actionId, payload, snapshot })
+			return createBulkActionResult({
+				status: 'success',
+				actionId,
+				snapshot,
+				succeededIds: snapshot.ids,
+				shouldClearSelection:
+					actionId === TASK_BULK_ACTION_IDS.archiveSelected ||
+					actionId === TASK_BULK_ACTION_IDS.deleteSelected,
+			})
+		},
+	}))
+}
+
+function resolveBulkActionIntent(actionId: BulkActionId): BulkAction['intent'] {
+	if (actionId === TASK_BULK_ACTION_IDS.archiveSelected) {
+		return 'archive'
+	}
+	if (actionId === TASK_BULK_ACTION_IDS.deleteSelected) {
+		return 'delete'
+	}
+	if (
+		actionId === TASK_BULK_ACTION_IDS.moveToProjectSelected ||
+		actionId === TASK_BULK_ACTION_IDS.moveToNoProjectSelected ||
+		actionId === TASK_BULK_ACTION_IDS.moveToInboxSelected
+	) {
+		return 'move'
+	}
+	if (actionId === TASK_BULK_ACTION_IDS.completeSelected) {
+		return 'complete'
+	}
+	return 'update'
+}

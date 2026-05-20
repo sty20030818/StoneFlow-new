@@ -32,6 +32,7 @@ export type BulkEntityType = 'task' | 'project' | 'lifecycle'
 export type BulkSelectionSource =
 	| 'bulk-bar'
 	| 'command-menu'
+	| 'context-menu'
 	| 'row-shortcut'
 	| 'section-menu'
 	| 'page'

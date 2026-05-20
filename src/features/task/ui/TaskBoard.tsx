@@ -26,6 +26,7 @@ import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { TaskRowShortcutScope, type TaskRowShortcutState } from '@/features/task/shortcuts'
 import { TaskRowAdapter, type TaskRowAdapterProps } from '@/features/task/ui/TaskRowAdapter'
 import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
+import { useTaskContextMenuBulkActions } from '@/features/task/ui/useTaskContextMenuBulkActions'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { ListTodoIcon, PlusIcon } from 'lucide-react'
@@ -110,6 +111,7 @@ export function TaskBoard({
 	const setProjectTaskBoardOpenSections = useShellPreferenceStore(
 		(state) => state.setProjectTaskBoardOpenSections,
 	)
+	const contextMenuActions = useTaskContextMenuBulkActions({ onClearTaskSelection })
 
 	const groupedTasks = useMemo(() => {
 		const tasksByStatus = groupBy(tasks, (task) => task.status)
@@ -151,6 +153,9 @@ export function TaskBoard({
 	}
 
 	function renderTaskRow(task: TaskListItem, rowShortcutState?: TaskRowShortcutState) {
+		const contextTasks = selectedTaskIdSet.has(task.id)
+			? tasks.filter((item) => selectedTaskIdSet.has(item.id))
+			: [task]
 		const actions: TaskRowAdapterProps['actions'] = {
 			onOpenTask,
 			onToggleTaskSelection,
@@ -171,6 +176,8 @@ export function TaskBoard({
 			<TaskRowAdapter
 				key={task.id}
 				actions={actions}
+				contextTasks={contextTasks}
+				contextMenuActions={contextMenuActions}
 				projectBinding={projectBinding}
 				rowState={{
 					isActive: activeTaskId === task.id,

@@ -21,6 +21,7 @@ import {
 	CalendarX2Icon,
 	CheckIcon,
 	FolderIcon,
+	MinusIcon,
 	TargetIcon,
 	Trash2Icon,
 } from 'lucide-react'
@@ -36,6 +37,7 @@ type TaskContextMenuProps = {
 	dueAt?: string | null
 	projectId?: string | null
 	projectName?: string | null
+	selectionValues?: TaskContextSelectionValues
 	projectOptions?: Array<{ id: string; name: string }>
 	isBusy?: boolean
 	onSelectStatus: (status: TaskStatus) => void
@@ -47,6 +49,14 @@ type TaskContextMenuProps = {
 	onArchive?: () => void
 	moveToTrashLabel?: string
 	archiveActionLabel?: string
+}
+
+type TaskContextSelectionValues = {
+	statuses: TaskStatus[]
+	priorities: TaskPriorityValue[]
+	dueDates: Array<string | null>
+	projectIds: Array<string | null>
+	projectNames?: Array<string | null>
 }
 
 type TaskDateMenuOption = {
@@ -77,6 +87,7 @@ export function TaskContextMenu({
 	dueAt = null,
 	projectId = null,
 	projectName = null,
+	selectionValues,
 	projectOptions = [],
 	isBusy,
 	onSelectStatus,
@@ -94,8 +105,19 @@ export function TaskContextMenu({
 	const canSelectDueDate = !!onSelectDueDate
 	const canSelectProject = Boolean(onSelectProject && onSelectNoProject)
 	const currentDueDate = normalizeDateValue(dueAt)
-	const dateOptions = getTaskContextDateOptions(Boolean(currentDueDate))
 	const deleteShortcut = getDeleteShortcutLabel()
+	const statusIndicatorValues = getIndicatorValues(selectionValues?.statuses ?? [status])
+	const priorityIndicatorValues = getIndicatorValues(
+		(selectionValues?.priorities ?? [priority]).map((value) => String(value)),
+	)
+	const dueDateIndicatorValues = getIndicatorValues(
+		(selectionValues?.dueDates ?? [currentDueDate]).map((value) => normalizeDateValue(value)),
+	)
+	const dateOptions = getTaskContextDateOptions(
+		Array.from(dueDateIndicatorValues).some((value) => value !== null),
+	)
+	const projectIndicatorValues = getIndicatorValues(selectionValues?.projectIds ?? [projectId])
+	const projectNameIndicatorValues = getIndicatorValues(selectionValues?.projectNames ?? [projectName])
 
 	return (
 		<ContextMenu>
@@ -116,7 +138,7 @@ export function TaskContextMenu({
 							<ContextMenuLabel className='normal-case tracking-normal'>设置状态为...</ContextMenuLabel>
 							{TASK_STATUS_OPTIONS.map((option, index) => (
 								<PropertyOptionItem
-									checked={option.value === status}
+									indicator={getPropertyOptionIndicator(statusIndicatorValues, option.value)}
 									icon={<TaskStatusIndicator status={option.value} />}
 									key={option.value}
 									onSelect={() => onSelectStatus(option.value)}
@@ -140,7 +162,10 @@ export function TaskContextMenu({
 							<ContextMenuLabel className='normal-case tracking-normal'>设置优先级为...</ContextMenuLabel>
 							{TASK_PRIORITY_OPTIONS.map((option, index) => (
 								<PropertyOptionItem
-									checked={option.value === priority}
+									indicator={getPropertyOptionIndicator(
+										priorityIndicatorValues,
+										String(option.value),
+									)}
 									icon={<PriorityIcon priority={option.value} />}
 									key={option.value}
 									onSelect={() => onSelectPriority(option.value)}
@@ -165,7 +190,11 @@ export function TaskContextMenu({
 								<ContextMenuLabel className='normal-case tracking-normal'>设置时间为...</ContextMenuLabel>
 								{dateOptions.map((option) => (
 									<PropertyOptionItem
-										checked={!option.disabled && option.value === currentDueDate}
+										indicator={
+											!option.disabled
+												? getPropertyOptionIndicator(dueDateIndicatorValues, option.value)
+												: null
+										}
 										disabled={option.disabled}
 										icon={getTaskContextDateIcon(option.key)}
 										key={option.key}
@@ -196,7 +225,7 @@ export function TaskContextMenu({
 							<ContextMenuSubContent className='w-64'>
 								<ContextMenuLabel className='normal-case tracking-normal'>移动到项目...</ContextMenuLabel>
 								<PropertyOptionItem
-									checked={projectId === null}
+									indicator={getPropertyOptionIndicator(projectIndicatorValues, null)}
 									icon={<TargetIcon />}
 									onSelect={() => onSelectNoProject?.()}
 									shortcut='0'
@@ -205,7 +234,12 @@ export function TaskContextMenu({
 								</PropertyOptionItem>
 								{projectOptions.map((project, index) => (
 									<PropertyOptionItem
-										checked={project.id === projectId || project.name === projectName}
+										indicator={getProjectOptionIndicator({
+											projectId: project.id,
+											projectName: project.name,
+											projectIds: projectIndicatorValues,
+											projectNames: projectNameIndicatorValues,
+										})}
 										icon={<FolderIcon />}
 										key={project.id}
 										onSelect={() => onSelectProject?.(project.id)}
@@ -272,7 +306,8 @@ function PropertySubTrigger({
 
 function PropertyOptionItem({
 	children,
-	checked,
+	checked = false,
+	indicator = checked ? 'checked' : null,
 	disabled,
 	icon,
 	onSelect,
@@ -280,7 +315,8 @@ function PropertyOptionItem({
 	trailing,
 }: {
 	children: ReactNode
-	checked: boolean
+	checked?: boolean
+	indicator?: PropertyOptionIndicator
 	disabled?: boolean
 	icon: ReactNode
 	onSelect: () => void
@@ -292,7 +328,7 @@ function PropertyOptionItem({
 			{icon}
 			<span className='min-w-0 flex-1 truncate'>{children}</span>
 			<span className='ml-auto flex min-w-12 items-center justify-end gap-2 text-[11px] text-muted-foreground'>
-				<CheckIcon className={checked ? 'size-3.5 text-foreground' : 'invisible size-3.5'} />
+				<PropertyOptionIndicatorIcon indicator={indicator} />
 				{shortcut ? <span className='tabular-nums'>{shortcut}</span> : null}
 				{!shortcut && trailing ? <span className='tabular-nums'>{trailing}</span> : null}
 			</span>
@@ -300,8 +336,58 @@ function PropertyOptionItem({
 	)
 }
 
+type PropertyOptionIndicator = 'checked' | 'mixed' | null
+
+function PropertyOptionIndicatorIcon({ indicator }: { indicator: PropertyOptionIndicator }) {
+	if (indicator === 'checked') {
+		return <CheckIcon className='size-3.5 text-foreground' />
+	}
+
+	if (indicator === 'mixed') {
+		return <MinusIcon className='size-3.5 text-foreground' />
+	}
+
+	return <CheckIcon className='invisible size-3.5' />
+}
+
 function MenuShortcut({ children }: { children: ReactNode }) {
 	return <span className='ml-auto text-[11px] text-muted-foreground'>{children}</span>
+}
+
+function getIndicatorValues<T>(values: T[]) {
+	return new Set(values)
+}
+
+function getPropertyOptionIndicator<T>(
+	values: Set<T>,
+	value: T,
+): PropertyOptionIndicator {
+	if (!values.has(value)) {
+		return null
+	}
+	return values.size === 1 ? 'checked' : 'mixed'
+}
+
+function getProjectOptionIndicator({
+	projectId,
+	projectName,
+	projectIds,
+	projectNames,
+}: {
+	projectId: string
+	projectName: string
+	projectIds: Set<string | null>
+	projectNames: Set<string | null>
+}): PropertyOptionIndicator {
+	const matchedById = projectIds.has(projectId)
+	const matchedByName = projectNames.has(projectName)
+	if (!matchedById && !matchedByName) {
+		return null
+	}
+
+	return projectIds.size === 1 && (projectIds.has(projectId) || projectNames.size <= 1)
+		? 'checked'
+		: 'mixed'
 }
 
 function getTaskContextDateOptions(hasExistingDate: boolean): TaskDateMenuOption[] {

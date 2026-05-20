@@ -3,6 +3,7 @@ import { TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/m
 import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
+import type { TaskContextMenuBulkActions } from '@/features/task/ui/useTaskContextMenuBulkActions'
 import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import {
@@ -22,6 +23,7 @@ import {
 
 type TaskRowAdapterProps = {
 	task: TaskListItem
+	contextTasks?: TaskListItem[]
 	rowState: {
 		isActive: boolean
 		isSelected: boolean
@@ -34,6 +36,7 @@ type TaskRowAdapterProps = {
 		onPointerMove: (taskId: string, point: { x: number; y: number }) => void
 	}
 	selectionGroupPosition?: RowSelectionGroupPosition
+	contextMenuActions?: TaskContextMenuBulkActions
 	projectBinding?: {
 		projectOptions?: Array<{ id: string; name: string }>
 		onSelectProject?: (task: TaskListItem, projectId: string) => void
@@ -57,13 +60,16 @@ type TaskRowAdapterProps = {
  */
 export function TaskRowAdapter({
 	task,
+	contextTasks,
 	rowState,
 	rowShortcutHandlers,
 	selectionGroupPosition,
+	contextMenuActions,
 	projectBinding,
 	actions,
 }: TaskRowAdapterProps) {
 	const { isActive, isSelected, isPending, isHovered = false, hoverSource = null } = rowState
+	const actionTargets = contextTasks && contextTasks.length > 0 ? contextTasks : [task]
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
 	const hasProjectOptions = Boolean(
 		projectBinding?.projectOptions &&
@@ -75,27 +81,89 @@ export function TaskRowAdapter({
 	return (
 		<TaskContextMenu
 			isBusy={isPending}
-			onArchive={actions.onArchiveTask ? () => void actions.onArchiveTask!(task) : undefined}
-			onMoveToTrash={actions.onDeleteTask ? () => void actions.onDeleteTask!(task) : undefined}
+			onArchive={
+				actions.onArchiveTask
+					? () =>
+							runContextMenuTaskAction(
+								actionTargets,
+								contextMenuActions
+									? (targets) => contextMenuActions.onArchive(targets)
+									: undefined,
+								(target) => actions.onArchiveTask!(target),
+							)
+					: undefined
+			}
+			onMoveToTrash={
+				actions.onDeleteTask
+					? () =>
+							runContextMenuTaskAction(
+								actionTargets,
+								contextMenuActions
+									? (targets) => contextMenuActions.onMoveToTrash(targets)
+									: undefined,
+								(target) => actions.onDeleteTask!(target),
+							)
+					: undefined
+			}
 			onSelectDueDate={
 				actions.onUpdateTaskDueDate
-					? (dueAt) => void actions.onUpdateTaskDueDate?.(task, dueAt)
+					? (dueAt) =>
+							runContextMenuTaskAction(
+								actionTargets,
+								contextMenuActions
+									? (targets) => contextMenuActions.onSelectDueDate(targets, dueAt)
+									: undefined,
+								(target) => actions.onUpdateTaskDueDate!(target, dueAt),
+							)
 					: undefined
 			}
 			onSelectNoProject={
-				hasProjectOptions ? () => projectBinding?.onSelectNoProject?.(task) : undefined
-			}
-			onSelectPriority={(priority) => void actions.onUpdateTaskPriority(task, priority)}
-			onSelectProject={
 				hasProjectOptions
-					? (projectId) => projectBinding?.onSelectProject?.(task, projectId)
+					? () =>
+							runContextMenuTaskAction(
+								actionTargets,
+								contextMenuActions
+									? (targets) => contextMenuActions.onSelectNoProject(targets)
+									: undefined,
+								(target) => projectBinding!.onSelectNoProject!(target),
+							)
 					: undefined
 			}
-			onSelectStatus={(status) => void actions.onUpdateTaskStatus(task, status)}
+			onSelectPriority={(priority) =>
+				runContextMenuTaskAction(
+					actionTargets,
+					contextMenuActions
+						? (targets) => contextMenuActions.onSelectPriority(targets, priority)
+						: undefined,
+					(target) => actions.onUpdateTaskPriority(target, priority),
+				)
+			}
+			onSelectProject={
+				hasProjectOptions
+					? (projectId) =>
+							runContextMenuTaskAction(
+								actionTargets,
+								contextMenuActions
+									? (targets) => contextMenuActions.onSelectProject(targets, projectId)
+									: undefined,
+								(target) => projectBinding!.onSelectProject!(target, projectId),
+							)
+					: undefined
+			}
+			onSelectStatus={(status) =>
+				runContextMenuTaskAction(
+					actionTargets,
+					contextMenuActions
+						? (targets) => contextMenuActions.onSelectStatus(targets, status)
+						: undefined,
+					(target) => actions.onUpdateTaskStatus(target, status),
+				)
+			}
 			priority={task.priority}
 			projectId={task.projectId}
 			projectName={task.projectName}
 			projectOptions={hasProjectOptions ? projectBinding?.projectOptions : undefined}
+			selectionValues={buildTaskContextSelectionValues(actionTargets)}
 			status={task.status}
 			dueAt={task.dueAt}
 		>
@@ -185,6 +253,38 @@ export function TaskRowAdapter({
 			</RowShell.Root>
 		</TaskContextMenu>
 	)
+}
+
+function runContextMenuTaskAction(
+	targets: TaskListItem[],
+	bulkRunner: ((targets: TaskListItem[]) => void) | undefined,
+	singleRunner: (target: TaskListItem) => Promise<void> | void,
+) {
+	if (targets.length > 1 && bulkRunner) {
+		bulkRunner(targets)
+		return
+	}
+
+	void runForTargets(targets, singleRunner)
+}
+
+async function runForTargets(
+	targets: TaskListItem[],
+	runner: (target: TaskListItem) => Promise<void> | void,
+) {
+	for (const target of targets) {
+		await runner(target)
+	}
+}
+
+function buildTaskContextSelectionValues(tasks: TaskListItem[]) {
+	return {
+		statuses: tasks.map((item) => item.status),
+		priorities: tasks.map((item) => item.priority),
+		dueDates: tasks.map((item) => item.dueAt?.slice(0, 10) ?? null),
+		projectIds: tasks.map((item) => item.projectId ?? null),
+		projectNames: tasks.map((item) => item.projectName ?? null),
+	}
 }
 
 export type { TaskRowAdapterProps }
