@@ -359,6 +359,20 @@ describe('TaskRowShortcutScope', () => {
 		expect(screen.getByTestId('selected-count')).toHaveTextContent('0')
 	})
 
+	it('上层浮层打开时忽略 pointer leave，冻结当前 hover 行', () => {
+		const actions = createActions()
+		renderSelectionScope({ actions, withBlockingLayer: true })
+
+		fireEvent.pointerMove(screen.getByTestId('row-task-b'), { clientX: 8, clientY: 8 })
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hover-source')).toHaveTextContent('pointer')
+
+		fireEvent.mouseLeave(screen.getByTestId('row-task-b'))
+
+		expect(screen.getByTestId('hovered-target')).toHaveTextContent('task-b')
+		expect(screen.getByTestId('hover-source')).toHaveTextContent('pointer')
+	})
+
 	it('Shift+ArrowDown / Shift+ArrowUp 会逐行切换选中状态', () => {
 		const actions = createActions()
 		renderSelectionScope({ actions })
@@ -731,6 +745,7 @@ function renderScope({
 								data-testid={`row-${task.id}`}
 								key={task.id}
 								onMouseEnter={() => state.onRowHover(task.id)}
+								onMouseLeave={() => state.onRowHover(null)}
 								onMouseMove={(event) =>
 									state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
 								}
@@ -812,6 +827,7 @@ function renderSelectionScope({
 									data-testid={`row-${task.id}`}
 									key={task.id}
 									onMouseEnter={() => state.onRowHover(task.id)}
+									onMouseLeave={() => state.onRowHover(null)}
 									onMouseMove={(event) =>
 										state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
 									}

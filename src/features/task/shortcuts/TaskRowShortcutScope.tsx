@@ -502,6 +502,10 @@ export function TaskRowShortcutScope({
 			commandTargetId,
 			onRowHover: (taskId) => {
 				if (taskId === null) {
+					if (isBlockedByHigherLayer()) {
+						return
+					}
+
 					if (hoverSourceRef.current === 'pointer') {
 						updateHoveredRow(null, null)
 					}

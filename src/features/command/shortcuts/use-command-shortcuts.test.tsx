@@ -190,6 +190,22 @@ describe('useCommandShortcuts', () => {
 		expect(onTrigger).toHaveBeenNthCalledWith(3, COMMAND_IDS.openCommandMenu)
 	})
 
+	it('Cmd/Ctrl+K 打开命令面板时不 preventDefault，避免系统隐藏鼠标', () => {
+		const onTrigger = vi.fn<(id: CommandId) => void>()
+		renderHook(() => useCommandShortcuts({ bindings, onTrigger }))
+
+		const metaEvent = fireKey('k', document.body, { metaKey: true })
+		const ctrlEvent = fireKey('k', document.body, { ctrlKey: true })
+		act(() => {
+			vi.runAllTimers()
+		})
+
+		expect(metaEvent.defaultPrevented).toBe(false)
+		expect(ctrlEvent.defaultPrevented).toBe(false)
+		expect(onTrigger).toHaveBeenNthCalledWith(1, COMMAND_IDS.openCommandMenu)
+		expect(onTrigger).toHaveBeenNthCalledWith(2, COMMAND_IDS.openCommandMenu)
+	})
+
 	it('shouldTrigger 返回 false 时不触发也不 preventDefault', () => {
 		const onTrigger = vi.fn<(id: CommandId) => void>()
 		renderHook(() =>
@@ -354,6 +370,8 @@ function fireKey(
 	act(() => {
 		window.dispatchEvent(event)
 	})
+
+	return event
 }
 
 function createBinding(

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import { isAnyModalOpen } from '@/shared/lib/modal-guard'
 import { setGlobalChordPending } from '@/shared/lib/global-chord-guard'
-import type { CommandId } from '@/features/command/core'
+import { COMMAND_IDS, type CommandId } from '@/features/command/core'
 import {
 	KEYBINDING_CHORD_TIMEOUT_MS,
 	matchKeybindingEvent,
@@ -101,7 +101,7 @@ export function useCommandShortcuts({
 				// 触发 macOS 的"输入时自动隐藏光标"行为。
 				// 字母 chord（f→p、g→p 等）的 Row 双触发问题由 GlobalChordGuard（方案 C）独立解决，
 				// 不再依赖 preventDefault 来隔离。
-				if (shouldPreventDefaultForMatchedKeybinding(result.keybinding.sequence)) {
+				if (shouldPreventDefaultForMatchedKeybinding(result.keybinding)) {
 					event.preventDefault()
 				}
 				clearChordState()
@@ -135,8 +135,12 @@ export function useCommandShortcuts({
 
 // 只对"有修饰键"或"特殊功能键"的绑定 preventDefault，普通字母键不 prevent，
 // 避免 macOS 把 preventDefault 解读为"用户在输入"而隐藏光标。
-function shouldPreventDefaultForMatchedKeybinding(sequence: Keybinding['sequence']) {
-	return sequence.some((stroke) => shouldPreventDefaultForStroke(stroke))
+function shouldPreventDefaultForMatchedKeybinding(keybinding: Keybinding) {
+	if (keybinding.commandId === COMMAND_IDS.openCommandMenu) {
+		return false
+	}
+
+	return keybinding.sequence.some((stroke) => shouldPreventDefaultForStroke(stroke))
 }
 
 function shouldPreventDefaultForStroke(stroke: KeybindingStroke) {
