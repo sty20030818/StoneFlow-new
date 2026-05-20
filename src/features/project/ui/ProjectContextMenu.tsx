@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { useDangerConfirm } from '@/features/danger-confirm'
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -13,6 +14,7 @@ import { ExternalLinkIcon, Trash2Icon } from 'lucide-react'
 type ProjectContextMenuProps = {
 	children: ReactNode
 	isBusy?: boolean
+	projectName?: string
 	onOpenProject: () => void
 	onMoveToTrash: () => void
 }
@@ -23,9 +25,12 @@ type ProjectContextMenuProps = {
 export function ProjectContextMenu({
 	children,
 	isBusy,
+	projectName,
 	onOpenProject,
 	onMoveToTrash,
 }: ProjectContextMenuProps) {
+	const { requestDangerConfirm } = useDangerConfirm()
+
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
@@ -40,7 +45,23 @@ export function ProjectContextMenu({
 				</ContextMenuGroup>
 				<ContextMenuSeparator />
 				<ContextMenuGroup>
-					<ContextMenuItem disabled={isBusy} onSelect={onMoveToTrash} variant='destructive'>
+					<ContextMenuItem
+						disabled={isBusy}
+						onSelect={async () => {
+							if (
+								!(await requestDangerConfirm({
+									intent: 'trash',
+									entityType: 'project',
+									count: 1,
+									entityLabel: projectName,
+								}))
+							) {
+								return
+							}
+							onMoveToTrash()
+						}}
+						variant='destructive'
+					>
 						<Trash2Icon />
 						移入回收站
 					</ContextMenuItem>

@@ -90,7 +90,6 @@ import {
 } from '@/features/command'
 import { COMMAND_IDS, type CommandContext, type CommandId } from '@/features/command/core'
 import {
-	BulkActionConfirmDialog,
 	BulkActionProvider,
 	LIFECYCLE_BULK_ACTION_IDS,
 	PROJECT_BULK_ACTION_IDS,
@@ -110,6 +109,7 @@ import {
 	type BulkActionResultMessageLabels,
 	type BulkEntityType,
 } from '@/features/bulk-action'
+import { DangerConfirmProvider } from '@/features/danger-confirm'
 import {
 	selectArchiveEntries,
 	selectTrashEntries,
@@ -134,13 +134,15 @@ export function ShellLayout({
 		<CommandSelectionProvider>
 			<SubmitRegistryProvider>
 				<PageFilterProvider>
-					<ShellLayoutBulkActionBoundary
-						activeSection={activeSection}
-						currentScope={currentScope}
-						currentSpaceId={currentSpaceId}
-					>
-						{children}
-					</ShellLayoutBulkActionBoundary>
+					<DangerConfirmProvider>
+						<ShellLayoutBulkActionBoundary
+							activeSection={activeSection}
+							currentScope={currentScope}
+							currentSpaceId={currentSpaceId}
+						>
+							{children}
+						</ShellLayoutBulkActionBoundary>
+					</DangerConfirmProvider>
 				</PageFilterProvider>
 			</SubmitRegistryProvider>
 		</CommandSelectionProvider>
@@ -242,13 +244,7 @@ function ShellLayoutContent({
 			completedAt: string | null
 		}>
 	>([])
-	const {
-		cancelPendingAction,
-		confirmPendingAction,
-		isExecuting: isBulkActionExecuting,
-		pendingConfirmation: pendingBulkActionConfirmation,
-		runBulkAction,
-	} = useBulkActionContext()
+	const { runBulkAction } = useBulkActionContext()
 	const pageFilter = usePageFilterContext()
 	const submitRegistry = useSubmitRegistryContext()
 	const submitRegistryActions = useSubmitRegistryActions()
@@ -529,11 +525,6 @@ function ShellLayoutContent({
 				useDialogStore.getState().openCommand('project-picker')
 			},
 			closeCurrentLayer: (ctx) => {
-				if (pendingBulkActionConfirmation) {
-					cancelPendingAction()
-					return
-				}
-
 				if (isShortcutHelpOpen) {
 					useDialogStore.getState().closeShortcutHelp()
 					return
@@ -703,7 +694,6 @@ function ShellLayoutContent({
 			currentSpaceId,
 			activeDrawerKind,
 			activeDrawerId,
-			cancelPendingAction,
 			goBack,
 			goForward,
 			canGoBack,
@@ -719,7 +709,6 @@ function ShellLayoutContent({
 			openProjectCreateDialog,
 			openTaskCreateDialog,
 			pageFilter,
-			pendingBulkActionConfirmation,
 			requestSearchFocus,
 			runEntityBulkActionFromCommand,
 			setCommandMenuFilterKind,
@@ -1091,14 +1080,6 @@ function ShellLayoutContent({
 					/>
 				) : null}
 			</CreateDialogShell>
-			<BulkActionConfirmDialog
-				isExecuting={isBulkActionExecuting}
-				onCancel={cancelPendingAction}
-				onConfirm={confirmPendingAction}
-				onOpenChange={() => undefined}
-				open={pendingBulkActionConfirmation !== null}
-				request={pendingBulkActionConfirmation}
-			/>
 			{/* <ShellFooter navBadges={navBadges} /> */}
 			{/* 占位，保持底部边距 */}
 			<div className='h-2 shrink-0 bg-sf-shell' />

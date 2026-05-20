@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
+import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { ProjectRowAdapter, type ProjectRowAdapterProps } from './ProjectRowAdapter'
 
@@ -43,7 +44,11 @@ function renderProjectRowAdapter({
 	rowState?: ProjectRowAdapterProps['rowState']
 	actions?: ProjectRowAdapterProps['actions']
 } = {}) {
-	render(<ProjectRowAdapter actions={actions} project={project} rowState={rowState} />)
+	render(
+		<DangerConfirmProvider>
+			<ProjectRowAdapter actions={actions} project={project} rowState={rowState} />
+		</DangerConfirmProvider>,
+	)
 	return { project, rowState, actions }
 }
 
@@ -62,15 +67,17 @@ describe('ProjectRowAdapter', () => {
 
 		const reopenActions = buildActions()
 		render(
-			<ProjectRowAdapter
-				actions={reopenActions}
-				project={createProject({
-					id: 'project-2',
-					name: '项目 B',
-					completedAt: '2026-05-02T00:00:00Z',
-				})}
-				rowState={{ isPending: false }}
-			/>,
+			<DangerConfirmProvider>
+				<ProjectRowAdapter
+					actions={reopenActions}
+					project={createProject({
+						id: 'project-2',
+						name: '项目 B',
+						completedAt: '2026-05-02T00:00:00Z',
+					})}
+					rowState={{ isPending: false }}
+				/>
+			</DangerConfirmProvider>,
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '重开' }))
@@ -83,7 +90,12 @@ describe('ProjectRowAdapter', () => {
 
 		fireEvent.contextMenu(row)
 		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
-		expect(actions.onDeleteProject).toHaveBeenCalledWith('project-1')
+		expect(actions.onDeleteProject).not.toHaveBeenCalled()
+		await screen.findByRole('alertdialog')
+		fireEvent.click(screen.getByRole('button', { name: '移入回收站' }))
+		await waitFor(() => {
+			expect(actions.onDeleteProject).toHaveBeenCalledWith('project-1')
+		})
 	})
 
 	it('pending 态映射到行壳样式', () => {
@@ -120,12 +132,14 @@ describe('ProjectRowAdapter', () => {
 			onToggleSelected: vi.fn(),
 		}
 		render(
-			<ProjectRowAdapter
-				actions={actions}
-				project={createProject({ id: 'project-1', name: '项目 A' })}
-				rowShortcutHandlers={rowShortcutHandlers}
-				rowState={{ isPending: false }}
-			/>,
+			<DangerConfirmProvider>
+				<ProjectRowAdapter
+					actions={actions}
+					project={createProject({ id: 'project-1', name: '项目 A' })}
+					rowShortcutHandlers={rowShortcutHandlers}
+					rowState={{ isPending: false }}
+				/>
+			</DangerConfirmProvider>,
 		)
 
 		const row = screen.getByRole('button', { name: '打开项目 项目 A' })

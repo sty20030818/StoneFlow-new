@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 
+import { DangerConfirmProvider } from '@/features/danger-confirm'
 import {
 	BulkActionProvider,
 	useBulkActionContext,
@@ -19,6 +20,7 @@ const snapshot = createBulkSelectionSnapshot({
 	ids: ['task-a'],
 	source: 'command-menu',
 	createdAt: 1,
+	entities: [{ id: 'task-a', title: '任务 A', status: 'todo' }],
 })
 
 describe('BulkActionProvider', () => {
@@ -37,9 +39,11 @@ describe('BulkActionProvider', () => {
 		const action = createAction('task.success', { run })
 
 		render(
-			<BulkActionProvider actions={[action]}>
-				<ProviderProbe actionId={action.id} snapshot={snapshot} />
-			</BulkActionProvider>,
+			<DangerConfirmProvider>
+				<BulkActionProvider actions={[action]}>
+					<ProviderProbe actionId={action.id} snapshot={snapshot} />
+				</BulkActionProvider>
+			</DangerConfirmProvider>,
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '执行批量操作' }))
@@ -63,23 +67,21 @@ describe('BulkActionProvider', () => {
 		)
 		const action = createAction('task.confirm', {
 			requiresConfirm: true,
-			getConfirmCopy: () => ({
-				title: '确认测试',
-				description: '确认描述',
-				confirmLabel: '确认执行',
-			}),
+			intent: 'archive',
 			run,
 		})
 
 		render(
-			<BulkActionProvider actions={[action]}>
-				<ProviderProbe actionId={action.id} snapshot={snapshot} />
-			</BulkActionProvider>,
+			<DangerConfirmProvider>
+				<BulkActionProvider actions={[action]}>
+					<ProviderProbe actionId={action.id} snapshot={snapshot} />
+				</BulkActionProvider>
+			</DangerConfirmProvider>,
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '执行批量操作' }))
 
-		expect(await screen.findByTestId('pending-title')).toHaveTextContent('确认测试')
+		expect(await screen.findByText('确认归档「任务 A」吗？')).toBeInTheDocument()
 		expect(run).not.toHaveBeenCalled()
 	})
 
@@ -97,18 +99,21 @@ describe('BulkActionProvider', () => {
 		)
 		const action = createAction('task.confirm', {
 			requiresConfirm: true,
+			intent: 'archive',
 			run,
 		})
 
 		render(
-			<BulkActionProvider actions={[action]}>
-				<ProviderProbe actionId={action.id} snapshot={snapshot} />
-			</BulkActionProvider>,
+			<DangerConfirmProvider>
+				<BulkActionProvider actions={[action]}>
+					<ProviderProbe actionId={action.id} snapshot={snapshot} />
+				</BulkActionProvider>
+			</DangerConfirmProvider>,
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '执行批量操作' }))
-		await screen.findByTestId('pending-title')
-		fireEvent.click(screen.getByRole('button', { name: '确认挂起操作' }))
+		await screen.findByRole('alertdialog')
+		fireEvent.click(screen.getByRole('button', { name: '归档' }))
 
 		await waitFor(() => {
 			expect(screen.getByTestId('result-status')).toHaveTextContent('success')
@@ -129,18 +134,21 @@ describe('BulkActionProvider', () => {
 		)
 		const action = createAction('task.cancel', {
 			requiresConfirm: true,
+			intent: 'archive',
 			run,
 		})
 
 		render(
-			<BulkActionProvider actions={[action]}>
-				<ProviderProbe actionId={action.id} snapshot={snapshot} />
-			</BulkActionProvider>,
+			<DangerConfirmProvider>
+				<BulkActionProvider actions={[action]}>
+					<ProviderProbe actionId={action.id} snapshot={snapshot} />
+				</BulkActionProvider>
+			</DangerConfirmProvider>,
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '执行批量操作' }))
-		await screen.findByTestId('pending-title')
-		fireEvent.click(screen.getByRole('button', { name: '取消挂起操作' }))
+		await screen.findByRole('alertdialog')
+		fireEvent.click(screen.getByRole('button', { name: '取消' }))
 
 		await waitFor(() => {
 			expect(screen.getByTestId('result-status')).toHaveTextContent('cancelled')
@@ -158,9 +166,11 @@ describe('BulkActionProvider', () => {
 		})
 
 		render(
-			<BulkActionProvider actions={[action]} onResult={onResult}>
-				<ProviderProbe actionId={action.id} snapshot={snapshot} />
-			</BulkActionProvider>,
+			<DangerConfirmProvider>
+				<BulkActionProvider actions={[action]} onResult={onResult}>
+					<ProviderProbe actionId={action.id} snapshot={snapshot} />
+				</BulkActionProvider>
+			</DangerConfirmProvider>,
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '执行批量操作' }))
@@ -175,7 +185,7 @@ describe('BulkActionProvider', () => {
 			}),
 		)
 	})
-})
+}) 
 
 function ProviderProbe({
 	actionId,
@@ -184,8 +194,7 @@ function ProviderProbe({
 	actionId: BulkActionId
 	snapshot: BulkSelectionSnapshot
 }) {
-	const { cancelPendingAction, confirmPendingAction, pendingConfirmation, runBulkAction } =
-		useBulkActionContext()
+	const { runBulkAction } = useBulkActionContext()
 	const [result, setResult] = useState<BulkActionResult | null>(null)
 
 	return (
@@ -198,15 +207,6 @@ function ProviderProbe({
 			>
 				执行批量操作
 			</button>
-			<button onClick={confirmPendingAction} type='button'>
-				确认挂起操作
-			</button>
-			<button onClick={cancelPendingAction} type='button'>
-				取消挂起操作
-			</button>
-			{pendingConfirmation ? (
-				<output data-testid='pending-title'>{pendingConfirmation.copy.title}</output>
-			) : null}
 			<output data-testid='result-status'>{result?.status ?? 'none'}</output>
 		</div>
 	)

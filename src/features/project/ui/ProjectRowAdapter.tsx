@@ -1,4 +1,5 @@
 import type { ProjectOverviewItem } from '@/shared/types'
+import { useDangerConfirm } from '@/features/danger-confirm'
 import { formatShortDate } from '@/shared/lib/date'
 import {
 	CreatedAtCell,
@@ -55,6 +56,7 @@ export function ProjectRowAdapter({
 	projectBinding,
 	actions,
 }: ProjectRowAdapterProps) {
+	const { requestDangerConfirm } = useDangerConfirm()
 	const showProjectCell = projectBinding?.showProjectCell ?? false
 	const hasProjectOptions = Boolean(
 		showProjectCell &&
@@ -70,6 +72,7 @@ export function ProjectRowAdapter({
 	return (
 		<ProjectContextMenu
 			isBusy={rowState.isPending}
+			projectName={project.name}
 			onMoveToTrash={() => actions.onDeleteProject(project.id)}
 			onOpenProject={() => actions.onOpenProject(project.id)}
 		>
@@ -116,7 +119,9 @@ export function ProjectRowAdapter({
 						<ProjectActions
 							completedAt={project.completedAt}
 							disabled={rowState.isPending}
+							projectName={project.name}
 							projectId={project.id}
+							requestDangerConfirm={requestDangerConfirm}
 							actions={actions}
 						/>
 					</RowShell.Actions>
@@ -148,12 +153,16 @@ const actionButtonProps = {
 function ProjectActions({
 	completedAt,
 	disabled,
+	projectName,
 	projectId,
+	requestDangerConfirm,
 	actions,
 }: {
 	completedAt: string | null
 	disabled: boolean
+	projectName: string
 	projectId: string
+	requestDangerConfirm: ReturnType<typeof useDangerConfirm>['requestDangerConfirm']
 	actions: ProjectRowAdapterProps['actions']
 }) {
 	const toggleLabel = completedAt ? '重开' : '完成'
@@ -169,14 +178,36 @@ function ProjectActions({
 			<RowActionButton
 				{...actionButtonProps}
 				disabled={disabled}
-				onClick={() => actions.onArchiveProject(projectId)}
+				onClick={async () => {
+					const confirmed = await requestDangerConfirm({
+						intent: 'archive',
+						entityType: 'project',
+						count: 1,
+						entityLabel: projectName,
+					})
+					if (!confirmed) {
+						return
+					}
+					actions.onArchiveProject(projectId)
+				}}
 			>
 				归档
 			</RowActionButton>
 			<RowActionButton
 				{...actionButtonProps}
 				disabled={disabled}
-				onClick={() => actions.onDeleteProject(projectId)}
+				onClick={async () => {
+					const confirmed = await requestDangerConfirm({
+						intent: 'trash',
+						entityType: 'project',
+						count: 1,
+						entityLabel: projectName,
+					})
+					if (!confirmed) {
+						return
+					}
+					actions.onDeleteProject(projectId)
+				}}
 			>
 				删除
 			</RowActionButton>

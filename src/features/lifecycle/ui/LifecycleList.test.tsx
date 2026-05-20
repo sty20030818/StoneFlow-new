@@ -4,12 +4,11 @@ import { ArchiveIcon, Trash2Icon, type LucideIcon } from 'lucide-react'
 import { MemoryRouter } from 'react-router-dom'
 
 import {
-	BulkActionConfirmDialog,
 	BulkActionProvider,
 	createLifecycleBulkAdapter,
 	lifecycleBulkActions,
-	useBulkActionContext,
 } from '@/features/bulk-action'
+import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { LifecycleList } from '@/features/lifecycle/ui/LifecycleList'
 import type { LifecycleEntry, Scope } from '@/shared/types'
 
@@ -204,7 +203,7 @@ describe('LifecycleList', () => {
 		fireEvent.click(screen.getByRole('button', { name: '永久删除' }))
 
 		expect(screen.getByRole('alertdialog')).toBeInTheDocument()
-		expect(screen.getByText('永久删除选中条目？')).toBeInTheDocument()
+		expect(screen.getByText('确认永久删除「待永久删除任务」吗？')).toBeInTheDocument()
 		expect(permanentlyDeleteLifecycleEntrySpy).not.toHaveBeenCalled()
 
 		fireEvent.click(
@@ -252,26 +251,11 @@ function TestBulkActionBoundary({
 	})
 
 	return (
-		<BulkActionProvider actions={lifecycleBulkActions} context={{ adapter }}>
-			{children}
-			<TestBulkActionConfirmDialog />
-		</BulkActionProvider>
-	)
-}
-
-function TestBulkActionConfirmDialog() {
-	const { cancelPendingAction, confirmPendingAction, isExecuting, pendingConfirmation } =
-		useBulkActionContext()
-
-	return (
-		<BulkActionConfirmDialog
-			isExecuting={isExecuting}
-			onCancel={cancelPendingAction}
-			onConfirm={confirmPendingAction}
-			onOpenChange={() => undefined}
-			open={Boolean(pendingConfirmation)}
-			request={pendingConfirmation}
-		/>
+		<DangerConfirmProvider>
+			<BulkActionProvider actions={lifecycleBulkActions} context={{ adapter }}>
+				{children}
+			</BulkActionProvider>
+		</DangerConfirmProvider>
 	)
 }
 

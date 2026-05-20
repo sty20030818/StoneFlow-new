@@ -3,12 +3,11 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom'
 
 import {
-	BulkActionConfirmDialog,
 	BulkActionProvider,
 	createProjectBulkAdapter,
 	projectBulkActions,
-	useBulkActionContext,
 } from '@/features/bulk-action'
+import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ProjectOverviewPage } from '@/features/project-overview/ui/ProjectOverviewPage'
 import type { ProjectOverviewItem, Scope } from '@/shared/types'
 
@@ -145,7 +144,7 @@ describe('ProjectOverviewPage', () => {
 		expect(archiveProjectSpy).not.toHaveBeenCalled()
 
 		fireEvent.click(
-			within(screen.getByRole('alertdialog')).getByRole('button', { name: '确认归档' }),
+			within(screen.getByRole('alertdialog')).getByRole('button', { name: '归档' }),
 		)
 
 		await waitFor(() => {
@@ -178,26 +177,11 @@ function TestBulkActionBoundary({ children }: { children: ReactNode }) {
 	})
 
 	return (
-		<BulkActionProvider actions={projectBulkActions} context={{ adapter }}>
-			{children}
-			<TestBulkActionConfirmDialog />
-		</BulkActionProvider>
-	)
-}
-
-function TestBulkActionConfirmDialog() {
-	const { cancelPendingAction, confirmPendingAction, isExecuting, pendingConfirmation } =
-		useBulkActionContext()
-
-	return (
-		<BulkActionConfirmDialog
-			isExecuting={isExecuting}
-			onCancel={cancelPendingAction}
-			onConfirm={confirmPendingAction}
-			onOpenChange={() => undefined}
-			open={Boolean(pendingConfirmation)}
-			request={pendingConfirmation}
-		/>
+		<DangerConfirmProvider>
+			<BulkActionProvider actions={projectBulkActions} context={{ adapter }}>
+				{children}
+			</BulkActionProvider>
+		</DangerConfirmProvider>
 	)
 }
 

@@ -77,10 +77,14 @@ export function TaskRowAdapter({
 		projectBinding.onSelectNoProject,
 	)
 	const showProjectCellOptions = hasProjectOptions && projectBinding?.showProjectCellOptions !== false
+	const usesBulkDangerActions = actionTargets.length > 1 && Boolean(contextMenuActions)
 
 	return (
 		<TaskContextMenu
+			archiveRequiresConfirm={!usesBulkDangerActions}
+			dangerEntityLabel={task.title}
 			isBusy={isPending}
+			moveToTrashRequiresConfirm={!usesBulkDangerActions}
 			onArchive={
 				actions.onArchiveTask
 					? () =>

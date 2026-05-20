@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
+import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ROW_SHELL_ACTIVE_CLASS, ROW_SHELL_SELECTED_CLASS } from '@/shared/ui/row'
 import type { TaskListItem } from '@/shared/types'
 import { TaskRowAdapter, type TaskRowAdapterProps } from './TaskRowAdapter'
@@ -67,14 +68,16 @@ function renderTaskRowAdapter({
 	contextTasks?: TaskListItem[]
 } = {}) {
 	render(
-		<TaskRowAdapter
-			actions={actions}
-			contextMenuActions={contextMenuActions}
-			contextTasks={contextTasks}
-			projectBinding={projectBinding}
-			rowState={rowState}
-			task={task}
-		/>,
+		<DangerConfirmProvider>
+			<TaskRowAdapter
+				actions={actions}
+				contextMenuActions={contextMenuActions}
+				contextTasks={contextTasks}
+				projectBinding={projectBinding}
+				rowState={rowState}
+				task={task}
+			/>
+		</DangerConfirmProvider>,
 	)
 	return { task, rowState, projectBinding, actions }
 }
@@ -123,11 +126,21 @@ describe('TaskRowAdapter', () => {
 
 		fireEvent.contextMenu(row)
 		fireEvent.click(await screen.findByRole('menuitem', { name: /归档任务/ }))
-		expect(actions.onArchiveTask).toHaveBeenCalledTimes(1)
+		expect(actions.onArchiveTask).not.toHaveBeenCalled()
+		await screen.findByRole('alertdialog')
+		fireEvent.click(screen.getByRole('button', { name: '归档' }))
+		await waitFor(() => {
+			expect(actions.onArchiveTask).toHaveBeenCalledTimes(1)
+		})
 
 		fireEvent.contextMenu(row)
 		fireEvent.click(await screen.findByRole('menuitem', { name: /移入回收站/ }))
-		expect(actions.onDeleteTask).toHaveBeenCalledTimes(1)
+		expect(actions.onDeleteTask).not.toHaveBeenCalled()
+		await screen.findByRole('alertdialog')
+		fireEvent.click(screen.getByRole('button', { name: '移入回收站' }))
+		await waitFor(() => {
+			expect(actions.onDeleteTask).toHaveBeenCalledTimes(1)
+		})
 	})
 
 	it('多选右键危险动作走批量入口，不循环调用单任务动作', async () => {
@@ -213,16 +226,18 @@ describe('TaskRowAdapter', () => {
 			onSelectNoProject: vi.fn(),
 		}
 		const { rerender } = render(
-			<TaskRowAdapter
-				actions={actions}
-				projectBinding={projectBinding}
-				rowState={{
-					isActive: true,
-					isSelected: true,
-					isPending: true,
-				}}
-				task={task}
-			/>,
+			<DangerConfirmProvider>
+				<TaskRowAdapter
+					actions={actions}
+					projectBinding={projectBinding}
+					rowState={{
+						isActive: true,
+						isSelected: true,
+						isPending: true,
+					}}
+					task={task}
+				/>
+			</DangerConfirmProvider>,
 		)
 
 		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
@@ -230,16 +245,18 @@ describe('TaskRowAdapter', () => {
 		expect(row.className).toContain('opacity-75')
 
 		rerender(
-			<TaskRowAdapter
-				actions={actions}
-				projectBinding={projectBinding}
-				rowState={{
-					isActive: false,
-					isSelected: true,
-					isPending: false,
-				}}
-				task={task}
-			/>,
+			<DangerConfirmProvider>
+				<TaskRowAdapter
+					actions={actions}
+					projectBinding={projectBinding}
+					rowState={{
+						isActive: false,
+						isSelected: true,
+						isPending: false,
+					}}
+					task={task}
+				/>
+			</DangerConfirmProvider>,
 		)
 
 		const selectedRow = screen.getByRole('button', { name: '打开任务 任务 A' })
@@ -267,21 +284,23 @@ describe('TaskRowAdapter', () => {
 
 	it('透传显式 selection group position 到真正的 surface', () => {
 		render(
-			<TaskRowAdapter
-				actions={buildActions()}
-				projectBinding={{
-					projectOptions: [{ id: 'project-1', name: '项目 A' }],
-					onSelectProject: vi.fn(),
-					onSelectNoProject: vi.fn(),
-				}}
-				rowState={{
-					isActive: false,
-					isPending: false,
-					isSelected: true,
-				}}
-				selectionGroupPosition='first'
-				task={buildTask()}
-			/>,
+			<DangerConfirmProvider>
+				<TaskRowAdapter
+					actions={buildActions()}
+					projectBinding={{
+						projectOptions: [{ id: 'project-1', name: '项目 A' }],
+						onSelectProject: vi.fn(),
+						onSelectNoProject: vi.fn(),
+					}}
+					rowState={{
+						isActive: false,
+						isPending: false,
+						isSelected: true,
+					}}
+					selectionGroupPosition='first'
+					task={buildTask()}
+				/>
+			</DangerConfirmProvider>,
 		)
 
 		const row = screen.getByRole('button', { name: '打开任务 任务 A' })

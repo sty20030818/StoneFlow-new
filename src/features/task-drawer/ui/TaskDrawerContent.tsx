@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import { useDangerConfirm } from '@/features/danger-confirm'
 import {
 	type ActivityTimelineEntry,
 	getEntityActivities,
@@ -68,6 +69,7 @@ export function TaskDrawerContent({
 	const updateTask = useTaskStore((state) => state.updateTask)
 	const archiveTask = useTaskStore((state) => state.archiveTask)
 	const restoreTask = useTaskStore((state) => state.restoreTask)
+	const { requestDangerConfirm } = useDangerConfirm()
 	const spaces = useSpaceStore(selectSpaces)
 	const projects = useProjectStore(selectProjectOptions)
 	const [draft, setDraft] = useState<TaskDraft | null>(null)
@@ -231,6 +233,16 @@ export function TaskDrawerContent({
 				await restoreTask(detail.item.id)
 				setSaveMessage('已恢复')
 			} else {
+				const confirmed = await requestDangerConfirm({
+					intent: 'archive',
+					entityType: 'task',
+					count: 1,
+					entityLabel: detail.item.title,
+				})
+				if (!confirmed) {
+					setSaveStatus('idle')
+					return
+				}
 				await archiveTask(detail.item.id)
 				setSaveMessage('已归档')
 			}

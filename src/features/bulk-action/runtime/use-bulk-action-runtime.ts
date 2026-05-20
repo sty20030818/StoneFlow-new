@@ -4,7 +4,7 @@ import {
 	BulkActionRegistry,
 	BulkActionRuntime,
 	type BulkAction,
-	type BulkActionConfirmationRequest,
+	type BulkActionConfirmRequest,
 	type BulkActionContext,
 	type BulkActionResult,
 } from '@/features/bulk-action/core'
@@ -12,7 +12,7 @@ import {
 type UseBulkActionRuntimeOptions = {
 	actions: BulkAction[]
 	context?: BulkActionContext
-	requestConfirm?: (request: BulkActionConfirmationRequest) => Promise<boolean>
+	requestConfirm?: (request: BulkActionConfirmRequest) => Promise<boolean>
 	onError?: (result: BulkActionResult) => void
 }
 

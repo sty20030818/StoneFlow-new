@@ -2,26 +2,23 @@ import {
 	createContext,
 	useCallback,
 	useContext,
-	useEffect,
 	useMemo,
-	useRef,
 	useState,
 	type PropsWithChildren,
 } from 'react'
 
+import { useDangerConfirm } from '@/features/danger-confirm'
 import {
 	BulkActionRegistry,
 	BulkActionRuntime,
 	type BulkAction,
-	type BulkActionConfirmationRequest,
 	type BulkActionContext as BulkActionRuntimeContextValue,
 	type BulkActionId,
 	type BulkActionPayload,
 	type BulkActionResult,
 	type BulkSelectionSnapshot,
 } from '@/features/bulk-action/core'
-
-type PendingConfirmation = BulkActionConfirmationRequest
+import { LIFECYCLE_BULK_ACTION_IDS } from '@/features/bulk-action/core'
 
 type BulkActionContextValue = {
 	runtime: BulkActionRuntime
@@ -30,10 +27,7 @@ type BulkActionContextValue = {
 		snapshot: BulkSelectionSnapshot,
 		payload?: BulkActionPayload,
 	) => Promise<BulkActionResult>
-	pendingConfirmation: PendingConfirmation | null
 	isExecuting: boolean
-	confirmPendingAction: () => void
-	cancelPendingAction: () => void
 }
 
 type BulkActionProviderProps = PropsWithChildren<{
@@ -52,18 +46,23 @@ export function BulkActionProvider({
 	onError,
 	onResult,
 }: BulkActionProviderProps) {
-	const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation | null>(null)
 	const [isExecuting, setIsExecuting] = useState(false)
-	const confirmResolverRef = useRef<((confirmed: boolean) => void) | null>(null)
+	const { requestDangerConfirm } = useDangerConfirm()
 
-	const requestConfirm = useCallback((request: BulkActionConfirmationRequest) => {
-		confirmResolverRef.current?.(false)
-		setPendingConfirmation(request)
-
-		return new Promise<boolean>((resolve) => {
-			confirmResolverRef.current = resolve
-		})
-	}, [])
+	const requestConfirm = useCallback(
+		(request: {
+			action: BulkAction
+			snapshot: BulkSelectionSnapshot
+		}) =>
+			requestDangerConfirm({
+				intent: toDangerConfirmIntent(request.action),
+				entityType: toDangerConfirmEntityType(request.snapshot.entity),
+				count: request.snapshot.ids.length,
+				entityLabel:
+					request.snapshot.ids.length === 1 ? request.snapshot.entities?.[0]?.title : undefined,
+			}),
+		[requestDangerConfirm],
+	)
 
 	const registry = useMemo(() => new BulkActionRegistry(actions), [actions])
 	const runtime = useMemo(
@@ -88,21 +87,6 @@ export function BulkActionProvider({
 		[context, onError, registry, requestConfirm],
 	)
 
-	const resolvePendingConfirmation = useCallback((confirmed: boolean) => {
-		const resolve = confirmResolverRef.current
-		confirmResolverRef.current = null
-		setPendingConfirmation(null)
-		resolve?.(confirmed)
-	}, [])
-
-	const confirmPendingAction = useCallback(() => {
-		resolvePendingConfirmation(true)
-	}, [resolvePendingConfirmation])
-
-	const cancelPendingAction = useCallback(() => {
-		resolvePendingConfirmation(false)
-	}, [resolvePendingConfirmation])
-
 	const runBulkAction = useCallback(
 		async (
 			actionId: BulkActionId,
@@ -121,31 +105,13 @@ export function BulkActionProvider({
 		[onResult, runtime],
 	)
 
-	useEffect(
-		() => () => {
-			confirmResolverRef.current?.(false)
-			confirmResolverRef.current = null
-		},
-		[],
-	)
-
 	const value = useMemo<BulkActionContextValue>(
 		() => ({
 			runtime,
 			runBulkAction,
-			pendingConfirmation,
 			isExecuting,
-			confirmPendingAction,
-			cancelPendingAction,
 		}),
-		[
-			cancelPendingAction,
-			confirmPendingAction,
-			isExecuting,
-			pendingConfirmation,
-			runBulkAction,
-			runtime,
-		],
+		[isExecuting, runBulkAction, runtime],
 	)
 
 	return <BulkActionContext.Provider value={value}>{children}</BulkActionContext.Provider>
@@ -157,4 +123,33 @@ export function useBulkActionContext() {
 		throw new Error('useBulkActionContext must be used inside BulkActionProvider')
 	}
 	return context
+}
+
+function toDangerConfirmIntent(action: BulkAction) {
+	if (action.id === LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected) {
+		return 'permanent-delete' as const
+	}
+
+	switch (action.intent) {
+		case 'archive':
+			return 'archive' as const
+		case 'delete':
+			return 'trash' as const
+		case 'restore':
+		case 'complete':
+		case 'move':
+		case 'update':
+			throw new Error(`unsupported bulk danger confirm intent: ${action.intent}`)
+	}
+}
+
+function toDangerConfirmEntityType(entity: BulkSelectionSnapshot['entity']) {
+	switch (entity) {
+		case 'task':
+			return 'task' as const
+		case 'project':
+			return 'project' as const
+		case 'lifecycle':
+			return 'lifecycle-entry' as const
+	}
 }

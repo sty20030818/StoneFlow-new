@@ -5,6 +5,7 @@ import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
+import { useDangerConfirm } from '@/features/danger-confirm'
 import {
 	useRegisterPageFilterController,
 	useTaskPageFilterController,
@@ -59,6 +60,7 @@ export function ProjectPage() {
 	const navigate = useNavigate()
 	const { projectId = '' } = useParams()
 	const { scope, spaceId } = useScopeRoute()
+	const { requestDangerConfirm } = useDangerConfirm()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const openDrawer = useDrawerStore((state) => state.openDrawer)
 	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
@@ -257,7 +259,16 @@ export function ProjectPage() {
 						</Button>
 						<Button
 							disabled={busyAction !== null}
-							onClick={() => {
+							onClick={async () => {
+								const confirmed = await requestDangerConfirm({
+									intent: 'archive',
+									entityType: 'project',
+									count: 1,
+									entityLabel: project.name,
+								})
+								if (!confirmed) {
+									return
+								}
 								void runAction('archive', async () => {
 									await archiveProject(project.id)
 									navigate(buildScopedSectionPath(scope, 'projects', spaceId))
@@ -270,7 +281,16 @@ export function ProjectPage() {
 						</Button>
 						<Button
 							disabled={busyAction !== null}
-							onClick={() => {
+							onClick={async () => {
+								const confirmed = await requestDangerConfirm({
+									intent: 'trash',
+									entityType: 'project',
+									count: 1,
+									entityLabel: project.name,
+								})
+								if (!confirmed) {
+									return
+								}
 								void runAction('delete', async () => {
 									await deleteProject(project.id)
 									navigate(buildScopedSectionPath(scope, 'projects', spaceId))

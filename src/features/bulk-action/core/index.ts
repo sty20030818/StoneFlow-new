@@ -5,6 +5,7 @@ export {
 	type BulkAction,
 	type BulkActionAdapter,
 	type BulkActionConfirmCopy,
+	type BulkActionConfirmRequest,
 	type BulkActionConfirmationRequest,
 	type BulkActionContext,
 	type BulkActionId,

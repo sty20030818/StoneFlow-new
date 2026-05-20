@@ -109,3 +109,5 @@ export type BulkActionConfirmationRequest = {
 	snapshot: BulkSelectionSnapshot
 	copy: BulkActionConfirmCopy
 }
+
+export type BulkActionConfirmRequest = BulkActionConfirmationRequest

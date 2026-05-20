@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
+import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import { TooltipProvider } from '@/shared/ui/base/tooltip'
 
@@ -119,8 +120,9 @@ describe('ShellSidebar', () => {
 		fireEvent.pointerMove(await screen.findByRole('menuitem', { name: '删除' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: '删除' }))
 
-		const confirmButton = await screen.findByRole('button', { name: '删除' })
-		expect(confirmButton).toHaveFocus()
+		const dialog = await screen.findByRole('alertdialog')
+		expect(dialog).toHaveFocus()
+		const confirmButton = screen.getByRole('button', { name: '移入回收站' })
 
 		fireEvent.click(confirmButton)
 
@@ -178,26 +180,28 @@ function renderShellSidebar(
 ) {
 	return render(
 		<MemoryRouter initialEntries={['/space/space-personal/inbox']}>
-			<TooltipProvider>
-				<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
-					<ShellSidebar
-						currentScope={{ type: 'space', spaceId: 'space-personal' }}
-						currentSpaceId='space-personal'
-						onArchiveSpace={async () => mockSpace}
-						onCreateSpace={async () => mockSpace}
-						onDeleteSpace={async () => mockSpace}
-						onOpenProjectCreateDialog={() => undefined}
-						onResetMainItemsVisibility={() => undefined}
-						onSetDefaultSpace={async () => mockSpace}
-						onUpdateItemVisibility={() => undefined}
-						onUpdateSpace={async () => mockSpace}
-						projects={projects}
-						spaces={[mockSpace]}
-						settings={settings}
-						{...overrides}
-					/>
-				</SidebarProvider>
-			</TooltipProvider>
+			<DangerConfirmProvider>
+				<TooltipProvider>
+					<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
+						<ShellSidebar
+							currentScope={{ type: 'space', spaceId: 'space-personal' }}
+							currentSpaceId='space-personal'
+							onArchiveSpace={async () => mockSpace}
+							onCreateSpace={async () => mockSpace}
+							onDeleteSpace={async () => mockSpace}
+							onOpenProjectCreateDialog={() => undefined}
+							onResetMainItemsVisibility={() => undefined}
+							onSetDefaultSpace={async () => mockSpace}
+							onUpdateItemVisibility={() => undefined}
+							onUpdateSpace={async () => mockSpace}
+							projects={projects}
+							spaces={[mockSpace]}
+							settings={settings}
+							{...overrides}
+						/>
+					</SidebarProvider>
+				</TooltipProvider>
+			</DangerConfirmProvider>
 		</MemoryRouter>,
 	)
 }
