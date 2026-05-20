@@ -28,6 +28,11 @@ type LifecycleBoardProps = {
 	emptyActionLabel?: string
 	onEmptyAction?: () => void
 	onRestore: (entry: LifecycleEntry) => void
+	onRestoreEntries?: (entries: LifecycleEntry[]) => void
+	onMoveToTrash?: (entry: LifecycleEntry) => void
+	onMoveToTrashEntries?: (entries: LifecycleEntry[]) => void
+	onPermanentlyDelete?: (entry: LifecycleEntry) => void
+	onPermanentlyDeleteEntries?: (entries: LifecycleEntry[]) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
 	selectedEntryIdSet?: Set<string>
 	focusedEntryId?: string | null
@@ -59,6 +64,11 @@ export function LifecycleBoard({
 	emptyActionLabel,
 	onEmptyAction,
 	onRestore,
+	onRestoreEntries,
+	onMoveToTrash,
+	onMoveToTrashEntries,
+	onPermanentlyDelete,
+	onPermanentlyDeleteEntries,
 	onOpenDetail,
 	selectedEntryIdSet,
 	focusedEntryId = null,
@@ -120,6 +130,7 @@ export function LifecycleBoard({
 	const visibleEntries = visibleSections
 		.filter((section) => openSections.has(section.key))
 		.flatMap((section) => section.items)
+	const allSelectedEntries = visibleEntries.filter((entry) => selectedEntryIdSet?.has(entry.id) ?? false)
 
 	return (
 		<EntityRowShortcutScope
@@ -136,6 +147,7 @@ export function LifecycleBoard({
 				<BoardRoot>
 					{visibleSections.map((section) => (
 						<LifecycleBoardSectionBlock
+							allSelectedEntries={allSelectedEntries}
 							items={section.items}
 							key={section.key}
 							label={section.label}
@@ -144,7 +156,12 @@ export function LifecycleBoard({
 							onExpandAll={handleExpandAll}
 							onOpenChange={(open) => handleOpenChange(section.key, open)}
 							onOpenDetail={onOpenDetail}
+							onPermanentlyDelete={onPermanentlyDelete}
+							onPermanentlyDeleteEntries={onPermanentlyDeleteEntries}
 							onRestore={onRestore}
+							onRestoreEntries={onRestoreEntries}
+							onMoveToTrash={onMoveToTrash}
+							onMoveToTrashEntries={onMoveToTrashEntries}
 							onToggleEntrySelection={onToggleEntrySelection}
 							open={openSections.has(section.key)}
 							pendingEntryId={pendingEntryId}
@@ -159,6 +176,7 @@ export function LifecycleBoard({
 }
 
 function LifecycleBoardSectionBlock({
+	allSelectedEntries,
 	label,
 	items,
 	mode,
@@ -166,6 +184,11 @@ function LifecycleBoardSectionBlock({
 	onOpenChange,
 	pendingEntryId,
 	onRestore,
+	onRestoreEntries,
+	onMoveToTrash,
+	onMoveToTrashEntries,
+	onPermanentlyDelete,
+	onPermanentlyDeleteEntries,
 	onOpenDetail,
 	selectedEntryIdSet,
 	onToggleEntrySelection,
@@ -173,6 +196,7 @@ function LifecycleBoardSectionBlock({
 	onExpandAll,
 	rowShortcutState,
 }: {
+	allSelectedEntries: LifecycleEntry[]
 	label: string
 	items: LifecycleEntry[]
 	mode: LifecycleMode
@@ -180,6 +204,11 @@ function LifecycleBoardSectionBlock({
 	onOpenChange: (open: boolean) => void
 	pendingEntryId: string | null
 	onRestore: (entry: LifecycleEntry) => void
+	onRestoreEntries?: (entries: LifecycleEntry[]) => void
+	onMoveToTrash?: (entry: LifecycleEntry) => void
+	onMoveToTrashEntries?: (entries: LifecycleEntry[]) => void
+	onPermanentlyDelete?: (entry: LifecycleEntry) => void
+	onPermanentlyDeleteEntries?: (entries: LifecycleEntry[]) => void
 	onOpenDetail?: (entry: LifecycleEntry) => void
 	selectedEntryIdSet?: Set<string>
 	onToggleEntrySelection?: (entryId: string) => void
@@ -223,11 +252,21 @@ function LifecycleBoardSectionBlock({
 				<LifecycleRowAdapter
 					actions={{
 						onOpenDetail,
+						onPermanentlyDelete,
+						onPermanentlyDeleteEntries,
 						onRestore,
+						onRestoreEntries,
+						onMoveToTrash,
+						onMoveToTrashEntries,
 						onToggleSelected: onToggleEntrySelection
 							? () => onToggleEntrySelection(entry.id)
 							: () => undefined,
 					}}
+					contextEntries={
+						(selectedEntryIdSet?.has(entry.id) ?? false) && allSelectedEntries.length > 1
+							? allSelectedEntries
+							: undefined
+					}
 					key={entry.id}
 					mode={mode}
 					entry={entry}

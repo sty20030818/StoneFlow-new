@@ -55,6 +55,8 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	const loadArchive = useLifecycleStore((state) => state.loadArchive)
 	const loadTrash = useLifecycleStore((state) => state.loadTrash)
 	const restoreEntry = useLifecycleStore((state) => state.restoreEntry)
+	const deleteEntry = useLifecycleStore((state) => state.deleteEntry)
+	const permanentlyDeleteEntry = useLifecycleStore((state) => state.permanentlyDeleteEntry)
 	const refreshLoadedSlices = useLifecycleStore((state) => state.refreshLoadedSlices)
 	const { runBulkAction } = useBulkActionContext()
 	const [entityFilter, setEntityFilter] = useState<LifecycleFilter>('all')
@@ -140,10 +142,14 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	}
 
 	const runLifecycleBulkAction = useCallback(
-		async (actionId: BulkActionId) => {
+		async (
+			actionId: BulkActionId,
+			entries: LifecycleEntry[] = selectedEntries,
+			source: 'bulk-bar' | 'context-menu' = 'bulk-bar',
+		) => {
 			const result = await runBulkAction(
 				actionId,
-				createLifecycleBulkSelectionSnapshot(selectedEntries, 'bulk-bar'),
+				createLifecycleBulkSelectionSnapshot(entries, source),
 			)
 			if (shouldClearBulkSelection(result)) {
 				clearEntrySelection()
@@ -185,6 +191,33 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 						onOpenDetail: mode === 'archive' ? handleOpenDetail : undefined,
 						onRestore: (entry: LifecycleEntry) => {
 							void restoreEntry(entry)
+						},
+						onRestoreEntries: (entries: LifecycleEntry[]) => {
+							void runLifecycleBulkAction(
+								LIFECYCLE_BULK_ACTION_IDS.restoreSelected,
+								entries,
+								'context-menu',
+							)
+						},
+						onMoveToTrash: (entry: LifecycleEntry) => {
+							void deleteEntry(entry)
+						},
+						onMoveToTrashEntries: (entries: LifecycleEntry[]) => {
+							void runLifecycleBulkAction(
+								LIFECYCLE_BULK_ACTION_IDS.deleteSelected,
+								entries,
+								'context-menu',
+							)
+						},
+						onPermanentlyDelete: (entry: LifecycleEntry) => {
+							void permanentlyDeleteEntry(entry)
+						},
+						onPermanentlyDeleteEntries: (entries: LifecycleEntry[]) => {
+							void runLifecycleBulkAction(
+								LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected,
+								entries,
+								'context-menu',
+							)
 						},
 						onSelectAllEntries: selectEntryIds,
 						onToggleEntrySelection: toggleEntrySelection,

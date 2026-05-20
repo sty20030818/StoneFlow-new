@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
+import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { LifecycleEntry } from '@/shared/types'
 import { LifecycleRowAdapter, type LifecycleRowAdapterProps } from './LifecycleRowAdapter'
 
@@ -26,7 +27,12 @@ function buildActions(): LifecycleRowAdapterProps['actions'] {
 	return {
 		onToggleSelected: vi.fn(),
 		onRestore: vi.fn(),
+		onRestoreEntries: vi.fn(),
 		onOpenDetail: vi.fn(),
+		onMoveToTrash: vi.fn(),
+		onMoveToTrashEntries: vi.fn(),
+		onPermanentlyDelete: vi.fn(),
+		onPermanentlyDeleteEntries: vi.fn(),
 	}
 }
 
@@ -36,12 +42,14 @@ describe('LifecycleRowAdapter', () => {
 		const actions = buildActions()
 
 		render(
-			<LifecycleRowAdapter
-				actions={actions}
-				entry={entry}
-				mode='archive'
-				rowState={{ isPending: false, isSelected: false }}
-			/>,
+			<DangerConfirmProvider>
+				<LifecycleRowAdapter
+					actions={actions}
+					entry={entry}
+					mode='archive'
+					rowState={{ isPending: false, isSelected: false }}
+				/>
+			</DangerConfirmProvider>,
 		)
 
 		expect(screen.getByRole('button', { name: '恢复' })).toBeInTheDocument()
@@ -57,12 +65,14 @@ describe('LifecycleRowAdapter', () => {
 		const actions = buildActions()
 
 		render(
-			<LifecycleRowAdapter
-				actions={actions}
-				entry={entry}
-				mode='archive'
-				rowState={{ isPending: false, isSelected: false }}
-			/>,
+			<DangerConfirmProvider>
+				<LifecycleRowAdapter
+					actions={actions}
+					entry={entry}
+					mode='archive'
+					rowState={{ isPending: false, isSelected: false }}
+				/>
+			</DangerConfirmProvider>,
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: '打开 项目 A' }))
@@ -74,16 +84,77 @@ describe('LifecycleRowAdapter', () => {
 		const actions = buildActions()
 
 		render(
-			<LifecycleRowAdapter
-				actions={actions}
-				entry={entry}
-				mode='trash'
-				rowState={{ isPending: true, isSelected: true }}
-			/>,
+			<DangerConfirmProvider>
+				<LifecycleRowAdapter
+					actions={actions}
+					entry={entry}
+					mode='trash'
+					rowState={{ isPending: true, isSelected: true }}
+				/>
+			</DangerConfirmProvider>,
 		)
 
 		expect(screen.queryByRole('button', { name: '打开 工作空间' })).not.toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '恢复' })).toBeDisabled()
 		expect(screen.getByRole('checkbox', { name: '选择 工作空间' })).toBeDisabled()
+	})
+
+	it('archive 右键菜单显示单条处置动作，并在确认后移入回收站', async () => {
+		const entry = createEntry({ id: 'task-1', entityType: 'task', title: '任务 A' })
+		const actions = buildActions()
+
+		render(
+			<DangerConfirmProvider>
+				<LifecycleRowAdapter
+					actions={actions}
+					entry={entry}
+					mode='archive'
+					rowState={{ isPending: false, isSelected: false }}
+				/>
+			</DangerConfirmProvider>,
+		)
+
+		fireEvent.contextMenu(screen.getByRole('button', { name: '打开 任务 A' }))
+		expect(await screen.findByRole('menuitem', { name: '打开详情' })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: '恢复' })).toBeInTheDocument()
+		fireEvent.click(screen.getByRole('menuitem', { name: '移入回收站' }))
+		expect(actions.onMoveToTrash).not.toHaveBeenCalled()
+
+		fireEvent.click(await screen.findByRole('button', { name: '移入回收站' }))
+		await waitFor(() => {
+			expect(actions.onMoveToTrash).toHaveBeenCalledWith(entry)
+		})
+	})
+
+	it('多选右键显示全部前缀，并走批量动作回调', async () => {
+		const entry = createEntry({ id: 'task-1', entityType: 'task', title: '任务 A' })
+		const sibling = createEntry({ id: 'task-2', entityType: 'task', title: '任务 B' })
+		const actions = buildActions()
+
+		render(
+			<DangerConfirmProvider>
+				<LifecycleRowAdapter
+					actions={actions}
+					contextEntries={[entry, sibling]}
+					entry={entry}
+					mode='trash'
+					rowState={{ isPending: false, isSelected: true }}
+				/>
+			</DangerConfirmProvider>,
+		)
+
+		fireEvent.contextMenu(screen.getByText('任务 A'))
+		expect(await screen.findByRole('menuitem', { name: '全部恢复' })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: '全部永久删除' })).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('menuitem', { name: '全部恢复' }))
+		expect(actions.onRestoreEntries).toHaveBeenCalledWith([entry, sibling])
+
+		fireEvent.contextMenu(screen.getByText('任务 A'))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '全部永久删除' }))
+		fireEvent.click(await screen.findByRole('button', { name: '永久删除' }))
+		await waitFor(() => {
+			expect(actions.onPermanentlyDeleteEntries).toHaveBeenCalledWith([entry, sibling])
+		})
 	})
 })

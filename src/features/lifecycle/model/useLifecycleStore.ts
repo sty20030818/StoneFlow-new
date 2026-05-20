@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 import {
+	deleteLifecycleEntry,
 	listLifecycleEntries,
 	permanentlyDeleteLifecycleEntry,
 	restoreLifecycleEntry,
@@ -25,6 +26,7 @@ type LifecycleStoreState = {
 	loadArchive: (scope: Scope, entityFilter?: LifecycleEntityType) => Promise<void>
 	loadTrash: (scope: Scope, entityFilter?: LifecycleEntityType) => Promise<void>
 	restoreEntry: (entry: LifecycleEntry) => Promise<void>
+	deleteEntry: (entry: LifecycleEntry) => Promise<void>
 	permanentlyDeleteEntry: (entry: LifecycleEntry) => Promise<void>
 	refreshLoadedSlices: () => Promise<void>
 }
@@ -215,6 +217,7 @@ export const useLifecycleStore = create<LifecycleStoreState>((set, get) => {
 		},
 
 		restoreEntry: async (entry) => runMutation(entry, () => restoreLifecycleEntry(entry)),
+		deleteEntry: async (entry) => runMutation(entry, () => deleteLifecycleEntry(entry), true),
 		permanentlyDeleteEntry: async (entry) =>
 			runMutation(entry, () => permanentlyDeleteLifecycleEntry(entry), true),
 		refreshLoadedSlices,

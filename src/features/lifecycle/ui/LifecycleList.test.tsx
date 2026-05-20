@@ -15,6 +15,8 @@ import type { LifecycleEntry, Scope } from '@/shared/types'
 const loadArchiveSpy = vi.fn<(scope: Scope) => Promise<void>>()
 const loadTrashSpy = vi.fn<(scope: Scope) => Promise<void>>()
 const restoreEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<void>>()
+const deleteEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<void>>()
+const permanentlyDeleteEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<void>>()
 const restoreLifecycleEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>()
 const permanentlyDeleteLifecycleEntrySpy = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>()
 const refreshLoadedSlicesSpy = vi.fn<() => Promise<void>>()
@@ -91,6 +93,10 @@ describe('LifecycleList', () => {
 		loadArchiveSpy.mockReset()
 		loadTrashSpy.mockReset()
 		restoreEntrySpy.mockReset()
+		deleteEntrySpy.mockReset()
+		deleteEntrySpy.mockResolvedValue()
+		permanentlyDeleteEntrySpy.mockReset()
+		permanentlyDeleteEntrySpy.mockResolvedValue()
 		restoreLifecycleEntrySpy.mockReset()
 		restoreLifecycleEntrySpy.mockResolvedValue({})
 		permanentlyDeleteLifecycleEntrySpy.mockReset()
@@ -219,6 +225,40 @@ describe('LifecycleList', () => {
 		expect(toastSuccessSpy).toHaveBeenCalledWith('已永久删除 1 个条目')
 		expect(screen.queryByText('已选 1 项')).not.toBeInTheDocument()
 	})
+
+	it('archive 单条 task 右键可移入回收站，trash 单条 task 右键可永久删除', async () => {
+		renderLifecycleList({
+			mode: 'archive',
+			title: '归档',
+			icon: ArchiveIcon,
+		})
+
+		fireEvent.contextMenu(screen.getByRole('button', { name: '打开 补齐生命周期页面' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
+		fireEvent.click(await screen.findByRole('button', { name: '移入回收站' }))
+
+		await waitFor(() => {
+			expect(deleteEntrySpy).toHaveBeenCalledWith(
+				expect.objectContaining({ id: 'task-1', entityType: 'task' }),
+			)
+		})
+
+		renderLifecycleList({
+			mode: 'trash',
+			title: '回收站',
+			icon: Trash2Icon,
+		})
+
+		fireEvent.contextMenu(screen.getByText('待永久删除任务'))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '永久删除' }))
+		fireEvent.click(await screen.findByRole('button', { name: '永久删除' }))
+
+		await waitFor(() => {
+			expect(permanentlyDeleteEntrySpy).toHaveBeenCalledWith(
+				expect.objectContaining({ id: 'task-2', entityType: 'task' }),
+			)
+		})
+	})
 })
 
 function renderLifecycleList(props: {
@@ -310,6 +350,8 @@ function createStoreStateBase() {
 		loadArchive: loadArchiveSpy,
 		loadTrash: loadTrashSpy,
 		restoreEntry: restoreEntrySpy,
+		deleteEntry: deleteEntrySpy,
+		permanentlyDeleteEntry: permanentlyDeleteEntrySpy,
 		refreshLoadedSlices: refreshLoadedSlicesSpy,
 	}
 }
