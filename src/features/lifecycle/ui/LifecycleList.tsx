@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
-import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import {
 	BulkActionBar,
 	LIFECYCLE_BULK_ACTION_IDS,
@@ -13,6 +12,7 @@ import {
 	useBulkActionContext,
 	type BulkActionId,
 } from '@/features/bulk-action'
+import { useEntityDetailController } from '@/features/entity-detail'
 import {
 	selectArchiveEntries,
 	selectTrashEntries,
@@ -47,7 +47,7 @@ type LifecycleFilter = 'all' | 'space' | 'project' | 'task'
 
 export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	const navigate = useNavigate()
-	const openDrawer = useDrawerStore((state) => state.openDrawer)
+	const openEntityDrawer = useEntityDetailController().openDrawer
 	const { scope, spaceId } = useScopeRoute()
 	const archiveEntries = useLifecycleStore(selectArchiveEntries)
 	const trashEntries = useLifecycleStore(selectTrashEntries)
@@ -127,12 +127,12 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 
 	function handleOpenDetail(entry: LifecycleEntry) {
 		if (entry.entityType === 'task') {
-			openDrawer('task', entry.id)
+			openEntityDrawer({ kind: 'task', id: entry.id })
 			return
 		}
 
 		if (entry.entityType === 'project') {
-			openDrawer('project', entry.id)
+			openEntityDrawer({ kind: 'project', id: entry.id })
 			return
 		}
 

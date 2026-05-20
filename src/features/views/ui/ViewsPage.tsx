@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
-import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
+import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import {
@@ -40,9 +40,9 @@ export function ViewsPage() {
 	const navigate = useNavigate()
 	const location = useLocation()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
-	const openDrawer = useDrawerStore((state) => state.openDrawer)
-	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
-	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
+	const entityDetailController = useEntityDetailController()
+	const activeDetail = entityDetailController.activeDetail
+	const openEntityDrawer = entityDetailController.openDrawer
 	const taskViews = useViewStore(selectTaskViews)
 	const taskRun = useViewStore(selectTaskViewRun)
 	const loadTaskViews = useViewStore((state) => state.loadTaskViews)
@@ -237,7 +237,7 @@ export function ViewsPage() {
 					},
 					boardData: {
 						items: visibleTasks,
-						activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
+						activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 						pendingItemId: pendingTaskId,
 						selectedTaskIdSet,
 						focusedTaskId,
@@ -247,7 +247,7 @@ export function ViewsPage() {
 						onClearTaskSelection: clearTaskSelection,
 						onDeleteTask: deleteListTask,
 						onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
-						onOpenTask: (taskId) => openDrawer('task', taskId),
+						onOpenTask: (taskId) => openEntityDrawer({ kind: 'task', id: taskId }),
 						onSelectAllTasks: selectTaskIds,
 						onSetFocusedTask: setFocusedTaskId,
 						onMoveTaskFocus: moveFocus,

@@ -1,36 +1,22 @@
 import { useState } from 'react'
 
-import { getDrawerDetail } from '@/app/layouts/shell/config'
-import { TaskDrawerContent } from '@/features/task-drawer/ui/TaskDrawerContent'
-import type { ShellDrawerKind } from '@/app/layouts/shell/types'
-import { Badge } from '@/shared/ui/base/badge'
-import { Button } from '@/shared/ui/base/button'
+import { EntityDetailDrawerHost, type EntityDetailRouteState } from '@/features/entity-detail'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/shared/ui/base/sheet'
-import {
-	shellDrawerCaptionClass,
-	shellDrawerEmptyStateClass,
-	shellDrawerItemLabelClass,
-	shellDrawerSectionItemCardClass,
-} from '@/shared/ui/patterns/shell-drawer'
 
 type ShellDrawerProps = {
 	open: boolean
-	activeDrawerKind: ShellDrawerKind | null
-	activeDrawerId: string | null
+	activeDetail: EntityDetailRouteState
 	currentSpaceLabel: string
 	onClose: () => void
 }
 
 export function ShellDrawer({
 	open,
-	activeDrawerKind,
-	activeDrawerId,
+	activeDetail,
 	currentSpaceLabel,
 	onClose,
 }: ShellDrawerProps) {
-	const detail = getDrawerDetail(activeDrawerKind, activeDrawerId)
-	const isRealTaskDrawer = activeDrawerKind === 'task' && !!activeDrawerId && !detail
-	const drawerTitle = activeDrawerKind === 'project' ? '项目详情' : '任务详情'
+	const drawerTitle = activeDetail?.kind === 'project' ? '项目详情' : '任务详情'
 	const [activeTab, setActiveTab] = useState<'details' | 'activity'>('details')
 
 	return (
@@ -75,51 +61,13 @@ export function ShellDrawer({
 				</SheetHeader>
 
 				<div className='no-scrollbar flex flex-1 flex-col overflow-hidden'>
-					{isRealTaskDrawer && activeDrawerId ? (
-						<TaskDrawerContent
-							activeTab={activeTab}
-							currentSpaceLabel={currentSpaceLabel}
-							onClose={onClose}
-							taskId={activeDrawerId}
-						/>
-					) : detail ? (
-						<div className='space-y-4'>
-							<div className='space-y-2'>
-								<div className='flex flex-wrap items-center gap-2'>
-									{detail.badges.map((badge) => (
-										<Badge key={badge.label} variant={badge.variant ?? 'secondary'}>
-											{badge.label}
-										</Badge>
-									))}
-								</div>
-								<h2 className='text-[13px] font-medium leading-6 text-foreground'>
-									{detail.title}
-								</h2>
-								<Button className='h-8 w-full justify-center' variant='outline'>
-									标记完成
-								</Button>
-							</div>
-
-							{detail.sections.map((section) => (
-								<section className='space-y-2' key={section.title}>
-									<p className={shellDrawerCaptionClass}>{section.title}</p>
-									<div className='space-y-1.5'>
-										{section.items.map((item) => (
-											<div
-												className={shellDrawerSectionItemCardClass}
-												key={`${section.title}-${item.label}`}
-											>
-												<p className={shellDrawerItemLabelClass}>{item.label}</p>
-												<p className='mt-1 text-[12px] leading-5 text-foreground'>{item.value}</p>
-											</div>
-										))}
-									</div>
-								</section>
-							))}
-						</div>
-					) : (
-						<div className={shellDrawerEmptyStateClass}>当前没有可展示的详情数据。</div>
-					)}
+					<EntityDetailDrawerHost
+						activeDetail={activeDetail}
+						activeTab={activeTab}
+						currentSpaceLabel={currentSpaceLabel}
+						onClose={onClose}
+						open={open}
+					/>
 				</div>
 			</SheetContent>
 		</Sheet>

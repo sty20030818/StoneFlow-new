@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
+import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
 	useRegisterPageFilterController,
@@ -39,9 +39,9 @@ const TASK_FILTERS: Array<'all' | 'noProject' | TaskStatus> = [
 export function AllTasksPage() {
 	const { scope } = useScopeRoute()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
-	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
-	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
-	const openDrawer = useDrawerStore((state) => state.openDrawer)
+	const entityDetailController = useEntityDetailController()
+	const activeDetail = entityDetailController.activeDetail
+	const openEntityDrawer = entityDetailController.openDrawer
 	const taskList = useTaskStore(selectTaskList)
 	const loadList = useTaskStore((state) => state.loadList)
 	const {
@@ -117,7 +117,7 @@ export function AllTasksPage() {
 				},
 				boardData: {
 					items: filteredTasks,
-					activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
+					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
 					focusedTaskId,
@@ -127,7 +127,7 @@ export function AllTasksPage() {
 					onClearTaskSelection: clearTaskSelection,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
-					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onOpenTask: (taskId) => openEntityDrawer({ kind: 'task', id: taskId }),
 					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,

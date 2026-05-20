@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import { useRegisterSubmitTarget, type SubmitIntent } from '@/features/submit/model'
+import { useEntityDetailController } from '@/features/entity-detail'
 import type { ProjectOption } from '@/features/project/model/types'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { buildCreatePlacementInput } from '@/features/task/model/taskPlacement'
@@ -18,7 +19,6 @@ import { Switch } from '@/shared/ui/base/switch'
 import { Textarea } from '@/shared/ui/base/textarea'
 import { CreateModalContent } from '@/shared/ui/create-modal-content'
 import { MoreHorizontalIcon, PaperclipIcon, TagIcon } from 'lucide-react'
-import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 
 type TaskCreateContentProps = {
 	currentScope: Scope
@@ -48,7 +48,7 @@ export function TaskCreateContent({
 	projectsLoading,
 }: TaskCreateContentProps) {
 	const createTask = useTaskStore((state) => state.createTask)
-	const openDrawer = useDrawerStore((state) => state.openDrawer)
+	const openEntityDrawer = useEntityDetailController().openDrawer
 	const defaultSpaceId = getDefaultSpaceId(spaces)
 	const initialProject = projects.find((project) => project.id === initialProjectId) ?? null
 	const resolvedInitialSpaceId =
@@ -158,7 +158,7 @@ export function TaskCreateContent({
 				resetFieldsOnly()
 				onClose()
 				if (effectiveIntent === 'open') {
-					openDrawer('task', createdTask.id)
+					openEntityDrawer({ kind: 'task', id: createdTask.id })
 				}
 			} catch (error) {
 				setSubmitState('error')
@@ -170,7 +170,7 @@ export function TaskCreateContent({
 			createTask,
 			note,
 			onClose,
-			openDrawer,
+			openEntityDrawer,
 			placement,
 			priority,
 			projectId,

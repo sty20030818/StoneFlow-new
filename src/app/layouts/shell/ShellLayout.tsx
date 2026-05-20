@@ -14,11 +14,6 @@ import type { Scope } from '@/shared/types'
 import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
 import { useSidebarNavBadges } from '@/app/layouts/shell/model/useSidebarNavBadges'
 import {
-	selectActiveDrawerId,
-	selectActiveDrawerKind,
-	useDrawerStore,
-} from '@/app/layouts/shell/model/useDrawerStore'
-import {
 	selectCommandMenuMode,
 	selectCommandMenuFilterKind,
 	selectCommandSelectionOverride,
@@ -39,6 +34,7 @@ import {
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
+import { useEntityDetailController } from '@/features/entity-detail'
 import {
 	selectPendingTaskOpenIntent,
 	useSearchOpenIntentStore,
@@ -225,8 +221,11 @@ function ShellLayoutContent({
 	const createDialogType = useDialogStore(selectCreateDialogType)
 	const taskCreateDraft = useDialogStore(selectTaskCreateDraft)
 	const taskCreatePresentation = useDialogStore(selectTaskCreatePresentation)
-	const activeDrawerKind = useDrawerStore(selectActiveDrawerKind)
-	const activeDrawerId = useDrawerStore(selectActiveDrawerId)
+	const entityDetailController = useEntityDetailController()
+	const activeDetail = entityDetailController.activeDetail
+	const isDrawerOpen = entityDetailController.isOpen
+	const openEntityDrawer = entityDetailController.openDrawer
+	const closeEntityDrawer = entityDetailController.closeDrawer
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
 	const setCommandMenuFilterKind = useDialogStore((state) => state.setCommandMenuFilterKind)
 	const setShortcutHelpOpen = useDialogStore((state) => state.setShortcutHelpOpen)
@@ -292,8 +291,6 @@ function ShellLayoutContent({
 		}
 		setSelectedSpaceId((current) => current ?? defaultCreateSpaceId)
 	}, [createDialogType, defaultCreateSpaceId])
-	const openDrawer = useDrawerStore((state) => state.openDrawer)
-	const closeDrawer = useDrawerStore((state) => state.closeDrawer)
 	const sidebarSettingsStatus = useSidebarSettingsStore(selectSidebarSettingsStatus)
 	const sidebarSettings = useSidebarSettingsStore(selectSidebarSettings)
 	const sidebarSettingsError = useSidebarSettingsStore(selectSidebarSettingsError)
@@ -390,8 +387,8 @@ function ShellLayoutContent({
 			return
 		}
 
-		openDrawer('task', consumedIntent.taskId)
-	}, [consumePendingTaskOpenIntent, openDrawer, pathname, pendingTaskOpenIntent, spaceStatus])
+		openEntityDrawer({ kind: 'task', id: consumedIntent.taskId })
+	}, [consumePendingTaskOpenIntent, openEntityDrawer, pathname, pendingTaskOpenIntent, spaceStatus])
 
 	const handleCommandOpen = useMemo(
 		() => (payload: CommandOpenPayload) => {
@@ -403,7 +400,7 @@ function ShellLayoutContent({
 						? `/space/${payload.spaceId}/inbox`
 						: `/space/${payload.spaceId}/no-project`
 
-			closeDrawer()
+			closeEntityDrawer()
 
 			if (payload.kind === 'project') {
 				if (pathname === targetPath) {
@@ -421,7 +418,7 @@ function ShellLayoutContent({
 			})
 
 			if (pathname === targetPath) {
-				openDrawer('task', payload.id)
+				openEntityDrawer({ kind: 'task', id: payload.id })
 				return
 			}
 
@@ -429,7 +426,7 @@ function ShellLayoutContent({
 				navigate(targetPath)
 			})
 		},
-		[closeDrawer, navigate, openDrawer, pathname, setPendingTaskOpenIntent],
+		[closeEntityDrawer, navigate, openEntityDrawer, pathname, setPendingTaskOpenIntent],
 	)
 
 	const projectLinks = useMemo(
@@ -540,8 +537,8 @@ function ShellLayoutContent({
 					return
 				}
 
-				if (activeDrawerId) {
-					closeDrawer()
+				if (activeDetail) {
+					closeEntityDrawer()
 					return
 				}
 
@@ -572,8 +569,8 @@ function ShellLayoutContent({
 				requestSidebarToggle()
 			},
 			togglePreview: (ctx) => {
-				if (activeDrawerKind === 'task' && activeDrawerId) {
-					closeDrawer()
+				if (activeDetail?.kind === 'task') {
+					closeEntityDrawer()
 					return
 				}
 
@@ -582,7 +579,7 @@ function ShellLayoutContent({
 					return
 				}
 
-				openDrawer('task', targetTaskId)
+				openEntityDrawer({ kind: 'task', id: targetTaskId })
 			},
 			openTaskPlacementPicker: (ctx) => {
 				useDialogStore.getState().openCommand('task-placement-picker', ctx.selection)
@@ -692,12 +689,11 @@ function ShellLayoutContent({
 		[
 			currentScope,
 			currentSpaceId,
-			activeDrawerKind,
-			activeDrawerId,
+			activeDetail,
 			goBack,
 			goForward,
 			canGoBack,
-			closeDrawer,
+			closeEntityDrawer,
 			closeProjectCreateDialog,
 			closeTaskCreateDialog,
 			createDialogType,
@@ -705,7 +701,7 @@ function ShellLayoutContent({
 			isCommandOpen,
 			isShortcutHelpOpen,
 			navigate,
-			openDrawer,
+			openEntityDrawer,
 			openProjectCreateDialog,
 			openTaskCreateDialog,
 			pageFilter,
@@ -738,11 +734,11 @@ function ShellLayoutContent({
 	const commandUi = useMemo(
 		() => ({
 			isCommandMenuOpen: isCommandOpen,
-			isDetailOpen: Boolean(activeDrawerId),
-			detailEntityType: activeDrawerId ? (activeDrawerKind ?? undefined) : undefined,
+			isDetailOpen: Boolean(activeDetail),
+			detailEntityType: activeDetail?.kind,
 			isModalOpen: createDialogType !== null || isShortcutHelpOpen,
 		}),
-		[activeDrawerId, activeDrawerKind, createDialogType, isCommandOpen, isShortcutHelpOpen],
+		[activeDetail, createDialogType, isCommandOpen, isShortcutHelpOpen],
 	)
 	const commandFocus = useMemo(
 		() => ({
@@ -750,10 +746,10 @@ function ShellLayoutContent({
 				isCommandOpen,
 				isShortcutHelpOpen,
 				isModalOpen: createDialogType !== null,
-				isDetailOpen: Boolean(activeDrawerId),
+				isDetailOpen: Boolean(activeDetail),
 			}),
 		}),
-		[activeDrawerId, createDialogType, isCommandOpen, isShortcutHelpOpen],
+		[activeDetail, createDialogType, isCommandOpen, isShortcutHelpOpen],
 	)
 	const commandSpace = useMemo(
 		() => ({
@@ -976,7 +972,7 @@ function ShellLayoutContent({
 				currentScope={currentScope}
 				isCommandOpen={isCommandOpen}
 				isShortcutHelpOpen={isShortcutHelpOpen}
-				onCloseDrawer={closeDrawer}
+				onCloseDrawer={closeEntityDrawer}
 				onCommandOpenChange={handleCommandMenuOpenChange}
 				onNavigateToHistoryEntry={navigateToHistoryEntry}
 				onRunCommand={runCommand}
@@ -1028,10 +1024,10 @@ function ShellLayoutContent({
 
 				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sf-shell'>
 					<ShellMain
-						activeDrawerId={activeDrawerId}
-						activeDrawerKind={activeDrawerKind}
+						activeDetail={activeDetail}
 						currentSpaceLabel={currentSpaceLabel}
-						onCloseDrawer={closeDrawer}
+						isDrawerOpen={isDrawerOpen}
+						onCloseDrawer={closeEntityDrawer}
 						onOpenProjectCreateDialog={() => openProjectCreateDialog()}
 						onOpenTaskCreateDialog={handleOpenTaskCreate}
 					>

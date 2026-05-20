@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildScopedSectionPath } from '@/app/layouts/shell/config'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
-import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
+import { useEntityDetailController } from '@/features/entity-detail'
 import { useDangerConfirm } from '@/features/danger-confirm'
 import {
 	useRegisterPageFilterController,
@@ -62,9 +62,9 @@ export function ProjectPage() {
 	const { scope, spaceId } = useScopeRoute()
 	const { requestDangerConfirm } = useDangerConfirm()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
-	const openDrawer = useDrawerStore((state) => state.openDrawer)
-	const activeDrawerId = useDrawerStore((state) => state.activeDrawerId)
-	const activeDrawerKind = useDrawerStore((state) => state.activeDrawerKind)
+	const entityDetailController = useEntityDetailController()
+	const activeDetail = entityDetailController.activeDetail
+	const openEntityDrawer = entityDetailController.openDrawer
 	const detail = useProjectStore(selectProjectDetail)
 	const projectOptions = useProjectStore(selectProjectOptions)
 	const loadDetail = useProjectStore((state) => state.loadDetail)
@@ -181,7 +181,7 @@ export function ProjectPage() {
 				},
 				boardData: {
 					items: project ? filteredTasks : [],
-					activeItemId: activeDrawerKind === 'task' ? activeDrawerId : null,
+					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
 					focusedTaskId,
@@ -191,7 +191,7 @@ export function ProjectPage() {
 					onClearTaskSelection: clearTaskSelection,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ projectId }),
-					onOpenTask: (taskId) => openDrawer('task', taskId),
+					onOpenTask: (taskId) => openEntityDrawer({ kind: 'task', id: taskId }),
 					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,

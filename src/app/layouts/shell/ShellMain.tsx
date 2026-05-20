@@ -1,8 +1,7 @@
 import { useEffect, type MouseEvent, type PropsWithChildren } from 'react'
 
-import { selectIsDrawerOpen, useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 import { ShellDrawer } from '@/app/layouts/shell/ShellDrawer'
-import type { ShellDrawerKind } from '@/app/layouts/shell/types'
+import type { EntityDetailRouteState } from '@/features/entity-detail'
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -15,8 +14,8 @@ import { FolderPlusIcon, SquarePenIcon } from 'lucide-react'
 
 type ShellMainProps = PropsWithChildren<{
 	currentSpaceLabel: string
-	activeDrawerKind: ShellDrawerKind | null
-	activeDrawerId: string | null
+	activeDetail: EntityDetailRouteState
+	isDrawerOpen: boolean
 	onCloseDrawer: () => void
 	onOpenTaskCreateDialog: () => void
 	onOpenProjectCreateDialog: () => void
@@ -51,14 +50,12 @@ const INTERACTIVE_TARGET_SELECTOR = [
 export function ShellMain({
 	children,
 	currentSpaceLabel,
-	activeDrawerKind,
-	activeDrawerId,
+	activeDetail,
+	isDrawerOpen,
 	onCloseDrawer,
 	onOpenTaskCreateDialog,
 	onOpenProjectCreateDialog,
 }: ShellMainProps) {
-	const isDrawerOpen = useDrawerStore(selectIsDrawerOpen)
-
 	useEffect(() => {
 		if (!isDrawerOpen) {
 			return undefined
@@ -139,8 +136,7 @@ export function ShellMain({
 							<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>{children}</div>
 
 							<ShellDrawer
-								activeDrawerId={activeDrawerId}
-								activeDrawerKind={activeDrawerKind}
+								activeDetail={activeDetail}
 								currentSpaceLabel={currentSpaceLabel}
 								onClose={onCloseDrawer}
 								open={isDrawerOpen}
