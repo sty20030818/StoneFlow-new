@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EntityDetailDrawerHost } from './EntityDetailDrawerHost'
 
-vi.mock('@/features/task-drawer/ui/TaskDrawerContent', () => ({
-	TaskDrawerContent: ({ taskId, onClose }: { taskId: string; onClose: () => void }) => (
+vi.mock('@/features/task/detail', () => ({
+	TaskDrawer: ({ taskId, onClose }: { taskId: string; onClose: () => void }) => (
 		<div data-testid='task-drawer'>
 			<span>{taskId}</span>
 			<button onClick={onClose} type='button'>

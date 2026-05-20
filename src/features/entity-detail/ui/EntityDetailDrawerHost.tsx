@@ -1,4 +1,4 @@
-import { TaskDrawerContent } from '@/features/task-drawer/ui/TaskDrawerContent'
+import { TaskDrawer } from '@/features/task/detail'
 import { Button } from '@/shared/ui/base/button'
 import { DetailBody, DetailSection } from '@/shared/ui/detail'
 
@@ -9,29 +9,20 @@ type EntityDetailDrawerHostProps = {
 	open: boolean
 	currentSpaceLabel: string
 	onClose: () => void
-	activeTab?: 'details' | 'activity'
 }
 
 export function EntityDetailDrawerHost({
 	activeDetail,
 	open,
-	currentSpaceLabel,
+	currentSpaceLabel: _currentSpaceLabel,
 	onClose,
-	activeTab = 'details',
 }: EntityDetailDrawerHostProps) {
 	if (!open || !activeDetail) {
 		return null
 	}
 
 	if (activeDetail.kind === 'task') {
-		return (
-			<TaskDrawerContent
-				activeTab={activeTab}
-				currentSpaceLabel={currentSpaceLabel}
-				onClose={onClose}
-				taskId={activeDetail.id}
-			/>
-		)
+		return <TaskDrawer onClose={onClose} taskId={activeDetail.id} />
 	}
 
 	return <ProjectDetailPlaceholder onClose={onClose} projectId={activeDetail.id} />
