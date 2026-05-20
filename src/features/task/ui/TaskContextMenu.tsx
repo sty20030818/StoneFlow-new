@@ -1,6 +1,18 @@
 import type { TaskStatus } from '@/shared/types'
+import { cn } from '@/shared/lib/utils'
 import type { ReactNode } from 'react'
+import { useRef, useState } from 'react'
 
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/shared/ui/base/alert-dialog'
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -49,6 +61,8 @@ type TaskContextMenuProps = {
 	onArchive?: () => void
 	moveToTrashLabel?: string
 	archiveActionLabel?: string
+	moveToTrashRequiresConfirm?: boolean
+	archiveRequiresConfirm?: boolean
 }
 
 type TaskContextSelectionValues = {
@@ -99,7 +113,11 @@ export function TaskContextMenu({
 	onArchive,
 	moveToTrashLabel = '移入回收站',
 	archiveActionLabel = '归档任务',
+	moveToTrashRequiresConfirm = true,
+	archiveRequiresConfirm = true,
 }: TaskContextMenuProps) {
+	const [pendingDangerAction, setPendingDangerAction] = useState<TaskDangerActionKind | null>(null)
+	const confirmActionRef = useRef<HTMLButtonElement>(null)
 	const canMoveToTrash = !!onMoveToTrash
 	const canArchive = !!onArchive
 	const canSelectDueDate = !!onSelectDueDate
@@ -118,171 +136,264 @@ export function TaskContextMenu({
 	)
 	const projectIndicatorValues = getIndicatorValues(selectionValues?.projectIds ?? [projectId])
 	const projectNameIndicatorValues = getIndicatorValues(selectionValues?.projectNames ?? [projectName])
+	const confirmCopy =
+		pendingDangerAction === 'archive'
+			? {
+					title: '归档任务？',
+					description: '任务归档后会移到归档页，后续仍可恢复。',
+					confirmLabel: '归档',
+					destructive: false,
+				}
+			: pendingDangerAction === 'delete'
+				? {
+						title: '移入回收站？',
+						description: '任务移入回收站后仍可恢复。',
+						confirmLabel: moveToTrashLabel,
+						destructive: true,
+					}
+				: null
+
+	function requestDangerActionConfirm(kind: TaskDangerActionKind) {
+		setPendingDangerAction(kind)
+	}
+
+	function handleDangerActionOpenChange(open: boolean) {
+		if (!open) {
+			setPendingDangerAction(null)
+		}
+	}
+
+	function handleConfirmDangerAction() {
+		const action = pendingDangerAction
+		setPendingDangerAction(null)
+		if (action === 'archive') {
+			onArchive?.()
+			return
+		}
+		if (action === 'delete') {
+			onMoveToTrash?.()
+		}
+	}
 
 	return (
-		<ContextMenu>
-			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
-				{children}
-			</ContextMenuTrigger>
-			<ContextMenuContent className='w-56'>
-				<ContextMenuGroup>
-					<ContextMenuSub>
-						<PropertySubTrigger
-							disabled={isBusy}
-							icon={<TaskStatusIndicator status={status} />}
-							shortcut={TASK_CONTEXT_SHORTCUTS.status}
-						>
-							状态
-						</PropertySubTrigger>
-						<ContextMenuSubContent className='w-64'>
-							<ContextMenuLabel className='normal-case tracking-normal'>设置状态为...</ContextMenuLabel>
-							{TASK_STATUS_OPTIONS.map((option, index) => (
-								<PropertyOptionItem
-									indicator={getPropertyOptionIndicator(statusIndicatorValues, option.value)}
-									icon={<TaskStatusIndicator status={option.value} />}
-									key={option.value}
-									onSelect={() => onSelectStatus(option.value)}
-									shortcut={String(index + 1)}
-								>
-									{option.label}
-								</PropertyOptionItem>
-							))}
-						</ContextMenuSubContent>
-					</ContextMenuSub>
-
-					<ContextMenuSub>
-						<PropertySubTrigger
-							disabled={isBusy}
-							icon={<PriorityIcon priority={priority} />}
-							shortcut={TASK_CONTEXT_SHORTCUTS.priority}
-						>
-							优先级
-						</PropertySubTrigger>
-						<ContextMenuSubContent className='w-64'>
-							<ContextMenuLabel className='normal-case tracking-normal'>设置优先级为...</ContextMenuLabel>
-							{TASK_PRIORITY_OPTIONS.map((option, index) => (
-								<PropertyOptionItem
-									indicator={getPropertyOptionIndicator(
-										priorityIndicatorValues,
-										String(option.value),
-									)}
-									icon={<PriorityIcon priority={option.value} />}
-									key={option.value}
-									onSelect={() => onSelectPriority(option.value)}
-									shortcut={String(index)}
-								>
-									{option.label}
-								</PropertyOptionItem>
-							))}
-						</ContextMenuSubContent>
-					</ContextMenuSub>
-
-					{canSelectDueDate ? (
+		<>
+			<ContextMenu>
+				<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
+					{children}
+				</ContextMenuTrigger>
+				<ContextMenuContent className='w-56'>
+					<ContextMenuGroup>
 						<ContextMenuSub>
 							<PropertySubTrigger
 								disabled={isBusy}
-								icon={<CalendarDaysIcon />}
-								shortcut={TASK_CONTEXT_SHORTCUTS.date}
+								icon={<TaskStatusIndicator status={status} />}
+								shortcut={TASK_CONTEXT_SHORTCUTS.status}
 							>
-								时间
+								状态
 							</PropertySubTrigger>
 							<ContextMenuSubContent className='w-64'>
-								<ContextMenuLabel className='normal-case tracking-normal'>设置时间为...</ContextMenuLabel>
-								{dateOptions.map((option) => (
+								<ContextMenuLabel className='normal-case tracking-normal'>设置状态为...</ContextMenuLabel>
+								{TASK_STATUS_OPTIONS.map((option, index) => (
 									<PropertyOptionItem
-										indicator={
-											!option.disabled
-												? getPropertyOptionIndicator(dueDateIndicatorValues, option.value)
-												: null
-										}
-										disabled={option.disabled}
-										icon={getTaskContextDateIcon(option.key)}
-										key={option.key}
-										onSelect={() => {
-											if (!option.disabled) {
-												onSelectDueDate?.(option.value)
-											}
-										}}
-										shortcut={option.shortcut}
-										trailing={option.disabledReason ?? option.meta}
+										indicator={getPropertyOptionIndicator(statusIndicatorValues, option.value)}
+										icon={<TaskStatusIndicator status={option.value} />}
+										key={option.value}
+										onSelect={() => onSelectStatus(option.value)}
+										shortcut={String(index + 1)}
 									>
 										{option.label}
 									</PropertyOptionItem>
 								))}
 							</ContextMenuSubContent>
 						</ContextMenuSub>
-					) : null}
 
-					{canSelectProject ? (
 						<ContextMenuSub>
 							<PropertySubTrigger
 								disabled={isBusy}
-								icon={<FolderIcon />}
-								shortcut={TASK_CONTEXT_SHORTCUTS.project}
+								icon={<PriorityIcon priority={priority} />}
+								shortcut={TASK_CONTEXT_SHORTCUTS.priority}
 							>
-								项目
+								优先级
 							</PropertySubTrigger>
 							<ContextMenuSubContent className='w-64'>
-								<ContextMenuLabel className='normal-case tracking-normal'>移动到项目...</ContextMenuLabel>
-								<PropertyOptionItem
-									indicator={getPropertyOptionIndicator(projectIndicatorValues, null)}
-									icon={<TargetIcon />}
-									onSelect={() => onSelectNoProject?.()}
-									shortcut='0'
-								>
-									独立事项
-								</PropertyOptionItem>
-								{projectOptions.map((project, index) => (
+								<ContextMenuLabel className='normal-case tracking-normal'>设置优先级为...</ContextMenuLabel>
+								{TASK_PRIORITY_OPTIONS.map((option, index) => (
 									<PropertyOptionItem
-										indicator={getProjectOptionIndicator({
-											projectId: project.id,
-											projectName: project.name,
-											projectIds: projectIndicatorValues,
-											projectNames: projectNameIndicatorValues,
-										})}
-										icon={<FolderIcon />}
-										key={project.id}
-										onSelect={() => onSelectProject?.(project.id)}
-										shortcut={index < 9 ? String(index + 1) : undefined}
+										indicator={getPropertyOptionIndicator(
+											priorityIndicatorValues,
+											String(option.value),
+										)}
+										icon={<PriorityIcon priority={option.value} />}
+										key={option.value}
+										onSelect={() => onSelectPriority(option.value)}
+										shortcut={String(index)}
 									>
-										{project.name}
+										{option.label}
 									</PropertyOptionItem>
 								))}
-								{projectOptions.length === 0 ? (
-									<ContextMenuItem disabled>
-										<FolderIcon />
-										暂无可移动项目
-									</ContextMenuItem>
-								) : null}
 							</ContextMenuSubContent>
 						</ContextMenuSub>
+						{canSelectDueDate ? (
+							<ContextMenuSub>
+								<PropertySubTrigger
+									disabled={isBusy}
+									icon={<CalendarDaysIcon />}
+									shortcut={TASK_CONTEXT_SHORTCUTS.date}
+								>
+									时间
+								</PropertySubTrigger>
+								<ContextMenuSubContent className='w-64'>
+									<ContextMenuLabel className='normal-case tracking-normal'>
+										设置时间为...
+									</ContextMenuLabel>
+									{dateOptions.map((option) => (
+										<PropertyOptionItem
+											indicator={
+												!option.disabled
+													? getPropertyOptionIndicator(dueDateIndicatorValues, option.value)
+													: null
+											}
+											disabled={option.disabled}
+											icon={getTaskContextDateIcon(option.key)}
+											key={option.key}
+											onSelect={() => {
+												if (!option.disabled) {
+													onSelectDueDate?.(option.value)
+												}
+											}}
+											shortcut={option.shortcut}
+											trailing={option.disabledReason ?? option.meta}
+										>
+											{option.label}
+										</PropertyOptionItem>
+									))}
+								</ContextMenuSubContent>
+							</ContextMenuSub>
+						) : null}
+
+						{canSelectProject ? (
+							<ContextMenuSub>
+								<PropertySubTrigger
+									disabled={isBusy}
+									icon={<FolderIcon />}
+									shortcut={TASK_CONTEXT_SHORTCUTS.project}
+								>
+									项目
+								</PropertySubTrigger>
+								<ContextMenuSubContent className='w-64'>
+									<ContextMenuLabel className='normal-case tracking-normal'>
+										移动到项目...
+									</ContextMenuLabel>
+									<PropertyOptionItem
+										indicator={getPropertyOptionIndicator(projectIndicatorValues, null)}
+										icon={<TargetIcon />}
+										onSelect={() => onSelectNoProject?.()}
+										shortcut='0'
+									>
+										独立事项
+									</PropertyOptionItem>
+									{projectOptions.map((project, index) => (
+										<PropertyOptionItem
+											indicator={getProjectOptionIndicator({
+												projectId: project.id,
+												projectName: project.name,
+												projectIds: projectIndicatorValues,
+												projectNames: projectNameIndicatorValues,
+											})}
+											icon={<FolderIcon />}
+											key={project.id}
+											onSelect={() => onSelectProject?.(project.id)}
+											shortcut={index < 9 ? String(index + 1) : undefined}
+										>
+											{project.name}
+										</PropertyOptionItem>
+									))}
+									{projectOptions.length === 0 ? (
+										<ContextMenuItem disabled>
+											<FolderIcon />
+											暂无可移动项目
+										</ContextMenuItem>
+									) : null}
+								</ContextMenuSubContent>
+							</ContextMenuSub>
+						) : null}
+					</ContextMenuGroup>
+					{canMoveToTrash || canArchive ? (
+						<>
+							<ContextMenuSeparator />
+							<ContextMenuGroup>
+								{canArchive ? (
+									<ContextMenuItem
+										disabled={isBusy}
+										onSelect={() => {
+											if (archiveRequiresConfirm) {
+												requestDangerActionConfirm('archive')
+												return
+											}
+											onArchive?.()
+										}}
+									>
+										<ArchiveIcon />
+										<span>{archiveActionLabel}</span>
+										<MenuShortcut>{TASK_CONTEXT_SHORTCUTS.archive}</MenuShortcut>
+									</ContextMenuItem>
+								) : null}
+								{canMoveToTrash ? (
+									<ContextMenuItem
+										disabled={isBusy}
+										onSelect={() => {
+											if (moveToTrashRequiresConfirm) {
+												requestDangerActionConfirm('delete')
+												return
+											}
+											onMoveToTrash?.()
+										}}
+										variant='destructive'
+									>
+										<Trash2Icon />
+										<span>{moveToTrashLabel}</span>
+										<MenuShortcut>{deleteShortcut}</MenuShortcut>
+									</ContextMenuItem>
+								) : null}
+							</ContextMenuGroup>
+						</>
 					) : null}
-				</ContextMenuGroup>
-				{canMoveToTrash || canArchive ? (
-					<>
-						<ContextMenuSeparator />
-						<ContextMenuGroup>
-							{canArchive ? (
-								<ContextMenuItem disabled={isBusy} onSelect={onArchive}>
-									<ArchiveIcon />
-									<span>{archiveActionLabel}</span>
-									<MenuShortcut>{TASK_CONTEXT_SHORTCUTS.archive}</MenuShortcut>
-								</ContextMenuItem>
-							) : null}
-							{canMoveToTrash ? (
-								<ContextMenuItem disabled={isBusy} onSelect={onMoveToTrash} variant='destructive'>
-									<Trash2Icon />
-									<span>{moveToTrashLabel}</span>
-									<MenuShortcut>{deleteShortcut}</MenuShortcut>
-								</ContextMenuItem>
-							) : null}
-						</ContextMenuGroup>
-					</>
-				) : null}
-			</ContextMenuContent>
-		</ContextMenu>
+				</ContextMenuContent>
+			</ContextMenu>
+			<AlertDialog
+				onOpenChange={handleDangerActionOpenChange}
+				open={pendingDangerAction !== null}
+			>
+				<AlertDialogContent
+					onOpenAutoFocus={(event) => {
+						event.preventDefault()
+						confirmActionRef.current?.focus({ preventScroll: true })
+					}}
+				>
+					<AlertDialogHeader>
+						<AlertDialogTitle>{confirmCopy?.title ?? '确认操作'}</AlertDialogTitle>
+						<AlertDialogDescription>{confirmCopy?.description ?? ''}</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel onClick={() => setPendingDangerAction(null)}>取消</AlertDialogCancel>
+						<AlertDialogAction
+							className={cn(confirmCopy?.destructive && destructiveActionClass)}
+							onClick={(event) => {
+								event.preventDefault()
+								handleConfirmDangerAction()
+							}}
+							ref={confirmActionRef}
+						>
+							{confirmCopy?.confirmLabel ?? '确认'}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
 	)
 }
+
+type TaskDangerActionKind = 'archive' | 'delete'
 
 function PropertySubTrigger({
 	children,
@@ -353,6 +464,9 @@ function PropertyOptionIndicatorIcon({ indicator }: { indicator: PropertyOptionI
 function MenuShortcut({ children }: { children: ReactNode }) {
 	return <span className='ml-auto text-[11px] text-muted-foreground'>{children}</span>
 }
+
+const destructiveActionClass =
+	'border-destructive/20 bg-destructive/10 text-destructive hover:bg-destructive/15 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40'
 
 function getIndicatorValues<T>(values: T[]) {
 	return new Set(values)
