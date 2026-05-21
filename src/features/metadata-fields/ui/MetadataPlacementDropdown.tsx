@@ -35,8 +35,9 @@ export function MetadataPlacementDropdown({
 	onChange,
 }: MetadataPlacementDropdownProps) {
 	const currentOption = findMetadataPlacementOption(options, value)
+	const resolvedValue = currentOption?.value ?? options[0]?.value
 
-	if (!currentOption) {
+	if (!currentOption || !resolvedValue) {
 		return null
 	}
 
@@ -50,7 +51,7 @@ export function MetadataPlacementDropdown({
 			label={label}
 			options={options}
 			stopPropagation={stopPropagation}
-			value={value}
+			value={resolvedValue}
 			values={values}
 			onChange={onChange}
 		/>

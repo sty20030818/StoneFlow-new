@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { AutosaveController } from '@/shared/autosave'
@@ -32,6 +32,30 @@ describe('TaskPropertiesSection', () => {
 
 		expect(screen.getByRole('button', { name: '状态' })).toHaveAttribute('data-variant', 'outline')
 		expect(screen.getByRole('button', { name: '优先级' })).toHaveAttribute('data-variant', 'outline')
+	})
+
+	it('状态菜单使用统一 dropdown 结构', async () => {
+		render(<TaskPropertiesSection autosave={createAutosaveController()} />)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '状态' }))
+
+		const menu = await screen.findByRole('menu')
+		expect(menu).toHaveAttribute('data-drawer-owned-overlay', 'true')
+		expect(screen.getByRole('menuitem', { name: /待执行/ })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: /已完成/ })).toBeInTheDocument()
+	})
+
+	it('日期菜单包含统一 preset，且自定义日期禁用', async () => {
+		render(<TaskPropertiesSection autosave={createAutosaveController()} />)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止日期' }))
+
+		expect(await screen.findByRole('menuitem', { name: /未设置/ })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: /今天/ })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: /明天/ })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: /本周/ })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: /一周后/ })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).toHaveAttribute('data-disabled')
 	})
 })
 
