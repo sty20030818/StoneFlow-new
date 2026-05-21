@@ -321,6 +321,57 @@ async fn list_sidebar_projects_should_respect_show_completed_and_max_visible() {
     assert_eq!(limited.len(), 1);
 }
 
+#[tokio::test]
+async fn project_description_should_keep_newlines_and_allow_blank() {
+    let temp_dir =
+        TempDatabaseDir::new("stoneflow-project-description-newlines").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_project_service(&database);
+    let space = SpaceRepository::new(database.connection().clone())
+        .list_visible()
+        .await
+        .expect("list visible spaces should succeed")
+        .into_iter()
+        .next()
+        .expect("default space should exist");
+
+    let blank = service
+        .create_project(CreateProjectInput {
+            space_id: space.id.clone(),
+            name: "空说明".to_owned(),
+            description: Some("\n  \n".to_owned()),
+            due_at: None,
+        })
+        .await
+        .expect("create project should succeed");
+    assert_eq!(blank.description, None);
+
+    let created = service
+        .create_project(CreateProjectInput {
+            space_id: space.id,
+            name: "多行说明".to_owned(),
+            description: Some("\n第一行\n第二行\n".to_owned()),
+            due_at: None,
+        })
+        .await
+        .expect("create project with description should succeed");
+    assert_eq!(created.description.as_deref(), Some("\n第一行\n第二行\n"));
+
+    let cleared = service
+        .update_project(crate::application::services::UpdateProjectInput {
+            project_id: created.id,
+            name: None,
+            description: Some(Some("\n  \n".to_owned())),
+            due_at: None,
+            sort_order: None,
+        })
+        .await
+        .expect("clear project description should succeed");
+    assert_eq!(cleared.description, None);
+}
+
 fn build_project_service(
     database: &crate::infrastructure::database::DatabaseRuntimeState,
 ) -> ProjectService {

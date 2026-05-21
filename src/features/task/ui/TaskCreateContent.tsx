@@ -142,7 +142,7 @@ export function TaskCreateContent({
 					spaceId: placement === 'project' ? null : spaceId,
 					placement: buildCreatePlacementInput(placement, projectId || null),
 					title: title.trim(),
-					note: note.trim() ? note.trim() : null,
+					note: note.trim() ? note : null,
 					status,
 					priority,
 				})

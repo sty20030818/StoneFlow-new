@@ -65,7 +65,7 @@ export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreate
 				await createProject({
 					spaceId: selectedSpaceId,
 					name: name.trim(),
-					description: description.trim() || null,
+					description: description.trim() ? description : null,
 					dueAt: null,
 				})
 

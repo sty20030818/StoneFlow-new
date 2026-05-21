@@ -7,7 +7,6 @@ export function TaskLabelsSection() {
 		<DetailFieldRow className='items-center' label='标签' labelClassName='pt-0'>
 			<DetailMetaButton
 				disabled
-				className='w-full'
 				icon={<PlusIcon className='size-3.5' />}
 				label='添加标签'
 			/>

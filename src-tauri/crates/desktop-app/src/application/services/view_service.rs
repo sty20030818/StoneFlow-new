@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use chrono::{DateTime, Datelike, Duration, FixedOffset, NaiveDate};
 use sea_orm::TransactionTrait;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{json, Value};
 use stoneflow_entity::{
     common::{ActivityEntityKind, TaskStatus, ViewEntityKind, ViewKind},
@@ -108,10 +108,12 @@ pub struct UpdateViewInput {
     pub view_id: String,
     pub name: Option<String>,
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub description: Option<Option<String>>,
     pub filters: Option<Value>,
     pub sort: Option<Vec<ViewSortRuleDto>>,
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub group_by: Option<Option<String>>,
 }
 
@@ -235,7 +237,7 @@ impl ViewService {
         }
 
         let name = normalize_required_text(&input.name, "View name")?;
-        let description = normalize_optional_text(input.description);
+        let description = normalize_optional_long_text(input.description);
         let sort_rules = normalize_sort_rules(input.sort)?;
         let filters = normalize_filters(input.filters)?;
         let group_by = normalize_group_by(input.group_by)?;
@@ -320,7 +322,7 @@ impl ViewService {
             Some(name) => Some(normalize_required_text(&name, "View name")?),
             None => None,
         };
-        let description = input.description.map(normalize_optional_text_option);
+        let description = input.description.map(normalize_optional_long_text_option);
         let filters = input.filters.map(normalize_filters).transpose()?;
         let sort_rules = input.sort.map(normalize_sort_rules).transpose()?;
         let group_by = input.group_by.map(normalize_group_by_option).transpose()?;
@@ -700,6 +702,15 @@ fn normalize_task_scope(input: &TaskScopeInput) -> Result<NormalizedTaskScope, A
     }
 }
 
+fn deserialize_nullable_string_field<'de, D>(
+    deserializer: D,
+) -> Result<Option<Option<String>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer).map(Some)
+}
+
 fn normalize_task_placement(
     input: Option<ListTasksPlacementInput>,
 ) -> Result<TaskPlacementQuery, AppError> {
@@ -761,8 +772,18 @@ fn normalize_optional_text(value: Option<String>) -> Option<String> {
     })
 }
 
-fn normalize_optional_text_option(value: Option<String>) -> Option<String> {
-    normalize_optional_text(value)
+fn normalize_optional_long_text(value: Option<String>) -> Option<String> {
+    value.and_then(|value| {
+        if value.trim().is_empty() {
+            None
+        } else {
+            Some(value)
+        }
+    })
+}
+
+fn normalize_optional_long_text_option(value: Option<String>) -> Option<String> {
+    normalize_optional_long_text(value)
 }
 
 fn json_option_string(value: &Option<String>) -> Option<Value> {

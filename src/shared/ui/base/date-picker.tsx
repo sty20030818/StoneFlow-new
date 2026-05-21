@@ -14,6 +14,8 @@ type DatePickerProps = {
 	onChange?: (value: string) => void
 	placeholder?: string
 	className?: string
+	contentClassName?: string
+	contentDrawerOwnedOverlay?: boolean
 	disabled?: boolean
 }
 
@@ -33,6 +35,8 @@ export function DatePicker({
 	onChange,
 	placeholder = '选择日期',
 	className,
+	contentClassName,
+	contentDrawerOwnedOverlay = false,
 	disabled = false,
 }: DatePickerProps) {
 	const [open, setOpen] = React.useState(false)
@@ -54,7 +58,11 @@ export function DatePicker({
 					{date ? format(date, 'PPP') : <span>{placeholder}</span>}
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent className='w-auto p-0' align='start'>
+			<PopoverContent
+				align='start'
+				className={cn('w-auto p-0', contentClassName)}
+				data-drawer-owned-overlay={contentDrawerOwnedOverlay ? 'true' : undefined}
+			>
 				<Calendar
 					mode='single'
 					selected={date}

@@ -57,7 +57,49 @@ describe('useTaskAutosaveAdapter', () => {
 		expect(updateTaskMock()).toHaveBeenCalledWith({
 			taskId: 'task-1',
 			title: '新标题',
-			note: '新备注',
+			note: '  新备注  ',
+		})
+	})
+
+	it('备注允许为空，并保留非空备注的换行内容', async () => {
+		const { result, rerender } = renderHook(({ base }) => useTaskAutosaveAdapter({ base }), {
+			initialProps: {
+				base: createTaskDetailDraft({
+					...baseTask,
+					note: '已有备注',
+				}),
+			},
+		})
+
+		act(() => {
+			result.current.setField('note', '\n\n', { saveMode: 'debounced' })
+		})
+
+		await act(async () => {
+			vi.advanceTimersByTime(600)
+			await Promise.resolve()
+		})
+
+		expect(updateTaskMock()).toHaveBeenCalledWith({
+			taskId: 'task-1',
+			note: null,
+		})
+
+		updateTaskMock().mockClear()
+		rerender({ base: createTaskDetailDraft(baseTask) })
+
+		act(() => {
+			result.current.setField('note', '  第一行\n第二行  ', { saveMode: 'debounced' })
+		})
+
+		await act(async () => {
+			vi.advanceTimersByTime(600)
+			await Promise.resolve()
+		})
+
+		expect(updateTaskMock()).toHaveBeenCalledWith({
+			taskId: 'task-1',
+			note: '  第一行\n第二行  ',
 		})
 	})
 

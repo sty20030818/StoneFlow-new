@@ -36,7 +36,6 @@ export function normalizeTaskDetailDraft(draft: TaskDetailDraft): TaskDetailDraf
 	return {
 		...draft,
 		title: draft.title.trim(),
-		note: draft.note.trim(),
 		dueAt: draft.dueAt.trim(),
 		scheduledAt: draft.scheduledAt.trim(),
 		reminderAt: draft.reminderAt.trim(),
@@ -55,7 +54,7 @@ export function getTaskDetailPatch(
 		patch.title = draft.title
 	}
 
-	const nextNote = draft.note || null
+	const nextNote = draft.note.trim() ? draft.note : null
 	const baseNote = base.note || null
 	if (nextNote !== baseNote) {
 		patch.note = nextNote

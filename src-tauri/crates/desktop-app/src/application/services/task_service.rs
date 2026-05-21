@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use chrono::NaiveDate;
 use sea_orm::TransactionTrait;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::json;
 use stoneflow_entity::{
     common::{ActivityEntityKind, TaskStatus},
@@ -167,17 +167,22 @@ pub struct UpdateTaskInput {
     pub task_id: String,
     pub title: Option<String>,
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub note: Option<Option<String>>,
     pub status: Option<TaskStatus>,
     pub priority: Option<i32>,
     pub space_id: Option<String>,
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub project_id: Option<Option<String>>,
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub due_at: Option<Option<String>>,
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub scheduled_at: Option<Option<String>>,
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub reminder_at: Option<Option<String>>,
 }
 
@@ -294,7 +299,7 @@ impl TaskService {
     /// 创建 Task。
     pub async fn create_task(&self, input: CreateTaskInput) -> Result<TaskDetailDto, AppError> {
         let title = normalize_required_text(&input.title, "Task title")?;
-        let note = normalize_optional_text(input.note);
+        let note = normalize_optional_long_text(input.note);
         let due_at = normalize_optional_text(input.due_at);
         let scheduled_at = normalize_optional_text(input.scheduled_at);
         let reminder_at = normalize_optional_text(input.reminder_at);
@@ -453,7 +458,7 @@ impl TaskService {
         }
 
         if let Some(note) = input.note {
-            let note = normalize_optional_text_option(note);
+            let note = normalize_optional_long_text_option(note);
             if note != current.note {
                 push_change(
                     &mut changes,
@@ -1125,6 +1130,15 @@ fn normalize_project_id(value: &str) -> Result<String, AppError> {
     normalize_required_text(value, "Project id")
 }
 
+fn deserialize_nullable_string_field<'de, D>(
+    deserializer: D,
+) -> Result<Option<Option<String>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer).map(Some)
+}
+
 fn normalize_priority(priority: i32) -> Result<i32, AppError> {
     if (0..=4).contains(&priority) {
         Ok(priority)
@@ -1144,6 +1158,16 @@ fn normalize_optional_text(value: Option<String>) -> Option<String> {
     })
 }
 
+fn normalize_optional_long_text(value: Option<String>) -> Option<String> {
+    value.and_then(|text| {
+        if text.trim().is_empty() {
+            None
+        } else {
+            Some(text)
+        }
+    })
+}
+
 fn normalize_optional_text_option(value: Option<String>) -> Option<String> {
     value.and_then(|text| {
         let trimmed = text.trim();
@@ -1153,6 +1177,10 @@ fn normalize_optional_text_option(value: Option<String>) -> Option<String> {
             Some(trimmed.to_owned())
         }
     })
+}
+
+fn normalize_optional_long_text_option(value: Option<String>) -> Option<String> {
+    normalize_optional_long_text(value)
 }
 
 fn json_option_string(value: &Option<String>) -> Option<serde_json::Value> {

@@ -51,12 +51,11 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 					<DropdownMenuTrigger asChild>
 						<DetailMetaButton
 							aria-label='状态'
-							className='w-full'
 							icon={<TaskStatusIndicator status={autosave.draft.status} />}
 							label={formatTaskStatusLabel(autosave.draft.status)}
 						/>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align='start' sideOffset={6}>
+					<DropdownMenuContent align='start' data-drawer-owned-overlay='true' sideOffset={6}>
 						<ShortcutDigitSelectLayer
 							items={statusShortcutItems}
 							onSelect={(item) =>
@@ -96,12 +95,11 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 					<DropdownMenuTrigger asChild>
 						<DetailMetaButton
 							aria-label='优先级'
-							className='w-full'
 							icon={<PriorityIcon priority={autosave.draft.priority} size='sm' />}
 							label={formatPriorityLabel(autosave.draft.priority)}
 						/>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align='start' sideOffset={6}>
+					<DropdownMenuContent align='start' data-drawer-owned-overlay='true' sideOffset={6}>
 						<ShortcutDigitSelectLayer
 							items={priorityShortcutItems}
 							onSelect={(item) =>
@@ -191,10 +189,10 @@ function renderDateMenu({
 }) {
 	return (
 		<DropdownMenu>
-		<DropdownMenuTrigger asChild>
-			<DetailMetaButton aria-label={ariaLabel} className='w-full' icon={icon} label={label} />
-		</DropdownMenuTrigger>
-			<DropdownMenuContent align='start' sideOffset={6}>
+			<DropdownMenuTrigger asChild>
+				<DetailMetaButton aria-label={ariaLabel} icon={icon} label={label} />
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align='start' data-drawer-owned-overlay='true' sideOffset={6}>
 				<ShortcutDigitSelectLayer
 					items={menu.shortcutItems}
 					onSelect={(item) => onSelect(String(item.value))}

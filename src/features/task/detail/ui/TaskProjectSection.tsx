@@ -53,7 +53,6 @@ export function TaskProjectSection({ autosave, projects }: TaskProjectSectionPro
 				<DropdownMenuTrigger asChild>
 					<DetailMetaButton
 						aria-label='项目'
-						className='w-full'
 						icon={
 							currentProject ? (
 								<FolderIcon className='size-3.5' />
@@ -64,7 +63,7 @@ export function TaskProjectSection({ autosave, projects }: TaskProjectSectionPro
 						label={currentProject?.name ?? '独立事项'}
 					/>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align='start' sideOffset={6}>
+				<DropdownMenuContent align='start' data-drawer-owned-overlay='true' sideOffset={6}>
 					<ShortcutDigitSelectLayer
 						items={shortcutItems}
 						onSelect={(item) =>

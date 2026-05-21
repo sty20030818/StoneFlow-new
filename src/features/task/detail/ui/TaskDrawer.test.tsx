@@ -104,6 +104,7 @@ describe('TaskDrawer', () => {
 		expect(body).toBeInTheDocument()
 		expect(screen.getByLabelText('任务标题')).toHaveClass('border-0')
 		expect(screen.getByLabelText('任务备注')).toHaveClass('border-0')
+		expect(screen.getByLabelText('任务备注')).toHaveClass('min-h-40')
 		// 属性、项目、标签现在使用 DetailFieldRow label-value 布局，不再是 h3 heading
 		expect(container.querySelector('[data-task-properties="stack"]')).toBeInTheDocument()
 		expect(screen.getByText('项目')).toBeInTheDocument()

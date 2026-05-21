@@ -216,7 +216,7 @@ export function ViewEditorDialog({
 			await onUpdate({
 				viewId: view.id,
 				name: name.trim(),
-				description: description.trim() || null,
+				description: description.trim() ? description : null,
 				filters,
 				sort: [sortRule],
 				groupBy,
@@ -225,7 +225,7 @@ export function ViewEditorDialog({
 			await onCreate({
 				entityType: 'task',
 				name: name.trim(),
-				description: description.trim() || null,
+				description: description.trim() ? description : null,
 				filters,
 				sort: [sortRule],
 				groupBy,

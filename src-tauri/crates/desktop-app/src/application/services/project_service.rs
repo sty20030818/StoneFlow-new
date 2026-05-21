@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use sea_orm::TransactionTrait;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::json;
 use stoneflow_entity::{common::ActivityEntityKind, project, space};
 use uuid::Uuid;
@@ -107,8 +107,10 @@ pub struct UpdateProjectInput {
     pub project_id: String,
     pub name: Option<String>,
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub description: Option<Option<String>>,
     #[serde(default)]
+    #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub due_at: Option<Option<String>>,
     pub sort_order: Option<i32>,
 }
@@ -272,7 +274,7 @@ impl ProjectService {
     ) -> Result<ProjectDetailDto, AppError> {
         let space_id = normalize_space_id(&input.space_id)?;
         let name = normalize_required_text(&input.name, "Project name")?;
-        let description = normalize_optional_text(input.description);
+        let description = normalize_optional_long_text(input.description);
         let due_at = normalize_optional_text(input.due_at);
         let space = self.require_visible_space(&space_id).await?;
 
@@ -358,7 +360,7 @@ impl ProjectService {
         ensure_project_mutable(&current)?;
 
         let next_name = normalize_optional_required_text(input.name.as_deref(), "Project name")?;
-        let next_description = normalize_optional_nullable_text(input.description);
+        let next_description = normalize_optional_nullable_long_text(input.description);
         let next_due_at = normalize_optional_nullable_text(input.due_at);
 
         if let Some(name) = next_name.as_deref() {
@@ -695,6 +697,15 @@ fn normalize_scope(input: &ProjectScopeInput) -> Result<NormalizedScope, AppErro
     }
 }
 
+fn deserialize_nullable_string_field<'de, D>(
+    deserializer: D,
+) -> Result<Option<Option<String>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer).map(Some)
+}
+
 fn parse_overview_view(value: &str) -> Result<ProjectOverviewView, AppError> {
     match value.trim() {
         "active" | "active_projects" => Ok(ProjectOverviewView::Active),
@@ -726,6 +737,16 @@ fn normalize_optional_text(value: Option<String>) -> Option<String> {
     })
 }
 
+fn normalize_optional_long_text(value: Option<String>) -> Option<String> {
+    value.and_then(|value| {
+        if value.trim().is_empty() {
+            None
+        } else {
+            Some(value)
+        }
+    })
+}
+
 fn normalize_optional_required_text(
     value: Option<&str>,
     field: &str,
@@ -737,6 +758,10 @@ fn normalize_optional_required_text(
 
 fn normalize_optional_nullable_text(value: Option<Option<String>>) -> Option<Option<String>> {
     value.map(normalize_optional_text)
+}
+
+fn normalize_optional_nullable_long_text(value: Option<Option<String>>) -> Option<Option<String>> {
+    value.map(normalize_optional_long_text)
 }
 
 fn normalize_space_id(space_id: &str) -> Result<String, AppError> {

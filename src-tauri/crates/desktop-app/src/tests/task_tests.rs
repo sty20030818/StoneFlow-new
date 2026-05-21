@@ -321,6 +321,85 @@ async fn update_task_should_manage_status_timestamps() {
 }
 
 #[tokio::test]
+async fn update_task_should_keep_note_newlines_and_allow_blank_note() {
+    let temp_dir =
+        TempDatabaseDir::new("stoneflow-task-note-newlines").expect("temp dir");
+    let database = bootstrap_database(temp_dir.path())
+        .await
+        .expect("database bootstrap should succeed");
+    let service = build_task_service(&database);
+    let space = default_space(&database).await;
+
+    let created = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Inbox,
+                project_id: None,
+            },
+            title: "备注换行".to_owned(),
+            note: Some("已有备注".to_owned()),
+            status: None,
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create task should succeed");
+
+    let updated = service
+        .update_task(UpdateTaskInput {
+            task_id: created.id.clone(),
+            title: None,
+            note: Some(Some("\n第一行\n第二行\n".to_owned())),
+            status: None,
+            priority: None,
+            space_id: None,
+            project_id: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("update note should succeed");
+    assert_eq!(updated.note.as_deref(), Some("\n第一行\n第二行\n"));
+
+    let cleared = service
+        .update_task(UpdateTaskInput {
+            task_id: created.id,
+            title: None,
+            note: Some(Some("\n  \n".to_owned())),
+            status: None,
+            priority: None,
+            space_id: None,
+            project_id: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("clear note should succeed");
+    assert_eq!(cleared.note, None);
+}
+
+#[test]
+fn update_task_input_should_distinguish_null_note_from_missing_note() {
+    let clear_note: UpdateTaskInput = serde_json::from_value(serde_json::json!({
+        "taskId": "task-1",
+        "note": null
+    }))
+    .expect("null note payload should deserialize");
+    let missing_note: UpdateTaskInput = serde_json::from_value(serde_json::json!({
+        "taskId": "task-1"
+    }))
+    .expect("missing note payload should deserialize");
+
+    assert_eq!(clear_note.note, Some(None));
+    assert_eq!(missing_note.note, None);
+}
+
+#[tokio::test]
 async fn list_tasks_should_filter_scope_project_and_lifecycle() {
     let temp_dir = TempDatabaseDir::new("stoneflow-stage6-list-tasks-filters").expect("temp dir");
     let database = bootstrap_database(temp_dir.path())

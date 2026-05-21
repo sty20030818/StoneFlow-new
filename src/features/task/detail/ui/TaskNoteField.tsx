@@ -11,7 +11,7 @@ export function TaskNoteField({ autosave }: TaskNoteFieldProps) {
 	return (
 		<Textarea
 			aria-label='任务备注'
-			className='min-h-20 resize-none border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0'
+			className='min-h-40 resize-none border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0'
 			onChange={(event) =>
 				autosave.setField('note', event.currentTarget.value, { saveMode: 'debounced' })
 			}

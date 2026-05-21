@@ -111,6 +111,22 @@ describe('tasks api', () => {
 		})
 	})
 
+	it('清空备注时保留 note null 语义', async () => {
+		mockedInvoke.mockResolvedValue({})
+
+		await updateTask({
+			taskId: 'task-1',
+			note: null,
+		})
+
+		expect(mockedInvoke).toHaveBeenCalledWith('update_task', {
+			input: expect.objectContaining({
+				taskId: 'task-1',
+				note: null,
+			}),
+		})
+	})
+
 	it('归档、恢复、删除和 Inbox 命令都发送正确载荷', async () => {
 		mockedInvoke.mockResolvedValue({})
 
