@@ -18,6 +18,7 @@ export type MetadataFieldButtonProps = Omit<ComponentProps<typeof Button>, 'chil
 	ariaLabel?: string
 	stopPropagation?: boolean
 	compact?: boolean
+	appearance?: 'default' | 'row-icon'
 }
 
 export function MetadataFieldButton({
@@ -27,6 +28,7 @@ export function MetadataFieldButton({
 	ariaLabel,
 	stopPropagation = false,
 	compact = false,
+	appearance = 'default',
 	className,
 	onClick,
 	onKeyDownCapture,
@@ -36,11 +38,49 @@ export function MetadataFieldButton({
 	type = 'button',
 	...props
 }: MetadataFieldButtonProps) {
+	if (appearance === 'row-icon') {
+		return (
+			<button
+				{...props}
+				aria-label={ariaLabel}
+				className={cn(
+					'flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-foreground shadow-none transition-colors outline-none focus-visible:border-border focus-visible:ring-0 disabled:pointer-events-none disabled:opacity-50',
+					className,
+				)}
+				onClick={(event) => {
+					if (stopPropagation) {
+						stopMetadataFieldEventPropagation(event)
+					}
+					onClick?.(event)
+				}}
+				onKeyDownCapture={(event) => {
+					if (stopPropagation) {
+						stopMetadataFieldEventPropagation(event)
+					}
+					onKeyDownCapture?.(event)
+				}}
+				onPointerDown={(event) => {
+					if (stopPropagation) {
+						stopMetadataFieldEventPropagation(event)
+					}
+					onPointerDown?.(event)
+				}}
+				type={type}
+			>
+				{icon}
+				<span className='sr-only'>{label}</span>
+			</button>
+		)
+	}
+
 	return (
 		<Button
 			{...props}
 			aria-label={ariaLabel}
-			className={cn(compact ? 'max-w-45' : 'max-w-52', className)}
+			className={cn(
+				compact ? 'max-w-45' : 'max-w-52',
+				className,
+			)}
 			onClick={(event) => {
 				if (stopPropagation) {
 					stopMetadataFieldEventPropagation(event)

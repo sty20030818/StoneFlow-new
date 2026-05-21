@@ -53,6 +53,24 @@ export function useTaskListController() {
 		)
 	}
 
+	async function updateTaskScheduledAt(task: TaskListItem, scheduledAt: string | null) {
+		await runTaskAction(task.id, () =>
+			updateTask({
+				taskId: task.id,
+				scheduledAt,
+			}),
+		)
+	}
+
+	async function updateTaskReminderAt(task: TaskListItem, reminderAt: string | null) {
+		await runTaskAction(task.id, () =>
+			updateTask({
+				taskId: task.id,
+				reminderAt,
+			}),
+		)
+	}
+
 	async function updateTaskProject(task: TaskListItem, projectId: string | null) {
 		await runTaskAction(task.id, () =>
 			updateTask({
@@ -107,6 +125,8 @@ export function useTaskListController() {
 		updateTaskStatus,
 		updateTaskPriority,
 		updateTaskDueDate,
+		updateTaskScheduledAt,
+		updateTaskReminderAt,
 		updateTaskProject,
 		toggleTaskStatus,
 		archiveListTask,

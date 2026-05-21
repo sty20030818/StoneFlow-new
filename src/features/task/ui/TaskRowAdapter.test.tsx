@@ -32,13 +32,15 @@ function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
 	}
 }
 
-function buildActions(): TaskRowAdapterProps['actions'] {
+	function buildActions(): TaskRowAdapterProps['actions'] {
 	return {
 		onOpenTask: vi.fn(),
 		onToggleTaskSelection: vi.fn(),
 		onUpdateTaskPriority: vi.fn().mockResolvedValue(undefined),
 		onUpdateTaskStatus: vi.fn().mockResolvedValue(undefined),
 		onUpdateTaskDueDate: vi.fn().mockResolvedValue(undefined),
+		onUpdateTaskScheduledAt: vi.fn().mockResolvedValue(undefined),
+		onUpdateTaskReminderAt: vi.fn().mockResolvedValue(undefined),
 		onToggleTaskStatus: vi.fn().mockResolvedValue(undefined),
 		onArchiveTask: vi.fn().mockResolvedValue(undefined),
 		onDeleteTask: vi.fn().mockResolvedValue(undefined),
@@ -118,10 +120,28 @@ describe('TaskRowAdapter', () => {
 		expect(actions.onOpenTask).not.toHaveBeenCalled()
 	})
 
+	it('三个日期字段都可打开并调用各自更新回调', async () => {
+		const { actions, task } = renderTaskRowAdapter()
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止 任务 A' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
+		expect(actions.onUpdateTaskDueDate).toHaveBeenCalledWith(task, expect.any(String))
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '计划 任务 A' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
+		expect(actions.onUpdateTaskScheduledAt).toHaveBeenCalledWith(task, expect.any(String))
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '提醒 任务 A' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
+		expect(actions.onUpdateTaskReminderAt).toHaveBeenCalledWith(task, expect.any(String))
+	})
+
 	it('项目字段可切换独立事项和项目', async () => {
 		const { projectBinding, task } = renderTaskRowAdapter()
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		await screen.findByRole('menu')
+		expect(getShortcutHintDigits()).toContain('0')
 		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
 		expect(projectBinding?.onSelectNoProject).toHaveBeenCalledWith(task)
 
@@ -146,8 +166,8 @@ describe('TaskRowAdapter', () => {
 		expect(screen.queryByRole('button', { name: '项目' })).not.toBeInTheDocument()
 	})
 
-	it('日期字段无值时不渲染，有值时显示统一按钮文案', () => {
-		const { rerender } = render(
+	it('日期字段无值时不渲染移出日期', async () => {
+		render(
 			<DangerConfirmProvider>
 				<TaskRowAdapter
 					actions={buildActions()}
@@ -162,14 +182,17 @@ describe('TaskRowAdapter', () => {
 			</DangerConfirmProvider>,
 		)
 
-		expect(screen.queryByRole('button', { name: /截止 任务 A/ })).not.toBeInTheDocument()
-		expect(screen.queryByRole('button', { name: /计划 任务 A/ })).not.toBeInTheDocument()
-		expect(screen.queryByRole('button', { name: /提醒 任务 A/ })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '截止 任务 A' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '计划 任务 A' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '提醒 任务 A' })).not.toBeInTheDocument()
+	})
 
-		rerender(
+	it('日期字段有值时显示移出日期并可按 0 清空', async () => {
+		const actions = buildActions()
+		render(
 			<DangerConfirmProvider>
 				<TaskRowAdapter
-					actions={buildActions()}
+					actions={actions}
 					projectBinding={{
 						projectOptions: [{ id: 'project-1', name: '项目 A' }],
 						onSelectProject: vi.fn(),
@@ -181,9 +204,13 @@ describe('TaskRowAdapter', () => {
 			</DangerConfirmProvider>,
 		)
 
-		expect(screen.getByRole('button', { name: /截止 任务 A/ })).toHaveTextContent('截止')
-		expect(screen.getByRole('button', { name: /计划 任务 A/ })).toHaveTextContent('计划')
-		expect(screen.getByRole('button', { name: /提醒 任务 A/ })).toHaveTextContent('提醒')
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止 任务 A' }))
+		expect(await screen.findByRole('menuitem', { name: /移出日期/ })).toBeInTheDocument()
+		expect(getShortcutHintDigits()).toEqual(['0'])
+
+		fireEvent.keyDown(window, { key: '0' })
+		expect(actions.onUpdateTaskDueDate).toHaveBeenCalledWith(buildTask(), null)
+		expect(screen.queryByRole('menu')).not.toBeInTheDocument()
 	})
 
 	it('右键菜单显示属性子菜单入口', async () => {
@@ -398,4 +425,10 @@ function buildContextMenuActions(): TaskContextMenuBulkActions {
 		onSelectProject: vi.fn(),
 		onSelectStatus: vi.fn(),
 	}
+}
+
+function getShortcutHintDigits() {
+	return [...document.querySelectorAll('[data-slot="shortcut-menu-item-hint"]')].map(
+		(item) => item.textContent,
+	)
 }

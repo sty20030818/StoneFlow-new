@@ -161,7 +161,26 @@ describe('metadata-fields', () => {
 		expect(menu).toHaveAttribute('data-drawer-owned-overlay', 'true')
 	})
 
-	it('MetadataDateDropdown 包含固定日期 preset，且自定义日期禁用', async () => {
+	it('row icon-only trigger 不显示文字标签', () => {
+		render(
+			<MetadataFieldDropdown
+				buttonAppearance='row-icon'
+				label='优先级'
+				value={2}
+				options={[
+					{ value: 0, label: '无优先级', isEmptyValue: true },
+					{ value: 2, label: '中', icon: <span>2</span> },
+				]}
+				onChange={() => undefined}
+			/>,
+		)
+
+		const button = screen.getByRole('button', { name: '优先级' })
+		expect(button).not.toHaveTextContent('优先级')
+		expect(button.querySelector('.sr-only')).toHaveTextContent('中')
+	})
+
+	it('MetadataDateDropdown 默认无值时不显示移出日期，且自定义日期禁用', async () => {
 		render(
 			<MetadataDateDropdown
 				icon={<CalendarIcon className='size-3.5' />}
@@ -173,13 +192,56 @@ describe('metadata-fields', () => {
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
 
-		expect(await screen.findByRole('menuitem', { name: /未设置/ })).toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /今天/ })).toBeInTheDocument()
+		expect(screen.queryByRole('menuitem', { name: /移出日期/ })).not.toBeInTheDocument()
+		expect(await screen.findByRole('menuitem', { name: /今天/ })).toBeInTheDocument()
+		expect(getShortcutHintDigits()).toEqual([])
 		expect(screen.getByRole('menuitem', { name: /明天/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /本周/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /一周后/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).toHaveAttribute('data-disabled')
 		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).toHaveTextContent('后续接入')
+	})
+
+	it('MetadataDateDropdown 有值时显示统一日期文案，并仅保留 0 快捷键', async () => {
+		const onChange = vi.fn()
+		render(
+			<MetadataDateDropdown
+				icon={<CalendarIcon className='size-3.5' />}
+				label='截止'
+				value='2026-05-08'
+				onChange={onChange}
+			/>,
+		)
+
+		expect(screen.getByRole('button', { name: '截止' })).toHaveTextContent('截止 5/8')
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
+		expect(await screen.findByRole('menuitem', { name: /移出日期/ })).toBeInTheDocument()
+		expect(getShortcutHintDigits()).toEqual(['0'])
+
+		fireEvent.keyDown(window, { key: '1' })
+		expect(onChange).not.toHaveBeenCalled()
+
+		fireEvent.keyDown(window, { key: '0' })
+		expect(onChange).toHaveBeenCalledWith(null)
+	})
+
+	it('MetadataDateDropdown 无值时不显示移出日期且 0 不生效', async () => {
+		const onChange = vi.fn()
+		render(
+			<MetadataDateDropdown
+				icon={<CalendarIcon className='size-3.5' />}
+				label='截止'
+				value={null}
+				onChange={onChange}
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
+		expect(screen.queryByRole('menuitem', { name: /移出日期/ })).not.toBeInTheDocument()
+		expect(getShortcutHintDigits()).toEqual([])
+
+		fireEvent.keyDown(window, { key: '0' })
+		expect(onChange).not.toHaveBeenCalled()
 	})
 
 	it('MetadataPlacementDropdown 能识别 inbox / noProject / project / space 当前值', async () => {
@@ -248,7 +310,32 @@ describe('metadata-fields', () => {
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 		await screen.findByRole('menu')
-		expect(getShortcutHintDigits()).toEqual(['0', '1', '2', '3'])
+		expect(getShortcutHintDigits()).toEqual(['0'])
+	})
+
+	it('MetadataPlacementDropdown 仅独立事项显示 0', async () => {
+		render(
+			<MetadataPlacementDropdown
+				label='项目'
+				options={[
+					{
+						value: { kind: 'noProject' } satisfies MetadataPlacementValue,
+						label: '独立事项',
+						isEmptyValue: true,
+					},
+					{
+						value: { kind: 'project', projectId: 'project-1' } satisfies MetadataPlacementValue,
+						label: '项目 A',
+					},
+				]}
+				value={{ kind: 'project', projectId: 'project-1' }}
+				onChange={() => undefined}
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		await screen.findByRole('menu')
+		expect(getShortcutHintDigits()).toEqual(['0'])
 	})
 })
 

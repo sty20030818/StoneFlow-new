@@ -1,4 +1,3 @@
-import { formatShortDate } from '@/shared/lib/date'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import type { TaskContextMenuBulkActions } from '@/features/task/ui/useTaskContextMenuBulkActions'
@@ -6,7 +5,7 @@ import {
 	createTaskPlacementMetadataOptions,
 	createTaskPriorityMetadataOptions,
 	createTaskStatusMetadataOptions,
-	MetadataDateButton,
+	MetadataDateDropdown,
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
 	taskDateMetadataIcons,
@@ -49,6 +48,8 @@ type TaskRowAdapterProps = {
 		onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 		onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
 		onUpdateTaskDueDate?: (task: TaskListItem, dueAt: string | null) => Promise<void>
+		onUpdateTaskScheduledAt?: (task: TaskListItem, scheduledAt: string | null) => Promise<void>
+		onUpdateTaskReminderAt?: (task: TaskListItem, reminderAt: string | null) => Promise<void>
 		onToggleTaskStatus: (task: TaskListItem) => Promise<void>
 		onArchiveTask?: (task: TaskListItem) => Promise<void>
 		onDeleteTask?: (task: TaskListItem) => Promise<void>
@@ -211,7 +212,7 @@ export function TaskRowAdapter({
 						/>
 						<MetadataFieldDropdown
 							ariaLabel={`设置任务 ${task.title} 的优先级`}
-							buttonLabel='优先级'
+							buttonAppearance='row-icon'
 							compact
 							disabled={isPending}
 							label='优先级'
@@ -222,7 +223,7 @@ export function TaskRowAdapter({
 						/>
 						<MetadataFieldDropdown
 							ariaLabel={`设置任务 ${task.title} 的状态`}
-							buttonLabel='状态'
+							buttonAppearance='row-icon'
 							compact
 							disabled={isPending}
 							label='状态'
@@ -241,32 +242,35 @@ export function TaskRowAdapter({
 				<RowShell.Right>
 					<RowShell.Fields>
 						<TagsCell />
-						<MetadataDateButton
+						<MetadataDateDropdown
 							ariaLabel={`截止 ${task.title}`}
 							compact
-							formatter={formatShortDate}
+							hideWhenEmpty
 							icon={taskDateMetadataIcons.due}
-							labelPrefix='截止'
+							label='截止'
 							stopPropagation
 							value={task.dueAt}
+							onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
 						/>
-						<MetadataDateButton
+						<MetadataDateDropdown
 							ariaLabel={`计划 ${task.title}`}
 							compact
-							formatter={formatShortDate}
+							hideWhenEmpty
 							icon={taskDateMetadataIcons.scheduled}
-							labelPrefix='计划'
+							label='计划'
 							stopPropagation
 							value={task.scheduledAt}
+							onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
 						/>
-						<MetadataDateButton
+						<MetadataDateDropdown
 							ariaLabel={`提醒 ${task.title}`}
 							compact
-							formatter={formatShortDate}
+							hideWhenEmpty
 							icon={taskDateMetadataIcons.reminder}
-							labelPrefix='提醒'
+							label='提醒'
 							stopPropagation
 							value={task.reminderAt}
+							onChange={(value) => void actions.onUpdateTaskReminderAt?.(task, value)}
 						/>
 						{showProjectCellOptions ? (
 							<MetadataPlacementDropdown
@@ -274,6 +278,7 @@ export function TaskRowAdapter({
 								disabled={isPending}
 								label='项目'
 								options={placementOptions}
+								shortcutMode='clear-only'
 								stopPropagation
 								value={projectValue}
 								onChange={(value) => {

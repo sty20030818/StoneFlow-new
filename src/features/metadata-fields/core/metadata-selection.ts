@@ -5,6 +5,8 @@ import type {
 } from './metadata-field.types'
 import type { ShortcutMenuItem } from '@/shared/ui/shortcut-menu'
 
+export type MetadataShortcutMode = 'default' | 'clear-only'
+
 export function defaultMetadataValueComparator<TValue>(left: TValue, right: TValue) {
 	return Object.is(left, right)
 }
@@ -27,7 +29,19 @@ export function getMetadataFieldIndicator<TValue>({
 
 export function buildMetadataShortcutItems<TValue>(
 	options: Array<MetadataFieldOption<TValue>>,
+	mode: MetadataShortcutMode = 'default',
 ): Array<ShortcutMenuItem<TValue>> {
+	if (mode === 'clear-only') {
+		return options
+			.filter((option) => option.isEmptyValue)
+			.map((option) => ({
+				label: option.label,
+				value: option.value,
+				disabled: option.disabled,
+				isEmptyValue: true,
+			}))
+	}
+
 	return options.map((option) => ({
 		label: option.label,
 		value: option.value,

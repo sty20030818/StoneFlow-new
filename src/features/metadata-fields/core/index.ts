@@ -12,10 +12,13 @@ export {
 	buildMetadataShortcutItems,
 	defaultMetadataValueComparator,
 	getMetadataFieldIndicator,
+	type MetadataShortcutMode,
 } from './metadata-selection'
 export {
 	addLocalDays,
 	createMetadataDateOptions,
+	createMetadataDateOptionsConfig,
+	formatMetadataDisplayDate,
 	formatLocalDate,
 	getEndOfLocalWeek,
 	normalizeMetadataDateValue,

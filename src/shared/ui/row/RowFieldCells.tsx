@@ -74,7 +74,7 @@ export function RowSelectionCell({
 					'flex size-4 items-center justify-center rounded-[5px] border transition-colors',
 					checked
 						? 'border-primary bg-primary text-primary-foreground'
-						: 'border-sf-border-strong bg-transparent text-transparent hover:border-border',
+						: 'border-sf-border-strong bg-transparent text-transparent hover:border-sf-icon-secondary',
 				)}
 			>
 				<svg

@@ -64,6 +64,8 @@ type TaskBoardProps = {
 	onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 	onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
 	onUpdateTaskDueDate?: (task: TaskListItem, dueAt: string | null) => Promise<void>
+	onUpdateTaskScheduledAt?: (task: TaskListItem, scheduledAt: string | null) => Promise<void>
+	onUpdateTaskReminderAt?: (task: TaskListItem, reminderAt: string | null) => Promise<void>
 	onToggleTaskStatus: (task: TaskListItem) => Promise<void>
 	onArchiveTask?: (task: TaskListItem) => Promise<void>
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
@@ -96,6 +98,8 @@ export function TaskBoard({
 	onUpdateTaskPriority,
 	onUpdateTaskStatus,
 	onUpdateTaskDueDate,
+	onUpdateTaskScheduledAt,
+	onUpdateTaskReminderAt,
 	onToggleTaskStatus,
 	onArchiveTask,
 	onDeleteTask,
@@ -162,6 +166,8 @@ export function TaskBoard({
 			onUpdateTaskPriority,
 			onUpdateTaskStatus,
 			onUpdateTaskDueDate,
+			onUpdateTaskScheduledAt,
+			onUpdateTaskReminderAt,
 			onToggleTaskStatus,
 			onArchiveTask,
 			onDeleteTask,

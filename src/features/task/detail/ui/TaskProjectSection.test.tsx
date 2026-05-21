@@ -45,6 +45,7 @@ describe('TaskProjectSection', () => {
 		expect(screen.getByRole('menuitem', { name: /独立事项/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /项目 A/ })).toBeInTheDocument()
 		expect(screen.queryByRole('menuitem', { name: /项目 B/ })).not.toBeInTheDocument()
+		expect(getShortcutHintDigits()).toEqual(['0'])
 	})
 
 	it('选择独立事项时调用 autosave.setDraft', async () => {
@@ -113,4 +114,11 @@ function createProjects(): ProjectOption[] {
 			spaceId: 'space-2',
 		},
 	] as ProjectOption[]
+}
+
+function getShortcutHintDigits() {
+	return screen
+		.queryAllByText(/^[0-9]$/)
+		.map((element) => element.textContent ?? '')
+		.filter(Boolean)
 }

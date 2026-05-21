@@ -1,6 +1,19 @@
 import type { MetadataDateOption } from './metadata-field.types'
 
 export function createMetadataDateOptions(currentValue?: string | null): MetadataDateOption[] {
+	return createMetadataDateOptionsConfig({
+		currentValue,
+		showClearOption: Boolean(normalizeMetadataDateValue(currentValue)),
+	})
+}
+
+export function createMetadataDateOptionsConfig({
+	currentValue,
+	showClearOption,
+}: {
+	currentValue?: string | null
+	showClearOption: boolean
+}): MetadataDateOption[] {
 	const today = startOfLocalDay(new Date())
 	const tomorrow = addLocalDays(today, 1)
 	const thisWeek = getEndOfLocalWeek(today)
@@ -8,12 +21,16 @@ export function createMetadataDateOptions(currentValue?: string | null): Metadat
 	const normalizedValue = normalizeMetadataDateValue(currentValue)
 
 	return [
-		{
-			key: 'none',
-			label: '未设置',
-			value: null,
-			isEmptyValue: true,
-		},
+		...(showClearOption
+			? [
+					{
+						key: 'none',
+						label: '移出日期',
+						value: null,
+						isEmptyValue: true,
+					} satisfies MetadataDateOption,
+				]
+			: []),
 		{
 			key: 'today',
 			label: '今天',
@@ -54,6 +71,26 @@ export function normalizeMetadataDateValue(value: string | null | undefined) {
 	}
 
 	return value.slice(0, 10)
+}
+
+export function formatMetadataDisplayDate(value: string) {
+	const date = new Date(value)
+	if (Number.isNaN(date.getTime())) {
+		return value
+	}
+
+	if (date.getFullYear() === new Date().getFullYear()) {
+		return new Intl.DateTimeFormat('zh-CN', {
+			month: 'numeric',
+			day: 'numeric',
+		}).format(date)
+	}
+
+	return new Intl.DateTimeFormat('zh-CN', {
+		year: 'numeric',
+		month: 'numeric',
+		day: 'numeric',
+	}).format(date)
 }
 
 export function formatLocalDate(value: Date) {

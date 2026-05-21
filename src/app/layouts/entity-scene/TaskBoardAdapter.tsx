@@ -47,6 +47,8 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			onToggleTaskSelection={actions.onToggleTaskSelection ?? (() => undefined)}
 			onToggleTaskStatus={actions.onToggleTaskStatus ?? (async () => undefined)}
 			onUpdateTaskDueDate={actions.onUpdateTaskDueDate}
+			onUpdateTaskScheduledAt={actions.onUpdateTaskScheduledAt}
+			onUpdateTaskReminderAt={actions.onUpdateTaskReminderAt}
 			onUpdateTaskPriority={actions.onUpdateTaskPriority ?? (async () => undefined)}
 			onUpdateTaskStatus={actions.onUpdateTaskStatus ?? (async () => undefined)}
 			pendingTaskId={data.pendingItemId ?? null}
