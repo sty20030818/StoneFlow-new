@@ -14,8 +14,10 @@ export type MetadataPlacementDropdownProps = {
 	value: MetadataPlacementValue
 	values?: MetadataPlacementValue[]
 	options: MetadataPlacementOption[]
+	ariaLabel?: string
 	buttonIcon?: ReactNode
 	buttonLabel?: ReactNode
+	compact?: boolean
 	disabled?: boolean
 	drawerOwnedOverlay?: boolean
 	stopPropagation?: boolean
@@ -27,8 +29,10 @@ export function MetadataPlacementDropdown({
 	value,
 	values,
 	options,
+	ariaLabel,
 	buttonIcon,
 	buttonLabel,
+	compact,
 	disabled,
 	drawerOwnedOverlay,
 	stopPropagation,
@@ -43,8 +47,10 @@ export function MetadataPlacementDropdown({
 
 	return (
 		<MetadataFieldDropdown
+			ariaLabel={ariaLabel}
 			buttonIcon={buttonIcon ?? currentOption.icon}
 			buttonLabel={buttonLabel ?? currentOption.label}
+			compact={compact}
 			disabled={disabled}
 			drawerOwnedOverlay={drawerOwnedOverlay}
 			isValueEqual={isMetadataPlacementValueEqual}

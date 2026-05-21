@@ -2,10 +2,14 @@ import type { ProjectOverviewItem } from '@/shared/types'
 import { useDangerConfirm } from '@/features/danger-confirm'
 import { formatShortDate } from '@/shared/lib/date'
 import {
+	createProjectParentMetadataOptions,
+	MetadataDateButton,
+	MetadataPlacementDropdown,
+	projectDateMetadataIcons,
+} from '@/features/metadata-fields'
+import {
 	CreatedAtCell,
-	DueDateCell,
 	IconCell,
-	ProjectCell,
 	RowActionButton,
 	RowSelectionCell,
 	RowShell,
@@ -68,6 +72,7 @@ export function ProjectRowAdapter({
 	const isSelected = rowState.isSelected ?? false
 	const isHovered = rowState.isHovered ?? false
 	const hoverSource = rowState.hoverSource ?? null
+	const projectPlacementOptions = createProjectParentMetadataOptions(projectBinding?.projectOptions ?? [])
 
 	return (
 		<ProjectContextMenu
@@ -127,15 +132,34 @@ export function ProjectRowAdapter({
 					</RowShell.Actions>
 					<RowShell.Fields>
 						{showProjectCell ? (
-							<ProjectCell
+							<MetadataPlacementDropdown
+								compact
 								disabled={rowState.isPending}
-								onSelectNone={hasProjectOptions ? projectBinding?.onSelectNoProject : undefined}
-								onSelectProject={hasProjectOptions ? projectBinding?.onSelectProject : undefined}
-								options={hasProjectOptions ? projectBinding?.projectOptions : undefined}
-								projectName={null}
+								label='父项目'
+								options={projectPlacementOptions}
+								stopPropagation
+								value={{ kind: 'noProject' }}
+								onChange={(value) => {
+									if (!hasProjectOptions) {
+										return
+									}
+									if (value.kind === 'project') {
+										projectBinding?.onSelectProject?.(value.projectId)
+										return
+									}
+									projectBinding?.onSelectNoProject?.()
+								}}
 							/>
 						) : null}
-						<DueDateCell formatter={formatShortDate} value={project.dueAt} />
+						<MetadataDateButton
+							ariaLabel={`截止 ${project.name}`}
+							compact
+							formatter={formatShortDate}
+							icon={projectDateMetadataIcons.due}
+							labelPrefix='截止'
+							stopPropagation
+							value={project.dueAt}
+						/>
 						<CreatedAtCell formatter={formatShortDate} value={project.createdAt} />
 					</RowShell.Fields>
 				</RowShell.Right>

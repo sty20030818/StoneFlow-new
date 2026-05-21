@@ -39,17 +39,24 @@ function renderProjectRowAdapter({
 	project = createProject({ id: 'project-1', name: '项目 A' }),
 	rowState = { isPending: false },
 	actions = buildActions(),
+	projectBinding,
 }: {
 	project?: ProjectOverviewItem
 	rowState?: ProjectRowAdapterProps['rowState']
 	actions?: ProjectRowAdapterProps['actions']
+	projectBinding?: ProjectRowAdapterProps['projectBinding']
 } = {}) {
 	render(
 		<DangerConfirmProvider>
-			<ProjectRowAdapter actions={actions} project={project} rowState={rowState} />
+			<ProjectRowAdapter
+				actions={actions}
+				project={project}
+				projectBinding={projectBinding}
+				rowState={rowState}
+			/>
 		</DangerConfirmProvider>,
 	)
-	return { project, rowState, actions }
+	return { project, rowState, actions, projectBinding }
 }
 
 describe('ProjectRowAdapter', () => {
@@ -146,5 +153,46 @@ describe('ProjectRowAdapter', () => {
 		fireEvent.mouseEnter(row)
 
 		expect(rowShortcutHandlers.onHover).toHaveBeenCalledWith('project-1')
+	})
+
+	it('showProjectCell=true 时可渲染并选择父项目', async () => {
+		const projectBinding = {
+			showProjectCell: true,
+			projectOptions: [
+				{ id: 'project-1', name: '项目 A' },
+				{ id: 'project-2', name: '项目 B' },
+			],
+			onSelectProject: vi.fn(),
+			onSelectNoProject: vi.fn(),
+		}
+
+		renderProjectRowAdapter({ projectBinding })
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '父项目' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
+		expect(projectBinding.onSelectProject).toHaveBeenCalledWith('project-2')
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '父项目' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /无父项目/ }))
+		expect(projectBinding.onSelectNoProject).toHaveBeenCalledTimes(1)
+	})
+
+	it('字段点击不会触发行打开，日期无值时不渲染', async () => {
+		const { actions } = renderProjectRowAdapter({
+			project: createProject({ id: 'project-1', name: '项目 A', dueAt: null }),
+			projectBinding: {
+				showProjectCell: true,
+				projectOptions: [{ id: 'project-2', name: '项目 B' }],
+				onSelectProject: vi.fn(),
+				onSelectNoProject: vi.fn(),
+			},
+		})
+
+		expect(screen.queryByRole('button', { name: /截止 项目 A/ })).not.toBeInTheDocument()
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '父项目' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
+
+		expect(actions.onOpenProject).not.toHaveBeenCalled()
 	})
 })

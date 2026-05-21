@@ -24,8 +24,10 @@ export type MetadataFieldDropdownProps<TValue> = {
 	value: TValue
 	values?: TValue[]
 	options: Array<MetadataFieldOption<TValue>>
+	ariaLabel?: string
 	buttonLabel?: ReactNode
 	buttonIcon?: ReactNode
+	compact?: boolean
 	disabled?: boolean
 	drawerOwnedOverlay?: boolean
 	stopPropagation?: boolean
@@ -38,8 +40,10 @@ export function MetadataFieldDropdown<TValue>({
 	value,
 	values,
 	options,
+	ariaLabel,
 	buttonLabel,
 	buttonIcon,
+	compact,
 	disabled,
 	drawerOwnedOverlay,
 	stopPropagation,
@@ -59,7 +63,8 @@ export function MetadataFieldDropdown<TValue>({
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
 				<MetadataFieldButton
-					ariaLabel={label}
+					ariaLabel={ariaLabel ?? label}
+					compact={compact}
 					disabled={disabled}
 					icon={buttonIcon ?? currentOption.icon}
 					label={buttonLabel ?? currentOption.label}

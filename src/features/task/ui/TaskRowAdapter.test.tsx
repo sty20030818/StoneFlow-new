@@ -109,6 +109,83 @@ describe('TaskRowAdapter', () => {
 		expect(actions.onUpdateTaskStatus).toHaveBeenCalledWith(task, 'done')
 	})
 
+	it('字段点击不会触发行打开', async () => {
+		const { actions } = renderTaskRowAdapter()
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '设置任务 任务 A 的优先级' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /高/ }))
+
+		expect(actions.onOpenTask).not.toHaveBeenCalled()
+	})
+
+	it('项目字段可切换独立事项和项目', async () => {
+		const { projectBinding, task } = renderTaskRowAdapter()
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
+		expect(projectBinding?.onSelectNoProject).toHaveBeenCalledWith(task)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
+		expect(projectBinding?.onSelectProject).toHaveBeenCalledWith(task, 'project-2')
+	})
+
+	it('关闭项目选项时不渲染项目 dropdown', () => {
+		renderTaskRowAdapter({
+			projectBinding: {
+				projectOptions: [
+					{ id: 'project-1', name: '项目 A' },
+					{ id: 'project-2', name: '项目 B' },
+				],
+				onSelectProject: vi.fn(),
+				onSelectNoProject: vi.fn(),
+				showProjectCellOptions: false,
+			},
+		})
+
+		expect(screen.queryByRole('button', { name: '项目' })).not.toBeInTheDocument()
+	})
+
+	it('日期字段无值时不渲染，有值时显示统一按钮文案', () => {
+		const { rerender } = render(
+			<DangerConfirmProvider>
+				<TaskRowAdapter
+					actions={buildActions()}
+					projectBinding={{
+						projectOptions: [{ id: 'project-1', name: '项目 A' }],
+						onSelectProject: vi.fn(),
+						onSelectNoProject: vi.fn(),
+					}}
+					rowState={{ isActive: false, isSelected: false, isPending: false }}
+					task={buildTask({ dueAt: null, scheduledAt: null, reminderAt: null })}
+				/>
+			</DangerConfirmProvider>,
+		)
+
+		expect(screen.queryByRole('button', { name: /截止 任务 A/ })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: /计划 任务 A/ })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: /提醒 任务 A/ })).not.toBeInTheDocument()
+
+		rerender(
+			<DangerConfirmProvider>
+				<TaskRowAdapter
+					actions={buildActions()}
+					projectBinding={{
+						projectOptions: [{ id: 'project-1', name: '项目 A' }],
+						onSelectProject: vi.fn(),
+						onSelectNoProject: vi.fn(),
+					}}
+					rowState={{ isActive: false, isSelected: false, isPending: false }}
+					task={buildTask()}
+				/>
+			</DangerConfirmProvider>,
+		)
+
+		expect(screen.getByRole('button', { name: /截止 任务 A/ })).toHaveTextContent('截止')
+		expect(screen.getByRole('button', { name: /计划 任务 A/ })).toHaveTextContent('计划')
+		expect(screen.getByRole('button', { name: /提醒 任务 A/ })).toHaveTextContent('提醒')
+	})
+
 	it('右键菜单显示属性子菜单入口', async () => {
 		renderTaskRowAdapter()
 		const row = screen.getByRole('button', { name: '打开任务 任务 A' })

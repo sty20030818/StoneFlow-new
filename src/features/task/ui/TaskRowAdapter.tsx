@@ -1,22 +1,22 @@
 import { formatShortDate } from '@/shared/lib/date'
-import { TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
-import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
-import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
+import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import type { TaskContextMenuBulkActions } from '@/features/task/ui/useTaskContextMenuBulkActions'
-import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
+import {
+	createTaskPlacementMetadataOptions,
+	createTaskPriorityMetadataOptions,
+	createTaskStatusMetadataOptions,
+	MetadataDateButton,
+	MetadataFieldDropdown,
+	MetadataPlacementDropdown,
+	taskDateMetadataIcons,
+} from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import {
 	CreatedAtCell,
-	DueDateCell,
-	PriorityCell,
-	ProjectCell,
-	ReminderCell,
 	RowSelectionCell,
 	RowShell,
 	RowTitleCell,
-	ScheduledDateCell,
-	StatusCell,
 	TagsCell,
 	type RowSelectionGroupPosition,
 } from '@/shared/ui/row'
@@ -78,6 +78,14 @@ export function TaskRowAdapter({
 	)
 	const showProjectCellOptions = hasProjectOptions && projectBinding?.showProjectCellOptions !== false
 	const usesBulkDangerActions = actionTargets.length > 1 && Boolean(contextMenuActions)
+	const priorityOptions = createTaskPriorityMetadataOptions()
+	const statusOptions = createTaskStatusMetadataOptions()
+	const placementOptions = createTaskPlacementMetadataOptions({
+		projects: projectBinding?.projectOptions ?? [],
+	})
+	const projectValue = task.projectId
+		? ({ kind: 'project', projectId: task.projectId } as const)
+		: ({ kind: 'noProject' } as const)
 
 	return (
 		<TaskContextMenu
@@ -201,29 +209,27 @@ export function TaskRowAdapter({
 							visible={isSelected || isHovered}
 							onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
 						/>
-						<PriorityCell
+						<MetadataFieldDropdown
 							ariaLabel={`设置任务 ${task.title} 的优先级`}
+							buttonLabel='优先级'
+							compact
 							disabled={isPending}
-							onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
-							options={TASK_PRIORITY_OPTIONS.map((option) => ({
-								value: option.value,
-								label: option.label,
-								icon: <PriorityIcon priority={option.value} size='md' />,
-							}))}
-							triggerDataAttribute='priority'
+							label='优先级'
+							options={priorityOptions}
+							stopPropagation
 							value={task.priority}
+							onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
 						/>
-						<StatusCell
+						<MetadataFieldDropdown
 							ariaLabel={`设置任务 ${task.title} 的状态`}
+							buttonLabel='状态'
+							compact
 							disabled={isPending}
-							onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
-							options={TASK_STATUS_OPTIONS.map((option) => ({
-								value: option.value,
-								label: option.label,
-								icon: <TaskStatusIndicator status={option.value} />,
-							}))}
-							triggerDataAttribute='status'
+							label='状态'
+							options={statusOptions}
+							stopPropagation
 							value={task.status}
+							onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
 						/>
 					</RowShell.Leading>
 
@@ -235,22 +241,50 @@ export function TaskRowAdapter({
 				<RowShell.Right>
 					<RowShell.Fields>
 						<TagsCell />
-						<DueDateCell formatter={formatShortDate} value={task.dueAt} />
-						<ScheduledDateCell formatter={formatShortDate} value={task.scheduledAt} />
-						<ReminderCell formatter={formatShortDate} value={task.reminderAt} />
-						<ProjectCell
-							disabled={isPending}
-							onSelectNone={
-								showProjectCellOptions ? () => projectBinding?.onSelectNoProject?.(task) : undefined
-							}
-							onSelectProject={
-								showProjectCellOptions
-									? (projectId) => projectBinding?.onSelectProject?.(task, projectId)
-									: undefined
-							}
-							options={showProjectCellOptions ? projectBinding?.projectOptions : undefined}
-							projectName={task.projectName}
+						<MetadataDateButton
+							ariaLabel={`截止 ${task.title}`}
+							compact
+							formatter={formatShortDate}
+							icon={taskDateMetadataIcons.due}
+							labelPrefix='截止'
+							stopPropagation
+							value={task.dueAt}
 						/>
+						<MetadataDateButton
+							ariaLabel={`计划 ${task.title}`}
+							compact
+							formatter={formatShortDate}
+							icon={taskDateMetadataIcons.scheduled}
+							labelPrefix='计划'
+							stopPropagation
+							value={task.scheduledAt}
+						/>
+						<MetadataDateButton
+							ariaLabel={`提醒 ${task.title}`}
+							compact
+							formatter={formatShortDate}
+							icon={taskDateMetadataIcons.reminder}
+							labelPrefix='提醒'
+							stopPropagation
+							value={task.reminderAt}
+						/>
+						{showProjectCellOptions ? (
+							<MetadataPlacementDropdown
+								compact
+								disabled={isPending}
+								label='项目'
+								options={placementOptions}
+								stopPropagation
+								value={projectValue}
+								onChange={(value) => {
+									if (value.kind === 'project') {
+										projectBinding?.onSelectProject?.(task, value.projectId)
+										return
+									}
+									projectBinding?.onSelectNoProject?.(task)
+								}}
+							/>
+						) : null}
 						<CreatedAtCell value={task.createdAt} />
 					</RowShell.Fields>
 				</RowShell.Right>

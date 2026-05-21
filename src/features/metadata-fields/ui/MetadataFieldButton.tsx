@@ -17,6 +17,7 @@ export type MetadataFieldButtonProps = Omit<ComponentProps<typeof Button>, 'chil
 	trailing?: ReactNode
 	ariaLabel?: string
 	stopPropagation?: boolean
+	compact?: boolean
 }
 
 export function MetadataFieldButton({
@@ -25,6 +26,7 @@ export function MetadataFieldButton({
 	trailing = null,
 	ariaLabel,
 	stopPropagation = false,
+	compact = false,
 	className,
 	onClick,
 	onKeyDownCapture,
@@ -38,7 +40,7 @@ export function MetadataFieldButton({
 		<Button
 			{...props}
 			aria-label={ariaLabel}
-			className={cn('max-w-52', className)}
+			className={cn(compact ? 'max-w-45' : 'max-w-52', className)}
 			onClick={(event) => {
 				if (stopPropagation) {
 					stopMetadataFieldEventPropagation(event)

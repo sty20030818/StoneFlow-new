@@ -9,6 +9,8 @@ export type MetadataDateButtonProps = {
 	formatter?: (value: string) => string
 	disabled?: boolean
 	stopPropagation?: boolean
+	compact?: boolean
+	ariaLabel?: string
 }
 
 export function MetadataDateButton({
@@ -18,6 +20,8 @@ export function MetadataDateButton({
 	formatter = (next) => next,
 	disabled,
 	stopPropagation,
+	compact = false,
+	ariaLabel,
 }: MetadataDateButtonProps) {
 	if (!value) {
 		return null
@@ -25,6 +29,8 @@ export function MetadataDateButton({
 
 	return (
 		<MetadataFieldButton
+			ariaLabel={ariaLabel}
+			compact={compact}
 			disabled={disabled}
 			icon={icon}
 			label={`${labelPrefix} ${formatter(value)}`}
