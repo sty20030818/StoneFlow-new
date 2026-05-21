@@ -2,10 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import type { ProjectOption } from '@/features/project/model/types'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { DetailDrawerShell } from '@/shared/ui/detail'
 import { Button } from '@/shared/ui/base/button'
-import type { Space, TaskDetail } from '@/shared/types'
+import type { TaskDetail } from '@/shared/types'
 
 import { createTaskDetailDraft } from '../model/taskDetailDraft'
 import { useTaskAutosaveAdapter } from '../model/useTaskAutosaveAdapter'
@@ -22,7 +21,6 @@ type TaskDrawerProps = {
 export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
 	const { task, status, error, archiveOrRestore } = useTaskDetailController(taskId)
 	const projects = useProjectStore(selectProjectOptions)
-	const spaces = useSpaceStore(selectSpaces)
 
 	if (status === 'loading' || status === 'idle') {
 		return <TaskDrawerState message='加载中...' />
@@ -41,7 +39,6 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
 			archiveOrRestore={archiveOrRestore}
 			onClose={onClose}
 			projects={projects}
-			spaces={spaces}
 			task={task}
 		/>
 	)
@@ -50,7 +47,6 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
 type TaskDrawerLoadedProps = {
 	task: TaskDetail
 	projects: ProjectOption[]
-	spaces: Space[]
 	onClose: () => void
 	archiveOrRestore: () => Promise<void>
 }
@@ -58,7 +54,6 @@ type TaskDrawerLoadedProps = {
 function TaskDrawerLoaded({
 	task,
 	projects,
-	spaces,
 	onClose,
 	archiveOrRestore,
 }: TaskDrawerLoadedProps) {
@@ -108,8 +103,8 @@ function TaskDrawerLoaded({
 
 	return (
 		<DetailDrawerShell aria-label='任务详情'>
-			<TaskDrawerHeader onClose={() => void handleClose()} title={autosave.draft.title || task.title} />
-			<TaskDrawerBody autosave={autosave} projects={projects} spaces={spaces} task={task} />
+			<TaskDrawerHeader autosave={autosave} onClose={() => void handleClose()} />
+			<TaskDrawerBody autosave={autosave} projects={projects} />
 			<TaskDrawerFooter
 				autosave={autosave}
 				isArchiveBusy={isArchiveBusy}

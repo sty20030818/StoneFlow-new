@@ -1,17 +1,19 @@
 import type { AutosaveController } from '@/shared/autosave'
 import { DatePicker } from '@/shared/ui/base/date-picker'
+import { buttonVariants } from '@/shared/ui/base/button'
 import {
 	Select,
 	SelectContent,
 	SelectGroup,
 	SelectItem,
 	SelectTrigger,
-	SelectValue,
 } from '@/shared/ui/base/select'
-import { DetailFieldRow, DetailSection } from '@/shared/ui/detail'
+import { cn } from '@/shared/lib/utils'
+import { DetailSection } from '@/shared/ui/detail'
 import { TASK_PRIORITY_OPTIONS } from '@/features/task/model/taskPriority'
-import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
+import { formatTaskStatusLabel, TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 import type { TaskPriority, TaskStatus } from '@/shared/types'
+import { FlagIcon } from 'lucide-react'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 
@@ -20,85 +22,92 @@ type TaskPropertiesSectionProps = {
 }
 
 export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) {
+	const priorityLabel =
+		TASK_PRIORITY_OPTIONS.find((option) => option.value === autosave.draft.priority)?.label ??
+		'优先级'
+
 	return (
 		<DetailSection title='属性'>
-			<div className='flex flex-col gap-2.5'>
-				<DetailFieldRow label='状态'>
-					<Select
-						onValueChange={(value) =>
-							autosave.setField('status', value as TaskStatus, { saveMode: 'immediate' })
-						}
-						value={autosave.draft.status}
+			<div className='flex flex-wrap gap-2' data-task-properties='button-group'>
+				<Select
+					onValueChange={(value) =>
+						autosave.setField('status', value as TaskStatus, { saveMode: 'immediate' })
+					}
+					value={autosave.draft.status}
+				>
+					<SelectTrigger
+						aria-label='状态'
+						className={cn(
+							buttonVariants({ variant: 'outline', size: 'sm' }),
+							'h-8 max-w-full rounded-md px-2 text-[12px]',
+						)}
 					>
-						<SelectTrigger className='h-7 border-0 bg-transparent px-0 text-[12px] shadow-none focus:ring-0'>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent position='popper'>
-							<SelectGroup>
-								{TASK_STATUS_OPTIONS.map((option) => (
-									<SelectItem key={option.value} value={option.value}>
-										{option.label}
-									</SelectItem>
-								))}
-							</SelectGroup>
-						</SelectContent>
-					</Select>
-				</DetailFieldRow>
+						<span className='truncate'>{formatTaskStatusLabel(autosave.draft.status)}</span>
+					</SelectTrigger>
+					<SelectContent position='popper'>
+						<SelectGroup>
+							{TASK_STATUS_OPTIONS.map((option) => (
+								<SelectItem key={option.value} value={option.value}>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
+					</SelectContent>
+				</Select>
 
-				<DetailFieldRow label='优先级'>
-					<Select
-						onValueChange={(value) =>
-							autosave.setField('priority', Number(value) as TaskPriority, {
-								saveMode: 'immediate',
-							})
-						}
-						value={`${autosave.draft.priority}`}
+				<Select
+					onValueChange={(value) =>
+						autosave.setField('priority', Number(value) as TaskPriority, {
+							saveMode: 'immediate',
+						})
+					}
+					value={`${autosave.draft.priority}`}
+				>
+					<SelectTrigger
+						aria-label='优先级'
+						className={cn(
+							buttonVariants({ variant: 'outline', size: 'sm' }),
+							'h-8 max-w-full rounded-md px-2 text-[12px]',
+						)}
 					>
-						<SelectTrigger className='h-7 border-0 bg-transparent px-0 text-[12px] shadow-none focus:ring-0'>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent position='popper'>
-							<SelectGroup>
-								{TASK_PRIORITY_OPTIONS.map((option) => (
-									<SelectItem key={option.value} value={`${option.value}`}>
-										{option.label}
-									</SelectItem>
-								))}
-							</SelectGroup>
-						</SelectContent>
-					</Select>
-				</DetailFieldRow>
+						<FlagIcon className='size-3.5' />
+						<span className='truncate'>{priorityLabel}</span>
+					</SelectTrigger>
+					<SelectContent position='popper'>
+						<SelectGroup>
+							{TASK_PRIORITY_OPTIONS.map((option) => (
+								<SelectItem key={option.value} value={`${option.value}`}>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
+					</SelectContent>
+				</Select>
 
-				<DetailFieldRow label='截止日期'>
-					<DatePicker
-						className='h-7 border-0 bg-transparent px-0 shadow-none hover:bg-transparent focus:ring-0'
-						onChange={(value) => autosave.setField('dueAt', value ?? '', { saveMode: 'immediate' })}
-						placeholder='选择日期'
-						value={autosave.draft.dueAt}
-					/>
-				</DetailFieldRow>
+				<DatePicker
+					className='h-8 px-2 text-[12px]'
+					onChange={(value) => autosave.setField('dueAt', value ?? '', { saveMode: 'immediate' })}
+					placeholder='截止日期'
+					value={autosave.draft.dueAt}
+				/>
 
-				<DetailFieldRow label='计划日期'>
-					<DatePicker
-						className='h-7 border-0 bg-transparent px-0 shadow-none hover:bg-transparent focus:ring-0'
-						onChange={(value) =>
-							autosave.setField('scheduledAt', value ?? '', { saveMode: 'immediate' })
-						}
-						placeholder='选择日期'
-						value={autosave.draft.scheduledAt}
-					/>
-				</DetailFieldRow>
+				<DatePicker
+					className='h-8 px-2 text-[12px]'
+					onChange={(value) =>
+						autosave.setField('scheduledAt', value ?? '', { saveMode: 'immediate' })
+					}
+					placeholder='计划日期'
+					value={autosave.draft.scheduledAt}
+				/>
 
-				<DetailFieldRow label='提醒时间'>
-					<DatePicker
-						className='h-7 border-0 bg-transparent px-0 shadow-none hover:bg-transparent focus:ring-0'
-						onChange={(value) =>
-							autosave.setField('reminderAt', value ?? '', { saveMode: 'immediate' })
-						}
-						placeholder='选择日期'
-						value={autosave.draft.reminderAt}
-					/>
-				</DetailFieldRow>
+				<DatePicker
+					className='h-8 px-2 text-[12px]'
+					onChange={(value) =>
+						autosave.setField('reminderAt', value ?? '', { saveMode: 'immediate' })
+					}
+					placeholder='提醒'
+					value={autosave.draft.reminderAt}
+				/>
 			</div>
 		</DetailSection>
 	)

@@ -46,7 +46,7 @@ describe('TaskDrawer', () => {
 		getEntityActivitiesMock.mockClear()
 	})
 
-	it('加载时显示 loading', () => {
+	it('加载时显示加载态', () => {
 		mockDetailController.value = {
 			...mockDetailController.value,
 			task: null,
@@ -58,7 +58,7 @@ describe('TaskDrawer', () => {
 		expect(screen.getByText('加载中...')).toBeInTheDocument()
 	})
 
-	it('not found/error 有稳定空态', () => {
+	it('不存在和错误时有稳定空态', () => {
 		mockDetailController.value = {
 			...mockDetailController.value,
 			task: null,
@@ -72,12 +72,60 @@ describe('TaskDrawer', () => {
 		expect(screen.getByRole('button', { name: '关闭' })).toBeInTheDocument()
 	})
 
-	it('不渲染 Activity tab 和手动保存按钮', () => {
+	it('不渲染动态页签和手动保存按钮', () => {
 		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.queryByRole('button', { name: '动态' })).not.toBeInTheDocument()
 		expect(screen.queryByRole('button', { name: '保存' })).not.toBeInTheDocument()
 		expect(getEntityActivitiesMock).not.toHaveBeenCalled()
+	})
+
+	it('标题输入在头部内，头部保留打开、更多、关闭', () => {
+		const { container } = render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		const titleInput = screen.getByLabelText('任务标题')
+
+		expect(titleInput.closest('[class*="border-b"]')).toContainElement(titleInput)
+		expect(screen.getByRole('button', { name: '打开' })).toHaveAttribute('data-variant', 'outline')
+		expect(screen.getAllByRole('button', { name: '更多任务操作' })[0]).toHaveAttribute(
+			'data-variant',
+			'outline',
+		)
+		expect(screen.getByRole('button', { name: '关闭任务详情' })).toBeInTheDocument()
+		expect(container.querySelector('[data-task-drawer-body="true"]')).not.toContainElement(titleInput)
+	})
+
+	it('正文按文档顺序渲染备注、属性、标签、项目、链接', () => {
+		const { container } = render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+		const body = container.querySelector('[data-task-drawer-body="true"]')
+
+		expect(body).toBeInTheDocument()
+		expect(screen.getByLabelText('任务备注')).toHaveClass('border-0')
+		expect(screen.getByRole('heading', { name: '属性' })).toBeInTheDocument()
+		expect(screen.getByRole('heading', { name: '标签' })).toBeInTheDocument()
+		expect(screen.getByRole('heading', { name: '项目' })).toBeInTheDocument()
+		expect(screen.getByRole('heading', { name: '链接' })).toBeInTheDocument()
+
+		const bodyText = body?.textContent ?? ''
+		expect(bodyText.indexOf('属性')).toBeGreaterThan(bodyText.indexOf('添加备注...'))
+		expect(bodyText.indexOf('标签')).toBeGreaterThan(bodyText.indexOf('属性'))
+		expect(bodyText.indexOf('项目')).toBeGreaterThan(bodyText.indexOf('标签'))
+		expect(bodyText.indexOf('链接')).toBeGreaterThan(bodyText.indexOf('项目'))
+	})
+
+	it('标签和链接只渲染预留入口', () => {
+		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+
+		expect(screen.getByRole('button', { name: '添加标签' })).toBeDisabled()
+		expect(screen.getByRole('button', { name: '添加标签' })).toHaveAttribute(
+			'data-variant',
+			'outline',
+		)
+		expect(screen.getByRole('button', { name: '添加链接' })).toHaveAttribute(
+			'data-variant',
+			'outline',
+		)
+		expect(mockAutosave.value.setField).not.toHaveBeenCalled()
+		expect(mockAutosave.value.setDraft).not.toHaveBeenCalled()
 	})
 
 	it('关闭前触发 flushNow', async () => {
@@ -92,21 +140,35 @@ describe('TaskDrawer', () => {
 		})
 	})
 
-	it('Footer 展示保存状态和失败重试', () => {
+	it('底部展示保存状态和失败重试', () => {
 		mockAutosave.value = createAutosaveController({
 			status: 'failed',
-			error: '保存失败',
+			error: '网络错误',
 		})
 
 		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
-		expect(screen.getByText('Save failed')).toBeInTheDocument()
 		expect(screen.getByText('保存失败')).toBeInTheDocument()
+		expect(screen.getByText('网络错误')).toBeInTheDocument()
 		fireEvent.click(screen.getByRole('button', { name: '重试' }))
 		expect(mockAutosave.value.retry).toHaveBeenCalledTimes(1)
 	})
 
-	it('archive/restore 走 controller action', async () => {
+	it('底部展示更新时间、更多和归档', () => {
+		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+
+		expect(screen.getByText(/^更新于 /)).toBeInTheDocument()
+		expect(screen.getAllByRole('button', { name: '更多任务操作' })[1]).toHaveAttribute(
+			'data-variant',
+			'outline',
+		)
+		expect(screen.getByRole('button', { name: '归档' })).toHaveAttribute(
+			'data-variant',
+			'outline',
+		)
+	})
+
+	it('归档和恢复走控制器动作', async () => {
 		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		fireEvent.click(screen.getByRole('button', { name: '归档' }))

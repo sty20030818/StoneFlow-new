@@ -16,22 +16,22 @@ import {
 	DetailSection,
 } from './index'
 
-describe('Detail UI primitive', () => {
-	it('按 Header / Body / Footer 顺序渲染并暴露 drawer shell 协议', () => {
+describe('详情通用界面基元', () => {
+	it('按头部、正文、底部顺序渲染并暴露抽屉壳协议', () => {
 		render(
 			<DetailDrawerShell aria-label='详情'>
-				<DetailHeader>Header</DetailHeader>
+				<DetailHeader>头部</DetailHeader>
 				<DetailBody>
-					<div>Body</div>
+					<div>正文</div>
 				</DetailBody>
-				<DetailFooter>Footer</DetailFooter>
+				<DetailFooter>底部</DetailFooter>
 			</DetailDrawerShell>,
 		)
 
 		const shell = screen.getByLabelText('详情')
-		const header = screen.getByText('Header')
-		const body = screen.getByText('Body')
-		const footer = screen.getByText('Footer')
+		const header = screen.getByText('头部')
+		const body = screen.getByText('正文')
+		const footer = screen.getByText('底部')
 
 		expect(shell).toHaveAttribute('data-detail-drawer-shell', 'true')
 		expect(shell.className).toContain('flex')
@@ -42,19 +42,19 @@ describe('Detail UI primitive', () => {
 		)
 	})
 
-	it('Body 使用 AppScrollArea，并把滚动协议挂在真实 viewport', () => {
+	it('正文使用 AppScrollArea，并把滚动协议挂在真实 viewport', () => {
 		render(
 			<DetailDrawerShell>
 				<DetailBody>
-					<div>Scrollable content</div>
+					<div>可滚动内容</div>
 				</DetailBody>
-				<DetailFooter>Footer</DetailFooter>
+				<DetailFooter>底部</DetailFooter>
 			</DetailDrawerShell>,
 		)
 
-		const viewport = screen.getByText('Scrollable content').closest('[data-scroll-container="true"]')
+		const viewport = screen.getByText('可滚动内容').closest('[data-scroll-container="true"]')
 		const wrapper = viewport?.parentElement
-		const footer = screen.getByText('Footer')
+		const footer = screen.getByText('底部')
 
 		expect(viewport).toHaveAttribute('data-scroll-container', 'true')
 		expect(viewport?.className).toContain('overflow-y-auto')
@@ -64,11 +64,11 @@ describe('Detail UI primitive', () => {
 		expect(footer.className).toContain('shrink-0')
 	})
 
-	it('Section 与 FieldRow 只提供通用布局语义', () => {
+	it('分区和字段行只提供通用布局语义', () => {
 		render(
 			<DetailSection description='说明' title='属性'>
 				<DetailFieldRow description='字段说明' label='状态'>
-					<button type='button'>Todo</button>
+					<button type='button'>待办</button>
 				</DetailFieldRow>
 			</DetailSection>,
 		)
@@ -77,6 +77,6 @@ describe('Detail UI primitive', () => {
 		expect(screen.getByText('说明')).toBeInTheDocument()
 		expect(screen.getByText('状态')).toBeInTheDocument()
 		expect(screen.getByText('字段说明')).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: 'Todo' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '待办' })).toBeInTheDocument()
 	})
 })

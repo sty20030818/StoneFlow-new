@@ -1,23 +1,42 @@
-import { XIcon } from 'lucide-react'
+import { MoreHorizontalIcon, SquareArrowOutUpRightIcon, XIcon } from 'lucide-react'
 
+import type { AutosaveController } from '@/shared/autosave'
 import { Button } from '@/shared/ui/base/button'
 import { DetailHeader } from '@/shared/ui/detail'
 
+import type { TaskDetailDraft } from '../model/taskDetailDraft'
+import { TaskTitleField } from './TaskTitleField'
+
 type TaskDrawerHeaderProps = {
-	title: string
+	autosave: AutosaveController<TaskDetailDraft>
 	onClose: () => void
 }
 
-export function TaskDrawerHeader({ title, onClose }: TaskDrawerHeaderProps) {
+export function TaskDrawerHeader({ autosave, onClose }: TaskDrawerHeaderProps) {
 	return (
-		<DetailHeader className='h-12 items-center justify-between py-0'>
-			<div className='min-w-0'>
-				<p className='truncate text-[13px] font-medium text-foreground'>{title || '未命名任务'}</p>
-				<p className='text-[11px] text-sf-text-tertiary'>Task Detail</p>
+		<DetailHeader className='h-12 items-center gap-2 py-0'>
+			<div className='min-w-0 flex-1'>
+				<TaskTitleField autosave={autosave} />
 			</div>
-			<Button aria-label='关闭任务详情' className='size-7 p-0' onClick={onClose} size='icon' variant='ghost'>
-				<XIcon className='size-4' />
-			</Button>
+			<div className='flex shrink-0 items-center gap-1'>
+				<Button className='h-7 px-2 text-[12px]' size='sm' type='button' variant='outline'>
+					<SquareArrowOutUpRightIcon className='size-3.5' />
+					打开
+				</Button>
+				<Button aria-label='更多任务操作' className='size-7 p-0' size='icon' type='button' variant='outline'>
+					<MoreHorizontalIcon className='size-4' />
+				</Button>
+				<Button
+					aria-label='关闭任务详情'
+					className='size-7 p-0'
+					onClick={onClose}
+					size='icon'
+					type='button'
+					variant='ghost'
+				>
+					<XIcon className='size-4' />
+				</Button>
+			</div>
 		</DetailHeader>
 	)
 }

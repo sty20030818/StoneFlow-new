@@ -12,16 +12,17 @@ type DetailSaveStatusProps = Omit<ComponentPropsWithoutRef<'div'>, 'children'> &
 }
 
 const SAVE_STATUS_LABELS: Partial<Record<AutosaveStatus, string>> = {
-	dirty: 'Edited',
-	scheduled: 'Saving...',
-	saving: 'Saving...',
-	saved: 'Saved',
-	failed: 'Save failed',
+	dirty: '已编辑',
+	scheduled: '保存中...',
+	saving: '保存中...',
+	saved: '已保存',
+	failed: '保存失败',
 }
 
 export function DetailSaveStatus({
 	status,
 	error,
+	savedAt: _savedAt,
 	className,
 	...props
 }: DetailSaveStatusProps) {
