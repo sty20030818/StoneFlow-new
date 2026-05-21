@@ -11,7 +11,7 @@ export function TaskTitleField({ autosave }: TaskTitleFieldProps) {
 	return (
 		<Input
 			aria-label='任务标题'
-			className='h-9 border-0 bg-transparent px-0 text-[14px] font-semibold shadow-none focus-visible:ring-0'
+			className='h-11 border-0 bg-transparent px-0 text-[20px] font-bold shadow-none focus-visible:ring-0 md:text-[22px]'
 			onChange={(event) =>
 				autosave.setField('title', event.currentTarget.value, { saveMode: 'debounced' })
 			}

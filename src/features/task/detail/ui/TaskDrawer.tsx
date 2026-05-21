@@ -19,7 +19,7 @@ type TaskDrawerProps = {
 }
 
 export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
-	const { task, status, error, archiveOrRestore } = useTaskDetailController(taskId)
+	const { task, status, error, archiveOrRestore, moveToTrash } = useTaskDetailController(taskId)
 	const projects = useProjectStore(selectProjectOptions)
 
 	if (status === 'loading' || status === 'idle') {
@@ -37,6 +37,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
 	return (
 		<TaskDrawerLoaded
 			archiveOrRestore={archiveOrRestore}
+			moveToTrash={moveToTrash}
 			onClose={onClose}
 			projects={projects}
 			task={task}
@@ -49,6 +50,7 @@ type TaskDrawerLoadedProps = {
 	projects: ProjectOption[]
 	onClose: () => void
 	archiveOrRestore: () => Promise<void>
+	moveToTrash: () => Promise<void>
 }
 
 function TaskDrawerLoaded({
@@ -56,11 +58,13 @@ function TaskDrawerLoaded({
 	projects,
 	onClose,
 	archiveOrRestore,
+	moveToTrash,
 }: TaskDrawerLoadedProps) {
 	const baseDraft = useMemo(() => createTaskDetailDraft(task), [task])
 	const autosave = useTaskAutosaveAdapter({ base: baseDraft })
 	const { flushNow, reset } = autosave
 	const [isArchiveBusy, setArchiveBusy] = useState(false)
+	const [isDeleteBusy, setDeleteBusy] = useState(false)
 	const lastTaskIdRef = useRef(task.id)
 	const flushRef = useRef(flushNow)
 
@@ -86,11 +90,6 @@ function TaskDrawerLoaded({
 		}
 	}, [])
 
-	const handleClose = async () => {
-		await flushNow()
-		onClose()
-	}
-
 	const handleArchiveOrRestore = async () => {
 		setArchiveBusy(true)
 		try {
@@ -101,13 +100,25 @@ function TaskDrawerLoaded({
 		}
 	}
 
+	const handleMoveToTrash = async () => {
+		setDeleteBusy(true)
+		try {
+			await flushNow()
+			await moveToTrash()
+			onClose()
+		} finally {
+			setDeleteBusy(false)
+		}
+	}
+
 	return (
 		<DetailDrawerShell aria-label='任务详情'>
-			<TaskDrawerHeader autosave={autosave} onClose={() => void handleClose()} />
+			<TaskDrawerHeader autosave={autosave} />
 			<TaskDrawerBody autosave={autosave} projects={projects} />
 			<TaskDrawerFooter
-				autosave={autosave}
 				isArchiveBusy={isArchiveBusy}
+				isDeleteBusy={isDeleteBusy}
+				onMoveToTrash={() => void handleMoveToTrash()}
 				onArchiveOrRestore={() => void handleArchiveOrRestore()}
 				task={task}
 			/>

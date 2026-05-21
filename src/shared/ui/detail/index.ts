@@ -3,6 +3,7 @@ export { DetailDrawerShell } from './DetailDrawerShell'
 export { DetailFieldRow } from './DetailFieldRow'
 export { DetailFooter } from './DetailFooter'
 export { DetailHeader } from './DetailHeader'
+export { DetailMetaButton } from './DetailMetaButton'
 export { DetailSaveStatus } from './DetailSaveStatus'
 export { DetailSection } from './DetailSection'
 export {

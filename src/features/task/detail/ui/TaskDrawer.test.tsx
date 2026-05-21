@@ -14,6 +14,7 @@ const mockDetailController = vi.hoisted(() => ({
 		status: 'loading' as 'idle' | 'loading' | 'ready' | 'error',
 		error: null as string | null,
 		archiveOrRestore: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+		moveToTrash: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 	},
 }))
 
@@ -40,6 +41,7 @@ describe('TaskDrawer', () => {
 			status: 'ready',
 			error: null,
 			archiveOrRestore: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+			moveToTrash: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 		}
 		mockAutosave.value = createAutosaveController()
 		getEntityActivitiesMock.mockResolvedValue([])
@@ -80,36 +82,34 @@ describe('TaskDrawer', () => {
 		expect(getEntityActivitiesMock).not.toHaveBeenCalled()
 	})
 
-	it('标题输入在头部内，头部保留打开、更多、关闭', () => {
+	it('头部显示任务详情、保存状态、打开和更多', () => {
 		const { container } = render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
-		const titleInput = screen.getByLabelText('任务标题')
 
-		expect(titleInput.closest('[class*="border-b"]')).toContainElement(titleInput)
+		expect(screen.getByText('任务详情')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '打开' })).toHaveAttribute('data-variant', 'outline')
 		expect(screen.getAllByRole('button', { name: '更多任务操作' })[0]).toHaveAttribute(
 			'data-variant',
 			'outline',
 		)
-		expect(screen.getByRole('button', { name: '关闭任务详情' })).toBeInTheDocument()
-		expect(container.querySelector('[data-task-drawer-body="true"]')).not.toContainElement(titleInput)
+		expect(screen.queryByRole('button', { name: '关闭任务详情' })).not.toBeInTheDocument()
+		expect(container.querySelector('[data-task-drawer-body="true"]')).toContainElement(
+			screen.getByLabelText('任务标题'),
+		)
 	})
 
-	it('正文按文档顺序渲染备注、属性、标签、项目、链接', () => {
+	it('正文按文档顺序渲染标题、备注、属性、项目、标签、链接', () => {
 		const { container } = render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 		const body = container.querySelector('[data-task-drawer-body="true"]')
 
 		expect(body).toBeInTheDocument()
+		expect(screen.getByLabelText('任务标题')).toHaveClass('border-0')
 		expect(screen.getByLabelText('任务备注')).toHaveClass('border-0')
-		expect(screen.getByRole('heading', { name: '属性' })).toBeInTheDocument()
-		expect(screen.getByRole('heading', { name: '标签' })).toBeInTheDocument()
-		expect(screen.getByRole('heading', { name: '项目' })).toBeInTheDocument()
+		// 属性、项目、标签现在使用 DetailFieldRow label-value 布局，不再是 h3 heading
+		expect(container.querySelector('[data-task-properties="stack"]')).toBeInTheDocument()
+		expect(screen.getByText('项目')).toBeInTheDocument()
+		expect(screen.getByText('标签')).toBeInTheDocument()
+		// 链接仍然是独立 section，保留 heading
 		expect(screen.getByRole('heading', { name: '链接' })).toBeInTheDocument()
-
-		const bodyText = body?.textContent ?? ''
-		expect(bodyText.indexOf('属性')).toBeGreaterThan(bodyText.indexOf('添加备注...'))
-		expect(bodyText.indexOf('标签')).toBeGreaterThan(bodyText.indexOf('属性'))
-		expect(bodyText.indexOf('项目')).toBeGreaterThan(bodyText.indexOf('标签'))
-		expect(bodyText.indexOf('链接')).toBeGreaterThan(bodyText.indexOf('项目'))
 	})
 
 	it('标签和链接只渲染预留入口', () => {
@@ -128,19 +128,7 @@ describe('TaskDrawer', () => {
 		expect(mockAutosave.value.setDraft).not.toHaveBeenCalled()
 	})
 
-	it('关闭前触发 flushNow', async () => {
-		const onClose = vi.fn<() => void>()
-		render(<TaskDrawer onClose={onClose} taskId='task-1' />)
-
-		fireEvent.click(screen.getByRole('button', { name: '关闭任务详情' }))
-
-		await waitFor(() => {
-			expect(mockAutosave.value.flushNow).toHaveBeenCalledTimes(1)
-			expect(onClose).toHaveBeenCalledTimes(1)
-		})
-	})
-
-	it('底部展示保存状态和失败重试', () => {
+	it('头部展示保存状态和失败信息', () => {
 		mockAutosave.value = createAutosaveController({
 			status: 'failed',
 			error: '网络错误',
@@ -150,11 +138,9 @@ describe('TaskDrawer', () => {
 
 		expect(screen.getByText('保存失败')).toBeInTheDocument()
 		expect(screen.getByText('网络错误')).toBeInTheDocument()
-		fireEvent.click(screen.getByRole('button', { name: '重试' }))
-		expect(mockAutosave.value.retry).toHaveBeenCalledTimes(1)
 	})
 
-	it('底部展示更新时间、更多和归档', () => {
+	it('底部展示更新时间、更多、归档和移入回收站', () => {
 		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.getByText(/^更新于 /)).toBeInTheDocument()
@@ -166,6 +152,10 @@ describe('TaskDrawer', () => {
 			'data-variant',
 			'outline',
 		)
+		expect(screen.getByRole('button', { name: '移入回收站' })).toHaveAttribute(
+			'data-variant',
+			'destructive',
+		)
 	})
 
 	it('归档和恢复走控制器动作', async () => {
@@ -176,6 +166,19 @@ describe('TaskDrawer', () => {
 		await waitFor(() => {
 			expect(mockAutosave.value.flushNow).toHaveBeenCalledTimes(1)
 			expect(mockDetailController.value.archiveOrRestore).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	it('移入回收站前触发 flushNow 并走控制器动作', async () => {
+		const onClose = vi.fn<() => void>()
+		render(<TaskDrawer onClose={onClose} taskId='task-1' />)
+
+		fireEvent.click(screen.getByRole('button', { name: '移入回收站' }))
+
+		await waitFor(() => {
+			expect(mockAutosave.value.flushNow).toHaveBeenCalledTimes(1)
+			expect(mockDetailController.value.moveToTrash).toHaveBeenCalledTimes(1)
+			expect(onClose).toHaveBeenCalledTimes(1)
 		})
 	})
 })

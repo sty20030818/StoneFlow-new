@@ -1,23 +1,22 @@
-import type { AutosaveController } from '@/shared/autosave'
 import { Button } from '@/shared/ui/base/button'
-import { DetailFooter, DetailSaveStatus } from '@/shared/ui/detail'
+import { DetailFooter } from '@/shared/ui/detail'
 import type { TaskDetail } from '@/shared/types'
-import { MoreHorizontalIcon } from 'lucide-react'
-
-import type { TaskDetailDraft } from '../model/taskDetailDraft'
+import { ArchiveIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react'
 
 type TaskDrawerFooterProps = {
-	autosave: AutosaveController<TaskDetailDraft>
 	task: TaskDetail
 	isArchiveBusy: boolean
+	isDeleteBusy: boolean
 	onArchiveOrRestore: () => void
+	onMoveToTrash: () => void
 }
 
 export function TaskDrawerFooter({
-	autosave,
 	task,
 	isArchiveBusy,
+	isDeleteBusy,
 	onArchiveOrRestore,
+	onMoveToTrash,
 }: TaskDrawerFooterProps) {
 	return (
 		<DetailFooter className='items-center gap-2'>
@@ -25,12 +24,6 @@ export function TaskDrawerFooter({
 				<span className='truncate'>更新于 {formatUpdatedAt(task.updatedAt)}</span>
 			</div>
 			<div className='flex min-w-0 shrink-0 items-center gap-2'>
-				<DetailSaveStatus error={autosave.error} savedAt={autosave.savedAt} status={autosave.status} />
-				{autosave.status === 'failed' ? (
-					<Button className='h-7 px-2 text-[12px]' onClick={() => void autosave.retry()} size='sm' variant='outline'>
-						重试
-					</Button>
-				) : null}
 				<Button aria-label='更多任务操作' className='size-7 p-0' size='icon' type='button' variant='outline'>
 					<MoreHorizontalIcon className='size-4' />
 				</Button>
@@ -41,7 +34,18 @@ export function TaskDrawerFooter({
 					size='sm'
 					variant='outline'
 				>
+					<ArchiveIcon className='size-3.5' />
 					{task.archivedAt ? '恢复' : '归档'}
+				</Button>
+				<Button
+					className='h-7 px-2 text-[12px]'
+					disabled={isDeleteBusy}
+					onClick={onMoveToTrash}
+					size='sm'
+					variant='destructive'
+				>
+					<Trash2Icon className='size-3.5' />
+					移入回收站
 				</Button>
 			</div>
 		</DetailFooter>

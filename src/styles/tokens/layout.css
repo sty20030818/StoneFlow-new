@@ -48,7 +48,7 @@
 	/* Shared geometry and motion */
 	--sf-shell-sidebar-width: 245px;
 	--sf-shell-sidebar-width-icon: 3rem;
-	--sf-shell-drawer-width: 32rem;
+	--sf-shell-drawer-width: 40rem;
 	--sf-shell-layout-sync-duration: var(--sf-motion-duration-layout-sync);
 	--sf-shell-layout-sync-easing: var(--sf-motion-easing-layout-sync);
 }
