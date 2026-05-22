@@ -25,7 +25,7 @@ export function createMetadataDateOptionsConfig({
 			? [
 					{
 						key: 'none',
-						label: '移出日期',
+						label: '移除当前日期',
 						value: null,
 						isEmptyValue: true,
 					} satisfies MetadataDateOption,

@@ -166,7 +166,7 @@ describe('TaskRowAdapter', () => {
 		expect(screen.queryByRole('button', { name: '项目' })).not.toBeInTheDocument()
 	})
 
-	it('日期字段无值时不渲染移出日期', async () => {
+	it('日期字段无值时不渲染移除当前日期', async () => {
 		render(
 			<DangerConfirmProvider>
 				<TaskRowAdapter
@@ -187,7 +187,7 @@ describe('TaskRowAdapter', () => {
 		expect(screen.queryByRole('button', { name: '提醒 任务 A' })).not.toBeInTheDocument()
 	})
 
-	it('日期字段有值时显示移出日期并可按 0 清空', async () => {
+	it('日期字段有值时显示移除当前日期并可按 0 清空', async () => {
 		const actions = buildActions()
 		render(
 			<DangerConfirmProvider>
@@ -205,7 +205,7 @@ describe('TaskRowAdapter', () => {
 		)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止 任务 A' }))
-		expect(await screen.findByRole('menuitem', { name: /移出日期/ })).toBeInTheDocument()
+		expect(await screen.findByRole('menuitem', { name: /移除当前日期/ })).toBeInTheDocument()
 		expect(getShortcutHintDigits()).toEqual(['0'])
 
 		fireEvent.keyDown(window, { key: '0' })

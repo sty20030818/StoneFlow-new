@@ -21,6 +21,12 @@ vi.mock('@/app/layouts/shell/model/useDrawerStore', () => ({
 		}),
 }))
 
+vi.mock('@/features/entity-detail', () => ({
+	useEntityDetailController: () => ({
+		openDrawer: openDrawerMock,
+	}),
+}))
+
 describe('TaskCreateContent', () => {
 	beforeEach(() => {
 		createTaskMock.mockReset()
@@ -65,7 +71,7 @@ describe('TaskCreateContent', () => {
 
 		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
 		expect(onClose).toHaveBeenCalledTimes(1)
-		expect(openDrawerMock).toHaveBeenCalledWith('task', 'task-created')
+		expect(openDrawerMock).toHaveBeenCalledWith({ kind: 'task', id: 'task-created' })
 	})
 
 	it('描述输入区位于统一滚动容器内', () => {
@@ -77,6 +83,81 @@ describe('TaskCreateContent', () => {
 
 		expect(scrollContainer).toHaveAttribute('data-scroll-container', 'true')
 		expect(scrollContainer?.className).toContain('px-5')
+	})
+
+	it('状态和优先级使用统一字段控件并写入创建 payload', async () => {
+		renderTaskCreate()
+
+		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 D' } })
+		expect(screen.getByText('待执行')).toBeInTheDocument()
+		fireEvent.pointerDown(screen.getByRole('button', { name: '状态' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /进行中/ }))
+		expect(screen.getByText('无优先级')).toBeInTheDocument()
+		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /高/ }))
+		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
+
+		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
+		expect(createTaskMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				status: 'doing',
+				priority: 3,
+			}),
+		)
+	})
+
+	it('归属菜单可在收件箱、独立事项和项目之间切换并保持提交语义', async () => {
+		renderTaskCreate()
+
+		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 E' } })
+		expect(screen.getByText('收件箱')).toBeInTheDocument()
+		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
+		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
+
+		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
+		expect(createTaskMock).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				placement: { kind: 'noProject' },
+			}),
+		)
+
+		createTaskMock.mockClear()
+		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 F' } })
+		expect(screen.getByText('独立事项')).toBeInTheDocument()
+		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 A/ }))
+		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
+
+		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
+		expect(createTaskMock).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				spaceId: null,
+				placement: { kind: 'project', projectId: 'project-a' },
+			}),
+		)
+	})
+
+	it('日期下拉位于标签前，并将截止、计划、提醒写入创建 payload', async () => {
+		renderTaskCreate()
+
+		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 G' } })
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '计划' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '提醒' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
+		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
+
+		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
+		expect(createTaskMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				dueAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+				scheduledAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+				reminderAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+			}),
+		)
 	})
 })
 
@@ -100,6 +181,11 @@ function renderTaskCreate({
 						id: 'project-a',
 						spaceId: 'space-a',
 						name: '项目 A',
+					},
+					{
+						id: 'project-b',
+						spaceId: 'space-b',
+						name: '项目 B',
 					},
 				]}
 				projectsLoading={false}

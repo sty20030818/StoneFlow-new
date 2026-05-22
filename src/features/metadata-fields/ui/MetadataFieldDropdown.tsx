@@ -75,7 +75,7 @@ export function MetadataFieldDropdown<TValue>({
 					appearance={buttonAppearance}
 					compact={compact}
 					disabled={disabled}
-					icon={buttonIcon ?? currentOption.icon}
+					icon={buttonIcon === undefined ? currentOption.icon : buttonIcon}
 					label={buttonLabel ?? currentOption.label}
 					stopPropagation={stopPropagation}
 				/>

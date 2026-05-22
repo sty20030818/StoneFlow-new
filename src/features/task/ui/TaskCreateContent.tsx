@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 
 import { useRegisterSubmitTarget, type SubmitIntent } from '@/features/submit/model'
 import { useEntityDetailController } from '@/features/entity-detail'
+import { MetadataDateDropdown, taskDateMetadataIcons } from '@/features/metadata-fields'
 import type { ProjectOption } from '@/features/project/model/types'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { buildCreatePlacementInput } from '@/features/task/model/taskPlacement'
@@ -64,6 +65,9 @@ export function TaskCreateContent({
 	const [placement, setPlacement] = useState<TaskPlacement>(resolvedInitialPlacement)
 	const [projectId, setProjectId] = useState(initialProjectId ?? '')
 	const [status, setStatus] = useState<TaskStatus>(initialStatus)
+	const [dueAt, setDueAt] = useState<string | null>(null)
+	const [scheduledAt, setScheduledAt] = useState<string | null>(null)
+	const [reminderAt, setReminderAt] = useState<string | null>(null)
 	const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
 	const [createMore, setCreateMore] = useState(false)
@@ -79,6 +83,9 @@ export function TaskCreateContent({
 		)
 		setProjectId(initialProjectId ?? '')
 		setStatus(initialStatus)
+		setDueAt(null)
+		setScheduledAt(null)
+		setReminderAt(null)
 	}, [
 		currentScope,
 		defaultSpaceId,
@@ -145,6 +152,9 @@ export function TaskCreateContent({
 					note: note.trim() ? note : null,
 					status,
 					priority,
+					dueAt,
+					scheduledAt,
+					reminderAt,
 				})
 
 				if (effectiveIntent === 'continue') {
@@ -168,13 +178,16 @@ export function TaskCreateContent({
 		[
 			createMore,
 			createTask,
+			dueAt,
 			note,
 			onClose,
 			openEntityDrawer,
 			placement,
 			priority,
 			projectId,
+			reminderAt,
 			resetFieldsOnly,
+			scheduledAt,
 			spaceId,
 			status,
 			title,
@@ -235,6 +248,27 @@ export function TaskCreateContent({
 							}
 						}
 					}}
+				/>
+				<MetadataDateDropdown
+					buttonLabel={dueAt ? undefined : '截止日期'}
+					icon={taskDateMetadataIcons.due}
+					label='截止日期'
+					value={dueAt}
+					onChange={setDueAt}
+				/>
+				<MetadataDateDropdown
+					buttonLabel={scheduledAt ? undefined : '计划日期'}
+					icon={taskDateMetadataIcons.scheduled}
+					label='计划日期'
+					value={scheduledAt}
+					onChange={setScheduledAt}
+				/>
+				<MetadataDateDropdown
+					buttonLabel={reminderAt ? undefined : '提醒日期'}
+					icon={taskDateMetadataIcons.reminder}
+					label='提醒日期'
+					value={reminderAt}
+					onChange={setReminderAt}
 				/>
 				<Button onClick={() => toast.info('标签功能即将支持')} size='sm' variant='outline'>
 					<TagIcon />

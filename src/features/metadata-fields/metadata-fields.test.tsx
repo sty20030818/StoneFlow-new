@@ -180,7 +180,7 @@ describe('metadata-fields', () => {
 		expect(button.querySelector('.sr-only')).toHaveTextContent('中')
 	})
 
-	it('MetadataDateDropdown 默认无值时不显示移出日期，且自定义日期禁用', async () => {
+	it('MetadataDateDropdown 默认无值时不显示移除当前日期，且自定义日期禁用', async () => {
 		render(
 			<MetadataDateDropdown
 				icon={<CalendarIcon className='size-3.5' />}
@@ -192,7 +192,7 @@ describe('metadata-fields', () => {
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
 
-		expect(screen.queryByRole('menuitem', { name: /移出日期/ })).not.toBeInTheDocument()
+		expect(screen.queryByRole('menuitem', { name: /移除当前日期/ })).not.toBeInTheDocument()
 		expect(await screen.findByRole('menuitem', { name: /今天/ })).toBeInTheDocument()
 		expect(getShortcutHintDigits()).toEqual([])
 		expect(screen.getByRole('menuitem', { name: /明天/ })).toBeInTheDocument()
@@ -215,7 +215,7 @@ describe('metadata-fields', () => {
 
 		expect(screen.getByRole('button', { name: '截止' })).toHaveTextContent('截止 5/8')
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
-		expect(await screen.findByRole('menuitem', { name: /移出日期/ })).toBeInTheDocument()
+		expect(await screen.findByRole('menuitem', { name: /移除当前日期/ })).toBeInTheDocument()
 		expect(getShortcutHintDigits()).toEqual(['0'])
 
 		fireEvent.keyDown(window, { key: '1' })
@@ -225,7 +225,7 @@ describe('metadata-fields', () => {
 		expect(onChange).toHaveBeenCalledWith(null)
 	})
 
-	it('MetadataDateDropdown 无值时不显示移出日期且 0 不生效', async () => {
+	it('MetadataDateDropdown 无值时不显示移除当前日期且 0 不生效', async () => {
 		const onChange = vi.fn()
 		render(
 			<MetadataDateDropdown
@@ -237,7 +237,7 @@ describe('metadata-fields', () => {
 		)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
-		expect(screen.queryByRole('menuitem', { name: /移出日期/ })).not.toBeInTheDocument()
+		expect(screen.queryByRole('menuitem', { name: /移除当前日期/ })).not.toBeInTheDocument()
 		expect(getShortcutHintDigits()).toEqual([])
 
 		fireEvent.keyDown(window, { key: '0' })

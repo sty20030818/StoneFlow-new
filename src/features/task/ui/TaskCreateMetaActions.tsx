@@ -1,21 +1,16 @@
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
-import { TASK_PRIORITY_OPTIONS } from '@/features/task/model/taskPriority'
 import type { TaskPlacement } from '@/shared/types'
 import type { TaskStatus } from '@/shared/types'
 import type { ProjectOption } from '@/features/project/model/types'
-import { getTaskStatusOption, TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
-import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
-import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
-import { Button } from '@/shared/ui/base/button'
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuTrigger,
-} from '@/shared/ui/base/dropdown-menu'
-import { CheckIcon, FileIcon, FolderIcon, InboxIcon } from 'lucide-react'
+	createTaskPlacementMetadataOptions,
+	createTaskPriorityMetadataOptions,
+	createTaskStatusMetadataOptions,
+	MetadataFieldDropdown,
+	MetadataPlacementDropdown,
+	type MetadataPlacementValue,
+} from '@/features/metadata-fields'
+import { FolderIcon } from 'lucide-react'
 
 /**
  * 状态元数据下拉 — outline button + DropdownMenu。
@@ -29,38 +24,16 @@ export function StatusMetaAction({
 	disabled: boolean
 	onStatusChange: (status: TaskStatus) => void
 }) {
-	const currentOption = getTaskStatusOption(status)
+	const statusOptions = createTaskStatusMetadataOptions()
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button disabled={disabled} size='sm' variant='outline'>
-					<TaskStatusIndicator status={status} />
-					{currentOption.label}
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align='start' sideOffset={6}>
-				<DropdownMenuLabel>状态</DropdownMenuLabel>
-				<DropdownMenuGroup>
-					{TASK_STATUS_OPTIONS.map((option) => (
-						<DropdownMenuItem
-							className='gap-2 p-2'
-							key={option.value}
-							onSelect={() => onStatusChange(option.value)}
-						>
-							<TaskStatusIndicator status={option.value} />
-							<span className='min-w-0 flex-1 truncate'>{option.label}</span>
-							{status === option.value ? (
-								<CheckIcon
-									aria-hidden
-									className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
-								/>
-							) : null}
-						</DropdownMenuItem>
-					))}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+		<MetadataFieldDropdown
+			disabled={disabled}
+			label='状态'
+			options={statusOptions}
+			value={status}
+			onChange={onStatusChange}
+		/>
 	)
 }
 
@@ -76,39 +49,16 @@ export function PriorityMetaAction({
 	disabled: boolean
 	onPriorityChange: (priority: TaskPriorityValue) => void
 }) {
-	const currentOption =
-		TASK_PRIORITY_OPTIONS.find((o) => o.value === priority) ?? TASK_PRIORITY_OPTIONS[0]
+	const priorityOptions = createTaskPriorityMetadataOptions()
 
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button disabled={disabled} size='sm' variant='outline'>
-					<PriorityIcon priority={priority} size='sm' />
-					{currentOption.label}
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align='start' sideOffset={6}>
-				<DropdownMenuLabel>优先级</DropdownMenuLabel>
-				<DropdownMenuGroup>
-					{TASK_PRIORITY_OPTIONS.map((option) => (
-						<DropdownMenuItem
-							className='gap-2 p-2'
-							key={option.value}
-							onSelect={() => onPriorityChange(option.value as TaskPriorityValue)}
-						>
-							<PriorityIcon priority={option.value} size='md' />
-							<span className='min-w-0 flex-1 truncate'>{option.label}</span>
-							{priority === option.value ? (
-								<CheckIcon
-									aria-hidden
-									className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
-								/>
-							) : null}
-						</DropdownMenuItem>
-					))}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+		<MetadataFieldDropdown
+			disabled={disabled}
+			label='优先级'
+			options={priorityOptions}
+			value={priority}
+			onChange={onPriorityChange}
+		/>
 	)
 }
 
@@ -128,63 +78,57 @@ export function ProjectMetaAction({
 	projects: ProjectOption[]
 	onPlacementChange: (placement: TaskPlacement, projectId: string | null) => void
 }) {
-	const currentProject = projects.find((p) => p.id === projectId)
-	const buttonLabel =
-		placement === 'project'
-			? (currentProject?.name ?? '选择项目')
-			: placement === 'noProject'
-				? '独立事项'
-				: '收件箱'
+	const placementOptions = createTaskPlacementMetadataOptions({
+		projects,
+		includeInbox: true,
+	})
+	const value = toMetadataPlacementValue(placement, projectId)
+	const needsProjectSelection = placement === 'project' && !projectId
+
 	return (
-		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button disabled={disabled} size='sm' variant='outline'>
-					{placement === 'inbox' ? (
-						<InboxIcon className='size-4' />
-					) : (
-						<FolderIcon className='size-4' />
-					)}
-					{buttonLabel}
-				</Button>
-			</DropdownMenuTrigger>
-			<DropdownMenuContent align='start' sideOffset={6}>
-				<DropdownMenuLabel>归属</DropdownMenuLabel>
-				<DropdownMenuGroup>
-					<DropdownMenuItem className='gap-2 p-2' onSelect={() => onPlacementChange('inbox', null)}>
-						<InboxIcon className='size-4 text-sf-icon-secondary' />
-						<span className='min-w-0 flex-1 truncate'>收件箱</span>
-						{placement === 'inbox' ? (
-							<CheckIcon aria-hidden className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary' />
-						) : null}
-					</DropdownMenuItem>
-					<DropdownMenuItem
-						className='gap-2 p-2'
-						onSelect={() => onPlacementChange('noProject', null)}
-					>
-						<FileIcon className='size-4 text-sf-icon-secondary' />
-						<span className='min-w-0 flex-1 truncate'>独立事项</span>
-						{placement === 'noProject' ? (
-							<CheckIcon aria-hidden className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary' />
-						) : null}
-					</DropdownMenuItem>
-					{projects.map((project) => (
-						<DropdownMenuItem
-							className='gap-2 p-2'
-							key={project.id}
-							onSelect={() => onPlacementChange('project', project.id)}
-						>
-							<FolderIcon className='size-4 text-sf-icon-secondary' />
-							<span className='min-w-0 flex-1 truncate'>{project.name}</span>
-							{placement === 'project' && projectId === project.id ? (
-								<CheckIcon
-									aria-hidden
-									className='ml-auto size-3.5 shrink-0 text-sf-icon-secondary'
-								/>
-							) : null}
-						</DropdownMenuItem>
-					))}
-				</DropdownMenuGroup>
-			</DropdownMenuContent>
-		</DropdownMenu>
+		<MetadataPlacementDropdown
+			buttonIcon={needsProjectSelection ? <FolderIcon className='size-3.5' /> : undefined}
+			buttonLabel={needsProjectSelection ? '选择项目' : undefined}
+			disabled={disabled}
+			label='归属'
+			options={placementOptions}
+			value={value}
+			onChange={(nextValue) => {
+				const nextPlacement = fromMetadataPlacementValue(nextValue)
+				onPlacementChange(nextPlacement.placement, nextPlacement.projectId)
+			}}
+		/>
 	)
+}
+
+function toMetadataPlacementValue(
+	placement: TaskPlacement,
+	projectId: string,
+): MetadataPlacementValue {
+	if (placement === 'project' && projectId) {
+		return { kind: 'project', projectId }
+	}
+
+	if (placement === 'noProject') {
+		return { kind: 'noProject' }
+	}
+
+	return { kind: 'inbox' }
+}
+
+function fromMetadataPlacementValue(value: MetadataPlacementValue): {
+	placement: TaskPlacement
+	projectId: string | null
+} {
+	if (value.kind === 'project') {
+		return {
+			placement: 'project',
+			projectId: value.projectId,
+		}
+	}
+
+	return {
+		placement: value.kind === 'noProject' ? 'noProject' : 'inbox',
+		projectId: null,
+	}
 }

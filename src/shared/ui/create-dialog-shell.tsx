@@ -1,6 +1,10 @@
 import type { Space } from '@/shared/types'
 
-import { SpaceDropdownMenu } from '@/features/space/ui/SpaceDropdownMenu'
+import {
+	createSpaceMetadataOptions,
+	getSpaceMetadataButtonVisual,
+	MetadataFieldDropdown,
+} from '@/features/metadata-fields'
 import { Button } from '@/shared/ui/base/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/base/dialog'
 import {
@@ -61,7 +65,7 @@ export function CreateDialogShell({
 
 				<div className={createDialogHeaderClass}>
 					<div className='flex items-center gap-1 text-[13px]'>
-						<SpaceDropdownMenu
+						<CreateDialogSpaceSelector
 							currentSpace={currentSpace}
 							currentSpaceLabel={currentSpaceLabel}
 							onSelectSpace={onSelectSpace}
@@ -103,5 +107,34 @@ export function CreateDialogShell({
 				<div className='flex min-h-0 flex-1 flex-col overflow-hidden'>{children}</div>
 			</DialogContent>
 		</Dialog>
+	)
+}
+
+function CreateDialogSpaceSelector({
+	currentSpace,
+	currentSpaceLabel,
+	selectedSpaceId,
+	spaces,
+	onSelectSpace,
+}: {
+	currentSpace: Space | null
+	currentSpaceLabel: string
+	selectedSpaceId: string | null
+	spaces: Space[]
+	onSelectSpace: (spaceId: string | null) => void
+}) {
+	const options = createSpaceMetadataOptions(spaces)
+	const buttonVisual = getSpaceMetadataButtonVisual(currentSpace)
+	const fallbackValue = selectedSpaceId ?? options[0]?.value ?? ''
+
+	return (
+		<MetadataFieldDropdown
+			buttonIcon={buttonVisual.icon}
+			buttonLabel={currentSpaceLabel}
+			label='空间'
+			options={options}
+			value={fallbackValue}
+			onChange={onSelectSpace}
+		/>
 	)
 }
