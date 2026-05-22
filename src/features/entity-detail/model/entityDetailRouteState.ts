@@ -1,7 +1,4 @@
-import type {
-	EntityDetailParseResult,
-	EntityDetailTarget,
-} from './entityDetailTypes'
+import type { EntityDetailParseResult, EntityDetailTarget } from './entityDetailTypes'
 
 const TASK_QUERY_KEY = 'task'
 const PROJECT_QUERY_KEY = 'project'

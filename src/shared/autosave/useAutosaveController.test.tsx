@@ -36,10 +36,12 @@ describe('useAutosaveController', () => {
 	})
 
 	it('debounced 字段在默认 600ms 后保存', async () => {
-		const savePatch = vi.fn(async (patch: Patch): Promise<Draft> => ({
-			title: patch.title ?? 'old',
-			note: patch.note ?? null,
-		}))
+		const savePatch = vi.fn(
+			async (patch: Patch): Promise<Draft> => ({
+				title: patch.title ?? 'old',
+				note: patch.note ?? null,
+			}),
+		)
 		const { result } = renderHook(() =>
 			useAutosaveController({
 				base: { title: 'old', note: null },
@@ -65,10 +67,12 @@ describe('useAutosaveController', () => {
 	})
 
 	it('immediate 字段不等待 debounce', async () => {
-		const savePatch = vi.fn(async (patch: Patch): Promise<Draft> => ({
-			title: patch.title ?? 'old',
-			note: patch.note ?? null,
-		}))
+		const savePatch = vi.fn(
+			async (patch: Patch): Promise<Draft> => ({
+				title: patch.title ?? 'old',
+				note: patch.note ?? null,
+			}),
+		)
 		const { result } = renderHook(() =>
 			useAutosaveController({
 				base: { title: 'old', note: null },
@@ -87,10 +91,12 @@ describe('useAutosaveController', () => {
 	})
 
 	it('manual 字段只变 dirty，flushNow 后才保存', async () => {
-		const savePatch = vi.fn(async (patch: Patch): Promise<Draft> => ({
-			title: patch.title ?? 'old',
-			note: patch.note ?? null,
-		}))
+		const savePatch = vi.fn(
+			async (patch: Patch): Promise<Draft> => ({
+				title: patch.title ?? 'old',
+				note: patch.note ?? null,
+			}),
+		)
 		const { result } = renderHook(() =>
 			useAutosaveController({
 				base: { title: 'old', note: null },
@@ -116,10 +122,12 @@ describe('useAutosaveController', () => {
 	})
 
 	it('flushNow 会取消 pending debounce', async () => {
-		const savePatch = vi.fn(async (patch: Patch): Promise<Draft> => ({
-			title: patch.title ?? 'old',
-			note: patch.note ?? null,
-		}))
+		const savePatch = vi.fn(
+			async (patch: Patch): Promise<Draft> => ({
+				title: patch.title ?? 'old',
+				note: patch.note ?? null,
+			}),
+		)
 		const { result } = renderHook(() =>
 			useAutosaveController({
 				base: { title: 'old', note: null },
@@ -140,10 +148,12 @@ describe('useAutosaveController', () => {
 	})
 
 	it('savePatch 返回的新 base 会成为后续 diff 基准', async () => {
-		const savePatch = vi.fn(async (patch: Patch): Promise<Draft> => ({
-			title: patch.title ?? 'old',
-			note: patch.note ?? null,
-		}))
+		const savePatch = vi.fn(
+			async (patch: Patch): Promise<Draft> => ({
+				title: patch.title ?? 'old',
+				note: patch.note ?? null,
+			}),
+		)
 		const { result } = renderHook(() =>
 			useAutosaveController({
 				base: { title: 'old', note: null },
@@ -199,10 +209,12 @@ describe('useAutosaveController', () => {
 	})
 
 	it('reset 会清理 timer 和错误状态', async () => {
-		const savePatch = vi.fn(async (patch: Patch): Promise<Draft> => ({
-			title: patch.title ?? 'old',
-			note: patch.note ?? null,
-		}))
+		const savePatch = vi.fn(
+			async (patch: Patch): Promise<Draft> => ({
+				title: patch.title ?? 'old',
+				note: patch.note ?? null,
+			}),
+		)
 		const { result } = renderHook(() =>
 			useAutosaveController({
 				base: { title: 'old', note: null },

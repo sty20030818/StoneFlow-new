@@ -759,7 +759,8 @@ function ScopedPickerCommandGroup({
 		const uniqueNonEmptyDueDates = Array.from(
 			new Set(normalizedDueDates.filter((value): value is string => Boolean(value))),
 		)
-		const customDateDialogValue = uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
+		const customDateDialogValue =
+			uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
 		return (
 			<CommandGroup className='pt-2' heading={group.heading}>
 				{options.map((option) => (

@@ -185,7 +185,7 @@ describe('BulkActionProvider', () => {
 			}),
 		)
 	})
-}) 
+})
 
 function ProviderProbe({
 	actionId,

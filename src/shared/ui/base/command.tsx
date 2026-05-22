@@ -64,10 +64,7 @@ const CommandInput = React.forwardRef<
 	}
 >(({ className, wrapperClassName, ...props }, ref) => {
 	return (
-		<div
-			data-slot='command-input-wrapper'
-			className={cn('px-5 py-4', wrapperClassName)}
-		>
+		<div data-slot='command-input-wrapper' className={cn('px-5 py-4', wrapperClassName)}>
 			<CommandPrimitive.Input
 				data-slot='command-input'
 				ref={ref}

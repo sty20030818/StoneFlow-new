@@ -370,56 +370,56 @@ export function ShellSidebar({
 															<CheckIcon className={shellChromeIconSecondaryClass} />
 															<span>设为默认</span>
 														</DropdownMenuItem>
-											<DropdownMenuItem
-												disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
-												onSelect={async () => {
-													if (!activeSpace) {
-														return
-													}
-													const confirmed = await requestDangerConfirm({
-														intent: 'archive',
-														entityType: 'space',
-														count: 1,
-														entityLabel: activeSpace.name,
-													})
-													if (!confirmed) {
-														return
-													}
-													await runSpaceMutation(async () => {
-														await onArchiveSpace(activeSpace.id)
-														if (currentScope.type === 'space') {
-															navigate('/spaces/inbox')
-														}
-													})
-												}}
-											>
+														<DropdownMenuItem
+															disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
+															onSelect={async () => {
+																if (!activeSpace) {
+																	return
+																}
+																const confirmed = await requestDangerConfirm({
+																	intent: 'archive',
+																	entityType: 'space',
+																	count: 1,
+																	entityLabel: activeSpace.name,
+																})
+																if (!confirmed) {
+																	return
+																}
+																await runSpaceMutation(async () => {
+																	await onArchiveSpace(activeSpace.id)
+																	if (currentScope.type === 'space') {
+																		navigate('/spaces/inbox')
+																	}
+																})
+															}}
+														>
 															<ExternalLinkIcon className={shellChromeIconSecondaryClass} />
 															<span>归档</span>
 														</DropdownMenuItem>
-											<DropdownMenuItem
-												className='text-destructive'
-												disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
-												onSelect={async () => {
-													if (!activeSpace) {
-														return
-													}
-													const confirmed = await requestDangerConfirm({
-														intent: 'trash',
-														entityType: 'space',
-														count: 1,
-														entityLabel: activeSpace.name,
-													})
-													if (!confirmed) {
-														return
-													}
-													await runSpaceMutation(async () => {
-														await onDeleteSpace(activeSpace.id)
-														if (currentScope.type === 'space') {
-															navigate('/spaces/inbox')
-														}
-													})
-												}}
-											>
+														<DropdownMenuItem
+															className='text-destructive'
+															disabled={!activeSpace || !canArchiveOrDeleteActiveSpace}
+															onSelect={async () => {
+																if (!activeSpace) {
+																	return
+																}
+																const confirmed = await requestDangerConfirm({
+																	intent: 'trash',
+																	entityType: 'space',
+																	count: 1,
+																	entityLabel: activeSpace.name,
+																})
+																if (!confirmed) {
+																	return
+																}
+																await runSpaceMutation(async () => {
+																	await onDeleteSpace(activeSpace.id)
+																	if (currentScope.type === 'space') {
+																		navigate('/spaces/inbox')
+																	}
+																})
+															}}
+														>
 															<Trash2Icon className='shrink-0' />
 															<span>删除</span>
 														</DropdownMenuItem>

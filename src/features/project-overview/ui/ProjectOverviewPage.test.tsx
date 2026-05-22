@@ -143,9 +143,7 @@ describe('ProjectOverviewPage', () => {
 		expect(screen.getByText('归档选中项目？')).toBeInTheDocument()
 		expect(archiveProjectSpy).not.toHaveBeenCalled()
 
-		fireEvent.click(
-			within(screen.getByRole('alertdialog')).getByRole('button', { name: '归档' }),
-		)
+		fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: '归档' }))
 
 		await waitFor(() => {
 			expect(archiveProjectSpy).toHaveBeenCalledTimes(2)

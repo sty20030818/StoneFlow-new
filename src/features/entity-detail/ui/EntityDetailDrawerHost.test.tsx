@@ -50,7 +50,12 @@ describe('EntityDetailDrawerHost', () => {
 
 	it('null 不渲染实体内容', () => {
 		const { container } = render(
-			<EntityDetailDrawerHost activeDetail={null} currentSpaceLabel='Work' onClose={onClose} open />,
+			<EntityDetailDrawerHost
+				activeDetail={null}
+				currentSpaceLabel='Work'
+				onClose={onClose}
+				open
+			/>,
 		)
 
 		expect(container).toBeEmptyDOMElement()

@@ -8,7 +8,12 @@ import {
 
 describe('entityDetailNavigation', () => {
 	it('首次打开 Drawer 使用 push', () => {
-		expect(openEntityDrawerTarget({ pathname: '/space/work/inbox', search: '' }, { kind: 'task', id: 'task-a' })).toEqual({
+		expect(
+			openEntityDrawerTarget(
+				{ pathname: '/space/work/inbox', search: '' },
+				{ kind: 'task', id: 'task-a' },
+			),
+		).toEqual({
 			pathname: '/space/work/inbox',
 			search: '?task=task-a',
 			replace: false,
@@ -42,7 +47,9 @@ describe('entityDetailNavigation', () => {
 	})
 
 	it('关闭 Drawer 使用 replace', () => {
-		expect(closeEntityDrawerTarget({ pathname: '/spaces/views', search: '?view=today&task=task-a' })).toEqual({
+		expect(
+			closeEntityDrawerTarget({ pathname: '/spaces/views', search: '?view=today&task=task-a' }),
+		).toEqual({
 			pathname: '/spaces/views',
 			search: '?view=today',
 			replace: true,

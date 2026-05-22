@@ -38,7 +38,13 @@ export function useEntityDetailController() {
 				{ replace: true },
 			)
 		})
-	}, [activeDetail, location.pathname, location.search, navigate, parsedRouteState.shouldCleanSearch])
+	}, [
+		activeDetail,
+		location.pathname,
+		location.search,
+		navigate,
+		parsedRouteState.shouldCleanSearch,
+	])
 
 	const openDrawer = useCallback(
 		(target: EntityDetailTarget) => {

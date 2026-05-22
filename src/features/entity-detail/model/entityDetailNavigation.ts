@@ -32,7 +32,9 @@ export function closeEntityDrawerTarget(
 
 export function openEntityPageTarget(target: EntityDetailTarget): EntityDetailNavigationTarget {
 	const pathname =
-		target.kind === 'task' ? `/tasks/${encodeURIComponent(target.id)}` : `/projects/${encodeURIComponent(target.id)}`
+		target.kind === 'task'
+			? `/tasks/${encodeURIComponent(target.id)}`
+			: `/projects/${encodeURIComponent(target.id)}`
 
 	return {
 		pathname,

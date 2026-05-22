@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 
-import {
-	autosaveMachineReducer,
-	initialAutosaveMachineState,
-} from './autosaveMachine'
+import { autosaveMachineReducer, initialAutosaveMachineState } from './autosaveMachine'
 import type {
 	AutosaveController,
 	AutosaveSaveMode,
@@ -22,10 +19,7 @@ export function useAutosaveController<TDraft, TPatch>({
 	savedVisibleMs = DEFAULT_SAVED_VISIBLE_MS,
 }: UseAutosaveControllerOptions<TDraft, TPatch>): AutosaveController<TDraft> {
 	const [draft, setDraftState] = useState(base)
-	const [machine, dispatch] = useReducer(
-		autosaveMachineReducer,
-		initialAutosaveMachineState,
-	)
+	const [machine, dispatch] = useReducer(autosaveMachineReducer, initialAutosaveMachineState)
 
 	const baseRef = useRef(base)
 	const draftRef = useRef(base)

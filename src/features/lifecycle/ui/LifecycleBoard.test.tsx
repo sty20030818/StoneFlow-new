@@ -34,14 +34,12 @@ describe('LifecycleBoard', () => {
 			</DangerConfirmProvider>,
 		)
 
-		expect(screen.getByRole('checkbox', { name: '选择 任务 B' }).closest('[data-lifecycle-entity]')).toHaveAttribute(
-			'data-selection-group-position',
-			'first',
-		)
-		expect(screen.getByRole('checkbox', { name: '选择 任务 C' }).closest('[data-lifecycle-entity]')).toHaveAttribute(
-			'data-selection-group-position',
-			'last',
-		)
+		expect(
+			screen.getByRole('checkbox', { name: '选择 任务 B' }).closest('[data-lifecycle-entity]'),
+		).toHaveAttribute('data-selection-group-position', 'first')
+		expect(
+			screen.getByRole('checkbox', { name: '选择 任务 C' }).closest('[data-lifecycle-entity]'),
+		).toHaveAttribute('data-selection-group-position', 'last')
 	})
 
 	it('异步加载到首批 section 后默认展开', async () => {

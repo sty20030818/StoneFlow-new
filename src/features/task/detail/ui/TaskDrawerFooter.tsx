@@ -19,12 +19,18 @@ export function TaskDrawerFooter({
 	onMoveToTrash,
 }: TaskDrawerFooterProps) {
 	return (
-		<DetailFooter className='items-center gap-2'>
+		<DetailFooter className='items-center gap-2 py-2 pl-4 pr-2'>
 			<div className='min-w-0 flex-1 text-[11px] text-sf-text-tertiary'>
 				<span className='truncate'>更新于 {formatUpdatedAt(task.updatedAt)}</span>
 			</div>
 			<div className='flex min-w-0 shrink-0 items-center gap-2'>
-				<Button aria-label='更多任务操作' className='size-7 p-0' size='icon' type='button' variant='outline'>
+				<Button
+					aria-label='更多任务操作'
+					className='size-7 p-0'
+					size='icon'
+					type='button'
+					variant='outline'
+				>
 					<MoreHorizontalIcon className='size-4' />
 				</Button>
 				<Button

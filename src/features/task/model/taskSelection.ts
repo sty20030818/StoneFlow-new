@@ -92,9 +92,7 @@ export function pruneTaskSelectionFocusState(
 	const selectedIds = pruneTaskSelection(state.selectedIds, validIds)
 	const validIdSet = new Set(validIds)
 	const focusedId =
-		state.focusedId && validIdSet.has(state.focusedId)
-			? state.focusedId
-			: (selectedIds[0] ?? null)
+		state.focusedId && validIdSet.has(state.focusedId) ? state.focusedId : (selectedIds[0] ?? null)
 	const anchorId =
 		state.anchorId && validIdSet.has(state.anchorId)
 			? state.anchorId

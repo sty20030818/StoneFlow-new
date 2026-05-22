@@ -1,14 +1,7 @@
-import {
-	CalendarClockIcon,
-	CalendarX2Icon,
-	BellIcon,
-} from 'lucide-react'
+import { CalendarClockIcon, CalendarX2Icon, BellIcon } from 'lucide-react'
 
 import type { ProjectOption } from '@/features/project/model/types'
-import {
-	formatTaskPriorityLabel,
-	type TaskPriorityValue,
-} from '@/features/task/model/taskPriority'
+import { formatTaskPriorityLabel, type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import {
 	createPriorityActionSpec,

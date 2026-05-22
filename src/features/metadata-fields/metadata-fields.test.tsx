@@ -42,7 +42,13 @@ describe('metadata-fields', () => {
 		expect(spec.headerLabel).toBe('设置优先级为...')
 		expect(spec.headerShortcut).toBe('P')
 		expect(spec.commandPlaceholder).toBe('选择优先级…')
-		expect(spec.options.map((option) => option.label)).toEqual(['无优先级', '紧急', '高', '中', '低'])
+		expect(spec.options.map((option) => option.label)).toEqual([
+			'无优先级',
+			'紧急',
+			'高',
+			'中',
+			'低',
+		])
 		expect(spec.options[0]).toMatchObject({
 			value: 0,
 			isEmptyValue: true,
@@ -373,7 +379,9 @@ describe('metadata-fields', () => {
 		expect(screen.getByRole('menuitem', { name: /明天/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /本周/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /一周后/ })).toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).not.toHaveAttribute('data-disabled')
+		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).not.toHaveAttribute(
+			'data-disabled',
+		)
 		expect(getVisibleIndicators()).toHaveLength(0)
 	})
 
@@ -611,18 +619,21 @@ function getShortcutHintDigits() {
 }
 
 function getHeaderShortcutSummary() {
-	return document.querySelector('[data-slot="metadata-field-menu-shortcut-summary"]')?.textContent ?? null
+	return (
+		document.querySelector('[data-slot="metadata-field-menu-shortcut-summary"]')?.textContent ??
+		null
+	)
 }
 
 function getVisibleIndicatorsFor(label: string) {
 	const item = screen.getByRole('menuitem', { name: new RegExp(label) })
 	return [...item.querySelectorAll('[data-slot="metadata-field-indicator"]')].filter(
-		indicator => !indicator.classList.contains('invisible'),
+		(indicator) => !indicator.classList.contains('invisible'),
 	)
 }
 
 function getVisibleIndicators() {
 	return [...document.querySelectorAll('[data-slot="metadata-field-indicator"]')].filter(
-		indicator => !indicator.classList.contains('invisible'),
+		(indicator) => !indicator.classList.contains('invisible'),
 	)
 }

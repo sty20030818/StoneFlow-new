@@ -128,7 +128,8 @@ export function TaskContextMenu({
 	const uniqueNonEmptyDueDates = Array.from(
 		new Set(normalizedDueDates.filter((value): value is string => Boolean(value))),
 	)
-	const customDateDialogValue = uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
+	const customDateDialogValue =
+		uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
 
 	return (
 		<ContextMenu>
@@ -146,7 +147,9 @@ export function TaskContextMenu({
 							状态
 						</PropertySubTrigger>
 						<ContextMenuSubContent className='w-64'>
-							<ContextMenuLabel className='normal-case tracking-normal'>{statusGroup.label}</ContextMenuLabel>
+							<ContextMenuLabel className='normal-case tracking-normal'>
+								{statusGroup.label}
+							</ContextMenuLabel>
 							{statusGroup.options.map((option) => (
 								<PropertyOptionItem
 									indicator={getPropertyOptionIndicator(statusIndicatorValues, option.value)}
@@ -170,10 +173,15 @@ export function TaskContextMenu({
 							优先级
 						</PropertySubTrigger>
 						<ContextMenuSubContent className='w-64'>
-							<ContextMenuLabel className='normal-case tracking-normal'>{priorityGroup.label}</ContextMenuLabel>
+							<ContextMenuLabel className='normal-case tracking-normal'>
+								{priorityGroup.label}
+							</ContextMenuLabel>
 							{priorityGroup.options.map((option) => (
 								<PropertyOptionItem
-									indicator={getPropertyOptionIndicator(priorityIndicatorValues, String(option.value))}
+									indicator={getPropertyOptionIndicator(
+										priorityIndicatorValues,
+										String(option.value),
+									)}
 									icon={option.icon}
 									key={option.value}
 									onSelect={() => onSelectPriority(option.value)}
@@ -194,13 +202,12 @@ export function TaskContextMenu({
 								截止时间
 							</PropertySubTrigger>
 							<ContextMenuSubContent className='w-64'>
-								<ContextMenuLabel className='normal-case tracking-normal'>{dateGroup.label}</ContextMenuLabel>
+								<ContextMenuLabel className='normal-case tracking-normal'>
+									{dateGroup.label}
+								</ContextMenuLabel>
 								{dateGroup.options.map((option) => (
 									<PropertyOptionItem
-										indicator={getPropertyOptionIndicator(
-											dueDateIndicatorValues,
-											option.value,
-										)}
+										indicator={getPropertyOptionIndicator(dueDateIndicatorValues, option.value)}
 										disabled={option.disabled}
 										icon={option.icon}
 										key={option.key}
@@ -252,10 +259,7 @@ export function TaskContextMenu({
 									独立事项
 								</PropertyOptionItem>
 								{projectOptions.map((project) => (
-									<ContextMenuItem
-										key={project.id}
-										onSelect={() => onSelectProject?.(project.id)}
-									>
+									<ContextMenuItem key={project.id} onSelect={() => onSelectProject?.(project.id)}>
 										<FolderIcon />
 										{project.name}
 									</ContextMenuItem>
@@ -403,10 +407,7 @@ function getIndicatorValues<T>(values: T[]) {
 	return new Set(values)
 }
 
-function getPropertyOptionIndicator<T>(
-	values: Set<T>,
-	value: T,
-): PropertyOptionIndicator {
+function getPropertyOptionIndicator<T>(values: Set<T>, value: T): PropertyOptionIndicator {
 	if (!values.has(value)) {
 		return null
 	}

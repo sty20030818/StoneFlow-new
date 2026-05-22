@@ -17,16 +17,16 @@ const mockTaskLinksController = vi.hoisted(() => ({
 		status: 'ready' as 'idle' | 'loading' | 'ready' | 'error',
 		error: null as string | null,
 		reloadLinks: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-		addLink: vi.fn<(input: { title: string; url: string }) => Promise<void>>().mockResolvedValue(
-			undefined,
-		),
+		addLink: vi
+			.fn<(input: { title: string; url: string }) => Promise<void>>()
+			.mockResolvedValue(undefined),
 		editLink: vi
 			.fn<(linkId: string, input: { title: string; url: string }) => Promise<void>>()
 			.mockResolvedValue(undefined),
 		removeLink: vi.fn<(linkId: string) => Promise<void>>().mockResolvedValue(undefined),
-		openLink: vi.fn<(link: { id: string; title: string; url: string }) => Promise<void>>().mockResolvedValue(
-			undefined,
-		),
+		openLink: vi
+			.fn<(link: { id: string; title: string; url: string }) => Promise<void>>()
+			.mockResolvedValue(undefined),
 	},
 }))
 
@@ -158,16 +158,16 @@ function baseTaskLinksControllerState() {
 		status: 'ready' as const,
 		error: null,
 		reloadLinks: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-		addLink: vi.fn<(input: { title: string; url: string }) => Promise<void>>().mockResolvedValue(
-			undefined,
-		),
+		addLink: vi
+			.fn<(input: { title: string; url: string }) => Promise<void>>()
+			.mockResolvedValue(undefined),
 		editLink: vi
 			.fn<(linkId: string, input: { title: string; url: string }) => Promise<void>>()
 			.mockResolvedValue(undefined),
 		removeLink: vi.fn<(linkId: string) => Promise<void>>().mockResolvedValue(undefined),
-		openLink: vi.fn<(link: { id: string; title: string; url: string }) => Promise<void>>().mockResolvedValue(
-			undefined,
-		),
+		openLink: vi
+			.fn<(link: { id: string; title: string; url: string }) => Promise<void>>()
+			.mockResolvedValue(undefined),
 	}
 }
 

@@ -112,12 +112,12 @@ function TaskDrawerLoaded({
 	}
 
 	return (
-			<DetailDrawerShell aria-label='任务详情'>
-				<TaskDrawerHeader autosave={autosave} />
-				<TaskDrawerBody autosave={autosave} projects={projects} taskId={task.id} />
-				<TaskDrawerFooter
-					isArchiveBusy={isArchiveBusy}
-					isDeleteBusy={isDeleteBusy}
+		<DetailDrawerShell aria-label='任务详情'>
+			<TaskDrawerHeader autosave={autosave} />
+			<TaskDrawerBody autosave={autosave} projects={projects} taskId={task.id} />
+			<TaskDrawerFooter
+				isArchiveBusy={isArchiveBusy}
+				isDeleteBusy={isDeleteBusy}
 				onMoveToTrash={() => void handleMoveToTrash()}
 				onArchiveOrRestore={() => void handleArchiveOrRestore()}
 				task={task}

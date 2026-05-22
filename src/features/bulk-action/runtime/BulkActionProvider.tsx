@@ -50,10 +50,7 @@ export function BulkActionProvider({
 	const { requestDangerConfirm } = useDangerConfirm()
 
 	const requestConfirm = useCallback(
-		(request: {
-			action: BulkAction
-			snapshot: BulkSelectionSnapshot
-		}) =>
+		(request: { action: BulkAction; snapshot: BulkSelectionSnapshot }) =>
 			requestDangerConfirm({
 				intent: toDangerConfirmIntent(request.action),
 				entityType: toDangerConfirmEntityType(request.snapshot.entity),

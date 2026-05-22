@@ -8,10 +8,7 @@ import type { ProjectOption } from '@/features/project/model/types'
 import type { AutosaveController } from '@/shared/autosave'
 import { DetailFieldRow } from '@/shared/ui/detail'
 
-import {
-	applyTaskProjectDraftChange,
-	type TaskDetailDraft,
-} from '../model/taskDetailDraft'
+import { applyTaskProjectDraftChange, type TaskDetailDraft } from '../model/taskDetailDraft'
 
 type TaskProjectSectionProps = {
 	autosave: AutosaveController<TaskDetailDraft>
@@ -50,10 +47,9 @@ export function TaskProjectSection({ autosave, projects }: TaskProjectSectionPro
 						return
 					}
 
-					autosave.setDraft(
-						(current) => applyTaskProjectDraftChange(current, '', projects),
-						{ saveMode: 'immediate' },
-					)
+					autosave.setDraft((current) => applyTaskProjectDraftChange(current, '', projects), {
+						saveMode: 'immediate',
+					})
 				}}
 			/>
 		</DetailFieldRow>

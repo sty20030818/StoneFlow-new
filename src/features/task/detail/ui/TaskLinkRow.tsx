@@ -67,11 +67,7 @@ export function TaskLinkRow({ link, onOpen, onEdit, onRemove }: TaskLinkRowProps
 									<MoreHorizontalIcon className='size-4' />
 								</Button>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent
-								align='end'
-								className='w-44'
-								data-drawer-owned-overlay='true'
-							>
+							<DropdownMenuContent align='end' className='w-44' data-drawer-owned-overlay='true'>
 								<DropdownMenuItem
 									onSelect={(event) => {
 										event.preventDefault()

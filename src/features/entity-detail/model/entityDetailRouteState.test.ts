@@ -36,9 +36,9 @@ describe('entityDetailRouteState', () => {
 	})
 
 	it('写入 task 时删除 project 并保留其他 query', () => {
-		expect(buildEntityDetailSearch('?view=today&project=project-a', { kind: 'task', id: 'task-a' })).toBe(
-			'?view=today&task=task-a',
-		)
+		expect(
+			buildEntityDetailSearch('?view=today&project=project-a', { kind: 'task', id: 'task-a' }),
+		).toBe('?view=today&task=task-a')
 	})
 
 	it('关闭时只删除 detail query 并保留其他 query', () => {

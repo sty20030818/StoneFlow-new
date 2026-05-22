@@ -1,7 +1,4 @@
-import {
-	TASK_PRIORITY_OPTIONS,
-	type TaskPriorityValue,
-} from '@/features/task/model/taskPriority'
+import { TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
 import type { TaskStatus } from '@/shared/types'
 

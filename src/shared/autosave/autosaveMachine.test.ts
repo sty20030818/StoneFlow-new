@@ -1,7 +1,4 @@
-import {
-	autosaveMachineReducer,
-	initialAutosaveMachineState,
-} from './autosaveMachine'
+import { autosaveMachineReducer, initialAutosaveMachineState } from './autosaveMachine'
 
 describe('autosaveMachineReducer', () => {
 	it('支持 idle -> dirty -> scheduled -> saving -> saved -> idle', () => {
@@ -52,8 +49,6 @@ describe('autosaveMachineReducer', () => {
 		expect(autosaveMachineReducer(dirty, { type: 'RESET_FROM_REMOTE' })).toEqual(
 			initialAutosaveMachineState,
 		)
-		expect(autosaveMachineReducer(dirty, { type: 'DISCARD' })).toEqual(
-			initialAutosaveMachineState,
-		)
+		expect(autosaveMachineReducer(dirty, { type: 'DISCARD' })).toEqual(initialAutosaveMachineState)
 	})
 })

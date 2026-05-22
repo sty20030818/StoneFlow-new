@@ -7,7 +7,10 @@ import { ShortcutMenuItemHint } from '@/shared/ui/shortcut-menu'
 
 export type DetailMenuOptionIndicator = 'checked' | 'mixed' | null
 
-export function getDetailMenuOptionIndicator<T>(values: Set<T>, value: T): DetailMenuOptionIndicator {
+export function getDetailMenuOptionIndicator<T>(
+	values: Set<T>,
+	value: T,
+): DetailMenuOptionIndicator {
 	if (!values.has(value)) {
 		return null
 	}
@@ -64,9 +67,7 @@ export function DetailMenuOptionRow({
 				<span className='flex items-center justify-center'>
 					{digit ? <ShortcutMenuItemHint digit={digit} /> : null}
 				</span>
-				{hasTrailing ? (
-					<span className='min-w-0 text-right tabular-nums'>{trailing}</span>
-				) : null}
+				{hasTrailing ? <span className='min-w-0 text-right tabular-nums'>{trailing}</span> : null}
 			</span>
 		</>
 	)

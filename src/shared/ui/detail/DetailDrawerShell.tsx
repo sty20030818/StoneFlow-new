@@ -6,11 +6,7 @@ import { detailDrawerShellClass } from './detailTokens'
 
 type DetailDrawerShellProps = ComponentPropsWithoutRef<'div'>
 
-export function DetailDrawerShell({
-	className,
-	children,
-	...props
-}: DetailDrawerShellProps) {
+export function DetailDrawerShell({ className, children, ...props }: DetailDrawerShellProps) {
 	return (
 		<div
 			className={cn(detailDrawerShellClass, className)}

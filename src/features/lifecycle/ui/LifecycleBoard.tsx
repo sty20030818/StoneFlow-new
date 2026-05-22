@@ -130,7 +130,9 @@ export function LifecycleBoard({
 	const visibleEntries = visibleSections
 		.filter((section) => openSections.has(section.key))
 		.flatMap((section) => section.items)
-	const allSelectedEntries = visibleEntries.filter((entry) => selectedEntryIdSet?.has(entry.id) ?? false)
+	const allSelectedEntries = visibleEntries.filter(
+		(entry) => selectedEntryIdSet?.has(entry.id) ?? false,
+	)
 
 	return (
 		<EntityRowShortcutScope

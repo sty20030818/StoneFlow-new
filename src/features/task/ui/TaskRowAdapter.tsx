@@ -77,7 +77,8 @@ export function TaskRowAdapter({
 		projectBinding.onSelectProject &&
 		projectBinding.onSelectNoProject,
 	)
-	const showProjectCellOptions = hasProjectOptions && projectBinding?.showProjectCellOptions !== false
+	const showProjectCellOptions =
+		hasProjectOptions && projectBinding?.showProjectCellOptions !== false
 	const usesBulkDangerActions = actionTargets.length > 1 && Boolean(contextMenuActions)
 	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
 	const statusDropdownProps = createTaskStatusMetadataDropdownProps()
@@ -99,9 +100,7 @@ export function TaskRowAdapter({
 					? () =>
 							runContextMenuTaskAction(
 								actionTargets,
-								contextMenuActions
-									? (targets) => contextMenuActions.onArchive(targets)
-									: undefined,
+								contextMenuActions ? (targets) => contextMenuActions.onArchive(targets) : undefined,
 								(target) => actions.onArchiveTask!(target),
 							)
 					: undefined

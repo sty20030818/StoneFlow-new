@@ -36,16 +36,16 @@ const mockTaskLinksController = vi.hoisted(() => ({
 		status: 'ready' as 'idle' | 'loading' | 'ready' | 'error',
 		error: null as string | null,
 		reloadLinks: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-		addLink: vi.fn<(input: { title: string; url: string }) => Promise<void>>().mockResolvedValue(
-			undefined,
-		),
+		addLink: vi
+			.fn<(input: { title: string; url: string }) => Promise<void>>()
+			.mockResolvedValue(undefined),
 		editLink: vi
 			.fn<(linkId: string, input: { title: string; url: string }) => Promise<void>>()
 			.mockResolvedValue(undefined),
 		removeLink: vi.fn<(linkId: string) => Promise<void>>().mockResolvedValue(undefined),
-		openLink: vi.fn<(link: { id: string; title: string; url: string }) => Promise<void>>().mockResolvedValue(
-			undefined,
-		),
+		openLink: vi
+			.fn<(link: { id: string; title: string; url: string }) => Promise<void>>()
+			.mockResolvedValue(undefined),
 	},
 }))
 
@@ -80,16 +80,16 @@ describe('TaskDrawer', () => {
 			status: 'ready',
 			error: null,
 			reloadLinks: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-			addLink: vi.fn<(input: { title: string; url: string }) => Promise<void>>().mockResolvedValue(
-				undefined,
-			),
+			addLink: vi
+				.fn<(input: { title: string; url: string }) => Promise<void>>()
+				.mockResolvedValue(undefined),
 			editLink: vi
 				.fn<(linkId: string, input: { title: string; url: string }) => Promise<void>>()
 				.mockResolvedValue(undefined),
 			removeLink: vi.fn<(linkId: string) => Promise<void>>().mockResolvedValue(undefined),
-			openLink: vi.fn<(link: { id: string; title: string; url: string }) => Promise<void>>().mockResolvedValue(
-				undefined,
-			),
+			openLink: vi
+				.fn<(link: { id: string; title: string; url: string }) => Promise<void>>()
+				.mockResolvedValue(undefined),
 		}
 		getEntityActivitiesMock.mockResolvedValue([])
 		getEntityActivitiesMock.mockClear()
@@ -168,7 +168,10 @@ describe('TaskDrawer', () => {
 			'data-variant',
 			'outline',
 		)
-		expect(screen.getByRole('button', { name: '添加链接' })).toHaveAttribute('data-variant', 'outline')
+		expect(screen.getByRole('button', { name: '添加链接' })).toHaveAttribute(
+			'data-variant',
+			'outline',
+		)
 		expect(
 			screen.getByText('还没有链接，添加一个外部 URL 方便回看当前任务的上下文。'),
 		).toBeInTheDocument()
@@ -196,10 +199,7 @@ describe('TaskDrawer', () => {
 			'data-variant',
 			'outline',
 		)
-		expect(screen.getByRole('button', { name: '归档' })).toHaveAttribute(
-			'data-variant',
-			'outline',
-		)
+		expect(screen.getByRole('button', { name: '归档' })).toHaveAttribute('data-variant', 'outline')
 		expect(screen.getByRole('button', { name: '移入回收站' })).toHaveAttribute(
 			'data-variant',
 			'destructive',

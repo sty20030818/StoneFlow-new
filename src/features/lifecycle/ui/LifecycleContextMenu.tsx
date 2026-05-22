@@ -9,11 +9,7 @@ import {
 	ContextMenuSeparator,
 	ContextMenuTrigger,
 } from '@/shared/ui/base/context-menu'
-import {
-	ArchiveRestoreIcon,
-	FolderOpenIcon,
-	Trash2Icon,
-} from 'lucide-react'
+import { ArchiveRestoreIcon, FolderOpenIcon, Trash2Icon } from 'lucide-react'
 
 type LifecycleContextMenuProps = {
 	children: ReactNode

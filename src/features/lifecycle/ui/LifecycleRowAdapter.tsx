@@ -53,7 +53,8 @@ export function LifecycleRowAdapter({
 	const Icon = getLifecycleEntityIcon(entry.entityType)
 	const targetEntries = contextEntries && contextEntries.length > 0 ? contextEntries : [entry]
 	const isBulkContext = targetEntries.length > 1
-	const canOpenDetail = !isBulkContext && mode === 'archive' && typeof actions.onOpenDetail === 'function'
+	const canOpenDetail =
+		!isBulkContext && mode === 'archive' && typeof actions.onOpenDetail === 'function'
 	const createdAtValue = mode === 'archive' ? entry.archivedAt : entry.deletedAt
 	const isHovered = rowState.isHovered ?? false
 	const hoverSource = rowState.hoverSource ?? null

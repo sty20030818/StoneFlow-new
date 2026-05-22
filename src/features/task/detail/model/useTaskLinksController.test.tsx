@@ -127,7 +127,9 @@ describe('useTaskLinksController', () => {
 
 	it('新增、编辑和打开链接时会补全缺失的 https 协议头', async () => {
 		mockedListTaskLinks.mockResolvedValue([])
-		mockedCreateTaskLink.mockResolvedValue(createTaskLinkItem({ url: 'https://docs.example.com/spec' }))
+		mockedCreateTaskLink.mockResolvedValue(
+			createTaskLinkItem({ url: 'https://docs.example.com/spec' }),
+		)
 		mockedUpdateTaskLink.mockResolvedValue(
 			createTaskLinkItem({ id: 'link-1', url: 'https://docs.example.com/final' }),
 		)

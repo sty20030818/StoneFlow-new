@@ -37,7 +37,9 @@ describe('useEntityDetailController', () => {
 
 		await waitFor(() => {
 			expect(screen.getByTestId('active-detail')).toHaveTextContent('task:task-a')
-			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/views?view=today&task=task-a')
+			expect(screen.getByTestId('location')).toHaveTextContent(
+				'/spaces/views?view=today&task=task-a',
+			)
 		})
 	})
 

@@ -195,5 +195,5 @@ function getMetadataMenuShortcut(fieldKey: MetadataFieldKey | undefined) {
 			return '⇧ P'
 		default:
 			return null
-		}
+	}
 }

@@ -32,7 +32,7 @@ function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
 	}
 }
 
-	function buildActions(): TaskRowAdapterProps['actions'] {
+function buildActions(): TaskRowAdapterProps['actions'] {
 	return {
 		onOpenTask: vi.fn(),
 		onToggleTaskSelection: vi.fn(),
@@ -155,7 +155,10 @@ describe('TaskRowAdapter', () => {
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止 任务 A' }))
 		const menu = await screen.findByRole('menu')
-		expect(menu.closest('[data-slot=\"dropdown-menu-content\"]')).toHaveAttribute('data-align', 'end')
+		expect(menu.closest('[data-slot=\"dropdown-menu-content\"]')).toHaveAttribute(
+			'data-align',
+			'end',
+		)
 	})
 
 	it('关闭项目选项时不渲染项目 dropdown', () => {

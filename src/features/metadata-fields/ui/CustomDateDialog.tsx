@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { zhCN } from 'date-fns/locale'
-import { ChevronLeftIcon, ChevronRightIcon, CornerUpLeftIcon, CornerUpRightIcon } from 'lucide-react'
+import {
+	ChevronLeftIcon,
+	ChevronRightIcon,
+	CornerUpLeftIcon,
+	CornerUpRightIcon,
+} from 'lucide-react'
 
 import {
 	formatCustomDateInputValue,
@@ -180,11 +185,7 @@ export function CustomDateDialog({
 												type='button'
 												variant='ghost'
 											>
-												{todayDirection === 'back' ? (
-													<CornerUpLeftIcon />
-												) : (
-													<CornerUpRightIcon />
-												)}
+												{todayDirection === 'back' ? <CornerUpLeftIcon /> : <CornerUpRightIcon />}
 											</Button>
 										)}
 										<Button

@@ -1,7 +1,4 @@
-export {
-	autosaveMachineReducer,
-	initialAutosaveMachineState,
-} from './autosaveMachine'
+export { autosaveMachineReducer, initialAutosaveMachineState } from './autosaveMachine'
 export type {
 	AutosaveAdapter,
 	AutosaveController,

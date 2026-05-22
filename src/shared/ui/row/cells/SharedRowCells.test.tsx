@@ -1,11 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 
-import {
-	CreatedAtCell,
-	IconCell,
-	RestoreActionCell,
-	TagsCell,
-} from '@/shared/ui/row'
+import { CreatedAtCell, IconCell, RestoreActionCell, TagsCell } from '@/shared/ui/row'
 
 describe('Shared Row Cells', () => {
 	it('CreatedAtCell 使用 formatter 渲染', () => {

@@ -23,7 +23,8 @@ export type TaskContextMenuMetadataGroup<TValue> = {
 export function mapMetadataActionSpecToTaskContextMenuGroup<TValue>(
 	spec: MetadataActionSpec<TValue>,
 ): TaskContextMenuMetadataGroup<TValue> {
-	const dropdownProps: MetadataDropdownMappedProps<TValue> = mapMetadataActionSpecToDropdownProps(spec)
+	const dropdownProps: MetadataDropdownMappedProps<TValue> =
+		mapMetadataActionSpecToDropdownProps(spec)
 
 	return {
 		label: spec.headerLabel,

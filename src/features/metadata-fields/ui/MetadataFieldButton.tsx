@@ -77,10 +77,7 @@ export function MetadataFieldButton({
 		<Button
 			{...props}
 			aria-label={ariaLabel}
-			className={cn(
-				compact ? 'max-w-45' : 'max-w-52',
-				className,
-			)}
+			className={cn(compact ? 'max-w-45' : 'max-w-52', className)}
 			onClick={(event) => {
 				if (stopPropagation) {
 					stopMetadataFieldEventPropagation(event)

@@ -64,9 +64,7 @@ export function MetadataFieldMenuItem<TValue>({
 				<span className='flex items-center justify-center'>
 					{digit ? <ShortcutMenuItemHint digit={digit} /> : null}
 				</span>
-				{hasTrailing ? (
-					<span className='min-w-0 text-right tabular-nums'>{trailing}</span>
-				) : null}
+				{hasTrailing ? <span className='min-w-0 text-right tabular-nums'>{trailing}</span> : null}
 			</span>
 		</DropdownMenuItem>
 	)

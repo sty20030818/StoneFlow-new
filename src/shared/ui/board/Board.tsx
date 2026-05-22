@@ -265,10 +265,7 @@ export function BoardCollapsibleSection({
 				</Badge>
 				{selectedCount > 0 ? (
 					<Badge
-						className={cn(
-							entityBoardSectionSelectedBadgeClass,
-							entityBoardCompactBadgeClass,
-						)}
+						className={cn(entityBoardSectionSelectedBadgeClass, entityBoardCompactBadgeClass)}
 						variant='secondary'
 					>
 						已选 {selectedCount}

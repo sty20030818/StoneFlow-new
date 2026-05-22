@@ -28,7 +28,13 @@ export function EntityDetailDrawerHost({
 	return <ProjectDetailPlaceholder onClose={onClose} projectId={activeDetail.id} />
 }
 
-function ProjectDetailPlaceholder({ onClose, projectId }: { onClose: () => void; projectId: string }) {
+function ProjectDetailPlaceholder({
+	onClose,
+	projectId,
+}: {
+	onClose: () => void
+	projectId: string
+}) {
 	return (
 		<DetailBody>
 			<div className='space-y-4 px-4 py-4'>

@@ -19,8 +19,7 @@ export type DangerConfirmCopy = {
 
 export function buildDangerConfirmCopy(request: DangerConfirmRequest): DangerConfirmCopy {
 	const noun = getEntityNoun(request.entityType)
-	const destructive =
-		request.intent === 'trash' || request.intent === 'permanent-delete'
+	const destructive = request.intent === 'trash' || request.intent === 'permanent-delete'
 	const confirmLabel = getConfirmLabel(request.intent)
 
 	if (request.count === 1 && request.entityLabel) {

@@ -9,12 +9,7 @@ import { TaskProjectSection } from './TaskProjectSection'
 
 describe('TaskProjectSection', () => {
 	it('无项目时显示独立事项', () => {
-		render(
-			<TaskProjectSection
-				autosave={createAutosaveController()}
-				projects={createProjects()}
-			/>,
-		)
+		render(<TaskProjectSection autosave={createAutosaveController()} projects={createProjects()} />)
 
 		expect(screen.getByRole('button', { name: '项目' })).toHaveTextContent('独立事项')
 	})
@@ -31,12 +26,7 @@ describe('TaskProjectSection', () => {
 	})
 
 	it('仅展示当前 space 下可见项目，并带 drawer overlay 标记', async () => {
-		render(
-			<TaskProjectSection
-				autosave={createAutosaveController()}
-				projects={createProjects()}
-			/>,
-		)
+		render(<TaskProjectSection autosave={createAutosaveController()} projects={createProjects()} />)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
 

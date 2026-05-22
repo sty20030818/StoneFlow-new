@@ -73,7 +73,9 @@ export function ProjectRowAdapter({
 	const isSelected = rowState.isSelected ?? false
 	const isHovered = rowState.isHovered ?? false
 	const hoverSource = rowState.hoverSource ?? null
-	const projectPlacementOptions = createProjectParentMetadataOptions(projectBinding?.projectOptions ?? [])
+	const projectPlacementOptions = createProjectParentMetadataOptions(
+		projectBinding?.projectOptions ?? [],
+	)
 	const projectPlacementDropdownProps = createProjectParentMetadataDropdownProps(
 		projectBinding?.projectOptions ?? [],
 	)

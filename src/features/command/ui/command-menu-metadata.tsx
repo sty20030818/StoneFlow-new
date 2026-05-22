@@ -24,7 +24,8 @@ export type CommandMenuMetadataGroup<TValue> = {
 export function mapMetadataActionSpecToCommandMenuGroup<TValue>(
 	spec: MetadataActionSpec<TValue>,
 ): CommandMenuMetadataGroup<TValue> {
-	const dropdownProps: MetadataDropdownMappedProps<TValue> = mapMetadataActionSpecToDropdownProps(spec)
+	const dropdownProps: MetadataDropdownMappedProps<TValue> =
+		mapMetadataActionSpecToDropdownProps(spec)
 
 	return {
 		heading: spec.headerLabel,

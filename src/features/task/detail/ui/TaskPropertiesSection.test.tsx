@@ -34,7 +34,10 @@ describe('TaskPropertiesSection', () => {
 		render(<TaskPropertiesSection autosave={createAutosaveController()} />)
 
 		expect(screen.getByRole('button', { name: '状态' })).toHaveAttribute('data-variant', 'outline')
-		expect(screen.getByRole('button', { name: '优先级' })).toHaveAttribute('data-variant', 'outline')
+		expect(screen.getByRole('button', { name: '优先级' })).toHaveAttribute(
+			'data-variant',
+			'outline',
+		)
 	})
 
 	it('状态菜单使用统一 dropdown 结构', async () => {

@@ -126,14 +126,14 @@ export function ProjectBoard(props: ProjectBoardProps) {
 							onExpandAll={handleExpandAll}
 							onOpen={props.onOpen}
 							onOpenChange={(open) => handleOpenChange(section.key, open)}
-						onReopen={props.onReopen}
-						onToggleProjectSelection={props.onToggleProjectSelection}
-						open={openSections.has(section.key)}
-						section={section}
-						selectedProjectIds={props.selectedProjectIds}
-						rowShortcutState={rowShortcutState}
-					/>
-				))}
+							onReopen={props.onReopen}
+							onToggleProjectSelection={props.onToggleProjectSelection}
+							open={openSections.has(section.key)}
+							section={section}
+							selectedProjectIds={props.selectedProjectIds}
+							rowShortcutState={rowShortcutState}
+						/>
+					))}
 				</BoardRoot>
 			)}
 		</EntityRowShortcutScope>

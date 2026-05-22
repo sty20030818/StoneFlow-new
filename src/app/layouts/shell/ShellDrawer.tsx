@@ -9,12 +9,7 @@ type ShellDrawerProps = {
 	onClose: () => void
 }
 
-export function ShellDrawer({
-	open,
-	activeDetail,
-	currentSpaceLabel,
-	onClose,
-}: ShellDrawerProps) {
+export function ShellDrawer({ open, activeDetail, currentSpaceLabel, onClose }: ShellDrawerProps) {
 	return (
 		<Sheet modal={false} onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
 			<SheetContent
