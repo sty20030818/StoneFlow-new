@@ -3,6 +3,9 @@ import { CalendarIcon, FolderIcon, InboxIcon, TargetIcon } from 'lucide-react'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+	createDueDateActionSpec,
+	createPriorityActionSpec,
+	createStatusActionSpec,
 	MetadataDateDropdown,
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
@@ -10,6 +13,73 @@ import {
 } from '@/features/metadata-fields'
 
 describe('metadata-fields', () => {
+	it('createStatusActionSpec 输出统一 header、shortcut、placeholder 和顺序', () => {
+		const spec = createStatusActionSpec()
+
+		expect(spec.fieldKey).toBe('status')
+		expect(spec.headerLabel).toBe('设置状态为...')
+		expect(spec.headerShortcut).toBe('S')
+		expect(spec.commandPlaceholder).toBe('选择状态…')
+		expect(spec.options.map((option) => option.label)).toEqual([
+			'待执行',
+			'进行中',
+			'等待中',
+			'已完成',
+			'已取消',
+		])
+		expect(spec.options.map((option) => option.digit)).toEqual(['1', '2', '3', '4', '5'])
+	})
+
+	it('createPriorityActionSpec 输出统一 header、shortcut、placeholder 和数字规则', () => {
+		const spec = createPriorityActionSpec()
+
+		expect(spec.fieldKey).toBe('priority')
+		expect(spec.headerLabel).toBe('设置优先级为...')
+		expect(spec.headerShortcut).toBe('P')
+		expect(spec.commandPlaceholder).toBe('选择优先级…')
+		expect(spec.options.map((option) => option.label)).toEqual(['无优先级', '紧急', '高', '中', '低'])
+		expect(spec.options[0]).toMatchObject({
+			value: 0,
+			isEmptyValue: true,
+			digit: '0',
+		})
+	})
+
+	it('createDueDateActionSpec 输出统一日期动作语义', () => {
+		const emptySpec = createDueDateActionSpec({
+			currentValue: null,
+			showClearOption: false,
+		})
+
+		expect(emptySpec.fieldKey).toBe('dueDate')
+		expect(emptySpec.headerLabel).toBe('设置截止时间为...')
+		expect(emptySpec.headerShortcut).toBe('D')
+		expect(emptySpec.commandPlaceholder).toBe('选择截止时间…')
+		expect(emptySpec.options.map((option) => option.label)).toEqual([
+			'今天',
+			'明天',
+			'本周',
+			'一周后',
+			'自定义日期',
+		])
+		expect(emptySpec.options.at(-1)).toMatchObject({
+			label: '自定义日期',
+			disabled: true,
+			disabledReason: '后续接入',
+		})
+
+		const valueSpec = createDueDateActionSpec({
+			currentValue: '2026-05-08',
+			showClearOption: true,
+		})
+		expect(valueSpec.options[0]).toMatchObject({
+			label: '移除当前日期',
+			value: null,
+			isEmptyValue: true,
+			digit: '0',
+		})
+	})
+
 	it('MetadataFieldDropdown 渲染统一 outline sm 按钮', () => {
 		render(
 			<MetadataFieldDropdown

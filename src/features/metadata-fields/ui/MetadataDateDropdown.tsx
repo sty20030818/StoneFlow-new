@@ -1,17 +1,10 @@
 import type { ReactNode } from 'react'
-import {
-	Calendar1Icon,
-	CalendarCogIcon,
-	CalendarDaysIcon,
-	CalendarIcon,
-	CalendarOffIcon,
-} from 'lucide-react'
 
 import {
-	createMetadataDateOptions,
-	createMetadataDateOptionsConfig,
+	createDueDateActionSpec,
 	formatMetadataDisplayDate,
 	normalizeMetadataDateValue,
+	renderMetadataActionIcon,
 } from '@/features/metadata-fields/core'
 
 import { MetadataFieldDropdown } from './MetadataFieldDropdown'
@@ -52,17 +45,18 @@ export function MetadataDateDropdown({
 	if (hideWhenEmpty && !normalizedValue) {
 		return null
 	}
-	const options = (
-		hideWhenEmpty
-			? createMetadataDateOptionsConfig({
-					currentValue: normalizedValue,
-					showClearOption: Boolean(normalizedValue),
-				})
-			: createMetadataDateOptions(normalizedValue)
-	).map((option) => ({
-		...option,
-		icon: getMetadataDateOptionIcon(option.key),
-		trailing: option.trailing ?? option.meta,
+	const spec = createDueDateActionSpec({
+		currentValue: normalizedValue,
+		showClearOption: Boolean(normalizedValue),
+	})
+	const options = spec.options.map((option) => ({
+		key: option.key,
+		value: option.value,
+		label: option.label,
+		icon: renderMetadataActionIcon(option.iconKey),
+		trailing: option.disabledReason ?? option.meta,
+		disabled: option.disabled,
+		isEmptyValue: option.isEmptyValue,
 	}))
 	const buttonLabelPrefix = getMetadataDateButtonLabelPrefix(label)
 	const resolvedButtonLabel =
@@ -81,8 +75,10 @@ export function MetadataDateDropdown({
 			disabled={disabled}
 			drawerOwnedOverlay={drawerOwnedOverlay}
 			fieldKey={getMetadataDateFieldKey(label)}
+			headerShortcut={spec.headerShortcut}
 			isValueEqual={(left, right) => left === right}
 			label={label}
+			menuLabel={spec.headerLabel}
 			options={options}
 			shortcutMode={shortcutMode}
 			stopPropagation={stopPropagation}
@@ -111,23 +107,5 @@ function getMetadataDateFieldKey(label: string): MetadataFieldKey {
 			return 'reminderDate'
 		default:
 			return 'dueDate'
-	}
-}
-
-function getMetadataDateOptionIcon(key: string) {
-	switch (key) {
-		case 'none':
-			return <CalendarOffIcon className='size-3.5 text-sf-icon-secondary' />
-		case 'today':
-			return <Calendar1Icon className='size-3.5 text-sf-icon-secondary' />
-		case 'tomorrow':
-			return <CalendarIcon className='size-3.5 text-sf-icon-secondary' />
-		case 'this-week':
-		case 'one-week':
-			return <CalendarDaysIcon className='size-3.5 text-sf-icon-secondary' />
-		case 'custom':
-			return <CalendarCogIcon className='size-3.5 text-sf-icon-secondary' />
-		default:
-			return null
 	}
 }

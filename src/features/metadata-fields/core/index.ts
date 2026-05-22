@@ -1,4 +1,10 @@
 export type {
+	MetadataActionFieldKey,
+	MetadataActionIconKey,
+	MetadataActionOption,
+	MetadataActionSpec,
+} from './metadata-action-spec'
+export type {
 	MetadataDateOption,
 	MetadataDateOptionKey,
 	MetadataFieldIndicator,
@@ -8,6 +14,12 @@ export type {
 	MetadataPlacementValue,
 	MetadataValueComparator,
 } from './metadata-field.types'
+export {
+	createDueDateActionSpec,
+	createPriorityActionSpec,
+	createStatusActionSpec,
+} from './metadata-action-factories'
+export { renderMetadataActionIcon } from './metadata-icon-tokens'
 export {
 	buildMetadataShortcutItems,
 	defaultMetadataValueComparator,

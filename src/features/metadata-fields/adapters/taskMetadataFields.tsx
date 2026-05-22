@@ -10,29 +10,34 @@ import {
 import type { ProjectOption } from '@/features/project/model/types'
 import {
 	formatTaskPriorityLabel,
-	TASK_PRIORITY_OPTIONS,
 	type TaskPriorityValue,
 } from '@/features/task/model/taskPriority'
-import { formatTaskStatusLabel, TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
-import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
-import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
-import type { MetadataFieldOption, MetadataPlacementOption } from '@/features/metadata-fields/core'
+import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
+import {
+	createPriorityActionSpec,
+	createStatusActionSpec,
+	renderMetadataActionIcon,
+	type MetadataFieldOption,
+	type MetadataPlacementOption,
+} from '@/features/metadata-fields/core'
 import type { TaskStatus } from '@/shared/types'
 
 export function createTaskStatusMetadataOptions(): Array<MetadataFieldOption<TaskStatus>> {
-	return TASK_STATUS_OPTIONS.map((option) => ({
+	return createStatusActionSpec().options.map((option) => ({
 		value: option.value,
 		label: option.label,
-		icon: <TaskStatusIndicator status={option.value} />,
+		icon: renderMetadataActionIcon(option.iconKey),
+		key: option.key,
 	}))
 }
 
 export function createTaskPriorityMetadataOptions(): Array<MetadataFieldOption<TaskPriorityValue>> {
-	return TASK_PRIORITY_OPTIONS.map((option) => ({
+	return createPriorityActionSpec().options.map((option) => ({
 		value: option.value,
 		label: option.label,
-		icon: <PriorityIcon priority={option.value} size='md' />,
-		isEmptyValue: option.value === 0,
+		icon: renderMetadataActionIcon(option.iconKey),
+		isEmptyValue: option.isEmptyValue,
+		key: option.key,
 	}))
 }
 

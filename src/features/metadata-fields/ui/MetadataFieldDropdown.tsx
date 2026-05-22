@@ -37,6 +37,8 @@ export type MetadataFieldDropdownProps<TValue> = {
 	value: TValue
 	values?: TValue[]
 	options: Array<MetadataFieldOption<TValue>>
+	menuLabel?: string
+	headerShortcut?: string | null
 	ariaLabel?: string
 	buttonLabel?: ReactNode
 	buttonIcon?: ReactNode
@@ -56,6 +58,8 @@ export function MetadataFieldDropdown<TValue>({
 	value,
 	values,
 	options,
+	menuLabel,
+	headerShortcut,
 	ariaLabel,
 	buttonLabel,
 	buttonIcon,
@@ -75,8 +79,8 @@ export function MetadataFieldDropdown<TValue>({
 		[options, shortcutMode],
 	)
 	const digitShortcutMap = useMemo(() => buildDigitShortcutMap(shortcutItems), [shortcutItems])
-	const menuLabel = buildMetadataMenuLabel(fieldKey, label)
-	const headerShortcut = getMetadataMenuShortcut(fieldKey)
+	const resolvedMenuLabel = menuLabel ?? buildMetadataMenuLabel(fieldKey, label)
+	const resolvedHeaderShortcut = headerShortcut ?? getMetadataMenuShortcut(fieldKey)
 
 	if (!currentOption) {
 		return null
@@ -103,13 +107,13 @@ export function MetadataFieldDropdown<TValue>({
 				<ShortcutDigitSelectLayer items={shortcutItems} onSelect={(item) => onChange(item.value)} />
 				<DropdownMenuLabel className='px-2 py-1.5 text-[12px] normal-case tracking-normal'>
 					<span className='flex items-center gap-2'>
-						<span className='min-w-0 flex-1 truncate'>{menuLabel}</span>
-						{headerShortcut ? (
+						<span className='min-w-0 flex-1 truncate'>{resolvedMenuLabel}</span>
+						{resolvedHeaderShortcut ? (
 							<Kbd
 								className='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] font-medium text-muted-foreground'
 								data-slot='metadata-field-menu-shortcut-summary'
 							>
-								{headerShortcut}
+								{resolvedHeaderShortcut}
 							</Kbd>
 						) : null}
 					</span>
