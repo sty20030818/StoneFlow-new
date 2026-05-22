@@ -1,6 +1,6 @@
 import {
-	createTaskPriorityMetadataOptions,
-	createTaskStatusMetadataOptions,
+	createTaskPriorityMetadataDropdownProps,
+	createTaskStatusMetadataDropdownProps,
 	formatTaskPriorityLabel,
 	formatTaskStatusLabel,
 	MetadataDateDropdown,
@@ -17,8 +17,8 @@ type TaskPropertiesSectionProps = {
 }
 
 export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) {
-	const statusOptions = createTaskStatusMetadataOptions()
-	const priorityOptions = createTaskPriorityMetadataOptions()
+	const statusDropdownProps = createTaskStatusMetadataDropdownProps()
+	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
 
 	return (
 		<div className='space-y-1' data-task-properties='stack'>
@@ -27,8 +27,10 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 					buttonLabel={formatTaskStatusLabel(autosave.draft.status)}
 					drawerOwnedOverlay
 					fieldKey='status'
+					headerShortcut={statusDropdownProps.headerShortcut}
 					label='状态'
-					options={statusOptions}
+					menuLabel={statusDropdownProps.menuLabel}
+					options={statusDropdownProps.options}
 					value={autosave.draft.status}
 					onChange={(value) =>
 						autosave.setField('status', value, {
@@ -43,8 +45,10 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 					buttonLabel={formatTaskPriorityLabel(autosave.draft.priority)}
 					drawerOwnedOverlay
 					fieldKey='priority'
+					headerShortcut={priorityDropdownProps.headerShortcut}
 					label='优先级'
-					options={priorityOptions}
+					menuLabel={priorityDropdownProps.menuLabel}
+					options={priorityDropdownProps.options}
 					value={autosave.draft.priority}
 					onChange={(value) =>
 						autosave.setField('priority', value, {

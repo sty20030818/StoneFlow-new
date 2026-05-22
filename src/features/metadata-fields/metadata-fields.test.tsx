@@ -100,6 +100,50 @@ describe('metadata-fields', () => {
 		expect(button).toHaveTextContent('无优先级')
 	})
 
+	it('MetadataFieldDropdown 优先使用显式 menuLabel 和 headerShortcut', async () => {
+		render(
+			<MetadataFieldDropdown
+				fieldKey='status'
+				headerShortcut='X'
+				label='状态'
+				menuLabel='显式标题'
+				options={[
+					{ value: 'todo', label: '待执行' },
+					{ value: 'done', label: '已完成' },
+				]}
+				value='todo'
+				onChange={() => undefined}
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '状态' }))
+		await screen.findByRole('menu')
+
+		expect(screen.getByText('显式标题')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('X')
+	})
+
+	it('MetadataFieldDropdown 在未显式传入时仍保留 fieldKey fallback', async () => {
+		render(
+			<MetadataFieldDropdown
+				fieldKey='project'
+				label='项目'
+				options={[
+					{ value: 'a', label: '项目 A' },
+					{ value: 'b', label: '项目 B' },
+				]}
+				value='a'
+				onChange={() => undefined}
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		await screen.findByRole('menu')
+
+		expect(screen.getByText('移动到项目...')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('⇧ P')
+	})
+
 	it('单选 checked indicator 正确显示', async () => {
 		render(
 			<MetadataFieldDropdown
@@ -305,6 +349,37 @@ describe('metadata-fields', () => {
 
 		fireEvent.keyDown(window, { key: '0' })
 		expect(onChange).toHaveBeenCalledWith(null)
+	})
+
+	it('MetadataDateDropdown 的计划时间和提醒时间仍保留各自 header', async () => {
+		const firstRender = render(
+			<MetadataDateDropdown
+				icon={<CalendarIcon className='size-3.5' />}
+				label='计划时间'
+				value={null}
+				onChange={() => undefined}
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '计划时间' }))
+		await screen.findByRole('menu')
+		expect(screen.getByText('设置计划时间为...')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBeNull()
+
+		firstRender.unmount()
+		render(
+			<MetadataDateDropdown
+				icon={<CalendarIcon className='size-3.5' />}
+				label='提醒时间'
+				value={null}
+				onChange={() => undefined}
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '提醒时间' }))
+		await screen.findByRole('menu')
+		expect(screen.getByText('设置提醒时间为...')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBeNull()
 	})
 
 	it('MetadataDateDropdown 无值时不显示移除当前日期且 0 不生效', async () => {

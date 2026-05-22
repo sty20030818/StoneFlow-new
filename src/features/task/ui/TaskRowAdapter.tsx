@@ -3,8 +3,8 @@ import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import type { TaskContextMenuBulkActions } from '@/features/task/ui/useTaskContextMenuBulkActions'
 import {
 	createTaskPlacementMetadataOptions,
-	createTaskPriorityMetadataOptions,
-	createTaskStatusMetadataOptions,
+	createTaskPriorityMetadataDropdownProps,
+	createTaskStatusMetadataDropdownProps,
 	MetadataDateDropdown,
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
@@ -79,8 +79,8 @@ export function TaskRowAdapter({
 	)
 	const showProjectCellOptions = hasProjectOptions && projectBinding?.showProjectCellOptions !== false
 	const usesBulkDangerActions = actionTargets.length > 1 && Boolean(contextMenuActions)
-	const priorityOptions = createTaskPriorityMetadataOptions()
-	const statusOptions = createTaskStatusMetadataOptions()
+	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
+	const statusDropdownProps = createTaskStatusMetadataDropdownProps()
 	const placementOptions = createTaskPlacementMetadataOptions({
 		projects: projectBinding?.projectOptions ?? [],
 	})
@@ -216,8 +216,10 @@ export function TaskRowAdapter({
 							compact
 							disabled={isPending}
 							fieldKey='priority'
+							headerShortcut={priorityDropdownProps.headerShortcut}
 							label='优先级'
-							options={priorityOptions}
+							menuLabel={priorityDropdownProps.menuLabel}
+							options={priorityDropdownProps.options}
 							stopPropagation
 							value={task.priority}
 							onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
@@ -228,8 +230,10 @@ export function TaskRowAdapter({
 							compact
 							disabled={isPending}
 							fieldKey='status'
+							headerShortcut={statusDropdownProps.headerShortcut}
 							label='状态'
-							options={statusOptions}
+							menuLabel={statusDropdownProps.menuLabel}
+							options={statusDropdownProps.options}
 							stopPropagation
 							value={task.status}
 							onChange={(status) => void actions.onUpdateTaskStatus(task, status)}

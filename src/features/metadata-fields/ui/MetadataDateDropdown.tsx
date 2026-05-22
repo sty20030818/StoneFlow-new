@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 import {
 	createDueDateActionSpec,
 	formatMetadataDisplayDate,
+	mapMetadataActionSpecToDropdownProps,
 	normalizeMetadataDateValue,
-	renderMetadataActionIcon,
 } from '@/features/metadata-fields/core'
 
 import { MetadataFieldDropdown } from './MetadataFieldDropdown'
@@ -49,15 +49,8 @@ export function MetadataDateDropdown({
 		currentValue: normalizedValue,
 		showClearOption: Boolean(normalizedValue),
 	})
-	const options = spec.options.map((option) => ({
-		key: option.key,
-		value: option.value,
-		label: option.label,
-		icon: renderMetadataActionIcon(option.iconKey),
-		trailing: option.disabledReason ?? option.meta,
-		disabled: option.disabled,
-		isEmptyValue: option.isEmptyValue,
-	}))
+	const dueDateDropdownProps = mapMetadataActionSpecToDropdownProps(spec)
+	const isDueDate = label === '截止时间'
 	const buttonLabelPrefix = getMetadataDateButtonLabelPrefix(label)
 	const resolvedButtonLabel =
 		buttonLabel ??
@@ -75,11 +68,11 @@ export function MetadataDateDropdown({
 			disabled={disabled}
 			drawerOwnedOverlay={drawerOwnedOverlay}
 			fieldKey={getMetadataDateFieldKey(label)}
-			headerShortcut={spec.headerShortcut}
+			headerShortcut={isDueDate ? dueDateDropdownProps.headerShortcut : undefined}
 			isValueEqual={(left, right) => left === right}
 			label={label}
-			menuLabel={spec.headerLabel}
-			options={options}
+			menuLabel={isDueDate ? dueDateDropdownProps.menuLabel : undefined}
+			options={dueDateDropdownProps.options}
 			shortcutMode={shortcutMode}
 			stopPropagation={stopPropagation}
 			value={normalizedValue}

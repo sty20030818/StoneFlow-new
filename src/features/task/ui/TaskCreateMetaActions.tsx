@@ -4,8 +4,8 @@ import type { TaskStatus } from '@/shared/types'
 import type { ProjectOption } from '@/features/project/model/types'
 import {
 	createTaskPlacementMetadataOptions,
-	createTaskPriorityMetadataOptions,
-	createTaskStatusMetadataOptions,
+	createTaskPriorityMetadataDropdownProps,
+	createTaskStatusMetadataDropdownProps,
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
 	type MetadataPlacementValue,
@@ -24,14 +24,16 @@ export function StatusMetaAction({
 	disabled: boolean
 	onStatusChange: (status: TaskStatus) => void
 }) {
-	const statusOptions = createTaskStatusMetadataOptions()
+	const statusDropdownProps = createTaskStatusMetadataDropdownProps()
 
 	return (
 		<MetadataFieldDropdown
 			disabled={disabled}
 			fieldKey='status'
+			headerShortcut={statusDropdownProps.headerShortcut}
 			label='状态'
-			options={statusOptions}
+			menuLabel={statusDropdownProps.menuLabel}
+			options={statusDropdownProps.options}
 			value={status}
 			onChange={onStatusChange}
 		/>
@@ -50,14 +52,16 @@ export function PriorityMetaAction({
 	disabled: boolean
 	onPriorityChange: (priority: TaskPriorityValue) => void
 }) {
-	const priorityOptions = createTaskPriorityMetadataOptions()
+	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
 
 	return (
 		<MetadataFieldDropdown
 			disabled={disabled}
 			fieldKey='priority'
+			headerShortcut={priorityDropdownProps.headerShortcut}
 			label='优先级'
-			options={priorityOptions}
+			menuLabel={priorityDropdownProps.menuLabel}
+			options={priorityDropdownProps.options}
 			value={priority}
 			onChange={onPriorityChange}
 		/>

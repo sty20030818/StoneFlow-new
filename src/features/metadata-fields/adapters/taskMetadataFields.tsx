@@ -16,29 +16,27 @@ import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import {
 	createPriorityActionSpec,
 	createStatusActionSpec,
-	renderMetadataActionIcon,
+	mapMetadataActionSpecToDropdownProps,
+	type MetadataDropdownMappedProps,
 	type MetadataFieldOption,
 	type MetadataPlacementOption,
 } from '@/features/metadata-fields/core'
 import type { TaskStatus } from '@/shared/types'
 
+export function createTaskStatusMetadataDropdownProps(): MetadataDropdownMappedProps<TaskStatus> {
+	return mapMetadataActionSpecToDropdownProps(createStatusActionSpec())
+}
+
 export function createTaskStatusMetadataOptions(): Array<MetadataFieldOption<TaskStatus>> {
-	return createStatusActionSpec().options.map((option) => ({
-		value: option.value,
-		label: option.label,
-		icon: renderMetadataActionIcon(option.iconKey),
-		key: option.key,
-	}))
+	return createTaskStatusMetadataDropdownProps().options
+}
+
+export function createTaskPriorityMetadataDropdownProps(): MetadataDropdownMappedProps<TaskPriorityValue> {
+	return mapMetadataActionSpecToDropdownProps(createPriorityActionSpec())
 }
 
 export function createTaskPriorityMetadataOptions(): Array<MetadataFieldOption<TaskPriorityValue>> {
-	return createPriorityActionSpec().options.map((option) => ({
-		value: option.value,
-		label: option.label,
-		icon: renderMetadataActionIcon(option.iconKey),
-		isEmptyValue: option.isEmptyValue,
-		key: option.key,
-	}))
+	return createTaskPriorityMetadataDropdownProps().options
 }
 
 export function createTaskPlacementMetadataOptions({

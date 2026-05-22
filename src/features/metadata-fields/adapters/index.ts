@@ -1,6 +1,8 @@
 export {
 	createTaskPlacementMetadataOptions,
+	createTaskPriorityMetadataDropdownProps,
 	createTaskPriorityMetadataOptions,
+	createTaskStatusMetadataDropdownProps,
 	createTaskStatusMetadataOptions,
 	formatTaskPriorityLabel,
 	formatTaskStatusLabel,

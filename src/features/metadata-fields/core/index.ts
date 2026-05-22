@@ -19,6 +19,10 @@ export {
 	createPriorityActionSpec,
 	createStatusActionSpec,
 } from './metadata-action-factories'
+export {
+	mapMetadataActionSpecToDropdownProps,
+	type MetadataDropdownMappedProps,
+} from './dropdown-spec-mapping'
 export { renderMetadataActionIcon } from './metadata-icon-tokens'
 export {
 	buildMetadataShortcutItems,
