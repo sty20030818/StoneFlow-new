@@ -1,4 +1,4 @@
-import { CalendarDaysIcon } from 'lucide-react'
+import { CalendarClockIcon } from 'lucide-react'
 
 import { RowMetaButton, type RowMetaButtonProps } from '@/shared/ui/row/RowFieldCells'
 
@@ -23,7 +23,7 @@ export function ScheduledDateCell({
 		<RowMetaButton
 			{...props}
 			disabled={disabled ?? !value}
-			icon={<CalendarDaysIcon className='size-3.5' />}
+			icon={<CalendarClockIcon className='size-3.5' />}
 			label={`${labelPrefix} ${formatter(value)}`}
 			trailing={null}
 			type='button'

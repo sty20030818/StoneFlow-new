@@ -1,4 +1,11 @@
 import type { ReactNode } from 'react'
+import {
+	Calendar1Icon,
+	CalendarCogIcon,
+	CalendarDaysIcon,
+	CalendarIcon,
+	CalendarOffIcon,
+} from 'lucide-react'
 
 import {
 	createMetadataDateOptions,
@@ -53,7 +60,7 @@ export function MetadataDateDropdown({
 			: createMetadataDateOptions(normalizedValue)
 	).map((option) => ({
 		...option,
-		icon,
+		icon: getMetadataDateOptionIcon(option.key),
 		trailing: option.trailing ?? option.meta,
 	}))
 	const currentOption = options.find((option) => option.value === normalizedValue)
@@ -81,4 +88,22 @@ export function MetadataDateDropdown({
 			onChange={onChange}
 		/>
 	)
+}
+
+function getMetadataDateOptionIcon(key: string) {
+	switch (key) {
+		case 'none':
+			return <CalendarOffIcon className='size-3.5 text-sf-icon-secondary' />
+		case 'today':
+			return <Calendar1Icon className='size-3.5 text-sf-icon-secondary' />
+		case 'tomorrow':
+			return <CalendarIcon className='size-3.5 text-sf-icon-secondary' />
+		case 'this-week':
+		case 'one-week':
+			return <CalendarDaysIcon className='size-3.5 text-sf-icon-secondary' />
+		case 'custom':
+			return <CalendarCogIcon className='size-3.5 text-sf-icon-secondary' />
+		default:
+			return null
+	}
 }

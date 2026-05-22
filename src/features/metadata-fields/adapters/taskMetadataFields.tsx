@@ -1,6 +1,6 @@
 import {
-	CalendarDaysIcon,
-	CalendarIcon,
+	CalendarClockIcon,
+	CalendarX2Icon,
 	BellIcon,
 	FolderIcon,
 	InboxIcon,
@@ -71,8 +71,8 @@ export function createTaskPlacementMetadataOptions({
 }
 
 export const taskDateMetadataIcons = {
-	due: <CalendarIcon className='size-3.5' />,
-	scheduled: <CalendarDaysIcon className='size-3.5' />,
+	due: <CalendarX2Icon className='size-3.5' />,
+	scheduled: <CalendarClockIcon className='size-3.5' />,
 	reminder: <BellIcon className='size-3.5' />,
 } as const
 
