@@ -54,8 +54,8 @@ export function MetadataFieldMenuItem<TValue>({
 				className={cn(
 					'ml-auto shrink-0 items-center text-[11px] text-muted-foreground',
 					hasTrailing
-						? 'grid grid-cols-[0.875rem_1.25rem_auto] gap-x-2'
-						: 'grid grid-cols-[0.875rem_1.25rem] gap-x-2',
+						? 'grid grid-cols-[0.875rem_1rem_auto] gap-x-1.5'
+						: 'grid grid-cols-[0.875rem_1rem] gap-x-1.5',
 				)}
 			>
 				<span className='flex items-center justify-center'>

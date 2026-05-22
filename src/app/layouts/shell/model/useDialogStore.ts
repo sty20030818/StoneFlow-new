@@ -200,7 +200,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 			taskCreatePresentation: 'default',
 		}),
 	openCustomDateDialog: (customDateDialog) => {
-		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: false,
 			commandMenuMode: 'default',

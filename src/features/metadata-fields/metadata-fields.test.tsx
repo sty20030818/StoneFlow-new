@@ -3,9 +3,12 @@ import { CalendarIcon, FolderIcon, InboxIcon, TargetIcon } from 'lucide-react'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+	addLocalDays,
 	createPlacementActionSpec,
 	createSpaceActionSpec,
 	createDueDateActionSpec,
+	formatLocalDate,
+	getEndOfLocalWeek,
 	createPriorityActionSpec,
 	createStatusActionSpec,
 	MetadataDateDropdown,
@@ -371,15 +374,17 @@ describe('metadata-fields', () => {
 		expect(screen.getByRole('menuitem', { name: /本周/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /一周后/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).not.toHaveAttribute('data-disabled')
+		expect(getVisibleIndicators()).toHaveLength(0)
 	})
 
 	it('MetadataDateDropdown 有值时显示统一日期文案，并仅保留 0 快捷键', async () => {
+		const todayValue = formatLocalDate(new Date())
 		const onChange = vi.fn()
 		render(
 			<MetadataDateDropdown
 				icon={<CalendarIcon className='size-3.5' />}
 				label='截止时间'
-				value='2026-05-08'
+				value={todayValue}
 				onChange={onChange}
 			/>,
 		)
@@ -390,12 +395,36 @@ describe('metadata-fields', () => {
 		expect(await screen.findByRole('menuitem', { name: /移除当前日期/ })).toBeInTheDocument()
 		expect(getHeaderShortcutSummary()).toBe('D')
 		expect(getShortcutHintDigits()).toEqual(['0'])
+		expect(getVisibleIndicatorsFor('今天')).toHaveLength(1)
+		expect(getVisibleIndicatorsFor('自定义日期')).toHaveLength(0)
 
 		fireEvent.keyDown(window, { key: '1' })
 		expect(onChange).not.toHaveBeenCalled()
 
 		fireEvent.keyDown(window, { key: '0' })
 		expect(onChange).toHaveBeenCalledWith(null)
+	})
+
+	it('非 preset 日期仅在自定义日期上显示勾选', async () => {
+		const baseDate = new Date()
+		const customValue = formatLocalDate(addLocalDays(getEndOfLocalWeek(baseDate), 3))
+		render(
+			<MetadataDateDropdown
+				icon={<CalendarIcon className='size-3.5' />}
+				label='截止时间'
+				value={customValue}
+				onChange={() => undefined}
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
+		await screen.findByRole('menu')
+
+		expect(getVisibleIndicatorsFor('今天')).toHaveLength(0)
+		expect(getVisibleIndicatorsFor('明天')).toHaveLength(0)
+		expect(getVisibleIndicatorsFor('本周')).toHaveLength(0)
+		expect(getVisibleIndicatorsFor('一周后')).toHaveLength(0)
+		expect(getVisibleIndicatorsFor('自定义日期')).toHaveLength(1)
 	})
 
 	it('MetadataDateDropdown 的计划时间和提醒时间仍保留各自 header', async () => {
@@ -583,4 +612,17 @@ function getShortcutHintDigits() {
 
 function getHeaderShortcutSummary() {
 	return document.querySelector('[data-slot="metadata-field-menu-shortcut-summary"]')?.textContent ?? null
+}
+
+function getVisibleIndicatorsFor(label: string) {
+	const item = screen.getByRole('menuitem', { name: new RegExp(label) })
+	return [...item.querySelectorAll('[data-slot="metadata-field-indicator"]')].filter(
+		indicator => !indicator.classList.contains('invisible'),
+	)
+}
+
+function getVisibleIndicators() {
+	return [...document.querySelectorAll('[data-slot="metadata-field-indicator"]')].filter(
+		indicator => !indicator.classList.contains('invisible'),
+	)
 }

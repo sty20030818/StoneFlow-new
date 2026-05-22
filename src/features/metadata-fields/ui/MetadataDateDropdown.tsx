@@ -4,8 +4,12 @@ import {
 	type CustomDateFieldKey,
 	createDueDateActionSpec,
 	formatMetadataDisplayDate,
+	formatLocalDate,
+	getEndOfLocalWeek,
 	mapMetadataActionSpecToDropdownProps,
 	normalizeMetadataDateValue,
+	startOfLocalDay,
+	addLocalDays,
 } from '@/features/metadata-fields/core'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 
@@ -54,6 +58,7 @@ export function MetadataDateDropdown({
 		showClearOption: Boolean(normalizedValue),
 	})
 	const dueDateDropdownProps = mapMetadataActionSpecToDropdownProps(spec)
+	const selectedDateOptionKey = getSelectedDateOptionKey(normalizedValue)
 	const isDueDate = label === '截止时间'
 	const buttonLabelPrefix = getMetadataDateButtonLabelPrefix(label)
 	const resolvedButtonLabel =
@@ -74,13 +79,17 @@ export function MetadataDateDropdown({
 			fieldKey={getMetadataDateFieldKey(label)}
 			headerShortcut={isDueDate ? dueDateDropdownProps.headerShortcut : undefined}
 			isValueEqual={(left, right) => left === right}
+			values={selectedDateOptionKey ? [selectedDateOptionKey] : []}
 			label={label}
 			menuAlign={menuAlign}
 			menuLabel={isDueDate ? dueDateDropdownProps.menuLabel : undefined}
-			options={dueDateDropdownProps.options}
+			options={dueDateDropdownProps.options.map((option) => ({
+				...option,
+				value: option.key,
+			}))}
 			shortcutMode={shortcutMode}
 			stopPropagation={stopPropagation}
-			value={normalizedValue}
+			value={selectedDateOptionKey}
 			onSelectCustomOption={() => {
 				openCustomDateDialog({
 					fieldKey: getMetadataDateFieldKey(label),
@@ -90,9 +99,37 @@ export function MetadataDateDropdown({
 					onSubmit: onChange,
 				})
 			}}
-			onChange={onChange}
+			onChange={(nextValue) => {
+				const selected = dueDateDropdownProps.options.find((option) => option.key === nextValue)
+				onChange(selected?.value ?? null)
+			}}
 		/>
 	)
+}
+
+function getSelectedDateOptionKey(value: string | null) {
+	if (!value) {
+		return null
+	}
+
+	const today = startOfLocalDay(new Date())
+	if (value === formatLocalDate(today)) {
+		return 'today'
+	}
+
+	if (value === formatLocalDate(addLocalDays(today, 1))) {
+		return 'tomorrow'
+	}
+
+	if (value === formatLocalDate(getEndOfLocalWeek(today))) {
+		return 'this-week'
+	}
+
+	if (value === formatLocalDate(addLocalDays(today, 7))) {
+		return 'one-week'
+	}
+
+	return 'custom'
 }
 
 function getMetadataDateButtonLabelPrefix(label: string) {

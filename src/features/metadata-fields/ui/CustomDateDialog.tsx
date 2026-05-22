@@ -100,7 +100,10 @@ export function CustomDateDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className='max-w-[calc(100%-1rem)] gap-0 overflow-hidden rounded-2xl border-sf-border-subtle bg-sf-surface-raised p-0 shadow-(--sf-shadow-float) sm:max-w-xl'>
+			<DialogContent
+				className='max-w-[calc(100%-1rem)] gap-0 overflow-hidden rounded-2xl border-sf-border-subtle bg-sf-surface-raised p-0 shadow-(--sf-shadow-float) sm:max-w-xl'
+				data-drawer-owned-overlay='true'
+			>
 				<div className='flex flex-col'>
 					<div className='px-4 pt-3'>
 						<DialogHeader className='gap-2 text-left'>

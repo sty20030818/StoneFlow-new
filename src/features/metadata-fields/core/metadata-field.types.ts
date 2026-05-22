@@ -34,6 +34,7 @@ export type MetadataDateOptionKey =
 export type MetadataDateOption = MetadataFieldOption<string | null> & {
 	key: MetadataDateOptionKey
 	meta?: string
+	matchesValue?: string | null
 }
 
 export type MetadataValueComparator<TValue> = (left: TValue, right: TValue) => boolean

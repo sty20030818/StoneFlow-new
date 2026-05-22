@@ -35,30 +35,42 @@ export function createMetadataDateOptionsConfig({
 			key: 'today',
 			label: '今天',
 			value: formatLocalDate(today),
+			matchesValue: formatLocalDate(today),
 			meta: formatMetaDate(today),
 		},
 		{
 			key: 'tomorrow',
 			label: '明天',
 			value: formatLocalDate(tomorrow),
+			matchesValue: formatLocalDate(tomorrow),
 			meta: formatMetaDate(tomorrow),
 		},
 		{
 			key: 'this-week',
 			label: '本周',
 			value: formatLocalDate(thisWeek),
+			matchesValue: formatLocalDate(thisWeek),
 			meta: formatMetaDate(thisWeek),
 		},
 		{
 			key: 'one-week',
 			label: '一周后',
 			value: formatLocalDate(oneWeek),
+			matchesValue: formatLocalDate(oneWeek),
 			meta: formatMetaDate(oneWeek),
 		},
 		{
 			key: 'custom',
-			label: '自定义日期',
-			value: normalizedValue,
+			label: normalizedValue ? '自定义日期' : '自定义日期',
+			value: '__custom__',
+			matchesValue:
+				normalizedValue &&
+				normalizedValue !== formatLocalDate(today) &&
+				normalizedValue !== formatLocalDate(tomorrow) &&
+				normalizedValue !== formatLocalDate(thisWeek) &&
+				normalizedValue !== formatLocalDate(oneWeek)
+					? normalizedValue
+					: null,
 			trailing: normalizedValue ? formatMetadataDisplayDate(normalizedValue) : undefined,
 		},
 	]
