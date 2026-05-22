@@ -13,15 +13,15 @@ describe('TaskPropertiesSection', () => {
 		expect(container.querySelector('[data-task-properties="stack"]')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '状态' })).toHaveTextContent('待执行')
 		expect(screen.getByRole('button', { name: '优先级' })).toHaveTextContent('中')
-		expect(screen.getByRole('button', { name: '截止日期' })).toHaveAttribute(
+		expect(screen.getByRole('button', { name: '截止时间' })).toHaveAttribute(
 			'data-variant',
 			'outline',
 		)
-		expect(screen.getByRole('button', { name: '计划日期' })).toHaveAttribute(
+		expect(screen.getByRole('button', { name: '计划时间' })).toHaveAttribute(
 			'data-variant',
 			'outline',
 		)
-		expect(screen.getByRole('button', { name: '提醒' })).toHaveAttribute(
+		expect(screen.getByRole('button', { name: '提醒时间' })).toHaveAttribute(
 			'data-variant',
 			'outline',
 		)
@@ -48,7 +48,7 @@ describe('TaskPropertiesSection', () => {
 	it('日期菜单包含统一 preset，空值时不显示移除当前日期，且自定义日期禁用', async () => {
 		render(<TaskPropertiesSection autosave={createAutosaveController()} />)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止日期' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
 
 		expect(screen.queryByRole('menuitem', { name: /移除当前日期/ })).not.toBeInTheDocument()
 		expect(await screen.findByRole('menuitem', { name: /今天/ })).toBeInTheDocument()

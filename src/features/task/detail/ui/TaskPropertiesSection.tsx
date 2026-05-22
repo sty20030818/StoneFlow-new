@@ -26,6 +26,7 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskStatusLabel(autosave.draft.status)}
 					drawerOwnedOverlay
+					fieldKey='status'
 					label='状态'
 					options={statusOptions}
 					value={autosave.draft.status}
@@ -41,6 +42,7 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskPriorityLabel(autosave.draft.priority)}
 					drawerOwnedOverlay
+					fieldKey='priority'
 					label='优先级'
 					options={priorityOptions}
 					value={autosave.draft.priority}
@@ -52,11 +54,11 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 				/>
 			</DetailFieldRow>
 
-			<DetailFieldRow className='items-center' label='截止' labelClassName='pt-0'>
+			<DetailFieldRow className='items-center' label='截止时间' labelClassName='pt-0'>
 				<MetadataDateDropdown
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.due}
-					label='截止日期'
+					label='截止时间'
 					value={autosave.draft.dueAt}
 					onChange={(value) =>
 						autosave.setField('dueAt', value ?? '', {
@@ -66,11 +68,11 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 				/>
 			</DetailFieldRow>
 
-			<DetailFieldRow className='items-center' label='计划' labelClassName='pt-0'>
+			<DetailFieldRow className='items-center' label='计划时间' labelClassName='pt-0'>
 				<MetadataDateDropdown
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.scheduled}
-					label='计划日期'
+					label='计划时间'
 					value={autosave.draft.scheduledAt}
 					onChange={(value) =>
 						autosave.setField('scheduledAt', value ?? '', {
@@ -80,11 +82,11 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 				/>
 			</DetailFieldRow>
 
-			<DetailFieldRow className='items-center' label='提醒' labelClassName='pt-0'>
+			<DetailFieldRow className='items-center' label='提醒时间' labelClassName='pt-0'>
 				<MetadataDateDropdown
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.reminder}
-					label='提醒'
+					label='提醒时间'
 					value={autosave.draft.reminderAt}
 					onChange={(value) =>
 						autosave.setField('reminderAt', value ?? '', {

@@ -29,6 +29,7 @@ export function StatusMetaAction({
 	return (
 		<MetadataFieldDropdown
 			disabled={disabled}
+			fieldKey='status'
 			label='状态'
 			options={statusOptions}
 			value={status}
@@ -54,6 +55,7 @@ export function PriorityMetaAction({
 	return (
 		<MetadataFieldDropdown
 			disabled={disabled}
+			fieldKey='priority'
 			label='优先级'
 			options={priorityOptions}
 			value={priority}
@@ -90,7 +92,7 @@ export function ProjectMetaAction({
 			buttonIcon={needsProjectSelection ? <FolderIcon className='size-3.5' /> : undefined}
 			buttonLabel={needsProjectSelection ? '选择项目' : undefined}
 			disabled={disabled}
-			label='归属'
+			label='项目'
 			options={placementOptions}
 			value={value}
 			onChange={(nextValue) => {

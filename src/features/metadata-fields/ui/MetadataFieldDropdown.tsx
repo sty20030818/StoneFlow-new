@@ -15,12 +15,24 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuTrigger,
 } from '@/shared/ui/base/dropdown-menu'
+import { Kbd } from '@/shared/ui/base/kbd'
 import { buildDigitShortcutMap, ShortcutDigitSelectLayer } from '@/shared/ui/shortcut-menu'
 
 import { MetadataFieldButton } from './MetadataFieldButton'
 import { MetadataFieldMenuItem } from './MetadataFieldMenuItem'
 
+export type MetadataFieldKey =
+	| 'status'
+	| 'priority'
+	| 'project'
+	| 'space'
+	| 'parentProject'
+	| 'dueDate'
+	| 'scheduledDate'
+	| 'reminderDate'
+
 export type MetadataFieldDropdownProps<TValue> = {
+	fieldKey?: MetadataFieldKey
 	label: string
 	value: TValue
 	values?: TValue[]
@@ -39,6 +51,7 @@ export type MetadataFieldDropdownProps<TValue> = {
 }
 
 export function MetadataFieldDropdown<TValue>({
+	fieldKey,
 	label,
 	value,
 	values,
@@ -62,6 +75,8 @@ export function MetadataFieldDropdown<TValue>({
 		[options, shortcutMode],
 	)
 	const digitShortcutMap = useMemo(() => buildDigitShortcutMap(shortcutItems), [shortcutItems])
+	const menuLabel = buildMetadataMenuLabel(fieldKey, label)
+	const headerShortcut = getMetadataMenuShortcut(fieldKey)
 
 	if (!currentOption) {
 		return null
@@ -86,11 +101,24 @@ export function MetadataFieldDropdown<TValue>({
 				sideOffset={6}
 			>
 				<ShortcutDigitSelectLayer items={shortcutItems} onSelect={(item) => onChange(item.value)} />
-				<DropdownMenuLabel>{label}</DropdownMenuLabel>
+				<DropdownMenuLabel className='px-2 py-1.5 text-[12px] normal-case tracking-normal'>
+					<span className='flex items-center gap-2'>
+						<span className='min-w-0 flex-1 truncate'>{menuLabel}</span>
+						{headerShortcut ? (
+							<Kbd
+								className='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] font-medium text-muted-foreground'
+								data-slot='metadata-field-menu-shortcut-summary'
+							>
+								{headerShortcut}
+							</Kbd>
+						) : null}
+					</span>
+				</DropdownMenuLabel>
 				<DropdownMenuGroup>
 					{options.map((option, index) => {
 						const shortcutDigit =
-							digitShortcutMap.find((entry) => isValueEqual(entry.item.value, option.value))?.digit ?? ''
+							digitShortcutMap.find((entry) => isValueEqual(entry.item.value, option.value))
+								?.digit ?? ''
 
 						return (
 							<MetadataFieldMenuItem
@@ -121,4 +149,34 @@ export function MetadataFieldDropdown<TValue>({
 			</DropdownMenuContent>
 		</DropdownMenu>
 	)
+}
+
+function buildMetadataMenuLabel(fieldKey: MetadataFieldKey | undefined, fallbackLabel: string) {
+	switch (fieldKey) {
+		case 'project':
+			return '移动到项目...'
+		case 'dueDate':
+			return '设置截止时间为...'
+		case 'scheduledDate':
+			return '设置计划时间为...'
+		case 'reminderDate':
+			return '设置提醒时间为...'
+		default:
+			return `设置${fallbackLabel}为...`
+	}
+}
+
+function getMetadataMenuShortcut(fieldKey: MetadataFieldKey | undefined) {
+	switch (fieldKey) {
+		case 'priority':
+			return 'P'
+		case 'status':
+			return 'S'
+		case 'dueDate':
+			return 'D'
+		case 'project':
+			return '⇧ P'
+		default:
+			return null
+		}
 }

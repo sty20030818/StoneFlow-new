@@ -13,6 +13,7 @@ describe('metadata-fields', () => {
 	it('MetadataFieldDropdown 渲染统一 outline sm 按钮', () => {
 		render(
 			<MetadataFieldDropdown
+				fieldKey='priority'
 				label='优先级'
 				value={0}
 				options={[
@@ -32,6 +33,7 @@ describe('metadata-fields', () => {
 	it('单选 checked indicator 正确显示', async () => {
 		render(
 			<MetadataFieldDropdown
+				fieldKey='status'
 				label='状态'
 				value='todo'
 				options={[
@@ -77,6 +79,7 @@ describe('metadata-fields', () => {
 
 		render(
 			<MetadataFieldDropdown
+				fieldKey='priority'
 				label='优先级'
 				value={0}
 				options={[
@@ -90,6 +93,8 @@ describe('metadata-fields', () => {
 		fireEvent.pointerDown(screen.getByRole('button', { name: '优先级' }))
 		await screen.findByRole('menu')
 
+		expect(screen.getByText('设置优先级为...')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('P')
 		expect(getShortcutHintDigits()).toEqual(['0', '1'])
 
 		fireEvent.keyDown(window, { key: '1' })
@@ -101,6 +106,7 @@ describe('metadata-fields', () => {
 	it('无空值时数字快捷键从 1 开始', async () => {
 		render(
 			<MetadataFieldDropdown
+				fieldKey='status'
 				label='状态'
 				value='todo'
 				options={[
@@ -114,6 +120,8 @@ describe('metadata-fields', () => {
 		fireEvent.pointerDown(screen.getByRole('button', { name: '状态' }))
 		await screen.findByRole('menu')
 
+		expect(screen.getByText('设置状态为...')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('S')
 		expect(getShortcutHintDigits()).toEqual(['1', '2'])
 	})
 
@@ -184,14 +192,16 @@ describe('metadata-fields', () => {
 		render(
 			<MetadataDateDropdown
 				icon={<CalendarIcon className='size-3.5' />}
-				label='截止'
+				label='截止时间'
 				value={null}
 				onChange={() => undefined}
 			/>,
 		)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
 
+		expect(screen.getByText('设置截止时间为...')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('D')
 		expect(screen.queryByRole('menuitem', { name: /移除当前日期/ })).not.toBeInTheDocument()
 		expect(await screen.findByRole('menuitem', { name: /今天/ })).toBeInTheDocument()
 		expect(getShortcutHintDigits()).toEqual([])
@@ -207,15 +217,17 @@ describe('metadata-fields', () => {
 		render(
 			<MetadataDateDropdown
 				icon={<CalendarIcon className='size-3.5' />}
-				label='截止'
+				label='截止时间'
 				value='2026-05-08'
 				onChange={onChange}
 			/>,
 		)
 
-		expect(screen.getByRole('button', { name: '截止' })).toHaveTextContent('截止 5/8')
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
+		expect(screen.getByRole('button', { name: '截止时间' })).toHaveTextContent('截止 5/8')
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
+		expect(screen.getByText('设置截止时间为...')).toBeInTheDocument()
 		expect(await screen.findByRole('menuitem', { name: /移除当前日期/ })).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('D')
 		expect(getShortcutHintDigits()).toEqual(['0'])
 
 		fireEvent.keyDown(window, { key: '1' })
@@ -230,13 +242,15 @@ describe('metadata-fields', () => {
 		render(
 			<MetadataDateDropdown
 				icon={<CalendarIcon className='size-3.5' />}
-				label='截止'
+				label='截止时间'
 				value={null}
 				onChange={onChange}
 			/>,
 		)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
+		expect(screen.getByText('设置截止时间为...')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('D')
 		expect(screen.queryByRole('menuitem', { name: /移除当前日期/ })).not.toBeInTheDocument()
 		expect(getShortcutHintDigits()).toEqual([])
 
@@ -269,47 +283,49 @@ describe('metadata-fields', () => {
 		]
 		const { rerender } = render(
 			<MetadataPlacementDropdown
-				label='归属'
+				label='项目'
 				value={{ kind: 'inbox' }}
 				options={options}
 				onChange={() => undefined}
 			/>,
 		)
 
-		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('收件箱')
+		expect(screen.getByRole('button', { name: '项目' })).toHaveTextContent('收件箱')
 
 		rerender(
 			<MetadataPlacementDropdown
-				label='归属'
+				label='项目'
 				value={{ kind: 'noProject' }}
 				options={options}
 				onChange={() => undefined}
 			/>,
 		)
-		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('独立事项')
+		expect(screen.getByRole('button', { name: '项目' })).toHaveTextContent('独立事项')
 
 		rerender(
 			<MetadataPlacementDropdown
-				label='归属'
+				label='项目'
 				value={{ kind: 'project', projectId: 'project-1' }}
 				options={options}
 				onChange={() => undefined}
 			/>,
 		)
-		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('项目 A')
+		expect(screen.getByRole('button', { name: '项目' })).toHaveTextContent('项目 A')
 
 		rerender(
 			<MetadataPlacementDropdown
-				label='归属'
+				label='项目'
 				value={{ kind: 'space', spaceId: 'space-1' }}
 				options={options}
 				onChange={() => undefined}
 			/>,
 		)
-		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('空间 A')
+		expect(screen.getByRole('button', { name: '项目' })).toHaveTextContent('空间 A')
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
 		await screen.findByRole('menu')
+		expect(screen.getByText('移动到项目...')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('⇧ P')
 		expect(getShortcutHintDigits()).toEqual(['0'])
 	})
 
@@ -335,6 +351,8 @@ describe('metadata-fields', () => {
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
 		await screen.findByRole('menu')
+		expect(screen.getByText('移动到项目...')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('⇧ P')
 		expect(getShortcutHintDigits()).toEqual(['0'])
 	})
 })
@@ -343,4 +361,8 @@ function getShortcutHintDigits() {
 	return [...document.querySelectorAll('[data-slot="shortcut-menu-item-hint"]')].map(
 		(item) => item.textContent,
 	)
+}
+
+function getHeaderShortcutSummary() {
+	return document.querySelector('[data-slot="metadata-field-menu-shortcut-summary"]')?.textContent ?? null
 }

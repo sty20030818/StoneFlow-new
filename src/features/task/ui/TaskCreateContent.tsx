@@ -250,23 +250,23 @@ export function TaskCreateContent({
 					}}
 				/>
 				<MetadataDateDropdown
-					buttonLabel={dueAt ? undefined : '截止日期'}
+					buttonLabel={dueAt ? undefined : '截止'}
 					icon={taskDateMetadataIcons.due}
-					label='截止日期'
+					label='截止时间'
 					value={dueAt}
 					onChange={setDueAt}
 				/>
 				<MetadataDateDropdown
-					buttonLabel={scheduledAt ? undefined : '计划日期'}
+					buttonLabel={scheduledAt ? undefined : '计划'}
 					icon={taskDateMetadataIcons.scheduled}
-					label='计划日期'
+					label='计划时间'
 					value={scheduledAt}
 					onChange={setScheduledAt}
 				/>
 				<MetadataDateDropdown
-					buttonLabel={reminderAt ? undefined : '提醒日期'}
+					buttonLabel={reminderAt ? undefined : '提醒'}
 					icon={taskDateMetadataIcons.reminder}
-					label='提醒日期'
+					label='提醒时间'
 					value={reminderAt}
 					onChange={setReminderAt}
 				/>

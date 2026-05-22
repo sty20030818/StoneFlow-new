@@ -370,7 +370,7 @@ describe('CommandMenu', () => {
 		expect(onSelectTaskPriority).toHaveBeenCalledWith(0)
 	})
 
-	it('task-date-picker 无日期时显示四个 preset，有日期时显示移除时间，自定义日期保持 disabled', () => {
+	it('task-date-picker 无日期时显示四个 preset，有日期时显示移除当前日期，自定义日期保持 disabled', () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTaskDate = vi.fn<(dueAt: string | null) => void>()
 		const firstRender = renderCommandMenu({
@@ -379,13 +379,13 @@ describe('CommandMenu', () => {
 			onSelectTaskDate,
 		})
 
-		expect(screen.queryByText('移除时间')).not.toBeInTheDocument()
+		expect(screen.queryByText('移除当前日期')).not.toBeInTheDocument()
 		expect(document.querySelectorAll('[data-slot="command-row-selected-indicator"]')).toHaveLength(
 			0,
 		)
 		expect(screen.getByText('明天')).toBeInTheDocument()
 		expect(screen.getByText('本周')).toBeInTheDocument()
-		expect(screen.getByText('一周')).toBeInTheDocument()
+		expect(screen.getByText('一周后')).toBeInTheDocument()
 		fireEvent.click(screen.getByText('明天'))
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(onSelectTaskDate).toHaveBeenCalledTimes(1)
@@ -396,14 +396,14 @@ describe('CommandMenu', () => {
 			onSelectTaskDate,
 			context: createTaskSelectionContextWithDueAt(),
 		})
-		expect(screen.getByText('移除时间')).toBeInTheDocument()
-		fireEvent.click(screen.getByText('移除时间'))
+		expect(screen.getByText('移除当前日期')).toBeInTheDocument()
+		fireEvent.click(screen.getByText('移除当前日期'))
 		expect(onSelectTaskDate).toHaveBeenCalledWith(null)
 
 		secondRender.unmount()
 		renderCommandMenu({ mode: 'task-date-picker', onSelectTaskDate })
 		fireEvent.click(screen.getByText('自定义日期'))
-		expect(screen.getByText('完整日期选择后续接入')).toBeInTheDocument()
+		expect(screen.getByText('后续接入')).toBeInTheDocument()
 		expect(onSelectTaskDate).toHaveBeenCalledTimes(2)
 	})
 
@@ -416,7 +416,7 @@ describe('CommandMenu', () => {
 
 		expect(onOpenChange).not.toHaveBeenCalledWith(false)
 		expect(onSelectTaskDate).not.toHaveBeenCalled()
-		expect(screen.getByPlaceholderText('选择日期…')).toHaveValue('')
+		expect(screen.getByPlaceholderText('选择截止时间…')).toHaveValue('')
 	})
 })
 

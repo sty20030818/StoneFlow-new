@@ -303,8 +303,8 @@ describe('TaskRowAdapter', () => {
 		expect(actions.onUpdateTaskPriority).not.toHaveBeenCalled()
 
 		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /时间/ }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /移除时间/ }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /截止时间/ }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /移除当前日期/ }))
 		expect(contextMenuActions.onSelectDueDate).toHaveBeenCalledWith(contextTasks, null)
 		expect(actions.onUpdateTaskDueDate).not.toHaveBeenCalled()
 

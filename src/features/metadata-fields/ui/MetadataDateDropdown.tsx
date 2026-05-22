@@ -15,6 +15,7 @@ import {
 } from '@/features/metadata-fields/core'
 
 import { MetadataFieldDropdown } from './MetadataFieldDropdown'
+import type { MetadataFieldKey } from './MetadataFieldDropdown'
 
 export type MetadataDateDropdownProps = {
 	label: string
@@ -63,12 +64,12 @@ export function MetadataDateDropdown({
 		icon: getMetadataDateOptionIcon(option.key),
 		trailing: option.trailing ?? option.meta,
 	}))
-	const currentOption = options.find((option) => option.value === normalizedValue)
+	const buttonLabelPrefix = getMetadataDateButtonLabelPrefix(label)
 	const resolvedButtonLabel =
 		buttonLabel ??
 		(normalizedValue
-			? `${label} ${formatMetadataDisplayDate(normalizedValue)}`
-			: (currentOption?.label ?? '未设置'))
+			? `${buttonLabelPrefix} ${formatMetadataDisplayDate(normalizedValue)}`
+			: buttonLabelPrefix)
 
 	return (
 		<MetadataFieldDropdown
@@ -79,6 +80,7 @@ export function MetadataDateDropdown({
 			compact={compact}
 			disabled={disabled}
 			drawerOwnedOverlay={drawerOwnedOverlay}
+			fieldKey={getMetadataDateFieldKey(label)}
 			isValueEqual={(left, right) => left === right}
 			label={label}
 			options={options}
@@ -88,6 +90,28 @@ export function MetadataDateDropdown({
 			onChange={onChange}
 		/>
 	)
+}
+
+function getMetadataDateButtonLabelPrefix(label: string) {
+	switch (label) {
+		case '计划时间':
+			return '计划'
+		case '提醒时间':
+			return '提醒'
+		default:
+			return '截止'
+	}
+}
+
+function getMetadataDateFieldKey(label: string): MetadataFieldKey {
+	switch (label) {
+		case '计划时间':
+			return 'scheduledDate'
+		case '提醒时间':
+			return 'reminderDate'
+		default:
+			return 'dueDate'
+	}
 }
 
 function getMetadataDateOptionIcon(key: string) {

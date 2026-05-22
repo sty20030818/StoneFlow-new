@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { CheckIcon, MinusIcon } from 'lucide-react'
 
 import type { MetadataFieldIndicator } from '@/features/metadata-fields/core'
+import { cn } from '@/shared/lib/utils'
 import { DropdownMenuItem } from '@/shared/ui/base/dropdown-menu'
 import { ShortcutMenuItemHint } from '@/shared/ui/shortcut-menu'
 
@@ -29,6 +30,8 @@ export function MetadataFieldMenuItem<TValue>({
 	stopPropagation,
 	onSelect,
 }: MetadataFieldMenuItemProps<TValue>) {
+	const hasTrailing = trailing !== undefined && trailing !== null
+
 	return (
 		<DropdownMenuItem
 			className='gap-2 p-2'
@@ -47,10 +50,23 @@ export function MetadataFieldMenuItem<TValue>({
 		>
 			{icon}
 			<span className='min-w-0 flex-1 truncate'>{label}</span>
-			<span className='ml-auto flex min-w-12 items-center justify-end gap-2 text-[11px] text-muted-foreground'>
-				<MetadataFieldIndicatorIcon indicator={indicator} />
-				{digit ? <ShortcutMenuItemHint digit={digit} /> : null}
-				{trailing ? <span className='tabular-nums'>{trailing}</span> : null}
+			<span
+				className={cn(
+					'ml-auto shrink-0 items-center text-[11px] text-muted-foreground',
+					hasTrailing
+						? 'grid grid-cols-[0.875rem_1.25rem_auto] gap-x-2'
+						: 'grid grid-cols-[0.875rem_1.25rem] gap-x-2',
+				)}
+			>
+				<span className='flex items-center justify-center'>
+					<MetadataFieldIndicatorIcon indicator={indicator} />
+				</span>
+				<span className='flex items-center justify-center'>
+					{digit ? <ShortcutMenuItemHint digit={digit} /> : null}
+				</span>
+				{hasTrailing ? (
+					<span className='min-w-0 text-right tabular-nums'>{trailing}</span>
+				) : null}
 			</span>
 		</DropdownMenuItem>
 	)

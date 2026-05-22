@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 
 import {
-	CalendarClockIcon,
+	Calendar1Icon,
+	CalendarCogIcon,
 	CalendarDaysIcon,
 	CalendarIcon,
-	CalendarX2Icon,
+	CalendarOffIcon,
 	FolderIcon,
 	TargetIcon,
 } from 'lucide-react'
@@ -40,14 +41,16 @@ export function getCommandMenuStatusLeading(status: TaskStatus) {
 export function getCommandMenuDateLeading(key: string): ReactNode {
 	switch (key) {
 		case 'custom':
-			return <CalendarClockIcon className='size-4 text-sf-icon-secondary' />
-		case 'week':
+			return <CalendarCogIcon className='size-4 text-sf-icon-secondary' />
+		case 'today':
+			return <Calendar1Icon className='size-4 text-sf-icon-secondary' />
 		case 'one-week':
+		case 'this-week':
 		case 'thisWeek':
 			return <CalendarDaysIcon className='size-4 text-sf-icon-secondary' />
 		case 'none':
 		case 'noDate':
-			return <CalendarX2Icon className='size-4 text-sf-icon-secondary' />
+			return <CalendarOffIcon className='size-4 text-sf-icon-secondary' />
 		default:
 			return <CalendarIcon className='size-4 text-sf-icon-secondary' />
 	}

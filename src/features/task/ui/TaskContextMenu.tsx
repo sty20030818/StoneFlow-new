@@ -1,5 +1,9 @@
-import type { TaskStatus } from '@/shared/types'
 import { useDangerConfirm } from '@/features/danger-confirm'
+import {
+	createMetadataDateOptionsConfig,
+	normalizeMetadataDateValue,
+} from '@/features/metadata-fields/core'
+import type { TaskStatus } from '@/shared/types'
 import type { ReactNode } from 'react'
 import {
 	ContextMenu,
@@ -15,11 +19,13 @@ import {
 } from '@/shared/ui/base/context-menu'
 import {
 	ArchiveIcon,
-	CalendarClockIcon,
+	Calendar1Icon,
+	CalendarCogIcon,
 	CalendarDaysIcon,
 	CalendarIcon,
 	CalendarX2Icon,
 	CheckIcon,
+	CalendarOffIcon,
 	FolderIcon,
 	MinusIcon,
 	TargetIcon,
@@ -69,7 +75,7 @@ type TaskDateMenuOption = {
 	meta?: string
 	shortcut?: string
 	disabled?: boolean
-	disabledReason?: string
+	disabledReason?: ReactNode
 }
 
 const TASK_CONTEXT_SHORTCUTS = {
@@ -182,14 +188,14 @@ export function TaskContextMenu({
 						<ContextMenuSub>
 							<PropertySubTrigger
 								disabled={isBusy}
-								icon={<CalendarDaysIcon />}
+								icon={<CalendarX2Icon />}
 								shortcut={TASK_CONTEXT_SHORTCUTS.date}
 							>
-								时间
+								截止时间
 							</PropertySubTrigger>
 							<ContextMenuSubContent className='w-64'>
 								<ContextMenuLabel className='normal-case tracking-normal'>
-									设置时间为...
+									设置截止时间为...
 								</ContextMenuLabel>
 								{dateOptions.map((option) => (
 									<PropertyOptionItem
@@ -399,76 +405,37 @@ function getPropertyOptionIndicator<T>(
 }
 
 function getTaskContextDateOptions(hasExistingDate: boolean): TaskDateMenuOption[] {
-	const today = startOfLocalDay(new Date())
-	const tomorrow = addLocalDays(today, 1)
-	const oneWeek = addLocalDays(today, 7)
-	const options: TaskDateMenuOption[] = []
-
-	if (hasExistingDate) {
-		options.push({ key: 'none', label: '移除时间', value: null, shortcut: '0' })
-	}
-
-	const tomorrowValue = formatLocalDate(tomorrow)
-	const weekValue = formatLocalDate(getEndOfLocalWeek(today))
-	const oneWeekValue = formatLocalDate(oneWeek)
-
-	options.push(
-		{ key: 'tomorrow', label: '明天', value: tomorrowValue, meta: tomorrowValue },
-		{ key: 'week', label: '本周', value: weekValue, meta: weekValue },
-		{ key: 'one-week', label: '一周', value: oneWeekValue, meta: oneWeekValue },
-		{
-			key: 'custom',
-			label: '自定义日期',
-			value: null,
-			disabled: true,
-			disabledReason: '后续接入',
-		},
-	)
-
-	return options
+	return createMetadataDateOptionsConfig({
+		showClearOption: hasExistingDate,
+	}).map((option) => ({
+		key: option.key,
+		label: option.label,
+		value: normalizeMetadataDateValue(option.value),
+		meta: option.meta,
+		shortcut: option.isEmptyValue ? '0' : undefined,
+		disabled: option.disabled,
+		disabledReason: option.trailing,
+	}))
 }
 
 function getTaskContextDateIcon(key: string) {
 	switch (key) {
 		case 'none':
-			return <CalendarX2Icon />
-		case 'week':
+			return <CalendarOffIcon />
+		case 'today':
+			return <Calendar1Icon />
+		case 'this-week':
 		case 'one-week':
 			return <CalendarDaysIcon />
 		case 'custom':
-			return <CalendarClockIcon />
+			return <CalendarCogIcon />
 		default:
 			return <CalendarIcon />
 	}
 }
 
 function normalizeDateValue(value: string | null | undefined) {
-	if (!value) {
-		return null
-	}
-	return value.slice(0, 10)
-}
-
-function startOfLocalDay(date: Date) {
-	return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-}
-
-function addLocalDays(date: Date, days: number) {
-	const next = new Date(date)
-	next.setDate(next.getDate() + days)
-	return next
-}
-
-function getEndOfLocalWeek(date: Date) {
-	const day = date.getDay() === 0 ? 7 : date.getDay()
-	return addLocalDays(date, 7 - day)
-}
-
-function formatLocalDate(date: Date) {
-	const year = date.getFullYear()
-	const month = String(date.getMonth() + 1).padStart(2, '0')
-	const day = String(date.getDate()).padStart(2, '0')
-	return `${year}-${month}-${day}`
+	return normalizeMetadataDateValue(value)
 }
 
 function isApplePlatform() {

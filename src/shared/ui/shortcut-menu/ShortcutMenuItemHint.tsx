@@ -1,4 +1,5 @@
 import { cn } from '@/shared/lib/utils'
+import { Kbd } from '@/shared/ui/base/kbd'
 
 type ShortcutMenuItemHintProps = {
 	digit: string
@@ -11,15 +12,15 @@ type ShortcutMenuItemHintProps = {
  */
 export function ShortcutMenuItemHint({ digit, className }: ShortcutMenuItemHintProps) {
 	return (
-		<span
+		<Kbd
 			aria-hidden
 			data-slot='shortcut-menu-item-hint'
 			className={cn(
-				'inline-flex shrink-0 items-center justify-center rounded-sm border border-transparent bg-muted/70 px-1.5 py-0.5 text-[11px] font-medium leading-none tabular-nums text-muted-foreground',
+				'h-auto min-w-0 shrink-0 rounded-none border-0 bg-transparent px-0 text-[11px] font-medium text-muted-foreground shadow-none',
 				className,
 			)}
 		>
 			{digit}
-		</span>
+		</Kbd>
 	)
 }

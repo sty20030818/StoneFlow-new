@@ -111,7 +111,7 @@ describe('TaskCreateContent', () => {
 
 		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 E' } })
 		expect(screen.getByText('收件箱')).toBeInTheDocument()
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
 
@@ -125,7 +125,7 @@ describe('TaskCreateContent', () => {
 		createTaskMock.mockClear()
 		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 F' } })
 		expect(screen.getByText('独立事项')).toBeInTheDocument()
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 A/ }))
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
 
@@ -142,11 +142,11 @@ describe('TaskCreateContent', () => {
 		renderTaskCreate()
 
 		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 G' } })
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止日期' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
-		fireEvent.pointerDown(screen.getByRole('button', { name: '计划日期' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '计划时间' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
-		fireEvent.pointerDown(screen.getByRole('button', { name: '提醒日期' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '提醒时间' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
 

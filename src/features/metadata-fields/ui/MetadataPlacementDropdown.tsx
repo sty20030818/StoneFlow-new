@@ -8,6 +8,7 @@ import {
 } from '@/features/metadata-fields/core'
 
 import { MetadataFieldDropdown } from './MetadataFieldDropdown'
+import type { MetadataFieldKey } from './MetadataFieldDropdown'
 
 export type MetadataPlacementDropdownProps = {
 	label: string
@@ -58,6 +59,7 @@ export function MetadataPlacementDropdown({
 			compact={compact}
 			disabled={disabled}
 			drawerOwnedOverlay={drawerOwnedOverlay}
+			fieldKey={getMetadataPlacementFieldKey(label)}
 			isValueEqual={isMetadataPlacementValueEqual}
 			label={label}
 			options={options}
@@ -68,4 +70,15 @@ export function MetadataPlacementDropdown({
 			onChange={onChange}
 		/>
 	)
+}
+
+function getMetadataPlacementFieldKey(label: string): MetadataFieldKey {
+	switch (label) {
+		case '空间':
+			return 'space'
+		case '父项目':
+			return 'parentProject'
+		default:
+			return 'project'
+	}
 }

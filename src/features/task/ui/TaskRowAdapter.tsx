@@ -215,6 +215,7 @@ export function TaskRowAdapter({
 							buttonAppearance='row-icon'
 							compact
 							disabled={isPending}
+							fieldKey='priority'
 							label='优先级'
 							options={priorityOptions}
 							stopPropagation
@@ -226,6 +227,7 @@ export function TaskRowAdapter({
 							buttonAppearance='row-icon'
 							compact
 							disabled={isPending}
+							fieldKey='status'
 							label='状态'
 							options={statusOptions}
 							stopPropagation
@@ -247,7 +249,7 @@ export function TaskRowAdapter({
 							compact
 							hideWhenEmpty
 							icon={taskDateMetadataIcons.due}
-							label='截止'
+							label='截止时间'
 							stopPropagation
 							value={task.dueAt}
 							onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
@@ -257,7 +259,7 @@ export function TaskRowAdapter({
 							compact
 							hideWhenEmpty
 							icon={taskDateMetadataIcons.scheduled}
-							label='计划'
+							label='计划时间'
 							stopPropagation
 							value={task.scheduledAt}
 							onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
@@ -267,7 +269,7 @@ export function TaskRowAdapter({
 							compact
 							hideWhenEmpty
 							icon={taskDateMetadataIcons.reminder}
-							label='提醒'
+							label='提醒时间'
 							stopPropagation
 							value={task.reminderAt}
 							onChange={(value) => void actions.onUpdateTaskReminderAt?.(task, value)}

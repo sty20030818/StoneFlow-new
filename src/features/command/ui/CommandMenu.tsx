@@ -34,6 +34,10 @@ import { AppScrollArea } from '@/shared/ui/AppScrollArea'
 import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { Kbd } from '@/shared/ui/base/kbd'
+import {
+	createMetadataDateOptionsConfig,
+	normalizeMetadataDateValue,
+} from '@/features/metadata-fields/core'
 import type { ShortcutMenuItem } from '@/shared/ui/shortcut-menu'
 import { ShortcutDigitSelectLayer } from '@/shared/ui/shortcut-menu'
 import {
@@ -453,7 +457,7 @@ function getCommandMenuPlaceholder(mode: CommandMenuMode, filterKind: PageFilter
 		case 'task-status-picker':
 			return '选择状态…'
 		case 'task-date-picker':
-			return '选择日期…'
+			return '选择截止时间…'
 		case 'filter-picker':
 			return getFilterPickerPlaceholder(mode, filterKind)
 		default:
@@ -646,7 +650,7 @@ function ScopedPickerCommandGroup({
 			isEmptyValue: option.value === 0,
 		}))
 		return (
-			<CommandGroup className='pt-2' heading='优先级'>
+			<CommandGroup className='pt-2' heading='设置优先级为...'>
 				<ShortcutDigitSelectLayer
 					items={shortcutItems}
 					onSelect={(item) => {
@@ -691,7 +695,7 @@ function ScopedPickerCommandGroup({
 			disabled: false,
 		}))
 		return (
-			<CommandGroup className='pt-2' heading='状态'>
+			<CommandGroup className='pt-2' heading='设置状态为...'>
 				<ShortcutDigitSelectLayer
 					items={shortcutItems}
 					onSelect={(item) => {
@@ -727,7 +731,7 @@ function ScopedPickerCommandGroup({
 	if (mode === 'task-date-picker') {
 		const options = getTaskDateOptions(context)
 		return (
-			<CommandGroup className='pt-2' heading='日期'>
+			<CommandGroup className='pt-2' heading='设置截止时间为...'>
 				{options.map((option) => (
 					<CommandItem
 						disabled={option.disabled}
@@ -827,7 +831,11 @@ function ScopedPickerCommandGroup({
 					}}
 				/>
 				{groups.map((group) => (
-					<CommandGroup className='pt-1 first:pt-0' heading={group.heading} key={group.spaceId}>
+					<CommandGroup
+						className='pt-1 first:pt-0'
+						heading={group.spaceId === 'ungrouped' ? '移动到项目...' : group.heading}
+						key={group.spaceId}
+					>
 						{group.items.map((item) => (
 							<CommandItem
 								key={item.key}
@@ -925,7 +933,7 @@ function FilterPickerCommandGroup({
 			capability.supportsDate
 				? {
 						kind: 'date' as const,
-						title: '按日期筛选',
+						title: '按截止时间筛选',
 						meta: formatDateMeta(context),
 						leading: getCommandMenuDateLeading('today'),
 					}
@@ -1084,7 +1092,7 @@ function FilterPickerCommandGroup({
 
 	if (filterKind === 'date') {
 		return (
-			<CommandGroup className='pt-2' heading='日期筛选'>
+			<CommandGroup className='pt-2' heading='截止时间筛选'>
 				{getFilterDateOptions().map((option) => {
 					const selected = context.view.dateFilterValue === option.value
 					return (
@@ -1162,7 +1170,7 @@ type TaskDateOption = {
 	value: string | null
 	digit?: string
 	disabled?: boolean
-	disabledReason?: string
+	disabledReason?: ReactNode
 }
 
 function getSelectedTaskPriorityValues(context: CommandContext) {
@@ -1217,33 +1225,20 @@ function getSelectionIndicatorForValue(
 }
 
 function getTaskDateOptions(context: CommandContext): TaskDateOption[] {
-	const today = startOfLocalDay(new Date())
-	const tomorrow = addLocalDays(today, 1)
-	const oneWeek = addLocalDays(today, 7)
 	const hasExistingDate = context.selection.entities.some(
 		(entity) => entity.type === 'task' && entity.dueAt !== undefined && entity.dueAt !== null,
 	)
 
-	const options: TaskDateOption[] = []
-
-	if (hasExistingDate) {
-		options.push({ key: 'none', label: '移除时间', value: null, digit: '0' })
-	}
-
-	options.push(
-		{ key: 'tomorrow', label: '明天', value: formatLocalDate(tomorrow) },
-		{ key: 'week', label: '本周', value: formatLocalDate(getEndOfLocalWeek(today)) },
-		{ key: 'one-week', label: '一周', value: formatLocalDate(oneWeek) },
-		{
-			key: 'custom',
-			label: '自定义日期',
-			value: null,
-			disabled: true,
-			disabledReason: '完整日期选择后续接入',
-		},
-	)
-
-	return options
+	return createMetadataDateOptionsConfig({
+		showClearOption: hasExistingDate,
+	}).map((option) => ({
+		key: option.key,
+		label: option.label,
+		value: normalizeMetadataDateValue(option.value),
+		digit: option.isEmptyValue ? '0' : undefined,
+		disabled: option.disabled,
+		disabledReason: option.trailing ?? '完整截止时间选择后续接入',
+	}))
 }
 
 function getFilterPickerPlaceholder(mode: CommandMenuMode, filterKind: PageFilterKind) {
@@ -1251,29 +1246,29 @@ function getFilterPickerPlaceholder(mode: CommandMenuMode, filterKind: PageFilte
 		return '输入命令 或 搜索 …'
 	}
 
-	switch (filterKind) {
-		case 'priority':
-			return '筛选优先级…'
-		case 'status':
-			return '筛选状态…'
-		case 'date':
-			return '筛选日期…'
-		case 'project':
-			return '搜索项目筛选…'
-		default:
-			return '选择筛选维度…'
+		switch (filterKind) {
+			case 'priority':
+				return '筛选优先级…'
+			case 'status':
+				return '筛选状态…'
+			case 'date':
+				return '筛选截止时间…'
+			case 'project':
+				return '搜索项目筛选…'
+			default:
+				return '选择筛选维度…'
 	}
 }
 
 function getFilterDateOptions(): Array<{ label: string; value: PageDateFilterValue }> {
 	return [
-		{ label: '不过滤日期', value: 'none' },
+		{ label: '不过滤截止时间', value: 'none' },
 		{ label: '今天', value: 'today' },
 		{ label: '明天', value: 'tomorrow' },
 		{ label: '本周', value: 'thisWeek' },
 		{ label: '已逾期', value: 'overdue' },
-		{ label: '有日期', value: 'hasDate' },
-		{ label: '无日期', value: 'noDate' },
+		{ label: '有截止时间', value: 'hasDate' },
+		{ label: '无截止时间', value: 'noDate' },
 	]
 }
 
@@ -1300,16 +1295,6 @@ function formatProjectMeta(context: CommandContext, projects: CommandMenuProject
 
 	const project = projects.find((item) => item.id === context.view.projectFilterId)
 	return project?.label ?? '已选项目'
-}
-
-function startOfLocalDay(date: Date) {
-	return new Date(date.getFullYear(), date.getMonth(), date.getDate())
-}
-
-function addLocalDays(date: Date, days: number) {
-	const next = new Date(date)
-	next.setDate(next.getDate() + days)
-	return next
 }
 
 type TaskPlacementGroup = {
@@ -1417,19 +1402,6 @@ function resolveTaskPlacementCurrentSpaceId(context: CommandContext) {
 	)
 
 	return selectionSpaceIds.size === 1 ? (Array.from(selectionSpaceIds)[0] ?? null) : null
-}
-
-function getEndOfLocalWeek(date: Date) {
-	const day = date.getDay()
-	const daysUntilSunday = (7 - day) % 7
-	return addLocalDays(date, daysUntilSunday)
-}
-
-function formatLocalDate(date: Date) {
-	const year = date.getFullYear()
-	const month = String(date.getMonth() + 1).padStart(2, '0')
-	const day = String(date.getDate()).padStart(2, '0')
-	return `${year}-${month}-${day}`
 }
 
 function ProjectsCommandGroup({

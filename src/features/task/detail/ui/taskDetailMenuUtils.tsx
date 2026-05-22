@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import { CheckIcon, MinusIcon } from 'lucide-react'
 
+import { cn } from '@/shared/lib/utils'
 import { ShortcutMenuItemHint } from '@/shared/ui/shortcut-menu'
 
 export type DetailMenuOptionIndicator = 'checked' | 'mixed' | null
@@ -43,14 +44,29 @@ export function DetailMenuOptionRow({
 	digit?: string
 	trailing?: ReactNode
 }) {
+	const hasTrailing = !digit && trailing !== undefined && trailing !== null
+
 	return (
 		<>
 			{icon}
 			<span className='min-w-0 flex-1 truncate'>{label}</span>
-			<span className='ml-auto flex min-w-12 items-center justify-end gap-2 text-[11px] text-muted-foreground'>
-				<DetailMenuOptionIndicatorIcon indicator={indicator} />
-				{digit ? <ShortcutMenuItemHint digit={digit} /> : null}
-				{!digit && trailing ? <span className='tabular-nums'>{trailing}</span> : null}
+			<span
+				className={cn(
+					'ml-auto shrink-0 items-center text-[11px] text-muted-foreground',
+					hasTrailing
+						? 'grid grid-cols-[0.875rem_1.25rem_auto] gap-x-2'
+						: 'grid grid-cols-[0.875rem_1.25rem] gap-x-2',
+				)}
+			>
+				<span className='flex items-center justify-center'>
+					<DetailMenuOptionIndicatorIcon indicator={indicator} />
+				</span>
+				<span className='flex items-center justify-center'>
+					{digit ? <ShortcutMenuItemHint digit={digit} /> : null}
+				</span>
+				{hasTrailing ? (
+					<span className='min-w-0 text-right tabular-nums'>{trailing}</span>
+				) : null}
 			</span>
 		</>
 	)
