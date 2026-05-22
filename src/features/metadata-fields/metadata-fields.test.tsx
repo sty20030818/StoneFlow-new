@@ -360,6 +360,7 @@ describe('metadata-fields', () => {
 			/>,
 		)
 
+		expect(screen.getByRole('button', { name: '截止时间' })).toHaveTextContent('添加时间')
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
 
 		expect(screen.getByText('设置截止时间为...')).toBeInTheDocument()
@@ -409,6 +410,7 @@ describe('metadata-fields', () => {
 			/>,
 		)
 
+		expect(screen.getByRole('button', { name: '计划时间' })).toHaveTextContent('添加时间')
 		fireEvent.pointerDown(screen.getByRole('button', { name: '计划时间' }))
 		await screen.findByRole('menu')
 		expect(screen.getByText('设置计划时间为...')).toBeInTheDocument()
@@ -424,6 +426,7 @@ describe('metadata-fields', () => {
 			/>,
 		)
 
+		expect(screen.getByRole('button', { name: '提醒时间' })).toHaveTextContent('添加时间')
 		fireEvent.pointerDown(screen.getByRole('button', { name: '提醒时间' }))
 		await screen.findByRole('menu')
 		expect(screen.getByText('设置提醒时间为...')).toBeInTheDocument()

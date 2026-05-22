@@ -17,14 +17,17 @@ describe('TaskPropertiesSection', () => {
 			'data-variant',
 			'outline',
 		)
+		expect(screen.getByRole('button', { name: '截止时间' })).toHaveTextContent('添加时间')
 		expect(screen.getByRole('button', { name: '计划时间' })).toHaveAttribute(
 			'data-variant',
 			'outline',
 		)
+		expect(screen.getByRole('button', { name: '计划时间' })).toHaveTextContent('添加时间')
 		expect(screen.getByRole('button', { name: '提醒时间' })).toHaveAttribute(
 			'data-variant',
 			'outline',
 		)
+		expect(screen.getByRole('button', { name: '提醒时间' })).toHaveTextContent('添加时间')
 	})
 
 	it('状态和优先级按钮使用 outline contract', () => {

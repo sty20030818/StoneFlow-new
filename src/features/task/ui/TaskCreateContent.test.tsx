@@ -142,6 +142,9 @@ describe('TaskCreateContent', () => {
 		renderTaskCreate()
 
 		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 G' } })
+		expect(screen.getByRole('button', { name: '截止时间' })).toHaveTextContent('添加时间')
+		expect(screen.getByRole('button', { name: '计划时间' })).toHaveTextContent('添加时间')
+		expect(screen.getByRole('button', { name: '提醒时间' })).toHaveTextContent('添加时间')
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
 		fireEvent.pointerDown(screen.getByRole('button', { name: '计划时间' }))

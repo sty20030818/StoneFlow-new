@@ -56,7 +56,7 @@ export function MetadataDateDropdown({
 		buttonLabel ??
 		(normalizedValue
 			? `${buttonLabelPrefix} ${formatMetadataDisplayDate(normalizedValue)}`
-			: buttonLabelPrefix)
+			: '添加时间')
 
 	return (
 		<MetadataFieldDropdown
