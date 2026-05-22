@@ -208,13 +208,16 @@ export function CommandMenu({
 				onPointerDownCapture={handleSurfacePointerDownCapture}
 				shouldFilter={!isCommandMenuSearchMode(mode)}
 			>
-				<CommandInput
-					ref={inputRef}
-					placeholder={getCommandMenuPlaceholder(mode, filterKind)}
-					value={query}
-					onValueChange={setQuery}
-				/>
-				<CommandMenuSelectionChips entities={context.selection.entities} />
+				<div className='flex flex-col'>
+					<CommandMenuSelectionChips entities={context.selection.entities} />
+					<CommandInput
+						ref={inputRef}
+						placeholder={getCommandMenuPlaceholder(mode, filterKind)}
+						value={query}
+						wrapperClassName='pr-2 pl-4 py-3'
+						onValueChange={setQuery}
+					/>
+				</div>
 				<CommandScrollableList>
 					<CommandEmpty>{getCommandMenuEmptyText(mode, query)}</CommandEmpty>
 					{isScopedMode ? (
@@ -301,7 +304,7 @@ function CommandMenuSelectionChips({ entities }: { entities: CommandSelectedEnti
 		<>
 			<div
 				aria-label='当前选中对象'
-				className='flex items-center gap-1.5 overflow-hidden border-b border-sf-divider px-3 py-2'
+				className='flex items-center gap-1.5 overflow-hidden px-2 pt-2'
 				ref={containerRef}
 			>
 				{visibleEntities.map((entity) => (
@@ -1231,17 +1234,17 @@ function getFilterPickerPlaceholder(mode: CommandMenuMode, filterKind: PageFilte
 		return '输入命令 或 搜索 …'
 	}
 
-		switch (filterKind) {
-			case 'priority':
-				return '筛选优先级…'
-			case 'status':
-				return '筛选状态…'
-			case 'date':
-				return '筛选截止时间…'
-			case 'project':
-				return '搜索项目筛选…'
-			default:
-				return '选择筛选维度…'
+	switch (filterKind) {
+		case 'priority':
+			return '筛选优先级…'
+		case 'status':
+			return '筛选状态…'
+		case 'date':
+			return '筛选截止时间…'
+		case 'project':
+			return '搜索项目筛选…'
+		default:
+			return '选择筛选维度…'
 	}
 }
 

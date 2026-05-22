@@ -59,15 +59,20 @@ function CommandDialog({
 
 const CommandInput = React.forwardRef<
 	React.ElementRef<typeof CommandPrimitive.Input>,
-	React.ComponentProps<typeof CommandPrimitive.Input>
->(({ className, ...props }, ref) => {
+	React.ComponentProps<typeof CommandPrimitive.Input> & {
+		wrapperClassName?: string
+	}
+>(({ className, wrapperClassName, ...props }, ref) => {
 	return (
-		<div data-slot='command-input-wrapper' className='px-5 py-4'>
+		<div
+			data-slot='command-input-wrapper'
+			className={cn('px-5 py-4', wrapperClassName)}
+		>
 			<CommandPrimitive.Input
 				data-slot='command-input'
 				ref={ref}
 				className={cn(
-					'w-full border-none bg-transparent p-0 text-[16px] font-medium text-foreground shadow-none outline-hidden ring-0 placeholder:text-sf-text-quaternary disabled:cursor-not-allowed disabled:opacity-50',
+					'w-full border-none bg-transparent p-0 text-[18px] font-medium text-foreground shadow-none outline-hidden ring-0 placeholder:text-sf-text-quaternary disabled:cursor-not-allowed disabled:opacity-50',
 					className,
 				)}
 				{...props}

@@ -107,11 +107,17 @@ describe('CommandMenu', () => {
 		const commandScrollContainer = commandItem.closest('[data-scroll-container="true"]')
 		const chipsRow = screen.getByLabelText('当前选中对象')
 		const commandList = commandItem.closest('[data-slot="command-list"]')
+		const input = screen.getByPlaceholderText('输入命令 或 搜索 …')
+		const topStack = input.closest('.flex.flex-col')
 
 		expect(commandScrollContainer).toHaveAttribute('data-scroll-container', 'true')
 		expect(commandList).toHaveClass('overflow-y-visible')
 		expect(chipsRow).toHaveClass('overflow-hidden')
+		expect(chipsRow).not.toHaveClass('border-b')
 		expect(chipsRow.closest('[data-scroll-container="true"]')).toBeNull()
+		expect(topStack).toContainElement(chipsRow)
+		expect(topStack).toContainElement(input)
+		expect(chipsRow.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 	})
 
 	it('有项目选择时显示项目批量操作分组', () => {
