@@ -66,8 +66,7 @@ describe('metadata-fields', () => {
 		])
 		expect(emptySpec.options.at(-1)).toMatchObject({
 			label: '自定义日期',
-			disabled: true,
-			disabledReason: '后续接入',
+			action: 'openCustomDateDialog',
 		})
 
 		const valueSpec = createDueDateActionSpec({
@@ -350,7 +349,7 @@ describe('metadata-fields', () => {
 		expect(button.querySelector('.sr-only')).toHaveTextContent('中')
 	})
 
-	it('MetadataDateDropdown 默认无值时不显示移除当前日期，且自定义日期禁用', async () => {
+	it('MetadataDateDropdown 默认无值时不显示移除当前日期，且自定义日期可打开弹窗', async () => {
 		render(
 			<MetadataDateDropdown
 				icon={<CalendarIcon className='size-3.5' />}
@@ -371,8 +370,7 @@ describe('metadata-fields', () => {
 		expect(screen.getByRole('menuitem', { name: /明天/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /本周/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /一周后/ })).toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).toHaveAttribute('data-disabled')
-		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).toHaveTextContent('后续接入')
+		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).not.toHaveAttribute('data-disabled')
 	})
 
 	it('MetadataDateDropdown 有值时显示统一日期文案，并仅保留 0 快捷键', async () => {

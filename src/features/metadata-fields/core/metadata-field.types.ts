@@ -12,6 +12,7 @@ export type MetadataFieldOption<TValue = MetadataFieldValue> = {
 	disabled?: boolean
 	isEmptyValue?: boolean
 	key?: string
+	action?: 'select' | 'openCustomDateDialog'
 }
 
 export type MetadataPlacementValue =

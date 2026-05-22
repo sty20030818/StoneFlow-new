@@ -22,6 +22,7 @@ export function mapMetadataActionSpecToDropdownProps<TValue>(
 			trailing: option.disabledReason ?? option.meta,
 			disabled: option.disabled,
 			isEmptyValue: option.isEmptyValue,
+			action: option.action,
 		})),
 	}
 }

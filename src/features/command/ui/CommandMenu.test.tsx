@@ -376,7 +376,7 @@ describe('CommandMenu', () => {
 		expect(onSelectTaskPriority).toHaveBeenCalledWith(0)
 	})
 
-	it('task-date-picker 无日期时显示四个 preset，有日期时显示移除当前日期，自定义日期保持 disabled', () => {
+	it('task-date-picker 无日期时显示四个 preset，有日期时显示移除当前日期，自定义日期不会直接提交日期值', () => {
 		const onOpenChange = vi.fn<(open: boolean) => void>()
 		const onSelectTaskDate = vi.fn<(dueAt: string | null) => void>()
 		const firstRender = renderCommandMenu({
@@ -407,9 +407,9 @@ describe('CommandMenu', () => {
 		expect(onSelectTaskDate).toHaveBeenCalledWith(null)
 
 		secondRender.unmount()
-		renderCommandMenu({ mode: 'task-date-picker', onSelectTaskDate })
+		renderCommandMenu({ mode: 'task-date-picker', onOpenChange, onSelectTaskDate })
 		fireEvent.click(screen.getByText('自定义日期'))
-		expect(screen.getByText('后续接入')).toBeInTheDocument()
+		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(onSelectTaskDate).toHaveBeenCalledTimes(2)
 	})
 

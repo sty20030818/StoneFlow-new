@@ -17,6 +17,7 @@ import {
 	selectCommandMenuMode,
 	selectCommandMenuFilterKind,
 	selectCommandSelectionOverride,
+	selectCustomDateDialog,
 	selectCreateDialogType,
 	selectIsCommandOpen,
 	selectIsShortcutHelpOpen,
@@ -64,6 +65,7 @@ import {
 import { ProjectCreateContent } from '@/features/project/ui/ProjectCreateContent'
 import { TaskCreateContent } from '@/features/task/ui/TaskCreateContent'
 import { useTaskStore } from '@/features/task/model/useTaskStore'
+import { CustomDateDialog } from '@/features/metadata-fields'
 import { CreateDialogShell } from '@/shared/ui/create-dialog-shell'
 import { requestSidebarToggle, SidebarProvider } from '@/shared/ui/base/sidebar'
 import {
@@ -219,6 +221,7 @@ function ShellLayoutContent({
 	const commandSelectionOverride = useDialogStore(selectCommandSelectionOverride)
 	const isShortcutHelpOpen = useDialogStore(selectIsShortcutHelpOpen)
 	const createDialogType = useDialogStore(selectCreateDialogType)
+	const customDateDialog = useDialogStore(selectCustomDateDialog)
 	const taskCreateDraft = useDialogStore(selectTaskCreateDraft)
 	const taskCreatePresentation = useDialogStore(selectTaskCreatePresentation)
 	const entityDetailController = useEntityDetailController()
@@ -231,6 +234,7 @@ function ShellLayoutContent({
 	const setShortcutHelpOpen = useDialogStore((state) => state.setShortcutHelpOpen)
 	const toggleShortcutHelp = useDialogStore((state) => state.toggleShortcutHelp)
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
+	const closeCustomDateDialog = useDialogStore((state) => state.closeCustomDateDialog)
 	const toggleTaskCreatePresentation = useDialogStore((state) => state.toggleTaskCreatePresentation)
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
 	const [chordSession, setChordSession] = useState<CommandChordSession | null>(null)
@@ -1076,6 +1080,24 @@ function ShellLayoutContent({
 					/>
 				) : null}
 			</CreateDialogShell>
+			{customDateDialog ? (
+				<CustomDateDialog
+					fieldKey={customDateDialog.fieldKey}
+					hasExistingValue={customDateDialog.hasExistingValue}
+					label={customDateDialog.label}
+					open
+					value={customDateDialog.value}
+					onOpenChange={(open) => {
+						if (!open) {
+							closeCustomDateDialog()
+						}
+					}}
+					onSubmit={(value) => {
+						customDateDialog.onSubmit?.(value)
+						closeCustomDateDialog()
+					}}
+				/>
+			) : null}
 			{/* <ShellFooter navBadges={navBadges} /> */}
 			{/* 占位，保持底部边距 */}
 			<div className='h-2 shrink-0 bg-sf-shell' />

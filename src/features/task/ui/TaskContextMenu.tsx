@@ -1,4 +1,5 @@
 import { useDangerConfirm } from '@/features/danger-confirm'
+import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
 	createDueDateActionSpec,
 	createPriorityActionSpec,
@@ -99,6 +100,7 @@ export function TaskContextMenu({
 	dangerEntityLabel,
 }: TaskContextMenuProps) {
 	const { requestDangerConfirm } = useDangerConfirm()
+	const openCustomDateDialog = useDialogStore((state) => state.openCustomDateDialog)
 	const canMoveToTrash = !!onMoveToTrash
 	const canArchive = !!onArchive
 	const canSelectDueDate = !!onSelectDueDate
@@ -112,6 +114,9 @@ export function TaskContextMenu({
 	const dueDateIndicatorValues = getIndicatorValues(
 		(selectionValues?.dueDates ?? [currentDueDate]).map((value) => normalizeDateValue(value)),
 	)
+	const normalizedDueDates = (selectionValues?.dueDates ?? [currentDueDate]).map((value) =>
+		normalizeDateValue(value),
+	)
 	const statusGroup = mapMetadataActionSpecToTaskContextMenuGroup(createStatusActionSpec())
 	const priorityGroup = mapMetadataActionSpecToTaskContextMenuGroup(createPriorityActionSpec())
 	const dateGroup = mapMetadataActionSpecToTaskContextMenuGroup(
@@ -120,6 +125,10 @@ export function TaskContextMenu({
 		}),
 	)
 	const projectIndicatorValues = getIndicatorValues(selectionValues?.projectIds ?? [projectId])
+	const uniqueNonEmptyDueDates = Array.from(
+		new Set(normalizedDueDates.filter((value): value is string => Boolean(value))),
+	)
+	const customDateDialogValue = uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
 
 	return (
 		<ContextMenu>
@@ -196,9 +205,20 @@ export function TaskContextMenu({
 										icon={option.icon}
 										key={option.key}
 										onSelect={() => {
-											if (!option.disabled) {
-												onSelectDueDate?.(option.value)
+											if (option.disabled) {
+												return
 											}
+											if (option.action === 'openCustomDateDialog') {
+												openCustomDateDialog({
+													fieldKey: 'dueDate',
+													label: '截止时间',
+													value: customDateDialogValue,
+													hasExistingValue: uniqueNonEmptyDueDates.length > 0,
+													onSubmit: (nextValue) => onSelectDueDate?.(nextValue),
+												})
+												return
+											}
+											onSelectDueDate?.(option.value)
 										}}
 										shortcut={option.shortcut}
 										trailing={option.trailing}

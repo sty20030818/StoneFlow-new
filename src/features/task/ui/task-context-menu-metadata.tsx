@@ -12,6 +12,7 @@ export type TaskContextMenuMetadataOption<TValue> = {
 	shortcut?: string
 	disabled?: boolean
 	trailing?: React.ReactNode
+	action?: 'select' | 'openCustomDateDialog'
 }
 
 export type TaskContextMenuMetadataGroup<TValue> = {
@@ -34,6 +35,7 @@ export function mapMetadataActionSpecToTaskContextMenuGroup<TValue>(
 			shortcut: option.digit,
 			disabled: option.disabled,
 			trailing: dropdownProps.options[index]?.trailing ?? null,
+			action: option.action,
 		})),
 	}
 }

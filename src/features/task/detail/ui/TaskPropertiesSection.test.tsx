@@ -48,7 +48,7 @@ describe('TaskPropertiesSection', () => {
 		expect(screen.getByRole('menuitem', { name: /已完成/ })).toBeInTheDocument()
 	})
 
-	it('日期菜单包含统一 preset，空值时不显示移除当前日期，且自定义日期禁用', async () => {
+	it('日期菜单包含统一 preset，空值时不显示移除当前日期，且自定义日期可打开弹窗', async () => {
 		render(<TaskPropertiesSection autosave={createAutosaveController()} />)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
@@ -59,7 +59,9 @@ describe('TaskPropertiesSection', () => {
 		expect(screen.getByRole('menuitem', { name: /明天/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /本周/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /一周后/ })).toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).toHaveAttribute('data-disabled')
+		expect(screen.getByRole('menuitem', { name: /自定义日期/ })).not.toHaveAttribute(
+			'data-disabled',
+		)
 	})
 })
 

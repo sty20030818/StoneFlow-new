@@ -154,7 +154,8 @@ describe('TaskRowAdapter', () => {
 		renderTaskRowAdapter()
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止 任务 A' }))
-		expect((await screen.findByRole('menu')).parentElement).toHaveAttribute('data-align', 'end')
+		const menu = await screen.findByRole('menu')
+		expect(menu.closest('[data-slot=\"dropdown-menu-content\"]')).toHaveAttribute('data-align', 'end')
 	})
 
 	it('关闭项目选项时不渲染项目 dropdown', () => {

@@ -52,6 +52,7 @@ export type MetadataFieldDropdownProps<TValue> = {
 	stopPropagation?: boolean
 	shortcutMode?: MetadataShortcutMode
 	isValueEqual?: MetadataValueComparator<TValue>
+	onSelectCustomOption?: (optionKey: string) => void
 	onChange: (value: TValue) => void
 }
 
@@ -74,6 +75,7 @@ export function MetadataFieldDropdown<TValue>({
 	stopPropagation,
 	shortcutMode = 'default',
 	isValueEqual = defaultMetadataValueComparator,
+	onSelectCustomOption,
 	onChange,
 }: MetadataFieldDropdownProps<TValue>) {
 	const currentOption = options.find((option) => isValueEqual(option.value, value)) ?? options[0]
@@ -149,7 +151,14 @@ export function MetadataFieldDropdown<TValue>({
 								stopPropagation={stopPropagation}
 								trailing={option.trailing}
 								value={option.value}
-								onSelect={onChange}
+								onSelect={(nextValue) => {
+									if (option.action === 'openCustomDateDialog') {
+										onSelectCustomOption?.(option.key ?? String(index))
+										return
+									}
+
+									onChange(nextValue)
+								}}
 							/>
 						)
 					})}

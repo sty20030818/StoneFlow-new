@@ -38,6 +38,7 @@ export type MetadataActionOption<TValue> = {
 	disabledReason?: string
 	digit?: string
 	isEmptyValue?: boolean
+	action?: 'select' | 'openCustomDateDialog'
 }
 
 export type MetadataActionSpec<TValue> = {

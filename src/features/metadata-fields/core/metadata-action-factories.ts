@@ -70,6 +70,7 @@ export function createDueDateActionSpec({
 			disabledReason: typeof option.trailing === 'string' ? option.trailing : undefined,
 			digit: option.isEmptyValue ? '0' : undefined,
 			isEmptyValue: option.isEmptyValue,
+			action: option.key === 'custom' ? 'openCustomDateDialog' : 'select',
 		})),
 	}
 }

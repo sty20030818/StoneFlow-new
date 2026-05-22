@@ -1,14 +1,15 @@
 import type { ReactNode } from 'react'
 
 import {
+	type CustomDateFieldKey,
 	createDueDateActionSpec,
 	formatMetadataDisplayDate,
 	mapMetadataActionSpecToDropdownProps,
 	normalizeMetadataDateValue,
 } from '@/features/metadata-fields/core'
+import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 
 import { MetadataFieldDropdown } from './MetadataFieldDropdown'
-import type { MetadataFieldKey } from './MetadataFieldDropdown'
 
 export type MetadataDateDropdownProps = {
 	label: string
@@ -43,6 +44,7 @@ export function MetadataDateDropdown({
 	hideWhenEmpty = false,
 	onChange,
 }: MetadataDateDropdownProps) {
+	const openCustomDateDialog = useDialogStore((state) => state.openCustomDateDialog)
 	const normalizedValue = normalizeMetadataDateValue(value)
 	if (hideWhenEmpty && !normalizedValue) {
 		return null
@@ -79,6 +81,15 @@ export function MetadataDateDropdown({
 			shortcutMode={shortcutMode}
 			stopPropagation={stopPropagation}
 			value={normalizedValue}
+			onSelectCustomOption={() => {
+				openCustomDateDialog({
+					fieldKey: getMetadataDateFieldKey(label),
+					label,
+					value: normalizedValue,
+					hasExistingValue: Boolean(normalizedValue),
+					onSubmit: onChange,
+				})
+			}}
 			onChange={onChange}
 		/>
 	)
@@ -95,7 +106,7 @@ function getMetadataDateButtonLabelPrefix(label: string) {
 	}
 }
 
-function getMetadataDateFieldKey(label: string): MetadataFieldKey {
+function getMetadataDateFieldKey(label: string): CustomDateFieldKey {
 	switch (label) {
 		case '计划时间':
 			return 'scheduledDate'

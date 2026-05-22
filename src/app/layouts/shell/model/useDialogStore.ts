@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 import type { CommandSelectionContext } from '@/features/command/core'
 import type { PageFilterKind } from '@/features/filter/model'
+import type { CustomDateFieldKey } from '@/features/metadata-fields/core'
 import type { CommandMenuMode } from '@/features/command/ui/command-menu-types'
 import type { TaskPlacement, TaskStatus } from '@/shared/types'
 
@@ -18,6 +19,14 @@ export type CreateDialogPresentation = 'default' | 'fullscreen'
 
 type CreateDialogType = 'task' | 'project' | null
 
+export type CustomDateDialogState = {
+	fieldKey: CustomDateFieldKey
+	label: string
+	value: string | null
+	hasExistingValue: boolean
+	onSubmit: ((value: string | null) => void) | null
+}
+
 type DialogState = {
 	isCommandOpen: boolean
 	commandMenuMode: CommandMenuMode
@@ -27,6 +36,7 @@ type DialogState = {
 	createDialogType: CreateDialogType
 	taskCreateDraft: TaskCreateDialogDraft
 	taskCreatePresentation: CreateDialogPresentation
+	customDateDialog: CustomDateDialogState | null
 
 	openCommand: (
 		mode?: CommandMenuMode,
@@ -48,6 +58,8 @@ type DialogState = {
 	toggleTaskCreatePresentation: () => void
 	openProjectCreateDialog: () => void
 	closeProjectCreateDialog: () => void
+	openCustomDateDialog: (state: CustomDateDialogState) => void
+	closeCustomDateDialog: () => void
 }
 
 const defaultTaskDraft: TaskCreateDialogDraft = {
@@ -66,6 +78,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 	createDialogType: null,
 	taskCreateDraft: { ...defaultTaskDraft },
 	taskCreatePresentation: 'default',
+	customDateDialog: null,
 
 	openCommand: (mode = 'default', selectionOverride = null, filterKind = 'root') => {
 		useDrawerStore.getState().closeDrawer()
@@ -78,6 +91,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			createDialogType: null,
 			taskCreateDraft: { ...defaultTaskDraft },
 			taskCreatePresentation: 'default',
+			customDateDialog: null,
 		})
 	},
 	closeCommand: () =>
@@ -111,6 +125,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 			createDialogType: null,
 			taskCreateDraft: { ...defaultTaskDraft },
 			taskCreatePresentation: 'default',
+			customDateDialog: null,
 		})
 	},
 	closeShortcutHelp: () => set({ isShortcutHelpOpen: false }),
@@ -150,6 +165,7 @@ export const useDialogStore = create<DialogState>((set) => ({
 				placement: draft?.placement ?? undefined,
 			},
 			taskCreatePresentation: presentation,
+			customDateDialog: null,
 		})
 	},
 	closeTaskCreateDialog: () =>
@@ -175,12 +191,31 @@ export const useDialogStore = create<DialogState>((set) => ({
 			createDialogType: 'project',
 			taskCreateDraft: { ...defaultTaskDraft },
 			taskCreatePresentation: 'default',
+			customDateDialog: null,
 		})
 	},
 	closeProjectCreateDialog: () =>
 		set({
 			createDialogType: null,
 			taskCreatePresentation: 'default',
+		}),
+	openCustomDateDialog: (customDateDialog) => {
+		useDrawerStore.getState().closeDrawer()
+		set({
+			isCommandOpen: false,
+			commandMenuMode: 'default',
+			commandSelectionOverride: null,
+			commandMenuFilterKind: 'root',
+			isShortcutHelpOpen: false,
+			createDialogType: null,
+			taskCreateDraft: { ...defaultTaskDraft },
+			taskCreatePresentation: 'default',
+			customDateDialog,
+		})
+	},
+	closeCustomDateDialog: () =>
+		set({
+			customDateDialog: null,
 		}),
 }))
 
@@ -193,6 +228,7 @@ export const selectIsShortcutHelpOpen = (state: DialogState) => state.isShortcut
 export const selectCreateDialogType = (state: DialogState) => state.createDialogType
 export const selectTaskCreateDraft = (state: DialogState) => state.taskCreateDraft
 export const selectTaskCreatePresentation = (state: DialogState) => state.taskCreatePresentation
+export const selectCustomDateDialog = (state: DialogState) => state.customDateDialog
 
 // 向后兼容 selectors（供未迁移的调用方使用）
 export const selectIsTaskCreateOpen = (state: DialogState) => state.createDialogType === 'task'

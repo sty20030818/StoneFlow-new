@@ -36,6 +36,7 @@ import { Button } from '@/shared/ui/base/button'
 import { Kbd } from '@/shared/ui/base/kbd'
 import {
 	createDueDateActionSpec,
+	normalizeMetadataDateValue,
 	createPriorityActionSpec,
 	createStatusActionSpec,
 } from '@/features/metadata-fields/core'
@@ -52,6 +53,10 @@ import {
 } from '@/shared/ui/base/command'
 import { getProjectStatusBadgeVariant } from '@/shared/ui/badgeSemantics'
 import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
+import {
+	useDialogStore,
+	type CustomDateDialogState,
+} from '@/app/layouts/shell/model/useDialogStore'
 import type {
 	PageDateFilterValue,
 	PageFilterApplyInput,
@@ -147,6 +152,7 @@ export function CommandMenu({
 }: CommandMenuProps) {
 	const [query, setQuery] = useState('')
 	const inputRef = useRef<HTMLInputElement>(null)
+	const openCustomDateDialog = useDialogStore((state) => state.openCustomDateDialog)
 	const groups = useMemo(() => buildCommandMenuGroups(runtime, context), [context, runtime])
 	const scopedSearch = useGlobalSearch(isCommandMenuSearchMode(mode) ? query : '')
 	const isScopedMode = mode !== 'default'
@@ -236,6 +242,7 @@ export function CommandMenu({
 							onSelectTaskPriority={onSelectTaskPriority}
 							onSelectTaskStatus={onSelectTaskStatus}
 							onToggleCompletedFilter={onToggleCompletedFilter}
+							onOpenCustomDateDialog={openCustomDateDialog}
 							projectLinks={projectLinks}
 							query={query}
 							result={scopedSearch.result}
@@ -605,6 +612,7 @@ function ScopedPickerCommandGroup({
 	onSelectTaskPriority,
 	onSelectTaskStatus,
 	onToggleCompletedFilter,
+	onOpenCustomDateDialog,
 	projectLinks,
 	query,
 	result,
@@ -624,6 +632,7 @@ function ScopedPickerCommandGroup({
 	onSelectTaskPriority: (priority: TaskPriorityValue) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
 	onToggleCompletedFilter: () => void
+	onOpenCustomDateDialog: (state: CustomDateDialogState) => void
 	projectLinks: CommandMenuProject[]
 	query: string
 	result: ReturnType<typeof useGlobalSearch>['result']
@@ -744,6 +753,13 @@ function ScopedPickerCommandGroup({
 			}),
 		)
 		const options = group.options
+		const normalizedDueDates = context.selection.entities
+			.filter((entity) => entity.type === 'task')
+			.map((entity) => normalizeMetadataDateValue(entity.dueAt))
+		const uniqueNonEmptyDueDates = Array.from(
+			new Set(normalizedDueDates.filter((value): value is string => Boolean(value))),
+		)
+		const customDateDialogValue = uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
 		return (
 			<CommandGroup className='pt-2' heading={group.heading}>
 				{options.map((option) => (
@@ -752,6 +768,17 @@ function ScopedPickerCommandGroup({
 						key={option.key}
 						onSelect={() => {
 							if (option.disabled) {
+								return
+							}
+							if (option.action === 'openCustomDateDialog') {
+								onOpenChange(false)
+								onOpenCustomDateDialog({
+									fieldKey: 'dueDate',
+									label: '截止时间',
+									value: customDateDialogValue,
+									hasExistingValue: uniqueNonEmptyDueDates.length > 0,
+									onSubmit: (nextValue: string | null) => onSelectTaskDate(nextValue),
+								})
 								return
 							}
 							onOpenChange(false)

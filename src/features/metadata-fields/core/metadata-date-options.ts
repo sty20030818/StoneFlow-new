@@ -59,8 +59,7 @@ export function createMetadataDateOptionsConfig({
 			key: 'custom',
 			label: '自定义日期',
 			value: normalizedValue,
-			trailing: '后续接入',
-			disabled: true,
+			trailing: normalizedValue ? formatMetadataDisplayDate(normalizedValue) : undefined,
 		},
 	]
 }

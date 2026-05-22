@@ -12,6 +12,7 @@ export type CommandMenuMetadataOption<TValue> = {
 	digit?: string
 	disabled?: boolean
 	disabledReason?: string
+	action?: 'select' | 'openCustomDateDialog'
 }
 
 export type CommandMenuMetadataGroup<TValue> = {
@@ -36,6 +37,7 @@ export function mapMetadataActionSpecToCommandMenuGroup<TValue>(
 			digit: option.digit,
 			disabled: option.disabled,
 			disabledReason: option.disabledReason,
+			action: option.action,
 		})),
 	}
 }
