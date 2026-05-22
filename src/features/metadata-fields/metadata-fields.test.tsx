@@ -3,6 +3,8 @@ import { CalendarIcon, FolderIcon, InboxIcon, TargetIcon } from 'lucide-react'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+	createPlacementActionSpec,
+	createSpaceActionSpec,
 	createDueDateActionSpec,
 	createPriorityActionSpec,
 	createStatusActionSpec,
@@ -78,6 +80,52 @@ describe('metadata-fields', () => {
 			isEmptyValue: true,
 			digit: '0',
 		})
+	})
+
+	it('createPlacementActionSpec 输出项目 placement 语义', () => {
+		const spec = createPlacementActionSpec({
+			projects: [{ id: 'project-1', name: '项目 A' }],
+			includeInbox: true,
+			labelMode: 'project',
+		})
+
+		expect(spec.fieldKey).toBe('project')
+		expect(spec.headerLabel).toBe('移动到项目...')
+		expect(spec.headerShortcut).toBe('⇧ P')
+		expect(spec.commandPlaceholder).toBe('选择项目…')
+		expect(spec.options.map((option) => option.label)).toEqual(['收件箱', '独立事项', '项目 A'])
+		expect(spec.options[1]).toMatchObject({
+			isEmptyValue: true,
+			digit: '0',
+		})
+	})
+
+	it('createPlacementActionSpec 输出父项目语义', () => {
+		const spec = createPlacementActionSpec({
+			projects: [{ id: 'project-1', name: '项目 A' }],
+			labelMode: 'parentProject',
+		})
+
+		expect(spec.fieldKey).toBe('parentProject')
+		expect(spec.headerLabel).toBe('设置父项目为...')
+		expect(spec.headerShortcut).toBeUndefined()
+		expect(spec.commandPlaceholder).toBe('选择父项目…')
+		expect(spec.options.map((option) => option.label)).toEqual(['无父项目', '项目 A'])
+	})
+
+	it('createSpaceActionSpec 输出空间语义', () => {
+		const spec = createSpaceActionSpec({
+			spaces: [
+				{ id: 'space-1', name: '工作' },
+				{ id: 'space-2', name: '生活' },
+			],
+		})
+
+		expect(spec.fieldKey).toBe('space')
+		expect(spec.headerLabel).toBe('设置空间为...')
+		expect(spec.headerShortcut).toBeUndefined()
+		expect(spec.commandPlaceholder).toBe('选择空间…')
+		expect(spec.options.map((option) => option.label)).toEqual(['工作', '生活'])
 	})
 
 	it('MetadataFieldDropdown 渲染统一 outline sm 按钮', () => {
@@ -499,6 +547,30 @@ describe('metadata-fields', () => {
 		expect(screen.getByText('移动到项目...')).toBeInTheDocument()
 		expect(getHeaderShortcutSummary()).toBe('⇧ P')
 		expect(getShortcutHintDigits()).toEqual(['0'])
+	})
+
+	it('MetadataPlacementDropdown 优先使用显式 menuLabel 和 headerShortcut', async () => {
+		render(
+			<MetadataPlacementDropdown
+				headerShortcut='X'
+				label='父项目'
+				menuLabel='显式父项目标题'
+				options={[
+					{
+						value: { kind: 'noProject' } satisfies MetadataPlacementValue,
+						label: '无父项目',
+						isEmptyValue: true,
+					},
+				]}
+				value={{ kind: 'noProject' }}
+				onChange={() => undefined}
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '父项目' }))
+		await screen.findByRole('menu')
+		expect(screen.getByText('显式父项目标题')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('X')
 	})
 })
 

@@ -3,6 +3,7 @@ import type { TaskPlacement } from '@/shared/types'
 import type { TaskStatus } from '@/shared/types'
 import type { ProjectOption } from '@/features/project/model/types'
 import {
+	createTaskPlacementMetadataDropdownProps,
 	createTaskPlacementMetadataOptions,
 	createTaskPriorityMetadataDropdownProps,
 	createTaskStatusMetadataDropdownProps,
@@ -88,6 +89,10 @@ export function ProjectMetaAction({
 		projects,
 		includeInbox: true,
 	})
+	const placementDropdownProps = createTaskPlacementMetadataDropdownProps({
+		projects,
+		includeInbox: true,
+	})
 	const value = toMetadataPlacementValue(placement, projectId)
 	const needsProjectSelection = placement === 'project' && !projectId
 
@@ -96,7 +101,9 @@ export function ProjectMetaAction({
 			buttonIcon={needsProjectSelection ? <FolderIcon className='size-3.5' /> : undefined}
 			buttonLabel={needsProjectSelection ? '选择项目' : undefined}
 			disabled={disabled}
+			headerShortcut={placementDropdownProps.headerShortcut}
 			label='项目'
+			menuLabel={placementDropdownProps.menuLabel}
 			options={placementOptions}
 			value={value}
 			onChange={(nextValue) => {

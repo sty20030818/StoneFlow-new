@@ -16,7 +16,9 @@ export type {
 } from './metadata-field.types'
 export {
 	createDueDateActionSpec,
+	createPlacementActionSpec,
 	createPriorityActionSpec,
+	createSpaceActionSpec,
 	createStatusActionSpec,
 } from './metadata-action-factories'
 export {

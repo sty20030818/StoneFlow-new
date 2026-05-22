@@ -10,6 +10,7 @@ import {
 	normalizeMetadataDateValue,
 } from './metadata-date-options'
 import type { MetadataActionSpec } from './metadata-action-spec'
+import type { MetadataPlacementValue } from './metadata-field.types'
 
 export function createStatusActionSpec(): MetadataActionSpec<TaskStatus> {
 	return {
@@ -69,6 +70,69 @@ export function createDueDateActionSpec({
 			disabledReason: typeof option.trailing === 'string' ? option.trailing : undefined,
 			digit: option.isEmptyValue ? '0' : undefined,
 			isEmptyValue: option.isEmptyValue,
+		})),
+	}
+}
+
+export function createPlacementActionSpec({
+	projects,
+	includeInbox = false,
+	labelMode = 'project',
+}: {
+	projects: Array<{ id: string; name: string }>
+	includeInbox?: boolean
+	labelMode?: 'project' | 'parentProject'
+}): MetadataActionSpec<MetadataPlacementValue> {
+	const options = [
+		...(includeInbox
+			? [
+					{
+						key: 'inbox',
+						value: { kind: 'inbox' as const },
+						label: '收件箱',
+						iconKey: 'inbox' as const,
+					},
+				]
+			: []),
+		{
+			key: 'noProject',
+			value: { kind: 'noProject' as const },
+			label: labelMode === 'parentProject' ? '无父项目' : '独立事项',
+			iconKey: 'target' as const,
+			digit: '0',
+			isEmptyValue: true,
+		},
+		...projects.map((project) => ({
+			key: `project:${project.id}`,
+			value: { kind: 'project' as const, projectId: project.id },
+			label: project.name,
+			iconKey: 'folder' as const,
+		})),
+	]
+
+	return {
+		fieldKey: labelMode === 'parentProject' ? 'parentProject' : 'project',
+		headerLabel: labelMode === 'parentProject' ? '设置父项目为...' : '移动到项目...',
+		headerShortcut: labelMode === 'parentProject' ? undefined : '⇧ P',
+		commandPlaceholder: labelMode === 'parentProject' ? '选择父项目…' : '选择项目…',
+		options,
+	}
+}
+
+export function createSpaceActionSpec({
+	spaces,
+}: {
+	spaces: Array<{ id: string; name: string }>
+}): MetadataActionSpec<string> {
+	return {
+		fieldKey: 'space',
+		headerLabel: '设置空间为...',
+		commandPlaceholder: '选择空间…',
+		options: spaces.map((space) => ({
+			key: `space:${space.id}`,
+			value: space.id,
+			label: space.name,
+			iconKey: 'space',
 		})),
 	}
 }

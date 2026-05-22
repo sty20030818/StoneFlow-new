@@ -5,6 +5,10 @@ import {
 	CalendarIcon,
 	CalendarOffIcon,
 	CalendarX2Icon,
+	FolderIcon,
+	InboxIcon,
+	OrbitIcon,
+	TargetIcon,
 } from 'lucide-react'
 
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -47,6 +51,14 @@ export function renderMetadataActionIcon(iconKey: MetadataActionIconKey | undefi
 			return <CalendarCogIcon className='size-3.5 text-sf-icon-secondary' />
 		case 'calendar-x-2':
 			return <CalendarX2Icon className='size-3.5 text-sf-icon-secondary' />
+		case 'folder':
+			return <FolderIcon className='size-3.5 text-sf-icon-secondary' />
+		case 'target':
+			return <TargetIcon className='size-3.5 text-sf-icon-secondary' />
+		case 'inbox':
+			return <InboxIcon className='size-3.5 text-sf-icon-secondary' />
+		case 'space':
+			return <OrbitIcon className='size-3.5 text-sf-icon-secondary' />
 		default:
 			return <CalendarIcon className='size-3.5 text-sf-icon-secondary' />
 	}

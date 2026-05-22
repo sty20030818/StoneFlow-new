@@ -1,4 +1,5 @@
 export {
+	createTaskPlacementMetadataDropdownProps,
 	createTaskPlacementMetadataOptions,
 	createTaskPriorityMetadataDropdownProps,
 	createTaskPriorityMetadataOptions,
@@ -9,7 +10,12 @@ export {
 	taskDateMetadataIcons,
 } from './taskMetadataFields'
 export {
+	createProjectParentMetadataDropdownProps,
 	createProjectParentMetadataOptions,
 	projectDateMetadataIcons,
 } from './projectMetadataFields'
-export { createSpaceMetadataOptions, getSpaceMetadataButtonVisual } from './spaceMetadataFields'
+export {
+	createSpaceMetadataDropdownProps,
+	createSpaceMetadataOptions,
+	getSpaceMetadataButtonVisual,
+} from './spaceMetadataFields'

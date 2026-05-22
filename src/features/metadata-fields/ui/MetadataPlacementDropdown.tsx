@@ -15,6 +15,8 @@ export type MetadataPlacementDropdownProps = {
 	value: MetadataPlacementValue
 	values?: MetadataPlacementValue[]
 	options: MetadataPlacementOption[]
+	menuLabel?: string
+	headerShortcut?: string | null
 	ariaLabel?: string
 	buttonIcon?: ReactNode
 	buttonLabel?: ReactNode
@@ -32,6 +34,8 @@ export function MetadataPlacementDropdown({
 	value,
 	values,
 	options,
+	menuLabel,
+	headerShortcut,
 	ariaLabel,
 	buttonIcon,
 	buttonLabel,
@@ -60,8 +64,10 @@ export function MetadataPlacementDropdown({
 			disabled={disabled}
 			drawerOwnedOverlay={drawerOwnedOverlay}
 			fieldKey={getMetadataPlacementFieldKey(label)}
+			headerShortcut={headerShortcut}
 			isValueEqual={isMetadataPlacementValueEqual}
 			label={label}
+			menuLabel={menuLabel}
 			options={options}
 			shortcutMode={shortcutMode}
 			stopPropagation={stopPropagation}

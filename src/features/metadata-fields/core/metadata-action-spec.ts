@@ -1,4 +1,10 @@
-export type MetadataActionFieldKey = 'status' | 'priority' | 'dueDate'
+export type MetadataActionFieldKey =
+	| 'status'
+	| 'priority'
+	| 'dueDate'
+	| 'project'
+	| 'parentProject'
+	| 'space'
 
 export type MetadataActionIconKey =
 	| 'status-todo'
@@ -17,6 +23,10 @@ export type MetadataActionIconKey =
 	| 'calendar-days'
 	| 'calendar-cog'
 	| 'calendar-x-2'
+	| 'folder'
+	| 'target'
+	| 'inbox'
+	| 'space'
 
 export type MetadataActionOption<TValue> = {
 	key: string

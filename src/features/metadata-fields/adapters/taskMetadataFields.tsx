@@ -2,9 +2,6 @@ import {
 	CalendarClockIcon,
 	CalendarX2Icon,
 	BellIcon,
-	FolderIcon,
-	InboxIcon,
-	TargetIcon,
 } from 'lucide-react'
 
 import type { ProjectOption } from '@/features/project/model/types'
@@ -15,6 +12,7 @@ import {
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import {
 	createPriorityActionSpec,
+	createPlacementActionSpec,
 	createStatusActionSpec,
 	mapMetadataActionSpecToDropdownProps,
 	type MetadataDropdownMappedProps,
@@ -46,31 +44,26 @@ export function createTaskPlacementMetadataOptions({
 	projects: Array<Pick<ProjectOption, 'id' | 'name'>>
 	includeInbox?: boolean
 }): MetadataPlacementOption[] {
-	const options: MetadataPlacementOption[] = []
+	return createTaskPlacementMetadataDropdownProps({
+		projects,
+		includeInbox,
+	}).options
+}
 
-	if (includeInbox) {
-		options.push({
-			value: { kind: 'inbox' as const },
-			label: '收件箱',
-			icon: <InboxIcon className='size-3.5 text-sf-icon-secondary' />,
-		})
-	}
-
-	options.push(
-		{
-			value: { kind: 'noProject' as const },
-			label: '独立事项',
-			icon: <TargetIcon className='size-3.5 text-sf-icon-secondary' />,
-			isEmptyValue: true,
-		},
-		...projects.map((project) => ({
-			value: { kind: 'project' as const, projectId: project.id },
-			label: project.name,
-			icon: <FolderIcon className='size-3.5 text-sf-icon-secondary' />,
-		})),
+export function createTaskPlacementMetadataDropdownProps({
+	projects,
+	includeInbox = false,
+}: {
+	projects: Array<Pick<ProjectOption, 'id' | 'name'>>
+	includeInbox?: boolean
+}): MetadataDropdownMappedProps<MetadataPlacementOption['value']> {
+	return mapMetadataActionSpecToDropdownProps(
+		createPlacementActionSpec({
+			projects,
+			includeInbox,
+			labelMode: 'project',
+		}),
 	)
-
-	return options
 }
 
 export const taskDateMetadataIcons = {

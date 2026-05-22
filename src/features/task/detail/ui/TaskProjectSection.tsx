@@ -1,4 +1,5 @@
 import {
+	createTaskPlacementMetadataDropdownProps,
 	createTaskPlacementMetadataOptions,
 	MetadataPlacementDropdown,
 	type MetadataPlacementValue,
@@ -24,6 +25,9 @@ export function TaskProjectSection({ autosave, projects }: TaskProjectSectionPro
 	const placementOptions = createTaskPlacementMetadataOptions({
 		projects: visibleProjects,
 	})
+	const placementDropdownProps = createTaskPlacementMetadataDropdownProps({
+		projects: visibleProjects,
+	})
 	const currentValue: MetadataPlacementValue = autosave.draft.projectId
 		? { kind: 'project', projectId: autosave.draft.projectId }
 		: { kind: 'noProject' }
@@ -32,7 +36,9 @@ export function TaskProjectSection({ autosave, projects }: TaskProjectSectionPro
 		<DetailFieldRow className='items-center' label='项目' labelClassName='pt-0'>
 			<MetadataPlacementDropdown
 				drawerOwnedOverlay
+				headerShortcut={placementDropdownProps.headerShortcut}
 				label='项目'
+				menuLabel={placementDropdownProps.menuLabel}
 				options={placementOptions}
 				value={currentValue}
 				onChange={(value) => {

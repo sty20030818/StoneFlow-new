@@ -1,6 +1,7 @@
 import type { Space } from '@/shared/types'
 
 import {
+	createSpaceMetadataDropdownProps,
 	createSpaceMetadataOptions,
 	getSpaceMetadataButtonVisual,
 	MetadataFieldDropdown,
@@ -124,6 +125,7 @@ function CreateDialogSpaceSelector({
 	onSelectSpace: (spaceId: string | null) => void
 }) {
 	const options = createSpaceMetadataOptions(spaces)
+	const spaceDropdownProps = createSpaceMetadataDropdownProps(spaces)
 	const buttonVisual = getSpaceMetadataButtonVisual(currentSpace)
 	const fallbackValue = selectedSpaceId ?? options[0]?.value ?? ''
 
@@ -131,7 +133,9 @@ function CreateDialogSpaceSelector({
 		<MetadataFieldDropdown
 			buttonIcon={buttonVisual.icon}
 			buttonLabel={currentSpaceLabel}
+			headerShortcut={spaceDropdownProps.headerShortcut}
 			label='空间'
+			menuLabel={spaceDropdownProps.menuLabel}
 			options={options}
 			value={fallbackValue}
 			onChange={onSelectSpace}

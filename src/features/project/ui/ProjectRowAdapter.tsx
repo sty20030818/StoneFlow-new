@@ -2,6 +2,7 @@ import type { ProjectOverviewItem } from '@/shared/types'
 import { useDangerConfirm } from '@/features/danger-confirm'
 import { formatShortDate } from '@/shared/lib/date'
 import {
+	createProjectParentMetadataDropdownProps,
 	createProjectParentMetadataOptions,
 	MetadataDateButton,
 	MetadataPlacementDropdown,
@@ -73,6 +74,9 @@ export function ProjectRowAdapter({
 	const isHovered = rowState.isHovered ?? false
 	const hoverSource = rowState.hoverSource ?? null
 	const projectPlacementOptions = createProjectParentMetadataOptions(projectBinding?.projectOptions ?? [])
+	const projectPlacementDropdownProps = createProjectParentMetadataDropdownProps(
+		projectBinding?.projectOptions ?? [],
+	)
 
 	return (
 		<ProjectContextMenu
@@ -135,7 +139,9 @@ export function ProjectRowAdapter({
 							<MetadataPlacementDropdown
 								compact
 								disabled={rowState.isPending}
+								headerShortcut={projectPlacementDropdownProps.headerShortcut}
 								label='父项目'
+								menuLabel={projectPlacementDropdownProps.menuLabel}
 								options={projectPlacementOptions}
 								stopPropagation
 								value={{ kind: 'noProject' }}
