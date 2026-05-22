@@ -5,6 +5,7 @@ mod project_repository;
 mod settings_repository;
 mod space_repository;
 mod task_repository;
+mod task_link_repository;
 mod view_repository;
 
 pub use activity_repository::{
@@ -20,4 +21,5 @@ pub use task_repository::{
     CreateTaskRecord, ProjectTaskCount, TaskLifecycleView, TaskListQuery, TaskPlacementQuery,
     TaskRepository, TaskSearchLifecycle, UpdateTaskPatch,
 };
+pub use task_link_repository::{CreateTaskLinkRecord, TaskLinkRepository, UpdateTaskLinkPatch};
 pub use view_repository::{CreateViewRecord, UpdateViewPatch, ViewListQuery, ViewRepository};

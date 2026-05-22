@@ -9,6 +9,7 @@ pub mod project;
 pub mod setting;
 pub mod space;
 pub mod task;
+pub mod task_link;
 pub mod view;
 
 pub mod prelude {
@@ -18,5 +19,6 @@ pub mod prelude {
     pub use crate::setting::Entity as Setting;
     pub use crate::space::Entity as Space;
     pub use crate::task::Entity as Task;
+    pub use crate::task_link::Entity as TaskLink;
     pub use crate::view::Entity as View;
 }

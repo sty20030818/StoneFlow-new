@@ -5,27 +5,30 @@ use stoneflow_test_support::TempDatabaseDir;
 
 use crate::infrastructure::database::bootstrap_database;
 
-const EXPECTED_TABLES: [&str; 7] = [
+const EXPECTED_TABLES: [&str; 8] = [
     "spaces",
     "projects",
     "tasks",
+    "task_links",
     "views",
     "settings",
     "activity_events",
     "activity_changes",
 ];
 
-const EXPECTED_INDEXES: [&str; 10] = [
+const EXPECTED_INDEXES: [&str; 12] = [
     "ux_spaces_single_default_active",
     "idx_projects_space_sort_order",
     "idx_tasks_space_project_status_sort_order",
     "idx_tasks_due_at",
     "idx_tasks_scheduled_at",
     "idx_tasks_inbox_at",
+    "idx_task_links_task_sort_order",
     "idx_views_entity_visible_sort_order",
     "ux_views_entity_key",
     "ux_settings_key",
     "idx_activity_events_entity_created_at",
+    "idx_activity_changes_event_id",
 ];
 
 #[tokio::test]
@@ -85,6 +88,11 @@ async fn bootstrap_should_create_foreign_keys_for_core_relations() {
         .await
         .expect("activity_changes foreign keys should be queryable");
     assert_eq!(change_foreign_keys, vec!["activity_events".to_owned()]);
+
+    let task_link_foreign_keys = foreign_key_tables(database.connection(), "task_links")
+        .await
+        .expect("task_links foreign keys should be queryable");
+    assert_eq!(task_link_foreign_keys, vec!["tasks".to_owned()]);
 }
 
 async fn sqlite_object_exists(

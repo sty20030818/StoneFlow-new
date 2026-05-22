@@ -1,19 +1,24 @@
 export type { TaskPriority } from './taskPriority'
 export type {
 	CreateTaskInput,
+	CreateTaskLinkInput,
+	DeleteTaskLinkInput,
 	LeaveInboxAsNoProjectInput,
 	LeaveInboxToProjectInput,
+	ListTaskLinksInput,
 	ListTasksInput,
 	MoveTaskToInboxInput,
 	TaskStatus,
 	Task,
 	TaskDetail,
+	TaskLink,
 	TaskListItem,
 	TaskListPlacementInput,
 	TaskListViewKey,
 	TaskPlacement,
 	TaskCreatePlacementInput,
 	TaskView,
+	UpdateTaskLinkInput,
 	UpdateTaskInput,
 } from './task'
 export type { Project, ProjectOverviewItem, ProjectSidebarItem } from './project'

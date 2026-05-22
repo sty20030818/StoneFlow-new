@@ -9,6 +9,7 @@ mod search_service;
 mod settings_service;
 mod space_service;
 mod task_service;
+mod task_link_service;
 mod view_service;
 
 pub use lifecycle_service::{
@@ -44,6 +45,10 @@ pub use task_service::{
     CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind, InboxTaskProjectInput,
     ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput,
     TaskListItemDto, TaskScopeInput, TaskScopeKind, TaskService, UpdateTaskInput,
+};
+pub use task_link_service::{
+    CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto,
+    TaskLinkService, UpdateTaskLinkInput,
 };
 pub use view_service::{
     CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunProjectViewInput,

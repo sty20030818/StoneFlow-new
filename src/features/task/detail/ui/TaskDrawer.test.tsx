@@ -22,12 +22,43 @@ const mockAutosave = vi.hoisted(() => ({
 	value: createAutosaveController(),
 }))
 
+const mockTaskLinksController = vi.hoisted(() => ({
+	value: {
+		links: [] as Array<{
+			id: string
+			taskId: string
+			title: string
+			url: string
+			sortOrder: number
+			createdAt: string
+			updatedAt: string
+		}>,
+		status: 'ready' as 'idle' | 'loading' | 'ready' | 'error',
+		error: null as string | null,
+		reloadLinks: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+		addLink: vi.fn<(input: { title: string; url: string }) => Promise<void>>().mockResolvedValue(
+			undefined,
+		),
+		editLink: vi
+			.fn<(linkId: string, input: { title: string; url: string }) => Promise<void>>()
+			.mockResolvedValue(undefined),
+		removeLink: vi.fn<(linkId: string) => Promise<void>>().mockResolvedValue(undefined),
+		openLink: vi.fn<(link: { id: string; title: string; url: string }) => Promise<void>>().mockResolvedValue(
+			undefined,
+		),
+	},
+}))
+
 vi.mock('../model/useTaskDetailController', () => ({
 	useTaskDetailController: () => mockDetailController.value,
 }))
 
 vi.mock('../model/useTaskAutosaveAdapter', () => ({
 	useTaskAutosaveAdapter: () => mockAutosave.value,
+}))
+
+vi.mock('../model/useTaskLinksController', () => ({
+	useTaskLinksController: () => mockTaskLinksController.value,
 }))
 
 vi.mock('@/features/activity/api/getEntityActivities', () => ({
@@ -44,6 +75,22 @@ describe('TaskDrawer', () => {
 			moveToTrash: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 		}
 		mockAutosave.value = createAutosaveController()
+		mockTaskLinksController.value = {
+			links: [],
+			status: 'ready',
+			error: null,
+			reloadLinks: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+			addLink: vi.fn<(input: { title: string; url: string }) => Promise<void>>().mockResolvedValue(
+				undefined,
+			),
+			editLink: vi
+				.fn<(linkId: string, input: { title: string; url: string }) => Promise<void>>()
+				.mockResolvedValue(undefined),
+			removeLink: vi.fn<(linkId: string) => Promise<void>>().mockResolvedValue(undefined),
+			openLink: vi.fn<(link: { id: string; title: string; url: string }) => Promise<void>>().mockResolvedValue(
+				undefined,
+			),
+		}
 		getEntityActivitiesMock.mockResolvedValue([])
 		getEntityActivitiesMock.mockClear()
 	})
@@ -113,7 +160,7 @@ describe('TaskDrawer', () => {
 		expect(screen.getByRole('heading', { name: '链接' })).toBeInTheDocument()
 	})
 
-	it('标签和链接只渲染预留入口', () => {
+	it('标签和链接区块不会接管 autosave', () => {
 		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 
 		expect(screen.getByRole('button', { name: '添加标签' })).toBeDisabled()
@@ -121,10 +168,10 @@ describe('TaskDrawer', () => {
 			'data-variant',
 			'outline',
 		)
-		expect(screen.getByRole('button', { name: '添加链接' })).toHaveAttribute(
-			'data-variant',
-			'outline',
-		)
+		expect(screen.getByRole('button', { name: '添加链接' })).toHaveAttribute('data-variant', 'outline')
+		expect(
+			screen.getByText('还没有链接，添加一个外部 URL 方便回看当前任务的上下文。'),
+		).toBeInTheDocument()
 		expect(mockAutosave.value.setField).not.toHaveBeenCalled()
 		expect(mockAutosave.value.setDraft).not.toHaveBeenCalled()
 	})

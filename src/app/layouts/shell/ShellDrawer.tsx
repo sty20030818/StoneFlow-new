@@ -1,5 +1,6 @@
 import { EntityDetailDrawerHost, type EntityDetailRouteState } from '@/features/entity-detail'
 import { Sheet, SheetContent } from '@/shared/ui/base/sheet'
+import { SheetTitle } from '@/shared/ui/base/sheet'
 
 type ShellDrawerProps = {
 	open: boolean
@@ -27,6 +28,7 @@ export function ShellDrawer({
 				showCloseButton={false}
 				side='right'
 			>
+				<SheetTitle className='sr-only'>详情抽屉</SheetTitle>
 				<div className='no-scrollbar flex flex-1 flex-col overflow-hidden'>
 					<EntityDetailDrawerHost
 						activeDetail={activeDetail}

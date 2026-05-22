@@ -90,6 +90,16 @@ export type TaskDetail = TaskListItem & {
 	deletedAt: string | null
 }
 
+export type TaskLink = {
+	id: string
+	taskId: string
+	title: string
+	url: string
+	sortOrder: number
+	createdAt: string
+	updatedAt: string
+}
+
 export type ListTasksInput = {
 	scope: Scope
 	viewKey: TaskListViewKey
@@ -132,4 +142,24 @@ export type LeaveInboxToProjectInput = {
 
 export type LeaveInboxAsNoProjectInput = {
 	taskId: string
+}
+
+export type ListTaskLinksInput = {
+	taskId: string
+}
+
+export type CreateTaskLinkInput = {
+	taskId: string
+	title: string
+	url: string
+}
+
+export type UpdateTaskLinkInput = {
+	linkId: string
+	title?: string
+	url?: string
+}
+
+export type DeleteTaskLinkInput = {
+	linkId: string
 }

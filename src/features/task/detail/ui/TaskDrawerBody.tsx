@@ -11,11 +11,12 @@ import { TaskPropertiesSection } from './TaskPropertiesSection'
 import { TaskTitleField } from './TaskTitleField'
 
 type TaskDrawerBodyProps = {
+	taskId: string
 	autosave: AutosaveController<TaskDetailDraft>
 	projects: ProjectOption[]
 }
 
-export function TaskDrawerBody({ autosave, projects }: TaskDrawerBodyProps) {
+export function TaskDrawerBody({ taskId, autosave, projects }: TaskDrawerBodyProps) {
 	return (
 		<DetailBody viewportClassName='px-3 pt-2 pb-20'>
 			<div className='flex flex-col' data-task-drawer-body='true'>
@@ -29,7 +30,7 @@ export function TaskDrawerBody({ autosave, projects }: TaskDrawerBodyProps) {
 				</div>
 				{/* 链接块 */}
 				<div className='mt-3 border-t border-sf-divider pt-3'>
-					<TaskLinksSection />
+					<TaskLinksSection taskId={taskId} />
 				</div>
 			</div>
 		</DetailBody>

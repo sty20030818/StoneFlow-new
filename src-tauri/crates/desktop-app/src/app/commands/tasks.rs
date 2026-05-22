@@ -8,13 +8,17 @@ use crate::{
     application::{
         activity::ActivityService,
         services::{
-            CreateTaskInput, InboxTaskProjectInput, ListTasksInput, TaskDetailDto, TaskIdInput,
-            TaskListItemDto, TaskService, UpdateTaskInput,
+            CreateTaskInput, CreateTaskLinkInput, DeleteTaskLinkInput, InboxTaskProjectInput,
+            ListTaskLinksInput, ListTasksInput, TaskDetailDto, TaskIdInput, TaskLinkDto,
+            TaskListItemDto, TaskLinkService, TaskService, UpdateTaskInput, UpdateTaskLinkInput,
         },
     },
     infrastructure::{
         database::DatabaseRuntimeState,
-        repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
+        repositories::{
+            ActivityRepository, ProjectRepository, SpaceRepository, TaskLinkRepository,
+            TaskRepository,
+        },
     },
 };
 
@@ -141,6 +145,55 @@ pub async fn restore_task(
 }
 
 #[tauri::command]
+pub async fn list_task_links(
+    input: ListTaskLinksInput,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<Vec<TaskLinkDto>, AppError> {
+    build_task_link_service(database.inner())
+        .list_task_links(input)
+        .await
+}
+
+#[tauri::command]
+pub async fn create_task_link(
+    input: CreateTaskLinkInput,
+    app_handle: tauri::AppHandle,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<TaskLinkDto, AppError> {
+    let link = build_task_link_service(database.inner())
+        .create_task_link(input)
+        .await?;
+    emit_task_changed_for_task_id(&app_handle, database.inner(), &link.task_id).await?;
+    Ok(link)
+}
+
+#[tauri::command]
+pub async fn update_task_link(
+    input: UpdateTaskLinkInput,
+    app_handle: tauri::AppHandle,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<TaskLinkDto, AppError> {
+    let link = build_task_link_service(database.inner())
+        .update_task_link(input)
+        .await?;
+    emit_task_changed_for_task_id(&app_handle, database.inner(), &link.task_id).await?;
+    Ok(link)
+}
+
+#[tauri::command]
+pub async fn delete_task_link(
+    input: DeleteTaskLinkInput,
+    app_handle: tauri::AppHandle,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<TaskLinkDto, AppError> {
+    let link = build_task_link_service(database.inner())
+        .delete_task_link(input)
+        .await?;
+    emit_task_changed_for_task_id(&app_handle, database.inner(), &link.task_id).await?;
+    Ok(link)
+}
+
+#[tauri::command]
 pub async fn delete_task(
     input: TaskIdInput,
     app_handle: tauri::AppHandle,
@@ -181,12 +234,34 @@ fn emit_task_changed(
         .map_err(|error| AppError::internal(error.to_string()))
 }
 
+async fn emit_task_changed_for_task_id(
+    app_handle: &tauri::AppHandle,
+    database: &DatabaseRuntimeState,
+    task_id: &str,
+) -> Result<(), AppError> {
+    let detail = build_task_service(database)
+        .get_task_detail(TaskIdInput {
+            task_id: task_id.to_owned(),
+        })
+        .await?;
+    emit_task_changed(app_handle, &detail)
+}
+
 fn build_task_service(database: &DatabaseRuntimeState) -> TaskService {
     let connection = database.connection().clone();
     TaskService::new(
         SpaceRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),
+        ActivityService::new(ActivityRepository::new(connection)),
+    )
+}
+
+fn build_task_link_service(database: &DatabaseRuntimeState) -> TaskLinkService {
+    let connection = database.connection().clone();
+    TaskLinkService::new(
+        TaskRepository::new(connection.clone()),
+        TaskLinkRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
 }
