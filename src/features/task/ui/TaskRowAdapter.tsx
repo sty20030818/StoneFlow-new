@@ -254,6 +254,7 @@ export function TaskRowAdapter({
 							hideWhenEmpty
 							icon={taskDateMetadataIcons.due}
 							label='截止时间'
+							menuAlign='end'
 							stopPropagation
 							value={task.dueAt}
 							onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
@@ -264,6 +265,7 @@ export function TaskRowAdapter({
 							hideWhenEmpty
 							icon={taskDateMetadataIcons.scheduled}
 							label='计划时间'
+							menuAlign='end'
 							stopPropagation
 							value={task.scheduledAt}
 							onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
@@ -274,6 +276,7 @@ export function TaskRowAdapter({
 							hideWhenEmpty
 							icon={taskDateMetadataIcons.reminder}
 							label='提醒时间'
+							menuAlign='end'
 							stopPropagation
 							value={task.reminderAt}
 							onChange={(value) => void actions.onUpdateTaskReminderAt?.(task, value)}
@@ -283,6 +286,7 @@ export function TaskRowAdapter({
 								compact
 								disabled={isPending}
 								label='项目'
+								menuAlign='end'
 								options={placementOptions}
 								shortcutMode='clear-only'
 								stopPropagation

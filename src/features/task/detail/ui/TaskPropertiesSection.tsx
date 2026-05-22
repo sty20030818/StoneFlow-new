@@ -21,7 +21,7 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
 
 	return (
-		<div className='space-y-1' data-task-properties='stack'>
+		<div className='space-y-2' data-task-properties='stack'>
 			<DetailFieldRow className='items-center' label='状态' labelClassName='pt-0'>
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskStatusLabel(autosave.draft.status)}

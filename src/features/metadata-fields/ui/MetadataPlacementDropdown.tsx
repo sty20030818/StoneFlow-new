@@ -24,6 +24,7 @@ export type MetadataPlacementDropdownProps = {
 	buttonAppearance?: 'default' | 'row-icon'
 	disabled?: boolean
 	drawerOwnedOverlay?: boolean
+	menuAlign?: 'start' | 'center' | 'end'
 	stopPropagation?: boolean
 	shortcutMode?: 'default' | 'clear-only'
 	onChange: (value: MetadataPlacementValue) => void
@@ -43,6 +44,7 @@ export function MetadataPlacementDropdown({
 	buttonAppearance = 'default',
 	disabled,
 	drawerOwnedOverlay,
+	menuAlign,
 	stopPropagation,
 	shortcutMode = 'clear-only',
 	onChange,
@@ -67,6 +69,7 @@ export function MetadataPlacementDropdown({
 			headerShortcut={headerShortcut}
 			isValueEqual={isMetadataPlacementValueEqual}
 			label={label}
+			menuAlign={menuAlign}
 			menuLabel={menuLabel}
 			options={options}
 			shortcutMode={shortcutMode}

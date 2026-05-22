@@ -20,6 +20,7 @@ export type MetadataDateDropdownProps = {
 	buttonAppearance?: 'default' | 'row-icon'
 	disabled?: boolean
 	drawerOwnedOverlay?: boolean
+	menuAlign?: 'start' | 'center' | 'end'
 	stopPropagation?: boolean
 	shortcutMode?: 'default' | 'clear-only'
 	hideWhenEmpty?: boolean
@@ -36,6 +37,7 @@ export function MetadataDateDropdown({
 	buttonAppearance = 'default',
 	disabled,
 	drawerOwnedOverlay,
+	menuAlign,
 	stopPropagation,
 	shortcutMode = 'clear-only',
 	hideWhenEmpty = false,
@@ -71,6 +73,7 @@ export function MetadataDateDropdown({
 			headerShortcut={isDueDate ? dueDateDropdownProps.headerShortcut : undefined}
 			isValueEqual={(left, right) => left === right}
 			label={label}
+			menuAlign={menuAlign}
 			menuLabel={isDueDate ? dueDateDropdownProps.menuLabel : undefined}
 			options={dueDateDropdownProps.options}
 			shortcutMode={shortcutMode}

@@ -31,6 +31,8 @@ export type MetadataFieldKey =
 	| 'scheduledDate'
 	| 'reminderDate'
 
+type MetadataMenuAlign = 'start' | 'center' | 'end'
+
 export type MetadataFieldDropdownProps<TValue> = {
 	fieldKey?: MetadataFieldKey
 	label: string
@@ -46,6 +48,7 @@ export type MetadataFieldDropdownProps<TValue> = {
 	buttonAppearance?: 'default' | 'row-icon'
 	disabled?: boolean
 	drawerOwnedOverlay?: boolean
+	menuAlign?: MetadataMenuAlign
 	stopPropagation?: boolean
 	shortcutMode?: MetadataShortcutMode
 	isValueEqual?: MetadataValueComparator<TValue>
@@ -67,6 +70,7 @@ export function MetadataFieldDropdown<TValue>({
 	buttonAppearance = 'default',
 	disabled,
 	drawerOwnedOverlay,
+	menuAlign = 'start',
 	stopPropagation,
 	shortcutMode = 'default',
 	isValueEqual = defaultMetadataValueComparator,
@@ -100,7 +104,7 @@ export function MetadataFieldDropdown<TValue>({
 				/>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent
-				align='start'
+				align={menuAlign}
 				data-drawer-owned-overlay={drawerOwnedOverlay ? 'true' : undefined}
 				sideOffset={6}
 			>

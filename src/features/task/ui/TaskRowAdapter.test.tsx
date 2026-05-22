@@ -150,6 +150,13 @@ describe('TaskRowAdapter', () => {
 		expect(projectBinding?.onSelectProject).toHaveBeenCalledWith(task, 'project-2')
 	})
 
+	it('右侧字段下拉右边对齐 trigger 右边，避免菜单被裁掉', async () => {
+		renderTaskRowAdapter()
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止 任务 A' }))
+		expect((await screen.findByRole('menu')).parentElement).toHaveAttribute('data-align', 'end')
+	})
+
 	it('关闭项目选项时不渲染项目 dropdown', () => {
 		renderTaskRowAdapter({
 			projectBinding: {
