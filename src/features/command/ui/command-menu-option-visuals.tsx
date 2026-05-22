@@ -10,49 +10,69 @@ import {
 	TargetIcon,
 } from 'lucide-react'
 
-import { TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
-import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
-import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
-import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
+import {
+	createPriorityActionSpec,
+	createStatusActionSpec,
+	type MetadataActionIconKey,
+} from '@/features/metadata-fields/core'
 import type { TaskStatus } from '@/shared/types'
+import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+
+import { mapMetadataActionSpecToCommandMenuGroup } from './command-menu-metadata'
 
 export function getCommandMenuPriorityOptions() {
-	return TASK_PRIORITY_OPTIONS.map((option) => ({
-		...option,
-		leading: <PriorityIcon priority={option.value} size='md' />,
-	}))
+	return mapMetadataActionSpecToCommandMenuGroup(createPriorityActionSpec()).options
 }
 
 export function getCommandMenuStatusOptions() {
-	return TASK_STATUS_OPTIONS.map((option) => ({
-		...option,
-		leading: <TaskStatusIndicator status={option.value} />,
-	}))
+	return mapMetadataActionSpecToCommandMenuGroup(createStatusActionSpec()).options
 }
 
 export function getCommandMenuPriorityLeading(priority: TaskPriorityValue) {
-	return <PriorityIcon priority={priority} size='md' />
+	return mapMetadataIconToCommandLeading(`priority-${priority}`)
 }
 
 export function getCommandMenuStatusLeading(status: TaskStatus) {
-	return <TaskStatusIndicator status={status} />
+	return mapMetadataIconToCommandLeading(`status-${status}`)
 }
 
-export function getCommandMenuDateLeading(key: string): ReactNode {
-	switch (key) {
+export function mapMetadataIconToCommandLeading(iconKey: MetadataActionIconKey | string) {
+	switch (iconKey) {
+		case 'calendar-cog':
 		case 'custom':
 			return <CalendarCogIcon className='size-4 text-sf-icon-secondary' />
+		case 'calendar-1':
 		case 'today':
 			return <Calendar1Icon className='size-4 text-sf-icon-secondary' />
+		case 'calendar-days':
 		case 'one-week':
 		case 'this-week':
 		case 'thisWeek':
 			return <CalendarDaysIcon className='size-4 text-sf-icon-secondary' />
+		case 'calendar-off':
 		case 'none':
 		case 'noDate':
 			return <CalendarOffIcon className='size-4 text-sf-icon-secondary' />
 		default:
 			return <CalendarIcon className='size-4 text-sf-icon-secondary' />
+	}
+}
+
+export function getCommandMenuDateLeading(key: string) {
+	switch (key) {
+		case 'custom':
+			return mapMetadataIconToCommandLeading('calendar-cog')
+		case 'today':
+			return mapMetadataIconToCommandLeading('calendar-1')
+		case 'one-week':
+		case 'this-week':
+		case 'thisWeek':
+			return mapMetadataIconToCommandLeading('calendar-days')
+		case 'none':
+		case 'noDate':
+			return mapMetadataIconToCommandLeading('calendar-off')
+		default:
+			return mapMetadataIconToCommandLeading('calendar')
 	}
 }
 

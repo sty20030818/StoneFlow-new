@@ -1,6 +1,8 @@
 import { useDangerConfirm } from '@/features/danger-confirm'
 import {
-	createMetadataDateOptionsConfig,
+	createDueDateActionSpec,
+	createPriorityActionSpec,
+	createStatusActionSpec,
 	normalizeMetadataDateValue,
 } from '@/features/metadata-fields/core'
 import type { TaskStatus } from '@/shared/types'
@@ -19,22 +21,17 @@ import {
 } from '@/shared/ui/base/context-menu'
 import {
 	ArchiveIcon,
-	Calendar1Icon,
-	CalendarCogIcon,
-	CalendarDaysIcon,
-	CalendarIcon,
 	CalendarX2Icon,
 	CheckIcon,
-	CalendarOffIcon,
 	FolderIcon,
 	MinusIcon,
 	TargetIcon,
 	Trash2Icon,
 } from 'lucide-react'
-import { TASK_PRIORITY_OPTIONS, type TaskPriorityValue } from '@/features/task/model/taskPriority'
-import { TASK_STATUS_OPTIONS } from '@/features/task/model/taskStatus'
+import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
 import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
+import { mapMetadataActionSpecToTaskContextMenuGroup } from './task-context-menu-metadata'
 
 type TaskContextMenuProps = {
 	children: ReactNode
@@ -66,16 +63,6 @@ type TaskContextSelectionValues = {
 	dueDates: Array<string | null>
 	projectIds: Array<string | null>
 	projectNames?: Array<string | null>
-}
-
-type TaskDateMenuOption = {
-	key: string
-	label: string
-	value: string | null
-	meta?: string
-	shortcut?: string
-	disabled?: boolean
-	disabledReason?: ReactNode
 }
 
 const TASK_CONTEXT_SHORTCUTS = {
@@ -125,8 +112,12 @@ export function TaskContextMenu({
 	const dueDateIndicatorValues = getIndicatorValues(
 		(selectionValues?.dueDates ?? [currentDueDate]).map((value) => normalizeDateValue(value)),
 	)
-	const dateOptions = getTaskContextDateOptions(
-		Array.from(dueDateIndicatorValues).some((value) => value !== null),
+	const statusGroup = mapMetadataActionSpecToTaskContextMenuGroup(createStatusActionSpec())
+	const priorityGroup = mapMetadataActionSpecToTaskContextMenuGroup(createPriorityActionSpec())
+	const dateGroup = mapMetadataActionSpecToTaskContextMenuGroup(
+		createDueDateActionSpec({
+			showClearOption: Array.from(dueDateIndicatorValues).some((value) => value !== null),
+		}),
 	)
 	const projectIndicatorValues = getIndicatorValues(selectionValues?.projectIds ?? [projectId])
 
@@ -146,14 +137,14 @@ export function TaskContextMenu({
 							状态
 						</PropertySubTrigger>
 						<ContextMenuSubContent className='w-64'>
-							<ContextMenuLabel className='normal-case tracking-normal'>设置状态为...</ContextMenuLabel>
-							{TASK_STATUS_OPTIONS.map((option, index) => (
+							<ContextMenuLabel className='normal-case tracking-normal'>{statusGroup.label}</ContextMenuLabel>
+							{statusGroup.options.map((option) => (
 								<PropertyOptionItem
 									indicator={getPropertyOptionIndicator(statusIndicatorValues, option.value)}
-									icon={<TaskStatusIndicator status={option.value} />}
+									icon={option.icon}
 									key={option.value}
 									onSelect={() => onSelectStatus(option.value)}
-									shortcut={String(index + 1)}
+									shortcut={option.shortcut}
 								>
 									{option.label}
 								</PropertyOptionItem>
@@ -170,14 +161,14 @@ export function TaskContextMenu({
 							优先级
 						</PropertySubTrigger>
 						<ContextMenuSubContent className='w-64'>
-							<ContextMenuLabel className='normal-case tracking-normal'>设置优先级为...</ContextMenuLabel>
-							{TASK_PRIORITY_OPTIONS.map((option, index) => (
+							<ContextMenuLabel className='normal-case tracking-normal'>{priorityGroup.label}</ContextMenuLabel>
+							{priorityGroup.options.map((option) => (
 								<PropertyOptionItem
 									indicator={getPropertyOptionIndicator(priorityIndicatorValues, String(option.value))}
-									icon={<PriorityIcon priority={option.value} />}
+									icon={option.icon}
 									key={option.value}
 									onSelect={() => onSelectPriority(option.value)}
-									shortcut={String(index)}
+									shortcut={option.shortcut}
 								>
 									{option.label}
 								</PropertyOptionItem>
@@ -194,17 +185,15 @@ export function TaskContextMenu({
 								截止时间
 							</PropertySubTrigger>
 							<ContextMenuSubContent className='w-64'>
-								<ContextMenuLabel className='normal-case tracking-normal'>
-									设置截止时间为...
-								</ContextMenuLabel>
-								{dateOptions.map((option) => (
+								<ContextMenuLabel className='normal-case tracking-normal'>{dateGroup.label}</ContextMenuLabel>
+								{dateGroup.options.map((option) => (
 									<PropertyOptionItem
 										indicator={getPropertyOptionIndicator(
 											dueDateIndicatorValues,
 											option.value,
 										)}
 										disabled={option.disabled}
-										icon={getTaskContextDateIcon(option.key)}
+										icon={option.icon}
 										key={option.key}
 										onSelect={() => {
 											if (!option.disabled) {
@@ -212,7 +201,7 @@ export function TaskContextMenu({
 											}
 										}}
 										shortcut={option.shortcut}
-										trailing={option.disabledReason ?? option.meta}
+										trailing={option.trailing}
 									>
 										{option.label}
 									</PropertyOptionItem>
@@ -402,36 +391,6 @@ function getPropertyOptionIndicator<T>(
 		return null
 	}
 	return values.size === 1 ? 'checked' : 'mixed'
-}
-
-function getTaskContextDateOptions(hasExistingDate: boolean): TaskDateMenuOption[] {
-	return createMetadataDateOptionsConfig({
-		showClearOption: hasExistingDate,
-	}).map((option) => ({
-		key: option.key,
-		label: option.label,
-		value: normalizeMetadataDateValue(option.value),
-		meta: option.meta,
-		shortcut: option.isEmptyValue ? '0' : undefined,
-		disabled: option.disabled,
-		disabledReason: option.trailing,
-	}))
-}
-
-function getTaskContextDateIcon(key: string) {
-	switch (key) {
-		case 'none':
-			return <CalendarOffIcon />
-		case 'today':
-			return <Calendar1Icon />
-		case 'this-week':
-		case 'one-week':
-			return <CalendarDaysIcon />
-		case 'custom':
-			return <CalendarCogIcon />
-		default:
-			return <CalendarIcon />
-	}
 }
 
 function normalizeDateValue(value: string | null | undefined) {

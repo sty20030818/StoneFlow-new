@@ -35,8 +35,9 @@ import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { Kbd } from '@/shared/ui/base/kbd'
 import {
-	createMetadataDateOptionsConfig,
-	normalizeMetadataDateValue,
+	createDueDateActionSpec,
+	createPriorityActionSpec,
+	createStatusActionSpec,
 } from '@/features/metadata-fields/core'
 import type { ShortcutMenuItem } from '@/shared/ui/shortcut-menu'
 import { ShortcutDigitSelectLayer } from '@/shared/ui/shortcut-menu'
@@ -74,6 +75,7 @@ import {
 	getCommandMenuPriorityOptions,
 	getCommandMenuStatusOptions,
 } from './command-menu-option-visuals'
+import { mapMetadataActionSpecToCommandMenuGroup } from './command-menu-metadata'
 import {
 	isCommandMenuSearchMode,
 	isCommandMenuTaskPropertyMode,
@@ -641,7 +643,8 @@ function ScopedPickerCommandGroup({
 	}
 
 	if (mode === 'task-priority-picker') {
-		const options = getCommandMenuPriorityOptions()
+		const group = mapMetadataActionSpecToCommandMenuGroup(createPriorityActionSpec())
+		const options = group.options
 		const selectedPriorityValues = getSelectedTaskPriorityValues(context)
 		const shortcutItems: ShortcutMenuItem<TaskPriorityValue>[] = options.map((option) => ({
 			label: option.label,
@@ -650,7 +653,7 @@ function ScopedPickerCommandGroup({
 			isEmptyValue: option.value === 0,
 		}))
 		return (
-			<CommandGroup className='pt-2' heading='设置优先级为...'>
+			<CommandGroup className='pt-2' heading={group.heading}>
 				<ShortcutDigitSelectLayer
 					items={shortcutItems}
 					onSelect={(item) => {
@@ -658,7 +661,7 @@ function ScopedPickerCommandGroup({
 						onSelectTaskPriority(item.value)
 					}}
 				/>
-				{options.map((option, index) => (
+				{options.map((option) => (
 					<CommandItem
 						key={option.value}
 						onSelect={() => {
@@ -672,7 +675,7 @@ function ScopedPickerCommandGroup({
 							title={option.label}
 							trailing={
 								<CommandRowSelectionTrailing
-									digit={String(index)}
+									digit={option.digit}
 									indicator={getSelectionIndicatorForValue(
 										selectedPriorityValues,
 										String(option.value),
@@ -687,7 +690,8 @@ function ScopedPickerCommandGroup({
 	}
 
 	if (mode === 'task-status-picker') {
-		const options = getCommandMenuStatusOptions()
+		const group = mapMetadataActionSpecToCommandMenuGroup(createStatusActionSpec())
+		const options = group.options
 		const selectedStatusValues = getSelectedTaskStatusValues(context)
 		const shortcutItems: ShortcutMenuItem<TaskStatus>[] = options.map((option) => ({
 			label: option.label,
@@ -695,7 +699,7 @@ function ScopedPickerCommandGroup({
 			disabled: false,
 		}))
 		return (
-			<CommandGroup className='pt-2' heading='设置状态为...'>
+			<CommandGroup className='pt-2' heading={group.heading}>
 				<ShortcutDigitSelectLayer
 					items={shortcutItems}
 					onSelect={(item) => {
@@ -703,7 +707,7 @@ function ScopedPickerCommandGroup({
 						onSelectTaskStatus(item.value)
 					}}
 				/>
-				{options.map((option, index) => (
+				{options.map((option) => (
 					<CommandItem
 						key={option.value}
 						onSelect={() => {
@@ -717,7 +721,7 @@ function ScopedPickerCommandGroup({
 							title={option.label}
 							trailing={
 								<CommandRowSelectionTrailing
-									digit={String(index + 1)}
+									digit={option.digit}
 									indicator={getSelectionIndicatorForValue(selectedStatusValues, option.value)}
 								/>
 							}
@@ -729,9 +733,16 @@ function ScopedPickerCommandGroup({
 	}
 
 	if (mode === 'task-date-picker') {
-		const options = getTaskDateOptions(context)
+		const group = mapMetadataActionSpecToCommandMenuGroup(
+			createDueDateActionSpec({
+				showClearOption: context.selection.entities.some(
+					(entity) => entity.type === 'task' && entity.dueAt !== undefined && entity.dueAt !== null,
+				),
+			}),
+		)
+		const options = group.options
 		return (
-			<CommandGroup className='pt-2' heading='设置截止时间为...'>
+			<CommandGroup className='pt-2' heading={group.heading}>
 				{options.map((option) => (
 					<CommandItem
 						disabled={option.disabled}
@@ -746,7 +757,7 @@ function ScopedPickerCommandGroup({
 						value={`date ${option.label} ${option.key}`}
 					>
 						<CommandRow
-							leading={getCommandMenuDateLeading(option.key)}
+							leading={option.leading}
 							title={option.label}
 							trailing={
 								option.disabled && option.disabledReason ? (
@@ -1164,15 +1175,6 @@ function FilterPickerCommandGroup({
 	)
 }
 
-type TaskDateOption = {
-	key: string
-	label: string
-	value: string | null
-	digit?: string
-	disabled?: boolean
-	disabledReason?: ReactNode
-}
-
 function getSelectedTaskPriorityValues(context: CommandContext) {
 	const values = new Set<string>()
 	for (const entity of context.selection.entities) {
@@ -1222,23 +1224,6 @@ function getSelectionIndicatorForValue(
 		return null
 	}
 	return values.size === 1 ? 'checked' : 'mixed'
-}
-
-function getTaskDateOptions(context: CommandContext): TaskDateOption[] {
-	const hasExistingDate = context.selection.entities.some(
-		(entity) => entity.type === 'task' && entity.dueAt !== undefined && entity.dueAt !== null,
-	)
-
-	return createMetadataDateOptionsConfig({
-		showClearOption: hasExistingDate,
-	}).map((option) => ({
-		key: option.key,
-		label: option.label,
-		value: normalizeMetadataDateValue(option.value),
-		digit: option.isEmptyValue ? '0' : undefined,
-		disabled: option.disabled,
-		disabledReason: option.trailing ?? '完整截止时间选择后续接入',
-	}))
 }
 
 function getFilterPickerPlaceholder(mode: CommandMenuMode, filterKind: PageFilterKind) {
