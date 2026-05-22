@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/utils'
 
 /**
- * 行级实体图标槽：纯展示，样式对齐 PriorityCell / StatusCell 的 trigger 尺寸。
+ * 行级实体图标槽：纯展示，尺寸与当前行级 metadata trigger 保持一致。
  * 不承载交互，仅用于 Leading 区显示 entity type icon。
  */
 export type IconCellProps = {

@@ -142,11 +142,11 @@ describe('TaskCreateContent', () => {
 		renderTaskCreate()
 
 		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 G' } })
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '截止日期' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
-		fireEvent.pointerDown(screen.getByRole('button', { name: '计划' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '计划日期' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
-		fireEvent.pointerDown(screen.getByRole('button', { name: '提醒' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '提醒日期' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
 
