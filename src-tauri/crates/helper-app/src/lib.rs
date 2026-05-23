@@ -60,11 +60,15 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         app.manage(runtime::QuickPopupRuntimeState::default());
         shortcut::register_global_shortcut(app.handle());
 
-        // 启动时做一次 Ping 自检，失败仅告警：主 App 还在启动可能晚于 Helper 连通，
+        // 启动时做一次 Hello 自检，失败仅告警：主 App 还在启动可能晚于 Helper 连通，
         // 用户真正按下快捷键时重试连接即可。
         tauri::async_runtime::spawn(async {
-            match ipc_client::ping().await {
-                Ok(version) => log::info!("helper: 与主 App IPC 连通，协议版本={version}"),
+            match ipc_client::hello().await {
+                Ok(ack) => log::info!(
+                    "helper: 与主 App IPC 连通，协议版本={}，主 App 版本={}",
+                    ack.protocol_version,
+                    ack.main_version
+                ),
                 Err(error) => log::warn!(
                     "helper: IPC 自检失败（主 App 可能未就绪）：{error}。\
                          稍后用户触发 Quick Create 时会重试。"

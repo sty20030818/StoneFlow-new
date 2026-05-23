@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// 协议语义版本，双方握手时使用。
-pub const PROTOCOL_VERSION: u16 = 2;
+pub const PROTOCOL_VERSION: u16 = 3;
 
 /// 单帧最大字节数（1 MiB）。
 pub const MAX_FRAME_BYTES: usize = 1024 * 1024;
@@ -24,6 +24,9 @@ pub const DEFAULT_REQUEST_TIMEOUT_MS: u64 = 5_000;
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum IpcRequest {
     Ping,
+    HelperHello(HelperHelloPayload),
+    HelperWindowReady,
+    HelperWindowUnready,
     QuickGetInitialState,
     QuickListProjectsBySpace(QuickListProjectsBySpacePayload),
     QuickSearch(QuickSearchPayload),
@@ -38,12 +41,32 @@ pub enum IpcRequest {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum IpcResponse {
     Pong { protocol_version: u16 },
+    HelperHelloAck(HelperHelloAckPayload),
     QuickInitialState(QuickInitialStatePayload),
     QuickProjectsBySpace(QuickProjectsBySpaceResponsePayload),
     QuickSearch(QuickSearchResponsePayload),
     QuickCreated(QuickCreatedPayload),
     Opened,
+    Ack,
     Error(IpcError),
+}
+
+/// Helper 进程层握手。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperHelloPayload {
+    pub protocol_version: u16,
+    pub helper_version: String,
+    pub pid: u32,
+    pub platform: String,
+}
+
+/// 主 App 对 HelperHello 的确认。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperHelloAckPayload {
+    pub protocol_version: u16,
+    pub main_version: String,
 }
 
 /// 当前 Scope 的轻量载荷。
@@ -312,6 +335,49 @@ mod tests {
     }
 
     #[test]
+    fn helper_hello_roundtrip_uses_v3_shape() {
+        let request = IpcRequest::HelperHello(HelperHelloPayload {
+            protocol_version: PROTOCOL_VERSION,
+            helper_version: "0.1.0".to_owned(),
+            pid: 42,
+            platform: "windows".to_owned(),
+        });
+
+        let json = serde_json::to_string(&request).expect("request should serialize");
+        let decoded: IpcRequest = serde_json::from_str(&json).expect("request should deserialize");
+
+        assert_eq!(request, decoded);
+        assert!(json.contains(r#""kind":"helper_hello""#));
+    }
+
+    #[test]
+    fn helper_hello_ack_roundtrip_serializes() {
+        let response = IpcResponse::HelperHelloAck(HelperHelloAckPayload {
+            protocol_version: PROTOCOL_VERSION,
+            main_version: "0.1.0".to_owned(),
+        });
+
+        let json = serde_json::to_string(&response).expect("response should serialize");
+        let decoded: IpcResponse =
+            serde_json::from_str(&json).expect("response should deserialize");
+
+        assert_eq!(response, decoded);
+        assert!(json.contains(r#""kind":"helper_hello_ack""#));
+    }
+
+    #[test]
+    fn helper_window_ready_roundtrip_serializes() {
+        let requests = [IpcRequest::HelperWindowReady, IpcRequest::HelperWindowUnready];
+
+        for request in requests {
+            let json = serde_json::to_string(&request).expect("request should serialize");
+            let decoded: IpcRequest =
+                serde_json::from_str(&json).expect("request should deserialize");
+            assert_eq!(request, decoded);
+        }
+    }
+
+    #[test]
     fn placement_roundtrip_covers_all_variants() {
         let variants = [
             QuickPlacementPayload {
@@ -360,5 +426,10 @@ mod tests {
             assert!(a.raw.ends_with(".sock"));
             assert!(a.raw.starts_with('/'));
         }
+    }
+
+    #[test]
+    fn protocol_version_should_be_3() {
+        assert_eq!(PROTOCOL_VERSION, 3);
     }
 }

@@ -60,7 +60,7 @@ pub struct HelperSupervisor {
     app_handle: tauri::AppHandle,
     helper_state: CommandHelperState,
     policy: RestartPolicy,
-    handshake_notify: Arc<Notify>,
+    hello_notify: Arc<Notify>,
     shutdown_notify: Arc<Notify>,
     stopped: Arc<AtomicBool>,
     current_child: Option<Child>,
@@ -71,13 +71,13 @@ impl HelperSupervisor {
     pub fn new(
         app_handle: tauri::AppHandle,
         helper_state: CommandHelperState,
-        handshake_notify: Arc<Notify>,
+        hello_notify: Arc<Notify>,
     ) -> Self {
         Self {
             app_handle,
             helper_state,
             policy: RestartPolicy::new(RestartPolicyConfig::default()),
-            handshake_notify,
+            hello_notify,
             shutdown_notify: Arc::new(Notify::new()),
             stopped: Arc::new(AtomicBool::new(false)),
             current_child: None,
@@ -99,8 +99,8 @@ impl HelperSupervisor {
     }
 
     /// 供 IPC server 调用，通知 supervisor 收到首个握手请求。
-    pub fn notify_handshake(&self) {
-        self.handshake_notify.notify_one();
+    pub fn notify_hello(&self) {
+        self.hello_notify.notify_one();
     }
 
     /// Supervisor 主循环。
@@ -125,10 +125,10 @@ impl HelperSupervisor {
                     }
                 }
                 SupervisorState::WaitingHandshake => {
-                    if self.wait_handshake().await {
+                    if self.wait_hello().await {
                         self.transition_to(SupervisorState::Ready).await;
                     } else {
-                        self.handle_crash("handshake 超时").await;
+                        self.handle_crash("helper hello 超时").await;
                     }
                 }
                 SupervisorState::Ready => {
@@ -210,32 +210,26 @@ impl HelperSupervisor {
         true
     }
 
-    /// 等待 helper 握手（首个 IPC 请求）。返回 true 表示握手成功。
-    async fn wait_handshake(&mut self) -> bool {
+    /// 等待 helper hello。返回 true 表示进程层握手成功。
+    async fn wait_hello(&mut self) -> bool {
         let started_at = std::time::Instant::now();
 
         loop {
-            if timeout(Duration::from_millis(1), self.handshake_notify.notified())
+            if timeout(Duration::from_millis(1), self.hello_notify.notified())
                 .await
                 .is_ok()
             {
-                log::info!("helper 握手成功");
-                self.helper_state
-                    .mark_helper_ready(
-                        stoneflow_ipc_protocol::PROTOCOL_VERSION,
-                        chrono::Utc::now().to_rfc3339(),
-                    )
-                    .await;
+                log::info!("helper hello 成功");
                 self.policy.record_stable();
                 return true;
             }
 
             if started_at.elapsed() >= HANDSHAKE_TIMEOUT {
-                log::warn!("helper 握手超时 ({HANDSHAKE_TIMEOUT:?})");
+                log::warn!("helper hello 超时 ({HANDSHAKE_TIMEOUT:?})");
                 return false;
             }
 
-            if self.check_child_exit("等待握手").await {
+            if self.check_child_exit("等待 hello").await {
                 return false;
             }
 
@@ -243,7 +237,7 @@ impl HelperSupervisor {
                 .await
                 .is_ok()
             {
-                log::info!("helper 等待握手时收到关闭请求");
+                log::info!("helper 等待 hello 时收到关闭请求");
                 self.transition_to(SupervisorState::Stopped).await;
                 return false;
             }

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{Emitter, LogicalSize, Manager, Size};
 
 use crate::{
+    ipc_client,
     commands::domain::{helper_quick_get_initial_state, HelperQuickInitialStateResponse},
     runtime::{QuickPopupCloseReason, QuickPopupRuntimeState},
     window_controller,
@@ -284,7 +285,7 @@ pub async fn helper_quick_close_session(
 pub async fn helper_quick_frontend_ready(
     runtime: tauri::State<'_, QuickPopupRuntimeState>,
 ) -> Result<(), QuickCreateErrorPayload> {
-    runtime.mark_frontend_ready().await;
+    apply_frontend_ready(runtime.inner(), || ipc_client::notify_window_ready()).await?;
     log::debug!("helper: quick create 前端监听器已就绪");
     Ok(())
 }
@@ -293,8 +294,40 @@ pub async fn helper_quick_frontend_ready(
 pub async fn helper_quick_frontend_unready(
     runtime: tauri::State<'_, QuickPopupRuntimeState>,
 ) -> Result<(), QuickCreateErrorPayload> {
-    runtime.mark_frontend_unready().await;
+    apply_frontend_unready(runtime.inner(), || ipc_client::notify_window_unready()).await?;
     log::debug!("helper: quick create 前端监听器已卸载");
+    Ok(())
+}
+
+async fn apply_frontend_ready<F, Fut>(
+    runtime: &QuickPopupRuntimeState,
+    notify: F,
+) -> Result<(), QuickCreateErrorPayload>
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = Result<(), stoneflow_ipc_protocol::IpcError>>,
+{
+    runtime.mark_frontend_ready().await;
+    notify().await.map_err(|error| QuickCreateErrorPayload {
+        type_: "Internal",
+        message: format!("quick create window ready 上报失败: {error}"),
+    })?;
+    Ok(())
+}
+
+async fn apply_frontend_unready<F, Fut>(
+    runtime: &QuickPopupRuntimeState,
+    notify: F,
+) -> Result<(), QuickCreateErrorPayload>
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = Result<(), stoneflow_ipc_protocol::IpcError>>,
+{
+    runtime.mark_frontend_unready().await;
+    notify().await.map_err(|error| QuickCreateErrorPayload {
+        type_: "Internal",
+        message: format!("quick create window unready 上报失败: {error}"),
+    })?;
     Ok(())
 }
 
@@ -342,4 +375,70 @@ fn format_optional_f64(value: Option<f64>) -> String {
     value
         .map(|value| format!("{value:.3}"))
         .unwrap_or_else(|| "missing".to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    };
+    use stoneflow_ipc_protocol::IpcError;
+
+    #[tokio::test]
+    async fn frontend_ready_should_mark_runtime_and_notify_main_app() {
+        let runtime = QuickPopupRuntimeState::default();
+        let notify_calls = Arc::new(AtomicUsize::new(0));
+        let notify_calls_for_closure = notify_calls.clone();
+
+        apply_frontend_ready(&runtime, move || {
+            let notify_calls = notify_calls_for_closure.clone();
+            async move {
+                notify_calls.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }
+        })
+        .await
+        .expect("frontend ready should succeed");
+
+        assert!(runtime.is_frontend_ready().await);
+        assert_eq!(notify_calls.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn frontend_unready_should_clear_runtime_and_notify_main_app() {
+        let runtime = QuickPopupRuntimeState::default();
+        runtime.mark_frontend_ready().await;
+        let notify_calls = Arc::new(AtomicUsize::new(0));
+        let notify_calls_for_closure = notify_calls.clone();
+
+        apply_frontend_unready(&runtime, move || {
+            let notify_calls = notify_calls_for_closure.clone();
+            async move {
+                notify_calls.fetch_add(1, Ordering::SeqCst);
+                Ok(())
+            }
+        })
+        .await
+        .expect("frontend unready should succeed");
+
+        assert!(!runtime.is_frontend_ready().await);
+        assert_eq!(notify_calls.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn frontend_ready_should_return_notify_error() {
+        let runtime = QuickPopupRuntimeState::default();
+
+        let error = apply_frontend_ready(&runtime, || async {
+            Err(IpcError::Internal("notify failed".to_owned()))
+        })
+        .await
+        .expect_err("notify failure should bubble up");
+
+        assert!(runtime.is_frontend_ready().await);
+        assert_eq!(error.type_, "Internal");
+        assert!(error.message.contains("quick create window ready 上报失败"));
+    }
 }

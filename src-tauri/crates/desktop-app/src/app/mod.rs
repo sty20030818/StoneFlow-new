@@ -203,7 +203,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
             let supervisor = supervisor::HelperSupervisor::new(
                 app.handle().clone(),
                 helper_state.clone(),
-                ipc_handle.handshake_notify,
+                ipc_handle.hello_notify,
             );
             let supervisor_handle = supervisor.handle();
             app.manage(supervisor_handle);

@@ -8,8 +8,9 @@ use interprocess::local_socket::{
     GenericFilePath, GenericNamespaced, ListenerOptions, ToFsName, ToNsName,
 };
 use stoneflow_ipc_protocol::{
-    socket_name, IpcError, IpcRequest, IpcResponse, QuickCreatedPayload, QuickOpenTargetKind,
-    QuickOpenTargetPayload, SocketName, MAX_FRAME_BYTES, PROTOCOL_VERSION,
+    socket_name, HelperHelloAckPayload, HelperHelloPayload, IpcError, IpcRequest, IpcResponse,
+    QuickCreatedPayload, QuickOpenTargetKind, QuickOpenTargetPayload, SocketName, MAX_FRAME_BYTES,
+    PROTOCOL_VERSION,
 };
 use tauri::{Emitter, Manager};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -53,9 +54,9 @@ struct TaskChangedPayload {
     space_fallback: bool,
 }
 
-/// IPC Server 句柄，持有 listener 和 handshake 通知器。
+/// IPC Server 句柄，持有 listener 和 hello 通知器。
 pub struct IpcServerHandle {
-    pub handshake_notify: Arc<Notify>,
+    pub hello_notify: Arc<Notify>,
 }
 
 /// 启动 IPC server，返回句柄供 supervisor 使用。
@@ -72,9 +73,9 @@ pub async fn start_ipc_server(
     let listener = bind_listener(&socket_name())
         .map_err(|error| AppError::initialization(format!("IPC server bind 失败: {error}")))?;
 
-    let handshake_notify = Arc::new(Notify::new());
+    let hello_notify = Arc::new(Notify::new());
     let server_handle = IpcServerHandle {
-        handshake_notify: handshake_notify.clone(),
+        hello_notify: hello_notify.clone(),
     };
 
     helper_state
@@ -87,7 +88,7 @@ pub async fn start_ipc_server(
         database,
         active_scope,
         helper_state,
-        handshake_notify,
+        hello_notify,
     ));
 
     Ok(server_handle)
@@ -122,7 +123,7 @@ async fn run_ipc_server(
     database: DatabaseRuntimeState,
     active_scope: ActiveScopeState,
     helper_state: CommandHelperState,
-    handshake_notify: Arc<Notify>,
+    hello_notify: Arc<Notify>,
 ) {
     loop {
         let stream = match listener.accept().await {
@@ -143,7 +144,7 @@ async fn run_ipc_server(
         let database = database.clone();
         let active_scope = active_scope.clone();
         let helper_state = helper_state.clone();
-        let handshake_notify = handshake_notify.clone();
+        let hello_notify = hello_notify.clone();
         tauri::async_runtime::spawn(async move {
             if let Err(error) = handle_ipc_connection(
                 stream,
@@ -151,7 +152,7 @@ async fn run_ipc_server(
                 database,
                 active_scope,
                 helper_state,
-                handshake_notify,
+                hello_notify,
             )
             .await
             {
@@ -171,7 +172,7 @@ async fn handle_ipc_connection(
     database: DatabaseRuntimeState,
     active_scope: ActiveScopeState,
     helper_state: CommandHelperState,
-    handshake_notify: Arc<Notify>,
+    hello_notify: Arc<Notify>,
 ) -> Result<(), io::Error> {
     let (mut reader, mut writer) = stream.split();
     let mut len_buf = [0_u8; 4];
@@ -210,7 +211,7 @@ async fn handle_ipc_connection(
         &session_bridge,
         &active_scope,
         &helper_state,
-        &handshake_notify,
+        &hello_notify,
     )
     .await;
 
@@ -231,15 +232,18 @@ async fn dispatch_request(
     session_bridge: &QuickCreateSessionBridge,
     active_scope: &ActiveScopeState,
     helper_state: &CommandHelperState,
-    handshake_notify: &Notify,
+    hello_notify: &Notify,
 ) -> Result<IpcResponse, AppError> {
-    // 首个请求到达 = 握手成功，通知 supervisor
-    handshake_notify.notify_one();
+    if let Some(response) = handle_control_request(request.clone(), helper_state, hello_notify).await
+    {
+        return response;
+    }
 
     match request {
-        IpcRequest::Ping => Ok(IpcResponse::Pong {
-            protocol_version: PROTOCOL_VERSION,
-        }),
+        IpcRequest::Ping
+        | IpcRequest::HelperHello(_)
+        | IpcRequest::HelperWindowReady
+        | IpcRequest::HelperWindowUnready => unreachable!("control requests handled above"),
         IpcRequest::QuickGetInitialState => Ok(IpcResponse::QuickInitialState(
             session_bridge
                 .prepare_initial_state(active_scope.get().await)
@@ -266,6 +270,187 @@ async fn dispatch_request(
             open_existing_target(app_handle, service, helper_state, payload).await?;
             Ok(IpcResponse::Opened)
         }
+    }
+}
+
+async fn handle_control_request(
+    request: IpcRequest,
+    helper_state: &CommandHelperState,
+    hello_notify: &Notify,
+) -> Option<Result<IpcResponse, AppError>> {
+    match request {
+        IpcRequest::Ping => Some(Ok(IpcResponse::Pong {
+            protocol_version: PROTOCOL_VERSION,
+        })),
+        IpcRequest::HelperHello(payload) => Some(
+            handle_helper_hello(helper_state, hello_notify, payload)
+                .await
+                .map(|()| {
+                    IpcResponse::HelperHelloAck(HelperHelloAckPayload {
+                        protocol_version: PROTOCOL_VERSION,
+                        main_version: env!("CARGO_PKG_VERSION").to_owned(),
+                    })
+                }),
+        ),
+        IpcRequest::HelperWindowReady => Some(
+            async {
+                helper_state
+                    .mark_window_ready(chrono::Utc::now().to_rfc3339())
+                    .await;
+                Ok(IpcResponse::Ack)
+            }
+            .await,
+        ),
+        IpcRequest::HelperWindowUnready => Some(
+            async {
+                helper_state
+                    .mark_window_unready(chrono::Utc::now().to_rfc3339())
+                    .await;
+                Ok(IpcResponse::Ack)
+            }
+            .await,
+        ),
+        _ => None,
+    }
+}
+
+async fn handle_helper_hello(
+    helper_state: &CommandHelperState,
+    hello_notify: &Notify,
+    payload: HelperHelloPayload,
+) -> Result<(), AppError> {
+    if payload.protocol_version != PROTOCOL_VERSION {
+        return Err(AppError::validation(format!(
+            "helper protocol version mismatch: expected {}, got {}",
+            PROTOCOL_VERSION, payload.protocol_version
+        )));
+    }
+
+    helper_state
+        .mark_helper_hello(
+            payload.protocol_version,
+            payload.helper_version,
+            payload.platform,
+            chrono::Utc::now().to_rfc3339(),
+        )
+        .await;
+    hello_notify.notify_one();
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::state::HelperLifecycleStage;
+    use tokio::time::{timeout, Duration};
+
+    fn helper_hello(protocol_version: u16) -> IpcRequest {
+        IpcRequest::HelperHello(HelperHelloPayload {
+            protocol_version,
+            helper_version: "0.1.0".to_owned(),
+            pid: 42,
+            platform: "windows".to_owned(),
+        })
+    }
+
+    #[tokio::test]
+    async fn helper_hello_should_complete_notify_and_promote_waiting_for_window() {
+        let helper_state = CommandHelperState::default();
+        let hello_notify = Notify::new();
+        helper_state.mark_helper_starting(None).await;
+        helper_state.mark_helper_spawned(42).await;
+
+        let response = handle_control_request(helper_hello(PROTOCOL_VERSION), &helper_state, &hello_notify)
+            .await
+            .expect("hello should be handled")
+            .expect("hello should succeed");
+
+        assert!(matches!(response, IpcResponse::HelperHelloAck(_)));
+        timeout(Duration::from_millis(20), hello_notify.notified())
+            .await
+            .expect("hello should notify supervisor");
+
+        let snapshot = helper_state.snapshot().await;
+        assert_eq!(snapshot.lifecycle_stage, HelperLifecycleStage::WaitingForWindow);
+        assert_eq!(snapshot.protocol_version, Some(PROTOCOL_VERSION));
+        assert_eq!(snapshot.helper_version.as_deref(), Some("0.1.0"));
+        assert_eq!(snapshot.platform.as_deref(), Some("windows"));
+        assert!(snapshot.last_hello_at.is_some());
+    }
+
+    #[tokio::test]
+    async fn non_hello_control_requests_should_not_notify_supervisor() {
+        let helper_state = CommandHelperState::default();
+        let hello_notify = Notify::new();
+        helper_state.mark_helper_starting(None).await;
+        helper_state.mark_helper_spawned(42).await;
+
+        let ping_response = handle_control_request(IpcRequest::Ping, &helper_state, &hello_notify)
+            .await
+            .expect("ping should be handled")
+            .expect("ping should succeed");
+        assert!(matches!(ping_response, IpcResponse::Pong { .. }));
+        assert!(timeout(Duration::from_millis(20), hello_notify.notified()).await.is_err());
+
+        let ready_response =
+            handle_control_request(IpcRequest::HelperWindowReady, &helper_state, &hello_notify)
+                .await
+                .expect("window ready should be handled")
+                .expect("window ready should succeed");
+        assert!(matches!(ready_response, IpcResponse::Ack));
+        assert!(timeout(Duration::from_millis(20), hello_notify.notified()).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn window_ready_and_unready_should_update_snapshot() {
+        let helper_state = CommandHelperState::default();
+        let hello_notify = Notify::new();
+        helper_state.mark_helper_starting(None).await;
+        helper_state.mark_helper_spawned(42).await;
+        handle_control_request(helper_hello(PROTOCOL_VERSION), &helper_state, &hello_notify)
+            .await
+            .expect("hello should be handled")
+            .expect("hello should succeed");
+
+        handle_control_request(IpcRequest::HelperWindowReady, &helper_state, &hello_notify)
+            .await
+            .expect("window ready should be handled")
+            .expect("window ready should succeed");
+        let ready_snapshot = helper_state.snapshot().await;
+        assert_eq!(ready_snapshot.lifecycle_stage, HelperLifecycleStage::Ready);
+        assert!(ready_snapshot.last_window_ready_at.is_some());
+
+        handle_control_request(IpcRequest::HelperWindowUnready, &helper_state, &hello_notify)
+            .await
+            .expect("window unready should be handled")
+            .expect("window unready should succeed");
+        let unready_snapshot = helper_state.snapshot().await;
+        assert_eq!(
+            unready_snapshot.lifecycle_stage,
+            HelperLifecycleStage::WaitingForWindow
+        );
+        assert!(unready_snapshot.last_window_unready_at.is_some());
+    }
+
+    #[tokio::test]
+    async fn protocol_mismatch_should_error_and_keep_waiting_for_hello() {
+        let helper_state = CommandHelperState::default();
+        let hello_notify = Notify::new();
+        helper_state.mark_helper_starting(None).await;
+        helper_state.mark_helper_spawned(42).await;
+
+        let error = handle_control_request(helper_hello(PROTOCOL_VERSION - 1), &helper_state, &hello_notify)
+            .await
+            .expect("hello should be handled")
+            .expect_err("protocol mismatch should fail");
+        assert!(matches!(error, AppError::Validation(_)));
+        assert!(timeout(Duration::from_millis(20), hello_notify.notified()).await.is_err());
+
+        let snapshot = helper_state.snapshot().await;
+        assert_eq!(snapshot.lifecycle_stage, HelperLifecycleStage::WaitingForHello);
+        assert_eq!(snapshot.protocol_version, None);
+        assert_eq!(snapshot.last_hello_at, None);
     }
 }
 

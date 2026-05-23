@@ -45,9 +45,11 @@ impl ActiveScopeState {
 /// Helper 进程状态。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub enum HelperRuntimeStatus {
+pub enum HelperLifecycleStage {
     Idle,
     Starting,
+    WaitingForHello,
+    WaitingForWindow,
     Ready,
     Disconnected,
     Crashed,
@@ -70,28 +72,38 @@ pub enum IpcServerStatus {
 #[serde(rename_all = "camelCase")]
 pub struct CommandHelperSnapshot {
     pub initialized: bool,
-    pub helper_status: HelperRuntimeStatus,
+    pub lifecycle_stage: HelperLifecycleStage,
     pub ipc_status: IpcServerStatus,
     pub helper_pid: Option<u32>,
     pub helper_binary_path: Option<String>,
-    pub last_protocol_version: Option<u16>,
-    pub last_handshake_at: Option<String>,
+    pub protocol_version: Option<u16>,
+    pub helper_version: Option<String>,
+    pub platform: Option<String>,
+    pub last_hello_at: Option<String>,
+    pub last_window_ready_at: Option<String>,
+    pub last_window_unready_at: Option<String>,
     pub last_helper_error: Option<String>,
     pub restart_count: u32,
+    pub shutdown_requested: bool,
 }
 
 impl Default for CommandHelperSnapshot {
     fn default() -> Self {
         Self {
             initialized: false,
-            helper_status: HelperRuntimeStatus::Idle,
+            lifecycle_stage: HelperLifecycleStage::Idle,
             ipc_status: IpcServerStatus::Stopped,
             helper_pid: None,
             helper_binary_path: None,
-            last_protocol_version: None,
-            last_handshake_at: None,
+            protocol_version: None,
+            helper_version: None,
+            platform: None,
+            last_hello_at: None,
+            last_window_ready_at: None,
+            last_window_unready_at: None,
             last_helper_error: None,
             restart_count: 0,
+            shutdown_requested: false,
         }
     }
 }
@@ -118,7 +130,12 @@ pub struct PendingCommandOpenIntent {
 impl CommandHelperState {
     /// 读取运行态快照。
     pub async fn snapshot(&self) -> CommandHelperSnapshot {
-        self.snapshot.read().await.clone()
+        let snapshot = self.snapshot.read().await.clone();
+        let shutdown_requested = *self.shutdown_requested.read().await;
+        CommandHelperSnapshot {
+            shutdown_requested,
+            ..snapshot
+        }
     }
 
     /// 更新 IPC server 状态。
@@ -135,7 +152,7 @@ impl CommandHelperState {
     pub async fn mark_helper_starting(&self, helper_binary_path: Option<PathBuf>) {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
-        snapshot.helper_status = HelperRuntimeStatus::Starting;
+        snapshot.lifecycle_stage = HelperLifecycleStage::Starting;
         snapshot.helper_binary_path =
             helper_binary_path.map(|path| path.display().to_string());
         snapshot.helper_pid = None;
@@ -146,24 +163,52 @@ impl CommandHelperState {
     pub async fn mark_helper_spawned(&self, pid: u32) {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
+        snapshot.lifecycle_stage = HelperLifecycleStage::WaitingForHello;
         snapshot.helper_pid = Some(pid);
     }
 
-    /// 记录 helper 完成握手。
-    pub async fn mark_helper_ready(&self, protocol_version: u16, handshake_at: String) {
+    /// 记录 helper hello 完成。
+    pub async fn mark_helper_hello(
+        &self,
+        protocol_version: u16,
+        helper_version: String,
+        platform: String,
+        hello_at: String,
+    ) {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
-        snapshot.helper_status = HelperRuntimeStatus::Ready;
-        snapshot.last_protocol_version = Some(protocol_version);
-        snapshot.last_handshake_at = Some(handshake_at);
+        snapshot.lifecycle_stage = HelperLifecycleStage::WaitingForWindow;
+        snapshot.protocol_version = Some(protocol_version);
+        snapshot.helper_version = Some(helper_version);
+        snapshot.platform = Some(platform);
+        snapshot.last_hello_at = Some(hello_at);
         snapshot.last_helper_error = None;
+    }
+
+    /// 记录 helper 窗口监听已就绪。
+    pub async fn mark_window_ready(&self, ready_at: String) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.lifecycle_stage = HelperLifecycleStage::Ready;
+        snapshot.last_window_ready_at = Some(ready_at);
+        snapshot.last_helper_error = None;
+    }
+
+    /// 记录 helper 窗口监听已卸载。
+    pub async fn mark_window_unready(&self, unready_at: String) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        if snapshot.lifecycle_stage == HelperLifecycleStage::Ready {
+            snapshot.lifecycle_stage = HelperLifecycleStage::WaitingForWindow;
+        }
+        snapshot.last_window_unready_at = Some(unready_at);
     }
 
     /// 记录 helper 断开。
     pub async fn mark_helper_disconnected(&self, error: impl Into<String>) {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
-        snapshot.helper_status = HelperRuntimeStatus::Disconnected;
+        snapshot.lifecycle_stage = HelperLifecycleStage::Disconnected;
         snapshot.helper_pid = None;
         snapshot.last_helper_error = Some(error.into());
     }
@@ -172,7 +217,7 @@ impl CommandHelperState {
     pub async fn mark_helper_crashed(&self, error: impl Into<String>) {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
-        snapshot.helper_status = HelperRuntimeStatus::Crashed;
+        snapshot.lifecycle_stage = HelperLifecycleStage::Crashed;
         snapshot.helper_pid = None;
         snapshot.last_helper_error = Some(error.into());
     }
@@ -181,7 +226,7 @@ impl CommandHelperState {
     pub async fn mark_helper_restarting(&self, error: impl Into<String>) {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
-        snapshot.helper_status = HelperRuntimeStatus::Restarting;
+        snapshot.lifecycle_stage = HelperLifecycleStage::Restarting;
         snapshot.helper_pid = None;
         snapshot.restart_count += 1;
         snapshot.last_helper_error = Some(error.into());
@@ -191,12 +236,14 @@ impl CommandHelperState {
     pub async fn mark_shutting_down(&self) {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
-        snapshot.helper_status = HelperRuntimeStatus::ShuttingDown;
+        snapshot.lifecycle_stage = HelperLifecycleStage::ShuttingDown;
     }
 
     pub async fn set_shutdown_requested(&self, value: bool) {
         let mut guard = self.shutdown_requested.write().await;
         *guard = value;
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.shutdown_requested = value;
     }
 
     pub async fn is_shutdown_requested(&self) -> bool {

@@ -10,10 +10,11 @@ use interprocess::local_socket::{
     GenericFilePath, GenericNamespaced, ToFsName, ToNsName,
 };
 use stoneflow_ipc_protocol::{
-    socket_name, IpcError, IpcRequest, IpcResponse, QuickCreatePayload, QuickInitialStatePayload,
-    QuickListProjectsBySpacePayload, QuickOpenTargetPayload, QuickProjectsBySpaceResponsePayload,
-    QuickSearchPayload, QuickSearchResponsePayload, SocketName, DEFAULT_CONNECT_TIMEOUT_MS,
-    DEFAULT_REQUEST_TIMEOUT_MS, MAX_FRAME_BYTES,
+    socket_name, HelperHelloAckPayload, HelperHelloPayload, IpcError, IpcRequest, IpcResponse,
+    QuickCreatePayload, QuickInitialStatePayload, QuickListProjectsBySpacePayload,
+    QuickOpenTargetPayload, QuickProjectsBySpaceResponsePayload, QuickSearchPayload,
+    QuickSearchResponsePayload, SocketName, DEFAULT_CONNECT_TIMEOUT_MS,
+    DEFAULT_REQUEST_TIMEOUT_MS, MAX_FRAME_BYTES, PROTOCOL_VERSION,
 };
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::time::timeout;
@@ -24,6 +25,53 @@ pub async fn ping() -> Result<u16, IpcError> {
         IpcResponse::Error(error) => Err(error),
         other => Err(IpcError::Internal(format!(
             "unexpected ipc response for Ping: {other:?}"
+        ))),
+    }
+}
+
+pub async fn hello() -> Result<HelperHelloAckPayload, IpcError> {
+    let payload = HelperHelloPayload {
+        protocol_version: PROTOCOL_VERSION,
+        helper_version: env!("CARGO_PKG_VERSION").to_owned(),
+        pid: std::process::id(),
+        platform: std::env::consts::OS.to_owned(),
+    };
+
+    parse_hello_response(
+        round_trip_with_policy(
+            IpcRequest::HelperHello(payload),
+            RetryPolicy::startup_probe("HelperHello"),
+        )
+        .await?,
+    )
+}
+
+pub async fn notify_window_ready() -> Result<(), IpcError> {
+    match round_trip_with_policy(
+        IpcRequest::HelperWindowReady,
+        RetryPolicy::single_attempt("HelperWindowReady"),
+    )
+    .await?
+    {
+        IpcResponse::Ack => Ok(()),
+        IpcResponse::Error(error) => Err(error),
+        other => Err(IpcError::Internal(format!(
+            "unexpected ipc response for HelperWindowReady: {other:?}"
+        ))),
+    }
+}
+
+pub async fn notify_window_unready() -> Result<(), IpcError> {
+    match round_trip_with_policy(
+        IpcRequest::HelperWindowUnready,
+        RetryPolicy::single_attempt("HelperWindowUnready"),
+    )
+    .await?
+    {
+        IpcResponse::Ack => Ok(()),
+        IpcResponse::Error(error) => Err(error),
+        other => Err(IpcError::Internal(format!(
+            "unexpected ipc response for HelperWindowUnready: {other:?}"
         ))),
     }
 }
@@ -242,6 +290,44 @@ async fn try_round_trip(request: &IpcRequest) -> Result<IpcResponse, IpcError> {
 
     serde_json::from_slice::<IpcResponse>(&response_bytes)
         .map_err(|error| IpcError::Internal(format!("deserialize response: {error}")))
+}
+
+fn parse_hello_response(response: IpcResponse) -> Result<HelperHelloAckPayload, IpcError> {
+    match response {
+        IpcResponse::HelperHelloAck(payload) => Ok(payload),
+        IpcResponse::Error(error) => Err(error),
+        other => Err(IpcError::Internal(format!(
+            "unexpected ipc response for HelperHello: {other:?}"
+        ))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_hello_response_should_return_ack_payload() {
+        let payload = HelperHelloAckPayload {
+            protocol_version: PROTOCOL_VERSION,
+            main_version: "1.2.3".to_owned(),
+        };
+
+        let parsed =
+            parse_hello_response(IpcResponse::HelperHelloAck(payload.clone())).expect("ack parse");
+
+        assert_eq!(parsed, payload);
+    }
+
+    #[test]
+    fn parse_hello_response_should_surface_protocol_error() {
+        let error = parse_hello_response(IpcResponse::Error(IpcError::Validation(
+            "protocol mismatch".to_owned(),
+        )))
+        .expect_err("error response should fail");
+
+        assert!(matches!(error, IpcError::Validation(message) if message == "protocol mismatch"));
+    }
 }
 
 async fn connect_with_timeout(socket: &SocketName) -> Result<Stream, IpcError> {
