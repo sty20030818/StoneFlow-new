@@ -18,6 +18,7 @@ const taskState = {
 
 const spaceState = {
 	load: vi.fn<() => Promise<void>>(),
+	refresh: vi.fn<() => Promise<void>>(),
 }
 
 const lifecycleState = {
@@ -84,6 +85,7 @@ describe('useWorkspaceSync', () => {
 		projectState.loadSidebar.mockReset()
 		projectState.loadOverview.mockReset()
 		spaceState.load.mockReset()
+		spaceState.refresh.mockReset()
 		lifecycleState.refreshLoadedSlices.mockReset()
 		viewState.refreshTaskRun.mockReset()
 		taskState.refreshLoadedSlices.mockResolvedValue()
@@ -91,6 +93,7 @@ describe('useWorkspaceSync', () => {
 		projectState.loadSidebar.mockResolvedValue()
 		projectState.loadOverview.mockResolvedValue()
 		spaceState.load.mockResolvedValue()
+		spaceState.refresh.mockResolvedValue()
 		lifecycleState.refreshLoadedSlices.mockResolvedValue()
 		viewState.refreshTaskRun.mockResolvedValue()
 	})
@@ -114,7 +117,7 @@ describe('useWorkspaceSync', () => {
 		expect(projectState.loadDetail).toHaveBeenCalledWith('project-1')
 		expect(projectState.loadSidebar).toHaveBeenCalledWith({ type: 'space', spaceId: 'space-1' })
 		expect(projectState.loadOverview).toHaveBeenCalledWith({ type: 'all' }, 'active')
-		expect(spaceState.load).toHaveBeenCalledTimes(1)
+		expect(spaceState.refresh).toHaveBeenCalledTimes(1)
 		expect(lifecycleState.refreshLoadedSlices).toHaveBeenCalledTimes(1)
 		expect(viewState.refreshTaskRun).toHaveBeenCalledTimes(1)
 	})
@@ -134,7 +137,7 @@ describe('useWorkspaceSync', () => {
 		expect(projectState.loadDetail).toHaveBeenCalledWith('project-1')
 		expect(projectState.loadSidebar).toHaveBeenCalledWith({ type: 'space', spaceId: 'space-1' })
 		expect(projectState.loadOverview).toHaveBeenCalledWith({ type: 'all' }, 'active')
-		expect(spaceState.load).toHaveBeenCalledTimes(1)
+		expect(spaceState.refresh).toHaveBeenCalledTimes(1)
 		expect(lifecycleState.refreshLoadedSlices).toHaveBeenCalledTimes(1)
 		expect(viewState.refreshTaskRun).toHaveBeenCalledTimes(1)
 	})
@@ -151,7 +154,7 @@ describe('useWorkspaceSync', () => {
 		})
 
 		expect(taskState.refreshLoadedSlices).toHaveBeenCalledTimes(1)
-		expect(spaceState.load).toHaveBeenCalledTimes(1)
+		expect(spaceState.refresh).toHaveBeenCalledTimes(1)
 		expect(lifecycleState.refreshLoadedSlices).toHaveBeenCalledTimes(1)
 		expect(viewState.refreshTaskRun).toHaveBeenCalledTimes(1)
 	})

@@ -20,7 +20,7 @@ const LIFECYCLE_DEBOUNCE_MS = 500
 export function useWorkspaceSync(scope: Scope) {
 	const refreshLoadedData = useCallback(() => {
 		void useTaskStore.getState().refreshLoadedSlices()
-		void useSpaceStore.getState().load()
+		void useSpaceStore.getState().refresh()
 		void useLifecycleStore.getState().refreshLoadedSlices()
 		void useViewStore.getState().refreshTaskRun()
 

@@ -17,6 +17,7 @@ type SpaceStoreState = {
 	status: 'idle' | 'loading' | 'ready' | 'error'
 	error: string | null
 	load: () => Promise<void>
+	refresh: () => Promise<void>
 	createSpace: (input: { name: string; iconKey: string; colorKey: string }) => Promise<Space>
 	updateSpace: (input: {
 		spaceId: string
@@ -78,6 +79,16 @@ export const useSpaceStore = create<SpaceStoreState>((set, get) => ({
 		})()
 
 		return pendingSpaceLoad
+	},
+	refresh: async () => {
+		try {
+			await reloadSpaces(set)
+		} catch (error) {
+			set({
+				status: 'error',
+				error: error instanceof Error ? error.message : '刷新 Space 列表失败',
+			})
+		}
 	},
 	createSpace: async (input) => {
 		const created = await createSpace(input)

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import {
@@ -134,6 +134,8 @@ export function ShellSidebar({
 	const { requestDangerConfirm } = useDangerConfirm()
 	const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create')
 	const [editorOpen, setEditorOpen] = useState(false)
+	const [spaceSwitcherMenuOpen, setSpaceSwitcherMenuOpen] = useState(false)
+	const [spaceSwitcherTooltipSuppressed, setSpaceSwitcherTooltipSuppressed] = useState(false)
 	const [dropdownError, setDropdownError] = useState<string | null>(null)
 	const fallbackSpaceId =
 		currentSpaceId ?? spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
@@ -197,11 +199,32 @@ export function ShellSidebar({
 		}
 	}
 
-	async function handleSpaceEditorSubmit(input: {
+	const handleSpaceEditorClose = useCallback(() => {
+		setEditorOpen(false)
+	}, [])
+
+	const handleSpaceSwitcherMenuOpenChange = useCallback((open: boolean) => {
+		setSpaceSwitcherMenuOpen(open)
+		setSpaceSwitcherTooltipSuppressed(true)
+	}, [])
+
+	const handleSpaceSwitcherPointerEnter = useCallback(() => {
+		if (!spaceSwitcherMenuOpen && !editorOpen) {
+			setSpaceSwitcherTooltipSuppressed(false)
+		}
+	}, [editorOpen, spaceSwitcherMenuOpen])
+
+	const handleSpaceSwitcherPointerLeave = useCallback(() => {
+		if (!spaceSwitcherMenuOpen && !editorOpen) {
+			setSpaceSwitcherTooltipSuppressed(false)
+		}
+	}, [editorOpen, spaceSwitcherMenuOpen])
+
+	const handleSpaceEditorSubmit = useCallback(async (input: {
 		name: string
 		iconKey: string
 		colorKey: string
-	}) {
+	}) => {
 		if (editorMode === 'create') {
 			const createdSpace = await onCreateSpace(input)
 			navigate(`/space/${createdSpace.id}/inbox`)
@@ -216,7 +239,7 @@ export function ShellSidebar({
 			spaceId: activeSpace.id,
 			...input,
 		})
-	}
+	}, [activeSpace, editorMode, navigate, onCreateSpace, onUpdateSpace])
 
 	const handleSidebarContextMenu = (event: React.MouseEvent<HTMLElement>) => {
 		const target = event.target
@@ -238,12 +261,23 @@ export function ShellSidebar({
 						<div className={shellChromeInlineGroupClass}>
 							<SidebarMenu className='flex-1'>
 								<SidebarMenuItem>
-									<DropdownMenu>
+									<DropdownMenu
+										open={spaceSwitcherMenuOpen}
+										onOpenChange={handleSpaceSwitcherMenuOpenChange}
+									>
 										<DropdownMenuTrigger asChild>
 											<SidebarMenuButton
 												aria-label='切换 Space'
+												onPointerEnter={handleSpaceSwitcherPointerEnter}
+												onPointerLeave={handleSpaceSwitcherPointerLeave}
 												size='lg'
-												tooltip={currentScopeLabel}
+												tooltip={
+													spaceSwitcherMenuOpen ||
+													editorOpen ||
+													spaceSwitcherTooltipSuppressed
+														? undefined
+														: currentScopeLabel
+												}
 											>
 												{currentScope.type === 'all' ? (
 													<SpaceIconBadge
@@ -581,7 +615,7 @@ export function ShellSidebar({
 
 			<SpaceEditorDialog
 				mode={editorMode}
-				onClose={() => setEditorOpen(false)}
+				onClose={handleSpaceEditorClose}
 				onSubmit={handleSpaceEditorSubmit}
 				open={editorOpen}
 				space={editorMode === 'edit' ? activeSpace : null}

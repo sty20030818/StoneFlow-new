@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
+import { SubmitRegistryProvider } from '@/features/submit/model'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import { TooltipProvider } from '@/shared/ui/base/tooltip'
 
@@ -131,6 +132,45 @@ describe('ShellSidebar', () => {
 		})
 	})
 
+	it('Space 新建和编辑弹窗可从切换菜单打开', async () => {
+		renderShellSidebar({
+			mainItems: {
+				inbox: { visible: true, order: 100 },
+				allTasks: { visible: true, order: 200 },
+				views: { visible: true, order: 300 },
+				projectOverview: { visible: true, order: 400 },
+			},
+			projectSection: {
+				visible: true,
+				order: 500,
+				collapsed: false,
+				showCounts: true,
+				showCompleted: true,
+				maxVisible: null,
+			},
+			footerItems: {
+				archive: { visible: true, order: 900 },
+				trash: { visible: true, order: 1000 },
+			},
+			width: 256,
+			desktopPreference: 'expanded',
+		})
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '新建空间' }))
+		expect(await screen.findByRole('dialog', { name: '新建 Space' })).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+		await waitFor(() => {
+			expect(screen.queryByRole('dialog', { name: '新建 Space' })).not.toBeInTheDocument()
+		})
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑空间' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑当前空间' }))
+		expect(await screen.findByRole('dialog', { name: '编辑 Space' })).toBeInTheDocument()
+	})
+
 	it('项目区和 footer 一起位于 AppScrollArea 滚动容器内，内容不足时 footer 仍可贴底', () => {
 		renderShellSidebar({
 			mainItems: {
@@ -180,28 +220,30 @@ function renderShellSidebar(
 ) {
 	return render(
 		<MemoryRouter initialEntries={['/space/space-personal/inbox']}>
-			<DangerConfirmProvider>
-				<TooltipProvider>
-					<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
-						<ShellSidebar
-							currentScope={{ type: 'space', spaceId: 'space-personal' }}
-							currentSpaceId='space-personal'
-							onArchiveSpace={async () => mockSpace}
-							onCreateSpace={async () => mockSpace}
-							onDeleteSpace={async () => mockSpace}
-							onOpenProjectCreateDialog={() => undefined}
-							onResetMainItemsVisibility={() => undefined}
-							onSetDefaultSpace={async () => mockSpace}
-							onUpdateItemVisibility={() => undefined}
-							onUpdateSpace={async () => mockSpace}
-							projects={projects}
-							spaces={[mockSpace]}
-							settings={settings}
-							{...overrides}
-						/>
-					</SidebarProvider>
-				</TooltipProvider>
-			</DangerConfirmProvider>
+			<SubmitRegistryProvider>
+				<DangerConfirmProvider>
+					<TooltipProvider>
+						<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
+							<ShellSidebar
+								currentScope={{ type: 'space', spaceId: 'space-personal' }}
+								currentSpaceId='space-personal'
+								onArchiveSpace={async () => mockSpace}
+								onCreateSpace={async () => mockSpace}
+								onDeleteSpace={async () => mockSpace}
+								onOpenProjectCreateDialog={() => undefined}
+								onResetMainItemsVisibility={() => undefined}
+								onSetDefaultSpace={async () => mockSpace}
+								onUpdateItemVisibility={() => undefined}
+								onUpdateSpace={async () => mockSpace}
+								projects={projects}
+								spaces={[mockSpace]}
+								settings={settings}
+								{...overrides}
+							/>
+						</SidebarProvider>
+					</TooltipProvider>
+				</DangerConfirmProvider>
+			</SubmitRegistryProvider>
 		</MemoryRouter>,
 	)
 }
