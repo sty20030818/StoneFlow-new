@@ -40,6 +40,7 @@ type TaskPreviewState = {
 type TaskPreviewContextValue = {
 	state: TaskPreviewState
 	source: TaskPreviewSource | null
+	sourceSnapshot: TaskPreviewSource | null
 	openPreview: (taskId: string, source: TaskPreviewAnchorReason) => void
 	closePreview: () => void
 	scheduleClosePreview: () => void
@@ -68,6 +69,7 @@ export function TaskPreviewProvider({ children }: PropsWithChildren) {
 		linkSummary: null,
 	})
 	const [source, setSource] = useState<TaskPreviewSource | null>(null)
+	const [sourceSnapshot, setSourceSnapshot] = useState<TaskPreviewSource | null>(null)
 	const closeTimerRef = useRef<number | null>(null)
 	const activeSourceTokenRef = useRef<symbol | null>(null)
 
@@ -235,6 +237,9 @@ export function TaskPreviewProvider({ children }: PropsWithChildren) {
 	const registerSource = useCallback((token: symbol, source: TaskPreviewSource) => {
 		activeSourceTokenRef.current = token
 		setSource((current) => (areSameTaskPreviewSource(current, source) ? current : source))
+		if (source.tasks.length > 0) {
+			setSourceSnapshot((current) => (areSameTaskPreviewSource(current, source) ? current : source))
+		}
 	}, [])
 
 	const clearSourceRegistration = useCallback((token: symbol) => {
@@ -263,7 +268,6 @@ export function TaskPreviewProvider({ children }: PropsWithChildren) {
 
 		const tasks = source?.tasks ?? []
 		if (tasks.length === 0) {
-			closePreview()
 			return
 		}
 
@@ -374,6 +378,7 @@ export function TaskPreviewProvider({ children }: PropsWithChildren) {
 		() => ({
 			state,
 			source,
+			sourceSnapshot,
 			openPreview,
 			closePreview,
 			scheduleClosePreview,
@@ -393,6 +398,7 @@ export function TaskPreviewProvider({ children }: PropsWithChildren) {
 			scheduleClosePreview,
 			setHoveredTask,
 			setPreviewPointerInside,
+			sourceSnapshot,
 			source,
 			state,
 			syncPreviewTarget,

@@ -1,17 +1,16 @@
 import { type ReactNode } from 'react'
 
+import { taskDateMetadataIcons } from '@/features/metadata-fields'
 import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
 import { formatShortDate } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
 import type { TaskListItem } from '@/shared/types'
-import { Badge } from '@/shared/ui/base/badge'
-import { CalendarIcon, CircleIcon, Link2Icon } from 'lucide-react'
+import { CircleIcon, Link2Icon } from 'lucide-react'
 
 import {
 	taskPreviewCardClass,
-	taskPreviewFooterClass,
 	taskPreviewHeaderClass,
 	taskPreviewHostClass,
 	taskPreviewMetaRowClass,
@@ -41,11 +40,26 @@ export function TaskPreview({
 	}
 
 	const placementLabel = task.projectName ?? (task.inboxAt ? 'Inbox' : '独立事项')
-	const dateItems = [
-		task.dueAt ? { label: '截止', value: formatShortDate(task.dueAt) } : null,
-		task.scheduledAt ? { label: '计划', value: formatShortDate(task.scheduledAt) } : null,
-		task.reminderAt ? { label: '提醒', value: formatShortDate(task.reminderAt) } : null,
-	].filter((item): item is { label: string; value: string } => item !== null)
+	const breadcrumbLabel = `${task.spaceName} > ${placementLabel}`
+	const dateItems: Array<{ icon: ReactNode; label: string }> = []
+
+	if (task.dueAt) {
+		dateItems.push({ icon: taskDateMetadataIcons.due, label: `截止 ${formatShortDate(task.dueAt)}` })
+	}
+
+	if (task.scheduledAt) {
+		dateItems.push({
+			icon: taskDateMetadataIcons.scheduled,
+			label: `计划 ${formatShortDate(task.scheduledAt)}`,
+		})
+	}
+
+	if (task.reminderAt) {
+		dateItems.push({
+			icon: taskDateMetadataIcons.reminder,
+			label: `提醒 ${formatShortDate(task.reminderAt)}`,
+		})
+	}
 
 	return (
 		<div className={taskPreviewHostClass}>
@@ -57,9 +71,9 @@ export function TaskPreview({
 				onPointerLeave={onPointerLeave}
 			>
 				<header className={taskPreviewHeaderClass}>
-					<div className='flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.18em] text-sf-text-tertiary'>
-						<span className='truncate'>{task.spaceName}</span>
-						<span className='truncate text-right'>{placementLabel}</span>
+					<div className='flex items-center justify-between gap-3 text-[11px] leading-4 text-sf-text-tertiary'>
+						<span className='min-w-0 truncate'>{breadcrumbLabel}</span>
+						<span className='shrink-0 truncate text-right'>更新于 {formatUpdatedAt(task.updatedAt)}</span>
 					</div>
 					<div className='flex flex-col gap-1.5'>
 						<h2 className='line-clamp-2 text-[20px] font-semibold leading-[1.25] text-foreground'>
@@ -71,22 +85,25 @@ export function TaskPreview({
 								icon={<PriorityIcon className='text-sf-text-secondary' priority={task.priority} size='sm' />}
 								label={formatTaskPriorityLabel(task.priority)}
 							/>
-							<MetaPill icon={<CalendarIcon className='size-3.5' />} label={buildDateSummary(dateItems)} />
+							{dateItems.map((item) => (
+								<MetaPill icon={item.icon} key={item.label} label={item.label} />
+							))}
 						</div>
 					</div>
 				</header>
 
-				{task.note ? (
-					<section className={cn(taskPreviewSectionClass, 'pt-3')}>
-						<h3 className='text-[11px] font-medium uppercase tracking-[0.16em] text-sf-text-tertiary'>
-							备注
-						</h3>
+				<section className={cn(taskPreviewSectionClass, 'pt-3')}>
+					{task.note ? (
 						<p className='line-clamp-5 text-[13px] leading-6 text-sf-text-secondary'>{task.note}</p>
-					</section>
-				) : null}
+					) : (
+						<div className='rounded-md border border-dashed border-sf-border-subtle bg-muted/30 px-3 py-3 text-[12px] leading-5 text-sf-text-tertiary'>
+							暂无备注
+						</div>
+					)}
+				</section>
 
 				{linkSummary && linkSummary.items.length > 0 ? (
-					<section className={cn(taskPreviewSectionClass, task.note ? 'pt-4' : 'pt-3')}>
+					<section className={cn(taskPreviewSectionClass, 'pt-4')}>
 						<h3 className='text-[11px] font-medium uppercase tracking-[0.16em] text-sf-text-tertiary'>
 							链接
 						</h3>
@@ -108,13 +125,6 @@ export function TaskPreview({
 						</div>
 					</section>
 				) : null}
-
-				<footer className={taskPreviewFooterClass}>
-					<Badge className='rounded-full px-2 py-0.5 text-[11px]' variant='secondary'>
-						{placementLabel}
-					</Badge>
-					<span className='truncate'>更新于 {formatUpdatedAt(task.updatedAt)}</span>
-				</footer>
 			</section>
 		</div>
 	)
@@ -135,16 +145,6 @@ function MetaPill({ icon, label }: { icon: ReactNode; label: string | null }) {
 
 function StatusDot() {
 	return <CircleIcon className='size-3' />
-}
-
-function buildDateSummary(items: Array<{ label: string; value: string }>) {
-	if (items.length === 0) {
-		return null
-	}
-
-	return items
-		.map((item) => `${item.label}${item.value}`)
-		.join(' · ')
 }
 
 function formatUpdatedAt(value: string) {

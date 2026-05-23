@@ -23,7 +23,7 @@ export function TaskDrawerBody({ taskId, autosave, projects }: TaskDrawerBodyPro
 				<TaskTitleField autosave={autosave} />
 				<TaskNoteField autosave={autosave} />
 				{/* 属性块：状态、优先级、日期、项目、标签 */}
-				<div className='mt-3 space-y-1 border-t border-sf-divider pt-3'>
+				<div className='mt-3 space-y-2 border-t border-sf-divider pt-3'>
 					<TaskPropertiesSection autosave={autosave} />
 					<TaskProjectSection autosave={autosave} projects={projects} />
 					<TaskLabelsSection />

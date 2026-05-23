@@ -6,7 +6,9 @@ export function useTaskPreviewController() {
 	const context = useTaskPreviewContext()
 
 	return useMemo(() => {
-		const taskMap = new Map((context.source?.tasks ?? []).map((task) => [task.id, task]))
+		const previewSource =
+			context.source?.tasks.length === 0 ? context.sourceSnapshot : context.source
+		const taskMap = new Map((previewSource?.tasks ?? []).map((task) => [task.id, task]))
 		const targetTask = context.state.targetTaskId
 			? (taskMap.get(context.state.targetTaskId) ?? null)
 			: null
