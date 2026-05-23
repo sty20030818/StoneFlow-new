@@ -14,6 +14,7 @@ import {
 	updateTask,
 } from '@/features/task/api/tasks'
 import { emitEvent } from '@/shared/events'
+import { isScopeMatch } from '@/shared/lib/scope'
 import type {
 	CreateTaskInput,
 	LeaveInboxAsNoProjectInput,
@@ -64,6 +65,36 @@ async function fetchList(input: ListTasksInput) {
 		...input,
 		viewKey: input.viewKey ?? getDefaultTaskViewKey(),
 	})
+}
+
+export function isTaskListInputMatch(
+	input: ListTasksInput | null,
+	expected: ListTasksInput,
+): boolean {
+	if (!input) {
+		return false
+	}
+
+	return (
+		isScopeMatch(input.scope, expected.scope) &&
+		input.viewKey === expected.viewKey &&
+		isTaskPlacementMatch(input.placement, expected.placement)
+	)
+}
+
+function isTaskPlacementMatch(
+	left: ListTasksInput['placement'],
+	right: ListTasksInput['placement'],
+) {
+	if (left.kind !== right.kind) {
+		return false
+	}
+
+	if (left.kind === 'project' && right.kind === 'project') {
+		return left.projectId === right.projectId
+	}
+
+	return true
 }
 
 export const useTaskStore = create<TaskStoreState>((set, get) => {

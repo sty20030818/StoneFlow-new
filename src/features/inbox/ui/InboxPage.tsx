@@ -25,17 +25,30 @@ import {
 } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
-import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import {
-	useRegisterTaskPreviewSource,
-	useTaskPreviewController,
-} from '@/features/task/detail'
+	isTaskListInputMatch,
+	selectTaskList,
+	useTaskStore,
+} from '@/features/task/model/useTaskStore'
+import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { InboxIcon, PlusIcon } from 'lucide-react'
 
 export function InboxPage() {
 	const { scope, spaceId } = useScopeRoute()
 	const taskList = useTaskStore(selectTaskList)
 	const loadList = useTaskStore((state) => state.loadList)
+	const listInput = useMemo(
+		() => ({
+			scope,
+			viewKey: 'all' as const,
+			placement: { kind: 'inbox' as const },
+		}),
+		[scope],
+	)
+	const taskBoardStatus = isTaskListInputMatch(taskList.input, listInput)
+		? taskList.status
+		: 'loading'
+	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
 	const projectOptions = useProjectStore(selectProjectOptions)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
@@ -62,7 +75,7 @@ export function InboxPage() {
 		[projectOptions, spaceId],
 	)
 	const { controller, filteredTasks } = useTaskPageFilterController({
-		tasks: taskList.items,
+		tasks: taskSourceItems,
 		projects: inboxProjectOptions,
 		capabilities: {
 			supportsPriority: true,
@@ -112,12 +125,8 @@ export function InboxPage() {
 	})
 
 	useEffect(() => {
-		void loadList({
-			scope,
-			viewKey: 'all',
-			placement: { kind: 'inbox' },
-		})
-	}, [loadList, scope])
+		void loadList(listInput)
+	}, [loadList, listInput])
 
 	return (
 		<EntityScene
@@ -133,6 +142,7 @@ export function InboxPage() {
 				},
 				boardData: {
 					items: filteredTasks,
+					status: taskBoardStatus,
 					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
@@ -182,11 +192,7 @@ export function InboxPage() {
 				</MainCard.GhostAction>
 			}
 			onRefresh={() => {
-				void loadList({
-					scope,
-					viewKey: 'all',
-					placement: { kind: 'inbox' },
-				})
+				void loadList(listInput)
 			}}
 			sceneVariant='inbox'
 			toolbarPills={[

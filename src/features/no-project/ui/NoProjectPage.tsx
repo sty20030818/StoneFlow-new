@@ -14,11 +14,12 @@ import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import {
-	useRegisterTaskPreviewSource,
-	useTaskPreviewController,
-} from '@/features/task/detail'
+	isTaskListInputMatch,
+	selectTaskList,
+	useTaskStore,
+} from '@/features/task/model/useTaskStore'
+import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import {
@@ -44,6 +45,18 @@ export function NoProjectPage() {
 	const { scope } = useScopeRoute()
 	const taskList = useTaskStore(selectTaskList)
 	const loadList = useTaskStore((state) => state.loadList)
+	const listInput = useMemo(
+		() => ({
+			scope,
+			viewKey: 'all' as const,
+			placement: { kind: 'noProject' as const },
+		}),
+		[scope],
+	)
+	const taskBoardStatus = isTaskListInputMatch(taskList.input, listInput)
+		? taskList.status
+		: 'loading'
+	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
 	const projectOptions = useProjectStore(selectProjectOptions)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
@@ -64,7 +77,7 @@ export function NoProjectPage() {
 		leaveListTaskAsNoProject,
 	} = useTaskListController()
 	const { controller, filteredTasks } = useTaskPageFilterController({
-		tasks: taskList.items,
+		tasks: taskSourceItems,
 		capabilities: {
 			supportsPriority: true,
 			supportsStatus: true,
@@ -109,12 +122,8 @@ export function NoProjectPage() {
 	})
 
 	useEffect(() => {
-		void loadList({
-			scope,
-			viewKey: 'all',
-			placement: { kind: 'noProject' },
-		})
-	}, [loadList, scope])
+		void loadList(listInput)
+	}, [loadList, listInput])
 
 	return (
 		<EntityScene
@@ -135,6 +144,7 @@ export function NoProjectPage() {
 				},
 				boardData: {
 					items: filteredTasks,
+					status: taskBoardStatus,
 					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
@@ -187,11 +197,7 @@ export function NoProjectPage() {
 				</MainCard.GhostAction>
 			}
 			onRefresh={() => {
-				void loadList({
-					scope,
-					viewKey: 'all',
-					placement: { kind: 'noProject' },
-				})
+				void loadList(listInput)
 			}}
 			sceneVariant='no-project'
 			toolbarPills={NO_PROJECT_FILTERS.map((filter) => ({

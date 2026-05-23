@@ -57,6 +57,7 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			showProjectCellOptions={actions.showProjectCellOptions ?? showProjectCellOptions}
 			focusedTaskId={data.focusedTaskId ?? null}
 			selectedTaskIdSet={data.selectedTaskIdSet ?? new Set<string>()}
+			status={data.status ?? 'ready'}
 			statusOrder={config.statusOrder}
 			tasks={data.items ?? []}
 		/>

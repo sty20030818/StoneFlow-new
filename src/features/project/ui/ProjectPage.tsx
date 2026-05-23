@@ -22,11 +22,12 @@ import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
+import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import {
-	useRegisterTaskPreviewSource,
-	useTaskPreviewController,
-} from '@/features/task/detail'
-import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
+	isTaskListInputMatch,
+	selectTaskList,
+	useTaskStore,
+} from '@/features/task/model/useTaskStore'
 import type { TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import {
@@ -80,6 +81,21 @@ export function ProjectPage() {
 	const deleteProject = useProjectStore((state) => state.deleteProject)
 	const taskList = useTaskStore(selectTaskList)
 	const loadTaskList = useTaskStore((state) => state.loadList)
+	const listInput = useMemo(
+		() => ({
+			scope,
+			viewKey: 'all' as const,
+			placement: {
+				kind: 'project' as const,
+				projectId,
+			},
+		}),
+		[projectId, scope],
+	)
+	const taskBoardStatus = isTaskListInputMatch(taskList.input, listInput)
+		? taskList.status
+		: 'loading'
+	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
 	const {
 		pendingTaskId,
 		updateTaskStatus,
@@ -97,23 +113,16 @@ export function ProjectPage() {
 	useEffect(() => {
 		if (projectId) {
 			void loadDetail(projectId)
-			void loadTaskList({
-				scope,
-				viewKey: 'all',
-				placement: {
-					kind: 'project',
-					projectId,
-				},
-			})
+			void loadTaskList(listInput)
 		}
 		return () => {
 			clearDetail()
 		}
-	}, [clearDetail, loadDetail, loadTaskList, projectId, scope])
+	}, [clearDetail, loadDetail, loadTaskList, listInput, projectId])
 
 	const visibleTasks = useMemo(
-		() => taskList.items.filter((task) => task.archivedAt === null),
-		[taskList.items],
+		() => taskSourceItems.filter((task) => task.archivedAt === null),
+		[taskSourceItems],
 	)
 	const { controller, filteredTasks } = useTaskPageFilterController({
 		tasks: visibleTasks,
@@ -127,7 +136,9 @@ export function ProjectPage() {
 		},
 	})
 	useRegisterPageFilterController(controller)
-	const project = detail.item
+	const project = detail.projectId === projectId ? detail.item : null
+	const isProjectLoading =
+		detail.status === 'idle' || detail.status === 'loading' || detail.projectId !== projectId
 	const projectMoveOptions = useMemo(
 		() =>
 			project
@@ -194,6 +205,7 @@ export function ProjectPage() {
 				},
 				boardData: {
 					items: project ? filteredTasks : [],
+					status: project ? taskBoardStatus : isProjectLoading ? 'loading' : 'ready',
 					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
@@ -231,7 +243,7 @@ export function ProjectPage() {
 			}}
 			breadcrumb={<ProjectBreadcrumb projectName={project?.name ?? '项目'} />}
 			beforeBoard={
-				!project ? (
+				!project && !isProjectLoading ? (
 					<EmptyPage>
 						<Empty>
 							<EmptyHeader>
@@ -333,14 +345,7 @@ export function ProjectPage() {
 					return
 				}
 				void loadDetail(projectId)
-				void loadTaskList({
-					scope,
-					viewKey: 'all',
-					placement: {
-						kind: 'project',
-						projectId,
-					},
-				})
+				void loadTaskList(listInput)
 			}}
 			sceneVariant='project-detail'
 			toolbarPills={PROJECT_TASK_FILTERS.map((filter) => ({

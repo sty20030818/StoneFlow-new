@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
 	BoardCollapsibleSection,
 	BoardEmptyState,
+	BoardLoadingState,
 	BoardRoot,
 	BoardSectionContextMenu,
 	type BoardSection,
@@ -22,6 +23,7 @@ export type LifecycleBoardSection = BoardSection<LifecycleEntry>
 type LifecycleBoardProps = {
 	mode: LifecycleMode
 	sections: LifecycleBoardSection[]
+	status?: 'idle' | 'loading' | 'ready' | 'error'
 	pendingEntryId: string | null
 	emptyTitle: string
 	emptyDescription: string
@@ -58,6 +60,7 @@ type LifecycleBoardProps = {
 export function LifecycleBoard({
 	mode,
 	sections,
+	status = 'ready',
 	pendingEntryId,
 	emptyTitle,
 	emptyDescription,
@@ -98,7 +101,11 @@ export function LifecycleBoard({
 		setOpenSections(new Set(visibleSections.map((section) => section.key)))
 	}, [visibleSections])
 
-	if (visibleSections.length === 0) {
+	if (status === 'idle' || status === 'loading') {
+		return <BoardLoadingState />
+	}
+
+	if (status === 'ready' && visibleSections.length === 0) {
 		return (
 			<BoardEmptyState
 				actionLabel={emptyActionLabel}

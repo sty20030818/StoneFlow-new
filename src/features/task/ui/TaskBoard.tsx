@@ -8,6 +8,7 @@ import {
 import {
 	BoardCollapsibleSection,
 	BoardEmptyState,
+	BoardLoadingState,
 	BoardGroup,
 	BoardGroupHeader,
 	BoardRoot,
@@ -34,6 +35,7 @@ import { entityBoardSectionActionButtonClass } from '@/shared/ui/patterns/entity
 
 type TaskBoardProps = {
 	tasks: TaskListItem[]
+	status?: 'idle' | 'loading' | 'ready' | 'error'
 	customSections?: Array<{
 		key: string
 		label: string
@@ -81,6 +83,7 @@ type TaskBoardProps = {
 
 export function TaskBoard({
 	tasks,
+	status = 'ready',
 	customSections,
 	createProjectId = null,
 	pendingTaskId,
@@ -208,7 +211,11 @@ export function TaskBoard({
 		)
 	}
 
-	if (tasks.length === 0 && emptyTitle) {
+	if (status === 'idle' || status === 'loading') {
+		return <BoardLoadingState />
+	}
+
+	if (status === 'ready' && tasks.length === 0 && emptyTitle) {
 		return (
 			<BoardEmptyState
 				actionLabel={emptyActionLabel}

@@ -27,6 +27,7 @@ import {
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { selectProjectViews, useViewStore } from '@/features/view/model/useViewStore'
+import { isScopeMatch } from '@/shared/lib/scope'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -53,6 +54,11 @@ export function ProjectOverviewPage() {
 	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('all_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
 	const scopeKey = scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
+	const overviewStatus =
+		isScopeMatch(overview.scope, scope) && overview.viewKey === viewKey
+			? overview.status
+			: 'loading'
+	const overviewItems = overviewStatus === 'loading' ? [] : overview.items
 	const {
 		selectedIdSet: selectedProjectIds,
 		selectionSnapshot,
@@ -63,19 +69,19 @@ export function ProjectOverviewPage() {
 		setFocusedId: setFocusedProjectId,
 		moveFocus,
 		selectIds: selectProjectIds,
-	} = useEntitySelection(overview.items.map((item) => item.id))
+	} = useEntitySelection(overviewItems.map((item) => item.id))
 	const selectedProjects = useMemo(
-		() => overview.items.filter((project) => selectedProjectIds.has(project.id)),
-		[overview.items, selectedProjectIds],
+		() => overviewItems.filter((project) => selectedProjectIds.has(project.id)),
+		[overviewItems, selectedProjectIds],
 	)
 	const commandSelection = useMemo(
 		() =>
 			buildProjectCommandSelection({
 				selectedIds: selectionSnapshot.ids,
-				projects: overview.items,
+				projects: overviewItems,
 				clearSelection: clearProjectSelection,
 			}),
-		[clearProjectSelection, overview.items, selectionSnapshot.ids],
+		[clearProjectSelection, overviewItems, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
 	useEntitySelectionEscape({
@@ -139,8 +145,8 @@ export function ProjectOverviewPage() {
 					emptyTitle: getProjectOverviewEmptyTitle(viewKey),
 				},
 				boardData: {
-					items: overview.items,
-					status: overview.status,
+					items: overviewItems,
+					status: overviewStatus,
 					busyProjectId,
 					selectedProjectIds,
 					focusedProjectId,

@@ -311,15 +311,13 @@ export function BoardChevron({ className, ...props }: ComponentProps<'span'>) {
 	)
 }
 
-export function BoardLoadingState({
-	label = '正在读取列表…',
-	className,
-}: {
-	label?: ReactNode
-	className?: string
-}) {
+export function BoardLoadingState({ label, className }: { label?: ReactNode; className?: string }) {
+	if (!label) {
+		return <EmptyPage aria-busy='true' />
+	}
+
 	return (
-		<EmptyPage>
+		<EmptyPage aria-busy='true'>
 			<div className={cn(entityBoardLoadingCardClass, className)}>{label}</div>
 		</EmptyPage>
 	)

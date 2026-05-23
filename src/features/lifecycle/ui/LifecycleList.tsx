@@ -25,6 +25,7 @@ import {
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
+import { isScopeMatch } from '@/shared/lib/scope'
 import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
@@ -62,6 +63,8 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	const [entityFilter, setEntityFilter] = useState<LifecycleFilter>('all')
 
 	const slice = mode === 'archive' ? archiveEntries : trashEntries
+	const sliceStatus = isScopeMatch(slice.scope, scope) ? slice.status : 'loading'
+	const sliceItems = sliceStatus === 'loading' ? [] : slice.items
 	const {
 		selectedIdSet: selectedEntryIdSet,
 		selectionSnapshot,
@@ -72,20 +75,20 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 		setFocusedId: setFocusedEntryId,
 		moveFocus,
 		selectIds: selectEntryIds,
-	} = useEntitySelection(slice.items.map((entry) => entry.id))
+	} = useEntitySelection(sliceItems.map((entry) => entry.id))
 	const selectedEntries = useMemo(
-		() => slice.items.filter((entry) => selectedEntryIdSet.has(entry.id)),
-		[selectedEntryIdSet, slice.items],
+		() => sliceItems.filter((entry) => selectedEntryIdSet.has(entry.id)),
+		[selectedEntryIdSet, sliceItems],
 	)
 	const commandSelection = useMemo(
 		() =>
 			buildLifecycleCommandSelection({
 				selectedIds: selectionSnapshot.ids,
-				entries: slice.items,
+				entries: sliceItems,
 				mode,
 				clearSelection: clearEntrySelection,
 			}),
-		[clearEntrySelection, mode, selectionSnapshot.ids, slice.items],
+		[clearEntrySelection, mode, selectionSnapshot.ids, sliceItems],
 	)
 	useRegisterCommandSelection(commandSelection)
 	useEntitySelectionEscape({
@@ -94,15 +97,15 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	})
 	const showSpacePill = scope.type === 'all'
 	const scopeItems = showSpacePill
-		? slice.items
-		: slice.items.filter((entry) => entry.entityType !== 'space')
+		? sliceItems
+		: sliceItems.filter((entry) => entry.entityType !== 'space')
 	const lifecyclePills = [
 		{ key: 'all', label: `${mode === 'archive' ? '所有归档' : '所有删除'} ${scopeItems.length}` },
 		...(showSpacePill
 			? [
 					{
 						key: 'space' as const,
-						label: `空间 ${slice.items.filter((entry) => entry.entityType === 'space').length}`,
+						label: `空间 ${sliceItems.filter((entry) => entry.entityType === 'space').length}`,
 					},
 				]
 			: []),
@@ -160,8 +163,8 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	)
 
 	const sections = useMemo(
-		() => buildLifecycleSections(slice.items, entityFilter, mode, scope),
-		[entityFilter, mode, slice.items, scope],
+		() => buildLifecycleSections(sliceItems, entityFilter, mode, scope),
+		[entityFilter, mode, sliceItems, scope],
 	)
 
 	return (
@@ -180,6 +183,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 					},
 					boardData: {
 						sections,
+						status: sliceStatus,
 						pendingEntryId,
 						selectedEntryIdSet,
 						focusedEntryId,

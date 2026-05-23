@@ -1,12 +1,34 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { useState } from 'react'
+import { useState, type ReactElement } from 'react'
 
+import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ProjectBoard } from '@/features/project/ui/ProjectBoard'
 import type { ProjectOverviewItem } from '@/shared/types'
 
 describe('ProjectBoard', () => {
+	it('加载中不显示空态文案', () => {
+		renderProjectBoard(
+			<ProjectBoard
+				busyProjectId={null}
+				emptyDescription='empty'
+				emptyTitle='当前 Scope 还没有项目'
+				items={[]}
+				onArchive={() => undefined}
+				onComplete={() => undefined}
+				onDelete={() => undefined}
+				onOpen={() => undefined}
+				onReopen={() => undefined}
+				status='loading'
+				variant='overview'
+			/>,
+		)
+
+		expect(screen.queryByText('当前 Scope 还没有项目')).not.toBeInTheDocument()
+		expect(screen.queryByText('empty')).not.toBeInTheDocument()
+	})
+
 	it('按项目状态分区渲染项目总览', () => {
-		render(
+		renderProjectBoard(
 			<ProjectBoard
 				busyProjectId={null}
 				emptyDescription='empty'
@@ -52,7 +74,7 @@ describe('ProjectBoard', () => {
 	})
 
 	it('连续选中的项目行透传显式 group position', () => {
-		render(
+		renderProjectBoard(
 			<ProjectBoard
 				busyProjectId={null}
 				emptyDescription='empty'
@@ -85,7 +107,7 @@ describe('ProjectBoard', () => {
 
 	it('Shift 上下键使用通用 row shortcut 选择项目', () => {
 		const onToggleProjectSelection = vi.fn()
-		render(
+		renderProjectBoard(
 			<ProjectBoard
 				busyProjectId={null}
 				emptyDescription='empty'
@@ -114,7 +136,7 @@ describe('ProjectBoard', () => {
 	})
 
 	it('鼠标 hover 项目行时不显示键盘边框，移开后清除 hover', () => {
-		render(<ProjectBoardHoverHarness />)
+		renderProjectBoard(<ProjectBoardHoverHarness />)
 
 		const row = screen.getByRole('button', { name: '打开项目 项目 A' })
 
@@ -127,6 +149,10 @@ describe('ProjectBoard', () => {
 		expect(row.className).not.toContain('border-sf-border-subtle')
 	})
 })
+
+function renderProjectBoard(node: ReactElement) {
+	return render(<DangerConfirmProvider>{node}</DangerConfirmProvider>)
+}
 
 function ProjectBoardHoverHarness() {
 	const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null)

@@ -83,7 +83,10 @@ const mockTaskRunState = {
 	},
 	status: 'ready' as const,
 	error: null,
-	input: null,
+	input: {
+		scope: { type: 'all' as const },
+		viewId: 'view-today',
+	},
 }
 
 const mockViewStoreState = {
@@ -169,6 +172,14 @@ vi.mock('@/features/task/model/useTaskSelection', () => ({
 		selectedCount: 1,
 		toggleTaskSelection: vi.fn<(taskId: string) => void>(),
 		clearTaskSelection: vi.fn<() => void>(),
+	}),
+}))
+
+vi.mock('@/features/task/detail', () => ({
+	useRegisterTaskPreviewSource: vi.fn(),
+	useTaskPreviewController: () => ({
+		closePreview: vi.fn(),
+		openPreview: vi.fn(),
 	}),
 }))
 
@@ -267,6 +278,10 @@ describe('ViewsPage', () => {
 							type: 'task',
 							title: '系统视图任务',
 							subtitle: '阶段 8',
+							spaceId: 'space-1',
+							projectId: 'project-1',
+							inboxAt: null,
+							dueAt: '2026-05-03',
 							status: 'todo',
 							priority: '4',
 						},

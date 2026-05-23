@@ -40,6 +40,7 @@ export function LifecycleBoardAdapter({ config, data, actions }: LifecycleBoardA
 			pendingEntryId={data.pendingEntryId ?? null}
 			sections={data.sections}
 			selectedEntryIdSet={data.selectedEntryIdSet}
+			status={data.status ?? 'ready'}
 		/>
 	)
 }

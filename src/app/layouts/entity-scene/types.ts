@@ -23,6 +23,7 @@ export type EntitySceneVariant =
 	| 'settings'
 
 export type BoardKind = 'task' | 'project' | 'lifecycle'
+export type EntitySceneBoardStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 export type EntitySceneTaskBoardConfig = {
 	variant: 'inbox' | 'all-tasks' | 'view' | 'no-project' | 'project-detail'
@@ -41,6 +42,7 @@ export type EntitySceneTaskBoardConfig = {
 
 export type EntitySceneTaskBoardData = {
 	items?: TaskListItem[]
+	status?: EntitySceneBoardStatus
 	activeItemId?: string | null
 	pendingItemId?: string | null
 	selectedTaskIdSet?: Set<string>
@@ -87,7 +89,7 @@ export type EntitySceneProjectBoardConfig = {
 
 export type EntitySceneProjectBoardData = {
 	items?: ProjectOverviewItem[]
-	status?: 'idle' | 'loading' | 'ready' | 'error'
+	status?: EntitySceneBoardStatus
 	busyProjectId?: string | null
 	selectedProjectIds?: Set<string>
 	focusedProjectId?: string | null
@@ -124,6 +126,7 @@ export type EntitySceneLifecycleBoardConfig = {
 
 export type EntitySceneLifecycleBoardData = {
 	sections: BoardSection<LifecycleEntry>[]
+	status?: EntitySceneBoardStatus
 	pendingEntryId?: string | null
 	selectedEntryIdSet?: Set<string>
 	focusedEntryId?: string | null

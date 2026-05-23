@@ -63,8 +63,8 @@ export function ProjectBoard(props: ProjectBoardProps) {
 		() => new Set(PROJECT_SECTION_ORDER),
 	)
 
-	if (props.status === 'loading' && props.items.length === 0) {
-		return <BoardLoadingState label='正在读取项目列表…' />
+	if (props.status === 'idle' || props.status === 'loading') {
+		return <BoardLoadingState />
 	}
 
 	if (props.status === 'ready' && props.items.length === 0) {

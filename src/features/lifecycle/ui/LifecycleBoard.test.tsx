@@ -6,6 +6,25 @@ import { LifecycleBoard, type LifecycleBoardSection } from '@/features/lifecycle
 import type { LifecycleEntry } from '@/shared/types'
 
 describe('LifecycleBoard', () => {
+	it('加载中不显示空态文案', () => {
+		render(
+			<DangerConfirmProvider>
+				<LifecycleBoard
+					emptyDescription='empty'
+					emptyTitle='归档为空'
+					mode='archive'
+					onRestore={() => undefined}
+					pendingEntryId={null}
+					sections={[]}
+					status='loading'
+				/>
+			</DangerConfirmProvider>,
+		)
+
+		expect(screen.queryByText('归档为空')).not.toBeInTheDocument()
+		expect(screen.queryByText('empty')).not.toBeInTheDocument()
+	})
+
 	it('连续选中的生命周期行透传显式 group position', () => {
 		const sections: LifecycleBoardSection[] = [
 			{

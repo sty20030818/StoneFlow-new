@@ -16,11 +16,12 @@ import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
-import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import {
-	useRegisterTaskPreviewSource,
-	useTaskPreviewController,
-} from '@/features/task/detail'
+	isTaskListInputMatch,
+	selectTaskList,
+	useTaskStore,
+} from '@/features/task/model/useTaskStore'
+import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -49,6 +50,18 @@ export function AllTasksPage() {
 	const taskPreviewController = useTaskPreviewController()
 	const taskList = useTaskStore(selectTaskList)
 	const loadList = useTaskStore((state) => state.loadList)
+	const listInput = useMemo(
+		() => ({
+			scope,
+			viewKey: 'all' as const,
+			placement: { kind: 'all' as const },
+		}),
+		[scope],
+	)
+	const taskBoardStatus = isTaskListInputMatch(taskList.input, listInput)
+		? taskList.status
+		: 'loading'
+	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
 	const {
 		pendingTaskId,
 		updateTaskStatus,
@@ -64,7 +77,7 @@ export function AllTasksPage() {
 	} = useTaskListController()
 	const projectOptions = useProjectStore(selectProjectOptions)
 	const { controller, filteredTasks } = useTaskPageFilterController({
-		tasks: taskList.items,
+		tasks: taskSourceItems,
 		projects: projectOptions,
 		capabilities: {
 			supportsPriority: true,
@@ -110,12 +123,8 @@ export function AllTasksPage() {
 	})
 
 	useEffect(() => {
-		void loadList({
-			scope,
-			viewKey: 'all',
-			placement: { kind: 'all' },
-		})
-	}, [loadList, scope])
+		void loadList(listInput)
+	}, [loadList, listInput])
 
 	return (
 		<EntityScene
@@ -130,6 +139,7 @@ export function AllTasksPage() {
 				},
 				boardData: {
 					items: filteredTasks,
+					status: taskBoardStatus,
 					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
@@ -182,11 +192,7 @@ export function AllTasksPage() {
 				</MainCard.GhostAction>
 			}
 			onRefresh={() => {
-				void loadList({
-					scope,
-					viewKey: 'all',
-					placement: { kind: 'all' },
-				})
+				void loadList(listInput)
 			}}
 			sceneVariant='all-tasks'
 			toolbarPills={TASK_FILTERS.map((filter) => ({

@@ -17,10 +17,7 @@ import { useTaskListController } from '@/features/task/model/useTaskListControll
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
-import {
-	useRegisterTaskPreviewSource,
-	useTaskPreviewController,
-} from '@/features/task/detail'
+import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import {
 	selectTaskViewRun,
 	selectTaskViews,
@@ -29,6 +26,7 @@ import {
 import { ViewActionsMenu } from '@/features/view/ui/ViewActionsMenu'
 import { ViewEditorDialog } from '@/features/view/ui/ViewEditorDialog'
 import { useTaskChangedListener } from '@/shared/events'
+import { isScopeMatch } from '@/shared/lib/scope'
 import type { TaskListItem, View } from '@/shared/types'
 import {
 	Breadcrumb,
@@ -97,7 +95,23 @@ export function ViewsPage() {
 			null
 		)
 	}, [rawViewValue, taskViews.items, visibleViews])
-	const visibleTasks = useMemo(() => taskRun.item?.items ?? [], [taskRun.item?.items])
+	const isTaskRunCurrent =
+		!!activeView &&
+		!!taskRun.input &&
+		taskRun.input.viewId === activeView.id &&
+		isScopeMatch(taskRun.input.scope, scope)
+	const boardStatus =
+		taskViews.status === 'idle' ||
+		taskViews.status === 'loading' ||
+		(activeView && (!isTaskRunCurrent || taskRun.status === 'idle' || taskRun.status === 'loading'))
+			? 'loading'
+			: activeView
+				? taskRun.status
+				: 'ready'
+	const visibleTasks = useMemo(
+		() => (isTaskRunCurrent ? (taskRun.item?.items ?? []) : []),
+		[isTaskRunCurrent, taskRun.item?.items],
+	)
 
 	useEffect(() => {
 		void loadTaskViews()
@@ -250,6 +264,7 @@ export function ViewsPage() {
 					},
 					boardData: {
 						items: visibleTasks,
+						status: boardStatus,
 						activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 						pendingItemId: pendingTaskId,
 						selectedTaskIdSet,
@@ -296,10 +311,11 @@ export function ViewsPage() {
 				}
 				footer={
 					<div className='px-1 text-[12px] text-sf-text-tertiary'>
-						{taskRun.item?.view.description ??
-							(taskRun.item
+						{isTaskRunCurrent && taskRun.item?.view.description
+							? taskRun.item.view.description
+							: isTaskRunCurrent && taskRun.item
 								? `当前视图共 ${taskRun.item.items.length} 条任务`
-								: '正在准备视图数据')}
+								: '正在准备视图数据'}
 					</div>
 				}
 				headerActions={
