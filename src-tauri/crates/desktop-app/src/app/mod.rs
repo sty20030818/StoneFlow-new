@@ -1,6 +1,5 @@
 //! Tauri 宿主层：负责窗口、插件、命令注册与主运行时编排。
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
@@ -14,6 +13,7 @@ use crate::infrastructure::database::bootstrap_database;
 
 pub mod commands;
 pub mod error;
+pub mod exit_coordinator;
 pub mod helper_runtime;
 pub mod state;
 pub mod supervisor;
@@ -25,11 +25,6 @@ const MAIN_WINDOW_WIDTH: f64 = 1360.0;
 const MAIN_WINDOW_HEIGHT: f64 = 980.0;
 const MAIN_WINDOW_MIN_WIDTH: f64 = 500.0;
 const MAIN_WINDOW_MIN_HEIGHT: f64 = 520.0;
-
-#[derive(Default)]
-struct ExitControl {
-    allow_exit: AtomicBool,
-}
 
 fn build_main_window(app: &tauri::App) -> tauri::Result<()> {
     if app.get_webview_window(MAIN_WINDOW_LABEL).is_some() {
@@ -90,17 +85,25 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
                         }
                     }
                     MAIN_TRAY_QUIT_ID => {
-                        if let Some(exit_control) = app_handle.try_state::<ExitControl>() {
-                            exit_control.allow_exit.store(true, Ordering::SeqCst);
-                        }
-                        if let Some(handle) = app_handle.try_state::<supervisor::SupervisorHandle>()
-                        {
-                            handle.request_shutdown();
-                            handle.wait_stopped();
+                        let app_handle = app_handle.clone();
+                        tauri::async_runtime::spawn(async move {
+                            if let (Some(exit_coordinator), Some(handle)) = (
+                                app_handle.try_state::<exit_coordinator::ExitCoordinator>(),
+                                app_handle.try_state::<supervisor::SupervisorHandle>(),
+                            ) {
+                                if let Err(error) = exit_coordinator
+                                    .request_exit(
+                                        &handle,
+                                        exit_coordinator::ExitReason::TrayQuit,
+                                    )
+                                    .await
+                                {
+                                    log::warn!("tray quit 请求 helper 停止失败: {error}");
+                                }
+                            }
                             app_handle.exit(0);
-                        } else {
-                            app_handle.exit(0);
-                        }
+                        });
+                        return;
                     }
                     _ => {}
                 }
@@ -191,24 +194,20 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
 
             build_main_window(app)?;
 
-            // 启动 IPC server
-            let ipc_handle = tauri::async_runtime::block_on(helper_runtime::start_ipc_server(
+            let supervisor_handle =
+                supervisor::spawn_supervisor(app.handle().clone(), helper_state.clone());
+            tauri::async_runtime::block_on(supervisor_handle.start())?;
+
+            tauri::async_runtime::block_on(helper_runtime::start_ipc_server(
                 app.handle().clone(),
                 database_state,
                 active_scope_state,
                 helper_state.clone(),
+                supervisor_handle.clone(),
             ))?;
 
-            // 启动 supervisor
-            let supervisor = supervisor::HelperSupervisor::new(
-                app.handle().clone(),
-                helper_state.clone(),
-                ipc_handle.hello_notify,
-            );
-            let supervisor_handle = supervisor.handle();
             app.manage(supervisor_handle);
-            app.manage(ExitControl::default());
-            tauri::async_runtime::spawn(supervisor.run());
+            app.manage(exit_coordinator::ExitCoordinator::default());
             setup_tray(app)?;
             Ok(())
         })
@@ -230,22 +229,53 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
         .expect("failed to build StoneFlow Tauri application");
     app.run(|app_handle, event| match event {
         tauri::RunEvent::ExitRequested { ref api, .. } => {
-            let should_allow_exit = app_handle
-                .try_state::<ExitControl>()
-                .map(|state| state.allow_exit.load(Ordering::SeqCst))
-                .unwrap_or(false);
+            let should_allow_exit = if let Some(exit_coordinator) =
+                app_handle.try_state::<exit_coordinator::ExitCoordinator>()
+            {
+                tauri::async_runtime::block_on(exit_coordinator.should_allow_process_exit())
+            } else {
+                false
+            };
 
-            if !should_allow_exit {
-                api.prevent_exit();
-                if let Some(window) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
-                    let _ = window.hide();
-                }
+            if should_allow_exit {
+                return;
             }
+
+            api.prevent_exit();
+            let app_handle = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                if let (Some(exit_coordinator), Some(handle)) = (
+                    app_handle.try_state::<exit_coordinator::ExitCoordinator>(),
+                    app_handle.try_state::<supervisor::SupervisorHandle>(),
+                ) {
+                    if let Err(error) = exit_coordinator
+                        .request_exit(
+                            &handle,
+                            exit_coordinator::ExitReason::RunEventExitRequested,
+                        )
+                        .await
+                    {
+                        log::warn!("ExitRequested 请求 helper 停止失败: {error}");
+                    }
+                }
+                app_handle.exit(0);
+            });
         }
         tauri::RunEvent::Exit => {
-            if let Some(handle) = app_handle.try_state::<supervisor::SupervisorHandle>() {
-                handle.request_shutdown();
-            }
+            let app_handle = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                if let (Some(exit_coordinator), Some(handle)) = (
+                    app_handle.try_state::<exit_coordinator::ExitCoordinator>(),
+                    app_handle.try_state::<supervisor::SupervisorHandle>(),
+                ) {
+                    if let Err(error) = exit_coordinator
+                        .request_exit(&handle, exit_coordinator::ExitReason::RunEventExit)
+                        .await
+                    {
+                        log::warn!("Exit 请求 helper 停止失败: {error}");
+                    }
+                }
+            });
         }
         _ => {}
     });

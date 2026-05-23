@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from 'react'
+import { forwardRef, type ComponentProps, type ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/base/button'
@@ -21,32 +21,68 @@ export type MetadataFieldButtonProps = Omit<ComponentProps<typeof Button>, 'chil
 	appearance?: 'default' | 'row-icon'
 }
 
-export function MetadataFieldButton({
-	icon,
-	label,
-	trailing = null,
-	ariaLabel,
-	stopPropagation = false,
-	compact = false,
-	appearance = 'default',
-	className,
-	onClick,
-	onKeyDownCapture,
-	onPointerDown,
-	variant = 'outline',
-	size = 'sm',
-	type = 'button',
-	...props
-}: MetadataFieldButtonProps) {
-	if (appearance === 'row-icon') {
+export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldButtonProps>(
+	function MetadataFieldButton(
+		{
+			icon,
+			label,
+			trailing = null,
+			ariaLabel,
+			stopPropagation = false,
+			compact = false,
+			appearance = 'default',
+			className,
+			onClick,
+			onKeyDownCapture,
+			onPointerDown,
+			variant = 'outline',
+			size = 'sm',
+			type = 'button',
+			...props
+		},
+		ref,
+	) {
+		if (appearance === 'row-icon') {
+			return (
+				<button
+					{...props}
+					aria-label={ariaLabel}
+					className={cn(
+						'flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-foreground shadow-none transition-colors outline-none focus-visible:border-border focus-visible:ring-0 disabled:pointer-events-none disabled:opacity-50',
+						className,
+					)}
+					onClick={(event) => {
+						if (stopPropagation) {
+							stopMetadataFieldEventPropagation(event)
+						}
+						onClick?.(event)
+					}}
+					onKeyDownCapture={(event) => {
+						if (stopPropagation) {
+							stopMetadataFieldEventPropagation(event)
+						}
+						onKeyDownCapture?.(event)
+					}}
+					onPointerDown={(event) => {
+						if (stopPropagation) {
+							stopMetadataFieldEventPropagation(event)
+						}
+						onPointerDown?.(event)
+					}}
+					ref={ref}
+					type={type}
+				>
+					{icon}
+					<span className='sr-only'>{label}</span>
+				</button>
+			)
+		}
+
 		return (
-			<button
+			<Button
 				{...props}
 				aria-label={ariaLabel}
-				className={cn(
-					'flex size-5 shrink-0 items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-foreground shadow-none transition-colors outline-none focus-visible:border-border focus-visible:ring-0 disabled:pointer-events-none disabled:opacity-50',
-					className,
-				)}
+				className={cn(compact ? 'max-w-45' : 'max-w-52', className)}
 				onClick={(event) => {
 					if (stopPropagation) {
 						stopMetadataFieldEventPropagation(event)
@@ -65,46 +101,17 @@ export function MetadataFieldButton({
 					}
 					onPointerDown?.(event)
 				}}
+				ref={ref}
+				size={size}
 				type={type}
+				variant={variant}
 			>
 				{icon}
-				<span className='sr-only'>{label}</span>
-			</button>
+				<span className='min-w-0 truncate'>{label}</span>
+				{trailing}
+			</Button>
 		)
-	}
-
-	return (
-		<Button
-			{...props}
-			aria-label={ariaLabel}
-			className={cn(compact ? 'max-w-45' : 'max-w-52', className)}
-			onClick={(event) => {
-				if (stopPropagation) {
-					stopMetadataFieldEventPropagation(event)
-				}
-				onClick?.(event)
-			}}
-			onKeyDownCapture={(event) => {
-				if (stopPropagation) {
-					stopMetadataFieldEventPropagation(event)
-				}
-				onKeyDownCapture?.(event)
-			}}
-			onPointerDown={(event) => {
-				if (stopPropagation) {
-					stopMetadataFieldEventPropagation(event)
-				}
-				onPointerDown?.(event)
-			}}
-			size={size}
-			type={type}
-			variant={variant}
-		>
-			{icon}
-			<span className='min-w-0 truncate'>{label}</span>
-			{trailing}
-		</Button>
-	)
-}
+	},
+)
 
 export { stopMetadataFieldEventPropagation }

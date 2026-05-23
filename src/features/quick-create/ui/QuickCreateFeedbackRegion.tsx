@@ -1,9 +1,14 @@
-import type { ComponentProps } from 'react'
+import { forwardRef, type ComponentProps } from 'react'
 
 import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import { cn } from '@/shared/lib/utils'
 
-export function QuickCreateFeedbackRegion({ className, ref, ...props }: ComponentProps<'div'>) {
+type QuickCreateFeedbackRegionProps = Omit<ComponentProps<'div'>, 'ref'>
+
+export const QuickCreateFeedbackRegion = forwardRef<
+	HTMLDivElement,
+	QuickCreateFeedbackRegionProps
+>(function QuickCreateFeedbackRegion({ className, ...props }, ref) {
 	const { derived, state } = useQuickCreate()
 
 	if (!derived.continuousToastVisible) {
@@ -25,4 +30,4 @@ export function QuickCreateFeedbackRegion({ className, ref, ...props }: Componen
 			<span>已连续创建 {state.continuousCreateCount} 条</span>
 		</div>
 	)
-}
+})

@@ -1,8 +1,4 @@
-//! 主 App -> Helper 控制 IPC server。
-
 use std::io;
-use std::sync::Arc;
-use std::time::Duration;
 
 use interprocess::local_socket::{
     tokio::{prelude::*, Listener},
@@ -14,49 +10,43 @@ use stoneflow_ipc_protocol::{
 };
 use tauri::{AppHandle, Manager, Wry};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::sync::Notify;
 
 use crate::{
-    commands::window::shutdown_quick_create,
+    lifecycle::{shutdown::execute_shutdown, state::HelperLifecycleState},
     runtime::QuickPopupRuntimeState,
 };
 
-pub fn spawn_control_server(app_handle: AppHandle<Wry>, shutdown_notify: Arc<Notify>) {
+pub fn spawn_control_plane(app_handle: AppHandle<Wry>) {
     tauri::async_runtime::spawn(async move {
         let listener = match bind_listener(&helper_control_socket_name()) {
             Ok(listener) => listener,
             Err(error) => {
-                log::error!("helper: control server bind 失败: {error}");
+                log::error!("helper: control plane bind 失败: {error}");
                 return;
             }
         };
 
-        run_control_server(listener, app_handle, shutdown_notify).await;
+        run_control_plane(listener, app_handle).await;
     });
 }
 
-async fn run_control_server(
-    listener: Listener,
-    app_handle: AppHandle<Wry>,
-    shutdown_notify: Arc<Notify>,
-) {
+async fn run_control_plane(listener: Listener, app_handle: AppHandle<Wry>) {
     loop {
         let stream = match listener.accept().await {
             Ok(stream) => stream,
             Err(error) => {
-                log::error!("helper: control server accept 失败: {error}");
+                log::error!("helper: control plane accept 失败: {error}");
                 break;
             }
         };
 
         let app_handle = app_handle.clone();
-        let shutdown_notify = shutdown_notify.clone();
         tauri::async_runtime::spawn(async move {
-            if let Err(error) = handle_connection(stream, app_handle, shutdown_notify).await {
+            if let Err(error) = handle_connection(stream, app_handle).await {
                 if error.kind() == io::ErrorKind::UnexpectedEof {
-                    log::debug!("helper: control connection early eof");
+                    log::debug!("helper: control plane connection early eof");
                 } else {
-                    log::warn!("helper: control request 处理失败: {error}");
+                    log::warn!("helper: control plane 请求处理失败: {error}");
                 }
             }
         });
@@ -66,7 +56,6 @@ async fn run_control_server(
 async fn handle_connection(
     stream: interprocess::local_socket::tokio::Stream,
     app_handle: AppHandle<Wry>,
-    shutdown_notify: Arc<Notify>,
 ) -> Result<(), io::Error> {
     let (mut reader, mut writer) = stream.split();
     let mut len_buf = [0_u8; 4];
@@ -95,18 +84,14 @@ async fn handle_connection(
         }
     };
 
-    let response = dispatch_control_request(request, &app_handle, &shutdown_notify).await;
+    let response = dispatch_request(app_handle, request).await;
     write_response(&mut writer, &response).await
 }
 
-async fn dispatch_control_request(
-    request: IpcRequest,
-    app_handle: &AppHandle<Wry>,
-    shutdown_notify: &Arc<Notify>,
-) -> IpcResponse {
+async fn dispatch_request(app_handle: AppHandle<Wry>, request: IpcRequest) -> IpcResponse {
     match request {
         IpcRequest::HelperShutdown(payload) => {
-            match handle_shutdown_request(app_handle.clone(), shutdown_notify.clone(), payload).await {
+            match handle_shutdown_request(app_handle, payload).await {
                 Ok(response) => response,
                 Err(error) => IpcResponse::Error(error),
             }
@@ -119,58 +104,38 @@ async fn dispatch_control_request(
 
 async fn handle_shutdown_request(
     app_handle: AppHandle<Wry>,
-    shutdown_notify: Arc<Notify>,
     payload: HelperShutdownPayload,
 ) -> Result<IpcResponse, IpcError> {
+    let Some(lifecycle) = app_handle.try_state::<HelperLifecycleState>() else {
+        return Err(IpcError::Internal("helper lifecycle 未注册".to_owned()));
+    };
     let Some(runtime) = app_handle.try_state::<QuickPopupRuntimeState>() else {
         return Err(IpcError::Internal("quick popup runtime 未注册".to_owned()));
     };
-    let runtime = runtime.inner().clone();
-    let started = runtime.begin_shutdown().await;
-    let phase = if started {
-        "shutdown_requested"
-    } else {
-        "shutting_down"
-    };
 
+    let phase = lifecycle.begin_shutdown().await;
     let response = IpcResponse::HelperShutdownAck(HelperShutdownAckPayload {
         accepted: true,
-        phase: phase.to_owned(),
+        phase: phase.clone(),
     });
 
-    if started {
+    if phase == "shutdown_requested" {
+        let lifecycle = lifecycle.inner().clone();
+        let runtime = runtime.inner().clone();
         tauri::async_runtime::spawn(async move {
-            if let Err(error) =
-                shutdown_helper_process(app_handle, runtime, payload, shutdown_notify).await
-            {
-                log::warn!("helper: graceful shutdown 执行失败: {error}");
-            }
+            log::info!(
+                "helper: 收到 graceful shutdown 请求 reason={:?} deadline_ms={}",
+                payload.reason,
+                payload.deadline_ms
+            );
+            lifecycle.advance_shutdown_phase("closing_session").await;
+            execute_shutdown(&app_handle, &runtime).await;
+            lifecycle.advance_shutdown_phase("exiting").await;
+            app_handle.exit(0);
         });
     }
 
     Ok(response)
-}
-
-async fn shutdown_helper_process(
-    app_handle: AppHandle<Wry>,
-    runtime: QuickPopupRuntimeState,
-    payload: HelperShutdownPayload,
-    shutdown_notify: Arc<Notify>,
-) -> Result<(), String> {
-    log::info!(
-        "helper: 收到 graceful shutdown 请求 reason={:?} deadline_ms={}",
-        payload.reason,
-        payload.deadline_ms
-    );
-
-    shutdown_quick_create(&app_handle, &runtime).await;
-    runtime.mark_frontend_unready().await;
-    shutdown_notify.notify_waiters();
-
-    let deadline = Duration::from_millis(payload.deadline_ms);
-    tokio::time::sleep(deadline.min(Duration::from_millis(50))).await;
-    app_handle.exit(0);
-    Ok(())
 }
 
 fn bind_listener(socket: &SocketName) -> Result<Listener, io::Error> {
@@ -207,24 +172,3 @@ async fn write_response(
     writer.flush().await
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use stoneflow_ipc_protocol::HelperShutdownReason;
-
-    #[test]
-    fn shutdown_ack_payload_should_express_accepted_phase() {
-        let response = IpcResponse::HelperShutdownAck(HelperShutdownAckPayload {
-            accepted: true,
-            phase: "shutdown_requested".to_owned(),
-        });
-        let json = serde_json::to_string(&response).expect("response should serialize");
-        assert!(json.contains("helper_shutdown_ack"));
-        assert!(json.contains("shutdown_requested"));
-        let payload = HelperShutdownPayload {
-            reason: HelperShutdownReason::SupervisorStop,
-            deadline_ms: 2_000,
-        };
-        assert_eq!(payload.deadline_ms, 2_000);
-    }
-}

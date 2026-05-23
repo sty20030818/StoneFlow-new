@@ -399,12 +399,12 @@ function ShellLayoutContent({
 	}, [consumePendingTaskOpenIntent, openEntityDrawer, pathname, pendingTaskOpenIntent, spaceStatus])
 
 	useEffect(() => {
-		if (!activeDetail) {
+		if (!activeDetail || !taskPreviewController.previewState.open) {
 			return
 		}
 
 		taskPreviewController.closePreview()
-	}, [activeDetail, taskPreviewController])
+	}, [activeDetail, taskPreviewController.closePreview, taskPreviewController.previewState.open])
 
 	const handleCommandOpen = useMemo(
 		() => (payload: CommandOpenPayload) => {

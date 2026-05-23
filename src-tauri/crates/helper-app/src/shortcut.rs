@@ -4,6 +4,7 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 use crate::commands::window::prepare_quick_create_session;
+use crate::lifecycle::HelperLifecycleState;
 use crate::runtime::{QuickPopupCloseReason, QuickPopupRuntimeState};
 use crate::window_controller;
 use crate::window_spec::QUICK_CREATE_SHORTCUT;
@@ -40,13 +41,17 @@ pub fn register_global_shortcut(app_handle: &AppHandle<tauri::Wry>) {
 }
 
 async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
+    let Some(lifecycle) = app_handle.try_state::<HelperLifecycleState>() else {
+        log::error!("helper: lifecycle state 未注册");
+        return;
+    };
     let Some(runtime) = app_handle.try_state::<QuickPopupRuntimeState>() else {
         log::error!("helper: quick popup runtime 未注册");
         return;
     };
 
-    if runtime.is_shutting_down().await {
-        log::warn!("helper: shutdown 中忽略全局快捷键触发");
+    if let Err(message) = lifecycle.guard_running("shortcut").await {
+        log::warn!("helper: {message}");
         return;
     }
 
@@ -90,14 +95,15 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
         return;
     }
 
-    if !runtime.is_frontend_ready().await {
+    if !lifecycle.is_frontend_ready().await {
         log::warn!("helper: quick create 前端未 ready，拒绝本次打开");
         runtime.mark_error().await;
         runtime.reset_to_idle().await;
         return;
     }
 
-    match prepare_quick_create_session(app_handle.clone(), runtime.inner()).await {
+    match prepare_quick_create_session(app_handle.clone(), lifecycle.inner(), runtime.inner()).await
+    {
         Ok(response) => {
             log::info!("helper: 打开 quick create session={}", response.session_id);
         }

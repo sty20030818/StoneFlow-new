@@ -4,6 +4,7 @@ use tauri::{Emitter, LogicalSize, Manager, Size};
 use crate::{
     ipc_client,
     commands::domain::{helper_quick_get_initial_state, HelperQuickInitialStateResponse},
+    lifecycle::HelperLifecycleState,
     runtime::{QuickPopupCloseReason, QuickPopupRuntimeState},
     window_controller,
     window_spec::{QUICK_CREATE_LABEL, QUICK_CREATE_WINDOW_MIN_HEIGHT, QUICK_CREATE_WINDOW_WIDTH},
@@ -54,16 +55,18 @@ pub enum HelperQuickCloseReasonInput {
 
 pub async fn prepare_quick_create_session(
     app_handle: tauri::AppHandle,
+    lifecycle: &HelperLifecycleState,
     runtime: &QuickPopupRuntimeState,
 ) -> Result<HelperQuickOpenSessionResponse, QuickCreateErrorPayload> {
-    if runtime.is_shutting_down().await {
-        return Err(QuickCreateErrorPayload {
+    lifecycle
+        .guard_running("prepare_session")
+        .await
+        .map_err(|message| QuickCreateErrorPayload {
             type_: "Internal",
-            message: "helper 正在关闭，无法准备 quick create session".to_owned(),
-        });
-    }
+            message: message.to_owned(),
+        })?;
 
-    if !runtime.is_frontend_ready().await {
+    if !lifecycle.is_frontend_ready().await {
         return Err(QuickCreateErrorPayload {
             type_: "Internal",
             message: "quick create 前端未 ready，无法准备 session".to_owned(),
@@ -156,9 +159,10 @@ pub async fn emit_quick_create_session_invalidated(
 #[tauri::command]
 pub async fn helper_quick_prepare_session(
     app_handle: tauri::AppHandle,
+    lifecycle: tauri::State<'_, HelperLifecycleState>,
     runtime: tauri::State<'_, QuickPopupRuntimeState>,
 ) -> Result<HelperQuickOpenSessionResponse, QuickCreateErrorPayload> {
-    prepare_quick_create_session(app_handle, runtime.inner()).await
+    prepare_quick_create_session(app_handle, lifecycle.inner(), runtime.inner()).await
 }
 
 #[tauri::command]
@@ -233,9 +237,18 @@ pub async fn helper_quick_commit_layout(
 #[tauri::command]
 pub async fn helper_quick_present_session(
     app_handle: tauri::AppHandle,
+    lifecycle: tauri::State<'_, HelperLifecycleState>,
     runtime: tauri::State<'_, QuickPopupRuntimeState>,
     input: HelperQuickSessionInput,
 ) -> Result<(), QuickCreateErrorPayload> {
+    lifecycle
+        .guard_running("present_session")
+        .await
+        .map_err(|message| QuickCreateErrorPayload {
+            type_: "Internal",
+            message: message.to_owned(),
+        })?;
+
     runtime
         .mark_presenting_for(&input.session_id)
         .await
@@ -290,18 +303,18 @@ pub async fn helper_quick_close_session(
 
 #[tauri::command]
 pub async fn helper_quick_frontend_ready(
-    runtime: tauri::State<'_, QuickPopupRuntimeState>,
+    lifecycle: tauri::State<'_, HelperLifecycleState>,
 ) -> Result<(), QuickCreateErrorPayload> {
-    apply_frontend_ready(runtime.inner(), || ipc_client::notify_window_ready()).await?;
+    apply_frontend_ready(lifecycle.inner(), || ipc_client::notify_window_ready()).await?;
     log::debug!("helper: quick create 前端监听器已就绪");
     Ok(())
 }
 
 #[tauri::command]
 pub async fn helper_quick_frontend_unready(
-    runtime: tauri::State<'_, QuickPopupRuntimeState>,
+    lifecycle: tauri::State<'_, HelperLifecycleState>,
 ) -> Result<(), QuickCreateErrorPayload> {
-    apply_frontend_unready(runtime.inner(), || ipc_client::notify_window_unready()).await?;
+    apply_frontend_unready(lifecycle.inner(), || ipc_client::notify_window_unready()).await?;
     log::debug!("helper: quick create 前端监听器已卸载");
     Ok(())
 }
@@ -349,14 +362,14 @@ pub async fn shutdown_quick_create(
 }
 
 async fn apply_frontend_ready<F, Fut>(
-    runtime: &QuickPopupRuntimeState,
+    lifecycle: &HelperLifecycleState,
     notify: F,
 ) -> Result<(), QuickCreateErrorPayload>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), stoneflow_ipc_protocol::IpcError>>,
 {
-    runtime.mark_frontend_ready().await;
+    lifecycle.mark_frontend_ready().await;
     notify().await.map_err(|error| QuickCreateErrorPayload {
         type_: "Internal",
         message: format!("quick create window ready 上报失败: {error}"),
@@ -365,14 +378,14 @@ where
 }
 
 async fn apply_frontend_unready<F, Fut>(
-    runtime: &QuickPopupRuntimeState,
+    lifecycle: &HelperLifecycleState,
     notify: F,
 ) -> Result<(), QuickCreateErrorPayload>
 where
     F: FnOnce() -> Fut,
     Fut: std::future::Future<Output = Result<(), stoneflow_ipc_protocol::IpcError>>,
 {
-    runtime.mark_frontend_unready().await;
+    lifecycle.mark_frontend_unready().await;
     notify().await.map_err(|error| QuickCreateErrorPayload {
         type_: "Internal",
         message: format!("quick create window unready 上报失败: {error}"),
@@ -437,11 +450,11 @@ mod tests {
 
     #[tokio::test]
     async fn frontend_ready_should_mark_runtime_and_notify_main_app() {
-        let runtime = QuickPopupRuntimeState::default();
+        let lifecycle = HelperLifecycleState::default();
         let notify_calls = Arc::new(AtomicUsize::new(0));
         let notify_calls_for_closure = notify_calls.clone();
 
-        apply_frontend_ready(&runtime, move || {
+        apply_frontend_ready(&lifecycle, move || {
             let notify_calls = notify_calls_for_closure.clone();
             async move {
                 notify_calls.fetch_add(1, Ordering::SeqCst);
@@ -451,18 +464,18 @@ mod tests {
         .await
         .expect("frontend ready should succeed");
 
-        assert!(runtime.is_frontend_ready().await);
+        assert!(lifecycle.is_frontend_ready().await);
         assert_eq!(notify_calls.load(Ordering::SeqCst), 1);
     }
 
     #[tokio::test]
     async fn frontend_unready_should_clear_runtime_and_notify_main_app() {
-        let runtime = QuickPopupRuntimeState::default();
-        runtime.mark_frontend_ready().await;
+        let lifecycle = HelperLifecycleState::default();
+        lifecycle.mark_frontend_ready().await;
         let notify_calls = Arc::new(AtomicUsize::new(0));
         let notify_calls_for_closure = notify_calls.clone();
 
-        apply_frontend_unready(&runtime, move || {
+        apply_frontend_unready(&lifecycle, move || {
             let notify_calls = notify_calls_for_closure.clone();
             async move {
                 notify_calls.fetch_add(1, Ordering::SeqCst);
@@ -472,21 +485,21 @@ mod tests {
         .await
         .expect("frontend unready should succeed");
 
-        assert!(!runtime.is_frontend_ready().await);
+        assert!(!lifecycle.is_frontend_ready().await);
         assert_eq!(notify_calls.load(Ordering::SeqCst), 1);
     }
 
     #[tokio::test]
     async fn frontend_ready_should_return_notify_error() {
-        let runtime = QuickPopupRuntimeState::default();
+        let lifecycle = HelperLifecycleState::default();
 
-        let error = apply_frontend_ready(&runtime, || async {
+        let error = apply_frontend_ready(&lifecycle, || async {
             Err(IpcError::Internal("notify failed".to_owned()))
         })
         .await
         .expect_err("notify failure should bubble up");
 
-        assert!(runtime.is_frontend_ready().await);
+        assert!(lifecycle.is_frontend_ready().await);
         assert_eq!(error.type_, "Internal");
         assert!(error.message.contains("quick create window ready 上报失败"));
     }

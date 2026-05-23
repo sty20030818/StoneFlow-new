@@ -2,7 +2,7 @@
 
 use crate::app::state::{
     ActiveScopeKind, ActiveScopeSnapshot, ActiveScopeState, CommandHelperState,
-    HelperLifecycleStage, IpcServerStatus,
+    HelperExitKind, HelperLifecycleStage, IpcServerStatus,
 };
 use crate::domain::next_runtime_id;
 use crate::infrastructure::database::DatabaseRuntimeSnapshot;
@@ -58,6 +58,10 @@ async fn command_helper_snapshot_should_start_with_new_lifecycle_shape() {
     assert_eq!(snapshot.last_shutdown_ack_at, None);
     assert_eq!(snapshot.last_shutdown_reason, None);
     assert!(!snapshot.shutdown_requested);
+    assert_eq!(snapshot.last_exit_kind, None);
+    assert_eq!(snapshot.last_exit_code, None);
+    assert_eq!(snapshot.last_exit_reason, None);
+    assert_eq!(snapshot.last_exit_at, None);
 }
 
 #[tokio::test]
@@ -139,10 +143,16 @@ async fn command_helper_state_should_preserve_new_fields_across_terminal_states(
     state
         .mark_shutdown_acknowledged("2026-05-23T00:00:03Z".to_owned())
         .await;
-    state.set_shutdown_requested(true).await;
     state.mark_shutting_down().await;
     state.mark_helper_restarting("restart".to_owned()).await;
-    state.mark_helper_crashed("crash".to_owned()).await;
+    state
+        .mark_helper_crashed(
+            "crash".to_owned(),
+            Some(1),
+            "crash".to_owned(),
+            "2026-05-23T00:00:04Z".to_owned(),
+        )
+        .await;
     state.mark_helper_disconnected("disconnected".to_owned()).await;
 
     let snapshot = state.snapshot().await;
@@ -165,4 +175,8 @@ async fn command_helper_state_should_preserve_new_fields_across_terminal_states(
         Some("supervisor_stop")
     );
     assert_eq!(snapshot.restart_count, 1);
+    assert_eq!(snapshot.last_exit_kind, Some(HelperExitKind::Crash));
+    assert_eq!(snapshot.last_exit_code, Some(1));
+    assert_eq!(snapshot.last_exit_reason.as_deref(), Some("crash"));
+    assert_eq!(snapshot.last_exit_at.as_deref(), Some("2026-05-23T00:00:04Z"));
 }

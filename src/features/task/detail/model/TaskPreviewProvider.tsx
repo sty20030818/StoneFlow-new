@@ -91,14 +91,26 @@ export function TaskPreviewProvider({ children }: PropsWithChildren) {
 			window.clearTimeout(closeTimerRef.current)
 			closeTimerRef.current = null
 		}
-		setState((current) => ({
-			...current,
-			open: false,
-			targetTaskId: null,
-			closeDelayState: 'idle',
-			lastAnchorReason: null,
-			linkSummary: null,
-		}))
+		setState((current) => {
+			if (
+				!current.open &&
+				current.targetTaskId === null &&
+				current.closeDelayState === 'idle' &&
+				current.lastAnchorReason === null &&
+				current.linkSummary === null
+			) {
+				return current
+			}
+
+			return {
+				...current,
+				open: false,
+				targetTaskId: null,
+				closeDelayState: 'idle',
+				lastAnchorReason: null,
+				linkSummary: null,
+			}
+		})
 	}, [])
 
 	const openPreview = useCallback(

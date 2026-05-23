@@ -5,8 +5,9 @@ use tauri::State;
 
 use crate::app::{
     error::AppError,
+    exit_coordinator::{ExitCoordinator, ExitReason},
     state::{CommandHelperSnapshot, CommandHelperState, PendingCommandOpenIntent},
-    supervisor,
+    supervisor::SupervisorHandle,
 };
 
 #[tauri::command]
@@ -18,9 +19,13 @@ pub async fn restore_main_window(app_handle: tauri::AppHandle) -> Result<(), App
 pub async fn quit_stoneflow(
     app_handle: tauri::AppHandle,
 ) -> Result<(), AppError> {
-    if let Some(handle) = app_handle.try_state::<supervisor::SupervisorHandle>() {
-        handle.request_shutdown();
-        handle.wait_stopped();
+    if let (Some(exit_coordinator), Some(handle)) = (
+        app_handle.try_state::<ExitCoordinator>(),
+        app_handle.try_state::<SupervisorHandle>(),
+    ) {
+        exit_coordinator
+            .request_exit(&handle, ExitReason::CommandQuit)
+            .await?;
     }
     app_handle.exit(0);
     Ok(())

@@ -67,6 +67,17 @@ pub enum IpcServerStatus {
     Error,
 }
 
+/// Helper 最近一次退出分类。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum HelperExitKind {
+    ExpectedShutdown,
+    Crash,
+    TerminateFallback,
+    KillFallback,
+    ProtocolError,
+}
+
 /// Helper 运行态快照。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -89,6 +100,10 @@ pub struct CommandHelperSnapshot {
     pub last_helper_error: Option<String>,
     pub restart_count: u32,
     pub shutdown_requested: bool,
+    pub last_exit_kind: Option<HelperExitKind>,
+    pub last_exit_code: Option<i32>,
+    pub last_exit_reason: Option<String>,
+    pub last_exit_at: Option<String>,
 }
 
 impl Default for CommandHelperSnapshot {
@@ -112,6 +127,10 @@ impl Default for CommandHelperSnapshot {
             last_helper_error: None,
             restart_count: 0,
             shutdown_requested: false,
+            last_exit_kind: None,
+            last_exit_code: None,
+            last_exit_reason: None,
+            last_exit_at: None,
         }
     }
 }
@@ -120,7 +139,6 @@ impl Default for CommandHelperSnapshot {
 #[derive(Debug, Clone, Default)]
 pub struct CommandHelperState {
     snapshot: Arc<RwLock<CommandHelperSnapshot>>,
-    shutdown_requested: Arc<RwLock<bool>>,
     pending_command_open: Arc<RwLock<Option<PendingCommandOpenIntent>>>,
 }
 
@@ -138,12 +156,7 @@ pub struct PendingCommandOpenIntent {
 impl CommandHelperState {
     /// 读取运行态快照。
     pub async fn snapshot(&self) -> CommandHelperSnapshot {
-        let snapshot = self.snapshot.read().await.clone();
-        let shutdown_requested = *self.shutdown_requested.read().await;
-        CommandHelperSnapshot {
-            shutdown_requested,
-            ..snapshot
-        }
+        self.snapshot.read().await.clone()
     }
 
     /// 更新 IPC server 状态。
@@ -161,8 +174,7 @@ impl CommandHelperState {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
         snapshot.lifecycle_stage = HelperLifecycleStage::Starting;
-        snapshot.helper_binary_path =
-            helper_binary_path.map(|path| path.display().to_string());
+        snapshot.helper_binary_path = helper_binary_path.map(|path| path.display().to_string());
         snapshot.helper_pid = None;
         snapshot.last_helper_error = None;
     }
@@ -177,6 +189,7 @@ impl CommandHelperState {
         snapshot.last_shutdown_requested_at = None;
         snapshot.last_shutdown_ack_at = None;
         snapshot.last_shutdown_reason = None;
+        snapshot.shutdown_requested = false;
     }
 
     /// 记录 helper hello 完成。
@@ -226,21 +239,41 @@ impl CommandHelperState {
     }
 
     /// 记录 helper 已按预期关闭。
-    pub async fn mark_expected_shutdown_completed(&self) {
+    pub async fn mark_expected_shutdown_completed(
+        &self,
+        reason: impl Into<String>,
+        exit_code: Option<i32>,
+        exited_at: String,
+    ) {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
         snapshot.lifecycle_stage = HelperLifecycleStage::Disconnected;
         snapshot.helper_pid = None;
         snapshot.last_helper_error = None;
+        snapshot.shutdown_requested = false;
+        snapshot.last_exit_kind = Some(HelperExitKind::ExpectedShutdown);
+        snapshot.last_exit_code = exit_code;
+        snapshot.last_exit_reason = Some(reason.into());
+        snapshot.last_exit_at = Some(exited_at);
     }
 
     /// 记录 helper 崩溃。
-    pub async fn mark_helper_crashed(&self, error: impl Into<String>) {
+    pub async fn mark_helper_crashed(
+        &self,
+        error: impl Into<String>,
+        exit_code: Option<i32>,
+        exit_reason: impl Into<String>,
+        exited_at: String,
+    ) {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
         snapshot.lifecycle_stage = HelperLifecycleStage::Crashed;
         snapshot.helper_pid = None;
         snapshot.last_helper_error = Some(error.into());
+        snapshot.last_exit_kind = Some(HelperExitKind::Crash);
+        snapshot.last_exit_code = exit_code;
+        snapshot.last_exit_reason = Some(exit_reason.into());
+        snapshot.last_exit_at = Some(exited_at);
     }
 
     /// 记录 helper 进入重启流程。
@@ -280,15 +313,55 @@ impl CommandHelperState {
         snapshot.last_helper_error = None;
     }
 
-    pub async fn set_shutdown_requested(&self, value: bool) {
-        let mut guard = self.shutdown_requested.write().await;
-        *guard = value;
+    /// 记录 helper 因协议错误进入终止路径。
+    pub async fn mark_protocol_error(&self, error: impl Into<String>, at: String) {
         let mut snapshot = self.snapshot.write().await;
-        snapshot.shutdown_requested = value;
+        snapshot.initialized = true;
+        snapshot.lifecycle_stage = HelperLifecycleStage::Crashed;
+        snapshot.helper_pid = None;
+        snapshot.last_helper_error = Some(error.into());
+        snapshot.last_exit_kind = Some(HelperExitKind::ProtocolError);
+        snapshot.last_exit_code = None;
+        snapshot.last_exit_reason = Some("protocol_error".to_owned());
+        snapshot.last_exit_at = Some(at);
     }
 
-    pub async fn is_shutdown_requested(&self) -> bool {
-        *self.shutdown_requested.read().await
+    /// 记录回退到 OS terminate。
+    pub async fn mark_terminate_fallback(
+        &self,
+        reason: impl Into<String>,
+        exit_code: Option<i32>,
+        at: String,
+    ) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.lifecycle_stage = HelperLifecycleStage::Disconnected;
+        snapshot.helper_pid = None;
+        snapshot.last_helper_error = Some(reason.into());
+        snapshot.shutdown_requested = false;
+        snapshot.last_exit_kind = Some(HelperExitKind::TerminateFallback);
+        snapshot.last_exit_code = exit_code;
+        snapshot.last_exit_reason = snapshot.last_helper_error.clone();
+        snapshot.last_exit_at = Some(at);
+    }
+
+    /// 记录回退到 kill。
+    pub async fn mark_kill_fallback(
+        &self,
+        reason: impl Into<String>,
+        exit_code: Option<i32>,
+        at: String,
+    ) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.lifecycle_stage = HelperLifecycleStage::Disconnected;
+        snapshot.helper_pid = None;
+        snapshot.last_helper_error = Some(reason.into());
+        snapshot.shutdown_requested = false;
+        snapshot.last_exit_kind = Some(HelperExitKind::KillFallback);
+        snapshot.last_exit_code = exit_code;
+        snapshot.last_exit_reason = snapshot.last_helper_error.clone();
+        snapshot.last_exit_at = Some(at);
     }
 
     pub async fn set_pending_command_open(&self, intent: PendingCommandOpenIntent) {
