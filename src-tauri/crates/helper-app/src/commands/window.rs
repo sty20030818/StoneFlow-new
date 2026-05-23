@@ -56,6 +56,13 @@ pub async fn prepare_quick_create_session(
     app_handle: tauri::AppHandle,
     runtime: &QuickPopupRuntimeState,
 ) -> Result<HelperQuickOpenSessionResponse, QuickCreateErrorPayload> {
+    if runtime.is_shutting_down().await {
+        return Err(QuickCreateErrorPayload {
+            type_: "Internal",
+            message: "helper 正在关闭，无法准备 quick create session".to_owned(),
+        });
+    }
+
     if !runtime.is_frontend_ready().await {
         return Err(QuickCreateErrorPayload {
             type_: "Internal",
@@ -299,6 +306,48 @@ pub async fn helper_quick_frontend_unready(
     Ok(())
 }
 
+pub async fn shutdown_quick_create(
+    app_handle: &tauri::AppHandle,
+    runtime: &QuickPopupRuntimeState,
+) {
+    let controller = window_controller::build_controller(app_handle.clone());
+    if let Some(session_id) = runtime.active_session_id().await {
+        match runtime
+            .begin_close_for(&session_id, QuickPopupCloseReason::Invalidated)
+            .await
+        {
+            Ok(Some(session)) => {
+                log::info!("helper: shutdown 关闭 quick create session={}", session.session_id);
+                if let Err(error) = controller.hide() {
+                    log::warn!("helper: shutdown 隐藏 quick create 失败: {error}");
+                }
+                if let Err(error) = runtime.finish_close_for(&session.session_id).await {
+                    log::warn!("helper: shutdown 清理 quick create session 失败: {error}");
+                    runtime.reset_to_idle().await;
+                }
+            }
+            Ok(None) => {
+                if let Err(error) = controller.hide() {
+                    log::warn!("helper: shutdown 隐藏 idle quick create 失败: {error}");
+                }
+                runtime.reset_to_idle().await;
+            }
+            Err(error) => {
+                log::warn!("helper: shutdown 进入 closing 失败: {error}");
+                if let Err(hide_error) = controller.hide() {
+                    log::warn!("helper: shutdown 隐藏 quick create 失败: {hide_error}");
+                }
+                runtime.reset_to_idle().await;
+            }
+        }
+    } else {
+        if let Err(error) = controller.hide() {
+            log::warn!("helper: shutdown 隐藏 quick create 失败: {error}");
+        }
+        runtime.reset_to_idle().await;
+    }
+}
+
 async fn apply_frontend_ready<F, Fut>(
     runtime: &QuickPopupRuntimeState,
     notify: F,
@@ -441,4 +490,5 @@ mod tests {
         assert_eq!(error.type_, "Internal");
         assert!(error.message.contains("quick create window ready 上报失败"));
     }
+
 }

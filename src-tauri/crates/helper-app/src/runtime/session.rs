@@ -39,6 +39,7 @@ pub struct QuickPopupSession {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuickPopupRuntimeSnapshot {
     pub frontend_ready: bool,
+    pub shutting_down: bool,
     pub phase: QuickPopupPhase,
     pub current_session: Option<QuickPopupSession>,
 }
@@ -47,6 +48,7 @@ impl Default for QuickPopupRuntimeSnapshot {
     fn default() -> Self {
         Self {
             frontend_ready: false,
+            shutting_down: false,
             phase: QuickPopupPhase::Idle,
             current_session: None,
         }
@@ -67,6 +69,10 @@ impl QuickPopupRuntimeState {
         self.inner.read().await.frontend_ready
     }
 
+    pub async fn is_shutting_down(&self) -> bool {
+        self.inner.read().await.shutting_down
+    }
+
     pub async fn mark_frontend_ready(&self) {
         let mut guard = self.inner.write().await;
         guard.frontend_ready = true;
@@ -77,11 +83,23 @@ impl QuickPopupRuntimeState {
         guard.frontend_ready = false;
     }
 
+    pub async fn begin_shutdown(&self) -> bool {
+        let mut guard = self.inner.write().await;
+        if guard.shutting_down {
+            return false;
+        }
+        guard.shutting_down = true;
+        true
+    }
+
     pub async fn begin_open(
         &self,
         trigger: QuickPopupOpenReason,
     ) -> Result<QuickPopupSession, &'static str> {
         let mut guard = self.inner.write().await;
+        if guard.shutting_down {
+            return Err("popup runtime is shutting down");
+        }
         if guard.phase != QuickPopupPhase::Idle {
             return Err("popup runtime is not idle");
         }
@@ -237,6 +255,7 @@ mod tests {
         let snapshot = runtime.snapshot().await;
         assert_eq!(snapshot.phase, QuickPopupPhase::Idle);
         assert!(!snapshot.frontend_ready);
+        assert!(!snapshot.shutting_down);
         assert!(snapshot.current_session.is_none());
     }
 
@@ -348,6 +367,26 @@ mod tests {
         assert!(!runtime.is_frontend_ready().await);
         runtime.mark_frontend_ready().await;
         assert!(runtime.is_frontend_ready().await);
+    }
+
+    #[tokio::test]
+    async fn runtime_should_reject_open_after_shutdown_begins() {
+        let runtime = QuickPopupRuntimeState::default();
+        assert!(runtime.begin_shutdown().await);
+        assert!(runtime.is_shutting_down().await);
+
+        let err = runtime
+            .begin_open(QuickPopupOpenReason::GlobalShortcut)
+            .await
+            .expect_err("open should fail during shutdown");
+        assert_eq!(err, "popup runtime is shutting down");
+    }
+
+    #[tokio::test]
+    async fn runtime_should_make_shutdown_idempotent() {
+        let runtime = QuickPopupRuntimeState::default();
+        assert!(runtime.begin_shutdown().await);
+        assert!(!runtime.begin_shutdown().await);
     }
 
     #[tokio::test]

@@ -1,24 +1,27 @@
 //! Quick Create 基座命令。
 
+use tauri::Manager;
 use tauri::State;
 
 use crate::app::{
     error::AppError,
-    helper_runtime,
     state::{CommandHelperSnapshot, CommandHelperState, PendingCommandOpenIntent},
+    supervisor,
 };
 
 #[tauri::command]
 pub async fn restore_main_window(app_handle: tauri::AppHandle) -> Result<(), AppError> {
-    helper_runtime::restore_main_window(&app_handle).await
+    crate::app::helper_runtime::restore_main_window(&app_handle).await
 }
 
 #[tauri::command]
 pub async fn quit_stoneflow(
     app_handle: tauri::AppHandle,
-    helper_state: State<'_, CommandHelperState>,
 ) -> Result<(), AppError> {
-    helper_runtime::shutdown(helper_state.inner().clone()).await;
+    if let Some(handle) = app_handle.try_state::<supervisor::SupervisorHandle>() {
+        handle.request_shutdown();
+        handle.wait_stopped();
+    }
     app_handle.exit(0);
     Ok(())
 }

@@ -6,6 +6,7 @@
 //! - 前端资源复用主 App 的 `dist/`，Quick Create 走 `#/quick-create` 路由。
 
 pub mod commands;
+pub mod control_server;
 pub mod ipc_client;
 pub mod runtime;
 pub mod shortcut;
@@ -19,6 +20,7 @@ pub mod panel;
 pub mod panel_windows;
 
 use tauri::Manager;
+use tokio::sync::Notify;
 
 /// 组装 Helper 的 Tauri Builder。调用方（`src-tauri/helper-bin` 宿主）
 /// 负责调用 `.run(tauri::generate_context!())` 并处理 panic。
@@ -58,7 +60,10 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         panel_windows::init_quick_create_panel(app.handle());
 
         app.manage(runtime::QuickPopupRuntimeState::default());
+        let shutdown_notify = std::sync::Arc::new(Notify::new());
+        app.manage(shutdown_notify.clone());
         shortcut::register_global_shortcut(app.handle());
+        control_server::spawn_control_server(app.handle().clone(), shutdown_notify);
 
         // 启动时做一次 Hello 自检，失败仅告警：主 App 还在启动可能晚于 Helper 连通，
         // 用户真正按下快捷键时重试连接即可。

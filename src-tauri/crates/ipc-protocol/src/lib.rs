@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// 协议语义版本，双方握手时使用。
-pub const PROTOCOL_VERSION: u16 = 3;
+pub const PROTOCOL_VERSION: u16 = 4;
 
 /// 单帧最大字节数（1 MiB）。
 pub const MAX_FRAME_BYTES: usize = 1024 * 1024;
@@ -25,6 +25,7 @@ pub const DEFAULT_REQUEST_TIMEOUT_MS: u64 = 5_000;
 pub enum IpcRequest {
     Ping,
     HelperHello(HelperHelloPayload),
+    HelperShutdown(HelperShutdownPayload),
     HelperWindowReady,
     HelperWindowUnready,
     QuickGetInitialState,
@@ -42,6 +43,7 @@ pub enum IpcRequest {
 pub enum IpcResponse {
     Pong { protocol_version: u16 },
     HelperHelloAck(HelperHelloAckPayload),
+    HelperShutdownAck(HelperShutdownAckPayload),
     QuickInitialState(QuickInitialStatePayload),
     QuickProjectsBySpace(QuickProjectsBySpaceResponsePayload),
     QuickSearch(QuickSearchResponsePayload),
@@ -67,6 +69,31 @@ pub struct HelperHelloPayload {
 pub struct HelperHelloAckPayload {
     pub protocol_version: u16,
     pub main_version: String,
+}
+
+/// Helper graceful shutdown 请求。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperShutdownPayload {
+    pub reason: HelperShutdownReason,
+    pub deadline_ms: u64,
+}
+
+/// Helper graceful shutdown 原因。
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum HelperShutdownReason {
+    AppExit,
+    SupervisorStop,
+    Restart,
+}
+
+/// Helper 对 shutdown 请求的确认。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct HelperShutdownAckPayload {
+    pub accepted: bool,
+    pub phase: String,
 }
 
 /// 当前 Scope 的轻量载荷。
@@ -306,6 +333,34 @@ pub fn socket_name() -> SocketName {
     }
 }
 
+/// 返回主 App -> Helper 控制请求使用的套接字名称。
+pub fn helper_control_socket_name() -> SocketName {
+    #[cfg(windows)]
+    {
+        SocketName {
+            raw: "com.stonefish.stoneflow.helper-control".to_owned(),
+            namespaced: true,
+        }
+    }
+
+    #[cfg(not(windows))]
+    {
+        let tmpdir = std::env::var("TMPDIR")
+            .ok()
+            .filter(|value| !value.is_empty())
+            .unwrap_or_else(|| "/tmp".to_owned());
+        let user = std::env::var("USER")
+            .ok()
+            .filter(|value| !value.is_empty())
+            .unwrap_or_else(|| "anon".to_owned());
+        let trimmed = tmpdir.trim_end_matches('/');
+        SocketName {
+            raw: format!("{trimmed}/com.stonefish.stoneflow-helper-control-{user}.sock"),
+            namespaced: false,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -335,7 +390,7 @@ mod tests {
     }
 
     #[test]
-    fn helper_hello_roundtrip_uses_v3_shape() {
+    fn helper_hello_roundtrip_uses_v4_shape() {
         let request = IpcRequest::HelperHello(HelperHelloPayload {
             protocol_version: PROTOCOL_VERSION,
             helper_version: "0.1.0".to_owned(),
@@ -375,6 +430,30 @@ mod tests {
                 serde_json::from_str(&json).expect("request should deserialize");
             assert_eq!(request, decoded);
         }
+    }
+
+    #[test]
+    fn helper_shutdown_roundtrip_serializes() {
+        let request = IpcRequest::HelperShutdown(HelperShutdownPayload {
+            reason: HelperShutdownReason::AppExit,
+            deadline_ms: 2_000,
+        });
+        let response = IpcResponse::HelperShutdownAck(HelperShutdownAckPayload {
+            accepted: true,
+            phase: "acked".to_owned(),
+        });
+
+        let request_json = serde_json::to_string(&request).expect("request should serialize");
+        let request_decoded: IpcRequest =
+            serde_json::from_str(&request_json).expect("request should deserialize");
+        assert_eq!(request, request_decoded);
+        assert!(request_json.contains(r#""kind":"helper_shutdown""#));
+
+        let response_json = serde_json::to_string(&response).expect("response should serialize");
+        let response_decoded: IpcResponse =
+            serde_json::from_str(&response_json).expect("response should deserialize");
+        assert_eq!(response, response_decoded);
+        assert!(response_json.contains(r#""kind":"helper_shutdown_ack""#));
     }
 
     #[test]
@@ -429,7 +508,25 @@ mod tests {
     }
 
     #[test]
-    fn protocol_version_should_be_3() {
-        assert_eq!(PROTOCOL_VERSION, 3);
+    fn helper_control_socket_name_is_nonempty_and_consistent() {
+        let a = helper_control_socket_name();
+        let b = helper_control_socket_name();
+        assert_eq!(a, b);
+        assert!(!a.raw.is_empty());
+
+        #[cfg(windows)]
+        assert!(a.namespaced);
+
+        #[cfg(not(windows))]
+        {
+            assert!(!a.namespaced);
+            assert!(a.raw.ends_with(".sock"));
+            assert!(a.raw.starts_with('/'));
+        }
+    }
+
+    #[test]
+    fn protocol_version_should_be_4() {
+        assert_eq!(PROTOCOL_VERSION, 4);
     }
 }

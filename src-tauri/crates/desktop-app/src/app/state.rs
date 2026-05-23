@@ -82,6 +82,10 @@ pub struct CommandHelperSnapshot {
     pub last_hello_at: Option<String>,
     pub last_window_ready_at: Option<String>,
     pub last_window_unready_at: Option<String>,
+    pub shutdown_acknowledged: bool,
+    pub last_shutdown_requested_at: Option<String>,
+    pub last_shutdown_ack_at: Option<String>,
+    pub last_shutdown_reason: Option<String>,
     pub last_helper_error: Option<String>,
     pub restart_count: u32,
     pub shutdown_requested: bool,
@@ -101,6 +105,10 @@ impl Default for CommandHelperSnapshot {
             last_hello_at: None,
             last_window_ready_at: None,
             last_window_unready_at: None,
+            shutdown_acknowledged: false,
+            last_shutdown_requested_at: None,
+            last_shutdown_ack_at: None,
+            last_shutdown_reason: None,
             last_helper_error: None,
             restart_count: 0,
             shutdown_requested: false,
@@ -165,6 +173,10 @@ impl CommandHelperState {
         snapshot.initialized = true;
         snapshot.lifecycle_stage = HelperLifecycleStage::WaitingForHello;
         snapshot.helper_pid = Some(pid);
+        snapshot.shutdown_acknowledged = false;
+        snapshot.last_shutdown_requested_at = None;
+        snapshot.last_shutdown_ack_at = None;
+        snapshot.last_shutdown_reason = None;
     }
 
     /// 记录 helper hello 完成。
@@ -213,6 +225,15 @@ impl CommandHelperState {
         snapshot.last_helper_error = Some(error.into());
     }
 
+    /// 记录 helper 已按预期关闭。
+    pub async fn mark_expected_shutdown_completed(&self) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.lifecycle_stage = HelperLifecycleStage::Disconnected;
+        snapshot.helper_pid = None;
+        snapshot.last_helper_error = None;
+    }
+
     /// 记录 helper 崩溃。
     pub async fn mark_helper_crashed(&self, error: impl Into<String>) {
         let mut snapshot = self.snapshot.write().await;
@@ -237,6 +258,26 @@ impl CommandHelperState {
         let mut snapshot = self.snapshot.write().await;
         snapshot.initialized = true;
         snapshot.lifecycle_stage = HelperLifecycleStage::ShuttingDown;
+    }
+
+    /// 记录主 App 已发起 helper shutdown。
+    pub async fn mark_shutdown_requested(&self, reason: impl Into<String>, requested_at: String) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.lifecycle_stage = HelperLifecycleStage::ShuttingDown;
+        snapshot.shutdown_requested = true;
+        snapshot.shutdown_acknowledged = false;
+        snapshot.last_shutdown_requested_at = Some(requested_at);
+        snapshot.last_shutdown_reason = Some(reason.into());
+    }
+
+    /// 记录 helper 已确认 shutdown。
+    pub async fn mark_shutdown_acknowledged(&self, ack_at: String) {
+        let mut snapshot = self.snapshot.write().await;
+        snapshot.initialized = true;
+        snapshot.shutdown_acknowledged = true;
+        snapshot.last_shutdown_ack_at = Some(ack_at);
+        snapshot.last_helper_error = None;
     }
 
     pub async fn set_shutdown_requested(&self, value: bool) {

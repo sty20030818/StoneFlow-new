@@ -45,6 +45,11 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
         return;
     };
 
+    if runtime.is_shutting_down().await {
+        log::warn!("helper: shutdown 中忽略全局快捷键触发");
+        return;
+    }
+
     let controller = window_controller::build_controller(app_handle.clone());
     let visible = match controller.is_visible() {
         Ok(visible) => visible,

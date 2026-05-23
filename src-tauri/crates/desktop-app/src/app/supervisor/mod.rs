@@ -2,13 +2,23 @@
 
 mod restart_policy;
 
+use std::io;
 use std::path::PathBuf;
 use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use tokio::io::{AsyncBufReadExt, BufReader};
+use interprocess::local_socket::{
+    tokio::{prelude::*, Stream},
+    GenericFilePath, GenericNamespaced, ToFsName, ToNsName,
+};
+use stoneflow_ipc_protocol::{
+    helper_control_socket_name, HelperShutdownAckPayload, HelperShutdownPayload,
+    HelperShutdownReason, IpcRequest, IpcResponse, SocketName,
+    DEFAULT_CONNECT_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS, MAX_FRAME_BYTES,
+};
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::Notify;
 use tokio::time::{sleep, timeout};
@@ -22,6 +32,7 @@ const HANDSHAKE_TIMEOUT: Duration = Duration::from_secs(10);
 const HEALTH_CHECK_INTERVAL: Duration = Duration::from_secs(30);
 const HELPER_RESTART_BACKOFF_MS: u64 = 1_500;
 const HELPER_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(2);
+const HELPER_TERMINATE_TIMEOUT: Duration = Duration::from_secs(1);
 
 /// Supervisor 状态机。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -33,6 +44,12 @@ enum SupervisorState {
     Restarting,
     CircuitOpen,
     Stopped,
+}
+
+enum WaitHelloResult {
+    Hello,
+    Shutdown,
+    Failed,
 }
 
 /// Supervisor 句柄，用于外部请求关闭。
@@ -125,10 +142,14 @@ impl HelperSupervisor {
                     }
                 }
                 SupervisorState::WaitingHandshake => {
-                    if self.wait_hello().await {
-                        self.transition_to(SupervisorState::Ready).await;
-                    } else {
-                        self.handle_crash("helper hello 超时").await;
+                    match self.wait_hello().await {
+                        WaitHelloResult::Hello => {
+                            self.transition_to(SupervisorState::Ready).await;
+                        }
+                        WaitHelloResult::Shutdown => {}
+                        WaitHelloResult::Failed => {
+                            self.handle_crash("helper hello 超时").await;
+                        }
                     }
                 }
                 SupervisorState::Ready => {
@@ -167,8 +188,7 @@ impl HelperSupervisor {
         log::debug!("supervisor: {:?} → {:?}", self.state, new_state);
         if new_state == SupervisorState::Stopped {
             self.helper_state.mark_shutting_down().await;
-            self.helper_state.set_shutdown_requested(true).await;
-            self.shutdown_helper_process("supervisor 停止").await;
+            self.shutdown_helper_process(HelperShutdownReason::SupervisorStop).await;
         }
         self.state = new_state;
     }
@@ -211,7 +231,7 @@ impl HelperSupervisor {
     }
 
     /// 等待 helper hello。返回 true 表示进程层握手成功。
-    async fn wait_hello(&mut self) -> bool {
+    async fn wait_hello(&mut self) -> WaitHelloResult {
         let started_at = std::time::Instant::now();
 
         loop {
@@ -221,16 +241,16 @@ impl HelperSupervisor {
             {
                 log::info!("helper hello 成功");
                 self.policy.record_stable();
-                return true;
+                return WaitHelloResult::Hello;
             }
 
             if started_at.elapsed() >= HANDSHAKE_TIMEOUT {
                 log::warn!("helper hello 超时 ({HANDSHAKE_TIMEOUT:?})");
-                return false;
+                return WaitHelloResult::Failed;
             }
 
             if self.check_child_exit("等待 hello").await {
-                return false;
+                return WaitHelloResult::Failed;
             }
 
             if timeout(Duration::from_millis(1), self.shutdown_notify.notified())
@@ -239,7 +259,7 @@ impl HelperSupervisor {
             {
                 log::info!("helper 等待 hello 时收到关闭请求");
                 self.transition_to(SupervisorState::Stopped).await;
-                return false;
+                return WaitHelloResult::Shutdown;
             }
 
             sleep(Duration::from_millis(200)).await;
@@ -247,47 +267,102 @@ impl HelperSupervisor {
     }
 
     /// 在主 App 退出时显式关闭 helper，避免残留旧进程继续服务。
-    async fn shutdown_helper_process(&mut self, reason: &str) {
+    async fn shutdown_helper_process(&mut self, reason: HelperShutdownReason) {
         let Some(mut child) = self.current_child.take() else {
             return;
         };
 
         let pid = child.id().unwrap_or(0);
-        log::info!("准备关闭 helper 进程, pid={pid}, reason={reason}");
+        let reason_label = shutdown_reason_label(reason);
+        log::info!("准备关闭 helper 进程, pid={pid}, reason={reason_label}");
+        self.helper_state
+            .mark_shutdown_requested(reason_label, chrono::Utc::now().to_rfc3339())
+            .await;
+        self.helper_state.set_shutdown_requested(true).await;
 
-        if let Err(error) = request_helper_shutdown(pid).await {
+        if let Err(error) = request_helper_shutdown(reason, HELPER_SHUTDOWN_TIMEOUT).await {
             log::warn!("请求 helper 优雅退出失败, pid={pid}: {error}");
+        } else {
+            self.helper_state
+                .mark_shutdown_acknowledged(chrono::Utc::now().to_rfc3339())
+                .await;
         }
 
         match timeout(HELPER_SHUTDOWN_TIMEOUT, child.wait()).await {
             Ok(Ok(status)) => {
                 log::info!("helper 进程已关闭, pid={pid}, status={status}");
+                self.helper_state.mark_expected_shutdown_completed().await;
             }
             Ok(Err(error)) => {
                 log::warn!("等待 helper 进程退出失败, pid={pid}: {error}");
+                self.helper_state
+                    .mark_helper_disconnected(format!("等待 helper 退出失败: {error}"))
+                    .await;
             }
             Err(_) => {
                 log::warn!(
-                    "helper 未在 {:?} 内退出，回退到强制结束, pid={pid}",
+                    "helper 未在 {:?} 内退出，进入回退终止, pid={pid}",
                     HELPER_SHUTDOWN_TIMEOUT
                 );
-                if let Err(error) = child.kill().await {
-                    log::warn!("强制关闭 helper 进程失败, pid={pid}: {error}");
+                if let Err(error) = terminate_helper_process(pid).await {
+                    log::warn!("请求 helper OS 级终止失败, pid={pid}: {error}");
                 }
-                match child.wait().await {
-                    Ok(status) => {
-                        log::info!("helper 进程已强制关闭, pid={pid}, status={status}");
+                match timeout(HELPER_TERMINATE_TIMEOUT, child.wait()).await {
+                    Ok(Ok(status)) => {
+                        log::info!("helper 进程已回退终止, pid={pid}, status={status}");
+                        self.helper_state
+                            .mark_helper_disconnected(format!(
+                                "helper 已回退终止: {reason_label}"
+                            ))
+                            .await;
                     }
-                    Err(error) => {
-                        log::warn!("等待 helper 强制退出失败, pid={pid}: {error}");
+                    Ok(status) => {
+                        match status {
+                            Err(error) => {
+                                log::warn!("等待 helper 回退终止失败, pid={pid}: {error}");
+                                self.helper_state
+                                    .mark_helper_disconnected(format!(
+                                        "等待 helper 回退终止失败: {error}"
+                                    ))
+                                    .await;
+                            }
+                            Ok(status) => {
+                                log::info!("helper 进程已回退终止, pid={pid}, status={status}");
+                                self.helper_state
+                                    .mark_helper_disconnected(format!(
+                                        "helper 已回退终止: {reason_label}"
+                                    ))
+                                    .await;
+                            }
+                        }
+                    }
+                    Err(_) => {
+                        log::warn!("helper OS 级终止后仍未退出，回退到强制 kill, pid={pid}");
+                        if let Err(error) = child.kill().await {
+                            log::warn!("强制关闭 helper 进程失败, pid={pid}: {error}");
+                        }
+                        match child.wait().await {
+                            Ok(status) => {
+                                log::info!("helper 进程已强制关闭, pid={pid}, status={status}");
+                                self.helper_state
+                                    .mark_helper_disconnected(format!(
+                                        "helper 已强制关闭: {reason_label}"
+                                    ))
+                                    .await;
+                            }
+                            Err(error) => {
+                                log::warn!("等待 helper 强制退出失败, pid={pid}: {error}");
+                                self.helper_state
+                                    .mark_helper_disconnected(format!(
+                                        "等待 helper 强制退出失败: {error}"
+                                    ))
+                                    .await;
+                            }
+                        }
                     }
                 }
             }
         }
-
-        self.helper_state
-            .mark_helper_disconnected(format!("helper 已关闭: {reason}"))
-            .await;
     }
 
     /// 健康检查循环，直到进程退出或关闭请求。
@@ -430,8 +505,29 @@ fn parse_helper_log_line(line: &str) -> Option<HelperLogLine<'_>> {
     })
 }
 
+async fn request_helper_shutdown(
+    reason: HelperShutdownReason,
+    deadline: Duration,
+) -> Result<HelperShutdownAckPayload, AppError> {
+    let request = IpcRequest::HelperShutdown(HelperShutdownPayload {
+        reason,
+        deadline_ms: deadline.as_millis() as u64,
+    });
+    let response = helper_control_round_trip(&request).await?;
+
+    match response {
+        IpcResponse::HelperShutdownAck(payload) => Ok(payload),
+        IpcResponse::Error(error) => Err(AppError::initialization(format!(
+            "helper shutdown 被拒绝: {error}"
+        ))),
+        other => Err(AppError::initialization(format!(
+            "unexpected helper shutdown response: {other:?}"
+        ))),
+    }
+}
+
 #[cfg(target_os = "windows")]
-async fn request_helper_shutdown(pid: u32) -> Result<(), AppError> {
+async fn terminate_helper_process(pid: u32) -> Result<(), AppError> {
     let output = tokio::process::Command::new("taskkill")
         .args(["/PID", &pid.to_string()])
         .output()
@@ -444,7 +540,7 @@ async fn request_helper_shutdown(pid: u32) -> Result<(), AppError> {
 
     let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
     Err(AppError::initialization(format!(
-        "taskkill 请求 helper 退出失败: {}",
+        "taskkill 请求 helper 终止失败: {}",
         if stderr.is_empty() {
             output.status.to_string()
         } else {
@@ -454,7 +550,7 @@ async fn request_helper_shutdown(pid: u32) -> Result<(), AppError> {
 }
 
 #[cfg(target_os = "macos")]
-async fn request_helper_shutdown(pid: u32) -> Result<(), AppError> {
+async fn terminate_helper_process(pid: u32) -> Result<(), AppError> {
     let output = tokio::process::Command::new("kill")
         .args(["-TERM", &pid.to_string()])
         .output()
@@ -467,7 +563,7 @@ async fn request_helper_shutdown(pid: u32) -> Result<(), AppError> {
 
     let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
     Err(AppError::initialization(format!(
-        "kill -TERM 请求 helper 退出失败: {}",
+        "kill -TERM 请求 helper 终止失败: {}",
         if stderr.is_empty() {
             output.status.to_string()
         } else {
@@ -477,8 +573,93 @@ async fn request_helper_shutdown(pid: u32) -> Result<(), AppError> {
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-async fn request_helper_shutdown(_pid: u32) -> Result<(), AppError> {
+async fn terminate_helper_process(_pid: u32) -> Result<(), AppError> {
     Ok(())
+}
+
+async fn helper_control_round_trip(request: &IpcRequest) -> Result<IpcResponse, AppError> {
+    let socket = helper_control_socket_name();
+    let stream = connect_with_timeout(&socket).await?;
+    let (mut reader, mut writer) = stream.split();
+
+    let payload = serde_json::to_vec(request)
+        .map_err(|error| AppError::initialization(format!("serialize helper shutdown: {error}")))?;
+    if payload.len() > MAX_FRAME_BYTES {
+        return Err(AppError::initialization(format!(
+            "helper shutdown payload too large: {}",
+            payload.len()
+        )));
+    }
+
+    let response_bytes = timeout(
+        Duration::from_millis(DEFAULT_REQUEST_TIMEOUT_MS),
+        async move {
+            writer
+                .write_all(&(payload.len() as u32).to_be_bytes())
+                .await?;
+            writer.write_all(&payload).await?;
+            writer.flush().await?;
+
+            let mut len_buf = [0_u8; 4];
+            reader.read_exact(&mut len_buf).await?;
+            let len = u32::from_be_bytes(len_buf) as usize;
+            if len == 0 || len > MAX_FRAME_BYTES {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("invalid helper control response frame: {len}"),
+                ));
+            }
+
+            let mut buf = vec![0_u8; len];
+            reader.read_exact(&mut buf).await?;
+            io::Result::Ok(buf)
+        },
+    )
+    .await
+    .map_err(|_| {
+        AppError::initialization(format!(
+            "helper shutdown request timed out after {DEFAULT_REQUEST_TIMEOUT_MS} ms"
+        ))
+    })?
+    .map_err(AppError::from)?;
+
+    serde_json::from_slice::<IpcResponse>(&response_bytes).map_err(|error| {
+        AppError::initialization(format!("deserialize helper shutdown response: {error}"))
+    })
+}
+
+async fn connect_with_timeout(socket: &SocketName) -> Result<Stream, AppError> {
+    let name_result = if socket.namespaced {
+        socket.raw.clone().to_ns_name::<GenericNamespaced>()
+    } else {
+        socket.raw.clone().to_fs_name::<GenericFilePath>()
+    };
+
+    let name = name_result
+        .map_err(|error| AppError::initialization(format!("invalid helper control socket: {error}")))?;
+
+    match timeout(
+        Duration::from_millis(DEFAULT_CONNECT_TIMEOUT_MS),
+        Stream::connect(name),
+    )
+    .await
+    {
+        Ok(Ok(stream)) => Ok(stream),
+        Ok(Err(error)) => Err(AppError::initialization(format!(
+            "connect helper control socket failed: {error}"
+        ))),
+        Err(_) => Err(AppError::initialization(format!(
+            "connect helper control socket timed out after {DEFAULT_CONNECT_TIMEOUT_MS} ms"
+        ))),
+    }
+}
+
+fn shutdown_reason_label(reason: HelperShutdownReason) -> &'static str {
+    match reason {
+        HelperShutdownReason::AppExit => "app_exit",
+        HelperShutdownReason::SupervisorStop => "supervisor_stop",
+        HelperShutdownReason::Restart => "restart",
+    }
 }
 
 fn spawn_helper(path: &PathBuf) -> Result<Child, AppError> {

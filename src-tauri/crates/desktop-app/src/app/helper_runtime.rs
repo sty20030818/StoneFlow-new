@@ -242,6 +242,7 @@ async fn dispatch_request(
     match request {
         IpcRequest::Ping
         | IpcRequest::HelperHello(_)
+        | IpcRequest::HelperShutdown(_)
         | IpcRequest::HelperWindowReady
         | IpcRequest::HelperWindowUnready => unreachable!("control requests handled above"),
         IpcRequest::QuickGetInitialState => Ok(IpcResponse::QuickInitialState(
@@ -292,6 +293,9 @@ async fn handle_control_request(
                     })
                 }),
         ),
+        IpcRequest::HelperShutdown(_) => Some(Err(AppError::validation(
+            "HelperShutdown 必须通过 helper control socket 调用",
+        ))),
         IpcRequest::HelperWindowReady => Some(
             async {
                 helper_state
