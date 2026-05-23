@@ -1,4 +1,5 @@
 export { TaskDrawer } from './ui/TaskDrawer'
+export { TaskPreview } from './ui/TaskPreview'
 export type { TaskDetailDraft, TaskDetailPatch } from './model/taskDetailDraft'
 export {
 	applyTaskProjectDraftChange,
@@ -7,3 +8,9 @@ export {
 	getTaskDetailPatch,
 	normalizeTaskDetailDraft,
 } from './model/taskDetailDraft'
+export {
+	TaskPreviewProvider,
+	useRegisterTaskPreviewSource,
+	useTaskPreviewContext,
+} from './model/TaskPreviewProvider'
+export { useTaskPreviewController } from './model/useTaskPreviewController'

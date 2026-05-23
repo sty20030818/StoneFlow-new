@@ -26,6 +26,10 @@ import {
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
+import {
+	useRegisterTaskPreviewSource,
+	useTaskPreviewController,
+} from '@/features/task/detail'
 import { InboxIcon, PlusIcon } from 'lucide-react'
 
 export function InboxPage() {
@@ -36,6 +40,7 @@ export function InboxPage() {
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
+	const taskPreviewController = useTaskPreviewController()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const {
 		pendingTaskId,
@@ -94,11 +99,17 @@ export function InboxPage() {
 				selectedIds: selectionSnapshot.ids,
 				tasks: filteredTasks,
 				fallbackSubtitle: 'Inbox',
+				focusedTaskId,
 				clearSelection: clearTaskSelection,
 			}),
-		[clearTaskSelection, filteredTasks, selectionSnapshot.ids],
+		[clearTaskSelection, filteredTasks, focusedTaskId, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
+	useRegisterTaskPreviewSource({
+		tasks: filteredTasks,
+		focusedTaskId,
+		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
+	})
 
 	useEffect(() => {
 		void loadList({
@@ -132,7 +143,16 @@ export function InboxPage() {
 					onClearTaskSelection: clearTaskSelection,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog(),
-					onOpenTask: (taskId) => openEntityDrawer({ kind: 'task', id: taskId }),
+					onOpenTask: (taskId) => {
+						taskPreviewController.closePreview()
+						openEntityDrawer({ kind: 'task', id: taskId })
+					},
+					onPeekTask: (taskId, source) => {
+						if (activeDetail?.kind === 'task') {
+							return
+						}
+						taskPreviewController.openPreview(taskId, source)
+					},
 					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,

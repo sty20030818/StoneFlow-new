@@ -16,6 +16,7 @@ import {
 } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import type { TaskListItem } from '@/shared/types'
+import { TaskPreviewProvider } from '@/features/task/detail'
 
 import { TaskRowShortcutScope } from './TaskRowShortcutScope'
 
@@ -62,7 +63,7 @@ describe('TaskRowShortcutScope', () => {
 		expect(actions.onToggleTaskSelection).toHaveBeenCalledWith('task-a')
 	})
 
-	it('Space / Enter 打开目标任务', () => {
+	it('Space 打开预览，Enter 打开目标任务', () => {
 		const actions = createActions()
 		renderScope({ actions })
 
@@ -71,8 +72,8 @@ describe('TaskRowShortcutScope', () => {
 		fireKey('Enter')
 		flushShortcutTimers()
 
+		expect(actions.onPeekTask).toHaveBeenNthCalledWith(1, 'task-a', 'pointer')
 		expect(actions.onOpenTask).toHaveBeenNthCalledWith(1, 'task-a')
-		expect(actions.onOpenTask).toHaveBeenNthCalledWith(2, 'task-a')
 	})
 
 	it('A / Delete / Cmd+Backspace 执行归档和删除', () => {
@@ -712,44 +713,47 @@ function renderScope({
 
 	render(
 		<DangerConfirmProvider>
-			<BulkActionProvider
-				actions={createTestBulkActions({
-					bulkCalls,
-					bulkResults,
-					confirmingActionIds,
-				})}
-			>
-				{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
-				<input aria-label='编辑标题' />
-				<TaskRowShortcutScope
-					activeTaskId={null}
-					onClearTaskSelection={actions.onClearTaskSelection}
-					onOpenTask={actions.onOpenTask}
-					onToggleTaskSelection={actions.onToggleTaskSelection}
-					selectedTaskIdSet={new Set(selectedTaskIds)}
-					tasks={tasks}
+			<TaskPreviewProvider>
+				<BulkActionProvider
+					actions={createTestBulkActions({
+						bulkCalls,
+						bulkResults,
+						confirmingActionIds,
+					})}
 				>
-					{(state) => (
-						<div data-testid='scope-root'>
-							{tasks.map((task) => (
-								<div
-									data-task-id={task.id}
-									data-testid={`row-${task.id}`}
-									key={task.id}
-									onMouseEnter={() => state.onRowHover(task.id)}
-									onMouseLeave={() => state.onRowHover(null)}
-									onMouseMove={(event) =>
-										state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
-									}
-									onPointerMove={(event) =>
-										state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
-									}
-								></div>
-							))}
-						</div>
-					)}
-				</TaskRowShortcutScope>
-			</BulkActionProvider>
+					{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
+					<input aria-label='编辑标题' />
+					<TaskRowShortcutScope
+						activeTaskId={null}
+						onClearTaskSelection={actions.onClearTaskSelection}
+						onOpenTask={actions.onOpenTask}
+						onPeekTask={actions.onPeekTask}
+						onToggleTaskSelection={actions.onToggleTaskSelection}
+						selectedTaskIdSet={new Set(selectedTaskIds)}
+						tasks={tasks}
+					>
+						{(state) => (
+							<div data-testid='scope-root'>
+								{tasks.map((task) => (
+									<div
+										data-task-id={task.id}
+										data-testid={`row-${task.id}`}
+										key={task.id}
+										onMouseEnter={() => state.onRowHover(task.id)}
+										onMouseLeave={() => state.onRowHover(null)}
+										onMouseMove={(event) =>
+											state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
+										}
+										onPointerMove={(event) =>
+											state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
+										}
+									></div>
+								))}
+							</div>
+						)}
+					</TaskRowShortcutScope>
+				</BulkActionProvider>
+			</TaskPreviewProvider>
 		</DangerConfirmProvider>,
 	)
 
@@ -788,52 +792,61 @@ function renderSelectionScope({
 
 		return (
 			<DangerConfirmProvider>
-				<BulkActionProvider
-					actions={createTestBulkActions({
-						bulkCalls,
-						confirmingActionIds: [],
-					})}
-				>
-					{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
-					<div data-testid='focused-task'>{focusedTaskId ?? 'none'}</div>
-					<div data-testid='selected-count'>{selectedCount}</div>
-					<div data-testid='selected-ids'>{selectedTaskIds.join(',')}</div>
-					<TaskRowShortcutScope
-						activeTaskId={null}
-						focusedTaskId={focusedTaskId}
-						onClearTaskSelection={actions.onClearTaskSelection}
-						onMoveTaskFocus={moveFocus}
-						onOpenTask={actions.onOpenTask}
-						onSetFocusedTask={setFocusedTaskId}
-						onSelectAllTasks={selectTaskIds}
-						onToggleTaskSelection={toggleTaskSelection}
-						selectedTaskIdSet={selectedTaskIdSet}
-						tasks={tasks}
+				<TaskPreviewProvider>
+					<BulkActionProvider
+						actions={createTestBulkActions({
+							bulkCalls,
+							confirmingActionIds: [],
+						})}
 					>
-						{(state) => (
-							<div data-testid='scope-root'>
-								<div data-testid='hovered-target'>{state.hoveredId ?? 'none'}</div>
-								<div data-testid='hover-source'>{state.hoverSource ?? 'none'}</div>
-								<div data-testid='command-target'>{state.commandTargetId ?? 'none'}</div>
-								{tasks.map((task) => (
-									<div
-										data-task-id={task.id}
-										data-testid={`row-${task.id}`}
-										key={task.id}
-										onMouseEnter={() => state.onRowHover(task.id)}
-										onMouseLeave={() => state.onRowHover(null)}
-										onMouseMove={(event) =>
-											state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
-										}
-										onPointerMove={(event) =>
-											state.onRowPointerMove(task.id, { x: event.clientX, y: event.clientY })
-										}
-									/>
-								))}
-							</div>
-						)}
-					</TaskRowShortcutScope>
-				</BulkActionProvider>
+						{withBlockingLayer ? <div data-slot='dropdown-menu-content' /> : null}
+						<div data-testid='focused-task'>{focusedTaskId ?? 'none'}</div>
+						<div data-testid='selected-count'>{selectedCount}</div>
+						<div data-testid='selected-ids'>{selectedTaskIds.join(',')}</div>
+						<TaskRowShortcutScope
+							activeTaskId={null}
+							focusedTaskId={focusedTaskId}
+							onClearTaskSelection={actions.onClearTaskSelection}
+							onMoveTaskFocus={moveFocus}
+							onOpenTask={actions.onOpenTask}
+							onPeekTask={actions.onPeekTask}
+							onSetFocusedTask={setFocusedTaskId}
+							onSelectAllTasks={selectTaskIds}
+							onToggleTaskSelection={toggleTaskSelection}
+							selectedTaskIdSet={selectedTaskIdSet}
+							tasks={tasks}
+						>
+							{(state) => (
+								<div data-testid='scope-root'>
+									<div data-testid='hovered-target'>{state.hoveredId ?? 'none'}</div>
+									<div data-testid='hover-source'>{state.hoverSource ?? 'none'}</div>
+									<div data-testid='command-target'>{state.commandTargetId ?? 'none'}</div>
+									{tasks.map((task) => (
+										<div
+											data-task-id={task.id}
+											data-testid={`row-${task.id}`}
+											key={task.id}
+											onMouseEnter={() => state.onRowHover(task.id)}
+											onMouseLeave={() => state.onRowHover(null)}
+											onMouseMove={(event) =>
+												state.onRowPointerMove(task.id, {
+													x: event.clientX,
+													y: event.clientY,
+												})
+											}
+											onPointerMove={(event) =>
+												state.onRowPointerMove(task.id, {
+													x: event.clientX,
+													y: event.clientY,
+												})
+											}
+										/>
+									))}
+								</div>
+							)}
+						</TaskRowShortcutScope>
+					</BulkActionProvider>
+				</TaskPreviewProvider>
 			</DangerConfirmProvider>
 		)
 	}
@@ -917,6 +930,7 @@ function createActions() {
 		onArchiveTask: vi.fn<(task: TaskListItem) => Promise<void>>().mockResolvedValue(undefined),
 		onDeleteTask: vi.fn<(task: TaskListItem) => Promise<void>>().mockResolvedValue(undefined),
 		onClearTaskSelection: vi.fn<() => void>(),
+		onPeekTask: vi.fn<(taskId: string, source: 'keyboard' | 'pointer') => void>(),
 		onOpenTask: vi.fn<(taskId: string) => void>(),
 	}
 }

@@ -63,6 +63,7 @@ import {
 	useSpaceStore,
 } from '@/features/space/model/useSpaceStore'
 import { ProjectCreateContent } from '@/features/project/ui/ProjectCreateContent'
+import { TaskPreviewProvider, useTaskPreviewController } from '@/features/task/detail'
 import { TaskCreateContent } from '@/features/task/ui/TaskCreateContent'
 import { useTaskStore } from '@/features/task/model/useTaskStore'
 import { CustomDateDialog } from '@/features/metadata-fields'
@@ -133,13 +134,15 @@ export function ShellLayout({
 			<SubmitRegistryProvider>
 				<PageFilterProvider>
 					<DangerConfirmProvider>
-						<ShellLayoutBulkActionBoundary
-							activeSection={activeSection}
-							currentScope={currentScope}
-							currentSpaceId={currentSpaceId}
-						>
-							{children}
-						</ShellLayoutBulkActionBoundary>
+						<TaskPreviewProvider>
+							<ShellLayoutBulkActionBoundary
+								activeSection={activeSection}
+								currentScope={currentScope}
+								currentSpaceId={currentSpaceId}
+							>
+								{children}
+							</ShellLayoutBulkActionBoundary>
+						</TaskPreviewProvider>
 					</DangerConfirmProvider>
 				</PageFilterProvider>
 			</SubmitRegistryProvider>
@@ -229,6 +232,7 @@ function ShellLayoutContent({
 	const isDrawerOpen = entityDetailController.isOpen
 	const openEntityDrawer = entityDetailController.openDrawer
 	const closeEntityDrawer = entityDetailController.closeDrawer
+	const taskPreviewController = useTaskPreviewController()
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
 	const setCommandMenuFilterKind = useDialogStore((state) => state.setCommandMenuFilterKind)
 	const setShortcutHelpOpen = useDialogStore((state) => state.setShortcutHelpOpen)
@@ -394,6 +398,14 @@ function ShellLayoutContent({
 		openEntityDrawer({ kind: 'task', id: consumedIntent.taskId })
 	}, [consumePendingTaskOpenIntent, openEntityDrawer, pathname, pendingTaskOpenIntent, spaceStatus])
 
+	useEffect(() => {
+		if (!activeDetail) {
+			return
+		}
+
+		taskPreviewController.closePreview()
+	}, [activeDetail, taskPreviewController])
+
 	const handleCommandOpen = useMemo(
 		() => (payload: CommandOpenPayload) => {
 			const targetPath = payload.projectId
@@ -546,6 +558,11 @@ function ShellLayoutContent({
 					return
 				}
 
+				if (taskPreviewController.previewState.open) {
+					taskPreviewController.closePreview()
+					return
+				}
+
 				if (isCommandOpen) {
 					useDialogStore.getState().closeCommand()
 					return
@@ -575,6 +592,12 @@ function ShellLayoutContent({
 			togglePreview: (ctx) => {
 				if (activeDetail?.kind === 'task') {
 					closeEntityDrawer()
+					taskPreviewController.openPreview(activeDetail.id, 'keyboard')
+					return
+				}
+
+				if (taskPreviewController.previewState.open) {
+					taskPreviewController.closePreview()
 					return
 				}
 
@@ -583,7 +606,7 @@ function ShellLayoutContent({
 					return
 				}
 
-				openEntityDrawer({ kind: 'task', id: targetTaskId })
+				taskPreviewController.openPreview(targetTaskId, 'keyboard')
 			},
 			openTaskPlacementPicker: (ctx) => {
 				useDialogStore.getState().openCommand('task-placement-picker', ctx.selection)
@@ -713,6 +736,7 @@ function ShellLayoutContent({
 			runEntityBulkActionFromCommand,
 			setCommandMenuFilterKind,
 			submitRegistryActions,
+			taskPreviewController,
 			toggleShortcutHelp,
 		],
 	)
@@ -738,11 +762,13 @@ function ShellLayoutContent({
 	const commandUi = useMemo(
 		() => ({
 			isCommandMenuOpen: isCommandOpen,
+			isPreviewOpen: taskPreviewController.previewState.open,
 			isDetailOpen: Boolean(activeDetail),
 			detailEntityType: activeDetail?.kind,
 			isModalOpen: createDialogType !== null || isShortcutHelpOpen,
+			isRightPreviewOpen: taskPreviewController.previewState.open,
 		}),
-		[activeDetail, createDialogType, isCommandOpen, isShortcutHelpOpen],
+		[activeDetail, createDialogType, isCommandOpen, isShortcutHelpOpen, taskPreviewController.previewState.open],
 	)
 	const commandFocus = useMemo(
 		() => ({
@@ -750,10 +776,11 @@ function ShellLayoutContent({
 				isCommandOpen,
 				isShortcutHelpOpen,
 				isModalOpen: createDialogType !== null,
+				isPreviewOpen: taskPreviewController.previewState.open,
 				isDetailOpen: Boolean(activeDetail),
 			}),
 		}),
-		[activeDetail, createDialogType, isCommandOpen, isShortcutHelpOpen],
+		[activeDetail, createDialogType, isCommandOpen, isShortcutHelpOpen, taskPreviewController.previewState.open],
 	)
 	const commandSpace = useMemo(
 		() => ({
@@ -1217,11 +1244,13 @@ function resolveCommandActivePanel({
 	isCommandOpen,
 	isShortcutHelpOpen,
 	isModalOpen,
+	isPreviewOpen,
 	isDetailOpen,
 }: {
 	isCommandOpen: boolean
 	isShortcutHelpOpen: boolean
 	isModalOpen: boolean
+	isPreviewOpen: boolean
 	isDetailOpen: boolean
 }): CommandFocusContext['activePanel'] {
 	if (isCommandOpen) {
@@ -1232,6 +1261,9 @@ function resolveCommandActivePanel({
 	}
 	if (isModalOpen) {
 		return 'modal'
+	}
+	if (isPreviewOpen) {
+		return 'preview'
 	}
 	if (isDetailOpen) {
 		return 'detail'

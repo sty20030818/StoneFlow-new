@@ -10,6 +10,7 @@ type BuildTaskCommandSelectionInput = {
 	selectedIds: string[]
 	tasks: TaskListItem[]
 	fallbackSubtitle: string | ((task: TaskListItem) => string)
+	focusedTaskId?: string | null
 	clearSelection?: () => void
 }
 
@@ -30,6 +31,7 @@ export function buildTaskCommandSelection({
 	selectedIds,
 	tasks,
 	fallbackSubtitle,
+	focusedTaskId = null,
 	clearSelection,
 }: BuildTaskCommandSelectionInput): CommandSelectionContext {
 	const taskById = new Map(tasks.map((task) => [task.id, task]))
@@ -58,12 +60,15 @@ export function buildTaskCommandSelection({
 	})
 	const ids = entities.map((entity) => entity.id)
 	const count = ids.length
+	const focusedTask = focusedTaskId ? taskById.get(focusedTaskId) ?? null : null
 
 	return {
 		type: count > 0 ? 'task' : undefined,
 		ids,
 		entities,
 		primaryEntity: entities[0],
+		focusedId: focusedTask?.id,
+		focusedType: focusedTask ? 'task' : undefined,
 		clearSelection,
 		source: count > 0 ? 'task-list' : 'none',
 		hasSelection: count > 0,

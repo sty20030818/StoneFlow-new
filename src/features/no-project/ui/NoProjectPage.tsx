@@ -15,6 +15,10 @@ import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
+import {
+	useRegisterTaskPreviewSource,
+	useTaskPreviewController,
+} from '@/features/task/detail'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import {
@@ -44,6 +48,7 @@ export function NoProjectPage() {
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
+	const taskPreviewController = useTaskPreviewController()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const {
 		pendingTaskId,
@@ -91,11 +96,17 @@ export function NoProjectPage() {
 				selectedIds: selectionSnapshot.ids,
 				tasks: filteredTasks,
 				fallbackSubtitle: '独立事项',
+				focusedTaskId,
 				clearSelection: clearTaskSelection,
 			}),
-		[clearTaskSelection, filteredTasks, selectionSnapshot.ids],
+		[clearTaskSelection, filteredTasks, focusedTaskId, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
+	useRegisterTaskPreviewSource({
+		tasks: filteredTasks,
+		focusedTaskId,
+		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
+	})
 
 	useEffect(() => {
 		void loadList({
@@ -134,7 +145,16 @@ export function NoProjectPage() {
 					onClearTaskSelection: clearTaskSelection,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ placement: 'noProject' }),
-					onOpenTask: (taskId) => openEntityDrawer({ kind: 'task', id: taskId }),
+					onOpenTask: (taskId) => {
+						taskPreviewController.closePreview()
+						openEntityDrawer({ kind: 'task', id: taskId })
+					},
+					onPeekTask: (taskId, source) => {
+						if (activeDetail?.kind === 'task') {
+							return
+						}
+						taskPreviewController.openPreview(taskId, source)
+					},
 					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,

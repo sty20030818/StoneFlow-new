@@ -70,6 +70,7 @@ type TaskBoardProps = {
 	onArchiveTask?: (task: TaskListItem) => Promise<void>
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask: (taskId: string) => void
+	onPeekTask?: (taskId: string, source: 'keyboard' | 'pointer') => void
 	statusOrder?: readonly TaskStatus[]
 	hideEmptySections?: boolean
 	projectOptions?: Array<{ id: string; name: string }>
@@ -104,6 +105,7 @@ export function TaskBoard({
 	onArchiveTask,
 	onDeleteTask,
 	onOpenTask,
+	onPeekTask,
 	statusOrder = TASK_BOARD_STATUS_ORDER,
 	hideEmptySections = false,
 	projectOptions,
@@ -224,6 +226,7 @@ export function TaskBoard({
 			focusedTaskId={focusedTaskId}
 			onClearTaskSelection={onClearTaskSelection}
 			onOpenTask={onOpenTask}
+			onPeekTask={onPeekTask}
 			onMoveTaskFocus={onMoveTaskFocus}
 			onSelectAllTasks={onSelectAllTasks}
 			onSetFocusedTask={onSetFocusedTask}

@@ -22,6 +22,10 @@ import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
+import {
+	useRegisterTaskPreviewSource,
+	useTaskPreviewController,
+} from '@/features/task/detail'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import type { TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
@@ -65,6 +69,7 @@ export function ProjectPage() {
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
+	const taskPreviewController = useTaskPreviewController()
 	const detail = useProjectStore(selectProjectDetail)
 	const projectOptions = useProjectStore(selectProjectOptions)
 	const loadDetail = useProjectStore((state) => state.loadDetail)
@@ -151,11 +156,17 @@ export function ProjectPage() {
 				selectedIds: selectionSnapshot.ids,
 				tasks: filteredTasks,
 				fallbackSubtitle: project?.name ?? '当前项目',
+				focusedTaskId,
 				clearSelection: clearTaskSelection,
 			}),
-		[clearTaskSelection, filteredTasks, project?.name, selectionSnapshot.ids],
+		[clearTaskSelection, filteredTasks, focusedTaskId, project?.name, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
+	useRegisterTaskPreviewSource({
+		tasks: filteredTasks,
+		focusedTaskId,
+		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
+	})
 
 	async function runAction(action: string, runner: () => Promise<unknown>) {
 		setBusyAction(action)
@@ -193,7 +204,16 @@ export function ProjectPage() {
 					onClearTaskSelection: clearTaskSelection,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ projectId }),
-					onOpenTask: (taskId) => openEntityDrawer({ kind: 'task', id: taskId }),
+					onOpenTask: (taskId) => {
+						taskPreviewController.closePreview()
+						openEntityDrawer({ kind: 'task', id: taskId })
+					},
+					onPeekTask: (taskId, source) => {
+						if (activeDetail?.kind === 'task') {
+							return
+						}
+						taskPreviewController.openPreview(taskId, source)
+					},
 					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,

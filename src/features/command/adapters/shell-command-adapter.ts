@@ -403,7 +403,7 @@ function getTogglePreviewDisabledReason(ctx: CommandContext) {
 		return undefined
 	}
 
-	return resolveTaskDetailTargetId(ctx) ? undefined : '当前没有可打开的任务详情'
+	return resolveTaskDetailTargetId(ctx) ? undefined : '当前没有可打开的任务预览'
 }
 
 function resolveTaskDetailTargetId(ctx: CommandContext) {

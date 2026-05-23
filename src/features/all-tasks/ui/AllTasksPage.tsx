@@ -18,6 +18,10 @@ import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { selectTaskList, useTaskStore } from '@/features/task/model/useTaskStore'
 import {
+	useRegisterTaskPreviewSource,
+	useTaskPreviewController,
+} from '@/features/task/detail'
+import {
 	Breadcrumb,
 	BreadcrumbItem,
 	BreadcrumbList,
@@ -42,6 +46,7 @@ export function AllTasksPage() {
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
+	const taskPreviewController = useTaskPreviewController()
 	const taskList = useTaskStore(selectTaskList)
 	const loadList = useTaskStore((state) => state.loadList)
 	const {
@@ -92,11 +97,17 @@ export function AllTasksPage() {
 				selectedIds: selectionSnapshot.ids,
 				tasks: filteredTasks,
 				fallbackSubtitle: (task) => (task.inboxAt ? 'Inbox' : '独立事项'),
+				focusedTaskId,
 				clearSelection: clearTaskSelection,
 			}),
-		[clearTaskSelection, filteredTasks, selectionSnapshot.ids],
+		[clearTaskSelection, filteredTasks, focusedTaskId, selectionSnapshot.ids],
 	)
 	useRegisterCommandSelection(commandSelection)
+	useRegisterTaskPreviewSource({
+		tasks: filteredTasks,
+		focusedTaskId,
+		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
+	})
 
 	useEffect(() => {
 		void loadList({
@@ -129,7 +140,16 @@ export function AllTasksPage() {
 					onClearTaskSelection: clearTaskSelection,
 					onDeleteTask: deleteListTask,
 					onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
-					onOpenTask: (taskId) => openEntityDrawer({ kind: 'task', id: taskId }),
+					onOpenTask: (taskId) => {
+						taskPreviewController.closePreview()
+						openEntityDrawer({ kind: 'task', id: taskId })
+					},
+					onPeekTask: (taskId, source) => {
+						if (activeDetail?.kind === 'task') {
+							return
+						}
+						taskPreviewController.openPreview(taskId, source)
+					},
 					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,

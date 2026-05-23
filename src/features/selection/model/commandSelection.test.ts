@@ -11,6 +11,7 @@ describe('buildTaskCommandSelection', () => {
 				createTask({ id: 'task-b', title: '任务 B', projectName: '项目 B' }),
 			],
 			fallbackSubtitle: 'Inbox',
+			focusedTaskId: 'task-a',
 		})
 
 		expect(selection).toMatchObject({
@@ -21,7 +22,7 @@ describe('buildTaskCommandSelection', () => {
 			isSingleSelection: false,
 			isMultiSelection: true,
 		})
-		expect(selection.entities).toEqual([
+		expect(selection.entities).toMatchObject([
 			{
 				id: 'task-b',
 				type: 'task',
@@ -40,6 +41,8 @@ describe('buildTaskCommandSelection', () => {
 			},
 		])
 		expect(selection.primaryEntity).toEqual(selection.entities[0])
+		expect(selection.focusedId).toBe('task-a')
+		expect(selection.focusedType).toBe('task')
 	})
 
 	it('没有有效任务时返回空 selection', () => {
@@ -47,11 +50,14 @@ describe('buildTaskCommandSelection', () => {
 			selectedIds: ['missing'],
 			tasks: [createTask({ id: 'task-a' })],
 			fallbackSubtitle: 'Inbox',
+			focusedTaskId: 'task-a',
 		})
 
 		expect(selection).toMatchObject({
 			ids: [],
 			entities: [],
+			focusedId: 'task-a',
+			focusedType: 'task',
 			source: 'none',
 			hasSelection: false,
 			isSingleSelection: false,

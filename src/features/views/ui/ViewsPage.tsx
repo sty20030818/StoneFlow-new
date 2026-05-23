@@ -18,6 +18,10 @@ import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import {
+	useRegisterTaskPreviewSource,
+	useTaskPreviewController,
+} from '@/features/task/detail'
+import {
 	selectTaskViewRun,
 	selectTaskViews,
 	useViewStore,
@@ -43,6 +47,7 @@ export function ViewsPage() {
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
+	const taskPreviewController = useTaskPreviewController()
 	const taskViews = useViewStore(selectTaskViews)
 	const taskRun = useViewStore(selectTaskViewRun)
 	const loadTaskViews = useViewStore((state) => state.loadTaskViews)
@@ -158,11 +163,17 @@ export function ViewsPage() {
 				selectedIds: selectionSnapshot.ids,
 				tasks: visibleTasks,
 				fallbackSubtitle: activeView?.name ?? '当前视图',
+				focusedTaskId,
 				clearSelection: clearTaskSelection,
 			}),
-		[activeView?.name, clearTaskSelection, selectionSnapshot.ids, visibleTasks],
+		[activeView?.name, clearTaskSelection, focusedTaskId, selectionSnapshot.ids, visibleTasks],
 	)
 	useRegisterCommandSelection(commandSelection)
+	useRegisterTaskPreviewSource({
+		tasks: visibleTasks,
+		focusedTaskId,
+		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
+	})
 	useEntitySelectionEscape({
 		hasSelection: selectedCount > 0,
 		clearSelection: clearTaskSelection,
@@ -249,7 +260,16 @@ export function ViewsPage() {
 						onClearTaskSelection: clearTaskSelection,
 						onDeleteTask: deleteListTask,
 						onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
-						onOpenTask: (taskId) => openEntityDrawer({ kind: 'task', id: taskId }),
+						onOpenTask: (taskId) => {
+							taskPreviewController.closePreview()
+							openEntityDrawer({ kind: 'task', id: taskId })
+						},
+						onPeekTask: (taskId, source) => {
+							if (activeDetail?.kind === 'task') {
+								return
+							}
+							taskPreviewController.openPreview(taskId, source)
+						},
 						onSelectAllTasks: selectTaskIds,
 						onSetFocusedTask: setFocusedTaskId,
 						onMoveTaskFocus: moveFocus,

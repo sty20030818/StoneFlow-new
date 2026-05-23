@@ -148,7 +148,7 @@ describe('Shell command adapter', () => {
 		expect(actions.goForward).toHaveBeenCalledTimes(1)
 	})
 
-	it('执行布局命令时调用 sidebar / 任务详情切换 action', async () => {
+	it('执行布局命令时调用 sidebar / 任务预览切换 action', async () => {
 		const actions = createActions()
 		const runtime = createRuntime(actions, {
 			...createEmptyCommandContext(),
@@ -380,13 +380,13 @@ describe('Shell command adapter', () => {
 		})
 	})
 
-	it('没有任务上下文时禁用任务详情切换命令', async () => {
+	it('没有任务上下文时禁用任务预览切换命令', async () => {
 		const runtime = createRuntime(createActions())
 
 		await expect(runtime.execute(COMMAND_IDS.layoutTogglePreview)).resolves.toMatchObject({
 			status: 'disabled',
 			commandId: COMMAND_IDS.layoutTogglePreview,
-			reason: '当前没有可打开的任务详情',
+			reason: '当前没有可打开的任务预览',
 		})
 	})
 

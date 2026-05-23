@@ -22,6 +22,7 @@ import {
 } from '@/features/command/keybinding'
 import { isGlobalChordPending } from '@/shared/lib/global-chord-guard'
 import type { TaskListItem } from '@/shared/types'
+import { useTaskPreviewController } from '@/features/task/detail'
 
 import { resolveTaskRowTarget, type TaskRowRef } from './rowTargetResolver'
 import { TASK_ROW_SHORTCUT_BINDINGS } from './taskRowShortcutBindings'
@@ -46,6 +47,7 @@ type TaskRowShortcutScopeProps = {
 	onClearTaskSelection?: () => void
 	onSelectAllTasks?: (taskIds: string[]) => void
 	onOpenTask: (taskId: string) => void
+	onPeekTask?: (taskId: string, source: 'keyboard' | 'pointer') => void
 }
 
 type PointerPoint = {
@@ -264,7 +266,9 @@ export function TaskRowShortcutScope({
 	onClearTaskSelection,
 	onSelectAllTasks,
 	onOpenTask,
+	onPeekTask,
 }: TaskRowShortcutScopeProps) {
+	const { cancelScheduledClose, setHoveredTask } = useTaskPreviewController()
 	const [hoveredId, setHoveredId] = useState<string | null>(focusedTaskId)
 	const [hoverSource, setHoverSource] = useState<HoverSource | null>(
 		focusedTaskId ? 'keyboard' : null,
@@ -349,9 +353,14 @@ export function TaskRowShortcutScope({
 			runBulkAction,
 			onClearTaskSelection,
 			onOpenTask,
+			onPeekTask,
 			onToggleTaskSelection,
 		})
-		const context = createTaskRowCommandContext(rowTarget, selectedTaskIds)
+		const context = createTaskRowCommandContext(
+			rowTarget,
+			selectedTaskIds,
+			hoveredId ?? focusedTaskId,
+		)
 
 		return new CommandRuntime({
 			registry: new CommandRegistry(createTaskRowCommands(actions)),
@@ -360,12 +369,15 @@ export function TaskRowShortcutScope({
 	}, [
 		onClearTaskSelection,
 		onOpenTask,
+		onPeekTask,
 		onToggleTaskSelection,
 		rowTarget,
 		runBulkAction,
 		selectedTaskIds,
 		selectedTasks,
 		targetTask,
+		hoveredId,
+		focusedTaskId,
 	])
 
 	const updateHoveredRow = useCallback(
@@ -409,6 +421,15 @@ export function TaskRowShortcutScope({
 			scrollIntoView: false,
 		})
 	}, [focusedTaskId, updateHoveredRow])
+
+	useEffect(() => {
+		const previewHoveredTaskId = hoverSource === 'pointer' ? hoveredId : null
+		setHoveredTask(previewHoveredTaskId, previewHoveredTaskId ? 'pointer' : null)
+
+		if (previewHoveredTaskId) {
+			cancelScheduledClose()
+		}
+	}, [cancelScheduledClose, hoveredId, hoverSource, setHoveredTask])
 
 	useEffect(() => {
 		function handleWindowKeyDown(event: KeyboardEvent) {
@@ -543,6 +564,7 @@ export function TaskRowShortcutScope({
 function createTaskRowCommandContext(
 	rowTarget: CommandContext['rowTarget'],
 	selectedTaskIds: string[],
+	focusedTaskId: string | null,
 ) {
 	return {
 		...createEmptyCommandContext(),
@@ -566,6 +588,8 @@ function createTaskRowCommandContext(
 			hasSelection: selectedTaskIds.length > 0,
 			isSingleSelection: selectedTaskIds.length === 1,
 			isMultiSelection: selectedTaskIds.length > 1,
+			focusedId: focusedTaskId ?? undefined,
+			focusedType: focusedTaskId ? ('task' as const) : undefined,
 		},
 		focus: {
 			isInputFocused: false,
@@ -616,6 +640,7 @@ function createTaskRowCommandActions({
 	runBulkAction,
 	onClearTaskSelection,
 	onOpenTask,
+	onPeekTask,
 	onToggleTaskSelection,
 }: {
 	rowTarget: CommandContext['rowTarget']
@@ -625,6 +650,7 @@ function createTaskRowCommandActions({
 	onClearTaskSelection?: () => void
 	onToggleTaskSelection: (taskId: string) => void
 	onOpenTask: (taskId: string) => void
+	onPeekTask?: (taskId: string, source: 'keyboard' | 'pointer') => void
 }): TaskRowCommandActions {
 	const batchTasks = selectedTasks.length > 0 ? selectedTasks : targetTask ? [targetTask] : []
 
@@ -647,7 +673,7 @@ function createTaskRowCommandActions({
 		},
 		peek: () => {
 			if (targetTask && selectedTasks.length <= 1) {
-				onOpenTask(targetTask.id)
+				onPeekTask?.(targetTask.id, rowTarget.source === 'hover' ? 'pointer' : 'keyboard')
 			}
 		},
 		openDetail: () => {

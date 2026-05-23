@@ -13,10 +13,10 @@ export const layoutCommands: Command[] = [
 	},
 	{
 		id: COMMAND_IDS.layoutTogglePreview,
-		title: '切换任务详情',
+		title: '切换任务预览',
 		category: 'layout',
 		scope: ['global'],
-		description: '展开或收起右侧任务详情面板。',
+		description: '展开或收起右上角任务预览。',
 		keywords: ['layout', 'preview', 'detail', 'toggle', '预览', '详情'],
 		getPriority: () => 40,
 		run: () => {},

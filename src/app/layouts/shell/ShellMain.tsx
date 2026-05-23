@@ -2,6 +2,7 @@ import { useEffect, type MouseEvent, type PropsWithChildren } from 'react'
 
 import { ShellDrawer } from '@/app/layouts/shell/ShellDrawer'
 import type { EntityDetailRouteState } from '@/features/entity-detail'
+import { TaskPreview, useTaskPreviewController } from '@/features/task/detail'
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -56,6 +57,28 @@ export function ShellMain({
 	onOpenTaskCreateDialog,
 	onOpenProjectCreateDialog,
 }: ShellMainProps) {
+	const preview = useTaskPreviewController()
+
+	const handleMainPointerDownCapture = (event: MouseEvent<HTMLElement>) => {
+		if (!preview.previewState.open || isDrawerOpen) {
+			return
+		}
+
+		const target = event.target
+		if (!(target instanceof HTMLElement)) {
+			return
+		}
+
+		if (
+			target.closest('[data-task-preview-root="true"]') ||
+			target.closest(SHELL_TASK_CARD_SELECTOR)
+		) {
+			return
+		}
+
+		preview.closePreview()
+	}
+
 	useEffect(() => {
 		if (!isDrawerOpen) {
 			return undefined
@@ -111,6 +134,7 @@ export function ShellMain({
 
 		if (
 			target.closest(SHELL_DRAWER_ROOT_SELECTOR) ||
+			target.closest('[data-task-preview-root="true"]') ||
 			target.closest(SHELL_TASK_CARD_SELECTOR) ||
 			target.closest(DRAWER_OWNED_OVERLAY_SELECTOR) ||
 			target.closest(INTERACTIVE_TARGET_SELECTOR)
@@ -132,8 +156,21 @@ export function ShellMain({
 								'group-data-[sidebar-layout=desktop]/sidebar-wrapper:shadow-none',
 								'group-data-[sidebar-layout=mobile]/sidebar-wrapper:shadow-(--sf-shadow-panel)',
 							)}
+							onPointerDownCapture={handleMainPointerDownCapture}
 						>
 							<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>{children}</div>
+
+							{!isDrawerOpen && preview.previewState.open ? (
+								<TaskPreview
+									linkSummary={preview.linkSummary}
+									onPointerEnter={() => preview.setPreviewPointerInside(true)}
+									onPointerLeave={() => {
+										preview.setPreviewPointerInside(false)
+										preview.scheduleClosePreview()
+									}}
+									task={preview.targetTask}
+								/>
+							) : null}
 
 							<ShellDrawer
 								activeDetail={activeDetail}
