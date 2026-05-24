@@ -16,6 +16,7 @@ export {
 	closeEntityDrawerTarget,
 	openEntityDrawerTarget,
 	openEntityPageTarget,
+	resolveEntityPageTarget,
 } from './model/entityDetailNavigation'
 export { useEntityDetailController } from './model/useEntityDetailController'
 export { EntityDetailDrawerHost } from './ui/EntityDetailDrawerHost'

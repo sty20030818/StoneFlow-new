@@ -47,6 +47,14 @@ const shellChildren = [
 		element: <ProjectOverviewPage />,
 	},
 	{
+		path: 'tasks/:taskId',
+		element: <TaskPageRoute />,
+	},
+	{
+		path: 'projects/:projectId/detail',
+		element: <ProjectPageRoute />,
+	},
+	{
 		path: 'project/:projectId',
 		element: <ProjectPage />,
 	},

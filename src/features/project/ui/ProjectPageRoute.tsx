@@ -1,24 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 
-import { buildStartupFallbackPath, useShellRoute } from '@/app/routing'
-import { ShellLayout } from '@/app/layouts/shell/ShellLayout'
-import type { ShellSectionKey } from '@/app/layouts/shell/types'
-import {
-	selectActiveSection,
-	selectCurrentScopeType,
-	selectCurrentSpaceId,
-	useShellNavStore,
-} from '@/app/layouts/shell/model/useShellNavStore'
+import { buildProjectDetailPath, buildStartupFallbackPath, useShellRoute } from '@/app/routing'
 import { getProjectDetail } from '@/features/project/api/projects'
 import { ProjectPage } from '@/features/project/ui/ProjectPage'
-import { setActiveScope } from '@/features/space/api/spaces'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { useWorkspaceSync } from '@/features/workspace/model/useWorkspaceSync'
 import type { Scope, Project } from '@/shared/types'
 import { TaskPageState } from '@/features/task/detail/ui/TaskPageState'
-
-const PROJECT_PAGE_SECTION: ShellSectionKey = 'project'
 
 type RouteLoadState =
 	| { kind: 'loading' }
@@ -28,14 +16,9 @@ type RouteLoadState =
 export function ProjectPageRoute() {
 	const shellRoute = useShellRoute()
 	const navigate = useNavigate()
-	const { projectId = '' } = useParams()
+	const { spaceId: routeSpaceId, projectId = '' } = useParams()
 	const [loadState, setLoadState] = useState<RouteLoadState>({ kind: 'loading' })
 	const spaces = useSpaceStore(selectSpaces)
-	const currentScopeType = useShellNavStore(selectCurrentScopeType)
-	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
-	const activeSection = useShellNavStore(selectActiveSection)
-	const setCurrentScope = useShellNavStore((state) => state.setCurrentScope)
-	const setActiveSection = useShellNavStore((state) => state.setActiveSection)
 
 	useEffect(() => {
 		let cancelled = false
@@ -76,38 +59,6 @@ export function ProjectPageRoute() {
 		return { type: 'space', spaceId: project.spaceId }
 	}, [loadState, spaces])
 
-	useWorkspaceSync(scope ?? { type: 'all' })
-
-	useEffect(() => {
-		if (!scope) {
-			return
-		}
-
-		const nextScopeType = scope.type
-		const nextSpaceId = scope.type === 'space' ? scope.spaceId : null
-
-		if (currentScopeType !== nextScopeType || currentSpaceId !== nextSpaceId) {
-			setCurrentScope(nextScopeType, nextSpaceId)
-		}
-
-		if (activeSection !== PROJECT_PAGE_SECTION) {
-			setActiveSection(PROJECT_PAGE_SECTION)
-		}
-	}, [activeSection, currentScopeType, currentSpaceId, scope, setActiveSection, setCurrentScope])
-
-	useEffect(() => {
-		if (!scope) {
-			return
-		}
-
-		void setActiveScope(scope).catch((activeScopeError) => {
-			console.error('project page active scope sync failed', {
-				scope,
-				error: activeScopeError,
-			})
-		})
-	}, [scope])
-
 	if (loadState.kind === 'loading') {
 		return (
 			<TaskPageState
@@ -132,7 +83,7 @@ export function ProjectPageRoute() {
 		)
 	}
 
-	if (!scope) {
+	if (!scope || scope.type !== 'space') {
 		return (
 			<TaskPageState
 				actionLabel='返回工作区'
@@ -146,14 +97,10 @@ export function ProjectPageRoute() {
 		)
 	}
 
-	return (
-		<ShellLayout
-			activeSection={PROJECT_PAGE_SECTION}
-			currentScope={scope}
-			currentSpaceId={scope.type === 'space' ? scope.spaceId : null}
-			shellRoute={shellRoute}
-		>
-			<ProjectPage scopeOverride={scope} />
-		</ShellLayout>
-	)
+	const canonicalPath = buildProjectDetailPath(scope.spaceId, projectId)
+	if (shellRoute.pathname !== canonicalPath || routeSpaceId !== scope.spaceId) {
+		return <Navigate replace to={canonicalPath} />
+	}
+
+	return <ProjectPage scopeOverride={scope} />
 }

@@ -1,6 +1,7 @@
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type {
 	RouteScope,
+	EntityPageRouteTarget,
 	ShellPathKind,
 	ShellRoute,
 	ShellRouteLocationLike,
@@ -12,6 +13,8 @@ const LEGACY_SCOPED_SHELL_PATH = /^\/space\/([^/]+)(?:\/(.+))?$/
 const LEGACY_ALL_SHELL_PATH = /^\/spaces(?:\/(.+))?$/
 const CANONICAL_SCOPED_SHELL_PATH = /^\/spaces\/([^/]+)(?:\/(.+))?$/
 const CANONICAL_ALL_SHELL_PATH = /^\/all(?:\/(.+))?$/
+const CANONICAL_TASK_DETAIL_PATH = /^\/spaces\/([^/]+)\/tasks\/([^/]+)$/
+const CANONICAL_PROJECT_DETAIL_PATH = /^\/spaces\/([^/]+)\/projects\/([^/]+)\/detail$/
 
 function stripQueryAndHash(pathname: string) {
 	return pathname.split(/[?#]/)[0] || '/'
@@ -46,12 +49,14 @@ export function parseShellRoute(input: ShellRouteLocationLike): ShellRoute {
 	const scope = parseShellScopePath(normalizedPath)
 	const pathKind = resolveShellPathKind(normalizedPath)
 	const projectId = resolveShellProjectId(normalizedPath)
+	const entityPageTarget = resolveEntityPageRouteTarget(normalizedPath)
 
 	return {
 		scope,
 		spaceId: scope?.type === 'space' ? scope.spaceId : null,
 		section: resolveShellSection(normalizedPath),
 		projectId,
+		entityPageTarget,
 		pathKind,
 		pathname: normalizedPath,
 		search,
@@ -68,7 +73,15 @@ export function parseShellRoute(input: ShellRouteLocationLike): ShellRoute {
 export function resolveShellSection(pathname: string): ShellSectionKey {
 	const normalizedPath = stripQueryAndHash(pathname)
 
-	if (isProjectShortcutPath(normalizedPath) || normalizedPath.includes('/project/')) {
+	if (isCanonicalTaskDetailPath(normalizedPath)) {
+		return 'allTasks'
+	}
+
+	if (
+		isProjectShortcutPath(normalizedPath) ||
+		normalizedPath.includes('/project/') ||
+		isCanonicalProjectDetailPath(normalizedPath)
+	) {
 		return 'project'
 	}
 
@@ -113,7 +126,12 @@ export function parseShellScopePath(pathname: string): RouteScope | null {
 	const canonicalScopedMatch = normalizedPath.match(CANONICAL_SCOPED_SHELL_PATH)
 	if (canonicalScopedMatch?.[1]) {
 		const remainder = canonicalScopedMatch[2] ?? ''
-		if (remainder && (remainder.startsWith('project/') || isCanonicalSectionRemainder(remainder))) {
+		if (
+			remainder &&
+			(remainder.startsWith('project/') ||
+				isCanonicalDetailRemainder(remainder) ||
+				isCanonicalSectionRemainder(remainder))
+		) {
 			return { type: 'space', spaceId: decodeURIComponent(canonicalScopedMatch[1]) }
 		}
 	}
@@ -127,7 +145,8 @@ export function parseShellScopePath(pathname: string): RouteScope | null {
 }
 
 export function isProjectShellPath(pathname: string) {
-	return stripQueryAndHash(pathname).includes('/project/')
+	const normalizedPath = stripQueryAndHash(pathname)
+	return normalizedPath.includes('/project/') || isCanonicalProjectDetailPath(normalizedPath)
 }
 
 export function isTaskShortcutPath(pathname: string) {
@@ -188,8 +207,43 @@ export function isTaskPageSection(section: ShellSectionKey) {
 
 function resolveShellProjectId(pathname: string) {
 	const normalizedPath = stripQueryAndHash(pathname)
+	const detailMatch = normalizedPath.match(CANONICAL_PROJECT_DETAIL_PATH)
+	if (detailMatch?.[2]) {
+		return decodeURIComponent(detailMatch[2])
+	}
+
 	const match = normalizedPath.match(/\/project\/([^/]+)/)
 	return match?.[1] ? decodeURIComponent(match[1]) : null
+}
+
+function resolveEntityPageRouteTarget(pathname: string): EntityPageRouteTarget | null {
+	const taskMatch = pathname.match(CANONICAL_TASK_DETAIL_PATH)
+	if (taskMatch?.[1] && taskMatch[2]) {
+		return {
+			kind: 'task',
+			spaceId: decodeURIComponent(taskMatch[1]),
+			id: decodeURIComponent(taskMatch[2]),
+		}
+	}
+
+	const projectMatch = pathname.match(CANONICAL_PROJECT_DETAIL_PATH)
+	if (projectMatch?.[1] && projectMatch[2]) {
+		return {
+			kind: 'project',
+			spaceId: decodeURIComponent(projectMatch[1]),
+			id: decodeURIComponent(projectMatch[2]),
+		}
+	}
+
+	return null
+}
+
+function isCanonicalTaskDetailPath(pathname: string) {
+	return CANONICAL_TASK_DETAIL_PATH.test(pathname)
+}
+
+function isCanonicalProjectDetailPath(pathname: string) {
+	return CANONICAL_PROJECT_DETAIL_PATH.test(pathname)
 }
 
 function isLegacyAllShellPath(pathname: string) {
@@ -203,7 +257,16 @@ function isCanonicalScopedShellPath(pathname: string) {
 	}
 
 	const remainder = match[2] ?? ''
-	return Boolean(remainder) && (remainder.startsWith('project/') || isCanonicalSectionRemainder(remainder))
+	return (
+		Boolean(remainder) &&
+		(remainder.startsWith('project/') ||
+			isCanonicalDetailRemainder(remainder) ||
+			isCanonicalSectionRemainder(remainder))
+	)
+}
+
+function isCanonicalDetailRemainder(remainder: string) {
+	return /^tasks\/[^/]+$/.test(remainder) || /^projects\/[^/]+\/detail$/.test(remainder)
 }
 
 function isCanonicalSectionRemainder(remainder: string) {

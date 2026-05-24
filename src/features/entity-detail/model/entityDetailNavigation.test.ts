@@ -1,12 +1,29 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
 	closeEntityDrawerTarget,
 	openEntityDrawerTarget,
 	openEntityPageTarget,
+	resolveEntityPageTarget,
 } from './entityDetailNavigation'
 
+const getTaskDetailMock = vi.hoisted(() => vi.fn())
+const getProjectDetailMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/features/task/api/tasks', () => ({
+	getTaskDetail: (taskId: string) => getTaskDetailMock(taskId),
+}))
+
+vi.mock('@/features/project/api/projects', () => ({
+	getProjectDetail: (projectId: string) => getProjectDetailMock(projectId),
+}))
+
 describe('entityDetailNavigation', () => {
+	beforeEach(() => {
+		getTaskDetailMock.mockReset()
+		getProjectDetailMock.mockReset()
+	})
+
 	it('首次打开 Drawer 使用 push', () => {
 		expect(
 			openEntityDrawerTarget(
@@ -56,7 +73,7 @@ describe('entityDetailNavigation', () => {
 		})
 	})
 
-	it('独立详情页不带 drawer query', () => {
+	it('shortcut 独立详情页不带 drawer query', () => {
 		expect(openEntityPageTarget({ kind: 'task', id: 'task/a' })).toEqual({
 			pathname: '/tasks/task%2Fa',
 			search: '',
@@ -64,6 +81,32 @@ describe('entityDetailNavigation', () => {
 		})
 		expect(openEntityPageTarget({ kind: 'project', id: 'project-a' })).toEqual({
 			pathname: '/projects/project-a',
+			search: '',
+			replace: false,
+		})
+	})
+
+	it('解析 canonical task detail page target', async () => {
+		getTaskDetailMock.mockResolvedValue({
+			id: 'task/a',
+			spaceId: 'space/a',
+		})
+
+		await expect(resolveEntityPageTarget({ kind: 'task', id: 'task/a' })).resolves.toEqual({
+			pathname: '/spaces/space%2Fa/tasks/task%2Fa',
+			search: '',
+			replace: false,
+		})
+	})
+
+	it('解析 canonical project detail page target', async () => {
+		getProjectDetailMock.mockResolvedValue({
+			id: 'project/a',
+			spaceId: 'space-a',
+		})
+
+		await expect(resolveEntityPageTarget({ kind: 'project', id: 'project/a' })).resolves.toEqual({
+			pathname: '/spaces/space-a/projects/project%2Fa/detail',
 			search: '',
 			replace: false,
 		})

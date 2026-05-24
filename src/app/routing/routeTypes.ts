@@ -26,6 +26,18 @@ export type EntityShortcutTarget =
 			id: string
 	  }
 
+export type EntityPageRouteTarget =
+	| {
+			kind: 'task'
+			id: string
+			spaceId: string
+	  }
+	| {
+			kind: 'project'
+			id: string
+			spaceId: string
+	  }
+
 export type ShellPathKind =
 	| 'canonical-all'
 	| 'canonical-space'
@@ -40,6 +52,7 @@ export type ShellRoute = {
 	spaceId: string | null
 	section: ShellSectionKey
 	projectId: string | null
+	entityPageTarget: EntityPageRouteTarget | null
 	pathKind: ShellPathKind
 	pathname: string
 	search: string

@@ -1,4 +1,4 @@
-import { buildProjectShortcutPath, buildScopedProjectPath, buildScopedSectionPath, buildStartupFallbackPath, buildTaskShortcutPath } from './routePaths'
+import { buildProjectDetailPath, buildProjectShortcutPath, buildScopedProjectPath, buildScopedSectionPath, buildStartupFallbackPath, buildTaskDetailPath, buildTaskShortcutPath } from './routePaths'
 import { buildLegacyProjectPath, buildLegacySectionPath } from './routePaths'
 
 describe('routePaths', () => {
@@ -36,6 +36,13 @@ describe('routePaths', () => {
 	it('构建 entity shortcut path', () => {
 		expect(buildTaskShortcutPath('task/a')).toBe('/tasks/task%2Fa')
 		expect(buildProjectShortcutPath('project-a')).toBe('/projects/project-a')
+	})
+
+	it('构建 entity canonical detail path', () => {
+		expect(buildTaskDetailPath('space/a', 'task/a')).toBe('/spaces/space%2Fa/tasks/task%2Fa')
+		expect(buildProjectDetailPath('space-a', 'project/a')).toBe(
+			'/spaces/space-a/projects/project%2Fa/detail',
+		)
 	})
 
 	it('构建 startup fallback path', () => {

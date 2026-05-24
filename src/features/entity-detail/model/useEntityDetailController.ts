@@ -5,6 +5,7 @@ import {
 	closeEntityDrawerTarget,
 	openEntityDrawerTarget,
 	openEntityPageTarget,
+	resolveEntityPageTarget,
 } from './entityDetailNavigation'
 import {
 	buildEntityDetailSearch,
@@ -77,16 +78,19 @@ export function useEntityDetailController() {
 
 	const openPage = useCallback(
 		(target: EntityDetailTarget) => {
-			const nextTarget = openEntityPageTarget(target)
-			startTransition(() => {
-				navigate(
-					{
-						pathname: nextTarget.pathname,
-						search: '',
-					},
-					{ replace: nextTarget.replace },
-				)
-			})
+			void resolveEntityPageTarget(target)
+				.catch(() => openEntityPageTarget(target))
+				.then((nextTarget) => {
+					startTransition(() => {
+						navigate(
+							{
+								pathname: nextTarget.pathname,
+								search: '',
+							},
+							{ replace: nextTarget.replace },
+						)
+					})
+				})
 		},
 		[navigate],
 	)

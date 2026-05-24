@@ -28,6 +28,14 @@ export function buildCanonicalProjectPath(
 	return `/spaces/${spaceId}/project/${encodeURIComponent(projectId)}`
 }
 
+export function buildTaskDetailPath(spaceId: string, taskId: string) {
+	return `/spaces/${encodeURIComponent(spaceId)}/tasks/${encodeURIComponent(taskId)}`
+}
+
+export function buildProjectDetailPath(spaceId: string, projectId: string) {
+	return `/spaces/${encodeURIComponent(spaceId)}/projects/${encodeURIComponent(projectId)}/detail`
+}
+
 export function buildLegacySectionPath(
 	scope: RouteScope,
 	section: ShellSectionSegment,

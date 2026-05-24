@@ -15,6 +15,8 @@ describe('routeParser', () => {
 		expect(resolveShellSection('/space/space-personal/trash')).toBe('trash')
 		expect(resolveShellSection('/space/space-personal/settings')).toBe('settings')
 		expect(resolveShellSection('/spaces/inbox')).toBe('inbox')
+		expect(resolveShellSection('/spaces/space-personal/tasks/task-a')).toBe('allTasks')
+		expect(resolveShellSection('/spaces/space-personal/projects/project-a/detail')).toBe('project')
 	})
 
 	it('识别 scope 和 path kind', () => {
@@ -22,6 +24,14 @@ describe('routeParser', () => {
 		expect(parseShellScopePath('/spaces/space-a/inbox')).toEqual({ type: 'space', spaceId: 'space-a' })
 		expect(parseShellScopePath('/spaces/views')).toEqual({ type: 'all' })
 		expect(parseShellScopePath('/space/space-a/inbox')).toEqual({ type: 'space', spaceId: 'space-a' })
+		expect(parseShellScopePath('/spaces/space-a/tasks/task-a')).toEqual({
+			type: 'space',
+			spaceId: 'space-a',
+		})
+		expect(parseShellScopePath('/spaces/space-a/projects/project-a/detail')).toEqual({
+			type: 'space',
+			spaceId: 'space-a',
+		})
 		expect(resolveShellPathKind('/all/views')).toBe('canonical-all')
 		expect(resolveShellPathKind('/spaces/space-a/project/project-a')).toBe('canonical-space')
 		expect(resolveShellPathKind('/spaces/views')).toBe('legacy-all')
@@ -32,6 +42,7 @@ describe('routeParser', () => {
 
 	it('识别 project shell 与 entity shortcut path', () => {
 		expect(isProjectShellPath('/spaces/space-a/project/project-a')).toBe(true)
+		expect(isProjectShellPath('/spaces/space-a/projects/project-a/detail')).toBe(true)
 		expect(isProjectShellPath('/space/space-a/project/project-a')).toBe(true)
 		expect(isTaskShortcutPath('/tasks/task-a')).toBe(true)
 		expect(isTaskShortcutPath('/tasks/task-a/extra')).toBe(false)
@@ -61,6 +72,26 @@ describe('routeParser', () => {
 			isShellPath: true,
 		})
 
+		expect(parseShellRoute('/spaces/space-a/tasks/task-a')).toMatchObject({
+			scope: { type: 'space', spaceId: 'space-a' },
+			spaceId: 'space-a',
+			section: 'allTasks',
+			projectId: null,
+			entityPageTarget: { kind: 'task', id: 'task-a', spaceId: 'space-a' },
+			pathKind: 'canonical-space',
+			isShellPath: true,
+		})
+
+		expect(parseShellRoute('/spaces/space-a/projects/project-a/detail')).toMatchObject({
+			scope: { type: 'space', spaceId: 'space-a' },
+			spaceId: 'space-a',
+			section: 'project',
+			projectId: 'project-a',
+			entityPageTarget: { kind: 'project', id: 'project-a', spaceId: 'space-a' },
+			pathKind: 'canonical-space',
+			isShellPath: true,
+		})
+
 		expect(parseShellRoute('/space/space-a/no-project')).toMatchObject({
 			scope: { type: 'space', spaceId: 'space-a' },
 			section: 'noProject',
@@ -71,6 +102,7 @@ describe('routeParser', () => {
 		expect(parseShellRoute('/tasks/task-a')).toMatchObject({
 			scope: null,
 			section: 'inbox',
+			entityPageTarget: null,
 			pathKind: 'task-shortcut',
 			isShellPath: false,
 		})

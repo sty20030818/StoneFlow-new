@@ -1,23 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ProjectPageRoute } from './ProjectPageRoute'
 
 const getProjectDetailMock = vi.hoisted(() => vi.fn())
-const setActiveScopeMock = vi.hoisted(() => vi.fn<(scope: unknown) => Promise<void>>())
-const useWorkspaceSyncMock = vi.hoisted(() => vi.fn<(scope: unknown) => void>())
-
-const shellLayoutPropsSpy = vi.hoisted(() => vi.fn())
 const projectPagePropsSpy = vi.hoisted(() => vi.fn())
-
-const shellNavState = vi.hoisted(() => ({
-	currentScopeType: 'all' as 'all' | 'space',
-	currentSpaceId: null as string | null,
-	activeSection: 'inbox' as const,
-	setCurrentScope: vi.fn(),
-	setActiveSection: vi.fn(),
-}))
 
 const spaceState = vi.hoisted(() => ({
 	spaces: [{ id: 'space-1', name: '工作' }],
@@ -27,39 +15,9 @@ vi.mock('@/features/project/api/projects', () => ({
 	getProjectDetail: (projectId: string) => getProjectDetailMock(projectId),
 }))
 
-vi.mock('@/features/space/api/spaces', () => ({
-	setActiveScope: (scope: unknown) => setActiveScopeMock(scope),
-}))
-
-vi.mock('@/features/workspace/model/useWorkspaceSync', () => ({
-	useWorkspaceSync: (scope: unknown) => useWorkspaceSyncMock(scope),
-}))
-
-vi.mock('@/app/layouts/shell/model/useShellNavStore', () => ({
-	selectCurrentScopeType: (state: typeof shellNavState) => state.currentScopeType,
-	selectCurrentSpaceId: (state: typeof shellNavState) => state.currentSpaceId,
-	selectActiveSection: (state: typeof shellNavState) => state.activeSection,
-	useShellNavStore: (selector: (state: typeof shellNavState) => unknown) => selector(shellNavState),
-}))
-
 vi.mock('@/features/space/model/useSpaceStore', () => ({
 	selectSpaces: (state: typeof spaceState) => state.spaces,
 	useSpaceStore: (selector: (state: typeof spaceState) => unknown) => selector(spaceState),
-}))
-
-vi.mock('@/app/layouts/shell/ShellLayout', () => ({
-	ShellLayout: ({
-		children,
-		...props
-	}: {
-		children: React.ReactNode
-		activeSection: string
-		currentScope: unknown
-		currentSpaceId: string | null
-	}) => {
-		shellLayoutPropsSpy(props)
-		return <div data-testid='shell-layout'>{children}</div>
-	},
 }))
 
 vi.mock('@/features/project/ui/ProjectPage', () => ({
@@ -72,116 +30,108 @@ vi.mock('@/features/project/ui/ProjectPage', () => ({
 describe('ProjectPageRoute', () => {
 	beforeEach(() => {
 		getProjectDetailMock.mockReset()
-		setActiveScopeMock.mockReset()
-		setActiveScopeMock.mockResolvedValue(undefined)
-		useWorkspaceSyncMock.mockClear()
-		shellLayoutPropsSpy.mockClear()
 		projectPagePropsSpy.mockClear()
-		shellNavState.currentScopeType = 'all'
-		shellNavState.currentSpaceId = null
-		shellNavState.activeSection = 'inbox'
-		shellNavState.setCurrentScope.mockReset()
-		shellNavState.setActiveSection.mockReset()
 		spaceState.spaces = [{ id: 'space-1', name: '工作' }]
 	})
 
-	it('已知项目能打开并同步 scope', async () => {
-		getProjectDetailMock.mockResolvedValue({
-			id: 'project-1',
-			spaceId: 'space-1',
-			name: '项目 A',
-			description: null,
-			dueAt: null,
-			sortOrder: 1,
-			completedAt: null,
-			archivedAt: null,
-			deletedAt: null,
-			createdAt: '2026-05-24T00:00:00Z',
-			updatedAt: '2026-05-24T00:00:00Z',
-		})
+	it('canonical 项目详情路由能打开项目页面', async () => {
+		mockProjectDetail()
 
-		renderProjectPageRoute('/projects/project-1')
+		renderProjectPageRoute('/spaces/space-1/projects/project-1/detail')
 
 		expect(await screen.findByText('Project page body')).toBeInTheDocument()
-		expect(shellLayoutPropsSpy).toHaveBeenCalledWith(
-			expect.objectContaining({
-				activeSection: 'project',
-				currentScope: { type: 'space', spaceId: 'space-1' },
-				currentSpaceId: 'space-1',
-				shellRoute: expect.objectContaining({
-					pathKind: 'project-shortcut',
-					pathname: '/projects/project-1',
-				}),
-			}),
-		)
 		expect(projectPagePropsSpy).toHaveBeenCalledWith({
 			scopeOverride: { type: 'space', spaceId: 'space-1' },
 		})
+		expect(screen.getByTestId('location')).toHaveTextContent(
+			'/spaces/space-1/projects/project-1/detail',
+		)
+	})
+
+	it('shortcut 项目路由 replace 到 canonical 详情路由', async () => {
+		mockProjectDetail()
+
+		renderProjectPageRoute('/projects/project-1')
 
 		await waitFor(() => {
-			expect(shellNavState.setCurrentScope).toHaveBeenCalledWith('space', 'space-1')
-			expect(shellNavState.setActiveSection).toHaveBeenCalledWith('project')
-			expect(setActiveScopeMock).toHaveBeenCalledWith({ type: 'space', spaceId: 'space-1' })
+			expect(screen.getByTestId('location')).toHaveTextContent(
+				'/spaces/space-1/projects/project-1/detail',
+			)
+		})
+		expect(await screen.findByText('Project page body')).toBeInTheDocument()
+	})
+
+	it('canonical spaceId 不匹配时 replace 到实体真实空间', async () => {
+		mockProjectDetail()
+
+		renderProjectPageRoute('/spaces/wrong-space/projects/project-1/detail')
+
+		await waitFor(() => {
+			expect(screen.getByTestId('location')).toHaveTextContent(
+				'/spaces/space-1/projects/project-1/detail',
+			)
 		})
 	})
 
 	it('未知项目进入错误态', async () => {
 		getProjectDetailMock.mockRejectedValue(new Error('not found'))
 
-		renderProjectPageRoute('/projects/missing-project')
+		renderProjectPageRoute('/spaces/space-1/projects/missing-project/detail')
 
 		expect(await screen.findByText('项目不可用')).toBeInTheDocument()
 		expect(screen.getByText('not found')).toBeInTheDocument()
 	})
 
-	it('不可见项目回退为 all scope', async () => {
+	it('不可见项目进入错误态', async () => {
 		spaceState.spaces = [{ id: 'space-2', name: '生活' }]
-		getProjectDetailMock.mockResolvedValue({
-			id: 'project-1',
-			spaceId: 'space-1',
-			name: '项目 A',
-			description: null,
-			dueAt: null,
-			sortOrder: 1,
-			completedAt: null,
-			archivedAt: null,
-			deletedAt: null,
-			createdAt: '2026-05-24T00:00:00Z',
-			updatedAt: '2026-05-24T00:00:00Z',
-		})
+		mockProjectDetail()
 
-		renderProjectPageRoute('/projects/project-1')
+		renderProjectPageRoute('/spaces/space-1/projects/project-1/detail')
 
-		expect(await screen.findByText('Project page body')).toBeInTheDocument()
-		expect(shellLayoutPropsSpy).toHaveBeenCalledWith(
-			expect.objectContaining({
-				activeSection: 'project',
-				currentScope: { type: 'all' },
-				currentSpaceId: null,
-				shellRoute: expect.objectContaining({
-					pathKind: 'project-shortcut',
-					pathname: '/projects/project-1',
-				}),
-			}),
-		)
-		expect(projectPagePropsSpy).toHaveBeenCalledWith({
-			scopeOverride: { type: 'all' },
-		})
-
-		await waitFor(() => {
-			expect(shellNavState.setCurrentScope).not.toHaveBeenCalled()
-			expect(shellNavState.setActiveSection).toHaveBeenCalledWith('project')
-			expect(setActiveScopeMock).toHaveBeenCalledWith({ type: 'all' })
-		})
+		expect(await screen.findByText('项目不可用')).toBeInTheDocument()
+		expect(screen.getByText('当前项目不可见，可能已被归档、删除，或当前账号无权访问。')).toBeInTheDocument()
 	})
 })
+
+function mockProjectDetail() {
+	getProjectDetailMock.mockResolvedValue({
+		id: 'project-1',
+		spaceId: 'space-1',
+		name: '项目 A',
+		description: null,
+		dueAt: null,
+		sortOrder: 1,
+		completedAt: null,
+		archivedAt: null,
+		deletedAt: null,
+		createdAt: '2026-05-24T00:00:00Z',
+		updatedAt: '2026-05-24T00:00:00Z',
+	})
+}
 
 function renderProjectPageRoute(initialEntry: string) {
 	return render(
 		<MemoryRouter initialEntries={[initialEntry]}>
 			<Routes>
-				<Route element={<ProjectPageRoute />} path='/projects/:projectId' />
+				<Route element={<RouteProbe />} path='*' />
 			</Routes>
 		</MemoryRouter>,
+	)
+}
+
+function RouteProbe() {
+	const location = useLocation()
+
+	return (
+		<>
+			<div data-testid='location'>
+				{location.pathname}
+				{location.search}
+			</div>
+			<Routes>
+				<Route element={<ProjectPageRoute />} path='/projects/:projectId' />
+				<Route element={<ProjectPageRoute />} path='/spaces/:spaceId/projects/:projectId/detail' />
+			</Routes>
+		</>
 	)
 }

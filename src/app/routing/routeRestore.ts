@@ -1,4 +1,5 @@
 import { getProjectDetail } from '@/features/project/api/projects'
+import { getTaskDetail } from '@/features/task/api/tasks'
 import type { Space } from '@/shared/types'
 
 import { normalizeLegacyRoute } from './routeMigration'
@@ -35,6 +36,10 @@ export function isRememberableShellPath(path: string): boolean {
 	const remainder = spaceMatch[2] ?? ''
 	if (remainder.startsWith('project/')) {
 		return remainder.length > 'project/'.length
+	}
+
+	if (isTaskDetailRemainder(remainder) || isProjectDetailRemainder(remainder)) {
+		return true
 	}
 
 	return ALLOWED_SECTION_SEGMENTS.has(remainder)
@@ -80,20 +85,17 @@ export async function normalizeRememberedShellPath(
 		}
 
 		if (remainder.startsWith('project/')) {
-			const projectId = remainder.slice('project/'.length)
-			if (projectId.length === 0) {
-				return fallbackPath
-			}
+			return validateProjectSpace(remainder.slice('project/'.length), spaceId, canonicalPath, fallbackPath)
+		}
 
-			try {
-				const detail = await getProjectDetail(projectId)
-				if (detail.spaceId !== spaceId) {
-					return fallbackPath
-				}
-				return canonicalPath
-			} catch {
-				return fallbackPath
-			}
+		if (isProjectDetailRemainder(remainder)) {
+			const projectId = remainder.match(/^projects\/([^/]+)\/detail$/)?.[1] ?? ''
+			return validateProjectSpace(projectId, spaceId, canonicalPath, fallbackPath)
+		}
+
+		if (isTaskDetailRemainder(remainder)) {
+			const taskId = remainder.match(/^tasks\/([^/]+)$/)?.[1] ?? ''
+			return validateTaskSpace(taskId, spaceId, canonicalPath, fallbackPath)
 		}
 
 		return canonicalPath
@@ -104,4 +106,48 @@ export async function normalizeRememberedShellPath(
 	}
 
 	return canonicalPath
+}
+
+async function validateProjectSpace(
+	projectId: string,
+	spaceId: string,
+	canonicalPath: string,
+	fallbackPath: string,
+) {
+	if (!projectId) {
+		return fallbackPath
+	}
+
+	try {
+		const detail = await getProjectDetail(decodeURIComponent(projectId))
+		return detail.spaceId === spaceId ? canonicalPath : fallbackPath
+	} catch {
+		return fallbackPath
+	}
+}
+
+async function validateTaskSpace(
+	taskId: string,
+	spaceId: string,
+	canonicalPath: string,
+	fallbackPath: string,
+) {
+	if (!taskId) {
+		return fallbackPath
+	}
+
+	try {
+		const detail = await getTaskDetail(decodeURIComponent(taskId))
+		return detail.spaceId === spaceId ? canonicalPath : fallbackPath
+	} catch {
+		return fallbackPath
+	}
+}
+
+function isTaskDetailRemainder(remainder: string) {
+	return /^tasks\/[^/]+$/.test(remainder)
+}
+
+function isProjectDetailRemainder(remainder: string) {
+	return /^projects\/[^/]+\/detail$/.test(remainder)
 }

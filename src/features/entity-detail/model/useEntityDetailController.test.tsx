@@ -1,10 +1,20 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useEntityDetailController } from './useEntityDetailController'
 
+const getTaskDetailMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@/features/task/api/tasks', () => ({
+	getTaskDetail: (taskId: string) => getTaskDetailMock(taskId),
+}))
+
 describe('useEntityDetailController', () => {
+	beforeEach(() => {
+		getTaskDetailMock.mockReset()
+	})
+
 	it('从 URL 恢复 active detail', () => {
 		renderController('/space/work/inbox?task=task-a')
 
@@ -44,6 +54,21 @@ describe('useEntityDetailController', () => {
 	})
 
 	it('openPage 导航到独立详情页路径', async () => {
+		getTaskDetailMock.mockResolvedValue({
+			id: 'task-a',
+			spaceId: 'space-work',
+		})
+		renderController('/space/work/inbox?task=task-a')
+
+		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))
+
+		await waitFor(() => {
+			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-work/tasks/task-a')
+		})
+	})
+
+	it('openPage 解析失败时 fallback 到 shortcut', async () => {
+		getTaskDetailMock.mockRejectedValue(new Error('not found'))
 		renderController('/space/work/inbox?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))

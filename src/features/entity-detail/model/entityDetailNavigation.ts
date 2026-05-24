@@ -1,6 +1,13 @@
 import type { Location } from 'react-router-dom'
 
-import { buildProjectShortcutPath, buildTaskShortcutPath } from '@/app/routing'
+import {
+	buildProjectDetailPath,
+	buildProjectShortcutPath,
+	buildTaskDetailPath,
+	buildTaskShortcutPath,
+} from '@/app/routing'
+import { getProjectDetail } from '@/features/project/api/projects'
+import { getTaskDetail } from '@/features/task/api/tasks'
 import {
 	buildEntityDetailSearch,
 	clearEntityDetailSearch,
@@ -39,6 +46,26 @@ export function openEntityPageTarget(target: EntityDetailTarget): EntityDetailNa
 
 	return {
 		pathname,
+		search: '',
+		replace: false,
+	}
+}
+
+export async function resolveEntityPageTarget(
+	target: EntityDetailTarget,
+): Promise<EntityDetailNavigationTarget> {
+	if (target.kind === 'task') {
+		const detail = await getTaskDetail(target.id)
+		return {
+			pathname: buildTaskDetailPath(detail.spaceId, detail.id),
+			search: '',
+			replace: false,
+		}
+	}
+
+	const detail = await getProjectDetail(target.id)
+	return {
+		pathname: buildProjectDetailPath(detail.spaceId, detail.id),
 		search: '',
 		replace: false,
 	}
