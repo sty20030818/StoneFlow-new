@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
-import { buildScopedSectionPath } from '@/app/layouts/shell/config'
+import { buildScopedSectionPath } from '@/app/routing'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDangerConfirm } from '@/features/danger-confirm'
@@ -28,7 +28,7 @@ import {
 	selectTaskList,
 	useTaskStore,
 } from '@/features/task/model/useTaskStore'
-import type { TaskStatus } from '@/shared/types'
+import type { Scope, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import {
 	Breadcrumb,
@@ -61,10 +61,16 @@ const PROJECT_TASK_FILTERS: Array<'all' | TaskStatus> = [
 	'canceled',
 ]
 
-export function ProjectPage() {
+type ProjectPageProps = {
+	scopeOverride?: Scope
+}
+
+export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 	const navigate = useNavigate()
 	const { projectId = '' } = useParams()
-	const { scope, spaceId } = useScopeRoute()
+	const routeScope = useScopeRoute()
+	const scope = scopeOverride ?? routeScope.scope
+	const spaceId = scope.type === 'space' ? scope.spaceId : null
 	const { requestDangerConfirm } = useDangerConfirm()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()

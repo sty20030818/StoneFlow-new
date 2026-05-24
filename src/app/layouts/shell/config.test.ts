@@ -4,6 +4,7 @@ import {
 	getSpaceLabel,
 	resolveShellSection,
 } from '@/app/layouts/shell/config'
+import { resolveShellSection as resolveShellSectionFromRouting } from '@/app/routing'
 
 const spaces = [
 	{
@@ -21,9 +22,14 @@ const spaces = [
 ]
 
 describe('shell config helpers', () => {
+	it('config 复用 routing 作为路由规则 owner', () => {
+		expect(resolveShellSection).toBe(resolveShellSectionFromRouting)
+	})
+
 	it('按路由解析主分区', () => {
 		expect(resolveShellSection('/spaces/focus')).toBe('views')
 		expect(resolveShellSection('/spaces/views')).toBe('views')
+		expect(resolveShellSection('/projects/project-shortcut')).toBe('project')
 		expect(resolveShellSection('/space/space-personal/all-tasks')).toBe('allTasks')
 		expect(resolveShellSection('/space/space-personal/no-project')).toBe('noProject')
 		expect(resolveShellSection('/space/space-personal/projects')).toBe('projects')
@@ -42,7 +48,7 @@ describe('shell config helpers', () => {
 		expect(getSectionLabel('archive')).toBe('归档')
 		expect(getSectionLabel('settings')).toBe('设置')
 		expect(getSpaceLabel('space-personal', spaces)).toBe('个人')
-		expect(getScopeLabel({ type: 'all' }, spaces)).toBe('全部 Spaces')
+		expect(getScopeLabel({ type: 'all' }, spaces)).toBe('所有空间')
 		expect(getScopeLabel({ type: 'space', spaceId: 'space-personal' }, spaces)).toBe('个人')
 	})
 

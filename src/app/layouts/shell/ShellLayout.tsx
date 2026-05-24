@@ -8,7 +8,11 @@ import {
 } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import { buildScopedSectionPath } from '@/app/layouts/shell/config'
+import {
+	buildScopedProjectPath,
+	buildScopedSectionPath,
+	isTaskShortcutPath,
+} from '@/app/routing'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
 import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
@@ -409,12 +413,28 @@ function ShellLayoutContent({
 	const handleCommandOpen = useMemo(
 		() => (payload: CommandOpenPayload) => {
 			const targetPath = payload.projectId
-				? `/space/${payload.spaceId}/project/${payload.projectId}`
+				? buildScopedProjectPath(
+						{ type: 'space', spaceId: payload.spaceId },
+						payload.projectId,
+						payload.spaceId,
+					)
 				: payload.kind === 'project'
-					? `/space/${payload.spaceId}/project/${payload.id}`
+					? buildScopedProjectPath(
+							{ type: 'space', spaceId: payload.spaceId },
+							payload.id,
+							payload.spaceId,
+						)
 					: payload.placement === 'inbox'
-						? `/space/${payload.spaceId}/inbox`
-						: `/space/${payload.spaceId}/no-project`
+						? buildScopedSectionPath(
+								{ type: 'space', spaceId: payload.spaceId },
+								'inbox',
+								payload.spaceId,
+							)
+						: buildScopedSectionPath(
+								{ type: 'space', spaceId: payload.spaceId },
+								'no-project',
+								payload.spaceId,
+							)
 
 			closeEntityDrawer()
 
@@ -1073,7 +1093,7 @@ function ShellLayoutContent({
 						onCloseDrawer={closeEntityDrawer}
 						onOpenProjectCreateDialog={() => openProjectCreateDialog()}
 						onOpenTaskCreateDialog={handleOpenTaskCreate}
-						showPreview={!pathname.startsWith('/tasks/')}
+						showPreview={!isTaskShortcutPath(pathname)}
 					>
 						{children}
 					</ShellMain>

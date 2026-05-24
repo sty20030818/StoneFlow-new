@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { buildScopedSectionPath, buildStartupFallbackPath } from '@/app/routing'
 import {
 	SHELL_FOOTER_ITEMS,
 	SHELL_NAV_ITEMS,
@@ -224,7 +225,13 @@ export function ShellSidebar({
 		async (input: { name: string; iconKey: string; colorKey: string }) => {
 			if (editorMode === 'create') {
 				const createdSpace = await onCreateSpace(input)
-				navigate(`/space/${createdSpace.id}/inbox`)
+				navigate(
+					buildScopedSectionPath(
+						{ type: 'space', spaceId: createdSpace.id },
+						'inbox',
+						createdSpace.id,
+					),
+				)
 				return
 			}
 
@@ -309,7 +316,7 @@ export function ShellSidebar({
 														void resolveRememberedPathForScope({
 															scopeKey: 'all',
 															spaces,
-															defaultPath: '/spaces/inbox',
+															defaultPath: buildStartupFallbackPath({ type: 'all' }),
 														}).then((path) => {
 															navigate(path)
 														})
@@ -337,7 +344,11 @@ export function ShellSidebar({
 																void resolveRememberedPathForScope({
 																	scopeKey: `space:${space.id}`,
 																	spaces,
-																	defaultPath: `/space/${space.id}/inbox`,
+																	defaultPath: buildScopedSectionPath(
+																		{ type: 'space', spaceId: space.id },
+																		'inbox',
+																		space.id,
+																	),
 																}).then((path) => {
 																	navigate(path)
 																})
@@ -419,7 +430,7 @@ export function ShellSidebar({
 																await runSpaceMutation(async () => {
 																	await onArchiveSpace(activeSpace.id)
 																	if (currentScope.type === 'space') {
-																		navigate('/spaces/inbox')
+																		navigate(buildStartupFallbackPath({ type: 'all' }))
 																	}
 																})
 															}}
@@ -446,7 +457,7 @@ export function ShellSidebar({
 																await runSpaceMutation(async () => {
 																	await onDeleteSpace(activeSpace.id)
 																	if (currentScope.type === 'space') {
-																		navigate('/spaces/inbox')
+																		navigate(buildStartupFallbackPath({ type: 'all' }))
 																	}
 																})
 															}}

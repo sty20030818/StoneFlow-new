@@ -2,8 +2,13 @@ import { startTransition, useEffect, useMemo, useState } from 'react'
 import { compact } from 'es-toolkit/array'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 
+import {
+	isProjectShortcutPath,
+	isTaskShortcutPath,
+	parseShellScopePath,
+	resolveShellSection,
+} from '@/app/routing'
 import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
-import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope, Space } from '@/shared/types'
 import {
 	ArchiveIcon,
@@ -52,23 +57,6 @@ const PATH_ICON_MAP: Record<string, LucideIcon> = {
 	trash: Trash2Icon,
 	settings: Settings2Icon,
 	'quick-create': SquarePenIcon,
-}
-
-/** URL 路径段（kebab-case）→ ShellSectionKey（camelCase） */
-const SECTION_KEY_MAP: Record<string, ShellSectionKey> = {
-	inbox: 'inbox',
-	'all-tasks': 'allTasks',
-	views: 'views',
-	projects: 'projects',
-	project: 'project',
-	'no-project': 'noProject',
-	archive: 'archive',
-	trash: 'trash',
-	settings: 'settings',
-}
-
-function resolveSectionKey(segment: string | undefined): ShellSectionKey {
-	return SECTION_KEY_MAP[segment ?? ''] ?? 'inbox'
 }
 
 /** 从路径中提取语义 icon：优先匹配路径段，再处理 project 详情页 */
@@ -173,19 +161,26 @@ export function buildShellRouteHistoryEntry(
 		return createHistoryEntry(path, '快捷创建', null, '所有空间')
 	}
 
-	if (parts[0] === 'spaces') {
-		const section = resolveSectionKey(parts[1])
-		return createHistoryEntry(path, getSectionLabel(section), null, '所有空间')
+	if (isTaskShortcutPath(pathname)) {
+		return createHistoryEntry(path, '任务详情', null, '所有空间')
 	}
 
-	if (parts[0] !== 'space') {
+	if (isProjectShortcutPath(pathname)) {
+		return createHistoryEntry(path, '项目详情', null, '所有空间')
+	}
+
+	const parsedScope = parseShellScopePath(pathname)
+	if (!parsedScope) {
 		return createHistoryEntry(path, '工作区', null, '所有空间')
 	}
 
-	const spaceId =
-		parts[1] ?? currentSpaceId ?? (currentScope.type === 'space' ? currentScope.spaceId : null)
-	const section = parts[2]
+	if (parsedScope.type === 'all') {
+		return createHistoryEntry(path, getSectionLabel(resolveShellSection(pathname)), null, '所有空间')
+	}
+
+	const spaceId = parsedScope.spaceId ?? currentSpaceId ?? (currentScope.type === 'space' ? currentScope.spaceId : null)
 	const spaceLabel = getSpaceLabel(spaceId, spaces)
+	const section = resolveShellSection(pathname)
 
 	if (section === 'project') {
 		const projectId = parts[3]
@@ -193,7 +188,7 @@ export function buildShellRouteHistoryEntry(
 		return createHistoryEntry(path, projectLabel ?? '项目', spaceId, spaceLabel)
 	}
 
-	return createHistoryEntry(path, getSectionLabel(resolveSectionKey(section)), spaceId, spaceLabel)
+	return createHistoryEntry(path, getSectionLabel(section), spaceId, spaceLabel)
 }
 
 function reduceRouteHistory(

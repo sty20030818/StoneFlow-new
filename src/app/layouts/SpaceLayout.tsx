@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 
-import { resolveShellSection } from './shell/config'
+import { resolveShellSection } from '@/app/routing'
 import { rememberShellRoute } from './shell/model/shellDevicePreferences'
 import {
 	selectActiveSection,

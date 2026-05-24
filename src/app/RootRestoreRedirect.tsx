@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { buildStartupFallbackPath } from '@/app/routing'
 import { resolveStartupPath } from '@/app/layouts/shell/model/shellDevicePreferences'
 import {
 	selectSpaceError,
@@ -46,7 +47,7 @@ export function RootRestoreRedirect() {
 
 				setRestoreError(error instanceof Error ? error.message : '恢复工作区失败')
 				startTransition(() => {
-					navigate('/spaces/inbox', { replace: true })
+					navigate(buildStartupFallbackPath(), { replace: true })
 				})
 			})
 

@@ -1,17 +1,18 @@
+import { buildScopedProjectPath, buildScopedSectionPath } from '@/app/routing'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 
 export function resolveProjectSearchTargetPath(project: SearchProjectItem) {
-	return `/space/${project.spaceId}/project/${project.id}`
+	return buildScopedProjectPath({ type: 'space', spaceId: project.spaceId }, project.id)
 }
 
 export function resolveTaskSearchTargetPath(task: SearchTaskItem) {
 	if (task.projectId) {
-		return `/space/${task.spaceId}/project/${task.projectId}`
+		return buildScopedProjectPath({ type: 'space', spaceId: task.spaceId }, task.projectId)
 	}
 
 	if (task.inboxAt) {
-		return `/space/${task.spaceId}/inbox`
+		return buildScopedSectionPath({ type: 'space', spaceId: task.spaceId }, 'inbox')
 	}
 
-	return `/space/${task.spaceId}/no-project`
+	return buildScopedSectionPath({ type: 'space', spaceId: task.spaceId }, 'no-project')
 }

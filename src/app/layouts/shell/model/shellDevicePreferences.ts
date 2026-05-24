@@ -2,11 +2,15 @@ import { invoke } from '@tauri-apps/api/core'
 import { LazyStore } from '@tauri-apps/plugin-store'
 import { clamp } from 'es-toolkit/math'
 
+import {
+	buildScopedSectionPath,
+	isRememberableShellPath as isRememberableShellRoutePath,
+	normalizeRememberedShellPath as normalizeRememberedShellRoutePath,
+} from '@/app/routing'
 import type {
 	SidebarPreferenceSettings,
 	SidebarProjectSectionPreferenceConfig,
 } from '@/features/settings/api/sidebarSettings'
-import { getProjectDetail } from '@/features/project/api/projects'
 import type { Scope, Space } from '@/shared/types'
 
 const SHELL_DEVICE_STORE_PATH = 'shell-device-preferences.json'
@@ -192,7 +196,7 @@ export async function resolveStartupPath({ spaces }: ResolveStartupPathInput): P
 		(await shellDeviceStore.get<ShellNavigationRestore>(NAVIGATION_RESTORE_KEY)) ?? null,
 	)
 	if (!navigationRestore) {
-		return '/spaces/inbox'
+		return buildScopedSectionPath({ type: 'all' }, 'inbox')
 	}
 
 	const defaultSpaceId = resolveDefaultSpaceId(spaces)
@@ -200,7 +204,7 @@ export async function resolveStartupPath({ spaces }: ResolveStartupPathInput): P
 		return await normalizeRememberedShellPath(
 			navigationRestore.lastRouteByScopeKey.all,
 			spaces,
-			'/spaces/inbox',
+			buildScopedSectionPath({ type: 'all' }, 'inbox'),
 		)
 	}
 
@@ -210,19 +214,19 @@ export async function resolveStartupPath({ spaces }: ResolveStartupPathInput): P
 			scopeKey: navigationRestore.lastScopeKey,
 			navigationRestore,
 			spaces,
-			defaultPath: `/space/${targetSpaceId}/inbox`,
+			defaultPath: buildScopedSectionPath({ type: 'space', spaceId: targetSpaceId }, 'inbox'),
 		})
 	}
 
 	if (!defaultSpaceId) {
-		return '/spaces/inbox'
+		return buildScopedSectionPath({ type: 'all' }, 'inbox')
 	}
 
 	return resolveScopePath({
 		scopeKey: `space:${defaultSpaceId}`,
 		navigationRestore,
 		spaces,
-		defaultPath: `/space/${defaultSpaceId}/inbox`,
+		defaultPath: buildScopedSectionPath({ type: 'space', spaceId: defaultSpaceId }, 'inbox'),
 	})
 }
 
@@ -231,7 +235,7 @@ export function buildShellScopeKey(scope: Scope): ShellScopeKey {
 }
 
 export function isRememberableShellPath(path: string): boolean {
-	return matchesRememberableShellPath(path)
+	return isRememberableShellRoutePath(path)
 }
 
 async function migrateLegacyDevicePreferencesIfNeeded(input: {
@@ -288,42 +292,7 @@ async function normalizeRememberedShellPath(
 	spaces: Space[],
 	fallbackPath: string,
 ): Promise<string> {
-	if (!path) {
-		return fallbackPath
-	}
-
-	if (!matchesRememberableShellPath(path)) {
-		return fallbackPath
-	}
-
-	const match = path.match(/^\/space\/([^/]+)\/(.+)$/)
-	if (match) {
-		const [, spaceId, remainder] = match
-		if (spaces.length > 0 && !spaces.some((space) => space.id === spaceId)) {
-			return fallbackPath
-		}
-
-		if (remainder.startsWith('project/')) {
-			const projectId = remainder.slice('project/'.length)
-			if (projectId.length === 0) {
-				return fallbackPath
-			}
-
-			try {
-				const detail = await getProjectDetail(projectId)
-				if (detail.spaceId !== spaceId) {
-					return fallbackPath
-				}
-				return path
-			} catch {
-				return fallbackPath
-			}
-		}
-
-		return path
-	}
-
-	return path
+	return normalizeRememberedShellRoutePath(path, spaces, fallbackPath)
 }
 
 function extractSpaceIdFromScopeKey(scopeKey: ShellScopeKey): string | null {
@@ -399,44 +368,3 @@ function defaultShellUiDevicePreferences(): ShellUiDevicePreferences {
 		taskDrawerWidth: DEFAULT_TASK_DRAWER_WIDTH,
 	}
 }
-
-function matchesRememberableShellPath(path: string): boolean {
-	const allMatch = path.match(/^\/spaces\/(.+)$/)
-	if (allMatch) {
-		return ALLOWED_ALL_SECTIONS.has(allMatch[1]?.split('?')[0] ?? '')
-	}
-
-	const spaceMatch = path.match(/^\/space\/([^/]+)\/(.+)$/)
-	if (!spaceMatch) {
-		return false
-	}
-
-	const remainder = spaceMatch[2] ?? ''
-	if (remainder.startsWith('project/')) {
-		return remainder.length > 'project/'.length
-	}
-
-	return ALLOWED_SPACE_SECTIONS.has(remainder.split('?')[0] ?? '')
-}
-
-const ALLOWED_ALL_SECTIONS = new Set([
-	'inbox',
-	'all-tasks',
-	'no-project',
-	'views',
-	'projects',
-	'archive',
-	'trash',
-	'settings',
-])
-
-const ALLOWED_SPACE_SECTIONS = new Set([
-	'inbox',
-	'all-tasks',
-	'no-project',
-	'views',
-	'projects',
-	'archive',
-	'trash',
-	'settings',
-])

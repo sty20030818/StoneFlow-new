@@ -1,31 +1,33 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
+import { buildStartupFallbackPath } from '@/app/routing'
 import { ShellLayout } from '@/app/layouts/shell/ShellLayout'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
-import { setActiveScope } from '@/features/space/api/spaces'
 import {
 	selectActiveSection,
 	selectCurrentScopeType,
 	selectCurrentSpaceId,
 	useShellNavStore,
 } from '@/app/layouts/shell/model/useShellNavStore'
+import { getProjectDetail } from '@/features/project/api/projects'
+import { ProjectPage } from '@/features/project/ui/ProjectPage'
+import { setActiveScope } from '@/features/space/api/spaces'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { useWorkspaceSync } from '@/features/workspace/model/useWorkspaceSync'
-import type { Scope, TaskDetail } from '@/shared/types'
-import { getTaskDetail } from '@/features/task/api/tasks'
-import { TaskPage } from './TaskPage'
-import { TaskPageState } from './TaskPageState'
+import type { Scope, Project } from '@/shared/types'
+import { TaskPageState } from '@/features/task/detail/ui/TaskPageState'
 
-const TASK_PAGE_SECTION: ShellSectionKey = 'allTasks'
+const PROJECT_PAGE_SECTION: ShellSectionKey = 'project'
 
 type RouteLoadState =
 	| { kind: 'loading' }
-	| { kind: 'ready'; task: TaskDetail | null }
+	| { kind: 'ready'; project: Project | null }
 	| { kind: 'error'; message: string }
 
-export function TaskPageRoute() {
-	const { taskId = '' } = useParams()
+export function ProjectPageRoute() {
+	const navigate = useNavigate()
+	const { projectId = '' } = useParams()
 	const [loadState, setLoadState] = useState<RouteLoadState>({ kind: 'loading' })
 	const spaces = useSpaceStore(selectSpaces)
 	const currentScopeType = useShellNavStore(selectCurrentScopeType)
@@ -40,15 +42,15 @@ export function TaskPageRoute() {
 
 		void (async () => {
 			try {
-				const task = await getTaskDetail(taskId)
+				const project = await getProjectDetail(projectId)
 				if (!cancelled) {
-					setLoadState({ kind: 'ready', task })
+					setLoadState({ kind: 'ready', project })
 				}
 			} catch (routeError) {
 				if (!cancelled) {
 					setLoadState({
 						kind: 'error',
-						message: routeError instanceof Error ? routeError.message : '任务详情加载失败',
+						message: routeError instanceof Error ? routeError.message : '项目详情加载失败',
 					})
 				}
 			}
@@ -57,20 +59,20 @@ export function TaskPageRoute() {
 		return () => {
 			cancelled = true
 		}
-	}, [taskId])
+	}, [projectId])
 
 	const scope: Scope | null = useMemo(() => {
-		const task = loadState.kind === 'ready' ? loadState.task : null
-		if (!task) {
+		const project = loadState.kind === 'ready' ? loadState.project : null
+		if (!project) {
 			return null
 		}
 
-		const hasVisibleSpace = spaces.some((space) => space.id === task.spaceId)
+		const hasVisibleSpace = spaces.some((space) => space.id === project.spaceId)
 		if (!hasVisibleSpace) {
 			return { type: 'all' }
 		}
 
-		return { type: 'space', spaceId: task.spaceId }
+		return { type: 'space', spaceId: project.spaceId }
 	}, [loadState, spaces])
 
 	useWorkspaceSync(scope ?? { type: 'all' })
@@ -87,8 +89,8 @@ export function TaskPageRoute() {
 			setCurrentScope(nextScopeType, nextSpaceId)
 		}
 
-		if (activeSection !== TASK_PAGE_SECTION) {
-			setActiveSection(TASK_PAGE_SECTION)
+		if (activeSection !== PROJECT_PAGE_SECTION) {
+			setActiveSection(PROJECT_PAGE_SECTION)
 		}
 	}, [activeSection, currentScopeType, currentSpaceId, scope, setActiveSection, setCurrentScope])
 
@@ -98,7 +100,7 @@ export function TaskPageRoute() {
 		}
 
 		void setActiveScope(scope).catch((activeScopeError) => {
-			console.error('task page active scope sync failed', {
+			console.error('project page active scope sync failed', {
 				scope,
 				error: activeScopeError,
 			})
@@ -106,24 +108,50 @@ export function TaskPageRoute() {
 	}, [scope])
 
 	if (loadState.kind === 'loading') {
-		return <TaskPageState description='正在解析任务所在空间并恢复详情页面。' title='加载中' />
+		return (
+			<TaskPageState
+				description='正在解析项目所在空间并恢复详情页面。'
+				pageTitle='项目详情'
+				title='加载中'
+			/>
+		)
 	}
 
 	if (loadState.kind === 'error') {
-		return <TaskPage taskId={taskId} scope={{ type: 'all' }} />
+		return (
+			<TaskPageState
+				actionLabel='返回工作区'
+				description={loadState.message}
+				onAction={() => {
+					navigate(buildStartupFallbackPath(), { replace: true })
+				}}
+				pageTitle='项目详情'
+				title='项目不可用'
+			/>
+		)
 	}
 
 	if (!scope) {
-		return <TaskPage taskId={taskId} scope={{ type: 'all' }} />
+		return (
+			<TaskPageState
+				actionLabel='返回工作区'
+				description='当前项目不可见，可能已被归档、删除，或当前账号无权访问。'
+				onAction={() => {
+					navigate(buildStartupFallbackPath(), { replace: true })
+				}}
+				pageTitle='项目详情'
+				title='项目不可用'
+			/>
+		)
 	}
 
 	return (
 		<ShellLayout
-			activeSection={TASK_PAGE_SECTION}
+			activeSection={PROJECT_PAGE_SECTION}
 			currentScope={scope}
 			currentSpaceId={scope.type === 'space' ? scope.spaceId : null}
 		>
-			<TaskPage taskId={taskId} scope={scope} />
+			<ProjectPage scopeOverride={scope} />
 		</ShellLayout>
 	)
 }

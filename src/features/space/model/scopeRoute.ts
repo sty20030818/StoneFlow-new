@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 
+import { parseShellScopePath } from '@/app/routing'
 import type { Scope } from '@/shared/types'
 
 /**
@@ -12,8 +13,7 @@ export function useScopeRoute() {
 	const { spaceId } = useParams()
 
 	const scope: Scope = useMemo(
-		() =>
-			pathname.startsWith('/spaces') || !spaceId ? { type: 'all' } : { type: 'space', spaceId },
+		() => parseShellScopePath(pathname) ?? (spaceId ? { type: 'space', spaceId } : { type: 'all' }),
 		[pathname, spaceId],
 	)
 

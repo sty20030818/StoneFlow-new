@@ -1,5 +1,10 @@
 import type { ComponentType } from 'react'
 
+import {
+	buildScopedProjectPath,
+	buildScopedSectionPath,
+	resolveShellSection,
+} from '@/app/routing'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope, Space } from '@/shared/types'
 import type { BadgeVariant } from '@/shared/ui/base/badge'
@@ -123,41 +128,7 @@ export const SHELL_COMMAND_ROUTE_ITEMS = [
 
 export const SHELL_ROUTE_ITEMS = SHELL_COMMAND_ROUTE_ITEMS
 
-export function resolveShellSection(pathname: string): ShellSectionKey {
-	if (pathname.includes('/all-tasks')) {
-		return 'allTasks'
-	}
-
-	if (pathname.includes('/no-project')) {
-		return 'noProject'
-	}
-
-	if (pathname.includes('/views') || pathname.includes('/focus')) {
-		return 'views'
-	}
-
-	if (pathname.includes('/projects')) {
-		return 'projects'
-	}
-
-	if (pathname.includes('/project/')) {
-		return 'project'
-	}
-
-	if (pathname.includes('/archive')) {
-		return 'archive'
-	}
-
-	if (pathname.includes('/trash')) {
-		return 'trash'
-	}
-
-	if (pathname.includes('/settings')) {
-		return 'settings'
-	}
-
-	return 'inbox'
-}
+export { buildScopedProjectPath, buildScopedSectionPath, resolveShellSection }
 
 export function getSectionLabel(section: ShellSectionKey) {
 	switch (section) {
@@ -182,31 +153,6 @@ export function getSectionLabel(section: ShellSectionKey) {
 		default:
 			return '工作区'
 	}
-}
-
-export function buildScopedSectionPath(
-	scope: Scope,
-	section: string,
-	fallbackSpaceId?: string | null,
-) {
-	if (scope.type === 'all') {
-		return `/spaces/${section}`
-	}
-
-	const spaceId = scope.spaceId || fallbackSpaceId
-	return spaceId ? `/space/${spaceId}/${section}` : `/spaces/${section}`
-}
-
-export function buildScopedProjectPath(
-	scope: Scope,
-	projectId?: string | null,
-	fallbackSpaceId?: string | null,
-) {
-	const spaceId = scope.type === 'space' ? scope.spaceId : fallbackSpaceId
-	if (!projectId || !spaceId) {
-		return buildScopedSectionPath(scope, 'projects', fallbackSpaceId)
-	}
-	return `/space/${spaceId}/project/${projectId}`
 }
 
 export function getSpaceLabel(spaceId: string | null | undefined, spaces: Space[] = []) {

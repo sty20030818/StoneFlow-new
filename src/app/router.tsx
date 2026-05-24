@@ -7,6 +7,7 @@ import { SpaceLayout } from './layouts/SpaceLayout'
 import { InboxPage } from '../features/inbox/ui/InboxPage'
 import { NoProjectPage } from '../features/no-project/ui/NoProjectPage'
 import { ProjectPage } from '../features/project/ui/ProjectPage'
+import { ProjectPageRoute } from '../features/project/ui/ProjectPageRoute'
 import { ProjectOverviewPage } from '../features/project-overview/ui/ProjectOverviewPage'
 import { QuickCreatePage } from '../features/quick-create/ui/QuickCreatePage'
 import { SettingsPage } from '../features/settings/ui/SettingsPage'
@@ -78,6 +79,10 @@ export const router = createHashRouter([
 	{
 		path: '/tasks/:taskId',
 		element: <TaskPageRoute />,
+	},
+	{
+		path: '/projects/:projectId',
+		element: <ProjectPageRoute />,
 	},
 	{
 		path: '/spaces',
