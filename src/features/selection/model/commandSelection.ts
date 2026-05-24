@@ -60,7 +60,7 @@ export function buildTaskCommandSelection({
 	})
 	const ids = entities.map((entity) => entity.id)
 	const count = ids.length
-	const focusedTask = focusedTaskId ? taskById.get(focusedTaskId) ?? null : null
+	const focusedTask = focusedTaskId ? (taskById.get(focusedTaskId) ?? null) : null
 
 	return {
 		type: count > 0 ? 'task' : undefined,

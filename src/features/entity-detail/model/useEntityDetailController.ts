@@ -82,7 +82,7 @@ export function useEntityDetailController() {
 				navigate(
 					{
 						pathname: nextTarget.pathname,
-						search: nextTarget.search,
+						search: '',
 					},
 					{ replace: nextTarget.replace },
 				)

@@ -33,3 +33,23 @@ export const detailFieldDescriptionClass = 'mt-1 text-[11px] leading-4 text-sf-t
 export const detailSaveStatusClass = 'text-[11px] leading-none text-sf-text-tertiary'
 
 export const detailSaveStatusErrorClass = 'text-[11px] leading-none text-sf-danger-soft-text'
+
+export const detailPageLayoutClass = 'flex h-full min-h-0 flex-col overflow-hidden'
+
+export const detailPageHeaderClass =
+	'flex shrink-0 items-center justify-between gap-3 border-b border-sf-divider px-5 py-3'
+
+export const detailPageContentClass = 'min-h-0 flex-1'
+
+export const detailPageViewportClass = 'min-h-full px-4 py-4 md:px-5 md:py-5'
+
+export const detailPageGridClass = 'grid min-h-full gap-4 lg:grid-cols-[minmax(0,1fr)_280px]'
+
+export const detailPageMainClass = 'min-w-0'
+
+export const detailPageSidebarClass = 'min-w-0'
+
+export const detailPageSidebarInnerClass = 'flex flex-col gap-3 lg:sticky lg:top-0'
+
+export const detailPageStatusBlockClass =
+	'rounded-xl border border-sf-border-subtle bg-muted/35 px-3 py-3'

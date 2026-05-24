@@ -13,9 +13,14 @@ import { applyTaskProjectDraftChange, type TaskDetailDraft } from '../model/task
 type TaskProjectSectionProps = {
 	autosave: AutosaveController<TaskDetailDraft>
 	projects: ProjectOption[]
+	disabled?: boolean
 }
 
-export function TaskProjectSection({ autosave, projects }: TaskProjectSectionProps) {
+export function TaskProjectSection({
+	autosave,
+	projects,
+	disabled = false,
+}: TaskProjectSectionProps) {
 	const visibleProjects = autosave.draft.spaceId
 		? projects.filter((project) => project.spaceId === autosave.draft.spaceId)
 		: projects
@@ -32,6 +37,7 @@ export function TaskProjectSection({ autosave, projects }: TaskProjectSectionPro
 	return (
 		<DetailFieldRow className='items-center' label='项目' labelClassName='pt-0'>
 			<MetadataPlacementDropdown
+				disabled={disabled}
 				drawerOwnedOverlay
 				headerShortcut={placementDropdownProps.headerShortcut}
 				label='项目'

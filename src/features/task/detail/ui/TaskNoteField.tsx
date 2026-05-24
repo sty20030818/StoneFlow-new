@@ -5,13 +5,15 @@ import type { TaskDetailDraft } from '../model/taskDetailDraft'
 
 type TaskNoteFieldProps = {
 	autosave: AutosaveController<TaskDetailDraft>
+	disabled?: boolean
 }
 
-export function TaskNoteField({ autosave }: TaskNoteFieldProps) {
+export function TaskNoteField({ autosave, disabled = false }: TaskNoteFieldProps) {
 	return (
 		<Textarea
 			aria-label='任务备注'
 			className='min-h-40 resize-none border-0 bg-transparent px-0 text-[13px] shadow-none focus-visible:ring-0'
+			disabled={disabled}
 			onChange={(event) =>
 				autosave.setField('note', event.currentTarget.value, { saveMode: 'debounced' })
 			}

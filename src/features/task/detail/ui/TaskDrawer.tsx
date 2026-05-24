@@ -113,7 +113,7 @@ function TaskDrawerLoaded({
 
 	return (
 		<DetailDrawerShell aria-label='任务详情'>
-			<TaskDrawerHeader autosave={autosave} />
+			<TaskDrawerHeader autosave={autosave} taskId={task.id} />
 			<TaskDrawerBody autosave={autosave} projects={projects} taskId={task.id} />
 			<TaskDrawerFooter
 				isArchiveBusy={isArchiveBusy}

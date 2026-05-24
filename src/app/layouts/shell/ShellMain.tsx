@@ -17,6 +17,7 @@ type ShellMainProps = PropsWithChildren<{
 	currentSpaceLabel: string
 	activeDetail: EntityDetailRouteState
 	isDrawerOpen: boolean
+	showPreview?: boolean
 	onCloseDrawer: () => void
 	onOpenTaskCreateDialog: () => void
 	onOpenProjectCreateDialog: () => void
@@ -53,6 +54,7 @@ export function ShellMain({
 	currentSpaceLabel,
 	activeDetail,
 	isDrawerOpen,
+	showPreview = true,
 	onCloseDrawer,
 	onOpenTaskCreateDialog,
 	onOpenProjectCreateDialog,
@@ -160,7 +162,7 @@ export function ShellMain({
 						>
 							<div className='flex min-w-0 flex-1 flex-col overflow-hidden'>{children}</div>
 
-							{!isDrawerOpen && preview.previewState.open ? (
+							{showPreview && !isDrawerOpen && preview.previewState.open ? (
 								<TaskPreview
 									linkSummary={preview.linkSummary}
 									onPointerEnter={() => preview.setPreviewPointerInside(true)}

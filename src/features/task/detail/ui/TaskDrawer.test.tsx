@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
 
 import type { AutosaveController } from '@/shared/autosave'
 import type { TaskDetail } from '@/shared/types'
@@ -49,6 +50,12 @@ const mockTaskLinksController = vi.hoisted(() => ({
 	},
 }))
 
+const mockEntityDetailController = vi.hoisted(() => ({
+	value: {
+		openPage: vi.fn<(target: { kind: 'task'; id: string }) => void>(),
+	},
+}))
+
 vi.mock('../model/useTaskDetailController', () => ({
 	useTaskDetailController: () => mockDetailController.value,
 }))
@@ -59,6 +66,10 @@ vi.mock('../model/useTaskAutosaveAdapter', () => ({
 
 vi.mock('../model/useTaskLinksController', () => ({
 	useTaskLinksController: () => mockTaskLinksController.value,
+}))
+
+vi.mock('@/features/entity-detail', () => ({
+	useEntityDetailController: () => mockEntityDetailController.value,
 }))
 
 vi.mock('@/features/activity/api/getEntityActivities', () => ({
@@ -93,6 +104,9 @@ describe('TaskDrawer', () => {
 		}
 		getEntityActivitiesMock.mockResolvedValue([])
 		getEntityActivitiesMock.mockClear()
+		mockEntityDetailController.value = {
+			openPage: vi.fn<(target: { kind: 'task'; id: string }) => void>(),
+		}
 	})
 
 	it('加载时显示加载态', () => {
@@ -172,9 +186,6 @@ describe('TaskDrawer', () => {
 			'data-variant',
 			'outline',
 		)
-		expect(
-			screen.getByText('还没有链接，添加一个外部 URL 方便回看当前任务的上下文。'),
-		).toBeInTheDocument()
 		expect(mockAutosave.value.setField).not.toHaveBeenCalled()
 		expect(mockAutosave.value.setDraft).not.toHaveBeenCalled()
 	})
@@ -219,7 +230,7 @@ describe('TaskDrawer', () => {
 
 	it('移入回收站前触发 flushNow 并走控制器动作', async () => {
 		const onClose = vi.fn<() => void>()
-		render(<TaskDrawer onClose={onClose} taskId='task-1' />)
+		renderWithRouter(<TaskDrawer onClose={onClose} taskId='task-1' />)
 
 		fireEvent.click(screen.getByRole('button', { name: '移入回收站' }))
 
@@ -229,7 +240,25 @@ describe('TaskDrawer', () => {
 			expect(onClose).toHaveBeenCalledTimes(1)
 		})
 	})
+
+	it('打开独立页面前先 flush 再导航', async () => {
+		renderWithRouter(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+
+		fireEvent.click(screen.getByRole('button', { name: '打开' }))
+
+		await waitFor(() => {
+			expect(mockAutosave.value.flushNow).toHaveBeenCalledTimes(1)
+			expect(mockEntityDetailController.value.openPage).toHaveBeenCalledWith({
+				kind: 'task',
+				id: 'task-1',
+			})
+		})
+	})
 })
+
+function renderWithRouter(node: React.ReactNode) {
+	return render(<MemoryRouter>{node}</MemoryRouter>)
+}
 
 function createAutosaveController(
 	overrides: Partial<AutosaveController<TaskDetailDraft>> = {},

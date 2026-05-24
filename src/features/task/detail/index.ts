@@ -1,4 +1,5 @@
 export { TaskDrawer } from './ui/TaskDrawer'
+export { TaskPage } from './ui/TaskPage'
 export { TaskPreview } from './ui/TaskPreview'
 export type { TaskDetailDraft, TaskDetailPatch } from './model/taskDetailDraft'
 export {

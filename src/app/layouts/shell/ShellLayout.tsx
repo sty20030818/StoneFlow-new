@@ -768,7 +768,13 @@ function ShellLayoutContent({
 			isModalOpen: createDialogType !== null || isShortcutHelpOpen,
 			isRightPreviewOpen: taskPreviewController.previewState.open,
 		}),
-		[activeDetail, createDialogType, isCommandOpen, isShortcutHelpOpen, taskPreviewController.previewState.open],
+		[
+			activeDetail,
+			createDialogType,
+			isCommandOpen,
+			isShortcutHelpOpen,
+			taskPreviewController.previewState.open,
+		],
 	)
 	const commandFocus = useMemo(
 		() => ({
@@ -780,7 +786,13 @@ function ShellLayoutContent({
 				isDetailOpen: Boolean(activeDetail),
 			}),
 		}),
-		[activeDetail, createDialogType, isCommandOpen, isShortcutHelpOpen, taskPreviewController.previewState.open],
+		[
+			activeDetail,
+			createDialogType,
+			isCommandOpen,
+			isShortcutHelpOpen,
+			taskPreviewController.previewState.open,
+		],
 	)
 	const commandSpace = useMemo(
 		() => ({
@@ -1061,6 +1073,7 @@ function ShellLayoutContent({
 						onCloseDrawer={closeEntityDrawer}
 						onOpenProjectCreateDialog={() => openProjectCreateDialog()}
 						onOpenTaskCreateDialog={handleOpenTaskCreate}
+						showPreview={!pathname.startsWith('/tasks/')}
 					>
 						{children}
 					</ShellMain>

@@ -84,7 +84,7 @@ export function TaskPreviewProvider({ children }: PropsWithChildren) {
 				: {
 						...current,
 						closeDelayState: 'idle',
-				  },
+					},
 		)
 	}, [])
 
@@ -145,7 +145,11 @@ export function TaskPreviewProvider({ children }: PropsWithChildren) {
 
 	const scheduleClosePreview = useCallback(() => {
 		setState((current) => {
-			if (!current.open || current.closeDelayState === 'pending' || current.isPointerInsidePreview) {
+			if (
+				!current.open ||
+				current.closeDelayState === 'pending' ||
+				current.isPointerInsidePreview
+			) {
 				return current
 			}
 

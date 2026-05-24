@@ -4,10 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { TaskListItem } from '@/shared/types'
 
-import {
-	TaskPreviewProvider,
-	useRegisterTaskPreviewSource,
-} from './TaskPreviewProvider'
+import { TaskPreviewProvider, useRegisterTaskPreviewSource } from './TaskPreviewProvider'
 import { useTaskPreviewController as useTaskPreviewControllerModel } from './useTaskPreviewController'
 
 vi.mock('@/features/task/api/taskLinks', () => ({
@@ -100,7 +97,9 @@ describe('TaskPreviewProvider', () => {
 	})
 })
 
-function createTask(overrides: Partial<TaskListItem> & Pick<TaskListItem, 'id' | 'title'>): TaskListItem {
+function createTask(
+	overrides: Partial<TaskListItem> & Pick<TaskListItem, 'id' | 'title'>,
+): TaskListItem {
 	const { id, title, ...rest } = overrides
 
 	return {

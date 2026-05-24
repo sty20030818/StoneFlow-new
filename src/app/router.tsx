@@ -11,6 +11,7 @@ import { ProjectOverviewPage } from '../features/project-overview/ui/ProjectOver
 import { QuickCreatePage } from '../features/quick-create/ui/QuickCreatePage'
 import { SettingsPage } from '../features/settings/ui/SettingsPage'
 import { ActivityDebugPage } from '../features/activity/ui/ActivityDebugPage'
+import { TaskPageRoute } from '../features/task/detail/ui/TaskPageRoute'
 import { TrashPage } from '../features/trash/ui/TrashPage'
 import { ViewsPage } from '../features/views/ui/ViewsPage'
 
@@ -73,6 +74,10 @@ export const router = createHashRouter([
 	{
 		path: '/',
 		element: <RootRestoreRedirect />,
+	},
+	{
+		path: '/tasks/:taskId',
+		element: <TaskPageRoute />,
 	},
 	{
 		path: '/spaces',

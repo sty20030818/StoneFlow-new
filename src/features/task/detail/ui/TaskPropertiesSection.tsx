@@ -14,9 +14,10 @@ import type { TaskDetailDraft } from '../model/taskDetailDraft'
 
 type TaskPropertiesSectionProps = {
 	autosave: AutosaveController<TaskDetailDraft>
+	disabled?: boolean
 }
 
-export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) {
+export function TaskPropertiesSection({ autosave, disabled = false }: TaskPropertiesSectionProps) {
 	const statusDropdownProps = createTaskStatusMetadataDropdownProps()
 	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
 
@@ -25,6 +26,7 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 			<DetailFieldRow className='items-center' label='状态' labelClassName='pt-0'>
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskStatusLabel(autosave.draft.status)}
+					disabled={disabled}
 					drawerOwnedOverlay
 					fieldKey='status'
 					headerShortcut={statusDropdownProps.headerShortcut}
@@ -43,6 +45,7 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 			<DetailFieldRow className='items-center' label='优先级' labelClassName='pt-0'>
 				<MetadataFieldDropdown
 					buttonLabel={formatTaskPriorityLabel(autosave.draft.priority)}
+					disabled={disabled}
 					drawerOwnedOverlay
 					fieldKey='priority'
 					headerShortcut={priorityDropdownProps.headerShortcut}
@@ -60,6 +63,7 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 
 			<DetailFieldRow className='items-center' label='截止时间' labelClassName='pt-0'>
 				<MetadataDateDropdown
+					disabled={disabled}
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.due}
 					label='截止时间'
@@ -74,6 +78,7 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 
 			<DetailFieldRow className='items-center' label='计划时间' labelClassName='pt-0'>
 				<MetadataDateDropdown
+					disabled={disabled}
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.scheduled}
 					label='计划时间'
@@ -88,6 +93,7 @@ export function TaskPropertiesSection({ autosave }: TaskPropertiesSectionProps) 
 
 			<DetailFieldRow className='items-center' label='提醒时间' labelClassName='pt-0'>
 				<MetadataDateDropdown
+					disabled={disabled}
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.reminder}
 					label='提醒时间'

@@ -19,12 +19,10 @@ import {
 
 type TaskPreviewProps = {
 	task: TaskListItem | null
-	linkSummary:
-		| {
-				items: Array<{ id: string; title: string }>
-				remainingCount: number
-		  }
-		| null
+	linkSummary: {
+		items: Array<{ id: string; title: string }>
+		remainingCount: number
+	} | null
 	onPointerEnter: () => void
 	onPointerLeave: () => void
 }
@@ -44,7 +42,10 @@ export function TaskPreview({
 	const dateItems: Array<{ icon: ReactNode; label: string }> = []
 
 	if (task.dueAt) {
-		dateItems.push({ icon: taskDateMetadataIcons.due, label: `截止 ${formatShortDate(task.dueAt)}` })
+		dateItems.push({
+			icon: taskDateMetadataIcons.due,
+			label: `截止 ${formatShortDate(task.dueAt)}`,
+		})
 	}
 
 	if (task.scheduledAt) {
@@ -73,7 +74,9 @@ export function TaskPreview({
 				<header className={taskPreviewHeaderClass}>
 					<div className='flex items-center justify-between gap-3 text-[11px] leading-4 text-sf-text-tertiary'>
 						<span className='min-w-0 truncate'>{breadcrumbLabel}</span>
-						<span className='shrink-0 truncate text-right'>更新于 {formatUpdatedAt(task.updatedAt)}</span>
+						<span className='shrink-0 truncate text-right'>
+							更新于 {formatUpdatedAt(task.updatedAt)}
+						</span>
 					</div>
 					<div className='flex flex-col gap-1.5'>
 						<h2 className='line-clamp-2 text-[20px] font-semibold leading-[1.25] text-foreground'>
@@ -82,7 +85,13 @@ export function TaskPreview({
 						<div className={taskPreviewMetaRowClass}>
 							<MetaPill icon={<StatusDot />} label={formatTaskStatusLabel(task.status)} />
 							<MetaPill
-								icon={<PriorityIcon className='text-sf-text-secondary' priority={task.priority} size='sm' />}
+								icon={
+									<PriorityIcon
+										className='text-sf-text-secondary'
+										priority={task.priority}
+										size='sm'
+									/>
+								}
 								label={formatTaskPriorityLabel(task.priority)}
 							/>
 							{dateItems.map((item) => (

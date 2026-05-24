@@ -220,26 +220,25 @@ export function ShellSidebar({
 		}
 	}, [editorOpen, spaceSwitcherMenuOpen])
 
-	const handleSpaceEditorSubmit = useCallback(async (input: {
-		name: string
-		iconKey: string
-		colorKey: string
-	}) => {
-		if (editorMode === 'create') {
-			const createdSpace = await onCreateSpace(input)
-			navigate(`/space/${createdSpace.id}/inbox`)
-			return
-		}
+	const handleSpaceEditorSubmit = useCallback(
+		async (input: { name: string; iconKey: string; colorKey: string }) => {
+			if (editorMode === 'create') {
+				const createdSpace = await onCreateSpace(input)
+				navigate(`/space/${createdSpace.id}/inbox`)
+				return
+			}
 
-		if (!activeSpace) {
-			throw new Error('当前没有可编辑的 Space')
-		}
+			if (!activeSpace) {
+				throw new Error('当前没有可编辑的 Space')
+			}
 
-		await onUpdateSpace({
-			spaceId: activeSpace.id,
-			...input,
-		})
-	}, [activeSpace, editorMode, navigate, onCreateSpace, onUpdateSpace])
+			await onUpdateSpace({
+				spaceId: activeSpace.id,
+				...input,
+			})
+		},
+		[activeSpace, editorMode, navigate, onCreateSpace, onUpdateSpace],
+	)
 
 	const handleSidebarContextMenu = (event: React.MouseEvent<HTMLElement>) => {
 		const target = event.target
@@ -272,9 +271,7 @@ export function ShellSidebar({
 												onPointerLeave={handleSpaceSwitcherPointerLeave}
 												size='lg'
 												tooltip={
-													spaceSwitcherMenuOpen ||
-													editorOpen ||
-													spaceSwitcherTooltipSuppressed
+													spaceSwitcherMenuOpen || editorOpen || spaceSwitcherTooltipSuppressed
 														? undefined
 														: currentScopeLabel
 												}
