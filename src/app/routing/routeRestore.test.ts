@@ -14,6 +14,8 @@ describe('routeRestore', () => {
 	})
 
 	it('判断 rememberable shell path', () => {
+		expect(isRememberableShellPath('/all/inbox')).toBe(true)
+		expect(isRememberableShellPath('/spaces/space-a/project/project-a')).toBe(true)
 		expect(isRememberableShellPath('/spaces/inbox')).toBe(true)
 		expect(isRememberableShellPath('/space/space-a/project/project-a')).toBe(true)
 		expect(isRememberableShellPath('/projects/project-a')).toBe(false)
@@ -21,9 +23,9 @@ describe('routeRestore', () => {
 	})
 
 	it('对非法 path 返回 fallback', async () => {
-		await expect(
-			normalizeRememberedShellPath('/projects/project-a', [], '/spaces/inbox'),
-		).resolves.toBe('/spaces/inbox')
+		await expect(normalizeRememberedShellPath('/projects/project-a', [], '/all/inbox')).resolves.toBe(
+			'/all/inbox',
+		)
 	})
 
 	it('校验 space project remembered path', async () => {
@@ -36,9 +38,9 @@ describe('routeRestore', () => {
 			normalizeRememberedShellPath(
 				'/space/space-a/project/project-a',
 				[{ id: 'space-a' } as never],
-				'/spaces/inbox',
+				'/all/inbox',
 			),
-		).resolves.toBe('/space/space-a/project/project-a')
+		).resolves.toBe('/spaces/space-a/project/project-a')
 	})
 
 	it('项目不匹配时回退 fallback', async () => {
@@ -51,8 +53,8 @@ describe('routeRestore', () => {
 			normalizeRememberedShellPath(
 				'/space/space-a/project/project-a',
 				[{ id: 'space-a' } as never],
-				'/spaces/inbox',
+				'/all/inbox',
 			),
-		).resolves.toBe('/spaces/inbox')
+		).resolves.toBe('/all/inbox')
 	})
 })

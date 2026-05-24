@@ -6,6 +6,8 @@ import {
 	buildScopedSectionPath,
 	isRememberableShellPath as isRememberableShellRoutePath,
 	normalizeRememberedShellPath as normalizeRememberedShellRoutePath,
+	normalizeLegacyRoute,
+	stripShellDetailSearch,
 } from '@/app/routing'
 import type {
 	SidebarPreferenceSettings,
@@ -148,7 +150,8 @@ export async function updateShellUiDevicePreferences(
 }
 
 export async function rememberShellRoute(scope: Scope, path: string): Promise<void> {
-	if (!isRememberableShellPath(path)) {
+	const canonicalPath = stripShellDetailSearch(normalizeLegacyRoute(path))
+	if (!isRememberableShellPath(canonicalPath)) {
 		return
 	}
 
@@ -163,7 +166,7 @@ export async function rememberShellRoute(scope: Scope, path: string): Promise<vo
 		lastScopeKey: scopeKey,
 		lastRouteByScopeKey: {
 			...current.lastRouteByScopeKey,
-			[scopeKey]: path,
+			[scopeKey]: canonicalPath,
 		},
 	}
 
@@ -292,7 +295,11 @@ async function normalizeRememberedShellPath(
 	spaces: Space[],
 	fallbackPath: string,
 ): Promise<string> {
-	return normalizeRememberedShellRoutePath(path, spaces, fallbackPath)
+	return normalizeRememberedShellRoutePath(
+		path ? stripShellDetailSearch(normalizeLegacyRoute(path)) : path,
+		spaces,
+		fallbackPath,
+	)
 }
 
 function extractSpaceIdFromScopeKey(scopeKey: ShellScopeKey): string | null {

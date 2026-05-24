@@ -1,18 +1,10 @@
 import { getProjectDetail } from '@/features/project/api/projects'
 import type { Space } from '@/shared/types'
 
-const ALLOWED_ALL_SECTIONS = new Set([
-	'inbox',
-	'all-tasks',
-	'no-project',
-	'views',
-	'projects',
-	'archive',
-	'trash',
-	'settings',
-])
+import { normalizeLegacyRoute } from './routeMigration'
+import { isProjectShellPath, isShellPath } from './routeParser'
 
-const ALLOWED_SPACE_SECTIONS = new Set([
+const ALLOWED_SECTION_SEGMENTS = new Set([
 	'inbox',
 	'all-tasks',
 	'no-project',
@@ -21,15 +13,21 @@ const ALLOWED_SPACE_SECTIONS = new Set([
 	'archive',
 	'trash',
 	'settings',
+	'debug/activity',
 ])
 
 export function isRememberableShellPath(path: string): boolean {
-	const allMatch = path.match(/^\/spaces\/(.+)$/)
-	if (allMatch) {
-		return ALLOWED_ALL_SECTIONS.has(allMatch[1]?.split('?')[0] ?? '')
+	const normalizedPath = normalizeLegacyRoute(path).split(/[?#]/)[0] ?? path
+	if (!isShellPath(normalizedPath)) {
+		return false
 	}
 
-	const spaceMatch = path.match(/^\/space\/([^/]+)\/(.+)$/)
+	const allMatch = normalizedPath.match(/^\/all\/(.+)$/)
+	if (allMatch) {
+		return ALLOWED_SECTION_SEGMENTS.has(allMatch[1] ?? '')
+	}
+
+	const spaceMatch = normalizedPath.match(/^\/spaces\/([^/]+)\/(.+)$/)
 	if (!spaceMatch) {
 		return false
 	}
@@ -39,7 +37,24 @@ export function isRememberableShellPath(path: string): boolean {
 		return remainder.length > 'project/'.length
 	}
 
-	return ALLOWED_SPACE_SECTIONS.has(remainder.split('?')[0] ?? '')
+	return ALLOWED_SECTION_SEGMENTS.has(remainder)
+}
+
+export function stripShellDetailSearch(path: string): string {
+	const [pathname, searchAndHash = ''] = path.split(/(?=[?#])/)
+	if (!searchAndHash.startsWith('?')) {
+		return path
+	}
+
+	const hashIndex = searchAndHash.indexOf('#')
+	const search = hashIndex >= 0 ? searchAndHash.slice(0, hashIndex) : searchAndHash
+	const hash = hashIndex >= 0 ? searchAndHash.slice(hashIndex) : ''
+	const params = new URLSearchParams(search)
+	params.delete('task')
+	params.delete('project')
+	const nextSearch = params.toString()
+
+	return `${pathname}${nextSearch ? `?${nextSearch}` : ''}${hash}`
 }
 
 export async function normalizeRememberedShellPath(
@@ -51,11 +66,13 @@ export async function normalizeRememberedShellPath(
 		return fallbackPath
 	}
 
-	if (!isRememberableShellPath(path)) {
+	const canonicalPath = normalizeLegacyRoute(path)
+	if (!isRememberableShellPath(canonicalPath)) {
 		return fallbackPath
 	}
 
-	const match = path.match(/^\/space\/([^/]+)\/(.+)$/)
+	const pathname = canonicalPath.split(/[?#]/)[0] ?? canonicalPath
+	const match = pathname.match(/^\/spaces\/([^/]+)\/(.+)$/)
 	if (match) {
 		const [, spaceId, remainder] = match
 		if (spaces.length > 0 && !spaces.some((space) => space.id === spaceId)) {
@@ -73,14 +90,18 @@ export async function normalizeRememberedShellPath(
 				if (detail.spaceId !== spaceId) {
 					return fallbackPath
 				}
-				return path
+				return canonicalPath
 			} catch {
 				return fallbackPath
 			}
 		}
 
-		return path
+		return canonicalPath
 	}
 
-	return path
+	if (isProjectShellPath(pathname)) {
+		return fallbackPath
+	}
+
+	return canonicalPath
 }

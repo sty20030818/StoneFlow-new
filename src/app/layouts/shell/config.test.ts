@@ -27,6 +27,8 @@ describe('shell config helpers', () => {
 	})
 
 	it('按路由解析主分区', () => {
+		expect(resolveShellSection('/all/views')).toBe('views')
+		expect(resolveShellSection('/spaces/space-personal/inbox')).toBe('inbox')
 		expect(resolveShellSection('/spaces/focus')).toBe('views')
 		expect(resolveShellSection('/spaces/views')).toBe('views')
 		expect(resolveShellSection('/projects/project-shortcut')).toBe('project')

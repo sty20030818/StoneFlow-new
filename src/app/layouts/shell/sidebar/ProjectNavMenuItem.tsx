@@ -1,4 +1,5 @@
-import { buildScopedProjectPath, type ShellProjectLink } from '@/app/layouts/shell/config'
+import { buildScopedProjectPath } from '@/app/routing'
+import type { ShellProjectLink } from '@/app/layouts/shell/config'
 import type { Scope } from '@/shared/types'
 import { SidebarMenuItem } from '@/shared/ui/base/sidebar'
 import { FolderIcon } from 'lucide-react'

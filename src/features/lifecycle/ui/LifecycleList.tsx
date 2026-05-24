@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
-import { buildScopedSectionPath } from '@/app/layouts/shell/config'
+import { buildScopedSectionPath } from '@/app/routing'
 import {
 	BulkActionBar,
 	LIFECYCLE_BULK_ACTION_IDS,

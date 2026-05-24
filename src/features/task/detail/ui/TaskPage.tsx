@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { buildScopedSectionPath } from '@/app/layouts/shell/config'
+import { buildScopedSectionPath } from '@/app/routing'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import type { Scope, TaskDetail } from '@/shared/types'
 import { DetailPageGrid, DetailPageMain, DetailPageSidebar } from '@/shared/ui/detail'

@@ -3,39 +3,47 @@ import type { RouteScope, ShellPathKind } from './routeTypes'
 
 const TASK_SHORTCUT_PATH = /^\/tasks\/[^/]+$/
 const PROJECT_SHORTCUT_PATH = /^\/projects\/[^/]+$/
-const SPACE_SHELL_PATH = /^\/space\/([^/]+)(?:\/(.+))?$/
-const ALL_SHELL_PATH = /^\/spaces(?:\/(.+))?$/
+const LEGACY_SCOPED_SHELL_PATH = /^\/space\/([^/]+)(?:\/(.+))?$/
+const LEGACY_ALL_SHELL_PATH = /^\/spaces(?:\/(.+))?$/
+const CANONICAL_SCOPED_SHELL_PATH = /^\/spaces\/([^/]+)(?:\/(.+))?$/
+const CANONICAL_ALL_SHELL_PATH = /^\/all(?:\/(.+))?$/
+
+function stripQueryAndHash(pathname: string) {
+	return pathname.split(/[?#]/)[0] || '/'
+}
 
 export function resolveShellSection(pathname: string): ShellSectionKey {
-	if (isProjectShortcutPath(pathname) || pathname.includes('/project/')) {
+	const normalizedPath = stripQueryAndHash(pathname)
+
+	if (isProjectShortcutPath(normalizedPath) || normalizedPath.includes('/project/')) {
 		return 'project'
 	}
 
-	if (pathname.includes('/all-tasks')) {
+	if (normalizedPath.includes('/all-tasks')) {
 		return 'allTasks'
 	}
 
-	if (pathname.includes('/no-project')) {
+	if (normalizedPath.includes('/no-project')) {
 		return 'noProject'
 	}
 
-	if (pathname.includes('/views') || pathname.includes('/focus')) {
+	if (normalizedPath.includes('/views') || normalizedPath.includes('/focus')) {
 		return 'views'
 	}
 
-	if (pathname.includes('/projects')) {
+	if (normalizedPath.includes('/projects')) {
 		return 'projects'
 	}
 
-	if (pathname.includes('/archive')) {
+	if (normalizedPath.includes('/archive')) {
 		return 'archive'
 	}
 
-	if (pathname.includes('/trash')) {
+	if (normalizedPath.includes('/trash')) {
 		return 'trash'
 	}
 
-	if (pathname.includes('/settings')) {
+	if (normalizedPath.includes('/settings')) {
 		return 'settings'
 	}
 
@@ -43,58 +51,113 @@ export function resolveShellSection(pathname: string): ShellSectionKey {
 }
 
 export function parseShellScopePath(pathname: string): RouteScope | null {
-	if (pathname.startsWith('/spaces')) {
+	const normalizedPath = stripQueryAndHash(pathname)
+
+	if (CANONICAL_ALL_SHELL_PATH.test(normalizedPath) || isLegacyAllShellPath(normalizedPath)) {
 		return { type: 'all' }
 	}
 
-	const match = pathname.match(SPACE_SHELL_PATH)
-	if (!match?.[1]) {
+	const canonicalScopedMatch = normalizedPath.match(CANONICAL_SCOPED_SHELL_PATH)
+	if (canonicalScopedMatch?.[1]) {
+		const remainder = canonicalScopedMatch[2] ?? ''
+		if (remainder && (remainder.startsWith('project/') || isCanonicalSectionRemainder(remainder))) {
+			return { type: 'space', spaceId: decodeURIComponent(canonicalScopedMatch[1]) }
+		}
+	}
+
+	const legacyScopedMatch = normalizedPath.match(LEGACY_SCOPED_SHELL_PATH)
+	if (!legacyScopedMatch?.[1]) {
 		return null
 	}
 
-	return { type: 'space', spaceId: decodeURIComponent(match[1]) }
+	return { type: 'space', spaceId: decodeURIComponent(legacyScopedMatch[1]) }
 }
 
 export function isProjectShellPath(pathname: string) {
-	return pathname.includes('/project/')
+	return stripQueryAndHash(pathname).includes('/project/')
 }
 
 export function isTaskShortcutPath(pathname: string) {
-	return TASK_SHORTCUT_PATH.test(pathname)
+	return TASK_SHORTCUT_PATH.test(stripQueryAndHash(pathname))
 }
 
 export function isProjectShortcutPath(pathname: string) {
-	return PROJECT_SHORTCUT_PATH.test(pathname)
+	return PROJECT_SHORTCUT_PATH.test(stripQueryAndHash(pathname))
 }
 
 export function resolveShellPathKind(pathname: string): ShellPathKind {
-	if (isTaskShortcutPath(pathname)) {
+	const normalizedPath = stripQueryAndHash(pathname)
+
+	if (isTaskShortcutPath(normalizedPath)) {
 		return 'task-shortcut'
 	}
 
-	if (isProjectShortcutPath(pathname)) {
+	if (isProjectShortcutPath(normalizedPath)) {
 		return 'project-shortcut'
 	}
 
-	if (pathname.startsWith('/spaces')) {
-		return 'all'
+	if (CANONICAL_ALL_SHELL_PATH.test(normalizedPath)) {
+		return 'canonical-all'
 	}
 
-	if (pathname.startsWith('/space/')) {
-		return 'space'
+	if (isCanonicalScopedShellPath(normalizedPath)) {
+		return 'canonical-space'
+	}
+
+	if (isLegacyAllShellPath(normalizedPath)) {
+		return 'legacy-all'
+	}
+
+	if (LEGACY_SCOPED_SHELL_PATH.test(normalizedPath)) {
+		return 'legacy-space'
 	}
 
 	return 'other'
 }
 
 export function isShellPath(pathname: string) {
-	return ALL_SHELL_PATH.test(pathname) || SPACE_SHELL_PATH.test(pathname)
+	const kind = resolveShellPathKind(pathname)
+	return (
+		kind === 'canonical-all' ||
+		kind === 'canonical-space' ||
+		kind === 'legacy-all' ||
+		kind === 'legacy-space'
+	)
 }
 
 export function isQuickCreatePath(pathname: string) {
-	return pathname === '/quick-create'
+	return stripQueryAndHash(pathname) === '/quick-create'
 }
 
 export function isTaskPageSection(section: ShellSectionKey) {
 	return section === 'allTasks'
+}
+
+function isLegacyAllShellPath(pathname: string) {
+	return LEGACY_ALL_SHELL_PATH.test(pathname) && !isCanonicalScopedShellPath(pathname)
+}
+
+function isCanonicalScopedShellPath(pathname: string) {
+	const match = pathname.match(CANONICAL_SCOPED_SHELL_PATH)
+	if (!match?.[1]) {
+		return false
+	}
+
+	const remainder = match[2] ?? ''
+	return Boolean(remainder) && (remainder.startsWith('project/') || isCanonicalSectionRemainder(remainder))
+}
+
+function isCanonicalSectionRemainder(remainder: string) {
+	return (
+		remainder === 'inbox' ||
+		remainder === 'all-tasks' ||
+		remainder === 'no-project' ||
+		remainder === 'views' ||
+		remainder === 'projects' ||
+		remainder === 'archive' ||
+		remainder === 'trash' ||
+		remainder === 'settings' ||
+		remainder === 'debug/activity' ||
+		remainder === 'focus'
+	)
 }

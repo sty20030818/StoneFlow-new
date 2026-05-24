@@ -6,7 +6,7 @@ import {
 	type ActivityTimelineEntry,
 	getEntityActivities,
 } from '@/features/activity/api/getEntityActivities'
-import { buildScopedSectionPath } from '@/app/layouts/shell/config'
+import { buildScopedSectionPath } from '@/app/routing'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { Button } from '@/shared/ui/base/button'

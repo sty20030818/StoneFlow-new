@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { buildScopedSectionPath } from '@/app/layouts/shell/config'
+import { buildScopedSectionPath } from '@/app/routing'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'

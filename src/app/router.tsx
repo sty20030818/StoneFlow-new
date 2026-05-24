@@ -1,5 +1,6 @@
-import { Navigate, createHashRouter } from 'react-router-dom'
+import { Navigate, createHashRouter, useLocation } from 'react-router-dom'
 
+import { normalizeLegacyRoute } from '@/app/routing'
 import { RootRestoreRedirect } from './RootRestoreRedirect'
 import { AllTasksPage } from '../features/all-tasks/ui/AllTasksPage'
 import { ArchivePage } from '../features/archive/ui/ArchivePage'
@@ -67,6 +68,60 @@ const shellChildren = [
 	},
 ]
 
+const legacyAllShellRoutes = [
+	{
+		path: '/spaces',
+		element: <LegacyShellRedirect />,
+	},
+	{
+		path: '/spaces/inbox',
+		element: <LegacyShellRedirect />,
+	},
+	{
+		path: '/spaces/focus',
+		element: <LegacyShellRedirect />,
+	},
+	{
+		path: '/spaces/all-tasks',
+		element: <LegacyShellRedirect />,
+	},
+	{
+		path: '/spaces/no-project',
+		element: <LegacyShellRedirect />,
+	},
+	{
+		path: '/spaces/views',
+		element: <LegacyShellRedirect />,
+	},
+	{
+		path: '/spaces/projects',
+		element: <LegacyShellRedirect />,
+	},
+	{
+		path: '/spaces/archive',
+		element: <LegacyShellRedirect />,
+	},
+	{
+		path: '/spaces/trash',
+		element: <LegacyShellRedirect />,
+	},
+	{
+		path: '/spaces/settings',
+		element: <LegacyShellRedirect />,
+	},
+	{
+		path: '/spaces/debug/activity',
+		element: <LegacyShellRedirect />,
+	},
+]
+
+function LegacyShellRedirect() {
+	const location = useLocation()
+	const currentPath = `${location.pathname}${location.search}${location.hash}`
+	const target = normalizeLegacyRoute(currentPath)
+	return <Navigate replace to={target} />
+}
+
 export const router = createHashRouter([
 	{
 		path: '/quick-create',
@@ -85,13 +140,24 @@ export const router = createHashRouter([
 		element: <ProjectPageRoute />,
 	},
 	{
-		path: '/spaces',
+		path: '/all',
 		element: <SpaceLayout />,
 		children: shellChildren,
 	},
 	{
-		path: '/space/:spaceId',
+		path: '/spaces/:spaceId',
 		element: <SpaceLayout />,
 		children: shellChildren,
+	},
+	...legacyAllShellRoutes,
+	{
+		path: '/space/:spaceId',
+		element: <LegacyShellRedirect />,
+		children: [
+			{
+				path: '*',
+				element: <LegacyShellRedirect />,
+			},
+		],
 	},
 ])

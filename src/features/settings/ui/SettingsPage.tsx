@@ -1,7 +1,7 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
 
-import { buildScopedSectionPath } from '@/app/layouts/shell/config'
+import { buildScopedSectionPath } from '@/app/routing'
 import { EntityScene } from '@/app/layouts/entity-scene'
 import {
 	selectSidebarSettings,

@@ -16,7 +16,7 @@ describe('ActivityDebugPage', () => {
 	})
 
 	it('在空查询参数下渲染等待态', () => {
-		renderActivityDebugPage('/space/work/debug/activity')
+		renderActivityDebugPage('/spaces/work/debug/activity')
 
 		expect(screen.getByText('等待查询')).toBeInTheDocument()
 		expect(
@@ -49,7 +49,7 @@ describe('ActivityDebugPage', () => {
 			},
 		])
 
-		renderActivityDebugPage('/space/work/debug/activity?entityType=task&entityId=task-1&limit=20')
+		renderActivityDebugPage('/spaces/work/debug/activity?entityType=task&entityId=task-1&limit=20')
 
 		await waitFor(() => {
 			expect(screen.getByText('task.status.changed')).toBeInTheDocument()
@@ -68,7 +68,7 @@ describe('ActivityDebugPage', () => {
 	it('在宿主不可用或读取失败时展示兜底错误态', async () => {
 		mockedGetEntityActivities.mockRejectedValue(new Error('invoke unavailable'))
 
-		renderActivityDebugPage('/space/work/debug/activity?entityType=task&entityId=task-1')
+		renderActivityDebugPage('/spaces/work/debug/activity?entityType=task&entityId=task-1')
 
 		await waitFor(() => {
 			expect(screen.getByText('查询失败')).toBeInTheDocument()
@@ -86,7 +86,7 @@ function renderActivityDebugPage(initialEntry: string) {
 	return render(
 		<MemoryRouter initialEntries={[initialEntry]}>
 			<Routes>
-				<Route element={<ActivityDebugPage />} path='/space/:spaceId/debug/activity' />
+				<Route element={<ActivityDebugPage />} path='/spaces/:spaceId/debug/activity' />
 			</Routes>
 		</MemoryRouter>,
 	)

@@ -1,4 +1,5 @@
 export * from './routePaths'
 export * from './routeParser'
+export * from './routeMigration'
 export * from './routeRestore'
 export * from './routeTypes'

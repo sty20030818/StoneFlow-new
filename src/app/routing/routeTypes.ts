@@ -25,4 +25,11 @@ export type EntityShortcutTarget =
 			id: string
 	  }
 
-export type ShellPathKind = 'all' | 'space' | 'task-shortcut' | 'project-shortcut' | 'other'
+export type ShellPathKind =
+	| 'canonical-all'
+	| 'canonical-space'
+	| 'legacy-all'
+	| 'legacy-space'
+	| 'task-shortcut'
+	| 'project-shortcut'
+	| 'other'

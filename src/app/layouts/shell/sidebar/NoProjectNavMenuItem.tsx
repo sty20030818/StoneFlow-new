@@ -1,4 +1,4 @@
-import { buildScopedSectionPath } from '@/app/layouts/shell/config'
+import { buildScopedSectionPath } from '@/app/routing'
 import type { Scope } from '@/shared/types'
 import { SidebarMenuItem } from '@/shared/ui/base/sidebar'
 import { TargetIcon } from 'lucide-react'

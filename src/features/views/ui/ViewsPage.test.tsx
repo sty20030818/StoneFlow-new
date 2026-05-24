@@ -211,9 +211,9 @@ describe('ViewsPage', () => {
 
 	it('根据 query viewKey 解析真实 viewId，并触发视图执行', async () => {
 		render(
-			<MemoryRouter initialEntries={['/spaces/views?view=today']}>
+			<MemoryRouter initialEntries={['/all/views?view=today']}>
 				<Routes>
-					<Route path='/spaces/views' element={<ViewsPage />} />
+					<Route path='/all/views' element={<ViewsPage />} />
 				</Routes>
 			</MemoryRouter>,
 		)
@@ -232,9 +232,9 @@ describe('ViewsPage', () => {
 
 	it('点击系统视图 tab 后切换到新的视图 id', async () => {
 		render(
-			<MemoryRouter initialEntries={['/spaces/views?view=view-today']}>
+			<MemoryRouter initialEntries={['/all/views?view=view-today']}>
 				<Routes>
-					<Route path='/spaces/views' element={<ViewsPage />} />
+					<Route path='/all/views' element={<ViewsPage />} />
 				</Routes>
 			</MemoryRouter>,
 		)
@@ -252,10 +252,10 @@ describe('ViewsPage', () => {
 	it('注册当前视图选择到 Command selection context', async () => {
 		render(
 			<CommandSelectionProvider>
-				<MemoryRouter initialEntries={['/spaces/views?view=view-today']}>
+				<MemoryRouter initialEntries={['/all/views?view=view-today']}>
 					<Routes>
 						<Route
-							path='/spaces/views'
+							path='/all/views'
 							element={
 								<>
 									<ViewsPage />
