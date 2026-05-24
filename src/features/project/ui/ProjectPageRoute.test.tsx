@@ -103,11 +103,17 @@ describe('ProjectPageRoute', () => {
 		renderProjectPageRoute('/projects/project-1')
 
 		expect(await screen.findByText('Project page body')).toBeInTheDocument()
-		expect(shellLayoutPropsSpy).toHaveBeenCalledWith({
-			activeSection: 'project',
-			currentScope: { type: 'space', spaceId: 'space-1' },
-			currentSpaceId: 'space-1',
-		})
+		expect(shellLayoutPropsSpy).toHaveBeenCalledWith(
+			expect.objectContaining({
+				activeSection: 'project',
+				currentScope: { type: 'space', spaceId: 'space-1' },
+				currentSpaceId: 'space-1',
+				shellRoute: expect.objectContaining({
+					pathKind: 'project-shortcut',
+					pathname: '/projects/project-1',
+				}),
+			}),
+		)
 		expect(projectPagePropsSpy).toHaveBeenCalledWith({
 			scopeOverride: { type: 'space', spaceId: 'space-1' },
 		})
@@ -147,11 +153,17 @@ describe('ProjectPageRoute', () => {
 		renderProjectPageRoute('/projects/project-1')
 
 		expect(await screen.findByText('Project page body')).toBeInTheDocument()
-		expect(shellLayoutPropsSpy).toHaveBeenCalledWith({
-			activeSection: 'project',
-			currentScope: { type: 'all' },
-			currentSpaceId: null,
-		})
+		expect(shellLayoutPropsSpy).toHaveBeenCalledWith(
+			expect.objectContaining({
+				activeSection: 'project',
+				currentScope: { type: 'all' },
+				currentSpaceId: null,
+				shellRoute: expect.objectContaining({
+					pathKind: 'project-shortcut',
+					pathname: '/projects/project-1',
+				}),
+			}),
+		)
 		expect(projectPagePropsSpy).toHaveBeenCalledWith({
 			scopeOverride: { type: 'all' },
 		})

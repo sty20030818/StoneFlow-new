@@ -6,13 +6,13 @@ import {
 	useState,
 	type PropsWithChildren,
 } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import {
 	buildScopedProjectPath,
 	buildScopedSectionPath,
-	isTaskShortcutPath,
 } from '@/app/routing'
+import type { ShellRoute } from '@/app/routing'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
 import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
@@ -125,6 +125,7 @@ type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
 	currentSpaceId: string | null
 	activeSection: ShellSectionKey
+	shellRoute: ShellRoute
 }>
 
 export function ShellLayout({
@@ -132,6 +133,7 @@ export function ShellLayout({
 	currentScope,
 	currentSpaceId,
 	activeSection,
+	shellRoute,
 }: ShellLayoutProps) {
 	return (
 		<CommandSelectionProvider>
@@ -143,6 +145,7 @@ export function ShellLayout({
 								activeSection={activeSection}
 								currentScope={currentScope}
 								currentSpaceId={currentSpaceId}
+								shellRoute={shellRoute}
 							>
 								{children}
 							</ShellLayoutBulkActionBoundary>
@@ -159,6 +162,7 @@ function ShellLayoutBulkActionBoundary({
 	currentScope,
 	currentSpaceId,
 	activeSection,
+	shellRoute,
 }: ShellLayoutProps) {
 	const refreshLoadedTaskSlices = useTaskStore((state) => state.refreshLoadedSlices)
 	const projectOverview = useProjectStore((state) => state.overview)
@@ -208,6 +212,7 @@ function ShellLayoutBulkActionBoundary({
 				activeSection={activeSection}
 				currentScope={currentScope}
 				currentSpaceId={currentSpaceId}
+				shellRoute={shellRoute}
 			>
 				{children}
 			</ShellLayoutContent>
@@ -220,6 +225,7 @@ function ShellLayoutContent({
 	currentScope,
 	currentSpaceId,
 	activeSection,
+	shellRoute,
 }: ShellLayoutProps) {
 	const navigate = useNavigate()
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
@@ -268,12 +274,8 @@ function ShellLayoutContent({
 	)
 	const requestSearchFocus = useSearchFocusIntentStore((state) => state.requestFocus)
 
-	const { pathname } = useLocation()
-	const routeProjectId = useMemo(() => {
-		const match = pathname.match(/\/project\/([^/]+)/)
-		return match?.[1] ?? null
-	}, [pathname])
-	const isNoProjectPage = pathname.endsWith('/no-project')
+	const routeProjectId = shellRoute.projectId
+	const isNoProjectPage = shellRoute.section === 'noProject'
 
 	const handleOpenTaskCreate = useMemo(() => {
 		if (routeProjectId) {
@@ -389,18 +391,18 @@ function ShellLayoutContent({
 		if (
 			spaceStatus !== 'ready' ||
 			!pendingTaskOpenIntent ||
-			pendingTaskOpenIntent.targetPath !== pathname
+			pendingTaskOpenIntent.targetPath !== shellRoute.pathname
 		) {
 			return
 		}
 
-		const consumedIntent = consumePendingTaskOpenIntent(pathname)
+		const consumedIntent = consumePendingTaskOpenIntent(shellRoute.pathname)
 		if (!consumedIntent) {
 			return
 		}
 
 		openEntityDrawer({ kind: 'task', id: consumedIntent.taskId })
-	}, [consumePendingTaskOpenIntent, openEntityDrawer, pathname, pendingTaskOpenIntent, spaceStatus])
+	}, [consumePendingTaskOpenIntent, openEntityDrawer, pendingTaskOpenIntent, shellRoute.pathname, spaceStatus])
 
 	useEffect(() => {
 		if (!activeDetail || !taskPreviewController.previewState.open) {
@@ -439,7 +441,7 @@ function ShellLayoutContent({
 			closeEntityDrawer()
 
 			if (payload.kind === 'project') {
-				if (pathname === targetPath) {
+				if (shellRoute.pathname === targetPath) {
 					return
 				}
 				startTransition(() => {
@@ -453,7 +455,7 @@ function ShellLayoutContent({
 				targetPath,
 			})
 
-			if (pathname === targetPath) {
+			if (shellRoute.pathname === targetPath) {
 				openEntityDrawer({ kind: 'task', id: payload.id })
 				return
 			}
@@ -462,7 +464,7 @@ function ShellLayoutContent({
 				navigate(targetPath)
 			})
 		},
-		[closeEntityDrawer, navigate, openEntityDrawer, pathname, setPendingTaskOpenIntent],
+		[closeEntityDrawer, navigate, openEntityDrawer, setPendingTaskOpenIntent, shellRoute.pathname],
 	)
 
 	const projectLinks = useMemo(
@@ -504,6 +506,7 @@ function ShellLayoutContent({
 	} = useShellRouteHistory({
 		currentScope,
 		currentSpaceId,
+		currentRoute: shellRoute,
 		spaces,
 		projects: sidebarProjectLinks,
 	})
@@ -1093,7 +1096,7 @@ function ShellLayoutContent({
 						onCloseDrawer={closeEntityDrawer}
 						onOpenProjectCreateDialog={() => openProjectCreateDialog()}
 						onOpenTaskCreateDialog={handleOpenTaskCreate}
-						showPreview={!isTaskShortcutPath(pathname)}
+						showPreview={shellRoute.pathKind !== 'task-shortcut'}
 					>
 						{children}
 					</ShellMain>

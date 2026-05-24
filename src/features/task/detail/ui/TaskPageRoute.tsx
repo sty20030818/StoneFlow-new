@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 
 import { ShellLayout } from '@/app/layouts/shell/ShellLayout'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
+import { useShellRoute } from '@/app/routing'
 import { setActiveScope } from '@/features/space/api/spaces'
 import {
 	selectActiveSection,
@@ -25,6 +26,7 @@ type RouteLoadState =
 	| { kind: 'error'; message: string }
 
 export function TaskPageRoute() {
+	const shellRoute = useShellRoute()
 	const { taskId = '' } = useParams()
 	const [loadState, setLoadState] = useState<RouteLoadState>({ kind: 'loading' })
 	const spaces = useSpaceStore(selectSpaces)
@@ -122,6 +124,7 @@ export function TaskPageRoute() {
 			activeSection={TASK_PAGE_SECTION}
 			currentScope={scope}
 			currentSpaceId={scope.type === 'space' ? scope.spaceId : null}
+			shellRoute={shellRoute}
 		>
 			<TaskPage taskId={taskId} scope={scope} />
 		</ShellLayout>

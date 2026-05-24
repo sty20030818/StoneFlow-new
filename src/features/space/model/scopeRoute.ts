@@ -1,21 +1,13 @@
-import { useMemo } from 'react'
-import { useLocation, useParams } from 'react-router-dom'
-
-import { parseShellScopePath } from '@/app/routing'
+import { useShellRoute } from '@/app/routing'
 import type { Scope } from '@/shared/types'
 
 /**
- * 从当前路由推导 Scope。
- * 返回的 scope 对象通过 useMemo 稳定引用，可安全用于 useEffect 依赖。
+ * 从结构化 Shell route 推导 Scope。
+ * 保留旧接口，避免页面侧在阶段 3 被迫一次性迁移。
  */
 export function useScopeRoute() {
-	const { pathname } = useLocation()
-	const { spaceId } = useParams()
-
-	const scope: Scope = useMemo(
-		() => parseShellScopePath(pathname) ?? (spaceId ? { type: 'space', spaceId } : { type: 'all' }),
-		[pathname, spaceId],
-	)
+	const route = useShellRoute()
+	const scope: Scope = route.scope ?? { type: 'all' }
 
 	return {
 		scope,

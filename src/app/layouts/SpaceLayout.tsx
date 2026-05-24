@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 
-import { resolveShellSection } from '@/app/routing'
+import { useShellRoute } from '@/app/routing'
 import { rememberShellRoute } from './shell/model/shellDevicePreferences'
 import {
 	selectActiveSection,
@@ -11,13 +11,12 @@ import {
 } from './shell/model/useShellNavStore'
 import { ShellLayout } from './shell/ShellLayout'
 import { setActiveScope } from '@/features/space/api/spaces'
-import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { useWorkspaceSync } from '@/features/workspace/model/useWorkspaceSync'
 
 export function SpaceLayout() {
-	const { scope } = useScopeRoute()
-	const { pathname, search, hash } = useLocation()
+	const shellRoute = useShellRoute()
+	const scope = shellRoute.scope ?? { type: 'all' as const }
 	const spaces = useSpaceStore(selectSpaces)
 	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
 	const currentScopeType = useShellNavStore(selectCurrentScopeType)
@@ -37,7 +36,7 @@ export function SpaceLayout() {
 			setCurrentScope(nextScopeType, nextSpaceId)
 		}
 
-		const nextSection = resolveShellSection(pathname)
+		const nextSection = shellRoute.section
 		if (activeSection !== nextSection) {
 			setActiveSection(nextSection)
 		}
@@ -46,7 +45,7 @@ export function SpaceLayout() {
 		currentScopeType,
 		currentSpaceId,
 		fallbackSpaceId,
-		pathname,
+		shellRoute.section,
 		scope,
 		setActiveSection,
 		setCurrentScope,
@@ -62,22 +61,21 @@ export function SpaceLayout() {
 	}, [scope])
 
 	useEffect(() => {
-		void rememberShellRoute(scope, `${pathname}${search}${hash}`).catch((error) => {
+		void rememberShellRoute(scope, shellRoute.fullPath).catch((error) => {
 			console.error('shell route restore save failed', {
 				scope,
-				pathname,
-				search,
-				hash,
+				path: shellRoute.fullPath,
 				error,
 			})
 		})
-	}, [hash, pathname, scope, search])
+	}, [scope, shellRoute.fullPath])
 
 	return (
 		<ShellLayout
 			activeSection={activeSection}
 			currentScope={scope}
 			currentSpaceId={scope.type === 'space' ? scope.spaceId : fallbackSpaceId}
+			shellRoute={shellRoute}
 		>
 			<Outlet />
 		</ShellLayout>

@@ -5,9 +5,10 @@ import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import {
 	isProjectShortcutPath,
 	isTaskShortcutPath,
+	parseShellRoute,
 	parseShellScopePath,
-	resolveShellSection,
 } from '@/app/routing'
+import type { ShellRoute } from '@/app/routing'
 import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import type { Scope, Space } from '@/shared/types'
 import {
@@ -40,6 +41,7 @@ type ShellRouteHistoryState = {
 type UseShellRouteHistoryOptions = {
 	currentScope: Scope
 	currentSpaceId: string | null
+	currentRoute?: ShellRoute
 	spaces: Space[]
 	projects: ShellProjectLink[]
 	maxEntries?: number
@@ -81,6 +83,7 @@ function resolveEntryIcon(path: string): LucideIcon {
 export function useShellRouteHistory({
 	currentScope,
 	currentSpaceId,
+	currentRoute,
 	spaces,
 	projects,
 	maxEntries = DEFAULT_MAX_HISTORY_ENTRIES,
@@ -89,9 +92,10 @@ export function useShellRouteHistory({
 	const navigationType = useNavigationType()
 	const navigate = useNavigate()
 	const currentPath = `${location.pathname}${location.search}${location.hash}`
+	const route = currentRoute ?? parseShellRoute(location)
 	const currentEntry = useMemo(
-		() => buildShellRouteHistoryEntry(currentPath, currentScope, currentSpaceId, spaces, projects),
-		[currentPath, currentScope, currentSpaceId, spaces, projects],
+		() => buildShellRouteHistoryEntry(route, currentScope, currentSpaceId, spaces, projects),
+		[route, currentScope, currentSpaceId, spaces, projects],
 	)
 	const [historyState, setHistoryState] = useState<ShellRouteHistoryState>({
 		entries: [],
@@ -148,13 +152,15 @@ export function useShellRouteHistory({
 }
 
 export function buildShellRouteHistoryEntry(
-	path: string,
+	routeOrPath: ShellRoute | string,
 	currentScope: Scope,
 	currentSpaceId: string | null,
 	spaces: Space[],
 	projects: ShellProjectLink[],
 ): ShellRouteHistoryEntry {
-	const pathname = path.split(/[?#]/)[0] || '/'
+	const route = typeof routeOrPath === 'string' ? parseShellRoute(routeOrPath) : routeOrPath
+	const path = route.fullPath
+	const pathname = route.pathname
 	const parts = compact(pathname.split('/'))
 
 	if (parts[0] === 'quick-create') {
@@ -169,21 +175,21 @@ export function buildShellRouteHistoryEntry(
 		return createHistoryEntry(path, '项目详情', null, '所有空间')
 	}
 
-	const parsedScope = parseShellScopePath(pathname)
+	const parsedScope = route.scope ?? parseShellScopePath(pathname)
 	if (!parsedScope) {
 		return createHistoryEntry(path, '工作区', null, '所有空间')
 	}
 
 	if (parsedScope.type === 'all') {
-		return createHistoryEntry(path, getSectionLabel(resolveShellSection(pathname)), null, '所有空间')
+		return createHistoryEntry(path, getSectionLabel(route.section), null, '所有空间')
 	}
 
 	const spaceId = parsedScope.spaceId ?? currentSpaceId ?? (currentScope.type === 'space' ? currentScope.spaceId : null)
 	const spaceLabel = getSpaceLabel(spaceId, spaces)
-	const section = resolveShellSection(pathname)
+	const section = route.section
 
 	if (section === 'project') {
-		const projectId = parts[3]
+		const projectId = route.projectId ?? parts[3]
 		const projectLabel = projects.find((project) => project.id === projectId)?.label
 		return createHistoryEntry(path, projectLabel ?? '项目', spaceId, spaceLabel)
 	}

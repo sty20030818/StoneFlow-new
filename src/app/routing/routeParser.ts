@@ -1,5 +1,10 @@
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
-import type { RouteScope, ShellPathKind } from './routeTypes'
+import type {
+	RouteScope,
+	ShellPathKind,
+	ShellRoute,
+	ShellRouteLocationLike,
+} from './routeTypes'
 
 const TASK_SHORTCUT_PATH = /^\/tasks\/[^/]+$/
 const PROJECT_SHORTCUT_PATH = /^\/projects\/[^/]+$/
@@ -10,6 +15,54 @@ const CANONICAL_ALL_SHELL_PATH = /^\/all(?:\/(.+))?$/
 
 function stripQueryAndHash(pathname: string) {
 	return pathname.split(/[?#]/)[0] || '/'
+}
+
+function splitLocationLike(input: ShellRouteLocationLike) {
+	if (typeof input !== 'string') {
+		return {
+			pathname: input.pathname || '/',
+			search: input.search ?? '',
+			hash: input.hash ?? '',
+		}
+	}
+
+	const hashStart = input.indexOf('#')
+	const withoutHash = hashStart >= 0 ? input.slice(0, hashStart) : input
+	const hash = hashStart >= 0 ? input.slice(hashStart) : ''
+	const searchStart = withoutHash.indexOf('?')
+	const pathname = searchStart >= 0 ? withoutHash.slice(0, searchStart) : withoutHash
+	const search = searchStart >= 0 ? withoutHash.slice(searchStart) : ''
+
+	return {
+		pathname: pathname || '/',
+		search,
+		hash,
+	}
+}
+
+export function parseShellRoute(input: ShellRouteLocationLike): ShellRoute {
+	const { pathname, search, hash } = splitLocationLike(input)
+	const normalizedPath = stripQueryAndHash(pathname)
+	const scope = parseShellScopePath(normalizedPath)
+	const pathKind = resolveShellPathKind(normalizedPath)
+	const projectId = resolveShellProjectId(normalizedPath)
+
+	return {
+		scope,
+		spaceId: scope?.type === 'space' ? scope.spaceId : null,
+		section: resolveShellSection(normalizedPath),
+		projectId,
+		pathKind,
+		pathname: normalizedPath,
+		search,
+		hash,
+		fullPath: `${normalizedPath}${search}${hash}`,
+		isShellPath:
+			pathKind === 'canonical-all' ||
+			pathKind === 'canonical-space' ||
+			pathKind === 'legacy-all' ||
+			pathKind === 'legacy-space',
+	}
 }
 
 export function resolveShellSection(pathname: string): ShellSectionKey {
@@ -131,6 +184,12 @@ export function isQuickCreatePath(pathname: string) {
 
 export function isTaskPageSection(section: ShellSectionKey) {
 	return section === 'allTasks'
+}
+
+function resolveShellProjectId(pathname: string) {
+	const normalizedPath = stripQueryAndHash(pathname)
+	const match = normalizedPath.match(/\/project\/([^/]+)/)
+	return match?.[1] ? decodeURIComponent(match[1]) : null
 }
 
 function isLegacyAllShellPath(pathname: string) {

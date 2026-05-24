@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { buildStartupFallbackPath } from '@/app/routing'
+import { buildStartupFallbackPath, useShellRoute } from '@/app/routing'
 import { ShellLayout } from '@/app/layouts/shell/ShellLayout'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import {
@@ -26,6 +26,7 @@ type RouteLoadState =
 	| { kind: 'error'; message: string }
 
 export function ProjectPageRoute() {
+	const shellRoute = useShellRoute()
 	const navigate = useNavigate()
 	const { projectId = '' } = useParams()
 	const [loadState, setLoadState] = useState<RouteLoadState>({ kind: 'loading' })
@@ -150,6 +151,7 @@ export function ProjectPageRoute() {
 			activeSection={PROJECT_PAGE_SECTION}
 			currentScope={scope}
 			currentSpaceId={scope.type === 'space' ? scope.spaceId : null}
+			shellRoute={shellRoute}
 		>
 			<ProjectPage scopeOverride={scope} />
 		</ShellLayout>

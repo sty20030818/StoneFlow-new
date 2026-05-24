@@ -1,4 +1,4 @@
-import { isProjectShellPath, isProjectShortcutPath, isTaskShortcutPath, parseShellScopePath, resolveShellPathKind, resolveShellSection } from './routeParser'
+import { isProjectShellPath, isProjectShortcutPath, isTaskShortcutPath, parseShellRoute, parseShellScopePath, resolveShellPathKind, resolveShellSection } from './routeParser'
 
 describe('routeParser', () => {
 	it('同时支持 canonical 与 legacy shell section 解析', () => {
@@ -36,5 +36,43 @@ describe('routeParser', () => {
 		expect(isTaskShortcutPath('/tasks/task-a')).toBe(true)
 		expect(isTaskShortcutPath('/tasks/task-a/extra')).toBe(false)
 		expect(isProjectShortcutPath('/projects/project-a')).toBe(true)
+	})
+
+	it('解析结构化 shell route', () => {
+		expect(parseShellRoute('/all/inbox?task=task-a#top')).toMatchObject({
+			scope: { type: 'all' },
+			spaceId: null,
+			section: 'inbox',
+			projectId: null,
+			pathKind: 'canonical-all',
+			pathname: '/all/inbox',
+			search: '?task=task-a',
+			hash: '#top',
+			fullPath: '/all/inbox?task=task-a#top',
+			isShellPath: true,
+		})
+
+		expect(parseShellRoute('/spaces/space-a/project/project-a')).toMatchObject({
+			scope: { type: 'space', spaceId: 'space-a' },
+			spaceId: 'space-a',
+			section: 'project',
+			projectId: 'project-a',
+			pathKind: 'canonical-space',
+			isShellPath: true,
+		})
+
+		expect(parseShellRoute('/space/space-a/no-project')).toMatchObject({
+			scope: { type: 'space', spaceId: 'space-a' },
+			section: 'noProject',
+			pathKind: 'legacy-space',
+			isShellPath: true,
+		})
+
+		expect(parseShellRoute('/tasks/task-a')).toMatchObject({
+			scope: null,
+			section: 'inbox',
+			pathKind: 'task-shortcut',
+			isShellPath: false,
+		})
 	})
 })
