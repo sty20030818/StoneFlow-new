@@ -1,13 +1,31 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
+import { resolveRememberedPathForScope } from '@/app/layouts/shell/model/shellDevicePreferences'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { SubmitRegistryProvider } from '@/features/submit/model'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import { TooltipProvider } from '@/shared/ui/base/tooltip'
 
+vi.mock('@/app/layouts/shell/model/shellDevicePreferences', async () => {
+	const actual = await vi.importActual<typeof import('@/app/layouts/shell/model/shellDevicePreferences')>(
+		'@/app/layouts/shell/model/shellDevicePreferences',
+	)
+
+	return {
+		...actual,
+		resolveRememberedPathForScope: vi.fn(actual.resolveRememberedPathForScope),
+	}
+})
+
+const mockedResolveRememberedPathForScope = vi.mocked(resolveRememberedPathForScope)
+
 describe('ShellSidebar', () => {
+	beforeEach(() => {
+		mockedResolveRememberedPathForScope.mockImplementation(async ({ defaultPath }) => defaultPath)
+	})
+
 	it('按 settings 渲染主导航，并把设置固定放在回收站之后', () => {
 		renderShellSidebar({
 			mainItems: {
@@ -206,6 +224,52 @@ describe('ShellSidebar', () => {
 		expect(footerLink.closest('[data-scroll-container="true"]')).toBe(scrollContainer)
 		expect(footer).toHaveClass('mt-auto')
 	})
+
+	it('从顶部 Space 下拉选择其他 space 后会导航到该 space 的工作页', async () => {
+		renderShellSidebar(
+			{
+				mainItems: {
+					inbox: { visible: true, order: 100 },
+					allTasks: { visible: true, order: 200 },
+					views: { visible: true, order: 300 },
+					projectOverview: { visible: true, order: 400 },
+				},
+				projectSection: {
+					visible: true,
+					order: 500,
+					collapsed: false,
+					showCounts: true,
+					showCompleted: true,
+					maxVisible: null,
+				},
+				footerItems: {
+					archive: { visible: true, order: 900 },
+					trash: { visible: true, order: 1000 },
+				},
+				width: 256,
+				desktopPreference: 'expanded',
+			},
+			[],
+			{
+				spaces: [
+					mockSpace,
+					{
+						...mockSpace,
+						id: 'space-work',
+						name: '工作',
+						isDefault: false,
+					},
+				],
+			},
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '工作' }))
+
+		await waitFor(() => {
+			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-work/inbox')
+		})
+	})
 })
 
 function renderShellSidebar(
@@ -224,6 +288,7 @@ function renderShellSidebar(
 				<DangerConfirmProvider>
 					<TooltipProvider>
 						<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
+							<LocationProbe />
 							<ShellSidebar
 								currentScope={{ type: 'space', spaceId: 'space-personal' }}
 								currentSpaceId='space-personal'
@@ -245,6 +310,17 @@ function renderShellSidebar(
 				</DangerConfirmProvider>
 			</SubmitRegistryProvider>
 		</MemoryRouter>,
+	)
+}
+
+function LocationProbe() {
+	const location = useLocation()
+
+	return (
+		<div data-testid='location'>
+			{location.pathname}
+			{location.search}
+		</div>
 	)
 }
 

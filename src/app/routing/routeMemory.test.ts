@@ -159,6 +159,40 @@ describe('routeMemory', () => {
 		).resolves.toBe('/spaces/space-a/inbox')
 	})
 
+	it('space scope 不得恢复到 all scope 路径', async () => {
+		await expect(
+			resolveRememberedPathForScope({
+				scopeKey: 'space:space-a',
+				routeMemory: {
+					version: 2,
+					lastScopeKey: 'space:space-a',
+					lastRouteByScopeKey: {
+						'space:space-a': '/all/tasks',
+					},
+				},
+				spaces: [{ id: 'space-a' } as never],
+				defaultPath: '/spaces/space-a/inbox',
+			}),
+		).resolves.toBe('/spaces/space-a/inbox')
+	})
+
+	it('all scope 不得恢复到 space scope 路径', async () => {
+		await expect(
+			resolveRememberedPathForScope({
+				scopeKey: 'all',
+				routeMemory: {
+					version: 2,
+					lastScopeKey: 'all',
+					lastRouteByScopeKey: {
+						all: '/spaces/space-a/inbox',
+					},
+				},
+				spaces: [{ id: 'space-a' } as never],
+				defaultPath: '/all/tasks',
+			}),
+		).resolves.toBe('/all/tasks')
+	})
+
 	it('校验 detail 所属 space', async () => {
 		getTaskDetailMock.mockResolvedValue({ id: 'task-a', spaceId: 'space-a' })
 		getProjectDetailMock.mockResolvedValue({ id: 'project-a', spaceId: 'space-b' })

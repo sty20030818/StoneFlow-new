@@ -86,7 +86,12 @@ export async function validateShellRouteMemoryPaths(
 	const entries = await Promise.all(
 		Object.entries(memory.lastRouteByScopeKey).map(async ([scopeKey, path]) => {
 			const fallbackPath = buildFallbackPathForScopeKey(scopeKey as ShellScopeKey, spaces)
-			const normalizedPath = await normalizeRememberedShellPath(path, spaces, fallbackPath)
+			const normalizedPath = await normalizeRememberedShellPath(
+				path,
+				spaces,
+				fallbackPath,
+				scopeKey as ShellScopeKey,
+			)
 			return isRememberableShellPath(normalizedPath) ? [scopeKey, normalizedPath] : null
 		}),
 	)
@@ -159,7 +164,12 @@ export async function resolveStartupPathFromMemory({
 
 	const defaultSpaceId = resolveDefaultSpaceId(spaces)
 	if (memory.lastScopeKey === 'all') {
-		return await normalizeRememberedShellPath(memory.lastRouteByScopeKey.all, spaces, allTasksPath)
+		return await normalizeRememberedShellPath(
+			memory.lastRouteByScopeKey.all,
+			spaces,
+			allTasksPath,
+			'all',
+		)
 	}
 
 	const targetSpaceId = extractSpaceIdFromScopeKey(memory.lastScopeKey)
@@ -232,6 +242,7 @@ export async function normalizeRememberedShellPath(
 	path: string | undefined,
 	spaces: Space[],
 	fallbackPath: string,
+	expectedScopeKey?: ShellScopeKey,
 ): Promise<string> {
 	if (!path) {
 		return fallbackPath
@@ -243,6 +254,10 @@ export async function normalizeRememberedShellPath(
 	}
 
 	const route = parseShellRoute(canonicalPath)
+	if (expectedScopeKey && !doesRouteMatchScopeKey(route, expectedScopeKey)) {
+		return fallbackPath
+	}
+
 	if (route.kind === 'shell-section') {
 		const scope = route.scope
 		if (scope && scope.type === 'space') {
@@ -281,7 +296,12 @@ async function resolveScopePath(input: {
 	defaultPath: string
 }): Promise<string> {
 	const rememberedPath = input.routeMemory.lastRouteByScopeKey[input.scopeKey]
-	return normalizeRememberedShellPath(rememberedPath, input.spaces, input.defaultPath)
+	return normalizeRememberedShellPath(
+		rememberedPath,
+		input.spaces,
+		input.defaultPath,
+		input.scopeKey,
+	)
 }
 
 async function validateProjectSpace(
@@ -346,4 +366,28 @@ function buildFallbackPathForScopeKey(scopeKey: ShellScopeKey, spaces: Space[]) 
 
 function isShellScopeKey(value: string): value is ShellScopeKey {
 	return value === 'all' || value.startsWith('space:')
+}
+
+function doesRouteMatchScopeKey(route: ReturnType<typeof parseShellRoute>, scopeKey: ShellScopeKey) {
+	if (scopeKey === 'all') {
+		return (
+			(route.kind === 'shell-section' || route.kind === 'view') &&
+			route.scope?.type === 'all'
+		)
+	}
+
+	const expectedSpaceId = extractSpaceIdFromScopeKey(scopeKey)
+	if (!expectedSpaceId) {
+		return false
+	}
+
+	if (route.kind === 'task' || route.kind === 'project') {
+		return route.spaceId === expectedSpaceId
+	}
+
+	return (
+		(route.kind === 'shell-section' || route.kind === 'view') &&
+		route.scope?.type === 'space' &&
+		route.scope.spaceId === expectedSpaceId
+	)
 }

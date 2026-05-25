@@ -207,6 +207,31 @@ export function ShellSidebar({
 		setEditorOpen(false)
 	}, [])
 
+	const navigateToRememberedScope = useCallback(
+		(scopeKey: 'all' | `space:${string}`, defaultPath: string) => {
+			setDropdownError(null)
+
+			void resolveRememberedPathForScope({
+				scopeKey,
+				spaces,
+				defaultPath,
+			})
+				.then((path) => {
+					navigate(path)
+				})
+				.catch((error) => {
+					console.error('space switch restore failed', {
+						scopeKey,
+						defaultPath,
+						error,
+					})
+					setDropdownError(error instanceof Error ? error.message : 'Space 切换失败')
+					navigate(defaultPath)
+				})
+		},
+		[navigate, spaces],
+	)
+
 	const handleSpaceSwitcherMenuOpenChange = useCallback((open: boolean) => {
 		setSpaceSwitcherMenuOpen(open)
 		setSpaceSwitcherTooltipSuppressed(true)
@@ -316,13 +341,10 @@ export function ShellSidebar({
 												<DropdownMenuItem
 													className={sidebarDropdownItemClass}
 													onSelect={() => {
-														void resolveRememberedPathForScope({
-															scopeKey: 'all',
-															spaces,
-															defaultPath: buildStartupFallbackPath({ type: 'all' }),
-														}).then((path) => {
-															navigate(path)
-														})
+														navigateToRememberedScope(
+															'all',
+															buildStartupFallbackPath({ type: 'all' }),
+														)
 													}}
 												>
 													<OrbitIcon className='size-3.5 shrink-0 text-[#8b5cf6]' />
@@ -344,17 +366,14 @@ export function ShellSidebar({
 															className={sidebarDropdownItemClass}
 															key={space.id}
 															onSelect={() => {
-																void resolveRememberedPathForScope({
-																	scopeKey: `space:${space.id}`,
-																	spaces,
-																	defaultPath: buildCanonicalSectionPath(
+																navigateToRememberedScope(
+																	`space:${space.id}`,
+																	buildCanonicalSectionPath(
 																		{ type: 'space', spaceId: space.id },
 																		'inbox',
 																		space.id,
 																	),
-																}).then((path) => {
-																	navigate(path)
-																})
+																)
 															}}
 														>
 															<SpaceIcon className={cn('shrink-0', visual.iconClassName)} />
