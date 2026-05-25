@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
+import { useShellRoute } from '@/app/routing'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
@@ -10,7 +11,6 @@ import {
 } from '@/features/filter/model'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
-import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
@@ -32,6 +32,8 @@ import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patter
 import type { TaskStatus } from '@/shared/types'
 import { ListTodoIcon, PlusIcon } from 'lucide-react'
 
+const ALL_SCOPE = { type: 'all' } as const
+
 const TASK_FILTERS: Array<'all' | 'noProject' | TaskStatus> = [
 	'all',
 	'noProject',
@@ -42,7 +44,8 @@ const TASK_FILTERS: Array<'all' | 'noProject' | TaskStatus> = [
 	'canceled',
 ]
 export function AllTasksPage() {
-	const { scope } = useScopeRoute()
+	const shellRoute = useShellRoute()
+	const scope = shellRoute.scope ?? ALL_SCOPE
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail

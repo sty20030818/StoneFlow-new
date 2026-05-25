@@ -1,7 +1,7 @@
 import { useEffect, useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
 
-import { buildScopedSectionPath } from '@/app/routing'
+import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import { EntityScene } from '@/app/layouts/entity-scene'
 import {
 	selectSidebarSettings,
@@ -16,7 +16,6 @@ import {
 	selectSpaceStatus,
 	useSpaceStore,
 } from '@/features/space/model/useSpaceStore'
-import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { cn } from '@/shared/lib/utils'
 import {
 	Breadcrumb,
@@ -71,11 +70,15 @@ type SettingsSectionKey = 'mainItems' | 'projectSection' | 'sidebarWidth' | 'def
 type SectionStateMap = Record<SettingsSectionKey, boolean>
 type SectionErrorMap = Partial<Record<SettingsSectionKey, string>>
 
+const ALL_SCOPE = { type: 'all' } as const
+
 /**
  * 阶段 11：设置页只负责组织现有 settings / space store，不复制配置状态。
  */
 export function SettingsPage() {
-	const { scope, spaceId } = useScopeRoute()
+	const shellRoute = useShellRoute()
+	const scope = shellRoute.scope ?? ALL_SCOPE
+	const spaceId = shellRoute.spaceId
 	const sidebarStatus = useSidebarSettingsStore(selectSidebarSettingsStatus)
 	const sidebarSettings = useSidebarSettingsStore(selectSidebarSettings)
 	const sidebarError = useSidebarSettingsStore(selectSidebarSettingsError)
@@ -466,7 +469,7 @@ export function SettingsPage() {
 			bodyClassName='gap-4 p-2'
 			headerActions={
 				<Button asChild size='sm' variant='ghost'>
-					<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回收件箱</Link>
+					<Link to={buildCanonicalSectionPath(scope, 'inbox', spaceId)}>返回收件箱</Link>
 				</Button>
 			}
 			notices={

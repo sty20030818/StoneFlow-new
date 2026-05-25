@@ -16,16 +16,6 @@ export type ShellSectionSegment =
 	| 'debug/activity'
 	| 'focus'
 
-export type EntityShortcutTarget =
-	| {
-			kind: 'task'
-			id: string
-	  }
-	| {
-			kind: 'project'
-			id: string
-	  }
-
 export type EntityPageRouteTarget =
 	| {
 			kind: 'task'
@@ -41,10 +31,6 @@ export type EntityPageRouteTarget =
 export type ShellPathKind =
 	| 'canonical-all'
 	| 'canonical-space'
-	| 'legacy-all'
-	| 'legacy-space'
-	| 'task-shortcut'
-	| 'project-shortcut'
 	| 'other'
 
 export type ShellRoute = {

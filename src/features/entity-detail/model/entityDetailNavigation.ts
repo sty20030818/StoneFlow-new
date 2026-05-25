@@ -1,11 +1,6 @@
 import type { Location } from 'react-router-dom'
 
-import {
-	buildProjectDetailPath,
-	buildProjectShortcutPath,
-	buildTaskDetailPath,
-	buildTaskShortcutPath,
-} from '@/app/routing'
+import { buildProjectDetailPath, buildTaskDetailPath } from '@/app/routing'
 import { getProjectDetail } from '@/features/project/api/projects'
 import { getTaskDetail } from '@/features/task/api/tasks'
 import {
@@ -35,19 +30,6 @@ export function closeEntityDrawerTarget(
 		pathname: location.pathname,
 		search: clearEntityDetailSearch(location.search),
 		replace: true,
-	}
-}
-
-export function openEntityPageTarget(target: EntityDetailTarget): EntityDetailNavigationTarget {
-	const pathname =
-		target.kind === 'task'
-			? buildTaskShortcutPath(target.id)
-			: buildProjectShortcutPath(target.id)
-
-	return {
-		pathname,
-		search: '',
-		replace: false,
 	}
 }
 

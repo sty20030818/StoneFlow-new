@@ -68,12 +68,16 @@ vi.mock('@/features/lifecycle/api/lifecycle', () => ({
 		permanentlyDeleteLifecycleEntrySpy(entry),
 }))
 
-vi.mock('@/features/space/model/scopeRoute', () => ({
-	useScopeRoute: () => ({
+vi.mock('@/app/routing', async () => {
+	const actual = await vi.importActual<typeof import('@/app/routing')>('@/app/routing')
+	return {
+		...actual,
+		useShellRoute: () => ({
 		scope: mockScope,
 		spaceId: mockScope.type === 'space' ? mockScope.spaceId : null,
 	}),
-}))
+	}
+})
 
 vi.mock('@/shared/events', () => ({
 	emitEvent: vi.fn(),

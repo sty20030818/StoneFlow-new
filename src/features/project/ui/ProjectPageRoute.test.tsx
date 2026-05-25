@@ -48,19 +48,6 @@ describe('ProjectPageRoute', () => {
 		)
 	})
 
-	it('shortcut 项目路由 replace 到 canonical 详情路由', async () => {
-		mockProjectDetail()
-
-		renderProjectPageRoute('/projects/project-1')
-
-		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent(
-				'/spaces/space-1/projects/project-1/detail',
-			)
-		})
-		expect(await screen.findByText('Project page body')).toBeInTheDocument()
-	})
-
 	it('canonical spaceId 不匹配时 replace 到实体真实空间', async () => {
 		mockProjectDetail()
 
@@ -129,7 +116,6 @@ function RouteProbe() {
 				{location.search}
 			</div>
 			<Routes>
-				<Route element={<ProjectPageRoute />} path='/projects/:projectId' />
 				<Route element={<ProjectPageRoute />} path='/spaces/:spaceId/projects/:projectId/detail' />
 			</Routes>
 		</>

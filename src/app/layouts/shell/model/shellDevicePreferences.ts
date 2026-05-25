@@ -5,10 +5,10 @@ import { clamp } from 'es-toolkit/math'
 import {
 	createNextShellRouteMemory,
 	isRememberableShellPath as isRememberableShellRoutePath,
-	migrateShellRouteMemoryPaths,
 	normalizeShellRouteMemory,
 	resolveRememberedPathForScope as resolveRememberedRoutePathForScope,
 	resolveStartupPathFromMemory,
+	validateShellRouteMemoryPaths,
 } from '@/app/routing'
 import type { ShellRouteMemory, ShellScopeKey } from '@/app/routing'
 import type {
@@ -90,7 +90,7 @@ export async function loadShellDeviceState(): Promise<ShellDeviceState> {
 			ui: ui ?? null,
 		},
 	)
-	const resolvedNavigationRestore = await migrateShellRouteMemoryPaths(
+	const resolvedNavigationRestore = await validateShellRouteMemoryPaths(
 		normalizeShellRouteMemory(navigationRestore ?? null),
 		[],
 	)

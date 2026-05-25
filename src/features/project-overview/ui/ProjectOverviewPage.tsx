@@ -14,7 +14,7 @@ import {
 } from '@/features/bulk-action'
 import { Button } from '@/shared/ui/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
-import { buildScopedProjectPath } from '@/app/routing'
+import { buildCanonicalProjectPath, useShellRoute } from '@/app/routing'
 import { getScopeLabel } from '@/app/layouts/shell/config'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
@@ -25,7 +25,6 @@ import {
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
-import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { selectProjectViews, useViewStore } from '@/features/view/model/useViewStore'
 import { isScopeMatch } from '@/shared/lib/scope'
@@ -38,9 +37,13 @@ import {
 import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import { BoxIcon, PlusIcon } from 'lucide-react'
 
+const ALL_SCOPE = { type: 'all' } as const
+
 export function ProjectOverviewPage() {
 	const navigate = useNavigate()
-	const { scope, spaceId } = useScopeRoute()
+	const shellRoute = useShellRoute()
+	const scope = shellRoute.scope ?? ALL_SCOPE
+	const spaceId = shellRoute.spaceId
 	const spaces = useSpaceStore(selectSpaces)
 	const overview = useProjectStore(selectProjectOverview)
 	const loadOverview = useProjectStore((state) => state.loadOverview)
@@ -173,7 +176,7 @@ export function ProjectOverviewPage() {
 						})
 					},
 					onEmptyAction: () => openProjectCreateDialog(),
-					onOpenProject: (projectId) => navigate(buildScopedProjectPath(scope, projectId, spaceId)),
+					onOpenProject: (projectId) => navigate(buildCanonicalProjectPath(scope, projectId, spaceId)),
 					onSelectAllProjects: selectProjectIds,
 					onReopenProject: (projectId) => {
 						void runRowAction(projectId, async () => {

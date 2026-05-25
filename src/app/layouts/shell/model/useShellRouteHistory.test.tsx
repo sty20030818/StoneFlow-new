@@ -54,8 +54,8 @@ describe('useShellRouteHistory', () => {
 		)
 	})
 
-	it('shortcut path 不作为最终历史 entry', async () => {
-		renderHistoryProbe('/tasks/task-a')
+	it('非 shell 路径不作为历史 entry', async () => {
+		renderHistoryProbe('/quick-create')
 
 		fireEvent.click(screen.getByRole('button', { name: 'go task detail' }))
 

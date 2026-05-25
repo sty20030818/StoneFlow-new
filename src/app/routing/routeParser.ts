@@ -7,10 +7,6 @@ import type {
 	ShellRouteLocationLike,
 } from './routeTypes'
 
-const TASK_SHORTCUT_PATH = /^\/tasks\/[^/]+$/
-const PROJECT_SHORTCUT_PATH = /^\/projects\/[^/]+$/
-const LEGACY_SCOPED_SHELL_PATH = /^\/space\/([^/]+)(?:\/(.+))?$/
-const LEGACY_ALL_SHELL_PATH = /^\/spaces(?:\/(.+))?$/
 const CANONICAL_SCOPED_SHELL_PATH = /^\/spaces\/([^/]+)(?:\/(.+))?$/
 const CANONICAL_ALL_SHELL_PATH = /^\/all(?:\/(.+))?$/
 const CANONICAL_TASK_DETAIL_PATH = /^\/spaces\/([^/]+)\/tasks\/([^/]+)$/
@@ -62,11 +58,7 @@ export function parseShellRoute(input: ShellRouteLocationLike): ShellRoute {
 		search,
 		hash,
 		fullPath: `${normalizedPath}${search}${hash}`,
-		isShellPath:
-			pathKind === 'canonical-all' ||
-			pathKind === 'canonical-space' ||
-			pathKind === 'legacy-all' ||
-			pathKind === 'legacy-space',
+		isShellPath: pathKind === 'canonical-all' || pathKind === 'canonical-space',
 	}
 }
 
@@ -77,11 +69,7 @@ export function resolveShellSection(pathname: string): ShellSectionKey {
 		return 'allTasks'
 	}
 
-	if (
-		isProjectShortcutPath(normalizedPath) ||
-		normalizedPath.includes('/project/') ||
-		isCanonicalProjectDetailPath(normalizedPath)
-	) {
+	if (normalizedPath.includes('/project/') || isCanonicalProjectDetailPath(normalizedPath)) {
 		return 'project'
 	}
 
@@ -119,7 +107,7 @@ export function resolveShellSection(pathname: string): ShellSectionKey {
 export function parseShellScopePath(pathname: string): RouteScope | null {
 	const normalizedPath = stripQueryAndHash(pathname)
 
-	if (CANONICAL_ALL_SHELL_PATH.test(normalizedPath) || isLegacyAllShellPath(normalizedPath)) {
+	if (CANONICAL_ALL_SHELL_PATH.test(normalizedPath)) {
 		return { type: 'all' }
 	}
 
@@ -136,37 +124,16 @@ export function parseShellScopePath(pathname: string): RouteScope | null {
 		}
 	}
 
-	const legacyScopedMatch = normalizedPath.match(LEGACY_SCOPED_SHELL_PATH)
-	if (!legacyScopedMatch?.[1]) {
-		return null
-	}
-
-	return { type: 'space', spaceId: decodeURIComponent(legacyScopedMatch[1]) }
+	return null
 }
 
 export function isProjectShellPath(pathname: string) {
 	const normalizedPath = stripQueryAndHash(pathname)
-	return normalizedPath.includes('/project/') || isCanonicalProjectDetailPath(normalizedPath)
-}
-
-export function isTaskShortcutPath(pathname: string) {
-	return TASK_SHORTCUT_PATH.test(stripQueryAndHash(pathname))
-}
-
-export function isProjectShortcutPath(pathname: string) {
-	return PROJECT_SHORTCUT_PATH.test(stripQueryAndHash(pathname))
+	return /^\/spaces\/[^/]+\/project\/[^/]+$/.test(normalizedPath) || isCanonicalProjectDetailPath(normalizedPath)
 }
 
 export function resolveShellPathKind(pathname: string): ShellPathKind {
 	const normalizedPath = stripQueryAndHash(pathname)
-
-	if (isTaskShortcutPath(normalizedPath)) {
-		return 'task-shortcut'
-	}
-
-	if (isProjectShortcutPath(normalizedPath)) {
-		return 'project-shortcut'
-	}
 
 	if (CANONICAL_ALL_SHELL_PATH.test(normalizedPath)) {
 		return 'canonical-all'
@@ -176,25 +143,12 @@ export function resolveShellPathKind(pathname: string): ShellPathKind {
 		return 'canonical-space'
 	}
 
-	if (isLegacyAllShellPath(normalizedPath)) {
-		return 'legacy-all'
-	}
-
-	if (LEGACY_SCOPED_SHELL_PATH.test(normalizedPath)) {
-		return 'legacy-space'
-	}
-
 	return 'other'
 }
 
 export function isShellPath(pathname: string) {
 	const kind = resolveShellPathKind(pathname)
-	return (
-		kind === 'canonical-all' ||
-		kind === 'canonical-space' ||
-		kind === 'legacy-all' ||
-		kind === 'legacy-space'
-	)
+	return kind === 'canonical-all' || kind === 'canonical-space'
 }
 
 export function isQuickCreatePath(pathname: string) {
@@ -244,10 +198,6 @@ function isCanonicalTaskDetailPath(pathname: string) {
 
 function isCanonicalProjectDetailPath(pathname: string) {
 	return CANONICAL_PROJECT_DETAIL_PATH.test(pathname)
-}
-
-function isLegacyAllShellPath(pathname: string) {
-	return LEGACY_ALL_SHELL_PATH.test(pathname) && !isCanonicalScopedShellPath(pathname)
 }
 
 function isCanonicalScopedShellPath(pathname: string) {

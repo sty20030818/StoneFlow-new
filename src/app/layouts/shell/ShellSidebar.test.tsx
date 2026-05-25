@@ -219,7 +219,7 @@ function renderShellSidebar(
 	overrides?: Partial<Parameters<typeof ShellSidebar>[0]>,
 ) {
 	return render(
-		<MemoryRouter initialEntries={['/space/space-personal/inbox']}>
+		<MemoryRouter initialEntries={['/spaces/space-personal/inbox']}>
 			<SubmitRegistryProvider>
 				<DangerConfirmProvider>
 					<TooltipProvider>

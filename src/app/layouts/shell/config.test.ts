@@ -1,10 +1,5 @@
-import {
-	getScopeLabel,
-	getSectionLabel,
-	getSpaceLabel,
-	resolveShellSection,
-} from '@/app/layouts/shell/config'
-import { resolveShellSection as resolveShellSectionFromRouting } from '@/app/routing'
+import { getScopeLabel, getSectionLabel, getSpaceLabel } from '@/app/layouts/shell/config'
+import { resolveShellSection } from '@/app/routing'
 
 const spaces = [
 	{
@@ -22,24 +17,16 @@ const spaces = [
 ]
 
 describe('shell config helpers', () => {
-	it('config 复用 routing 作为路由规则 owner', () => {
-		expect(resolveShellSection).toBe(resolveShellSectionFromRouting)
-	})
-
-	it('按路由解析主分区', () => {
+	it('routing 按 canonical 路由解析主分区', () => {
 		expect(resolveShellSection('/all/views')).toBe('views')
 		expect(resolveShellSection('/spaces/space-personal/inbox')).toBe('inbox')
-		expect(resolveShellSection('/spaces/focus')).toBe('views')
-		expect(resolveShellSection('/spaces/views')).toBe('views')
-		expect(resolveShellSection('/projects/project-shortcut')).toBe('project')
-		expect(resolveShellSection('/space/space-personal/all-tasks')).toBe('allTasks')
-		expect(resolveShellSection('/space/space-personal/no-project')).toBe('noProject')
-		expect(resolveShellSection('/space/space-personal/projects')).toBe('projects')
-		expect(resolveShellSection('/space/space-personal/project/stoneflow-v1')).toBe('project')
-		expect(resolveShellSection('/space/space-personal/archive')).toBe('archive')
-		expect(resolveShellSection('/space/space-personal/trash')).toBe('trash')
-		expect(resolveShellSection('/space/space-personal/settings')).toBe('settings')
-		expect(resolveShellSection('/spaces/inbox')).toBe('inbox')
+		expect(resolveShellSection('/spaces/space-personal/all-tasks')).toBe('allTasks')
+		expect(resolveShellSection('/spaces/space-personal/no-project')).toBe('noProject')
+		expect(resolveShellSection('/spaces/space-personal/projects')).toBe('projects')
+		expect(resolveShellSection('/spaces/space-personal/project/stoneflow-v1')).toBe('project')
+		expect(resolveShellSection('/spaces/space-personal/archive')).toBe('archive')
+		expect(resolveShellSection('/spaces/space-personal/trash')).toBe('trash')
+		expect(resolveShellSection('/spaces/space-personal/settings')).toBe('settings')
 	})
 
 	it('为已知分区和空间返回标签', () => {

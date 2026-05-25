@@ -1,10 +1,6 @@
 import type { ComponentType } from 'react'
 
-import {
-	buildScopedProjectPath,
-	buildScopedSectionPath,
-	resolveShellSection,
-} from '@/app/routing'
+import { buildCanonicalSectionPath } from '@/app/routing'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope, Space } from '@/shared/types'
 import type { BadgeVariant } from '@/shared/ui/base/badge'
@@ -70,28 +66,28 @@ export const SHELL_NAV_ITEMS: ShellNavItem<ShellMainNavKey>[] = [
 		section: 'inbox',
 		label: '收件箱',
 		icon: InboxIcon,
-		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'inbox', fallbackSpaceId),
+		to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'inbox', fallbackSpaceId),
 	},
 	{
 		key: 'allTasks',
 		section: 'allTasks',
 		label: '所有任务',
 		icon: ListTodoIcon,
-		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'all-tasks', fallbackSpaceId),
+		to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'all-tasks', fallbackSpaceId),
 	},
 	{
 		key: 'views',
 		section: 'views',
 		label: '视图',
 		icon: Layers2Icon,
-		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'views', fallbackSpaceId),
+		to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'views', fallbackSpaceId),
 	},
 	{
 		key: 'projectOverview',
 		section: 'projects',
 		label: '项目总览',
 		icon: BoxIcon,
-		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'projects', fallbackSpaceId),
+		to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'projects', fallbackSpaceId),
 	},
 ]
 
@@ -101,14 +97,14 @@ export const SHELL_FOOTER_ITEMS: ShellNavItem<ShellFooterNavKey>[] = [
 		section: 'archive',
 		label: '归档',
 		icon: ArchiveIcon,
-		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'archive', fallbackSpaceId),
+		to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'archive', fallbackSpaceId),
 	},
 	{
 		key: 'trash',
 		section: 'trash',
 		label: '回收站',
 		icon: Trash2Icon,
-		to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'trash', fallbackSpaceId),
+		to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'trash', fallbackSpaceId),
 	},
 ]
 
@@ -117,7 +113,7 @@ export const SHELL_SETTINGS_ITEM: ShellNavItem<'settings'> = {
 	section: 'settings',
 	label: '设置',
 	icon: Settings2Icon,
-	to: (scope, fallbackSpaceId) => buildScopedSectionPath(scope, 'settings', fallbackSpaceId),
+	to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'settings', fallbackSpaceId),
 }
 
 export const SHELL_COMMAND_ROUTE_ITEMS = [
@@ -127,8 +123,6 @@ export const SHELL_COMMAND_ROUTE_ITEMS = [
 ]
 
 export const SHELL_ROUTE_ITEMS = SHELL_COMMAND_ROUTE_ITEMS
-
-export { buildScopedProjectPath, buildScopedSectionPath, resolveShellSection }
 
 export function getSectionLabel(section: ShellSectionKey) {
 	switch (section) {

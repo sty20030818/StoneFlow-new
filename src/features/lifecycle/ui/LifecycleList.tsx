@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
-import { buildScopedSectionPath } from '@/app/routing'
+import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import {
 	BulkActionBar,
 	LIFECYCLE_BULK_ACTION_IDS,
@@ -24,7 +24,6 @@ import {
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
-import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { isScopeMatch } from '@/shared/lib/scope'
 import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
@@ -46,10 +45,14 @@ type LifecycleListProps = {
 
 type LifecycleFilter = 'all' | 'space' | 'project' | 'task'
 
+const ALL_SCOPE = { type: 'all' } as const
+
 export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	const navigate = useNavigate()
 	const openEntityDrawer = useEntityDetailController().openDrawer
-	const { scope, spaceId } = useScopeRoute()
+	const shellRoute = useShellRoute()
+	const scope = shellRoute.scope ?? ALL_SCOPE
+	const spaceId = shellRoute.spaceId
 	const archiveEntries = useLifecycleStore(selectArchiveEntries)
 	const trashEntries = useLifecycleStore(selectTrashEntries)
 	const pendingEntryId = useLifecycleStore((state) => state.pendingEntryId)
@@ -140,7 +143,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 		}
 
 		if (entry.spaceId) {
-			void navigate(buildScopedSectionPath({ type: 'space', spaceId: entry.spaceId }, 'inbox'))
+			void navigate(buildCanonicalSectionPath({ type: 'space', spaceId: entry.spaceId }, 'inbox'))
 		}
 	}
 
@@ -190,7 +193,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 					},
 					boardActions: {
 						onEmptyAction: () => {
-							void navigate(buildScopedSectionPath(scope, 'inbox', spaceId))
+							void navigate(buildCanonicalSectionPath(scope, 'inbox', spaceId))
 						},
 						onOpenDetail: mode === 'archive' ? handleOpenDetail : undefined,
 						onRestore: (entry: LifecycleEntry) => {

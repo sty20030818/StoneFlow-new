@@ -47,17 +47,6 @@ describe('TaskPageRoute', () => {
 		expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-1/tasks/task-1')
 	})
 
-	it('shortcut 任务路由 replace 到 canonical 详情路由', async () => {
-		mockTaskDetail()
-
-		renderTaskPageRoute('/tasks/task-1')
-
-		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-1/tasks/task-1')
-		})
-		expect(await screen.findByText('Task page body')).toBeInTheDocument()
-	})
-
 	it('canonical spaceId 不匹配时 replace 到实体真实空间', async () => {
 		mockTaskDetail()
 
@@ -128,7 +117,6 @@ function RouteProbe() {
 				{location.search}
 			</div>
 			<Routes>
-				<Route element={<TaskPageRoute />} path='/tasks/:taskId' />
 				<Route element={<TaskPageRoute />} path='/spaces/:spaceId/tasks/:taskId' />
 			</Routes>
 		</>

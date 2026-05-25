@@ -6,7 +6,7 @@ import {
 	getScopeLabel,
 	type ShellProjectLink,
 } from '@/app/layouts/shell/config'
-import { buildScopedProjectPath } from '@/app/routing'
+import { buildCanonicalProjectPath } from '@/app/routing'
 import type { ShellRouteHistoryEntry } from '@/app/layouts/shell/model/useShellRouteHistory'
 import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
 import { NavBackForward } from '@/app/layouts/shell/header/NavBackForward'
@@ -492,7 +492,7 @@ export function ShellHeader({
 				onClearAllFilters={onClearAllFilters}
 				onOpenChange={onCommandOpenChange}
 				onNavigateProject={(projectId) => {
-					handleNavigate(buildScopedProjectPath(currentScope, projectId, currentSpaceId))
+					handleNavigate(buildCanonicalProjectPath(currentScope, projectId, currentSpaceId))
 				}}
 				onSelectFilterKind={onSelectFilterKind}
 				onRunCommand={onRunCommand}

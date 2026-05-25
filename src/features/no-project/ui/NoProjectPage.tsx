@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
+import { useShellRoute } from '@/app/routing'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useEntityDetailController } from '@/features/entity-detail'
 import {
@@ -21,7 +22,6 @@ import {
 } from '@/features/task/model/useTaskStore'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
-import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -31,6 +31,8 @@ import {
 import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import { Layers3Icon, PlusIcon, TargetIcon } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
+
+const ALL_SCOPE = { type: 'all' } as const
 
 const NO_PROJECT_FILTERS: Array<'all' | TaskStatus> = [
 	'all',
@@ -42,7 +44,8 @@ const NO_PROJECT_FILTERS: Array<'all' | TaskStatus> = [
 ]
 
 export function NoProjectPage() {
-	const { scope } = useScopeRoute()
+	const shellRoute = useShellRoute()
+	const scope = shellRoute.scope ?? ALL_SCOPE
 	const taskList = useTaskStore(selectTaskList)
 	const loadList = useTaskStore((state) => state.loadList)
 	const listInput = useMemo(

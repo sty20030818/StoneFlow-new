@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { buildScopedSectionPath } from '@/app/routing'
+import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
@@ -12,7 +12,6 @@ import {
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
-import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
@@ -37,8 +36,12 @@ import {
 import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import { Layers2Icon, PlusIcon } from 'lucide-react'
 
+const ALL_SCOPE = { type: 'all' } as const
+
 export function ViewsPage() {
-	const { scope, spaceId } = useScopeRoute()
+	const shellRoute = useShellRoute()
+	const scope = shellRoute.scope ?? ALL_SCOPE
+	const spaceId = shellRoute.spaceId
 	const navigate = useNavigate()
 	const location = useLocation()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
@@ -130,7 +133,7 @@ export function ViewsPage() {
 
 		void navigate(
 			{
-				pathname: buildScopedSectionPath(scope, 'views', spaceId),
+				pathname: buildCanonicalSectionPath(scope, 'views', spaceId),
 				search: `?view=${nextViewValue}`,
 			},
 			{ replace: true },
@@ -195,7 +198,7 @@ export function ViewsPage() {
 
 	function navigateToView(view: View) {
 		void navigate({
-			pathname: buildScopedSectionPath(scope, 'views', spaceId),
+			pathname: buildCanonicalSectionPath(scope, 'views', spaceId),
 			search: `?view=${view.id}`,
 		})
 	}
@@ -205,7 +208,7 @@ export function ViewsPage() {
 		try {
 			const created = await createTaskView(input)
 			void navigate({
-				pathname: buildScopedSectionPath(scope, 'views', spaceId),
+				pathname: buildCanonicalSectionPath(scope, 'views', spaceId),
 				search: `?view=${created.id}`,
 			})
 		} finally {

@@ -63,12 +63,16 @@ vi.mock('@/features/project/model/useProjectStore', () => ({
 	useProjectStore: (selector: (state: typeof storeState) => unknown) => selector(storeState),
 }))
 
-vi.mock('@/features/space/model/scopeRoute', () => ({
-	useScopeRoute: () => ({
-		scope: { type: 'all' },
-		spaceId: null,
-	}),
-}))
+vi.mock('@/app/routing', async () => {
+	const actual = await vi.importActual<typeof import('@/app/routing')>('@/app/routing')
+	return {
+		...actual,
+		useShellRoute: () => ({
+			scope: { type: 'all' },
+			spaceId: null,
+		}),
+	}
+})
 
 vi.mock('@/features/space/model/useSpaceStore', () => ({
 	selectSpaces: (state: typeof spaceState) => state.spaces,

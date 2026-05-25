@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
+import { useShellRoute } from '@/app/routing'
 import {
 	useRegisterPageFilterController,
 	useTaskPageFilterController,
@@ -17,7 +18,6 @@ import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
-import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import {
 	ACTIVE_TASK_BOARD_STATUS_ORDER,
@@ -33,8 +33,12 @@ import {
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { InboxIcon, PlusIcon } from 'lucide-react'
 
+const ALL_SCOPE = { type: 'all' } as const
+
 export function InboxPage() {
-	const { scope, spaceId } = useScopeRoute()
+	const shellRoute = useShellRoute()
+	const scope = shellRoute.scope ?? ALL_SCOPE
+	const spaceId = shellRoute.spaceId
 	const taskList = useTaskStore(selectTaskList)
 	const loadList = useTaskStore((state) => state.loadList)
 	const listInput = useMemo(

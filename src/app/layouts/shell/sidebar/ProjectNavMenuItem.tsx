@@ -1,4 +1,4 @@
-import { buildScopedProjectPath } from '@/app/routing'
+import { buildCanonicalProjectPath } from '@/app/routing'
 import type { ShellProjectLink } from '@/app/layouts/shell/config'
 import type { Scope } from '@/shared/types'
 import { SidebarMenuItem } from '@/shared/ui/base/sidebar'
@@ -24,7 +24,7 @@ export function ProjectNavMenuItem({
 		return null
 	}
 
-	const projectPath = buildScopedProjectPath(currentScope, project.id, resolvedSpaceId)
+	const projectPath = buildCanonicalProjectPath(currentScope, project.id, resolvedSpaceId)
 
 	return (
 		<SidebarMenuItem>

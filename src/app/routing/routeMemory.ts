@@ -3,7 +3,6 @@ import { getTaskDetail } from '@/features/task/api/tasks'
 import type { Scope, Space } from '@/shared/types'
 
 import { buildCanonicalSectionPath } from './routePaths'
-import { normalizeLegacyRoute } from './routeMigration'
 import { isProjectShellPath, isShellPath } from './routeParser'
 
 const ROUTE_MEMORY_VERSION = 2
@@ -74,7 +73,7 @@ export function normalizeShellRouteMemory(
 	}
 }
 
-export async function migrateShellRouteMemoryPaths(
+export async function validateShellRouteMemoryPaths(
 	routeMemory: ShellRouteMemory | null,
 	spaces: Space[],
 ): Promise<ShellRouteMemory | null> {
@@ -185,7 +184,7 @@ export async function resolveStartupPathFromMemory({
 }
 
 export function normalizeShellMemoryPath(path: string): string {
-	return stripShellDetailSearch(normalizeLegacyRoute(path))
+	return stripShellDetailSearch(path)
 }
 
 export function isRememberableShellPath(path: string): boolean {

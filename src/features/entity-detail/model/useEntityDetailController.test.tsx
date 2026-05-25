@@ -16,19 +16,19 @@ describe('useEntityDetailController', () => {
 	})
 
 	it('从 URL 恢复 active detail', () => {
-		renderController('/space/work/inbox?task=task-a')
+		renderController('/spaces/work/inbox?task=task-a')
 
 		expect(screen.getByTestId('active-detail')).toHaveTextContent('task:task-a')
 		expect(screen.getByTestId('is-open')).toHaveTextContent('open')
 	})
 
 	it('openDrawer 更新 URL', async () => {
-		renderController('/space/work/inbox')
+		renderController('/spaces/work/inbox')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务' }))
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/space/work/inbox?task=task-a')
+			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/work/inbox?task=task-a')
 		})
 	})
 
@@ -58,7 +58,7 @@ describe('useEntityDetailController', () => {
 			id: 'task-a',
 			spaceId: 'space-work',
 		})
-		renderController('/space/work/inbox?task=task-a')
+		renderController('/spaces/work/inbox?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))
 
@@ -67,15 +67,16 @@ describe('useEntityDetailController', () => {
 		})
 	})
 
-	it('openPage 解析失败时 fallback 到 shortcut', async () => {
+	it('openPage 解析失败时停留在当前页面', async () => {
 		getTaskDetailMock.mockRejectedValue(new Error('not found'))
-		renderController('/space/work/inbox?task=task-a')
+		renderController('/spaces/work/inbox?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/tasks/task-a')
+			expect(getTaskDetailMock).toHaveBeenCalledWith('task-a')
 		})
+		expect(screen.getByTestId('location')).toHaveTextContent('/spaces/work/inbox?task=task-a')
 	})
 })
 

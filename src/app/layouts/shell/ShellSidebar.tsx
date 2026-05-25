@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { buildScopedSectionPath, buildStartupFallbackPath } from '@/app/routing'
+import { buildCanonicalSectionPath, buildStartupFallbackPath } from '@/app/routing'
 import {
 	SHELL_FOOTER_ITEMS,
 	SHELL_NAV_ITEMS,
@@ -226,7 +226,7 @@ export function ShellSidebar({
 			if (editorMode === 'create') {
 				const createdSpace = await onCreateSpace(input)
 				navigate(
-					buildScopedSectionPath(
+					buildCanonicalSectionPath(
 						{ type: 'space', spaceId: createdSpace.id },
 						'inbox',
 						createdSpace.id,
@@ -344,7 +344,7 @@ export function ShellSidebar({
 																void resolveRememberedPathForScope({
 																	scopeKey: `space:${space.id}`,
 																	spaces,
-																	defaultPath: buildScopedSectionPath(
+																	defaultPath: buildCanonicalSectionPath(
 																		{ type: 'space', spaceId: space.id },
 																		'inbox',
 																		space.id,

@@ -9,8 +9,8 @@ import {
 import { useNavigate } from 'react-router-dom'
 
 import {
-	buildScopedProjectPath,
-	buildScopedSectionPath,
+	buildCanonicalProjectPath,
+	buildCanonicalSectionPath,
 } from '@/app/routing'
 import type { ShellRoute } from '@/app/routing'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -415,24 +415,24 @@ function ShellLayoutContent({
 	const handleCommandOpen = useMemo(
 		() => (payload: CommandOpenPayload) => {
 			const targetPath = payload.projectId
-				? buildScopedProjectPath(
+				? buildCanonicalProjectPath(
 						{ type: 'space', spaceId: payload.spaceId },
 						payload.projectId,
 						payload.spaceId,
 					)
 				: payload.kind === 'project'
-					? buildScopedProjectPath(
+					? buildCanonicalProjectPath(
 							{ type: 'space', spaceId: payload.spaceId },
 							payload.id,
 							payload.spaceId,
 						)
 					: payload.placement === 'inbox'
-						? buildScopedSectionPath(
+						? buildCanonicalSectionPath(
 								{ type: 'space', spaceId: payload.spaceId },
 								'inbox',
 								payload.spaceId,
 							)
-						: buildScopedSectionPath(
+						: buildCanonicalSectionPath(
 								{ type: 'space', spaceId: payload.spaceId },
 								'no-project',
 								payload.spaceId,
@@ -730,7 +730,7 @@ function ShellLayoutContent({
 				),
 			navigateTo: (target: ShellNavigationTarget) => {
 				startTransition(() => {
-					navigate(buildScopedSectionPath(currentScope, target, currentSpaceId))
+					navigate(buildCanonicalSectionPath(currentScope, target, currentSpaceId))
 				})
 			},
 			goBack,
@@ -1096,7 +1096,7 @@ function ShellLayoutContent({
 						onCloseDrawer={closeEntityDrawer}
 						onOpenProjectCreateDialog={() => openProjectCreateDialog()}
 						onOpenTaskCreateDialog={handleOpenTaskCreate}
-						showPreview={shellRoute.pathKind !== 'task-shortcut'}
+						showPreview
 					>
 						{children}
 					</ShellMain>

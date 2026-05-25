@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import {
 	closeEntityDrawerTarget,
 	openEntityDrawerTarget,
-	openEntityPageTarget,
 	resolveEntityPageTarget,
 } from './entityDetailNavigation'
 import {
@@ -79,7 +78,6 @@ export function useEntityDetailController() {
 	const openPage = useCallback(
 		(target: EntityDetailTarget) => {
 			void resolveEntityPageTarget(target)
-				.catch(() => openEntityPageTarget(target))
 				.then((nextTarget) => {
 					startTransition(() => {
 						navigate(
@@ -90,6 +88,9 @@ export function useEntityDetailController() {
 							{ replace: nextTarget.replace },
 						)
 					})
+				})
+				.catch((error) => {
+					console.error('无法解析独立详情页 canonical route', error)
 				})
 		},
 		[navigate],

@@ -6,9 +6,8 @@ import {
 	type ActivityTimelineEntry,
 	getEntityActivities,
 } from '@/features/activity/api/getEntityActivities'
-import { buildScopedSectionPath } from '@/app/routing'
+import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import {
@@ -37,6 +36,8 @@ const ENTITY_TYPE_OPTIONS: Array<{ value: ActivityEntityType; label: string }> =
 	{ value: 'setting', label: 'Setting' },
 ]
 
+const ALL_SCOPE = { type: 'all' } as const
+
 type LoadState =
 	| { kind: 'idle' }
 	| { kind: 'loading' }
@@ -47,7 +48,9 @@ type LoadState =
  * 隐藏调试页：只用于按实体读取 Activity timeline，不接正式业务入口。
  */
 export function ActivityDebugPage() {
-	const { scope, spaceId } = useScopeRoute()
+	const shellRoute = useShellRoute()
+	const scope = shellRoute.scope ?? ALL_SCOPE
+	const spaceId = shellRoute.spaceId
 	const [searchParams, setSearchParams] = useSearchParams()
 	const [entityType, setEntityType] = useState<ActivityEntityType>(
 		(searchParams.get('entityType') as ActivityEntityType | null) ?? 'task',
@@ -176,7 +179,7 @@ export function ActivityDebugPage() {
 							查询 Activity
 						</Button>
 						<Button asChild className='h-10 rounded-lg' type='button' variant='ghost'>
-							<Link to={buildScopedSectionPath(scope, 'inbox', spaceId)}>返回</Link>
+							<Link to={buildCanonicalSectionPath(scope, 'inbox', spaceId)}>返回</Link>
 						</Button>
 					</div>
 				</form>

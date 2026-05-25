@@ -1,29 +1,39 @@
-import { isProjectShellPath, isProjectShortcutPath, isTaskShortcutPath, parseShellRoute, parseShellScopePath, resolveShellPathKind, resolveShellSection } from './routeParser'
+import {
+	isProjectShellPath,
+	isShellPath,
+	parseShellRoute,
+	parseShellScopePath,
+	resolveShellPathKind,
+	resolveShellSection,
+} from './routeParser'
+
+const OLD_SPACE_PATH = `/${'space'}/space-a/inbox`
+const OLD_PROJECT_SHELL_PATH = `/${'space'}/space-a/project/project-a`
+const OLD_NO_PROJECT_PATH = `/${'space'}/space-a/no-project`
+const TASK_SHORTCUT_PATH = `/${'tasks'}/task-a`
+const PROJECT_SHORTCUT_PATH = `/${'projects'}/project-a`
 
 describe('routeParser', () => {
-	it('同时支持 canonical 与 legacy shell section 解析', () => {
+	it('解析 canonical shell section', () => {
 		expect(resolveShellSection('/all/views')).toBe('views')
 		expect(resolveShellSection('/spaces/space-personal/inbox')).toBe('inbox')
-		expect(resolveShellSection('/spaces/focus')).toBe('views')
-		expect(resolveShellSection('/spaces/views')).toBe('views')
-		expect(resolveShellSection('/projects/project-shortcut')).toBe('project')
-		expect(resolveShellSection('/space/space-personal/all-tasks')).toBe('allTasks')
-		expect(resolveShellSection('/space/space-personal/no-project')).toBe('noProject')
-		expect(resolveShellSection('/space/space-personal/projects')).toBe('projects')
-		expect(resolveShellSection('/space/space-personal/project/stoneflow-v1')).toBe('project')
-		expect(resolveShellSection('/space/space-personal/archive')).toBe('archive')
-		expect(resolveShellSection('/space/space-personal/trash')).toBe('trash')
-		expect(resolveShellSection('/space/space-personal/settings')).toBe('settings')
-		expect(resolveShellSection('/spaces/inbox')).toBe('inbox')
+		expect(resolveShellSection('/spaces/space-personal/all-tasks')).toBe('allTasks')
+		expect(resolveShellSection('/spaces/space-personal/no-project')).toBe('noProject')
+		expect(resolveShellSection('/spaces/space-personal/projects')).toBe('projects')
+		expect(resolveShellSection('/spaces/space-personal/project/stoneflow-v1')).toBe('project')
+		expect(resolveShellSection('/spaces/space-personal/archive')).toBe('archive')
+		expect(resolveShellSection('/spaces/space-personal/trash')).toBe('trash')
+		expect(resolveShellSection('/spaces/space-personal/settings')).toBe('settings')
 		expect(resolveShellSection('/spaces/space-personal/tasks/task-a')).toBe('allTasks')
 		expect(resolveShellSection('/spaces/space-personal/projects/project-a/detail')).toBe('project')
 	})
 
-	it('识别 scope 和 path kind', () => {
+	it('只识别 canonical scope 和 path kind', () => {
 		expect(parseShellScopePath('/all/views')).toEqual({ type: 'all' })
-		expect(parseShellScopePath('/spaces/space-a/inbox')).toEqual({ type: 'space', spaceId: 'space-a' })
-		expect(parseShellScopePath('/spaces/views')).toEqual({ type: 'all' })
-		expect(parseShellScopePath('/space/space-a/inbox')).toEqual({ type: 'space', spaceId: 'space-a' })
+		expect(parseShellScopePath('/spaces/space-a/inbox')).toEqual({
+			type: 'space',
+			spaceId: 'space-a',
+		})
 		expect(parseShellScopePath('/spaces/space-a/tasks/task-a')).toEqual({
 			type: 'space',
 			spaceId: 'space-a',
@@ -32,21 +42,27 @@ describe('routeParser', () => {
 			type: 'space',
 			spaceId: 'space-a',
 		})
+
+		expect(parseShellScopePath('/spaces/views')).toBeNull()
+		expect(parseShellScopePath(OLD_SPACE_PATH)).toBeNull()
+		expect(parseShellScopePath(TASK_SHORTCUT_PATH)).toBeNull()
+		expect(parseShellScopePath(PROJECT_SHORTCUT_PATH)).toBeNull()
+
 		expect(resolveShellPathKind('/all/views')).toBe('canonical-all')
 		expect(resolveShellPathKind('/spaces/space-a/project/project-a')).toBe('canonical-space')
-		expect(resolveShellPathKind('/spaces/views')).toBe('legacy-all')
-		expect(resolveShellPathKind('/space/space-a/project/project-a')).toBe('legacy-space')
-		expect(resolveShellPathKind('/tasks/task-a')).toBe('task-shortcut')
-		expect(resolveShellPathKind('/projects/project-a')).toBe('project-shortcut')
+		expect(resolveShellPathKind('/spaces/views')).toBe('other')
+		expect(resolveShellPathKind(OLD_PROJECT_SHELL_PATH)).toBe('other')
+		expect(resolveShellPathKind(TASK_SHORTCUT_PATH)).toBe('other')
+		expect(resolveShellPathKind(PROJECT_SHORTCUT_PATH)).toBe('other')
 	})
 
-	it('识别 project shell 与 entity shortcut path', () => {
+	it('识别 canonical project shell path', () => {
 		expect(isProjectShellPath('/spaces/space-a/project/project-a')).toBe(true)
 		expect(isProjectShellPath('/spaces/space-a/projects/project-a/detail')).toBe(true)
-		expect(isProjectShellPath('/space/space-a/project/project-a')).toBe(true)
-		expect(isTaskShortcutPath('/tasks/task-a')).toBe(true)
-		expect(isTaskShortcutPath('/tasks/task-a/extra')).toBe(false)
-		expect(isProjectShortcutPath('/projects/project-a')).toBe(true)
+		expect(isProjectShellPath(OLD_PROJECT_SHELL_PATH)).toBe(false)
+		expect(isShellPath('/all/inbox')).toBe(true)
+		expect(isShellPath('/spaces/space-a/inbox')).toBe(true)
+		expect(isShellPath('/spaces/inbox')).toBe(false)
 	})
 
 	it('解析结构化 shell route', () => {
@@ -92,18 +108,16 @@ describe('routeParser', () => {
 			isShellPath: true,
 		})
 
-		expect(parseShellRoute('/space/space-a/no-project')).toMatchObject({
-			scope: { type: 'space', spaceId: 'space-a' },
-			section: 'noProject',
-			pathKind: 'legacy-space',
-			isShellPath: true,
+		expect(parseShellRoute(OLD_NO_PROJECT_PATH)).toMatchObject({
+			scope: null,
+			pathKind: 'other',
+			isShellPath: false,
 		})
 
-		expect(parseShellRoute('/tasks/task-a')).toMatchObject({
+		expect(parseShellRoute(TASK_SHORTCUT_PATH)).toMatchObject({
 			scope: null,
-			section: 'inbox',
 			entityPageTarget: null,
-			pathKind: 'task-shortcut',
+			pathKind: 'other',
 			isShellPath: false,
 		})
 	})

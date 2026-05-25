@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { buildScopedSectionPath } from '@/app/routing'
+import { buildCanonicalSectionPath } from '@/app/routing'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import type { Scope, TaskDetail } from '@/shared/types'
 import { DetailPageGrid, DetailPageMain, DetailPageSidebar } from '@/shared/ui/detail'
@@ -54,7 +54,7 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 				description={error ?? '任务详情加载失败。'}
 				onAction={() =>
 					navigate(
-						buildScopedSectionPath(
+						buildCanonicalSectionPath(
 							scope,
 							'all-tasks',
 							scope.type === 'space' ? scope.spaceId : null,
@@ -73,7 +73,7 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 				description='这个任务不存在，或者当前已经不可见。'
 				onAction={() =>
 					navigate(
-						buildScopedSectionPath(
+						buildCanonicalSectionPath(
 							scope,
 							'all-tasks',
 							scope.type === 'space' ? scope.spaceId : null,

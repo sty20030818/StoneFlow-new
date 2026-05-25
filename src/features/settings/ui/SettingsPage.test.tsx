@@ -34,12 +34,16 @@ vi.mock('@/features/space/model/useSpaceStore', () => ({
 		selector(spaceStoreState),
 }))
 
-vi.mock('@/features/space/model/scopeRoute', () => ({
-	useScopeRoute: () => ({
-		scope: { type: 'all' },
-		spaceId: null,
-	}),
-}))
+vi.mock('@/app/routing', async () => {
+	const actual = await vi.importActual<typeof import('@/app/routing')>('@/app/routing')
+	return {
+		...actual,
+		useShellRoute: () => ({
+			scope: { type: 'all' },
+			spaceId: null,
+		}),
+	}
+})
 
 vi.mock('@/shared/ui/base/select', () => {
 	type SelectContextValue = {

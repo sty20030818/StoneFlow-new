@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
 	closeEntityDrawerTarget,
 	openEntityDrawerTarget,
-	openEntityPageTarget,
 	resolveEntityPageTarget,
 } from './entityDetailNavigation'
 
@@ -27,11 +26,11 @@ describe('entityDetailNavigation', () => {
 	it('首次打开 Drawer 使用 push', () => {
 		expect(
 			openEntityDrawerTarget(
-				{ pathname: '/space/work/inbox', search: '' },
+				{ pathname: '/spaces/work/inbox', search: '' },
 				{ kind: 'task', id: 'task-a' },
 			),
 		).toEqual({
-			pathname: '/space/work/inbox',
+			pathname: '/spaces/work/inbox',
 			search: '?task=task-a',
 			replace: false,
 		})
@@ -40,11 +39,11 @@ describe('entityDetailNavigation', () => {
 	it('切换 task 使用 replace', () => {
 		expect(
 			openEntityDrawerTarget(
-				{ pathname: '/space/work/inbox', search: '?task=task-a' },
+				{ pathname: '/spaces/work/inbox', search: '?task=task-a' },
 				{ kind: 'task', id: 'task-b' },
 			),
 		).toEqual({
-			pathname: '/space/work/inbox',
+			pathname: '/spaces/work/inbox',
 			search: '?task=task-b',
 			replace: true,
 		})
@@ -70,19 +69,6 @@ describe('entityDetailNavigation', () => {
 			pathname: '/spaces/views',
 			search: '?view=today',
 			replace: true,
-		})
-	})
-
-	it('shortcut 独立详情页不带 drawer query', () => {
-		expect(openEntityPageTarget({ kind: 'task', id: 'task/a' })).toEqual({
-			pathname: '/tasks/task%2Fa',
-			search: '',
-			replace: false,
-		})
-		expect(openEntityPageTarget({ kind: 'project', id: 'project-a' })).toEqual({
-			pathname: '/projects/project-a',
-			search: '',
-			replace: false,
 		})
 	})
 

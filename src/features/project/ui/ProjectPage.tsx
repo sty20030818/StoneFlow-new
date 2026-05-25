@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
-import { buildScopedSectionPath } from '@/app/routing'
+import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDangerConfirm } from '@/features/danger-confirm'
@@ -16,7 +16,6 @@ import {
 	useProjectStore,
 } from '@/features/project/model/useProjectStore'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
-import { useScopeRoute } from '@/features/space/model/scopeRoute'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
@@ -61,6 +60,8 @@ const PROJECT_TASK_FILTERS: Array<'all' | TaskStatus> = [
 	'canceled',
 ]
 
+const ALL_SCOPE = { type: 'all' } as const
+
 type ProjectPageProps = {
 	scopeOverride?: Scope
 }
@@ -68,8 +69,8 @@ type ProjectPageProps = {
 export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 	const navigate = useNavigate()
 	const { projectId = '' } = useParams()
-	const routeScope = useScopeRoute()
-	const scope = scopeOverride ?? routeScope.scope
+	const shellRoute = useShellRoute()
+	const scope = scopeOverride ?? shellRoute.scope ?? ALL_SCOPE
 	const spaceId = scope.type === 'space' ? scope.spaceId : null
 	const { requestDangerConfirm } = useDangerConfirm()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
@@ -261,7 +262,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 							</EmptyHeader>
 							<EmptyContent>
 								<Button
-									onClick={() => navigate(buildScopedSectionPath(scope, 'projects', spaceId))}
+									onClick={() => navigate(buildCanonicalSectionPath(scope, 'projects', spaceId))}
 									type='button'
 								>
 									返回项目总览
@@ -313,7 +314,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 								}
 								void runAction('archive', async () => {
 									await archiveProject(project.id)
-									navigate(buildScopedSectionPath(scope, 'projects', spaceId))
+									navigate(buildCanonicalSectionPath(scope, 'projects', spaceId))
 								})
 							}}
 							size='sm'
@@ -335,7 +336,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 								}
 								void runAction('delete', async () => {
 									await deleteProject(project.id)
-									navigate(buildScopedSectionPath(scope, 'projects', spaceId))
+									navigate(buildCanonicalSectionPath(scope, 'projects', spaceId))
 								})
 							}}
 							size='sm'
