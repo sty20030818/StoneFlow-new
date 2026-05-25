@@ -1,6 +1,7 @@
 export * from './routePaths'
 export * from './routeParser'
 export * from './routeMigration'
+export * from './routeMemory'
 export * from './routeRestore'
 export * from './routeTypes'
 export * from './useShellRoute'

@@ -3,17 +3,21 @@ import { LazyStore } from '@tauri-apps/plugin-store'
 import { clamp } from 'es-toolkit/math'
 
 import {
-	buildScopedSectionPath,
+	createNextShellRouteMemory,
 	isRememberableShellPath as isRememberableShellRoutePath,
-	normalizeRememberedShellPath as normalizeRememberedShellRoutePath,
-	normalizeLegacyRoute,
-	stripShellDetailSearch,
+	migrateShellRouteMemoryPaths,
+	normalizeShellRouteMemory,
+	resolveRememberedPathForScope as resolveRememberedRoutePathForScope,
+	resolveStartupPathFromMemory,
 } from '@/app/routing'
+import type { ShellRouteMemory, ShellScopeKey } from '@/app/routing'
 import type {
 	SidebarPreferenceSettings,
 	SidebarProjectSectionPreferenceConfig,
 } from '@/features/settings/api/sidebarSettings'
 import type { Scope, Space } from '@/shared/types'
+
+export { buildShellScopeKey } from '@/app/routing'
 
 const SHELL_DEVICE_STORE_PATH = 'shell-device-preferences.json'
 const SIDEBAR_DEVICE_KEY = 'shell.sidebar.device'
@@ -44,12 +48,7 @@ export type ShellUiDevicePreferences = {
 	taskDrawerWidth: number
 }
 
-export type ShellNavigationRestore = {
-	lastScopeKey: ShellScopeKey
-	lastRouteByScopeKey: Record<string, string>
-}
-
-export type ShellScopeKey = 'all' | `space:${string}`
+export type ShellNavigationRestore = ShellRouteMemory
 
 export type ShellSidebarProjectSectionSettings = SidebarProjectSectionPreferenceConfig & {
 	collapsed: boolean
@@ -91,11 +90,19 @@ export async function loadShellDeviceState(): Promise<ShellDeviceState> {
 			ui: ui ?? null,
 		},
 	)
+	const resolvedNavigationRestore = await migrateShellRouteMemoryPaths(
+		normalizeShellRouteMemory(navigationRestore ?? null),
+		[],
+	)
+	if (navigationRestore && resolvedNavigationRestore) {
+		await shellDeviceStore.set(NAVIGATION_RESTORE_KEY, resolvedNavigationRestore)
+		await shellDeviceStore.save()
+	}
 
 	return {
 		sidebar: normalizeSidebarDevicePreferences(resolvedSidebar),
 		ui: normalizeUiDevicePreferences(resolvedUi),
-		navigationRestore: normalizeNavigationRestore(navigationRestore ?? null),
+		navigationRestore: resolvedNavigationRestore,
 	}
 }
 
@@ -150,24 +157,12 @@ export async function updateShellUiDevicePreferences(
 }
 
 export async function rememberShellRoute(scope: Scope, path: string): Promise<void> {
-	const canonicalPath = stripShellDetailSearch(normalizeLegacyRoute(path))
-	if (!isRememberableShellPath(canonicalPath)) {
-		return
-	}
-
-	const current = normalizeNavigationRestore(
+	const current = normalizeShellRouteMemory(
 		(await shellDeviceStore.get<ShellNavigationRestore>(NAVIGATION_RESTORE_KEY)) ?? null,
-	) ?? {
-		lastScopeKey: 'all',
-		lastRouteByScopeKey: {},
-	}
-	const scopeKey = buildShellScopeKey(scope)
-	const next: ShellNavigationRestore = {
-		lastScopeKey: scopeKey,
-		lastRouteByScopeKey: {
-			...current.lastRouteByScopeKey,
-			[scopeKey]: canonicalPath,
-		},
+	)
+	const next = createNextShellRouteMemory(current, scope, path)
+	if (!next) {
+		return
 	}
 
 	await shellDeviceStore.set(NAVIGATION_RESTORE_KEY, next)
@@ -179,62 +174,25 @@ export async function resolveRememberedPathForScope({
 	spaces,
 	defaultPath,
 }: ResolveRememberedPathInput): Promise<string> {
-	const navigationRestore = normalizeNavigationRestore(
+	const navigationRestore = normalizeShellRouteMemory(
 		(await shellDeviceStore.get<ShellNavigationRestore>(NAVIGATION_RESTORE_KEY)) ?? null,
 	)
-	if (!navigationRestore) {
-		return defaultPath
-	}
-
-	return resolveScopePath({
+	return resolveRememberedRoutePathForScope({
 		scopeKey,
-		navigationRestore,
+		routeMemory: navigationRestore,
 		spaces,
 		defaultPath,
 	})
 }
 
 export async function resolveStartupPath({ spaces }: ResolveStartupPathInput): Promise<string> {
-	const navigationRestore = normalizeNavigationRestore(
+	const navigationRestore = normalizeShellRouteMemory(
 		(await shellDeviceStore.get<ShellNavigationRestore>(NAVIGATION_RESTORE_KEY)) ?? null,
 	)
-	if (!navigationRestore) {
-		return buildScopedSectionPath({ type: 'all' }, 'inbox')
-	}
-
-	const defaultSpaceId = resolveDefaultSpaceId(spaces)
-	if (navigationRestore.lastScopeKey === 'all') {
-		return await normalizeRememberedShellPath(
-			navigationRestore.lastRouteByScopeKey.all,
-			spaces,
-			buildScopedSectionPath({ type: 'all' }, 'inbox'),
-		)
-	}
-
-	const targetSpaceId = extractSpaceIdFromScopeKey(navigationRestore.lastScopeKey)
-	if (targetSpaceId && spaces.some((space) => space.id === targetSpaceId)) {
-		return resolveScopePath({
-			scopeKey: navigationRestore.lastScopeKey,
-			navigationRestore,
-			spaces,
-			defaultPath: buildScopedSectionPath({ type: 'space', spaceId: targetSpaceId }, 'inbox'),
-		})
-	}
-
-	if (!defaultSpaceId) {
-		return buildScopedSectionPath({ type: 'all' }, 'inbox')
-	}
-
-	return resolveScopePath({
-		scopeKey: `space:${defaultSpaceId}`,
-		navigationRestore,
+	return resolveStartupPathFromMemory({
+		routeMemory: navigationRestore,
 		spaces,
-		defaultPath: buildScopedSectionPath({ type: 'space', spaceId: defaultSpaceId }, 'inbox'),
 	})
-}
-
-export function buildShellScopeKey(scope: Scope): ShellScopeKey {
-	return scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
 }
 
 export function isRememberableShellPath(path: string): boolean {
@@ -280,36 +238,6 @@ async function migrateLegacyDevicePreferencesIfNeeded(input: {
 	}
 }
 
-async function resolveScopePath(input: {
-	scopeKey: ShellScopeKey
-	navigationRestore: ShellNavigationRestore
-	spaces: Space[]
-	defaultPath: string
-}): Promise<string> {
-	const rememberedPath = input.navigationRestore.lastRouteByScopeKey[input.scopeKey]
-	return normalizeRememberedShellPath(rememberedPath, input.spaces, input.defaultPath)
-}
-
-async function normalizeRememberedShellPath(
-	path: string | undefined,
-	spaces: Space[],
-	fallbackPath: string,
-): Promise<string> {
-	return normalizeRememberedShellRoutePath(
-		path ? stripShellDetailSearch(normalizeLegacyRoute(path)) : path,
-		spaces,
-		fallbackPath,
-	)
-}
-
-function extractSpaceIdFromScopeKey(scopeKey: ShellScopeKey): string | null {
-	return scopeKey === 'all' ? null : scopeKey.slice('space:'.length)
-}
-
-function resolveDefaultSpaceId(spaces: Space[]): string | null {
-	return spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
-}
-
 function normalizeSidebarDevicePreferences(
 	candidate: ShellSidebarDevicePreferences,
 ): ShellSidebarDevicePreferences {
@@ -334,31 +262,6 @@ function normalizeUiDevicePreferences(
 				? Math.round(candidate.taskDrawerWidth)
 				: DEFAULT_TASK_DRAWER_WIDTH,
 	}
-}
-
-function normalizeNavigationRestore(
-	candidate: ShellNavigationRestore | null | undefined,
-): ShellNavigationRestore | null {
-	if (!candidate) {
-		return null
-	}
-
-	const lastScopeKey = isShellScopeKey(candidate.lastScopeKey) ? candidate.lastScopeKey : 'all'
-	const lastRouteByScopeKey = Object.fromEntries(
-		Object.entries(candidate.lastRouteByScopeKey ?? {}).filter(
-			([scopeKey, path]) =>
-				isShellScopeKey(scopeKey) && typeof path === 'string' && path.length > 0,
-		),
-	)
-
-	return {
-		lastScopeKey,
-		lastRouteByScopeKey,
-	}
-}
-
-function isShellScopeKey(value: string): value is ShellScopeKey {
-	return value === 'all' || value.startsWith('space:')
 }
 
 function defaultShellSidebarDevicePreferences(): ShellSidebarDevicePreferences {

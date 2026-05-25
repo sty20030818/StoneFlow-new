@@ -1,12 +1,10 @@
 import { startTransition, useEffect, useMemo, useState } from 'react'
-import { compact } from 'es-toolkit/array'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 
 import {
-	isProjectShortcutPath,
-	isTaskShortcutPath,
+	isRememberableShellPath,
+	normalizeShellMemoryPath,
 	parseShellRoute,
-	parseShellScopePath,
 } from '@/app/routing'
 import type { ShellRoute } from '@/app/routing'
 import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
@@ -20,7 +18,6 @@ import {
 	ListTodoIcon,
 	Settings2Icon,
 	SparklesIcon,
-	SquarePenIcon,
 	Trash2Icon,
 	type LucideIcon,
 } from 'lucide-react'
@@ -49,32 +46,28 @@ type UseShellRouteHistoryOptions = {
 
 const DEFAULT_MAX_HISTORY_ENTRIES = 8
 
-/** 路径段 → icon 映射，与 Sidebar 主导航保持一致 */
-const PATH_ICON_MAP: Record<string, LucideIcon> = {
-	'all-tasks': ListTodoIcon,
+const SECTION_ICON_MAP: Record<string, LucideIcon> = {
+	allTasks: ListTodoIcon,
 	views: Layers2Icon,
 	projects: BoxIcon,
-	'no-project': SparklesIcon,
+	noProject: SparklesIcon,
 	archive: ArchiveIcon,
 	trash: Trash2Icon,
 	settings: Settings2Icon,
-	'quick-create': SquarePenIcon,
+	project: FolderIcon,
+	inbox: InboxIcon,
 }
 
-/** 从路径中提取语义 icon：优先匹配路径段，再处理 project 详情页 */
-function resolveEntryIcon(path: string): LucideIcon {
-	const segments = path.split(/[?#]/)[0]?.split('/').filter(Boolean) ?? []
-	const last = segments[segments.length - 1] ?? ''
-
-	if (PATH_ICON_MAP[last]) {
-		return PATH_ICON_MAP[last]
+function resolveEntryIcon(route: ShellRoute): LucideIcon {
+	if (route.entityPageTarget?.kind === 'task') {
+		return ListTodoIcon
 	}
 
-	if (segments.includes('project')) {
+	if (route.entityPageTarget?.kind === 'project') {
 		return FolderIcon
 	}
 
-	return InboxIcon
+	return SECTION_ICON_MAP[route.section] ?? InboxIcon
 }
 
 /**
@@ -91,8 +84,17 @@ export function useShellRouteHistory({
 	const location = useLocation()
 	const navigationType = useNavigationType()
 	const navigate = useNavigate()
-	const currentPath = `${location.pathname}${location.search}${location.hash}`
-	const route = currentRoute ?? parseShellRoute(location)
+	const locationRoute = useMemo(
+		() =>
+			parseShellRoute({
+				pathname: location.pathname,
+				search: location.search,
+				hash: location.hash,
+			}),
+		[location.hash, location.pathname, location.search],
+	)
+	const route = currentRoute ?? locationRoute
+	const currentPath = normalizeShellMemoryPath(route.fullPath)
 	const currentEntry = useMemo(
 		() => buildShellRouteHistoryEntry(route, currentScope, currentSpaceId, spaces, projects),
 		[route, currentScope, currentSpaceId, spaces, projects],
@@ -103,6 +105,10 @@ export function useShellRouteHistory({
 	})
 
 	useEffect(() => {
+		if (!isTrackableRouteHistoryEntry(currentEntry)) {
+			return
+		}
+
 		setHistoryState((previous) =>
 			reduceRouteHistory(previous, currentEntry, navigationType, maxEntries),
 		)
@@ -159,42 +165,49 @@ export function buildShellRouteHistoryEntry(
 	projects: ShellProjectLink[],
 ): ShellRouteHistoryEntry {
 	const route = typeof routeOrPath === 'string' ? parseShellRoute(routeOrPath) : routeOrPath
-	const path = route.fullPath
-	const pathname = route.pathname
-	const parts = compact(pathname.split('/'))
+	const path = normalizeShellMemoryPath(route.fullPath)
 
-	if (parts[0] === 'quick-create') {
-		return createHistoryEntry(path, '快捷创建', null, '所有空间')
+	if (!isRememberableShellPath(path)) {
+		return createHistoryEntry(path, '工作区', null, '所有空间', InboxIcon)
 	}
 
-	if (isTaskShortcutPath(pathname)) {
-		return createHistoryEntry(path, '任务详情', null, '所有空间')
+	if (route.entityPageTarget?.kind === 'task') {
+		const spaceId = route.entityPageTarget.spaceId
+		return createHistoryEntry(path, '任务详情', spaceId, getSpaceLabel(spaceId, spaces), resolveEntryIcon(route))
 	}
 
-	if (isProjectShortcutPath(pathname)) {
-		return createHistoryEntry(path, '项目详情', null, '所有空间')
+	if (route.entityPageTarget?.kind === 'project') {
+		const spaceId = route.entityPageTarget.spaceId
+		const projectLabel = projects.find((project) => project.id === route.entityPageTarget?.id)?.label
+		return createHistoryEntry(
+			path,
+			projectLabel ?? '项目详情',
+			spaceId,
+			getSpaceLabel(spaceId, spaces),
+			resolveEntryIcon(route),
+		)
 	}
 
-	const parsedScope = route.scope ?? parseShellScopePath(pathname)
-	if (!parsedScope) {
-		return createHistoryEntry(path, '工作区', null, '所有空间')
+	if (!route.scope) {
+		return createHistoryEntry(path, '工作区', null, '所有空间', resolveEntryIcon(route))
 	}
 
-	if (parsedScope.type === 'all') {
-		return createHistoryEntry(path, getSectionLabel(route.section), null, '所有空间')
+	if (route.scope.type === 'all') {
+		return createHistoryEntry(path, getSectionLabel(route.section), null, '所有空间', resolveEntryIcon(route))
 	}
 
-	const spaceId = parsedScope.spaceId ?? currentSpaceId ?? (currentScope.type === 'space' ? currentScope.spaceId : null)
+	const spaceId =
+		route.scope.spaceId ?? currentSpaceId ?? (currentScope.type === 'space' ? currentScope.spaceId : null)
 	const spaceLabel = getSpaceLabel(spaceId, spaces)
 	const section = route.section
 
 	if (section === 'project') {
-		const projectId = route.projectId ?? parts[3]
+		const projectId = route.projectId
 		const projectLabel = projects.find((project) => project.id === projectId)?.label
-		return createHistoryEntry(path, projectLabel ?? '项目', spaceId, spaceLabel)
+		return createHistoryEntry(path, projectLabel ?? '项目', spaceId, spaceLabel, resolveEntryIcon(route))
 	}
 
-	return createHistoryEntry(path, getSectionLabel(section), spaceId, spaceLabel)
+	return createHistoryEntry(path, getSectionLabel(section), spaceId, spaceLabel, resolveEntryIcon(route))
 }
 
 function reduceRouteHistory(
@@ -206,6 +219,10 @@ function reduceRouteHistory(
 	const currentEntry = previous.entries[previous.currentIndex]
 
 	if (currentEntry?.path === nextEntry.path) {
+		if (isSameHistoryEntry(currentEntry, nextEntry)) {
+			return previous
+		}
+
 		const nextEntries = [...previous.entries]
 		nextEntries[previous.currentIndex] = nextEntry
 		return { entries: nextEntries, currentIndex: previous.currentIndex }
@@ -254,6 +271,21 @@ function createHistoryEntry(
 	label: string,
 	spaceId: string | null,
 	spaceName: string,
+	entryIcon: LucideIcon,
 ): ShellRouteHistoryEntry {
-	return { path, label, spaceId, spaceName, entryIcon: resolveEntryIcon(path) }
+	return { path, label, spaceId, spaceName, entryIcon }
+}
+
+function isTrackableRouteHistoryEntry(entry: ShellRouteHistoryEntry) {
+	return isRememberableShellPath(entry.path)
+}
+
+function isSameHistoryEntry(left: ShellRouteHistoryEntry, right: ShellRouteHistoryEntry) {
+	return (
+		left.path === right.path &&
+		left.label === right.label &&
+		left.spaceId === right.spaceId &&
+		left.spaceName === right.spaceName &&
+		left.entryIcon === right.entryIcon
+	)
 }
