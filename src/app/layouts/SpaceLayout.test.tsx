@@ -68,15 +68,15 @@ describe('SpaceLayout', () => {
 	})
 
 	it('用结构化 shell route 同步 scope、section 和 remember path', async () => {
-		renderSpaceLayout('/spaces/space-a/project/project-a?task=task-a')
+		renderSpaceLayout('/spaces/space-a/projects/project-a')
 
 		await waitFor(() => {
 			expect(shellNavState.setCurrentScope).toHaveBeenCalledWith('space', 'space-a')
-			expect(shellNavState.setActiveSection).toHaveBeenCalledWith('project')
+			expect(shellNavState.setActiveSection).toHaveBeenCalledWith('projects')
 			expect(setActiveScopeMock).toHaveBeenCalledWith({ type: 'space', spaceId: 'space-a' })
 			expect(rememberShellRouteMock).toHaveBeenCalledWith(
 				{ type: 'space', spaceId: 'space-a' },
-				'/spaces/space-a/project/project-a?task=task-a',
+				'/spaces/space-a/projects/project-a',
 			)
 		})
 
@@ -87,9 +87,9 @@ describe('SpaceLayout', () => {
 				currentScope: { type: 'space', spaceId: 'space-a' },
 				currentSpaceId: 'space-a',
 				shellRoute: expect.objectContaining({
-					section: 'project',
+					section: 'projects',
 					projectId: 'project-a',
-					fullPath: '/spaces/space-a/project/project-a?task=task-a',
+					fullPath: '/spaces/space-a/projects/project-a',
 				}),
 			}),
 		)

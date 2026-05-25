@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-import { buildCanonicalSectionPath } from '@/app/routing'
+import { buildCanonicalSectionPath, buildSettingsPath } from '@/app/routing'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope, Space } from '@/shared/types'
 import type { BadgeVariant } from '@/shared/ui/base/badge'
@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 
 type ShellIcon = ComponentType<{ className?: string }>
-type ShellMainNavKey = 'inbox' | 'allTasks' | 'views' | 'projectOverview'
+type ShellMainNavKey = 'inbox' | 'tasks' | 'views' | 'projectOverview'
 type ShellFooterNavKey = 'archive' | 'trash'
 type ShellCommandNavKey = ShellMainNavKey | ShellFooterNavKey | 'settings'
 
@@ -69,11 +69,11 @@ export const SHELL_NAV_ITEMS: ShellNavItem<ShellMainNavKey>[] = [
 		to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'inbox', fallbackSpaceId),
 	},
 	{
-		key: 'allTasks',
-		section: 'allTasks',
+		key: 'tasks',
+		section: 'tasks',
 		label: '所有任务',
 		icon: ListTodoIcon,
-		to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'all-tasks', fallbackSpaceId),
+		to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'tasks', fallbackSpaceId),
 	},
 	{
 		key: 'views',
@@ -110,10 +110,10 @@ export const SHELL_FOOTER_ITEMS: ShellNavItem<ShellFooterNavKey>[] = [
 
 export const SHELL_SETTINGS_ITEM: ShellNavItem<'settings'> = {
 	key: 'settings',
-	section: 'settings',
+	section: 'inbox',
 	label: '设置',
 	icon: Settings2Icon,
-	to: (scope, fallbackSpaceId) => buildCanonicalSectionPath(scope, 'settings', fallbackSpaceId),
+	to: () => buildSettingsPath(),
 }
 
 export const SHELL_COMMAND_ROUTE_ITEMS = [
@@ -128,22 +128,18 @@ export function getSectionLabel(section: ShellSectionKey) {
 	switch (section) {
 		case 'inbox':
 			return '收件箱'
-		case 'allTasks':
+		case 'tasks':
 			return '所有任务'
 		case 'views':
 			return '视图'
 		case 'projects':
 			return '项目总览'
-		case 'project':
-			return '项目列表'
 		case 'noProject':
 			return '独立事项'
 		case 'archive':
 			return '归档'
 		case 'trash':
 			return '回收站'
-		case 'settings':
-			return '设置'
 		default:
 			return '工作区'
 	}

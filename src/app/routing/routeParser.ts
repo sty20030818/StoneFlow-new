@@ -1,16 +1,10 @@
-import type { ShellSectionKey } from '@/app/layouts/shell/types'
-import type {
-	RouteScope,
-	EntityPageRouteTarget,
-	ShellPathKind,
-	ShellRoute,
-	ShellRouteLocationLike,
-} from './routeTypes'
+import type { AppRoute, RouteScope, ShellRoute, ShellRouteLocationLike } from './routeTypes'
 
-const CANONICAL_SCOPED_SHELL_PATH = /^\/spaces\/([^/]+)(?:\/(.+))?$/
-const CANONICAL_ALL_SHELL_PATH = /^\/all(?:\/(.+))?$/
-const CANONICAL_TASK_DETAIL_PATH = /^\/spaces\/([^/]+)\/tasks\/([^/]+)$/
-const CANONICAL_PROJECT_DETAIL_PATH = /^\/spaces\/([^/]+)\/projects\/([^/]+)\/detail$/
+const CANONICAL_ALL_PATH = /^\/all(?:\/(.+))?$/
+const CANONICAL_SPACE_PATH = /^\/spaces\/([^/]+)(?:\/(.+))?$/
+const TASK_DETAIL_PATH = /^\/spaces\/([^/]+)\/tasks\/([^/]+)$/
+const PROJECT_PAGE_PATH = /^\/spaces\/([^/]+)\/projects\/([^/]+)$/
+const VIEW_DETAIL_REMAINDER = /^views\/([^/]+)$/
 
 function stripQueryAndHash(pathname: string) {
 	return pathname.split(/[?#]/)[0] || '/'
@@ -42,194 +36,265 @@ function splitLocationLike(input: ShellRouteLocationLike) {
 export function parseShellRoute(input: ShellRouteLocationLike): ShellRoute {
 	const { pathname, search, hash } = splitLocationLike(input)
 	const normalizedPath = stripQueryAndHash(pathname)
-	const scope = parseShellScopePath(normalizedPath)
-	const pathKind = resolveShellPathKind(normalizedPath)
-	const projectId = resolveShellProjectId(normalizedPath)
-	const entityPageTarget = resolveEntityPageRouteTarget(normalizedPath)
+	const fullPath = `${normalizedPath}${search}${hash}`
+	const appRoute = parseAppRoute(normalizedPath, search, hash, fullPath)
+	const isShellPath = appRoute.kind === 'shell-section' || appRoute.kind === 'view'
 
 	return {
-		scope,
-		spaceId: scope?.type === 'space' ? scope.spaceId : null,
-		section: resolveShellSection(normalizedPath),
-		projectId,
-		entityPageTarget,
-		pathKind,
+		appRoute,
+		kind: appRoute.kind,
+		scope:
+			appRoute.kind === 'shell-section' || appRoute.kind === 'view'
+				? appRoute.scope
+				: appRoute.kind === 'task' || appRoute.kind === 'project'
+					? { type: 'space', spaceId: appRoute.spaceId }
+					: null,
+		spaceId:
+			appRoute.kind === 'task' || appRoute.kind === 'project'
+				? appRoute.spaceId
+				: appRoute.kind === 'shell-section' || appRoute.kind === 'view'
+					? appRoute.scope.type === 'space'
+						? appRoute.scope.spaceId
+						: null
+					: null,
+		section: resolveShellSection(appRoute),
+		viewId: appRoute.kind === 'view' ? appRoute.viewId : null,
+		projectId: appRoute.kind === 'project' ? appRoute.projectId : null,
+		taskId: appRoute.kind === 'task' ? appRoute.taskId : null,
 		pathname: normalizedPath,
 		search,
 		hash,
-		fullPath: `${normalizedPath}${search}${hash}`,
-		isShellPath: pathKind === 'canonical-all' || pathKind === 'canonical-space',
+		fullPath,
+		isShellPath,
+		isSettingsPath: appRoute.kind === 'settings',
+		isDebugPath: appRoute.kind === 'debug-activity',
+		isQuickCreatePath: appRoute.kind === 'quick-create',
+		isWorkPath:
+			appRoute.kind === 'shell-section' ||
+			appRoute.kind === 'view' ||
+			appRoute.kind === 'task' ||
+			appRoute.kind === 'project',
 	}
 }
 
-export function resolveShellSection(pathname: string): ShellSectionKey {
-	const normalizedPath = stripQueryAndHash(pathname)
-
-	if (isCanonicalTaskDetailPath(normalizedPath)) {
-		return 'allTasks'
+export function parseAppRoute(
+	pathname: string,
+	search = '',
+	hash = '',
+	fullPath = `${pathname}${search}${hash}`,
+): AppRoute {
+	if (pathname === '/') {
+		return { kind: 'startup', pathname: '/', search, hash, fullPath }
 	}
 
-	if (normalizedPath.includes('/project/') || isCanonicalProjectDetailPath(normalizedPath)) {
-		return 'project'
+	if (pathname === '/quick-create') {
+		return { kind: 'quick-create', pathname: '/quick-create', search, hash, fullPath }
 	}
 
-	if (normalizedPath.includes('/all-tasks')) {
-		return 'allTasks'
+	if (pathname === '/settings') {
+		return { kind: 'settings', pathname: '/settings', search, hash, fullPath }
 	}
 
-	if (normalizedPath.includes('/no-project')) {
-		return 'noProject'
+	if (pathname === '/debug/activity') {
+		return { kind: 'debug-activity', pathname: '/debug/activity', search, hash, fullPath }
 	}
 
-	if (normalizedPath.includes('/views') || normalizedPath.includes('/focus')) {
-		return 'views'
+	const taskMatch = pathname.match(TASK_DETAIL_PATH)
+	if (taskMatch?.[1] && taskMatch[2]) {
+		return {
+			kind: 'task',
+			spaceId: decodeURIComponent(taskMatch[1]),
+			taskId: decodeURIComponent(taskMatch[2]),
+			pathname,
+			search,
+			hash,
+			fullPath,
+		}
 	}
 
-	if (normalizedPath.includes('/projects')) {
-		return 'projects'
+	const projectMatch = pathname.match(PROJECT_PAGE_PATH)
+	if (projectMatch?.[1] && projectMatch[2]) {
+		return {
+			kind: 'project',
+			spaceId: decodeURIComponent(projectMatch[1]),
+			projectId: decodeURIComponent(projectMatch[2]),
+			pathname,
+			search,
+			hash,
+			fullPath,
+		}
 	}
 
-	if (normalizedPath.includes('/archive')) {
-		return 'archive'
+	const allMatch = pathname.match(CANONICAL_ALL_PATH)
+	if (allMatch) {
+		return parseScopedWorkRoute({ type: 'all' }, allMatch[1] ?? '', pathname, search, hash, fullPath)
 	}
 
-	if (normalizedPath.includes('/trash')) {
-		return 'trash'
+	const spaceMatch = pathname.match(CANONICAL_SPACE_PATH)
+	if (spaceMatch?.[1]) {
+		return parseScopedWorkRoute(
+			{ type: 'space', spaceId: decodeURIComponent(spaceMatch[1]) },
+			spaceMatch[2] ?? '',
+			pathname,
+			search,
+			hash,
+			fullPath,
+		)
 	}
 
-	if (normalizedPath.includes('/settings')) {
-		return 'settings'
+	return {
+		kind: 'unknown',
+		pathname,
+		search,
+		hash,
+		fullPath,
 	}
+}
 
-	return 'inbox'
+export function resolveShellSection(routeOrPath: AppRoute | string) {
+	const route =
+		typeof routeOrPath === 'string'
+			? parseAppRoute(stripQueryAndHash(routeOrPath))
+			: routeOrPath
+
+	switch (route.kind) {
+		case 'shell-section':
+			return route.section
+		case 'view':
+			return 'views'
+		case 'task':
+			return 'tasks'
+		case 'project':
+			return 'projects'
+		default:
+			return 'inbox'
+	}
 }
 
 export function parseShellScopePath(pathname: string): RouteScope | null {
 	const normalizedPath = stripQueryAndHash(pathname)
+	const taskMatch = normalizedPath.match(TASK_DETAIL_PATH)
+	if (taskMatch?.[1]) {
+		return { type: 'space', spaceId: decodeURIComponent(taskMatch[1]) }
+	}
 
-	if (CANONICAL_ALL_SHELL_PATH.test(normalizedPath)) {
+	const projectMatch = normalizedPath.match(PROJECT_PAGE_PATH)
+	if (projectMatch?.[1]) {
+		return { type: 'space', spaceId: decodeURIComponent(projectMatch[1]) }
+	}
+
+	const allMatch = normalizedPath.match(CANONICAL_ALL_PATH)
+	if (allMatch && isCanonicalAllRemainder(allMatch[1] ?? '')) {
 		return { type: 'all' }
 	}
 
-	const canonicalScopedMatch = normalizedPath.match(CANONICAL_SCOPED_SHELL_PATH)
-	if (canonicalScopedMatch?.[1]) {
-		const remainder = canonicalScopedMatch[2] ?? ''
-		if (
-			remainder &&
-			(remainder.startsWith('project/') ||
-				isCanonicalDetailRemainder(remainder) ||
-				isCanonicalSectionRemainder(remainder))
-		) {
-			return { type: 'space', spaceId: decodeURIComponent(canonicalScopedMatch[1]) }
-		}
+	const spaceMatch = normalizedPath.match(CANONICAL_SPACE_PATH)
+	if (spaceMatch?.[1] && isCanonicalSpaceRemainder(spaceMatch[2] ?? '')) {
+		return { type: 'space', spaceId: decodeURIComponent(spaceMatch[1]) }
 	}
 
 	return null
 }
 
 export function isProjectShellPath(pathname: string) {
-	const normalizedPath = stripQueryAndHash(pathname)
-	return /^\/spaces\/[^/]+\/project\/[^/]+$/.test(normalizedPath) || isCanonicalProjectDetailPath(normalizedPath)
-}
-
-export function resolveShellPathKind(pathname: string): ShellPathKind {
-	const normalizedPath = stripQueryAndHash(pathname)
-
-	if (CANONICAL_ALL_SHELL_PATH.test(normalizedPath)) {
-		return 'canonical-all'
-	}
-
-	if (isCanonicalScopedShellPath(normalizedPath)) {
-		return 'canonical-space'
-	}
-
-	return 'other'
+	return PROJECT_PAGE_PATH.test(stripQueryAndHash(pathname))
 }
 
 export function isShellPath(pathname: string) {
-	const kind = resolveShellPathKind(pathname)
-	return kind === 'canonical-all' || kind === 'canonical-space'
+	const route = parseAppRoute(stripQueryAndHash(pathname))
+	return route.kind === 'shell-section' || route.kind === 'view'
 }
 
-export function isQuickCreatePath(pathname: string) {
-	return stripQueryAndHash(pathname) === '/quick-create'
-}
-
-export function isTaskPageSection(section: ShellSectionKey) {
-	return section === 'allTasks'
-}
-
-function resolveShellProjectId(pathname: string) {
-	const normalizedPath = stripQueryAndHash(pathname)
-	const detailMatch = normalizedPath.match(CANONICAL_PROJECT_DETAIL_PATH)
-	if (detailMatch?.[2]) {
-		return decodeURIComponent(detailMatch[2])
-	}
-
-	const match = normalizedPath.match(/\/project\/([^/]+)/)
-	return match?.[1] ? decodeURIComponent(match[1]) : null
-}
-
-function resolveEntityPageRouteTarget(pathname: string): EntityPageRouteTarget | null {
-	const taskMatch = pathname.match(CANONICAL_TASK_DETAIL_PATH)
-	if (taskMatch?.[1] && taskMatch[2]) {
+function parseScopedWorkRoute(
+	scope: RouteScope,
+	remainder: string,
+	pathname: string,
+	search: string,
+	hash: string,
+	fullPath: string,
+): AppRoute {
+	if (!remainder) {
 		return {
-			kind: 'task',
-			spaceId: decodeURIComponent(taskMatch[1]),
-			id: decodeURIComponent(taskMatch[2]),
+			kind: 'unknown',
+			pathname,
+			search,
+			hash,
+			fullPath,
 		}
 	}
 
-	const projectMatch = pathname.match(CANONICAL_PROJECT_DETAIL_PATH)
-	if (projectMatch?.[1] && projectMatch[2]) {
+	if (remainder === 'inbox') {
+		return { kind: 'shell-section', scope, section: 'inbox', pathname, search, hash, fullPath }
+	}
+
+	if (remainder === 'tasks') {
+		return { kind: 'shell-section', scope, section: 'tasks', pathname, search, hash, fullPath }
+	}
+
+	if (remainder === 'views') {
+		return { kind: 'shell-section', scope, section: 'views', pathname, search, hash, fullPath }
+	}
+
+	const viewMatch = remainder.match(VIEW_DETAIL_REMAINDER)
+	if (viewMatch?.[1]) {
 		return {
-			kind: 'project',
-			spaceId: decodeURIComponent(projectMatch[1]),
-			id: decodeURIComponent(projectMatch[2]),
+			kind: 'view',
+			scope,
+			viewId: decodeURIComponent(viewMatch[1]),
+			pathname,
+			search,
+			hash,
+			fullPath,
 		}
 	}
 
-	return null
-}
-
-function isCanonicalTaskDetailPath(pathname: string) {
-	return CANONICAL_TASK_DETAIL_PATH.test(pathname)
-}
-
-function isCanonicalProjectDetailPath(pathname: string) {
-	return CANONICAL_PROJECT_DETAIL_PATH.test(pathname)
-}
-
-function isCanonicalScopedShellPath(pathname: string) {
-	const match = pathname.match(CANONICAL_SCOPED_SHELL_PATH)
-	if (!match?.[1]) {
-		return false
+	if (remainder === 'projects') {
+		return { kind: 'shell-section', scope, section: 'projects', pathname, search, hash, fullPath }
 	}
 
-	const remainder = match[2] ?? ''
+	if (remainder === 'no-project') {
+		return { kind: 'shell-section', scope, section: 'noProject', pathname, search, hash, fullPath }
+	}
+
+	if (remainder === 'archive') {
+		return { kind: 'shell-section', scope, section: 'archive', pathname, search, hash, fullPath }
+	}
+
+	if (remainder === 'trash') {
+		return { kind: 'shell-section', scope, section: 'trash', pathname, search, hash, fullPath }
+	}
+
+	return {
+		kind: 'unknown',
+		pathname,
+		search,
+		hash,
+		fullPath,
+	}
+}
+
+function isCanonicalAllRemainder(remainder: string) {
 	return (
-		Boolean(remainder) &&
-		(remainder.startsWith('project/') ||
-			isCanonicalDetailRemainder(remainder) ||
-			isCanonicalSectionRemainder(remainder))
+		remainder === 'inbox' ||
+		remainder === 'tasks' ||
+		remainder === 'views' ||
+		remainder === 'projects' ||
+		remainder === 'no-project' ||
+		remainder === 'archive' ||
+		remainder === 'trash' ||
+		Boolean(remainder.match(VIEW_DETAIL_REMAINDER))
 	)
 }
 
-function isCanonicalDetailRemainder(remainder: string) {
-	return /^tasks\/[^/]+$/.test(remainder) || /^projects\/[^/]+\/detail$/.test(remainder)
-}
-
-function isCanonicalSectionRemainder(remainder: string) {
+function isCanonicalSpaceRemainder(remainder: string) {
 	return (
 		remainder === 'inbox' ||
-		remainder === 'all-tasks' ||
-		remainder === 'no-project' ||
+		remainder === 'tasks' ||
 		remainder === 'views' ||
 		remainder === 'projects' ||
+		remainder === 'no-project' ||
 		remainder === 'archive' ||
 		remainder === 'trash' ||
-		remainder === 'settings' ||
-		remainder === 'debug/activity' ||
-		remainder === 'focus'
+		Boolean(remainder.match(VIEW_DETAIL_REMAINDER))
 	)
 }

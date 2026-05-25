@@ -121,8 +121,8 @@ describe('Shell command adapter', () => {
 
 	it.each([
 		[COMMAND_IDS.goInbox, 'inbox'],
-		[COMMAND_IDS.goAllTasks, 'all-tasks'],
-		[COMMAND_IDS.goFocus, 'focus'],
+		[COMMAND_IDS.goAllTasks, 'tasks'],
+		[COMMAND_IDS.goFocus, 'views/focus'],
 		[COMMAND_IDS.goViews, 'views'],
 		[COMMAND_IDS.goProjects, 'projects'],
 		[COMMAND_IDS.goArchive, 'archive'],
@@ -285,13 +285,13 @@ describe('Shell command adapter', () => {
 	})
 
 	it('Cmd+Backspace 分发 task selection 到任务删除', async () => {
-		const actions = createActions()
-		const context = {
-			...createEmptyCommandContext(),
-			route: { page: 'project' as const },
-			selection: {
-				type: 'task' as const,
-				ids: ['task-a'],
+			const actions = createActions()
+			const context = {
+				...createEmptyCommandContext(),
+				route: { page: 'projects' as const },
+				selection: {
+					type: 'task' as const,
+					ids: ['task-a'],
 				entities: [{ id: 'task-a', type: 'task' as const, title: '任务 A' }],
 				primaryEntity: { id: 'task-a', type: 'task' as const, title: '任务 A' },
 				source: 'task-list' as const,

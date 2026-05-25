@@ -32,7 +32,7 @@ export function MainNavRowContextMenu({
 	onUpdateItemVisibility,
 	onResetMainItemsVisibility,
 }: MainNavRowContextMenuProps) {
-	const currentItem = navItems.find((item) => item.key === itemKey)
+	const currentItem = navItems.find((item) => item.settingsKey === itemKey)
 
 	return (
 		<SidebarItemContextMenu

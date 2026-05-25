@@ -2,21 +2,22 @@ import { getProjectDetail } from '@/features/project/api/projects'
 import { getTaskDetail } from '@/features/task/api/tasks'
 import type { Scope, Space } from '@/shared/types'
 
-import { buildCanonicalSectionPath } from './routePaths'
-import { isProjectShellPath, isShellPath } from './routeParser'
+import {
+	buildCanonicalSectionPath,
+	buildStartupFallbackPath,
+} from './routePaths'
+import { parseShellRoute } from './routeParser'
 
 const ROUTE_MEMORY_VERSION = 2
 
 const ALLOWED_SECTION_SEGMENTS = new Set([
 	'inbox',
-	'all-tasks',
-	'no-project',
+	'tasks',
 	'views',
 	'projects',
+	'no-project',
 	'archive',
 	'trash',
-	'settings',
-	'debug/activity',
 ])
 
 export type ShellScopeKey = 'all' | `space:${string}`
@@ -98,7 +99,7 @@ export async function validateShellRouteMemoryPaths(
 			: 'all'
 
 	return {
-		version: 2,
+		version: ROUTE_MEMORY_VERSION,
 		lastScopeKey,
 		lastRouteByScopeKey,
 	}
@@ -151,14 +152,14 @@ export async function resolveStartupPathFromMemory({
 	spaces,
 }: ResolveStartupPathInput): Promise<string> {
 	const memory = normalizeShellRouteMemory(routeMemory)
-	const allInboxPath = buildCanonicalSectionPath({ type: 'all' }, 'inbox')
+	const allTasksPath = buildCanonicalSectionPath({ type: 'all' }, 'tasks')
 	if (!memory) {
-		return allInboxPath
+		return allTasksPath
 	}
 
 	const defaultSpaceId = resolveDefaultSpaceId(spaces)
 	if (memory.lastScopeKey === 'all') {
-		return await normalizeRememberedShellPath(memory.lastRouteByScopeKey.all, spaces, allInboxPath)
+		return await normalizeRememberedShellPath(memory.lastRouteByScopeKey.all, spaces, allTasksPath)
 	}
 
 	const targetSpaceId = extractSpaceIdFromScopeKey(memory.lastScopeKey)
@@ -172,14 +173,14 @@ export async function resolveStartupPathFromMemory({
 	}
 
 	if (!defaultSpaceId) {
-		return allInboxPath
+		return allTasksPath
 	}
 
 	return resolveScopePath({
 		scopeKey: `space:${defaultSpaceId}`,
 		routeMemory: memory,
 		spaces,
-		defaultPath: buildCanonicalSectionPath({ type: 'space', spaceId: defaultSpaceId }, 'inbox'),
+		defaultPath: buildStartupFallbackPath({ type: 'space', spaceId: defaultSpaceId }),
 	})
 }
 
@@ -188,31 +189,24 @@ export function normalizeShellMemoryPath(path: string): string {
 }
 
 export function isRememberableShellPath(path: string): boolean {
-	const normalizedPath = normalizeShellMemoryPath(path).split(/[?#]/)[0] ?? path
-	if (!isShellPath(normalizedPath)) {
+	const route = parseShellRoute(path)
+
+	if (!route.isWorkPath) {
 		return false
 	}
 
-	const allMatch = normalizedPath.match(/^\/all\/(.+)$/)
-	if (allMatch) {
-		return ALLOWED_SECTION_SEGMENTS.has(allMatch[1] ?? '')
+	if (route.kind === 'shell-section') {
+		const normalizedPath = normalizeShellMemoryPath(path).split(/[?#]/)[0] ?? path
+		const allMatch = normalizedPath.match(/^\/all\/(.+)$/)
+		if (allMatch) {
+			return ALLOWED_SECTION_SEGMENTS.has(allMatch[1] ?? '')
+		}
+
+		const spaceMatch = normalizedPath.match(/^\/spaces\/([^/]+)\/(.+)$/)
+		return spaceMatch ? ALLOWED_SECTION_SEGMENTS.has(spaceMatch[2] ?? '') : false
 	}
 
-	const spaceMatch = normalizedPath.match(/^\/spaces\/([^/]+)\/(.+)$/)
-	if (!spaceMatch) {
-		return false
-	}
-
-	const remainder = spaceMatch[2] ?? ''
-	if (remainder.startsWith('project/')) {
-		return remainder.length > 'project/'.length
-	}
-
-	if (isTaskDetailRemainder(remainder) || isProjectDetailRemainder(remainder)) {
-		return true
-	}
-
-	return ALLOWED_SECTION_SEGMENTS.has(remainder)
+	return route.kind === 'view' || route.kind === 'task' || route.kind === 'project'
 }
 
 export function stripShellDetailSearch(path: string): string {
@@ -248,36 +242,36 @@ export async function normalizeRememberedShellPath(
 		return fallbackPath
 	}
 
-	const pathname = canonicalPath.split(/[?#]/)[0] ?? canonicalPath
-	const match = pathname.match(/^\/spaces\/([^/]+)\/(.+)$/)
-	if (match) {
-		const [, spaceId, remainder] = match
-		if (spaces.length > 0 && !spaces.some((space) => space.id === spaceId)) {
-			return fallbackPath
+	const route = parseShellRoute(canonicalPath)
+	if (route.kind === 'shell-section') {
+		const scope = route.scope
+		if (scope && scope.type === 'space') {
+			if (spaces.length > 0 && !spaces.some((space) => space.id === scope.spaceId)) {
+				return fallbackPath
+			}
 		}
-
-		if (remainder.startsWith('project/')) {
-			return validateProjectSpace(remainder.slice('project/'.length), spaceId, canonicalPath, fallbackPath)
-		}
-
-		if (isProjectDetailRemainder(remainder)) {
-			const projectId = remainder.match(/^projects\/([^/]+)\/detail$/)?.[1] ?? ''
-			return validateProjectSpace(projectId, spaceId, canonicalPath, fallbackPath)
-		}
-
-		if (isTaskDetailRemainder(remainder)) {
-			const taskId = remainder.match(/^tasks\/([^/]+)$/)?.[1] ?? ''
-			return validateTaskSpace(taskId, spaceId, canonicalPath, fallbackPath)
-		}
-
 		return canonicalPath
 	}
 
-	if (isProjectShellPath(pathname)) {
-		return fallbackPath
+	if (route.kind === 'view') {
+		const scope = route.scope
+		if (scope && scope.type === 'space') {
+			if (spaces.length > 0 && !spaces.some((space) => space.id === scope.spaceId)) {
+				return fallbackPath
+			}
+		}
+		return canonicalPath
 	}
 
-	return canonicalPath
+	if (route.kind === 'project' && route.projectId && route.spaceId) {
+		return validateProjectSpace(route.projectId, route.spaceId, canonicalPath, fallbackPath)
+	}
+
+	if (route.kind === 'task' && route.taskId && route.spaceId) {
+		return validateTaskSpace(route.taskId, route.spaceId, canonicalPath, fallbackPath)
+	}
+
+	return fallbackPath
 }
 
 async function resolveScopePath(input: {
@@ -336,7 +330,7 @@ function resolveDefaultSpaceId(spaces: Space[]): string | null {
 
 function buildFallbackPathForScopeKey(scopeKey: ShellScopeKey, spaces: Space[]) {
 	if (scopeKey === 'all') {
-		return buildCanonicalSectionPath({ type: 'all' }, 'inbox')
+		return buildCanonicalSectionPath({ type: 'all' }, 'tasks')
 	}
 
 	const spaceId = extractSpaceIdFromScopeKey(scopeKey)
@@ -347,15 +341,7 @@ function buildFallbackPathForScopeKey(scopeKey: ShellScopeKey, spaces: Space[]) 
 	const defaultSpaceId = resolveDefaultSpaceId(spaces)
 	return defaultSpaceId
 		? buildCanonicalSectionPath({ type: 'space', spaceId: defaultSpaceId }, 'inbox')
-		: buildCanonicalSectionPath({ type: 'all' }, 'inbox')
-}
-
-function isTaskDetailRemainder(remainder: string) {
-	return /^tasks\/[^/]+$/.test(remainder)
-}
-
-function isProjectDetailRemainder(remainder: string) {
-	return /^projects\/[^/]+\/detail$/.test(remainder)
+		: buildCanonicalSectionPath({ type: 'all' }, 'tasks')
 }
 
 function isShellScopeKey(value: string): value is ShellScopeKey {

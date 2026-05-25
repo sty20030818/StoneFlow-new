@@ -134,7 +134,7 @@ export function AllTasksPage() {
 			board={{
 				boardKind: 'task',
 				boardConfig: {
-					variant: 'all-tasks',
+					variant: 'tasks',
 					emptyActionLabel: '创建任务',
 					emptyDescription: '当前筛选下没有任务，尝试切换筛选或创建新任务。',
 					emptyTitle: '暂无任务',
@@ -197,7 +197,7 @@ export function AllTasksPage() {
 			onRefresh={() => {
 				void loadList(listInput)
 			}}
-			sceneVariant='all-tasks'
+			sceneVariant='tasks'
 			toolbarPills={TASK_FILTERS.map((filter) => ({
 				label:
 					filter === 'all'

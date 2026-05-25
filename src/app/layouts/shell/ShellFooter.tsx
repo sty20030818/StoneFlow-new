@@ -30,10 +30,10 @@ export function ShellFooter({ navBadges = {} }: ShellFooterProps) {
 						<span className={shellFooterBadgeValueClass}>{navBadges.inbox}</span>
 					</span>
 				) : null}
-				{navBadges.allTasks ? (
+				{navBadges.tasks ? (
 					<span className={shellFooterBadgePairClass}>
 						<span>任务</span>
-						<span className={shellFooterBadgeValueClass}>{navBadges.allTasks}</span>
+						<span className={shellFooterBadgeValueClass}>{navBadges.tasks}</span>
 					</span>
 				) : null}
 			</div>

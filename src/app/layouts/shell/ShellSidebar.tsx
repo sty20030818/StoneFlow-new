@@ -155,8 +155,11 @@ export function ShellSidebar({
 		...item,
 		badge: navBadges[item.section],
 		to: item.to(currentScope, currentSpaceId),
-		visible: settings.mainItems[item.key as SidebarMainItemKey].visible,
-		order: settings.mainItems[item.key as SidebarMainItemKey].order,
+		settingsKey: item.key === 'tasks' ? 'allTasks' : item.key,
+		visible: settings.mainItems[(item.key === 'tasks' ? 'allTasks' : item.key) as SidebarMainItemKey]
+			.visible,
+		order: settings.mainItems[(item.key === 'tasks' ? 'allTasks' : item.key) as SidebarMainItemKey]
+			.order,
 	})) satisfies MainNavItemViewModel[]
 	const visibleNavItems = [...mainNavItems]
 		.filter((item) => item.visible)
@@ -497,7 +500,7 @@ export function ShellSidebar({
 												badge={item.badge}
 												footerItems={footerCustomizeItems}
 												icon={item.icon}
-												itemKey={item.key}
+												itemKey={item.settingsKey}
 												key={item.key}
 												label={item.label}
 												navItems={mainNavItems}

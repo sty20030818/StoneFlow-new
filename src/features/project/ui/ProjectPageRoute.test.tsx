@@ -37,33 +37,29 @@ describe('ProjectPageRoute', () => {
 	it('canonical 项目详情路由能打开项目页面', async () => {
 		mockProjectDetail()
 
-		renderProjectPageRoute('/spaces/space-1/projects/project-1/detail')
+		renderProjectPageRoute('/spaces/space-1/projects/project-1')
 
 		expect(await screen.findByText('Project page body')).toBeInTheDocument()
 		expect(projectPagePropsSpy).toHaveBeenCalledWith({
 			scopeOverride: { type: 'space', spaceId: 'space-1' },
 		})
-		expect(screen.getByTestId('location')).toHaveTextContent(
-			'/spaces/space-1/projects/project-1/detail',
-		)
+		expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-1/projects/project-1')
 	})
 
 	it('canonical spaceId 不匹配时 replace 到实体真实空间', async () => {
 		mockProjectDetail()
 
-		renderProjectPageRoute('/spaces/wrong-space/projects/project-1/detail')
+		renderProjectPageRoute('/spaces/wrong-space/projects/project-1')
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent(
-				'/spaces/space-1/projects/project-1/detail',
-			)
+			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-1/projects/project-1')
 		})
 	})
 
 	it('未知项目进入错误态', async () => {
 		getProjectDetailMock.mockRejectedValue(new Error('not found'))
 
-		renderProjectPageRoute('/spaces/space-1/projects/missing-project/detail')
+		renderProjectPageRoute('/spaces/space-1/projects/missing-project')
 
 		expect(await screen.findByText('项目不可用')).toBeInTheDocument()
 		expect(screen.getByText('not found')).toBeInTheDocument()
@@ -73,7 +69,7 @@ describe('ProjectPageRoute', () => {
 		spaceState.spaces = [{ id: 'space-2', name: '生活' }]
 		mockProjectDetail()
 
-		renderProjectPageRoute('/spaces/space-1/projects/project-1/detail')
+		renderProjectPageRoute('/spaces/space-1/projects/project-1')
 
 		expect(await screen.findByText('项目不可用')).toBeInTheDocument()
 		expect(screen.getByText('当前项目不可见，可能已被归档、删除，或当前账号无权访问。')).toBeInTheDocument()
@@ -116,7 +112,7 @@ function RouteProbe() {
 				{location.search}
 			</div>
 			<Routes>
-				<Route element={<ProjectPageRoute />} path='/spaces/:spaceId/projects/:projectId/detail' />
+				<Route element={<ProjectPageRoute />} path='/spaces/:spaceId/projects/:projectId' />
 			</Routes>
 		</>
 	)

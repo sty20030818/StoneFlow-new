@@ -16,7 +16,7 @@ describe('searchNavigation', () => {
 				updatedAt: '2026-05-09T10:00:00Z',
 				completedAt: null,
 			}),
-		).toBe('/spaces/space-1/project/project-1')
+		).toBe('/spaces/space-1/projects/project-1')
 	})
 
 	it('任务结果根据项目、Inbox 与独立事项决定目标页面', () => {
@@ -36,7 +36,7 @@ describe('searchNavigation', () => {
 				updatedAt: '2026-05-09T10:00:00Z',
 				completedAt: null,
 			}),
-		).toBe('/spaces/space-1/project/project-1')
+		).toBe('/spaces/space-1/projects/project-1')
 
 		expect(
 			resolveTaskSearchTargetPath({

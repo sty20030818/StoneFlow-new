@@ -1,6 +1,6 @@
 import type { Location } from 'react-router-dom'
 
-import { buildProjectDetailPath, buildTaskDetailPath } from '@/app/routing'
+import { buildProjectPath, buildTaskDetailPath } from '@/app/routing'
 import { getProjectDetail } from '@/features/project/api/projects'
 import { getTaskDetail } from '@/features/task/api/tasks'
 import {
@@ -47,7 +47,7 @@ export async function resolveEntityPageTarget(
 
 	const detail = await getProjectDetail(target.id)
 	return {
-		pathname: buildProjectDetailPath(detail.spaceId, detail.id),
+		pathname: buildProjectPath(detail.spaceId, detail.id),
 		search: '',
 		replace: false,
 	}

@@ -25,17 +25,17 @@ describe('useShellRouteHistory', () => {
 	})
 
 	it('识别 all views 和 space project route', async () => {
-		renderHistoryProbe('/all/views?view=focus')
+		renderHistoryProbe('/all/views/focus')
 
 		fireEvent.click(screen.getByRole('button', { name: 'go project' }))
 
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/project/project-a|项目 A|space-a|工作',
+				'/spaces/space-a/projects/project-a|项目 A|space-a|工作',
 			)
 		})
 		expect(screen.getByTestId('history-entries')).toHaveTextContent(
-			'/all/views?view=focus|视图|null|所有空间',
+			'/all/views/focus|视图|null|所有空间',
 		)
 	})
 
@@ -46,7 +46,7 @@ describe('useShellRouteHistory', () => {
 
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/projects/project-a/detail|项目 A|space-a|工作',
+				'/spaces/space-a/projects/project-a|项目 A|space-a|工作',
 			)
 		})
 		expect(screen.getByTestId('history-entries')).toHaveTextContent(
@@ -74,7 +74,7 @@ describe('useShellRouteHistory', () => {
 
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/views?view=today|视图|space-a|工作',
+				'/spaces/space-a/views/today|视图|space-a|工作',
 			)
 		})
 		expect(screen.getByTestId('history-entries')).toHaveTextContent('empty')
@@ -106,16 +106,16 @@ function HistoryProbe() {
 			<div data-testid='history-entries'>
 				{history.entries.length > 0 ? history.entries.map(formatEntry).join('\n') : 'empty'}
 			</div>
-			<button onClick={() => navigate('/spaces/space-a/project/project-a')} type='button'>
+			<button onClick={() => navigate('/spaces/space-a/projects/project-a')} type='button'>
 				go project
 			</button>
 			<button onClick={() => navigate('/spaces/space-a/tasks/task-a')} type='button'>
 				go task detail
 			</button>
-			<button onClick={() => navigate('/spaces/space-a/projects/project-a/detail')} type='button'>
+			<button onClick={() => navigate('/spaces/space-a/projects/project-a')} type='button'>
 				go project detail
 			</button>
-			<button onClick={() => navigate('/spaces/space-a/views?view=today', { replace: true })} type='button'>
+			<button onClick={() => navigate('/spaces/space-a/views/today', { replace: true })} type='button'>
 				replace views
 			</button>
 		</div>

@@ -38,7 +38,7 @@ export const navigationCommands: Command[] = [
 		title: '前往专注',
 		category: 'navigation',
 		scope: ['global'],
-		keywords: ['focus', 'go', '专注'],
+		keywords: ['focus', 'view', 'go', '专注'],
 		run: () => {},
 	},
 	{

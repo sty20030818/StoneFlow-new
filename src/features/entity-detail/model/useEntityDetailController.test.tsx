@@ -33,22 +33,22 @@ describe('useEntityDetailController', () => {
 	})
 
 	it('closeDrawer 清理 URL 并保留其他 query', async () => {
-		renderController('/spaces/views?view=today&task=task-a')
+		renderController('/spaces/space-a/views/today?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '关闭详情' }))
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/views?view=today')
+			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-a/views/today')
 		})
 	})
 
 	it('双 query 初始化后自动清理 project', async () => {
-		renderController('/spaces/views?view=today&task=task-a&project=project-a')
+		renderController('/spaces/space-a/views/today?task=task-a&project=project-a')
 
 		await waitFor(() => {
 			expect(screen.getByTestId('active-detail')).toHaveTextContent('task:task-a')
 			expect(screen.getByTestId('location')).toHaveTextContent(
-				'/spaces/views?view=today&task=task-a',
+				'/spaces/space-a/views/today?task=task-a',
 			)
 		})
 	})

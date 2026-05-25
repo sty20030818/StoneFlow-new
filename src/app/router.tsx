@@ -6,9 +6,8 @@ import { ArchivePage } from '../features/archive/ui/ArchivePage'
 import { SpaceLayout } from './layouts/SpaceLayout'
 import { InboxPage } from '../features/inbox/ui/InboxPage'
 import { NoProjectPage } from '../features/no-project/ui/NoProjectPage'
-import { ProjectPage } from '../features/project/ui/ProjectPage'
-import { ProjectPageRoute } from '../features/project/ui/ProjectPageRoute'
 import { ProjectOverviewPage } from '../features/project-overview/ui/ProjectOverviewPage'
+import { ProjectPageRoute } from '../features/project/ui/ProjectPageRoute'
 import { QuickCreatePage } from '../features/quick-create/ui/QuickCreatePage'
 import { SettingsPage } from '../features/settings/ui/SettingsPage'
 import { ActivityDebugPage } from '../features/activity/ui/ActivityDebugPage'
@@ -18,19 +17,11 @@ import { ViewsPage } from '../features/views/ui/ViewsPage'
 
 const shellChildren = [
 	{
-		index: true,
-		element: <Navigate replace to='inbox' />,
-	},
-	{
 		path: 'inbox',
 		element: <InboxPage />,
 	},
 	{
-		path: 'focus',
-		element: <Navigate replace to='../views?view=focus' />,
-	},
-	{
-		path: 'all-tasks',
+		path: 'tasks',
 		element: <AllTasksPage />,
 	},
 	{
@@ -42,6 +33,10 @@ const shellChildren = [
 		element: <ViewsPage />,
 	},
 	{
+		path: 'views/:viewId',
+		element: <ViewsPage />,
+	},
+	{
 		path: 'projects',
 		element: <ProjectOverviewPage />,
 	},
@@ -50,12 +45,8 @@ const shellChildren = [
 		element: <TaskPageRoute />,
 	},
 	{
-		path: 'projects/:projectId/detail',
+		path: 'projects/:projectId',
 		element: <ProjectPageRoute />,
-	},
-	{
-		path: 'project/:projectId',
-		element: <ProjectPage />,
 	},
 	{
 		path: 'archive',
@@ -64,14 +55,6 @@ const shellChildren = [
 	{
 		path: 'trash',
 		element: <TrashPage />,
-	},
-	{
-		path: 'settings',
-		element: <SettingsPage />,
-	},
-	{
-		path: 'debug/activity',
-		element: <ActivityDebugPage />,
 	},
 ]
 
@@ -85,13 +68,33 @@ export const router = createHashRouter([
 		element: <RootRestoreRedirect />,
 	},
 	{
+		path: '/settings',
+		element: <SettingsPage />,
+	},
+	{
+		path: '/debug/activity',
+		element: <ActivityDebugPage />,
+	},
+	{
 		path: '/all',
 		element: <SpaceLayout />,
-		children: shellChildren,
+		children: [
+			{
+				index: true,
+				element: <Navigate replace to='tasks' />,
+			},
+			...shellChildren,
+		],
 	},
 	{
 		path: '/spaces/:spaceId',
 		element: <SpaceLayout />,
-		children: shellChildren,
+		children: [
+			{
+				index: true,
+				element: <Navigate replace to='inbox' />,
+			},
+			...shellChildren,
+		],
 	},
 ])

@@ -92,7 +92,7 @@ describe('entityDetailNavigation', () => {
 		})
 
 		await expect(resolveEntityPageTarget({ kind: 'project', id: 'project/a' })).resolves.toEqual({
-			pathname: '/spaces/space-a/projects/project%2Fa/detail',
+			pathname: '/spaces/space-a/projects/project%2Fa',
 			search: '',
 			replace: false,
 		})

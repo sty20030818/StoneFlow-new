@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
+import { buildCanonicalViewPath, useShellRoute } from '@/app/routing'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
@@ -43,7 +43,7 @@ export function ViewsPage() {
 	const scope = shellRoute.scope ?? ALL_SCOPE
 	const spaceId = shellRoute.spaceId
 	const navigate = useNavigate()
-	const location = useLocation()
+	const { viewId: routeViewId } = useParams()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
@@ -79,25 +79,23 @@ export function ViewsPage() {
 	const [editingView, setEditingView] = useState<View | null>(null)
 	const [isSavingView, setIsSavingView] = useState(false)
 
-	const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search])
-	const rawViewValue = searchParams.get('view')
 	const visibleViews = useMemo(
 		() => taskViews.items.filter((view) => view.isVisible),
 		[taskViews.items],
 	)
 	const activeView = useMemo(() => {
-		if (!rawViewValue) {
+		if (!routeViewId) {
 			return visibleViews[0] ?? null
 		}
 
 		return (
 			taskViews.items.find(
-				(view) => view.id === rawViewValue || (view.key !== null && view.key === rawViewValue),
+				(view) => view.id === routeViewId || (view.key !== null && view.key === routeViewId),
 			) ??
 			visibleViews[0] ??
 			null
 		)
-	}, [rawViewValue, taskViews.items, visibleViews])
+	}, [routeViewId, taskViews.items, visibleViews])
 	const isTaskRunCurrent =
 		!!activeView &&
 		!!taskRun.input &&
@@ -127,18 +125,12 @@ export function ViewsPage() {
 		}
 
 		const nextViewValue = activeView.id
-		if (rawViewValue === nextViewValue) {
+		if (routeViewId === nextViewValue) {
 			return
 		}
 
-		void navigate(
-			{
-				pathname: buildCanonicalSectionPath(scope, 'views', spaceId),
-				search: `?view=${nextViewValue}`,
-			},
-			{ replace: true },
-		)
-	}, [activeView, navigate, rawViewValue, scope, spaceId, taskViews.status, visibleViews.length])
+		void navigate(buildCanonicalViewPath(scope, nextViewValue, spaceId), { replace: true })
+	}, [activeView, navigate, routeViewId, scope, spaceId, taskViews.status, visibleViews.length])
 
 	useEffect(() => {
 		if (!activeView) {
@@ -197,20 +189,14 @@ export function ViewsPage() {
 	})
 
 	function navigateToView(view: View) {
-		void navigate({
-			pathname: buildCanonicalSectionPath(scope, 'views', spaceId),
-			search: `?view=${view.id}`,
-		})
+		void navigate(buildCanonicalViewPath(scope, view.id, spaceId))
 	}
 
 	async function handleCreateView(input: Parameters<typeof createTaskView>[0]) {
 		setIsSavingView(true)
 		try {
 			const created = await createTaskView(input)
-			void navigate({
-				pathname: buildCanonicalSectionPath(scope, 'views', spaceId),
-				search: `?view=${created.id}`,
-			})
+			void navigate(buildCanonicalViewPath(scope, created.id, spaceId))
 		} finally {
 			setIsSavingView(false)
 		}

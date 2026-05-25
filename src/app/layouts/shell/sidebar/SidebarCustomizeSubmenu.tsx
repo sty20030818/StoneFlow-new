@@ -60,7 +60,10 @@ export function SidebarCustomizeSubmenu({
 								disabled={isLastVisibleItem}
 								key={item.key}
 								onCheckedChange={(checked) =>
-									onUpdateItemVisibility({ kind: 'main', key: item.key }, checked === true)
+									onUpdateItemVisibility(
+										{ kind: 'main', key: item.settingsKey },
+										checked === true,
+									)
 								}
 							>
 								<item.icon className='size-4' />

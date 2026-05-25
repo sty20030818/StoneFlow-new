@@ -11,6 +11,8 @@ import { useNavigate } from 'react-router-dom'
 import {
 	buildCanonicalProjectPath,
 	buildCanonicalSectionPath,
+	buildCanonicalViewPath,
+	buildSettingsPath,
 } from '@/app/routing'
 import type { ShellRoute } from '@/app/routing'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -274,7 +276,7 @@ function ShellLayoutContent({
 	)
 	const requestSearchFocus = useSearchFocusIntentStore((state) => state.requestFocus)
 
-	const routeProjectId = shellRoute.projectId
+	const routeProjectId = shellRoute.kind === 'project' ? shellRoute.projectId : null
 	const isNoProjectPage = shellRoute.section === 'noProject'
 
 	const handleOpenTaskCreate = useMemo(() => {
@@ -730,7 +732,18 @@ function ShellLayoutContent({
 				),
 			navigateTo: (target: ShellNavigationTarget) => {
 				startTransition(() => {
-					navigate(buildCanonicalSectionPath(currentScope, target, currentSpaceId))
+					if (target === 'settings') {
+						navigate(buildSettingsPath())
+						return
+					}
+
+					if (target.startsWith('views/')) {
+						navigate(buildCanonicalViewPath(currentScope, target.slice('views/'.length), currentSpaceId))
+						return
+					}
+
+					const sectionTarget = target as Exclude<ShellNavigationTarget, 'settings' | `views/${string}`>
+					navigate(buildCanonicalSectionPath(currentScope, sectionTarget, currentSpaceId))
 				})
 			},
 			goBack,
@@ -1254,20 +1267,16 @@ function ShellLayoutSkeleton({
 
 function resolveCommandRoutePage(section: ShellSectionKey): CommandRouteContext['page'] {
 	switch (section) {
-		case 'allTasks':
-			return 'allTasks'
+		case 'tasks':
+			return 'tasks'
 		case 'views':
 			return 'views'
 		case 'projects':
 			return 'projects'
-		case 'project':
-			return 'project'
 		case 'archive':
 			return 'archive'
 		case 'trash':
 			return 'trash'
-		case 'settings':
-			return 'settings'
 		case 'inbox':
 		case 'noProject':
 			return 'inbox'

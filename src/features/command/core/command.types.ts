@@ -100,13 +100,9 @@ export type CommandScope =
 export type CommandRouteContext = {
 	page:
 		| 'inbox'
-		| 'allTasks'
-		| 'today'
-		| 'upcoming'
-		| 'focus'
+		| 'tasks'
 		| 'views'
 		| 'projects'
-		| 'project'
 		| 'archive'
 		| 'trash'
 		| 'settings'

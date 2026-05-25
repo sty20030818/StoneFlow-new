@@ -67,7 +67,7 @@ describe('shellDevicePreferences navigation restore', () => {
 			version: 2,
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
-				'space:space-a': '/all/inbox',
+				'space:space-a': '/all/tasks',
 			},
 		})
 		expect(storeSetMock).toHaveBeenCalledWith('shell.navigation.restore', state.navigationRestore)
@@ -77,14 +77,14 @@ describe('shellDevicePreferences navigation restore', () => {
 	it('rememberShellRoute 写入 canonical path 并删除 drawer query', async () => {
 		await rememberShellRoute(
 			{ type: 'space', spaceId: 'space-a' },
-			'/spaces/space-a/inbox?task=task-a&view=today',
+			'/spaces/space-a/views/today?task=task-a',
 		)
 
 		expect(storeState.get('shell.navigation.restore')).toEqual({
 			version: 2,
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
-				'space:space-a': '/spaces/space-a/inbox?view=today',
+				'space:space-a': '/spaces/space-a/views/today',
 			},
 		})
 	})

@@ -1,12 +1,10 @@
 export type ShellSectionKey =
 	| 'inbox'
-	| 'allTasks'
+	| 'tasks'
 	| 'views'
 	| 'projects'
-	| 'project'
 	| 'noProject'
 	| 'archive'
 	| 'trash'
-	| 'settings'
 
 export type ShellDrawerKind = 'task' | 'project'

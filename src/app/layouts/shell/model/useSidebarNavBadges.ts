@@ -25,7 +25,7 @@ export function useSidebarNavBadges(scope: Scope): NavBadges {
 				])
 
 			const next: NavBadges = {}
-			if (allTasks.length > 0) next.allTasks = String(allTasks.length)
+			if (allTasks.length > 0) next.tasks = String(allTasks.length)
 			if (inboxItems.length > 0) next.inbox = String(inboxItems.length)
 			if (noProjectItems.length > 0) next.noProject = String(noProjectItems.length)
 			if (projects.length > 0) next.projects = String(projects.length)

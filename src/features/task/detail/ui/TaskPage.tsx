@@ -56,7 +56,7 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 					navigate(
 						buildCanonicalSectionPath(
 							scope,
-							'all-tasks',
+							'tasks',
 							scope.type === 'space' ? scope.spaceId : null,
 						),
 					)
@@ -75,7 +75,7 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 					navigate(
 						buildCanonicalSectionPath(
 							scope,
-							'all-tasks',
+							'tasks',
 							scope.type === 'space' ? scope.spaceId : null,
 						),
 					)

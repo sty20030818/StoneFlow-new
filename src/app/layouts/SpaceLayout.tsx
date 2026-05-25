@@ -30,6 +30,10 @@ export function SpaceLayout() {
 	useWorkspaceSync(scope)
 
 	useEffect(() => {
+		if (!shellRoute.isWorkPath) {
+			return
+		}
+
 		const nextScopeType = scope.type
 		const nextSpaceId = scope.type === 'space' ? scope.spaceId : fallbackSpaceId
 		if (currentScopeType !== nextScopeType || currentSpaceId !== nextSpaceId) {
@@ -52,6 +56,10 @@ export function SpaceLayout() {
 	])
 
 	useEffect(() => {
+		if (!shellRoute.isWorkPath) {
+			return
+		}
+
 		void setActiveScope(scope).catch((error) => {
 			console.error('active scope sync failed', {
 				scope,
@@ -61,6 +69,10 @@ export function SpaceLayout() {
 	}, [scope])
 
 	useEffect(() => {
+		if (!shellRoute.isWorkPath) {
+			return
+		}
+
 		void rememberShellRoute(scope, shellRoute.fullPath).catch((error) => {
 			console.error('shell route restore save failed', {
 				scope,
@@ -68,7 +80,7 @@ export function SpaceLayout() {
 				error,
 			})
 		})
-	}, [scope, shellRoute.fullPath])
+	}, [scope, shellRoute.fullPath, shellRoute.isWorkPath])
 
 	return (
 		<ShellLayout

@@ -16,7 +16,6 @@ import {
 	InboxIcon,
 	Layers2Icon,
 	ListTodoIcon,
-	Settings2Icon,
 	SparklesIcon,
 	Trash2Icon,
 	type LucideIcon,
@@ -47,23 +46,21 @@ type UseShellRouteHistoryOptions = {
 const DEFAULT_MAX_HISTORY_ENTRIES = 8
 
 const SECTION_ICON_MAP: Record<string, LucideIcon> = {
-	allTasks: ListTodoIcon,
+	tasks: ListTodoIcon,
 	views: Layers2Icon,
 	projects: BoxIcon,
 	noProject: SparklesIcon,
 	archive: ArchiveIcon,
 	trash: Trash2Icon,
-	settings: Settings2Icon,
-	project: FolderIcon,
 	inbox: InboxIcon,
 }
 
 function resolveEntryIcon(route: ShellRoute): LucideIcon {
-	if (route.entityPageTarget?.kind === 'task') {
+	if (route.kind === 'task') {
 		return ListTodoIcon
 	}
 
-	if (route.entityPageTarget?.kind === 'project') {
+	if (route.kind === 'project') {
 		return FolderIcon
 	}
 
@@ -171,17 +168,17 @@ export function buildShellRouteHistoryEntry(
 		return createHistoryEntry(path, '工作区', null, '所有空间', InboxIcon)
 	}
 
-	if (route.entityPageTarget?.kind === 'task') {
-		const spaceId = route.entityPageTarget.spaceId
+	if (route.kind === 'task') {
+		const spaceId = route.spaceId
 		return createHistoryEntry(path, '任务详情', spaceId, getSpaceLabel(spaceId, spaces), resolveEntryIcon(route))
 	}
 
-	if (route.entityPageTarget?.kind === 'project') {
-		const spaceId = route.entityPageTarget.spaceId
-		const projectLabel = projects.find((project) => project.id === route.entityPageTarget?.id)?.label
+	if (route.kind === 'project') {
+		const spaceId = route.spaceId
+		const projectLabel = projects.find((project) => project.id === route.projectId)?.label
 		return createHistoryEntry(
 			path,
-			projectLabel ?? '项目详情',
+			projectLabel ?? '项目',
 			spaceId,
 			getSpaceLabel(spaceId, spaces),
 			resolveEntryIcon(route),
@@ -200,12 +197,6 @@ export function buildShellRouteHistoryEntry(
 		route.scope.spaceId ?? currentSpaceId ?? (currentScope.type === 'space' ? currentScope.spaceId : null)
 	const spaceLabel = getSpaceLabel(spaceId, spaces)
 	const section = route.section
-
-	if (section === 'project') {
-		const projectId = route.projectId
-		const projectLabel = projects.find((project) => project.id === projectId)?.label
-		return createHistoryEntry(path, projectLabel ?? '项目', spaceId, spaceLabel, resolveEntryIcon(route))
-	}
 
 	return createHistoryEntry(path, getSectionLabel(section), spaceId, spaceLabel, resolveEntryIcon(route))
 }

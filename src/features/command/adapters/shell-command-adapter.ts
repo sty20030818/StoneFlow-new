@@ -4,9 +4,9 @@ import type { PageFilterKind } from '@/features/filter/model'
 
 export type ShellNavigationTarget =
 	| 'inbox'
-	| 'all-tasks'
-	| 'focus'
+	| 'tasks'
 	| 'views'
+	| `views/${string}`
 	| 'projects'
 	| 'archive'
 	| 'trash'
@@ -186,9 +186,9 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 		case COMMAND_IDS.goInbox:
 			return { ...command, run: () => adapter.navigateTo('inbox') }
 		case COMMAND_IDS.goAllTasks:
-			return { ...command, run: () => adapter.navigateTo('all-tasks') }
+			return { ...command, run: () => adapter.navigateTo('tasks') }
 		case COMMAND_IDS.goFocus:
-			return { ...command, run: () => adapter.navigateTo('focus') }
+			return { ...command, run: () => adapter.navigateTo('views/focus') }
 		case COMMAND_IDS.goViews:
 			return { ...command, run: () => adapter.navigateTo('views') }
 		case COMMAND_IDS.goProjects:

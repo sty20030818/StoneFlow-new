@@ -88,7 +88,7 @@ describe('routeMemory', () => {
 			version: 2,
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
-				all: '/all/inbox',
+				all: '/all/tasks',
 				'space:space-a': '/spaces/space-a/inbox',
 			},
 		})
@@ -111,19 +111,19 @@ describe('routeMemory', () => {
 
 	it('判断 rememberable route 并保留 canonical detail path', () => {
 		expect(isRememberableShellPath('/all/inbox')).toBe(true)
-		expect(isRememberableShellPath('/spaces/space-a/project/project-a')).toBe(true)
+		expect(isRememberableShellPath('/spaces/space-a/projects/project-a')).toBe(true)
 		expect(isRememberableShellPath('/spaces/space-a/tasks/task-a')).toBe(true)
-		expect(isRememberableShellPath('/spaces/space-a/projects/project-a/detail')).toBe(true)
+		expect(isRememberableShellPath('/spaces/space-a/projects/project-a')).toBe(true)
 		expect(isRememberableShellPath('/spaces/inbox')).toBe(false)
 		expect(isRememberableShellPath(TASK_SHORTCUT_PATH)).toBe(false)
 	})
 
 	it('规范化 shell memory path 只剥离 drawer query', () => {
-		expect(normalizeShellMemoryPath(`${OLD_SPACE_VIEWS_PATH}&project=project-a`)).toBe(
-			OLD_SPACE_VIEWS_PATH,
+		expect(normalizeShellMemoryPath('/spaces/space-a/views/today?project=project-a')).toBe(
+			'/spaces/space-a/views/today',
 		)
-		expect(stripShellDetailSearch('/all/views?task=task-a&view=focus#top')).toBe(
-			'/all/views?view=focus#top',
+		expect(stripShellDetailSearch('/all/views/focus?task=task-a#top')).toBe(
+			'/all/views/focus#top',
 		)
 	})
 
@@ -172,10 +172,10 @@ describe('routeMemory', () => {
 		).resolves.toBe('/spaces/space-a/tasks/task-a')
 		await expect(
 			normalizeRememberedShellPath(
-				'/spaces/space-a/projects/project-a/detail',
+				'/spaces/space-a/projects/project-a',
 				[{ id: 'space-a' } as never],
-				'/all/inbox',
+				'/all/tasks',
 			),
-		).resolves.toBe('/all/inbox')
+		).resolves.toBe('/all/tasks')
 	})
 })

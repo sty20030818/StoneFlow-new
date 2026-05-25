@@ -19,7 +19,7 @@ describe('ShellFooter', () => {
 			title: '/tmp/StoneFlow/app.db',
 		})
 
-		render(<ShellFooter navBadges={{ inbox: '3', allTasks: '12' }} />)
+		render(<ShellFooter navBadges={{ inbox: '3', tasks: '12' }} />)
 
 		expect(screen.getByText('本地数据库已连接')).toBeInTheDocument()
 		expect(screen.getByText('收件箱')).toBeInTheDocument()

@@ -3,7 +3,6 @@ import {
 	isShellPath,
 	parseShellRoute,
 	parseShellScopePath,
-	resolveShellPathKind,
 	resolveShellSection,
 } from './routeParser'
 
@@ -17,18 +16,16 @@ describe('routeParser', () => {
 	it('解析 canonical shell section', () => {
 		expect(resolveShellSection('/all/views')).toBe('views')
 		expect(resolveShellSection('/spaces/space-personal/inbox')).toBe('inbox')
-		expect(resolveShellSection('/spaces/space-personal/all-tasks')).toBe('allTasks')
+		expect(resolveShellSection('/spaces/space-personal/tasks')).toBe('tasks')
 		expect(resolveShellSection('/spaces/space-personal/no-project')).toBe('noProject')
 		expect(resolveShellSection('/spaces/space-personal/projects')).toBe('projects')
-		expect(resolveShellSection('/spaces/space-personal/project/stoneflow-v1')).toBe('project')
 		expect(resolveShellSection('/spaces/space-personal/archive')).toBe('archive')
 		expect(resolveShellSection('/spaces/space-personal/trash')).toBe('trash')
-		expect(resolveShellSection('/spaces/space-personal/settings')).toBe('settings')
-		expect(resolveShellSection('/spaces/space-personal/tasks/task-a')).toBe('allTasks')
-		expect(resolveShellSection('/spaces/space-personal/projects/project-a/detail')).toBe('project')
+		expect(resolveShellSection('/spaces/space-personal/tasks/task-a')).toBe('tasks')
+		expect(resolveShellSection('/spaces/space-personal/projects/project-a')).toBe('projects')
 	})
 
-	it('只识别 canonical scope 和 path kind', () => {
+	it('只识别 canonical scope', () => {
 		expect(parseShellScopePath('/all/views')).toEqual({ type: 'all' })
 		expect(parseShellScopePath('/spaces/space-a/inbox')).toEqual({
 			type: 'space',
@@ -38,7 +35,7 @@ describe('routeParser', () => {
 			type: 'space',
 			spaceId: 'space-a',
 		})
-		expect(parseShellScopePath('/spaces/space-a/projects/project-a/detail')).toEqual({
+		expect(parseShellScopePath('/spaces/space-a/projects/project-a')).toEqual({
 			type: 'space',
 			spaceId: 'space-a',
 		})
@@ -47,18 +44,10 @@ describe('routeParser', () => {
 		expect(parseShellScopePath(OLD_SPACE_PATH)).toBeNull()
 		expect(parseShellScopePath(TASK_SHORTCUT_PATH)).toBeNull()
 		expect(parseShellScopePath(PROJECT_SHORTCUT_PATH)).toBeNull()
-
-		expect(resolveShellPathKind('/all/views')).toBe('canonical-all')
-		expect(resolveShellPathKind('/spaces/space-a/project/project-a')).toBe('canonical-space')
-		expect(resolveShellPathKind('/spaces/views')).toBe('other')
-		expect(resolveShellPathKind(OLD_PROJECT_SHELL_PATH)).toBe('other')
-		expect(resolveShellPathKind(TASK_SHORTCUT_PATH)).toBe('other')
-		expect(resolveShellPathKind(PROJECT_SHORTCUT_PATH)).toBe('other')
 	})
 
 	it('识别 canonical project shell path', () => {
-		expect(isProjectShellPath('/spaces/space-a/project/project-a')).toBe(true)
-		expect(isProjectShellPath('/spaces/space-a/projects/project-a/detail')).toBe(true)
+		expect(isProjectShellPath('/spaces/space-a/projects/project-a')).toBe(true)
 		expect(isProjectShellPath(OLD_PROJECT_SHELL_PATH)).toBe(false)
 		expect(isShellPath('/all/inbox')).toBe(true)
 		expect(isShellPath('/spaces/space-a/inbox')).toBe(true)
@@ -71,7 +60,6 @@ describe('routeParser', () => {
 			spaceId: null,
 			section: 'inbox',
 			projectId: null,
-			pathKind: 'canonical-all',
 			pathname: '/all/inbox',
 			search: '?task=task-a',
 			hash: '#top',
@@ -79,45 +67,30 @@ describe('routeParser', () => {
 			isShellPath: true,
 		})
 
-		expect(parseShellRoute('/spaces/space-a/project/project-a')).toMatchObject({
-			scope: { type: 'space', spaceId: 'space-a' },
-			spaceId: 'space-a',
-			section: 'project',
-			projectId: 'project-a',
-			pathKind: 'canonical-space',
-			isShellPath: true,
-		})
-
 		expect(parseShellRoute('/spaces/space-a/tasks/task-a')).toMatchObject({
-			scope: { type: 'space', spaceId: 'space-a' },
 			spaceId: 'space-a',
-			section: 'allTasks',
+			section: 'tasks',
 			projectId: null,
-			entityPageTarget: { kind: 'task', id: 'task-a', spaceId: 'space-a' },
-			pathKind: 'canonical-space',
-			isShellPath: true,
+			taskId: 'task-a',
+			kind: 'task',
 		})
 
-		expect(parseShellRoute('/spaces/space-a/projects/project-a/detail')).toMatchObject({
-			scope: { type: 'space', spaceId: 'space-a' },
+		expect(parseShellRoute('/spaces/space-a/projects/project-a')).toMatchObject({
 			spaceId: 'space-a',
-			section: 'project',
+			section: 'projects',
 			projectId: 'project-a',
-			entityPageTarget: { kind: 'project', id: 'project-a', spaceId: 'space-a' },
-			pathKind: 'canonical-space',
-			isShellPath: true,
+			kind: 'project',
 		})
 
 		expect(parseShellRoute(OLD_NO_PROJECT_PATH)).toMatchObject({
 			scope: null,
-			pathKind: 'other',
+			kind: 'unknown',
 			isShellPath: false,
 		})
 
 		expect(parseShellRoute(TASK_SHORTCUT_PATH)).toMatchObject({
 			scope: null,
-			entityPageTarget: null,
-			pathKind: 'other',
+			kind: 'unknown',
 			isShellPath: false,
 		})
 	})

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 
-import { buildProjectDetailPath, buildStartupFallbackPath, useShellRoute } from '@/app/routing'
+import { buildProjectPath, buildStartupFallbackPath, useShellRoute } from '@/app/routing'
 import { getProjectDetail } from '@/features/project/api/projects'
 import { ProjectPage } from '@/features/project/ui/ProjectPage'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
@@ -97,7 +97,7 @@ export function ProjectPageRoute() {
 		)
 	}
 
-	const canonicalPath = buildProjectDetailPath(scope.spaceId, projectId)
+	const canonicalPath = buildProjectPath(scope.spaceId, projectId)
 	if (shellRoute.pathname !== canonicalPath || routeSpaceId !== scope.spaceId) {
 		return <Navigate replace to={canonicalPath} />
 	}
