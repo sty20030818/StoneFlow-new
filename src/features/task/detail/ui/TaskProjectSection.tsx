@@ -44,7 +44,7 @@ export function TaskProjectSection({
 				menuLabel={placementDropdownProps.menuLabel}
 				options={placementOptions}
 				value={currentValue}
-				onChange={(value) => {
+				onChange={(value: MetadataPlacementValue) => {
 					if (value.kind === 'project') {
 						autosave.setDraft(
 							(current) => applyTaskProjectDraftChange(current, value.projectId, projects),

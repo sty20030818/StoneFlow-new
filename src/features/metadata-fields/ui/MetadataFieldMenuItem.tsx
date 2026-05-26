@@ -73,15 +73,29 @@ export function MetadataFieldMenuItem<TValue>({
 function MetadataFieldIndicatorIcon({ indicator }: { indicator: MetadataFieldIndicator }) {
 	if (indicator === 'checked') {
 		return (
-			<CheckIcon className='size-3.5 text-sf-icon-secondary' data-slot='metadata-field-indicator' />
+			<CheckIcon
+				className='size-3.5 text-sf-icon-secondary'
+				data-indicator='checked'
+				data-slot='metadata-field-indicator'
+			/>
 		)
 	}
 
 	if (indicator === 'mixed') {
 		return (
-			<MinusIcon className='size-3.5 text-sf-icon-secondary' data-slot='metadata-field-indicator' />
+			<MinusIcon
+				className='size-3.5 text-sf-icon-secondary'
+				data-indicator='mixed'
+				data-slot='metadata-field-indicator'
+			/>
 		)
 	}
 
-	return <CheckIcon className='invisible size-3.5' data-slot='metadata-field-indicator' />
+	return (
+		<CheckIcon
+			className='invisible size-3.5'
+			data-indicator='none'
+			data-slot='metadata-field-indicator'
+		/>
+	)
 }

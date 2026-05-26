@@ -9,6 +9,7 @@ import {
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
 	taskDateMetadataIcons,
+	type MetadataPlacementValue,
 } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import {
@@ -290,7 +291,7 @@ export function TaskRowAdapter({
 								shortcutMode='clear-only'
 								stopPropagation
 								value={projectValue}
-								onChange={(value) => {
+								onChange={(value: MetadataPlacementValue) => {
 									if (value.kind === 'project') {
 										projectBinding?.onSelectProject?.(task, value.projectId)
 										return

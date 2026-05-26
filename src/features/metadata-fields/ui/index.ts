@@ -12,3 +12,7 @@ export {
 	MetadataPlacementDropdown,
 	type MetadataPlacementDropdownProps,
 } from './MetadataPlacementDropdown'
+export {
+	MetadataPlacementGroupList,
+	type MetadataPlacementGroupListProps,
+} from './MetadataPlacementGroupList'

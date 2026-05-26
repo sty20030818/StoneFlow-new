@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+	buildMetadataTaskPlacementGroups,
 	buildTaskPlacementGroups,
 	getTaskPlacementGroupSearchText,
 	getTaskPlacementTargetValue,
+	isTaskPlacementTargetEqual,
+	findTaskPlacementGroupItem,
 } from '@/features/metadata-fields/core'
 
 describe('task-placement-groups', () => {
@@ -83,22 +86,20 @@ describe('task-placement-groups', () => {
 			],
 		})
 
-		expect(groups).toEqual([
-			{
-				spaceId: 'space-a',
-				heading: '工作',
-				items: [
-					{
-						key: 'no-project:space-a',
-						title: '独立事项',
-						meta: 'No Project',
-						value: '独立事项 工作 no project',
-						target: { kind: 'no_project', spaceId: 'space-a' },
-						digit: '0',
-					},
-				],
-			},
-		])
+		expect(groups).toHaveLength(1)
+		expect(groups[0]).toMatchObject({
+			spaceId: 'space-a',
+			heading: '工作',
+		})
+		expect(groups[0]?.items).toHaveLength(1)
+		expect(groups[0]?.items[0]).toMatchObject({
+			key: 'no-project:space-a',
+			title: '独立事项',
+			meta: 'No Project',
+			value: '独立事项 工作 no project',
+			target: { kind: 'no_project', spaceId: 'space-a' },
+			digit: '0',
+		})
 	})
 
 	it('暴露稳定的 target value 与搜索文案 helper', () => {
@@ -119,5 +120,114 @@ describe('task-placement-groups', () => {
 				spaceName: '工作',
 			}),
 		).toBe('项目 A 备注 工作')
+	})
+
+	it('metadata global 模式每个 space 都有独立事项，且当前 space 排第一', () => {
+		const groups = buildMetadataTaskPlacementGroups({
+			mode: 'global',
+			currentSpaceId: 'space-b',
+			spaces: [
+				{ id: 'space-a', name: '工作' },
+				{ id: 'space-b', name: '生活' },
+			],
+			projects: [
+				{
+					id: 'project-a',
+					name: '项目 A',
+					spaceId: 'space-a',
+					spaceName: '工作',
+					completedAt: null,
+				},
+				{
+					id: 'project-b',
+					name: '项目 B',
+					spaceId: 'space-b',
+					spaceName: '生活',
+					completedAt: null,
+				},
+			],
+		})
+
+		expect(groups.map((group) => group.heading)).toEqual(['生活', '工作'])
+		expect(groups[0]?.items[0]?.title).toBe('独立事项')
+		expect(groups[1]?.items[0]?.title).toBe('独立事项')
+	})
+
+	it('metadata local 模式只显示当前 space，且可选 inbox', () => {
+		const groups = buildMetadataTaskPlacementGroups({
+			mode: 'local',
+			currentSpaceId: 'space-a',
+			spaces: [
+				{ id: 'space-a', name: '工作' },
+				{ id: 'space-b', name: '生活' },
+			],
+			projects: [
+				{
+					id: 'project-a',
+					name: '项目 A',
+					spaceId: 'space-a',
+					spaceName: '工作',
+					completedAt: null,
+				},
+			],
+			includeInbox: true,
+		})
+
+		expect(groups).toHaveLength(1)
+		expect(groups[0]?.heading).toBe('工作')
+		expect(groups[0]?.items.map((item) => item.title)).toEqual(['收件箱', '独立事项', '项目 A'])
+		expect(groups[0]?.items.map((item) => item.digit)).toEqual(['0', '1', undefined])
+	})
+
+	it('metadata local 模式 includeInbox=false 时不显示收件箱', () => {
+		const groups = buildMetadataTaskPlacementGroups({
+			mode: 'local',
+			currentSpaceId: 'space-a',
+			spaces: [{ id: 'space-a', name: '工作' }],
+			projects: [],
+			includeInbox: false,
+		})
+
+		expect(groups[0]?.items.map((item) => item.title)).toEqual(['独立事项'])
+		expect(groups[0]?.items.map((item) => item.digit)).toEqual(['0'])
+	})
+
+	it('target 比较与 group item 查找稳定', () => {
+		const groups = buildMetadataTaskPlacementGroups({
+			mode: 'global',
+			currentSpaceId: 'space-a',
+			spaces: [{ id: 'space-a', name: '工作' }],
+			projects: [
+				{
+					id: 'project-a',
+					name: '项目 A',
+					spaceId: 'space-a',
+					spaceName: '工作',
+					completedAt: null,
+				},
+			],
+		})
+
+		expect(
+			isTaskPlacementTargetEqual(
+				{ kind: 'project', projectId: 'project-a', spaceId: 'space-a' },
+				{ kind: 'project', projectId: 'project-a', spaceId: 'space-a' },
+			),
+		).toBe(true)
+		expect(
+			isTaskPlacementTargetEqual(
+				{ kind: 'no_project', spaceId: 'space-a' },
+				{ kind: 'project', projectId: 'project-a', spaceId: 'space-a' },
+			),
+		).toBe(false)
+		expect(
+			findTaskPlacementGroupItem(groups, {
+				kind: 'project',
+				projectId: 'project-a',
+				spaceId: 'space-a',
+			}),
+		).toMatchObject({
+			title: '项目 A',
+		})
 	})
 })

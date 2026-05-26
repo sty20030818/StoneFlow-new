@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import {
 	addLocalDays,
+	createTaskPlacementGroupedDropdownProps,
 	createPlacementActionSpec,
 	createSpaceActionSpec,
 	createDueDateActionSpec,
@@ -616,6 +617,100 @@ describe('metadata-fields', () => {
 		expect(screen.getByText('显式父项目标题')).toBeInTheDocument()
 		expect(getHeaderShortcutSummary()).toBe('X')
 	})
+
+	it('MetadataPlacementDropdown grouped 模式可按 space 分组渲染并显示当前值', async () => {
+		const groupedProps = createTaskPlacementGroupedDropdownProps({
+			mode: 'global',
+			currentSpaceId: 'space-a',
+			spaces: [
+				{ id: 'space-a', name: '工作' },
+				{ id: 'space-b', name: '生活' },
+			],
+			projects: [
+				{ id: 'project-a', name: '项目 A', spaceId: 'space-a' },
+				{ id: 'project-b', name: '项目 B', spaceId: 'space-b' },
+			],
+		})
+
+		render(
+			<MetadataPlacementDropdown
+				groups={groupedProps.groups}
+				headerShortcut={groupedProps.headerShortcut}
+				label='项目'
+				menuLabel={groupedProps.menuLabel}
+				value={{ kind: 'project', projectId: 'project-b', spaceId: 'space-b' }}
+				onChange={() => undefined}
+			/>,
+		)
+
+		expect(screen.getByRole('button', { name: '项目' })).toHaveTextContent('项目 B')
+		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		await screen.findByRole('menu')
+		expect(screen.getByText('工作')).toBeInTheDocument()
+		expect(screen.getByText('生活')).toBeInTheDocument()
+		expect(screen.getAllByText('独立事项').length).toBe(2)
+		expect(getHeaderShortcutSummary()).toBe('⇧ P')
+	})
+
+	it('MetadataPlacementDropdown grouped 模式支持 mixed indicator 和 local digit 规则', async () => {
+		const groupedProps = createTaskPlacementGroupedDropdownProps({
+			mode: 'local',
+			currentSpaceId: 'space-a',
+			spaces: [{ id: 'space-a', name: '工作' }],
+			projects: [{ id: 'project-a', name: '项目 A', spaceId: 'space-a' }],
+			includeInbox: true,
+		})
+
+		render(
+			<MetadataPlacementDropdown
+				groups={groupedProps.groups}
+				label='项目'
+				value={{ kind: 'no_project', spaceId: 'space-a' }}
+				values={[
+					{ kind: 'no_project', spaceId: 'space-a' },
+					{ kind: 'project', projectId: 'project-a', spaceId: 'space-a' },
+				]}
+				onChange={() => undefined}
+			/>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		await screen.findByRole('menu')
+		expect(getShortcutHintDigits()).toEqual(['0', '1'])
+		expectGroupedIndicator('独立事项', 'mixed')
+		expectGroupedIndicator('项目 A', 'mixed')
+	})
+
+	it('MetadataPlacementDropdown grouped 模式显式 header 优先级仍成立', async () => {
+		const groupedProps = createTaskPlacementGroupedDropdownProps({
+			mode: 'local',
+			currentSpaceId: 'space-a',
+			spaces: [{ id: 'space-a', name: '工作' }],
+			projects: [],
+		})
+
+		render(
+			<div onClick={vi.fn()}>
+				<MetadataPlacementDropdown
+					drawerOwnedOverlay
+					groups={groupedProps.groups}
+					headerShortcut='X'
+					label='项目'
+					menuAlign='end'
+					menuLabel='显式 grouped 标题'
+					stopPropagation
+					value={{ kind: 'no_project', spaceId: 'space-a' }}
+					onChange={() => undefined}
+				/>
+			</div>,
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		const menu = await screen.findByRole('menu')
+		expect(screen.getByText('显式 grouped 标题')).toBeInTheDocument()
+		expect(getHeaderShortcutSummary()).toBe('X')
+		expect(menu).toHaveAttribute('data-drawer-owned-overlay', 'true')
+	})
 })
 
 function getShortcutHintDigits() {
@@ -641,5 +736,14 @@ function getVisibleIndicatorsFor(label: string) {
 function getVisibleIndicators() {
 	return [...document.querySelectorAll('[data-slot="metadata-field-indicator"]')].filter(
 		(indicator) => !indicator.classList.contains('invisible'),
+	)
+}
+
+function expectGroupedIndicator(title: string, indicatorState: 'checked' | 'mixed' | 'none') {
+	const item = screen.getByText(title).closest('[role="menuitem"]')
+	expect(item).not.toBeNull()
+	expect(item?.querySelector('[data-slot="metadata-field-indicator"]')).toHaveAttribute(
+		'data-indicator',
+		indicatorState,
 	)
 }

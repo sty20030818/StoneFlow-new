@@ -7,6 +7,7 @@ import {
 	MetadataDateButton,
 	MetadataPlacementDropdown,
 	projectDateMetadataIcons,
+	type MetadataPlacementValue,
 } from '@/features/metadata-fields'
 import {
 	CreatedAtCell,
@@ -147,7 +148,7 @@ export function ProjectRowAdapter({
 								options={projectPlacementOptions}
 								stopPropagation
 								value={{ kind: 'noProject' }}
-								onChange={(value) => {
+								onChange={(value: MetadataPlacementValue) => {
 									if (!hasProjectOptions) {
 										return
 									}

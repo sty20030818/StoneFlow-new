@@ -4,6 +4,7 @@ import type { ProjectOption } from '@/features/project/model/types'
 import { formatTaskPriorityLabel, type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import {
+	buildMetadataTaskPlacementGroups,
 	createPriorityActionSpec,
 	createPlacementActionSpec,
 	createStatusActionSpec,
@@ -11,6 +12,7 @@ import {
 	type MetadataDropdownMappedProps,
 	type MetadataFieldOption,
 	type MetadataPlacementOption,
+	type TaskPlacementGroup,
 } from '@/features/metadata-fields/core'
 import type { TaskStatus } from '@/shared/types'
 
@@ -57,6 +59,46 @@ export function createTaskPlacementMetadataDropdownProps({
 			labelMode: 'project',
 		}),
 	)
+}
+
+export function createTaskPlacementGroupedDropdownProps({
+	mode,
+	currentSpaceId,
+	spaces,
+	projects,
+	includeInbox = false,
+}: {
+	mode: 'global' | 'local'
+	currentSpaceId: string
+	spaces: Array<{ id: string; name: string }>
+	projects: Array<{
+		id: string
+		name: string
+		spaceId: string
+		completedAt?: string | null
+		note?: string | null
+		spaceName?: string
+	}>
+	includeInbox?: boolean
+}): {
+	menuLabel: string
+	headerShortcut?: string
+	groups: TaskPlacementGroup[]
+} {
+	return {
+		menuLabel: '移动到项目...',
+		headerShortcut: '⇧ P',
+		groups: buildMetadataTaskPlacementGroups({
+			mode,
+			currentSpaceId,
+			spaces,
+			projects: projects.map((project) => ({
+				...project,
+				completedAt: project.completedAt ?? null,
+			})),
+			includeInbox,
+		}),
+	}
 }
 
 export const taskDateMetadataIcons = {

@@ -1,4 +1,5 @@
 export {
+	createTaskPlacementGroupedDropdownProps,
 	createTaskPlacementMetadataDropdownProps,
 	createTaskPlacementMetadataOptions,
 	createTaskPriorityMetadataDropdownProps,

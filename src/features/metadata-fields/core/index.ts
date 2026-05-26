@@ -15,6 +15,7 @@ export type {
 	MetadataValueComparator,
 } from './metadata-field.types'
 export type {
+	BuildMetadataTaskPlacementGroupsInput,
 	BuildTaskPlacementGroupsInput,
 	TaskPlacementGroup,
 	TaskPlacementGroupItem,
@@ -67,7 +68,12 @@ export {
 	isMetadataPlacementValueEqual,
 } from './metadata-placement'
 export {
+	buildMetadataTaskPlacementGroups,
 	buildTaskPlacementGroups,
+	findTaskPlacementGroupItem,
 	getTaskPlacementGroupSearchText,
 } from './task-placement-groups'
-export { getTaskPlacementTargetValue } from './task-placement-target'
+export {
+	getTaskPlacementTargetValue,
+	isTaskPlacementTargetEqual,
+} from './task-placement-target'

@@ -106,7 +106,7 @@ export function ProjectMetaAction({
 			menuLabel={placementDropdownProps.menuLabel}
 			options={placementOptions}
 			value={value}
-			onChange={(nextValue) => {
+			onChange={(nextValue: MetadataPlacementValue) => {
 				const nextPlacement = fromMetadataPlacementValue(nextValue)
 				onPlacementChange(nextPlacement.placement, nextPlacement.projectId)
 			}}
