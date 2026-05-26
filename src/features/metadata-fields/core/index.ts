@@ -14,6 +14,14 @@ export type {
 	MetadataPlacementValue,
 	MetadataValueComparator,
 } from './metadata-field.types'
+export type {
+	BuildTaskPlacementGroupsInput,
+	TaskPlacementGroup,
+	TaskPlacementGroupItem,
+	TaskPlacementGroupProject,
+	TaskPlacementGroupSpace,
+} from './task-placement-groups'
+export type { TaskPlacementTarget } from './task-placement-target'
 export {
 	createDueDateActionSpec,
 	createPlacementActionSpec,
@@ -58,3 +66,8 @@ export {
 	getMetadataPlacementKey,
 	isMetadataPlacementValueEqual,
 } from './metadata-placement'
+export {
+	buildTaskPlacementGroups,
+	getTaskPlacementGroupSearchText,
+} from './task-placement-groups'
+export { getTaskPlacementTargetValue } from './task-placement-target'

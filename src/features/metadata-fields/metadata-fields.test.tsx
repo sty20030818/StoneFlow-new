@@ -397,7 +397,13 @@ describe('metadata-fields', () => {
 			/>,
 		)
 
-		expect(screen.getByRole('button', { name: '截止时间' })).toHaveTextContent('截止 5/8')
+		const expectedMonthDay = new Intl.DateTimeFormat('zh-CN', {
+			month: 'numeric',
+			day: 'numeric',
+		}).format(new Date())
+		expect(screen.getByRole('button', { name: '截止时间' })).toHaveTextContent(
+			`截止 ${expectedMonthDay}`,
+		)
 		fireEvent.pointerDown(screen.getByRole('button', { name: '截止时间' }))
 		expect(screen.getByText('设置截止时间为...')).toBeInTheDocument()
 		expect(await screen.findByRole('menuitem', { name: /移除当前日期/ })).toBeInTheDocument()

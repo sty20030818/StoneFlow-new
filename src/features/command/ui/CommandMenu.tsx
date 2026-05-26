@@ -35,10 +35,13 @@ import { Badge } from '@/shared/ui/base/badge'
 import { Button } from '@/shared/ui/base/button'
 import { Kbd } from '@/shared/ui/base/kbd'
 import {
+	buildTaskPlacementGroups,
 	createDueDateActionSpec,
-	normalizeMetadataDateValue,
 	createPriorityActionSpec,
 	createStatusActionSpec,
+	getTaskPlacementTargetValue,
+	normalizeMetadataDateValue,
+	type TaskPlacementGroup,
 } from '@/features/metadata-fields/core'
 import type { ShortcutMenuItem } from '@/shared/ui/shortcut-menu'
 import { ShortcutDigitSelectLayer } from '@/shared/ui/shortcut-menu'
@@ -845,7 +848,7 @@ function ScopedPickerCommandGroup({
 			updatedAt: '',
 			completedAt: project.completedAt ?? null,
 		}))
-		const groups = buildTaskPlacementGroups({
+		const groups: CommandTaskPlacementGroup[] = buildCommandTaskPlacementGroups({
 			context,
 			projects:
 				result.projects.length > 0 || result.completedProjects.length > 0
@@ -878,7 +881,7 @@ function ScopedPickerCommandGroup({
 						heading={group.spaceId === 'ungrouped' ? '移动到项目...' : group.heading}
 						key={group.spaceId}
 					>
-						{group.items.map((item) => (
+						{group.items.map((item: CommandTaskPlacementGroup['items'][number]) => (
 							<CommandItem
 								key={item.key}
 								onSelect={() => {
@@ -1243,10 +1246,6 @@ function getSelectedTaskPlacementValues(context: CommandContext) {
 	return values
 }
 
-function getTaskPlacementTargetValue(target: TaskPlacementTarget) {
-	return target.kind === 'project' ? `project:${target.projectId}` : `no_project:${target.spaceId}`
-}
-
 function getSelectionIndicatorForValue(
 	values: Set<string>,
 	value: string,
@@ -1313,98 +1312,6 @@ function formatProjectMeta(context: CommandContext, projects: CommandMenuProject
 	return project?.label ?? '已选项目'
 }
 
-type TaskPlacementGroup = {
-	spaceId: string
-	heading: string
-	items: Array<{
-		key: string
-		title: string
-		meta: string
-		value: string
-		target: TaskPlacementTarget
-		leading: ReactNode
-		digit?: string
-	}>
-}
-
-function buildTaskPlacementGroups({
-	context,
-	projects,
-	spaces,
-}: {
-	context: CommandContext
-	projects: SearchProjectItem[]
-	spaces: Space[]
-}): TaskPlacementGroup[] {
-	const currentSpaceId = resolveTaskPlacementCurrentSpaceId(context)
-	if (!currentSpaceId) {
-		return []
-	}
-
-	const activeProjects = projects.filter((project) => project.completedAt === null)
-	const spaceNameById = new Map(spaces.map((space) => [space.id, space.name]))
-	const projectsBySpaceId = new Map<string, SearchProjectItem[]>()
-
-	for (const project of activeProjects) {
-		const bucket = projectsBySpaceId.get(project.spaceId)
-		if (bucket) {
-			bucket.push(project)
-		} else {
-			projectsBySpaceId.set(project.spaceId, [project])
-		}
-	}
-
-	const orderedSpaceIds = [
-		currentSpaceId,
-		...Array.from(projectsBySpaceId.keys()).filter((spaceId) => spaceId !== currentSpaceId),
-	]
-
-	return orderedSpaceIds.flatMap((spaceId) => {
-		const items: TaskPlacementGroup['items'] = []
-		const projectsInSpace = projectsBySpaceId.get(spaceId) ?? []
-
-		if (spaceId === currentSpaceId) {
-			items.push({
-				key: `no-project:${spaceId}`,
-				title: '独立事项',
-				meta: 'No Project',
-				value: `独立事项 ${spaceNameById.get(spaceId) ?? ''} no project`,
-				target: { kind: 'no_project', spaceId },
-				leading: getCommandMenuPlacementLeading('no_project'),
-				digit: '0',
-			})
-		}
-
-		items.push(
-			...projectsInSpace.map((project) => ({
-				key: `project:${project.id}`,
-				title: project.name,
-				meta: `Project · ${project.spaceName}`,
-				value: `${project.name} ${project.note ?? ''} ${project.spaceName}`,
-				target: {
-					kind: 'project' as const,
-					projectId: project.id,
-					spaceId: project.spaceId,
-				},
-				leading: getCommandMenuPlacementLeading('project'),
-				digit: undefined,
-			})),
-		)
-
-		if (items.length === 0) {
-			return []
-		}
-
-		return [
-			{
-				spaceId,
-				heading: spaceNameById.get(spaceId) ?? projectsInSpace[0]?.spaceName ?? spaceId,
-				items,
-			},
-		]
-	})
-}
-
 function resolveTaskPlacementCurrentSpaceId(context: CommandContext) {
 	if (context.space.currentSpaceId) {
 		return context.space.currentSpaceId
@@ -1418,6 +1325,36 @@ function resolveTaskPlacementCurrentSpaceId(context: CommandContext) {
 	)
 
 	return selectionSpaceIds.size === 1 ? (Array.from(selectionSpaceIds)[0] ?? null) : null
+}
+
+type CommandTaskPlacementGroup = TaskPlacementGroup & {
+	items: Array<
+		TaskPlacementGroup['items'][number] & {
+			leading: ReactNode
+		}
+	>
+}
+
+function buildCommandTaskPlacementGroups({
+	context,
+	projects,
+	spaces,
+}: {
+	context: CommandContext
+	projects: SearchProjectItem[]
+	spaces: Space[]
+}): CommandTaskPlacementGroup[] {
+	return buildTaskPlacementGroups({
+		currentSpaceId: resolveTaskPlacementCurrentSpaceId(context),
+		spaces,
+		projects,
+	}).map((group): CommandTaskPlacementGroup => ({
+		...group,
+		items: group.items.map((item) => ({
+			...item,
+			leading: getCommandMenuPlacementLeading(item.target.kind),
+		})),
+	}))
 }
 
 function ProjectsCommandGroup({

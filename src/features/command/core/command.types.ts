@@ -141,17 +141,6 @@ export type CommandSelectedEntity = {
 	projectStatus?: 'active' | 'completed' | 'archived'
 }
 
-export type TaskPlacementTarget =
-	| {
-			kind: 'no_project'
-			spaceId: string
-	  }
-	| {
-			kind: 'project'
-			projectId: string
-			spaceId: string
-	  }
-
 export type CommandFocusContext = {
 	isInputFocused: boolean
 	activeElementType?:

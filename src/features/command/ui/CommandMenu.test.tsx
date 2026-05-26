@@ -263,6 +263,43 @@ describe('CommandMenu', () => {
 		expectCommandRowIndicator('项目 B', 'checked')
 	})
 
+	it('task-placement-picker 不显示已完成项目', async () => {
+		mockedSearchEntities.mockResolvedValue(
+			createSearchResult({
+				projects: [
+					createProjectResult({
+						id: 'project-a',
+						name: '项目 A',
+						spaceId: 'space-a',
+						spaceName: '工作',
+						completedAt: null,
+					}),
+				],
+				completedProjects: [
+					createProjectResult({
+						id: 'project-c',
+						name: '项目 C',
+						spaceId: 'space-a',
+						spaceName: '工作',
+						completedAt: '2026-05-15T00:00:00Z',
+					}),
+				],
+			}),
+		)
+		renderCommandMenu({
+			mode: 'task-placement-picker',
+			context: createTaskSelectionContext(),
+		})
+
+		fireEvent.change(screen.getByPlaceholderText('移动到项目或独立事项...'), {
+			target: { value: '项目' },
+		})
+		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
+
+		expect(await screen.findByText('项目 A')).toBeInTheDocument()
+		expect(screen.queryByText('项目 C')).not.toBeInTheDocument()
+	})
+
 	it('scoped mode 空态文案区分任务和项目', async () => {
 		mockedSearchEntities.mockResolvedValue(createSearchResult())
 		const { rerender } = renderCommandMenu({ mode: 'task-picker' })

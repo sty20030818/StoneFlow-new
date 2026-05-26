@@ -23,7 +23,7 @@ export type {
 	CommandSpaceContext,
 	CommandSubmitContext,
 	CommandUiContext,
-	TaskPlacementTarget,
 	CommandViewContext,
 	KnownCommandId,
 } from './command.types'
+export type { TaskPlacementTarget } from '@/features/metadata-fields/core'
