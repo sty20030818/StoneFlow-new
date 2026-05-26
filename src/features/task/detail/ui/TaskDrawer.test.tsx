@@ -64,6 +64,52 @@ vi.mock('../model/useTaskAutosaveAdapter', () => ({
 	useTaskAutosaveAdapter: () => mockAutosave.value,
 }))
 
+vi.mock('@/features/project/model/useProjectStore', () => ({
+	selectProjectOptions: () => [
+		{
+			id: 'project-1',
+			name: '项目 A',
+			spaceId: 'space-1',
+		},
+		{
+			id: 'project-2',
+			name: '项目 B',
+			spaceId: 'space-2',
+		},
+	],
+	useProjectStore: (selector: (state: unknown) => unknown) => selector({}),
+}))
+
+vi.mock('@/features/space/model/useSpaceStore', () => ({
+	selectSpaces: () => [
+		{
+			id: 'space-1',
+			name: '工作',
+			iconKey: 'briefcase',
+			colorKey: 'blue',
+			isDefault: true,
+			sortOrder: 1,
+			archivedAt: null,
+			deletedAt: null,
+			createdAt: '2026-05-19T00:00:00Z',
+			updatedAt: '2026-05-19T00:00:00Z',
+		},
+		{
+			id: 'space-2',
+			name: '生活',
+			iconKey: 'home',
+			colorKey: 'green',
+			isDefault: false,
+			sortOrder: 2,
+			archivedAt: null,
+			deletedAt: null,
+			createdAt: '2026-05-19T00:00:00Z',
+			updatedAt: '2026-05-19T00:00:00Z',
+		},
+	],
+	useSpaceStore: (selector: (state: unknown) => unknown) => selector({}),
+}))
+
 vi.mock('../model/useTaskLinksController', () => ({
 	useTaskLinksController: () => mockTaskLinksController.value,
 }))
@@ -158,7 +204,7 @@ describe('TaskDrawer', () => {
 		)
 	})
 
-	it('正文按文档顺序渲染标题、备注、属性、项目、标签、链接', () => {
+	it('正文按文档顺序渲染标题、备注、属性、归属、标签、链接', () => {
 		const { container } = render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
 		const body = container.querySelector('[data-task-drawer-body="true"]')
 
@@ -166,12 +212,24 @@ describe('TaskDrawer', () => {
 		expect(screen.getByLabelText('任务标题')).toHaveClass('border-0')
 		expect(screen.getByLabelText('任务备注')).toHaveClass('border-0')
 		expect(screen.getByLabelText('任务备注')).toHaveClass('min-h-40')
-		// 属性、项目、标签现在使用 DetailFieldRow label-value 布局，不再是 h3 heading
+		// 属性、归属、标签现在使用 DetailFieldRow label-value 布局，不再是 h3 heading
 		expect(container.querySelector('[data-task-properties="stack"]')).toBeInTheDocument()
-		expect(screen.getByText('项目')).toBeInTheDocument()
+		expect(screen.getByText('归属')).toBeInTheDocument()
+		expect(screen.queryByText('项目')).not.toBeInTheDocument()
 		expect(screen.getByText('标签')).toBeInTheDocument()
 		// 链接仍然是独立 section，保留 heading
 		expect(screen.getByRole('heading', { name: '链接' })).toBeInTheDocument()
+	})
+
+	it('归属 dropdown 使用 grouped placement menu', async () => {
+		render(<TaskDrawer onClose={() => undefined} taskId='task-1' />)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+
+		const menu = await screen.findByRole('menu')
+		expect(menu).toHaveAttribute('data-drawer-owned-overlay', 'true')
+		expect(screen.getByText('工作')).toBeInTheDocument()
+		expect(screen.getAllByRole('menuitem', { name: /独立事项/ })).toHaveLength(2)
 	})
 
 	it('标签和链接区块不会接管 autosave', () => {

@@ -2,21 +2,28 @@ import type { AutosaveController } from '@/shared/autosave'
 import { DetailPageStatusBlock, DetailSection } from '@/shared/ui/detail'
 import type { TaskDetail } from '@/shared/types'
 import type { ProjectOption } from '@/features/project/model/types'
+import type { Space } from '@/shared/types'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskLabelsSection } from './TaskLabelsSection'
-import { TaskProjectSection } from './TaskProjectSection'
+import { TaskPlacementSection } from './TaskPlacementSection'
 import { TaskPropertiesSection } from './TaskPropertiesSection'
-import { TaskSpaceSection } from './TaskSpaceSection'
 
 type TaskPageSidebarProps = {
 	task: TaskDetail
 	autosave: AutosaveController<TaskDetailDraft>
 	projects: ProjectOption[]
+	spaces: Array<Pick<Space, 'id' | 'name'>>
 	isReadOnly: boolean
 }
 
-export function TaskPageSidebar({ task, autosave, projects, isReadOnly }: TaskPageSidebarProps) {
+export function TaskPageSidebar({
+	task,
+	autosave,
+	projects,
+	spaces,
+	isReadOnly,
+}: TaskPageSidebarProps) {
 	return (
 		<div className='flex flex-col gap-3'>
 			{task.archivedAt ? (
@@ -55,8 +62,12 @@ export function TaskPageSidebar({ task, autosave, projects, isReadOnly }: TaskPa
 				className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4'
 				title='归属'
 			>
-				<TaskSpaceSection autosave={autosave} disabled={isReadOnly} projects={projects} />
-				<TaskProjectSection autosave={autosave} disabled={isReadOnly} projects={projects} />
+				<TaskPlacementSection
+					autosave={autosave}
+					disabled={isReadOnly}
+					projects={projects}
+					spaces={spaces}
+				/>
 			</DetailSection>
 
 			<DetailSection

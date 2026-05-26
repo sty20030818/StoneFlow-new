@@ -1,4 +1,5 @@
 import type { ProjectOption } from '@/features/project/model/types'
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskDetail, TaskStatus, UpdateTaskInput } from '@/shared/types'
 
@@ -116,6 +117,25 @@ export function applyTaskProjectDraftChange(
 		...draft,
 		projectId,
 		spaceId: nextProject?.spaceId ?? draft.spaceId,
+	}
+}
+
+export function applyTaskPlacementDraftChange(
+	draft: TaskDetailDraft,
+	target: TaskPlacementTarget,
+): TaskDetailDraft {
+	if (target.kind === 'project') {
+		return {
+			...draft,
+			spaceId: target.spaceId,
+			projectId: target.projectId,
+		}
+	}
+
+	return {
+		...draft,
+		spaceId: target.spaceId,
+		projectId: '',
 	}
 }
 

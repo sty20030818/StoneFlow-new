@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { buildCanonicalSectionPath } from '@/app/routing'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
+import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import type { Scope, TaskDetail } from '@/shared/types'
 import { DetailPageGrid, DetailPageMain, DetailPageSidebar } from '@/shared/ui/detail'
 import {
@@ -34,6 +35,7 @@ type TaskPageProps = {
 export function TaskPage({ taskId, scope }: TaskPageProps) {
 	const navigate = useNavigate()
 	const projects = useProjectStore(selectProjectOptions)
+	const spaces = useSpaceStore(selectSpaces)
 	const { task, status, error } = useTaskDetailController(taskId)
 	const isReadOnly = status !== 'ready' || !task || Boolean(task.deletedAt)
 
@@ -83,6 +85,7 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 		<TaskPageLoaded
 			isReadOnly={isReadOnly}
 			projects={projects}
+			spaces={spaces}
 			task={task}
 		/>
 	)
@@ -91,10 +94,11 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 type TaskPageLoadedProps = {
 	task: TaskDetail
 	projects: ReturnType<typeof selectProjectOptions>
+	spaces: ReturnType<typeof selectSpaces>
 	isReadOnly: boolean
 }
 
-function TaskPageLoaded({ task, projects, isReadOnly }: TaskPageLoadedProps) {
+function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedProps) {
 	const autosaveBase = useMemo(() => createTaskDetailDraft(task), [task])
 	const autosave = useTaskAutosaveAdapter({
 		base: autosaveBase,
@@ -115,6 +119,7 @@ function TaskPageLoaded({ task, projects, isReadOnly }: TaskPageLoadedProps) {
 								autosave={autosave}
 								isReadOnly={isReadOnly}
 								projects={projects}
+								spaces={spaces}
 								task={task}
 							/>
 						</DetailPageSidebar>

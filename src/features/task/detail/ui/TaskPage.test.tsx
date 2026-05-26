@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -109,6 +109,9 @@ describe('TaskPage', () => {
 
 		expect(screen.getByText('任务 A')).toBeInTheDocument()
 		expect(screen.getByText('Links for task-1')).toBeInTheDocument()
+		expect(screen.getAllByText('归属').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('空间').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
 
 		await waitFor(() => {
 			expect(getEntityActivitiesMock).toHaveBeenCalledWith({
@@ -119,6 +122,20 @@ describe('TaskPage', () => {
 		})
 
 		expect(await screen.findByText('暂无 Activity')).toBeInTheDocument()
+	})
+
+	it('归属区只保留一个 placement 入口，并继续保留详情只读空间和项目', async () => {
+		renderTaskPage()
+
+		expect(screen.getAllByRole('button', { name: '归属' })).toHaveLength(1)
+		expect(screen.queryByRole('button', { name: '空间' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '项目' })).not.toBeInTheDocument()
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+
+		expect(await screen.findByRole('menuitem', { name: /独立事项/ })).toBeInTheDocument()
+		expect(screen.getAllByText('空间').length).toBeGreaterThan(0)
+		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
 	})
 
 	it('真实详情可用前不会先用 fallback draft 渲染错误字段', async () => {
