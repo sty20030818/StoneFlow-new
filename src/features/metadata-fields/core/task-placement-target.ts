@@ -1,5 +1,9 @@
 export type TaskPlacementTarget =
 	| {
+			kind: 'inbox'
+			spaceId: string
+	  }
+	| {
 			kind: 'no_project'
 			spaceId: string
 	  }
@@ -10,7 +14,14 @@ export type TaskPlacementTarget =
 	  }
 
 export function getTaskPlacementTargetValue(target: TaskPlacementTarget) {
-	return target.kind === 'project' ? `project:${target.projectId}` : `no_project:${target.spaceId}`
+	switch (target.kind) {
+		case 'project':
+			return `project:${target.projectId}`
+		case 'inbox':
+			return `inbox:${target.spaceId}`
+		default:
+			return `no_project:${target.spaceId}`
+	}
 }
 
 export function isTaskPlacementTargetEqual(left: TaskPlacementTarget, right: TaskPlacementTarget) {

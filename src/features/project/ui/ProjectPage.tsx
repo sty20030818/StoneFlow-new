@@ -15,6 +15,7 @@ import {
 	selectProjectOptions,
 	useProjectStore,
 } from '@/features/project/model/useProjectStore'
+import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
@@ -80,6 +81,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 	const taskPreviewController = useTaskPreviewController()
 	const detail = useProjectStore(selectProjectDetail)
 	const projectOptions = useProjectStore(selectProjectOptions)
+	const spaces = useSpaceStore(selectSpaces)
 	const loadDetail = useProjectStore((state) => state.loadDetail)
 	const clearDetail = useProjectStore((state) => state.clearDetail)
 	const completeProject = useProjectStore((state) => state.completeProject)
@@ -246,6 +248,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 					onUpdateTaskPriority: updateTaskPriority,
 					onUpdateTaskStatus: updateTaskStatus,
 					projectOptions: projectMoveOptions,
+					spaces,
 				},
 			}}
 			breadcrumb={<ProjectBreadcrumb projectName={project?.name ?? '项目'} />}

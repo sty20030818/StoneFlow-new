@@ -10,7 +10,7 @@ import { buildCreatePlacementInput } from '@/features/task/model/taskPlacement'
 import { useTaskStore } from '@/features/task/model/useTaskStore'
 import {
 	PriorityMetaAction,
-	ProjectMetaAction,
+	PlacementMetaAction,
 	StatusMetaAction,
 } from '@/features/task/ui/TaskCreateMetaActions'
 import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
@@ -115,10 +115,6 @@ export function TaskCreateContent({
 		// 这里只在弹窗挂载时初始化一次，避免编辑中的草稿被外部 context 变更误清空。
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
-
-	const visibleProjects = spaceId
-		? projects.filter((project) => project.spaceId === spaceId)
-		: projects
 
 	const canSubmit =
 		!isSubmitting &&
@@ -233,11 +229,13 @@ export function TaskCreateContent({
 			<CreateModalContent.Metadata error={submitState === 'error' ? errorMessage : null}>
 				<StatusMetaAction disabled={false} status={status} onStatusChange={setStatus} />
 				<PriorityMetaAction disabled={false} priority={priority} onPriorityChange={setPriority} />
-				<ProjectMetaAction
+				<PlacementMetaAction
 					disabled={projectsLoading}
 					placement={placement}
+					spaceId={spaceId}
 					projectId={projectId}
-					projects={visibleProjects}
+					projects={projects}
+					spaces={spaces.map((space) => ({ id: space.id, name: space.name }))}
 					onPlacementChange={(newPlacement, newProjectId) => {
 						setPlacement(newPlacement)
 						setProjectId(newProjectId ?? '')

@@ -74,7 +74,8 @@ export type EntitySceneTaskBoardActions = {
 	onDeleteTask?: (task: TaskListItem) => Promise<void>
 	onOpenTask?: (taskId: string) => void
 	onPeekTask?: (taskId: string, source: 'keyboard' | 'pointer') => void
-	projectOptions?: Array<{ id: string; name: string }>
+	projectOptions?: Array<{ id: string; name: string; spaceId: string }>
+	spaces?: Array<{ id: string; name: string }>
 	onSelectProject?: (task: TaskListItem, projectId: string) => void
 	onSelectNoProject?: (task: TaskListItem) => void
 	showProjectCellOptions?: boolean

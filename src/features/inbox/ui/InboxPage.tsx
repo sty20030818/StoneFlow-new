@@ -17,6 +17,7 @@ import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patter
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
+import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import {
@@ -54,6 +55,7 @@ export function InboxPage() {
 		: 'loading'
 	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
 	const projectOptions = useProjectStore(selectProjectOptions)
+	const spaces = useSpaceStore(selectSpaces)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
@@ -180,6 +182,7 @@ export function InboxPage() {
 					onSelectProject: (task, projectId) => void leaveListTaskToProject(task, projectId),
 					onSelectNoProject: (task) => void leaveListTaskAsNoProject(task),
 					projectOptions: inboxProjectOptions,
+					spaces,
 				},
 			}}
 			breadcrumb={<InboxBreadcrumb />}

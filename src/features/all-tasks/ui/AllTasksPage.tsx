@@ -22,6 +22,7 @@ import {
 	useTaskStore,
 } from '@/features/task/model/useTaskStore'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
+import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -79,6 +80,7 @@ export function AllTasksPage() {
 		leaveListTaskAsNoProject,
 	} = useTaskListController()
 	const projectOptions = useProjectStore(selectProjectOptions)
+	const spaces = useSpaceStore(selectSpaces)
 	const { controller, filteredTasks } = useTaskPageFilterController({
 		tasks: taskSourceItems,
 		projects: projectOptions,
@@ -176,6 +178,7 @@ export function AllTasksPage() {
 					onUpdateTaskPriority: updateTaskPriority,
 					onUpdateTaskStatus: updateTaskStatus,
 					projectOptions,
+					spaces,
 				},
 			}}
 			breadcrumb={<AllTasksBreadcrumb />}

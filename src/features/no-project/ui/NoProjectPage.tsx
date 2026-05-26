@@ -11,6 +11,7 @@ import {
 } from '@/features/filter/model'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
+import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
@@ -61,6 +62,7 @@ export function NoProjectPage() {
 		: 'loading'
 	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
 	const projectOptions = useProjectStore(selectProjectOptions)
+	const spaces = useSpaceStore(selectSpaces)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
@@ -181,6 +183,7 @@ export function NoProjectPage() {
 					onUpdateTaskPriority: updateTaskPriority,
 					onUpdateTaskStatus: updateTaskStatus,
 					projectOptions,
+					spaces,
 				},
 			}}
 			breadcrumb={<NoProjectBreadcrumb />}

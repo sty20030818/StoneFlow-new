@@ -54,6 +54,7 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			onUpdateTaskStatus={actions.onUpdateTaskStatus ?? (async () => undefined)}
 			pendingTaskId={data.pendingItemId ?? null}
 			projectOptions={actions.projectOptions}
+			spaces={actions.spaces}
 			showProjectCellOptions={actions.showProjectCellOptions ?? showProjectCellOptions}
 			focusedTaskId={data.focusedTaskId ?? null}
 			selectedTaskIdSet={data.selectedTaskIdSet ?? new Set<string>()}

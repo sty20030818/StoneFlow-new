@@ -52,8 +52,13 @@ function renderTaskRowAdapter({
 	rowState = { isActive: false, isSelected: false, isPending: false },
 	projectBinding = {
 		projectOptions: [
-			{ id: 'project-1', name: '项目 A' },
-			{ id: 'project-2', name: '项目 B' },
+			{ id: 'project-1', name: '项目 A', spaceId: 'space-1' },
+			{ id: 'project-2', name: '项目 B', spaceId: 'space-1' },
+			{ id: 'project-3', name: '项目 C', spaceId: 'space-2' },
+		],
+		spaces: [
+			{ id: 'space-1', name: '个人' },
+			{ id: 'space-2', name: '工作' },
 		],
 		onSelectProject: vi.fn(),
 		onSelectNoProject: vi.fn(),
@@ -136,18 +141,22 @@ describe('TaskRowAdapter', () => {
 		expect(actions.onUpdateTaskReminderAt).toHaveBeenCalledWith(task, expect.any(String))
 	})
 
-	it('项目字段可切换独立事项和项目', async () => {
+	it('归属字段使用 local grouped placement，并可切换独立事项和项目', async () => {
 		const { projectBinding, task } = renderTaskRowAdapter()
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 		await screen.findByRole('menu')
+		expect(screen.getByText('个人')).toBeInTheDocument()
+		expect(screen.queryByText('工作')).not.toBeInTheDocument()
+		expect(screen.queryByRole('menuitem', { name: /收件箱/ })).not.toBeInTheDocument()
 		expect(getShortcutHintDigits()).toContain('0')
 		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
 		expect(projectBinding?.onSelectNoProject).toHaveBeenCalledWith(task)
 
-		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
 		expect(projectBinding?.onSelectProject).toHaveBeenCalledWith(task, 'project-2')
+		expect(screen.queryByRole('menuitem', { name: /项目 C/ })).not.toBeInTheDocument()
 	})
 
 	it('右侧字段下拉右边对齐 trigger 右边，避免菜单被裁掉', async () => {
@@ -165,28 +174,30 @@ describe('TaskRowAdapter', () => {
 		renderTaskRowAdapter({
 			projectBinding: {
 				projectOptions: [
-					{ id: 'project-1', name: '项目 A' },
-					{ id: 'project-2', name: '项目 B' },
+					{ id: 'project-1', name: '项目 A', spaceId: 'space-1' },
+					{ id: 'project-2', name: '项目 B', spaceId: 'space-1' },
 				],
+				spaces: [{ id: 'space-1', name: '个人' }],
 				onSelectProject: vi.fn(),
 				onSelectNoProject: vi.fn(),
 				showProjectCellOptions: false,
 			},
 		})
 
-		expect(screen.queryByRole('button', { name: '项目' })).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '归属' })).not.toBeInTheDocument()
 	})
 
 	it('日期字段无值时不渲染移除当前日期', async () => {
 		render(
 			<DangerConfirmProvider>
-				<TaskRowAdapter
-					actions={buildActions()}
-					projectBinding={{
-						projectOptions: [{ id: 'project-1', name: '项目 A' }],
-						onSelectProject: vi.fn(),
-						onSelectNoProject: vi.fn(),
-					}}
+					<TaskRowAdapter
+						actions={buildActions()}
+						projectBinding={{
+							projectOptions: [{ id: 'project-1', name: '项目 A', spaceId: 'space-1' }],
+							spaces: [{ id: 'space-1', name: '个人' }],
+							onSelectProject: vi.fn(),
+							onSelectNoProject: vi.fn(),
+						}}
 					rowState={{ isActive: false, isSelected: false, isPending: false }}
 					task={buildTask({ dueAt: null, scheduledAt: null, reminderAt: null })}
 				/>
@@ -202,13 +213,14 @@ describe('TaskRowAdapter', () => {
 		const actions = buildActions()
 		render(
 			<DangerConfirmProvider>
-				<TaskRowAdapter
-					actions={actions}
-					projectBinding={{
-						projectOptions: [{ id: 'project-1', name: '项目 A' }],
-						onSelectProject: vi.fn(),
-						onSelectNoProject: vi.fn(),
-					}}
+					<TaskRowAdapter
+						actions={actions}
+						projectBinding={{
+							projectOptions: [{ id: 'project-1', name: '项目 A', spaceId: 'space-1' }],
+							spaces: [{ id: 'space-1', name: '个人' }],
+							onSelectProject: vi.fn(),
+							onSelectNoProject: vi.fn(),
+						}}
 					rowState={{ isActive: false, isSelected: false, isPending: false }}
 					task={buildTask()}
 				/>
@@ -285,9 +297,10 @@ describe('TaskRowAdapter', () => {
 		const contextMenuActions = buildContextMenuActions()
 		const projectBinding = {
 			projectOptions: [
-				{ id: 'project-1', name: '项目 A' },
-				{ id: 'project-2', name: '项目 B' },
+				{ id: 'project-1', name: '项目 A', spaceId: 'space-1' },
+				{ id: 'project-2', name: '项目 B', spaceId: 'space-1' },
 			],
+			spaces: [{ id: 'space-1', name: '个人' }],
 			onSelectProject: vi.fn(),
 			onSelectNoProject: vi.fn(),
 		}
@@ -336,7 +349,8 @@ describe('TaskRowAdapter', () => {
 		const actions = buildActions()
 		const task = buildTask()
 		const projectBinding = {
-			projectOptions: [{ id: 'project-1', name: '项目 A' }],
+			projectOptions: [{ id: 'project-1', name: '项目 A', spaceId: 'space-1' }],
+			spaces: [{ id: 'space-1', name: '个人' }],
 			onSelectProject: vi.fn(),
 			onSelectNoProject: vi.fn(),
 		}
@@ -400,13 +414,14 @@ describe('TaskRowAdapter', () => {
 	it('透传显式 selection group position 到真正的 surface', () => {
 		render(
 			<DangerConfirmProvider>
-				<TaskRowAdapter
-					actions={buildActions()}
-					projectBinding={{
-						projectOptions: [{ id: 'project-1', name: '项目 A' }],
-						onSelectProject: vi.fn(),
-						onSelectNoProject: vi.fn(),
-					}}
+					<TaskRowAdapter
+						actions={buildActions()}
+						projectBinding={{
+							projectOptions: [{ id: 'project-1', name: '项目 A', spaceId: 'space-1' }],
+							spaces: [{ id: 'space-1', name: '个人' }],
+							onSelectProject: vi.fn(),
+							onSelectNoProject: vi.fn(),
+						}}
 					rowState={{
 						isActive: false,
 						isPending: false,

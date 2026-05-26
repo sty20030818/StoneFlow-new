@@ -7,6 +7,7 @@ import { buildCanonicalViewPath, useShellRoute } from '@/app/routing'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
+import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import {
 	buildTaskCommandSelection,
 	useEntitySelectionEscape,
@@ -61,6 +62,7 @@ export function ViewsPage() {
 	const reorderTaskViews = useViewStore((state) => state.reorderTaskViews)
 	const loadSidebarProjects = useProjectStore((state) => state.loadSidebar)
 	const projectOptions = useProjectStore(selectProjectOptions)
+	const spaces = useSpaceStore(selectSpaces)
 	const {
 		pendingTaskId,
 		updateTaskPriority,
@@ -287,6 +289,7 @@ export function ViewsPage() {
 						onUpdateTaskPriority: updateTaskPriority,
 						onUpdateTaskStatus: updateTaskStatus,
 						projectOptions,
+						spaces,
 						showProjectCellOptions: false,
 					},
 				}}

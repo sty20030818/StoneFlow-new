@@ -76,8 +76,8 @@ export function getCommandMenuDateLeading(key: string) {
 	}
 }
 
-export function getCommandMenuPlacementLeading(kind: 'project' | 'no_project'): ReactNode {
-	if (kind === 'no_project') {
+export function getCommandMenuPlacementLeading(kind: 'project' | 'no_project' | 'inbox'): ReactNode {
+	if (kind !== 'project') {
 		return <TargetIcon className='size-4 text-sf-icon-secondary' />
 	}
 

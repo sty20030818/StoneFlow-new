@@ -103,6 +103,9 @@ describe('task-placement-groups', () => {
 	})
 
 	it('暴露稳定的 target value 与搜索文案 helper', () => {
+		expect(getTaskPlacementTargetValue({ kind: 'inbox', spaceId: 'space-a' })).toBe(
+			'inbox:space-a',
+		)
 		expect(
 			getTaskPlacementTargetValue({
 				kind: 'project',
@@ -177,6 +180,8 @@ describe('task-placement-groups', () => {
 		expect(groups[0]?.heading).toBe('工作')
 		expect(groups[0]?.items.map((item) => item.title)).toEqual(['收件箱', '独立事项', '项目 A'])
 		expect(groups[0]?.items.map((item) => item.digit)).toEqual(['0', '1', undefined])
+		expect(groups[0]?.items[0]?.target).toEqual({ kind: 'inbox', spaceId: 'space-a' })
+		expect(groups[0]?.items[1]?.target).toEqual({ kind: 'no_project', spaceId: 'space-a' })
 	})
 
 	it('metadata local 模式 includeInbox=false 时不显示收件箱', () => {
@@ -210,6 +215,18 @@ describe('task-placement-groups', () => {
 
 		expect(
 			isTaskPlacementTargetEqual(
+				{ kind: 'inbox', spaceId: 'space-a' },
+				{ kind: 'inbox', spaceId: 'space-a' },
+			),
+		).toBe(true)
+		expect(
+			isTaskPlacementTargetEqual(
+				{ kind: 'inbox', spaceId: 'space-a' },
+				{ kind: 'no_project', spaceId: 'space-a' },
+			),
+		).toBe(false)
+		expect(
+			isTaskPlacementTargetEqual(
 				{ kind: 'project', projectId: 'project-a', spaceId: 'space-a' },
 				{ kind: 'project', projectId: 'project-a', spaceId: 'space-a' },
 			),
@@ -228,6 +245,20 @@ describe('task-placement-groups', () => {
 			}),
 		).toMatchObject({
 			title: '项目 A',
+		})
+		expect(
+			findTaskPlacementGroupItem(
+				buildMetadataTaskPlacementGroups({
+					mode: 'local',
+					currentSpaceId: 'space-a',
+					spaces: [{ id: 'space-a', name: '工作' }],
+					projects: [],
+					includeInbox: true,
+				}),
+				{ kind: 'inbox', spaceId: 'space-a' },
+			),
+		).toMatchObject({
+			title: '收件箱',
 		})
 	})
 })

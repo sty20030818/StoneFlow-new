@@ -216,14 +216,13 @@ function GroupedPlacementDropdown({
 function getGroupedPlacementIcon(
 	itemOrTarget: TaskPlacementTarget | TaskPlacementGroup['items'][number],
 ) {
-	const title = 'target' in itemOrTarget ? itemOrTarget.title : null
 	const target = 'target' in itemOrTarget ? itemOrTarget.target : itemOrTarget
 
 	if (target.kind === 'project') {
 		return <FolderIcon className='size-3.5' />
 	}
 
-	if (title === '收件箱') {
+	if (target.kind === 'inbox') {
 		return <InboxIcon className='size-3.5' />
 	}
 

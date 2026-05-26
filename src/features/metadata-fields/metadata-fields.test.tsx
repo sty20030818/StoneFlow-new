@@ -652,6 +652,36 @@ describe('metadata-fields', () => {
 		expect(getHeaderShortcutSummary()).toBe('⇧ P')
 	})
 
+	it('MetadataPlacementDropdown grouped 模式当前值为 inbox 时显示收件箱与 inbox 图标', async () => {
+		const groupedProps = createTaskPlacementGroupedDropdownProps({
+			mode: 'local',
+			currentSpaceId: 'space-a',
+			spaces: [{ id: 'space-a', name: '工作' }],
+			projects: [{ id: 'project-a', name: '项目 A', spaceId: 'space-a' }],
+			includeInbox: true,
+		})
+
+		render(
+			<MetadataPlacementDropdown
+				groups={groupedProps.groups}
+				headerShortcut={groupedProps.headerShortcut}
+				label='归属'
+				menuLabel={groupedProps.menuLabel}
+				value={{ kind: 'inbox', spaceId: 'space-a' }}
+				onChange={() => undefined}
+			/>,
+		)
+
+		const button = screen.getByRole('button', { name: '归属' })
+		expect(button).toHaveTextContent('收件箱')
+		expect(button.querySelector('svg')).toHaveClass('lucide-inbox')
+
+		fireEvent.pointerDown(button)
+		await screen.findByRole('menu')
+		expectGroupedIndicator('收件箱', 'checked')
+		expect(getShortcutHintDigits()).toEqual(['0', '1'])
+	})
+
 	it('MetadataPlacementDropdown grouped 模式支持 mixed indicator 和 local digit 规则', async () => {
 		const groupedProps = createTaskPlacementGroupedDropdownProps({
 			mode: 'local',
@@ -740,7 +770,10 @@ function getVisibleIndicators() {
 }
 
 function expectGroupedIndicator(title: string, indicatorState: 'checked' | 'mixed' | 'none') {
-	const item = screen.getByText(title).closest('[role="menuitem"]')
+	const item = screen
+		.getAllByText(title)
+		.find((node) => node.closest('[role="menuitem"]'))
+		?.closest('[role="menuitem"]')
 	expect(item).not.toBeNull()
 	expect(item?.querySelector('[data-slot="metadata-field-indicator"]')).toHaveAttribute(
 		'data-indicator',

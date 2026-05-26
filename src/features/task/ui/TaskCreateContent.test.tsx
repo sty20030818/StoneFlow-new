@@ -110,22 +110,32 @@ describe('TaskCreateContent', () => {
 		renderTaskCreate()
 
 		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 E' } })
-		expect(screen.getByText('收件箱')).toBeInTheDocument()
-		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('收件箱')
+		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+		await screen.findByRole('menu')
+		expect(screen.getByText('工作')).toBeInTheDocument()
+		expect(screen.queryByText('生活')).not.toBeInTheDocument()
+		expect(getShortcutHintDigits()).toEqual(['0', '1'])
+		expect(getPlacementMenuitemTexts()).toEqual([
+			'收件箱0Inbox',
+			'独立事项1No Project',
+			'项目 AProject · 工作',
+		])
 		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
 
 		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
 		expect(createTaskMock).toHaveBeenLastCalledWith(
 			expect.objectContaining({
+				spaceId: 'space-a',
 				placement: { kind: 'noProject' },
 			}),
 		)
 
 		createTaskMock.mockClear()
 		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 F' } })
-		expect(screen.getByText('独立事项')).toBeInTheDocument()
-		fireEvent.pointerDown(screen.getByRole('button', { name: '项目' }))
+		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('独立事项')
+		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 A/ }))
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
 
@@ -134,6 +144,20 @@ describe('TaskCreateContent', () => {
 			expect.objectContaining({
 				spaceId: null,
 				placement: { kind: 'project', projectId: 'project-a' },
+			}),
+		)
+
+		createTaskMock.mockClear()
+		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 G' } })
+		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /收件箱/ }))
+		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
+
+		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
+		expect(createTaskMock).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				spaceId: 'space-a',
+				placement: { kind: 'inbox' },
 			}),
 		)
 	})
@@ -253,4 +277,16 @@ function createTaskDetail() {
 		sortOrder: 1,
 		deletedAt: null,
 	}
+}
+
+function getShortcutHintDigits() {
+	return [...document.querySelectorAll('[data-slot="shortcut-menu-item-hint"]')].map(
+		(item) => item.textContent,
+	)
+}
+
+function getPlacementMenuitemTexts() {
+	return [...document.querySelectorAll('[role="menuitem"]')].map((item) =>
+		item.textContent?.replace(/\s+/g, ' ').trim(),
+	)
 }

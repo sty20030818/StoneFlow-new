@@ -75,7 +75,8 @@ type TaskBoardProps = {
 	onPeekTask?: (taskId: string, source: 'keyboard' | 'pointer') => void
 	statusOrder?: readonly TaskStatus[]
 	hideEmptySections?: boolean
-	projectOptions?: Array<{ id: string; name: string }>
+	projectOptions?: Array<{ id: string; name: string; spaceId: string }>
+	spaces?: Array<{ id: string; name: string }>
 	onSelectProject?: (task: TaskListItem, projectId: string) => void
 	onSelectNoProject?: (task: TaskListItem) => void
 	showProjectCellOptions?: boolean
@@ -112,6 +113,7 @@ export function TaskBoard({
 	statusOrder = TASK_BOARD_STATUS_ORDER,
 	hideEmptySections = false,
 	projectOptions,
+	spaces,
 	onSelectProject,
 	onSelectNoProject,
 	showProjectCellOptions = true,
@@ -179,6 +181,7 @@ export function TaskBoard({
 		}
 		const projectBinding: TaskRowAdapterProps['projectBinding'] = {
 			projectOptions,
+			spaces,
 			onSelectProject,
 			onSelectNoProject,
 			showProjectCellOptions,

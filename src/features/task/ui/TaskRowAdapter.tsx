@@ -2,14 +2,14 @@ import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import type { TaskContextMenuBulkActions } from '@/features/task/ui/useTaskContextMenuBulkActions'
 import {
-	createTaskPlacementMetadataOptions,
+	createTaskPlacementGroupedDropdownProps,
 	createTaskPriorityMetadataDropdownProps,
 	createTaskStatusMetadataDropdownProps,
 	MetadataDateDropdown,
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
 	taskDateMetadataIcons,
-	type MetadataPlacementValue,
+	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import {
@@ -38,7 +38,8 @@ type TaskRowAdapterProps = {
 	selectionGroupPosition?: RowSelectionGroupPosition
 	contextMenuActions?: TaskContextMenuBulkActions
 	projectBinding?: {
-		projectOptions?: Array<{ id: string; name: string }>
+		projectOptions?: Array<{ id: string; name: string; spaceId: string }>
+		spaces?: Array<{ id: string; name: string }>
 		onSelectProject?: (task: TaskListItem, projectId: string) => void
 		onSelectNoProject?: (task: TaskListItem) => void
 		showProjectCellOptions?: boolean
@@ -83,12 +84,19 @@ export function TaskRowAdapter({
 	const usesBulkDangerActions = actionTargets.length > 1 && Boolean(contextMenuActions)
 	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
 	const statusDropdownProps = createTaskStatusMetadataDropdownProps()
-	const placementOptions = createTaskPlacementMetadataOptions({
+	const placementSpaces =
+		projectBinding?.spaces?.some((space) => space.id === task.spaceId)
+			? projectBinding.spaces
+			: [{ id: task.spaceId, name: task.spaceName }, ...(projectBinding?.spaces ?? [])]
+	const placementDropdownProps = createTaskPlacementGroupedDropdownProps({
+		mode: 'local',
+		currentSpaceId: task.spaceId,
+		spaces: placementSpaces,
 		projects: projectBinding?.projectOptions ?? [],
 	})
 	const projectValue = task.projectId
-		? ({ kind: 'project', projectId: task.projectId } as const)
-		: ({ kind: 'noProject' } as const)
+		? ({ kind: 'project', projectId: task.projectId, spaceId: task.spaceId } as const)
+		: ({ kind: 'no_project', spaceId: task.spaceId } as const)
 
 	return (
 		<TaskContextMenu
@@ -285,13 +293,15 @@ export function TaskRowAdapter({
 							<MetadataPlacementDropdown
 								compact
 								disabled={isPending}
-								label='项目'
+								groups={placementDropdownProps.groups}
+								headerShortcut={placementDropdownProps.headerShortcut}
+								label='归属'
 								menuAlign='end'
-								options={placementOptions}
+								menuLabel={placementDropdownProps.menuLabel}
 								shortcutMode='clear-only'
 								stopPropagation
 								value={projectValue}
-								onChange={(value: MetadataPlacementValue) => {
+								onChange={(value: TaskPlacementTarget) => {
 									if (value.kind === 'project') {
 										projectBinding?.onSelectProject?.(task, value.projectId)
 										return

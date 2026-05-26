@@ -169,7 +169,7 @@ export function buildMetadataTaskPlacementGroups({
 					spaceName: space.name,
 					meta: 'inbox',
 				}),
-				target: { kind: 'no_project', spaceId: space.id },
+				target: { kind: 'inbox', spaceId: space.id },
 				digit: '0',
 				isEmptyValue: true,
 				showsDigit: true,

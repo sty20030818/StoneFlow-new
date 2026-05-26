@@ -3,13 +3,12 @@ import type { TaskPlacement } from '@/shared/types'
 import type { TaskStatus } from '@/shared/types'
 import type { ProjectOption } from '@/features/project/model/types'
 import {
-	createTaskPlacementMetadataDropdownProps,
-	createTaskPlacementMetadataOptions,
+	createTaskPlacementGroupedDropdownProps,
 	createTaskPriorityMetadataDropdownProps,
 	createTaskStatusMetadataDropdownProps,
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
-	type MetadataPlacementValue,
+	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
 import { FolderIcon } from 'lucide-react'
 
@@ -70,30 +69,35 @@ export function PriorityMetaAction({
 }
 
 /**
- * 项目元数据下拉 — outline button + DropdownMenu。
+ * 归属元数据下拉 — grouped local placement。
  */
-export function ProjectMetaAction({
+export function PlacementMetaAction({
 	disabled,
 	placement,
+	spaceId,
 	projectId,
+	spaces,
 	projects,
+	includeInbox = true,
 	onPlacementChange,
 }: {
 	disabled: boolean
 	placement: TaskPlacement
+	spaceId: string
 	projectId: string
+	spaces: Array<{ id: string; name: string }>
 	projects: ProjectOption[]
+	includeInbox?: boolean
 	onPlacementChange: (placement: TaskPlacement, projectId: string | null) => void
 }) {
-	const placementOptions = createTaskPlacementMetadataOptions({
+	const groupedDropdownProps = createTaskPlacementGroupedDropdownProps({
+		mode: 'local',
+		currentSpaceId: spaceId,
+		spaces,
 		projects,
-		includeInbox: true,
+		includeInbox,
 	})
-	const placementDropdownProps = createTaskPlacementMetadataDropdownProps({
-		projects,
-		includeInbox: true,
-	})
-	const value = toMetadataPlacementValue(placement, projectId)
+	const value = toTaskPlacementTarget(placement, spaceId, projectId)
 	const needsProjectSelection = placement === 'project' && !projectId
 
 	return (
@@ -101,35 +105,36 @@ export function ProjectMetaAction({
 			buttonIcon={needsProjectSelection ? <FolderIcon className='size-3.5' /> : undefined}
 			buttonLabel={needsProjectSelection ? '选择项目' : undefined}
 			disabled={disabled}
-			headerShortcut={placementDropdownProps.headerShortcut}
-			label='项目'
-			menuLabel={placementDropdownProps.menuLabel}
-			options={placementOptions}
+			groups={groupedDropdownProps.groups}
+			headerShortcut={groupedDropdownProps.headerShortcut}
+			label='归属'
+			menuLabel={groupedDropdownProps.menuLabel}
 			value={value}
-			onChange={(nextValue: MetadataPlacementValue) => {
-				const nextPlacement = fromMetadataPlacementValue(nextValue)
+			onChange={(nextValue: TaskPlacementTarget) => {
+				const nextPlacement = fromTaskPlacementTarget(nextValue)
 				onPlacementChange(nextPlacement.placement, nextPlacement.projectId)
 			}}
 		/>
 	)
 }
 
-function toMetadataPlacementValue(
+function toTaskPlacementTarget(
 	placement: TaskPlacement,
+	spaceId: string,
 	projectId: string,
-): MetadataPlacementValue {
+): TaskPlacementTarget {
 	if (placement === 'project' && projectId) {
-		return { kind: 'project', projectId }
+		return { kind: 'project', projectId, spaceId }
 	}
 
 	if (placement === 'noProject') {
-		return { kind: 'noProject' }
+		return { kind: 'no_project', spaceId }
 	}
 
-	return { kind: 'inbox' }
+	return { kind: 'inbox', spaceId }
 }
 
-function fromMetadataPlacementValue(value: MetadataPlacementValue): {
+function fromTaskPlacementTarget(value: TaskPlacementTarget): {
 	placement: TaskPlacement
 	projectId: string | null
 } {
@@ -141,7 +146,7 @@ function fromMetadataPlacementValue(value: MetadataPlacementValue): {
 	}
 
 	return {
-		placement: value.kind === 'noProject' ? 'noProject' : 'inbox',
+		placement: value.kind === 'no_project' ? 'noProject' : 'inbox',
 		projectId: null,
 	}
 }
