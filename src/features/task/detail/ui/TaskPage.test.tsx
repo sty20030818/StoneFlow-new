@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -35,6 +36,24 @@ vi.mock('../model/useTaskAutosaveAdapter', () => ({
 vi.mock('@/features/project/model/useProjectStore', () => ({
 	selectProjectOptions: () => [],
 	useProjectStore: () => [],
+}))
+
+vi.mock('@/features/space/model/useSpaceStore', () => ({
+	selectSpaces: () => [
+		{
+			id: 'space-1',
+			name: '工作',
+			iconKey: 'briefcase',
+			colorKey: 'blue',
+			isDefault: true,
+			sortOrder: 1,
+			archivedAt: null,
+			deletedAt: null,
+			createdAt: '2026-05-19T00:00:00Z',
+			updatedAt: '2026-05-19T00:00:00Z',
+		},
+	],
+	useSpaceStore: (selector: (state: unknown) => unknown) => selector({}),
 }))
 
 vi.mock('../ui/TaskLinksSection', () => ({
@@ -95,11 +114,45 @@ describe('TaskPage', () => {
 			expect(getEntityActivitiesMock).toHaveBeenCalledWith({
 				entityType: 'task',
 				entityId: 'task-1',
-				limit: 50,
+				limit: 10,
 			})
 		})
 
 		expect(await screen.findByText('暂无 Activity')).toBeInTheDocument()
+	})
+
+	it('真实详情可用前不会先用 fallback draft 渲染错误字段', async () => {
+		mockDetailController.value = {
+			...mockDetailController.value,
+			task: null,
+			status: 'loading',
+		}
+
+		const view = renderTaskPage()
+		expect(screen.getByText('正在读取任务详情。')).toBeInTheDocument()
+		expect(mockAutosave.value.reset).not.toHaveBeenCalled()
+
+		mockDetailController.value = {
+			...mockDetailController.value,
+			task: createTaskDetail({
+				title: '真实任务标题',
+				note: '真实任务备注',
+				status: 'doing',
+				priority: 4,
+				dueAt: '2026-05-30',
+				scheduledAt: '2026-05-29',
+				reminderAt: '2026-05-28',
+				projectId: 'project-1',
+				projectName: '项目 A',
+			}),
+			status: 'ready',
+		}
+
+		view.rerender(renderTaskPageElement())
+
+		expect(await screen.findByText('真实任务标题')).toBeInTheDocument()
+		expect(screen.queryByText('正在读取任务详情。')).toBeNull()
+		expect(screen.getByText('Links for task-1')).toBeInTheDocument()
 	})
 
 	it('trash 任务显示只读状态', () => {
@@ -119,10 +172,14 @@ describe('TaskPage', () => {
 })
 
 function renderTaskPage() {
-	return render(
+	return render(renderTaskPageElement())
+}
+
+function renderTaskPageElement(): ReactElement {
+	return (
 		<MemoryRouter>
 			<TaskPage scope={{ type: 'space', spaceId: 'space-1' }} taskId='task-1' />
-		</MemoryRouter>,
+		</MemoryRouter>
 	)
 }
 

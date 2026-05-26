@@ -35,13 +35,7 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 	const navigate = useNavigate()
 	const projects = useProjectStore(selectProjectOptions)
 	const { task, status, error } = useTaskDetailController(taskId)
-	const effectiveTask = task ?? createFallbackTaskDetail(taskId, scope)
 	const isReadOnly = status !== 'ready' || !task || Boolean(task.deletedAt)
-	const autosaveBase = useMemo(() => createTaskDetailDraft(effectiveTask), [effectiveTask])
-	const autosave = useTaskAutosaveAdapter({
-		base: autosaveBase,
-		disabled: isReadOnly,
-	})
 
 	if (status === 'loading' || status === 'idle') {
 		return <TaskPageState description='正在读取任务详情。' title='加载中' />
@@ -84,6 +78,28 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 			/>
 		)
 	}
+
+	return (
+		<TaskPageLoaded
+			isReadOnly={isReadOnly}
+			projects={projects}
+			task={task}
+		/>
+	)
+}
+
+type TaskPageLoadedProps = {
+	task: TaskDetail
+	projects: ReturnType<typeof selectProjectOptions>
+	isReadOnly: boolean
+}
+
+function TaskPageLoaded({ task, projects, isReadOnly }: TaskPageLoadedProps) {
+	const autosaveBase = useMemo(() => createTaskDetailDraft(task), [task])
+	const autosave = useTaskAutosaveAdapter({
+		base: autosaveBase,
+		disabled: isReadOnly,
+	})
 
 	return (
 		<MainCard.Root>
@@ -134,31 +150,4 @@ function TaskPageBreadcrumb({ task }: { task: TaskDetail }) {
 			</BreadcrumbList>
 		</Breadcrumb>
 	)
-}
-
-function createFallbackTaskDetail(taskId: string, scope: Scope) {
-	return {
-		id: taskId,
-		spaceId: scope.type === 'space' ? scope.spaceId : '',
-		spaceName: scope.type === 'space' ? scope.spaceId : '所有空间',
-		spaceSlug: scope.type === 'space' ? scope.spaceId : 'spaces',
-		projectId: null,
-		projectName: null,
-		inboxAt: null,
-		title: '',
-		note: null,
-		status: 'todo' as const,
-		statusChangedAt: '',
-		priority: 2 as const,
-		dueAt: null,
-		scheduledAt: null,
-		reminderAt: null,
-		completedAt: null,
-		canceledAt: null,
-		archivedAt: null,
-		createdAt: '',
-		updatedAt: '',
-		sortOrder: 0,
-		deletedAt: null,
-	}
 }

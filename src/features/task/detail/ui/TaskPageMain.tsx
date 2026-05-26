@@ -25,9 +25,7 @@ export function TaskPageMain({ taskId, autosave, isReadOnly }: TaskPageMainProps
 
 			<DetailSection
 				className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4 md:px-5 md:py-5'
-				contentClassName='pt-1'
-				description='V1 只支持 URL Links。'
-				title='Links'
+				contentClassName='pt-0'
 			>
 				<TaskLinksSection taskId={taskId} />
 			</DetailSection>

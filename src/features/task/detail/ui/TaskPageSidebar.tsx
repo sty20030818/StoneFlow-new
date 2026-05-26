@@ -7,6 +7,7 @@ import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskLabelsSection } from './TaskLabelsSection'
 import { TaskProjectSection } from './TaskProjectSection'
 import { TaskPropertiesSection } from './TaskPropertiesSection'
+import { TaskSpaceSection } from './TaskSpaceSection'
 
 type TaskPageSidebarProps = {
 	task: TaskDetail
@@ -38,26 +39,38 @@ export function TaskPageSidebar({ task, autosave, projects, isReadOnly }: TaskPa
 
 			<DetailSection
 				className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4'
-				description={isReadOnly ? '当前状态为只读展示。' : '结构化属性会立即或自动保存。'}
-				title='Properties'
+				title='属性'
 			>
 				<TaskPropertiesSection autosave={autosave} disabled={isReadOnly} />
-				<TaskProjectSection autosave={autosave} disabled={isReadOnly} projects={projects} />
+			</DetailSection>
+
+			<DetailSection
+				className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4'
+				title='标签'
+			>
 				<TaskLabelsSection />
 			</DetailSection>
 
 			<DetailSection
 				className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4'
-				title='Meta'
+				title='归属'
 			>
-				<MetaRow label='Space' value={task.spaceName} />
-				<MetaRow label='Project' value={task.projectName ?? '独立事项'} />
-				<MetaRow label='Created' value={formatTimestamp(task.createdAt)} />
-				<MetaRow label='Updated' value={formatTimestamp(task.updatedAt)} />
+				<TaskSpaceSection autosave={autosave} disabled={isReadOnly} projects={projects} />
+				<TaskProjectSection autosave={autosave} disabled={isReadOnly} projects={projects} />
+			</DetailSection>
+
+			<DetailSection
+				className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4'
+				title='详情'
+			>
+				<MetaRow label='空间' value={task.spaceName} />
+				<MetaRow label='项目' value={task.projectName ?? '独立事项'} />
+				<MetaRow label='创建时间' value={formatTimestamp(task.createdAt)} />
+				<MetaRow label='更新时间' value={formatTimestamp(task.updatedAt)} />
 				{task.archivedAt ? (
-					<MetaRow label='Archived' value={formatTimestamp(task.archivedAt)} />
+					<MetaRow label='归档时间' value={formatTimestamp(task.archivedAt)} />
 				) : null}
-				{task.deletedAt ? <MetaRow label='Trash' value={formatTimestamp(task.deletedAt)} /> : null}
+				{task.deletedAt ? <MetaRow label='移入回收站时间' value={formatTimestamp(task.deletedAt)} /> : null}
 			</DetailSection>
 		</div>
 	)
