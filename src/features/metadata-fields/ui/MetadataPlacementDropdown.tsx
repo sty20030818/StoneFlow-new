@@ -4,12 +4,8 @@ import { FolderIcon, InboxIcon, TargetIcon } from 'lucide-react'
 import {
 	buildMetadataShortcutItems,
 	findTaskPlacementGroupItem,
-	findMetadataPlacementOption,
 	getMetadataFieldIndicator,
-	isMetadataPlacementValueEqual,
 	isTaskPlacementTargetEqual,
-	type MetadataPlacementOption,
-	type MetadataPlacementValue,
 	type MetadataShortcutMode,
 	type TaskPlacementGroup,
 	type TaskPlacementTarget,
@@ -24,11 +20,9 @@ import { Kbd } from '@/shared/ui/base/kbd'
 import { ShortcutDigitSelectLayer } from '@/shared/ui/shortcut-menu'
 
 import { MetadataFieldButton } from './MetadataFieldButton'
-import { MetadataFieldDropdown } from './MetadataFieldDropdown'
-import type { MetadataFieldKey } from './MetadataFieldDropdown'
 import { MetadataPlacementGroupList } from './MetadataPlacementGroupList'
 
-type PlacementDropdownSharedProps = {
+export type MetadataPlacementDropdownProps = {
 	label: string
 	menuLabel?: string
 	headerShortcut?: string | null
@@ -42,81 +36,14 @@ type PlacementDropdownSharedProps = {
 	menuAlign?: 'start' | 'center' | 'end'
 	stopPropagation?: boolean
 	shortcutMode?: MetadataShortcutMode
-}
-
-type LegacyPlacementDropdownProps = PlacementDropdownSharedProps & {
-	value: MetadataPlacementValue
-	values?: MetadataPlacementValue[]
-	options: MetadataPlacementOption[]
-	onChange: (value: MetadataPlacementValue) => void
-}
-
-type GroupedPlacementDropdownProps = PlacementDropdownSharedProps & {
 	value: TaskPlacementTarget
 	values?: TaskPlacementTarget[]
 	groups: TaskPlacementGroup[]
 	onChange: (value: TaskPlacementTarget) => void
 }
 
-export type MetadataPlacementDropdownProps =
-	| LegacyPlacementDropdownProps
-	| GroupedPlacementDropdownProps
-
 export function MetadataPlacementDropdown(props: MetadataPlacementDropdownProps) {
-	if (isGroupedPlacementDropdownProps(props)) {
-		return <GroupedPlacementDropdown {...props} />
-	}
-
-	const {
-		label,
-		value,
-		values,
-		options,
-		menuLabel,
-		headerShortcut,
-		ariaLabel,
-		buttonIcon,
-		buttonLabel,
-		compact,
-		buttonAppearance = 'default',
-		disabled,
-		drawerOwnedOverlay,
-		menuAlign,
-		stopPropagation,
-		shortcutMode = 'clear-only',
-		onChange,
-	} = props
-
-	const currentOption = findMetadataPlacementOption(options, value)
-	const resolvedValue = currentOption?.value ?? options[0]?.value
-
-	if (!currentOption || !resolvedValue) {
-		return null
-	}
-
-	return (
-		<MetadataFieldDropdown
-			ariaLabel={ariaLabel}
-			buttonIcon={buttonIcon ?? currentOption.icon}
-			buttonLabel={buttonLabel ?? currentOption.label}
-			buttonAppearance={buttonAppearance}
-			compact={compact}
-			disabled={disabled}
-			drawerOwnedOverlay={drawerOwnedOverlay}
-			fieldKey={getMetadataPlacementFieldKey(label)}
-			headerShortcut={headerShortcut}
-			isValueEqual={isMetadataPlacementValueEqual}
-			label={label}
-			menuAlign={menuAlign}
-			menuLabel={menuLabel}
-			options={options}
-			shortcutMode={shortcutMode}
-			stopPropagation={stopPropagation}
-			value={resolvedValue}
-			values={values}
-			onChange={onChange}
-		/>
-	)
+	return <GroupedPlacementDropdown {...props} />
 }
 
 function GroupedPlacementDropdown({
@@ -137,7 +64,7 @@ function GroupedPlacementDropdown({
 	stopPropagation,
 	shortcutMode = 'clear-only',
 	onChange,
-}: GroupedPlacementDropdownProps) {
+}: MetadataPlacementDropdownProps) {
 	const currentItem = findTaskPlacementGroupItem(groups, value)
 	const selectedValues = values ?? [value]
 	const flatItems = groups.flatMap((group) => group.items)
@@ -149,9 +76,6 @@ function GroupedPlacementDropdown({
 		})),
 		shortcutMode,
 	)
-	const fieldKey = getMetadataPlacementFieldKey(label)
-	const resolvedMenuLabel = menuLabel ?? buildPlacementMenuLabel(fieldKey, label)
-	const resolvedHeaderShortcut = headerShortcut ?? getPlacementMenuShortcut(fieldKey)
 
 	if (!currentItem) {
 		return null
@@ -178,13 +102,13 @@ function GroupedPlacementDropdown({
 				<ShortcutDigitSelectLayer items={shortcutItems} onSelect={(item) => onChange(item.value)} />
 				<DropdownMenuLabel className='px-2 py-1.5 text-[12px] normal-case tracking-normal'>
 					<span className='flex items-center gap-2'>
-						<span className='min-w-0 flex-1 truncate'>{resolvedMenuLabel}</span>
-						{resolvedHeaderShortcut ? (
+						<span className='min-w-0 flex-1 truncate'>{menuLabel}</span>
+						{headerShortcut ? (
 							<Kbd
 								className='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-background/90 px-1.5 text-[11px] font-medium text-muted-foreground'
 								data-slot='metadata-field-menu-shortcut-summary'
 							>
-								{resolvedHeaderShortcut}
+								{headerShortcut}
 							</Kbd>
 						) : null}
 					</span>
@@ -227,39 +151,4 @@ function getGroupedPlacementIcon(
 	}
 
 	return <TargetIcon className='size-3.5' />
-}
-
-function buildPlacementMenuLabel(fieldKey: MetadataFieldKey, fallbackLabel: string) {
-	switch (fieldKey) {
-		case 'project':
-			return '移动到项目...'
-		default:
-			return `设置${fallbackLabel}为...`
-	}
-}
-
-function getPlacementMenuShortcut(fieldKey: MetadataFieldKey) {
-	switch (fieldKey) {
-		case 'project':
-			return '⇧ P'
-		default:
-			return null
-	}
-}
-
-function getMetadataPlacementFieldKey(label: string): MetadataFieldKey {
-	switch (label) {
-		case '空间':
-			return 'space'
-		case '父项目':
-			return 'parentProject'
-		default:
-			return 'project'
-	}
-}
-
-function isGroupedPlacementDropdownProps(
-	props: MetadataPlacementDropdownProps,
-): props is GroupedPlacementDropdownProps {
-	return 'groups' in props
 }

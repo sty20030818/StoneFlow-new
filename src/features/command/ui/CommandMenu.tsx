@@ -41,6 +41,7 @@ import {
 	createStatusActionSpec,
 	getTaskPlacementTargetValue,
 	normalizeMetadataDateValue,
+	resolveTaskPlacementTarget,
 	type TaskPlacementGroup,
 } from '@/features/metadata-fields/core'
 import type { ShortcutMenuItem } from '@/shared/ui/shortcut-menu'
@@ -861,7 +862,7 @@ function ScopedPickerCommandGroup({
 				label: item.title,
 				value: item.target,
 				disabled: false,
-				isEmptyValue: item.target.kind === 'no_project',
+				isEmptyValue: item.target.kind !== 'project',
 			})),
 		)
 		const selectedPlacementValues = getSelectedTaskPlacementValues(context)
@@ -1235,13 +1236,20 @@ function getSelectedTaskPlacementValues(context: CommandContext) {
 		if (entity.type !== 'task') {
 			continue
 		}
-		if (entity.projectId) {
-			values.add(`project:${entity.projectId}`)
+
+		if (!entity.spaceId) {
 			continue
 		}
-		if (entity.spaceId) {
-			values.add(`no_project:${entity.spaceId}`)
-		}
+
+		values.add(
+			getTaskPlacementTargetValue(
+				resolveTaskPlacementTarget({
+					spaceId: entity.spaceId,
+					projectId: entity.projectId,
+					inboxAt: entity.inboxAt,
+				}),
+			),
+		)
 	}
 	return values
 }
@@ -1345,6 +1353,7 @@ function buildCommandTaskPlacementGroups({
 	spaces: Space[]
 }): CommandTaskPlacementGroup[] {
 	return buildTaskPlacementGroups({
+		mode: 'global',
 		currentSpaceId: resolveTaskPlacementCurrentSpaceId(context),
 		spaces,
 		projects,

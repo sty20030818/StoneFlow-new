@@ -3,11 +3,9 @@ import { useDangerConfirm } from '@/features/danger-confirm'
 import { formatShortDate } from '@/shared/lib/date'
 import {
 	createProjectParentMetadataDropdownProps,
-	createProjectParentMetadataOptions,
 	MetadataDateButton,
-	MetadataPlacementDropdown,
+	MetadataFieldDropdown,
 	projectDateMetadataIcons,
-	type MetadataPlacementValue,
 } from '@/features/metadata-fields'
 import {
 	CreatedAtCell,
@@ -74,9 +72,6 @@ export function ProjectRowAdapter({
 	const isSelected = rowState.isSelected ?? false
 	const isHovered = rowState.isHovered ?? false
 	const hoverSource = rowState.hoverSource ?? null
-	const projectPlacementOptions = createProjectParentMetadataOptions(
-		projectBinding?.projectOptions ?? [],
-	)
 	const projectPlacementDropdownProps = createProjectParentMetadataDropdownProps(
 		projectBinding?.projectOptions ?? [],
 	)
@@ -139,21 +134,22 @@ export function ProjectRowAdapter({
 					</RowShell.Actions>
 					<RowShell.Fields>
 						{showProjectCell ? (
-							<MetadataPlacementDropdown
+							<MetadataFieldDropdown
 								compact
 								disabled={rowState.isPending}
+								fieldKey='parentProject'
 								headerShortcut={projectPlacementDropdownProps.headerShortcut}
 								label='父项目'
 								menuLabel={projectPlacementDropdownProps.menuLabel}
-								options={projectPlacementOptions}
+								options={projectPlacementDropdownProps.options}
 								stopPropagation
-								value={{ kind: 'noProject' }}
-								onChange={(value: MetadataPlacementValue) => {
+								value=''
+								onChange={(value: string) => {
 									if (!hasProjectOptions) {
 										return
 									}
-									if (value.kind === 'project') {
-										projectBinding?.onSelectProject?.(value.projectId)
+									if (value) {
+										projectBinding?.onSelectProject?.(value)
 										return
 									}
 									projectBinding?.onSelectNoProject?.()

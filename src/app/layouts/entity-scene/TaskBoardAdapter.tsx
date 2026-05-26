@@ -43,8 +43,7 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			onPeekTask={actions.onPeekTask ?? (() => undefined)}
 			onSelectAllTasks={actions.onSelectAllTasks}
 			onSetFocusedTask={actions.onSetFocusedTask}
-			onSelectNoProject={actions.onSelectNoProject}
-			onSelectProject={actions.onSelectProject}
+			onSelectPlacement={actions.onSelectPlacement}
 			onToggleTaskSelection={actions.onToggleTaskSelection ?? (() => undefined)}
 			onToggleTaskStatus={actions.onToggleTaskStatus ?? (async () => undefined)}
 			onUpdateTaskDueDate={actions.onUpdateTaskDueDate}

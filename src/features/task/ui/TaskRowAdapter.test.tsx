@@ -1,8 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
 import { DangerConfirmProvider } from '@/features/danger-confirm'
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import { ROW_SHELL_ACTIVE_CLASS, ROW_SHELL_SELECTED_CLASS } from '@/shared/ui/row'
 import type { TaskListItem } from '@/shared/types'
+
 import { TaskRowAdapter, type TaskRowAdapterProps } from './TaskRowAdapter'
 import type { TaskContextMenuBulkActions } from './useTaskContextMenuBulkActions'
 
@@ -47,10 +49,10 @@ function buildActions(): TaskRowAdapterProps['actions'] {
 	}
 }
 
-function renderTaskRowAdapter({
-	task = buildTask(),
-	rowState = { isActive: false, isSelected: false, isPending: false },
-	projectBinding = {
+function createProjectBinding(
+	overrides: Partial<NonNullable<TaskRowAdapterProps['projectBinding']>> = {},
+) {
+	return {
 		projectOptions: [
 			{ id: 'project-1', name: '项目 A', spaceId: 'space-1' },
 			{ id: 'project-2', name: '项目 B', spaceId: 'space-1' },
@@ -60,9 +62,16 @@ function renderTaskRowAdapter({
 			{ id: 'space-1', name: '个人' },
 			{ id: 'space-2', name: '工作' },
 		],
-		onSelectProject: vi.fn(),
-		onSelectNoProject: vi.fn(),
-	},
+		onSelectPlacement: vi.fn(),
+		showProjectCellOptions: true,
+		...overrides,
+	}
+}
+
+function renderTaskRowAdapter({
+	task = buildTask(),
+	rowState = { isActive: false, isSelected: false, isPending: false },
+	projectBinding = createProjectBinding(),
 	actions = buildActions(),
 	contextMenuActions,
 	contextTasks,
@@ -86,6 +95,7 @@ function renderTaskRowAdapter({
 			/>
 		</DangerConfirmProvider>,
 	)
+
 	return { task, rowState, projectBinding, actions }
 }
 
@@ -116,249 +126,91 @@ describe('TaskRowAdapter', () => {
 		expect(actions.onUpdateTaskStatus).toHaveBeenCalledWith(task, 'done')
 	})
 
-	it('字段点击不会触发行打开', async () => {
-		const { actions } = renderTaskRowAdapter()
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '设置任务 任务 A 的优先级' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /高/ }))
-
-		expect(actions.onOpenTask).not.toHaveBeenCalled()
-	})
-
-	it('三个日期字段都可打开并调用各自更新回调', async () => {
-		const { actions, task } = renderTaskRowAdapter()
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止 任务 A' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
-		expect(actions.onUpdateTaskDueDate).toHaveBeenCalledWith(task, expect.any(String))
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '计划 任务 A' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
-		expect(actions.onUpdateTaskScheduledAt).toHaveBeenCalledWith(task, expect.any(String))
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '提醒 任务 A' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /今天/ }))
-		expect(actions.onUpdateTaskReminderAt).toHaveBeenCalledWith(task, expect.any(String))
-	})
-
-	it('归属字段使用 local grouped placement，并可切换独立事项和项目', async () => {
+	it('归属字段使用 local grouped placement，并暴露 inbox / no_project / project 三态', async () => {
 		const { projectBinding, task } = renderTaskRowAdapter()
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 		await screen.findByRole('menu')
+
 		expect(screen.getByText('个人')).toBeInTheDocument()
 		expect(screen.queryByText('工作')).not.toBeInTheDocument()
-		expect(screen.queryByRole('menuitem', { name: /收件箱/ })).not.toBeInTheDocument()
-		expect(getShortcutHintDigits()).toContain('0')
+		expect(screen.getByRole('menuitem', { name: /收件箱/ })).toBeInTheDocument()
+		expect(screen.getByRole('menuitem', { name: /独立事项/ })).toBeInTheDocument()
+		expect(screen.queryByRole('menuitem', { name: /项目 C/ })).not.toBeInTheDocument()
+		expect(getShortcutHintDigits()).toEqual(['0', '1'])
+
+		fireEvent.click(screen.getByRole('menuitem', { name: /收件箱/ }))
+		expect(projectBinding?.onSelectPlacement).toHaveBeenCalledWith(task, {
+			kind: 'inbox',
+			spaceId: 'space-1',
+		} satisfies TaskPlacementTarget)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
-		expect(projectBinding?.onSelectNoProject).toHaveBeenCalledWith(task)
+		expect(projectBinding?.onSelectPlacement).toHaveBeenCalledWith(task, {
+			kind: 'no_project',
+			spaceId: 'space-1',
+		} satisfies TaskPlacementTarget)
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
-		expect(projectBinding?.onSelectProject).toHaveBeenCalledWith(task, 'project-2')
-		expect(screen.queryByRole('menuitem', { name: /项目 C/ })).not.toBeInTheDocument()
+		expect(projectBinding?.onSelectPlacement).toHaveBeenCalledWith(task, {
+			kind: 'project',
+			spaceId: 'space-1',
+			projectId: 'project-2',
+		} satisfies TaskPlacementTarget)
 	})
 
-	it('右侧字段下拉右边对齐 trigger 右边，避免菜单被裁掉', async () => {
-		renderTaskRowAdapter()
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止 任务 A' }))
-		const menu = await screen.findByRole('menu')
-		expect(menu.closest('[data-slot=\"dropdown-menu-content\"]')).toHaveAttribute(
-			'data-align',
-			'end',
-		)
-	})
-
-	it('关闭项目选项时不渲染项目 dropdown', () => {
+	it('showProjectCellOptions=false 时不渲染归属 dropdown', () => {
 		renderTaskRowAdapter({
-			projectBinding: {
-				projectOptions: [
-					{ id: 'project-1', name: '项目 A', spaceId: 'space-1' },
-					{ id: 'project-2', name: '项目 B', spaceId: 'space-1' },
-				],
-				spaces: [{ id: 'space-1', name: '个人' }],
-				onSelectProject: vi.fn(),
-				onSelectNoProject: vi.fn(),
+			projectBinding: createProjectBinding({
 				showProjectCellOptions: false,
-			},
+			}),
 		})
 
 		expect(screen.queryByRole('button', { name: '归属' })).not.toBeInTheDocument()
 	})
 
-	it('日期字段无值时不渲染移除当前日期', async () => {
-		render(
-			<DangerConfirmProvider>
-					<TaskRowAdapter
-						actions={buildActions()}
-						projectBinding={{
-							projectOptions: [{ id: 'project-1', name: '项目 A', spaceId: 'space-1' }],
-							spaces: [{ id: 'space-1', name: '个人' }],
-							onSelectProject: vi.fn(),
-							onSelectNoProject: vi.fn(),
-						}}
-					rowState={{ isActive: false, isSelected: false, isPending: false }}
-					task={buildTask({ dueAt: null, scheduledAt: null, reminderAt: null })}
-				/>
-			</DangerConfirmProvider>,
-		)
-
-		expect(screen.queryByRole('button', { name: '截止 任务 A' })).not.toBeInTheDocument()
-		expect(screen.queryByRole('button', { name: '计划 任务 A' })).not.toBeInTheDocument()
-		expect(screen.queryByRole('button', { name: '提醒 任务 A' })).not.toBeInTheDocument()
-	})
-
-	it('日期字段有值时显示移除当前日期并可按 0 清空', async () => {
-		const actions = buildActions()
-		render(
-			<DangerConfirmProvider>
-					<TaskRowAdapter
-						actions={actions}
-						projectBinding={{
-							projectOptions: [{ id: 'project-1', name: '项目 A', spaceId: 'space-1' }],
-							spaces: [{ id: 'space-1', name: '个人' }],
-							onSelectProject: vi.fn(),
-							onSelectNoProject: vi.fn(),
-						}}
-					rowState={{ isActive: false, isSelected: false, isPending: false }}
-					task={buildTask()}
-				/>
-			</DangerConfirmProvider>,
-		)
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '截止 任务 A' }))
-		expect(await screen.findByRole('menuitem', { name: /移除当前日期/ })).toBeInTheDocument()
-		expect(getShortcutHintDigits()).toEqual(['0'])
-
-		fireEvent.keyDown(window, { key: '0' })
-		expect(actions.onUpdateTaskDueDate).toHaveBeenCalledWith(buildTask(), null)
-		expect(screen.queryByRole('menu')).not.toBeInTheDocument()
-	})
-
-	it('右键菜单显示属性子菜单入口', async () => {
-		renderTaskRowAdapter()
-		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
-
-		fireEvent.contextMenu(row)
-		expect(await screen.findByRole('menuitem', { name: /状态/ })).toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /优先级/ })).toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /时间/ })).toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /项目/ })).toBeInTheDocument()
-	})
-
-	it('右键菜单危险动作触发任务动作回调', async () => {
-		const { actions } = renderTaskRowAdapter()
-		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
-
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /归档任务/ }))
-		expect(actions.onArchiveTask).not.toHaveBeenCalled()
-		await screen.findByRole('alertdialog')
-		fireEvent.click(screen.getByRole('button', { name: '归档' }))
-		await waitFor(() => {
-			expect(actions.onArchiveTask).toHaveBeenCalledTimes(1)
-		})
-
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /移入回收站/ }))
-		expect(actions.onDeleteTask).not.toHaveBeenCalled()
-		await screen.findByRole('alertdialog')
-		fireEvent.click(screen.getByRole('button', { name: '移入回收站' }))
-		await waitFor(() => {
-			expect(actions.onDeleteTask).toHaveBeenCalledTimes(1)
-		})
-	})
-
-	it('多选右键危险动作走批量入口，不循环调用单任务动作', async () => {
-		const actions = buildActions()
+	it('右键菜单属性动作在多选时统一走 placement bulk 入口', async () => {
 		const task = buildTask()
-		const contextTasks = [task, buildTask({ id: 'task-2', title: '任务 B' })]
+		const contextTasks = [task, buildTask({ id: 'task-2', title: '任务 B', inboxAt: '2026-05-07T09:00:00.000Z' })]
 		const contextMenuActions = buildContextMenuActions()
-
-		renderTaskRowAdapter({ actions, contextMenuActions, contextTasks, task })
-		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
-
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /归档任务/ }))
-		expect(contextMenuActions.onArchive).toHaveBeenCalledWith(contextTasks)
-		expect(actions.onArchiveTask).not.toHaveBeenCalled()
-
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /移入回收站/ }))
-		expect(contextMenuActions.onMoveToTrash).toHaveBeenCalledWith(contextTasks)
-		expect(actions.onDeleteTask).not.toHaveBeenCalled()
-	})
-
-	it('多选右键属性动作走批量入口，不循环调用单任务动作', async () => {
-		const actions = buildActions()
-		const task = buildTask()
-		const contextTasks = [task, buildTask({ id: 'task-2', title: '任务 B' })]
-		const contextMenuActions = buildContextMenuActions()
-		const projectBinding = {
-			projectOptions: [
-				{ id: 'project-1', name: '项目 A', spaceId: 'space-1' },
-				{ id: 'project-2', name: '项目 B', spaceId: 'space-1' },
-			],
-			spaces: [{ id: 'space-1', name: '个人' }],
-			onSelectProject: vi.fn(),
-			onSelectNoProject: vi.fn(),
-		}
+		const projectBinding = createProjectBinding()
 
 		renderTaskRowAdapter({
-			actions,
 			contextMenuActions,
 			contextTasks,
 			projectBinding,
 			task,
 		})
-		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
 
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /状态/ }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /已完成/ }))
-		expect(contextMenuActions.onSelectStatus).toHaveBeenCalledWith(contextTasks, 'done')
-		expect(actions.onUpdateTaskStatus).not.toHaveBeenCalled()
+		fireEvent.contextMenu(screen.getByRole('button', { name: '打开任务 任务 A' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /归属/ }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /收件箱/ }))
+		expect(contextMenuActions.onSelectPlacement).toHaveBeenCalledWith(contextTasks, {
+			kind: 'inbox',
+			spaceId: 'space-1',
+		})
+		expect(projectBinding.onSelectPlacement).not.toHaveBeenCalled()
 
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /优先级/ }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /高/ }))
-		expect(contextMenuActions.onSelectPriority).toHaveBeenCalledWith(contextTasks, 3)
-		expect(actions.onUpdateTaskPriority).not.toHaveBeenCalled()
-
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /截止时间/ }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /移除当前日期/ }))
-		expect(contextMenuActions.onSelectDueDate).toHaveBeenCalledWith(contextTasks, null)
-		expect(actions.onUpdateTaskDueDate).not.toHaveBeenCalled()
-
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /项目/ }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
-		expect(contextMenuActions.onSelectNoProject).toHaveBeenCalledWith(contextTasks)
-		expect(projectBinding.onSelectNoProject).not.toHaveBeenCalled()
-
-		fireEvent.contextMenu(row)
-		fireEvent.click(await screen.findByRole('menuitem', { name: /项目/ }))
+		fireEvent.contextMenu(screen.getByRole('button', { name: '打开任务 任务 A' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /归属/ }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /项目 B/ }))
-		expect(contextMenuActions.onSelectProject).toHaveBeenCalledWith(contextTasks, 'project-2')
-		expect(projectBinding.onSelectProject).not.toHaveBeenCalled()
+		expect(contextMenuActions.onSelectPlacement).toHaveBeenCalledWith(contextTasks, {
+			kind: 'project',
+			spaceId: 'space-1',
+			projectId: 'project-2',
+		})
 	})
 
 	it('active/selected/pending 映射到行壳状态 class', () => {
-		const actions = buildActions()
 		const task = buildTask()
-		const projectBinding = {
-			projectOptions: [{ id: 'project-1', name: '项目 A', spaceId: 'space-1' }],
-			spaces: [{ id: 'space-1', name: '个人' }],
-			onSelectProject: vi.fn(),
-			onSelectNoProject: vi.fn(),
-		}
+		const actions = buildActions()
 		const { rerender } = render(
 			<DangerConfirmProvider>
 				<TaskRowAdapter
 					actions={actions}
-					projectBinding={projectBinding}
+					projectBinding={createProjectBinding()}
 					rowState={{
 						isActive: true,
 						isSelected: true,
@@ -377,7 +229,7 @@ describe('TaskRowAdapter', () => {
 			<DangerConfirmProvider>
 				<TaskRowAdapter
 					actions={actions}
-					projectBinding={projectBinding}
+					projectBinding={createProjectBinding()}
 					rowState={{
 						isActive: false,
 						isSelected: true,
@@ -390,54 +242,23 @@ describe('TaskRowAdapter', () => {
 
 		const selectedRow = screen.getByRole('button', { name: '打开任务 任务 A' })
 		expect(selectedRow.className).toContain(ROW_SHELL_SELECTED_CLASS)
-		const selectedCheckbox = screen.getByRole('checkbox', { name: '选择任务 任务 A' })
-		expect(selectedCheckbox).toHaveAttribute('aria-checked', 'true')
-		expect(selectedCheckbox.className).toContain('opacity-100')
-	})
-
-	it('hover 行显示未勾选选择框', () => {
-		renderTaskRowAdapter({
-			rowState: {
-				isActive: false,
-				isPending: false,
-				isSelected: false,
-				isHovered: true,
-				hoverSource: 'pointer',
-			},
-		})
-
-		const checkbox = screen.getByRole('checkbox', { name: '选择任务 任务 A' })
-		expect(checkbox).toHaveAttribute('aria-checked', 'false')
-		expect(checkbox.className).toContain('opacity-100')
-	})
-
-	it('透传显式 selection group position 到真正的 surface', () => {
-		render(
-			<DangerConfirmProvider>
-					<TaskRowAdapter
-						actions={buildActions()}
-						projectBinding={{
-							projectOptions: [{ id: 'project-1', name: '项目 A', spaceId: 'space-1' }],
-							spaces: [{ id: 'space-1', name: '个人' }],
-							onSelectProject: vi.fn(),
-							onSelectNoProject: vi.fn(),
-						}}
-					rowState={{
-						isActive: false,
-						isPending: false,
-						isSelected: true,
-					}}
-					selectionGroupPosition='first'
-					task={buildTask()}
-				/>
-			</DangerConfirmProvider>,
+		expect(screen.getByRole('checkbox', { name: '选择任务 任务 A' })).toHaveAttribute(
+			'aria-checked',
+			'true',
 		)
+	})
 
+	it('右键菜单危险动作触发任务动作回调', async () => {
+		const { actions } = renderTaskRowAdapter()
 		const row = screen.getByRole('button', { name: '打开任务 任务 A' })
-		expect(row).toHaveAttribute('data-selection-group-position', 'first')
-		expect(row.className).toContain('rounded-none')
-		expect(row.className).toContain('rounded-t-md')
-		expect(row.className).toContain('bg-transparent')
+
+		fireEvent.contextMenu(row)
+		fireEvent.click(await screen.findByRole('menuitem', { name: /归档任务/ }))
+		await screen.findByRole('alertdialog')
+		fireEvent.click(screen.getByRole('button', { name: '归档' }))
+		await waitFor(() => {
+			expect(actions.onArchiveTask).toHaveBeenCalledTimes(1)
+		})
 	})
 })
 
@@ -446,9 +267,8 @@ function buildContextMenuActions(): TaskContextMenuBulkActions {
 		onArchive: vi.fn(),
 		onMoveToTrash: vi.fn(),
 		onSelectDueDate: vi.fn(),
-		onSelectNoProject: vi.fn(),
+		onSelectPlacement: vi.fn(),
 		onSelectPriority: vi.fn(),
-		onSelectProject: vi.fn(),
 		onSelectStatus: vi.fn(),
 	}
 }

@@ -18,19 +18,30 @@ describe('useTaskAutosaveAdapter', () => {
 
 	beforeEach(() => {
 		vi.useFakeTimers()
-		useTaskStore.setState((state) => ({
-			...state,
-			updateTask: vi.fn<UpdateTask>(async (input) => ({
-				...baseTask,
-				...('title' in input ? { title: input.title ?? baseTask.title } : {}),
-				...('note' in input ? { note: input.note ?? null } : {}),
-				...('status' in input ? { status: input.status ?? baseTask.status } : {}),
-				...('priority' in input ? { priority: input.priority ?? baseTask.priority } : {}),
-				...('spaceId' in input ? { spaceId: input.spaceId ?? baseTask.spaceId } : {}),
-				...('projectId' in input ? { projectId: input.projectId ?? null } : {}),
-				...('dueAt' in input ? { dueAt: input.dueAt ?? null } : {}),
-			})),
-		}))
+			useTaskStore.setState((state) => ({
+				...state,
+				updateTask: vi.fn<UpdateTask>(async (input) => ({
+					...baseTask,
+					...('title' in input ? { title: input.title ?? baseTask.title } : {}),
+					...('note' in input ? { note: input.note ?? null } : {}),
+					...('status' in input ? { status: input.status ?? baseTask.status } : {}),
+					...('priority' in input ? { priority: input.priority ?? baseTask.priority } : {}),
+					...(input.placement
+						? {
+								spaceId: input.placement.spaceId,
+								projectId:
+									input.placement.kind === 'project'
+										? input.placement.projectId ?? null
+										: null,
+								inboxAt:
+									input.placement.kind === 'inbox'
+										? '2026-05-19T01:00:00Z'
+										: null,
+						  }
+						: {}),
+					...('dueAt' in input ? { dueAt: input.dueAt ?? null } : {}),
+				})),
+			}))
 	})
 
 	afterEach(() => {

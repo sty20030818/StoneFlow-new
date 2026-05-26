@@ -1,7 +1,5 @@
 export {
 	createTaskPlacementGroupedDropdownProps,
-	createTaskPlacementMetadataDropdownProps,
-	createTaskPlacementMetadataOptions,
 	createTaskPriorityMetadataDropdownProps,
 	createTaskPriorityMetadataOptions,
 	createTaskStatusMetadataDropdownProps,
@@ -12,7 +10,6 @@ export {
 } from './taskMetadataFields'
 export {
 	createProjectParentMetadataDropdownProps,
-	createProjectParentMetadataOptions,
 	projectDateMetadataIcons,
 } from './projectMetadataFields'
 export {

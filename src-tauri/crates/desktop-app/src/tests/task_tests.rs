@@ -10,8 +10,9 @@ use crate::{
         activity::ActivityService,
         services::{
             CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
-            InboxTaskProjectInput, ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind,
-            TaskIdInput, TaskScopeInput, TaskScopeKind, TaskService, UpdateTaskInput,
+            ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind, TaskIdInput,
+            TaskScopeInput, TaskScopeKind, TaskService, UpdateTaskInput,
+            UpdateTaskPlacementInput, UpdateTaskPlacementKind,
         },
     },
     domain::{create_id, today_local_date},
@@ -138,7 +139,7 @@ async fn create_task_should_persist_inbox_and_no_project_placement() {
 }
 
 #[tokio::test]
-async fn inbox_workflow_commands_should_move_task_between_project_and_no_project() {
+async fn update_task_should_move_task_between_inbox_project_and_no_project() {
     let temp_dir =
         TempDatabaseDir::new("stoneflow-stage7-inbox-workflow-commands").expect("temp dir");
     let database = bootstrap_database(temp_dir.path())
@@ -167,30 +168,65 @@ async fn inbox_workflow_commands_should_move_task_between_project_and_no_project
         .expect("create inbox task should succeed");
 
     let moved_to_project = service
-        .leave_inbox_to_project(InboxTaskProjectInput {
+        .update_task(UpdateTaskInput {
             task_id: inbox_task.id.clone(),
-            project_id: project.id.clone(),
+            title: None,
+            note: None,
+            status: None,
+            priority: None,
+            placement: Some(UpdateTaskPlacementInput {
+                kind: UpdateTaskPlacementKind::Project,
+                space_id: space.id.clone(),
+                project_id: Some(project.id.clone()),
+            }),
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
         })
         .await
-        .expect("leave inbox to project should succeed");
+        .expect("move to project should succeed");
     assert_eq!(moved_to_project.project_id, Some(project.id.clone()));
     assert!(moved_to_project.inbox_at.is_none());
 
     let moved_back_to_inbox = service
-        .move_task_to_inbox(TaskIdInput {
+        .update_task(UpdateTaskInput {
             task_id: moved_to_project.id.clone(),
+            title: None,
+            note: None,
+            status: None,
+            priority: None,
+            placement: Some(UpdateTaskPlacementInput {
+                kind: UpdateTaskPlacementKind::Inbox,
+                space_id: space.id.clone(),
+                project_id: None,
+            }),
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
         })
         .await
-        .expect("move task back to inbox should succeed");
+        .expect("move back to inbox should succeed");
     assert!(moved_back_to_inbox.project_id.is_none());
     assert!(moved_back_to_inbox.inbox_at.is_some());
 
     let no_project = service
-        .leave_inbox_as_no_project(TaskIdInput {
+        .update_task(UpdateTaskInput {
             task_id: moved_back_to_inbox.id.clone(),
+            title: None,
+            note: None,
+            status: None,
+            priority: None,
+            placement: Some(UpdateTaskPlacementInput {
+                kind: UpdateTaskPlacementKind::NoProject,
+                space_id: space.id.clone(),
+                project_id: None,
+            }),
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
         })
         .await
-        .expect("leave inbox as no project should succeed");
+        .expect("move to no project should succeed");
     assert!(no_project.project_id.is_none());
     assert!(no_project.inbox_at.is_none());
 }
@@ -229,8 +265,7 @@ async fn update_task_should_manage_status_timestamps() {
             note: None,
             status: None,
             priority: Some(4),
-            space_id: None,
-            project_id: None,
+            placement: None,
             due_at: None,
             scheduled_at: None,
             reminder_at: None,
@@ -246,8 +281,7 @@ async fn update_task_should_manage_status_timestamps() {
             note: None,
             status: Some(TaskStatus::Doing),
             priority: None,
-            space_id: None,
-            project_id: None,
+            placement: None,
             due_at: None,
             scheduled_at: None,
             reminder_at: None,
@@ -262,8 +296,7 @@ async fn update_task_should_manage_status_timestamps() {
             note: None,
             status: Some(TaskStatus::Done),
             priority: None,
-            space_id: None,
-            project_id: None,
+            placement: None,
             due_at: None,
             scheduled_at: None,
             reminder_at: None,
@@ -278,8 +311,7 @@ async fn update_task_should_manage_status_timestamps() {
             note: None,
             status: Some(TaskStatus::Canceled),
             priority: None,
-            space_id: None,
-            project_id: None,
+            placement: None,
             due_at: None,
             scheduled_at: None,
             reminder_at: None,
@@ -293,8 +325,7 @@ async fn update_task_should_manage_status_timestamps() {
             note: None,
             status: Some(TaskStatus::Todo),
             priority: None,
-            space_id: None,
-            project_id: None,
+            placement: None,
             due_at: None,
             scheduled_at: None,
             reminder_at: None,
@@ -355,8 +386,7 @@ async fn update_task_should_keep_note_newlines_and_allow_blank_note() {
             note: Some(Some("\n第一行\n第二行\n".to_owned())),
             status: None,
             priority: None,
-            space_id: None,
-            project_id: None,
+            placement: None,
             due_at: None,
             scheduled_at: None,
             reminder_at: None,
@@ -372,8 +402,7 @@ async fn update_task_should_keep_note_newlines_and_allow_blank_note() {
             note: Some(Some("\n  \n".to_owned())),
             status: None,
             priority: None,
-            space_id: None,
-            project_id: None,
+            placement: None,
             due_at: None,
             scheduled_at: None,
             reminder_at: None,
@@ -931,7 +960,7 @@ async fn system_task_views_should_filter_and_sort_by_stage8_rules() {
             .iter()
             .map(|item| item.title.as_str())
             .collect::<Vec<_>>(),
-        vec!["Upcoming Soon", "Waiting P4", "Upcoming Later"]
+        vec!["Waiting P4", "Upcoming Soon", "Upcoming Later"]
     );
     assert!(!upcoming_rows.iter().any(|item| item.title == "Due Today"));
     assert!(!focus_rows.iter().any(|item| item.title == "Waiting P4"));

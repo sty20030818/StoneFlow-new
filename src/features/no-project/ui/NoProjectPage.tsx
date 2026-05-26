@@ -78,8 +78,7 @@ export function NoProjectPage() {
 		toggleTaskStatus,
 		archiveListTask,
 		deleteListTask,
-		leaveListTaskToProject,
-		leaveListTaskAsNoProject,
+		updateTaskPlacement,
 	} = useTaskListController()
 	const { controller, filteredTasks } = useTaskPageFilterController({
 		tasks: taskSourceItems,
@@ -173,8 +172,7 @@ export function NoProjectPage() {
 					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,
-					onSelectNoProject: (task) => void leaveListTaskAsNoProject(task),
-					onSelectProject: (task, projectId) => void leaveListTaskToProject(task, projectId),
+					onSelectPlacement: (task, target) => void updateTaskPlacement(task, target),
 					onToggleTaskSelection: toggleTaskSelection,
 					onToggleTaskStatus: toggleTaskStatus,
 					onUpdateTaskDueDate: updateTaskDueDate,

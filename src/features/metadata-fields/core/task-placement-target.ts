@@ -35,3 +35,29 @@ export function isTaskPlacementTargetEqual(left: TaskPlacementTarget, right: Tas
 
 	return left.spaceId === right.spaceId
 }
+
+export function resolveTaskPlacementTarget(input: {
+	spaceId: string
+	projectId?: string | null
+	inboxAt?: string | null
+}): TaskPlacementTarget {
+	if (input.projectId) {
+		return {
+			kind: 'project',
+			projectId: input.projectId,
+			spaceId: input.spaceId,
+		}
+	}
+
+	if (input.inboxAt) {
+		return {
+			kind: 'inbox',
+			spaceId: input.spaceId,
+		}
+	}
+
+	return {
+		kind: 'no_project',
+		spaceId: input.spaceId,
+	}
+}

@@ -636,36 +636,19 @@ function ShellLayoutContent({
 			openTaskPlacementPicker: (ctx) => {
 				useDialogStore.getState().openCommand('task-placement-picker', ctx.selection)
 			},
-			applyTaskPlacement: (target, ctx) => {
-				if (target.kind === 'project') {
-					return runEntityBulkActionFromCommand(
-						ctx,
-						'task',
-						TASK_BULK_ACTION_IDS.moveToProjectSelected,
-						{
-							successVerb: '整理',
-							entityLabel: '任务',
-						},
-						{
-							projectId: target.projectId,
-							spaceId: target.spaceId,
-						},
-					)
-				}
-
-				return runEntityBulkActionFromCommand(
+			applyTaskPlacement: (target, ctx) =>
+				runEntityBulkActionFromCommand(
 					ctx,
 					'task',
-					TASK_BULK_ACTION_IDS.moveToNoProjectSelected,
+					TASK_BULK_ACTION_IDS.setPlacementSelected,
 					{
 						successVerb: '整理',
 						entityLabel: '任务',
 					},
 					{
-						spaceId: target.spaceId,
+						target,
 					},
-				)
-			},
+				),
 			openTaskPriorityPicker: (ctx) => {
 				useDialogStore.getState().openCommand('task-priority-picker', ctx.selection)
 			},
@@ -909,8 +892,7 @@ function ShellLayoutContent({
 				priority?: TaskPriorityValue
 				status?: TaskStatus
 				dueAt?: string | null
-				projectId?: string
-				spaceId?: string
+				target?: TaskPlacementTarget
 			},
 		) => {
 			if (commandContext.selection.type !== 'task' || commandContext.selection.ids.length === 0) {
@@ -951,16 +933,8 @@ function ShellLayoutContent({
 
 	const handleSelectTaskPlacement = useCallback(
 		(target: TaskPlacementTarget) => {
-			if (target.kind === 'project') {
-				void updateSelectedTasks(TASK_BULK_ACTION_IDS.moveToProjectSelected, {
-					projectId: target.projectId,
-					spaceId: target.spaceId,
-				}).catch(() => undefined)
-				return
-			}
-
-			void updateSelectedTasks(TASK_BULK_ACTION_IDS.moveToNoProjectSelected, {
-				spaceId: target.spaceId,
+			void updateSelectedTasks(TASK_BULK_ACTION_IDS.setPlacementSelected, {
+				target,
 			}).catch(() => undefined)
 		},
 		[updateSelectedTasks],

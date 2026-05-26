@@ -9,6 +9,7 @@ import {
 } from '@/features/bulk-action/core'
 import { useBulkActionContext } from '@/features/bulk-action/runtime'
 import { showBulkActionResultToast } from '@/features/bulk-action/ui'
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 
@@ -16,9 +17,8 @@ export type TaskContextMenuBulkActions = {
 	onArchive: (tasks: TaskListItem[]) => void
 	onMoveToTrash: (tasks: TaskListItem[]) => void
 	onSelectDueDate: (tasks: TaskListItem[], dueAt: string | null) => void
-	onSelectNoProject: (tasks: TaskListItem[]) => void
+	onSelectPlacement: (tasks: TaskListItem[], target: TaskPlacementTarget) => void
 	onSelectPriority: (tasks: TaskListItem[], priority: TaskPriorityValue) => void
-	onSelectProject: (tasks: TaskListItem[], projectId: string) => void
 	onSelectStatus: (tasks: TaskListItem[], status: TaskStatus) => void
 }
 
@@ -58,15 +58,13 @@ export function useTaskContextMenuBulkActions({
 			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setDateSelected, {
 				dueAt,
 			}),
-		onSelectNoProject: (tasks) =>
-			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.moveToNoProjectSelected),
+		onSelectPlacement: (tasks, target) =>
+			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setPlacementSelected, {
+				target,
+			}),
 		onSelectPriority: (tasks, priority) =>
 			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setPrioritySelected, {
 				priority,
-			}),
-		onSelectProject: (tasks, projectId) =>
-			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.moveToProjectSelected, {
-				projectId,
 			}),
 		onSelectStatus: (tasks, status) =>
 			void runTaskContextMenuBulkAction(tasks, TASK_BULK_ACTION_IDS.setStatusSelected, {
@@ -76,9 +74,5 @@ export function useTaskContextMenuBulkActions({
 }
 
 function isTaskMoveAction(actionId: BulkActionId) {
-	return (
-		actionId === TASK_BULK_ACTION_IDS.moveToProjectSelected ||
-		actionId === TASK_BULK_ACTION_IDS.moveToNoProjectSelected ||
-		actionId === TASK_BULK_ACTION_IDS.moveToInboxSelected
-	)
+	return actionId === TASK_BULK_ACTION_IDS.setPlacementSelected
 }

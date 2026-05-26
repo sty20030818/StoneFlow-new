@@ -28,6 +28,7 @@ import { TaskRowShortcutScope, type TaskRowShortcutState } from '@/features/task
 import { TaskRowAdapter, type TaskRowAdapterProps } from '@/features/task/ui/TaskRowAdapter'
 import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
 import { useTaskContextMenuBulkActions } from '@/features/task/ui/useTaskContextMenuBulkActions'
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { ListTodoIcon, PlusIcon } from 'lucide-react'
@@ -77,8 +78,7 @@ type TaskBoardProps = {
 	hideEmptySections?: boolean
 	projectOptions?: Array<{ id: string; name: string; spaceId: string }>
 	spaces?: Array<{ id: string; name: string }>
-	onSelectProject?: (task: TaskListItem, projectId: string) => void
-	onSelectNoProject?: (task: TaskListItem) => void
+	onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 	showProjectCellOptions?: boolean
 }
 
@@ -114,8 +114,7 @@ export function TaskBoard({
 	hideEmptySections = false,
 	projectOptions,
 	spaces,
-	onSelectProject,
-	onSelectNoProject,
+	onSelectPlacement,
 	showProjectCellOptions = true,
 }: TaskBoardProps) {
 	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
@@ -182,8 +181,7 @@ export function TaskBoard({
 		const projectBinding: TaskRowAdapterProps['projectBinding'] = {
 			projectOptions,
 			spaces,
-			onSelectProject,
-			onSelectNoProject,
+			onSelectPlacement,
 			showProjectCellOptions,
 		}
 		return (

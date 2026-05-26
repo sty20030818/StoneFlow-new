@@ -71,8 +71,7 @@ export function InboxPage() {
 		toggleTaskStatus,
 		archiveListTask,
 		deleteListTask,
-		leaveListTaskToProject,
-		leaveListTaskAsNoProject,
+		updateTaskPlacement,
 	} = useTaskListController()
 
 	const inboxProjectOptions = useMemo(
@@ -179,8 +178,7 @@ export function InboxPage() {
 					onUpdateTaskReminderAt: updateTaskReminderAt,
 					onUpdateTaskPriority: updateTaskPriority,
 					onUpdateTaskStatus: updateTaskStatus,
-					onSelectProject: (task, projectId) => void leaveListTaskToProject(task, projectId),
-					onSelectNoProject: (task) => void leaveListTaskAsNoProject(task),
+					onSelectPlacement: (task, target) => void updateTaskPlacement(task, target),
 					projectOptions: inboxProjectOptions,
 					spaces,
 				},

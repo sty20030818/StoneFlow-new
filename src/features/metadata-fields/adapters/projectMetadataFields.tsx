@@ -5,22 +5,14 @@ import {
 	createPlacementActionSpec,
 	mapMetadataActionSpecToDropdownProps,
 	type MetadataDropdownMappedProps,
-	type MetadataPlacementOption,
 } from '@/features/metadata-fields/core'
-
-export function createProjectParentMetadataOptions(
-	projects: Array<Pick<ProjectOption, 'id' | 'name'>>,
-): MetadataPlacementOption[] {
-	return createProjectParentMetadataDropdownProps(projects).options
-}
 
 export function createProjectParentMetadataDropdownProps(
 	projects: Array<Pick<ProjectOption, 'id' | 'name'>>,
-): MetadataDropdownMappedProps<MetadataPlacementOption['value']> {
+): MetadataDropdownMappedProps<string> {
 	return mapMetadataActionSpecToDropdownProps(
 		createPlacementActionSpec({
 			projects,
-			labelMode: 'parentProject',
 		}),
 	)
 }

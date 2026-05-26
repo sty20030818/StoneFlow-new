@@ -10,12 +10,9 @@ export type {
 	MetadataFieldIndicator,
 	MetadataFieldOption,
 	MetadataFieldValue,
-	MetadataPlacementOption,
-	MetadataPlacementValue,
 	MetadataValueComparator,
 } from './metadata-field.types'
 export type {
-	BuildMetadataTaskPlacementGroupsInput,
 	BuildTaskPlacementGroupsInput,
 	TaskPlacementGroup,
 	TaskPlacementGroupItem,
@@ -63,12 +60,6 @@ export {
 	parseCustomDateInputValue,
 } from './custom-date-dialog'
 export {
-	findMetadataPlacementOption,
-	getMetadataPlacementKey,
-	isMetadataPlacementValueEqual,
-} from './metadata-placement'
-export {
-	buildMetadataTaskPlacementGroups,
 	buildTaskPlacementGroups,
 	findTaskPlacementGroupItem,
 	getTaskPlacementGroupSearchText,
@@ -76,4 +67,5 @@ export {
 export {
 	getTaskPlacementTargetValue,
 	isTaskPlacementTargetEqual,
+	resolveTaskPlacementTarget,
 } from './task-placement-target'

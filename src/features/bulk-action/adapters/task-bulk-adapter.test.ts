@@ -1,6 +1,7 @@
 import { emitEvent } from '@/shared/events'
 import type { TaskDetail } from '@/shared/types'
 import { createBulkSelectionSnapshot } from '@/features/bulk-action/core'
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
 
 import { createTaskBulkAdapter, resolveBulkCompleteStatus } from './task-bulk-adapter'
 
@@ -113,27 +114,46 @@ describe('TaskBulkAdapter', () => {
 		})
 	})
 
-	it('moveToProject / moveToInbox / moveToNoProject 走各自最小 mutation 路径', async () => {
+	it('updatePlacement 走统一 placement mutation 路径', async () => {
 		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
 		const updateTask = vi.fn<
-			(input: { taskId: string; projectId?: string | null }) => Promise<TaskDetail>
+			(input: {
+				taskId: string
+				placement?: {
+					kind: 'inbox' | 'noProject' | 'project'
+					spaceId: string
+					projectId?: string | null
+				}
+			}) => Promise<TaskDetail>
 		>((input) => Promise.resolve(createTaskDetail(input.taskId)))
-		const moveTaskToInbox = vi.fn<(input: { taskId: string }) => Promise<TaskDetail>>((input) =>
-			Promise.resolve(createTaskDetail(input.taskId)),
-		)
 		const adapter = createTaskBulkAdapter({
 			refreshLoadedSlices,
 			updateTask: updateTask as never,
-			moveTaskToInbox: moveTaskToInbox as never,
 		})
+		const inboxTarget: TaskPlacementTarget = { kind: 'inbox', spaceId: 'space-a' }
+		const projectTarget: TaskPlacementTarget = {
+			kind: 'project',
+			spaceId: 'space-a',
+			projectId: 'project-a',
+		}
+		const noProjectTarget: TaskPlacementTarget = { kind: 'no_project', spaceId: 'space-a' }
 
-		await adapter.moveToProject(['task-a'], 'project-a')
-		await adapter.moveToInbox(['task-b'])
-		await adapter.moveToNoProject(['task-c'])
+		await adapter.updatePlacement(['task-a'], projectTarget)
+		await adapter.updatePlacement(['task-b'], inboxTarget)
+		await adapter.updatePlacement(['task-c'], noProjectTarget)
 
-		expect(updateTask).toHaveBeenCalledWith({ taskId: 'task-a', projectId: 'project-a' })
-		expect(moveTaskToInbox).toHaveBeenCalledWith({ taskId: 'task-b' })
-		expect(updateTask).toHaveBeenCalledWith({ taskId: 'task-c', projectId: null })
+		expect(updateTask).toHaveBeenCalledWith({
+			taskId: 'task-a',
+			placement: { kind: 'project', spaceId: 'space-a', projectId: 'project-a' },
+		})
+		expect(updateTask).toHaveBeenCalledWith({
+			taskId: 'task-b',
+			placement: { kind: 'inbox', spaceId: 'space-a' },
+		})
+		expect(updateTask).toHaveBeenCalledWith({
+			taskId: 'task-c',
+			placement: { kind: 'noProject', spaceId: 'space-a' },
+		})
 		expect(refreshLoadedSlices).toHaveBeenCalledTimes(3)
 	})
 })

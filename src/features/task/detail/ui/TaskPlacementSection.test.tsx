@@ -130,6 +130,7 @@ function createDraft(overrides: Partial<TaskDetailDraft> = {}): TaskDetailDraft 
 		priority: 2,
 		spaceId: 'space-1',
 		projectId: '',
+		inboxAt: '',
 		dueAt: '',
 		scheduledAt: '',
 		reminderAt: '',

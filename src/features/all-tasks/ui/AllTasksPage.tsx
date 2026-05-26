@@ -76,8 +76,7 @@ export function AllTasksPage() {
 		toggleTaskStatus,
 		archiveListTask,
 		deleteListTask,
-		leaveListTaskToProject,
-		leaveListTaskAsNoProject,
+		updateTaskPlacement,
 	} = useTaskListController()
 	const projectOptions = useProjectStore(selectProjectOptions)
 	const spaces = useSpaceStore(selectSpaces)
@@ -168,8 +167,7 @@ export function AllTasksPage() {
 					onSelectAllTasks: selectTaskIds,
 					onSetFocusedTask: setFocusedTaskId,
 					onMoveTaskFocus: moveFocus,
-					onSelectNoProject: (task) => void leaveListTaskAsNoProject(task),
-					onSelectProject: (task, projectId) => void leaveListTaskToProject(task, projectId),
+					onSelectPlacement: (task, target) => void updateTaskPlacement(task, target),
 					onToggleTaskSelection: toggleTaskSelection,
 					onToggleTaskStatus: toggleTaskStatus,
 					onUpdateTaskDueDate: updateTaskDueDate,

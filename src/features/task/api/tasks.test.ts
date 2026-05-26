@@ -5,10 +5,7 @@ import {
 	createTask,
 	deleteTask,
 	getTaskDetail,
-	leaveInboxAsNoProject,
-	leaveInboxToProject,
 	listTasks,
-	moveTaskToInbox,
 	restoreTask,
 	updateTask,
 } from '@/features/task/api/tasks'
@@ -73,7 +70,10 @@ describe('tasks api', () => {
 			taskId: 'task-1',
 			status: 'done',
 			priority: 4,
-			projectId: null,
+			placement: {
+				kind: 'noProject',
+				spaceId: 'space-1',
+			},
 		})
 
 		expect(mockedInvoke).toHaveBeenNthCalledWith(1, 'get_task_detail', {
@@ -102,8 +102,11 @@ describe('tasks api', () => {
 				note: undefined,
 				status: 'done',
 				priority: 4,
-				spaceId: undefined,
-				projectId: null,
+				placement: {
+					kind: 'noProject',
+					spaceId: 'space-1',
+					projectId: null,
+				},
 				dueAt: undefined,
 				scheduledAt: undefined,
 				reminderAt: undefined,
@@ -127,15 +130,34 @@ describe('tasks api', () => {
 		})
 	})
 
-	it('归档、恢复、删除和 Inbox 命令都发送正确载荷', async () => {
+	it('归档、恢复、删除和 placement 更新都发送正确载荷', async () => {
 		mockedInvoke.mockResolvedValue({})
 
 		await archiveTask('task-1')
 		await restoreTask('task-1')
 		await deleteTask('task-1')
-		await moveTaskToInbox({ taskId: 'task-1' })
-		await leaveInboxToProject({ taskId: 'task-1', projectId: 'project-1' })
-		await leaveInboxAsNoProject({ taskId: 'task-1' })
+		await updateTask({
+			taskId: 'task-1',
+			placement: {
+				kind: 'inbox',
+				spaceId: 'space-1',
+			},
+		})
+		await updateTask({
+			taskId: 'task-1',
+			placement: {
+				kind: 'project',
+				spaceId: 'space-1',
+				projectId: 'project-1',
+			},
+		})
+		await updateTask({
+			taskId: 'task-1',
+			placement: {
+				kind: 'noProject',
+				spaceId: 'space-1',
+			},
+		})
 
 		expect(mockedInvoke).toHaveBeenNthCalledWith(1, 'archive_task', {
 			input: { taskId: 'task-1' },
@@ -146,17 +168,56 @@ describe('tasks api', () => {
 		expect(mockedInvoke).toHaveBeenNthCalledWith(3, 'delete_task', {
 			input: { taskId: 'task-1' },
 		})
-		expect(mockedInvoke).toHaveBeenNthCalledWith(4, 'move_task_to_inbox', {
-			input: { taskId: 'task-1' },
-		})
-		expect(mockedInvoke).toHaveBeenNthCalledWith(5, 'leave_inbox_to_project', {
+		expect(mockedInvoke).toHaveBeenNthCalledWith(4, 'update_task', {
 			input: {
 				taskId: 'task-1',
-				projectId: 'project-1',
+				title: undefined,
+				note: undefined,
+				status: undefined,
+				priority: undefined,
+				placement: {
+					kind: 'inbox',
+					spaceId: 'space-1',
+					projectId: null,
+				},
+				dueAt: undefined,
+				scheduledAt: undefined,
+				reminderAt: undefined,
 			},
 		})
-		expect(mockedInvoke).toHaveBeenNthCalledWith(6, 'leave_inbox_as_no_project', {
-			input: { taskId: 'task-1' },
+		expect(mockedInvoke).toHaveBeenNthCalledWith(5, 'update_task', {
+			input: {
+				taskId: 'task-1',
+				title: undefined,
+				note: undefined,
+				status: undefined,
+				priority: undefined,
+				placement: {
+					kind: 'project',
+					spaceId: 'space-1',
+					projectId: 'project-1',
+				},
+				dueAt: undefined,
+				scheduledAt: undefined,
+				reminderAt: undefined,
+			},
+		})
+		expect(mockedInvoke).toHaveBeenNthCalledWith(6, 'update_task', {
+			input: {
+				taskId: 'task-1',
+				title: undefined,
+				note: undefined,
+				status: undefined,
+				priority: undefined,
+				placement: {
+					kind: 'noProject',
+					spaceId: 'space-1',
+					projectId: null,
+				},
+				dueAt: undefined,
+				scheduledAt: undefined,
+				reminderAt: undefined,
+			},
 		})
 	})
 })

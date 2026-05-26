@@ -214,10 +214,10 @@ describe('CommandMenu', () => {
 		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
 		expect(await screen.findByText('工作')).toBeInTheDocument()
 		expect(screen.getByText('生活')).toBeInTheDocument()
-		expect(screen.getByText('独立事项')).toBeInTheDocument()
-		expectCommandRowIndicator('独立事项', 'mixed', '0')
+		expect(screen.getAllByText('独立事项')).toHaveLength(2)
+		expectCommandRowIndicator('收件箱', 'mixed', '0')
 		expectCommandRowIndicator('项目 B', 'mixed')
-		fireEvent.click(screen.getByText('独立事项'))
+		fireEvent.click(screen.getAllByText('独立事项')[0]!)
 
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(onSelectTaskPlacement).toHaveBeenCalledWith({
@@ -467,8 +467,9 @@ function expectCommandRowIndicator(
 	title: string,
 	indicatorState: 'checked' | 'mixed' | 'none',
 	shortcutDigit?: string,
+	index = 0,
 ) {
-	const item = getCommandItemByTitle(title)
+	const item = getCommandItemByTitle(title, index)
 	const indicator = item.querySelector('[data-slot="command-row-selected-indicator"]')
 
 	expect(indicator).not.toBeNull()
@@ -482,8 +483,8 @@ function expectCommandRowIndicator(
 	expect(indicator!.compareDocumentPosition(shortcutHint)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
 }
 
-function getCommandItemByTitle(title: string) {
-	const item = screen.getByText(title).closest('[data-slot="command-item"]')
+function getCommandItemByTitle(title: string, index = 0) {
+	const item = screen.getAllByText(title)[index]?.closest('[data-slot="command-item"]')
 	expect(item).not.toBeNull()
 	return item as HTMLElement
 }

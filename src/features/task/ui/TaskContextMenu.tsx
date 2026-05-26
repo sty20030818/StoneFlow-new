@@ -4,7 +4,10 @@ import {
 	createDueDateActionSpec,
 	createPriorityActionSpec,
 	createStatusActionSpec,
+	getTaskPlacementTargetValue,
 	normalizeMetadataDateValue,
+	type TaskPlacementGroup,
+	type TaskPlacementTarget,
 } from '@/features/metadata-fields/core'
 import type { TaskStatus } from '@/shared/types'
 import type { ReactNode } from 'react'
@@ -25,6 +28,7 @@ import {
 	CalendarX2Icon,
 	CheckIcon,
 	FolderIcon,
+	InboxIcon,
 	MinusIcon,
 	TargetIcon,
 	Trash2Icon,
@@ -39,16 +43,14 @@ type TaskContextMenuProps = {
 	status: TaskStatus
 	priority: TaskPriorityValue
 	dueAt?: string | null
-	projectId?: string | null
-	projectName?: string | null
 	selectionValues?: TaskContextSelectionValues
-	projectOptions?: Array<{ id: string; name: string }>
+	placementGroups?: TaskPlacementGroup[]
+	placementValue?: TaskPlacementTarget
 	isBusy?: boolean
 	onSelectStatus: (status: TaskStatus) => void
 	onSelectPriority: (priority: TaskPriorityValue) => void
 	onSelectDueDate?: (dueAt: string | null) => void
-	onSelectProject?: (projectId: string) => void
-	onSelectNoProject?: () => void
+	onSelectPlacement?: (target: TaskPlacementTarget) => void
 	onMoveToTrash?: () => void
 	onArchive?: () => void
 	moveToTrashLabel?: string
@@ -62,7 +64,7 @@ type TaskContextSelectionValues = {
 	statuses: TaskStatus[]
 	priorities: TaskPriorityValue[]
 	dueDates: Array<string | null>
-	projectIds: Array<string | null>
+	placements: TaskPlacementTarget[]
 	projectNames?: Array<string | null>
 }
 
@@ -82,15 +84,14 @@ export function TaskContextMenu({
 	status,
 	priority,
 	dueAt = null,
-	projectId = null,
 	selectionValues,
-	projectOptions = [],
+	placementGroups = [],
+	placementValue,
 	isBusy,
 	onSelectStatus,
 	onSelectPriority,
 	onSelectDueDate,
-	onSelectProject,
-	onSelectNoProject,
+	onSelectPlacement,
 	onMoveToTrash,
 	onArchive,
 	moveToTrashLabel = '移入回收站',
@@ -104,7 +105,7 @@ export function TaskContextMenu({
 	const canMoveToTrash = !!onMoveToTrash
 	const canArchive = !!onArchive
 	const canSelectDueDate = !!onSelectDueDate
-	const canSelectProject = Boolean(onSelectProject && onSelectNoProject)
+	const canSelectPlacement = Boolean(onSelectPlacement && placementValue && placementGroups.length > 0)
 	const currentDueDate = normalizeDateValue(dueAt)
 	const deleteShortcut = getDeleteShortcutLabel()
 	const statusIndicatorValues = getIndicatorValues(selectionValues?.statuses ?? [status])
@@ -124,13 +125,16 @@ export function TaskContextMenu({
 			showClearOption: Array.from(dueDateIndicatorValues).some((value) => value !== null),
 		}),
 	)
-	const projectIndicatorValues = getIndicatorValues(selectionValues?.projectIds ?? [projectId])
+	const placementIndicatorValues = getIndicatorValues(
+		(selectionValues?.placements ?? (placementValue ? [placementValue] : [])).map((value) =>
+			getTaskPlacementTargetValue(value),
+		),
+	)
 	const uniqueNonEmptyDueDates = Array.from(
 		new Set(normalizedDueDates.filter((value): value is string => Boolean(value))),
 	)
 	const customDateDialogValue =
 		uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
-
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
@@ -237,39 +241,40 @@ export function TaskContextMenu({
 						</ContextMenuSub>
 					) : null}
 
-					{canSelectProject ? (
+					{canSelectPlacement ? (
 						<ContextMenuSub>
 							<PropertySubTrigger
 								disabled={isBusy}
-								icon={<FolderIcon />}
+								icon={getPlacementIcon(placementValue!)}
 								shortcut={TASK_CONTEXT_SHORTCUTS.project}
 							>
-								项目
+								归属
 							</PropertySubTrigger>
 							<ContextMenuSubContent className='w-64'>
 								<ContextMenuLabel className='normal-case tracking-normal'>
 									移动到项目...
 								</ContextMenuLabel>
-								<PropertyOptionItem
-									indicator={getPropertyOptionIndicator(projectIndicatorValues, null)}
-									icon={<TargetIcon />}
-									onSelect={() => onSelectNoProject?.()}
-									shortcut='0'
-								>
-									独立事项
-								</PropertyOptionItem>
-								{projectOptions.map((project) => (
-									<ContextMenuItem key={project.id} onSelect={() => onSelectProject?.(project.id)}>
-										<FolderIcon />
-										{project.name}
-									</ContextMenuItem>
+								{placementGroups.map((group) => (
+									<div key={group.spaceId}>
+										<ContextMenuLabel className='px-2 py-1.5 text-[12px] normal-case tracking-normal text-sf-text-tertiary'>
+											{group.heading}
+										</ContextMenuLabel>
+										{group.items.map((item) => (
+											<PropertyOptionItem
+												indicator={getPlacementOptionIndicator(
+													placementIndicatorValues,
+													item.target,
+												)}
+												icon={getPlacementIcon(item.target)}
+												key={item.key}
+												onSelect={() => onSelectPlacement?.(item.target)}
+												shortcut={item.showsDigit ? item.digit : undefined}
+											>
+												{item.title}
+											</PropertyOptionItem>
+										))}
+									</div>
 								))}
-								{projectOptions.length === 0 ? (
-									<ContextMenuItem disabled>
-										<FolderIcon />
-										暂无可移动项目
-									</ContextMenuItem>
-								) : null}
 							</ContextMenuSubContent>
 						</ContextMenuSub>
 					) : null}
@@ -331,6 +336,18 @@ export function TaskContextMenu({
 			</ContextMenuContent>
 		</ContextMenu>
 	)
+}
+
+function getPlacementIcon(target: TaskPlacementTarget) {
+	if (target.kind === 'project') {
+		return <FolderIcon />
+	}
+
+	if (target.kind === 'inbox') {
+		return <InboxIcon />
+	}
+
+	return <TargetIcon />
 }
 
 function PropertySubTrigger({
@@ -411,6 +428,18 @@ function getPropertyOptionIndicator<T>(values: Set<T>, value: T): PropertyOption
 	if (!values.has(value)) {
 		return null
 	}
+	return values.size === 1 ? 'checked' : 'mixed'
+}
+
+function getPlacementOptionIndicator(
+	values: Set<string>,
+	target: TaskPlacementTarget,
+): PropertyOptionIndicator {
+	const value = getTaskPlacementTargetValue(target)
+	if (!values.has(value)) {
+		return null
+	}
+
 	return values.size === 1 ? 'checked' : 'mixed'
 }
 

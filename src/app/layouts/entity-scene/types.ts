@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import type { MainCardToolbarPill } from '@/app/layouts/main-card/MainCardLayout'
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type {
 	LifecycleEntry,
@@ -76,8 +77,7 @@ export type EntitySceneTaskBoardActions = {
 	onPeekTask?: (taskId: string, source: 'keyboard' | 'pointer') => void
 	projectOptions?: Array<{ id: string; name: string; spaceId: string }>
 	spaces?: Array<{ id: string; name: string }>
-	onSelectProject?: (task: TaskListItem, projectId: string) => void
-	onSelectNoProject?: (task: TaskListItem) => void
+	onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 	showProjectCellOptions?: boolean
 }
 

@@ -47,8 +47,11 @@ describe('taskDetailDraft', () => {
 
 		expect(getTaskDetailPatch(base, draft)).toEqual({
 			taskId: 'task-1',
-			spaceId: 'space-2',
-			projectId: 'project-2',
+			placement: {
+				kind: 'project',
+				spaceId: 'space-2',
+				projectId: 'project-2',
+			},
 		})
 	})
 })
@@ -62,6 +65,7 @@ function createDraft(overrides: Partial<TaskDetailDraft> = {}): TaskDetailDraft 
 		priority: 2,
 		spaceId: 'space-1',
 		projectId: '',
+		inboxAt: '',
 		dueAt: '',
 		scheduledAt: '',
 		reminderAt: '',

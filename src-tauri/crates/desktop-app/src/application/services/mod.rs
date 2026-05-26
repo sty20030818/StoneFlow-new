@@ -42,9 +42,10 @@ pub use space_service::{
     CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService, UpdateSpaceInput,
 };
 pub use task_service::{
-    CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind, InboxTaskProjectInput,
-    ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput,
-    TaskListItemDto, TaskScopeInput, TaskScopeKind, TaskService, UpdateTaskInput,
+    CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind, ListTasksInput,
+    ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput, TaskListItemDto,
+    TaskScopeInput, TaskScopeKind, TaskService, UpdateTaskInput, UpdateTaskPlacementInput,
+    UpdateTaskPlacementKind,
 };
 pub use task_link_service::{
     CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto,

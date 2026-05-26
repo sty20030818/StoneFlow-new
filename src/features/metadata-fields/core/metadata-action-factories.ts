@@ -7,7 +7,6 @@ import {
 	normalizeMetadataDateValue,
 } from './metadata-date-options'
 import type { MetadataActionSpec } from './metadata-action-spec'
-import type { MetadataPlacementValue } from './metadata-field.types'
 
 export function createStatusActionSpec(): MetadataActionSpec<TaskStatus> {
 	return {
@@ -74,45 +73,30 @@ export function createDueDateActionSpec({
 
 export function createPlacementActionSpec({
 	projects,
-	includeInbox = false,
-	labelMode = 'project',
 }: {
 	projects: Array<{ id: string; name: string }>
-	includeInbox?: boolean
-	labelMode?: 'project' | 'parentProject'
-}): MetadataActionSpec<MetadataPlacementValue> {
+}): MetadataActionSpec<string> {
 	const options = [
-		...(includeInbox
-			? [
-					{
-						key: 'inbox',
-						value: { kind: 'inbox' as const },
-						label: '收件箱',
-						iconKey: 'inbox' as const,
-					},
-				]
-			: []),
 		{
-			key: 'noProject',
-			value: { kind: 'noProject' as const },
-			label: labelMode === 'parentProject' ? '无父项目' : '独立事项',
+			key: 'no-parent',
+			value: '',
+			label: '无父项目',
 			iconKey: 'target' as const,
 			digit: '0',
 			isEmptyValue: true,
 		},
 		...projects.map((project) => ({
 			key: `project:${project.id}`,
-			value: { kind: 'project' as const, projectId: project.id },
+			value: project.id,
 			label: project.name,
 			iconKey: 'folder' as const,
 		})),
 	]
 
 	return {
-		fieldKey: labelMode === 'parentProject' ? 'parentProject' : 'project',
-		headerLabel: labelMode === 'parentProject' ? '设置父项目为...' : '移动到项目...',
-		headerShortcut: labelMode === 'parentProject' ? undefined : '⇧ P',
-		commandPlaceholder: labelMode === 'parentProject' ? '选择父项目…' : '选择项目…',
+		fieldKey: 'parentProject',
+		headerLabel: '设置父项目为...',
+		commandPlaceholder: '选择父项目…',
 		options,
 	}
 }

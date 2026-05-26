@@ -78,7 +78,6 @@ export function PlacementMetaAction({
 	projectId,
 	spaces,
 	projects,
-	includeInbox = true,
 	onPlacementChange,
 }: {
 	disabled: boolean
@@ -87,7 +86,6 @@ export function PlacementMetaAction({
 	projectId: string
 	spaces: Array<{ id: string; name: string }>
 	projects: ProjectOption[]
-	includeInbox?: boolean
 	onPlacementChange: (placement: TaskPlacement, projectId: string | null) => void
 }) {
 	const groupedDropdownProps = createTaskPlacementGroupedDropdownProps({
@@ -95,7 +93,6 @@ export function PlacementMetaAction({
 		currentSpaceId: spaceId,
 		spaces,
 		projects,
-		includeInbox,
 	})
 	const value = toTaskPlacementTarget(placement, spaceId, projectId)
 	const needsProjectSelection = placement === 'project' && !projectId

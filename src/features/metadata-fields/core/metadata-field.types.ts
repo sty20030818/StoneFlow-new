@@ -15,14 +15,6 @@ export type MetadataFieldOption<TValue = MetadataFieldValue> = {
 	action?: 'select' | 'openCustomDateDialog'
 }
 
-export type MetadataPlacementValue =
-	| { kind: 'inbox' }
-	| { kind: 'noProject' }
-	| { kind: 'project'; projectId: string }
-	| { kind: 'space'; spaceId: string }
-
-export type MetadataPlacementOption = MetadataFieldOption<MetadataPlacementValue>
-
 export type MetadataDateOptionKey =
 	| 'none'
 	| 'today'

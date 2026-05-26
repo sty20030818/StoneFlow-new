@@ -2,10 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 
 import type {
 	CreateTaskInput,
-	LeaveInboxAsNoProjectInput,
-	LeaveInboxToProjectInput,
 	ListTasksInput,
-	MoveTaskToInboxInput,
 	TaskDetail,
 	TaskListItem,
 	TaskListViewKey,
@@ -72,8 +69,14 @@ export async function updateTask(input: UpdateTaskInput) {
 			note: input.note,
 			status: input.status,
 			priority: input.priority,
-			spaceId: input.spaceId,
-			projectId: input.projectId,
+			placement: input.placement
+				? {
+						kind: input.placement.kind,
+						spaceId: input.placement.spaceId,
+						projectId:
+							input.placement.kind === 'project' ? input.placement.projectId : null,
+				  }
+				: undefined,
 			dueAt: input.dueAt,
 			scheduledAt: input.scheduledAt,
 			reminderAt: input.reminderAt,
@@ -96,31 +99,6 @@ export async function restoreTask(taskId: string) {
 export async function deleteTask(taskId: string) {
 	return invoke<TaskDetail>('delete_task', {
 		input: { taskId },
-	})
-}
-
-export async function moveTaskToInbox(input: MoveTaskToInboxInput) {
-	return invoke<TaskDetail>('move_task_to_inbox', {
-		input: {
-			taskId: input.taskId,
-		},
-	})
-}
-
-export async function leaveInboxToProject(input: LeaveInboxToProjectInput) {
-	return invoke<TaskDetail>('leave_inbox_to_project', {
-		input: {
-			taskId: input.taskId,
-			projectId: input.projectId,
-		},
-	})
-}
-
-export async function leaveInboxAsNoProject(input: LeaveInboxAsNoProjectInput) {
-	return invoke<TaskDetail>('leave_inbox_as_no_project', {
-		input: {
-			taskId: input.taskId,
-		},
 	})
 }
 

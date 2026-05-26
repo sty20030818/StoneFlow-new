@@ -8,9 +8,9 @@ use crate::{
     application::{
         activity::ActivityService,
         services::{
-            CreateTaskInput, CreateTaskLinkInput, DeleteTaskLinkInput, InboxTaskProjectInput,
-            ListTaskLinksInput, ListTasksInput, TaskDetailDto, TaskIdInput, TaskLinkDto,
-            TaskListItemDto, TaskLinkService, TaskService, UpdateTaskInput, UpdateTaskLinkInput,
+            CreateTaskInput, CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput,
+            ListTasksInput, TaskDetailDto, TaskIdInput, TaskLinkDto, TaskListItemDto,
+            TaskLinkService, TaskService, UpdateTaskInput, UpdateTaskLinkInput,
         },
     },
     infrastructure::{
@@ -87,45 +87,6 @@ pub async fn archive_task(
 ) -> Result<TaskDetailDto, AppError> {
     let detail = build_task_service(database.inner())
         .archive_task(input)
-        .await?;
-    emit_task_changed(&app_handle, &detail)?;
-    Ok(detail)
-}
-
-#[tauri::command]
-pub async fn move_task_to_inbox(
-    input: TaskIdInput,
-    app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
-) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner())
-        .move_task_to_inbox(input)
-        .await?;
-    emit_task_changed(&app_handle, &detail)?;
-    Ok(detail)
-}
-
-#[tauri::command]
-pub async fn leave_inbox_to_project(
-    input: InboxTaskProjectInput,
-    app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
-) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner())
-        .leave_inbox_to_project(input)
-        .await?;
-    emit_task_changed(&app_handle, &detail)?;
-    Ok(detail)
-}
-
-#[tauri::command]
-pub async fn leave_inbox_as_no_project(
-    input: TaskIdInput,
-    app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
-) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner())
-        .leave_inbox_as_no_project(input)
         .await?;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)

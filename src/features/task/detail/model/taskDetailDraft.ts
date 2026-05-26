@@ -11,6 +11,7 @@ export type TaskDetailDraft = {
 	priority: TaskPriorityValue
 	spaceId: string
 	projectId: string
+	inboxAt: string
 	dueAt: string
 	scheduledAt: string
 	reminderAt: string
@@ -27,6 +28,7 @@ export function createTaskDetailDraft(task: TaskDetail): TaskDetailDraft {
 		priority: task.priority,
 		spaceId: task.spaceId,
 		projectId: task.projectId ?? '',
+		inboxAt: task.inboxAt ?? '',
 		dueAt: task.dueAt ?? '',
 		scheduledAt: task.scheduledAt ?? '',
 		reminderAt: task.reminderAt ?? '',
@@ -37,6 +39,7 @@ export function normalizeTaskDetailDraft(draft: TaskDetailDraft): TaskDetailDraf
 	return {
 		...draft,
 		title: draft.title.trim(),
+		inboxAt: draft.inboxAt.trim(),
 		dueAt: draft.dueAt.trim(),
 		scheduledAt: draft.scheduledAt.trim(),
 		reminderAt: draft.reminderAt.trim(),
@@ -69,14 +72,16 @@ export function getTaskDetailPatch(
 		patch.priority = draft.priority
 	}
 
-	if (draft.spaceId !== base.spaceId) {
-		patch.spaceId = draft.spaceId
-	}
-
-	const nextProjectId = draft.projectId || null
-	const baseProjectId = base.projectId || null
-	if (nextProjectId !== baseProjectId) {
-		patch.projectId = nextProjectId
+	const nextPlacement = toTaskPlacementPatch(draft)
+	const basePlacement = toTaskPlacementPatch(base)
+	if (
+		nextPlacement.kind !== basePlacement.kind ||
+		nextPlacement.spaceId !== basePlacement.spaceId ||
+		(nextPlacement.kind === 'project' &&
+			basePlacement.kind === 'project' &&
+			nextPlacement.projectId !== basePlacement.projectId)
+	) {
+		patch.placement = nextPlacement
 	}
 
 	const nextDueAt = draft.dueAt || null
@@ -129,6 +134,16 @@ export function applyTaskPlacementDraftChange(
 			...draft,
 			spaceId: target.spaceId,
 			projectId: target.projectId,
+			inboxAt: '',
+		}
+	}
+
+	if (target.kind === 'inbox') {
+		return {
+			...draft,
+			spaceId: target.spaceId,
+			projectId: '',
+			inboxAt: new Date().toISOString(),
 		}
 	}
 
@@ -136,6 +151,7 @@ export function applyTaskPlacementDraftChange(
 		...draft,
 		spaceId: target.spaceId,
 		projectId: '',
+		inboxAt: '',
 	}
 }
 
@@ -152,5 +168,27 @@ export function applyTaskSpaceDraftChange(
 		...draft,
 		spaceId,
 		projectId: shouldClearProject ? '' : draft.projectId,
+	}
+}
+
+function toTaskPlacementPatch(draft: TaskDetailDraft): NonNullable<UpdateTaskInput['placement']> {
+	if (draft.projectId) {
+		return {
+			kind: 'project',
+			spaceId: draft.spaceId,
+			projectId: draft.projectId,
+		}
+	}
+
+	if (draft.inboxAt) {
+		return {
+			kind: 'inbox',
+			spaceId: draft.spaceId,
+		}
+	}
+
+	return {
+		kind: 'noProject',
+		spaceId: draft.spaceId,
 	}
 }

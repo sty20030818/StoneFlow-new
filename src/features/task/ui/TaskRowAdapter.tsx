@@ -8,6 +8,7 @@ import {
 	MetadataDateDropdown,
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
+	resolveTaskPlacementTarget,
 	taskDateMetadataIcons,
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
@@ -40,8 +41,7 @@ type TaskRowAdapterProps = {
 	projectBinding?: {
 		projectOptions?: Array<{ id: string; name: string; spaceId: string }>
 		spaces?: Array<{ id: string; name: string }>
-		onSelectProject?: (task: TaskListItem, projectId: string) => void
-		onSelectNoProject?: (task: TaskListItem) => void
+		onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 		showProjectCellOptions?: boolean
 	}
 	actions: {
@@ -76,8 +76,7 @@ export function TaskRowAdapter({
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
 	const hasProjectOptions = Boolean(
 		projectBinding?.projectOptions &&
-		projectBinding.onSelectProject &&
-		projectBinding.onSelectNoProject,
+		projectBinding.onSelectPlacement,
 	)
 	const showProjectCellOptions =
 		hasProjectOptions && projectBinding?.showProjectCellOptions !== false
@@ -94,9 +93,11 @@ export function TaskRowAdapter({
 		spaces: placementSpaces,
 		projects: projectBinding?.projectOptions ?? [],
 	})
-	const projectValue = task.projectId
-		? ({ kind: 'project', projectId: task.projectId, spaceId: task.spaceId } as const)
-		: ({ kind: 'no_project', spaceId: task.spaceId } as const)
+	const projectValue = resolveTaskPlacementTarget({
+		spaceId: task.spaceId,
+		projectId: task.projectId,
+		inboxAt: task.inboxAt,
+	})
 
 	return (
 		<TaskContextMenu
@@ -138,15 +139,15 @@ export function TaskRowAdapter({
 							)
 					: undefined
 			}
-			onSelectNoProject={
+			onSelectPlacement={
 				hasProjectOptions
-					? () =>
+					? (target) =>
 							runContextMenuTaskAction(
 								actionTargets,
 								contextMenuActions
-									? (targets) => contextMenuActions.onSelectNoProject(targets)
+									? (targets) => contextMenuActions.onSelectPlacement(targets, target)
 									: undefined,
-								(target) => projectBinding!.onSelectNoProject!(target),
+								(item) => projectBinding!.onSelectPlacement!(item, target),
 							)
 					: undefined
 			}
@@ -159,18 +160,6 @@ export function TaskRowAdapter({
 					(target) => actions.onUpdateTaskPriority(target, priority),
 				)
 			}
-			onSelectProject={
-				hasProjectOptions
-					? (projectId) =>
-							runContextMenuTaskAction(
-								actionTargets,
-								contextMenuActions
-									? (targets) => contextMenuActions.onSelectProject(targets, projectId)
-									: undefined,
-								(target) => projectBinding!.onSelectProject!(target, projectId),
-							)
-					: undefined
-			}
 			onSelectStatus={(status) =>
 				runContextMenuTaskAction(
 					actionTargets,
@@ -180,10 +169,9 @@ export function TaskRowAdapter({
 					(target) => actions.onUpdateTaskStatus(target, status),
 				)
 			}
+			placementGroups={showProjectCellOptions ? placementDropdownProps.groups : undefined}
+			placementValue={projectValue}
 			priority={task.priority}
-			projectId={task.projectId}
-			projectName={task.projectName}
-			projectOptions={hasProjectOptions ? projectBinding?.projectOptions : undefined}
 			selectionValues={buildTaskContextSelectionValues(actionTargets)}
 			status={task.status}
 			dueAt={task.dueAt}
@@ -301,13 +289,9 @@ export function TaskRowAdapter({
 								shortcutMode='clear-only'
 								stopPropagation
 								value={projectValue}
-								onChange={(value: TaskPlacementTarget) => {
-									if (value.kind === 'project') {
-										projectBinding?.onSelectProject?.(task, value.projectId)
-										return
-									}
-									projectBinding?.onSelectNoProject?.(task)
-								}}
+								onChange={(value: TaskPlacementTarget) =>
+									projectBinding?.onSelectPlacement?.(task, value)
+								}
 							/>
 						) : null}
 						<CreatedAtCell value={task.createdAt} />
@@ -345,7 +329,13 @@ function buildTaskContextSelectionValues(tasks: TaskListItem[]) {
 		statuses: tasks.map((item) => item.status),
 		priorities: tasks.map((item) => item.priority),
 		dueDates: tasks.map((item) => item.dueAt?.slice(0, 10) ?? null),
-		projectIds: tasks.map((item) => item.projectId ?? null),
+		placements: tasks.map((item) =>
+			resolveTaskPlacementTarget({
+				spaceId: item.spaceId,
+				projectId: item.projectId,
+				inboxAt: item.inboxAt,
+			}),
+		),
 		projectNames: tasks.map((item) => item.projectName ?? null),
 	}
 }

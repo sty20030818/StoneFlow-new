@@ -1,17 +1,14 @@
 import { CalendarClockIcon, CalendarX2Icon, BellIcon } from 'lucide-react'
 
-import type { ProjectOption } from '@/features/project/model/types'
 import { formatTaskPriorityLabel, type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import {
-	buildMetadataTaskPlacementGroups,
+	buildTaskPlacementGroups,
 	createPriorityActionSpec,
-	createPlacementActionSpec,
 	createStatusActionSpec,
 	mapMetadataActionSpecToDropdownProps,
 	type MetadataDropdownMappedProps,
 	type MetadataFieldOption,
-	type MetadataPlacementOption,
 	type TaskPlacementGroup,
 } from '@/features/metadata-fields/core'
 import type { TaskStatus } from '@/shared/types'
@@ -32,44 +29,14 @@ export function createTaskPriorityMetadataOptions(): Array<MetadataFieldOption<T
 	return createTaskPriorityMetadataDropdownProps().options
 }
 
-export function createTaskPlacementMetadataOptions({
-	projects,
-	includeInbox = false,
-}: {
-	projects: Array<Pick<ProjectOption, 'id' | 'name'>>
-	includeInbox?: boolean
-}): MetadataPlacementOption[] {
-	return createTaskPlacementMetadataDropdownProps({
-		projects,
-		includeInbox,
-	}).options
-}
-
-export function createTaskPlacementMetadataDropdownProps({
-	projects,
-	includeInbox = false,
-}: {
-	projects: Array<Pick<ProjectOption, 'id' | 'name'>>
-	includeInbox?: boolean
-}): MetadataDropdownMappedProps<MetadataPlacementOption['value']> {
-	return mapMetadataActionSpecToDropdownProps(
-		createPlacementActionSpec({
-			projects,
-			includeInbox,
-			labelMode: 'project',
-		}),
-	)
-}
-
 export function createTaskPlacementGroupedDropdownProps({
 	mode,
 	currentSpaceId,
 	spaces,
 	projects,
-	includeInbox = false,
 }: {
 	mode: 'global' | 'local'
-	currentSpaceId: string
+	currentSpaceId: string | null
 	spaces: Array<{ id: string; name: string }>
 	projects: Array<{
 		id: string
@@ -79,7 +46,6 @@ export function createTaskPlacementGroupedDropdownProps({
 		note?: string | null
 		spaceName?: string
 	}>
-	includeInbox?: boolean
 }): {
 	menuLabel: string
 	headerShortcut?: string
@@ -88,7 +54,7 @@ export function createTaskPlacementGroupedDropdownProps({
 	return {
 		menuLabel: '移动到项目...',
 		headerShortcut: '⇧ P',
-		groups: buildMetadataTaskPlacementGroups({
+		groups: buildTaskPlacementGroups({
 			mode,
 			currentSpaceId,
 			spaces,
@@ -96,7 +62,6 @@ export function createTaskPlacementGroupedDropdownProps({
 				...project,
 				completedAt: project.completedAt ?? null,
 			})),
-			includeInbox,
 		}),
 	}
 }

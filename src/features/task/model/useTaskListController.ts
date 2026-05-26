@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
@@ -12,9 +13,6 @@ export function useTaskListController() {
 	const updateTask = useTaskStore((state) => state.updateTask)
 	const archiveTask = useTaskStore((state) => state.archiveTask)
 	const deleteTask = useTaskStore((state) => state.deleteTask)
-	const moveTaskToInbox = useTaskStore((state) => state.moveTaskToInbox)
-	const leaveInboxToProject = useTaskStore((state) => state.leaveInboxToProject)
-	const leaveInboxAsNoProject = useTaskStore((state) => state.leaveInboxAsNoProject)
 	const [pendingTaskId, setPendingTaskId] = useState<string | null>(null)
 
 	async function runTaskAction(taskId: string, runner: () => Promise<unknown>) {
@@ -71,11 +69,26 @@ export function useTaskListController() {
 		)
 	}
 
-	async function updateTaskProject(task: TaskListItem, projectId: string | null) {
+	async function updateTaskPlacement(task: TaskListItem, target: TaskPlacementTarget) {
 		await runTaskAction(task.id, () =>
 			updateTask({
 				taskId: task.id,
-				projectId,
+				placement:
+					target.kind === 'project'
+						? {
+								kind: 'project',
+								spaceId: target.spaceId,
+								projectId: target.projectId,
+						  }
+						: target.kind === 'inbox'
+							? {
+									kind: 'inbox',
+									spaceId: target.spaceId,
+							  }
+							: {
+									kind: 'noProject',
+									spaceId: target.spaceId,
+							  },
 			}),
 		)
 	}
@@ -95,31 +108,6 @@ export function useTaskListController() {
 		await runTaskAction(task.id, () => deleteTask(task.id))
 	}
 
-	async function moveListTaskToInbox(task: TaskListItem) {
-		await runTaskAction(task.id, () =>
-			moveTaskToInbox({
-				taskId: task.id,
-			}),
-		)
-	}
-
-	async function leaveListTaskToProject(task: TaskListItem, projectId: string) {
-		await runTaskAction(task.id, () =>
-			leaveInboxToProject({
-				taskId: task.id,
-				projectId,
-			}),
-		)
-	}
-
-	async function leaveListTaskAsNoProject(task: TaskListItem) {
-		await runTaskAction(task.id, () =>
-			leaveInboxAsNoProject({
-				taskId: task.id,
-			}),
-		)
-	}
-
 	return {
 		pendingTaskId,
 		updateTaskStatus,
@@ -127,12 +115,9 @@ export function useTaskListController() {
 		updateTaskDueDate,
 		updateTaskScheduledAt,
 		updateTaskReminderAt,
-		updateTaskProject,
+		updateTaskPlacement,
 		toggleTaskStatus,
 		archiveListTask,
 		deleteListTask,
-		moveListTaskToInbox,
-		leaveListTaskToProject,
-		leaveListTaskAsNoProject,
 	}
 }

@@ -1,5 +1,6 @@
 import { createBulkSelectionSnapshot, TASK_BULK_ACTION_IDS } from '@/features/bulk-action/core'
 import type { TaskBulkAdapter } from '@/features/bulk-action/adapters'
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
 
 import { taskBulkActions } from './task.bulk-actions'
 
@@ -58,34 +59,51 @@ describe('taskBulkActions', () => {
 		expect(adapter.updateDate).toHaveBeenCalledWith(['task-a', 'task-b'], null)
 	})
 
-	it('moveToProject 缺 payload 时不执行 adapter', async () => {
+	it('setPlacement 缺 payload 时不执行 adapter', async () => {
 		const adapter = createAdapter()
 
-		const result = await getAction(TASK_BULK_ACTION_IDS.moveToProjectSelected).run(snapshot, {
+		const result = await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(snapshot, {
 			adapter,
 		})
 
 		expect(result).toMatchObject({
 			status: 'disabled',
-			actionId: TASK_BULK_ACTION_IDS.moveToProjectSelected,
+			actionId: TASK_BULK_ACTION_IDS.setPlacementSelected,
 		})
-		expect(adapter.moveToProject).not.toHaveBeenCalled()
+		expect(adapter.updatePlacement).not.toHaveBeenCalled()
 	})
 
-	it('move 系列 action 调用对应 adapter', async () => {
+	it('setPlacement 使用最终 target 调用 adapter', async () => {
 		const adapter = createAdapter()
+		const inboxTarget: TaskPlacementTarget = { kind: 'inbox', spaceId: 'space-a' }
+		const projectTarget: TaskPlacementTarget = {
+			kind: 'project',
+			spaceId: 'space-a',
+			projectId: 'project-a',
+		}
+		const noProjectTarget: TaskPlacementTarget = { kind: 'no_project', spaceId: 'space-a' }
 
-		await getAction(TASK_BULK_ACTION_IDS.moveToProjectSelected).run(
-			snapshot,
-			{ adapter },
-			{ projectId: 'project-a' },
+		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(snapshot, { adapter }, {
+			target: inboxTarget,
+		})
+		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(snapshot, { adapter }, {
+			target: projectTarget,
+		})
+		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(snapshot, { adapter }, {
+			target: noProjectTarget,
+		})
+
+		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(1, ['task-a', 'task-b'], inboxTarget)
+		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(
+			2,
+			['task-a', 'task-b'],
+			projectTarget,
 		)
-		await getAction(TASK_BULK_ACTION_IDS.moveToInboxSelected).run(snapshot, { adapter })
-		await getAction(TASK_BULK_ACTION_IDS.moveToNoProjectSelected).run(snapshot, { adapter })
-
-		expect(adapter.moveToProject).toHaveBeenCalledWith(['task-a', 'task-b'], 'project-a')
-		expect(adapter.moveToInbox).toHaveBeenCalledWith(['task-a', 'task-b'])
-		expect(adapter.moveToNoProject).toHaveBeenCalledWith(['task-a', 'task-b'])
+		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(
+			3,
+			['task-a', 'task-b'],
+			noProjectTarget,
+		)
 	})
 
 	it('archive/delete 成功时标记 shouldClearSelection', async () => {
@@ -151,9 +169,7 @@ function createAdapter(overrides: Partial<TaskBulkAdapter> = {}): TaskBulkAdapte
 		updatePriority: vi.fn<TaskBulkAdapter['updatePriority']>(() => Promise.resolve(report)),
 		updateStatus: vi.fn<TaskBulkAdapter['updateStatus']>(() => Promise.resolve(report)),
 		updateDate: vi.fn<TaskBulkAdapter['updateDate']>(() => Promise.resolve(report)),
-		moveToProject: vi.fn<TaskBulkAdapter['moveToProject']>(() => Promise.resolve(report)),
-		moveToInbox: vi.fn<TaskBulkAdapter['moveToInbox']>(() => Promise.resolve(report)),
-		moveToNoProject: vi.fn<TaskBulkAdapter['moveToNoProject']>(() => Promise.resolve(report)),
+		updatePlacement: vi.fn<TaskBulkAdapter['updatePlacement']>(() => Promise.resolve(report)),
 		...overrides,
 	}
 }

@@ -1,6 +1,7 @@
 import {
 	createTaskPlacementGroupedDropdownProps,
 	MetadataPlacementDropdown,
+	resolveTaskPlacementTarget,
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
 import type { ProjectOption } from '@/features/project/model/types'
@@ -27,16 +28,11 @@ export function TaskPlacementSection({
 	disabled = false,
 	mode = 'global',
 }: TaskPlacementSectionProps) {
-	const currentValue: TaskPlacementTarget = autosave.draft.projectId
-		? {
-				kind: 'project',
-				spaceId: autosave.draft.spaceId,
-				projectId: autosave.draft.projectId,
-			}
-		: {
-				kind: 'no_project',
-				spaceId: autosave.draft.spaceId,
-			}
+	const currentValue: TaskPlacementTarget = resolveTaskPlacementTarget({
+		spaceId: autosave.draft.spaceId,
+		projectId: autosave.draft.projectId,
+		inboxAt: autosave.draft.inboxAt,
+	})
 
 	const dropdownProps = createTaskPlacementGroupedDropdownProps({
 		mode,

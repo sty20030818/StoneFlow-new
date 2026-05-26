@@ -6,6 +6,7 @@ import {
 	createBulkActionResult,
 } from '@/features/bulk-action/core'
 import type { TaskBulkAdapter, TaskBulkMutationReport } from '@/features/bulk-action/adapters'
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskStatus } from '@/shared/types'
 
@@ -15,7 +16,7 @@ export type TaskBulkActionPayload =
 	| { priority: TaskPriorityValue }
 	| { status: TaskStatus }
 	| { dueAt: string | null }
-	| { projectId: string }
+	| { target: TaskPlacementTarget }
 
 export const taskBulkActionDefinitions: TaskBulkActionDefinition[] = [
 	{
@@ -74,24 +75,10 @@ export const taskBulkActionDefinitions: TaskBulkActionDefinition[] = [
 		intent: 'update',
 	},
 	{
-		id: TASK_BULK_ACTION_IDS.moveToProjectSelected,
+		id: TASK_BULK_ACTION_IDS.setPlacementSelected,
 		entity: 'task',
-		label: '移动任务到项目',
-		description: '批量将选中任务移动到指定项目。',
-		intent: 'move',
-	},
-	{
-		id: TASK_BULK_ACTION_IDS.moveToInboxSelected,
-		entity: 'task',
-		label: '移动任务到收件箱',
-		description: '批量将选中任务移动到 Inbox。',
-		intent: 'move',
-	},
-	{
-		id: TASK_BULK_ACTION_IDS.moveToNoProjectSelected,
-		entity: 'task',
-		label: '移动任务到独立事项',
-		description: '批量将选中任务移出项目，设为独立事项。',
+		label: '设置任务归属',
+		description: '批量更新选中任务的归属。',
 		intent: 'move',
 	},
 ]
@@ -157,31 +144,17 @@ export const taskBulkActions: BulkAction[] = taskBulkActionDefinitions.map((defi
 					{ getMessage: (report) => `已更新 ${report.succeededIds.length} 个任务` },
 				)
 			}
-			case TASK_BULK_ACTION_IDS.moveToProjectSelected: {
-				if (!isProjectPayload(payload)) {
-					return createMissingPayloadResult(definition.id, snapshot, 'projectId')
+			case TASK_BULK_ACTION_IDS.setPlacementSelected: {
+				if (!isPlacementPayload(payload)) {
+					return createMissingPayloadResult(definition.id, snapshot, 'target')
 				}
 				return toBulkActionResult(
 					definition.id,
 					snapshot,
-					await adapter.moveToProject(snapshot.ids, payload.projectId),
+					await adapter.updatePlacement(snapshot.ids, payload.target),
 					{ getMessage: (report) => `已整理 ${report.succeededIds.length} 个任务` },
 				)
 			}
-			case TASK_BULK_ACTION_IDS.moveToInboxSelected:
-				return toBulkActionResult(
-					definition.id,
-					snapshot,
-					await adapter.moveToInbox(snapshot.ids),
-					{ getMessage: (report) => `已整理 ${report.succeededIds.length} 个任务` },
-				)
-			case TASK_BULK_ACTION_IDS.moveToNoProjectSelected:
-				return toBulkActionResult(
-					definition.id,
-					snapshot,
-					await adapter.moveToNoProject(snapshot.ids),
-					{ getMessage: (report) => `已整理 ${report.succeededIds.length} 个任务` },
-				)
 			default:
 				return createBulkActionResult({
 					status: 'failed',
@@ -267,12 +240,13 @@ function isDatePayload(payload: BulkActionPayload): payload is { dueAt: string |
 	return Boolean(payload && typeof payload === 'object' && 'dueAt' in payload)
 }
 
-function isProjectPayload(payload: BulkActionPayload): payload is { projectId: string } {
+function isPlacementPayload(payload: BulkActionPayload): payload is { target: TaskPlacementTarget } {
 	return Boolean(
 		payload &&
 		typeof payload === 'object' &&
-		'projectId' in payload &&
-		typeof payload.projectId === 'string' &&
-		payload.projectId.length > 0,
+		'target' in payload &&
+		payload.target &&
+		typeof payload.target === 'object' &&
+		'kind' in payload.target,
 	)
 }

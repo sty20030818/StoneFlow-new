@@ -73,8 +73,7 @@ export function ViewsPage() {
 		toggleTaskStatus,
 		archiveListTask,
 		deleteListTask,
-		leaveListTaskToProject,
-		leaveListTaskAsNoProject,
+		updateTaskPlacement,
 	} = useTaskListController()
 
 	const [editorOpen, setEditorOpen] = useState(false)
@@ -279,8 +278,7 @@ export function ViewsPage() {
 						onSelectAllTasks: selectTaskIds,
 						onSetFocusedTask: setFocusedTaskId,
 						onMoveTaskFocus: moveFocus,
-						onSelectNoProject: (task) => void leaveListTaskAsNoProject(task),
-						onSelectProject: (task, projectId) => void leaveListTaskToProject(task, projectId),
+						onSelectPlacement: (task, target) => void updateTaskPlacement(task, target),
 						onToggleTaskSelection: toggleTaskSelection,
 						onToggleTaskStatus: toggleTaskStatus,
 						onUpdateTaskDueDate: updateTaskDueDate,

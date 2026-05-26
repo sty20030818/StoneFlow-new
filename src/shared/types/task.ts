@@ -43,6 +43,21 @@ export type TaskCreatePlacementInput =
 			kind: 'noProject'
 	  }
 
+export type TaskUpdatePlacementInput =
+	| {
+			kind: 'project'
+			spaceId: string
+			projectId: string
+	  }
+	| {
+			kind: 'inbox'
+			spaceId: string
+	  }
+	| {
+			kind: 'noProject'
+			spaceId: string
+	  }
+
 export type Task = {
 	id: string
 	title: string
@@ -124,24 +139,10 @@ export type UpdateTaskInput = {
 	note?: string | null
 	status?: TaskStatus
 	priority?: TaskPriority
-	spaceId?: string
-	projectId?: string | null
+	placement?: TaskUpdatePlacementInput
 	dueAt?: string | null
 	scheduledAt?: string | null
 	reminderAt?: string | null
-}
-
-export type MoveTaskToInboxInput = {
-	taskId: string
-}
-
-export type LeaveInboxToProjectInput = {
-	taskId: string
-	projectId: string
-}
-
-export type LeaveInboxAsNoProjectInput = {
-	taskId: string
 }
 
 export type ListTaskLinksInput = {

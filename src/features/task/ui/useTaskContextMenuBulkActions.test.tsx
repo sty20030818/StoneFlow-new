@@ -10,6 +10,8 @@ import {
 	type BulkActionPayload,
 	type BulkSelectionSnapshot,
 } from '@/features/bulk-action'
+import { DangerConfirmProvider } from '@/features/danger-confirm'
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskListItem } from '@/shared/types'
 
 import { useTaskContextMenuBulkActions } from './useTaskContextMenuBulkActions'
@@ -71,23 +73,41 @@ describe('useTaskContextMenuBulkActions', () => {
 			result.current.onSelectStatus(tasks, 'done')
 			result.current.onSelectPriority(tasks, 3)
 			result.current.onSelectDueDate(tasks, null)
-			result.current.onSelectProject(tasks, 'project-2')
-			result.current.onSelectNoProject(tasks)
+			result.current.onSelectPlacement(tasks, {
+				kind: 'project',
+				projectId: 'project-2',
+				spaceId: 'space-1',
+			})
+			result.current.onSelectPlacement(tasks, {
+				kind: 'inbox',
+				spaceId: 'space-1',
+			})
 		})
 
 		expect(calls.map((call) => call.actionId)).toEqual([
 			TASK_BULK_ACTION_IDS.setStatusSelected,
 			TASK_BULK_ACTION_IDS.setPrioritySelected,
 			TASK_BULK_ACTION_IDS.setDateSelected,
-			TASK_BULK_ACTION_IDS.moveToProjectSelected,
-			TASK_BULK_ACTION_IDS.moveToNoProjectSelected,
+			TASK_BULK_ACTION_IDS.setPlacementSelected,
+			TASK_BULK_ACTION_IDS.setPlacementSelected,
 		])
 		expect(calls.map((call) => call.payload)).toEqual([
 			{ status: 'done' },
 			{ priority: 3 },
 			{ dueAt: null },
-			{ projectId: 'project-2' },
-			undefined,
+			{
+				target: {
+					kind: 'project',
+					projectId: 'project-2',
+					spaceId: 'space-1',
+				} satisfies TaskPlacementTarget,
+			},
+			{
+				target: {
+					kind: 'inbox',
+					spaceId: 'space-1',
+				} satisfies TaskPlacementTarget,
+			},
 		])
 		expect(calls[0].snapshot).toMatchObject({
 			entity: 'task',
@@ -125,7 +145,9 @@ function renderTaskContextMenuBulkActions({
 }) {
 	return renderHook(() => useTaskContextMenuBulkActions({ onClearTaskSelection }), {
 		wrapper: ({ children }: PropsWithChildren) => (
-			<BulkActionProvider actions={createTestBulkActions(calls)}>{children}</BulkActionProvider>
+			<DangerConfirmProvider>
+				<BulkActionProvider actions={createTestBulkActions(calls)}>{children}</BulkActionProvider>
+			</DangerConfirmProvider>
 		),
 	})
 }
@@ -158,11 +180,7 @@ function resolveBulkActionIntent(actionId: BulkActionId): BulkAction['intent'] {
 	if (actionId === TASK_BULK_ACTION_IDS.deleteSelected) {
 		return 'delete'
 	}
-	if (
-		actionId === TASK_BULK_ACTION_IDS.moveToProjectSelected ||
-		actionId === TASK_BULK_ACTION_IDS.moveToNoProjectSelected ||
-		actionId === TASK_BULK_ACTION_IDS.moveToInboxSelected
-	) {
+	if (actionId === TASK_BULK_ACTION_IDS.setPlacementSelected) {
 		return 'move'
 	}
 	if (actionId === TASK_BULK_ACTION_IDS.completeSelected) {
