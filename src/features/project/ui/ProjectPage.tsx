@@ -30,17 +30,8 @@ import {
 } from '@/features/task/model/useTaskStore'
 import type { Scope, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-	BreadcrumbSeparator,
-} from '@/shared/ui/base/breadcrumb'
-import {
-	breadcrumbLeadForegroundClass,
-	breadcrumbLeadIconClass,
-} from '@/shared/ui/patterns/breadcrumb'
+import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
+import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 import {
 	Empty,
 	EmptyContent,
@@ -50,7 +41,7 @@ import {
 	EmptyPage,
 	EmptyTitle,
 } from '@/shared/ui/base/empty'
-import { BoxIcon, FolderIcon } from 'lucide-react'
+import { FolderIcon } from 'lucide-react'
 
 const PROJECT_TASK_FILTERS: Array<'all' | TaskStatus> = [
 	'all',
@@ -148,6 +139,24 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 	const project = detail.projectId === projectId ? detail.item : null
 	const isProjectLoading =
 		detail.status === 'idle' || detail.status === 'loading' || detail.projectId !== projectId
+	const breadcrumbItems = useMemo(
+		() =>
+			resolveBreadcrumb({
+				route: shellRoute,
+				projectDetail: project
+					? {
+							id: project.id,
+							name: project.name,
+						}
+					: projectId
+						? {
+								id: projectId,
+								name: '',
+							}
+						: null,
+			}),
+		[project, projectId, shellRoute],
+	)
 	const projectMoveOptions = useMemo(
 		() =>
 			project
@@ -250,7 +259,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 					spaces,
 				},
 			}}
-			breadcrumb={<ProjectBreadcrumb projectName={project?.name ?? '项目'} />}
+			breadcrumb={<AppBreadcrumb items={breadcrumbItems} />}
 			beforeBoard={
 				!project && !isProjectLoading ? (
 					<EmptyPage>
@@ -371,24 +380,5 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 					}),
 			}))}
 		/>
-	)
-}
-
-function ProjectBreadcrumb({ projectName }: { projectName: string }) {
-	return (
-		<Breadcrumb>
-			<BreadcrumbList className='text-sm leading-5'>
-				<BreadcrumbItem>
-					<span className={breadcrumbLeadForegroundClass}>
-						<BoxIcon aria-hidden className={breadcrumbLeadIconClass} />
-						项目总览
-					</span>
-				</BreadcrumbItem>
-				<BreadcrumbSeparator />
-				<BreadcrumbItem className='min-w-0'>
-					<BreadcrumbPage className='truncate font-semibold'>{projectName}</BreadcrumbPage>
-				</BreadcrumbItem>
-			</BreadcrumbList>
-		</Breadcrumb>
 	)
 }

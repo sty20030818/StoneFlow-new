@@ -68,8 +68,31 @@ vi.mock('@/app/routing', async () => {
 	return {
 		...actual,
 		useShellRoute: () => ({
+			appRoute: {
+				kind: 'shell-section',
+				scope: { type: 'all' },
+				section: 'projects',
+				pathname: '/all/projects',
+				search: '',
+				hash: '',
+				fullPath: '/all/projects',
+			},
+			kind: 'shell-section',
 			scope: { type: 'all' },
 			spaceId: null,
+			section: 'projects',
+			viewId: null,
+			projectId: null,
+			taskId: null,
+			pathname: '/all/projects',
+			search: '',
+			hash: '',
+			fullPath: '/all/projects',
+			isShellPath: true,
+			isSettingsPath: false,
+			isDebugPath: false,
+			isQuickCreatePath: false,
+			isWorkPath: true,
 		}),
 	}
 })
@@ -127,6 +150,7 @@ describe('ProjectOverviewPage', () => {
 	it('多选后显示归档和删除批量入口', () => {
 		renderProjectOverviewPage()
 
+		expect(screen.getByText('项目总览')).toHaveAttribute('aria-current', 'page')
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择项目 项目 A' }))
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择项目 项目 B' }))
 

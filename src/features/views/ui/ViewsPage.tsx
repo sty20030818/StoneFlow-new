@@ -28,14 +28,9 @@ import { ViewEditorDialog } from '@/features/view/ui/ViewEditorDialog'
 import { useTaskChangedListener } from '@/shared/events'
 import { isScopeMatch } from '@/shared/lib/scope'
 import type { TaskListItem, View } from '@/shared/types'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-} from '@/shared/ui/base/breadcrumb'
-import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
-import { Layers2Icon, PlusIcon } from 'lucide-react'
+import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
+import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { PlusIcon } from 'lucide-react'
 
 const ALL_SCOPE = { type: 'all' } as const
 
@@ -113,6 +108,14 @@ export function ViewsPage() {
 	const visibleTasks = useMemo(
 		() => (isTaskRunCurrent ? (taskRun.item?.items ?? []) : []),
 		[isTaskRunCurrent, taskRun.item?.items],
+	)
+	const breadcrumbItems = useMemo(
+		() =>
+			resolveBreadcrumb({
+				route: shellRoute,
+				viewName: activeView?.name ?? null,
+			}),
+		[activeView?.name, shellRoute],
 	)
 
 	useEffect(() => {
@@ -291,7 +294,7 @@ export function ViewsPage() {
 						showProjectCellOptions: false,
 					},
 				}}
-				breadcrumb={<ViewsBreadcrumb />}
+				breadcrumb={<AppBreadcrumb items={breadcrumbItems} />}
 				bulkBar={
 					<BulkActionBar
 						action={<BulkCommandMenuAction />}
@@ -392,19 +395,4 @@ function buildCustomSections(
 		.filter(
 			(group): group is { key: string; label: string; tasks: TaskListItem[] } => group !== null,
 		)
-}
-
-function ViewsBreadcrumb() {
-	return (
-		<Breadcrumb>
-			<BreadcrumbList className='text-sm font-semibold leading-5'>
-				<BreadcrumbItem>
-					<BreadcrumbPage className={breadcrumbLeadClass}>
-						<Layers2Icon aria-hidden className={breadcrumbLeadIconClass} />
-						视图
-					</BreadcrumbPage>
-				</BreadcrumbItem>
-			</BreadcrumbList>
-		</Breadcrumb>
-	)
 }

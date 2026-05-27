@@ -28,14 +28,9 @@ import { isScopeMatch } from '@/shared/lib/scope'
 import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-} from '@/shared/ui/base/breadcrumb'
-import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
+import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import type { LucideIcon } from 'lucide-react'
+import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 
 type LifecycleListProps = {
 	mode: LifecycleMode
@@ -47,7 +42,7 @@ type LifecycleFilter = 'all' | 'space' | 'project' | 'task'
 
 const ALL_SCOPE = { type: 'all' } as const
 
-export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
+export function LifecycleList({ mode, title }: LifecycleListProps) {
 	const navigate = useNavigate()
 	const openEntityDrawer = useEntityDetailController().openDrawer
 	const shellRoute = useShellRoute()
@@ -64,6 +59,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 	const refreshLoadedSlices = useLifecycleStore((state) => state.refreshLoadedSlices)
 	const { runBulkAction } = useBulkActionContext()
 	const [entityFilter, setEntityFilter] = useState<LifecycleFilter>('all')
+	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 
 	const slice = mode === 'archive' ? archiveEntries : trashEntries
 	const sliceStatus = isScopeMatch(slice.scope, scope) ? slice.status : 'loading'
@@ -233,7 +229,7 @@ export function LifecycleList({ mode, title, icon: Icon }: LifecycleListProps) {
 						onClearEntrySelection: clearEntrySelection,
 					},
 				}}
-				breadcrumb={<LifecycleBreadcrumb icon={Icon} title={title} />}
+				breadcrumb={<AppBreadcrumb items={breadcrumbItems} />}
 				bulkBar={
 					<BulkActionBar
 						action={
@@ -312,21 +308,6 @@ function LifecycleBulkBarActions({
 				</Button>
 			)}
 		</div>
-	)
-}
-
-function LifecycleBreadcrumb({ icon: Icon, title }: { icon: LucideIcon; title: string }) {
-	return (
-		<Breadcrumb>
-			<BreadcrumbList className='text-sm font-semibold leading-5'>
-				<BreadcrumbItem>
-					<BreadcrumbPage className={breadcrumbLeadClass}>
-						<Icon aria-hidden className={breadcrumbLeadIconClass} />
-						{title}
-					</BreadcrumbPage>
-				</BreadcrumbItem>
-			</BreadcrumbList>
-		</Breadcrumb>
 	)
 }
 

@@ -28,14 +28,9 @@ import {
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import { selectProjectViews, useViewStore } from '@/features/view/model/useViewStore'
 import { isScopeMatch } from '@/shared/lib/scope'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-} from '@/shared/ui/base/breadcrumb'
-import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
-import { BoxIcon, PlusIcon } from 'lucide-react'
+import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
+import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { PlusIcon } from 'lucide-react'
 
 const ALL_SCOPE = { type: 'all' } as const
 
@@ -57,6 +52,7 @@ export function ProjectOverviewPage() {
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
 	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('all_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
+	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 	const scopeKey = scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
 	const overviewStatus =
 		isScopeMatch(overview.scope, scope) && overview.viewKey === viewKey
@@ -185,7 +181,7 @@ export function ProjectOverviewPage() {
 					},
 				},
 			}}
-			breadcrumb={<ProjectOverviewBreadcrumb />}
+			breadcrumb={<AppBreadcrumb items={breadcrumbItems} />}
 			bulkBar={
 				<BulkActionBar
 					action={
@@ -255,21 +251,6 @@ function ProjectBulkBarActions({
 				删除
 			</Button>
 		</div>
-	)
-}
-
-function ProjectOverviewBreadcrumb() {
-	return (
-		<Breadcrumb>
-			<BreadcrumbList className='text-sm font-semibold leading-5'>
-				<BreadcrumbItem>
-					<BreadcrumbPage className={breadcrumbLeadClass}>
-						<BoxIcon aria-hidden className={breadcrumbLeadIconClass} />
-						项目总览
-					</BreadcrumbPage>
-				</BreadcrumbItem>
-			</BreadcrumbList>
-		</Breadcrumb>
 	)
 }
 

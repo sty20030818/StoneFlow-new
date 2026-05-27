@@ -7,18 +7,8 @@ import { selectProjectOptions, useProjectStore } from '@/features/project/model/
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
 import type { Scope, TaskDetail } from '@/shared/types'
 import { DetailPageGrid, DetailPageMain, DetailPageSidebar } from '@/shared/ui/detail'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-	BreadcrumbSeparator,
-} from '@/shared/ui/base/breadcrumb'
-import {
-	breadcrumbLeadForegroundClass,
-	breadcrumbLeadIconClass,
-} from '@/shared/ui/patterns/breadcrumb'
-import { BoxIcon } from 'lucide-react'
+import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
+import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 
 import { createTaskDetailDraft } from '../model/taskDetailDraft'
 import { useTaskAutosaveAdapter } from '../model/useTaskAutosaveAdapter'
@@ -104,10 +94,50 @@ function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedPr
 		base: autosaveBase,
 		disabled: isReadOnly,
 	})
+	const breadcrumbItems = useMemo(
+		() =>
+			resolveBreadcrumb({
+				route: {
+					appRoute: {
+						kind: 'task',
+						spaceId: task.spaceId,
+						taskId: task.id,
+						pathname: '',
+						search: '',
+						hash: '',
+						fullPath: '',
+					},
+					kind: 'task',
+					scope: { type: 'space', spaceId: task.spaceId },
+					spaceId: task.spaceId,
+					section: 'tasks',
+					viewId: null,
+					projectId: task.projectId,
+					taskId: task.id,
+					pathname: '',
+					search: '',
+					hash: '',
+					fullPath: '',
+					isShellPath: false,
+					isSettingsPath: false,
+					isDebugPath: false,
+					isQuickCreatePath: false,
+					isWorkPath: true,
+				},
+				taskDetail: {
+					id: task.id,
+					title: task.title,
+					projectId: task.projectId,
+					projectName: task.projectName,
+					inboxAt: task.inboxAt,
+				},
+			}),
+		[task],
+	)
 
 	return (
 		<MainCard.Root>
-			<MainCard.Header breadcrumb={<TaskPageBreadcrumb task={task} />} />
+			<MainCard.Header breadcrumb={<AppBreadcrumb items={breadcrumbItems} />} />
 			<MainCard.Body>
 				<div className='flex min-h-0 flex-1 flex-col gap-3'>
 					<DetailPageGrid>
@@ -127,32 +157,5 @@ function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedPr
 				</div>
 			</MainCard.Body>
 		</MainCard.Root>
-	)
-}
-
-function TaskPageBreadcrumb({ task }: { task: TaskDetail }) {
-	const projectLabel = task.projectName ?? (task.inboxAt ? 'Inbox' : '独立事项')
-
-	return (
-		<Breadcrumb>
-			<BreadcrumbList className='text-sm leading-5'>
-				<BreadcrumbItem>
-					<span className={breadcrumbLeadForegroundClass}>
-						<BoxIcon aria-hidden className={breadcrumbLeadIconClass} />
-						项目总览
-					</span>
-				</BreadcrumbItem>
-				<BreadcrumbSeparator />
-				<BreadcrumbItem className='min-w-0'>
-					<span className='truncate font-semibold text-foreground'>{projectLabel}</span>
-				</BreadcrumbItem>
-				<BreadcrumbSeparator />
-				<BreadcrumbItem className='min-w-0'>
-					<BreadcrumbPage className='truncate font-semibold'>
-						{task.title || '任务详情'}
-					</BreadcrumbPage>
-				</BreadcrumbItem>
-			</BreadcrumbList>
-		</Breadcrumb>
 	)
 }

@@ -23,15 +23,10 @@ import {
 } from '@/features/task/model/useTaskStore'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-} from '@/shared/ui/base/breadcrumb'
-import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import type { TaskStatus } from '@/shared/types'
-import { ListTodoIcon, PlusIcon } from 'lucide-react'
+import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
+import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { PlusIcon } from 'lucide-react'
 
 const ALL_SCOPE = { type: 'all' } as const
 
@@ -78,6 +73,7 @@ export function AllTasksPage() {
 		deleteListTask,
 		updateTaskPlacement,
 	} = useTaskListController()
+	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 	const projectOptions = useProjectStore(selectProjectOptions)
 	const spaces = useSpaceStore(selectSpaces)
 	const { controller, filteredTasks } = useTaskPageFilterController({
@@ -113,7 +109,7 @@ export function AllTasksPage() {
 			buildTaskCommandSelection({
 				selectedIds: selectionSnapshot.ids,
 				tasks: filteredTasks,
-				fallbackSubtitle: (task) => (task.inboxAt ? 'Inbox' : '独立事项'),
+				fallbackSubtitle: (task) => (task.inboxAt ? '收件箱' : '独立事项'),
 				focusedTaskId,
 				clearSelection: clearTaskSelection,
 			}),
@@ -179,7 +175,7 @@ export function AllTasksPage() {
 					spaces,
 				},
 			}}
-			breadcrumb={<AllTasksBreadcrumb />}
+			breadcrumb={<AppBreadcrumb items={breadcrumbItems} />}
 			bulkBar={
 				<BulkActionBar
 					action={<BulkCommandMenuAction />}
@@ -232,20 +228,5 @@ export function AllTasksPage() {
 				},
 			}))}
 		/>
-	)
-}
-
-function AllTasksBreadcrumb() {
-	return (
-		<Breadcrumb>
-			<BreadcrumbList className='text-sm font-semibold leading-5'>
-				<BreadcrumbItem>
-					<BreadcrumbPage className={breadcrumbLeadClass}>
-						<ListTodoIcon aria-hidden className={breadcrumbLeadIconClass} />
-						所有任务
-					</BreadcrumbPage>
-				</BreadcrumbItem>
-			</BreadcrumbList>
-		</Breadcrumb>
 	)
 }

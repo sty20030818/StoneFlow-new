@@ -7,13 +7,6 @@ import {
 	useRegisterPageFilterController,
 	useTaskPageFilterController,
 } from '@/features/filter/model'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-} from '@/shared/ui/base/breadcrumb'
-import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
@@ -32,7 +25,9 @@ import {
 	useTaskStore,
 } from '@/features/task/model/useTaskStore'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
-import { InboxIcon, PlusIcon } from 'lucide-react'
+import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
+import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { PlusIcon } from 'lucide-react'
 
 const ALL_SCOPE = { type: 'all' } as const
 
@@ -79,6 +74,7 @@ export function InboxPage() {
 			spaceId ? projectOptions.filter((project) => project.spaceId === spaceId) : projectOptions,
 		[projectOptions, spaceId],
 	)
+	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 	const { controller, filteredTasks } = useTaskPageFilterController({
 		tasks: taskSourceItems,
 		projects: inboxProjectOptions,
@@ -116,7 +112,7 @@ export function InboxPage() {
 			buildTaskCommandSelection({
 				selectedIds: selectionSnapshot.ids,
 				tasks: filteredTasks,
-				fallbackSubtitle: 'Inbox',
+				fallbackSubtitle: '收件箱',
 				focusedTaskId,
 				clearSelection: clearTaskSelection,
 			}),
@@ -183,7 +179,7 @@ export function InboxPage() {
 					spaces,
 				},
 			}}
-			breadcrumb={<InboxBreadcrumb />}
+			breadcrumb={<AppBreadcrumb items={breadcrumbItems} />}
 			bulkBar={
 				<BulkActionBar
 					action={<BulkCommandMenuAction />}
@@ -207,20 +203,5 @@ export function InboxPage() {
 				},
 			]}
 		/>
-	)
-}
-
-function InboxBreadcrumb() {
-	return (
-		<Breadcrumb>
-			<BreadcrumbList className='text-sm font-semibold leading-5'>
-				<BreadcrumbItem>
-					<BreadcrumbPage className={breadcrumbLeadClass}>
-						<InboxIcon aria-hidden className={breadcrumbLeadIconClass} />
-						收件箱
-					</BreadcrumbPage>
-				</BreadcrumbItem>
-			</BreadcrumbList>
-		</Breadcrumb>
 	)
 }

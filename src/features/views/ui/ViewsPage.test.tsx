@@ -228,6 +228,8 @@ describe('ViewsPage', () => {
 		})
 
 		expect(screen.getByRole('button', { name: '操作' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: 'Today' })).toHaveAttribute('aria-current', 'page')
 	})
 
 	it('点击系统视图 tab 后切换到新的视图 id', async () => {

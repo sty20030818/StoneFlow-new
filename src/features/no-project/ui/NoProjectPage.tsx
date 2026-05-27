@@ -23,14 +23,9 @@ import {
 } from '@/features/task/model/useTaskStore'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
-import {
-	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
-	BreadcrumbPage,
-} from '@/shared/ui/base/breadcrumb'
-import { breadcrumbLeadClass, breadcrumbLeadIconClass } from '@/shared/ui/patterns/breadcrumb'
-import { Layers3Icon, PlusIcon, TargetIcon } from 'lucide-react'
+import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
+import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { Layers3Icon, PlusIcon } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
 
 const ALL_SCOPE = { type: 'all' } as const
@@ -80,6 +75,7 @@ export function NoProjectPage() {
 		deleteListTask,
 		updateTaskPlacement,
 	} = useTaskListController()
+	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 	const { controller, filteredTasks } = useTaskPageFilterController({
 		tasks: taskSourceItems,
 		capabilities: {
@@ -184,7 +180,7 @@ export function NoProjectPage() {
 					spaces,
 				},
 			}}
-			breadcrumb={<NoProjectBreadcrumb />}
+			breadcrumb={<AppBreadcrumb items={breadcrumbItems} />}
 			bulkBar={
 				<BulkActionBar
 					action={<BulkCommandMenuAction />}
@@ -218,20 +214,5 @@ export function NoProjectPage() {
 					}),
 			}))}
 		/>
-	)
-}
-
-function NoProjectBreadcrumb() {
-	return (
-		<Breadcrumb>
-			<BreadcrumbList className='text-sm font-semibold leading-5'>
-				<BreadcrumbItem>
-					<BreadcrumbPage className={breadcrumbLeadClass}>
-						<TargetIcon aria-hidden className={breadcrumbLeadIconClass} />
-						独立事项
-					</BreadcrumbPage>
-				</BreadcrumbItem>
-			</BreadcrumbList>
-		</Breadcrumb>
 	)
 }

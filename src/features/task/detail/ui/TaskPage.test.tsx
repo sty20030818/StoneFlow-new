@@ -108,6 +108,7 @@ describe('TaskPage', () => {
 		renderTaskPage()
 
 		expect(screen.getByText('任务 A')).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '独立事项' })).toBeInTheDocument()
 		expect(screen.getByText('Links for task-1')).toBeInTheDocument()
 		expect(screen.getAllByText('归属').length).toBeGreaterThan(0)
 		expect(screen.getAllByText('空间').length).toBeGreaterThan(0)
@@ -136,6 +137,32 @@ describe('TaskPage', () => {
 		expect(await screen.findByRole('menuitem', { name: /独立事项/ })).toBeInTheDocument()
 		expect(screen.getAllByText('空间').length).toBeGreaterThan(0)
 		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
+	})
+
+	it('项目任务显示项目链路，收件箱任务显示收件箱链路', () => {
+		mockDetailController.value = {
+			...mockDetailController.value,
+			task: createTaskDetail({
+				projectId: 'project-1',
+				projectName: '项目 A',
+			}),
+		}
+
+		const view = renderTaskPage()
+		expect(screen.getByRole('link', { name: '项目总览' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '项目 A' })).toBeInTheDocument()
+
+		mockDetailController.value = {
+			...mockDetailController.value,
+			task: createTaskDetail({
+				projectId: null,
+				projectName: null,
+				inboxAt: '2026-05-19T00:00:00Z',
+			}),
+		}
+
+		view.rerender(renderTaskPageElement())
+		expect(screen.getByRole('link', { name: '收件箱' })).toBeInTheDocument()
 	})
 
 	it('真实详情可用前不会先用 fallback draft 渲染错误字段', async () => {
