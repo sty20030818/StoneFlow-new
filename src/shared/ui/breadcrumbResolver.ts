@@ -1,5 +1,6 @@
 import { BoxIcon, FolderIcon, InboxIcon, Layers2Icon, ListTodoIcon, TargetIcon, Trash2Icon } from 'lucide-react'
 
+import { getSectionLabel } from '@/app/layouts/shell/config'
 import {
 	buildCanonicalProjectPath,
 	buildCanonicalSectionPath,
@@ -41,17 +42,14 @@ const SECTION_BREADCRUMB_PRESETS = {
 	},
 	archive: {
 		key: 'archive',
-		label: '归档',
 		icon: BoxIcon,
 	},
 	trash: {
 		key: 'trash',
-		label: '废纸篓',
 		icon: Trash2Icon,
 	},
 	views: {
 		key: 'views',
-		label: '视图',
 		icon: Layers2Icon,
 	},
 } as const
@@ -191,7 +189,7 @@ function toSectionBreadcrumb(
 	const preset = SECTION_BREADCRUMB_PRESETS[section]
 	return {
 		key: preset.key,
-		label: preset.label,
+		label: getSectionLabel(section),
 		icon: preset.icon,
 		current: true,
 		to: buildCanonicalSectionPath(resolveRouteScope(route), section, route.spaceId),

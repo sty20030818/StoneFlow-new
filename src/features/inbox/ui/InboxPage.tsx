@@ -136,8 +136,9 @@ export function InboxPage() {
 				boardConfig: {
 					variant: 'inbox',
 					emptyActionLabel: '创建任务',
-					emptyDescription: '新捕获的任务会先进入 Inbox，补齐项目后再离开。',
-					emptyTitle: '当前 Inbox 已清空',
+					emptyDescription:
+						'新捕获的任务都会先来到这里，现在这一批已经整理完了。点「创建任务」也可以先记一条，之后再决定把它放去哪里。',
+					emptyTitle: 'Inbox 已清空',
 					hideEmptySections: true,
 					statusOrder: ACTIVE_TASK_BOARD_STATUS_ORDER,
 				},

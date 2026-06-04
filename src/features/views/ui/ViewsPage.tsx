@@ -250,9 +250,11 @@ export function ViewsPage() {
 					boardConfig: {
 						variant: 'view',
 						customSections: sections,
-						emptyActionLabel: '创建任务',
-						emptyDescription: activeView?.description ?? '当前视图下没有符合条件的任务。',
-						emptyTitle: activeView ? `${activeView.name} 暂无任务` : '暂无视图',
+						emptyActionLabel: activeView ? '创建任务' : '创建视图',
+						emptyDescription: activeView
+							? `视图「${activeView.name}」下还没有符合条件的任务。点「创建任务」新增一项，或者调整一下视图条件再看看。`
+							: '这里会显示你整理好的任务视图，现在还没准备好。点「创建视图」先建一个，后面筛选、回看和聚焦都会更顺手。',
+						emptyTitle: activeView ? '当前没有任务' : '当前还没有视图',
 						hideEmptySections: true,
 					},
 					boardData: {
@@ -267,7 +269,15 @@ export function ViewsPage() {
 						onArchiveTask: archiveListTask,
 						onClearTaskSelection: clearTaskSelection,
 						onDeleteTask: deleteListTask,
-						onEmptyAction: () => openTaskCreateDialog({ status: 'todo' }),
+						onEmptyAction: () => {
+							if (activeView) {
+								openTaskCreateDialog({ status: 'todo' })
+								return
+							}
+
+							setEditingView(null)
+							setEditorOpen(true)
+						},
 						onOpenTask: (taskId) => {
 							taskPreviewController.closePreview()
 							openEntityDrawer({ kind: 'task', id: taskId })

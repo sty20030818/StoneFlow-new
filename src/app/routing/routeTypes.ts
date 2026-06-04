@@ -10,6 +10,7 @@ export type ShellSectionSegment =
 	| 'no-project'
 	| 'archive'
 	| 'trash'
+	| 'settings'
 
 export type ShellSectionKey =
 	| 'inbox'
@@ -19,11 +20,11 @@ export type ShellSectionKey =
 	| 'noProject'
 	| 'archive'
 	| 'trash'
+	| 'settings'
 
 export type AppRouteKind =
 	| 'startup'
 	| 'quick-create'
-	| 'settings'
 	| 'debug-activity'
 	| 'shell-section'
 	| 'view'
@@ -42,13 +43,6 @@ export type AppRoute =
 	| {
 			kind: 'quick-create'
 			pathname: '/quick-create'
-			search: string
-			hash: string
-			fullPath: string
-	  }
-	| {
-			kind: 'settings'
-			pathname: '/settings'
 			search: string
 			hash: string
 			fullPath: string

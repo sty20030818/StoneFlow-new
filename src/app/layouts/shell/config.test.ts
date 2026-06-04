@@ -1,5 +1,5 @@
 import { getScopeLabel, getSectionLabel, getSpaceLabel } from '@/app/layouts/shell/config'
-import { resolveShellSection } from '@/app/routing'
+import { buildScopedSettingsPath, resolveShellSection } from '@/app/routing'
 
 const spaces = [
 	{
@@ -25,6 +25,7 @@ describe('shell config helpers', () => {
 		expect(resolveShellSection('/spaces/space-personal/projects')).toBe('projects')
 		expect(resolveShellSection('/spaces/space-personal/archive')).toBe('archive')
 		expect(resolveShellSection('/spaces/space-personal/trash')).toBe('trash')
+		expect(resolveShellSection('/spaces/space-personal/settings')).toBe('settings')
 		expect(resolveShellSection('/spaces/space-personal/projects/stoneflow-v1')).toBe('projects')
 	})
 
@@ -34,9 +35,17 @@ describe('shell config helpers', () => {
 		expect(getSectionLabel('views')).toBe('视图')
 		expect(getSectionLabel('projects')).toBe('项目总览')
 		expect(getSectionLabel('archive')).toBe('归档')
+		expect(getSectionLabel('settings')).toBe('设置')
 		expect(getSpaceLabel('space-personal', spaces)).toBe('个人')
 		expect(getScopeLabel({ type: 'all' }, spaces)).toBe('所有空间')
 		expect(getScopeLabel({ type: 'space', spaceId: 'space-personal' }, spaces)).toBe('个人')
+	})
+
+	it('设置页路径跟随当前 scope', () => {
+		expect(buildScopedSettingsPath({ type: 'all' })).toBe('/all/settings')
+		expect(buildScopedSettingsPath({ type: 'space', spaceId: 'space-personal' })).toBe(
+			'/spaces/space-personal/settings',
+		)
 	})
 
 	it('为未知值返回兜底标签', () => {

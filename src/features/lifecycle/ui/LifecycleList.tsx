@@ -175,9 +175,9 @@ export function LifecycleList({ mode, title }: LifecycleListProps) {
 						emptyActionLabel: '返回收件箱',
 						emptyDescription:
 							mode === 'archive'
-								? '归档后的内容会统一出现在这里。'
-								: '删除后的内容会统一出现在这里，等待恢复或永久删除。',
-						emptyTitle: `${title}为空`,
+								? '归档后的任务和项目会放在这里。点「返回收件箱」先回去继续处理手头内容就好。'
+								: '删除后的任务和项目会先来到这里。点「返回收件箱」先回去继续处理内容就好。',
+						emptyTitle: mode === 'archive' ? '当前没有已归档内容' : '当前没有已删除内容',
 						mode,
 					},
 					boardData: {

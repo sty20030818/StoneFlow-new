@@ -11,7 +11,6 @@ const setItemVisibilitySpy =
 	vi.fn<(target: { kind: 'main'; key: string }, visible: boolean) => Promise<void>>()
 const setProjectSectionConfigSpy =
 	vi.fn<(config: ShellSidebarSettings['projectSection']) => Promise<void>>()
-const setSidebarWidthSpy = vi.fn<(width: number) => Promise<void>>()
 const loadSpacesSpy = vi.fn<() => Promise<void>>()
 const setDefaultSpaceSpy = vi.fn<(spaceId: string) => Promise<Space>>()
 
@@ -39,8 +38,10 @@ vi.mock('@/app/routing', async () => {
 	return {
 		...actual,
 		useShellRoute: () => ({
+			kind: 'shell-section',
 			scope: { type: 'all' },
 			spaceId: null,
+			section: 'settings',
 		}),
 	}
 })
@@ -146,8 +147,6 @@ describe('SettingsPage', () => {
 		setItemVisibilitySpy.mockResolvedValue(undefined)
 		setProjectSectionConfigSpy.mockReset()
 		setProjectSectionConfigSpy.mockResolvedValue(undefined)
-		setSidebarWidthSpy.mockReset()
-		setSidebarWidthSpy.mockResolvedValue(undefined)
 		loadSpacesSpy.mockReset()
 		loadSpacesSpy.mockResolvedValue(undefined)
 		setDefaultSpaceSpy.mockReset()
@@ -171,21 +170,31 @@ describe('SettingsPage', () => {
 			expect(loadSpacesSpy).toHaveBeenCalledTimes(1)
 		})
 
-		expect(screen.getByText('V1 页面设置')).toBeInTheDocument()
+		expect(screen.getByText('工作区设置')).toBeInTheDocument()
 		expect(screen.getByText('Sidebar 主入口')).toBeInTheDocument()
-		expect(screen.getByText('Projects Section')).toBeInTheDocument()
-		expect(screen.getByText('Sidebar Width')).toBeInTheDocument()
-		expect(screen.getByText('默认 Space')).toBeInTheDocument()
+		expect(screen.getByText('辅助入口')).toBeInTheDocument()
+		expect(screen.getByText('项目分区')).toBeInTheDocument()
+		expect(screen.getByText('默认空间')).toBeInTheDocument()
 		expect(screen.queryByText('设置功能建设中')).not.toBeInTheDocument()
 	})
 
 	it('切换主入口显隐时调用 sidebar settings store', async () => {
 		renderSettingsPage()
 
-		fireEvent.click(getCheckboxByLabel('All Tasks'))
+		fireEvent.click(getCheckboxByLabel('所有任务'))
 
 		await waitFor(() => {
 			expect(setItemVisibilitySpy).toHaveBeenCalledWith({ kind: 'main', key: 'allTasks' }, false)
+		})
+	})
+
+	it('切换辅助入口显隐时调用 sidebar settings store', async () => {
+		renderSettingsPage()
+
+		fireEvent.click(getCheckboxByLabel('回收站'))
+
+		await waitFor(() => {
+			expect(setItemVisibilitySpy).toHaveBeenCalledWith({ kind: 'footer', key: 'trash' }, false)
 		})
 	})
 
@@ -202,22 +211,10 @@ describe('SettingsPage', () => {
 		})
 	})
 
-	it('提交 Sidebar 宽度时调用宽度更新', async () => {
-		renderSettingsPage()
-
-		const widthInput = screen.getByLabelText('宽度（px）')
-		fireEvent.change(widthInput, { target: { value: '320' } })
-		fireEvent.blur(widthInput)
-
-		await waitFor(() => {
-			expect(setSidebarWidthSpy).toHaveBeenCalledWith(320)
-		})
-	})
-
 	it('切换默认 Space 时调用 setDefaultSpace', async () => {
 		renderSettingsPage()
 
-		fireEvent.change(screen.getByLabelText('默认 Space'), { target: { value: 'space-2' } })
+		fireEvent.change(screen.getByLabelText('默认空间'), { target: { value: 'space-2' } })
 
 		await waitFor(() => {
 			expect(setDefaultSpaceSpy).toHaveBeenCalledWith('space-2')
@@ -255,7 +252,7 @@ function createSidebarStoreState() {
 		load: loadSidebarSettingsSpy,
 		resetMainItemsVisibility: vi.fn(),
 		setItemVisibility: setItemVisibilitySpy,
-		setSidebarWidth: setSidebarWidthSpy,
+		setSidebarWidth: vi.fn(),
 		setDesktopPreference: vi.fn(),
 		setProjectSectionConfig: setProjectSectionConfigSpy,
 	}

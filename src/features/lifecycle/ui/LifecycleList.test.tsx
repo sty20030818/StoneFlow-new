@@ -182,9 +182,9 @@ describe('LifecycleList', () => {
 			expect(loadTrashSpy).toHaveBeenCalledWith({ type: 'all' })
 		})
 
-		expect(screen.getByText('回收站为空')).toBeInTheDocument()
+		expect(screen.getByText('当前没有已删除内容')).toBeInTheDocument()
 		expect(
-			screen.getByText('删除后的内容会统一出现在这里，等待恢复或永久删除。'),
+			screen.getByText('删除后的任务和项目会先来到这里。点「返回收件箱」先回去继续处理内容就好。'),
 		).toBeInTheDocument()
 	})
 

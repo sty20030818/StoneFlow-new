@@ -215,7 +215,8 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 					...(project
 						? {
 								emptyActionLabel: '创建任务',
-								emptyDescription: '创建第一个任务来推进项目叭。',
+								emptyDescription:
+									'这个项目里还没有任务，所以现在还看不到进展内容。点「创建任务」先放进第一项，项目就能开始往前推进了。',
 								emptyTitle: '当前项目没有任务',
 							}
 						: {}),

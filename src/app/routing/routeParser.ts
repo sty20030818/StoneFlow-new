@@ -91,10 +91,6 @@ export function parseAppRoute(
 		return { kind: 'quick-create', pathname: '/quick-create', search, hash, fullPath }
 	}
 
-	if (pathname === '/settings') {
-		return { kind: 'settings', pathname: '/settings', search, hash, fullPath }
-	}
-
 	if (pathname === '/debug/activity') {
 		return { kind: 'debug-activity', pathname: '/debug/activity', search, hash, fullPath }
 	}
@@ -264,6 +260,10 @@ function parseScopedWorkRoute(
 		return { kind: 'shell-section', scope, section: 'trash', pathname, search, hash, fullPath }
 	}
 
+	if (remainder === 'settings') {
+		return { kind: 'shell-section', scope, section: 'settings', pathname, search, hash, fullPath }
+	}
+
 	return {
 		kind: 'unknown',
 		pathname,
@@ -282,6 +282,7 @@ function isCanonicalAllRemainder(remainder: string) {
 		remainder === 'no-project' ||
 		remainder === 'archive' ||
 		remainder === 'trash' ||
+		remainder === 'settings' ||
 		Boolean(remainder.match(VIEW_DETAIL_REMAINDER))
 	)
 }
@@ -295,6 +296,7 @@ function isCanonicalSpaceRemainder(remainder: string) {
 		remainder === 'no-project' ||
 		remainder === 'archive' ||
 		remainder === 'trash' ||
+		remainder === 'settings' ||
 		Boolean(remainder.match(VIEW_DETAIL_REMAINDER))
 	)
 }

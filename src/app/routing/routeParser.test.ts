@@ -21,6 +21,7 @@ describe('routeParser', () => {
 		expect(resolveShellSection('/spaces/space-personal/projects')).toBe('projects')
 		expect(resolveShellSection('/spaces/space-personal/archive')).toBe('archive')
 		expect(resolveShellSection('/spaces/space-personal/trash')).toBe('trash')
+		expect(resolveShellSection('/spaces/space-personal/settings')).toBe('settings')
 		expect(resolveShellSection('/spaces/space-personal/tasks/task-a')).toBe('tasks')
 		expect(resolveShellSection('/spaces/space-personal/projects/project-a')).toBe('projects')
 	})
@@ -36,6 +37,10 @@ describe('routeParser', () => {
 			spaceId: 'space-a',
 		})
 		expect(parseShellScopePath('/spaces/space-a/projects/project-a')).toEqual({
+			type: 'space',
+			spaceId: 'space-a',
+		})
+		expect(parseShellScopePath('/spaces/space-a/settings')).toEqual({
 			type: 'space',
 			spaceId: 'space-a',
 		})
@@ -80,6 +85,14 @@ describe('routeParser', () => {
 			section: 'projects',
 			projectId: 'project-a',
 			kind: 'project',
+		})
+
+		expect(parseShellRoute('/spaces/space-a/settings')).toMatchObject({
+			scope: { type: 'space', spaceId: 'space-a' },
+			spaceId: 'space-a',
+			section: 'settings',
+			kind: 'shell-section',
+			isShellPath: true,
 		})
 
 		expect(parseShellRoute(OLD_NO_PROJECT_PATH)).toMatchObject({

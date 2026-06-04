@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-import { buildCanonicalSectionPath, buildSettingsPath } from '@/app/routing'
+import { buildCanonicalSectionPath, buildScopedSettingsPath } from '@/app/routing'
 import type { ShellDrawerKind, ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope, Space } from '@/shared/types'
 import type { BadgeVariant } from '@/shared/ui/base/badge'
@@ -113,7 +113,7 @@ export const SHELL_SETTINGS_ITEM: ShellNavItem<'settings'> = {
 	section: 'inbox',
 	label: '设置',
 	icon: Settings2Icon,
-	to: () => buildSettingsPath(),
+	to: (scope, fallbackSpaceId) => buildScopedSettingsPath(scope, fallbackSpaceId),
 }
 
 export const SHELL_COMMAND_ROUTE_ITEMS = [
@@ -140,6 +140,8 @@ export function getSectionLabel(section: ShellSectionKey) {
 			return '归档'
 		case 'trash':
 			return '回收站'
+		case 'settings':
+			return '设置'
 		default:
 			return '工作区'
 	}

@@ -117,6 +117,14 @@ describe('resolveBreadcrumb', () => {
 		])
 	})
 
+	it('trash section 复用统一的 section 文案', () => {
+		expect(
+			resolveBreadcrumb({
+				route: createRoute({ kind: 'shell-section', section: 'trash' }),
+			}),
+		).toMatchObject([{ label: '回收站', current: true, to: '/all/trash' }])
+	})
+
 	it('缺少名称时使用兜底文案', () => {
 		expect(
 			resolveBreadcrumb({

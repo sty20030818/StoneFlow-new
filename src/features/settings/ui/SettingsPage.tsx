@@ -1,7 +1,7 @@
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
-import { buildCanonicalSectionPath } from '@/app/routing'
+import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import { EntityScene } from '@/app/layouts/entity-scene'
 import {
 	selectSidebarSettings,
@@ -24,7 +24,6 @@ import {
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
 import { Button } from '@/shared/ui/base/button'
-import { Input } from '@/shared/ui/base/input'
 import {
 	Select,
 	SelectContent,
@@ -33,7 +32,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/shared/ui/base/select'
-import { Switch } from '@/shared/ui/base/switch'
 import {
 	formFieldHintClass,
 	formFieldLabelVariants,
@@ -55,17 +53,17 @@ const MAIN_ITEM_OPTIONS: Array<{
 	label: string
 	description: string
 }> = [
-	{ key: 'inbox', label: 'Inbox', description: '保留任务收集入口，支持快速回到待整理列表。' },
-	{ key: 'allTasks', label: 'All Tasks', description: '统一查看当前范围内所有任务。' },
-	{ key: 'views', label: 'Views', description: '展示视图入口，承接列表和看板等任务视图。' },
+	{ key: 'inbox', label: '收件箱', description: '保留任务收集入口，方便快速回到待整理列表。' },
+	{ key: 'allTasks', label: '所有任务', description: '统一查看当前范围内的全部任务。' },
+	{ key: 'views', label: '视图', description: '保留视图入口，方便按条件聚焦任务。' },
 	{
 		key: 'projectOverview',
-		label: 'Project Overview',
-		description: '提供项目总览入口，便于按 Space 聚合查看项目。',
+		label: '项目总览',
+		description: '保留项目入口，方便集中查看和管理项目。',
 	},
 ]
 
-type SettingsSectionKey = 'mainItems' | 'projectSection' | 'sidebarWidth' | 'defaultSpace'
+type SettingsSectionKey = 'mainItems' | 'footerItems' | 'projectSection' | 'defaultSpace'
 
 type SectionStateMap = Record<SettingsSectionKey, boolean>
 type SectionErrorMap = Partial<Record<SettingsSectionKey, string>>
@@ -74,13 +72,15 @@ type SectionErrorMap = Partial<Record<SettingsSectionKey, string>>
  * 阶段 11：设置页只负责组织现有 settings / space store，不复制配置状态。
  */
 export function SettingsPage() {
+	const shellRoute = useShellRoute()
+	const scope = shellRoute.scope ?? { type: 'all' as const }
+	const fallbackSpaceId = shellRoute.spaceId
 	const sidebarStatus = useSidebarSettingsStore(selectSidebarSettingsStatus)
 	const sidebarSettings = useSidebarSettingsStore(selectSidebarSettings)
 	const sidebarError = useSidebarSettingsStore(selectSidebarSettingsError)
 	const loadSidebarSettings = useSidebarSettingsStore((state) => state.load)
 	const setItemVisibility = useSidebarSettingsStore((state) => state.setItemVisibility)
 	const setProjectSectionConfig = useSidebarSettingsStore((state) => state.setProjectSectionConfig)
-	const setSidebarWidth = useSidebarSettingsStore((state) => state.setSidebarWidth)
 
 	const spaces = useSpaceStore(selectSpaces)
 	const spaceStatus = useSpaceStore(selectSpaceStatus)
@@ -88,34 +88,28 @@ export function SettingsPage() {
 	const loadSpaces = useSpaceStore((state) => state.load)
 	const setDefaultSpace = useSpaceStore((state) => state.setDefaultSpace)
 
-	const [sidebarWidthDraft, setSidebarWidthDraft] = useState('')
 	const [pendingSections, setPendingSections] = useState<SectionStateMap>({
 		mainItems: false,
+		footerItems: false,
 		projectSection: false,
-		sidebarWidth: false,
 		defaultSpace: false,
 	})
 	const [sectionErrors, setSectionErrors] = useState<SectionErrorMap>({})
-	const [switchDemoDefault, setSwitchDemoDefault] = useState(false)
-	const [switchDemoSmall, setSwitchDemoSmall] = useState(false)
 
 	useEffect(() => {
 		void loadSidebarSettings().catch(() => undefined)
 		void loadSpaces()
 	}, [loadSidebarSettings, loadSpaces])
 
-	useEffect(() => {
-		if (!sidebarSettings) {
-			return
-		}
-
-		setSidebarWidthDraft(String(sidebarSettings.width))
-	}, [sidebarSettings])
-
 	const visibleMainItemCount =
 		sidebarSettings === null
 			? 0
 			: MAIN_ITEM_OPTIONS.filter((item) => sidebarSettings.mainItems[item.key].visible).length
+	const visibleFooterItemCount =
+		sidebarSettings === null
+			? 0
+			: (sidebarSettings.footerItems.archive.visible ? 1 : 0) +
+				(sidebarSettings.footerItems.trash.visible ? 1 : 0)
 	const defaultSpaceId = spaces.find((space) => space.isDefault)?.id ?? ''
 	const isSettingsLoading =
 		(sidebarStatus === 'idle' || sidebarStatus === 'loading') && sidebarSettings === null
@@ -163,6 +157,24 @@ export function SettingsPage() {
 		})
 	}
 
+	function handleFooterItemVisibilityChange(key: 'archive' | 'trash', visible: boolean) {
+		if (!sidebarSettings) {
+			return
+		}
+
+		if (!visible && sidebarSettings.footerItems[key].visible && visibleFooterItemCount === 1) {
+			setSectionErrors((state) => ({
+				...state,
+				footerItems: '至少保留一个辅助入口，避免底部区域完全消失。',
+			}))
+			return
+		}
+
+		void runSectionUpdate('footerItems', async () => {
+			await setItemVisibility({ kind: 'footer', key }, visible)
+		})
+	}
+
 	function handleProjectSectionChange(
 		key: 'visible' | 'showCompleted' | 'showCounts',
 		value: boolean,
@@ -177,43 +189,6 @@ export function SettingsPage() {
 				[key]: value,
 			})
 		})
-	}
-
-	function handleSidebarWidthCommit() {
-		if (!sidebarSettings) {
-			return
-		}
-
-		const parsedWidth = Number(sidebarWidthDraft.trim())
-		if (!Number.isInteger(parsedWidth) || parsedWidth <= 0) {
-			setSidebarWidthDraft(String(sidebarSettings.width))
-			setSectionErrors((state) => ({
-				...state,
-				sidebarWidth: '请输入大于 0 的整数宽度，失焦后会恢复到当前保存值。',
-			}))
-			return
-		}
-
-		if (parsedWidth === sidebarSettings.width) {
-			setSectionErrors((state) => ({
-				...state,
-				sidebarWidth: undefined,
-			}))
-			return
-		}
-
-		void runSectionUpdate('sidebarWidth', async () => {
-			await setSidebarWidth(parsedWidth)
-		})
-	}
-
-	function handleSidebarWidthKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-		if (event.key !== 'Enter') {
-			return
-		}
-
-		event.preventDefault()
-		handleSidebarWidthCommit()
 	}
 
 	function handleDefaultSpaceChange(nextSpaceId: string) {
@@ -245,7 +220,7 @@ export function SettingsPage() {
 					{sidebarSettings ? (
 						<>
 							<SettingsSection
-								description='控制 Shell 顶部主导航入口是否显示。至少保留一个主入口，避免侧边栏失去导航能力。'
+								description='控制侧边栏主导航里哪些入口显示。至少保留一个主入口，避免侧边栏失去基本导航能力。'
 								title='Sidebar 主入口'
 							>
 								<div className='grid gap-3 md:grid-cols-2'>
@@ -281,20 +256,62 @@ export function SettingsPage() {
 							</SettingsSection>
 
 							<SettingsSection
-								description='只暴露 V1 真正会影响导航认知的 Projects 配置，不把 drawer、theme、density 混进本期。'
-								title='Projects Section'
+								description='控制底部辅助入口是否显示，方便决定归档和回收站要不要常驻侧边栏。'
+								title='辅助入口'
+							>
+								<div className='grid gap-3 md:grid-cols-2'>
+									<SettingCheckboxRow
+										checked={sidebarSettings.footerItems.archive.visible}
+										description='显示归档入口，方便集中查看暂时收起的内容。'
+										disabled={
+											pendingSections.footerItems ||
+											(sidebarSettings.footerItems.archive.visible && visibleFooterItemCount === 1)
+										}
+										label='归档'
+										onChange={(nextChecked) =>
+											handleFooterItemVisibilityChange('archive', nextChecked)
+										}
+									/>
+									<SettingCheckboxRow
+										checked={sidebarSettings.footerItems.trash.visible}
+										description='显示回收站入口，方便恢复或彻底删除内容。'
+										disabled={
+											pendingSections.footerItems ||
+											(sidebarSettings.footerItems.trash.visible && visibleFooterItemCount === 1)
+										}
+										label='回收站'
+										onChange={(nextChecked) =>
+											handleFooterItemVisibilityChange('trash', nextChecked)
+										}
+									/>
+								</div>
+								{sectionErrors.footerItems ? (
+									<StatusNotice
+										className={`mt-4 ${statusNoticeCompactTextClass}`}
+										role='alert'
+										size='sm'
+										variant='danger'
+									>
+										{sectionErrors.footerItems}
+									</StatusNotice>
+								) : null}
+							</SettingsSection>
+
+							<SettingsSection
+								description='控制项目分区在侧边栏里的呈现方式，只保留真正会影响日常导航的几项。'
+								title='项目分区'
 							>
 								<div className='grid gap-3 md:grid-cols-3'>
 									<SettingCheckboxRow
 										checked={sidebarSettings.projectSection.visible}
-										description='决定 Sidebar 中是否展示项目列表分区。'
+										description='决定侧边栏中是否展示项目分区。'
 										disabled={pendingSections.projectSection}
-										label='显示 Projects'
+										label='显示项目分区'
 										onChange={(nextChecked) => handleProjectSectionChange('visible', nextChecked)}
 									/>
 									<SettingCheckboxRow
 										checked={sidebarSettings.projectSection.showCompleted}
-										description='控制项目列表是否包含已完成项目。'
+										description='控制项目分区里是否包含已完成项目。'
 										disabled={pendingSections.projectSection}
 										label='显示已完成项目'
 										onChange={(nextChecked) =>
@@ -322,45 +339,12 @@ export function SettingsPage() {
 									</StatusNotice>
 								) : null}
 							</SettingsSection>
-
-							<SettingsSection
-								description='输入桌面侧边栏宽度，按 Enter 或失焦后立即保存。服务端会做最终约束。'
-								title='Sidebar Width'
-							>
-								<div className='flex flex-col gap-3 md:max-w-sm'>
-									<label className={formFieldStackClass} htmlFor='sidebar-width'>
-										<span className={formFieldLabelVariants()}>宽度（px）</span>
-										<Input
-											className='h-10'
-											disabled={pendingSections.sidebarWidth}
-											id='sidebar-width'
-											inputMode='numeric'
-											onBlur={handleSidebarWidthCommit}
-											onChange={(event) => setSidebarWidthDraft(event.currentTarget.value)}
-											onKeyDown={handleSidebarWidthKeyDown}
-											placeholder='例如 256'
-											value={sidebarWidthDraft}
-										/>
-									</label>
-									<p className={formFieldHintClass}>当前保存值：{sidebarSettings.width}px</p>
-								</div>
-								{sectionErrors.sidebarWidth ? (
-									<StatusNotice
-										className={`mt-4 ${statusNoticeCompactTextClass}`}
-										role='alert'
-										size='sm'
-										variant='danger'
-									>
-										{sectionErrors.sidebarWidth}
-									</StatusNotice>
-								) : null}
-							</SettingsSection>
 						</>
 					) : null}
 
 					<SettingsSection
-						description='默认 Space 决定全局新建和兜底恢复时优先落点，本期直接复用现有 Space store。'
-						title='默认 Space'
+						description='默认空间会影响全局新建和兜底恢复时的优先落点，建议把最常用的空间放在这里。'
+						title='默认空间'
 					>
 						{spaceStatus === 'error' ? (
 							<StatusNotice
@@ -381,13 +365,13 @@ export function SettingsPage() {
 							/>
 						) : spaces.length === 0 && spaceStatus === 'ready' ? (
 							<StatusNotice
-								description='当前没有可见 Space，暂时无法设置默认 Space。'
-								title='暂无可用 Space'
+								description='当前还没有可用空间，所以暂时不能设置默认项。等空间准备好之后，再回来这里调整就可以了。'
+								title='当前没有可用空间'
 							/>
 						) : (
 							<div className='flex flex-col gap-3 md:max-w-sm'>
 								<label className={formFieldStackClass}>
-									<span className={formFieldLabelVariants()}>选择默认 Space</span>
+									<span className={formFieldLabelVariants()}>选择默认空间</span>
 									<Select
 										disabled={
 											pendingSections.defaultSpace ||
@@ -398,8 +382,8 @@ export function SettingsPage() {
 										onValueChange={handleDefaultSpaceChange}
 										value={defaultSpaceId}
 									>
-										<SelectTrigger aria-label='默认 Space' className='h-10 w-full'>
-											<SelectValue placeholder='选择默认 Space' />
+										<SelectTrigger aria-label='默认空间' className='h-10 w-full'>
+											<SelectValue placeholder='选择默认空间' />
 										</SelectTrigger>
 										<SelectContent position='popper'>
 											<SelectGroup>
@@ -413,7 +397,7 @@ export function SettingsPage() {
 									</Select>
 								</label>
 								<p className={formFieldHintClass}>
-									当前默认值：
+									当前默认项：
 									{spaces.find((space) => space.id === defaultSpaceId)?.name ?? '未设置'}
 								</p>
 							</div>
@@ -430,48 +414,19 @@ export function SettingsPage() {
 						) : null}
 					</SettingsSection>
 
-					<SettingsSection
-						description='临时验证当前 Switch 组件在常规页面里是否能正常点击与切换，方便定位问题是否只出现在任务弹窗。'
-						title='Switch 调试'
-					>
-						<div className='grid gap-3 md:grid-cols-2'>
-							<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-3'>
-								<div className='min-w-0'>
-									<p className='text-sm font-medium text-foreground'>默认尺寸</p>
-									<p className={formFieldHintClass}>当前值：{switchDemoDefault ? '开' : '关'}</p>
-								</div>
-								<Switch
-									checked={switchDemoDefault}
-									onCheckedChange={(checked) => setSwitchDemoDefault(checked === true)}
-								/>
-							</div>
-
-							<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-3'>
-								<div className='min-w-0'>
-									<p className='text-sm font-medium text-foreground'>小号尺寸</p>
-									<p className={formFieldHintClass}>当前值：{switchDemoSmall ? '开' : '关'}</p>
-								</div>
-								<Switch
-									checked={switchDemoSmall}
-									onCheckedChange={(checked) => setSwitchDemoSmall(checked === true)}
-									size='sm'
-								/>
-							</div>
-						</div>
-					</SettingsSection>
 				</div>
 			}
 			bodyClassName='gap-4 p-2'
 			headerActions={
 				<Button asChild size='sm' variant='ghost'>
-					<Link to={buildCanonicalSectionPath({ type: 'all' }, 'tasks')}>返回所有任务</Link>
+					<Link to={buildCanonicalSectionPath(scope, 'tasks', fallbackSpaceId)}>返回所有任务</Link>
 				</Button>
 			}
 			notices={
 				<>
 					<StatusNotice
-						description='阶段 11 只开放最小可用设置：侧边栏入口、Projects 分区、Sidebar 宽度和默认 Space。所有变更都会即时保存。'
-						title='V1 页面设置'
+						description='这里先只开放会影响日常导航和默认落点的设置。所有变更都会立即保存，不需要额外确认。'
+						title='工作区设置'
 					/>
 
 					{isSettingsLoading ? (

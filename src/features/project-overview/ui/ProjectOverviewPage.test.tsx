@@ -19,6 +19,17 @@ const refreshLoadedSlicesSpy = vi.fn<() => Promise<void>>()
 const toastSuccessSpy = vi.fn<(message: string) => void>()
 const toastErrorSpy = vi.fn<(message: string) => void>()
 
+const baseOverviewState = {
+	items: [
+		createProject({ id: 'project-a', name: '项目 A' }),
+		createProject({ id: 'project-b', name: '项目 B' }),
+	],
+	status: 'ready' as const,
+	error: null,
+	scope: { type: 'all' } as Scope,
+	viewKey: 'all_projects' as const,
+}
+
 let storeState = createProjectStoreState()
 
 vi.mock('@/app/layouts/main-card/MainCardLayout', () => ({
@@ -182,6 +193,24 @@ describe('ProjectOverviewPage', () => {
 		expect(toastSuccessSpy).toHaveBeenCalledWith('已归档 2 个项目')
 		expect(screen.queryByText('已选 2 项')).not.toBeInTheDocument()
 	})
+
+	it('空状态文案使用统一的项目总览文案', () => {
+		storeState = createProjectStoreState({
+			overview: {
+				items: [],
+				status: 'ready',
+			},
+		})
+
+		renderProjectOverviewPage()
+
+		expect(screen.getByText('当前没有项目')).toBeInTheDocument()
+		expect(
+			screen.getByText(
+				'这里还没有项目，可以先从一个项目开始。点「创建项目」先建起来，后面的任务和节奏就有地方承接了。',
+			),
+		).toBeInTheDocument()
+	})
 })
 
 function renderProjectOverviewPage() {
@@ -211,18 +240,18 @@ function TestBulkActionBoundary({ children }: { children: ReactNode }) {
 	)
 }
 
-function createProjectStoreState() {
+function createProjectStoreState(
+	overrides?: Partial<{
+		overview: Partial<(typeof baseOverviewState)>
+	}>,
+) {
+	const overview = {
+		...baseOverviewState,
+		...overrides?.overview,
+	}
+
 	return {
-		overview: {
-			items: [
-				createProject({ id: 'project-a', name: '项目 A' }),
-				createProject({ id: 'project-b', name: '项目 B' }),
-			],
-			status: 'ready' as const,
-			error: null,
-			scope: { type: 'all' } as Scope,
-			viewKey: 'all_projects',
-		},
+		overview,
 		loadOverview: loadOverviewSpy,
 		completeProject: vi.fn(),
 		reopenProject: vi.fn(),

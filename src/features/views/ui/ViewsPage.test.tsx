@@ -184,9 +184,27 @@ vi.mock('@/features/task/detail', () => ({
 }))
 
 vi.mock('@/features/task/ui/TaskBoard', () => ({
-	TaskBoard: ({ emptyTitle, tasks }: { emptyTitle: string; tasks: Array<{ title: string }> }) => (
+	TaskBoard: ({
+		emptyActionLabel,
+		emptyDescription,
+		emptyTitle,
+		onEmptyAction,
+		tasks,
+	}: {
+		emptyActionLabel?: string
+		emptyDescription?: string
+		emptyTitle: string
+		onEmptyAction?: () => void
+		tasks: Array<{ title: string }>
+	}) => (
 		<div>
 			<div>{emptyTitle}</div>
+			{emptyDescription ? <div>{emptyDescription}</div> : null}
+			{emptyActionLabel && onEmptyAction ? (
+				<button onClick={onEmptyAction} type='button'>
+					{emptyActionLabel}
+				</button>
+			) : null}
 			<div>{tasks.map((task) => task.title).join(',')}</div>
 		</div>
 	),
@@ -199,7 +217,7 @@ vi.mock('@/features/bulk-action', () => ({
 }))
 
 vi.mock('@/features/view/ui/ViewEditorDialog', () => ({
-	ViewEditorDialog: () => null,
+	ViewEditorDialog: ({ open }: { open: boolean }) => (open ? <div>创建视图弹窗</div> : null),
 }))
 
 describe('ViewsPage', () => {
@@ -207,6 +225,9 @@ describe('ViewsPage', () => {
 		loadTaskViewsSpy.mockReset()
 		runTaskViewSpy.mockReset()
 		loadSidebarSpy.mockReset()
+		openTaskCreateDialogSpy.mockReset()
+		mockViewStoreState.taskViews.items = mockViews
+		mockViewStoreState.taskRun = mockTaskRunState
 	})
 
 	it('根据 canonical view route 解析真实 viewId，并触发视图执行', async () => {
@@ -293,6 +314,59 @@ describe('ViewsPage', () => {
 				}),
 			)
 		})
+	})
+
+	it('有视图但没有任务时展示更完整的空态文案', () => {
+		mockViewStoreState.taskRun = {
+			...mockTaskRunState,
+			item: {
+				...mockTaskRunState.item,
+				items: [],
+			},
+		}
+
+		render(
+			<MemoryRouter initialEntries={['/all/views/view-today']}>
+				<Routes>
+					<Route path='/all/views/:viewId' element={<ViewsPage />} />
+				</Routes>
+			</MemoryRouter>,
+		)
+
+		expect(screen.getByText('当前没有任务')).toBeInTheDocument()
+		expect(
+			screen.getByText(
+				'视图「Today」下还没有符合条件的任务。点「创建任务」新增一项，或者调整一下视图条件再看看。',
+			),
+		).toBeInTheDocument()
+	})
+
+	it('没有可用视图时空态 CTA 打开创建视图弹窗', () => {
+		mockViewStoreState.taskViews.items = []
+		mockViewStoreState.taskRun = {
+			item: null,
+			status: 'ready',
+			error: null,
+			input: null,
+		}
+
+		render(
+			<MemoryRouter initialEntries={['/all/views/view-today']}>
+				<Routes>
+					<Route path='/all/views/:viewId' element={<ViewsPage />} />
+				</Routes>
+			</MemoryRouter>,
+		)
+
+		expect(screen.getByText('当前还没有视图')).toBeInTheDocument()
+		expect(
+			screen.getByText(
+				'这里会显示你整理好的任务视图，现在还没准备好。点「创建视图」先建一个，后面筛选、回看和聚焦都会更顺手。',
+			),
+		).toBeInTheDocument()
+
+		fireEvent.click(screen.getByRole('button', { name: '创建视图' }))
+		expect(screen.getByText('创建视图弹窗')).toBeInTheDocument()
 	})
 })
 

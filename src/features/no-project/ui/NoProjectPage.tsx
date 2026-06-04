@@ -138,8 +138,9 @@ export function NoProjectPage() {
 				boardConfig: {
 					variant: 'no-project',
 					emptyActionLabel: '创建任务',
-					emptyDescription: '这里展示已经离开 Inbox、但仍不属于任何 Project 的任务。',
-					emptyTitle: '当前没有独立事项任务',
+					emptyDescription:
+						'这里会放那些还没归属到项目里的任务，现在暂时还是空的。点「创建任务」先记下来，之后再决定要不要放进某个项目。',
+					emptyTitle: '当前没有独立事项',
 					hideEmptySections: true,
 				},
 				boardData: {

@@ -11,8 +11,8 @@ import { useNavigate } from 'react-router-dom'
 import {
 	buildCanonicalProjectPath,
 	buildCanonicalSectionPath,
+	buildScopedSettingsPath,
 	buildCanonicalViewPath,
-	buildSettingsPath,
 } from '@/app/routing'
 import type { ShellRoute } from '@/app/routing'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -716,7 +716,7 @@ function ShellLayoutContent({
 			navigateTo: (target: ShellNavigationTarget) => {
 				startTransition(() => {
 					if (target === 'settings') {
-						navigate(buildSettingsPath())
+						navigate(buildScopedSettingsPath(currentScope, currentSpaceId))
 						return
 					}
 

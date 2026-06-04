@@ -133,8 +133,9 @@ export function AllTasksPage() {
 				boardConfig: {
 					variant: 'tasks',
 					emptyActionLabel: '创建任务',
-					emptyDescription: '当前筛选下没有任务，尝试切换筛选或创建新任务。',
-					emptyTitle: '暂无任务',
+					emptyDescription:
+						'这里本来会显示符合当前条件的任务，不过现在还是空的。点「创建任务」先记下一项，后面再慢慢整理也来得及。',
+					emptyTitle: '当前没有任务',
 					hideEmptySections: true,
 				},
 				boardData: {

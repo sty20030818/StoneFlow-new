@@ -44,8 +44,7 @@ export function ProjectOverviewEmptyState({
 					</EmptyMedia>
 					<EmptyTitle>{getEmptyTitle(viewKey)}</EmptyTitle>
 					<EmptyDescription>
-						当前 Scope：{scopeLabel}。阶段 5
-						已接入真实项目模型，但这里还没有满足当前筛选条件的项目。
+						当前范围：{scopeLabel}。这里还没有满足当前条件的项目。
 					</EmptyDescription>
 				</EmptyHeader>
 				<EmptyContent>

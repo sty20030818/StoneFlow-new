@@ -52,7 +52,11 @@ export function buildProjectPath(spaceId: string, projectId: string) {
 }
 
 export function buildSettingsPath() {
-	return '/settings'
+	return '/all/settings'
+}
+
+export function buildScopedSettingsPath(scope: RouteScope, fallbackSpaceId?: string | null) {
+	return buildCanonicalSectionPath(scope, 'settings', fallbackSpaceId)
 }
 
 export function buildDebugActivityPath() {

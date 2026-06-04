@@ -15,7 +15,6 @@ import {
 import { Button } from '@/shared/ui/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import { buildCanonicalProjectPath, useShellRoute } from '@/app/routing'
-import { getScopeLabel } from '@/app/layouts/shell/config'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
 import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
@@ -25,11 +24,10 @@ import {
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { selectProjectViews, useViewStore } from '@/features/view/model/useViewStore'
 import { isScopeMatch } from '@/shared/lib/scope'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { selectProjectViews, useViewStore } from '@/features/view/model/useViewStore'
 import { PlusIcon } from 'lucide-react'
 
 const ALL_SCOPE = { type: 'all' } as const
@@ -39,7 +37,6 @@ export function ProjectOverviewPage() {
 	const shellRoute = useShellRoute()
 	const scope = shellRoute.scope ?? ALL_SCOPE
 	const spaceId = shellRoute.spaceId
-	const spaces = useSpaceStore(selectSpaces)
 	const overview = useProjectStore(selectProjectOverview)
 	const loadOverview = useProjectStore((state) => state.loadOverview)
 	const projectViews = useViewStore(selectProjectViews)
@@ -141,8 +138,9 @@ export function ProjectOverviewPage() {
 				boardConfig: {
 					variant: 'overview',
 					emptyActionLabel: '创建项目',
-					emptyDescription: `当前 Scope：${getScopeLabel(scope, spaces)}。这里还没有满足当前筛选条件的项目。`,
-					emptyTitle: getProjectOverviewEmptyTitle(viewKey),
+					emptyDescription:
+						'这里还没有项目，可以先从一个项目开始。点「创建项目」先建起来，后面的任务和节奏就有地方承接了。',
+					emptyTitle: '当前没有项目',
 				},
 				boardData: {
 					items: overviewItems,
@@ -252,20 +250,4 @@ function ProjectBulkBarActions({
 			</Button>
 		</div>
 	)
-}
-
-function getProjectOverviewEmptyTitle(viewKey: ProjectOverviewViewKey) {
-	switch (viewKey) {
-		case 'completed':
-		case 'completed_projects':
-			return '当前没有已完成项目'
-		case 'archived':
-		case 'archived_projects':
-			return '当前没有已归档项目'
-		case 'all':
-		case 'all_projects':
-			return '当前 Scope 还没有项目'
-		default:
-			return '当前没有活跃项目'
-	}
 }
