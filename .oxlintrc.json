@@ -2,7 +2,9 @@
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
 	"plugins": ["react", "vitest"],
 	"categories": {},
-	"rules": {},
+	"rules": {
+		"vitest/require-mock-type-parameters": "off"
+	},
 	"settings": {
 		"vitest": {
 			"typecheck": false

@@ -1,7 +1,9 @@
-import type { ListTasksInput } from '@/shared/types'
+import type { ListTasksInput, TaskListItem } from '@/shared/types'
 import type { QueryLoadStatus } from '@/shared/query/queryStatus'
 
 import { useTaskDetailQuery, useTaskListQuery } from './task.queries'
+
+const EMPTY_TASK_LIST_ITEMS: TaskListItem[] = []
 
 export function useTaskListData(input: ListTasksInput) {
 	const query = useTaskListQuery(input)
@@ -12,7 +14,7 @@ export function useTaskListData(input: ListTasksInput) {
 			: 'ready'
 
 	return {
-		items: query.data ?? [],
+		items: query.data ?? EMPTY_TASK_LIST_ITEMS,
 		status,
 		error: query.error instanceof Error ? query.error.message : null,
 		input,

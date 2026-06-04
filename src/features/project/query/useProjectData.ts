@@ -1,5 +1,5 @@
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
-import type { Scope } from '@/shared/types'
+import type { ProjectOverviewItem, ProjectSidebarItem, Scope } from '@/shared/types'
 import type { QueryLoadStatus } from '@/shared/query/queryStatus'
 
 import {
@@ -10,6 +10,9 @@ import {
 	useViewsProjectOptionsQuery,
 } from './project.queries'
 
+const EMPTY_PROJECT_OVERVIEW_ITEMS: ProjectOverviewItem[] = []
+const EMPTY_PROJECT_SIDEBAR_ITEMS: ProjectSidebarItem[] = []
+
 export function useProjectOverviewData(scope: Scope, viewKey: ProjectOverviewViewKey) {
 	const query = useProjectOverviewQuery(scope, viewKey)
 	const status: QueryLoadStatus = query.isError
@@ -19,7 +22,7 @@ export function useProjectOverviewData(scope: Scope, viewKey: ProjectOverviewVie
 			: 'ready'
 
 	return {
-		items: query.data ?? [],
+		items: query.data ?? EMPTY_PROJECT_OVERVIEW_ITEMS,
 		status,
 		error: query.error instanceof Error ? query.error.message : null,
 		refetch: query.refetch,
@@ -28,7 +31,7 @@ export function useProjectOverviewData(scope: Scope, viewKey: ProjectOverviewVie
 
 export function useProjectSidebarData(scope: Scope) {
 	const query = useProjectSidebarQuery(scope)
-	const items = query.data ?? []
+	const items = query.data ?? EMPTY_PROJECT_SIDEBAR_ITEMS
 	const status: QueryLoadStatus = query.isError
 		? 'error'
 		: query.isLoading || query.isPending

@@ -14,9 +14,14 @@ import { setActiveScope } from '@/features/space/api/spaces'
 import { useSpaces } from '@/features/space/query'
 import { useWorkspaceSync } from '@/features/workspace/model/useWorkspaceSync'
 
+const ALL_SCOPE = { type: 'all' as const }
+
 export function SpaceLayout() {
 	const shellRoute = useShellRoute()
-	const scope = shellRoute.scope ?? { type: 'all' as const }
+	const scope = shellRoute.scope ?? ALL_SCOPE
+	const isWorkPath = shellRoute.isWorkPath
+	const scopeType = scope.type
+	const scopeSpaceId = scope.type === 'space' ? scope.spaceId : null
 	const { spaces } = useSpaces()
 	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
 	const currentScopeType = useShellNavStore(selectCurrentScopeType)
@@ -30,12 +35,12 @@ export function SpaceLayout() {
 	useWorkspaceSync(scope)
 
 	useEffect(() => {
-		if (!shellRoute.isWorkPath) {
+		if (!isWorkPath) {
 			return
 		}
 
-		const nextScopeType = scope.type
-		const nextSpaceId = scope.type === 'space' ? scope.spaceId : fallbackSpaceId
+		const nextScopeType = scopeType
+		const nextSpaceId = scopeSpaceId ?? fallbackSpaceId
 		if (currentScopeType !== nextScopeType || currentSpaceId !== nextSpaceId) {
 			setCurrentScope(nextScopeType, nextSpaceId)
 		}
@@ -49,14 +54,16 @@ export function SpaceLayout() {
 		currentScopeType,
 		currentSpaceId,
 		fallbackSpaceId,
+		isWorkPath,
 		shellRoute.section,
-		scope,
+		scopeSpaceId,
+		scopeType,
 		setActiveSection,
 		setCurrentScope,
 	])
 
 	useEffect(() => {
-		if (!shellRoute.isWorkPath) {
+		if (!isWorkPath) {
 			return
 		}
 
@@ -66,10 +73,10 @@ export function SpaceLayout() {
 				error,
 			})
 		})
-	}, [scope])
+	}, [isWorkPath, scope, scopeSpaceId, scopeType])
 
 	useEffect(() => {
-		if (!shellRoute.isWorkPath) {
+		if (!isWorkPath) {
 			return
 		}
 
@@ -80,7 +87,7 @@ export function SpaceLayout() {
 				error,
 			})
 		})
-	}, [scope, shellRoute.fullPath, shellRoute.isWorkPath])
+	}, [isWorkPath, scope, scopeSpaceId, scopeType, shellRoute.fullPath])
 
 	return (
 		<ShellLayout

@@ -54,7 +54,7 @@ export function ProjectOverviewPage() {
 	const archiveProject = useArchiveProjectMutation()
 	const deleteProject = useDeleteProjectMutation()
 	const overviewStatus = overview.status
-	const overviewItems = overviewStatus === 'loading' ? [] : overview.items
+	const overviewItems = overview.items
 	const {
 		selectedIdSet: selectedProjectIds,
 		selectionSnapshot,

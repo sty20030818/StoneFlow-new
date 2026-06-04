@@ -7,7 +7,7 @@ export type TagsCellProps = Omit<RowMetaButtonProps, 'icon' | 'label' | 'value'>
 	placeholder?: string
 }
 
-export function TagsCell({ tags, disabled, placeholder = '标签', ...props }: TagsCellProps) {
+export function TagsCell({ tags, disabled, placeholder: _placeholder = '标签', ...props }: TagsCellProps) {
 	if (!tags || tags.length === 0) {
 		return null
 	}

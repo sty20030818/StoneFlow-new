@@ -41,6 +41,7 @@ type LifecycleListProps = {
 type LifecycleFilter = 'all' | 'space' | 'project' | 'task'
 
 const ALL_SCOPE = { type: 'all' } as const
+const EMPTY_LIFECYCLE_ENTRIES: LifecycleEntry[] = []
 
 export function LifecycleList({ mode }: LifecycleListProps) {
 	const navigate = useNavigate()
@@ -62,7 +63,7 @@ export function LifecycleList({ mode }: LifecycleListProps) {
 		: entriesQuery.isLoading || entriesQuery.isPending
 			? 'loading'
 			: 'ready'
-	const sliceItems = sliceStatus === 'loading' ? [] : (entriesQuery.data ?? [])
+	const sliceItems = entriesQuery.data ?? EMPTY_LIFECYCLE_ENTRIES
 	const {
 		selectedIdSet: selectedEntryIdSet,
 		selectionSnapshot,

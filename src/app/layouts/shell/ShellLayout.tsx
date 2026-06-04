@@ -246,6 +246,8 @@ function ShellLayoutContent({
 	const openEntityDrawer = entityDetailController.openDrawer
 	const closeEntityDrawer = entityDetailController.closeDrawer
 	const taskPreviewController = useTaskPreviewController()
+	const isTaskPreviewOpen = taskPreviewController.previewState.open
+	const closeTaskPreview = taskPreviewController.closePreview
 	const setCommandOpen = useDialogStore((state) => state.setCommandOpen)
 	const setCommandMenuFilterKind = useDialogStore((state) => state.setCommandMenuFilterKind)
 	const setShortcutHelpOpen = useDialogStore((state) => state.setShortcutHelpOpen)
@@ -397,12 +399,12 @@ function ShellLayoutContent({
 	])
 
 	useEffect(() => {
-		if (!activeDetail || !taskPreviewController.previewState.open) {
+		if (!activeDetail || !isTaskPreviewOpen) {
 			return
 		}
 
-		taskPreviewController.closePreview()
-	}, [activeDetail, taskPreviewController.closePreview, taskPreviewController.previewState.open])
+		closeTaskPreview()
+	}, [activeDetail, closeTaskPreview, isTaskPreviewOpen, taskPreviewController])
 
 	const handleCommandOpen = useMemo(
 		() => (payload: CommandOpenPayload) => {
@@ -742,7 +744,6 @@ function ShellLayoutContent({
 			isCommandOpen,
 			isShortcutHelpOpen,
 			navigate,
-			openEntityDrawer,
 			openProjectCreateDialog,
 			openTaskCreateDialog,
 			pageFilter,

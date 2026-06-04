@@ -89,7 +89,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 	)
 	const taskList = useTaskListData(listInput)
 	const taskBoardStatus = taskList.status
-	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
+	const taskSourceItems = taskList.items
 	const {
 		pendingTaskId,
 		updateTaskStatus,

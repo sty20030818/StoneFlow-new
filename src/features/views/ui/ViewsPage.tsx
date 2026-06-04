@@ -36,6 +36,7 @@ import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 import { PlusIcon } from 'lucide-react'
 
 const ALL_SCOPE = { type: 'all' } as const
+const EMPTY_TASK_VIEWS: View[] = []
 
 export function ViewsPage() {
 	const shellRoute = useShellRoute()
@@ -49,7 +50,7 @@ export function ViewsPage() {
 	const openEntityDrawer = entityDetailController.openDrawer
 	const taskPreviewController = useTaskPreviewController()
 	const taskViewsQuery = useViewsQuery('task', false)
-	const taskViews = taskViewsQuery.data ?? []
+	const taskViews = taskViewsQuery.data ?? EMPTY_TASK_VIEWS
 	const createTaskView = useCreateViewMutation()
 	const updateTaskView = useUpdateViewMutation()
 	const deleteTaskView = useDeleteViewMutation()

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useEntityActivitiesQuery } from '@/features/activity/query'
+import type { ActivityTimelineEntry } from '@/features/activity/api/getEntityActivities'
 import { useProjectOptions } from '@/features/project/query'
 import { useSpaces } from '@/features/space/query'
 import { useEventSubscription, type AppEvent } from '@/shared/events'
@@ -18,6 +19,7 @@ type TaskActivityTimelineProps = {
 const DEFAULT_VISIBLE_COUNT = 6
 const INITIAL_ACTIVITY_FETCH_LIMIT = 10
 const EXPANDED_ACTIVITY_FETCH_LIMIT = 65_535
+const EMPTY_ACTIVITY_ENTRIES: ActivityTimelineEntry[] = []
 
 /**
  * Task Page 专用 Activity 列表。
@@ -37,7 +39,7 @@ export function TaskActivityTimeline({ spaceId, taskId }: TaskActivityTimelinePr
 	const timeline = useEntityActivitiesQuery(queryInput)
 	const projects = useProjectOptions({ type: 'space', spaceId })
 	const { spaces } = useSpaces()
-	const entries = timeline.data ?? []
+	const entries = timeline.data ?? EMPTY_ACTIVITY_ENTRIES
 	const loadState = timeline.isError
 		? 'error'
 		: timeline.isLoading || timeline.isPending
