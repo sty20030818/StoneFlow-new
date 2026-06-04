@@ -42,7 +42,9 @@ export function AppBreadcrumb({ items }: AppBreadcrumbProps) {
 					const Icon = item.icon
 					const isCurrent = item.current ?? index === items.length - 1
 					const labelClassName = cn(
-						index === 0 ? breadcrumbLeadForegroundClass : `${breadcrumbLeadClass} text-sf-text-tertiary`,
+						index === 0
+							? breadcrumbLeadForegroundClass
+							: `${breadcrumbLeadClass} text-sf-text-tertiary`,
 						'h-5 items-center leading-none',
 						item.truncate ? 'min-w-0 truncate' : null,
 						isCurrent ? 'font-semibold text-foreground' : null,

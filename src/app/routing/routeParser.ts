@@ -66,7 +66,7 @@ export function parseShellRoute(input: ShellRouteLocationLike): ShellRoute {
 		hash,
 		fullPath,
 		isShellPath,
-		isSettingsPath: appRoute.kind === 'settings',
+		isSettingsPath: appRoute.kind === 'shell-section' && appRoute.section === 'settings',
 		isDebugPath: appRoute.kind === 'debug-activity',
 		isQuickCreatePath: appRoute.kind === 'quick-create',
 		isWorkPath:
@@ -123,7 +123,14 @@ export function parseAppRoute(
 
 	const allMatch = pathname.match(CANONICAL_ALL_PATH)
 	if (allMatch) {
-		return parseScopedWorkRoute({ type: 'all' }, allMatch[1] ?? '', pathname, search, hash, fullPath)
+		return parseScopedWorkRoute(
+			{ type: 'all' },
+			allMatch[1] ?? '',
+			pathname,
+			search,
+			hash,
+			fullPath,
+		)
 	}
 
 	const spaceMatch = pathname.match(CANONICAL_SPACE_PATH)
@@ -149,9 +156,7 @@ export function parseAppRoute(
 
 export function resolveShellSection(routeOrPath: AppRoute | string) {
 	const route =
-		typeof routeOrPath === 'string'
-			? parseAppRoute(stripQueryAndHash(routeOrPath))
-			: routeOrPath
+		typeof routeOrPath === 'string' ? parseAppRoute(stripQueryAndHash(routeOrPath)) : routeOrPath
 
 	switch (route.kind) {
 		case 'shell-section':

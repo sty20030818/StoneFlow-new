@@ -10,12 +10,7 @@ import {
 	useSidebarSettingsStore,
 } from '@/app/layouts/shell/model/useSidebarSettingsStore'
 import type { SidebarMainItemKey } from '@/features/settings/api/sidebarSettings'
-import {
-	selectSpaceError,
-	selectSpaces,
-	selectSpaceStatus,
-	useSpaceStore,
-} from '@/features/space/model/useSpaceStore'
+import { useSetDefaultSpaceMutation, useSpaces } from '@/features/space/query'
 import { cn } from '@/shared/lib/utils'
 import {
 	Breadcrumb,
@@ -69,7 +64,7 @@ type SectionStateMap = Record<SettingsSectionKey, boolean>
 type SectionErrorMap = Partial<Record<SettingsSectionKey, string>>
 
 /**
- * 阶段 11：设置页只负责组织现有 settings / space store，不复制配置状态。
+ * 设置页只负责组织现有 settings 状态与 Space 数据，不复制配置状态。
  */
 export function SettingsPage() {
 	const shellRoute = useShellRoute()
@@ -82,11 +77,8 @@ export function SettingsPage() {
 	const setItemVisibility = useSidebarSettingsStore((state) => state.setItemVisibility)
 	const setProjectSectionConfig = useSidebarSettingsStore((state) => state.setProjectSectionConfig)
 
-	const spaces = useSpaceStore(selectSpaces)
-	const spaceStatus = useSpaceStore(selectSpaceStatus)
-	const spaceError = useSpaceStore(selectSpaceError)
-	const loadSpaces = useSpaceStore((state) => state.load)
-	const setDefaultSpace = useSpaceStore((state) => state.setDefaultSpace)
+	const { spaces, status: spaceStatus, error: spaceError, refetch: refetchSpaces } = useSpaces()
+	const setDefaultSpace = useSetDefaultSpaceMutation()
 
 	const [pendingSections, setPendingSections] = useState<SectionStateMap>({
 		mainItems: false,
@@ -98,8 +90,7 @@ export function SettingsPage() {
 
 	useEffect(() => {
 		void loadSidebarSettings().catch(() => undefined)
-		void loadSpaces()
-	}, [loadSidebarSettings, loadSpaces])
+	}, [loadSidebarSettings])
 
 	const visibleMainItemCount =
 		sidebarSettings === null
@@ -197,7 +188,7 @@ export function SettingsPage() {
 		}
 
 		void runSectionUpdate('defaultSpace', async () => {
-			await setDefaultSpace(nextSpaceId)
+			await setDefaultSpace.mutateAsync(nextSpaceId)
 		})
 	}
 
@@ -350,7 +341,7 @@ export function SettingsPage() {
 							<StatusNotice
 								actions={
 									<Button
-										onClick={() => void loadSpaces()}
+										onClick={() => void refetchSpaces()}
 										size='sm'
 										type='button'
 										variant='secondary'
@@ -376,7 +367,6 @@ export function SettingsPage() {
 										disabled={
 											pendingSections.defaultSpace ||
 											spaceStatus === 'loading' ||
-											spaceStatus === 'idle' ||
 											spaces.length === 0
 										}
 										onValueChange={handleDefaultSpaceChange}
@@ -413,7 +403,6 @@ export function SettingsPage() {
 							</StatusNotice>
 						) : null}
 					</SettingsSection>
-
 				</div>
 			}
 			bodyClassName='gap-4 p-2'

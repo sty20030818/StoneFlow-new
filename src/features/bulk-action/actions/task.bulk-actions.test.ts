@@ -83,22 +83,30 @@ describe('taskBulkActions', () => {
 		}
 		const noProjectTarget: TaskPlacementTarget = { kind: 'no_project', spaceId: 'space-a' }
 
-		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(snapshot, { adapter }, {
-			target: inboxTarget,
-		})
-		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(snapshot, { adapter }, {
-			target: projectTarget,
-		})
-		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(snapshot, { adapter }, {
-			target: noProjectTarget,
-		})
+		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(
+			snapshot,
+			{ adapter },
+			{
+				target: inboxTarget,
+			},
+		)
+		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(
+			snapshot,
+			{ adapter },
+			{
+				target: projectTarget,
+			},
+		)
+		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(
+			snapshot,
+			{ adapter },
+			{
+				target: noProjectTarget,
+			},
+		)
 
 		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(1, ['task-a', 'task-b'], inboxTarget)
-		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(
-			2,
-			['task-a', 'task-b'],
-			projectTarget,
-		)
+		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(2, ['task-a', 'task-b'], projectTarget)
 		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(
 			3,
 			['task-a', 'task-b'],

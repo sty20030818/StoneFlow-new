@@ -9,9 +9,9 @@ import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import { TooltipProvider } from '@/shared/ui/base/tooltip'
 
 vi.mock('@/app/layouts/shell/model/shellDevicePreferences', async () => {
-	const actual = await vi.importActual<typeof import('@/app/layouts/shell/model/shellDevicePreferences')>(
-		'@/app/layouts/shell/model/shellDevicePreferences',
-	)
+	const actual = await vi.importActual<
+		typeof import('@/app/layouts/shell/model/shellDevicePreferences')
+	>('@/app/layouts/shell/model/shellDevicePreferences')
 
 	return {
 		...actual,

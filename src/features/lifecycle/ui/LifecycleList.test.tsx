@@ -26,6 +26,7 @@ const toastErrorSpy = vi.fn<(message: string) => void>()
 
 let mockScope: Scope = { type: 'all' }
 let storeState = createStoreState()
+type MockQueryStatus = 'loading' | 'ready' | 'error'
 
 vi.mock('@/app/layouts/main-card/MainCardLayout', () => ({
 	MainCard: {
@@ -55,10 +56,27 @@ vi.mock('@/app/layouts/shell/model/useDrawerStore', () => ({
 		}),
 }))
 
-vi.mock('@/features/lifecycle/model/useLifecycleStore', () => ({
-	selectArchiveEntries: (state: typeof storeState) => state.archiveEntries,
-	selectTrashEntries: (state: typeof storeState) => state.trashEntries,
-	useLifecycleStore: (selector: (state: typeof storeState) => unknown) => selector(storeState),
+vi.mock('@/features/lifecycle/query', () => ({
+	useLifecycleEntriesQuery: (mode: 'archive' | 'trash') => {
+		const slice = mode === 'archive' ? storeState.archiveEntries : storeState.trashEntries
+		return {
+			data: slice.items,
+			isError: slice.status === 'error',
+			isLoading: slice.status === 'loading',
+			isPending: slice.status === 'loading',
+			error: slice.error,
+			refetch: mode === 'archive' ? loadArchiveSpy : loadTrashSpy,
+		}
+	},
+	useRestoreLifecycleEntryMutation: () => ({
+		mutateAsync: restoreEntrySpy,
+	}),
+	useDeleteLifecycleEntryMutation: () => ({
+		mutateAsync: deleteEntrySpy,
+	}),
+	usePermanentlyDeleteLifecycleEntryMutation: () => ({
+		mutateAsync: permanentlyDeleteEntrySpy,
+	}),
 }))
 
 vi.mock('@/features/lifecycle/api/lifecycle', () => ({
@@ -73,9 +91,9 @@ vi.mock('@/app/routing', async () => {
 	return {
 		...actual,
 		useShellRoute: () => ({
-		scope: mockScope,
-		spaceId: mockScope.type === 'space' ? mockScope.spaceId : null,
-	}),
+			scope: mockScope,
+			spaceId: mockScope.type === 'space' ? mockScope.spaceId : null,
+		}),
 	}
 })
 
@@ -117,10 +135,6 @@ describe('LifecycleList', () => {
 			mode: 'archive',
 			title: '归档',
 			icon: ArchiveIcon,
-		})
-
-		await waitFor(() => {
-			expect(loadArchiveSpy).toHaveBeenCalledWith({ type: 'all' })
 		})
 
 		expect(screen.getByText('已归档的空间')).toBeInTheDocument()
@@ -176,10 +190,6 @@ describe('LifecycleList', () => {
 			mode: 'trash',
 			title: '回收站',
 			icon: Trash2Icon,
-		})
-
-		await waitFor(() => {
-			expect(loadTrashSpy).toHaveBeenCalledWith({ type: 'all' })
 		})
 
 		expect(screen.getByText('当前没有已删除内容')).toBeInTheDocument()
@@ -330,7 +340,7 @@ function createStoreStateBase() {
 					projectName: '阶段 10',
 				}),
 			],
-			status: 'ready' as const,
+			status: 'ready' as MockQueryStatus,
 			error: null,
 			scope: { type: 'all' } as Scope,
 			entityFilter: undefined,
@@ -345,7 +355,7 @@ function createStoreStateBase() {
 					archivedAt: null,
 				}),
 			],
-			status: 'ready' as const,
+			status: 'ready' as MockQueryStatus,
 			error: null,
 			scope: { type: 'all' } as Scope,
 			entityFilter: undefined,

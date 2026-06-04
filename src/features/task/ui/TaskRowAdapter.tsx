@@ -75,18 +75,16 @@ export function TaskRowAdapter({
 	const actionTargets = contextTasks && contextTasks.length > 0 ? contextTasks : [task]
 	const isDoneLike = task.status === 'done' || task.status === 'canceled'
 	const hasProjectOptions = Boolean(
-		projectBinding?.projectOptions &&
-		projectBinding.onSelectPlacement,
+		projectBinding?.projectOptions && projectBinding.onSelectPlacement,
 	)
 	const showProjectCellOptions =
 		hasProjectOptions && projectBinding?.showProjectCellOptions !== false
 	const usesBulkDangerActions = actionTargets.length > 1 && Boolean(contextMenuActions)
 	const priorityDropdownProps = createTaskPriorityMetadataDropdownProps()
 	const statusDropdownProps = createTaskStatusMetadataDropdownProps()
-	const placementSpaces =
-		projectBinding?.spaces?.some((space) => space.id === task.spaceId)
-			? projectBinding.spaces
-			: [{ id: task.spaceId, name: task.spaceName }, ...(projectBinding?.spaces ?? [])]
+	const placementSpaces = projectBinding?.spaces?.some((space) => space.id === task.spaceId)
+		? projectBinding.spaces
+		: [{ id: task.spaceId, name: task.spaceName }, ...(projectBinding?.spaces ?? [])]
 	const placementDropdownProps = createTaskPlacementGroupedDropdownProps({
 		mode: 'local',
 		currentSpaceId: task.spaceId,

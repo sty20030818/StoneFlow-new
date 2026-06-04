@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
@@ -9,8 +9,8 @@ import {
 } from '@/features/filter/model'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useEntityDetailController } from '@/features/entity-detail'
-import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+import { useProjectOptions } from '@/features/project/query'
+import { useSpaces } from '@/features/space/query'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import {
@@ -19,11 +19,7 @@ import {
 } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
-import {
-	isTaskListInputMatch,
-	selectTaskList,
-	useTaskStore,
-} from '@/features/task/model/useTaskStore'
+import { useTaskListData } from '@/features/task/query'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
@@ -35,8 +31,6 @@ export function InboxPage() {
 	const shellRoute = useShellRoute()
 	const scope = shellRoute.scope ?? ALL_SCOPE
 	const spaceId = shellRoute.spaceId
-	const taskList = useTaskStore(selectTaskList)
-	const loadList = useTaskStore((state) => state.loadList)
 	const listInput = useMemo(
 		() => ({
 			scope,
@@ -45,12 +39,11 @@ export function InboxPage() {
 		}),
 		[scope],
 	)
-	const taskBoardStatus = isTaskListInputMatch(taskList.input, listInput)
-		? taskList.status
-		: 'loading'
+	const taskList = useTaskListData(listInput)
+	const taskBoardStatus = taskList.status
 	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
-	const projectOptions = useProjectStore(selectProjectOptions)
-	const spaces = useSpaceStore(selectSpaces)
+	const projectOptions = useProjectOptions(scope)
+	const { spaces } = useSpaces()
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
@@ -125,10 +118,6 @@ export function InboxPage() {
 		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 	})
 
-	useEffect(() => {
-		void loadList(listInput)
-	}, [loadList, listInput])
-
 	return (
 		<EntityScene
 			board={{
@@ -194,7 +183,7 @@ export function InboxPage() {
 				</MainCard.GhostAction>
 			}
 			onRefresh={() => {
-				void loadList(listInput)
+				void taskList.refetch()
 			}}
 			sceneVariant='inbox'
 			toolbarPills={[

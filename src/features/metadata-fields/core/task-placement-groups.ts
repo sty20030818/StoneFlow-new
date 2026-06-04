@@ -144,10 +144,7 @@ export function findTaskPlacementGroupItem(
 			}
 
 			if (item.target.kind === 'project' && value.kind === 'project') {
-				if (
-					item.target.projectId === value.projectId &&
-					item.target.spaceId === value.spaceId
-				) {
+				if (item.target.projectId === value.projectId && item.target.spaceId === value.spaceId) {
 					return item
 				}
 				continue
@@ -173,5 +170,7 @@ export function getTaskPlacementGroupSearchText({
 	spaceName?: string | null
 	meta?: string | null
 }) {
-	return [title, note, spaceName, meta].filter((part): part is string => Boolean(part?.trim())).join(' ')
+	return [title, note, spaceName, meta]
+		.filter((part): part is string => Boolean(part?.trim()))
+		.join(' ')
 }

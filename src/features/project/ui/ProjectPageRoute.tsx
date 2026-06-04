@@ -4,7 +4,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { buildProjectPath, buildStartupFallbackPath, useShellRoute } from '@/app/routing'
 import { getProjectDetail } from '@/features/project/api/projects'
 import { ProjectPage } from '@/features/project/ui/ProjectPage'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+import { useSpaces } from '@/features/space/query'
 import type { Scope, Project } from '@/shared/types'
 import { TaskPageState } from '@/features/task/detail/ui/TaskPageState'
 
@@ -18,7 +18,7 @@ export function ProjectPageRoute() {
 	const navigate = useNavigate()
 	const { spaceId: routeSpaceId, projectId = '' } = useParams()
 	const [loadState, setLoadState] = useState<RouteLoadState>({ kind: 'loading' })
-	const spaces = useSpaceStore(selectSpaces)
+	const { spaces } = useSpaces()
 
 	useEffect(() => {
 		let cancelled = false

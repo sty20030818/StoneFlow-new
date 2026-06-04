@@ -1357,13 +1357,15 @@ function buildCommandTaskPlacementGroups({
 		currentSpaceId: resolveTaskPlacementCurrentSpaceId(context),
 		spaces,
 		projects,
-	}).map((group): CommandTaskPlacementGroup => ({
-		...group,
-		items: group.items.map((item) => ({
-			...item,
-			leading: getCommandMenuPlacementLeading(item.target.kind),
-		})),
-	}))
+	}).map(
+		(group): CommandTaskPlacementGroup => ({
+			...group,
+			items: group.items.map((item) => ({
+				...item,
+				leading: getCommandMenuPlacementLeading(item.target.kind),
+			})),
+		}),
+	)
 }
 
 function ProjectsCommandGroup({

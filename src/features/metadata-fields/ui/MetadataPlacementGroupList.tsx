@@ -6,7 +6,11 @@ import type {
 	TaskPlacementGroupItem,
 	TaskPlacementTarget,
 } from '@/features/metadata-fields/core'
-import { DropdownMenuGroup, DropdownMenuLabel, DropdownMenuSeparator } from '@/shared/ui/base/dropdown-menu'
+import {
+	DropdownMenuGroup,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+} from '@/shared/ui/base/dropdown-menu'
 
 import { MetadataFieldMenuItem } from './MetadataFieldMenuItem'
 

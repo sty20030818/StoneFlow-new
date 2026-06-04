@@ -173,7 +173,10 @@ describe('TaskRowAdapter', () => {
 
 	it('右键菜单属性动作在多选时统一走 placement bulk 入口', async () => {
 		const task = buildTask()
-		const contextTasks = [task, buildTask({ id: 'task-2', title: '任务 B', inboxAt: '2026-05-07T09:00:00.000Z' })]
+		const contextTasks = [
+			task,
+			buildTask({ id: 'task-2', title: '任务 B', inboxAt: '2026-05-07T09:00:00.000Z' }),
+		]
 		const contextMenuActions = buildContextMenuActions()
 		const projectBinding = createProjectBinding()
 

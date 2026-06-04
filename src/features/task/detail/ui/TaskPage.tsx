@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { buildCanonicalSectionPath } from '@/app/routing'
-import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
-import type { Scope, TaskDetail } from '@/shared/types'
+import { useProjectOptions } from '@/features/project/query'
+import { useSpaces } from '@/features/space/query'
+import type { Scope, Space, TaskDetail } from '@/shared/types'
+import type { ProjectOption } from '@/features/project/model/types'
 import { DetailPageGrid, DetailPageMain, DetailPageSidebar } from '@/shared/ui/detail'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
@@ -24,12 +25,12 @@ type TaskPageProps = {
 
 export function TaskPage({ taskId, scope }: TaskPageProps) {
 	const navigate = useNavigate()
-	const projects = useProjectStore(selectProjectOptions)
-	const spaces = useSpaceStore(selectSpaces)
+	const projects = useProjectOptions(scope)
+	const { spaces } = useSpaces()
 	const { task, status, error } = useTaskDetailController(taskId)
 	const isReadOnly = status !== 'ready' || !task || Boolean(task.deletedAt)
 
-	if (status === 'loading' || status === 'idle') {
+	if (status === 'loading') {
 		return <TaskPageState description='正在读取任务详情。' title='加载中' />
 	}
 
@@ -71,20 +72,13 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 		)
 	}
 
-	return (
-		<TaskPageLoaded
-			isReadOnly={isReadOnly}
-			projects={projects}
-			spaces={spaces}
-			task={task}
-		/>
-	)
+	return <TaskPageLoaded isReadOnly={isReadOnly} projects={projects} spaces={spaces} task={task} />
 }
 
 type TaskPageLoadedProps = {
 	task: TaskDetail
-	projects: ReturnType<typeof selectProjectOptions>
-	spaces: ReturnType<typeof selectSpaces>
+	projects: ProjectOption[]
+	spaces: Space[]
 	isReadOnly: boolean
 }
 
@@ -142,7 +136,12 @@ function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedPr
 				<div className='flex min-h-0 flex-1 flex-col gap-3'>
 					<DetailPageGrid>
 						<DetailPageMain>
-							<TaskPageMainContent autosave={autosave} isReadOnly={isReadOnly} taskId={task.id} />
+							<TaskPageMainContent
+								autosave={autosave}
+								isReadOnly={isReadOnly}
+								spaceId={task.spaceId}
+								taskId={task.id}
+							/>
 						</DetailPageMain>
 						<DetailPageSidebar>
 							<TaskPageSidebarContent

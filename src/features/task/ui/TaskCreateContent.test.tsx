@@ -7,11 +7,10 @@ import { TaskCreateContent } from './TaskCreateContent'
 const createTaskMock = vi.fn()
 const openDrawerMock = vi.fn()
 
-vi.mock('@/features/task/model/useTaskStore', () => ({
-	useTaskStore: (selector: (state: { createTask: typeof createTaskMock }) => unknown) =>
-		selector({
-			createTask: createTaskMock,
-		}),
+vi.mock('@/features/task/query', () => ({
+	useCreateTaskMutation: () => ({
+		mutateAsync: createTaskMock,
+	}),
 }))
 
 vi.mock('@/app/layouts/shell/model/useDrawerStore', () => ({

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import { searchEntities } from '@/features/global-search/api/searchEntities'
 import { createShellCommandRegistry } from '@/features/command/commands'
@@ -259,6 +260,7 @@ describe('CommandMenu', () => {
 			target: { value: 'B' },
 		})
 		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
+		expect(await screen.findByText('项目 B')).toBeInTheDocument()
 
 		expectCommandRowIndicator('项目 B', 'checked')
 	})
@@ -308,7 +310,11 @@ describe('CommandMenu', () => {
 		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(1))
 		expect(await screen.findByText('没有匹配的任务')).toBeInTheDocument()
 
-		rerender(createCommandMenuElement({ mode: 'project-picker' }))
+		rerender(
+			<QueryClientProvider client={createTestQueryClient()}>
+				{createCommandMenuElement({ mode: 'project-picker' })}
+			</QueryClientProvider>,
+		)
 		fireEvent.change(screen.getByPlaceholderText('搜索项目…'), { target: { value: 'none' } })
 		await waitFor(() => expect(mockedSearchEntities).toHaveBeenCalledTimes(2))
 		expect(await screen.findByText('没有匹配的项目')).toBeInTheDocument()
@@ -525,25 +531,36 @@ function renderCommandMenu({
 	onSelectTask: (task: SearchTaskItem) => void
 }> = {}) {
 	return render(
-		createCommandMenuElement({
-			mode,
-			filterKind,
-			onNavigateProject,
-			onOpenChange,
-			onRunCommand,
-			onApplyFilter,
-			onClearAllFilters,
-			onSelectTaskDate,
-			onSelectFilterKind,
-			onSelectTaskPriority,
-			onSelectTaskStatus,
-			onToggleCompletedFilter,
-			onSelectProject,
-			onSelectTaskPlacement,
-			onSelectTask,
-			context,
-		}),
+		<QueryClientProvider client={createTestQueryClient()}>
+			{createCommandMenuElement({
+				mode,
+				filterKind,
+				onNavigateProject,
+				onOpenChange,
+				onRunCommand,
+				onApplyFilter,
+				onClearAllFilters,
+				onSelectTaskDate,
+				onSelectFilterKind,
+				onSelectTaskPriority,
+				onSelectTaskStatus,
+				onToggleCompletedFilter,
+				onSelectProject,
+				onSelectTaskPlacement,
+				onSelectTask,
+				context,
+			})}
+		</QueryClientProvider>,
 	)
+}
+
+function createTestQueryClient() {
+	return new QueryClient({
+		defaultOptions: {
+			queries: { retry: false, gcTime: 0 },
+			mutations: { retry: false },
+		},
+	})
 }
 
 function createCommandMenuElement({

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-import { searchEntities } from '@/features/global-search/api/searchEntities'
+import { useSearchEntitiesQuery } from '@/features/global-search/query'
 import type { SearchEntitiesResult } from '@/shared/types'
 
 const SEARCH_DEBOUNCE_MS = 150
@@ -16,48 +16,29 @@ function emptySearchEntitiesResult(): SearchEntitiesResult {
 
 export function useGlobalSearch(query: string) {
 	const normalizedQuery = query.trim()
-	const requestIdRef = useRef(0)
-	const [result, setResult] = useState<SearchEntitiesResult>(emptySearchEntitiesResult)
-	const [isLoading, setIsLoading] = useState(false)
-	const [errorMessage, setErrorMessage] = useState<string | null>(null)
+	const [debouncedQuery, setDebouncedQuery] = useState(normalizedQuery)
 	const [hasResolvedQuery, setHasResolvedQuery] = useState(false)
+	const searchInput = useMemo(
+		() =>
+			debouncedQuery
+				? {
+						query: debouncedQuery,
+						limitPerSection: 5,
+					}
+				: null,
+		[debouncedQuery],
+	)
+	const searchQuery = useSearchEntitiesQuery(searchInput)
 
 	useEffect(() => {
 		if (!normalizedQuery) {
-			requestIdRef.current += 1
-			setResult(emptySearchEntitiesResult())
-			setIsLoading(false)
-			setErrorMessage(null)
+			setDebouncedQuery('')
 			setHasResolvedQuery(false)
 			return
 		}
 
-		const requestId = requestIdRef.current + 1
-		requestIdRef.current = requestId
-		setIsLoading(true)
-		setErrorMessage(null)
-
 		const timerId = window.setTimeout(() => {
-			void searchEntities({
-				query: normalizedQuery,
-				limitPerSection: 5,
-			})
-				.then((nextResult) => {
-					if (requestIdRef.current !== requestId) {
-						return
-					}
-					setResult(nextResult)
-					setIsLoading(false)
-					setHasResolvedQuery(true)
-				})
-				.catch(() => {
-					if (requestIdRef.current !== requestId) {
-						return
-					}
-					setIsLoading(false)
-					setErrorMessage('搜索失败，请稍后重试')
-					setHasResolvedQuery(true)
-				})
+			setDebouncedQuery(normalizedQuery)
 		}, SEARCH_DEBOUNCE_MS)
 
 		return () => {
@@ -65,10 +46,20 @@ export function useGlobalSearch(query: string) {
 		}
 	}, [normalizedQuery])
 
+	useEffect(() => {
+		if (!debouncedQuery) {
+			return
+		}
+
+		if (!searchQuery.isPending && !searchQuery.isFetching) {
+			setHasResolvedQuery(true)
+		}
+	}, [debouncedQuery, searchQuery.isFetching, searchQuery.isPending])
+
 	return {
-		result,
-		isLoading,
-		errorMessage,
+		result: searchQuery.data ?? emptySearchEntitiesResult(),
+		isLoading: Boolean(normalizedQuery) && (searchQuery.isPending || searchQuery.isFetching),
+		errorMessage: searchQuery.isError ? '搜索失败，请稍后重试' : null,
 		hasResolvedQuery,
 	}
 }

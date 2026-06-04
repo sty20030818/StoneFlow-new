@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 
 import { buildTaskDetailPath, useShellRoute } from '@/app/routing'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+import { useSpaces } from '@/features/space/query'
 import type { Scope, TaskDetail } from '@/shared/types'
 import { getTaskDetail } from '@/features/task/api/tasks'
 import { TaskPage } from './TaskPage'
@@ -17,7 +17,7 @@ export function TaskPageRoute() {
 	const shellRoute = useShellRoute()
 	const { spaceId: routeSpaceId, taskId = '' } = useParams()
 	const [loadState, setLoadState] = useState<RouteLoadState>({ kind: 'loading' })
-	const spaces = useSpaceStore(selectSpaces)
+	const { spaces } = useSpaces()
 
 	useEffect(() => {
 		let cancelled = false
@@ -63,13 +63,7 @@ export function TaskPageRoute() {
 	}
 
 	if (loadState.kind === 'error') {
-		return (
-			<TaskPageState
-				description={loadState.message}
-				pageTitle='任务详情'
-				title='任务不可用'
-			/>
-		)
+		return <TaskPageState description={loadState.message} pageTitle='任务详情' title='任务不可用' />
 	}
 
 	if (!scope || scope.type !== 'space') {

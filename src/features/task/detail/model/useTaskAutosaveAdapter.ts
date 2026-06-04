@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 
 import { useAutosaveController } from '@/shared/autosave'
-import { useTaskStore } from '@/features/task/model/useTaskStore'
+import { useUpdateTaskMutation } from '@/features/task/query'
 
 import {
 	createTaskDetailDraft,
@@ -17,13 +17,13 @@ type UseTaskAutosaveAdapterOptions = {
 }
 
 export function useTaskAutosaveAdapter({ base, disabled = false }: UseTaskAutosaveAdapterOptions) {
-	const updateTask = useTaskStore((state) => state.updateTask)
+	const updateTask = useUpdateTaskMutation()
 	const savePatch = useCallback(
 		async (patch: TaskDetailPatch) => {
 			if (disabled) {
 				return base
 			}
-			const nextDetail = await updateTask(patch)
+			const nextDetail = await updateTask.mutateAsync(patch)
 			return createTaskDetailDraft(nextDetail)
 		},
 		[base, disabled, updateTask],

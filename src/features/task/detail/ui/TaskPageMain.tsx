@@ -9,11 +9,12 @@ import { TaskTitleField } from './TaskTitleField'
 
 type TaskPageMainProps = {
 	taskId: string
+	spaceId: string
 	autosave: AutosaveController<TaskDetailDraft>
 	isReadOnly: boolean
 }
 
-export function TaskPageMain({ taskId, autosave, isReadOnly }: TaskPageMainProps) {
+export function TaskPageMain({ taskId, spaceId, autosave, isReadOnly }: TaskPageMainProps) {
 	return (
 		<div className='flex min-w-0 flex-col gap-5'>
 			<section className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4 md:px-5 md:py-5'>
@@ -31,7 +32,7 @@ export function TaskPageMain({ taskId, autosave, isReadOnly }: TaskPageMainProps
 			</DetailSection>
 
 			<div className='rounded-xl border border-sf-border-subtle bg-card px-4 py-4 md:px-5 md:py-5'>
-				<TaskActivityTimeline taskId={taskId} />
+				<TaskActivityTimeline spaceId={spaceId} taskId={taskId} />
 			</div>
 		</div>
 	)

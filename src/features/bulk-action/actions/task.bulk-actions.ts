@@ -240,7 +240,9 @@ function isDatePayload(payload: BulkActionPayload): payload is { dueAt: string |
 	return Boolean(payload && typeof payload === 'object' && 'dueAt' in payload)
 }
 
-function isPlacementPayload(payload: BulkActionPayload): payload is { target: TaskPlacementTarget } {
+function isPlacementPayload(
+	payload: BulkActionPayload,
+): payload is { target: TaskPlacementTarget } {
 	return Boolean(
 		payload &&
 		typeof payload === 'object' &&

@@ -15,9 +15,13 @@ vi.mock('@/features/task/api/tasks', () => ({
 	getTaskDetail: (taskId: string) => getTaskDetailMock(taskId),
 }))
 
-vi.mock('@/features/space/model/useSpaceStore', () => ({
-	selectSpaces: (state: typeof spaceState) => state.spaces,
-	useSpaceStore: (selector: (state: typeof spaceState) => unknown) => selector(spaceState),
+vi.mock('@/features/space/query', () => ({
+	useSpaces: () => ({
+		spaces: spaceState.spaces,
+		status: 'ready',
+		error: null,
+		refetch: vi.fn(),
+	}),
 }))
 
 vi.mock('./TaskPage', () => ({
@@ -73,7 +77,9 @@ describe('TaskPageRoute', () => {
 		renderTaskPageRoute('/spaces/space-1/tasks/task-1')
 
 		expect(await screen.findByText('任务不可用')).toBeInTheDocument()
-		expect(screen.getByText('当前任务所属 Space 不可见，可能已被归档、删除，或当前账号无权访问。')).toBeInTheDocument()
+		expect(
+			screen.getByText('当前任务所属 Space 不可见，可能已被归档、删除，或当前账号无权访问。'),
+		).toBeInTheDocument()
 	})
 })
 

@@ -115,7 +115,7 @@ describe('taskSelection', () => {
 			),
 		).toEqual({
 			selectedIds: ['task-c'],
-			focusedId: 'task-b',
+			focusedId: 'task-c',
 			anchorId: 'task-c',
 		})
 	})

@@ -156,10 +156,12 @@ export function ShellSidebar({
 		badge: navBadges[item.section],
 		to: item.to(currentScope, currentSpaceId),
 		settingsKey: item.key === 'tasks' ? 'allTasks' : item.key,
-		visible: settings.mainItems[(item.key === 'tasks' ? 'allTasks' : item.key) as SidebarMainItemKey]
-			.visible,
-		order: settings.mainItems[(item.key === 'tasks' ? 'allTasks' : item.key) as SidebarMainItemKey]
-			.order,
+		visible:
+			settings.mainItems[(item.key === 'tasks' ? 'allTasks' : item.key) as SidebarMainItemKey]
+				.visible,
+		order:
+			settings.mainItems[(item.key === 'tasks' ? 'allTasks' : item.key) as SidebarMainItemKey]
+				.order,
 	})) satisfies MainNavItemViewModel[]
 	const visibleNavItems = [...mainNavItems]
 		.filter((item) => item.visible)

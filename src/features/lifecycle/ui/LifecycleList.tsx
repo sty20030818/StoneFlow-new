@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
@@ -14,17 +14,17 @@ import {
 } from '@/features/bulk-action'
 import { useEntityDetailController } from '@/features/entity-detail'
 import {
-	selectArchiveEntries,
-	selectTrashEntries,
-	useLifecycleStore,
-} from '@/features/lifecycle/model/useLifecycleStore'
+	useDeleteLifecycleEntryMutation,
+	useLifecycleEntriesQuery,
+	usePermanentlyDeleteLifecycleEntryMutation,
+	useRestoreLifecycleEntryMutation,
+} from '@/features/lifecycle/query'
 import {
 	buildLifecycleCommandSelection,
 	useEntitySelection,
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
-import { isScopeMatch } from '@/shared/lib/scope'
 import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
@@ -42,28 +42,27 @@ type LifecycleFilter = 'all' | 'space' | 'project' | 'task'
 
 const ALL_SCOPE = { type: 'all' } as const
 
-export function LifecycleList({ mode, title }: LifecycleListProps) {
+export function LifecycleList({ mode }: LifecycleListProps) {
 	const navigate = useNavigate()
 	const openEntityDrawer = useEntityDetailController().openDrawer
 	const shellRoute = useShellRoute()
 	const scope = shellRoute.scope ?? ALL_SCOPE
 	const spaceId = shellRoute.spaceId
-	const archiveEntries = useLifecycleStore(selectArchiveEntries)
-	const trashEntries = useLifecycleStore(selectTrashEntries)
-	const pendingEntryId = useLifecycleStore((state) => state.pendingEntryId)
-	const loadArchive = useLifecycleStore((state) => state.loadArchive)
-	const loadTrash = useLifecycleStore((state) => state.loadTrash)
-	const restoreEntry = useLifecycleStore((state) => state.restoreEntry)
-	const deleteEntry = useLifecycleStore((state) => state.deleteEntry)
-	const permanentlyDeleteEntry = useLifecycleStore((state) => state.permanentlyDeleteEntry)
-	const refreshLoadedSlices = useLifecycleStore((state) => state.refreshLoadedSlices)
+	const entriesQuery = useLifecycleEntriesQuery(mode, scope)
+	const restoreEntry = useRestoreLifecycleEntryMutation()
+	const deleteEntry = useDeleteLifecycleEntryMutation()
+	const permanentlyDeleteEntry = usePermanentlyDeleteLifecycleEntryMutation()
 	const { runBulkAction } = useBulkActionContext()
 	const [entityFilter, setEntityFilter] = useState<LifecycleFilter>('all')
+	const [pendingEntryId, setPendingEntryId] = useState<string | null>(null)
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 
-	const slice = mode === 'archive' ? archiveEntries : trashEntries
-	const sliceStatus = isScopeMatch(slice.scope, scope) ? slice.status : 'loading'
-	const sliceItems = sliceStatus === 'loading' ? [] : slice.items
+	const sliceStatus = entriesQuery.isError
+		? 'error'
+		: entriesQuery.isLoading || entriesQuery.isPending
+			? 'loading'
+			: 'ready'
+	const sliceItems = sliceStatus === 'loading' ? [] : (entriesQuery.data ?? [])
 	const {
 		selectedIdSet: selectedEntryIdSet,
 		selectionSnapshot,
@@ -118,15 +117,6 @@ export function LifecycleList({ mode, title }: LifecycleListProps) {
 		},
 	]
 
-	useEffect(() => {
-		if (mode === 'archive') {
-			void loadArchive(scope)
-			return
-		}
-
-		void loadTrash(scope)
-	}, [loadArchive, loadTrash, mode, scope])
-
 	function handleOpenDetail(entry: LifecycleEntry) {
 		if (entry.entityType === 'task') {
 			openEntityDrawer({ kind: 'task', id: entry.id })
@@ -161,6 +151,15 @@ export function LifecycleList({ mode, title }: LifecycleListProps) {
 		[clearEntrySelection, runBulkAction, selectedEntries],
 	)
 
+	async function runEntryMutation(entry: LifecycleEntry, runner: () => Promise<unknown>) {
+		setPendingEntryId(entry.id)
+		try {
+			await runner()
+		} finally {
+			setPendingEntryId(null)
+		}
+	}
+
 	const sections = useMemo(
 		() => buildLifecycleSections(sliceItems, entityFilter, mode, scope),
 		[entityFilter, mode, sliceItems, scope],
@@ -193,7 +192,7 @@ export function LifecycleList({ mode, title }: LifecycleListProps) {
 						},
 						onOpenDetail: mode === 'archive' ? handleOpenDetail : undefined,
 						onRestore: (entry: LifecycleEntry) => {
-							void restoreEntry(entry)
+							void runEntryMutation(entry, () => restoreEntry.mutateAsync(entry))
 						},
 						onRestoreEntries: (entries: LifecycleEntry[]) => {
 							void runLifecycleBulkAction(
@@ -203,7 +202,7 @@ export function LifecycleList({ mode, title }: LifecycleListProps) {
 							)
 						},
 						onMoveToTrash: (entry: LifecycleEntry) => {
-							void deleteEntry(entry)
+							void runEntryMutation(entry, () => deleteEntry.mutateAsync(entry))
 						},
 						onMoveToTrashEntries: (entries: LifecycleEntry[]) => {
 							void runLifecycleBulkAction(
@@ -213,7 +212,7 @@ export function LifecycleList({ mode, title }: LifecycleListProps) {
 							)
 						},
 						onPermanentlyDelete: (entry: LifecycleEntry) => {
-							void permanentlyDeleteEntry(entry)
+							void runEntryMutation(entry, () => permanentlyDeleteEntry.mutateAsync(entry))
 						},
 						onPermanentlyDeleteEntries: (entries: LifecycleEntry[]) => {
 							void runLifecycleBulkAction(
@@ -251,7 +250,7 @@ export function LifecycleList({ mode, title }: LifecycleListProps) {
 					/>
 				}
 				onRefresh={() => {
-					void refreshLoadedSlices()
+					void entriesQuery.refetch()
 				}}
 				sceneVariant={mode}
 				toolbarPills={lifecyclePills.map((pill) => ({

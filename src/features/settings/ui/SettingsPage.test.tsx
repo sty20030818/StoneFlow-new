@@ -25,12 +25,16 @@ vi.mock('@/app/layouts/shell/model/useSidebarSettingsStore', () => ({
 		selector(sidebarStoreState),
 }))
 
-vi.mock('@/features/space/model/useSpaceStore', () => ({
-	selectSpaces: (state: typeof spaceStoreState) => state.spaces,
-	selectSpaceStatus: (state: typeof spaceStoreState) => state.status,
-	selectSpaceError: (state: typeof spaceStoreState) => state.error,
-	useSpaceStore: (selector: (state: typeof spaceStoreState) => unknown) =>
-		selector(spaceStoreState),
+vi.mock('@/features/space/query', () => ({
+	useSpaces: () => ({
+		spaces: spaceStoreState.spaces,
+		status: spaceStoreState.status,
+		error: spaceStoreState.error,
+		refetch: loadSpacesSpy,
+	}),
+	useSetDefaultSpaceMutation: () => ({
+		mutateAsync: setDefaultSpaceSpy,
+	}),
 }))
 
 vi.mock('@/app/routing', async () => {
@@ -167,7 +171,6 @@ describe('SettingsPage', () => {
 
 		await waitFor(() => {
 			expect(loadSidebarSettingsSpy).toHaveBeenCalledTimes(1)
-			expect(loadSpacesSpy).toHaveBeenCalledTimes(1)
 		})
 
 		expect(screen.getByText('工作区设置')).toBeInTheDocument()

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
 import { compact } from 'es-toolkit/array'
 
-import { type HealthcheckPayload, fetchHealthcheck } from '@/features/healthcheck/api/healthcheck'
+import type { HealthcheckPayload } from '@/features/healthcheck/api/healthcheck'
+import { useHealthcheckQuery } from '@/features/healthcheck/query'
 
 type HealthcheckStatus =
 	| {
@@ -79,54 +79,34 @@ function resolveReadyState(payload: HealthcheckPayload): HealthcheckStatus {
  */
 export function useHealthcheckStatus() {
 	const tauriRuntimeAvailable = isTauriRuntimeAvailable()
+	const query = useHealthcheckQuery(tauriRuntimeAvailable)
 
-	const [status, setStatus] = useState<HealthcheckStatus>(() =>
-		tauriRuntimeAvailable
-			? {
-					kind: 'loading',
-					label: '正在检查本地连接',
-					detail: '等待 Rust 宿主响应',
-					indicatorClassName: 'bg-amber-400',
-				}
-			: {
-					kind: 'tauri-unavailable',
-					label: 'Tauri 未连接',
-					detail: '当前是浏览器预览环境',
-					indicatorClassName: 'bg-slate-400',
-				},
-	)
+	if (!tauriRuntimeAvailable) {
+		return {
+			kind: 'tauri-unavailable',
+			label: 'Tauri 未连接',
+			detail: '当前是浏览器预览环境',
+			indicatorClassName: 'bg-slate-400',
+		} satisfies HealthcheckStatus
+	}
 
-	useEffect(() => {
-		if (!tauriRuntimeAvailable) {
-			return
-		}
+	if (query.isError) {
+		return {
+			kind: 'error',
+			label: '健康检查失败',
+			detail: '无法读取 Rust 宿主状态',
+			indicatorClassName: 'bg-red-400',
+		} satisfies HealthcheckStatus
+	}
 
-		let cancelled = false
+	if (!query.data) {
+		return {
+			kind: 'loading',
+			label: '正在检查本地连接',
+			detail: '等待 Rust 宿主响应',
+			indicatorClassName: 'bg-amber-400',
+		} satisfies HealthcheckStatus
+	}
 
-		void (async () => {
-			try {
-				const payload = await fetchHealthcheck()
-
-				if (!cancelled) {
-					setStatus(resolveReadyState(payload))
-				}
-			} catch {
-				if (!cancelled) {
-					// 这里统一收口为可读失败态，避免把底层异常直接泄漏到壳层文案。
-					setStatus({
-						kind: 'error',
-						label: '健康检查失败',
-						detail: '无法读取 Rust 宿主状态',
-						indicatorClassName: 'bg-red-400',
-					})
-				}
-			}
-		})()
-
-		return () => {
-			cancelled = true
-		}
-	}, [tauriRuntimeAvailable])
-
-	return status
+	return resolveReadyState(query.data)
 }

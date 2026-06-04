@@ -17,17 +17,22 @@ import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import { buildCanonicalProjectPath, useShellRoute } from '@/app/routing'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
-import { selectProjectOverview, useProjectStore } from '@/features/project/model/useProjectStore'
+import {
+	useArchiveProjectMutation,
+	useCompleteProjectMutation,
+	useDeleteProjectMutation,
+	useProjectOverviewData,
+	useReopenProjectMutation,
+} from '@/features/project/query'
 import {
 	buildProjectCommandSelection,
 	useEntitySelection,
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
-import { isScopeMatch } from '@/shared/lib/scope'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
-import { selectProjectViews, useViewStore } from '@/features/view/model/useViewStore'
+import { useViewsQuery } from '@/features/view/query'
 import { PlusIcon } from 'lucide-react'
 
 const ALL_SCOPE = { type: 'all' } as const
@@ -37,24 +42,18 @@ export function ProjectOverviewPage() {
 	const shellRoute = useShellRoute()
 	const scope = shellRoute.scope ?? ALL_SCOPE
 	const spaceId = shellRoute.spaceId
-	const overview = useProjectStore(selectProjectOverview)
-	const loadOverview = useProjectStore((state) => state.loadOverview)
-	const projectViews = useViewStore(selectProjectViews)
-	const loadProjectViews = useViewStore((state) => state.loadProjectViews)
-	const completeProject = useProjectStore((state) => state.completeProject)
-	const reopenProject = useProjectStore((state) => state.reopenProject)
-	const archiveProject = useProjectStore((state) => state.archiveProject)
-	const deleteProject = useProjectStore((state) => state.deleteProject)
 	const { runBulkAction } = useBulkActionContext()
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
 	const [viewKey, setViewKey] = useState<ProjectOverviewViewKey>('all_projects')
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
-	const scopeKey = scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
-	const overviewStatus =
-		isScopeMatch(overview.scope, scope) && overview.viewKey === viewKey
-			? overview.status
-			: 'loading'
+	const overview = useProjectOverviewData(scope, viewKey)
+	const projectViewsQuery = useViewsQuery('project', false)
+	const completeProject = useCompleteProjectMutation()
+	const reopenProject = useReopenProjectMutation()
+	const archiveProject = useArchiveProjectMutation()
+	const deleteProject = useDeleteProjectMutation()
+	const overviewStatus = overview.status
 	const overviewItems = overviewStatus === 'loading' ? [] : overview.items
 	const {
 		selectedIdSet: selectedProjectIds,
@@ -85,11 +84,7 @@ export function ProjectOverviewPage() {
 		hasSelection: selectedCount > 0,
 		clearSelection: clearProjectSelection,
 	})
-	const visibleProjectViews = projectViews.items.filter((view) => view.isVisible)
-
-	useEffect(() => {
-		void loadProjectViews()
-	}, [loadProjectViews])
+	const visibleProjectViews = (projectViewsQuery.data ?? []).filter((view) => view.isVisible)
 
 	useEffect(() => {
 		if (visibleProjectViews.length === 0) {
@@ -103,10 +98,6 @@ export function ProjectOverviewPage() {
 
 		setViewKey((visibleProjectViews[0].key ?? visibleProjectViews[0].id) as ProjectOverviewViewKey)
 	}, [viewKey, visibleProjectViews])
-
-	useEffect(() => {
-		void loadOverview(scope, viewKey)
-	}, [loadOverview, scope, scopeKey, viewKey])
 
 	async function runRowAction(projectId: string, runner: () => Promise<unknown>) {
 		setBusyProjectId(projectId)
@@ -156,25 +147,26 @@ export function ProjectOverviewPage() {
 					onClearProjectSelection: clearProjectSelection,
 					onArchiveProject: (projectId) => {
 						void runRowAction(projectId, async () => {
-							await archiveProject(projectId)
+							await archiveProject.mutateAsync(projectId)
 						})
 					},
 					onCompleteProject: (projectId) => {
 						void runRowAction(projectId, async () => {
-							await completeProject(projectId)
+							await completeProject.mutateAsync(projectId)
 						})
 					},
 					onDeleteProject: (projectId) => {
 						void runRowAction(projectId, async () => {
-							await deleteProject(projectId)
+							await deleteProject.mutateAsync(projectId)
 						})
 					},
 					onEmptyAction: () => openProjectCreateDialog(),
-					onOpenProject: (projectId) => navigate(buildCanonicalProjectPath(scope, projectId, spaceId)),
+					onOpenProject: (projectId) =>
+						navigate(buildCanonicalProjectPath(scope, projectId, spaceId)),
 					onSelectAllProjects: selectProjectIds,
 					onReopenProject: (projectId) => {
 						void runRowAction(projectId, async () => {
-							await reopenProject(projectId)
+							await reopenProject.mutateAsync(projectId)
 						})
 					},
 				},
@@ -202,7 +194,7 @@ export function ProjectOverviewPage() {
 				</MainCard.GhostAction>
 			}
 			onRefresh={() => {
-				void loadOverview(scope, viewKey)
+				void overview.refetch()
 			}}
 			sceneVariant='project-overview'
 			toolbarPills={[

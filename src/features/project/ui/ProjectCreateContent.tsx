@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
-import { useProjectStore } from '@/features/project/model/useProjectStore'
+import { useCreateProjectMutation } from '@/features/project/query'
 import { useRegisterSubmitTarget, type SubmitIntent } from '@/features/submit/model'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
@@ -20,7 +20,7 @@ type ProjectCreateContentProps = {
  * 壳层（Dialog + Header）由 CreateDialogShell 统一提供。
  */
 export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreateContentProps) {
-	const createProject = useProjectStore((state) => state.createProject)
+	const createProject = useCreateProjectMutation()
 	const [name, setName] = useState('')
 	const [description, setDescription] = useState('')
 	const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
@@ -62,7 +62,7 @@ export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreate
 			setSubmitState('submitting')
 			setErrorMessage(null)
 			try {
-				await createProject({
+				await createProject.mutateAsync({
 					spaceId: selectedSpaceId,
 					name: name.trim(),
 					description: description.trim() ? description : null,

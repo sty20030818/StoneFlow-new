@@ -1,11 +1,7 @@
 import { startTransition, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 
-import {
-	isRememberableShellPath,
-	normalizeShellMemoryPath,
-	parseShellRoute,
-} from '@/app/routing'
+import { isRememberableShellPath, normalizeShellMemoryPath, parseShellRoute } from '@/app/routing'
 import type { ShellRoute } from '@/app/routing'
 import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import type { Scope, Space } from '@/shared/types'
@@ -170,7 +166,13 @@ export function buildShellRouteHistoryEntry(
 
 	if (route.kind === 'task') {
 		const spaceId = route.spaceId
-		return createHistoryEntry(path, '任务详情', spaceId, getSpaceLabel(spaceId, spaces), resolveEntryIcon(route))
+		return createHistoryEntry(
+			path,
+			'任务详情',
+			spaceId,
+			getSpaceLabel(spaceId, spaces),
+			resolveEntryIcon(route),
+		)
 	}
 
 	if (route.kind === 'project') {
@@ -190,15 +192,29 @@ export function buildShellRouteHistoryEntry(
 	}
 
 	if (route.scope.type === 'all') {
-		return createHistoryEntry(path, getSectionLabel(route.section), null, '所有空间', resolveEntryIcon(route))
+		return createHistoryEntry(
+			path,
+			getSectionLabel(route.section),
+			null,
+			'所有空间',
+			resolveEntryIcon(route),
+		)
 	}
 
 	const spaceId =
-		route.scope.spaceId ?? currentSpaceId ?? (currentScope.type === 'space' ? currentScope.spaceId : null)
+		route.scope.spaceId ??
+		currentSpaceId ??
+		(currentScope.type === 'space' ? currentScope.spaceId : null)
 	const spaceLabel = getSpaceLabel(spaceId, spaces)
 	const section = route.section
 
-	return createHistoryEntry(path, getSectionLabel(section), spaceId, spaceLabel, resolveEntryIcon(route))
+	return createHistoryEntry(
+		path,
+		getSectionLabel(section),
+		spaceId,
+		spaceLabel,
+		resolveEntryIcon(route),
+	)
 }
 
 function reduceRouteHistory(

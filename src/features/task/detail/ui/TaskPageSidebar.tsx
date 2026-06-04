@@ -81,7 +81,9 @@ export function TaskPageSidebar({
 				{task.archivedAt ? (
 					<MetaRow label='归档时间' value={formatTimestamp(task.archivedAt)} />
 				) : null}
-				{task.deletedAt ? <MetaRow label='移入回收站时间' value={formatTimestamp(task.deletedAt)} /> : null}
+				{task.deletedAt ? (
+					<MetaRow label='移入回收站时间' value={formatTimestamp(task.deletedAt)} />
+				) : null}
 			</DetailSection>
 		</div>
 	)

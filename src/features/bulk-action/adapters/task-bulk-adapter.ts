@@ -134,16 +134,16 @@ export function createTaskBulkAdapter({
 										kind: 'project',
 										spaceId: target.spaceId,
 										projectId: target.projectId,
-								  }
+									}
 								: target.kind === 'inbox'
 									? {
 											kind: 'inbox',
 											spaceId: target.spaceId,
-									  }
+										}
 									: {
 											kind: 'noProject',
 											spaceId: target.spaceId,
-									  },
+										},
 					}),
 			}),
 	}

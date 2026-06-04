@@ -1,13 +1,10 @@
 import { debounce } from 'es-toolkit/function'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo } from 'react'
 
 import { useTaskChangedListener, useEventSubscription, type AppEvent } from '@/shared/events'
-import { useLifecycleStore } from '@/features/lifecycle/model/useLifecycleStore'
 import type { Scope } from '@/shared/types'
-import { useProjectStore } from '@/features/project/model/useProjectStore'
-import { useSpaceStore } from '@/features/space/model/useSpaceStore'
-import { useTaskStore } from '@/features/task/model/useTaskStore'
-import { useViewStore } from '@/features/view/model/useViewStore'
+import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'
 
 const DEBOUNCE_MS = 80
 const LIFECYCLE_DEBOUNCE_MS = 500
@@ -18,23 +15,10 @@ const LIFECYCLE_DEBOUNCE_MS = 500
  * 使用 debounce 合并短时间内连续触发的多个事件（如 archive 同时发 project:updated + lifecycle:changed）。
  */
 export function useWorkspaceSync(scope: Scope) {
+	const queryClient = useQueryClient()
 	const refreshLoadedData = useCallback(() => {
-		void useTaskStore.getState().refreshLoadedSlices()
-		void useSpaceStore.getState().refresh()
-		void useLifecycleStore.getState().refreshLoadedSlices()
-		void useViewStore.getState().refreshTaskRun()
-
-		const projectStore = useProjectStore.getState()
-		if (projectStore.detail.projectId && !projectStore.detail.item?.archivedAt) {
-			void projectStore.loadDetail(projectStore.detail.projectId)
-		}
-		if (projectStore.sidebar.scope) {
-			void projectStore.loadSidebar(projectStore.sidebar.scope)
-		}
-		if (projectStore.overview.scope) {
-			void projectStore.loadOverview(projectStore.overview.scope, projectStore.overview.viewKey)
-		}
-	}, [])
+		void invalidateWorkspaceQueries(queryClient)
+	}, [queryClient])
 
 	const scheduleRefreshDebounced = useMemo(
 		() => debounce(refreshLoadedData, DEBOUNCE_MS),

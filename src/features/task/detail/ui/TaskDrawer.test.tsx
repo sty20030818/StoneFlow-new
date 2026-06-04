@@ -64,8 +64,8 @@ vi.mock('../model/useTaskAutosaveAdapter', () => ({
 	useTaskAutosaveAdapter: () => mockAutosave.value,
 }))
 
-vi.mock('@/features/project/model/useProjectStore', () => ({
-	selectProjectOptions: () => [
+vi.mock('@/features/project/query', () => ({
+	useProjectOptions: () => [
 		{
 			id: 'project-1',
 			name: '项目 A',
@@ -77,37 +77,40 @@ vi.mock('@/features/project/model/useProjectStore', () => ({
 			spaceId: 'space-2',
 		},
 	],
-	useProjectStore: (selector: (state: unknown) => unknown) => selector({}),
 }))
 
-vi.mock('@/features/space/model/useSpaceStore', () => ({
-	selectSpaces: () => [
-		{
-			id: 'space-1',
-			name: '工作',
-			iconKey: 'briefcase',
-			colorKey: 'blue',
-			isDefault: true,
-			sortOrder: 1,
-			archivedAt: null,
-			deletedAt: null,
-			createdAt: '2026-05-19T00:00:00Z',
-			updatedAt: '2026-05-19T00:00:00Z',
-		},
-		{
-			id: 'space-2',
-			name: '生活',
-			iconKey: 'home',
-			colorKey: 'green',
-			isDefault: false,
-			sortOrder: 2,
-			archivedAt: null,
-			deletedAt: null,
-			createdAt: '2026-05-19T00:00:00Z',
-			updatedAt: '2026-05-19T00:00:00Z',
-		},
-	],
-	useSpaceStore: (selector: (state: unknown) => unknown) => selector({}),
+vi.mock('@/features/space/query', () => ({
+	useSpaces: () => ({
+		spaces: [
+			{
+				id: 'space-1',
+				name: '工作',
+				iconKey: 'briefcase',
+				colorKey: 'blue',
+				isDefault: true,
+				sortOrder: 1,
+				archivedAt: null,
+				deletedAt: null,
+				createdAt: '2026-05-19T00:00:00Z',
+				updatedAt: '2026-05-19T00:00:00Z',
+			},
+			{
+				id: 'space-2',
+				name: '生活',
+				iconKey: 'home',
+				colorKey: 'green',
+				isDefault: false,
+				sortOrder: 2,
+				archivedAt: null,
+				deletedAt: null,
+				createdAt: '2026-05-19T00:00:00Z',
+				updatedAt: '2026-05-19T00:00:00Z',
+			},
+		],
+		status: 'ready',
+		error: null,
+		refetch: vi.fn(),
+	}),
 }))
 
 vi.mock('../model/useTaskLinksController', () => ({

@@ -6,8 +6,8 @@ import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { buildCanonicalViewPath, useShellRoute } from '@/app/routing'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
-import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+import { useProjectOptions } from '@/features/project/query'
+import { useSpaces } from '@/features/space/query'
 import {
 	buildTaskCommandSelection,
 	useEntitySelectionEscape,
@@ -19,14 +19,17 @@ import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import {
-	selectTaskViewRun,
-	selectTaskViews,
-	useViewStore,
-} from '@/features/view/model/useViewStore'
+	useCreateViewMutation,
+	useDeleteViewMutation,
+	useReorderViewsMutation,
+	useTaskViewRunQuery,
+	useToggleViewVisibleMutation,
+	useUpdateViewMutation,
+	useViewsQuery,
+} from '@/features/view/query'
 import { ViewActionsMenu } from '@/features/view/ui/ViewActionsMenu'
 import { ViewEditorDialog } from '@/features/view/ui/ViewEditorDialog'
 import { useTaskChangedListener } from '@/shared/events'
-import { isScopeMatch } from '@/shared/lib/scope'
 import type { TaskListItem, View } from '@/shared/types'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
@@ -45,19 +48,15 @@ export function ViewsPage() {
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
 	const taskPreviewController = useTaskPreviewController()
-	const taskViews = useViewStore(selectTaskViews)
-	const taskRun = useViewStore(selectTaskViewRun)
-	const loadTaskViews = useViewStore((state) => state.loadTaskViews)
-	const runTaskView = useViewStore((state) => state.runTaskView)
-	const refreshTaskRun = useViewStore((state) => state.refreshTaskRun)
-	const createTaskView = useViewStore((state) => state.createTaskView)
-	const updateTaskView = useViewStore((state) => state.updateTaskView)
-	const deleteTaskView = useViewStore((state) => state.deleteTaskView)
-	const toggleTaskViewVisible = useViewStore((state) => state.toggleTaskViewVisible)
-	const reorderTaskViews = useViewStore((state) => state.reorderTaskViews)
-	const loadSidebarProjects = useProjectStore((state) => state.loadSidebar)
-	const projectOptions = useProjectStore(selectProjectOptions)
-	const spaces = useSpaceStore(selectSpaces)
+	const taskViewsQuery = useViewsQuery('task', false)
+	const taskViews = taskViewsQuery.data ?? []
+	const createTaskView = useCreateViewMutation()
+	const updateTaskView = useUpdateViewMutation()
+	const deleteTaskView = useDeleteViewMutation()
+	const toggleTaskViewVisible = useToggleViewVisibleMutation()
+	const reorderTaskViews = useReorderViewsMutation()
+	const projectOptions = useProjectOptions(scope)
+	const { spaces } = useSpaces()
 	const {
 		pendingTaskId,
 		updateTaskPriority,
@@ -75,40 +74,39 @@ export function ViewsPage() {
 	const [editingView, setEditingView] = useState<View | null>(null)
 	const [isSavingView, setIsSavingView] = useState(false)
 
-	const visibleViews = useMemo(
-		() => taskViews.items.filter((view) => view.isVisible),
-		[taskViews.items],
-	)
+	const visibleViews = useMemo(() => taskViews.filter((view) => view.isVisible), [taskViews])
 	const activeView = useMemo(() => {
 		if (!routeViewId) {
 			return visibleViews[0] ?? null
 		}
 
 		return (
-			taskViews.items.find(
+			taskViews.find(
 				(view) => view.id === routeViewId || (view.key !== null && view.key === routeViewId),
 			) ??
 			visibleViews[0] ??
 			null
 		)
-	}, [routeViewId, taskViews.items, visibleViews])
-	const isTaskRunCurrent =
-		!!activeView &&
-		!!taskRun.input &&
-		taskRun.input.viewId === activeView.id &&
-		isScopeMatch(taskRun.input.scope, scope)
+	}, [routeViewId, taskViews, visibleViews])
+	const taskRunInput = activeView
+		? {
+				scope,
+				viewId: activeView.id,
+			}
+		: null
+	const taskRunQuery = useTaskViewRunQuery(taskRunInput)
+	const taskRun = taskRunQuery.data ?? null
 	const boardStatus =
-		taskViews.status === 'idle' ||
-		taskViews.status === 'loading' ||
-		(activeView && (!isTaskRunCurrent || taskRun.status === 'idle' || taskRun.status === 'loading'))
+		taskViewsQuery.isLoading ||
+		taskViewsQuery.isPending ||
+		(activeView && (taskRunQuery.isLoading || taskRunQuery.isPending))
 			? 'loading'
 			: activeView
-				? taskRun.status
+				? taskRunQuery.isError
+					? 'error'
+					: 'ready'
 				: 'ready'
-	const visibleTasks = useMemo(
-		() => (isTaskRunCurrent ? (taskRun.item?.items ?? []) : []),
-		[isTaskRunCurrent, taskRun.item?.items],
-	)
+	const visibleTasks = useMemo(() => taskRun?.items ?? [], [taskRun?.items])
 	const breadcrumbItems = useMemo(
 		() =>
 			resolveBreadcrumb({
@@ -119,12 +117,12 @@ export function ViewsPage() {
 	)
 
 	useEffect(() => {
-		void loadTaskViews()
-		void loadSidebarProjects(scope)
-	}, [loadSidebarProjects, loadTaskViews, scope])
-
-	useEffect(() => {
-		if (taskViews.status !== 'ready' || visibleViews.length === 0 || !activeView) {
+		if (
+			taskViewsQuery.isLoading ||
+			taskViewsQuery.isPending ||
+			visibleViews.length === 0 ||
+			!activeView
+		) {
 			return
 		}
 
@@ -134,26 +132,24 @@ export function ViewsPage() {
 		}
 
 		void navigate(buildCanonicalViewPath(scope, nextViewValue, spaceId), { replace: true })
-	}, [activeView, navigate, routeViewId, scope, spaceId, taskViews.status, visibleViews.length])
-
-	useEffect(() => {
-		if (!activeView) {
-			return
-		}
-
-		void runTaskView({
-			scope,
-			viewId: activeView.id,
-		})
-	}, [activeView, runTaskView, scope])
+	}, [
+		activeView,
+		navigate,
+		routeViewId,
+		scope,
+		spaceId,
+		taskViewsQuery.isLoading,
+		taskViewsQuery.isPending,
+		visibleViews.length,
+	])
 
 	useTaskChangedListener(scope, () => {
-		void refreshTaskRun()
+		void taskRunQuery.refetch()
 	})
 
 	const sections = useMemo(
-		() => buildCustomSections(taskRun.item?.groups ?? [], visibleTasks),
-		[taskRun.item?.groups, visibleTasks],
+		() => buildCustomSections(taskRun?.groups ?? [], visibleTasks),
+		[taskRun?.groups, visibleTasks],
 	)
 	const taskSelectionOrderIds = useMemo(
 		() => getTaskBoardVisualOrderIds(visibleTasks, { customSections: sections }),
@@ -196,27 +192,27 @@ export function ViewsPage() {
 		void navigate(buildCanonicalViewPath(scope, view.id, spaceId))
 	}
 
-	async function handleCreateView(input: Parameters<typeof createTaskView>[0]) {
+	async function handleCreateView(input: Parameters<typeof createTaskView.mutateAsync>[0]) {
 		setIsSavingView(true)
 		try {
-			const created = await createTaskView(input)
+			const created = await createTaskView.mutateAsync(input)
 			void navigate(buildCanonicalViewPath(scope, created.id, spaceId))
 		} finally {
 			setIsSavingView(false)
 		}
 	}
 
-	async function handleUpdateView(input: Parameters<typeof updateTaskView>[0]) {
+	async function handleUpdateView(input: Parameters<typeof updateTaskView.mutateAsync>[0]) {
 		setIsSavingView(true)
 		try {
-			await updateTaskView(input)
+			await updateTaskView.mutateAsync(input)
 		} finally {
 			setIsSavingView(false)
 		}
 	}
 
 	async function handleDeleteView(view: View) {
-		await deleteTaskView(view.id)
+		await deleteTaskView.mutateAsync(view.id)
 		if (activeView?.id === view.id) {
 			const fallbackView = visibleViews.find((item) => item.id !== view.id)
 			if (fallbackView) {
@@ -226,7 +222,7 @@ export function ViewsPage() {
 	}
 
 	async function handleToggleVisible(view: View, visible: boolean) {
-		await toggleTaskViewVisible(view.id, visible)
+		await toggleTaskViewVisible.mutateAsync({ viewId: view.id, visible })
 		if (!visible && activeView?.id === view.id) {
 			const fallbackView = visibleViews.find((item) => item.id !== view.id)
 			if (fallbackView) {
@@ -236,7 +232,7 @@ export function ViewsPage() {
 	}
 
 	async function handleReorder(orderedIds: string[]) {
-		await reorderTaskViews({
+		await reorderTaskViews.mutateAsync({
 			entityType: 'task',
 			orderedIds,
 		})
@@ -314,10 +310,10 @@ export function ViewsPage() {
 				}
 				footer={
 					<div className='px-1 text-[12px] text-sf-text-tertiary'>
-						{isTaskRunCurrent && taskRun.item?.view.description
-							? taskRun.item.view.description
-							: isTaskRunCurrent && taskRun.item
-								? `当前视图共 ${taskRun.item.items.length} 条任务`
+						{taskRun?.view.description
+							? taskRun.view.description
+							: taskRun
+								? `当前视图共 ${taskRun.items.length} 条任务`
 								: '正在准备视图数据'}
 					</div>
 				}
@@ -330,7 +326,7 @@ export function ViewsPage() {
 					</MainCard.GhostAction>
 				}
 				onRefresh={() => {
-					void refreshTaskRun()
+					void taskRunQuery.refetch()
 				}}
 				sceneVariant='view'
 				toolbarFilterAction={
@@ -347,7 +343,7 @@ export function ViewsPage() {
 						}}
 						onReorder={(orderedIds) => void handleReorder(orderedIds)}
 						onToggleVisible={(view, visible) => void handleToggleVisible(view, visible)}
-						views={taskViews.items}
+						views={taskViews}
 					/>
 				}
 				toolbarPills={visibleViews.map((view) => ({

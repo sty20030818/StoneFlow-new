@@ -1,4 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { fetchHealthcheck } from '@/features/healthcheck/api/healthcheck'
 import { useHealthcheckStatus } from '@/features/healthcheck/model/useHealthcheckStatus'
 
@@ -19,7 +21,9 @@ describe('useHealthcheckStatus', () => {
 	})
 
 	it('在浏览器预览环境返回 tauri-unavailable', () => {
-		const { result } = renderHook(() => useHealthcheckStatus())
+		const { result } = renderHook(() => useHealthcheckStatus(), {
+			wrapper: createQueryWrapper(),
+		})
 
 		expect(result.current.kind).toBe('tauri-unavailable')
 		expect(mockedFetchHealthcheck).not.toHaveBeenCalled()
@@ -34,7 +38,9 @@ describe('useHealthcheckStatus', () => {
 			databaseReady: true,
 		})
 
-		const { result } = renderHook(() => useHealthcheckStatus())
+		const { result } = renderHook(() => useHealthcheckStatus(), {
+			wrapper: createQueryWrapper(),
+		})
 
 		await waitFor(() => {
 			expect(result.current.kind).toBe('ready')
@@ -45,3 +51,16 @@ describe('useHealthcheckStatus', () => {
 		expect(result.current.detail).toBe('...\\stoneflow\\data\\app.db')
 	})
 })
+
+function createQueryWrapper() {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: { retry: false, gcTime: 0 },
+			mutations: { retry: false },
+		},
+	})
+
+	return function QueryWrapper({ children }: { children: ReactNode }) {
+		return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+	}
+}

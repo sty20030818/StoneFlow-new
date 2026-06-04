@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi } from 'vitest'
 
 import { searchEntities } from '@/features/global-search/api/searchEntities'
@@ -188,7 +189,20 @@ function renderSearch({
 	onOpenTask?: (task: unknown) => void
 	onOpenProject?: (project: unknown) => void
 } = {}) {
-	return render(<GlobalSearchInput onOpenProject={onOpenProject} onOpenTask={onOpenTask} />)
+	return render(
+		<QueryClientProvider client={createTestQueryClient()}>
+			<GlobalSearchInput onOpenProject={onOpenProject} onOpenTask={onOpenTask} />
+		</QueryClientProvider>,
+	)
+}
+
+function createTestQueryClient() {
+	return new QueryClient({
+		defaultOptions: {
+			queries: { retry: false, gcTime: 0 },
+			mutations: { retry: false },
+		},
+	})
 }
 
 async function flushSearch(expectedCallCount: number) {

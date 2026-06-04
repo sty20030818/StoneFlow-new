@@ -92,10 +92,7 @@ describe('shellDevicePreferences navigation restore', () => {
 	it('rememberShellRoute 不保存 shortcut path', async () => {
 		await rememberShellRoute({ type: 'all' }, TASK_SHORTCUT_PATH)
 
-		expect(storeSetMock).not.toHaveBeenCalledWith(
-			'shell.navigation.restore',
-			expect.anything(),
-		)
+		expect(storeSetMock).not.toHaveBeenCalledWith('shell.navigation.restore', expect.anything())
 	})
 
 	it('resolveStartupPath 遇到旧 stored path 返回 canonical fallback', async () => {

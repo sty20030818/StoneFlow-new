@@ -1,8 +1,10 @@
 import { act, renderHook } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ReactNode } from 'react'
 
 import type { ProjectOption } from '@/features/project/model/types'
-import { useTaskStore } from '@/features/task/model/useTaskStore'
+import { updateTask } from '@/features/task/api/tasks'
 import type { TaskDetail } from '@/shared/types'
 
 import {
@@ -12,36 +14,33 @@ import {
 } from './taskDetailDraft'
 import { useTaskAutosaveAdapter } from './useTaskAutosaveAdapter'
 
+vi.mock('@/features/task/api/tasks', () => ({
+	updateTask: vi.fn(),
+}))
+
 describe('useTaskAutosaveAdapter', () => {
 	const baseTask = createTaskDetail()
-	type UpdateTask = ReturnType<typeof useTaskStore.getState>['updateTask']
+	const updateTaskMock = vi.mocked(updateTask)
 
 	beforeEach(() => {
 		vi.useFakeTimers()
-			useTaskStore.setState((state) => ({
-				...state,
-				updateTask: vi.fn<UpdateTask>(async (input) => ({
-					...baseTask,
-					...('title' in input ? { title: input.title ?? baseTask.title } : {}),
-					...('note' in input ? { note: input.note ?? null } : {}),
-					...('status' in input ? { status: input.status ?? baseTask.status } : {}),
-					...('priority' in input ? { priority: input.priority ?? baseTask.priority } : {}),
-					...(input.placement
-						? {
-								spaceId: input.placement.spaceId,
-								projectId:
-									input.placement.kind === 'project'
-										? input.placement.projectId ?? null
-										: null,
-								inboxAt:
-									input.placement.kind === 'inbox'
-										? '2026-05-19T01:00:00Z'
-										: null,
-						  }
-						: {}),
-					...('dueAt' in input ? { dueAt: input.dueAt ?? null } : {}),
-				})),
-			}))
+		updateTaskMock.mockReset()
+		updateTaskMock.mockImplementation(async (input) => ({
+			...baseTask,
+			...('title' in input ? { title: input.title ?? baseTask.title } : {}),
+			...('note' in input ? { note: input.note ?? null } : {}),
+			...('status' in input ? { status: input.status ?? baseTask.status } : {}),
+			...('priority' in input ? { priority: input.priority ?? baseTask.priority } : {}),
+			...(input.placement
+				? {
+						spaceId: input.placement.spaceId,
+						projectId:
+							input.placement.kind === 'project' ? (input.placement.projectId ?? null) : null,
+						inboxAt: input.placement.kind === 'inbox' ? '2026-05-19T01:00:00Z' : null,
+					}
+				: {}),
+			...('dueAt' in input ? { dueAt: input.dueAt ?? null } : {}),
+		}))
 	})
 
 	afterEach(() => {
@@ -49,8 +48,9 @@ describe('useTaskAutosaveAdapter', () => {
 	})
 
 	it('标题和备注 debounce 后保存', async () => {
-		const { result } = renderHook(() =>
-			useTaskAutosaveAdapter({ base: createTaskDetailDraft(baseTask) }),
+		const { result } = renderHook(
+			() => useTaskAutosaveAdapter({ base: createTaskDetailDraft(baseTask) }),
+			{ wrapper: createQueryWrapper() },
 		)
 
 		act(() => {
@@ -58,14 +58,14 @@ describe('useTaskAutosaveAdapter', () => {
 			result.current.setField('note', '  新备注  ', { saveMode: 'debounced' })
 		})
 
-		expect(updateTaskMock()).not.toHaveBeenCalled()
+		expect(updateTaskMock).not.toHaveBeenCalled()
 
 		await act(async () => {
 			vi.advanceTimersByTime(600)
 			await Promise.resolve()
 		})
 
-		expect(updateTaskMock()).toHaveBeenCalledWith({
+		expect(updateTaskMock.mock.calls.at(-1)?.[0]).toEqual({
 			taskId: 'task-1',
 			title: '新标题',
 			note: '  新备注  ',
@@ -80,6 +80,7 @@ describe('useTaskAutosaveAdapter', () => {
 					note: '已有备注',
 				}),
 			},
+			wrapper: createQueryWrapper(),
 		})
 
 		act(() => {
@@ -91,12 +92,12 @@ describe('useTaskAutosaveAdapter', () => {
 			await Promise.resolve()
 		})
 
-		expect(updateTaskMock()).toHaveBeenCalledWith({
+		expect(updateTaskMock.mock.calls.at(-1)?.[0]).toEqual({
 			taskId: 'task-1',
 			note: null,
 		})
 
-		updateTaskMock().mockClear()
+		updateTaskMock.mockClear()
 		rerender({ base: createTaskDetailDraft(baseTask) })
 
 		act(() => {
@@ -108,15 +109,16 @@ describe('useTaskAutosaveAdapter', () => {
 			await Promise.resolve()
 		})
 
-		expect(updateTaskMock()).toHaveBeenCalledWith({
+		expect(updateTaskMock.mock.calls.at(-1)?.[0]).toEqual({
 			taskId: 'task-1',
 			note: '  第一行\n第二行  ',
 		})
 	})
 
 	it('状态和优先级立即保存', async () => {
-		const { result } = renderHook(() =>
-			useTaskAutosaveAdapter({ base: createTaskDetailDraft(baseTask) }),
+		const { result } = renderHook(
+			() => useTaskAutosaveAdapter({ base: createTaskDetailDraft(baseTask) }),
+			{ wrapper: createQueryWrapper() },
 		)
 
 		await act(async () => {
@@ -124,7 +126,7 @@ describe('useTaskAutosaveAdapter', () => {
 			await Promise.resolve()
 		})
 
-		expect(updateTaskMock()).toHaveBeenCalledWith({
+		expect(updateTaskMock.mock.calls.at(-1)?.[0]).toEqual({
 			taskId: 'task-1',
 			status: 'doing',
 		})
@@ -134,15 +136,16 @@ describe('useTaskAutosaveAdapter', () => {
 			await Promise.resolve()
 		})
 
-		expect(updateTaskMock()).toHaveBeenLastCalledWith({
+		expect(updateTaskMock.mock.calls.at(-1)?.[0]).toEqual({
 			taskId: 'task-1',
 			priority: 4,
 		})
 	})
 
 	it('保存返回的新 detail 成为下一次 diff base', async () => {
-		const { result } = renderHook(() =>
-			useTaskAutosaveAdapter({ base: createTaskDetailDraft(baseTask) }),
+		const { result } = renderHook(
+			() => useTaskAutosaveAdapter({ base: createTaskDetailDraft(baseTask) }),
+			{ wrapper: createQueryWrapper() },
 		)
 
 		await act(async () => {
@@ -150,20 +153,21 @@ describe('useTaskAutosaveAdapter', () => {
 			await Promise.resolve()
 		})
 
-		updateTaskMock().mockClear()
+		updateTaskMock.mockClear()
 
 		await act(async () => {
 			result.current.setField('status', 'doing', { saveMode: 'immediate' })
 			await Promise.resolve()
 		})
 
-		expect(updateTaskMock()).not.toHaveBeenCalled()
+		expect(updateTaskMock).not.toHaveBeenCalled()
 	})
 
 	it('保存失败保留 draft，并可 retry', async () => {
-		updateTaskMock().mockRejectedValueOnce(new Error('boom'))
-		const { result } = renderHook(() =>
-			useTaskAutosaveAdapter({ base: createTaskDetailDraft(baseTask) }),
+		updateTaskMock.mockRejectedValueOnce(new Error('boom'))
+		const { result } = renderHook(
+			() => useTaskAutosaveAdapter({ base: createTaskDetailDraft(baseTask) }),
+			{ wrapper: createQueryWrapper() },
 		)
 
 		await act(async () => {
@@ -178,7 +182,7 @@ describe('useTaskAutosaveAdapter', () => {
 			await result.current.retry()
 		})
 
-		expect(updateTaskMock()).toHaveBeenLastCalledWith({
+		expect(updateTaskMock.mock.calls.at(-1)?.[0]).toEqual({
 			taskId: 'task-1',
 			status: 'doing',
 		})
@@ -205,10 +209,6 @@ describe('useTaskAutosaveAdapter', () => {
 	})
 })
 
-function updateTaskMock() {
-	return useTaskStore.getState().updateTask as ReturnType<typeof vi.fn>
-}
-
 function createTaskDetail(overrides: Partial<TaskDetail> = {}): TaskDetail {
 	return {
 		id: 'task-1',
@@ -234,5 +234,18 @@ function createTaskDetail(overrides: Partial<TaskDetail> = {}): TaskDetail {
 		sortOrder: 100,
 		deletedAt: null,
 		...overrides,
+	}
+}
+
+function createQueryWrapper() {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: { retry: false },
+			mutations: { retry: false },
+		},
+	})
+
+	return function QueryWrapper({ children }: { children: ReactNode }) {
+		return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 	}
 }

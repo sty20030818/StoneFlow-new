@@ -7,11 +7,10 @@ import { ProjectCreateContent } from './ProjectCreateContent'
 
 const createProjectMock = vi.fn()
 
-vi.mock('@/features/project/model/useProjectStore', () => ({
-	useProjectStore: (selector: (state: { createProject: typeof createProjectMock }) => unknown) =>
-		selector({
-			createProject: createProjectMock,
-		}),
+vi.mock('@/features/project/query', () => ({
+	useCreateProjectMutation: () => ({
+		mutateAsync: createProjectMock,
+	}),
 }))
 
 describe('ProjectCreateContent', () => {

@@ -89,22 +89,21 @@ const mockTaskRunState = {
 	},
 }
 
-const mockViewStoreState = {
-	taskViews: {
-		items: mockViews,
-		status: 'ready' as const,
-		error: null,
-		entityType: 'task' as const,
-	},
+type MockTaskRunState =
+	| typeof mockTaskRunState
+	| {
+			item: null
+			status: 'loading' | 'ready' | 'error'
+			error: string | null
+			input: null
+	  }
+
+const mockViewQueryState: {
+	taskViews: typeof mockViews
+	taskRun: MockTaskRunState
+} = {
+	taskViews: mockViews,
 	taskRun: mockTaskRunState,
-	loadTaskViews: loadTaskViewsSpy,
-	runTaskView: runTaskViewSpy,
-	refreshTaskRun: refreshTaskRunSpy,
-	createTaskView: createTaskViewSpy,
-	updateTaskView: updateTaskViewSpy,
-	deleteTaskView: deleteTaskViewSpy,
-	toggleTaskViewVisible: toggleTaskViewVisibleSpy,
-	reorderTaskViews: reorderTaskViewsSpy,
 }
 
 vi.mock('@/app/layouts/shell/model/useDrawerStore', () => ({
@@ -123,22 +122,63 @@ vi.mock('@/app/layouts/shell/model/useDialogStore', () => ({
 		}),
 }))
 
-vi.mock('@/features/project/model/useProjectStore', () => ({
-	selectProjectOptions: (state: {
-		options: Array<{ id: string; name: string; spaceId: string }>
-	}) => state.options,
-	useProjectStore: (selector: (state: unknown) => unknown) =>
-		selector({
-			options: [{ id: 'project-1', name: '阶段 8', spaceId: 'space-1' }],
-			loadSidebar: loadSidebarSpy,
-		}),
+vi.mock('@/features/project/query', () => ({
+	useProjectOptions: (scope: { type: string }) => {
+		loadSidebarSpy(scope)
+		return [{ id: 'project-1', name: '阶段 8', spaceId: 'space-1' }]
+	},
 }))
 
-vi.mock('@/features/view/model/useViewStore', () => ({
-	selectTaskViews: (state: typeof mockViewStoreState) => state.taskViews,
-	selectTaskViewRun: (state: typeof mockViewStoreState) => state.taskRun,
-	useViewStore: (selector: (state: typeof mockViewStoreState) => unknown) =>
-		selector(mockViewStoreState),
+vi.mock('@/features/space/query', () => ({
+	useSpaces: () => ({
+		spaces: [{ id: 'space-1', name: '工作' }],
+		status: 'ready',
+		error: null,
+		refetch: vi.fn(),
+	}),
+}))
+
+vi.mock('@/features/view/query', () => ({
+	useViewsQuery: () => {
+		loadTaskViewsSpy()
+		return {
+			data: mockViewQueryState.taskViews,
+			isError: false,
+			isLoading: false,
+			isPending: false,
+			error: null,
+			refetch: loadTaskViewsSpy,
+		}
+	},
+	useTaskViewRunQuery: (input: { scope: { type: string }; viewId: string } | null) => {
+		if (input) {
+			runTaskViewSpy(input)
+		}
+
+		return {
+			data: mockViewQueryState.taskRun.item,
+			isError: mockViewQueryState.taskRun.status === 'error',
+			isLoading: mockViewQueryState.taskRun.status === 'loading',
+			isPending: mockViewQueryState.taskRun.status === 'loading',
+			error: mockViewQueryState.taskRun.error,
+			refetch: refreshTaskRunSpy,
+		}
+	},
+	useCreateViewMutation: () => ({
+		mutateAsync: createTaskViewSpy,
+	}),
+	useUpdateViewMutation: () => ({
+		mutateAsync: updateTaskViewSpy,
+	}),
+	useDeleteViewMutation: () => ({
+		mutateAsync: deleteTaskViewSpy,
+	}),
+	useToggleViewVisibleMutation: () => ({
+		mutateAsync: toggleTaskViewVisibleSpy,
+	}),
+	useReorderViewsMutation: () => ({
+		mutateAsync: reorderTaskViewsSpy,
+	}),
 }))
 
 vi.mock('@/shared/events', () => ({
@@ -226,8 +266,8 @@ describe('ViewsPage', () => {
 		runTaskViewSpy.mockReset()
 		loadSidebarSpy.mockReset()
 		openTaskCreateDialogSpy.mockReset()
-		mockViewStoreState.taskViews.items = mockViews
-		mockViewStoreState.taskRun = mockTaskRunState
+		mockViewQueryState.taskViews = mockViews
+		mockViewQueryState.taskRun = mockTaskRunState
 	})
 
 	it('根据 canonical view route 解析真实 viewId，并触发视图执行', async () => {
@@ -317,7 +357,7 @@ describe('ViewsPage', () => {
 	})
 
 	it('有视图但没有任务时展示更完整的空态文案', () => {
-		mockViewStoreState.taskRun = {
+		mockViewQueryState.taskRun = {
 			...mockTaskRunState,
 			item: {
 				...mockTaskRunState.item,
@@ -342,8 +382,8 @@ describe('ViewsPage', () => {
 	})
 
 	it('没有可用视图时空态 CTA 打开创建视图弹窗', () => {
-		mockViewStoreState.taskViews.items = []
-		mockViewStoreState.taskRun = {
+		mockViewQueryState.taskViews = []
+		mockViewQueryState.taskRun = {
 			item: null,
 			status: 'ready',
 			error: null,

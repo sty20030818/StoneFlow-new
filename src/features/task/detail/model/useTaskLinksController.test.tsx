@@ -1,4 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -7,7 +9,6 @@ import {
 	listTaskLinks,
 	updateTaskLink,
 } from '@/features/task/api/taskLinks'
-import { useTaskStore } from '@/features/task/model/useTaskStore'
 
 import { useTaskLinksController } from './useTaskLinksController'
 
@@ -47,11 +48,6 @@ describe('useTaskLinksController', () => {
 		toastErrorMock.mockReset()
 		windowOpenMock.mockReset()
 		vi.stubGlobal('open', windowOpenMock)
-
-		useTaskStore.setState((state) => ({
-			...state,
-			updateTask: vi.fn(state.updateTask),
-		}))
 	})
 
 	it('挂载后读取当前 task 的 links', async () => {
@@ -62,7 +58,9 @@ describe('useTaskLinksController', () => {
 			}),
 		])
 
-		const { result } = renderHook(() => useTaskLinksController('task-1'))
+		const { result } = renderHook(() => useTaskLinksController('task-1'), {
+			wrapper: createQueryWrapper(),
+		})
 
 		await waitFor(() => {
 			expect(result.current.status).toBe('ready')
@@ -70,20 +68,40 @@ describe('useTaskLinksController', () => {
 
 		expect(mockedListTaskLinks).toHaveBeenCalledWith({ taskId: 'task-1' })
 		expect(result.current.links).toHaveLength(1)
-		expect(result.current.links[0]?.title).toBe('技术方案')
+		await waitFor(() => {
+			expect(result.current.links[0]?.title).toBe('技术方案')
+		})
 	})
 
-	it('新增、编辑、删除后都会刷新 links，且不会触发 task autosave', async () => {
-		mockedListTaskLinks
-			.mockResolvedValueOnce([])
-			.mockResolvedValueOnce([createTaskLinkItem({ id: 'link-1', title: '技术方案' })])
-			.mockResolvedValueOnce([createTaskLinkItem({ id: 'link-1', title: '最终方案' })])
-			.mockResolvedValueOnce([])
-		mockedCreateTaskLink.mockResolvedValue(createTaskLinkItem({ id: 'link-1' }))
-		mockedUpdateTaskLink.mockResolvedValue(createTaskLinkItem({ id: 'link-1', title: '最终方案' }))
-		mockedDeleteTaskLink.mockResolvedValue(createTaskLinkItem({ id: 'link-1', title: '最终方案' }))
+	it('新增、编辑、删除后都会刷新 links', async () => {
+		let currentLinks = [] as ReturnType<typeof createTaskLinkItem>[]
+		mockedListTaskLinks.mockImplementation(async () => currentLinks)
+		mockedCreateTaskLink.mockImplementation(async (input) => {
+			const nextLink = createTaskLinkItem({
+				id: 'link-1',
+				title: String(input.title),
+				url: String(input.url),
+			})
+			currentLinks = [nextLink]
+			return nextLink
+		})
+		mockedUpdateTaskLink.mockImplementation(async (input) => {
+			const nextLink = createTaskLinkItem({
+				id: String(input.linkId),
+				title: String(input.title),
+				url: String(input.url),
+			})
+			currentLinks = [nextLink]
+			return nextLink
+		})
+		mockedDeleteTaskLink.mockImplementation(async () => {
+			currentLinks = []
+			return createTaskLinkItem({ id: 'link-1', title: '最终方案' })
+		})
 
-		const { result } = renderHook(() => useTaskLinksController('task-1'))
+		const { result } = renderHook(() => useTaskLinksController('task-1'), {
+			wrapper: createQueryWrapper(),
+		})
 
 		await waitFor(() => {
 			expect(result.current.status).toBe('ready')
@@ -95,12 +113,14 @@ describe('useTaskLinksController', () => {
 				url: 'https://example.com/spec',
 			})
 		})
-		expect(mockedCreateTaskLink).toHaveBeenCalledWith({
+		expect(mockedCreateTaskLink.mock.calls.at(-1)?.[0]).toEqual({
 			taskId: 'task-1',
 			title: '技术方案',
 			url: 'https://example.com/spec',
 		})
-		expect(result.current.links[0]?.title).toBe('技术方案')
+		await waitFor(() => {
+			expect(result.current.links[0]?.title).toBe('技术方案')
+		})
 
 		await act(async () => {
 			await result.current.editLink('link-1', {
@@ -108,21 +128,24 @@ describe('useTaskLinksController', () => {
 				url: 'https://example.com/spec-final',
 			})
 		})
-		expect(mockedUpdateTaskLink).toHaveBeenCalledWith({
+		expect(mockedUpdateTaskLink.mock.calls.at(-1)?.[0]).toEqual({
 			linkId: 'link-1',
 			title: '最终方案',
 			url: 'https://example.com/spec-final',
 		})
-		expect(result.current.links[0]?.title).toBe('最终方案')
+		await waitFor(() => {
+			expect(result.current.links[0]?.title).toBe('最终方案')
+		})
 
 		await act(async () => {
 			await result.current.removeLink('link-1')
 		})
-		expect(mockedDeleteTaskLink).toHaveBeenCalledWith({
+		expect(mockedDeleteTaskLink.mock.calls.at(-1)?.[0]).toEqual({
 			linkId: 'link-1',
 		})
-		expect(result.current.links).toEqual([])
-		expect(useTaskStore.getState().updateTask).not.toHaveBeenCalled()
+		await waitFor(() => {
+			expect(result.current.links).toEqual([])
+		})
 	})
 
 	it('新增、编辑和打开链接时会补全缺失的 https 协议头', async () => {
@@ -135,7 +158,9 @@ describe('useTaskLinksController', () => {
 		)
 		openUrlMock.mockResolvedValue(undefined)
 
-		const { result } = renderHook(() => useTaskLinksController('task-1'))
+		const { result } = renderHook(() => useTaskLinksController('task-1'), {
+			wrapper: createQueryWrapper(),
+		})
 
 		await waitFor(() => {
 			expect(result.current.status).toBe('ready')
@@ -148,7 +173,7 @@ describe('useTaskLinksController', () => {
 			})
 		})
 
-		expect(mockedCreateTaskLink).toHaveBeenCalledWith({
+		expect(mockedCreateTaskLink.mock.calls.at(-1)?.[0]).toEqual({
 			taskId: 'task-1',
 			title: '技术方案',
 			url: 'https://docs.example.com/spec',
@@ -161,7 +186,7 @@ describe('useTaskLinksController', () => {
 			})
 		})
 
-		expect(mockedUpdateTaskLink).toHaveBeenCalledWith({
+		expect(mockedUpdateTaskLink.mock.calls.at(-1)?.[0]).toEqual({
 			linkId: 'link-1',
 			title: '最终方案',
 			url: 'https://docs.example.com/final',
@@ -178,7 +203,9 @@ describe('useTaskLinksController', () => {
 		mockedListTaskLinks.mockResolvedValue([])
 		openUrlMock.mockRejectedValue(new Error('浏览器打开失败'))
 
-		const { result } = renderHook(() => useTaskLinksController('task-1'))
+		const { result } = renderHook(() => useTaskLinksController('task-1'), {
+			wrapper: createQueryWrapper(),
+		})
 
 		await waitFor(() => {
 			expect(result.current.status).toBe('ready')
@@ -214,5 +241,18 @@ function baseTaskLink() {
 		sortOrder: 1000,
 		createdAt: '2026-05-23T10:00:00Z',
 		updatedAt: '2026-05-23T10:00:00Z',
+	}
+}
+
+function createQueryWrapper() {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: { retry: false, staleTime: 0, gcTime: 0 },
+			mutations: { retry: false },
+		},
+	})
+
+	return function QueryWrapper({ children }: { children: ReactNode }) {
+		return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 	}
 }

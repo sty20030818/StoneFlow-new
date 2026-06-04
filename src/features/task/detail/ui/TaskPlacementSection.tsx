@@ -8,10 +8,7 @@ import type { ProjectOption } from '@/features/project/model/types'
 import type { AutosaveController } from '@/shared/autosave'
 import { DetailFieldRow } from '@/shared/ui/detail'
 
-import {
-	applyTaskPlacementDraftChange,
-	type TaskDetailDraft,
-} from '../model/taskDetailDraft'
+import { applyTaskPlacementDraftChange, type TaskDetailDraft } from '../model/taskDetailDraft'
 
 type TaskPlacementSectionProps = {
 	autosave: AutosaveController<TaskDetailDraft>

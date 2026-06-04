@@ -6,9 +6,9 @@ import { resolveBreadcrumb } from './breadcrumbResolver'
 
 describe('resolveBreadcrumb', () => {
 	it('projects section 生成项目总览节点', () => {
-		expect(resolveBreadcrumb({ route: createRoute({ kind: 'shell-section', section: 'projects' }) })).toMatchObject([
-			{ label: '项目总览', current: true, to: '/all/projects' },
-		])
+		expect(
+			resolveBreadcrumb({ route: createRoute({ kind: 'shell-section', section: 'projects' }) }),
+		).toMatchObject([{ label: '项目总览', current: true, to: '/all/projects' }])
 	})
 
 	it('project detail 生成项目总览到项目详情', () => {

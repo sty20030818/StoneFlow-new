@@ -18,7 +18,9 @@ export function buildCanonicalSectionPath(
 	}
 
 	const spaceId = scope.spaceId || fallbackSpaceId
-	return spaceId ? `/spaces/${encodeURIComponent(spaceId)}/${segment}` : `/all/${DEFAULT_ALL_SECTION}`
+	return spaceId
+		? `/spaces/${encodeURIComponent(spaceId)}/${segment}`
+		: `/all/${DEFAULT_ALL_SECTION}`
 }
 
 export function buildCanonicalViewPath(
@@ -63,7 +65,10 @@ export function buildDebugActivityPath() {
 	return '/debug/activity'
 }
 
-export function buildStartupFallbackPath(scope?: RouteScope | null, fallbackSpaceId?: string | null) {
+export function buildStartupFallbackPath(
+	scope?: RouteScope | null,
+	fallbackSpaceId?: string | null,
+) {
 	if (!scope) {
 		return `/all/${DEFAULT_ALL_SECTION}`
 	}

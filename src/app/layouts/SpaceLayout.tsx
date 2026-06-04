@@ -11,13 +11,13 @@ import {
 } from './shell/model/useShellNavStore'
 import { ShellLayout } from './shell/ShellLayout'
 import { setActiveScope } from '@/features/space/api/spaces'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+import { useSpaces } from '@/features/space/query'
 import { useWorkspaceSync } from '@/features/workspace/model/useWorkspaceSync'
 
 export function SpaceLayout() {
 	const shellRoute = useShellRoute()
 	const scope = shellRoute.scope ?? { type: 'all' as const }
-	const spaces = useSpaceStore(selectSpaces)
+	const { spaces } = useSpaces()
 	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
 	const currentScopeType = useShellNavStore(selectCurrentScopeType)
 	const activeSection = useShellNavStore(selectActiveSection)

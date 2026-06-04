@@ -50,10 +50,10 @@ import { useSearchFocusIntentStore } from '@/features/global-search/model/useSea
 import { type CommandOpenPayload, useCommandOpenListener } from '@/shared/events'
 import { listAllVisibleProjects } from '@/features/project/api/projects'
 import {
-	selectProjectOptions,
-	selectProjectSidebar,
-	useProjectStore,
-} from '@/features/project/model/useProjectStore'
+	useProjectOverviewData,
+	useProjectOptions,
+	useProjectSidebarData,
+} from '@/features/project/query'
 import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection/model'
 import { PageFilterProvider, usePageFilterContext } from '@/features/filter/model'
 import {
@@ -63,15 +63,16 @@ import {
 } from '@/features/submit/model'
 import { takePendingCommandOpenIntent } from '@/features/space/api/spaces'
 import {
-	selectSpaceError,
-	selectSpaces,
-	selectSpaceStatus,
-	useSpaceStore,
-} from '@/features/space/model/useSpaceStore'
+	useArchiveSpaceMutation,
+	useCreateSpaceMutation,
+	useDeleteSpaceMutation,
+	useSetDefaultSpaceMutation,
+	useSpaces,
+	useUpdateSpaceMutation,
+} from '@/features/space/query'
 import { ProjectCreateContent } from '@/features/project/ui/ProjectCreateContent'
 import { TaskPreviewProvider, useTaskPreviewController } from '@/features/task/detail'
 import { TaskCreateContent } from '@/features/task/ui/TaskCreateContent'
-import { useTaskStore } from '@/features/task/model/useTaskStore'
 import { CustomDateDialog } from '@/features/metadata-fields'
 import { CreateDialogShell } from '@/shared/ui/create-dialog-shell'
 import { requestSidebarToggle, SidebarProvider } from '@/shared/ui/base/sidebar'
@@ -115,13 +116,11 @@ import {
 	type BulkEntityType,
 } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
-import {
-	selectArchiveEntries,
-	selectTrashEntries,
-	useLifecycleStore,
-} from '@/features/lifecycle/model/useLifecycleStore'
+import { useLifecycleEntriesQuery } from '@/features/lifecycle/query'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskStatus } from '@/shared/types'
+import { useQueryClient } from '@tanstack/react-query'
+import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'
 
 type ShellLayoutProps = PropsWithChildren<{
 	currentScope: Scope
@@ -166,34 +165,36 @@ function ShellLayoutBulkActionBoundary({
 	activeSection,
 	shellRoute,
 }: ShellLayoutProps) {
-	const refreshLoadedTaskSlices = useTaskStore((state) => state.refreshLoadedSlices)
-	const projectOverview = useProjectStore((state) => state.overview)
-	const refreshLoadedProjectSlices = useProjectStore((state) => state.refreshLoadedSlices)
-	const archiveEntries = useLifecycleStore(selectArchiveEntries)
-	const trashEntries = useLifecycleStore(selectTrashEntries)
-	const refreshLoadedLifecycleSlices = useLifecycleStore((state) => state.refreshLoadedSlices)
+	const queryClient = useQueryClient()
+	const refreshLoadedSlices = useCallback(
+		() => invalidateWorkspaceQueries(queryClient),
+		[queryClient],
+	)
+	const projectOverview = useProjectOverviewData(currentScope, 'all_projects')
+	const archiveEntries = useLifecycleEntriesQuery('archive', currentScope)
+	const trashEntries = useLifecycleEntriesQuery('trash', currentScope)
 	const taskBulkAdapter = useMemo(
 		() =>
 			createTaskBulkAdapter({
-				refreshLoadedSlices: refreshLoadedTaskSlices,
+				refreshLoadedSlices,
 			}),
-		[refreshLoadedTaskSlices],
+		[refreshLoadedSlices],
 	)
 	const lifecycleBulkAdapter = useMemo(
 		() =>
 			createLifecycleBulkAdapter({
-				entries: [...archiveEntries.items, ...trashEntries.items],
-				refreshLoadedSlices: refreshLoadedLifecycleSlices,
+				entries: [...(archiveEntries.data ?? []), ...(trashEntries.data ?? [])],
+				refreshLoadedSlices,
 			}),
-		[archiveEntries.items, refreshLoadedLifecycleSlices, trashEntries.items],
+		[archiveEntries.data, refreshLoadedSlices, trashEntries.data],
 	)
 	const projectBulkAdapter = useMemo(
 		() =>
 			createProjectBulkAdapter({
 				availableProjectIds: projectOverview.items.map((project) => project.id),
-				refreshLoadedSlices: refreshLoadedProjectSlices,
+				refreshLoadedSlices,
 			}),
-		[projectOverview.items, refreshLoadedProjectSlices],
+		[projectOverview.items, refreshLoadedSlices],
 	)
 	const bulkActionAdapter = useMemo(
 		() => ({
@@ -291,7 +292,7 @@ function ShellLayoutContent({
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
 	const closeTaskCreateDialog = useDialogStore((state) => state.closeTaskCreateDialog)
 	const closeProjectCreateDialog = useDialogStore((state) => state.closeProjectCreateDialog)
-	const spaces = useSpaceStore(selectSpaces)
+	const { spaces, status: spaceStatus, error: spaceError } = useSpaces()
 	const defaultCreateSpaceId = useMemo(
 		() =>
 			currentScope.type === 'space'
@@ -310,11 +311,8 @@ function ShellLayoutContent({
 	const sidebarSettingsStatus = useSidebarSettingsStore(selectSidebarSettingsStatus)
 	const sidebarSettings = useSidebarSettingsStore(selectSidebarSettings)
 	const sidebarSettingsError = useSidebarSettingsStore(selectSidebarSettingsError)
-	const spaceStatus = useSpaceStore(selectSpaceStatus)
-	const spaceError = useSpaceStore(selectSpaceError)
-	const sidebarProjects = useProjectStore(selectProjectSidebar)
-	const projectOptions = useProjectStore(selectProjectOptions)
-	const scopeKey = currentScope.type === 'all' ? 'all' : `space:${currentScope.spaceId}`
+	const sidebarProjects = useProjectSidebarData(currentScope)
+	const projectOptions = useProjectOptions(currentScope)
 	const navBadges = useSidebarNavBadges(currentScope)
 	const hasResolvedTaskDraftProject =
 		Boolean(taskCreateDraft.projectId) &&
@@ -325,13 +323,11 @@ function ShellLayoutContent({
 		!hasResolvedTaskDraftProject &&
 		sidebarProjects.status === 'loading'
 	const loadSidebarSettings = useSidebarSettingsStore((state) => state.load)
-	const loadSpaces = useSpaceStore((state) => state.load)
-	const loadSidebarProjects = useProjectStore((state) => state.loadSidebar)
-	const createSpace = useSpaceStore((state) => state.createSpace)
-	const updateSpace = useSpaceStore((state) => state.updateSpace)
-	const setDefaultSpace = useSpaceStore((state) => state.setDefaultSpace)
-	const archiveSpace = useSpaceStore((state) => state.archiveSpace)
-	const deleteSpace = useSpaceStore((state) => state.deleteSpace)
+	const createSpace = useCreateSpaceMutation()
+	const updateSpace = useUpdateSpaceMutation()
+	const setDefaultSpace = useSetDefaultSpaceMutation()
+	const archiveSpace = useArchiveSpaceMutation()
+	const deleteSpace = useDeleteSpaceMutation()
 	const setSidebarWidth = useSidebarSettingsStore((state) => state.setSidebarWidth)
 	const setDesktopPreference = useSidebarSettingsStore((state) => state.setDesktopPreference)
 	const setSidebarItemVisibility = useSidebarSettingsStore((state) => state.setItemVisibility)
@@ -343,18 +339,6 @@ function ShellLayoutContent({
 			void loadSidebarSettings()
 		}
 	}, [loadSidebarSettings, sidebarSettingsStatus])
-
-	useEffect(() => {
-		if (spaceStatus === 'idle') {
-			void loadSpaces()
-		}
-	}, [loadSpaces, spaceStatus])
-
-	useEffect(() => {
-		if (spaceStatus === 'ready') {
-			void loadSidebarProjects(currentScope)
-		}
-	}, [currentScope, loadSidebarProjects, scopeKey, spaceStatus])
 
 	useEffect(() => {
 		if (spaceStatus !== 'ready') {
@@ -404,7 +388,13 @@ function ShellLayoutContent({
 		}
 
 		openEntityDrawer({ kind: 'task', id: consumedIntent.taskId })
-	}, [consumePendingTaskOpenIntent, openEntityDrawer, pendingTaskOpenIntent, shellRoute.pathname, spaceStatus])
+	}, [
+		consumePendingTaskOpenIntent,
+		openEntityDrawer,
+		pendingTaskOpenIntent,
+		shellRoute.pathname,
+		spaceStatus,
+	])
 
 	useEffect(() => {
 		if (!activeDetail || !taskPreviewController.previewState.open) {
@@ -721,11 +711,16 @@ function ShellLayoutContent({
 					}
 
 					if (target.startsWith('views/')) {
-						navigate(buildCanonicalViewPath(currentScope, target.slice('views/'.length), currentSpaceId))
+						navigate(
+							buildCanonicalViewPath(currentScope, target.slice('views/'.length), currentSpaceId),
+						)
 						return
 					}
 
-					const sectionTarget = target as Exclude<ShellNavigationTarget, 'settings' | `views/${string}`>
+					const sectionTarget = target as Exclude<
+						ShellNavigationTarget,
+						'settings' | `views/${string}`
+					>
 					navigate(buildCanonicalSectionPath(currentScope, sectionTarget, currentSpaceId))
 				})
 			},
@@ -1057,18 +1052,18 @@ function ShellLayoutContent({
 						currentScope={currentScope}
 						currentSpaceId={currentSpaceId}
 						navBadges={navBadges}
-						onArchiveSpace={archiveSpace}
-						onCreateSpace={createSpace}
-						onDeleteSpace={deleteSpace}
+						onArchiveSpace={(spaceId) => archiveSpace.mutateAsync(spaceId)}
+						onCreateSpace={(input) => createSpace.mutateAsync(input)}
+						onDeleteSpace={(spaceId) => deleteSpace.mutateAsync(spaceId)}
 						onOpenProjectCreateDialog={openProjectCreateDialog}
 						onResetMainItemsVisibility={() => {
 							void resetSidebarMainItemsVisibility()
 						}}
-						onSetDefaultSpace={setDefaultSpace}
+						onSetDefaultSpace={(spaceId) => setDefaultSpace.mutateAsync(spaceId)}
 						onUpdateItemVisibility={(target, visible) => {
 							void setSidebarItemVisibility(target, visible)
 						}}
-						onUpdateSpace={updateSpace}
+						onUpdateSpace={(input) => updateSpace.mutateAsync(input)}
 						projects={sidebarProjectLinks}
 						spaces={spaces}
 						settings={sidebarSettings}

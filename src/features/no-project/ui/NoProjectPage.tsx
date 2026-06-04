@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
@@ -10,17 +10,13 @@ import {
 	useTaskPageFilterController,
 } from '@/features/filter/model'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
-import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+import { useProjectOptions } from '@/features/project/query'
+import { useSpaces } from '@/features/space/query'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import {
-	isTaskListInputMatch,
-	selectTaskList,
-	useTaskStore,
-} from '@/features/task/model/useTaskStore'
+import { useTaskListData } from '@/features/task/query'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
@@ -42,8 +38,6 @@ const NO_PROJECT_FILTERS: Array<'all' | TaskStatus> = [
 export function NoProjectPage() {
 	const shellRoute = useShellRoute()
 	const scope = shellRoute.scope ?? ALL_SCOPE
-	const taskList = useTaskStore(selectTaskList)
-	const loadList = useTaskStore((state) => state.loadList)
 	const listInput = useMemo(
 		() => ({
 			scope,
@@ -52,12 +46,11 @@ export function NoProjectPage() {
 		}),
 		[scope],
 	)
-	const taskBoardStatus = isTaskListInputMatch(taskList.input, listInput)
-		? taskList.status
-		: 'loading'
+	const taskList = useTaskListData(listInput)
+	const taskBoardStatus = taskList.status
 	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
-	const projectOptions = useProjectStore(selectProjectOptions)
-	const spaces = useSpaceStore(selectSpaces)
+	const projectOptions = useProjectOptions(scope)
+	const { spaces } = useSpaces()
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
@@ -120,10 +113,6 @@ export function NoProjectPage() {
 		focusedTaskId,
 		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 	})
-
-	useEffect(() => {
-		void loadList(listInput)
-	}, [loadList, listInput])
 
 	return (
 		<EntityScene
@@ -198,7 +187,7 @@ export function NoProjectPage() {
 				</MainCard.GhostAction>
 			}
 			onRefresh={() => {
-				void loadList(listInput)
+				void taskList.refetch()
 			}}
 			sceneVariant='no-project'
 			toolbarPills={NO_PROJECT_FILTERS.map((filter) => ({

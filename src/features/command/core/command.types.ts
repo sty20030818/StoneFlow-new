@@ -98,15 +98,7 @@ export type CommandScope =
 	| 'dropdown'
 
 export type CommandRouteContext = {
-	page:
-		| 'inbox'
-		| 'tasks'
-		| 'views'
-		| 'projects'
-		| 'archive'
-		| 'trash'
-		| 'settings'
-		| 'unknown'
+	page: 'inbox' | 'tasks' | 'views' | 'projects' | 'archive' | 'trash' | 'settings' | 'unknown'
 	projectId?: string
 	viewId?: string
 }

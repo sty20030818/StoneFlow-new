@@ -43,9 +43,13 @@ vi.mock('@/features/space/api/spaces', () => ({
 	setActiveScope: (scope: unknown) => setActiveScopeMock(scope),
 }))
 
-vi.mock('@/features/space/model/useSpaceStore', () => ({
-	selectSpaces: (state: typeof spaceState) => state.spaces,
-	useSpaceStore: (selector: (state: typeof spaceState) => unknown) => selector(spaceState),
+vi.mock('@/features/space/query', () => ({
+	useSpaces: () => ({
+		spaces: spaceState.spaces,
+		status: 'ready',
+		error: null,
+		refetch: vi.fn(),
+	}),
 }))
 
 vi.mock('@/features/workspace/model/useWorkspaceSync', () => ({

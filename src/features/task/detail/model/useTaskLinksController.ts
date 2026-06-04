@@ -1,13 +1,13 @@
 import { openUrl } from '@tauri-apps/plugin-opener'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { toast } from 'sonner'
 
 import {
-	createTaskLink,
-	deleteTaskLink,
-	listTaskLinks,
-	updateTaskLink,
-} from '@/features/task/api/taskLinks'
+	useCreateTaskLinkMutation,
+	useDeleteTaskLinkMutation,
+	useTaskLinksQuery,
+	useUpdateTaskLinkMutation,
+} from '@/features/task/query'
 import type { TaskLink } from '@/shared/types'
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -29,32 +29,16 @@ type UseTaskLinksControllerResult = {
 }
 
 export function useTaskLinksController(taskId: string): UseTaskLinksControllerResult {
-	const [links, setLinks] = useState<TaskLink[]>([])
-	const [status, setStatus] = useState<LoadStatus>('idle')
-	const [error, setError] = useState<string | null>(null)
-
-	const reloadLinks = useCallback(async () => {
-		setStatus((current) => (current === 'ready' ? 'ready' : 'loading'))
-		setError(null)
-		try {
-			const nextLinks = await listTaskLinks({ taskId })
-			setLinks(nextLinks)
-			setStatus('ready')
-		} catch (nextError) {
-			setStatus('error')
-			setError(nextError instanceof Error ? nextError.message : '链接加载失败')
-		}
-	}, [taskId])
-
-	useEffect(() => {
-		void reloadLinks()
-	}, [reloadLinks])
+	const linksQuery = useTaskLinksQuery(taskId)
+	const createLink = useCreateTaskLinkMutation(taskId)
+	const updateLink = useUpdateTaskLinkMutation(taskId)
+	const deleteLink = useDeleteTaskLinkMutation(taskId)
 
 	const runMutation = useCallback(
 		async (runner: () => Promise<unknown>, failureMessage: string) => {
 			try {
 				await runner()
-				await reloadLinks()
+				await linksQuery.refetch()
 			} catch (nextError) {
 				const message =
 					nextError instanceof Error && nextError.message ? nextError.message : failureMessage
@@ -62,7 +46,7 @@ export function useTaskLinksController(taskId: string): UseTaskLinksControllerRe
 				throw nextError
 			}
 		},
-		[reloadLinks],
+		[linksQuery],
 	)
 
 	const addLink = useCallback(
@@ -70,7 +54,7 @@ export function useTaskLinksController(taskId: string): UseTaskLinksControllerRe
 			const normalizedUrl = normalizeTaskLinkUrl(input.url)
 			await runMutation(
 				() =>
-					createTaskLink({
+					createLink.mutateAsync({
 						taskId,
 						title: input.title,
 						url: normalizedUrl,
@@ -78,7 +62,7 @@ export function useTaskLinksController(taskId: string): UseTaskLinksControllerRe
 				'新增链接失败',
 			)
 		},
-		[runMutation, taskId],
+		[createLink, runMutation, taskId],
 	)
 
 	const editLink = useCallback(
@@ -86,7 +70,7 @@ export function useTaskLinksController(taskId: string): UseTaskLinksControllerRe
 			const normalizedUrl = normalizeTaskLinkUrl(input.url)
 			await runMutation(
 				() =>
-					updateTaskLink({
+					updateLink.mutateAsync({
 						linkId,
 						title: input.title,
 						url: normalizedUrl,
@@ -94,20 +78,20 @@ export function useTaskLinksController(taskId: string): UseTaskLinksControllerRe
 				'更新链接失败',
 			)
 		},
-		[runMutation],
+		[runMutation, updateLink],
 	)
 
 	const removeLink = useCallback(
 		async (linkId: string) => {
 			await runMutation(
 				() =>
-					deleteTaskLink({
+					deleteLink.mutateAsync({
 						linkId,
 					}),
 				'删除链接失败',
 			)
 		},
-		[runMutation],
+		[deleteLink, runMutation],
 	)
 
 	const handleOpenLink = useCallback(async (link: TaskLink) => {
@@ -123,10 +107,16 @@ export function useTaskLinksController(taskId: string): UseTaskLinksControllerRe
 	}, [])
 
 	return {
-		links,
-		status,
-		error,
-		reloadLinks,
+		links: linksQuery.data ?? [],
+		status: linksQuery.isError
+			? 'error'
+			: linksQuery.isLoading || linksQuery.isPending
+				? 'loading'
+				: 'ready',
+		error: linksQuery.error instanceof Error ? linksQuery.error.message : null,
+		reloadLinks: async () => {
+			await linksQuery.refetch()
+		},
 		addLink,
 		editLink,
 		removeLink,

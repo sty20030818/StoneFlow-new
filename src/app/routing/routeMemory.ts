@@ -2,10 +2,7 @@ import { getProjectDetail } from '@/features/project/api/projects'
 import { getTaskDetail } from '@/features/task/api/tasks'
 import type { Scope, Space } from '@/shared/types'
 
-import {
-	buildCanonicalSectionPath,
-	buildStartupFallbackPath,
-} from './routePaths'
+import { buildCanonicalSectionPath, buildStartupFallbackPath } from './routePaths'
 import { parseShellRoute } from './routeParser'
 
 const ROUTE_MEMORY_VERSION = 2
@@ -368,12 +365,12 @@ function isShellScopeKey(value: string): value is ShellScopeKey {
 	return value === 'all' || value.startsWith('space:')
 }
 
-function doesRouteMatchScopeKey(route: ReturnType<typeof parseShellRoute>, scopeKey: ShellScopeKey) {
+function doesRouteMatchScopeKey(
+	route: ReturnType<typeof parseShellRoute>,
+	scopeKey: ShellScopeKey,
+) {
 	if (scopeKey === 'all') {
-		return (
-			(route.kind === 'shell-section' || route.kind === 'view') &&
-			route.scope?.type === 'all'
-		)
+		return (route.kind === 'shell-section' || route.kind === 'view') && route.scope?.type === 'all'
 	}
 
 	const expectedSpaceId = extractSpaceIdFromScopeKey(scopeKey)

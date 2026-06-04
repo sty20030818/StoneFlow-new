@@ -143,9 +143,9 @@ describe('task-placement-groups', () => {
 			),
 		).toBe(false)
 
-		expect(
-			findTaskPlacementGroupItem(groups, { kind: 'inbox', spaceId: 'space-a' })?.title,
-		).toBe('收件箱')
+		expect(findTaskPlacementGroupItem(groups, { kind: 'inbox', spaceId: 'space-a' })?.title).toBe(
+			'收件箱',
+		)
 		expect(
 			findTaskPlacementGroupItem(groups, {
 				kind: 'project',

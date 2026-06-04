@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactElement } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -33,27 +34,30 @@ vi.mock('../model/useTaskAutosaveAdapter', () => ({
 	useTaskAutosaveAdapter: () => mockAutosave.value,
 }))
 
-vi.mock('@/features/project/model/useProjectStore', () => ({
-	selectProjectOptions: () => [],
-	useProjectStore: () => [],
+vi.mock('@/features/project/query', () => ({
+	useProjectOptions: () => [],
 }))
 
-vi.mock('@/features/space/model/useSpaceStore', () => ({
-	selectSpaces: () => [
-		{
-			id: 'space-1',
-			name: '工作',
-			iconKey: 'briefcase',
-			colorKey: 'blue',
-			isDefault: true,
-			sortOrder: 1,
-			archivedAt: null,
-			deletedAt: null,
-			createdAt: '2026-05-19T00:00:00Z',
-			updatedAt: '2026-05-19T00:00:00Z',
-		},
-	],
-	useSpaceStore: (selector: (state: unknown) => unknown) => selector({}),
+vi.mock('@/features/space/query', () => ({
+	useSpaces: () => ({
+		spaces: [
+			{
+				id: 'space-1',
+				name: '工作',
+				iconKey: 'briefcase',
+				colorKey: 'blue',
+				isDefault: true,
+				sortOrder: 1,
+				archivedAt: null,
+				deletedAt: null,
+				createdAt: '2026-05-19T00:00:00Z',
+				updatedAt: '2026-05-19T00:00:00Z',
+			},
+		],
+		status: 'ready',
+		error: null,
+		refetch: vi.fn(),
+	}),
 }))
 
 vi.mock('../ui/TaskLinksSection', () => ({
@@ -221,10 +225,21 @@ function renderTaskPage() {
 
 function renderTaskPageElement(): ReactElement {
 	return (
-		<MemoryRouter>
-			<TaskPage scope={{ type: 'space', spaceId: 'space-1' }} taskId='task-1' />
-		</MemoryRouter>
+		<QueryClientProvider client={createTestQueryClient()}>
+			<MemoryRouter>
+				<TaskPage scope={{ type: 'space', spaceId: 'space-1' }} taskId='task-1' />
+			</MemoryRouter>
+		</QueryClientProvider>
 	)
+}
+
+function createTestQueryClient() {
+	return new QueryClient({
+		defaultOptions: {
+			queries: { retry: false },
+			mutations: { retry: false },
+		},
+	})
 }
 
 function createAutosaveController(

@@ -1,11 +1,7 @@
 import { startTransition, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
-import {
-	getSectionLabel,
-	getScopeLabel,
-	type ShellProjectLink,
-} from '@/app/layouts/shell/config'
+import { getSectionLabel, getScopeLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import { buildCanonicalProjectPath } from '@/app/routing'
 import type { ShellRouteHistoryEntry } from '@/app/layouts/shell/model/useShellRouteHistory'
 import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'

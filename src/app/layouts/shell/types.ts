@@ -6,5 +6,6 @@ export type ShellSectionKey =
 	| 'noProject'
 	| 'archive'
 	| 'trash'
+	| 'settings'
 
 export type ShellDrawerKind = 'task' | 'project'

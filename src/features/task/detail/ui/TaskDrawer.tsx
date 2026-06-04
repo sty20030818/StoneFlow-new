@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
 import type { ProjectOption } from '@/features/project/model/types'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+import { useProjectOptions } from '@/features/project/query'
+import { useSpaces } from '@/features/space/query'
 import { DetailDrawerShell } from '@/shared/ui/detail'
 import { Button } from '@/shared/ui/base/button'
-import type { TaskDetail } from '@/shared/types'
+import type { Space, TaskDetail } from '@/shared/types'
 
 import { createTaskDetailDraft } from '../model/taskDetailDraft'
 import { useTaskAutosaveAdapter } from '../model/useTaskAutosaveAdapter'
@@ -21,10 +21,13 @@ type TaskDrawerProps = {
 
 export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
 	const { task, status, error, archiveOrRestore, moveToTrash } = useTaskDetailController(taskId)
-	const projects = useProjectStore(selectProjectOptions)
-	const spaces = useSpaceStore(selectSpaces)
+	const scope = task
+		? ({ type: 'space', spaceId: task.spaceId } as const)
+		: ({ type: 'all' } as const)
+	const projects = useProjectOptions(scope)
+	const { spaces } = useSpaces()
 
-	if (status === 'loading' || status === 'idle') {
+	if (status === 'loading') {
 		return <TaskDrawerState message='加载中...' />
 	}
 
@@ -51,7 +54,7 @@ export function TaskDrawer({ taskId, onClose }: TaskDrawerProps) {
 type TaskDrawerLoadedProps = {
 	task: TaskDetail
 	projects: ProjectOption[]
-	spaces: ReturnType<typeof selectSpaces>
+	spaces: Space[]
 	onClose: () => void
 	archiveOrRestore: () => Promise<void>
 	moveToTrash: () => Promise<void>

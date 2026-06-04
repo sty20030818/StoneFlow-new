@@ -1,23 +1,17 @@
-import { useEffect } from 'react'
-
 import { useDangerConfirm } from '@/features/danger-confirm'
-import { selectTaskDetail, useTaskStore } from '@/features/task/model/useTaskStore'
+import {
+	useArchiveTaskMutation,
+	useDeleteTaskMutation,
+	useRestoreTaskMutation,
+	useTaskDetailData,
+} from '@/features/task/query'
 
 export function useTaskDetailController(taskId: string) {
-	const detail = useTaskStore(selectTaskDetail)
-	const loadDetail = useTaskStore((state) => state.loadDetail)
-	const clearDetail = useTaskStore((state) => state.clearDetail)
-	const archiveTask = useTaskStore((state) => state.archiveTask)
-	const restoreTask = useTaskStore((state) => state.restoreTask)
-	const deleteTask = useTaskStore((state) => state.deleteTask)
+	const detail = useTaskDetailData(taskId)
+	const archiveTask = useArchiveTaskMutation()
+	const restoreTask = useRestoreTaskMutation()
+	const deleteTask = useDeleteTaskMutation()
 	const { requestDangerConfirm } = useDangerConfirm()
-
-	useEffect(() => {
-		void loadDetail(taskId)
-		return () => {
-			clearDetail()
-		}
-	}, [clearDetail, loadDetail, taskId])
 
 	async function archiveOrRestore() {
 		if (!detail.item) {
@@ -25,7 +19,7 @@ export function useTaskDetailController(taskId: string) {
 		}
 
 		if (detail.item.archivedAt) {
-			await restoreTask(detail.item.id)
+			await restoreTask.mutateAsync(detail.item.id)
 			return
 		}
 
@@ -40,7 +34,7 @@ export function useTaskDetailController(taskId: string) {
 			return
 		}
 
-		await archiveTask(detail.item.id)
+		await archiveTask.mutateAsync(detail.item.id)
 	}
 
 	async function moveToTrash() {
@@ -59,7 +53,7 @@ export function useTaskDetailController(taskId: string) {
 			return
 		}
 
-		await deleteTask(detail.item.id)
+		await deleteTask.mutateAsync(detail.item.id)
 	}
 
 	return {

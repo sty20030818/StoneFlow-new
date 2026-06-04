@@ -100,11 +100,7 @@ describe('routeMemory', () => {
 		expect(createNextShellRouteMemory(null, { type: 'all' }, PROJECT_SHORTCUT_PATH)).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, '/spaces/inbox')).toBeNull()
 		expect(
-			createNextShellRouteMemory(
-				null,
-				{ type: 'space', spaceId: 'space-a' },
-				OLD_SPACE_INBOX_PATH,
-			),
+			createNextShellRouteMemory(null, { type: 'space', spaceId: 'space-a' }, OLD_SPACE_INBOX_PATH),
 		).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, '/unknown')).toBeNull()
 	})
@@ -122,9 +118,7 @@ describe('routeMemory', () => {
 		expect(normalizeShellMemoryPath('/spaces/space-a/views/today?project=project-a')).toBe(
 			'/spaces/space-a/views/today',
 		)
-		expect(stripShellDetailSearch('/all/views/focus?task=task-a#top')).toBe(
-			'/all/views/focus#top',
-		)
+		expect(stripShellDetailSearch('/all/views/focus?task=task-a#top')).toBe('/all/views/focus#top')
 	})
 
 	it('启动恢复遇到旧 stored path 时回退到 canonical inbox', async () => {

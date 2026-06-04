@@ -7,7 +7,7 @@ import { MetadataDateDropdown, taskDateMetadataIcons } from '@/features/metadata
 import type { ProjectOption } from '@/features/project/model/types'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { buildCreatePlacementInput } from '@/features/task/model/taskPlacement'
-import { useTaskStore } from '@/features/task/model/useTaskStore'
+import { useCreateTaskMutation } from '@/features/task/query'
 import {
 	PriorityMetaAction,
 	PlacementMetaAction,
@@ -48,7 +48,7 @@ export function TaskCreateContent({
 	projects,
 	projectsLoading,
 }: TaskCreateContentProps) {
-	const createTask = useTaskStore((state) => state.createTask)
+	const createTask = useCreateTaskMutation()
 	const openEntityDrawer = useEntityDetailController().openDrawer
 	const defaultSpaceId = getDefaultSpaceId(spaces)
 	const initialProject = projects.find((project) => project.id === initialProjectId) ?? null
@@ -141,7 +141,7 @@ export function TaskCreateContent({
 			setErrorMessage(null)
 
 			try {
-				const createdTask = await createTask({
+				const createdTask = await createTask.mutateAsync({
 					spaceId: placement === 'project' ? null : spaceId,
 					placement: buildCreatePlacementInput(placement, projectId || null),
 					title: title.trim(),

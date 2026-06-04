@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
@@ -9,20 +9,16 @@ import {
 	useRegisterPageFilterController,
 	useTaskPageFilterController,
 } from '@/features/filter/model'
-import { selectProjectOptions, useProjectStore } from '@/features/project/model/useProjectStore'
+import { useProjectOptions } from '@/features/project/query'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
-import {
-	isTaskListInputMatch,
-	selectTaskList,
-	useTaskStore,
-} from '@/features/task/model/useTaskStore'
+import { useTaskListData } from '@/features/task/query'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+import { useSpaces } from '@/features/space/query'
 import type { TaskStatus } from '@/shared/types'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
@@ -47,8 +43,6 @@ export function AllTasksPage() {
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
 	const taskPreviewController = useTaskPreviewController()
-	const taskList = useTaskStore(selectTaskList)
-	const loadList = useTaskStore((state) => state.loadList)
 	const listInput = useMemo(
 		() => ({
 			scope,
@@ -57,9 +51,8 @@ export function AllTasksPage() {
 		}),
 		[scope],
 	)
-	const taskBoardStatus = isTaskListInputMatch(taskList.input, listInput)
-		? taskList.status
-		: 'loading'
+	const taskList = useTaskListData(listInput)
+	const taskBoardStatus = taskList.status
 	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
 	const {
 		pendingTaskId,
@@ -74,8 +67,8 @@ export function AllTasksPage() {
 		updateTaskPlacement,
 	} = useTaskListController()
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
-	const projectOptions = useProjectStore(selectProjectOptions)
-	const spaces = useSpaceStore(selectSpaces)
+	const projectOptions = useProjectOptions(scope)
+	const { spaces } = useSpaces()
 	const { controller, filteredTasks } = useTaskPageFilterController({
 		tasks: taskSourceItems,
 		projects: projectOptions,
@@ -121,10 +114,6 @@ export function AllTasksPage() {
 		focusedTaskId,
 		activeTaskId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 	})
-
-	useEffect(() => {
-		void loadList(listInput)
-	}, [loadList, listInput])
 
 	return (
 		<EntityScene
@@ -193,7 +182,7 @@ export function AllTasksPage() {
 				</MainCard.GhostAction>
 			}
 			onRefresh={() => {
-				void loadList(listInput)
+				void taskList.refetch()
 			}}
 			sceneVariant='tasks'
 			toolbarPills={TASK_FILTERS.map((filter) => ({

@@ -115,7 +115,10 @@ function HistoryProbe() {
 			<button onClick={() => navigate('/spaces/space-a/projects/project-a')} type='button'>
 				go project detail
 			</button>
-			<button onClick={() => navigate('/spaces/space-a/views/today', { replace: true })} type='button'>
+			<button
+				onClick={() => navigate('/spaces/space-a/views/today', { replace: true })}
+				type='button'
+			>
 				replace views
 			</button>
 		</div>

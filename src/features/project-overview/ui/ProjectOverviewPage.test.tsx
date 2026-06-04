@@ -24,7 +24,7 @@ const baseOverviewState = {
 		createProject({ id: 'project-a', name: '项目 A' }),
 		createProject({ id: 'project-b', name: '项目 B' }),
 	],
-	status: 'ready' as const,
+	status: 'ready' as 'loading' | 'ready' | 'error',
 	error: null,
 	scope: { type: 'all' } as Scope,
 	viewKey: 'all_projects' as const,
@@ -69,9 +69,25 @@ vi.mock('@/app/layouts/shell/model/useDialogStore', () => ({
 		}),
 }))
 
-vi.mock('@/features/project/model/useProjectStore', () => ({
-	selectProjectOverview: (state: typeof storeState) => state.overview,
-	useProjectStore: (selector: (state: typeof storeState) => unknown) => selector(storeState),
+vi.mock('@/features/project/query', () => ({
+	useProjectOverviewData: () => ({
+		items: storeState.overview.items,
+		status: storeState.overview.status,
+		error: storeState.overview.error ?? null,
+		refetch: loadOverviewSpy,
+	}),
+	useCompleteProjectMutation: () => ({
+		mutateAsync: vi.fn(),
+	}),
+	useReopenProjectMutation: () => ({
+		mutateAsync: vi.fn(),
+	}),
+	useArchiveProjectMutation: () => ({
+		mutateAsync: archiveProjectSpy,
+	}),
+	useDeleteProjectMutation: () => ({
+		mutateAsync: deleteProjectSpy,
+	}),
 }))
 
 vi.mock('@/app/routing', async () => {
@@ -108,14 +124,15 @@ vi.mock('@/app/routing', async () => {
 	}
 })
 
-vi.mock('@/features/space/model/useSpaceStore', () => ({
-	selectSpaces: (state: typeof spaceState) => state.spaces,
-	useSpaceStore: (selector: (state: typeof spaceState) => unknown) => selector(spaceState),
-}))
-
-vi.mock('@/features/view/model/useViewStore', () => ({
-	selectProjectViews: (state: typeof viewState) => state.projectViews,
-	useViewStore: (selector: (state: typeof viewState) => unknown) => selector(viewState),
+vi.mock('@/features/view/query', () => ({
+	useViewsQuery: () => ({
+		data: viewState.projectViews.items,
+		isError: viewState.projectViews.status === 'error',
+		isLoading: viewState.projectViews.status === 'loading',
+		isPending: viewState.projectViews.status === 'loading',
+		error: viewState.projectViews.error,
+		refetch: loadProjectViewsSpy,
+	}),
 }))
 
 vi.mock('@/features/project/api/projects', () => ({
@@ -130,14 +147,10 @@ vi.mock('sonner', () => ({
 	},
 }))
 
-const spaceState = {
-	spaces: [],
-}
-
 const viewState = {
 	projectViews: {
 		items: [],
-		status: 'ready' as const,
+		status: 'ready' as 'loading' | 'ready' | 'error',
 		error: null,
 	},
 	loadProjectViews: loadProjectViewsSpy,
@@ -242,7 +255,7 @@ function TestBulkActionBoundary({ children }: { children: ReactNode }) {
 
 function createProjectStoreState(
 	overrides?: Partial<{
-		overview: Partial<(typeof baseOverviewState)>
+		overview: Partial<typeof baseOverviewState>
 	}>,
 ) {
 	const overview = {

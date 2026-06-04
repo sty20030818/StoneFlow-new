@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
@@ -11,11 +11,14 @@ import {
 	useTaskPageFilterController,
 } from '@/features/filter/model'
 import {
-	selectProjectDetail,
-	selectProjectOptions,
-	useProjectStore,
-} from '@/features/project/model/useProjectStore'
-import { selectSpaces, useSpaceStore } from '@/features/space/model/useSpaceStore'
+	useArchiveProjectMutation,
+	useCompleteProjectMutation,
+	useDeleteProjectMutation,
+	useProjectDetailData,
+	useProjectOptions,
+	useReopenProjectMutation,
+} from '@/features/project/query'
+import { useSpaces } from '@/features/space/query'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
@@ -23,11 +26,7 @@ import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
-import {
-	isTaskListInputMatch,
-	selectTaskList,
-	useTaskStore,
-} from '@/features/task/model/useTaskStore'
+import { useTaskListData } from '@/features/task/query'
 import type { Scope, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
@@ -70,17 +69,13 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
 	const taskPreviewController = useTaskPreviewController()
-	const detail = useProjectStore(selectProjectDetail)
-	const projectOptions = useProjectStore(selectProjectOptions)
-	const spaces = useSpaceStore(selectSpaces)
-	const loadDetail = useProjectStore((state) => state.loadDetail)
-	const clearDetail = useProjectStore((state) => state.clearDetail)
-	const completeProject = useProjectStore((state) => state.completeProject)
-	const reopenProject = useProjectStore((state) => state.reopenProject)
-	const archiveProject = useProjectStore((state) => state.archiveProject)
-	const deleteProject = useProjectStore((state) => state.deleteProject)
-	const taskList = useTaskStore(selectTaskList)
-	const loadTaskList = useTaskStore((state) => state.loadList)
+	const detail = useProjectDetailData(projectId)
+	const projectOptions = useProjectOptions(scope)
+	const { spaces } = useSpaces()
+	const completeProject = useCompleteProjectMutation()
+	const reopenProject = useReopenProjectMutation()
+	const archiveProject = useArchiveProjectMutation()
+	const deleteProject = useDeleteProjectMutation()
 	const listInput = useMemo(
 		() => ({
 			scope,
@@ -92,9 +87,8 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 		}),
 		[projectId, scope],
 	)
-	const taskBoardStatus = isTaskListInputMatch(taskList.input, listInput)
-		? taskList.status
-		: 'loading'
+	const taskList = useTaskListData(listInput)
+	const taskBoardStatus = taskList.status
 	const taskSourceItems = taskBoardStatus === 'loading' ? [] : taskList.items
 	const {
 		pendingTaskId,
@@ -109,16 +103,6 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 		deleteListTask,
 	} = useTaskListController()
 	const [busyAction, setBusyAction] = useState<string | null>(null)
-
-	useEffect(() => {
-		if (projectId) {
-			void loadDetail(projectId)
-			void loadTaskList(listInput)
-		}
-		return () => {
-			clearDetail()
-		}
-	}, [clearDetail, loadDetail, loadTaskList, listInput, projectId])
 
 	const visibleTasks = useMemo(
 		() => taskSourceItems.filter((task) => task.archivedAt === null),
@@ -137,8 +121,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 	})
 	useRegisterPageFilterController(controller)
 	const project = detail.projectId === projectId ? detail.item : null
-	const isProjectLoading =
-		detail.status === 'idle' || detail.status === 'loading' || detail.projectId !== projectId
+	const isProjectLoading = detail.status === 'loading' || detail.projectId !== projectId
 	const breadcrumbItems = useMemo(
 		() =>
 			resolveBreadcrumb({
@@ -301,10 +284,10 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 							onClick={() => {
 								void runAction(project.completedAt ? 'reopen' : 'complete', async () => {
 									if (project.completedAt) {
-										await reopenProject(project.id)
+										await reopenProject.mutateAsync(project.id)
 										return
 									}
-									await completeProject(project.id)
+									await completeProject.mutateAsync(project.id)
 								})
 							}}
 							size='sm'
@@ -325,7 +308,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 									return
 								}
 								void runAction('archive', async () => {
-									await archiveProject(project.id)
+									await archiveProject.mutateAsync(project.id)
 									navigate(buildCanonicalSectionPath(scope, 'projects', spaceId))
 								})
 							}}
@@ -347,7 +330,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 									return
 								}
 								void runAction('delete', async () => {
-									await deleteProject(project.id)
+									await deleteProject.mutateAsync(project.id)
 									navigate(buildCanonicalSectionPath(scope, 'projects', spaceId))
 								})
 							}}
@@ -363,8 +346,8 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 				if (!projectId) {
 					return
 				}
-				void loadDetail(projectId)
-				void loadTaskList(listInput)
+				void detail.refetch()
+				void taskList.refetch()
 			}}
 			sceneVariant='project-detail'
 			toolbarPills={PROJECT_TASK_FILTERS.map((filter) => ({

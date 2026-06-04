@@ -3,26 +3,12 @@ import { useNavigate } from 'react-router-dom'
 
 import { buildStartupFallbackPath } from '@/app/routing'
 import { resolveStartupPath } from '@/app/layouts/shell/model/shellDevicePreferences'
-import {
-	selectSpaceError,
-	selectSpaces,
-	selectSpaceStatus,
-	useSpaceStore,
-} from '@/features/space/model/useSpaceStore'
+import { useSpaces } from '@/features/space/query'
 
 export function RootRestoreRedirect() {
 	const navigate = useNavigate()
-	const spaces = useSpaceStore(selectSpaces)
-	const spaceStatus = useSpaceStore(selectSpaceStatus)
-	const spaceError = useSpaceStore(selectSpaceError)
-	const loadSpaces = useSpaceStore((state) => state.load)
+	const { spaces, status: spaceStatus, error: spaceError } = useSpaces()
 	const [restoreError, setRestoreError] = useState<string | null>(null)
-
-	useEffect(() => {
-		if (spaceStatus === 'idle') {
-			void loadSpaces().catch(() => undefined)
-		}
-	}, [loadSpaces, spaceStatus])
 
 	useEffect(() => {
 		if (spaceStatus !== 'ready' && spaceStatus !== 'error') {

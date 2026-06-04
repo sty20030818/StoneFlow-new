@@ -1,4 +1,13 @@
-import { BoxIcon, FolderIcon, InboxIcon, Layers2Icon, ListTodoIcon, TargetIcon, Trash2Icon } from 'lucide-react'
+import {
+	BoxIcon,
+	FolderIcon,
+	InboxIcon,
+	Layers2Icon,
+	ListTodoIcon,
+	Settings2Icon,
+	TargetIcon,
+	Trash2Icon,
+} from 'lucide-react'
 
 import { getSectionLabel } from '@/app/layouts/shell/config'
 import {
@@ -51,6 +60,11 @@ const SECTION_BREADCRUMB_PRESETS = {
 	views: {
 		key: 'views',
 		icon: Layers2Icon,
+	},
+	settings: {
+		key: 'settings',
+		label: '设置',
+		icon: Settings2Icon,
 	},
 } as const
 
@@ -197,5 +211,8 @@ function toSectionBreadcrumb(
 }
 
 function resolveRouteScope(route: Pick<ShellRoute, 'scope' | 'spaceId'>) {
-	return route.scope ?? (route.spaceId ? { type: 'space' as const, spaceId: route.spaceId } : { type: 'all' as const })
+	return (
+		route.scope ??
+		(route.spaceId ? { type: 'space' as const, spaceId: route.spaceId } : { type: 'all' as const })
+	)
 }

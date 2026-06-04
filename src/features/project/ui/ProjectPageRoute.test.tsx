@@ -15,9 +15,13 @@ vi.mock('@/features/project/api/projects', () => ({
 	getProjectDetail: (projectId: string) => getProjectDetailMock(projectId),
 }))
 
-vi.mock('@/features/space/model/useSpaceStore', () => ({
-	selectSpaces: (state: typeof spaceState) => state.spaces,
-	useSpaceStore: (selector: (state: typeof spaceState) => unknown) => selector(spaceState),
+vi.mock('@/features/space/query', () => ({
+	useSpaces: () => ({
+		spaces: spaceState.spaces,
+		status: 'ready',
+		error: null,
+		refetch: vi.fn(),
+	}),
 }))
 
 vi.mock('@/features/project/ui/ProjectPage', () => ({
@@ -72,7 +76,9 @@ describe('ProjectPageRoute', () => {
 		renderProjectPageRoute('/spaces/space-1/projects/project-1')
 
 		expect(await screen.findByText('项目不可用')).toBeInTheDocument()
-		expect(screen.getByText('当前项目不可见，可能已被归档、删除，或当前账号无权访问。')).toBeInTheDocument()
+		expect(
+			screen.getByText('当前项目不可见，可能已被归档、删除，或当前账号无权访问。'),
+		).toBeInTheDocument()
 	})
 })
 

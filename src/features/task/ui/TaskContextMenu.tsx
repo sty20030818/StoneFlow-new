@@ -105,7 +105,9 @@ export function TaskContextMenu({
 	const canMoveToTrash = !!onMoveToTrash
 	const canArchive = !!onArchive
 	const canSelectDueDate = !!onSelectDueDate
-	const canSelectPlacement = Boolean(onSelectPlacement && placementValue && placementGroups.length > 0)
+	const canSelectPlacement = Boolean(
+		onSelectPlacement && placementValue && placementGroups.length > 0,
+	)
 	const currentDueDate = normalizeDateValue(dueAt)
 	const deleteShortcut = getDeleteShortcutLabel()
 	const statusIndicatorValues = getIndicatorValues(selectionValues?.statuses ?? [status])

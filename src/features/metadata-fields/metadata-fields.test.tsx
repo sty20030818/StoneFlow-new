@@ -208,7 +208,9 @@ describe('metadata-fields', () => {
 	})
 
 	it('parent project action spec 只保留 generic 语义', () => {
-		expect(createPlacementActionSpec({ projects: [{ id: 'project-1', name: '项目 A' }] })).toMatchObject({
+		expect(
+			createPlacementActionSpec({ projects: [{ id: 'project-1', name: '项目 A' }] }),
+		).toMatchObject({
 			fieldKey: 'parentProject',
 			headerLabel: '设置父项目为...',
 			commandPlaceholder: '选择父项目…',
@@ -231,5 +233,7 @@ function getHeaderShortcutSummary() {
 
 function getIndicatorState(label: string) {
 	const item = screen.getByRole('menuitem', { name: new RegExp(label) })
-	return item.querySelector('[data-slot="metadata-field-indicator"]')?.getAttribute('data-indicator')
+	return item
+		.querySelector('[data-slot="metadata-field-indicator"]')
+		?.getAttribute('data-indicator')
 }

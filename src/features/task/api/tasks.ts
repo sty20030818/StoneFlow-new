@@ -73,9 +73,8 @@ export async function updateTask(input: UpdateTaskInput) {
 				? {
 						kind: input.placement.kind,
 						spaceId: input.placement.spaceId,
-						projectId:
-							input.placement.kind === 'project' ? input.placement.projectId : null,
-				  }
+						projectId: input.placement.kind === 'project' ? input.placement.projectId : null,
+					}
 				: undefined,
 			dueAt: input.dueAt,
 			scheduledAt: input.scheduledAt,
