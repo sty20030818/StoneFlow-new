@@ -2,7 +2,12 @@
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
 use serde_json::json;
-use stoneflow_schema::common::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind};
+use crate::domain::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind};
+use stoneflow_schema::common::{
+    ActivityActorKind as SchemaActivityActorKind,
+    ActivityEntityKind as SchemaActivityEntityKind,
+    ActivitySourceKind as SchemaActivitySourceKind,
+};
 use stoneflow_test_support::TempDatabaseDir;
 
 use crate::{
@@ -139,11 +144,11 @@ async fn get_entity_activities_should_return_events_with_grouped_changes_in_desc
             repository.connection(),
             &ActivityEventRecord {
                 id: "event-1".to_owned(),
-                entity_type: ActivityEntityKind::Task,
+                entity_type: SchemaActivityEntityKind::Task,
                 entity_id: "task-2".to_owned(),
                 action: "task.created".to_owned(),
-                actor_type: ActivityActorKind::User,
-                source: ActivitySourceKind::App,
+                actor_type: SchemaActivityActorKind::User,
+                source: SchemaActivitySourceKind::App,
                 summary: Some("第一次创建".to_owned()),
                 metadata: Some(json!({ "source": "seed" })),
                 created_at: "2026-04-29T00:00:00Z".to_owned(),
@@ -164,11 +169,11 @@ async fn get_entity_activities_should_return_events_with_grouped_changes_in_desc
             repository.connection(),
             &ActivityEventRecord {
                 id: "event-2".to_owned(),
-                entity_type: ActivityEntityKind::Task,
+                entity_type: SchemaActivityEntityKind::Task,
                 entity_id: "task-2".to_owned(),
                 action: "task.status.changed".to_owned(),
-                actor_type: ActivityActorKind::System,
-                source: ActivitySourceKind::Automation,
+                actor_type: SchemaActivityActorKind::System,
+                source: SchemaActivitySourceKind::Automation,
                 summary: Some("系统自动推进".to_owned()),
                 metadata: Some(json!({ "job": "scheduler" })),
                 created_at: "2026-04-29T01:00:00Z".to_owned(),

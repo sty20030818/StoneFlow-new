@@ -97,3 +97,29 @@ impl From<sea_orm::DbErr> for AppError {
         Self::Database(error.to_string())
     }
 }
+
+impl From<stoneflow_domain::DomainError> for AppError {
+    fn from(error: stoneflow_domain::DomainError) -> Self {
+        match error {
+            stoneflow_domain::DomainError::Validation(message) => Self::Validation(message),
+        }
+    }
+}
+
+impl From<stoneflow_usecase::UsecaseError> for AppError {
+    fn from(error: stoneflow_usecase::UsecaseError) -> Self {
+        match error {
+            stoneflow_usecase::UsecaseError::Validation(message) => Self::Validation(message),
+            stoneflow_usecase::UsecaseError::NotFound(message) => Self::NotFound(message),
+            stoneflow_usecase::UsecaseError::Conflict(message) => Self::Conflict(message),
+            stoneflow_usecase::UsecaseError::Storage(message) => Self::Database(message),
+            stoneflow_usecase::UsecaseError::Initialization(message) => {
+                Self::Initialization(message)
+            }
+            stoneflow_usecase::UsecaseError::Internal(message) => Self::Internal(message),
+            stoneflow_usecase::UsecaseError::DefaultSpaceUnavailable(message) => {
+                Self::DefaultSpaceUnavailable(message)
+            }
+        }
+    }
+}

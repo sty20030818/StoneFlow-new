@@ -982,11 +982,12 @@ dependencies = [
  "sea-orm-migration",
  "serde",
  "serde_json",
- "stoneflow-core",
+ "stoneflow-domain",
  "stoneflow-ipc-protocol",
  "stoneflow-migration",
  "stoneflow-schema",
  "stoneflow-test-support",
+ "stoneflow-usecase",
  "tauri",
  "tauri-plugin-dialog",
  "tauri-plugin-log",
@@ -4936,16 +4937,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "stoneflow-core"
+name = "stoneflow-domain"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "serde",
+ "thiserror 1.0.69",
+ "url",
  "uuid",
 ]
-
-[[package]]
-name = "stoneflow-domain"
-version = "0.1.0"
 
 [[package]]
 name = "stoneflow-helper"
@@ -5058,7 +5058,12 @@ dependencies = [
 name = "stoneflow-usecase"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
  "stoneflow-domain",
+ "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]

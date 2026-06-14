@@ -214,7 +214,7 @@ async fn task_link_service_should_record_activity_and_keep_task_detail_unchanged
 
     let timeline = activity_service
         .get_entity_activities(GetEntityActivitiesInput {
-            entity_type: stoneflow_schema::common::ActivityEntityKind::Task,
+            entity_type: crate::domain::ActivityEntityKind::Task,
             entity_id: task.id.clone(),
             limit: Some(10),
         })

@@ -96,7 +96,7 @@ impl SettingsRepository {
             .await
     }
 
-    async fn set_raw_setting_in_connection<C>(
+    pub async fn set_raw_setting_in_connection<C>(
         &self,
         connection: &C,
         key: &str,

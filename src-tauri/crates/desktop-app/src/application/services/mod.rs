@@ -1,7 +1,9 @@
-//! Service 骨架：保留后续业务模块的编排边界。
+//! Service adapter：各模块 CRUD / 生命周期均委托 `stoneflow-usecase`，此处只做持久化接线。
 
 mod lifecycle_service;
 mod project_service;
+mod quick_create_adapter;
+mod quick_create_ipc;
 mod quick_create_open_context_service;
 mod quick_create_service;
 mod quick_create_session_bridge;

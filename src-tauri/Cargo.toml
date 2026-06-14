@@ -7,7 +7,6 @@ members = [
   "crates/storage",
   "crates/schema",
   "crates/testing",
-  "crates/core",
   "crates/desktop-app",
   "crates/helper-app",
   "crates/ipc-protocol",
@@ -42,6 +41,7 @@ tauri-plugin-store = "2"
 tauri-plugin-window-state = "2"
 thiserror = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "io-util", "time", "net", "process"] }
+url = "2"
 uuid = { version = "1", features = ["v4", "v7", "serde"] }
 
 [package]

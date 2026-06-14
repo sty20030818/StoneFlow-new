@@ -191,7 +191,7 @@ async fn settings_service_should_record_settings_updated_activity_with_field_pat
 
     let timeline = activity_service
         .get_entity_activities(GetEntityActivitiesInput {
-            entity_type: stoneflow_schema::common::ActivityEntityKind::Setting,
+            entity_type: crate::domain::ActivityEntityKind::Setting,
             entity_id: "app.sidebar.preferences".to_owned(),
             limit: Some(10),
         })

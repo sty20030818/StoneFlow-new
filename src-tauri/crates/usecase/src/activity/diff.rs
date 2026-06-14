@@ -3,8 +3,9 @@
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::app::error::AppError;
-use crate::domain::normalize_required_text;
+use stoneflow_domain::normalize_required_text;
+
+use crate::UsecaseError;
 
 use super::ActivityChangeInput;
 
@@ -13,14 +14,14 @@ pub fn create_changes<T>(
     old_entity: &T,
     new_entity: &T,
     fields: &[&str],
-) -> Result<Vec<ActivityChangeInput>, AppError>
+) -> Result<Vec<ActivityChangeInput>, UsecaseError>
 where
     T: Serialize,
 {
     let old_value = serde_json::to_value(old_entity)
-        .map_err(|error| AppError::internal(format!("旧实体序列化失败: {error}")))?;
+        .map_err(|error| UsecaseError::internal(format!("旧实体序列化失败: {error}")))?;
     let new_value = serde_json::to_value(new_entity)
-        .map_err(|error| AppError::internal(format!("新实体序列化失败: {error}")))?;
+        .map_err(|error| UsecaseError::internal(format!("新实体序列化失败: {error}")))?;
 
     create_changes_from_values(&old_value, &new_value, fields)
 }
@@ -29,7 +30,7 @@ fn create_changes_from_values(
     old_entity: &Value,
     new_entity: &Value,
     fields: &[&str],
-) -> Result<Vec<ActivityChangeInput>, AppError> {
+) -> Result<Vec<ActivityChangeInput>, UsecaseError> {
     let mut changes = Vec::new();
 
     for field in fields {
@@ -65,9 +66,9 @@ fn extract_field_value(entity: &Value, field: &str) -> Option<Value> {
     }
 }
 
-fn serialize_value_for_compare(value: &Option<Value>) -> Result<String, AppError> {
+fn serialize_value_for_compare(value: &Option<Value>) -> Result<String, UsecaseError> {
     serde_json::to_string(value)
-        .map_err(|error| AppError::internal(format!("Activity 变更值序列化失败: {error}")))
+        .map_err(|error| UsecaseError::internal(format!("Activity 变更值序列化失败: {error}")))
 }
 
 #[cfg(test)]

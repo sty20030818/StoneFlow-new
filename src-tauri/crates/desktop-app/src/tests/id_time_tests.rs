@@ -2,7 +2,7 @@
 
 use chrono::{TimeZone, Utc};
 
-use crate::domain::create_id;
+use crate::domain::{create_id, is_same_utc_day, to_date_only};
 
 #[test]
 fn create_id_should_generate_uuid_v7() {
@@ -20,11 +20,14 @@ fn to_date_only_should_extract_utc_date() {
         .with_ymd_and_hms(2026, 4, 29, 13, 45, 10)
         .single()
         .expect("timestamp should be valid");
-    let date = stoneflow_core::to_date_only(ts);
-    assert_eq!(date, chrono::NaiveDate::from_ymd_opt(2026, 4, 29).unwrap());
+    let date = to_date_only(ts);
+    assert_eq!(
+        date,
+        chrono::NaiveDate::from_ymd_opt(2026, 4, 29).expect("date should be valid")
+    );
 }
 
 #[test]
 fn is_same_utc_day_should_match_current_day() {
-    assert!(stoneflow_core::is_same_utc_day(Utc::now(), Utc::now()));
+    assert!(is_same_utc_day(Utc::now(), Utc::now()));
 }

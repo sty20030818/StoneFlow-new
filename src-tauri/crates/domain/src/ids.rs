@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 /// 生成新的业务 ID。
 pub fn create_id() -> Uuid {
-    stoneflow_core::new_uuid_v7()
+    Uuid::now_v7()
 }
 
 /// 兼容当前运行时状态命名。

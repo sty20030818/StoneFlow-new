@@ -1,35 +1,5 @@
-//! 纯领域辅助：只保留与具体数据模型无关的基础归一化规则。
+//! 兼容壳：桌面应用仍从 `crate::domain::*` 读取，但真源已迁到 `stoneflow-domain`。
 
-use crate::app::error::AppError;
-
-mod ids;
-mod time;
-
-pub use ids::{create_id, next_runtime_id};
-pub use time::{now_utc, parse_calendar_date, today_local_date};
-
-/// 归一化必填文本。
-pub fn normalize_required_text(value: &str, field: &str) -> Result<String, AppError> {
-    let normalized = value.trim();
-    if normalized.is_empty() {
-        return Err(AppError::validation(format!("{field} 不能为空")));
-    }
-    Ok(normalized.to_owned())
-}
-
-/// 归一化 slug。
-pub fn normalize_slug(value: &str) -> String {
-    value
-        .trim()
-        .chars()
-        .flat_map(char::to_lowercase)
-        .map(|ch| match ch {
-            'a'..='z' | '0'..='9' => ch,
-            _ => '-',
-        })
-        .collect::<String>()
-        .split('-')
-        .filter(|segment| !segment.is_empty())
-        .collect::<Vec<_>>()
-        .join("-")
-}
+pub use stoneflow_domain::{
+    ActivityActorKind, ActivityEntityKind, ActivitySourceKind, TaskStatus, *,
+};

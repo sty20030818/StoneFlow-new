@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use stoneflow_schema::common::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind};
+use stoneflow_domain::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind};
 
 use super::ActivityAction;
 

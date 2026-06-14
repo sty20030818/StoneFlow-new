@@ -16,6 +16,10 @@ use stoneflow_schema::{
 use crate::{
     app::error::AppError,
     application::activity::{ActivityTimelineChange, ActivityTimelineEntry},
+    infrastructure::mappers::{
+        activity_actor_kind_to_domain, activity_entity_kind_to_domain,
+        activity_source_kind_to_domain,
+    },
 };
 
 /// 写入一条 Activity event 所需的持久化字段。
@@ -221,11 +225,11 @@ impl ActivityRepository {
             let event_id = event.id.clone();
             timeline.push(ActivityTimelineEntry {
                 id: event_id.clone(),
-                entity_type: event.entity_type,
+                entity_type: activity_entity_kind_to_domain(event.entity_type),
                 entity_id: event.entity_id,
                 action: event.action,
-                actor_type: event.actor_type,
-                source: event.source,
+                actor_type: activity_actor_kind_to_domain(event.actor_type),
+                source: activity_source_kind_to_domain(event.source),
                 summary: event.summary,
                 metadata: deserialize_optional_json(event.metadata)?,
                 created_at: event.created_at,

@@ -4,7 +4,17 @@ use chrono::{DateTime, Local, NaiveDate, Utc};
 
 /// 返回当前 UTC 时间。
 pub fn now_utc() -> DateTime<Utc> {
-    stoneflow_core::now_utc()
+    Utc::now()
+}
+
+/// 将 UTC 时间截断为日期。
+pub fn to_date_only(value: DateTime<Utc>) -> NaiveDate {
+    value.date_naive()
+}
+
+/// 判断两个时间是否处于同一天（UTC）。
+pub fn is_same_utc_day(left: DateTime<Utc>, right: DateTime<Utc>) -> bool {
+    to_date_only(left) == to_date_only(right)
 }
 
 /// 返回当前本地日历日。

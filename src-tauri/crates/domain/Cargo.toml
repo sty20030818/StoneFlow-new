@@ -7,3 +7,10 @@ rust-version.workspace = true
 [lib]
 name = "stoneflow_domain"
 path = "src/lib.rs"
+
+[dependencies]
+chrono.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+url.workspace = true
+uuid.workspace = true

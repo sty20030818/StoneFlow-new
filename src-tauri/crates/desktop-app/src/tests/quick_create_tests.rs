@@ -15,6 +15,7 @@ use crate::{
         QuickCreateOpenContextService, QuickCreateService, QuickCreateSessionBridge,
         QuickResolvedPlacement,
     },
+    domain::create_id,
     infrastructure::{
         database::bootstrap_database,
         repositories::{
@@ -307,7 +308,7 @@ async fn quick_create_create_and_resolve_open_target_should_preserve_placement_a
     let project = insert_project_record(
         &database,
         CreateProjectRecord {
-            id: "project-target".to_owned(),
+            id: create_id().to_string(),
             space_id: default_space.id.clone(),
             name: "目标项目".to_owned(),
             description: None,

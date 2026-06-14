@@ -2,7 +2,7 @@
 
 use chrono::Duration;
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
-use stoneflow_schema::common::TaskStatus;
+use stoneflow_domain::TaskStatus;
 use stoneflow_test_support::TempDatabaseDir;
 
 use crate::{
