@@ -1,0 +1,12 @@
+[package]
+name = "stoneflow-platform"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "stoneflow_platform"
+path = "src/lib.rs"
+
+[dependencies]
+tauri.workspace = true

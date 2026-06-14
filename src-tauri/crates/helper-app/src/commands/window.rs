@@ -275,27 +275,25 @@ pub async fn helper_quick_close_session(
     let controller = window_controller::build_controller(app_handle);
     let reason = map_close_reason(input.reason);
 
-    match runtime
+    if let Some(_) = runtime
         .begin_close_for(&input.session_id, reason)
         .await
         .map_err(|message| QuickCreateErrorPayload {
             type_: "Internal",
             message: message.to_owned(),
-        })? {
-        Some(_) => {
-            controller.hide().map_err(|message| QuickCreateErrorPayload {
+        })?
+    {
+        controller.hide().map_err(|message| QuickCreateErrorPayload {
+            type_: "Internal",
+            message,
+        })?;
+        runtime
+            .finish_close_for(&input.session_id)
+            .await
+            .map_err(|message| QuickCreateErrorPayload {
                 type_: "Internal",
-                message,
+                message: message.to_owned(),
             })?;
-            runtime
-                .finish_close_for(&input.session_id)
-                .await
-                .map_err(|message| QuickCreateErrorPayload {
-                    type_: "Internal",
-                    message: message.to_owned(),
-                })?;
-        }
-        None => {}
     }
 
     Ok(())
@@ -305,7 +303,7 @@ pub async fn helper_quick_close_session(
 pub async fn helper_quick_frontend_ready(
     lifecycle: tauri::State<'_, HelperLifecycleState>,
 ) -> Result<(), QuickCreateErrorPayload> {
-    apply_frontend_ready(lifecycle.inner(), || ipc_client::notify_window_ready()).await?;
+    apply_frontend_ready(lifecycle.inner(), ipc_client::notify_window_ready).await?;
     log::debug!("helper: quick create 前端监听器已就绪");
     Ok(())
 }
@@ -314,7 +312,7 @@ pub async fn helper_quick_frontend_ready(
 pub async fn helper_quick_frontend_unready(
     lifecycle: tauri::State<'_, HelperLifecycleState>,
 ) -> Result<(), QuickCreateErrorPayload> {
-    apply_frontend_unready(lifecycle.inner(), || ipc_client::notify_window_unready()).await?;
+    apply_frontend_unready(lifecycle.inner(), ipc_client::notify_window_unready).await?;
     log::debug!("helper: quick create 前端监听器已卸载");
     Ok(())
 }

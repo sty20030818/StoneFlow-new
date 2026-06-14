@@ -302,6 +302,32 @@ fn parse_hello_response(response: IpcResponse) -> Result<HelperHelloAckPayload, 
     }
 }
 
+async fn connect_with_timeout(socket: &SocketName) -> Result<Stream, IpcError> {
+    let name_result = if socket.namespaced {
+        socket.raw.clone().to_ns_name::<GenericNamespaced>()
+    } else {
+        socket.raw.clone().to_fs_name::<GenericFilePath>()
+    };
+
+    let name =
+        name_result.map_err(|error| IpcError::Internal(format!("invalid socket name: {error}")))?;
+
+    match timeout(
+        Duration::from_millis(DEFAULT_CONNECT_TIMEOUT_MS),
+        Stream::connect(name),
+    )
+    .await
+    {
+        Ok(Ok(stream)) => Ok(stream),
+        Ok(Err(error)) => Err(IpcError::Internal(format!(
+            "connect main app socket failed: {error}"
+        ))),
+        Err(_) => Err(IpcError::Internal(format!(
+            "connect main app socket timed out after {DEFAULT_CONNECT_TIMEOUT_MS} ms"
+        ))),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -327,31 +353,5 @@ mod tests {
         .expect_err("error response should fail");
 
         assert!(matches!(error, IpcError::Validation(message) if message == "protocol mismatch"));
-    }
-}
-
-async fn connect_with_timeout(socket: &SocketName) -> Result<Stream, IpcError> {
-    let name_result = if socket.namespaced {
-        socket.raw.clone().to_ns_name::<GenericNamespaced>()
-    } else {
-        socket.raw.clone().to_fs_name::<GenericFilePath>()
-    };
-
-    let name =
-        name_result.map_err(|error| IpcError::Internal(format!("invalid socket name: {error}")))?;
-
-    match timeout(
-        Duration::from_millis(DEFAULT_CONNECT_TIMEOUT_MS),
-        Stream::connect(name),
-    )
-    .await
-    {
-        Ok(Ok(stream)) => Ok(stream),
-        Ok(Err(error)) => Err(IpcError::Internal(format!(
-            "connect main app socket failed: {error}"
-        ))),
-        Err(_) => Err(IpcError::Internal(format!(
-            "connect main app socket timed out after {DEFAULT_CONNECT_TIMEOUT_MS} ms"
-        ))),
     }
 }

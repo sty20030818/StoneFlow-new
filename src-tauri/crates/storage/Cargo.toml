@@ -1,0 +1,16 @@
+[package]
+name = "stoneflow-storage"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "stoneflow_storage"
+path = "src/lib.rs"
+
+[dependencies]
+sea-orm.workspace = true
+stoneflow-domain = { path = "../domain" }
+stoneflow-migration = { path = "../migration" }
+stoneflow-schema = { path = "../schema" }
+stoneflow-usecase = { path = "../usecase" }

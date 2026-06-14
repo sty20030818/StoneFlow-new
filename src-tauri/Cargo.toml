@@ -1,5 +1,12 @@
 [workspace]
 members = [
+  "crates/runtime",
+  "crates/platform",
+  "crates/domain",
+  "crates/usecase",
+  "crates/storage",
+  "crates/schema",
+  "crates/testing",
   "crates/core",
   "crates/desktop-app",
   "crates/entity",
@@ -32,6 +39,7 @@ tauri-plugin-log = "2"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-single-instance = "2"
+tauri-plugin-store = "2"
 tauri-plugin-window-state = "2"
 thiserror = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "io-util", "time", "net", "process"] }
@@ -53,9 +61,9 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.5.6", features = [] }
 
 [dependencies]
-desktop-app = { path = "crates/desktop-app" }
+stoneflow-runtime = { path = "crates/runtime" }
 tauri = { workspace = true, features = ["macos-private-api", "tray-icon"] }
 tauri-plugin-dialog.workspace = true
 tauri-plugin-opener.workspace = true
-tauri-plugin-store = "2"
+tauri-plugin-store.workspace = true
 tauri-plugin-window-state.workspace = true

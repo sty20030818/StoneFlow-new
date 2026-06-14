@@ -1,0 +1,12 @@
+[package]
+name = "stoneflow-schema"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "stoneflow_schema"
+path = "src/lib.rs"
+
+[dependencies]
+sea-orm.workspace = true

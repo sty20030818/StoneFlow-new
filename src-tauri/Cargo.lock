@@ -4926,7 +4926,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 name = "stoneflow"
 version = "0.1.0"
 dependencies = [
- "desktop-app",
+ "stoneflow-runtime",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
@@ -4942,6 +4942,10 @@ dependencies = [
  "chrono",
  "uuid",
 ]
+
+[[package]]
+name = "stoneflow-domain"
+version = "0.1.0"
 
 [[package]]
 name = "stoneflow-entity"
@@ -5005,10 +5009,63 @@ dependencies = [
 ]
 
 [[package]]
+name = "stoneflow-platform"
+version = "0.1.0"
+dependencies = [
+ "tauri",
+]
+
+[[package]]
+name = "stoneflow-runtime"
+version = "0.1.0"
+dependencies = [
+ "desktop-app",
+ "stoneflow-platform",
+ "stoneflow-storage",
+ "stoneflow-usecase",
+ "tauri",
+]
+
+[[package]]
+name = "stoneflow-schema"
+version = "0.1.0"
+dependencies = [
+ "sea-orm",
+]
+
+[[package]]
+name = "stoneflow-storage"
+version = "0.1.0"
+dependencies = [
+ "sea-orm",
+ "stoneflow-domain",
+ "stoneflow-migration",
+ "stoneflow-schema",
+ "stoneflow-usecase",
+]
+
+[[package]]
 name = "stoneflow-test-support"
 version = "0.1.0"
 dependencies = [
  "uuid",
+]
+
+[[package]]
+name = "stoneflow-testing"
+version = "0.1.0"
+dependencies = [
+ "stoneflow-domain",
+ "stoneflow-migration",
+ "stoneflow-storage",
+ "stoneflow-usecase",
+]
+
+[[package]]
+name = "stoneflow-usecase"
+version = "0.1.0"
+dependencies = [
+ "stoneflow-domain",
 ]
 
 [[package]]

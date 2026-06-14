@@ -1,0 +1,12 @@
+[package]
+name = "stoneflow-usecase"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "stoneflow_usecase"
+path = "src/lib.rs"
+
+[dependencies]
+stoneflow-domain = { path = "../domain" }

@@ -1,0 +1,16 @@
+[package]
+name = "stoneflow-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "stoneflow_runtime"
+path = "src/lib.rs"
+
+[dependencies]
+desktop-app = { path = "../desktop-app" }
+stoneflow-platform = { path = "../platform" }
+stoneflow-storage = { path = "../storage" }
+stoneflow-usecase = { path = "../usecase" }
+tauri.workspace = true

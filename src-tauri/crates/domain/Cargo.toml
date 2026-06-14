@@ -1,0 +1,9 @@
+[package]
+name = "stoneflow-domain"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "stoneflow_domain"
+path = "src/lib.rs"
