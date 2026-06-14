@@ -7,7 +7,7 @@ use chrono::NaiveDate;
 use sea_orm::TransactionTrait;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::json;
-use stoneflow_entity::{
+use stoneflow_schema::{
     common::{ActivityEntityKind, TaskStatus},
     project, space, task,
 };

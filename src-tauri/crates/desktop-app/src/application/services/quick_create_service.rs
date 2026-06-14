@@ -1,6 +1,6 @@
 //! Quick Create Service：集中承载 Helper / Quick Create 入口的编排规则。
 
-use stoneflow_entity::{common::TaskStatus, space};
+use stoneflow_schema::{common::TaskStatus, space};
 use stoneflow_ipc_protocol::{
     QuickCreatePayload, QuickCreatedPayload, QuickListProjectsBySpacePayload,
     QuickPlacementKind, QuickPlacementPayload, QuickProjectItemPayload,
@@ -169,7 +169,7 @@ impl QuickCreateService {
             .search_service
             .search_entities(SearchEntitiesInput {
                 query: input.query,
-                limit_per_section: Some(input.limit.max(1).min(QUICK_CREATE_SEARCH_LIMIT)),
+                limit_per_section: Some(input.limit.clamp(1, QUICK_CREATE_SEARCH_LIMIT)),
             })
             .await?;
 

@@ -67,6 +67,17 @@ CREATE TABLE IF NOT EXISTS tasks (
     FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
+CREATE TABLE IF NOT EXISTS task_links (
+    id TEXT PRIMARY KEY NOT NULL,
+    task_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL,
+    sort_order INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(id)
+);
+
 CREATE TABLE IF NOT EXISTS views (
     id TEXT PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
@@ -131,6 +142,9 @@ ON tasks(scheduled_at);
 CREATE INDEX IF NOT EXISTS idx_tasks_inbox_at
 ON tasks(inbox_at);
 
+CREATE INDEX IF NOT EXISTS idx_task_links_task_sort_order
+ON task_links(task_id, sort_order, created_at);
+
 CREATE INDEX IF NOT EXISTS idx_views_entity_visible_sort_order
 ON views(entity_type, is_visible, sort_order);
 
@@ -167,6 +181,7 @@ DROP INDEX IF EXISTS idx_activity_events_entity_created_at;
 DROP INDEX IF EXISTS ux_settings_key;
 DROP INDEX IF EXISTS ux_views_entity_key;
 DROP INDEX IF EXISTS idx_views_entity_visible_sort_order;
+DROP INDEX IF EXISTS idx_task_links_task_sort_order;
 DROP INDEX IF EXISTS idx_tasks_inbox_at;
 DROP INDEX IF EXISTS idx_tasks_scheduled_at;
 DROP INDEX IF EXISTS idx_tasks_due_at;
@@ -178,6 +193,7 @@ DROP TABLE IF EXISTS activity_changes;
 DROP TABLE IF EXISTS activity_events;
 DROP TABLE IF EXISTS settings;
 DROP TABLE IF EXISTS views;
+DROP TABLE IF EXISTS task_links;
 DROP TABLE IF EXISTS tasks;
 DROP TABLE IF EXISTS projects;
 DROP TABLE IF EXISTS spaces;

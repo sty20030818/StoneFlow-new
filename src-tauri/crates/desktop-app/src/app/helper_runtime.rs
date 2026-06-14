@@ -331,58 +331,6 @@ async fn handle_helper_hello(
         .await
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::app::state::HelperLifecycleStage;
-
-    fn helper_hello(protocol_version: u16) -> IpcRequest {
-        IpcRequest::HelperHello(HelperHelloPayload {
-            protocol_version,
-            helper_version: "0.1.0".to_owned(),
-            pid: 42,
-            platform: "windows".to_owned(),
-        })
-    }
-
-    #[tokio::test]
-    async fn helper_hello_request_shape_should_encode_expected_fields() {
-        let helper_state = CommandHelperState::default();
-        helper_state.mark_helper_starting(None).await;
-        helper_state.mark_helper_spawned(42).await;
-        let snapshot = helper_state.snapshot().await;
-        assert_eq!(snapshot.lifecycle_stage, HelperLifecycleStage::WaitingForHello);
-
-        let hello = helper_hello(PROTOCOL_VERSION);
-        let json = serde_json::to_string(&hello).expect("hello should serialize");
-        assert!(json.contains("helper_hello"));
-        assert!(json.contains("0.1.0"));
-    }
-
-    #[test]
-    fn ping_response_should_encode_protocol_version() {
-        let response = IpcResponse::Pong {
-            protocol_version: PROTOCOL_VERSION,
-        };
-        let json = serde_json::to_value(&response).expect("pong should serialize");
-        assert_eq!(json["protocol_version"], PROTOCOL_VERSION);
-    }
-
-    #[tokio::test]
-    async fn protocol_mismatch_should_be_validation_error_shape() {
-        let helper_state = CommandHelperState::default();
-        helper_state.mark_helper_starting(None).await;
-        helper_state.mark_helper_spawned(42).await;
-        let error = AppError::validation(format!(
-            "helper protocol version mismatch: expected {}, got {}",
-            PROTOCOL_VERSION,
-            PROTOCOL_VERSION - 1
-        ));
-        assert!(matches!(error, AppError::Validation(_)));
-        assert_eq!(helper_state.snapshot().await.last_exit_kind, None);
-    }
-}
-
 async fn open_created_task(
     app_handle: &tauri::AppHandle,
     service: &QuickCreateService,
@@ -586,5 +534,57 @@ fn map_app_error(error: AppError) -> IpcError {
         AppError::DefaultSpaceUnavailable(message) => IpcError::DefaultSpaceUnavailable(message),
         AppError::CapturePersistence(message) => IpcError::CapturePersistence(message),
         AppError::Database(message) => IpcError::Internal(message),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app::state::HelperLifecycleStage;
+
+    fn helper_hello(protocol_version: u16) -> IpcRequest {
+        IpcRequest::HelperHello(HelperHelloPayload {
+            protocol_version,
+            helper_version: "0.1.0".to_owned(),
+            pid: 42,
+            platform: "windows".to_owned(),
+        })
+    }
+
+    #[tokio::test]
+    async fn helper_hello_request_shape_should_encode_expected_fields() {
+        let helper_state = CommandHelperState::default();
+        helper_state.mark_helper_starting(None).await;
+        helper_state.mark_helper_spawned(42).await;
+        let snapshot = helper_state.snapshot().await;
+        assert_eq!(snapshot.lifecycle_stage, HelperLifecycleStage::WaitingForHello);
+
+        let hello = helper_hello(PROTOCOL_VERSION);
+        let json = serde_json::to_string(&hello).expect("hello should serialize");
+        assert!(json.contains("helper_hello"));
+        assert!(json.contains("0.1.0"));
+    }
+
+    #[test]
+    fn ping_response_should_encode_protocol_version() {
+        let response = IpcResponse::Pong {
+            protocol_version: PROTOCOL_VERSION,
+        };
+        let json = serde_json::to_value(&response).expect("pong should serialize");
+        assert_eq!(json["protocol_version"], PROTOCOL_VERSION);
+    }
+
+    #[tokio::test]
+    async fn protocol_mismatch_should_be_validation_error_shape() {
+        let helper_state = CommandHelperState::default();
+        helper_state.mark_helper_starting(None).await;
+        helper_state.mark_helper_spawned(42).await;
+        let error = AppError::validation(format!(
+            "helper protocol version mismatch: expected {}, got {}",
+            PROTOCOL_VERSION,
+            PROTOCOL_VERSION - 1
+        ));
+        assert!(matches!(error, AppError::Validation(_)));
+        assert_eq!(helper_state.snapshot().await.last_exit_kind, None);
     }
 }

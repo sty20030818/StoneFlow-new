@@ -103,7 +103,6 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
                             }
                             app_handle.exit(0);
                         });
-                        return;
                     }
                     _ => {}
                 }

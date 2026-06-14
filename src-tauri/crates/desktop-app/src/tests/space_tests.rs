@@ -1,7 +1,7 @@
 //! 阶段 4 Space 服务回归测试。
 
 use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, Statement};
-use stoneflow_entity::{common::TaskStatus, project, task};
+use stoneflow_schema::{common::TaskStatus, project, task};
 use stoneflow_test_support::TempDatabaseDir;
 
 use crate::{

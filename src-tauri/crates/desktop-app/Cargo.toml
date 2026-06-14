@@ -13,9 +13,9 @@ sea-orm.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 stoneflow-core = { path = "../core" }
-stoneflow-entity = { path = "../entity" }
 stoneflow-ipc-protocol.workspace = true
 stoneflow-migration = { path = "../migration" }
+stoneflow-schema = { path = "../schema" }
 tauri = { workspace = true, features = ["macos-private-api"] }
 tauri-plugin-dialog.workspace = true
 tauri-plugin-log.workspace = true

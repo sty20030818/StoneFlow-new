@@ -275,13 +275,14 @@ pub async fn helper_quick_close_session(
     let controller = window_controller::build_controller(app_handle);
     let reason = map_close_reason(input.reason);
 
-    if let Some(_) = runtime
+    if runtime
         .begin_close_for(&input.session_id, reason)
         .await
         .map_err(|message| QuickCreateErrorPayload {
             type_: "Internal",
             message: message.to_owned(),
         })?
+        .is_some()
     {
         controller.hide().map_err(|message| QuickCreateErrorPayload {
             type_: "Internal",

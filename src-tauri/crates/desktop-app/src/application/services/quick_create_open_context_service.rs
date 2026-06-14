@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use stoneflow_entity::{project, space, task};
+use stoneflow_schema::{project, space, task};
 use stoneflow_ipc_protocol::{
     QuickInitialStatePayload, QuickListProjectsBySpacePayload, QuickPlacementKind,
     QuickPlacementPayload, QuickProjectItemPayload, QuickProjectOptionPayload, QuickScopeKind,
@@ -211,13 +211,13 @@ fn map_task_model(
     }
 }
 
-fn map_task_status(status: stoneflow_entity::common::TaskStatus) -> String {
+fn map_task_status(status: stoneflow_schema::common::TaskStatus) -> String {
     match status {
-        stoneflow_entity::common::TaskStatus::Todo => "todo",
-        stoneflow_entity::common::TaskStatus::Doing => "doing",
-        stoneflow_entity::common::TaskStatus::Waiting => "waiting",
-        stoneflow_entity::common::TaskStatus::Done => "done",
-        stoneflow_entity::common::TaskStatus::Canceled => "canceled",
+        stoneflow_schema::common::TaskStatus::Todo => "todo",
+        stoneflow_schema::common::TaskStatus::Doing => "doing",
+        stoneflow_schema::common::TaskStatus::Waiting => "waiting",
+        stoneflow_schema::common::TaskStatus::Done => "done",
+        stoneflow_schema::common::TaskStatus::Canceled => "canceled",
     }
     .to_owned()
 }

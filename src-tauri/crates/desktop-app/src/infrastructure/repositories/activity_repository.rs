@@ -7,7 +7,7 @@ use sea_orm::{
     QueryOrder, QuerySelect, Set,
 };
 use serde_json::Value;
-use stoneflow_entity::{
+use stoneflow_schema::{
     activity_change, activity_event,
     common::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind},
     prelude::{ActivityChange, ActivityEvent},

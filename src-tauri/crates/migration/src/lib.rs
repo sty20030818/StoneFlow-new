@@ -1,21 +1,17 @@
-//! 数据库迁移层 crate。
+//! 数据库迁移历史。
 //!
-//! V1 阶段仅一个 migration：一次性建表并中文化系统视图名称。
+//! 当前基线只保留一条 V1 schema migration，后续 schema 变化从这里继续追加。
 
 pub use sea_orm_migration::prelude::*;
 
 mod m20260429_000001_v1_schema;
-mod m20260523_000001_task_links;
 
 pub struct Migrator;
 
 #[async_trait::async_trait]
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
-        vec![
-            Box::new(m20260429_000001_v1_schema::Migration),
-            Box::new(m20260523_000001_task_links::Migration),
-        ]
+        vec![Box::new(m20260429_000001_v1_schema::Migration)]
     }
 }
 

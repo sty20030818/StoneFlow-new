@@ -2,7 +2,7 @@
 
 use sea_orm::{DatabaseTransaction, TransactionTrait};
 use serde_json::Value;
-use stoneflow_entity::common::{ActivityActorKind, ActivitySourceKind};
+use stoneflow_schema::common::{ActivityActorKind, ActivitySourceKind};
 
 use crate::app::error::AppError;
 use crate::domain::{create_id, normalize_required_text, now_utc};

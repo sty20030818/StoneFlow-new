@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use stoneflow_entity::{project, space, task};
+use stoneflow_schema::{project, space, task};
 
 use crate::{
     app::error::AppError,
@@ -39,7 +39,7 @@ pub struct SearchTaskItemDto {
     pub title: String,
     pub note: Option<String>,
     pub priority: i32,
-    pub status: stoneflow_entity::common::TaskStatus,
+    pub status: stoneflow_schema::common::TaskStatus,
     pub updated_at: String,
     pub completed_at: Option<String>,
 }
@@ -319,13 +319,13 @@ fn classify_match(primary: &str, secondary: Option<&str>, query: &str) -> Option
     })
 }
 
-fn classify_task_status(status: stoneflow_entity::common::TaskStatus) -> TaskSearchStatusRank {
+fn classify_task_status(status: stoneflow_schema::common::TaskStatus) -> TaskSearchStatusRank {
     match status {
-        stoneflow_entity::common::TaskStatus::Doing => TaskSearchStatusRank::Doing,
-        stoneflow_entity::common::TaskStatus::Todo => TaskSearchStatusRank::Todo,
-        stoneflow_entity::common::TaskStatus::Waiting => TaskSearchStatusRank::Waiting,
-        stoneflow_entity::common::TaskStatus::Done => TaskSearchStatusRank::Done,
-        stoneflow_entity::common::TaskStatus::Canceled => TaskSearchStatusRank::Canceled,
+        stoneflow_schema::common::TaskStatus::Doing => TaskSearchStatusRank::Doing,
+        stoneflow_schema::common::TaskStatus::Todo => TaskSearchStatusRank::Todo,
+        stoneflow_schema::common::TaskStatus::Waiting => TaskSearchStatusRank::Waiting,
+        stoneflow_schema::common::TaskStatus::Done => TaskSearchStatusRank::Done,
+        stoneflow_schema::common::TaskStatus::Canceled => TaskSearchStatusRank::Canceled,
     }
 }
 

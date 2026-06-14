@@ -1,7 +1,7 @@
 //! Quick Create 服务回归测试。
 
 use sea_orm::TransactionTrait;
-use stoneflow_entity::common::TaskStatus;
+use stoneflow_schema::common::TaskStatus;
 use stoneflow_ipc_protocol::{
     QuickCreatePayload, QuickListProjectsBySpacePayload, QuickPlacementKind, QuickPlacementPayload,
     QuickProjectOptionKind, QuickScopeKind, QuickSearchPayload,
@@ -397,7 +397,7 @@ fn build_quick_create_session_bridge(
 
 async fn default_space(
     database: &crate::infrastructure::database::DatabaseRuntimeState,
-) -> stoneflow_entity::space::Model {
+) -> stoneflow_schema::space::Model {
     SpaceRepository::new(database.connection().clone())
         .list_visible()
         .await
@@ -410,7 +410,7 @@ async fn default_space(
 async fn insert_space(
     database: &crate::infrastructure::database::DatabaseRuntimeState,
     record: CreateSpaceRecord,
-) -> stoneflow_entity::space::Model {
+) -> stoneflow_schema::space::Model {
     let repository = SpaceRepository::new(database.connection().clone());
     let transaction = repository
         .connection()
@@ -431,7 +431,7 @@ async fn insert_space(
 async fn insert_project_record(
     database: &crate::infrastructure::database::DatabaseRuntimeState,
     record: CreateProjectRecord,
-) -> stoneflow_entity::project::Model {
+) -> stoneflow_schema::project::Model {
     let repository = ProjectRepository::new(database.connection().clone());
     let transaction = repository
         .connection()
@@ -452,7 +452,7 @@ async fn insert_project_record(
 async fn insert_task(
     database: &crate::infrastructure::database::DatabaseRuntimeState,
     record: CreateTaskRecord,
-) -> stoneflow_entity::task::Model {
+) -> stoneflow_schema::task::Model {
     let repository = TaskRepository::new(database.connection().clone());
     let transaction = repository
         .connection()

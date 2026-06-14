@@ -4,7 +4,7 @@ use sea_orm::{
     ActiveModelTrait, ConnectionTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set,
 };
 use serde::{de::DeserializeOwned, Serialize};
-use stoneflow_entity::{prelude::Setting, setting};
+use stoneflow_schema::{prelude::Setting, setting};
 
 #[derive(Debug, Clone)]
 pub struct SettingsRepository {

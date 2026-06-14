@@ -13,4 +13,4 @@ sea-orm.workspace = true
 sea-orm-migration.workspace = true
 serde_json.workspace = true
 uuid.workspace = true
-stoneflow-entity = { path = "../entity" }
+stoneflow-schema = { path = "../schema" }

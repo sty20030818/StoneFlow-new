@@ -2,7 +2,7 @@
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
 use serde_json::json;
-use stoneflow_entity::common::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind};
+use stoneflow_schema::common::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind};
 use stoneflow_test_support::TempDatabaseDir;
 
 use crate::{

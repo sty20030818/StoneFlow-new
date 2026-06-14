@@ -2,7 +2,7 @@
 
 use sea_orm::{ActiveValue::Set, DatabaseConnection, TransactionTrait};
 use serde_json::Value;
-use stoneflow_entity::{setting, space, view};
+use stoneflow_schema::{setting, space, view};
 
 use crate::{
     app::error::AppError,
@@ -87,7 +87,7 @@ where
                 id: Set(create_id().to_string()),
                 name: Set(seed.name.to_owned()),
                 description: Set(None),
-                r#type: Set(stoneflow_entity::common::ViewKind::System),
+                r#type: Set(stoneflow_schema::common::ViewKind::System),
                 entity_type: Set(seed.entity_type),
                 key: Set(Some(seed.key.to_owned())),
                 filters: Set(json_string(&seed.filters)?),

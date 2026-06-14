@@ -9,7 +9,6 @@ members = [
   "crates/testing",
   "crates/core",
   "crates/desktop-app",
-  "crates/entity",
   "crates/helper-app",
   "crates/ipc-protocol",
   "crates/migration",

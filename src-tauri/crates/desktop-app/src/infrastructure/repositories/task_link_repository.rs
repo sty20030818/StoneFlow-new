@@ -4,7 +4,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait, QueryFilter,
     QueryOrder, QuerySelect, Set,
 };
-use stoneflow_entity::{prelude::TaskLink, task_link};
+use stoneflow_schema::{prelude::TaskLink, task_link};
 
 use crate::app::error::AppError;
 

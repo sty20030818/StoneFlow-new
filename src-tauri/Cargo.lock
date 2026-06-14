@@ -983,9 +983,9 @@ dependencies = [
  "serde",
  "serde_json",
  "stoneflow-core",
- "stoneflow-entity",
  "stoneflow-ipc-protocol",
  "stoneflow-migration",
+ "stoneflow-schema",
  "stoneflow-test-support",
  "tauri",
  "tauri-plugin-dialog",
@@ -4948,14 +4948,6 @@ name = "stoneflow-domain"
 version = "0.1.0"
 
 [[package]]
-name = "stoneflow-entity"
-version = "0.1.0"
-dependencies = [
- "sea-orm",
- "serde",
-]
-
-[[package]]
 name = "stoneflow-helper"
 version = "0.1.0"
 dependencies = [
@@ -5004,7 +4996,7 @@ dependencies = [
  "sea-orm",
  "sea-orm-migration",
  "serde_json",
- "stoneflow-entity",
+ "stoneflow-schema",
  "uuid",
 ]
 
@@ -5031,6 +5023,7 @@ name = "stoneflow-schema"
 version = "0.1.0"
 dependencies = [
  "sea-orm",
+ "serde",
 ]
 
 [[package]]

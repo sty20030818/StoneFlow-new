@@ -6,7 +6,7 @@ use sea_orm::{
     sea_query::Expr, ActiveModelTrait, ActiveValue::Set, ColumnTrait, Condition, ConnectionTrait,
     DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect,
 };
-use stoneflow_entity::{common::TaskStatus, prelude::Task, task};
+use stoneflow_schema::{common::TaskStatus, prelude::Task, task};
 
 use crate::app::error::AppError;
 
@@ -52,8 +52,9 @@ pub struct UpdateTaskPatch {
 }
 
 /// Task 列表的生命周期过滤。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum TaskLifecycleView {
+    #[default]
     Active,
     Completed,
     Canceled,
@@ -69,8 +70,9 @@ pub enum TaskSearchLifecycle {
 }
 
 /// Task 列表查询条件。
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum TaskPlacementQuery {
+    #[default]
     All,
     Project(String),
     Inbox,
@@ -94,18 +96,6 @@ pub struct TaskRepository {
 pub struct ProjectTaskCount {
     pub total_count: u64,
     pub active_count: u64,
-}
-
-impl Default for TaskLifecycleView {
-    fn default() -> Self {
-        Self::Active
-    }
-}
-
-impl Default for TaskPlacementQuery {
-    fn default() -> Self {
-        Self::All
-    }
 }
 
 impl TaskRepository {

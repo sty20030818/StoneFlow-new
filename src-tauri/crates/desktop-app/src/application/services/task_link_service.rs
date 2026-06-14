@@ -3,7 +3,7 @@
 use sea_orm::TransactionTrait;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use stoneflow_entity::{common::ActivityEntityKind, task, task_link};
+use stoneflow_schema::{common::ActivityEntityKind, task, task_link};
 use tauri::Url;
 
 use crate::{

@@ -2,7 +2,7 @@
 
 use chrono::Duration;
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
-use stoneflow_entity::common::TaskStatus;
+use stoneflow_schema::common::TaskStatus;
 use stoneflow_test_support::TempDatabaseDir;
 
 use crate::{
@@ -980,7 +980,7 @@ fn build_task_service(
 
 async fn default_space(
     database: &crate::infrastructure::database::DatabaseRuntimeState,
-) -> stoneflow_entity::space::Model {
+) -> stoneflow_schema::space::Model {
     SpaceRepository::new(database.connection().clone())
         .list_visible()
         .await
@@ -994,7 +994,7 @@ async fn insert_space(
     database: &crate::infrastructure::database::DatabaseRuntimeState,
     name: &str,
     is_default: bool,
-) -> stoneflow_entity::space::Model {
+) -> stoneflow_schema::space::Model {
     let repository = SpaceRepository::new(database.connection().clone());
     let transaction = repository
         .connection()
@@ -1033,7 +1033,7 @@ async fn insert_project(
     database: &crate::infrastructure::database::DatabaseRuntimeState,
     space_id: &str,
     name: &str,
-) -> stoneflow_entity::project::Model {
+) -> stoneflow_schema::project::Model {
     let repository = ProjectRepository::new(database.connection().clone());
     let transaction = repository
         .connection()

@@ -1,7 +1,7 @@
 //! 阶段 10 生命周期服务回归测试。
 
 use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
-use stoneflow_entity::{common::TaskStatus, project, space, task};
+use stoneflow_schema::{common::TaskStatus, project, space, task};
 use stoneflow_test_support::TempDatabaseDir;
 
 use crate::{

@@ -3,7 +3,7 @@
 use sea_orm::TransactionTrait;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use stoneflow_entity::{common::ActivityEntityKind, space};
+use stoneflow_schema::{common::ActivityEntityKind, space};
 use uuid::Uuid;
 
 use crate::{

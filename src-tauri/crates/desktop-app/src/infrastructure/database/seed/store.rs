@@ -4,7 +4,7 @@ use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, EntityTrait, PaginatorTrait,
     QueryFilter,
 };
-use stoneflow_entity::{
+use stoneflow_schema::{
     common::{ViewEntityKind, ViewKind},
     setting, space, view,
 };

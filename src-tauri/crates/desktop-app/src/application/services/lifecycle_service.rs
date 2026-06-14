@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use sea_orm::TransactionTrait;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use stoneflow_entity::{common::ActivityEntityKind, project, space, task};
+use stoneflow_schema::{common::ActivityEntityKind, project, space, task};
 use uuid::Uuid;
 
 use crate::{
@@ -1096,7 +1096,7 @@ impl LifecycleService {
 
         entries.sort_by(|left, right| {
             lifecycle_time(right, mode)
-                .cmp(&lifecycle_time(left, mode))
+                .cmp(lifecycle_time(left, mode))
                 .then_with(|| left.entity_type.as_str().cmp(right.entity_type.as_str()))
                 .then_with(|| left.id.cmp(&right.id))
         });

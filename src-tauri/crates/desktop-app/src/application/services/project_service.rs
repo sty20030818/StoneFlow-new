@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use sea_orm::TransactionTrait;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::json;
-use stoneflow_entity::{common::ActivityEntityKind, project, space};
+use stoneflow_schema::{common::ActivityEntityKind, project, space};
 use uuid::Uuid;
 
 use crate::{
