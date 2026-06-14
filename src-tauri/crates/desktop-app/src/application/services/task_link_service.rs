@@ -123,7 +123,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             .get(link_id)
             .await
             .map(|link| link.map(map_task_link_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_by_task(
@@ -135,7 +135,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             .list_by_task(task_id)
             .await
             .map(|links| links.into_iter().map(map_task_link_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn next_sort_order(
@@ -146,7 +146,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         self.repository
             .next_sort_order(connection, task_id)
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn create(
@@ -169,7 +169,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             )
             .await
             .map(map_task_link_model_to_record)
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn update(
@@ -192,7 +192,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             )
             .await
             .map(|link| link.map(map_task_link_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn delete(
@@ -203,7 +203,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         self.repository
             .delete(connection, link_id)
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -228,7 +228,7 @@ impl TaskLinkTaskReader for TaskLinkTaskReaderAdapter {
             .get(task_id)
             .await
             .map(|task| task.map(map_task_model_to_link_task_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 

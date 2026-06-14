@@ -150,7 +150,7 @@ impl SpacePersistence for SpacePersistenceAdapter {
             .list_visible()
             .await
             .map(|spaces| spaces.into_iter().map(map_space_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn get(
@@ -161,7 +161,7 @@ impl SpacePersistence for SpacePersistenceAdapter {
             .get(space_id)
             .await
             .map(|space| space.map(map_space_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn next_sort_order(
@@ -171,7 +171,7 @@ impl SpacePersistence for SpacePersistenceAdapter {
         self.repository
             .next_sort_order(connection)
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn create(
@@ -195,7 +195,7 @@ impl SpacePersistence for SpacePersistenceAdapter {
             )
             .await
             .map(map_space_model_to_record)
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn update(
@@ -218,7 +218,7 @@ impl SpacePersistence for SpacePersistenceAdapter {
             )
             .await
             .map(|space| space.map(map_space_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn clear_default(
@@ -230,7 +230,7 @@ impl SpacePersistence for SpacePersistenceAdapter {
             .clear_default(connection, updated_at)
             .await
             .map(|_| ())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn set_default(
@@ -243,7 +243,7 @@ impl SpacePersistence for SpacePersistenceAdapter {
             .set_default(connection, space_id, updated_at)
             .await
             .map(|space| space.map(map_space_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 

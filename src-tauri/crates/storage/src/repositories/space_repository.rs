@@ -6,7 +6,7 @@ use sea_orm::{
 };
 use stoneflow_schema::{prelude::Space, space};
 
-use crate::app::error::AppError;
+use crate::error::StorageError;
 
 /// 创建 Space 所需的持久化字段。
 #[derive(Debug, Clone)]
@@ -44,7 +44,7 @@ impl SpaceRepository {
     }
 
     /// 返回所有活跃可见的 Space。
-    pub async fn list_visible(&self) -> Result<Vec<space::Model>, AppError> {
+    pub async fn list_visible(&self) -> Result<Vec<space::Model>, StorageError> {
         Space::find()
             .filter(space::Column::ArchivedAt.is_null())
             .filter(space::Column::DeletedAt.is_null())
@@ -52,30 +52,30 @@ impl SpaceRepository {
             .order_by_asc(space::Column::CreatedAt)
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 根据 ID 查询单个 Space。
-    pub async fn get(&self, space_id: &str) -> Result<Option<space::Model>, AppError> {
+    pub async fn get(&self, space_id: &str) -> Result<Option<space::Model>, StorageError> {
         Space::find_by_id(space_id.to_owned())
             .one(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 查询当前默认且活跃的 Space。
-    pub async fn get_default(&self) -> Result<Option<space::Model>, AppError> {
+    pub async fn get_default(&self) -> Result<Option<space::Model>, StorageError> {
         Space::find()
             .filter(space::Column::IsDefault.eq(true))
             .filter(space::Column::ArchivedAt.is_null())
             .filter(space::Column::DeletedAt.is_null())
             .one(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 根据一组 ID 查询 Space。
-    pub async fn list_by_ids(&self, space_ids: &[String]) -> Result<Vec<space::Model>, AppError> {
+    pub async fn list_by_ids(&self, space_ids: &[String]) -> Result<Vec<space::Model>, StorageError> {
         if space_ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -84,14 +84,14 @@ impl SpaceRepository {
             .filter(space::Column::Id.is_in(space_ids.iter().cloned()))
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 列出归档中的 Space。
     pub async fn list_archived(
         &self,
         scope_space_id: Option<&str>,
-    ) -> Result<Vec<space::Model>, AppError> {
+    ) -> Result<Vec<space::Model>, StorageError> {
         let mut query = Space::find()
             .filter(space::Column::ArchivedAt.is_not_null())
             .filter(space::Column::DeletedAt.is_null())
@@ -102,14 +102,14 @@ impl SpaceRepository {
             query = query.filter(space::Column::Id.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(AppError::from)
+        query.all(self.connection()).await.map_err(StorageError::from)
     }
 
     /// 列出已删除的 Space。
     pub async fn list_deleted(
         &self,
         scope_space_id: Option<&str>,
-    ) -> Result<Vec<space::Model>, AppError> {
+    ) -> Result<Vec<space::Model>, StorageError> {
         let mut query = Space::find()
             .filter(space::Column::DeletedAt.is_not_null())
             .order_by_desc(space::Column::DeletedAt)
@@ -119,11 +119,11 @@ impl SpaceRepository {
             query = query.filter(space::Column::Id.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(AppError::from)
+        query.all(self.connection()).await.map_err(StorageError::from)
     }
 
     /// 计算下一条 Space 的排序值。
-    pub async fn next_sort_order<C>(&self, connection: &C) -> Result<i32, AppError>
+    pub async fn next_sort_order<C>(&self, connection: &C) -> Result<i32, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -142,7 +142,7 @@ impl SpaceRepository {
         &self,
         connection: &C,
         record: CreateSpaceRecord,
-    ) -> Result<space::Model, AppError>
+    ) -> Result<space::Model, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -160,7 +160,7 @@ impl SpaceRepository {
         }
         .insert(connection)
         .await
-        .map_err(AppError::from)
+        .map_err(StorageError::from)
     }
 
     /// 更新基础字段，不做额外规则判断。
@@ -170,7 +170,7 @@ impl SpaceRepository {
         space_id: &str,
         patch: UpdateSpacePatch,
         updated_at: &str,
-    ) -> Result<Option<space::Model>, AppError>
+    ) -> Result<Option<space::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -196,11 +196,11 @@ impl SpaceRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 清除所有活跃 Space 的默认标记。
-    pub async fn clear_default<C>(&self, connection: &C, updated_at: &str) -> Result<u64, AppError>
+    pub async fn clear_default<C>(&self, connection: &C, updated_at: &str) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -221,7 +221,7 @@ impl SpaceRepository {
         connection: &C,
         space_id: &str,
         updated_at: &str,
-    ) -> Result<Option<space::Model>, AppError>
+    ) -> Result<Option<space::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -239,7 +239,7 @@ impl SpaceRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始归档：只更新 Space 自身。
@@ -249,7 +249,7 @@ impl SpaceRepository {
         space_id: &str,
         archived_at: &str,
         updated_at: &str,
-    ) -> Result<Option<space::Model>, AppError>
+    ) -> Result<Option<space::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -267,7 +267,7 @@ impl SpaceRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始恢复：只恢复 Space 自身。
@@ -276,7 +276,7 @@ impl SpaceRepository {
         connection: &C,
         space_id: &str,
         updated_at: &str,
-    ) -> Result<Option<space::Model>, AppError>
+    ) -> Result<Option<space::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -295,7 +295,7 @@ impl SpaceRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始删除：只更新 Space 自身。
@@ -305,7 +305,7 @@ impl SpaceRepository {
         space_id: &str,
         deleted_at: &str,
         updated_at: &str,
-    ) -> Result<Option<space::Model>, AppError>
+    ) -> Result<Option<space::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -323,7 +323,7 @@ impl SpaceRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 永久删除 Space。
@@ -331,7 +331,7 @@ impl SpaceRepository {
         &self,
         connection: &C,
         space_id: &str,
-    ) -> Result<u64, AppError>
+    ) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {

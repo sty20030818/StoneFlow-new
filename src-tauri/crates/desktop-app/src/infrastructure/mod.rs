@@ -1,6 +1,4 @@
-//! 基础设施层占位。
-//!
-//! 前置阶段 A 只保留骨架，不提前实现数据库、仓储或 seed。
+//! 基础设施层：`database` / `repositories` / `mappers` 真源在 `stoneflow-storage`。
 
 pub mod database;
 pub mod mappers;

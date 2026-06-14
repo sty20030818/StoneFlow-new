@@ -986,6 +986,7 @@ dependencies = [
  "stoneflow-ipc-protocol",
  "stoneflow-migration",
  "stoneflow-schema",
+ "stoneflow-storage",
  "stoneflow-test-support",
  "stoneflow-usecase",
  "tauri",
@@ -5030,11 +5031,16 @@ dependencies = [
 name = "stoneflow-storage"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "sea-orm",
+ "serde",
+ "serde_json",
  "stoneflow-domain",
  "stoneflow-migration",
  "stoneflow-schema",
  "stoneflow-usecase",
+ "thiserror 1.0.69",
+ "uuid",
 ]
 
 [[package]]

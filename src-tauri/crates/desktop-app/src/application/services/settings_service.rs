@@ -120,7 +120,7 @@ impl SettingsPersistence for SettingsPersistenceAdapter {
         self.repository
             .find_raw_setting(key)
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn set_raw_setting_in_connection(
@@ -133,7 +133,7 @@ impl SettingsPersistence for SettingsPersistenceAdapter {
         self.repository
             .set_raw_setting_in_connection(connection, key, raw_value, updated_at)
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 

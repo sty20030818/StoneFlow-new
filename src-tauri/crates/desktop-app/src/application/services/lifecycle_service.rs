@@ -205,7 +205,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
             .get(space_id)
             .await
             .map(|space| space.map(map_space_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn get_default(&self) -> Result<Option<SpaceRecord>, stoneflow_usecase::UsecaseError> {
@@ -213,7 +213,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
             .get_default()
             .await
             .map(|space| space.map(map_space_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_by_ids(
@@ -224,7 +224,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
             .list_by_ids(space_ids)
             .await
             .map(|spaces| spaces.into_iter().map(map_space_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_archived(
@@ -235,7 +235,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
             .list_archived(scope_space_id)
             .await
             .map(|spaces| spaces.into_iter().map(map_space_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_deleted(
@@ -246,7 +246,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
             .list_deleted(scope_space_id)
             .await
             .map(|spaces| spaces.into_iter().map(map_space_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn archive_raw(
@@ -260,7 +260,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
             .archive_raw(connection, space_id, archived_at, updated_at)
             .await
             .map(|space| space.map(map_space_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn restore_raw(
@@ -273,7 +273,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
             .restore_raw(connection, space_id, updated_at)
             .await
             .map(|space| space.map(map_space_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn delete_raw(
@@ -287,7 +287,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
             .delete_raw(connection, space_id, deleted_at, updated_at)
             .await
             .map(|space| space.map(map_space_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn permanently_delete(
@@ -299,7 +299,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
             .permanently_delete(connection, space_id)
             .await
             .map(|_| ())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -340,7 +340,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
             .get(project_id)
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_by_space(
@@ -351,7 +351,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
             .list_by_space(space_id)
             .await
             .map(|projects| projects.into_iter().map(map_project_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_by_ids(
@@ -362,7 +362,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
             .list_by_ids(project_ids)
             .await
             .map(|projects| projects.into_iter().map(map_project_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_archived(
@@ -381,7 +381,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
                     .map(map_project_model_to_lifecycle_list_record)
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_deleted(
@@ -400,7 +400,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
                     .map(map_project_model_to_lifecycle_list_record)
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn archive_raw(
@@ -415,7 +415,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
             .archive_raw(connection, project_id, archived_at, archived_by_id, updated_at)
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn restore_raw(
@@ -428,7 +428,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
             .restore_raw(connection, project_id, updated_at)
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn delete_raw(
@@ -443,7 +443,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
             .delete_raw(connection, project_id, deleted_at, deleted_by_id, updated_at)
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn permanently_delete(
@@ -455,7 +455,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
             .permanently_delete(connection, project_id)
             .await
             .map(|_| ())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn archive_by_space_raw(
@@ -470,7 +470,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
             .archive_by_space_raw(connection, space_id, archived_at, archived_by_id, updated_at)
             .await
             .map(|_| ())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn delete_by_space_raw(
@@ -485,7 +485,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
             .delete_by_space_raw(connection, space_id, deleted_at, deleted_by_id, updated_at)
             .await
             .map(|_| ())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -526,7 +526,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .get(task_id)
             .await
             .map(|task| task.map(map_task_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_by_space(
@@ -537,7 +537,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .list_by_space(space_id)
             .await
             .map(|tasks| tasks.into_iter().map(map_task_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_by_project(
@@ -548,7 +548,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .list_by_project(project_id)
             .await
             .map(|tasks| tasks.into_iter().map(map_task_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_archived(
@@ -567,7 +567,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
                     .map(map_task_model_to_lifecycle_list_record)
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_deleted(
@@ -586,7 +586,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
                     .map(map_task_model_to_lifecycle_list_record)
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn archive_raw(
@@ -601,7 +601,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .archive_raw(connection, task_id, archived_at, archived_by_id, updated_at)
             .await
             .map(|task| task.map(map_task_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn restore_raw(
@@ -614,7 +614,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .restore_raw(connection, task_id, updated_at)
             .await
             .map(|task| task.map(map_task_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn delete_raw(
@@ -629,7 +629,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .delete_raw(connection, task_id, deleted_at, deleted_by_id, updated_at)
             .await
             .map(|task| task.map(map_task_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn permanently_delete(
@@ -641,7 +641,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .permanently_delete(connection, task_id)
             .await
             .map(|_| ())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn update(
@@ -675,7 +675,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             )
             .await
             .map(|task| task.map(map_task_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn archive_by_space_raw(
@@ -690,7 +690,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .archive_by_space_raw(connection, space_id, archived_at, archived_by_id, updated_at)
             .await
             .map(|_| ())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn delete_by_space_raw(
@@ -705,7 +705,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .delete_by_space_raw(connection, space_id, deleted_at, deleted_by_id, updated_at)
             .await
             .map(|_| ())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn archive_by_project_raw(
@@ -720,7 +720,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .archive_by_project_raw(connection, project_id, archived_at, archived_by_id, updated_at)
             .await
             .map(|_| ())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn delete_by_project_raw(
@@ -735,7 +735,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
             .delete_by_project_raw(connection, project_id, deleted_at, deleted_by_id, updated_at)
             .await
             .map(|_| ())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 

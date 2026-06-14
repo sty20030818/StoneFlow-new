@@ -8,7 +8,7 @@ use sea_orm::{
 };
 use stoneflow_schema::{common::TaskStatus, prelude::Task, task};
 
-use crate::app::error::AppError;
+use crate::error::StorageError;
 
 /// 创建 Task 所需的持久化字段。
 #[derive(Debug, Clone)]
@@ -108,29 +108,29 @@ impl TaskRepository {
     }
 
     /// 根据 ID 查询单个 Task。
-    pub async fn get(&self, task_id: &str) -> Result<Option<task::Model>, AppError> {
+    pub async fn get(&self, task_id: &str) -> Result<Option<task::Model>, StorageError> {
         Task::find_by_id(task_id.to_owned())
             .one(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 列出某个 Space 下的全部 Task。
-    pub async fn list_by_space(&self, space_id: &str) -> Result<Vec<task::Model>, AppError> {
+    pub async fn list_by_space(&self, space_id: &str) -> Result<Vec<task::Model>, StorageError> {
         Task::find()
             .filter(task::Column::SpaceId.eq(space_id))
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 列出某个 Project 下的全部 Task。
-    pub async fn list_by_project(&self, project_id: &str) -> Result<Vec<task::Model>, AppError> {
+    pub async fn list_by_project(&self, project_id: &str) -> Result<Vec<task::Model>, StorageError> {
         Task::find()
             .filter(task::Column::ProjectId.eq(project_id))
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 搜索符合查询文本的可见 Task。
@@ -138,7 +138,7 @@ impl TaskRepository {
         &self,
         query: &str,
         lifecycle: TaskSearchLifecycle,
-    ) -> Result<Vec<task::Model>, AppError> {
+    ) -> Result<Vec<task::Model>, StorageError> {
         let pattern = format!("%{query}%");
         let mut task_query = Task::find()
             .filter(task::Column::DeletedAt.is_null())
@@ -165,14 +165,14 @@ impl TaskRepository {
         task_query
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 列出归档中的 Task。
     pub async fn list_archived(
         &self,
         scope_space_id: Option<&str>,
-    ) -> Result<Vec<task::Model>, AppError> {
+    ) -> Result<Vec<task::Model>, StorageError> {
         let mut query = Task::find()
             .filter(task::Column::ArchivedAt.is_not_null())
             .filter(task::Column::DeletedAt.is_null())
@@ -183,14 +183,14 @@ impl TaskRepository {
             query = query.filter(task::Column::SpaceId.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(AppError::from)
+        query.all(self.connection()).await.map_err(StorageError::from)
     }
 
     /// 列出已删除的 Task。
     pub async fn list_deleted(
         &self,
         scope_space_id: Option<&str>,
-    ) -> Result<Vec<task::Model>, AppError> {
+    ) -> Result<Vec<task::Model>, StorageError> {
         let mut query = Task::find()
             .filter(task::Column::DeletedAt.is_not_null())
             .order_by_desc(task::Column::DeletedAt)
@@ -200,7 +200,7 @@ impl TaskRepository {
             query = query.filter(task::Column::SpaceId.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(AppError::from)
+        query.all(self.connection()).await.map_err(StorageError::from)
     }
 
     /// 计算下一条 Task 的排序值。
@@ -209,7 +209,7 @@ impl TaskRepository {
         connection: &C,
         space_id: &str,
         project_id: Option<&str>,
-    ) -> Result<i32, AppError>
+    ) -> Result<i32, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -237,7 +237,7 @@ impl TaskRepository {
         &self,
         connection: &C,
         record: CreateTaskRecord,
-    ) -> Result<task::Model, AppError>
+    ) -> Result<task::Model, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -268,7 +268,7 @@ impl TaskRepository {
         }
         .insert(connection)
         .await
-        .map_err(AppError::from)
+        .map_err(StorageError::from)
     }
 
     /// 更新基础字段，不做额外规则判断。
@@ -278,7 +278,7 @@ impl TaskRepository {
         task_id: &str,
         patch: UpdateTaskPatch,
         updated_at: &str,
-    ) -> Result<Option<task::Model>, AppError>
+    ) -> Result<Option<task::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -335,11 +335,11 @@ impl TaskRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 按 scope / project / 生命周期读取 Task 列表。
-    pub async fn list(&self, query: TaskListQuery) -> Result<Vec<task::Model>, AppError> {
+    pub async fn list(&self, query: TaskListQuery) -> Result<Vec<task::Model>, StorageError> {
         let mut task_query = Task::find();
 
         if let Some(space_id) = query.space_id.as_deref() {
@@ -384,7 +384,7 @@ impl TaskRepository {
             .order_by_desc(task::Column::UpdatedAt)
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 按 scope / placement 读取 View 执行器所需候选集。
@@ -393,7 +393,7 @@ impl TaskRepository {
         space_id: Option<String>,
         placement: TaskPlacementQuery,
         include_deleted: bool,
-    ) -> Result<Vec<task::Model>, AppError> {
+    ) -> Result<Vec<task::Model>, StorageError> {
         let mut task_query = Task::find();
 
         if let Some(space_id) = space_id.as_deref() {
@@ -422,7 +422,7 @@ impl TaskRepository {
             .order_by_desc(task::Column::UpdatedAt)
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始归档：只更新 Task 自身。
@@ -433,7 +433,7 @@ impl TaskRepository {
         archived_at: &str,
         archived_by_id: &str,
         updated_at: &str,
-    ) -> Result<Option<task::Model>, AppError>
+    ) -> Result<Option<task::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -451,7 +451,7 @@ impl TaskRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始恢复：只恢复 Task 自身。
@@ -460,7 +460,7 @@ impl TaskRepository {
         connection: &C,
         task_id: &str,
         updated_at: &str,
-    ) -> Result<Option<task::Model>, AppError>
+    ) -> Result<Option<task::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -480,7 +480,7 @@ impl TaskRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始删除：只更新 Task 自身。
@@ -491,7 +491,7 @@ impl TaskRepository {
         deleted_at: &str,
         deleted_by_id: &str,
         updated_at: &str,
-    ) -> Result<Option<task::Model>, AppError>
+    ) -> Result<Option<task::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -509,7 +509,7 @@ impl TaskRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 永久删除 Task 记录。
@@ -517,7 +517,7 @@ impl TaskRepository {
         &self,
         connection: &C,
         task_id: &str,
-    ) -> Result<u64, AppError>
+    ) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -535,7 +535,7 @@ impl TaskRepository {
         archived_at: &str,
         archived_by_id: &str,
         updated_at: &str,
-    ) -> Result<u64, AppError>
+    ) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -569,7 +569,7 @@ impl TaskRepository {
         deleted_at: &str,
         deleted_by_id: &str,
         updated_at: &str,
-    ) -> Result<u64, AppError>
+    ) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -596,7 +596,7 @@ impl TaskRepository {
         archived_at: &str,
         archived_by_id: &str,
         updated_at: &str,
-    ) -> Result<u64, AppError>
+    ) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -630,7 +630,7 @@ impl TaskRepository {
         deleted_at: &str,
         deleted_by_id: &str,
         updated_at: &str,
-    ) -> Result<u64, AppError>
+    ) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -656,7 +656,7 @@ impl TaskRepository {
     pub async fn count_by_project_ids(
         &self,
         project_ids: &[String],
-    ) -> Result<HashMap<String, ProjectTaskCount>, AppError> {
+    ) -> Result<HashMap<String, ProjectTaskCount>, StorageError> {
         if project_ids.is_empty() {
             return Ok(HashMap::new());
         }
@@ -710,15 +710,15 @@ impl TaskRepository {
     }
 
     /// 测试辅助：插入一条最小任务记录。
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-helpers"))]
     pub async fn insert_for_test<C>(
         &self,
         connection: &C,
         model: task::ActiveModel,
-    ) -> Result<task::Model, AppError>
+    ) -> Result<task::Model, StorageError>
     where
         C: ConnectionTrait,
     {
-        model.insert(connection).await.map_err(AppError::from)
+        model.insert(connection).await.map_err(StorageError::from)
     }
 }

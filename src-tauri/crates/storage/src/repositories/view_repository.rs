@@ -10,7 +10,7 @@ use stoneflow_schema::{
     view,
 };
 
-use crate::app::error::AppError;
+use crate::error::StorageError;
 
 /// 创建 View 所需的持久化字段。
 #[derive(Debug, Clone)]
@@ -64,11 +64,11 @@ impl ViewRepository {
     }
 
     /// 根据 ID 查询单个 View。
-    pub async fn get(&self, view_id: &str) -> Result<Option<view::Model>, AppError> {
+    pub async fn get(&self, view_id: &str) -> Result<Option<view::Model>, StorageError> {
         View::find_by_id(view_id.to_owned())
             .one(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 根据实体类型与 key 查询系统 View。
@@ -76,17 +76,17 @@ impl ViewRepository {
         &self,
         entity_type: ViewEntityKind,
         key: &str,
-    ) -> Result<Option<view::Model>, AppError> {
+    ) -> Result<Option<view::Model>, StorageError> {
         View::find()
             .filter(view::Column::EntityType.eq(entity_type))
             .filter(view::Column::Key.eq(key))
             .one(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 列出一组 View。
-    pub async fn list(&self, query: ViewListQuery) -> Result<Vec<view::Model>, AppError> {
+    pub async fn list(&self, query: ViewListQuery) -> Result<Vec<view::Model>, StorageError> {
         let mut builder = View::find().filter(view::Column::EntityType.eq(query.entity_type));
 
         if query.visible_only {
@@ -98,7 +98,7 @@ impl ViewRepository {
             .order_by_asc(view::Column::CreatedAt)
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 读取同实体类型下的下一个排序值。
@@ -106,7 +106,7 @@ impl ViewRepository {
         &self,
         connection: &C,
         entity_type: ViewEntityKind,
-    ) -> Result<i32, AppError>
+    ) -> Result<i32, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -127,7 +127,7 @@ impl ViewRepository {
         &self,
         connection: &C,
         record: CreateViewRecord,
-    ) -> Result<view::Model, AppError>
+    ) -> Result<view::Model, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -148,7 +148,7 @@ impl ViewRepository {
         }
         .insert(connection)
         .await
-        .map_err(AppError::from)
+        .map_err(StorageError::from)
     }
 
     /// 更新 View 基础字段。
@@ -157,7 +157,7 @@ impl ViewRepository {
         connection: &C,
         view_id: &str,
         patch: UpdateViewPatch,
-    ) -> Result<Option<view::Model>, AppError>
+    ) -> Result<Option<view::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -195,11 +195,11 @@ impl ViewRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始删除，直接物理删除一条 View。
-    pub async fn delete<C>(&self, connection: &C, view_id: &str) -> Result<u64, AppError>
+    pub async fn delete<C>(&self, connection: &C, view_id: &str) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {

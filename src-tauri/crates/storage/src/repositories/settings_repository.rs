@@ -24,7 +24,7 @@ impl SettingsRepository {
     pub async fn find_raw_setting(
         &self,
         key: &str,
-    ) -> Result<Option<String>, crate::app::error::AppError> {
+    ) -> Result<Option<String>, crate::error::StorageError> {
         let model = Setting::find_by_id(key.to_owned())
             .one(self.connection())
             .await?;
@@ -33,14 +33,14 @@ impl SettingsRepository {
     }
 
     /// 读取原始 JSON 字符串。
-    pub async fn get_raw_setting(&self, key: &str) -> Result<String, crate::app::error::AppError> {
+    pub async fn get_raw_setting(&self, key: &str) -> Result<String, crate::error::StorageError> {
         self.find_raw_setting(key).await?.ok_or_else(|| {
-            crate::app::error::AppError::not_found(format!("setting `{key}` 不存在"))
+            crate::error::StorageError::not_found(format!("setting `{key}` 不存在"))
         })
     }
 
     /// 读取并反序列化 JSON setting。
-    pub async fn get_json_setting<T>(&self, key: &str) -> Result<T, crate::app::error::AppError>
+    pub async fn get_json_setting<T>(&self, key: &str) -> Result<T, crate::error::StorageError>
     where
         T: DeserializeOwned,
     {
@@ -52,7 +52,7 @@ impl SettingsRepository {
     pub async fn find_json_setting<T>(
         &self,
         key: &str,
-    ) -> Result<Option<T>, crate::app::error::AppError>
+    ) -> Result<Option<T>, crate::error::StorageError>
     where
         T: DeserializeOwned,
     {
@@ -69,7 +69,7 @@ impl SettingsRepository {
         key: &str,
         value: &T,
         updated_at: &str,
-    ) -> Result<(), crate::app::error::AppError>
+    ) -> Result<(), crate::error::StorageError>
     where
         T: Serialize,
     {
@@ -84,13 +84,13 @@ impl SettingsRepository {
         key: &str,
         value: &T,
         updated_at: &str,
-    ) -> Result<(), crate::app::error::AppError>
+    ) -> Result<(), crate::error::StorageError>
     where
         C: ConnectionTrait,
         T: Serialize,
     {
         let raw = serde_json::to_string(value).map_err(|error| {
-            crate::app::error::AppError::database(format!("setting `{key}` 序列化失败: {error}"))
+            crate::error::StorageError::database(format!("setting `{key}` 序列化失败: {error}"))
         })?;
         self.set_raw_setting_in_connection(connection, key, &raw, updated_at)
             .await
@@ -102,7 +102,7 @@ impl SettingsRepository {
         key: &str,
         raw_value: &str,
         updated_at: &str,
-    ) -> Result<(), crate::app::error::AppError>
+    ) -> Result<(), crate::error::StorageError>
     where
         C: ConnectionTrait,
     {
@@ -110,7 +110,7 @@ impl SettingsRepository {
             .one(connection)
             .await?
             .ok_or_else(|| {
-                crate::app::error::AppError::not_found(format!("setting `{key}` 不存在"))
+                crate::error::StorageError::not_found(format!("setting `{key}` 不存在"))
             })?;
 
         let mut active_model: setting::ActiveModel = model.into_active_model();
@@ -122,11 +122,11 @@ impl SettingsRepository {
     }
 }
 
-fn deserialize_setting<T>(key: &str, raw: &str) -> Result<T, crate::app::error::AppError>
+fn deserialize_setting<T>(key: &str, raw: &str) -> Result<T, crate::error::StorageError>
 where
     T: DeserializeOwned,
 {
     serde_json::from_str(raw).map_err(|error| {
-        crate::app::error::AppError::database(format!("setting `{key}` 反序列化失败: {error}"))
+        crate::error::StorageError::database(format!("setting `{key}` 反序列化失败: {error}"))
     })
 }

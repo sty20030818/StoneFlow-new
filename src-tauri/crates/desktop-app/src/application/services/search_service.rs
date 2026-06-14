@@ -42,7 +42,7 @@ impl SearchSpaceReader for SpaceReaderAdapter {
                     })
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -67,7 +67,7 @@ impl SearchProjectReader for ProjectReaderAdapter {
             )
             .await
             .map(|projects| projects.into_iter().map(map_project_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -93,7 +93,7 @@ impl SearchTaskReader for TaskReaderAdapter {
             )
             .await
             .map(|tasks| tasks.into_iter().map(map_task_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_projects_by_ids(
@@ -104,7 +104,7 @@ impl SearchTaskReader for TaskReaderAdapter {
             .list_by_ids(project_ids)
             .await
             .map(|projects| projects.into_iter().map(map_project_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 

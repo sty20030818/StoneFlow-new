@@ -4,10 +4,8 @@ use sea_orm::{ActiveValue::Set, DatabaseConnection, TransactionTrait};
 use serde_json::Value;
 use stoneflow_schema::{setting, space, view};
 
-use crate::{
-    app::error::AppError,
-    domain::{create_id, now_utc},
-};
+use crate::error::StorageError;
+use stoneflow_domain::{create_id, now_utc};
 
 use super::{
     defaults::{default_settings, default_space, default_views},
@@ -21,12 +19,12 @@ const UI_PREFERENCE_SETTING_KEY: &str = "app.ui.preferences";
 const LEGACY_UI_SETTING_KEY: &str = "app.ui";
 
 /// 返回多个默认 Space 的统一初始化错误。
-pub fn multiple_default_spaces_error() -> AppError {
-    AppError::initialization(MULTIPLE_DEFAULT_SPACES_ERROR)
+pub fn multiple_default_spaces_error() -> StorageError {
+    StorageError::initialization(MULTIPLE_DEFAULT_SPACES_ERROR)
 }
 
 /// 执行阶段 1 默认 Seed。
-pub async fn run_seed(connection: &DatabaseConnection) -> Result<(), AppError> {
+pub async fn run_seed(connection: &DatabaseConnection) -> Result<(), StorageError> {
     if store::count_active_default_spaces(connection).await? > 1 {
         return Err(multiple_default_spaces_error());
     }
@@ -41,7 +39,7 @@ pub async fn run_seed(connection: &DatabaseConnection) -> Result<(), AppError> {
     Ok(())
 }
 
-async fn ensure_default_space<C>(connection: &C) -> Result<(), AppError>
+async fn ensure_default_space<C>(connection: &C) -> Result<(), StorageError>
 where
     C: sea_orm::ConnectionTrait,
 {
@@ -71,7 +69,7 @@ where
     Ok(())
 }
 
-async fn ensure_system_views<C>(connection: &C) -> Result<(), AppError>
+async fn ensure_system_views<C>(connection: &C) -> Result<(), StorageError>
 where
     C: sea_orm::ConnectionTrait,
 {
@@ -105,7 +103,7 @@ where
     Ok(())
 }
 
-async fn ensure_settings<C>(connection: &C) -> Result<(), AppError>
+async fn ensure_settings<C>(connection: &C) -> Result<(), StorageError>
 where
     C: sea_orm::ConnectionTrait,
 {
@@ -132,7 +130,7 @@ where
     Ok(())
 }
 
-async fn migrate_legacy_settings<C>(connection: &C) -> Result<(), AppError>
+async fn migrate_legacy_settings<C>(connection: &C) -> Result<(), StorageError>
 where
     C: sea_orm::ConnectionTrait,
 {
@@ -156,7 +154,7 @@ where
     Ok(())
 }
 
-async fn insert_setting_json<C>(connection: &C, key: &str, value: &Value) -> Result<(), AppError>
+async fn insert_setting_json<C>(connection: &C, key: &str, value: &Value) -> Result<(), StorageError>
 where
     C: sea_orm::ConnectionTrait,
 {
@@ -175,9 +173,9 @@ where
     Ok(())
 }
 
-fn extract_sidebar_preferences_from_legacy_json(raw: &str) -> Result<Option<Value>, AppError> {
+fn extract_sidebar_preferences_from_legacy_json(raw: &str) -> Result<Option<Value>, StorageError> {
     let legacy = serde_json::from_str::<Value>(raw).map_err(|error| {
-        AppError::initialization(format!("legacy app.sidebar 反序列化失败: {error}"))
+        StorageError::initialization(format!("legacy app.sidebar 反序列化失败: {error}"))
     })?;
 
     let Some(main_items) = legacy.get("mainItems").cloned() else {
@@ -202,9 +200,9 @@ fn extract_sidebar_preferences_from_legacy_json(raw: &str) -> Result<Option<Valu
     })))
 }
 
-fn extract_ui_preferences_from_legacy_json(raw: &str) -> Result<Option<Value>, AppError> {
+fn extract_ui_preferences_from_legacy_json(raw: &str) -> Result<Option<Value>, StorageError> {
     let legacy = serde_json::from_str::<Value>(raw)
-        .map_err(|error| AppError::initialization(format!("legacy app.ui 反序列化失败: {error}")))?;
+        .map_err(|error| StorageError::initialization(format!("legacy app.ui 反序列化失败: {error}")))?;
 
     Ok(Some(serde_json::json!({
         "theme": legacy.get("theme").cloned().unwrap_or(serde_json::json!("system")),
@@ -216,7 +214,7 @@ fn timestamp_now() -> String {
     now_utc().to_rfc3339()
 }
 
-fn json_string(value: &Value) -> Result<String, AppError> {
+fn json_string(value: &Value) -> Result<String, StorageError> {
     serde_json::to_string(value)
-        .map_err(|error| AppError::initialization(format!("默认 JSON 序列化失败: {error}")))
+        .map_err(|error| StorageError::initialization(format!("默认 JSON 序列化失败: {error}")))
 }

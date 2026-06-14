@@ -6,7 +6,7 @@ use sea_orm::{
 };
 use stoneflow_schema::{prelude::TaskLink, task_link};
 
-use crate::app::error::AppError;
+use crate::error::StorageError;
 
 /// 创建 Task Link 所需的持久化字段。
 #[derive(Debug, Clone)]
@@ -42,26 +42,26 @@ impl TaskLinkRepository {
     }
 
     /// 根据 ID 查询单个 Task Link。
-    pub async fn get(&self, link_id: &str) -> Result<Option<task_link::Model>, AppError> {
+    pub async fn get(&self, link_id: &str) -> Result<Option<task_link::Model>, StorageError> {
         TaskLink::find_by_id(link_id.to_owned())
             .one(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 按 Task 读取全部 Links。
-    pub async fn list_by_task(&self, task_id: &str) -> Result<Vec<task_link::Model>, AppError> {
+    pub async fn list_by_task(&self, task_id: &str) -> Result<Vec<task_link::Model>, StorageError> {
         TaskLink::find()
             .filter(task_link::Column::TaskId.eq(task_id))
             .order_by_asc(task_link::Column::SortOrder)
             .order_by_asc(task_link::Column::CreatedAt)
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 计算某个 Task 下下一条 Link 的排序值。
-    pub async fn next_sort_order<C>(&self, connection: &C, task_id: &str) -> Result<i32, AppError>
+    pub async fn next_sort_order<C>(&self, connection: &C, task_id: &str) -> Result<i32, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -81,7 +81,7 @@ impl TaskLinkRepository {
         &self,
         connection: &C,
         record: CreateTaskLinkRecord,
-    ) -> Result<task_link::Model, AppError>
+    ) -> Result<task_link::Model, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -96,7 +96,7 @@ impl TaskLinkRepository {
         }
         .insert(connection)
         .await
-        .map_err(AppError::from)
+        .map_err(StorageError::from)
     }
 
     /// 更新基础字段，不做额外规则判断。
@@ -106,7 +106,7 @@ impl TaskLinkRepository {
         link_id: &str,
         patch: UpdateTaskLinkPatch,
         updated_at: &str,
-    ) -> Result<Option<task_link::Model>, AppError>
+    ) -> Result<Option<task_link::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -129,11 +129,11 @@ impl TaskLinkRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 物理删除一条 Task Link。
-    pub async fn delete<C>(&self, connection: &C, link_id: &str) -> Result<bool, AppError>
+    pub async fn delete<C>(&self, connection: &C, link_id: &str) -> Result<bool, StorageError>
     where
         C: ConnectionTrait,
     {

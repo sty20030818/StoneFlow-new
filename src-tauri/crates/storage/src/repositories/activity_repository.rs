@@ -13,14 +13,12 @@ use stoneflow_schema::{
     prelude::{ActivityChange, ActivityEvent},
 };
 
-use crate::{
-    app::error::AppError,
-    application::activity::{ActivityTimelineChange, ActivityTimelineEntry},
-    infrastructure::mappers::{
-        activity_actor_kind_to_domain, activity_entity_kind_to_domain,
-        activity_source_kind_to_domain,
-    },
+use crate::error::StorageError;
+use crate::mappers::{
+    activity_actor_kind_to_domain, activity_entity_kind_to_domain,
+    activity_source_kind_to_domain,
 };
+use stoneflow_usecase::activity::{ActivityTimelineChange, ActivityTimelineEntry};
 
 /// 写入一条 Activity event 所需的持久化字段。
 #[derive(Debug, Clone)]
@@ -75,7 +73,7 @@ impl ActivityRepository {
         connection: &C,
         event: &ActivityEventRecord,
         changes: &[ActivityChangeRecord],
-    ) -> Result<(), AppError>
+    ) -> Result<(), StorageError>
     where
         C: ConnectionTrait,
     {
@@ -109,7 +107,7 @@ impl ActivityRepository {
                     created_at: Set(change.created_at.clone()),
                 })
             })
-            .collect::<Result<Vec<_>, AppError>>()?;
+            .collect::<Result<Vec<_>, StorageError>>()?;
 
         ActivityChange::insert_many(change_models)
             .exec(connection)
@@ -123,7 +121,7 @@ impl ActivityRepository {
         &self,
         connection: &C,
         records: &[(ActivityEventRecord, Vec<ActivityChangeRecord>)],
-    ) -> Result<(), AppError>
+    ) -> Result<(), StorageError>
     where
         C: ConnectionTrait,
     {
@@ -147,7 +145,7 @@ impl ActivityRepository {
                     created_at: Set(event.created_at.clone()),
                 })
             })
-            .collect::<Result<Vec<_>, AppError>>()?;
+            .collect::<Result<Vec<_>, StorageError>>()?;
 
         ActivityEvent::insert_many(event_models)
             .exec(connection)
@@ -167,7 +165,7 @@ impl ActivityRepository {
                     created_at: Set(change.created_at.clone()),
                 })
             })
-            .collect::<Result<Vec<_>, AppError>>()?;
+            .collect::<Result<Vec<_>, StorageError>>()?;
 
         if !all_change_models.is_empty() {
             ActivityChange::insert_many(all_change_models)
@@ -182,7 +180,7 @@ impl ActivityRepository {
     pub async fn list_by_entity(
         &self,
         query: ActivityQuery,
-    ) -> Result<Vec<ActivityTimelineEntry>, AppError> {
+    ) -> Result<Vec<ActivityTimelineEntry>, StorageError> {
         let events = ActivityEvent::find()
             .filter(activity_event::Column::EntityType.eq(query.entity_type))
             .filter(activity_event::Column::EntityId.eq(query.entity_id.clone()))
@@ -241,21 +239,21 @@ impl ActivityRepository {
     }
 }
 
-fn serialize_optional_json(value: &Option<Value>) -> Result<Option<String>, AppError> {
+fn serialize_optional_json(value: &Option<Value>) -> Result<Option<String>, StorageError> {
     value
         .as_ref()
         .map(|value| {
             serde_json::to_string(value)
-                .map_err(|error| AppError::database(format!("Activity JSON 序列化失败: {error}")))
+                .map_err(|error| StorageError::database(format!("Activity JSON 序列化失败: {error}")))
         })
         .transpose()
 }
 
-fn deserialize_optional_json(value: Option<String>) -> Result<Option<Value>, AppError> {
+fn deserialize_optional_json(value: Option<String>) -> Result<Option<Value>, StorageError> {
     value
         .map(|value| {
             serde_json::from_str::<Value>(&value)
-                .map_err(|error| AppError::database(format!("Activity JSON 反序列化失败: {error}")))
+                .map_err(|error| StorageError::database(format!("Activity JSON 反序列化失败: {error}")))
         })
         .transpose()
 }

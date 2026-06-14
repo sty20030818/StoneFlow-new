@@ -6,7 +6,7 @@ use sea_orm::{
 };
 use stoneflow_schema::{prelude::Project, project};
 
-use crate::app::error::AppError;
+use crate::error::StorageError;
 
 /// 创建 Project 所需的持久化字段。
 #[derive(Debug, Clone)]
@@ -61,11 +61,11 @@ impl ProjectRepository {
     }
 
     /// 根据 ID 查询单个 Project。
-    pub async fn get(&self, project_id: &str) -> Result<Option<project::Model>, AppError> {
+    pub async fn get(&self, project_id: &str) -> Result<Option<project::Model>, StorageError> {
         Project::find_by_id(project_id.to_owned())
             .one(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 查询某个 Space 下同名且未删除的 Project。
@@ -73,21 +73,21 @@ impl ProjectRepository {
         &self,
         space_id: &str,
         name: &str,
-    ) -> Result<Option<project::Model>, AppError> {
+    ) -> Result<Option<project::Model>, StorageError> {
         Project::find()
             .filter(project::Column::SpaceId.eq(space_id))
             .filter(project::Column::Name.eq(name))
             .filter(project::Column::DeletedAt.is_null())
             .one(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 根据一组 ID 查询 Project。
     pub async fn list_by_ids(
         &self,
         project_ids: &[String],
-    ) -> Result<Vec<project::Model>, AppError> {
+    ) -> Result<Vec<project::Model>, StorageError> {
         if project_ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -96,16 +96,16 @@ impl ProjectRepository {
             .filter(project::Column::Id.is_in(project_ids.iter().cloned()))
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 列出某个 Space 下的全部 Project。
-    pub async fn list_by_space(&self, space_id: &str) -> Result<Vec<project::Model>, AppError> {
+    pub async fn list_by_space(&self, space_id: &str) -> Result<Vec<project::Model>, StorageError> {
         Project::find()
             .filter(project::Column::SpaceId.eq(space_id))
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 搜索符合查询文本的可见 Project。
@@ -113,7 +113,7 @@ impl ProjectRepository {
         &self,
         query: &str,
         lifecycle: ProjectSearchLifecycle,
-    ) -> Result<Vec<project::Model>, AppError> {
+    ) -> Result<Vec<project::Model>, StorageError> {
         let pattern = format!("%{query}%");
         let mut project_query = Project::find()
             .filter(project::Column::DeletedAt.is_null())
@@ -137,14 +137,14 @@ impl ProjectRepository {
         project_query
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 列出归档中的 Project。
     pub async fn list_archived(
         &self,
         scope_space_id: Option<&str>,
-    ) -> Result<Vec<project::Model>, AppError> {
+    ) -> Result<Vec<project::Model>, StorageError> {
         let mut query = Project::find()
             .filter(project::Column::ArchivedAt.is_not_null())
             .filter(project::Column::DeletedAt.is_null())
@@ -155,14 +155,14 @@ impl ProjectRepository {
             query = query.filter(project::Column::SpaceId.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(AppError::from)
+        query.all(self.connection()).await.map_err(StorageError::from)
     }
 
     /// 列出已删除的 Project。
     pub async fn list_deleted(
         &self,
         scope_space_id: Option<&str>,
-    ) -> Result<Vec<project::Model>, AppError> {
+    ) -> Result<Vec<project::Model>, StorageError> {
         let mut query = Project::find()
             .filter(project::Column::DeletedAt.is_not_null())
             .order_by_desc(project::Column::DeletedAt)
@@ -172,11 +172,11 @@ impl ProjectRepository {
             query = query.filter(project::Column::SpaceId.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(AppError::from)
+        query.all(self.connection()).await.map_err(StorageError::from)
     }
 
     /// 计算某个 Space 下下一条 Project 的排序值。
-    pub async fn next_sort_order<C>(&self, connection: &C, space_id: &str) -> Result<i32, AppError>
+    pub async fn next_sort_order<C>(&self, connection: &C, space_id: &str) -> Result<i32, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -196,7 +196,7 @@ impl ProjectRepository {
         &self,
         connection: &C,
         record: CreateProjectRecord,
-    ) -> Result<project::Model, AppError>
+    ) -> Result<project::Model, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -219,7 +219,7 @@ impl ProjectRepository {
         }
         .insert(connection)
         .await
-        .map_err(AppError::from)
+        .map_err(StorageError::from)
     }
 
     /// 更新基础字段，不做额外规则判断。
@@ -229,7 +229,7 @@ impl ProjectRepository {
         project_id: &str,
         patch: UpdateProjectPatch,
         updated_at: &str,
-    ) -> Result<Option<project::Model>, AppError>
+    ) -> Result<Option<project::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -258,7 +258,7 @@ impl ProjectRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 按 scope 与 tab 读取 Project Overview 列表。
@@ -266,7 +266,7 @@ impl ProjectRepository {
         &self,
         space_id: Option<&str>,
         view: ProjectOverviewView,
-    ) -> Result<Vec<project::Model>, AppError> {
+    ) -> Result<Vec<project::Model>, StorageError> {
         let mut query = Project::find();
 
         if let Some(space_id) = space_id {
@@ -292,7 +292,7 @@ impl ProjectRepository {
             .order_by_desc(project::Column::UpdatedAt)
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 按 scope 读取 Sidebar Projects 快捷区。
@@ -301,7 +301,7 @@ impl ProjectRepository {
         space_id: Option<&str>,
         show_completed: bool,
         max_visible: Option<u64>,
-    ) -> Result<Vec<project::Model>, AppError> {
+    ) -> Result<Vec<project::Model>, StorageError> {
         let mut query = Project::find()
             .filter(project::Column::ArchivedAt.is_null())
             .filter(project::Column::DeletedAt.is_null());
@@ -321,7 +321,7 @@ impl ProjectRepository {
             .order_by_asc(project::Column::CreatedAt)
             .all(self.connection())
             .await
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始完成：只更新 completed_at。
@@ -331,7 +331,7 @@ impl ProjectRepository {
         project_id: &str,
         completed_at: &str,
         updated_at: &str,
-    ) -> Result<Option<project::Model>, AppError>
+    ) -> Result<Option<project::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -349,7 +349,7 @@ impl ProjectRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始重开：只清空 completed_at。
@@ -358,7 +358,7 @@ impl ProjectRepository {
         connection: &C,
         project_id: &str,
         updated_at: &str,
-    ) -> Result<Option<project::Model>, AppError>
+    ) -> Result<Option<project::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -376,7 +376,7 @@ impl ProjectRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始归档：只更新 Project 自身。
@@ -387,7 +387,7 @@ impl ProjectRepository {
         archived_at: &str,
         archived_by_id: &str,
         updated_at: &str,
-    ) -> Result<Option<project::Model>, AppError>
+    ) -> Result<Option<project::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -407,7 +407,7 @@ impl ProjectRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始恢复：只恢复 Project 自身。
@@ -416,7 +416,7 @@ impl ProjectRepository {
         connection: &C,
         project_id: &str,
         updated_at: &str,
-    ) -> Result<Option<project::Model>, AppError>
+    ) -> Result<Option<project::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -439,7 +439,7 @@ impl ProjectRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 原始删除：只更新 Project 自身。
@@ -450,7 +450,7 @@ impl ProjectRepository {
         deleted_at: &str,
         deleted_by_id: &str,
         updated_at: &str,
-    ) -> Result<Option<project::Model>, AppError>
+    ) -> Result<Option<project::Model>, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -470,7 +470,7 @@ impl ProjectRepository {
             .update(connection)
             .await
             .map(Some)
-            .map_err(AppError::from)
+            .map_err(StorageError::from)
     }
 
     /// 按 Space 级联归档其下所有未归档项目。
@@ -481,7 +481,7 @@ impl ProjectRepository {
         archived_at: &str,
         archived_by_id: &str,
         updated_at: &str,
-    ) -> Result<u64, AppError>
+    ) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -518,7 +518,7 @@ impl ProjectRepository {
         deleted_at: &str,
         deleted_by_id: &str,
         updated_at: &str,
-    ) -> Result<u64, AppError>
+    ) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -551,7 +551,7 @@ impl ProjectRepository {
         &self,
         connection: &C,
         project_id: &str,
-    ) -> Result<u64, AppError>
+    ) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {
@@ -562,15 +562,15 @@ impl ProjectRepository {
     }
 
     /// 测试辅助：插入一个最小项目记录。
-    #[cfg(test)]
+    #[cfg(any(test, feature = "test-helpers"))]
     pub async fn insert_for_test<C>(
         &self,
         connection: &C,
         model: project::ActiveModel,
-    ) -> Result<project::Model, AppError>
+    ) -> Result<project::Model, StorageError>
     where
         C: ConnectionTrait,
     {
-        model.insert(connection).await.map_err(AppError::from)
+        model.insert(connection).await.map_err(StorageError::from)
     }
 }

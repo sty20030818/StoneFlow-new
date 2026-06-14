@@ -146,7 +146,7 @@ impl ViewPersistence for ViewPersistenceAdapter {
             .get(view_id)
             .await
             .map(|view| view.map(map_view_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn get_by_key(
@@ -158,7 +158,7 @@ impl ViewPersistence for ViewPersistenceAdapter {
             .get_by_key(view_entity_kind_to_schema(entity_type), key)
             .await
             .map(|view| view.map(map_view_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list(
@@ -172,7 +172,7 @@ impl ViewPersistence for ViewPersistenceAdapter {
             })
             .await
             .map(|views| views.into_iter().map(map_view_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn next_sort_order(
@@ -183,7 +183,7 @@ impl ViewPersistence for ViewPersistenceAdapter {
         self.repository
             .next_sort_order(connection, view_entity_kind_to_schema(entity_type))
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn create(
@@ -212,7 +212,7 @@ impl ViewPersistence for ViewPersistenceAdapter {
             )
             .await
             .map(map_view_model_to_record)
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn update(
@@ -238,7 +238,7 @@ impl ViewPersistence for ViewPersistenceAdapter {
             )
             .await
             .map(|view| view.map(map_view_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn delete(
@@ -249,7 +249,7 @@ impl ViewPersistence for ViewPersistenceAdapter {
         self.repository
             .delete(connection, view_id)
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -279,7 +279,7 @@ impl ViewTaskReader for ViewTaskReaderAdapter {
             )
             .await
             .map(|tasks| tasks.into_iter().map(map_task_model_to_view_task_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -318,7 +318,7 @@ impl ViewLookupReader for ViewLookupReaderAdapter {
                     })
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_projects_by_ids(
@@ -340,7 +340,7 @@ impl ViewLookupReader for ViewLookupReaderAdapter {
                     })
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 

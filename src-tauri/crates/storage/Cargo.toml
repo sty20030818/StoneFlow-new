@@ -9,8 +9,16 @@ name = "stoneflow_storage"
 path = "src/lib.rs"
 
 [dependencies]
+chrono.workspace = true
 sea-orm.workspace = true
+serde.workspace = true
+serde_json.workspace = true
 stoneflow-domain = { path = "../domain" }
 stoneflow-migration = { path = "../migration" }
 stoneflow-schema = { path = "../schema" }
 stoneflow-usecase = { path = "../usecase" }
+thiserror.workspace = true
+uuid.workspace = true
+
+[features]
+test-helpers = []

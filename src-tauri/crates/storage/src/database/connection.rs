@@ -6,7 +6,7 @@ use sea_orm::{
     ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement,
 };
 
-use crate::app::error::AppError;
+use crate::error::StorageError;
 
 const DATABASE_FILE_NAME: &str = "stoneflow.sqlite3";
 
@@ -16,7 +16,7 @@ pub fn resolve_database_path(base_dir: &Path) -> PathBuf {
 }
 
 /// 确保数据库父目录存在。
-pub fn ensure_database_parent_dir(database_path: &Path) -> Result<(), AppError> {
+pub fn ensure_database_parent_dir(database_path: &Path) -> Result<(), StorageError> {
     if let Some(parent_dir) = database_path.parent() {
         std::fs::create_dir_all(parent_dir)?;
     }
@@ -25,7 +25,7 @@ pub fn ensure_database_parent_dir(database_path: &Path) -> Result<(), AppError> 
 }
 
 /// 创建 SQLite 连接并完成基础 PRAGMA 初始化。
-pub async fn connect_sqlite(database_path: &Path) -> Result<DatabaseConnection, AppError> {
+pub async fn connect_sqlite(database_path: &Path) -> Result<DatabaseConnection, StorageError> {
     ensure_database_parent_dir(database_path)?;
 
     let mut options = ConnectOptions::new(format!(
@@ -53,7 +53,7 @@ pub async fn connect_sqlite(database_path: &Path) -> Result<DatabaseConnection, 
 }
 
 /// 执行最小 smoke query，确认连接可用。
-pub async fn run_smoke_query(connection: &DatabaseConnection) -> Result<(), AppError> {
+pub async fn run_smoke_query(connection: &DatabaseConnection) -> Result<(), StorageError> {
     let result = connection
         .query_one(Statement::from_string(
             DbBackend::Sqlite,
@@ -62,7 +62,7 @@ pub async fn run_smoke_query(connection: &DatabaseConnection) -> Result<(), AppE
         .await?;
 
     if result.is_none() {
-        return Err(AppError::database("SQLite smoke query 未返回结果"));
+        return Err(StorageError::database("SQLite smoke query 未返回结果"));
     }
 
     Ok(())

@@ -1,25 +1,3 @@
-//! Repository 骨架：阶段 0 只建立边界，不提前写业务规则。
+//! Repository 层：真源在 `stoneflow-storage`。
 
-mod activity_repository;
-mod project_repository;
-mod settings_repository;
-mod space_repository;
-mod task_repository;
-mod task_link_repository;
-mod view_repository;
-
-pub use activity_repository::{
-    ActivityChangeRecord, ActivityEventRecord, ActivityQuery, ActivityRepository,
-};
-pub use project_repository::{
-    CreateProjectRecord, ProjectOverviewView, ProjectRepository, ProjectSearchLifecycle,
-    UpdateProjectPatch,
-};
-pub use settings_repository::SettingsRepository;
-pub use space_repository::{CreateSpaceRecord, SpaceRepository, UpdateSpacePatch};
-pub use task_repository::{
-    CreateTaskRecord, TaskLifecycleView, TaskListQuery, TaskPlacementQuery,
-    TaskRepository, TaskSearchLifecycle, UpdateTaskPatch,
-};
-pub use task_link_repository::{CreateTaskLinkRecord, TaskLinkRepository, UpdateTaskLinkPatch};
-pub use view_repository::{CreateViewRecord, UpdateViewPatch, ViewListQuery, ViewRepository};
+pub use stoneflow_storage::repositories::*;

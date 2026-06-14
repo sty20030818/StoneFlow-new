@@ -235,7 +235,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .get(project_id)
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn get_visible_by_name(
@@ -248,7 +248,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .get_visible_by_name(space_id, name)
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn next_sort_order(
@@ -259,7 +259,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         self.repository
             .next_sort_order(connection, space_id)
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn create(
@@ -283,7 +283,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             )
             .await
             .map(map_project_model_to_record)
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn update(
@@ -308,7 +308,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             )
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_overview_by_scope(
@@ -321,7 +321,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .list_overview_by_scope(space_id, map_overview_view_to_repo(view))
             .await
             .map(|projects| projects.into_iter().map(map_project_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_sidebar_by_scope(
@@ -335,7 +335,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .list_sidebar_by_scope(space_id, show_completed, max_visible)
             .await
             .map(|projects| projects.into_iter().map(map_project_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn complete_raw(
@@ -350,7 +350,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .complete_raw(connection, project_id, completed_at, updated_at)
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn reopen_raw(
@@ -364,7 +364,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .reopen_raw(connection, project_id, updated_at)
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -389,7 +389,7 @@ impl ProjectSpaceReader for ProjectSpaceReaderAdapter {
             .get(space_id)
             .await
             .map(|space| space.map(map_space_model_to_project_space_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_by_ids(
@@ -406,7 +406,7 @@ impl ProjectSpaceReader for ProjectSpaceReaderAdapter {
                     .map(map_space_model_to_project_space_record)
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -446,7 +446,7 @@ impl ProjectTaskCounter for ProjectTaskCounterAdapter {
                     })
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 

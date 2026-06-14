@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use sea_orm::DatabaseConnection;
 use serde::Serialize;
 
-use crate::app::error::AppError;
+use crate::error::StorageError;
 
 use super::{
     connection::{connect_sqlite, resolve_database_path, run_smoke_query},
@@ -57,7 +57,7 @@ impl DatabaseRuntimeState {
 }
 
 /// 建立数据库连接并执行基础迁移。
-pub async fn bootstrap_database(base_dir: &Path) -> Result<DatabaseRuntimeState, AppError> {
+pub async fn bootstrap_database(base_dir: &Path) -> Result<DatabaseRuntimeState, StorageError> {
     let database_path = resolve_database_path(base_dir);
     let connection = connect_sqlite(&database_path).await?;
     run_smoke_query(&connection).await?;
@@ -74,7 +74,7 @@ pub async fn bootstrap_database(base_dir: &Path) -> Result<DatabaseRuntimeState,
     })
 }
 
-fn map_migration_error(error: sea_orm::DbErr) -> AppError {
+fn map_migration_error(error: sea_orm::DbErr) -> StorageError {
     let message = error.to_string();
     if message.contains("ux_spaces_single_default_active")
         || message.contains("UNIQUE constraint failed: spaces.is_default")
@@ -82,5 +82,5 @@ fn map_migration_error(error: sea_orm::DbErr) -> AppError {
         return multiple_default_spaces_error();
     }
 
-    AppError::from(error)
+    StorageError::from(error)
 }

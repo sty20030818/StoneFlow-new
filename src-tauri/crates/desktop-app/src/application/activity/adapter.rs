@@ -60,7 +60,7 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
                 &changes.iter().map(map_change_to_infrastructure).collect::<Vec<_>>(),
             )
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn insert_events_with_changes(
@@ -84,7 +84,7 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
         self.repository
             .insert_events_with_changes(connection, &mapped)
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_by_entity(
@@ -99,7 +99,7 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
             })
             .await
             .map(|entries| entries)
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 

@@ -169,7 +169,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             .get(task_id)
             .await
             .map(|task| task.map(map_task_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list(
@@ -184,7 +184,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             })
             .await
             .map(|tasks| tasks.into_iter().map(map_task_model_to_record).collect())
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn next_sort_order(
@@ -196,7 +196,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
         self.repository
             .next_sort_order(connection, space_id, project_id)
             .await
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn create(
@@ -229,7 +229,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             )
             .await
             .map(map_task_model_to_record)
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn update(
@@ -263,7 +263,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             )
             .await
             .map(|task| task.map(map_task_model_to_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -288,7 +288,7 @@ impl TaskSpaceReader for TaskSpaceReaderAdapter {
             .get(space_id)
             .await
             .map(|space| space.map(map_space_model_to_task_space_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_by_ids(
@@ -305,7 +305,7 @@ impl TaskSpaceReader for TaskSpaceReaderAdapter {
                     .map(map_space_model_to_task_space_record)
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
@@ -330,7 +330,7 @@ impl TaskProjectReader for TaskProjectReaderAdapter {
             .get(project_id)
             .await
             .map(|project| project.map(map_project_model_to_task_project_record))
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 
     async fn list_by_ids(
@@ -347,7 +347,7 @@ impl TaskProjectReader for TaskProjectReaderAdapter {
                     .map(map_project_model_to_task_project_record)
                     .collect()
             })
-            .map_err(map_app_error)
+            .map_err(|error| map_app_error(error.into()))
     }
 }
 
