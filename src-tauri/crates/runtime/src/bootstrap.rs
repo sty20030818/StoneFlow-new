@@ -6,7 +6,9 @@ use desktop_app::app::state::{ActiveScopeState, CommandHelperState};
 use stoneflow_storage::database::bootstrap_database;
 
 use crate::exit_coordinator;
+#[cfg(not(feature = "single-binary-quick"))]
 use crate::helper_runtime;
+#[cfg(not(feature = "single-binary-quick"))]
 use crate::supervisor;
 use crate::tray;
 use crate::windows::{

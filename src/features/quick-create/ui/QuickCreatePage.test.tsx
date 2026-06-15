@@ -976,7 +976,7 @@ describe('QuickCreatePage', () => {
 		})
 	})
 
-	it('挂载后会通知 helper 前端监听器已就绪', async () => {
+	it('挂载后会通知 runtime 前端监听器已就绪', async () => {
 		render(<QuickCreatePage />)
 
 		await screen.findByTestId('quick-create-recent-tasks-section')

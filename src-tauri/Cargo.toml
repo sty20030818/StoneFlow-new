@@ -60,7 +60,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.5.6", features = [] }
 
 [dependencies]
-stoneflow-runtime = { path = "crates/runtime" }
+stoneflow-runtime = { path = "crates/runtime", features = ["single-binary-quick"] }
 tauri = { workspace = true, features = ["macos-private-api", "tray-icon"] }
 tauri-plugin-dialog.workspace = true
 tauri-plugin-opener.workspace = true

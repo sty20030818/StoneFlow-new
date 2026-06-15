@@ -39,7 +39,7 @@ export type QuickCreateOpenSessionResponse = {
 }
 
 export async function getOpenContextSnapshot() {
-	return invoke<QuickCreateInitialState>('helper_quick_get_initial_state')
+	return invoke<QuickCreateInitialState>('quick_create_get_initial_state')
 }
 
 export async function commitLayout(input: {
@@ -47,7 +47,7 @@ export async function commitLayout(input: {
 	height: number
 	devicePixelRatio: number
 }) {
-	return invoke('helper_quick_commit_layout', {
+	return invoke('quick_create_commit_layout', {
 		input,
 	})
 }
@@ -75,33 +75,33 @@ export type QuickCreateLayoutDiagnostics = {
 }
 
 export async function reportLayoutDiagnostics(input: QuickCreateLayoutDiagnostics) {
-	return invoke('helper_quick_report_layout_diagnostics', { input })
+	return invoke('quick_create_report_layout_diagnostics', { input })
 }
 
 export async function presentSession(input: { sessionId: string }) {
-	return invoke('helper_quick_present_session', { input })
+	return invoke('quick_create_present_session', { input })
 }
 
 export async function closeSession(input: { sessionId: string; reason: QuickCreateCloseReason }) {
-	return invoke('helper_quick_close_session', { input })
+	return invoke('quick_create_close_session', { input })
 }
 
 export async function notifyFrontendReady() {
-	return invoke('helper_quick_frontend_ready')
+	return invoke('quick_create_frontend_ready')
 }
 
 export async function notifyFrontendUnready() {
-	return invoke('helper_quick_frontend_unready')
+	return invoke('quick_create_frontend_unready')
 }
 
 export async function listProjectsBySpace(spaceId: string) {
-	return invoke<QuickCreateProjectsBySpace>('helper_quick_list_projects_by_space', {
+	return invoke<QuickCreateProjectsBySpace>('quick_create_list_projects_by_space', {
 		input: { spaceId },
 	})
 }
 
 export async function search(query: string, limit = 3) {
-	return invoke<QuickCreateSearchResponse>('helper_quick_search', {
+	return invoke<QuickCreateSearchResponse>('quick_create_search', {
 		input: {
 			query,
 			limit,
@@ -110,13 +110,13 @@ export async function search(query: string, limit = 3) {
 }
 
 export async function create(input: QuickCreateInput) {
-	return invoke('helper_quick_create', { input })
+	return invoke('quick_create_create', { input })
 }
 
 export async function createAndOpen(input: QuickCreateInput) {
-	return invoke('helper_quick_create_and_open', { input })
+	return invoke('quick_create_create_and_open', { input })
 }
 
 export async function openTarget(input: QuickOpenTargetInput) {
-	return invoke('helper_quick_open_target', { input })
+	return invoke('quick_create_open_target', { input })
 }

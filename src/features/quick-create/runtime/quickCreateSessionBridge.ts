@@ -19,7 +19,7 @@ const QUICK_CREATE_SESSION_CLOSE_REQUESTED_EVENT = 'quick-create:session-close-r
 const QUICK_CREATE_SESSION_INVALIDATED_EVENT = 'quick-create:session-invalidated'
 
 /**
- * 把 helper 事件监听与 frontend ready/unready 通知收口到 runtime bridge。
+ * 把 runtime 事件监听与 frontend ready/unready 通知收口到 session bridge。
  * provider 只维护 session state，不再直接知道外部事件源。
  */
 export function useQuickCreateSessionBridge(
