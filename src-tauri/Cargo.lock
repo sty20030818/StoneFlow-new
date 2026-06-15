@@ -4905,6 +4905,7 @@ dependencies = [
  "stoneflow-schema",
  "stoneflow-storage",
  "stoneflow-test-support",
+ "stoneflow-usecase",
  "tokio",
  "uuid",
 ]

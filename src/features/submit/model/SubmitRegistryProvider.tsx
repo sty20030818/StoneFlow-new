@@ -241,7 +241,9 @@ function resolveActiveTargetRecord(
 	return sorted[0] ?? null
 }
 
-function buildSubmitRegistryState(activeRecord: SubmitRegistryTargetRecord | null): SubmitRegistryState {
+function buildSubmitRegistryState(
+	activeRecord: SubmitRegistryTargetRecord | null,
+): SubmitRegistryState {
 	if (!activeRecord) {
 		return EMPTY_SUBMIT_REGISTRY_STATE
 	}

@@ -463,13 +463,13 @@ export function ShellSidebar({
 																if (!confirmed) {
 																	return
 																}
-															await runSpaceMutation(async () => {
-																await onArchiveSpace(activeSpace.id)
-																if (currentScope.type === 'space') {
-																	navigate(resolvePostSpaceRemovalPath(activeSpace.id))
-																}
-															})
-														}}
+																await runSpaceMutation(async () => {
+																	await onArchiveSpace(activeSpace.id)
+																	if (currentScope.type === 'space') {
+																		navigate(resolvePostSpaceRemovalPath(activeSpace.id))
+																	}
+																})
+															}}
 														>
 															<ExternalLinkIcon className={shellChromeIconSecondaryClass} />
 															<span>归档</span>
@@ -490,13 +490,13 @@ export function ShellSidebar({
 																if (!confirmed) {
 																	return
 																}
-															await runSpaceMutation(async () => {
-																await onDeleteSpace(activeSpace.id)
-																if (currentScope.type === 'space') {
-																	navigate(resolvePostSpaceRemovalPath(activeSpace.id))
-																}
-															})
-														}}
+																await runSpaceMutation(async () => {
+																	await onDeleteSpace(activeSpace.id)
+																	if (currentScope.type === 'space') {
+																		navigate(resolvePostSpaceRemovalPath(activeSpace.id))
+																	}
+																})
+															}}
 														>
 															<Trash2Icon className='shrink-0' />
 															<span>删除</span>

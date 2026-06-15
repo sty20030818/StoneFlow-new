@@ -37,6 +37,7 @@ describe('useWorkspaceSync', () => {
 	})
 
 	it('收到任务变更事件后统一失效工作区 Query 缓存', () => {
+		expect.hasAssertions()
 		renderUseWorkspaceSync()
 
 		act(() => {
@@ -50,6 +51,7 @@ describe('useWorkspaceSync', () => {
 	})
 
 	it('收到前端内部 task 事件时也会走同一套刷新逻辑', () => {
+		expect.hasAssertions()
 		renderUseWorkspaceSync({ type: 'all' })
 
 		act(() => {
@@ -64,6 +66,7 @@ describe('useWorkspaceSync', () => {
 	})
 
 	it('收到 lifecycle 事件时也会刷新 Space、View 与生命周期切片', () => {
+		expect.hasAssertions()
 		renderUseWorkspaceSync({ type: 'all' })
 
 		act(() => {

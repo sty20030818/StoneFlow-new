@@ -343,6 +343,7 @@ describe('CommandMenu', () => {
 	})
 
 	it('task-priority-picker 多个当前优先级显示减号，单个当前优先级显示勾且在数字前', () => {
+		expect.hasAssertions()
 		const mixedContext = createTaskSelectionContext()
 		const mixedRender = renderCommandMenu({
 			mode: 'task-priority-picker',
@@ -381,6 +382,7 @@ describe('CommandMenu', () => {
 	})
 
 	it('task-status-picker 多个当前状态显示减号，单个当前状态显示勾且在数字前', () => {
+		expect.hasAssertions()
 		const mixedRender = renderCommandMenu({
 			mode: 'task-status-picker',
 			context: createTaskSelectionContext(),

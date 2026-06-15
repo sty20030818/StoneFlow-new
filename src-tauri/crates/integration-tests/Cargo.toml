@@ -21,5 +21,6 @@ stoneflow-migration = { path = "../migration" }
 stoneflow-schema = { path = "../schema" }
 stoneflow-storage = { path = "../storage", features = ["test-helpers"] }
 stoneflow-test-support = { path = "../test-support" }
+stoneflow-usecase = { path = "../usecase" }
 tokio.workspace = true
 uuid.workspace = true

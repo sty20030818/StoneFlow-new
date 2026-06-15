@@ -85,7 +85,7 @@ export function SpaceEditorDialog({
 		} finally {
 			setSubmitting(false)
 		}
-	}, [closeDialog, colorKey, iconKey, name, submitSpace])
+	}, [colorKey, iconKey, name])
 	const submitTarget = useMemo(
 		() =>
 			open
