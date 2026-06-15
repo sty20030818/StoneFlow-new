@@ -2,8 +2,8 @@
 
 use tauri::State;
 
-use desktop_app::app::error::AppError;
-use desktop_app::application::activity::{
+use crate::app::error::AppError;
+use crate::services::activity::{
     ActivityService, ActivityTimelineEntry, GetEntityActivitiesInput,
 };
 use stoneflow_storage::{

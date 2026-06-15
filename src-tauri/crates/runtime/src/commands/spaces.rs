@@ -2,15 +2,11 @@
 
 use tauri::State;
 
-use desktop_app::app::error::AppError;
-use desktop_app::{
-    application::{
-        activity::ActivityService,
-        services::{
-            CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService,
+use crate::app::error::AppError;
+use crate::services::{
+    activity::ActivityService,
+    CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService,
             UpdateSpaceInput,
-        },
-    },
 };
 use stoneflow_storage::{
     database::DatabaseRuntimeState,
@@ -114,9 +110,9 @@ fn build_space_service(database: &DatabaseRuntimeState) -> SpaceService {
 
 #[cfg(test)]
 mod tests {
-    use stoneflow_test_support::TempDatabaseDir;
+    use stoneflow_testing::TempDatabaseDir;
 
-    use desktop_app::application::services::{CreateSpaceInput, SpaceIdInput};
+    use crate::services::{CreateSpaceInput, SpaceIdInput};
     use stoneflow_storage::database::bootstrap_database;
 
     #[tokio::test]

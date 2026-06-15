@@ -11,5 +11,6 @@ path = "src/lib.rs"
 [dependencies]
 stoneflow-domain = { path = "../domain" }
 stoneflow-migration = { path = "../migration" }
-stoneflow-storage = { path = "../storage" }
+stoneflow-storage = { path = "../storage", features = ["test-helpers"] }
 stoneflow-usecase = { path = "../usecase" }
+uuid.workspace = true

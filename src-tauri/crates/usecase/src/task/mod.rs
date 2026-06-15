@@ -1,4 +1,4 @@
-//! Task 用例：CRUD、列表视图预设与 Activity 编排（生命周期仍由 desktop-app 委托 lifecycle）。
+//! Task 用例：CRUD、列表视图预设与 Activity 编排（生命周期由 runtime adapter 委托 lifecycle）。
 
 pub mod executor;
 pub mod service;

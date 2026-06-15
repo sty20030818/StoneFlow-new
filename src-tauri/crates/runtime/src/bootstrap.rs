@@ -2,7 +2,7 @@
 
 use tauri::Manager;
 
-use desktop_app::app::state::{ActiveScopeState, CommandHelperState};
+use crate::app::state::{ActiveScopeState, CommandOpenState};
 use stoneflow_storage::database::bootstrap_database;
 
 use crate::exit_coordinator;
@@ -27,12 +27,12 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
     )?;
 
     let active_scope_state = ActiveScopeState::default();
-    let helper_state = CommandHelperState::default();
+    let command_open_state = CommandOpenState::default();
     let quick_frontend_state = QuickCreateFrontendState::default();
     let quick_runtime_state = QuickPopupRuntimeState::default();
 
     app.manage(active_scope_state);
-    app.manage(helper_state);
+    app.manage(command_open_state);
     app.manage(quick_frontend_state);
     app.manage(quick_runtime_state);
 

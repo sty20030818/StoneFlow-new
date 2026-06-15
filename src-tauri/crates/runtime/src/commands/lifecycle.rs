@@ -2,12 +2,10 @@
 
 use tauri::State;
 
-use desktop_app::app::error::AppError;
-use desktop_app::{
-    application::{
-        activity::ActivityService,
-        services::{LifecycleEntry, LifecycleService, ListLifecycleEntriesInput},
-    },
+use crate::app::error::AppError;
+use crate::services::{
+    activity::ActivityService,
+    LifecycleEntry, LifecycleService, ListLifecycleEntriesInput
 };
 use stoneflow_storage::{
     database::DatabaseRuntimeState,

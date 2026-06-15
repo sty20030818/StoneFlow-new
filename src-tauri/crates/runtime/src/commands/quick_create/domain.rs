@@ -10,8 +10,8 @@ use stoneflow_storage::database::DatabaseRuntimeState;
 
 use crate::command_open::{dispatch_command_open, restore_main_window, CommandOpenPayload};
 use crate::quick_services::build_quick_create_service;
-use desktop_app::app::state::{ActiveScopeState, CommandHelperState};
-use desktop_app::application::services::QuickResolvedPlacement;
+use crate::app::state::{ActiveScopeState, CommandOpenState};
+use crate::services::QuickResolvedPlacement;
 
 use super::error::{
     map_projects_by_space, map_search_response, QuickCreateErrorPayload,
@@ -147,7 +147,7 @@ pub async fn quick_create_create_and_open(
     app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
     active_scope: State<'_, ActiveScopeState>,
-    helper_state: State<'_, CommandHelperState>,
+    command_open_state: State<'_, CommandOpenState>,
 ) -> Result<(), QuickCreateErrorPayload> {
     let service = build_quick_create_service(database.inner());
     let created = service
@@ -155,7 +155,7 @@ pub async fn quick_create_create_and_open(
         .await
         .map_err(QuickCreateErrorPayload::from)?;
     emit_task_changed(&app_handle, &created)?;
-    open_created_task(&app_handle, &service, helper_state.inner(), &created).await?;
+    open_created_task(&app_handle, &service, command_open_state.inner(), &created).await?;
     Ok(())
 }
 
@@ -164,17 +164,17 @@ pub async fn quick_create_open_target(
     input: QuickCreateOpenTargetInput,
     app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
-    helper_state: State<'_, CommandHelperState>,
+    command_open_state: State<'_, CommandOpenState>,
 ) -> Result<(), QuickCreateErrorPayload> {
     let service = build_quick_create_service(database.inner());
-    open_existing_target(&app_handle, &service, helper_state.inner(), input).await?;
+    open_existing_target(&app_handle, &service, command_open_state.inner(), input).await?;
     Ok(())
 }
 
 async fn open_created_task(
     app_handle: &tauri::AppHandle,
-    service: &desktop_app::application::services::QuickCreateService,
-    helper_state: &CommandHelperState,
+    service: &crate::services::QuickCreateService,
+    command_open_state: &CommandOpenState,
     created: &QuickCreatedDto,
 ) -> Result<(), QuickCreateErrorPayload> {
     let target = service
@@ -186,7 +186,7 @@ async fn open_created_task(
         .map_err(QuickCreateErrorPayload::from)?;
     dispatch_command_open(
         app_handle,
-        helper_state,
+        command_open_state,
         CommandOpenPayload {
             kind: target.kind,
             id: target.id,
@@ -206,8 +206,8 @@ async fn open_created_task(
 
 async fn open_existing_target(
     app_handle: &tauri::AppHandle,
-    service: &desktop_app::application::services::QuickCreateService,
-    helper_state: &CommandHelperState,
+    service: &crate::services::QuickCreateService,
+    command_open_state: &CommandOpenState,
     input: QuickCreateOpenTargetInput,
 ) -> Result<(), QuickCreateErrorPayload> {
     let target = match input.kind {
@@ -225,7 +225,7 @@ async fn open_existing_target(
         .map_err(QuickCreateErrorPayload::from)?;
     dispatch_command_open(
         app_handle,
-        helper_state,
+        command_open_state,
         CommandOpenPayload {
             kind: target.kind,
             id: target.id,

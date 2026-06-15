@@ -13,7 +13,7 @@ use crate::windows::{
         QuickCreateSessionInput,
     },
 };
-use desktop_app::app::state::ActiveScopeState;
+use crate::app::state::ActiveScopeState;
 
 use super::error::{QuickCreateErrorPayload, QuickCreateOpenSessionResponse};
 

@@ -2,9 +2,9 @@
 
 use tauri::{Emitter, Manager};
 
-use desktop_app::app::{
+use crate::app::{
     error::AppError,
-    state::{CommandHelperState, PendingCommandOpenIntent},
+    state::{CommandOpenState, PendingCommandOpenIntent},
 };
 
 use crate::MAIN_WINDOW_LABEL;
@@ -39,10 +39,10 @@ pub async fn restore_main_window(app_handle: &tauri::AppHandle) -> Result<(), Ap
 
 pub(crate) async fn dispatch_command_open(
     app_handle: &tauri::AppHandle,
-    helper_state: &CommandHelperState,
+    command_open_state: &CommandOpenState,
     payload: CommandOpenPayload,
 ) -> Result<(), AppError> {
-    helper_state
+    command_open_state
         .set_pending_command_open(PendingCommandOpenIntent {
             kind: payload.kind.to_owned(),
             id: payload.id.clone(),

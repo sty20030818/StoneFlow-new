@@ -11,7 +11,7 @@ use crate::windows::{
     quick_runtime::{QuickPopupCloseReason, QuickPopupRuntimeState},
     quick_session::prepare_quick_create_session,
 };
-use desktop_app::app::state::ActiveScopeState;
+use crate::app::state::ActiveScopeState;
 use stoneflow_storage::database::DatabaseRuntimeState;
 
 /// 注册全局快捷键；失败时只记录 warn，不阻塞应用启动。

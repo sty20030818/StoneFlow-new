@@ -3,16 +3,12 @@
 use serde::Serialize;
 use tauri::{Emitter, State};
 
-use desktop_app::app::error::AppError;
-use desktop_app::{
-    application::{
-        activity::ActivityService,
-        services::{
-            CreateTaskInput, CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput,
+use crate::app::error::AppError;
+use crate::services::{
+    activity::ActivityService,
+    CreateTaskInput, CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput,
             ListTasksInput, TaskDetailDto, TaskIdInput, TaskLinkDto, TaskListItemDto,
             TaskLinkService, TaskService, UpdateTaskInput, UpdateTaskLinkInput,
-        },
-    },
 };
 use stoneflow_storage::{
     database::DatabaseRuntimeState,

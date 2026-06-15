@@ -11,9 +11,9 @@ pub use error::{
 use tauri::{Manager, State};
 
 use crate::exit_coordinator::{ExitCoordinator, ExitReason};
-use desktop_app::app::{
+use crate::app::{
     error::AppError,
-    state::{CommandHelperState, PendingCommandOpenIntent},
+    state::{CommandOpenState, PendingCommandOpenIntent},
 };
 
 #[tauri::command]
@@ -34,7 +34,7 @@ pub async fn quit_stoneflow(app_handle: tauri::AppHandle) -> Result<(), AppError
 
 #[tauri::command]
 pub async fn take_pending_command_open_intent(
-    helper_state: State<'_, CommandHelperState>,
+    command_open_state: State<'_, CommandOpenState>,
 ) -> Result<Option<PendingCommandOpenIntent>, AppError> {
-    Ok(helper_state.take_pending_command_open().await)
+    Ok(command_open_state.take_pending_command_open().await)
 }

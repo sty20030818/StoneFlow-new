@@ -2,14 +2,19 @@
 
 use tauri::{Manager, WindowEvent};
 
+pub mod app;
 pub mod bootstrap;
 pub mod command_open;
 pub mod commands;
 pub mod exit_coordinator;
 pub mod quick_services;
+pub mod services;
 pub mod shortcuts;
 pub mod tray;
 pub mod windows;
+
+#[cfg(test)]
+mod tests;
 
 pub use windows::main::MAIN_WINDOW_LABEL;
 

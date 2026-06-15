@@ -2,16 +2,12 @@
 
 use tauri::State;
 
-use desktop_app::app::error::AppError;
-use desktop_app::{
-    application::{
-        activity::ActivityService,
-        services::{
-            CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput,
+use crate::app::error::AppError;
+use crate::services::{
+    activity::ActivityService,
+    CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput,
             ProjectDetailDto, ProjectIdInput, ProjectOverviewItemDto, ProjectService,
             ProjectSidebarItemDto, UpdateProjectInput,
-        },
-    },
 };
 use stoneflow_storage::{
     database::DatabaseRuntimeState,
@@ -142,9 +138,9 @@ fn build_project_service(database: &DatabaseRuntimeState) -> ProjectService {
 
 #[cfg(test)]
 mod tests {
-    use stoneflow_test_support::TempDatabaseDir;
+    use stoneflow_testing::TempDatabaseDir;
 
-    use desktop_app::application::services::CreateProjectInput;
+    use crate::services::CreateProjectInput;
     use stoneflow_storage::{
         database::bootstrap_database,
         repositories::SpaceRepository,

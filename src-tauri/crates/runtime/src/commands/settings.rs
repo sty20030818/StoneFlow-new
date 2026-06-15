@@ -2,15 +2,11 @@
 
 use tauri::State;
 
-use desktop_app::app::error::AppError;
-use desktop_app::{
-    application::{
-        activity::ActivityService,
-        services::{
-            GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput, SettingsService,
+use crate::app::error::AppError;
+use crate::services::{
+    activity::ActivityService,
+    GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput, SettingsService,
             UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
-        },
-    },
 };
 use stoneflow_storage::{
     database::DatabaseRuntimeState,
@@ -94,13 +90,13 @@ fn build_settings_service(database: &DatabaseRuntimeState) -> SettingsService {
 #[cfg(test)]
 mod tests {
     use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-    use stoneflow_test_support::TempDatabaseDir;
+    use stoneflow_testing::TempDatabaseDir;
 
     use super::{
         get_legacy_shell_device_preferences_impl, get_sidebar_settings_impl,
         update_sidebar_item_visibility_impl, update_sidebar_project_section_impl,
     };
-    use desktop_app::application::services::{
+    use crate::services::{
         SidebarItemVisibilityTarget, SidebarMainItemKey,
         SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
         UpdateSidebarProjectSectionInput,

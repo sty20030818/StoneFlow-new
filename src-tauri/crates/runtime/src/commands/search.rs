@@ -2,8 +2,8 @@
 
 use tauri::State;
 
-use desktop_app::app::error::AppError;
-use desktop_app::application::services::{
+use crate::app::error::AppError;
+use crate::services::{
     SearchEntitiesInput, SearchEntitiesResultDto, SearchService,
 };
 use stoneflow_storage::{

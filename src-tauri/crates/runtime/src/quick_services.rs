@@ -1,6 +1,6 @@
 //! Quick Create 相关 service 组装（IPC 命令与单 Binary 命令共享）。
 
-use desktop_app::application::services::{
+use crate::services::{
     QuickCreateOpenContextService, QuickCreateService, QuickCreateSessionBridge,
 };
 use stoneflow_storage::{

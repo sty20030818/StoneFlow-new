@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use tokio::sync::{Mutex, Notify};
 
-use desktop_app::app::error::AppError;
+use crate::app::error::AppError;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ExitReason {

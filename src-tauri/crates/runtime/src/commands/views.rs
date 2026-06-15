@@ -2,15 +2,11 @@
 
 use tauri::State;
 
-use desktop_app::app::error::AppError;
-use desktop_app::{
-    application::{
-        activity::ActivityService,
-        services::{
-            CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunTaskViewInput,
+use crate::app::error::AppError;
+use crate::services::{
+    activity::ActivityService,
+    CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunTaskViewInput,
             RunTaskViewOutput, ToggleViewVisibleInput, UpdateViewInput, ViewDto, ViewService,
-        },
-    },
 };
 use stoneflow_storage::{
     database::DatabaseRuntimeState,

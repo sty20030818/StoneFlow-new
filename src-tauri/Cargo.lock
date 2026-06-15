@@ -971,34 +971,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "desktop-app"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "log",
- "sea-orm",
- "sea-orm-migration",
- "serde",
- "serde_json",
- "stoneflow-domain",
- "stoneflow-migration",
- "stoneflow-schema",
- "stoneflow-storage",
- "stoneflow-test-support",
- "stoneflow-usecase",
- "tauri",
- "tauri-plugin-dialog",
- "tauri-plugin-log",
- "tauri-plugin-opener",
- "tauri-plugin-single-instance",
- "tauri-plugin-store",
- "thiserror 1.0.69",
- "tokio",
- "uuid",
-]
-
-[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4950,15 +4922,17 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
- "desktop-app",
  "log",
  "sea-orm",
+ "sea-orm-migration",
  "serde",
  "serde_json",
  "stoneflow-domain",
+ "stoneflow-migration",
  "stoneflow-platform",
+ "stoneflow-schema",
  "stoneflow-storage",
- "stoneflow-test-support",
+ "stoneflow-testing",
  "stoneflow-usecase",
  "tauri",
  "tauri-nspanel",
@@ -4998,13 +4972,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stoneflow-test-support"
-version = "0.1.0"
-dependencies = [
- "uuid",
-]
-
-[[package]]
 name = "stoneflow-testing"
 version = "0.1.0"
 dependencies = [
@@ -5012,6 +4979,7 @@ dependencies = [
  "stoneflow-migration",
  "stoneflow-storage",
  "stoneflow-usecase",
+ "uuid",
 ]
 
 [[package]]

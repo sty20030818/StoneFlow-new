@@ -34,7 +34,7 @@ pub struct ActivityChangeRecord {
     pub created_at: String,
 }
 
-/// Activity 持久化边界：连接类型由 adapter 决定（desktop-app 为 `DatabaseTransaction`）。
+/// Activity 持久化边界：连接类型由 adapter 决定（runtime 为 `DatabaseTransaction`）。
 pub trait ActivityPersistence: Send + Sync {
     /// 事务连接句柄。
     type Connection: Send + Sync;

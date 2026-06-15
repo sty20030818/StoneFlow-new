@@ -1,4 +1,4 @@
-//! Space 用例：Space CRUD 与默认切换编排（生命周期操作仍由 desktop-app 委托 lifecycle）。
+//! Space 用例：Space CRUD 与默认切换编排（生命周期操作由 runtime adapter 委托 lifecycle）。
 
 #![allow(async_fn_in_trait)]
 

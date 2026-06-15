@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
 
-use desktop_app::app::error::AppError;
-use desktop_app::app::state::{ActiveScopeKind, ActiveScopeSnapshot, ActiveScopeState};
+use crate::app::error::AppError;
+use crate::app::state::{ActiveScopeKind, ActiveScopeSnapshot, ActiveScopeState};
 use stoneflow_domain::next_runtime_id;
 use stoneflow_storage::database::{DatabaseRuntimeSnapshot, DatabaseRuntimeState};
 
@@ -26,7 +26,7 @@ fn healthcheck_payload(database: DatabaseRuntimeSnapshot) -> RuntimeHealthcheckP
         } else {
             "degraded"
         },
-        app: "desktop-app",
+        app: "stoneflow",
         architecture_stage: "stage_0_infra",
         database_path: database.database_path,
         database_ready: database.database_ready,

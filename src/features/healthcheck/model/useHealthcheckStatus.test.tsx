@@ -33,7 +33,7 @@ describe('useHealthcheckStatus', () => {
 		tauriWindow.__TAURI__ = {}
 		mockedFetchHealthcheck.mockResolvedValue({
 			status: 'ok',
-			app: 'desktop-app',
+			app: 'stoneflow',
 			databasePath: 'C:\\Users\\stone\\AppData\\Roaming\\stoneflow\\data\\app.db',
 			databaseReady: true,
 		})

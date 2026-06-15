@@ -1,6 +1,6 @@
 //! Quick Create 命令错误与 usecase DTO 响应映射。
 
-use desktop_app::app::error::AppError;
+use crate::app::error::AppError;
 use serde::Serialize;
 use stoneflow_usecase::quick_create::{
     QuickPlacementDto, QuickPlacementKind, QuickProjectItemDto, QuickProjectOptionDto,
