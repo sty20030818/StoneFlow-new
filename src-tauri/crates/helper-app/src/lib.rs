@@ -8,6 +8,7 @@
 pub mod commands;
 pub mod ipc_client;
 pub mod lifecycle;
+pub mod quick_callbacks;
 pub mod runtime;
 pub mod shortcut;
 pub mod window_controller;

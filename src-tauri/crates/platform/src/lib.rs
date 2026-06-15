@@ -4,5 +4,11 @@
 //! - macOS NSPanel / AppKit bridge；
 //! - Windows 浮层窗口行为；
 //! - Quick Create 的 prepare / present / hide / resize。
-//!
-//! S1 只建立 crate 边界，不承载任何运行时逻辑。
+
+pub mod quick_window;
+
+#[cfg(target_os = "macos")]
+pub mod macos;
+
+#[cfg(target_os = "windows")]
+pub mod windows;

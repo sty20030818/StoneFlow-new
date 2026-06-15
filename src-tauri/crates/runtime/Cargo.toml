@@ -8,9 +8,35 @@ rust-version.workspace = true
 name = "stoneflow_runtime"
 path = "src/lib.rs"
 
+[features]
+default = []
+single-binary-quick = []
+
 [dependencies]
+anyhow.workspace = true
+chrono.workspace = true
 desktop-app = { path = "../desktop-app" }
+interprocess.workspace = true
+log.workspace = true
+sea-orm.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+stoneflow-domain = { path = "../domain" }
+stoneflow-ipc-protocol.workspace = true
 stoneflow-platform = { path = "../platform" }
-stoneflow-storage = { path = "../storage" }
+stoneflow-storage = { path = "../storage", features = ["test-helpers"] }
 stoneflow-usecase = { path = "../usecase" }
-tauri.workspace = true
+stoneflow-test-support = { path = "../test-support" }
+tauri = { workspace = true, features = ["macos-private-api", "tray-icon"] }
+tauri-plugin-dialog.workspace = true
+tauri-plugin-global-shortcut.workspace = true
+tauri-plugin-log.workspace = true
+tauri-plugin-opener.workspace = true
+tauri-plugin-single-instance.workspace = true
+tauri-plugin-store.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }

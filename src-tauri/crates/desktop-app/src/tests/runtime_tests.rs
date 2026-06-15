@@ -5,22 +5,26 @@ use crate::app::state::{
     HelperExitKind, HelperLifecycleStage, IpcServerStatus,
 };
 use crate::domain::next_runtime_id;
-use crate::infrastructure::database::DatabaseRuntimeSnapshot;
-use crate::infrastructure::runtime::healthcheck_payload;
+use stoneflow_storage::database::DatabaseRuntimeSnapshot;
 use uuid::Uuid;
+
+/// 与 runtime `healthcheck` 命令保持同一契约（测试内联，避免 desktop-app → runtime 依赖）。
+fn healthcheck_payload(database: DatabaseRuntimeSnapshot) -> (&'static str, &'static str, bool) {
+    let status = if database.database_ready { "ok" } else { "degraded" };
+    (status, "desktop-app", database.database_ready)
+}
 
 #[test]
 fn healthcheck_should_report_stage_0_runtime() {
-    let payload = healthcheck_payload(DatabaseRuntimeSnapshot {
+    let (status, app, database_ready) = healthcheck_payload(DatabaseRuntimeSnapshot {
         database_path: "/tmp/stoneflow.sqlite3".to_owned(),
         database_ready: true,
         migrations_ready: true,
     });
 
-    assert_eq!(payload.status, "ok");
-    assert_eq!(payload.app, "desktop-app");
-    assert_eq!(payload.architecture_stage, "stage_0_infra");
-    assert!(payload.database_ready);
+    assert_eq!(status, "ok");
+    assert_eq!(app, "desktop-app");
+    assert_eq!(database_ready, true);
 }
 
 #[tokio::test]

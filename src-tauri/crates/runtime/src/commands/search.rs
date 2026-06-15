@@ -1,0 +1,31 @@
+//! 全局搜索命令。
+
+use tauri::State;
+
+use desktop_app::app::error::AppError;
+use desktop_app::application::services::{
+    SearchEntitiesInput, SearchEntitiesResultDto, SearchService,
+};
+use stoneflow_storage::{
+    database::DatabaseRuntimeState,
+    repositories::{ProjectRepository, SpaceRepository, TaskRepository},
+};
+
+#[tauri::command]
+pub async fn search_entities(
+    input: SearchEntitiesInput,
+    database: State<'_, DatabaseRuntimeState>,
+) -> Result<SearchEntitiesResultDto, AppError> {
+    build_search_service(database.inner())
+        .search_entities(input)
+        .await
+}
+
+fn build_search_service(database: &DatabaseRuntimeState) -> SearchService {
+    let connection = database.connection().clone();
+    SearchService::new(
+        SpaceRepository::new(connection.clone()),
+        ProjectRepository::new(connection.clone()),
+        TaskRepository::new(connection),
+    )
+}

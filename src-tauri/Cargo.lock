@@ -4965,12 +4965,10 @@ dependencies = [
  "chrono",
  "interprocess",
  "log",
- "objc2",
- "objc2-app-kit",
- "objc2-foundation",
  "serde",
  "serde_json",
  "stoneflow-ipc-protocol",
+ "stoneflow-platform",
  "tauri",
  "tauri-nspanel",
  "tauri-plugin-global-shortcut",
@@ -5005,18 +5003,45 @@ dependencies = [
 name = "stoneflow-platform"
 version = "0.1.0"
 dependencies = [
+ "log",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "serde",
+ "serde_json",
  "tauri",
+ "tauri-nspanel",
 ]
 
 [[package]]
 name = "stoneflow-runtime"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "chrono",
  "desktop-app",
+ "interprocess",
+ "log",
+ "sea-orm",
+ "serde",
+ "serde_json",
+ "stoneflow-domain",
+ "stoneflow-ipc-protocol",
  "stoneflow-platform",
  "stoneflow-storage",
+ "stoneflow-test-support",
  "stoneflow-usecase",
  "tauri",
+ "tauri-nspanel",
+ "tauri-plugin-dialog",
+ "tauri-plugin-global-shortcut",
+ "tauri-plugin-log",
+ "tauri-plugin-opener",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-store",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
