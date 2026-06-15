@@ -33,6 +33,7 @@ export function createQuickCreateInitialState(): QuickCreatePanelState {
 		isAdvancedOpen: false,
 		searchResults: { tasks: [], projects: [] },
 		searchView: 'recent',
+		searchError: null,
 		isSearching: false,
 		focusTarget: 'none',
 		submitState: 'idle',
@@ -108,6 +109,7 @@ export function quickCreateDomainReducer(
 					isAdvancedOpen: false,
 					searchResults: { tasks: [], projects: [] },
 					searchView: 'recent',
+					searchError: null,
 					isSearching: false,
 					focusTarget: 'none',
 					submitState: 'idle',
@@ -241,11 +243,13 @@ export function quickCreateDomainReducer(
 			return {
 				...state,
 				isSearching: true,
+				searchError: null,
 			}
 		case 'searchSucceeded':
 			return {
 				...state,
 				isSearching: false,
+				searchError: null,
 				searchView:
 					action.payload.tasks.length > 0 || action.payload.projects.length > 0
 						? 'results'
@@ -257,6 +261,7 @@ export function quickCreateDomainReducer(
 				...state,
 				isSearching: false,
 				searchView: 'recent',
+				searchError: null,
 				searchResults: { tasks: [], projects: [] },
 				focusTarget: state.draft.title.trim().length > 0 ? 'create' : 'none',
 			}
@@ -264,9 +269,9 @@ export function quickCreateDomainReducer(
 			return {
 				...state,
 				isSearching: false,
-				submitState: 'error',
-				message: action.message,
-				errorMessage: action.message,
+				searchView: 'empty',
+				searchResults: { tasks: [], projects: [] },
+				searchError: action.message,
 			}
 		case 'focusChanged':
 			return {
@@ -303,6 +308,7 @@ export function quickCreateDomainReducer(
 				},
 				searchResults: { tasks: [], projects: [] },
 				searchView: 'recent',
+				searchError: null,
 				isSearching: false,
 				focusTarget: 'none',
 				submitState: 'idle',
@@ -324,6 +330,7 @@ export function quickCreateDomainReducer(
 				},
 				searchResults: { tasks: [], projects: [] },
 				searchView: 'recent',
+				searchError: null,
 				isSearching: false,
 				focusTarget: 'none',
 			}

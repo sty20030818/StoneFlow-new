@@ -19,7 +19,8 @@ export function useQuickCreateDerivedState(state: QuickCreatePanelState): QuickC
 	const hasTitle = normalizedTitle.length > 0
 	const isSearchingMode = normalizedTitle.length > 0
 	const isShowingRecent = !isSearchingMode || state.searchView === 'recent'
-	const isSearchEmpty = isSearchingMode && state.searchView === 'empty'
+	const isSearchEmpty =
+		isSearchingMode && (state.searchView === 'empty' || state.searchError !== null)
 
 	const displayTasks = useMemo(() => {
 		const sourceTasks = isShowingRecent

@@ -44,9 +44,12 @@ export function useQuickCreateSearchEffect({
 						return
 					}
 
+					const message = error instanceof Error ? error.message : '搜索失败'
+					console.warn('[quick-create] search failed:', message)
+
 					dispatch({
 						type: 'searchFailed',
-						message: error instanceof Error ? error.message : '搜索失败',
+						message,
 					})
 				})
 		}, SEARCH_DEBOUNCE_MS)

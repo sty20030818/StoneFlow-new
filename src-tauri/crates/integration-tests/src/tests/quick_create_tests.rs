@@ -189,7 +189,7 @@ async fn quick_create_list_projects_by_space_should_include_virtual_placements()
 }
 
 #[tokio::test]
-async fn quick_create_search_should_clamp_to_three_and_ignore_closed_results() {
+async fn quick_create_search_should_clamp_to_three_and_include_closed_results() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -279,17 +279,46 @@ async fn quick_create_search_should_clamp_to_three_and_ignore_closed_results() {
     .await;
 
     let result = service
-        .search(QuickSearchInput {
-            query: "stone".to_owned(),
-            limit: 99,
-        })
+        .search(
+            QuickSearchInput {
+                query: "stone".to_owned(),
+                limit: 99,
+            },
+            None,
+        )
         .await
         .expect("search should succeed");
 
     assert_eq!(result.tasks.len(), 3);
     assert_eq!(result.projects.len(), 3);
-    assert!(result.tasks.iter().all(|item| item.id != "task-done"));
-    assert!(result.projects.iter().all(|item| item.id != "project-done"));
+
+    let closed_result = service
+        .search(
+            QuickSearchInput {
+                query: "Stone 已完成任务".to_owned(),
+                limit: 3,
+            },
+            None,
+        )
+        .await
+        .expect("closed search should succeed");
+
+    assert_eq!(closed_result.tasks.len(), 1);
+    assert_eq!(closed_result.tasks[0].id, "task-done");
+
+    let closed_project_result = service
+        .search(
+            QuickSearchInput {
+                query: "Stone 已完成项目".to_owned(),
+                limit: 3,
+            },
+            None,
+        )
+        .await
+        .expect("closed project search should succeed");
+
+    assert_eq!(closed_project_result.projects.len(), 1);
+    assert_eq!(closed_project_result.projects[0].id, "project-done");
 }
 
 #[tokio::test]

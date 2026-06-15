@@ -148,6 +148,7 @@ export type QuickCreatePanelState = {
 	isAdvancedOpen: boolean
 	searchResults: QuickCreateSearchResponse
 	searchView: 'recent' | 'results' | 'empty'
+	searchError: string | null
 	isSearching: boolean
 	focusTarget: QuickCreateFocusTarget
 	submitState: QuickCreateSubmitState

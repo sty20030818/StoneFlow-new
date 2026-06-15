@@ -8,6 +8,10 @@ use stoneflow_domain::{
 };
 
 use crate::{
+    quick_create_search_ranking::{
+        rank_quick_create_projects, rank_quick_create_tasks, QuickSearchScopeContext,
+        QUICK_CREATE_SEARCH_POOL_LIMIT,
+    },
     search::SearchEntitiesInput,
     UsecaseError,
 };
@@ -306,19 +310,62 @@ impl<P: QuickCreatePorts> QuickCreateService<P> {
         })
     }
 
-    pub async fn search(&self, input: QuickSearchInput) -> Result<QuickSearchResultDto, UsecaseError> {
+    pub async fn search(
+        &self,
+        input: QuickSearchInput,
+        active_scope: Option<ActiveScopeInput>,
+    ) -> Result<QuickSearchResultDto, UsecaseError> {
+        let limit = input.limit.clamp(1, QUICK_CREATE_SEARCH_LIMIT) as usize;
+        let candidates = self.ports.list_space_candidates().await?;
+        let default_space_id =
+            resolve_default_space_from_candidates(active_scope.as_ref(), &candidates).ok();
+        let current_space_id = match active_scope.as_ref() {
+            Some(scope) if scope.kind == ActiveScopeKind::Space => scope.space_id.clone(),
+            _ => None,
+        };
+        let scope = QuickSearchScopeContext {
+            current_space_id,
+            default_space_id,
+        };
+
         let result = self
             .ports
             .search_entities(SearchEntitiesInput {
-                query: input.query,
-                limit_per_section: Some(input.limit.clamp(1, QUICK_CREATE_SEARCH_LIMIT)),
+                query: input.query.clone(),
+                limit_per_section: Some(QUICK_CREATE_SEARCH_POOL_LIMIT),
             })
             .await?;
 
-        Ok(QuickSearchResultDto {
-            tasks: result.tasks.into_iter().map(map_search_task).collect(),
-            projects: result.projects.into_iter().map(map_search_project).collect(),
-        })
+        let mut tasks = result
+            .tasks
+            .into_iter()
+            .map(map_search_task)
+            .chain(
+                result
+                    .completed_tasks
+                    .into_iter()
+                    .map(map_search_task),
+            )
+            .collect::<Vec<_>>();
+        let mut projects = result
+            .projects
+            .into_iter()
+            .map(map_search_project)
+            .chain(
+                result
+                    .completed_projects
+                    .into_iter()
+                    .map(map_search_project),
+            )
+            .collect::<Vec<_>>();
+
+        rank_quick_create_tasks(&mut tasks, &input.query, &scope);
+        rank_quick_create_projects(&mut projects, &input.query, &scope);
+
+        tasks.truncate(limit);
+        projects.truncate(limit);
+
+        Ok(QuickSearchResultDto { tasks, projects })
     }
 
     pub async fn create(

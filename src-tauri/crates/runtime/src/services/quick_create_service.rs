@@ -87,8 +87,12 @@ impl QuickCreateService {
     pub async fn search(
         &self,
         input: QuickSearchInput,
+        active_scope: Option<ActiveScopeSnapshot>,
     ) -> Result<QuickSearchResultDto, AppError> {
-        self.inner.search(input).await.map_err(AppError::from)
+        self.inner
+            .search(input, map_active_scope(active_scope))
+            .await
+            .map_err(AppError::from)
     }
 
     pub async fn create(

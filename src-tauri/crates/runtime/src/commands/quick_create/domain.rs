@@ -113,13 +113,17 @@ pub async fn quick_create_list_projects_by_space(
 pub async fn quick_create_search(
     input: QuickCreateSearchInput,
     database: State<'_, DatabaseRuntimeState>,
+    active_scope: State<'_, ActiveScopeState>,
 ) -> Result<QuickCreateSearchResponse, QuickCreateErrorPayload> {
     let service = build_quick_create_service(database.inner());
     let payload = service
-        .search(QuickSearchInput {
-            query: input.query,
-            limit: input.limit,
-        })
+        .search(
+            QuickSearchInput {
+                query: input.query,
+                limit: input.limit,
+            },
+            active_scope.get().await,
+        )
         .await
         .map_err(QuickCreateErrorPayload::from)?;
     Ok(map_search_response(payload))

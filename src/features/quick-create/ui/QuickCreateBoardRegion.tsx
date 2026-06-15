@@ -85,7 +85,10 @@ export function QuickCreateBoardRegion({
 								data-testid='quick-create-empty-board-region'
 								ref={taskBoardRef}
 							>
-								<QuickCreateSearchEmptyState title={state.draft.title.trim()} />
+								<QuickCreateSearchEmptyState
+								errorMessage={state.searchError}
+								title={state.draft.title.trim()}
+							/>
 							</div>
 						) : (
 							<div className={quickCreateBoardResultsStackClass}>
@@ -159,21 +162,31 @@ function QuickCreateBoardState({ description, title }: { description?: string; t
 	)
 }
 
-function QuickCreateSearchEmptyState({ title }: { title: string }) {
+function QuickCreateSearchEmptyState({
+	errorMessage,
+	title,
+}: {
+	errorMessage?: string | null
+	title: string
+}) {
 	return (
 		<div className='px-3 pb-3 pt-2'>
 			<div className='flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-sf-border-subtle bg-muted/30 px-5 py-6 text-center'>
 				<div className='mb-3 flex size-9 items-center justify-center rounded-lg bg-background text-sf-text-tertiary shadow-sm ring-1 ring-sf-border-subtle/80'>
 					<SearchIcon className='size-4' />
 				</div>
-				<div className='text-[13px] font-medium text-foreground'>没有匹配结果</div>
+				<div className='text-[13px] font-medium text-foreground'>
+					{errorMessage ? '搜索失败' : '没有匹配结果'}
+				</div>
 				<div className='mt-1 max-w-70 text-balance text-[12px] leading-5 text-sf-text-tertiary'>
-					没有找到现有任务或项目，可以直接创建为新任务。
+					{errorMessage ?? '没有找到现有任务或项目，可以直接创建为新任务。'}
 				</div>
-				<div className='mt-3 inline-flex items-center gap-1.5 rounded-full border border-sf-border-subtle bg-background/80 px-2.5 py-1 text-[11px] text-sf-text-quaternary'>
-					<span className='font-medium text-sf-text-secondary'>Enter</span>
-					<span>创建“{title}”</span>
-				</div>
+				{errorMessage ? null : (
+					<div className='mt-3 inline-flex items-center gap-1.5 rounded-full border border-sf-border-subtle bg-background/80 px-2.5 py-1 text-[11px] text-sf-text-quaternary'>
+						<span className='font-medium text-sf-text-secondary'>Enter</span>
+						<span>创建“{title}”</span>
+					</div>
+				)}
 			</div>
 		</div>
 	)
