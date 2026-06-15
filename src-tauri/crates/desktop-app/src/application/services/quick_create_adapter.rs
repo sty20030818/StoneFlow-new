@@ -77,7 +77,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
                     })
                     .collect()
             })
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(map_app_error)
     }
 
     async fn list_space_candidates(&self) -> Result<Vec<QuickCreateSpaceCandidate>, UsecaseError> {
@@ -93,7 +93,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
                     })
                     .collect()
             })
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(map_storage_error)
     }
 
     async fn get_space(
@@ -109,7 +109,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
                     is_default: space.is_default,
                 })
             })
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(map_storage_error)
     }
 
     async fn list_sidebar_projects_for_space(
@@ -136,7 +136,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
                     })
                     .collect()
             })
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(map_app_error)
     }
 
     async fn search_entities(
@@ -146,7 +146,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
         self.search_service
             .search_entities(input)
             .await
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(map_app_error)
     }
 
     async fn create_task(
@@ -167,7 +167,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
             })
             .await
             .map(map_task_detail)
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(map_app_error)
     }
 
     async fn get_task_detail(&self, task_id: &str) -> Result<QuickCreateTaskDetail, UsecaseError> {
@@ -177,7 +177,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
             })
             .await
             .map(map_task_detail)
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(map_app_error)
     }
 
     async fn get_project_space_id(&self, project_id: &str) -> Result<String, UsecaseError> {
@@ -187,11 +187,11 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
             })
             .await
             .map(|detail| detail.space_id)
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(map_app_error)
     }
 
     async fn list_recent_tasks(&self, limit: usize) -> Result<Vec<QuickTaskItemDto>, UsecaseError> {
-        let spaces = self.space_repository.list_visible().await.map_err(|error| map_app_error(error.into()))?;
+        let spaces = self.space_repository.list_visible().await.map_err(map_storage_error)?;
         let space_map: HashMap<String, space::Model> = spaces
             .into_iter()
             .map(|space| (space.id.clone(), space))
@@ -201,7 +201,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
             .task_repository
             .list_candidates(None, TaskPlacementQuery::All, false)
             .await
-            .map_err(|error| map_app_error(error.into()))?;
+            .map_err(map_storage_error)?;
         tasks.retain(|item| item.archived_at.is_none());
         tasks.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
         tasks.truncate(limit);
@@ -214,7 +214,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
             .project_repository
             .list_by_ids(&project_ids)
             .await
-            .map_err(|error| map_app_error(error.into()))?
+            .map_err(map_storage_error)?
             .into_iter()
             .map(|project| (project.id.clone(), project))
             .collect();
@@ -229,7 +229,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
         &self,
         limit: usize,
     ) -> Result<Vec<QuickProjectItemDto>, UsecaseError> {
-        let spaces = self.space_repository.list_visible().await.map_err(|error| map_app_error(error.into()))?;
+        let spaces = self.space_repository.list_visible().await.map_err(map_storage_error)?;
         let space_map: HashMap<String, space::Model> = spaces
             .into_iter()
             .map(|space| (space.id.clone(), space))
@@ -239,7 +239,7 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
             .project_repository
             .list_sidebar_by_scope(None, true, None)
             .await
-            .map_err(|error| map_app_error(error.into()))?;
+            .map_err(map_storage_error)?;
         projects.sort_by(|left, right| right.updated_at.cmp(&left.updated_at));
         projects.truncate(limit);
 
@@ -334,6 +334,10 @@ fn map_schema_task_status(status: stoneflow_schema::common::TaskStatus) -> Strin
         stoneflow_domain::TaskStatus::Done => "done".to_owned(),
         stoneflow_domain::TaskStatus::Canceled => "canceled".to_owned(),
     }
+}
+
+fn map_storage_error(error: stoneflow_storage::StorageError) -> UsecaseError {
+    map_app_error(AppError::from(error))
 }
 
 pub fn map_app_error(error: AppError) -> UsecaseError {

@@ -9,12 +9,12 @@ use super::quick_callbacks;
 pub fn build_quick_controller(app_handle: AppHandle<Wry>) -> Box<dyn stoneflow_platform::quick_window::controller::QuickPopupWindowController + Send> {
     #[cfg(target_os = "windows")]
     {
-        return build_controller(app_handle, quick_callbacks::runtime_quick_window_callbacks());
+        build_controller(app_handle, quick_callbacks::runtime_quick_window_callbacks())
     }
 
     #[cfg(target_os = "macos")]
     {
-        return build_controller(app_handle);
+        build_controller(app_handle)
     }
 
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]

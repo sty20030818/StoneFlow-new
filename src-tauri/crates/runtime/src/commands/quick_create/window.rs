@@ -82,6 +82,7 @@ pub async fn quick_create_frontend_unready(
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // 前端上报完整 DOM 指标；Rust 侧当前只记录关键字段
 pub struct QuickCreateLayoutDiagnosticsInput {
     pub phase: String,
     pub target_height: f64,

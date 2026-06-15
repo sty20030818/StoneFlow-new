@@ -24,7 +24,7 @@ fn healthcheck_should_report_stage_0_runtime() {
 
     assert_eq!(status, "ok");
     assert_eq!(app, "desktop-app");
-    assert_eq!(database_ready, true);
+    assert!(database_ready);
 }
 
 #[tokio::test]

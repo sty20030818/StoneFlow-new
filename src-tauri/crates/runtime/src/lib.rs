@@ -32,7 +32,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
     let builder = builder.plugin(tauri_nspanel::init());
 
     builder
-        .setup(|app| bootstrap::setup_app(app))
+        .setup(bootstrap::setup_app)
         .on_window_event(|window, event| {
             if window.label() == MAIN_WINDOW_LABEL {
                 if let WindowEvent::CloseRequested { api, .. } = event {

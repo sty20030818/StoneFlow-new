@@ -98,7 +98,6 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
                 limit: u64::from(input.limit.unwrap_or(50)),
             })
             .await
-            .map(|entries| entries)
             .map_err(|error| map_app_error(error.into()))
     }
 }
