@@ -15,7 +15,7 @@ pub use windows::main::MAIN_WINDOW_LABEL;
 
 /// 组装主应用 Builder。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
-    let mut builder = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
                 let _ = window.show();
@@ -29,9 +29,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build());
 
     #[cfg(target_os = "macos")]
-    {
-        builder = builder.plugin(tauri_nspanel::init());
-    }
+    let builder = builder.plugin(tauri_nspanel::init());
 
     builder
         .setup(|app| bootstrap::setup_app(app))
