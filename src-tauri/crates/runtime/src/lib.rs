@@ -5,18 +5,15 @@ use tauri::{Manager, WindowEvent};
 pub mod app;
 pub mod bootstrap;
 pub mod command_open;
+pub mod composition;
 pub mod commands;
 pub mod exit_coordinator;
-pub mod quick_services;
 pub mod services;
 pub mod shortcuts;
 pub mod tray;
-pub mod windows;
+pub mod window;
 
-#[cfg(test)]
-mod tests;
-
-pub use windows::main::MAIN_WINDOW_LABEL;
+pub use window::main::MAIN_WINDOW_LABEL;
 
 /// 组装主应用 Builder。
 pub fn builder() -> tauri::Builder<tauri::Wry> {

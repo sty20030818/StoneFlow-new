@@ -8,11 +8,13 @@ use stoneflow_storage::database::bootstrap_database;
 use crate::exit_coordinator;
 use crate::shortcuts;
 use crate::tray;
-use crate::windows::{
+use crate::window::{
     main::build_main_window,
-    quick_callbacks,
-    quick_frontend::QuickCreateFrontendState,
-    quick_runtime::QuickPopupRuntimeState,
+    quick_create::{
+        callbacks,
+        frontend::QuickCreateFrontendState,
+        runtime::QuickPopupRuntimeState,
+    },
 };
 
 pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -56,7 +58,7 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
 }
 
 fn init_quick_create_panel(app_handle: &tauri::AppHandle) {
-    let callbacks = quick_callbacks::runtime_quick_window_callbacks();
+    let callbacks = callbacks::runtime_quick_window_callbacks();
 
     #[cfg(target_os = "macos")]
     stoneflow_platform::macos::panel::init_quick_create_panel(app_handle, callbacks);

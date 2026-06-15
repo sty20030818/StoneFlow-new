@@ -6,7 +6,8 @@ members = [
   "crates/usecase",
   "crates/storage",
   "crates/schema",
-  "crates/testing",
+  "crates/test-support",
+  "crates/integration-tests",
   "crates/migration",
 ]
 resolver = "2"

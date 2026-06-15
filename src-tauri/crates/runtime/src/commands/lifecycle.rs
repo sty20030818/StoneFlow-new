@@ -2,15 +2,10 @@
 
 use tauri::State;
 
+use crate::composition::build_lifecycle_service;
 use crate::app::error::AppError;
-use crate::services::{
-    activity::ActivityService,
-    LifecycleEntry, LifecycleService, ListLifecycleEntriesInput
-};
-use stoneflow_storage::{
-    database::DatabaseRuntimeState,
-    repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
-};
+use crate::services::{LifecycleEntry, ListLifecycleEntriesInput};
+use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
 pub async fn list_archive_entries(
@@ -30,14 +25,4 @@ pub async fn list_trash_entries(
     build_lifecycle_service(database.inner())
         .list_trash_entries(input)
         .await
-}
-
-pub(crate) fn build_lifecycle_service(database: &DatabaseRuntimeState) -> LifecycleService {
-    let connection = database.connection().clone();
-    LifecycleService::new(
-        SpaceRepository::new(connection.clone()),
-        ProjectRepository::new(connection.clone()),
-        TaskRepository::new(connection.clone()),
-        ActivityService::new(ActivityRepository::new(connection)),
-    )
 }

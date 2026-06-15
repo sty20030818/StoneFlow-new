@@ -8,7 +8,7 @@ use stoneflow_schema::common::{
     ActivityEntityKind as SchemaActivityEntityKind,
     ActivitySourceKind as SchemaActivitySourceKind,
 };
-use stoneflow_testing::TempDatabaseDir;
+use stoneflow_test_support::TempDatabaseDir;
 
 use crate::services::activity::{
     ActivityAction, ActivityChangeInput, ActivityService, GetEntityActivitiesInput,

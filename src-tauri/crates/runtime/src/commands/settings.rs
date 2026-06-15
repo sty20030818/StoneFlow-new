@@ -2,16 +2,13 @@
 
 use tauri::State;
 
+use crate::composition::build_settings_service;
 use crate::app::error::AppError;
 use crate::services::{
-    activity::ActivityService,
-    GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput, SettingsService,
-            UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
+    GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput,
+    UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
 };
-use stoneflow_storage::{
-    database::DatabaseRuntimeState,
-    repositories::{ActivityRepository, SettingsRepository},
-};
+use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
 pub async fn get_sidebar_settings(
@@ -80,17 +77,10 @@ async fn update_sidebar_project_section_impl(
     Ok(GetSidebarSettingsOutput { settings })
 }
 
-fn build_settings_service(database: &DatabaseRuntimeState) -> SettingsService {
-    let connection = database.connection().clone();
-    let settings_repository = SettingsRepository::new(connection.clone());
-    let activity_service = ActivityService::new(ActivityRepository::new(connection));
-    SettingsService::new(settings_repository, activity_service)
-}
-
 #[cfg(test)]
 mod tests {
     use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-    use stoneflow_testing::TempDatabaseDir;
+    use stoneflow_test_support::TempDatabaseDir;
 
     use super::{
         get_legacy_shell_device_preferences_impl, get_sidebar_settings_impl,

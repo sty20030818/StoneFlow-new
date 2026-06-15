@@ -6,14 +6,14 @@ use stoneflow_platform::quick_window::{
     spec::{QUICK_CREATE_LABEL, QUICK_CREATE_WINDOW_MIN_HEIGHT, QUICK_CREATE_WINDOW_WIDTH},
 };
 
-use super::quick_controller::build_quick_controller;
+use super::controller::build_quick_controller;
 use stoneflow_storage::database::DatabaseRuntimeState;
 
-use crate::quick_services::build_quick_create_session_bridge;
+use crate::composition::build_quick_create_session_bridge;
 use crate::app::state::ActiveScopeState;
 
-use super::quick_frontend::QuickCreateFrontendState;
-use super::quick_runtime::{QuickPopupCloseReason, QuickPopupOpenReason, QuickPopupRuntimeState};
+use super::frontend::QuickCreateFrontendState;
+use super::runtime::{QuickPopupCloseReason, QuickPopupOpenReason, QuickPopupRuntimeState};
 
 use crate::commands::quick_create::{
     QuickCreateErrorPayload, QuickCreateInitialStateResponse, QuickCreateOpenSessionResponse,

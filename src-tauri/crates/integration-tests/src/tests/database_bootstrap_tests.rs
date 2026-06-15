@@ -2,7 +2,7 @@
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, DbErr, Statement, TransactionTrait};
 use sea_orm_migration::prelude::*;
-use stoneflow_testing::TempDatabaseDir;
+use stoneflow_test_support::TempDatabaseDir;
 
 use crate::app::error::AppError;
 use stoneflow_storage::database::bootstrap_database;

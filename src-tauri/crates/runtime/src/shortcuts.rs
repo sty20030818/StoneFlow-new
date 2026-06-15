@@ -4,12 +4,13 @@ use stoneflow_platform::quick_window::spec::QUICK_CREATE_SHORTCUT;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
-use crate::windows::quick_controller::build_quick_controller;
-
-use crate::windows::{
-    quick_frontend::QuickCreateFrontendState,
-    quick_runtime::{QuickPopupCloseReason, QuickPopupRuntimeState},
-    quick_session::prepare_quick_create_session,
+use crate::window::{
+    quick_create::{
+        controller::build_quick_controller,
+        frontend::QuickCreateFrontendState,
+        runtime::{QuickPopupCloseReason, QuickPopupRuntimeState},
+        session::prepare_quick_create_session,
+    },
 };
 use crate::app::state::ActiveScopeState;
 use stoneflow_storage::database::DatabaseRuntimeState;

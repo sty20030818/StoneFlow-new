@@ -2,14 +2,10 @@
 
 use tauri::State;
 
+use crate::composition::build_search_service;
 use crate::app::error::AppError;
-use crate::services::{
-    SearchEntitiesInput, SearchEntitiesResultDto, SearchService,
-};
-use stoneflow_storage::{
-    database::DatabaseRuntimeState,
-    repositories::{ProjectRepository, SpaceRepository, TaskRepository},
-};
+use crate::services::{SearchEntitiesInput, SearchEntitiesResultDto};
+use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
 pub async fn search_entities(
@@ -19,13 +15,4 @@ pub async fn search_entities(
     build_search_service(database.inner())
         .search_entities(input)
         .await
-}
-
-fn build_search_service(database: &DatabaseRuntimeState) -> SearchService {
-    let connection = database.connection().clone();
-    SearchService::new(
-        SpaceRepository::new(connection.clone()),
-        ProjectRepository::new(connection.clone()),
-        TaskRepository::new(connection),
-    )
 }

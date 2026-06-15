@@ -2,18 +2,12 @@
 
 use tauri::State;
 
+use crate::composition::{build_lifecycle_service, build_space_service};
 use crate::app::error::AppError;
 use crate::services::{
-    activity::ActivityService,
-    CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService,
-            UpdateSpaceInput,
+    CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, UpdateSpaceInput,
 };
-use stoneflow_storage::{
-    database::DatabaseRuntimeState,
-    repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
-};
-
-use super::lifecycle::build_lifecycle_service;
+use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
 pub async fn list_visible_spaces(
@@ -94,24 +88,11 @@ pub async fn permanently_delete_space(
         .await
 }
 
-fn build_space_service(database: &DatabaseRuntimeState) -> SpaceService {
-    let connection = database.connection().clone();
-    let space_repository = SpaceRepository::new(connection.clone());
-    let project_repository = ProjectRepository::new(connection.clone());
-    let task_repository = TaskRepository::new(connection.clone());
-    let activity_service = ActivityService::new(ActivityRepository::new(connection));
-    SpaceService::new(
-        space_repository,
-        project_repository,
-        task_repository,
-        activity_service,
-    )
-}
-
 #[cfg(test)]
 mod tests {
-    use stoneflow_testing::TempDatabaseDir;
+    use stoneflow_test_support::TempDatabaseDir;
 
+    use crate::composition::build_space_service;
     use crate::services::{CreateSpaceInput, SpaceIdInput};
     use stoneflow_storage::database::bootstrap_database;
 
@@ -123,7 +104,7 @@ mod tests {
             .await
             .expect("database bootstrap should succeed");
 
-        let payload = super::build_space_service(&database)
+        let payload = build_space_service(&database)
             .list_visible_spaces()
             .await
             .expect("list visible spaces should succeed");
@@ -141,7 +122,7 @@ mod tests {
             .await
             .expect("database bootstrap should succeed");
 
-        let error = super::build_space_service(&database)
+        let error = build_space_service(&database)
             .create_space(CreateSpaceInput {
                 name: "   ".to_owned(),
                 icon_key: "house".to_owned(),
@@ -161,7 +142,7 @@ mod tests {
             .await
             .expect("database bootstrap should succeed");
 
-        let error = super::build_space_service(&database)
+        let error = build_space_service(&database)
             .restore_space(SpaceIdInput {
                 space_id: uuid::Uuid::new_v4().to_string(),
             })

@@ -8,8 +8,8 @@ use stoneflow_usecase::quick_create::{
 use tauri::{Emitter, State};
 use stoneflow_storage::database::DatabaseRuntimeState;
 
+use crate::composition::{build_quick_create_service, build_quick_create_session_bridge};
 use crate::command_open::{dispatch_command_open, restore_main_window, CommandOpenPayload};
-use crate::quick_services::build_quick_create_service;
 use crate::app::state::{ActiveScopeState, CommandOpenState};
 use crate::services::QuickResolvedPlacement;
 
@@ -86,7 +86,7 @@ pub async fn quick_create_get_initial_state(
     database: State<'_, DatabaseRuntimeState>,
     active_scope: State<'_, ActiveScopeState>,
 ) -> Result<super::error::QuickCreateInitialStateResponse, QuickCreateErrorPayload> {
-    let bridge = crate::quick_services::build_quick_create_session_bridge(database.inner());
+    let bridge = build_quick_create_session_bridge(database.inner());
     let payload = bridge
         .prepare_initial_state(active_scope.get().await)
         .await

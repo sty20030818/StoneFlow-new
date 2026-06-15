@@ -6,7 +6,7 @@ use stoneflow_usecase::quick_create::{
     QuickCreateInput, QuickListProjectsBySpaceInput, QuickPlacementDto, QuickPlacementKind,
     QuickProjectOptionKind, QuickScopeKind, QuickSearchInput,
 };
-use stoneflow_testing::TempDatabaseDir;
+use stoneflow_test_support::TempDatabaseDir;
 use uuid::Uuid;
 
 use crate::{

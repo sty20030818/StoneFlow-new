@@ -2,18 +2,13 @@
 
 use tauri::State;
 
+use crate::composition::build_view_service;
 use crate::app::error::AppError;
 use crate::services::{
-    activity::ActivityService,
     CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunTaskViewInput,
-            RunTaskViewOutput, ToggleViewVisibleInput, UpdateViewInput, ViewDto, ViewService,
+    RunTaskViewOutput, ToggleViewVisibleInput, UpdateViewInput, ViewDto,
 };
-use stoneflow_storage::{
-    database::DatabaseRuntimeState,
-    repositories::{
-        ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository, ViewRepository,
-    },
-};
+use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
 pub async fn list_views(
@@ -81,15 +76,4 @@ pub async fn reorder_views(
     build_view_service(database.inner())
         .reorder_views(input)
         .await
-}
-
-fn build_view_service(database: &DatabaseRuntimeState) -> ViewService {
-    let connection = database.connection().clone();
-    ViewService::new(
-        ViewRepository::new(connection.clone()),
-        SpaceRepository::new(connection.clone()),
-        ProjectRepository::new(connection.clone()),
-        TaskRepository::new(connection.clone()),
-        ActivityService::new(ActivityRepository::new(connection)),
-    )
 }

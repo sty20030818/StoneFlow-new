@@ -1,7 +1,7 @@
 //! 阶段 3 settings 与 sidebar 配置回归测试。
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-use stoneflow_testing::TempDatabaseDir;
+use stoneflow_test_support::TempDatabaseDir;
 
 use crate::services::{
     activity::{ActivityService, GetEntityActivitiesInput},

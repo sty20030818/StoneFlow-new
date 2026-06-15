@@ -1,7 +1,7 @@
 //! 阶段 1 Schema 回归测试。
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-use stoneflow_testing::TempDatabaseDir;
+use stoneflow_test_support::TempDatabaseDir;
 
 use stoneflow_storage::database::bootstrap_database;
 

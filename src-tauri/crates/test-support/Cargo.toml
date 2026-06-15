@@ -1,11 +1,11 @@
 [package]
-name = "stoneflow-testing"
+name = "stoneflow-test-support"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
 [lib]
-name = "stoneflow_testing"
+name = "stoneflow_test_support"
 path = "src/lib.rs"
 
 [dependencies]

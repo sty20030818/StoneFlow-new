@@ -2,19 +2,13 @@
 
 use tauri::State;
 
+use crate::composition::{build_lifecycle_service, build_project_service};
 use crate::app::error::AppError;
 use crate::services::{
-    activity::ActivityService,
-    CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput,
-            ProjectDetailDto, ProjectIdInput, ProjectOverviewItemDto, ProjectService,
-            ProjectSidebarItemDto, UpdateProjectInput,
+    CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput, ProjectDetailDto,
+    ProjectIdInput, ProjectOverviewItemDto, ProjectSidebarItemDto, UpdateProjectInput,
 };
-use stoneflow_storage::{
-    database::DatabaseRuntimeState,
-    repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
-};
-
-use super::lifecycle::build_lifecycle_service;
+use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
 pub async fn list_project_overview(
@@ -126,20 +120,11 @@ pub async fn permanently_delete_project(
         .await
 }
 
-fn build_project_service(database: &DatabaseRuntimeState) -> ProjectService {
-    let connection = database.connection().clone();
-    ProjectService::new(
-        SpaceRepository::new(connection.clone()),
-        ProjectRepository::new(connection.clone()),
-        TaskRepository::new(connection.clone()),
-        ActivityService::new(ActivityRepository::new(connection)),
-    )
-}
-
 #[cfg(test)]
 mod tests {
-    use stoneflow_testing::TempDatabaseDir;
+    use stoneflow_test_support::TempDatabaseDir;
 
+    use crate::composition::build_project_service;
     use crate::services::CreateProjectInput;
     use stoneflow_storage::{
         database::bootstrap_database,
@@ -158,7 +143,7 @@ mod tests {
             .await
             .expect("list visible spaces should succeed");
 
-        let error = super::build_project_service(&database)
+        let error = build_project_service(&database)
             .create_project(CreateProjectInput {
                 space_id: spaces[0].id.clone(),
                 name: "   ".to_owned(),

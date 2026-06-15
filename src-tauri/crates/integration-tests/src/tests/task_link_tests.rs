@@ -1,7 +1,7 @@
 //! 阶段 5 Task Links 回归测试。
 
 use sea_orm::TransactionTrait;
-use stoneflow_testing::TempDatabaseDir;
+use stoneflow_test_support::TempDatabaseDir;
 
 use crate::services::{
     activity::{ActivityService, GetEntityActivitiesInput},

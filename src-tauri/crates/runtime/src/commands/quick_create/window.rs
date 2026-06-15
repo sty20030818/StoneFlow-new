@@ -4,13 +4,15 @@ use serde::Deserialize;
 use tauri::{Manager, State};
 use stoneflow_storage::database::DatabaseRuntimeState;
 
-use crate::windows::{
-    quick_frontend::QuickCreateFrontendState,
-    quick_runtime::QuickPopupRuntimeState,
-    quick_session::{
-        close_quick_create_session, commit_quick_create_layout, prepare_quick_create_session,
-        present_quick_create_session, QuickCreateCloseSessionInput, QuickCreateCommitLayoutInput,
-        QuickCreateSessionInput,
+use crate::window::{
+    quick_create::{
+        frontend::QuickCreateFrontendState,
+        runtime::QuickPopupRuntimeState,
+        session::{
+            close_quick_create_session, commit_quick_create_layout, prepare_quick_create_session,
+            present_quick_create_session, QuickCreateCloseSessionInput,
+            QuickCreateCommitLayoutInput, QuickCreateSessionInput,
+        },
     },
 };
 use crate::app::state::ActiveScopeState;

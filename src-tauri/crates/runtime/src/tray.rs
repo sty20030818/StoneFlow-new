@@ -7,7 +7,7 @@ use tauri::{
 };
 
 use crate::exit_coordinator;
-use crate::windows::main::{toggle_main_window, MAIN_WINDOW_LABEL};
+use crate::window::main::{toggle_main_window, MAIN_WINDOW_LABEL};
 
 const MAIN_TRAY_SHOW_ID: &str = "tray-show-main";
 const MAIN_TRAY_QUIT_ID: &str = "tray-quit";

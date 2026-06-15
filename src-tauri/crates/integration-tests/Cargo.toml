@@ -1,0 +1,25 @@
+[package]
+name = "stoneflow-integration-tests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "stoneflow_integration_tests"
+path = "src/lib.rs"
+
+[dependencies]
+stoneflow-runtime = { path = "../runtime" }
+
+[dev-dependencies]
+chrono.workspace = true
+sea-orm.workspace = true
+sea-orm-migration.workspace = true
+serde_json.workspace = true
+stoneflow-domain = { path = "../domain" }
+stoneflow-migration = { path = "../migration" }
+stoneflow-schema = { path = "../schema" }
+stoneflow-storage = { path = "../storage", features = ["test-helpers"] }
+stoneflow-test-support = { path = "../test-support" }
+tokio.workspace = true
+uuid.workspace = true

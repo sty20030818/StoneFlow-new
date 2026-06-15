@@ -5,8 +5,8 @@ use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager, Wry};
 use stoneflow_platform::quick_window::{spec::QUICK_CREATE_LABEL, QuickWindowCallbacks};
 
-use super::quick_runtime::{QuickPopupCloseReason, QuickPopupRuntimeState};
-use super::quick_session::emit_quick_create_session_invalidated;
+use super::runtime::{QuickPopupCloseReason, QuickPopupRuntimeState};
+use super::session::emit_quick_create_session_invalidated;
 
 pub fn runtime_quick_window_callbacks() -> QuickWindowCallbacks {
     QuickWindowCallbacks {

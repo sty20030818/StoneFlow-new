@@ -3,22 +3,13 @@
 use serde::Serialize;
 use tauri::{Emitter, State};
 
+use crate::composition::{build_lifecycle_service, build_task_link_service, build_task_service};
 use crate::app::error::AppError;
 use crate::services::{
-    activity::ActivityService,
-    CreateTaskInput, CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput,
-            ListTasksInput, TaskDetailDto, TaskIdInput, TaskLinkDto, TaskListItemDto,
-            TaskLinkService, TaskService, UpdateTaskInput, UpdateTaskLinkInput,
+    CreateTaskInput, CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, ListTasksInput,
+    TaskDetailDto, TaskIdInput, TaskLinkDto, TaskListItemDto, UpdateTaskInput, UpdateTaskLinkInput,
 };
-use stoneflow_storage::{
-    database::DatabaseRuntimeState,
-    repositories::{
-        ActivityRepository, ProjectRepository, SpaceRepository, TaskLinkRepository,
-        TaskRepository,
-    },
-};
-
-use super::lifecycle::build_lifecycle_service;
+use stoneflow_storage::database::DatabaseRuntimeState;
 
 const TASKS_CHANGED_EVENT: &str = "stoneflow://tasks/changed";
 
@@ -202,23 +193,4 @@ async fn emit_task_changed_for_task_id(
         })
         .await?;
     emit_task_changed(app_handle, &detail)
-}
-
-fn build_task_service(database: &DatabaseRuntimeState) -> TaskService {
-    let connection = database.connection().clone();
-    TaskService::new(
-        SpaceRepository::new(connection.clone()),
-        ProjectRepository::new(connection.clone()),
-        TaskRepository::new(connection.clone()),
-        ActivityService::new(ActivityRepository::new(connection)),
-    )
-}
-
-fn build_task_link_service(database: &DatabaseRuntimeState) -> TaskLinkService {
-    let connection = database.connection().clone();
-    TaskLinkService::new(
-        TaskRepository::new(connection.clone()),
-        TaskLinkRepository::new(connection.clone()),
-        ActivityService::new(ActivityRepository::new(connection)),
-    )
 }

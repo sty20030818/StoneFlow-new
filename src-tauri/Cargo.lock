@@ -4892,6 +4892,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "stoneflow-integration-tests"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "sea-orm",
+ "sea-orm-migration",
+ "serde_json",
+ "stoneflow-domain",
+ "stoneflow-migration",
+ "stoneflow-runtime",
+ "stoneflow-schema",
+ "stoneflow-storage",
+ "stoneflow-test-support",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "stoneflow-migration"
 version = "0.1.0"
 dependencies = [
@@ -4924,15 +4942,13 @@ dependencies = [
  "chrono",
  "log",
  "sea-orm",
- "sea-orm-migration",
  "serde",
  "serde_json",
  "stoneflow-domain",
- "stoneflow-migration",
  "stoneflow-platform",
  "stoneflow-schema",
  "stoneflow-storage",
- "stoneflow-testing",
+ "stoneflow-test-support",
  "stoneflow-usecase",
  "tauri",
  "tauri-nspanel",
@@ -4972,7 +4988,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "stoneflow-testing"
+name = "stoneflow-test-support"
 version = "0.1.0"
 dependencies = [
  "stoneflow-domain",

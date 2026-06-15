@@ -2,7 +2,7 @@
 
 use sea_orm::TransactionTrait;
 use stoneflow_schema::common::TaskStatus;
-use stoneflow_testing::TempDatabaseDir;
+use stoneflow_test_support::TempDatabaseDir;
 
 use crate::services::{SearchEntitiesInput, SearchService};
 use stoneflow_storage::{

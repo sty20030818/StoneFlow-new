@@ -2,7 +2,7 @@
 
 use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, Statement};
 use stoneflow_schema::{common::TaskStatus, task};
-use stoneflow_testing::TempDatabaseDir;
+use stoneflow_test_support::TempDatabaseDir;
 
 use crate::services::{
     activity::ActivityService,
