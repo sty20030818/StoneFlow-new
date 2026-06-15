@@ -195,6 +195,18 @@ export function ShellSidebar({
 		() => (activeSpace ? getSpaceVisual(activeSpace) : null),
 		[activeSpace],
 	)
+	const resolvePostSpaceRemovalPath = useCallback(
+		(removedSpaceId: string) => {
+			const remainingSpaces = spaces.filter((space) => space.id !== removedSpaceId)
+			const nextSpaceId =
+				remainingSpaces.find((space) => space.isDefault)?.id ?? remainingSpaces[0]?.id ?? null
+
+			return nextSpaceId
+				? buildCanonicalSectionPath({ type: 'space', spaceId: nextSpaceId }, 'inbox', nextSpaceId)
+				: buildStartupFallbackPath({ type: 'all' })
+		},
+		[spaces],
+	)
 
 	async function runSpaceMutation(task: () => Promise<void>) {
 		try {
@@ -451,13 +463,13 @@ export function ShellSidebar({
 																if (!confirmed) {
 																	return
 																}
-																await runSpaceMutation(async () => {
-																	await onArchiveSpace(activeSpace.id)
-																	if (currentScope.type === 'space') {
-																		navigate(buildStartupFallbackPath({ type: 'all' }))
-																	}
-																})
-															}}
+															await runSpaceMutation(async () => {
+																await onArchiveSpace(activeSpace.id)
+																if (currentScope.type === 'space') {
+																	navigate(resolvePostSpaceRemovalPath(activeSpace.id))
+																}
+															})
+														}}
 														>
 															<ExternalLinkIcon className={shellChromeIconSecondaryClass} />
 															<span>归档</span>
@@ -478,13 +490,13 @@ export function ShellSidebar({
 																if (!confirmed) {
 																	return
 																}
-																await runSpaceMutation(async () => {
-																	await onDeleteSpace(activeSpace.id)
-																	if (currentScope.type === 'space') {
-																		navigate(buildStartupFallbackPath({ type: 'all' }))
-																	}
-																})
-															}}
+															await runSpaceMutation(async () => {
+																await onDeleteSpace(activeSpace.id)
+																if (currentScope.type === 'space') {
+																	navigate(resolvePostSpaceRemovalPath(activeSpace.id))
+																}
+															})
+														}}
 														>
 															<Trash2Icon className='shrink-0' />
 															<span>删除</span>

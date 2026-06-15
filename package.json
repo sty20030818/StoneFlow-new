@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsgo -b && vite build",
+		"tauri": "tauri",
 		"typecheck": "tsgo -b",
 		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",
@@ -16,11 +17,7 @@
 		"test:run": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"test:rust": "cargo test --manifest-path src-tauri/Cargo.toml --workspace",
-		"check": "bash scripts/style-audit.sh && bun run lint && bun run format:check && bun run test:run && bun run test:rust",
-		"preview": "vite preview",
-		"tauri": "tauri",
-		"tauri:dev": "tauri dev",
-		"tauri:build": "tauri build"
+		"check": "bash scripts/style-audit.sh && bun run lint && bun run format:check && bun run test:run && bun run test:rust"
 	},
 	"dependencies": {
 		"@radix-ui/react-avatar": "^1.1.12",

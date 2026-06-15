@@ -5,8 +5,8 @@ use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use tauri::{LogicalPosition, TitleBarStyle};
 
 pub const MAIN_WINDOW_LABEL: &str = "main";
-const MAIN_WINDOW_WIDTH: f64 = 1360.0;
-const MAIN_WINDOW_HEIGHT: f64 = 980.0;
+const MAIN_WINDOW_WIDTH: f64 = 1280.0;
+const MAIN_WINDOW_HEIGHT: f64 = 900.0;
 const MAIN_WINDOW_MIN_WIDTH: f64 = 500.0;
 const MAIN_WINDOW_MIN_HEIGHT: f64 = 520.0;
 

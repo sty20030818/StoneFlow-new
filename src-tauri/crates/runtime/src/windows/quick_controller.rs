@@ -4,6 +4,7 @@ use tauri::{AppHandle, Wry};
 
 use stoneflow_platform::quick_window::controller::build_controller;
 
+#[cfg(target_os = "windows")]
 use super::quick_callbacks;
 
 pub fn build_quick_controller(app_handle: AppHandle<Wry>) -> Box<dyn stoneflow_platform::quick_window::controller::QuickPopupWindowController + Send> {

@@ -1,8 +1,6 @@
-#[cfg(target_os = "macos")]
-mod macos;
-
 use tauri::{AppHandle, Wry};
 
+#[cfg(target_os = "windows")]
 use crate::quick_window::QuickWindowCallbacks;
 
 pub trait QuickPopupWindowController {
@@ -24,8 +22,7 @@ pub fn build_controller(
     callbacks: QuickWindowCallbacks,
 ) -> Box<dyn QuickPopupWindowController + Send> {
     Box::new(windows::WindowsQuickPopupWindowController::new(
-        app_handle,
-        callbacks,
+        app_handle, callbacks,
     ))
 }
 

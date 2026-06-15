@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react'
 
 import {
 	getSpaceColorOption,
@@ -59,6 +59,8 @@ export function SpaceEditorDialog({
 	const previewVisual = getSpaceVisual({ iconKey, colorKey })
 	const PreviewIcon = previewVisual.icon
 	const SelectedIcon = selectedIconOption.icon
+	const submitSpace = useEffectEvent(onSubmit)
+	const closeDialog = useEffectEvent(onClose)
 
 	useEffect(() => {
 		setName(space?.name ?? '')
@@ -72,18 +74,18 @@ export function SpaceEditorDialog({
 		setSubmitting(true)
 		setError(null)
 		try {
-			await onSubmit({
+			await submitSpace({
 				name,
 				iconKey,
 				colorKey,
 			})
-			onClose()
+			closeDialog()
 		} catch (error) {
 			setError(error instanceof Error ? error.message : 'Space 保存失败')
 		} finally {
 			setSubmitting(false)
 		}
-	}, [colorKey, iconKey, name, onClose, onSubmit])
+	}, [closeDialog, colorKey, iconKey, name, submitSpace])
 	const submitTarget = useMemo(
 		() =>
 			open

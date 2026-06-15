@@ -270,6 +270,60 @@ describe('ShellSidebar', () => {
 			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-work/inbox')
 		})
 	})
+
+	it('删除当前空间后会跳到剩余默认空间的收件箱', async () => {
+		const onDeleteSpace = vi.fn(async () => mockSpace)
+		renderShellSidebar(
+			{
+				mainItems: {
+					inbox: { visible: true, order: 100 },
+					allTasks: { visible: true, order: 200 },
+					views: { visible: true, order: 300 },
+					projectOverview: { visible: true, order: 400 },
+				},
+				projectSection: {
+					visible: true,
+					order: 500,
+					collapsed: false,
+					showCounts: true,
+					showCompleted: true,
+					maxVisible: null,
+				},
+				footerItems: {
+					archive: { visible: true, order: 900 },
+					trash: { visible: true, order: 1000 },
+				},
+				width: 256,
+				desktopPreference: 'expanded',
+			},
+			[],
+			{
+				onDeleteSpace,
+				spaces: [
+					{ ...mockSpace, isDefault: false },
+					{
+						...mockSpace,
+						id: 'space-work',
+						name: '工作',
+						isDefault: true,
+					},
+				],
+			},
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑空间' }))
+		fireEvent.pointerMove(await screen.findByRole('menuitem', { name: '删除' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '删除' }))
+		fireEvent.click(await screen.findByRole('button', { name: '移入回收站' }))
+
+		await waitFor(() => {
+			expect(onDeleteSpace).toHaveBeenCalledWith('space-personal')
+		})
+		await waitFor(() => {
+			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-work/inbox')
+		})
+	})
 })
 
 function renderShellSidebar(
