@@ -2,24 +2,21 @@
 
 use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, Statement};
 use stoneflow_schema::{common::TaskStatus, project, task};
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 
 use crate::services::{
     activity::ActivityService,
     CreateSpaceInput, SetDefaultSpaceInput, SpaceIdInput, SpaceService
 };
 use stoneflow_storage::{
-    database::bootstrap_database,
     repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
 };
 
 #[tokio::test]
 async fn set_default_space_should_keep_only_one_active_default_space() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage4-service-set-default").expect("temporary dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_space_service(&database);
 
     let created = service
@@ -50,11 +47,9 @@ async fn set_default_space_should_keep_only_one_active_default_space() {
 
 #[tokio::test]
 async fn archive_space_should_cascade_archive_projects_and_tasks() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage4-service-archive-space").expect("temporary dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_space_service(&database);
 
     let created = service
@@ -96,11 +91,9 @@ async fn archive_space_should_cascade_archive_projects_and_tasks() {
 
 #[tokio::test]
 async fn delete_space_should_fail_when_target_is_only_active_default_space() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage4-service-delete-default").expect("temporary dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_space_service(&database);
     let default_space = service
         .list_visible_spaces()

@@ -2,11 +2,10 @@
 
 use sea_orm::TransactionTrait;
 use stoneflow_schema::common::TaskStatus;
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 
 use crate::services::{SearchEntitiesInput, SearchService};
 use stoneflow_storage::{
-    database::bootstrap_database,
     repositories::{
         CreateProjectRecord, CreateTaskRecord, ProjectRepository, SpaceRepository,
         TaskRepository,
@@ -16,10 +15,9 @@ use stoneflow_storage::{
 
 #[tokio::test]
 async fn search_entities_should_rank_title_prefix_before_note_matches() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-search-rank-title-prefix").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_search_service(&database);
     let space = default_space(&database).await;
     let project = insert_project(&database, &space.id, "搜索项目").await;
@@ -86,10 +84,9 @@ async fn search_entities_should_rank_title_prefix_before_note_matches() {
 
 #[tokio::test]
 async fn search_entities_should_split_active_and_closed_and_exclude_archived_or_deleted() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-search-lifecycle").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_search_service(&database);
     let space = default_space(&database).await;
 
@@ -327,10 +324,9 @@ async fn search_entities_should_split_active_and_closed_and_exclude_archived_or_
 
 #[tokio::test]
 async fn search_entities_should_respect_limit_per_section_and_status_sort() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-search-limit").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_search_service(&database);
     let space = default_space(&database).await;
 

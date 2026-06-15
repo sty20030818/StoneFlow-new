@@ -24,15 +24,42 @@ pub fn ensure_database_parent_dir(database_path: &Path) -> Result<(), StorageErr
     Ok(())
 }
 
+const SQLITE_MEMORY_URL: &str = "sqlite::memory:?cache=shared";
+
 /// 创建 SQLite 连接并完成基础 PRAGMA 初始化。
 pub async fn connect_sqlite(database_path: &Path) -> Result<DatabaseConnection, StorageError> {
     ensure_database_parent_dir(database_path)?;
 
-    let mut options = ConnectOptions::new(format!(
+    let database_url = format!(
         "sqlite://{}?mode=rwc",
         database_path.to_string_lossy()
-    ));
-    options.max_connections(5);
+    );
+    connect_sqlite_with_options(&database_url, 5, "WAL").await
+}
+
+/// 测试用文件库连接：单连接 + DELETE journal，便于 Windows 下释放文件锁。
+pub async fn connect_sqlite_for_test(database_path: &Path) -> Result<DatabaseConnection, StorageError> {
+    ensure_database_parent_dir(database_path)?;
+
+    let database_url = format!(
+        "sqlite://{}?mode=rwc",
+        database_path.to_string_lossy()
+    );
+    connect_sqlite_with_options(&database_url, 1, "DELETE").await
+}
+
+/// 测试用内存库连接：不落盘，适合绝大多数集成/仓储测试。
+pub async fn connect_sqlite_memory() -> Result<DatabaseConnection, StorageError> {
+    connect_sqlite_with_options(SQLITE_MEMORY_URL, 5, "DELETE").await
+}
+
+async fn connect_sqlite_with_options(
+    database_url: &str,
+    max_connections: u32,
+    journal_mode: &str,
+) -> Result<DatabaseConnection, StorageError> {
+    let mut options = ConnectOptions::new(database_url);
+    options.max_connections(max_connections);
     options.min_connections(1);
     options.acquire_timeout(std::time::Duration::from_secs(10));
     options.idle_timeout(std::time::Duration::from_secs(60));
@@ -40,13 +67,13 @@ pub async fn connect_sqlite(database_path: &Path) -> Result<DatabaseConnection, 
 
     let connection = Database::connect(options).await?;
     connection
-        .execute_unprepared(
+        .execute_unprepared(&format!(
             r#"
             PRAGMA foreign_keys = ON;
-            PRAGMA journal_mode = WAL;
+            PRAGMA journal_mode = {journal_mode};
             PRAGMA synchronous = NORMAL;
-            "#,
-        )
+            "#
+        ))
         .await?;
 
     Ok(connection)

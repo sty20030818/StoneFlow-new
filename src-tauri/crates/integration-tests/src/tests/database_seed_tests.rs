@@ -1,19 +1,23 @@
 //! 阶段 1 Seed 与幂等回归测试。
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 
-use stoneflow_storage::database::{bootstrap_database, connect_sqlite, resolve_database_path};
+use stoneflow_storage::database::{
+    bootstrap_database_for_test, connect_sqlite_for_test, resolve_database_path,
+};
 
 #[tokio::test]
 async fn bootstrap_should_seed_default_space_and_not_duplicate_it() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage1-seed-space").expect("temporary dir should exist");
-
-    let first = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("first bootstrap should succeed");
-    let second = bootstrap_database(temp_dir.path())
+        .expect("test database should bootstrap");
+    let base_dir = database
+        .base_dir()
+        .expect("file test database should expose base dir");
+
+    let first = &database;
+    let second = bootstrap_database_for_test(base_dir)
         .await
         .expect("second bootstrap should succeed");
 
@@ -36,11 +40,9 @@ async fn bootstrap_should_seed_default_space_and_not_duplicate_it() {
 
 #[tokio::test]
 async fn bootstrap_should_seed_system_views_and_default_settings() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage1-seed-view-setting")
-        .expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
 
     let task_system_views = scalar_i64(
         database.connection(),
@@ -68,11 +70,12 @@ async fn bootstrap_should_seed_system_views_and_default_settings() {
 
 #[tokio::test]
 async fn bootstrap_should_preserve_existing_setting_value_on_rebootstrap() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage1-seed-setting-preserve")
-        .expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("first bootstrap should succeed");
+        .expect("test database should bootstrap");
+    let base_dir = database
+        .base_dir()
+        .expect("file test database should expose base dir");
 
     database
         .connection()
@@ -92,7 +95,7 @@ async fn bootstrap_should_preserve_existing_setting_value_on_rebootstrap() {
         .await
         .expect("manual settings update should succeed");
 
-    let second = bootstrap_database(temp_dir.path())
+    let second = bootstrap_database_for_test(base_dir)
         .await
         .expect("second bootstrap should succeed");
     let app_ui_value = scalar_string(
@@ -108,11 +111,9 @@ async fn bootstrap_should_preserve_existing_setting_value_on_rebootstrap() {
 
 #[tokio::test]
 async fn bootstrap_should_keep_system_view_keys_unique_per_entity_type() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage1-seed-view-unique")
-        .expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
 
     let duplicate_pairs = scalar_i64(
         database.connection(),
@@ -135,16 +136,30 @@ async fn bootstrap_should_keep_system_view_keys_unique_per_entity_type() {
 
 #[tokio::test]
 async fn bootstrap_should_fail_with_readable_error_when_multiple_active_default_spaces_exist() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage1-seed-duplicate-default")
-        .expect("temporary dir should exist");
-    let database_path = resolve_database_path(temp_dir.path());
-    let connection = connect_sqlite(&database_path)
+    let database = TestDatabase::bootstrap()
+        .await
+        .expect("test database should bootstrap");
+    let base_dir = database
+        .base_dir()
+        .expect("file test database should expose base dir");
+    let database_path = resolve_database_path(base_dir);
+    let connection = connect_sqlite_for_test(&database_path)
         .await
         .expect("manual sqlite connection should succeed");
 
     connection
         .execute_unprepared(
             r#"
+            DROP TABLE IF EXISTS activity_changes;
+            DROP TABLE IF EXISTS activity_events;
+            DROP TABLE IF EXISTS settings;
+            DROP TABLE IF EXISTS views;
+            DROP TABLE IF EXISTS task_links;
+            DROP TABLE IF EXISTS tasks;
+            DROP TABLE IF EXISTS projects;
+            DROP TABLE IF EXISTS spaces;
+            DROP TABLE IF EXISTS seaql_migrations;
+
             CREATE TABLE spaces (
                 id TEXT PRIMARY KEY NOT NULL,
                 name TEXT NOT NULL,
@@ -168,7 +183,7 @@ async fn bootstrap_should_fail_with_readable_error_when_multiple_active_default_
         .await
         .expect("manual duplicated spaces should be inserted");
 
-    let error = bootstrap_database(temp_dir.path())
+    let error = bootstrap_database_for_test(base_dir)
         .await
         .expect_err("bootstrap should fail when duplicated active defaults exist");
 

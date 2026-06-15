@@ -1,9 +1,7 @@
 //! 阶段 1 Schema 回归测试。
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-use stoneflow_test_support::TempDatabaseDir;
-
-use stoneflow_storage::database::bootstrap_database;
+use stoneflow_test_support::TestDatabase;
 
 const EXPECTED_TABLES: [&str; 8] = [
     "spaces",
@@ -33,11 +31,9 @@ const EXPECTED_INDEXES: [&str; 12] = [
 
 #[tokio::test]
 async fn bootstrap_should_create_all_v1_tables() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage1-schema-tables").expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
 
     for table_name in EXPECTED_TABLES {
         let exists = sqlite_object_exists(database.connection(), "table", table_name)
@@ -49,11 +45,9 @@ async fn bootstrap_should_create_all_v1_tables() {
 
 #[tokio::test]
 async fn bootstrap_should_create_expected_indexes() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage1-schema-indexes")
-        .expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
 
     for index_name in EXPECTED_INDEXES {
         let exists = sqlite_object_exists(database.connection(), "index", index_name)
@@ -65,11 +59,9 @@ async fn bootstrap_should_create_expected_indexes() {
 
 #[tokio::test]
 async fn bootstrap_should_create_foreign_keys_for_core_relations() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage1-schema-fks").expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
 
     let project_foreign_keys = foreign_key_tables(database.connection(), "projects")
         .await

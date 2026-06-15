@@ -2,7 +2,7 @@
 
 use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
 use stoneflow_schema::{common::TaskStatus, project, space, task};
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 
 use crate::services::{
     activity::ActivityService,
@@ -11,17 +11,14 @@ use crate::services::{
 };
 use stoneflow_domain::create_id;
 use stoneflow_storage::{
-        database::bootstrap_database,
         repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},};
 
 
 #[tokio::test]
 async fn delete_space_should_record_cascade_activity_for_each_child() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage10-delete-space-cascade-activity").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_lifecycle_service(&database);
     let archived_space = insert_space(&database, "工作", false).await;
     let project = insert_project(&database, &archived_space.id, "项目 A").await;
@@ -61,11 +58,9 @@ async fn delete_space_should_record_cascade_activity_for_each_child() {
 
 #[tokio::test]
 async fn restore_task_should_fallback_to_default_space_and_inbox_when_original_context_is_gone() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage10-restore-task-fallback").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_lifecycle_service(&database);
     let default_space = default_space(&database).await;
     let another_space = insert_space(&database, "学习", false).await;
@@ -91,11 +86,9 @@ async fn restore_task_should_fallback_to_default_space_and_inbox_when_original_c
 
 #[tokio::test]
 async fn permanently_delete_task_should_require_deleted_state_and_remove_row() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage10-permanently-delete-task").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_lifecycle_service(&database);
     let space = default_space(&database).await;
     let task = insert_task(&database, &space.id, None, "任务 C").await;
@@ -127,11 +120,9 @@ async fn permanently_delete_task_should_require_deleted_state_and_remove_row() {
 
 #[tokio::test]
 async fn list_archive_entries_should_obey_scope_and_sort_desc() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage10-list-archive-entries").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_lifecycle_service(&database);
     let default_space = default_space(&database).await;
     let other_space = insert_space(&database, "副空间", false).await;

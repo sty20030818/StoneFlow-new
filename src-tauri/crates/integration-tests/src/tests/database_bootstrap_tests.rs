@@ -2,19 +2,16 @@
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, DbErr, Statement, TransactionTrait};
 use sea_orm_migration::prelude::*;
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 
 use crate::app::error::AppError;
-use stoneflow_storage::database::bootstrap_database;
+use stoneflow_storage::database::bootstrap_database_for_test;
 
 #[tokio::test]
 async fn database_bootstrap_should_create_sqlite_and_report_ready() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage0-bootstrap")
-        .expect("temporary directory should be created");
-
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
 
     let snapshot = database.snapshot();
     assert!(database.database_path().exists());
@@ -25,27 +22,28 @@ async fn database_bootstrap_should_create_sqlite_and_report_ready() {
 
 #[tokio::test]
 async fn database_bootstrap_should_be_idempotent_for_same_directory() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage0-idempotent")
-        .expect("temporary directory should be created");
-
-    let first = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("first bootstrap should succeed");
-    let second = bootstrap_database(temp_dir.path())
+        .expect("test database should bootstrap");
+    let base_dir = database
+        .base_dir()
+        .expect("file test database should expose base dir")
+        .to_path_buf();
+    let first_path = database.database_path().to_path_buf();
+
+    let second = bootstrap_database_for_test(&base_dir)
         .await
         .expect("second bootstrap should succeed");
 
-    assert_eq!(first.database_path(), second.database_path());
+    assert_eq!(first_path, second.database_path());
     assert!(second.snapshot().database_ready);
 }
 
 #[tokio::test]
 async fn transaction_should_rollback_test_data() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage0-transaction")
-        .expect("temporary directory should be created");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
 
     let transaction = database
         .connection()
@@ -86,11 +84,9 @@ async fn transaction_should_rollback_test_data() {
 
 #[tokio::test]
 async fn failing_migration_should_not_leave_half_finished_schema() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage0-failing-migration")
-        .expect("temporary directory should be created");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
 
     let error = FailingMigrator::up(database.connection(), None)
         .await

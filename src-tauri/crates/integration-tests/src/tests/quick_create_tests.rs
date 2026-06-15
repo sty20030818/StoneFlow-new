@@ -6,7 +6,7 @@ use stoneflow_usecase::quick_create::{
     QuickCreateInput, QuickListProjectsBySpaceInput, QuickPlacementDto, QuickPlacementKind,
     QuickProjectOptionKind, QuickScopeKind, QuickSearchInput,
 };
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 use uuid::Uuid;
 
 use crate::{
@@ -18,7 +18,6 @@ use crate::{
 };
 use stoneflow_domain::create_id;
 use stoneflow_storage::{
-        database::bootstrap_database,
         repositories::{
             ActivityRepository, CreateProjectRecord, CreateSpaceRecord, CreateTaskRecord,
             ProjectRepository, SpaceRepository, TaskRepository,
@@ -27,10 +26,9 @@ use stoneflow_storage::{
 
 #[tokio::test]
 async fn quick_create_initial_state_should_use_space_scope_and_trim_recent_lists() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-quick-create-space-scope").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_quick_create_session_bridge(&database);
     let default_space = default_space(&database).await;
 
@@ -103,10 +101,9 @@ async fn quick_create_initial_state_should_use_space_scope_and_trim_recent_lists
 
 #[tokio::test]
 async fn quick_create_initial_state_should_keep_all_scope_and_default_space() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-quick-create-all-scope").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_quick_create_session_bridge(&database);
     let default_space = default_space(&database).await;
 
@@ -144,10 +141,9 @@ async fn quick_create_initial_state_should_keep_all_scope_and_default_space() {
 
 #[tokio::test]
 async fn quick_create_list_projects_by_space_should_include_virtual_placements() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-quick-create-project-options").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_quick_create_service(&database);
     let default_space = default_space(&database).await;
 
@@ -194,10 +190,9 @@ async fn quick_create_list_projects_by_space_should_include_virtual_placements()
 
 #[tokio::test]
 async fn quick_create_search_should_clamp_to_three_and_ignore_closed_results() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-quick-create-search").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_quick_create_service(&database);
     let default_space = default_space(&database).await;
 
@@ -299,10 +294,9 @@ async fn quick_create_search_should_clamp_to_three_and_ignore_closed_results() {
 
 #[tokio::test]
 async fn quick_create_create_and_resolve_open_target_should_preserve_placement_and_dates() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-quick-create-create").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_quick_create_service(&database);
     let default_space = default_space(&database).await;
     let project = insert_project_record(

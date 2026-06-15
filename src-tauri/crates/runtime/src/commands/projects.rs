@@ -122,22 +122,17 @@ pub async fn permanently_delete_project(
 
 #[cfg(test)]
 mod tests {
-    use stoneflow_test_support::TempDatabaseDir;
+    use stoneflow_test_support::TestDatabase;
 
     use crate::composition::build_project_service;
     use crate::services::CreateProjectInput;
-    use stoneflow_storage::{
-        database::bootstrap_database,
-        repositories::SpaceRepository,
-    };
+    use stoneflow_storage::repositories::SpaceRepository;
 
     #[tokio::test]
     async fn create_project_command_should_fail_when_name_is_blank() {
-        let temp_dir = TempDatabaseDir::new("stoneflow-stage5-command-create-project-invalid")
-            .expect("temporary dir should exist");
-        let database = bootstrap_database(temp_dir.path())
+        let database = TestDatabase::bootstrap_in_memory()
             .await
-            .expect("database bootstrap should succeed");
+            .expect("test database should bootstrap");
         let spaces = SpaceRepository::new(database.connection().clone())
             .list_visible()
             .await

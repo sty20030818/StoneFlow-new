@@ -8,24 +8,21 @@ use stoneflow_schema::common::{
     ActivityEntityKind as SchemaActivityEntityKind,
     ActivitySourceKind as SchemaActivitySourceKind,
 };
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 
 use crate::services::activity::{
     ActivityAction, ActivityChangeInput, ActivityService, GetEntityActivitiesInput,
     RecordActivityInput,
 };
 use stoneflow_storage::{
-        database::bootstrap_database,
         repositories::{ActivityChangeRecord, ActivityEventRecord, ActivityRepository},};
 
 
 #[tokio::test]
 async fn record_activity_should_persist_event_and_changes_atomically() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage2-activity-record")
-        .expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = ActivityService::new(ActivityRepository::new(database.connection().clone()));
 
     service
@@ -72,11 +69,9 @@ async fn record_activity_should_persist_event_and_changes_atomically() {
 
 #[tokio::test]
 async fn record_activity_in_txn_should_rollback_with_outer_transaction() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage2-activity-rollback")
-        .expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = ActivityService::new(ActivityRepository::new(database.connection().clone()));
     let transaction = database
         .connection()
@@ -129,11 +124,9 @@ async fn record_activity_in_txn_should_rollback_with_outer_transaction() {
 
 #[tokio::test]
 async fn get_entity_activities_should_return_events_with_grouped_changes_in_desc_order() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage2-activity-list").expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let repository = ActivityRepository::new(database.connection().clone());
     let service = ActivityService::new(repository.clone());
 
@@ -218,11 +211,9 @@ async fn get_entity_activities_should_return_events_with_grouped_changes_in_desc
 
 #[tokio::test]
 async fn record_activity_should_allow_event_without_changes_for_create_delete_actions() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage2-activity-without-changes")
-        .expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = ActivityService::new(ActivityRepository::new(database.connection().clone()));
 
     service

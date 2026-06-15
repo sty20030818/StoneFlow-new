@@ -4992,11 +4992,11 @@ dependencies = [
 name = "stoneflow-test-support"
 version = "0.1.0"
 dependencies = [
- "stoneflow-domain",
- "stoneflow-migration",
+ "log",
+ "sea-orm",
  "stoneflow-storage",
- "stoneflow-usecase",
- "uuid",
+ "tempfile",
+ "tokio",
 ]
 
 [[package]]

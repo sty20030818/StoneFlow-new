@@ -80,7 +80,7 @@ async fn update_sidebar_project_section_impl(
 #[cfg(test)]
 mod tests {
     use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-    use stoneflow_test_support::TempDatabaseDir;
+    use stoneflow_test_support::TestDatabase;
 
     use super::{
         get_legacy_shell_device_preferences_impl, get_sidebar_settings_impl,
@@ -91,15 +91,11 @@ mod tests {
         SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
         UpdateSidebarProjectSectionInput,
     };
-    use stoneflow_storage::database::bootstrap_database;
-
     #[tokio::test]
     async fn get_sidebar_settings_command_should_return_typed_payload() {
-        let temp_dir =
-            TempDatabaseDir::new("stoneflow-stage3-command-get-sidebar").expect("temporary dir");
-        let database = bootstrap_database(temp_dir.path())
+        let database = TestDatabase::bootstrap_in_memory()
             .await
-            .expect("database bootstrap should succeed");
+            .expect("test database should bootstrap");
 
         let payload = get_sidebar_settings_impl(&database)
             .await
@@ -111,11 +107,9 @@ mod tests {
 
     #[tokio::test]
     async fn get_legacy_shell_device_preferences_command_should_read_legacy_payload() {
-        let temp_dir =
-            TempDatabaseDir::new("stoneflow-stage3-command-legacy-device").expect("temporary dir");
-        let database = bootstrap_database(temp_dir.path())
+        let database = TestDatabase::bootstrap_in_memory()
             .await
-            .expect("database bootstrap should succeed");
+            .expect("test database should bootstrap");
 
         database
             .connection()
@@ -192,11 +186,9 @@ mod tests {
 
     #[tokio::test]
     async fn update_sidebar_item_visibility_command_should_fail_when_hiding_last_main_item() {
-        let temp_dir =
-            TempDatabaseDir::new("stoneflow-stage3-command-hide-last-nav").expect("temporary dir");
-        let database = bootstrap_database(temp_dir.path())
+        let database = TestDatabase::bootstrap_in_memory()
             .await
-            .expect("database bootstrap should succeed");
+            .expect("test database should bootstrap");
 
         database
             .connection()
@@ -245,11 +237,9 @@ mod tests {
 
     #[tokio::test]
     async fn update_sidebar_project_section_command_should_return_typed_payload() {
-        let temp_dir = TempDatabaseDir::new("stoneflow-stage3-command-project-section-valid")
-            .expect("temporary dir");
-        let database = bootstrap_database(temp_dir.path())
+        let database = TestDatabase::bootstrap_in_memory()
             .await
-            .expect("database bootstrap should succeed");
+            .expect("test database should bootstrap");
 
         let payload = update_sidebar_project_section_impl(
             &database,

@@ -8,7 +8,10 @@ use serde::Serialize;
 use crate::error::StorageError;
 
 use super::{
-    connection::{connect_sqlite, resolve_database_path, run_smoke_query},
+    connection::{
+        connect_sqlite, connect_sqlite_for_test, connect_sqlite_memory, resolve_database_path,
+        run_smoke_query,
+    },
     seed::{multiple_default_spaces_error, run_seed},
 };
 
@@ -60,6 +63,28 @@ impl DatabaseRuntimeState {
 pub async fn bootstrap_database(base_dir: &Path) -> Result<DatabaseRuntimeState, StorageError> {
     let database_path = resolve_database_path(base_dir);
     let connection = connect_sqlite(&database_path).await?;
+    bootstrap_database_with_connection(connection, database_path).await
+}
+
+/// 测试专用：文件库 bootstrap，使用更易清理的连接参数。
+pub async fn bootstrap_database_for_test(
+    base_dir: &Path,
+) -> Result<DatabaseRuntimeState, StorageError> {
+    let database_path = resolve_database_path(base_dir);
+    let connection = connect_sqlite_for_test(&database_path).await?;
+    bootstrap_database_with_connection(connection, database_path).await
+}
+
+/// 测试专用：内存库 bootstrap，避免在 Temp 目录落盘。
+pub async fn bootstrap_database_in_memory() -> Result<DatabaseRuntimeState, StorageError> {
+    let connection = connect_sqlite_memory().await?;
+    bootstrap_database_with_connection(connection, PathBuf::from(":memory:")).await
+}
+
+async fn bootstrap_database_with_connection(
+    connection: DatabaseConnection,
+    database_path: PathBuf,
+) -> Result<DatabaseRuntimeState, StorageError> {
     run_smoke_query(&connection).await?;
 
     let applied_migrations = stoneflow_migration::run_migrations(&connection)

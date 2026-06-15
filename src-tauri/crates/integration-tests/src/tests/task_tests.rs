@@ -3,7 +3,7 @@
 use chrono::Duration;
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
 use stoneflow_domain::TaskStatus;
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 
 use crate::services::{
     activity::ActivityService,
@@ -14,16 +14,14 @@ use crate::services::{
 };
 use stoneflow_domain::{create_id, today_local_date};
 use stoneflow_storage::{
-        database::bootstrap_database,
         repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},};
 
 
 #[tokio::test]
 async fn create_task_should_fail_when_title_is_blank() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage6-create-task-invalid").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_task_service(&database);
     let space = default_space(&database).await;
 
@@ -50,11 +48,9 @@ async fn create_task_should_fail_when_title_is_blank() {
 
 #[tokio::test]
 async fn create_task_should_follow_selected_project_space() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage6-create-task-project-space").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_task_service(&database);
     let default_space = default_space(&database).await;
     let another_space = insert_space(&database, "学习", false).await;
@@ -85,11 +81,9 @@ async fn create_task_should_follow_selected_project_space() {
 
 #[tokio::test]
 async fn create_task_should_persist_inbox_and_no_project_placement() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage7-create-task-placement").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_task_service(&database);
     let space = default_space(&database).await;
 
@@ -136,11 +130,9 @@ async fn create_task_should_persist_inbox_and_no_project_placement() {
 
 #[tokio::test]
 async fn update_task_should_move_task_between_inbox_project_and_no_project() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage7-inbox-workflow-commands").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_task_service(&database);
     let space = default_space(&database).await;
     let project = insert_project(&database, &space.id, "Inbox 整理").await;
@@ -229,11 +221,9 @@ async fn update_task_should_move_task_between_inbox_project_and_no_project() {
 
 #[tokio::test]
 async fn update_task_should_manage_status_timestamps() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage6-update-task-status-timestamps").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_task_service(&database);
     let space = default_space(&database).await;
 
@@ -349,11 +339,9 @@ async fn update_task_should_manage_status_timestamps() {
 
 #[tokio::test]
 async fn update_task_should_keep_note_newlines_and_allow_blank_note() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-task-note-newlines").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_task_service(&database);
     let space = default_space(&database).await;
 
@@ -426,10 +414,9 @@ fn update_task_input_should_distinguish_null_note_from_missing_note() {
 
 #[tokio::test]
 async fn list_tasks_should_filter_scope_project_and_lifecycle() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage6-list-tasks-filters").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_task_service(&database);
     let default_space = default_space(&database).await;
     let another_space = insert_space(&database, "副空间", false).await;
@@ -583,10 +570,9 @@ async fn list_tasks_should_filter_scope_project_and_lifecycle() {
 
 #[tokio::test]
 async fn list_tasks_should_filter_inbox_and_no_project_placement() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage7-list-task-placement").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_task_service(&database);
     let space = default_space(&database).await;
     let project = insert_project(&database, &space.id, "Project Placement").await;
@@ -714,10 +700,9 @@ async fn list_tasks_should_filter_inbox_and_no_project_placement() {
 
 #[tokio::test]
 async fn archive_restore_delete_task_should_record_activity_and_return_consistent_payload() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage6-task-activity-chain").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_task_service(&database);
     let space = default_space(&database).await;
 
@@ -773,10 +758,9 @@ async fn archive_restore_delete_task_should_record_activity_and_return_consisten
 
 #[tokio::test]
 async fn system_task_views_should_filter_and_sort_by_stage8_rules() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage8-system-task-views").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_task_service(&database);
     let space = default_space(&database).await;
     let today = today_local_date();

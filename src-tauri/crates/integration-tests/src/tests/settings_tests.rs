@@ -1,7 +1,7 @@
 //! 阶段 3 settings 与 sidebar 配置回归测试。
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 
 use crate::services::{
     activity::{ActivityService, GetEntityActivitiesInput},
@@ -10,17 +10,14 @@ use crate::services::{
             UpdateSidebarProjectSectionInput,
 };
 use stoneflow_storage::{
-    database::bootstrap_database,
     repositories::{ActivityRepository, SettingsRepository},
 };
 
 #[tokio::test]
 async fn settings_service_should_read_sidebar_settings() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage3-settings-read").expect("temporary dir should exist");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_settings_service(&database);
 
     let settings = service
@@ -34,11 +31,9 @@ async fn settings_service_should_read_sidebar_settings() {
 
 #[tokio::test]
 async fn settings_service_should_read_legacy_device_preferences() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage3-settings-legacy-device")
-        .expect("temporary dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_settings_service(&database);
 
     database
@@ -116,11 +111,9 @@ async fn settings_service_should_read_legacy_device_preferences() {
 
 #[tokio::test]
 async fn settings_service_should_reject_hiding_last_visible_main_item() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage3-settings-hide-last-nav").expect("temporary dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_settings_service(&database);
 
     database
@@ -168,11 +161,9 @@ async fn settings_service_should_reject_hiding_last_visible_main_item() {
 
 #[tokio::test]
 async fn settings_service_should_record_settings_updated_activity_with_field_paths() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage3-settings-activity").expect("temporary dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_settings_service(&database);
     let activity_service =
         ActivityService::new(ActivityRepository::new(database.connection().clone()));
@@ -205,11 +196,9 @@ async fn settings_service_should_record_settings_updated_activity_with_field_pat
 
 #[tokio::test]
 async fn settings_service_should_update_project_section_and_desktop_preference() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage3-settings-project-section").expect("temporary dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_settings_service(&database);
 
     let settings = service

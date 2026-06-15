@@ -1,7 +1,7 @@
 //! 阶段 5 Task Links 回归测试。
 
 use sea_orm::TransactionTrait;
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 
 use crate::services::{
     activity::{ActivityService, GetEntityActivitiesInput},
@@ -10,7 +10,6 @@ use crate::services::{
             TaskLinkService, TaskService, UpdateTaskLinkInput,
 };
 use stoneflow_storage::{
-    database::bootstrap_database,
     repositories::{
         ActivityRepository, CreateTaskLinkRecord, ProjectRepository, SpaceRepository,
         TaskLinkRepository, TaskRepository,
@@ -19,10 +18,9 @@ use stoneflow_storage::{
 
 #[tokio::test]
 async fn task_link_repository_should_support_crud_roundtrip() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage5-task-link-repository").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let task = create_task_fixture(&database, "Repository Task").await;
     let repository = TaskLinkRepository::new(database.connection().clone());
     let transaction = repository
@@ -110,10 +108,9 @@ async fn task_link_repository_should_support_crud_roundtrip() {
 
 #[tokio::test]
 async fn task_link_service_should_validate_title_url_and_deleted_task() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage5-task-link-validation").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let task = create_task_fixture(&database, "Validation Task").await;
     let link_service = build_task_link_service(&database);
     let task_service = build_task_service(&database);
@@ -158,10 +155,9 @@ async fn task_link_service_should_validate_title_url_and_deleted_task() {
 
 #[tokio::test]
 async fn task_link_service_should_record_activity_and_keep_task_detail_unchanged() {
-    let temp_dir = TempDatabaseDir::new("stoneflow-stage5-task-link-activity").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let task = create_task_fixture(&database, "Activity Task").await;
     let link_service = build_task_link_service(&database);
     let task_service = build_task_service(&database);

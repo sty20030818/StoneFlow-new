@@ -90,19 +90,16 @@ pub async fn permanently_delete_space(
 
 #[cfg(test)]
 mod tests {
-    use stoneflow_test_support::TempDatabaseDir;
+    use stoneflow_test_support::TestDatabase;
 
     use crate::composition::build_space_service;
     use crate::services::{CreateSpaceInput, SpaceIdInput};
-    use stoneflow_storage::database::bootstrap_database;
 
     #[tokio::test]
     async fn list_visible_spaces_command_should_return_seeded_default_space() {
-        let temp_dir = TempDatabaseDir::new("stoneflow-stage4-command-list-spaces")
-            .expect("temporary dir should exist");
-        let database = bootstrap_database(temp_dir.path())
+        let database = TestDatabase::bootstrap_in_memory()
             .await
-            .expect("database bootstrap should succeed");
+            .expect("test database should bootstrap");
 
         let payload = build_space_service(&database)
             .list_visible_spaces()
@@ -116,11 +113,9 @@ mod tests {
 
     #[tokio::test]
     async fn create_space_command_should_fail_when_name_is_blank() {
-        let temp_dir = TempDatabaseDir::new("stoneflow-stage4-command-create-space-invalid")
-            .expect("temporary dir should exist");
-        let database = bootstrap_database(temp_dir.path())
+        let database = TestDatabase::bootstrap_in_memory()
             .await
-            .expect("database bootstrap should succeed");
+            .expect("test database should bootstrap");
 
         let error = build_space_service(&database)
             .create_space(CreateSpaceInput {
@@ -136,11 +131,9 @@ mod tests {
 
     #[tokio::test]
     async fn restore_space_command_should_return_not_found_for_unknown_space_id() {
-        let temp_dir = TempDatabaseDir::new("stoneflow-stage4-command-restore-space-missing")
-            .expect("temporary dir should exist");
-        let database = bootstrap_database(temp_dir.path())
+        let database = TestDatabase::bootstrap_in_memory()
             .await
-            .expect("database bootstrap should succeed");
+            .expect("test database should bootstrap");
 
         let error = build_space_service(&database)
             .restore_space(SpaceIdInput {

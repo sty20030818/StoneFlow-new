@@ -2,7 +2,7 @@
 
 use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, Statement};
 use stoneflow_schema::{common::TaskStatus, task};
-use stoneflow_test_support::TempDatabaseDir;
+use stoneflow_test_support::TestDatabase;
 
 use crate::services::{
     activity::ActivityService,
@@ -10,17 +10,14 @@ use crate::services::{
             ProjectScopeInput, ProjectScopeKind, ProjectService,
 };
 use stoneflow_storage::{
-    database::bootstrap_database,
     repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
 };
 
 #[tokio::test]
 async fn create_project_should_fail_when_name_conflicts_in_same_space() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage5-service-create-project-conflict").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_project_service(&database);
     let space = SpaceRepository::new(database.connection().clone())
         .list_visible()
@@ -58,11 +55,9 @@ async fn create_project_should_fail_when_name_conflicts_in_same_space() {
 
 #[tokio::test]
 async fn archive_and_restore_project_should_not_restore_tasks() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage5-service-archive-restore-project").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_project_service(&database);
     let space = SpaceRepository::new(database.connection().clone())
         .list_visible()
@@ -109,11 +104,9 @@ async fn archive_and_restore_project_should_not_restore_tasks() {
 
 #[tokio::test]
 async fn delete_project_should_cascade_delete_tasks() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage5-service-delete-project").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_project_service(&database);
     let space = SpaceRepository::new(database.connection().clone())
         .list_visible()
@@ -154,11 +147,9 @@ async fn delete_project_should_cascade_delete_tasks() {
 
 #[tokio::test]
 async fn list_project_overview_should_filter_tabs_correctly() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage5-service-project-overview-tabs").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_project_service(&database);
     let space = SpaceRepository::new(database.connection().clone())
         .list_visible()
@@ -250,11 +241,9 @@ async fn list_project_overview_should_filter_tabs_correctly() {
 
 #[tokio::test]
 async fn list_sidebar_projects_should_respect_show_completed_and_max_visible() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-stage5-service-sidebar-projects").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_project_service(&database);
     let space = SpaceRepository::new(database.connection().clone())
         .list_visible()
@@ -319,11 +308,9 @@ async fn list_sidebar_projects_should_respect_show_completed_and_max_visible() {
 
 #[tokio::test]
 async fn project_description_should_keep_newlines_and_allow_blank() {
-    let temp_dir =
-        TempDatabaseDir::new("stoneflow-project-description-newlines").expect("temp dir");
-    let database = bootstrap_database(temp_dir.path())
+    let database = TestDatabase::bootstrap_in_memory()
         .await
-        .expect("database bootstrap should succeed");
+        .expect("test database should bootstrap");
     let service = build_project_service(&database);
     let space = SpaceRepository::new(database.connection().clone())
         .list_visible()

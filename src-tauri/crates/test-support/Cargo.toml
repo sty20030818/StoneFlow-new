@@ -8,9 +8,13 @@ rust-version.workspace = true
 name = "stoneflow_test_support"
 path = "src/lib.rs"
 
+[[bin]]
+name = "count-test-dirs"
+path = "src/bin/count-test-dirs.rs"
+
 [dependencies]
-stoneflow-domain = { path = "../domain" }
-stoneflow-migration = { path = "../migration" }
+log.workspace = true
+sea-orm.workspace = true
 stoneflow-storage = { path = "../storage", features = ["test-helpers"] }
-stoneflow-usecase = { path = "../usecase" }
-uuid.workspace = true
+tempfile.workspace = true
+tokio.workspace = true
