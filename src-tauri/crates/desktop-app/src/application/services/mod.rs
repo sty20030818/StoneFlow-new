@@ -3,7 +3,6 @@
 mod lifecycle_service;
 mod project_service;
 mod quick_create_adapter;
-mod quick_create_ipc;
 mod quick_create_open_context_service;
 mod quick_create_service;
 mod quick_create_session_bridge;

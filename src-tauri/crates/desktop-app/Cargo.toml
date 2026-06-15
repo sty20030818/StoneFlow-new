@@ -7,13 +7,11 @@ rust-version.workspace = true
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
-interprocess.workspace = true
 log.workspace = true
 sea-orm.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 stoneflow-domain = { path = "../domain" }
-stoneflow-ipc-protocol.workspace = true
 stoneflow-migration = { path = "../migration" }
 stoneflow-schema = { path = "../schema" }
 stoneflow-storage = { path = "../storage", features = ["test-helpers"] }

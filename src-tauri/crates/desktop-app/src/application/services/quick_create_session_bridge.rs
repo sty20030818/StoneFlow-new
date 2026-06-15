@@ -1,6 +1,6 @@
-//! Quick Create Session Bridge：提供 helper prepare-session 所需的只读桥接入口。
+//! Quick Create Session Bridge：提供 prepare-session 所需的只读桥接入口。
 
-use stoneflow_ipc_protocol::QuickInitialStatePayload;
+use stoneflow_usecase::quick_create_context::QuickInitialStateDto;
 
 use crate::{
     app::{error::AppError, state::ActiveScopeSnapshot},
@@ -20,7 +20,7 @@ impl QuickCreateSessionBridge {
     pub async fn prepare_initial_state(
         &self,
         active_scope: Option<ActiveScopeSnapshot>,
-    ) -> Result<QuickInitialStatePayload, AppError> {
+    ) -> Result<QuickInitialStateDto, AppError> {
         self.open_context_service.get_initial_state(active_scope).await
     }
 }

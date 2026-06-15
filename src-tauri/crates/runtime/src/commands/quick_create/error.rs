@@ -1,12 +1,13 @@
-//! Quick Create 命令错误与 IPC 响应映射。
+//! Quick Create 命令错误与 usecase DTO 响应映射。
 
 use desktop_app::app::error::AppError;
 use serde::Serialize;
-use stoneflow_ipc_protocol::{
-    IpcError, QuickInitialStatePayload, QuickPlacementKind, QuickPlacementPayload,
-    QuickProjectItemPayload, QuickProjectOptionKind, QuickProjectOptionPayload,
-    QuickScopeKind, QuickScopePayload, QuickSpaceSummaryPayload, QuickTaskItemPayload,
+use stoneflow_usecase::quick_create::{
+    QuickPlacementDto, QuickPlacementKind, QuickProjectItemDto, QuickProjectOptionDto,
+    QuickProjectOptionKind, QuickProjectsBySpaceDto, QuickScopeDto, QuickScopeKind,
+    QuickSearchResultDto, QuickSpaceSummaryDto, QuickTaskItemDto,
 };
+use stoneflow_usecase::quick_create_context::QuickInitialStateDto;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct QuickCreateErrorPayload {
@@ -25,23 +26,6 @@ impl From<AppError> for QuickCreateErrorPayload {
         } else {
             "Internal"
         };
-        Self { type_, message }
-    }
-}
-
-impl From<IpcError> for QuickCreateErrorPayload {
-    fn from(error: IpcError) -> Self {
-        let (type_, message) = match error {
-            IpcError::Validation(message) => ("Validation", message),
-            IpcError::NotFound(message) => ("NotFound", message),
-            IpcError::Forbidden(message) => ("Forbidden", message),
-            IpcError::Conflict(message) => ("Conflict", message),
-            IpcError::Internal(message) => ("Internal", message),
-            IpcError::CaptureSpaceUnavailable(message) => ("QuickCreateSpaceUnavailable", message),
-            IpcError::DefaultSpaceUnavailable(message) => ("DefaultSpaceUnavailable", message),
-            IpcError::CapturePersistence(message) => ("QuickCreatePersistence", message),
-        };
-
         Self { type_, message }
     }
 }
@@ -68,7 +52,7 @@ pub struct QuickCreateInitialStateResponse {
 }
 
 impl QuickCreateInitialStateResponse {
-    pub fn from_ipc(payload: QuickInitialStatePayload) -> Self {
+    pub fn from_dto(payload: QuickInitialStateDto) -> Self {
         Self {
             current_scope: map_scope(payload.current_scope),
             default_space_id: payload.default_space_id,
@@ -166,7 +150,7 @@ pub struct QuickCreateSearchResponse {
     pub projects: Vec<QuickCreateProjectItemResponse>,
 }
 
-fn map_scope(payload: QuickScopePayload) -> QuickCreateScopeResponse {
+fn map_scope(payload: QuickScopeDto) -> QuickCreateScopeResponse {
     QuickCreateScopeResponse {
         kind: match payload.kind {
             QuickScopeKind::All => "all",
@@ -176,7 +160,7 @@ fn map_scope(payload: QuickScopePayload) -> QuickCreateScopeResponse {
     }
 }
 
-fn map_placement(payload: QuickPlacementPayload) -> QuickCreatePlacementResponse {
+fn map_placement(payload: QuickPlacementDto) -> QuickCreatePlacementResponse {
     QuickCreatePlacementResponse {
         kind: match payload.kind {
             QuickPlacementKind::Inbox => "inbox",
@@ -187,7 +171,7 @@ fn map_placement(payload: QuickPlacementPayload) -> QuickCreatePlacementResponse
     }
 }
 
-fn map_space(payload: QuickSpaceSummaryPayload) -> QuickCreateSpaceSummaryResponse {
+fn map_space(payload: QuickSpaceSummaryDto) -> QuickCreateSpaceSummaryResponse {
     QuickCreateSpaceSummaryResponse {
         id: payload.id,
         name: payload.name,
@@ -197,7 +181,7 @@ fn map_space(payload: QuickSpaceSummaryPayload) -> QuickCreateSpaceSummaryRespon
     }
 }
 
-fn map_project_option(payload: QuickProjectOptionPayload) -> QuickCreateProjectOptionResponse {
+fn map_project_option(payload: QuickProjectOptionDto) -> QuickCreateProjectOptionResponse {
     QuickCreateProjectOptionResponse {
         kind: match payload.kind {
             QuickProjectOptionKind::Inbox => "inbox",
@@ -210,7 +194,7 @@ fn map_project_option(payload: QuickProjectOptionPayload) -> QuickCreateProjectO
     }
 }
 
-fn map_task_item(payload: QuickTaskItemPayload) -> QuickCreateTaskItemResponse {
+fn map_task_item(payload: QuickTaskItemDto) -> QuickCreateTaskItemResponse {
     QuickCreateTaskItemResponse {
         id: payload.id,
         space_id: payload.space_id,
@@ -227,7 +211,7 @@ fn map_task_item(payload: QuickTaskItemPayload) -> QuickCreateTaskItemResponse {
     }
 }
 
-fn map_project_item(payload: QuickProjectItemPayload) -> QuickCreateProjectItemResponse {
+fn map_project_item(payload: QuickProjectItemDto) -> QuickCreateProjectItemResponse {
     QuickCreateProjectItemResponse {
         id: payload.id,
         space_id: payload.space_id,
@@ -240,7 +224,7 @@ fn map_project_item(payload: QuickProjectItemPayload) -> QuickCreateProjectItemR
 }
 
 pub(crate) fn map_projects_by_space(
-    payload: stoneflow_ipc_protocol::QuickProjectsBySpaceResponsePayload,
+    payload: QuickProjectsBySpaceDto,
 ) -> QuickCreateProjectsBySpaceResponse {
     QuickCreateProjectsBySpaceResponse {
         space_id: payload.space_id,
@@ -254,9 +238,7 @@ pub(crate) fn map_projects_by_space(
     }
 }
 
-pub(crate) fn map_search_response(
-    payload: stoneflow_ipc_protocol::QuickSearchResponsePayload,
-) -> QuickCreateSearchResponse {
+pub(crate) fn map_search_response(payload: QuickSearchResultDto) -> QuickCreateSearchResponse {
     QuickCreateSearchResponse {
         tasks: payload.tasks.into_iter().map(map_task_item).collect(),
         projects: payload.projects.into_iter().map(map_project_item).collect(),

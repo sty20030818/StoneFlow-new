@@ -66,7 +66,6 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         workspace::set_active_scope,
         quick_create::restore_main_window,
         quick_create::quit_stoneflow,
-        quick_create::get_quick_create_runtime_status,
         quick_create::take_pending_command_open_intent,
         quick_create::domain::quick_create_get_initial_state,
         quick_create::domain::quick_create_list_projects_by_space,

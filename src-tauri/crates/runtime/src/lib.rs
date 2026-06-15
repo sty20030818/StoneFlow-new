@@ -3,12 +3,11 @@
 use tauri::{Manager, WindowEvent};
 
 pub mod bootstrap;
+pub mod command_open;
 pub mod commands;
 pub mod exit_coordinator;
-pub mod helper_runtime;
 pub mod quick_services;
 pub mod shortcuts;
-pub mod supervisor;
 pub mod tray;
 pub mod windows;
 
@@ -26,12 +25,8 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_store::Builder::default().build());
-
-    #[cfg(feature = "single-binary-quick")]
-    {
-        builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
-    }
+        .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build());
 
     #[cfg(target_os = "macos")]
     {
@@ -76,22 +71,7 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
                 tray::request_exit_and_quit(&app_handle).await;
             });
         }
-        tauri::RunEvent::Exit => {
-            let app_handle = app_handle.clone();
-            tauri::async_runtime::spawn(async move {
-                if let (Some(exit_coordinator), Some(handle)) = (
-                    app_handle.try_state::<exit_coordinator::ExitCoordinator>(),
-                    app_handle.try_state::<supervisor::SupervisorHandle>(),
-                ) {
-                    if let Err(error) = exit_coordinator
-                        .request_exit(&handle, exit_coordinator::ExitReason::RunEventExit)
-                        .await
-                    {
-                        log::warn!("Exit 请求 helper 停止失败: {error}");
-                    }
-                }
-            });
-        }
+        tauri::RunEvent::Exit => {}
         _ => {}
     });
 }

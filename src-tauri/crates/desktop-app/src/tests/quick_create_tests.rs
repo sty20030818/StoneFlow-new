@@ -2,9 +2,9 @@
 
 use sea_orm::TransactionTrait;
 use stoneflow_schema::common::TaskStatus;
-use stoneflow_ipc_protocol::{
-    QuickCreatePayload, QuickListProjectsBySpacePayload, QuickPlacementKind, QuickPlacementPayload,
-    QuickProjectOptionKind, QuickScopeKind, QuickSearchPayload,
+use stoneflow_usecase::quick_create::{
+    QuickCreateInput, QuickListProjectsBySpaceInput, QuickPlacementDto, QuickPlacementKind,
+    QuickProjectOptionKind, QuickScopeKind, QuickSearchInput,
 };
 use stoneflow_test_support::TempDatabaseDir;
 use uuid::Uuid;
@@ -181,7 +181,7 @@ async fn quick_create_list_projects_by_space_should_include_virtual_placements()
     .await;
 
     let result = service
-        .list_projects_by_space(QuickListProjectsBySpacePayload {
+        .list_projects_by_space(QuickListProjectsBySpaceInput {
             space_id: default_space.id.clone(),
         })
         .await
@@ -284,7 +284,7 @@ async fn quick_create_search_should_clamp_to_three_and_ignore_closed_results() {
     .await;
 
     let result = service
-        .search(QuickSearchPayload {
+        .search(QuickSearchInput {
             query: "stone".to_owned(),
             limit: 99,
         })
@@ -322,9 +322,9 @@ async fn quick_create_create_and_resolve_open_target_should_preserve_placement_a
 
     let created = service
         .create(
-            QuickCreatePayload {
+            QuickCreateInput {
                 space_id: Some(default_space.id.clone()),
-                placement: QuickPlacementPayload {
+                placement: QuickPlacementDto {
                     kind: QuickPlacementKind::Project,
                     project_id: Some(project.id.clone()),
                 },

@@ -2,10 +2,8 @@
 
 use std::sync::Arc;
 
-use stoneflow_ipc_protocol::HelperShutdownReason;
 use tokio::sync::{Mutex, Notify};
 
-use crate::supervisor::SupervisorHandle;
 use desktop_app::app::error::AppError;
 
 #[derive(Debug, Clone, Copy)]
@@ -14,17 +12,6 @@ pub enum ExitReason {
     CommandQuit,
     RunEventExitRequested,
     RunEventExit,
-}
-
-impl ExitReason {
-    fn shutdown_reason(self) -> HelperShutdownReason {
-        match self {
-            ExitReason::TrayQuit
-            | ExitReason::CommandQuit
-            | ExitReason::RunEventExitRequested
-            | ExitReason::RunEventExit => HelperShutdownReason::AppExit,
-        }
-    }
 }
 
 #[derive(Clone, Default)]
@@ -51,11 +38,7 @@ impl ExitCoordinator {
         self.inner.state.lock().await.allow_process_exit
     }
 
-    pub async fn request_exit(
-        &self,
-        supervisor: &SupervisorHandle,
-        reason: ExitReason,
-    ) -> Result<(), AppError> {
+    pub async fn request_exit(&self, _reason: ExitReason) -> Result<(), AppError> {
         let should_run = {
             let mut state = self.inner.state.lock().await;
             if state.completed {
@@ -75,15 +58,11 @@ impl ExitCoordinator {
         };
 
         if should_run {
-            let result = supervisor
-                .stop(reason.shutdown_reason())
-                .await
-                .map_err(|error| error.to_string());
             let mut state = self.inner.state.lock().await;
             state.completed = true;
             state.in_progress = false;
             state.allow_process_exit = true;
-            state.result = Some(result);
+            state.result = Some(Ok(()));
             drop(state);
             self.inner.finished.notify_waiters();
         } else {

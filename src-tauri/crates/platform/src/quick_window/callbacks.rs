@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tauri::{AppHandle, Wry};
 
-/// Quick Create 窗口生命周期回调，由运行时（如 helper-app）注入业务逻辑。
+/// Quick Create 窗口生命周期回调，由 runtime 注入业务逻辑。
 #[derive(Clone)]
 pub struct QuickWindowCallbacks {
     pub on_became_key: Arc<dyn Fn(AppHandle<Wry>) + Send + Sync>,

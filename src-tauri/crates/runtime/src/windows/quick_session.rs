@@ -89,7 +89,7 @@ pub async fn prepare_quick_create_session(
         .await
         .map_err(QuickCreateErrorPayload::from)?;
 
-    let open_context = QuickCreateInitialStateResponse::from_ipc(open_context);
+    let open_context = QuickCreateInitialStateResponse::from_dto(open_context);
     let response = QuickCreateOpenSessionResponse {
         session_id: session.session_id.clone(),
         opened_at: session.opened_at.to_rfc3339(),

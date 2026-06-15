@@ -10,39 +10,26 @@ pub use error::{
 
 use tauri::{Manager, State};
 
-use crate::{
-    exit_coordinator::{ExitCoordinator, ExitReason},
-    supervisor::SupervisorHandle,
-};
+use crate::exit_coordinator::{ExitCoordinator, ExitReason};
 use desktop_app::app::{
     error::AppError,
-    state::{CommandHelperSnapshot, CommandHelperState, PendingCommandOpenIntent},
+    state::{CommandHelperState, PendingCommandOpenIntent},
 };
 
 #[tauri::command]
 pub async fn restore_main_window(app_handle: tauri::AppHandle) -> Result<(), AppError> {
-    crate::helper_runtime::restore_main_window(&app_handle).await
+    crate::command_open::restore_main_window(&app_handle).await
 }
 
 #[tauri::command]
 pub async fn quit_stoneflow(app_handle: tauri::AppHandle) -> Result<(), AppError> {
-    if let (Some(exit_coordinator), Some(handle)) = (
-        app_handle.try_state::<ExitCoordinator>(),
-        app_handle.try_state::<SupervisorHandle>(),
-    ) {
+    if let Some(exit_coordinator) = app_handle.try_state::<ExitCoordinator>() {
         exit_coordinator
-            .request_exit(&handle, ExitReason::CommandQuit)
+            .request_exit(ExitReason::CommandQuit)
             .await?;
     }
     app_handle.exit(0);
     Ok(())
-}
-
-#[tauri::command]
-pub async fn get_quick_create_runtime_status(
-    helper_state: State<'_, CommandHelperState>,
-) -> Result<CommandHelperSnapshot, AppError> {
-    Ok(helper_state.snapshot().await)
 }
 
 #[tauri::command]

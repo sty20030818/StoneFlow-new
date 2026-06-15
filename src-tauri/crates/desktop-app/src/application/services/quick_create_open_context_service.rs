@@ -1,7 +1,7 @@
 //! Quick Create Open Context 兼容壳。
 
 use stoneflow_usecase::quick_create_context::{
-    QuickCreateContextService as QuickCreateContextUsecase,
+    QuickCreateContextService as QuickCreateContextUsecase, QuickInitialStateDto,
 };
 
 use crate::{
@@ -10,7 +10,6 @@ use crate::{
         activity::ActivityService,
         services::{
             quick_create_adapter::QuickCreatePortsAdapter,
-            quick_create_ipc::map_initial_state_output,
             quick_create_service::map_active_scope,
             ProjectService, QuickCreateService, SearchService, SpaceService, TaskService,
         },
@@ -72,11 +71,10 @@ impl QuickCreateOpenContextService {
     pub async fn get_initial_state(
         &self,
         active_scope: Option<ActiveScopeSnapshot>,
-    ) -> Result<stoneflow_ipc_protocol::QuickInitialStatePayload, AppError> {
+    ) -> Result<QuickInitialStateDto, AppError> {
         self.inner
             .get_initial_state(map_active_scope(active_scope))
             .await
-            .map(map_initial_state_output)
             .map_err(AppError::from)
     }
 }

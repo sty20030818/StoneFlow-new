@@ -1,11 +1,9 @@
-//! Quick Create Service 兼容壳：真源在 `stoneflow-usecase`；IPC 映射在 `quick_create_ipc`。
+//! Quick Create Service：真源在 `stoneflow-usecase`。
 
-use stoneflow_ipc_protocol::{
-    QuickCreatePayload, QuickCreatedPayload, QuickListProjectsBySpacePayload,
-    QuickProjectsBySpaceResponsePayload, QuickSearchPayload, QuickSearchResponsePayload,
-};
 use stoneflow_usecase::quick_create::{
-    ActiveScopeInput, ActiveScopeKind, QuickCreateService as QuickCreateUsecase,
+    ActiveScopeInput, ActiveScopeKind, QuickCreateInput, QuickCreatedDto,
+    QuickListProjectsBySpaceInput, QuickProjectsBySpaceDto, QuickSearchInput, QuickSearchResultDto,
+    QuickCreateService as QuickCreateUsecase,
 };
 
 pub use stoneflow_usecase::quick_create::{QuickResolvedOpenTarget, QuickResolvedPlacement};
@@ -16,10 +14,6 @@ use crate::{
         activity::ActivityService,
         services::{
             quick_create_adapter::QuickCreatePortsAdapter,
-            quick_create_ipc::{
-                map_create_input, map_created_output, map_list_projects_input,
-                map_projects_by_space_output, map_search_input, map_search_output,
-            },
             ProjectService, SearchService, SpaceService, TaskDetailDto, TaskService,
         },
     },
@@ -83,35 +77,29 @@ impl QuickCreateService {
 
     pub async fn list_projects_by_space(
         &self,
-        input: QuickListProjectsBySpacePayload,
-    ) -> Result<QuickProjectsBySpaceResponsePayload, AppError> {
+        input: QuickListProjectsBySpaceInput,
+    ) -> Result<QuickProjectsBySpaceDto, AppError> {
         self.inner
-            .list_projects_by_space(map_list_projects_input(input))
+            .list_projects_by_space(input)
             .await
-            .map(map_projects_by_space_output)
             .map_err(AppError::from)
     }
 
     pub async fn search(
         &self,
-        input: QuickSearchPayload,
-    ) -> Result<QuickSearchResponsePayload, AppError> {
-        self.inner
-            .search(map_search_input(input))
-            .await
-            .map(map_search_output)
-            .map_err(AppError::from)
+        input: QuickSearchInput,
+    ) -> Result<QuickSearchResultDto, AppError> {
+        self.inner.search(input).await.map_err(AppError::from)
     }
 
     pub async fn create(
         &self,
-        input: QuickCreatePayload,
+        input: QuickCreateInput,
         active_scope: Option<ActiveScopeSnapshot>,
-    ) -> Result<QuickCreatedPayload, AppError> {
+    ) -> Result<QuickCreatedDto, AppError> {
         self.inner
-            .create(map_create_input(input), map_active_scope(active_scope))
+            .create(input, map_active_scope(active_scope))
             .await
-            .map(map_created_output)
             .map_err(AppError::from)
     }
 

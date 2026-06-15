@@ -1,14 +1,14 @@
 //! Quick Create 业务命令（直接调用 usecase，不经 IPC）。
 
 use serde::Deserialize;
-use stoneflow_ipc_protocol::{
-    QuickCreatePayload, QuickListProjectsBySpacePayload, QuickPlacementKind, QuickPlacementPayload,
-    QuickSearchPayload,
+use stoneflow_usecase::quick_create::{
+    QuickCreateInput, QuickCreatedDto, QuickListProjectsBySpaceInput, QuickPlacementDto,
+    QuickPlacementKind, QuickSearchInput,
 };
 use tauri::{Emitter, State};
 use stoneflow_storage::database::DatabaseRuntimeState;
 
-use crate::helper_runtime::{dispatch_command_open, restore_main_window, CommandOpenPayload};
+use crate::command_open::{dispatch_command_open, restore_main_window, CommandOpenPayload};
 use crate::quick_services::build_quick_create_service;
 use desktop_app::app::state::{ActiveScopeState, CommandHelperState};
 use desktop_app::application::services::QuickResolvedPlacement;
@@ -91,7 +91,7 @@ pub async fn quick_create_get_initial_state(
         .prepare_initial_state(active_scope.get().await)
         .await
         .map_err(QuickCreateErrorPayload::from)?;
-    Ok(super::error::QuickCreateInitialStateResponse::from_ipc(payload))
+    Ok(super::error::QuickCreateInitialStateResponse::from_dto(payload))
 }
 
 #[tauri::command]
@@ -101,7 +101,7 @@ pub async fn quick_create_list_projects_by_space(
 ) -> Result<QuickCreateProjectsBySpaceResponse, QuickCreateErrorPayload> {
     let service = build_quick_create_service(database.inner());
     let payload = service
-        .list_projects_by_space(QuickListProjectsBySpacePayload {
+        .list_projects_by_space(QuickListProjectsBySpaceInput {
             space_id: input.space_id,
         })
         .await
@@ -116,7 +116,7 @@ pub async fn quick_create_search(
 ) -> Result<QuickCreateSearchResponse, QuickCreateErrorPayload> {
     let service = build_quick_create_service(database.inner());
     let payload = service
-        .search(QuickSearchPayload {
+        .search(QuickSearchInput {
             query: input.query,
             limit: input.limit,
         })
@@ -175,7 +175,7 @@ async fn open_created_task(
     app_handle: &tauri::AppHandle,
     service: &desktop_app::application::services::QuickCreateService,
     helper_state: &CommandHelperState,
-    created: &stoneflow_ipc_protocol::QuickCreatedPayload,
+    created: &QuickCreatedDto,
 ) -> Result<(), QuickCreateErrorPayload> {
     let target = service
         .resolve_task_open_target(&created.id)
@@ -243,10 +243,10 @@ async fn open_existing_target(
     Ok(())
 }
 
-fn map_create_payload(input: QuickCreateCreateInput) -> QuickCreatePayload {
-    QuickCreatePayload {
+fn map_create_payload(input: QuickCreateCreateInput) -> QuickCreateInput {
+    QuickCreateInput {
         space_id: input.space_id,
-        placement: QuickPlacementPayload {
+        placement: QuickPlacementDto {
             kind: match input.placement.kind {
                 QuickCreatePlacementKind::Inbox => QuickPlacementKind::Inbox,
                 QuickCreatePlacementKind::NoProject => QuickPlacementKind::NoProject,
@@ -266,7 +266,7 @@ fn map_create_payload(input: QuickCreateCreateInput) -> QuickCreatePayload {
 
 fn emit_task_changed(
     app_handle: &tauri::AppHandle,
-    created: &stoneflow_ipc_protocol::QuickCreatedPayload,
+    created: &QuickCreatedDto,
 ) -> Result<(), QuickCreateErrorPayload> {
     app_handle
         .emit(

@@ -1,4 +1,4 @@
-//! Quick Create 用例：Helper 入口编排（不依赖 ipc-protocol）。
+//! Quick Create 用例编排。
 
 #![allow(async_fn_in_trait)]
 

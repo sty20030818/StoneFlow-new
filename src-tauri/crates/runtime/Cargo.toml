@@ -8,21 +8,15 @@ rust-version.workspace = true
 name = "stoneflow_runtime"
 path = "src/lib.rs"
 
-[features]
-default = []
-single-binary-quick = []
-
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
 desktop-app = { path = "../desktop-app" }
-interprocess.workspace = true
 log.workspace = true
 sea-orm.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 stoneflow-domain = { path = "../domain" }
-stoneflow-ipc-protocol.workspace = true
 stoneflow-platform = { path = "../platform" }
 stoneflow-storage = { path = "../storage", features = ["test-helpers"] }
 stoneflow-usecase = { path = "../usecase" }
