@@ -49,7 +49,7 @@ export function TaskCreateContent({
 	projectsLoading,
 }: TaskCreateContentProps) {
 	const createTask = useCreateTaskMutation()
-	const openEntityDrawer = useEntityDetailController().openDrawer
+	const openTaskPage = useEntityDetailController().openPage
 	const defaultSpaceId = getDefaultSpaceId(spaces)
 	const initialProject = projects.find((project) => project.id === initialProjectId) ?? null
 	const resolvedInitialSpaceId =
@@ -164,7 +164,7 @@ export function TaskCreateContent({
 				resetFieldsOnly()
 				onClose()
 				if (effectiveIntent === 'open') {
-					openEntityDrawer({ kind: 'task', id: createdTask.id })
+					openTaskPage({ kind: 'task', id: createdTask.id })
 				}
 			} catch (error) {
 				setSubmitState('error')
@@ -177,7 +177,7 @@ export function TaskCreateContent({
 			dueAt,
 			note,
 			onClose,
-			openEntityDrawer,
+			openTaskPage,
 			placement,
 			priority,
 			projectId,

@@ -5,7 +5,7 @@ import { SubmitRegistryProvider, useSubmitRegistryActions } from '@/features/sub
 import { TaskCreateContent } from './TaskCreateContent'
 
 const createTaskMock = vi.fn()
-const openDrawerMock = vi.fn()
+const openPageMock = vi.fn()
 
 vi.mock('@/features/task/query', () => ({
 	useCreateTaskMutation: () => ({
@@ -13,23 +13,16 @@ vi.mock('@/features/task/query', () => ({
 	}),
 }))
 
-vi.mock('@/app/layouts/shell/model/useDrawerStore', () => ({
-	useDrawerStore: (selector: (state: { openDrawer: typeof openDrawerMock }) => unknown) =>
-		selector({
-			openDrawer: openDrawerMock,
-		}),
-}))
-
 vi.mock('@/features/entity-detail', () => ({
 	useEntityDetailController: () => ({
-		openDrawer: openDrawerMock,
+		openPage: openPageMock,
 	}),
 }))
 
 describe('TaskCreateContent', () => {
 	beforeEach(() => {
 		createTaskMock.mockReset()
-		openDrawerMock.mockReset()
+		openPageMock.mockReset()
 		createTaskMock.mockResolvedValue(createTaskDetail())
 	})
 
@@ -46,7 +39,7 @@ describe('TaskCreateContent', () => {
 		expect(screen.getByPlaceholderText('添加描述...')).toHaveValue('')
 		expect(screen.getByText('已创建 1 条任务')).toBeInTheDocument()
 		expect(screen.getByRole('switch')).toHaveAttribute('data-state', 'unchecked')
-		expect(openDrawerMock).not.toHaveBeenCalled()
+		expect(openPageMock).not.toHaveBeenCalled()
 	})
 
 	it('submitAndContinue 会直接进入下一条草稿并累加计数', async () => {
@@ -70,7 +63,7 @@ describe('TaskCreateContent', () => {
 
 		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
 		expect(onClose).toHaveBeenCalledTimes(1)
-		expect(openDrawerMock).toHaveBeenCalledWith({ kind: 'task', id: 'task-created' })
+		expect(openPageMock).toHaveBeenCalledWith({ kind: 'task', id: 'task-created' })
 	})
 
 	it('描述输入区位于统一滚动容器内', () => {

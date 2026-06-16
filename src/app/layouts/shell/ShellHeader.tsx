@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import { getSectionLabel, getScopeLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import { buildCanonicalProjectPath } from '@/app/routing'
@@ -8,11 +8,7 @@ import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
 import { NavBackForward } from '@/app/layouts/shell/header/NavBackForward'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
-import {
-	resolveProjectSearchTargetPath,
-	resolveTaskSearchTargetPath,
-} from '@/features/global-search/model/searchNavigation'
-import { useSearchOpenIntentStore } from '@/features/global-search/model/useSearchOpenIntentStore'
+import { resolveProjectSearchTargetPath } from '@/features/global-search/model/searchNavigation'
 import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter/model'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import type { Scope, Space, TaskStatus } from '@/shared/types'
@@ -85,6 +81,7 @@ type ShellHeaderProps = {
 	onShortcutHelpOpenChange: (open: boolean) => void
 	onNavigateToHistoryEntry: (entry: ShellRouteHistoryEntry) => void
 	onCloseDrawer: () => void
+	onOpenTaskPage: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
 	onSelectFilterKind: (kind: PageFilterKind) => void
 	onApplyFilter: (input: PageFilterApplyInput) => void
@@ -114,6 +111,7 @@ export function ShellHeader({
 	onShortcutHelpOpenChange,
 	onNavigateToHistoryEntry,
 	onCloseDrawer,
+	onOpenTaskPage,
 	onApplyFilter,
 	onClearAllFilters,
 	onSelectTaskDate,
@@ -127,15 +125,11 @@ export function ShellHeader({
 	commandMenuFilterKind,
 }: ShellHeaderProps) {
 	const navigate = useNavigate()
-	const location = useLocation()
 	const [isMaximized, setIsMaximized] = useState(false)
 	const isMac = useMemo(() => /Mac|iPhone|iPad|iPod/i.test(window.navigator.userAgent), [])
 	const isWin = useMemo(
 		() => /Windows/i.test(window.navigator.userAgent) || window.navigator.platform === 'Win32',
 		[],
-	)
-	const setPendingTaskOpenIntent = useSearchOpenIntentStore(
-		(state) => state.setPendingTaskOpenIntent,
 	)
 	const { toggleSidebar, visualState: sidebarVisualState, isMobile: isLayoutNarrow } = useSidebar()
 	const sidebarToggleOpen =
@@ -199,20 +193,7 @@ export function ShellHeader({
 	}
 
 	const handleOpenTaskFromSearch = (task: SearchTaskItem) => {
-		onCloseDrawer()
-		const targetPath = resolveTaskSearchTargetPath(task)
-		setPendingTaskOpenIntent({
-			taskId: task.id,
-			targetPath,
-		})
-
-		if (location.pathname === targetPath) {
-			return
-		}
-
-		startTransition(() => {
-			navigate(targetPath)
-		})
+		onOpenTaskPage(task)
 	}
 
 	const handleMinimize = async () => {

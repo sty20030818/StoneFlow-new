@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import { Input } from '@/shared/ui/base/input'
@@ -9,19 +9,9 @@ import { Input } from '@/shared/ui/base/input'
  */
 export function QuickCreateTitleInput() {
 	const { actions, refs, state } = useQuickCreate()
-	const [draftTitle, setDraftTitle] = useState(state.draft.title)
-	const [isComposing, setIsComposing] = useState(false)
-
-	useEffect(() => {
-		if (!isComposing) {
-			setDraftTitle(state.draft.title)
-		}
-	}, [isComposing, state.draft.title])
-
-	const commitTitle = (title: string) => {
-		setDraftTitle(title)
-		actions.setTitle(title)
-	}
+	const [composingTitle, setComposingTitle] = useState<string | null>(null)
+	const isComposingRef = useRef(false)
+	const displayTitle = composingTitle ?? state.draft.title
 
 	return (
 		<Input
@@ -32,22 +22,31 @@ export function QuickCreateTitleInput() {
 			disabled={state.submitState === 'submitting'}
 			onChange={(event) => {
 				const nextTitle = event.currentTarget.value
-				setDraftTitle(nextTitle)
-				if (!event.nativeEvent.isComposing) {
-					actions.setTitle(nextTitle)
+				const nativeEvent = event.nativeEvent
+				const isComposing = 'isComposing' in nativeEvent && nativeEvent.isComposing
+				if (isComposingRef.current || isComposing) {
+					setComposingTitle(nextTitle)
+					return
 				}
+
+				if (composingTitle !== null) {
+					setComposingTitle(null)
+				}
+				actions.setTitle(nextTitle)
 			}}
 			onCompositionEnd={(event) => {
-				setIsComposing(false)
-				commitTitle(event.currentTarget.value)
+				isComposingRef.current = false
+				setComposingTitle(null)
+				actions.setTitle(event.currentTarget.value)
 			}}
-			onCompositionStart={() => {
-				setIsComposing(true)
+			onCompositionStart={(event) => {
+				isComposingRef.current = true
+				setComposingTitle(event.currentTarget.value)
 			}}
 			onKeyDown={actions.handleInputKeyDown}
 			placeholder='写下任务…'
 			spellCheck={false}
-			value={draftTitle}
+			value={displayTitle}
 		/>
 	)
 }

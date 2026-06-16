@@ -642,6 +642,35 @@ describe('QuickCreatePage', () => {
 		expect(screen.getByText('Stone 新搜索项目')).toBeInTheDocument()
 	})
 
+	it('中文组合输入期间不触发搜索，结束后再按最终标题搜索', async () => {
+		render(<QuickCreatePage />)
+		await screen.findByTestId('quick-create-recent-tasks-section')
+
+		const input = screen.getByLabelText('Quick Create 输入')
+
+		fireEvent.compositionStart(input)
+		fireEvent.change(input, {
+			target: { value: '输' },
+			nativeEvent: { isComposing: true },
+		})
+		fireEvent.change(input, {
+			target: { value: '输入' },
+			nativeEvent: { isComposing: true },
+		})
+
+		expect(input).toHaveValue('输入')
+		expect(mockedSearch).not.toHaveBeenCalled()
+
+		fireEvent.compositionEnd(input, {
+			target: { value: '输入法' },
+		})
+
+		await waitFor(() => {
+			expect(mockedSearch).toHaveBeenCalledWith('输入法', 3)
+		})
+		expect(input).toHaveValue('输入法')
+	})
+
 	it('没有匹配结果时直接显示空态，不回 recent', async () => {
 		mockedSearch.mockResolvedValueOnce({
 			tasks: [],

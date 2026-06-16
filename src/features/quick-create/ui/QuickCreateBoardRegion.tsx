@@ -86,9 +86,9 @@ export function QuickCreateBoardRegion({
 								ref={taskBoardRef}
 							>
 								<QuickCreateSearchEmptyState
-								errorMessage={state.searchError}
-								title={state.draft.title.trim()}
-							/>
+									errorMessage={state.searchError}
+									title={state.draft.title.trim()}
+								/>
 							</div>
 						) : (
 							<div className={quickCreateBoardResultsStackClass}>

@@ -12,17 +12,11 @@
 		"lint:fix": "oxlint --fix",
 		"format": "oxfmt",
 		"format:check": "oxfmt --check",
-		"style:audit": "bash scripts/style-audit.sh",
 		"test": "vitest",
 		"test:run": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"test:rust": "cargo test --manifest-path src-tauri/Cargo.toml --workspace",
-		"pretest:rust": "node scripts/cleanup-test-dbs.mjs --stale-only",
-		"posttest:rust": "node scripts/cleanup-test-dbs.mjs",
-		"cleanup:test-dbs": "node scripts/cleanup-test-dbs.mjs",
-		"cleanup:test-dbs:stale": "node scripts/cleanup-test-dbs.mjs --stale-only",
-		"test:rust:count-dbs": "node scripts/cleanup-test-dbs.mjs --count-only",
-		"check": "bash scripts/style-audit.sh && bun run lint && bun run format:check && bun run test:run && bun run test:rust"
+		"check": "bun run typecheck && bun run lint && bun run format:check && bun run test:run && bun run test:rust"
 	},
 	"dependencies": {
 		"@radix-ui/react-avatar": "^1.1.12",

@@ -9,8 +9,8 @@ import {
 import { useNavigate } from 'react-router-dom'
 
 import {
-	buildCanonicalProjectPath,
 	buildCanonicalSectionPath,
+	buildTaskDetailPath,
 	buildScopedSettingsPath,
 	buildCanonicalViewPath,
 } from '@/app/routing'
@@ -41,11 +41,11 @@ import {
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
-import { useEntityDetailController } from '@/features/entity-detail'
 import {
-	selectPendingTaskOpenIntent,
-	useSearchOpenIntentStore,
-} from '@/features/global-search/model/useSearchOpenIntentStore'
+	resolveCommandOpenTargetPath,
+	resolveShellDetailState,
+} from '@/app/layouts/shell/model/taskOpenStrategy'
+import { useEntityDetailController } from '@/features/entity-detail'
 import { useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
 import { type CommandOpenPayload, useCommandOpenListener } from '@/shared/events'
 import { listAllVisibleProjects } from '@/features/project/api/projects'
@@ -243,7 +243,6 @@ function ShellLayoutContent({
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const isDrawerOpen = entityDetailController.isOpen
-	const openEntityDrawer = entityDetailController.openDrawer
 	const closeEntityDrawer = entityDetailController.closeDrawer
 	const taskPreviewController = useTaskPreviewController()
 	const isTaskPreviewOpen = taskPreviewController.previewState.open
@@ -270,16 +269,10 @@ function ShellLayoutContent({
 	const pageFilter = usePageFilterContext()
 	const submitRegistry = useSubmitRegistryContext()
 	const submitRegistryActions = useSubmitRegistryActions()
-	const pendingTaskOpenIntent = useSearchOpenIntentStore(selectPendingTaskOpenIntent)
-	const consumePendingTaskOpenIntent = useSearchOpenIntentStore(
-		(state) => state.consumePendingTaskOpenIntent,
-	)
-	const setPendingTaskOpenIntent = useSearchOpenIntentStore(
-		(state) => state.setPendingTaskOpenIntent,
-	)
 	const requestSearchFocus = useSearchFocusIntentStore((state) => state.requestFocus)
 
 	const routeProjectId = shellRoute.kind === 'project' ? shellRoute.projectId : null
+	const isTaskDetailPage = shellRoute.kind === 'task'
 	const isNoProjectPage = shellRoute.section === 'noProject'
 
 	const handleOpenTaskCreate = useMemo(() => {
@@ -301,6 +294,23 @@ function ShellLayoutContent({
 				? currentScope.spaceId
 				: (spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null),
 		[currentScope, spaces],
+	)
+	const openTaskPage = useCallback(
+		({ taskId, spaceId }: { taskId: string; spaceId: string }) => {
+			const targetPath = buildTaskDetailPath(spaceId, taskId)
+
+			closeTaskPreview()
+			closeEntityDrawer()
+
+			if (shellRoute.pathname === targetPath) {
+				return
+			}
+
+			startTransition(() => {
+				navigate(targetPath)
+			})
+		},
+		[closeEntityDrawer, closeTaskPreview, navigate, shellRoute.pathname],
 	)
 
 	useEffect(() => {
@@ -376,81 +386,27 @@ function ShellLayoutContent({
 	}, [spaceStatus])
 
 	useEffect(() => {
-		if (
-			spaceStatus !== 'ready' ||
-			!pendingTaskOpenIntent ||
-			pendingTaskOpenIntent.targetPath !== shellRoute.pathname
-		) {
-			return
-		}
-
-		const consumedIntent = consumePendingTaskOpenIntent(shellRoute.pathname)
-		if (!consumedIntent) {
-			return
-		}
-
-		openEntityDrawer({ kind: 'task', id: consumedIntent.taskId })
-	}, [
-		consumePendingTaskOpenIntent,
-		openEntityDrawer,
-		pendingTaskOpenIntent,
-		shellRoute.pathname,
-		spaceStatus,
-	])
-
-	useEffect(() => {
-		if (!activeDetail || !isTaskPreviewOpen) {
+		if ((!activeDetail && !isTaskDetailPage) || !isTaskPreviewOpen) {
 			return
 		}
 
 		closeTaskPreview()
-	}, [activeDetail, closeTaskPreview, isTaskPreviewOpen, taskPreviewController])
+	}, [activeDetail, closeTaskPreview, isTaskDetailPage, isTaskPreviewOpen, taskPreviewController])
 
 	const handleCommandOpen = useMemo(
 		() => (payload: CommandOpenPayload) => {
-			const targetPath = payload.projectId
-				? buildCanonicalProjectPath(
-						{ type: 'space', spaceId: payload.spaceId },
-						payload.projectId,
-						payload.spaceId,
-					)
-				: payload.kind === 'project'
-					? buildCanonicalProjectPath(
-							{ type: 'space', spaceId: payload.spaceId },
-							payload.id,
-							payload.spaceId,
-						)
-					: payload.placement === 'inbox'
-						? buildCanonicalSectionPath(
-								{ type: 'space', spaceId: payload.spaceId },
-								'inbox',
-								payload.spaceId,
-							)
-						: buildCanonicalSectionPath(
-								{ type: 'space', spaceId: payload.spaceId },
-								'no-project',
-								payload.spaceId,
-							)
-
-			closeEntityDrawer()
-
-			if (payload.kind === 'project') {
-				if (shellRoute.pathname === targetPath) {
-					return
-				}
-				startTransition(() => {
-					navigate(targetPath)
+			if (payload.kind === 'task') {
+				openTaskPage({
+					taskId: payload.id,
+					spaceId: payload.spaceId,
 				})
 				return
 			}
 
-			setPendingTaskOpenIntent({
-				taskId: payload.id,
-				targetPath,
-			})
+			const targetPath = resolveCommandOpenTargetPath(payload)
+			closeEntityDrawer()
 
 			if (shellRoute.pathname === targetPath) {
-				openEntityDrawer({ kind: 'task', id: payload.id })
 				return
 			}
 
@@ -458,7 +414,7 @@ function ShellLayoutContent({
 				navigate(targetPath)
 			})
 		},
-		[closeEntityDrawer, navigate, openEntityDrawer, setPendingTaskOpenIntent, shellRoute.pathname],
+		[closeEntityDrawer, navigate, openTaskPage, shellRoute.pathname],
 	)
 
 	const projectLinks = useMemo(
@@ -774,18 +730,27 @@ function ShellLayoutContent({
 		}),
 		[commandRoutePage, routeProjectId],
 	)
+	const detailState = useMemo(
+		() =>
+			resolveShellDetailState({
+				activeDetailKind: activeDetail?.kind ?? null,
+				routeKind: shellRoute.kind,
+			}),
+		[activeDetail?.kind, shellRoute.kind],
+	)
 	const commandUi = useMemo(
 		() => ({
 			isCommandMenuOpen: isCommandOpen,
 			isPreviewOpen: taskPreviewController.previewState.open,
-			isDetailOpen: Boolean(activeDetail),
-			detailEntityType: activeDetail?.kind,
+			isDetailOpen: detailState.isDetailOpen,
+			detailEntityType: detailState.detailEntityType,
 			isModalOpen: createDialogType !== null || isShortcutHelpOpen,
 			isRightPreviewOpen: taskPreviewController.previewState.open,
 		}),
 		[
-			activeDetail,
 			createDialogType,
+			detailState.detailEntityType,
+			detailState.isDetailOpen,
 			isCommandOpen,
 			isShortcutHelpOpen,
 			taskPreviewController.previewState.open,
@@ -798,12 +763,12 @@ function ShellLayoutContent({
 				isShortcutHelpOpen,
 				isModalOpen: createDialogType !== null,
 				isPreviewOpen: taskPreviewController.previewState.open,
-				isDetailOpen: Boolean(activeDetail),
+				isDetailOpen: detailState.isDetailOpen,
 			}),
 		}),
 		[
-			activeDetail,
 			createDialogType,
+			detailState.isDetailOpen,
 			isCommandOpen,
 			isShortcutHelpOpen,
 			taskPreviewController.previewState.open,
@@ -1024,6 +989,9 @@ function ShellLayoutContent({
 				onCloseDrawer={closeEntityDrawer}
 				onCommandOpenChange={handleCommandMenuOpenChange}
 				onNavigateToHistoryEntry={navigateToHistoryEntry}
+				onOpenTaskPage={(task) => {
+					openTaskPage({ taskId: task.id, spaceId: task.spaceId })
+				}}
 				onRunCommand={runCommand}
 				onSelectFilterKind={(kind) => {
 					pageFilter.actions.openFilterPicker(kind)
