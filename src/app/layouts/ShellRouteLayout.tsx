@@ -2,7 +2,6 @@ import { useEffect, type PropsWithChildren } from 'react'
 
 import type { ShellRoute } from '@/app/routing'
 import type { Scope } from '@/shared/types'
-import { rememberShellRoute } from './shell/model/shellDevicePreferences'
 import { ShellRouteProvider } from './shell/model/ShellRouteContext'
 import {
 	selectActiveSection,
@@ -76,20 +75,6 @@ export function ShellRouteLayout({ children, scope, shellRoute }: ShellRouteLayo
 			})
 		})
 	}, [isWorkPath, scope])
-
-	useEffect(() => {
-		if (!isWorkPath) {
-			return
-		}
-
-		void rememberShellRoute(scope, shellRoute.fullPath).catch((error) => {
-			console.error('shell route restore save failed', {
-				scope,
-				path: shellRoute.fullPath,
-				error,
-			})
-		})
-	}, [isWorkPath, scope, shellRoute.fullPath])
 
 	return (
 		<ShellRouteProvider shellRoute={shellRoute}>

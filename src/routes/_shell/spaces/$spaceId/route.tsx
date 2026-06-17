@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { useRememberCurrentShellRoute } from '../../-route-memory'
 import { ScopedShellRouteLayout } from '../../-scoped-shell-route-layout'
 
 export const Route = createFileRoute('/_shell/spaces/$spaceId')({
@@ -8,6 +9,9 @@ export const Route = createFileRoute('/_shell/spaces/$spaceId')({
 
 function SpaceScopeRoute() {
 	const { spaceId } = Route.useParams()
+	const scope = { type: 'space', spaceId } as const
 
-	return <ScopedShellRouteLayout scope={{ type: 'space', spaceId }} />
+	useRememberCurrentShellRoute(scope)
+
+	return <ScopedShellRouteLayout scope={scope} />
 }

@@ -4,7 +4,6 @@ import { beforeEach, vi } from 'vitest'
 
 import { SpaceLayout } from './SpaceLayout'
 
-const rememberShellRouteMock = vi.hoisted(() => vi.fn())
 const setActiveScopeMock = vi.hoisted(() => vi.fn<(scope: unknown) => Promise<void>>())
 const useWorkspaceSyncMock = vi.hoisted(() => vi.fn())
 const shellLayoutPropsSpy = vi.hoisted(() => vi.fn())
@@ -19,10 +18,6 @@ const shellNavState = vi.hoisted(() => ({
 
 const spaceState = vi.hoisted(() => ({
 	spaces: [{ id: 'space-a', name: '工作', isDefault: true }],
-}))
-
-vi.mock('./shell/model/shellDevicePreferences', () => ({
-	rememberShellRoute: (scope: unknown, path: string) => rememberShellRouteMock(scope, path),
 }))
 
 vi.mock('./shell/model/useShellNavStore', () => ({
@@ -58,8 +53,6 @@ vi.mock('@/features/workspace/model/useWorkspaceSync', () => ({
 
 describe('SpaceLayout', () => {
 	beforeEach(() => {
-		rememberShellRouteMock.mockReset()
-		rememberShellRouteMock.mockResolvedValue(undefined)
 		setActiveScopeMock.mockReset()
 		setActiveScopeMock.mockResolvedValue(undefined)
 		useWorkspaceSyncMock.mockClear()
@@ -71,17 +64,13 @@ describe('SpaceLayout', () => {
 		shellNavState.setActiveSection.mockReset()
 	})
 
-	it('用结构化 shell route 同步 scope、section 和 remember path', async () => {
+	it('用结构化 shell route 同步 scope、section', async () => {
 		renderSpaceLayout('/spaces/space-a/projects/project-a')
 
 		await waitFor(() => {
 			expect(shellNavState.setCurrentScope).toHaveBeenCalledWith('space', 'space-a')
 			expect(shellNavState.setActiveSection).toHaveBeenCalledWith('projects')
 			expect(setActiveScopeMock).toHaveBeenCalledWith({ type: 'space', spaceId: 'space-a' })
-			expect(rememberShellRouteMock).toHaveBeenCalledWith(
-				{ type: 'space', spaceId: 'space-a' },
-				'/spaces/space-a/projects/project-a',
-			)
 		})
 
 		expect(useWorkspaceSyncMock).toHaveBeenCalledWith({ type: 'space', spaceId: 'space-a' })

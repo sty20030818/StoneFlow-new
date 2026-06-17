@@ -107,8 +107,10 @@ describe('routeMemory', () => {
 
 	it('判断 rememberable route 并保留 canonical detail path', () => {
 		expect(isRememberableShellPath('/all/inbox')).toBe(true)
+		expect(isRememberableShellPath('/all/views/today')).toBe(true)
 		expect(isRememberableShellPath('/spaces/space-a/projects/project-a')).toBe(true)
 		expect(isRememberableShellPath('/spaces/space-a/tasks/task-a')).toBe(true)
+		expect(isRememberableShellPath('/spaces/space-a/views/today')).toBe(true)
 		expect(isRememberableShellPath('/spaces/space-a/projects/project-a')).toBe(true)
 		expect(isRememberableShellPath('/spaces/inbox')).toBe(false)
 		expect(isRememberableShellPath(TASK_SHORTCUT_PATH)).toBe(false)
@@ -203,6 +205,17 @@ describe('routeMemory', () => {
 				'/spaces/space-a/projects/project-a',
 				[{ id: 'space-a' } as never],
 				'/all/tasks',
+			),
+		).resolves.toBe('/all/tasks')
+	})
+
+	it('all scope 只能记住 all scope 路径', async () => {
+		await expect(
+			normalizeRememberedShellPath(
+				'/spaces/space-a/inbox',
+				[{ id: 'space-a' } as never],
+				'/all/tasks',
+				'all',
 			),
 		).resolves.toBe('/all/tasks')
 	})

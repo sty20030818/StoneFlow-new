@@ -3,7 +3,6 @@ import { getTaskDetail } from '@/features/task/api/tasks'
 import type { Scope, Space } from '@/shared/types'
 
 import { buildCanonicalSectionPath, buildStartupFallbackPath } from './routePaths'
-import { parseShellRoute } from './routeParser'
 
 const ROUTE_MEMORY_VERSION = 2
 
@@ -16,6 +15,12 @@ const ALLOWED_SECTION_SEGMENTS = new Set([
 	'archive',
 	'trash',
 ])
+
+const ALL_SECTION_PATH = /^\/all\/([^/?#]+)(?:[?#].*)?$/
+const SPACE_SECTION_PATH = /^\/spaces\/([^/]+)\/([^/?#]+)(?:[?#].*)?$/
+const VIEW_PATH = /^\/(?:all|spaces\/([^/]+))\/views\/([^/?#]+)(?:[?#].*)?$/
+const TASK_DETAIL_PATH = /^\/spaces\/([^/]+)\/tasks\/([^/?#]+)(?:[?#].*)?$/
+const PROJECT_DETAIL_PATH = /^\/spaces\/([^/]+)\/projects\/([^/?#]+)(?:[?#].*)?$/
 
 export type ShellScopeKey = 'all' | `space:${string}`
 
@@ -196,24 +201,28 @@ export function normalizeShellMemoryPath(path: string): string {
 }
 
 export function isRememberableShellPath(path: string): boolean {
-	const route = parseShellRoute(path)
+	const canonicalPath = normalizeShellMemoryPath(path)
+	const pathname = canonicalPath.split(/[?#]/)[0] ?? canonicalPath
 
-	if (!route.isWorkPath) {
+	if (pathname === '/quick-create' || pathname === '/' || pathname.length === 0) {
 		return false
 	}
 
-	if (route.kind === 'shell-section') {
-		const normalizedPath = normalizeShellMemoryPath(path).split(/[?#]/)[0] ?? path
-		const allMatch = normalizedPath.match(/^\/all\/(.+)$/)
-		if (allMatch) {
-			return ALLOWED_SECTION_SEGMENTS.has(allMatch[1] ?? '')
-		}
-
-		const spaceMatch = normalizedPath.match(/^\/spaces\/([^/]+)\/(.+)$/)
-		return spaceMatch ? ALLOWED_SECTION_SEGMENTS.has(spaceMatch[2] ?? '') : false
+	const allMatch = pathname.match(/^\/all\/([^/]+)$/)
+	if (allMatch?.[1]) {
+		return ALLOWED_SECTION_SEGMENTS.has(allMatch[1])
 	}
 
-	return route.kind === 'view' || route.kind === 'task' || route.kind === 'project'
+	const spaceSectionMatch = pathname.match(/^\/spaces\/([^/]+)\/([^/]+)$/)
+	if (spaceSectionMatch?.[2]) {
+		return ALLOWED_SECTION_SEGMENTS.has(spaceSectionMatch[2])
+	}
+
+	return (
+		VIEW_PATH.test(pathname) ||
+		TASK_DETAIL_PATH.test(pathname) ||
+		PROJECT_DETAIL_PATH.test(pathname)
+	)
 }
 
 export function stripShellDetailSearch(path: string): string {
@@ -250,40 +259,53 @@ export async function normalizeRememberedShellPath(
 		return fallbackPath
 	}
 
-	const route = parseShellRoute(canonicalPath)
-	if (expectedScopeKey && !doesRouteMatchScopeKey(route, expectedScopeKey)) {
+	if (expectedScopeKey && !doesPathMatchScopeKey(canonicalPath, expectedScopeKey)) {
 		return fallbackPath
 	}
 
-	if (route.kind === 'shell-section') {
-		const scope = route.scope
-		if (scope && scope.type === 'space') {
-			if (spaces.length > 0 && !spaces.some((space) => space.id === scope.spaceId)) {
-				return fallbackPath
-			}
-		}
+	const routeKind = detectRememberedPathKind(canonicalPath)
+	if (!routeKind) {
+		return fallbackPath
+	}
+
+	const rememberedSpaceId = extractSpaceIdFromPath(canonicalPath)
+	if (
+		rememberedSpaceId &&
+		spaces.length > 0 &&
+		!spaces.some((space) => space.id === rememberedSpaceId)
+	) {
+		return fallbackPath
+	}
+
+	if (routeKind === 'section' || routeKind === 'view') {
 		return canonicalPath
 	}
 
-	if (route.kind === 'view') {
-		const scope = route.scope
-		if (scope && scope.type === 'space') {
-			if (spaces.length > 0 && !spaces.some((space) => space.id === scope.spaceId)) {
-				return fallbackPath
-			}
+	if (routeKind === 'project') {
+		const detailMatch = canonicalPath.match(PROJECT_DETAIL_PATH)
+		if (!detailMatch?.[1] || !detailMatch[2]) {
+			return fallbackPath
 		}
-		return canonicalPath
+
+		return validateProjectSpace(
+			detailMatch[2],
+			decodeURIComponent(detailMatch[1]),
+			canonicalPath,
+			fallbackPath,
+		)
 	}
 
-	if (route.kind === 'project' && route.projectId && route.spaceId) {
-		return validateProjectSpace(route.projectId, route.spaceId, canonicalPath, fallbackPath)
+	const detailMatch = canonicalPath.match(TASK_DETAIL_PATH)
+	if (!detailMatch?.[1] || !detailMatch[2]) {
+		return fallbackPath
 	}
 
-	if (route.kind === 'task' && route.taskId && route.spaceId) {
-		return validateTaskSpace(route.taskId, route.spaceId, canonicalPath, fallbackPath)
-	}
-
-	return fallbackPath
+	return validateTaskSpace(
+		detailMatch[2],
+		decodeURIComponent(detailMatch[1]),
+		canonicalPath,
+		fallbackPath,
+	)
 }
 
 async function resolveScopePath(input: {
@@ -365,12 +387,11 @@ function isShellScopeKey(value: string): value is ShellScopeKey {
 	return value === 'all' || value.startsWith('space:')
 }
 
-function doesRouteMatchScopeKey(
-	route: ReturnType<typeof parseShellRoute>,
-	scopeKey: ShellScopeKey,
-) {
+function doesPathMatchScopeKey(path: string, scopeKey: ShellScopeKey) {
+	const pathname = path.split(/[?#]/)[0] ?? path
+
 	if (scopeKey === 'all') {
-		return (route.kind === 'shell-section' || route.kind === 'view') && route.scope?.type === 'all'
+		return pathname.startsWith('/all/')
 	}
 
 	const expectedSpaceId = extractSpaceIdFromScopeKey(scopeKey)
@@ -378,13 +399,34 @@ function doesRouteMatchScopeKey(
 		return false
 	}
 
-	if (route.kind === 'task' || route.kind === 'project') {
-		return route.spaceId === expectedSpaceId
+	return extractSpaceIdFromPath(path) === expectedSpaceId
+}
+
+function extractSpaceIdFromPath(path: string): string | null {
+	const pathname = path.split(/[?#]/)[0] ?? path
+	const detailMatch = pathname.match(/^\/spaces\/([^/]+)\//)
+
+	return detailMatch?.[1] ? decodeURIComponent(detailMatch[1]) : null
+}
+
+function detectRememberedPathKind(path: string): 'section' | 'view' | 'task' | 'project' | null {
+	const pathname = path.split(/[?#]/)[0] ?? path
+
+	if (TASK_DETAIL_PATH.test(pathname)) {
+		return 'task'
 	}
 
-	return (
-		(route.kind === 'shell-section' || route.kind === 'view') &&
-		route.scope?.type === 'space' &&
-		route.scope.spaceId === expectedSpaceId
-	)
+	if (PROJECT_DETAIL_PATH.test(pathname)) {
+		return 'project'
+	}
+
+	if (VIEW_PATH.test(pathname)) {
+		return 'view'
+	}
+
+	if (ALL_SECTION_PATH.test(pathname) || SPACE_SECTION_PATH.test(pathname)) {
+		return 'section'
+	}
+
+	return null
 }
