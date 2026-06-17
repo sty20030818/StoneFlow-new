@@ -1,7 +1,7 @@
 import { startTransition, useEffect, useState } from 'react'
 import { useNavigate } from '@/app/routing/tanstackCompat'
 
-import { buildStartupFallbackPath } from '@/app/routing'
+import { openStartupFallback } from '@/app/navigation/intents'
 import { resolveStartupPath } from '@/app/layouts/shell/model/shellDevicePreferences'
 import { useSpaces } from '@/features/space/query'
 
@@ -33,7 +33,7 @@ export function RootRestoreRedirect() {
 
 				setRestoreError(error instanceof Error ? error.message : '恢复工作区失败')
 				startTransition(() => {
-					navigate(buildStartupFallbackPath(), { replace: true })
+					navigate(openStartupFallback(), { replace: true })
 				})
 			})
 

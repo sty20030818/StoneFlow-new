@@ -1,6 +1,10 @@
 import { redirect } from '@tanstack/react-router'
 
-import { buildProjectPath, buildStartupFallbackPath, buildTaskDetailPath } from '@/app/routing'
+import {
+	openCanonicalProjectDetail,
+	openStartupFallback,
+	openTaskDetail,
+} from '@/app/navigation/intents'
 import { projectDetailQueryOptions } from '@/features/project/query'
 import { taskDetailQueryOptions } from '@/features/task/query/task.queries'
 import type { Scope, Space, TaskDetail } from '@/shared/types'
@@ -101,7 +105,7 @@ export function createProjectUnavailableError(): DetailRouteErrorState {
 		description: '当前项目不可见，可能已被归档、删除，或当前账号无权访问。',
 		pageTitle: '项目详情',
 		actionLabel: '返回工作区',
-		actionTo: buildStartupFallbackPath(),
+		actionTo: openStartupFallback(),
 	}
 }
 
@@ -119,14 +123,14 @@ export function createProjectLoaderError(error: unknown): DetailRouteErrorState 
 		description: error instanceof Error ? error.message : '项目详情加载失败',
 		pageTitle: '项目详情',
 		actionLabel: '返回工作区',
-		actionTo: buildStartupFallbackPath(),
+		actionTo: openStartupFallback(),
 	}
 }
 
 export function buildTaskDetailFallbackPath(task: TaskDetail) {
-	return buildTaskDetailPath(task.spaceId, task.id)
+	return openTaskDetail(task.id, task.spaceId)
 }
 
 export function buildProjectDetailFallbackPath(project: ProjectDetail) {
-	return buildProjectPath(project.spaceId, project.id)
+	return openCanonicalProjectDetail(project.id, project.spaceId)
 }
