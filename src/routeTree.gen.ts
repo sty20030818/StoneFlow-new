@@ -11,33 +11,40 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as QuickCreateRouteImport } from './routes/quick-create'
-import { Route as AllRouteImport } from './routes/all'
+import { Route as ShellRouteRouteImport } from './routes/_shell/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AllIndexRouteImport } from './routes/all.index'
-import { Route as SpacesSpaceIdRouteImport } from './routes/spaces.$spaceId'
 import { Route as DebugActivityRouteImport } from './routes/debug.activity'
-import { Route as AllViewsRouteImport } from './routes/all.views'
-import { Route as AllTrashRouteImport } from './routes/all.trash'
-import { Route as AllTasksRouteImport } from './routes/all.tasks'
-import { Route as AllSettingsRouteImport } from './routes/all.settings'
-import { Route as AllProjectsRouteImport } from './routes/all.projects'
-import { Route as AllNoProjectRouteImport } from './routes/all.no-project'
-import { Route as AllInboxRouteImport } from './routes/all.inbox'
-import { Route as AllArchiveRouteImport } from './routes/all.archive'
-import { Route as SpacesSpaceIdIndexRouteImport } from './routes/spaces.$spaceId.index'
-import { Route as SpacesSpaceIdViewsRouteImport } from './routes/spaces.$spaceId.views'
-import { Route as SpacesSpaceIdTrashRouteImport } from './routes/spaces.$spaceId.trash'
-import { Route as SpacesSpaceIdTasksRouteImport } from './routes/spaces.$spaceId.tasks'
-import { Route as SpacesSpaceIdSettingsRouteImport } from './routes/spaces.$spaceId.settings'
-import { Route as SpacesSpaceIdProjectsRouteImport } from './routes/spaces.$spaceId.projects'
-import { Route as SpacesSpaceIdNoProjectRouteImport } from './routes/spaces.$spaceId.no-project'
-import { Route as SpacesSpaceIdInboxRouteImport } from './routes/spaces.$spaceId.inbox'
-import { Route as SpacesSpaceIdArchiveRouteImport } from './routes/spaces.$spaceId.archive'
-import { Route as AllViewsViewIdRouteImport } from './routes/all.views.$viewId'
-import { Route as AllProjectsProjectIdRouteImport } from './routes/all.projects.$projectId'
-import { Route as SpacesSpaceIdViewsViewIdRouteImport } from './routes/spaces.$spaceId.views.$viewId'
-import { Route as SpacesSpaceIdTasksTaskIdRouteImport } from './routes/spaces.$spaceId.tasks.$taskId'
-import { Route as SpacesSpaceIdProjectsProjectIdRouteImport } from './routes/spaces.$spaceId.projects.$projectId'
+import { Route as ShellAllRouteRouteImport } from './routes/_shell/all/route'
+import { Route as ShellAllIndexRouteImport } from './routes/_shell/all/index'
+import { Route as ShellAllTrashRouteImport } from './routes/_shell/all/trash'
+import { Route as ShellAllSettingsRouteImport } from './routes/_shell/all/settings'
+import { Route as ShellAllNoProjectRouteImport } from './routes/_shell/all/no-project'
+import { Route as ShellAllInboxRouteImport } from './routes/_shell/all/inbox'
+import { Route as ShellAllArchiveRouteImport } from './routes/_shell/all/archive'
+import { Route as ShellSpacesSpaceIdRouteRouteImport } from './routes/_shell/spaces/$spaceId/route'
+import { Route as ShellAllViewsRouteRouteImport } from './routes/_shell/all/views/route'
+import { Route as ShellAllTasksRouteRouteImport } from './routes/_shell/all/tasks/route'
+import { Route as ShellAllProjectsRouteRouteImport } from './routes/_shell/all/projects/route'
+import { Route as ShellSpacesSpaceIdIndexRouteImport } from './routes/_shell/spaces/$spaceId/index'
+import { Route as ShellAllViewsIndexRouteImport } from './routes/_shell/all/views/index'
+import { Route as ShellAllTasksIndexRouteImport } from './routes/_shell/all/tasks/index'
+import { Route as ShellAllProjectsIndexRouteImport } from './routes/_shell/all/projects/index'
+import { Route as ShellSpacesSpaceIdTrashRouteImport } from './routes/_shell/spaces/$spaceId/trash'
+import { Route as ShellSpacesSpaceIdSettingsRouteImport } from './routes/_shell/spaces/$spaceId/settings'
+import { Route as ShellSpacesSpaceIdNoProjectRouteImport } from './routes/_shell/spaces/$spaceId/no-project'
+import { Route as ShellSpacesSpaceIdInboxRouteImport } from './routes/_shell/spaces/$spaceId/inbox'
+import { Route as ShellSpacesSpaceIdArchiveRouteImport } from './routes/_shell/spaces/$spaceId/archive'
+import { Route as ShellAllViewsViewIdRouteImport } from './routes/_shell/all/views/$viewId'
+import { Route as ShellAllProjectsProjectIdRouteImport } from './routes/_shell/all/projects/$projectId'
+import { Route as ShellSpacesSpaceIdViewsRouteRouteImport } from './routes/_shell/spaces/$spaceId/views/route'
+import { Route as ShellSpacesSpaceIdTasksRouteRouteImport } from './routes/_shell/spaces/$spaceId/tasks/route'
+import { Route as ShellSpacesSpaceIdProjectsRouteRouteImport } from './routes/_shell/spaces/$spaceId/projects/route'
+import { Route as ShellSpacesSpaceIdViewsIndexRouteImport } from './routes/_shell/spaces/$spaceId/views/index'
+import { Route as ShellSpacesSpaceIdTasksIndexRouteImport } from './routes/_shell/spaces/$spaceId/tasks/index'
+import { Route as ShellSpacesSpaceIdProjectsIndexRouteImport } from './routes/_shell/spaces/$spaceId/projects/index'
+import { Route as ShellSpacesSpaceIdViewsViewIdRouteImport } from './routes/_shell/spaces/$spaceId/views/$viewId'
+import { Route as ShellSpacesSpaceIdTasksTaskIdRouteImport } from './routes/_shell/spaces/$spaceId/tasks/$taskId'
+import { Route as ShellSpacesSpaceIdProjectsProjectIdRouteImport } from './routes/_shell/spaces/$spaceId/projects/$projectId'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -49,9 +56,8 @@ const QuickCreateRoute = QuickCreateRouteImport.update({
   path: '/quick-create',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AllRoute = AllRouteImport.update({
-  id: '/all',
-  path: '/all',
+const ShellRouteRoute = ShellRouteRouteImport.update({
+  id: '/_shell',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -59,328 +65,398 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AllIndexRoute = AllIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AllRoute,
-} as any)
-const SpacesSpaceIdRoute = SpacesSpaceIdRouteImport.update({
-  id: '/spaces/$spaceId',
-  path: '/spaces/$spaceId',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DebugActivityRoute = DebugActivityRouteImport.update({
   id: '/debug/activity',
   path: '/debug/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AllViewsRoute = AllViewsRouteImport.update({
-  id: '/views',
-  path: '/views',
-  getParentRoute: () => AllRoute,
+const ShellAllRouteRoute = ShellAllRouteRouteImport.update({
+  id: '/all',
+  path: '/all',
+  getParentRoute: () => ShellRouteRoute,
 } as any)
-const AllTrashRoute = AllTrashRouteImport.update({
-  id: '/trash',
-  path: '/trash',
-  getParentRoute: () => AllRoute,
-} as any)
-const AllTasksRoute = AllTasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
-  getParentRoute: () => AllRoute,
-} as any)
-const AllSettingsRoute = AllSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AllRoute,
-} as any)
-const AllProjectsRoute = AllProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => AllRoute,
-} as any)
-const AllNoProjectRoute = AllNoProjectRouteImport.update({
-  id: '/no-project',
-  path: '/no-project',
-  getParentRoute: () => AllRoute,
-} as any)
-const AllInboxRoute = AllInboxRouteImport.update({
-  id: '/inbox',
-  path: '/inbox',
-  getParentRoute: () => AllRoute,
-} as any)
-const AllArchiveRoute = AllArchiveRouteImport.update({
-  id: '/archive',
-  path: '/archive',
-  getParentRoute: () => AllRoute,
-} as any)
-const SpacesSpaceIdIndexRoute = SpacesSpaceIdIndexRouteImport.update({
+const ShellAllIndexRoute = ShellAllIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => SpacesSpaceIdRoute,
+  getParentRoute: () => ShellAllRouteRoute,
 } as any)
-const SpacesSpaceIdViewsRoute = SpacesSpaceIdViewsRouteImport.update({
-  id: '/views',
-  path: '/views',
-  getParentRoute: () => SpacesSpaceIdRoute,
-} as any)
-const SpacesSpaceIdTrashRoute = SpacesSpaceIdTrashRouteImport.update({
+const ShellAllTrashRoute = ShellAllTrashRouteImport.update({
   id: '/trash',
   path: '/trash',
-  getParentRoute: () => SpacesSpaceIdRoute,
+  getParentRoute: () => ShellAllRouteRoute,
 } as any)
-const SpacesSpaceIdTasksRoute = SpacesSpaceIdTasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
-  getParentRoute: () => SpacesSpaceIdRoute,
-} as any)
-const SpacesSpaceIdSettingsRoute = SpacesSpaceIdSettingsRouteImport.update({
+const ShellAllSettingsRoute = ShellAllSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => SpacesSpaceIdRoute,
+  getParentRoute: () => ShellAllRouteRoute,
 } as any)
-const SpacesSpaceIdProjectsRoute = SpacesSpaceIdProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => SpacesSpaceIdRoute,
-} as any)
-const SpacesSpaceIdNoProjectRoute = SpacesSpaceIdNoProjectRouteImport.update({
+const ShellAllNoProjectRoute = ShellAllNoProjectRouteImport.update({
   id: '/no-project',
   path: '/no-project',
-  getParentRoute: () => SpacesSpaceIdRoute,
+  getParentRoute: () => ShellAllRouteRoute,
 } as any)
-const SpacesSpaceIdInboxRoute = SpacesSpaceIdInboxRouteImport.update({
+const ShellAllInboxRoute = ShellAllInboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
-  getParentRoute: () => SpacesSpaceIdRoute,
+  getParentRoute: () => ShellAllRouteRoute,
 } as any)
-const SpacesSpaceIdArchiveRoute = SpacesSpaceIdArchiveRouteImport.update({
+const ShellAllArchiveRoute = ShellAllArchiveRouteImport.update({
   id: '/archive',
   path: '/archive',
-  getParentRoute: () => SpacesSpaceIdRoute,
+  getParentRoute: () => ShellAllRouteRoute,
 } as any)
-const AllViewsViewIdRoute = AllViewsViewIdRouteImport.update({
+const ShellSpacesSpaceIdRouteRoute = ShellSpacesSpaceIdRouteRouteImport.update({
+  id: '/spaces/$spaceId',
+  path: '/spaces/$spaceId',
+  getParentRoute: () => ShellRouteRoute,
+} as any)
+const ShellAllViewsRouteRoute = ShellAllViewsRouteRouteImport.update({
+  id: '/views',
+  path: '/views',
+  getParentRoute: () => ShellAllRouteRoute,
+} as any)
+const ShellAllTasksRouteRoute = ShellAllTasksRouteRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => ShellAllRouteRoute,
+} as any)
+const ShellAllProjectsRouteRoute = ShellAllProjectsRouteRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => ShellAllRouteRoute,
+} as any)
+const ShellSpacesSpaceIdIndexRoute = ShellSpacesSpaceIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShellSpacesSpaceIdRouteRoute,
+} as any)
+const ShellAllViewsIndexRoute = ShellAllViewsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShellAllViewsRouteRoute,
+} as any)
+const ShellAllTasksIndexRoute = ShellAllTasksIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShellAllTasksRouteRoute,
+} as any)
+const ShellAllProjectsIndexRoute = ShellAllProjectsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShellAllProjectsRouteRoute,
+} as any)
+const ShellSpacesSpaceIdTrashRoute = ShellSpacesSpaceIdTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => ShellSpacesSpaceIdRouteRoute,
+} as any)
+const ShellSpacesSpaceIdSettingsRoute =
+  ShellSpacesSpaceIdSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => ShellSpacesSpaceIdRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdNoProjectRoute =
+  ShellSpacesSpaceIdNoProjectRouteImport.update({
+    id: '/no-project',
+    path: '/no-project',
+    getParentRoute: () => ShellSpacesSpaceIdRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdInboxRoute = ShellSpacesSpaceIdInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => ShellSpacesSpaceIdRouteRoute,
+} as any)
+const ShellSpacesSpaceIdArchiveRoute =
+  ShellSpacesSpaceIdArchiveRouteImport.update({
+    id: '/archive',
+    path: '/archive',
+    getParentRoute: () => ShellSpacesSpaceIdRouteRoute,
+  } as any)
+const ShellAllViewsViewIdRoute = ShellAllViewsViewIdRouteImport.update({
   id: '/$viewId',
   path: '/$viewId',
-  getParentRoute: () => AllViewsRoute,
+  getParentRoute: () => ShellAllViewsRouteRoute,
 } as any)
-const AllProjectsProjectIdRoute = AllProjectsProjectIdRouteImport.update({
-  id: '/$projectId',
-  path: '/$projectId',
-  getParentRoute: () => AllProjectsRoute,
-} as any)
-const SpacesSpaceIdViewsViewIdRoute =
-  SpacesSpaceIdViewsViewIdRouteImport.update({
-    id: '/$viewId',
-    path: '/$viewId',
-    getParentRoute: () => SpacesSpaceIdViewsRoute,
-  } as any)
-const SpacesSpaceIdTasksTaskIdRoute =
-  SpacesSpaceIdTasksTaskIdRouteImport.update({
-    id: '/$taskId',
-    path: '/$taskId',
-    getParentRoute: () => SpacesSpaceIdTasksRoute,
-  } as any)
-const SpacesSpaceIdProjectsProjectIdRoute =
-  SpacesSpaceIdProjectsProjectIdRouteImport.update({
+const ShellAllProjectsProjectIdRoute =
+  ShellAllProjectsProjectIdRouteImport.update({
     id: '/$projectId',
     path: '/$projectId',
-    getParentRoute: () => SpacesSpaceIdProjectsRoute,
+    getParentRoute: () => ShellAllProjectsRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdViewsRouteRoute =
+  ShellSpacesSpaceIdViewsRouteRouteImport.update({
+    id: '/views',
+    path: '/views',
+    getParentRoute: () => ShellSpacesSpaceIdRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdTasksRouteRoute =
+  ShellSpacesSpaceIdTasksRouteRouteImport.update({
+    id: '/tasks',
+    path: '/tasks',
+    getParentRoute: () => ShellSpacesSpaceIdRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdProjectsRouteRoute =
+  ShellSpacesSpaceIdProjectsRouteRouteImport.update({
+    id: '/projects',
+    path: '/projects',
+    getParentRoute: () => ShellSpacesSpaceIdRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdViewsIndexRoute =
+  ShellSpacesSpaceIdViewsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ShellSpacesSpaceIdViewsRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdTasksIndexRoute =
+  ShellSpacesSpaceIdTasksIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ShellSpacesSpaceIdTasksRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdProjectsIndexRoute =
+  ShellSpacesSpaceIdProjectsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ShellSpacesSpaceIdProjectsRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdViewsViewIdRoute =
+  ShellSpacesSpaceIdViewsViewIdRouteImport.update({
+    id: '/$viewId',
+    path: '/$viewId',
+    getParentRoute: () => ShellSpacesSpaceIdViewsRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdTasksTaskIdRoute =
+  ShellSpacesSpaceIdTasksTaskIdRouteImport.update({
+    id: '/$taskId',
+    path: '/$taskId',
+    getParentRoute: () => ShellSpacesSpaceIdTasksRouteRoute,
+  } as any)
+const ShellSpacesSpaceIdProjectsProjectIdRoute =
+  ShellSpacesSpaceIdProjectsProjectIdRouteImport.update({
+    id: '/$projectId',
+    path: '/$projectId',
+    getParentRoute: () => ShellSpacesSpaceIdProjectsRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/all': typeof AllRouteWithChildren
   '/quick-create': typeof QuickCreateRoute
   '/settings': typeof SettingsRoute
-  '/all/archive': typeof AllArchiveRoute
-  '/all/inbox': typeof AllInboxRoute
-  '/all/no-project': typeof AllNoProjectRoute
-  '/all/projects': typeof AllProjectsRouteWithChildren
-  '/all/settings': typeof AllSettingsRoute
-  '/all/tasks': typeof AllTasksRoute
-  '/all/trash': typeof AllTrashRoute
-  '/all/views': typeof AllViewsRouteWithChildren
+  '/all': typeof ShellAllRouteRouteWithChildren
   '/debug/activity': typeof DebugActivityRoute
-  '/spaces/$spaceId': typeof SpacesSpaceIdRouteWithChildren
-  '/all/': typeof AllIndexRoute
-  '/all/projects/$projectId': typeof AllProjectsProjectIdRoute
-  '/all/views/$viewId': typeof AllViewsViewIdRoute
-  '/spaces/$spaceId/archive': typeof SpacesSpaceIdArchiveRoute
-  '/spaces/$spaceId/inbox': typeof SpacesSpaceIdInboxRoute
-  '/spaces/$spaceId/no-project': typeof SpacesSpaceIdNoProjectRoute
-  '/spaces/$spaceId/projects': typeof SpacesSpaceIdProjectsRouteWithChildren
-  '/spaces/$spaceId/settings': typeof SpacesSpaceIdSettingsRoute
-  '/spaces/$spaceId/tasks': typeof SpacesSpaceIdTasksRouteWithChildren
-  '/spaces/$spaceId/trash': typeof SpacesSpaceIdTrashRoute
-  '/spaces/$spaceId/views': typeof SpacesSpaceIdViewsRouteWithChildren
-  '/spaces/$spaceId/': typeof SpacesSpaceIdIndexRoute
-  '/spaces/$spaceId/projects/$projectId': typeof SpacesSpaceIdProjectsProjectIdRoute
-  '/spaces/$spaceId/tasks/$taskId': typeof SpacesSpaceIdTasksTaskIdRoute
-  '/spaces/$spaceId/views/$viewId': typeof SpacesSpaceIdViewsViewIdRoute
+  '/all/projects': typeof ShellAllProjectsRouteRouteWithChildren
+  '/all/tasks': typeof ShellAllTasksRouteRouteWithChildren
+  '/all/views': typeof ShellAllViewsRouteRouteWithChildren
+  '/spaces/$spaceId': typeof ShellSpacesSpaceIdRouteRouteWithChildren
+  '/all/archive': typeof ShellAllArchiveRoute
+  '/all/inbox': typeof ShellAllInboxRoute
+  '/all/no-project': typeof ShellAllNoProjectRoute
+  '/all/settings': typeof ShellAllSettingsRoute
+  '/all/trash': typeof ShellAllTrashRoute
+  '/all/': typeof ShellAllIndexRoute
+  '/spaces/$spaceId/projects': typeof ShellSpacesSpaceIdProjectsRouteRouteWithChildren
+  '/spaces/$spaceId/tasks': typeof ShellSpacesSpaceIdTasksRouteRouteWithChildren
+  '/spaces/$spaceId/views': typeof ShellSpacesSpaceIdViewsRouteRouteWithChildren
+  '/all/projects/$projectId': typeof ShellAllProjectsProjectIdRoute
+  '/all/views/$viewId': typeof ShellAllViewsViewIdRoute
+  '/spaces/$spaceId/archive': typeof ShellSpacesSpaceIdArchiveRoute
+  '/spaces/$spaceId/inbox': typeof ShellSpacesSpaceIdInboxRoute
+  '/spaces/$spaceId/no-project': typeof ShellSpacesSpaceIdNoProjectRoute
+  '/spaces/$spaceId/settings': typeof ShellSpacesSpaceIdSettingsRoute
+  '/spaces/$spaceId/trash': typeof ShellSpacesSpaceIdTrashRoute
+  '/all/projects/': typeof ShellAllProjectsIndexRoute
+  '/all/tasks/': typeof ShellAllTasksIndexRoute
+  '/all/views/': typeof ShellAllViewsIndexRoute
+  '/spaces/$spaceId/': typeof ShellSpacesSpaceIdIndexRoute
+  '/spaces/$spaceId/projects/$projectId': typeof ShellSpacesSpaceIdProjectsProjectIdRoute
+  '/spaces/$spaceId/tasks/$taskId': typeof ShellSpacesSpaceIdTasksTaskIdRoute
+  '/spaces/$spaceId/views/$viewId': typeof ShellSpacesSpaceIdViewsViewIdRoute
+  '/spaces/$spaceId/projects/': typeof ShellSpacesSpaceIdProjectsIndexRoute
+  '/spaces/$spaceId/tasks/': typeof ShellSpacesSpaceIdTasksIndexRoute
+  '/spaces/$spaceId/views/': typeof ShellSpacesSpaceIdViewsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/quick-create': typeof QuickCreateRoute
   '/settings': typeof SettingsRoute
-  '/all/archive': typeof AllArchiveRoute
-  '/all/inbox': typeof AllInboxRoute
-  '/all/no-project': typeof AllNoProjectRoute
-  '/all/projects': typeof AllProjectsRouteWithChildren
-  '/all/settings': typeof AllSettingsRoute
-  '/all/tasks': typeof AllTasksRoute
-  '/all/trash': typeof AllTrashRoute
-  '/all/views': typeof AllViewsRouteWithChildren
   '/debug/activity': typeof DebugActivityRoute
-  '/all': typeof AllIndexRoute
-  '/all/projects/$projectId': typeof AllProjectsProjectIdRoute
-  '/all/views/$viewId': typeof AllViewsViewIdRoute
-  '/spaces/$spaceId/archive': typeof SpacesSpaceIdArchiveRoute
-  '/spaces/$spaceId/inbox': typeof SpacesSpaceIdInboxRoute
-  '/spaces/$spaceId/no-project': typeof SpacesSpaceIdNoProjectRoute
-  '/spaces/$spaceId/projects': typeof SpacesSpaceIdProjectsRouteWithChildren
-  '/spaces/$spaceId/settings': typeof SpacesSpaceIdSettingsRoute
-  '/spaces/$spaceId/tasks': typeof SpacesSpaceIdTasksRouteWithChildren
-  '/spaces/$spaceId/trash': typeof SpacesSpaceIdTrashRoute
-  '/spaces/$spaceId/views': typeof SpacesSpaceIdViewsRouteWithChildren
-  '/spaces/$spaceId': typeof SpacesSpaceIdIndexRoute
-  '/spaces/$spaceId/projects/$projectId': typeof SpacesSpaceIdProjectsProjectIdRoute
-  '/spaces/$spaceId/tasks/$taskId': typeof SpacesSpaceIdTasksTaskIdRoute
-  '/spaces/$spaceId/views/$viewId': typeof SpacesSpaceIdViewsViewIdRoute
+  '/all/archive': typeof ShellAllArchiveRoute
+  '/all/inbox': typeof ShellAllInboxRoute
+  '/all/no-project': typeof ShellAllNoProjectRoute
+  '/all/settings': typeof ShellAllSettingsRoute
+  '/all/trash': typeof ShellAllTrashRoute
+  '/all': typeof ShellAllIndexRoute
+  '/all/projects/$projectId': typeof ShellAllProjectsProjectIdRoute
+  '/all/views/$viewId': typeof ShellAllViewsViewIdRoute
+  '/spaces/$spaceId/archive': typeof ShellSpacesSpaceIdArchiveRoute
+  '/spaces/$spaceId/inbox': typeof ShellSpacesSpaceIdInboxRoute
+  '/spaces/$spaceId/no-project': typeof ShellSpacesSpaceIdNoProjectRoute
+  '/spaces/$spaceId/settings': typeof ShellSpacesSpaceIdSettingsRoute
+  '/spaces/$spaceId/trash': typeof ShellSpacesSpaceIdTrashRoute
+  '/all/projects': typeof ShellAllProjectsIndexRoute
+  '/all/tasks': typeof ShellAllTasksIndexRoute
+  '/all/views': typeof ShellAllViewsIndexRoute
+  '/spaces/$spaceId': typeof ShellSpacesSpaceIdIndexRoute
+  '/spaces/$spaceId/projects/$projectId': typeof ShellSpacesSpaceIdProjectsProjectIdRoute
+  '/spaces/$spaceId/tasks/$taskId': typeof ShellSpacesSpaceIdTasksTaskIdRoute
+  '/spaces/$spaceId/views/$viewId': typeof ShellSpacesSpaceIdViewsViewIdRoute
+  '/spaces/$spaceId/projects': typeof ShellSpacesSpaceIdProjectsIndexRoute
+  '/spaces/$spaceId/tasks': typeof ShellSpacesSpaceIdTasksIndexRoute
+  '/spaces/$spaceId/views': typeof ShellSpacesSpaceIdViewsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/all': typeof AllRouteWithChildren
+  '/_shell': typeof ShellRouteRouteWithChildren
   '/quick-create': typeof QuickCreateRoute
   '/settings': typeof SettingsRoute
-  '/all/archive': typeof AllArchiveRoute
-  '/all/inbox': typeof AllInboxRoute
-  '/all/no-project': typeof AllNoProjectRoute
-  '/all/projects': typeof AllProjectsRouteWithChildren
-  '/all/settings': typeof AllSettingsRoute
-  '/all/tasks': typeof AllTasksRoute
-  '/all/trash': typeof AllTrashRoute
-  '/all/views': typeof AllViewsRouteWithChildren
+  '/_shell/all': typeof ShellAllRouteRouteWithChildren
   '/debug/activity': typeof DebugActivityRoute
-  '/spaces/$spaceId': typeof SpacesSpaceIdRouteWithChildren
-  '/all/': typeof AllIndexRoute
-  '/all/projects/$projectId': typeof AllProjectsProjectIdRoute
-  '/all/views/$viewId': typeof AllViewsViewIdRoute
-  '/spaces/$spaceId/archive': typeof SpacesSpaceIdArchiveRoute
-  '/spaces/$spaceId/inbox': typeof SpacesSpaceIdInboxRoute
-  '/spaces/$spaceId/no-project': typeof SpacesSpaceIdNoProjectRoute
-  '/spaces/$spaceId/projects': typeof SpacesSpaceIdProjectsRouteWithChildren
-  '/spaces/$spaceId/settings': typeof SpacesSpaceIdSettingsRoute
-  '/spaces/$spaceId/tasks': typeof SpacesSpaceIdTasksRouteWithChildren
-  '/spaces/$spaceId/trash': typeof SpacesSpaceIdTrashRoute
-  '/spaces/$spaceId/views': typeof SpacesSpaceIdViewsRouteWithChildren
-  '/spaces/$spaceId/': typeof SpacesSpaceIdIndexRoute
-  '/spaces/$spaceId/projects/$projectId': typeof SpacesSpaceIdProjectsProjectIdRoute
-  '/spaces/$spaceId/tasks/$taskId': typeof SpacesSpaceIdTasksTaskIdRoute
-  '/spaces/$spaceId/views/$viewId': typeof SpacesSpaceIdViewsViewIdRoute
+  '/_shell/all/projects': typeof ShellAllProjectsRouteRouteWithChildren
+  '/_shell/all/tasks': typeof ShellAllTasksRouteRouteWithChildren
+  '/_shell/all/views': typeof ShellAllViewsRouteRouteWithChildren
+  '/_shell/spaces/$spaceId': typeof ShellSpacesSpaceIdRouteRouteWithChildren
+  '/_shell/all/archive': typeof ShellAllArchiveRoute
+  '/_shell/all/inbox': typeof ShellAllInboxRoute
+  '/_shell/all/no-project': typeof ShellAllNoProjectRoute
+  '/_shell/all/settings': typeof ShellAllSettingsRoute
+  '/_shell/all/trash': typeof ShellAllTrashRoute
+  '/_shell/all/': typeof ShellAllIndexRoute
+  '/_shell/spaces/$spaceId/projects': typeof ShellSpacesSpaceIdProjectsRouteRouteWithChildren
+  '/_shell/spaces/$spaceId/tasks': typeof ShellSpacesSpaceIdTasksRouteRouteWithChildren
+  '/_shell/spaces/$spaceId/views': typeof ShellSpacesSpaceIdViewsRouteRouteWithChildren
+  '/_shell/all/projects/$projectId': typeof ShellAllProjectsProjectIdRoute
+  '/_shell/all/views/$viewId': typeof ShellAllViewsViewIdRoute
+  '/_shell/spaces/$spaceId/archive': typeof ShellSpacesSpaceIdArchiveRoute
+  '/_shell/spaces/$spaceId/inbox': typeof ShellSpacesSpaceIdInboxRoute
+  '/_shell/spaces/$spaceId/no-project': typeof ShellSpacesSpaceIdNoProjectRoute
+  '/_shell/spaces/$spaceId/settings': typeof ShellSpacesSpaceIdSettingsRoute
+  '/_shell/spaces/$spaceId/trash': typeof ShellSpacesSpaceIdTrashRoute
+  '/_shell/all/projects/': typeof ShellAllProjectsIndexRoute
+  '/_shell/all/tasks/': typeof ShellAllTasksIndexRoute
+  '/_shell/all/views/': typeof ShellAllViewsIndexRoute
+  '/_shell/spaces/$spaceId/': typeof ShellSpacesSpaceIdIndexRoute
+  '/_shell/spaces/$spaceId/projects/$projectId': typeof ShellSpacesSpaceIdProjectsProjectIdRoute
+  '/_shell/spaces/$spaceId/tasks/$taskId': typeof ShellSpacesSpaceIdTasksTaskIdRoute
+  '/_shell/spaces/$spaceId/views/$viewId': typeof ShellSpacesSpaceIdViewsViewIdRoute
+  '/_shell/spaces/$spaceId/projects/': typeof ShellSpacesSpaceIdProjectsIndexRoute
+  '/_shell/spaces/$spaceId/tasks/': typeof ShellSpacesSpaceIdTasksIndexRoute
+  '/_shell/spaces/$spaceId/views/': typeof ShellSpacesSpaceIdViewsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/all'
     | '/quick-create'
     | '/settings'
+    | '/all'
+    | '/debug/activity'
+    | '/all/projects'
+    | '/all/tasks'
+    | '/all/views'
+    | '/spaces/$spaceId'
     | '/all/archive'
     | '/all/inbox'
     | '/all/no-project'
-    | '/all/projects'
     | '/all/settings'
-    | '/all/tasks'
     | '/all/trash'
-    | '/all/views'
-    | '/debug/activity'
-    | '/spaces/$spaceId'
     | '/all/'
+    | '/spaces/$spaceId/projects'
+    | '/spaces/$spaceId/tasks'
+    | '/spaces/$spaceId/views'
     | '/all/projects/$projectId'
     | '/all/views/$viewId'
     | '/spaces/$spaceId/archive'
     | '/spaces/$spaceId/inbox'
     | '/spaces/$spaceId/no-project'
-    | '/spaces/$spaceId/projects'
     | '/spaces/$spaceId/settings'
-    | '/spaces/$spaceId/tasks'
     | '/spaces/$spaceId/trash'
-    | '/spaces/$spaceId/views'
+    | '/all/projects/'
+    | '/all/tasks/'
+    | '/all/views/'
     | '/spaces/$spaceId/'
     | '/spaces/$spaceId/projects/$projectId'
     | '/spaces/$spaceId/tasks/$taskId'
     | '/spaces/$spaceId/views/$viewId'
+    | '/spaces/$spaceId/projects/'
+    | '/spaces/$spaceId/tasks/'
+    | '/spaces/$spaceId/views/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/quick-create'
     | '/settings'
+    | '/debug/activity'
     | '/all/archive'
     | '/all/inbox'
     | '/all/no-project'
-    | '/all/projects'
     | '/all/settings'
-    | '/all/tasks'
     | '/all/trash'
-    | '/all/views'
-    | '/debug/activity'
     | '/all'
     | '/all/projects/$projectId'
     | '/all/views/$viewId'
     | '/spaces/$spaceId/archive'
     | '/spaces/$spaceId/inbox'
     | '/spaces/$spaceId/no-project'
-    | '/spaces/$spaceId/projects'
     | '/spaces/$spaceId/settings'
-    | '/spaces/$spaceId/tasks'
     | '/spaces/$spaceId/trash'
-    | '/spaces/$spaceId/views'
+    | '/all/projects'
+    | '/all/tasks'
+    | '/all/views'
     | '/spaces/$spaceId'
     | '/spaces/$spaceId/projects/$projectId'
     | '/spaces/$spaceId/tasks/$taskId'
     | '/spaces/$spaceId/views/$viewId'
+    | '/spaces/$spaceId/projects'
+    | '/spaces/$spaceId/tasks'
+    | '/spaces/$spaceId/views'
   id:
     | '__root__'
     | '/'
-    | '/all'
+    | '/_shell'
     | '/quick-create'
     | '/settings'
-    | '/all/archive'
-    | '/all/inbox'
-    | '/all/no-project'
-    | '/all/projects'
-    | '/all/settings'
-    | '/all/tasks'
-    | '/all/trash'
-    | '/all/views'
+    | '/_shell/all'
     | '/debug/activity'
-    | '/spaces/$spaceId'
-    | '/all/'
-    | '/all/projects/$projectId'
-    | '/all/views/$viewId'
-    | '/spaces/$spaceId/archive'
-    | '/spaces/$spaceId/inbox'
-    | '/spaces/$spaceId/no-project'
-    | '/spaces/$spaceId/projects'
-    | '/spaces/$spaceId/settings'
-    | '/spaces/$spaceId/tasks'
-    | '/spaces/$spaceId/trash'
-    | '/spaces/$spaceId/views'
-    | '/spaces/$spaceId/'
-    | '/spaces/$spaceId/projects/$projectId'
-    | '/spaces/$spaceId/tasks/$taskId'
-    | '/spaces/$spaceId/views/$viewId'
+    | '/_shell/all/projects'
+    | '/_shell/all/tasks'
+    | '/_shell/all/views'
+    | '/_shell/spaces/$spaceId'
+    | '/_shell/all/archive'
+    | '/_shell/all/inbox'
+    | '/_shell/all/no-project'
+    | '/_shell/all/settings'
+    | '/_shell/all/trash'
+    | '/_shell/all/'
+    | '/_shell/spaces/$spaceId/projects'
+    | '/_shell/spaces/$spaceId/tasks'
+    | '/_shell/spaces/$spaceId/views'
+    | '/_shell/all/projects/$projectId'
+    | '/_shell/all/views/$viewId'
+    | '/_shell/spaces/$spaceId/archive'
+    | '/_shell/spaces/$spaceId/inbox'
+    | '/_shell/spaces/$spaceId/no-project'
+    | '/_shell/spaces/$spaceId/settings'
+    | '/_shell/spaces/$spaceId/trash'
+    | '/_shell/all/projects/'
+    | '/_shell/all/tasks/'
+    | '/_shell/all/views/'
+    | '/_shell/spaces/$spaceId/'
+    | '/_shell/spaces/$spaceId/projects/$projectId'
+    | '/_shell/spaces/$spaceId/tasks/$taskId'
+    | '/_shell/spaces/$spaceId/views/$viewId'
+    | '/_shell/spaces/$spaceId/projects/'
+    | '/_shell/spaces/$spaceId/tasks/'
+    | '/_shell/spaces/$spaceId/views/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AllRoute: typeof AllRouteWithChildren
+  ShellRouteRoute: typeof ShellRouteRouteWithChildren
   QuickCreateRoute: typeof QuickCreateRoute
   SettingsRoute: typeof SettingsRoute
   DebugActivityRoute: typeof DebugActivityRoute
-  SpacesSpaceIdRoute: typeof SpacesSpaceIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -399,11 +475,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QuickCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/all': {
-      id: '/all'
-      path: '/all'
-      fullPath: '/all'
-      preLoaderRoute: typeof AllRouteImport
+    '/_shell': {
+      id: '/_shell'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ShellRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -413,20 +489,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/all/': {
-      id: '/all/'
-      path: '/'
-      fullPath: '/all/'
-      preLoaderRoute: typeof AllIndexRouteImport
-      parentRoute: typeof AllRoute
-    }
-    '/spaces/$spaceId': {
-      id: '/spaces/$spaceId'
-      path: '/spaces/$spaceId'
-      fullPath: '/spaces/$spaceId'
-      preLoaderRoute: typeof SpacesSpaceIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/debug/activity': {
       id: '/debug/activity'
       path: '/debug/activity'
@@ -434,283 +496,395 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DebugActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/all/views': {
-      id: '/all/views'
-      path: '/views'
-      fullPath: '/all/views'
-      preLoaderRoute: typeof AllViewsRouteImport
-      parentRoute: typeof AllRoute
+    '/_shell/all': {
+      id: '/_shell/all'
+      path: '/all'
+      fullPath: '/all'
+      preLoaderRoute: typeof ShellAllRouteRouteImport
+      parentRoute: typeof ShellRouteRoute
     }
-    '/all/trash': {
-      id: '/all/trash'
+    '/_shell/all/': {
+      id: '/_shell/all/'
+      path: '/'
+      fullPath: '/all/'
+      preLoaderRoute: typeof ShellAllIndexRouteImport
+      parentRoute: typeof ShellAllRouteRoute
+    }
+    '/_shell/all/trash': {
+      id: '/_shell/all/trash'
       path: '/trash'
       fullPath: '/all/trash'
-      preLoaderRoute: typeof AllTrashRouteImport
-      parentRoute: typeof AllRoute
+      preLoaderRoute: typeof ShellAllTrashRouteImport
+      parentRoute: typeof ShellAllRouteRoute
     }
-    '/all/tasks': {
-      id: '/all/tasks'
-      path: '/tasks'
-      fullPath: '/all/tasks'
-      preLoaderRoute: typeof AllTasksRouteImport
-      parentRoute: typeof AllRoute
-    }
-    '/all/settings': {
-      id: '/all/settings'
+    '/_shell/all/settings': {
+      id: '/_shell/all/settings'
       path: '/settings'
       fullPath: '/all/settings'
-      preLoaderRoute: typeof AllSettingsRouteImport
-      parentRoute: typeof AllRoute
+      preLoaderRoute: typeof ShellAllSettingsRouteImport
+      parentRoute: typeof ShellAllRouteRoute
     }
-    '/all/projects': {
-      id: '/all/projects'
-      path: '/projects'
-      fullPath: '/all/projects'
-      preLoaderRoute: typeof AllProjectsRouteImport
-      parentRoute: typeof AllRoute
-    }
-    '/all/no-project': {
-      id: '/all/no-project'
+    '/_shell/all/no-project': {
+      id: '/_shell/all/no-project'
       path: '/no-project'
       fullPath: '/all/no-project'
-      preLoaderRoute: typeof AllNoProjectRouteImport
-      parentRoute: typeof AllRoute
+      preLoaderRoute: typeof ShellAllNoProjectRouteImport
+      parentRoute: typeof ShellAllRouteRoute
     }
-    '/all/inbox': {
-      id: '/all/inbox'
+    '/_shell/all/inbox': {
+      id: '/_shell/all/inbox'
       path: '/inbox'
       fullPath: '/all/inbox'
-      preLoaderRoute: typeof AllInboxRouteImport
-      parentRoute: typeof AllRoute
+      preLoaderRoute: typeof ShellAllInboxRouteImport
+      parentRoute: typeof ShellAllRouteRoute
     }
-    '/all/archive': {
-      id: '/all/archive'
+    '/_shell/all/archive': {
+      id: '/_shell/all/archive'
       path: '/archive'
       fullPath: '/all/archive'
-      preLoaderRoute: typeof AllArchiveRouteImport
-      parentRoute: typeof AllRoute
+      preLoaderRoute: typeof ShellAllArchiveRouteImport
+      parentRoute: typeof ShellAllRouteRoute
     }
-    '/spaces/$spaceId/': {
-      id: '/spaces/$spaceId/'
+    '/_shell/spaces/$spaceId': {
+      id: '/_shell/spaces/$spaceId'
+      path: '/spaces/$spaceId'
+      fullPath: '/spaces/$spaceId'
+      preLoaderRoute: typeof ShellSpacesSpaceIdRouteRouteImport
+      parentRoute: typeof ShellRouteRoute
+    }
+    '/_shell/all/views': {
+      id: '/_shell/all/views'
+      path: '/views'
+      fullPath: '/all/views'
+      preLoaderRoute: typeof ShellAllViewsRouteRouteImport
+      parentRoute: typeof ShellAllRouteRoute
+    }
+    '/_shell/all/tasks': {
+      id: '/_shell/all/tasks'
+      path: '/tasks'
+      fullPath: '/all/tasks'
+      preLoaderRoute: typeof ShellAllTasksRouteRouteImport
+      parentRoute: typeof ShellAllRouteRoute
+    }
+    '/_shell/all/projects': {
+      id: '/_shell/all/projects'
+      path: '/projects'
+      fullPath: '/all/projects'
+      preLoaderRoute: typeof ShellAllProjectsRouteRouteImport
+      parentRoute: typeof ShellAllRouteRoute
+    }
+    '/_shell/spaces/$spaceId/': {
+      id: '/_shell/spaces/$spaceId/'
       path: '/'
       fullPath: '/spaces/$spaceId/'
-      preLoaderRoute: typeof SpacesSpaceIdIndexRouteImport
-      parentRoute: typeof SpacesSpaceIdRoute
+      preLoaderRoute: typeof ShellSpacesSpaceIdIndexRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdRouteRoute
     }
-    '/spaces/$spaceId/views': {
-      id: '/spaces/$spaceId/views'
-      path: '/views'
-      fullPath: '/spaces/$spaceId/views'
-      preLoaderRoute: typeof SpacesSpaceIdViewsRouteImport
-      parentRoute: typeof SpacesSpaceIdRoute
+    '/_shell/all/views/': {
+      id: '/_shell/all/views/'
+      path: '/'
+      fullPath: '/all/views/'
+      preLoaderRoute: typeof ShellAllViewsIndexRouteImport
+      parentRoute: typeof ShellAllViewsRouteRoute
     }
-    '/spaces/$spaceId/trash': {
-      id: '/spaces/$spaceId/trash'
+    '/_shell/all/tasks/': {
+      id: '/_shell/all/tasks/'
+      path: '/'
+      fullPath: '/all/tasks/'
+      preLoaderRoute: typeof ShellAllTasksIndexRouteImport
+      parentRoute: typeof ShellAllTasksRouteRoute
+    }
+    '/_shell/all/projects/': {
+      id: '/_shell/all/projects/'
+      path: '/'
+      fullPath: '/all/projects/'
+      preLoaderRoute: typeof ShellAllProjectsIndexRouteImport
+      parentRoute: typeof ShellAllProjectsRouteRoute
+    }
+    '/_shell/spaces/$spaceId/trash': {
+      id: '/_shell/spaces/$spaceId/trash'
       path: '/trash'
       fullPath: '/spaces/$spaceId/trash'
-      preLoaderRoute: typeof SpacesSpaceIdTrashRouteImport
-      parentRoute: typeof SpacesSpaceIdRoute
+      preLoaderRoute: typeof ShellSpacesSpaceIdTrashRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdRouteRoute
     }
-    '/spaces/$spaceId/tasks': {
-      id: '/spaces/$spaceId/tasks'
-      path: '/tasks'
-      fullPath: '/spaces/$spaceId/tasks'
-      preLoaderRoute: typeof SpacesSpaceIdTasksRouteImport
-      parentRoute: typeof SpacesSpaceIdRoute
-    }
-    '/spaces/$spaceId/settings': {
-      id: '/spaces/$spaceId/settings'
+    '/_shell/spaces/$spaceId/settings': {
+      id: '/_shell/spaces/$spaceId/settings'
       path: '/settings'
       fullPath: '/spaces/$spaceId/settings'
-      preLoaderRoute: typeof SpacesSpaceIdSettingsRouteImport
-      parentRoute: typeof SpacesSpaceIdRoute
+      preLoaderRoute: typeof ShellSpacesSpaceIdSettingsRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdRouteRoute
     }
-    '/spaces/$spaceId/projects': {
-      id: '/spaces/$spaceId/projects'
-      path: '/projects'
-      fullPath: '/spaces/$spaceId/projects'
-      preLoaderRoute: typeof SpacesSpaceIdProjectsRouteImport
-      parentRoute: typeof SpacesSpaceIdRoute
-    }
-    '/spaces/$spaceId/no-project': {
-      id: '/spaces/$spaceId/no-project'
+    '/_shell/spaces/$spaceId/no-project': {
+      id: '/_shell/spaces/$spaceId/no-project'
       path: '/no-project'
       fullPath: '/spaces/$spaceId/no-project'
-      preLoaderRoute: typeof SpacesSpaceIdNoProjectRouteImport
-      parentRoute: typeof SpacesSpaceIdRoute
+      preLoaderRoute: typeof ShellSpacesSpaceIdNoProjectRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdRouteRoute
     }
-    '/spaces/$spaceId/inbox': {
-      id: '/spaces/$spaceId/inbox'
+    '/_shell/spaces/$spaceId/inbox': {
+      id: '/_shell/spaces/$spaceId/inbox'
       path: '/inbox'
       fullPath: '/spaces/$spaceId/inbox'
-      preLoaderRoute: typeof SpacesSpaceIdInboxRouteImport
-      parentRoute: typeof SpacesSpaceIdRoute
+      preLoaderRoute: typeof ShellSpacesSpaceIdInboxRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdRouteRoute
     }
-    '/spaces/$spaceId/archive': {
-      id: '/spaces/$spaceId/archive'
+    '/_shell/spaces/$spaceId/archive': {
+      id: '/_shell/spaces/$spaceId/archive'
       path: '/archive'
       fullPath: '/spaces/$spaceId/archive'
-      preLoaderRoute: typeof SpacesSpaceIdArchiveRouteImport
-      parentRoute: typeof SpacesSpaceIdRoute
+      preLoaderRoute: typeof ShellSpacesSpaceIdArchiveRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdRouteRoute
     }
-    '/all/views/$viewId': {
-      id: '/all/views/$viewId'
+    '/_shell/all/views/$viewId': {
+      id: '/_shell/all/views/$viewId'
       path: '/$viewId'
       fullPath: '/all/views/$viewId'
-      preLoaderRoute: typeof AllViewsViewIdRouteImport
-      parentRoute: typeof AllViewsRoute
+      preLoaderRoute: typeof ShellAllViewsViewIdRouteImport
+      parentRoute: typeof ShellAllViewsRouteRoute
     }
-    '/all/projects/$projectId': {
-      id: '/all/projects/$projectId'
+    '/_shell/all/projects/$projectId': {
+      id: '/_shell/all/projects/$projectId'
       path: '/$projectId'
       fullPath: '/all/projects/$projectId'
-      preLoaderRoute: typeof AllProjectsProjectIdRouteImport
-      parentRoute: typeof AllProjectsRoute
+      preLoaderRoute: typeof ShellAllProjectsProjectIdRouteImport
+      parentRoute: typeof ShellAllProjectsRouteRoute
     }
-    '/spaces/$spaceId/views/$viewId': {
-      id: '/spaces/$spaceId/views/$viewId'
+    '/_shell/spaces/$spaceId/views': {
+      id: '/_shell/spaces/$spaceId/views'
+      path: '/views'
+      fullPath: '/spaces/$spaceId/views'
+      preLoaderRoute: typeof ShellSpacesSpaceIdViewsRouteRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdRouteRoute
+    }
+    '/_shell/spaces/$spaceId/tasks': {
+      id: '/_shell/spaces/$spaceId/tasks'
+      path: '/tasks'
+      fullPath: '/spaces/$spaceId/tasks'
+      preLoaderRoute: typeof ShellSpacesSpaceIdTasksRouteRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdRouteRoute
+    }
+    '/_shell/spaces/$spaceId/projects': {
+      id: '/_shell/spaces/$spaceId/projects'
+      path: '/projects'
+      fullPath: '/spaces/$spaceId/projects'
+      preLoaderRoute: typeof ShellSpacesSpaceIdProjectsRouteRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdRouteRoute
+    }
+    '/_shell/spaces/$spaceId/views/': {
+      id: '/_shell/spaces/$spaceId/views/'
+      path: '/'
+      fullPath: '/spaces/$spaceId/views/'
+      preLoaderRoute: typeof ShellSpacesSpaceIdViewsIndexRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdViewsRouteRoute
+    }
+    '/_shell/spaces/$spaceId/tasks/': {
+      id: '/_shell/spaces/$spaceId/tasks/'
+      path: '/'
+      fullPath: '/spaces/$spaceId/tasks/'
+      preLoaderRoute: typeof ShellSpacesSpaceIdTasksIndexRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdTasksRouteRoute
+    }
+    '/_shell/spaces/$spaceId/projects/': {
+      id: '/_shell/spaces/$spaceId/projects/'
+      path: '/'
+      fullPath: '/spaces/$spaceId/projects/'
+      preLoaderRoute: typeof ShellSpacesSpaceIdProjectsIndexRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdProjectsRouteRoute
+    }
+    '/_shell/spaces/$spaceId/views/$viewId': {
+      id: '/_shell/spaces/$spaceId/views/$viewId'
       path: '/$viewId'
       fullPath: '/spaces/$spaceId/views/$viewId'
-      preLoaderRoute: typeof SpacesSpaceIdViewsViewIdRouteImport
-      parentRoute: typeof SpacesSpaceIdViewsRoute
+      preLoaderRoute: typeof ShellSpacesSpaceIdViewsViewIdRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdViewsRouteRoute
     }
-    '/spaces/$spaceId/tasks/$taskId': {
-      id: '/spaces/$spaceId/tasks/$taskId'
+    '/_shell/spaces/$spaceId/tasks/$taskId': {
+      id: '/_shell/spaces/$spaceId/tasks/$taskId'
       path: '/$taskId'
       fullPath: '/spaces/$spaceId/tasks/$taskId'
-      preLoaderRoute: typeof SpacesSpaceIdTasksTaskIdRouteImport
-      parentRoute: typeof SpacesSpaceIdTasksRoute
+      preLoaderRoute: typeof ShellSpacesSpaceIdTasksTaskIdRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdTasksRouteRoute
     }
-    '/spaces/$spaceId/projects/$projectId': {
-      id: '/spaces/$spaceId/projects/$projectId'
+    '/_shell/spaces/$spaceId/projects/$projectId': {
+      id: '/_shell/spaces/$spaceId/projects/$projectId'
       path: '/$projectId'
       fullPath: '/spaces/$spaceId/projects/$projectId'
-      preLoaderRoute: typeof SpacesSpaceIdProjectsProjectIdRouteImport
-      parentRoute: typeof SpacesSpaceIdProjectsRoute
+      preLoaderRoute: typeof ShellSpacesSpaceIdProjectsProjectIdRouteImport
+      parentRoute: typeof ShellSpacesSpaceIdProjectsRouteRoute
     }
   }
 }
 
-interface AllProjectsRouteChildren {
-  AllProjectsProjectIdRoute: typeof AllProjectsProjectIdRoute
+interface ShellAllProjectsRouteRouteChildren {
+  ShellAllProjectsProjectIdRoute: typeof ShellAllProjectsProjectIdRoute
+  ShellAllProjectsIndexRoute: typeof ShellAllProjectsIndexRoute
 }
 
-const AllProjectsRouteChildren: AllProjectsRouteChildren = {
-  AllProjectsProjectIdRoute: AllProjectsProjectIdRoute,
+const ShellAllProjectsRouteRouteChildren: ShellAllProjectsRouteRouteChildren = {
+  ShellAllProjectsProjectIdRoute: ShellAllProjectsProjectIdRoute,
+  ShellAllProjectsIndexRoute: ShellAllProjectsIndexRoute,
 }
 
-const AllProjectsRouteWithChildren = AllProjectsRoute._addFileChildren(
-  AllProjectsRouteChildren,
-)
-
-interface AllViewsRouteChildren {
-  AllViewsViewIdRoute: typeof AllViewsViewIdRoute
-}
-
-const AllViewsRouteChildren: AllViewsRouteChildren = {
-  AllViewsViewIdRoute: AllViewsViewIdRoute,
-}
-
-const AllViewsRouteWithChildren = AllViewsRoute._addFileChildren(
-  AllViewsRouteChildren,
-)
-
-interface AllRouteChildren {
-  AllArchiveRoute: typeof AllArchiveRoute
-  AllInboxRoute: typeof AllInboxRoute
-  AllNoProjectRoute: typeof AllNoProjectRoute
-  AllProjectsRoute: typeof AllProjectsRouteWithChildren
-  AllSettingsRoute: typeof AllSettingsRoute
-  AllTasksRoute: typeof AllTasksRoute
-  AllTrashRoute: typeof AllTrashRoute
-  AllViewsRoute: typeof AllViewsRouteWithChildren
-  AllIndexRoute: typeof AllIndexRoute
-}
-
-const AllRouteChildren: AllRouteChildren = {
-  AllArchiveRoute: AllArchiveRoute,
-  AllInboxRoute: AllInboxRoute,
-  AllNoProjectRoute: AllNoProjectRoute,
-  AllProjectsRoute: AllProjectsRouteWithChildren,
-  AllSettingsRoute: AllSettingsRoute,
-  AllTasksRoute: AllTasksRoute,
-  AllTrashRoute: AllTrashRoute,
-  AllViewsRoute: AllViewsRouteWithChildren,
-  AllIndexRoute: AllIndexRoute,
-}
-
-const AllRouteWithChildren = AllRoute._addFileChildren(AllRouteChildren)
-
-interface SpacesSpaceIdProjectsRouteChildren {
-  SpacesSpaceIdProjectsProjectIdRoute: typeof SpacesSpaceIdProjectsProjectIdRoute
-}
-
-const SpacesSpaceIdProjectsRouteChildren: SpacesSpaceIdProjectsRouteChildren = {
-  SpacesSpaceIdProjectsProjectIdRoute: SpacesSpaceIdProjectsProjectIdRoute,
-}
-
-const SpacesSpaceIdProjectsRouteWithChildren =
-  SpacesSpaceIdProjectsRoute._addFileChildren(
-    SpacesSpaceIdProjectsRouteChildren,
+const ShellAllProjectsRouteRouteWithChildren =
+  ShellAllProjectsRouteRoute._addFileChildren(
+    ShellAllProjectsRouteRouteChildren,
   )
 
-interface SpacesSpaceIdTasksRouteChildren {
-  SpacesSpaceIdTasksTaskIdRoute: typeof SpacesSpaceIdTasksTaskIdRoute
+interface ShellAllTasksRouteRouteChildren {
+  ShellAllTasksIndexRoute: typeof ShellAllTasksIndexRoute
 }
 
-const SpacesSpaceIdTasksRouteChildren: SpacesSpaceIdTasksRouteChildren = {
-  SpacesSpaceIdTasksTaskIdRoute: SpacesSpaceIdTasksTaskIdRoute,
+const ShellAllTasksRouteRouteChildren: ShellAllTasksRouteRouteChildren = {
+  ShellAllTasksIndexRoute: ShellAllTasksIndexRoute,
 }
 
-const SpacesSpaceIdTasksRouteWithChildren =
-  SpacesSpaceIdTasksRoute._addFileChildren(SpacesSpaceIdTasksRouteChildren)
+const ShellAllTasksRouteRouteWithChildren =
+  ShellAllTasksRouteRoute._addFileChildren(ShellAllTasksRouteRouteChildren)
 
-interface SpacesSpaceIdViewsRouteChildren {
-  SpacesSpaceIdViewsViewIdRoute: typeof SpacesSpaceIdViewsViewIdRoute
+interface ShellAllViewsRouteRouteChildren {
+  ShellAllViewsViewIdRoute: typeof ShellAllViewsViewIdRoute
+  ShellAllViewsIndexRoute: typeof ShellAllViewsIndexRoute
 }
 
-const SpacesSpaceIdViewsRouteChildren: SpacesSpaceIdViewsRouteChildren = {
-  SpacesSpaceIdViewsViewIdRoute: SpacesSpaceIdViewsViewIdRoute,
+const ShellAllViewsRouteRouteChildren: ShellAllViewsRouteRouteChildren = {
+  ShellAllViewsViewIdRoute: ShellAllViewsViewIdRoute,
+  ShellAllViewsIndexRoute: ShellAllViewsIndexRoute,
 }
 
-const SpacesSpaceIdViewsRouteWithChildren =
-  SpacesSpaceIdViewsRoute._addFileChildren(SpacesSpaceIdViewsRouteChildren)
+const ShellAllViewsRouteRouteWithChildren =
+  ShellAllViewsRouteRoute._addFileChildren(ShellAllViewsRouteRouteChildren)
 
-interface SpacesSpaceIdRouteChildren {
-  SpacesSpaceIdArchiveRoute: typeof SpacesSpaceIdArchiveRoute
-  SpacesSpaceIdInboxRoute: typeof SpacesSpaceIdInboxRoute
-  SpacesSpaceIdNoProjectRoute: typeof SpacesSpaceIdNoProjectRoute
-  SpacesSpaceIdProjectsRoute: typeof SpacesSpaceIdProjectsRouteWithChildren
-  SpacesSpaceIdSettingsRoute: typeof SpacesSpaceIdSettingsRoute
-  SpacesSpaceIdTasksRoute: typeof SpacesSpaceIdTasksRouteWithChildren
-  SpacesSpaceIdTrashRoute: typeof SpacesSpaceIdTrashRoute
-  SpacesSpaceIdViewsRoute: typeof SpacesSpaceIdViewsRouteWithChildren
-  SpacesSpaceIdIndexRoute: typeof SpacesSpaceIdIndexRoute
+interface ShellAllRouteRouteChildren {
+  ShellAllProjectsRouteRoute: typeof ShellAllProjectsRouteRouteWithChildren
+  ShellAllTasksRouteRoute: typeof ShellAllTasksRouteRouteWithChildren
+  ShellAllViewsRouteRoute: typeof ShellAllViewsRouteRouteWithChildren
+  ShellAllArchiveRoute: typeof ShellAllArchiveRoute
+  ShellAllInboxRoute: typeof ShellAllInboxRoute
+  ShellAllNoProjectRoute: typeof ShellAllNoProjectRoute
+  ShellAllSettingsRoute: typeof ShellAllSettingsRoute
+  ShellAllTrashRoute: typeof ShellAllTrashRoute
+  ShellAllIndexRoute: typeof ShellAllIndexRoute
 }
 
-const SpacesSpaceIdRouteChildren: SpacesSpaceIdRouteChildren = {
-  SpacesSpaceIdArchiveRoute: SpacesSpaceIdArchiveRoute,
-  SpacesSpaceIdInboxRoute: SpacesSpaceIdInboxRoute,
-  SpacesSpaceIdNoProjectRoute: SpacesSpaceIdNoProjectRoute,
-  SpacesSpaceIdProjectsRoute: SpacesSpaceIdProjectsRouteWithChildren,
-  SpacesSpaceIdSettingsRoute: SpacesSpaceIdSettingsRoute,
-  SpacesSpaceIdTasksRoute: SpacesSpaceIdTasksRouteWithChildren,
-  SpacesSpaceIdTrashRoute: SpacesSpaceIdTrashRoute,
-  SpacesSpaceIdViewsRoute: SpacesSpaceIdViewsRouteWithChildren,
-  SpacesSpaceIdIndexRoute: SpacesSpaceIdIndexRoute,
+const ShellAllRouteRouteChildren: ShellAllRouteRouteChildren = {
+  ShellAllProjectsRouteRoute: ShellAllProjectsRouteRouteWithChildren,
+  ShellAllTasksRouteRoute: ShellAllTasksRouteRouteWithChildren,
+  ShellAllViewsRouteRoute: ShellAllViewsRouteRouteWithChildren,
+  ShellAllArchiveRoute: ShellAllArchiveRoute,
+  ShellAllInboxRoute: ShellAllInboxRoute,
+  ShellAllNoProjectRoute: ShellAllNoProjectRoute,
+  ShellAllSettingsRoute: ShellAllSettingsRoute,
+  ShellAllTrashRoute: ShellAllTrashRoute,
+  ShellAllIndexRoute: ShellAllIndexRoute,
 }
 
-const SpacesSpaceIdRouteWithChildren = SpacesSpaceIdRoute._addFileChildren(
-  SpacesSpaceIdRouteChildren,
+const ShellAllRouteRouteWithChildren = ShellAllRouteRoute._addFileChildren(
+  ShellAllRouteRouteChildren,
+)
+
+interface ShellSpacesSpaceIdProjectsRouteRouteChildren {
+  ShellSpacesSpaceIdProjectsProjectIdRoute: typeof ShellSpacesSpaceIdProjectsProjectIdRoute
+  ShellSpacesSpaceIdProjectsIndexRoute: typeof ShellSpacesSpaceIdProjectsIndexRoute
+}
+
+const ShellSpacesSpaceIdProjectsRouteRouteChildren: ShellSpacesSpaceIdProjectsRouteRouteChildren =
+  {
+    ShellSpacesSpaceIdProjectsProjectIdRoute:
+      ShellSpacesSpaceIdProjectsProjectIdRoute,
+    ShellSpacesSpaceIdProjectsIndexRoute: ShellSpacesSpaceIdProjectsIndexRoute,
+  }
+
+const ShellSpacesSpaceIdProjectsRouteRouteWithChildren =
+  ShellSpacesSpaceIdProjectsRouteRoute._addFileChildren(
+    ShellSpacesSpaceIdProjectsRouteRouteChildren,
+  )
+
+interface ShellSpacesSpaceIdTasksRouteRouteChildren {
+  ShellSpacesSpaceIdTasksTaskIdRoute: typeof ShellSpacesSpaceIdTasksTaskIdRoute
+  ShellSpacesSpaceIdTasksIndexRoute: typeof ShellSpacesSpaceIdTasksIndexRoute
+}
+
+const ShellSpacesSpaceIdTasksRouteRouteChildren: ShellSpacesSpaceIdTasksRouteRouteChildren =
+  {
+    ShellSpacesSpaceIdTasksTaskIdRoute: ShellSpacesSpaceIdTasksTaskIdRoute,
+    ShellSpacesSpaceIdTasksIndexRoute: ShellSpacesSpaceIdTasksIndexRoute,
+  }
+
+const ShellSpacesSpaceIdTasksRouteRouteWithChildren =
+  ShellSpacesSpaceIdTasksRouteRoute._addFileChildren(
+    ShellSpacesSpaceIdTasksRouteRouteChildren,
+  )
+
+interface ShellSpacesSpaceIdViewsRouteRouteChildren {
+  ShellSpacesSpaceIdViewsViewIdRoute: typeof ShellSpacesSpaceIdViewsViewIdRoute
+  ShellSpacesSpaceIdViewsIndexRoute: typeof ShellSpacesSpaceIdViewsIndexRoute
+}
+
+const ShellSpacesSpaceIdViewsRouteRouteChildren: ShellSpacesSpaceIdViewsRouteRouteChildren =
+  {
+    ShellSpacesSpaceIdViewsViewIdRoute: ShellSpacesSpaceIdViewsViewIdRoute,
+    ShellSpacesSpaceIdViewsIndexRoute: ShellSpacesSpaceIdViewsIndexRoute,
+  }
+
+const ShellSpacesSpaceIdViewsRouteRouteWithChildren =
+  ShellSpacesSpaceIdViewsRouteRoute._addFileChildren(
+    ShellSpacesSpaceIdViewsRouteRouteChildren,
+  )
+
+interface ShellSpacesSpaceIdRouteRouteChildren {
+  ShellSpacesSpaceIdProjectsRouteRoute: typeof ShellSpacesSpaceIdProjectsRouteRouteWithChildren
+  ShellSpacesSpaceIdTasksRouteRoute: typeof ShellSpacesSpaceIdTasksRouteRouteWithChildren
+  ShellSpacesSpaceIdViewsRouteRoute: typeof ShellSpacesSpaceIdViewsRouteRouteWithChildren
+  ShellSpacesSpaceIdArchiveRoute: typeof ShellSpacesSpaceIdArchiveRoute
+  ShellSpacesSpaceIdInboxRoute: typeof ShellSpacesSpaceIdInboxRoute
+  ShellSpacesSpaceIdNoProjectRoute: typeof ShellSpacesSpaceIdNoProjectRoute
+  ShellSpacesSpaceIdSettingsRoute: typeof ShellSpacesSpaceIdSettingsRoute
+  ShellSpacesSpaceIdTrashRoute: typeof ShellSpacesSpaceIdTrashRoute
+  ShellSpacesSpaceIdIndexRoute: typeof ShellSpacesSpaceIdIndexRoute
+}
+
+const ShellSpacesSpaceIdRouteRouteChildren: ShellSpacesSpaceIdRouteRouteChildren =
+  {
+    ShellSpacesSpaceIdProjectsRouteRoute:
+      ShellSpacesSpaceIdProjectsRouteRouteWithChildren,
+    ShellSpacesSpaceIdTasksRouteRoute:
+      ShellSpacesSpaceIdTasksRouteRouteWithChildren,
+    ShellSpacesSpaceIdViewsRouteRoute:
+      ShellSpacesSpaceIdViewsRouteRouteWithChildren,
+    ShellSpacesSpaceIdArchiveRoute: ShellSpacesSpaceIdArchiveRoute,
+    ShellSpacesSpaceIdInboxRoute: ShellSpacesSpaceIdInboxRoute,
+    ShellSpacesSpaceIdNoProjectRoute: ShellSpacesSpaceIdNoProjectRoute,
+    ShellSpacesSpaceIdSettingsRoute: ShellSpacesSpaceIdSettingsRoute,
+    ShellSpacesSpaceIdTrashRoute: ShellSpacesSpaceIdTrashRoute,
+    ShellSpacesSpaceIdIndexRoute: ShellSpacesSpaceIdIndexRoute,
+  }
+
+const ShellSpacesSpaceIdRouteRouteWithChildren =
+  ShellSpacesSpaceIdRouteRoute._addFileChildren(
+    ShellSpacesSpaceIdRouteRouteChildren,
+  )
+
+interface ShellRouteRouteChildren {
+  ShellAllRouteRoute: typeof ShellAllRouteRouteWithChildren
+  ShellSpacesSpaceIdRouteRoute: typeof ShellSpacesSpaceIdRouteRouteWithChildren
+}
+
+const ShellRouteRouteChildren: ShellRouteRouteChildren = {
+  ShellAllRouteRoute: ShellAllRouteRouteWithChildren,
+  ShellSpacesSpaceIdRouteRoute: ShellSpacesSpaceIdRouteRouteWithChildren,
+}
+
+const ShellRouteRouteWithChildren = ShellRouteRoute._addFileChildren(
+  ShellRouteRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AllRoute: AllRouteWithChildren,
+  ShellRouteRoute: ShellRouteRouteWithChildren,
   QuickCreateRoute: QuickCreateRoute,
   SettingsRoute: SettingsRoute,
   DebugActivityRoute: DebugActivityRoute,
-  SpacesSpaceIdRoute: SpacesSpaceIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
