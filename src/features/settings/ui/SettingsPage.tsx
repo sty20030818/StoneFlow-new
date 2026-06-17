@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 
 import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import { EntityScene } from '@/app/layouts/entity-scene'
+import { Link } from '@/app/routing/tanstackCompat'
 import {
 	selectSidebarSettings,
 	selectSidebarSettingsError,

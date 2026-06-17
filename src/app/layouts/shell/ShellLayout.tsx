@@ -6,7 +6,6 @@ import {
 	useState,
 	type PropsWithChildren,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import {
 	buildCanonicalSectionPath,
@@ -14,6 +13,7 @@ import {
 	buildScopedSettingsPath,
 	buildCanonicalViewPath,
 } from '@/app/routing'
+import { useNavigate } from '@/app/routing/tanstackCompat'
 import type { ShellRoute } from '@/app/routing'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'

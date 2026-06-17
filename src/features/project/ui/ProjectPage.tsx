@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
+import { useNavigate, useParams } from '@/app/routing/tanstackCompat'
 import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useEntityDetailController } from '@/features/entity-detail'

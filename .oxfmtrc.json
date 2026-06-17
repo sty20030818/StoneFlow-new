@@ -24,6 +24,7 @@
 		"src-tauri/**",
 		"Docs/**",
 		"openspec/**",
+		"src/routeTree.gen.ts",
 		"*.md",
 		"*.svg",
 		"*.png",

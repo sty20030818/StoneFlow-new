@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
@@ -15,6 +14,7 @@ import {
 import { Button } from '@/shared/ui/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import { buildCanonicalProjectPath, useShellRoute } from '@/app/routing'
+import { useNavigate } from '@/app/routing/tanstackCompat'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
 import {

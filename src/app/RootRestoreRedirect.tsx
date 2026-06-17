@@ -1,5 +1,5 @@
 import { startTransition, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from '@/app/routing/tanstackCompat'
 
 import { buildStartupFallbackPath } from '@/app/routing'
 import { resolveStartupPath } from '@/app/layouts/shell/model/shellDevicePreferences'

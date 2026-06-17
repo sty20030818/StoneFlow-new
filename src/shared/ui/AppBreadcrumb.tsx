@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
+import { Link } from '@/app/routing/tanstackCompat'
 import {
 	Breadcrumb,
 	BreadcrumbItem,

@@ -1,8 +1,8 @@
 import { startTransition, useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import { getSectionLabel, getScopeLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import { buildCanonicalProjectPath } from '@/app/routing'
+import { useNavigate } from '@/app/routing/tanstackCompat'
 import type { ShellRouteHistoryEntry } from '@/app/layouts/shell/model/useShellRouteHistory'
 import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
 import { NavBackForward } from '@/app/layouts/shell/header/NavBackForward'

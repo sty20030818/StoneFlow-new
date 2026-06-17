@@ -1,5 +1,3 @@
-import type { Location } from 'react-router-dom'
-
 import { buildProjectPath, buildTaskDetailPath } from '@/app/routing'
 import { getProjectDetail } from '@/features/project/api/projects'
 import { getTaskDetail } from '@/features/task/api/tasks'
@@ -10,8 +8,13 @@ import {
 } from './entityDetailRouteState'
 import type { EntityDetailNavigationTarget, EntityDetailTarget } from './entityDetailTypes'
 
+type LocationLike = {
+	pathname: string
+	search: string
+}
+
 export function openEntityDrawerTarget(
-	location: Pick<Location, 'pathname' | 'search'>,
+	location: LocationLike,
 	target: EntityDetailTarget,
 ): EntityDetailNavigationTarget {
 	const current = parseEntityDetailRouteState(location.search).activeDetail
@@ -23,9 +26,7 @@ export function openEntityDrawerTarget(
 	}
 }
 
-export function closeEntityDrawerTarget(
-	location: Pick<Location, 'pathname' | 'search'>,
-): EntityDetailNavigationTarget {
+export function closeEntityDrawerTarget(location: LocationLike): EntityDetailNavigationTarget {
 	return {
 		pathname: location.pathname,
 		search: clearEntityDetailSearch(location.search),

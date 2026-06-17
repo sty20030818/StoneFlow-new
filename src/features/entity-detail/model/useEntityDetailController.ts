@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, startTransition } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
 
 import {
 	closeEntityDrawerTarget,
@@ -12,6 +11,7 @@ import {
 	parseEntityDetailRouteState,
 } from './entityDetailRouteState'
 import type { EntityDetailTarget } from './entityDetailTypes'
+import { useLocation, useNavigate } from '@/app/routing/tanstackCompat'
 
 export function useEntityDetailController() {
 	const location = useLocation()

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import { buildCanonicalSectionPath, buildStartupFallbackPath } from '@/app/routing'
+import { useNavigate } from '@/app/routing/tanstackCompat'
 import {
 	SHELL_FOOTER_ITEMS,
 	SHELL_NAV_ITEMS,

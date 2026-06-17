@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
 
 import { buildProjectPath, buildStartupFallbackPath, useShellRoute } from '@/app/routing'
 import { getProjectDetail } from '@/features/project/api/projects'
@@ -7,6 +6,7 @@ import { ProjectPage } from '@/features/project/ui/ProjectPage'
 import { useSpaces } from '@/features/space/query'
 import type { Scope, Project } from '@/shared/types'
 import { TaskPageState } from '@/features/task/detail/ui/TaskPageState'
+import { Navigate, useNavigate, useParams } from '@/app/routing/tanstackCompat'
 
 type RouteLoadState =
 	| { kind: 'loading' }

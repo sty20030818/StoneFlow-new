@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { buildCanonicalViewPath, useShellRoute } from '@/app/routing'
+import { useNavigate, useParams } from '@/app/routing/tanstackCompat'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useProjectOptions } from '@/features/project/query'

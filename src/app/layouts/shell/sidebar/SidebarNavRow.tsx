@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react'
-import { NavLink, useMatch } from 'react-router-dom'
 
+import { Link, useMatch } from '@/app/routing/tanstackCompat'
 import { ContextMenu, ContextMenuTrigger } from '@/shared/ui/base/context-menu'
 import { SidebarMenuBadge, SidebarMenuButton } from '@/shared/ui/base/sidebar'
 import {
@@ -58,9 +58,9 @@ export function SidebarNavRow({
 
 	const buttonRow = (
 		<SidebarMenuButton asChild isActive={isActive} tooltip={tooltip ?? label}>
-			<NavLink to={to}>
+			<Link to={to}>
 				<SidebarNavRowLayout badge={badge} icon={icon} label={label} />
-			</NavLink>
+			</Link>
 		</SidebarMenuButton>
 	)
 

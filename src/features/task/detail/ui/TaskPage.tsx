@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { buildCanonicalSectionPath } from '@/app/routing'
+import { useNavigate } from '@/app/routing/tanstackCompat'
 import { useProjectOptions } from '@/features/project/query'
 import { useSpaces } from '@/features/space/query'
 import type { Scope, Space, TaskDetail } from '@/shared/types'

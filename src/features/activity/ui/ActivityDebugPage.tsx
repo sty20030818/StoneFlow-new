@@ -1,5 +1,4 @@
 import { type FormEvent, useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
 
 import {
 	type ActivityEntityType,
@@ -7,6 +6,7 @@ import {
 	getEntityActivities,
 } from '@/features/activity/api/getEntityActivities'
 import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
+import { Link, useSearchParams } from '@/app/routing/tanstackCompat'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'

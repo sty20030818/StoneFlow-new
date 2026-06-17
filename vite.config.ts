@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
@@ -7,7 +8,15 @@ const host = process.env.TAURI_DEV_HOST
 const srcDir = fileURLToPath(new URL('./src', import.meta.url))
 
 export default defineConfig({
-	plugins: [react(), tailwindcss()],
+	plugins: [
+		tanstackRouter({
+			target: 'react',
+			autoCodeSplitting: true,
+			routeFileIgnorePrefix: '-',
+		}),
+		react(),
+		tailwindcss(),
+	],
 	// 防止 Vite 清屏，便于直接看到 Rust 侧错误输出。
 	clearScreen: false,
 	resolve: {

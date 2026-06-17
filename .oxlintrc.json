@@ -23,6 +23,7 @@
 		"src-tauri/**",
 		"Docs/**",
 		"openspec/**",
+		"src/routeTree.gen.ts",
 		"*.min.js",
 		"*.d.ts",
 		"*.tsbuildinfo",

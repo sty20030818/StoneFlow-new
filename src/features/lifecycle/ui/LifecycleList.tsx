@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
+import { useNavigate } from '@/app/routing/tanstackCompat'
 import {
 	BulkActionBar,
 	LIFECYCLE_BULK_ACTION_IDS,
