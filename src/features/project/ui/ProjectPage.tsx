@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
+import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
+import { openSection } from '@/app/navigation/intents'
+import { resolveShellRouteScope } from '@/app/navigation/scope'
 import { useNavigate, useParams } from '@/app/routing/tanstackCompat'
-import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDangerConfirm } from '@/features/danger-confirm'
@@ -51,8 +53,6 @@ const PROJECT_TASK_FILTERS: Array<'all' | TaskStatus> = [
 	'canceled',
 ]
 
-const ALL_SCOPE = { type: 'all' } as const
-
 type ProjectPageProps = {
 	scopeOverride?: Scope
 }
@@ -60,8 +60,8 @@ type ProjectPageProps = {
 export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 	const navigate = useNavigate()
 	const { projectId = '' } = useParams()
-	const shellRoute = useShellRoute()
-	const scope = scopeOverride ?? shellRoute.scope ?? ALL_SCOPE
+	const shellRoute = useCurrentShellRoute()
+	const scope = scopeOverride ?? resolveShellRouteScope(shellRoute)
 	const spaceId = scope.type === 'space' ? scope.spaceId : null
 	const { requestDangerConfirm } = useDangerConfirm()
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
@@ -255,7 +255,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 							</EmptyHeader>
 							<EmptyContent>
 								<Button
-									onClick={() => navigate(buildCanonicalSectionPath(scope, 'projects', spaceId))}
+									onClick={() => navigate(openSection(scope, 'projects', spaceId))}
 									type='button'
 								>
 									返回项目总览
@@ -307,7 +307,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 								}
 								void runAction('archive', async () => {
 									await archiveProject.mutateAsync(project.id)
-									navigate(buildCanonicalSectionPath(scope, 'projects', spaceId))
+									navigate(openSection(scope, 'projects', spaceId))
 								})
 							}}
 							size='sm'
@@ -329,7 +329,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 								}
 								void runAction('delete', async () => {
 									await deleteProject.mutateAsync(project.id)
-									navigate(buildCanonicalSectionPath(scope, 'projects', spaceId))
+									navigate(openSection(scope, 'projects', spaceId))
 								})
 							}}
 							size='sm'

@@ -1,7 +1,7 @@
 import { startTransition, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 
 import { getSectionLabel, getScopeLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
-import { buildCanonicalProjectPath } from '@/app/routing'
+import { openProjectDetail } from '@/app/navigation/intents'
 import { useNavigate } from '@/app/routing/tanstackCompat'
 import type { ShellRouteHistoryEntry } from '@/app/layouts/shell/model/useShellRouteHistory'
 import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
@@ -469,7 +469,12 @@ export function ShellHeader({
 				onClearAllFilters={onClearAllFilters}
 				onOpenChange={onCommandOpenChange}
 				onNavigateProject={(projectId) => {
-					handleNavigate(buildCanonicalProjectPath(currentScope, projectId, currentSpaceId))
+					handleNavigate(
+						openProjectDetail(projectId, {
+							scope: currentScope,
+							fallbackSpaceId: currentSpaceId,
+						}),
+					)
 				}}
 				onSelectFilterKind={onSelectFilterKind}
 				onRunCommand={onRunCommand}

@@ -7,12 +7,8 @@ import {
 	type PropsWithChildren,
 } from 'react'
 
-import {
-	buildCanonicalSectionPath,
-	buildTaskDetailPath,
-	buildScopedSettingsPath,
-	buildCanonicalViewPath,
-} from '@/app/routing'
+import {} from '@/app/routing'
+import { openShellNavigationTarget, openTaskDetail } from '@/app/navigation/intents'
 import { useNavigate } from '@/app/routing/tanstackCompat'
 import type { ShellRoute } from '@/app/routing'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -297,7 +293,7 @@ function ShellLayoutContent({
 	)
 	const openTaskPage = useCallback(
 		({ taskId, spaceId }: { taskId: string; spaceId: string }) => {
-			const targetPath = buildTaskDetailPath(spaceId, taskId)
+			const targetPath = openTaskDetail(taskId, spaceId)
 
 			closeTaskPreview()
 			closeEntityDrawer()
@@ -663,23 +659,12 @@ function ShellLayoutContent({
 				),
 			navigateTo: (target: ShellNavigationTarget) => {
 				startTransition(() => {
-					if (target === 'settings') {
-						navigate(buildScopedSettingsPath(currentScope, currentSpaceId))
-						return
-					}
-
-					if (target.startsWith('views/')) {
-						navigate(
-							buildCanonicalViewPath(currentScope, target.slice('views/'.length), currentSpaceId),
-						)
-						return
-					}
-
-					const sectionTarget = target as Exclude<
-						ShellNavigationTarget,
-						'settings' | `views/${string}`
-					>
-					navigate(buildCanonicalSectionPath(currentScope, sectionTarget, currentSpaceId))
+					navigate(
+						openShellNavigationTarget(target, {
+							scope: currentScope,
+							fallbackSpaceId: currentSpaceId,
+						}),
+					)
 				})
 			},
 			goBack,

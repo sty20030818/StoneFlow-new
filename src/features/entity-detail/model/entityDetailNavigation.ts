@@ -1,4 +1,4 @@
-import { buildProjectPath, buildTaskDetailPath } from '@/app/routing'
+import { openCanonicalProjectDetail, openTaskDetail } from '@/app/navigation/intents'
 import { getProjectDetail } from '@/features/project/api/projects'
 import { getTaskDetail } from '@/features/task/api/tasks'
 import {
@@ -40,7 +40,7 @@ export async function resolveEntityPageTarget(
 	if (target.kind === 'task') {
 		const detail = await getTaskDetail(target.id)
 		return {
-			pathname: buildTaskDetailPath(detail.spaceId, detail.id),
+			pathname: openTaskDetail(detail.id, detail.spaceId),
 			search: '',
 			replace: false,
 		}
@@ -48,7 +48,7 @@ export async function resolveEntityPageTarget(
 
 	const detail = await getProjectDetail(target.id)
 	return {
-		pathname: buildProjectPath(detail.spaceId, detail.id),
+		pathname: openCanonicalProjectDetail(detail.id, detail.spaceId),
 		search: '',
 		replace: false,
 	}

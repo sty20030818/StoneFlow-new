@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
-import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
+import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
+import { openSection } from '@/app/navigation/intents'
+import { resolveShellRouteScope } from '@/app/navigation/scope'
 import { useNavigate } from '@/app/routing/tanstackCompat'
 import {
 	BulkActionBar,
@@ -40,14 +42,13 @@ type LifecycleListProps = {
 
 type LifecycleFilter = 'all' | 'space' | 'project' | 'task'
 
-const ALL_SCOPE = { type: 'all' } as const
 const EMPTY_LIFECYCLE_ENTRIES: LifecycleEntry[] = []
 
 export function LifecycleList({ mode }: LifecycleListProps) {
 	const navigate = useNavigate()
 	const openEntityDrawer = useEntityDetailController().openDrawer
-	const shellRoute = useShellRoute()
-	const scope = shellRoute.scope ?? ALL_SCOPE
+	const shellRoute = useCurrentShellRoute()
+	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
 	const entriesQuery = useLifecycleEntriesQuery(mode, scope)
 	const restoreEntry = useRestoreLifecycleEntryMutation()
@@ -130,7 +131,7 @@ export function LifecycleList({ mode }: LifecycleListProps) {
 		}
 
 		if (entry.spaceId) {
-			void navigate(buildCanonicalSectionPath({ type: 'space', spaceId: entry.spaceId }, 'inbox'))
+			void navigate(openSection({ type: 'space', spaceId: entry.spaceId }, 'inbox', entry.spaceId))
 		}
 	}
 
@@ -189,7 +190,7 @@ export function LifecycleList({ mode }: LifecycleListProps) {
 					},
 					boardActions: {
 						onEmptyAction: () => {
-							void navigate(buildCanonicalSectionPath(scope, 'inbox', spaceId))
+							void navigate(openSection(scope, 'inbox', spaceId))
 						},
 						onOpenDetail: mode === 'archive' ? handleOpenDetail : undefined,
 						onRestore: (entry: LifecycleEntry) => {

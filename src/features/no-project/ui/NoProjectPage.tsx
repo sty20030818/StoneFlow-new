@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { useShellRoute } from '@/app/routing'
+import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
+import { resolveShellRouteScope } from '@/app/navigation/scope'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useEntityDetailController } from '@/features/entity-detail'
 import {
@@ -24,8 +25,6 @@ import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 import { Layers3Icon, PlusIcon } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
 
-const ALL_SCOPE = { type: 'all' } as const
-
 const NO_PROJECT_FILTERS: Array<'all' | TaskStatus> = [
 	'all',
 	'doing',
@@ -36,8 +35,8 @@ const NO_PROJECT_FILTERS: Array<'all' | TaskStatus> = [
 ]
 
 export function NoProjectPage() {
-	const shellRoute = useShellRoute()
-	const scope = shellRoute.scope ?? ALL_SCOPE
+	const shellRoute = useCurrentShellRoute()
+	const scope = resolveShellRouteScope(shellRoute)
 	const listInput = useMemo(
 		() => ({
 			scope,

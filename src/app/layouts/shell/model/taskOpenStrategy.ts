@@ -1,26 +1,25 @@
-import { buildCanonicalProjectPath, buildTaskDetailPath, type AppRouteKind } from '@/app/routing'
+import { openProjectDetail, openTaskDetail } from '@/app/navigation/intents'
+import type { AppRouteKind } from '@/app/routing'
 import type { CommandOpenPayload } from '@/shared/events'
 
 type ActiveDetailKind = 'task' | 'project' | null
 
 export function resolveCommandOpenTargetPath(payload: CommandOpenPayload) {
 	if (payload.kind === 'task') {
-		return buildTaskDetailPath(payload.spaceId, payload.id)
+		return openTaskDetail(payload.id, payload.spaceId)
 	}
 
 	if (payload.projectId) {
-		return buildCanonicalProjectPath(
-			{ type: 'space', spaceId: payload.spaceId },
-			payload.projectId,
-			payload.spaceId,
-		)
+		return openProjectDetail(payload.projectId, {
+			scope: { type: 'space', spaceId: payload.spaceId },
+			fallbackSpaceId: payload.spaceId,
+		})
 	}
 
-	return buildCanonicalProjectPath(
-		{ type: 'space', spaceId: payload.spaceId },
-		payload.id,
-		payload.spaceId,
-	)
+	return openProjectDetail(payload.id, {
+		scope: { type: 'space', spaceId: payload.spaceId },
+		fallbackSpaceId: payload.spaceId,
+	})
 }
 
 export function resolveShellDetailState({

@@ -1,4 +1,4 @@
-import { buildCanonicalSectionPath } from '@/app/routing'
+import { openSection } from '@/app/navigation/intents'
 import type { Scope } from '@/shared/types'
 import { SidebarMenuItem } from '@/shared/ui/base/sidebar'
 import { TargetIcon } from 'lucide-react'
@@ -19,7 +19,7 @@ export function NoProjectNavMenuItem({
 	fallbackSpaceId,
 	contextMenuContent,
 }: NoProjectNavMenuItemProps) {
-	const noProjectPath = buildCanonicalSectionPath(currentScope, 'no-project', fallbackSpaceId)
+	const noProjectPath = openSection(currentScope, 'no-project', fallbackSpaceId)
 
 	return (
 		<SidebarMenuItem>

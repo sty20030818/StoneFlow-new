@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 
-import { buildCanonicalSectionPath, buildStartupFallbackPath } from '@/app/routing'
+import { openSection, openStartupFallback } from '@/app/navigation/intents'
 import { useNavigate } from '@/app/routing/tanstackCompat'
 import {
 	SHELL_FOOTER_ITEMS,
@@ -202,8 +202,8 @@ export function ShellSidebar({
 				remainingSpaces.find((space) => space.isDefault)?.id ?? remainingSpaces[0]?.id ?? null
 
 			return nextSpaceId
-				? buildCanonicalSectionPath({ type: 'space', spaceId: nextSpaceId }, 'inbox', nextSpaceId)
-				: buildStartupFallbackPath({ type: 'all' })
+				? openSection({ type: 'space', spaceId: nextSpaceId }, 'inbox', nextSpaceId)
+				: openStartupFallback({ type: 'all' })
 		},
 		[spaces],
 	)
@@ -267,13 +267,7 @@ export function ShellSidebar({
 		async (input: { name: string; iconKey: string; colorKey: string }) => {
 			if (editorMode === 'create') {
 				const createdSpace = await onCreateSpace(input)
-				navigate(
-					buildCanonicalSectionPath(
-						{ type: 'space', spaceId: createdSpace.id },
-						'inbox',
-						createdSpace.id,
-					),
-				)
+				navigate(openSection({ type: 'space', spaceId: createdSpace.id }, 'inbox', createdSpace.id))
 				return
 			}
 
@@ -355,10 +349,7 @@ export function ShellSidebar({
 												<DropdownMenuItem
 													className={sidebarDropdownItemClass}
 													onSelect={() => {
-														navigateToRememberedScope(
-															'all',
-															buildStartupFallbackPath({ type: 'all' }),
-														)
+														navigateToRememberedScope('all', openStartupFallback({ type: 'all' }))
 													}}
 												>
 													<OrbitIcon className='size-3.5 shrink-0 text-[#8b5cf6]' />
@@ -382,7 +373,7 @@ export function ShellSidebar({
 															onSelect={() => {
 																navigateToRememberedScope(
 																	`space:${space.id}`,
-																	buildCanonicalSectionPath(
+																	openSection(
 																		{ type: 'space', spaceId: space.id },
 																		'inbox',
 																		space.id,

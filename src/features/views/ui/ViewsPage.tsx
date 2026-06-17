@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { buildCanonicalViewPath, useShellRoute } from '@/app/routing'
+import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
+import { openView } from '@/app/navigation/intents'
+import { resolveShellRouteScope } from '@/app/navigation/scope'
 import { useNavigate, useParams } from '@/app/routing/tanstackCompat'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
@@ -34,13 +36,11 @@ import type { TaskListItem, View } from '@/shared/types'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 import { PlusIcon } from 'lucide-react'
-
-const ALL_SCOPE = { type: 'all' } as const
 const EMPTY_TASK_VIEWS: View[] = []
 
 export function ViewsPage() {
-	const shellRoute = useShellRoute()
-	const scope = shellRoute.scope ?? ALL_SCOPE
+	const shellRoute = useCurrentShellRoute()
+	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
 	const navigate = useNavigate()
 	const { viewId: routeViewId } = useParams()
@@ -132,7 +132,7 @@ export function ViewsPage() {
 			return
 		}
 
-		void navigate(buildCanonicalViewPath(scope, nextViewValue, spaceId), { replace: true })
+		void navigate(openView(scope, nextViewValue, spaceId), { replace: true })
 	}, [
 		activeView,
 		navigate,
@@ -190,14 +190,14 @@ export function ViewsPage() {
 	})
 
 	function navigateToView(view: View) {
-		void navigate(buildCanonicalViewPath(scope, view.id, spaceId))
+		void navigate(openView(scope, view.id, spaceId))
 	}
 
 	async function handleCreateView(input: Parameters<typeof createTaskView.mutateAsync>[0]) {
 		setIsSavingView(true)
 		try {
 			const created = await createTaskView.mutateAsync(input)
-			void navigate(buildCanonicalViewPath(scope, created.id, spaceId))
+			void navigate(openView(scope, created.id, spaceId))
 		} finally {
 			setIsSavingView(false)
 		}

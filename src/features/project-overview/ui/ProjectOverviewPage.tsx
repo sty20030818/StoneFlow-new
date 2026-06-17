@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
+import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
+import { openProjectDetail } from '@/app/navigation/intents'
+import { resolveShellRouteScope } from '@/app/navigation/scope'
 import {
 	BulkActionBar,
 	PROJECT_BULK_ACTION_IDS,
@@ -13,7 +16,6 @@ import {
 } from '@/features/bulk-action'
 import { Button } from '@/shared/ui/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
-import { buildCanonicalProjectPath, useShellRoute } from '@/app/routing'
 import { useNavigate } from '@/app/routing/tanstackCompat'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
@@ -35,12 +37,10 @@ import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 import { useViewsQuery } from '@/features/view/query'
 import { PlusIcon } from 'lucide-react'
 
-const ALL_SCOPE = { type: 'all' } as const
-
 export function ProjectOverviewPage() {
 	const navigate = useNavigate()
-	const shellRoute = useShellRoute()
-	const scope = shellRoute.scope ?? ALL_SCOPE
+	const shellRoute = useCurrentShellRoute()
+	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
 	const { runBulkAction } = useBulkActionContext()
 	const openProjectCreateDialog = useDialogStore((state) => state.openProjectCreateDialog)
@@ -162,7 +162,7 @@ export function ProjectOverviewPage() {
 					},
 					onEmptyAction: () => openProjectCreateDialog(),
 					onOpenProject: (projectId) =>
-						navigate(buildCanonicalProjectPath(scope, projectId, spaceId)),
+						navigate(openProjectDetail(projectId, { scope, fallbackSpaceId: spaceId })),
 					onSelectAllProjects: selectProjectIds,
 					onReopenProject: (projectId) => {
 						void runRowAction(projectId, async () => {

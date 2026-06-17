@@ -1,11 +1,13 @@
 import { type FormEvent, useEffect, useState } from 'react'
 
+import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
+import { openSection } from '@/app/navigation/intents'
+import { resolveShellRouteScope } from '@/app/navigation/scope'
 import {
 	type ActivityEntityType,
 	type ActivityTimelineEntry,
 	getEntityActivities,
 } from '@/features/activity/api/getEntityActivities'
-import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import { Link, useSearchParams } from '@/app/routing/tanstackCompat'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { Button } from '@/shared/ui/base/button'
@@ -35,9 +37,6 @@ const ENTITY_TYPE_OPTIONS: Array<{ value: ActivityEntityType; label: string }> =
 	{ value: 'view', label: 'View' },
 	{ value: 'setting', label: 'Setting' },
 ]
-
-const ALL_SCOPE = { type: 'all' } as const
-
 type LoadState =
 	| { kind: 'idle' }
 	| { kind: 'loading' }
@@ -48,8 +47,8 @@ type LoadState =
  * 隐藏调试页：只用于按实体读取 Activity timeline，不接正式业务入口。
  */
 export function ActivityDebugPage() {
-	const shellRoute = useShellRoute()
-	const scope = shellRoute.scope ?? ALL_SCOPE
+	const shellRoute = useCurrentShellRoute()
+	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
 	const [searchParams, setSearchParams] = useSearchParams()
 	const [entityType, setEntityType] = useState<ActivityEntityType>(
@@ -179,7 +178,7 @@ export function ActivityDebugPage() {
 							查询 Activity
 						</Button>
 						<Button asChild className='h-10 rounded-lg' type='button' variant='ghost'>
-							<Link to={buildCanonicalSectionPath(scope, 'inbox', spaceId)}>返回</Link>
+							<Link to={openSection(scope, 'inbox', spaceId)}>返回</Link>
 						</Button>
 					</div>
 				</form>

@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
-import { useShellRoute } from '@/app/routing'
+import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
+import { resolveShellRouteScope } from '@/app/navigation/scope'
 import {
 	useRegisterPageFilterController,
 	useTaskPageFilterController,
@@ -25,11 +26,9 @@ import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 import { PlusIcon } from 'lucide-react'
 
-const ALL_SCOPE = { type: 'all' } as const
-
 export function InboxPage() {
-	const shellRoute = useShellRoute()
-	const scope = shellRoute.scope ?? ALL_SCOPE
+	const shellRoute = useCurrentShellRoute()
+	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
 	const listInput = useMemo(
 		() => ({

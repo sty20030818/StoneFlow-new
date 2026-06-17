@@ -10,11 +10,9 @@ import {
 } from 'lucide-react'
 
 import { getSectionLabel } from '@/app/layouts/shell/config'
-import {
-	buildCanonicalProjectPath,
-	buildCanonicalSectionPath,
-	type ShellRoute,
-} from '@/app/routing'
+import { type ShellRoute } from '@/app/routing'
+import { openProjectDetail, openSection } from '@/app/navigation/intents'
+import { resolveShellRouteScope } from '@/app/navigation/scope'
 import type { ShellSectionKey } from '@/app/routing'
 import type { ProjectDetail } from '@/features/project/model/types'
 import type { TaskDetail } from '@/shared/types'
@@ -119,7 +117,7 @@ function resolveProjectBreadcrumb(
 		{
 			...toSectionBreadcrumb('projects', route),
 			current: false,
-			to: buildCanonicalSectionPath(resolveRouteScope(route), 'projects', route.spaceId),
+			to: openSection(resolveRouteScope(route), 'projects', route.spaceId),
 		},
 		{
 			key: `project:${projectId}`,
@@ -144,13 +142,16 @@ function resolveTaskBreadcrumb(
 			{
 				...toSectionBreadcrumb('projects', route),
 				current: false,
-				to: buildCanonicalSectionPath(scope, 'projects', route.spaceId),
+				to: openSection(scope, 'projects', route.spaceId),
 			},
 			{
 				key: `project:${taskDetail.projectId}`,
 				label: taskDetail.projectName?.trim() || '项目详情',
 				icon: FolderIcon,
-				to: buildCanonicalProjectPath(scope, taskDetail.projectId, route.spaceId),
+				to: openProjectDetail(taskDetail.projectId, {
+					scope,
+					fallbackSpaceId: route.spaceId,
+				}),
 				truncate: true,
 			},
 			{
@@ -168,7 +169,7 @@ function resolveTaskBreadcrumb(
 			{
 				...toSectionBreadcrumb('inbox', route),
 				current: false,
-				to: buildCanonicalSectionPath(scope, 'inbox', route.spaceId),
+				to: openSection(scope, 'inbox', route.spaceId),
 			},
 			{
 				key: `task:${taskId}`,
@@ -184,7 +185,7 @@ function resolveTaskBreadcrumb(
 		{
 			...toSectionBreadcrumb('noProject', route),
 			current: false,
-			to: buildCanonicalSectionPath(scope, 'noProject', route.spaceId),
+			to: openSection(scope, 'no-project', route.spaceId),
 		},
 		{
 			key: `task:${taskId}`,
@@ -206,13 +207,16 @@ function toSectionBreadcrumb(
 		label: getSectionLabel(section),
 		icon: preset.icon,
 		current: true,
-		to: buildCanonicalSectionPath(resolveRouteScope(route), section, route.spaceId),
+		to: openSection(resolveRouteScope(route), normalizeSectionTarget(section), route.spaceId),
 	}
 }
 
 function resolveRouteScope(route: Pick<ShellRoute, 'scope' | 'spaceId'>) {
-	return (
-		route.scope ??
-		(route.spaceId ? { type: 'space' as const, spaceId: route.spaceId } : { type: 'all' as const })
-	)
+	return resolveShellRouteScope(route)
+}
+
+function normalizeSectionTarget(
+	section: ShellSectionKey,
+): 'inbox' | 'tasks' | 'views' | 'projects' | 'archive' | 'trash' | 'settings' | 'no-project' {
+	return section === 'noProject' ? 'no-project' : section
 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 
-import { buildCanonicalSectionPath, useShellRoute } from '@/app/routing'
 import { EntityScene } from '@/app/layouts/entity-scene'
+import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
+import { openSection } from '@/app/navigation/intents'
+import { resolveShellRouteScope } from '@/app/navigation/scope'
 import { Link } from '@/app/routing/tanstackCompat'
 import {
 	selectSidebarSettings,
@@ -67,8 +69,8 @@ type SectionErrorMap = Partial<Record<SettingsSectionKey, string>>
  * 设置页只负责组织现有 settings 状态与 Space 数据，不复制配置状态。
  */
 export function SettingsPage() {
-	const shellRoute = useShellRoute()
-	const scope = shellRoute.scope ?? { type: 'all' as const }
+	const shellRoute = useCurrentShellRoute()
+	const scope = resolveShellRouteScope(shellRoute)
 	const fallbackSpaceId = shellRoute.spaceId
 	const sidebarStatus = useSidebarSettingsStore(selectSidebarSettingsStatus)
 	const sidebarSettings = useSidebarSettingsStore(selectSidebarSettings)
@@ -408,7 +410,7 @@ export function SettingsPage() {
 			bodyClassName='gap-4 p-2'
 			headerActions={
 				<Button asChild size='sm' variant='ghost'>
-					<Link to={buildCanonicalSectionPath(scope, 'tasks', fallbackSpaceId)}>返回所有任务</Link>
+					<Link to={openSection(scope, 'tasks', fallbackSpaceId)}>返回所有任务</Link>
 				</Button>
 			}
 			notices={

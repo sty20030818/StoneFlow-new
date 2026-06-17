@@ -1,10 +1,12 @@
-import { buildCanonicalProjectPath, buildTaskDetailPath } from '@/app/routing'
+import { openProjectDetail, openTaskDetail } from '@/app/navigation/intents'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 
 export function resolveProjectSearchTargetPath(project: SearchProjectItem) {
-	return buildCanonicalProjectPath({ type: 'space', spaceId: project.spaceId }, project.id)
+	return openProjectDetail(project.id, {
+		scope: { type: 'space', spaceId: project.spaceId },
+	})
 }
 
 export function resolveTaskSearchTargetPath(task: SearchTaskItem) {
-	return buildTaskDetailPath(task.spaceId, task.id)
+	return openTaskDetail(task.id, task.spaceId)
 }

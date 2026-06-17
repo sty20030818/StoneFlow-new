@@ -3,6 +3,7 @@ import { useEffect, type PropsWithChildren } from 'react'
 import type { ShellRoute } from '@/app/routing'
 import type { Scope } from '@/shared/types'
 import { rememberShellRoute } from './shell/model/shellDevicePreferences'
+import { ShellRouteProvider } from './shell/model/ShellRouteContext'
 import {
 	selectActiveSection,
 	selectCurrentSpaceId,
@@ -91,13 +92,15 @@ export function ShellRouteLayout({ children, scope, shellRoute }: ShellRouteLayo
 	}, [isWorkPath, scope, shellRoute.fullPath])
 
 	return (
-		<ShellLayout
-			activeSection={activeSection}
-			currentScope={scope}
-			currentSpaceId={scope.type === 'space' ? scope.spaceId : fallbackSpaceId}
-			shellRoute={shellRoute}
-		>
-			{children}
-		</ShellLayout>
+		<ShellRouteProvider shellRoute={shellRoute}>
+			<ShellLayout
+				activeSection={activeSection}
+				currentScope={scope}
+				currentSpaceId={scope.type === 'space' ? scope.spaceId : fallbackSpaceId}
+				shellRoute={shellRoute}
+			>
+				{children}
+			</ShellLayout>
+		</ShellRouteProvider>
 	)
 }
