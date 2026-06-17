@@ -14,9 +14,9 @@ import {
 	useArchiveProjectMutation,
 	useCompleteProjectMutation,
 	useDeleteProjectMutation,
-	useProjectDetailData,
 	useProjectOptions,
 	useReopenProjectMutation,
+	useSuspenseProjectDetailQuery,
 } from '@/features/project/query'
 import { useSpaces } from '@/features/space/query'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
@@ -69,7 +69,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
 	const taskPreviewController = useTaskPreviewController()
-	const detail = useProjectDetailData(projectId)
+	const { data: project } = useSuspenseProjectDetailQuery(projectId)
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
 	const completeProject = useCompleteProjectMutation()
@@ -120,8 +120,6 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 		},
 	})
 	useRegisterPageFilterController(controller)
-	const project = detail.projectId === projectId ? detail.item : null
-	const isProjectLoading = detail.status === 'loading' || detail.projectId !== projectId
 	const breadcrumbItems = useMemo(
 		() =>
 			resolveBreadcrumb({
@@ -207,7 +205,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 				},
 				boardData: {
 					items: project ? filteredTasks : [],
-					status: project ? taskBoardStatus : isProjectLoading ? 'loading' : 'ready',
+					status: project ? taskBoardStatus : 'ready',
 					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
 					selectedTaskIdSet,
@@ -245,7 +243,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 			}}
 			breadcrumb={<AppBreadcrumb items={breadcrumbItems} />}
 			beforeBoard={
-				!project && !isProjectLoading ? (
+				!project ? (
 					<EmptyPage>
 						<Empty>
 							<EmptyHeader>
@@ -346,7 +344,6 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 				if (!projectId) {
 					return
 				}
-				void detail.refetch()
 				void taskList.refetch()
 			}}
 			sceneVariant='project-detail'

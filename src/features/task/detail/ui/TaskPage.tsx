@@ -13,7 +13,7 @@ import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 
 import { createTaskDetailDraft } from '../model/taskDetailDraft'
 import { useTaskAutosaveAdapter } from '../model/useTaskAutosaveAdapter'
-import { useTaskDetailController } from '../model/useTaskDetailController'
+import { useSuspenseTaskDetailQuery } from '@/features/task/query/task.queries'
 import { TaskPageMain as TaskPageMainContent } from './TaskPageMain'
 import { TaskPageSidebar as TaskPageSidebarContent } from './TaskPageSidebar'
 import { TaskPageState } from './TaskPageState'
@@ -27,31 +27,8 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 	const navigate = useNavigate()
 	const projects = useProjectOptions(scope)
 	const { spaces } = useSpaces()
-	const { task, status, error } = useTaskDetailController(taskId)
-	const isReadOnly = status !== 'ready' || !task || Boolean(task.deletedAt)
-
-	if (status === 'loading') {
-		return <TaskPageState description='正在读取任务详情。' title='加载中' />
-	}
-
-	if (status === 'error') {
-		return (
-			<TaskPageState
-				actionLabel='返回任务列表'
-				description={error ?? '任务详情加载失败。'}
-				onAction={() =>
-					navigate(
-						buildCanonicalSectionPath(
-							scope,
-							'tasks',
-							scope.type === 'space' ? scope.spaceId : null,
-						),
-					)
-				}
-				title='无法打开任务'
-			/>
-		)
-	}
+	const { data: task } = useSuspenseTaskDetailQuery(taskId)
+	const isReadOnly = Boolean(task.deletedAt)
 
 	if (!task) {
 		return (

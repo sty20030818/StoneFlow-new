@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 
 import {
 	getProjectDetail,
@@ -46,8 +46,18 @@ export function toProjectOptions(
 
 export function useProjectDetailQuery(projectId: string | null | undefined) {
 	return useQuery({
-		queryKey: projectKeys.detail(projectId ?? ''),
-		queryFn: () => getProjectDetail(projectId ?? ''),
+		...(projectId ? projectDetailQueryOptions(projectId) : projectDetailQueryOptions('')),
 		enabled: Boolean(projectId),
 	})
+}
+
+export function projectDetailQueryOptions(projectId: string) {
+	return queryOptions({
+		queryKey: projectKeys.detail(projectId),
+		queryFn: () => getProjectDetail(projectId),
+	})
+}
+
+export function useSuspenseProjectDetailQuery(projectId: string) {
+	return useSuspenseQuery(projectDetailQueryOptions(projectId))
 }

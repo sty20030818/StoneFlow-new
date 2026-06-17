@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Suspense } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,22 +13,18 @@ import { TaskPage } from './TaskPage'
 
 const getEntityActivitiesMock = vi.hoisted(() => vi.fn<() => Promise<unknown[]>>())
 
-const mockDetailController = vi.hoisted(() => ({
-	value: {
-		task: null as TaskDetail | null,
-		status: 'loading' as 'idle' | 'loading' | 'ready' | 'error',
-		error: null as string | null,
-		archiveOrRestore: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-		moveToTrash: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-	},
-}))
-
 const mockAutosave = vi.hoisted(() => ({
 	value: createAutosaveController(),
 }))
 
-vi.mock('../model/useTaskDetailController', () => ({
-	useTaskDetailController: () => mockDetailController.value,
+const taskDetailQueryState = vi.hoisted(() => ({
+	data: createTaskDetail(),
+}))
+
+vi.mock('@/features/task/query/task.queries', () => ({
+	useSuspenseTaskDetailQuery: () => ({
+		data: taskDetailQueryState.data,
+	}),
 }))
 
 vi.mock('../model/useTaskAutosaveAdapter', () => ({
@@ -70,42 +67,10 @@ vi.mock('@/features/activity/api/getEntityActivities', () => ({
 
 describe('TaskPage', () => {
 	beforeEach(() => {
-		mockDetailController.value = {
-			task: createTaskDetail(),
-			status: 'ready',
-			error: null,
-			archiveOrRestore: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-			moveToTrash: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-		}
+		taskDetailQueryState.data = createTaskDetail()
 		mockAutosave.value = createAutosaveController()
 		getEntityActivitiesMock.mockResolvedValue([])
 		getEntityActivitiesMock.mockClear()
-	})
-
-	it('详情加载中时显示 page loading 状态', () => {
-		mockDetailController.value = {
-			...mockDetailController.value,
-			task: null,
-			status: 'loading',
-		}
-
-		renderTaskPage()
-
-		expect(screen.getByText('加载中')).toBeInTheDocument()
-		expect(screen.getByText('正在读取任务详情。')).toBeInTheDocument()
-	})
-
-	it('not found 时展示返回列表入口', () => {
-		mockDetailController.value = {
-			...mockDetailController.value,
-			task: null,
-			status: 'ready',
-		}
-
-		renderTaskPage()
-
-		expect(screen.getByText('任务不存在')).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: '返回任务列表' })).toBeInTheDocument()
 	})
 
 	it('展示 task page 主体和 activity empty state', async () => {
@@ -144,72 +109,49 @@ describe('TaskPage', () => {
 	})
 
 	it('项目任务显示项目链路，收件箱任务显示收件箱链路', () => {
-		mockDetailController.value = {
-			...mockDetailController.value,
-			task: createTaskDetail({
-				projectId: 'project-1',
-				projectName: '项目 A',
-			}),
-		}
+		taskDetailQueryState.data = createTaskDetail({
+			projectId: 'project-1',
+			projectName: '项目 A',
+		})
 
 		const view = renderTaskPage()
 		expect(screen.getByRole('link', { name: '项目总览' })).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '项目 A' })).toBeInTheDocument()
 
-		mockDetailController.value = {
-			...mockDetailController.value,
-			task: createTaskDetail({
-				projectId: null,
-				projectName: null,
-				inboxAt: '2026-05-19T00:00:00Z',
-			}),
-		}
+		taskDetailQueryState.data = createTaskDetail({
+			projectId: null,
+			projectName: null,
+			inboxAt: '2026-05-19T00:00:00Z',
+		})
 
 		view.rerender(renderTaskPageElement())
 		expect(screen.getByRole('link', { name: '收件箱' })).toBeInTheDocument()
 	})
 
-	it('真实详情可用前不会先用 fallback draft 渲染错误字段', async () => {
-		mockDetailController.value = {
-			...mockDetailController.value,
-			task: null,
-			status: 'loading',
-		}
+	it('真实详情数据直接驱动页面，不依赖 fallback draft', async () => {
+		taskDetailQueryState.data = createTaskDetail({
+			title: '真实任务标题',
+			note: '真实任务备注',
+			status: 'doing',
+			priority: 4,
+			dueAt: '2026-05-30',
+			scheduledAt: '2026-05-29',
+			reminderAt: '2026-05-28',
+			projectId: 'project-1',
+			projectName: '项目 A',
+		})
 
-		const view = renderTaskPage()
-		expect(screen.getByText('正在读取任务详情。')).toBeInTheDocument()
-		expect(mockAutosave.value.reset).not.toHaveBeenCalled()
-
-		mockDetailController.value = {
-			...mockDetailController.value,
-			task: createTaskDetail({
-				title: '真实任务标题',
-				note: '真实任务备注',
-				status: 'doing',
-				priority: 4,
-				dueAt: '2026-05-30',
-				scheduledAt: '2026-05-29',
-				reminderAt: '2026-05-28',
-				projectId: 'project-1',
-				projectName: '项目 A',
-			}),
-			status: 'ready',
-		}
-
-		view.rerender(renderTaskPageElement())
+		renderTaskPage()
 
 		expect(await screen.findByText('真实任务标题')).toBeInTheDocument()
-		expect(screen.queryByText('正在读取任务详情。')).toBeNull()
 		expect(screen.getByText('Links for task-1')).toBeInTheDocument()
+		expect(mockAutosave.value.reset).not.toHaveBeenCalled()
 	})
 
 	it('trash 任务显示只读状态', () => {
-		mockDetailController.value = {
-			...mockDetailController.value,
-			task: createTaskDetail({
-				deletedAt: '2026-05-24T00:00:00Z',
-			}),
-		}
+		taskDetailQueryState.data = createTaskDetail({
+			deletedAt: '2026-05-24T00:00:00Z',
+		})
 
 		renderTaskPage()
 
@@ -227,7 +169,9 @@ function renderTaskPageElement(): ReactElement {
 	return (
 		<QueryClientProvider client={createTestQueryClient()}>
 			<MemoryRouter>
-				<TaskPage scope={{ type: 'space', spaceId: 'space-1' }} taskId='task-1' />
+				<Suspense fallback={<div>loading</div>}>
+					<TaskPage scope={{ type: 'space', spaceId: 'space-1' }} taskId='task-1' />
+				</Suspense>
 			</MemoryRouter>
 		</QueryClientProvider>
 	)

@@ -1,7 +1,62 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { ProjectPageRoute } from '@/features/project/ui/ProjectPageRoute'
+import { ProjectPage } from '@/features/project/ui/ProjectPage'
+import { TaskPageState } from '@/features/task/detail/ui/TaskPageState'
+import { useVisibleSpacesQuery } from '@/features/space/query/space.queries'
+import { useNavigate } from '@/app/routing/tanstackCompat'
+import {
+	createProjectLoaderError,
+	ensureProjectDetailRouteData,
+	type DetailRouteErrorState,
+} from '../../../-detail-route-helpers'
 
 export const Route = createFileRoute('/_shell/spaces/$spaceId/projects/$projectId')({
-	component: ProjectPageRoute,
+	loader: async ({ context, params }) => {
+		const spaces = await context.queryClient.ensureQueryData({
+			queryKey: ['spaces', 'visible'],
+			queryFn: async () => (await import('@/features/space/api/spaces')).listVisibleSpaces(),
+		})
+
+		return ensureProjectDetailRouteData({
+			queryClient: context.queryClient,
+			projectId: params.projectId,
+			routeSpaceId: params.spaceId,
+			spaces,
+		})
+	},
+	errorComponent: ProjectDetailRouteError,
+	component: SpaceProjectDetailRoute,
 })
+
+function SpaceProjectDetailRoute() {
+	const { scope } = Route.useLoaderData()
+	useVisibleSpacesQuery()
+
+	return <ProjectPage scopeOverride={scope} />
+}
+
+function ProjectDetailRouteError({ error }: { error: unknown }) {
+	const detailError = isDetailRouteError(error) ? error : createProjectLoaderError(error)
+	const navigate = useNavigate()
+	const actionTo = detailError.actionTo
+
+	return (
+		<TaskPageState
+			actionLabel={detailError.actionLabel}
+			description={detailError.description}
+			onAction={actionTo ? () => navigate(actionTo, { replace: true }) : undefined}
+			pageTitle={detailError.pageTitle}
+			title={detailError.title}
+		/>
+	)
+}
+
+function isDetailRouteError(error: unknown): error is DetailRouteErrorState {
+	return Boolean(
+		error &&
+		typeof error === 'object' &&
+		'title' in error &&
+		'description' in error &&
+		'pageTitle' in error,
+	)
+}
