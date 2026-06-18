@@ -10,6 +10,8 @@ import { taskDetailQueryOptions } from '@/features/task/query/task.queries'
 import type { Scope, Space, TaskDetail } from '@/shared/types'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ProjectDetail } from '@/features/project/model/types'
+import { TaskPageState } from '@/features/task/detail/ui/TaskPageState'
+import { useNavigate } from '@/app/routing/tanstackCompat'
 
 export type DetailRouteErrorState = {
 	title: string
@@ -17,6 +19,13 @@ export type DetailRouteErrorState = {
 	pageTitle: string
 	actionLabel?: string
 	actionTo?: string
+}
+
+export async function ensureVisibleSpaces(queryClient: QueryClient) {
+	return queryClient.ensureQueryData({
+		queryKey: ['spaces', 'visible'],
+		queryFn: async () => (await import('@/features/space/api/spaces')).listVisibleSpaces(),
+	})
 }
 
 export function resolveVisibleSpaceScope(entitySpaceId: string, spaces: Space[]): Scope | null {
@@ -133,4 +142,42 @@ export function buildTaskDetailFallbackPath(task: TaskDetail) {
 
 export function buildProjectDetailFallbackPath(project: ProjectDetail) {
 	return openCanonicalProjectDetail(project.id, project.spaceId)
+}
+
+export function isDetailRouteError(error: unknown): error is DetailRouteErrorState {
+	return Boolean(
+		error &&
+		typeof error === 'object' &&
+		'title' in error &&
+		'description' in error &&
+		'pageTitle' in error,
+	)
+}
+
+export function DetailRouteErrorStateView({
+	error,
+	fallback,
+}: {
+	error: unknown
+	fallback: (error: unknown) => DetailRouteErrorState
+}) {
+	const detailError = isDetailRouteError(error) ? error : fallback(error)
+	const navigate = useNavigate()
+	const actionTo = detailError.actionTo
+
+	return (
+		<TaskPageState
+			actionLabel={detailError.actionLabel}
+			description={detailError.description}
+			onAction={
+				actionTo
+					? () => {
+							navigate(actionTo, { replace: true })
+						}
+					: undefined
+			}
+			pageTitle={detailError.pageTitle}
+			title={detailError.title}
+		/>
+	)
 }

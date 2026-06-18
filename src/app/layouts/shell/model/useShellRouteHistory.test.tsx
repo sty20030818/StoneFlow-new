@@ -1,5 +1,14 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
+import { QueryClient } from '@tanstack/react-query'
+import {
+	Outlet,
+	RouterProvider,
+	createMemoryHistory,
+	createRootRouteWithContext,
+	createRoute,
+	createRouter,
+} from '@tanstack/react-router'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { useNavigate } from '@/app/routing/tanstackCompat'
 import { describe, expect, it } from 'vitest'
 
 import { useShellRouteHistory } from './useShellRouteHistory'
@@ -15,7 +24,7 @@ const projects = [
 
 describe('useShellRouteHistory', () => {
 	it('基于 ShellRoute 生成 canonical label 并剥离 drawer query', async () => {
-		renderHistoryProbe('/spaces/space-a/inbox?task=task-a')
+		await renderHistoryProbe('/spaces/space-a/inbox?task=task-a')
 
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
@@ -25,7 +34,7 @@ describe('useShellRouteHistory', () => {
 	})
 
 	it('识别 all views 和 space project route', async () => {
-		renderHistoryProbe('/all/views/focus')
+		await renderHistoryProbe('/all/views/focus')
 
 		fireEvent.click(screen.getByRole('button', { name: 'go project' }))
 
@@ -40,7 +49,7 @@ describe('useShellRouteHistory', () => {
 	})
 
 	it('canonical detail 进入历史记录', async () => {
-		renderHistoryProbe('/spaces/space-a/tasks/task-a')
+		await renderHistoryProbe('/spaces/space-a/tasks/task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: 'go project detail' }))
 
@@ -55,7 +64,7 @@ describe('useShellRouteHistory', () => {
 	})
 
 	it('非 shell 路径不作为历史 entry', async () => {
-		renderHistoryProbe('/quick-create')
+		await renderHistoryProbe('/quick-create')
 
 		fireEvent.click(screen.getByRole('button', { name: 'go task detail' }))
 
@@ -68,7 +77,7 @@ describe('useShellRouteHistory', () => {
 	})
 
 	it('REPLACE 会替换当前 history entry', async () => {
-		renderHistoryProbe('/spaces/space-a/inbox')
+		await renderHistoryProbe('/spaces/space-a/inbox')
 
 		fireEvent.click(screen.getByRole('button', { name: 'replace views' }))
 
@@ -81,17 +90,117 @@ describe('useShellRouteHistory', () => {
 	})
 })
 
-function renderHistoryProbe(initialEntry: string) {
-	return render(
-		<MemoryRouter initialEntries={[initialEntry]}>
-			<Routes>
-				<Route element={<HistoryProbe />} path='*' />
-			</Routes>
-		</MemoryRouter>,
-	)
+async function renderHistoryProbe(initialEntry: string) {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: { retry: false },
+			mutations: { retry: false },
+		},
+	})
+	const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+		component: HistoryProbeLayout,
+	})
+	const allRoute = createRoute({
+		getParentRoute: () => rootRoute,
+		path: 'all',
+		component: () => <Outlet />,
+	})
+	const allViewsRoute = createRoute({
+		getParentRoute: () => allRoute,
+		path: 'views',
+		component: () => <Outlet />,
+	})
+	const allViewDetailRoute = createRoute({
+		getParentRoute: () => allViewsRoute,
+		path: '$',
+		component: () => null,
+	})
+	const spacesRoute = createRoute({
+		getParentRoute: () => rootRoute,
+		path: 'spaces',
+		component: () => <Outlet />,
+	})
+	const spaceRoute = createRoute({
+		getParentRoute: () => spacesRoute,
+		path: '$spaceId',
+		component: () => <Outlet />,
+	})
+	const inboxRoute = createRoute({
+		getParentRoute: () => spaceRoute,
+		path: 'inbox',
+		component: () => null,
+	})
+	const spaceViewsRoute = createRoute({
+		getParentRoute: () => spaceRoute,
+		path: 'views',
+		component: () => <Outlet />,
+	})
+	const spaceViewDetailRoute = createRoute({
+		getParentRoute: () => spaceViewsRoute,
+		path: '$',
+		component: () => null,
+	})
+	const tasksRoute = createRoute({
+		getParentRoute: () => spaceRoute,
+		path: 'tasks',
+		component: () => <Outlet />,
+	})
+	const taskDetailRoute = createRoute({
+		getParentRoute: () => tasksRoute,
+		path: '$taskId',
+		component: () => null,
+	})
+	const projectsRoute = createRoute({
+		getParentRoute: () => spaceRoute,
+		path: 'projects',
+		component: () => <Outlet />,
+	})
+	const projectDetailRoute = createRoute({
+		getParentRoute: () => projectsRoute,
+		path: '$projectId',
+		component: () => null,
+	})
+	const quickCreateRoute = createRoute({
+		getParentRoute: () => rootRoute,
+		path: 'quick-create',
+		component: () => null,
+	})
+	const routeTree = rootRoute.addChildren([
+		allRoute.addChildren([allViewsRoute.addChildren([allViewDetailRoute])]),
+		spacesRoute.addChildren([
+			spaceRoute.addChildren([
+				inboxRoute,
+				spaceViewsRoute.addChildren([spaceViewDetailRoute]),
+				tasksRoute.addChildren([taskDetailRoute]),
+				projectsRoute.addChildren([projectDetailRoute]),
+			]),
+		]),
+		quickCreateRoute,
+	])
+	const router = createRouter({
+		routeTree,
+		history: createMemoryHistory({
+			initialEntries: [initialEntry],
+		}),
+		context: {
+			queryClient,
+		},
+		defaultNotFoundComponent: () => null,
+	})
+	const rendered = render(<RouterProvider context={{ queryClient }} router={router} />)
+
+	await act(async () => {
+		await router.load()
+	})
+
+	return {
+		router,
+		queryClient,
+		...rendered,
+	}
 }
 
-function HistoryProbe() {
+function HistoryProbeLayout() {
 	const navigate = useNavigate()
 	const history = useShellRouteHistory({
 		currentScope: { type: 'space', spaceId: 'space-a' },
@@ -121,6 +230,7 @@ function HistoryProbe() {
 			>
 				replace views
 			</button>
+			<Outlet />
 		</div>
 	)
 }

@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react'
 
-import { useShellRoute, type ShellRoute } from '@/app/routing'
+import type { ShellRoute } from '@/app/navigation/shellRoute'
 
 const ShellRouteContext = createContext<ShellRoute | null>(null)
 
@@ -16,9 +16,12 @@ export function ShellRouteProvider({ shellRoute, children }: ShellRouteProviderP
 	return <ShellRouteContext.Provider value={shellRoute}>{children}</ShellRouteContext.Provider>
 }
 
-/**
- * 优先读取壳层提供的 shellRoute；旧测试或 legacy 入口下回退到 parser hook。
- */
 export function useCurrentShellRoute() {
-	return useContext(ShellRouteContext) ?? useShellRoute()
+	const shellRoute = useContext(ShellRouteContext)
+
+	if (!shellRoute) {
+		throw new Error('useCurrentShellRoute must be used within ShellRouteProvider')
+	}
+
+	return shellRoute
 }

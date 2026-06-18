@@ -1,6 +1,6 @@
 import { useEffect, type PropsWithChildren } from 'react'
 
-import type { ShellRoute } from '@/app/routing'
+import type { ShellRoute } from '@/app/navigation/shellRoute'
 import type { Scope } from '@/shared/types'
 import { ShellRouteProvider } from './shell/model/ShellRouteContext'
 import {

@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { useLocation } from '@tanstack/react-router'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { renderWithMatchedRoute } from '@/test-utils/renderWithRouter'
 import { useEntityDetailController } from './useEntityDetailController'
 
 const getTaskDetailMock = vi.hoisted(() => vi.fn())
@@ -15,15 +16,15 @@ describe('useEntityDetailController', () => {
 		getTaskDetailMock.mockReset()
 	})
 
-	it('从 URL 恢复 active detail', () => {
-		renderController('/spaces/work/inbox?task=task-a')
+	it('从 URL 恢复 active detail', async () => {
+		await renderController('/spaces/work/inbox?task=task-a')
 
 		expect(screen.getByTestId('active-detail')).toHaveTextContent('task:task-a')
 		expect(screen.getByTestId('is-open')).toHaveTextContent('open')
 	})
 
 	it('openDrawer 更新 URL', async () => {
-		renderController('/spaces/work/inbox')
+		await renderController('/spaces/work/inbox')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务' }))
 
@@ -33,7 +34,7 @@ describe('useEntityDetailController', () => {
 	})
 
 	it('closeDrawer 清理 URL 并保留其他 query', async () => {
-		renderController('/spaces/space-a/views/today?task=task-a')
+		await renderController('/spaces/space-a/views/today?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '关闭详情' }))
 
@@ -43,7 +44,7 @@ describe('useEntityDetailController', () => {
 	})
 
 	it('双 query 初始化后自动清理 project', async () => {
-		renderController('/spaces/space-a/views/today?task=task-a&project=project-a')
+		await renderController('/spaces/space-a/views/today?task=task-a&project=project-a')
 
 		await waitFor(() => {
 			expect(screen.getByTestId('active-detail')).toHaveTextContent('task:task-a')
@@ -58,7 +59,7 @@ describe('useEntityDetailController', () => {
 			id: 'task-a',
 			spaceId: 'space-work',
 		})
-		renderController('/spaces/work/inbox?task=task-a')
+		await renderController('/spaces/work/inbox?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))
 
@@ -69,7 +70,7 @@ describe('useEntityDetailController', () => {
 
 	it('openPage 解析失败时停留在当前页面', async () => {
 		getTaskDetailMock.mockRejectedValue(new Error('not found'))
-		renderController('/spaces/work/inbox?task=task-a')
+		await renderController('/spaces/work/inbox?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))
 
@@ -81,13 +82,10 @@ describe('useEntityDetailController', () => {
 })
 
 function renderController(initialEntry: string) {
-	return render(
-		<MemoryRouter initialEntries={[initialEntry]}>
-			<Routes>
-				<Route element={<ControllerProbe />} path='*' />
-			</Routes>
-		</MemoryRouter>,
-	)
+	return renderWithMatchedRoute(<ControllerProbe />, {
+		initialEntry,
+		path: '/$',
+	})
 }
 
 function ControllerProbe() {
@@ -103,7 +101,7 @@ function ControllerProbe() {
 			<div data-testid='is-open'>{controller.isOpen ? 'open' : 'closed'}</div>
 			<div data-testid='location'>
 				{location.pathname}
-				{location.search}
+				{location.searchStr}
 			</div>
 			<button onClick={() => controller.openDrawer({ kind: 'task', id: 'task-a' })} type='button'>
 				打开任务

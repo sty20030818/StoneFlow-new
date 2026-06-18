@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { buildShellScopeKey } from '@/app/navigation/shellRoute'
 import {
-	buildShellScopeKey,
 	createNextShellRouteMemory,
 	isRememberableShellPath,
 	normalizeRememberedShellPath,

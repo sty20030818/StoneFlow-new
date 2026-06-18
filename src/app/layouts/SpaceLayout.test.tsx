@@ -1,7 +1,9 @@
-import { render, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { waitFor } from '@testing-library/react'
 import { beforeEach, vi } from 'vitest'
 
+import { ShellRouteProvider } from '@/app/layouts/shell/model/ShellRouteContext'
+import { parseShellRoute } from '@/app/navigation/shellRoute'
+import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
 import { SpaceLayout } from './SpaceLayout'
 
 const setActiveScopeMock = vi.hoisted(() => vi.fn<(scope: unknown) => Promise<void>>())
@@ -19,6 +21,17 @@ const shellNavState = vi.hoisted(() => ({
 const spaceState = vi.hoisted(() => ({
 	spaces: [{ id: 'space-a', name: '工作', isDefault: true }],
 }))
+
+vi.mock('@/app/routing/tanstackCompat', async () => {
+	const actual = await vi.importActual<typeof import('@/app/routing/tanstackCompat')>(
+		'@/app/routing/tanstackCompat',
+	)
+
+	return {
+		...actual,
+		Outlet: () => <div>page</div>,
+	}
+})
 
 vi.mock('./shell/model/useShellNavStore', () => ({
 	selectCurrentScopeType: (state: typeof shellNavState) => state.currentScopeType,
@@ -65,7 +78,7 @@ describe('SpaceLayout', () => {
 	})
 
 	it('用结构化 shell route 同步 scope、section', async () => {
-		renderSpaceLayout('/spaces/space-a/projects/project-a')
+		await renderSpaceLayout('/spaces/space-a/projects/project-a')
 
 		await waitFor(() => {
 			expect(shellNavState.setCurrentScope).toHaveBeenCalledWith('space', 'space-a')
@@ -90,13 +103,12 @@ describe('SpaceLayout', () => {
 })
 
 function renderSpaceLayout(initialEntry: string) {
-	return render(
-		<MemoryRouter initialEntries={[initialEntry]}>
-			<Routes>
-				<Route element={<SpaceLayout />} path='/spaces/:spaceId/*'>
-					<Route element={<div>page</div>} path='*' />
-				</Route>
-			</Routes>
-		</MemoryRouter>,
+	return renderWithRouterContext(
+		<ShellRouteProvider shellRoute={parseShellRoute(initialEntry)}>
+			<SpaceLayout />
+		</ShellRouteProvider>,
+		{
+			initialEntry,
+		},
 	)
 }

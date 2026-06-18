@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 
+import { ShellRouteProvider } from '@/app/layouts/shell/model/ShellRouteContext'
+import { parseShellRoute } from '@/app/navigation/shellRoute'
 import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection/model'
+import { renderWithMatchedRoute } from '@/test-utils/renderWithRouter'
 import { ViewsPage } from '@/features/views/ui/ViewsPage'
 
 const loadTaskViewsSpy = vi.fn<() => Promise<void>>()
@@ -271,13 +273,7 @@ describe('ViewsPage', () => {
 	})
 
 	it('根据 canonical view route 解析真实 viewId，并触发视图执行', async () => {
-		render(
-			<MemoryRouter initialEntries={['/all/views/today']}>
-				<Routes>
-					<Route path='/all/views/:viewId' element={<ViewsPage />} />
-				</Routes>
-			</MemoryRouter>,
-		)
+		await renderViewsPage('/all/views/today')
 
 		await waitFor(() => {
 			expect(loadTaskViewsSpy).toHaveBeenCalled()
@@ -294,13 +290,7 @@ describe('ViewsPage', () => {
 	})
 
 	it('点击系统视图 tab 后切换到新的视图 id', async () => {
-		render(
-			<MemoryRouter initialEntries={['/all/views/view-today']}>
-				<Routes>
-					<Route path='/all/views/:viewId' element={<ViewsPage />} />
-				</Routes>
-			</MemoryRouter>,
-		)
+		await renderViewsPage('/all/views/view-today')
 
 		fireEvent.click(screen.getByRole('tab', { name: 'Upcoming' }))
 
@@ -313,23 +303,15 @@ describe('ViewsPage', () => {
 	})
 
 	it('注册当前视图选择到 Command selection context', async () => {
-		render(
-			<CommandSelectionProvider>
-				<MemoryRouter initialEntries={['/all/views/view-today']}>
-					<Routes>
-						<Route
-							path='/all/views/:viewId'
-							element={
-								<>
-									<ViewsPage />
-									<CommandSelectionProbe />
-								</>
-							}
-						/>
-					</Routes>
-				</MemoryRouter>
-			</CommandSelectionProvider>,
-		)
+		await renderViewsPage('/all/views/view-today', {
+			node: (
+				<>
+					<ViewsPage />
+					<CommandSelectionProbe />
+				</>
+			),
+			wrap: (children) => <CommandSelectionProvider>{children}</CommandSelectionProvider>,
+		})
 
 		await waitFor(() => {
 			expect(screen.getByTestId('command-selection-probe')).toHaveTextContent(
@@ -356,7 +338,7 @@ describe('ViewsPage', () => {
 		})
 	})
 
-	it('有视图但没有任务时展示更完整的空态文案', () => {
+	it('有视图但没有任务时展示更完整的空态文案', async () => {
 		mockViewQueryState.taskRun = {
 			...mockTaskRunState,
 			item: {
@@ -365,13 +347,7 @@ describe('ViewsPage', () => {
 			},
 		}
 
-		render(
-			<MemoryRouter initialEntries={['/all/views/view-today']}>
-				<Routes>
-					<Route path='/all/views/:viewId' element={<ViewsPage />} />
-				</Routes>
-			</MemoryRouter>,
-		)
+		await renderViewsPage('/all/views/view-today')
 
 		expect(screen.getByText('当前没有任务')).toBeInTheDocument()
 		expect(
@@ -381,7 +357,7 @@ describe('ViewsPage', () => {
 		).toBeInTheDocument()
 	})
 
-	it('没有可用视图时空态 CTA 打开创建视图弹窗', () => {
+	it('没有可用视图时空态 CTA 打开创建视图弹窗', async () => {
 		mockViewQueryState.taskViews = []
 		mockViewQueryState.taskRun = {
 			item: null,
@@ -390,13 +366,7 @@ describe('ViewsPage', () => {
 			input: null,
 		}
 
-		render(
-			<MemoryRouter initialEntries={['/all/views/view-today']}>
-				<Routes>
-					<Route path='/all/views/:viewId' element={<ViewsPage />} />
-				</Routes>
-			</MemoryRouter>,
-		)
+		await renderViewsPage('/all/views/view-today')
 
 		expect(screen.getByText('当前还没有视图')).toBeInTheDocument()
 		expect(
@@ -422,4 +392,26 @@ function CommandSelectionProbe() {
 			})}
 		</output>
 	)
+}
+
+function renderViewsPage(
+	initialEntry: string,
+	options: {
+		node?: ReactNode
+		wrap?: (children: ReactNode) => ReactNode
+	} = {},
+) {
+	return renderWithMatchedRoute(options.node ?? <ViewsPage />, {
+		initialEntry,
+		path: '/all/views/$viewId',
+		wrap: (children) => {
+			const content = (
+				<ShellRouteProvider shellRoute={parseShellRoute(initialEntry)}>
+					{children}
+				</ShellRouteProvider>
+			)
+
+			return options.wrap ? options.wrap(content) : content
+		},
+	})
 }

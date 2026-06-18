@@ -1,14 +1,8 @@
-import { type FormEvent, useEffect, useState } from 'react'
-
-import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
-import { openSection } from '@/app/navigation/intents'
-import { resolveShellRouteScope } from '@/app/navigation/scope'
+import type { FormEvent, ReactNode } from 'react'
 import {
 	type ActivityEntityType,
 	type ActivityTimelineEntry,
-	getEntityActivities,
 } from '@/features/activity/api/getEntityActivities'
-import { Link, useSearchParams } from '@/app/routing/tanstackCompat'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
@@ -37,104 +31,51 @@ const ENTITY_TYPE_OPTIONS: Array<{ value: ActivityEntityType; label: string }> =
 	{ value: 'view', label: 'View' },
 	{ value: 'setting', label: 'Setting' },
 ]
-type LoadState =
+
+export type ActivityDebugLoadState =
 	| { kind: 'idle' }
 	| { kind: 'loading' }
 	| { kind: 'ready'; entries: ActivityTimelineEntry[] }
 	| { kind: 'error'; message: string }
 
+type ActivityDebugPageProps = {
+	entityType: ActivityEntityType
+	entityId: string
+	limit: string
+	loadState: ActivityDebugLoadState
+	backAction?: ReactNode
+	onEntityTypeChange: (entityType: ActivityEntityType) => void
+	onEntityIdChange: (entityId: string) => void
+	onLimitChange: (limit: string) => void
+	onSubmit: (event: FormEvent<HTMLFormElement>) => void
+}
+
 /**
- * 隐藏调试页：只用于按实体读取 Activity timeline，不接正式业务入口。
+ * 隐藏调试页：只负责展示和表单交互，不承担路由或数据装配。
  */
-export function ActivityDebugPage() {
-	const shellRoute = useCurrentShellRoute()
-	const scope = resolveShellRouteScope(shellRoute)
-	const spaceId = shellRoute.spaceId
-	const [searchParams, setSearchParams] = useSearchParams()
-	const [entityType, setEntityType] = useState<ActivityEntityType>(
-		(searchParams.get('entityType') as ActivityEntityType | null) ?? 'task',
-	)
-	const [entityId, setEntityId] = useState(searchParams.get('entityId') ?? '')
-	const [limit, setLimit] = useState(searchParams.get('limit') ?? '50')
-	const [loadState, setLoadState] = useState<LoadState>({ kind: 'idle' })
-
-	useEffect(() => {
-		const nextEntityType = searchParams.get('entityType') as ActivityEntityType | null
-		const nextEntityId = searchParams.get('entityId')
-		const nextLimit = searchParams.get('limit')
-
-		if (!nextEntityType || !nextEntityId) {
-			setLoadState({ kind: 'idle' })
-			return
-		}
-
-		setEntityType(nextEntityType)
-		setEntityId(nextEntityId)
-		setLimit(nextLimit ?? '50')
-		let cancelled = false
-		setLoadState({ kind: 'loading' })
-
-		void (async () => {
-			try {
-				const parsedLimit = Number(nextLimit ?? '50')
-				const entries = await getEntityActivities({
-					entityType: nextEntityType,
-					entityId: nextEntityId,
-					limit: Number.isFinite(parsedLimit) ? parsedLimit : 50,
-				})
-				if (!cancelled) {
-					setLoadState({
-						kind: 'ready',
-						entries,
-					})
-				}
-			} catch {
-				if (!cancelled) {
-					setLoadState({
-						kind: 'error',
-						message:
-							'无法读取 Rust 宿主 Activity 数据，请确认当前运行在 Tauri 环境且数据库已就绪。',
-					})
-				}
-			}
-		})()
-
-		return () => {
-			cancelled = true
-		}
-	}, [searchParams])
-
-	function handleSubmit(event: FormEvent<HTMLFormElement>) {
-		event.preventDefault()
-
-		const trimmedEntityId = entityId.trim()
-		if (!trimmedEntityId) {
-			setLoadState({
-				kind: 'error',
-				message: '请先输入 entity id，再发起查询。',
-			})
-			return
-		}
-
-		setSearchParams({
-			entityType,
-			entityId: trimmedEntityId,
-			limit: limit.trim() || '50',
-		})
-	}
-
+export function ActivityDebugPage({
+	entityType,
+	entityId,
+	limit,
+	loadState,
+	backAction = null,
+	onEntityTypeChange,
+	onEntityIdChange,
+	onLimitChange,
+	onSubmit,
+}: ActivityDebugPageProps) {
 	return (
 		<MainCard.Root>
 			<MainCard.Header title='Activity Debug' />
 			<MainCard.Body className='gap-4 p-4'>
 				<form
 					className='grid gap-3 rounded-xl border border-sf-border-subtle bg-card p-4 md:grid-cols-[180px_minmax(0,1fr)_120px_auto]'
-					onSubmit={handleSubmit}
+					onSubmit={onSubmit}
 				>
 					<label className='space-y-1.5'>
 						<span className={activityDebugFieldLabelClass}>Entity Type</span>
 						<Select
-							onValueChange={(value) => setEntityType(value as ActivityEntityType)}
+							onValueChange={(value) => onEntityTypeChange(value as ActivityEntityType)}
 							value={entityType}
 						>
 							<SelectTrigger aria-label='实体类型' className='h-10 w-full'>
@@ -156,7 +97,7 @@ export function ActivityDebugPage() {
 						<span className={activityDebugFieldLabelClass}>Entity ID</span>
 						<Input
 							className='h-10'
-							onChange={(event) => setEntityId(event.currentTarget.value)}
+							onChange={(event) => onEntityIdChange(event.currentTarget.value)}
 							placeholder='例如 task-1 / project-42'
 							value={entityId}
 						/>
@@ -167,7 +108,7 @@ export function ActivityDebugPage() {
 						<Input
 							className='h-10'
 							inputMode='numeric'
-							onChange={(event) => setLimit(event.currentTarget.value)}
+							onChange={(event) => onLimitChange(event.currentTarget.value)}
 							placeholder='50'
 							value={limit}
 						/>
@@ -177,9 +118,7 @@ export function ActivityDebugPage() {
 						<Button className='h-10 rounded-lg' type='submit'>
 							查询 Activity
 						</Button>
-						<Button asChild className='h-10 rounded-lg' type='button' variant='ghost'>
-							<Link to={openSection(scope, 'inbox', spaceId)}>返回</Link>
-						</Button>
+						{backAction}
 					</div>
 				</form>
 

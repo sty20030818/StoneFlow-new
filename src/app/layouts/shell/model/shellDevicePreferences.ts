@@ -9,15 +9,13 @@ import {
 	resolveRememberedPathForScope as resolveRememberedRoutePathForScope,
 	resolveStartupPathFromMemory,
 	validateShellRouteMemoryPaths,
-} from '@/app/routing'
-import type { ShellRouteMemory, ShellScopeKey } from '@/app/routing'
+} from '@/app/routing/routeMemory'
+import type { ShellRouteMemory, ShellScopeKey } from '@/app/navigation/shellRoute'
 import type {
 	SidebarPreferenceSettings,
 	SidebarProjectSectionPreferenceConfig,
 } from '@/features/settings/api/sidebarSettings'
 import type { Scope, Space } from '@/shared/types'
-
-export { buildShellScopeKey } from '@/app/routing'
 
 const SHELL_DEVICE_STORE_PATH = 'shell-device-preferences.json'
 const SIDEBAR_DEVICE_KEY = 'shell.sidebar.device'

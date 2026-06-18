@@ -1,25 +1,20 @@
-import { useCallback, useMemo, useSyncExternalStore, type ReactNode } from 'react'
 import {
 	Link as TanStackLink,
 	Navigate as TanStackNavigate,
 	Outlet as TanStackOutlet,
+	useLocation as useTanStackLocation,
+	useMatchRoute,
+	useNavigate as useTanStackNavigate,
+	useParams as useTanStackParams,
+	useRouter,
+	useRouterState,
 } from '@tanstack/react-router'
-import {
-	Link as ReactRouterLink,
-	NavLink as ReactRouterNavLink,
-	Navigate as ReactRouterNavigate,
-	Outlet as ReactRouterOutlet,
-	matchPath,
-	UNSAFE_LocationContext as ReactRouterLocationContext,
-	useLocation as useReactRouterLocation,
-	useNavigate as useReactRouterNavigate,
-	useNavigationType as useReactRouterNavigationType,
-	useParams as useReactRouterParams,
-	useSearchParams as useReactRouterSearchParams,
-} from 'react-router-dom'
-import { useContext } from 'react'
-import { useRouterRuntime } from './routerRuntimeContext'
+import { useCallback, useMemo, useSyncExternalStore, type ReactNode } from 'react'
 
+/**
+ * 过渡期路由兼容层。
+ * 这里只承接旧调用点仍在使用的最小 API 形状，新的 route file / route-private 代码应优先直接使用 TanStack Router 官方 API。
+ */
 type CompatNavigateOptions = {
 	replace?: boolean
 }
@@ -50,57 +45,31 @@ type CompatNavigateProps = {
 	to: string
 }
 
+type RouterLocationShape = {
+	pathname: string
+	search: string
+	hash: string
+}
+
 let lastNavigationAction = 'POP'
 
-function useHasReactRouterContext() {
-	return useContext(ReactRouterLocationContext) !== null
-}
-
-function useTanStackRouter() {
-	return useRouterRuntime()
-}
-
 export function Outlet() {
-	const hasReactRouterContext = useHasReactRouterContext()
-	return hasReactRouterContext ? <ReactRouterOutlet /> : <TanStackOutlet />
+	return <TanStackOutlet />
 }
 
 export function Navigate({ replace, to }: CompatNavigateProps) {
-	const hasReactRouterContext = useHasReactRouterContext()
-	return hasReactRouterContext ? (
-		<ReactRouterNavigate replace={replace} to={to} />
-	) : (
-		<TanStackNavigate replace={replace} to={to as never} />
-	)
+	return <TanStackNavigate replace={replace} to={to as never} />
 }
 
 export function Link({ children, className, to }: CompatLinkProps) {
-	const hasReactRouterContext = useHasReactRouterContext()
-	if (hasReactRouterContext) {
-		return (
-			<ReactRouterLink className={className} to={to}>
-				{children}
-			</ReactRouterLink>
-		)
-	}
-
 	return (
-		<TanStackLink from='/' className={className} to={to as never}>
+		<TanStackLink className={className} from='/' to={to as never}>
 			{children}
 		</TanStackLink>
 	)
 }
 
 export function NavLink({ children, className, to }: CompatNavLinkProps) {
-	const hasReactRouterContext = useHasReactRouterContext()
-	if (hasReactRouterContext) {
-		return (
-			<ReactRouterNavLink className={className} to={to}>
-				{children}
-			</ReactRouterNavLink>
-		)
-	}
-
 	return (
 		<TanStackLink activeProps={{ className }} className={className} from='/' to={to as never}>
 			{children}
@@ -109,47 +78,24 @@ export function NavLink({ children, className, to }: CompatNavLinkProps) {
 }
 
 export function useNavigate() {
-	const hasReactRouterContext = useHasReactRouterContext()
-	const reactRouterNavigate = useReactRouterNavigate()
-	const tanstackRouter = useTanStackRouter()
+	const navigate = useTanStackNavigate({ from: '/' })
+	const router = useRouter()
 
 	return useCallback(
 		(to: string | number | CompatLocationTarget, options?: CompatNavigateOptions) => {
-			if (hasReactRouterContext) {
-				if (typeof to === 'number') {
-					reactRouterNavigate(to)
-					return
-				}
-
-				if (typeof to === 'string') {
-					reactRouterNavigate(to, { replace: options?.replace })
-					return
-				}
-
-				reactRouterNavigate(
-					{
-						pathname: to.pathname,
-						search: to.search,
-						hash: to.hash,
-					},
-					{ replace: options?.replace },
-				)
-				return
-			}
-
 			if (typeof to === 'number') {
-				tanstackRouter?.history.go(to)
+				router.history.go(to)
 				return
 			}
 
 			if (typeof to === 'string') {
-				return tanstackRouter?.navigate({
+				return navigate({
 					replace: options?.replace,
 					to: to as never,
 				})
 			}
 
-			return tanstackRouter?.navigate({
+			return navigate({
 				replace: options?.replace,
 				to: to.pathname as never,
 				hash: to.hash ? to.hash.replace(/^#/, '') : undefined,
@@ -158,111 +104,70 @@ export function useNavigate() {
 					: undefined,
 			})
 		},
-		[hasReactRouterContext, reactRouterNavigate, tanstackRouter],
+		[navigate, router.history],
 	)
 }
 
 export function useParams<TParams extends Record<string, string | undefined>>() {
-	const hasReactRouterContext = useHasReactRouterContext()
-	const reactRouterParams = useReactRouterParams()
-	const tanstackRouter = useTanStackRouter()
-
-	if (hasReactRouterContext) {
-		return reactRouterParams as TParams
-	}
-
-	const state = tanstackRouter?.state as unknown as {
-		matches?: Array<{ params?: TParams }>
-	} | null
-	const lastMatch = state?.matches?.[state.matches.length - 1]
-	return (lastMatch?.params ?? {}) as TParams
+	return useTanStackParams({ strict: false } as never) as TParams
 }
 
-export function useLocation() {
-	const hasReactRouterContext = useHasReactRouterContext()
-	const reactRouterLocation = useReactRouterLocation()
-	const tanstackRouter = useTanStackRouter()
-	const tanstackLocation = tanstackRouter?.state.location
+export function useLocation(): RouterLocationShape {
+	const location = useTanStackLocation()
 
 	return useMemo(
-		() =>
-			hasReactRouterContext
-				? {
-						pathname: reactRouterLocation.pathname,
-						search: reactRouterLocation.search,
-						hash: reactRouterLocation.hash,
-					}
-				: {
-						pathname: tanstackLocation?.pathname ?? '/',
-						search: tanstackLocation?.searchStr ?? '',
-						hash: tanstackLocation?.hash ? `#${tanstackLocation.hash}` : '',
-					},
-		[
-			hasReactRouterContext,
-			reactRouterLocation.hash,
-			reactRouterLocation.pathname,
-			reactRouterLocation.search,
-			tanstackLocation?.hash,
-			tanstackLocation?.pathname,
-			tanstackLocation?.searchStr,
-		],
+		() => ({
+			pathname: location.pathname,
+			search: location.searchStr,
+			hash: location.hash ? `#${location.hash}` : '',
+		}),
+		[location.hash, location.pathname, location.searchStr],
 	)
 }
 
 export function useSearchParams(): [URLSearchParams, (nextInit: CompatSearchParamsInit) => void] {
-	const hasReactRouterContext = useHasReactRouterContext()
-	const [reactRouterSearchParams, setReactRouterSearchParams] = useReactRouterSearchParams()
-	const tanstackRouter = useTanStackRouter()
-	const tanstackLocation = tanstackRouter?.state.location
-	const tanstackSearchParams = useMemo(
-		() => new URLSearchParams(tanstackLocation?.searchStr ?? ''),
-		[tanstackLocation?.searchStr],
-	)
+	const navigate = useTanStackNavigate({ from: '/' })
+	const location = useTanStackLocation()
+	const searchParams = useMemo(() => new URLSearchParams(location.searchStr), [location.searchStr])
 
 	const setSearchParams = useCallback(
 		(nextInit: CompatSearchParamsInit) => {
-			if (hasReactRouterContext) {
-				setReactRouterSearchParams(nextInit, { replace: true })
-				return
-			}
-
-			void tanstackRouter?.navigate({
+			void navigate({
 				replace: true,
-				to: (tanstackLocation?.pathname ?? '/') as never,
+				to: location.pathname as never,
 				search: nextInit as never,
 			})
 		},
-		[hasReactRouterContext, setReactRouterSearchParams, tanstackLocation?.pathname, tanstackRouter],
+		[location.pathname, navigate],
 	)
 
-	return [hasReactRouterContext ? reactRouterSearchParams : tanstackSearchParams, setSearchParams]
+	return [searchParams, setSearchParams]
 }
 
 export function useNavigationType() {
-	const hasReactRouterContext = useHasReactRouterContext()
-	const reactRouterNavigationType = useReactRouterNavigationType()
-	const tanstackRouter = useTanStackRouter()
+	const router = useRouter()
 
-	return hasReactRouterContext
-		? reactRouterNavigationType
-		: useSyncExternalStore(
-				(onStoreChange) =>
-					tanstackRouter?.history.subscribe(({ action }) => {
-						lastNavigationAction = action.type
-						onStoreChange()
-					}) ?? (() => undefined),
-				() => lastNavigationAction,
-				() => 'POP',
-			)
+	return useSyncExternalStore(
+		(onStoreChange) =>
+			router.history.subscribe(({ action }) => {
+				lastNavigationAction = action.type
+				onStoreChange()
+			}),
+		() => lastNavigationAction,
+		() => 'POP',
+	)
 }
 
 export function useMatch(options: CompatMatchOptions) {
-	const hasReactRouterContext = useHasReactRouterContext()
-	const reactRouterLocation = useReactRouterLocation()
+	const matchRoute = useMatchRoute()
+	const routerState = useRouterState()
 
-	if (hasReactRouterContext) {
-		return matchPath({ path: options.path, end: options.end }, reactRouterLocation.pathname)
-	}
-
-	return matchPath({ path: options.path, end: options.end ?? false }, useLocation().pathname)
+	return (
+		matchRoute({
+			fuzzy: options.end === false,
+			to: options.path as never,
+			pending: false,
+		}) ??
+		(options.end === false && routerState.location.pathname.startsWith(options.path) ? {} : false)
+	)
 }

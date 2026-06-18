@@ -10,10 +10,10 @@ import {
 } from 'lucide-react'
 
 import { getSectionLabel } from '@/app/layouts/shell/config'
-import { type ShellRoute } from '@/app/routing'
+import type { ShellRoute } from '@/app/navigation/shellRoute'
 import { openProjectDetail, openSection } from '@/app/navigation/intents'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
-import type { ShellSectionKey } from '@/app/routing'
+import type { ShellSectionKey } from '@/app/navigation/shellRoute'
 import type { ProjectDetail } from '@/features/project/model/types'
 import type { TaskDetail } from '@/shared/types'
 

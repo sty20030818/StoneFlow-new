@@ -7,10 +7,9 @@ import {
 	type PropsWithChildren,
 } from 'react'
 
-import {} from '@/app/routing'
 import { openShellNavigationTarget, openTaskDetail } from '@/app/navigation/intents'
 import { useNavigate } from '@/app/routing/tanstackCompat'
-import type { ShellRoute } from '@/app/routing'
+import type { ShellRoute } from '@/app/navigation/shellRoute'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
 import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'

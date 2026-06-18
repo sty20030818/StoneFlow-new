@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 
 import {
 	BulkActionProvider,
@@ -10,6 +9,7 @@ import {
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ProjectOverviewPage } from '@/features/project-overview/ui/ProjectOverviewPage'
 import type { ProjectOverviewItem, Scope } from '@/shared/types'
+import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
 
 const loadOverviewSpy = vi.fn<(scope: Scope, viewKey: string) => Promise<void>>()
 const loadProjectViewsSpy = vi.fn<() => Promise<void>>()
@@ -90,39 +90,35 @@ vi.mock('@/features/project/query', () => ({
 	}),
 }))
 
-vi.mock('@/app/routing', async () => {
-	const actual = await vi.importActual<typeof import('@/app/routing')>('@/app/routing')
-	return {
-		...actual,
-		useShellRoute: () => ({
-			appRoute: {
-				kind: 'shell-section',
-				scope: { type: 'all' },
-				section: 'projects',
-				pathname: '/all/projects',
-				search: '',
-				hash: '',
-				fullPath: '/all/projects',
-			},
+vi.mock('@/app/layouts/shell/model/ShellRouteContext', () => ({
+	useCurrentShellRoute: () => ({
+		appRoute: {
 			kind: 'shell-section',
 			scope: { type: 'all' },
-			spaceId: null,
 			section: 'projects',
-			viewId: null,
-			projectId: null,
-			taskId: null,
 			pathname: '/all/projects',
 			search: '',
 			hash: '',
 			fullPath: '/all/projects',
-			isShellPath: true,
-			isSettingsPath: false,
-			isDebugPath: false,
-			isQuickCreatePath: false,
-			isWorkPath: true,
-		}),
-	}
-})
+		},
+		kind: 'shell-section',
+		scope: { type: 'all' },
+		spaceId: null,
+		section: 'projects',
+		viewId: null,
+		projectId: null,
+		taskId: null,
+		pathname: '/all/projects',
+		search: '',
+		hash: '',
+		fullPath: '/all/projects',
+		isShellPath: true,
+		isSettingsPath: false,
+		isDebugPath: false,
+		isQuickCreatePath: false,
+		isWorkPath: true,
+	}),
+}))
 
 vi.mock('@/features/view/query', () => ({
 	useViewsQuery: () => ({
@@ -171,25 +167,27 @@ describe('ProjectOverviewPage', () => {
 		toastErrorSpy.mockReset()
 	})
 
-	it('多选后显示归档和删除批量入口', () => {
-		renderProjectOverviewPage()
+	it('多选后显示归档和删除批量入口', async () => {
+		await renderProjectOverviewPage()
 
 		expect(screen.getByText('项目总览')).toHaveAttribute('aria-current', 'page')
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择项目 项目 A' }))
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择项目 项目 B' }))
 
-		const bulkToolbar = screen.getByRole('toolbar', { name: '批量操作' })
+		const bulkToolbar = await screen.findByRole('toolbar', { name: '批量操作' })
 		expect(within(bulkToolbar).getByText('已选 2 项')).toBeInTheDocument()
 		expect(within(bulkToolbar).getByRole('button', { name: '归档' })).toBeInTheDocument()
 		expect(within(bulkToolbar).getByRole('button', { name: '删除' })).toBeInTheDocument()
 	})
 
 	it('归档批量操作先确认，成功后刷新一次并清空 selection', async () => {
-		renderProjectOverviewPage()
+		await renderProjectOverviewPage()
 
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择项目 项目 A' }))
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择项目 项目 B' }))
-		fireEvent.click(within(screen.getByRole('toolbar', { name: '批量操作' })).getByText('归档'))
+		fireEvent.click(
+			within(await screen.findByRole('toolbar', { name: '批量操作' })).getByText('归档'),
+		)
 
 		expect(screen.getByRole('alertdialog')).toBeInTheDocument()
 		expect(screen.getByText('归档选中项目？')).toBeInTheDocument()
@@ -207,7 +205,7 @@ describe('ProjectOverviewPage', () => {
 		expect(screen.queryByText('已选 2 项')).not.toBeInTheDocument()
 	})
 
-	it('空状态文案使用统一的项目总览文案', () => {
+	it('空状态文案使用统一的项目总览文案', async () => {
 		storeState = createProjectStoreState({
 			overview: {
 				items: [],
@@ -215,7 +213,7 @@ describe('ProjectOverviewPage', () => {
 			},
 		})
 
-		renderProjectOverviewPage()
+		await renderProjectOverviewPage()
 
 		expect(screen.getByText('当前没有项目')).toBeInTheDocument()
 		expect(
@@ -226,14 +224,10 @@ describe('ProjectOverviewPage', () => {
 	})
 })
 
-function renderProjectOverviewPage() {
-	return render(
-		<MemoryRouter>
-			<TestBulkActionBoundary>
-				<ProjectOverviewPage />
-			</TestBulkActionBoundary>
-		</MemoryRouter>,
-	)
+async function renderProjectOverviewPage() {
+	return renderWithRouterContext(<ProjectOverviewPage />, {
+		wrap: (children) => <TestBulkActionBoundary>{children}</TestBulkActionBoundary>,
+	})
 }
 
 function TestBulkActionBoundary({ children }: { children: ReactNode }) {

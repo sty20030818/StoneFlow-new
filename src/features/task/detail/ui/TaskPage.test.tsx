@@ -1,12 +1,12 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Suspense } from 'react'
-import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AutosaveController } from '@/shared/autosave'
 import type { TaskDetail } from '@/shared/types'
+import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskPage } from './TaskPage'
@@ -74,7 +74,7 @@ describe('TaskPage', () => {
 	})
 
 	it('展示 task page 主体和 activity empty state', async () => {
-		renderTaskPage()
+		await renderTaskPage()
 
 		expect(screen.getByText('任务 A')).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '独立事项' })).toBeInTheDocument()
@@ -95,7 +95,7 @@ describe('TaskPage', () => {
 	})
 
 	it('归属区只保留一个 placement 入口，并继续保留详情只读空间和项目', async () => {
-		renderTaskPage()
+		await renderTaskPage()
 
 		expect(screen.getAllByRole('button', { name: '归属' })).toHaveLength(1)
 		expect(screen.queryByRole('button', { name: '空间' })).not.toBeInTheDocument()
@@ -108,13 +108,13 @@ describe('TaskPage', () => {
 		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
 	})
 
-	it('项目任务显示项目链路，收件箱任务显示收件箱链路', () => {
+	it('项目任务显示项目链路，收件箱任务显示收件箱链路', async () => {
 		taskDetailQueryState.data = createTaskDetail({
 			projectId: 'project-1',
 			projectName: '项目 A',
 		})
 
-		const view = renderTaskPage()
+		const view = await renderTaskPage()
 		expect(screen.getByRole('link', { name: '项目总览' })).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '项目 A' })).toBeInTheDocument()
 
@@ -124,7 +124,7 @@ describe('TaskPage', () => {
 			inboxAt: '2026-05-19T00:00:00Z',
 		})
 
-		view.rerender(renderTaskPageElement())
+		await view.rerender(renderTaskPageElement())
 		expect(screen.getByRole('link', { name: '收件箱' })).toBeInTheDocument()
 	})
 
@@ -141,19 +141,19 @@ describe('TaskPage', () => {
 			projectName: '项目 A',
 		})
 
-		renderTaskPage()
+		await renderTaskPage()
 
 		expect(await screen.findByText('真实任务标题')).toBeInTheDocument()
 		expect(screen.getByText('Links for task-1')).toBeInTheDocument()
 		expect(mockAutosave.value.reset).not.toHaveBeenCalled()
 	})
 
-	it('trash 任务显示只读状态', () => {
+	it('trash 任务显示只读状态', async () => {
 		taskDetailQueryState.data = createTaskDetail({
 			deletedAt: '2026-05-24T00:00:00Z',
 		})
 
-		renderTaskPage()
+		await renderTaskPage()
 
 		expect(screen.getByText('回收站中的任务')).toBeInTheDocument()
 		expect(screen.getByLabelText('任务标题')).toBeDisabled()
@@ -161,20 +161,22 @@ describe('TaskPage', () => {
 	})
 })
 
-function renderTaskPage() {
-	return render(renderTaskPageElement())
+async function renderTaskPage() {
+	return renderTaskPageWithRouter()
 }
 
 function renderTaskPageElement(): ReactElement {
 	return (
 		<QueryClientProvider client={createTestQueryClient()}>
-			<MemoryRouter>
-				<Suspense fallback={<div>loading</div>}>
-					<TaskPage scope={{ type: 'space', spaceId: 'space-1' }} taskId='task-1' />
-				</Suspense>
-			</MemoryRouter>
+			<Suspense fallback={<div>loading</div>}>
+				<TaskPage scope={{ type: 'space', spaceId: 'space-1' }} taskId='task-1' />
+			</Suspense>
 		</QueryClientProvider>
 	)
+}
+
+async function renderTaskPageWithRouter() {
+	return renderWithRouterContext(renderTaskPageElement())
 }
 
 function createTestQueryClient() {

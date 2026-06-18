@@ -1,10 +1,10 @@
 import React from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import type { ShellSidebarSettings } from '@/app/layouts/shell/model/shellDevicePreferences'
 import { SettingsPage } from '@/features/settings/ui/SettingsPage'
 import type { Space } from '@/shared/types'
+import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
 
 const loadSidebarSettingsSpy = vi.fn<() => Promise<void>>()
 const setItemVisibilitySpy =
@@ -37,18 +37,14 @@ vi.mock('@/features/space/query', () => ({
 	}),
 }))
 
-vi.mock('@/app/routing', async () => {
-	const actual = await vi.importActual<typeof import('@/app/routing')>('@/app/routing')
-	return {
-		...actual,
-		useShellRoute: () => ({
-			kind: 'shell-section',
-			scope: { type: 'all' },
-			spaceId: null,
-			section: 'settings',
-		}),
-	}
-})
+vi.mock('@/app/layouts/shell/model/ShellRouteContext', () => ({
+	useCurrentShellRoute: () => ({
+		kind: 'shell-section',
+		scope: { type: 'all' },
+		spaceId: null,
+		section: 'settings',
+	}),
+}))
 
 vi.mock('@/shared/ui/base/select', () => {
 	type SelectContextValue = {
@@ -167,7 +163,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('渲染真实设置项并触发初始化加载', async () => {
-		renderSettingsPage()
+		await renderSettingsPage()
 
 		await waitFor(() => {
 			expect(loadSidebarSettingsSpy).toHaveBeenCalledTimes(1)
@@ -182,7 +178,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('切换主入口显隐时调用 sidebar settings store', async () => {
-		renderSettingsPage()
+		await renderSettingsPage()
 
 		fireEvent.click(getCheckboxByLabel('所有任务'))
 
@@ -192,7 +188,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('切换辅助入口显隐时调用 sidebar settings store', async () => {
-		renderSettingsPage()
+		await renderSettingsPage()
 
 		fireEvent.click(getCheckboxByLabel('回收站'))
 
@@ -202,7 +198,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('修改 projects section 配置时调用更新方法', async () => {
-		renderSettingsPage()
+		await renderSettingsPage()
 
 		fireEvent.click(getCheckboxByLabel('显示已完成项目'))
 
@@ -215,7 +211,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('切换默认 Space 时调用 setDefaultSpace', async () => {
-		renderSettingsPage()
+		await renderSettingsPage()
 
 		fireEvent.change(screen.getByLabelText('默认空间'), { target: { value: 'space-2' } })
 
@@ -225,12 +221,8 @@ describe('SettingsPage', () => {
 	})
 })
 
-function renderSettingsPage() {
-	return render(
-		<MemoryRouter>
-			<SettingsPage />
-		</MemoryRouter>,
-	)
+async function renderSettingsPage() {
+	return renderWithRouterContext(<SettingsPage />)
 }
 
 function getCheckboxByLabel(label: string) {

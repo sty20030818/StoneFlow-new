@@ -1,4 +1,4 @@
-import type { RouteScope, ShellSectionKey, ShellSectionSegment } from './routeTypes'
+import type { RouteScope, ShellSectionKey, ShellSectionSegment } from '@/app/navigation/shellRoute'
 
 const DEFAULT_SPACE_SECTION: ShellSectionSegment = 'inbox'
 const DEFAULT_ALL_SECTION: ShellSectionSegment = 'tasks'

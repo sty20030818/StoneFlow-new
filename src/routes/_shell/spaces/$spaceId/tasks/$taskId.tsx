@@ -1,20 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { TaskPage } from '@/features/task/detail/ui/TaskPage'
-import { TaskPageState } from '@/features/task/detail/ui/TaskPageState'
 import { useVisibleSpacesQuery } from '@/features/space/query/space.queries'
 import {
 	createTaskLoaderError,
+	DetailRouteErrorStateView,
 	ensureTaskDetailRouteData,
-	type DetailRouteErrorState,
+	ensureVisibleSpaces,
 } from '../../../-detail-route-helpers'
 
 export const Route = createFileRoute('/_shell/spaces/$spaceId/tasks/$taskId')({
 	loader: async ({ context, params }) => {
-		const spaces = await context.queryClient.ensureQueryData({
-			queryKey: ['spaces', 'visible'],
-			queryFn: async () => (await import('@/features/space/api/spaces')).listVisibleSpaces(),
-		})
+		const spaces = await ensureVisibleSpaces(context.queryClient)
 
 		return ensureTaskDetailRouteData({
 			queryClient: context.queryClient,
@@ -36,23 +33,5 @@ function SpaceTaskDetailRoute() {
 }
 
 function TaskDetailRouteError({ error }: { error: unknown }) {
-	const detailError = isDetailRouteError(error) ? error : createTaskLoaderError(error)
-
-	return (
-		<TaskPageState
-			description={detailError.description}
-			pageTitle={detailError.pageTitle}
-			title={detailError.title}
-		/>
-	)
-}
-
-function isDetailRouteError(error: unknown): error is DetailRouteErrorState {
-	return Boolean(
-		error &&
-		typeof error === 'object' &&
-		'title' in error &&
-		'description' in error &&
-		'pageTitle' in error,
-	)
+	return <DetailRouteErrorStateView error={error} fallback={createTaskLoaderError} />
 }

@@ -1,4 +1,4 @@
-import type { ShellRoute } from '@/app/routing'
+import type { ShellRoute } from '@/app/navigation/shellRoute'
 import type { Scope } from '@/shared/types'
 
 const ALL_SCOPE = { type: 'all' } as const satisfies Scope

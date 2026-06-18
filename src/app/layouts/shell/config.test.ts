@@ -1,5 +1,6 @@
 import { getScopeLabel, getSectionLabel, getSpaceLabel } from '@/app/layouts/shell/config'
-import { buildScopedSettingsPath, resolveShellSection } from '@/app/routing'
+import { buildScopedSettingsPath } from '@/app/routing'
+import { resolveShellSection } from '@/app/navigation/shellRoute'
 
 const spaces = [
 	{

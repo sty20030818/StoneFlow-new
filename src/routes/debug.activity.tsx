@@ -1,7 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { ActivityDebugPage } from '@/features/activity/ui/ActivityDebugPage'
+import { ActivityDebugRoute } from './-activity-debug-route'
+import { normalizeActivityDebugSearch } from './-activity-debug-search'
 
 export const Route = createFileRoute('/debug/activity')({
-	component: ActivityDebugPage,
+	validateSearch: normalizeActivityDebugSearch,
+	component: ActivityDebugRoute,
 })

@@ -1,6 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
 
 import type { AutosaveController } from '@/shared/autosave'
 import type { TaskDetail } from '@/shared/types'
@@ -318,7 +317,7 @@ describe('TaskDrawer', () => {
 })
 
 function renderWithRouter(node: React.ReactNode) {
-	return render(<MemoryRouter>{node}</MemoryRouter>)
+	return render(node)
 }
 
 function createAutosaveController(

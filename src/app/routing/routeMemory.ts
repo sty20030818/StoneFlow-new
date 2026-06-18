@@ -3,6 +3,11 @@ import { getTaskDetail } from '@/features/task/api/tasks'
 import type { Scope, Space } from '@/shared/types'
 
 import { buildCanonicalSectionPath, buildStartupFallbackPath } from './routePaths'
+import {
+	buildShellScopeKey,
+	type ShellRouteMemory,
+	type ShellScopeKey,
+} from '@/app/navigation/shellRoute'
 
 const ROUTE_MEMORY_VERSION = 2
 
@@ -22,14 +27,6 @@ const VIEW_PATH = /^\/(?:all|spaces\/([^/]+))\/views\/([^/?#]+)(?:[?#].*)?$/
 const TASK_DETAIL_PATH = /^\/spaces\/([^/]+)\/tasks\/([^/?#]+)(?:[?#].*)?$/
 const PROJECT_DETAIL_PATH = /^\/spaces\/([^/]+)\/projects\/([^/?#]+)(?:[?#].*)?$/
 
-export type ShellScopeKey = 'all' | `space:${string}`
-
-export type ShellRouteMemory = {
-	version: 2
-	lastScopeKey: ShellScopeKey
-	lastRouteByScopeKey: Record<string, string>
-}
-
 export type ResolveRememberedPathInput = {
 	scopeKey: ShellScopeKey
 	routeMemory: ShellRouteMemory | null
@@ -40,10 +37,6 @@ export type ResolveRememberedPathInput = {
 export type ResolveStartupPathInput = {
 	routeMemory: ShellRouteMemory | null
 	spaces: Space[]
-}
-
-export function buildShellScopeKey(scope: Scope): ShellScopeKey {
-	return scope.type === 'all' ? 'all' : `space:${scope.spaceId}`
 }
 
 export function defaultShellRouteMemory(): ShellRouteMemory {

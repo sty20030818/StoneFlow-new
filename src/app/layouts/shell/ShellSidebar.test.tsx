@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, useLocation } from 'react-router-dom'
+import { useLocation } from '@tanstack/react-router'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
 import { resolveRememberedPathForScope } from '@/app/layouts/shell/model/shellDevicePreferences'
@@ -7,6 +7,7 @@ import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { SubmitRegistryProvider } from '@/features/submit/model'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import { TooltipProvider } from '@/shared/ui/base/tooltip'
+import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
 
 vi.mock('@/app/layouts/shell/model/shellDevicePreferences', async () => {
 	const actual = await vi.importActual<
@@ -336,34 +337,35 @@ function renderShellSidebar(
 	],
 	overrides?: Partial<Parameters<typeof ShellSidebar>[0]>,
 ) {
-	return render(
-		<MemoryRouter initialEntries={['/spaces/space-personal/inbox']}>
-			<SubmitRegistryProvider>
-				<DangerConfirmProvider>
-					<TooltipProvider>
-						<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
-							<LocationProbe />
-							<ShellSidebar
-								currentScope={{ type: 'space', spaceId: 'space-personal' }}
-								currentSpaceId='space-personal'
-								onArchiveSpace={async () => mockSpace}
-								onCreateSpace={async () => mockSpace}
-								onDeleteSpace={async () => mockSpace}
-								onOpenProjectCreateDialog={() => undefined}
-								onResetMainItemsVisibility={() => undefined}
-								onSetDefaultSpace={async () => mockSpace}
-								onUpdateItemVisibility={() => undefined}
-								onUpdateSpace={async () => mockSpace}
-								projects={projects}
-								spaces={[mockSpace]}
-								settings={settings}
-								{...overrides}
-							/>
-						</SidebarProvider>
-					</TooltipProvider>
-				</DangerConfirmProvider>
-			</SubmitRegistryProvider>
-		</MemoryRouter>,
+	return renderWithRouterContext(
+		<SubmitRegistryProvider>
+			<DangerConfirmProvider>
+				<TooltipProvider>
+					<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
+						<LocationProbe />
+						<ShellSidebar
+							currentScope={{ type: 'space', spaceId: 'space-personal' }}
+							currentSpaceId='space-personal'
+							onArchiveSpace={async () => mockSpace}
+							onCreateSpace={async () => mockSpace}
+							onDeleteSpace={async () => mockSpace}
+							onOpenProjectCreateDialog={() => undefined}
+							onResetMainItemsVisibility={() => undefined}
+							onSetDefaultSpace={async () => mockSpace}
+							onUpdateItemVisibility={() => undefined}
+							onUpdateSpace={async () => mockSpace}
+							projects={projects}
+							spaces={[mockSpace]}
+							settings={settings}
+							{...overrides}
+						/>
+					</SidebarProvider>
+				</TooltipProvider>
+			</DangerConfirmProvider>
+		</SubmitRegistryProvider>,
+		{
+			initialEntry: '/spaces/space-personal/inbox',
+		},
 	)
 }
 
@@ -373,7 +375,7 @@ function LocationProbe() {
 	return (
 		<div data-testid='location'>
 			{location.pathname}
-			{location.search}
+			{location.searchStr}
 		</div>
 	)
 }

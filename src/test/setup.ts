@@ -21,6 +21,14 @@ if (typeof HTMLElement !== 'undefined' && !HTMLElement.prototype.scrollIntoView)
 	})
 }
 
+if (typeof window !== 'undefined') {
+	Object.defineProperty(window, 'scrollTo', {
+		value: () => undefined,
+		configurable: true,
+		writable: true,
+	})
+}
+
 if (typeof window !== 'undefined' && !window.matchMedia) {
 	Object.defineProperty(window, 'matchMedia', {
 		configurable: true,

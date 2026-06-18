@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ShellRoute } from '@/app/routing'
+import type { ShellRoute } from '@/app/navigation/shellRoute'
 
 import { resolveBreadcrumb } from './breadcrumbResolver'
 

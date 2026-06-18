@@ -1,10 +1,11 @@
 import { startTransition, useEffect, useMemo, useState } from 'react'
 
-import { isRememberableShellPath, normalizeShellMemoryPath, parseShellRoute } from '@/app/routing'
-import type { ShellRoute } from '@/app/routing'
+import { type ShellRoute } from '@/app/navigation/shellRoute'
+import { parseShellRoute } from '@/app/navigation/shellRoute'
 import { useLocation, useNavigate, useNavigationType } from '@/app/routing/tanstackCompat'
 import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import type { Scope, Space } from '@/shared/types'
+import { isRememberableShellPath, normalizeShellMemoryPath } from '@/app/routing/routeMemory'
 import {
 	ArchiveIcon,
 	BoxIcon,

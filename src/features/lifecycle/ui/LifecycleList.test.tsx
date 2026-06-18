@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { ArchiveIcon, Trash2Icon, type LucideIcon } from 'lucide-react'
-import { MemoryRouter } from 'react-router-dom'
 
 import {
 	BulkActionProvider,
@@ -11,6 +10,7 @@ import {
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { LifecycleList } from '@/features/lifecycle/ui/LifecycleList'
 import type { LifecycleEntry, Scope } from '@/shared/types'
+import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
 
 const loadArchiveSpy = vi.fn<(scope: Scope) => Promise<void>>()
 const loadTrashSpy = vi.fn<(scope: Scope) => Promise<void>>()
@@ -86,16 +86,12 @@ vi.mock('@/features/lifecycle/api/lifecycle', () => ({
 		permanentlyDeleteLifecycleEntrySpy(entry),
 }))
 
-vi.mock('@/app/routing', async () => {
-	const actual = await vi.importActual<typeof import('@/app/routing')>('@/app/routing')
-	return {
-		...actual,
-		useShellRoute: () => ({
-			scope: mockScope,
-			spaceId: mockScope.type === 'space' ? mockScope.spaceId : null,
-		}),
-	}
-})
+vi.mock('@/app/layouts/shell/model/ShellRouteContext', () => ({
+	useCurrentShellRoute: () => ({
+		scope: mockScope,
+		spaceId: mockScope.type === 'space' ? mockScope.spaceId : null,
+	}),
+}))
 
 vi.mock('@/shared/events', () => ({
 	emitEvent: vi.fn(),
@@ -131,7 +127,7 @@ describe('LifecycleList', () => {
 	})
 
 	it('Archive 模式渲染三分区与对应操作按钮', async () => {
-		renderLifecycleList({
+		await renderLifecycleList({
 			mode: 'archive',
 			title: '归档',
 			icon: ArchiveIcon,
@@ -146,7 +142,7 @@ describe('LifecycleList', () => {
 	})
 
 	it('Archive 模式多选后通过批量条恢复并清空 selection', async () => {
-		renderLifecycleList({
+		await renderLifecycleList({
 			mode: 'archive',
 			title: '归档',
 			icon: ArchiveIcon,
@@ -155,8 +151,8 @@ describe('LifecycleList', () => {
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择 工作' }))
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择 补齐生命周期页面' }))
 
-		expect(screen.getByText('已选 2 项')).toBeInTheDocument()
-		const bulkToolbar = screen.getByRole('toolbar', { name: '批量操作' })
+		expect(await screen.findByText('已选 2 项')).toBeInTheDocument()
+		const bulkToolbar = await screen.findByRole('toolbar', { name: '批量操作' })
 		fireEvent.click(within(bulkToolbar).getByRole('button', { name: '恢复' }))
 
 		await waitFor(() => {
@@ -186,7 +182,7 @@ describe('LifecycleList', () => {
 			},
 		})
 
-		renderLifecycleList({
+		await renderLifecycleList({
 			mode: 'trash',
 			title: '回收站',
 			icon: Trash2Icon,
@@ -198,8 +194,8 @@ describe('LifecycleList', () => {
 		).toBeInTheDocument()
 	})
 
-	it('Trash 模式多选后展示恢复与永久删除入口', () => {
-		renderLifecycleList({
+	it('Trash 模式多选后展示恢复与永久删除入口', async () => {
+		await renderLifecycleList({
 			mode: 'trash',
 			title: '回收站',
 			icon: Trash2Icon,
@@ -207,20 +203,24 @@ describe('LifecycleList', () => {
 
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择 待永久删除任务' }))
 
-		expect(screen.getByRole('toolbar', { name: '批量操作' })).toBeInTheDocument()
+		expect(await screen.findByRole('toolbar', { name: '批量操作' })).toBeInTheDocument()
 		expect(screen.getAllByRole('button', { name: '恢复' })).toHaveLength(2)
 		expect(screen.getByRole('button', { name: '永久删除' })).toBeInTheDocument()
 	})
 
 	it('Trash 模式永久删除先确认再执行', async () => {
-		renderLifecycleList({
+		await renderLifecycleList({
 			mode: 'trash',
 			title: '回收站',
 			icon: Trash2Icon,
 		})
 
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择 待永久删除任务' }))
-		fireEvent.click(screen.getByRole('button', { name: '永久删除' }))
+		fireEvent.click(
+			within(await screen.findByRole('toolbar', { name: '批量操作' })).getByRole('button', {
+				name: '永久删除',
+			}),
+		)
 
 		expect(screen.getByRole('alertdialog')).toBeInTheDocument()
 		expect(screen.getByText('确认永久删除「待永久删除任务」吗？')).toBeInTheDocument()
@@ -241,7 +241,7 @@ describe('LifecycleList', () => {
 	})
 
 	it('archive 单条 task 右键可移入回收站，trash 单条 task 右键可永久删除', async () => {
-		renderLifecycleList({
+		await renderLifecycleList({
 			mode: 'archive',
 			title: '归档',
 			icon: ArchiveIcon,
@@ -257,7 +257,7 @@ describe('LifecycleList', () => {
 			)
 		})
 
-		renderLifecycleList({
+		await renderLifecycleList({
 			mode: 'trash',
 			title: '回收站',
 			icon: Trash2Icon,
@@ -275,17 +275,15 @@ describe('LifecycleList', () => {
 	})
 })
 
-function renderLifecycleList(props: {
+async function renderLifecycleList(props: {
 	mode: 'archive' | 'trash'
 	title: string
 	icon: LucideIcon
 }) {
-	return render(
-		<MemoryRouter>
-			<TestBulkActionBoundary mode={props.mode}>
-				<LifecycleList {...props} />
-			</TestBulkActionBoundary>
-		</MemoryRouter>,
+	return renderWithRouterContext(
+		<TestBulkActionBoundary mode={props.mode}>
+			<LifecycleList {...props} />
+		</TestBulkActionBoundary>,
 	)
 }
 
