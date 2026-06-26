@@ -1,14 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { FormProvider, useController } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { useCreateProjectMutation } from '@/features/project/query'
-import { useRegisterSubmitTarget, type SubmitIntent } from '@/features/submit/model'
+import type { SubmitIntent } from '@/features/submit/model'
+import { normalizeSubmitError, useSubmitTargetFromForm, useZodForm } from '@/shared/form'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'
 import { Switch } from '@/shared/ui/base/switch'
 import { Textarea } from '@/shared/ui/base/textarea'
 import { CreateModalContent } from '@/shared/ui/create-modal-content'
 import { MoreHorizontalIcon, PaperclipIcon } from 'lucide-react'
+import {
+	buildProjectCreateDefaultValues,
+	projectCreateSchema,
+	toProjectCreateInput,
+} from './ProjectCreateContent.form'
 
 type ProjectCreateContentProps = {
 	selectedSpaceId: string | null
@@ -21,57 +28,50 @@ type ProjectCreateContentProps = {
  */
 export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreateContentProps) {
 	const createProject = useCreateProjectMutation()
-	const [name, setName] = useState('')
-	const [description, setDescription] = useState('')
+	const form = useZodForm({
+		schema: projectCreateSchema,
+		defaultValues: buildProjectCreateDefaultValues(),
+	})
+	const { field: nameField } = useController({ control: form.control, name: 'name' })
+	const { field: descriptionField } = useController({
+		control: form.control,
+		name: 'description',
+	})
+	const { field: createMoreField } = useController({
+		control: form.control,
+		name: 'createMore',
+	})
 	const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle')
 	const [errorMessage, setErrorMessage] = useState<string | null>(null)
-	const [createMore, setCreateMore] = useState(false)
 	const [createdCount, setCreatedCount] = useState(0)
 	const titleInputRef = useRef<HTMLInputElement>(null)
 	const isSubmitting = submitState === 'submitting'
 
 	const resetFieldsOnly = useCallback(() => {
-		setName('')
-		setDescription('')
+		form.reset(buildProjectCreateDefaultValues())
 		setSubmitState('idle')
 		setErrorMessage(null)
-	}, [])
+	}, [form])
 
-	const resetSession = useCallback(() => {
-		resetFieldsOnly()
-		setCreateMore(false)
-		setCreatedCount(0)
-	}, [resetFieldsOnly])
-
-	useEffect(() => {
-		resetSession()
-		// 只在挂载时初始化一次，关闭后重新打开会重新挂载。
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [])
-
-	const canSubmit = !isSubmitting && name.trim().length > 0 && Boolean(selectedSpaceId)
+	const canSubmit = !isSubmitting && Boolean(selectedSpaceId) && nameField.value.trim().length > 0
 
 	const submitProject = useCallback(
 		async (intent: SubmitIntent = 'default') => {
-			if (!selectedSpaceId || name.trim().length === 0) {
+			const isValid = await form.trigger()
+			if (!selectedSpaceId || !isValid) {
 				return
 			}
 
-			const effectiveIntent = intent === 'default' && createMore ? 'continue' : intent
+			const values = form.getValues()
+			const effectiveIntent = intent === 'default' && values.createMore ? 'continue' : intent
 
 			setSubmitState('submitting')
 			setErrorMessage(null)
 			try {
-				await createProject.mutateAsync({
-					spaceId: selectedSpaceId,
-					name: name.trim(),
-					description: description.trim() ? description : null,
-					dueAt: null,
-				})
+				await createProject.mutateAsync(toProjectCreateInput(values, selectedSpaceId))
 
 				if (effectiveIntent === 'continue') {
 					resetFieldsOnly()
-					setCreateMore(false)
 					setCreatedCount((count) => count + 1)
 					requestAnimationFrame(() => titleInputRef.current?.focus())
 					return
@@ -81,94 +81,93 @@ export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreate
 				onClose()
 			} catch (error) {
 				setSubmitState('error')
-				setErrorMessage(extractErrorMessage(error, '项目创建失败'))
+				setErrorMessage(normalizeSubmitError(error, '项目创建失败'))
 			}
 		},
-		[createMore, createProject, description, name, onClose, resetFieldsOnly, selectedSpaceId],
+		[createProject, form, onClose, resetFieldsOnly, selectedSpaceId],
 	)
 
-	const submitTarget = useMemo(
-		() => ({
-			id: 'project-create',
-			title: '创建项目',
-			priority: 110,
-			canSubmit,
-			supportedIntents: ['continue'] satisfies SubmitIntent[],
-			submit: submitProject,
-			context: { source: 'project-create' as const },
-		}),
-		[canSubmit, submitProject],
-	)
-	useRegisterSubmitTarget(submitTarget)
+	useSubmitTargetFromForm({
+		id: 'project-create',
+		title: '创建项目',
+		priority: 110,
+		context: { source: 'project-create' as const },
+		form,
+		canSubmit,
+		isSubmitting,
+		supportedIntents: ['continue'],
+		getIntentDisabledReason: (intent) => {
+			if (intent === 'open') {
+				return '当前表单不支持创建并打开'
+			}
+			return undefined
+		},
+		submit: submitProject,
+	})
 
 	return (
-		<CreateModalContent>
-			<CreateModalContent.Title>
-				<Input
-					ref={titleInputRef}
-					autoFocus
-					className='h-auto border-none bg-transparent px-0 text-lg font-black shadow-none focus-visible:ring-0 md:text-lg md:font-black'
-					onChange={(event) => setName(event.currentTarget.value)}
-					placeholder='项目名称'
-					value={name}
-				/>
-			</CreateModalContent.Title>
+		<FormProvider {...form}>
+			<CreateModalContent>
+				<CreateModalContent.Title>
+					<Input
+						ref={titleInputRef}
+						autoFocus
+						className='h-auto border-none bg-transparent px-0 text-lg font-black shadow-none focus-visible:ring-0 md:text-lg md:font-black'
+						onBlur={nameField.onBlur}
+						onChange={nameField.onChange}
+						placeholder='项目名称'
+						value={nameField.value}
+					/>
+				</CreateModalContent.Title>
 
-			<CreateModalContent.Body>
-				<Textarea
-					className='min-h-20 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
-					onChange={(event) => setDescription(event.currentTarget.value)}
-					placeholder='添加项目说明…'
-					value={description}
-				/>
-			</CreateModalContent.Body>
+				<CreateModalContent.Body>
+					<Textarea
+						className='min-h-20 resize-none border-none bg-transparent px-0 text-[13px] leading-5 shadow-none placeholder:text-sf-text-quaternary focus-visible:ring-0'
+						onBlur={descriptionField.onBlur}
+						onChange={descriptionField.onChange}
+						placeholder='添加项目说明…'
+						value={descriptionField.value}
+					/>
+				</CreateModalContent.Body>
 
-			<CreateModalContent.Metadata error={submitState === 'error' ? errorMessage : null}>
-				<Button onClick={() => toast.info('更多属性即将支持')} size='icon-sm' variant='outline'>
-					<MoreHorizontalIcon />
-				</Button>
-			</CreateModalContent.Metadata>
-
-			<CreateModalContent.Footer>
-				<Button
-					className='text-sf-icon-secondary'
-					onClick={() => toast.info('附件上传功能即将支持')}
-					size='icon-sm'
-					variant='outline'
-				>
-					<PaperclipIcon />
-				</Button>
-
-				<div className='flex items-center gap-3'>
-					<p
-						aria-live='polite'
-						className='min-w-30 text-right text-[11px] font-medium tabular-nums text-sf-text-tertiary'
-					>
-						{createdCount > 0 ? `已创建 ${createdCount} 个项目` : '\u00A0'}
-					</p>
-					<div className='flex items-center gap-1.5 text-[12px] text-sf-text-secondary select-none'>
-						<Switch
-							checked={createMore}
-							onCheckedChange={(checked) => setCreateMore(checked === true)}
-							disabled={isSubmitting}
-							size='sm'
-						/>
-						创建更多
-					</div>
-					<Button disabled={!canSubmit} onClick={() => void submitProject('default')} size='sm'>
-						{submitState === 'submitting' ? '创建中…' : '创建项目'}
+				<CreateModalContent.Metadata error={submitState === 'error' ? errorMessage : null}>
+					<Button onClick={() => toast.info('更多属性即将支持')} size='icon-sm' variant='outline'>
+						<MoreHorizontalIcon />
 					</Button>
-				</div>
-			</CreateModalContent.Footer>
-		</CreateModalContent>
-	)
-}
+				</CreateModalContent.Metadata>
 
-function extractErrorMessage(error: unknown, fallback: string): string {
-	if (error instanceof Error) return error.message
-	if (typeof error === 'string') return error
-	if (error && typeof error === 'object' && 'message' in error) {
-		return String((error as { message: unknown }).message)
-	}
-	return fallback
+				<CreateModalContent.Footer>
+					<Button
+						className='text-sf-icon-secondary'
+						onClick={() => toast.info('附件上传功能即将支持')}
+						size='icon-sm'
+						variant='outline'
+					>
+						<PaperclipIcon />
+					</Button>
+
+					<div className='flex items-center gap-3'>
+						<p
+							aria-live='polite'
+							className='min-w-30 text-right text-[11px] font-medium tabular-nums text-sf-text-tertiary'
+						>
+							{createdCount > 0 ? `已创建 ${createdCount} 个项目` : '\u00A0'}
+						</p>
+						<div className='flex items-center gap-1.5 text-[12px] text-sf-text-secondary select-none'>
+							<Switch
+								checked={createMoreField.value}
+								onCheckedChange={(checked) => createMoreField.onChange(checked === true)}
+								disabled={isSubmitting}
+								size='sm'
+							/>
+							创建更多
+						</div>
+						<Button disabled={!canSubmit} onClick={() => void submitProject('default')} size='sm'>
+							{submitState === 'submitting' ? '创建中…' : '创建项目'}
+						</Button>
+					</div>
+				</CreateModalContent.Footer>
+			</CreateModalContent>
+		</FormProvider>
+	)
 }

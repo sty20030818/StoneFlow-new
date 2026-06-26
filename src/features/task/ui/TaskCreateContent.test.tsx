@@ -1,7 +1,11 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
-import { SubmitRegistryProvider, useSubmitRegistryActions } from '@/features/submit/model'
+import {
+	SubmitRegistryProvider,
+	useSubmitRegistryActions,
+	useSubmitRegistryContext,
+} from '@/features/submit/model'
 import { TaskCreateContent } from './TaskCreateContent'
 
 const createTaskMock = vi.fn()
@@ -225,6 +229,7 @@ function renderTaskCreate({
 				]}
 			/>
 			{withActions ? <SubmitActionProbe /> : null}
+			{withActions ? <SubmitStateProbe /> : null}
 		</SubmitRegistryProvider>,
 	)
 }
@@ -240,6 +245,22 @@ function SubmitActionProbe() {
 			<button onClick={() => void actions.submitActiveTarget('open')} type='button'>
 				执行打开提交
 			</button>
+		</div>
+	)
+}
+
+function SubmitStateProbe() {
+	const submitState = useSubmitRegistryContext()
+
+	return (
+		<div>
+			<div data-testid='task-active-target'>{submitState.activeTarget?.id ?? 'none'}</div>
+			<div data-testid='task-can-continue'>
+				{submitState.canSubmitIntent('continue') ? 'enabled' : 'disabled'}
+			</div>
+			<div data-testid='task-can-open'>
+				{submitState.canSubmitIntent('open') ? 'enabled' : 'disabled'}
+			</div>
 		</div>
 	)
 }

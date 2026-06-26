@@ -2,6 +2,7 @@ import {
 	createContext,
 	useContext,
 	useEffect,
+	useLayoutEffect,
 	useMemo,
 	useRef,
 	useSyncExternalStore,
@@ -162,7 +163,7 @@ export function useRegisterSubmitTarget(target: SubmitTarget | null) {
 		}
 	}, [actions])
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		const token = tokenRef.current!
 
 		if (!target) {
@@ -215,16 +216,17 @@ function createSubmitRegistryStore(): SubmitRegistryStore {
 			const activeRecord = resolveActiveTargetRecord(registrations)
 			emitIfChanged(buildSubmitRegistryState(activeRecord))
 
-			if (!activeRecord) {
+			const targetRecord = activeRecord ?? resolveHighestPriorityTargetRecord(registrations)
+			if (!targetRecord) {
 				return false
 			}
 
-			const disabledReason = resolveTargetIntentDisabledReason(activeRecord.target, intent)
+			const disabledReason = resolveTargetIntentDisabledReason(targetRecord.target, intent)
 			if (disabledReason) {
 				return false
 			}
 
-			await activeRecord.target.submit(intent)
+			await targetRecord.target.submit(intent)
 			return true
 		},
 	}
@@ -236,6 +238,16 @@ function resolveActiveTargetRecord(
 	const sorted = Array.from(registrations.entries())
 		.map(([token, target]) => ({ token, target }))
 		.filter((record) => record.target.canSubmit)
+		.sort((left, right) => right.target.priority - left.target.priority)
+
+	return sorted[0] ?? null
+}
+
+function resolveHighestPriorityTargetRecord(
+	registrations: Map<symbol, SubmitTarget>,
+): SubmitRegistryTargetRecord | null {
+	const sorted = Array.from(registrations.entries())
+		.map(([token, target]) => ({ token, target }))
 		.sort((left, right) => right.target.priority - left.target.priority)
 
 	return sorted[0] ?? null
