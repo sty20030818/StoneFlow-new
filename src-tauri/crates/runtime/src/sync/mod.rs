@@ -2,7 +2,6 @@
 
 mod config;
 mod engine;
-mod replicator;
 mod state;
 mod types;
 
