@@ -1,7 +1,10 @@
 //! 云同步调度与执行入口。
 
+use std::path::{Path, PathBuf};
+
 use tauri::Manager;
 use tokio::sync::OwnedMutexGuard;
+use tokio::process::Command;
 
 use crate::app::error::AppError;
 
@@ -101,10 +104,6 @@ pub fn trigger_resume_pull(app_handle: &tauri::AppHandle) {
 
 /// 手动同步固定语义为 push -> pull，并等待本轮完成。
 pub async fn force_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload, AppError> {
-    if !sync_execution_enabled() {
-        return Err(sync_execution_disabled_error());
-    }
-
     let sync_state = sync_state_from_app(app_handle)?;
     ensure_remote_config(&sync_state).await?;
 
@@ -251,11 +250,11 @@ async fn run_sync_round(
 }
 
 async fn sync_database(
-    _database_path: String,
-    _remote_config: &crate::sync::types::SyncRemoteConfig,
-    _mode: SyncRunMode,
+    database_path: String,
+    remote_config: &crate::sync::types::SyncRemoteConfig,
+    mode: SyncRunMode,
 ) -> Result<(), AppError> {
-    Err(sync_execution_disabled_error())
+    run_sync_worker(&database_path, remote_config, mode).await
 }
 
 trait SyncErrorContext {
@@ -294,16 +293,6 @@ async fn ensure_remote_config(sync_state: &SyncRuntimeState) -> Result<(), AppEr
     ))
 }
 
-/// 当主可执行文件以 worker 标志启动时，直接执行独立同步进程逻辑并返回退出码。
-pub fn run_sync_worker_from_cli() -> Option<i32> {
-    let is_sync_worker = std::env::args().any(|arg| arg == "--stoneflow-sync-worker");
-    if !is_sync_worker {
-        return None;
-    }
-
-    Some(1)
-}
-
 fn mode_label(mode: SyncRunMode) -> &'static str {
     match mode {
         SyncRunMode::Push => "push",
@@ -323,20 +312,127 @@ fn redact_remote_url(url: &str) -> String {
 }
 
 fn sync_execution_enabled() -> bool {
-    false
+    true
 }
 
-fn sync_execution_disabled_error() -> AppError {
-    AppError::validation(
-        "Turso 远端同步正在进行 S1 重构，当前构建暂时禁用实际远端执行；本地 SQLite 仍可正常使用。",
-    )
+async fn run_sync_worker(
+    database_path: &str,
+    remote_config: &crate::sync::types::SyncRemoteConfig,
+    mode: SyncRunMode,
+) -> Result<(), AppError> {
+    let mut command = build_sync_worker_command(database_path, remote_config, mode)?;
+    let output = command.output().await.map_err(|error| {
+        AppError::internal(format!("启动同步 worker 失败: {error}"))
+    })?;
+
+    if output.status.success() {
+        return Ok(());
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+    let message = if !stderr.is_empty() {
+        stderr
+    } else if !stdout.is_empty() {
+        stdout
+    } else {
+        format!(
+            "同步 worker 异常退出，exit_code={}",
+            output
+                .status
+                .code()
+                .map(|code| code.to_string())
+                .unwrap_or_else(|| "unknown".to_owned())
+        )
+    };
+
+    Err(AppError::internal(message))
+}
+
+fn build_sync_worker_command(
+    database_path: &str,
+    remote_config: &crate::sync::types::SyncRemoteConfig,
+    mode: SyncRunMode,
+) -> Result<Command, AppError> {
+    let worker_args = [
+        "--database-path",
+        database_path,
+        "--remote-url",
+        remote_config.url.as_str(),
+        "--remote-token",
+        remote_config.token.as_str(),
+        "--mode",
+        mode_label(mode),
+    ];
+
+    if let Some(worker_binary) = find_bundled_sync_worker()? {
+        let mut command = Command::new(worker_binary);
+        command.args(worker_args);
+        return Ok(command);
+    }
+
+    if let Some((manifest_path, workdir)) = find_workspace_manifest_for_dev() {
+        let mut command = Command::new("cargo");
+        command
+            .arg("run")
+            .arg("--manifest-path")
+            .arg(manifest_path)
+            .arg("-p")
+            .arg("stoneflow-sync-worker")
+            .arg("--quiet")
+            .arg("--")
+            .args(worker_args)
+            .current_dir(workdir);
+        return Ok(command);
+    }
+
+    Err(AppError::initialization(
+        "未找到同步 worker 可执行文件；当前构建无法执行 Turso 同步。",
+    ))
+}
+
+fn find_bundled_sync_worker() -> Result<Option<PathBuf>, AppError> {
+    let current_exe = std::env::current_exe()
+        .map_err(|error| AppError::initialization(format!("读取当前可执行文件路径失败: {error}")))?;
+    let Some(base_dir) = current_exe.parent() else {
+        return Ok(None);
+    };
+
+    let worker_file_name = if cfg!(target_os = "windows") {
+        "stoneflow-sync-worker.exe"
+    } else {
+        "stoneflow-sync-worker"
+    };
+
+    let direct_path = base_dir.join(worker_file_name);
+    if direct_path.is_file() {
+        return Ok(Some(direct_path));
+    }
+
+    let sidecar_path = base_dir.join("binaries").join(worker_file_name);
+    if sidecar_path.is_file() {
+        return Ok(Some(sidecar_path));
+    }
+
+    Ok(None)
+}
+
+fn find_workspace_manifest_for_dev() -> Option<(PathBuf, PathBuf)> {
+    let runtime_manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let workspace_root = runtime_manifest_dir.parent()?.parent()?;
+    let manifest_path = workspace_root.join("Cargo.toml");
+    if !manifest_path.is_file() {
+        return None;
+    }
+
+    Some((manifest_path, workspace_root.to_path_buf()))
 }
 
 #[cfg(test)]
 mod tests {
     use stoneflow_test_support::TestDatabase;
 
-    use super::{configure_sync, force_sync, get_sync_status, initialize_state};
+    use super::{configure_sync, get_sync_status, initialize_state};
     use crate::sync::{
         state::SyncRuntimeState,
         types::{ConfigureSyncInput, SyncStatusKind},
@@ -386,18 +482,4 @@ mod tests {
         assert_eq!(payload.last_error_mode, None);
     }
 
-    #[tokio::test]
-    async fn force_sync_should_return_validation_error_while_execution_disabled() {
-        let app = tauri::test::mock_app();
-        let error = force_sync(app.handle())
-            .await
-            .expect_err("force sync should be disabled during S1");
-
-        assert!(
-            error
-                .to_string()
-                .contains("当前构建暂时禁用实际远端执行"),
-            "unexpected error: {error}"
-        );
-    }
 }

@@ -1,6 +1,7 @@
 [workspace]
 members = [
   "crates/runtime",
+  "crates/sync-worker",
   "crates/platform",
   "crates/domain",
   "crates/usecase",
