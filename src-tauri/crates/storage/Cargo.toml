@@ -20,5 +20,9 @@ stoneflow-usecase = { path = "../usecase" }
 thiserror.workspace = true
 uuid.workspace = true
 
+[dev-dependencies]
+stoneflow-test-support = { path = "../test-support" }
+tokio.workspace = true
+
 [features]
 test-helpers = []

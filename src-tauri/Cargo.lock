@@ -4984,8 +4984,10 @@ dependencies = [
  "stoneflow-domain",
  "stoneflow-migration",
  "stoneflow-schema",
+ "stoneflow-test-support",
  "stoneflow-usecase",
  "thiserror 1.0.69",
+ "tokio",
  "uuid",
 ]
 
