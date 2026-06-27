@@ -11,6 +11,7 @@ path = "src/lib.rs"
 [dependencies]
 anyhow.workspace = true
 chrono.workspace = true
+libsql.workspace = true
 log.workspace = true
 sea-orm.workspace = true
 serde.workspace = true
@@ -33,6 +34,7 @@ uuid.workspace = true
 
 [dev-dependencies]
 stoneflow-test-support = { path = "../test-support" }
+tempfile.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }

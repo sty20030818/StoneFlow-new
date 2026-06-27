@@ -5,11 +5,10 @@ use stoneflow_schema::{common::TaskStatus, project, task};
 use stoneflow_test_support::TestDatabase;
 
 use crate::services::{
-    activity::ActivityService,
-    CreateSpaceInput, SetDefaultSpaceInput, SpaceIdInput, SpaceService
+    activity::ActivityService, CreateSpaceInput, SetDefaultSpaceInput, SpaceIdInput, SpaceService,
 };
-use stoneflow_storage::{
-    repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},
+use stoneflow_storage::repositories::{
+    ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository,
 };
 
 #[tokio::test]

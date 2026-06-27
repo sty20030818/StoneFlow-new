@@ -1,8 +1,8 @@
 //! 主窗口创建与切换。
 
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 #[cfg(target_os = "macos")]
 use tauri::{LogicalPosition, TitleBarStyle};
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub const MAIN_WINDOW_LABEL: &str = "main";
 const MAIN_WINDOW_WIDTH: f64 = 1280.0;

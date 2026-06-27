@@ -34,9 +34,9 @@ impl SettingsRepository {
 
     /// 读取原始 JSON 字符串。
     pub async fn get_raw_setting(&self, key: &str) -> Result<String, crate::error::StorageError> {
-        self.find_raw_setting(key).await?.ok_or_else(|| {
-            crate::error::StorageError::not_found(format!("setting `{key}` 不存在"))
-        })
+        self.find_raw_setting(key)
+            .await?
+            .ok_or_else(|| crate::error::StorageError::not_found(format!("setting `{key}` 不存在")))
     }
 
     /// 读取并反序列化 JSON setting。

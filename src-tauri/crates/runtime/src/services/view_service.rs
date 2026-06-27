@@ -3,31 +3,25 @@
 use sea_orm::TransactionTrait;
 use stoneflow_usecase::{
     activity::ActivityService as ActivityUsecase,
-    view::{
-        ViewLookupReader, ViewPersistence, ViewService as ViewUsecase, ViewTaskReader,
+    view::{ViewLookupReader, ViewPersistence, ViewService as ViewUsecase, ViewTaskReader},
+};
+
+use crate::{app::error::AppError, services::activity::ActivityPersistenceAdapter};
+use stoneflow_storage::{
+    mappers::{
+        map_task_model_to_view_task_record, map_view_model_to_record, view_entity_kind_to_schema,
+        view_kind_to_schema,
+    },
+    repositories::{
+        CreateViewRecord, ProjectRepository, SpaceRepository, TaskPlacementQuery, TaskRepository,
+        UpdateViewPatch, ViewListQuery, ViewRepository,
     },
 };
 
-use crate::{
-
-    app::error::AppError,
-    services::activity::ActivityPersistenceAdapter
-};
-use stoneflow_storage::{
-        mappers::{
-            map_task_model_to_view_task_record, map_view_model_to_record,
-            view_entity_kind_to_schema, view_kind_to_schema,
-        },
-        repositories::{
-            CreateViewRecord, ProjectRepository, SpaceRepository, TaskPlacementQuery,
-            TaskRepository, UpdateViewPatch, ViewListQuery, ViewRepository,
-        },};
-
-
 pub use stoneflow_usecase::view::{
     CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunProjectViewInput,
-    RunTaskViewInput, RunTaskViewOutput, TaskViewGroupDto, ToggleViewVisibleInput,
-    UpdateViewInput, ViewDto, ViewSortDirection, ViewSortRuleDto,
+    RunTaskViewInput, RunTaskViewOutput, TaskViewGroupDto, ToggleViewVisibleInput, UpdateViewInput,
+    ViewDto, ViewSortDirection, ViewSortRuleDto,
 };
 
 /// View 编排兼容壳。
@@ -74,7 +68,10 @@ impl ViewService {
         &self,
         input: RunTaskViewInput,
     ) -> Result<RunTaskViewOutput, AppError> {
-        self.inner.run_task_view(input).await.map_err(AppError::from)
+        self.inner
+            .run_task_view(input)
+            .await
+            .map_err(AppError::from)
     }
 
     pub async fn create_view(&self, input: CreateViewInput) -> Result<ViewDto, AppError> {
@@ -99,10 +96,7 @@ impl ViewService {
             .map_err(AppError::from)
     }
 
-    pub async fn reorder_views(
-        &self,
-        input: ReorderViewsInput,
-    ) -> Result<Vec<ViewDto>, AppError> {
+    pub async fn reorder_views(&self, input: ReorderViewsInput) -> Result<Vec<ViewDto>, AppError> {
         self.inner
             .reorder_views(input)
             .await
@@ -279,7 +273,12 @@ impl ViewTaskReader for ViewTaskReaderAdapter {
                 include_deleted,
             )
             .await
-            .map(|tasks| tasks.into_iter().map(map_task_model_to_view_task_record).collect())
+            .map(|tasks| {
+                tasks
+                    .into_iter()
+                    .map(map_task_model_to_view_task_record)
+                    .collect()
+            })
             .map_err(|error| map_app_error(error.into()))
     }
 }
@@ -303,10 +302,8 @@ impl ViewLookupReader for ViewLookupReaderAdapter {
     async fn list_spaces_by_ids(
         &self,
         space_ids: &[String],
-    ) -> Result<
-        Vec<stoneflow_usecase::view::ViewSpaceLookupRecord>,
-        stoneflow_usecase::UsecaseError,
-    > {
+    ) -> Result<Vec<stoneflow_usecase::view::ViewSpaceLookupRecord>, stoneflow_usecase::UsecaseError>
+    {
         self.space_repository
             .list_by_ids(space_ids)
             .await

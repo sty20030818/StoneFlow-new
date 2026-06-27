@@ -1,25 +1,23 @@
 //! Quick Create Service：真源在 `stoneflow-usecase`。
 
 use stoneflow_usecase::quick_create::{
-    ActiveScopeInput, ActiveScopeKind, QuickCreateInput, QuickCreatedDto,
-    QuickListProjectsBySpaceInput, QuickProjectsBySpaceDto, QuickSearchInput, QuickSearchResultDto,
-    QuickCreateService as QuickCreateUsecase,
+    ActiveScopeInput, ActiveScopeKind, QuickCreateInput, QuickCreateService as QuickCreateUsecase,
+    QuickCreatedDto, QuickListProjectsBySpaceInput, QuickProjectsBySpaceDto, QuickSearchInput,
+    QuickSearchResultDto,
 };
 
 pub use stoneflow_usecase::quick_create::{QuickResolvedOpenTarget, QuickResolvedPlacement};
 
 use crate::{
-
     app::{error::AppError, state::ActiveScopeSnapshot},
     services::{
-        activity::ActivityService,
-        quick_create_adapter::QuickCreatePortsAdapter,
-        ProjectService, SearchService, SpaceService, TaskDetailDto, TaskService,
-        }
+        activity::ActivityService, quick_create_adapter::QuickCreatePortsAdapter, ProjectService,
+        SearchService, SpaceService, TaskDetailDto, TaskService,
+    },
 };
 use stoneflow_storage::repositories::{
-        ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository,};
-
+    ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository,
+};
 
 #[derive(Debug, Clone)]
 pub struct QuickCreateService {

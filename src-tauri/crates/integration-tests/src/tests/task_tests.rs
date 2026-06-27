@@ -6,16 +6,14 @@ use stoneflow_domain::TaskStatus;
 use stoneflow_test_support::TestDatabase;
 
 use crate::services::{
-    activity::ActivityService,
-    CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
-    ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind, TaskIdInput,
-    TaskScopeInput, TaskScopeKind, TaskService, UpdateTaskInput,
-    UpdateTaskPlacementInput, UpdateTaskPlacementKind,
+    activity::ActivityService, CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
+    ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind, TaskIdInput, TaskScopeInput,
+    TaskScopeKind, TaskService, UpdateTaskInput, UpdateTaskPlacementInput, UpdateTaskPlacementKind,
 };
 use stoneflow_domain::{create_id, today_local_date};
-use stoneflow_storage::{
-        repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},};
-
+use stoneflow_storage::repositories::{
+    ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository,
+};
 
 #[tokio::test]
 async fn create_task_should_fail_when_title_is_blank() {
@@ -946,9 +944,7 @@ async fn system_task_views_should_filter_and_sort_by_stage8_rules() {
     assert!(!focus_rows.iter().any(|item| item.title == "Waiting P4"));
 }
 
-fn build_task_service(
-    database: &stoneflow_storage::database::DatabaseRuntimeState,
-) -> TaskService {
+fn build_task_service(database: &stoneflow_storage::database::DatabaseRuntimeState) -> TaskService {
     let connection = database.connection().clone();
     TaskService::new(
         SpaceRepository::new(connection.clone()),

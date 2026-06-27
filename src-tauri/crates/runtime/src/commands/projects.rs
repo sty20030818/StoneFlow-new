@@ -2,12 +2,13 @@
 
 use tauri::State;
 
-use crate::composition::{build_lifecycle_service, build_project_service};
 use crate::app::error::AppError;
+use crate::composition::{build_lifecycle_service, build_project_service};
 use crate::services::{
     CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput, ProjectDetailDto,
     ProjectIdInput, ProjectOverviewItemDto, ProjectSidebarItemDto, UpdateProjectInput,
 };
+use crate::sync;
 use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
@@ -43,81 +44,105 @@ pub async fn get_project_detail(
 #[tauri::command]
 pub async fn create_project(
     input: CreateProjectInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<ProjectDetailDto, AppError> {
-    build_project_service(database.inner())
+    let detail = build_project_service(database.inner())
         .create_project(input)
-        .await
+        .await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(detail)
 }
 
 #[tauri::command]
 pub async fn update_project(
     input: UpdateProjectInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<ProjectDetailDto, AppError> {
-    build_project_service(database.inner())
+    let detail = build_project_service(database.inner())
         .update_project(input)
-        .await
+        .await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(detail)
 }
 
 #[tauri::command]
 pub async fn complete_project(
     input: ProjectIdInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<ProjectDetailDto, AppError> {
-    build_project_service(database.inner())
+    let detail = build_project_service(database.inner())
         .complete_project(input)
-        .await
+        .await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(detail)
 }
 
 #[tauri::command]
 pub async fn reopen_project(
     input: ProjectIdInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<ProjectDetailDto, AppError> {
-    build_project_service(database.inner())
+    let detail = build_project_service(database.inner())
         .reopen_project(input)
-        .await
+        .await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(detail)
 }
 
 #[tauri::command]
 pub async fn archive_project(
     input: ProjectIdInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<ProjectDetailDto, AppError> {
-    build_project_service(database.inner())
+    let detail = build_project_service(database.inner())
         .archive_project(input)
-        .await
+        .await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(detail)
 }
 
 #[tauri::command]
 pub async fn restore_project(
     input: ProjectIdInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<ProjectDetailDto, AppError> {
-    build_project_service(database.inner())
+    let detail = build_project_service(database.inner())
         .restore_project(input)
-        .await
+        .await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(detail)
 }
 
 #[tauri::command]
 pub async fn delete_project(
     input: ProjectIdInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<ProjectDetailDto, AppError> {
-    build_project_service(database.inner())
+    let detail = build_project_service(database.inner())
         .delete_project(input)
-        .await
+        .await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(detail)
 }
 
 #[tauri::command]
 pub async fn permanently_delete_project(
     input: ProjectIdInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<(), AppError> {
     build_lifecycle_service(database.inner())
         .permanently_delete_project(&input.project_id)
-        .await
+        .await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(())
 }
 
 #[cfg(test)]

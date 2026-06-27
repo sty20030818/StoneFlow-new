@@ -1,3 +1,5 @@
+import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
+
 export type QueryLoadStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 export function resolveQueryLoadStatus(input: {
@@ -17,5 +19,5 @@ export function resolveQueryLoadStatus(input: {
 }
 
 export function resolveQueryErrorMessage(error: unknown, fallback: string) {
-	return error instanceof Error ? error.message : fallback
+	return normalizeTauriError(error, fallback)
 }

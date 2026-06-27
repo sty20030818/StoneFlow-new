@@ -1,12 +1,10 @@
 //! schema 与 domain 枚举互转。
 
 use stoneflow_domain::{
-    ActivityActorKind, ActivityEntityKind, ActivitySourceKind, TaskStatus, ViewEntityKind,
-    ViewKind,
+    ActivityActorKind, ActivityEntityKind, ActivitySourceKind, TaskStatus, ViewEntityKind, ViewKind,
 };
 use stoneflow_schema::common::{
-    ActivityActorKind as SchemaActivityActorKind,
-    ActivityEntityKind as SchemaActivityEntityKind,
+    ActivityActorKind as SchemaActivityActorKind, ActivityEntityKind as SchemaActivityEntityKind,
     ActivitySourceKind as SchemaActivitySourceKind, TaskStatus as SchemaTaskStatus,
     ViewEntityKind as SchemaViewEntityKind, ViewKind as SchemaViewKind,
 };

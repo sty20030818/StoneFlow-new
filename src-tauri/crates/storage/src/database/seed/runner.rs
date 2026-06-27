@@ -135,10 +135,18 @@ where
     C: sea_orm::ConnectionTrait,
 {
     if !store::setting_exists(connection, SIDEBAR_PREFERENCE_SETTING_KEY).await? {
-        if let Some(raw_sidebar) = store::get_setting_value(connection, LEGACY_SIDEBAR_SETTING_KEY).await? {
-            if let Some(next_sidebar_preferences) = extract_sidebar_preferences_from_legacy_json(&raw_sidebar)? {
-                insert_setting_json(connection, SIDEBAR_PREFERENCE_SETTING_KEY, &next_sidebar_preferences)
-                    .await?;
+        if let Some(raw_sidebar) =
+            store::get_setting_value(connection, LEGACY_SIDEBAR_SETTING_KEY).await?
+        {
+            if let Some(next_sidebar_preferences) =
+                extract_sidebar_preferences_from_legacy_json(&raw_sidebar)?
+            {
+                insert_setting_json(
+                    connection,
+                    SIDEBAR_PREFERENCE_SETTING_KEY,
+                    &next_sidebar_preferences,
+                )
+                .await?;
             }
         }
     }
@@ -146,7 +154,8 @@ where
     if !store::setting_exists(connection, UI_PREFERENCE_SETTING_KEY).await? {
         if let Some(raw_ui) = store::get_setting_value(connection, LEGACY_UI_SETTING_KEY).await? {
             if let Some(next_ui_preferences) = extract_ui_preferences_from_legacy_json(&raw_ui)? {
-                insert_setting_json(connection, UI_PREFERENCE_SETTING_KEY, &next_ui_preferences).await?;
+                insert_setting_json(connection, UI_PREFERENCE_SETTING_KEY, &next_ui_preferences)
+                    .await?;
             }
         }
     }
@@ -154,7 +163,11 @@ where
     Ok(())
 }
 
-async fn insert_setting_json<C>(connection: &C, key: &str, value: &Value) -> Result<(), StorageError>
+async fn insert_setting_json<C>(
+    connection: &C,
+    key: &str,
+    value: &Value,
+) -> Result<(), StorageError>
 where
     C: sea_orm::ConnectionTrait,
 {
@@ -201,8 +214,9 @@ fn extract_sidebar_preferences_from_legacy_json(raw: &str) -> Result<Option<Valu
 }
 
 fn extract_ui_preferences_from_legacy_json(raw: &str) -> Result<Option<Value>, StorageError> {
-    let legacy = serde_json::from_str::<Value>(raw)
-        .map_err(|error| StorageError::initialization(format!("legacy app.ui 反序列化失败: {error}")))?;
+    let legacy = serde_json::from_str::<Value>(raw).map_err(|error| {
+        StorageError::initialization(format!("legacy app.ui 反序列化失败: {error}"))
+    })?;
 
     Ok(Some(serde_json::json!({
         "theme": legacy.get("theme").cloned().unwrap_or(serde_json::json!("system")),

@@ -6,12 +6,10 @@ use stoneflow_test_support::TestDatabase;
 use crate::services::{
     activity::{ActivityService, GetEntityActivitiesInput},
     SettingsService, SidebarItemVisibilityTarget, SidebarMainItemKey,
-            SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
-            UpdateSidebarProjectSectionInput,
+    SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
+    UpdateSidebarProjectSectionInput,
 };
-use stoneflow_storage::{
-    repositories::{ActivityRepository, SettingsRepository},
-};
+use stoneflow_storage::repositories::{ActivityRepository, SettingsRepository};
 
 #[tokio::test]
 async fn settings_service_should_read_sidebar_settings() {
@@ -100,11 +98,17 @@ async fn settings_service_should_read_legacy_device_preferences() {
         .expect("get legacy device preferences should succeed");
 
     assert_eq!(
-        device_preferences.sidebar.expect("sidebar should exist").width,
+        device_preferences
+            .sidebar
+            .expect("sidebar should exist")
+            .width,
         256
     );
     assert_eq!(
-        device_preferences.ui.expect("ui should exist").task_drawer_width,
+        device_preferences
+            .ui
+            .expect("ui should exist")
+            .task_drawer_width,
         420
     );
 }

@@ -81,7 +81,11 @@ pub trait TaskLinkPersistence: Send + Sync {
         patch: UpdateTaskLinkPatch,
         updated_at: &str,
     ) -> Result<Option<TaskLinkRecord>, UsecaseError>;
-    async fn delete(&self, connection: &Self::Connection, link_id: &str) -> Result<bool, UsecaseError>;
+    async fn delete(
+        &self,
+        connection: &Self::Connection,
+        link_id: &str,
+    ) -> Result<bool, UsecaseError>;
 }
 
 /// Task Link 所需的 Task 读取边界。
@@ -350,7 +354,10 @@ where
         Ok(map_task_link_dto(current))
     }
 
-    async fn require_visible_task(&self, task_id: &str) -> Result<TaskLinkTaskRecord, UsecaseError> {
+    async fn require_visible_task(
+        &self,
+        task_id: &str,
+    ) -> Result<TaskLinkTaskRecord, UsecaseError> {
         let task = self
             .task_reader
             .get(task_id)

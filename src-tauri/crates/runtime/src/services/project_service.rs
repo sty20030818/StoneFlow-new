@@ -11,20 +11,16 @@ use stoneflow_usecase::{
 };
 
 use crate::{
-
     app::error::AppError,
-    services::{
-        activity::ActivityPersistenceAdapter,
-        LifecycleService,
-    }
+    services::{activity::ActivityPersistenceAdapter, LifecycleService},
 };
 use stoneflow_storage::{
-        mappers::{map_project_model_to_record, map_space_model_to_project_space_record},
-        repositories::{
-            CreateProjectRecord, ProjectOverviewView as RepoProjectOverviewView,
-            ProjectRepository, SpaceRepository, TaskRepository, UpdateProjectPatch,
-        },};
-
+    mappers::{map_project_model_to_record, map_space_model_to_project_space_record},
+    repositories::{
+        CreateProjectRecord, ProjectOverviewView as RepoProjectOverviewView, ProjectRepository,
+        SpaceRepository, TaskRepository, UpdateProjectPatch,
+    },
+};
 
 pub use stoneflow_usecase::project::{
     CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput, ProjectDetailDto,
@@ -187,10 +183,7 @@ impl ProjectService {
         input: ProjectIdInput,
     ) -> Result<ProjectDetailDto, AppError> {
         let project_id = validate_project_id(&input.project_id).map_err(AppError::from)?;
-        let updated = self
-            .lifecycle_service()
-            .delete_project(&project_id)
-            .await?;
+        let updated = self.lifecycle_service().delete_project(&project_id).await?;
         self.inner
             .build_project_detail_from_record(updated)
             .await
@@ -321,7 +314,12 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         self.repository
             .list_overview_by_scope(space_id, map_overview_view_to_repo(view))
             .await
-            .map(|projects| projects.into_iter().map(map_project_model_to_record).collect())
+            .map(|projects| {
+                projects
+                    .into_iter()
+                    .map(map_project_model_to_record)
+                    .collect()
+            })
             .map_err(|error| map_app_error(error.into()))
     }
 
@@ -335,7 +333,12 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         self.repository
             .list_sidebar_by_scope(space_id, show_completed, max_visible)
             .await
-            .map(|projects| projects.into_iter().map(map_project_model_to_record).collect())
+            .map(|projects| {
+                projects
+                    .into_iter()
+                    .map(map_project_model_to_record)
+                    .collect()
+            })
             .map_err(|error| map_app_error(error.into()))
     }
 
@@ -384,8 +387,10 @@ impl ProjectSpaceReader for ProjectSpaceReaderAdapter {
     async fn get(
         &self,
         space_id: &str,
-    ) -> Result<Option<stoneflow_usecase::project::ProjectSpaceRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_usecase::project::ProjectSpaceRecord>,
+        stoneflow_usecase::UsecaseError,
+    > {
         self.repository
             .get(space_id)
             .await
@@ -455,9 +460,7 @@ fn map_overview_view_to_repo(
     view: stoneflow_usecase::project::ProjectOverviewView,
 ) -> RepoProjectOverviewView {
     match view {
-        stoneflow_usecase::project::ProjectOverviewView::Active => {
-            RepoProjectOverviewView::Active
-        }
+        stoneflow_usecase::project::ProjectOverviewView::Active => RepoProjectOverviewView::Active,
         stoneflow_usecase::project::ProjectOverviewView::Completed => {
             RepoProjectOverviewView::Completed
         }

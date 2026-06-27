@@ -10,7 +10,11 @@ use uuid::Uuid;
 
 /// 与 runtime `healthcheck` 命令保持同一契约。
 fn healthcheck_payload(database: DatabaseRuntimeSnapshot) -> (&'static str, &'static str, bool) {
-    let status = if database.database_ready { "ok" } else { "degraded" };
+    let status = if database.database_ready {
+        "ok"
+    } else {
+        "degraded"
+    };
     (status, "stoneflow", database.database_ready)
 }
 

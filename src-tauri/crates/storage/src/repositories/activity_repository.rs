@@ -15,8 +15,7 @@ use stoneflow_schema::{
 
 use crate::error::StorageError;
 use crate::mappers::{
-    activity_actor_kind_to_domain, activity_entity_kind_to_domain,
-    activity_source_kind_to_domain,
+    activity_actor_kind_to_domain, activity_entity_kind_to_domain, activity_source_kind_to_domain,
 };
 use stoneflow_usecase::activity::{ActivityTimelineChange, ActivityTimelineEntry};
 
@@ -243,8 +242,9 @@ fn serialize_optional_json(value: &Option<Value>) -> Result<Option<String>, Stor
     value
         .as_ref()
         .map(|value| {
-            serde_json::to_string(value)
-                .map_err(|error| StorageError::database(format!("Activity JSON 序列化失败: {error}")))
+            serde_json::to_string(value).map_err(|error| {
+                StorageError::database(format!("Activity JSON 序列化失败: {error}"))
+            })
         })
         .transpose()
 }
@@ -252,8 +252,9 @@ fn serialize_optional_json(value: &Option<Value>) -> Result<Option<String>, Stor
 fn deserialize_optional_json(value: Option<String>) -> Result<Option<Value>, StorageError> {
     value
         .map(|value| {
-            serde_json::from_str::<Value>(&value)
-                .map_err(|error| StorageError::database(format!("Activity JSON 反序列化失败: {error}")))
+            serde_json::from_str::<Value>(&value).map_err(|error| {
+                StorageError::database(format!("Activity JSON 反序列化失败: {error}"))
+            })
         })
         .transpose()
 }

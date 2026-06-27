@@ -233,5 +233,12 @@ pub fn default_settings() -> Vec<DefaultSettingSeed> {
                 "density": "comfortable"
             }),
         },
+        DefaultSettingSeed {
+            key: "app.sync.config",
+            value: json!({
+                "url": null,
+                "token": null
+            }),
+        },
     ]
 }

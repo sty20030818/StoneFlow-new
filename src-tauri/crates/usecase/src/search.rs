@@ -438,8 +438,8 @@ mod tests {
 
     use super::{
         ProjectSearchLifecycle, SearchEntitiesInput, SearchProjectReader, SearchProjectRecord,
-        SearchService, SearchSpaceReader, SearchSpaceRecord, SearchTaskReader, SearchTaskRecord,
-        SearchTaskItemDto, TaskSearchLifecycle,
+        SearchService, SearchSpaceReader, SearchSpaceRecord, SearchTaskItemDto, SearchTaskReader,
+        SearchTaskRecord, TaskSearchLifecycle,
     };
     use crate::UsecaseError;
 

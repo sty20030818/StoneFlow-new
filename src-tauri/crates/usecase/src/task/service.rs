@@ -8,8 +8,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{json, Value};
 use stoneflow_domain::{
     create_id, normalize_required_text, normalize_slug, now_utc, validate_project_id,
-    validate_space_id, validate_task_id, validate_task_priority, ActivityEntityKind,
-    TaskStatus,
+    validate_space_id, validate_task_id, validate_task_priority, ActivityEntityKind, TaskStatus,
 };
 
 use crate::{
@@ -241,10 +240,8 @@ pub trait TaskPersistence: Send + Sync {
 /// Task 编排所需的 Space 读取边界。
 pub trait TaskSpaceReader: Send + Sync {
     async fn get(&self, space_id: &str) -> Result<Option<TaskSpaceRecord>, UsecaseError>;
-    async fn list_by_ids(
-        &self,
-        space_ids: &[String],
-    ) -> Result<Vec<TaskSpaceRecord>, UsecaseError>;
+    async fn list_by_ids(&self, space_ids: &[String])
+        -> Result<Vec<TaskSpaceRecord>, UsecaseError>;
 }
 
 /// Task 编排所需的 Project 读取边界。
@@ -679,7 +676,10 @@ where
         self.build_task_detail(task).await
     }
 
-    async fn build_task_list(&self, tasks: Vec<TaskRecord>) -> Result<Vec<TaskListItemDto>, UsecaseError> {
+    async fn build_task_list(
+        &self,
+        tasks: Vec<TaskRecord>,
+    ) -> Result<Vec<TaskListItemDto>, UsecaseError> {
         let space_map = self.load_space_map(&tasks).await?;
         let project_map = self.load_project_map(&tasks).await?;
 

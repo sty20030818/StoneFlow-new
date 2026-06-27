@@ -4,9 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use stoneflow_domain::{
-    now_utc, validate_sidebar_main_visible_count, ActivityEntityKind,
-};
+use stoneflow_domain::{now_utc, validate_sidebar_main_visible_count, ActivityEntityKind};
 
 use crate::{
     activity::{

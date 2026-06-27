@@ -6,13 +6,8 @@ use stoneflow_usecase::{
     settings::{SettingsPersistence, SettingsService as SettingsUsecase},
 };
 
-use crate::{
-
-    app::error::AppError,
-    services::activity::ActivityPersistenceAdapter
-};
+use crate::{app::error::AppError, services::activity::ActivityPersistenceAdapter};
 use stoneflow_storage::repositories::SettingsRepository;
-
 
 pub use stoneflow_usecase::settings::{
     GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput,

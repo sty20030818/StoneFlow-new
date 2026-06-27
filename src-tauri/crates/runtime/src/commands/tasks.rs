@@ -3,12 +3,13 @@
 use serde::Serialize;
 use tauri::{Emitter, State};
 
-use crate::composition::{build_lifecycle_service, build_task_link_service, build_task_service};
 use crate::app::error::AppError;
+use crate::composition::{build_lifecycle_service, build_task_link_service, build_task_service};
 use crate::services::{
     CreateTaskInput, CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, ListTasksInput,
     TaskDetailDto, TaskIdInput, TaskLinkDto, TaskListItemDto, UpdateTaskInput, UpdateTaskLinkInput,
 };
+use crate::sync;
 use stoneflow_storage::database::DatabaseRuntimeState;
 
 const TASKS_CHANGED_EVENT: &str = "stoneflow://tasks/changed";
@@ -49,6 +50,7 @@ pub async fn create_task(
     let detail = build_task_service(database.inner())
         .create_task(input)
         .await?;
+    sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }
@@ -62,6 +64,7 @@ pub async fn update_task(
     let detail = build_task_service(database.inner())
         .update_task(input)
         .await?;
+    sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }
@@ -75,6 +78,7 @@ pub async fn archive_task(
     let detail = build_task_service(database.inner())
         .archive_task(input)
         .await?;
+    sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }
@@ -88,6 +92,7 @@ pub async fn restore_task(
     let detail = build_task_service(database.inner())
         .restore_task(input)
         .await?;
+    sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }
@@ -111,6 +116,7 @@ pub async fn create_task_link(
     let link = build_task_link_service(database.inner())
         .create_task_link(input)
         .await?;
+    sync::note_local_write(&app_handle).await;
     emit_task_changed_for_task_id(&app_handle, database.inner(), &link.task_id).await?;
     Ok(link)
 }
@@ -124,6 +130,7 @@ pub async fn update_task_link(
     let link = build_task_link_service(database.inner())
         .update_task_link(input)
         .await?;
+    sync::note_local_write(&app_handle).await;
     emit_task_changed_for_task_id(&app_handle, database.inner(), &link.task_id).await?;
     Ok(link)
 }
@@ -137,6 +144,7 @@ pub async fn delete_task_link(
     let link = build_task_link_service(database.inner())
         .delete_task_link(input)
         .await?;
+    sync::note_local_write(&app_handle).await;
     emit_task_changed_for_task_id(&app_handle, database.inner(), &link.task_id).await?;
     Ok(link)
 }
@@ -150,6 +158,7 @@ pub async fn delete_task(
     let detail = build_task_service(database.inner())
         .delete_task(input)
         .await?;
+    sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
 }
@@ -157,11 +166,14 @@ pub async fn delete_task(
 #[tauri::command]
 pub async fn permanently_delete_task(
     input: TaskIdInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<(), AppError> {
     build_lifecycle_service(database.inner())
         .permanently_delete_task(&input.task_id)
-        .await
+        .await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(())
 }
 
 fn emit_task_changed(

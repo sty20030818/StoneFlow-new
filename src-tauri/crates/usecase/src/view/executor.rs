@@ -325,7 +325,11 @@ fn compare_by_rule(
     }
 }
 
-fn compare_today_bucket(left: &ViewTaskRecord, right: &ViewTaskRecord, today: NaiveDate) -> Ordering {
+fn compare_today_bucket(
+    left: &ViewTaskRecord,
+    right: &ViewTaskRecord,
+    today: NaiveDate,
+) -> Ordering {
     let left_bucket = today_bucket(left, today);
     let right_bucket = today_bucket(right, today);
     left_bucket.cmp(&right_bucket)

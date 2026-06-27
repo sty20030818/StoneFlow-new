@@ -2,8 +2,8 @@
 
 use tauri::State;
 
-use crate::composition::build_search_service;
 use crate::app::error::AppError;
+use crate::composition::build_search_service;
 use crate::services::{SearchEntitiesInput, SearchEntitiesResultDto};
 use stoneflow_storage::database::DatabaseRuntimeState;
 

@@ -1,16 +1,16 @@
 //! Quick Create 窗口 session 编排（单 Binary 路径）。
 
 use serde::{Deserialize, Serialize};
-use tauri::{Emitter, LogicalSize, Manager, Size};
-use stoneflow_platform::quick_window::{
-    spec::{QUICK_CREATE_LABEL, QUICK_CREATE_WINDOW_MIN_HEIGHT, QUICK_CREATE_WINDOW_WIDTH},
+use stoneflow_platform::quick_window::spec::{
+    QUICK_CREATE_LABEL, QUICK_CREATE_WINDOW_MIN_HEIGHT, QUICK_CREATE_WINDOW_WIDTH,
 };
+use tauri::{Emitter, LogicalSize, Manager, Size};
 
 use super::controller::build_quick_controller;
 use stoneflow_storage::database::DatabaseRuntimeState;
 
-use crate::composition::build_quick_create_session_bridge;
 use crate::app::state::ActiveScopeState;
+use crate::composition::build_quick_create_session_bridge;
 
 use super::frontend::QuickCreateFrontendState;
 use super::runtime::{QuickPopupCloseReason, QuickPopupOpenReason, QuickPopupRuntimeState};
@@ -218,10 +218,12 @@ pub async fn present_quick_create_session(
         })?;
 
     let controller = build_quick_controller(app_handle);
-    controller.present().map_err(|message| QuickCreateErrorPayload {
-        type_: "Internal",
-        message,
-    })
+    controller
+        .present()
+        .map_err(|message| QuickCreateErrorPayload {
+            type_: "Internal",
+            message,
+        })
 }
 
 pub async fn close_quick_create_session(
@@ -241,10 +243,12 @@ pub async fn close_quick_create_session(
         })?
         .is_some()
     {
-        controller.hide().map_err(|message| QuickCreateErrorPayload {
-            type_: "Internal",
-            message,
-        })?;
+        controller
+            .hide()
+            .map_err(|message| QuickCreateErrorPayload {
+                type_: "Internal",
+                message,
+            })?;
         runtime
             .finish_close_for(&input.session_id)
             .await
@@ -257,7 +261,10 @@ pub async fn close_quick_create_session(
     Ok(())
 }
 
-pub async fn shutdown_quick_create(app_handle: &tauri::AppHandle, runtime: &QuickPopupRuntimeState) {
+pub async fn shutdown_quick_create(
+    app_handle: &tauri::AppHandle,
+    runtime: &QuickPopupRuntimeState,
+) {
     let controller = build_quick_controller(app_handle.clone());
     if let Some(session_id) = runtime.active_session_id().await {
         match runtime

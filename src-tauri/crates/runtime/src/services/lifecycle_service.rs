@@ -12,21 +12,17 @@ use stoneflow_usecase::{
     task::{TaskRecord, UpdateTaskPatch},
 };
 
-use crate::{
-
-    app::error::AppError,
-    services::activity::ActivityPersistenceAdapter
-};
+use crate::{app::error::AppError, services::activity::ActivityPersistenceAdapter};
 use stoneflow_storage::{
-        mappers::{
-            map_project_model_to_lifecycle_list_record, map_project_model_to_record,
-            map_space_model_to_record, map_task_model_to_lifecycle_list_record,
-            map_task_model_to_record, task_status_to_schema,
-        },
-        repositories::{
-            ProjectRepository, SpaceRepository, TaskRepository, UpdateTaskPatch as RepoUpdateTaskPatch,
-        },};
-
+    mappers::{
+        map_project_model_to_lifecycle_list_record, map_project_model_to_record,
+        map_space_model_to_record, map_task_model_to_lifecycle_list_record,
+        map_task_model_to_record, task_status_to_schema,
+    },
+    repositories::{
+        ProjectRepository, SpaceRepository, TaskRepository, UpdateTaskPatch as RepoUpdateTaskPatch,
+    },
+};
 
 pub use stoneflow_usecase::lifecycle::{
     LifecycleEntityType, LifecycleEntry, LifecycleMode, LifecycleScopeInput, LifecycleScopeKind,
@@ -351,7 +347,12 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         self.repository
             .list_by_space(space_id)
             .await
-            .map(|projects| projects.into_iter().map(map_project_model_to_record).collect())
+            .map(|projects| {
+                projects
+                    .into_iter()
+                    .map(map_project_model_to_record)
+                    .collect()
+            })
             .map_err(|error| map_app_error(error.into()))
     }
 
@@ -362,7 +363,12 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         self.repository
             .list_by_ids(project_ids)
             .await
-            .map(|projects| projects.into_iter().map(map_project_model_to_record).collect())
+            .map(|projects| {
+                projects
+                    .into_iter()
+                    .map(map_project_model_to_record)
+                    .collect()
+            })
             .map_err(|error| map_app_error(error.into()))
     }
 
@@ -413,7 +419,13 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         updated_at: &str,
     ) -> Result<Option<ProjectRecord>, stoneflow_usecase::UsecaseError> {
         self.repository
-            .archive_raw(connection, project_id, archived_at, archived_by_id, updated_at)
+            .archive_raw(
+                connection,
+                project_id,
+                archived_at,
+                archived_by_id,
+                updated_at,
+            )
             .await
             .map(|project| project.map(map_project_model_to_record))
             .map_err(|error| map_app_error(error.into()))
@@ -441,7 +453,13 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         updated_at: &str,
     ) -> Result<Option<ProjectRecord>, stoneflow_usecase::UsecaseError> {
         self.repository
-            .delete_raw(connection, project_id, deleted_at, deleted_by_id, updated_at)
+            .delete_raw(
+                connection,
+                project_id,
+                deleted_at,
+                deleted_by_id,
+                updated_at,
+            )
             .await
             .map(|project| project.map(map_project_model_to_record))
             .map_err(|error| map_app_error(error.into()))
@@ -468,7 +486,13 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         updated_at: &str,
     ) -> Result<(), stoneflow_usecase::UsecaseError> {
         self.repository
-            .archive_by_space_raw(connection, space_id, archived_at, archived_by_id, updated_at)
+            .archive_by_space_raw(
+                connection,
+                space_id,
+                archived_at,
+                archived_by_id,
+                updated_at,
+            )
             .await
             .map(|_| ())
             .map_err(|error| map_app_error(error.into()))
@@ -688,7 +712,13 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         updated_at: &str,
     ) -> Result<(), stoneflow_usecase::UsecaseError> {
         self.repository
-            .archive_by_space_raw(connection, space_id, archived_at, archived_by_id, updated_at)
+            .archive_by_space_raw(
+                connection,
+                space_id,
+                archived_at,
+                archived_by_id,
+                updated_at,
+            )
             .await
             .map(|_| ())
             .map_err(|error| map_app_error(error.into()))
@@ -718,7 +748,13 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         updated_at: &str,
     ) -> Result<(), stoneflow_usecase::UsecaseError> {
         self.repository
-            .archive_by_project_raw(connection, project_id, archived_at, archived_by_id, updated_at)
+            .archive_by_project_raw(
+                connection,
+                project_id,
+                archived_at,
+                archived_by_id,
+                updated_at,
+            )
             .await
             .map(|_| ())
             .map_err(|error| map_app_error(error.into()))
@@ -733,7 +769,13 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         updated_at: &str,
     ) -> Result<(), stoneflow_usecase::UsecaseError> {
         self.repository
-            .delete_by_project_raw(connection, project_id, deleted_at, deleted_by_id, updated_at)
+            .delete_by_project_raw(
+                connection,
+                project_id,
+                deleted_at,
+                deleted_by_id,
+                updated_at,
+            )
             .await
             .map(|_| ())
             .map_err(|error| map_app_error(error.into()))

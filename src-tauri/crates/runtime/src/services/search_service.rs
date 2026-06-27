@@ -6,17 +6,14 @@ use stoneflow_usecase::search::{
     SearchTaskReader, SearchTaskRecord, TaskSearchLifecycle as UsecaseTaskSearchLifecycle,
 };
 
-use crate::{
-
-    app::error::AppError
-};
+use crate::app::error::AppError;
 use stoneflow_storage::{
-        mappers::task_status_to_domain,
-        repositories::{
-            ProjectRepository, ProjectSearchLifecycle, SpaceRepository, TaskRepository,
-            TaskSearchLifecycle,
-        },};
-
+    mappers::task_status_to_domain,
+    repositories::{
+        ProjectRepository, ProjectSearchLifecycle, SpaceRepository, TaskRepository,
+        TaskSearchLifecycle,
+    },
+};
 
 pub use stoneflow_usecase::search::{
     SearchEntitiesInput, SearchEntitiesResultDto, SearchProjectItemDto, SearchTaskItemDto,
@@ -141,7 +138,10 @@ impl SearchService {
         &self,
         input: SearchEntitiesInput,
     ) -> Result<SearchEntitiesResultDto, AppError> {
-        self.inner.search_entities(input).await.map_err(AppError::from)
+        self.inner
+            .search_entities(input)
+            .await
+            .map_err(AppError::from)
     }
 }
 

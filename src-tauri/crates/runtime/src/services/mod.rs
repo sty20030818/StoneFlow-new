@@ -11,8 +11,8 @@ mod quick_create_session_bridge;
 mod search_service;
 mod settings_service;
 mod space_service;
-mod task_service;
 mod task_link_service;
+mod task_service;
 mod view_service;
 
 pub use lifecycle_service::{
@@ -24,10 +24,10 @@ pub use project_service::{
     ProjectIdInput, ProjectOverviewItemDto, ProjectScopeInput, ProjectScopeKind, ProjectService,
     ProjectSidebarItemDto, UpdateProjectInput,
 };
+pub use quick_create_open_context_service::QuickCreateOpenContextService;
 pub use quick_create_service::{
     QuickCreateService, QuickResolvedOpenTarget, QuickResolvedPlacement,
 };
-pub use quick_create_open_context_service::QuickCreateOpenContextService;
 pub use quick_create_session_bridge::QuickCreateSessionBridge;
 pub use search_service::{
     SearchEntitiesInput, SearchEntitiesResultDto, SearchProjectItemDto, SearchService,
@@ -44,15 +44,15 @@ pub use settings_service::{
 pub use space_service::{
     CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService, UpdateSpaceInput,
 };
+pub use task_link_service::{
+    CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto, TaskLinkService,
+    UpdateTaskLinkInput,
+};
 pub use task_service::{
     CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind, ListTasksInput,
     ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput, TaskListItemDto,
     TaskScopeInput, TaskScopeKind, TaskService, UpdateTaskInput, UpdateTaskPlacementInput,
     UpdateTaskPlacementKind,
-};
-pub use task_link_service::{
-    CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto,
-    TaskLinkService, UpdateTaskLinkInput,
 };
 pub use view_service::{
     CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunProjectViewInput,

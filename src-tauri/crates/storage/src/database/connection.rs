@@ -30,21 +30,17 @@ const SQLITE_MEMORY_URL: &str = "sqlite::memory:?cache=shared";
 pub async fn connect_sqlite(database_path: &Path) -> Result<DatabaseConnection, StorageError> {
     ensure_database_parent_dir(database_path)?;
 
-    let database_url = format!(
-        "sqlite://{}?mode=rwc",
-        database_path.to_string_lossy()
-    );
+    let database_url = format!("sqlite://{}?mode=rwc", database_path.to_string_lossy());
     connect_sqlite_with_options(&database_url, 5, "WAL").await
 }
 
 /// 测试用文件库连接：单连接 + DELETE journal，便于 Windows 下释放文件锁。
-pub async fn connect_sqlite_for_test(database_path: &Path) -> Result<DatabaseConnection, StorageError> {
+pub async fn connect_sqlite_for_test(
+    database_path: &Path,
+) -> Result<DatabaseConnection, StorageError> {
     ensure_database_parent_dir(database_path)?;
 
-    let database_url = format!(
-        "sqlite://{}?mode=rwc",
-        database_path.to_string_lossy()
-    );
+    let database_url = format!("sqlite://{}?mode=rwc", database_path.to_string_lossy());
     connect_sqlite_with_options(&database_url, 1, "DELETE").await
 }
 

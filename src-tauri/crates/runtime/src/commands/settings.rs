@@ -2,12 +2,13 @@
 
 use tauri::State;
 
-use crate::composition::build_settings_service;
 use crate::app::error::AppError;
+use crate::composition::build_settings_service;
 use crate::services::{
     GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput,
     UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
 };
+use crate::sync;
 use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
@@ -27,17 +28,23 @@ pub async fn get_legacy_shell_device_preferences(
 #[tauri::command]
 pub async fn update_sidebar_item_visibility(
     input: UpdateSidebarItemVisibilityInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<GetSidebarSettingsOutput, AppError> {
-    update_sidebar_item_visibility_impl(database.inner(), input).await
+    let payload = update_sidebar_item_visibility_impl(database.inner(), input).await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(payload)
 }
 
 #[tauri::command]
 pub async fn update_sidebar_project_section(
     input: UpdateSidebarProjectSectionInput,
+    app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<GetSidebarSettingsOutput, AppError> {
-    update_sidebar_project_section_impl(database.inner(), input).await
+    let payload = update_sidebar_project_section_impl(database.inner(), input).await?;
+    sync::note_local_write(&app_handle).await;
+    Ok(payload)
 }
 
 async fn get_sidebar_settings_impl(
@@ -87,9 +94,8 @@ mod tests {
         update_sidebar_item_visibility_impl, update_sidebar_project_section_impl,
     };
     use crate::services::{
-        SidebarItemVisibilityTarget, SidebarMainItemKey,
-        SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
-        UpdateSidebarProjectSectionInput,
+        SidebarItemVisibilityTarget, SidebarMainItemKey, SidebarProjectSectionPreferenceConfig,
+        UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
     };
     #[tokio::test]
     async fn get_sidebar_settings_command_should_return_typed_payload() {
@@ -119,29 +125,29 @@ mod tests {
                 [
                     "app.sidebar".into(),
                     serde_json::json!({
-                    "mainItems": {
-                        "inbox": { "visible": true, "order": 100 },
-                        "allTasks": { "visible": true, "order": 200 },
-                        "views": { "visible": true, "order": 300 },
-                        "projectOverview": { "visible": true, "order": 400 }
-                    },
-                    "projectSection": {
-                        "visible": true,
-                        "order": 500,
-                        "collapsed": true,
-                        "showCounts": false,
-                        "showCompleted": false,
-                        "maxVisible": 5
-                    },
-                    "footerItems": {
-                        "archive": { "visible": true, "order": 900 },
-                        "trash": { "visible": true, "order": 1000 }
-                    },
-                    "width": 288,
-                    "desktopPreference": "collapsed"
-                })
-                .to_string()
-                .into(),
+                        "mainItems": {
+                            "inbox": { "visible": true, "order": 100 },
+                            "allTasks": { "visible": true, "order": 200 },
+                            "views": { "visible": true, "order": 300 },
+                            "projectOverview": { "visible": true, "order": 400 }
+                        },
+                        "projectSection": {
+                            "visible": true,
+                            "order": 500,
+                            "collapsed": true,
+                            "showCounts": false,
+                            "showCompleted": false,
+                            "maxVisible": 5
+                        },
+                        "footerItems": {
+                            "archive": { "visible": true, "order": 900 },
+                            "trash": { "visible": true, "order": 1000 }
+                        },
+                        "width": 288,
+                        "desktopPreference": "collapsed"
+                    })
+                    .to_string()
+                    .into(),
                     "2026-04-29T00:00:00+00:00".into(),
                     "2026-04-29T00:00:00+00:00".into(),
                 ],
@@ -177,10 +183,7 @@ mod tests {
         let ui = payload.ui.expect("ui should exist");
 
         assert_eq!(sidebar.width, 288);
-        assert_eq!(
-            sidebar.project_section_max_visible,
-            Some(5)
-        );
+        assert_eq!(sidebar.project_section_max_visible, Some(5));
         assert_eq!(ui.task_drawer_width, 420);
     }
 

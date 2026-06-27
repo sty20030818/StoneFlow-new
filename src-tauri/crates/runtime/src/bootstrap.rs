@@ -3,6 +3,7 @@
 use tauri::Manager;
 
 use crate::app::state::{ActiveScopeState, CommandOpenState};
+use crate::sync::{self, SyncRuntimeState};
 use stoneflow_storage::database::bootstrap_database;
 
 use crate::exit_coordinator;
@@ -11,9 +12,7 @@ use crate::tray;
 use crate::window::{
     main::build_main_window,
     quick_create::{
-        callbacks,
-        frontend::QuickCreateFrontendState,
-        runtime::QuickPopupRuntimeState,
+        callbacks, frontend::QuickCreateFrontendState, runtime::QuickPopupRuntimeState,
     },
 };
 
@@ -39,12 +38,26 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
     app.manage(quick_runtime_state);
 
     let database_state = tauri::async_runtime::block_on(async {
-        let app_data_dir = app.path().app_data_dir().map_err(|error| error.to_string())?;
+        let app_data_dir = app
+            .path()
+            .app_data_dir()
+            .map_err(|error| error.to_string())?;
         bootstrap_database(&app_data_dir)
             .await
             .map_err(|error| error.to_string())
     })?;
     app.manage(database_state);
+
+    let sync_state = SyncRuntimeState::default();
+    tauri::async_runtime::block_on(async {
+        let database = app
+            .handle()
+            .state::<stoneflow_storage::database::DatabaseRuntimeState>();
+        sync::initialize_state(&sync_state, database.inner())
+            .await
+            .map_err(|error| error.to_string())
+    })?;
+    app.manage(sync_state);
 
     init_quick_create_panel(app.handle());
 
@@ -54,6 +67,7 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
 
     app.manage(exit_coordinator::ExitCoordinator::default());
     tray::setup_tray(app)?;
+    sync::trigger_startup_pull(app.handle());
     Ok(())
 }
 

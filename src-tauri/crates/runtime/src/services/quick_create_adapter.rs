@@ -15,18 +15,17 @@ use stoneflow_usecase::{
 };
 
 use crate::{
-
     app::error::AppError,
     services::{
-        CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind, ListSidebarProjectsInput,
-        ProjectScopeInput, ProjectScopeKind, ProjectService, SearchService, SpaceService,
-        TaskDetailDto, TaskIdInput, TaskService,
-    }
+        CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
+        ListSidebarProjectsInput, ProjectScopeInput, ProjectScopeKind, ProjectService,
+        SearchService, SpaceService, TaskDetailDto, TaskIdInput, TaskService,
+    },
 };
 use stoneflow_storage::{
-        mappers::task_status_to_domain,
-        repositories::{ProjectRepository, SpaceRepository, TaskPlacementQuery, TaskRepository},};
-
+    mappers::task_status_to_domain,
+    repositories::{ProjectRepository, SpaceRepository, TaskPlacementQuery, TaskRepository},
+};
 
 #[derive(Debug, Clone)]
 pub struct QuickCreatePortsAdapter {
@@ -192,7 +191,11 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
     }
 
     async fn list_recent_tasks(&self, limit: usize) -> Result<Vec<QuickTaskItemDto>, UsecaseError> {
-        let spaces = self.space_repository.list_visible().await.map_err(map_storage_error)?;
+        let spaces = self
+            .space_repository
+            .list_visible()
+            .await
+            .map_err(map_storage_error)?;
         let space_map: HashMap<String, space::Model> = spaces
             .into_iter()
             .map(|space| (space.id.clone(), space))
@@ -230,7 +233,11 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
         &self,
         limit: usize,
     ) -> Result<Vec<QuickProjectItemDto>, UsecaseError> {
-        let spaces = self.space_repository.list_visible().await.map_err(map_storage_error)?;
+        let spaces = self
+            .space_repository
+            .list_visible()
+            .await
+            .map_err(map_storage_error)?;
         let space_map: HashMap<String, space::Model> = spaces
             .into_iter()
             .map(|space| (space.id.clone(), space))

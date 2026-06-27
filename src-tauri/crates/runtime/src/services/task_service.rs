@@ -8,23 +8,19 @@ use stoneflow_usecase::{
 };
 
 use crate::{
-
     app::error::AppError,
-    services::{
-        activity::ActivityPersistenceAdapter,
-        LifecycleService,
-    }
+    services::{activity::ActivityPersistenceAdapter, LifecycleService},
 };
 use stoneflow_storage::{
-        mappers::{
-            map_project_model_to_task_project_record, map_space_model_to_task_space_record,
-            map_task_model_to_record, task_status_to_schema,
-        },
-        repositories::{
-            CreateTaskRecord, ProjectRepository, SpaceRepository, TaskLifecycleView,
-            TaskListQuery, TaskPlacementQuery, TaskRepository, UpdateTaskPatch,
-        },};
-
+    mappers::{
+        map_project_model_to_task_project_record, map_space_model_to_task_space_record,
+        map_task_model_to_record, task_status_to_schema,
+    },
+    repositories::{
+        CreateTaskRecord, ProjectRepository, SpaceRepository, TaskLifecycleView, TaskListQuery,
+        TaskPlacementQuery, TaskRepository, UpdateTaskPatch,
+    },
+};
 
 pub use stoneflow_usecase::task::{
     CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind, ListTasksInput,

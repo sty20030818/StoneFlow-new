@@ -1,5 +1,6 @@
 import React from 'react'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act } from 'react'
 
 import type { ShellSidebarSettings } from '@/app/layouts/shell/model/shellDevicePreferences'
 import { SettingsPage } from '@/features/settings/ui/SettingsPage'
@@ -13,6 +14,9 @@ const setProjectSectionConfigSpy =
 	vi.fn<(config: ShellSidebarSettings['projectSection']) => Promise<void>>()
 const loadSpacesSpy = vi.fn<() => Promise<void>>()
 const setDefaultSpaceSpy = vi.fn<(spaceId: string) => Promise<Space>>()
+const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
+const configureSyncSpy = vi.fn<(input: { url: string; token: string }) => Promise<unknown>>()
+const forceSyncSpy = vi.fn<() => Promise<unknown>>()
 
 let sidebarStoreState = createSidebarStoreState()
 let spaceStoreState = createSpaceStoreState()
@@ -35,6 +39,12 @@ vi.mock('@/features/space/query', () => ({
 	useSetDefaultSpaceMutation: () => ({
 		mutateAsync: setDefaultSpaceSpy,
 	}),
+}))
+
+vi.mock('@/features/sync/api/sync', () => ({
+	getSyncStatus: () => getSyncStatusSpy(),
+	configureSync: (input: { url: string; token: string }) => configureSyncSpy(input),
+	forceSync: () => forceSyncSpy(),
 }))
 
 vi.mock('@/app/layouts/shell/model/ShellRouteContext', () => ({
@@ -157,9 +167,55 @@ describe('SettingsPage', () => {
 			}
 			return nextDefaultSpace
 		})
+		getSyncStatusSpy.mockReset()
+		getSyncStatusSpy.mockResolvedValue({
+			enabled: false,
+			status: 'disabled',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: false,
+			remoteUrl: null,
+			remoteToken: null,
+		})
+		configureSyncSpy.mockReset()
+		configureSyncSpy.mockResolvedValue({
+			enabled: true,
+			status: 'idle',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			remoteToken: 'secret-token',
+		})
+		forceSyncSpy.mockReset()
+		forceSyncSpy.mockResolvedValue({
+			enabled: true,
+			status: 'idle',
+			lastPushAt: '2026-06-26T00:00:00Z',
+			lastPullAt: '2026-06-26T00:00:01Z',
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			remoteToken: 'secret-token',
+		})
 
 		sidebarStoreState = createSidebarStoreState()
 		spaceStoreState = createSpaceStoreState()
+	})
+
+	afterEach(() => {
+		vi.useRealTimers()
 	})
 
 	it('渲染真实设置项并触发初始化加载', async () => {
@@ -174,6 +230,7 @@ describe('SettingsPage', () => {
 		expect(screen.getByText('辅助入口')).toBeInTheDocument()
 		expect(screen.getByText('项目分区')).toBeInTheDocument()
 		expect(screen.getByText('默认空间')).toBeInTheDocument()
+		expect(screen.getByText('云同步')).toBeInTheDocument()
 		expect(screen.queryByText('设置功能建设中')).not.toBeInTheDocument()
 	})
 
@@ -218,6 +275,232 @@ describe('SettingsPage', () => {
 		await waitFor(() => {
 			expect(setDefaultSpaceSpy).toHaveBeenCalledWith('space-2')
 		})
+	})
+
+	it('保存同步配置时调用 configureSync 并刷新状态', async () => {
+		await renderSettingsPage()
+
+		fireEvent.change(screen.getByLabelText('Turso URL'), {
+			target: { value: 'libsql://example.turso.io' },
+		})
+		fireEvent.change(screen.getByLabelText('Turso Token'), {
+			target: { value: 'secret-token' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
+
+		await waitFor(() => {
+			expect(configureSyncSpy).toHaveBeenCalledWith({
+				url: 'libsql://example.turso.io',
+				token: 'secret-token',
+			})
+		})
+		expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
+	})
+
+	it('页面加载后会回填已保存的同步配置', async () => {
+		getSyncStatusSpy.mockResolvedValue({
+			enabled: true,
+			status: 'idle',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://saved.turso.io',
+			remoteToken: 'saved-token',
+		})
+
+		await renderSettingsPage()
+
+		expect(screen.getByLabelText('Turso URL')).toHaveValue('libsql://saved.turso.io')
+		expect(screen.getByLabelText('Turso Token')).toHaveValue('saved-token')
+	})
+
+	it('未配置同步时展示本地优先提示', async () => {
+		await renderSettingsPage()
+
+		expect(screen.getByText('尚未启用云同步')).toBeInTheDocument()
+		expect(
+			screen.getByText('当前还没有保存可用的 Turso 远端。完成配置前，所有数据只会保留在本地数据库。'),
+		).toBeInTheDocument()
+		expect(screen.getByText('未启用')).toBeInTheDocument()
+		expect(screen.getAllByText('从未同步')).toHaveLength(2)
+	})
+
+	it('后台状态刷新时不应覆盖正在编辑的同步配置草稿', async () => {
+		const setIntervalSpy = vi.spyOn(window, 'setInterval')
+		setIntervalSpy.mockImplementation((callback) => {
+			void callback()
+			return 1 as unknown as number
+		})
+
+		getSyncStatusSpy
+			.mockResolvedValueOnce({
+				enabled: true,
+				status: 'idle',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://saved.turso.io',
+				remoteToken: 'saved-token',
+			})
+			.mockResolvedValue({
+				enabled: true,
+				status: 'idle',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://saved.turso.io',
+				remoteToken: 'saved-token',
+			})
+
+		await renderSettingsPage()
+
+		fireEvent.change(screen.getByLabelText('Turso URL'), {
+			target: { value: 'libsql://new.turso.io' },
+		})
+		fireEvent.change(screen.getByLabelText('Turso Token'), {
+			target: { value: 'new-token' },
+		})
+
+		await waitFor(() => {
+			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
+		})
+
+		expect(screen.getByLabelText('Turso URL')).toHaveValue('libsql://new.turso.io')
+		expect(screen.getByLabelText('Turso Token')).toHaveValue('new-token')
+
+		setIntervalSpy.mockRestore()
+	})
+
+	it('点击立即同步时调用 forceSync', async () => {
+		getSyncStatusSpy.mockResolvedValue({
+			enabled: true,
+			status: 'idle',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			remoteToken: 'secret-token',
+		})
+
+		await renderSettingsPage()
+
+		fireEvent.click(screen.getByRole('button', { name: '立即同步' }))
+
+		await waitFor(() => {
+			expect(forceSyncSpy).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	it('dirty 状态时展示等待上推提示', async () => {
+		vi.useFakeTimers()
+		vi.setSystemTime(new Date('2026-06-26T00:10:00Z'))
+
+		getSyncStatusSpy.mockResolvedValue({
+			enabled: true,
+			status: 'dirty',
+			lastPushAt: '2026-06-26T00:00:00Z',
+			lastPullAt: '2026-06-26T00:00:01Z',
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: '2026-06-26T00:00:00Z',
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			remoteToken: 'secret-token',
+		})
+
+		await renderSettingsPage()
+
+		expect(screen.getByText('等待上推')).toBeInTheDocument()
+		expect(
+			screen.getByText(
+				'本地已经产生新变更，最早一笔待同步写入开始于 10 分钟前。你可以直接点“立即同步”，也可以等后台自动补跑。',
+			),
+		).toBeInTheDocument()
+		expect(screen.getByText('待同步')).toBeInTheDocument()
+		expect(screen.getByText('10 分钟前')).toBeInTheDocument()
+		expect(screen.getByText('本地已有新写入，已等待 10 分钟前。')).toBeInTheDocument()
+	})
+
+	it('同步错误时展示 lastError', async () => {
+		getSyncStatusSpy.mockResolvedValue({
+			enabled: true,
+			status: 'error',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: 'remote unavailable',
+			lastErrorMode: 'pull',
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			remoteToken: 'secret-token',
+		})
+
+		await renderSettingsPage()
+
+		expect(screen.getByText('同步需要处理')).toBeInTheDocument()
+		expect(screen.getByText('拉取失败')).toBeInTheDocument()
+		expect(await screen.findByText('remote unavailable')).toBeInTheDocument()
+	})
+
+	it('已配置同步时会定时刷新状态', async () => {
+		const setIntervalSpy = vi.spyOn(window, 'setInterval')
+		setIntervalSpy.mockImplementation((callback) => {
+			void callback()
+			return 1 as unknown as number
+		})
+		getSyncStatusSpy
+			.mockResolvedValueOnce({
+				enabled: true,
+				status: 'idle',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				remoteToken: 'secret-token',
+			})
+			.mockResolvedValue({
+				enabled: true,
+				status: 'error',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: 'sync timeout',
+				lastErrorMode: 'pull',
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				remoteToken: 'secret-token',
+			})
+
+		await renderSettingsPage()
+
+		await waitFor(() => {
+			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
+		})
+		expect(await screen.findByText('sync timeout')).toBeInTheDocument()
+		setIntervalSpy.mockRestore()
 	})
 })
 

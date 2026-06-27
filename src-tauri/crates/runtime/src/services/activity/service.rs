@@ -6,13 +6,8 @@ use stoneflow_usecase::activity::{
     RecordActivityInput,
 };
 
-use crate::{
-
-    app::error::AppError,
-    services::activity::adapter::ActivityPersistenceAdapter
-};
+use crate::{app::error::AppError, services::activity::adapter::ActivityPersistenceAdapter};
 use stoneflow_storage::repositories::ActivityRepository;
-
 
 pub use stoneflow_usecase::activity::{
     create_changes, ActivityAction, ActivityChangeInput, ActivityTimelineChange,

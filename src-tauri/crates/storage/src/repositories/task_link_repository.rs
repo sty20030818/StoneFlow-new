@@ -61,7 +61,11 @@ impl TaskLinkRepository {
     }
 
     /// 计算某个 Task 下下一条 Link 的排序值。
-    pub async fn next_sort_order<C>(&self, connection: &C, task_id: &str) -> Result<i32, StorageError>
+    pub async fn next_sort_order<C>(
+        &self,
+        connection: &C,
+        task_id: &str,
+    ) -> Result<i32, StorageError>
     where
         C: ConnectionTrait,
     {

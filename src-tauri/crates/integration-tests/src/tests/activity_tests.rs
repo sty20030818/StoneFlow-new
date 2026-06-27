@@ -4,8 +4,7 @@ use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
 use serde_json::json;
 use stoneflow_domain::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind};
 use stoneflow_schema::common::{
-    ActivityActorKind as SchemaActivityActorKind,
-    ActivityEntityKind as SchemaActivityEntityKind,
+    ActivityActorKind as SchemaActivityActorKind, ActivityEntityKind as SchemaActivityEntityKind,
     ActivitySourceKind as SchemaActivitySourceKind,
 };
 use stoneflow_test_support::TestDatabase;
@@ -14,9 +13,9 @@ use crate::services::activity::{
     ActivityAction, ActivityChangeInput, ActivityService, GetEntityActivitiesInput,
     RecordActivityInput,
 };
-use stoneflow_storage::{
-        repositories::{ActivityChangeRecord, ActivityEventRecord, ActivityRepository},};
-
+use stoneflow_storage::repositories::{
+    ActivityChangeRecord, ActivityEventRecord, ActivityRepository,
+};
 
 #[tokio::test]
 async fn record_activity_should_persist_event_and_changes_atomically() {

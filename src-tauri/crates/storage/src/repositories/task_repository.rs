@@ -6,7 +6,11 @@ use sea_orm::{
     sea_query::Expr, ActiveModelTrait, ActiveValue::Set, ColumnTrait, Condition, ConnectionTrait,
     DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect,
 };
-use stoneflow_schema::{common::TaskStatus, prelude::Task, task};
+use stoneflow_schema::{
+    common::TaskStatus,
+    prelude::{Task, TaskLink},
+    task, task_link,
+};
 
 use crate::error::StorageError;
 
@@ -125,7 +129,10 @@ impl TaskRepository {
     }
 
     /// 列出某个 Project 下的全部 Task。
-    pub async fn list_by_project(&self, project_id: &str) -> Result<Vec<task::Model>, StorageError> {
+    pub async fn list_by_project(
+        &self,
+        project_id: &str,
+    ) -> Result<Vec<task::Model>, StorageError> {
         Task::find()
             .filter(task::Column::ProjectId.eq(project_id))
             .all(self.connection())
@@ -156,10 +163,8 @@ impl TaskRepository {
                 TaskStatus::Todo,
                 TaskStatus::Waiting,
             ])),
-            TaskSearchLifecycle::Closed => task_query.filter(task::Column::Status.is_in([
-                TaskStatus::Done,
-                TaskStatus::Canceled,
-            ])),
+            TaskSearchLifecycle::Closed => task_query
+                .filter(task::Column::Status.is_in([TaskStatus::Done, TaskStatus::Canceled])),
         };
 
         task_query
@@ -183,7 +188,10 @@ impl TaskRepository {
             query = query.filter(task::Column::SpaceId.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(StorageError::from)
+        query
+            .all(self.connection())
+            .await
+            .map_err(StorageError::from)
     }
 
     /// 列出已删除的 Task。
@@ -200,7 +208,10 @@ impl TaskRepository {
             query = query.filter(task::Column::SpaceId.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(StorageError::from)
+        query
+            .all(self.connection())
+            .await
+            .map_err(StorageError::from)
     }
 
     /// 计算下一条 Task 的排序值。
@@ -521,6 +532,11 @@ impl TaskRepository {
     where
         C: ConnectionTrait,
     {
+        TaskLink::delete_many()
+            .filter(task_link::Column::TaskId.eq(task_id))
+            .exec(connection)
+            .await?;
+
         let result = Task::delete_by_id(task_id.to_owned())
             .exec(connection)
             .await?;

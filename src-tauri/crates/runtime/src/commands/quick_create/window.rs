@@ -1,21 +1,19 @@
 //! Quick Create 窗口 session 命令。
 
 use serde::Deserialize;
-use tauri::{Manager, State};
 use stoneflow_storage::database::DatabaseRuntimeState;
+use tauri::{Manager, State};
 
-use crate::window::{
-    quick_create::{
-        frontend::QuickCreateFrontendState,
-        runtime::QuickPopupRuntimeState,
-        session::{
-            close_quick_create_session, commit_quick_create_layout, prepare_quick_create_session,
-            present_quick_create_session, QuickCreateCloseSessionInput,
-            QuickCreateCommitLayoutInput, QuickCreateSessionInput,
-        },
+use crate::app::state::ActiveScopeState;
+use crate::window::quick_create::{
+    frontend::QuickCreateFrontendState,
+    runtime::QuickPopupRuntimeState,
+    session::{
+        close_quick_create_session, commit_quick_create_layout, prepare_quick_create_session,
+        present_quick_create_session, QuickCreateCloseSessionInput, QuickCreateCommitLayoutInput,
+        QuickCreateSessionInput,
     },
 };
-use crate::app::state::ActiveScopeState;
 
 use super::error::{QuickCreateErrorPayload, QuickCreateOpenSessionResponse};
 

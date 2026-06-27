@@ -2,8 +2,8 @@
 
 use tauri::State;
 
-use crate::composition::build_lifecycle_service;
 use crate::app::error::AppError;
+use crate::composition::build_lifecycle_service;
 use crate::services::{LifecycleEntry, ListLifecycleEntriesInput};
 use stoneflow_storage::database::DatabaseRuntimeState;
 

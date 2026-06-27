@@ -1,17 +1,18 @@
 //! Quick Create 业务命令（直接调用 usecase，不经 IPC）。
 
 use serde::Deserialize;
+use stoneflow_storage::database::DatabaseRuntimeState;
 use stoneflow_usecase::quick_create::{
     QuickCreateInput, QuickCreatedDto, QuickListProjectsBySpaceInput, QuickPlacementDto,
     QuickPlacementKind, QuickSearchInput,
 };
 use tauri::{Emitter, State};
-use stoneflow_storage::database::DatabaseRuntimeState;
 
-use crate::composition::{build_quick_create_service, build_quick_create_session_bridge};
-use crate::command_open::{dispatch_command_open, restore_main_window, CommandOpenPayload};
 use crate::app::state::{ActiveScopeState, CommandOpenState};
+use crate::command_open::{dispatch_command_open, restore_main_window, CommandOpenPayload};
+use crate::composition::{build_quick_create_service, build_quick_create_session_bridge};
 use crate::services::QuickResolvedPlacement;
+use crate::sync;
 
 use super::error::{
     map_projects_by_space, map_search_response, QuickCreateErrorPayload,
@@ -91,7 +92,9 @@ pub async fn quick_create_get_initial_state(
         .prepare_initial_state(active_scope.get().await)
         .await
         .map_err(QuickCreateErrorPayload::from)?;
-    Ok(super::error::QuickCreateInitialStateResponse::from_dto(payload))
+    Ok(super::error::QuickCreateInitialStateResponse::from_dto(
+        payload,
+    ))
 }
 
 #[tauri::command]
@@ -141,6 +144,7 @@ pub async fn quick_create_create(
         .create(map_create_payload(input), active_scope.get().await)
         .await
         .map_err(QuickCreateErrorPayload::from)?;
+    sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &created)?;
     Ok(())
 }
@@ -158,6 +162,7 @@ pub async fn quick_create_create_and_open(
         .create(map_create_payload(input), active_scope.get().await)
         .await
         .map_err(QuickCreateErrorPayload::from)?;
+    sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &created)?;
     open_created_task(&app_handle, &service, command_open_state.inner(), &created).await?;
     Ok(())

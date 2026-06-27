@@ -3,9 +3,7 @@
 #![allow(async_fn_in_trait)]
 
 use serde::{Deserialize, Serialize};
-use stoneflow_domain::{
-    resolve_default_space_id, QuickCreateSpaceCandidate, TaskStatus,
-};
+use stoneflow_domain::{resolve_default_space_id, QuickCreateSpaceCandidate, TaskStatus};
 
 use crate::{
     quick_create_search_ranking::{
@@ -235,7 +233,10 @@ pub struct QuickSidebarProjectDto {
 pub trait QuickCreatePorts: Send + Sync + Clone {
     async fn list_visible_spaces(&self) -> Result<Vec<QuickSpaceSummaryDto>, UsecaseError>;
     async fn list_space_candidates(&self) -> Result<Vec<QuickCreateSpaceCandidate>, UsecaseError>;
-    async fn get_space(&self, space_id: &str) -> Result<Option<QuickCreateSpaceCandidate>, UsecaseError>;
+    async fn get_space(
+        &self,
+        space_id: &str,
+    ) -> Result<Option<QuickCreateSpaceCandidate>, UsecaseError>;
     async fn list_sidebar_projects_for_space(
         &self,
         space_id: &str,
@@ -251,7 +252,10 @@ pub trait QuickCreatePorts: Send + Sync + Clone {
     async fn get_task_detail(&self, task_id: &str) -> Result<QuickCreateTaskDetail, UsecaseError>;
     async fn get_project_space_id(&self, project_id: &str) -> Result<String, UsecaseError>;
     async fn list_recent_tasks(&self, limit: usize) -> Result<Vec<QuickTaskItemDto>, UsecaseError>;
-    async fn list_recent_projects(&self, limit: usize) -> Result<Vec<QuickProjectItemDto>, UsecaseError>;
+    async fn list_recent_projects(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<QuickProjectItemDto>, UsecaseError>;
 }
 
 /// Quick Create 编排服务。
@@ -340,12 +344,7 @@ impl<P: QuickCreatePorts> QuickCreateService<P> {
             .tasks
             .into_iter()
             .map(map_search_task)
-            .chain(
-                result
-                    .completed_tasks
-                    .into_iter()
-                    .map(map_search_task),
-            )
+            .chain(result.completed_tasks.into_iter().map(map_search_task))
             .collect::<Vec<_>>();
         let mut projects = result
             .projects
@@ -406,7 +405,10 @@ impl<P: QuickCreatePorts> QuickCreateService<P> {
         ))
     }
 
-    pub async fn get_task_detail(&self, task_id: &str) -> Result<QuickCreateTaskDetail, UsecaseError> {
+    pub async fn get_task_detail(
+        &self,
+        task_id: &str,
+    ) -> Result<QuickCreateTaskDetail, UsecaseError> {
         self.ports.get_task_detail(task_id).await
     }
 
@@ -442,7 +444,9 @@ impl<P: QuickCreatePorts> QuickCreateService<P> {
     }
 }
 
-fn map_create_placement(input: &QuickPlacementDto) -> Result<QuickCreateTaskPlacement, UsecaseError> {
+fn map_create_placement(
+    input: &QuickPlacementDto,
+) -> Result<QuickCreateTaskPlacement, UsecaseError> {
     if matches!(input.kind, QuickPlacementKind::Project) && input.project_id.is_none() {
         return Err(UsecaseError::validation(
             "placement.kind=project 时必须提供 projectId",
@@ -535,9 +539,7 @@ fn map_task_status(status: TaskStatus) -> String {
 
 fn map_default_space_domain_error(error: stoneflow_domain::DomainError) -> UsecaseError {
     match error {
-        stoneflow_domain::DomainError::Validation(message)
-            if message.contains("Space") =>
-        {
+        stoneflow_domain::DomainError::Validation(message) if message.contains("Space") => {
             UsecaseError::default_space_unavailable(message)
         }
         stoneflow_domain::DomainError::Validation(message) => UsecaseError::validation(message),

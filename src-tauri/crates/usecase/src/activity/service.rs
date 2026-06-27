@@ -179,10 +179,7 @@ mod tests {
             event: &ActivityEventRecord,
             changes: &[ActivityChangeRecord],
         ) -> Result<(), UsecaseError> {
-            self.events
-                .lock()
-                .expect("lock")
-                .push(event.clone());
+            self.events.lock().expect("lock").push(event.clone());
             self.changes
                 .lock()
                 .expect("lock")

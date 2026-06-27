@@ -61,10 +61,7 @@ pub trait SpacePersistence: Send + Sync {
     async fn commit(&self, connection: Self::Connection) -> Result<(), UsecaseError>;
     async fn list_visible(&self) -> Result<Vec<SpaceRecord>, UsecaseError>;
     async fn get(&self, space_id: &str) -> Result<Option<SpaceRecord>, UsecaseError>;
-    async fn next_sort_order(
-        &self,
-        connection: &Self::Connection,
-    ) -> Result<i32, UsecaseError>;
+    async fn next_sort_order(&self, connection: &Self::Connection) -> Result<i32, UsecaseError>;
     async fn create(
         &self,
         connection: &Self::Connection,

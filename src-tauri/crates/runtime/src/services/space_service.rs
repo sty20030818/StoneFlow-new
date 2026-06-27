@@ -7,19 +7,15 @@ use stoneflow_usecase::{
 };
 
 use crate::{
-
     app::error::AppError,
-    services::{
-        activity::ActivityPersistenceAdapter,
-        LifecycleService,
-    }
+    services::{activity::ActivityPersistenceAdapter, LifecycleService},
 };
 use stoneflow_storage::{
-        mappers::map_space_model_to_record,
-        repositories::{
-            CreateSpaceRecord, ProjectRepository, SpaceRepository, TaskRepository, UpdateSpacePatch,
-        },};
-
+    mappers::map_space_model_to_record,
+    repositories::{
+        CreateSpaceRecord, ProjectRepository, SpaceRepository, TaskRepository, UpdateSpacePatch,
+    },
+};
 
 pub use stoneflow_usecase::space::{
     CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, UpdateSpaceInput,
@@ -157,7 +153,8 @@ impl SpacePersistence for SpacePersistenceAdapter {
     async fn get(
         &self,
         space_id: &str,
-    ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError>
+    {
         self.repository
             .get(space_id)
             .await
@@ -205,7 +202,8 @@ impl SpacePersistence for SpacePersistenceAdapter {
         space_id: &str,
         patch: stoneflow_usecase::space::UpdateSpacePatch,
         updated_at: &str,
-    ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError>
+    {
         self.repository
             .update(
                 connection,
@@ -239,7 +237,8 @@ impl SpacePersistence for SpacePersistenceAdapter {
         connection: &Self::Connection,
         space_id: &str,
         updated_at: &str,
-    ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError>
+    {
         self.repository
             .set_default(connection, space_id, updated_at)
             .await

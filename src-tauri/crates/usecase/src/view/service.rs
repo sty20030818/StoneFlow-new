@@ -243,7 +243,11 @@ pub trait ViewPersistence: Send + Sync {
         view_id: &str,
         patch: UpdateViewPatch,
     ) -> Result<Option<ViewRecord>, UsecaseError>;
-    async fn delete(&self, connection: &Self::Connection, view_id: &str) -> Result<u64, UsecaseError>;
+    async fn delete(
+        &self,
+        connection: &Self::Connection,
+        view_id: &str,
+    ) -> Result<u64, UsecaseError>;
 }
 
 /// Task View 执行所需的 Task 读取边界。
@@ -290,7 +294,12 @@ where
     T: ViewTaskReader,
     L: ViewLookupReader,
 {
-    pub fn new(persistence: P, activity: ActivityService<A>, task_reader: T, lookup_reader: L) -> Self {
+    pub fn new(
+        persistence: P,
+        activity: ActivityService<A>,
+        task_reader: T,
+        lookup_reader: L,
+    ) -> Self {
         Self {
             persistence,
             activity,
@@ -643,7 +652,10 @@ where
         map_view_record(updated)
     }
 
-    pub async fn reorder_views(&self, input: ReorderViewsInput) -> Result<Vec<ViewDto>, UsecaseError> {
+    pub async fn reorder_views(
+        &self,
+        input: ReorderViewsInput,
+    ) -> Result<Vec<ViewDto>, UsecaseError> {
         if input.ordered_ids.is_empty() {
             return self
                 .list_views(ListViewsInput {
@@ -713,7 +725,9 @@ where
         let by_key = match view_key {
             Some(view_key) => {
                 let normalized = normalize_required_text(&view_key, "View key")?;
-                self.persistence.get_by_key(entity_type, &normalized).await?
+                self.persistence
+                    .get_by_key(entity_type, &normalized)
+                    .await?
             }
             None => None,
         };
@@ -804,10 +818,9 @@ fn normalize_task_scope(input: &ViewTaskScopeInput) -> Result<NormalizedTaskScop
         ViewTaskScopeKind::All => Ok(NormalizedTaskScope { space_id: None }),
         ViewTaskScopeKind::Space => Ok(NormalizedTaskScope {
             space_id: Some(normalize_required_text(
-                input
-                    .space_id
-                    .as_deref()
-                    .ok_or_else(|| UsecaseError::validation("scope.type=space 时必须提供 spaceId"))?,
+                input.space_id.as_deref().ok_or_else(|| {
+                    UsecaseError::validation("scope.type=space 时必须提供 spaceId")
+                })?,
                 "spaceId",
             )?),
         }),
@@ -824,14 +837,14 @@ fn normalize_task_placement(
 
     match placement.kind {
         ViewListTasksPlacementKind::All => Ok(ViewTaskPlacementQuery::All),
-        ViewListTasksPlacementKind::Project => Ok(ViewTaskPlacementQuery::Project(
-            normalize_required_text(
+        ViewListTasksPlacementKind::Project => {
+            Ok(ViewTaskPlacementQuery::Project(normalize_required_text(
                 placement.project_id.as_deref().ok_or_else(|| {
                     UsecaseError::validation("placement.kind=project 时必须提供 projectId")
                 })?,
                 "projectId",
-            )?,
-        )),
+            )?))
+        }
         ViewListTasksPlacementKind::Inbox => Ok(ViewTaskPlacementQuery::Inbox),
         ViewListTasksPlacementKind::NoProject => Ok(ViewTaskPlacementQuery::NoProject),
     }

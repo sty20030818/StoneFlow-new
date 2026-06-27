@@ -14,13 +14,17 @@ pub struct QuickCreateSessionBridge {
 
 impl QuickCreateSessionBridge {
     pub fn new(open_context_service: QuickCreateOpenContextService) -> Self {
-        Self { open_context_service }
+        Self {
+            open_context_service,
+        }
     }
 
     pub async fn prepare_initial_state(
         &self,
         active_scope: Option<ActiveScopeSnapshot>,
     ) -> Result<QuickInitialStateDto, AppError> {
-        self.open_context_service.get_initial_state(active_scope).await
+        self.open_context_service
+            .get_initial_state(active_scope)
+            .await
     }
 }

@@ -18,9 +18,7 @@ use crate::{
     },
     lifecycle::{
         executor::{build_lifecycle_entries, normalize_scope},
-        types::{
-            LifecycleProjectListRecord, LifecycleTaskListRecord, ListLifecycleEntriesInput,
-        },
+        types::{LifecycleProjectListRecord, LifecycleTaskListRecord, ListLifecycleEntriesInput},
     },
     project::ProjectRecord,
     space::SpaceRecord,
@@ -80,7 +78,8 @@ pub trait LifecycleProjectPersistence: Send + Sync {
     async fn commit(&self, connection: Self::Connection) -> Result<(), UsecaseError>;
     async fn get(&self, project_id: &str) -> Result<Option<ProjectRecord>, UsecaseError>;
     async fn list_by_space(&self, space_id: &str) -> Result<Vec<ProjectRecord>, UsecaseError>;
-    async fn list_by_ids(&self, project_ids: &[String]) -> Result<Vec<ProjectRecord>, UsecaseError>;
+    async fn list_by_ids(&self, project_ids: &[String])
+        -> Result<Vec<ProjectRecord>, UsecaseError>;
     async fn list_archived(
         &self,
         scope_space_id: Option<&str>,
@@ -253,8 +252,7 @@ where
     pub async fn archive_space(&self, space_id: &str) -> Result<SpaceRecord, UsecaseError> {
         let space_id = validate_space_id(space_id)?;
         let current = self.require_existing_space(&space_id).await?;
-        ensure_space_mutable(current.deleted_at.as_deref())
-            .map_err(map_space_mutable_error)?;
+        ensure_space_mutable(current.deleted_at.as_deref()).map_err(map_space_mutable_error)?;
         ensure_not_only_active_default(
             current.is_default,
             current.archived_at.as_deref(),
@@ -531,7 +529,8 @@ where
     pub async fn permanently_delete_space(&self, space_id: &str) -> Result<(), UsecaseError> {
         let space_id = validate_space_id(space_id)?;
         let current = self.require_existing_space(&space_id).await?;
-        ensure_deleted(current.deleted_at.as_deref(), "Space").map_err(map_lifecycle_guard_error)?;
+        ensure_deleted(current.deleted_at.as_deref(), "Space")
+            .map_err(map_lifecycle_guard_error)?;
 
         let transaction = self.spaces.begin().await?;
         let deleted_projects = self
@@ -1113,15 +1112,9 @@ where
         let space_rows = if include_space {
             match mode {
                 LifecycleMode::Archive => {
-                    self.spaces
-                        .list_archived(scope_space_id.as_deref())
-                        .await?
+                    self.spaces.list_archived(scope_space_id.as_deref()).await?
                 }
-                LifecycleMode::Trash => {
-                    self.spaces
-                        .list_deleted(scope_space_id.as_deref())
-                        .await?
-                }
+                LifecycleMode::Trash => self.spaces.list_deleted(scope_space_id.as_deref()).await?,
             }
         } else {
             Vec::new()
@@ -1145,13 +1138,9 @@ where
         let task_rows = if include_task {
             match mode {
                 LifecycleMode::Archive => {
-                    self.tasks
-                        .list_archived(scope_space_id.as_deref())
-                        .await?
+                    self.tasks.list_archived(scope_space_id.as_deref()).await?
                 }
-                LifecycleMode::Trash => {
-                    self.tasks.list_deleted(scope_space_id.as_deref()).await?
-                }
+                LifecycleMode::Trash => self.tasks.list_deleted(scope_space_id.as_deref()).await?,
             }
         } else {
             Vec::new()

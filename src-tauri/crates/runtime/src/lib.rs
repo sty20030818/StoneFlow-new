@@ -5,11 +5,12 @@ use tauri::{Manager, WindowEvent};
 pub mod app;
 pub mod bootstrap;
 pub mod command_open;
-pub mod composition;
 pub mod commands;
+pub mod composition;
 pub mod exit_coordinator;
 pub mod services;
 pub mod shortcuts;
+pub mod sync;
 pub mod tray;
 pub mod window;
 
@@ -70,6 +71,9 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
             tauri::async_runtime::spawn(async move {
                 tray::request_exit_and_quit(&app_handle).await;
             });
+        }
+        tauri::RunEvent::Resumed => {
+            sync::trigger_resume_pull(app_handle);
         }
         tauri::RunEvent::Exit => {}
         _ => {}

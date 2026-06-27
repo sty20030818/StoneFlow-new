@@ -3,13 +3,8 @@
 use tauri::State;
 
 use crate::app::error::AppError;
-use crate::services::activity::{
-    ActivityService, ActivityTimelineEntry, GetEntityActivitiesInput,
-};
-use stoneflow_storage::{
-    database::DatabaseRuntimeState,
-    repositories::ActivityRepository,
-};
+use crate::services::activity::{ActivityService, ActivityTimelineEntry, GetEntityActivitiesInput};
+use stoneflow_storage::{database::DatabaseRuntimeState, repositories::ActivityRepository};
 
 #[tauri::command]
 pub async fn get_entity_activities(

@@ -5,13 +5,9 @@ use stoneflow_schema::common::TaskStatus;
 use stoneflow_test_support::TestDatabase;
 
 use crate::services::{SearchEntitiesInput, SearchService};
-use stoneflow_storage::{
-    repositories::{
-        CreateProjectRecord, CreateTaskRecord, ProjectRepository, SpaceRepository,
-        TaskRepository,
-    },
+use stoneflow_storage::repositories::{
+    CreateProjectRecord, CreateTaskRecord, ProjectRepository, SpaceRepository, TaskRepository,
 };
-
 
 #[tokio::test]
 async fn search_entities_should_rank_title_prefix_before_note_matches() {
@@ -410,7 +406,11 @@ async fn search_entities_should_respect_limit_per_section_and_status_sort() {
 
     assert_eq!(result.tasks.len(), 3);
     assert_eq!(
-        result.tasks.iter().map(|item| item.id.as_str()).collect::<Vec<_>>(),
+        result
+            .tasks
+            .iter()
+            .map(|item| item.id.as_str())
+            .collect::<Vec<_>>(),
         vec!["task-doing", "task-todo", "task-waiting"]
     );
 }

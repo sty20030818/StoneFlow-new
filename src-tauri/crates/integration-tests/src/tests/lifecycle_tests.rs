@@ -1,18 +1,17 @@
 //! 阶段 10 生命周期服务回归测试。
 
 use sea_orm::{ActiveValue::Set, ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
-use stoneflow_schema::{common::TaskStatus, project, space, task};
+use stoneflow_schema::{common::TaskStatus, project, space, task, task_link};
 use stoneflow_test_support::TestDatabase;
 
 use crate::services::{
-    activity::ActivityService,
-    LifecycleEntityType, LifecycleScopeInput, LifecycleScopeKind, LifecycleService,
-    ListLifecycleEntriesInput,
+    activity::ActivityService, LifecycleEntityType, LifecycleScopeInput, LifecycleScopeKind,
+    LifecycleService, ListLifecycleEntriesInput,
 };
 use stoneflow_domain::create_id;
-use stoneflow_storage::{
-        repositories::{ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository},};
-
+use stoneflow_storage::repositories::{
+    ActivityRepository, ProjectRepository, SpaceRepository, TaskLinkRepository, TaskRepository,
+};
 
 #[tokio::test]
 async fn delete_space_should_record_cascade_activity_for_each_child() {
@@ -116,6 +115,32 @@ async fn permanently_delete_task_should_require_deleted_state_and_remove_row() {
         .await
         .expect("query task should succeed");
     assert!(deleted.is_none());
+}
+
+#[tokio::test]
+async fn permanently_delete_task_should_remove_task_links() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_lifecycle_service(&database);
+    let space = default_space(&database).await;
+    let task = insert_task(&database, &space.id, None, "任务 D").await;
+    let link = insert_task_link(&database, &task.id, "文档", "https://example.com/docs").await;
+
+    service
+        .delete_task(&task.id)
+        .await
+        .expect("delete task should succeed");
+    service
+        .permanently_delete_task(&task.id)
+        .await
+        .expect("permanently delete task should succeed");
+
+    let deleted_link = TaskLinkRepository::new(database.connection().clone())
+        .get(&link.id)
+        .await
+        .expect("query task link should succeed");
+    assert!(deleted_link.is_none());
 }
 
 #[tokio::test]
@@ -331,6 +356,30 @@ async fn insert_task(
         )
         .await
         .expect("insert task should succeed")
+}
+
+async fn insert_task_link(
+    database: &stoneflow_storage::database::DatabaseRuntimeState,
+    task_id: &str,
+    title: &str,
+    url: &str,
+) -> task_link::Model {
+    let repository = TaskLinkRepository::new(database.connection().clone());
+    repository
+        .create(
+            repository.connection(),
+            stoneflow_storage::repositories::CreateTaskLinkRecord {
+                id: create_id().to_string(),
+                task_id: task_id.to_owned(),
+                title: title.to_owned(),
+                url: url.to_owned(),
+                sort_order: 1000,
+                created_at: "2026-05-01T00:00:00Z".to_owned(),
+                updated_at: "2026-05-01T00:00:00Z".to_owned(),
+            },
+        )
+        .await
+        .expect("insert task link should succeed")
 }
 
 async fn scalar_i64_with_args<C>(

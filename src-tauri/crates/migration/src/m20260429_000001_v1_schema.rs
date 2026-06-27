@@ -101,6 +101,13 @@ CREATE TABLE IF NOT EXISTS settings (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS sync_meta (
+    key TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS activity_events (
     id TEXT PRIMARY KEY NOT NULL,
     entity_type TEXT NOT NULL CHECK (entity_type IN ('task', 'project', 'space', 'view', 'setting')),
@@ -192,6 +199,7 @@ DROP INDEX IF EXISTS ux_spaces_single_default_active;
 DROP TABLE IF EXISTS activity_changes;
 DROP TABLE IF EXISTS activity_events;
 DROP TABLE IF EXISTS settings;
+DROP TABLE IF EXISTS sync_meta;
 DROP TABLE IF EXISTS views;
 DROP TABLE IF EXISTS task_links;
 DROP TABLE IF EXISTS tasks;

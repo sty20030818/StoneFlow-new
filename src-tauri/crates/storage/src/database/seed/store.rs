@@ -82,7 +82,10 @@ where
     Ok(())
 }
 
-pub async fn get_setting_value<C>(connection: &C, key: &str) -> Result<Option<String>, sea_orm::DbErr>
+pub async fn get_setting_value<C>(
+    connection: &C,
+    key: &str,
+) -> Result<Option<String>, sea_orm::DbErr>
 where
     C: ConnectionTrait,
 {

@@ -12,6 +12,13 @@ import {
 	useSidebarSettingsStore,
 } from '@/app/layouts/shell/model/useSidebarSettingsStore'
 import type { SidebarMainItemKey } from '@/features/settings/api/sidebarSettings'
+import {
+	configureSync,
+	forceSync,
+	getSyncStatus,
+	type SyncStatus,
+	type SyncStatusPayload,
+} from '@/features/sync/api/sync'
 import { useSetDefaultSpaceMutation, useSpaces } from '@/features/space/query'
 import { cn } from '@/shared/lib/utils'
 import {
@@ -21,6 +28,7 @@ import {
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
 import { Button } from '@/shared/ui/base/button'
+import { Input } from '@/shared/ui/base/input'
 import {
 	Select,
 	SelectContent,
@@ -29,6 +37,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/shared/ui/base/select'
+import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 import {
 	formFieldHintClass,
 	formFieldLabelVariants,
@@ -64,6 +73,7 @@ type SettingsSectionKey = 'mainItems' | 'footerItems' | 'projectSection' | 'defa
 
 type SectionStateMap = Record<SettingsSectionKey, boolean>
 type SectionErrorMap = Partial<Record<SettingsSectionKey, string>>
+const SYNC_STATUS_REFRESH_INTERVAL_MS = 3000
 
 /**
  * 设置页只负责组织现有 settings 状态与 Space 数据，不复制配置状态。
@@ -89,10 +99,35 @@ export function SettingsPage() {
 		defaultSpace: false,
 	})
 	const [sectionErrors, setSectionErrors] = useState<SectionErrorMap>({})
+	const [syncStatus, setSyncStatus] = useState<SyncStatusPayload | null>(null)
+	const [syncStatusMessage, setSyncStatusMessage] = useState<string | null>(null)
+	const [syncLoading, setSyncLoading] = useState(true)
+	const [syncSaving, setSyncSaving] = useState(false)
+	const [syncRunning, setSyncRunning] = useState(false)
+	const [syncUrl, setSyncUrl] = useState('')
+	const [syncToken, setSyncToken] = useState('')
 
 	useEffect(() => {
 		void loadSidebarSettings().catch(() => undefined)
 	}, [loadSidebarSettings])
+
+	useEffect(() => {
+		void refreshSyncStatus({ syncDraft: true })
+	}, [])
+
+	useEffect(() => {
+		if (!syncStatus?.hasRemoteConfig) {
+			return
+		}
+
+		const timer = window.setInterval(() => {
+			void refreshSyncStatus({ silent: true, syncDraft: false })
+		}, SYNC_STATUS_REFRESH_INTERVAL_MS)
+
+		return () => {
+			window.clearInterval(timer)
+		}
+	}, [syncStatus?.hasRemoteConfig])
 
 	const visibleMainItemCount =
 		sidebarSettings === null
@@ -131,6 +166,80 @@ export function SettingsPage() {
 			}))
 		}
 	}
+
+	async function refreshSyncStatus(options?: { silent?: boolean; syncDraft?: boolean }) {
+		const silent = options?.silent ?? false
+		const syncDraft = options?.syncDraft ?? true
+		if (!silent) {
+			setSyncLoading(true)
+			setSyncStatusMessage(null)
+		}
+		try {
+			const payload = await getSyncStatus()
+			setSyncStatus(payload)
+			if (syncDraft) {
+				setSyncUrl(payload.remoteUrl ?? '')
+				setSyncToken(payload.remoteToken ?? '')
+			}
+		} catch (error) {
+			setSyncStatus(null)
+			setSyncStatusMessage(normalizeTauriError(error, '同步状态读取失败'))
+		} finally {
+			if (!silent) {
+				setSyncLoading(false)
+			}
+		}
+	}
+
+	async function handleSaveSyncConfig() {
+		setSyncSaving(true)
+		setSyncStatusMessage(null)
+		try {
+			await configureSync({
+				url: syncUrl.trim(),
+				token: syncToken.trim(),
+			})
+			await refreshSyncStatus({ syncDraft: true })
+		} catch (error) {
+			setSyncStatusMessage(normalizeTauriError(error, '同步配置保存失败'))
+		} finally {
+			setSyncSaving(false)
+		}
+	}
+
+	async function handleForceSync() {
+		setSyncRunning(true)
+		setSyncStatusMessage(null)
+		try {
+			await forceSync()
+			await refreshSyncStatus({ syncDraft: false })
+		} catch (error) {
+			setSyncStatusMessage(normalizeTauriError(error, '手动同步失败'))
+			await refreshSyncStatus({ syncDraft: false })
+		} finally {
+			setSyncRunning(false)
+		}
+	}
+
+	const effectiveSyncError =
+		syncStatus?.status === 'error' ? (syncStatus.lastError ?? syncStatusMessage) : syncStatusMessage
+	const effectiveSyncErrorTitle = getSyncErrorTitle(syncStatus?.lastErrorMode ?? null, syncRunning)
+	const syncBusy = syncSaving || syncRunning || syncLoading
+	const syncConfigIncomplete = syncUrl.trim().length === 0 || syncToken.trim().length === 0
+	const displayedSyncStatus: SyncStatus = syncRunning
+		? 'pulling'
+		: syncSaving
+			? 'pushing'
+			: (syncStatus?.status ?? (syncLoading ? 'pulling' : 'disabled'))
+	const syncStatusCopy = getSyncStatusCopy({
+		dirtySince: syncStatus?.dirtySince ?? null,
+		pendingResync: syncStatus?.pendingResync ?? false,
+		hasRemoteConfig: syncStatus?.hasRemoteConfig ?? false,
+		status: displayedSyncStatus,
+		syncLoading,
+		syncRunning,
+		syncSaving,
+	})
 
 	function handleMainItemVisibilityChange(key: SidebarMainItemKey, visible: boolean) {
 		if (!sidebarSettings) {
@@ -405,6 +514,110 @@ export function SettingsPage() {
 							</StatusNotice>
 						) : null}
 					</SettingsSection>
+
+					<SettingsSection
+						description='所有业务仍然只读写本地数据库；这里仅配置 Turso 远端，并在需要时手动或自动触发同步。'
+						title='云同步'
+					>
+						<div className='grid gap-3 md:grid-cols-2'>
+							<SettingInfoRow
+								description={syncStatusCopy.statusDescription}
+								label='当前状态'
+								value={<SyncStatusBadge status={displayedSyncStatus} />}
+							/>
+							<SettingInfoRow
+								description='是否已经保存可用的 Turso url 和 token。'
+								label='Turso 配置'
+								value={
+									<span
+										className={cn(
+											'text-sm font-medium',
+											syncStatus?.hasRemoteConfig ? 'text-emerald-700' : 'text-slate-500',
+										)}
+									>
+										{syncStatus?.hasRemoteConfig ? '已配置' : '未配置'}
+									</span>
+								}
+							/>
+							<SettingInfoRow
+								description='最近一次 push-like 同步完成时间。'
+								label='上次 push'
+								value={<SyncTimestampValue timestamp={syncStatus?.lastPushAt ?? null} />}
+							/>
+							<SettingInfoRow
+								description='最近一次 pull-like 同步完成时间。'
+								label='上次 pull'
+								value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
+							/>
+						</div>
+
+						<div className='mt-4 grid gap-3 md:grid-cols-2'>
+							<label className={formFieldStackClass}>
+								<span className={formFieldLabelVariants()}>Turso URL</span>
+								<Input
+									autoComplete='off'
+									disabled={syncBusy}
+									onChange={(event) => setSyncUrl(event.currentTarget.value)}
+									placeholder='libsql://your-db.turso.io'
+									type='text'
+									value={syncUrl}
+								/>
+							</label>
+							<label className={formFieldStackClass}>
+								<span className={formFieldLabelVariants()}>Turso Token</span>
+								<Input
+									autoComplete='off'
+									disabled={syncBusy}
+									onChange={(event) => setSyncToken(event.currentTarget.value)}
+									placeholder='输入 Turso auth token'
+									type='password'
+									value={syncToken}
+								/>
+							</label>
+						</div>
+
+						<div className='mt-4 flex flex-wrap gap-3'>
+							<Button
+								disabled={syncBusy || syncConfigIncomplete}
+								onClick={() => void handleSaveSyncConfig()}
+								type='button'
+							>
+								{syncSaving ? '保存中...' : '保存配置'}
+							</Button>
+							<Button
+								disabled={syncBusy || !syncStatus?.hasRemoteConfig}
+								onClick={() => void handleForceSync()}
+								type='button'
+								variant='secondary'
+							>
+								{syncRunning ? '同步中...' : '立即同步'}
+							</Button>
+						</div>
+
+						<p className={`mt-3 ${formFieldHintClass}`}>
+							配置会直接保存在本地数据库的 settings
+							表；页面刷新后会自动回填。未配置前不会自动同步；配置完成后，本地写入会先标记
+							dirty，再由同步引擎异步 push。
+						</p>
+
+						<StatusNotice
+							className='mt-4'
+							description={syncStatusCopy.summary}
+							title={syncStatusCopy.title}
+							variant={syncStatusCopy.variant}
+						/>
+
+						{effectiveSyncError ? (
+							<StatusNotice
+								className={`mt-4 ${statusNoticeCompactTextClass}`}
+								description={effectiveSyncError}
+								role='alert'
+								size='sm'
+								title={effectiveSyncErrorTitle}
+								variant='danger'
+							/>
+						) : null}
+					</SettingsSection>
 				</div>
 			}
 			bodyClassName='gap-4 p-2'
@@ -512,4 +725,260 @@ function SettingCheckboxRow({
 			</div>
 		</label>
 	)
+}
+
+function SettingInfoRow({
+	label,
+	description,
+	value,
+}: {
+	label: string
+	description: string
+	value: React.ReactNode
+}) {
+	return (
+		<div className='rounded-xl border border-sf-border-subtle bg-muted/25 p-3'>
+			<p className='text-sm font-medium text-foreground'>{label}</p>
+			<div className='mt-1 text-sm text-foreground'>{value}</div>
+			<p className={`mt-1 ${formFieldHintClass}`}>{description}</p>
+		</div>
+	)
+}
+
+function SyncTimestampValue({ timestamp }: { timestamp: string | null }) {
+	if (!timestamp) {
+		return <span className='text-slate-500'>从未同步</span>
+	}
+
+	return (
+		<div className='flex flex-col gap-1'>
+			<span className='font-medium text-foreground'>{formatSyncRelativeTime(timestamp)}</span>
+			<span className='text-xs text-slate-500'>{formatSyncExactTime(timestamp)}</span>
+		</div>
+	)
+}
+
+function SyncStatusBadge({ status }: { status: SyncStatus }) {
+	const tone =
+		status === 'idle'
+			? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+			: status === 'dirty'
+				? 'border-amber-200 bg-amber-50 text-amber-700'
+				: status === 'pushing' || status === 'pulling'
+					? 'border-sky-200 bg-sky-50 text-sky-700'
+					: status === 'error'
+						? 'border-red-200 bg-red-50 text-red-700'
+						: 'border-slate-200 bg-slate-50 text-slate-600'
+	const dotTone =
+		status === 'idle'
+			? 'bg-emerald-500'
+			: status === 'dirty'
+				? 'bg-amber-500'
+				: status === 'pushing' || status === 'pulling'
+					? 'bg-sky-500'
+					: status === 'error'
+						? 'bg-red-500'
+						: 'bg-slate-400'
+
+	return (
+		<span
+			className={cn(
+				'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-sm font-medium',
+				tone,
+			)}
+		>
+			<span className={cn('size-2.5 rounded-full', dotTone)} />
+			{formatSyncStatus(status)}
+		</span>
+	)
+}
+
+function formatSyncRelativeTime(value: string) {
+	const date = new Date(value)
+	if (Number.isNaN(date.getTime())) {
+		return value
+	}
+
+	const diffMs = Date.now() - date.getTime()
+	const minute = 60 * 1000
+	const hour = 60 * minute
+	const day = 24 * hour
+
+	if (diffMs < minute) {
+		return '刚刚'
+	}
+
+	if (diffMs < hour) {
+		const minutes = Math.max(1, Math.floor(diffMs / minute))
+		return `${minutes} 分钟前`
+	}
+
+	if (diffMs < day) {
+		const hours = Math.max(1, Math.floor(diffMs / hour))
+		return `${hours} 小时前`
+	}
+
+	const days = Math.max(1, Math.floor(diffMs / day))
+	return `${days} 天前`
+}
+
+function formatSyncExactTime(value: string) {
+	const date = new Date(value)
+	if (Number.isNaN(date.getTime())) {
+		return value
+	}
+
+	const now = new Date()
+	const includeYear = date.getFullYear() !== now.getFullYear()
+	return date.toLocaleString('zh-CN', {
+		year: includeYear ? 'numeric' : undefined,
+		month: 'numeric',
+		day: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
+	})
+}
+
+function getSyncStatusCopy({
+	status,
+	dirtySince,
+	pendingResync,
+	hasRemoteConfig,
+	syncLoading,
+	syncSaving,
+	syncRunning,
+}: {
+	status: SyncStatus
+	dirtySince: string | null
+	pendingResync: boolean
+	hasRemoteConfig: boolean
+	syncLoading: boolean
+	syncSaving: boolean
+	syncRunning: boolean
+}) {
+	if (syncLoading) {
+		return {
+			title: '正在读取同步状态',
+			summary: '正在读取本机保存的云同步状态与远端配置，完成后会显示最近一次 push / pull 结果。',
+			statusDescription: '正在读取当前同步状态。',
+			variant: 'warning' as const,
+		}
+	}
+
+	if (syncSaving) {
+		return {
+			title: '正在保存同步配置',
+			summary: '正在保存 Turso URL 和 token。保存成功后会立即刷新状态，并在后续写入时参与自动同步。',
+			statusDescription: '正在保存新的 Turso 远端配置。',
+			variant: 'warning' as const,
+		}
+	}
+
+	if (syncRunning) {
+		return {
+			title: '正在执行手动同步',
+			summary: pendingResync
+				? '当前这一轮会先 push 本地增量，再 pull 远端结果；运行期间又有新写入，结束后还会自动补跑一轮。'
+				: '当前这一轮会先 push 本地增量，再 pull 远端结果。同步期间本地业务仍然继续只读写本地数据库。',
+			statusDescription: '正在执行一轮手动 push -> pull。',
+			variant: 'warning' as const,
+		}
+	}
+
+	if (!hasRemoteConfig || status === 'disabled') {
+		return {
+			title: '尚未启用云同步',
+			summary: '当前还没有保存可用的 Turso 远端。完成配置前，所有数据只会保留在本地数据库。',
+			statusDescription: '未配置 Turso 远端，本机只保留本地数据。',
+			variant: 'neutral' as const,
+		}
+	}
+
+	switch (status) {
+		case 'idle':
+			return {
+				title: '同步状态正常',
+				summary: '当前没有待处理同步动作。本地一旦产生新的写入，会先变成待同步，再由后台异步 push。',
+				statusDescription: '当前没有待处理的 push 或 pull。',
+				variant: 'success' as const,
+			}
+		case 'dirty':
+			return {
+				title: '等待上推',
+				summary: dirtySince
+					? `本地已经产生新变更，最早一笔待同步写入开始于 ${formatSyncRelativeTime(dirtySince)}。你可以直接点“立即同步”，也可以等后台自动补跑。`
+					: '本地已经产生新变更，正在等待下一次 push。你可以直接点“立即同步”，也可以等后台自动补跑。',
+				statusDescription: dirtySince
+					? `本地已有新写入，已等待 ${formatSyncRelativeTime(dirtySince)}。`
+					: '本地已有新写入，等待下一次 push。',
+				variant: 'warning' as const,
+			}
+		case 'pushing':
+			return {
+				title: '正在推送本地变更',
+				summary: '同步引擎正在把本地增量提交到 Turso 远端。这个过程失败时不会影响当前本地写入结果。',
+				statusDescription: '正在把本地增量 push 到远端。',
+				variant: 'warning' as const,
+			}
+		case 'pulling':
+			return {
+				title: '正在拉取远端结果',
+				summary: '同步引擎正在从 Turso 拉取最新结果，用来收敛其他设备或远端已有的变更。',
+				statusDescription: '正在从远端 pull 最新结果。',
+				variant: 'warning' as const,
+			}
+		case 'error':
+			return {
+				title: '同步需要处理',
+				summary: '上一轮同步失败了。先检查 URL、token、网络和 Turso 远端状态，修正后再触发下一轮同步。',
+				statusDescription: '上一轮同步失败，等待人工处理或下一次重试。',
+				variant: 'danger' as const,
+			}
+		default:
+			return {
+				title: '同步概览',
+				summary: '当前同步状态已更新。',
+				statusDescription: '当前同步状态已更新。',
+				variant: 'neutral' as const,
+			}
+	}
+}
+
+function getSyncErrorTitle(
+	mode: 'push' | 'pull' | 'force' | null,
+	syncRunning: boolean,
+) {
+	if (syncRunning) {
+		return '手动同步失败'
+	}
+
+	switch (mode) {
+		case 'push':
+			return '上推失败'
+		case 'pull':
+			return '拉取失败'
+		case 'force':
+			return '手动同步失败'
+		default:
+			return '同步失败'
+	}
+}
+
+function formatSyncStatus(status: SyncStatus) {
+	switch (status) {
+		case 'disabled':
+			return '未启用'
+		case 'idle':
+			return '空闲'
+		case 'dirty':
+			return '待同步'
+		case 'pushing':
+			return '正在 push'
+		case 'pulling':
+			return '正在 pull'
+		case 'error':
+			return '同步失败'
+		default:
+			return status
+	}
 }

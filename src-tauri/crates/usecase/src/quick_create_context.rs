@@ -43,7 +43,9 @@ impl<P: QuickCreatePorts> QuickCreateContextService<P> {
         &self,
         active_scope: Option<ActiveScopeInput>,
     ) -> Result<QuickInitialStateDto, UsecaseError> {
-        let spaces = QuickCreateService::new(self.ports.clone()).list_visible_spaces().await?;
+        let spaces = QuickCreateService::new(self.ports.clone())
+            .list_visible_spaces()
+            .await?;
         let candidates = self.ports.list_space_candidates().await?;
         let default_space_id =
             resolve_default_space_from_candidates(active_scope.as_ref(), &candidates)?;

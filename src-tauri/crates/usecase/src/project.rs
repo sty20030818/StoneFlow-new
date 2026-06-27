@@ -294,7 +294,12 @@ where
     S: ProjectSpaceReader,
     T: ProjectTaskCounter,
 {
-    pub fn new(persistence: P, activity: ActivityService<A>, space_reader: S, task_counter: T) -> Self {
+    pub fn new(
+        persistence: P,
+        activity: ActivityService<A>,
+        space_reader: S,
+        task_counter: T,
+    ) -> Self {
         Self {
             persistence,
             activity,
@@ -701,14 +706,20 @@ where
         self.build_project_detail(project).await
     }
 
-    async fn require_existing_project(&self, project_id: &str) -> Result<ProjectRecord, UsecaseError> {
+    async fn require_existing_project(
+        &self,
+        project_id: &str,
+    ) -> Result<ProjectRecord, UsecaseError> {
         self.persistence
             .get(project_id)
             .await?
             .ok_or_else(|| UsecaseError::not_found("Project 不存在"))
     }
 
-    async fn require_visible_space(&self, space_id: &str) -> Result<ProjectSpaceRecord, UsecaseError> {
+    async fn require_visible_space(
+        &self,
+        space_id: &str,
+    ) -> Result<ProjectSpaceRecord, UsecaseError> {
         let space = self
             .space_reader
             .get(space_id)
@@ -797,14 +808,9 @@ fn normalize_scope(input: &ProjectScopeInput) -> Result<NormalizedScope, Usecase
     match input.kind {
         ProjectScopeKind::All => Ok(NormalizedScope { space_id: None }),
         ProjectScopeKind::Space => Ok(NormalizedScope {
-            space_id: Some(validate_space_id(
-                input
-                    .space_id
-                    .as_deref()
-                    .ok_or_else(|| {
-                        UsecaseError::validation("scope.type=space 时必须提供 spaceId")
-                    })?,
-            )?),
+            space_id: Some(validate_space_id(input.space_id.as_deref().ok_or_else(
+                || UsecaseError::validation("scope.type=space 时必须提供 spaceId"),
+            )?)?),
         }),
     }
 }

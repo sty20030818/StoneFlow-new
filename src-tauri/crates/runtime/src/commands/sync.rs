@@ -1,0 +1,30 @@
+//! 云同步命令：配置、状态读取与手动同步。
+
+use tauri::State;
+
+use crate::{
+    app::error::AppError,
+    sync::{self, ConfigureSyncInput, SyncRuntimeState, SyncStatusPayload},
+};
+use stoneflow_storage::database::DatabaseRuntimeState;
+
+#[tauri::command]
+pub async fn get_sync_status(
+    sync_state: State<'_, SyncRuntimeState>,
+) -> Result<SyncStatusPayload, AppError> {
+    Ok(sync::get_sync_status(sync_state.inner()).await)
+}
+
+#[tauri::command]
+pub async fn configure_sync(
+    input: ConfigureSyncInput,
+    database: State<'_, DatabaseRuntimeState>,
+    sync_state: State<'_, SyncRuntimeState>,
+) -> Result<SyncStatusPayload, AppError> {
+    sync::configure_sync(database.inner(), sync_state.inner(), input).await
+}
+
+#[tauri::command]
+pub async fn force_sync(app_handle: tauri::AppHandle) -> Result<SyncStatusPayload, AppError> {
+    sync::force_sync(&app_handle).await
+}

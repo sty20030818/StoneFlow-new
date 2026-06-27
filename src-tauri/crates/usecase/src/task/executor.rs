@@ -78,7 +78,10 @@ pub(crate) fn status_key(status: TaskStatus) -> &'static str {
     }
 }
 
-pub(crate) fn timestamps_for_status(status: TaskStatus, now: &str) -> (Option<String>, Option<String>) {
+pub(crate) fn timestamps_for_status(
+    status: TaskStatus,
+    now: &str,
+) -> (Option<String>, Option<String>) {
     match status {
         TaskStatus::Done => (Some(now.to_owned()), None),
         TaskStatus::Canceled => (None, Some(now.to_owned())),

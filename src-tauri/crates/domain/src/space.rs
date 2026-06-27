@@ -14,9 +14,7 @@ pub fn validate_space_id(value: &str) -> Result<String, DomainError> {
 /// 已删除的 Space 不允许直接编辑或切换默认。
 pub fn ensure_space_mutable(deleted_at: Option<&str>) -> Result<(), DomainError> {
     if deleted_at.is_some() {
-        return Err(DomainError::validation(
-            "已删除的 Space 不能直接编辑或归档",
-        ));
+        return Err(DomainError::validation("已删除的 Space 不能直接编辑或归档"));
     }
 
     Ok(())

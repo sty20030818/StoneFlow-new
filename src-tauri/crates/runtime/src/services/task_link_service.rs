@@ -6,27 +6,24 @@ use stoneflow_usecase::{
     task_link::{TaskLinkPersistence, TaskLinkService as TaskLinkUsecase, TaskLinkTaskReader},
 };
 
-use crate::{
-
-    app::error::AppError,
-    services::activity::ActivityPersistenceAdapter
-};
+use crate::{app::error::AppError, services::activity::ActivityPersistenceAdapter};
 use stoneflow_storage::{
-        mappers::{map_task_link_model_to_record, map_task_model_to_link_task_record},
-        repositories::{
-            CreateTaskLinkRecord, TaskLinkRepository, TaskRepository, UpdateTaskLinkPatch,
-        },};
-
+    mappers::{map_task_link_model_to_record, map_task_model_to_link_task_record},
+    repositories::{CreateTaskLinkRecord, TaskLinkRepository, TaskRepository, UpdateTaskLinkPatch},
+};
 
 pub use stoneflow_usecase::task_link::{
-    CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto,
-    UpdateTaskLinkInput,
+    CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto, UpdateTaskLinkInput,
 };
 
 /// Task Link 编排兼容壳。
 #[derive(Debug, Clone)]
 pub struct TaskLinkService {
-    inner: TaskLinkUsecase<TaskLinkPersistenceAdapter, ActivityPersistenceAdapter, TaskLinkTaskReaderAdapter>,
+    inner: TaskLinkUsecase<
+        TaskLinkPersistenceAdapter,
+        ActivityPersistenceAdapter,
+        TaskLinkTaskReaderAdapter,
+    >,
 }
 
 impl TaskLinkService {
@@ -135,7 +132,12 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         self.repository
             .list_by_task(task_id)
             .await
-            .map(|links| links.into_iter().map(map_task_link_model_to_record).collect())
+            .map(|links| {
+                links
+                    .into_iter()
+                    .map(map_task_link_model_to_record)
+                    .collect()
+            })
             .map_err(|error| map_app_error(error.into()))
     }
 
@@ -223,8 +225,10 @@ impl TaskLinkTaskReader for TaskLinkTaskReaderAdapter {
     async fn get(
         &self,
         task_id: &str,
-    ) -> Result<Option<stoneflow_usecase::task_link::TaskLinkTaskRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_usecase::task_link::TaskLinkTaskRecord>,
+        stoneflow_usecase::UsecaseError,
+    > {
         self.repository
             .get(task_id)
             .await

@@ -58,8 +58,16 @@ impl QuickCreateInitialStateResponse {
             default_space_id: payload.default_space_id,
             default_placement: map_placement(payload.default_placement),
             spaces: payload.spaces.into_iter().map(map_space).collect(),
-            projects: payload.projects.into_iter().map(map_project_option).collect(),
-            recent_tasks: payload.recent_tasks.into_iter().map(map_task_item).collect(),
+            projects: payload
+                .projects
+                .into_iter()
+                .map(map_project_option)
+                .collect(),
+            recent_tasks: payload
+                .recent_tasks
+                .into_iter()
+                .map(map_task_item)
+                .collect(),
             recent_projects: payload
                 .recent_projects
                 .into_iter()

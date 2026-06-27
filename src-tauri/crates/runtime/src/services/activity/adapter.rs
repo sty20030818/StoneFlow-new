@@ -3,23 +3,18 @@
 use sea_orm::{DatabaseTransaction, TransactionTrait};
 use stoneflow_usecase::activity::{
     ActivityChangeRecord as UsecaseActivityChangeRecord,
-    ActivityEventRecord as UsecaseActivityEventRecord, ActivityPersistence,
-    ActivityTimelineEntry, GetEntityActivitiesInput,
+    ActivityEventRecord as UsecaseActivityEventRecord, ActivityPersistence, ActivityTimelineEntry,
+    GetEntityActivitiesInput,
 };
 
-use crate::{
-
-    app::error::AppError
-};
+use crate::app::error::AppError;
 use stoneflow_storage::{
-        mappers::{
-            activity_actor_kind_to_schema, activity_entity_kind_to_schema,
-            activity_source_kind_to_schema,
-        },
-        repositories::{
-            ActivityChangeRecord, ActivityEventRecord, ActivityQuery, ActivityRepository,
-        },};
-
+    mappers::{
+        activity_actor_kind_to_schema, activity_entity_kind_to_schema,
+        activity_source_kind_to_schema,
+    },
+    repositories::{ActivityChangeRecord, ActivityEventRecord, ActivityQuery, ActivityRepository},
+};
 
 /// Activity 持久化 adapter。
 #[derive(Debug, Clone)]
@@ -44,7 +39,10 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
             .map_err(map_db_error)
     }
 
-    async fn commit(&self, connection: Self::Connection) -> Result<(), stoneflow_usecase::UsecaseError> {
+    async fn commit(
+        &self,
+        connection: Self::Connection,
+    ) -> Result<(), stoneflow_usecase::UsecaseError> {
         connection.commit().await.map_err(map_db_error)
     }
 
@@ -58,7 +56,10 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
             .insert_event_with_changes(
                 connection,
                 &map_event_to_infrastructure(event),
-                &changes.iter().map(map_change_to_infrastructure).collect::<Vec<_>>(),
+                &changes
+                    .iter()
+                    .map(map_change_to_infrastructure)
+                    .collect::<Vec<_>>(),
             )
             .await
             .map_err(|error| map_app_error(error.into()))

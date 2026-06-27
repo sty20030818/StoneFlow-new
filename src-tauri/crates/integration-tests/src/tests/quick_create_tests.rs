@@ -2,11 +2,11 @@
 
 use sea_orm::TransactionTrait;
 use stoneflow_schema::common::TaskStatus;
+use stoneflow_test_support::TestDatabase;
 use stoneflow_usecase::quick_create::{
     QuickCreateInput, QuickListProjectsBySpaceInput, QuickPlacementDto, QuickPlacementKind,
     QuickProjectOptionKind, QuickScopeKind, QuickSearchInput,
 };
-use stoneflow_test_support::TestDatabase;
 use uuid::Uuid;
 
 use crate::{
@@ -17,12 +17,10 @@ use crate::{
     },
 };
 use stoneflow_domain::create_id;
-use stoneflow_storage::{
-        repositories::{
-            ActivityRepository, CreateProjectRecord, CreateSpaceRecord, CreateTaskRecord,
-            ProjectRepository, SpaceRepository, TaskRepository,
-        },};
-
+use stoneflow_storage::repositories::{
+    ActivityRepository, CreateProjectRecord, CreateSpaceRecord, CreateTaskRecord,
+    ProjectRepository, SpaceRepository, TaskRepository,
+};
 
 #[tokio::test]
 async fn quick_create_initial_state_should_use_space_scope_and_trim_recent_lists() {
@@ -84,7 +82,10 @@ async fn quick_create_initial_state_should_use_space_scope_and_trim_recent_lists
         .expect("get initial state should succeed");
 
     assert_eq!(state.current_scope.kind, QuickScopeKind::Space);
-    assert_eq!(state.current_scope.space_id.as_deref(), Some(default_space.id.as_str()));
+    assert_eq!(
+        state.current_scope.space_id.as_deref(),
+        Some(default_space.id.as_str())
+    );
     assert_eq!(state.default_space_id, default_space.id);
     assert_eq!(state.default_placement.kind, QuickPlacementKind::Inbox);
     assert_eq!(state.recent_tasks.len(), 3);
@@ -184,7 +185,10 @@ async fn quick_create_list_projects_by_space_should_include_virtual_placements()
         .expect("list projects by space should succeed");
 
     assert_eq!(result.inbox_project.kind, QuickProjectOptionKind::Inbox);
-    assert_eq!(result.no_project_option.kind, QuickProjectOptionKind::NoProject);
+    assert_eq!(
+        result.no_project_option.kind,
+        QuickProjectOptionKind::NoProject
+    );
     assert_eq!(result.projects.len(), 2);
 }
 
@@ -362,7 +366,9 @@ async fn quick_create_create_and_resolve_open_target_should_preserve_placement_a
             Some(ActiveScopeSnapshot {
                 id: Uuid::new_v4(),
                 kind: ActiveScopeKind::Space,
-                space_id: Some(Uuid::parse_str(&default_space.id).expect("space id should be uuid")),
+                space_id: Some(
+                    Uuid::parse_str(&default_space.id).expect("space id should be uuid"),
+                ),
             }),
         )
         .await

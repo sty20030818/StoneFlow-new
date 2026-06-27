@@ -155,7 +155,10 @@ impl ProjectRepository {
             query = query.filter(project::Column::SpaceId.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(StorageError::from)
+        query
+            .all(self.connection())
+            .await
+            .map_err(StorageError::from)
     }
 
     /// 列出已删除的 Project。
@@ -172,11 +175,18 @@ impl ProjectRepository {
             query = query.filter(project::Column::SpaceId.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(StorageError::from)
+        query
+            .all(self.connection())
+            .await
+            .map_err(StorageError::from)
     }
 
     /// 计算某个 Space 下下一条 Project 的排序值。
-    pub async fn next_sort_order<C>(&self, connection: &C, space_id: &str) -> Result<i32, StorageError>
+    pub async fn next_sort_order<C>(
+        &self,
+        connection: &C,
+        space_id: &str,
+    ) -> Result<i32, StorageError>
     where
         C: ConnectionTrait,
     {

@@ -20,6 +20,7 @@ version = "0.1.0"
 [workspace.dependencies]
 anyhow = "1"
 chrono = { version = "0.4", features = ["clock", "serde"] }
+libsql = { version = "0.10.0-pre.4", default-features = false, features = ["core", "sync", "tls"] }
 log = "0.4"
 sea-orm = { version = "1.1.20", default-features = false, features = ["macros", "sqlx-sqlite", "runtime-tokio-rustls", "with-chrono", "with-json", "with-uuid"] }
 sea-orm-migration = { version = "1.1.20", default-features = false, features = ["sqlx-sqlite", "runtime-tokio-rustls"] }

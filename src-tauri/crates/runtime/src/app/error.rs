@@ -130,7 +130,9 @@ impl From<stoneflow_storage::StorageError> for AppError {
             stoneflow_storage::StorageError::Validation(message) => Self::Validation(message),
             stoneflow_storage::StorageError::NotFound(message) => Self::NotFound(message),
             stoneflow_storage::StorageError::Database(message) => Self::Database(message),
-            stoneflow_storage::StorageError::Initialization(message) => Self::Initialization(message),
+            stoneflow_storage::StorageError::Initialization(message) => {
+                Self::Initialization(message)
+            }
         }
     }
 }

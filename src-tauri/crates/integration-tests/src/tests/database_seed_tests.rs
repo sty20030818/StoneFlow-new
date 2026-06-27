@@ -65,7 +65,7 @@ async fn bootstrap_should_seed_system_views_and_default_settings() {
 
     assert_eq!(task_system_views, 6);
     assert_eq!(project_system_views, 4);
-    assert_eq!(setting_count, 4);
+    assert_eq!(setting_count, 5);
 }
 
 #[tokio::test]

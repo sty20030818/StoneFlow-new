@@ -5,15 +5,13 @@ use stoneflow_test_support::TestDatabase;
 
 use crate::services::{
     activity::{ActivityService, GetEntityActivitiesInput},
-    CreateTaskInput, CreateTaskLinkInput, CreateTaskPlacementInput,
-            CreateTaskPlacementKind, DeleteTaskLinkInput, ListTaskLinksInput, TaskIdInput,
-            TaskLinkService, TaskService, UpdateTaskLinkInput,
+    CreateTaskInput, CreateTaskLinkInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
+    DeleteTaskLinkInput, ListTaskLinksInput, TaskIdInput, TaskLinkService, TaskService,
+    UpdateTaskLinkInput,
 };
-use stoneflow_storage::{
-    repositories::{
-        ActivityRepository, CreateTaskLinkRecord, ProjectRepository, SpaceRepository,
-        TaskLinkRepository, TaskRepository,
-    },
+use stoneflow_storage::repositories::{
+    ActivityRepository, CreateTaskLinkRecord, ProjectRepository, SpaceRepository,
+    TaskLinkRepository, TaskRepository,
 };
 
 #[tokio::test]
@@ -133,7 +131,10 @@ async fn task_link_service_should_validate_title_url_and_deleted_task() {
         })
         .await
         .expect_err("custom scheme should fail");
-    assert_eq!(invalid_url.to_string(), "验证失败: Link URL 仅支持 http 或 https");
+    assert_eq!(
+        invalid_url.to_string(),
+        "验证失败: Link URL 仅支持 http 或 https"
+    );
 
     task_service
         .delete_task(TaskIdInput {
@@ -237,9 +238,7 @@ async fn task_link_service_should_record_activity_and_keep_task_detail_unchanged
     assert_eq!(before.note, after.note);
 }
 
-fn build_task_service(
-    database: &stoneflow_storage::database::DatabaseRuntimeState,
-) -> TaskService {
+fn build_task_service(database: &stoneflow_storage::database::DatabaseRuntimeState) -> TaskService {
     let connection = database.connection().clone();
     TaskService::new(
         SpaceRepository::new(connection.clone()),

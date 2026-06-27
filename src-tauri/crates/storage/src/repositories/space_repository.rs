@@ -75,7 +75,10 @@ impl SpaceRepository {
     }
 
     /// 根据一组 ID 查询 Space。
-    pub async fn list_by_ids(&self, space_ids: &[String]) -> Result<Vec<space::Model>, StorageError> {
+    pub async fn list_by_ids(
+        &self,
+        space_ids: &[String],
+    ) -> Result<Vec<space::Model>, StorageError> {
         if space_ids.is_empty() {
             return Ok(Vec::new());
         }
@@ -102,7 +105,10 @@ impl SpaceRepository {
             query = query.filter(space::Column::Id.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(StorageError::from)
+        query
+            .all(self.connection())
+            .await
+            .map_err(StorageError::from)
     }
 
     /// 列出已删除的 Space。
@@ -119,7 +125,10 @@ impl SpaceRepository {
             query = query.filter(space::Column::Id.eq(space_id));
         }
 
-        query.all(self.connection()).await.map_err(StorageError::from)
+        query
+            .all(self.connection())
+            .await
+            .map_err(StorageError::from)
     }
 
     /// 计算下一条 Space 的排序值。
@@ -200,7 +209,11 @@ impl SpaceRepository {
     }
 
     /// 清除所有活跃 Space 的默认标记。
-    pub async fn clear_default<C>(&self, connection: &C, updated_at: &str) -> Result<u64, StorageError>
+    pub async fn clear_default<C>(
+        &self,
+        connection: &C,
+        updated_at: &str,
+    ) -> Result<u64, StorageError>
     where
         C: ConnectionTrait,
     {

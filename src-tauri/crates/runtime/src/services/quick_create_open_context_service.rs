@@ -5,18 +5,16 @@ use stoneflow_usecase::quick_create_context::{
 };
 
 use crate::{
-
     app::{error::AppError, state::ActiveScopeSnapshot},
     services::{
-        activity::ActivityService,
-        quick_create_adapter::QuickCreatePortsAdapter,
-        quick_create_service::map_active_scope,
-            ProjectService, QuickCreateService, SearchService, SpaceService, TaskService,
-        }
+        activity::ActivityService, quick_create_adapter::QuickCreatePortsAdapter,
+        quick_create_service::map_active_scope, ProjectService, QuickCreateService, SearchService,
+        SpaceService, TaskService,
+    },
 };
 use stoneflow_storage::repositories::{
-        ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository,};
-
+    ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository,
+};
 
 #[derive(Debug, Clone)]
 pub struct QuickCreateOpenContextService {

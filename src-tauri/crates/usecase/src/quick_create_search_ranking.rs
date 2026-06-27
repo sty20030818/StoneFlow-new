@@ -57,9 +57,7 @@ pub fn rank_quick_create_tasks(
     query: &str,
     scope: &QuickSearchScopeContext,
 ) {
-    tasks.sort_by(|left, right| {
-        compare_quick_create_task(left, right, query, scope)
-    });
+    tasks.sort_by(|left, right| compare_quick_create_task(left, right, query, scope));
 }
 
 pub fn rank_quick_create_projects(
@@ -67,9 +65,7 @@ pub fn rank_quick_create_projects(
     query: &str,
     scope: &QuickSearchScopeContext,
 ) {
-    projects.sort_by(|left, right| {
-        compare_quick_create_project(left, right, query, scope)
-    });
+    projects.sort_by(|left, right| compare_quick_create_project(left, right, query, scope));
 }
 
 fn compare_quick_create_task(
@@ -84,13 +80,18 @@ fn compare_quick_create_task(
     left_match
         .rank
         .cmp(&right_match.rank)
-        .then_with(|| left_match.primary_char_len.cmp(&right_match.primary_char_len))
+        .then_with(|| {
+            left_match
+                .primary_char_len
+                .cmp(&right_match.primary_char_len)
+        })
         .then_with(|| left_match.hit_char_index.cmp(&right_match.hit_char_index))
         .then_with(|| {
             task_actionability_rank(&left.status).cmp(&task_actionability_rank(&right.status))
         })
         .then_with(|| {
-            space_context_rank(&left.space_id, scope).cmp(&space_context_rank(&right.space_id, scope))
+            space_context_rank(&left.space_id, scope)
+                .cmp(&space_context_rank(&right.space_id, scope))
         })
         .then_with(|| right.priority.cmp(&left.priority))
         .then_with(|| right.updated_at.cmp(&left.updated_at))
@@ -109,14 +110,19 @@ fn compare_quick_create_project(
     left_match
         .rank
         .cmp(&right_match.rank)
-        .then_with(|| left_match.primary_char_len.cmp(&right_match.primary_char_len))
+        .then_with(|| {
+            left_match
+                .primary_char_len
+                .cmp(&right_match.primary_char_len)
+        })
         .then_with(|| left_match.hit_char_index.cmp(&right_match.hit_char_index))
         .then_with(|| {
             project_lifecycle_rank(left.completed_at.as_ref())
                 .cmp(&project_lifecycle_rank(right.completed_at.as_ref()))
         })
         .then_with(|| {
-            space_context_rank(&left.space_id, scope).cmp(&space_context_rank(&right.space_id, scope))
+            space_context_rank(&left.space_id, scope)
+                .cmp(&space_context_rank(&right.space_id, scope))
         })
         .then_with(|| right.updated_at.cmp(&left.updated_at))
         .then_with(|| left.id.cmp(&right.id))
@@ -263,7 +269,13 @@ mod tests {
     };
     use crate::quick_create::QuickTaskItemDto;
 
-    fn sample_task(id: &str, title: &str, status: &str, priority: i32, space_id: &str) -> QuickTaskItemDto {
+    fn sample_task(
+        id: &str,
+        title: &str,
+        status: &str,
+        priority: i32,
+        space_id: &str,
+    ) -> QuickTaskItemDto {
         QuickTaskItemDto {
             id: id.to_owned(),
             space_id: space_id.to_owned(),

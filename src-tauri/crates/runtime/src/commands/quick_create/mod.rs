@@ -10,11 +10,11 @@ pub use error::{
 
 use tauri::{Manager, State};
 
-use crate::exit_coordinator::{ExitCoordinator, ExitReason};
 use crate::app::{
     error::AppError,
     state::{CommandOpenState, PendingCommandOpenIntent},
 };
+use crate::exit_coordinator::{ExitCoordinator, ExitReason};
 
 #[tauri::command]
 pub async fn restore_main_window(app_handle: tauri::AppHandle) -> Result<(), AppError> {

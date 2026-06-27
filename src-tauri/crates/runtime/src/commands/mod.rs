@@ -9,6 +9,7 @@ pub(crate) mod quick_create;
 pub(crate) mod search;
 pub(crate) mod settings;
 pub(crate) mod spaces;
+pub(crate) mod sync;
 pub(crate) mod tasks;
 pub(crate) mod views;
 pub(crate) mod workspace;
@@ -54,6 +55,9 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         settings::get_legacy_shell_device_preferences,
         settings::update_sidebar_item_visibility,
         settings::update_sidebar_project_section,
+        sync::get_sync_status,
+        sync::configure_sync,
+        sync::force_sync,
         spaces::list_visible_spaces,
         spaces::create_space,
         spaces::update_space,

@@ -21,23 +21,19 @@ mod view;
 
 pub use activity::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind};
 pub use error::DomainError;
-pub use project::{ensure_project_mutable, validate_project_id};
-pub use quick_create::{resolve_default_space_id, QuickCreateSpaceCandidate};
-pub use settings::validate_sidebar_main_visible_count;
-pub use space::{ensure_space_mutable, validate_space_id};
-pub use task::{validate_task_id, validate_task_priority, TaskStatus};
-pub use view::{ViewEntityKind, ViewKind};
-pub use task_link::{
-    validate_http_https_url, validate_link_id, validate_task_id_for_link,
-};
 pub use ids::{create_id, next_runtime_id};
 pub use lifecycle::{
     ensure_deleted, ensure_not_only_active_default, restore_hint, LifecycleEntityType,
     LifecycleMode,
 };
-pub use time::{
-    is_same_utc_day, now_utc, parse_calendar_date, to_date_only, today_local_date,
-};
+pub use project::{ensure_project_mutable, validate_project_id};
+pub use quick_create::{resolve_default_space_id, QuickCreateSpaceCandidate};
+pub use settings::validate_sidebar_main_visible_count;
+pub use space::{ensure_space_mutable, validate_space_id};
+pub use task::{validate_task_id, validate_task_priority, TaskStatus};
+pub use task_link::{validate_http_https_url, validate_link_id, validate_task_id_for_link};
+pub use time::{is_same_utc_day, now_utc, parse_calendar_date, to_date_only, today_local_date};
+pub use view::{ViewEntityKind, ViewKind};
 
 /// 归一化必填文本。
 pub fn normalize_required_text(value: &str, field: &str) -> Result<String, DomainError> {

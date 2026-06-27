@@ -2,9 +2,7 @@
 
 use std::collections::HashMap;
 
-use stoneflow_domain::{
-    restore_hint, validate_space_id, LifecycleEntityType, LifecycleMode,
-};
+use stoneflow_domain::{restore_hint, validate_space_id, LifecycleEntityType, LifecycleMode};
 
 use crate::{
     lifecycle::types::{
@@ -20,9 +18,10 @@ pub(crate) fn normalize_scope(input: &LifecycleScopeInput) -> Result<Option<Stri
     match input.kind {
         LifecycleScopeKind::All => Ok(None),
         LifecycleScopeKind::Space => {
-            let space_id = input.space_id.as_deref().ok_or_else(|| {
-                UsecaseError::validation("scope.type=space 时必须提供 spaceId")
-            })?;
+            let space_id = input
+                .space_id
+                .as_deref()
+                .ok_or_else(|| UsecaseError::validation("scope.type=space 时必须提供 spaceId"))?;
             Ok(Some(validate_space_id(space_id)?))
         }
     }
