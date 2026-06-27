@@ -9,7 +9,7 @@ use crate::services::{
     ListSidebarProjectsInput, ProjectIdInput, ProjectScopeInput, ProjectScopeKind, ProjectService,
 };
 use stoneflow_storage::repositories::{
-    ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository,
+    ActivityRepository, ProjectRepository, SpaceRepository, SyncRepository, TaskRepository,
 };
 
 #[tokio::test]
@@ -354,6 +354,92 @@ async fn project_description_should_keep_newlines_and_allow_blank() {
     assert_eq!(cleared.description, None);
 }
 
+#[tokio::test]
+async fn create_project_should_enqueue_pending_sync_outbox_record() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_project_service(&database);
+    let sync_repository = SyncRepository::new(database.connection().clone());
+    let space = SpaceRepository::new(database.connection().clone())
+        .list_visible()
+        .await
+        .expect("list visible spaces should succeed")
+        .into_iter()
+        .next()
+        .expect("default space should exist");
+
+    let created = service
+        .create_project(CreateProjectInput {
+            space_id: space.id,
+            name: "同步 Project".to_owned(),
+            description: Some("准备同步".to_owned()),
+            due_at: Some("2026-07-01".to_owned()),
+        })
+        .await
+        .expect("create project should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].entity_type, "project");
+    assert_eq!(pending[0].entity_id, created.id);
+    assert_eq!(pending[0].action, "upsert");
+    assert!(pending[0].payload.contains("\"name\":\"同步 Project\""));
+}
+
+#[tokio::test]
+async fn update_project_should_enqueue_pending_sync_outbox_record() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_project_service(&database);
+    let sync_repository = SyncRepository::new(database.connection().clone());
+    let space = SpaceRepository::new(database.connection().clone())
+        .list_visible()
+        .await
+        .expect("list visible spaces should succeed")
+        .into_iter()
+        .next()
+        .expect("default space should exist");
+
+    let created = service
+        .create_project(CreateProjectInput {
+            space_id: space.id,
+            name: "待更新 Project".to_owned(),
+            description: None,
+            due_at: None,
+        })
+        .await
+        .expect("create project should succeed");
+
+    service
+        .update_project(crate::services::UpdateProjectInput {
+            project_id: created.id.clone(),
+            name: Some("已更新 Project".to_owned()),
+            description: Some(Some("新的项目说明".to_owned())),
+            due_at: Some(Some("2026-07-02".to_owned())),
+            sort_order: Some(2048),
+        })
+        .await
+        .expect("update project should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 2);
+    assert_eq!(pending[1].entity_type, "project");
+    assert_eq!(pending[1].entity_id, created.id);
+    assert_eq!(pending[1].action, "upsert");
+    assert!(pending[1].payload.contains("\"name\":\"已更新 Project\""));
+    assert!(pending[1].payload.contains("\"due_at\":\"2026-07-02\""));
+}
+
 fn build_project_service(
     database: &stoneflow_storage::database::DatabaseRuntimeState,
 ) -> ProjectService {
@@ -362,6 +448,7 @@ fn build_project_service(
         SpaceRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
 }

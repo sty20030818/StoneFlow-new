@@ -26,6 +26,46 @@ use crate::{
     UsecaseError,
 };
 
+pub trait LifecycleSyncHook: Send + Sync {
+    type Connection: Send + Sync;
+
+    async fn enqueue_space_upsert(
+        &self,
+        connection: &Self::Connection,
+        space: &SpaceRecord,
+    ) -> Result<(), UsecaseError>;
+
+    async fn enqueue_space_delete(
+        &self,
+        connection: &Self::Connection,
+        space: &SpaceRecord,
+    ) -> Result<(), UsecaseError>;
+
+    async fn enqueue_project_upsert(
+        &self,
+        connection: &Self::Connection,
+        project: &ProjectRecord,
+    ) -> Result<(), UsecaseError>;
+
+    async fn enqueue_project_delete(
+        &self,
+        connection: &Self::Connection,
+        project: &ProjectRecord,
+    ) -> Result<(), UsecaseError>;
+
+    async fn enqueue_task_upsert(
+        &self,
+        connection: &Self::Connection,
+        task: &TaskRecord,
+    ) -> Result<(), UsecaseError>;
+
+    async fn enqueue_task_delete(
+        &self,
+        connection: &Self::Connection,
+        task: &TaskRecord,
+    ) -> Result<(), UsecaseError>;
+}
+
 /// Space 生命周期持久化边界。
 pub trait LifecycleSpacePersistence: Send + Sync {
     type Connection: Send + Sync;
@@ -220,32 +260,42 @@ pub trait LifecycleTaskPersistence: Send + Sync {
 
 /// Lifecycle 用例编排。
 #[derive(Debug, Clone)]
-pub struct LifecycleService<SP, PP, TP, AP>
+pub struct LifecycleService<SP, PP, TP, AP, SH>
 where
     SP: LifecycleSpacePersistence,
     PP: LifecycleProjectPersistence<Connection = SP::Connection>,
     TP: LifecycleTaskPersistence<Connection = SP::Connection>,
     AP: ActivityPersistence<Connection = SP::Connection>,
+    SH: LifecycleSyncHook<Connection = SP::Connection>,
 {
     spaces: SP,
     projects: PP,
     tasks: TP,
     activity: ActivityService<AP>,
+    sync_hook: SH,
 }
 
-impl<SP, PP, TP, AP> LifecycleService<SP, PP, TP, AP>
+impl<SP, PP, TP, AP, SH> LifecycleService<SP, PP, TP, AP, SH>
 where
     SP: LifecycleSpacePersistence,
     PP: LifecycleProjectPersistence<Connection = SP::Connection>,
     TP: LifecycleTaskPersistence<Connection = SP::Connection>,
     AP: ActivityPersistence<Connection = SP::Connection>,
+    SH: LifecycleSyncHook<Connection = SP::Connection>,
 {
-    pub fn new(spaces: SP, projects: PP, tasks: TP, activity: ActivityService<AP>) -> Self {
+    pub fn new(
+        spaces: SP,
+        projects: PP,
+        tasks: TP,
+        activity: ActivityService<AP>,
+        sync_hook: SH,
+    ) -> Self {
         Self {
             spaces,
             projects,
             tasks,
             activity,
+            sync_hook,
         }
     }
 
@@ -294,6 +344,23 @@ where
         self.tasks
             .archive_by_space_raw(&transaction, &space_id, &now, &space_id, &now)
             .await?;
+        self.sync_hook
+            .enqueue_space_upsert(&transaction, &updated)
+            .await?;
+        for project in &affected_projects {
+            let mut project = project.clone();
+            project.archived_at = Some(now.clone());
+            project.updated_at = now.clone();
+            self.sync_hook
+                .enqueue_project_upsert(&transaction, &project)
+                .await?;
+        }
+        for task in &affected_tasks {
+            let mut task = task.clone();
+            task.archived_at = Some(now.clone());
+            task.updated_at = now.clone();
+            self.sync_hook.enqueue_task_upsert(&transaction, &task).await?;
+        }
 
         self.record_space_activity(
             &transaction,
@@ -388,6 +455,9 @@ where
             .restore_raw(&transaction, &space_id, &updated_at)
             .await?
             .ok_or_else(|| UsecaseError::not_found("Space 不存在"))?;
+        self.sync_hook
+            .enqueue_space_upsert(&transaction, &restored)
+            .await?;
 
         self.record_space_activity(
             &transaction,
@@ -458,6 +528,23 @@ where
         self.tasks
             .delete_by_space_raw(&transaction, &space_id, &now, &space_id, &now)
             .await?;
+        self.sync_hook
+            .enqueue_space_delete(&transaction, &updated)
+            .await?;
+        for project in &affected_projects {
+            let mut project = project.clone();
+            project.deleted_at = Some(now.clone());
+            project.updated_at = now.clone();
+            self.sync_hook
+                .enqueue_project_delete(&transaction, &project)
+                .await?;
+        }
+        for task in &affected_tasks {
+            let mut task = task.clone();
+            task.deleted_at = Some(now.clone());
+            task.updated_at = now.clone();
+            self.sync_hook.enqueue_task_delete(&transaction, &task).await?;
+        }
 
         self.record_space_activity(
             &transaction,
@@ -641,6 +728,15 @@ where
         self.tasks
             .archive_by_project_raw(&transaction, &project_id, &now, &project_id, &now)
             .await?;
+        self.sync_hook
+            .enqueue_project_upsert(&transaction, &updated)
+            .await?;
+        for task in &affected_tasks {
+            let mut task = task.clone();
+            task.archived_at = Some(now.clone());
+            task.updated_at = now.clone();
+            self.sync_hook.enqueue_task_upsert(&transaction, &task).await?;
+        }
 
         self.record_project_activity(
             &transaction,
@@ -710,6 +806,9 @@ where
             .restore_raw(&transaction, &project_id, &updated_at)
             .await?
             .ok_or_else(|| UsecaseError::not_found("Project 不存在"))?;
+        self.sync_hook
+            .enqueue_project_upsert(&transaction, &updated)
+            .await?;
 
         self.record_project_activity(
             &transaction,
@@ -762,6 +861,15 @@ where
         self.tasks
             .delete_by_project_raw(&transaction, &project_id, &now, &project_id, &now)
             .await?;
+        self.sync_hook
+            .enqueue_project_delete(&transaction, &updated)
+            .await?;
+        for task in &affected_tasks {
+            let mut task = task.clone();
+            task.deleted_at = Some(now.clone());
+            task.updated_at = now.clone();
+            self.sync_hook.enqueue_task_delete(&transaction, &task).await?;
+        }
 
         self.record_project_activity(
             &transaction,
@@ -884,6 +992,7 @@ where
             .archive_raw(&transaction, &task_id, &now, &task_id, &now)
             .await?
             .ok_or_else(|| UsecaseError::not_found("Task 不存在"))?;
+        self.sync_hook.enqueue_task_upsert(&transaction, &updated).await?;
 
         self.record_task_activity(
             &transaction,
@@ -967,6 +1076,7 @@ where
             )
             .await?
             .ok_or_else(|| UsecaseError::not_found("Task 不存在"))?;
+        self.sync_hook.enqueue_task_upsert(&transaction, &updated).await?;
 
         self.record_task_activity(
             &transaction,
@@ -1029,6 +1139,7 @@ where
             .delete_raw(&transaction, &task_id, &now, &task_id, &now)
             .await?
             .ok_or_else(|| UsecaseError::not_found("Task 不存在"))?;
+        self.sync_hook.enqueue_task_delete(&transaction, &updated).await?;
 
         self.record_task_activity(
             &transaction,

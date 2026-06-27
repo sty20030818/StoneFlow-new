@@ -16,7 +16,7 @@ use crate::{
     },
 };
 use stoneflow_storage::repositories::{
-    ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository,
+    ActivityRepository, ProjectRepository, SpaceRepository, SyncRepository, TaskRepository,
 };
 
 #[derive(Debug, Clone)]
@@ -35,6 +35,7 @@ impl QuickCreateService {
         let activity_service = ActivityService::new(activity_repository);
         let space_service = SpaceService::new(
             space_repository.clone(),
+            SyncRepository::new(space_repository.connection().clone()),
             project_repository.clone(),
             task_repository.clone(),
             activity_service.clone(),
@@ -43,12 +44,14 @@ impl QuickCreateService {
             space_repository.clone(),
             project_repository.clone(),
             task_repository.clone(),
+            SyncRepository::new(project_repository.connection().clone()),
             activity_service.clone(),
         );
         let task_service = TaskService::new(
             space_repository.clone(),
             project_repository.clone(),
             task_repository.clone(),
+            SyncRepository::new(task_repository.connection().clone()),
             activity_service,
         );
         let search_service = SearchService::new(

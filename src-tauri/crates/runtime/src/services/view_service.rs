@@ -1,12 +1,22 @@
 //! View Service 兼容壳：真源在 `stoneflow-usecase`。
 
+use serde::Serialize;
 use sea_orm::TransactionTrait;
 use stoneflow_usecase::{
     activity::ActivityService as ActivityUsecase,
-    view::{ViewLookupReader, ViewPersistence, ViewService as ViewUsecase, ViewTaskReader},
+    view::{
+        ViewLookupReader, ViewPersistence, ViewRecord, ViewService as ViewUsecase,
+        ViewTaskReader,
+    },
 };
 
-use crate::{app::error::AppError, services::activity::ActivityPersistenceAdapter};
+use crate::{
+    app::error::AppError,
+    services::{
+        activity::ActivityPersistenceAdapter,
+        sync_outbox::{build_delete_record, build_upsert_record},
+    },
+};
 use stoneflow_storage::{
     mappers::{
         map_task_model_to_view_task_record, map_view_model_to_record, view_entity_kind_to_schema,
@@ -14,7 +24,7 @@ use stoneflow_storage::{
     },
     repositories::{
         CreateViewRecord, ProjectRepository, SpaceRepository, TaskPlacementQuery, TaskRepository,
-        UpdateViewPatch, ViewListQuery, ViewRepository,
+        SyncRepository, UpdateViewPatch, ViewListQuery, ViewRepository,
     },
 };
 
@@ -39,6 +49,7 @@ pub struct ViewService {
 impl ViewService {
     pub fn new(
         repository: ViewRepository,
+        sync_repository: SyncRepository,
         space_repository: SpaceRepository,
         project_repository: ProjectRepository,
         task_repository: TaskRepository,
@@ -47,7 +58,7 @@ impl ViewService {
         let activity_repo = activity_service.repository().clone();
         Self {
             inner: ViewUsecase::new(
-                ViewPersistenceAdapter::new(repository.clone()),
+                ViewPersistenceAdapter::new(repository.clone(), sync_repository),
                 ActivityUsecase::new(ActivityPersistenceAdapter::new(activity_repo)),
                 ViewTaskReaderAdapter::new(task_repository),
                 ViewLookupReaderAdapter::new(space_repository, project_repository),
@@ -107,11 +118,15 @@ impl ViewService {
 #[derive(Debug, Clone)]
 struct ViewPersistenceAdapter {
     repository: ViewRepository,
+    sync_repository: SyncRepository,
 }
 
 impl ViewPersistenceAdapter {
-    fn new(repository: ViewRepository) -> Self {
-        Self { repository }
+    fn new(repository: ViewRepository, sync_repository: SyncRepository) -> Self {
+        Self {
+            repository,
+            sync_repository,
+        }
     }
 }
 
@@ -186,7 +201,8 @@ impl ViewPersistence for ViewPersistenceAdapter {
         connection: &Self::Connection,
         record: stoneflow_usecase::view::CreateViewPersistenceRecord,
     ) -> Result<stoneflow_usecase::view::ViewRecord, stoneflow_usecase::UsecaseError> {
-        self.repository
+        let view = self
+            .repository
             .create(
                 connection,
                 CreateViewRecord {
@@ -207,7 +223,14 @@ impl ViewPersistence for ViewPersistenceAdapter {
             )
             .await
             .map(map_view_model_to_record)
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+        let outbox_record = build_view_upsert_outbox_record(&view).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &outbox_record)
+            .await
+            .map_err(|error| map_app_error(error.into()))?;
+
+        Ok(view)
     }
 
     async fn update(
@@ -216,7 +239,8 @@ impl ViewPersistence for ViewPersistenceAdapter {
         view_id: &str,
         patch: stoneflow_usecase::view::UpdateViewPatch,
     ) -> Result<Option<stoneflow_usecase::view::ViewRecord>, stoneflow_usecase::UsecaseError> {
-        self.repository
+        let view = self
+            .repository
             .update(
                 connection,
                 view_id,
@@ -233,7 +257,17 @@ impl ViewPersistence for ViewPersistenceAdapter {
             )
             .await
             .map(|view| view.map(map_view_model_to_record))
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        if let Some(view) = view.as_ref() {
+            let outbox_record = build_view_upsert_outbox_record(view).map_err(map_app_error)?;
+            self.sync_repository
+                .insert_outbox_record(connection, &outbox_record)
+                .await
+                .map_err(|error| map_app_error(error.into()))?;
+        }
+
+        Ok(view)
     }
 
     async fn delete(
@@ -241,11 +275,74 @@ impl ViewPersistence for ViewPersistenceAdapter {
         connection: &Self::Connection,
         view_id: &str,
     ) -> Result<u64, stoneflow_usecase::UsecaseError> {
-        self.repository
+        let current = self.get(view_id).await?;
+        let affected = self
+            .repository
             .delete(connection, view_id)
             .await
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        if affected > 0 {
+            if let Some(current) = current.as_ref() {
+                let outbox_record = build_view_delete_outbox_record(current).map_err(map_app_error)?;
+                self.sync_repository
+                    .insert_outbox_record(connection, &outbox_record)
+                    .await
+                    .map_err(|error| map_app_error(error.into()))?;
+            }
+        }
+
+        Ok(affected)
     }
+}
+
+#[derive(Debug, Serialize)]
+struct ViewSyncPayload<'a> {
+    id: &'a str,
+    name: &'a str,
+    description: Option<&'a str>,
+    kind: stoneflow_domain::ViewKind,
+    entity_type: stoneflow_domain::ViewEntityKind,
+    key: Option<&'a str>,
+    filters: &'a str,
+    sort: &'a str,
+    group_by: Option<&'a str>,
+    is_visible: bool,
+    sort_order: i32,
+    created_at: &'a str,
+    updated_at: &'a str,
+}
+
+impl<'a> From<&'a ViewRecord> for ViewSyncPayload<'a> {
+    fn from(view: &'a ViewRecord) -> Self {
+        Self {
+            id: &view.id,
+            name: &view.name,
+            description: view.description.as_deref(),
+            kind: view.kind,
+            entity_type: view.entity_type,
+            key: view.key.as_deref(),
+            filters: &view.filters,
+            sort: &view.sort,
+            group_by: view.group_by.as_deref(),
+            is_visible: view.is_visible,
+            sort_order: view.sort_order,
+            created_at: &view.created_at,
+            updated_at: &view.updated_at,
+        }
+    }
+}
+
+fn build_view_upsert_outbox_record(
+    view: &ViewRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_upsert_record("view", &view.id, &ViewSyncPayload::from(view), &view.updated_at)
+}
+
+fn build_view_delete_outbox_record(
+    view: &ViewRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_delete_record("view", &view.id, &ViewSyncPayload::from(view), &view.updated_at)
 }
 
 #[derive(Debug, Clone)]

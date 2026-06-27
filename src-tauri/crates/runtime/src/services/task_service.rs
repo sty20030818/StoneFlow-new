@@ -4,12 +4,18 @@ use sea_orm::TransactionTrait;
 use stoneflow_domain::validate_task_id;
 use stoneflow_usecase::{
     activity::ActivityService as ActivityUsecase,
-    task::{TaskPersistence, TaskProjectReader, TaskService as TaskUsecase, TaskSpaceReader},
+    task::{
+        TaskPersistence, TaskProjectReader, TaskRecord, TaskService as TaskUsecase,
+        TaskSpaceReader,
+    },
 };
 
 use crate::{
     app::error::AppError,
-    services::{activity::ActivityPersistenceAdapter, LifecycleService},
+    services::{
+        activity::ActivityPersistenceAdapter, sync_outbox::build_upsert_record,
+        LifecycleService,
+    },
 };
 use stoneflow_storage::{
     mappers::{
@@ -17,8 +23,8 @@ use stoneflow_storage::{
         map_task_model_to_record, task_status_to_schema,
     },
     repositories::{
-        CreateTaskRecord, ProjectRepository, SpaceRepository, TaskLifecycleView, TaskListQuery,
-        TaskPlacementQuery, TaskRepository, UpdateTaskPatch,
+        CreateTaskRecord, ProjectRepository, SpaceRepository, SyncRepository, TaskLifecycleView,
+        TaskListQuery, TaskPlacementQuery, TaskRepository, UpdateTaskPatch,
     },
 };
 
@@ -49,12 +55,13 @@ impl TaskService {
         space_repository: SpaceRepository,
         project_repository: ProjectRepository,
         repository: TaskRepository,
+        sync_repository: SyncRepository,
         activity_service: crate::services::activity::ActivityService,
     ) -> Self {
         let activity_repo = activity_service.repository().clone();
         Self {
             inner: TaskUsecase::new(
-                TaskPersistenceAdapter::new(repository.clone()),
+                TaskPersistenceAdapter::new(repository.clone(), sync_repository),
                 ActivityUsecase::new(ActivityPersistenceAdapter::new(activity_repo)),
                 TaskSpaceReaderAdapter::new(space_repository.clone()),
                 TaskProjectReaderAdapter::new(project_repository.clone()),
@@ -73,6 +80,7 @@ impl TaskService {
     fn lifecycle_service(&self) -> LifecycleService {
         LifecycleService::new(
             self.space_repository.clone(),
+            SyncRepository::new(self.repository.connection().clone()),
             self.project_repository.clone(),
             self.repository.clone(),
             self.activity_service.clone(),
@@ -132,11 +140,15 @@ impl TaskService {
 #[derive(Debug, Clone)]
 struct TaskPersistenceAdapter {
     repository: TaskRepository,
+    sync_repository: SyncRepository,
 }
 
 impl TaskPersistenceAdapter {
-    fn new(repository: TaskRepository) -> Self {
-        Self { repository }
+    fn new(repository: TaskRepository, sync_repository: SyncRepository) -> Self {
+        Self {
+            repository,
+            sync_repository,
+        }
     }
 }
 
@@ -201,7 +213,8 @@ impl TaskPersistence for TaskPersistenceAdapter {
         connection: &Self::Connection,
         record: stoneflow_usecase::task::CreateTaskPersistenceRecord,
     ) -> Result<stoneflow_usecase::task::TaskRecord, stoneflow_usecase::UsecaseError> {
-        self.repository
+        let task = self
+            .repository
             .create(
                 connection,
                 CreateTaskRecord {
@@ -226,7 +239,14 @@ impl TaskPersistence for TaskPersistenceAdapter {
             )
             .await
             .map(map_task_model_to_record)
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+        let outbox_record = build_task_outbox_record(&task).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &outbox_record)
+            .await
+            .map_err(|error| map_app_error(error.into()))?;
+
+        Ok(task)
     }
 
     async fn update(
@@ -236,7 +256,8 @@ impl TaskPersistence for TaskPersistenceAdapter {
         patch: stoneflow_usecase::task::UpdateTaskPatch,
         updated_at: &str,
     ) -> Result<Option<stoneflow_usecase::task::TaskRecord>, stoneflow_usecase::UsecaseError> {
-        self.repository
+        let task = self
+            .repository
             .update(
                 connection,
                 task_id,
@@ -260,7 +281,17 @@ impl TaskPersistence for TaskPersistenceAdapter {
             )
             .await
             .map(|task| task.map(map_task_model_to_record))
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        if let Some(task) = task.as_ref() {
+            let outbox_record = build_task_outbox_record(task).map_err(map_app_error)?;
+            self.sync_repository
+                .insert_outbox_record(connection, &outbox_record)
+                .await
+                .map_err(|error| map_app_error(error.into()))?;
+        }
+
+        Ok(task)
     }
 }
 
@@ -375,6 +406,59 @@ fn map_task_lifecycle_to_repo(
 
 fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {
     map_app_error(AppError::from(error))
+}
+
+#[derive(Debug, serde::Serialize)]
+struct TaskSyncPayload<'a> {
+    id: &'a str,
+    space_id: &'a str,
+    project_id: Option<&'a str>,
+    title: &'a str,
+    note: Option<&'a str>,
+    status: stoneflow_domain::TaskStatus,
+    status_changed_at: &'a str,
+    priority: i32,
+    inbox_at: Option<&'a str>,
+    due_at: Option<&'a str>,
+    scheduled_at: Option<&'a str>,
+    reminder_at: Option<&'a str>,
+    sort_order: i32,
+    completed_at: Option<&'a str>,
+    canceled_at: Option<&'a str>,
+    archived_at: Option<&'a str>,
+    deleted_at: Option<&'a str>,
+    created_at: &'a str,
+    updated_at: &'a str,
+}
+
+impl<'a> From<&'a TaskRecord> for TaskSyncPayload<'a> {
+    fn from(task: &'a TaskRecord) -> Self {
+        Self {
+            id: &task.id,
+            space_id: &task.space_id,
+            project_id: task.project_id.as_deref(),
+            title: &task.title,
+            note: task.note.as_deref(),
+            status: task.status,
+            status_changed_at: &task.status_changed_at,
+            priority: task.priority,
+            inbox_at: task.inbox_at.as_deref(),
+            due_at: task.due_at.as_deref(),
+            scheduled_at: task.scheduled_at.as_deref(),
+            reminder_at: task.reminder_at.as_deref(),
+            sort_order: task.sort_order,
+            completed_at: task.completed_at.as_deref(),
+            canceled_at: task.canceled_at.as_deref(),
+            archived_at: task.archived_at.as_deref(),
+            deleted_at: task.deleted_at.as_deref(),
+            created_at: &task.created_at,
+            updated_at: &task.updated_at,
+        }
+    }
+}
+
+fn build_task_outbox_record(task: &TaskRecord) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_upsert_record("task", &task.id, &TaskSyncPayload::from(task), &task.updated_at)
 }
 
 fn map_app_error(error: AppError) -> stoneflow_usecase::UsecaseError {

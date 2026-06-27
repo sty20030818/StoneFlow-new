@@ -10,7 +10,8 @@ use crate::services::{
 };
 use stoneflow_domain::create_id;
 use stoneflow_storage::repositories::{
-    ActivityRepository, ProjectRepository, SpaceRepository, TaskLinkRepository, TaskRepository,
+    ActivityRepository, ProjectRepository, SpaceRepository, SyncRepository, TaskLinkRepository,
+    TaskRepository,
 };
 
 #[tokio::test]
@@ -53,6 +54,123 @@ async fn delete_space_should_record_cascade_activity_for_each_child() {
     assert_eq!(space_deleted, 1);
     assert_eq!(project_deleted, 1);
     assert_eq!(task_deleted, 1);
+}
+
+#[tokio::test]
+async fn delete_task_should_enqueue_task_delete_outbox_record() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_lifecycle_service(&database);
+    let sync_repository = SyncRepository::new(database.connection().clone());
+    let space = default_space(&database).await;
+    let task = insert_task(&database, &space.id, None, "删除同步任务").await;
+
+    service
+        .delete_task(&task.id)
+        .await
+        .expect("delete task should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].entity_type, "task");
+    assert_eq!(pending[0].entity_id, task.id);
+    assert_eq!(pending[0].action, "delete");
+}
+
+#[tokio::test]
+async fn restore_task_should_enqueue_task_upsert_outbox_record() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_lifecycle_service(&database);
+    let sync_repository = SyncRepository::new(database.connection().clone());
+    let space = default_space(&database).await;
+    let task = insert_task(&database, &space.id, None, "恢复同步任务").await;
+
+    service
+        .delete_task(&task.id)
+        .await
+        .expect("delete task should succeed");
+    service
+        .restore_task(&task.id)
+        .await
+        .expect("restore task should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 2);
+    assert_eq!(pending[1].entity_type, "task");
+    assert_eq!(pending[1].entity_id, task.id);
+    assert_eq!(pending[1].action, "upsert");
+}
+
+#[tokio::test]
+async fn delete_project_should_enqueue_project_and_task_outbox_records() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_lifecycle_service(&database);
+    let sync_repository = SyncRepository::new(database.connection().clone());
+    let space = default_space(&database).await;
+    let project = insert_project(&database, &space.id, "删除同步项目").await;
+    let task = insert_task(&database, &space.id, Some(&project.id), "删除同步任务").await;
+
+    service
+        .delete_project(&project.id)
+        .await
+        .expect("delete project should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 2);
+    assert_eq!(pending[0].entity_type, "project");
+    assert_eq!(pending[0].action, "delete");
+    assert_eq!(pending[1].entity_type, "task");
+    assert_eq!(pending[1].entity_id, task.id);
+    assert_eq!(pending[1].action, "delete");
+}
+
+#[tokio::test]
+async fn delete_space_should_enqueue_space_project_task_outbox_records() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_lifecycle_service(&database);
+    let sync_repository = SyncRepository::new(database.connection().clone());
+    let space = insert_space(&database, "同步工作区", false).await;
+    let project = insert_project(&database, &space.id, "同步项目").await;
+    let task = insert_task(&database, &space.id, Some(&project.id), "同步任务").await;
+
+    service
+        .delete_space(&space.id)
+        .await
+        .expect("delete space should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 3);
+    assert_eq!(pending[0].entity_type, "space");
+    assert_eq!(pending[0].action, "delete");
+    assert_eq!(pending[1].entity_type, "project");
+    assert_eq!(pending[1].entity_id, project.id);
+    assert_eq!(pending[1].action, "delete");
+    assert_eq!(pending[2].entity_type, "task");
+    assert_eq!(pending[2].entity_id, task.id);
+    assert_eq!(pending[2].action, "delete");
 }
 
 #[tokio::test]
@@ -230,6 +348,7 @@ fn build_lifecycle_service(
     let connection = database.connection().clone();
     LifecycleService::new(
         SpaceRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),

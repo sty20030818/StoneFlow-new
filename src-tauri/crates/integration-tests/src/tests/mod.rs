@@ -14,3 +14,4 @@ mod settings_tests;
 mod space_tests;
 mod task_link_tests;
 mod task_tests;
+mod view_tests;

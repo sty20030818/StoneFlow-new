@@ -9,7 +9,7 @@ use crate::services::{
     SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
     UpdateSidebarProjectSectionInput,
 };
-use stoneflow_storage::repositories::{ActivityRepository, SettingsRepository};
+use stoneflow_storage::repositories::{ActivityRepository, SettingsRepository, SyncRepository};
 
 #[tokio::test]
 async fn settings_service_should_read_sidebar_settings() {
@@ -199,6 +199,65 @@ async fn settings_service_should_record_settings_updated_activity_with_field_pat
 }
 
 #[tokio::test]
+async fn settings_service_should_enqueue_setting_outbox_on_visibility_update() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_settings_service(&database);
+    let sync_repository = SyncRepository::new(database.connection().clone());
+
+    service
+        .update_sidebar_item_visibility(UpdateSidebarItemVisibilityInput {
+            target: SidebarItemVisibilityTarget::Main(SidebarMainItemKey::Views),
+            visible: false,
+        })
+        .await
+        .expect("update visibility should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].entity_type, "setting");
+    assert_eq!(pending[0].entity_id, "app.sidebar.preferences");
+    assert_eq!(pending[0].action, "upsert");
+    assert!(pending[0].payload.contains("\"key\":\"app.sidebar.preferences\""));
+}
+
+#[tokio::test]
+async fn settings_service_should_enqueue_setting_outbox_on_project_section_update() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_settings_service(&database);
+    let sync_repository = SyncRepository::new(database.connection().clone());
+
+    service
+        .update_sidebar_project_section(UpdateSidebarProjectSectionInput {
+            config: SidebarProjectSectionPreferenceConfig {
+                visible: true,
+                order: 520,
+                show_counts: false,
+                show_completed: false,
+            },
+        })
+        .await
+        .expect("update project section should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].entity_type, "setting");
+    assert_eq!(pending[0].entity_id, "app.sidebar.preferences");
+    assert_eq!(pending[0].action, "upsert");
+}
+
+#[tokio::test]
 async fn settings_service_should_update_project_section_and_desktop_preference() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
@@ -227,6 +286,7 @@ fn build_settings_service(
     let connection = database.connection().clone();
     SettingsService::new(
         SettingsRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
 }

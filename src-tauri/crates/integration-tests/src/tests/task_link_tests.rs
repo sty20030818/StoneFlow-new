@@ -11,7 +11,7 @@ use crate::services::{
 };
 use stoneflow_storage::repositories::{
     ActivityRepository, CreateTaskLinkRecord, ProjectRepository, SpaceRepository,
-    TaskLinkRepository, TaskRepository,
+    SyncRepository, TaskLinkRepository, TaskRepository,
 };
 
 #[tokio::test]
@@ -238,12 +238,58 @@ async fn task_link_service_should_record_activity_and_keep_task_detail_unchanged
     assert_eq!(before.note, after.note);
 }
 
+#[tokio::test]
+async fn task_link_service_should_enqueue_sync_outbox_for_create_update_delete() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let task = create_task_fixture(&database, "Sync Task").await;
+    let link_service = build_task_link_service(&database);
+    let sync_repository = SyncRepository::new(database.connection().clone());
+
+    let created = link_service
+        .create_task_link(CreateTaskLinkInput {
+            task_id: task.id.clone(),
+            title: "链接 A".to_owned(),
+            url: "https://example.com/a".to_owned(),
+        })
+        .await
+        .expect("create task link should succeed");
+    link_service
+        .update_task_link(UpdateTaskLinkInput {
+            link_id: created.id.clone(),
+            title: Some("链接 B".to_owned()),
+            url: Some("https://example.com/b".to_owned()),
+        })
+        .await
+        .expect("update task link should succeed");
+    link_service
+        .delete_task_link(DeleteTaskLinkInput {
+            link_id: created.id.clone(),
+        })
+        .await
+        .expect("delete task link should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 4);
+    assert_eq!(pending[1].entity_type, "task");
+    assert_eq!(pending[1].entity_id, task.id);
+    assert_eq!(pending[1].action, "upsert");
+    assert_eq!(pending[2].action, "upsert");
+    assert_eq!(pending[3].action, "delete");
+}
+
 fn build_task_service(database: &stoneflow_storage::database::DatabaseRuntimeState) -> TaskService {
     let connection = database.connection().clone();
     TaskService::new(
         SpaceRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
 }
@@ -255,6 +301,7 @@ fn build_task_link_service(
     TaskLinkService::new(
         TaskRepository::new(connection.clone()),
         TaskLinkRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
 }

@@ -1,13 +1,17 @@
 //! Settings Service 兼容壳：真实编排已迁到 `stoneflow-usecase`。
 
+use serde::Serialize;
 use sea_orm::{DatabaseTransaction, TransactionTrait};
 use stoneflow_usecase::{
     activity::ActivityService as ActivityUsecase,
     settings::{SettingsPersistence, SettingsService as SettingsUsecase},
 };
 
-use crate::{app::error::AppError, services::activity::ActivityPersistenceAdapter};
-use stoneflow_storage::repositories::SettingsRepository;
+use crate::{
+    app::error::AppError,
+    services::{activity::ActivityPersistenceAdapter, sync_outbox::build_upsert_record},
+};
+use stoneflow_storage::repositories::{SettingsRepository, SyncRepository};
 
 pub use stoneflow_usecase::settings::{
     GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput,
@@ -27,13 +31,14 @@ pub struct SettingsService {
 impl SettingsService {
     pub fn new(
         repository: SettingsRepository,
+        sync_repository: SyncRepository,
         activity_service: crate::services::activity::ActivityService,
     ) -> Self {
         let activity_repo = activity_service.repository().clone();
         let repository_for_accessor = repository.clone();
         Self {
             inner: SettingsUsecase::new(
-                SettingsPersistenceAdapter::new(repository.clone()),
+                SettingsPersistenceAdapter::new(repository.clone(), sync_repository),
                 ActivityUsecase::new(ActivityPersistenceAdapter::new(activity_repo)),
             ),
             repository: repository_for_accessor,
@@ -84,11 +89,15 @@ impl SettingsService {
 #[derive(Debug, Clone)]
 struct SettingsPersistenceAdapter {
     repository: SettingsRepository,
+    sync_repository: SyncRepository,
 }
 
 impl SettingsPersistenceAdapter {
-    fn new(repository: SettingsRepository) -> Self {
-        Self { repository }
+    fn new(repository: SettingsRepository, sync_repository: SyncRepository) -> Self {
+        Self {
+            repository,
+            sync_repository,
+        }
     }
 }
 
@@ -130,8 +139,41 @@ impl SettingsPersistence for SettingsPersistenceAdapter {
         self.repository
             .set_raw_setting_in_connection(connection, key, raw_value, updated_at)
             .await
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        let outbox_record = build_setting_outbox_record(key, raw_value, updated_at)
+            .map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &outbox_record)
+            .await
+            .map_err(|error| map_app_error(error.into()))?;
+
+        Ok(())
     }
+}
+
+#[derive(Debug, Serialize)]
+struct SettingSyncPayload<'a> {
+    key: &'a str,
+    raw_value: &'a str,
+    updated_at: &'a str,
+}
+
+fn build_setting_outbox_record(
+    key: &str,
+    raw_value: &str,
+    updated_at: &str,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_upsert_record(
+        "setting",
+        key,
+        &SettingSyncPayload {
+            key,
+            raw_value,
+            updated_at,
+        },
+        updated_at,
+    )
 }
 
 fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {

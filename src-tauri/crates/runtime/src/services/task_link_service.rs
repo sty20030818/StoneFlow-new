@@ -1,15 +1,28 @@
 //! Task Link Service 兼容壳：真源在 `stoneflow-usecase`。
 
+use serde::Serialize;
 use sea_orm::TransactionTrait;
 use stoneflow_usecase::{
     activity::ActivityService as ActivityUsecase,
-    task_link::{TaskLinkPersistence, TaskLinkService as TaskLinkUsecase, TaskLinkTaskReader},
+    task_link::{
+        TaskLinkPersistence, TaskLinkRecord, TaskLinkService as TaskLinkUsecase,
+        TaskLinkTaskReader,
+    },
 };
 
-use crate::{app::error::AppError, services::activity::ActivityPersistenceAdapter};
+use crate::{
+    app::error::AppError,
+    services::{
+        activity::ActivityPersistenceAdapter,
+        sync_outbox::{build_delete_record, build_upsert_record},
+    },
+};
 use stoneflow_storage::{
     mappers::{map_task_link_model_to_record, map_task_model_to_link_task_record},
-    repositories::{CreateTaskLinkRecord, TaskLinkRepository, TaskRepository, UpdateTaskLinkPatch},
+    repositories::{
+        CreateTaskLinkRecord, SyncRepository, TaskLinkRepository, TaskRepository,
+        UpdateTaskLinkPatch,
+    },
 };
 
 pub use stoneflow_usecase::task_link::{
@@ -30,12 +43,13 @@ impl TaskLinkService {
     pub fn new(
         task_repository: TaskRepository,
         repository: TaskLinkRepository,
+        sync_repository: SyncRepository,
         activity_service: crate::services::activity::ActivityService,
     ) -> Self {
         let activity_repo = activity_service.repository().clone();
         Self {
             inner: TaskLinkUsecase::new(
-                TaskLinkPersistenceAdapter::new(repository),
+                TaskLinkPersistenceAdapter::new(repository, sync_repository),
                 ActivityUsecase::new(ActivityPersistenceAdapter::new(activity_repo)),
                 TaskLinkTaskReaderAdapter::new(task_repository),
             ),
@@ -86,11 +100,15 @@ impl TaskLinkService {
 #[derive(Debug, Clone)]
 struct TaskLinkPersistenceAdapter {
     repository: TaskLinkRepository,
+    sync_repository: SyncRepository,
 }
 
 impl TaskLinkPersistenceAdapter {
-    fn new(repository: TaskLinkRepository) -> Self {
-        Self { repository }
+    fn new(repository: TaskLinkRepository, sync_repository: SyncRepository) -> Self {
+        Self {
+            repository,
+            sync_repository,
+        }
     }
 }
 
@@ -157,7 +175,8 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         connection: &Self::Connection,
         record: stoneflow_usecase::task_link::CreateTaskLinkPersistenceRecord,
     ) -> Result<stoneflow_usecase::task_link::TaskLinkRecord, stoneflow_usecase::UsecaseError> {
-        self.repository
+        let link = self
+            .repository
             .create(
                 connection,
                 CreateTaskLinkRecord {
@@ -172,7 +191,14 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             )
             .await
             .map(map_task_link_model_to_record)
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+        let outbox_record = build_task_link_upsert_outbox_record(&link).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &outbox_record)
+            .await
+            .map_err(|error| map_app_error(error.into()))?;
+
+        Ok(link)
     }
 
     async fn update(
@@ -183,7 +209,8 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         updated_at: &str,
     ) -> Result<Option<stoneflow_usecase::task_link::TaskLinkRecord>, stoneflow_usecase::UsecaseError>
     {
-        self.repository
+        let link = self
+            .repository
             .update(
                 connection,
                 link_id,
@@ -195,7 +222,17 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             )
             .await
             .map(|link| link.map(map_task_link_model_to_record))
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        if let Some(link) = link.as_ref() {
+            let outbox_record = build_task_link_upsert_outbox_record(link).map_err(map_app_error)?;
+            self.sync_repository
+                .insert_outbox_record(connection, &outbox_record)
+                .await
+                .map_err(|error| map_app_error(error.into()))?;
+        }
+
+        Ok(link)
     }
 
     async fn delete(
@@ -203,11 +240,73 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         connection: &Self::Connection,
         link_id: &str,
     ) -> Result<bool, stoneflow_usecase::UsecaseError> {
-        self.repository
+        let current = self.get(link_id).await?;
+        let deleted = self
+            .repository
             .delete(connection, link_id)
             .await
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        if deleted {
+            if let Some(current) = current.as_ref() {
+                let outbox_record =
+                    build_task_link_delete_outbox_record(current).map_err(map_app_error)?;
+                self.sync_repository
+                    .insert_outbox_record(connection, &outbox_record)
+                    .await
+                    .map_err(|error| map_app_error(error.into()))?;
+            }
+        }
+
+        Ok(deleted)
     }
+}
+
+#[derive(Debug, Serialize)]
+struct TaskLinkSyncPayload<'a> {
+    id: &'a str,
+    task_id: &'a str,
+    title: &'a str,
+    url: &'a str,
+    sort_order: i32,
+    created_at: &'a str,
+    updated_at: &'a str,
+}
+
+impl<'a> From<&'a TaskLinkRecord> for TaskLinkSyncPayload<'a> {
+    fn from(link: &'a TaskLinkRecord) -> Self {
+        Self {
+            id: &link.id,
+            task_id: &link.task_id,
+            title: &link.title,
+            url: &link.url,
+            sort_order: link.sort_order,
+            created_at: &link.created_at,
+            updated_at: &link.updated_at,
+        }
+    }
+}
+
+fn build_task_link_upsert_outbox_record(
+    link: &TaskLinkRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_upsert_record(
+        "task",
+        &link.task_id,
+        &TaskLinkSyncPayload::from(link),
+        &link.updated_at,
+    )
+}
+
+fn build_task_link_delete_outbox_record(
+    link: &TaskLinkRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_delete_record(
+        "task",
+        &link.task_id,
+        &TaskLinkSyncPayload::from(link),
+        &link.updated_at,
+    )
 }
 
 #[derive(Debug, Clone)]

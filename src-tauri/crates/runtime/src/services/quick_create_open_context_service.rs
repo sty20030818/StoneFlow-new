@@ -13,7 +13,7 @@ use crate::{
     },
 };
 use stoneflow_storage::repositories::{
-    ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository,
+    ActivityRepository, ProjectRepository, SpaceRepository, SyncRepository, TaskRepository,
 };
 
 #[derive(Debug, Clone)]
@@ -34,6 +34,7 @@ impl QuickCreateOpenContextService {
         let ports = QuickCreatePortsAdapter::new(
             SpaceService::new(
                 space_repository.clone(),
+                SyncRepository::new(connection.clone()),
                 project_repository.clone(),
                 task_repository.clone(),
                 activity_service.clone(),
@@ -42,12 +43,14 @@ impl QuickCreateOpenContextService {
                 space_repository.clone(),
                 project_repository.clone(),
                 task_repository.clone(),
+                SyncRepository::new(connection.clone()),
                 activity_service.clone(),
             ),
             TaskService::new(
                 space_repository.clone(),
                 project_repository.clone(),
                 task_repository.clone(),
+                SyncRepository::new(connection.clone()),
                 activity_service,
             ),
             SearchService::new(

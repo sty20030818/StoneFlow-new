@@ -5,20 +5,23 @@ use stoneflow_domain::validate_project_id;
 use stoneflow_usecase::{
     activity::ActivityService as ActivityUsecase,
     project::{
-        ProjectPersistence, ProjectService as ProjectUsecase, ProjectSpaceReader,
-        ProjectTaskCounter,
+        ProjectPersistence, ProjectRecord, ProjectService as ProjectUsecase,
+        ProjectSpaceReader, ProjectTaskCounter,
     },
 };
 
 use crate::{
     app::error::AppError,
-    services::{activity::ActivityPersistenceAdapter, LifecycleService},
+    services::{
+        activity::ActivityPersistenceAdapter, sync_outbox::build_upsert_record,
+        LifecycleService,
+    },
 };
 use stoneflow_storage::{
     mappers::{map_project_model_to_record, map_space_model_to_project_space_record},
     repositories::{
         CreateProjectRecord, ProjectOverviewView as RepoProjectOverviewView, ProjectRepository,
-        SpaceRepository, TaskRepository, UpdateProjectPatch,
+        SpaceRepository, SyncRepository, TaskRepository, UpdateProjectPatch,
     },
 };
 
@@ -48,12 +51,13 @@ impl ProjectService {
         space_repository: SpaceRepository,
         repository: ProjectRepository,
         task_repository: TaskRepository,
+        sync_repository: SyncRepository,
         activity_service: crate::services::activity::ActivityService,
     ) -> Self {
         let activity_repo = activity_service.repository().clone();
         Self {
             inner: ProjectUsecase::new(
-                ProjectPersistenceAdapter::new(repository.clone()),
+                ProjectPersistenceAdapter::new(repository.clone(), sync_repository),
                 ActivityUsecase::new(ActivityPersistenceAdapter::new(activity_repo)),
                 ProjectSpaceReaderAdapter::new(space_repository.clone()),
                 ProjectTaskCounterAdapter::new(task_repository.clone()),
@@ -72,6 +76,7 @@ impl ProjectService {
     fn lifecycle_service(&self) -> LifecycleService {
         LifecycleService::new(
             self.space_repository.clone(),
+            SyncRepository::new(self.repository.connection().clone()),
             self.repository.clone(),
             self.task_repository.clone(),
             self.activity_service.clone(),
@@ -194,11 +199,15 @@ impl ProjectService {
 #[derive(Debug, Clone)]
 struct ProjectPersistenceAdapter {
     repository: ProjectRepository,
+    sync_repository: SyncRepository,
 }
 
 impl ProjectPersistenceAdapter {
-    fn new(repository: ProjectRepository) -> Self {
-        Self { repository }
+    fn new(repository: ProjectRepository, sync_repository: SyncRepository) -> Self {
+        Self {
+            repository,
+            sync_repository,
+        }
     }
 }
 
@@ -261,7 +270,8 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         connection: &Self::Connection,
         record: stoneflow_usecase::project::CreateProjectPersistenceRecord,
     ) -> Result<stoneflow_usecase::project::ProjectRecord, stoneflow_usecase::UsecaseError> {
-        self.repository
+        let project = self
+            .repository
             .create(
                 connection,
                 CreateProjectRecord {
@@ -277,7 +287,14 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             )
             .await
             .map(map_project_model_to_record)
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+        let outbox_record = build_project_outbox_record(&project).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &outbox_record)
+            .await
+            .map_err(|error| map_app_error(error.into()))?;
+
+        Ok(project)
     }
 
     async fn update(
@@ -288,7 +305,8 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         updated_at: &str,
     ) -> Result<Option<stoneflow_usecase::project::ProjectRecord>, stoneflow_usecase::UsecaseError>
     {
-        self.repository
+        let project = self
+            .repository
             .update(
                 connection,
                 project_id,
@@ -302,7 +320,17 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             )
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        if let Some(project) = project.as_ref() {
+            let outbox_record = build_project_outbox_record(project).map_err(map_app_error)?;
+            self.sync_repository
+                .insert_outbox_record(connection, &outbox_record)
+                .await
+                .map_err(|error| map_app_error(error.into()))?;
+        }
+
+        Ok(project)
     }
 
     async fn list_overview_by_scope(
@@ -350,11 +378,22 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         updated_at: &str,
     ) -> Result<Option<stoneflow_usecase::project::ProjectRecord>, stoneflow_usecase::UsecaseError>
     {
-        self.repository
+        let project = self
+            .repository
             .complete_raw(connection, project_id, completed_at, updated_at)
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        if let Some(project) = project.as_ref() {
+            let outbox_record = build_project_outbox_record(project).map_err(map_app_error)?;
+            self.sync_repository
+                .insert_outbox_record(connection, &outbox_record)
+                .await
+                .map_err(|error| map_app_error(error.into()))?;
+        }
+
+        Ok(project)
     }
 
     async fn reopen_raw(
@@ -364,11 +403,22 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         updated_at: &str,
     ) -> Result<Option<stoneflow_usecase::project::ProjectRecord>, stoneflow_usecase::UsecaseError>
     {
-        self.repository
+        let project = self
+            .repository
             .reopen_raw(connection, project_id, updated_at)
             .await
             .map(|project| project.map(map_project_model_to_record))
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        if let Some(project) = project.as_ref() {
+            let outbox_record = build_project_outbox_record(project).map_err(map_app_error)?;
+            self.sync_repository
+                .insert_outbox_record(connection, &outbox_record)
+                .await
+                .map_err(|error| map_app_error(error.into()))?;
+        }
+
+        Ok(project)
     }
 }
 
@@ -473,6 +523,50 @@ fn map_overview_view_to_repo(
 
 fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {
     map_app_error(AppError::from(error))
+}
+
+#[derive(Debug, serde::Serialize)]
+struct ProjectSyncPayload<'a> {
+    id: &'a str,
+    space_id: &'a str,
+    name: &'a str,
+    description: Option<&'a str>,
+    due_at: Option<&'a str>,
+    sort_order: i32,
+    completed_at: Option<&'a str>,
+    archived_at: Option<&'a str>,
+    deleted_at: Option<&'a str>,
+    created_at: &'a str,
+    updated_at: &'a str,
+}
+
+impl<'a> From<&'a ProjectRecord> for ProjectSyncPayload<'a> {
+    fn from(project: &'a ProjectRecord) -> Self {
+        Self {
+            id: &project.id,
+            space_id: &project.space_id,
+            name: &project.name,
+            description: project.description.as_deref(),
+            due_at: project.due_at.as_deref(),
+            sort_order: project.sort_order,
+            completed_at: project.completed_at.as_deref(),
+            archived_at: project.archived_at.as_deref(),
+            deleted_at: project.deleted_at.as_deref(),
+            created_at: &project.created_at,
+            updated_at: &project.updated_at,
+        }
+    }
+}
+
+fn build_project_outbox_record(
+    project: &ProjectRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_upsert_record(
+        "project",
+        &project.id,
+        &ProjectSyncPayload::from(project),
+        &project.updated_at,
+    )
 }
 
 fn map_app_error(error: AppError) -> stoneflow_usecase::UsecaseError {

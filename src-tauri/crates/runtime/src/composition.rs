@@ -9,7 +9,7 @@ use stoneflow_storage::{
     database::DatabaseRuntimeState,
     repositories::{
         ActivityRepository, ProjectRepository, SettingsRepository, SpaceRepository,
-        TaskLinkRepository, TaskRepository, ViewRepository,
+        SyncRepository, TaskLinkRepository, TaskRepository, ViewRepository,
     },
 };
 
@@ -17,6 +17,7 @@ pub fn build_lifecycle_service(database: &DatabaseRuntimeState) -> LifecycleServ
     let connection = database.connection().clone();
     LifecycleService::new(
         SpaceRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
@@ -29,6 +30,7 @@ pub fn build_project_service(database: &DatabaseRuntimeState) -> ProjectService 
         SpaceRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
 }
@@ -78,6 +80,7 @@ pub fn build_settings_service(database: &DatabaseRuntimeState) -> SettingsServic
     let connection = database.connection().clone();
     SettingsService::new(
         SettingsRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
 }
@@ -86,6 +89,7 @@ pub fn build_space_service(database: &DatabaseRuntimeState) -> SpaceService {
     let connection = database.connection().clone();
     SpaceService::new(
         SpaceRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
@@ -98,6 +102,7 @@ pub fn build_task_service(database: &DatabaseRuntimeState) -> TaskService {
         SpaceRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
 }
@@ -107,6 +112,7 @@ pub fn build_task_link_service(database: &DatabaseRuntimeState) -> TaskLinkServi
     TaskLinkService::new(
         TaskRepository::new(connection.clone()),
         TaskLinkRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
 }
@@ -115,6 +121,7 @@ pub fn build_view_service(database: &DatabaseRuntimeState) -> ViewService {
     let connection = database.connection().clone();
     ViewService::new(
         ViewRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         SpaceRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),

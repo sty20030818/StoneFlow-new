@@ -1,19 +1,25 @@
 //! Space Service 兼容壳：CRUD 真源在 `stoneflow-usecase`；生命周期仍委托 `LifecycleService`。
 
+use serde::Serialize;
 use sea_orm::TransactionTrait;
 use stoneflow_usecase::{
     activity::ActivityService as ActivityUsecase,
-    space::{SpacePersistence, SpaceService as SpaceUsecase},
+    space::{SpacePersistence, SpaceRecord, SpaceService as SpaceUsecase},
 };
 
 use crate::{
     app::error::AppError,
-    services::{activity::ActivityPersistenceAdapter, LifecycleService},
+    services::{
+        activity::ActivityPersistenceAdapter,
+        sync_outbox::build_upsert_record,
+        LifecycleService,
+    },
 };
 use stoneflow_storage::{
     mappers::map_space_model_to_record,
     repositories::{
-        CreateSpaceRecord, ProjectRepository, SpaceRepository, TaskRepository, UpdateSpacePatch,
+        CreateSpaceRecord, ProjectRepository, SpaceRepository, SyncRepository, TaskRepository,
+        UpdateSpacePatch,
     },
 };
 
@@ -26,6 +32,7 @@ pub use stoneflow_usecase::space::{
 pub struct SpaceService {
     inner: SpaceUsecase<SpacePersistenceAdapter, ActivityPersistenceAdapter>,
     repository: SpaceRepository,
+    sync_repository: SyncRepository,
     project_repository: ProjectRepository,
     task_repository: TaskRepository,
     activity_service: crate::services::activity::ActivityService,
@@ -34,6 +41,7 @@ pub struct SpaceService {
 impl SpaceService {
     pub fn new(
         repository: SpaceRepository,
+        sync_repository: SyncRepository,
         project_repository: ProjectRepository,
         task_repository: TaskRepository,
         activity_service: crate::services::activity::ActivityService,
@@ -41,10 +49,11 @@ impl SpaceService {
         let activity_repo = activity_service.repository().clone();
         Self {
             inner: SpaceUsecase::new(
-                SpacePersistenceAdapter::new(repository.clone()),
+                SpacePersistenceAdapter::new(repository.clone(), sync_repository.clone()),
                 ActivityUsecase::new(ActivityPersistenceAdapter::new(activity_repo)),
             ),
             repository,
+            sync_repository,
             project_repository,
             task_repository,
             activity_service,
@@ -58,6 +67,7 @@ impl SpaceService {
     fn lifecycle_service(&self) -> LifecycleService {
         LifecycleService::new(
             self.repository.clone(),
+            self.sync_repository.clone(),
             self.project_repository.clone(),
             self.task_repository.clone(),
             self.activity_service.clone(),
@@ -114,11 +124,15 @@ impl SpaceService {
 #[derive(Debug, Clone)]
 struct SpacePersistenceAdapter {
     repository: SpaceRepository,
+    sync_repository: SyncRepository,
 }
 
 impl SpacePersistenceAdapter {
-    fn new(repository: SpaceRepository) -> Self {
-        Self { repository }
+    fn new(repository: SpaceRepository, sync_repository: SyncRepository) -> Self {
+        Self {
+            repository,
+            sync_repository,
+        }
     }
 }
 
@@ -177,7 +191,8 @@ impl SpacePersistence for SpacePersistenceAdapter {
         connection: &Self::Connection,
         record: stoneflow_usecase::space::CreateSpacePersistenceRecord,
     ) -> Result<stoneflow_usecase::space::SpaceRecord, stoneflow_usecase::UsecaseError> {
-        self.repository
+        let space = self
+            .repository
             .create(
                 connection,
                 CreateSpaceRecord {
@@ -193,7 +208,14 @@ impl SpacePersistence for SpacePersistenceAdapter {
             )
             .await
             .map(map_space_model_to_record)
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+        let outbox_record = build_space_outbox_record(&space).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &outbox_record)
+            .await
+            .map_err(|error| map_app_error(error.into()))?;
+
+        Ok(space)
     }
 
     async fn update(
@@ -204,7 +226,8 @@ impl SpacePersistence for SpacePersistenceAdapter {
         updated_at: &str,
     ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError>
     {
-        self.repository
+        let space = self
+            .repository
             .update(
                 connection,
                 space_id,
@@ -217,7 +240,17 @@ impl SpacePersistence for SpacePersistenceAdapter {
             )
             .await
             .map(|space| space.map(map_space_model_to_record))
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        if let Some(space) = space.as_ref() {
+            let outbox_record = build_space_outbox_record(space).map_err(map_app_error)?;
+            self.sync_repository
+                .insert_outbox_record(connection, &outbox_record)
+                .await
+                .map_err(|error| map_app_error(error.into()))?;
+        }
+
+        Ok(space)
     }
 
     async fn clear_default(
@@ -239,12 +272,60 @@ impl SpacePersistence for SpacePersistenceAdapter {
         updated_at: &str,
     ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError>
     {
-        self.repository
+        let space = self
+            .repository
             .set_default(connection, space_id, updated_at)
             .await
             .map(|space| space.map(map_space_model_to_record))
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| map_app_error(error.into()))?;
+
+        if let Some(space) = space.as_ref() {
+            let outbox_record = build_space_outbox_record(space).map_err(map_app_error)?;
+            self.sync_repository
+                .insert_outbox_record(connection, &outbox_record)
+                .await
+                .map_err(|error| map_app_error(error.into()))?;
+        }
+
+        Ok(space)
     }
+}
+
+#[derive(Debug, Serialize)]
+struct SpaceSyncPayload<'a> {
+    id: &'a str,
+    name: &'a str,
+    icon_key: &'a str,
+    color_key: &'a str,
+    is_default: bool,
+    sort_order: i32,
+    archived_at: Option<&'a str>,
+    deleted_at: Option<&'a str>,
+    created_at: &'a str,
+    updated_at: &'a str,
+}
+
+impl<'a> From<&'a SpaceRecord> for SpaceSyncPayload<'a> {
+    fn from(space: &'a SpaceRecord) -> Self {
+        Self {
+            id: &space.id,
+            name: &space.name,
+            icon_key: &space.icon_key,
+            color_key: &space.color_key,
+            is_default: space.is_default,
+            sort_order: space.sort_order,
+            archived_at: space.archived_at.as_deref(),
+            deleted_at: space.deleted_at.as_deref(),
+            created_at: &space.created_at,
+            updated_at: &space.updated_at,
+        }
+    }
+}
+
+fn build_space_outbox_record(
+    space: &SpaceRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_upsert_record("space", &space.id, &SpaceSyncPayload::from(space), &space.updated_at)
 }
 
 fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {

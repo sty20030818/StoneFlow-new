@@ -1,18 +1,25 @@
 //! Lifecycle Service 兼容壳：Archive / Trash 真源在 `stoneflow-usecase`。
 
+use serde::Serialize;
 use sea_orm::TransactionTrait;
 use stoneflow_usecase::{
     activity::ActivityService as ActivityUsecase,
     lifecycle::{
         LifecycleProjectPersistence, LifecycleService as LifecycleUsecase,
-        LifecycleSpacePersistence, LifecycleTaskPersistence,
+        LifecycleSpacePersistence, LifecycleSyncHook, LifecycleTaskPersistence,
     },
     project::ProjectRecord,
     space::SpaceRecord,
     task::{TaskRecord, UpdateTaskPatch},
 };
 
-use crate::{app::error::AppError, services::activity::ActivityPersistenceAdapter};
+use crate::{
+    app::error::AppError,
+    services::{
+        activity::ActivityPersistenceAdapter,
+        sync_outbox::{build_delete_record, build_upsert_record},
+    },
+};
 use stoneflow_storage::{
     mappers::{
         map_project_model_to_lifecycle_list_record, map_project_model_to_record,
@@ -20,7 +27,8 @@ use stoneflow_storage::{
         map_task_model_to_record, task_status_to_schema,
     },
     repositories::{
-        ProjectRepository, SpaceRepository, TaskRepository, UpdateTaskPatch as RepoUpdateTaskPatch,
+        ProjectRepository, SpaceRepository, SyncRepository, TaskRepository,
+        UpdateTaskPatch as RepoUpdateTaskPatch,
     },
 };
 
@@ -34,6 +42,7 @@ type InnerLifecycleService = LifecycleUsecase<
     LifecycleProjectPersistenceAdapter,
     LifecycleTaskPersistenceAdapter,
     ActivityPersistenceAdapter,
+    LifecycleSyncHookAdapter,
 >;
 
 /// Lifecycle 编排兼容壳。
@@ -45,6 +54,7 @@ pub struct LifecycleService {
 impl LifecycleService {
     pub fn new(
         space_repository: SpaceRepository,
+        sync_repository: SyncRepository,
         project_repository: ProjectRepository,
         task_repository: TaskRepository,
         activity_service: crate::services::activity::ActivityService,
@@ -56,6 +66,7 @@ impl LifecycleService {
                 LifecycleProjectPersistenceAdapter::new(project_repository),
                 LifecycleTaskPersistenceAdapter::new(task_repository),
                 ActivityUsecase::new(ActivityPersistenceAdapter::new(activity_repo)),
+                LifecycleSyncHookAdapter::new(sync_repository),
             ),
         }
     }
@@ -523,6 +534,272 @@ impl LifecycleTaskPersistenceAdapter {
     fn new(repository: TaskRepository) -> Self {
         Self { repository }
     }
+}
+
+#[derive(Debug, Clone)]
+struct LifecycleSyncHookAdapter {
+    sync_repository: SyncRepository,
+}
+
+impl LifecycleSyncHookAdapter {
+    fn new(sync_repository: SyncRepository) -> Self {
+        Self { sync_repository }
+    }
+}
+
+impl LifecycleSyncHook for LifecycleSyncHookAdapter {
+    type Connection = sea_orm::DatabaseTransaction;
+
+    async fn enqueue_space_upsert(
+        &self,
+        connection: &Self::Connection,
+        space: &SpaceRecord,
+    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+        let record = build_space_outbox_record(space).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &record)
+            .await
+            .map_err(|error| map_app_error(error.into()))
+    }
+
+    async fn enqueue_space_delete(
+        &self,
+        connection: &Self::Connection,
+        space: &SpaceRecord,
+    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+        let record = build_space_delete_outbox_record(space).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &record)
+            .await
+            .map_err(|error| map_app_error(error.into()))
+    }
+
+    async fn enqueue_project_upsert(
+        &self,
+        connection: &Self::Connection,
+        project: &ProjectRecord,
+    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+        let record = build_project_outbox_record(project).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &record)
+            .await
+            .map_err(|error| map_app_error(error.into()))
+    }
+
+    async fn enqueue_project_delete(
+        &self,
+        connection: &Self::Connection,
+        project: &ProjectRecord,
+    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+        let record = build_project_delete_outbox_record(project).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &record)
+            .await
+            .map_err(|error| map_app_error(error.into()))
+    }
+
+    async fn enqueue_task_upsert(
+        &self,
+        connection: &Self::Connection,
+        task: &TaskRecord,
+    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+        let record = build_task_outbox_record(task).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &record)
+            .await
+            .map_err(|error| map_app_error(error.into()))
+    }
+
+    async fn enqueue_task_delete(
+        &self,
+        connection: &Self::Connection,
+        task: &TaskRecord,
+    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+        let record = build_task_delete_outbox_record(task).map_err(map_app_error)?;
+        self.sync_repository
+            .insert_outbox_record(connection, &record)
+            .await
+            .map_err(|error| map_app_error(error.into()))
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct LifecycleSpaceSyncPayload<'a> {
+    id: &'a str,
+    name: &'a str,
+    icon_key: &'a str,
+    color_key: &'a str,
+    is_default: bool,
+    sort_order: i32,
+    archived_at: Option<&'a str>,
+    deleted_at: Option<&'a str>,
+    created_at: &'a str,
+    updated_at: &'a str,
+}
+
+impl<'a> From<&'a SpaceRecord> for LifecycleSpaceSyncPayload<'a> {
+    fn from(space: &'a SpaceRecord) -> Self {
+        Self {
+            id: &space.id,
+            name: &space.name,
+            icon_key: &space.icon_key,
+            color_key: &space.color_key,
+            is_default: space.is_default,
+            sort_order: space.sort_order,
+            archived_at: space.archived_at.as_deref(),
+            deleted_at: space.deleted_at.as_deref(),
+            created_at: &space.created_at,
+            updated_at: &space.updated_at,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct LifecycleProjectSyncPayload<'a> {
+    id: &'a str,
+    space_id: &'a str,
+    name: &'a str,
+    description: Option<&'a str>,
+    due_at: Option<&'a str>,
+    sort_order: i32,
+    completed_at: Option<&'a str>,
+    archived_at: Option<&'a str>,
+    deleted_at: Option<&'a str>,
+    created_at: &'a str,
+    updated_at: &'a str,
+}
+
+impl<'a> From<&'a ProjectRecord> for LifecycleProjectSyncPayload<'a> {
+    fn from(project: &'a ProjectRecord) -> Self {
+        Self {
+            id: &project.id,
+            space_id: &project.space_id,
+            name: &project.name,
+            description: project.description.as_deref(),
+            due_at: project.due_at.as_deref(),
+            sort_order: project.sort_order,
+            completed_at: project.completed_at.as_deref(),
+            archived_at: project.archived_at.as_deref(),
+            deleted_at: project.deleted_at.as_deref(),
+            created_at: &project.created_at,
+            updated_at: &project.updated_at,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct LifecycleTaskSyncPayload<'a> {
+    id: &'a str,
+    space_id: &'a str,
+    project_id: Option<&'a str>,
+    title: &'a str,
+    note: Option<&'a str>,
+    status: stoneflow_domain::TaskStatus,
+    status_changed_at: &'a str,
+    priority: i32,
+    inbox_at: Option<&'a str>,
+    due_at: Option<&'a str>,
+    scheduled_at: Option<&'a str>,
+    reminder_at: Option<&'a str>,
+    sort_order: i32,
+    completed_at: Option<&'a str>,
+    canceled_at: Option<&'a str>,
+    archived_at: Option<&'a str>,
+    deleted_at: Option<&'a str>,
+    created_at: &'a str,
+    updated_at: &'a str,
+}
+
+impl<'a> From<&'a TaskRecord> for LifecycleTaskSyncPayload<'a> {
+    fn from(task: &'a TaskRecord) -> Self {
+        Self {
+            id: &task.id,
+            space_id: &task.space_id,
+            project_id: task.project_id.as_deref(),
+            title: &task.title,
+            note: task.note.as_deref(),
+            status: task.status,
+            status_changed_at: &task.status_changed_at,
+            priority: task.priority,
+            inbox_at: task.inbox_at.as_deref(),
+            due_at: task.due_at.as_deref(),
+            scheduled_at: task.scheduled_at.as_deref(),
+            reminder_at: task.reminder_at.as_deref(),
+            sort_order: task.sort_order,
+            completed_at: task.completed_at.as_deref(),
+            canceled_at: task.canceled_at.as_deref(),
+            archived_at: task.archived_at.as_deref(),
+            deleted_at: task.deleted_at.as_deref(),
+            created_at: &task.created_at,
+            updated_at: &task.updated_at,
+        }
+    }
+}
+
+fn build_space_outbox_record(
+    space: &SpaceRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_upsert_record(
+        "space",
+        &space.id,
+        &LifecycleSpaceSyncPayload::from(space),
+        &space.updated_at,
+    )
+}
+
+fn build_space_delete_outbox_record(
+    space: &SpaceRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_delete_record(
+        "space",
+        &space.id,
+        &LifecycleSpaceSyncPayload::from(space),
+        &space.updated_at,
+    )
+}
+
+fn build_project_outbox_record(
+    project: &ProjectRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_upsert_record(
+        "project",
+        &project.id,
+        &LifecycleProjectSyncPayload::from(project),
+        &project.updated_at,
+    )
+}
+
+fn build_project_delete_outbox_record(
+    project: &ProjectRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_delete_record(
+        "project",
+        &project.id,
+        &LifecycleProjectSyncPayload::from(project),
+        &project.updated_at,
+    )
+}
+
+fn build_task_outbox_record(
+    task: &TaskRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_upsert_record(
+        "task",
+        &task.id,
+        &LifecycleTaskSyncPayload::from(task),
+        &task.updated_at,
+    )
+}
+
+fn build_task_delete_outbox_record(
+    task: &TaskRecord,
+) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+    build_delete_record(
+        "task",
+        &task.id,
+        &LifecycleTaskSyncPayload::from(task),
+        &task.updated_at,
+    )
 }
 
 impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {

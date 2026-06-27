@@ -12,7 +12,7 @@ use crate::services::{
 };
 use stoneflow_domain::{create_id, today_local_date};
 use stoneflow_storage::repositories::{
-    ActivityRepository, ProjectRepository, SpaceRepository, TaskRepository,
+    ActivityRepository, ProjectRepository, SpaceRepository, SyncRepository, TaskRepository,
 };
 
 #[tokio::test]
@@ -392,6 +392,104 @@ async fn update_task_should_keep_note_newlines_and_allow_blank_note() {
         .await
         .expect("clear note should succeed");
     assert_eq!(cleared.note, None);
+}
+
+#[tokio::test]
+async fn create_task_should_enqueue_pending_sync_outbox_record() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_task_service(&database);
+    let space = default_space(&database).await;
+    let sync_repository = SyncRepository::new(database.connection().clone());
+
+    let created = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Inbox,
+                project_id: None,
+            },
+            title: "同步创建".to_owned(),
+            note: Some("准备上推".to_owned()),
+            status: None,
+            priority: Some(2),
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create task should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].entity_type, "task");
+    assert_eq!(pending[0].entity_id, created.id);
+    assert_eq!(pending[0].action, "upsert");
+    assert!(pending[0].payload.contains("\"title\":\"同步创建\""));
+}
+
+#[tokio::test]
+async fn update_task_should_enqueue_pending_sync_outbox_record() {
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_task_service(&database);
+    let space = default_space(&database).await;
+    let sync_repository = SyncRepository::new(database.connection().clone());
+
+    let created = service
+        .create_task(CreateTaskInput {
+            space_id: Some(space.id.clone()),
+            placement: CreateTaskPlacementInput {
+                kind: CreateTaskPlacementKind::Inbox,
+                project_id: None,
+            },
+            title: "待更新同步".to_owned(),
+            note: None,
+            status: None,
+            priority: None,
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("create task should succeed");
+
+    service
+        .update_task(UpdateTaskInput {
+            task_id: created.id.clone(),
+            title: Some("已更新同步".to_owned()),
+            note: Some(Some("新备注".to_owned())),
+            status: Some(TaskStatus::Doing),
+            priority: Some(4),
+            placement: Some(UpdateTaskPlacementInput {
+                kind: UpdateTaskPlacementKind::NoProject,
+                space_id: space.id,
+                project_id: None,
+            }),
+            due_at: None,
+            scheduled_at: None,
+            reminder_at: None,
+        })
+        .await
+        .expect("update task should succeed");
+
+    let pending = sync_repository
+        .list_outbox_by_status("pending", 10)
+        .await
+        .expect("pending outbox query should succeed");
+
+    assert_eq!(pending.len(), 2);
+    assert_eq!(pending[1].entity_type, "task");
+    assert_eq!(pending[1].entity_id, created.id);
+    assert_eq!(pending[1].action, "upsert");
+    assert!(pending[1].payload.contains("\"title\":\"已更新同步\""));
+    assert!(pending[1].payload.contains("\"status\":\"doing\""));
 }
 
 #[test]
@@ -950,6 +1048,7 @@ fn build_task_service(database: &stoneflow_storage::database::DatabaseRuntimeSta
         SpaceRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),
+        SyncRepository::new(connection.clone()),
         ActivityService::new(ActivityRepository::new(connection)),
     )
 }
