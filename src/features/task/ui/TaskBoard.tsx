@@ -245,16 +245,25 @@ export function TaskBoard({
 			{(rowShortcutState) =>
 				customSections && customSections.length > 0 ? (
 					<BoardRoot className='gap-2'>
-						{customSections.map((section) => (
-							<TaskCustomSection
-								createProjectId={createProjectId}
-								key={section.key}
-								label={section.label}
-								renderTaskRow={(task) => renderTaskRow(task, rowShortcutState)}
-								selectedTaskIdSet={selectedTaskIdSet}
-								tasks={section.tasks}
-							/>
-						))}
+						{customSections.length === 1 && customSections[0]?.key === 'all' ? (
+							<BoardRows
+								getItemId={(_child, index) => customSections[0]?.tasks[index]?.id}
+								selectedIdSet={selectedTaskIdSet}
+							>
+								{customSections[0].tasks.map((task) => renderTaskRow(task, rowShortcutState))}
+							</BoardRows>
+						) : (
+							customSections.map((section) => (
+								<TaskCustomSection
+									createProjectId={createProjectId}
+									key={section.key}
+									label={section.label}
+									renderTaskRow={(task) => renderTaskRow(task, rowShortcutState)}
+									selectedTaskIdSet={selectedTaskIdSet}
+									tasks={section.tasks}
+								/>
+							))
+						)}
 					</BoardRoot>
 				) : (
 					<BoardRoot>

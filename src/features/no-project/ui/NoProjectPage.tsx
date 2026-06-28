@@ -5,6 +5,12 @@ import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import {
+	applyTaskDisplayOptionsToTasks,
+	createTaskDisplayApplyContext,
+} from '@/features/display-options/adapters/task'
+import { useTaskDisplayOptions } from '@/features/display-options/model'
+import { DisplayOptionsButton } from '@/features/display-options/ui'
 import { useEntityDetailController } from '@/features/entity-detail'
 import {
 	useRegisterPageFilterController,
@@ -13,7 +19,6 @@ import {
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useProjectOptions } from '@/features/project/query'
 import { useSpaces } from '@/features/space/query'
-import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
@@ -33,6 +38,8 @@ const NO_PROJECT_FILTERS: Array<'all' | TaskStatus> = [
 	'done',
 	'canceled',
 ]
+
+const NO_PROJECT_DISPLAY_PAGE_KEY = 'task:no-project'
 
 export function NoProjectPage() {
 	const shellRoute = useCurrentShellRoute()
@@ -80,10 +87,17 @@ export function NoProjectPage() {
 		},
 	})
 	useRegisterPageFilterController(controller)
-	const taskSelectionOrderIds = useMemo(
-		() => getTaskBoardVisualOrderIds(filteredTasks),
-		[filteredTasks],
+	const display = useTaskDisplayOptions(NO_PROJECT_DISPLAY_PAGE_KEY)
+	const displayResult = useMemo(
+		() =>
+			applyTaskDisplayOptionsToTasks({
+				items: filteredTasks,
+				options: display.options,
+				context: createTaskDisplayApplyContext(NO_PROJECT_DISPLAY_PAGE_KEY),
+			}),
+		[display.options, filteredTasks],
 	)
+	const taskSelectionOrderIds = displayResult.selectionOrderIds
 	const {
 		selectedTaskIdSet,
 		selectionSnapshot,
@@ -125,14 +139,16 @@ export function NoProjectPage() {
 				boardKind: 'task',
 				boardConfig: {
 					variant: 'no-project',
+					customSections: displayResult.boardPatch.customSections,
 					emptyActionLabel: '创建任务',
 					emptyDescription:
 						'这里会放那些还没归属到项目里的任务，现在暂时还是空的。点「创建任务」先记下来，之后再决定要不要放进某个项目。',
 					emptyTitle: '当前没有独立事项',
-					hideEmptySections: true,
+					hideEmptySections: displayResult.boardPatch.hideEmptySections ?? true,
+					statusOrder: displayResult.boardPatch.statusOrder,
 				},
 				boardData: {
-					items: filteredTasks,
+					items: displayResult.orderedItems,
 					status: taskBoardStatus,
 					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
@@ -189,6 +205,7 @@ export function NoProjectPage() {
 				void taskList.refetch()
 			}}
 			sceneVariant='no-project'
+			toolbarDisplayAction={<DisplayOptionsButton pageKey={NO_PROJECT_DISPLAY_PAGE_KEY} />}
 			toolbarPills={NO_PROJECT_FILTERS.map((filter) => ({
 				label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
 				active:

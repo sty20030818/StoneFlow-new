@@ -4,15 +4,17 @@ import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
+import { applyTaskDisplayOptionsToTasks, createTaskDisplayApplyContext } from '@/features/display-options/adapters/task'
+import { DisplayOptionsButton } from '@/features/display-options/ui'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import { useTaskDisplayOptions } from '@/features/display-options/model'
 import {
 	useRegisterPageFilterController,
 	useTaskPageFilterController,
 } from '@/features/filter/model'
 import { useProjectOptions } from '@/features/project/query'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
-import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
@@ -34,6 +36,9 @@ const TASK_FILTERS: Array<'all' | 'noProject' | TaskStatus> = [
 	'done',
 	'canceled',
 ]
+
+const ALL_TASKS_DISPLAY_PAGE_KEY = 'task:all'
+
 export function AllTasksPage() {
 	const shellRoute = useCurrentShellRoute()
 	const scope = resolveShellRouteScope(shellRoute)
@@ -68,6 +73,7 @@ export function AllTasksPage() {
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
+	const display = useTaskDisplayOptions(ALL_TASKS_DISPLAY_PAGE_KEY)
 	const { controller, filteredTasks } = useTaskPageFilterController({
 		tasks: taskSourceItems,
 		projects: projectOptions,
@@ -81,10 +87,16 @@ export function AllTasksPage() {
 		},
 	})
 	useRegisterPageFilterController(controller)
-	const taskSelectionOrderIds = useMemo(
-		() => getTaskBoardVisualOrderIds(filteredTasks),
-		[filteredTasks],
+	const displayResult = useMemo(
+		() =>
+			applyTaskDisplayOptionsToTasks({
+				items: filteredTasks,
+				options: display.options,
+				context: createTaskDisplayApplyContext(ALL_TASKS_DISPLAY_PAGE_KEY),
+			}),
+		[display.options, filteredTasks],
 	)
+	const taskSelectionOrderIds = displayResult.selectionOrderIds
 	const {
 		selectedTaskIdSet,
 		selectionSnapshot,
@@ -120,14 +132,16 @@ export function AllTasksPage() {
 				boardKind: 'task',
 				boardConfig: {
 					variant: 'tasks',
+					customSections: displayResult.boardPatch.customSections,
 					emptyActionLabel: '创建任务',
 					emptyDescription:
 						'这里本来会显示符合当前条件的任务，不过现在还是空的。点「创建任务」先记下一项，后面再慢慢整理也来得及。',
 					emptyTitle: '当前没有任务',
-					hideEmptySections: true,
+					hideEmptySections: displayResult.boardPatch.hideEmptySections ?? true,
+					statusOrder: displayResult.boardPatch.statusOrder,
 				},
 				boardData: {
-					items: filteredTasks,
+					items: displayResult.orderedItems,
 					status: taskBoardStatus,
 					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
@@ -184,6 +198,7 @@ export function AllTasksPage() {
 				void taskList.refetch()
 			}}
 			sceneVariant='tasks'
+			toolbarDisplayAction={<DisplayOptionsButton pageKey={ALL_TASKS_DISPLAY_PAGE_KEY} />}
 			toolbarPills={TASK_FILTERS.map((filter) => ({
 				label:
 					filter === 'all'

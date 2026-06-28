@@ -8,6 +8,13 @@ import { resolveShellRouteScope } from '@/app/navigation/scope'
 import { useNavigate, useParams } from '@/app/routing/tanstackCompat'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import {
+	applyTaskDisplayOptionsToTasks,
+	createTaskDisplayApplyContext,
+} from '@/features/display-options/adapters/task'
+import { createTaskDisplayViewPageKey } from '@/features/display-options/core'
+import { useTaskDisplayOptions } from '@/features/display-options/model'
+import { DisplayOptionsButton } from '@/features/display-options/ui'
 import { useProjectOptions } from '@/features/project/query'
 import { useSpaces } from '@/features/space/query'
 import {
@@ -16,7 +23,6 @@ import {
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
-import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
@@ -32,7 +38,7 @@ import {
 import { ViewActionsMenu } from '@/features/view/ui/ViewActionsMenu'
 import { ViewEditorDialog } from '@/features/view/ui/ViewEditorDialog'
 import { useTaskChangedListener } from '@/shared/events'
-import type { TaskListItem, View } from '@/shared/types'
+import type { View } from '@/shared/types'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 import { PlusIcon } from 'lucide-react'
@@ -116,6 +122,11 @@ export function ViewsPage() {
 			}),
 		[activeView?.name, shellRoute],
 	)
+	const displayPageKey = useMemo(
+		() => createTaskDisplayViewPageKey(activeView?.id ?? 'empty-state'),
+		[activeView?.id],
+	)
+	const display = useTaskDisplayOptions(displayPageKey)
 
 	useEffect(() => {
 		if (
@@ -147,15 +158,16 @@ export function ViewsPage() {
 	useTaskChangedListener(scope, () => {
 		void taskRunQuery.refetch()
 	})
-
-	const sections = useMemo(
-		() => buildCustomSections(taskRun?.groups ?? [], visibleTasks),
-		[taskRun?.groups, visibleTasks],
+	const displayResult = useMemo(
+		() =>
+			applyTaskDisplayOptionsToTasks({
+				items: visibleTasks,
+				options: display.options,
+				context: createTaskDisplayApplyContext(displayPageKey),
+			}),
+		[display.options, displayPageKey, visibleTasks],
 	)
-	const taskSelectionOrderIds = useMemo(
-		() => getTaskBoardVisualOrderIds(visibleTasks, { customSections: sections }),
-		[sections, visibleTasks],
-	)
+	const taskSelectionOrderIds = displayResult.selectionOrderIds
 	const {
 		selectedTaskIdSet,
 		selectionSnapshot,
@@ -246,16 +258,17 @@ export function ViewsPage() {
 					boardKind: 'task',
 					boardConfig: {
 						variant: 'view',
-						customSections: sections,
+						customSections: displayResult.boardPatch.customSections,
 						emptyActionLabel: activeView ? '创建任务' : '创建视图',
 						emptyDescription: activeView
 							? `视图「${activeView.name}」下还没有符合条件的任务。点「创建任务」新增一项，或者调整一下视图条件再看看。`
 							: '这里会显示你整理好的任务视图，现在还没准备好。点「创建视图」先建一个，后面筛选、回看和聚焦都会更顺手。',
 						emptyTitle: activeView ? '当前没有任务' : '当前还没有视图',
-						hideEmptySections: true,
+						hideEmptySections: displayResult.boardPatch.hideEmptySections ?? true,
+						statusOrder: displayResult.boardPatch.statusOrder,
 					},
 					boardData: {
-						items: visibleTasks,
+						items: displayResult.orderedItems,
 						status: boardStatus,
 						activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 						pendingItemId: pendingTaskId,
@@ -330,6 +343,9 @@ export function ViewsPage() {
 					void taskRunQuery.refetch()
 				}}
 				sceneVariant='view'
+				toolbarDisplayAction={
+					activeView ? <DisplayOptionsButton pageKey={displayPageKey} /> : undefined
+				}
 				toolbarFilterAction={
 					<ViewActionsMenu
 						activeView={activeView}
@@ -369,37 +385,4 @@ export function ViewsPage() {
 			/>
 		</>
 	)
-}
-
-function buildCustomSections(
-	groups: Array<{ key: string; label: string; taskIds: string[] }>,
-	items: TaskListItem[],
-) {
-	if (groups.length === 0) {
-		return undefined
-	}
-
-	const itemMap = new Map(items.map((task) => [task.id, task]))
-	return groups
-		.map((group) => {
-			const tasks = group.taskIds
-				.map((taskId) => itemMap.get(taskId))
-				.filter((task): task is TaskListItem => task !== undefined)
-			if (tasks.length === 0) {
-				return null
-			}
-
-			const label =
-				group.key.startsWith('project:') && tasks[0]?.projectName
-					? tasks[0].projectName
-					: group.label
-			return {
-				key: group.key,
-				label,
-				tasks,
-			}
-		})
-		.filter(
-			(group): group is { key: string; label: string; tasks: TaskListItem[] } => group !== null,
-		)
 }

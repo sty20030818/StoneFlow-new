@@ -42,6 +42,7 @@ type MainCardToolbarProps = {
 	pills?: MainCardToolbarPill[]
 	left?: ReactNode
 	filterAction?: ReactNode
+	displayAction?: ReactNode
 	onRefresh?: () => void
 	refreshDisabled?: boolean
 	className?: string
@@ -87,6 +88,7 @@ function MainCardToolbar({
 	pills,
 	left,
 	filterAction,
+	displayAction,
 	onRefresh,
 	refreshDisabled,
 	className,
@@ -120,6 +122,11 @@ function MainCardToolbar({
 				{filterAction ?? (
 					<MainCardToolbarIconButton
 						action={{ label: '筛选', icon: ListFilterIcon, onClick: () => undefined }}
+					/>
+				)}
+				{displayAction ?? (
+					<MainCardToolbarIconButton
+						action={{ label: '视图选项', icon: SlidersHorizontalIcon, onClick: () => undefined }}
 					/>
 				)}
 				{createToolbarActions(onRefresh, refreshDisabled).map((action) => (
@@ -190,7 +197,6 @@ function createToolbarActions(
 	const noop = () => undefined
 
 	return [
-		{ label: '视图选项', icon: SlidersHorizontalIcon, onClick: noop },
 		{ label: '打开右侧面板', icon: PanelRightOpenIcon, onClick: noop },
 		{
 			label: '刷新',

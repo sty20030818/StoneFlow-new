@@ -6,6 +6,12 @@ import { openSection } from '@/app/navigation/intents'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
 import { useNavigate, useParams } from '@/app/routing/tanstackCompat'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import {
+	applyTaskDisplayOptionsToTasks,
+	createTaskDisplayApplyContext,
+} from '@/features/display-options/adapters/task'
+import { useTaskDisplayOptions } from '@/features/display-options/model'
+import { DisplayOptionsButton } from '@/features/display-options/ui'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDangerConfirm } from '@/features/danger-confirm'
 import {
@@ -24,7 +30,6 @@ import { useSpaces } from '@/features/space/query'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
-import { getTaskBoardVisualOrderIds } from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
@@ -52,6 +57,8 @@ const PROJECT_TASK_FILTERS: Array<'all' | TaskStatus> = [
 	'done',
 	'canceled',
 ]
+
+const PROJECT_DETAIL_DISPLAY_PAGE_KEY = 'task:project-detail'
 
 type ProjectPageProps = {
 	scopeOverride?: Scope
@@ -120,6 +127,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 		},
 	})
 	useRegisterPageFilterController(controller)
+	const display = useTaskDisplayOptions(PROJECT_DETAIL_DISPLAY_PAGE_KEY)
 	const breadcrumbItems = useMemo(
 		() =>
 			resolveBreadcrumb({
@@ -145,10 +153,16 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 				: projectOptions,
 		[project, projectOptions],
 	)
-	const taskSelectionOrderIds = useMemo(
-		() => getTaskBoardVisualOrderIds(filteredTasks),
-		[filteredTasks],
+	const displayResult = useMemo(
+		() =>
+			applyTaskDisplayOptionsToTasks({
+				items: filteredTasks,
+				options: display.options,
+				context: createTaskDisplayApplyContext(PROJECT_DETAIL_DISPLAY_PAGE_KEY),
+			}),
+		[display.options, filteredTasks],
 	)
+	const taskSelectionOrderIds = displayResult.selectionOrderIds
 	const {
 		selectedTaskIdSet,
 		selectionSnapshot,
@@ -193,6 +207,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 				boardKind: 'task',
 				boardConfig: {
 					variant: 'project-detail',
+					customSections: displayResult.boardPatch.customSections,
 					...(project
 						? {
 								emptyActionLabel: '创建任务',
@@ -201,10 +216,11 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 								emptyTitle: '当前项目没有任务',
 							}
 						: {}),
-					hideEmptySections: true,
+					hideEmptySections: displayResult.boardPatch.hideEmptySections ?? true,
+					statusOrder: displayResult.boardPatch.statusOrder,
 				},
 				boardData: {
-					items: project ? filteredTasks : [],
+					items: project ? displayResult.orderedItems : [],
 					status: project ? taskBoardStatus : 'ready',
 					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
@@ -347,6 +363,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 				void taskList.refetch()
 			}}
 			sceneVariant='project-detail'
+			toolbarDisplayAction={<DisplayOptionsButton pageKey={PROJECT_DETAIL_DISPLAY_PAGE_KEY} />}
 			toolbarPills={PROJECT_TASK_FILTERS.map((filter) => ({
 				label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
 				active:

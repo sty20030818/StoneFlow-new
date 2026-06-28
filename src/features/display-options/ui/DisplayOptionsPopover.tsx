@@ -34,7 +34,11 @@ export function DisplayOptionsPopover({
 	return (
 		<Popover onOpenChange={onOpenChange} open={open}>
 			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
-			<PopoverContent align='end' className={cn('w-[392px] p-4', className)} sideOffset={8}>
+			<PopoverContent
+				align='end'
+				className={cn('w-[min(360px,calc(100vw-24px))] p-3', className)}
+				sideOffset={8}
+			>
 				<DisplayOptionsPanel
 					actions={actions}
 					error={error}

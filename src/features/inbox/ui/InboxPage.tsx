@@ -5,6 +5,12 @@ import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
 import {
+	applyTaskDisplayOptionsToTasks,
+	createTaskDisplayApplyContext,
+} from '@/features/display-options/adapters/task'
+import { useTaskDisplayOptions } from '@/features/display-options/model'
+import { DisplayOptionsButton } from '@/features/display-options/ui'
+import {
 	useRegisterPageFilterController,
 	useTaskPageFilterController,
 } from '@/features/filter/model'
@@ -14,10 +20,6 @@ import { useProjectOptions } from '@/features/project/query'
 import { useSpaces } from '@/features/space/query'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
-import {
-	ACTIVE_TASK_BOARD_STATUS_ORDER,
-	getTaskBoardVisualOrderIds,
-} from '@/features/task/model/taskBoardOrder'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useTaskListData } from '@/features/task/query'
@@ -25,6 +27,8 @@ import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/featur
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
 import { PlusIcon } from 'lucide-react'
+
+const INBOX_DISPLAY_PAGE_KEY = 'task:inbox'
 
 export function InboxPage() {
 	const shellRoute = useCurrentShellRoute()
@@ -67,6 +71,7 @@ export function InboxPage() {
 		[projectOptions, spaceId],
 	)
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
+	const display = useTaskDisplayOptions(INBOX_DISPLAY_PAGE_KEY)
 	const { controller, filteredTasks } = useTaskPageFilterController({
 		tasks: taskSourceItems,
 		projects: inboxProjectOptions,
@@ -81,13 +86,16 @@ export function InboxPage() {
 		initialShowCompleted: false,
 	})
 	useRegisterPageFilterController(controller)
-	const taskSelectionOrderIds = useMemo(
+	const displayResult = useMemo(
 		() =>
-			getTaskBoardVisualOrderIds(filteredTasks, {
-				statusOrder: ACTIVE_TASK_BOARD_STATUS_ORDER,
+			applyTaskDisplayOptionsToTasks({
+				items: filteredTasks,
+				options: display.options,
+				context: createTaskDisplayApplyContext(INBOX_DISPLAY_PAGE_KEY),
 			}),
-		[filteredTasks],
+		[display.options, filteredTasks],
 	)
+	const taskSelectionOrderIds = displayResult.selectionOrderIds
 	const {
 		selectedTaskIdSet,
 		selectionSnapshot,
@@ -123,15 +131,16 @@ export function InboxPage() {
 				boardKind: 'task',
 				boardConfig: {
 					variant: 'inbox',
+					customSections: displayResult.boardPatch.customSections,
 					emptyActionLabel: '创建任务',
 					emptyDescription:
 						'新捕获的任务都会先来到这里，现在这一批已经整理完了。点「创建任务」也可以先记一条，之后再决定把它放去哪里。',
 					emptyTitle: 'Inbox 已清空',
-					hideEmptySections: true,
-					statusOrder: ACTIVE_TASK_BOARD_STATUS_ORDER,
+					hideEmptySections: displayResult.boardPatch.hideEmptySections ?? true,
+					statusOrder: displayResult.boardPatch.statusOrder,
 				},
 				boardData: {
-					items: filteredTasks,
+					items: displayResult.orderedItems,
 					status: taskBoardStatus,
 					activeItemId: activeDetail?.kind === 'task' ? activeDetail.id : null,
 					pendingItemId: pendingTaskId,
@@ -185,6 +194,7 @@ export function InboxPage() {
 				void taskList.refetch()
 			}}
 			sceneVariant='inbox'
+			toolbarDisplayAction={<DisplayOptionsButton pageKey={INBOX_DISPLAY_PAGE_KEY} />}
 			toolbarPills={[
 				{
 					label: `待整理 ${filteredTasks.length}`,

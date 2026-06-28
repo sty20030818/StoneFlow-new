@@ -185,6 +185,7 @@ export type EntitySceneProps = {
 	toolbarPills?: MainCardToolbarPill[]
 	toolbarLeft?: ReactNode
 	toolbarFilterAction?: ReactNode
+	toolbarDisplayAction?: ReactNode
 	onRefresh?: () => void
 	refreshDisabled?: boolean
 	/** 页级状态提示区 */

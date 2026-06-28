@@ -34,7 +34,7 @@ describe('DisplayOptionsButton', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
 
-		expect(await screen.findByText('布局')).toBeInTheDocument()
+		expect(await screen.findByText('布局模式')).toBeInTheDocument()
 		expect(screen.getByLabelText('布局模式')).toBeInTheDocument()
 	})
 
