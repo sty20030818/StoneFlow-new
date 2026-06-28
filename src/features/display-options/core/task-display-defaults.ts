@@ -7,7 +7,7 @@ const DEFAULT_PROJECT_DETAIL_VISIBLE_PROPERTIES = [
 	'priority',
 	'dueAt',
 	'scheduledAt',
-	'links',
+	'updatedAt',
 ] as const
 const DEFAULT_INBOX_VISIBLE_PROPERTIES = ['status', 'priority', 'project', 'createdAt'] as const
 const DEFAULT_DATE_FOCUSED_VISIBLE_PROPERTIES = [
@@ -115,4 +115,3 @@ export function getTaskDisplaySystemDefaults(pageKey: TaskDisplayPageKey): TaskD
 		visibleProperties: [...defaults.visibleProperties],
 	}
 }
-

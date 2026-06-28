@@ -1,5 +1,4 @@
 export { DisplayOptionsButton } from './DisplayOptionsButton'
 export { DisplayOptionsPanel } from './DisplayOptionsPanel'
 export { DisplayOptionsPopover } from './DisplayOptionsPopover'
-export { DisplayOptionsSection } from './DisplayOptionsSection'
 export { PropertyToggleGrid } from './PropertyToggleGrid'

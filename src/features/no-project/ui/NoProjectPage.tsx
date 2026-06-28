@@ -146,6 +146,7 @@ export function NoProjectPage() {
 					emptyTitle: '当前没有独立事项',
 					hideEmptySections: displayResult.boardPatch.hideEmptySections ?? true,
 					statusOrder: displayResult.boardPatch.statusOrder,
+					visibleProperties: displayResult.visibleProperties,
 				},
 				boardData: {
 					items: displayResult.orderedItems,

@@ -138,6 +138,7 @@ export function InboxPage() {
 					emptyTitle: 'Inbox 已清空',
 					hideEmptySections: displayResult.boardPatch.hideEmptySections ?? true,
 					statusOrder: displayResult.boardPatch.statusOrder,
+					visibleProperties: displayResult.visibleProperties,
 				},
 				boardData: {
 					items: displayResult.orderedItems,

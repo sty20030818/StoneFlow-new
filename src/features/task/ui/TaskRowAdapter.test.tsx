@@ -75,6 +75,7 @@ function renderTaskRowAdapter({
 	actions = buildActions(),
 	contextMenuActions,
 	contextTasks,
+	visibleProperties,
 }: {
 	task?: TaskListItem
 	rowState?: TaskRowAdapterProps['rowState']
@@ -82,6 +83,7 @@ function renderTaskRowAdapter({
 	actions?: TaskRowAdapterProps['actions']
 	contextMenuActions?: TaskContextMenuBulkActions
 	contextTasks?: TaskListItem[]
+	visibleProperties?: TaskRowAdapterProps['visibleProperties']
 } = {}) {
 	render(
 		<DangerConfirmProvider>
@@ -92,6 +94,7 @@ function renderTaskRowAdapter({
 				projectBinding={projectBinding}
 				rowState={rowState}
 				task={task}
+				visibleProperties={visibleProperties}
 			/>
 		</DangerConfirmProvider>,
 	)
@@ -169,6 +172,19 @@ describe('TaskRowAdapter', () => {
 		})
 
 		expect(screen.queryByRole('button', { name: '归属' })).not.toBeInTheDocument()
+	})
+
+	it('visibleProperties 会控制行内字段显示', () => {
+		renderTaskRowAdapter({
+			visibleProperties: ['status', 'project', 'updatedAt'],
+		})
+
+		expect(screen.queryByRole('button', { name: '设置任务 任务 A 的优先级' })).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '设置任务 任务 A 的状态' })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '归属' })).toBeInTheDocument()
+		expect(screen.getByText('5/7')).toBeInTheDocument()
+		expect(screen.queryByText('5/6')).not.toBeInTheDocument()
+		expect(screen.queryByText('5/8')).not.toBeInTheDocument()
 	})
 
 	it('右键菜单属性动作在多选时统一走 placement bulk 入口', async () => {

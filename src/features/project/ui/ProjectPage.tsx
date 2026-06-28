@@ -218,6 +218,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 						: {}),
 					hideEmptySections: displayResult.boardPatch.hideEmptySections ?? true,
 					statusOrder: displayResult.boardPatch.statusOrder,
+					visibleProperties: displayResult.visibleProperties,
 				},
 				boardData: {
 					items: project ? displayResult.orderedItems : [],

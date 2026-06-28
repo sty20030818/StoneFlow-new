@@ -81,15 +81,14 @@ const COMPLETED_ORDER_LABELS: Record<ResolvedTaskDisplayOptions['completedOrder'
 	natural: '自然顺序',
 }
 
-const PROPERTY_META: Record<TaskDisplayPropertyKey, { label: string; description: string }> = {
-	status: { label: '状态', description: '在列表行里保留任务当前状态。' },
-	priority: { label: '优先级', description: '显示紧急程度，方便快速扫视。' },
-	project: { label: '项目', description: '显示任务当前归属项目。' },
-	dueAt: { label: '截止时间', description: '显示任务的 deadline 信息。' },
-	scheduledAt: { label: '计划时间', description: '显示任务的计划执行时间。' },
-	updatedAt: { label: '更新时间', description: '显示最近一次修改时间。' },
-	createdAt: { label: '创建时间', description: '显示任务创建时间。' },
-	links: { label: '链接', description: '显示任务关联的资源链接入口。' },
+const PROPERTY_META: Record<TaskDisplayPropertyKey, { label: string }> = {
+	status: { label: '状态' },
+	priority: { label: '优先级' },
+	project: { label: '项目' },
+	dueAt: { label: '截止时间' },
+	scheduledAt: { label: '计划时间' },
+	updatedAt: { label: '更新时间' },
+	createdAt: { label: '创建时间' },
 }
 
 const TASK_DISPLAY_ORDERED_PROPERTIES = [
@@ -100,7 +99,6 @@ const TASK_DISPLAY_ORDERED_PROPERTIES = [
 	'scheduledAt',
 	'updatedAt',
 	'createdAt',
-	'links',
 ] as const satisfies readonly TaskDisplayPropertyKey[]
 
 export function DisplayOptionsPanel({

@@ -35,7 +35,6 @@ const COMMON_VISIBLE_PROPERTIES = [
 	'scheduledAt',
 	'updatedAt',
 	'createdAt',
-	'links',
 ] as const satisfies readonly TaskDisplayPropertyKey[]
 
 const LIST_GROUPS = ['none', 'status', 'priority', 'project', 'due', 'scheduled'] as const satisfies readonly TaskDisplayGroupBy[]

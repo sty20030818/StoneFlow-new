@@ -57,6 +57,15 @@ describe('DisplayOptionsButton', () => {
 			)
 		})
 	})
+
+	it('V1 面板不再暴露 links 显示属性', async () => {
+		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
+
+		fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
+
+		await screen.findByText('显示属性')
+		expect(screen.queryByRole('button', { name: /链接/ })).not.toBeInTheDocument()
+	})
 })
 
 function renderWithQueryClient(ui: React.ReactNode) {

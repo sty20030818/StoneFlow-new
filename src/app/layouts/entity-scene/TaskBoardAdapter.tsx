@@ -60,6 +60,7 @@ export function TaskBoardAdapter({ config, data, actions }: TaskBoardAdapterProp
 			status={data.status ?? 'ready'}
 			statusOrder={config.statusOrder}
 			tasks={data.items ?? []}
+			visibleProperties={config.visibleProperties}
 		/>
 	)
 }

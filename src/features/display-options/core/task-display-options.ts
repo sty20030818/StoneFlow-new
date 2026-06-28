@@ -38,7 +38,6 @@ export const TASK_DISPLAY_PROPERTY_KEY_VALUES = [
 	'scheduledAt',
 	'updatedAt',
 	'createdAt',
-	'links',
 ] as const
 
 export type DisplayLayoutMode = (typeof TASK_DISPLAY_LAYOUT_MODE_VALUES)[number]
@@ -82,4 +81,3 @@ export const taskDisplayOptionsSchema = z.object({
 })
 
 export const taskDisplayPreferenceSchema = taskDisplayOptionsSchema.partial()
-

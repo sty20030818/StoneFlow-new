@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import type { MainCardToolbarPill } from '@/app/layouts/main-card/MainCardLayout'
+import type { TaskDisplayPropertyKey } from '@/features/display-options/core'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type {
@@ -33,6 +34,7 @@ export type EntitySceneTaskBoardConfig = {
 	emptyActionLabel?: string
 	hideEmptySections?: boolean
 	statusOrder?: readonly TaskStatus[]
+	visibleProperties?: TaskDisplayPropertyKey[]
 	customSections?: Array<{
 		key: string
 		label: string

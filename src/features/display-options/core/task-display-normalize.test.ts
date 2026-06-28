@@ -47,7 +47,7 @@ describe('resolveTaskDisplayOptions', () => {
 				personalOverride: {
 					groupBy: 'status',
 					orderBy: 'priority',
-					visibleProperties: ['status', 'links'],
+					visibleProperties: ['status', 'updatedAt'],
 				},
 			}),
 		).toEqual({
@@ -58,7 +58,7 @@ describe('resolveTaskDisplayOptions', () => {
 			orderDirection: 'asc',
 			completedOrder: 'recency',
 			showEmptyGroups: true,
-			visibleProperties: ['status', 'links'],
+			visibleProperties: ['status', 'updatedAt'],
 		})
 	})
 
@@ -109,11 +109,10 @@ describe('resolveTaskDisplayOptions', () => {
 		const resolved = resolveTaskDisplayOptions({
 			pageKey: 'task:all',
 			personalOverride: {
-				visibleProperties: ['project', 'project', 'links', 'status', 'invalid' as never],
+				visibleProperties: ['project', 'project', 'updatedAt', 'status', 'invalid' as never],
 			},
 		})
 
-		expect(resolved.visibleProperties).toEqual(['project', 'links', 'status'])
+		expect(resolved.visibleProperties).toEqual(['project', 'updatedAt', 'status'])
 	})
 })
-

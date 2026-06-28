@@ -139,6 +139,7 @@ export function AllTasksPage() {
 					emptyTitle: '当前没有任务',
 					hideEmptySections: displayResult.boardPatch.hideEmptySections ?? true,
 					statusOrder: displayResult.boardPatch.statusOrder,
+					visibleProperties: displayResult.visibleProperties,
 				},
 				boardData: {
 					items: displayResult.orderedItems,

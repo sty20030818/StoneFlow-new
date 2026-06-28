@@ -18,6 +18,7 @@ import {
 } from '@/shared/ui/board'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import { useSectionSelection } from '@/features/bulk-action'
+import type { TaskDisplayPropertyKey } from '@/features/display-options/core'
 import {
 	TASK_BOARD_STATUS_ORDER,
 	orderTasksByTaskBoardVisualOrder,
@@ -80,6 +81,7 @@ type TaskBoardProps = {
 	spaces?: Array<{ id: string; name: string }>
 	onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 	showProjectCellOptions?: boolean
+	visibleProperties?: TaskDisplayPropertyKey[]
 }
 
 export function TaskBoard({
@@ -116,6 +118,7 @@ export function TaskBoard({
 	spaces,
 	onSelectPlacement,
 	showProjectCellOptions = true,
+	visibleProperties,
 }: TaskBoardProps) {
 	const openSections = useShellPreferenceStore(selectProjectTaskBoardOpenSections)
 	const setProjectTaskBoardOpenSections = useShellPreferenceStore(
@@ -208,6 +211,7 @@ export function TaskBoard({
 						: undefined
 				}
 				task={task}
+				visibleProperties={visibleProperties}
 			/>
 		)
 	}

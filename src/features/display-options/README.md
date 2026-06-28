@@ -84,7 +84,6 @@ src/features/display-options/
     ├── DisplayOptionsButton.tsx
     ├── DisplayOptionsPopover.tsx
     ├── DisplayOptionsPanel.tsx
-    ├── DisplayOptionsSection.tsx
     ├── PropertyToggleGrid.tsx
     └── index.ts
 ```
@@ -131,11 +130,20 @@ const resolved = applyDisplayOptionsToTasks({
 3. `resolved.visibleProperties`
 4. `resolved.layout`
 
+说明：
+
+1. `resolved.visibleProperties` 需要继续透传到 `TaskBoard / TaskRowAdapter`，不能只停留在面板状态。
+
 ---
 
 ## 5. 接入 toolbar 的方式
 
-统一入口必须挂在 `EntityScene.toolbarFilterAction`。
+统一入口必须挂在 `EntityScene.toolbarDisplayAction`。
+
+说明：
+
+1. `toolbarFilterAction` 是第一个按钮位，保留给原有筛选 / 视图管理入口；
+2. `toolbarDisplayAction` 是第二个按钮位，专门承载 display options。
 
 不要：
 
@@ -194,7 +202,7 @@ schema
 
 可以复用：
 
-1. `EntityScene.toolbarFilterAction`
+1. `EntityScene.toolbarDisplayAction`
 2. `MainCard.Toolbar` 的按钮承载位
 3. `View` 现有 query 链路拿任务候选集
 4. `TaskBoard` 和 `BoardGroup` 的渲染能力
@@ -295,4 +303,3 @@ schema
 3. `src/features/task/model/taskBoardOrder.ts`
 4. `src/app/layouts/entity-scene/EntityScene.tsx`
 5. `src/app/layouts/main-card/MainCardLayout.tsx`
-

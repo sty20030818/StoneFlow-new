@@ -1,6 +1,7 @@
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TaskContextMenu } from '@/features/task/ui/TaskContextMenu'
 import type { TaskContextMenuBulkActions } from '@/features/task/ui/useTaskContextMenuBulkActions'
+import type { TaskDisplayPropertyKey } from '@/features/display-options/core'
 import {
 	createTaskPlacementGroupedDropdownProps,
 	createTaskPriorityMetadataDropdownProps,
@@ -18,9 +19,9 @@ import {
 	RowSelectionCell,
 	RowShell,
 	RowTitleCell,
-	TagsCell,
 	type RowSelectionGroupPosition,
 } from '@/shared/ui/row'
+import { formatShortDate } from '@/shared/lib/date'
 
 type TaskRowAdapterProps = {
 	task: TaskListItem
@@ -44,6 +45,7 @@ type TaskRowAdapterProps = {
 		onSelectPlacement?: (task: TaskListItem, target: TaskPlacementTarget) => void
 		showProjectCellOptions?: boolean
 	}
+	visibleProperties?: readonly TaskDisplayPropertyKey[]
 	actions: {
 		onOpenTask: (taskId: string) => void
 		onToggleTaskSelection: (taskId: string) => void
@@ -69,6 +71,7 @@ export function TaskRowAdapter({
 	selectionGroupPosition,
 	contextMenuActions,
 	projectBinding,
+	visibleProperties,
 	actions,
 }: TaskRowAdapterProps) {
 	const { isActive, isSelected, isPending, isHovered = false, hoverSource = null } = rowState
@@ -96,6 +99,16 @@ export function TaskRowAdapter({
 		projectId: task.projectId,
 		inboxAt: task.inboxAt,
 	})
+	const visiblePropertySet = new Set(
+		visibleProperties ?? ['status', 'priority', 'project', 'dueAt', 'scheduledAt', 'createdAt'],
+	)
+	const showStatus = visiblePropertySet.has('status')
+	const showPriority = visiblePropertySet.has('priority')
+	const showProject = visiblePropertySet.has('project') && showProjectCellOptions
+	const showDueAt = visiblePropertySet.has('dueAt')
+	const showScheduledAt = visiblePropertySet.has('scheduledAt')
+	const showUpdatedAt = visiblePropertySet.has('updatedAt')
+	const showCreatedAt = visiblePropertySet.has('createdAt')
 
 	return (
 		<TaskContextMenu
@@ -204,34 +217,38 @@ export function TaskRowAdapter({
 							visible={isSelected || isHovered}
 							onCheckedChange={() => actions.onToggleTaskSelection(task.id)}
 						/>
-						<MetadataFieldDropdown
-							ariaLabel={`设置任务 ${task.title} 的优先级`}
-							buttonAppearance='row-icon'
-							compact
-							disabled={isPending}
-							fieldKey='priority'
-							headerShortcut={priorityDropdownProps.headerShortcut}
-							label='优先级'
-							menuLabel={priorityDropdownProps.menuLabel}
-							options={priorityDropdownProps.options}
-							stopPropagation
-							value={task.priority}
-							onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
-						/>
-						<MetadataFieldDropdown
-							ariaLabel={`设置任务 ${task.title} 的状态`}
-							buttonAppearance='row-icon'
-							compact
-							disabled={isPending}
-							fieldKey='status'
-							headerShortcut={statusDropdownProps.headerShortcut}
-							label='状态'
-							menuLabel={statusDropdownProps.menuLabel}
-							options={statusDropdownProps.options}
-							stopPropagation
-							value={task.status}
-							onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
-						/>
+						{showPriority ? (
+							<MetadataFieldDropdown
+								ariaLabel={`设置任务 ${task.title} 的优先级`}
+								buttonAppearance='row-icon'
+								compact
+								disabled={isPending}
+								fieldKey='priority'
+								headerShortcut={priorityDropdownProps.headerShortcut}
+								label='优先级'
+								menuLabel={priorityDropdownProps.menuLabel}
+								options={priorityDropdownProps.options}
+								stopPropagation
+								value={task.priority}
+								onChange={(priority) => void actions.onUpdateTaskPriority(task, priority)}
+							/>
+						) : null}
+						{showStatus ? (
+							<MetadataFieldDropdown
+								ariaLabel={`设置任务 ${task.title} 的状态`}
+								buttonAppearance='row-icon'
+								compact
+								disabled={isPending}
+								fieldKey='status'
+								headerShortcut={statusDropdownProps.headerShortcut}
+								label='状态'
+								menuLabel={statusDropdownProps.menuLabel}
+								options={statusDropdownProps.options}
+								stopPropagation
+								value={task.status}
+								onChange={(status) => void actions.onUpdateTaskStatus(task, status)}
+							/>
+						) : null}
 					</RowShell.Leading>
 
 					<RowShell.Title>
@@ -241,41 +258,33 @@ export function TaskRowAdapter({
 
 				<RowShell.Right>
 					<RowShell.Fields>
-						<TagsCell />
-						<MetadataDateDropdown
-							ariaLabel={`截止 ${task.title}`}
-							compact
-							hideWhenEmpty
-							icon={taskDateMetadataIcons.due}
-							label='截止时间'
-							menuAlign='end'
-							stopPropagation
-							value={task.dueAt}
-							onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
-						/>
-						<MetadataDateDropdown
-							ariaLabel={`计划 ${task.title}`}
-							compact
-							hideWhenEmpty
-							icon={taskDateMetadataIcons.scheduled}
-							label='计划时间'
-							menuAlign='end'
-							stopPropagation
-							value={task.scheduledAt}
-							onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
-						/>
-						<MetadataDateDropdown
-							ariaLabel={`提醒 ${task.title}`}
-							compact
-							hideWhenEmpty
-							icon={taskDateMetadataIcons.reminder}
-							label='提醒时间'
-							menuAlign='end'
-							stopPropagation
-							value={task.reminderAt}
-							onChange={(value) => void actions.onUpdateTaskReminderAt?.(task, value)}
-						/>
-						{showProjectCellOptions ? (
+						{showDueAt ? (
+							<MetadataDateDropdown
+								ariaLabel={`截止 ${task.title}`}
+								compact
+								hideWhenEmpty
+								icon={taskDateMetadataIcons.due}
+								label='截止时间'
+								menuAlign='end'
+								stopPropagation
+								value={task.dueAt}
+								onChange={(value) => void actions.onUpdateTaskDueDate?.(task, value)}
+							/>
+						) : null}
+						{showScheduledAt ? (
+							<MetadataDateDropdown
+								ariaLabel={`计划 ${task.title}`}
+								compact
+								hideWhenEmpty
+								icon={taskDateMetadataIcons.scheduled}
+								label='计划时间'
+								menuAlign='end'
+								stopPropagation
+								value={task.scheduledAt}
+								onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
+							/>
+						) : null}
+						{showProject ? (
 							<MetadataPlacementDropdown
 								compact
 								disabled={isPending}
@@ -292,11 +301,27 @@ export function TaskRowAdapter({
 								}
 							/>
 						) : null}
-						<CreatedAtCell value={task.createdAt} />
+						{showUpdatedAt ? <UpdatedAtCell value={task.updatedAt} /> : null}
+						{showCreatedAt ? <CreatedAtCell value={task.createdAt} /> : null}
 					</RowShell.Fields>
 				</RowShell.Right>
 			</RowShell.Root>
 		</TaskContextMenu>
+	)
+}
+
+function UpdatedAtCell({ value }: { value: string | null | undefined }) {
+	if (!value) {
+		return null
+	}
+
+	return (
+		<span
+			className='shrink-0 text-xs tabular-nums text-sf-text-tertiary'
+			title={`更新于 ${formatShortDate(value)}`}
+		>
+			{formatShortDate(value)}
+		</span>
 	)
 }
 

@@ -266,6 +266,7 @@ export function ViewsPage() {
 						emptyTitle: activeView ? '当前没有任务' : '当前还没有视图',
 						hideEmptySections: displayResult.boardPatch.hideEmptySections ?? true,
 						statusOrder: displayResult.boardPatch.statusOrder,
+						visibleProperties: displayResult.visibleProperties,
 					},
 					boardData: {
 						items: displayResult.orderedItems,
