@@ -195,9 +195,6 @@ export function AllTasksPage() {
 					<PlusIcon />
 				</MainCard.GhostAction>
 			}
-			onRefresh={() => {
-				void taskList.refetch()
-			}}
 			sceneVariant='tasks'
 			toolbarDisplayAction={<DisplayOptionsButton pageKey={ALL_TASKS_DISPLAY_PAGE_KEY} />}
 			toolbarPills={TASK_FILTERS.map((filter) => ({

@@ -193,9 +193,6 @@ export function ProjectOverviewPage() {
 					<PlusIcon />
 				</MainCard.GhostAction>
 			}
-			onRefresh={() => {
-				void overview.refetch()
-			}}
 			sceneVariant='project-overview'
 			toolbarPills={[
 				{

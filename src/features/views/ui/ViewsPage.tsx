@@ -340,9 +340,6 @@ export function ViewsPage() {
 						<PlusIcon />
 					</MainCard.GhostAction>
 				}
-				onRefresh={() => {
-					void taskRunQuery.refetch()
-				}}
 				sceneVariant='view'
 				toolbarDisplayAction={
 					activeView ? <DisplayOptionsButton pageKey={displayPageKey} /> : undefined

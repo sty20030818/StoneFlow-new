@@ -251,9 +251,6 @@ export function LifecycleList({ mode }: LifecycleListProps) {
 						selectedCount={selectedCount}
 					/>
 				}
-				onRefresh={() => {
-					void entriesQuery.refetch()
-				}}
 				sceneVariant={mode}
 				toolbarPills={lifecyclePills.map((pill) => ({
 					label: pill.label,

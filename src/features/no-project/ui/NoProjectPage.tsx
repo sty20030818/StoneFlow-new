@@ -202,9 +202,6 @@ export function NoProjectPage() {
 					<PlusIcon />
 				</MainCard.GhostAction>
 			}
-			onRefresh={() => {
-				void taskList.refetch()
-			}}
 			sceneVariant='no-project'
 			toolbarDisplayAction={<DisplayOptionsButton pageKey={NO_PROJECT_DISPLAY_PAGE_KEY} />}
 			toolbarPills={NO_PROJECT_FILTERS.map((filter) => ({

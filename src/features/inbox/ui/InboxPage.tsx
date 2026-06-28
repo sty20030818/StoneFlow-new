@@ -191,9 +191,6 @@ export function InboxPage() {
 					<PlusIcon />
 				</MainCard.GhostAction>
 			}
-			onRefresh={() => {
-				void taskList.refetch()
-			}}
 			sceneVariant='inbox'
 			toolbarDisplayAction={<DisplayOptionsButton pageKey={INBOX_DISPLAY_PAGE_KEY} />}
 			toolbarPills={[

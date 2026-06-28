@@ -11,7 +11,6 @@ import {
 import {
 	ListFilterIcon,
 	PanelRightOpenIcon,
-	RefreshCwIcon,
 	SlidersHorizontalIcon,
 } from 'lucide-react'
 
@@ -43,8 +42,6 @@ type MainCardToolbarProps = {
 	left?: ReactNode
 	filterAction?: ReactNode
 	displayAction?: ReactNode
-	onRefresh?: () => void
-	refreshDisabled?: boolean
 	className?: string
 }
 
@@ -89,8 +86,6 @@ function MainCardToolbar({
 	left,
 	filterAction,
 	displayAction,
-	onRefresh,
-	refreshDisabled,
 	className,
 }: MainCardToolbarProps) {
 	const pillRole = pills?.some((pill) => pill.role === 'tab') ? 'tablist' : undefined
@@ -129,7 +124,7 @@ function MainCardToolbar({
 						action={{ label: '视图选项', icon: SlidersHorizontalIcon, onClick: () => undefined }}
 					/>
 				)}
-				{createToolbarActions(onRefresh, refreshDisabled).map((action) => (
+				{createToolbarActions().map((action) => (
 					<MainCardToolbarIconButton action={action} key={action.label} />
 				))}
 			</div>
@@ -190,20 +185,11 @@ function MainCardToolbarIconButton({ action }: { action: MainCardIconAction }) {
 	)
 }
 
-function createToolbarActions(
-	onRefresh: (() => void) | undefined,
-	refreshDisabled: boolean | undefined,
-): MainCardIconAction[] {
+function createToolbarActions(): MainCardIconAction[] {
 	const noop = () => undefined
 
 	return [
 		{ label: '打开右侧面板', icon: PanelRightOpenIcon, onClick: noop },
-		{
-			label: '刷新',
-			icon: RefreshCwIcon,
-			onClick: onRefresh,
-			disabled: refreshDisabled,
-		},
 	]
 }
 

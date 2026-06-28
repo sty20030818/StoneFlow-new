@@ -188,8 +188,6 @@ export type EntitySceneProps = {
 	toolbarLeft?: ReactNode
 	toolbarFilterAction?: ReactNode
 	toolbarDisplayAction?: ReactNode
-	onRefresh?: () => void
-	refreshDisabled?: boolean
 	/** 页级状态提示区 */
 	notices?: ReactNode
 	/** Board 区块头部（位于 notices 与 board slot 之间） */

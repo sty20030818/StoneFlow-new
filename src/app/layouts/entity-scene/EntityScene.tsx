@@ -27,18 +27,14 @@ function EntitySceneToolbar({
 	toolbarLeft,
 	toolbarFilterAction,
 	toolbarDisplayAction,
-	onRefresh,
-	refreshDisabled,
 }: Pick<
 	EntitySceneProps,
 	| 'toolbarPills'
 	| 'toolbarLeft'
 	| 'toolbarFilterAction'
 	| 'toolbarDisplayAction'
-	| 'onRefresh'
-	| 'refreshDisabled'
 >) {
-	if (!toolbarPills && !toolbarLeft && !toolbarFilterAction && !toolbarDisplayAction && !onRefresh) {
+	if (!toolbarPills && !toolbarLeft && !toolbarFilterAction && !toolbarDisplayAction) {
 		return null
 	}
 
@@ -48,9 +44,7 @@ function EntitySceneToolbar({
 				displayAction={toolbarDisplayAction}
 				filterAction={toolbarFilterAction}
 				left={toolbarLeft}
-				onRefresh={onRefresh}
 				pills={toolbarPills}
-				refreshDisabled={refreshDisabled}
 			/>
 		</div>
 	)
@@ -138,8 +132,6 @@ function EntitySceneComponent({
 	toolbarLeft,
 	toolbarFilterAction,
 	toolbarDisplayAction,
-	onRefresh,
-	refreshDisabled,
 	notices,
 	boardHeader,
 	beforeBoard,
@@ -158,9 +150,7 @@ function EntitySceneComponent({
 			/>
 
 			<EntitySceneToolbar
-				onRefresh={onRefresh}
 				toolbarDisplayAction={toolbarDisplayAction}
-				refreshDisabled={refreshDisabled}
 				toolbarFilterAction={toolbarFilterAction}
 				toolbarLeft={toolbarLeft}
 				toolbarPills={toolbarPills}

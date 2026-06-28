@@ -357,12 +357,6 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 					</div>
 				) : null
 			}
-			onRefresh={() => {
-				if (!projectId) {
-					return
-				}
-				void taskList.refetch()
-			}}
 			sceneVariant='project-detail'
 			toolbarDisplayAction={<DisplayOptionsButton pageKey={PROJECT_DETAIL_DISPLAY_PAGE_KEY} />}
 			toolbarPills={PROJECT_TASK_FILTERS.map((filter) => ({
