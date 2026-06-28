@@ -1,6 +1,7 @@
 use std::thread;
 
 mod apply;
+mod diagnose;
 mod error;
 mod local;
 mod pull;
@@ -11,6 +12,7 @@ mod schema;
 mod types;
 
 use error::SyncWorkerError;
+use diagnose::collect_sync_diagnostics;
 use pull::pull_remote_changes;
 use push::push_local_changes;
 use remote::{bootstrap_remote_schema, open_local_sqlite, open_remote};
@@ -87,6 +89,16 @@ async fn run() -> Result<(), SyncWorkerError> {
             pull_remote_changes(&local, &remote).await
         }
         SyncRunMode::Restore => restore_remote_snapshot(&local, &remote).await,
+        SyncRunMode::Diagnose => {
+            let payload = collect_sync_diagnostics(&local, &remote).await?;
+            println!(
+                "{}",
+                serde_json::to_string(&payload).map_err(|error| {
+                    SyncWorkerError::serialization(format!("序列化同步诊断结果失败: {error}"))
+                })?
+            );
+            Ok(())
+        }
     }
 }
 

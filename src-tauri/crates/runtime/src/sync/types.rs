@@ -76,6 +76,48 @@ pub struct RestoreSyncPayload {
     pub summary: SyncRestoreSummaryPayload,
 }
 
+/// 诊断面板展示的同步计数摘要。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncDiagnosticsCountsPayload {
+    pub spaces: i64,
+    pub projects: i64,
+    pub tasks: i64,
+    pub task_links: i64,
+    pub views: i64,
+    pub settings: i64,
+    pub total_items: i64,
+}
+
+/// 当前设备本地副本的诊断摘要。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncLocalDiagnosticsPayload {
+    pub device_id: Option<String>,
+    pub last_pulled_remote_cursor: Option<i64>,
+    pub last_restore_at: Option<String>,
+    pub pending_outbox_count: i64,
+    pub counts: SyncDiagnosticsCountsPayload,
+}
+
+/// 远端 Turso 工作集的诊断摘要。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncRemoteDiagnosticsPayload {
+    pub latest_remote_cursor: Option<i64>,
+    pub counts: SyncDiagnosticsCountsPayload,
+}
+
+/// 设置页读取的同步诊断载荷。
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncDiagnosticsPayload {
+    #[serde(default)]
+    pub remote_host: Option<String>,
+    pub local: SyncLocalDiagnosticsPayload,
+    pub remote: SyncRemoteDiagnosticsPayload,
+}
+
 /// 前端提交的远端配置输入。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]

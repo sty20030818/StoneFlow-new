@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use tauri::Manager;
 use tokio::sync::OwnedMutexGuard;
@@ -13,7 +14,10 @@ use super::{
     config::{load_remote_config, save_remote_config},
     local::{inspect_local_replica, read_restore_summary},
     state::{SyncRunMode, SyncRuntimeState},
-    types::{ConfigureSyncInput, RestoreSyncPayload, SyncReplicaState, SyncStatusPayload},
+    types::{
+        ConfigureSyncInput, RestoreSyncPayload, SyncDiagnosticsPayload, SyncReplicaState,
+        SyncStatusPayload,
+    },
 };
 use stoneflow_storage::database::DatabaseRuntimeState;
 
@@ -46,6 +50,33 @@ pub async fn get_sync_status(
 ) -> Result<SyncStatusPayload, AppError> {
     refresh_local_replica_state(sync_state, database).await?;
     Ok(sync_state.snapshot().await)
+}
+
+/// 读取当前设备和 Turso 远端的只读诊断摘要。
+pub async fn get_sync_diagnostics(app_handle: &tauri::AppHandle) -> Result<SyncDiagnosticsPayload, AppError> {
+    let sync_state = sync_state_from_app(app_handle)?;
+    let database = database_state_from_app(app_handle)?;
+    refresh_local_replica_state(&sync_state, &database).await?;
+    let remote_config = sync_state
+        .remote_config()
+        .await
+        .ok_or_else(|| AppError::validation("云同步尚未配置远端，请先保存 Turso url 和 token"))?;
+
+    log::info!(
+        "sync:diagnostics requested db_path={} host={}",
+        database.database_path().display(),
+        redact_remote_url(&remote_config.url)
+    );
+
+    let mut diagnostics = run_sync_worker_json::<SyncDiagnosticsPayload>(
+        app_handle,
+        database.database_path().display().to_string(),
+        &remote_config,
+        "diagnose",
+    )
+    .await?;
+    diagnostics.remote_host = Some(redact_remote_url(&remote_config.url));
+    Ok(diagnostics)
 }
 
 /// 保存远端配置并刷新运行态缓存。
@@ -454,7 +485,8 @@ async fn run_sync_worker(
     remote_config: &crate::sync::types::SyncRemoteConfig,
     mode: SyncRunMode,
 ) -> Result<(), AppError> {
-    let mut command = build_sync_worker_command(app_handle, database_path, remote_config, mode)?;
+    let mut command =
+        build_sync_worker_command(app_handle, database_path, remote_config, mode_label(mode))?;
     let output = command.output().await.map_err(|error| {
         AppError::internal(format!("启动同步 worker 失败: {error}"))
     })?;
@@ -476,11 +508,48 @@ async fn run_sync_worker(
     Err(failure.into_app_error())
 }
 
+async fn run_sync_worker_json<T: DeserializeOwned>(
+    app_handle: &tauri::AppHandle,
+    database_path: String,
+    remote_config: &crate::sync::types::SyncRemoteConfig,
+    mode_label: &str,
+) -> Result<T, AppError> {
+    let mut command =
+        build_sync_worker_command(app_handle, &database_path, remote_config, mode_label)?;
+    let output = command.output().await.map_err(|error| {
+        AppError::internal(format!("启动同步 worker 失败: {error}"))
+    })?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
+        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+        let failure = parse_sync_worker_failure(&stderr, &stdout, output.status.code());
+        log::warn!(
+            "sync:worker failed mode={} kind={} message={}",
+            mode_label,
+            failure.kind.as_str(),
+            failure.message
+        );
+        return Err(failure.into_app_error());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_owned();
+    if stdout.is_empty() {
+        return Err(AppError::internal(format!(
+            "同步 worker 未返回 {mode_label} 结果"
+        )));
+    }
+
+    serde_json::from_str::<T>(&stdout).map_err(|error| {
+        AppError::internal(format!("解析同步 worker {mode_label} 结果失败: {error}"))
+    })
+}
+
 fn build_sync_worker_command(
     app_handle: &tauri::AppHandle,
     database_path: &str,
     remote_config: &crate::sync::types::SyncRemoteConfig,
-    mode: SyncRunMode,
+    worker_mode: &str,
 ) -> Result<Command, AppError> {
     let worker_args = [
         "--database-path",
@@ -490,7 +559,7 @@ fn build_sync_worker_command(
         "--remote-token",
         remote_config.token.as_str(),
         "--mode",
-        mode_label(mode),
+        worker_mode,
     ];
 
     if let Some(worker_binary) = find_bundled_sync_worker(app_handle)? {

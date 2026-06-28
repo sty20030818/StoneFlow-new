@@ -1,6 +1,12 @@
 import { invoke } from '@tauri-apps/api/core'
 
-import { configureSync, forceSync, getSyncStatus, restoreSync } from '@/features/sync/api/sync'
+import {
+	configureSync,
+	forceSync,
+	getSyncDiagnostics,
+	getSyncStatus,
+	restoreSync,
+} from '@/features/sync/api/sync'
 
 vi.mock('@tauri-apps/api/core', () => ({
 	invoke: vi.fn<(cmd: string, args?: Record<string, unknown>) => Promise<unknown>>(),
@@ -63,6 +69,43 @@ describe('sync api', () => {
 				token: 'secret',
 			},
 		})
+	})
+
+	it('读取同步诊断时调用 get_sync_diagnostics', async () => {
+		mockedInvoke.mockResolvedValue({
+			remoteHost: 'libsql://example.turso.io',
+			local: {
+				deviceId: 'device-1',
+				lastPulledRemoteCursor: 12,
+				lastRestoreAt: '2026-06-28T00:00:00Z',
+				pendingOutboxCount: 1,
+				counts: {
+					spaces: 2,
+					projects: 3,
+					tasks: 8,
+					taskLinks: 1,
+					views: 4,
+					settings: 2,
+					totalItems: 20,
+				},
+			},
+			remote: {
+				latestRemoteCursor: 15,
+				counts: {
+					spaces: 2,
+					projects: 3,
+					tasks: 8,
+					taskLinks: 1,
+					views: 4,
+					settings: 2,
+					totalItems: 20,
+				},
+			},
+		})
+
+		await getSyncDiagnostics()
+
+		expect(mockedInvoke).toHaveBeenCalledWith('get_sync_diagnostics')
 	})
 
 	it('手动同步时调用 force_sync', async () => {

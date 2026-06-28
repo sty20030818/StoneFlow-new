@@ -14,6 +14,7 @@ const setProjectSectionConfigSpy =
 const loadSpacesSpy = vi.fn<() => Promise<void>>()
 const setDefaultSpaceSpy = vi.fn<(spaceId: string) => Promise<Space>>()
 const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
+const getSyncDiagnosticsSpy = vi.fn<() => Promise<unknown>>()
 const configureSyncSpy = vi.fn<(input: { url: string; token: string }) => Promise<unknown>>()
 const forceSyncSpy = vi.fn<() => Promise<unknown>>()
 const restoreSyncSpy = vi.fn<() => Promise<unknown>>()
@@ -45,6 +46,7 @@ vi.mock('@/features/space/query', () => ({
 
 vi.mock('@/features/sync/api/sync', () => ({
 	getSyncStatus: () => getSyncStatusSpy(),
+	getSyncDiagnostics: () => getSyncDiagnosticsSpy(),
 	configureSync: (input: { url: string; token: string }) => configureSyncSpy(input),
 	forceSync: () => forceSyncSpy(),
 	restoreSync: () => restoreSyncSpy(),
@@ -202,6 +204,37 @@ describe('SettingsPage', () => {
 			replicaState: 'uninitialized',
 			replicaReason: null,
 			lastRestoreAt: null,
+		})
+		getSyncDiagnosticsSpy.mockReset()
+		getSyncDiagnosticsSpy.mockResolvedValue({
+			remoteHost: 'libsql://example.turso.io',
+			local: {
+				deviceId: 'device-1',
+				lastPulledRemoteCursor: 12,
+				lastRestoreAt: '2026-06-28T00:00:00Z',
+				pendingOutboxCount: 1,
+				counts: {
+					spaces: 6,
+					projects: 8,
+					tasks: 60,
+					taskLinks: 0,
+					views: 10,
+					settings: 4,
+					totalItems: 88,
+				},
+			},
+			remote: {
+				latestRemoteCursor: 15,
+				counts: {
+					spaces: 6,
+					projects: 8,
+					tasks: 60,
+					taskLinks: 0,
+					views: 10,
+					settings: 4,
+					totalItems: 88,
+				},
+			},
 		})
 		configureSyncSpy.mockReset()
 		configureSyncSpy.mockResolvedValue({
@@ -653,6 +686,36 @@ describe('SettingsPage', () => {
 		expect(screen.getAllByText('当前设备需要先恢复本地副本')).toHaveLength(2)
 		expect(screen.getByText('需要先恢复')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '立即同步' })).toBeDisabled()
+	})
+
+	it('点击刷新诊断时展示远端与本地摘要', async () => {
+		getSyncStatusSpy.mockResolvedValue({
+			enabled: true,
+			status: 'idle',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: '2026-06-28T00:00:00Z',
+		})
+
+		await renderSettingsPage()
+
+		fireEvent.click(screen.getByRole('button', { name: '刷新诊断' }))
+
+		await waitFor(() => {
+			expect(getSyncDiagnosticsSpy).toHaveBeenCalledTimes(1)
+		})
+		expect(screen.getByText('同步诊断')).toBeInTheDocument()
+		expect(screen.getByText('libsql://example.turso.io')).toBeInTheDocument()
+		expect(screen.getAllByText('总计 88 条主数据')).toHaveLength(2)
+		expect(screen.getByText('1 条')).toBeInTheDocument()
 	})
 })
 

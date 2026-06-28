@@ -7,11 +7,12 @@ mod state;
 mod types;
 
 pub use engine::{
-    configure_sync, force_sync, get_sync_status, initialize_state, note_local_write,
+    configure_sync, force_sync, get_sync_diagnostics, get_sync_status, initialize_state, note_local_write,
     restore_sync, trigger_resume_pull, trigger_startup_pull,
 };
 pub use state::SyncRuntimeState;
 pub use types::{
-    ConfigureSyncInput, RestoreSyncPayload, SyncReplicaState, SyncRestoreSummaryPayload,
-    SyncStatusPayload,
+    ConfigureSyncInput, RestoreSyncPayload, SyncDiagnosticsCountsPayload, SyncDiagnosticsPayload,
+    SyncLocalDiagnosticsPayload, SyncRemoteDiagnosticsPayload, SyncReplicaState,
+    SyncRestoreSummaryPayload, SyncStatusPayload,
 };

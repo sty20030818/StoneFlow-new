@@ -32,11 +32,43 @@ export type RestoreSyncPayload = {
 	}
 }
 
+export type SyncDiagnosticsCountsPayload = {
+	spaces: number
+	projects: number
+	tasks: number
+	taskLinks: number
+	views: number
+	settings: number
+	totalItems: number
+}
+
+export type SyncDiagnosticsPayload = {
+	remoteHost: string | null
+	local: {
+		deviceId: string | null
+		lastPulledRemoteCursor: number | null
+		lastRestoreAt: string | null
+		pendingOutboxCount: number
+		counts: SyncDiagnosticsCountsPayload
+	}
+	remote: {
+		latestRemoteCursor: number | null
+		counts: SyncDiagnosticsCountsPayload
+	}
+}
+
 /**
  * 读取当前云同步状态。
  */
 export function getSyncStatus() {
 	return invoke<SyncStatusPayload>('get_sync_status')
+}
+
+/**
+ * 读取当前设备与远端的同步诊断摘要。
+ */
+export function getSyncDiagnostics() {
+	return invoke<SyncDiagnosticsPayload>('get_sync_diagnostics')
 }
 
 /**

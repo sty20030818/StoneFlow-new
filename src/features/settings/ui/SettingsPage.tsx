@@ -15,8 +15,10 @@ import type { SidebarMainItemKey } from '@/features/settings/api/sidebarSettings
 import {
 	configureSync,
 	forceSync,
+	getSyncDiagnostics,
 	getSyncStatus,
 	restoreSync,
+	type SyncDiagnosticsPayload,
 	type SyncReplicaState,
 	type SyncStatus,
 	type SyncStatusPayload,
@@ -106,10 +108,13 @@ export function SettingsPage() {
 	const [sectionErrors, setSectionErrors] = useState<SectionErrorMap>({})
 	const [syncStatus, setSyncStatus] = useState<SyncStatusPayload | null>(null)
 	const [syncStatusMessage, setSyncStatusMessage] = useState<string | null>(null)
+	const [syncDiagnostics, setSyncDiagnostics] = useState<SyncDiagnosticsPayload | null>(null)
+	const [syncDiagnosticsMessage, setSyncDiagnosticsMessage] = useState<string | null>(null)
 	const [syncLoading, setSyncLoading] = useState(true)
 	const [syncSaving, setSyncSaving] = useState(false)
 	const [syncRunning, setSyncRunning] = useState(false)
 	const [syncRestoring, setSyncRestoring] = useState(false)
+	const [syncDiagnosing, setSyncDiagnosing] = useState(false)
 	const [syncUrl, setSyncUrl] = useState('')
 	const [syncToken, setSyncToken] = useState('')
 
@@ -183,6 +188,10 @@ export function SettingsPage() {
 		try {
 			const payload = await getSyncStatus()
 			setSyncStatus(payload)
+			if (!payload.hasRemoteConfig) {
+				setSyncDiagnostics(null)
+				setSyncDiagnosticsMessage(null)
+			}
 			if (syncUrlDraft) {
 				setSyncUrl(payload.remoteUrl ?? '')
 			}
@@ -196,9 +205,31 @@ export function SettingsPage() {
 		}
 	}
 
+	async function refreshSyncDiagnostics(options?: { silent?: boolean }) {
+		const silent = options?.silent ?? false
+		if (!silent) {
+			setSyncDiagnosing(true)
+		}
+		setSyncDiagnosticsMessage(null)
+
+		try {
+			const payload = await getSyncDiagnostics()
+			setSyncDiagnostics(payload)
+		} catch (error) {
+			setSyncDiagnostics(null)
+			setSyncDiagnosticsMessage(normalizeTauriError(error, '同步诊断读取失败'))
+		} finally {
+			if (!silent) {
+				setSyncDiagnosing(false)
+			}
+		}
+	}
+
 	async function handleSaveSyncConfig() {
 		setSyncSaving(true)
 		setSyncStatusMessage(null)
+		setSyncDiagnostics(null)
+		setSyncDiagnosticsMessage(null)
 		try {
 			await configureSync({
 				url: syncUrl.trim(),
@@ -206,6 +237,7 @@ export function SettingsPage() {
 			})
 			setSyncToken('')
 			await refreshSyncStatus({ syncUrlDraft: true })
+			await refreshSyncDiagnostics({ silent: true })
 		} catch (error) {
 			setSyncStatusMessage(normalizeTauriError(error, '同步配置保存失败'))
 		} finally {
@@ -219,6 +251,7 @@ export function SettingsPage() {
 		try {
 			await forceSync()
 			await refreshSyncStatus({ syncUrlDraft: false })
+			await refreshSyncDiagnostics({ silent: true })
 		} catch (error) {
 			setSyncStatusMessage(normalizeTauriError(error, '手动同步失败'))
 			await refreshSyncStatus({ syncUrlDraft: false })
@@ -233,6 +266,7 @@ export function SettingsPage() {
 		try {
 			const payload = await restoreSync()
 			setSyncStatus(payload.status)
+			await refreshSyncDiagnostics({ silent: true })
 			toast.success(buildRestoreSuccessToastMessage(payload.summary))
 			emitEvent({ type: 'workspace:restored', payload: { source: 'sync_restore' } })
 			void navigate(openSection(scope, 'tasks', fallbackSpaceId), { replace: true })
@@ -252,6 +286,7 @@ export function SettingsPage() {
 		syncRestoring,
 	)
 	const syncBusy = syncSaving || syncRunning || syncRestoring || syncLoading
+	const syncActionBusy = syncBusy || syncDiagnosing
 	const syncConfigIncomplete = syncUrl.trim().length === 0 || syncToken.trim().length === 0
 	const syncRequiresRestore = syncStatus?.replicaState === 'restore_required'
 	const displayedSyncStatus: SyncStatus = syncRunning
@@ -626,14 +661,14 @@ export function SettingsPage() {
 
 						<div className='mt-4 flex flex-wrap gap-3'>
 							<Button
-								disabled={syncBusy || syncConfigIncomplete}
+								disabled={syncActionBusy || syncConfigIncomplete}
 								onClick={() => void handleSaveSyncConfig()}
 								type='button'
 							>
 								{syncSaving ? '保存中...' : '保存配置'}
 							</Button>
 							<Button
-								disabled={syncBusy || !syncStatus?.hasRemoteConfig}
+								disabled={syncActionBusy || !syncStatus?.hasRemoteConfig}
 								onClick={() => void handleRestoreSync()}
 								type='button'
 								variant='secondary'
@@ -641,12 +676,22 @@ export function SettingsPage() {
 								{syncRestoring ? '恢复中...' : '从云端恢复本地'}
 							</Button>
 							<Button
-								disabled={syncBusy || !syncStatus?.hasRemoteConfig || syncRequiresRestore}
+								disabled={
+									syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresRestore
+								}
 								onClick={() => void handleForceSync()}
 								type='button'
 								variant='secondary'
 							>
 								{syncRunning ? '同步中...' : '立即同步'}
+							</Button>
+							<Button
+								disabled={syncBusy || syncDiagnosing || !syncStatus?.hasRemoteConfig}
+								onClick={() => void refreshSyncDiagnostics()}
+								type='button'
+								variant='secondary'
+							>
+								{syncDiagnosing ? '诊断中...' : '刷新诊断'}
 							</Button>
 						</div>
 
@@ -681,6 +726,90 @@ export function SettingsPage() {
 								variant='danger'
 							/>
 						) : null}
+
+						<div className='mt-6 flex flex-col gap-3'>
+							<div className='flex items-center justify-between gap-3'>
+								<div className='min-w-0'>
+									<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
+									<p className={formFieldHintClass}>
+										只读查看当前设备与 Turso 远端的 cursor 和工作集摘要，用于排查“为什么没同步到”这类问题。
+									</p>
+								</div>
+							</div>
+
+							{syncDiagnostics ? (
+								<div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
+									<SettingInfoRow
+										description='当前保存并正在使用的 Turso 远端 host。'
+										label='远端 Host'
+										value={
+											<span className='break-all font-medium text-foreground'>
+												{syncDiagnostics.remoteHost ?? '未读取'}
+											</span>
+										}
+									/>
+									<SettingInfoRow
+										description='当前设备最后一次成功吸收远端 operation 后落在本地的 remote cursor。'
+										label='本地 cursor'
+										value={
+											<SyncCursorValue
+												value={syncDiagnostics.local.lastPulledRemoteCursor}
+											/>
+										}
+									/>
+									<SettingInfoRow
+										description='Turso 远端 sync_operations 当前看到的最新 cursor。'
+										label='远端 cursor'
+										value={
+											<SyncCursorValue value={syncDiagnostics.remote.latestRemoteCursor} />
+										}
+									/>
+									<SettingInfoRow
+										description='当前设备本地 outbox 里还没 push 成功的记录数量。'
+										label='待 push outbox'
+										value={
+											<span className='font-medium text-foreground'>
+												{syncDiagnostics.local.pendingOutboxCount} 条
+											</span>
+										}
+									/>
+									<SettingInfoRow
+										description='当前设备本地工作集的计数摘要。'
+										label='本地工作集'
+										value={
+											<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />
+										}
+									/>
+									<SettingInfoRow
+										description='Turso 远端当前镜像表的计数摘要。'
+										label='远端工作集'
+										value={
+											<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />
+										}
+									/>
+								</div>
+							) : (
+								<StatusNotice
+									description={
+										syncStatus?.hasRemoteConfig
+											? '当前还没有读取诊断摘要。点击“刷新诊断”后，会显示本地 cursor、远端 cursor 和工作集计数。'
+											: '先保存可用的 Turso URL 和 token，才能读取远端诊断信息。'
+									}
+									title='尚未读取同步诊断'
+								/>
+							)}
+
+							{syncDiagnosticsMessage ? (
+								<StatusNotice
+									className={statusNoticeCompactTextClass}
+									description={syncDiagnosticsMessage}
+									role='alert'
+									size='sm'
+									title='同步诊断读取失败'
+									variant='danger'
+								/>
+							) : null}
+						</div>
 					</SettingsSection>
 				</div>
 			}
@@ -828,6 +957,37 @@ function SyncTimestampValue({
 	)
 }
 
+function SyncCursorValue({ value }: { value: number | null }) {
+	if (value === null) {
+		return <span className='text-slate-500'>未记录</span>
+	}
+
+	return <span className='font-medium text-foreground'>{value}</span>
+}
+
+function SyncCountsSummaryValue({
+	counts,
+}: {
+	counts: {
+		spaces: number
+		projects: number
+		tasks: number
+		taskLinks: number
+		views: number
+		settings: number
+		totalItems: number
+	}
+}) {
+	return (
+		<div className='flex flex-col gap-1'>
+			<span className='font-medium text-foreground'>
+				{formatSyncCountsSummary(counts)}
+			</span>
+			<span className='text-xs text-slate-500'>总计 {counts.totalItems} 条主数据</span>
+		</div>
+	)
+}
+
 function SyncStatusBadge({ status }: { status: SyncStatus }) {
 	const tone =
 		status === 'idle'
@@ -929,6 +1089,24 @@ function formatSyncExactTime(value: string) {
 		hour: '2-digit',
 		minute: '2-digit',
 	})
+}
+
+function formatSyncCountsSummary(counts: {
+	spaces: number
+	projects: number
+	tasks: number
+	taskLinks: number
+	views: number
+	settings: number
+}) {
+	return [
+		`${counts.tasks} 任务`,
+		`${counts.projects} 项目`,
+		`${counts.spaces} 空间`,
+		`${counts.views} 视图`,
+		`${counts.taskLinks} 链接`,
+		`${counts.settings} 设置`,
+	].join(' / ')
 }
 
 function getSyncStatusCopy({
