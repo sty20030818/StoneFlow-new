@@ -14,10 +14,10 @@ import {
 import type { SidebarMainItemKey } from '@/features/settings/api/sidebarSettings'
 import {
 	configureSync,
-	forceSync,
 	getSyncDiagnostics,
 	getSyncStatus,
 	restoreSync,
+	runSync,
 	type SyncDiagnosticsPayload,
 	type SyncReplicaState,
 	type SyncStatus,
@@ -245,11 +245,11 @@ export function SettingsPage() {
 		}
 	}
 
-	async function handleForceSync() {
+	async function handleRunSync() {
 		setSyncRunning(true)
 		setSyncStatusMessage(null)
 		try {
-			await forceSync()
+			await runSync()
 			await refreshSyncStatus({ syncUrlDraft: false })
 			await refreshSyncDiagnostics({ silent: true })
 		} catch (error) {
@@ -679,7 +679,7 @@ export function SettingsPage() {
 								disabled={
 									syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresRestore
 								}
-								onClick={() => void handleForceSync()}
+								onClick={() => void handleRunSync()}
 								type='button'
 								variant='secondary'
 							>
@@ -1245,7 +1245,7 @@ function getSyncStatusCopy({
 }
 
 function getSyncErrorTitle(
-	mode: 'push' | 'pull' | 'force' | 'restore' | null,
+	mode: 'push' | 'pull' | 'sync' | 'restore' | null,
 	syncRunning: boolean,
 	syncRestoring: boolean,
 ) {
@@ -1261,7 +1261,7 @@ function getSyncErrorTitle(
 			return '上推失败'
 		case 'pull':
 			return '拉取失败'
-		case 'force':
+		case 'sync':
 			return '手动同步失败'
 		case 'restore':
 			return '恢复失败'

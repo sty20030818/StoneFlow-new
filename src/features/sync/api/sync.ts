@@ -9,7 +9,7 @@ export type SyncStatusPayload = {
 	lastPushAt: string | null
 	lastPullAt: string | null
 	lastError: string | null
-	lastErrorMode: 'push' | 'pull' | 'force' | 'restore' | null
+	lastErrorMode: 'push' | 'pull' | 'sync' | 'restore' | null
 	dirtySince: string | null
 	pendingResync: boolean
 	hasRemoteConfig: boolean
@@ -81,8 +81,8 @@ export function configureSync(input: { url: string; token: string }) {
 /**
  * 手动执行一轮 pull -> push -> pull-confirm。
  */
-export function forceSync() {
-	return invoke<SyncStatusPayload>('force_sync')
+export function runSync() {
+	return invoke<SyncStatusPayload>('run_sync')
 }
 
 /**

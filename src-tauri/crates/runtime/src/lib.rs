@@ -73,7 +73,7 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
             });
         }
         tauri::RunEvent::Resumed => {
-            sync::trigger_resume_pull(app_handle);
+            sync::trigger_resume_sync(app_handle);
         }
         tauri::RunEvent::Exit => {}
         _ => {}

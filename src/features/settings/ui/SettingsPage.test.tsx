@@ -16,7 +16,7 @@ const setDefaultSpaceSpy = vi.fn<(spaceId: string) => Promise<Space>>()
 const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
 const getSyncDiagnosticsSpy = vi.fn<() => Promise<unknown>>()
 const configureSyncSpy = vi.fn<(input: { url: string; token: string }) => Promise<unknown>>()
-const forceSyncSpy = vi.fn<() => Promise<unknown>>()
+const runSyncSpy = vi.fn<() => Promise<unknown>>()
 const restoreSyncSpy = vi.fn<() => Promise<unknown>>()
 const navigateSpy = vi.fn<(to: string, options?: { replace?: boolean }) => void>()
 const toastSuccessSpy = vi.fn<(message: string) => void>()
@@ -48,7 +48,7 @@ vi.mock('@/features/sync/api/sync', () => ({
 	getSyncStatus: () => getSyncStatusSpy(),
 	getSyncDiagnostics: () => getSyncDiagnosticsSpy(),
 	configureSync: (input: { url: string; token: string }) => configureSyncSpy(input),
-	forceSync: () => forceSyncSpy(),
+	runSync: () => runSyncSpy(),
 	restoreSync: () => restoreSyncSpy(),
 }))
 
@@ -252,8 +252,8 @@ describe('SettingsPage', () => {
 			replicaReason: null,
 			lastRestoreAt: null,
 		})
-		forceSyncSpy.mockReset()
-		forceSyncSpy.mockResolvedValue({
+		runSyncSpy.mockReset()
+		runSyncSpy.mockResolvedValue({
 			enabled: true,
 			status: 'idle',
 			lastPushAt: '2026-06-26T00:00:00Z',
@@ -484,7 +484,7 @@ describe('SettingsPage', () => {
 		setIntervalSpy.mockRestore()
 	})
 
-	it('点击立即同步时调用 forceSync', async () => {
+	it('点击立即同步时调用 runSync', async () => {
 		getSyncStatusSpy.mockResolvedValue({
 			enabled: true,
 			status: 'idle',
@@ -506,7 +506,7 @@ describe('SettingsPage', () => {
 		fireEvent.click(screen.getByRole('button', { name: '立即同步' }))
 
 		await waitFor(() => {
-			expect(forceSyncSpy).toHaveBeenCalledTimes(1)
+			expect(runSyncSpy).toHaveBeenCalledTimes(1)
 		})
 	})
 

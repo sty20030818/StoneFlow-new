@@ -141,12 +141,12 @@ pub struct SyncRemoteConfig {
     pub token: String,
 }
 
-/// 最近一次失败发生在 push 还是 pull。
+/// 最近一次失败发生在哪个同步入口。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncRunMode {
     Push,
     Pull,
-    Force,
+    Sync,
     Restore,
 }

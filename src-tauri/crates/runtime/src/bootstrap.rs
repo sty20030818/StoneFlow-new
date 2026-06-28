@@ -67,7 +67,7 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
 
     app.manage(exit_coordinator::ExitCoordinator::default());
     tray::setup_tray(app)?;
-    sync::trigger_startup_pull(app.handle());
+    sync::trigger_startup_sync(app.handle());
     Ok(())
 }
 

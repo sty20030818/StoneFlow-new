@@ -2,10 +2,10 @@ import { invoke } from '@tauri-apps/api/core'
 
 import {
 	configureSync,
-	forceSync,
 	getSyncDiagnostics,
 	getSyncStatus,
 	restoreSync,
+	runSync,
 } from '@/features/sync/api/sync'
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -108,7 +108,7 @@ describe('sync api', () => {
 		expect(mockedInvoke).toHaveBeenCalledWith('get_sync_diagnostics')
 	})
 
-	it('手动同步时调用 force_sync', async () => {
+	it('手动同步时调用 run_sync', async () => {
 		mockedInvoke.mockResolvedValue({
 			enabled: true,
 			status: 'idle',
@@ -125,9 +125,9 @@ describe('sync api', () => {
 			lastRestoreAt: null,
 		})
 
-		await forceSync()
+		await runSync()
 
-		expect(mockedInvoke).toHaveBeenCalledWith('force_sync')
+		expect(mockedInvoke).toHaveBeenCalledWith('run_sync')
 	})
 
 	it('恢复本地副本时调用 restore_sync', async () => {

@@ -36,8 +36,8 @@ pub async fn get_sync_diagnostics(
 }
 
 #[tauri::command]
-pub async fn force_sync(app_handle: tauri::AppHandle) -> Result<SyncStatusPayload, AppError> {
-    sync::force_sync(&app_handle).await
+pub async fn run_sync(app_handle: tauri::AppHandle) -> Result<SyncStatusPayload, AppError> {
+    sync::run_sync(&app_handle).await
 }
 
 #[tauri::command]

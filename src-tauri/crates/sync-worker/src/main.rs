@@ -83,11 +83,6 @@ async fn run() -> Result<(), SyncWorkerError> {
     match args.mode {
         SyncRunMode::Push => push_local_changes(&local, &remote).await,
         SyncRunMode::Pull => pull_remote_changes(&local, &remote).await,
-        SyncRunMode::Force => {
-            pull_remote_changes(&local, &remote).await?;
-            push_local_changes(&local, &remote).await?;
-            pull_remote_changes(&local, &remote).await
-        }
         SyncRunMode::Restore => restore_remote_snapshot(&local, &remote).await,
         SyncRunMode::Diagnose => {
             let payload = collect_sync_diagnostics(&local, &remote).await?;

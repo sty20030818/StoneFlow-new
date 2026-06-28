@@ -115,7 +115,7 @@ impl SyncRuntimeState {
         }
 
         if is_running(guard.status) {
-            queue_pending_mode(&mut guard, SyncRunMode::Force);
+            queue_pending_mode(&mut guard, SyncRunMode::Sync);
             return;
         }
 
@@ -149,20 +149,20 @@ impl SyncRuntimeState {
         guard.last_error_mode = None;
         guard.status = match mode {
             SyncRunMode::Push => SyncStatusKind::Pushing,
-            SyncRunMode::Pull | SyncRunMode::Force | SyncRunMode::Restore => {
+            SyncRunMode::Pull | SyncRunMode::Sync | SyncRunMode::Restore => {
                 SyncStatusKind::Pulling
             }
         };
     }
 
-    /// Force 模式在同一轮中切换到中间 push 阶段。
-    pub(crate) async fn enter_force_push_phase(&self) {
+    /// 完整同步轮次在同一轮中切换到中间 push 阶段。
+    pub(crate) async fn enter_sync_push_phase(&self) {
         let mut guard = self.inner.write().await;
         guard.status = SyncStatusKind::Pushing;
     }
 
-    /// Force 模式在同一轮中切换到最后的 confirm pull 阶段。
-    pub(crate) async fn enter_force_confirm_pull_phase(&self) {
+    /// 完整同步轮次在同一轮中切换到最后的 confirm pull 阶段。
+    pub(crate) async fn enter_sync_confirm_pull_phase(&self) {
         let mut guard = self.inner.write().await;
         guard.status = SyncStatusKind::Pulling;
     }
@@ -180,7 +180,7 @@ impl SyncRuntimeState {
             SyncRunMode::Pull | SyncRunMode::Restore => {
                 guard.last_pull_at = Some(now);
             }
-            SyncRunMode::Force => {
+            SyncRunMode::Sync => {
                 guard.last_push_at = Some(now.clone());
                 guard.last_pull_at = Some(now);
                 guard.dirty_since = None;
@@ -224,14 +224,14 @@ fn queue_pending_mode(inner: &mut SyncRuntimeInner, next_mode: SyncRunMode) {
 }
 
 fn merge_modes(current: SyncRunMode, next: SyncRunMode) -> SyncRunMode {
-    use SyncRunMode::{Force, Pull, Push, Restore};
+    use SyncRunMode::{Pull, Push, Restore, Sync};
 
     match (current, next) {
         (Restore, _) | (_, Restore) => Restore,
-        (Force, _) | (_, Force) => Force,
+        (Sync, _) | (_, Sync) => Sync,
         (Push, Push) => Push,
         (Pull, Pull) => Pull,
-        _ => Force,
+        _ => Sync,
     }
 }
 
@@ -258,7 +258,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn queue_pending_should_merge_push_and_pull_into_force() {
+    async fn queue_pending_should_merge_push_and_pull_into_sync() {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
@@ -271,11 +271,11 @@ mod tests {
         state.queue_pending(SyncRunMode::Pull).await;
 
         let next_mode = state.take_pending_mode().await;
-        assert_eq!(next_mode, Some(SyncRunMode::Force));
+        assert_eq!(next_mode, Some(SyncRunMode::Sync));
     }
 
     #[tokio::test]
-    async fn mark_dirty_should_queue_force_when_sync_is_running() {
+    async fn mark_dirty_should_queue_sync_when_sync_is_running() {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
@@ -288,11 +288,11 @@ mod tests {
         state.mark_dirty().await;
 
         let next_mode = state.take_pending_mode().await;
-        assert_eq!(next_mode, Some(SyncRunMode::Force));
+        assert_eq!(next_mode, Some(SyncRunMode::Sync));
     }
 
     #[tokio::test]
-    async fn start_run_should_begin_force_round_in_pulling_state() {
+    async fn start_run_should_begin_sync_round_in_pulling_state() {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
@@ -301,7 +301,7 @@ mod tests {
             }))
             .await;
 
-        state.start_run(SyncRunMode::Force).await;
+        state.start_run(SyncRunMode::Sync).await;
 
         let payload = state.snapshot().await;
         assert_eq!(payload.status, SyncStatusKind::Pulling);

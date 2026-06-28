@@ -110,11 +110,11 @@ pub async fn note_local_write(app_handle: &tauri::AppHandle) {
         return;
     }
 
-    schedule_background_sync(app_handle, SyncRunMode::Force).await;
+    schedule_background_sync(app_handle, SyncRunMode::Sync).await;
 }
 
 /// 启动后自动触发一轮完整对齐同步。
-pub fn trigger_startup_pull(app_handle: &tauri::AppHandle) {
+pub fn trigger_startup_sync(app_handle: &tauri::AppHandle) {
     if !sync_execution_enabled() {
         log::info!("sync:trigger startup sync skipped because remote execution disabled");
         return;
@@ -123,12 +123,12 @@ pub fn trigger_startup_pull(app_handle: &tauri::AppHandle) {
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
         log::info!("sync:trigger startup sync requested");
-        schedule_background_sync(&app_handle, SyncRunMode::Force).await;
+        schedule_background_sync(&app_handle, SyncRunMode::Sync).await;
     });
 }
 
 /// 应用恢复前台后自动触发一轮完整对齐同步。
-pub fn trigger_resume_pull(app_handle: &tauri::AppHandle) {
+pub fn trigger_resume_sync(app_handle: &tauri::AppHandle) {
     if !sync_execution_enabled() {
         log::info!("sync:trigger resume sync skipped because remote execution disabled");
         return;
@@ -137,21 +137,21 @@ pub fn trigger_resume_pull(app_handle: &tauri::AppHandle) {
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
         log::info!("sync:trigger resume sync requested");
-        schedule_background_sync(&app_handle, SyncRunMode::Force).await;
+        schedule_background_sync(&app_handle, SyncRunMode::Sync).await;
     });
 }
 
 /// 手动同步固定语义为 pull -> push -> pull-confirm，并等待本轮完成。
-pub async fn force_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload, AppError> {
+pub async fn run_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload, AppError> {
     let sync_state = sync_state_from_app(app_handle)?;
     let database = database_state_from_app(app_handle)?;
     refresh_local_replica_state(&sync_state, &database).await?;
     ensure_remote_config(&sync_state).await?;
     ensure_sync_allowed(&sync_state).await?;
 
-    log::info!("sync:trigger force sync requested");
+    log::info!("sync:trigger manual sync requested");
     let guard = sync_state.lock_execution().await;
-    run_sync_loop(app_handle, guard, SyncRunMode::Force).await?;
+    run_sync_loop(app_handle, guard, SyncRunMode::Sync).await?;
 
     Ok(sync_state.snapshot().await)
 }
@@ -295,7 +295,7 @@ async fn run_sync_round(
             failed_mode: mode,
             error,
         }),
-        SyncRunMode::Force => run_force_sync_round(
+        SyncRunMode::Sync => run_sync_round_trip(
             app_handle,
             sync_state,
             database_path,
@@ -330,13 +330,13 @@ struct SyncRoundFailure {
     error: AppError,
 }
 
-async fn run_force_sync_round(
+async fn run_sync_round_trip(
     app_handle: &tauri::AppHandle,
     sync_state: &SyncRuntimeState,
     database_path: String,
     remote_config: &crate::sync::types::SyncRemoteConfig,
 ) -> Result<(), SyncRoundFailure> {
-    log::info!("sync:force phase=initial_pull");
+    log::info!("sync:sync phase=initial_pull");
     sync_database(
         app_handle,
         database_path.clone(),
@@ -349,8 +349,8 @@ async fn run_force_sync_round(
         error: error.with_sync_mode(SyncRunMode::Pull),
     })?;
 
-    sync_state.enter_force_push_phase().await;
-    log::info!("sync:force phase=push");
+    sync_state.enter_sync_push_phase().await;
+    log::info!("sync:sync phase=push");
     sync_database(
         app_handle,
         database_path.clone(),
@@ -363,8 +363,8 @@ async fn run_force_sync_round(
         error: error.with_sync_mode(SyncRunMode::Push),
     })?;
 
-    sync_state.enter_force_confirm_pull_phase().await;
-    log::info!("sync:force phase=confirm_pull");
+    sync_state.enter_sync_confirm_pull_phase().await;
+    log::info!("sync:sync phase=confirm_pull");
     sync_database(app_handle, database_path, remote_config, SyncRunMode::Pull)
         .await
         .map_err(|error| SyncRoundFailure {
@@ -460,7 +460,7 @@ fn mode_label(mode: SyncRunMode) -> &'static str {
     match mode {
         SyncRunMode::Push => "push",
         SyncRunMode::Pull => "pull",
-        SyncRunMode::Force => "force",
+        SyncRunMode::Sync => "sync",
         SyncRunMode::Restore => "restore",
     }
 }

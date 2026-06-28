@@ -7,8 +7,8 @@ mod state;
 mod types;
 
 pub use engine::{
-    configure_sync, force_sync, get_sync_diagnostics, get_sync_status, initialize_state, note_local_write,
-    restore_sync, trigger_resume_pull, trigger_startup_pull,
+    configure_sync, get_sync_diagnostics, get_sync_status, initialize_state, note_local_write,
+    restore_sync, run_sync, trigger_resume_sync, trigger_startup_sync,
 };
 pub use state::SyncRuntimeState;
 pub use types::{
