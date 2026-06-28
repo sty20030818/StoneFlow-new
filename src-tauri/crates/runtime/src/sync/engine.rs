@@ -11,9 +11,9 @@ use crate::app::error::AppError;
 
 use super::{
     config::{load_remote_config, save_remote_config},
-    local::inspect_local_replica,
+    local::{inspect_local_replica, read_restore_summary},
     state::{SyncRunMode, SyncRuntimeState},
-    types::{ConfigureSyncInput, SyncReplicaState, SyncStatusPayload},
+    types::{ConfigureSyncInput, RestoreSyncPayload, SyncReplicaState, SyncStatusPayload},
 };
 use stoneflow_storage::database::DatabaseRuntimeState;
 
@@ -125,6 +125,25 @@ pub async fn force_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPaylo
     Ok(sync_state.snapshot().await)
 }
 
+/// 显式从远端镜像恢复当前设备的本地工作副本。
+pub async fn restore_sync(app_handle: &tauri::AppHandle) -> Result<RestoreSyncPayload, AppError> {
+    let sync_state = sync_state_from_app(app_handle)?;
+    let database = database_state_from_app(app_handle)?;
+    refresh_local_replica_state(&sync_state, &database).await?;
+    ensure_remote_config(&sync_state).await?;
+
+    log::info!("sync:trigger restore requested");
+    let guard = sync_state.lock_execution().await;
+    run_sync_loop(app_handle, guard, SyncRunMode::Restore).await?;
+    refresh_local_replica_state(&sync_state, &database).await?;
+    let summary = read_restore_summary(&database).await?;
+
+    Ok(RestoreSyncPayload {
+        status: sync_state.snapshot().await,
+        summary,
+    })
+}
+
 async fn schedule_background_sync(app_handle: &tauri::AppHandle, mode: SyncRunMode) {
     if !sync_execution_enabled() {
         log::info!(
@@ -233,7 +252,7 @@ async fn run_sync_round(
     sync_state.start_run(mode).await;
 
     let result = match mode {
-        SyncRunMode::Push | SyncRunMode::Pull => {
+        SyncRunMode::Push | SyncRunMode::Pull | SyncRunMode::Restore => {
             sync_database(
                 app_handle,
                 database.database_path().display().to_string(),
@@ -369,6 +388,7 @@ fn mode_label(mode: SyncRunMode) -> &'static str {
         SyncRunMode::Push => "push",
         SyncRunMode::Pull => "pull",
         SyncRunMode::Force => "force",
+        SyncRunMode::Restore => "restore",
     }
 }
 

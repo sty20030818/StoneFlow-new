@@ -102,6 +102,15 @@ export function useWorkspaceSync(scope: Scope) {
 		scheduleRefresh()
 	})
 
+	useEventSubscription('workspace:restored', (event: AppEvent) => {
+		if (event.type !== 'workspace:restored') {
+			return
+		}
+
+		console.info('[useWorkspaceSync] workspace:restored', event.payload)
+		scheduleRefresh(LIFECYCLE_DEBOUNCE_MS)
+	})
+
 	useEventSubscription('lifecycle:changed', (event: AppEvent) => {
 		if (event.type !== 'lifecycle:changed') {
 			return

@@ -13,6 +13,7 @@ export type AppEvent =
 	| { type: 'space:created'; payload: { spaceId: string } }
 	| { type: 'space:updated'; payload: { spaceId: string } }
 	| { type: 'space:deleted'; payload: { spaceId: string } }
+	| { type: 'workspace:restored'; payload: { source: 'sync_restore' } }
 	| {
 			type: 'lifecycle:changed'
 			payload: {

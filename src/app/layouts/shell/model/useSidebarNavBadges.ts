@@ -55,6 +55,7 @@ export function useSidebarNavBadges(scope: Scope): NavBadges {
 	useEventSubscription('space:created', scheduleRefresh)
 	useEventSubscription('space:updated', scheduleRefresh)
 	useEventSubscription('space:deleted', scheduleRefresh)
+	useEventSubscription('workspace:restored', scheduleRefresh)
 
 	return badges
 }

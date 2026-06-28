@@ -4,7 +4,7 @@ import { EntityScene } from '@/app/layouts/entity-scene'
 import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
 import { openSection } from '@/app/navigation/intents'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
-import { Link } from '@/app/routing/tanstackCompat'
+import { Link, useNavigate } from '@/app/routing/tanstackCompat'
 import {
 	selectSidebarSettings,
 	selectSidebarSettingsError,
@@ -16,6 +16,7 @@ import {
 	configureSync,
 	forceSync,
 	getSyncStatus,
+	restoreSync,
 	type SyncReplicaState,
 	type SyncStatus,
 	type SyncStatusPayload,
@@ -39,6 +40,7 @@ import {
 	SelectValue,
 } from '@/shared/ui/base/select'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
+import { emitEvent } from '@/shared/events'
 import {
 	formFieldHintClass,
 	formFieldLabelVariants,
@@ -54,6 +56,7 @@ import {
 import { statusNoticeCompactTextClass } from '@/shared/ui/patterns/status-notice'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Settings2Icon } from 'lucide-react'
+import { toast } from 'sonner'
 
 const MAIN_ITEM_OPTIONS: Array<{
 	key: SidebarMainItemKey
@@ -83,6 +86,7 @@ export function SettingsPage() {
 	const shellRoute = useCurrentShellRoute()
 	const scope = resolveShellRouteScope(shellRoute)
 	const fallbackSpaceId = shellRoute.spaceId
+	const navigate = useNavigate()
 	const sidebarStatus = useSidebarSettingsStore(selectSidebarSettingsStatus)
 	const sidebarSettings = useSidebarSettingsStore(selectSidebarSettings)
 	const sidebarError = useSidebarSettingsStore(selectSidebarSettingsError)
@@ -105,6 +109,7 @@ export function SettingsPage() {
 	const [syncLoading, setSyncLoading] = useState(true)
 	const [syncSaving, setSyncSaving] = useState(false)
 	const [syncRunning, setSyncRunning] = useState(false)
+	const [syncRestoring, setSyncRestoring] = useState(false)
 	const [syncUrl, setSyncUrl] = useState('')
 	const [syncToken, setSyncToken] = useState('')
 
@@ -222,14 +227,37 @@ export function SettingsPage() {
 		}
 	}
 
+	async function handleRestoreSync() {
+		setSyncRestoring(true)
+		setSyncStatusMessage(null)
+		try {
+			const payload = await restoreSync()
+			setSyncStatus(payload.status)
+			toast.success(buildRestoreSuccessToastMessage(payload.summary))
+			emitEvent({ type: 'workspace:restored', payload: { source: 'sync_restore' } })
+			void navigate(openSection(scope, 'tasks', fallbackSpaceId), { replace: true })
+		} catch (error) {
+			setSyncStatusMessage(normalizeTauriError(error, '从云端恢复本地失败'))
+			await refreshSyncStatus({ syncUrlDraft: false })
+		} finally {
+			setSyncRestoring(false)
+		}
+	}
+
 	const effectiveSyncError =
 		syncStatus?.status === 'error' ? (syncStatus.lastError ?? syncStatusMessage) : syncStatusMessage
-	const effectiveSyncErrorTitle = getSyncErrorTitle(syncStatus?.lastErrorMode ?? null, syncRunning)
-	const syncBusy = syncSaving || syncRunning || syncLoading
+	const effectiveSyncErrorTitle = getSyncErrorTitle(
+		syncStatus?.lastErrorMode ?? null,
+		syncRunning,
+		syncRestoring,
+	)
+	const syncBusy = syncSaving || syncRunning || syncRestoring || syncLoading
 	const syncConfigIncomplete = syncUrl.trim().length === 0 || syncToken.trim().length === 0
 	const syncRequiresRestore = syncStatus?.replicaState === 'restore_required'
 	const displayedSyncStatus: SyncStatus = syncRunning
 		? 'pulling'
+		: syncRestoring
+			? 'pulling'
 		: syncSaving
 			? 'pushing'
 			: (syncStatus?.status ?? (syncLoading ? 'pulling' : 'disabled'))
@@ -243,6 +271,7 @@ export function SettingsPage() {
 		syncLoading,
 		syncRunning,
 		syncSaving,
+		syncRestoring,
 	})
 
 	function handleMainItemVisibilityChange(key: SidebarMainItemKey, visible: boolean) {
@@ -558,6 +587,16 @@ export function SettingsPage() {
 								label='本地副本'
 								value={<SyncReplicaBadge state={syncStatus?.replicaState ?? 'uninitialized'} />}
 							/>
+							<SettingInfoRow
+								description='最近一次“从云端恢复本地”完成时间。'
+								label='上次恢复'
+								value={
+									<SyncTimestampValue
+										emptyLabel='从未恢复'
+										timestamp={syncStatus?.lastRestoreAt ?? null}
+									/>
+								}
+							/>
 						</div>
 
 						<div className='mt-4 grid gap-3 md:grid-cols-2'>
@@ -594,6 +633,14 @@ export function SettingsPage() {
 								{syncSaving ? '保存中...' : '保存配置'}
 							</Button>
 							<Button
+								disabled={syncBusy || !syncStatus?.hasRemoteConfig}
+								onClick={() => void handleRestoreSync()}
+								type='button'
+								variant='secondary'
+							>
+								{syncRestoring ? '恢复中...' : '从云端恢复本地'}
+							</Button>
+							<Button
 								disabled={syncBusy || !syncStatus?.hasRemoteConfig || syncRequiresRestore}
 								onClick={() => void handleForceSync()}
 								type='button'
@@ -605,7 +652,7 @@ export function SettingsPage() {
 
 						<p className={`mt-3 ${formFieldHintClass}`}>
 							配置会直接保存在本地数据库的 settings 表；页面刷新后只会自动回填 URL。出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token 覆盖保存。未配置前不会自动同步；配置完成后，本地写入会先标记
-							dirty，再由同步引擎异步 push。
+							dirty，再由同步引擎异步 push。若当前设备是空副本，先用“从云端恢复本地”把远端基线完整拉回本机，再继续普通同步。
 						</p>
 
 						<StatusNotice
@@ -762,9 +809,15 @@ function SettingInfoRow({
 	)
 }
 
-function SyncTimestampValue({ timestamp }: { timestamp: string | null }) {
+function SyncTimestampValue({
+	timestamp,
+	emptyLabel = '从未同步',
+}: {
+	timestamp: string | null
+	emptyLabel?: string
+}) {
 	if (!timestamp) {
-		return <span className='text-slate-500'>从未同步</span>
+		return <span className='text-slate-500'>{emptyLabel}</span>
 	}
 
 	return (
@@ -888,6 +941,7 @@ function getSyncStatusCopy({
 	syncLoading,
 	syncSaving,
 	syncRunning,
+	syncRestoring,
 }: {
 	status: SyncStatus
 	dirtySince: string | null
@@ -898,6 +952,7 @@ function getSyncStatusCopy({
 	syncLoading: boolean
 	syncSaving: boolean
 	syncRunning: boolean
+	syncRestoring: boolean
 }) {
 	if (syncLoading) {
 		return {
@@ -924,6 +979,16 @@ function getSyncStatusCopy({
 				? '当前这一轮会先 push 本地增量，再 pull 远端结果；运行期间又有新写入，结束后还会自动补跑一轮。'
 				: '当前这一轮会先 push 本地增量，再 pull 远端结果。同步期间本地业务仍然继续只读写本地数据库。',
 			statusDescription: '正在执行一轮手动 push -> pull。',
+			variant: 'warning' as const,
+		}
+	}
+
+	if (syncRestoring) {
+		return {
+			title: '正在从云端恢复本地',
+			summary:
+				'同步引擎正在用 Turso 远端镜像重建当前设备的本地工作副本。恢复期间会先清空当前本地副本，再按远端当前基线完整写回。',
+			statusDescription: '正在从远端镜像恢复当前设备的本地副本。',
 			variant: 'warning' as const,
 		}
 	}
@@ -999,11 +1064,15 @@ function getSyncStatusCopy({
 }
 
 function getSyncErrorTitle(
-	mode: 'push' | 'pull' | 'force' | null,
+	mode: 'push' | 'pull' | 'force' | 'restore' | null,
 	syncRunning: boolean,
+	syncRestoring: boolean,
 ) {
 	if (syncRunning) {
 		return '手动同步失败'
+	}
+	if (syncRestoring) {
+		return '恢复失败'
 	}
 
 	switch (mode) {
@@ -1013,6 +1082,8 @@ function getSyncErrorTitle(
 			return '拉取失败'
 		case 'force':
 			return '手动同步失败'
+		case 'restore':
+			return '恢复失败'
 		default:
 			return '同步失败'
 	}
@@ -1050,4 +1121,30 @@ function formatReplicaState(state: SyncReplicaState) {
 		default:
 			return state
 	}
+}
+
+function buildRestoreSuccessToastMessage(summary: {
+	spaces: number
+	projects: number
+	tasks: number
+	taskLinks: number
+	views: number
+	settings: number
+	totalItems: number
+}) {
+	const parts = [
+		summary.tasks > 0 ? `${summary.tasks} 个任务` : null,
+		summary.projects > 0 ? `${summary.projects} 个项目` : null,
+		summary.spaces > 0 ? `${summary.spaces} 个空间` : null,
+		summary.views > 0 ? `${summary.views} 个视图` : null,
+		summary.taskLinks > 0 ? `${summary.taskLinks} 个链接` : null,
+	]
+		.filter(Boolean)
+		.join('、')
+
+	if (parts.length > 0) {
+		return `云端恢复完成：已恢复 ${parts}`
+	}
+
+	return `云端恢复完成：已恢复 ${summary.totalItems} 条本地主数据`
 }

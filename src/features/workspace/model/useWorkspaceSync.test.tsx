@@ -79,6 +79,21 @@ describe('useWorkspaceSync', () => {
 
 		expectInvalidatedWorkspaceQueries()
 	})
+
+	it('收到 workspace restored 事件时也会刷新整个工作区', () => {
+		expect.hasAssertions()
+		renderUseWorkspaceSync({ type: 'all' })
+
+		act(() => {
+			eventHandlers.get('workspace:restored')?.({
+				type: 'workspace:restored',
+				payload: { source: 'sync_restore' },
+			})
+			vi.advanceTimersByTime(500)
+		})
+
+		expectInvalidatedWorkspaceQueries()
+	})
 })
 
 function renderUseWorkspaceSync(scope: Scope = { type: 'space', spaceId: 'space-1' }) {

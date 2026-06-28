@@ -5,6 +5,7 @@ pub enum SyncRunMode {
     Push,
     Pull,
     Force,
+    Restore,
 }
 
 impl SyncRunMode {
@@ -13,6 +14,7 @@ impl SyncRunMode {
             "push" => Ok(Self::Push),
             "pull" => Ok(Self::Pull),
             "force" => Ok(Self::Force),
+            "restore" => Ok(Self::Restore),
             other => Err(SyncWorkerError::validation(format!(
                 "不支持的同步模式: {other}"
             ))),

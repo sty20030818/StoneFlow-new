@@ -9,6 +9,7 @@ use stoneflow_storage::{
 };
 
 use super::types::SyncReplicaState;
+use super::types::SyncRestoreSummaryPayload;
 
 const DEVICE_ID_SCOPE: &str = "sync:device_id";
 const REMOTE_CURSOR_SCOPE: &str = "sync:last_pulled_remote_cursor";
@@ -33,8 +34,11 @@ pub async fn inspect_local_replica(
 
     let has_sync_metadata = has_non_empty_cursor(&device_id) || has_non_empty_cursor(&remote_cursor);
     let looks_empty_replica = counts.has_no_user_content() && counts.pending_outbox_count == 0;
+    let has_restore_marker = has_non_empty_cursor(&last_restore_at);
 
-    let (state, reason) = if has_remote_config && looks_empty_replica {
+    let (state, reason) = if has_remote_config && looks_empty_replica && has_restore_marker {
+        (SyncReplicaState::Ready, None)
+    } else if has_remote_config && looks_empty_replica {
         (
             SyncReplicaState::RestoreRequired,
             Some(
@@ -55,6 +59,60 @@ pub async fn inspect_local_replica(
         state,
         reason,
         last_restore_at: last_restore_at.and_then(|record| record.cursor),
+    })
+}
+
+pub async fn read_restore_summary(
+    database: &DatabaseRuntimeState,
+) -> Result<SyncRestoreSummaryPayload, AppError> {
+    let row = database
+        .connection()
+        .query_one(Statement::from_string(
+            DbBackend::Sqlite,
+            r#"
+            SELECT
+                (SELECT COUNT(*) FROM spaces) AS space_count,
+                (SELECT COUNT(*) FROM projects) AS project_count,
+                (SELECT COUNT(*) FROM tasks) AS task_count,
+                (SELECT COUNT(*) FROM task_links) AS task_link_count,
+                (SELECT COUNT(*) FROM views) AS view_count,
+                (SELECT COUNT(*) FROM settings WHERE key <> 'app.sync.config') AS setting_count
+            "#,
+        ))
+        .await
+        .map_err(|error| AppError::database(format!("读取 restore 汇总失败: {error}")))?;
+
+    let Some(row) = row else {
+        return Err(AppError::database("读取 restore 汇总失败: 缺少结果行"));
+    };
+
+    let spaces: i64 = row
+        .try_get("", "space_count")
+        .map_err(|error| AppError::database(format!("读取 space_count 失败: {error}")))?;
+    let projects: i64 = row
+        .try_get("", "project_count")
+        .map_err(|error| AppError::database(format!("读取 project_count 失败: {error}")))?;
+    let tasks: i64 = row
+        .try_get("", "task_count")
+        .map_err(|error| AppError::database(format!("读取 task_count 失败: {error}")))?;
+    let task_links: i64 = row
+        .try_get("", "task_link_count")
+        .map_err(|error| AppError::database(format!("读取 task_link_count 失败: {error}")))?;
+    let views: i64 = row
+        .try_get("", "view_count")
+        .map_err(|error| AppError::database(format!("读取 view_count 失败: {error}")))?;
+    let settings: i64 = row
+        .try_get("", "setting_count")
+        .map_err(|error| AppError::database(format!("读取 setting_count 失败: {error}")))?;
+
+    Ok(SyncRestoreSummaryPayload {
+        spaces,
+        projects,
+        tasks,
+        task_links,
+        views,
+        settings,
+        total_items: spaces + projects + tasks + task_links + views + settings,
     })
 }
 
@@ -176,5 +234,34 @@ mod tests {
 
         assert_eq!(snapshot.state, SyncReplicaState::Ready);
         assert_eq!(snapshot.reason, None);
+    }
+
+    #[tokio::test]
+    async fn inspect_local_replica_should_treat_restored_empty_replica_as_ready() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        let repository = SyncRepository::new(database.connection().clone());
+
+        repository
+            .upsert_cursor(
+                repository.connection(),
+                "sync:last_restore_at",
+                Some("2026-06-28T00:00:00Z"),
+                "2026-06-28T00:00:00Z",
+            )
+            .await
+            .expect("restore marker should persist");
+
+        let snapshot = inspect_local_replica(&database, true)
+            .await
+            .expect("replica inspection should succeed");
+
+        assert_eq!(snapshot.state, SyncReplicaState::Ready);
+        assert_eq!(snapshot.reason, None);
+        assert_eq!(
+            snapshot.last_restore_at.as_deref(),
+            Some("2026-06-28T00:00:00Z")
+        );
     }
 }

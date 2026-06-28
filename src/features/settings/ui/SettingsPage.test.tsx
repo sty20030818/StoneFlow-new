@@ -16,6 +16,9 @@ const setDefaultSpaceSpy = vi.fn<(spaceId: string) => Promise<Space>>()
 const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
 const configureSyncSpy = vi.fn<(input: { url: string; token: string }) => Promise<unknown>>()
 const forceSyncSpy = vi.fn<() => Promise<unknown>>()
+const restoreSyncSpy = vi.fn<() => Promise<unknown>>()
+const navigateSpy = vi.fn<(to: string, options?: { replace?: boolean }) => void>()
+const toastSuccessSpy = vi.fn<(message: string) => void>()
 
 let sidebarStoreState = createSidebarStoreState()
 let spaceStoreState = createSpaceStoreState()
@@ -44,6 +47,24 @@ vi.mock('@/features/sync/api/sync', () => ({
 	getSyncStatus: () => getSyncStatusSpy(),
 	configureSync: (input: { url: string; token: string }) => configureSyncSpy(input),
 	forceSync: () => forceSyncSpy(),
+	restoreSync: () => restoreSyncSpy(),
+}))
+
+vi.mock('@/app/routing/tanstackCompat', async () => {
+	const actual = await vi.importActual<typeof import('@/app/routing/tanstackCompat')>(
+		'@/app/routing/tanstackCompat',
+	)
+
+	return {
+		...actual,
+		useNavigate: () => navigateSpy,
+	}
+})
+
+vi.mock('sonner', () => ({
+	toast: {
+		success: (message: string) => toastSuccessSpy(message),
+	},
 }))
 
 vi.mock('@/app/layouts/shell/model/ShellRouteContext', () => ({
@@ -214,6 +235,35 @@ describe('SettingsPage', () => {
 			replicaReason: null,
 			lastRestoreAt: null,
 		})
+		restoreSyncSpy.mockReset()
+		restoreSyncSpy.mockResolvedValue({
+			status: {
+				enabled: true,
+				status: 'idle',
+				lastPushAt: null,
+				lastPullAt: '2026-06-28T00:00:00Z',
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: '2026-06-28T00:00:00Z',
+			},
+			summary: {
+				spaces: 6,
+				projects: 8,
+				tasks: 60,
+				taskLinks: 0,
+				views: 10,
+				settings: 4,
+				totalItems: 88,
+			},
+		})
+		navigateSpy.mockReset()
+		toastSuccessSpy.mockReset()
 
 		sidebarStoreState = createSidebarStoreState()
 		spaceStoreState = createSpaceStoreState()
@@ -425,6 +475,36 @@ describe('SettingsPage', () => {
 		await waitFor(() => {
 			expect(forceSyncSpy).toHaveBeenCalledTimes(1)
 		})
+	})
+
+	it('点击从云端恢复本地时调用 restoreSync', async () => {
+		getSyncStatusSpy.mockResolvedValue({
+			enabled: true,
+			status: 'idle',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			replicaState: 'restore_required',
+			replicaReason: 'needs restore',
+			lastRestoreAt: null,
+		})
+
+		await renderSettingsPage()
+
+		fireEvent.click(screen.getByRole('button', { name: '从云端恢复本地' }))
+
+		await waitFor(() => {
+			expect(restoreSyncSpy).toHaveBeenCalledTimes(1)
+		})
+		expect(toastSuccessSpy).toHaveBeenCalledWith(
+			'云端恢复完成：已恢复 60 个任务、8 个项目、6 个空间、10 个视图',
+		)
+		expect(navigateSpy).toHaveBeenCalledWith('/all/tasks', { replace: true })
 	})
 
 	it('dirty 状态时展示等待上推提示', async () => {

@@ -8,7 +8,10 @@ mod types;
 
 pub use engine::{
     configure_sync, force_sync, get_sync_status, initialize_state, note_local_write,
-    trigger_resume_pull, trigger_startup_pull,
+    restore_sync, trigger_resume_pull, trigger_startup_pull,
 };
 pub use state::SyncRuntimeState;
-pub use types::{ConfigureSyncInput, SyncReplicaState, SyncStatusPayload};
+pub use types::{
+    ConfigureSyncInput, RestoreSyncPayload, SyncReplicaState, SyncRestoreSummaryPayload,
+    SyncStatusPayload,
+};

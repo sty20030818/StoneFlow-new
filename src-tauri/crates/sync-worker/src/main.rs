@@ -6,6 +6,7 @@ mod local;
 mod pull;
 mod push;
 mod remote;
+mod restore;
 mod schema;
 mod types;
 
@@ -13,6 +14,7 @@ use error::SyncWorkerError;
 use pull::pull_remote_changes;
 use push::push_local_changes;
 use remote::{bootstrap_remote_schema, open_local_sqlite, open_remote};
+use restore::restore_remote_snapshot;
 use types::{SyncRemoteConfig, SyncRunMode, WorkerArgs};
 
 fn main() {
@@ -83,6 +85,7 @@ async fn run() -> Result<(), SyncWorkerError> {
             push_local_changes(&local, &remote).await?;
             pull_remote_changes(&local, &remote).await
         }
+        SyncRunMode::Restore => restore_remote_snapshot(&local, &remote).await,
     }
 }
 

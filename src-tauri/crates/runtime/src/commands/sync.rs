@@ -4,7 +4,7 @@ use tauri::State;
 
 use crate::{
     app::error::AppError,
-    sync::{self, ConfigureSyncInput, SyncRuntimeState, SyncStatusPayload},
+    sync::{self, ConfigureSyncInput, RestoreSyncPayload, SyncRuntimeState, SyncStatusPayload},
 };
 use stoneflow_storage::database::DatabaseRuntimeState;
 
@@ -28,4 +28,9 @@ pub async fn configure_sync(
 #[tauri::command]
 pub async fn force_sync(app_handle: tauri::AppHandle) -> Result<SyncStatusPayload, AppError> {
     sync::force_sync(&app_handle).await
+}
+
+#[tauri::command]
+pub async fn restore_sync(app_handle: tauri::AppHandle) -> Result<RestoreSyncPayload, AppError> {
+    sync::restore_sync(&app_handle).await
 }

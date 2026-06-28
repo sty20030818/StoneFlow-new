@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 
-import { configureSync, forceSync, getSyncStatus } from '@/features/sync/api/sync'
+import { configureSync, forceSync, getSyncStatus, restoreSync } from '@/features/sync/api/sync'
 
 vi.mock('@tauri-apps/api/core', () => ({
 	invoke: vi.fn<(cmd: string, args?: Record<string, unknown>) => Promise<unknown>>(),
@@ -85,5 +85,38 @@ describe('sync api', () => {
 		await forceSync()
 
 		expect(mockedInvoke).toHaveBeenCalledWith('force_sync')
+	})
+
+	it('恢复本地副本时调用 restore_sync', async () => {
+		mockedInvoke.mockResolvedValue({
+			status: {
+				enabled: true,
+				status: 'idle',
+				lastPushAt: null,
+				lastPullAt: '2026-06-28T00:00:00Z',
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: '2026-06-28T00:00:00Z',
+			},
+			summary: {
+				spaces: 2,
+				projects: 3,
+				tasks: 8,
+				taskLinks: 1,
+				views: 4,
+				settings: 2,
+				totalItems: 20,
+			},
+		})
+
+		await restoreSync()
+
+		expect(mockedInvoke).toHaveBeenCalledWith('restore_sync')
 	})
 })

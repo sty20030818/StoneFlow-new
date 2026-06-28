@@ -1,15 +1,17 @@
-//! 本地 SQLite 同步元数据读写。
+//! 本地 SQLite 同步元数据读写与 restore 清理。
 
-use libsql::{params, Connection};
+use libsql::{params, Connection, Transaction};
 use stoneflow_domain::{create_id, now_utc};
 
 use crate::{
     error::SyncWorkerError,
     schema::{
         DEVICE_ID_SCOPE, HARD_DELETE_CURSOR_SCOPE, HardDeleteCursor, HardDeleteEventRecord,
-        LocalOutboxRecord, REMOTE_CURSOR_SCOPE,
+        LAST_RESTORE_AT_SCOPE, LocalOutboxRecord, REMOTE_CURSOR_SCOPE,
     },
 };
+
+const SYNC_CONFIG_SETTING_KEY: &str = "app.sync.config";
 
 pub async fn get_or_create_device_id(local: &Connection) -> Result<String, SyncWorkerError> {
     if let Some(device_id) = read_text_cursor(local, DEVICE_ID_SCOPE).await? {
@@ -184,6 +186,68 @@ pub async fn write_remote_cursor(
     write_text_cursor(local, REMOTE_CURSOR_SCOPE, Some(&remote_cursor.to_string())).await
 }
 
+pub async fn reset_local_replica_for_restore(
+    transaction: &Transaction,
+) -> Result<(), SyncWorkerError> {
+    // restore 会用远端当前镜像重建本地工作副本，因此先清空所有可重建业务表和同步元数据。
+    let statements = [
+        "DELETE FROM task_links",
+        "DELETE FROM tasks",
+        "DELETE FROM projects",
+        "DELETE FROM views",
+        "DELETE FROM activity_changes",
+        "DELETE FROM activity_events",
+        "DELETE FROM sync_outbox",
+        "DELETE FROM settings WHERE key <> ?1",
+        "DELETE FROM spaces",
+        "DELETE FROM sync_cursor WHERE scope <> ?1",
+    ];
+
+    for statement in &statements[..7] {
+        transaction
+            .execute(statement, params![])
+            .await
+            .map_err(|error| {
+                SyncWorkerError::local_database(format!("清空本地 restore 副本失败: {error}"))
+            })?;
+    }
+
+    transaction
+        .execute(statements[7], params![SYNC_CONFIG_SETTING_KEY])
+        .await
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("清空本地 restore settings 失败: {error}"))
+        })?;
+    transaction
+        .execute(statements[8], params![])
+        .await
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("清空本地 restore spaces 失败: {error}"))
+        })?;
+    transaction
+        .execute(statements[9], params![DEVICE_ID_SCOPE])
+        .await
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("清空本地 restore cursor 失败: {error}"))
+        })?;
+
+    Ok(())
+}
+
+pub async fn write_restore_markers(
+    transaction: &Transaction,
+    remote_cursor: i64,
+    restored_at: &str,
+) -> Result<(), SyncWorkerError> {
+    write_text_cursor_in_transaction(
+        transaction,
+        REMOTE_CURSOR_SCOPE,
+        Some(&remote_cursor.to_string()),
+    )
+    .await?;
+    write_text_cursor_in_transaction(transaction, LAST_RESTORE_AT_SCOPE, Some(restored_at)).await
+}
+
 async fn read_hard_delete_cursor(
     local: &Connection,
 ) -> Result<Option<HardDeleteCursor>, SyncWorkerError> {
@@ -225,6 +289,27 @@ async fn write_text_cursor(
     cursor: Option<&str>,
 ) -> Result<(), SyncWorkerError> {
     local
+        .execute(
+            r#"
+            INSERT INTO sync_cursor(scope, cursor, updated_at)
+            VALUES (?1, ?2, ?3)
+            ON CONFLICT(scope) DO UPDATE SET
+                cursor = excluded.cursor,
+                updated_at = excluded.updated_at
+            "#,
+            params![scope.to_owned(), cursor.map(str::to_owned), now_utc().to_rfc3339()],
+        )
+        .await
+        .map_err(|error| SyncWorkerError::local_database(format!("写入 sync_cursor 失败: {error}")))?;
+    Ok(())
+}
+
+async fn write_text_cursor_in_transaction(
+    transaction: &Transaction,
+    scope: &str,
+    cursor: Option<&str>,
+) -> Result<(), SyncWorkerError> {
+    transaction
         .execute(
             r#"
             INSERT INTO sync_cursor(scope, cursor, updated_at)

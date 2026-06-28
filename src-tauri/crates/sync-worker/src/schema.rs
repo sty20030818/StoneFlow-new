@@ -6,6 +6,7 @@ use serde_json::Value;
 pub const DEVICE_ID_SCOPE: &str = "sync:device_id";
 pub const REMOTE_CURSOR_SCOPE: &str = "sync:last_pulled_remote_cursor";
 pub const HARD_DELETE_CURSOR_SCOPE: &str = "sync:last_pushed_hard_delete";
+pub const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
 pub const PUSH_BATCH_SIZE: u64 = 100;
 pub const PULL_BATCH_SIZE: i64 = 100;
 
