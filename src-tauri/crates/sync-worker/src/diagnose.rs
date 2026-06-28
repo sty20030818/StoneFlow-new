@@ -11,12 +11,14 @@ use crate::{
 const SYNC_CONFIG_SETTING_KEY: &str = "app.sync.config";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SyncDiagnosticsOutput {
     pub local: LocalSyncDiagnosticsOutput,
     pub remote: RemoteSyncDiagnosticsOutput,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LocalSyncDiagnosticsOutput {
     pub device_id: Option<String>,
     pub last_pulled_remote_cursor: Option<i64>,
@@ -26,12 +28,14 @@ pub struct LocalSyncDiagnosticsOutput {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RemoteSyncDiagnosticsOutput {
     pub latest_remote_cursor: Option<i64>,
     pub counts: SyncDiagnosticsCountsOutput,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SyncDiagnosticsCountsOutput {
     pub spaces: i64,
     pub projects: i64,
@@ -238,4 +242,82 @@ async fn read_latest_remote_cursor(remote: &Connection) -> Result<Option<i64>, S
     })
     .transpose()
     .map(Option::flatten)
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::{
+        LocalSyncDiagnosticsOutput, RemoteSyncDiagnosticsOutput, SyncDiagnosticsCountsOutput,
+        SyncDiagnosticsOutput,
+    };
+
+    #[test]
+    fn diagnostics_output_should_serialize_as_camel_case() {
+        let payload = SyncDiagnosticsOutput {
+            local: LocalSyncDiagnosticsOutput {
+                device_id: Some("device-1".to_owned()),
+                last_pulled_remote_cursor: Some(12),
+                last_restore_at: Some("2026-06-28T00:00:00Z".to_owned()),
+                pending_outbox_count: 3,
+                counts: SyncDiagnosticsCountsOutput {
+                    spaces: 1,
+                    projects: 2,
+                    tasks: 3,
+                    task_links: 4,
+                    views: 5,
+                    settings: 6,
+                    total_items: 21,
+                },
+            },
+            remote: RemoteSyncDiagnosticsOutput {
+                latest_remote_cursor: Some(18),
+                counts: SyncDiagnosticsCountsOutput {
+                    spaces: 1,
+                    projects: 2,
+                    tasks: 3,
+                    task_links: 4,
+                    views: 5,
+                    settings: 6,
+                    total_items: 21,
+                },
+            },
+        };
+
+        let value = serde_json::to_value(payload).expect("diagnostics payload should serialize");
+
+        assert_eq!(
+            value,
+            json!({
+                "local": {
+                    "deviceId": "device-1",
+                    "lastPulledRemoteCursor": 12,
+                    "lastRestoreAt": "2026-06-28T00:00:00Z",
+                    "pendingOutboxCount": 3,
+                    "counts": {
+                        "spaces": 1,
+                        "projects": 2,
+                        "tasks": 3,
+                        "taskLinks": 4,
+                        "views": 5,
+                        "settings": 6,
+                        "totalItems": 21
+                    }
+                },
+                "remote": {
+                    "latestRemoteCursor": 18,
+                    "counts": {
+                        "spaces": 1,
+                        "projects": 2,
+                        "tasks": 3,
+                        "taskLinks": 4,
+                        "views": 5,
+                        "settings": 6,
+                        "totalItems": 21
+                    }
+                }
+            })
+        );
+    }
 }
