@@ -65,7 +65,7 @@ pub async fn configure_sync(
     Ok(sync_state.snapshot().await)
 }
 
-/// 本地写入成功后的统一入口：标记 dirty，并在空闲时异步发起一轮上推。
+/// 本地写入成功后的统一入口：标记 dirty，并在空闲时异步发起一轮完整对齐同步。
 pub async fn note_local_write(app_handle: &tauri::AppHandle) {
     let Some(sync_state) = app_handle.try_state::<SyncRuntimeState>() else {
         return;
@@ -79,38 +79,38 @@ pub async fn note_local_write(app_handle: &tauri::AppHandle) {
         return;
     }
 
-    schedule_background_sync(app_handle, SyncRunMode::Push).await;
+    schedule_background_sync(app_handle, SyncRunMode::Force).await;
 }
 
-/// 启动后自动触发一轮 pull-like 同步。
+/// 启动后自动触发一轮完整对齐同步。
 pub fn trigger_startup_pull(app_handle: &tauri::AppHandle) {
     if !sync_execution_enabled() {
-        log::info!("sync:trigger startup pull skipped because remote execution disabled");
+        log::info!("sync:trigger startup sync skipped because remote execution disabled");
         return;
     }
 
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
-        log::info!("sync:trigger startup pull requested");
-        schedule_background_sync(&app_handle, SyncRunMode::Pull).await;
+        log::info!("sync:trigger startup sync requested");
+        schedule_background_sync(&app_handle, SyncRunMode::Force).await;
     });
 }
 
-/// 应用恢复前台后自动触发一轮 pull-like 同步。
+/// 应用恢复前台后自动触发一轮完整对齐同步。
 pub fn trigger_resume_pull(app_handle: &tauri::AppHandle) {
     if !sync_execution_enabled() {
-        log::info!("sync:trigger resume pull skipped because remote execution disabled");
+        log::info!("sync:trigger resume sync skipped because remote execution disabled");
         return;
     }
 
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
-        log::info!("sync:trigger resume pull requested");
-        schedule_background_sync(&app_handle, SyncRunMode::Pull).await;
+        log::info!("sync:trigger resume sync requested");
+        schedule_background_sync(&app_handle, SyncRunMode::Force).await;
     });
 }
 
-/// 手动同步固定语义为 push -> pull，并等待本轮完成。
+/// 手动同步固定语义为 pull -> push -> pull-confirm，并等待本轮完成。
 pub async fn force_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload, AppError> {
     let sync_state = sync_state_from_app(app_handle)?;
     let database = database_state_from_app(app_handle)?;
@@ -251,35 +251,26 @@ async fn run_sync_round(
     );
     sync_state.start_run(mode).await;
 
+    let database_path = database.database_path().display().to_string();
     let result = match mode {
-        SyncRunMode::Push | SyncRunMode::Pull | SyncRunMode::Restore => {
-            sync_database(
-                app_handle,
-                database.database_path().display().to_string(),
-                &remote_config,
-                mode,
-            )
-            .await
-        }
-        SyncRunMode::Force => {
-            sync_database(
-                app_handle,
-                database.database_path().display().to_string(),
-                &remote_config,
-                SyncRunMode::Push,
-            )
-            .await
-            .map_err(|error| error.with_sync_mode(SyncRunMode::Push))?;
-            sync_state.enter_force_pull_phase().await;
-            sync_database(
-                app_handle,
-                database.database_path().display().to_string(),
-                &remote_config,
-                SyncRunMode::Pull,
-            )
-            .await
-            .map_err(|error| error.with_sync_mode(SyncRunMode::Pull))
-        }
+        SyncRunMode::Push | SyncRunMode::Pull | SyncRunMode::Restore => sync_database(
+            app_handle,
+            database_path,
+            &remote_config,
+            mode,
+        )
+        .await
+        .map_err(|error| SyncRoundFailure {
+            failed_mode: mode,
+            error,
+        }),
+        SyncRunMode::Force => run_force_sync_round(
+            app_handle,
+            sync_state,
+            database_path,
+            &remote_config,
+        )
+        .await,
     };
 
     match result {
@@ -288,16 +279,67 @@ async fn run_sync_round(
             log::info!("sync:round success mode={}", mode_label(mode));
             Ok(())
         }
-        Err(error) => {
-            let message = error.to_string();
-            sync_state.fail_run(mode, message.clone()).await;
+        Err(failure) => {
+            let message = failure.error.to_string();
+            sync_state
+                .fail_run(failure.failed_mode, message.clone())
+                .await;
             log::warn!(
-                "sync:round failed mode={} error={message}",
-                mode_label(mode)
+                "sync:round failed mode={} failed_mode={} error={message}",
+                mode_label(mode),
+                mode_label(failure.failed_mode)
             );
-            Err(error)
+            Err(failure.error)
         }
     }
+}
+
+struct SyncRoundFailure {
+    failed_mode: SyncRunMode,
+    error: AppError,
+}
+
+async fn run_force_sync_round(
+    app_handle: &tauri::AppHandle,
+    sync_state: &SyncRuntimeState,
+    database_path: String,
+    remote_config: &crate::sync::types::SyncRemoteConfig,
+) -> Result<(), SyncRoundFailure> {
+    log::info!("sync:force phase=initial_pull");
+    sync_database(
+        app_handle,
+        database_path.clone(),
+        remote_config,
+        SyncRunMode::Pull,
+    )
+    .await
+    .map_err(|error| SyncRoundFailure {
+        failed_mode: SyncRunMode::Pull,
+        error: error.with_sync_mode(SyncRunMode::Pull),
+    })?;
+
+    sync_state.enter_force_push_phase().await;
+    log::info!("sync:force phase=push");
+    sync_database(
+        app_handle,
+        database_path.clone(),
+        remote_config,
+        SyncRunMode::Push,
+    )
+    .await
+    .map_err(|error| SyncRoundFailure {
+        failed_mode: SyncRunMode::Push,
+        error: error.with_sync_mode(SyncRunMode::Push),
+    })?;
+
+    sync_state.enter_force_confirm_pull_phase().await;
+    log::info!("sync:force phase=confirm_pull");
+    sync_database(app_handle, database_path, remote_config, SyncRunMode::Pull)
+        .await
+        .map_err(|error| SyncRoundFailure {
+            failed_mode: SyncRunMode::Pull,
+            error: error.with_sync_mode(SyncRunMode::Pull),
+        })
 }
 
 async fn sync_database(

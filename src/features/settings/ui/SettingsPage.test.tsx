@@ -532,7 +532,7 @@ describe('SettingsPage', () => {
 		expect(screen.getByText('等待上推')).toBeInTheDocument()
 		expect(
 			screen.getByText(
-				'本地已经产生新变更，最早一笔待同步写入开始于 10 分钟前。你可以直接点“立即同步”，也可以等后台自动补跑。',
+				'本地已经产生新变更，最早一笔待同步写入开始于 10 分钟前。你可以直接点“立即同步”，也可以等后台自动补跑完整对齐轮次。',
 			),
 		).toBeInTheDocument()
 		expect(screen.getByText('待同步')).toBeInTheDocument()

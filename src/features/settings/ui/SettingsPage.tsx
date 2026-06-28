@@ -573,12 +573,12 @@ export function SettingsPage() {
 								}
 							/>
 							<SettingInfoRow
-								description='最近一次 push-like 同步完成时间。'
+								description='最近一次同步轮次里 push 阶段完成时间。'
 								label='上次 push'
 								value={<SyncTimestampValue timestamp={syncStatus?.lastPushAt ?? null} />}
 							/>
 							<SettingInfoRow
-								description='最近一次 pull-like 同步完成时间。'
+								description='最近一次同步轮次里 pull 或 pull-confirm 阶段完成时间。'
 								label='上次 pull'
 								value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
 							/>
@@ -652,7 +652,7 @@ export function SettingsPage() {
 
 						<p className={`mt-3 ${formFieldHintClass}`}>
 							配置会直接保存在本地数据库的 settings 表；页面刷新后只会自动回填 URL。出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token 覆盖保存。未配置前不会自动同步；配置完成后，本地写入会先标记
-							dirty，再由同步引擎异步 push。若当前设备是空副本，先用“从云端恢复本地”把远端基线完整拉回本机，再继续普通同步。
+							dirty，再由同步引擎异步执行“pull → push → pull-confirm”。若当前设备是空副本，先用“从云端恢复本地”把远端基线完整拉回本机，再继续普通同步。
 						</p>
 
 						<StatusNotice
@@ -976,9 +976,9 @@ function getSyncStatusCopy({
 		return {
 			title: '正在执行手动同步',
 			summary: pendingResync
-				? '当前这一轮会先 push 本地增量，再 pull 远端结果；运行期间又有新写入，结束后还会自动补跑一轮。'
-				: '当前这一轮会先 push 本地增量，再 pull 远端结果。同步期间本地业务仍然继续只读写本地数据库。',
-			statusDescription: '正在执行一轮手动 push -> pull。',
+				? '当前这一轮会先 pull 远端增量，再 push 本地 outbox，最后再做一次 pull-confirm；运行期间又有新写入，结束后还会自动补跑一轮。'
+				: '当前这一轮会先 pull 远端增量，再 push 本地 outbox，最后再做一次 pull-confirm。同步期间本地业务仍然继续只读写本地数据库。',
+			statusDescription: '正在执行一轮 pull → push → pull-confirm。',
 			variant: 'warning' as const,
 		}
 	}
@@ -1017,33 +1017,36 @@ function getSyncStatusCopy({
 		case 'idle':
 			return {
 				title: '同步状态正常',
-				summary: '当前没有待处理同步动作。本地一旦产生新的写入，会先变成待同步，再由后台异步 push。',
-				statusDescription: '当前没有待处理的 push 或 pull。',
+				summary:
+					'当前没有待处理同步动作。本地一旦产生新的写入，会先变成待同步，再由后台异步执行一轮 pull → push → pull-confirm。',
+				statusDescription: '当前没有待处理的同步轮次。',
 				variant: 'success' as const,
 			}
 		case 'dirty':
 			return {
 				title: '等待上推',
 				summary: dirtySince
-					? `本地已经产生新变更，最早一笔待同步写入开始于 ${formatSyncRelativeTime(dirtySince)}。你可以直接点“立即同步”，也可以等后台自动补跑。`
-					: '本地已经产生新变更，正在等待下一次 push。你可以直接点“立即同步”，也可以等后台自动补跑。',
+					? `本地已经产生新变更，最早一笔待同步写入开始于 ${formatSyncRelativeTime(dirtySince)}。你可以直接点“立即同步”，也可以等后台自动补跑完整对齐轮次。`
+					: '本地已经产生新变更，正在等待下一轮完整对齐同步。你可以直接点“立即同步”，也可以等后台自动补跑。',
 				statusDescription: dirtySince
 					? `本地已有新写入，已等待 ${formatSyncRelativeTime(dirtySince)}。`
-					: '本地已有新写入，等待下一次 push。',
+					: '本地已有新写入，等待下一轮完整对齐同步。',
 				variant: 'warning' as const,
 			}
 		case 'pushing':
 			return {
 				title: '正在推送本地变更',
-				summary: '同步引擎正在把本地增量提交到 Turso 远端。这个过程失败时不会影响当前本地写入结果。',
-				statusDescription: '正在把本地增量 push 到远端。',
+				summary:
+					'同步引擎正在这一轮对齐同步的中间阶段，把本地 outbox 提交到 Turso 远端。这个过程失败时不会影响当前本地写入结果。',
+				statusDescription: '正在把本地 outbox push 到远端。',
 				variant: 'warning' as const,
 			}
 		case 'pulling':
 			return {
 				title: '正在拉取远端结果',
-				summary: '同步引擎正在从 Turso 拉取最新结果，用来收敛其他设备或远端已有的变更。',
-				statusDescription: '正在从远端 pull 最新结果。',
+				summary:
+					'同步引擎正在执行初始 pull 或最后的 pull-confirm，用来先吸收其他设备变更，再确认当前轮次提交后的远端最终状态。',
+				statusDescription: '正在从远端 pull 最新结果或确认结果。',
 				variant: 'warning' as const,
 			}
 		case 'error':

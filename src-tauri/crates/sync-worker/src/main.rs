@@ -82,6 +82,7 @@ async fn run() -> Result<(), SyncWorkerError> {
         SyncRunMode::Push => push_local_changes(&local, &remote).await,
         SyncRunMode::Pull => pull_remote_changes(&local, &remote).await,
         SyncRunMode::Force => {
+            pull_remote_changes(&local, &remote).await?;
             push_local_changes(&local, &remote).await?;
             pull_remote_changes(&local, &remote).await
         }

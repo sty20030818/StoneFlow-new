@@ -115,7 +115,7 @@ impl SyncRuntimeState {
         }
 
         if is_running(guard.status) {
-            queue_pending_mode(&mut guard, SyncRunMode::Push);
+            queue_pending_mode(&mut guard, SyncRunMode::Force);
             return;
         }
 
@@ -148,13 +148,21 @@ impl SyncRuntimeState {
         guard.last_error = None;
         guard.last_error_mode = None;
         guard.status = match mode {
-            SyncRunMode::Push | SyncRunMode::Force => SyncStatusKind::Pushing,
-            SyncRunMode::Pull | SyncRunMode::Restore => SyncStatusKind::Pulling,
+            SyncRunMode::Push => SyncStatusKind::Pushing,
+            SyncRunMode::Pull | SyncRunMode::Force | SyncRunMode::Restore => {
+                SyncStatusKind::Pulling
+            }
         };
     }
 
-    /// Force 模式在同一轮中切换到 pull 阶段。
-    pub(crate) async fn enter_force_pull_phase(&self) {
+    /// Force 模式在同一轮中切换到中间 push 阶段。
+    pub(crate) async fn enter_force_push_phase(&self) {
+        let mut guard = self.inner.write().await;
+        guard.status = SyncStatusKind::Pushing;
+    }
+
+    /// Force 模式在同一轮中切换到最后的 confirm pull 阶段。
+    pub(crate) async fn enter_force_confirm_pull_phase(&self) {
         let mut guard = self.inner.write().await;
         guard.status = SyncStatusKind::Pulling;
     }
@@ -264,6 +272,39 @@ mod tests {
 
         let next_mode = state.take_pending_mode().await;
         assert_eq!(next_mode, Some(SyncRunMode::Force));
+    }
+
+    #[tokio::test]
+    async fn mark_dirty_should_queue_force_when_sync_is_running() {
+        let state = SyncRuntimeState::default();
+        state
+            .set_remote_config(Some(SyncRemoteConfig {
+                url: "libsql://example.turso.io".to_owned(),
+                token: "token".to_owned(),
+            }))
+            .await;
+        state.start_run(SyncRunMode::Pull).await;
+
+        state.mark_dirty().await;
+
+        let next_mode = state.take_pending_mode().await;
+        assert_eq!(next_mode, Some(SyncRunMode::Force));
+    }
+
+    #[tokio::test]
+    async fn start_run_should_begin_force_round_in_pulling_state() {
+        let state = SyncRuntimeState::default();
+        state
+            .set_remote_config(Some(SyncRemoteConfig {
+                url: "libsql://example.turso.io".to_owned(),
+                token: "token".to_owned(),
+            }))
+            .await;
+
+        state.start_run(SyncRunMode::Force).await;
+
+        let payload = state.snapshot().await;
+        assert_eq!(payload.status, SyncStatusKind::Pulling);
     }
 
     #[tokio::test]

@@ -47,7 +47,7 @@ export function configureSync(input: { url: string; token: string }) {
 }
 
 /**
- * 手动执行一轮 push -> pull。
+ * 手动执行一轮 pull -> push -> pull-confirm。
  */
 export function forceSync() {
 	return invoke<SyncStatusPayload>('force_sync')
