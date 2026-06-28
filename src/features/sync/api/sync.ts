@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 
 export type SyncStatus = 'disabled' | 'idle' | 'dirty' | 'pushing' | 'pulling' | 'error'
+export type SyncReplicaState = 'uninitialized' | 'ready' | 'restore_required' | 'diverged'
 
 export type SyncStatusPayload = {
 	enabled: boolean
@@ -13,7 +14,9 @@ export type SyncStatusPayload = {
 	pendingResync: boolean
 	hasRemoteConfig: boolean
 	remoteUrl: string | null
-	remoteToken: string | null
+	replicaState: SyncReplicaState
+	replicaReason: string | null
+	lastRestoreAt: string | null
 }
 
 /**

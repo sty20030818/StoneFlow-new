@@ -1,5 +1,8 @@
+use std::thread;
+
 mod apply;
 mod error;
+mod local;
 mod pull;
 mod push;
 mod remote;
@@ -12,16 +15,59 @@ use push::push_local_changes;
 use remote::{bootstrap_remote_schema, open_local_sqlite, open_remote};
 use types::{SyncRemoteConfig, SyncRunMode, WorkerArgs};
 
-#[tokio::main]
-async fn main() {
-    let exit_code = match run().await {
-        Ok(()) => 0,
+fn main() {
+    // libsql 在 Windows 上首次访问 Turso 远端时会占用更深调用栈；
+    // worker 单独放到更大栈的线程里执行，避免主线程直接 stack overflow。
+    let exit_code = match thread::Builder::new()
+        .name("sync-worker-main".to_owned())
+        .stack_size(8 * 1024 * 1024)
+        .spawn(run_entrypoint)
+    {
+        Ok(handle) => match handle.join() {
+            Ok(code) => code,
+            Err(_) => {
+                eprintln!(
+                    "{}",
+                    SyncWorkerError::internal("同步 worker 主线程异常退出").to_wire_json()
+                );
+                1
+            }
+        },
         Err(error) => {
-            eprintln!("{error}");
+            eprintln!(
+                "{}",
+                SyncWorkerError::internal(format!("启动同步 worker 线程失败: {error}"))
+                    .to_wire_json()
+            );
             1
         }
     };
-    std::process::exit(exit_code);
+    std::process::exit(exit_code)
+}
+
+fn run_entrypoint() -> i32 {
+    let runtime = match tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+    {
+        Ok(runtime) => runtime,
+        Err(error) => {
+            eprintln!(
+                "{}",
+                SyncWorkerError::internal(format!("初始化同步 worker runtime 失败: {error}"))
+                    .to_wire_json()
+            );
+            return 1;
+        }
+    };
+
+    match runtime.block_on(run()) {
+        Ok(()) => 0,
+        Err(error) => {
+            eprintln!("{}", error.to_wire_json());
+            1
+        }
+    }
 }
 
 async fn run() -> Result<(), SyncWorkerError> {

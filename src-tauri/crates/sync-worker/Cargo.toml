@@ -15,3 +15,6 @@ serde_json.workspace = true
 stoneflow-domain = { path = "../domain" }
 thiserror.workspace = true
 tokio.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

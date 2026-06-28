@@ -1,6 +1,5 @@
 import React from 'react'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { act } from 'react'
 
 import type { ShellSidebarSettings } from '@/app/layouts/shell/model/shellDevicePreferences'
 import { SettingsPage } from '@/features/settings/ui/SettingsPage'
@@ -179,7 +178,9 @@ describe('SettingsPage', () => {
 			pendingResync: false,
 			hasRemoteConfig: false,
 			remoteUrl: null,
-			remoteToken: null,
+			replicaState: 'uninitialized',
+			replicaReason: null,
+			lastRestoreAt: null,
 		})
 		configureSyncSpy.mockReset()
 		configureSyncSpy.mockResolvedValue({
@@ -193,7 +194,9 @@ describe('SettingsPage', () => {
 			pendingResync: false,
 			hasRemoteConfig: true,
 			remoteUrl: 'libsql://example.turso.io',
-			remoteToken: 'secret-token',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
 		})
 		forceSyncSpy.mockReset()
 		forceSyncSpy.mockResolvedValue({
@@ -207,7 +210,9 @@ describe('SettingsPage', () => {
 			pendingResync: false,
 			hasRemoteConfig: true,
 			remoteUrl: 'libsql://example.turso.io',
-			remoteToken: 'secret-token',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
 		})
 
 		sidebarStoreState = createSidebarStoreState()
@@ -309,13 +314,20 @@ describe('SettingsPage', () => {
 			pendingResync: false,
 			hasRemoteConfig: true,
 			remoteUrl: 'libsql://saved.turso.io',
-			remoteToken: 'saved-token',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
 		})
 
 		await renderSettingsPage()
 
 		expect(screen.getByLabelText('Turso URL')).toHaveValue('libsql://saved.turso.io')
-		expect(screen.getByLabelText('Turso Token')).toHaveValue('saved-token')
+		expect(screen.getByLabelText('Turso Token')).toHaveValue('')
+		expect(
+			screen.getByText('出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token 覆盖保存。', {
+				exact: false,
+			}),
+		).toBeInTheDocument()
 	})
 
 	it('未配置同步时展示本地优先提示', async () => {
@@ -332,7 +344,9 @@ describe('SettingsPage', () => {
 	it('后台状态刷新时不应覆盖正在编辑的同步配置草稿', async () => {
 		const setIntervalSpy = vi.spyOn(window, 'setInterval')
 		setIntervalSpy.mockImplementation((callback) => {
-			void callback()
+			if (typeof callback === 'function') {
+				void callback()
+			}
 			return 1 as unknown as number
 		})
 
@@ -348,7 +362,9 @@ describe('SettingsPage', () => {
 				pendingResync: false,
 				hasRemoteConfig: true,
 				remoteUrl: 'libsql://saved.turso.io',
-				remoteToken: 'saved-token',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
 			})
 			.mockResolvedValue({
 				enabled: true,
@@ -361,7 +377,9 @@ describe('SettingsPage', () => {
 				pendingResync: false,
 				hasRemoteConfig: true,
 				remoteUrl: 'libsql://saved.turso.io',
-				remoteToken: 'saved-token',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
 			})
 
 		await renderSettingsPage()
@@ -395,7 +413,9 @@ describe('SettingsPage', () => {
 			pendingResync: false,
 			hasRemoteConfig: true,
 			remoteUrl: 'libsql://example.turso.io',
-			remoteToken: 'secret-token',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
 		})
 
 		await renderSettingsPage()
@@ -422,7 +442,9 @@ describe('SettingsPage', () => {
 			pendingResync: false,
 			hasRemoteConfig: true,
 			remoteUrl: 'libsql://example.turso.io',
-			remoteToken: 'secret-token',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
 		})
 
 		await renderSettingsPage()
@@ -450,7 +472,9 @@ describe('SettingsPage', () => {
 			pendingResync: false,
 			hasRemoteConfig: true,
 			remoteUrl: 'libsql://example.turso.io',
-			remoteToken: 'secret-token',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
 		})
 
 		await renderSettingsPage()
@@ -463,7 +487,9 @@ describe('SettingsPage', () => {
 	it('已配置同步时会定时刷新状态', async () => {
 		const setIntervalSpy = vi.spyOn(window, 'setInterval')
 		setIntervalSpy.mockImplementation((callback) => {
-			void callback()
+			if (typeof callback === 'function') {
+				void callback()
+			}
 			return 1 as unknown as number
 		})
 		getSyncStatusSpy
@@ -478,7 +504,9 @@ describe('SettingsPage', () => {
 				pendingResync: false,
 				hasRemoteConfig: true,
 				remoteUrl: 'libsql://example.turso.io',
-				remoteToken: 'secret-token',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
 			})
 			.mockResolvedValue({
 				enabled: true,
@@ -491,7 +519,9 @@ describe('SettingsPage', () => {
 				pendingResync: false,
 				hasRemoteConfig: true,
 				remoteUrl: 'libsql://example.turso.io',
-				remoteToken: 'secret-token',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
 			})
 
 		await renderSettingsPage()
@@ -501,6 +531,48 @@ describe('SettingsPage', () => {
 		})
 		expect(await screen.findByText('sync timeout')).toBeInTheDocument()
 		setIntervalSpy.mockRestore()
+	})
+
+	it('保存同步配置成功后会清空 token 输入框', async () => {
+		await renderSettingsPage()
+
+		fireEvent.change(screen.getByLabelText('Turso URL'), {
+			target: { value: 'libsql://example.turso.io' },
+		})
+		fireEvent.change(screen.getByLabelText('Turso Token'), {
+			target: { value: 'secret-token' },
+		})
+		fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
+
+		await waitFor(() => {
+			expect(configureSyncSpy).toHaveBeenCalledTimes(1)
+		})
+		expect(screen.getByLabelText('Turso Token')).toHaveValue('')
+	})
+
+	it('副本为空时展示待恢复提示并禁用立即同步', async () => {
+		getSyncStatusSpy.mockResolvedValue({
+			enabled: true,
+			status: 'idle',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			replicaState: 'restore_required',
+			replicaReason:
+				'当前本地副本不包含任务、项目等同步主数据。为避免把空副本误当成删除源，S1 阶段已阻止普通同步，请先走“从远端恢复本地”链路。',
+			lastRestoreAt: null,
+		})
+
+		await renderSettingsPage()
+
+		expect(screen.getAllByText('当前设备需要先恢复本地副本')).toHaveLength(2)
+		expect(screen.getByText('需要先恢复')).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: '立即同步' })).toBeDisabled()
 	})
 })
 

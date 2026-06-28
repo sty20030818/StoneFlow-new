@@ -10,9 +10,10 @@ use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
 pub async fn get_sync_status(
+    database: State<'_, DatabaseRuntimeState>,
     sync_state: State<'_, SyncRuntimeState>,
 ) -> Result<SyncStatusPayload, AppError> {
-    Ok(sync::get_sync_status(sync_state.inner()).await)
+    sync::get_sync_status(sync_state.inner(), database.inner()).await
 }
 
 #[tauri::command]

@@ -20,6 +20,22 @@ impl Default for SyncStatusKind {
     }
 }
 
+/// 当前设备本地副本是否适合继续做普通同步。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SyncReplicaState {
+    Uninitialized,
+    Ready,
+    RestoreRequired,
+    Diverged,
+}
+
+impl Default for SyncReplicaState {
+    fn default() -> Self {
+        Self::Uninitialized
+    }
+}
+
 /// 设置页读取的最小同步状态载荷。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -34,7 +50,9 @@ pub struct SyncStatusPayload {
     pub pending_resync: bool,
     pub has_remote_config: bool,
     pub remote_url: Option<String>,
-    pub remote_token: Option<String>,
+    pub replica_state: SyncReplicaState,
+    pub replica_reason: Option<String>,
+    pub last_restore_at: Option<String>,
 }
 
 /// 前端提交的远端配置输入。

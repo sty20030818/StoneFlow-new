@@ -141,12 +141,8 @@ pub const REMOTE_SCHEMA_STATEMENTS: &[&str] = &[
 pub struct LocalOutboxRecord {
     pub op_id: String,
     pub entity_type: String,
-    pub entity_id: String,
     pub action: String,
     pub payload: String,
-    pub status: String,
-    pub error_message: Option<String>,
-    pub attempt_count: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -156,7 +152,6 @@ pub struct HardDeleteEventRecord {
     pub id: String,
     pub entity_type: String,
     pub entity_id: String,
-    pub action: String,
     pub metadata: Option<String>,
     pub created_at: String,
 }

@@ -1,7 +1,8 @@
-//! 云同步 Phase 1：本地库是真相源，sync 层只负责脏标记与 push/pull 调度。
+//! 云同步运行时边界：主进程只负责状态、调度与 sidecar 拉起。
 
 mod config;
 mod engine;
+mod local;
 mod state;
 mod types;
 
@@ -10,4 +11,4 @@ pub use engine::{
     trigger_resume_pull, trigger_startup_pull,
 };
 pub use state::SyncRuntimeState;
-pub use types::{ConfigureSyncInput, SyncStatusPayload};
+pub use types::{ConfigureSyncInput, SyncReplicaState, SyncStatusPayload};

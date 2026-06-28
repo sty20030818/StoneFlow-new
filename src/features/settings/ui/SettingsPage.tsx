@@ -16,6 +16,7 @@ import {
 	configureSync,
 	forceSync,
 	getSyncStatus,
+	type SyncReplicaState,
 	type SyncStatus,
 	type SyncStatusPayload,
 } from '@/features/sync/api/sync'
@@ -112,7 +113,7 @@ export function SettingsPage() {
 	}, [loadSidebarSettings])
 
 	useEffect(() => {
-		void refreshSyncStatus({ syncDraft: true })
+		void refreshSyncStatus({ syncUrlDraft: true })
 	}, [])
 
 	useEffect(() => {
@@ -121,7 +122,7 @@ export function SettingsPage() {
 		}
 
 		const timer = window.setInterval(() => {
-			void refreshSyncStatus({ silent: true, syncDraft: false })
+			void refreshSyncStatus({ silent: true, syncUrlDraft: false })
 		}, SYNC_STATUS_REFRESH_INTERVAL_MS)
 
 		return () => {
@@ -167,9 +168,9 @@ export function SettingsPage() {
 		}
 	}
 
-	async function refreshSyncStatus(options?: { silent?: boolean; syncDraft?: boolean }) {
+	async function refreshSyncStatus(options?: { silent?: boolean; syncUrlDraft?: boolean }) {
 		const silent = options?.silent ?? false
-		const syncDraft = options?.syncDraft ?? true
+		const syncUrlDraft = options?.syncUrlDraft ?? true
 		if (!silent) {
 			setSyncLoading(true)
 			setSyncStatusMessage(null)
@@ -177,9 +178,8 @@ export function SettingsPage() {
 		try {
 			const payload = await getSyncStatus()
 			setSyncStatus(payload)
-			if (syncDraft) {
+			if (syncUrlDraft) {
 				setSyncUrl(payload.remoteUrl ?? '')
-				setSyncToken(payload.remoteToken ?? '')
 			}
 		} catch (error) {
 			setSyncStatus(null)
@@ -199,7 +199,8 @@ export function SettingsPage() {
 				url: syncUrl.trim(),
 				token: syncToken.trim(),
 			})
-			await refreshSyncStatus({ syncDraft: true })
+			setSyncToken('')
+			await refreshSyncStatus({ syncUrlDraft: true })
 		} catch (error) {
 			setSyncStatusMessage(normalizeTauriError(error, '同步配置保存失败'))
 		} finally {
@@ -212,10 +213,10 @@ export function SettingsPage() {
 		setSyncStatusMessage(null)
 		try {
 			await forceSync()
-			await refreshSyncStatus({ syncDraft: false })
+			await refreshSyncStatus({ syncUrlDraft: false })
 		} catch (error) {
 			setSyncStatusMessage(normalizeTauriError(error, '手动同步失败'))
-			await refreshSyncStatus({ syncDraft: false })
+			await refreshSyncStatus({ syncUrlDraft: false })
 		} finally {
 			setSyncRunning(false)
 		}
@@ -226,6 +227,7 @@ export function SettingsPage() {
 	const effectiveSyncErrorTitle = getSyncErrorTitle(syncStatus?.lastErrorMode ?? null, syncRunning)
 	const syncBusy = syncSaving || syncRunning || syncLoading
 	const syncConfigIncomplete = syncUrl.trim().length === 0 || syncToken.trim().length === 0
+	const syncRequiresRestore = syncStatus?.replicaState === 'restore_required'
 	const displayedSyncStatus: SyncStatus = syncRunning
 		? 'pulling'
 		: syncSaving
@@ -235,6 +237,8 @@ export function SettingsPage() {
 		dirtySince: syncStatus?.dirtySince ?? null,
 		pendingResync: syncStatus?.pendingResync ?? false,
 		hasRemoteConfig: syncStatus?.hasRemoteConfig ?? false,
+		replicaState: syncStatus?.replicaState ?? 'uninitialized',
+		replicaReason: syncStatus?.replicaReason ?? null,
 		status: displayedSyncStatus,
 		syncLoading,
 		syncRunning,
@@ -549,6 +553,11 @@ export function SettingsPage() {
 								label='上次 pull'
 								value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
 							/>
+							<SettingInfoRow
+								description='用于判断当前设备能否继续执行普通同步。若副本为空，S1 会先阻止 push，避免把空副本误当成删除源。'
+								label='本地副本'
+								value={<SyncReplicaBadge state={syncStatus?.replicaState ?? 'uninitialized'} />}
+							/>
 						</div>
 
 						<div className='mt-4 grid gap-3 md:grid-cols-2'>
@@ -585,7 +594,7 @@ export function SettingsPage() {
 								{syncSaving ? '保存中...' : '保存配置'}
 							</Button>
 							<Button
-								disabled={syncBusy || !syncStatus?.hasRemoteConfig}
+								disabled={syncBusy || !syncStatus?.hasRemoteConfig || syncRequiresRestore}
 								onClick={() => void handleForceSync()}
 								type='button'
 								variant='secondary'
@@ -595,8 +604,7 @@ export function SettingsPage() {
 						</div>
 
 						<p className={`mt-3 ${formFieldHintClass}`}>
-							配置会直接保存在本地数据库的 settings
-							表；页面刷新后会自动回填。未配置前不会自动同步；配置完成后，本地写入会先标记
+							配置会直接保存在本地数据库的 settings 表；页面刷新后只会自动回填 URL。出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token 覆盖保存。未配置前不会自动同步；配置完成后，本地写入会先标记
 							dirty，再由同步引擎异步 push。
 						</p>
 
@@ -606,6 +614,15 @@ export function SettingsPage() {
 							title={syncStatusCopy.title}
 							variant={syncStatusCopy.variant}
 						/>
+
+						{syncRequiresRestore && syncStatus?.replicaReason ? (
+							<StatusNotice
+								className='mt-4'
+								description={syncStatus.replicaReason}
+								title='当前设备需要先恢复本地副本'
+								variant='warning'
+							/>
+						) : null}
 
 						{effectiveSyncError ? (
 							<StatusNotice
@@ -793,6 +810,28 @@ function SyncStatusBadge({ status }: { status: SyncStatus }) {
 	)
 }
 
+function SyncReplicaBadge({ state }: { state: SyncReplicaState }) {
+	const tone =
+		state === 'ready'
+			? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+			: state === 'restore_required'
+				? 'border-amber-200 bg-amber-50 text-amber-700'
+				: state === 'diverged'
+					? 'border-red-200 bg-red-50 text-red-700'
+					: 'border-slate-200 bg-slate-50 text-slate-600'
+
+	return (
+		<span
+			className={cn(
+				'inline-flex items-center rounded-full border px-2.5 py-1 text-sm font-medium',
+				tone,
+			)}
+		>
+			{formatReplicaState(state)}
+		</span>
+	)
+}
+
 function formatSyncRelativeTime(value: string) {
 	const date = new Date(value)
 	if (Number.isNaN(date.getTime())) {
@@ -844,6 +883,8 @@ function getSyncStatusCopy({
 	dirtySince,
 	pendingResync,
 	hasRemoteConfig,
+	replicaState,
+	replicaReason,
 	syncLoading,
 	syncSaving,
 	syncRunning,
@@ -852,6 +893,8 @@ function getSyncStatusCopy({
 	dirtySince: string | null
 	pendingResync: boolean
 	hasRemoteConfig: boolean
+	replicaState: SyncReplicaState
+	replicaReason: string | null
 	syncLoading: boolean
 	syncSaving: boolean
 	syncRunning: boolean
@@ -868,7 +911,7 @@ function getSyncStatusCopy({
 	if (syncSaving) {
 		return {
 			title: '正在保存同步配置',
-			summary: '正在保存 Turso URL 和 token。保存成功后会立即刷新状态，并在后续写入时参与自动同步。',
+			summary: '正在保存 Turso URL 和 token。保存成功后会立即刷新状态，并清空当前 token 输入框。',
 			statusDescription: '正在保存新的 Turso 远端配置。',
 			variant: 'warning' as const,
 		}
@@ -891,6 +934,17 @@ function getSyncStatusCopy({
 			summary: '当前还没有保存可用的 Turso 远端。完成配置前，所有数据只会保留在本地数据库。',
 			statusDescription: '未配置 Turso 远端，本机只保留本地数据。',
 			variant: 'neutral' as const,
+		}
+	}
+
+	if (replicaState === 'restore_required') {
+		return {
+			title: '当前设备需要先恢复本地副本',
+			summary:
+				replicaReason ??
+				'当前本地副本看起来是空的。为避免把空副本误当成删除源，S1 阶段已阻止普通同步，后续需要走“从远端恢复本地”链路。',
+			statusDescription: '当前设备的本地副本为空，普通同步已被阻止。',
+			variant: 'warning' as const,
 		}
 	}
 
@@ -980,5 +1034,20 @@ function formatSyncStatus(status: SyncStatus) {
 			return '同步失败'
 		default:
 			return status
+	}
+}
+
+function formatReplicaState(state: SyncReplicaState) {
+	switch (state) {
+		case 'ready':
+			return '可正常同步'
+		case 'restore_required':
+			return '需要先恢复'
+		case 'diverged':
+			return '状态异常'
+		case 'uninitialized':
+			return '尚未初始化'
+		default:
+			return state
 	}
 }

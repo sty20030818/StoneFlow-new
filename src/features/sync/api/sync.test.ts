@@ -25,7 +25,9 @@ describe('sync api', () => {
 			pendingResync: false,
 			hasRemoteConfig: false,
 			remoteUrl: null,
-			remoteToken: null,
+			replicaState: 'uninitialized',
+			replicaReason: null,
+			lastRestoreAt: null,
 		})
 
 		await getSyncStatus()
@@ -45,7 +47,9 @@ describe('sync api', () => {
 			pendingResync: false,
 			hasRemoteConfig: true,
 			remoteUrl: 'libsql://example.turso.io',
-			remoteToken: 'secret',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
 		})
 
 		await configureSync({
@@ -73,7 +77,9 @@ describe('sync api', () => {
 			pendingResync: false,
 			hasRemoteConfig: true,
 			remoteUrl: 'libsql://example.turso.io',
-			remoteToken: 'secret',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
 		})
 
 		await forceSync()

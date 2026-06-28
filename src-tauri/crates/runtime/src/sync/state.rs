@@ -6,7 +6,7 @@ use stoneflow_domain::now_utc;
 use tokio::sync::{Mutex, OwnedMutexGuard, RwLock};
 
 pub use super::types::SyncRunMode;
-use super::types::{SyncRemoteConfig, SyncStatusKind, SyncStatusPayload};
+use super::types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind, SyncStatusPayload};
 
 #[derive(Debug, Default)]
 struct SyncRuntimeInner {
@@ -19,6 +19,9 @@ struct SyncRuntimeInner {
     dirty_since: Option<String>,
     pending_resync: bool,
     pending_mode: Option<SyncRunMode>,
+    replica_state: SyncReplicaState,
+    replica_reason: Option<String>,
+    last_restore_at: Option<String>,
 }
 
 /// Tauri app manage 的同步状态。
@@ -52,10 +55,9 @@ impl SyncRuntimeState {
                 .remote_config
                 .as_ref()
                 .map(|config| config.url.clone()),
-            remote_token: guard
-                .remote_config
-                .as_ref()
-                .map(|config| config.token.clone()),
+            replica_state: guard.replica_state,
+            replica_reason: guard.replica_reason.clone(),
+            last_restore_at: guard.last_restore_at.clone(),
         }
     }
 
@@ -80,6 +82,24 @@ impl SyncRuntimeState {
     /// 返回当前已加载的远端配置。
     pub(crate) async fn remote_config(&self) -> Option<SyncRemoteConfig> {
         self.inner.read().await.remote_config.clone()
+    }
+
+    /// 更新当前设备本地副本状态。
+    pub(crate) async fn set_replica_state(
+        &self,
+        replica_state: SyncReplicaState,
+        replica_reason: Option<String>,
+        last_restore_at: Option<String>,
+    ) {
+        let mut guard = self.inner.write().await;
+        guard.replica_state = replica_state;
+        guard.replica_reason = replica_reason;
+        guard.last_restore_at = last_restore_at;
+    }
+
+    /// 读取当前设备本地副本状态。
+    pub(crate) async fn replica_state(&self) -> SyncReplicaState {
+        self.inner.read().await.replica_state
     }
 
     /// 标记本地有未上推的写入。
@@ -209,7 +229,7 @@ fn merge_modes(current: SyncRunMode, next: SyncRunMode) -> SyncRunMode {
 #[cfg(test)]
 mod tests {
     use super::{SyncRunMode, SyncRuntimeState};
-    use crate::sync::types::{SyncRemoteConfig, SyncStatusKind};
+    use crate::sync::types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind};
 
     #[tokio::test]
     async fn mark_dirty_should_move_idle_to_dirty() {
@@ -243,5 +263,26 @@ mod tests {
 
         let next_mode = state.take_pending_mode().await;
         assert_eq!(next_mode, Some(SyncRunMode::Force));
+    }
+
+    #[tokio::test]
+    async fn snapshot_should_include_replica_state() {
+        let state = SyncRuntimeState::default();
+
+        state
+            .set_replica_state(
+                SyncReplicaState::RestoreRequired,
+                Some("needs restore".to_owned()),
+                Some("2026-06-28T00:00:00Z".to_owned()),
+            )
+            .await;
+
+        let payload = state.snapshot().await;
+        assert_eq!(payload.replica_state, SyncReplicaState::RestoreRequired);
+        assert_eq!(payload.replica_reason.as_deref(), Some("needs restore"));
+        assert_eq!(
+            payload.last_restore_at.as_deref(),
+            Some("2026-06-28T00:00:00Z")
+        );
     }
 }
