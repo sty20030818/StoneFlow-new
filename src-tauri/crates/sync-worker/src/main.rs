@@ -4,6 +4,7 @@ mod apply;
 mod diagnose;
 mod error;
 mod local;
+mod migrate;
 mod pull;
 mod push;
 mod remote;
@@ -13,6 +14,7 @@ mod types;
 
 use error::SyncWorkerError;
 use diagnose::collect_sync_diagnostics;
+use migrate::migrate_v2_baseline;
 use pull::{pull_remote_changes, pull_v2_remote_changes};
 use push::{push_local_changes, push_v2_local_changes};
 use remote::{bootstrap_remote_schema, open_local_sqlite, open_remote};
@@ -85,6 +87,7 @@ async fn run() -> Result<(), SyncWorkerError> {
         SyncRunMode::PushV2 => push_v2_local_changes(&local, &remote).await,
         SyncRunMode::Pull => pull_remote_changes(&local, &remote).await,
         SyncRunMode::PullV2 => pull_v2_remote_changes(&local, &remote).await,
+        SyncRunMode::MigrateV2 => migrate_v2_baseline(&local, &remote).await,
         SyncRunMode::Restore => restore_remote_snapshot(&local, &remote).await,
         SyncRunMode::Diagnose => {
             let payload = collect_sync_diagnostics(&local, &remote).await?;

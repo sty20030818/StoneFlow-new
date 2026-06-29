@@ -6,6 +6,7 @@ pub enum SyncRunMode {
     PushV2,
     Pull,
     PullV2,
+    MigrateV2,
     Restore,
     Diagnose,
 }
@@ -17,6 +18,7 @@ impl SyncRunMode {
             "push_v2" => Ok(Self::PushV2),
             "pull" => Ok(Self::Pull),
             "pull_v2" => Ok(Self::PullV2),
+            "migrate_v2" => Ok(Self::MigrateV2),
             "restore" => Ok(Self::Restore),
             "diagnose" => Ok(Self::Diagnose),
             other => Err(SyncWorkerError::validation(format!(

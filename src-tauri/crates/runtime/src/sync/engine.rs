@@ -337,6 +337,14 @@ async fn run_sync_round_trip(
     database_path: String,
     remote_config: &crate::sync::types::SyncRemoteConfig,
 ) -> Result<(), SyncRoundFailure> {
+    log::info!("sync:sync_v2 phase=migrate");
+    run_sync_worker_with_label(app_handle, &database_path, remote_config, "migrate_v2")
+        .await
+        .map_err(|error| SyncRoundFailure {
+            failed_mode: SyncRunMode::Sync,
+            error: error.with_sync_mode(SyncRunMode::Sync),
+        })?;
+
     log::info!("sync:sync_v2 phase=initial_pull");
     sync_database_v2(
         app_handle,

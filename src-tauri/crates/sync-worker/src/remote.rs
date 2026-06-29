@@ -210,6 +210,101 @@ pub async fn fetch_latest_v2_server_seq(remote: &Connection) -> Result<Option<i6
     .map(Option::flatten)
 }
 
+pub async fn insert_v2_baseline_changes_if_empty(
+    remote: &Connection,
+    snapshot: &RemoteRestoreSnapshot,
+) -> Result<(), SyncWorkerError> {
+    if fetch_latest_v2_server_seq(remote).await?.is_some() {
+        return Ok(());
+    }
+
+    let transaction = remote.transaction().await.map_err(|error| {
+        SyncWorkerError::remote_database(format!("开启远端 V2 基线迁移事务失败: {error}"))
+    })?;
+
+    for space in &snapshot.spaces {
+        insert_v2_baseline_change(&transaction, SyncOperationPayload::Space { snapshot: space.clone() }).await?;
+    }
+    for project in &snapshot.projects {
+        insert_v2_baseline_change(
+            &transaction,
+            SyncOperationPayload::Project {
+                snapshot: project.clone(),
+            },
+        )
+        .await?;
+    }
+    for task in &snapshot.tasks {
+        insert_v2_baseline_change(&transaction, SyncOperationPayload::Task { snapshot: task.clone() }).await?;
+    }
+    for task_link in &snapshot.task_links {
+        insert_v2_baseline_change(
+            &transaction,
+            SyncOperationPayload::TaskLink {
+                snapshot: task_link.clone(),
+            },
+        )
+        .await?;
+    }
+    for view in &snapshot.views {
+        insert_v2_baseline_change(&transaction, SyncOperationPayload::View { snapshot: view.clone() }).await?;
+    }
+    for setting in &snapshot.settings {
+        insert_v2_baseline_change(
+            &transaction,
+            SyncOperationPayload::Setting {
+                snapshot: setting.clone(),
+            },
+        )
+        .await?;
+    }
+
+    transaction.commit().await.map_err(|error| {
+        SyncWorkerError::remote_database(format!("提交远端 V2 基线迁移事务失败: {error}"))
+    })?;
+    Ok(())
+}
+
+async fn insert_v2_baseline_change(
+    transaction: &Transaction,
+    payload: SyncOperationPayload,
+) -> Result<(), SyncWorkerError> {
+    let committed_at = payload_updated_at(&payload).to_owned();
+    let patch = serde_json::to_string(&payload)
+        .map_err(|error| SyncWorkerError::serialization(format!("序列化 V2 基线 patch 失败: {error}")))?;
+    transaction
+        .execute(
+            r#"
+            INSERT INTO remote_change_log(
+                entity_type, entity_id, change_kind, patch,
+                changed_by_client_id, changed_by_client_seq, committed_at
+            )
+            VALUES (?1, ?2, 'upsert', ?3, 's1_baseline', 0, ?4)
+            "#,
+            params![
+                payload.entity_type().to_owned(),
+                payload.entity_id().to_owned(),
+                patch,
+                committed_at,
+            ],
+        )
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("写入远端 V2 基线 change 失败: {error}")))?;
+    Ok(())
+}
+
+fn payload_updated_at(payload: &SyncOperationPayload) -> &str {
+    match payload {
+        SyncOperationPayload::Space { snapshot } => &snapshot.updated_at,
+        SyncOperationPayload::Project { snapshot } => &snapshot.updated_at,
+        SyncOperationPayload::Task { snapshot } => &snapshot.updated_at,
+        SyncOperationPayload::View { snapshot } => &snapshot.updated_at,
+        SyncOperationPayload::Setting { snapshot } => &snapshot.updated_at,
+        SyncOperationPayload::TaskLink { snapshot } => &snapshot.updated_at,
+        SyncOperationPayload::HardDelete { target } => &target.deleted_at,
+    }
+}
+
 pub async fn open_remote(remote_config: &SyncRemoteConfig) -> Result<Connection, SyncWorkerError> {
     let database = Builder::new_remote(remote_config.url.clone(), remote_config.token.clone())
         .build()
