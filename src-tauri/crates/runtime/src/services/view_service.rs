@@ -14,7 +14,7 @@ use crate::{
     app::error::AppError,
     services::{
         activity::ActivityPersistenceAdapter,
-        sync_outbox::{build_delete_record, build_upsert_record},
+        sync_mutation::{build_delete_record, build_upsert_record},
     },
 };
 use stoneflow_storage::{
@@ -224,9 +224,9 @@ impl ViewPersistence for ViewPersistenceAdapter {
             .await
             .map(map_view_model_to_record)
             .map_err(|error| map_app_error(error.into()))?;
-        let outbox_record = build_view_upsert_outbox_record(&view).map_err(map_app_error)?;
+        let mutation_record = build_view_upsert_mutation_record(&view).map_err(map_app_error)?;
         self.sync_repository
-            .insert_outbox_record(connection, &outbox_record)
+            .insert_pending_mutation(connection, &mutation_record)
             .await
             .map_err(|error| map_app_error(error.into()))?;
 
@@ -260,9 +260,9 @@ impl ViewPersistence for ViewPersistenceAdapter {
             .map_err(|error| map_app_error(error.into()))?;
 
         if let Some(view) = view.as_ref() {
-            let outbox_record = build_view_upsert_outbox_record(view).map_err(map_app_error)?;
+            let mutation_record = build_view_upsert_mutation_record(view).map_err(map_app_error)?;
             self.sync_repository
-                .insert_outbox_record(connection, &outbox_record)
+                .insert_pending_mutation(connection, &mutation_record)
                 .await
                 .map_err(|error| map_app_error(error.into()))?;
         }
@@ -284,9 +284,9 @@ impl ViewPersistence for ViewPersistenceAdapter {
 
         if affected > 0 {
             if let Some(current) = current.as_ref() {
-                let outbox_record = build_view_delete_outbox_record(current).map_err(map_app_error)?;
+                let mutation_record = build_view_delete_mutation_record(current).map_err(map_app_error)?;
                 self.sync_repository
-                    .insert_outbox_record(connection, &outbox_record)
+                    .insert_pending_mutation(connection, &mutation_record)
                     .await
                     .map_err(|error| map_app_error(error.into()))?;
             }
@@ -333,15 +333,15 @@ impl<'a> From<&'a ViewRecord> for ViewSyncPayload<'a> {
     }
 }
 
-fn build_view_upsert_outbox_record(
+fn build_view_upsert_mutation_record(
     view: &ViewRecord,
-) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_upsert_record("view", &view.id, &ViewSyncPayload::from(view), &view.updated_at)
 }
 
-fn build_view_delete_outbox_record(
+fn build_view_delete_mutation_record(
     view: &ViewRecord,
-) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_delete_record("view", &view.id, &ViewSyncPayload::from(view), &view.updated_at)
 }
 

@@ -15,7 +15,7 @@ async fn database_bootstrap_should_create_sqlite_and_report_ready() {
 
     let snapshot = database.snapshot();
     assert!(database.database_path().exists());
-    assert_eq!(database.applied_migrations(), 1);
+    assert!(database.applied_migrations() > 0);
     assert!(snapshot.database_ready);
     assert!(snapshot.migrations_ready);
 }

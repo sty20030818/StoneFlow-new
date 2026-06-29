@@ -189,9 +189,9 @@ describe('SettingsPage', () => {
 			remoteHost: 'libsql://example.turso.io',
 			local: {
 				deviceId: 'device-1',
-				lastPulledRemoteCursor: 12,
+				lastPulledServerSeq: 12,
 				lastRestoreAt: '2026-06-28T00:00:00Z',
-				pendingOutboxCount: 1,
+				pendingMutationCount: 1,
 				counts: {
 					spaces: 6,
 					projects: 8,
@@ -203,7 +203,7 @@ describe('SettingsPage', () => {
 				},
 			},
 			remote: {
-				latestRemoteCursor: 15,
+				latestServerSeq: 15,
 				counts: {
 					spaces: 6,
 					projects: 8,
@@ -601,7 +601,7 @@ describe('SettingsPage', () => {
 			pendingResync: false,
 			hasRemoteConfig: true,
 			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'restore_required',
+			replicaState: 'baseline_required',
 			replicaReason:
 				'当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。',
 			lastRestoreAt: null,

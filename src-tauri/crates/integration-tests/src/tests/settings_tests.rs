@@ -199,7 +199,7 @@ async fn settings_service_should_record_settings_updated_activity_with_field_pat
 }
 
 #[tokio::test]
-async fn settings_service_should_enqueue_setting_outbox_on_visibility_update() {
+async fn settings_service_should_enqueue_setting_mutation_on_visibility_update() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -215,19 +215,19 @@ async fn settings_service_should_enqueue_setting_outbox_on_visibility_update() {
         .expect("update visibility should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].entity_type, "setting");
     assert_eq!(pending[0].entity_id, "app.sidebar.preferences");
-    assert_eq!(pending[0].action, "upsert");
+    assert_eq!(pending[0].operation, "upsert");
     assert!(pending[0].payload.contains("\"key\":\"app.sidebar.preferences\""));
 }
 
 #[tokio::test]
-async fn settings_service_should_enqueue_setting_outbox_on_project_section_update() {
+async fn settings_service_should_enqueue_setting_mutation_on_project_section_update() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -247,14 +247,14 @@ async fn settings_service_should_enqueue_setting_outbox_on_project_section_updat
         .expect("update project section should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].entity_type, "setting");
     assert_eq!(pending[0].entity_id, "app.sidebar.preferences");
-    assert_eq!(pending[0].action, "upsert");
+    assert_eq!(pending[0].operation, "upsert");
 }
 
 #[tokio::test]

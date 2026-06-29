@@ -26,7 +26,7 @@ impl Default for SyncStatusKind {
 pub enum SyncReplicaState {
     Uninitialized,
     Ready,
-    RestoreRequired,
+    BaselineRequired,
     Diverged,
 }
 
@@ -73,9 +73,8 @@ pub struct SyncDiagnosticsCountsPayload {
 #[serde(rename_all = "camelCase")]
 pub struct SyncLocalDiagnosticsPayload {
     pub device_id: Option<String>,
-    pub last_pulled_remote_cursor: Option<i64>,
-    pub last_restore_at: Option<String>,
-    pub pending_outbox_count: i64,
+    pub last_pulled_server_seq: Option<i64>,
+    pub pending_mutation_count: i64,
     pub counts: SyncDiagnosticsCountsPayload,
 }
 
@@ -83,7 +82,7 @@ pub struct SyncLocalDiagnosticsPayload {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncRemoteDiagnosticsPayload {
-    pub latest_remote_cursor: Option<i64>,
+    pub latest_server_seq: Option<i64>,
     pub counts: SyncDiagnosticsCountsPayload,
 }
 

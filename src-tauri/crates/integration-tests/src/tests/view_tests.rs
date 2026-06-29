@@ -1,4 +1,4 @@
-//! 阶段 3 View 同步出站回归测试。
+//! 阶段 3 View 同步 mutation 回归测试。
 
 use serde_json::json;
 use stoneflow_domain::ViewEntityKind;
@@ -14,7 +14,7 @@ use stoneflow_storage::repositories::{
 };
 
 #[tokio::test]
-async fn create_view_should_enqueue_pending_sync_outbox_record() {
+async fn create_view_should_enqueue_pending_sync_mutation_record() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -24,19 +24,19 @@ async fn create_view_should_enqueue_pending_sync_outbox_record() {
     let created = create_custom_task_view(&service, "同步视图").await;
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].entity_type, "view");
     assert_eq!(pending[0].entity_id, created.id);
-    assert_eq!(pending[0].action, "upsert");
+    assert_eq!(pending[0].operation, "upsert");
     assert!(pending[0].payload.contains("\"name\":\"同步视图\""));
 }
 
 #[tokio::test]
-async fn update_view_should_enqueue_pending_sync_outbox_record() {
+async fn update_view_should_enqueue_pending_sync_mutation_record() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -64,9 +64,9 @@ async fn update_view_should_enqueue_pending_sync_outbox_record() {
         .expect("update view should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 2);
     let updated = pending
@@ -76,13 +76,13 @@ async fn update_view_should_enqueue_pending_sync_outbox_record() {
                 && record.entity_id == created.id
                 && record.payload.contains("\"name\":\"已更新视图\"")
         })
-        .expect("updated view outbox record should exist");
-    assert_eq!(updated.action, "upsert");
+        .expect("updated view mutation record should exist");
+    assert_eq!(updated.operation, "upsert");
     assert!(updated.payload.contains("\"group_by\":\"priority\""));
 }
 
 #[tokio::test]
-async fn delete_view_should_enqueue_delete_sync_outbox_record() {
+async fn delete_view_should_enqueue_delete_sync_mutation_record() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -98,20 +98,24 @@ async fn delete_view_should_enqueue_delete_sync_outbox_record() {
         .expect("delete view should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 2);
     let deleted = pending
         .iter()
-        .find(|record| record.entity_type == "view" && record.entity_id == created.id && record.action == "delete")
-        .expect("deleted view outbox record should exist");
+        .find(|record| {
+            record.entity_type == "view"
+                && record.entity_id == created.id
+                && record.operation == "soft_delete"
+        })
+        .expect("deleted view mutation record should exist");
     assert!(deleted.payload.contains("\"name\":\"待删除视图\""));
 }
 
 #[tokio::test]
-async fn toggle_view_visible_should_enqueue_pending_sync_outbox_record() {
+async fn toggle_view_visible_should_enqueue_pending_sync_mutation_record() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -128,9 +132,9 @@ async fn toggle_view_visible_should_enqueue_pending_sync_outbox_record() {
         .expect("toggle view visible should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 2);
     let toggled = pending
@@ -140,12 +144,12 @@ async fn toggle_view_visible_should_enqueue_pending_sync_outbox_record() {
                 && record.entity_id == created.id
                 && record.payload.contains("\"is_visible\":false")
         })
-        .expect("toggled view outbox record should exist");
-    assert_eq!(toggled.action, "upsert");
+        .expect("toggled view mutation record should exist");
+    assert_eq!(toggled.operation, "upsert");
 }
 
 #[tokio::test]
-async fn reorder_views_should_enqueue_pending_sync_outbox_records() {
+async fn reorder_views_should_enqueue_pending_sync_mutation_records() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -163,9 +167,9 @@ async fn reorder_views_should_enqueue_pending_sync_outbox_records() {
         .expect("reorder views should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 4);
     let second_reordered = pending
@@ -175,8 +179,8 @@ async fn reorder_views_should_enqueue_pending_sync_outbox_records() {
                 && record.entity_id == second.id
                 && record.payload.contains("\"sort_order\":100")
         })
-        .expect("second reordered outbox record should exist");
-    assert_eq!(second_reordered.action, "upsert");
+        .expect("second reordered mutation record should exist");
+    assert_eq!(second_reordered.operation, "upsert");
 
     let first_reordered = pending
         .iter()
@@ -185,8 +189,8 @@ async fn reorder_views_should_enqueue_pending_sync_outbox_records() {
                 && record.entity_id == first.id
                 && record.payload.contains("\"sort_order\":200")
         })
-        .expect("first reordered outbox record should exist");
-    assert_eq!(first_reordered.action, "upsert");
+        .expect("first reordered mutation record should exist");
+    assert_eq!(first_reordered.operation, "upsert");
 }
 
 fn build_view_service(database: &stoneflow_storage::database::DatabaseRuntimeState) -> ViewService {

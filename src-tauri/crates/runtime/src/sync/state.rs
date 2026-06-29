@@ -307,14 +307,14 @@ mod tests {
 
         state
             .set_replica_state(
-                SyncReplicaState::RestoreRequired,
+                SyncReplicaState::BaselineRequired,
                 Some("needs restore".to_owned()),
                 Some("2026-06-28T00:00:00Z".to_owned()),
             )
             .await;
 
         let payload = state.snapshot().await;
-        assert_eq!(payload.replica_state, SyncReplicaState::RestoreRequired);
+        assert_eq!(payload.replica_state, SyncReplicaState::BaselineRequired);
         assert_eq!(payload.replica_reason.as_deref(), Some("needs restore"));
         assert_eq!(
             payload.last_restore_at.as_deref(),

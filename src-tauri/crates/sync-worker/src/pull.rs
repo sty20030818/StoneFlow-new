@@ -121,7 +121,7 @@ async fn apply_snapshot_payload(
     payload: SyncOperationPayload,
 ) -> Result<(), SyncWorkerError> {
     let operation = RemoteOperationRecord {
-        remote_cursor: server_seq,
+        server_seq: server_seq,
         op_id: format!("snapshot:{entity_type}:{entity_id}"),
         device_id: "remote_snapshot".to_owned(),
         entity_type: entity_type.to_owned(),
@@ -155,7 +155,7 @@ async fn apply_change_to_local(
 
     if change.change_kind == RemoteChangeKind::HardDelete {
         let operation = RemoteOperationRecord {
-            remote_cursor: change.server_seq,
+            server_seq: change.server_seq,
             op_id: operation_id(change),
             device_id: change.changed_by_client_id.clone(),
             entity_type: change.entity_type.clone(),
@@ -185,7 +185,7 @@ async fn apply_change_to_local(
         )));
     };
     let operation = RemoteOperationRecord {
-        remote_cursor: change.server_seq,
+        server_seq: change.server_seq,
         op_id: operation_id(change),
         device_id: change.changed_by_client_id.clone(),
         entity_type: change.entity_type.clone(),
@@ -500,20 +500,6 @@ mod tests {
                 field TEXT NOT NULL,
                 old_value TEXT NULL,
                 new_value TEXT NULL
-            )
-            "#,
-            r#"
-            CREATE TABLE sync_outbox (
-                id TEXT PRIMARY KEY NOT NULL,
-                entity_type TEXT NOT NULL,
-                entity_id TEXT NOT NULL,
-                action TEXT NOT NULL,
-                payload TEXT NOT NULL,
-                status TEXT NOT NULL,
-                error_message TEXT NULL,
-                attempt_count INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
             )
             "#,
             r#"

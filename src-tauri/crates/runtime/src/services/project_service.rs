@@ -13,7 +13,7 @@ use stoneflow_usecase::{
 use crate::{
     app::error::AppError,
     services::{
-        activity::ActivityPersistenceAdapter, sync_outbox::build_upsert_record,
+        activity::ActivityPersistenceAdapter, sync_mutation::build_upsert_record,
         LifecycleService,
     },
 };
@@ -288,9 +288,9 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .await
             .map(map_project_model_to_record)
             .map_err(|error| map_app_error(error.into()))?;
-        let outbox_record = build_project_outbox_record(&project).map_err(map_app_error)?;
+        let mutation_record = build_project_mutation_record(&project).map_err(map_app_error)?;
         self.sync_repository
-            .insert_outbox_record(connection, &outbox_record)
+            .insert_pending_mutation(connection, &mutation_record)
             .await
             .map_err(|error| map_app_error(error.into()))?;
 
@@ -323,9 +323,9 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .map_err(|error| map_app_error(error.into()))?;
 
         if let Some(project) = project.as_ref() {
-            let outbox_record = build_project_outbox_record(project).map_err(map_app_error)?;
+            let mutation_record = build_project_mutation_record(project).map_err(map_app_error)?;
             self.sync_repository
-                .insert_outbox_record(connection, &outbox_record)
+                .insert_pending_mutation(connection, &mutation_record)
                 .await
                 .map_err(|error| map_app_error(error.into()))?;
         }
@@ -386,9 +386,9 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .map_err(|error| map_app_error(error.into()))?;
 
         if let Some(project) = project.as_ref() {
-            let outbox_record = build_project_outbox_record(project).map_err(map_app_error)?;
+            let mutation_record = build_project_mutation_record(project).map_err(map_app_error)?;
             self.sync_repository
-                .insert_outbox_record(connection, &outbox_record)
+                .insert_pending_mutation(connection, &mutation_record)
                 .await
                 .map_err(|error| map_app_error(error.into()))?;
         }
@@ -411,9 +411,9 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .map_err(|error| map_app_error(error.into()))?;
 
         if let Some(project) = project.as_ref() {
-            let outbox_record = build_project_outbox_record(project).map_err(map_app_error)?;
+            let mutation_record = build_project_mutation_record(project).map_err(map_app_error)?;
             self.sync_repository
-                .insert_outbox_record(connection, &outbox_record)
+                .insert_pending_mutation(connection, &mutation_record)
                 .await
                 .map_err(|error| map_app_error(error.into()))?;
         }
@@ -558,9 +558,9 @@ impl<'a> From<&'a ProjectRecord> for ProjectSyncPayload<'a> {
     }
 }
 
-fn build_project_outbox_record(
+fn build_project_mutation_record(
     project: &ProjectRecord,
-) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_upsert_record(
         "project",
         &project.id,

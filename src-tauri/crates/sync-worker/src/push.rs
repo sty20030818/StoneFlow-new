@@ -87,7 +87,7 @@ fn normalize_mutation_record(
 
     Ok((
         RemoteOperationRecord {
-            remote_cursor: 0,
+            server_seq: 0,
             op_id: format!("{}:{}", record.client_id, record.client_seq),
             device_id: record.client_id.clone(),
             entity_type: record.entity_type.clone(),

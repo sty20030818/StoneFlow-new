@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use crate::{
     error::SyncWorkerError,
-    schema::{DEVICE_ID_SCOPE, LAST_RESTORE_AT_SCOPE, REMOTE_CURSOR_SCOPE},
+    schema::{DEVICE_ID_SCOPE, SERVER_SEQ_CURSOR_SCOPE},
 };
 
 const SYNC_CONFIG_SETTING_KEY: &str = "app.sync.config";
@@ -21,16 +21,15 @@ pub struct SyncDiagnosticsOutput {
 #[serde(rename_all = "camelCase")]
 pub struct LocalSyncDiagnosticsOutput {
     pub device_id: Option<String>,
-    pub last_pulled_remote_cursor: Option<i64>,
-    pub last_restore_at: Option<String>,
-    pub pending_outbox_count: i64,
+    pub last_pulled_server_seq: Option<i64>,
+    pub pending_mutation_count: i64,
     pub counts: SyncDiagnosticsCountsOutput,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteSyncDiagnosticsOutput {
-    pub latest_remote_cursor: Option<i64>,
+    pub latest_server_seq: Option<i64>,
     pub counts: SyncDiagnosticsCountsOutput,
 }
 
@@ -53,13 +52,12 @@ pub async fn collect_sync_diagnostics(
     Ok(SyncDiagnosticsOutput {
         local: LocalSyncDiagnosticsOutput {
             device_id: read_text_cursor(local, DEVICE_ID_SCOPE).await?,
-            last_pulled_remote_cursor: read_optional_i64_cursor(local, REMOTE_CURSOR_SCOPE).await?,
-            last_restore_at: read_text_cursor(local, LAST_RESTORE_AT_SCOPE).await?,
-            pending_outbox_count: read_pending_outbox_count(local).await?,
+            last_pulled_server_seq: read_optional_i64_cursor(local, SERVER_SEQ_CURSOR_SCOPE).await?,
+            pending_mutation_count: read_pending_mutation_count(local).await?,
             counts: read_local_counts(local).await?,
         },
         remote: RemoteSyncDiagnosticsOutput {
-            latest_remote_cursor: read_latest_remote_cursor(remote).await?,
+            latest_server_seq: read_latest_server_seq(remote).await?,
             counts: read_remote_counts(remote).await?,
         },
     })
@@ -102,22 +100,22 @@ async fn read_optional_i64_cursor(
         .map_err(|error| SyncWorkerError::serialization(format!("解析本地 cursor 失败: {error}")))
 }
 
-async fn read_pending_outbox_count(connection: &Connection) -> Result<i64, SyncWorkerError> {
+async fn read_pending_mutation_count(connection: &Connection) -> Result<i64, SyncWorkerError> {
     let mut rows = connection
         .query(
-            "SELECT COUNT(*) FROM sync_outbox WHERE status = 'pending' LIMIT 1",
+            "SELECT COUNT(*) FROM sync_mutations WHERE status = 'pending' LIMIT 1",
             params![],
         )
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("读取本地待同步 outbox 数量失败: {error}")))?;
+        .map_err(|error| SyncWorkerError::local_database(format!("读取本地待同步 mutation 数量失败: {error}")))?;
     let row = rows
         .next()
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("遍历本地待同步 outbox 数量失败: {error}")))?;
+        .map_err(|error| SyncWorkerError::local_database(format!("遍历本地待同步 mutation 数量失败: {error}")))?;
 
     row.map(|row| {
         row.get::<i64>(0).map_err(|error| {
-            SyncWorkerError::local_database(format!("读取本地待同步 outbox 数量列失败: {error}"))
+            SyncWorkerError::local_database(format!("读取本地待同步 mutation 数量列失败: {error}"))
         })
     })
     .transpose()
@@ -216,27 +214,24 @@ where
     })
 }
 
-async fn read_latest_remote_cursor(remote: &Connection) -> Result<Option<i64>, SyncWorkerError> {
+async fn read_latest_server_seq(remote: &Connection) -> Result<Option<i64>, SyncWorkerError> {
     let mut rows = remote
-        .query(
-            "SELECT MAX(remote_cursor) FROM sync_operations LIMIT 1",
-            params![],
-        )
+        .query("SELECT MAX(server_seq) FROM remote_change_log LIMIT 1", params![])
         .await
         .map_err(|error| {
-            SyncWorkerError::remote_database(format!("读取远端最新 remote_cursor 失败: {error}"))
+            SyncWorkerError::remote_database(format!("读取远端最新 server_seq 失败: {error}"))
         })?;
     let row = rows
         .next()
         .await
         .map_err(|error| {
-            SyncWorkerError::remote_database(format!("遍历远端最新 remote_cursor 失败: {error}"))
+            SyncWorkerError::remote_database(format!("遍历远端最新 server_seq 失败: {error}"))
         })?;
 
     row.map(|row| {
         row.get::<Option<i64>>(0).map_err(|error| {
             SyncWorkerError::remote_database(format!(
-                "读取远端 sync_operations.max(remote_cursor) 失败: {error}"
+                "读取远端 remote_change_log.max(server_seq) 失败: {error}"
             ))
         })
     })
@@ -258,9 +253,8 @@ mod tests {
         let payload = SyncDiagnosticsOutput {
             local: LocalSyncDiagnosticsOutput {
                 device_id: Some("device-1".to_owned()),
-                last_pulled_remote_cursor: Some(12),
-                last_restore_at: Some("2026-06-28T00:00:00Z".to_owned()),
-                pending_outbox_count: 3,
+                last_pulled_server_seq: Some(12),
+                pending_mutation_count: 3,
                 counts: SyncDiagnosticsCountsOutput {
                     spaces: 1,
                     projects: 2,
@@ -272,7 +266,7 @@ mod tests {
                 },
             },
             remote: RemoteSyncDiagnosticsOutput {
-                latest_remote_cursor: Some(18),
+                latest_server_seq: Some(18),
                 counts: SyncDiagnosticsCountsOutput {
                     spaces: 1,
                     projects: 2,
@@ -292,9 +286,8 @@ mod tests {
             json!({
                 "local": {
                     "deviceId": "device-1",
-                    "lastPulledRemoteCursor": 12,
-                    "lastRestoreAt": "2026-06-28T00:00:00Z",
-                    "pendingOutboxCount": 3,
+                    "lastPulledServerSeq": 12,
+                    "pendingMutationCount": 3,
                     "counts": {
                         "spaces": 1,
                         "projects": 2,
@@ -306,7 +299,7 @@ mod tests {
                     }
                 },
                 "remote": {
-                    "latestRemoteCursor": 18,
+                    "latestServerSeq": 18,
                     "counts": {
                         "spaces": 1,
                         "projects": 2,

@@ -395,7 +395,7 @@ async fn update_task_should_keep_note_newlines_and_allow_blank_note() {
 }
 
 #[tokio::test]
-async fn create_task_should_enqueue_pending_sync_outbox_record() {
+async fn create_task_should_enqueue_pending_sync_mutation_record() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -422,19 +422,19 @@ async fn create_task_should_enqueue_pending_sync_outbox_record() {
         .expect("create task should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].entity_type, "task");
     assert_eq!(pending[0].entity_id, created.id);
-    assert_eq!(pending[0].action, "upsert");
+    assert_eq!(pending[0].operation, "upsert");
     assert!(pending[0].payload.contains("\"title\":\"同步创建\""));
 }
 
 #[tokio::test]
-async fn update_task_should_enqueue_pending_sync_outbox_record() {
+async fn update_task_should_enqueue_pending_sync_mutation_record() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -480,14 +480,14 @@ async fn update_task_should_enqueue_pending_sync_outbox_record() {
         .expect("update task should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 2);
     assert_eq!(pending[1].entity_type, "task");
     assert_eq!(pending[1].entity_id, created.id);
-    assert_eq!(pending[1].action, "upsert");
+    assert_eq!(pending[1].operation, "upsert");
     assert!(pending[1].payload.contains("\"title\":\"已更新同步\""));
     assert!(pending[1].payload.contains("\"status\":\"doing\""));
 }

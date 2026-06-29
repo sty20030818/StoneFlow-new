@@ -11,7 +11,7 @@ mod quick_create_session_bridge;
 mod search_service;
 mod settings_service;
 mod space_service;
-mod sync_outbox;
+mod sync_mutation;
 mod task_link_service;
 mod task_service;
 mod view_service;

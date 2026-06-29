@@ -239,7 +239,7 @@ async fn task_link_service_should_record_activity_and_keep_task_detail_unchanged
 }
 
 #[tokio::test]
-async fn task_link_service_should_enqueue_sync_outbox_for_create_update_delete() {
+async fn task_link_service_should_enqueue_sync_mutations_for_create_update_delete() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -271,16 +271,20 @@ async fn task_link_service_should_enqueue_sync_outbox_for_create_update_delete()
         .expect("delete task link should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 4);
-    assert_eq!(pending[1].entity_type, "task");
-    assert_eq!(pending[1].entity_id, task.id);
-    assert_eq!(pending[1].action, "upsert");
-    assert_eq!(pending[2].action, "upsert");
-    assert_eq!(pending[3].action, "delete");
+    assert_eq!(pending[1].entity_type, "task_link");
+    assert_eq!(pending[1].entity_id, created.id);
+    assert_eq!(pending[1].operation, "upsert");
+    assert_eq!(pending[2].entity_type, "task_link");
+    assert_eq!(pending[2].entity_id, created.id);
+    assert_eq!(pending[2].operation, "upsert");
+    assert_eq!(pending[3].entity_type, "task_link");
+    assert_eq!(pending[3].entity_id, created.id);
+    assert_eq!(pending[3].operation, "hard_delete");
 }
 
 fn build_task_service(database: &stoneflow_storage::database::DatabaseRuntimeState) -> TaskService {

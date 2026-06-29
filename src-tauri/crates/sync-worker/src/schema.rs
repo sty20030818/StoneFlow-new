@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 pub const DEVICE_ID_SCOPE: &str = "sync:device_id";
-pub const REMOTE_CURSOR_SCOPE: &str = "sync:last_pulled_remote_cursor";
 pub const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
-pub const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
 pub const PUSH_BATCH_SIZE: u64 = 100;
 pub const PULL_BATCH_SIZE: i64 = 100;
 
@@ -113,19 +111,6 @@ pub const REMOTE_SCHEMA_STATEMENTS: &[&str] = &[
     )
     "#,
     r#"
-    CREATE TABLE IF NOT EXISTS sync_operations (
-        remote_cursor INTEGER PRIMARY KEY AUTOINCREMENT,
-        op_id TEXT NOT NULL UNIQUE,
-        device_id TEXT NOT NULL,
-        entity_type TEXT NOT NULL,
-        entity_id TEXT NOT NULL,
-        action TEXT NOT NULL,
-        payload TEXT NOT NULL,
-        committed_at TEXT NOT NULL
-    )
-    "#,
-    // 当前协议使用 mutation ack 与 server_seq change log 作为唯一远端同步事实。
-    r#"
     CREATE TABLE IF NOT EXISTS remote_mutations (
         client_id TEXT NOT NULL,
         client_seq INTEGER NOT NULL,
@@ -151,14 +136,6 @@ pub const REMOTE_SCHEMA_STATEMENTS: &[&str] = &[
     r#"
     CREATE INDEX IF NOT EXISTS idx_remote_change_log_entity
     ON remote_change_log(entity_type, entity_id, server_seq)
-    "#,
-    r#"
-    CREATE INDEX IF NOT EXISTS idx_sync_operations_remote_cursor
-    ON sync_operations(remote_cursor)
-    "#,
-    r#"
-    CREATE INDEX IF NOT EXISTS idx_sync_operations_entity
-    ON sync_operations(entity_type, entity_id, remote_cursor)
     "#,
     r#"
     CREATE INDEX IF NOT EXISTS idx_activity_events_entity_action_created_at
@@ -225,7 +202,7 @@ impl SyncOperationPayload {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RemoteOperationRecord {
-    pub remote_cursor: i64,
+    pub server_seq: i64,
     pub op_id: String,
     pub device_id: String,
     pub entity_type: String,

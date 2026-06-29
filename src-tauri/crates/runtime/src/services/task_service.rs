@@ -13,7 +13,7 @@ use stoneflow_usecase::{
 use crate::{
     app::error::AppError,
     services::{
-        activity::ActivityPersistenceAdapter, sync_outbox::build_upsert_record,
+        activity::ActivityPersistenceAdapter, sync_mutation::build_upsert_record,
         LifecycleService,
     },
 };
@@ -240,9 +240,9 @@ impl TaskPersistence for TaskPersistenceAdapter {
             .await
             .map(map_task_model_to_record)
             .map_err(|error| map_app_error(error.into()))?;
-        let outbox_record = build_task_outbox_record(&task).map_err(map_app_error)?;
+        let mutation_record = build_task_mutation_record(&task).map_err(map_app_error)?;
         self.sync_repository
-            .insert_outbox_record(connection, &outbox_record)
+            .insert_pending_mutation(connection, &mutation_record)
             .await
             .map_err(|error| map_app_error(error.into()))?;
 
@@ -284,9 +284,9 @@ impl TaskPersistence for TaskPersistenceAdapter {
             .map_err(|error| map_app_error(error.into()))?;
 
         if let Some(task) = task.as_ref() {
-            let outbox_record = build_task_outbox_record(task).map_err(map_app_error)?;
+            let mutation_record = build_task_mutation_record(task).map_err(map_app_error)?;
             self.sync_repository
-                .insert_outbox_record(connection, &outbox_record)
+                .insert_pending_mutation(connection, &mutation_record)
                 .await
                 .map_err(|error| map_app_error(error.into()))?;
         }
@@ -457,7 +457,7 @@ impl<'a> From<&'a TaskRecord> for TaskSyncPayload<'a> {
     }
 }
 
-fn build_task_outbox_record(task: &TaskRecord) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+fn build_task_mutation_record(task: &TaskRecord) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_upsert_record("task", &task.id, &TaskSyncPayload::from(task), &task.updated_at)
 }
 

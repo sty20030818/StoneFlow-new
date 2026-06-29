@@ -10,7 +10,6 @@ use stoneflow_storage::{
 
 use super::types::SyncReplicaState;
 const DEVICE_ID_SCOPE: &str = "sync:device_id";
-const REMOTE_CURSOR_SCOPE: &str = "sync:last_pulled_remote_cursor";
 const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
 const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
 
@@ -28,14 +27,11 @@ pub async fn inspect_local_replica(
     let repository = SyncRepository::new(database.connection().clone());
     let counts = read_local_replica_counts(database.connection()).await?;
     let device_id = repository.find_cursor(DEVICE_ID_SCOPE).await?;
-    let remote_cursor = repository.find_cursor(REMOTE_CURSOR_SCOPE).await?;
     let server_seq_cursor = repository.find_cursor(SERVER_SEQ_CURSOR_SCOPE).await?;
     let last_restore_at = repository.find_cursor(LAST_RESTORE_AT_SCOPE).await?;
 
-    let has_sync_metadata = has_non_empty_cursor(&device_id)
-        || has_non_empty_cursor(&remote_cursor)
-        || has_non_empty_cursor(&server_seq_cursor);
-    let looks_empty_replica = counts.has_no_user_content() && counts.pending_outbox_count == 0;
+    let has_sync_metadata = has_non_empty_cursor(&device_id) || has_non_empty_cursor(&server_seq_cursor);
+    let looks_empty_replica = counts.has_no_user_content() && counts.pending_mutation_count == 0;
     let has_restore_marker = has_non_empty_cursor(&last_restore_at);
     let has_server_seq_cursor = has_non_empty_cursor(&server_seq_cursor);
 
@@ -43,7 +39,7 @@ pub async fn inspect_local_replica(
         (SyncReplicaState::Ready, None)
     } else if has_remote_config && !has_server_seq_cursor && !has_restore_marker {
         (
-            SyncReplicaState::RestoreRequired,
+            SyncReplicaState::BaselineRequired,
             Some(
                 "当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。"
                     .to_owned(),
@@ -71,7 +67,7 @@ struct LocalReplicaCounts {
     project_count: i64,
     task_link_count: i64,
     non_default_space_count: i64,
-    pending_outbox_count: i64,
+    pending_mutation_count: i64,
 }
 
 impl LocalReplicaCounts {
@@ -95,7 +91,7 @@ async fn read_local_replica_counts(
                 (SELECT COUNT(*) FROM projects) AS project_count,
                 (SELECT COUNT(*) FROM task_links) AS task_link_count,
                 (SELECT COUNT(*) FROM spaces WHERE is_default = 0) AS non_default_space_count,
-                (SELECT COUNT(*) FROM sync_outbox WHERE status = 'pending') AS pending_outbox_count
+                (SELECT COUNT(*) FROM sync_mutations WHERE status = 'pending') AS pending_mutation_count
             "#,
         ))
         .await
@@ -118,9 +114,9 @@ async fn read_local_replica_counts(
         non_default_space_count: row.try_get("", "non_default_space_count").map_err(|error| {
             AppError::database(format!("读取 non_default_space_count 失败: {error}"))
         })?,
-        pending_outbox_count: row
-            .try_get("", "pending_outbox_count")
-            .map_err(|error| AppError::database(format!("读取 pending_outbox_count 失败: {error}")))?,
+        pending_mutation_count: row
+            .try_get("", "pending_mutation_count")
+            .map_err(|error| AppError::database(format!("读取 pending_mutation_count 失败: {error}")))?,
     })
 }
 
@@ -138,7 +134,7 @@ mod tests {
 
     use super::inspect_local_replica;
     use crate::sync::types::SyncReplicaState;
-    use stoneflow_storage::repositories::{SyncOutboxRecord, SyncRepository};
+    use stoneflow_storage::repositories::{SyncMutationRecord, SyncRepository};
 
     #[tokio::test]
     async fn inspect_local_replica_should_allow_remote_configured_empty_database_to_sync() {
@@ -155,28 +151,29 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn inspect_local_replica_should_mark_pending_outbox_as_ready() {
+    async fn inspect_local_replica_should_mark_pending_mutation_as_ready() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
         let repository = SyncRepository::new(database.connection().clone());
-        let record = SyncOutboxRecord {
-            id: "op-1".to_owned(),
+        let record = SyncMutationRecord {
+            client_id: String::new(),
+            client_seq: 0,
             entity_type: "task".to_owned(),
             entity_id: "task-1".to_owned(),
-            action: "upsert".to_owned(),
+            operation: "upsert".to_owned(),
             payload: serde_json::json!({ "id": "task-1", "title": "hello" }).to_string(),
+            base_server_seq: None,
             status: "pending".to_owned(),
             error_message: None,
-            attempt_count: 0,
             created_at: "2026-06-28T00:00:00Z".to_owned(),
             updated_at: "2026-06-28T00:00:00Z".to_owned(),
         };
 
         repository
-            .insert_outbox_record(repository.connection(), &record)
+            .insert_pending_mutation(repository.connection(), &record)
             .await
-            .expect("outbox insert should succeed");
+            .expect("mutation insert should succeed");
         repository
             .upsert_cursor(
                 repository.connection(),
@@ -231,7 +228,7 @@ mod tests {
             .await
             .expect("replica inspection should succeed");
 
-        assert_eq!(snapshot.state, SyncReplicaState::RestoreRequired);
+        assert_eq!(snapshot.state, SyncReplicaState::BaselineRequired);
         assert_eq!(
             snapshot.reason.as_deref(),
             Some(

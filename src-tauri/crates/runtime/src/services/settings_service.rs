@@ -9,7 +9,7 @@ use stoneflow_usecase::{
 
 use crate::{
     app::error::AppError,
-    services::{activity::ActivityPersistenceAdapter, sync_outbox::build_upsert_record},
+    services::{activity::ActivityPersistenceAdapter, sync_mutation::build_upsert_record},
 };
 use stoneflow_storage::repositories::{SettingsRepository, SyncRepository};
 
@@ -141,10 +141,10 @@ impl SettingsPersistence for SettingsPersistenceAdapter {
             .await
             .map_err(|error| map_app_error(error.into()))?;
 
-        let outbox_record = build_setting_outbox_record(key, raw_value, updated_at)
+        let mutation_record = build_setting_mutation_record(key, raw_value, updated_at)
             .map_err(map_app_error)?;
         self.sync_repository
-            .insert_outbox_record(connection, &outbox_record)
+            .insert_pending_mutation(connection, &mutation_record)
             .await
             .map_err(|error| map_app_error(error.into()))?;
 
@@ -159,11 +159,11 @@ struct SettingSyncPayload<'a> {
     updated_at: &'a str,
 }
 
-fn build_setting_outbox_record(
+fn build_setting_mutation_record(
     key: &str,
     raw_value: &str,
     updated_at: &str,
-) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_upsert_record(
         "setting",
         key,

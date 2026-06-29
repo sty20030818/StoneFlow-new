@@ -1,7 +1,6 @@
 //! Sync Repository：负责本地同步元数据表读写。
 //!
-//! `sync_outbox` 是 S1 兼容入口；新的长期同步协议使用
-//! `sync_clients`、`sync_mutations`、`sync_shadow` 与 `sync_cursor`。
+//! 长期同步协议使用 `sync_clients`、`sync_mutations`、`sync_shadow` 与 `sync_cursor`。
 
 use chrono::Utc;
 use sea_orm::{ConnectionTrait, DatabaseBackend, DatabaseConnection, DbBackend, QueryResult, Statement};
@@ -12,21 +11,6 @@ use crate::error::StorageError;
 
 const DEVICE_ID_SCOPE: &str = "sync:device_id";
 const NEXT_CLIENT_SEQ_SCOPE: &str = "sync:next_client_seq";
-
-/// 本地待上推操作的持久化记录。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SyncOutboxRecord {
-    pub id: String,
-    pub entity_type: String,
-    pub entity_id: String,
-    pub action: String,
-    pub payload: String,
-    pub status: String,
-    pub error_message: Option<String>,
-    pub attempt_count: i64,
-    pub created_at: String,
-    pub updated_at: String,
-}
 
 /// `sync_cursor` 的单行记录。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,24 +69,6 @@ impl SyncRepository {
         &self.db
     }
 
-    /// 插入一条本地同步 outbox 记录。
-    pub async fn insert_outbox_record<C>(
-        &self,
-        connection: &C,
-        record: &SyncOutboxRecord,
-    ) -> Result<(), StorageError>
-    where
-        C: ConnectionTrait,
-    {
-        connection
-            .execute(outbox_insert_statement(record))
-            .await?;
-        let mutation = self.build_mutation_from_outbox(connection, record).await?;
-        connection.execute(mutation_insert_statement(&mutation)).await?;
-
-        Ok(())
-    }
-
     /// 插入或刷新当前设备身份。
     pub async fn upsert_client<C>(
         &self,
@@ -146,6 +112,33 @@ impl SyncRepository {
             .await?;
 
         Ok(())
+    }
+
+    /// 为一条业务 mutation 分配当前设备的 client id 与单调序号后写入。
+    pub async fn insert_pending_mutation<C>(
+        &self,
+        connection: &C,
+        record: &SyncMutationRecord,
+    ) -> Result<(), StorageError>
+    where
+        C: ConnectionTrait,
+    {
+        let now = Utc::now().to_rfc3339();
+        let mutation = SyncMutationRecord {
+            client_id: self.ensure_client_id(connection, &now).await?,
+            client_seq: self.allocate_client_seq(connection, &now).await?,
+            entity_type: record.entity_type.clone(),
+            entity_id: record.entity_id.clone(),
+            operation: record.operation.clone(),
+            payload: record.payload.clone(),
+            base_server_seq: record.base_server_seq,
+            status: record.status.clone(),
+            error_message: record.error_message.clone(),
+            created_at: record.created_at.clone(),
+            updated_at: record.updated_at.clone(),
+        };
+
+        self.insert_mutation(connection, &mutation).await
     }
 
     /// 按状态与序号读取长期协议 mutation。
@@ -208,65 +201,6 @@ impl SyncRepository {
         Ok(())
     }
 
-    /// 按状态与创建时间读取待处理 outbox。
-    pub async fn list_outbox_by_status(
-        &self,
-        status: &str,
-        limit: u64,
-    ) -> Result<Vec<SyncOutboxRecord>, StorageError> {
-        let rows = self
-            .connection()
-            .query_all(Statement::from_sql_and_values(
-                DbBackend::Sqlite,
-                r#"
-                SELECT id, entity_type, entity_id, action, payload, status, error_message,
-                       attempt_count, created_at, updated_at
-                FROM sync_outbox
-                WHERE status = ?
-                ORDER BY created_at ASC, id ASC
-                LIMIT ?
-                "#,
-                [status.into(), (limit as i64).into()],
-            ))
-            .await?;
-
-        rows.into_iter().map(map_outbox_row).collect()
-    }
-
-    /// 将 outbox 状态与错误信息更新到指定值。
-    pub async fn update_outbox_status<C>(
-        &self,
-        connection: &C,
-        outbox_id: &str,
-        status: &str,
-        error_message: Option<&str>,
-        attempt_count: i64,
-        updated_at: &str,
-    ) -> Result<(), StorageError>
-    where
-        C: ConnectionTrait,
-    {
-        connection
-            .execute(Statement::from_sql_and_values(
-                DbBackend::Sqlite,
-                r#"
-                UPDATE sync_outbox
-                SET status = ?, error_message = ?, attempt_count = ?, updated_at = ?
-                WHERE id = ?
-                "#,
-                [
-                    status.into(),
-                    option_str_to_value(error_message),
-                    attempt_count.into(),
-                    updated_at.into(),
-                    outbox_id.into(),
-                ],
-            ))
-            .await?;
-
-        Ok(())
-    }
-
     /// 读取指定 scope 的游标；不存在时返回 None。
     pub async fn find_cursor(
         &self,
@@ -310,33 +244,6 @@ impl SyncRepository {
             .await?;
 
         Ok(())
-    }
-
-    async fn build_mutation_from_outbox<C>(
-        &self,
-        connection: &C,
-        record: &SyncOutboxRecord,
-    ) -> Result<SyncMutationRecord, StorageError>
-    where
-        C: ConnectionTrait,
-    {
-        let now = Utc::now().to_rfc3339();
-        let client_id = self.ensure_client_id(connection, &now).await?;
-        let client_seq = self.allocate_client_seq(connection, &now).await?;
-
-        Ok(SyncMutationRecord {
-            client_id,
-            client_seq,
-            entity_type: mutation_entity_type(record)?,
-            entity_id: mutation_entity_id(record)?,
-            operation: map_outbox_action_to_mutation_operation(record)?,
-            payload: record.payload.clone(),
-            base_server_seq: None,
-            status: "pending".to_owned(),
-            error_message: None,
-            created_at: record.created_at.clone(),
-            updated_at: record.updated_at.clone(),
-        })
     }
 
     async fn ensure_client_id<C>(&self, connection: &C, now: &str) -> Result<String, StorageError>
@@ -414,31 +321,6 @@ impl SyncRepository {
     }
 }
 
-fn outbox_insert_statement(record: &SyncOutboxRecord) -> Statement {
-    Statement::from_sql_and_values(
-        DbBackend::Sqlite,
-        r#"
-        INSERT INTO sync_outbox(
-            id, entity_type, entity_id, action, payload, status, error_message,
-            attempt_count, created_at, updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        "#,
-        [
-            record.id.clone().into(),
-            record.entity_type.clone().into(),
-            record.entity_id.clone().into(),
-            record.action.clone().into(),
-            record.payload.clone().into(),
-            record.status.clone().into(),
-            option_str_to_value(record.error_message.as_deref()),
-            record.attempt_count.into(),
-            record.created_at.clone().into(),
-            record.updated_at.clone().into(),
-        ],
-    )
-}
-
 fn mutation_insert_statement(record: &SyncMutationRecord) -> Statement {
     Statement::from_sql_and_values(
         DbBackend::Sqlite,
@@ -463,70 +345,6 @@ fn mutation_insert_statement(record: &SyncMutationRecord) -> Statement {
             record.updated_at.clone().into(),
         ],
     )
-}
-
-fn map_outbox_row(row: QueryResult) -> Result<SyncOutboxRecord, StorageError> {
-    Ok(SyncOutboxRecord {
-        id: try_get_required_string(&row, "id")?,
-        entity_type: try_get_required_string(&row, "entity_type")?,
-        entity_id: try_get_required_string(&row, "entity_id")?,
-        action: try_get_required_string(&row, "action")?,
-        payload: try_get_required_string(&row, "payload")?,
-        status: try_get_required_string(&row, "status")?,
-        error_message: try_get_optional_string(&row, "error_message")?,
-        attempt_count: row
-            .try_get("", "attempt_count")
-            .map_err(|error| StorageError::database(format!("读取 sync_outbox.attempt_count 失败: {error}")))?,
-        created_at: try_get_required_string(&row, "created_at")?,
-        updated_at: try_get_required_string(&row, "updated_at")?,
-    })
-}
-
-fn map_outbox_action_to_mutation_operation(
-    record: &SyncOutboxRecord,
-) -> Result<String, StorageError> {
-    match record.action.as_str() {
-        "upsert" => Ok("upsert".to_owned()),
-        "delete" if is_task_link_payload(record) => Ok("hard_delete".to_owned()),
-        "delete" => Ok("soft_delete".to_owned()),
-        other => Err(StorageError::database(format!(
-            "无法从 sync_outbox.action 映射 V2 mutation operation: {other}"
-        ))),
-    }
-}
-
-fn mutation_entity_type(record: &SyncOutboxRecord) -> Result<String, StorageError> {
-    if is_task_link_payload(record) {
-        return Ok("task_link".to_owned());
-    }
-    Ok(record.entity_type.clone())
-}
-
-fn mutation_entity_id(record: &SyncOutboxRecord) -> Result<String, StorageError> {
-    if is_task_link_payload(record) {
-        let value: serde_json::Value = serde_json::from_str(&record.payload).map_err(|error| {
-            StorageError::database(format!("解析 task_link sync payload 失败: {error}"))
-        })?;
-        let id = value
-            .get("id")
-            .and_then(|value| value.as_str())
-            .filter(|value| !value.trim().is_empty())
-            .ok_or_else(|| StorageError::database("task_link sync payload 缺少 id"))?;
-        return Ok(id.to_owned());
-    }
-    Ok(record.entity_id.clone())
-}
-
-fn is_task_link_payload(record: &SyncOutboxRecord) -> bool {
-    if record.entity_type != "task" {
-        return false;
-    }
-
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(&record.payload) else {
-        return false;
-    };
-
-    value.get("task_id").is_some() && value.get("url").is_some()
 }
 
 fn map_mutation_row(row: QueryResult) -> Result<SyncMutationRecord, StorageError> {
@@ -588,55 +406,7 @@ fn option_i64_to_value(value: Option<i64>) -> Value {
 mod tests {
     use stoneflow_test_support::TestDatabase;
 
-    use super::{
-        SyncClientRecord, SyncMutationRecord, SyncOutboxRecord, SyncRepository, SyncShadowRecord,
-    };
-
-    mod insert_outbox_record {
-        use super::*;
-
-        #[tokio::test]
-        async fn should_persist_pending_record() {
-            let database = TestDatabase::bootstrap_in_memory()
-                .await
-                .expect("test database should bootstrap");
-            let repository = SyncRepository::new(database.connection().clone());
-            let record = SyncOutboxRecord {
-                id: "op-1".to_owned(),
-                entity_type: "task".to_owned(),
-                entity_id: "task-1".to_owned(),
-                action: "upsert".to_owned(),
-                payload: "{\"title\":\"hello\"}".to_owned(),
-                status: "pending".to_owned(),
-                error_message: None,
-                attempt_count: 0,
-                created_at: "2026-06-28T10:00:00Z".to_owned(),
-                updated_at: "2026-06-28T10:00:00Z".to_owned(),
-            };
-
-            repository
-                .insert_outbox_record(repository.connection(), &record)
-                .await
-                .expect("outbox insert should succeed");
-
-            let rows = repository
-                .list_outbox_by_status("pending", 10)
-                .await
-                .expect("pending outbox query should succeed");
-
-            assert_eq!(rows, vec![record]);
-
-            let mutations = repository
-                .list_mutations_by_status("pending", 10)
-                .await
-                .expect("pending mutation query should succeed");
-            assert_eq!(mutations.len(), 1);
-            assert_eq!(mutations[0].client_seq, 1);
-            assert_eq!(mutations[0].entity_type, "task");
-            assert_eq!(mutations[0].entity_id, "task-1");
-            assert_eq!(mutations[0].operation, "upsert");
-        }
-    }
+    use super::{SyncClientRecord, SyncMutationRecord, SyncRepository, SyncShadowRecord};
 
     mod upsert_cursor {
         use super::*;
@@ -687,7 +457,7 @@ mod tests {
         }
     }
 
-    mod v2_protocol {
+    mod sync_protocol {
         use super::*;
 
         #[tokio::test]
@@ -751,37 +521,29 @@ mod tests {
         }
 
         #[tokio::test]
-        async fn should_map_legacy_task_link_outbox_to_task_link_mutation() {
+        async fn should_allocate_client_identity_for_pending_mutation() {
             let database = TestDatabase::bootstrap_in_memory()
                 .await
                 .expect("test database should bootstrap");
             let repository = SyncRepository::new(database.connection().clone());
-            let record = SyncOutboxRecord {
-                id: "op-1".to_owned(),
-                entity_type: "task".to_owned(),
-                entity_id: "task-1".to_owned(),
-                action: "delete".to_owned(),
-                payload: serde_json::json!({
-                    "id": "link-1",
-                    "task_id": "task-1",
-                    "title": "文档",
-                    "url": "https://example.com",
-                    "sort_order": 1000,
-                    "created_at": "2026-06-29T10:00:00Z",
-                    "updated_at": "2026-06-29T10:00:00Z"
-                })
-                .to_string(),
+            let record = SyncMutationRecord {
+                client_id: String::new(),
+                client_seq: 0,
+                entity_type: "task_link".to_owned(),
+                entity_id: "link-1".to_owned(),
+                operation: "hard_delete".to_owned(),
+                payload: "{}".to_owned(),
+                base_server_seq: None,
                 status: "pending".to_owned(),
                 error_message: None,
-                attempt_count: 0,
                 created_at: "2026-06-29T10:00:00Z".to_owned(),
                 updated_at: "2026-06-29T10:00:00Z".to_owned(),
             };
 
             repository
-                .insert_outbox_record(repository.connection(), &record)
+                .insert_pending_mutation(repository.connection(), &record)
                 .await
-                .expect("outbox insert should also create mutation");
+                .expect("pending mutation insert should allocate identity");
 
             let mutations = repository
                 .list_mutations_by_status("pending", 10)
@@ -792,6 +554,8 @@ mod tests {
             assert_eq!(mutations[0].entity_type, "task_link");
             assert_eq!(mutations[0].entity_id, "link-1");
             assert_eq!(mutations[0].operation, "hard_delete");
+            assert!(!mutations[0].client_id.is_empty());
+            assert_eq!(mutations[0].client_seq, 1);
         }
     }
 }

@@ -178,13 +178,12 @@ pub async fn reset_local_replica_for_snapshot(
         "DELETE FROM views",
         "DELETE FROM activity_changes",
         "DELETE FROM activity_events",
-        "DELETE FROM sync_outbox",
         "DELETE FROM settings WHERE key <> ?1",
         "DELETE FROM spaces",
         "DELETE FROM sync_cursor WHERE scope <> ?1",
     ];
 
-    for statement in &statements[..7] {
+    for statement in &statements[..6] {
         transaction
             .execute(statement, params![])
             .await
@@ -194,19 +193,19 @@ pub async fn reset_local_replica_for_snapshot(
     }
 
     transaction
-        .execute(statements[7], params![SYNC_CONFIG_SETTING_KEY])
+        .execute(statements[6], params![SYNC_CONFIG_SETTING_KEY])
         .await
         .map_err(|error| {
             SyncWorkerError::local_database(format!("清空本地 snapshot settings 失败: {error}"))
         })?;
     transaction
-        .execute(statements[8], params![])
+        .execute(statements[7], params![])
         .await
         .map_err(|error| {
             SyncWorkerError::local_database(format!("清空本地 snapshot spaces 失败: {error}"))
         })?;
     transaction
-        .execute(statements[9], params![DEVICE_ID_SCOPE])
+        .execute(statements[8], params![DEVICE_ID_SCOPE])
         .await
         .map_err(|error| {
             SyncWorkerError::local_database(format!("清空本地 snapshot cursor 失败: {error}"))

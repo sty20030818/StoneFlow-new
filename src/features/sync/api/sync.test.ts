@@ -75,9 +75,9 @@ describe('sync api', () => {
 			remoteHost: 'libsql://example.turso.io',
 			local: {
 				deviceId: 'device-1',
-				lastPulledRemoteCursor: 12,
+				lastPulledServerSeq: 12,
 				lastRestoreAt: '2026-06-28T00:00:00Z',
-				pendingOutboxCount: 1,
+				pendingMutationCount: 1,
 				counts: {
 					spaces: 2,
 					projects: 3,
@@ -89,7 +89,7 @@ describe('sync api', () => {
 				},
 			},
 			remote: {
-				latestRemoteCursor: 15,
+				latestServerSeq: 15,
 				counts: {
 					spaces: 2,
 					projects: 3,

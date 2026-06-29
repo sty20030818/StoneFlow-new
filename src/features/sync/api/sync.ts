@@ -7,7 +7,7 @@ export type SyncStatus =
 	| 'offline_pending'
 	| 'error'
 	| 'needs_attention'
-export type SyncReplicaState = 'uninitialized' | 'ready' | 'restore_required' | 'diverged'
+export type SyncReplicaState = 'uninitialized' | 'ready' | 'baseline_required' | 'diverged'
 
 export type SyncStatusPayload = {
 	enabled: boolean
@@ -39,13 +39,12 @@ export type SyncDiagnosticsPayload = {
 	remoteHost: string | null
 	local: {
 		deviceId: string | null
-		lastPulledRemoteCursor: number | null
-		lastRestoreAt: string | null
-		pendingOutboxCount: number
+		lastPulledServerSeq: number | null
+		pendingMutationCount: number
 		counts: SyncDiagnosticsCountsPayload
 	}
 	remote: {
-		latestRemoteCursor: number | null
+		latestServerSeq: number | null
 		counts: SyncDiagnosticsCountsPayload
 	}
 }

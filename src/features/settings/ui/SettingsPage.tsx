@@ -257,14 +257,11 @@ export function SettingsPage() {
 
 	const effectiveSyncError =
 		syncStatus?.status === 'error' ? (syncStatus.lastError ?? syncStatusMessage) : syncStatusMessage
-	const effectiveSyncErrorTitle = getSyncErrorTitle(
-		syncStatus?.lastErrorMode ?? null,
-		syncRunning,
-	)
+	const effectiveSyncErrorTitle = getSyncErrorTitle(syncStatus?.lastErrorMode ?? null, syncRunning)
 	const syncBusy = syncSaving || syncRunning || syncLoading
 	const syncActionBusy = syncBusy || syncDiagnosing
 	const syncConfigIncomplete = syncUrl.trim().length === 0 || syncToken.trim().length === 0
-	const syncRequiresRestore = syncStatus?.replicaState === 'restore_required'
+	const syncRequiresBaseline = syncStatus?.replicaState === 'baseline_required'
 	const displayedSyncStatus: SyncStatus = syncRunning
 		? 'syncing'
 		: syncSaving
@@ -631,7 +628,7 @@ export function SettingsPage() {
 								{syncSaving ? '保存中...' : '保存配置'}
 							</Button>
 							<Button
-								disabled={syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresRestore}
+								disabled={syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresBaseline}
 								onClick={() => void handleRunSync()}
 								type='button'
 								variant='secondary'
@@ -662,7 +659,7 @@ export function SettingsPage() {
 							variant={syncStatusCopy.variant}
 						/>
 
-						{syncRequiresRestore && syncStatus?.replicaReason ? (
+						{syncRequiresBaseline && syncStatus?.replicaReason ? (
 							<StatusNotice
 								className='mt-4'
 								description={syncStatus.replicaReason}
@@ -687,7 +684,7 @@ export function SettingsPage() {
 								<div className='min-w-0'>
 									<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
 									<p className={formFieldHintClass}>
-										只读查看当前设备与 Turso 远端的 cursor
+										只读查看当前设备与 Turso 远端的 server_seq
 										和工作集摘要，用于排查“为什么没同步到”这类问题。
 									</p>
 								</div>
@@ -705,21 +702,21 @@ export function SettingsPage() {
 										}
 									/>
 									<SettingInfoRow
-										description='当前设备最后一次成功吸收远端 operation 后落在本地的 remote cursor。'
-										label='本地 cursor'
-										value={<SyncCursorValue value={syncDiagnostics.local.lastPulledRemoteCursor} />}
+										description='当前设备最后一次成功吸收远端 change log 后落在本地的 server_seq。'
+										label='本地 server_seq'
+										value={<SyncCursorValue value={syncDiagnostics.local.lastPulledServerSeq} />}
 									/>
 									<SettingInfoRow
-										description='Turso 远端 sync_operations 当前看到的最新 cursor。'
-										label='远端 cursor'
-										value={<SyncCursorValue value={syncDiagnostics.remote.latestRemoteCursor} />}
+										description='Turso 远端 remote_change_log 当前看到的最新 server_seq。'
+										label='远端 server_seq'
+										value={<SyncCursorValue value={syncDiagnostics.remote.latestServerSeq} />}
 									/>
 									<SettingInfoRow
-										description='当前设备本地还没提交成功的同步记录数量。'
-										label='待同步记录'
+										description='当前设备本地还没提交成功的 mutation 数量。'
+										label='待同步 mutation'
 										value={
 											<span className='font-medium text-foreground'>
-												{syncDiagnostics.local.pendingOutboxCount} 条
+												{syncDiagnostics.local.pendingMutationCount} 条
 											</span>
 										}
 									/>
@@ -971,7 +968,7 @@ function SyncReplicaBadge({ state }: { state: SyncReplicaState }) {
 	const tone =
 		state === 'ready'
 			? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-			: state === 'restore_required'
+			: state === 'baseline_required'
 				? 'border-amber-200 bg-amber-50 text-amber-700'
 				: state === 'diverged'
 					? 'border-red-200 bg-red-50 text-red-700'
@@ -1112,7 +1109,7 @@ function getSyncStatusCopy({
 		}
 	}
 
-	if (replicaState === 'restore_required') {
+	if (replicaState === 'baseline_required') {
 		return {
 			title: '当前设备需要建立同步基线',
 			summary:
@@ -1175,10 +1172,7 @@ function getSyncStatusCopy({
 	}
 }
 
-function getSyncErrorTitle(
-	mode: 'push' | 'pull' | 'sync' | null,
-	syncRunning: boolean,
-) {
+function getSyncErrorTitle(mode: 'push' | 'pull' | 'sync' | null, syncRunning: boolean) {
 	if (syncRunning) {
 		return '手动同步失败'
 	}
@@ -1218,7 +1212,7 @@ function formatReplicaState(state: SyncReplicaState) {
 	switch (state) {
 		case 'ready':
 			return '可正常同步'
-		case 'restore_required':
+		case 'baseline_required':
 			return '缺少基线'
 		case 'diverged':
 			return '状态异常'

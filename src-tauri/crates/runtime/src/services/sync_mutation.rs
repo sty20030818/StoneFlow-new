@@ -1,6 +1,5 @@
 use serde::Serialize;
-use stoneflow_domain::create_id;
-use stoneflow_storage::repositories::SyncOutboxRecord;
+use stoneflow_storage::repositories::SyncMutationRecord;
 
 use crate::app::error::AppError;
 
@@ -9,7 +8,7 @@ pub fn build_upsert_record<T>(
     entity_id: &str,
     payload: &T,
     updated_at: &str,
-) -> Result<SyncOutboxRecord, AppError>
+) -> Result<SyncMutationRecord, AppError>
 where
     T: Serialize,
 {
@@ -21,20 +20,32 @@ pub fn build_delete_record<T>(
     entity_id: &str,
     payload: &T,
     updated_at: &str,
-) -> Result<SyncOutboxRecord, AppError>
+) -> Result<SyncMutationRecord, AppError>
 where
     T: Serialize,
 {
-    build_record(entity_type, entity_id, "delete", payload, updated_at)
+    build_record(entity_type, entity_id, "soft_delete", payload, updated_at)
+}
+
+pub fn build_hard_delete_record<T>(
+    entity_type: &str,
+    entity_id: &str,
+    payload: &T,
+    updated_at: &str,
+) -> Result<SyncMutationRecord, AppError>
+where
+    T: Serialize,
+{
+    build_record(entity_type, entity_id, "hard_delete", payload, updated_at)
 }
 
 fn build_record<T>(
     entity_type: &str,
     entity_id: &str,
-    action: &str,
+    operation: &str,
     payload: &T,
     updated_at: &str,
-) -> Result<SyncOutboxRecord, AppError>
+) -> Result<SyncMutationRecord, AppError>
 where
     T: Serialize,
 {
@@ -44,15 +55,16 @@ where
         ))
     })?;
 
-    Ok(SyncOutboxRecord {
-        id: create_id().to_string(),
+    Ok(SyncMutationRecord {
+        client_id: String::new(),
+        client_seq: 0,
         entity_type: entity_type.to_owned(),
         entity_id: entity_id.to_owned(),
-        action: action.to_owned(),
+        operation: operation.to_owned(),
         payload,
+        base_server_seq: None,
         status: "pending".to_owned(),
         error_message: None,
-        attempt_count: 0,
         created_at: updated_at.to_owned(),
         updated_at: updated_at.to_owned(),
     })

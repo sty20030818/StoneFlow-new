@@ -855,7 +855,7 @@ mod tests {
 
     fn sample_setting_operation() -> RemoteOperationRecord {
         RemoteOperationRecord {
-            remote_cursor: 1,
+            server_seq: 1,
             op_id: "op-setting-1".to_owned(),
             device_id: "device-a".to_owned(),
             entity_type: "setting".to_owned(),
@@ -874,7 +874,7 @@ mod tests {
 
     fn invalid_hard_delete_operation() -> RemoteOperationRecord {
         RemoteOperationRecord {
-            remote_cursor: 2,
+            server_seq: 2,
             op_id: "op-hard-delete-1".to_owned(),
             device_id: "device-a".to_owned(),
             entity_type: "mystery".to_owned(),

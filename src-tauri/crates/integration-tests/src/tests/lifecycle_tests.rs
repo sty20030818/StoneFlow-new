@@ -57,7 +57,7 @@ async fn delete_space_should_record_cascade_activity_for_each_child() {
 }
 
 #[tokio::test]
-async fn delete_task_should_enqueue_task_delete_outbox_record() {
+async fn delete_task_should_enqueue_task_delete_mutation_record() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -72,18 +72,18 @@ async fn delete_task_should_enqueue_task_delete_outbox_record() {
         .expect("delete task should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 1);
     assert_eq!(pending[0].entity_type, "task");
     assert_eq!(pending[0].entity_id, task.id);
-    assert_eq!(pending[0].action, "delete");
+    assert_eq!(pending[0].operation, "soft_delete");
 }
 
 #[tokio::test]
-async fn restore_task_should_enqueue_task_upsert_outbox_record() {
+async fn restore_task_should_enqueue_task_upsert_mutation_record() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -102,18 +102,18 @@ async fn restore_task_should_enqueue_task_upsert_outbox_record() {
         .expect("restore task should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 2);
     assert_eq!(pending[1].entity_type, "task");
     assert_eq!(pending[1].entity_id, task.id);
-    assert_eq!(pending[1].action, "upsert");
+    assert_eq!(pending[1].operation, "upsert");
 }
 
 #[tokio::test]
-async fn delete_project_should_enqueue_project_and_task_outbox_records() {
+async fn delete_project_should_enqueue_project_and_task_mutation_records() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -129,20 +129,20 @@ async fn delete_project_should_enqueue_project_and_task_outbox_records() {
         .expect("delete project should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 2);
     assert_eq!(pending[0].entity_type, "project");
-    assert_eq!(pending[0].action, "delete");
+    assert_eq!(pending[0].operation, "soft_delete");
     assert_eq!(pending[1].entity_type, "task");
     assert_eq!(pending[1].entity_id, task.id);
-    assert_eq!(pending[1].action, "delete");
+    assert_eq!(pending[1].operation, "soft_delete");
 }
 
 #[tokio::test]
-async fn delete_space_should_enqueue_space_project_task_outbox_records() {
+async fn delete_space_should_enqueue_space_project_task_mutation_records() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -158,19 +158,19 @@ async fn delete_space_should_enqueue_space_project_task_outbox_records() {
         .expect("delete space should succeed");
 
     let pending = sync_repository
-        .list_outbox_by_status("pending", 10)
+        .list_mutations_by_status("pending", 10)
         .await
-        .expect("pending outbox query should succeed");
+        .expect("pending mutation query should succeed");
 
     assert_eq!(pending.len(), 3);
     assert_eq!(pending[0].entity_type, "space");
-    assert_eq!(pending[0].action, "delete");
+    assert_eq!(pending[0].operation, "soft_delete");
     assert_eq!(pending[1].entity_type, "project");
     assert_eq!(pending[1].entity_id, project.id);
-    assert_eq!(pending[1].action, "delete");
+    assert_eq!(pending[1].operation, "soft_delete");
     assert_eq!(pending[2].entity_type, "task");
     assert_eq!(pending[2].entity_id, task.id);
-    assert_eq!(pending[2].action, "delete");
+    assert_eq!(pending[2].operation, "soft_delete");
 }
 
 #[tokio::test]

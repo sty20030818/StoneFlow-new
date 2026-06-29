@@ -333,7 +333,6 @@ pub async fn bootstrap_remote_schema(remote: &Connection) -> Result<(), SyncWork
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RemoteRestoreSnapshot {
-    pub latest_remote_cursor: Option<i64>,
     pub spaces: Vec<SpacePayload>,
     pub projects: Vec<ProjectPayload>,
     pub tasks: Vec<TaskPayload>,
@@ -346,7 +345,6 @@ pub async fn fetch_restore_snapshot(
     remote: &Connection,
 ) -> Result<RemoteRestoreSnapshot, SyncWorkerError> {
     Ok(RemoteRestoreSnapshot {
-        latest_remote_cursor: fetch_latest_remote_cursor(remote).await?,
         spaces: fetch_spaces(remote).await?,
         projects: fetch_projects(remote).await?,
         tasks: fetch_tasks(remote).await?,
@@ -354,34 +352,6 @@ pub async fn fetch_restore_snapshot(
         views: fetch_views(remote).await?,
         settings: fetch_settings(remote).await?,
     })
-}
-
-async fn fetch_latest_remote_cursor(remote: &Connection) -> Result<Option<i64>, SyncWorkerError> {
-    let mut rows = remote
-        .query(
-            "SELECT MAX(remote_cursor) FROM sync_operations LIMIT 1",
-            params![],
-        )
-        .await
-        .map_err(|error| {
-            SyncWorkerError::remote_database(format!("读取远端最新 remote_cursor 失败: {error}"))
-        })?;
-    let row = rows
-        .next()
-        .await
-        .map_err(|error| {
-            SyncWorkerError::remote_database(format!("遍历远端最新 remote_cursor 失败: {error}"))
-        })?;
-
-    row.map(|row| {
-        row.get::<Option<i64>>(0).map_err(|error| {
-            SyncWorkerError::remote_database(format!(
-                "读取远端 sync_operations.max(remote_cursor) 失败: {error}"
-            ))
-        })
-    })
-    .transpose()
-    .map(Option::flatten)
 }
 
 async fn fetch_spaces(remote: &Connection) -> Result<Vec<SpacePayload>, SyncWorkerError> {

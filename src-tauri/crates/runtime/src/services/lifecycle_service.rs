@@ -17,7 +17,7 @@ use crate::{
     app::error::AppError,
     services::{
         activity::ActivityPersistenceAdapter,
-        sync_outbox::{build_delete_record, build_upsert_record},
+        sync_mutation::{build_delete_record, build_upsert_record},
     },
 };
 use stoneflow_storage::{
@@ -555,9 +555,9 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         connection: &Self::Connection,
         space: &SpaceRecord,
     ) -> Result<(), stoneflow_usecase::UsecaseError> {
-        let record = build_space_outbox_record(space).map_err(map_app_error)?;
+        let record = build_space_mutation_record(space).map_err(map_app_error)?;
         self.sync_repository
-            .insert_outbox_record(connection, &record)
+            .insert_pending_mutation(connection, &record)
             .await
             .map_err(|error| map_app_error(error.into()))
     }
@@ -567,9 +567,9 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         connection: &Self::Connection,
         space: &SpaceRecord,
     ) -> Result<(), stoneflow_usecase::UsecaseError> {
-        let record = build_space_delete_outbox_record(space).map_err(map_app_error)?;
+        let record = build_space_delete_mutation_record(space).map_err(map_app_error)?;
         self.sync_repository
-            .insert_outbox_record(connection, &record)
+            .insert_pending_mutation(connection, &record)
             .await
             .map_err(|error| map_app_error(error.into()))
     }
@@ -579,9 +579,9 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         connection: &Self::Connection,
         project: &ProjectRecord,
     ) -> Result<(), stoneflow_usecase::UsecaseError> {
-        let record = build_project_outbox_record(project).map_err(map_app_error)?;
+        let record = build_project_mutation_record(project).map_err(map_app_error)?;
         self.sync_repository
-            .insert_outbox_record(connection, &record)
+            .insert_pending_mutation(connection, &record)
             .await
             .map_err(|error| map_app_error(error.into()))
     }
@@ -591,9 +591,9 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         connection: &Self::Connection,
         project: &ProjectRecord,
     ) -> Result<(), stoneflow_usecase::UsecaseError> {
-        let record = build_project_delete_outbox_record(project).map_err(map_app_error)?;
+        let record = build_project_delete_mutation_record(project).map_err(map_app_error)?;
         self.sync_repository
-            .insert_outbox_record(connection, &record)
+            .insert_pending_mutation(connection, &record)
             .await
             .map_err(|error| map_app_error(error.into()))
     }
@@ -603,9 +603,9 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         connection: &Self::Connection,
         task: &TaskRecord,
     ) -> Result<(), stoneflow_usecase::UsecaseError> {
-        let record = build_task_outbox_record(task).map_err(map_app_error)?;
+        let record = build_task_mutation_record(task).map_err(map_app_error)?;
         self.sync_repository
-            .insert_outbox_record(connection, &record)
+            .insert_pending_mutation(connection, &record)
             .await
             .map_err(|error| map_app_error(error.into()))
     }
@@ -615,9 +615,9 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         connection: &Self::Connection,
         task: &TaskRecord,
     ) -> Result<(), stoneflow_usecase::UsecaseError> {
-        let record = build_task_delete_outbox_record(task).map_err(map_app_error)?;
+        let record = build_task_delete_mutation_record(task).map_err(map_app_error)?;
         self.sync_repository
-            .insert_outbox_record(connection, &record)
+            .insert_pending_mutation(connection, &record)
             .await
             .map_err(|error| map_app_error(error.into()))
     }
@@ -736,9 +736,9 @@ impl<'a> From<&'a TaskRecord> for LifecycleTaskSyncPayload<'a> {
     }
 }
 
-fn build_space_outbox_record(
+fn build_space_mutation_record(
     space: &SpaceRecord,
-) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_upsert_record(
         "space",
         &space.id,
@@ -747,9 +747,9 @@ fn build_space_outbox_record(
     )
 }
 
-fn build_space_delete_outbox_record(
+fn build_space_delete_mutation_record(
     space: &SpaceRecord,
-) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_delete_record(
         "space",
         &space.id,
@@ -758,9 +758,9 @@ fn build_space_delete_outbox_record(
     )
 }
 
-fn build_project_outbox_record(
+fn build_project_mutation_record(
     project: &ProjectRecord,
-) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_upsert_record(
         "project",
         &project.id,
@@ -769,9 +769,9 @@ fn build_project_outbox_record(
     )
 }
 
-fn build_project_delete_outbox_record(
+fn build_project_delete_mutation_record(
     project: &ProjectRecord,
-) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_delete_record(
         "project",
         &project.id,
@@ -780,9 +780,9 @@ fn build_project_delete_outbox_record(
     )
 }
 
-fn build_task_outbox_record(
+fn build_task_mutation_record(
     task: &TaskRecord,
-) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_upsert_record(
         "task",
         &task.id,
@@ -791,9 +791,9 @@ fn build_task_outbox_record(
     )
 }
 
-fn build_task_delete_outbox_record(
+fn build_task_delete_mutation_record(
     task: &TaskRecord,
-) -> Result<stoneflow_storage::repositories::SyncOutboxRecord, AppError> {
+) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
     build_delete_record(
         "task",
         &task.id,

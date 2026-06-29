@@ -433,7 +433,7 @@ async fn refresh_local_replica_state(
 async fn ensure_sync_allowed(sync_state: &SyncRuntimeState) -> Result<(), AppError> {
     match sync_state.replica_state().await {
         SyncReplicaState::Ready => Ok(()),
-        SyncReplicaState::RestoreRequired => Err(AppError::validation(
+        SyncReplicaState::BaselineRequired => Err(AppError::validation(
             "当前设备已有本地数据，但还没有同步基线。为避免误覆盖本地副本，已暂停普通同步，请先完成基线迁移。",
         )),
         SyncReplicaState::Diverged => Err(AppError::validation(
