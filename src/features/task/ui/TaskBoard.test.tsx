@@ -83,7 +83,9 @@ describe('TaskBoard', () => {
 	})
 })
 
-function createTask(overrides: Partial<TaskListItem> & Pick<TaskListItem, 'id' | 'title'>): TaskListItem {
+function createTask(
+	overrides: Partial<TaskListItem> & Pick<TaskListItem, 'id' | 'title'>,
+): TaskListItem {
 	return {
 		id: overrides.id,
 		title: overrides.title,

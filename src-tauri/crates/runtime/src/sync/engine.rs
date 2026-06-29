@@ -152,6 +152,7 @@ pub async fn run_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload
     log::info!("sync:trigger manual sync requested");
     let guard = sync_state.lock_execution().await;
     run_sync_loop(app_handle, guard, SyncRunMode::Sync).await?;
+    refresh_local_replica_state(&sync_state, &database).await?;
 
     Ok(sync_state.snapshot().await)
 }
@@ -336,8 +337,8 @@ async fn run_sync_round_trip(
     database_path: String,
     remote_config: &crate::sync::types::SyncRemoteConfig,
 ) -> Result<(), SyncRoundFailure> {
-    log::info!("sync:sync phase=initial_pull");
-    sync_database(
+    log::info!("sync:sync_v2 phase=initial_pull");
+    sync_database_v2(
         app_handle,
         database_path.clone(),
         remote_config,
@@ -350,8 +351,8 @@ async fn run_sync_round_trip(
     })?;
 
     sync_state.enter_sync_push_phase().await;
-    log::info!("sync:sync phase=push");
-    sync_database(
+    log::info!("sync:sync_v2 phase=push");
+    sync_database_v2(
         app_handle,
         database_path.clone(),
         remote_config,
@@ -364,8 +365,8 @@ async fn run_sync_round_trip(
     })?;
 
     sync_state.enter_sync_confirm_pull_phase().await;
-    log::info!("sync:sync phase=confirm_pull");
-    sync_database(app_handle, database_path, remote_config, SyncRunMode::Pull)
+    log::info!("sync:sync_v2 phase=confirm_pull");
+    sync_database_v2(app_handle, database_path, remote_config, SyncRunMode::Pull)
         .await
         .map_err(|error| SyncRoundFailure {
             failed_mode: SyncRunMode::Pull,
@@ -380,6 +381,16 @@ async fn sync_database(
     mode: SyncRunMode,
 ) -> Result<(), AppError> {
     run_sync_worker(app_handle, &database_path, remote_config, mode).await
+}
+
+async fn sync_database_v2(
+    app_handle: &tauri::AppHandle,
+    database_path: String,
+    remote_config: &crate::sync::types::SyncRemoteConfig,
+    mode: SyncRunMode,
+) -> Result<(), AppError> {
+    run_sync_worker_with_label(app_handle, &database_path, remote_config, v2_worker_mode_label(mode))
+        .await
 }
 
 trait SyncErrorContext {
@@ -445,13 +456,13 @@ async fn ensure_sync_allowed(sync_state: &SyncRuntimeState) -> Result<(), AppErr
     match sync_state.replica_state().await {
         SyncReplicaState::Ready => Ok(()),
         SyncReplicaState::RestoreRequired => Err(AppError::validation(
-            "当前设备的本地副本为空，S1 阶段已阻止普通同步。为避免把空副本误当成删除源，请先走“从远端恢复本地”链路。",
+            "当前设备已有本地数据，但还没有 V2 同步基线。为避免误覆盖本地副本，请先走“从云端恢复本地”链路，或等待后续 S1 到 V2 的一次性迁移。",
         )),
         SyncReplicaState::Diverged => Err(AppError::validation(
             "当前设备的本地副本状态异常，已暂停普通同步，请先完成诊断或恢复。",
         )),
         SyncReplicaState::Uninitialized => Err(AppError::validation(
-            "当前设备还没有可用的本地同步副本，S1 阶段暂不允许直接执行普通同步。",
+            "当前设备还没有可用的本地同步副本，暂不允许执行云同步。",
         )),
     }
 }
@@ -460,6 +471,15 @@ fn mode_label(mode: SyncRunMode) -> &'static str {
     match mode {
         SyncRunMode::Push => "push",
         SyncRunMode::Pull => "pull",
+        SyncRunMode::Sync => "sync",
+        SyncRunMode::Restore => "restore",
+    }
+}
+
+fn v2_worker_mode_label(mode: SyncRunMode) -> &'static str {
+    match mode {
+        SyncRunMode::Push => "push_v2",
+        SyncRunMode::Pull => "pull_v2",
         SyncRunMode::Sync => "sync",
         SyncRunMode::Restore => "restore",
     }
@@ -485,8 +505,17 @@ async fn run_sync_worker(
     remote_config: &crate::sync::types::SyncRemoteConfig,
     mode: SyncRunMode,
 ) -> Result<(), AppError> {
+    run_sync_worker_with_label(app_handle, database_path, remote_config, mode_label(mode)).await
+}
+
+async fn run_sync_worker_with_label(
+    app_handle: &tauri::AppHandle,
+    database_path: &str,
+    remote_config: &crate::sync::types::SyncRemoteConfig,
+    worker_mode: &str,
+) -> Result<(), AppError> {
     let mut command =
-        build_sync_worker_command(app_handle, database_path, remote_config, mode_label(mode))?;
+        build_sync_worker_command(app_handle, database_path, remote_config, worker_mode)?;
     let output = command.output().await.map_err(|error| {
         AppError::internal(format!("启动同步 worker 失败: {error}"))
     })?;
@@ -500,7 +529,7 @@ async fn run_sync_worker(
     let failure = parse_sync_worker_failure(&stderr, &stdout, output.status.code());
     log::warn!(
         "sync:worker failed mode={} kind={} message={}",
-        mode_label(mode),
+        worker_mode,
         failure.kind.as_str(),
         failure.message
     );
@@ -724,7 +753,10 @@ impl SyncWorkerFailure {
 mod tests {
     use stoneflow_test_support::TestDatabase;
 
-    use super::{configure_sync, get_sync_status, initialize_state, parse_sync_worker_failure};
+    use super::{
+        configure_sync, get_sync_status, initialize_state, parse_sync_worker_failure,
+        v2_worker_mode_label,
+    };
     use crate::sync::{
         state::SyncRuntimeState,
         types::{ConfigureSyncInput, SyncReplicaState, SyncStatusKind},
@@ -788,5 +820,11 @@ mod tests {
 
         assert_eq!(failure.kind, super::SyncWorkerErrorKind::Authentication);
         assert_eq!(failure.message, "token invalid");
+    }
+
+    #[test]
+    fn v2_worker_mode_label_should_map_push_and_pull_only() {
+        assert_eq!(v2_worker_mode_label(super::SyncRunMode::Pull), "pull_v2");
+        assert_eq!(v2_worker_mode_label(super::SyncRunMode::Push), "push_v2");
     }
 }

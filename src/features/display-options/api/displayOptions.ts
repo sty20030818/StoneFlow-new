@@ -86,4 +86,3 @@ export async function updateTaskDisplayPreference({
 export function buildTaskDisplayPreferenceStorageKey(pageKey: TaskDisplayPageKey) {
 	return `task:${pageKey}`
 }
-

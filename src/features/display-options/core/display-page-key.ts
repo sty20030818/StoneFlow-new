@@ -47,10 +47,11 @@ export function isTaskDisplayPageKey(value: string): value is TaskDisplayPageKey
 }
 
 export function isTaskDisplayViewPageKey(value: string): value is TaskDisplayScopedViewPageKey {
-	return value.startsWith(TASK_VIEW_PAGE_KEY_PREFIX) && value.length > TASK_VIEW_PAGE_KEY_PREFIX.length
+	return (
+		value.startsWith(TASK_VIEW_PAGE_KEY_PREFIX) && value.length > TASK_VIEW_PAGE_KEY_PREFIX.length
+	)
 }
 
 export function getTaskDisplayPageKind(pageKey: TaskDisplayPageKey): TaskDisplayPageKind {
 	return isTaskDisplayViewPageKey(pageKey) ? 'task:view' : pageKey
 }
-

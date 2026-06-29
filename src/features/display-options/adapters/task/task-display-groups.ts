@@ -30,7 +30,11 @@ export function buildTaskDisplaySections(
 		]
 	}
 
-	const descriptor = getTaskDisplayGroupDescriptor(items, options.groupBy, context.includeEmptySections ?? false)
+	const descriptor = getTaskDisplayGroupDescriptor(
+		items,
+		options.groupBy,
+		context.includeEmptySections ?? false,
+	)
 	const compare = createTaskDisplayComparator(options, { pageKey: context.pageKey })
 
 	return descriptor.groups

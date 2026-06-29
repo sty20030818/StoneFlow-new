@@ -83,4 +83,3 @@ function renderWithQueryClient<T>(callback: () => T) {
 		),
 	})
 }
-

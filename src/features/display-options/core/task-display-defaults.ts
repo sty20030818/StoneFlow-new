@@ -1,4 +1,8 @@
-import { getTaskDisplayPageKind, type TaskDisplayPageKey, type TaskDisplayPageKind } from './display-page-key'
+import {
+	getTaskDisplayPageKind,
+	type TaskDisplayPageKey,
+	type TaskDisplayPageKind,
+} from './display-page-key'
 import type { TaskDisplayOptions } from './task-display-options'
 
 const DEFAULT_VISIBLE_PROPERTIES = ['status', 'priority', 'project', 'dueAt'] as const

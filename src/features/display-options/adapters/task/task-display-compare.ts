@@ -9,7 +9,11 @@ import type {
 	TaskDisplayPageKey,
 } from '@/features/display-options/core'
 
-import type { TaskDateBucketKey, TaskDisplayComparatorContext, TaskDisplayStatusRank } from './task-display-types'
+import type {
+	TaskDateBucketKey,
+	TaskDisplayComparatorContext,
+	TaskDisplayStatusRank,
+} from './task-display-types'
 
 const STATUS_RANK: TaskDisplayStatusRank = {
 	doing: 0,
@@ -73,16 +77,28 @@ export function createTaskDisplayComparator(
 }
 
 export function compareByManualOrder(left: TaskListItem, right: TaskListItem) {
-	return compareByDateValue(left.updatedAt, right.updatedAt, 'desc') || compareByStableId(left, right)
+	return (
+		compareByDateValue(left.updatedAt, right.updatedAt, 'desc') || compareByStableId(left, right)
+	)
 }
 
-export function compareBySmartOrder(left: TaskListItem, right: TaskListItem, pageKey?: TaskDisplayPageKey) {
+export function compareBySmartOrder(
+	left: TaskListItem,
+	right: TaskListItem,
+	pageKey?: TaskDisplayPageKey,
+) {
 	if (pageKey === 'task:completed') {
-		return compareByDateValue(left.completedAt, right.completedAt, 'desc') || compareByStableId(left, right)
+		return (
+			compareByDateValue(left.completedAt, right.completedAt, 'desc') ||
+			compareByStableId(left, right)
+		)
 	}
 
 	if (pageKey === 'task:canceled') {
-		return compareByDateValue(left.canceledAt, right.canceledAt, 'desc') || compareByStableId(left, right)
+		return (
+			compareByDateValue(left.canceledAt, right.canceledAt, 'desc') ||
+			compareByStableId(left, right)
+		)
 	}
 
 	const statusCompare = compareNumber(STATUS_RANK[left.status], STATUS_RANK[right.status], 'asc')
@@ -122,7 +138,11 @@ export function compareBySmartOrder(left: TaskListItem, right: TaskListItem, pag
 
 export function compareByPriority(direction: TaskDisplayOrderDirection): CompareFn {
 	return (left, right) =>
-		compareNumber(PRIORITY_RANK[left.priority], PRIORITY_RANK[right.priority], direction === 'asc' ? 'desc' : 'asc') ||
+		compareNumber(
+			PRIORITY_RANK[left.priority],
+			PRIORITY_RANK[right.priority],
+			direction === 'asc' ? 'desc' : 'asc',
+		) ||
 		compareByDateValue(left.updatedAt, right.updatedAt, 'desc') ||
 		compareByStableId(left, right)
 }
@@ -137,7 +157,14 @@ export function compareByStatus(direction: TaskDisplayOrderDirection): CompareFn
 export function compareByDateField(
 	field: keyof Pick<
 		TaskListItem,
-		'dueAt' | 'scheduledAt' | 'inboxAt' | 'statusChangedAt' | 'createdAt' | 'updatedAt' | 'completedAt' | 'canceledAt'
+		| 'dueAt'
+		| 'scheduledAt'
+		| 'inboxAt'
+		| 'statusChangedAt'
+		| 'createdAt'
+		| 'updatedAt'
+		| 'completedAt'
+		| 'canceledAt'
 	>,
 	direction: TaskDisplayOrderDirection,
 ): CompareFn {

@@ -42,13 +42,7 @@ export type TaskDisplayGroupingContext = {
 	includeEmptySections: boolean
 }
 
-export type TaskDateBucketKey =
-	| 'overdue'
-	| 'today'
-	| 'tomorrow'
-	| 'this-week'
-	| 'later'
-	| 'none'
+export type TaskDateBucketKey = 'overdue' | 'today' | 'tomorrow' | 'this-week' | 'later' | 'none'
 
 export type TaskDisplayStatusRank = Record<TaskStatus, number>
 
@@ -62,4 +56,3 @@ export type TaskDisplayGroupDescriptor = {
 	groupBy: TaskDisplayGroupBy
 	groups: TaskGroupDefinition[]
 }
-

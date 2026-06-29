@@ -407,9 +407,12 @@ describe('SettingsPage', () => {
 		expect(screen.getByLabelText('Turso URL')).toHaveValue('libsql://saved.turso.io')
 		expect(screen.getByLabelText('Turso Token')).toHaveValue('')
 		expect(
-			screen.getByText('出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token 覆盖保存。', {
-				exact: false,
-			}),
+			screen.getByText(
+				'出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token 覆盖保存。',
+				{
+					exact: false,
+				},
+			),
 		).toBeInTheDocument()
 	})
 
@@ -418,7 +421,9 @@ describe('SettingsPage', () => {
 
 		expect(screen.getByText('尚未启用云同步')).toBeInTheDocument()
 		expect(
-			screen.getByText('当前还没有保存可用的 Turso 远端。完成配置前，所有数据只会保留在本地数据库。'),
+			screen.getByText(
+				'当前还没有保存可用的 Turso 远端。完成配置前，所有数据只会保留在本地数据库。',
+			),
 		).toBeInTheDocument()
 		expect(screen.getByText('未启用')).toBeInTheDocument()
 		expect(screen.getAllByText('从未同步')).toHaveLength(2)
@@ -663,7 +668,7 @@ describe('SettingsPage', () => {
 		expect(screen.getByLabelText('Turso Token')).toHaveValue('')
 	})
 
-	it('副本为空时展示待恢复提示并禁用立即同步', async () => {
+	it('缺少同步基线时展示提示并禁用立即同步', async () => {
 		getSyncStatusSpy.mockResolvedValue({
 			enabled: true,
 			status: 'synced',
@@ -677,14 +682,14 @@ describe('SettingsPage', () => {
 			remoteUrl: 'libsql://example.turso.io',
 			replicaState: 'restore_required',
 			replicaReason:
-				'当前本地副本不包含任务、项目等同步主数据。为避免把空副本误当成删除源，S1 阶段已阻止普通同步，请先走“从远端恢复本地”链路。',
+				'当前设备已有本地数据，但缺少 V2 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先走“从云端恢复本地”建立 V2 基线，或后续执行 S1 到 V2 的一次性迁移。',
 			lastRestoreAt: null,
 		})
 
 		await renderSettingsPage()
 
-		expect(screen.getAllByText('当前设备需要先恢复本地副本')).toHaveLength(2)
-		expect(screen.getByText('需要先恢复')).toBeInTheDocument()
+		expect(screen.getAllByText('当前设备需要建立同步基线')).toHaveLength(2)
+		expect(screen.getByText('缺少基线')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '立即同步' })).toBeDisabled()
 	})
 

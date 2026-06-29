@@ -1,7 +1,4 @@
-export {
-	applyTaskDisplayOptionsToTasks,
-	createTaskDisplayApplyContext,
-} from './task-display-apply'
+export { applyTaskDisplayOptionsToTasks, createTaskDisplayApplyContext } from './task-display-apply'
 export {
 	compareByDateField,
 	compareByManualOrder,
@@ -29,4 +26,3 @@ export type {
 	TaskDisplayStatusRank,
 	TaskGroupDefinition,
 } from './task-display-types'
-

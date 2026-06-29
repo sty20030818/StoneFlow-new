@@ -293,9 +293,9 @@ export function SettingsPage() {
 		? 'syncing'
 		: syncRestoring
 			? 'syncing'
-		: syncSaving
-			? 'syncing'
-			: (syncStatus?.status ?? (syncLoading ? 'syncing' : 'disabled'))
+			: syncSaving
+				? 'syncing'
+				: (syncStatus?.status ?? (syncLoading ? 'syncing' : 'disabled'))
 	const syncStatusCopy = getSyncStatusCopy({
 		dirtySince: syncStatus?.dirtySince ?? null,
 		pendingResync: syncStatus?.pendingResync ?? false,
@@ -618,7 +618,7 @@ export function SettingsPage() {
 								value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
 							/>
 							<SettingInfoRow
-								description='用于判断当前设备能否继续执行普通同步。若副本为空，会先阻止普通同步，避免把空副本误当成删除源。'
+								description='用于判断当前设备能否继续执行统一同步。空副本会由 V2 同步自动拉取远端基线。'
 								label='本地副本'
 								value={<SyncReplicaBadge state={syncStatus?.replicaState ?? 'uninitialized'} />}
 							/>
@@ -676,9 +676,7 @@ export function SettingsPage() {
 								{syncRestoring ? '恢复中...' : '从云端恢复本地'}
 							</Button>
 							<Button
-								disabled={
-									syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresRestore
-								}
+								disabled={syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresRestore}
 								onClick={() => void handleRunSync()}
 								type='button'
 								variant='secondary'
@@ -696,8 +694,10 @@ export function SettingsPage() {
 						</div>
 
 						<p className={`mt-3 ${formFieldHintClass}`}>
-							配置会直接保存在本地数据库的 settings 表；页面刷新后只会自动回填 URL。出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token 覆盖保存。未配置前不会自动同步；配置完成后，本地写入会先标记
-							待同步，再由同步引擎异步执行完整同步。若当前设备是空副本，先用“从云端恢复本地”把远端基线完整拉回本机，再继续普通同步。
+							配置会直接保存在本地数据库的 settings 表；页面刷新后只会自动回填
+							URL。出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token
+							覆盖保存。未配置前不会自动同步；配置完成后，本地写入会先标记
+							待同步，再由同步引擎异步执行完整同步。当前设备是空副本时，立即同步会自动拉取远端基线；“从云端恢复本地”只作为手动兜底操作。
 						</p>
 
 						<StatusNotice
@@ -711,7 +711,7 @@ export function SettingsPage() {
 							<StatusNotice
 								className='mt-4'
 								description={syncStatus.replicaReason}
-								title='当前设备需要先恢复本地副本'
+								title='当前设备需要建立同步基线'
 								variant='warning'
 							/>
 						) : null}
@@ -732,7 +732,8 @@ export function SettingsPage() {
 								<div className='min-w-0'>
 									<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
 									<p className={formFieldHintClass}>
-										只读查看当前设备与 Turso 远端的 cursor 和工作集摘要，用于排查“为什么没同步到”这类问题。
+										只读查看当前设备与 Turso 远端的 cursor
+										和工作集摘要，用于排查“为什么没同步到”这类问题。
 									</p>
 								</div>
 							</div>
@@ -751,18 +752,12 @@ export function SettingsPage() {
 									<SettingInfoRow
 										description='当前设备最后一次成功吸收远端 operation 后落在本地的 remote cursor。'
 										label='本地 cursor'
-										value={
-											<SyncCursorValue
-												value={syncDiagnostics.local.lastPulledRemoteCursor}
-											/>
-										}
+										value={<SyncCursorValue value={syncDiagnostics.local.lastPulledRemoteCursor} />}
 									/>
 									<SettingInfoRow
 										description='Turso 远端 sync_operations 当前看到的最新 cursor。'
 										label='远端 cursor'
-										value={
-											<SyncCursorValue value={syncDiagnostics.remote.latestRemoteCursor} />
-										}
+										value={<SyncCursorValue value={syncDiagnostics.remote.latestRemoteCursor} />}
 									/>
 									<SettingInfoRow
 										description='当前设备本地还没提交成功的同步记录数量。'
@@ -776,16 +771,12 @@ export function SettingsPage() {
 									<SettingInfoRow
 										description='当前设备本地工作集的计数摘要。'
 										label='本地工作集'
-										value={
-											<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />
-										}
+										value={<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />}
 									/>
 									<SettingInfoRow
 										description='Turso 远端当前镜像表的计数摘要。'
 										label='远端工作集'
-										value={
-											<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />
-										}
+										value={<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />}
 									/>
 								</div>
 							) : (
@@ -980,9 +971,7 @@ function SyncCountsSummaryValue({
 }) {
 	return (
 		<div className='flex flex-col gap-1'>
-			<span className='font-medium text-foreground'>
-				{formatSyncCountsSummary(counts)}
-			</span>
+			<span className='font-medium text-foreground'>{formatSyncCountsSummary(counts)}</span>
 			<span className='text-xs text-slate-500'>总计 {counts.totalItems} 条主数据</span>
 		</div>
 	)
@@ -1182,11 +1171,11 @@ function getSyncStatusCopy({
 
 	if (replicaState === 'restore_required') {
 		return {
-			title: '当前设备需要先恢复本地副本',
+			title: '当前设备需要建立同步基线',
 			summary:
 				replicaReason ??
-				'当前本地副本看起来是空的。为避免把空副本误当成删除源，已阻止普通同步，后续需要走“从远端恢复本地”链路。',
-			statusDescription: '当前设备的本地副本为空，普通同步已被阻止。',
+				'当前设备已有本地数据，但缺少 V2 同步基线。为避免误覆盖本地副本，已暂停自动同步，请先恢复或迁移基线。',
+			statusDescription: '当前设备缺少 V2 同步基线，普通同步已暂停。',
 			variant: 'warning' as const,
 		}
 	}
@@ -1221,7 +1210,8 @@ function getSyncStatusCopy({
 		case 'error':
 			return {
 				title: '同步需要处理',
-				summary: '上一轮同步失败了。先检查 URL、token、网络和 Turso 远端状态，修正后再触发下一轮同步。',
+				summary:
+					'上一轮同步失败了。先检查 URL、token、网络和 Turso 远端状态，修正后再触发下一轮同步。',
 				statusDescription: '上一轮同步失败，等待人工处理或下一次重试。',
 				variant: 'danger' as const,
 			}
@@ -1292,7 +1282,7 @@ function formatReplicaState(state: SyncReplicaState) {
 		case 'ready':
 			return '可正常同步'
 		case 'restore_required':
-			return '需要先恢复'
+			return '缺少基线'
 		case 'diverged':
 			return '状态异常'
 		case 'uninitialized':

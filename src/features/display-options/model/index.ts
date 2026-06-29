@@ -6,4 +6,3 @@ export {
 } from './taskDisplayOptions.queries'
 export { useUpdateTaskDisplayPreferenceMutation } from './taskDisplayOptions.mutations'
 export { useTaskDisplayOptions } from './useTaskDisplayOptions'
-

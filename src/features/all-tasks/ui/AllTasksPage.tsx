@@ -4,7 +4,10 @@ import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
-import { applyTaskDisplayOptionsToTasks, createTaskDisplayApplyContext } from '@/features/display-options/adapters/task'
+import {
+	applyTaskDisplayOptionsToTasks,
+	createTaskDisplayApplyContext,
+} from '@/features/display-options/adapters/task'
 import { DisplayOptionsButton } from '@/features/display-options/ui'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'

@@ -13,10 +13,7 @@ export {
 	getTaskDisplayPageCapabilities,
 	type TaskDisplayPageCapabilities,
 } from './task-display-capabilities'
-export {
-	BASE_TASK_DISPLAY_OPTIONS,
-	getTaskDisplaySystemDefaults,
-} from './task-display-defaults'
+export { BASE_TASK_DISPLAY_OPTIONS, getTaskDisplaySystemDefaults } from './task-display-defaults'
 export {
 	mergeTaskDisplayPreferences,
 	normalizeTaskDisplayPreference,
@@ -48,4 +45,3 @@ export {
 	type TaskDisplayPreferenceRecord,
 	type TaskDisplayPropertyKey,
 } from './task-display-options'
-

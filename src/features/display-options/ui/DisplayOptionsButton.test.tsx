@@ -42,9 +42,7 @@ describe('DisplayOptionsButton', () => {
 		renderWithQueryClient(<DisplayOptionsButton pageKey='task:all' />)
 
 		fireEvent.click(screen.getByRole('button', { name: '视图选项' }))
-		await waitFor(() =>
-			expect(screen.queryByText('正在读取显示偏好…')).not.toBeInTheDocument(),
-		)
+		await waitFor(() => expect(screen.queryByText('正在读取显示偏好…')).not.toBeInTheDocument())
 		fireEvent.click(await screen.findByRole('button', { name: /截止时间/ }))
 
 		await waitFor(() => {

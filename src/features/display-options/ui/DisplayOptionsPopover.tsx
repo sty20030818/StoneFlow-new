@@ -2,7 +2,10 @@
 
 import type { ReactNode } from 'react'
 
-import type { ResolvedTaskDisplayOptions, TaskDisplayPageKey } from '@/features/display-options/core'
+import type {
+	ResolvedTaskDisplayOptions,
+	TaskDisplayPageKey,
+} from '@/features/display-options/core'
 import { cn } from '@/shared/lib/utils'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/base/popover'
 

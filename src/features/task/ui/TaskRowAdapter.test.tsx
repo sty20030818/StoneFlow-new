@@ -179,7 +179,9 @@ describe('TaskRowAdapter', () => {
 			visibleProperties: ['status', 'project', 'updatedAt'],
 		})
 
-		expect(screen.queryByRole('button', { name: '设置任务 任务 A 的优先级' })).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: '设置任务 任务 A 的优先级' }),
+		).not.toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '设置任务 任务 A 的状态' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '归属' })).toBeInTheDocument()
 		expect(screen.getByText('5/7')).toBeInTheDocument()

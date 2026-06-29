@@ -29,10 +29,7 @@ function EntitySceneToolbar({
 	toolbarDisplayAction,
 }: Pick<
 	EntitySceneProps,
-	| 'toolbarPills'
-	| 'toolbarLeft'
-	| 'toolbarFilterAction'
-	| 'toolbarDisplayAction'
+	'toolbarPills' | 'toolbarLeft' | 'toolbarFilterAction' | 'toolbarDisplayAction'
 >) {
 	if (!toolbarPills && !toolbarLeft && !toolbarFilterAction && !toolbarDisplayAction) {
 		return null

@@ -6,4 +6,3 @@ export const taskDisplayOptionsKeys = {
 	preference: (pageKey: TaskDisplayPageKey) =>
 		[...taskDisplayOptionsKeys.preferences(), pageKey] as const,
 }
-

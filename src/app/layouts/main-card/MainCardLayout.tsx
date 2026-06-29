@@ -8,11 +8,7 @@ import {
 	mainCardSectionClass,
 	mainCardToolbarPillVariants,
 } from '@/shared/ui/patterns/main-card'
-import {
-	ListFilterIcon,
-	PanelRightOpenIcon,
-	SlidersHorizontalIcon,
-} from 'lucide-react'
+import { ListFilterIcon, PanelRightOpenIcon, SlidersHorizontalIcon } from 'lucide-react'
 
 /**
  * MainCard 是页级骨架：Root / Header / Body 为正式必选结构。
@@ -188,9 +184,7 @@ function MainCardToolbarIconButton({ action }: { action: MainCardIconAction }) {
 function createToolbarActions(): MainCardIconAction[] {
 	const noop = () => undefined
 
-	return [
-		{ label: '打开右侧面板', icon: PanelRightOpenIcon, onClick: noop },
-	]
+	return [{ label: '打开右侧面板', icon: PanelRightOpenIcon, onClick: noop }]
 }
 
 export const MainCard = {

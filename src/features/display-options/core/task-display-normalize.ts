@@ -54,11 +54,13 @@ export function resolveTaskDisplayOptions({
 
 	const allowedGroupBy =
 		layout === 'board'
-			? (capabilities.board?.allowedGroupBy ?? ['status']) satisfies readonly TaskDisplayGroupBy[]
+			? ((capabilities.board?.allowedGroupBy ?? ['status']) satisfies readonly TaskDisplayGroupBy[])
 			: capabilities.allowedGroupBy
 	const allowedSubGroupBy =
 		layout === 'board'
-			? (capabilities.board?.allowedSubGroupBy ?? ['none']) satisfies readonly TaskDisplayGroupBy[]
+			? ((capabilities.board?.allowedSubGroupBy ?? [
+					'none',
+				]) satisfies readonly TaskDisplayGroupBy[])
 			: capabilities.allowedSubGroupBy
 
 	const groupBy: TaskDisplayGroupBy = normalizeChoice<TaskDisplayGroupBy>(
@@ -89,12 +91,11 @@ export function resolveTaskDisplayOptions({
 		defaults.orderDirection,
 	)
 
-	const completedOrder: TaskDisplayCompletedOrder =
-		normalizeChoice<TaskDisplayCompletedOrder>(
+	const completedOrder: TaskDisplayCompletedOrder = normalizeChoice<TaskDisplayCompletedOrder>(
 		merged.completedOrder ?? defaults.completedOrder,
 		capabilities.allowedCompletedOrder,
 		getFallbackValue(defaults.completedOrder, capabilities.allowedCompletedOrder),
-		)
+	)
 
 	const visiblePropertiesSource =
 		merged.visibleProperties === undefined ? defaults.visibleProperties : merged.visibleProperties
@@ -110,10 +111,9 @@ export function resolveTaskDisplayOptions({
 		orderBy,
 		orderDirection,
 		completedOrder,
-		showEmptyGroups:
-			capabilities.supportsShowEmptyGroups
-				? (merged.showEmptyGroups ?? defaults.showEmptyGroups)
-				: defaults.showEmptyGroups,
+		showEmptyGroups: capabilities.supportsShowEmptyGroups
+			? (merged.showEmptyGroups ?? defaults.showEmptyGroups)
+			: defaults.showEmptyGroups,
 		visibleProperties,
 	}
 
@@ -225,11 +225,7 @@ function filterVisibleProperties(
 	return result
 }
 
-function normalizeChoice<T extends string>(
-	value: T,
-	allowed: readonly T[],
-	fallback: T,
-): T {
+function normalizeChoice<T extends string>(value: T, allowed: readonly T[], fallback: T): T {
 	return allowed.includes(value) ? value : fallback
 }
 

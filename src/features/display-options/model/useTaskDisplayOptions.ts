@@ -30,7 +30,10 @@ type UseTaskDisplayOptionsResult = {
 		setLayout: (layout: DisplayLayoutMode) => Promise<void>
 		setGrouping: (groupBy: TaskDisplayGroupBy) => Promise<void>
 		setSubGrouping: (subGroupBy: TaskDisplayGroupBy) => Promise<void>
-		setOrdering: (orderBy: TaskDisplayOrderBy, orderDirection?: TaskDisplayOrderDirection) => Promise<void>
+		setOrdering: (
+			orderBy: TaskDisplayOrderBy,
+			orderDirection?: TaskDisplayOrderDirection,
+		) => Promise<void>
 		setCompletedOrder: (completedOrder: TaskDisplayCompletedOrder) => Promise<void>
 		setVisibleProperties: (visibleProperties: TaskDisplayPropertyKey[]) => Promise<void>
 		resetToDefault: () => Promise<void>

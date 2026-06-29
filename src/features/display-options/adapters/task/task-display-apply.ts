@@ -1,4 +1,7 @@
-import type { ResolvedTaskDisplayOptions, TaskDisplayPageKey } from '@/features/display-options/core'
+import type {
+	ResolvedTaskDisplayOptions,
+	TaskDisplayPageKey,
+} from '@/features/display-options/core'
 
 import { createTaskDisplayComparator } from './task-display-compare'
 import { buildTaskDisplaySections } from './task-display-groups'
@@ -40,18 +43,17 @@ export function applyTaskDisplayOptionsToTasks({
 							tasks: section.tasks,
 						})),
 			statusOrder:
-				options.groupBy === 'status'
-					? ['doing', 'todo', 'waiting', 'done', 'canceled']
-					: undefined,
+				options.groupBy === 'status' ? ['doing', 'todo', 'waiting', 'done', 'canceled'] : undefined,
 			hideEmptySections: !context.includeEmptySections,
 		},
 	}
 }
 
-export function createTaskDisplayApplyContext(pageKey: TaskDisplayPageKey): TaskDisplayApplyContext {
+export function createTaskDisplayApplyContext(
+	pageKey: TaskDisplayPageKey,
+): TaskDisplayApplyContext {
 	return {
 		pageKey,
 		includeEmptySections: false,
 	}
 }
-

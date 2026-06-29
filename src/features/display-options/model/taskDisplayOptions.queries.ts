@@ -32,4 +32,3 @@ export function resolveTaskDisplayOptionsFromPreferencePayload(input: {
 		personalOverride: input.payload?.personal ?? null,
 	})
 }
-

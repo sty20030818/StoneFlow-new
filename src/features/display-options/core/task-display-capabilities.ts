@@ -37,8 +37,19 @@ const COMMON_VISIBLE_PROPERTIES = [
 	'createdAt',
 ] as const satisfies readonly TaskDisplayPropertyKey[]
 
-const LIST_GROUPS = ['none', 'status', 'priority', 'project', 'due', 'scheduled'] as const satisfies readonly TaskDisplayGroupBy[]
-const BOARD_GROUPS = ['status', 'priority', 'project'] as const satisfies readonly TaskDisplayGroupBy[]
+const LIST_GROUPS = [
+	'none',
+	'status',
+	'priority',
+	'project',
+	'due',
+	'scheduled',
+] as const satisfies readonly TaskDisplayGroupBy[]
+const BOARD_GROUPS = [
+	'status',
+	'priority',
+	'project',
+] as const satisfies readonly TaskDisplayGroupBy[]
 const NO_SUB_GROUPS = ['none'] as const satisfies readonly TaskDisplayGroupBy[]
 
 const ACTIVE_ORDER_BY = [
@@ -75,7 +86,10 @@ const PROJECT_DETAIL_ORDER_BY = [
 	'updatedAt',
 ] as const satisfies readonly TaskDisplayOrderBy[]
 
-const COMMON_COMPLETED_ORDER = ['recency', 'natural'] as const satisfies readonly TaskDisplayCompletedOrder[]
+const COMMON_COMPLETED_ORDER = [
+	'recency',
+	'natural',
+] as const satisfies readonly TaskDisplayCompletedOrder[]
 
 const TASK_DISPLAY_PAGE_CAPABILITIES: Record<TaskDisplayPageKind, TaskDisplayPageCapabilities> = {
 	'task:all': {
@@ -144,7 +158,15 @@ const TASK_DISPLAY_PAGE_CAPABILITIES: Record<TaskDisplayPageKind, TaskDisplayPag
 		allowedLayouts: ['list'],
 		allowedGroupBy: ['none', 'status', 'priority', 'project', 'due'],
 		allowedSubGroupBy: ['none', 'status', 'priority', 'project'],
-		allowedOrderBy: ['smart', 'priority', 'dueAt', 'scheduledAt', 'statusChangedAt', 'createdAt', 'updatedAt'],
+		allowedOrderBy: [
+			'smart',
+			'priority',
+			'dueAt',
+			'scheduledAt',
+			'statusChangedAt',
+			'createdAt',
+			'updatedAt',
+		],
 		allowedCompletedOrder: COMMON_COMPLETED_ORDER,
 		allowedVisibleProperties: COMMON_VISIBLE_PROPERTIES,
 		supportsShowEmptyGroups: true,
@@ -154,7 +176,15 @@ const TASK_DISPLAY_PAGE_CAPABILITIES: Record<TaskDisplayPageKind, TaskDisplayPag
 		allowedLayouts: ['list'],
 		allowedGroupBy: ['none', 'status', 'priority', 'project', 'due', 'scheduled'],
 		allowedSubGroupBy: ['none', 'status', 'priority', 'project'],
-		allowedOrderBy: ['smart', 'priority', 'dueAt', 'scheduledAt', 'statusChangedAt', 'createdAt', 'updatedAt'],
+		allowedOrderBy: [
+			'smart',
+			'priority',
+			'dueAt',
+			'scheduledAt',
+			'statusChangedAt',
+			'createdAt',
+			'updatedAt',
+		],
 		allowedCompletedOrder: COMMON_COMPLETED_ORDER,
 		allowedVisibleProperties: COMMON_VISIBLE_PROPERTIES,
 		supportsShowEmptyGroups: true,
@@ -164,7 +194,15 @@ const TASK_DISPLAY_PAGE_CAPABILITIES: Record<TaskDisplayPageKind, TaskDisplayPag
 		allowedLayouts: ['list'],
 		allowedGroupBy: ['none', 'status', 'priority', 'project', 'scheduled'],
 		allowedSubGroupBy: ['none', 'status', 'priority', 'project'],
-		allowedOrderBy: ['smart', 'priority', 'dueAt', 'scheduledAt', 'statusChangedAt', 'createdAt', 'updatedAt'],
+		allowedOrderBy: [
+			'smart',
+			'priority',
+			'dueAt',
+			'scheduledAt',
+			'statusChangedAt',
+			'createdAt',
+			'updatedAt',
+		],
 		allowedCompletedOrder: COMMON_COMPLETED_ORDER,
 		allowedVisibleProperties: COMMON_VISIBLE_PROPERTIES,
 		supportsShowEmptyGroups: true,
@@ -174,7 +212,15 @@ const TASK_DISPLAY_PAGE_CAPABILITIES: Record<TaskDisplayPageKind, TaskDisplayPag
 		allowedLayouts: ['list'],
 		allowedGroupBy: ['none', 'status', 'priority', 'project', 'due'],
 		allowedSubGroupBy: ['none', 'status', 'priority', 'project'],
-		allowedOrderBy: ['smart', 'priority', 'dueAt', 'scheduledAt', 'statusChangedAt', 'createdAt', 'updatedAt'],
+		allowedOrderBy: [
+			'smart',
+			'priority',
+			'dueAt',
+			'scheduledAt',
+			'statusChangedAt',
+			'createdAt',
+			'updatedAt',
+		],
 		allowedCompletedOrder: COMMON_COMPLETED_ORDER,
 		allowedVisibleProperties: COMMON_VISIBLE_PROPERTIES,
 		supportsShowEmptyGroups: true,
@@ -212,6 +258,8 @@ const TASK_DISPLAY_PAGE_CAPABILITIES: Record<TaskDisplayPageKind, TaskDisplayPag
 	},
 }
 
-export function getTaskDisplayPageCapabilities(pageKey: TaskDisplayPageKey): TaskDisplayPageCapabilities {
+export function getTaskDisplayPageCapabilities(
+	pageKey: TaskDisplayPageKey,
+): TaskDisplayPageCapabilities {
 	return TASK_DISPLAY_PAGE_CAPABILITIES[getTaskDisplayPageKind(pageKey)]
 }

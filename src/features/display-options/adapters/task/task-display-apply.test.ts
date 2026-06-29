@@ -10,7 +10,9 @@ import {
 	resolveTaskDateBucket,
 } from './index'
 
-function createTask(overrides: Partial<TaskListItem> & Pick<TaskListItem, 'id' | 'title'>): TaskListItem {
+function createTask(
+	overrides: Partial<TaskListItem> & Pick<TaskListItem, 'id' | 'title'>,
+): TaskListItem {
 	return {
 		id: overrides.id,
 		title: overrides.title,
@@ -186,4 +188,3 @@ describe('task-display adapters', () => {
 		).toBe('none')
 	})
 })
-

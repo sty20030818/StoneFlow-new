@@ -13,6 +13,7 @@ use super::types::SyncRestoreSummaryPayload;
 
 const DEVICE_ID_SCOPE: &str = "sync:device_id";
 const REMOTE_CURSOR_SCOPE: &str = "sync:last_pulled_remote_cursor";
+const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
 const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -30,28 +31,23 @@ pub async fn inspect_local_replica(
     let counts = read_local_replica_counts(database.connection()).await?;
     let device_id = repository.find_cursor(DEVICE_ID_SCOPE).await?;
     let remote_cursor = repository.find_cursor(REMOTE_CURSOR_SCOPE).await?;
+    let server_seq_cursor = repository.find_cursor(SERVER_SEQ_CURSOR_SCOPE).await?;
     let last_restore_at = repository.find_cursor(LAST_RESTORE_AT_SCOPE).await?;
 
-    let has_sync_metadata = has_non_empty_cursor(&device_id) || has_non_empty_cursor(&remote_cursor);
+    let has_sync_metadata = has_non_empty_cursor(&device_id)
+        || has_non_empty_cursor(&remote_cursor)
+        || has_non_empty_cursor(&server_seq_cursor);
     let looks_empty_replica = counts.has_no_user_content() && counts.pending_outbox_count == 0;
     let has_restore_marker = has_non_empty_cursor(&last_restore_at);
-    let has_remote_cursor = has_non_empty_cursor(&remote_cursor);
+    let has_server_seq_cursor = has_non_empty_cursor(&server_seq_cursor);
 
-    let (state, reason) = if has_remote_config && looks_empty_replica && has_restore_marker {
+    let (state, reason) = if has_remote_config && looks_empty_replica {
         (SyncReplicaState::Ready, None)
-    } else if has_remote_config && looks_empty_replica {
+    } else if has_remote_config && !has_server_seq_cursor && !has_restore_marker {
         (
             SyncReplicaState::RestoreRequired,
             Some(
-                "当前本地副本不包含任务、项目等同步主数据。为避免把空副本误当成删除源，S1 阶段已阻止普通同步，请先走“从远端恢复本地”链路。"
-                    .to_owned(),
-            ),
-        )
-    } else if has_remote_config && !has_remote_cursor && !has_restore_marker {
-        (
-            SyncReplicaState::RestoreRequired,
-            Some(
-                "当前设备缺少远端 pull cursor，无法安全执行普通同步。现有 Turso operation log 不能保证从零重建完整副本，请先走“从远端恢复本地”链路。"
+                "当前设备已有本地数据，但缺少 V2 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先走“从云端恢复本地”建立 V2 基线，或后续执行 S1 到 V2 的一次性迁移。"
                     .to_owned(),
             ),
         )
@@ -201,7 +197,7 @@ mod tests {
     use stoneflow_storage::repositories::{SyncOutboxRecord, SyncRepository};
 
     #[tokio::test]
-    async fn inspect_local_replica_should_mark_remote_configured_empty_database_as_restore_required() {
+    async fn inspect_local_replica_should_allow_remote_configured_empty_database_to_sync() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
@@ -210,8 +206,8 @@ mod tests {
             .await
             .expect("replica inspection should succeed");
 
-        assert_eq!(snapshot.state, SyncReplicaState::RestoreRequired);
-        assert!(snapshot.reason.is_some());
+        assert_eq!(snapshot.state, SyncReplicaState::Ready);
+        assert_eq!(snapshot.reason, None);
     }
 
     #[tokio::test]
@@ -240,7 +236,7 @@ mod tests {
         repository
             .upsert_cursor(
                 repository.connection(),
-                "sync:last_pulled_remote_cursor",
+                "sync:last_pulled_server_seq",
                 Some("12"),
                 "2026-06-28T00:00:00Z",
             )
@@ -256,7 +252,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn inspect_local_replica_should_require_restore_when_remote_cursor_is_missing() {
+    async fn inspect_local_replica_should_require_restore_when_server_seq_cursor_is_missing() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
@@ -295,7 +291,7 @@ mod tests {
         assert_eq!(
             snapshot.reason.as_deref(),
             Some(
-                "当前设备缺少远端 pull cursor，无法安全执行普通同步。现有 Turso operation log 不能保证从零重建完整副本，请先走“从远端恢复本地”链路。"
+                "当前设备已有本地数据，但缺少 V2 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先走“从云端恢复本地”建立 V2 基线，或后续执行 S1 到 V2 的一次性迁移。"
             )
         );
     }

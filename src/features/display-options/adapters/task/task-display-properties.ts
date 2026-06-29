@@ -5,4 +5,3 @@ export function resolveVisibleTaskDisplayProperties(
 ): TaskDisplayPropertyKey[] {
 	return [...properties]
 }
-

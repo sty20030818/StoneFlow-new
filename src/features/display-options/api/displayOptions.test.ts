@@ -89,4 +89,3 @@ describe('displayOptions api', () => {
 		})
 	})
 })
-
