@@ -52,17 +52,11 @@ fn prepare_sync_worker_sidecar() -> Result<(), String> {
         .status()
         .map_err(|error| format!("spawn sidecar cargo build failed: {error}"))?;
     if !status.success() {
-        return Err(format!(
-            "sidecar cargo build failed with status: {status}"
-        ));
+        return Err(format!("sidecar cargo build failed with status: {status}"));
     }
 
-    let built_binary = sidecar_binary_path(
-        &sidecar_target_dir,
-        &target_triple,
-        &profile,
-        binary_name,
-    );
+    let built_binary =
+        sidecar_binary_path(&sidecar_target_dir, &target_triple, &profile, binary_name);
     if !built_binary.is_file() {
         return Err(format!(
             "sidecar binary missing after build: {}",

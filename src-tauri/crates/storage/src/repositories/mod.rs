@@ -18,7 +18,10 @@ pub use project_repository::{
 };
 pub use settings_repository::SettingsRepository;
 pub use space_repository::{CreateSpaceRecord, SpaceRepository, UpdateSpacePatch};
-pub use sync_repository::{SyncCursorRecord, SyncOutboxRecord, SyncRepository};
+pub use sync_repository::{
+    SyncClientRecord, SyncCursorRecord, SyncMutationRecord, SyncOutboxRecord, SyncRepository,
+    SyncShadowRecord,
+};
 pub use task_link_repository::{CreateTaskLinkRecord, TaskLinkRepository, UpdateTaskLinkPatch};
 pub use task_repository::{
     CreateTaskRecord, TaskLifecycleView, TaskListQuery, TaskPlacementQuery, TaskRepository,

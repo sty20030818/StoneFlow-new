@@ -3,12 +3,15 @@
 //! `sync_outbox` 是 S1 兼容入口；新的长期同步协议使用
 //! `sync_clients`、`sync_mutations`、`sync_shadow` 与 `sync_cursor`。
 
-use sea_orm::{
-    ConnectionTrait, DatabaseBackend, DatabaseConnection, DbBackend, QueryResult, Statement,
-};
+use chrono::Utc;
+use sea_orm::{ConnectionTrait, DatabaseBackend, DatabaseConnection, DbBackend, QueryResult, Statement};
 use sea_orm::Value;
+use stoneflow_domain::create_id;
 
 use crate::error::StorageError;
+
+const DEVICE_ID_SCOPE: &str = "sync:device_id";
+const NEXT_CLIENT_SEQ_SCOPE: &str = "sync:next_client_seq";
 
 /// 本地待上推操作的持久化记录。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -94,6 +97,8 @@ impl SyncRepository {
         connection
             .execute(outbox_insert_statement(record))
             .await?;
+        let mutation = self.build_mutation_from_outbox(connection, record).await?;
+        connection.execute(mutation_insert_statement(&mutation)).await?;
 
         Ok(())
     }
@@ -306,6 +311,107 @@ impl SyncRepository {
 
         Ok(())
     }
+
+    async fn build_mutation_from_outbox<C>(
+        &self,
+        connection: &C,
+        record: &SyncOutboxRecord,
+    ) -> Result<SyncMutationRecord, StorageError>
+    where
+        C: ConnectionTrait,
+    {
+        let now = Utc::now().to_rfc3339();
+        let client_id = self.ensure_client_id(connection, &now).await?;
+        let client_seq = self.allocate_client_seq(connection, &now).await?;
+
+        Ok(SyncMutationRecord {
+            client_id,
+            client_seq,
+            entity_type: mutation_entity_type(record)?,
+            entity_id: mutation_entity_id(record)?,
+            operation: map_outbox_action_to_mutation_operation(record)?,
+            payload: record.payload.clone(),
+            base_server_seq: None,
+            status: "pending".to_owned(),
+            error_message: None,
+            created_at: record.created_at.clone(),
+            updated_at: record.updated_at.clone(),
+        })
+    }
+
+    async fn ensure_client_id<C>(&self, connection: &C, now: &str) -> Result<String, StorageError>
+    where
+        C: ConnectionTrait,
+    {
+        if let Some(cursor) = self.find_cursor_in_connection(connection, DEVICE_ID_SCOPE).await? {
+            if let Some(client_id) = cursor.cursor.filter(|value| !value.trim().is_empty()) {
+                self.upsert_client(
+                    connection,
+                    &SyncClientRecord {
+                        client_id: client_id.clone(),
+                        created_at: now.to_owned(),
+                        last_seen_at: now.to_owned(),
+                    },
+                )
+                .await?;
+                return Ok(client_id);
+            }
+        }
+
+        let client_id = create_id().to_string();
+        self.upsert_cursor(connection, DEVICE_ID_SCOPE, Some(&client_id), now)
+            .await?;
+        self.upsert_client(
+            connection,
+            &SyncClientRecord {
+                client_id: client_id.clone(),
+                created_at: now.to_owned(),
+                last_seen_at: now.to_owned(),
+            },
+        )
+        .await?;
+        Ok(client_id)
+    }
+
+    async fn allocate_client_seq<C>(&self, connection: &C, now: &str) -> Result<i64, StorageError>
+    where
+        C: ConnectionTrait,
+    {
+        let current = self
+            .find_cursor_in_connection(connection, NEXT_CLIENT_SEQ_SCOPE)
+            .await?
+            .and_then(|record| record.cursor)
+            .and_then(|cursor| cursor.parse::<i64>().ok())
+            .unwrap_or(1);
+        let next = current.saturating_add(1);
+        self.upsert_cursor(
+            connection,
+            NEXT_CLIENT_SEQ_SCOPE,
+            Some(&next.to_string()),
+            now,
+        )
+        .await?;
+        Ok(current)
+    }
+
+    async fn find_cursor_in_connection<C>(
+        &self,
+        connection: &C,
+        scope: &str,
+    ) -> Result<Option<SyncCursorRecord>, StorageError>
+    where
+        C: ConnectionTrait,
+    {
+        let row = connection
+            .query_one(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "SELECT scope, cursor, updated_at FROM sync_cursor WHERE scope = ? LIMIT 1",
+                [scope.into()],
+            ))
+            .await?;
+
+        row.map(map_cursor_row).transpose()
+    }
 }
 
 fn outbox_insert_statement(record: &SyncOutboxRecord) -> Statement {
@@ -376,6 +482,53 @@ fn map_outbox_row(row: QueryResult) -> Result<SyncOutboxRecord, StorageError> {
     })
 }
 
+fn map_outbox_action_to_mutation_operation(
+    record: &SyncOutboxRecord,
+) -> Result<String, StorageError> {
+    match record.action.as_str() {
+        "upsert" => Ok("upsert".to_owned()),
+        "delete" if is_task_link_payload(record) => Ok("hard_delete".to_owned()),
+        "delete" => Ok("soft_delete".to_owned()),
+        other => Err(StorageError::database(format!(
+            "无法从 sync_outbox.action 映射 V2 mutation operation: {other}"
+        ))),
+    }
+}
+
+fn mutation_entity_type(record: &SyncOutboxRecord) -> Result<String, StorageError> {
+    if is_task_link_payload(record) {
+        return Ok("task_link".to_owned());
+    }
+    Ok(record.entity_type.clone())
+}
+
+fn mutation_entity_id(record: &SyncOutboxRecord) -> Result<String, StorageError> {
+    if is_task_link_payload(record) {
+        let value: serde_json::Value = serde_json::from_str(&record.payload).map_err(|error| {
+            StorageError::database(format!("解析 task_link sync payload 失败: {error}"))
+        })?;
+        let id = value
+            .get("id")
+            .and_then(|value| value.as_str())
+            .filter(|value| !value.trim().is_empty())
+            .ok_or_else(|| StorageError::database("task_link sync payload 缺少 id"))?;
+        return Ok(id.to_owned());
+    }
+    Ok(record.entity_id.clone())
+}
+
+fn is_task_link_payload(record: &SyncOutboxRecord) -> bool {
+    if record.entity_type != "task" {
+        return false;
+    }
+
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(&record.payload) else {
+        return false;
+    };
+
+    value.get("task_id").is_some() && value.get("url").is_some()
+}
+
 fn map_mutation_row(row: QueryResult) -> Result<SyncMutationRecord, StorageError> {
     Ok(SyncMutationRecord {
         client_id: try_get_required_string(&row, "client_id")?,
@@ -435,7 +588,9 @@ fn option_i64_to_value(value: Option<i64>) -> Value {
 mod tests {
     use stoneflow_test_support::TestDatabase;
 
-    use super::{SyncClientRecord, SyncMutationRecord, SyncOutboxRecord, SyncRepository, SyncShadowRecord};
+    use super::{
+        SyncClientRecord, SyncMutationRecord, SyncOutboxRecord, SyncRepository, SyncShadowRecord,
+    };
 
     mod insert_outbox_record {
         use super::*;
@@ -470,6 +625,16 @@ mod tests {
                 .expect("pending outbox query should succeed");
 
             assert_eq!(rows, vec![record]);
+
+            let mutations = repository
+                .list_mutations_by_status("pending", 10)
+                .await
+                .expect("pending mutation query should succeed");
+            assert_eq!(mutations.len(), 1);
+            assert_eq!(mutations[0].client_seq, 1);
+            assert_eq!(mutations[0].entity_type, "task");
+            assert_eq!(mutations[0].entity_id, "task-1");
+            assert_eq!(mutations[0].operation, "upsert");
         }
     }
 
@@ -583,6 +748,50 @@ mod tests {
                 .expect("pending mutation query should succeed");
 
             assert_eq!(pending, vec![mutation]);
+        }
+
+        #[tokio::test]
+        async fn should_map_legacy_task_link_outbox_to_task_link_mutation() {
+            let database = TestDatabase::bootstrap_in_memory()
+                .await
+                .expect("test database should bootstrap");
+            let repository = SyncRepository::new(database.connection().clone());
+            let record = SyncOutboxRecord {
+                id: "op-1".to_owned(),
+                entity_type: "task".to_owned(),
+                entity_id: "task-1".to_owned(),
+                action: "delete".to_owned(),
+                payload: serde_json::json!({
+                    "id": "link-1",
+                    "task_id": "task-1",
+                    "title": "文档",
+                    "url": "https://example.com",
+                    "sort_order": 1000,
+                    "created_at": "2026-06-29T10:00:00Z",
+                    "updated_at": "2026-06-29T10:00:00Z"
+                })
+                .to_string(),
+                status: "pending".to_owned(),
+                error_message: None,
+                attempt_count: 0,
+                created_at: "2026-06-29T10:00:00Z".to_owned(),
+                updated_at: "2026-06-29T10:00:00Z".to_owned(),
+            };
+
+            repository
+                .insert_outbox_record(repository.connection(), &record)
+                .await
+                .expect("outbox insert should also create mutation");
+
+            let mutations = repository
+                .list_mutations_by_status("pending", 10)
+                .await
+                .expect("pending mutation query should succeed");
+
+            assert_eq!(mutations.len(), 1);
+            assert_eq!(mutations[0].entity_type, "task_link");
+            assert_eq!(mutations[0].entity_id, "link-1");
+            assert_eq!(mutations[0].operation, "hard_delete");
         }
     }
 }
