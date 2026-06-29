@@ -1,4 +1,4 @@
-//! V1 完整 Schema：一次性建立核心表结构并中文化系统视图名称。
+//! 当前完整 Schema：一次性建立核心表结构并中文化系统视图名称。
 
 use sea_orm::ConnectionTrait;
 use sea_orm_migration::prelude::*;
@@ -108,6 +108,52 @@ CREATE TABLE IF NOT EXISTS sync_meta (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS sync_cursor (
+    scope TEXT PRIMARY KEY NOT NULL,
+    cursor TEXT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sync_clients (
+    client_id TEXT PRIMARY KEY NOT NULL,
+    created_at TEXT NOT NULL,
+    last_seen_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sync_mutations (
+    client_id TEXT NOT NULL,
+    client_seq INTEGER NOT NULL,
+    entity_type TEXT NOT NULL CHECK (entity_type IN ('task', 'project', 'space', 'view', 'setting', 'task_link')),
+    entity_id TEXT NOT NULL,
+    operation TEXT NOT NULL CHECK (operation IN ('upsert', 'soft_delete', 'restore', 'hard_delete')),
+    payload TEXT NOT NULL,
+    base_server_seq INTEGER NULL,
+    status TEXT NOT NULL CHECK (status IN ('pending', 'acked', 'failed')),
+    error_message TEXT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (client_id, client_seq)
+);
+
+CREATE INDEX IF NOT EXISTS idx_sync_mutations_status_seq
+ON sync_mutations(status, client_id, client_seq);
+
+CREATE INDEX IF NOT EXISTS idx_sync_mutations_entity
+ON sync_mutations(entity_type, entity_id);
+
+CREATE TABLE IF NOT EXISTS sync_shadow (
+    entity_type TEXT NOT NULL CHECK (entity_type IN ('task', 'project', 'space', 'view', 'setting', 'task_link')),
+    entity_id TEXT NOT NULL,
+    server_seq INTEGER NOT NULL,
+    snapshot TEXT NOT NULL,
+    deleted_at TEXT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (entity_type, entity_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_sync_shadow_server_seq
+ON sync_shadow(server_seq);
+
 CREATE TABLE IF NOT EXISTS activity_events (
     id TEXT PRIMARY KEY NOT NULL,
     entity_type TEXT NOT NULL CHECK (entity_type IN ('task', 'project', 'space', 'view', 'setting')),
@@ -185,6 +231,9 @@ UPDATE views SET name = '全部', updated_at = updated_at WHERE key = 'all_proje
 const DROP_SCHEMA_SQL: &str = r#"
 DROP INDEX IF EXISTS idx_activity_changes_event_id;
 DROP INDEX IF EXISTS idx_activity_events_entity_created_at;
+DROP INDEX IF EXISTS idx_sync_shadow_server_seq;
+DROP INDEX IF EXISTS idx_sync_mutations_entity;
+DROP INDEX IF EXISTS idx_sync_mutations_status_seq;
 DROP INDEX IF EXISTS ux_settings_key;
 DROP INDEX IF EXISTS ux_views_entity_key;
 DROP INDEX IF EXISTS idx_views_entity_visible_sort_order;
@@ -199,6 +248,10 @@ DROP INDEX IF EXISTS ux_spaces_single_default_active;
 DROP TABLE IF EXISTS activity_changes;
 DROP TABLE IF EXISTS activity_events;
 DROP TABLE IF EXISTS settings;
+DROP TABLE IF EXISTS sync_shadow;
+DROP TABLE IF EXISTS sync_mutations;
+DROP TABLE IF EXISTS sync_clients;
+DROP TABLE IF EXISTS sync_cursor;
 DROP TABLE IF EXISTS sync_meta;
 DROP TABLE IF EXISTS views;
 DROP TABLE IF EXISTS task_links;

@@ -105,7 +105,7 @@ pub async fn note_local_write(app_handle: &tauri::AppHandle) {
     log::info!("sync:dirty local write marked dirty");
 
     if !sync_execution_enabled() {
-        log::info!("sync:dirty remote execution disabled during S1");
+        log::info!("sync:dirty remote execution disabled");
         return;
     }
 

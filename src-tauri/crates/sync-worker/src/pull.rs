@@ -10,6 +10,7 @@ use crate::{
         upsert_sync_shadow,
         write_server_seq_cursor_in_transaction,
     },
+    migrate::{read_local_business_count, snapshot_business_count},
     remote::{fetch_changes_after, fetch_latest_server_seq, fetch_restore_snapshot},
     schema::{
         HardDeletePayload, RemoteChangeKind, RemoteChangeRecord, RemoteOperationRecord,
@@ -23,6 +24,10 @@ pub async fn pull_remote_changes(
     remote: &Connection,
 ) -> Result<(), SyncWorkerError> {
     if read_server_seq_cursor(local).await?.is_none() {
+        pull_snapshot(local, remote).await?;
+        return Ok(());
+    }
+    if should_repair_seed_only_replica(local, remote).await? {
         pull_snapshot(local, remote).await?;
         return Ok(());
     }
@@ -57,6 +62,18 @@ pub async fn pull_remote_changes(
     }
 
     Ok(())
+}
+
+async fn should_repair_seed_only_replica(
+    local: &Connection,
+    remote: &Connection,
+) -> Result<bool, SyncWorkerError> {
+    if read_local_business_count(local).await? != 0 {
+        return Ok(false);
+    }
+
+    let snapshot = fetch_restore_snapshot(remote).await?;
+    Ok(snapshot_business_count(&snapshot) > 0)
 }
 
 async fn pull_snapshot(local: &Connection, remote: &Connection) -> Result<(), SyncWorkerError> {
@@ -376,6 +393,75 @@ mod tests {
         assert_eq!(cursor, "7");
     }
 
+    #[tokio::test]
+    async fn pull_remote_changes_should_repair_seed_only_local_replica_even_when_cursor_exists() {
+        let (_local_dir, local) = open_test_connection("local-seed-repair").await;
+        let (_remote_dir, remote) = open_test_connection("remote-seed-repair").await;
+        bootstrap_local_schema(&local).await;
+        bootstrap_remote_schema(&remote)
+            .await
+            .expect("remote schema should bootstrap");
+        insert_seed_only_local_replica(&local).await;
+        local
+            .execute(
+                "INSERT INTO sync_cursor(scope, cursor, updated_at) VALUES (?1, ?2, ?3)",
+                params![
+                    "sync:last_pulled_server_seq",
+                    "1",
+                    "2026-06-29T10:00:00Z"
+                ],
+            )
+            .await
+            .expect("existing cursor should insert");
+        remote
+            .execute(
+                r#"
+                INSERT INTO settings(key, value, created_at, updated_at)
+                VALUES (?1, ?2, ?3, ?4)
+                "#,
+                params![
+                    "app.theme",
+                    "\"dark\"",
+                    "2026-06-29T10:00:00Z",
+                    "2026-06-29T10:00:00Z"
+                ],
+            )
+            .await
+            .expect("remote setting should insert");
+        remote
+            .execute(
+                r#"
+                INSERT INTO remote_change_log(
+                    server_seq, entity_type, entity_id, change_kind, patch,
+                    changed_by_client_id, changed_by_client_seq, committed_at
+                )
+                VALUES (?1, ?2, ?3, ?4, NULL, ?5, ?6, ?7)
+                "#,
+                params![
+                    1,
+                    "setting",
+                    "app.theme",
+                    "upsert",
+                    "client-a",
+                    1,
+                    "2026-06-29T10:00:00Z",
+                ],
+            )
+            .await
+            .expect("remote server seq should insert");
+
+        pull_remote_changes(&local, &remote)
+            .await
+            .expect("snapshot repair should succeed");
+
+        assert_eq!(
+            read_text(&local, "SELECT value FROM settings WHERE key = 'app.theme'")
+                .await
+                .as_deref(),
+            Some("\"dark\"")
+        );
+    }
+
     async fn open_test_connection(name: &str) -> (TempDir, Connection) {
         let temp_dir = tempfile::tempdir().expect("temp dir should be created");
         let path = temp_dir.path().join(format!("{name}.db"));
@@ -526,6 +612,56 @@ mod tests {
                 .await
                 .expect("local schema statement should run");
         }
+    }
+
+    async fn insert_seed_only_local_replica(connection: &Connection) {
+        connection
+            .execute(
+                r#"
+                INSERT INTO spaces(
+                    id, name, icon_key, color_key, is_default, sort_order, archived_at, deleted_at,
+                    created_at, updated_at
+                )
+                VALUES (
+                    'seed-space', '个人', 'user', 'blue', 1, 1000, NULL, NULL,
+                    '2026-06-29T10:00:00Z', '2026-06-29T10:00:00Z'
+                )
+                "#,
+                params![],
+            )
+            .await
+            .expect("default space should insert");
+        connection
+            .execute(
+                r#"
+                INSERT INTO views(
+                    id, name, description, type, entity_type, key, filters, sort, group_by,
+                    is_visible, sort_order, created_at, updated_at
+                )
+                VALUES (
+                    'seed-view', '今天', NULL, 'system', 'task', 'today', '{}', '[]', NULL,
+                    1, 100, '2026-06-29T10:00:00Z', '2026-06-29T10:00:00Z'
+                )
+                "#,
+                params![],
+            )
+            .await
+            .expect("system view should insert");
+        connection
+            .execute(
+                r#"
+                INSERT INTO settings(key, value, created_at, updated_at)
+                VALUES (?1, ?2, ?3, ?4)
+                "#,
+                params![
+                    "app.sync.config",
+                    "{}",
+                    "2026-06-29T10:00:00Z",
+                    "2026-06-29T10:00:00Z"
+                ],
+            )
+            .await
+            .expect("sync config should insert");
     }
 
     async fn read_text(connection: &Connection, sql: &str) -> Option<String> {

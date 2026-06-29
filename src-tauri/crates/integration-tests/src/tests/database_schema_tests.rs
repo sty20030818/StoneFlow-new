@@ -14,6 +14,13 @@ const EXPECTED_TABLES: [&str; 8] = [
     "activity_changes",
 ];
 
+const EXPECTED_SYNC_TABLES: [&str; 4] = [
+    "sync_clients",
+    "sync_cursor",
+    "sync_mutations",
+    "sync_shadow",
+];
+
 const EXPECTED_INDEXES: [&str; 12] = [
     "ux_spaces_single_default_active",
     "idx_projects_space_sort_order",
@@ -41,6 +48,25 @@ async fn bootstrap_should_create_all_v1_tables() {
             .expect("sqlite_master query should succeed");
         assert!(exists, "table `{table_name}` should exist");
     }
+}
+
+#[tokio::test]
+async fn bootstrap_should_create_current_sync_tables_without_legacy_outbox() {
+    let database = TestDatabase::bootstrap()
+        .await
+        .expect("test database should bootstrap");
+
+    for table_name in EXPECTED_SYNC_TABLES {
+        let exists = sqlite_object_exists(database.connection(), "table", table_name)
+            .await
+            .expect("sqlite_master query should succeed");
+        assert!(exists, "table `{table_name}` should exist");
+    }
+
+    let legacy_exists = sqlite_object_exists(database.connection(), "table", "sync_outbox")
+        .await
+        .expect("sqlite_master query should succeed");
+    assert!(!legacy_exists, "legacy sync_outbox table should not exist");
 }
 
 #[tokio::test]

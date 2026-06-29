@@ -4,11 +4,10 @@ use libsql::{params, Connection};
 
 use crate::{
     error::SyncWorkerError,
-    local::{
-        read_server_seq_cursor, upsert_sync_shadow, write_server_seq_cursor_in_transaction,
-    },
+    local::{read_server_seq_cursor, upsert_sync_shadow, write_server_seq_cursor_in_transaction},
     remote::{
         fetch_latest_server_seq, fetch_restore_snapshot, insert_baseline_changes_if_empty,
+        RemoteRestoreSnapshot,
     },
     schema::{
         ProjectPayload, SettingPayload, SpacePayload, SyncOperationPayload, TaskLinkPayload,
@@ -59,8 +58,9 @@ where
 {
     for record in records {
         let payload = record.clone().into_payload();
-        let snapshot = serde_json::to_string(&payload)
-            .map_err(|error| SyncWorkerError::serialization(format!("序列化 sync_shadow 失败: {error}")))?;
+        let snapshot = serde_json::to_string(&payload).map_err(|error| {
+            SyncWorkerError::serialization(format!("序列化 sync_shadow 失败: {error}"))
+        })?;
         upsert_sync_shadow(
             transaction,
             payload.entity_type(),
@@ -80,24 +80,76 @@ pub(crate) async fn read_local_business_count(local: &Connection) -> Result<i64,
         .query(
             r#"
             SELECT
-                (SELECT COUNT(*) FROM spaces) +
+                (SELECT COUNT(*) FROM spaces
+                    WHERE NOT (
+                        name = '个人'
+                        AND icon_key = 'user'
+                        AND color_key = 'blue'
+                        AND is_default = 1
+                        AND sort_order = 1000
+                        AND archived_at IS NULL
+                        AND deleted_at IS NULL
+                    )
+                ) +
                 (SELECT COUNT(*) FROM projects) +
                 (SELECT COUNT(*) FROM tasks) +
                 (SELECT COUNT(*) FROM task_links) +
-                (SELECT COUNT(*) FROM views) +
-                (SELECT COUNT(*) FROM settings WHERE key <> 'app.sync.config')
+                (SELECT COUNT(*) FROM views
+                    WHERE NOT (
+                        type = 'system'
+                        AND key IN (
+                            'today',
+                            'focus',
+                            'upcoming',
+                            'recently_added',
+                            'waiting',
+                            'overdue',
+                            'active_projects',
+                            'completed_projects',
+                            'archived_projects',
+                            'all_projects'
+                        )
+                    )
+                ) +
+                (SELECT COUNT(*) FROM settings
+                    WHERE key NOT IN (
+                        'app.sidebar.preferences',
+                        'app.quickCreate',
+                        'app.taskDefaults',
+                        'app.ui.preferences',
+                        'app.sync.config'
+                    )
+                )
             "#,
             params![],
         )
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("读取本地业务数据数量失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("读取本地业务数据数量失败: {error}"))
+        })?;
     let row = rows
         .next()
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("遍历本地业务数据数量失败: {error}")))?
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("遍历本地业务数据数量失败: {error}"))
+        })?
         .ok_or_else(|| SyncWorkerError::local_database("读取本地业务数据数量失败: 缺少结果行"))?;
-    row.get::<i64>(0)
-        .map_err(|error| SyncWorkerError::local_database(format!("读取本地业务数据数量列失败: {error}")))
+    row.get::<i64>(0).map_err(|error| {
+        SyncWorkerError::local_database(format!("读取本地业务数据数量列失败: {error}"))
+    })
+}
+
+pub(crate) fn snapshot_business_count(snapshot: &RemoteRestoreSnapshot) -> usize {
+    snapshot.spaces.len()
+        + snapshot.projects.len()
+        + snapshot.tasks.len()
+        + snapshot.task_links.len()
+        + snapshot.views.len()
+        + snapshot
+            .settings
+            .iter()
+            .filter(|setting| setting.key != "app.sync.config")
+            .count()
 }
 
 fn deleted_at_from_payload(payload: &SyncOperationPayload) -> Option<&str> {
@@ -175,7 +227,8 @@ mod tests {
     use crate::remote::bootstrap_remote_schema;
 
     #[tokio::test]
-    async fn migrate_baseline_should_seed_remote_log_and_local_cursor_without_overwriting_local_data() {
+    async fn migrate_baseline_should_seed_remote_log_and_local_cursor_without_overwriting_local_data(
+    ) {
         let (_local_dir, local) = open_test_connection("local-migrate").await;
         let (_remote_dir, remote) = open_test_connection("remote-migrate").await;
         bootstrap_local_schema(&local).await;
@@ -192,12 +245,20 @@ mod tests {
             .await
             .expect("migration should be idempotent");
 
-        assert_eq!(read_text(&local, "SELECT value FROM settings WHERE key = 'app.theme'").await.as_deref(), Some("local"));
-        assert_eq!(read_count(&remote, "remote_change_log").await, 1);
         assert_eq!(
-            read_text(&local, "SELECT cursor FROM sync_cursor WHERE scope = 'sync:last_pulled_server_seq'")
+            read_text(&local, "SELECT value FROM settings WHERE key = 'app.theme'")
                 .await
                 .as_deref(),
+            Some("local")
+        );
+        assert_eq!(read_count(&remote, "remote_change_log").await, 1);
+        assert_eq!(
+            read_text(
+                &local,
+                "SELECT cursor FROM sync_cursor WHERE scope = 'sync:last_pulled_server_seq'"
+            )
+            .await
+            .as_deref(),
             Some("1")
         );
         assert_eq!(read_count(&local, "sync_shadow").await, 1);
@@ -219,6 +280,32 @@ mod tests {
 
         assert_eq!(read_count(&remote, "remote_change_log").await, 1);
         assert_eq!(
+            read_text(
+                &local,
+                "SELECT cursor FROM sync_cursor WHERE scope = 'sync:last_pulled_server_seq'"
+            )
+            .await,
+            None
+        );
+    }
+
+    #[tokio::test]
+    async fn migrate_baseline_should_treat_seed_only_local_replica_as_empty() {
+        let (_local_dir, local) = open_test_connection("local-seed-only-migrate").await;
+        let (_remote_dir, remote) = open_test_connection("remote-seed-only-migrate").await;
+        bootstrap_local_schema(&local).await;
+        bootstrap_remote_schema(&remote)
+            .await
+            .expect("remote schema should bootstrap");
+        insert_default_seed_rows(&local).await;
+        insert_setting(&remote, "app.theme", "remote").await;
+
+        migrate_baseline(&local, &remote)
+            .await
+            .expect("migration should succeed");
+
+        assert_eq!(read_count(&remote, "remote_change_log").await, 1);
+        assert_eq!(
             read_text(&local, "SELECT cursor FROM sync_cursor WHERE scope = 'sync:last_pulled_server_seq'").await,
             None
         );
@@ -231,20 +318,35 @@ mod tests {
             .build()
             .await
             .expect("test database should build");
-        let connection = database
-            .connect()
-            .expect("test database should connect");
+        let connection = database.connect().expect("test database should connect");
 
         (temp_dir, connection)
     }
 
     async fn bootstrap_local_schema(connection: &Connection) {
         for statement in [
-            "CREATE TABLE spaces (id TEXT PRIMARY KEY NOT NULL)",
+            r#"
+            CREATE TABLE spaces (
+                id TEXT PRIMARY KEY NOT NULL,
+                name TEXT NOT NULL,
+                icon_key TEXT NOT NULL,
+                color_key TEXT NOT NULL,
+                is_default INTEGER NOT NULL,
+                sort_order INTEGER NOT NULL,
+                archived_at TEXT NULL,
+                deleted_at TEXT NULL
+            )
+            "#,
             "CREATE TABLE projects (id TEXT PRIMARY KEY NOT NULL)",
             "CREATE TABLE tasks (id TEXT PRIMARY KEY NOT NULL)",
             "CREATE TABLE task_links (id TEXT PRIMARY KEY NOT NULL)",
-            "CREATE TABLE views (id TEXT PRIMARY KEY NOT NULL)",
+            r#"
+            CREATE TABLE views (
+                id TEXT PRIMARY KEY NOT NULL,
+                type TEXT NOT NULL,
+                key TEXT NULL
+            )
+            "#,
             r#"
             CREATE TABLE settings (
                 key TEXT PRIMARY KEY NOT NULL,
@@ -290,6 +392,37 @@ mod tests {
             )
             .await
             .expect("setting should insert");
+    }
+
+    async fn insert_default_seed_rows(connection: &Connection) {
+        connection
+            .execute(
+                r#"
+                INSERT INTO spaces(
+                    id, name, icon_key, color_key, is_default, sort_order, archived_at, deleted_at
+                )
+                VALUES ('seed-space', '个人', 'user', 'blue', 1, 1000, NULL, NULL)
+                "#,
+                params![],
+            )
+            .await
+            .expect("default space should insert");
+        connection
+            .execute(
+                "INSERT INTO views(id, type, key) VALUES ('seed-view', 'system', 'today')",
+                params![],
+            )
+            .await
+            .expect("system view should insert");
+        for key in [
+            "app.sidebar.preferences",
+            "app.quickCreate",
+            "app.taskDefaults",
+            "app.ui.preferences",
+            "app.sync.config",
+        ] {
+            insert_setting(connection, key, "seed").await;
+        }
     }
 
     async fn read_text(connection: &Connection, sql: &str) -> Option<String> {
