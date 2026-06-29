@@ -55,27 +55,6 @@ pub struct SyncStatusPayload {
     pub last_restore_at: Option<String>,
 }
 
-/// 一次 restore 完成后，本地当前已恢复的数据规模。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SyncRestoreSummaryPayload {
-    pub spaces: i64,
-    pub projects: i64,
-    pub tasks: i64,
-    pub task_links: i64,
-    pub views: i64,
-    pub settings: i64,
-    pub total_items: i64,
-}
-
-/// restore 命令的返回载荷。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RestoreSyncPayload {
-    pub status: SyncStatusPayload,
-    pub summary: SyncRestoreSummaryPayload,
-}
-
 /// 诊断面板展示的同步计数摘要。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -148,5 +127,4 @@ pub enum SyncRunMode {
     Push,
     Pull,
     Sync,
-    Restore,
 }

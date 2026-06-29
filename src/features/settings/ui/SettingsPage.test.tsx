@@ -17,9 +17,6 @@ const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
 const getSyncDiagnosticsSpy = vi.fn<() => Promise<unknown>>()
 const configureSyncSpy = vi.fn<(input: { url: string; token: string }) => Promise<unknown>>()
 const runSyncSpy = vi.fn<() => Promise<unknown>>()
-const restoreSyncSpy = vi.fn<() => Promise<unknown>>()
-const navigateSpy = vi.fn<(to: string, options?: { replace?: boolean }) => void>()
-const toastSuccessSpy = vi.fn<(message: string) => void>()
 
 let sidebarStoreState = createSidebarStoreState()
 let spaceStoreState = createSpaceStoreState()
@@ -49,24 +46,6 @@ vi.mock('@/features/sync/api/sync', () => ({
 	getSyncDiagnostics: () => getSyncDiagnosticsSpy(),
 	configureSync: (input: { url: string; token: string }) => configureSyncSpy(input),
 	runSync: () => runSyncSpy(),
-	restoreSync: () => restoreSyncSpy(),
-}))
-
-vi.mock('@/app/routing/tanstackCompat', async () => {
-	const actual = await vi.importActual<typeof import('@/app/routing/tanstackCompat')>(
-		'@/app/routing/tanstackCompat',
-	)
-
-	return {
-		...actual,
-		useNavigate: () => navigateSpy,
-	}
-})
-
-vi.mock('sonner', () => ({
-	toast: {
-		success: (message: string) => toastSuccessSpy(message),
-	},
 }))
 
 vi.mock('@/app/layouts/shell/model/ShellRouteContext', () => ({
@@ -268,36 +247,6 @@ describe('SettingsPage', () => {
 			replicaReason: null,
 			lastRestoreAt: null,
 		})
-		restoreSyncSpy.mockReset()
-		restoreSyncSpy.mockResolvedValue({
-			status: {
-				enabled: true,
-				status: 'synced',
-				lastPushAt: null,
-				lastPullAt: '2026-06-28T00:00:00Z',
-				lastError: null,
-				lastErrorMode: null,
-				dirtySince: null,
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: '2026-06-28T00:00:00Z',
-			},
-			summary: {
-				spaces: 6,
-				projects: 8,
-				tasks: 60,
-				taskLinks: 0,
-				views: 10,
-				settings: 4,
-				totalItems: 88,
-			},
-		})
-		navigateSpy.mockReset()
-		toastSuccessSpy.mockReset()
-
 		sidebarStoreState = createSidebarStoreState()
 		spaceStoreState = createSpaceStoreState()
 	})
@@ -515,36 +464,6 @@ describe('SettingsPage', () => {
 		})
 	})
 
-	it('点击从云端恢复本地时调用 restoreSync', async () => {
-		getSyncStatusSpy.mockResolvedValue({
-			enabled: true,
-			status: 'synced',
-			lastPushAt: null,
-			lastPullAt: null,
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'restore_required',
-			replicaReason: 'needs restore',
-			lastRestoreAt: null,
-		})
-
-		await renderSettingsPage()
-
-		fireEvent.click(screen.getByRole('button', { name: '从云端恢复本地' }))
-
-		await waitFor(() => {
-			expect(restoreSyncSpy).toHaveBeenCalledTimes(1)
-		})
-		expect(toastSuccessSpy).toHaveBeenCalledWith(
-			'云端恢复完成：已恢复 60 个任务、8 个项目、6 个空间、10 个视图',
-		)
-		expect(navigateSpy).toHaveBeenCalledWith('/all/tasks', { replace: true })
-	})
-
 	it('待同步状态时展示等待同步提示', async () => {
 		vi.useFakeTimers()
 		vi.setSystemTime(new Date('2026-06-26T00:10:00Z'))
@@ -665,7 +584,9 @@ describe('SettingsPage', () => {
 		await waitFor(() => {
 			expect(configureSyncSpy).toHaveBeenCalledTimes(1)
 		})
-		expect(screen.getByLabelText('Turso Token')).toHaveValue('')
+		await waitFor(() => {
+			expect(screen.getByLabelText('Turso Token')).toHaveValue('')
+		})
 	})
 
 	it('缺少同步基线时展示提示并禁用立即同步', async () => {
@@ -682,7 +603,7 @@ describe('SettingsPage', () => {
 			remoteUrl: 'libsql://example.turso.io',
 			replicaState: 'restore_required',
 			replicaReason:
-				'当前设备已有本地数据，但缺少 V2 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先走“从云端恢复本地”建立 V2 基线，或后续执行 S1 到 V2 的一次性迁移。',
+				'当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。',
 			lastRestoreAt: null,
 		})
 

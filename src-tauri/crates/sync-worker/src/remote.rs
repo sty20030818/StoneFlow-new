@@ -8,8 +8,8 @@ use crate::{
     error::SyncWorkerError,
     schema::{
         LocalMutationRecord, ProjectPayload, REMOTE_SCHEMA_STATEMENTS, RemoteChangeKind,
-        RemoteChangeRecord, RemoteOperationRecord, SettingPayload, SpacePayload, SyncAction,
-        SyncOperationPayload, TaskLinkPayload, TaskPayload, ViewPayload,
+        RemoteChangeRecord, SettingPayload, SpacePayload, SyncOperationPayload, TaskLinkPayload,
+        TaskPayload, ViewPayload,
     },
     types::SyncRemoteConfig,
 };
@@ -56,7 +56,7 @@ pub async fn find_remote_mutation_ack(
     .transpose()
 }
 
-pub async fn insert_v2_change_and_ack(
+pub async fn insert_change_and_ack(
     transaction: &Transaction,
     mutation: &LocalMutationRecord,
     change_kind: RemoteChangeKind,
@@ -120,7 +120,7 @@ pub async fn insert_v2_change_and_ack(
     Ok(server_seq)
 }
 
-pub async fn fetch_v2_changes_after(
+pub async fn fetch_changes_after(
     remote: &Connection,
     after_server_seq: i64,
     limit: i64,
@@ -189,7 +189,7 @@ pub async fn fetch_v2_changes_after(
     Ok(changes)
 }
 
-pub async fn fetch_latest_v2_server_seq(remote: &Connection) -> Result<Option<i64>, SyncWorkerError> {
+pub async fn fetch_latest_server_seq(remote: &Connection) -> Result<Option<i64>, SyncWorkerError> {
     let mut rows = remote
         .query("SELECT MAX(server_seq) FROM remote_change_log LIMIT 1", params![])
         .await
@@ -210,23 +210,23 @@ pub async fn fetch_latest_v2_server_seq(remote: &Connection) -> Result<Option<i6
     .map(Option::flatten)
 }
 
-pub async fn insert_v2_baseline_changes_if_empty(
+pub async fn insert_baseline_changes_if_empty(
     remote: &Connection,
     snapshot: &RemoteRestoreSnapshot,
 ) -> Result<(), SyncWorkerError> {
-    if fetch_latest_v2_server_seq(remote).await?.is_some() {
+    if fetch_latest_server_seq(remote).await?.is_some() {
         return Ok(());
     }
 
     let transaction = remote.transaction().await.map_err(|error| {
-        SyncWorkerError::remote_database(format!("开启远端 V2 基线迁移事务失败: {error}"))
+        SyncWorkerError::remote_database(format!("开启远端同步基线迁移事务失败: {error}"))
     })?;
 
     for space in &snapshot.spaces {
-        insert_v2_baseline_change(&transaction, SyncOperationPayload::Space { snapshot: space.clone() }).await?;
+        insert_baseline_change(&transaction, SyncOperationPayload::Space { snapshot: space.clone() }).await?;
     }
     for project in &snapshot.projects {
-        insert_v2_baseline_change(
+        insert_baseline_change(
             &transaction,
             SyncOperationPayload::Project {
                 snapshot: project.clone(),
@@ -235,10 +235,10 @@ pub async fn insert_v2_baseline_changes_if_empty(
         .await?;
     }
     for task in &snapshot.tasks {
-        insert_v2_baseline_change(&transaction, SyncOperationPayload::Task { snapshot: task.clone() }).await?;
+        insert_baseline_change(&transaction, SyncOperationPayload::Task { snapshot: task.clone() }).await?;
     }
     for task_link in &snapshot.task_links {
-        insert_v2_baseline_change(
+        insert_baseline_change(
             &transaction,
             SyncOperationPayload::TaskLink {
                 snapshot: task_link.clone(),
@@ -247,10 +247,10 @@ pub async fn insert_v2_baseline_changes_if_empty(
         .await?;
     }
     for view in &snapshot.views {
-        insert_v2_baseline_change(&transaction, SyncOperationPayload::View { snapshot: view.clone() }).await?;
+        insert_baseline_change(&transaction, SyncOperationPayload::View { snapshot: view.clone() }).await?;
     }
     for setting in &snapshot.settings {
-        insert_v2_baseline_change(
+        insert_baseline_change(
             &transaction,
             SyncOperationPayload::Setting {
                 snapshot: setting.clone(),
@@ -260,18 +260,18 @@ pub async fn insert_v2_baseline_changes_if_empty(
     }
 
     transaction.commit().await.map_err(|error| {
-        SyncWorkerError::remote_database(format!("提交远端 V2 基线迁移事务失败: {error}"))
+        SyncWorkerError::remote_database(format!("提交远端同步基线迁移事务失败: {error}"))
     })?;
     Ok(())
 }
 
-async fn insert_v2_baseline_change(
+async fn insert_baseline_change(
     transaction: &Transaction,
     payload: SyncOperationPayload,
 ) -> Result<(), SyncWorkerError> {
     let committed_at = payload_updated_at(&payload).to_owned();
     let patch = serde_json::to_string(&payload)
-        .map_err(|error| SyncWorkerError::serialization(format!("序列化 V2 基线 patch 失败: {error}")))?;
+        .map_err(|error| SyncWorkerError::serialization(format!("序列化同步基线 patch 失败: {error}")))?;
     transaction
         .execute(
             r#"
@@ -289,7 +289,7 @@ async fn insert_v2_baseline_change(
             ],
         )
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("写入远端 V2 基线 change 失败: {error}")))?;
+        .map_err(|error| SyncWorkerError::remote_database(format!("写入远端同步基线 change 失败: {error}")))?;
     Ok(())
 }
 
@@ -329,106 +329,6 @@ pub async fn bootstrap_remote_schema(remote: &Connection) -> Result<(), SyncWork
     }
 
     Ok(())
-}
-
-pub async fn insert_operation_if_absent(
-    transaction: &Transaction,
-    operation: &RemoteOperationRecord,
-) -> Result<bool, SyncWorkerError> {
-    let payload = serde_json::to_string(&operation.payload)
-        .map_err(|error| SyncWorkerError::serialization(format!("序列化 sync payload 失败: {error}")))?;
-    let changed = transaction
-        .execute(
-            r#"
-            INSERT OR IGNORE INTO sync_operations(
-                op_id, device_id, entity_type, entity_id, action, payload, committed_at
-            )
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
-            "#,
-            params![
-                operation.op_id.clone(),
-                operation.device_id.clone(),
-                operation.entity_type.clone(),
-                operation.entity_id.clone(),
-                operation.action.as_str(),
-                payload,
-                operation.committed_at.clone(),
-            ],
-        )
-        .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("写入远端 sync_operations 失败: {error}")))?;
-
-    Ok(changed > 0)
-}
-
-pub async fn fetch_operations_after(
-    remote: &Connection,
-    after_remote_cursor: Option<i64>,
-    limit: i64,
-) -> Result<Vec<RemoteOperationRecord>, SyncWorkerError> {
-    let mut rows = remote
-        .query(
-            r#"
-            SELECT remote_cursor, op_id, device_id, entity_type, entity_id, action, payload, committed_at
-            FROM sync_operations
-            WHERE (?1 IS NULL OR remote_cursor > ?1)
-            ORDER BY remote_cursor ASC
-            LIMIT ?2
-            "#,
-            params![after_remote_cursor, limit],
-        )
-        .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 sync_operations 失败: {error}")))?;
-    let mut operations = Vec::new();
-
-    while let Some(row) = rows
-        .next()
-        .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("遍历远端 sync_operations 失败: {error}")))?
-    {
-        let action = match row
-            .get::<String>(5)
-            .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 operation.action 失败: {error}")))?
-            .as_str()
-        {
-            "upsert" => SyncAction::Upsert,
-            "delete" => SyncAction::Delete,
-            other => {
-                return Err(SyncWorkerError::protocol(format!(
-                    "远端 sync_operations.action 非法: {other}"
-                )));
-            }
-        };
-        let payload_raw = row
-            .get::<String>(6)
-            .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 operation.payload 失败: {error}")))?;
-        let payload = serde_json::from_str::<SyncOperationPayload>(&payload_raw)
-            .map_err(|error| SyncWorkerError::serialization(format!("解析远端 sync payload 失败: {error}")))?;
-        operations.push(RemoteOperationRecord {
-            remote_cursor: row
-                .get::<i64>(0)
-                .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 operation.remote_cursor 失败: {error}")))?,
-            op_id: row
-                .get::<String>(1)
-                .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 operation.op_id 失败: {error}")))?,
-            device_id: row
-                .get::<String>(2)
-                .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 operation.device_id 失败: {error}")))?,
-            entity_type: row
-                .get::<String>(3)
-                .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 operation.entity_type 失败: {error}")))?,
-            entity_id: row
-                .get::<String>(4)
-                .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 operation.entity_id 失败: {error}")))?,
-            action,
-            payload,
-            committed_at: row
-                .get::<String>(7)
-                .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 operation.committed_at 失败: {error}")))?,
-        });
-    }
-
-    Ok(operations)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

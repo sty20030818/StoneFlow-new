@@ -6,7 +6,6 @@ use serde_json::Value;
 pub const DEVICE_ID_SCOPE: &str = "sync:device_id";
 pub const REMOTE_CURSOR_SCOPE: &str = "sync:last_pulled_remote_cursor";
 pub const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
-pub const HARD_DELETE_CURSOR_SCOPE: &str = "sync:last_pushed_hard_delete";
 pub const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
 pub const PUSH_BATCH_SIZE: u64 = 100;
 pub const PULL_BATCH_SIZE: i64 = 100;
@@ -125,8 +124,7 @@ pub const REMOTE_SCHEMA_STATEMENTS: &[&str] = &[
         committed_at TEXT NOT NULL
     )
     "#,
-    // S1 `sync_operations` remains the active worker path. These V2 tables
-    // are only the long-term protocol skeleton until push/pull are replaced.
+    // 当前协议使用 mutation ack 与 server_seq change log 作为唯一远端同步事实。
     r#"
     CREATE TABLE IF NOT EXISTS remote_mutations (
         client_id TEXT NOT NULL,
@@ -169,16 +167,6 @@ pub const REMOTE_SCHEMA_STATEMENTS: &[&str] = &[
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LocalOutboxRecord {
-    pub op_id: String,
-    pub entity_type: String,
-    pub action: String,
-    pub payload: String,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LocalMutationRecord {
     pub client_id: String,
     pub client_seq: i64,
@@ -190,35 +178,11 @@ pub struct LocalMutationRecord {
     pub updated_at: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HardDeleteEventRecord {
-    pub id: String,
-    pub entity_type: String,
-    pub entity_id: String,
-    pub metadata: Option<String>,
-    pub created_at: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct HardDeleteCursor {
-    pub created_at: String,
-    pub event_id: String,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncAction {
     Upsert,
     Delete,
-}
-
-impl SyncAction {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Upsert => "upsert",
-            Self::Delete => "delete",
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -4,7 +4,6 @@ import {
 	configureSync,
 	getSyncDiagnostics,
 	getSyncStatus,
-	restoreSync,
 	runSync,
 } from '@/features/sync/api/sync'
 
@@ -128,38 +127,5 @@ describe('sync api', () => {
 		await runSync()
 
 		expect(mockedInvoke).toHaveBeenCalledWith('run_sync')
-	})
-
-	it('恢复本地副本时调用 restore_sync', async () => {
-		mockedInvoke.mockResolvedValue({
-			status: {
-				enabled: true,
-				status: 'synced',
-				lastPushAt: null,
-				lastPullAt: '2026-06-28T00:00:00Z',
-				lastError: null,
-				lastErrorMode: null,
-				dirtySince: null,
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: '2026-06-28T00:00:00Z',
-			},
-			summary: {
-				spaces: 2,
-				projects: 3,
-				tasks: 8,
-				taskLinks: 1,
-				views: 4,
-				settings: 2,
-				totalItems: 20,
-			},
-		})
-
-		await restoreSync()
-
-		expect(mockedInvoke).toHaveBeenCalledWith('restore_sync')
 	})
 })

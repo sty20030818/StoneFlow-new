@@ -172,7 +172,7 @@ impl SyncRuntimeState {
                 guard.last_push_at = Some(now);
                 guard.dirty_since = None;
             }
-            SyncRunMode::Pull | SyncRunMode::Restore => {
+            SyncRunMode::Pull => {
                 guard.last_pull_at = Some(now);
             }
             SyncRunMode::Sync => {
@@ -219,10 +219,9 @@ fn queue_pending_mode(inner: &mut SyncRuntimeInner, next_mode: SyncRunMode) {
 }
 
 fn merge_modes(current: SyncRunMode, next: SyncRunMode) -> SyncRunMode {
-    use SyncRunMode::{Pull, Push, Restore, Sync};
+    use SyncRunMode::{Pull, Push, Sync};
 
     match (current, next) {
-        (Restore, _) | (_, Restore) => Restore,
         (Sync, _) | (_, Sync) => Sync,
         (Push, Push) => Push,
         (Pull, Pull) => Pull,

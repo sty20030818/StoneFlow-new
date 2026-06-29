@@ -9,8 +9,6 @@ use stoneflow_storage::{
 };
 
 use super::types::SyncReplicaState;
-use super::types::SyncRestoreSummaryPayload;
-
 const DEVICE_ID_SCOPE: &str = "sync:device_id";
 const REMOTE_CURSOR_SCOPE: &str = "sync:last_pulled_remote_cursor";
 const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
@@ -47,7 +45,7 @@ pub async fn inspect_local_replica(
         (
             SyncReplicaState::RestoreRequired,
             Some(
-                "当前设备已有本地数据，但缺少 V2 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先走“从云端恢复本地”建立 V2 基线，或后续执行 S1 到 V2 的一次性迁移。"
+                "当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。"
                     .to_owned(),
             ),
         )
@@ -64,60 +62,6 @@ pub async fn inspect_local_replica(
         state,
         reason,
         last_restore_at: last_restore_at.and_then(|record| record.cursor),
-    })
-}
-
-pub async fn read_restore_summary(
-    database: &DatabaseRuntimeState,
-) -> Result<SyncRestoreSummaryPayload, AppError> {
-    let row = database
-        .connection()
-        .query_one(Statement::from_string(
-            DbBackend::Sqlite,
-            r#"
-            SELECT
-                (SELECT COUNT(*) FROM spaces) AS space_count,
-                (SELECT COUNT(*) FROM projects) AS project_count,
-                (SELECT COUNT(*) FROM tasks) AS task_count,
-                (SELECT COUNT(*) FROM task_links) AS task_link_count,
-                (SELECT COUNT(*) FROM views) AS view_count,
-                (SELECT COUNT(*) FROM settings WHERE key <> 'app.sync.config') AS setting_count
-            "#,
-        ))
-        .await
-        .map_err(|error| AppError::database(format!("读取 restore 汇总失败: {error}")))?;
-
-    let Some(row) = row else {
-        return Err(AppError::database("读取 restore 汇总失败: 缺少结果行"));
-    };
-
-    let spaces: i64 = row
-        .try_get("", "space_count")
-        .map_err(|error| AppError::database(format!("读取 space_count 失败: {error}")))?;
-    let projects: i64 = row
-        .try_get("", "project_count")
-        .map_err(|error| AppError::database(format!("读取 project_count 失败: {error}")))?;
-    let tasks: i64 = row
-        .try_get("", "task_count")
-        .map_err(|error| AppError::database(format!("读取 task_count 失败: {error}")))?;
-    let task_links: i64 = row
-        .try_get("", "task_link_count")
-        .map_err(|error| AppError::database(format!("读取 task_link_count 失败: {error}")))?;
-    let views: i64 = row
-        .try_get("", "view_count")
-        .map_err(|error| AppError::database(format!("读取 view_count 失败: {error}")))?;
-    let settings: i64 = row
-        .try_get("", "setting_count")
-        .map_err(|error| AppError::database(format!("读取 setting_count 失败: {error}")))?;
-
-    Ok(SyncRestoreSummaryPayload {
-        spaces,
-        projects,
-        tasks,
-        task_links,
-        views,
-        settings,
-        total_items: spaces + projects + tasks + task_links + views + settings,
     })
 }
 
@@ -291,7 +235,7 @@ mod tests {
         assert_eq!(
             snapshot.reason.as_deref(),
             Some(
-                "当前设备已有本地数据，但缺少 V2 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先走“从云端恢复本地”建立 V2 基线，或后续执行 S1 到 V2 的一次性迁移。"
+                "当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。"
             )
         );
     }

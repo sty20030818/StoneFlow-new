@@ -1,4 +1,4 @@
-//! 远端 operation log -> 本地 SQLite 回放。
+//! 远端 change log -> 本地 SQLite 回放。
 
 use libsql::Connection;
 
@@ -6,154 +6,114 @@ use crate::{
     apply::apply_operation_to_local,
     error::SyncWorkerError,
     local::{
-        delete_sync_shadow, get_or_create_device_id, read_remote_cursor, read_server_seq_cursor,
-        reset_local_replica_for_restore, upsert_sync_shadow, write_remote_cursor,
+        delete_sync_shadow, read_server_seq_cursor, reset_local_replica_for_snapshot,
+        upsert_sync_shadow,
         write_server_seq_cursor_in_transaction,
     },
-    remote::{fetch_latest_v2_server_seq, fetch_operations_after, fetch_restore_snapshot, fetch_v2_changes_after},
+    remote::{fetch_changes_after, fetch_latest_server_seq, fetch_restore_snapshot},
     schema::{
         HardDeletePayload, RemoteChangeKind, RemoteChangeRecord, RemoteOperationRecord,
         SyncAction, SyncOperationPayload, PULL_BATCH_SIZE,
     },
 };
 
-pub async fn pull_remote_changes(local: &Connection, remote: &Connection) -> Result<(), SyncWorkerError> {
-    let device_id = get_or_create_device_id(local).await?;
-
-    loop {
-        let after_remote_cursor = read_remote_cursor(local).await?;
-        let operations = fetch_operations_after(remote, after_remote_cursor, PULL_BATCH_SIZE).await?;
-        if operations.is_empty() {
-            break;
-        }
-
-        let Some(last_operation) = operations.last() else {
-            return Err(SyncWorkerError::protocol(
-                "pull batch 为空时不应进入 cursor 更新分支",
-            ));
-        };
-        let last_remote_cursor = last_operation.remote_cursor;
-        let transaction = local
-            .transaction()
-            .await
-            .map_err(|error| SyncWorkerError::local_database(format!("开启本地 pull 事务失败: {error}")))?;
-
-        for operation in &operations {
-            if operation.device_id == device_id {
-                continue;
-            }
-            apply_operation_to_local(&transaction, operation).await?;
-        }
-
-        transaction
-            .commit()
-            .await
-            .map_err(|error| SyncWorkerError::local_database(format!("提交本地 pull 事务失败: {error}")))?;
-        write_remote_cursor(local, last_remote_cursor).await?;
-    }
-
-    Ok(())
-}
-
-/// V2 pull 骨架：读取 `remote_change_log`，事务化应用到本地业务表与 `sync_shadow`。
-///
-/// S4 之前远端还没有生产 `remote_change_log`，所以这个函数暂不挂到 CLI 入口。
-pub async fn pull_v2_remote_changes(
+/// 读取 `remote_change_log`，事务化应用到本地业务表与 `sync_shadow`。
+pub async fn pull_remote_changes(
     local: &Connection,
     remote: &Connection,
 ) -> Result<(), SyncWorkerError> {
     if read_server_seq_cursor(local).await?.is_none() {
-        pull_v2_snapshot(local, remote).await?;
+        pull_snapshot(local, remote).await?;
         return Ok(());
     }
 
     loop {
         let after_server_seq = read_server_seq_cursor(local).await?.unwrap_or(0);
-        let changes = fetch_v2_changes_after(remote, after_server_seq, PULL_BATCH_SIZE).await?;
+        let changes = fetch_changes_after(remote, after_server_seq, PULL_BATCH_SIZE).await?;
         if changes.is_empty() {
             break;
         }
 
         let Some(last_change) = changes.last() else {
             return Err(SyncWorkerError::protocol(
-                "V2 pull batch 为空时不应进入 cursor 更新分支",
+                "pull batch 为空时不应进入 cursor 更新分支",
             ));
         };
         let last_server_seq = last_change.server_seq;
         let transaction = local
             .transaction()
             .await
-            .map_err(|error| SyncWorkerError::local_database(format!("开启本地 V2 pull 事务失败: {error}")))?;
+            .map_err(|error| SyncWorkerError::local_database(format!("开启本地 pull 事务失败: {error}")))?;
 
         for change in &changes {
-            apply_v2_change_to_local(&transaction, change).await?;
+            apply_change_to_local(&transaction, change).await?;
         }
 
         write_server_seq_cursor_in_transaction(&transaction, last_server_seq).await?;
         transaction
             .commit()
             .await
-            .map_err(|error| SyncWorkerError::local_database(format!("提交本地 V2 pull 事务失败: {error}")))?;
+            .map_err(|error| SyncWorkerError::local_database(format!("提交本地 pull 事务失败: {error}")))?;
     }
 
     Ok(())
 }
 
-async fn pull_v2_snapshot(local: &Connection, remote: &Connection) -> Result<(), SyncWorkerError> {
+async fn pull_snapshot(local: &Connection, remote: &Connection) -> Result<(), SyncWorkerError> {
     let snapshot = fetch_restore_snapshot(remote).await?;
-    let server_seq = fetch_latest_v2_server_seq(remote).await?.unwrap_or(0);
+    let server_seq = fetch_latest_server_seq(remote).await?.unwrap_or(0);
     let transaction = local
         .transaction()
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("开启本地 V2 snapshot 事务失败: {error}")))?;
+        .map_err(|error| SyncWorkerError::local_database(format!("开启本地 snapshot 事务失败: {error}")))?;
 
-    reset_local_replica_for_restore(&transaction).await?;
+    reset_local_replica_for_snapshot(&transaction).await?;
     for space in &snapshot.spaces {
         let payload = SyncOperationPayload::Space {
             snapshot: space.clone(),
         };
-        apply_v2_snapshot_payload(&transaction, server_seq, "space", &space.id, payload).await?;
+        apply_snapshot_payload(&transaction, server_seq, "space", &space.id, payload).await?;
     }
     for project in &snapshot.projects {
         let payload = SyncOperationPayload::Project {
             snapshot: project.clone(),
         };
-        apply_v2_snapshot_payload(&transaction, server_seq, "project", &project.id, payload).await?;
+        apply_snapshot_payload(&transaction, server_seq, "project", &project.id, payload).await?;
     }
     for task in &snapshot.tasks {
         let payload = SyncOperationPayload::Task {
             snapshot: task.clone(),
         };
-        apply_v2_snapshot_payload(&transaction, server_seq, "task", &task.id, payload).await?;
+        apply_snapshot_payload(&transaction, server_seq, "task", &task.id, payload).await?;
     }
     for task_link in &snapshot.task_links {
         let payload = SyncOperationPayload::TaskLink {
             snapshot: task_link.clone(),
         };
-        apply_v2_snapshot_payload(&transaction, server_seq, "task_link", &task_link.id, payload).await?;
+        apply_snapshot_payload(&transaction, server_seq, "task_link", &task_link.id, payload).await?;
     }
     for view in &snapshot.views {
         let payload = SyncOperationPayload::View {
             snapshot: view.clone(),
         };
-        apply_v2_snapshot_payload(&transaction, server_seq, "view", &view.id, payload).await?;
+        apply_snapshot_payload(&transaction, server_seq, "view", &view.id, payload).await?;
     }
     for setting in &snapshot.settings {
         let payload = SyncOperationPayload::Setting {
             snapshot: setting.clone(),
         };
-        apply_v2_snapshot_payload(&transaction, server_seq, "setting", &setting.key, payload).await?;
+        apply_snapshot_payload(&transaction, server_seq, "setting", &setting.key, payload).await?;
     }
 
     write_server_seq_cursor_in_transaction(&transaction, server_seq).await?;
     transaction
         .commit()
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("提交本地 V2 snapshot 事务失败: {error}")))?;
+        .map_err(|error| SyncWorkerError::local_database(format!("提交本地 snapshot 事务失败: {error}")))?;
     Ok(())
 }
 
-async fn apply_v2_snapshot_payload(
+async fn apply_snapshot_payload(
     transaction: &libsql::Transaction,
     server_seq: i64,
     entity_type: &str,
@@ -162,7 +122,7 @@ async fn apply_v2_snapshot_payload(
 ) -> Result<(), SyncWorkerError> {
     let operation = RemoteOperationRecord {
         remote_cursor: server_seq,
-        op_id: format!("v2:snapshot:{entity_type}:{entity_id}"),
+        op_id: format!("snapshot:{entity_type}:{entity_id}"),
         device_id: "remote_snapshot".to_owned(),
         entity_type: entity_type.to_owned(),
         entity_id: entity_id.to_owned(),
@@ -185,7 +145,7 @@ async fn apply_v2_snapshot_payload(
     .await
 }
 
-async fn apply_v2_change_to_local(
+async fn apply_change_to_local(
     transaction: &libsql::Transaction,
     change: &RemoteChangeRecord,
 ) -> Result<(), SyncWorkerError> {
@@ -196,7 +156,7 @@ async fn apply_v2_change_to_local(
     if change.change_kind == RemoteChangeKind::HardDelete {
         let operation = RemoteOperationRecord {
             remote_cursor: change.server_seq,
-            op_id: v2_operation_id(change),
+            op_id: operation_id(change),
             device_id: change.changed_by_client_id.clone(),
             entity_type: change.entity_type.clone(),
             entity_id: change.entity_id.clone(),
@@ -218,7 +178,7 @@ async fn apply_v2_change_to_local(
 
     let Some(payload) = change.patch.clone() else {
         return Err(SyncWorkerError::protocol(format!(
-            "V2 {} change 缺少 patch: {}:{}",
+            "{} change 缺少 patch: {}:{}",
             change_kind_label(change.change_kind),
             change.entity_type,
             change.entity_id
@@ -226,7 +186,7 @@ async fn apply_v2_change_to_local(
     };
     let operation = RemoteOperationRecord {
         remote_cursor: change.server_seq,
-        op_id: v2_operation_id(change),
+        op_id: operation_id(change),
         device_id: change.changed_by_client_id.clone(),
         entity_type: change.entity_type.clone(),
         entity_id: change.entity_id.clone(),
@@ -262,8 +222,8 @@ fn deleted_at_from_payload(payload: &SyncOperationPayload) -> Option<&str> {
     }
 }
 
-fn v2_operation_id(change: &RemoteChangeRecord) -> String {
-    format!("v2:{}", change.server_seq)
+fn operation_id(change: &RemoteChangeRecord) -> String {
+    format!("change:{}", change.server_seq)
 }
 
 fn change_kind_label(kind: RemoteChangeKind) -> &'static str {
@@ -283,13 +243,13 @@ mod tests {
     use libsql::{params, Builder, Connection};
     use tempfile::TempDir;
 
-    use super::pull_v2_remote_changes;
+    use super::pull_remote_changes;
     use crate::remote::bootstrap_remote_schema;
 
     #[tokio::test]
-    async fn pull_v2_remote_changes_should_apply_setting_and_advance_cursor() {
-        let (_local_dir, local) = open_test_connection("local-v2-pull").await;
-        let (_remote_dir, remote) = open_test_connection("remote-v2-pull").await;
+    async fn pull_remote_changes_should_apply_setting_and_advance_cursor() {
+        let (_local_dir, local) = open_test_connection("local-pull").await;
+        let (_remote_dir, remote) = open_test_connection("remote-pull").await;
         bootstrap_local_schema(&local).await;
         bootstrap_remote_schema(&remote)
             .await
@@ -328,9 +288,9 @@ mod tests {
             .await
             .expect("remote change should insert");
 
-        pull_v2_remote_changes(&local, &remote)
+        pull_remote_changes(&local, &remote)
             .await
-            .expect("v2 pull should succeed");
+            .expect("pull should succeed");
 
         let setting = read_text(&local, "SELECT value FROM settings WHERE key = 'app.theme'")
             .await
@@ -354,9 +314,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn pull_v2_remote_changes_should_apply_snapshot_when_cursor_missing() {
-        let (_local_dir, local) = open_test_connection("local-v2-snapshot").await;
-        let (_remote_dir, remote) = open_test_connection("remote-v2-snapshot").await;
+    async fn pull_remote_changes_should_apply_snapshot_when_cursor_missing() {
+        let (_local_dir, local) = open_test_connection("local-snapshot").await;
+        let (_remote_dir, remote) = open_test_connection("remote-snapshot").await;
         bootstrap_local_schema(&local).await;
         bootstrap_remote_schema(&remote)
             .await
@@ -398,9 +358,9 @@ mod tests {
             .await
             .expect("remote server seq should insert");
 
-        pull_v2_remote_changes(&local, &remote)
+        pull_remote_changes(&local, &remote)
             .await
-            .expect("v2 snapshot should succeed");
+            .expect("snapshot should succeed");
 
         let setting = read_text(&local, "SELECT value FROM settings WHERE key = 'app.theme'")
             .await

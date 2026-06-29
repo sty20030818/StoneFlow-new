@@ -3,11 +3,8 @@ use crate::error::SyncWorkerError;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SyncRunMode {
     Push,
-    PushV2,
     Pull,
-    PullV2,
-    MigrateV2,
-    Restore,
+    Migrate,
     Diagnose,
 }
 
@@ -15,11 +12,8 @@ impl SyncRunMode {
     pub fn parse(raw: &str) -> Result<Self, SyncWorkerError> {
         match raw {
             "push" => Ok(Self::Push),
-            "push_v2" => Ok(Self::PushV2),
             "pull" => Ok(Self::Pull),
-            "pull_v2" => Ok(Self::PullV2),
-            "migrate_v2" => Ok(Self::MigrateV2),
-            "restore" => Ok(Self::Restore),
+            "migrate" => Ok(Self::Migrate),
             "diagnose" => Ok(Self::Diagnose),
             other => Err(SyncWorkerError::validation(format!(
                 "不支持的同步模式: {other}"

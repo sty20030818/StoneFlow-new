@@ -12,11 +12,10 @@ use crate::app::error::AppError;
 
 use super::{
     config::{load_remote_config, save_remote_config},
-    local::{inspect_local_replica, read_restore_summary},
+    local::inspect_local_replica,
     state::{SyncRunMode, SyncRuntimeState},
     types::{
-        ConfigureSyncInput, RestoreSyncPayload, SyncDiagnosticsPayload, SyncReplicaState,
-        SyncStatusPayload,
+        ConfigureSyncInput, SyncDiagnosticsPayload, SyncReplicaState, SyncStatusPayload,
     },
 };
 use stoneflow_storage::database::DatabaseRuntimeState;
@@ -157,25 +156,6 @@ pub async fn run_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload
     Ok(sync_state.snapshot().await)
 }
 
-/// 显式从远端镜像恢复当前设备的本地工作副本。
-pub async fn restore_sync(app_handle: &tauri::AppHandle) -> Result<RestoreSyncPayload, AppError> {
-    let sync_state = sync_state_from_app(app_handle)?;
-    let database = database_state_from_app(app_handle)?;
-    refresh_local_replica_state(&sync_state, &database).await?;
-    ensure_remote_config(&sync_state).await?;
-
-    log::info!("sync:trigger restore requested");
-    let guard = sync_state.lock_execution().await;
-    run_sync_loop(app_handle, guard, SyncRunMode::Restore).await?;
-    refresh_local_replica_state(&sync_state, &database).await?;
-    let summary = read_restore_summary(&database).await?;
-
-    Ok(RestoreSyncPayload {
-        status: sync_state.snapshot().await,
-        summary,
-    })
-}
-
 async fn schedule_background_sync(app_handle: &tauri::AppHandle, mode: SyncRunMode) {
     if !sync_execution_enabled() {
         log::info!(
@@ -285,7 +265,7 @@ async fn run_sync_round(
 
     let database_path = database.database_path().display().to_string();
     let result = match mode {
-        SyncRunMode::Push | SyncRunMode::Pull | SyncRunMode::Restore => sync_database(
+        SyncRunMode::Push | SyncRunMode::Pull => sync_database(
             app_handle,
             database_path,
             &remote_config,
@@ -337,16 +317,16 @@ async fn run_sync_round_trip(
     database_path: String,
     remote_config: &crate::sync::types::SyncRemoteConfig,
 ) -> Result<(), SyncRoundFailure> {
-    log::info!("sync:sync_v2 phase=migrate");
-    run_sync_worker_with_label(app_handle, &database_path, remote_config, "migrate_v2")
+    log::info!("sync:sync phase=migrate");
+    run_sync_worker_with_label(app_handle, &database_path, remote_config, "migrate")
         .await
         .map_err(|error| SyncRoundFailure {
             failed_mode: SyncRunMode::Sync,
             error: error.with_sync_mode(SyncRunMode::Sync),
         })?;
 
-    log::info!("sync:sync_v2 phase=initial_pull");
-    sync_database_v2(
+    log::info!("sync:sync phase=initial_pull");
+    sync_database(
         app_handle,
         database_path.clone(),
         remote_config,
@@ -359,8 +339,8 @@ async fn run_sync_round_trip(
     })?;
 
     sync_state.enter_sync_push_phase().await;
-    log::info!("sync:sync_v2 phase=push");
-    sync_database_v2(
+    log::info!("sync:sync phase=push");
+    sync_database(
         app_handle,
         database_path.clone(),
         remote_config,
@@ -373,8 +353,8 @@ async fn run_sync_round_trip(
     })?;
 
     sync_state.enter_sync_confirm_pull_phase().await;
-    log::info!("sync:sync_v2 phase=confirm_pull");
-    sync_database_v2(app_handle, database_path, remote_config, SyncRunMode::Pull)
+    log::info!("sync:sync phase=confirm_pull");
+    sync_database(app_handle, database_path, remote_config, SyncRunMode::Pull)
         .await
         .map_err(|error| SyncRoundFailure {
             failed_mode: SyncRunMode::Pull,
@@ -389,16 +369,6 @@ async fn sync_database(
     mode: SyncRunMode,
 ) -> Result<(), AppError> {
     run_sync_worker(app_handle, &database_path, remote_config, mode).await
-}
-
-async fn sync_database_v2(
-    app_handle: &tauri::AppHandle,
-    database_path: String,
-    remote_config: &crate::sync::types::SyncRemoteConfig,
-    mode: SyncRunMode,
-) -> Result<(), AppError> {
-    run_sync_worker_with_label(app_handle, &database_path, remote_config, v2_worker_mode_label(mode))
-        .await
 }
 
 trait SyncErrorContext {
@@ -464,7 +434,7 @@ async fn ensure_sync_allowed(sync_state: &SyncRuntimeState) -> Result<(), AppErr
     match sync_state.replica_state().await {
         SyncReplicaState::Ready => Ok(()),
         SyncReplicaState::RestoreRequired => Err(AppError::validation(
-            "当前设备已有本地数据，但还没有 V2 同步基线。为避免误覆盖本地副本，请先走“从云端恢复本地”链路，或等待后续 S1 到 V2 的一次性迁移。",
+            "当前设备已有本地数据，但还没有同步基线。为避免误覆盖本地副本，已暂停普通同步，请先完成基线迁移。",
         )),
         SyncReplicaState::Diverged => Err(AppError::validation(
             "当前设备的本地副本状态异常，已暂停普通同步，请先完成诊断或恢复。",
@@ -480,16 +450,6 @@ fn mode_label(mode: SyncRunMode) -> &'static str {
         SyncRunMode::Push => "push",
         SyncRunMode::Pull => "pull",
         SyncRunMode::Sync => "sync",
-        SyncRunMode::Restore => "restore",
-    }
-}
-
-fn v2_worker_mode_label(mode: SyncRunMode) -> &'static str {
-    match mode {
-        SyncRunMode::Push => "push_v2",
-        SyncRunMode::Pull => "pull_v2",
-        SyncRunMode::Sync => "sync",
-        SyncRunMode::Restore => "restore",
     }
 }
 
@@ -763,7 +723,6 @@ mod tests {
 
     use super::{
         configure_sync, get_sync_status, initialize_state, parse_sync_worker_failure,
-        v2_worker_mode_label,
     };
     use crate::sync::{
         state::SyncRuntimeState,
@@ -828,11 +787,5 @@ mod tests {
 
         assert_eq!(failure.kind, super::SyncWorkerErrorKind::Authentication);
         assert_eq!(failure.message, "token invalid");
-    }
-
-    #[test]
-    fn v2_worker_mode_label_should_map_push_and_pull_only() {
-        assert_eq!(v2_worker_mode_label(super::SyncRunMode::Pull), "pull_v2");
-        assert_eq!(v2_worker_mode_label(super::SyncRunMode::Push), "push_v2");
     }
 }

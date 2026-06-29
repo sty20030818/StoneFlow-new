@@ -15,7 +15,7 @@ export type SyncStatusPayload = {
 	lastPushAt: string | null
 	lastPullAt: string | null
 	lastError: string | null
-	lastErrorMode: 'push' | 'pull' | 'sync' | 'restore' | null
+	lastErrorMode: 'push' | 'pull' | 'sync' | null
 	dirtySince: string | null
 	pendingResync: boolean
 	hasRemoteConfig: boolean
@@ -23,19 +23,6 @@ export type SyncStatusPayload = {
 	replicaState: SyncReplicaState
 	replicaReason: string | null
 	lastRestoreAt: string | null
-}
-
-export type RestoreSyncPayload = {
-	status: SyncStatusPayload
-	summary: {
-		spaces: number
-		projects: number
-		tasks: number
-		taskLinks: number
-		views: number
-		settings: number
-		totalItems: number
-	}
 }
 
 export type SyncDiagnosticsCountsPayload = {
@@ -89,11 +76,4 @@ export function configureSync(input: { url: string; token: string }) {
  */
 export function runSync() {
 	return invoke<SyncStatusPayload>('run_sync')
-}
-
-/**
- * 用远端镜像重建当前设备的本地副本。
- */
-export function restoreSync() {
-	return invoke<RestoreSyncPayload>('restore_sync')
 }

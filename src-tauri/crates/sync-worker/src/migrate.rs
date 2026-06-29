@@ -1,4 +1,4 @@
-//! S1 到 V2 的幂等基线迁移。
+//! 旧同步数据到当前同步协议的幂等基线迁移。
 
 use libsql::{params, Connection};
 
@@ -8,7 +8,7 @@ use crate::{
         read_server_seq_cursor, upsert_sync_shadow, write_server_seq_cursor_in_transaction,
     },
     remote::{
-        fetch_latest_v2_server_seq, fetch_restore_snapshot, insert_v2_baseline_changes_if_empty,
+        fetch_latest_server_seq, fetch_restore_snapshot, insert_baseline_changes_if_empty,
     },
     schema::{
         ProjectPayload, SettingPayload, SpacePayload, SyncOperationPayload, TaskLinkPayload,
@@ -16,13 +16,13 @@ use crate::{
     },
 };
 
-pub async fn migrate_v2_baseline(
+pub async fn migrate_baseline(
     local: &Connection,
     remote: &Connection,
 ) -> Result<(), SyncWorkerError> {
     let snapshot = fetch_restore_snapshot(remote).await?;
-    insert_v2_baseline_changes_if_empty(remote, &snapshot).await?;
-    let server_seq = fetch_latest_v2_server_seq(remote).await?.unwrap_or(0);
+    insert_baseline_changes_if_empty(remote, &snapshot).await?;
+    let server_seq = fetch_latest_server_seq(remote).await?.unwrap_or(0);
 
     if read_server_seq_cursor(local).await?.is_some() {
         return Ok(());
@@ -32,7 +32,7 @@ pub async fn migrate_v2_baseline(
     }
 
     let transaction = local.transaction().await.map_err(|error| {
-        SyncWorkerError::local_database(format!("开启本地 V2 迁移事务失败: {error}"))
+        SyncWorkerError::local_database(format!("开启本地同步基线迁移事务失败: {error}"))
     })?;
 
     write_shadow_records(&transaction, server_seq, &snapshot.spaces).await?;
@@ -44,7 +44,7 @@ pub async fn migrate_v2_baseline(
     write_server_seq_cursor_in_transaction(&transaction, server_seq).await?;
 
     transaction.commit().await.map_err(|error| {
-        SyncWorkerError::local_database(format!("提交本地 V2 迁移事务失败: {error}"))
+        SyncWorkerError::local_database(format!("提交本地同步基线迁移事务失败: {error}"))
     })?;
     Ok(())
 }
@@ -60,7 +60,7 @@ where
     for record in records {
         let payload = record.clone().into_payload();
         let snapshot = serde_json::to_string(&payload)
-            .map_err(|error| SyncWorkerError::serialization(format!("序列化 V2 shadow 失败: {error}")))?;
+            .map_err(|error| SyncWorkerError::serialization(format!("序列化 sync_shadow 失败: {error}")))?;
         upsert_sync_shadow(
             transaction,
             payload.entity_type(),
@@ -171,13 +171,13 @@ mod tests {
     use libsql::{params, Builder, Connection};
     use tempfile::TempDir;
 
-    use super::migrate_v2_baseline;
+    use super::migrate_baseline;
     use crate::remote::bootstrap_remote_schema;
 
     #[tokio::test]
-    async fn migrate_v2_baseline_should_seed_remote_log_and_local_cursor_without_overwriting_local_data() {
-        let (_local_dir, local) = open_test_connection("local-v2-migrate").await;
-        let (_remote_dir, remote) = open_test_connection("remote-v2-migrate").await;
+    async fn migrate_baseline_should_seed_remote_log_and_local_cursor_without_overwriting_local_data() {
+        let (_local_dir, local) = open_test_connection("local-migrate").await;
+        let (_remote_dir, remote) = open_test_connection("remote-migrate").await;
         bootstrap_local_schema(&local).await;
         bootstrap_remote_schema(&remote)
             .await
@@ -185,10 +185,10 @@ mod tests {
         insert_setting(&local, "app.theme", "local").await;
         insert_setting(&remote, "app.theme", "remote").await;
 
-        migrate_v2_baseline(&local, &remote)
+        migrate_baseline(&local, &remote)
             .await
             .expect("migration should succeed");
-        migrate_v2_baseline(&local, &remote)
+        migrate_baseline(&local, &remote)
             .await
             .expect("migration should be idempotent");
 
@@ -204,16 +204,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn migrate_v2_baseline_should_not_write_local_cursor_for_empty_local_replica() {
-        let (_local_dir, local) = open_test_connection("local-empty-v2-migrate").await;
-        let (_remote_dir, remote) = open_test_connection("remote-empty-v2-migrate").await;
+    async fn migrate_baseline_should_not_write_local_cursor_for_empty_local_replica() {
+        let (_local_dir, local) = open_test_connection("local-empty-migrate").await;
+        let (_remote_dir, remote) = open_test_connection("remote-empty-migrate").await;
         bootstrap_local_schema(&local).await;
         bootstrap_remote_schema(&remote)
             .await
             .expect("remote schema should bootstrap");
         insert_setting(&remote, "app.theme", "remote").await;
 
-        migrate_v2_baseline(&local, &remote)
+        migrate_baseline(&local, &remote)
             .await
             .expect("migration should succeed");
 
