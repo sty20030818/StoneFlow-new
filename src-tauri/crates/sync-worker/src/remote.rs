@@ -7,8 +7,9 @@ use libsql::{params, Builder, Connection, Transaction};
 use crate::{
     error::SyncWorkerError,
     schema::{
-        ProjectPayload, REMOTE_SCHEMA_STATEMENTS, RemoteOperationRecord, SettingPayload,
-        SpacePayload, SyncAction, SyncOperationPayload, TaskLinkPayload, TaskPayload, ViewPayload,
+        ProjectPayload, REMOTE_SCHEMA_STATEMENTS, RemoteChangeKind, RemoteChangeRecord,
+        RemoteOperationRecord, SettingPayload, SpacePayload, SyncAction, SyncOperationPayload,
+        TaskLinkPayload, TaskPayload, ViewPayload,
     },
     types::SyncRemoteConfig,
 };
@@ -24,6 +25,96 @@ pub async fn open_local_sqlite(database_path: &str) -> Result<Connection, SyncWo
     database
         .connect()
         .map_err(|error| SyncWorkerError::local_database(format!("连接本地 SQLite 失败: {error}")))
+}
+
+pub async fn fetch_v2_changes_after(
+    remote: &Connection,
+    after_server_seq: i64,
+    limit: i64,
+) -> Result<Vec<RemoteChangeRecord>, SyncWorkerError> {
+    let mut rows = remote
+        .query(
+            r#"
+            SELECT server_seq, entity_type, entity_id, change_kind, patch,
+                   changed_by_client_id, changed_by_client_seq, committed_at
+            FROM remote_change_log
+            WHERE server_seq > ?1
+            ORDER BY server_seq ASC
+            LIMIT ?2
+            "#,
+            params![after_server_seq, limit],
+        )
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 remote_change_log 失败: {error}")))?;
+    let mut changes = Vec::new();
+
+    while let Some(row) = rows
+        .next()
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("遍历远端 remote_change_log 失败: {error}")))?
+    {
+        let change_kind = RemoteChangeKind::parse(
+            row.get::<String>(3)
+                .map_err(remote_column_error("remote_change_log.change_kind"))?
+                .as_str(),
+        )?;
+        let patch_raw = row
+            .get::<Option<String>>(4)
+            .map_err(remote_column_error("remote_change_log.patch"))?;
+        let patch = patch_raw
+            .map(|raw| {
+                serde_json::from_str::<SyncOperationPayload>(&raw).map_err(|error| {
+                    SyncWorkerError::serialization(format!("解析 remote_change_log.patch 失败: {error}"))
+                })
+            })
+            .transpose()?;
+
+        changes.push(RemoteChangeRecord {
+            server_seq: row
+                .get::<i64>(0)
+                .map_err(remote_column_error("remote_change_log.server_seq"))?,
+            entity_type: row
+                .get::<String>(1)
+                .map_err(remote_column_error("remote_change_log.entity_type"))?,
+            entity_id: row
+                .get::<String>(2)
+                .map_err(remote_column_error("remote_change_log.entity_id"))?,
+            change_kind,
+            patch,
+            changed_by_client_id: row
+                .get::<String>(5)
+                .map_err(remote_column_error("remote_change_log.changed_by_client_id"))?,
+            changed_by_client_seq: row
+                .get::<i64>(6)
+                .map_err(remote_column_error("remote_change_log.changed_by_client_seq"))?,
+            committed_at: row
+                .get::<String>(7)
+                .map_err(remote_column_error("remote_change_log.committed_at"))?,
+        });
+    }
+
+    Ok(changes)
+}
+
+pub async fn fetch_latest_v2_server_seq(remote: &Connection) -> Result<Option<i64>, SyncWorkerError> {
+    let mut rows = remote
+        .query("SELECT MAX(server_seq) FROM remote_change_log LIMIT 1", params![])
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("读取远端最新 server_seq 失败: {error}")))?;
+    let row = rows
+        .next()
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("遍历远端最新 server_seq 失败: {error}")))?;
+
+    row.map(|row| {
+        row.get::<Option<i64>>(0).map_err(|error| {
+            SyncWorkerError::remote_database(format!(
+                "读取远端 remote_change_log.max(server_seq) 失败: {error}"
+            ))
+        })
+    })
+    .transpose()
+    .map(Option::flatten)
 }
 
 pub async fn open_remote(remote_config: &SyncRemoteConfig) -> Result<Connection, SyncWorkerError> {

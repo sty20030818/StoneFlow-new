@@ -7,7 +7,7 @@ use crate::{
     error::SyncWorkerError,
     schema::{
         DEVICE_ID_SCOPE, HARD_DELETE_CURSOR_SCOPE, HardDeleteCursor, HardDeleteEventRecord,
-        LAST_RESTORE_AT_SCOPE, LocalOutboxRecord, REMOTE_CURSOR_SCOPE,
+        LAST_RESTORE_AT_SCOPE, LocalOutboxRecord, REMOTE_CURSOR_SCOPE, SERVER_SEQ_CURSOR_SCOPE,
     },
 };
 
@@ -184,6 +184,77 @@ pub async fn write_remote_cursor(
     remote_cursor: i64,
 ) -> Result<(), SyncWorkerError> {
     write_text_cursor(local, REMOTE_CURSOR_SCOPE, Some(&remote_cursor.to_string())).await
+}
+
+pub async fn read_server_seq_cursor(local: &Connection) -> Result<Option<i64>, SyncWorkerError> {
+    let Some(raw) = read_text_cursor(local, SERVER_SEQ_CURSOR_SCOPE).await? else {
+        return Ok(None);
+    };
+
+    raw.parse::<i64>()
+        .map(Some)
+        .map_err(|error| SyncWorkerError::serialization(format!("解析 server_seq cursor 失败: {error}")))
+}
+
+pub async fn write_server_seq_cursor_in_transaction(
+    transaction: &Transaction,
+    server_seq: i64,
+) -> Result<(), SyncWorkerError> {
+    write_text_cursor_in_transaction(
+        transaction,
+        SERVER_SEQ_CURSOR_SCOPE,
+        Some(&server_seq.to_string()),
+    )
+    .await
+}
+
+pub async fn upsert_sync_shadow(
+    transaction: &Transaction,
+    entity_type: &str,
+    entity_id: &str,
+    server_seq: i64,
+    snapshot: &str,
+    deleted_at: Option<&str>,
+    updated_at: &str,
+) -> Result<(), SyncWorkerError> {
+    transaction
+        .execute(
+            r#"
+            INSERT INTO sync_shadow(entity_type, entity_id, server_seq, snapshot, deleted_at, updated_at)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+            ON CONFLICT(entity_type, entity_id) DO UPDATE SET
+                server_seq = excluded.server_seq,
+                snapshot = excluded.snapshot,
+                deleted_at = excluded.deleted_at,
+                updated_at = excluded.updated_at
+            "#,
+            params![
+                entity_type.to_owned(),
+                entity_id.to_owned(),
+                server_seq,
+                snapshot.to_owned(),
+                deleted_at.map(str::to_owned),
+                updated_at.to_owned(),
+            ],
+        )
+        .await
+        .map_err(|error| SyncWorkerError::local_database(format!("写入 sync_shadow 失败: {error}")))?;
+    Ok(())
+}
+
+pub async fn delete_sync_shadow(
+    transaction: &Transaction,
+    entity_type: &str,
+    entity_id: &str,
+) -> Result<(), SyncWorkerError> {
+    transaction
+        .execute(
+            "DELETE FROM sync_shadow WHERE entity_type = ?1 AND entity_id = ?2",
+            params![entity_type.to_owned(), entity_id.to_owned()],
+        )
+        .await
+        .map_err(|error| SyncWorkerError::local_database(format!("删除 sync_shadow 失败: {error}")))?;
+    Ok(())
 }
 
 pub async fn reset_local_replica_for_restore(

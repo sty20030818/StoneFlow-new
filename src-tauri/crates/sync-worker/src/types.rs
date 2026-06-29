@@ -4,6 +4,7 @@ use crate::error::SyncWorkerError;
 pub enum SyncRunMode {
     Push,
     Pull,
+    PullV2,
     Restore,
     Diagnose,
 }
@@ -13,6 +14,7 @@ impl SyncRunMode {
         match raw {
             "push" => Ok(Self::Push),
             "pull" => Ok(Self::Pull),
+            "pull_v2" => Ok(Self::PullV2),
             "restore" => Ok(Self::Restore),
             "diagnose" => Ok(Self::Diagnose),
             other => Err(SyncWorkerError::validation(format!(

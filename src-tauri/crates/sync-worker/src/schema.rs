@@ -5,6 +5,7 @@ use serde_json::Value;
 
 pub const DEVICE_ID_SCOPE: &str = "sync:device_id";
 pub const REMOTE_CURSOR_SCOPE: &str = "sync:last_pulled_remote_cursor";
+pub const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
 pub const HARD_DELETE_CURSOR_SCOPE: &str = "sync:last_pushed_hard_delete";
 pub const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
 pub const PUSH_BATCH_SIZE: u64 = 100;
@@ -255,6 +256,42 @@ pub struct RemoteOperationRecord {
     pub entity_id: String,
     pub action: SyncAction,
     pub payload: SyncOperationPayload,
+    pub committed_at: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RemoteChangeKind {
+    Upsert,
+    SoftDelete,
+    Restore,
+    HardDelete,
+    ConflictNotice,
+}
+
+impl RemoteChangeKind {
+    pub fn parse(raw: &str) -> Result<Self, crate::error::SyncWorkerError> {
+        match raw {
+            "upsert" => Ok(Self::Upsert),
+            "soft_delete" => Ok(Self::SoftDelete),
+            "restore" => Ok(Self::Restore),
+            "hard_delete" => Ok(Self::HardDelete),
+            "conflict_notice" => Ok(Self::ConflictNotice),
+            other => Err(crate::error::SyncWorkerError::protocol(format!(
+                "远端 remote_change_log.change_kind 非法: {other}"
+            ))),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RemoteChangeRecord {
+    pub server_seq: i64,
+    pub entity_type: String,
+    pub entity_id: String,
+    pub change_kind: RemoteChangeKind,
+    pub patch: Option<SyncOperationPayload>,
+    pub changed_by_client_id: String,
+    pub changed_by_client_seq: i64,
     pub committed_at: String,
 }
 
