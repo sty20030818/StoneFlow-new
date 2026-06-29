@@ -24,6 +24,7 @@ import type {
 	SidebarItemVisibilityTarget,
 	SidebarMainItemKey,
 } from '@/features/settings/api/sidebarSettings'
+import { SyncSidebarStatusStrip } from '@/features/sync/ui/SyncSidebarStatusStrip'
 import {
 	resolveRememberedPathForScope,
 	type ShellSidebarSettings,
@@ -629,6 +630,7 @@ export function ShellSidebar({
 										/>
 									</SidebarMenuItem>
 								</SidebarMenu>
+								<SyncSidebarStatusStrip />
 							</SidebarFooter>
 						</AppScrollArea>
 					</SidebarContent>

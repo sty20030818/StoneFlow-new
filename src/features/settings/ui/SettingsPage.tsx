@@ -22,8 +22,16 @@ import {
 	type SyncStatus,
 	type SyncStatusPayload,
 } from '@/features/sync/api/sync'
+import { SyncConfigDialog } from '@/features/sync/ui/SyncConfigDialog'
+import {
+	formatReplicaState,
+	formatSyncStatus,
+	getSyncReplicaTone,
+	getSyncStatusTone,
+} from '@/features/sync/model/syncStatusPresentation'
 import { useSetDefaultSpaceMutation, useSpaces } from '@/features/space/query'
 import { cn } from '@/shared/lib/utils'
+import { Badge } from '@/shared/ui/base/badge'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -31,7 +39,6 @@ import {
 	BreadcrumbPage,
 } from '@/shared/ui/base/breadcrumb'
 import { Button } from '@/shared/ui/base/button'
-import { Input } from '@/shared/ui/base/input'
 import {
 	Select,
 	SelectContent,
@@ -55,7 +62,8 @@ import {
 } from '@/shared/ui/patterns/settings-panel'
 import { statusNoticeCompactTextClass } from '@/shared/ui/patterns/status-notice'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
-import { Settings2Icon } from 'lucide-react'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/ui/base/collapsible'
+import { ChevronDownIcon, SettingsIcon, Settings2Icon } from 'lucide-react'
 
 const MAIN_ITEM_OPTIONS: Array<{
 	key: SidebarMainItemKey
@@ -112,6 +120,8 @@ export function SettingsPage() {
 	const [syncDiagnosing, setSyncDiagnosing] = useState(false)
 	const [syncUrl, setSyncUrl] = useState('')
 	const [syncToken, setSyncToken] = useState('')
+	const [syncConfigDialogOpen, setSyncConfigDialogOpen] = useState(false)
+	const [syncDetailsOpen, setSyncDetailsOpen] = useState(false)
 
 	useEffect(() => {
 		void loadSidebarSettings().catch(() => undefined)
@@ -220,21 +230,19 @@ export function SettingsPage() {
 		}
 	}
 
-	async function handleSaveSyncConfig() {
+	async function handleSaveSyncConfig(input: { url: string; token: string }) {
 		setSyncSaving(true)
 		setSyncStatusMessage(null)
 		setSyncDiagnostics(null)
 		setSyncDiagnosticsMessage(null)
 		try {
-			await configureSync({
-				url: syncUrl.trim(),
-				token: syncToken.trim(),
-			})
+			await configureSync(input)
 			setSyncToken('')
 			await refreshSyncStatus({ syncUrlDraft: true })
 			await refreshSyncDiagnostics({ silent: true })
 		} catch (error) {
 			setSyncStatusMessage(normalizeTauriError(error, '同步配置保存失败'))
+			throw error
 		} finally {
 			setSyncSaving(false)
 		}
@@ -260,7 +268,6 @@ export function SettingsPage() {
 	const effectiveSyncErrorTitle = getSyncErrorTitle(syncStatus?.lastErrorMode ?? null, syncRunning)
 	const syncBusy = syncSaving || syncRunning || syncLoading
 	const syncActionBusy = syncBusy || syncDiagnosing
-	const syncConfigIncomplete = syncUrl.trim().length === 0 || syncToken.trim().length === 0
 	const syncRequiresBaseline = syncStatus?.replicaState === 'baseline_required'
 	const displayedSyncStatus: SyncStatus = syncRunning
 		? 'syncing'
@@ -356,7 +363,7 @@ export function SettingsPage() {
 				</Breadcrumb>
 			}
 			beforeBoard={
-				<div className='flex flex-col gap-4'>
+				<div className='flex flex-col gap-4 pb-4'>
 					{sidebarSettings ? (
 						<>
 							<SettingsSection
@@ -557,202 +564,217 @@ export function SettingsPage() {
 						description='所有业务仍然只读写本地数据库；这里仅配置 Turso 远端，并在需要时手动或自动触发同步。'
 						title='云同步'
 					>
-						<div className='grid gap-3 md:grid-cols-2'>
-							<SettingInfoRow
-								description={syncStatusCopy.statusDescription}
-								label='当前状态'
-								value={<SyncStatusBadge status={displayedSyncStatus} />}
-							/>
-							<SettingInfoRow
-								description='是否已经保存可用的 Turso url 和 token。'
-								label='Turso 配置'
-								value={
-									<span
-										className={cn(
-											'text-sm font-medium',
-											syncStatus?.hasRemoteConfig ? 'text-emerald-700' : 'text-slate-500',
-										)}
-									>
-										{syncStatus?.hasRemoteConfig ? '已配置' : '未配置'}
-									</span>
-								}
-							/>
-							<SettingInfoRow
-								description='最近一次本地变更成功提交到远端的时间。'
-								label='上次提交'
-								value={<SyncTimestampValue timestamp={syncStatus?.lastPushAt ?? null} />}
-							/>
-							<SettingInfoRow
-								description='最近一次从远端确认同步结果的时间。'
-								label='上次确认'
-								value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
-							/>
-							<SettingInfoRow
-								description='用于判断当前设备能否继续执行统一同步。空副本会由同步引擎自动拉取远端基线。'
-								label='本地副本'
-								value={<SyncReplicaBadge state={syncStatus?.replicaState ?? 'uninitialized'} />}
-							/>
-						</div>
+						<div className='overflow-hidden rounded-xl border border-sf-border-subtle bg-card'>
+							<div className='p-4'>
+								<div className='flex flex-col gap-4 md:flex-row md:items-start md:justify-between'>
+									<div className='min-w-0'>
+										<div className='flex flex-wrap items-center gap-2'>
+											<SyncStatusBadge status={displayedSyncStatus} />
+											<SyncReplicaBadge state={syncStatus?.replicaState ?? 'uninitialized'} />
+											<SyncTursoConfigBadge configured={syncStatus?.hasRemoteConfig ?? false} />
+										</div>
+										<h3 className='mt-3 text-base font-semibold tracking-tight text-foreground'>
+											{syncStatusCopy.title}
+										</h3>
+										<p className='mt-1 max-w-2xl text-sm leading-6 text-muted-foreground'>
+											{syncStatusCopy.statusDescription}
+										</p>
+									</div>
+									<div className='flex shrink-0 items-center gap-2 self-start'>
+										<Button
+											aria-label='配置 Turso 远端'
+											disabled={syncActionBusy}
+											onClick={() => setSyncConfigDialogOpen(true)}
+											size='icon-sm'
+											type='button'
+											variant='ghost'
+										>
+											<SettingsIcon />
+										</Button>
+										<Button
+											disabled={
+												syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresBaseline
+											}
+											onClick={() => void handleRunSync()}
+											type='button'
+											variant='secondary'
+										>
+											{syncRunning ? '同步中...' : '立即同步'}
+										</Button>
+									</div>
+								</div>
 
-						<div className='mt-4 grid gap-3 md:grid-cols-2'>
-							<label className={formFieldStackClass}>
-								<span className={formFieldLabelVariants()}>Turso URL</span>
-								<Input
-									autoComplete='off'
-									disabled={syncBusy}
-									onChange={(event) => setSyncUrl(event.currentTarget.value)}
-									placeholder='libsql://your-db.turso.io'
-									type='text'
-									value={syncUrl}
-								/>
-							</label>
-							<label className={formFieldStackClass}>
-								<span className={formFieldLabelVariants()}>Turso Token</span>
-								<Input
-									autoComplete='off'
-									disabled={syncBusy}
-									onChange={(event) => setSyncToken(event.currentTarget.value)}
-									placeholder='输入 Turso auth token'
-									type='password'
-									value={syncToken}
-								/>
-							</label>
-						</div>
-
-						<div className='mt-4 flex flex-wrap gap-3'>
-							<Button
-								disabled={syncActionBusy || syncConfigIncomplete}
-								onClick={() => void handleSaveSyncConfig()}
-								type='button'
-							>
-								{syncSaving ? '保存中...' : '保存配置'}
-							</Button>
-							<Button
-								disabled={syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresBaseline}
-								onClick={() => void handleRunSync()}
-								type='button'
-								variant='secondary'
-							>
-								{syncRunning ? '同步中...' : '立即同步'}
-							</Button>
-							<Button
-								disabled={syncBusy || syncDiagnosing || !syncStatus?.hasRemoteConfig}
-								onClick={() => void refreshSyncDiagnostics()}
-								type='button'
-								variant='secondary'
-							>
-								{syncDiagnosing ? '诊断中...' : '刷新诊断'}
-							</Button>
-						</div>
-
-						<p className={`mt-3 ${formFieldHintClass}`}>
-							配置会直接保存在本地数据库的 settings 表；页面刷新后只会自动回填
-							URL。出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token
-							覆盖保存。未配置前不会自动同步；配置完成后，本地写入会先标记
-							待同步，再由同步引擎异步执行完整同步。当前设备是空副本时，立即同步会自动拉取远端基线。
-						</p>
-
-						<StatusNotice
-							className='mt-4'
-							description={syncStatusCopy.summary}
-							title={syncStatusCopy.title}
-							variant={syncStatusCopy.variant}
-						/>
-
-						{syncRequiresBaseline && syncStatus?.replicaReason ? (
-							<StatusNotice
-								className='mt-4'
-								description={syncStatus.replicaReason}
-								title='当前设备需要建立同步基线'
-								variant='warning'
-							/>
-						) : null}
-
-						{effectiveSyncError ? (
-							<StatusNotice
-								className={`mt-4 ${statusNoticeCompactTextClass}`}
-								description={effectiveSyncError}
-								role='alert'
-								size='sm'
-								title={effectiveSyncErrorTitle}
-								variant='danger'
-							/>
-						) : null}
-
-						<div className='mt-6 flex flex-col gap-3'>
-							<div className='flex items-center justify-between gap-3'>
-								<div className='min-w-0'>
-									<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
-									<p className={formFieldHintClass}>
-										只读查看当前设备与 Turso 远端的 server_seq
-										和工作集摘要，用于排查“为什么没同步到”这类问题。
-									</p>
+								<div className='mt-4 grid gap-2 md:grid-cols-4'>
+									<SyncMetricCard
+										label='上次提交'
+										value={<SyncTimestampValue timestamp={syncStatus?.lastPushAt ?? null} />}
+									/>
+									<SyncMetricCard
+										label='上次确认'
+										value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
+									/>
+									<SyncMetricCard
+										label='待同步'
+										value={
+											<span className='font-medium text-foreground'>
+												{syncDiagnostics?.local.pendingMutationCount ?? 0} 条
+											</span>
+										}
+									/>
+									<SyncMetricCard
+										label='副本状态'
+										value={formatReplicaState(syncStatus?.replicaState ?? 'uninitialized')}
+									/>
 								</div>
 							</div>
 
-							{syncDiagnostics ? (
-								<div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
-									<SettingInfoRow
-										description='当前保存并正在使用的 Turso 远端 host。'
-										label='远端 Host'
-										value={
-											<span className='break-all font-medium text-foreground'>
-												{syncDiagnostics.remoteHost ?? '未读取'}
-											</span>
-										}
+							<Collapsible onOpenChange={setSyncDetailsOpen} open={syncDetailsOpen}>
+								<CollapsibleTrigger
+									className={cn(
+										'flex w-full items-center justify-between border-t border-sf-border-subtle bg-muted/20 px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/35 hover:text-foreground',
+										syncDetailsOpen && 'bg-muted/30 text-foreground',
+									)}
+									type='button'
+								>
+									<span className='font-medium'>详情与诊断</span>
+									<ChevronDownIcon
+										className={cn(
+											'size-4 shrink-0 transition-transform duration-200',
+											syncDetailsOpen && 'rotate-180',
+										)}
 									/>
-									<SettingInfoRow
-										description='当前设备最后一次成功吸收远端 change log 后落在本地的 server_seq。'
-										label='本地 server_seq'
-										value={<SyncCursorValue value={syncDiagnostics.local.lastPulledServerSeq} />}
-									/>
-									<SettingInfoRow
-										description='Turso 远端 remote_change_log 当前看到的最新 server_seq。'
-										label='远端 server_seq'
-										value={<SyncCursorValue value={syncDiagnostics.remote.latestServerSeq} />}
-									/>
-									<SettingInfoRow
-										description='当前设备本地还没提交成功的 mutation 数量。'
-										label='待同步 mutation'
-										value={
-											<span className='font-medium text-foreground'>
-												{syncDiagnostics.local.pendingMutationCount} 条
-											</span>
-										}
-									/>
-									<SettingInfoRow
-										description='当前设备本地工作集的计数摘要。'
-										label='本地工作集'
-										value={<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />}
-									/>
-									<SettingInfoRow
-										description='Turso 远端当前镜像表的计数摘要。'
-										label='远端工作集'
-										value={<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />}
-									/>
-								</div>
-							) : (
-								<StatusNotice
-									description={
-										syncStatus?.hasRemoteConfig
-											? '当前还没有读取诊断摘要。点击“刷新诊断”后，会显示本地 cursor、远端 cursor 和工作集计数。'
-											: '先保存可用的 Turso URL 和 token，才能读取远端诊断信息。'
-									}
-									title='尚未读取同步诊断'
-								/>
-							)}
+								</CollapsibleTrigger>
+								<CollapsibleContent className='overflow-hidden border-t border-sf-border-subtle'>
+									<div className='flex flex-col gap-4 bg-muted/10 p-4'>
+										<StatusNotice
+											description={syncStatusCopy.summary}
+											title={syncStatusCopy.title}
+											variant={syncStatusCopy.variant}
+										/>
 
-							{syncDiagnosticsMessage ? (
-								<StatusNotice
-									className={statusNoticeCompactTextClass}
-									description={syncDiagnosticsMessage}
-									role='alert'
-									size='sm'
-									title='同步诊断读取失败'
-									variant='danger'
-								/>
-							) : null}
+										{syncRequiresBaseline && syncStatus?.replicaReason ? (
+											<StatusNotice
+												description={syncStatus.replicaReason}
+												title='当前设备需要建立同步基线'
+												variant='warning'
+											/>
+										) : null}
+
+										{effectiveSyncError ? (
+											<StatusNotice
+												className={statusNoticeCompactTextClass}
+												description={effectiveSyncError}
+												role='alert'
+												size='sm'
+												title={effectiveSyncErrorTitle}
+												variant='danger'
+											/>
+										) : null}
+
+										<div className='flex flex-col gap-3'>
+											<div className='flex items-center justify-between gap-3'>
+												<div className='min-w-0'>
+													<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
+													<p className={formFieldHintClass}>
+														只读查看当前设备与 Turso 远端的 server_seq
+														和工作集摘要，用于排查同步问题。
+													</p>
+												</div>
+												<Button
+													disabled={syncBusy || syncDiagnosing || !syncStatus?.hasRemoteConfig}
+													onClick={() => void refreshSyncDiagnostics()}
+													size='sm'
+													type='button'
+													variant='secondary'
+												>
+													{syncDiagnosing ? '诊断中...' : '刷新诊断'}
+												</Button>
+											</div>
+
+											{syncDiagnostics ? (
+												<div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
+													<SettingInfoRow
+														description='当前保存并正在使用的 Turso 远端 host。'
+														label='远端 Host'
+														value={
+															<span className='break-all font-medium text-foreground'>
+																{syncDiagnostics.remoteHost ?? '未读取'}
+															</span>
+														}
+													/>
+													<SettingInfoRow
+														description='当前设备最后一次成功吸收远端 change log 后落在本地的 server_seq。'
+														label='本地 server_seq'
+														value={
+															<SyncCursorValue value={syncDiagnostics.local.lastPulledServerSeq} />
+														}
+													/>
+													<SettingInfoRow
+														description='Turso 远端 remote_change_log 当前看到的最新 server_seq。'
+														label='远端 server_seq'
+														value={
+															<SyncCursorValue value={syncDiagnostics.remote.latestServerSeq} />
+														}
+													/>
+													<SettingInfoRow
+														description='当前设备本地还没提交成功的 mutation 数量。'
+														label='待同步 mutation'
+														value={
+															<span className='font-medium text-foreground'>
+																{syncDiagnostics.local.pendingMutationCount} 条
+															</span>
+														}
+													/>
+													<SettingInfoRow
+														description='当前设备本地工作集的计数摘要。'
+														label='本地工作集'
+														value={<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />}
+													/>
+													<SettingInfoRow
+														description='Turso 远端当前镜像表的计数摘要。'
+														label='远端工作集'
+														value={
+															<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />
+														}
+													/>
+												</div>
+											) : (
+												<StatusNotice
+													description={
+														syncStatus?.hasRemoteConfig
+															? '点击「刷新诊断」后，会显示本地 cursor、远端 cursor 和工作集计数。'
+															: '先保存可用的 Turso URL 和 token，才能读取远端诊断信息。'
+													}
+													title='尚未读取同步诊断'
+												/>
+											)}
+
+											{syncDiagnosticsMessage ? (
+												<StatusNotice
+													className={statusNoticeCompactTextClass}
+													description={syncDiagnosticsMessage}
+													role='alert'
+													size='sm'
+													title='同步诊断读取失败'
+													variant='danger'
+												/>
+											) : null}
+										</div>
+									</div>
+								</CollapsibleContent>
+							</Collapsible>
 						</div>
+
+						<SyncConfigDialog
+							onClose={() => setSyncConfigDialogOpen(false)}
+							onSave={handleSaveSyncConfig}
+							onSyncTokenChange={setSyncToken}
+							onSyncUrlChange={setSyncUrl}
+							open={syncConfigDialogOpen}
+							syncBusy={syncBusy}
+							syncToken={syncToken}
+							syncUrl={syncUrl}
+						/>
 					</SettingsSection>
 				</div>
 			}
@@ -881,6 +903,15 @@ function SettingInfoRow({
 	)
 }
 
+function SyncMetricCard({ label, value }: { label: string; value: React.ReactNode }) {
+	return (
+		<div className='rounded-2xl border border-sf-border-subtle bg-muted/25 px-3 py-2'>
+			<p className='text-[11px] font-medium text-muted-foreground'>{label}</p>
+			<div className='mt-1 text-sm text-foreground'>{value}</div>
+		</div>
+	)
+}
+
 function SyncTimestampValue({
 	timestamp,
 	emptyLabel = '从未同步',
@@ -930,59 +961,44 @@ function SyncCountsSummaryValue({
 }
 
 function SyncStatusBadge({ status }: { status: SyncStatus }) {
-	const tone =
-		status === 'synced'
-			? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-			: status === 'offline_pending'
-				? 'border-amber-200 bg-amber-50 text-amber-700'
-				: status === 'syncing'
-					? 'border-sky-200 bg-sky-50 text-sky-700'
-					: status === 'error' || status === 'needs_attention'
-						? 'border-red-200 bg-red-50 text-red-700'
-						: 'border-slate-200 bg-slate-50 text-slate-600'
-	const dotTone =
-		status === 'synced'
-			? 'bg-emerald-500'
-			: status === 'offline_pending'
-				? 'bg-amber-500'
-				: status === 'syncing'
-					? 'bg-sky-500'
-					: status === 'error' || status === 'needs_attention'
-						? 'bg-red-500'
-						: 'bg-slate-400'
+	const tone = getSyncStatusTone(status)
 
 	return (
-		<span
-			className={cn(
-				'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-sm font-medium',
-				tone,
-			)}
-		>
-			<span className={cn('size-2.5 rounded-full', dotTone)} />
+		<Badge variant={tone.badgeVariant}>
+			<span
+				className={cn(
+					'size-2 shrink-0 rounded-full',
+					tone.dotClassName,
+					status === 'syncing' && 'animate-pulse',
+				)}
+			/>
 			{formatSyncStatus(status)}
-		</span>
+		</Badge>
 	)
 }
 
 function SyncReplicaBadge({ state }: { state: SyncReplicaState }) {
-	const tone =
-		state === 'ready'
-			? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-			: state === 'baseline_required'
-				? 'border-amber-200 bg-amber-50 text-amber-700'
-				: state === 'diverged'
-					? 'border-red-200 bg-red-50 text-red-700'
-					: 'border-slate-200 bg-slate-50 text-slate-600'
+	const tone = getSyncReplicaTone(state)
 
 	return (
-		<span
-			className={cn(
-				'inline-flex items-center rounded-full border px-2.5 py-1 text-sm font-medium',
-				tone,
-			)}
-		>
+		<Badge variant={tone.badgeVariant}>
+			<span className={cn('size-2 shrink-0 rounded-full', tone.dotClassName)} />
 			{formatReplicaState(state)}
-		</span>
+		</Badge>
+	)
+}
+
+function SyncTursoConfigBadge({ configured }: { configured: boolean }) {
+	return (
+		<Badge variant={configured ? 'success' : 'outline'}>
+			<span
+				className={cn(
+					'size-2 shrink-0 rounded-full',
+					configured ? 'bg-sf-project-task-status-done' : 'bg-(--sf-neutral-500)',
+				)}
+			/>
+			{configured ? 'Turso 已配置' : 'Turso 未配置'}
+		</Badge>
 	)
 }
 
@@ -1186,39 +1202,5 @@ function getSyncErrorTitle(mode: 'push' | 'pull' | 'sync' | null, syncRunning: b
 			return '手动同步失败'
 		default:
 			return '同步失败'
-	}
-}
-
-function formatSyncStatus(status: SyncStatus) {
-	switch (status) {
-		case 'disabled':
-			return '未启用'
-		case 'synced':
-			return '已同步'
-		case 'offline_pending':
-			return '待同步'
-		case 'syncing':
-			return '同步中'
-		case 'error':
-			return '同步失败'
-		case 'needs_attention':
-			return '需要处理'
-		default:
-			return status
-	}
-}
-
-function formatReplicaState(state: SyncReplicaState) {
-	switch (state) {
-		case 'ready':
-			return '可正常同步'
-		case 'baseline_required':
-			return '缺少基线'
-		case 'diverged':
-			return '状态异常'
-		case 'uninitialized':
-			return '尚未初始化'
-		default:
-			return state
 	}
 }
