@@ -1,6 +1,12 @@
 import { invoke } from '@tauri-apps/api/core'
 
-export type SyncStatus = 'disabled' | 'idle' | 'dirty' | 'pushing' | 'pulling' | 'error'
+export type SyncStatus =
+	| 'disabled'
+	| 'synced'
+	| 'syncing'
+	| 'offline_pending'
+	| 'error'
+	| 'needs_attention'
 export type SyncReplicaState = 'uninitialized' | 'ready' | 'restore_required' | 'diverged'
 
 export type SyncStatusPayload = {
@@ -79,7 +85,7 @@ export function configureSync(input: { url: string; token: string }) {
 }
 
 /**
- * 手动执行一轮 pull -> push -> pull-confirm。
+ * 手动执行一轮完整同步。
  */
 export function runSync() {
 	return invoke<SyncStatusPayload>('run_sync')

@@ -141,7 +141,7 @@ pub fn trigger_resume_sync(app_handle: &tauri::AppHandle) {
     });
 }
 
-/// 手动同步固定语义为 pull -> push -> pull-confirm，并等待本轮完成。
+/// 手动执行一轮完整同步，并等待本轮完成。
 pub async fn run_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload, AppError> {
     let sync_state = sync_state_from_app(app_handle)?;
     let database = database_state_from_app(app_handle)?;
@@ -753,7 +753,7 @@ mod tests {
 
         assert!(payload.enabled);
         assert!(payload.has_remote_config);
-        assert_eq!(payload.status, SyncStatusKind::Idle);
+        assert_eq!(payload.status, SyncStatusKind::Synced);
         assert_eq!(payload.remote_url.as_deref(), Some("libsql://example.turso.io"));
     }
 

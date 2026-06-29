@@ -7,9 +7,9 @@ use libsql::{params, Builder, Connection, Transaction};
 use crate::{
     error::SyncWorkerError,
     schema::{
-        ProjectPayload, REMOTE_SCHEMA_STATEMENTS, RemoteChangeKind, RemoteChangeRecord,
-        RemoteOperationRecord, SettingPayload, SpacePayload, SyncAction, SyncOperationPayload,
-        TaskLinkPayload, TaskPayload, ViewPayload,
+        LocalMutationRecord, ProjectPayload, REMOTE_SCHEMA_STATEMENTS, RemoteChangeKind,
+        RemoteChangeRecord, RemoteOperationRecord, SettingPayload, SpacePayload, SyncAction,
+        SyncOperationPayload, TaskLinkPayload, TaskPayload, ViewPayload,
     },
     types::SyncRemoteConfig,
 };
@@ -25,6 +25,99 @@ pub async fn open_local_sqlite(database_path: &str) -> Result<Connection, SyncWo
     database
         .connect()
         .map_err(|error| SyncWorkerError::local_database(format!("连接本地 SQLite 失败: {error}")))
+}
+
+pub async fn find_remote_mutation_ack(
+    transaction: &Transaction,
+    client_id: &str,
+    client_seq: i64,
+) -> Result<Option<i64>, SyncWorkerError> {
+    let mut rows = transaction
+        .query(
+            r#"
+            SELECT server_seq
+            FROM remote_mutations
+            WHERE client_id = ?1 AND client_seq = ?2
+            LIMIT 1
+            "#,
+            params![client_id.to_owned(), client_seq],
+        )
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 remote_mutations 失败: {error}")))?;
+    let row = rows
+        .next()
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("遍历远端 remote_mutations 失败: {error}")))?;
+
+    row.map(|row| {
+        row.get::<i64>(0)
+            .map_err(remote_column_error("remote_mutations.server_seq"))
+    })
+    .transpose()
+}
+
+pub async fn insert_v2_change_and_ack(
+    transaction: &Transaction,
+    mutation: &LocalMutationRecord,
+    change_kind: RemoteChangeKind,
+    patch: Option<&SyncOperationPayload>,
+) -> Result<i64, SyncWorkerError> {
+    let patch = patch
+        .map(serde_json::to_string)
+        .transpose()
+        .map_err(|error| SyncWorkerError::serialization(format!("序列化 remote_change_log.patch 失败: {error}")))?;
+    transaction
+        .execute(
+            r#"
+            INSERT INTO remote_change_log(
+                entity_type, entity_id, change_kind, patch,
+                changed_by_client_id, changed_by_client_seq, committed_at
+            )
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            "#,
+            params![
+                mutation.entity_type.clone(),
+                mutation.entity_id.clone(),
+                change_kind.as_str(),
+                patch,
+                mutation.client_id.clone(),
+                mutation.client_seq,
+                mutation.updated_at.clone(),
+            ],
+        )
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("写入远端 remote_change_log 失败: {error}")))?;
+
+    let mut rows = transaction
+        .query("SELECT last_insert_rowid()", params![])
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("读取 server_seq 失败: {error}")))?;
+    let row = rows
+        .next()
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("遍历 server_seq 失败: {error}")))?
+        .ok_or_else(|| SyncWorkerError::remote_database("读取 server_seq 失败: 缺少结果行"))?;
+    let server_seq = row
+        .get::<i64>(0)
+        .map_err(remote_column_error("remote_change_log.server_seq"))?;
+
+    transaction
+        .execute(
+            r#"
+            INSERT INTO remote_mutations(client_id, client_seq, received_at, server_seq, status, error_message)
+            VALUES (?1, ?2, ?3, ?4, 'applied', NULL)
+            "#,
+            params![
+                mutation.client_id.clone(),
+                mutation.client_seq,
+                mutation.updated_at.clone(),
+                server_seq,
+            ],
+        )
+        .await
+        .map_err(|error| SyncWorkerError::remote_database(format!("写入远端 remote_mutations 失败: {error}")))?;
+
+    Ok(server_seq)
 }
 
 pub async fn fetch_v2_changes_after(

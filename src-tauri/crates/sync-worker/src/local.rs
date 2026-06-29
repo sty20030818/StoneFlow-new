@@ -7,7 +7,8 @@ use crate::{
     error::SyncWorkerError,
     schema::{
         DEVICE_ID_SCOPE, HARD_DELETE_CURSOR_SCOPE, HardDeleteCursor, HardDeleteEventRecord,
-        LAST_RESTORE_AT_SCOPE, LocalOutboxRecord, REMOTE_CURSOR_SCOPE, SERVER_SEQ_CURSOR_SCOPE,
+        LAST_RESTORE_AT_SCOPE, LocalMutationRecord, LocalOutboxRecord, REMOTE_CURSOR_SCOPE,
+        SERVER_SEQ_CURSOR_SCOPE,
     },
 };
 
@@ -68,6 +69,92 @@ pub async fn list_pushable_outbox(
     }
 
     Ok(records)
+}
+
+pub async fn list_pending_mutations(
+    local: &Connection,
+    limit: u64,
+) -> Result<Vec<LocalMutationRecord>, SyncWorkerError> {
+    let mut rows = local
+        .query(
+            r#"
+            SELECT client_id, client_seq, entity_type, entity_id, operation, payload, created_at, updated_at
+            FROM sync_mutations
+            WHERE status = 'pending'
+            ORDER BY client_id ASC, client_seq ASC
+            LIMIT ?1
+            "#,
+            params![limit as i64],
+        )
+        .await
+        .map_err(|error| SyncWorkerError::local_database(format!("读取本地 sync_mutations 失败: {error}")))?;
+    let mut records = Vec::new();
+
+    while let Some(row) = rows
+        .next()
+        .await
+        .map_err(|error| SyncWorkerError::local_database(format!("遍历本地 sync_mutations 失败: {error}")))?
+    {
+        records.push(LocalMutationRecord {
+            client_id: row
+                .get::<String>(0)
+                .map_err(read_local_column_error("sync_mutations.client_id"))?,
+            client_seq: row
+                .get::<i64>(1)
+                .map_err(read_local_column_error("sync_mutations.client_seq"))?,
+            entity_type: row
+                .get::<String>(2)
+                .map_err(read_local_column_error("sync_mutations.entity_type"))?,
+            entity_id: row
+                .get::<String>(3)
+                .map_err(read_local_column_error("sync_mutations.entity_id"))?,
+            operation: row
+                .get::<String>(4)
+                .map_err(read_local_column_error("sync_mutations.operation"))?,
+            payload: row
+                .get::<String>(5)
+                .map_err(read_local_column_error("sync_mutations.payload"))?,
+            created_at: row
+                .get::<String>(6)
+                .map_err(read_local_column_error("sync_mutations.created_at"))?,
+            updated_at: row
+                .get::<String>(7)
+                .map_err(read_local_column_error("sync_mutations.updated_at"))?,
+        });
+    }
+
+    Ok(records)
+}
+
+pub async fn mark_mutations_acked(
+    local: &Connection,
+    batch: &[LocalMutationRecord],
+) -> Result<(), SyncWorkerError> {
+    let transaction = local
+        .transaction()
+        .await
+        .map_err(|error| SyncWorkerError::local_database(format!("开启本地 mutation ack 事务失败: {error}")))?;
+    let now = now_utc().to_rfc3339();
+
+    for record in batch {
+        transaction
+            .execute(
+                r#"
+                UPDATE sync_mutations
+                SET status = 'acked', error_message = NULL, updated_at = ?1
+                WHERE client_id = ?2 AND client_seq = ?3
+                "#,
+                params![now.clone(), record.client_id.clone(), record.client_seq],
+            )
+            .await
+            .map_err(|error| SyncWorkerError::local_database(format!("更新本地 sync_mutations 状态失败: {error}")))?;
+    }
+
+    transaction
+        .commit()
+        .await
+        .map_err(|error| SyncWorkerError::local_database(format!("提交本地 mutation ack 事务失败: {error}")))?;
+    Ok(())
 }
 
 pub async fn mark_outbox_records_synced(

@@ -179,6 +179,18 @@ pub struct LocalOutboxRecord {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LocalMutationRecord {
+    pub client_id: String,
+    pub client_seq: i64,
+    pub entity_type: String,
+    pub entity_id: String,
+    pub operation: String,
+    pub payload: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HardDeleteEventRecord {
     pub id: String,
     pub entity_type: String,
@@ -269,6 +281,16 @@ pub enum RemoteChangeKind {
 }
 
 impl RemoteChangeKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Upsert => "upsert",
+            Self::SoftDelete => "soft_delete",
+            Self::Restore => "restore",
+            Self::HardDelete => "hard_delete",
+            Self::ConflictNotice => "conflict_notice",
+        }
+    }
+
     pub fn parse(raw: &str) -> Result<Self, crate::error::SyncWorkerError> {
         match raw {
             "upsert" => Ok(Self::Upsert),

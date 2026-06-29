@@ -239,7 +239,7 @@ describe('SettingsPage', () => {
 		configureSyncSpy.mockReset()
 		configureSyncSpy.mockResolvedValue({
 			enabled: true,
-			status: 'idle',
+			status: 'synced',
 			lastPushAt: null,
 			lastPullAt: null,
 			lastError: null,
@@ -255,7 +255,7 @@ describe('SettingsPage', () => {
 		runSyncSpy.mockReset()
 		runSyncSpy.mockResolvedValue({
 			enabled: true,
-			status: 'idle',
+			status: 'synced',
 			lastPushAt: '2026-06-26T00:00:00Z',
 			lastPullAt: '2026-06-26T00:00:01Z',
 			lastError: null,
@@ -272,7 +272,7 @@ describe('SettingsPage', () => {
 		restoreSyncSpy.mockResolvedValue({
 			status: {
 				enabled: true,
-				status: 'idle',
+				status: 'synced',
 				lastPushAt: null,
 				lastPullAt: '2026-06-28T00:00:00Z',
 				lastError: null,
@@ -388,7 +388,7 @@ describe('SettingsPage', () => {
 	it('页面加载后会回填已保存的同步配置', async () => {
 		getSyncStatusSpy.mockResolvedValue({
 			enabled: true,
-			status: 'idle',
+			status: 'synced',
 			lastPushAt: null,
 			lastPullAt: null,
 			lastError: null,
@@ -436,7 +436,7 @@ describe('SettingsPage', () => {
 		getSyncStatusSpy
 			.mockResolvedValueOnce({
 				enabled: true,
-				status: 'idle',
+				status: 'synced',
 				lastPushAt: null,
 				lastPullAt: null,
 				lastError: null,
@@ -451,7 +451,7 @@ describe('SettingsPage', () => {
 			})
 			.mockResolvedValue({
 				enabled: true,
-				status: 'idle',
+				status: 'synced',
 				lastPushAt: null,
 				lastPullAt: null,
 				lastError: null,
@@ -487,7 +487,7 @@ describe('SettingsPage', () => {
 	it('点击立即同步时调用 runSync', async () => {
 		getSyncStatusSpy.mockResolvedValue({
 			enabled: true,
-			status: 'idle',
+			status: 'synced',
 			lastPushAt: null,
 			lastPullAt: null,
 			lastError: null,
@@ -513,7 +513,7 @@ describe('SettingsPage', () => {
 	it('点击从云端恢复本地时调用 restoreSync', async () => {
 		getSyncStatusSpy.mockResolvedValue({
 			enabled: true,
-			status: 'idle',
+			status: 'synced',
 			lastPushAt: null,
 			lastPullAt: null,
 			lastError: null,
@@ -540,13 +540,13 @@ describe('SettingsPage', () => {
 		expect(navigateSpy).toHaveBeenCalledWith('/all/tasks', { replace: true })
 	})
 
-	it('dirty 状态时展示等待上推提示', async () => {
+	it('待同步状态时展示等待同步提示', async () => {
 		vi.useFakeTimers()
 		vi.setSystemTime(new Date('2026-06-26T00:10:00Z'))
 
 		getSyncStatusSpy.mockResolvedValue({
 			enabled: true,
-			status: 'dirty',
+			status: 'offline_pending',
 			lastPushAt: '2026-06-26T00:00:00Z',
 			lastPullAt: '2026-06-26T00:00:01Z',
 			lastError: null,
@@ -562,7 +562,7 @@ describe('SettingsPage', () => {
 
 		await renderSettingsPage()
 
-		expect(screen.getByText('等待上推')).toBeInTheDocument()
+		expect(screen.getByText('等待同步')).toBeInTheDocument()
 		expect(
 			screen.getByText(
 				'本地已经产生新变更，最早一笔待同步写入开始于 10 分钟前。你可以直接点“立即同步”，也可以等后台自动补跑完整对齐轮次。',
@@ -593,7 +593,7 @@ describe('SettingsPage', () => {
 		await renderSettingsPage()
 
 		expect(screen.getByText('同步需要处理')).toBeInTheDocument()
-		expect(screen.getByText('拉取失败')).toBeInTheDocument()
+		expect(screen.getByText('确认失败')).toBeInTheDocument()
 		expect(await screen.findByText('remote unavailable')).toBeInTheDocument()
 	})
 
@@ -608,7 +608,7 @@ describe('SettingsPage', () => {
 		getSyncStatusSpy
 			.mockResolvedValueOnce({
 				enabled: true,
-				status: 'idle',
+				status: 'synced',
 				lastPushAt: null,
 				lastPullAt: null,
 				lastError: null,
@@ -666,7 +666,7 @@ describe('SettingsPage', () => {
 	it('副本为空时展示待恢复提示并禁用立即同步', async () => {
 		getSyncStatusSpy.mockResolvedValue({
 			enabled: true,
-			status: 'idle',
+			status: 'synced',
 			lastPushAt: null,
 			lastPullAt: null,
 			lastError: null,
@@ -691,7 +691,7 @@ describe('SettingsPage', () => {
 	it('点击刷新诊断时展示远端与本地摘要', async () => {
 		getSyncStatusSpy.mockResolvedValue({
 			enabled: true,
-			status: 'idle',
+			status: 'synced',
 			lastPushAt: null,
 			lastPullAt: null,
 			lastError: null,

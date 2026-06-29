@@ -501,6 +501,7 @@ async fn apply_hard_delete(
         "task" => ("tasks", "task.permanently_deleted"),
         "project" => ("projects", "project.permanently_deleted"),
         "space" => ("spaces", "space.permanently_deleted"),
+        "task_link" => ("task_links", "task.link.removed"),
         other => {
             return Err(SyncWorkerError::protocol(format!(
                 "暂不支持的 hard delete entity_type: {other}"

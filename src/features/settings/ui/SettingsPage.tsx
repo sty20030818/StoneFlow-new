@@ -290,12 +290,12 @@ export function SettingsPage() {
 	const syncConfigIncomplete = syncUrl.trim().length === 0 || syncToken.trim().length === 0
 	const syncRequiresRestore = syncStatus?.replicaState === 'restore_required'
 	const displayedSyncStatus: SyncStatus = syncRunning
-		? 'pulling'
+		? 'syncing'
 		: syncRestoring
-			? 'pulling'
+			? 'syncing'
 		: syncSaving
-			? 'pushing'
-			: (syncStatus?.status ?? (syncLoading ? 'pulling' : 'disabled'))
+			? 'syncing'
+			: (syncStatus?.status ?? (syncLoading ? 'syncing' : 'disabled'))
 	const syncStatusCopy = getSyncStatusCopy({
 		dirtySince: syncStatus?.dirtySince ?? null,
 		pendingResync: syncStatus?.pendingResync ?? false,
@@ -608,17 +608,17 @@ export function SettingsPage() {
 								}
 							/>
 							<SettingInfoRow
-								description='最近一次同步轮次里 push 阶段完成时间。'
-								label='上次 push'
+								description='最近一次本地变更成功提交到远端的时间。'
+								label='上次提交'
 								value={<SyncTimestampValue timestamp={syncStatus?.lastPushAt ?? null} />}
 							/>
 							<SettingInfoRow
-								description='最近一次同步轮次里 pull 或 pull-confirm 阶段完成时间。'
-								label='上次 pull'
+								description='最近一次从远端确认同步结果的时间。'
+								label='上次确认'
 								value={<SyncTimestampValue timestamp={syncStatus?.lastPullAt ?? null} />}
 							/>
 							<SettingInfoRow
-								description='用于判断当前设备能否继续执行普通同步。若副本为空，S1 会先阻止 push，避免把空副本误当成删除源。'
+								description='用于判断当前设备能否继续执行普通同步。若副本为空，会先阻止普通同步，避免把空副本误当成删除源。'
 								label='本地副本'
 								value={<SyncReplicaBadge state={syncStatus?.replicaState ?? 'uninitialized'} />}
 							/>
@@ -697,7 +697,7 @@ export function SettingsPage() {
 
 						<p className={`mt-3 ${formFieldHintClass}`}>
 							配置会直接保存在本地数据库的 settings 表；页面刷新后只会自动回填 URL。出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token 覆盖保存。未配置前不会自动同步；配置完成后，本地写入会先标记
-							dirty，再由同步引擎异步执行“pull → push → pull-confirm”。若当前设备是空副本，先用“从云端恢复本地”把远端基线完整拉回本机，再继续普通同步。
+							待同步，再由同步引擎异步执行完整同步。若当前设备是空副本，先用“从云端恢复本地”把远端基线完整拉回本机，再继续普通同步。
 						</p>
 
 						<StatusNotice
@@ -765,8 +765,8 @@ export function SettingsPage() {
 										}
 									/>
 									<SettingInfoRow
-										description='当前设备本地 outbox 里还没 push 成功的记录数量。'
-										label='待 push outbox'
+										description='当前设备本地还没提交成功的同步记录数量。'
+										label='待同步记录'
 										value={
 											<span className='font-medium text-foreground'>
 												{syncDiagnostics.local.pendingOutboxCount} 条
@@ -990,23 +990,23 @@ function SyncCountsSummaryValue({
 
 function SyncStatusBadge({ status }: { status: SyncStatus }) {
 	const tone =
-		status === 'idle'
+		status === 'synced'
 			? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-			: status === 'dirty'
+			: status === 'offline_pending'
 				? 'border-amber-200 bg-amber-50 text-amber-700'
-				: status === 'pushing' || status === 'pulling'
+				: status === 'syncing'
 					? 'border-sky-200 bg-sky-50 text-sky-700'
-					: status === 'error'
+					: status === 'error' || status === 'needs_attention'
 						? 'border-red-200 bg-red-50 text-red-700'
 						: 'border-slate-200 bg-slate-50 text-slate-600'
 	const dotTone =
-		status === 'idle'
+		status === 'synced'
 			? 'bg-emerald-500'
-			: status === 'dirty'
+			: status === 'offline_pending'
 				? 'bg-amber-500'
-				: status === 'pushing' || status === 'pulling'
+				: status === 'syncing'
 					? 'bg-sky-500'
-					: status === 'error'
+					: status === 'error' || status === 'needs_attention'
 						? 'bg-red-500'
 						: 'bg-slate-400'
 
@@ -1135,7 +1135,7 @@ function getSyncStatusCopy({
 	if (syncLoading) {
 		return {
 			title: '正在读取同步状态',
-			summary: '正在读取本机保存的云同步状态与远端配置，完成后会显示最近一次 push / pull 结果。',
+			summary: '正在读取本机保存的云同步状态与远端配置，完成后会显示最近一次同步结果。',
 			statusDescription: '正在读取当前同步状态。',
 			variant: 'warning' as const,
 		}
@@ -1154,9 +1154,9 @@ function getSyncStatusCopy({
 		return {
 			title: '正在执行手动同步',
 			summary: pendingResync
-				? '当前这一轮会先 pull 远端增量，再 push 本地 outbox，最后再做一次 pull-confirm；运行期间又有新写入，结束后还会自动补跑一轮。'
-				: '当前这一轮会先 pull 远端增量，再 push 本地 outbox，最后再做一次 pull-confirm。同步期间本地业务仍然继续只读写本地数据库。',
-			statusDescription: '正在执行一轮 pull → push → pull-confirm。',
+				? '当前正在执行完整同步；运行期间又有新写入，结束后还会自动补跑一轮。'
+				: '当前正在执行完整同步。同步期间本地业务仍然继续只读写本地数据库。',
+			statusDescription: '正在执行完整同步。',
 			variant: 'warning' as const,
 		}
 	}
@@ -1185,24 +1185,24 @@ function getSyncStatusCopy({
 			title: '当前设备需要先恢复本地副本',
 			summary:
 				replicaReason ??
-				'当前本地副本看起来是空的。为避免把空副本误当成删除源，S1 阶段已阻止普通同步，后续需要走“从远端恢复本地”链路。',
+				'当前本地副本看起来是空的。为避免把空副本误当成删除源，已阻止普通同步，后续需要走“从远端恢复本地”链路。',
 			statusDescription: '当前设备的本地副本为空，普通同步已被阻止。',
 			variant: 'warning' as const,
 		}
 	}
 
 	switch (status) {
-		case 'idle':
+		case 'synced':
 			return {
 				title: '同步状态正常',
 				summary:
-					'当前没有待处理同步动作。本地一旦产生新的写入，会先变成待同步，再由后台异步执行一轮 pull → push → pull-confirm。',
+					'当前没有待处理同步动作。本地一旦产生新的写入，会先变成待同步，再由后台异步执行完整同步。',
 				statusDescription: '当前没有待处理的同步轮次。',
 				variant: 'success' as const,
 			}
-		case 'dirty':
+		case 'offline_pending':
 			return {
-				title: '等待上推',
+				title: '等待同步',
 				summary: dirtySince
 					? `本地已经产生新变更，最早一笔待同步写入开始于 ${formatSyncRelativeTime(dirtySince)}。你可以直接点“立即同步”，也可以等后台自动补跑完整对齐轮次。`
 					: '本地已经产生新变更，正在等待下一轮完整对齐同步。你可以直接点“立即同步”，也可以等后台自动补跑。',
@@ -1211,20 +1211,11 @@ function getSyncStatusCopy({
 					: '本地已有新写入，等待下一轮完整对齐同步。',
 				variant: 'warning' as const,
 			}
-		case 'pushing':
+		case 'syncing':
 			return {
-				title: '正在推送本地变更',
-				summary:
-					'同步引擎正在这一轮对齐同步的中间阶段，把本地 outbox 提交到 Turso 远端。这个过程失败时不会影响当前本地写入结果。',
-				statusDescription: '正在把本地 outbox push 到远端。',
-				variant: 'warning' as const,
-			}
-		case 'pulling':
-			return {
-				title: '正在拉取远端结果',
-				summary:
-					'同步引擎正在执行初始 pull 或最后的 pull-confirm，用来先吸收其他设备变更，再确认当前轮次提交后的远端最终状态。',
-				statusDescription: '正在从远端 pull 最新结果或确认结果。',
+				title: '正在同步',
+				summary: '同步引擎正在对齐本地和远端数据。这个过程失败时不会影响当前本地写入结果。',
+				statusDescription: '正在同步本地和远端数据。',
 				variant: 'warning' as const,
 			}
 		case 'error':
@@ -1232,6 +1223,13 @@ function getSyncStatusCopy({
 				title: '同步需要处理',
 				summary: '上一轮同步失败了。先检查 URL、token、网络和 Turso 远端状态，修正后再触发下一轮同步。',
 				statusDescription: '上一轮同步失败，等待人工处理或下一次重试。',
+				variant: 'danger' as const,
+			}
+		case 'needs_attention':
+			return {
+				title: '同步需要处理',
+				summary: '同步遇到无法自动处理的问题，需要检查配置、数据状态或冲突信息。',
+				statusDescription: '同步需要人工处理。',
 				variant: 'danger' as const,
 			}
 		default:
@@ -1258,9 +1256,9 @@ function getSyncErrorTitle(
 
 	switch (mode) {
 		case 'push':
-			return '上推失败'
+			return '提交失败'
 		case 'pull':
-			return '拉取失败'
+			return '确认失败'
 		case 'sync':
 			return '手动同步失败'
 		case 'restore':
@@ -1274,16 +1272,16 @@ function formatSyncStatus(status: SyncStatus) {
 	switch (status) {
 		case 'disabled':
 			return '未启用'
-		case 'idle':
-			return '空闲'
-		case 'dirty':
+		case 'synced':
+			return '已同步'
+		case 'offline_pending':
 			return '待同步'
-		case 'pushing':
-			return '正在 push'
-		case 'pulling':
-			return '正在 pull'
+		case 'syncing':
+			return '同步中'
 		case 'error':
 			return '同步失败'
+		case 'needs_attention':
+			return '需要处理'
 		default:
 			return status
 	}

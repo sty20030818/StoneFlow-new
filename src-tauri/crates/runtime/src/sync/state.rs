@@ -70,9 +70,9 @@ impl SyncRuntimeState {
 
         if guard.remote_config.is_some() {
             guard.status = if guard.dirty_since.is_some() {
-                SyncStatusKind::Dirty
+                SyncStatusKind::OfflinePending
             } else {
-                SyncStatusKind::Idle
+                SyncStatusKind::Synced
             };
         } else {
             guard.status = SyncStatusKind::Disabled;
@@ -119,7 +119,7 @@ impl SyncRuntimeState {
             return;
         }
 
-        guard.status = SyncStatusKind::Dirty;
+        guard.status = SyncStatusKind::OfflinePending;
     }
 
     /// 运行中的外部触发只排队，不并发起第二轮。
@@ -143,28 +143,23 @@ impl SyncRuntimeState {
     }
 
     /// 一轮同步开始时更新可见状态。
-    pub(crate) async fn start_run(&self, mode: SyncRunMode) {
+    pub(crate) async fn start_run(&self, _mode: SyncRunMode) {
         let mut guard = self.inner.write().await;
         guard.last_error = None;
         guard.last_error_mode = None;
-        guard.status = match mode {
-            SyncRunMode::Push => SyncStatusKind::Pushing,
-            SyncRunMode::Pull | SyncRunMode::Sync | SyncRunMode::Restore => {
-                SyncStatusKind::Pulling
-            }
-        };
+        guard.status = SyncStatusKind::Syncing;
     }
 
     /// 完整同步轮次在同一轮中切换到中间 push 阶段。
     pub(crate) async fn enter_sync_push_phase(&self) {
         let mut guard = self.inner.write().await;
-        guard.status = SyncStatusKind::Pushing;
+        guard.status = SyncStatusKind::Syncing;
     }
 
     /// 完整同步轮次在同一轮中切换到最后的 confirm pull 阶段。
     pub(crate) async fn enter_sync_confirm_pull_phase(&self) {
         let mut guard = self.inner.write().await;
-        guard.status = SyncStatusKind::Pulling;
+        guard.status = SyncStatusKind::Syncing;
     }
 
     /// 同步成功后落状态。
@@ -187,7 +182,7 @@ impl SyncRuntimeState {
             }
         }
 
-        guard.status = SyncStatusKind::Idle;
+        guard.status = SyncStatusKind::Synced;
         guard.last_error_mode = None;
     }
 
@@ -212,7 +207,7 @@ impl SyncRuntimeState {
 }
 
 fn is_running(status: SyncStatusKind) -> bool {
-    matches!(status, SyncStatusKind::Pushing | SyncStatusKind::Pulling)
+    matches!(status, SyncStatusKind::Syncing)
 }
 
 fn queue_pending_mode(inner: &mut SyncRuntimeInner, next_mode: SyncRunMode) {
@@ -253,7 +248,7 @@ mod tests {
         state.mark_dirty().await;
 
         let payload = state.snapshot().await;
-        assert_eq!(payload.status, SyncStatusKind::Dirty);
+        assert_eq!(payload.status, SyncStatusKind::OfflinePending);
         assert!(payload.enabled);
     }
 
@@ -292,7 +287,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn start_run_should_begin_sync_round_in_pulling_state() {
+    async fn start_run_should_begin_sync_round_in_syncing_state() {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
@@ -304,7 +299,7 @@ mod tests {
         state.start_run(SyncRunMode::Sync).await;
 
         let payload = state.snapshot().await;
-        assert_eq!(payload.status, SyncStatusKind::Pulling);
+        assert_eq!(payload.status, SyncStatusKind::Syncing);
     }
 
     #[tokio::test]

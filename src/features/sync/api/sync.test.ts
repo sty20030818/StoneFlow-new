@@ -44,7 +44,7 @@ describe('sync api', () => {
 	it('保存配置时发送 camelCase 输入', async () => {
 		mockedInvoke.mockResolvedValue({
 			enabled: true,
-			status: 'idle',
+			status: 'synced',
 			lastPushAt: null,
 			lastPullAt: null,
 			lastError: null,
@@ -111,7 +111,7 @@ describe('sync api', () => {
 	it('手动同步时调用 run_sync', async () => {
 		mockedInvoke.mockResolvedValue({
 			enabled: true,
-			status: 'idle',
+			status: 'synced',
 			lastPushAt: '2026-06-26T00:00:00Z',
 			lastPullAt: '2026-06-26T00:00:00Z',
 			lastError: null,
@@ -134,7 +134,7 @@ describe('sync api', () => {
 		mockedInvoke.mockResolvedValue({
 			status: {
 				enabled: true,
-				status: 'idle',
+				status: 'synced',
 				lastPushAt: null,
 				lastPullAt: '2026-06-28T00:00:00Z',
 				lastError: null,

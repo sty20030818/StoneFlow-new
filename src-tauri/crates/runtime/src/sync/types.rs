@@ -7,11 +7,11 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub enum SyncStatusKind {
     Disabled,
-    Idle,
-    Dirty,
-    Pushing,
-    Pulling,
+    Synced,
+    Syncing,
+    OfflinePending,
     Error,
+    NeedsAttention,
 }
 
 impl Default for SyncStatusKind {
