@@ -124,6 +124,35 @@ pub const REMOTE_SCHEMA_STATEMENTS: &[&str] = &[
         committed_at TEXT NOT NULL
     )
     "#,
+    // S1 `sync_operations` remains the active worker path. These V2 tables
+    // are only the long-term protocol skeleton until push/pull are replaced.
+    r#"
+    CREATE TABLE IF NOT EXISTS remote_mutations (
+        client_id TEXT NOT NULL,
+        client_seq INTEGER NOT NULL,
+        received_at TEXT NOT NULL,
+        server_seq INTEGER NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('applied', 'duplicate', 'rejected', 'conflict')),
+        error_message TEXT NULL,
+        PRIMARY KEY (client_id, client_seq)
+    )
+    "#,
+    r#"
+    CREATE TABLE IF NOT EXISTS remote_change_log (
+        server_seq INTEGER PRIMARY KEY AUTOINCREMENT,
+        entity_type TEXT NOT NULL CHECK (entity_type IN ('task', 'project', 'space', 'view', 'setting', 'task_link')),
+        entity_id TEXT NOT NULL,
+        change_kind TEXT NOT NULL CHECK (change_kind IN ('upsert', 'soft_delete', 'restore', 'hard_delete', 'conflict_notice')),
+        patch TEXT NULL,
+        changed_by_client_id TEXT NOT NULL,
+        changed_by_client_seq INTEGER NOT NULL,
+        committed_at TEXT NOT NULL
+    )
+    "#,
+    r#"
+    CREATE INDEX IF NOT EXISTS idx_remote_change_log_entity
+    ON remote_change_log(entity_type, entity_id, server_seq)
+    "#,
     r#"
     CREATE INDEX IF NOT EXISTS idx_sync_operations_remote_cursor
     ON sync_operations(remote_cursor)

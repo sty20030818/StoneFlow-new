@@ -35,6 +35,7 @@ pub async fn inspect_local_replica(
     let has_sync_metadata = has_non_empty_cursor(&device_id) || has_non_empty_cursor(&remote_cursor);
     let looks_empty_replica = counts.has_no_user_content() && counts.pending_outbox_count == 0;
     let has_restore_marker = has_non_empty_cursor(&last_restore_at);
+    let has_remote_cursor = has_non_empty_cursor(&remote_cursor);
 
     let (state, reason) = if has_remote_config && looks_empty_replica && has_restore_marker {
         (SyncReplicaState::Ready, None)
@@ -43,6 +44,14 @@ pub async fn inspect_local_replica(
             SyncReplicaState::RestoreRequired,
             Some(
                 "当前本地副本不包含任务、项目等同步主数据。为避免把空副本误当成删除源，S1 阶段已阻止普通同步，请先走“从远端恢复本地”链路。"
+                    .to_owned(),
+            ),
+        )
+    } else if has_remote_config && !has_remote_cursor && !has_restore_marker {
+        (
+            SyncReplicaState::RestoreRequired,
+            Some(
+                "当前设备缺少远端 pull cursor，无法安全执行普通同步。现有 Turso operation log 不能保证从零重建完整副本，请先走“从远端恢复本地”链路。"
                     .to_owned(),
             ),
         )
@@ -184,6 +193,7 @@ fn has_non_empty_cursor(record: &Option<SyncCursorRecord>) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use sea_orm::{ConnectionTrait, DbBackend, Statement};
     use stoneflow_test_support::TestDatabase;
 
     use super::inspect_local_replica;
@@ -227,6 +237,15 @@ mod tests {
             .insert_outbox_record(repository.connection(), &record)
             .await
             .expect("outbox insert should succeed");
+        repository
+            .upsert_cursor(
+                repository.connection(),
+                "sync:last_pulled_remote_cursor",
+                Some("12"),
+                "2026-06-28T00:00:00Z",
+            )
+            .await
+            .expect("remote cursor should persist");
 
         let snapshot = inspect_local_replica(&database, true)
             .await
@@ -234,6 +253,51 @@ mod tests {
 
         assert_eq!(snapshot.state, SyncReplicaState::Ready);
         assert_eq!(snapshot.reason, None);
+    }
+
+    #[tokio::test]
+    async fn inspect_local_replica_should_require_restore_when_remote_cursor_is_missing() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        database
+            .connection()
+            .execute(Statement::from_sql_and_values(
+                DbBackend::Sqlite,
+                r#"
+                INSERT INTO spaces(
+                    id, name, icon_key, color_key, is_default, sort_order, archived_at, deleted_at,
+                    created_at, updated_at
+                )
+                VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+                "#,
+                [
+                    "space-1".into(),
+                    "测试空间".into(),
+                    "sparkles".into(),
+                    "blue".into(),
+                    false.into(),
+                    1000.into(),
+                    Option::<String>::None.into(),
+                    Option::<String>::None.into(),
+                    "2026-06-28T00:00:00Z".into(),
+                    "2026-06-28T00:00:00Z".into(),
+                ],
+            ))
+            .await
+            .expect("space should persist");
+
+        let snapshot = inspect_local_replica(&database, true)
+            .await
+            .expect("replica inspection should succeed");
+
+        assert_eq!(snapshot.state, SyncReplicaState::RestoreRequired);
+        assert_eq!(
+            snapshot.reason.as_deref(),
+            Some(
+                "当前设备缺少远端 pull cursor，无法安全执行普通同步。现有 Turso operation log 不能保证从零重建完整副本，请先走“从远端恢复本地”链路。"
+            )
+        );
     }
 
     #[tokio::test]

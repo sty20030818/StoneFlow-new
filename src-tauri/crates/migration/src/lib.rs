@@ -6,6 +6,7 @@ pub use sea_orm_migration::prelude::*;
 
 mod m20260429_000001_v1_schema;
 mod m20260626_000002_sync_metadata;
+mod m20260629_000003_sync_v2_protocol;
 
 pub struct Migrator;
 
@@ -15,6 +16,7 @@ impl MigratorTrait for Migrator {
         vec![
             Box::new(m20260429_000001_v1_schema::Migration) as Box<dyn MigrationTrait>,
             Box::new(m20260626_000002_sync_metadata::Migration) as Box<dyn MigrationTrait>,
+            Box::new(m20260629_000003_sync_v2_protocol::Migration) as Box<dyn MigrationTrait>,
         ]
     }
 }

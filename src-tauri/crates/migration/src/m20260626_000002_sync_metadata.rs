@@ -1,4 +1,7 @@
-//! 云同步基础元数据表：设备标识、游标与本地 outbox。
+//! 云同步 S1 基础元数据表：游标与本地 outbox。
+//!
+//! S1 `sync_outbox` 只保留为兼容入口；长期协议骨架从
+//! `m20260629_000003_sync_v2_protocol` 开始。
 
 use sea_orm::ConnectionTrait;
 use sea_orm_migration::prelude::*;
