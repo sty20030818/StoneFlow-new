@@ -13,12 +13,13 @@ const WORKSPACE_QUERY_DOMAINS: WorkspaceQueryDomain[] = [
 
 export async function invalidateWorkspaceQueries(
 	queryClient: QueryClient,
-	options: { exclude?: WorkspaceQueryDomain[] } = {},
+	options: { exclude?: WorkspaceQueryDomain[]; include?: WorkspaceQueryDomain[] } = {},
 ) {
 	const excludedDomains = new Set(options.exclude ?? [])
+	const domains = options.include ?? WORKSPACE_QUERY_DOMAINS
 
 	await Promise.all(
-		WORKSPACE_QUERY_DOMAINS.filter((domain) => !excludedDomains.has(domain)).map((domain) =>
+		domains.filter((domain) => !excludedDomains.has(domain)).map((domain) =>
 			queryClient.invalidateQueries({ queryKey: [domain] }),
 		),
 	)

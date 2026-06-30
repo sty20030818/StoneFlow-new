@@ -18,7 +18,7 @@ export type ProjectBulkAdapter = {
 }
 
 type ProjectBulkAdapterOptions = {
-	availableProjectIds: string[]
+	availableProjectIds: string[] | (() => Promise<string[]>)
 	archiveProject?: typeof archiveProjectApi
 	deleteProject?: typeof deleteProjectApi
 	refreshLoadedSlices: () => Promise<void>
@@ -30,7 +30,11 @@ export function createProjectBulkAdapter({
 	deleteProject = deleteProjectApi,
 	refreshLoadedSlices,
 }: ProjectBulkAdapterOptions): ProjectBulkAdapter {
-	const availableProjectIdSet = new Set(availableProjectIds)
+	async function resolveAvailableProjectIdSet() {
+		const ids =
+			typeof availableProjectIds === 'function' ? await availableProjectIds() : availableProjectIds
+		return new Set(ids)
+	}
 
 	async function runProjectBulkMutation({
 		ids,
@@ -46,6 +50,7 @@ export function createProjectBulkAdapter({
 		const succeededIds: string[] = []
 		const failedIds: string[] = []
 		const skippedIds: string[] = []
+		const availableProjectIdSet = await resolveAvailableProjectIdSet()
 
 		for (const projectId of ids) {
 			if (!availableProjectIdSet.has(projectId)) {

@@ -100,7 +100,7 @@ describe('useWorkspaceSync', () => {
 		expectInvalidatedWorkspaceQueries()
 	})
 
-	it('收到 Tauri workspace changed 事件时也会刷新整个工作区', () => {
+	it('收到 Tauri workspace changed 事件时只刷新同步会影响的核心工作区切片', () => {
 		expect.hasAssertions()
 		renderUseWorkspaceSync({ type: 'all' })
 
@@ -112,7 +112,13 @@ describe('useWorkspaceSync', () => {
 			vi.advanceTimersByTime(500)
 		})
 
-		expectInvalidatedWorkspaceQueries()
+		expect(invalidateQueriesSpy).toHaveBeenCalledTimes(5)
+		expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['tasks'] })
+		expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['projects'] })
+		expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['spaces'] })
+		expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['lifecycle'] })
+		expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['views'] })
+		expect(invalidateQueriesSpy).not.toHaveBeenCalledWith({ queryKey: ['activity'] })
 	})
 })
 

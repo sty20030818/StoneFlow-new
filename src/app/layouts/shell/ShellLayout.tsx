@@ -44,11 +44,8 @@ import { useEntityDetailController } from '@/features/entity-detail'
 import { useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
 import { type CommandOpenPayload, useCommandOpenListener } from '@/shared/events'
 import { listAllVisibleProjects } from '@/features/project/api/projects'
-import {
-	useProjectOverviewData,
-	useProjectOptions,
-	useProjectSidebarData,
-} from '@/features/project/query'
+import { listLifecycleEntries } from '@/features/lifecycle/api/lifecycle'
+import { useProjectOptions, useProjectSidebarData } from '@/features/project/query'
 import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection/model'
 import { PageFilterProvider, usePageFilterContext } from '@/features/filter/model'
 import {
@@ -111,7 +108,6 @@ import {
 	type BulkEntityType,
 } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
-import { useLifecycleEntriesQuery } from '@/features/lifecycle/query'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskStatus } from '@/shared/types'
 import { useQueryClient } from '@tanstack/react-query'
@@ -165,9 +161,17 @@ function ShellLayoutBulkActionBoundary({
 		() => invalidateWorkspaceQueries(queryClient),
 		[queryClient],
 	)
-	const projectOverview = useProjectOverviewData(currentScope, 'all_projects')
-	const archiveEntries = useLifecycleEntriesQuery('archive', currentScope)
-	const trashEntries = useLifecycleEntriesQuery('trash', currentScope)
+	const loadVisibleProjectIds = useCallback(async () => {
+		const projects = await listAllVisibleProjects()
+		return projects.map((project) => project.id)
+	}, [])
+	const loadLifecycleEntries = useCallback(async () => {
+		const [archiveEntries, trashEntries] = await Promise.all([
+			listLifecycleEntries({ mode: 'archive', scope: currentScope }),
+			listLifecycleEntries({ mode: 'trash', scope: currentScope }),
+		])
+		return [...archiveEntries, ...trashEntries]
+	}, [currentScope])
 	const taskBulkAdapter = useMemo(
 		() =>
 			createTaskBulkAdapter({
@@ -178,18 +182,18 @@ function ShellLayoutBulkActionBoundary({
 	const lifecycleBulkAdapter = useMemo(
 		() =>
 			createLifecycleBulkAdapter({
-				entries: [...(archiveEntries.data ?? []), ...(trashEntries.data ?? [])],
+				entries: loadLifecycleEntries,
 				refreshLoadedSlices,
 			}),
-		[archiveEntries.data, refreshLoadedSlices, trashEntries.data],
+		[loadLifecycleEntries, refreshLoadedSlices],
 	)
 	const projectBulkAdapter = useMemo(
 		() =>
 			createProjectBulkAdapter({
-				availableProjectIds: projectOverview.items.map((project) => project.id),
+				availableProjectIds: loadVisibleProjectIds,
 				refreshLoadedSlices,
 			}),
-		[projectOverview.items, refreshLoadedSlices],
+		[loadVisibleProjectIds, refreshLoadedSlices],
 	)
 	const bulkActionAdapter = useMemo(
 		() => ({
@@ -251,7 +255,7 @@ function ShellLayoutContent({
 	const toggleTaskCreatePresentation = useDialogStore((state) => state.toggleTaskCreatePresentation)
 	const [selectedSpaceId, setSelectedSpaceId] = useState<string | null>(null)
 	const [chordSession, setChordSession] = useState<CommandChordSession | null>(null)
-	const [placementProjects, setPlacementProjects] = useState<
+	const [commandProjects, setCommandProjects] = useState<
 		Array<{
 			id: string
 			label: string
@@ -348,7 +352,7 @@ function ShellLayoutContent({
 	}, [loadSidebarSettings, sidebarSettingsStatus])
 
 	useEffect(() => {
-		if (spaceStatus !== 'ready') {
+		if (!isCommandOpen || spaceStatus !== 'ready' || commandProjects.length > 0) {
 			return
 		}
 
@@ -358,7 +362,7 @@ function ShellLayoutContent({
 				if (cancelled) {
 					return
 				}
-				setPlacementProjects(
+				setCommandProjects(
 					items.map((project) => ({
 						id: project.id,
 						label: project.name,
@@ -372,13 +376,13 @@ function ShellLayoutContent({
 				if (cancelled) {
 					return
 				}
-				setPlacementProjects([])
+				setCommandProjects([])
 			})
 
 		return () => {
 			cancelled = true
 		}
-	}, [spaceStatus])
+	}, [commandProjects.length, isCommandOpen, spaceStatus])
 
 	useEffect(() => {
 		if ((!activeDetail && !isTaskDetailPage) || !isTaskPreviewOpen) {
@@ -412,16 +416,16 @@ function ShellLayoutContent({
 		[closeEntityDrawer, navigate, openTaskPage, shellRoute.pathname],
 	)
 
-	const projectLinks = useMemo(
+	const commandProjectLinks = useMemo(
 		() =>
-			placementProjects.map((project) => ({
+			commandProjects.map((project) => ({
 				id: project.id,
 				label: project.label,
 				spaceId: project.spaceId,
 				spaceName: project.spaceName,
 				completedAt: project.completedAt,
 			})),
-		[placementProjects],
+		[commandProjects],
 	)
 	const sidebarProjectLinks = useMemo(
 		() =>
@@ -995,7 +999,7 @@ function ShellLayoutContent({
 				onSelectTaskPriority={handleSelectTaskPriority}
 				onSelectTaskStatus={handleSelectTaskStatus}
 				onShortcutHelpOpenChange={setShortcutHelpOpen}
-				projects={projectLinks}
+				projects={commandProjectLinks.length > 0 ? commandProjectLinks : sidebarProjectLinks}
 				routeHistoryEntries={routeHistoryEntries}
 				spaces={spaces}
 			/>

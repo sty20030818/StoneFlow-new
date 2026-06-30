@@ -6,6 +6,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 use crate::app::state::ActiveScopeState;
 use crate::window::quick_create::{
+    callbacks::runtime_quick_window_callbacks,
     controller::build_quick_controller,
     frontend::QuickCreateFrontendState,
     runtime::{QuickPopupCloseReason, QuickPopupRuntimeState},
@@ -38,6 +39,34 @@ pub fn register_global_shortcut(app_handle: &AppHandle<tauri::Wry>) {
     }
 }
 
+fn ensure_quick_create_panel(app_handle: &AppHandle<tauri::Wry>) {
+    if !should_initialize_quick_create_panel(
+        app_handle
+            .get_webview_window(stoneflow_platform::quick_window::spec::QUICK_CREATE_LABEL)
+            .is_some(),
+    ) {
+        return;
+    }
+
+    let callbacks = runtime_quick_window_callbacks();
+
+    #[cfg(target_os = "macos")]
+    stoneflow_platform::macos::panel::init_quick_create_panel(app_handle, callbacks);
+
+    #[cfg(target_os = "windows")]
+    stoneflow_platform::windows::panel::init_quick_create_panel(app_handle, callbacks);
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        let _ = (app_handle, callbacks);
+        log::warn!("runtime: 当前平台尚未实现 Quick Create 浮窗");
+    }
+}
+
+fn should_initialize_quick_create_panel(panel_exists: bool) -> bool {
+    !panel_exists
+}
+
 async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
     let Some(frontend) = app_handle.try_state::<QuickCreateFrontendState>() else {
         log::error!("runtime: quick create frontend state 未注册");
@@ -55,6 +84,27 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
         log::error!("runtime: active scope state 未注册");
         return;
     };
+
+    ensure_quick_create_panel(&app_handle);
+
+    if !frontend.inner().is_ready().await {
+        log::info!("runtime: quick create 前端未 ready，等待初始化完成");
+        let mut attempts = 0;
+        while attempts < 50 {
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            if frontend.inner().is_ready().await {
+                break;
+            }
+            attempts += 1;
+        }
+
+        if !frontend.inner().is_ready().await {
+            log::warn!("runtime: quick create 前端启动超时");
+            runtime.inner().mark_error().await;
+            runtime.inner().reset_to_idle().await;
+            return;
+        }
+    }
 
     let controller = build_quick_controller(app_handle.clone());
     let visible = match controller.is_visible() {
@@ -89,13 +139,6 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
         return;
     }
 
-    if !frontend.inner().is_ready().await {
-        log::warn!("runtime: quick create 前端未 ready，拒绝本次打开");
-        runtime.inner().mark_error().await;
-        runtime.inner().reset_to_idle().await;
-        return;
-    }
-
     match prepare_quick_create_session(
         app_handle.clone(),
         frontend.inner(),
@@ -114,5 +157,20 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
                 error.message
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::should_initialize_quick_create_panel;
+
+    #[test]
+    fn quick_create_panel_should_not_reinitialize_when_it_already_exists() {
+        assert!(!should_initialize_quick_create_panel(true));
+    }
+
+    #[test]
+    fn quick_create_panel_should_initialize_when_missing() {
+        assert!(should_initialize_quick_create_panel(false));
     }
 }

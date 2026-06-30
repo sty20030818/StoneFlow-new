@@ -13,6 +13,7 @@ import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'
 
 const DEBOUNCE_MS = 80
 const LIFECYCLE_DEBOUNCE_MS = 500
+const SYNC_WORKSPACE_DOMAINS = ['tasks', 'projects', 'spaces', 'lifecycle', 'views'] as const
 
 /**
  * 工作区数据同步 hook
@@ -64,7 +65,7 @@ export function useWorkspaceSync(scope: Scope) {
 
 	useWorkspaceChangedListener((payload) => {
 		console.info('[useWorkspaceSync] workspace changed via Tauri IPC', payload)
-		scheduleRefresh(LIFECYCLE_DEBOUNCE_MS)
+		void invalidateWorkspaceQueries(queryClient, { include: [...SYNC_WORKSPACE_DOMAINS] })
 	})
 
 	useEventSubscription('task:created', (event: AppEvent) => {

@@ -8,6 +8,29 @@ describe('LifecycleBulkAdapter', () => {
 		useEventBus.setState({ listeners: new Map() })
 	})
 
+	it('懒加载生命周期条目，只在执行生命周期批量操作时读取', async () => {
+		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
+		const loadEntries = vi.fn<() => Promise<LifecycleEntry[]>>(() =>
+			Promise.resolve([createEntry({ id: 'entry-a' })]),
+		)
+		const restoreLifecycleEntry = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>(() =>
+			Promise.resolve({}),
+		)
+		const adapter = createLifecycleBulkAdapter({
+			entries: loadEntries,
+			refreshLoadedSlices,
+			restoreLifecycleEntry: restoreLifecycleEntry as never,
+		})
+
+		expect(loadEntries).not.toHaveBeenCalled()
+
+		const result = await adapter.restore(['entry-a'])
+
+		expect(result.succeededIds).toEqual(['entry-a'])
+		expect(loadEntries).toHaveBeenCalledTimes(1)
+		expect(restoreLifecycleEntry).toHaveBeenCalledTimes(1)
+	})
+
 	it('restore 多 id 后只刷新一次', async () => {
 		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
 		const restoreLifecycleEntry = vi.fn<(entry: LifecycleEntry) => Promise<unknown>>(() =>

@@ -20,7 +20,7 @@ export type LifecycleBulkAdapter = {
 }
 
 type LifecycleBulkAdapterOptions = {
-	entries: LifecycleEntry[]
+	entries: LifecycleEntry[] | (() => Promise<LifecycleEntry[]>)
 	restoreLifecycleEntry?: typeof restoreLifecycleEntryApi
 	deleteLifecycleEntry?: typeof deleteLifecycleEntryApi
 	permanentlyDeleteLifecycleEntry?: typeof permanentlyDeleteLifecycleEntryApi
@@ -34,7 +34,10 @@ export function createLifecycleBulkAdapter({
 	refreshLoadedSlices,
 	restoreLifecycleEntry = restoreLifecycleEntryApi,
 }: LifecycleBulkAdapterOptions): LifecycleBulkAdapter {
-	const entryById = new Map(entries.map((entry) => [entry.id, entry]))
+	async function resolveEntryById() {
+		const resolvedEntries = typeof entries === 'function' ? await entries() : entries
+		return new Map(resolvedEntries.map((entry) => [entry.id, entry]))
+	}
 
 	async function runLifecycleBulkMutation({
 		ids,
@@ -48,6 +51,7 @@ export function createLifecycleBulkAdapter({
 		const succeededIds: string[] = []
 		const failedIds: string[] = []
 		const skippedIds: string[] = []
+		const entryById = await resolveEntryById()
 
 		for (const entryId of ids) {
 			const entry = entryById.get(entryId)

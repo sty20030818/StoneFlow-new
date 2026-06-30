@@ -7,6 +7,29 @@ vi.mock('@/shared/events', () => ({
 }))
 
 describe('ProjectBulkAdapter', () => {
+	it('懒加载可见项目列表，只在执行项目批量操作时读取', async () => {
+		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
+		const loadAvailableProjectIds = vi.fn<() => Promise<string[]>>(() =>
+			Promise.resolve(['project-a']),
+		)
+		const archiveProject = vi.fn<(projectId: string) => Promise<ProjectDetail>>((projectId) =>
+			Promise.resolve(createProjectDetail(projectId)),
+		)
+		const adapter = createProjectBulkAdapter({
+			availableProjectIds: loadAvailableProjectIds,
+			archiveProject: archiveProject as never,
+			refreshLoadedSlices,
+		})
+
+		expect(loadAvailableProjectIds).not.toHaveBeenCalled()
+
+		const result = await adapter.archiveProject(['project-a'])
+
+		expect(result.succeededIds).toEqual(['project-a'])
+		expect(loadAvailableProjectIds).toHaveBeenCalledTimes(1)
+		expect(archiveProject).toHaveBeenCalledTimes(1)
+	})
+
 	it('archive 多 id 后只刷新一次', async () => {
 		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
 		const archiveProject = vi.fn<(projectId: string) => Promise<ProjectDetail>>((projectId) =>

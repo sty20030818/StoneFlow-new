@@ -1,20 +1,20 @@
 //! Tauri setup：状态注册、窗口初始化与 Quick Create 基座。
 
+use std::future::Future;
+
 use tauri::Manager;
 
 use crate::app::state::{ActiveScopeState, CommandOpenState};
 use crate::sync::{self, SyncRuntimeState};
 use stoneflow_storage::database::bootstrap_database;
+use stoneflow_storage::database::DatabaseRuntimeState;
 
 use crate::exit_coordinator;
 use crate::shortcuts;
 use crate::tray;
-use crate::window::{
-    main::build_main_window,
-    quick_create::{
-        callbacks, frontend::QuickCreateFrontendState, runtime::QuickPopupRuntimeState,
-    },
-};
+use crate::window::main::build_main_window;
+use crate::window::quick_create::frontend::QuickCreateFrontendState;
+use crate::window::QuickPopupRuntimeState;
 
 pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     app.handle().plugin(
@@ -49,17 +49,7 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
     app.manage(database_state);
 
     let sync_state = SyncRuntimeState::default();
-    tauri::async_runtime::block_on(async {
-        let database = app
-            .handle()
-            .state::<stoneflow_storage::database::DatabaseRuntimeState>();
-        sync::initialize_state(&sync_state, database.inner())
-            .await
-            .map_err(|error| error.to_string())
-    })?;
     app.manage(sync_state);
-
-    init_quick_create_panel(app.handle());
 
     build_main_window(app)?;
 
@@ -67,22 +57,67 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
 
     app.manage(exit_coordinator::ExitCoordinator::default());
     tray::setup_tray(app)?;
-    sync::trigger_startup_sync(app.handle());
+    schedule_post_startup_jobs(app.handle().clone());
     Ok(())
 }
 
-fn init_quick_create_panel(app_handle: &tauri::AppHandle) {
-    let callbacks = callbacks::runtime_quick_window_callbacks();
+fn schedule_post_startup_jobs(app_handle: tauri::AppHandle) {
+    spawn_detached_job(move || async move {
+        let Some(database) = app_handle
+            .try_state::<DatabaseRuntimeState>()
+            .map(|state| state.inner().clone())
+        else {
+            log::warn!("runtime: startup async init missing database state");
+            return;
+        };
+        let Some(sync_state) = app_handle
+            .try_state::<SyncRuntimeState>()
+            .map(|state| state.inner().clone())
+        else {
+            log::warn!("runtime: startup async init missing sync state");
+            return;
+        };
 
-    #[cfg(target_os = "macos")]
-    stoneflow_platform::macos::panel::init_quick_create_panel(app_handle, callbacks);
+        if let Err(error) = sync::initialize_state(&sync_state, &database).await {
+            log::warn!("runtime: startup async sync init failed: {error}");
+            return;
+        }
 
-    #[cfg(target_os = "windows")]
-    stoneflow_platform::windows::panel::init_quick_create_panel(app_handle, callbacks);
+        sync::trigger_startup_sync(&app_handle);
+    });
+}
 
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    {
-        let _ = (app_handle, callbacks);
-        log::warn!("runtime: 当前平台尚未实现 Quick Create 浮窗");
+fn spawn_detached_job<F, Fut>(job: F)
+where
+    F: FnOnce() -> Fut + Send + 'static,
+    Fut: Future<Output = ()> + Send + 'static,
+{
+    tauri::async_runtime::spawn(async move {
+        job().await;
+    });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::spawn_detached_job;
+    use std::sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    };
+    use std::time::Duration;
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn spawn_detached_job_returns_before_task_finishes() {
+        let finished = Arc::new(AtomicBool::new(false));
+        let finished_for_task = Arc::clone(&finished);
+
+        spawn_detached_job(move || async move {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            finished_for_task.store(true, Ordering::SeqCst);
+        });
+
+        assert!(!finished.load(Ordering::SeqCst));
+        tokio::time::sleep(Duration::from_millis(10)).await;
+        assert!(!finished.load(Ordering::SeqCst));
     }
 }
