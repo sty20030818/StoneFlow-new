@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 
-import { getSyncStatus, runSync, type SyncStatus, type SyncStatusPayload } from '@/features/sync/api/sync'
+import {
+	getSyncStatus,
+	runSync,
+	type SyncStatus,
+	type SyncStatusPayload,
+} from '@/features/sync/api/sync'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 
 const SYNC_STATUS_REFRESH_INTERVAL_MS = 3000

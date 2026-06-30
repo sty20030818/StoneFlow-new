@@ -2,7 +2,12 @@ import { debounce } from 'es-toolkit/function'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo } from 'react'
 
-import { useTaskChangedListener, useEventSubscription, type AppEvent } from '@/shared/events'
+import {
+	useTaskChangedListener,
+	useWorkspaceChangedListener,
+	useEventSubscription,
+	type AppEvent,
+} from '@/shared/events'
 import type { Scope } from '@/shared/types'
 import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'
 
@@ -55,6 +60,11 @@ export function useWorkspaceSync(scope: Scope) {
 	useTaskChangedListener(scope, (payload) => {
 		console.info('[useWorkspaceSync] task changed via Tauri IPC', payload)
 		scheduleRefresh()
+	})
+
+	useWorkspaceChangedListener((payload) => {
+		console.info('[useWorkspaceSync] workspace changed via Tauri IPC', payload)
+		scheduleRefresh(LIFECYCLE_DEBOUNCE_MS)
 	})
 
 	useEventSubscription('task:created', (event: AppEvent) => {

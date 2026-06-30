@@ -7,6 +7,7 @@ import type { AppEvent } from '@/shared/events'
 import type { Scope } from '@/shared/types'
 
 const taskChangedHandlers: Array<(payload: unknown) => void> = []
+const workspaceChangedHandlers: Array<(payload: unknown) => void> = []
 const eventHandlers = new Map<string, (event: AppEvent) => void>()
 let invalidateQueriesSpy: ReturnType<typeof vi.fn>
 
@@ -16,6 +17,9 @@ vi.mock('@/shared/events', () => ({
 			taskChangedHandlers.push(handler)
 		},
 	),
+	useWorkspaceChangedListener: vi.fn<(handler: (payload: unknown) => void) => void>((handler) => {
+		workspaceChangedHandlers.push(handler)
+	}),
 	useEventSubscription: vi.fn<(type: string, handler: (event: AppEvent) => void) => void>(
 		(type, handler) => {
 			eventHandlers.set(type, handler)
@@ -27,6 +31,7 @@ describe('useWorkspaceSync', () => {
 	beforeEach(() => {
 		vi.useFakeTimers()
 		taskChangedHandlers.length = 0
+		workspaceChangedHandlers.length = 0
 		eventHandlers.clear()
 		invalidateQueriesSpy = vi.fn().mockResolvedValue(undefined)
 	})
@@ -88,6 +93,21 @@ describe('useWorkspaceSync', () => {
 			eventHandlers.get('workspace:restored')?.({
 				type: 'workspace:restored',
 				payload: { source: 'sync_restore' },
+			})
+			vi.advanceTimersByTime(500)
+		})
+
+		expectInvalidatedWorkspaceQueries()
+	})
+
+	it('收到 Tauri workspace changed 事件时也会刷新整个工作区', () => {
+		expect.hasAssertions()
+		renderUseWorkspaceSync({ type: 'all' })
+
+		act(() => {
+			workspaceChangedHandlers[0]?.({
+				source: 'sync',
+				reason: 'pull',
 			})
 			vi.advanceTimersByTime(500)
 		})

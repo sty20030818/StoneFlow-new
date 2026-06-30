@@ -3,8 +3,8 @@
 use std::path::{Path, PathBuf};
 
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
-use tauri::Manager;
+use serde::{Deserialize, Serialize};
+use tauri::{Emitter, Manager};
 use tokio::sync::OwnedMutexGuard;
 use tokio::process::Command;
 
@@ -19,6 +19,14 @@ use super::{
     },
 };
 use stoneflow_storage::database::DatabaseRuntimeState;
+
+const WORKSPACE_CHANGED_EVENT: &str = "stoneflow://workspace/changed";
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+struct WorkspaceChangedPayload {
+    source: &'static str,
+    reason: &'static str,
+}
 
 /// 启动时从 settings 表加载同步配置。
 pub async fn initialize_state(
@@ -231,6 +239,7 @@ async fn run_sync_loop(
 
         let Some(pending_mode) = sync_state.take_pending_mode().await else {
             log::info!("sync:loop finished last_mode={}", mode_label(next_mode));
+            emit_workspace_changed(app_handle, next_mode)?;
             break;
         };
         log::info!(
@@ -242,6 +251,22 @@ async fn run_sync_loop(
     }
 
     Ok(())
+}
+
+fn workspace_changed_payload(mode: SyncRunMode) -> WorkspaceChangedPayload {
+    WorkspaceChangedPayload {
+        source: "sync",
+        reason: mode_label(mode),
+    }
+}
+
+fn emit_workspace_changed(
+    app_handle: &tauri::AppHandle,
+    mode: SyncRunMode,
+) -> Result<(), AppError> {
+    app_handle
+        .emit(WORKSPACE_CHANGED_EVENT, workspace_changed_payload(mode))
+        .map_err(|error| AppError::internal(error.to_string()))
 }
 
 async fn run_sync_round(
@@ -723,6 +748,7 @@ mod tests {
 
     use super::{
         configure_sync, get_sync_status, initialize_state, parse_sync_worker_failure,
+        workspace_changed_payload,
     };
     use crate::sync::{
         state::SyncRuntimeState,
@@ -787,5 +813,13 @@ mod tests {
 
         assert_eq!(failure.kind, super::SyncWorkerErrorKind::Authentication);
         assert_eq!(failure.message, "token invalid");
+    }
+
+    #[test]
+    fn workspace_changed_payload_should_describe_sync_source() {
+        let payload = workspace_changed_payload(super::SyncRunMode::Pull);
+
+        assert_eq!(payload.source, "sync");
+        assert_eq!(payload.reason, "pull");
     }
 }

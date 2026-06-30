@@ -8,6 +8,15 @@ export {
 	useTaskChangedListener,
 } from './taskChanged'
 
+// Tauri IPC 事件：workspaceChanged
+export {
+	WORKSPACE_CHANGED_EVENT,
+	type WorkspaceChangedPayload,
+	normalizeWorkspaceChangedPayload,
+	subscribeToWorkspaceChanged,
+	useWorkspaceChangedListener,
+} from './workspaceChanged'
+
 // Tauri IPC 事件：commandOpen
 export {
 	COMMAND_OPEN_EVENT,
