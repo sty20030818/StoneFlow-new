@@ -19,8 +19,8 @@ export async function invalidateWorkspaceQueries(
 	const domains = options.include ?? WORKSPACE_QUERY_DOMAINS
 
 	await Promise.all(
-		domains.filter((domain) => !excludedDomains.has(domain)).map((domain) =>
-			queryClient.invalidateQueries({ queryKey: [domain] }),
-		),
+		domains
+			.filter((domain) => !excludedDomains.has(domain))
+			.map((domain) => queryClient.invalidateQueries({ queryKey: [domain] })),
 	)
 }

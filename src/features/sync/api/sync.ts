@@ -77,10 +77,7 @@ export function configureSync(input: { url: string; token: string }) {
 /**
  * 保存同步频率策略。
  */
-export function updateSyncPolicy(input: {
-	mode: SyncPolicyMode
-	intervalMinutes: 5 | 15 | 30
-}) {
+export function updateSyncPolicy(input: { mode: SyncPolicyMode; intervalMinutes: 5 | 15 | 30 }) {
 	return invoke<SyncStatusPayload>('update_sync_policy', { input })
 }
 

@@ -65,6 +65,13 @@ export function useWorkspaceSync(scope: Scope) {
 
 	useWorkspaceChangedListener((payload) => {
 		console.info('[useWorkspaceSync] workspace changed via Tauri IPC', payload)
+		if (payload.changedDomains) {
+			if (payload.changedDomains.length === 0) {
+				return
+			}
+			void invalidateWorkspaceQueries(queryClient, { include: payload.changedDomains })
+			return
+		}
 		void invalidateWorkspaceQueries(queryClient, { include: [...SYNC_WORKSPACE_DOMAINS] })
 	})
 

@@ -19,9 +19,10 @@ const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
 const getSyncDiagnosticsSpy = vi.fn<() => Promise<unknown>>()
 const configureSyncSpy = vi.fn<(input: { url: string; token: string }) => Promise<unknown>>()
 const runSyncSpy = vi.fn<() => Promise<unknown>>()
-const updateSyncPolicySpy = vi.fn<
-	(input: { mode: 'interval' | 'manual'; intervalMinutes: 5 | 15 | 30 }) => Promise<unknown>
->()
+const updateSyncPolicySpy =
+	vi.fn<
+		(input: { mode: 'interval' | 'manual'; intervalMinutes: 5 | 15 | 30 }) => Promise<unknown>
+	>()
 const unlistenSyncStatusSpy = vi.fn<() => void>()
 const mockedListen = vi.mocked(listen)
 
@@ -183,21 +184,23 @@ describe('SettingsPage', () => {
 			return nextDefaultSpace
 		})
 		getSyncStatusSpy.mockReset()
-		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: false,
-			status: 'disabled',
-			lastPushAt: null,
-			lastPullAt: null,
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: false,
-			remoteUrl: null,
-			replicaState: 'uninitialized',
-			replicaReason: null,
-			lastRestoreAt: null,
-		}))
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: false,
+				status: 'disabled',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: false,
+				remoteUrl: null,
+				replicaState: 'uninitialized',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}),
+		)
 		getSyncDiagnosticsSpy.mockReset()
 		getSyncDiagnosticsSpy.mockResolvedValue({
 			remoteHost: 'libsql://example.turso.io',
@@ -230,54 +233,60 @@ describe('SettingsPage', () => {
 			},
 		})
 		configureSyncSpy.mockReset()
-		configureSyncSpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: true,
-			status: 'synced',
-			lastPushAt: null,
-			lastPullAt: null,
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'ready',
-			replicaReason: null,
-			lastRestoreAt: null,
-		}))
+		configureSyncSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}),
+		)
 		runSyncSpy.mockReset()
-		runSyncSpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: true,
-			status: 'synced',
-			lastPushAt: '2026-06-26T00:00:00Z',
-			lastPullAt: '2026-06-26T00:00:01Z',
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'ready',
-			replicaReason: null,
-			lastRestoreAt: null,
-		}))
+		runSyncSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: '2026-06-26T00:00:00Z',
+				lastPullAt: '2026-06-26T00:00:01Z',
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}),
+		)
 		updateSyncPolicySpy.mockReset()
-		updateSyncPolicySpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: true,
-			status: 'synced',
-			lastPushAt: null,
-			lastPullAt: null,
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'ready',
-			replicaReason: null,
-			lastRestoreAt: null,
-			policyMode: 'manual',
-		}))
+		updateSyncPolicySpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+				policyMode: 'manual',
+			}),
+		)
 		unlistenSyncStatusSpy.mockReset()
 		syncStatusChangedHandler = () => undefined
 		mockedListen.mockReset()
@@ -374,21 +383,23 @@ describe('SettingsPage', () => {
 	})
 
 	it('页面加载后会回填已保存的同步配置', async () => {
-		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: true,
-			status: 'synced',
-			lastPushAt: null,
-			lastPullAt: null,
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://saved.turso.io',
-			replicaState: 'ready',
-			replicaReason: null,
-			lastRestoreAt: null,
-		}))
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://saved.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}),
+		)
 
 		await renderSettingsPage()
 		openSyncConfigDialog()
@@ -406,9 +417,7 @@ describe('SettingsPage', () => {
 		await renderSettingsPage()
 
 		expect(screen.getByText('尚未启用云同步')).toBeInTheDocument()
-		expect(
-			screen.getByText('未配置 Turso 远端，本机只保留本地数据。'),
-		).toBeInTheDocument()
+		expect(screen.getByText('未配置 Turso 远端，本机只保留本地数据。')).toBeInTheDocument()
 		expect(screen.getByText('未启用')).toBeInTheDocument()
 		expect(screen.getAllByText('从未同步')).toHaveLength(2)
 	})
@@ -423,36 +432,40 @@ describe('SettingsPage', () => {
 		})
 
 		getSyncStatusSpy
-			.mockResolvedValueOnce(createSyncStatusPayload({
-				enabled: true,
-				status: 'synced',
-				lastPushAt: null,
-				lastPullAt: null,
-				lastError: null,
-				lastErrorMode: null,
-				dirtySince: null,
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'libsql://saved.turso.io',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: null,
-			}))
-			.mockResolvedValue(createSyncStatusPayload({
-				enabled: true,
-				status: 'synced',
-				lastPushAt: null,
-				lastPullAt: null,
-				lastError: null,
-				lastErrorMode: null,
-				dirtySince: null,
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'libsql://saved.turso.io',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: null,
-			}))
+			.mockResolvedValueOnce(
+				createSyncStatusPayload({
+					enabled: true,
+					status: 'synced',
+					lastPushAt: null,
+					lastPullAt: null,
+					lastError: null,
+					lastErrorMode: null,
+					dirtySince: null,
+					pendingResync: false,
+					hasRemoteConfig: true,
+					remoteUrl: 'libsql://saved.turso.io',
+					replicaState: 'ready',
+					replicaReason: null,
+					lastRestoreAt: null,
+				}),
+			)
+			.mockResolvedValue(
+				createSyncStatusPayload({
+					enabled: true,
+					status: 'synced',
+					lastPushAt: null,
+					lastPullAt: null,
+					lastError: null,
+					lastErrorMode: null,
+					dirtySince: null,
+					pendingResync: false,
+					hasRemoteConfig: true,
+					remoteUrl: 'libsql://saved.turso.io',
+					replicaState: 'ready',
+					replicaReason: null,
+					lastRestoreAt: null,
+				}),
+			)
 
 		await renderSettingsPage()
 		openSyncConfigDialog()
@@ -476,21 +489,23 @@ describe('SettingsPage', () => {
 	})
 
 	it('点击立即同步时调用 runSync', async () => {
-		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: true,
-			status: 'synced',
-			lastPushAt: null,
-			lastPullAt: null,
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'ready',
-			replicaReason: null,
-			lastRestoreAt: null,
-		}))
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}),
+		)
 
 		await renderSettingsPage()
 
@@ -502,21 +517,23 @@ describe('SettingsPage', () => {
 	})
 
 	it('切换同步频率时调用 updateSyncPolicy', async () => {
-		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: true,
-			status: 'synced',
-			lastPushAt: null,
-			lastPullAt: null,
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'ready',
-			replicaReason: null,
-			lastRestoreAt: null,
-		}))
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}),
+		)
 
 		await renderSettingsPage()
 
@@ -534,48 +551,50 @@ describe('SettingsPage', () => {
 		vi.useFakeTimers()
 		vi.setSystemTime(new Date('2026-06-26T00:10:00Z'))
 
-		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: true,
-			status: 'offline_pending',
-			lastPushAt: '2026-06-26T00:00:00Z',
-			lastPullAt: '2026-06-26T00:00:01Z',
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: '2026-06-26T00:00:00Z',
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'ready',
-			replicaReason: null,
-			lastRestoreAt: null,
-		}))
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'offline_pending',
+				lastPushAt: '2026-06-26T00:00:00Z',
+				lastPullAt: '2026-06-26T00:00:01Z',
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: '2026-06-26T00:00:00Z',
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}),
+		)
 
 		await renderSettingsPage()
 
 		expect(screen.getByText('等待同步')).toBeInTheDocument()
-		expect(
-			screen.getByText('本地已有新写入，已等待 10 分钟前。'),
-		).toBeInTheDocument()
+		expect(screen.getByText('本地已有新写入，已等待 10 分钟前。')).toBeInTheDocument()
 		expect(screen.getAllByText('待同步').length).toBeGreaterThanOrEqual(1)
 		expect(screen.getByText('10 分钟前')).toBeInTheDocument()
 	})
 
 	it('同步错误时展示 lastError', async () => {
-		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: true,
-			status: 'error',
-			lastPushAt: null,
-			lastPullAt: null,
-			lastError: 'remote unavailable',
-			lastErrorMode: 'pull',
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'ready',
-			replicaReason: null,
-			lastRestoreAt: null,
-		}))
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'error',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: 'remote unavailable',
+				lastErrorMode: 'pull',
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}),
+		)
 
 		await renderSettingsPage()
 		openSyncDetails()
@@ -594,36 +613,40 @@ describe('SettingsPage', () => {
 			return 1 as unknown as number
 		})
 		getSyncStatusSpy
-			.mockResolvedValueOnce(createSyncStatusPayload({
-				enabled: true,
-				status: 'synced',
-				lastPushAt: null,
-				lastPullAt: null,
-				lastError: null,
-				lastErrorMode: null,
-				dirtySince: null,
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: null,
-			}))
-			.mockResolvedValue(createSyncStatusPayload({
-				enabled: true,
-				status: 'error',
-				lastPushAt: null,
-				lastPullAt: null,
-				lastError: 'sync timeout',
-				lastErrorMode: 'pull',
-				dirtySince: null,
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: null,
-			}))
+			.mockResolvedValueOnce(
+				createSyncStatusPayload({
+					enabled: true,
+					status: 'synced',
+					lastPushAt: null,
+					lastPullAt: null,
+					lastError: null,
+					lastErrorMode: null,
+					dirtySince: null,
+					pendingResync: false,
+					hasRemoteConfig: true,
+					remoteUrl: 'libsql://example.turso.io',
+					replicaState: 'ready',
+					replicaReason: null,
+					lastRestoreAt: null,
+				}),
+			)
+			.mockResolvedValue(
+				createSyncStatusPayload({
+					enabled: true,
+					status: 'error',
+					lastPushAt: null,
+					lastPullAt: null,
+					lastError: 'sync timeout',
+					lastErrorMode: 'pull',
+					dirtySince: null,
+					pendingResync: false,
+					hasRemoteConfig: true,
+					remoteUrl: 'libsql://example.turso.io',
+					replicaState: 'ready',
+					replicaReason: null,
+					lastRestoreAt: null,
+				}),
+			)
 
 		await renderSettingsPage()
 		openSyncDetails()
@@ -638,36 +661,40 @@ describe('SettingsPage', () => {
 
 	it('收到同步状态事件时刷新状态', async () => {
 		getSyncStatusSpy
-			.mockResolvedValueOnce(createSyncStatusPayload({
-				enabled: true,
-				status: 'synced',
-				lastPushAt: null,
-				lastPullAt: null,
-				lastError: null,
-				lastErrorMode: null,
-				dirtySince: null,
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: null,
-			}))
-			.mockResolvedValue(createSyncStatusPayload({
-				enabled: true,
-				status: 'offline_pending',
-				lastPushAt: null,
-				lastPullAt: null,
-				lastError: null,
-				lastErrorMode: null,
-				dirtySince: '2026-06-26T00:00:00Z',
-				pendingResync: false,
-				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
-				replicaState: 'ready',
-				replicaReason: null,
-				lastRestoreAt: null,
-			}))
+			.mockResolvedValueOnce(
+				createSyncStatusPayload({
+					enabled: true,
+					status: 'synced',
+					lastPushAt: null,
+					lastPullAt: null,
+					lastError: null,
+					lastErrorMode: null,
+					dirtySince: null,
+					pendingResync: false,
+					hasRemoteConfig: true,
+					remoteUrl: 'libsql://example.turso.io',
+					replicaState: 'ready',
+					replicaReason: null,
+					lastRestoreAt: null,
+				}),
+			)
+			.mockResolvedValue(
+				createSyncStatusPayload({
+					enabled: true,
+					status: 'offline_pending',
+					lastPushAt: null,
+					lastPullAt: null,
+					lastError: null,
+					lastErrorMode: null,
+					dirtySince: '2026-06-26T00:00:00Z',
+					pendingResync: false,
+					hasRemoteConfig: true,
+					remoteUrl: 'libsql://example.turso.io',
+					replicaState: 'ready',
+					replicaReason: null,
+					lastRestoreAt: null,
+				}),
+			)
 
 		await renderSettingsPage()
 
@@ -715,22 +742,24 @@ describe('SettingsPage', () => {
 	})
 
 	it('缺少同步基线时展示提示并禁用立即同步', async () => {
-		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: true,
-			status: 'synced',
-			lastPushAt: null,
-			lastPullAt: null,
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'baseline_required',
-			replicaReason:
-				'当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。',
-			lastRestoreAt: null,
-		}))
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'baseline_required',
+				replicaReason:
+					'当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。',
+				lastRestoreAt: null,
+			}),
+		)
 
 		await renderSettingsPage()
 
@@ -740,21 +769,23 @@ describe('SettingsPage', () => {
 	})
 
 	it('点击刷新诊断时展示远端与本地摘要', async () => {
-		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
-			enabled: true,
-			status: 'synced',
-			lastPushAt: null,
-			lastPullAt: null,
-			lastError: null,
-			lastErrorMode: null,
-			dirtySince: null,
-			pendingResync: false,
-			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
-			replicaState: 'ready',
-			replicaReason: null,
-			lastRestoreAt: '2026-06-28T00:00:00Z',
-		}))
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: '2026-06-28T00:00:00Z',
+			}),
+		)
 
 		await renderSettingsPage()
 		openSyncDetails()

@@ -24,11 +24,15 @@ use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SyncReposi
 const WORKSPACE_CHANGED_EVENT: &str = "stoneflow://workspace/changed";
 const SYNC_STATUS_CHANGED_EVENT: &str = "stoneflow://sync/status-changed";
 const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
+const SYNC_WORKSPACE_DOMAINS: &[&str] = &["tasks", "projects", "spaces", "lifecycle", "views"];
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct WorkspaceChangedPayload {
     source: &'static str,
     reason: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    changed_domains: Option<Vec<&'static str>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -314,14 +318,16 @@ async fn run_sync_loop(
 ) -> Result<(), AppError> {
     let sync_state = sync_state_from_app(app_handle)?;
     let mut next_mode = initial_mode;
+    let mut changed_domains = Vec::new();
 
     log::info!("sync:loop start mode={}", mode_label(initial_mode));
     loop {
-        run_sync_round(app_handle, &sync_state, next_mode).await?;
+        let outcome = run_sync_round(app_handle, &sync_state, next_mode).await?;
+        append_unique_domains(&mut changed_domains, outcome.changed_domains);
 
         let Some(pending_mode) = sync_state.take_pending_mode().await else {
             log::info!("sync:loop finished last_mode={}", mode_label(next_mode));
-            emit_workspace_changed(app_handle, next_mode)?;
+            emit_workspace_changed(app_handle, next_mode, Some(changed_domains))?;
             break;
         };
         log::info!(
@@ -335,10 +341,14 @@ async fn run_sync_loop(
     Ok(())
 }
 
-fn workspace_changed_payload(mode: SyncRunMode) -> WorkspaceChangedPayload {
+fn workspace_changed_payload(
+    mode: SyncRunMode,
+    changed_domains: Option<Vec<&'static str>>,
+) -> WorkspaceChangedPayload {
     WorkspaceChangedPayload {
         source: "sync",
         reason: mode_label(mode),
+        changed_domains,
     }
 }
 
@@ -346,6 +356,59 @@ fn sync_status_changed_payload(reason: &'static str) -> SyncStatusChangedPayload
     SyncStatusChangedPayload {
         source: "sync",
         reason,
+    }
+}
+
+async fn read_pending_changed_domains(
+    database: &DatabaseRuntimeState,
+) -> Result<Vec<&'static str>, AppError> {
+    let repository = SyncRepository::new(database.connection().clone());
+    let mutations = repository.list_mutations_by_status("pending", 1000).await?;
+    let mut domains = Vec::new();
+    for mutation in mutations {
+        if let Some(domain) = domain_for_entity_type(&mutation.entity_type) {
+            push_unique_domain(&mut domains, domain);
+        }
+        if matches!(
+            mutation.operation.as_str(),
+            "soft_delete" | "hard_delete" | "restore"
+        ) {
+            push_unique_domain(&mut domains, "lifecycle");
+        }
+    }
+    Ok(domains)
+}
+
+fn resolve_round_changed_domains(
+    before_server_seq: Option<i64>,
+    after_server_seq: Option<i64>,
+    mut pending_domains: Vec<&'static str>,
+) -> Vec<&'static str> {
+    if after_server_seq.unwrap_or(0) > before_server_seq.unwrap_or(0) {
+        append_unique_domains(&mut pending_domains, SYNC_WORKSPACE_DOMAINS.to_vec());
+    }
+    pending_domains
+}
+
+fn domain_for_entity_type(entity_type: &str) -> Option<&'static str> {
+    match entity_type {
+        "task" | "task_link" => Some("tasks"),
+        "project" => Some("projects"),
+        "space" => Some("spaces"),
+        "view" => Some("views"),
+        _ => None,
+    }
+}
+
+fn append_unique_domains(target: &mut Vec<&'static str>, domains: Vec<&'static str>) {
+    for domain in domains {
+        push_unique_domain(target, domain);
+    }
+}
+
+fn push_unique_domain(target: &mut Vec<&'static str>, domain: &'static str) {
+    if !target.contains(&domain) {
+        target.push(domain);
     }
 }
 
@@ -383,9 +446,10 @@ async fn read_local_server_seq_cursor(
 fn emit_workspace_changed(
     app_handle: &tauri::AppHandle,
     mode: SyncRunMode,
+    changed_domains: Option<Vec<&'static str>>,
 ) -> Result<(), AppError> {
     app_handle
-        .emit(WORKSPACE_CHANGED_EVENT, workspace_changed_payload(mode))
+        .emit(WORKSPACE_CHANGED_EVENT, workspace_changed_payload(mode, changed_domains))
         .map_err(|error| AppError::internal(error.to_string()))
 }
 
@@ -399,7 +463,7 @@ async fn run_sync_round(
     app_handle: &tauri::AppHandle,
     sync_state: &SyncRuntimeState,
     mode: SyncRunMode,
-) -> Result<(), AppError> {
+) -> Result<SyncRoundOutcome, AppError> {
     let database = database_state_from_app(app_handle)?;
     let remote_config = sync_state
         .remote_config()
@@ -412,6 +476,8 @@ async fn run_sync_round(
         database.database_path().display(),
         redact_remote_url(&remote_config.url)
     );
+    let before_server_seq = read_local_server_seq_cursor(&database).await?;
+    let pending_domains = read_pending_changed_domains(&database).await?;
     sync_state.start_run(mode).await;
     emit_sync_status_changed(app_handle, "started");
 
@@ -439,10 +505,16 @@ async fn run_sync_round(
 
     match result {
         Ok(()) => {
+            let after_server_seq = read_local_server_seq_cursor(&database).await?;
+            let changed_domains = resolve_round_changed_domains(
+                before_server_seq,
+                after_server_seq,
+                pending_domains,
+            );
             sync_state.complete_run(mode).await;
             emit_sync_status_changed(app_handle, "completed");
             log::info!("sync:round success mode={}", mode_label(mode));
-            Ok(())
+            Ok(SyncRoundOutcome { changed_domains })
         }
         Err(failure) => {
             let message = failure.error.to_string();
@@ -458,6 +530,10 @@ async fn run_sync_round(
             Err(failure.error)
         }
     }
+}
+
+struct SyncRoundOutcome {
+    changed_domains: Vec<&'static str>,
 }
 
 struct SyncRoundFailure {
@@ -946,10 +1022,11 @@ mod tests {
 
     #[test]
     fn workspace_changed_payload_should_describe_sync_source() {
-        let payload = workspace_changed_payload(super::SyncRunMode::Pull);
+        let payload = workspace_changed_payload(super::SyncRunMode::Pull, Some(vec!["tasks"]));
 
         assert_eq!(payload.source, "sync");
         assert_eq!(payload.reason, "pull");
+        assert_eq!(payload.changed_domains, Some(vec!["tasks"]));
     }
 
     #[test]
@@ -958,6 +1035,27 @@ mod tests {
 
         assert_eq!(payload.source, "sync");
         assert_eq!(payload.reason, "dirty");
+    }
+
+    #[test]
+    fn resolve_round_changed_domains_should_skip_when_nothing_changed() {
+        let domains = super::resolve_round_changed_domains(Some(12), Some(12), vec![]);
+
+        assert!(domains.is_empty());
+    }
+
+    #[test]
+    fn resolve_round_changed_domains_should_include_sync_domains_when_server_seq_advances() {
+        let domains = super::resolve_round_changed_domains(Some(12), Some(18), vec!["tasks"]);
+
+        assert_eq!(domains, vec!["tasks", "projects", "spaces", "lifecycle", "views"]);
+    }
+
+    #[test]
+    fn domain_for_entity_type_should_map_sync_entities_to_workspace_domains() {
+        assert_eq!(super::domain_for_entity_type("task_link"), Some("tasks"));
+        assert_eq!(super::domain_for_entity_type("project"), Some("projects"));
+        assert_eq!(super::domain_for_entity_type("setting"), None);
     }
 
     #[test]

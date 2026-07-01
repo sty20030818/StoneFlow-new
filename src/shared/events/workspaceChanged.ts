@@ -3,15 +3,27 @@ import { listen } from '@tauri-apps/api/event'
 
 export const WORKSPACE_CHANGED_EVENT = 'stoneflow://workspace/changed'
 
+export type WorkspaceChangedDomain = 'tasks' | 'projects' | 'spaces' | 'lifecycle' | 'views'
+
 export type WorkspaceChangedPayload = {
 	source: 'sync'
 	reason: string
+	changedDomains?: WorkspaceChangedDomain[]
 }
 
 type RawWorkspaceChangedPayload = {
 	source?: unknown
 	reason?: unknown
+	changedDomains?: unknown
 }
+
+const WORKSPACE_CHANGED_DOMAINS = new Set<WorkspaceChangedDomain>([
+	'tasks',
+	'projects',
+	'spaces',
+	'lifecycle',
+	'views',
+])
 
 export function normalizeWorkspaceChangedPayload(payload: unknown): WorkspaceChangedPayload | null {
 	if (!payload || typeof payload !== 'object') {
@@ -22,10 +34,18 @@ export function normalizeWorkspaceChangedPayload(payload: unknown): WorkspaceCha
 	if (candidate.source !== 'sync' || typeof candidate.reason !== 'string') {
 		return null
 	}
+	if (
+		candidate.changedDomains !== undefined &&
+		(!Array.isArray(candidate.changedDomains) ||
+			candidate.changedDomains.some((domain) => !WORKSPACE_CHANGED_DOMAINS.has(domain)))
+	) {
+		return null
+	}
 
 	return {
 		source: candidate.source,
 		reason: candidate.reason,
+		changedDomains: candidate.changedDomains as WorkspaceChangedDomain[] | undefined,
 	}
 }
 

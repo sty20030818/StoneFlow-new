@@ -120,6 +120,37 @@ describe('useWorkspaceSync', () => {
 		expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['views'] })
 		expect(invalidateQueriesSpy).not.toHaveBeenCalledWith({ queryKey: ['activity'] })
 	})
+
+	it('收到带 changed domains 的 workspace changed 事件时只刷新指定切片', () => {
+		expect.hasAssertions()
+		renderUseWorkspaceSync({ type: 'all' })
+
+		act(() => {
+			workspaceChangedHandlers[0]?.({
+				source: 'sync',
+				reason: 'pull',
+				changedDomains: ['tasks'],
+			})
+		})
+
+		expect(invalidateQueriesSpy).toHaveBeenCalledTimes(1)
+		expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['tasks'] })
+	})
+
+	it('收到空 changed domains 的 workspace changed 事件时不刷新', () => {
+		expect.hasAssertions()
+		renderUseWorkspaceSync({ type: 'all' })
+
+		act(() => {
+			workspaceChangedHandlers[0]?.({
+				source: 'sync',
+				reason: 'pull',
+				changedDomains: [],
+			})
+		})
+
+		expect(invalidateQueriesSpy).not.toHaveBeenCalled()
+	})
 })
 
 function renderUseWorkspaceSync(scope: Scope = { type: 'space', spaceId: 'space-1' }) {

@@ -24,15 +24,24 @@ describe('workspaceChanged event helpers', () => {
 			normalizeWorkspaceChangedPayload({
 				source: 'sync',
 				reason: 'sync',
+				changedDomains: ['tasks'],
 			}),
 		).toEqual({
 			source: 'sync',
 			reason: 'sync',
+			changedDomains: ['tasks'],
 		})
 	})
 
 	it('忽略不完整 workspace changed 载荷', () => {
 		expect(normalizeWorkspaceChangedPayload({ source: 'sync' })).toBeNull()
+		expect(
+			normalizeWorkspaceChangedPayload({
+				source: 'sync',
+				reason: 'pull',
+				changedDomains: ['unknown'],
+			}),
+		).toBeNull()
 		expect(normalizeWorkspaceChangedPayload(null)).toBeNull()
 	})
 
@@ -57,12 +66,14 @@ describe('workspaceChanged event helpers', () => {
 			payload: {
 				source: 'sync',
 				reason: 'pull',
+				changedDomains: ['tasks'],
 			},
 		})
 
 		expect(onWorkspaceChanged).toHaveBeenCalledWith({
 			source: 'sync',
 			reason: 'pull',
+			changedDomains: ['tasks'],
 		})
 
 		cleanup()

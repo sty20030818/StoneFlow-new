@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { listen } from '@tauri-apps/api/event'
 
 import {
 	getSyncStatus,
@@ -8,7 +9,8 @@ import {
 } from '@/features/sync/api/sync'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 
-const SYNC_STATUS_REFRESH_INTERVAL_MS = 3000
+const SYNC_STATUS_CHANGED_EVENT = 'stoneflow://sync/status-changed'
+const SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000
 
 export function useSyncStatusController() {
 	const [statusPayload, setStatusPayload] = useState<SyncStatusPayload | null>(null)
@@ -53,6 +55,30 @@ export function useSyncStatusController() {
 
 	useEffect(() => {
 		void refresh()
+	}, [refresh])
+
+	useEffect(() => {
+		let disposed = false
+		let unlisten: (() => void) | null = null
+
+		void listen(SYNC_STATUS_CHANGED_EVENT, () => {
+			void refresh({ silent: true })
+		})
+			.then((nextUnlisten) => {
+				if (disposed) {
+					nextUnlisten()
+					return
+				}
+				unlisten = nextUnlisten
+			})
+			.catch((error) => {
+				console.error('sync status listener failed', { error })
+			})
+
+		return () => {
+			disposed = true
+			unlisten?.()
+		}
 	}, [refresh])
 
 	useEffect(() => {
