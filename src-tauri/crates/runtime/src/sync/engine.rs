@@ -117,7 +117,7 @@ pub async fn configure_sync(
     Ok(sync_state.snapshot().await)
 }
 
-/// 本地写入成功后的统一入口：标记 dirty，并在空闲时异步发起一轮完整对齐同步。
+/// 本地写入成功后的统一入口：只标记 dirty，自动同步交给后续调度入口决定。
 pub async fn note_local_write(app_handle: &tauri::AppHandle) {
     let Some(sync_state) = app_handle.try_state::<SyncRuntimeState>() else {
         return;
@@ -125,13 +125,6 @@ pub async fn note_local_write(app_handle: &tauri::AppHandle) {
 
     sync_state.mark_dirty().await;
     log::info!("sync:dirty local write marked dirty");
-
-    if !sync_execution_enabled() {
-        log::info!("sync:dirty remote execution disabled");
-        return;
-    }
-
-    schedule_background_sync(app_handle, SyncRunMode::Sync).await;
 }
 
 /// 启动后自动触发一轮完整对齐同步。

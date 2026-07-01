@@ -268,6 +268,22 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn mark_dirty_should_not_queue_sync_when_idle() {
+        let state = SyncRuntimeState::default();
+        state
+            .set_remote_config(Some(SyncRemoteConfig {
+                url: "libsql://example.turso.io".to_owned(),
+                token: "token".to_owned(),
+            }))
+            .await;
+
+        state.mark_dirty().await;
+
+        let next_mode = state.take_pending_mode().await;
+        assert_eq!(next_mode, None);
+    }
+
+    #[tokio::test]
     async fn queue_pending_should_merge_push_and_pull_into_sync() {
         let state = SyncRuntimeState::default();
         state
