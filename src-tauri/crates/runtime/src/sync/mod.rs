@@ -4,6 +4,7 @@ mod config;
 mod engine;
 mod local;
 mod policy;
+mod scheduler;
 mod state;
 mod types;
 
@@ -12,6 +13,7 @@ pub use engine::{
     run_sync, trigger_resume_sync, trigger_startup_sync, update_sync_policy,
 };
 pub use policy::{SyncPolicy, SyncPolicyMode};
+pub use scheduler::start_scheduler;
 pub use state::SyncRuntimeState;
 pub use types::{
     ConfigureSyncInput, SyncDiagnosticsCountsPayload, SyncDiagnosticsPayload,

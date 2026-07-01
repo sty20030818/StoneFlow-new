@@ -1,5 +1,6 @@
 //! 云同步策略：只描述用户选择的自动同步节奏。
 
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::app::error::AppError;
@@ -45,6 +46,13 @@ impl SyncPolicy {
             )),
         }
     }
+
+    pub fn next_sync_at(&self, now: DateTime<Utc>) -> Option<DateTime<Utc>> {
+        match self.mode {
+            SyncPolicyMode::Interval => Some(now + Duration::minutes(i64::from(self.interval_minutes))),
+            SyncPolicyMode::Manual => None,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -69,5 +77,35 @@ mod tests {
         .expect("manual policy should normalize");
 
         assert_eq!(policy.interval_minutes, DEFAULT_SYNC_INTERVAL_MINUTES);
+    }
+
+    #[test]
+    fn interval_policy_should_calculate_next_sync_at() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-07-01T10:00:00Z")
+            .expect("time should parse")
+            .with_timezone(&chrono::Utc);
+        let policy = SyncPolicy {
+            mode: SyncPolicyMode::Interval,
+            interval_minutes: 15,
+        };
+
+        let next = policy.next_sync_at(now);
+
+        assert_eq!(next, Some(now + chrono::Duration::minutes(15)));
+    }
+
+    #[test]
+    fn manual_policy_should_not_calculate_next_sync_at() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-07-01T10:00:00Z")
+            .expect("time should parse")
+            .with_timezone(&chrono::Utc);
+        let policy = SyncPolicy {
+            mode: SyncPolicyMode::Manual,
+            interval_minutes: 15,
+        };
+
+        let next = policy.next_sync_at(now);
+
+        assert_eq!(next, None);
     }
 }

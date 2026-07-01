@@ -2,8 +2,9 @@
 
 use std::sync::Arc;
 
+use chrono::{DateTime, Duration, Utc};
 use stoneflow_domain::now_utc;
-use tokio::sync::{Mutex, OwnedMutexGuard, RwLock};
+use tokio::sync::{Mutex, Notify, OwnedMutexGuard, RwLock};
 
 pub use super::types::SyncRunMode;
 use super::{
@@ -27,6 +28,7 @@ struct SyncRuntimeInner {
     last_restore_at: Option<String>,
     policy: SyncPolicy,
     next_sync_at: Option<String>,
+    failure_count: u32,
 }
 
 /// Tauri app manage 的同步状态。
@@ -34,6 +36,7 @@ struct SyncRuntimeInner {
 pub struct SyncRuntimeState {
     inner: Arc<RwLock<SyncRuntimeInner>>,
     execution_lock: Arc<Mutex<()>>,
+    scheduler_notify: Arc<Notify>,
 }
 
 impl SyncRuntimeState {
@@ -96,7 +99,16 @@ impl SyncRuntimeState {
     pub(crate) async fn set_policy(&self, policy: SyncPolicy, next_sync_at: Option<String>) {
         let mut guard = self.inner.write().await;
         guard.policy = policy;
-        guard.next_sync_at = next_sync_at;
+        guard.next_sync_at = if guard.dirty_since.is_some() {
+            guard
+                .policy
+                .next_sync_at(now_utc())
+                .map(|time| time.to_rfc3339())
+        } else {
+            next_sync_at
+        };
+        drop(guard);
+        self.scheduler_notify.notify_one();
     }
 
     /// 更新当前设备本地副本状态。
@@ -124,17 +136,24 @@ impl SyncRuntimeState {
             return;
         }
 
-        let now = now_utc().to_rfc3339();
+        let now = now_utc();
         if guard.dirty_since.is_none() {
-            guard.dirty_since = Some(now);
+            guard.dirty_since = Some(now.to_rfc3339());
+        }
+        if guard.next_sync_at.is_none() {
+            guard.next_sync_at = guard.policy.next_sync_at(now).map(|time| time.to_rfc3339());
         }
 
         if is_running(guard.status) {
             queue_pending_mode(&mut guard, SyncRunMode::Sync);
+            drop(guard);
+            self.scheduler_notify.notify_one();
             return;
         }
 
         guard.status = SyncStatusKind::OfflinePending;
+        drop(guard);
+        self.scheduler_notify.notify_one();
     }
 
     /// 运行中的外部触发只排队，不并发起第二轮。
@@ -199,6 +218,10 @@ impl SyncRuntimeState {
 
         guard.status = SyncStatusKind::Synced;
         guard.last_error_mode = None;
+        guard.failure_count = 0;
+        guard.next_sync_at = None;
+        drop(guard);
+        self.scheduler_notify.notify_one();
     }
 
     /// 同步失败只更新状态，不影响业务写入结果。
@@ -207,6 +230,15 @@ impl SyncRuntimeState {
         guard.status = SyncStatusKind::Error;
         guard.last_error = Some(message);
         guard.last_error_mode = Some(mode);
+        guard.failure_count = guard.failure_count.saturating_add(1);
+        guard.next_sync_at = match guard.policy.mode {
+            super::policy::SyncPolicyMode::Interval => {
+                Some((now_utc() + retry_backoff(guard.failure_count)).to_rfc3339())
+            }
+            super::policy::SyncPolicyMode::Manual => None,
+        };
+        drop(guard);
+        self.scheduler_notify.notify_one();
     }
 
     /// 取出排队的补跑模式。
@@ -218,6 +250,35 @@ impl SyncRuntimeState {
 
         guard.pending_resync = false;
         guard.pending_mode.take()
+    }
+
+    pub(crate) fn scheduler_notifier(&self) -> Arc<Notify> {
+        Arc::clone(&self.scheduler_notify)
+    }
+
+    pub(crate) async fn next_sync_deadline(&self) -> Option<DateTime<Utc>> {
+        let guard = self.inner.read().await;
+        let raw = guard.next_sync_at.as_ref()?;
+        DateTime::parse_from_rfc3339(raw)
+            .ok()
+            .map(|time| time.with_timezone(&Utc))
+    }
+
+    pub(crate) async fn should_run_scheduled_sync(&self, now: DateTime<Utc>) -> bool {
+        let guard = self.inner.read().await;
+        if guard.remote_config.is_none()
+            || guard.dirty_since.is_none()
+            || guard.policy.mode == super::policy::SyncPolicyMode::Manual
+            || is_running(guard.status)
+        {
+            return false;
+        }
+
+        guard
+            .next_sync_at
+            .as_ref()
+            .and_then(|raw| DateTime::parse_from_rfc3339(raw).ok())
+            .is_some_and(|deadline| deadline.with_timezone(&Utc) <= now)
     }
 }
 
@@ -231,6 +292,14 @@ fn queue_pending_mode(inner: &mut SyncRuntimeInner, next_mode: SyncRunMode) {
         None => next_mode,
         Some(current) => merge_modes(current, next_mode),
     });
+}
+
+fn retry_backoff(failure_count: u32) -> Duration {
+    match failure_count {
+        0 | 1 => Duration::minutes(1),
+        2 => Duration::minutes(5),
+        _ => Duration::minutes(15),
+    }
 }
 
 fn merge_modes(current: SyncRunMode, next: SyncRunMode) -> SyncRunMode {
@@ -247,8 +316,8 @@ fn merge_modes(current: SyncRunMode, next: SyncRunMode) -> SyncRunMode {
 #[cfg(test)]
 mod tests {
     use super::{SyncRunMode, SyncRuntimeState};
-    use crate::sync::SyncPolicyMode;
     use crate::sync::types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind};
+    use crate::sync::{SyncPolicy, SyncPolicyMode};
 
     #[tokio::test]
     async fn mark_dirty_should_move_idle_to_dirty() {
@@ -281,6 +350,65 @@ mod tests {
 
         let next_mode = state.take_pending_mode().await;
         assert_eq!(next_mode, None);
+    }
+
+    #[tokio::test]
+    async fn mark_dirty_should_schedule_next_sync_for_interval_policy() {
+        let state = SyncRuntimeState::default();
+        state
+            .set_remote_config(Some(SyncRemoteConfig {
+                url: "libsql://example.turso.io".to_owned(),
+                token: "token".to_owned(),
+            }))
+            .await;
+
+        state.mark_dirty().await;
+
+        let payload = state.snapshot().await;
+        assert!(payload.next_sync_at.is_some());
+    }
+
+    #[tokio::test]
+    async fn mark_dirty_should_not_schedule_next_sync_for_manual_policy() {
+        let state = SyncRuntimeState::default();
+        state
+            .set_remote_config(Some(SyncRemoteConfig {
+                url: "libsql://example.turso.io".to_owned(),
+                token: "token".to_owned(),
+            }))
+            .await;
+        state
+            .set_policy(
+                SyncPolicy {
+                    mode: SyncPolicyMode::Manual,
+                    interval_minutes: 15,
+                },
+                None,
+            )
+            .await;
+
+        state.mark_dirty().await;
+
+        let payload = state.snapshot().await;
+        assert_eq!(payload.next_sync_at, None);
+    }
+
+    #[tokio::test]
+    async fn fail_run_should_schedule_retry() {
+        let state = SyncRuntimeState::default();
+        state
+            .set_remote_config(Some(SyncRemoteConfig {
+                url: "libsql://example.turso.io".to_owned(),
+                token: "token".to_owned(),
+            }))
+            .await;
+
+        state
+            .fail_run(SyncRunMode::Sync, "network down".to_owned())
+            .await;
+
+        let payload = state.snapshot().await;
+        assert!(payload.next_sync_at.is_some());
     }
 
     #[tokio::test]

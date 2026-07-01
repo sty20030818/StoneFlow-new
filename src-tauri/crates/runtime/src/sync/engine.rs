@@ -172,7 +172,7 @@ pub async fn run_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload
     Ok(sync_state.snapshot().await)
 }
 
-async fn schedule_background_sync(app_handle: &tauri::AppHandle, mode: SyncRunMode) {
+pub(super) async fn schedule_background_sync(app_handle: &tauri::AppHandle, mode: SyncRunMode) {
     if !sync_execution_enabled() {
         log::info!(
             "sync:schedule skipped because remote execution disabled mode={}",

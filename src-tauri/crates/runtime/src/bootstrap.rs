@@ -83,6 +83,7 @@ fn schedule_post_startup_jobs(app_handle: tauri::AppHandle) {
             return;
         }
 
+        sync::start_scheduler(app_handle.clone());
         sync::trigger_startup_sync(&app_handle);
     });
 }
