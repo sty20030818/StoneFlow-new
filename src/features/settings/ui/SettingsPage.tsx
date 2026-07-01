@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { listen } from '@tauri-apps/api/event'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
@@ -86,7 +87,8 @@ type SettingsSectionKey = 'mainItems' | 'footerItems' | 'projectSection' | 'defa
 
 type SectionStateMap = Record<SettingsSectionKey, boolean>
 type SectionErrorMap = Partial<Record<SettingsSectionKey, string>>
-const SYNC_STATUS_REFRESH_INTERVAL_MS = 3000
+const SYNC_STATUS_CHANGED_EVENT = 'stoneflow://sync/status-changed'
+const SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000
 const SYNC_POLICY_OPTIONS: Array<{
 	value: string
 	label: string
@@ -142,6 +144,30 @@ export function SettingsPage() {
 
 	useEffect(() => {
 		void refreshSyncStatus({ syncUrlDraft: true })
+	}, [])
+
+	useEffect(() => {
+		let disposed = false
+		let unlisten: (() => void) | null = null
+
+		void listen(SYNC_STATUS_CHANGED_EVENT, () => {
+			void refreshSyncStatus({ silent: true, syncUrlDraft: false })
+		})
+			.then((nextUnlisten) => {
+				if (disposed) {
+					nextUnlisten()
+					return
+				}
+				unlisten = nextUnlisten
+			})
+			.catch((error) => {
+				console.error('sync status listener failed', { error })
+			})
+
+		return () => {
+			disposed = true
+			unlisten?.()
+		}
 	}, [])
 
 	useEffect(() => {

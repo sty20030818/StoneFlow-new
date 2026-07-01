@@ -1,5 +1,7 @@
 import React from 'react'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { listen } from '@tauri-apps/api/event'
+import type * as TauriEvent from '@tauri-apps/api/event'
 
 import type { ShellSidebarSettings } from '@/app/layouts/shell/model/shellDevicePreferences'
 import { SettingsPage } from '@/features/settings/ui/SettingsPage'
@@ -20,9 +22,16 @@ const runSyncSpy = vi.fn<() => Promise<unknown>>()
 const updateSyncPolicySpy = vi.fn<
 	(input: { mode: 'interval' | 'manual'; intervalMinutes: 5 | 15 | 30 }) => Promise<unknown>
 >()
+const unlistenSyncStatusSpy = vi.fn<() => void>()
+const mockedListen = vi.mocked(listen)
 
 let sidebarStoreState = createSidebarStoreState()
 let spaceStoreState = createSpaceStoreState()
+let syncStatusChangedHandler: TauriEvent.EventCallback<unknown> = () => undefined
+
+vi.mock('@tauri-apps/api/event', () => ({
+	listen: vi.fn<typeof TauriEvent.listen>(),
+}))
 
 vi.mock('@/app/layouts/shell/model/useSidebarSettingsStore', () => ({
 	selectSidebarSettings: (state: typeof sidebarStoreState) => state.settings,
@@ -269,6 +278,13 @@ describe('SettingsPage', () => {
 			lastRestoreAt: null,
 			policyMode: 'manual',
 		}))
+		unlistenSyncStatusSpy.mockReset()
+		syncStatusChangedHandler = () => undefined
+		mockedListen.mockReset()
+		mockedListen.mockImplementation(async (_eventName, handler) => {
+			syncStatusChangedHandler = handler
+			return unlistenSyncStatusSpy
+		})
 		sidebarStoreState = createSidebarStoreState()
 		spaceStoreState = createSpaceStoreState()
 	})
@@ -454,6 +470,7 @@ describe('SettingsPage', () => {
 
 		expect(screen.getByLabelText('Turso URL')).toHaveValue('libsql://new.turso.io')
 		expect(screen.getByLabelText('Turso Token')).toHaveValue('new-token')
+		expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000)
 
 		setIntervalSpy.mockRestore()
 	})
@@ -614,8 +631,66 @@ describe('SettingsPage', () => {
 		await waitFor(() => {
 			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
 		})
+		expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000)
 		expect(await screen.findByText('sync timeout')).toBeInTheDocument()
 		setIntervalSpy.mockRestore()
+	})
+
+	it('收到同步状态事件时刷新状态', async () => {
+		getSyncStatusSpy
+			.mockResolvedValueOnce(createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}))
+			.mockResolvedValue(createSyncStatusPayload({
+				enabled: true,
+				status: 'offline_pending',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: '2026-06-26T00:00:00Z',
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'libsql://example.turso.io',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}))
+
+		await renderSettingsPage()
+
+		await waitFor(() => {
+			expect(mockedListen).toHaveBeenCalledWith(
+				'stoneflow://sync/status-changed',
+				expect.any(Function),
+			)
+		})
+
+		syncStatusChangedHandler({
+			event: 'stoneflow://sync/status-changed',
+			id: 1,
+			payload: {
+				source: 'sync',
+				reason: 'dirty',
+			},
+		})
+
+		await waitFor(() => {
+			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
+		})
+		expect(await screen.findByText('等待同步')).toBeInTheDocument()
 	})
 
 	it('保存同步配置成功后会清空 token 输入框', async () => {

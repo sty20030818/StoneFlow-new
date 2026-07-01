@@ -22,10 +22,17 @@ use super::{
 use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SyncRepository};
 
 const WORKSPACE_CHANGED_EVENT: &str = "stoneflow://workspace/changed";
+const SYNC_STATUS_CHANGED_EVENT: &str = "stoneflow://sync/status-changed";
 const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 struct WorkspaceChangedPayload {
+    source: &'static str,
+    reason: &'static str,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+struct SyncStatusChangedPayload {
     source: &'static str,
     reason: &'static str,
 }
@@ -125,6 +132,7 @@ pub async fn note_local_write(app_handle: &tauri::AppHandle) {
     };
 
     sync_state.mark_dirty().await;
+    emit_sync_status_changed(app_handle, "dirty");
     log::info!("sync:dirty local write marked dirty");
 }
 
@@ -334,6 +342,13 @@ fn workspace_changed_payload(mode: SyncRunMode) -> WorkspaceChangedPayload {
     }
 }
 
+fn sync_status_changed_payload(reason: &'static str) -> SyncStatusChangedPayload {
+    SyncStatusChangedPayload {
+        source: "sync",
+        reason,
+    }
+}
+
 fn resolve_probe_mode(
     local_last_pulled_server_seq: Option<i64>,
     remote_latest_server_seq: Option<i64>,
@@ -374,6 +389,12 @@ fn emit_workspace_changed(
         .map_err(|error| AppError::internal(error.to_string()))
 }
 
+fn emit_sync_status_changed(app_handle: &tauri::AppHandle, reason: &'static str) {
+    if let Err(error) = app_handle.emit(SYNC_STATUS_CHANGED_EVENT, sync_status_changed_payload(reason)) {
+        log::warn!("sync:status event emit failed reason={reason}: {error}");
+    }
+}
+
 async fn run_sync_round(
     app_handle: &tauri::AppHandle,
     sync_state: &SyncRuntimeState,
@@ -392,6 +413,7 @@ async fn run_sync_round(
         redact_remote_url(&remote_config.url)
     );
     sync_state.start_run(mode).await;
+    emit_sync_status_changed(app_handle, "started");
 
     let database_path = database.database_path().display().to_string();
     let result = match mode {
@@ -418,6 +440,7 @@ async fn run_sync_round(
     match result {
         Ok(()) => {
             sync_state.complete_run(mode).await;
+            emit_sync_status_changed(app_handle, "completed");
             log::info!("sync:round success mode={}", mode_label(mode));
             Ok(())
         }
@@ -426,6 +449,7 @@ async fn run_sync_round(
             sync_state
                 .fail_run(failure.failed_mode, message.clone())
                 .await;
+            emit_sync_status_changed(app_handle, "failed");
             log::warn!(
                 "sync:round failed mode={} failed_mode={} error={message}",
                 mode_label(mode),
@@ -853,7 +877,7 @@ mod tests {
 
     use super::{
         configure_sync, get_sync_status, initialize_state, parse_sync_worker_failure,
-        workspace_changed_payload,
+        sync_status_changed_payload, workspace_changed_payload,
     };
     use crate::sync::{
         state::SyncRuntimeState,
@@ -926,6 +950,14 @@ mod tests {
 
         assert_eq!(payload.source, "sync");
         assert_eq!(payload.reason, "pull");
+    }
+
+    #[test]
+    fn sync_status_changed_payload_should_describe_sync_source() {
+        let payload = sync_status_changed_payload("dirty");
+
+        assert_eq!(payload.source, "sync");
+        assert_eq!(payload.reason, "dirty");
     }
 
     #[test]
