@@ -101,6 +101,14 @@ pub struct SyncDiagnosticsPayload {
     pub remote: SyncRemoteDiagnosticsPayload,
 }
 
+/// 轻量远端 head check 的 worker 返回值。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncProbeResult {
+    pub latest_server_seq: Option<i64>,
+    pub schema_version: Option<i64>,
+}
+
 /// 前端提交的远端配置输入。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]

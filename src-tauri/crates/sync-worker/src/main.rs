@@ -12,7 +12,7 @@ mod schema;
 mod types;
 
 use error::SyncWorkerError;
-use diagnose::collect_sync_diagnostics;
+use diagnose::{collect_sync_diagnostics, collect_sync_probe};
 use migrate::migrate_baseline;
 use pull::pull_remote_changes;
 use push::push_local_changes;
@@ -84,6 +84,16 @@ async fn run() -> Result<(), SyncWorkerError> {
         SyncRunMode::Push => push_local_changes(&local, &remote).await,
         SyncRunMode::Pull => pull_remote_changes(&local, &remote).await,
         SyncRunMode::Migrate => migrate_baseline(&local, &remote).await,
+        SyncRunMode::Probe => {
+            let payload = collect_sync_probe(&remote).await?;
+            println!(
+                "{}",
+                serde_json::to_string(&payload).map_err(|error| {
+                    SyncWorkerError::serialization(format!("序列化同步 probe 结果失败: {error}"))
+                })?
+            );
+            Ok(())
+        }
         SyncRunMode::Diagnose => {
             let payload = collect_sync_diagnostics(&local, &remote).await?;
             println!(

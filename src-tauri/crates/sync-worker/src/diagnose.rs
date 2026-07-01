@@ -45,6 +45,22 @@ pub struct SyncDiagnosticsCountsOutput {
     pub total_items: i64,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncProbeOutput {
+    pub latest_server_seq: Option<i64>,
+    pub schema_version: Option<i64>,
+}
+
+pub async fn collect_sync_probe(
+    remote: &Connection,
+) -> Result<SyncProbeOutput, SyncWorkerError> {
+    Ok(SyncProbeOutput {
+        latest_server_seq: read_latest_server_seq(remote).await?,
+        schema_version: None,
+    })
+}
+
 pub async fn collect_sync_diagnostics(
     local: &Connection,
     remote: &Connection,
@@ -241,12 +257,17 @@ async fn read_latest_server_seq(remote: &Connection) -> Result<Option<i64>, Sync
 
 #[cfg(test)]
 mod tests {
+    use std::path::PathBuf;
+
+    use libsql::{params, Builder, Connection};
     use serde_json::json;
+    use tempfile::TempDir;
 
     use super::{
-        LocalSyncDiagnosticsOutput, RemoteSyncDiagnosticsOutput, SyncDiagnosticsCountsOutput,
-        SyncDiagnosticsOutput,
+        collect_sync_probe, LocalSyncDiagnosticsOutput, RemoteSyncDiagnosticsOutput,
+        SyncDiagnosticsCountsOutput, SyncDiagnosticsOutput, SyncProbeOutput,
     };
+    use crate::remote::bootstrap_remote_schema;
 
     #[test]
     fn diagnostics_output_should_serialize_as_camel_case() {
@@ -312,5 +333,69 @@ mod tests {
                 }
             })
         );
+    }
+
+    #[test]
+    fn probe_output_should_serialize_as_camel_case() {
+        let value = serde_json::to_value(SyncProbeOutput {
+            latest_server_seq: Some(18),
+            schema_version: None,
+        })
+        .expect("probe payload should serialize");
+
+        assert_eq!(
+            value,
+            json!({
+                "latestServerSeq": 18,
+                "schemaVersion": null
+            })
+        );
+    }
+
+    #[tokio::test]
+    async fn collect_sync_probe_should_read_latest_remote_server_seq() {
+        let (_remote_dir, remote) = open_test_connection("remote-probe").await;
+        bootstrap_remote_schema(&remote)
+            .await
+            .expect("remote schema should bootstrap");
+        remote
+            .execute(
+                r#"
+                INSERT INTO remote_change_log(
+                    server_seq, entity_type, entity_id, change_kind, patch,
+                    changed_by_client_id, changed_by_client_seq, committed_at
+                )
+                VALUES (?1, ?2, ?3, ?4, NULL, ?5, ?6, ?7)
+                "#,
+                params![
+                    7,
+                    "setting",
+                    "app.theme",
+                    "upsert",
+                    "client-a",
+                    1,
+                    "2026-06-29T10:00:00Z",
+                ],
+            )
+            .await
+            .expect("remote change should insert");
+
+        let output = collect_sync_probe(&remote)
+            .await
+            .expect("probe should read remote head");
+
+        assert_eq!(output.latest_server_seq, Some(7));
+    }
+
+    async fn open_test_connection(name: &str) -> (TempDir, Connection) {
+        let temp_dir = tempfile::tempdir().expect("temp dir should be created");
+        let database_path = PathBuf::from(temp_dir.path()).join(format!("{name}.sqlite3"));
+        let database = Builder::new_local(&database_path)
+            .build()
+            .await
+            .expect("test database should open");
+        let connection = database.connect().expect("test database should connect");
+
+        (temp_dir, connection)
     }
 }

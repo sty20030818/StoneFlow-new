@@ -6,6 +6,7 @@ pub enum SyncRunMode {
     Pull,
     Migrate,
     Diagnose,
+    Probe,
 }
 
 impl SyncRunMode {
@@ -15,6 +16,7 @@ impl SyncRunMode {
             "pull" => Ok(Self::Pull),
             "migrate" => Ok(Self::Migrate),
             "diagnose" => Ok(Self::Diagnose),
+            "probe" => Ok(Self::Probe),
             other => Err(SyncWorkerError::validation(format!(
                 "不支持的同步模式: {other}"
             ))),
@@ -33,4 +35,16 @@ pub struct WorkerArgs {
     pub database_path: String,
     pub remote: SyncRemoteConfig,
     pub mode: SyncRunMode,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SyncRunMode;
+
+    #[test]
+    fn parse_should_accept_probe_mode() {
+        let mode = SyncRunMode::parse("probe").expect("probe mode should parse");
+
+        assert_eq!(mode, SyncRunMode::Probe);
+    }
 }

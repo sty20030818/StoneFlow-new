@@ -15,13 +15,14 @@ use super::{
     local::inspect_local_replica,
     state::{SyncRunMode, SyncRuntimeState},
     types::{
-        ConfigureSyncInput, SyncDiagnosticsPayload, SyncReplicaState, SyncStatusPayload,
-        UpdateSyncPolicyInput,
+        ConfigureSyncInput, SyncDiagnosticsPayload, SyncProbeResult, SyncReplicaState,
+        SyncStatusPayload, UpdateSyncPolicyInput,
     },
 };
-use stoneflow_storage::database::DatabaseRuntimeState;
+use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SyncRepository};
 
 const WORKSPACE_CHANGED_EVENT: &str = "stoneflow://workspace/changed";
+const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 struct WorkspaceChangedPayload {
@@ -136,8 +137,8 @@ pub fn trigger_startup_sync(app_handle: &tauri::AppHandle) {
 
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
-        log::info!("sync:trigger startup sync requested");
-        schedule_background_sync(&app_handle, SyncRunMode::Sync).await;
+        log::info!("sync:trigger startup probe requested");
+        schedule_probe_sync(&app_handle, "startup").await;
     });
 }
 
@@ -150,8 +151,8 @@ pub fn trigger_resume_sync(app_handle: &tauri::AppHandle) {
 
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
-        log::info!("sync:trigger resume sync requested");
-        schedule_background_sync(&app_handle, SyncRunMode::Sync).await;
+        log::info!("sync:trigger resume probe requested");
+        schedule_probe_sync(&app_handle, "resume").await;
     });
 }
 
@@ -232,6 +233,72 @@ async fn schedule_background_sync(app_handle: &tauri::AppHandle, mode: SyncRunMo
     });
 }
 
+async fn schedule_probe_sync(app_handle: &tauri::AppHandle, source: &str) {
+    let Ok(sync_state) = sync_state_from_app(app_handle) else {
+        log::warn!("sync:probe state missing source={source}");
+        return;
+    };
+
+    if ensure_remote_config(&sync_state).await.is_err() {
+        log::info!("sync:probe skipped because remote config missing source={source}");
+        return;
+    }
+
+    let Ok(database) = database_state_from_app(app_handle) else {
+        log::warn!("sync:probe database state missing source={source}");
+        return;
+    };
+
+    if let Err(error) = refresh_local_replica_state(&sync_state, &database).await {
+        log::warn!("sync:probe refresh replica state failed source={source}: {error}");
+        return;
+    }
+
+    if let Err(error) = ensure_sync_allowed(&sync_state).await {
+        log::info!("sync:probe blocked source={source} reason={error}");
+        return;
+    }
+
+    let Some(remote_config) = sync_state.remote_config().await else {
+        return;
+    };
+    let local_seq = match read_local_server_seq_cursor(&database).await {
+        Ok(value) => value,
+        Err(error) => {
+            log::warn!("sync:probe read local cursor failed source={source}: {error}");
+            return;
+        }
+    };
+    let probe = match run_sync_worker_json::<SyncProbeResult>(
+        app_handle,
+        database.database_path().display().to_string(),
+        &remote_config,
+        "probe",
+    )
+    .await
+    {
+        Ok(value) => value,
+        Err(error) => {
+            log::warn!("sync:probe worker failed source={source}: {error}");
+            return;
+        }
+    };
+
+    let Some(mode) = resolve_probe_mode(local_seq, probe.latest_server_seq) else {
+        log::info!("sync:probe skipped source={source} remote unchanged");
+        return;
+    };
+
+    log::info!(
+        "sync:probe scheduling source={} mode={} local_seq={:?} remote_seq={:?}",
+        source,
+        mode_label(mode),
+        local_seq,
+        probe.latest_server_seq
+    );
+    schedule_background_sync(app_handle, mode).await;
+}
+
 async fn run_sync_loop(
     app_handle: &tauri::AppHandle,
     _guard: OwnedMutexGuard<()>,
@@ -265,6 +332,37 @@ fn workspace_changed_payload(mode: SyncRunMode) -> WorkspaceChangedPayload {
         source: "sync",
         reason: mode_label(mode),
     }
+}
+
+fn resolve_probe_mode(
+    local_last_pulled_server_seq: Option<i64>,
+    remote_latest_server_seq: Option<i64>,
+) -> Option<SyncRunMode> {
+    let remote_seq = remote_latest_server_seq?;
+    let local_seq = local_last_pulled_server_seq.unwrap_or(0);
+
+    (remote_seq > local_seq).then_some(SyncRunMode::Pull)
+}
+
+async fn read_local_server_seq_cursor(
+    database: &DatabaseRuntimeState,
+) -> Result<Option<i64>, AppError> {
+    let repository = SyncRepository::new(database.connection().clone());
+    let Some(record) = repository.find_cursor(SERVER_SEQ_CURSOR_SCOPE).await? else {
+        return Ok(None);
+    };
+    let Some(cursor) = record.cursor else {
+        return Ok(None);
+    };
+    let trimmed = cursor.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+
+    trimmed
+        .parse::<i64>()
+        .map(Some)
+        .map_err(|error| AppError::database(format!("解析本地 server_seq cursor 失败: {error}")))
 }
 
 fn emit_workspace_changed(
@@ -828,5 +926,19 @@ mod tests {
 
         assert_eq!(payload.source, "sync");
         assert_eq!(payload.reason, "pull");
+    }
+
+    #[test]
+    fn resolve_probe_mode_should_pull_when_remote_seq_advanced() {
+        let mode = super::resolve_probe_mode(Some(12), Some(18));
+
+        assert_eq!(mode, Some(super::SyncRunMode::Pull));
+    }
+
+    #[test]
+    fn resolve_probe_mode_should_skip_when_remote_seq_is_unchanged() {
+        let mode = super::resolve_probe_mode(Some(18), Some(18));
+
+        assert_eq!(mode, None);
     }
 }
