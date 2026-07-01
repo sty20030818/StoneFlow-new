@@ -8,6 +8,7 @@ export type SyncStatus =
 	| 'error'
 	| 'needs_attention'
 export type SyncReplicaState = 'uninitialized' | 'ready' | 'baseline_required' | 'diverged'
+export type SyncPolicyMode = 'interval' | 'manual'
 
 export type SyncStatusPayload = {
 	enabled: boolean
@@ -23,6 +24,9 @@ export type SyncStatusPayload = {
 	replicaState: SyncReplicaState
 	replicaReason: string | null
 	lastRestoreAt: string | null
+	policyMode: SyncPolicyMode
+	policyIntervalMinutes: number
+	nextSyncAt: string | null
 }
 
 export type SyncDiagnosticsCountsPayload = {
@@ -68,6 +72,16 @@ export function getSyncDiagnostics() {
  */
 export function configureSync(input: { url: string; token: string }) {
 	return invoke<SyncStatusPayload>('configure_sync', { input })
+}
+
+/**
+ * 保存同步频率策略。
+ */
+export function updateSyncPolicy(input: {
+	mode: SyncPolicyMode
+	intervalMinutes: 5 | 15 | 30
+}) {
+	return invoke<SyncStatusPayload>('update_sync_policy', { input })
 }
 
 /**

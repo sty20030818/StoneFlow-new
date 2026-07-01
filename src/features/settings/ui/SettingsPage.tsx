@@ -17,7 +17,9 @@ import {
 	getSyncDiagnostics,
 	getSyncStatus,
 	runSync,
+	updateSyncPolicy,
 	type SyncDiagnosticsPayload,
+	type SyncPolicyMode,
 	type SyncReplicaState,
 	type SyncStatus,
 	type SyncStatusPayload,
@@ -85,6 +87,17 @@ type SettingsSectionKey = 'mainItems' | 'footerItems' | 'projectSection' | 'defa
 type SectionStateMap = Record<SettingsSectionKey, boolean>
 type SectionErrorMap = Partial<Record<SettingsSectionKey, string>>
 const SYNC_STATUS_REFRESH_INTERVAL_MS = 3000
+const SYNC_POLICY_OPTIONS: Array<{
+	value: string
+	label: string
+	mode: SyncPolicyMode
+	intervalMinutes: 5 | 15 | 30
+}> = [
+	{ value: 'interval:5', label: '每 5 分钟', mode: 'interval', intervalMinutes: 5 },
+	{ value: 'interval:15', label: '每 15 分钟', mode: 'interval', intervalMinutes: 15 },
+	{ value: 'interval:30', label: '每 30 分钟', mode: 'interval', intervalMinutes: 30 },
+	{ value: 'manual:15', label: '仅手动', mode: 'manual', intervalMinutes: 15 },
+]
 
 /**
  * 设置页只负责组织现有 settings 状态与 Space 数据，不复制配置状态。
@@ -263,12 +276,37 @@ export function SettingsPage() {
 		}
 	}
 
+	async function handleSyncPolicyChange(value: string) {
+		const option = SYNC_POLICY_OPTIONS.find((item) => item.value === value)
+		if (!option) {
+			return
+		}
+
+		setSyncSaving(true)
+		setSyncStatusMessage(null)
+		try {
+			const payload = await updateSyncPolicy({
+				mode: option.mode,
+				intervalMinutes: option.intervalMinutes,
+			})
+			setSyncStatus(payload)
+		} catch (error) {
+			setSyncStatusMessage(normalizeTauriError(error, '同步频率保存失败'))
+			await refreshSyncStatus({ syncUrlDraft: false })
+		} finally {
+			setSyncSaving(false)
+		}
+	}
+
 	const effectiveSyncError =
 		syncStatus?.status === 'error' ? (syncStatus.lastError ?? syncStatusMessage) : syncStatusMessage
 	const effectiveSyncErrorTitle = getSyncErrorTitle(syncStatus?.lastErrorMode ?? null, syncRunning)
 	const syncBusy = syncSaving || syncRunning || syncLoading
 	const syncActionBusy = syncBusy || syncDiagnosing
 	const syncRequiresBaseline = syncStatus?.replicaState === 'baseline_required'
+	const syncPolicyValue = syncStatus
+		? `${syncStatus.policyMode}:${syncStatus.policyIntervalMinutes}`
+		: 'interval:15'
 	const displayedSyncStatus: SyncStatus = syncRunning
 		? 'syncing'
 		: syncSaving
@@ -625,6 +663,31 @@ export function SettingsPage() {
 										label='副本状态'
 										value={formatReplicaState(syncStatus?.replicaState ?? 'uninitialized')}
 									/>
+								</div>
+
+								<div className='mt-4 grid gap-3 md:grid-cols-[minmax(0,18rem)_1fr] md:items-end'>
+									<label className={formFieldStackClass}>
+										<span className={formFieldLabelVariants()}>同步频率</span>
+										<Select
+											disabled={syncActionBusy}
+											onValueChange={handleSyncPolicyChange}
+											value={syncPolicyValue}
+										>
+											<SelectTrigger aria-label='同步频率' className='h-10 w-full'>
+												<SelectValue placeholder='选择同步频率' />
+											</SelectTrigger>
+											<SelectContent position='popper'>
+												<SelectGroup>
+													{SYNC_POLICY_OPTIONS.map((option) => (
+														<SelectItem key={option.value} value={option.value}>
+															{option.label}
+														</SelectItem>
+													))}
+												</SelectGroup>
+											</SelectContent>
+										</Select>
+									</label>
+									<p className={formFieldHintClass}>{formatSyncPolicySummary(syncStatus)}</p>
 								</div>
 							</div>
 
@@ -1064,6 +1127,21 @@ function formatSyncCountsSummary(counts: {
 		`${counts.taskLinks} 链接`,
 		`${counts.settings} 设置`,
 	].join(' / ')
+}
+
+function formatSyncPolicySummary(status: SyncStatusPayload | null) {
+	if (!status) {
+		return '默认每 15 分钟自动同步。'
+	}
+
+	if (status.policyMode === 'manual') {
+		return '仅手动同步：本地写入会保留为待同步状态，直到点击“立即同步”。'
+	}
+
+	const nextSyncText = status.nextSyncAt
+		? `下次自动同步：${formatSyncExactTime(status.nextSyncAt)}。`
+		: '下次自动同步会在调度器启动后计算。'
+	return `每 ${status.policyIntervalMinutes} 分钟自动同步。${nextSyncText}`
 }
 
 function getSyncStatusCopy({

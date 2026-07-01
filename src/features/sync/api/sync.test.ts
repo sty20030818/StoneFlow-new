@@ -5,6 +5,7 @@ import {
 	getSyncDiagnostics,
 	getSyncStatus,
 	runSync,
+	updateSyncPolicy,
 } from '@/features/sync/api/sync'
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -127,5 +128,35 @@ describe('sync api', () => {
 		await runSync()
 
 		expect(mockedInvoke).toHaveBeenCalledWith('run_sync')
+	})
+
+	it('保存同步策略时调用 update_sync_policy', async () => {
+		mockedInvoke.mockResolvedValue({
+			enabled: true,
+			status: 'synced',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
+			policyMode: 'manual',
+			policyIntervalMinutes: 15,
+			nextSyncAt: null,
+		})
+
+		await updateSyncPolicy({ mode: 'manual', intervalMinutes: 15 })
+
+		expect(mockedInvoke).toHaveBeenCalledWith('update_sync_policy', {
+			input: {
+				mode: 'manual',
+				intervalMinutes: 15,
+			},
+		})
 	})
 })

@@ -11,11 +11,12 @@ use tokio::process::Command;
 use crate::app::error::AppError;
 
 use super::{
-    config::{load_remote_config, save_remote_config},
+    config::{load_remote_config, load_sync_policy, save_remote_config, save_sync_policy},
     local::inspect_local_replica,
     state::{SyncRunMode, SyncRuntimeState},
     types::{
         ConfigureSyncInput, SyncDiagnosticsPayload, SyncReplicaState, SyncStatusPayload,
+        UpdateSyncPolicyInput,
     },
 };
 use stoneflow_storage::database::DatabaseRuntimeState;
@@ -46,6 +47,8 @@ pub async fn initialize_state(
         ),
     }
     sync_state.set_remote_config(config).await;
+    let (policy, next_sync_at) = load_sync_policy(database).await?;
+    sync_state.set_policy(policy, next_sync_at).await;
     refresh_local_replica_state(sync_state, database).await?;
     Ok(())
 }
@@ -56,6 +59,17 @@ pub async fn get_sync_status(
     database: &DatabaseRuntimeState,
 ) -> Result<SyncStatusPayload, AppError> {
     refresh_local_replica_state(sync_state, database).await?;
+    Ok(sync_state.snapshot().await)
+}
+
+/// 保存同步策略并刷新运行态缓存。
+pub async fn update_sync_policy(
+    database: &DatabaseRuntimeState,
+    sync_state: &SyncRuntimeState,
+    input: UpdateSyncPolicyInput,
+) -> Result<SyncStatusPayload, AppError> {
+    let policy = save_sync_policy(database, input.into(), None).await?;
+    sync_state.set_policy(policy, None).await;
     Ok(sync_state.snapshot().await)
 }
 

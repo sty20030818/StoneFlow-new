@@ -17,6 +17,9 @@ const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
 const getSyncDiagnosticsSpy = vi.fn<() => Promise<unknown>>()
 const configureSyncSpy = vi.fn<(input: { url: string; token: string }) => Promise<unknown>>()
 const runSyncSpy = vi.fn<() => Promise<unknown>>()
+const updateSyncPolicySpy = vi.fn<
+	(input: { mode: 'interval' | 'manual'; intervalMinutes: 5 | 15 | 30 }) => Promise<unknown>
+>()
 
 let sidebarStoreState = createSidebarStoreState()
 let spaceStoreState = createSpaceStoreState()
@@ -46,6 +49,8 @@ vi.mock('@/features/sync/api/sync', () => ({
 	getSyncDiagnostics: () => getSyncDiagnosticsSpy(),
 	configureSync: (input: { url: string; token: string }) => configureSyncSpy(input),
 	runSync: () => runSyncSpy(),
+	updateSyncPolicy: (input: { mode: 'interval' | 'manual'; intervalMinutes: 5 | 15 | 30 }) =>
+		updateSyncPolicySpy(input),
 }))
 
 vi.mock('@/app/layouts/shell/model/ShellRouteContext', () => ({
@@ -169,7 +174,7 @@ describe('SettingsPage', () => {
 			return nextDefaultSpace
 		})
 		getSyncStatusSpy.mockReset()
-		getSyncStatusSpy.mockResolvedValue({
+		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
 			enabled: false,
 			status: 'disabled',
 			lastPushAt: null,
@@ -183,7 +188,7 @@ describe('SettingsPage', () => {
 			replicaState: 'uninitialized',
 			replicaReason: null,
 			lastRestoreAt: null,
-		})
+		}))
 		getSyncDiagnosticsSpy.mockReset()
 		getSyncDiagnosticsSpy.mockResolvedValue({
 			remoteHost: 'libsql://example.turso.io',
@@ -216,7 +221,7 @@ describe('SettingsPage', () => {
 			},
 		})
 		configureSyncSpy.mockReset()
-		configureSyncSpy.mockResolvedValue({
+		configureSyncSpy.mockResolvedValue(createSyncStatusPayload({
 			enabled: true,
 			status: 'synced',
 			lastPushAt: null,
@@ -230,9 +235,9 @@ describe('SettingsPage', () => {
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
-		})
+		}))
 		runSyncSpy.mockReset()
-		runSyncSpy.mockResolvedValue({
+		runSyncSpy.mockResolvedValue(createSyncStatusPayload({
 			enabled: true,
 			status: 'synced',
 			lastPushAt: '2026-06-26T00:00:00Z',
@@ -246,7 +251,24 @@ describe('SettingsPage', () => {
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
-		})
+		}))
+		updateSyncPolicySpy.mockReset()
+		updateSyncPolicySpy.mockResolvedValue(createSyncStatusPayload({
+			enabled: true,
+			status: 'synced',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
+			policyMode: 'manual',
+		}))
 		sidebarStoreState = createSidebarStoreState()
 		spaceStoreState = createSpaceStoreState()
 	})
@@ -316,6 +338,7 @@ describe('SettingsPage', () => {
 
 	it('保存同步配置时调用 configureSync 并刷新状态', async () => {
 		await renderSettingsPage()
+		openSyncConfigDialog()
 
 		fireEvent.change(screen.getByLabelText('Turso URL'), {
 			target: { value: 'libsql://example.turso.io' },
@@ -335,7 +358,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('页面加载后会回填已保存的同步配置', async () => {
-		getSyncStatusSpy.mockResolvedValue({
+		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
 			enabled: true,
 			status: 'synced',
 			lastPushAt: null,
@@ -349,19 +372,17 @@ describe('SettingsPage', () => {
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
-		})
+		}))
 
 		await renderSettingsPage()
+		openSyncConfigDialog()
 
 		expect(screen.getByLabelText('Turso URL')).toHaveValue('libsql://saved.turso.io')
 		expect(screen.getByLabelText('Turso Token')).toHaveValue('')
 		expect(
-			screen.getByText(
-				'出于安全考虑，已保存的 token 不会回显；需要更换时直接输入新 token 覆盖保存。',
-				{
-					exact: false,
-				},
-			),
+			screen.getByText('配置会保存在本地 settings 表；页面刷新后只会自动回填 URL', {
+				exact: false,
+			}),
 		).toBeInTheDocument()
 	})
 
@@ -370,9 +391,7 @@ describe('SettingsPage', () => {
 
 		expect(screen.getByText('尚未启用云同步')).toBeInTheDocument()
 		expect(
-			screen.getByText(
-				'当前还没有保存可用的 Turso 远端。完成配置前，所有数据只会保留在本地数据库。',
-			),
+			screen.getByText('未配置 Turso 远端，本机只保留本地数据。'),
 		).toBeInTheDocument()
 		expect(screen.getByText('未启用')).toBeInTheDocument()
 		expect(screen.getAllByText('从未同步')).toHaveLength(2)
@@ -388,7 +407,7 @@ describe('SettingsPage', () => {
 		})
 
 		getSyncStatusSpy
-			.mockResolvedValueOnce({
+			.mockResolvedValueOnce(createSyncStatusPayload({
 				enabled: true,
 				status: 'synced',
 				lastPushAt: null,
@@ -402,8 +421,8 @@ describe('SettingsPage', () => {
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
-			})
-			.mockResolvedValue({
+			}))
+			.mockResolvedValue(createSyncStatusPayload({
 				enabled: true,
 				status: 'synced',
 				lastPushAt: null,
@@ -417,9 +436,10 @@ describe('SettingsPage', () => {
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
-			})
+			}))
 
 		await renderSettingsPage()
+		openSyncConfigDialog()
 
 		fireEvent.change(screen.getByLabelText('Turso URL'), {
 			target: { value: 'libsql://new.turso.io' },
@@ -439,7 +459,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('点击立即同步时调用 runSync', async () => {
-		getSyncStatusSpy.mockResolvedValue({
+		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
 			enabled: true,
 			status: 'synced',
 			lastPushAt: null,
@@ -453,7 +473,7 @@ describe('SettingsPage', () => {
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
-		})
+		}))
 
 		await renderSettingsPage()
 
@@ -464,11 +484,40 @@ describe('SettingsPage', () => {
 		})
 	})
 
+	it('切换同步频率时调用 updateSyncPolicy', async () => {
+		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
+			enabled: true,
+			status: 'synced',
+			lastPushAt: null,
+			lastPullAt: null,
+			lastError: null,
+			lastErrorMode: null,
+			dirtySince: null,
+			pendingResync: false,
+			hasRemoteConfig: true,
+			remoteUrl: 'libsql://example.turso.io',
+			replicaState: 'ready',
+			replicaReason: null,
+			lastRestoreAt: null,
+		}))
+
+		await renderSettingsPage()
+
+		fireEvent.change(screen.getByLabelText('同步频率'), { target: { value: 'manual:15' } })
+
+		await waitFor(() => {
+			expect(updateSyncPolicySpy).toHaveBeenCalledWith({
+				mode: 'manual',
+				intervalMinutes: 15,
+			})
+		})
+	})
+
 	it('待同步状态时展示等待同步提示', async () => {
 		vi.useFakeTimers()
 		vi.setSystemTime(new Date('2026-06-26T00:10:00Z'))
 
-		getSyncStatusSpy.mockResolvedValue({
+		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
 			enabled: true,
 			status: 'offline_pending',
 			lastPushAt: '2026-06-26T00:00:00Z',
@@ -482,23 +531,20 @@ describe('SettingsPage', () => {
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
-		})
+		}))
 
 		await renderSettingsPage()
 
 		expect(screen.getByText('等待同步')).toBeInTheDocument()
 		expect(
-			screen.getByText(
-				'本地已经产生新变更，最早一笔待同步写入开始于 10 分钟前。你可以直接点“立即同步”，也可以等后台自动补跑完整对齐轮次。',
-			),
+			screen.getByText('本地已有新写入，已等待 10 分钟前。'),
 		).toBeInTheDocument()
-		expect(screen.getByText('待同步')).toBeInTheDocument()
+		expect(screen.getAllByText('待同步').length).toBeGreaterThanOrEqual(1)
 		expect(screen.getByText('10 分钟前')).toBeInTheDocument()
-		expect(screen.getByText('本地已有新写入，已等待 10 分钟前。')).toBeInTheDocument()
 	})
 
 	it('同步错误时展示 lastError', async () => {
-		getSyncStatusSpy.mockResolvedValue({
+		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
 			enabled: true,
 			status: 'error',
 			lastPushAt: null,
@@ -512,11 +558,12 @@ describe('SettingsPage', () => {
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
-		})
+		}))
 
 		await renderSettingsPage()
+		openSyncDetails()
 
-		expect(screen.getByText('同步需要处理')).toBeInTheDocument()
+		expect(screen.getAllByText('同步需要处理').length).toBeGreaterThanOrEqual(1)
 		expect(screen.getByText('确认失败')).toBeInTheDocument()
 		expect(await screen.findByText('remote unavailable')).toBeInTheDocument()
 	})
@@ -530,7 +577,7 @@ describe('SettingsPage', () => {
 			return 1 as unknown as number
 		})
 		getSyncStatusSpy
-			.mockResolvedValueOnce({
+			.mockResolvedValueOnce(createSyncStatusPayload({
 				enabled: true,
 				status: 'synced',
 				lastPushAt: null,
@@ -544,8 +591,8 @@ describe('SettingsPage', () => {
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
-			})
-			.mockResolvedValue({
+			}))
+			.mockResolvedValue(createSyncStatusPayload({
 				enabled: true,
 				status: 'error',
 				lastPushAt: null,
@@ -559,9 +606,10 @@ describe('SettingsPage', () => {
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
-			})
+			}))
 
 		await renderSettingsPage()
+		openSyncDetails()
 
 		await waitFor(() => {
 			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
@@ -572,6 +620,7 @@ describe('SettingsPage', () => {
 
 	it('保存同步配置成功后会清空 token 输入框', async () => {
 		await renderSettingsPage()
+		openSyncConfigDialog()
 
 		fireEvent.change(screen.getByLabelText('Turso URL'), {
 			target: { value: 'libsql://example.turso.io' },
@@ -584,13 +633,14 @@ describe('SettingsPage', () => {
 		await waitFor(() => {
 			expect(configureSyncSpy).toHaveBeenCalledTimes(1)
 		})
+		openSyncConfigDialog()
 		await waitFor(() => {
 			expect(screen.getByLabelText('Turso Token')).toHaveValue('')
 		})
 	})
 
 	it('缺少同步基线时展示提示并禁用立即同步', async () => {
-		getSyncStatusSpy.mockResolvedValue({
+		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
 			enabled: true,
 			status: 'synced',
 			lastPushAt: null,
@@ -605,17 +655,17 @@ describe('SettingsPage', () => {
 			replicaReason:
 				'当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。',
 			lastRestoreAt: null,
-		})
+		}))
 
 		await renderSettingsPage()
 
-		expect(screen.getAllByText('当前设备需要建立同步基线')).toHaveLength(2)
-		expect(screen.getByText('缺少基线')).toBeInTheDocument()
+		expect(screen.getByText('当前设备需要建立同步基线')).toBeInTheDocument()
+		expect(screen.getAllByText('缺少基线').length).toBeGreaterThanOrEqual(1)
 		expect(screen.getByRole('button', { name: '立即同步' })).toBeDisabled()
 	})
 
 	it('点击刷新诊断时展示远端与本地摘要', async () => {
-		getSyncStatusSpy.mockResolvedValue({
+		getSyncStatusSpy.mockResolvedValue(createSyncStatusPayload({
 			enabled: true,
 			status: 'synced',
 			lastPushAt: null,
@@ -629,9 +679,10 @@ describe('SettingsPage', () => {
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: '2026-06-28T00:00:00Z',
-		})
+		}))
 
 		await renderSettingsPage()
+		openSyncDetails()
 
 		fireEvent.click(screen.getByRole('button', { name: '刷新诊断' }))
 
@@ -641,12 +692,29 @@ describe('SettingsPage', () => {
 		expect(screen.getByText('同步诊断')).toBeInTheDocument()
 		expect(screen.getByText('libsql://example.turso.io')).toBeInTheDocument()
 		expect(screen.getAllByText('总计 88 条主数据')).toHaveLength(2)
-		expect(screen.getByText('1 条')).toBeInTheDocument()
+		expect(screen.getAllByText('1 条').length).toBeGreaterThanOrEqual(1)
 	})
 })
 
 async function renderSettingsPage() {
 	return renderWithRouterContext(<SettingsPage />)
+}
+
+function openSyncConfigDialog() {
+	fireEvent.click(screen.getByRole('button', { name: '配置 Turso 远端' }))
+}
+
+function openSyncDetails() {
+	fireEvent.click(screen.getByRole('button', { name: '详情与诊断' }))
+}
+
+function createSyncStatusPayload(overrides: Record<string, unknown>) {
+	return {
+		policyMode: 'interval',
+		policyIntervalMinutes: 15,
+		nextSyncAt: null,
+		...overrides,
+	}
 }
 
 function getCheckboxByLabel(label: string) {

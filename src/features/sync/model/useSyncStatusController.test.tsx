@@ -20,6 +20,9 @@ vi.mock('@/features/sync/api/sync', () => ({
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
+			policyMode: 'interval',
+			policyIntervalMinutes: 15,
+			nextSyncAt: null,
 		}),
 	),
 	runSync: vi.fn(),
@@ -47,6 +50,9 @@ describe('useSyncStatusController', () => {
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
+			policyMode: 'interval',
+			policyIntervalMinutes: 15,
+			nextSyncAt: null,
 		})
 
 		const { result } = renderHook(() => useSyncStatusController())

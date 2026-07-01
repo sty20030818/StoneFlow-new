@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::policy::{SyncPolicy, SyncPolicyMode};
+
 /// 同步状态机对前端暴露的稳定状态。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -53,6 +55,9 @@ pub struct SyncStatusPayload {
     pub replica_state: SyncReplicaState,
     pub replica_reason: Option<String>,
     pub last_restore_at: Option<String>,
+    pub policy_mode: SyncPolicyMode,
+    pub policy_interval_minutes: u16,
+    pub next_sync_at: Option<String>,
 }
 
 /// 诊断面板展示的同步计数摘要。
@@ -104,12 +109,38 @@ pub struct ConfigureSyncInput {
     pub token: String,
 }
 
+/// 前端提交的同步策略输入。
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateSyncPolicyInput {
+    pub mode: SyncPolicyMode,
+    pub interval_minutes: u16,
+}
+
+impl From<UpdateSyncPolicyInput> for SyncPolicy {
+    fn from(input: UpdateSyncPolicyInput) -> Self {
+        Self {
+            mode: input.mode,
+            interval_minutes: input.interval_minutes,
+        }
+    }
+}
+
 /// Settings 表中持久化的同步配置。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncRemoteConfigSetting {
     pub url: Option<String>,
     pub token: Option<String>,
+}
+
+/// Settings 表中持久化的同步策略配置。
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncPolicySetting {
+    pub mode: Option<SyncPolicyMode>,
+    pub interval_minutes: Option<u16>,
+    pub next_sync_at: Option<String>,
 }
 
 /// 运行态可用的远端配置。

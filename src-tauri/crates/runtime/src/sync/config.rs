@@ -5,9 +5,13 @@ use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SettingsRe
 
 use crate::app::error::AppError;
 
-use super::types::{SyncRemoteConfig, SyncRemoteConfigSetting};
+use super::{
+    policy::SyncPolicy,
+    types::{SyncPolicySetting, SyncRemoteConfig, SyncRemoteConfigSetting},
+};
 
 pub const SYNC_CONFIG_SETTING_KEY: &str = "app.sync.config";
+pub const SYNC_POLICY_SETTING_KEY: &str = "app.sync.policy";
 
 /// 从 settings 表读取同步远端配置。
 pub async fn load_remote_config(
@@ -19,6 +23,54 @@ pub async fn load_remote_config(
         .await?;
 
     Ok(stored.and_then(normalize_setting))
+}
+
+/// 从 settings 表读取同步策略；缺省值是 15 分钟自动同步。
+pub async fn load_sync_policy(
+    database: &DatabaseRuntimeState,
+) -> Result<(SyncPolicy, Option<String>), AppError> {
+    let repository = SettingsRepository::new(database.connection().clone());
+    let stored = repository
+        .find_json_setting::<SyncPolicySetting>(SYNC_POLICY_SETTING_KEY)
+        .await?;
+    let Some(setting) = stored else {
+        return Ok((SyncPolicy::default(), None));
+    };
+
+    let policy = SyncPolicy {
+        mode: setting.mode.unwrap_or(SyncPolicy::default().mode),
+        interval_minutes: setting
+            .interval_minutes
+            .unwrap_or(SyncPolicy::default().interval_minutes),
+    }
+    .validated()?;
+
+    Ok((policy, setting.next_sync_at))
+}
+
+/// 写入并返回标准化后的同步策略。
+pub async fn save_sync_policy(
+    database: &DatabaseRuntimeState,
+    policy: SyncPolicy,
+    next_sync_at: Option<String>,
+) -> Result<SyncPolicy, AppError> {
+    let policy = policy.validated()?;
+    let repository = SettingsRepository::new(database.connection().clone());
+    let updated_at = now_utc().to_rfc3339();
+
+    repository
+        .set_json_setting(
+            SYNC_POLICY_SETTING_KEY,
+            &SyncPolicySetting {
+                mode: Some(policy.mode),
+                interval_minutes: Some(policy.interval_minutes),
+                next_sync_at,
+            },
+            &updated_at,
+        )
+        .await?;
+
+    Ok(policy)
 }
 
 /// 写入并返回标准化后的同步远端配置。

@@ -6,7 +6,10 @@ use stoneflow_domain::now_utc;
 use tokio::sync::{Mutex, OwnedMutexGuard, RwLock};
 
 pub use super::types::SyncRunMode;
-use super::types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind, SyncStatusPayload};
+use super::{
+    policy::SyncPolicy,
+    types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind, SyncStatusPayload},
+};
 
 #[derive(Debug, Default)]
 struct SyncRuntimeInner {
@@ -22,6 +25,8 @@ struct SyncRuntimeInner {
     replica_state: SyncReplicaState,
     replica_reason: Option<String>,
     last_restore_at: Option<String>,
+    policy: SyncPolicy,
+    next_sync_at: Option<String>,
 }
 
 /// Tauri app manage 的同步状态。
@@ -58,6 +63,9 @@ impl SyncRuntimeState {
             replica_state: guard.replica_state,
             replica_reason: guard.replica_reason.clone(),
             last_restore_at: guard.last_restore_at.clone(),
+            policy_mode: guard.policy.mode,
+            policy_interval_minutes: guard.policy.interval_minutes,
+            next_sync_at: guard.next_sync_at.clone(),
         }
     }
 
@@ -82,6 +90,13 @@ impl SyncRuntimeState {
     /// 返回当前已加载的远端配置。
     pub(crate) async fn remote_config(&self) -> Option<SyncRemoteConfig> {
         self.inner.read().await.remote_config.clone()
+    }
+
+    /// 初始化或覆盖同步策略缓存。
+    pub(crate) async fn set_policy(&self, policy: SyncPolicy, next_sync_at: Option<String>) {
+        let mut guard = self.inner.write().await;
+        guard.policy = policy;
+        guard.next_sync_at = next_sync_at;
     }
 
     /// 更新当前设备本地副本状态。
@@ -232,6 +247,7 @@ fn merge_modes(current: SyncRunMode, next: SyncRunMode) -> SyncRunMode {
 #[cfg(test)]
 mod tests {
     use super::{SyncRunMode, SyncRuntimeState};
+    use crate::sync::SyncPolicyMode;
     use crate::sync::types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind};
 
     #[tokio::test]
@@ -320,5 +336,15 @@ mod tests {
             payload.last_restore_at.as_deref(),
             Some("2026-06-28T00:00:00Z")
         );
+    }
+
+    #[tokio::test]
+    async fn snapshot_should_default_to_fifteen_minute_policy() {
+        let state = SyncRuntimeState::default();
+
+        let payload = state.snapshot().await;
+
+        assert_eq!(payload.policy_mode, SyncPolicyMode::Interval);
+        assert_eq!(payload.policy_interval_minutes, 15);
     }
 }

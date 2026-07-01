@@ -57,6 +57,7 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         settings::update_sidebar_project_section,
         sync::get_sync_status,
         sync::configure_sync,
+        sync::update_sync_policy,
         sync::get_sync_diagnostics,
         sync::run_sync,
         spaces::list_visible_spaces,
