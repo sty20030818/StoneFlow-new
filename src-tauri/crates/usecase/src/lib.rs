@@ -19,6 +19,8 @@ pub mod settings;
 pub mod space;
 pub mod task;
 pub mod task_link;
+pub mod update;
 pub mod view;
 
 pub use error::UsecaseError;
+pub use update::{UpdateInfo, UpdatePort, UpdateService, UpdateSettingsPort};

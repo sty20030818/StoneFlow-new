@@ -108,6 +108,7 @@ import {
 	type BulkEntityType,
 } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
+import { UpdateDialog, useUpdateEvents } from '@/features/update'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskStatus } from '@/shared/types'
 import { useQueryClient } from '@tanstack/react-query'
@@ -240,6 +241,8 @@ function ShellLayoutContent({
 	const taskCreateDraft = useDialogStore(selectTaskCreateDraft)
 	const taskCreatePresentation = useDialogStore(selectTaskCreatePresentation)
 	const entityDetailController = useEntityDetailController()
+	// 监听应用更新事件
+	useUpdateEvents()
 	const activeDetail = entityDetailController.activeDetail
 	const isDrawerOpen = entityDetailController.isOpen
 	const closeEntityDrawer = entityDetailController.closeDrawer
@@ -1100,6 +1103,7 @@ function ShellLayoutContent({
 					}}
 				/>
 			) : null}
+			<UpdateDialog />
 			{/* <ShellFooter navBadges={navBadges} /> */}
 			{/* 占位，保持底部边距 */}
 			<div className='h-2 shrink-0 bg-sf-shell' />

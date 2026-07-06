@@ -26,6 +26,7 @@ import {
 	type SyncStatusPayload,
 } from '@/features/sync/api/sync'
 import { SyncConfigDialog } from '@/features/sync/ui/SyncConfigDialog'
+import { UpdateSettingsSection } from '@/features/update'
 import {
 	formatReplicaState,
 	formatSyncStatus,
@@ -865,6 +866,8 @@ export function SettingsPage() {
 							syncUrl={syncUrl}
 						/>
 					</SettingsSection>
+
+					<UpdateSettingsSection />
 				</div>
 			}
 			bodyClassName='gap-4 p-2'

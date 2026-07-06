@@ -14,6 +14,9 @@ mod space_service;
 mod sync_mutation;
 mod task_link_service;
 mod task_service;
+mod update_adapter;
+mod update_service;
+mod update_settings_store;
 mod view_service;
 
 pub use lifecycle_service::{
@@ -38,9 +41,8 @@ pub use settings_service::{
     GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput,
     LegacySidebarDevicePreferences, LegacyUiDevicePreferences, SettingsService,
     SidebarDesktopPreference, SidebarFooterItemKey, SidebarItemConfig, SidebarItemVisibilityTarget,
-    SidebarMainItemKey, SidebarMainItems, SidebarPreferenceSettings,
-    SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
-    UpdateSidebarProjectSectionInput,
+    SidebarMainItemKey, SidebarMainItems, SidebarPreferenceSettings, SidebarProjectSectionPreferenceConfig,
+    UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
 };
 pub use space_service::{
     CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService, UpdateSpaceInput,
@@ -55,6 +57,7 @@ pub use task_service::{
     TaskScopeInput, TaskScopeKind, TaskService, UpdateTaskInput, UpdateTaskPlacementInput,
     UpdateTaskPlacementKind,
 };
+pub use update_service::{build_update_service, RuntimeUpdateService};
 pub use view_service::{
     CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunProjectViewInput,
     RunTaskViewInput, RunTaskViewOutput, TaskViewGroupDto, ToggleViewVisibleInput, UpdateViewInput,

@@ -11,6 +11,7 @@ pub(crate) mod settings;
 pub(crate) mod spaces;
 pub(crate) mod sync;
 pub(crate) mod tasks;
+pub(crate) mod update;
 pub(crate) mod views;
 pub(crate) mod workspace;
 
@@ -68,6 +69,13 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         spaces::restore_space,
         spaces::delete_space,
         spaces::permanently_delete_space,
+        update::check_update,
+        update::download_and_install,
+        update::restart_and_install,
+        update::skip_version,
+        update::set_check_mode,
+        update::set_channel,
+        update::get_update_settings,
         workspace::healthcheck,
         workspace::set_active_scope,
         quick_create::restore_main_window,

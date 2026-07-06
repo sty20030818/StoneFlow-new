@@ -32,6 +32,10 @@ pub enum UsecaseError {
     /// 默认 Space 不可用（Quick Create 边界）。
     #[error("默认 Space 不可用: {0}")]
     DefaultSpaceUnavailable(String),
+
+    /// 应用更新相关错误。
+    #[error("更新失败: {0}")]
+    Update(String),
 }
 
 impl UsecaseError {
@@ -68,6 +72,11 @@ impl UsecaseError {
     /// 构造默认 Space 不可用错误。
     pub fn default_space_unavailable(message: impl Into<String>) -> Self {
         Self::DefaultSpaceUnavailable(message.into())
+    }
+
+    /// 构造更新错误。
+    pub fn update(message: impl Into<String>) -> Self {
+        Self::Update(message.into())
     }
 }
 

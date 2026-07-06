@@ -2,10 +2,14 @@
 
 use std::future::Future;
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 use crate::app::state::{ActiveScopeState, CommandOpenState};
+use crate::services::{build_update_service, RuntimeUpdateService};
 use crate::sync::{self, SyncRuntimeState};
+use stoneflow_domain::{
+    UpdateCheckMode, AUTO_CHECK_INTERVAL_SECS, STARTUP_CHECK_DELAY_SECS,
+};
 use stoneflow_storage::database::bootstrap_database;
 use stoneflow_storage::database::DatabaseRuntimeState;
 
@@ -57,7 +61,13 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
 
     app.manage(exit_coordinator::ExitCoordinator::default());
     tray::setup_tray(app)?;
+
+    // 构建并注册更新服务
+    let update_service = build_update_service(&app.handle());
+    app.manage(update_service);
+
     schedule_post_startup_jobs(app.handle().clone());
+    schedule_update_checker(app.handle().clone());
     Ok(())
 }
 
@@ -95,6 +105,98 @@ where
 {
     tauri::async_runtime::spawn(async move {
         job().await;
+    });
+}
+
+/// 调度自动更新检查：启动延迟后首次检查，之后每 6 小时检查一次。
+fn schedule_update_checker(app_handle: tauri::AppHandle) {
+    use std::time::Duration;
+
+    spawn_detached_job(move || async move {
+        // 启动延迟，避免影响应用启动速度
+        tokio::time::sleep(Duration::from_secs(STARTUP_CHECK_DELAY_SECS)).await;
+
+        loop {
+            let Some(service) = app_handle.try_state::<RuntimeUpdateService>() else {
+                break;
+            };
+
+            match service.check_update(false).await {
+                Ok(Some(info)) => {
+                    let settings = match service.get_settings().await {
+                        Ok(s) => s,
+                        Err(_) => {
+                            tokio::time::sleep(Duration::from_secs(AUTO_CHECK_INTERVAL_SECS as u64))
+                                .await;
+                            continue;
+                        }
+                    };
+
+                    match settings.check_mode {
+                        UpdateCheckMode::Manual => {
+                            // 手动模式不弹窗，但 emit 事件
+                            let _ = app_handle.emit("update-available", &info);
+                        }
+                        UpdateCheckMode::NotifyOnly => {
+                            let _ = app_handle.emit("update-available", &info);
+                        }
+                        UpdateCheckMode::AutoDownload | UpdateCheckMode::AutoInstall => {
+                            let _ = app_handle.emit("update-available", &info);
+
+                            let app = app_handle.clone();
+                            let version = info.version.clone();
+                            tauri::async_runtime::spawn(async move {
+                                let Some(download_service) =
+                                    app.try_state::<RuntimeUpdateService>()
+                                else {
+                                    return;
+                                };
+
+                                let app_for_progress = app.clone();
+                                let version_for_progress = version.clone();
+                                let version_for_done = version.clone();
+                                let app_for_done = app.clone();
+                                let app_for_error = app.clone();
+                                let result = download_service
+                                    .download_and_install(move |downloaded, total| {
+                                        let _ = app_for_progress.emit(
+                                            "update-download-progress",
+                                            serde_json::json!({
+                                                "version": version_for_progress,
+                                                "downloaded": downloaded,
+                                                "total": total,
+                                            }),
+                                        );
+                                    })
+                                    .await;
+
+                                match result {
+                                    Ok(()) => {
+                                        let _ = app_for_done.emit(
+                                            "update-downloaded",
+                                            serde_json::json!({ "version": version_for_done }),
+                                        );
+                                    }
+                                    Err(e) => {
+                                        log::warn!("runtime: auto download update failed: {e}");
+                                        let _ = app_for_error.emit(
+                                            "update-error",
+                                            serde_json::json!({ "message": e.to_string() }),
+                                        );
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    log::warn!("runtime: auto check update failed: {e}");
+                }
+            }
+
+            tokio::time::sleep(Duration::from_secs(AUTO_CHECK_INTERVAL_SECS as u64)).await;
+        }
     });
 }
 

@@ -19,6 +19,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "externalBin": [
       "binaries/stoneflow-sync-worker"
     ],
@@ -29,5 +30,18 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5ClJXUlRZMEl5MTdLeVliVVBJL2p6QXNlT1UzaGp1aTlZcGpIMVgvZ3hCZVhzTUZNWVBUc0FBQkFBQUFBQUFBQUFBQUlBQUFBQVV6aUdzYXhtVWQ3MWpFVjVsMjZjOENNSDZPQzB2SWtaVE1nbGhiQW9KQ1NEWUoyNWpwRStpVW5tWkl2bjdlSEl6NkVOZzhUR3BzK3NmNndFOE1XalFKVlNPQVRkajR2WHZkVVFIdkRadXNmNUloNFFSREdvcGVGcFRKaVhRUDJrTEQ2WTloTmpHR1k9Cg==",
+      "endpoints": [
+        "https://release.sty20030818.space/stoneflow/updates/stable/latest.json",
+        "https://release.sty20030818.space/stoneflow/updates/beta/latest.json"
+      ],
+      "dangerousInsecureTransportProtocol": true,
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

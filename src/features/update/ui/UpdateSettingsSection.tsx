@@ -1,0 +1,287 @@
+/**
+ * 设置页的"应用更新"设置区块。
+ *
+ * 提供更新检查模式选择、更新渠道选择、手动检查更新按钮。
+ */
+
+import { useEffect, useState } from 'react'
+import { RefreshCwIcon } from 'lucide-react'
+
+import {
+	checkUpdate,
+	getUpdateSettings,
+	setChannel,
+	setCheckMode,
+	type UpdateChannel,
+	type UpdateCheckMode,
+} from '@/features/update/api/updates'
+import { useUpdateStore } from '@/features/update/model/useUpdateStore'
+import { formFieldHintClass } from '@/shared/ui/patterns/form-field'
+import {
+	settingsPanelDescriptionClass,
+	settingsPanelHeaderWrapClass,
+	settingsPanelSectionClass,
+	settingsPanelTitleClass,
+} from '@/shared/ui/patterns/settings-panel'
+import { Badge } from '@/shared/ui/base/badge'
+import { Button } from '@/shared/ui/base/button'
+import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
+import { cn } from '@/shared/lib/utils'
+import { StatusNotice } from '@/shared/ui/StatusNotice'
+
+const CHECK_MODE_OPTIONS: Array<{
+	value: UpdateCheckMode
+	label: string
+	description: string
+}> = [
+	{
+		value: 'manual',
+		label: '手动检查',
+		description: '不自动检查，仅在你手动点击"检查更新"时查询。',
+	},
+	{
+		value: 'notifyOnly',
+		label: '仅提醒',
+		description: '启动后及每 6 小时自动检查，发现更新时弹窗提醒你。',
+	},
+	{
+		value: 'autoDownload',
+		label: '自动下载',
+		description: '自动检查并后台下载更新，下载完成后提醒你重启。',
+	},
+	{
+		value: 'autoInstall',
+		label: '自动下载并安装',
+		description: '自动下载更新，下载完成后更明显地提示重启安装。',
+	},
+]
+
+const CHANNEL_OPTIONS: Array<{
+	value: UpdateChannel
+	label: string
+	description: string
+	badge?: string
+}> = [
+	{ value: 'stable', label: '正式版', description: '只接收经过测试的稳定版本，推荐日常使用。' },
+	{
+		value: 'beta',
+		label: '测试版',
+		description: '接收最新的测试版本，可能包含实验性功能和未修复的问题。',
+		badge: 'Beta',
+	},
+]
+
+export function UpdateSettingsSection() {
+	const [loading, setLoading] = useState(true)
+	const [saving, setSaving] = useState(false)
+	const [checking, setChecking] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+	const [checkResult, setCheckResult] = useState<{ found: boolean; version?: string } | null>(null)
+	const [settings, setSettings] = useState<{
+		checkMode: UpdateCheckMode
+		channel: UpdateChannel
+	} | null>(null)
+	const showUpdate = useUpdateStore((s) => s.showUpdate)
+
+	useEffect(() => {
+		void loadSettings()
+	}, [])
+
+	async function loadSettings() {
+		setLoading(true)
+		setError(null)
+		try {
+			const s = await getUpdateSettings()
+			setSettings({ checkMode: s.checkMode, channel: s.channel })
+		} catch (err) {
+			setError(normalizeTauriError(err, '读取更新设置失败'))
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	async function handleCheckModeChange(mode: UpdateCheckMode) {
+		if (!settings || settings.checkMode === mode) return
+		setSaving(true)
+		setError(null)
+		try {
+			await setCheckMode(mode)
+			setSettings((prev) => (prev ? { ...prev, checkMode: mode } : prev))
+		} catch (err) {
+			setError(normalizeTauriError(err, '保存更新模式失败'))
+		} finally {
+			setSaving(false)
+		}
+	}
+
+	async function handleChannelChange(channel: UpdateChannel) {
+		if (!settings || settings.channel === channel) return
+		setSaving(true)
+		setError(null)
+		try {
+			await setChannel(channel)
+			setSettings((prev) => (prev ? { ...prev, channel } : prev))
+		} catch (err) {
+			setError(normalizeTauriError(err, '保存更新渠道失败'))
+		} finally {
+			setSaving(false)
+		}
+	}
+
+	async function handleCheckNow() {
+		setChecking(true)
+		setError(null)
+		setCheckResult(null)
+		try {
+			const info = await checkUpdate(true)
+			if (info) {
+				setCheckResult({ found: true, version: info.version })
+				showUpdate(info)
+			} else {
+				setCheckResult({ found: false })
+			}
+		} catch (err) {
+			setError(normalizeTauriError(err, '检查更新失败'))
+		} finally {
+			setChecking(false)
+		}
+	}
+
+	if (loading) {
+		return (
+			<section className={settingsPanelSectionClass}>
+				<div className={settingsPanelHeaderWrapClass}>
+					<h2 className={settingsPanelTitleClass}>应用更新</h2>
+					<p className={settingsPanelDescriptionClass}>加载中...</p>
+				</div>
+			</section>
+		)
+	}
+
+	return (
+		<section className={settingsPanelSectionClass}>
+			<div className={settingsPanelHeaderWrapClass}>
+				<h2 className={settingsPanelTitleClass}>应用更新</h2>
+				<p className={settingsPanelDescriptionClass}>
+					控制 StoneFlow 如何检查和安装更新。更新包从 release.sty20030818.space 的 Cloudflare R2
+					分发。
+				</p>
+			</div>
+
+			<div className='space-y-4'>
+				{error ? (
+					<StatusNotice
+						className='text-sm'
+						description={error}
+						layout='split'
+						role='alert'
+						size='sm'
+						title='更新设置出错'
+						variant='danger'
+					/>
+				) : null}
+
+				{checkResult && !checkResult.found ? (
+					<StatusNotice
+						className='text-sm'
+						description='当前已是最新版本。'
+						size='sm'
+						title='已是最新'
+						variant='success'
+					/>
+				) : null}
+
+				{/* 更新模式 */}
+				<div className='grid gap-3'>
+					<p className={cn(formFieldHintClass, 'text-foreground font-medium')}>更新检查方式</p>
+					{CHECK_MODE_OPTIONS.map((option) => {
+						const checked = settings?.checkMode === option.value
+						return (
+							<label
+								className={cn(
+									'flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-muted/25 p-3 transition-colors',
+									saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-muted/45',
+									checked && 'border-primary/40 bg-primary/5',
+								)}
+								key={option.value}
+							>
+								<input
+									checked={checked}
+									className='mt-1 size-4 accent-primary'
+									disabled={saving}
+									name='update-check-mode'
+									onChange={() => void handleCheckModeChange(option.value)}
+									type='radio'
+								/>
+								<div className='min-w-0'>
+									<p className='text-sm font-medium text-foreground'>{option.label}</p>
+									<p className={formFieldHintClass}>{option.description}</p>
+								</div>
+							</label>
+						)
+					})}
+				</div>
+
+				{/* 更新渠道 */}
+				<div className='grid gap-3 pt-1'>
+					<p className={cn(formFieldHintClass, 'text-foreground font-medium')}>更新渠道</p>
+					<div className='grid gap-3 md:grid-cols-2'>
+						{CHANNEL_OPTIONS.map((option) => {
+							const checked = settings?.channel === option.value
+							return (
+								<label
+									className={cn(
+										'flex items-start gap-3 rounded-xl border border-sf-border-subtle bg-muted/25 p-3 transition-colors',
+										saving ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-muted/45',
+										checked && 'border-primary/40 bg-primary/5',
+									)}
+									key={option.value}
+								>
+									<input
+										checked={checked}
+										className='mt-1 size-4 accent-primary'
+										disabled={saving}
+										name='update-channel'
+										onChange={() => void handleChannelChange(option.value)}
+										type='radio'
+									/>
+									<div className='min-w-0'>
+										<p className='flex items-center gap-2 text-sm font-medium text-foreground'>
+											{option.label}
+											{option.badge ? (
+												<Badge variant='warning' className='text-[10px] px-1 py-0'>
+													{option.badge}
+												</Badge>
+											) : null}
+										</p>
+										<p className={formFieldHintClass}>{option.description}</p>
+									</div>
+								</label>
+							)
+						})}
+					</div>
+				</div>
+
+				{/* 手动检查更新 */}
+				<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-4'>
+					<div>
+						<p className='text-sm font-medium text-foreground'>手动检查更新</p>
+						<p className={cn(formFieldHintClass, 'mt-0.5')}>立即向服务器查询是否有新版本可用。</p>
+					</div>
+					<Button
+						disabled={checking || saving}
+						onClick={() => void handleCheckNow()}
+						type='button'
+						variant='secondary'
+					>
+						<RefreshCwIcon
+							aria-hidden
+							className={cn('-ml-0.5 mr-1.5 size-4', checking && 'animate-spin')}
+						/>
+						{checking ? '检查中...' : '检查更新'}
+					</Button>
+				</div>
+			</div>
+		</section>
+	)
+}

@@ -1,0 +1,95 @@
+//! 基于 `tauri-plugin-store` 的更新设置持久化适配器。
+
+use tauri_plugin_store::StoreExt;
+
+use stoneflow_domain::{UpdateChannel, UpdateCheckMode, UpdateSettings};
+use stoneflow_usecase::update::UpdateSettingsPort;
+use stoneflow_usecase::UsecaseError;
+
+/// Store 文件名（存放在 Tauri app data 目录）。
+const STORE_PATH: &str = "update-settings.json";
+
+/// 存储键名。
+const KEY_CHECK_MODE: &str = "checkMode";
+const KEY_CHANNEL: &str = "channel";
+const KEY_SKIPPED_VERSIONS: &str = "skippedVersions";
+const KEY_LAST_CHECKED_AT: &str = "lastCheckedAt";
+
+/// 基于 tauri-plugin-store 的设置持久化。
+#[derive(Clone)]
+pub struct StoreUpdateSettingsAdapter {
+    app: tauri::AppHandle,
+}
+
+impl StoreUpdateSettingsAdapter {
+    pub fn new(app: tauri::AppHandle) -> Self {
+        Self { app }
+    }
+
+    fn store(&self) -> Result<std::sync::Arc<tauri_plugin_store::Store<tauri::Wry>>, UsecaseError> {
+        self.app
+            .store(STORE_PATH)
+            .map_err(|e| UsecaseError::update(format!("打开更新设置 store 失败: {e}")))
+    }
+}
+
+impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
+    async fn load(&self) -> Result<UpdateSettings, UsecaseError> {
+        let store = self.store()?;
+
+        let check_mode = store
+            .get(KEY_CHECK_MODE)
+            .and_then(|v| serde_json::from_value::<UpdateCheckMode>(v.clone()).ok())
+            .unwrap_or_default();
+
+        let channel = store
+            .get(KEY_CHANNEL)
+            .and_then(|v| serde_json::from_value::<UpdateChannel>(v.clone()).ok())
+            .unwrap_or_default();
+
+        let skipped_versions = store
+            .get(KEY_SKIPPED_VERSIONS)
+            .and_then(|v| serde_json::from_value::<Vec<String>>(v.clone()).ok())
+            .unwrap_or_default();
+
+        let last_checked_at = store
+            .get(KEY_LAST_CHECKED_AT)
+            .and_then(|v| serde_json::from_value::<Option<i64>>(v.clone()).ok())
+            .flatten();
+
+        Ok(UpdateSettings {
+            check_mode,
+            channel,
+            skipped_versions,
+            last_checked_at,
+        })
+    }
+
+    async fn save(&self, settings: &UpdateSettings) -> Result<(), UsecaseError> {
+        let store = self.store()?;
+        store.set(
+            KEY_CHECK_MODE,
+            serde_json::to_value(settings.check_mode)
+                .map_err(|e| UsecaseError::update(format!("序列化 check_mode 失败: {e}")))?,
+        );
+        store.set(
+            KEY_CHANNEL,
+            serde_json::to_value(settings.channel)
+                .map_err(|e| UsecaseError::update(format!("序列化 channel 失败: {e}")))?,
+        );
+        store.set(
+            KEY_SKIPPED_VERSIONS,
+            serde_json::to_value(&settings.skipped_versions)
+                .map_err(|e| UsecaseError::update(format!("序列化 skipped_versions 失败: {e}")))?,
+        );
+        store.set(
+            KEY_LAST_CHECKED_AT,
+            serde_json::to_value(settings.last_checked_at)
+                .map_err(|e| UsecaseError::update(format!("序列化 last_checked_at 失败: {e}")))?,
+        );
+        store
+            .save()
+            .map_err(|e| UsecaseError::update(format!("保存更新设置失败: {e}")))?;
+        Ok(())
+    }
+}

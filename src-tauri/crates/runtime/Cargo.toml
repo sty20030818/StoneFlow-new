@@ -27,8 +27,10 @@ tauri-plugin-log.workspace = true
 tauri-plugin-opener.workspace = true
 tauri-plugin-single-instance.workspace = true
 tauri-plugin-store.workspace = true
+tauri-plugin-updater.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+url.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]

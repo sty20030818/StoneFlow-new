@@ -120,6 +120,7 @@ impl From<stoneflow_usecase::UsecaseError> for AppError {
             stoneflow_usecase::UsecaseError::DefaultSpaceUnavailable(message) => {
                 Self::DefaultSpaceUnavailable(message)
             }
+            stoneflow_usecase::UsecaseError::Update(message) => Self::Internal(message),
         }
     }
 }
