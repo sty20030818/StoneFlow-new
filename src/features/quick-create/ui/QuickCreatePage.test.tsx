@@ -805,6 +805,25 @@ describe('QuickCreatePage', () => {
 		})
 	})
 
+	it('点击阴影安全区会按 blur 关闭窗口', async () => {
+		render(<QuickCreatePage />)
+		await screen.findByTestId('quick-create-recent-tasks-section')
+
+		const surface = screen.getByLabelText('StoneFlow Quick Create')
+		await waitFor(() => {
+			expect(surface).toHaveClass('opacity-100')
+		})
+
+		fireEvent.pointerDown(surface.parentElement!)
+
+		await waitFor(() => {
+			expect(mockedCloseSession).toHaveBeenCalledWith({
+				reason: 'blur',
+				sessionId: DEFAULT_SESSION_ID,
+			})
+		})
+	})
+
 	it('切换 Space 后会把项目重置为收件箱', async () => {
 		render(<QuickCreatePage />)
 		await screen.findByTestId('quick-create-recent-tasks-section')

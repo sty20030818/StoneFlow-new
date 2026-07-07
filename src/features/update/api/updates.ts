@@ -87,9 +87,7 @@ export async function checkUpdate(manual: boolean): Promise<UpdateInfo | null> {
 }
 
 /** 下载并安装更新，通过 onStatus 接收进度状态 */
-export async function downloadAndInstall(
-	onStatus: (status: UpdateStatus) => void,
-): Promise<void> {
+export async function downloadAndInstall(onStatus: (status: UpdateStatus) => void): Promise<void> {
 	const channel = new Channel<UpdateStatusChangedEvent>()
 	channel.onmessage = (event) => {
 		if (event.event === 'statusChanged') {

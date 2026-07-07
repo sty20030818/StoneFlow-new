@@ -1,3 +1,5 @@
+import type { PointerEvent } from 'react'
+
 import type { QuickCreateLayoutController } from '@/features/quick-create/layout/useQuickCreateLayout'
 import { QuickCreateBoardRegion } from '@/features/quick-create/ui/QuickCreateBoardRegion'
 import { QuickCreateComposerRegion } from '@/features/quick-create/ui/QuickCreateComposerRegion'
@@ -8,11 +10,22 @@ import { QuickCreateSurface } from '@/features/quick-create/ui/QuickCreateSurfac
 type QuickCreateFrameProps = {
 	isVisible: boolean
 	layout: Pick<QuickCreateLayoutController, 'registerRegion' | 'requestMeasure'>
+	onRequestClose: () => void
 }
 
-export function QuickCreateFrame({ isVisible, layout }: QuickCreateFrameProps) {
+export function QuickCreateFrame({ isVisible, layout, onRequestClose }: QuickCreateFrameProps) {
+	const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+		if (!isVisible || event.target !== event.currentTarget) {
+			return
+		}
+		onRequestClose()
+	}
+
 	return (
-		<div className='relative flex w-full min-h-0 bg-transparent p-7'>
+		<div
+			className='relative flex w-full min-h-0 bg-transparent p-7'
+			onPointerDown={handlePointerDown}
+		>
 			<QuickCreateSurface
 				className={`w-full transition-opacity duration-150 ${
 					isVisible ? 'opacity-100' : 'pointer-events-none opacity-0'

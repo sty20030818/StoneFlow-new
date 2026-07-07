@@ -51,7 +51,14 @@ fn ensure_quick_create_panel(app_handle: &AppHandle<tauri::Wry>) {
     let callbacks = runtime_quick_window_callbacks();
 
     #[cfg(target_os = "macos")]
-    stoneflow_platform::macos::panel::init_quick_create_panel(app_handle, callbacks);
+    {
+        let app_handle = app_handle.clone();
+        if let Err(error) = app_handle.clone().run_on_main_thread(move || {
+            stoneflow_platform::macos::panel::init_quick_create_panel(&app_handle, callbacks);
+        }) {
+            log::error!("runtime: quick create panel 主线程初始化失败: {error}");
+        }
+    }
 
     #[cfg(target_os = "windows")]
     stoneflow_platform::windows::panel::init_quick_create_panel(app_handle, callbacks);

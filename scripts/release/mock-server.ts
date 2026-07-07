@@ -34,7 +34,8 @@ const PORT = parseInt(getArg('--port') || '1420')
 const DEFAULT_STABLE_VERSION = '99.0.0'
 // beta 默认版本
 const DEFAULT_BETA_VERSION = '99.0.0-beta.1'
-const MOCK_VERSION = getArg('--version') || (hasFlag('--beta') ? DEFAULT_BETA_VERSION : DEFAULT_STABLE_VERSION)
+const MOCK_VERSION =
+	getArg('--version') || (hasFlag('--beta') ? DEFAULT_BETA_VERSION : DEFAULT_STABLE_VERSION)
 const CHANNEL = hasFlag('--beta') ? 'beta' : 'stable'
 const SCENARIO: 'update' | 'noUpdate' | 'error' = hasFlag('--error')
 	? 'error'
@@ -114,7 +115,9 @@ const server = serve({
 			await new Promise((r) => setTimeout(r, SLOW_DELAY_MS))
 		}
 
-		console.log(`[${new Date().toISOString()}] ${req.method} ${url.pathname}  scenario=${SCENARIO}  channel=${CHANNEL}`)
+		console.log(
+			`[${new Date().toISOString()}] ${req.method} ${url.pathname}  scenario=${SCENARIO}  channel=${CHANNEL}`,
+		)
 
 		// ── 更新端点 ──
 		const isStable = url.pathname === '/stoneflow/updates/stable/latest.json'
@@ -137,7 +140,11 @@ const server = serve({
 					2,
 				)
 				return new Response(body, {
-					headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+					headers: {
+						...corsHeaders,
+						'Content-Type': 'application/json',
+						'Cache-Control': 'no-cache',
+					},
 				})
 			}
 
@@ -154,7 +161,11 @@ const server = serve({
 					2,
 				)
 				return new Response(body, {
-					headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+					headers: {
+						...corsHeaders,
+						'Content-Type': 'application/json',
+						'Cache-Control': 'no-cache',
+					},
 				})
 			}
 
@@ -171,7 +182,11 @@ const server = serve({
 			}
 
 			return new Response(JSON.stringify(json, null, 2), {
-				headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+				headers: {
+					...corsHeaders,
+					'Content-Type': 'application/json',
+					'Cache-Control': 'no-cache',
+				},
 			})
 		}
 
@@ -267,7 +282,9 @@ th{background:#fafafa}</style></head><body>
 </table>
 <p style="color:#999;font-size:12px;margin-top:40px">debug 模式下 app 会自动检测到此服务器，无需修改配置。</p>
 </body></html>`
-			return new Response(html, { headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } })
+			return new Response(html, {
+				headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' },
+			})
 		}
 
 		return new Response('Not Found', { status: 404, headers: corsHeaders })

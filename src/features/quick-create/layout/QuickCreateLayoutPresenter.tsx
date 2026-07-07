@@ -120,7 +120,15 @@ export function QuickCreateLayoutPresenter({ layoutRevisionKey }: QuickCreateLay
 		})
 	}, [isWindowReady, sessionState.phase])
 
-	return <QuickCreateFrame isVisible={isWindowReady && activeSessionId !== null} layout={layout} />
+	return (
+		<QuickCreateFrame
+			isVisible={isWindowReady && activeSessionId !== null}
+			layout={layout}
+			onRequestClose={() => {
+				void sessionActions.requestClose('blur')
+			}}
+		/>
+	)
 }
 
 function isActiveLayoutPhase(
