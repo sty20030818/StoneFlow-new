@@ -105,10 +105,10 @@ impl TauriUpdateAdapter {
             .endpoints(vec![parsed_url])
             .map_err(|e| UsecaseError::update(format!("配置 updater endpoint 失败: {e}")))?;
 
-        // Stable 渠道过滤掉预发布版本（如 0.2.0-beta.1）
+        // Stable 渠道只接受更高的正式版本，过滤同版本、低版本和预发布版本。
         if channel == UpdateChannel::Stable {
-            builder = builder.version_comparator(|_current, remote| {
-                remote.version.pre.is_empty()
+            builder = builder.version_comparator(|current, remote| {
+                remote.version > current && remote.version.pre.is_empty()
             });
         }
 

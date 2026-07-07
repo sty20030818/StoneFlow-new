@@ -36,6 +36,59 @@ async function writeJSON(filePath: string, data: unknown) {
 	await writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`)
 }
 
+function parseStableVersion(version: string) {
+	const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version)
+	if (!match) return null
+	return {
+		major: Number(match[1]),
+		minor: Number(match[2]),
+		patch: Number(match[3]),
+	}
+}
+
+function nextPatchVersion(version: string) {
+	const parsed = parseStableVersion(version)
+	if (!parsed) {
+		throw new Error(`stable 版本必须是 x.y.z，当前是 ${version}`)
+	}
+	return `${parsed.major}.${parsed.minor}.${parsed.patch + 1}`
+}
+
+async function readLatestBetaVersion() {
+	const response = await fetch(`${R2_PUBLIC_URL}/updates/beta/latest.json`, {
+		signal: AbortSignal.timeout(5000),
+	})
+	if (response.status === 404) return null
+	if (!response.ok) {
+		throw new Error(`读取 beta latest.json 失败: HTTP ${response.status}`)
+	}
+	const data = (await response.json()) as { version?: unknown }
+	return typeof data.version === 'string' ? data.version : null
+}
+
+async function resolveReleaseVersion(channel: 'stable' | 'beta', stableVersion: string) {
+	if (!parseStableVersion(stableVersion)) {
+		throw new Error(`配置版本必须是 x.y.z，当前是 ${stableVersion}`)
+	}
+	if (channel === 'stable') return stableVersion
+
+	const betaBaseVersion = nextPatchVersion(stableVersion)
+	try {
+		const latestBetaVersion = await readLatestBetaVersion()
+		const match = new RegExp(`^${betaBaseVersion.replaceAll('.', '\\.')}-beta\\.(\\d+)$`).exec(
+			latestBetaVersion ?? '',
+		)
+		const nextBetaNumber = match ? Number(match[1]) + 1 : 1
+		return `${betaBaseVersion}-beta.${nextBetaNumber}`
+	} catch (error) {
+		if (!NO_UPLOAD) throw error
+		console.log(
+			chalk.yellow(`   无法读取远端 beta 版本，--no-upload 使用 ${betaBaseVersion}-beta.1`),
+		)
+		return `${betaBaseVersion}-beta.1`
+	}
+}
+
 async function glob(pattern: string) {
 	if (!existsSync(path.dirname(pattern))) return []
 	try {
@@ -94,7 +147,6 @@ if (!CHANNEL || !['stable', 'beta'].includes(CHANNEL)) {
 	process.exit(1)
 }
 
-// beta 渠道需要修改版本号添加 -beta 后缀吗？暂时不自动改，由开发者手动设置
 console.log(chalk.blue(`\n🚀 开始发布 ${CHANNEL} 渠道更新...\n`))
 
 // 1. 清理临时目录
@@ -103,11 +155,12 @@ await mkdir(UPDATES_DIR, { recursive: true })
 await mkdir(DOWNLOADS_DIR, { recursive: true })
 
 // 2. 读取当前版本
-const tauriConf = await readJSON<{ version: string }>(
-	path.resolve(import.meta.dir, '../../src-tauri/tauri.conf.json'),
-)
-const VERSION = tauriConf.version
-console.log(chalk.gray(`   版本: ${VERSION}`))
+const tauriConfPath = path.resolve(import.meta.dir, '../../src-tauri/tauri.conf.json')
+const tauriConf = await readJSON<{ version: string }>(tauriConfPath)
+const SOURCE_VERSION = tauriConf.version
+const VERSION = await resolveReleaseVersion(CHANNEL, SOURCE_VERSION)
+console.log(chalk.gray(`   配置版本: ${SOURCE_VERSION}`))
+console.log(chalk.gray(`   发布版本: ${VERSION}`))
 
 // 3. 构建 Tauri 应用
 console.log(chalk.gray('\n📦 构建应用...\n'))
@@ -117,7 +170,16 @@ if (process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD) {
 	tauriEnv.TAURI_SIGNING_PRIVATE_KEY_PASSWORD = process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD
 }
 $.env(tauriEnv)
-await $`bun run tauri build`
+if (VERSION !== SOURCE_VERSION) {
+	await writeJSON(tauriConfPath, { ...tauriConf, version: VERSION })
+}
+try {
+	await $`bun run tauri build`
+} finally {
+	if (VERSION !== SOURCE_VERSION) {
+		await writeJSON(tauriConfPath, tauriConf)
+	}
+}
 
 // 4. 收集构建产物
 console.log(chalk.gray('\n🔍 收集构建产物...\n'))
