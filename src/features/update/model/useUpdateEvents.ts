@@ -12,6 +12,7 @@ import { listen } from '@tauri-apps/api/event'
 import { toast } from 'sonner'
 
 import {
+	checkUpdate,
 	downloadAndInstall,
 	getUpdateSettings,
 	restartAndInstall,
@@ -73,14 +74,11 @@ export function useUpdateEvents() {
 			unlisteners.push(unlistenDownloaded)
 
 			// 监听错误事件
-			const unlistenError = await listen<UpdateErrorPayload>(
-				UPDATE_EVENTS.ERROR,
-				(event) => {
-					if (disposed) return
-					setStatus({ status: 'error', message: event.payload.message })
-					toast.error(`更新失败: ${event.payload.message}`)
-				},
-			)
+			const unlistenError = await listen<UpdateErrorPayload>(UPDATE_EVENTS.ERROR, (event) => {
+				if (disposed) return
+				setStatus({ status: 'error', message: event.payload.message })
+				toast.error(`更新失败: ${event.payload.message}`)
+			})
 			unlisteners.push(unlistenError)
 		}
 
@@ -130,7 +128,6 @@ export function useUpdateActions() {
 	/** 手动检查更新 */
 	async function checkNow(): Promise<UpdateSettings | null> {
 		try {
-			const { checkUpdate } = await import('@/features/update/api/updates')
 			const settings = await getUpdateSettings()
 			setStatus({ status: 'checking' })
 			const info = await checkUpdate(true)

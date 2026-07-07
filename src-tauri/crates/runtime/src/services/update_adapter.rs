@@ -132,11 +132,6 @@ fn is_mock_server_reachable() -> bool {
     .is_ok()
 }
 
-#[cfg(not(debug_assertions))]
-fn is_mock_server_reachable() -> bool {
-    false
-}
-
 impl UpdatePort for TauriUpdateAdapter {
     async fn check(
         &self,

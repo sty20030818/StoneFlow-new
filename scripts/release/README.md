@@ -21,8 +21,8 @@ bunx tauri signer generate -w ~/.tauri/stoneflow.key
 ```bash
 # 私钥密码（生成密钥时设置的）
 TAURI_SIGNING_PRIVATE_KEY_PASSWORD=your-password
-# 私钥路径
-TAURI_SIGNING_PRIVATE_KEY_PATH=~/.tauri/stoneflow.key
+# 私钥路径，推荐绝对路径；脚本也兼容 ~/.tauri/stoneflow.key
+TAURI_SIGNING_PRIVATE_KEY=/Users/your-name/.tauri/stoneflow.key
 
 # Cloudflare R2 配置（用于上传）
 R2_ACCOUNT_ID=your-account-id
@@ -38,14 +38,19 @@ R2_PUBLIC_URL=https://release.sty20030818.space/stoneflow
 
 ```
 stoneflow/
-└── updates/
+├── updates/
+│   ├── stable/
+│   │   ├── latest.json                    # 稳定版更新清单
+│   │   ├── StoneFlow_0.1.0_aarch64.app.tar.gz      # macOS updater 包
+│   │   └── StoneFlow_0.1.0_aarch64.app.tar.gz.sig
+│   └── beta/
+│       ├── latest.json
+│       └── ...
+└── downloads/
     ├── stable/
-    │   ├── latest.json          # 稳定版更新清单
-    │   ├── StoneFlow_0.1.0_x64.dmg
-    │   ├── StoneFlow_0.1.0_x64.AppImage.tar.gz
-    │   └── StoneFlow_0.1.0_x64_en-US.msi.zip
+    │   ├── StoneFlow_0.1.0_aarch64.dmg    # 用户手动下载安装包
+    │   └── latest-macos-aarch64.dmg       # 下载页稳定别名
     └── beta/
-        ├── latest.json          # 测试版更新清单
         └── ...
 ```
 
@@ -74,11 +79,11 @@ Tauri updater 期望的 JSON 格式：
   "platforms": {
     "darwin-x86_64": {
       "signature": "base64-signature",
-      "url": "https://release.sty20030818.space/stoneflow/updates/stable/StoneFlow_0.1.0_x64.dmg"
+      "url": "https://release.sty20030818.space/stoneflow/updates/stable/StoneFlow_0.1.0_x86_64.app.tar.gz"
     },
     "darwin-aarch64": {
       "signature": "base64-signature",
-      "url": "https://release.sty20030818.space/stoneflow/updates/stable/StoneFlow_0.1.0_aarch64.dmg"
+      "url": "https://release.sty20030818.space/stoneflow/updates/stable/StoneFlow_0.1.0_aarch64.app.tar.gz"
     },
     "linux-x86_64": {
       "signature": "base64-signature",

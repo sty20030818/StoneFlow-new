@@ -6,28 +6,71 @@
  *   bun run scripts/release/release.ts beta [--no-upload]
  */
 
-import { $, argv, chalk, fs, path } from 'bun'
+import { $, argv } from 'bun'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { existsSync } from 'node:fs'
+import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import path from 'node:path'
+
+const color = (code: number) => (text: string) => `\x1b[${code}m${text}\x1b[0m`
+const chalk = {
+	red: color(31),
+	green: color(32),
+	yellow: color(33),
+	blue: color(34),
+	gray: color(90),
+	cyan: color(36),
+}
+
+async function emptyDir(dir: string) {
+	await rm(dir, { recursive: true, force: true })
+	await mkdir(dir, { recursive: true })
+}
+
+async function readJSON<T>(filePath: string): Promise<T> {
+	return JSON.parse(await readFile(filePath, 'utf8')) as T
+}
+
+async function writeJSON(filePath: string, data: unknown) {
+	await writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`)
+}
+
+async function glob(pattern: string) {
+	if (!existsSync(path.dirname(pattern))) return []
+	try {
+		const files = await Array.fromAsync(new Bun.Glob(pattern).scan('/'))
+		return files.filter((file) => !file.includes('\0') && existsSync(file))
+	} catch (error) {
+		if ((error as { code?: string }).code === 'ENOENT') return []
+		throw error
+	}
+}
+
+function expandHomePath(filePath: string | undefined) {
+	if (!filePath) return undefined
+	if (filePath === '~') return homedir()
+	if (filePath.startsWith('~/')) return path.join(homedir(), filePath.slice(2))
+	return filePath
+}
 
 // 配置
 const R2_ENDPOINT = `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || 'https://release.sty20030818.space/stoneflow'
 const R2_BUCKET = process.env.R2_BUCKET_NAME || ''
-const CHANNEL = argv[0] as 'stable' | 'beta'
+const CHANNEL = argv.find((arg): arg is 'stable' | 'beta' => arg === 'stable' || arg === 'beta')
 const NO_UPLOAD = argv.includes('--no-upload')
+const SIGNING_PRIVATE_KEY = expandHomePath(
+	process.env.TAURI_SIGNING_PRIVATE_KEY ?? process.env.TAURI_SIGNING_PRIVATE_KEY_PATH,
+)
+const MAC_ARCH = process.arch === 'arm64' ? 'aarch64' : 'x86_64'
 
 // Tauri 构建输出目录
 const TAURI_DIST = path.resolve(import.meta.dir, '../../src-tauri/target/release/bundle')
 // 临时工作目录
 const WORK_DIR = path.resolve(import.meta.dir, '../../.release-tmp')
-
-// 平台映射：Tauri bundle 目录名 -> updater platform key
-const PLATFORM_MAP: Record<string, string> = {
-	dmg: 'darwin-x86_64', // macOS Intel
-	// 'dmg': 'darwin-aarch64', // macOS Apple Silicon (需要在对应架构构建)
-	appimage: 'linux-x86_64',
-	msi: 'windows-x86_64',
-}
+const UPDATES_DIR = path.join(WORK_DIR, 'updates')
+const DOWNLOADS_DIR = path.join(WORK_DIR, 'downloads')
 
 interface PlatformMeta {
 	url: string
@@ -41,6 +84,11 @@ interface LatestJson {
 	platforms: Record<string, PlatformMeta>
 }
 
+interface UploadItem {
+	filePath: string
+	key: string
+}
+
 if (!CHANNEL || !['stable', 'beta'].includes(CHANNEL)) {
 	console.error(chalk.red('错误: 请指定渠道 (stable 或 beta)'))
 	process.exit(1)
@@ -50,10 +98,12 @@ if (!CHANNEL || !['stable', 'beta'].includes(CHANNEL)) {
 console.log(chalk.blue(`\n🚀 开始发布 ${CHANNEL} 渠道更新...\n`))
 
 // 1. 清理临时目录
-await fs.emptyDir(WORK_DIR)
+await emptyDir(WORK_DIR)
+await mkdir(UPDATES_DIR, { recursive: true })
+await mkdir(DOWNLOADS_DIR, { recursive: true })
 
 // 2. 读取当前版本
-const tauriConf = await fs.readJSON(
+const tauriConf = await readJSON<{ version: string }>(
 	path.resolve(import.meta.dir, '../../src-tauri/tauri.conf.json'),
 )
 const VERSION = tauriConf.version
@@ -61,77 +111,97 @@ console.log(chalk.gray(`   版本: ${VERSION}`))
 
 // 3. 构建 Tauri 应用
 console.log(chalk.gray('\n📦 构建应用...\n'))
-$.env({
-	...process.env,
-	TAURI_SIGNING_PRIVATE_KEY: process.env.TAURI_SIGNING_PRIVATE_KEY_PATH,
-	TAURI_SIGNING_PRIVATE_KEY_PASSWORD: process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD,
-})
+const tauriEnv = { ...process.env }
+if (SIGNING_PRIVATE_KEY) tauriEnv.TAURI_SIGNING_PRIVATE_KEY = SIGNING_PRIVATE_KEY
+if (process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD) {
+	tauriEnv.TAURI_SIGNING_PRIVATE_KEY_PASSWORD = process.env.TAURI_SIGNING_PRIVATE_KEY_PASSWORD
+}
+$.env(tauriEnv)
 await $`bun run tauri build`
 
 // 4. 收集构建产物
 console.log(chalk.gray('\n🔍 收集构建产物...\n'))
 
 const platforms: Record<string, PlatformMeta> = {}
+const uploadItems: UploadItem[] = []
 
-// 查找 macOS .dmg 及签名
-const dmgFiles = await fs.glob(`${TAURI_DIST}/dmg/*.dmg`).all()
-const dmgSigFiles = await fs.glob(`${TAURI_DIST}/dmg/*.dmg.sig`).all()
+async function addUpdaterArtifact(
+	platformKey: string,
+	filePath: string,
+	sigPath: string,
+	targetFileName = path.basename(filePath),
+) {
+	const signature = await readFile(sigPath, 'utf8')
+	const targetPath = path.join(UPDATES_DIR, targetFileName)
+	const targetSigPath = path.join(UPDATES_DIR, `${targetFileName}.sig`)
 
-if (dmgFiles.length > 0 && dmgSigFiles.length > 0) {
-	const dmgPath = dmgFiles[0]
-	const sigPath = dmgSigFiles[0]
-	const fileName = path.basename(dmgPath)
-	const signature = await fs.readFile(sigPath, 'utf8')
-
-	// 复制到工作目录
-	await fs.copyFile(dmgPath, path.join(WORK_DIR, fileName))
-
-	// 判断架构 (简单判断，实际应根据构建机器或更准确方式)
-	const arch = process.arch === 'arm64' ? 'aarch64' : 'x86_64'
-	const platformKey = `darwin-${arch}`
+	await copyFile(filePath, targetPath)
+	await copyFile(sigPath, targetSigPath)
 	platforms[platformKey] = {
-		url: `${R2_PUBLIC_URL}/updates/${CHANNEL}/${fileName}`,
+		url: `${R2_PUBLIC_URL}/updates/${CHANNEL}/${targetFileName}`,
 		signature: signature.trim(),
 	}
-	console.log(chalk.green(`   ✓ ${platformKey}: ${fileName}`))
+	uploadItems.push(
+		{
+			filePath: targetPath,
+			key: `stoneflow/updates/${CHANNEL}/${targetFileName}`,
+		},
+		{
+			filePath: targetSigPath,
+			key: `stoneflow/updates/${CHANNEL}/${targetFileName}.sig`,
+		},
+	)
+	console.log(chalk.green(`   ✓ ${platformKey}: ${targetFileName}`))
+}
+
+// macOS updater 使用 .app.tar.gz；dmg 只给用户手动下载安装。
+const macUpdaterFiles = await glob(`${TAURI_DIST}/macos/*.app.tar.gz`)
+const macUpdaterSigFiles = await glob(`${TAURI_DIST}/macos/*.app.tar.gz.sig`)
+const dmgFiles = await glob(`${TAURI_DIST}/dmg/*.dmg`)
+
+if (macUpdaterFiles.length > 0 && macUpdaterSigFiles.length > 0) {
+	await addUpdaterArtifact(
+		`darwin-${MAC_ARCH}`,
+		macUpdaterFiles[0],
+		macUpdaterSigFiles[0],
+		`StoneFlow_${VERSION}_${MAC_ARCH}.app.tar.gz`,
+	)
+}
+
+if (dmgFiles.length > 0) {
+	const fileName = path.basename(dmgFiles[0])
+	const targetPath = path.join(DOWNLOADS_DIR, fileName)
+	const latestPath = path.join(DOWNLOADS_DIR, `latest-macos-${MAC_ARCH}.dmg`)
+
+	await copyFile(dmgFiles[0], targetPath)
+	await copyFile(dmgFiles[0], latestPath)
+	uploadItems.push(
+		{
+			filePath: targetPath,
+			key: `stoneflow/downloads/${CHANNEL}/${fileName}`,
+		},
+		{
+			filePath: latestPath,
+			key: `stoneflow/downloads/${CHANNEL}/latest-macos-${MAC_ARCH}.dmg`,
+		},
+	)
+	console.log(chalk.green(`   ✓ macOS 下载包: ${fileName}`))
 }
 
 // 查找 Linux AppImage 及签名
-const appimageFiles = await fs.glob(`${TAURI_DIST}/appimage/*.AppImage.tar.gz`).all()
-const appimageSigFiles = await fs.glob(`${TAURI_DIST}/appimage/*.AppImage.tar.gz.sig`).all()
+const appimageFiles = await glob(`${TAURI_DIST}/appimage/*.AppImage.tar.gz`)
+const appimageSigFiles = await glob(`${TAURI_DIST}/appimage/*.AppImage.tar.gz.sig`)
 
 if (appimageFiles.length > 0 && appimageSigFiles.length > 0) {
-	const filePath = appimageFiles[0]
-	const sigPath = appimageSigFiles[0]
-	const fileName = path.basename(filePath)
-	const signature = await fs.readFile(sigPath, 'utf8')
-
-	await fs.copyFile(filePath, path.join(WORK_DIR, fileName))
-
-	platforms['linux-x86_64'] = {
-		url: `${R2_PUBLIC_URL}/updates/${CHANNEL}/${fileName}`,
-		signature: signature.trim(),
-	}
-	console.log(chalk.green(`   ✓ linux-x86_64: ${fileName}`))
+	await addUpdaterArtifact('linux-x86_64', appimageFiles[0], appimageSigFiles[0])
 }
 
 // 查找 Windows MSI 及签名
-const msiFiles = await fs.glob(`${TAURI_DIST}/msi/*.msi.zip`).all()
-const msiSigFiles = await fs.glob(`${TAURI_DIST}/msi/*.msi.zip.sig`).all()
+const msiFiles = await glob(`${TAURI_DIST}/msi/*.msi.zip`)
+const msiSigFiles = await glob(`${TAURI_DIST}/msi/*.msi.zip.sig`)
 
 if (msiFiles.length > 0 && msiSigFiles.length > 0) {
-	const filePath = msiFiles[0]
-	const sigPath = msiSigFiles[0]
-	const fileName = path.basename(filePath)
-	const signature = await fs.readFile(sigPath, 'utf8')
-
-	await fs.copyFile(filePath, path.join(WORK_DIR, fileName))
-
-	platforms['windows-x86_64'] = {
-		url: `${R2_PUBLIC_URL}/updates/${CHANNEL}/${fileName}`,
-		signature: signature.trim(),
-	}
-	console.log(chalk.green(`   ✓ windows-x86_64: ${fileName}`))
+	await addUpdaterArtifact('windows-x86_64', msiFiles[0], msiSigFiles[0])
 }
 
 if (Object.keys(platforms).length === 0) {
@@ -142,8 +212,8 @@ if (Object.keys(platforms).length === 0) {
 // 5. 读取更新说明（如果存在 RELEASE_NOTES.md）
 const notesPath = path.resolve(import.meta.dir, '../../RELEASE_NOTES.md')
 let notes = ''
-if (await fs.exists(notesPath)) {
-	notes = await fs.readFile(notesPath, 'utf8')
+if (existsSync(notesPath)) {
+	notes = await readFile(notesPath, 'utf8')
 }
 
 // 6. 生成 latest.json
@@ -154,8 +224,12 @@ const latestJson: LatestJson = {
 	platforms,
 }
 
-const latestJsonPath = path.join(WORK_DIR, 'latest.json')
-await fs.writeJSON(latestJsonPath, latestJson, { spaces: 2 })
+const latestJsonPath = path.join(UPDATES_DIR, 'latest.json')
+await writeJSON(latestJsonPath, latestJson)
+uploadItems.push({
+	filePath: latestJsonPath,
+	key: `stoneflow/updates/${CHANNEL}/latest.json`,
+})
 console.log(chalk.gray('\n📝 生成 latest.json'))
 
 // 7. 输出到控制台预览
@@ -184,7 +258,7 @@ if (
 		),
 	)
 	console.log(chalk.yellow('\n💡 提示: 构建产物已保存到:'), WORK_DIR)
-	console.log(chalk.yellow('   你可以手动上传到 R2 的 stoneflow/updates/' + CHANNEL + '/ 目录下'))
+	console.log(chalk.yellow('   你可以按 .release-tmp 下的 updates / downloads 目录手动上传到 R2'))
 	process.exit(1)
 }
 
@@ -199,21 +273,16 @@ const s3Client = new S3Client({
 	},
 })
 
-// 上传所有文件
-const filesToUpload = await fs.glob(`${WORK_DIR}/*`).all()
-const uploadPath = `stoneflow/updates/${CHANNEL}`
+for (const item of uploadItems) {
+	const fileName = path.basename(item.filePath)
+	const body = await readFile(item.filePath)
 
-for (const file of filesToUpload) {
-	const fileName = path.basename(file)
-	const key = `${uploadPath}/${fileName}`
-	const body = await fs.readFile(file)
-
-	console.log(chalk.gray(`   上传 ${key}...`))
+	console.log(chalk.gray(`   上传 ${item.key}...`))
 
 	await s3Client.send(
 		new PutObjectCommand({
 			Bucket: R2_BUCKET,
-			Key: key,
+			Key: item.key,
 			Body: body,
 			ContentType: fileName.endsWith('.json') ? 'application/json' : 'application/octet-stream',
 			CacheControl: fileName === 'latest.json' ? 'no-cache' : 'public, max-age=31536000, immutable',
@@ -226,8 +295,11 @@ for (const file of filesToUpload) {
 // 9. 完成
 console.log(chalk.green('\n✅ 发布完成!'))
 console.log(chalk.gray(`\n   更新地址: ${R2_PUBLIC_URL}/updates/${CHANNEL}/latest.json`))
+console.log(
+	chalk.gray(`   下载地址: ${R2_PUBLIC_URL}/downloads/${CHANNEL}/latest-macos-${MAC_ARCH}.dmg`),
+)
 console.log(chalk.gray(`   版本: ${VERSION}`))
 console.log(chalk.gray(`   平台: ${Object.keys(platforms).join(', ')}\n`))
 
 // 清理临时目录
-await fs.remove(WORK_DIR)
+await rm(WORK_DIR, { recursive: true, force: true })

@@ -5,6 +5,7 @@ import {
 	openStartupFallback,
 	openTaskDetail,
 } from '@/app/navigation/intents'
+import { listVisibleSpaces } from '@/features/space/api/spaces'
 import { projectDetailQueryOptions } from '@/features/project/query'
 import { taskDetailQueryOptions } from '@/features/task/query/task.queries'
 import type { Scope, Space, TaskDetail } from '@/shared/types'
@@ -24,7 +25,7 @@ export type DetailRouteErrorState = {
 export async function ensureVisibleSpaces(queryClient: QueryClient) {
 	return queryClient.ensureQueryData({
 		queryKey: ['spaces', 'visible'],
-		queryFn: async () => (await import('@/features/space/api/spaces')).listVisibleSpaces(),
+		queryFn: listVisibleSpaces,
 	})
 }
 

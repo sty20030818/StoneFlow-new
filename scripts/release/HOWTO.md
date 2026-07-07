@@ -119,6 +119,7 @@ cp .env.example .env.local
 ```
 
 填入以下内容：
+- `TAURI_SIGNING_PRIVATE_KEY`：私钥文件路径，推荐绝对路径；脚本也兼容 `~/.tauri/stoneflow.key`
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`：生成密钥时设置的密码
 - `R2_ACCOUNT_ID`：Cloudflare Account ID（在 R2 概览页能找到）
 - `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY`：在 Cloudflare "我的个人资料" → "API 令牌" → "R2 存储令牌" 创建
@@ -135,10 +136,11 @@ cp .env.example .env.local
 
 脚本会自动：
 - 执行 `tauri build`（带签名）
-- 收集各平台的构建产物（.dmg / .AppImage.tar.gz / .msi.zip）和对应 .sig 签名文件
+- 收集 updater 产物（macOS 为 `.app.tar.gz`，Linux 为 `.AppImage.tar.gz`，Windows 为 `.msi.zip`）和对应 `.sig` 签名文件
+- 额外收集 macOS `.dmg` 到 `downloads/<channel>/`，用于用户手动下载安装
 - 读取 RELEASE_NOTES.md 作为更新说明
 - 生成符合 Tauri updater 格式的 `latest.json`
-- 上传所有文件到 R2 的 `stoneflow/updates/stable/` 目录
+- 上传 updater 文件到 R2 的 `stoneflow/updates/stable/` 目录，上传下载包到 `stoneflow/downloads/stable/` 目录
 - 上传完成后输出更新地址
 
 ### 发布测试版（Beta）
@@ -168,10 +170,11 @@ bun run release:stable -- --no-upload
 如果不想配置 R2 API 密钥，或者用 CI/CD 发布：
 
 1. 运行 `bun run release:stable -- --no-upload`
-2. 手动把 `.release-tmp/` 目录下的所有文件上传到 R2 的对应路径
-3. 或者用 wrangler CLI：
+2. 手动把 `.release-tmp/updates/` 上传到 R2 的 `stoneflow/updates/stable/`
+3. 手动把 `.release-tmp/downloads/` 上传到 R2 的 `stoneflow/downloads/stable/`
+4. 或者用 wrangler CLI：
    ```bash
-   npx wrangler r2 object put your-bucket-name/stoneflow/updates/stable/latest.json --file .release-tmp/latest.json
+   npx wrangler r2 object put your-bucket-name/stoneflow/updates/stable/latest.json --file .release-tmp/updates/latest.json
    # 其他文件同理
    ```
 
@@ -183,20 +186,24 @@ bun run release:stable -- --no-upload
 
 ```
 stoneflow/
-└── updates/
+├── updates/
+│   ├── stable/
+│   │   ├── latest.json                         # 更新清单（Cache-Control: no-cache）
+│   │   ├── StoneFlow_0.1.0_aarch64.app.tar.gz  # macOS updater 包
+│   │   ├── StoneFlow_0.1.0_aarch64.app.tar.gz.sig
+│   │   ├── StoneFlow_0.1.0_x64.AppImage.tar.gz # Linux
+│   │   ├── StoneFlow_0.1.0_x64.AppImage.tar.gz.sig
+│   │   ├── StoneFlow_0.1.0_x64_en-US.msi.zip   # Windows
+│   │   └── StoneFlow_0.1.0_x64_en-US.msi.zip.sig
+│   └── beta/
+│       ├── latest.json
+│       └── ...（同上）
+└── downloads/
     ├── stable/
-    │   ├── latest.json                          # 更新清单（Cache-Control: no-cache）
-    │   ├── StoneFlow_0.1.0_x64.dmg             # macOS Intel
-    │   ├── StoneFlow_0.1.0_x64.dmg.sig         # macOS Intel 签名
-    │   ├── StoneFlow_0.1.0_aarch64.dmg         # macOS Apple Silicon
-    │   ├── StoneFlow_0.1.0_aarch64.dmg.sig
-    │   ├── StoneFlow_0.1.0_x64.AppImage.tar.gz  # Linux
-    │   ├── StoneFlow_0.1.0_x64.AppImage.tar.gz.sig
-    │   ├── StoneFlow_0.1.0_x64_en-US.msi.zip    # Windows
-    │   └── StoneFlow_0.1.0_x64_en-US.msi.zip.sig
+    │   ├── StoneFlow_0.1.0_aarch64.dmg          # 用户手动下载安装包
+    │   └── latest-macos-aarch64.dmg             # 下载页稳定别名
     └── beta/
-        ├── latest.json
-        └── ...（同上）
+        └── ...
 ```
 
 Cloudflare R2 公共访问配置（你已经配好了）：
@@ -229,7 +236,7 @@ Cloudflare R2 公共访问配置（你已经配好了）：
 
 ### Q: 签名验证失败？
 - 确认 `tauri.conf.json` 里的 pubkey 和生成密钥对时的公钥一致
-- 确认构建时使用了正确的私钥（`TAURI_SIGNING_PRIVATE_KEY_PATH` 环境变量）
+- 确认构建时使用了正确的私钥（`TAURI_SIGNING_PRIVATE_KEY` 环境变量）
 - 确认 .sig 文件和安装包是同一次构建生成的
 
 ### Q: 开发模式下为什么不弹窗？

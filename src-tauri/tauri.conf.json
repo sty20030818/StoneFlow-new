@@ -33,7 +33,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5ClJXUlRZMEl5MTdLeVliVVBJL2p6QXNlT1UzaGp1aTlZcGpIMVgvZ3hCZVhzTUZNWVBUc0FBQkFBQUFBQUFBQUFBQUlBQUFBQVV6aUdzYXhtVWQ3MWpFVjVsMjZjOENNSDZPQzB2SWtaVE1nbGhiQW9KQ1NEWUoyNWpwRStpVW5tWkl2bjdlSEl6NkVOZzhUR3BzK3NmNndFOE1XalFKVlNPQVRkajR2WHZkVVFIdkRadXNmNUloNFFSREdvcGVGcFRKaVhRUDJrTEQ2WTloTmpHR1k9Cg==",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEEwMjQwQTAxQjIxNkREQUMKUldTczNSYXlBUW9rb08zR1dWb3daMFpybzE3aEJwNEVLcFVJK3VybWxQMUtEaXVwUlloYk1haDUK",
       "endpoints": [
         "https://release.sty20030818.space/stoneflow/updates/stable/latest.json",
         "https://release.sty20030818.space/stoneflow/updates/beta/latest.json"
