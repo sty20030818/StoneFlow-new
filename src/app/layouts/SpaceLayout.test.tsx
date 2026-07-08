@@ -9,6 +9,7 @@ import { SpaceLayout } from './SpaceLayout'
 const setActiveScopeMock = vi.hoisted(() => vi.fn<(scope: unknown) => Promise<void>>())
 const useWorkspaceSyncMock = vi.hoisted(() => vi.fn())
 const shellLayoutPropsSpy = vi.hoisted(() => vi.fn())
+const navigateMock = vi.hoisted(() => vi.fn())
 
 const shellNavState = vi.hoisted(() => ({
 	currentScopeType: 'all' as 'all' | 'space',
@@ -30,6 +31,7 @@ vi.mock('@/app/routing/tanstackCompat', async () => {
 	return {
 		...actual,
 		Outlet: () => <div>page</div>,
+		useNavigate: () => navigateMock,
 	}
 })
 
@@ -70,6 +72,8 @@ describe('SpaceLayout', () => {
 		setActiveScopeMock.mockResolvedValue(undefined)
 		useWorkspaceSyncMock.mockClear()
 		shellLayoutPropsSpy.mockClear()
+		navigateMock.mockReset()
+		spaceState.spaces = [{ id: 'space-a', name: '工作', isDefault: true }]
 		shellNavState.currentScopeType = 'all'
 		shellNavState.currentSpaceId = null
 		shellNavState.activeSection = 'inbox'
@@ -99,6 +103,18 @@ describe('SpaceLayout', () => {
 				}),
 			}),
 		)
+	})
+
+	it('同步恢复后当前路由 Space 不存在时跳到可见默认 Space 的同一栏目', async () => {
+		spaceState.spaces = [{ id: 'space-new', name: '个人', isDefault: true }]
+
+		await renderSpaceLayout('/spaces/space-old/projects')
+
+		await waitFor(() => {
+			expect(navigateMock).toHaveBeenCalledWith('/spaces/space-new/projects', {
+				replace: true,
+			})
+		})
 	})
 })
 

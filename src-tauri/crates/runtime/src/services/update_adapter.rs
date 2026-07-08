@@ -71,7 +71,12 @@ impl TauriUpdateAdapter {
 
     /// 根据渠道构造远端 endpoint URL。
     fn endpoint_url(channel: UpdateChannel, base_url: &str) -> String {
-        format!("{}/{}/latest.json", base_url, channel.path_segment())
+        format!(
+            "{}/{}/{}/latest.json",
+            base_url,
+            channel.path_segment(),
+            platform_key()
+        )
     }
 
     /// 根据渠道构建 UpdaterBuilder（配置 endpoint 和版本比较器）。
@@ -115,6 +120,17 @@ impl TauriUpdateAdapter {
         builder
             .build()
             .map_err(|e| UsecaseError::update(format!("构建 updater 失败: {e}")))
+    }
+}
+
+/// Tauri updater manifest 按平台拆分，路径与 manifest 的 `platforms` key 保持一致。
+fn platform_key() -> &'static str {
+    match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("macos", "aarch64") => "darwin-aarch64",
+        ("macos", "x86_64") => "darwin-x86_64",
+        ("windows", "x86_64") => "windows-x86_64",
+        ("linux", "x86_64") => "linux-x86_64",
+        _ => "unknown-unknown",
     }
 }
 

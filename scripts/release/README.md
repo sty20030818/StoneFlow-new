@@ -40,16 +40,30 @@ R2_PUBLIC_URL=https://release.sty20030818.space/stoneflow
 stoneflow/
 ├── updates/
 │   ├── stable/
-│   │   ├── latest.json                    # 稳定版更新清单
-│   │   ├── StoneFlow_0.1.0_aarch64.app.tar.gz      # macOS updater 包
-│   │   └── StoneFlow_0.1.0_aarch64.app.tar.gz.sig
+│   │   ├── darwin-aarch64/
+│   │   │   ├── latest.json                # 当前平台 updater 清单
+│   │   │   ├── latest.meta.json           # 发布脚本元数据（commit / channel / platform）
+│   │   │   └── 0.1.0/
+│   │   │       ├── StoneFlow_0.1.0_aarch64.app.tar.gz
+│   │   │       └── StoneFlow_0.1.0_aarch64.app.tar.gz.sig
+│   │   └── windows-x86_64/
+│   │       ├── latest.json
+│   │       ├── latest.meta.json
+│   │       └── 0.1.0/
+│   │           ├── StoneFlow_0.1.0_x64-setup.exe
+│   │           └── StoneFlow_0.1.0_x64-setup.exe.sig
 │   └── beta/
-│       ├── latest.json
 │       └── ...
 └── downloads/
     ├── stable/
-    │   ├── StoneFlow_0.1.0_aarch64.dmg    # 用户手动下载安装包
-    │   └── latest-macos-aarch64.dmg       # 下载页稳定别名
+    │   ├── darwin-aarch64/
+    │   │   ├── latest.dmg
+    │   │   └── 0.1.0/
+    │   │       └── StoneFlow_0.1.0_aarch64.dmg
+    │   └── windows-x86_64/
+    │       ├── latest-setup.exe
+    │       └── 0.1.0/
+    │           └── StoneFlow_0.1.0_x64-setup.exe
     └── beta/
         └── ...
 ```
@@ -58,13 +72,13 @@ stoneflow/
 
 ```bash
 # 发布稳定版
-bun run release:stable
+bun run release
 
 # 发布测试版
 bun run release:beta
 
 # 仅构建不 upload（本地验证）
-bun run release:stable --no-upload
+bun run release -- --no-upload
 ```
 
 ## 5. latest.json 格式
@@ -77,22 +91,14 @@ Tauri updater 期望的 JSON 格式：
   "notes": "更新说明...",
   "pub_date": "2024-01-01T00:00:00Z",
   "platforms": {
-    "darwin-x86_64": {
-      "signature": "base64-signature",
-      "url": "https://release.sty20030818.space/stoneflow/updates/stable/StoneFlow_0.1.0_x86_64.app.tar.gz"
-    },
     "darwin-aarch64": {
       "signature": "base64-signature",
-      "url": "https://release.sty20030818.space/stoneflow/updates/stable/StoneFlow_0.1.0_aarch64.app.tar.gz"
-    },
-    "linux-x86_64": {
-      "signature": "base64-signature",
-      "url": "https://release.sty20030818.space/stoneflow/updates/stable/StoneFlow_0.1.0_x64.AppImage.tar.gz"
-    },
-    "windows-x86_64": {
-      "signature": "base64-signature",
-      "url": "https://release.sty20030818.space/stoneflow/updates/stable/StoneFlow_0.1.0_x64_en-US.msi.zip"
+      "url": "https://release.sty20030818.space/stoneflow/updates/stable/darwin-aarch64/0.1.0/StoneFlow_0.1.0_aarch64.app.tar.gz"
     }
   }
 }
 ```
+
+StoneFlow 采用平台级 `latest.json`，macOS 和 Windows 可以分别发布不同版本，互不覆盖。Beta 发布会读取同平台的 `latest.meta.json`：当前 git commit 相同则复用 beta 版本，不同则递增 `-beta.N`。
+
+Windows Beta 只构建 NSIS `.exe`。MSI 不支持 `0.1.1-beta.1` 这类带 `beta` 文本的预发布版本号。

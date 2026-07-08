@@ -35,8 +35,8 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEEwMjQwQTAxQjIxNkREQUMKUldTczNSYXlBUW9rb08zR1dWb3daMFpybzE3aEJwNEVLcFVJK3VybWxQMUtEaXVwUlloYk1haDUK",
       "endpoints": [
-        "https://release.sty20030818.space/stoneflow/updates/stable/latest.json",
-        "https://release.sty20030818.space/stoneflow/updates/beta/latest.json"
+        "https://release.sty20030818.space/stoneflow/updates/stable/{{target}}-{{arch}}/latest.json",
+        "https://release.sty20030818.space/stoneflow/updates/beta/{{target}}-{{arch}}/latest.json"
       ],
       "dangerousInsecureTransportProtocol": true,
       "windows": {

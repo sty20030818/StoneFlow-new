@@ -62,7 +62,7 @@ function buildPlatforms(baseUrl: string, version: string) {
 	}
 	platforms['windows-x86_64'] = {
 		signature: 'mock-signature-for-testing-only',
-		url: `${baseUrl}/mock/StoneFlow_${version}_x64_en-US.msi.zip`,
+		url: `${baseUrl}/mock/StoneFlow_${version}_x64-setup.exe`,
 	}
 	platforms['linux-x86_64'] = {
 		signature: 'mock-signature-for-testing-only',
@@ -71,7 +71,7 @@ function buildPlatforms(baseUrl: string, version: string) {
 	return platforms
 }
 
-function buildLatestJson(baseUrl: string, channel: 'stable' | 'beta') {
+function buildLatestJson(baseUrl: string, channel: 'stable' | 'beta', platform?: string) {
 	if (SCENARIO === 'error') return null
 
 	const isNoUpdate = SCENARIO === 'noUpdate'
@@ -87,7 +87,16 @@ function buildLatestJson(baseUrl: string, channel: 'stable' | 'beta') {
 		version,
 		notes,
 		pub_date: new Date().toISOString(),
-		platforms: isNoUpdate ? {} : buildPlatforms(baseUrl, version),
+		platforms: isNoUpdate
+			? {}
+			: platform
+				? {
+						[platform]: buildPlatforms(baseUrl, version)[platform] ?? {
+							signature: 'mock-signature-for-testing-only',
+							url: `${baseUrl}/mock/StoneFlow_${version}_${platform}`,
+						},
+					}
+				: buildPlatforms(baseUrl, version),
 	}
 }
 
@@ -120,11 +129,15 @@ const server = serve({
 		)
 
 		// ── 更新端点 ──
-		const isStable = url.pathname === '/stoneflow/updates/stable/latest.json'
-		const isBeta = url.pathname === '/stoneflow/updates/beta/latest.json'
+		const updateMatch = /^\/stoneflow\/updates\/(stable|beta)(?:\/([^/]+))?\/latest\.json$/.exec(
+			url.pathname,
+		)
+		const isStable = updateMatch?.[1] === 'stable'
+		const isBeta = updateMatch?.[1] === 'beta'
 
 		if (isStable || isBeta) {
 			const channel = isStable ? 'stable' : 'beta'
+			const platform = updateMatch?.[2]
 
 			// beta 路径下，如果当前 mock 是 beta 模式，返回 beta 更新；否则返回低版本
 			if (channel === 'beta' && CHANNEL !== 'beta') {
@@ -176,7 +189,7 @@ const server = serve({
 				})
 			}
 
-			const json = buildLatestJson(baseUrl, channel)
+			const json = buildLatestJson(baseUrl, channel, platform)
 			if (!json) {
 				return new Response('Internal Server Error', { status: 500, headers: corsHeaders })
 			}
@@ -267,8 +280,10 @@ th{background:#fafafa}</style></head><body>
 </table>
 <h2>可用端点</h2>
 <ul>
-<li><a href="/stoneflow/updates/stable/latest.json">/stoneflow/updates/stable/latest.json</a></li>
-<li><a href="/stoneflow/updates/beta/latest.json">/stoneflow/updates/beta/latest.json</a></li>
+<li><a href="/stoneflow/updates/stable/darwin-aarch64/latest.json">/stoneflow/updates/stable/darwin-aarch64/latest.json</a></li>
+<li><a href="/stoneflow/updates/stable/windows-x86_64/latest.json">/stoneflow/updates/stable/windows-x86_64/latest.json</a></li>
+<li><a href="/stoneflow/updates/beta/darwin-aarch64/latest.json">/stoneflow/updates/beta/darwin-aarch64/latest.json</a></li>
+<li><a href="/stoneflow/updates/beta/windows-x86_64/latest.json">/stoneflow/updates/beta/windows-x86_64/latest.json</a></li>
 <li><a href="/health">/health</a></li>
 </ul>
 <h2>场景切换命令</h2>
@@ -305,6 +320,6 @@ console.log(`   版本: ${MOCK_VERSION}`)
 console.log(`   渠道: ${CHANNEL}`)
 console.log(`   场景: ${scenarioText}`)
 if (SLOW_MODE) console.log(`   慢模式: 开启 (${SLOW_DELAY_MS}ms 延迟)`)
-console.log(`\n   Stable: http://localhost:${PORT}/stoneflow/updates/stable/latest.json`)
-console.log(`   Beta:   http://localhost:${PORT}/stoneflow/updates/beta/latest.json`)
+console.log(`\n   Stable: http://localhost:${PORT}/stoneflow/updates/stable/<platform>/latest.json`)
+console.log(`   Beta:   http://localhost:${PORT}/stoneflow/updates/beta/<platform>/latest.json`)
 console.log(`\n   按 Ctrl+C 停止\n`)

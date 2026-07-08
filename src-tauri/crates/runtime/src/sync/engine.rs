@@ -791,12 +791,14 @@ fn build_sync_worker_command(
 
     if let Some(worker_binary) = find_bundled_sync_worker(app_handle)? {
         let mut command = Command::new(worker_binary);
+        hide_child_console_window(&mut command);
         command.args(worker_args);
         return Ok(command);
     }
 
     if let Some((manifest_path, workdir)) = find_workspace_manifest_for_dev() {
         let mut command = Command::new("cargo");
+        hide_child_console_window(&mut command);
         command
             .arg("run")
             .arg("--manifest-path")
@@ -814,6 +816,15 @@ fn build_sync_worker_command(
         "未找到同步 worker 可执行文件；当前构建无法执行 Turso 同步。",
     ))
 }
+
+#[cfg(target_os = "windows")]
+fn hide_child_console_window(command: &mut Command) {
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    command.creation_flags(CREATE_NO_WINDOW);
+}
+
+#[cfg(not(target_os = "windows"))]
+fn hide_child_console_window(_command: &mut Command) {}
 
 fn find_bundled_sync_worker(app_handle: &tauri::AppHandle) -> Result<Option<PathBuf>, AppError> {
     let current_exe = std::env::current_exe()

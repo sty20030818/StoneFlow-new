@@ -54,11 +54,11 @@ src/features/update/
    # bun run mock:updates:beta
    ```
 
-2. 临时修改 `src-tauri/tauri.conf.json` 的 endpoints 指向本地：
+2. Debug 模式会自动检测 1420 端口的 mock 服务器。若需要手动配置，endpoint 使用平台级路径：
    ```json
    "endpoints": [
-     "http://localhost:1420/stoneflow/updates/stable/latest.json",
-     "http://localhost:1420/stoneflow/updates/beta/latest.json"
+     "http://localhost:1420/stoneflow/updates/stable/{{target}}-{{arch}}/latest.json",
+     "http://localhost:1420/stoneflow/updates/beta/{{target}}-{{arch}}/latest.json"
    ]
    ```
 
@@ -131,16 +131,16 @@ cp .env.example .env.local
 2. 在项目根目录写 `RELEASE_NOTES.md`（可选，作为更新说明）
 3. 运行：
    ```bash
-   bun run release:stable
+   bun run release
    ```
 
 脚本会自动：
 - 执行 `tauri build`（带签名）
-- 收集 updater 产物（macOS 为 `.app.tar.gz`，Linux 为 `.AppImage.tar.gz`，Windows 为 `.msi.zip`）和对应 `.sig` 签名文件
-- 额外收集 macOS `.dmg` 到 `downloads/<channel>/`，用于用户手动下载安装
+- 收集当前平台 updater 产物（macOS 为 `.app.tar.gz`，Linux 为 `.AppImage.tar.gz`，Windows 优先 NSIS `.exe`，否则 MSI `.msi`）和对应 `.sig` 签名文件
+- 额外收集当前平台下载包到 `downloads/<channel>/<platform>/`，用于用户手动下载安装
 - 读取 RELEASE_NOTES.md 作为更新说明
-- 生成符合 Tauri updater 格式的 `latest.json`
-- 上传 updater 文件到 R2 的 `stoneflow/updates/stable/` 目录，上传下载包到 `stoneflow/downloads/stable/` 目录
+- 生成符合 Tauri updater 格式的当前平台 `latest.json`，以及发布脚本使用的 `latest.meta.json`
+- 上传 updater 文件到 R2 的 `stoneflow/updates/stable/<platform>/` 目录，上传下载包到 `stoneflow/downloads/stable/<platform>/` 目录
 - 上传完成后输出更新地址
 
 ### 发布测试版（Beta）
@@ -151,16 +151,18 @@ cp .env.example .env.local
 bun run release:beta
 ```
 
-文件会上传到 `stoneflow/updates/beta/` 目录。
+文件会上传到 `stoneflow/updates/beta/<platform>/` 目录。
 
-**注意**：Beta 版本号建议带预发布后缀，比如 `0.2.0-beta.1`。Stable 渠道的版本比较器会自动过滤掉预发布版本，用户在设置里切换到 Beta 渠道才能收到。
+**注意**：Beta 版本号由脚本根据当前平台的 `latest.meta.json` 自动计算。当前 git commit 相同则复用现有 beta 版本；commit 不同则递增 `-beta.N`。Stable 渠道的版本比较器会自动过滤掉预发布版本，用户在设置里切换到 Beta 渠道才能收到。
+
+Windows Beta 只生成 NSIS `.exe`，不会生成 MSI。MSI 的版本字段不支持 `0.1.1-beta.1` 这类带 `beta` 文本的预发布标识。
 
 ### 仅构建不上传（验证用）
 
 如果只想在本地验证构建产物，不上传：
 
 ```bash
-bun run release:stable -- --no-upload
+bun run release -- --no-upload
 ```
 
 产物会保存在 `.release-tmp/` 目录。
@@ -169,12 +171,12 @@ bun run release:stable -- --no-upload
 
 如果不想配置 R2 API 密钥，或者用 CI/CD 发布：
 
-1. 运行 `bun run release:stable -- --no-upload`
-2. 手动把 `.release-tmp/updates/` 上传到 R2 的 `stoneflow/updates/stable/`
-3. 手动把 `.release-tmp/downloads/` 上传到 R2 的 `stoneflow/downloads/stable/`
+1. 运行 `bun run release -- --no-upload`
+2. 手动把 `.release-tmp/updates/stable/<platform>/` 上传到 R2 的 `stoneflow/updates/stable/<platform>/`
+3. 手动把 `.release-tmp/downloads/stable/<platform>/` 上传到 R2 的 `stoneflow/downloads/stable/<platform>/`
 4. 或者用 wrangler CLI：
    ```bash
-   npx wrangler r2 object put your-bucket-name/stoneflow/updates/stable/latest.json --file .release-tmp/updates/latest.json
+   npx wrangler r2 object put your-bucket-name/stoneflow/updates/stable/windows-x86_64/latest.json --file .release-tmp/updates/stable/windows-x86_64/latest.json
    # 其他文件同理
    ```
 
@@ -188,20 +190,30 @@ bun run release:stable -- --no-upload
 stoneflow/
 ├── updates/
 │   ├── stable/
-│   │   ├── latest.json                         # 更新清单（Cache-Control: no-cache）
-│   │   ├── StoneFlow_0.1.0_aarch64.app.tar.gz  # macOS updater 包
-│   │   ├── StoneFlow_0.1.0_aarch64.app.tar.gz.sig
-│   │   ├── StoneFlow_0.1.0_x64.AppImage.tar.gz # Linux
-│   │   ├── StoneFlow_0.1.0_x64.AppImage.tar.gz.sig
-│   │   ├── StoneFlow_0.1.0_x64_en-US.msi.zip   # Windows
-│   │   └── StoneFlow_0.1.0_x64_en-US.msi.zip.sig
+│   │   ├── darwin-aarch64/
+│   │   │   ├── latest.json                     # 当前平台更新清单（Cache-Control: no-cache）
+│   │   │   ├── latest.meta.json                # 发布脚本元数据（Cache-Control: no-cache）
+│   │   │   └── 0.1.0/
+│   │   │       ├── StoneFlow_0.1.0_aarch64.app.tar.gz
+│   │   │       └── StoneFlow_0.1.0_aarch64.app.tar.gz.sig
+│   │   └── windows-x86_64/
+│   │       ├── latest.json
+│   │       ├── latest.meta.json
+│   │       └── 0.1.0/
+│   │           ├── StoneFlow_0.1.0_x64-setup.exe
+│   │           └── StoneFlow_0.1.0_x64-setup.exe.sig
 │   └── beta/
-│       ├── latest.json
 │       └── ...（同上）
 └── downloads/
     ├── stable/
-    │   ├── StoneFlow_0.1.0_aarch64.dmg          # 用户手动下载安装包
-    │   └── latest-macos-aarch64.dmg             # 下载页稳定别名
+    │   ├── darwin-aarch64/
+    │   │   ├── latest.dmg
+    │   │   └── 0.1.0/
+    │   │       └── StoneFlow_0.1.0_aarch64.dmg
+    │   └── windows-x86_64/
+    │       ├── latest-setup.exe
+    │       └── 0.1.0/
+    │           └── StoneFlow_0.1.0_x64-setup.exe
     └── beta/
         └── ...
 ```
@@ -228,7 +240,7 @@ Cloudflare R2 公共访问配置（你已经配好了）：
 ## 六、常见问题
 
 ### Q: 用户收不到更新？
-1. 检查 `latest.json` 是否正确上传，访问 `https://release.sty20030818.space/stoneflow/updates/stable/latest.json` 能否正常返回
+1. 检查 `latest.json` 是否正确上传，访问当前平台地址（例如 `https://release.sty20030818.space/stoneflow/updates/stable/windows-x86_64/latest.json`）能否正常返回
 2. 检查 `latest.json` 里的 version 是否确实高于用户当前版本
 3. 检查用户设置的更新渠道（stable 收不到 beta）
 4. 检查用户是否跳过了该版本

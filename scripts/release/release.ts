@@ -2,8 +2,10 @@
  * StoneFlow 应用更新发布脚本
  *
  * 用法:
+ *   bun run release
  *   bun run scripts/release/release.ts stable [--no-upload]
  *   bun run scripts/release/release.ts beta [--no-upload]
+ *   bun run scripts/release/release.ts beta --version 0.1.1-beta.1
  */
 
 import { $, argv } from 'bun'
@@ -54,39 +56,78 @@ function nextPatchVersion(version: string) {
 	return `${parsed.major}.${parsed.minor}.${parsed.patch + 1}`
 }
 
-async function readLatestBetaVersion() {
-	const response = await fetch(`${R2_PUBLIC_URL}/updates/beta/latest.json`, {
+function getArg(name: string): string | undefined {
+	const idx = argv.indexOf(name)
+	return idx >= 0 && idx + 1 < argv.length ? argv[idx + 1] : undefined
+}
+
+function resolvePlatformKey() {
+	const os = process.platform === 'darwin' ? 'darwin' : process.platform
+	const arch =
+		process.arch === 'arm64' ? 'aarch64' : process.arch === 'x64' ? 'x86_64' : process.arch
+	if (os === 'win32') return `windows-${arch}`
+	if (os === 'darwin') return `darwin-${arch}`
+	if (os === 'linux') return `linux-${arch}`
+	throw new Error(`不支持当前发布平台: ${process.platform}-${process.arch}`)
+}
+
+async function resolveGitCommit() {
+	try {
+		return (await $`git rev-parse --short=8 HEAD`.quiet().text()).trim()
+	} catch {
+		return 'unknown'
+	}
+}
+
+async function fetchJson<T>(url: string) {
+	const response = await fetch(url, {
 		signal: AbortSignal.timeout(5000),
 	})
 	if (response.status === 404) return null
 	if (!response.ok) {
-		throw new Error(`读取 beta latest.json 失败: HTTP ${response.status}`)
+		throw new Error(`读取远端 JSON 失败: ${url} HTTP ${response.status}`)
 	}
-	const data = (await response.json()) as { version?: unknown }
-	return typeof data.version === 'string' ? data.version : null
+	return (await response.json()) as T
 }
 
-async function resolveReleaseVersion(channel: 'stable' | 'beta', stableVersion: string) {
+function parseBetaVersion(version: string, betaBaseVersion: string) {
+	const match = new RegExp(`^${betaBaseVersion.replaceAll('.', '\\.')}-beta\\.(\\d+)$`).exec(
+		version,
+	)
+	return match ? Number(match[1]) : null
+}
+
+async function readRemoteMeta(channel: 'stable' | 'beta', platformKey: string) {
+	const url = `${R2_PUBLIC_URL}/updates/${channel}/${platformKey}/latest.meta.json`
+	try {
+		return await fetchJson<ReleaseMeta>(url)
+	} catch (error) {
+		if (!NO_UPLOAD) throw error
+		console.log(chalk.yellow(`   无法读取远端 meta，--no-upload 将使用本地默认版本`))
+		return null
+	}
+}
+
+async function resolveReleaseVersion(
+	channel: 'stable' | 'beta',
+	stableVersion: string,
+	platformKey: string,
+	commit: string,
+) {
 	if (!parseStableVersion(stableVersion)) {
 		throw new Error(`配置版本必须是 x.y.z，当前是 ${stableVersion}`)
 	}
+	const specifiedVersion = getArg('--version')
+	if (specifiedVersion) return specifiedVersion
 	if (channel === 'stable') return stableVersion
 
 	const betaBaseVersion = nextPatchVersion(stableVersion)
-	try {
-		const latestBetaVersion = await readLatestBetaVersion()
-		const match = new RegExp(`^${betaBaseVersion.replaceAll('.', '\\.')}-beta\\.(\\d+)$`).exec(
-			latestBetaVersion ?? '',
-		)
-		const nextBetaNumber = match ? Number(match[1]) + 1 : 1
-		return `${betaBaseVersion}-beta.${nextBetaNumber}`
-	} catch (error) {
-		if (!NO_UPLOAD) throw error
-		console.log(
-			chalk.yellow(`   无法读取远端 beta 版本，--no-upload 使用 ${betaBaseVersion}-beta.1`),
-		)
-		return `${betaBaseVersion}-beta.1`
+	const remoteMeta = await readRemoteMeta(channel, platformKey)
+	if (remoteMeta?.commit === commit && remoteMeta.version) {
+		return remoteMeta.version
 	}
+	const latestBetaNumber = remoteMeta ? parseBetaVersion(remoteMeta.version, betaBaseVersion) : null
+	return `${betaBaseVersion}-beta.${latestBetaNumber ? latestBetaNumber + 1 : 1}`
 }
 
 async function glob(pattern: string) {
@@ -111,19 +152,20 @@ function expandHomePath(filePath: string | undefined) {
 const R2_ENDPOINT = `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
 const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || 'https://release.sty20030818.space/stoneflow'
 const R2_BUCKET = process.env.R2_BUCKET_NAME || ''
-const CHANNEL = argv.find((arg): arg is 'stable' | 'beta' => arg === 'stable' || arg === 'beta')
+const CHANNEL =
+	argv.find((arg): arg is 'stable' | 'beta' => arg === 'stable' || arg === 'beta') ?? 'stable'
 const NO_UPLOAD = argv.includes('--no-upload')
 const SIGNING_PRIVATE_KEY = expandHomePath(
 	process.env.TAURI_SIGNING_PRIVATE_KEY ?? process.env.TAURI_SIGNING_PRIVATE_KEY_PATH,
 )
-const MAC_ARCH = process.arch === 'arm64' ? 'aarch64' : 'x86_64'
+const PLATFORM_KEY = resolvePlatformKey()
 
 // Tauri 构建输出目录
 const TAURI_DIST = path.resolve(import.meta.dir, '../../src-tauri/target/release/bundle')
 // 临时工作目录
 const WORK_DIR = path.resolve(import.meta.dir, '../../.release-tmp')
-const UPDATES_DIR = path.join(WORK_DIR, 'updates')
-const DOWNLOADS_DIR = path.join(WORK_DIR, 'downloads')
+const UPDATES_DIR = path.join(WORK_DIR, 'updates', CHANNEL, PLATFORM_KEY)
+const DOWNLOADS_DIR = path.join(WORK_DIR, 'downloads', CHANNEL, PLATFORM_KEY)
 
 interface PlatformMeta {
 	url: string
@@ -137,6 +179,15 @@ interface LatestJson {
 	platforms: Record<string, PlatformMeta>
 }
 
+interface ReleaseMeta {
+	version: string
+	channel: 'stable' | 'beta'
+	platform: string
+	commit: string
+	sourceVersion: string
+	createdAt: string
+}
+
 interface UploadItem {
 	filePath: string
 	key: string
@@ -148,6 +199,7 @@ if (!CHANNEL || !['stable', 'beta'].includes(CHANNEL)) {
 }
 
 console.log(chalk.blue(`\n🚀 开始发布 ${CHANNEL} 渠道更新...\n`))
+console.log(chalk.gray(`   发布平台: ${PLATFORM_KEY}`))
 
 // 1. 清理临时目录
 await emptyDir(WORK_DIR)
@@ -158,9 +210,11 @@ await mkdir(DOWNLOADS_DIR, { recursive: true })
 const tauriConfPath = path.resolve(import.meta.dir, '../../src-tauri/tauri.conf.json')
 const tauriConf = await readJSON<{ version: string }>(tauriConfPath)
 const SOURCE_VERSION = tauriConf.version
-const VERSION = await resolveReleaseVersion(CHANNEL, SOURCE_VERSION)
+const COMMIT = await resolveGitCommit()
+const VERSION = await resolveReleaseVersion(CHANNEL, SOURCE_VERSION, PLATFORM_KEY, COMMIT)
 console.log(chalk.gray(`   配置版本: ${SOURCE_VERSION}`))
 console.log(chalk.gray(`   发布版本: ${VERSION}`))
+console.log(chalk.gray(`   Git 提交: ${COMMIT}`))
 
 // 3. 构建 Tauri 应用
 console.log(chalk.gray('\n📦 构建应用...\n'))
@@ -174,7 +228,14 @@ if (VERSION !== SOURCE_VERSION) {
 	await writeJSON(tauriConfPath, { ...tauriConf, version: VERSION })
 }
 try {
-	await $`bun run tauri build`
+	if (CHANNEL === 'beta' && PLATFORM_KEY.startsWith('windows-')) {
+		console.log(
+			chalk.yellow('   Windows beta 版本跳过 MSI，仅构建 NSIS（MSI 不支持 beta 预发布标识）'),
+		)
+		await $`bun run tauri build --bundles nsis`
+	} else {
+		await $`bun run tauri build`
+	}
 } finally {
 	if (VERSION !== SOURCE_VERSION) {
 		await writeJSON(tauriConfPath, tauriConf)
@@ -194,26 +255,50 @@ async function addUpdaterArtifact(
 	targetFileName = path.basename(filePath),
 ) {
 	const signature = await readFile(sigPath, 'utf8')
-	const targetPath = path.join(UPDATES_DIR, targetFileName)
-	const targetSigPath = path.join(UPDATES_DIR, `${targetFileName}.sig`)
+	const versionedUpdatesDir = path.join(UPDATES_DIR, VERSION)
+	await mkdir(versionedUpdatesDir, { recursive: true })
+	const targetPath = path.join(versionedUpdatesDir, targetFileName)
+	const targetSigPath = path.join(versionedUpdatesDir, `${targetFileName}.sig`)
 
 	await copyFile(filePath, targetPath)
 	await copyFile(sigPath, targetSigPath)
 	platforms[platformKey] = {
-		url: `${R2_PUBLIC_URL}/updates/${CHANNEL}/${targetFileName}`,
+		url: `${R2_PUBLIC_URL}/updates/${CHANNEL}/${platformKey}/${VERSION}/${targetFileName}`,
 		signature: signature.trim(),
 	}
 	uploadItems.push(
 		{
 			filePath: targetPath,
-			key: `stoneflow/updates/${CHANNEL}/${targetFileName}`,
+			key: `stoneflow/updates/${CHANNEL}/${platformKey}/${VERSION}/${targetFileName}`,
 		},
 		{
 			filePath: targetSigPath,
-			key: `stoneflow/updates/${CHANNEL}/${targetFileName}.sig`,
+			key: `stoneflow/updates/${CHANNEL}/${platformKey}/${VERSION}/${targetFileName}.sig`,
 		},
 	)
 	console.log(chalk.green(`   ✓ ${platformKey}: ${targetFileName}`))
+}
+
+async function addDownloadArtifact(filePath: string, latestFileName: string) {
+	const fileName = path.basename(filePath)
+	const versionedDownloadsDir = path.join(DOWNLOADS_DIR, VERSION)
+	await mkdir(versionedDownloadsDir, { recursive: true })
+	const targetPath = path.join(versionedDownloadsDir, fileName)
+	const latestPath = path.join(DOWNLOADS_DIR, latestFileName)
+
+	await copyFile(filePath, targetPath)
+	await copyFile(filePath, latestPath)
+	uploadItems.push(
+		{
+			filePath: targetPath,
+			key: `stoneflow/downloads/${CHANNEL}/${PLATFORM_KEY}/${VERSION}/${fileName}`,
+		},
+		{
+			filePath: latestPath,
+			key: `stoneflow/downloads/${CHANNEL}/${PLATFORM_KEY}/${latestFileName}`,
+		},
+	)
+	console.log(chalk.green(`   ✓ 下载包: ${fileName}`))
 }
 
 // macOS updater 使用 .app.tar.gz；dmg 只给用户手动下载安装。
@@ -223,31 +308,15 @@ const dmgFiles = await glob(`${TAURI_DIST}/dmg/*.dmg`)
 
 if (macUpdaterFiles.length > 0 && macUpdaterSigFiles.length > 0) {
 	await addUpdaterArtifact(
-		`darwin-${MAC_ARCH}`,
+		PLATFORM_KEY,
 		macUpdaterFiles[0],
 		macUpdaterSigFiles[0],
-		`StoneFlow_${VERSION}_${MAC_ARCH}.app.tar.gz`,
+		`StoneFlow_${VERSION}_${PLATFORM_KEY.replace('darwin-', '')}.app.tar.gz`,
 	)
 }
 
 if (dmgFiles.length > 0) {
-	const fileName = path.basename(dmgFiles[0])
-	const targetPath = path.join(DOWNLOADS_DIR, fileName)
-	const latestPath = path.join(DOWNLOADS_DIR, `latest-macos-${MAC_ARCH}.dmg`)
-
-	await copyFile(dmgFiles[0], targetPath)
-	await copyFile(dmgFiles[0], latestPath)
-	uploadItems.push(
-		{
-			filePath: targetPath,
-			key: `stoneflow/downloads/${CHANNEL}/${fileName}`,
-		},
-		{
-			filePath: latestPath,
-			key: `stoneflow/downloads/${CHANNEL}/latest-macos-${MAC_ARCH}.dmg`,
-		},
-	)
-	console.log(chalk.green(`   ✓ macOS 下载包: ${fileName}`))
+	await addDownloadArtifact(dmgFiles[0], 'latest.dmg')
 }
 
 // 查找 Linux AppImage 及签名
@@ -255,15 +324,22 @@ const appimageFiles = await glob(`${TAURI_DIST}/appimage/*.AppImage.tar.gz`)
 const appimageSigFiles = await glob(`${TAURI_DIST}/appimage/*.AppImage.tar.gz.sig`)
 
 if (appimageFiles.length > 0 && appimageSigFiles.length > 0) {
-	await addUpdaterArtifact('linux-x86_64', appimageFiles[0], appimageSigFiles[0])
+	await addUpdaterArtifact(PLATFORM_KEY, appimageFiles[0], appimageSigFiles[0])
+	await addDownloadArtifact(appimageFiles[0], 'latest.AppImage.tar.gz')
 }
 
-// 查找 Windows MSI 及签名
-const msiFiles = await glob(`${TAURI_DIST}/msi/*.msi.zip`)
-const msiSigFiles = await glob(`${TAURI_DIST}/msi/*.msi.zip.sig`)
+// Windows updater 优先使用 NSIS 安装器；如果当前构建未生成 NSIS，则回退到 MSI。
+const nsisFiles = await glob(`${TAURI_DIST}/nsis/*.exe`)
+const nsisSigFiles = await glob(`${TAURI_DIST}/nsis/*.exe.sig`)
+const msiFiles = await glob(`${TAURI_DIST}/msi/*.msi`)
+const msiSigFiles = await glob(`${TAURI_DIST}/msi/*.msi.sig`)
 
-if (msiFiles.length > 0 && msiSigFiles.length > 0) {
-	await addUpdaterArtifact('windows-x86_64', msiFiles[0], msiSigFiles[0])
+if (nsisFiles.length > 0 && nsisSigFiles.length > 0) {
+	await addUpdaterArtifact(PLATFORM_KEY, nsisFiles[0], nsisSigFiles[0])
+	await addDownloadArtifact(nsisFiles[0], 'latest-setup.exe')
+} else if (msiFiles.length > 0 && msiSigFiles.length > 0) {
+	await addUpdaterArtifact(PLATFORM_KEY, msiFiles[0], msiSigFiles[0])
+	await addDownloadArtifact(msiFiles[0], 'latest.msi')
 }
 
 if (Object.keys(platforms).length === 0) {
@@ -285,12 +361,26 @@ const latestJson: LatestJson = {
 	pub_date: new Date().toISOString(),
 	platforms,
 }
+const latestMeta: ReleaseMeta = {
+	version: VERSION,
+	channel: CHANNEL,
+	platform: PLATFORM_KEY,
+	commit: COMMIT,
+	sourceVersion: SOURCE_VERSION,
+	createdAt: latestJson.pub_date,
+}
 
 const latestJsonPath = path.join(UPDATES_DIR, 'latest.json')
 await writeJSON(latestJsonPath, latestJson)
 uploadItems.push({
 	filePath: latestJsonPath,
-	key: `stoneflow/updates/${CHANNEL}/latest.json`,
+	key: `stoneflow/updates/${CHANNEL}/${PLATFORM_KEY}/latest.json`,
+})
+const latestMetaPath = path.join(UPDATES_DIR, 'latest.meta.json')
+await writeJSON(latestMetaPath, latestMeta)
+uploadItems.push({
+	filePath: latestMetaPath,
+	key: `stoneflow/updates/${CHANNEL}/${PLATFORM_KEY}/latest.meta.json`,
 })
 console.log(chalk.gray('\n📝 生成 latest.json'))
 
@@ -338,6 +428,11 @@ const s3Client = new S3Client({
 for (const item of uploadItems) {
 	const fileName = path.basename(item.filePath)
 	const body = await readFile(item.filePath)
+	const isMutableFile =
+		fileName === 'latest.json' ||
+		fileName === 'latest.meta.json' ||
+		fileName.startsWith('latest.') ||
+		fileName.startsWith('latest-')
 
 	console.log(chalk.gray(`   上传 ${item.key}...`))
 
@@ -347,7 +442,7 @@ for (const item of uploadItems) {
 			Key: item.key,
 			Body: body,
 			ContentType: fileName.endsWith('.json') ? 'application/json' : 'application/octet-stream',
-			CacheControl: fileName === 'latest.json' ? 'no-cache' : 'public, max-age=31536000, immutable',
+			CacheControl: isMutableFile ? 'no-cache' : 'public, max-age=31536000, immutable',
 		}),
 	)
 
@@ -356,10 +451,10 @@ for (const item of uploadItems) {
 
 // 9. 完成
 console.log(chalk.green('\n✅ 发布完成!'))
-console.log(chalk.gray(`\n   更新地址: ${R2_PUBLIC_URL}/updates/${CHANNEL}/latest.json`))
 console.log(
-	chalk.gray(`   下载地址: ${R2_PUBLIC_URL}/downloads/${CHANNEL}/latest-macos-${MAC_ARCH}.dmg`),
+	chalk.gray(`\n   更新地址: ${R2_PUBLIC_URL}/updates/${CHANNEL}/${PLATFORM_KEY}/latest.json`),
 )
+console.log(chalk.gray(`   下载目录: ${R2_PUBLIC_URL}/downloads/${CHANNEL}/${PLATFORM_KEY}/`))
 console.log(chalk.gray(`   版本: ${VERSION}`))
 console.log(chalk.gray(`   平台: ${Object.keys(platforms).join(', ')}\n`))
 
