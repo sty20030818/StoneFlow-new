@@ -99,6 +99,6 @@ Tauri updater 期望的 JSON 格式：
 }
 ```
 
-StoneFlow 采用平台级 `latest.json`，macOS 和 Windows 可以分别发布不同版本，互不覆盖。Beta 发布会读取同平台的 `latest.meta.json`：当前 git commit 相同则复用 beta 版本，不同则递增 `-beta.N`。
+StoneFlow 采用平台级 `latest.json`，远端目录名与 `latest.json.platforms` key 统一使用 Tauri updater 官方平台 key，例如 Windows x64 为 `windows-x86_64`。macOS 和 Windows 可以分别发布不同版本，互不覆盖。Beta 发布会读取同平台的 `latest.meta.json`：当前 git commit 相同则复用 beta 版本，不同则递增 `-beta.N`。
 
 Windows Beta 只构建 NSIS `.exe`。MSI 不支持 `0.1.1-beta.1` 这类带 `beta` 文本的预发布版本号。

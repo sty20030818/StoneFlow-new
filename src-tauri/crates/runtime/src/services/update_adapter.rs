@@ -3,7 +3,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-use tauri_plugin_updater::UpdaterExt;
+use tauri_plugin_updater::{target, UpdaterExt};
 
 use stoneflow_domain::UpdateChannel;
 use stoneflow_usecase::update::{UpdateInfo, UpdatePort};
@@ -75,7 +75,7 @@ impl TauriUpdateAdapter {
             "{}/{}/{}/latest.json",
             base_url,
             channel.path_segment(),
-            platform_key()
+            updater_platform_key()
         )
     }
 
@@ -123,15 +123,9 @@ impl TauriUpdateAdapter {
     }
 }
 
-/// Tauri updater manifest 按平台拆分，路径与 manifest 的 `platforms` key 保持一致。
-fn platform_key() -> &'static str {
-    match (std::env::consts::OS, std::env::consts::ARCH) {
-        ("macos", "aarch64") => "darwin-aarch64",
-        ("macos", "x86_64") => "darwin-x86_64",
-        ("windows", "x86_64") => "windows-x86_64",
-        ("linux", "x86_64") => "linux-x86_64",
-        _ => "unknown-unknown",
-    }
+/// 与 Tauri updater 选择 `latest.json.platforms` 的平台 key 保持同源。
+fn updater_platform_key() -> String {
+    target().unwrap_or_else(|| "unknown-unknown".to_owned())
 }
 
 /// Debug 模式下快速检测 Mock 服务器是否运行（TCP 连接，超时 200ms）。
