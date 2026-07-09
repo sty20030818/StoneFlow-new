@@ -133,15 +133,24 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                     };
 
                     match settings.check_mode {
-                        UpdateCheckMode::Manual => {
-                            // 手动模式不弹窗，但 emit 事件
-                            let _ = app_handle.emit("update-available", &info);
-                        }
+                        // check_update(false) 在 Manual 下已提前返回 None；此处防御性忽略。
+                        UpdateCheckMode::Manual => {}
+                        // 仅提醒：只通知前端弹窗，由用户决定是否下载。
                         UpdateCheckMode::NotifyOnly => {
+                            log::info!(
+                                target: "updater",
+                                "自动检查发现更新 v{}（仅提醒，等待用户确认）",
+                                info.version
+                            );
                             let _ = app_handle.emit("update-available", &info);
                         }
+                        // 自动下载：静默后台下载，不 emit update-available（避免前端开发现弹窗）。
                         UpdateCheckMode::AutoDownload => {
-                            let _ = app_handle.emit("update-available", &info);
+                            log::info!(
+                                target: "updater",
+                                "自动检查发现更新 v{}，开始静默下载",
+                                info.version
+                            );
 
                             let app = app_handle.clone();
                             let version = info.version.clone();
@@ -172,13 +181,20 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
 
                                 match result {
                                     Ok(()) => {
+                                        log::info!(
+                                            target: "updater",
+                                            "静默下载完成 v{version_for_done}，等待用户重启"
+                                        );
                                         let _ = app_for_done.emit(
                                             "update-downloaded",
                                             serde_json::json!({ "version": version_for_done }),
                                         );
                                     }
                                     Err(e) => {
-                                        log::warn!("runtime: auto download update failed: {e}");
+                                        log::warn!(
+                                            target: "updater",
+                                            "静默下载失败 v{version}: {e}"
+                                        );
                                         let _ = app_for_error.emit(
                                             "update-error",
                                             serde_json::json!({ "message": e.to_string() }),
