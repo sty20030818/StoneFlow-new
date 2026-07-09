@@ -1107,7 +1107,7 @@ function ShellLayoutContent({
 			) : null}
 			<UpdateDialog />
 			<SystemStatusChip />
-			<ShellFooter navBadges={navBadges} />
+			<ShellFooter />
 			</SyncStatusProvider>
 		</SidebarProvider>
 	)

@@ -1,30 +1,68 @@
 import { render, screen } from '@testing-library/react'
 
 import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
-import { useHealthcheckStatus } from '@/features/healthcheck/model/useHealthcheckStatus'
+import { SyncStatusProvider } from '@/features/sync/model/SyncStatusProvider'
 
-vi.mock('@/features/healthcheck/model/useHealthcheckStatus', () => ({
-	useHealthcheckStatus: vi.fn<typeof useHealthcheckStatus>(),
+vi.mock('@/features/sync/model/useSyncStatusController', () => ({
+	useSyncStatusController: () => ({
+		displayedStatus: 'synced' as const,
+		loading: false,
+		message: null,
+		refresh: vi.fn(),
+		runNow: vi.fn(),
+		running: false,
+		statusPayload: {
+			status: 'synced',
+			hasRemoteConfig: true,
+			replicaState: 'ready',
+			lastSyncAt: null,
+			lastError: null,
+		},
+	}),
 }))
 
-const mockedUseHealthcheckStatus = vi.mocked(useHealthcheckStatus)
+vi.mock('@tauri-apps/api/app', () => ({
+	getVersion: vi.fn(async () => '0.1.0'),
+}))
+
+vi.mock('@/features/update/api/updates', () => ({
+	getUpdateSettings: vi.fn(async () => ({
+		checkMode: 'notifyOnly',
+		channel: 'stable',
+		skippedVersions: [],
+		lastCheckedAt: null,
+		checkIntervalSecs: 21600,
+	})),
+}))
 
 describe('ShellFooter', () => {
-	it('渲染健康状态与导航计数', () => {
-		mockedUseHealthcheckStatus.mockReturnValue({
-			detail: '...\\StoneFlow\\app.db',
-			indicatorClassName: 'bg-sf-shell-online',
-			kind: 'ready',
-			label: '本地数据库已连接',
-			title: '/tmp/StoneFlow/app.db',
-		})
+	it('左侧：状态灯 + 文案 + 同步按钮分离；右侧：版本；无快捷键', async () => {
+		const { container } = render(
+			<SyncStatusProvider>
+				<ShellFooter />
+			</SyncStatusProvider>,
+		)
 
-		const { container } = render(<ShellFooter navBadges={{ inbox: '3', tasks: '12' }} />)
+		// 文案独立
+		expect(screen.getByText('已同步')).toBeInTheDocument()
 
-		expect(container.querySelector('[title="/tmp/StoneFlow/app.db"]')).toBeInTheDocument()
-		expect(screen.getByText('收件箱')).toBeInTheDocument()
-		expect(screen.getByText('3')).toBeInTheDocument()
-		expect(screen.getByText('任务')).toBeInTheDocument()
-		expect(screen.getByText('12')).toBeInTheDocument()
+		// 同步按钮独立（不与文案合成同一 button）
+		const syncButton = screen.getByRole('button', { name: '立即同步' })
+		expect(syncButton).toBeInTheDocument()
+		expect(syncButton).not.toHaveTextContent('已同步')
+
+		// 状态灯存在（只读圆点）
+		const status = screen.getByRole('status')
+		const dot = status.querySelector('span[aria-hidden]')
+		expect(dot).toBeTruthy()
+		expect(dot?.className).toMatch(/rounded-full/)
+
+		// 右侧版本
+		expect(await screen.findByText('v0.1.0')).toBeInTheDocument()
+
+		// 无快捷键提示
+		expect(screen.queryByText('命令')).not.toBeInTheDocument()
+		expect(screen.queryByText('新建')).not.toBeInTheDocument()
+		expect(container.querySelector('kbd')).toBeNull()
 	})
 })

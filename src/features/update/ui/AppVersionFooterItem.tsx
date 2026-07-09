@@ -1,5 +1,5 @@
 /**
- * Footer 右侧：当前应用版本 + 渠道角标（Beta）。
+ * Footer 右侧：当前版本 + Beta 角标（静默展示）。
  */
 
 import { useEffect, useState } from 'react'
@@ -9,6 +9,7 @@ import {
 	getUpdateSettings,
 	type UpdateChannel,
 } from '@/features/update/api/updates'
+import { shellFooterStaticTextClass } from '@/shared/ui/patterns/shell-footer'
 import { cn } from '@/shared/lib/utils'
 
 export function AppVersionFooterItem() {
@@ -41,14 +42,12 @@ export function AppVersionFooterItem() {
 
 	return (
 		<span
-			className={cn(
-				'flex shrink-0 items-center gap-1 tabular-nums text-[11px] text-sf-shell-text-tertiary',
-			)}
+			className={cn(shellFooterStaticTextClass, 'flex shrink-0 items-center gap-1 tabular-nums')}
 			title={channel === 'beta' ? `测试版 ${version}` : `版本 ${version}`}
 		>
 			<span>v{version}</span>
 			{channel === 'beta' ? (
-				<span className='rounded px-1 py-px text-[10px] font-medium leading-none text-amber-700 dark:text-amber-400'>
+				<span className='text-[10px] font-medium leading-none text-amber-700/90 dark:text-amber-400/90'>
 					Beta
 				</span>
 			) : null}

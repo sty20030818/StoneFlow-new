@@ -1,30 +1,29 @@
 /**
- * Footer 系统状态轨中的更新项（下载进度 / 就绪 / 错误）。
- * idle / checking 时不渲染。
- * 下载中：Popover 详情 + 取消 UI；就绪/发现：可打开 Dialog 或点就绪操作。
+ * Footer 右侧更新事务 · explicit phase variants。
+ * idle/checking 不渲染（只留版本号）。
+ *
+ * 布局零件：ShellFooterStatus（环 / 文案 / 动作分离）
+ * 数据：deriveUpdateFooterView + store / actions
  */
 
 import { useState } from 'react'
+import { RefreshCwIcon } from 'lucide-react'
 
 import { skipVersion } from '@/features/update/api/updates'
 import {
-	formatDownloadBytesLine,
-	footerUpdateLabel,
-	footerUpdateTitle,
-	formatDownloadPercent,
-} from '@/features/update/model/updatePresentation'
+	deriveUpdateFooterView,
+	type UpdateFooterView,
+} from '@/features/update/model/deriveUpdateFooterView'
+import { formatDownloadBytesLine } from '@/features/update/model/updatePresentation'
 import { useUpdateActions } from '@/features/update/model/useUpdateEvents'
-import {
-	selectFooterUpdateVisible,
-	useUpdateStore,
-} from '@/features/update/model/useUpdateStore'
+import { useUpdateStore } from '@/features/update/model/useUpdateStore'
 import { UpdateProgressRing } from '@/features/update/ui/UpdateProgressRing'
 import { Button } from '@/shared/ui/base/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/base/popover'
+import { ShellFooterStatus } from '@/shared/ui/patterns/ShellFooterStatus'
 import { cn } from '@/shared/lib/utils'
 
 export function UpdateStatusFooterItem() {
-	const visible = useUpdateStore(selectFooterUpdateVisible)
 	const phase = useUpdateStore((s) => s.phase)
 	const progress = useUpdateStore((s) => s.progress)
 	const updateInfo = useUpdateStore((s) => s.updateInfo)
@@ -32,108 +31,103 @@ export function UpdateStatusFooterItem() {
 	const openDialog = useUpdateStore((s) => s.openDialog)
 	const skipAndClose = useUpdateStore((s) => s.skipAndClose)
 	const { restart, cancelDownloadUi } = useUpdateActions()
-	const [popoverOpen, setPopoverOpen] = useState(false)
 
-	if (!visible) return null
-
-	const version = updateInfo?.version ?? null
-
-	const downloaded = progress?.downloaded ?? 0
-	const total = progress?.total ?? null
-	const label = footerUpdateLabel({
+	const view = deriveUpdateFooterView({
 		phase,
-		version,
-		downloaded,
-		total,
+		version: updateInfo?.version ?? null,
+		downloaded: progress?.downloaded ?? 0,
+		total: progress?.total ?? null,
 		errorMessage,
 	})
-	const title = footerUpdateTitle({ phase, version, errorMessage })
-	const percent = formatDownloadPercent(downloaded, total)
-	const ringValue =
-		percent !== null ? Math.min(100, Math.round((downloaded / (total ?? 1)) * 100)) : null
 
-	const ringState =
-		phase === 'downloading' || phase === 'ready' || phase === 'error' || phase === 'available'
-			? phase
-			: 'available'
+	if (!view) return null
 
-	async function handleSkip() {
-		if (updateInfo) {
-			try {
-				await skipVersion(updateInfo.version)
-			} catch (err) {
-				console.error('Failed to skip version:', err)
-			}
-		}
-		skipAndClose()
-		setPopoverOpen(false)
+	const actions: UpdateFooterActions = {
+		version: updateInfo?.version ?? null,
+		openDialog,
+		skipAndClose,
+		restart,
+		cancelDownloadUi,
 	}
 
-	const triggerClass = cn(
-		'flex min-h-7 items-center gap-1.5 rounded-sm px-0.5',
-		'text-[11px] text-sf-shell-text-tertiary transition-colors',
-		'hover:text-sf-shell-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
-	)
+	switch (view.phase) {
+		case 'downloading':
+			return <UpdateDownloadingFooter view={view} actions={actions} />
+		case 'ready':
+			return <UpdateReadyFooter view={view} actions={actions} />
+		case 'available':
+			return <UpdateAvailableFooter view={view} actions={actions} />
+		case 'error':
+			return <UpdateErrorFooter view={view} actions={actions} />
+	}
+}
 
-	const ringClass = cn(
-		'relative flex size-3.5 shrink-0 items-center justify-center',
+type UpdateFooterActions = {
+	version: string | null
+	openDialog: () => void
+	skipAndClose: () => void
+	restart: () => Promise<void> | void
+	cancelDownloadUi: () => Promise<void> | void
+}
+
+function ringToneClass(phase: UpdateFooterView['phase']) {
+	return cn(
 		phase === 'ready' && 'text-emerald-600 dark:text-emerald-400',
 		phase === 'error' && 'text-red-600 dark:text-red-400',
 		phase === 'downloading' && 'text-foreground/70',
 		phase === 'available' && 'text-foreground/55',
 	)
+}
 
-	const labelClass = cn(
-		'max-w-28 truncate tabular-nums',
-		phase === 'ready' && 'text-emerald-700 dark:text-emerald-400',
-		phase === 'error' && 'text-red-600 dark:text-red-400',
+function UpdateRing({ view }: { view: UpdateFooterView }) {
+	return (
+		<ShellFooterStatus.Indicator className={ringToneClass(view.phase)} aria-hidden>
+			<UpdateProgressRing
+				state={view.ringState}
+				value={view.phase === 'ready' ? 100 : view.ringValue}
+			/>
+		</ShellFooterStatus.Indicator>
 	)
+}
 
-	const ringAndLabel = (
-		<>
-			<span className={ringClass} aria-hidden={phase === 'downloading' ? undefined : true}>
-				<UpdateProgressRing state={ringState} value={ringValue} />
-			</span>
-			<span className={labelClass}>{label}</span>
-		</>
-	)
+/** 下载中：环 + 可点文案（popover 取消） */
+function UpdateDownloadingFooter({
+	view,
+	actions,
+}: {
+	view: UpdateFooterView
+	actions: UpdateFooterActions
+}) {
+	const [open, setOpen] = useState(false)
+	const ringValue = view.ringValue
 
-	// 下载中：Popover 详情
-	if (phase === 'downloading') {
-		return (
-			<Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+	return (
+		<ShellFooterStatus.Root>
+			<UpdateRing view={view} />
+			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverTrigger asChild>
-					<button type='button' title={title} aria-label={title} className={triggerClass}>
-						{ringAndLabel}
-					</button>
+					<ShellFooterStatus.InteractiveLabel title={view.title} aria-label={view.title}>
+						{view.label}
+					</ShellFooterStatus.InteractiveLabel>
 				</PopoverTrigger>
-				<PopoverContent
-					align='start'
-					side='top'
-					sideOffset={8}
-					className='w-72 space-y-3 p-3'
-				>
+				<PopoverContent align='end' side='top' sideOffset={8} className='w-72 space-y-3 p-3'>
 					<div className='space-y-1'>
 						<p className='text-[13px] font-medium text-foreground'>
-							{version ? `正在下载 ${version}` : '正在下载更新'}
+							{view.version ? `正在下载 ${view.version}` : '正在下载更新'}
 						</p>
 						<p className='text-[12px] tabular-nums text-muted-foreground'>
-							{formatDownloadBytesLine(downloaded, total)}
+							{formatDownloadBytesLine(view.downloaded, view.total)}
 						</p>
 					</div>
 					<div className='h-1.5 w-full overflow-hidden rounded-full bg-muted'>
 						<div
 							className='h-full rounded-full bg-primary transition-[width] duration-200 ease-out'
 							style={{
-								width: total !== null && total > 0 ? `${ringValue ?? 0}%` : undefined,
+								width:
+									view.total !== null && view.total > 0 ? `${ringValue ?? 0}%` : undefined,
 							}}
 						/>
 					</div>
-					{updateInfo?.body ? (
-						<p className='line-clamp-3 text-[12px] leading-5 text-muted-foreground'>
-							{updateInfo.body}
-						</p>
-					) : null}
 					<p className='text-[11px] text-muted-foreground'>
 						取消将中断下载并断开网络；可稍后重新下载。
 					</p>
@@ -143,77 +137,85 @@ export function UpdateStatusFooterItem() {
 							size='sm'
 							variant='ghost'
 							onClick={() => {
-								void cancelDownloadUi()
-								setPopoverOpen(false)
+								void actions.cancelDownloadUi()
+								setOpen(false)
 							}}
 						>
 							取消下载
 						</Button>
-						<Button
-							type='button'
-							size='sm'
-							variant='secondary'
-							onClick={() => setPopoverOpen(false)}
-						>
+						<Button type='button' size='sm' variant='secondary' onClick={() => setOpen(false)}>
 							后台继续
 						</Button>
 					</div>
 				</PopoverContent>
 			</Popover>
-		)
+		</ShellFooterStatus.Root>
+	)
+}
+
+/** 就绪：环 · 只读文案 · 独立重启 */
+function UpdateReadyFooter({
+	view,
+	actions,
+}: {
+	view: UpdateFooterView
+	actions: UpdateFooterActions
+}) {
+	return (
+		<ShellFooterStatus.Root>
+			<UpdateRing view={view} />
+			<ShellFooterStatus.StaticLabel
+				className='max-w-32 text-emerald-700 dark:text-emerald-400'
+				title={view.title}
+			>
+				{view.label}
+			</ShellFooterStatus.StaticLabel>
+			<ShellFooterStatus.IconButton
+				className='text-emerald-700 dark:text-emerald-400'
+				aria-label='立即重启以安装更新'
+				title='立即重启'
+				onClick={() => void actions.restart()}
+			>
+				<RefreshCwIcon aria-hidden className='size-3' />
+			</ShellFooterStatus.IconButton>
+		</ShellFooterStatus.Root>
+	)
+}
+
+/** 有更新：环 + 可点文案（popover 跳过/查看） */
+function UpdateAvailableFooter({
+	view,
+	actions,
+}: {
+	view: UpdateFooterView
+	actions: UpdateFooterActions
+}) {
+	const [open, setOpen] = useState(false)
+
+	async function handleSkip() {
+		if (actions.version) {
+			try {
+				await skipVersion(actions.version)
+			} catch (err) {
+				console.error('Failed to skip version:', err)
+			}
+		}
+		actions.skipAndClose()
+		setOpen(false)
 	}
 
-	// 就绪：Popover 快速重启
-	if (phase === 'ready') {
-		return (
-			<Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+	return (
+		<ShellFooterStatus.Root>
+			<UpdateRing view={view} />
+			<Popover open={open} onOpenChange={setOpen}>
 				<PopoverTrigger asChild>
-					<button type='button' title={title} aria-label={title} className={triggerClass}>
-						{ringAndLabel}
-					</button>
+					<ShellFooterStatus.InteractiveLabel title={view.title} aria-label={view.title}>
+						{view.label}
+					</ShellFooterStatus.InteractiveLabel>
 				</PopoverTrigger>
-				<PopoverContent align='start' side='top' sideOffset={8} className='w-64 space-y-3 p-3'>
+				<PopoverContent align='end' side='top' sideOffset={8} className='w-64 space-y-3 p-3'>
 					<p className='text-[13px] font-medium text-foreground'>
-						{version ? `v${version} 已就绪` : '更新已就绪'}
-					</p>
-					<p className='text-[12px] text-muted-foreground'>重启后生效。未保存的工作请先保存。</p>
-					<div className='flex justify-end gap-2'>
-						<Button
-							type='button'
-							size='sm'
-							variant='ghost'
-							onClick={() => setPopoverOpen(false)}
-						>
-							稍后
-						</Button>
-						<Button
-							type='button'
-							size='sm'
-							onClick={() => {
-								setPopoverOpen(false)
-								void restart()
-							}}
-						>
-							立即重启
-						</Button>
-					</div>
-				</PopoverContent>
-			</Popover>
-		)
-	}
-
-	// 有更新 / 错误：打开 Dialog 或跳过
-	if (phase === 'available') {
-		return (
-			<Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-				<PopoverTrigger asChild>
-					<button type='button' title={title} aria-label={title} className={triggerClass}>
-						{ringAndLabel}
-					</button>
-				</PopoverTrigger>
-				<PopoverContent align='start' side='top' sideOffset={8} className='w-64 space-y-3 p-3'>
-					<p className='text-[13px] font-medium text-foreground'>
-						{version ? `发现新版本 ${version}` : '发现新版本'}
+						{view.version ? `发现新版本 ${view.version}` : '发现新版本'}
 					</p>
 					<div className='flex justify-end gap-2'>
 						<Button type='button' size='sm' variant='ghost' onClick={() => void handleSkip()}>
@@ -223,8 +225,8 @@ export function UpdateStatusFooterItem() {
 							type='button'
 							size='sm'
 							onClick={() => {
-								setPopoverOpen(false)
-								openDialog()
+								setOpen(false)
+								actions.openDialog()
 							}}
 						>
 							查看
@@ -232,19 +234,30 @@ export function UpdateStatusFooterItem() {
 					</div>
 				</PopoverContent>
 			</Popover>
-		)
-	}
-
-	// error
-	return (
-		<button
-			type='button'
-			title={title}
-			aria-label={title}
-			onClick={() => openDialog()}
-			className={triggerClass}
-		>
-			{ringAndLabel}
-		</button>
+		</ShellFooterStatus.Root>
 	)
 }
+
+/** 失败：环 + 可点文案打开对话框 */
+function UpdateErrorFooter({
+	view,
+	actions,
+}: {
+	view: UpdateFooterView
+	actions: UpdateFooterActions
+}) {
+	return (
+		<ShellFooterStatus.Root>
+			<UpdateRing view={view} />
+			<ShellFooterStatus.InteractiveLabel
+				className='text-red-600 hover:text-red-700 dark:text-red-400'
+				title={view.title}
+				aria-label={view.title}
+				onClick={() => actions.openDialog()}
+			>
+				{view.label}
+			</ShellFooterStatus.InteractiveLabel>
+		</ShellFooterStatus.Root>
+	)
+}
+
