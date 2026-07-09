@@ -12,6 +12,23 @@ export function formatDownloadPercent(
 	return `${Math.min(100, Math.round((downloaded / total) * 100))}%`
 }
 
+/** 格式化字节数为人类可读（tabular-nums 友好） */
+export function formatBytes(bytes: number): string {
+	if (bytes <= 0) return '0 B'
+	const units = ['B', 'KB', 'MB', 'GB']
+	const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)))
+	const value = bytes / Math.pow(1024, i)
+	return `${i === 0 ? value : value.toFixed(1)} ${units[i]}`
+}
+
+export function formatDownloadBytesLine(downloaded: number, total: number | null): string {
+	if (total !== null && total > 0) {
+		const pct = formatDownloadPercent(downloaded, total)
+		return `${formatBytes(downloaded)} / ${formatBytes(total)}${pct ? ` (${pct})` : ''}`
+	}
+	return `${formatBytes(downloaded)} 已下载`
+}
+
 export function footerUpdateLabel(input: {
 	phase: UpdateUiPhase
 	version: string | null

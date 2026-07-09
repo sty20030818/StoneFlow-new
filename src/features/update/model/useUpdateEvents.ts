@@ -64,6 +64,7 @@ export function useUpdateEvents() {
 				(event) => {
 					if (disposed) return
 					const store = useUpdateStore.getState()
+					if (store.downloadUiAbandoned) return
 					if (!store.updateInfo || store.updateInfo.version !== event.payload.version) {
 						store.showUpdate(
 							{
@@ -129,16 +130,26 @@ export function useUpdateActions() {
 
 	/** 开始下载更新 */
 	async function startDownload() {
+		useUpdateStore.setState({ downloadUiAbandoned: false })
 		setStatus({ status: 'downloading', downloaded: 0, total: null })
 
 		try {
 			await downloadAndInstall((status) => {
+				if (useUpdateStore.getState().downloadUiAbandoned && status.status === 'downloading') {
+					return
+				}
 				setStatus(status)
 			})
 		} catch (err) {
+			if (useUpdateStore.getState().downloadUiAbandoned) return
 			const message = err instanceof Error ? err.message : '下载更新失败'
 			setStatus({ status: 'error', message })
 		}
+	}
+
+	/** 取消下载 UI（best-effort，底层可能仍在下载） */
+	function cancelDownloadUi() {
+		useUpdateStore.getState().abandonDownloadUi()
 	}
 
 	/** 重启并安装 */
@@ -172,5 +183,5 @@ export function useUpdateActions() {
 		}
 	}
 
-	return { startDownload, restart, checkNow, closeDialog, updateInfo }
+	return { startDownload, restart, checkNow, cancelDownloadUi, closeDialog, updateInfo }
 }

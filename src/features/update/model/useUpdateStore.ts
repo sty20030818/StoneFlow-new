@@ -37,12 +37,19 @@ interface UpdateState {
 	readyChipDismissedVersion: string | null
 	/** 已 toast 过的就绪版本（防重复） */
 	readyToastVersion: string | null
+	/**
+	 * 用户取消了下载 UI（best-effort）：忽略后续 progress，
+	 * 真正下完仍会进入 ready。
+	 */
+	downloadUiAbandoned: boolean
 
 	setCheckMode: (mode: UpdateCheckMode | null) => void
 	/** 发现更新；openDialog 默认 true（仅提醒/手动） */
 	showUpdate: (info: UpdateInfo, options?: { openDialog?: boolean }) => void
 	setStatus: (status: UpdateStatus) => void
 	markReady: (version: string) => void
+	/** 放弃下载 UI（不保证中断底层下载） */
+	abandonDownloadUi: () => void
 	closeDialog: () => void
 	skipAndClose: () => void
 	dismissReadyChip: () => void
@@ -94,6 +101,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 	dismissedVersion: null,
 	readyChipDismissedVersion: null,
 	readyToastVersion: null,
+	downloadUiAbandoned: false,
 
 	setCheckMode: (mode) => set({ checkMode: mode }),
 
@@ -109,15 +117,22 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			phase: 'available',
 			progress: null,
 			errorMessage: null,
+			downloadUiAbandoned: false,
 		})
 	},
 
 	setStatus: (status) => {
+		if (get().downloadUiAbandoned && status.status === 'downloading') {
+			return
+		}
 		const patch: Partial<UpdateState> = {
 			status,
 			phase: phaseFromStatus(status),
 			progress: progressFromStatus(status),
 			errorMessage: errorFromStatus(status),
+		}
+		if (status.status === 'downloading') {
+			patch.downloadUiAbandoned = false
 		}
 		if (status.status === 'updateAvailable') {
 			patch.updateInfo = {
@@ -128,9 +143,15 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 		}
 		if (status.status === 'downloaded') {
 			const prev = get().updateInfo
-			patch.updateInfo = prev?.version === status.version
-				? prev
-				: { version: status.version, body: prev?.body ?? null, pubDate: prev?.pubDate ?? null }
+			patch.updateInfo =
+				prev?.version === status.version
+					? prev
+					: {
+							version: status.version,
+							body: prev?.body ?? null,
+							pubDate: prev?.pubDate ?? null,
+						}
+			patch.downloadUiAbandoned = false
 		}
 		set(patch)
 	},
@@ -142,9 +163,40 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			status: { status: 'downloaded', version },
 			progress: null,
 			errorMessage: null,
-			updateInfo: prev?.version === version
-				? prev
-				: { version, body: prev?.body ?? null, pubDate: prev?.pubDate ?? null },
+			downloadUiAbandoned: false,
+			updateInfo:
+				prev?.version === version
+					? prev
+					: { version, body: prev?.body ?? null, pubDate: prev?.pubDate ?? null },
+		})
+	},
+
+	abandonDownloadUi: () => {
+		const { updateInfo, phase } = get()
+		if (phase !== 'downloading') return
+		if (updateInfo) {
+			set({
+				downloadUiAbandoned: true,
+				dialogVisible: false,
+				phase: 'available',
+				status: {
+					status: 'updateAvailable',
+					version: updateInfo.version,
+					body: updateInfo.body,
+					pubDate: updateInfo.pubDate,
+				},
+				progress: null,
+				errorMessage: null,
+			})
+			return
+		}
+		set({
+			downloadUiAbandoned: true,
+			dialogVisible: false,
+			phase: 'idle',
+			status: initialStatus,
+			progress: null,
+			errorMessage: null,
 		})
 	},
 
@@ -185,6 +237,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			dismissedVersion: null,
 			readyChipDismissedVersion: null,
 			readyToastVersion: null,
+			downloadUiAbandoned: false,
 		}),
 }))
 

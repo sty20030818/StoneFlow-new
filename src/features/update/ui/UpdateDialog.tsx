@@ -22,7 +22,7 @@ export function UpdateDialog() {
 	const status = useUpdateStore((s) => s.status)
 	const closeDialog = useUpdateStore((s) => s.closeDialog)
 	const skipAndClose = useUpdateStore((s) => s.skipAndClose)
-	const { startDownload, restart } = useUpdateActions()
+	const { startDownload, restart, cancelDownloadUi } = useUpdateActions()
 
 	function handleOpenChange(nextOpen: boolean) {
 		if (!nextOpen) {
@@ -153,6 +153,16 @@ export function UpdateDialog() {
 						</>
 					) : isDownloading ? (
 						<>
+							<Button
+								onClick={() => {
+									cancelDownloadUi()
+								}}
+								size='sm'
+								type='button'
+								variant='ghost'
+							>
+								取消
+							</Button>
 							<Button onClick={closeDialog} size='sm' type='button' variant='ghost'>
 								后台继续
 							</Button>

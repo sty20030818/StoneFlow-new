@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
 	footerUpdateLabel,
+	formatBytes,
+	formatDownloadBytesLine,
 	formatDownloadPercent,
 } from '@/features/update/model/updatePresentation'
 
@@ -42,5 +44,22 @@ describe('footerUpdateLabel', () => {
 				errorMessage: null,
 			}),
 		).toBe('v0.2.0 就绪')
+	})
+})
+
+describe('formatBytes', () => {
+	it('formats zero', () => {
+		expect(formatBytes(0)).toBe('0 B')
+	})
+
+	it('formats megabytes', () => {
+		expect(formatBytes(1024 * 1024)).toBe('1.0 MB')
+	})
+})
+
+describe('formatDownloadBytesLine', () => {
+	it('includes total and percent when known', () => {
+		expect(formatDownloadBytesLine(512 * 1024, 1024 * 1024)).toContain('MB')
+		expect(formatDownloadBytesLine(512 * 1024, 1024 * 1024)).toContain('50%')
 	})
 })
