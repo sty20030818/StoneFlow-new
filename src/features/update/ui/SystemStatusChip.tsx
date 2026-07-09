@@ -33,7 +33,6 @@ function resolveActiveChip(input: {
 
 export function SystemStatusChip() {
 	const updateReady = useUpdateStore(selectReadyChipVisible)
-	const status = useUpdateStore((s) => s.status)
 	const updateInfo = useUpdateStore((s) => s.updateInfo)
 	const dismissReadyChip = useUpdateStore((s) => s.dismissReadyChip)
 	const { restart } = useUpdateActions()
@@ -61,8 +60,7 @@ export function SystemStatusChip() {
 	)
 
 	if (active === 'update-ready') {
-		const version =
-			status.status === 'downloaded' ? status.version : (updateInfo?.version ?? '')
+		const version = updateInfo?.version ?? ''
 		return (
 			<div role='status' aria-live='polite' className={shellClass}>
 				<div className={pillClass}>

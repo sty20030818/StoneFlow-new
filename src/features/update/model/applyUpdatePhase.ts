@@ -1,8 +1,9 @@
 /**
- * 将统一 update-phase 事件应用到 store 动作（纯逻辑，便于单测）。
+ * 将 update-phase 事件应用到 store 动作（纯逻辑，便于单测）。
  */
 
-import type { UpdateCheckMode } from '@/features/update/api/updates'
+import type { UpdateCheckMode, UpdateInfo } from '@/features/update/api/updates'
+import type { UpdateProgress } from '@/features/update/model/useUpdateStore'
 
 export type UpdatePhaseEvent = {
 	phase: 'available' | 'downloading' | 'ready' | 'error'
@@ -17,18 +18,10 @@ export type UpdatePhaseEvent = {
 export type UpdatePhaseActions = {
 	checkMode: UpdateCheckMode | null
 	downloadUiAbandoned: boolean
-	showUpdate: (
-		info: { version: string; body: string | null; pubDate: string | null },
-		options?: { openDialog?: boolean },
-	) => void
-	setStatus: (status: {
-		status: 'downloading' | 'error'
-		downloaded?: number
-		total?: number | null
-		message?: string
-	}) => void
-	markReady: (version: string) => void
-	ensureUpdateInfo: (version: string) => void
+	showAvailable: (info: UpdateInfo, options?: { openDialog?: boolean }) => void
+	setDownloading: (progress: UpdateProgress, version?: string) => void
+	setReady: (version: string) => void
+	setError: (message: string) => void
 	shouldToastReady: (version: string) => boolean
 	markReadyToasted: (version: string) => void
 }
@@ -38,9 +31,6 @@ export type UpdatePhaseSideEffect =
 	| { type: 'toast-error'; message: string }
 	| null
 
-/**
- * 处理统一 phase 事件，返回可选副作用（toast）。
- */
 export function applyUpdatePhaseEvent(
 	event: UpdatePhaseEvent,
 	actions: UpdatePhaseActions,
@@ -48,30 +38,29 @@ export function applyUpdatePhaseEvent(
 	switch (event.phase) {
 		case 'available': {
 			if (!event.version) return null
-			const info = {
+			const info: UpdateInfo = {
 				version: event.version,
 				body: event.body ?? null,
 				pubDate: event.pubDate ?? null,
 			}
 			const openDialog = actions.checkMode !== 'autoDownload'
-			actions.showUpdate(info, { openDialog })
+			actions.showAvailable(info, { openDialog })
 			return null
 		}
 		case 'downloading': {
 			if (actions.downloadUiAbandoned) return null
-			if (event.version) {
-				actions.ensureUpdateInfo(event.version)
-			}
-			actions.setStatus({
-				status: 'downloading',
-				downloaded: event.downloaded ?? 0,
-				total: event.total ?? null,
-			})
+			actions.setDownloading(
+				{
+					downloaded: event.downloaded ?? 0,
+					total: event.total ?? null,
+				},
+				event.version ?? undefined,
+			)
 			return null
 		}
 		case 'ready': {
 			if (!event.version) return null
-			actions.markReady(event.version)
+			actions.setReady(event.version)
 			if (actions.shouldToastReady(event.version)) {
 				actions.markReadyToasted(event.version)
 				return { type: 'toast-ready', version: event.version }
@@ -80,7 +69,7 @@ export function applyUpdatePhaseEvent(
 		}
 		case 'error': {
 			const message = event.message ?? '更新失败'
-			actions.setStatus({ status: 'error', message })
+			actions.setError(message)
 			return { type: 'toast-error', message }
 		}
 		default:

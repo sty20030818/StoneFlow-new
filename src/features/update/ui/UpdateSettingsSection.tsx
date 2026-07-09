@@ -88,7 +88,7 @@ export function UpdateSettingsSection() {
 		channel: UpdateChannel
 		checkIntervalSecs: number
 	} | null>(null)
-	const showUpdate = useUpdateStore((s) => s.showUpdate)
+	const showAvailable = useUpdateStore((s) => s.showAvailable)
 	const setStoreCheckMode = useUpdateStore((s) => s.setCheckMode)
 
 	useEffect(() => {
@@ -169,7 +169,7 @@ export function UpdateSettingsSection() {
 			const info = await checkUpdate(true)
 			if (info) {
 				setCheckResult({ found: true, version: info.version })
-				showUpdate(info)
+				showAvailable(info, { openDialog: true })
 			} else {
 				setCheckResult({ found: false })
 			}

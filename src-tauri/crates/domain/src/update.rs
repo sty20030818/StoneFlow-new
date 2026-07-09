@@ -66,37 +66,6 @@ impl UpdateChannel {
     }
 }
 
-/// 更新状态（传输到前端）。
-#[derive(Debug, Clone, Serialize)]
-#[serde(tag = "status", rename_all = "camelCase")]
-pub enum UpdateStatus {
-    /// 空闲 / 未检查。
-    Idle,
-    /// 正在检查。
-    Checking,
-    /// 有可用更新。
-    UpdateAvailable {
-        version: String,
-        body: Option<String>,
-        pub_date: Option<String>,
-    },
-    /// 当前已是最新。
-    UpToDate,
-    /// 正在下载。
-    Downloading {
-        downloaded: u64,
-        total: Option<u64>,
-    },
-    /// 下载完成，等待重启。
-    Downloaded {
-        version: String,
-    },
-    /// 更新出错。
-    Error {
-        message: String,
-    },
-}
-
 /// 更新相关用户设置（持久化存储）。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

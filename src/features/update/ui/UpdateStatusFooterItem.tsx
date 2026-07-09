@@ -29,17 +29,14 @@ export function UpdateStatusFooterItem() {
 	const progress = useUpdateStore((s) => s.progress)
 	const updateInfo = useUpdateStore((s) => s.updateInfo)
 	const errorMessage = useUpdateStore((s) => s.errorMessage)
-	const status = useUpdateStore((s) => s.status)
 	const openDialog = useUpdateStore((s) => s.openDialog)
 	const skipAndClose = useUpdateStore((s) => s.skipAndClose)
 	const { restart, cancelDownloadUi } = useUpdateActions()
-	// cancelDownloadUi is async now
 	const [popoverOpen, setPopoverOpen] = useState(false)
 
 	if (!visible) return null
 
-	const version =
-		status.status === 'downloaded' ? status.version : (updateInfo?.version ?? null)
+	const version = updateInfo?.version ?? null
 
 	const downloaded = progress?.downloaded ?? 0
 	const total = progress?.total ?? null

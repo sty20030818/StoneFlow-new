@@ -9,6 +9,7 @@ use stoneflow_usecase::update::UpdateInfo;
 pub const UPDATE_PHASE_EVENT: &str = "update-phase";
 
 /// 统一阶段 payload（camelCase）。
+/// 全局 `update-phase` 与 IPC Channel 共用此形状。
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdatePhasePayload {

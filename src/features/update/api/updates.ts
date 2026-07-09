@@ -1,11 +1,7 @@
 /**
  * 应用内更新相关的 Tauri IPC 调用封装。
  *
- * Rust 侧序列化约定：
- * - enum 变体：camelCase（如 `notifyOnly`, `autoDownload`）
- * - struct 字段：camelCase（如 `checkMode`, `skippedVersions`, `lastCheckedAt`）
- * - UpdateStatus 是 internally tagged enum（tag 字段为 `status`）
- * - UpdateEvent 是 adjacently tagged（tag = `event`, content = `data`）
+ * 进度与状态统一为 phase 形状（与全局 update-phase 同构）。
  */
 
 import { Channel, invoke } from '@tauri-apps/api/core'
@@ -44,33 +40,12 @@ export const ALLOWED_CHECK_INTERVAL_SECS = [
 
 export type CheckIntervalSecs = (typeof ALLOWED_CHECK_INTERVAL_SECS)[number]
 
-/**
- * 更新状态（与 Rust domain 层 `UpdateStatus` 对应）。
- * 使用 internally tagged 表示，tag 字段为 `status`。
- */
-export type UpdateStatus =
-	| { status: 'idle' }
-	| { status: 'checking' }
-	| { status: 'updateAvailable'; version: string; body: string | null; pubDate: string | null }
-	| { status: 'upToDate' }
-	| { status: 'downloading'; downloaded: number; total: number | null }
-	| { status: 'downloaded'; version: string }
-	| { status: 'error'; message: string }
-
-/**
- * 通过 IPC Channel 推送到前端的更新事件。
- */
-export interface UpdateStatusChangedEvent {
-	event: 'statusChanged'
-	data: { status: UpdateStatus }
-}
-
-/** 后端 emit 的全局事件名（仅统一 phase） */
+/** 后端 emit / Channel 的全局事件名 */
 export const UPDATE_EVENTS = {
 	PHASE: 'update-phase',
 } as const
 
-/** update-phase 事件 payload */
+/** update-phase / IPC Channel 共用 payload */
 export interface UpdatePhasePayload {
 	phase: 'available' | 'downloading' | 'ready' | 'error'
 	version?: string | null
@@ -86,13 +61,13 @@ export async function checkUpdate(manual: boolean): Promise<UpdateInfo | null> {
 	return invoke<UpdateInfo | null>('check_update', { manual })
 }
 
-/** 下载并安装更新，通过 onStatus 接收进度状态 */
-export async function downloadAndInstall(onStatus: (status: UpdateStatus) => void): Promise<void> {
-	const channel = new Channel<UpdateStatusChangedEvent>()
-	channel.onmessage = (event) => {
-		if (event.event === 'statusChanged') {
-			onStatus(event.data.status)
-		}
+/** 下载并安装；onPhase 接收与全局 update-phase 同构的 payload */
+export async function downloadAndInstall(
+	onPhase: (payload: UpdatePhasePayload) => void,
+): Promise<void> {
+	const channel = new Channel<UpdatePhasePayload>()
+	channel.onmessage = (payload) => {
+		onPhase(payload)
 	}
 	return invoke('download_and_install', { onEvent: channel })
 }
@@ -144,10 +119,7 @@ export async function getUpdateSession(): Promise<UpdateSessionSnapshot> {
 	return invoke<UpdateSessionSnapshot>('get_update_session')
 }
 
-/**
- * 取消进行中的下载：abort 后端下载 task，断开 HTTP 流。
- * 仅在「下载中」有效；已预装完成（就绪）后无效。
- */
+/** 取消进行中的下载（abort 下载 task） */
 export async function cancelUpdateDownload(): Promise<void> {
 	return invoke('cancel_update_download')
 }

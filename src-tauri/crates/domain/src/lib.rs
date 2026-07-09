@@ -37,7 +37,7 @@ pub use time::{is_same_utc_day, now_utc, parse_calendar_date, to_date_only, toda
 pub use update::{
     is_version_skipped, migrate_check_mode_from_stored, normalize_check_interval_secs,
     should_auto_check, should_auto_check_with_interval, UpdateChannel, UpdateCheckMode,
-    UpdateSettings, UpdateStatus, ALLOWED_CHECK_INTERVAL_SECS, AUTO_CHECK_INTERVAL_SECS,
+    UpdateSettings, ALLOWED_CHECK_INTERVAL_SECS, AUTO_CHECK_INTERVAL_SECS,
     STARTUP_CHECK_DELAY_SECS,
 };
 pub use view::{ViewEntityKind, ViewKind};

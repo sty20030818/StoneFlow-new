@@ -1,7 +1,5 @@
 /**
- * 更新事件监听 Hook。
- *
- * 监听统一 `update-phase`，hydrate 会话，并按 checkMode 分流。
+ * 更新事件监听 Hook：update-phase + session hydrate。
  */
 
 import { useEffect } from 'react'
@@ -27,27 +25,10 @@ function storePhaseActions() {
 	return {
 		checkMode: store.checkMode,
 		downloadUiAbandoned: store.downloadUiAbandoned,
-		showUpdate: store.showUpdate,
-		setStatus: store.setStatus as (status: {
-			status: 'downloading' | 'error'
-			downloaded?: number
-			total?: number | null
-			message?: string
-		}) => void,
-		markReady: store.markReady,
-		ensureUpdateInfo: (version: string) => {
-			const s = useUpdateStore.getState()
-			if (!s.updateInfo || s.updateInfo.version !== version) {
-				s.showUpdate(
-					{
-						version,
-						body: s.updateInfo?.body ?? null,
-						pubDate: s.updateInfo?.pubDate ?? null,
-					},
-					{ openDialog: false },
-				)
-			}
-		},
+		showAvailable: store.showAvailable,
+		setDownloading: store.setDownloading,
+		setReady: store.setReady,
+		setError: store.setError,
 		shouldToastReady: (version: string) =>
 			useUpdateStore.getState().readyToastVersion !== version,
 		markReadyToasted: (version: string) => {
@@ -116,42 +97,35 @@ export function useUpdateEvents() {
 	}, [])
 }
 
-/**
- * 触发下载更新的 action hook。
- */
 export function useUpdateActions() {
-	const setStatus = useUpdateStore((s) => s.setStatus)
 	const updateInfo = useUpdateStore((s) => s.updateInfo)
 	const closeDialog = useUpdateStore((s) => s.closeDialog)
 
 	async function startDownload() {
+		const store = useUpdateStore.getState()
 		useUpdateStore.setState({ downloadUiAbandoned: false })
-		setStatus({ status: 'downloading', downloaded: 0, total: null })
+		store.setDownloading({ downloaded: 0, total: null }, store.updateInfo?.version)
 
 		try {
-			await downloadAndInstall((status) => {
-				if (
-					useUpdateStore.getState().downloadUiAbandoned &&
-					status.status === 'downloading'
-				) {
+			await downloadAndInstall((payload) => {
+				if (useUpdateStore.getState().downloadUiAbandoned && payload.phase === 'downloading') {
 					return
 				}
-				setStatus(status)
+				handlePhasePayload(payload)
 			})
 		} catch (err) {
 			if (useUpdateStore.getState().downloadUiAbandoned) return
 			const message = err instanceof Error ? err.message : '下载更新失败'
-			setStatus({ status: 'error', message })
+			useUpdateStore.getState().setError(message)
 		}
 	}
 
-	/** 取消下载 UI + 请求后端停止进度推送（无法保证中断网络） */
 	async function cancelDownloadUi() {
-		useUpdateStore.getState().abandonDownloadUi()
+		useUpdateStore.getState().cancelDownloadUiLocal()
 		try {
 			await cancelUpdateDownload()
 		} catch (err) {
-			console.error('Failed to suppress update progress emits:', err)
+			console.error('Failed to cancel update download:', err)
 		}
 	}
 
@@ -166,19 +140,20 @@ export function useUpdateActions() {
 	async function checkNow(): Promise<UpdateSettings | null> {
 		try {
 			const settings = await getUpdateSettings()
-			useUpdateStore.getState().setCheckMode(settings.checkMode)
-			setStatus({ status: 'checking' })
+			const store = useUpdateStore.getState()
+			store.setCheckMode(settings.checkMode)
+			store.setChecking()
 			const info = await checkUpdate(true)
 			if (info) {
-				useUpdateStore.getState().showUpdate(info, { openDialog: true })
+				store.showAvailable(info, { openDialog: true })
 			} else {
-				setStatus({ status: 'upToDate' })
+				store.setUpToDate()
 				toast.success('当前已是最新版本')
 			}
 			return settings
 		} catch (err) {
 			const message = err instanceof Error ? err.message : '检查更新失败'
-			setStatus({ status: 'error', message })
+			useUpdateStore.getState().setError(message)
 			toast.error(message)
 			return null
 		}
