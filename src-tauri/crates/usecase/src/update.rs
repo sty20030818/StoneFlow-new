@@ -3,6 +3,7 @@
 //! 定义更新操作的 Port trait 与 `UpdateService` 业务编排，不依赖 Tauri。
 
 use std::future::Future;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use chrono::Utc;
 use serde::Serialize;
@@ -11,6 +12,15 @@ use stoneflow_domain::{
 };
 
 use crate::error::UsecaseError;
+
+/// 下载进行中时占用的守卫：离开作用域后释放单飞锁。
+struct DownloadInFlightGuard<'a>(&'a AtomicBool);
+
+impl Drop for DownloadInFlightGuard<'_> {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::SeqCst);
+    }
+}
 
 /// 从远端检查到的更新信息。
 #[derive(Debug, Clone, Serialize)]
@@ -53,6 +63,8 @@ pub trait UpdateSettingsPort: Send + Sync {
 pub struct UpdateService<P: UpdatePort, S: UpdateSettingsPort> {
     port: P,
     settings_port: S,
+    /// 进程内下载单飞：防止自动下载与用户手动下载并发执行两次。
+    download_in_flight: AtomicBool,
 }
 
 impl<P: UpdatePort, S: UpdateSettingsPort> UpdateService<P, S> {
@@ -60,7 +72,13 @@ impl<P: UpdatePort, S: UpdateSettingsPort> UpdateService<P, S> {
         Self {
             port,
             settings_port,
+            download_in_flight: AtomicBool::new(false),
         }
+    }
+
+    /// 当前是否有进行中的下载（供 runtime/前端会话快照使用）。
+    pub fn is_download_in_flight(&self) -> bool {
+        self.download_in_flight.load(Ordering::SeqCst)
     }
 
     /// 读取当前更新设置。
@@ -109,10 +127,22 @@ impl<P: UpdatePort, S: UpdateSettingsPort> UpdateService<P, S> {
     }
 
     /// 开始下载并安装当前检测到的更新。
+    ///
+    /// 同一时刻最多一次下载：若已有下载在进行，直接返回 `Ok(())`（幂等忽略重复请求）。
     pub async fn download_and_install(
         &self,
         on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
     ) -> Result<(), UsecaseError> {
+        if self
+            .download_in_flight
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_err()
+        {
+            // 已有下载：bootstrap 静默下载与 UI「立即更新」可能重叠，忽略第二次。
+            return Ok(());
+        }
+        let _guard = DownloadInFlightGuard(&self.download_in_flight);
+
         let settings = self.settings_port.load().await?;
         self.port
             .download_and_install(settings.channel, on_progress)
@@ -158,6 +188,8 @@ mod tests {
     struct MockUpdatePort {
         latest_version: Option<&'static str>,
         download_called: Arc<Mutex<bool>>,
+        download_count: Arc<Mutex<u32>>,
+        download_delay_ms: u64,
         restart_called: Arc<Mutex<bool>>,
     }
 
@@ -166,6 +198,8 @@ mod tests {
             Self {
                 latest_version,
                 download_called: Arc::new(Mutex::new(false)),
+                download_count: Arc::new(Mutex::new(0)),
+                download_delay_ms: 0,
                 restart_called: Arc::new(Mutex::new(false)),
             }
         }
@@ -189,6 +223,10 @@ mod tests {
             _on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
         ) -> Result<(), UsecaseError> {
             *self.download_called.lock().unwrap() = true;
+            *self.download_count.lock().unwrap() += 1;
+            if self.download_delay_ms > 0 {
+                tokio::time::sleep(std::time::Duration::from_millis(self.download_delay_ms)).await;
+            }
             Ok(())
         }
 
@@ -288,5 +326,53 @@ mod tests {
             .unwrap();
         let settings = service.get_settings().await.unwrap();
         assert_eq!(settings.check_mode, UpdateCheckMode::AutoDownload);
+    }
+
+    #[tokio::test]
+    async fn concurrent_download_should_only_invoke_port_once() {
+        let download_count = Arc::new(Mutex::new(0u32));
+        let port = MockUpdatePort {
+            latest_version: Some("0.2.0"),
+            download_called: Arc::new(Mutex::new(false)),
+            download_count: Arc::clone(&download_count),
+            download_delay_ms: 80,
+            restart_called: Arc::new(Mutex::new(false)),
+        };
+        let settings_port = MockSettingsPort::new(UpdateSettings::default());
+        let service = Arc::new(UpdateService::new(port, settings_port));
+
+        let s1 = Arc::clone(&service);
+        let s2 = Arc::clone(&service);
+        let (r1, r2) = tokio::join!(
+            s1.download_and_install(|_, _| {}),
+            s2.download_and_install(|_, _| {}),
+        );
+
+        assert!(r1.is_ok());
+        assert!(r2.is_ok());
+        assert_eq!(
+            *download_count.lock().unwrap(),
+            1,
+            "second concurrent download must be single-flighted"
+        );
+        assert!(!service.is_download_in_flight());
+    }
+
+    #[tokio::test]
+    async fn download_can_retry_after_previous_finishes() {
+        let download_count = Arc::new(Mutex::new(0u32));
+        let port = MockUpdatePort {
+            latest_version: Some("0.2.0"),
+            download_called: Arc::new(Mutex::new(false)),
+            download_count: Arc::clone(&download_count),
+            download_delay_ms: 0,
+            restart_called: Arc::new(Mutex::new(false)),
+        };
+        let settings_port = MockSettingsPort::new(UpdateSettings::default());
+        let service = UpdateService::new(port, settings_port);
+
+        service.download_and_install(|_, _| {}).await.unwrap();
+        service.download_and_install(|_, _| {}).await.unwrap();
+        assert_eq!(*download_count.lock().unwrap(), 2);
     }
 }
