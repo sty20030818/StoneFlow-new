@@ -187,7 +187,10 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
 
     /// 读取当前更新设置（间隔字段已规范化）。
     pub async fn get_settings(&self) -> Result<UpdateSettings, UsecaseError> {
-        self.get_settings_normalized().await
+        let mut settings = self.settings_port.load().await?;
+        settings.check_interval_secs =
+            normalize_check_interval_secs(settings.check_interval_secs);
+        Ok(settings)
     }
 
     /// 检查更新。
@@ -391,13 +394,6 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         let mut settings = self.settings_port.load().await?;
         settings.check_interval_secs = normalize_check_interval_secs(interval_secs);
         self.settings_port.save(&settings).await
-    }
-
-    /// 读取规范化后的完整设置（含默认间隔）。
-    pub async fn get_settings_normalized(&self) -> Result<UpdateSettings, UsecaseError> {
-        let mut settings = self.settings_port.load().await?;
-        settings.check_interval_secs = normalize_check_interval_secs(settings.check_interval_secs);
-        Ok(settings)
     }
 
     /// 将指定版本加入跳过列表。

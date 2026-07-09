@@ -47,7 +47,7 @@ src/features/update/
 
 ### 修改更新相关代码时的注意事项
 
-- Rust / TS 序列化 camelCase；IPC Channel 的 `UpdateStatus` 与 shell `phase` 勿混用
+- Rust / TS 序列化 camelCase；进度与 UI 状态统一为 **phase**（`update-phase` / IPC Channel 同构）
 - 修改 IPC 须同步 TS 类型
 - 自动检查间隔：`checkIntervalSecs`；启动延迟 `STARTUP_CHECK_DELAY_SECS`
 
