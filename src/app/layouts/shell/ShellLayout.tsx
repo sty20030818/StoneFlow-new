@@ -108,6 +108,7 @@ import {
 } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
+import { SyncStatusProvider } from '@/features/sync/model/SyncStatusProvider'
 import { SystemStatusChip, UpdateDialog, useUpdateEvents } from '@/features/update'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskStatus } from '@/shared/types'
@@ -958,6 +959,7 @@ function ShellLayoutContent({
 			}}
 			sidebarWidth={sidebarSettings.width}
 		>
+			<SyncStatusProvider>
 			<CommandShortcutLayer
 				bindings={activeShortcutBindings}
 				onChordStateChange={setChordSession}
@@ -1106,6 +1108,7 @@ function ShellLayoutContent({
 			<UpdateDialog />
 			<SystemStatusChip />
 			<ShellFooter navBadges={navBadges} />
+			</SyncStatusProvider>
 		</SidebarProvider>
 	)
 }

@@ -1,7 +1,7 @@
 /**
  * 更新事件监听 Hook。
  *
- * 优先监听统一 `update-phase`；兼容过渡期仍双发的旧事件名。
+ * 监听统一 `update-phase`，hydrate 会话，并按 checkMode 分流。
  */
 
 import { useEffect } from 'react'
@@ -99,7 +99,6 @@ export function useUpdateEvents() {
 				console.error('Failed to hydrate update session:', err)
 			}
 
-			// 主路径：只听统一 phase（后端仍双发旧事件给其它消费者，前端避免重复处理）
 			unlistenPhase = await listen<UpdatePhasePayload>(UPDATE_EVENTS.PHASE, (event) => {
 				if (disposed) return
 				handlePhasePayload(event.payload)

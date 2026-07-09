@@ -7,7 +7,7 @@
 
 import { RefreshCwIcon } from 'lucide-react'
 
-import { useSyncStatusController } from '@/features/sync/model/useSyncStatusController'
+import { useSharedSyncStatus } from '@/features/sync/model/SyncStatusProvider'
 import {
 	formatReplicaState,
 	formatSyncStatus,
@@ -38,13 +38,7 @@ export function SystemStatusChip() {
 	const dismissReadyChip = useUpdateStore((s) => s.dismissReadyChip)
 	const { restart } = useUpdateActions()
 
-	const {
-		displayedStatus,
-		message,
-		runNow,
-		running,
-		statusPayload,
-	} = useSyncStatusController()
+	const { displayedStatus, message, runNow, running, statusPayload } = useSharedSyncStatus()
 
 	const replicaState = statusPayload?.replicaState ?? 'uninitialized'
 	const blocked = replicaState === 'baseline_required' || replicaState === 'diverged'

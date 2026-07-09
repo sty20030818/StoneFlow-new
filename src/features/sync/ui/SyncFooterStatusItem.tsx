@@ -1,10 +1,10 @@
 /**
- * Footer 精简同步状态：与 sidebar strip 双写，点击可触发手动同步。
+ * Footer 精简同步状态：与 sidebar 共用 SyncStatusProvider。
  */
 
 import { RefreshCwIcon } from 'lucide-react'
 
-import { useSyncStatusController } from '@/features/sync/model/useSyncStatusController'
+import { useSharedSyncStatus } from '@/features/sync/model/SyncStatusProvider'
 import {
 	formatReplicaState,
 	formatSyncStatus,
@@ -14,7 +14,7 @@ import { cn } from '@/shared/lib/utils'
 
 export function SyncFooterStatusItem() {
 	const { displayedStatus, loading, message, runNow, running, statusPayload } =
-		useSyncStatusController()
+		useSharedSyncStatus()
 	const tone = getSyncStatusTone(displayedStatus)
 	const hasRemoteConfig = statusPayload?.hasRemoteConfig ?? false
 	const replicaState = statusPayload?.replicaState ?? 'uninitialized'

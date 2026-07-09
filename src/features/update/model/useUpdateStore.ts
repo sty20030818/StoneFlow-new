@@ -38,8 +38,8 @@ interface UpdateState {
 	/** 已 toast 过的就绪版本（防重复） */
 	readyToastVersion: string | null
 	/**
-	 * 用户取消了下载 UI（best-effort）：忽略后续 progress，
-	 * 真正下完仍会进入 ready。
+	 * 用户已取消下载：忽略迟到的 progress；
+	 * 后端 abort 成功后应进入 idle/available，不再 ready。
 	 */
 	downloadUiAbandoned: boolean
 

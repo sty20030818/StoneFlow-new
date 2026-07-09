@@ -8,28 +8,24 @@
 
 ```
 src-tauri/crates/
-├── domain/src/update.rs          # 领域模型（三档模式、节流规则、迁移）
-├── usecase/src/update.rs         # 业务编排（检查、下载单飞锁、跳过版本）
+├── domain/src/update.rs          # 三档模式、间隔、autoInstall 迁移
+├── usecase/src/update.rs         # 检查、单飞、abort 取消、session
 └── runtime/src/
     ├── services/
-    │   ├── update_adapter.rs     # Tauri updater 适配
-    │   ├── update_settings_store.rs  # 设置持久化（含 autoInstall→autoDownload 迁移）
-    │   └── update_service.rs     # 服务组装
-    ├── commands/update.rs        # IPC 命令
-    └── bootstrap.rs              # 启动/定时检查；按模式分流事件
+    │   ├── update_adapter.rs / update_events.rs（仅 update-phase）
+    │   ├── update_settings_store.rs / update_service.rs
+    ├── commands/update.rs
+    └── bootstrap.rs
 
 src/features/update/
-├── api/updates.ts                # Tauri invoke 封装 + TS 类型
-├── model/
-│   ├── useUpdateStore.ts         # phase 状态机 + Dialog 兼容 status
-│   ├── useUpdateEvents.ts        # 事件监听与模式分流
-│   └── updatePresentation.ts     # Footer 文案/进度纯函数
-├── ui/
-│   ├── UpdateDialog.tsx          # 仅提醒/手动：是否下载决策
-│   ├── UpdateStatusFooterItem.tsx# Footer 进度环与状态
-│   ├── UpdateReadyChip.tsx       # 就绪非模态 Chip（重启/稍后）
-│   └── UpdateSettingsSection.tsx # 设置页三档 + 渠道
-└── index.ts
+├── api/updates.ts
+├── model/                        # store / events / phase / presentation
+└── ui/
+    ├── UpdateDialog.tsx
+    ├── UpdateStatusFooterItem.tsx
+    ├── SystemStatusChip.tsx      # 更新就绪 > 同步异常
+    ├── AppVersionFooterItem.tsx
+    └── UpdateSettingsSection.tsx
 ```
 
 ### 三档更新模式（产品行为）
@@ -37,27 +33,24 @@ src/features/update/
 | 模式 | 行为 |
 |------|------|
 | `manual` 手动检查 | 不自动检查；设置页点「检查更新」才查询 |
-| `notifyOnly` 仅提醒（默认） | 启动约 3s + 每 6h 自动检查；发现更新 **弹窗**，用户决定是否下载 |
-| `autoDownload` 自动下载 | 自动检查后 **静默下载**（不弹发现窗）；Footer 显示进度；完成后 Chip + toast 提醒重启 |
+| `notifyOnly` 仅提醒（默认） | 启动约 3s + 按间隔检查；发现更新 **弹窗** |
+| `autoDownload` 自动下载 | 静默下载；Footer 进度；完成后 Chip + toast 催重启 |
 
 说明：
 
-- **永不自动重启**，需用户确认「重启」
-- 历史设置 `autoInstall` 加载时迁移为 `autoDownload` 并回写
-- 同一时刻最多一次下载（usecase 单飞锁）
-- 统一事件：`update-phase`（主路径）；过渡期仍双发旧事件名
-- 取消下载：`cancel_update_download` 会 abort 下载 task，中断 HTTP 流（仅下载阶段；不在 install 瞬间取消）
-- 设计文档：`Docs/01-执行计划/04-更新系统体验完善/`
+- **永不自动重启**；用户确认后重启
+- 历史 `autoInstall` → 加载时迁移为 `autoDownload`（仅旧 store 兼容）
+- 单飞下载；`cancel_update_download` **abort** 下载 task
+- 全局事件 **仅** `update-phase`（无旧事件双发）
+- 间隔 1h/3h/6h/12h/24h 可配；启动延迟 3s
+- Chip 优先级：更新就绪 > 同步异常；Footer 常显同步精简态
+- **产品行为以 `Docs/01-执行计划/04-更新系统体验完善` 为准**（03 中四档描述已过时）
 
 ### 修改更新相关代码时的注意事项
 
-- Rust 端枚举和结构体用了 `#[serde(rename_all = "camelCase")]`，TS 端必须对应 camelCase
-- `UpdateStatus` 是 internally tagged enum（tag 字段为 `status`），两端变体名必须一致
-- Shell 侧以 `phase` 为准；Dialog 的 `status` 为兼容层
-- 修改领域模型（domain 层）不影响 Tauri/网络，最安全
-- 修改 IPC 命令时必须同步修改 TS 端的类型定义
-- 自动检查间隔：设置可配 `checkIntervalSecs`（1h/3h/6h/12h/24h），默认 6 小时；启动延迟 `STARTUP_CHECK_DELAY_SECS`（3 秒）
-- 系统 Chip 优先级：更新就绪 > 同步错误/需处理
+- Rust / TS 序列化 camelCase；IPC Channel 的 `UpdateStatus` 与 shell `phase` 勿混用
+- 修改 IPC 须同步 TS 类型
+- 自动检查间隔：`checkIntervalSecs`；启动延迟 `STARTUP_CHECK_DELAY_SECS`
 
 ---
 

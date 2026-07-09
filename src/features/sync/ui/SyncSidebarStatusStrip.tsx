@@ -1,6 +1,11 @@
+/**
+ * Sidebar 同步条：仅未配置 / 阻塞 / 错误时显示（正常已同步不占侧栏）。
+ * 状态数据来自 Shell 级 SyncStatusProvider。
+ */
+
 import { RefreshCwIcon } from 'lucide-react'
 
-import { useSyncStatusController } from '@/features/sync/model/useSyncStatusController'
+import { useSharedSyncStatus } from '@/features/sync/model/SyncStatusProvider'
 import {
 	formatReplicaState,
 	formatSyncStatus,
@@ -11,11 +16,22 @@ import { Button } from '@/shared/ui/base/button'
 
 export function SyncSidebarStatusStrip() {
 	const { displayedStatus, loading, message, runNow, running, statusPayload } =
-		useSyncStatusController()
+		useSharedSyncStatus()
 	const tone = getSyncStatusTone(displayedStatus)
 	const hasRemoteConfig = statusPayload?.hasRemoteConfig ?? false
 	const replicaState = statusPayload?.replicaState ?? 'uninitialized'
 	const blocked = replicaState === 'baseline_required' || replicaState === 'diverged'
+	const attention =
+		!hasRemoteConfig ||
+		blocked ||
+		displayedStatus === 'error' ||
+		displayedStatus === 'needs_attention'
+
+	// 正常同步：不占 sidebar，状态在 footer
+	if (!attention) {
+		return null
+	}
+
 	const disabled = loading || running || !hasRemoteConfig || blocked
 	const subtitle = getSidebarSyncSubtitle({
 		blocked,
@@ -45,7 +61,7 @@ export function SyncSidebarStatusStrip() {
 							)}
 						/>
 						<span className='truncate text-xs font-semibold text-foreground'>
-							{formatSyncStatus(displayedStatus)}
+							{!hasRemoteConfig ? '同步未配置' : formatSyncStatus(displayedStatus)}
 						</span>
 					</div>
 					{subtitle ? (
@@ -54,17 +70,19 @@ export function SyncSidebarStatusStrip() {
 						</p>
 					) : null}
 				</div>
-				<Button
-					aria-label={running ? '同步中' : '同步'}
-					className='shrink-0 text-muted-foreground'
-					disabled={disabled}
-					onClick={() => void runNow()}
-					size='icon-xs'
-					type='button'
-					variant='ghost'
-				>
-					<RefreshCwIcon className={cn(running && 'animate-spin')} />
-				</Button>
+				{hasRemoteConfig && !blocked ? (
+					<Button
+						aria-label={running ? '同步中' : '同步'}
+						className='shrink-0 text-muted-foreground'
+						disabled={disabled}
+						onClick={() => void runNow()}
+						size='icon-xs'
+						type='button'
+						variant='ghost'
+					>
+						<RefreshCwIcon className={cn(running && 'animate-spin')} />
+					</Button>
+				) : null}
 			</div>
 		</div>
 	)
@@ -86,7 +104,7 @@ function getSidebarSyncSubtitle({
 	}
 
 	if (!hasRemoteConfig) {
-		return '未配置远端'
+		return '请到设置中配置远端'
 	}
 
 	if (blocked) {

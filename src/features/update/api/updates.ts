@@ -65,18 +65,12 @@ export interface UpdateStatusChangedEvent {
 	data: { status: UpdateStatus }
 }
 
-/** 后端 emit 的全局事件名 */
+/** 后端 emit 的全局事件名（仅统一 phase） */
 export const UPDATE_EVENTS = {
-	/** 统一阶段事件（主路径） */
 	PHASE: 'update-phase',
-	/** 以下为过渡期兼容事件（仍双发） */
-	AVAILABLE: 'update-available',
-	DOWNLOAD_PROGRESS: 'update-download-progress',
-	DOWNLOADED: 'update-downloaded',
-	ERROR: 'update-error',
 } as const
 
-/** 统一 update-phase 事件 payload */
+/** update-phase 事件 payload */
 export interface UpdatePhasePayload {
 	phase: 'available' | 'downloading' | 'ready' | 'error'
 	version?: string | null
@@ -85,27 +79,6 @@ export interface UpdatePhasePayload {
 	downloaded?: number | null
 	total?: number | null
 	message?: string | null
-}
-
-/** 全局事件 payload 类型 */
-export interface UpdateAvailablePayload {
-	version: string
-	body: string | null
-	pubDate: string | null
-}
-
-export interface UpdateDownloadProgressPayload {
-	version: string
-	downloaded: number
-	total: number | null
-}
-
-export interface UpdateDownloadedPayload {
-	version: string
-}
-
-export interface UpdateErrorPayload {
-	message: string
 }
 
 /** 检查更新 */

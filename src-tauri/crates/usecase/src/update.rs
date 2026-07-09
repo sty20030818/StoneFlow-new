@@ -42,7 +42,7 @@ struct SessionInner {
     total: Option<u64>,
     /// 最近一次 check 到的远端版本，供下载会话标注。
     pending_version: Option<String>,
-    /// 为 false 时停止推送进度；并配合 abort 真正中断下载 task。
+    /// 为 false 时停止推送进度（取消后）；配合 abort 中断下载 task。
     emit_progress: bool,
     /// 当前下载 task 的 abort 句柄（仅下载阶段有效）。
     abort_handle: Option<tokio::task::AbortHandle>,
@@ -144,10 +144,7 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
 
     /// 当前是否有进行中的下载。
     pub fn is_download_in_flight(&self) -> bool {
-        self.session
-            .lock()
-            .map(|s| s.in_flight)
-            .unwrap_or(false)
+        self.session.lock().map(|s| s.in_flight).unwrap_or(false)
     }
 
     /// 读取进程内更新会话快照（前端挂载时 hydrate）。
@@ -164,15 +161,7 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
 
     /// 是否应向前端推送下载进度（取消后为 false）。
     pub fn should_emit_progress(&self) -> bool {
-        self.session
-            .lock()
-            .map(|s| s.emit_progress)
-            .unwrap_or(true)
-    }
-
-    /// 停止进度推送（兼容旧调用）。
-    pub fn suppress_progress_emits(&self) {
-        self.cancel_download();
+        self.session.lock().map(|s| s.emit_progress).unwrap_or(true)
     }
 
     /// 取消**下载中**的更新：abort 下载 task，断开 HTTP 流。
@@ -407,8 +396,7 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
     /// 读取规范化后的完整设置（含默认间隔）。
     pub async fn get_settings_normalized(&self) -> Result<UpdateSettings, UsecaseError> {
         let mut settings = self.settings_port.load().await?;
-        settings.check_interval_secs =
-            normalize_check_interval_secs(settings.check_interval_secs);
+        settings.check_interval_secs = normalize_check_interval_secs(settings.check_interval_secs);
         Ok(settings)
     }
 
@@ -451,10 +439,7 @@ mod tests {
     }
 
     impl UpdatePort for MockUpdatePort {
-        async fn check(
-            &self,
-            _channel: UpdateChannel,
-        ) -> Result<Option<UpdateInfo>, UsecaseError> {
+        async fn check(&self, _channel: UpdateChannel) -> Result<Option<UpdateInfo>, UsecaseError> {
             Ok(self.latest_version.map(|v| UpdateInfo {
                 version: v.to_string(),
                 body: Some("test notes".into()),
