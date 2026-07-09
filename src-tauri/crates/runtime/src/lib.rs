@@ -12,6 +12,7 @@ pub mod services;
 pub mod shortcuts;
 pub mod sync;
 pub mod tray;
+pub mod update_schedule;
 pub mod window;
 
 pub use window::main::MAIN_WINDOW_LABEL;

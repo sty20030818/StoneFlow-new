@@ -21,6 +21,7 @@ use stoneflow_storage::database::DatabaseRuntimeState;
 use crate::exit_coordinator;
 use crate::shortcuts;
 use crate::tray;
+use crate::update_schedule::UpdateScheduleWake;
 use crate::window::main::build_main_window;
 use crate::window::quick_create::frontend::QuickCreateFrontendState;
 use crate::window::QuickPopupRuntimeState;
@@ -71,8 +72,11 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
     let update_service = build_update_service(&app.handle());
     app.manage(update_service);
 
+    let update_wake = UpdateScheduleWake::new();
+    app.manage(update_wake.clone());
+
     schedule_post_startup_jobs(app.handle().clone());
-    schedule_update_checker(app.handle().clone());
+    schedule_update_checker(app.handle().clone(), update_wake);
     Ok(())
 }
 
@@ -114,8 +118,11 @@ where
 }
 
 /// 调度自动更新检查：启动延迟后首次检查，之后按用户配置的间隔循环。
-fn schedule_update_checker(app_handle: tauri::AppHandle) {
+/// 间隔/模式变更时 `UpdateScheduleWake` 会打断 sleep，使新间隔立即生效。
+fn schedule_update_checker(app_handle: tauri::AppHandle, wake: UpdateScheduleWake) {
     use std::time::Duration;
+
+    let notify = wake.clone_notify();
 
     spawn_detached_job(move || async move {
         // 启动延迟，避免影响应用启动速度
@@ -126,25 +133,18 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                 break;
             };
 
-            let sleep_secs = match service.get_settings().await {
-                Ok(s) => normalize_check_interval_secs(s.check_interval_secs) as u64,
-                Err(_) => AUTO_CHECK_INTERVAL_SECS as u64,
-            };
-
             match service.check_update(false).await {
                 Ok(Some(info)) => {
                     let settings = match service.get_settings().await {
                         Ok(s) => s,
                         Err(_) => {
-                            tokio::time::sleep(Duration::from_secs(sleep_secs)).await;
+                            sleep_or_wake(&notify, AUTO_CHECK_INTERVAL_SECS as u64).await;
                             continue;
                         }
                     };
 
                     match settings.check_mode {
-                        // check_update(false) 在 Manual 下已提前返回 None；此处防御性忽略。
                         UpdateCheckMode::Manual => {}
-                        // 仅提醒：只通知前端弹窗，由用户决定是否下载。
                         UpdateCheckMode::NotifyOnly => {
                             log::info!(
                                 target: "updater",
@@ -153,7 +153,6 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                             );
                             emit_available(&app_handle, &info);
                         }
-                        // 自动下载：静默后台下载，不发 available 开窗路径。
                         UpdateCheckMode::AutoDownload => {
                             log::info!(
                                 target: "updater",
@@ -172,7 +171,6 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
 
                                 let app_for_progress = app.clone();
                                 let version_for_progress = version.clone();
-                                let version_for_done = version.clone();
                                 let app_for_done = app.clone();
                                 let app_for_error = app.clone();
                                 let app_check = app.clone();
@@ -196,23 +194,23 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                                     .await;
 
                                 match result {
-                                    Ok(DownloadOutcome::Completed) => {
+                                    Ok(DownloadOutcome::Completed { version }) => {
                                         log::info!(
                                             target: "updater",
-                                            "静默下载完成 v{version_for_done}，等待用户重启"
+                                            "静默下载完成 v{version}，等待用户重启"
                                         );
-                                        emit_ready(&app_for_done, &version_for_done);
+                                        emit_ready(&app_for_done, &version);
                                     }
                                     Ok(DownloadOutcome::Cancelled) => {
                                         log::info!(
                                             target: "updater",
-                                            "静默下载已取消 v{version_for_done}"
+                                            "静默下载已取消"
                                         );
                                     }
                                     Err(e) => {
                                         log::warn!(
                                             target: "updater",
-                                            "静默下载失败 v{version}: {e}"
+                                            "静默下载失败: {e}"
                                         );
                                         emit_error(&app_for_error, e.to_string());
                                     }
@@ -227,9 +225,24 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                 }
             }
 
-            tokio::time::sleep(Duration::from_secs(sleep_secs)).await;
+            let sleep_secs = match service.get_settings().await {
+                Ok(s) => normalize_check_interval_secs(s.check_interval_secs) as u64,
+                Err(_) => AUTO_CHECK_INTERVAL_SECS as u64,
+            };
+            // 被 wake 打断时不立刻再 check，只按新间隔重新计时
+            sleep_or_wake(&notify, sleep_secs).await;
         }
     });
+}
+
+async fn sleep_or_wake(notify: &std::sync::Arc<tokio::sync::Notify>, secs: u64) {
+    use std::time::Duration;
+    tokio::select! {
+        _ = tokio::time::sleep(Duration::from_secs(secs)) => {}
+        _ = notify.notified() => {
+            log::info!(target: "updater", "更新检查调度被设置变更唤醒，将按新间隔重新计时");
+        }
+    }
 }
 
 #[cfg(test)]

@@ -67,10 +67,12 @@ impl Default for SessionInner {
 }
 
 /// 下载结果。
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DownloadOutcome {
     /// 下载并预装完成，等待重启。
-    Completed,
+    Completed {
+        version: String,
+    },
     /// 用户在下载中取消（网络任务已 abort）。
     Cancelled,
 }
@@ -104,11 +106,12 @@ pub trait UpdatePort: Send + Sync {
     ) -> impl Future<Output = Result<Option<UpdateInfo>, UsecaseError>> + Send;
 
     /// 执行下载并安装，通过 `on_progress` 向前端推送下载进度。
+    /// 成功时返回已下载的版本号（port 内只应做一次远端 check）。
     fn download_and_install(
         &self,
         channel: UpdateChannel,
         on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
-    ) -> impl Future<Output = Result<(), UsecaseError>> + Send;
+    ) -> impl Future<Output = Result<String, UsecaseError>> + Send;
 
     /// 重启应用以完成更新。
     fn restart(&self) -> impl Future<Output = Result<(), UsecaseError>> + Send;
@@ -157,6 +160,14 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
             total: s.total,
             download_in_flight: s.in_flight,
         }
+    }
+
+    /// 最近一次 check 到的远端版本（下载前可用，避免命令层再 check 一次）。
+    pub fn pending_version(&self) -> Option<String> {
+        self.session
+            .lock()
+            .ok()
+            .and_then(|s| s.pending_version.clone())
     }
 
     /// 是否应向前端推送下载进度（取消后为 false）。
@@ -252,8 +263,9 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         {
             let mut s = self.session.lock().unwrap_or_else(|e| e.into_inner());
             if s.in_flight {
-                // 已有下载：幂等视为「已有任务在跑」，不二次启动。
-                return Ok(DownloadOutcome::Completed);
+                // 已有下载：幂等忽略；版本取当前会话。
+                let version = s.version.clone().unwrap_or_default();
+                return Ok(DownloadOutcome::Completed { version });
             }
             s.in_flight = true;
             s.phase = UpdateSessionPhase::Downloading;
@@ -299,7 +311,7 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         }
 
         match join_result {
-            Ok(Ok(())) => {
+            Ok(Ok(version)) => {
                 let cancelled = self
                     .session
                     .lock()
@@ -311,9 +323,11 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
                 }
                 if let Ok(mut s) = self.session.lock() {
                     s.phase = UpdateSessionPhase::Ready;
+                    s.version = Some(version.clone());
+                    s.pending_version = Some(version.clone());
                     s.cancel_requested = false;
                 }
-                Ok(DownloadOutcome::Completed)
+                Ok(DownloadOutcome::Completed { version })
             }
             Ok(Err(e)) => {
                 let cancelled = self
@@ -447,13 +461,13 @@ mod tests {
             &self,
             _channel: UpdateChannel,
             _on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
-        ) -> Result<(), UsecaseError> {
+        ) -> Result<String, UsecaseError> {
             *self.download_called.lock().unwrap() = true;
             *self.download_count.lock().unwrap() += 1;
             if self.download_delay_ms > 0 {
                 tokio::time::sleep(std::time::Duration::from_millis(self.download_delay_ms)).await;
             }
-            Ok(())
+            Ok(self.latest_version.unwrap_or("0.0.0").to_string())
         }
 
         async fn restart(&self) -> Result<(), UsecaseError> {
@@ -583,7 +597,10 @@ mod tests {
             "second concurrent download must be single-flighted"
         );
         assert!(!service.is_download_in_flight());
-        assert_eq!(r1.unwrap(), DownloadOutcome::Completed);
+        assert!(matches!(
+            r1.unwrap(),
+            DownloadOutcome::Completed { .. }
+        ));
     }
 
     #[tokio::test]
@@ -599,14 +616,14 @@ mod tests {
         let settings_port = MockSettingsPort::new(UpdateSettings::default());
         let service = UpdateService::new(port, settings_port);
 
-        assert_eq!(
+        assert!(matches!(
             service.download_and_install(|_, _| {}).await.unwrap(),
-            DownloadOutcome::Completed
-        );
-        assert_eq!(
+            DownloadOutcome::Completed { version } if version == "0.2.0"
+        ));
+        assert!(matches!(
             service.download_and_install(|_, _| {}).await.unwrap(),
-            DownloadOutcome::Completed
-        );
+            DownloadOutcome::Completed { .. }
+        ));
         assert_eq!(*download_count.lock().unwrap(), 2);
     }
 
@@ -618,10 +635,10 @@ mod tests {
 
         let info = service.check_update(true).await.unwrap().unwrap();
         assert_eq!(info.version, "0.3.0");
-        assert_eq!(
+        assert!(matches!(
             service.download_and_install(|_, _| {}).await.unwrap(),
-            DownloadOutcome::Completed
-        );
+            DownloadOutcome::Completed { version } if version == "0.3.0"
+        ));
 
         let snap = service.session_snapshot();
         assert_eq!(snap.phase, UpdateSessionPhase::Ready);
@@ -656,9 +673,9 @@ mod tests {
         assert_eq!(service.session_snapshot().phase, UpdateSessionPhase::Idle);
 
         // 取消后可重新下载
-        assert_eq!(
+        assert!(matches!(
             service.download_and_install(|_, _| {}).await.unwrap(),
-            DownloadOutcome::Completed
-        );
+            DownloadOutcome::Completed { version } if version == "0.3.0"
+        ));
     }
 }

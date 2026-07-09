@@ -171,17 +171,19 @@ impl UpdatePort for TauriUpdateAdapter {
         &self,
         channel: UpdateChannel,
         on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
-    ) -> Result<(), UsecaseError> {
+    ) -> Result<String, UsecaseError> {
         let updater = self.build_updater(channel)?;
 
+        // 仅在此处 check 一次，拿到可下载的 Update 句柄（Tauri API 要求）。
         let update = updater
             .check()
             .await
             .map_err(|e| UsecaseError::update(format!("检查更新失败: {e}")))?
             .ok_or_else(|| UsecaseError::update("当前没有可用更新"))?;
 
-        // 拆成 download + install：下载阶段可被 task abort 真正中断；
-        // 下载完成后的 install 为同步短操作，取消主要针对卡顿的下载。
+        let version = update.version.to_string();
+
+        // 拆成 download + install：下载阶段可被 task abort 真正中断。
         let downloaded = Arc::new(AtomicU64::new(0));
         let downloaded_clone = downloaded.clone();
         let bytes = update
@@ -200,7 +202,7 @@ impl UpdatePort for TauriUpdateAdapter {
             .install(bytes)
             .map_err(|e| UsecaseError::update(format!("安装更新失败: {e}")))?;
 
-        Ok(())
+        Ok(version)
     }
 
     async fn restart(&self) -> Result<(), UsecaseError> {

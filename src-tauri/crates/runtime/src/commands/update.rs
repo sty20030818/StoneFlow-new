@@ -5,6 +5,7 @@ use tauri::{ipc::Channel, AppHandle, State};
 use crate::app::error::AppError;
 use crate::services::update_events::UpdatePhasePayload;
 use crate::services::RuntimeUpdateService;
+use crate::update_schedule::UpdateScheduleWake;
 use stoneflow_domain::{UpdateChannel, UpdateCheckMode, UpdateSettings};
 use stoneflow_usecase::update::{DownloadOutcome, UpdateInfo, UpdateSessionSnapshot};
 
@@ -18,16 +19,15 @@ pub async fn check_update(
 }
 
 /// 下载并安装；通过 Channel 推送与全局 `update-phase` 同构的 phase 事件。
+///
+/// 不再预先 `check_update`：版本优先用会话 pending（用户刚检查过），
+/// 真正远端 check 只发生在 adapter 内一次。
 #[tauri::command]
 pub async fn download_and_install(
     on_event: Channel<UpdatePhasePayload>,
     service: State<'_, RuntimeUpdateService>,
 ) -> Result<(), AppError> {
-    let update_info = service.check_update(true).await?;
-    let version = update_info
-        .as_ref()
-        .map(|i| i.version.clone())
-        .unwrap_or_default();
+    let version = service.pending_version().unwrap_or_default();
 
     let _ = on_event.send(UpdatePhasePayload {
         phase: "downloading",
@@ -56,7 +56,7 @@ pub async fn download_and_install(
         .await;
 
     match result {
-        Ok(DownloadOutcome::Completed) => {
+        Ok(DownloadOutcome::Completed { version }) => {
             let _ = on_event.send(UpdatePhasePayload {
                 phase: "ready",
                 version: Some(version),
@@ -104,8 +104,10 @@ pub async fn skip_version(
 pub async fn set_check_mode(
     mode: UpdateCheckMode,
     service: State<'_, RuntimeUpdateService>,
+    wake: State<'_, UpdateScheduleWake>,
 ) -> Result<(), AppError> {
     service.set_check_mode(mode).await?;
+    wake.notify();
     Ok(())
 }
 
@@ -122,8 +124,10 @@ pub async fn set_channel(
 pub async fn set_check_interval_secs(
     interval_secs: i64,
     service: State<'_, RuntimeUpdateService>,
+    wake: State<'_, UpdateScheduleWake>,
 ) -> Result<(), AppError> {
     service.set_check_interval_secs(interval_secs).await?;
+    wake.notify();
     Ok(())
 }
 

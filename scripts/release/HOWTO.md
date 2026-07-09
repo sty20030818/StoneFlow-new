@@ -49,7 +49,8 @@ src/features/update/
 
 - Rust / TS 序列化 camelCase；进度与 UI 状态统一为 **phase**（`update-phase` / IPC Channel 同构）
 - 修改 IPC 须同步 TS 类型
-- 自动检查间隔：`checkIntervalSecs`；启动延迟 `STARTUP_CHECK_DELAY_SECS`
+- 自动检查间隔：`checkIntervalSecs`；改间隔/模式会唤醒调度，按新间隔重新计时（不强制立刻再 check）
+- 启动延迟 `STARTUP_CHECK_DELAY_SECS`；手动下载命令不再二次 check（版本用 pending，adapter 内只 check 一次）
 
 ---
 
