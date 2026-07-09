@@ -1,8 +1,9 @@
 /**
  * 更新弹窗组件。
  *
- * 展示更新信息、下载进度、错误状态，提供"立即下载"/"跳过此版本"/"重启安装"等操作。
- * 视觉风格对齐项目内创建弹窗（rounded-3xl、无分割线、统一 padding 梯度）。
+ * 职责：仅提醒 / 手动检查路径下的「是否下载」决策，以及可选的进度/重启展示。
+ * 自动下载路径默认不开本弹窗；下载进度与就绪态以 Footer / Ready Chip 为主。
+ * 下载中可关闭弹窗（状态落到 Footer，不中断下载）。
  */
 
 import type { ReactNode } from 'react'
@@ -25,8 +26,7 @@ export function UpdateDialog() {
 
 	function handleOpenChange(nextOpen: boolean) {
 		if (!nextOpen) {
-			// 如果正在下载，不允许关闭
-			if (status.status === 'downloading') return
+			// 关闭不等于取消下载 / 跳过版本；进度继续由 Footer / Chip 承载
 			closeDialog()
 		}
 	}
@@ -72,7 +72,7 @@ export function UpdateDialog() {
 	const descText = isDownloaded
 		? `版本 ${displayVersion} 已下载完成，重启 StoneFlow 即可完成安装。`
 		: isDownloading
-			? '正在下载更新文件，请稍候...'
+			? '正在下载更新文件。可关闭此窗口，进度会显示在底部状态栏。'
 			: isError
 				? status.message
 				: isChecking
@@ -83,7 +83,7 @@ export function UpdateDialog() {
 		<Dialog onOpenChange={handleOpenChange} open={dialogVisible}>
 			<DialogContent
 				className={dialogContentClass}
-				showCloseButton={!isDownloading}
+				showCloseButton
 				disableAnimation
 			>
 				{/* 头部：标题 + 描述，无 border 分割，padding 对齐创建弹窗 */}
@@ -152,13 +152,18 @@ export function UpdateDialog() {
 							</Button>
 						</>
 					) : isDownloading ? (
-						<Button disabled size='sm' type='button'>
-							<span
-								aria-hidden
-								className='-ml-0.5 mr-2 size-3 animate-spin rounded-full border-2 border-current border-t-transparent'
-							/>
-							下载中
-						</Button>
+						<>
+							<Button onClick={closeDialog} size='sm' type='button' variant='ghost'>
+								后台继续
+							</Button>
+							<Button disabled size='sm' type='button'>
+								<span
+									aria-hidden
+									className='-ml-0.5 mr-2 size-3 animate-spin rounded-full border-2 border-current border-t-transparent'
+								/>
+								下载中
+							</Button>
+						</>
 					) : (
 						<>
 							<Button

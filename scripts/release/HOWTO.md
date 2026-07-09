@@ -8,31 +8,50 @@
 
 ```
 src-tauri/crates/
-├── domain/src/update.rs          # 领域模型（纯数据结构，无 I/O）
-├── usecase/src/update.rs         # 业务编排（检查逻辑、节流、跳过版本）
+├── domain/src/update.rs          # 领域模型（三档模式、节流规则、迁移）
+├── usecase/src/update.rs         # 业务编排（检查、下载单飞锁、跳过版本）
 └── runtime/src/
     ├── services/
     │   ├── update_adapter.rs     # Tauri updater 适配
-    │   ├── update_settings_store.rs  # 设置持久化
+    │   ├── update_settings_store.rs  # 设置持久化（含 autoInstall→autoDownload 迁移）
     │   └── update_service.rs     # 服务组装
-    ├── commands/update.rs        # IPC 命令（7个）
-    └── bootstrap.rs              # 自动检查调度
+    ├── commands/update.rs        # IPC 命令
+    └── bootstrap.rs              # 启动/定时检查；按模式分流事件
 
 src/features/update/
 ├── api/updates.ts                # Tauri invoke 封装 + TS 类型
 ├── model/
-│   ├── useUpdateStore.ts         # Zustand 状态管理
-│   └── useUpdateEvents.ts        # 事件监听 hook + actions
+│   ├── useUpdateStore.ts         # phase 状态机 + Dialog 兼容 status
+│   ├── useUpdateEvents.ts        # 事件监听与模式分流
+│   └── updatePresentation.ts     # Footer 文案/进度纯函数
 ├── ui/
-│   ├── UpdateDialog.tsx          # 更新弹窗
-│   └── UpdateSettingsSection.tsx # 设置页区块
-└── index.ts                      # 统一导出
+│   ├── UpdateDialog.tsx          # 仅提醒/手动：是否下载决策
+│   ├── UpdateStatusFooterItem.tsx# Footer 进度环与状态
+│   ├── UpdateReadyChip.tsx       # 就绪非模态 Chip（重启/稍后）
+│   └── UpdateSettingsSection.tsx # 设置页三档 + 渠道
+└── index.ts
 ```
+
+### 三档更新模式（产品行为）
+
+| 模式 | 行为 |
+|------|------|
+| `manual` 手动检查 | 不自动检查；设置页点「检查更新」才查询 |
+| `notifyOnly` 仅提醒（默认） | 启动约 3s + 每 6h 自动检查；发现更新 **弹窗**，用户决定是否下载 |
+| `autoDownload` 自动下载 | 自动检查后 **静默下载**（不弹发现窗）；Footer 显示进度；完成后 Chip + toast 提醒重启 |
+
+说明：
+
+- **永不自动重启**，需用户确认「重启」
+- 历史设置 `autoInstall` 加载时迁移为 `autoDownload` 并回写
+- 同一时刻最多一次下载（usecase 单飞锁）
+- 设计文档：`Docs/01-执行计划/04-更新系统体验完善/`
 
 ### 修改更新相关代码时的注意事项
 
 - Rust 端枚举和结构体用了 `#[serde(rename_all = "camelCase")]`，TS 端必须对应 camelCase
 - `UpdateStatus` 是 internally tagged enum（tag 字段为 `status`），两端变体名必须一致
+- Shell 侧以 `phase` 为准；Dialog 的 `status` 为兼容层
 - 修改领域模型（domain 层）不影响 Tauri/网络，最安全
 - 修改 IPC 命令时必须同步修改 TS 端的类型定义
 - 自动检查间隔常量：`AUTO_CHECK_INTERVAL_SECS`（6小时）、`STARTUP_CHECK_DELAY_SECS`（3秒）
@@ -41,11 +60,11 @@ src/features/update/
 
 ## 二、测试更新流程
 
-**重要前提**：Tauri updater 在 `tauri dev` 模式下**不会真正执行下载和安装**（因为开发环境没有签名的安装包），但检查更新和弹窗 UI 是可以测试的。
+**重要前提**：Tauri updater 在 `tauri dev` 模式下**不会真正完成安装**（开发环境通常没有可用的签名安装包），但检查更新、事件分流、Footer/Chip/弹窗 UI 可用 mock 验证。
 
-### 方式 A：快速测试弹窗 UI（不需要构建）
+### 方式 A：快速测试 UI 与三档行为（不需要构建）
 
-用本地 mock 服务器模拟远端返回新版本，测试弹窗、设置页交互：
+用本地 mock 服务器模拟远端返回新版本：
 
 1. 启动 mock 服务器：
    ```bash
@@ -67,17 +86,26 @@ src/features/update/
    bun tauri dev
    ```
 
-4. 打开设置页 → 应用更新 → 点击「检查更新」，即可看到弹窗。
+4. 建议按模式验收：
 
-5. **测试完后记得把 endpoints 改回正式地址！**
+| 设置 | 操作 | 期望 |
+|------|------|------|
+| 仅提醒 | 等启动约 3s，或点「检查更新」 | **UpdateDialog** 出现；不自动下载 |
+| 自动下载 | 等启动约 3s | **无**发现弹窗；Footer 出现下载/进度；完成后 Chip + toast |
+| 手动检查 | 启动后不点检查 | 无网络检查/无更新 UI；点「检查更新」才有结果 |
+| 任意 · 下载中 | 关闭 Dialog / 点「后台继续」 | 下载不中断，Footer 仍显示进度 |
+| 就绪 | Chip 点「稍后」 | Chip 消失，Footer 仍「就绪」；点「重启」调 restart |
+
+5. **测试完后记得把 endpoints 改回正式地址！**（若曾手改配置）
 
 你可以测试的内容：
-- 弹窗展示、更新说明显示
-- 4 种检查模式切换
+- 三档检查模式切换与文案
+- 仅提醒弹窗 / 自动下载静默路径
+- Footer 进度环与就绪 Chip
 - 稳定版/测试版渠道切换
 - 跳过此版本
 - 手动检查更新按钮
-- 下载进度条（mock 数据）
+- 下载进度（Channel 或全局事件）
 - 错误状态展示
 
 ### 方式 B：完整端到端测试（需要构建）
