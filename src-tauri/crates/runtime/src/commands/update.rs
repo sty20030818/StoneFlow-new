@@ -6,7 +6,7 @@ use tauri::{ipc::Channel, AppHandle, State};
 use crate::app::error::AppError;
 use crate::services::RuntimeUpdateService;
 use stoneflow_domain::{UpdateChannel, UpdateCheckMode, UpdateSettings, UpdateStatus};
-use stoneflow_usecase::update::{UpdateInfo, UpdateSessionSnapshot};
+use stoneflow_usecase::update::{DownloadOutcome, UpdateInfo, UpdateSessionSnapshot};
 
 /// 推送到前端的更新事件。
 #[derive(Clone, Serialize)]
@@ -55,10 +55,14 @@ pub async fn download_and_install(
         .await;
 
     match result {
-        Ok(()) => {
+        Ok(DownloadOutcome::Completed) => {
             let _ = on_event.send(UpdateEvent::StatusChanged {
                 status: UpdateStatus::Downloaded { version },
             });
+            Ok(())
+        }
+        Ok(DownloadOutcome::Cancelled) => {
+            // 前端已 abandon UI；不推送 ready，避免误提示重启
             Ok(())
         }
         Err(e) => {
@@ -120,4 +124,13 @@ pub async fn get_update_session(
     service: State<'_, RuntimeUpdateService>,
 ) -> Result<UpdateSessionSnapshot, AppError> {
     Ok(service.session_snapshot())
+}
+
+/// 取消进行中的下载（abort 下载 task，断开 HTTP 流）。
+#[tauri::command]
+pub async fn cancel_update_download(
+    service: State<'_, RuntimeUpdateService>,
+) -> Result<(), AppError> {
+    service.cancel_download();
+    Ok(())
 }

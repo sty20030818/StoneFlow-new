@@ -45,6 +45,8 @@ src/features/update/
 - **永不自动重启**，需用户确认「重启」
 - 历史设置 `autoInstall` 加载时迁移为 `autoDownload` 并回写
 - 同一时刻最多一次下载（usecase 单飞锁）
+- 统一事件：`update-phase`（主路径）；过渡期仍双发旧事件名
+- 取消下载：`cancel_update_download` 会 abort 下载 task，中断 HTTP 流（仅下载阶段；不在 install 瞬间取消）
 - 设计文档：`Docs/01-执行计划/04-更新系统体验完善/`
 
 ### 修改更新相关代码时的注意事项

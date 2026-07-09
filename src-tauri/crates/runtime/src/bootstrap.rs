@@ -2,10 +2,14 @@
 
 use std::future::Future;
 
-use tauri::{Emitter, Manager};
+use tauri::Manager;
 
 use crate::app::state::{ActiveScopeState, CommandOpenState};
+use crate::services::update_events::{
+    emit_available, emit_downloading, emit_error, emit_ready,
+};
 use crate::services::{build_update_service, RuntimeUpdateService};
+use stoneflow_usecase::DownloadOutcome;
 use crate::sync::{self, SyncRuntimeState};
 use stoneflow_domain::{
     UpdateCheckMode, AUTO_CHECK_INTERVAL_SECS, STARTUP_CHECK_DELAY_SECS,
@@ -142,9 +146,9 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                                 "自动检查发现更新 v{}（仅提醒，等待用户确认）",
                                 info.version
                             );
-                            let _ = app_handle.emit("update-available", &info);
+                            emit_available(&app_handle, &info);
                         }
-                        // 自动下载：静默后台下载，不 emit update-available（避免前端开发现弹窗）。
+                        // 自动下载：静默后台下载，不发 available 开窗路径。
                         UpdateCheckMode::AutoDownload => {
                             log::info!(
                                 target: "updater",
@@ -166,28 +170,38 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                                 let version_for_done = version.clone();
                                 let app_for_done = app.clone();
                                 let app_for_error = app.clone();
+                                let app_check = app.clone();
                                 let result = download_service
                                     .download_and_install(move |downloaded, total| {
-                                        let _ = app_for_progress.emit(
-                                            "update-download-progress",
-                                            serde_json::json!({
-                                                "version": version_for_progress,
-                                                "downloaded": downloaded,
-                                                "total": total,
-                                            }),
+                                        let Some(svc) =
+                                            app_check.try_state::<RuntimeUpdateService>()
+                                        else {
+                                            return;
+                                        };
+                                        if !svc.should_emit_progress() {
+                                            return;
+                                        }
+                                        emit_downloading(
+                                            &app_for_progress,
+                                            &version_for_progress,
+                                            downloaded,
+                                            total,
                                         );
                                     })
                                     .await;
 
                                 match result {
-                                    Ok(()) => {
+                                    Ok(DownloadOutcome::Completed) => {
                                         log::info!(
                                             target: "updater",
                                             "静默下载完成 v{version_for_done}，等待用户重启"
                                         );
-                                        let _ = app_for_done.emit(
-                                            "update-downloaded",
-                                            serde_json::json!({ "version": version_for_done }),
+                                        emit_ready(&app_for_done, &version_for_done);
+                                    }
+                                    Ok(DownloadOutcome::Cancelled) => {
+                                        log::info!(
+                                            target: "updater",
+                                            "静默下载已取消 v{version_for_done}"
                                         );
                                     }
                                     Err(e) => {
@@ -195,10 +209,7 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                                             target: "updater",
                                             "静默下载失败 v{version}: {e}"
                                         );
-                                        let _ = app_for_error.emit(
-                                            "update-error",
-                                            serde_json::json!({ "message": e.to_string() }),
-                                        );
+                                        emit_error(&app_for_error, e.to_string());
                                     }
                                 }
                             });

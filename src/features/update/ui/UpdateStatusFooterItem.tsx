@@ -33,6 +33,7 @@ export function UpdateStatusFooterItem() {
 	const openDialog = useUpdateStore((s) => s.openDialog)
 	const skipAndClose = useUpdateStore((s) => s.skipAndClose)
 	const { restart, cancelDownloadUi } = useUpdateActions()
+	// cancelDownloadUi is async now
 	const [popoverOpen, setPopoverOpen] = useState(false)
 
 	if (!visible) return null
@@ -137,7 +138,7 @@ export function UpdateStatusFooterItem() {
 						</p>
 					) : null}
 					<p className='text-[11px] text-muted-foreground'>
-						取消仅隐藏进度；底层下载可能仍会继续，完成后仍会提示就绪。
+						取消将中断下载并断开网络；可稍后重新下载。
 					</p>
 					<div className='flex justify-end gap-2'>
 						<Button
@@ -145,7 +146,7 @@ export function UpdateStatusFooterItem() {
 							size='sm'
 							variant='ghost'
 							onClick={() => {
-								cancelDownloadUi()
+								void cancelDownloadUi()
 								setPopoverOpen(false)
 							}}
 						>

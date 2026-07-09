@@ -54,11 +54,25 @@ export interface UpdateStatusChangedEvent {
 
 /** 后端 emit 的全局事件名 */
 export const UPDATE_EVENTS = {
+	/** 统一阶段事件（主路径） */
+	PHASE: 'update-phase',
+	/** 以下为过渡期兼容事件（仍双发） */
 	AVAILABLE: 'update-available',
 	DOWNLOAD_PROGRESS: 'update-download-progress',
 	DOWNLOADED: 'update-downloaded',
 	ERROR: 'update-error',
 } as const
+
+/** 统一 update-phase 事件 payload */
+export interface UpdatePhasePayload {
+	phase: 'available' | 'downloading' | 'ready' | 'error'
+	version?: string | null
+	body?: string | null
+	pubDate?: string | null
+	downloaded?: number | null
+	total?: number | null
+	message?: string | null
+}
 
 /** 全局事件 payload 类型 */
 export interface UpdateAvailablePayload {
@@ -137,4 +151,12 @@ export interface UpdateSessionSnapshot {
 /** 读取后端更新会话快照 */
 export async function getUpdateSession(): Promise<UpdateSessionSnapshot> {
 	return invoke<UpdateSessionSnapshot>('get_update_session')
+}
+
+/**
+ * 取消进行中的下载：abort 后端下载 task，断开 HTTP 流。
+ * 仅在「下载中」有效；已预装完成（就绪）后无效。
+ */
+export async function cancelUpdateDownload(): Promise<void> {
+	return invoke('cancel_update_download')
 }

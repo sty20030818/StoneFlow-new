@@ -180,10 +180,12 @@ impl UpdatePort for TauriUpdateAdapter {
             .map_err(|e| UsecaseError::update(format!("检查更新失败: {e}")))?
             .ok_or_else(|| UsecaseError::update("当前没有可用更新"))?;
 
+        // 拆成 download + install：下载阶段可被 task abort 真正中断；
+        // 下载完成后的 install 为同步短操作，取消主要针对卡顿的下载。
         let downloaded = Arc::new(AtomicU64::new(0));
         let downloaded_clone = downloaded.clone();
-        update
-            .download_and_install(
+        let bytes = update
+            .download(
                 move |chunk_length, content_length| {
                     downloaded_clone.fetch_add(chunk_length as u64, Ordering::SeqCst);
                     let total = downloaded_clone.load(Ordering::SeqCst);
@@ -192,7 +194,11 @@ impl UpdatePort for TauriUpdateAdapter {
                 || {},
             )
             .await
-            .map_err(|e| UsecaseError::update(format!("下载或安装更新失败: {e}")))?;
+            .map_err(|e| UsecaseError::update(format!("下载更新失败: {e}")))?;
+
+        update
+            .install(bytes)
+            .map_err(|e| UsecaseError::update(format!("安装更新失败: {e}")))?;
 
         Ok(())
     }

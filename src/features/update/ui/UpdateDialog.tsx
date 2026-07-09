@@ -155,7 +155,7 @@ export function UpdateDialog() {
 						<>
 							<Button
 								onClick={() => {
-									cancelDownloadUi()
+									void cancelDownloadUi()
 								}}
 								size='sm'
 								type='button'

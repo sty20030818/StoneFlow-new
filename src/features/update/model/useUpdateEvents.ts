@@ -1,10 +1,7 @@
 /**
  * 更新事件监听 Hook。
  *
- * 在应用启动时挂载一次，负责：
- * 1. 监听后端 emit 的全局事件
- * 2. 按 checkMode 分流（自动下载不打开发现弹窗）
- * 3. 更新 Zustand store
+ * 优先监听统一 `update-phase`；兼容过渡期仍双发的旧事件名。
  */
 
 import { useEffect } from 'react'
@@ -12,23 +9,71 @@ import { listen } from '@tauri-apps/api/event'
 import { toast } from 'sonner'
 
 import {
+	cancelUpdateDownload,
 	checkUpdate,
 	downloadAndInstall,
 	getUpdateSession,
 	getUpdateSettings,
 	restartAndInstall,
 	UPDATE_EVENTS,
-	type UpdateAvailablePayload,
-	type UpdateDownloadProgressPayload,
-	type UpdateErrorPayload,
+	type UpdatePhasePayload,
 	type UpdateSettings,
 } from '@/features/update/api/updates'
+import { applyUpdatePhaseEvent } from '@/features/update/model/applyUpdatePhase'
 import { useUpdateStore } from '@/features/update/model/useUpdateStore'
+
+function storePhaseActions() {
+	const store = useUpdateStore.getState()
+	return {
+		checkMode: store.checkMode,
+		downloadUiAbandoned: store.downloadUiAbandoned,
+		showUpdate: store.showUpdate,
+		setStatus: store.setStatus as (status: {
+			status: 'downloading' | 'error'
+			downloaded?: number
+			total?: number | null
+			message?: string
+		}) => void,
+		markReady: store.markReady,
+		ensureUpdateInfo: (version: string) => {
+			const s = useUpdateStore.getState()
+			if (!s.updateInfo || s.updateInfo.version !== version) {
+				s.showUpdate(
+					{
+						version,
+						body: s.updateInfo?.body ?? null,
+						pubDate: s.updateInfo?.pubDate ?? null,
+					},
+					{ openDialog: false },
+				)
+			}
+		},
+		shouldToastReady: (version: string) =>
+			useUpdateStore.getState().readyToastVersion !== version,
+		markReadyToasted: (version: string) => {
+			useUpdateStore.setState({ readyToastVersion: version })
+		},
+	}
+}
+
+function runPhaseEffect(effect: ReturnType<typeof applyUpdatePhaseEvent>) {
+	if (!effect) return
+	if (effect.type === 'toast-ready') {
+		toast.success(`新版本 ${effect.version} 已下载完成，重启后生效`)
+	} else if (effect.type === 'toast-error') {
+		toast.error(`更新失败: ${effect.message}`)
+	}
+}
+
+function handlePhasePayload(payload: UpdatePhasePayload) {
+	const effect = applyUpdatePhaseEvent(payload, storePhaseActions())
+	runPhaseEffect(effect)
+}
 
 export function useUpdateEvents() {
 	useEffect(() => {
 		let disposed = false
-		const unlisteners: Array<() => void> = []
+		let unlistenPhase: (() => void) | undefined
 
 		async function setupListeners() {
 			try {
@@ -40,7 +85,6 @@ export function useUpdateEvents() {
 				console.error('Failed to load update settings for event routing:', err)
 			}
 
-			// 挂载时 hydrate：避免 listener 未就绪时错过已在进行的下载/就绪态
 			try {
 				const session = await getUpdateSession()
 				if (!disposed) {
@@ -55,74 +99,11 @@ export function useUpdateEvents() {
 				console.error('Failed to hydrate update session:', err)
 			}
 
-			const unlistenAvailable = await listen<UpdateAvailablePayload>(
-				UPDATE_EVENTS.AVAILABLE,
-				(event) => {
-					if (disposed) return
-					const info = {
-						version: event.payload.version,
-						body: event.payload.body,
-						pubDate: event.payload.pubDate,
-					}
-					const checkMode = useUpdateStore.getState().checkMode
-					// 自动下载：后端不应再发 available；若仍收到则只记状态、不开窗
-					if (checkMode === 'autoDownload') {
-						useUpdateStore.getState().showUpdate(info, { openDialog: false })
-						return
-					}
-					useUpdateStore.getState().showUpdate(info, { openDialog: true })
-				},
-			)
-			unlisteners.push(unlistenAvailable)
-
-			const unlistenProgress = await listen<UpdateDownloadProgressPayload>(
-				UPDATE_EVENTS.DOWNLOAD_PROGRESS,
-				(event) => {
-					if (disposed) return
-					const store = useUpdateStore.getState()
-					if (store.downloadUiAbandoned) return
-					if (!store.updateInfo || store.updateInfo.version !== event.payload.version) {
-						store.showUpdate(
-							{
-								version: event.payload.version,
-								body: store.updateInfo?.body ?? null,
-								pubDate: store.updateInfo?.pubDate ?? null,
-							},
-							{ openDialog: false },
-						)
-					}
-					store.setStatus({
-						status: 'downloading',
-						downloaded: event.payload.downloaded,
-						total: event.payload.total,
-					})
-				},
-			)
-			unlisteners.push(unlistenProgress)
-
-			const unlistenDownloaded = await listen<{ version: string }>(
-				UPDATE_EVENTS.DOWNLOADED,
-				(event) => {
-					if (disposed) return
-					const store = useUpdateStore.getState()
-					store.markReady(event.payload.version)
-					if (store.readyToastVersion !== event.payload.version) {
-						useUpdateStore.setState({ readyToastVersion: event.payload.version })
-						toast.success(`新版本 ${event.payload.version} 已下载完成，重启后生效`)
-					}
-				},
-			)
-			unlisteners.push(unlistenDownloaded)
-
-			const unlistenError = await listen<UpdateErrorPayload>(UPDATE_EVENTS.ERROR, (event) => {
+			// 主路径：只听统一 phase（后端仍双发旧事件给其它消费者，前端避免重复处理）
+			unlistenPhase = await listen<UpdatePhasePayload>(UPDATE_EVENTS.PHASE, (event) => {
 				if (disposed) return
-				useUpdateStore.getState().setStatus({
-					status: 'error',
-					message: event.payload.message,
-				})
-				toast.error(`更新失败: ${event.payload.message}`)
+				handlePhasePayload(event.payload)
 			})
-			unlisteners.push(unlistenError)
 		}
 
 		void setupListeners().catch((err) => {
@@ -131,7 +112,7 @@ export function useUpdateEvents() {
 
 		return () => {
 			disposed = true
-			unlisteners.forEach((u) => u())
+			unlistenPhase?.()
 		}
 	}, [])
 }
@@ -144,14 +125,16 @@ export function useUpdateActions() {
 	const updateInfo = useUpdateStore((s) => s.updateInfo)
 	const closeDialog = useUpdateStore((s) => s.closeDialog)
 
-	/** 开始下载更新 */
 	async function startDownload() {
 		useUpdateStore.setState({ downloadUiAbandoned: false })
 		setStatus({ status: 'downloading', downloaded: 0, total: null })
 
 		try {
 			await downloadAndInstall((status) => {
-				if (useUpdateStore.getState().downloadUiAbandoned && status.status === 'downloading') {
+				if (
+					useUpdateStore.getState().downloadUiAbandoned &&
+					status.status === 'downloading'
+				) {
 					return
 				}
 				setStatus(status)
@@ -163,12 +146,16 @@ export function useUpdateActions() {
 		}
 	}
 
-	/** 取消下载 UI（best-effort，底层可能仍在下载） */
-	function cancelDownloadUi() {
+	/** 取消下载 UI + 请求后端停止进度推送（无法保证中断网络） */
+	async function cancelDownloadUi() {
 		useUpdateStore.getState().abandonDownloadUi()
+		try {
+			await cancelUpdateDownload()
+		} catch (err) {
+			console.error('Failed to suppress update progress emits:', err)
+		}
 	}
 
-	/** 重启并安装 */
 	async function restart() {
 		try {
 			await restartAndInstall()
@@ -177,7 +164,6 @@ export function useUpdateActions() {
 		}
 	}
 
-	/** 手动检查更新 */
 	async function checkNow(): Promise<UpdateSettings | null> {
 		try {
 			const settings = await getUpdateSettings()

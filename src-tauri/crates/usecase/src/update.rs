@@ -33,7 +33,6 @@ pub struct UpdateSessionSnapshot {
     pub download_in_flight: bool,
 }
 
-#[derive(Debug)]
 struct SessionInner {
     in_flight: bool,
     phase: UpdateSessionPhase,
@@ -42,6 +41,12 @@ struct SessionInner {
     total: Option<u64>,
     /// 最近一次 check 到的远端版本，供下载会话标注。
     pending_version: Option<String>,
+    /// 为 false 时停止推送进度；并配合 abort 真正中断下载 task。
+    emit_progress: bool,
+    /// 当前下载 task 的 abort 句柄（仅下载阶段有效）。
+    abort_handle: Option<tokio::task::AbortHandle>,
+    /// 用户请求取消（abort 后 join 时识别）。
+    cancel_requested: bool,
 }
 
 impl Default for SessionInner {
@@ -53,8 +58,20 @@ impl Default for SessionInner {
             downloaded: 0,
             total: None,
             pending_version: None,
+            emit_progress: true,
+            abort_handle: None,
+            cancel_requested: false,
         }
     }
+}
+
+/// 下载结果。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DownloadOutcome {
+    /// 下载并预装完成，等待重启。
+    Completed,
+    /// 用户在下载中取消（网络任务已 abort）。
+    Cancelled,
 }
 
 /// 下载进行中时占用的守卫：离开作用域后清除 in_flight。
@@ -106,14 +123,16 @@ pub trait UpdateSettingsPort: Send + Sync {
 }
 
 /// 更新业务编排服务。
-pub struct UpdateService<P: UpdatePort, S: UpdateSettingsPort> {
+///
+/// `P: Clone`：下载在独立 task 中运行以便 `abort` 真正中断网络流。
+pub struct UpdateService<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> {
     port: P,
     settings_port: S,
     /// 进程内下载会话（单飞 + hydrate 快照）。
     session: Arc<Mutex<SessionInner>>,
 }
 
-impl<P: UpdatePort, S: UpdateSettingsPort> UpdateService<P, S> {
+impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S> {
     pub fn new(port: P, settings_port: S) -> Self {
         Self {
             port,
@@ -139,6 +158,40 @@ impl<P: UpdatePort, S: UpdateSettingsPort> UpdateService<P, S> {
             downloaded: s.downloaded,
             total: s.total,
             download_in_flight: s.in_flight,
+        }
+    }
+
+    /// 是否应向前端推送下载进度（取消后为 false）。
+    pub fn should_emit_progress(&self) -> bool {
+        self.session
+            .lock()
+            .map(|s| s.emit_progress)
+            .unwrap_or(true)
+    }
+
+    /// 停止进度推送（兼容旧调用）。
+    pub fn suppress_progress_emits(&self) {
+        self.cancel_download();
+    }
+
+    /// 取消**下载中**的更新：abort 下载 task，断开 HTTP 流。
+    ///
+    /// 已进入 install 的极短窗口内可能无法打断；完成后（Ready）调用无效。
+    pub fn cancel_download(&self) {
+        let handle = {
+            let mut s = match self.session.lock() {
+                Ok(g) => g,
+                Err(e) => e.into_inner(),
+            };
+            if s.phase != UpdateSessionPhase::Downloading && !s.in_flight {
+                return;
+            }
+            s.emit_progress = false;
+            s.cancel_requested = true;
+            s.abort_handle.take()
+        };
+        if let Some(handle) = handle {
+            handle.abort();
         }
     }
 
@@ -195,56 +248,132 @@ impl<P: UpdatePort, S: UpdateSettingsPort> UpdateService<P, S> {
 
     /// 开始下载并安装当前检测到的更新。
     ///
-    /// 同一时刻最多一次下载：若已有下载在进行，直接返回 `Ok(())`（幂等忽略重复请求）。
+    /// - 同一时刻最多一次下载：若已有下载在进行，返回 `Ok(Completed)` 幂等忽略。
+    /// - 下载在独立 task 中运行，可通过 [`Self::cancel_download`] abort 真正中断网络。
+    /// - `Ok(Cancelled)`：用户取消；`Ok(Completed)`：预装完成。
     pub async fn download_and_install(
         &self,
         on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
-    ) -> Result<(), UsecaseError> {
+    ) -> Result<DownloadOutcome, UsecaseError> {
         {
             let mut s = self.session.lock().unwrap_or_else(|e| e.into_inner());
             if s.in_flight {
-                // 已有下载：bootstrap 静默下载与 UI「立即更新」可能重叠，忽略第二次。
-                return Ok(());
+                // 已有下载：幂等视为「已有任务在跑」，不二次启动。
+                return Ok(DownloadOutcome::Completed);
             }
             s.in_flight = true;
             s.phase = UpdateSessionPhase::Downloading;
             s.downloaded = 0;
             s.total = None;
             s.version = s.pending_version.clone();
+            s.emit_progress = true;
+            s.cancel_requested = false;
+            s.abort_handle = None;
         }
         let _guard = DownloadInFlightGuard(Arc::clone(&self.session));
 
         let settings = self.settings_port.load().await?;
         let session = Arc::clone(&self.session);
-        let result = self
-            .port
-            .download_and_install(settings.channel, move |downloaded, total| {
+        let port = self.port.clone();
+        let channel = settings.channel;
+
+        let join = tokio::spawn(async move {
+            port.download_and_install(channel, move |downloaded, total| {
                 if let Ok(mut s) = session.lock() {
+                    if s.cancel_requested {
+                        return;
+                    }
                     s.downloaded = downloaded;
                     s.total = total;
                     s.phase = UpdateSessionPhase::Downloading;
                 }
                 on_progress(downloaded, total);
             })
-            .await;
+            .await
+        });
 
-        match &result {
-            Ok(()) => {
+        {
+            let mut s = self.session.lock().unwrap_or_else(|e| e.into_inner());
+            s.abort_handle = Some(join.abort_handle());
+        }
+
+        let join_result = join.await;
+
+        // 清理 abort 句柄
+        if let Ok(mut s) = self.session.lock() {
+            s.abort_handle = None;
+        }
+
+        match join_result {
+            Ok(Ok(())) => {
+                let cancelled = self
+                    .session
+                    .lock()
+                    .map(|s| s.cancel_requested)
+                    .unwrap_or(false);
+                if cancelled {
+                    self.reset_session_after_cancel();
+                    return Ok(DownloadOutcome::Cancelled);
+                }
                 if let Ok(mut s) = self.session.lock() {
                     s.phase = UpdateSessionPhase::Ready;
-                    // version 已在启动时写入
+                    s.cancel_requested = false;
                 }
+                Ok(DownloadOutcome::Completed)
             }
-            Err(_) => {
+            Ok(Err(e)) => {
+                let cancelled = self
+                    .session
+                    .lock()
+                    .map(|s| s.cancel_requested)
+                    .unwrap_or(false);
+                if cancelled {
+                    self.reset_session_after_cancel();
+                    return Ok(DownloadOutcome::Cancelled);
+                }
                 if let Ok(mut s) = self.session.lock() {
                     s.phase = UpdateSessionPhase::Idle;
                     s.downloaded = 0;
                     s.total = None;
+                    s.cancel_requested = false;
+                }
+                Err(e)
+            }
+            Err(join_err) => {
+                // abort 会走到这里
+                let cancelled = join_err.is_cancelled()
+                    || self
+                        .session
+                        .lock()
+                        .map(|s| s.cancel_requested)
+                        .unwrap_or(false);
+                self.reset_session_after_cancel();
+                if cancelled {
+                    Ok(DownloadOutcome::Cancelled)
+                } else {
+                    Err(UsecaseError::update(format!(
+                        "下载任务异常结束: {join_err}"
+                    )))
                 }
             }
         }
+    }
 
-        result
+    fn reset_session_after_cancel(&self) {
+        if let Ok(mut s) = self.session.lock() {
+            s.phase = if s.pending_version.is_some() {
+                UpdateSessionPhase::Idle
+            } else {
+                UpdateSessionPhase::Idle
+            };
+            // 保留 pending_version，便于用户再次下载
+            s.downloaded = 0;
+            s.total = None;
+            s.emit_progress = true;
+            s.cancel_requested = false;
+            s.abort_handle = None;
+            s.version = s.pending_version.clone();
+        }
     }
 
     /// 重启应用以完成安装。
@@ -283,6 +412,7 @@ mod tests {
     use super::*;
 
     /// 测试用的内存 Mock UpdatePort。
+    #[derive(Clone)]
     struct MockUpdatePort {
         latest_version: Option<&'static str>,
         download_called: Arc<Mutex<bool>>,
@@ -454,6 +584,7 @@ mod tests {
             "second concurrent download must be single-flighted"
         );
         assert!(!service.is_download_in_flight());
+        assert_eq!(r1.unwrap(), DownloadOutcome::Completed);
     }
 
     #[tokio::test]
@@ -469,8 +600,14 @@ mod tests {
         let settings_port = MockSettingsPort::new(UpdateSettings::default());
         let service = UpdateService::new(port, settings_port);
 
-        service.download_and_install(|_, _| {}).await.unwrap();
-        service.download_and_install(|_, _| {}).await.unwrap();
+        assert_eq!(
+            service.download_and_install(|_, _| {}).await.unwrap(),
+            DownloadOutcome::Completed
+        );
+        assert_eq!(
+            service.download_and_install(|_, _| {}).await.unwrap(),
+            DownloadOutcome::Completed
+        );
         assert_eq!(*download_count.lock().unwrap(), 2);
     }
 
@@ -482,11 +619,47 @@ mod tests {
 
         let info = service.check_update(true).await.unwrap().unwrap();
         assert_eq!(info.version, "0.3.0");
-        service.download_and_install(|_, _| {}).await.unwrap();
+        assert_eq!(
+            service.download_and_install(|_, _| {}).await.unwrap(),
+            DownloadOutcome::Completed
+        );
 
         let snap = service.session_snapshot();
         assert_eq!(snap.phase, UpdateSessionPhase::Ready);
         assert_eq!(snap.version.as_deref(), Some("0.3.0"));
         assert!(!snap.download_in_flight);
+    }
+
+    #[tokio::test]
+    async fn cancel_download_aborts_in_flight_task() {
+        let download_count = Arc::new(Mutex::new(0u32));
+        let port = MockUpdatePort {
+            latest_version: Some("0.3.0"),
+            download_called: Arc::new(Mutex::new(false)),
+            download_count: Arc::clone(&download_count),
+            download_delay_ms: 500,
+            restart_called: Arc::new(Mutex::new(false)),
+        };
+        let settings_port = MockSettingsPort::new(UpdateSettings::default());
+        let service = Arc::new(UpdateService::new(port, settings_port));
+        let _ = service.check_update(true).await.unwrap();
+
+        let svc = Arc::clone(&service);
+        let handle = tokio::spawn(async move { svc.download_and_install(|_, _| {}).await });
+
+        tokio::time::sleep(std::time::Duration::from_millis(30)).await;
+        assert!(service.is_download_in_flight());
+        service.cancel_download();
+
+        let outcome = handle.await.unwrap().unwrap();
+        assert_eq!(outcome, DownloadOutcome::Cancelled);
+        assert!(!service.is_download_in_flight());
+        assert_eq!(service.session_snapshot().phase, UpdateSessionPhase::Idle);
+
+        // 取消后可重新下载
+        assert_eq!(
+            service.download_and_install(|_, _| {}).await.unwrap(),
+            DownloadOutcome::Completed
+        );
     }
 }

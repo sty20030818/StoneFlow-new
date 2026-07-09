@@ -15,6 +15,7 @@ mod sync_mutation;
 mod task_link_service;
 mod task_service;
 mod update_adapter;
+pub mod update_events;
 mod update_service;
 mod update_settings_store;
 mod view_service;
