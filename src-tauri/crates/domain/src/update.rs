@@ -22,21 +22,25 @@ impl Default for UpdateCheckMode {
     }
 }
 
-/// 从持久化字符串解析检查模式，并迁移历史值。
+/// 从持久化字符串解析检查模式。
 ///
-/// - `"autoInstall"` → [`UpdateCheckMode::AutoDownload`]（历史模式迁移）
 /// - `"manual"` / `"notifyOnly"` / `"autoDownload"` → 对应变体
-/// - 未知或空 → 默认 [`UpdateCheckMode::NotifyOnly`]
-///
-/// 返回 `(mode, migrated)`：`migrated == true` 表示存储值被改写（历史 `autoInstall`），
-/// 调用方应回写设置以清理持久化数据。
-pub fn migrate_check_mode_from_stored(raw: &str) -> (UpdateCheckMode, bool) {
+/// - 未知、空、历史脏值 → 默认 [`UpdateCheckMode::NotifyOnly`]
+pub fn parse_check_mode(raw: &str) -> UpdateCheckMode {
     match raw {
-        "manual" => (UpdateCheckMode::Manual, false),
-        "notifyOnly" => (UpdateCheckMode::NotifyOnly, false),
-        "autoDownload" => (UpdateCheckMode::AutoDownload, false),
-        "autoInstall" => (UpdateCheckMode::AutoDownload, true),
-        _ => (UpdateCheckMode::NotifyOnly, false),
+        "manual" => UpdateCheckMode::Manual,
+        "notifyOnly" => UpdateCheckMode::NotifyOnly,
+        "autoDownload" => UpdateCheckMode::AutoDownload,
+        _ => UpdateCheckMode::NotifyOnly,
+    }
+}
+
+/// 序列化为 store 使用的 camelCase 字符串。
+pub fn check_mode_to_stored(mode: UpdateCheckMode) -> &'static str {
+    match mode {
+        UpdateCheckMode::Manual => "manual",
+        UpdateCheckMode::NotifyOnly => "notifyOnly",
+        UpdateCheckMode::AutoDownload => "autoDownload",
     }
 }
 
@@ -165,39 +169,31 @@ mod tests {
     }
 
     #[test]
-    fn migrate_check_mode_known_values() {
+    fn parse_check_mode_known_values() {
+        assert_eq!(parse_check_mode("manual"), UpdateCheckMode::Manual);
+        assert_eq!(parse_check_mode("notifyOnly"), UpdateCheckMode::NotifyOnly);
         assert_eq!(
-            migrate_check_mode_from_stored("manual"),
-            (UpdateCheckMode::Manual, false)
-        );
-        assert_eq!(
-            migrate_check_mode_from_stored("notifyOnly"),
-            (UpdateCheckMode::NotifyOnly, false)
-        );
-        assert_eq!(
-            migrate_check_mode_from_stored("autoDownload"),
-            (UpdateCheckMode::AutoDownload, false)
+            parse_check_mode("autoDownload"),
+            UpdateCheckMode::AutoDownload
         );
     }
 
     #[test]
-    fn migrate_auto_install_to_auto_download() {
-        assert_eq!(
-            migrate_check_mode_from_stored("autoInstall"),
-            (UpdateCheckMode::AutoDownload, true)
-        );
+    fn parse_check_mode_unknown_defaults_to_notify_only() {
+        assert_eq!(parse_check_mode("autoInstall"), UpdateCheckMode::NotifyOnly);
+        assert_eq!(parse_check_mode("somethingElse"), UpdateCheckMode::NotifyOnly);
+        assert_eq!(parse_check_mode(""), UpdateCheckMode::NotifyOnly);
     }
 
     #[test]
-    fn migrate_unknown_check_mode_to_notify_only() {
-        assert_eq!(
-            migrate_check_mode_from_stored("somethingElse"),
-            (UpdateCheckMode::NotifyOnly, false)
-        );
-        assert_eq!(
-            migrate_check_mode_from_stored(""),
-            (UpdateCheckMode::NotifyOnly, false)
-        );
+    fn check_mode_to_stored_roundtrip() {
+        for mode in [
+            UpdateCheckMode::Manual,
+            UpdateCheckMode::NotifyOnly,
+            UpdateCheckMode::AutoDownload,
+        ] {
+            assert_eq!(parse_check_mode(check_mode_to_stored(mode)), mode);
+        }
     }
 
     #[test]

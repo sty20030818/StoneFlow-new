@@ -8,7 +8,7 @@
 
 ```
 src-tauri/crates/
-├── domain/src/update.rs          # 三档模式、间隔、autoInstall 迁移
+├── domain/src/update.rs          # 三档模式、间隔、parse_check_mode
 ├── usecase/src/update.rs         # 检查、单飞、abort 取消、session
 └── runtime/src/
     ├── services/
@@ -39,7 +39,6 @@ src/features/update/
 说明：
 
 - **永不自动重启**；用户确认后重启
-- 历史 `autoInstall` → 加载时迁移为 `autoDownload`（仅旧 store 兼容）
 - 单飞下载；`cancel_update_download` **abort** 下载 task
 - 全局事件 **仅** `update-phase`（无旧事件双发）
 - 间隔 1h/3h/6h/12h/24h 可配；启动延迟 3s

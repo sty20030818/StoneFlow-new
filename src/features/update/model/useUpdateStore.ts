@@ -39,16 +39,12 @@ interface UpdateState {
 	setChecking: () => void
 	setUpToDate: () => void
 	showAvailable: (info: UpdateInfo, options?: { openDialog?: boolean }) => void
-	/** @deprecated 使用 showAvailable */
-	showUpdate: (info: UpdateInfo, options?: { openDialog?: boolean }) => void
 	setDownloading: (progress: UpdateProgress, version?: string) => void
 	setReady: (version: string) => void
 	setError: (message: string) => void
 	setIdle: () => void
 	/** 本地放弃下载 UI（配合 cancel_update_download abort） */
 	cancelDownloadUiLocal: () => void
-	/** @deprecated 使用 cancelDownloadUiLocal */
-	abandonDownloadUi: () => void
 	closeDialog: () => void
 	skipAndClose: () => void
 	dismissReadyChip: () => void
@@ -108,8 +104,6 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			downloadUiAbandoned: false,
 		})
 	},
-
-	showUpdate: (info, options) => get().showAvailable(info, options),
 
 	setDownloading: (progress, version) => {
 		if (get().downloadUiAbandoned) return
@@ -179,8 +173,6 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			errorMessage: null,
 		})
 	},
-
-	abandonDownloadUi: () => get().cancelDownloadUiLocal(),
 
 	closeDialog: () => set({ dialogVisible: false }),
 

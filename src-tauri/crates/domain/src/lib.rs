@@ -35,7 +35,7 @@ pub use task::{validate_task_id, validate_task_priority, TaskStatus};
 pub use task_link::{validate_http_https_url, validate_link_id, validate_task_id_for_link};
 pub use time::{is_same_utc_day, now_utc, parse_calendar_date, to_date_only, today_local_date};
 pub use update::{
-    is_version_skipped, migrate_check_mode_from_stored, normalize_check_interval_secs,
+    check_mode_to_stored, is_version_skipped, normalize_check_interval_secs, parse_check_mode,
     should_auto_check, should_auto_check_with_interval, UpdateChannel, UpdateCheckMode,
     UpdateSettings, ALLOWED_CHECK_INTERVAL_SECS, AUTO_CHECK_INTERVAL_SECS,
     STARTUP_CHECK_DELAY_SECS,

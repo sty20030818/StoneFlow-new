@@ -3,7 +3,7 @@
 use tauri_plugin_store::StoreExt;
 
 use stoneflow_domain::{
-    migrate_check_mode_from_stored, normalize_check_interval_secs, UpdateChannel, UpdateCheckMode,
+    check_mode_to_stored, normalize_check_interval_secs, parse_check_mode, UpdateChannel,
     UpdateSettings, AUTO_CHECK_INTERVAL_SECS,
 };
 use stoneflow_usecase::update::UpdateSettingsPort;
@@ -41,12 +41,18 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
     async fn load(&self) -> Result<UpdateSettings, UsecaseError> {
         let store = self.store()?;
 
-        // 经迁移 helper 解析字符串，避免 serde 将历史 `autoInstall` 误落为默认 NotifyOnly。
-        let (check_mode, check_mode_migrated) = store
+        let raw_mode = store
             .get(KEY_CHECK_MODE)
-            .and_then(|v| v.as_str().map(|s| s.to_owned()))
-            .map(|s| migrate_check_mode_from_stored(&s))
-            .unwrap_or((UpdateCheckMode::default(), false));
+            .and_then(|v| v.as_str().map(|s| s.to_owned()));
+        let check_mode = raw_mode
+            .as_deref()
+            .map(parse_check_mode)
+            .unwrap_or_default();
+        // 脏值 / 缺省：规范化回写
+        let mode_needs_rewrite = match raw_mode.as_deref() {
+            None => true,
+            Some(s) => s != check_mode_to_stored(check_mode),
+        };
 
         let channel = store
             .get(KEY_CHANNEL)
@@ -68,7 +74,7 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
             .and_then(|v| v.as_i64().or_else(|| v.as_u64().map(|u| u as i64)))
             .unwrap_or(AUTO_CHECK_INTERVAL_SECS);
         let check_interval_secs = normalize_check_interval_secs(raw_interval);
-        let interval_migrated = check_interval_secs != raw_interval
+        let interval_needs_rewrite = check_interval_secs != raw_interval
             || store.get(KEY_CHECK_INTERVAL_SECS).is_none();
 
         let settings = UpdateSettings {
@@ -79,8 +85,7 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
             check_interval_secs,
         };
 
-        // 历史 autoInstall / 缺省间隔：加载后立刻回写。
-        if check_mode_migrated || interval_migrated {
+        if mode_needs_rewrite || interval_needs_rewrite {
             self.save(&settings).await?;
         }
 
