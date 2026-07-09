@@ -2,7 +2,9 @@
 
 use tauri_plugin_store::StoreExt;
 
-use stoneflow_domain::{UpdateChannel, UpdateCheckMode, UpdateSettings};
+use stoneflow_domain::{
+    migrate_check_mode_from_stored, UpdateChannel, UpdateCheckMode, UpdateSettings,
+};
 use stoneflow_usecase::update::UpdateSettingsPort;
 use stoneflow_usecase::UsecaseError;
 
@@ -37,10 +39,12 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
     async fn load(&self) -> Result<UpdateSettings, UsecaseError> {
         let store = self.store()?;
 
-        let check_mode = store
+        // 经迁移 helper 解析字符串，避免 serde 将历史 `autoInstall` 误落为默认 NotifyOnly。
+        let (check_mode, check_mode_migrated) = store
             .get(KEY_CHECK_MODE)
-            .and_then(|v| serde_json::from_value::<UpdateCheckMode>(v.clone()).ok())
-            .unwrap_or_default();
+            .and_then(|v| v.as_str().map(|s| s.to_owned()))
+            .map(|s| migrate_check_mode_from_stored(&s))
+            .unwrap_or((UpdateCheckMode::default(), false));
 
         let channel = store
             .get(KEY_CHANNEL)
@@ -57,12 +61,19 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
             .and_then(|v| serde_json::from_value::<Option<i64>>(v.clone()).ok())
             .flatten();
 
-        Ok(UpdateSettings {
+        let settings = UpdateSettings {
             check_mode,
             channel,
             skipped_versions,
             last_checked_at,
-        })
+        };
+
+        // 历史 autoInstall → autoDownload：加载后立刻回写，清理持久化值。
+        if check_mode_migrated {
+            self.save(&settings).await?;
+        }
+
+        Ok(settings)
     }
 
     async fn save(&self, settings: &UpdateSettings) -> Result<(), UsecaseError> {

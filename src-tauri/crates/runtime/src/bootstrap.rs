@@ -140,7 +140,7 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                         UpdateCheckMode::NotifyOnly => {
                             let _ = app_handle.emit("update-available", &info);
                         }
-                        UpdateCheckMode::AutoDownload | UpdateCheckMode::AutoInstall => {
+                        UpdateCheckMode::AutoDownload => {
                             let _ = app_handle.emit("update-available", &info);
 
                             let app = app_handle.clone();

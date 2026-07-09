@@ -37,22 +37,17 @@ const CHECK_MODE_OPTIONS: Array<{
 	{
 		value: 'manual',
 		label: '手动检查',
-		description: '不自动检查，仅在你手动点击"检查更新"时查询。',
+		description: '不自动检查。仅在你点击「检查更新」时查询。',
 	},
 	{
 		value: 'notifyOnly',
 		label: '仅提醒',
-		description: '启动后及每 6 小时自动检查，发现更新时弹窗提醒你。',
+		description: '启动后及定期自动检查。发现更新时弹窗提醒，由你决定是否下载。',
 	},
 	{
 		value: 'autoDownload',
 		label: '自动下载',
-		description: '自动检查并后台下载更新，下载完成后提醒你重启。',
-	},
-	{
-		value: 'autoInstall',
-		label: '自动下载并安装',
-		description: '自动下载更新，下载完成后更明显地提示重启安装。',
+		description: '自动检查并在后台静默下载。下载完成后提醒你重启生效。',
 	},
 ]
 

@@ -12,15 +12,31 @@ pub enum UpdateCheckMode {
     Manual,
     /// 启动 + 定时检查，发现更新弹窗提示，用户决定是否下载。
     NotifyOnly,
-    /// 自动后台下载，下载完成后提示用户重启。
+    /// 静默后台下载，下载完成后提示用户重启（不自动重启）。
     AutoDownload,
-    /// 自动后台下载，下载完成后更显著地提示重启。
-    AutoInstall,
 }
 
 impl Default for UpdateCheckMode {
     fn default() -> Self {
         Self::NotifyOnly
+    }
+}
+
+/// 从持久化字符串解析检查模式，并迁移历史值。
+///
+/// - `"autoInstall"` → [`UpdateCheckMode::AutoDownload`]（历史模式迁移）
+/// - `"manual"` / `"notifyOnly"` / `"autoDownload"` → 对应变体
+/// - 未知或空 → 默认 [`UpdateCheckMode::NotifyOnly`]
+///
+/// 返回 `(mode, migrated)`：`migrated == true` 表示存储值被改写（历史 `autoInstall`），
+/// 调用方应回写设置以清理持久化数据。
+pub fn migrate_check_mode_from_stored(raw: &str) -> (UpdateCheckMode, bool) {
+    match raw {
+        "manual" => (UpdateCheckMode::Manual, false),
+        "notifyOnly" => (UpdateCheckMode::NotifyOnly, false),
+        "autoDownload" => (UpdateCheckMode::AutoDownload, false),
+        "autoInstall" => (UpdateCheckMode::AutoDownload, true),
+        _ => (UpdateCheckMode::NotifyOnly, false),
     }
 }
 
@@ -136,6 +152,47 @@ mod tests {
         assert_eq!(settings.channel, UpdateChannel::Stable);
         assert!(settings.skipped_versions.is_empty());
         assert!(settings.last_checked_at.is_none());
+    }
+
+    #[test]
+    fn default_check_mode_is_notify_only() {
+        assert_eq!(UpdateCheckMode::default(), UpdateCheckMode::NotifyOnly);
+    }
+
+    #[test]
+    fn migrate_check_mode_known_values() {
+        assert_eq!(
+            migrate_check_mode_from_stored("manual"),
+            (UpdateCheckMode::Manual, false)
+        );
+        assert_eq!(
+            migrate_check_mode_from_stored("notifyOnly"),
+            (UpdateCheckMode::NotifyOnly, false)
+        );
+        assert_eq!(
+            migrate_check_mode_from_stored("autoDownload"),
+            (UpdateCheckMode::AutoDownload, false)
+        );
+    }
+
+    #[test]
+    fn migrate_auto_install_to_auto_download() {
+        assert_eq!(
+            migrate_check_mode_from_stored("autoInstall"),
+            (UpdateCheckMode::AutoDownload, true)
+        );
+    }
+
+    #[test]
+    fn migrate_unknown_check_mode_to_notify_only() {
+        assert_eq!(
+            migrate_check_mode_from_stored("somethingElse"),
+            (UpdateCheckMode::NotifyOnly, false)
+        );
+        assert_eq!(
+            migrate_check_mode_from_stored(""),
+            (UpdateCheckMode::NotifyOnly, false)
+        );
     }
 
     #[test]

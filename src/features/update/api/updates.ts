@@ -14,7 +14,7 @@ import { Channel, invoke } from '@tauri-apps/api/core'
 export type UpdateChannel = 'stable' | 'beta'
 
 /** 更新检查模式 */
-export type UpdateCheckMode = 'manual' | 'notifyOnly' | 'autoDownload' | 'autoInstall'
+export type UpdateCheckMode = 'manual' | 'notifyOnly' | 'autoDownload'
 
 /** 远端返回的更新信息 */
 export interface UpdateInfo {
