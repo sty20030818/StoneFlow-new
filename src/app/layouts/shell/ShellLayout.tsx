@@ -108,7 +108,7 @@ import {
 } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
-import { UpdateDialog, UpdateReadyChip, useUpdateEvents } from '@/features/update'
+import { SystemStatusChip, UpdateDialog, useUpdateEvents } from '@/features/update'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskStatus } from '@/shared/types'
 import { useQueryClient } from '@tanstack/react-query'
@@ -1104,9 +1104,7 @@ function ShellLayoutContent({
 				/>
 			) : null}
 			<UpdateDialog />
-			{/* 占位，保持底部边距 */}
-			{/* <div className='h-2 shrink-0 bg-sf-shell' /> */}
-			<UpdateReadyChip />
+			<SystemStatusChip />
 			<ShellFooter navBadges={navBadges} />
 		</SidebarProvider>
 	)

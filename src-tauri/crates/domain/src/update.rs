@@ -107,8 +107,15 @@ pub struct UpdateSettings {
     pub channel: UpdateChannel,
     /// 用户已选择跳过的版本号集合。
     pub skipped_versions: Vec<String>,
-    /// 上次自动检查时间（unix timestamp 秒），用于 6 小时节流。
+    /// 上次自动检查时间（unix timestamp 秒），用于节流。
     pub last_checked_at: Option<i64>,
+    /// 自动检查间隔（秒）。缺省 / 非法值由 [`normalize_check_interval_secs`] 收敛。
+    #[serde(default = "default_check_interval_secs")]
+    pub check_interval_secs: i64,
+}
+
+fn default_check_interval_secs() -> i64 {
+    AUTO_CHECK_INTERVAL_SECS
 }
 
 impl Default for UpdateSettings {
@@ -118,21 +125,50 @@ impl Default for UpdateSettings {
             channel: UpdateChannel::default(),
             skipped_versions: Vec::new(),
             last_checked_at: None,
+            check_interval_secs: AUTO_CHECK_INTERVAL_SECS,
         }
     }
 }
 
-/// 自动检查节流间隔：6 小时。
+/// 默认自动检查节流间隔：6 小时。
 pub const AUTO_CHECK_INTERVAL_SECS: i64 = 6 * 60 * 60;
+
+/// 允许的检查间隔（秒）：1h / 3h / 6h / 12h / 24h。
+pub const ALLOWED_CHECK_INTERVAL_SECS: &[i64] = &[
+    60 * 60,
+    3 * 60 * 60,
+    6 * 60 * 60,
+    12 * 60 * 60,
+    24 * 60 * 60,
+];
 
 /// 启动后首次自动检查的延迟（避免影响启动速度）。
 pub const STARTUP_CHECK_DELAY_SECS: u64 = 3;
 
+/// 将间隔收敛到允许列表（非法 / 缺失 → 默认 6h）。
+pub fn normalize_check_interval_secs(raw: i64) -> i64 {
+    if ALLOWED_CHECK_INTERVAL_SECS.contains(&raw) {
+        raw
+    } else {
+        AUTO_CHECK_INTERVAL_SECS
+    }
+}
+
 /// 判断给定时间戳是否需要执行自动检查（距上次检查超过节流间隔）。
 pub fn should_auto_check(now_ts: i64, last_checked_at: Option<i64>) -> bool {
+    should_auto_check_with_interval(now_ts, last_checked_at, AUTO_CHECK_INTERVAL_SECS)
+}
+
+/// 使用自定义间隔判断是否应自动检查。
+pub fn should_auto_check_with_interval(
+    now_ts: i64,
+    last_checked_at: Option<i64>,
+    interval_secs: i64,
+) -> bool {
+    let interval = normalize_check_interval_secs(interval_secs);
     match last_checked_at {
         None => true,
-        Some(last) => now_ts - last >= AUTO_CHECK_INTERVAL_SECS,
+        Some(last) => now_ts - last >= interval,
     }
 }
 
@@ -204,6 +240,32 @@ mod tests {
     fn should_auto_check_after_interval() {
         assert!(should_auto_check(1000 + AUTO_CHECK_INTERVAL_SECS, Some(1000)));
         assert!(!should_auto_check(1000 + AUTO_CHECK_INTERVAL_SECS - 1, Some(1000)));
+    }
+
+    #[test]
+    fn normalize_check_interval_secs_clamps_unknown() {
+        assert_eq!(normalize_check_interval_secs(3600), 3600);
+        assert_eq!(normalize_check_interval_secs(999), AUTO_CHECK_INTERVAL_SECS);
+        assert_eq!(normalize_check_interval_secs(-1), AUTO_CHECK_INTERVAL_SECS);
+    }
+
+    #[test]
+    fn should_auto_check_with_custom_interval() {
+        let one_hour = 3600;
+        assert!(should_auto_check_with_interval(1000 + one_hour, Some(1000), one_hour));
+        assert!(!should_auto_check_with_interval(
+            1000 + one_hour - 1,
+            Some(1000),
+            one_hour
+        ));
+    }
+
+    #[test]
+    fn default_settings_include_default_interval() {
+        assert_eq!(
+            UpdateSettings::default().check_interval_secs,
+            AUTO_CHECK_INTERVAL_SECS
+        );
     }
 
     #[test]

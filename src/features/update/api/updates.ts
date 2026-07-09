@@ -29,7 +29,20 @@ export interface UpdateSettings {
 	channel: UpdateChannel
 	skippedVersions: string[]
 	lastCheckedAt: number | null
+	/** 自动检查间隔（秒）：3600 / 10800 / 21600 / 43200 / 86400 */
+	checkIntervalSecs: number
 }
+
+/** 允许的检查间隔（与 domain ALLOWED_CHECK_INTERVAL_SECS 对齐） */
+export const ALLOWED_CHECK_INTERVAL_SECS = [
+	60 * 60,
+	3 * 60 * 60,
+	6 * 60 * 60,
+	12 * 60 * 60,
+	24 * 60 * 60,
+] as const
+
+export type CheckIntervalSecs = (typeof ALLOWED_CHECK_INTERVAL_SECS)[number]
 
 /**
  * 更新状态（与 Rust domain 层 `UpdateStatus` 对应）。
@@ -129,6 +142,11 @@ export async function setCheckMode(mode: UpdateCheckMode): Promise<void> {
 /** 设置更新渠道 */
 export async function setChannel(channel: UpdateChannel): Promise<void> {
 	return invoke('set_channel', { channel })
+}
+
+/** 设置自动检查间隔（秒） */
+export async function setCheckIntervalSecs(intervalSecs: number): Promise<void> {
+	return invoke('set_check_interval_secs', { intervalSecs })
 }
 
 /** 获取当前更新设置 */

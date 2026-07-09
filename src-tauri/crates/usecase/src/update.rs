@@ -8,7 +8,8 @@ use std::sync::{Arc, Mutex};
 use chrono::Utc;
 use serde::Serialize;
 use stoneflow_domain::{
-    is_version_skipped, should_auto_check, UpdateChannel, UpdateCheckMode, UpdateSettings,
+    is_version_skipped, normalize_check_interval_secs, should_auto_check_with_interval,
+    UpdateChannel, UpdateCheckMode, UpdateSettings,
 };
 
 use crate::error::UsecaseError;
@@ -195,9 +196,9 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         }
     }
 
-    /// 读取当前更新设置。
+    /// 读取当前更新设置（间隔字段已规范化）。
     pub async fn get_settings(&self) -> Result<UpdateSettings, UsecaseError> {
-        self.settings_port.load().await
+        self.get_settings_normalized().await
     }
 
     /// 检查更新。
@@ -213,9 +214,10 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
             if settings.check_mode == UpdateCheckMode::Manual {
                 return Ok(None);
             }
-            // 6 小时节流
+            // 按用户配置的间隔节流
             let now = Utc::now().timestamp();
-            if !should_auto_check(now, settings.last_checked_at) {
+            let interval = normalize_check_interval_secs(settings.check_interval_secs);
+            if !should_auto_check_with_interval(now, settings.last_checked_at, interval) {
                 return Ok(None);
             }
         }
@@ -395,6 +397,21 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         self.settings_port.save(&settings).await
     }
 
+    /// 设置自动检查间隔（秒）；非法值会收敛到默认 6 小时。
+    pub async fn set_check_interval_secs(&self, interval_secs: i64) -> Result<(), UsecaseError> {
+        let mut settings = self.settings_port.load().await?;
+        settings.check_interval_secs = normalize_check_interval_secs(interval_secs);
+        self.settings_port.save(&settings).await
+    }
+
+    /// 读取规范化后的完整设置（含默认间隔）。
+    pub async fn get_settings_normalized(&self) -> Result<UpdateSettings, UsecaseError> {
+        let mut settings = self.settings_port.load().await?;
+        settings.check_interval_secs =
+            normalize_check_interval_secs(settings.check_interval_secs);
+        Ok(settings)
+    }
+
     /// 将指定版本加入跳过列表。
     pub async fn skip_version(&self, version: String) -> Result<(), UsecaseError> {
         let mut settings = self.settings_port.load().await?;
@@ -496,6 +513,7 @@ mod tests {
             channel: UpdateChannel::Stable,
             skipped_versions: vec!["0.2.0".to_string()],
             last_checked_at: Some(Utc::now().timestamp()), // 刚检查过
+            ..Default::default()
         });
         let service = UpdateService::new(port, settings_port);
 

@@ -12,7 +12,8 @@ use crate::services::{build_update_service, RuntimeUpdateService};
 use stoneflow_usecase::DownloadOutcome;
 use crate::sync::{self, SyncRuntimeState};
 use stoneflow_domain::{
-    UpdateCheckMode, AUTO_CHECK_INTERVAL_SECS, STARTUP_CHECK_DELAY_SECS,
+    normalize_check_interval_secs, UpdateCheckMode, AUTO_CHECK_INTERVAL_SECS,
+    STARTUP_CHECK_DELAY_SECS,
 };
 use stoneflow_storage::database::bootstrap_database;
 use stoneflow_storage::database::DatabaseRuntimeState;
@@ -112,7 +113,7 @@ where
     });
 }
 
-/// 调度自动更新检查：启动延迟后首次检查，之后每 6 小时检查一次。
+/// 调度自动更新检查：启动延迟后首次检查，之后按用户配置的间隔循环。
 fn schedule_update_checker(app_handle: tauri::AppHandle) {
     use std::time::Duration;
 
@@ -125,13 +126,17 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                 break;
             };
 
+            let sleep_secs = match service.get_settings().await {
+                Ok(s) => normalize_check_interval_secs(s.check_interval_secs) as u64,
+                Err(_) => AUTO_CHECK_INTERVAL_SECS as u64,
+            };
+
             match service.check_update(false).await {
                 Ok(Some(info)) => {
                     let settings = match service.get_settings().await {
                         Ok(s) => s,
                         Err(_) => {
-                            tokio::time::sleep(Duration::from_secs(AUTO_CHECK_INTERVAL_SECS as u64))
-                                .await;
+                            tokio::time::sleep(Duration::from_secs(sleep_secs)).await;
                             continue;
                         }
                     };
@@ -222,7 +227,7 @@ fn schedule_update_checker(app_handle: tauri::AppHandle) {
                 }
             }
 
-            tokio::time::sleep(Duration::from_secs(AUTO_CHECK_INTERVAL_SECS as u64)).await;
+            tokio::time::sleep(Duration::from_secs(sleep_secs)).await;
         }
     });
 }

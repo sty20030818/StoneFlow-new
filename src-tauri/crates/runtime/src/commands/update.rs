@@ -111,6 +111,15 @@ pub async fn set_channel(
 }
 
 #[tauri::command]
+pub async fn set_check_interval_secs(
+    interval_secs: i64,
+    service: State<'_, RuntimeUpdateService>,
+) -> Result<(), AppError> {
+    service.set_check_interval_secs(interval_secs).await?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn get_update_settings(
     service: State<'_, RuntimeUpdateService>,
 ) -> Result<UpdateSettings, AppError> {

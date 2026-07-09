@@ -8,10 +8,13 @@ import { useEffect, useState } from 'react'
 import { RefreshCwIcon } from 'lucide-react'
 
 import {
+	ALLOWED_CHECK_INTERVAL_SECS,
 	checkUpdate,
 	getUpdateSettings,
 	setChannel,
+	setCheckIntervalSecs,
 	setCheckMode,
+	type CheckIntervalSecs,
 	type UpdateChannel,
 	type UpdateCheckMode,
 } from '@/features/update/api/updates'
@@ -66,6 +69,14 @@ const CHANNEL_OPTIONS: Array<{
 	},
 ]
 
+const INTERVAL_OPTIONS: Array<{ value: CheckIntervalSecs; label: string }> = [
+	{ value: 60 * 60, label: '每 1 小时' },
+	{ value: 3 * 60 * 60, label: '每 3 小时' },
+	{ value: 6 * 60 * 60, label: '每 6 小时' },
+	{ value: 12 * 60 * 60, label: '每 12 小时' },
+	{ value: 24 * 60 * 60, label: '每 24 小时' },
+]
+
 export function UpdateSettingsSection() {
 	const [loading, setLoading] = useState(true)
 	const [saving, setSaving] = useState(false)
@@ -75,6 +86,7 @@ export function UpdateSettingsSection() {
 	const [settings, setSettings] = useState<{
 		checkMode: UpdateCheckMode
 		channel: UpdateChannel
+		checkIntervalSecs: number
 	} | null>(null)
 	const showUpdate = useUpdateStore((s) => s.showUpdate)
 	const setStoreCheckMode = useUpdateStore((s) => s.setCheckMode)
@@ -88,7 +100,16 @@ export function UpdateSettingsSection() {
 		setError(null)
 		try {
 			const s = await getUpdateSettings()
-			setSettings({ checkMode: s.checkMode, channel: s.channel })
+			const interval = ALLOWED_CHECK_INTERVAL_SECS.includes(
+				s.checkIntervalSecs as CheckIntervalSecs,
+			)
+				? s.checkIntervalSecs
+				: 6 * 60 * 60
+			setSettings({
+				checkMode: s.checkMode,
+				channel: s.channel,
+				checkIntervalSecs: interval,
+			})
 			setStoreCheckMode(s.checkMode)
 		} catch (err) {
 			setError(normalizeTauriError(err, '读取更新设置失败'))
@@ -121,6 +142,20 @@ export function UpdateSettingsSection() {
 			setSettings((prev) => (prev ? { ...prev, channel } : prev))
 		} catch (err) {
 			setError(normalizeTauriError(err, '保存更新渠道失败'))
+		} finally {
+			setSaving(false)
+		}
+	}
+
+	async function handleIntervalChange(intervalSecs: CheckIntervalSecs) {
+		if (!settings || settings.checkIntervalSecs === intervalSecs) return
+		setSaving(true)
+		setError(null)
+		try {
+			await setCheckIntervalSecs(intervalSecs)
+			setSettings((prev) => (prev ? { ...prev, checkIntervalSecs: intervalSecs } : prev))
+		} catch (err) {
+			setError(normalizeTauriError(err, '保存检查间隔失败'))
 		} finally {
 			setSaving(false)
 		}
@@ -259,6 +294,40 @@ export function UpdateSettingsSection() {
 						})}
 					</div>
 				</div>
+
+				{/* 自动检查间隔：仅非手动模式有意义 */}
+				{settings?.checkMode !== 'manual' ? (
+					<div className='grid gap-3 pt-1'>
+						<p className={cn(formFieldHintClass, 'text-foreground font-medium')}>
+							自动检查间隔
+						</p>
+						<p className={formFieldHintClass}>
+							启动约 3 秒后会检查一次；之后按此间隔定期检查。
+						</p>
+						<div className='flex flex-wrap gap-2'>
+							{INTERVAL_OPTIONS.map((option) => {
+								const checked = settings?.checkIntervalSecs === option.value
+								return (
+									<button
+										key={option.value}
+										type='button'
+										disabled={saving}
+										onClick={() => void handleIntervalChange(option.value)}
+										className={cn(
+											'rounded-full border px-3 py-1.5 text-[13px] transition-colors',
+											saving && 'cursor-not-allowed opacity-70',
+											checked
+												? 'border-primary/40 bg-primary/10 font-medium text-foreground'
+												: 'border-sf-border-subtle bg-muted/25 text-sf-shell-tertiary hover:bg-muted/45',
+										)}
+									>
+										{option.label}
+									</button>
+								)
+							})}
+						</div>
+					</div>
+				) : null}
 
 				{/* 手动检查更新 */}
 				<div className='flex items-center justify-between rounded-xl border border-sf-border-subtle bg-muted/25 p-4'>

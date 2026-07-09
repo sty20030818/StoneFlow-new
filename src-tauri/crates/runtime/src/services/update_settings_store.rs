@@ -3,7 +3,8 @@
 use tauri_plugin_store::StoreExt;
 
 use stoneflow_domain::{
-    migrate_check_mode_from_stored, UpdateChannel, UpdateCheckMode, UpdateSettings,
+    migrate_check_mode_from_stored, normalize_check_interval_secs, UpdateChannel, UpdateCheckMode,
+    UpdateSettings, AUTO_CHECK_INTERVAL_SECS,
 };
 use stoneflow_usecase::update::UpdateSettingsPort;
 use stoneflow_usecase::UsecaseError;
@@ -16,6 +17,7 @@ const KEY_CHECK_MODE: &str = "checkMode";
 const KEY_CHANNEL: &str = "channel";
 const KEY_SKIPPED_VERSIONS: &str = "skippedVersions";
 const KEY_LAST_CHECKED_AT: &str = "lastCheckedAt";
+const KEY_CHECK_INTERVAL_SECS: &str = "checkIntervalSecs";
 
 /// 基于 tauri-plugin-store 的设置持久化。
 #[derive(Clone)]
@@ -61,15 +63,24 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
             .and_then(|v| serde_json::from_value::<Option<i64>>(v.clone()).ok())
             .flatten();
 
+        let raw_interval = store
+            .get(KEY_CHECK_INTERVAL_SECS)
+            .and_then(|v| v.as_i64().or_else(|| v.as_u64().map(|u| u as i64)))
+            .unwrap_or(AUTO_CHECK_INTERVAL_SECS);
+        let check_interval_secs = normalize_check_interval_secs(raw_interval);
+        let interval_migrated = check_interval_secs != raw_interval
+            || store.get(KEY_CHECK_INTERVAL_SECS).is_none();
+
         let settings = UpdateSettings {
             check_mode,
             channel,
             skipped_versions,
             last_checked_at,
+            check_interval_secs,
         };
 
-        // 历史 autoInstall → autoDownload：加载后立刻回写，清理持久化值。
-        if check_mode_migrated {
+        // 历史 autoInstall / 缺省间隔：加载后立刻回写。
+        if check_mode_migrated || interval_migrated {
             self.save(&settings).await?;
         }
 
@@ -78,6 +89,7 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
 
     async fn save(&self, settings: &UpdateSettings) -> Result<(), UsecaseError> {
         let store = self.store()?;
+        let check_interval_secs = normalize_check_interval_secs(settings.check_interval_secs);
         store.set(
             KEY_CHECK_MODE,
             serde_json::to_value(settings.check_mode)
@@ -97,6 +109,11 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
             KEY_LAST_CHECKED_AT,
             serde_json::to_value(settings.last_checked_at)
                 .map_err(|e| UsecaseError::update(format!("序列化 last_checked_at 失败: {e}")))?,
+        );
+        store.set(
+            KEY_CHECK_INTERVAL_SECS,
+            serde_json::to_value(check_interval_secs)
+                .map_err(|e| UsecaseError::update(format!("序列化 check_interval_secs 失败: {e}")))?,
         );
         store
             .save()

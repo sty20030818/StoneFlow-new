@@ -56,7 +56,8 @@ src/features/update/
 - Shell 侧以 `phase` 为准；Dialog 的 `status` 为兼容层
 - 修改领域模型（domain 层）不影响 Tauri/网络，最安全
 - 修改 IPC 命令时必须同步修改 TS 端的类型定义
-- 自动检查间隔常量：`AUTO_CHECK_INTERVAL_SECS`（6小时）、`STARTUP_CHECK_DELAY_SECS`（3秒）
+- 自动检查间隔：设置可配 `checkIntervalSecs`（1h/3h/6h/12h/24h），默认 6 小时；启动延迟 `STARTUP_CHECK_DELAY_SECS`（3 秒）
+- 系统 Chip 优先级：更新就绪 > 同步错误/需处理
 
 ---
 
