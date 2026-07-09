@@ -121,3 +121,20 @@ export async function setChannel(channel: UpdateChannel): Promise<void> {
 export async function getUpdateSettings(): Promise<UpdateSettings> {
 	return invoke<UpdateSettings>('get_update_settings')
 }
+
+/** 进程内更新会话阶段 */
+export type UpdateSessionPhase = 'idle' | 'downloading' | 'ready'
+
+/** 进程内更新会话快照（挂载 hydrate） */
+export interface UpdateSessionSnapshot {
+	phase: UpdateSessionPhase
+	version: string | null
+	downloaded: number
+	total: number | null
+	downloadInFlight: boolean
+}
+
+/** 读取后端更新会话快照 */
+export async function getUpdateSession(): Promise<UpdateSessionSnapshot> {
+	return invoke<UpdateSessionSnapshot>('get_update_session')
+}

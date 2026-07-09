@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import {
 	checkUpdate,
 	downloadAndInstall,
+	getUpdateSession,
 	getUpdateSettings,
 	restartAndInstall,
 	UPDATE_EVENTS,
@@ -37,6 +38,21 @@ export function useUpdateEvents() {
 				}
 			} catch (err) {
 				console.error('Failed to load update settings for event routing:', err)
+			}
+
+			// 挂载时 hydrate：避免 listener 未就绪时错过已在进行的下载/就绪态
+			try {
+				const session = await getUpdateSession()
+				if (!disposed) {
+					useUpdateStore.getState().hydrateFromSession({
+						phase: session.phase,
+						version: session.version,
+						downloaded: session.downloaded,
+						total: session.total,
+					})
+				}
+			} catch (err) {
+				console.error('Failed to hydrate update session:', err)
 			}
 
 			const unlistenAvailable = await listen<UpdateAvailablePayload>(

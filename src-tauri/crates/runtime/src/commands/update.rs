@@ -6,7 +6,7 @@ use tauri::{ipc::Channel, AppHandle, State};
 use crate::app::error::AppError;
 use crate::services::RuntimeUpdateService;
 use stoneflow_domain::{UpdateChannel, UpdateCheckMode, UpdateSettings, UpdateStatus};
-use stoneflow_usecase::update::UpdateInfo;
+use stoneflow_usecase::update::{UpdateInfo, UpdateSessionSnapshot};
 
 /// 推送到前端的更新事件。
 #[derive(Clone, Serialize)]
@@ -112,4 +112,12 @@ pub async fn get_update_settings(
 ) -> Result<UpdateSettings, AppError> {
     let settings = service.get_settings().await?;
     Ok(settings)
+}
+
+/// 读取进程内更新会话快照，供前端挂载时 hydrate。
+#[tauri::command]
+pub async fn get_update_session(
+    service: State<'_, RuntimeUpdateService>,
+) -> Result<UpdateSessionSnapshot, AppError> {
+    Ok(service.session_snapshot())
 }

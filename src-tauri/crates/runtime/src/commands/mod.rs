@@ -76,6 +76,7 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         update::set_check_mode,
         update::set_channel,
         update::get_update_settings,
+        update::get_update_session,
         workspace::healthcheck,
         workspace::set_active_scope,
         quick_create::restore_main_window,

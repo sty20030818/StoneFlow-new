@@ -3,7 +3,7 @@
 //! 定义更新操作的 Port trait 与 `UpdateService` 业务编排，不依赖 Tauri。
 
 use std::future::Future;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use chrono::Utc;
 use serde::Serialize;
@@ -13,12 +13,58 @@ use stoneflow_domain::{
 
 use crate::error::UsecaseError;
 
-/// 下载进行中时占用的守卫：离开作用域后释放单飞锁。
-struct DownloadInFlightGuard<'a>(&'a AtomicBool);
+/// 进程内更新会话阶段（供前端 hydrate）。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum UpdateSessionPhase {
+    Idle,
+    Downloading,
+    Ready,
+}
 
-impl Drop for DownloadInFlightGuard<'_> {
+/// 更新会话快照。
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateSessionSnapshot {
+    pub phase: UpdateSessionPhase,
+    pub version: Option<String>,
+    pub downloaded: u64,
+    pub total: Option<u64>,
+    pub download_in_flight: bool,
+}
+
+#[derive(Debug)]
+struct SessionInner {
+    in_flight: bool,
+    phase: UpdateSessionPhase,
+    version: Option<String>,
+    downloaded: u64,
+    total: Option<u64>,
+    /// 最近一次 check 到的远端版本，供下载会话标注。
+    pending_version: Option<String>,
+}
+
+impl Default for SessionInner {
+    fn default() -> Self {
+        Self {
+            in_flight: false,
+            phase: UpdateSessionPhase::Idle,
+            version: None,
+            downloaded: 0,
+            total: None,
+            pending_version: None,
+        }
+    }
+}
+
+/// 下载进行中时占用的守卫：离开作用域后清除 in_flight。
+struct DownloadInFlightGuard(Arc<Mutex<SessionInner>>);
+
+impl Drop for DownloadInFlightGuard {
     fn drop(&mut self) {
-        self.0.store(false, Ordering::SeqCst);
+        if let Ok(mut s) = self.0.lock() {
+            s.in_flight = false;
+        }
     }
 }
 
@@ -63,8 +109,8 @@ pub trait UpdateSettingsPort: Send + Sync {
 pub struct UpdateService<P: UpdatePort, S: UpdateSettingsPort> {
     port: P,
     settings_port: S,
-    /// 进程内下载单飞：防止自动下载与用户手动下载并发执行两次。
-    download_in_flight: AtomicBool,
+    /// 进程内下载会话（单飞 + hydrate 快照）。
+    session: Arc<Mutex<SessionInner>>,
 }
 
 impl<P: UpdatePort, S: UpdateSettingsPort> UpdateService<P, S> {
@@ -72,13 +118,28 @@ impl<P: UpdatePort, S: UpdateSettingsPort> UpdateService<P, S> {
         Self {
             port,
             settings_port,
-            download_in_flight: AtomicBool::new(false),
+            session: Arc::new(Mutex::new(SessionInner::default())),
         }
     }
 
-    /// 当前是否有进行中的下载（供 runtime/前端会话快照使用）。
+    /// 当前是否有进行中的下载。
     pub fn is_download_in_flight(&self) -> bool {
-        self.download_in_flight.load(Ordering::SeqCst)
+        self.session
+            .lock()
+            .map(|s| s.in_flight)
+            .unwrap_or(false)
+    }
+
+    /// 读取进程内更新会话快照（前端挂载时 hydrate）。
+    pub fn session_snapshot(&self) -> UpdateSessionSnapshot {
+        let s = self.session.lock().unwrap_or_else(|e| e.into_inner());
+        UpdateSessionSnapshot {
+            phase: s.phase,
+            version: s.version.clone(),
+            downloaded: s.downloaded,
+            total: s.total,
+            download_in_flight: s.in_flight,
+        }
     }
 
     /// 读取当前更新设置。
@@ -123,6 +184,12 @@ impl<P: UpdatePort, S: UpdateSettingsPort> UpdateService<P, S> {
             }
         }
 
+        if let Some(ref info) = update {
+            if let Ok(mut s) = self.session.lock() {
+                s.pending_version = Some(info.version.clone());
+            }
+        }
+
         Ok(update)
     }
 
@@ -133,20 +200,51 @@ impl<P: UpdatePort, S: UpdateSettingsPort> UpdateService<P, S> {
         &self,
         on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
     ) -> Result<(), UsecaseError> {
-        if self
-            .download_in_flight
-            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
-            .is_err()
         {
-            // 已有下载：bootstrap 静默下载与 UI「立即更新」可能重叠，忽略第二次。
-            return Ok(());
+            let mut s = self.session.lock().unwrap_or_else(|e| e.into_inner());
+            if s.in_flight {
+                // 已有下载：bootstrap 静默下载与 UI「立即更新」可能重叠，忽略第二次。
+                return Ok(());
+            }
+            s.in_flight = true;
+            s.phase = UpdateSessionPhase::Downloading;
+            s.downloaded = 0;
+            s.total = None;
+            s.version = s.pending_version.clone();
         }
-        let _guard = DownloadInFlightGuard(&self.download_in_flight);
+        let _guard = DownloadInFlightGuard(Arc::clone(&self.session));
 
         let settings = self.settings_port.load().await?;
-        self.port
-            .download_and_install(settings.channel, on_progress)
-            .await
+        let session = Arc::clone(&self.session);
+        let result = self
+            .port
+            .download_and_install(settings.channel, move |downloaded, total| {
+                if let Ok(mut s) = session.lock() {
+                    s.downloaded = downloaded;
+                    s.total = total;
+                    s.phase = UpdateSessionPhase::Downloading;
+                }
+                on_progress(downloaded, total);
+            })
+            .await;
+
+        match &result {
+            Ok(()) => {
+                if let Ok(mut s) = self.session.lock() {
+                    s.phase = UpdateSessionPhase::Ready;
+                    // version 已在启动时写入
+                }
+            }
+            Err(_) => {
+                if let Ok(mut s) = self.session.lock() {
+                    s.phase = UpdateSessionPhase::Idle;
+                    s.downloaded = 0;
+                    s.total = None;
+                }
+            }
+        }
+
+        result
     }
 
     /// 重启应用以完成安装。
@@ -374,5 +472,21 @@ mod tests {
         service.download_and_install(|_, _| {}).await.unwrap();
         service.download_and_install(|_, _| {}).await.unwrap();
         assert_eq!(*download_count.lock().unwrap(), 2);
+    }
+
+    #[tokio::test]
+    async fn session_snapshot_tracks_ready_after_download() {
+        let port = MockUpdatePort::new(Some("0.3.0"));
+        let settings_port = MockSettingsPort::new(UpdateSettings::default());
+        let service = UpdateService::new(port, settings_port);
+
+        let info = service.check_update(true).await.unwrap().unwrap();
+        assert_eq!(info.version, "0.3.0");
+        service.download_and_install(|_, _| {}).await.unwrap();
+
+        let snap = service.session_snapshot();
+        assert_eq!(snap.phase, UpdateSessionPhase::Ready);
+        assert_eq!(snap.version.as_deref(), Some("0.3.0"));
+        assert!(!snap.download_in_flight);
     }
 }

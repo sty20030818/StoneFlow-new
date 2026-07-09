@@ -1,6 +1,7 @@
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import { useHealthcheckStatus } from '@/features/healthcheck/model/useHealthcheckStatus'
 import { SyncFooterStatusItem } from '@/features/sync/ui/SyncFooterStatusItem'
+import { AppVersionFooterItem } from '@/features/update/ui/AppVersionFooterItem'
 import { UpdateStatusFooterItem } from '@/features/update/ui/UpdateStatusFooterItem'
 import { Kbd, KbdGroup } from '@/shared/ui/base/kbd'
 import {
@@ -43,14 +44,20 @@ export function ShellFooter({ navBadges = {} }: ShellFooterProps) {
 			</div>
 
 			<div className={shellFooterRightTrackClass}>
-				<KbdGroup>
+				<AppVersionFooterItem />
+				<span className='text-sf-border-strong max-sm:hidden' aria-hidden>
+					·
+				</span>
+				<KbdGroup className='max-sm:hidden'>
 					<Kbd>⌘K</Kbd>
-					<span>命令</span>
+					<span className='max-md:hidden'>命令</span>
 				</KbdGroup>
-				<span className='text-sf-border-strong'>·</span>
-				<KbdGroup>
+				<span className='text-sf-border-strong max-sm:hidden' aria-hidden>
+					·
+				</span>
+				<KbdGroup className='max-sm:hidden'>
 					<Kbd>C</Kbd>
-					<span>新建</span>
+					<span className='max-md:hidden'>新建</span>
 				</KbdGroup>
 			</div>
 		</footer>

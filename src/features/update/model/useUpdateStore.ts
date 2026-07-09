@@ -54,6 +54,13 @@ interface UpdateState {
 	skipAndClose: () => void
 	dismissReadyChip: () => void
 	openDialog: () => void
+	/** 用后端会话快照恢复 UI 状态 */
+	hydrateFromSession: (input: {
+		phase: 'idle' | 'downloading' | 'ready'
+		version: string | null
+		downloaded: number
+		total: number | null
+	}) => void
 	reset: () => void
 }
 
@@ -224,6 +231,48 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 		if (get().updateInfo || get().phase === 'available' || get().phase === 'ready') {
 			set({ dialogVisible: true })
 		}
+	},
+
+	hydrateFromSession: (input) => {
+		if (input.phase === 'idle') return
+		const version = input.version
+		if (input.phase === 'downloading') {
+			set({
+				phase: 'downloading',
+				status: {
+					status: 'downloading',
+					downloaded: input.downloaded,
+					total: input.total,
+				},
+				progress: { downloaded: input.downloaded, total: input.total },
+				errorMessage: null,
+				downloadUiAbandoned: false,
+				updateInfo: version
+					? {
+							version,
+							body: get().updateInfo?.body ?? null,
+							pubDate: get().updateInfo?.pubDate ?? null,
+						}
+					: get().updateInfo,
+				dialogVisible: false,
+			})
+			return
+		}
+		// ready
+		if (!version) return
+		set({
+			phase: 'ready',
+			status: { status: 'downloaded', version },
+			progress: null,
+			errorMessage: null,
+			downloadUiAbandoned: false,
+			updateInfo: {
+				version,
+				body: get().updateInfo?.body ?? null,
+				pubDate: get().updateInfo?.pubDate ?? null,
+			},
+			dialogVisible: false,
+		})
 	},
 
 	reset: () =>
