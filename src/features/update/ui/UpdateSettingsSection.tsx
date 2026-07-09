@@ -77,6 +77,7 @@ export function UpdateSettingsSection() {
 		channel: UpdateChannel
 	} | null>(null)
 	const showUpdate = useUpdateStore((s) => s.showUpdate)
+	const setStoreCheckMode = useUpdateStore((s) => s.setCheckMode)
 
 	useEffect(() => {
 		void loadSettings()
@@ -88,6 +89,7 @@ export function UpdateSettingsSection() {
 		try {
 			const s = await getUpdateSettings()
 			setSettings({ checkMode: s.checkMode, channel: s.channel })
+			setStoreCheckMode(s.checkMode)
 		} catch (err) {
 			setError(normalizeTauriError(err, '读取更新设置失败'))
 		} finally {
@@ -102,6 +104,7 @@ export function UpdateSettingsSection() {
 		try {
 			await setCheckMode(mode)
 			setSettings((prev) => (prev ? { ...prev, checkMode: mode } : prev))
+			setStoreCheckMode(mode)
 		} catch (err) {
 			setError(normalizeTauriError(err, '保存更新模式失败'))
 		} finally {

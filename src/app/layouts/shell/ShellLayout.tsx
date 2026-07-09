@@ -32,7 +32,6 @@ import {
 	selectSidebarSettingsStatus,
 	useSidebarSettingsStore,
 } from '@/app/layouts/shell/model/useSidebarSettingsStore'
-// import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
@@ -108,7 +107,8 @@ import {
 	type BulkEntityType,
 } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
-import { UpdateDialog, useUpdateEvents } from '@/features/update'
+import { ShellFooter } from '@/app/layouts/shell/ShellFooter'
+import { UpdateDialog, UpdateReadyChip, useUpdateEvents } from '@/features/update'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskStatus } from '@/shared/types'
 import { useQueryClient } from '@tanstack/react-query'
@@ -1104,9 +1104,10 @@ function ShellLayoutContent({
 				/>
 			) : null}
 			<UpdateDialog />
-			{/* <ShellFooter navBadges={navBadges} /> */}
 			{/* 占位，保持底部边距 */}
-			<div className='h-2 shrink-0 bg-sf-shell' />
+			{/* <div className='h-2 shrink-0 bg-sf-shell' /> */}
+			<UpdateReadyChip />
+			<ShellFooter navBadges={navBadges} />
 		</SidebarProvider>
 	)
 }

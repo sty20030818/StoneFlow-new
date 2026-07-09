@@ -1,5 +1,6 @@
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import { useHealthcheckStatus } from '@/features/healthcheck/model/useHealthcheckStatus'
+import { UpdateStatusFooterItem } from '@/features/update/ui/UpdateStatusFooterItem'
 import { Kbd, KbdGroup } from '@/shared/ui/base/kbd'
 import {
 	shellFooterBadgePairClass,
@@ -24,6 +25,7 @@ export function ShellFooter({ navBadges = {} }: ShellFooterProps) {
 					className={`size-1.5 shrink-0 rounded-full ${healthcheckStatus.indicatorClassName}`}
 					title={healthcheckStatus.title}
 				/>
+				<UpdateStatusFooterItem />
 				{navBadges.inbox ? (
 					<span className={shellFooterBadgePairClass}>
 						<span>收件箱</span>
