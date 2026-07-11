@@ -34,3 +34,25 @@ export const shellFooterInteractiveTextClass =
  */
 export const shellFooterIconButtonClass =
 	'inline-flex size-7 shrink-0 items-center justify-center rounded-md text-sf-shell-text-tertiary transition-[color,background-color,transform] hover:bg-muted/50 hover:text-sf-shell-text-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40'
+
+/**
+ * 一体可点 hit 区（indicator + label 共用 click）。
+ * 用于更新轨等「点一下开弹窗」交互；同步轨仍用灯/文案/按钮分离。
+ */
+export const shellFooterHitClass =
+	'inline-flex min-w-0 max-w-40 items-center gap-1.5 rounded-md ' +
+	'text-[11px] leading-none tabular-nums ' +
+	'transition-[color,background-color,transform] ' +
+	'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring ' +
+	'active:scale-[0.96]'
+
+/** Hit 语气色（无业务语义，仅视觉） */
+export type ShellFooterHitTone = 'neutral' | 'success' | 'danger'
+
+export const shellFooterHitToneClass: Record<ShellFooterHitTone, string> = {
+	neutral:
+		'text-sf-shell-text-tertiary hover:bg-muted/50 hover:text-sf-shell-text-secondary',
+	success: 'text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400',
+	danger:
+		'text-red-600 hover:bg-red-500/10 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300',
+}

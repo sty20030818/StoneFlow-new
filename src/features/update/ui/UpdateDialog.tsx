@@ -4,15 +4,23 @@
  */
 
 import type { ReactNode } from 'react'
-import { DownloadIcon, RefreshCwIcon } from 'lucide-react'
+import { DownloadIcon, RefreshCwIcon, XIcon } from 'lucide-react'
 
 import { Button } from '@/shared/ui/base/button'
-import { Dialog, DialogContent } from '@/shared/ui/base/dialog'
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from '@/shared/ui/base/dialog'
 import { cn } from '@/shared/lib/utils'
 import { skipVersion } from '@/features/update/api/updates'
 import { useUpdateStore } from '@/features/update/model/useUpdateStore'
 import { useUpdateActions } from '@/features/update/model/useUpdateEvents'
-import { formatBytes } from '@/features/update/model/updatePresentation'
+import {
+	downloadProgressBarValue,
+	formatDownloadBytesLine,
+} from '@/features/update/model/updatePresentation'
 
 export function UpdateDialog() {
 	const dialogVisible = useUpdateStore((s) => s.dialogVisible)
@@ -48,10 +56,14 @@ export function UpdateDialog() {
 
 	const downloaded = progress?.downloaded ?? 0
 	const total = progress?.total ?? null
-	const progressPercent =
-		isDownloading && total !== null ? Math.min(100, Math.round((downloaded / total) * 100)) : 0
+	// 无 total 时必须给 0，禁止 width:undefined（块级条会撑满成「100%」）
+	const progressPercent = isDownloading
+		? downloadProgressBarValue(downloaded, total)
+		: 0
 
 	const displayVersion = updateInfo?.version ?? ''
+	const showNotes = !isDownloading && !isReady && Boolean(updateInfo?.body)
+	const showBody = showNotes || isDownloading || isReady || isError
 
 	const titleText = isReady
 		? '更新已下载，等待安装'
@@ -75,54 +87,75 @@ export function UpdateDialog() {
 
 	return (
 		<Dialog onOpenChange={handleOpenChange} open={dialogVisible}>
-			<DialogContent className={dialogContentClass} showCloseButton disableAnimation>
+			{/*
+			 * 对齐创建任务/项目弹窗（CreateDialogShell）：
+			 * - 外壳 p-0，分区自管 padding
+			 * - 关闭钮在 header 行内 size-7（不是 absolute top-2 贴边）
+			 * - 底栏 px-3 pb-3 pt-2（createDialogFooterClass）
+			 */}
+			<DialogContent className={dialogContentClass} showCloseButton={false} disableAnimation>
+				<DialogTitle className='sr-only'>{titleText}</DialogTitle>
+				<DialogDescription className='sr-only'>{descText}</DialogDescription>
+
+				{/* Header：p-3，关闭与标题同一行 — 对齐 createDialogHeaderClass */}
 				<div className={headerClass}>
-					<h2 className={titleClass}>{titleText}</h2>
-					<p className={descClass}>{descText}</p>
+					<div className='min-w-0 flex-1 space-y-1'>
+						<h2 className={titleClass}>{titleText}</h2>
+						<p className={descClass}>{descText}</p>
+					</div>
+					<Button
+						type='button'
+						variant='ghost'
+						size='icon-sm'
+						className='size-7 shrink-0 text-sf-icon-secondary'
+						aria-label='关闭'
+						onClick={closeDialog}
+					>
+						<XIcon className='size-3.5' aria-hidden />
+					</Button>
 				</div>
 
-				<div className={bodyClass}>
-					{!isDownloading && !isReady && updateInfo?.body ? (
-						<div className={notesCardClass}>
-							<UpdateNotesMarkdown content={updateInfo.body} />
-						</div>
-					) : null}
-
-					{isDownloading ? (
-						<div className='space-y-2'>
-							<div className='h-1.5 w-full overflow-hidden rounded-full bg-muted'>
-								<div
-									className='h-full rounded-full bg-primary transition-[width] duration-200 ease-out'
-									style={{
-										width: total !== null ? `${progressPercent}%` : undefined,
-									}}
-								/>
+				{showBody ? (
+					<div className={bodyClass}>
+						{showNotes && updateInfo?.body ? (
+							<div className={notesCardClass}>
+								<UpdateNotesMarkdown content={updateInfo.body} />
 							</div>
-							<p className='text-[12px] leading-none text-sf-shell-tertiary tabular-nums'>
-								{total !== null
-									? `${formatBytes(downloaded)} / ${formatBytes(total)} (${progressPercent}%)`
-									: `${formatBytes(downloaded)} 已下载`}
-							</p>
-						</div>
-					) : null}
+						) : null}
 
-					{isReady ? (
-						<div className={successCardClass}>
-							<p className='text-[13px] leading-5 text-green-700 dark:text-green-300'>
-								安装包已就绪。只有点击「立即重启」才会开始安装并退出当前进程。
-							</p>
-						</div>
-					) : null}
+						{isDownloading ? (
+							<div className='space-y-2'>
+								<div className='h-1.5 w-full overflow-hidden rounded-full bg-muted'>
+									<div
+										className='h-full rounded-full bg-primary transition-[width] duration-200 ease-out'
+										style={{ width: `${progressPercent}%` }}
+									/>
+								</div>
+								<p className='text-[12px] leading-none text-sf-shell-tertiary tabular-nums'>
+									{formatDownloadBytesLine(downloaded, total)}
+								</p>
+							</div>
+						) : null}
 
-					{isError ? (
-						<div className={errorCardClass}>
-							<p className='text-[13px] leading-5 text-red-700 dark:text-red-300'>
-								{errorMessage}
-							</p>
-						</div>
-					) : null}
-				</div>
+						{isReady ? (
+							<div className={successCardClass}>
+								<p className='text-[13px] leading-5 text-green-700 dark:text-green-300'>
+									安装包已就绪。只有点击「立即重启」才会开始安装并退出当前进程。
+								</p>
+							</div>
+						) : null}
 
+						{isError ? (
+							<div className={errorCardClass}>
+								<p className='text-[13px] leading-5 text-red-700 dark:text-red-300'>
+									{errorMessage}
+								</p>
+							</div>
+						) : null}
+					</div>
+				) : null}
+
+				{/* Footer：对齐 createDialogFooterClass = px-3 pb-3 pt-2 */}
 				<div className={footerClass}>
 					{isReady ? (
 						<>
@@ -185,22 +218,26 @@ export function UpdateDialog() {
 	)
 }
 
+/** 外壳 p-0，分区自管边距（对齐 CreateDialogShell） */
 const dialogContentClass = cn(
 	'flex flex-col gap-0 overflow-hidden rounded-3xl border border-border p-0',
 	'shadow-(--sf-shadow-float) top-[15dvh] translate-y-0',
 	'max-w-[calc(100%-1.5rem)] sm:max-w-md',
 )
 
-const headerClass = 'shrink-0 px-5 pt-5 pb-3'
+/** 对齐 createDialogHeaderClass：p-3 + 右侧关闭 */
+const headerClass = 'flex shrink-0 items-start justify-between gap-2 p-3'
 const titleClass = 'text-[15px] font-semibold leading-tight text-foreground'
-const descClass = 'mt-1 text-[13px] leading-5 text-sf-shell-tertiary'
-const bodyClass = 'min-h-0 px-5 py-3 space-y-3'
-const footerClass = 'shrink-0 flex items-center justify-end gap-2 px-5 pb-4 pt-2'
-const notesCardClass = 'rounded-xl bg-muted p-4'
+const descClass = 'text-[13px] leading-5 text-sf-shell-tertiary'
+/** 内容区左右与 header/footer 对齐 px-3 */
+const bodyClass = 'min-h-0 space-y-3 px-3'
+/** 对齐 createDialogFooterClass */
+const footerClass = 'flex shrink-0 items-center justify-end gap-2 px-3 pb-3 pt-2'
+const notesCardClass = 'rounded-xl bg-muted p-3'
 const successCardClass =
-	'rounded-xl border border-green-200/60 bg-green-50/60 p-4 dark:border-green-900/30 dark:bg-green-950/20'
+	'rounded-xl border border-green-200/60 bg-green-50/60 p-3 dark:border-green-900/30 dark:bg-green-950/20'
 const errorCardClass =
-	'rounded-xl border border-red-200/60 bg-red-50/60 p-4 dark:border-red-900/30 dark:bg-red-950/20'
+	'rounded-xl border border-red-200/60 bg-red-50/60 p-3 dark:border-red-900/30 dark:bg-red-950/20'
 
 function UpdateNotesMarkdown({ content }: { content: string }) {
 	const blocks = parseSimpleMarkdown(content)

@@ -52,6 +52,18 @@ describe('deriveUpdateFooterView', () => {
 			errorMessage: null,
 		})
 		expect(view?.label).toBe('v0.2.0 就绪')
-		expect(view?.title).toContain('重启')
+		expect(view?.title).toContain('就绪')
+	})
+
+	it('downloading start without total → 0% and empty ring', () => {
+		const view = deriveUpdateFooterView({
+			phase: 'downloading',
+			version: '0.2.0',
+			downloaded: 0,
+			total: null,
+			errorMessage: null,
+		})
+		expect(view?.label).toBe('0%')
+		expect(view?.ringValue).toBe(0)
 	})
 })

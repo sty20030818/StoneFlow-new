@@ -3,6 +3,7 @@
  */
 
 import {
+	downloadProgressBarValue,
 	footerUpdateLabel,
 	footerUpdateTitle,
 	formatDownloadPercent,
@@ -50,11 +51,20 @@ export function isUpdateFooterVisiblePhase(
 export function deriveUpdateFooterView(input: UpdateFooterViewInput): UpdateFooterView | null {
 	if (!isUpdateFooterVisiblePhase(input.phase)) return null
 
-	const percent = formatDownloadPercent(input.downloaded, input.total)
+	const hasTotal = input.total !== null && input.total > 0
+	// 有 total → 真实百分比；无 total 起手 → 0（空环）；无 total 已有流量 → null（慢旋）
 	const ringValue =
-		percent !== null
-			? Math.min(100, Math.round((input.downloaded / (input.total ?? 1)) * 100))
-			: null
+		input.phase === 'downloading'
+			? hasTotal
+				? downloadProgressBarValue(input.downloaded, input.total)
+				: input.downloaded <= 0
+					? 0
+					: null
+			: input.phase === 'ready'
+				? 100
+				: formatDownloadPercent(input.downloaded, input.total) !== null
+					? downloadProgressBarValue(input.downloaded, input.total)
+					: null
 
 	return {
 		phase: input.phase,
