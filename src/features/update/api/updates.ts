@@ -103,12 +103,14 @@ export async function getUpdateSettings(): Promise<UpdateSettings> {
 }
 
 /** 进程内更新会话阶段 */
-export type UpdateSessionPhase = 'idle' | 'downloading' | 'ready'
+export type UpdateSessionPhase = 'idle' | 'available' | 'downloading' | 'ready'
 
 /** 进程内更新会话快照（挂载 hydrate） */
 export interface UpdateSessionSnapshot {
 	phase: UpdateSessionPhase
 	version: string | null
+	body?: string | null
+	pubDate?: string | null
 	downloaded: number
 	total: number | null
 	downloadInFlight: boolean

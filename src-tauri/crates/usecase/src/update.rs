@@ -19,8 +19,21 @@ use crate::error::UsecaseError;
 #[serde(rename_all = "camelCase")]
 pub enum UpdateSessionPhase {
     Idle,
+    /// 已发现更新，等待用户确认下载（仅提醒 / 取消下载后）。
+    Available,
     Downloading,
     Ready,
+}
+
+/// 更新检查触发来源。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UpdateCheckKind {
+    /// 用户手动：绕过节流与跳过列表。
+    Manual,
+    /// 定期自动：受间隔节流；Manual 模式不查；尊重跳过列表。
+    Scheduled,
+    /// 启动首次：不受间隔节流（仍尊重 Manual 模式与跳过列表）。
+    Startup,
 }
 
 /// 更新会话快照。
@@ -29,6 +42,8 @@ pub enum UpdateSessionPhase {
 pub struct UpdateSessionSnapshot {
     pub phase: UpdateSessionPhase,
     pub version: Option<String>,
+    pub body: Option<String>,
+    pub pub_date: Option<String>,
     pub downloaded: u64,
     pub total: Option<u64>,
     pub download_in_flight: bool,
@@ -42,6 +57,8 @@ struct SessionInner {
     total: Option<u64>,
     /// 最近一次 check 到的远端版本，供下载会话标注。
     pending_version: Option<String>,
+    pending_body: Option<String>,
+    pending_pub_date: Option<String>,
     /// 为 false 时停止推送进度（取消后）；配合 abort 中断下载 task。
     emit_progress: bool,
     /// 当前下载 task 的 abort 句柄（仅下载阶段有效）。
@@ -59,6 +76,8 @@ impl Default for SessionInner {
             downloaded: 0,
             total: None,
             pending_version: None,
+            pending_body: None,
+            pending_pub_date: None,
             emit_progress: true,
             abort_handle: None,
             cancel_requested: false,
@@ -153,9 +172,15 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
     /// 读取进程内更新会话快照（前端挂载时 hydrate）。
     pub fn session_snapshot(&self) -> UpdateSessionSnapshot {
         let s = self.session.lock().unwrap_or_else(|e| e.into_inner());
+        let version = match s.phase {
+            UpdateSessionPhase::Available => s.pending_version.clone().or_else(|| s.version.clone()),
+            _ => s.version.clone().or_else(|| s.pending_version.clone()),
+        };
         UpdateSessionSnapshot {
             phase: s.phase,
-            version: s.version.clone(),
+            version,
+            body: s.pending_body.clone(),
+            pub_date: s.pending_pub_date.clone(),
             downloaded: s.downloaded,
             total: s.total,
             download_in_flight: s.in_flight,
@@ -204,24 +229,40 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         Ok(settings)
     }
 
+    /// 检查更新（IPC：`manual=true` → Manual，否则 Scheduled）。
+    pub async fn check_update(&self, manual: bool) -> Result<Option<UpdateInfo>, UsecaseError> {
+        self.check_update_with(if manual {
+            UpdateCheckKind::Manual
+        } else {
+            UpdateCheckKind::Scheduled
+        })
+        .await
+    }
+
     /// 检查更新。
     ///
-    /// - `manual = true`：用户手动触发，绕过节流和跳过版本过滤。
-    /// - `manual = false`：自动检查，受 6 小时节流和版本跳过列表约束。
-    pub async fn check_update(&self, manual: bool) -> Result<Option<UpdateInfo>, UsecaseError> {
+    /// - [`UpdateCheckKind::Manual`]：绕过节流和跳过版本过滤。
+    /// - [`UpdateCheckKind::Scheduled`]：受间隔节流；Manual 模式不查；尊重跳过列表。
+    /// - [`UpdateCheckKind::Startup`]：启动首次，不受间隔节流；仍尊重 Manual 模式与跳过列表。
+    pub async fn check_update_with(
+        &self,
+        kind: UpdateCheckKind,
+    ) -> Result<Option<UpdateInfo>, UsecaseError> {
         let settings = self.settings_port.load().await?;
+        let is_manual = kind == UpdateCheckKind::Manual;
 
-        // 自动模式下的拦截逻辑
-        if !manual {
+        if !is_manual {
             // 手动模式不自动检查
             if settings.check_mode == UpdateCheckMode::Manual {
                 return Ok(None);
             }
-            // 按用户配置的间隔节流
-            let now = Utc::now().timestamp();
-            let interval = normalize_check_interval_secs(settings.check_interval_secs);
-            if !should_auto_check_with_interval(now, settings.last_checked_at, interval) {
-                return Ok(None);
+            // 定期自动受间隔节流；启动首次故意绕过，避免「有更新但 6h 内静默」
+            if kind == UpdateCheckKind::Scheduled {
+                let now = Utc::now().timestamp();
+                let interval = normalize_check_interval_secs(settings.check_interval_secs);
+                if !should_auto_check_with_interval(now, settings.last_checked_at, interval) {
+                    return Ok(None);
+                }
             }
         }
 
@@ -233,22 +274,64 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         new_settings.last_checked_at = Some(Utc::now().timestamp());
         self.settings_port.save(&new_settings).await?;
 
-        // 自动模式下跳过用户选择跳过的版本
-        if !manual {
-            if let Some(ref info) = update {
-                if is_version_skipped(&settings.skipped_versions, &info.version) {
-                    return Ok(None);
+        // 非手动：跳过用户选择跳过的版本
+        let update = if !is_manual {
+            match update {
+                Some(ref info) if is_version_skipped(&settings.skipped_versions, &info.version) => {
+                    None
+                }
+                other => other,
+            }
+        } else {
+            update
+        };
+
+        self.apply_check_result_to_session(update.as_ref());
+
+        Ok(update)
+    }
+
+    /// 将检查结果写入进程内会话，供前端 hydrate（避免仅依赖可能丢失的 emit）。
+    fn apply_check_result_to_session(&self, update: Option<&UpdateInfo>) {
+        let Ok(mut s) = self.session.lock() else {
+            return;
+        };
+        // 下载中 / 已就绪时不降级会话
+        if s.in_flight
+            || s.phase == UpdateSessionPhase::Downloading
+            || s.phase == UpdateSessionPhase::Ready
+        {
+            if let Some(info) = update {
+                s.pending_version = Some(info.version.clone());
+                s.pending_body = info.body.clone();
+                s.pending_pub_date = info.pub_date.clone();
+            }
+            return;
+        }
+
+        match update {
+            Some(info) => {
+                s.pending_version = Some(info.version.clone());
+                s.pending_body = info.body.clone();
+                s.pending_pub_date = info.pub_date.clone();
+                s.version = Some(info.version.clone());
+                s.phase = UpdateSessionPhase::Available;
+                s.downloaded = 0;
+                s.total = None;
+            }
+            None => {
+                // 无更新：清掉「仅有 available」的悬挂态
+                if s.phase == UpdateSessionPhase::Available {
+                    s.phase = UpdateSessionPhase::Idle;
+                    s.version = None;
+                    s.pending_version = None;
+                    s.pending_body = None;
+                    s.pending_pub_date = None;
+                    s.downloaded = 0;
+                    s.total = None;
                 }
             }
         }
-
-        if let Some(ref info) = update {
-            if let Ok(mut s) = self.session.lock() {
-                s.pending_version = Some(info.version.clone());
-            }
-        }
-
-        Ok(update)
     }
 
     /// 开始下载并安装当前检测到的更新。
@@ -340,7 +423,13 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
                     return Ok(DownloadOutcome::Cancelled);
                 }
                 if let Ok(mut s) = self.session.lock() {
-                    s.phase = UpdateSessionPhase::Idle;
+                    // 下载失败但仍有 pending → 回到 available，便于用户重试
+                    s.phase = if s.pending_version.is_some() {
+                        UpdateSessionPhase::Available
+                    } else {
+                        UpdateSessionPhase::Idle
+                    };
+                    s.version = s.pending_version.clone();
                     s.downloaded = 0;
                     s.total = None;
                     s.cancel_requested = false;
@@ -369,12 +458,12 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
 
     fn reset_session_after_cancel(&self) {
         if let Ok(mut s) = self.session.lock() {
+            // 保留 pending_*，回到 available 便于再次下载
             s.phase = if s.pending_version.is_some() {
-                UpdateSessionPhase::Idle
+                UpdateSessionPhase::Available
             } else {
                 UpdateSessionPhase::Idle
             };
-            // 保留 pending_version，便于用户再次下载
             s.downloaded = 0;
             s.total = None;
             s.emit_progress = true;
@@ -414,9 +503,27 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
     pub async fn skip_version(&self, version: String) -> Result<(), UsecaseError> {
         let mut settings = self.settings_port.load().await?;
         if !settings.skipped_versions.iter().any(|v| v == &version) {
-            settings.skipped_versions.push(version);
+            settings.skipped_versions.push(version.clone());
         }
-        self.settings_port.save(&settings).await
+        self.settings_port.save(&settings).await?;
+
+        // 若跳过的是当前 pending，清掉 available 会话
+        if let Ok(mut s) = self.session.lock() {
+            if s.pending_version.as_deref() == Some(version.as_str())
+                && !s.in_flight
+                && s.phase != UpdateSessionPhase::Downloading
+                && s.phase != UpdateSessionPhase::Ready
+            {
+                s.phase = UpdateSessionPhase::Idle;
+                s.version = None;
+                s.pending_version = None;
+                s.pending_body = None;
+                s.pending_pub_date = None;
+                s.downloaded = 0;
+                s.total = None;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -670,12 +777,75 @@ mod tests {
         let outcome = handle.await.unwrap().unwrap();
         assert_eq!(outcome, DownloadOutcome::Cancelled);
         assert!(!service.is_download_in_flight());
-        assert_eq!(service.session_snapshot().phase, UpdateSessionPhase::Idle);
+        assert_eq!(
+            service.session_snapshot().phase,
+            UpdateSessionPhase::Available
+        );
 
         // 取消后可重新下载
         assert!(matches!(
             service.download_and_install(|_, _| {}).await.unwrap(),
             DownloadOutcome::Completed { version } if version == "0.3.0"
         ));
+    }
+
+    #[tokio::test]
+    async fn check_should_mark_session_available() {
+        let port = MockUpdatePort::new(Some("0.4.0"));
+        let settings_port = MockSettingsPort::new(UpdateSettings::default());
+        let service = UpdateService::new(port, settings_port);
+
+        let info = service.check_update(true).await.unwrap().unwrap();
+        assert_eq!(info.version, "0.4.0");
+
+        let snap = service.session_snapshot();
+        assert_eq!(snap.phase, UpdateSessionPhase::Available);
+        assert_eq!(snap.version.as_deref(), Some("0.4.0"));
+    }
+
+    #[tokio::test]
+    async fn startup_check_should_bypass_throttle_but_respect_skip_list() {
+        let port = MockUpdatePort::new(Some("0.5.0"));
+        let settings_port = MockSettingsPort::new(UpdateSettings {
+            check_mode: UpdateCheckMode::NotifyOnly,
+            last_checked_at: Some(Utc::now().timestamp()), // 刚检查过
+            skipped_versions: vec![],
+            ..Default::default()
+        });
+        let service = UpdateService::new(port, settings_port);
+
+        // Scheduled 被节流
+        assert!(service
+            .check_update_with(UpdateCheckKind::Scheduled)
+            .await
+            .unwrap()
+            .is_none());
+
+        // Startup 绕过节流
+        let info = service
+            .check_update_with(UpdateCheckKind::Startup)
+            .await
+            .unwrap();
+        assert_eq!(info.unwrap().version, "0.5.0");
+        assert_eq!(
+            service.session_snapshot().phase,
+            UpdateSessionPhase::Available
+        );
+    }
+
+    #[tokio::test]
+    async fn startup_check_should_respect_manual_mode() {
+        let port = MockUpdatePort::new(Some("0.5.0"));
+        let settings_port = MockSettingsPort::new(UpdateSettings {
+            check_mode: UpdateCheckMode::Manual,
+            ..Default::default()
+        });
+        let service = UpdateService::new(port, settings_port);
+
+        assert!(service
+            .check_update_with(UpdateCheckKind::Startup)
+            .await
+            .unwrap()
+            .is_none());
     }
 }

@@ -9,7 +9,7 @@ use crate::services::update_events::{
     emit_available, emit_downloading, emit_error, emit_ready,
 };
 use crate::services::{build_update_service, RuntimeUpdateService};
-use stoneflow_usecase::DownloadOutcome;
+use stoneflow_usecase::{DownloadOutcome, UpdateCheckKind};
 use crate::sync::{self, SyncRuntimeState};
 use stoneflow_domain::{
     normalize_check_interval_secs, UpdateCheckMode, AUTO_CHECK_INTERVAL_SECS,
@@ -128,12 +128,22 @@ fn schedule_update_checker(app_handle: tauri::AppHandle, wake: UpdateScheduleWak
         // 启动延迟，避免影响应用启动速度
         tokio::time::sleep(Duration::from_secs(STARTUP_CHECK_DELAY_SECS)).await;
 
+        // 首次为启动检查（绕过间隔节流）；之后按配置间隔循环
+        let mut is_startup = true;
+
         loop {
             let Some(service) = app_handle.try_state::<RuntimeUpdateService>() else {
                 break;
             };
 
-            match service.check_update(false).await {
+            let kind = if is_startup {
+                UpdateCheckKind::Startup
+            } else {
+                UpdateCheckKind::Scheduled
+            };
+            is_startup = false;
+
+            match service.check_update_with(kind).await {
                 Ok(Some(info)) => {
                     let settings = match service.get_settings().await {
                         Ok(s) => s,

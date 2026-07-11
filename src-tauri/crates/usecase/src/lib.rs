@@ -24,6 +24,6 @@ pub mod view;
 
 pub use error::UsecaseError;
 pub use update::{
-    DownloadOutcome, UpdateInfo, UpdatePort, UpdateService, UpdateSessionPhase,
+    DownloadOutcome, UpdateCheckKind, UpdateInfo, UpdatePort, UpdateService, UpdateSessionPhase,
     UpdateSessionSnapshot, UpdateSettingsPort,
 };

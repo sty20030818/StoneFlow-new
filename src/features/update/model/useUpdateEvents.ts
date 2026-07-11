@@ -51,12 +51,45 @@ function handlePhasePayload(payload: UpdatePhasePayload) {
 	runPhaseEffect(effect)
 }
 
+/** 后端 STARTUP_CHECK_DELAY_SECS=3；多等一点兜底拉会话 */
+const STARTUP_SESSION_REHYDRATE_MS = 4500
+
+function hydrateSessionSnapshot(session: Awaited<ReturnType<typeof getUpdateSession>>) {
+	useUpdateStore.getState().hydrateFromSession({
+		phase: session.phase,
+		version: session.version,
+		body: session.body ?? null,
+		pubDate: session.pubDate ?? null,
+		downloaded: session.downloaded,
+		total: session.total,
+	})
+}
+
+/** 仅当 UI 仍空闲时用会话补全，避免覆盖用户已在进行的下载 */
+function maybeHydrateIfIdle(session: Awaited<ReturnType<typeof getUpdateSession>>) {
+	const phase = useUpdateStore.getState().phase
+	if (
+		(phase === 'idle' || phase === 'upToDate' || phase === 'checking') &&
+		session.phase !== 'idle'
+	) {
+		hydrateSessionSnapshot(session)
+	}
+}
+
 export function useUpdateEvents() {
 	useEffect(() => {
 		let disposed = false
 		let unlistenPhase: (() => void) | undefined
+		let rehydrateTimer: ReturnType<typeof setTimeout> | undefined
 
 		async function setupListeners() {
+			// 1) 尽早挂监听，降低启动检查 emit 丢失概率
+			unlistenPhase = await listen<UpdatePhasePayload>(UPDATE_EVENTS.PHASE, (event) => {
+				if (disposed) return
+				handlePhasePayload(event.payload)
+			})
+
+			// 2) checkMode：决定 available 是否自动弹窗
 			try {
 				const settings = await getUpdateSettings()
 				if (!disposed) {
@@ -66,24 +99,28 @@ export function useUpdateEvents() {
 				console.error('Failed to load update settings for event routing:', err)
 			}
 
+			// 3) 用会话快照恢复（同进程内已发现更新 / 下载中 / 就绪）
 			try {
 				const session = await getUpdateSession()
 				if (!disposed) {
-					useUpdateStore.getState().hydrateFromSession({
-						phase: session.phase,
-						version: session.version,
-						downloaded: session.downloaded,
-						total: session.total,
-					})
+					hydrateSessionSnapshot(session)
 				}
 			} catch (err) {
 				console.error('Failed to hydrate update session:', err)
 			}
 
-			unlistenPhase = await listen<UpdatePhasePayload>(UPDATE_EVENTS.PHASE, (event) => {
+			// 4) 启动检查约 3s 后才跑；延迟再 hydrate，兜底 emit 丢失
+			rehydrateTimer = setTimeout(() => {
 				if (disposed) return
-				handlePhasePayload(event.payload)
-			})
+				void getUpdateSession()
+					.then((session) => {
+						if (disposed) return
+						maybeHydrateIfIdle(session)
+					})
+					.catch(() => {
+						// 延迟 hydrate 失败可忽略
+					})
+			}, STARTUP_SESSION_REHYDRATE_MS)
 		}
 
 		void setupListeners().catch((err) => {
@@ -93,6 +130,7 @@ export function useUpdateEvents() {
 		return () => {
 			disposed = true
 			unlistenPhase?.()
+			if (rehydrateTimer !== undefined) clearTimeout(rehydrateTimer)
 		}
 	}, [])
 }

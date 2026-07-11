@@ -13,8 +13,8 @@ export const shellFooterTrackClass =
 /** 左侧：同步区 */
 export const shellFooterLeftTrackClass = `flex min-w-0 flex-1 items-center gap-2 ${shellFooterTrackClass}`
 
-/** 右侧：更新 + 版本 */
-export const shellFooterRightTrackClass = `flex shrink-0 items-center gap-2 ${shellFooterTrackClass}`
+/** 右侧：更新 badge + 版本（与版本拉开，避免挤成一团） */
+export const shellFooterRightTrackClass = `flex shrink-0 items-center gap-3 ${shellFooterTrackClass}`
 
 /** 状态灯（只读） */
 export const shellFooterStatusDotClass =

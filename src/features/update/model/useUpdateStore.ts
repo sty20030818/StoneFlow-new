@@ -50,8 +50,10 @@ interface UpdateState {
 	dismissReadyChip: () => void
 	openDialog: () => void
 	hydrateFromSession: (input: {
-		phase: 'idle' | 'downloading' | 'ready'
+		phase: 'idle' | 'available' | 'downloading' | 'ready'
 		version: string | null
+		body?: string | null
+		pubDate?: string | null
 		downloaded: number
 		total: number | null
 	}) => void
@@ -208,6 +210,35 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 	hydrateFromSession: (input) => {
 		if (input.phase === 'idle') return
 		const version = input.version
+		const body = input.body ?? get().updateInfo?.body ?? null
+		const pubDate = input.pubDate ?? get().updateInfo?.pubDate ?? null
+
+		// 已发现更新：恢复 available（emit 可能在监听前丢失）
+		if (input.phase === 'available') {
+			if (!version) return
+			const current = get()
+			if (current.dismissedVersion === version) return
+			// 已在下载/就绪，或同一版本已展示，不覆盖、不强弹
+			if (current.phase === 'downloading' || current.phase === 'ready') return
+			if (
+				current.phase === 'available' &&
+				current.updateInfo?.version === version
+			) {
+				return
+			}
+			// 仅提醒默认弹窗；自动下载不弹窗打扰
+			const openDialog = current.checkMode !== 'autoDownload'
+			set({
+				phase: 'available',
+				updateInfo: { version, body, pubDate },
+				progress: null,
+				errorMessage: null,
+				downloadUiAbandoned: false,
+				dialogVisible: openDialog,
+			})
+			return
+		}
+
 		if (input.phase === 'downloading') {
 			set({
 				phase: 'downloading',
@@ -216,15 +247,13 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 				downloadUiAbandoned: false,
 				dialogVisible: false,
 				updateInfo: version
-					? {
-							version,
-							body: get().updateInfo?.body ?? null,
-							pubDate: get().updateInfo?.pubDate ?? null,
-						}
+					? { version, body, pubDate }
 					: get().updateInfo,
 			})
 			return
 		}
+
+		// ready
 		if (!version) return
 		set({
 			phase: 'ready',
@@ -232,11 +261,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			errorMessage: null,
 			downloadUiAbandoned: false,
 			dialogVisible: false,
-			updateInfo: {
-				version,
-				body: get().updateInfo?.body ?? null,
-				pubDate: get().updateInfo?.pubDate ?? null,
-			},
+			updateInfo: { version, body, pubDate },
 		})
 	},
 
