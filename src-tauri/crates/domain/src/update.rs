@@ -78,8 +78,8 @@ pub struct UpdateSettings {
     pub check_mode: UpdateCheckMode,
     /// 更新渠道。
     pub channel: UpdateChannel,
-    /// 用户已选择跳过的版本号集合。
-    pub skipped_versions: Vec<String>,
+    /// 用户跳过的「当前忽略」版本号（只记一个：远端仍是该版本时自动检查不再提醒）。
+    pub skipped_version: Option<String>,
     /// 上次自动检查时间（unix timestamp 秒），用于节流。
     pub last_checked_at: Option<i64>,
     /// 自动检查间隔（秒）。缺省 / 非法值由 [`normalize_check_interval_secs`] 收敛。
@@ -96,7 +96,7 @@ impl Default for UpdateSettings {
         Self {
             check_mode: UpdateCheckMode::default(),
             channel: UpdateChannel::default(),
-            skipped_versions: Vec::new(),
+            skipped_version: None,
             last_checked_at: None,
             check_interval_secs: AUTO_CHECK_INTERVAL_SECS,
         }
@@ -145,9 +145,9 @@ pub fn should_auto_check_with_interval(
     }
 }
 
-/// 判断给定版本号是否在用户跳过列表中。
-pub fn is_version_skipped(skipped_versions: &[String], version: &str) -> bool {
-    skipped_versions.iter().any(|v| v == version)
+/// 判断远端版本是否正是用户选择跳过的那个版本。
+pub fn is_version_skipped(skipped_version: Option<&str>, version: &str) -> bool {
+    skipped_version.is_some_and(|s| s == version)
 }
 
 #[cfg(test)]
@@ -159,7 +159,7 @@ mod tests {
         let settings = UpdateSettings::default();
         assert_eq!(settings.check_mode, UpdateCheckMode::NotifyOnly);
         assert_eq!(settings.channel, UpdateChannel::Stable);
-        assert!(settings.skipped_versions.is_empty());
+        assert!(settings.skipped_version.is_none());
         assert!(settings.last_checked_at.is_none());
     }
 
@@ -235,10 +235,10 @@ mod tests {
 
     #[test]
     fn is_version_skipped_should_match_exact_version() {
-        let skipped = vec!["0.2.0".to_string(), "0.3.0-beta.1".to_string()];
-        assert!(is_version_skipped(&skipped, "0.2.0"));
-        assert!(is_version_skipped(&skipped, "0.3.0-beta.1"));
-        assert!(!is_version_skipped(&skipped, "0.2.1"));
+        assert!(is_version_skipped(Some("0.2.0"), "0.2.0"));
+        assert!(is_version_skipped(Some("0.3.0-beta.1"), "0.3.0-beta.1"));
+        assert!(!is_version_skipped(Some("0.2.0"), "0.2.1"));
+        assert!(!is_version_skipped(None, "0.2.0"));
     }
 
     #[test]

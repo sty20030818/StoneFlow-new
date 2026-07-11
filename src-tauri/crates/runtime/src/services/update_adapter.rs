@@ -167,11 +167,11 @@ impl UpdatePort for TauriUpdateAdapter {
         }))
     }
 
-    async fn download_and_install(
+    async fn download_package(
         &self,
         channel: UpdateChannel,
         on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
-    ) -> Result<String, UsecaseError> {
+    ) -> Result<(String, Vec<u8>), UsecaseError> {
         let updater = self.build_updater(channel)?;
 
         // 仅在此处 check 一次，拿到可下载的 Update 句柄（Tauri API 要求）。
@@ -183,7 +183,9 @@ impl UpdatePort for TauriUpdateAdapter {
 
         let version = update.version.to_string();
 
-        // 拆成 download + install：下载阶段可被 task abort 真正中断。
+        // 只 download，不 install。
+        // Windows 上 install() 会启动 NSIS 并 process::exit，等同「自动安装」；
+        // 必须等用户点「重启」再 install。
         let downloaded = Arc::new(AtomicU64::new(0));
         let downloaded_clone = downloaded.clone();
         let bytes = update
@@ -198,11 +200,43 @@ impl UpdatePort for TauriUpdateAdapter {
             .await
             .map_err(|e| UsecaseError::update(format!("下载更新失败: {e}")))?;
 
+        log::info!(
+            target: "updater",
+            "更新包已下载并暂存 v{version}（{} bytes），等待用户确认安装",
+            bytes.len()
+        );
+
+        Ok((version, bytes))
+    }
+
+    async fn install_package(
+        &self,
+        channel: UpdateChannel,
+        bytes: Vec<u8>,
+    ) -> Result<(), UsecaseError> {
+        let updater = self.build_updater(channel)?;
+
+        // install 需要 Update 句柄（路径/配置）；再 check 一次拿句柄，安装内容用已暂存的 bytes。
+        let update = updater
+            .check()
+            .await
+            .map_err(|e| UsecaseError::update(format!("安装前检查更新失败: {e}")))?
+            .ok_or_else(|| {
+                UsecaseError::update("安装失败：远端已无此更新，请重新检查并下载".to_string())
+            })?;
+
+        log::info!(
+            target: "updater",
+            "开始安装更新 v{}（Windows 上将退出进程）",
+            update.version
+        );
+
+        // Windows：内部 ShellExecute 安装器后 process::exit(0)，不会返回。
         update
             .install(bytes)
             .map_err(|e| UsecaseError::update(format!("安装更新失败: {e}")))?;
 
-        Ok(version)
+        Ok(())
     }
 
     async fn restart(&self) -> Result<(), UsecaseError> {

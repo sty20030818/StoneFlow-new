@@ -2,22 +2,29 @@
  * Footer 右侧更新事务 · explicit phase variants。
  * idle/checking 不渲染（只留版本号）。
  *
- * available：shadcn Badge（↓ 有更新）—— 单纯提醒，点击开弹窗
- * downloading / ready / error：指示 + 文案轨
+ * 统一交互：整块只负责开弹窗（下载 / 重启 / 跳过都在弹窗里完成）。
+ * available：Badge；downloading / ready / error：指示 + 文案一体可点。
  */
 
-import { DownloadIcon, RefreshCwIcon } from 'lucide-react'
+import { DownloadIcon } from 'lucide-react'
 
 import {
 	deriveUpdateFooterView,
 	type UpdateFooterView,
 } from '@/features/update/model/deriveUpdateFooterView'
-import { useUpdateActions } from '@/features/update/model/useUpdateEvents'
 import { useUpdateStore } from '@/features/update/model/useUpdateStore'
 import { UpdateProgressRing } from '@/features/update/ui/UpdateProgressRing'
 import { Badge } from '@/shared/ui/base/badge'
-import { ShellFooterStatus } from '@/shared/ui/patterns/ShellFooterStatus'
 import { cn } from '@/shared/lib/utils'
+
+/** Footer 事务态共用的一体可点样式 */
+const footerHitClass = cn(
+	'inline-flex min-w-0 max-w-40 items-center gap-1.5 rounded-md',
+	'text-[11px] leading-none tabular-nums',
+	'transition-[color,background-color,transform]',
+	'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+	'active:scale-[0.96]',
+)
 
 export function UpdateStatusFooterItem() {
 	const phase = useUpdateStore((s) => s.phase)
@@ -25,7 +32,6 @@ export function UpdateStatusFooterItem() {
 	const updateInfo = useUpdateStore((s) => s.updateInfo)
 	const errorMessage = useUpdateStore((s) => s.errorMessage)
 	const openDialog = useUpdateStore((s) => s.openDialog)
-	const { restart } = useUpdateActions()
 
 	const view = deriveUpdateFooterView({
 		phase,
@@ -37,111 +43,87 @@ export function UpdateStatusFooterItem() {
 
 	if (!view) return null
 
-	const actions: UpdateFooterActions = {
-		openDialog,
-		restart,
-	}
-
 	switch (view.phase) {
 		case 'downloading':
-			return <UpdateDownloadingFooter view={view} actions={actions} />
+			return <UpdateDownloadingFooter view={view} onOpen={openDialog} />
 		case 'ready':
-			return <UpdateReadyFooter view={view} actions={actions} />
+			return <UpdateReadyFooter view={view} onOpen={openDialog} />
 		case 'available':
-			return <UpdateAvailableFooter view={view} actions={actions} />
+			return <UpdateAvailableFooter view={view} onOpen={openDialog} />
 		case 'error':
-			return <UpdateErrorFooter view={view} actions={actions} />
+			return <UpdateErrorFooter view={view} onOpen={openDialog} />
 	}
 }
 
-type UpdateFooterActions = {
-	openDialog: () => void
-	restart: () => Promise<void> | void
-}
-
-function ringToneClass(phase: UpdateFooterView['phase']) {
-	return cn(
-		phase === 'ready' && 'text-emerald-600 dark:text-emerald-400',
-		phase === 'error' && 'text-red-600 dark:text-red-400',
-		phase === 'downloading' && 'text-foreground/70',
-	)
-}
-
-function UpdateRing({ view }: { view: UpdateFooterView }) {
-	const ringState =
-		view.phase === 'available' ? 'downloading' : view.phase
-
-	return (
-		<ShellFooterStatus.Indicator className={ringToneClass(view.phase)} aria-hidden>
-			<UpdateProgressRing
-				state={ringState}
-				value={view.phase === 'ready' ? 100 : view.ringValue}
-			/>
-		</ShellFooterStatus.Indicator>
-	)
-}
-
-/** 下载中：进度环 + 文案（点开弹窗看进度 / 取消） */
+/** 下载中：环 + 百分比一体，点开弹窗 */
 function UpdateDownloadingFooter({
 	view,
-	actions,
+	onOpen,
 }: {
 	view: UpdateFooterView
-	actions: UpdateFooterActions
+	onOpen: () => void
 }) {
 	return (
-		<ShellFooterStatus.Root>
-			<UpdateRing view={view} />
-			<ShellFooterStatus.InteractiveLabel
-				title={view.title}
-				aria-label={view.title}
-				onClick={() => actions.openDialog()}
+		<button
+			type='button'
+			title={view.title}
+			aria-label={view.title}
+			onClick={onOpen}
+			className={cn(
+				footerHitClass,
+				'text-sf-shell-text-tertiary',
+				'hover:bg-muted/50 hover:text-sf-shell-text-secondary',
+			)}
+		>
+			<span
+				className='relative flex size-3.5 shrink-0 items-center justify-center text-foreground/70'
+				aria-hidden
 			>
-				{view.label}
-			</ShellFooterStatus.InteractiveLabel>
-		</ShellFooterStatus.Root>
+				<UpdateProgressRing state='downloading' value={view.ringValue} />
+			</span>
+			<span className='min-w-0 truncate'>{view.label}</span>
+		</button>
 	)
 }
 
-/** 就绪：环 · 只读文案 · 独立重启 */
+/** 就绪：环 + 文案一体，点开弹窗（重启只在弹窗 / 悬浮栏） */
 function UpdateReadyFooter({
 	view,
-	actions,
+	onOpen,
 }: {
 	view: UpdateFooterView
-	actions: UpdateFooterActions
+	onOpen: () => void
 }) {
 	return (
-		<ShellFooterStatus.Root>
-			<UpdateRing view={view} />
-			<ShellFooterStatus.StaticLabel
-				className='max-w-32 text-emerald-700 dark:text-emerald-400'
-				title={view.title}
+		<button
+			type='button'
+			title={view.title}
+			aria-label={view.title}
+			onClick={onOpen}
+			className={cn(
+				footerHitClass,
+				'text-emerald-700 dark:text-emerald-400',
+				'hover:bg-emerald-500/10',
+			)}
+		>
+			<span
+				className='relative flex size-3.5 shrink-0 items-center justify-center'
+				aria-hidden
 			>
-				{view.label}
-			</ShellFooterStatus.StaticLabel>
-			<ShellFooterStatus.IconButton
-				className='text-emerald-700 dark:text-emerald-400'
-				aria-label='立即重启以安装更新'
-				title='立即重启'
-				onClick={() => void actions.restart()}
-			>
-				<RefreshCwIcon aria-hidden className='size-3' />
-			</ShellFooterStatus.IconButton>
-		</ShellFooterStatus.Root>
+				<UpdateProgressRing state='ready' value={100} />
+			</span>
+			<span className='min-w-0 truncate'>{view.label}</span>
+		</button>
 	)
 }
 
-/**
- * 有更新：shadcn Badge 一体提醒，点击开弹窗。
- * asChild → button，保证可键盘聚焦与语义正确。
- */
+/** 有更新：Badge 一体提醒，点开弹窗 */
 function UpdateAvailableFooter({
 	view,
-	actions,
+	onOpen,
 }: {
 	view: UpdateFooterView
-	actions: UpdateFooterActions
+	onOpen: () => void
 }) {
 	return (
 		<Badge
@@ -149,12 +131,7 @@ function UpdateAvailableFooter({
 			variant='default'
 			className='max-w-38 cursor-pointer text-[11px] active:scale-[0.96]'
 		>
-			<button
-				type='button'
-				title={view.title}
-				aria-label={view.title}
-				onClick={() => actions.openDialog()}
-			>
+			<button type='button' title={view.title} aria-label={view.title} onClick={onOpen}>
 				{/* 光学：箭头略偏下 */}
 				<DownloadIcon aria-hidden data-icon='inline-start' className='translate-y-px' />
 				<span className='min-w-0 truncate'>{view.label}</span>
@@ -163,25 +140,33 @@ function UpdateAvailableFooter({
 	)
 }
 
-/** 失败：环 + 可点文案打开对话框 */
+/** 失败：环 + 文案一体，点开弹窗 */
 function UpdateErrorFooter({
 	view,
-	actions,
+	onOpen,
 }: {
 	view: UpdateFooterView
-	actions: UpdateFooterActions
+	onOpen: () => void
 }) {
 	return (
-		<ShellFooterStatus.Root>
-			<UpdateRing view={view} />
-			<ShellFooterStatus.InteractiveLabel
-				className='text-red-600 hover:text-red-700 dark:text-red-400'
-				title={view.title}
-				aria-label={view.title}
-				onClick={() => actions.openDialog()}
+		<button
+			type='button'
+			title={view.title}
+			aria-label={view.title}
+			onClick={onOpen}
+			className={cn(
+				footerHitClass,
+				'text-red-600 dark:text-red-400',
+				'hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300',
+			)}
+		>
+			<span
+				className='relative flex size-3.5 shrink-0 items-center justify-center'
+				aria-hidden
 			>
-				{view.label}
-			</ShellFooterStatus.InteractiveLabel>
-		</ShellFooterStatus.Root>
+				<UpdateProgressRing state='error' value={null} />
+			</span>
+			<span className='min-w-0 truncate'>{view.label}</span>
+		</button>
 	)
 }

@@ -23,7 +23,8 @@ export interface UpdateInfo {
 export interface UpdateSettings {
 	checkMode: UpdateCheckMode
 	channel: UpdateChannel
-	skippedVersions: string[]
+	/** 当前忽略的单一版本号；新版本号发布后仍会提醒 */
+	skippedVersion: string | null
 	lastCheckedAt: number | null
 	/** 自动检查间隔（秒）：3600 / 10800 / 21600 / 43200 / 86400 */
 	checkIntervalSecs: number

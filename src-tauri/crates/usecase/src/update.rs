@@ -59,6 +59,8 @@ struct SessionInner {
     pending_version: Option<String>,
     pending_body: Option<String>,
     pending_pub_date: Option<String>,
+    /// 已下载、待用户确认后安装的安装包（Windows 上 install 会立刻退出进程）。
+    staged_package: Option<Vec<u8>>,
     /// 为 false 时停止推送进度（取消后）；配合 abort 中断下载 task。
     emit_progress: bool,
     /// 当前下载 task 的 abort 句柄（仅下载阶段有效）。
@@ -78,6 +80,7 @@ impl Default for SessionInner {
             pending_version: None,
             pending_body: None,
             pending_pub_date: None,
+            staged_package: None,
             emit_progress: true,
             abort_handle: None,
             cancel_requested: false,
@@ -124,15 +127,23 @@ pub trait UpdatePort: Send + Sync {
         channel: UpdateChannel,
     ) -> impl Future<Output = Result<Option<UpdateInfo>, UsecaseError>> + Send;
 
-    /// 执行下载并安装，通过 `on_progress` 向前端推送下载进度。
-    /// 成功时返回已下载的版本号（port 内只应做一次远端 check）。
-    fn download_and_install(
+    /// **仅下载**安装包（校验签名），**不安装**。
+    /// 成功返回 `(version, package_bytes)`；port 内只应做一次远端 check。
+    fn download_package(
         &self,
         channel: UpdateChannel,
         on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
-    ) -> impl Future<Output = Result<String, UsecaseError>> + Send;
+    ) -> impl Future<Output = Result<(String, Vec<u8>), UsecaseError>> + Send;
 
-    /// 重启应用以完成更新。
+    /// 安装已暂存的安装包。
+    /// Windows 上会启动安装器并 `exit` 当前进程（随后由安装器重启）；Unix 上通常返回后再 `restart`。
+    fn install_package(
+        &self,
+        channel: UpdateChannel,
+        bytes: Vec<u8>,
+    ) -> impl Future<Output = Result<(), UsecaseError>> + Send;
+
+    /// 重启应用（无暂存包时的兜底；Windows 安装路径通常走不到这里）。
     fn restart(&self) -> impl Future<Output = Result<(), UsecaseError>> + Send;
 }
 
@@ -269,22 +280,31 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         // 向远端查询
         let update = self.port.check(settings.channel).await?;
 
-        // 更新 last_checked_at（无论是否有更新都记录检查时间）
-        let mut new_settings = settings.clone();
-        new_settings.last_checked_at = Some(Utc::now().timestamp());
-        self.settings_port.save(&new_settings).await?;
-
-        // 非手动：跳过用户选择跳过的版本
-        let update = if !is_manual {
+        // 非手动：若远端仍是用户跳过的那个版本，视为无更新
+        // 手动：仍返回该版本，并清除跳过记录（用户主动再查 = 愿意再看到）
+        let (update, clear_skip) = if !is_manual {
             match update {
-                Some(ref info) if is_version_skipped(&settings.skipped_versions, &info.version) => {
-                    None
+                Some(ref info)
+                    if is_version_skipped(settings.skipped_version.as_deref(), &info.version) =>
+                {
+                    (None, false)
                 }
-                other => other,
+                other => (other, false),
             }
         } else {
-            update
+            let clear = update
+                .as_ref()
+                .is_some_and(|info| settings.skipped_version.as_deref() == Some(info.version.as_str()));
+            (update, clear)
         };
+
+        // 更新 last_checked_at；手动检查到已跳过版本时一并清 skip
+        let mut new_settings = settings.clone();
+        new_settings.last_checked_at = Some(Utc::now().timestamp());
+        if clear_skip {
+            new_settings.skipped_version = None;
+        }
+        self.settings_port.save(&new_settings).await?;
 
         self.apply_check_result_to_session(update.as_ref());
 
@@ -334,11 +354,14 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         }
     }
 
-    /// 开始下载并安装当前检测到的更新。
+    /// 下载更新包并**暂存**（不安装）。
     ///
     /// - 同一时刻最多一次下载：若已有下载在进行，返回 `Ok(Completed)` 幂等忽略。
     /// - 下载在独立 task 中运行，可通过 [`Self::cancel_download`] abort 真正中断网络。
-    /// - `Ok(Cancelled)`：用户取消；`Ok(Completed)`：预装完成。
+    /// - `Ok(Cancelled)`：用户取消；`Ok(Completed)`：下载完成，等待用户重启安装。
+    ///
+    /// **重要**：Windows 上 `install` 会立刻跑安装器并退出进程；因此必须与下载拆开，
+    /// 只有用户点「重启」时才 [`Self::apply_and_restart`]。
     pub async fn download_and_install(
         &self,
         on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
@@ -350,11 +373,17 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
                 let version = s.version.clone().unwrap_or_default();
                 return Ok(DownloadOutcome::Completed { version });
             }
+            // 已就绪且包还在：幂等
+            if s.phase == UpdateSessionPhase::Ready && s.staged_package.is_some() {
+                let version = s.version.clone().unwrap_or_default();
+                return Ok(DownloadOutcome::Completed { version });
+            }
             s.in_flight = true;
             s.phase = UpdateSessionPhase::Downloading;
             s.downloaded = 0;
             s.total = None;
             s.version = s.pending_version.clone();
+            s.staged_package = None;
             s.emit_progress = true;
             s.cancel_requested = false;
             s.abort_handle = None;
@@ -367,7 +396,7 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         let channel = settings.channel;
 
         let join = tokio::spawn(async move {
-            port.download_and_install(channel, move |downloaded, total| {
+            port.download_package(channel, move |downloaded, total| {
                 if let Ok(mut s) = session.lock() {
                     if s.cancel_requested {
                         return;
@@ -394,7 +423,7 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         }
 
         match join_result {
-            Ok(Ok(version)) => {
+            Ok(Ok((version, bytes))) => {
                 let cancelled = self
                     .session
                     .lock()
@@ -408,6 +437,7 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
                     s.phase = UpdateSessionPhase::Ready;
                     s.version = Some(version.clone());
                     s.pending_version = Some(version.clone());
+                    s.staged_package = Some(bytes);
                     s.cancel_requested = false;
                 }
                 Ok(DownloadOutcome::Completed { version })
@@ -430,6 +460,7 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
                         UpdateSessionPhase::Idle
                     };
                     s.version = s.pending_version.clone();
+                    s.staged_package = None;
                     s.downloaded = 0;
                     s.total = None;
                     s.cancel_requested = false;
@@ -466,6 +497,7 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
             };
             s.downloaded = 0;
             s.total = None;
+            s.staged_package = None;
             s.emit_progress = true;
             s.cancel_requested = false;
             s.abort_handle = None;
@@ -473,7 +505,27 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         }
     }
 
-    /// 重启应用以完成安装。
+    /// 安装已暂存的更新并重启。
+    ///
+    /// - 有暂存包：先 `install_package`（Windows 通常直接 exit + 安装器拉起新版本）
+    /// - 无暂存包：仅 `restart`（兜底）
+    pub async fn apply_and_restart(&self) -> Result<(), UsecaseError> {
+        let settings = self.settings_port.load().await?;
+        let staged = self
+            .session
+            .lock()
+            .map(|mut s| s.staged_package.take())
+            .unwrap_or(None);
+
+        if let Some(bytes) = staged {
+            // Windows：install 内部 process::exit，不会返回
+            self.port.install_package(settings.channel, bytes).await?;
+        }
+
+        self.port.restart().await
+    }
+
+    /// 重启应用（不安装）。
     pub async fn restart(&self) -> Result<(), UsecaseError> {
         self.port.restart().await
     }
@@ -499,12 +551,10 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         self.settings_port.save(&settings).await
     }
 
-    /// 将指定版本加入跳过列表。
+    /// 记录「跳过此版本」（覆盖为单一值；出新版本号后会再次提醒）。
     pub async fn skip_version(&self, version: String) -> Result<(), UsecaseError> {
         let mut settings = self.settings_port.load().await?;
-        if !settings.skipped_versions.iter().any(|v| v == &version) {
-            settings.skipped_versions.push(version.clone());
-        }
+        settings.skipped_version = Some(version.clone());
         self.settings_port.save(&settings).await?;
 
         // 若跳过的是当前 pending，清掉 available 会话
@@ -564,17 +614,28 @@ mod tests {
             }))
         }
 
-        async fn download_and_install(
+        async fn download_package(
             &self,
             _channel: UpdateChannel,
             _on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
-        ) -> Result<String, UsecaseError> {
+        ) -> Result<(String, Vec<u8>), UsecaseError> {
             *self.download_called.lock().unwrap() = true;
             *self.download_count.lock().unwrap() += 1;
             if self.download_delay_ms > 0 {
                 tokio::time::sleep(std::time::Duration::from_millis(self.download_delay_ms)).await;
             }
-            Ok(self.latest_version.unwrap_or("0.0.0").to_string())
+            Ok((
+                self.latest_version.unwrap_or("0.0.0").to_string(),
+                vec![0u8; 8],
+            ))
+        }
+
+        async fn install_package(
+            &self,
+            _channel: UpdateChannel,
+            _bytes: Vec<u8>,
+        ) -> Result<(), UsecaseError> {
+            Ok(())
         }
 
         async fn restart(&self) -> Result<(), UsecaseError> {
@@ -613,7 +674,7 @@ mod tests {
         let settings_port = MockSettingsPort::new(UpdateSettings {
             check_mode: UpdateCheckMode::Manual,
             channel: UpdateChannel::Stable,
-            skipped_versions: vec!["0.2.0".to_string()],
+            skipped_version: Some("0.2.0".to_string()),
             last_checked_at: Some(Utc::now().timestamp()), // 刚检查过
             ..Default::default()
         });
@@ -622,6 +683,8 @@ mod tests {
         let result = service.check_update(true).await.unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap().version, "0.2.0");
+        // 手动检查会清除对该版本的跳过
+        assert!(service.get_settings().await.unwrap().skipped_version.is_none());
     }
 
     #[tokio::test]
@@ -642,7 +705,7 @@ mod tests {
         let port = MockUpdatePort::new(Some("0.2.0"));
         let settings_port = MockSettingsPort::new(UpdateSettings {
             check_mode: UpdateCheckMode::NotifyOnly,
-            skipped_versions: vec!["0.2.0".to_string()],
+            skipped_version: Some("0.2.0".to_string()),
             ..Default::default()
         });
         let service = UpdateService::new(port, settings_port);
@@ -652,14 +715,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn skip_version_should_add_to_list() {
+    async fn skip_version_should_store_single_value() {
         let port = MockUpdatePort::new(None);
         let settings_port = MockSettingsPort::new(UpdateSettings::default());
         let service = UpdateService::new(port, settings_port);
 
         service.skip_version("0.2.0".to_string()).await.unwrap();
+        service.skip_version("0.3.0".to_string()).await.unwrap();
         let settings = service.get_settings().await.unwrap();
-        assert!(settings.skipped_versions.contains(&"0.2.0".to_string()));
+        assert_eq!(settings.skipped_version.as_deref(), Some("0.3.0"));
     }
 
     #[tokio::test]
@@ -711,7 +775,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn download_can_retry_after_previous_finishes() {
+    async fn download_when_already_ready_is_idempotent() {
         let download_count = Arc::new(Mutex::new(0u32));
         let port = MockUpdatePort {
             latest_version: Some("0.2.0"),
@@ -727,11 +791,30 @@ mod tests {
             service.download_and_install(|_, _| {}).await.unwrap(),
             DownloadOutcome::Completed { version } if version == "0.2.0"
         ));
+        // 已有暂存包时不再重复下载
         assert!(matches!(
             service.download_and_install(|_, _| {}).await.unwrap(),
-            DownloadOutcome::Completed { .. }
+            DownloadOutcome::Completed { version } if version == "0.2.0"
         ));
-        assert_eq!(*download_count.lock().unwrap(), 2);
+        assert_eq!(*download_count.lock().unwrap(), 1);
+        assert_eq!(
+            service.session_snapshot().phase,
+            UpdateSessionPhase::Ready
+        );
+    }
+
+    #[tokio::test]
+    async fn apply_and_restart_consumes_staged_package() {
+        let port = MockUpdatePort::new(Some("0.2.0"));
+        let restart_called = Arc::clone(&port.restart_called);
+        let settings_port = MockSettingsPort::new(UpdateSettings::default());
+        let service = UpdateService::new(port, settings_port);
+
+        let _ = service.download_and_install(|_, _| {}).await.unwrap();
+        assert_eq!(service.session_snapshot().phase, UpdateSessionPhase::Ready);
+
+        service.apply_and_restart().await.unwrap();
+        assert!(*restart_called.lock().unwrap());
     }
 
     #[tokio::test]
@@ -809,7 +892,7 @@ mod tests {
         let settings_port = MockSettingsPort::new(UpdateSettings {
             check_mode: UpdateCheckMode::NotifyOnly,
             last_checked_at: Some(Utc::now().timestamp()), // 刚检查过
-            skipped_versions: vec![],
+            skipped_version: None,
             ..Default::default()
         });
         let service = UpdateService::new(port, settings_port);

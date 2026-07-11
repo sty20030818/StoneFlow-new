@@ -95,8 +95,10 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 		}),
 
 	showAvailable: (info, options) => {
-		if (get().dismissedVersion === info.version) return
 		const openDialog = options?.openDialog ?? true
+		// 仅「后台静默 available、且用户已 dismiss」时忽略；
+		// 手动检查会 openDialog=true，必须能重新弹出（含曾跳过的版本）。
+		if (!openDialog && get().dismissedVersion === info.version) return
 		set({
 			phase: 'available',
 			updateInfo: info,
@@ -104,6 +106,9 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			errorMessage: null,
 			dialogVisible: openDialog,
 			downloadUiAbandoned: false,
+			// 用户再次看到该版本 → 清掉内存 dismiss
+			dismissedVersion:
+				get().dismissedVersion === info.version ? null : get().dismissedVersion,
 		})
 	},
 
@@ -132,6 +137,9 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			progress: null,
 			errorMessage: null,
 			downloadUiAbandoned: false,
+			// 下载完成 ≠ 自动安装：每次进入 ready 都重新展示底部悬浮栏
+			//（自动下载 / 手动下载同理；用户点「稍后」才会再藏）
+			readyChipDismissedVersion: null,
 			updateInfo:
 				prev?.version === version
 					? prev
@@ -217,7 +225,6 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 		if (input.phase === 'available') {
 			if (!version) return
 			const current = get()
-			if (current.dismissedVersion === version) return
 			// 已在下载/就绪，或同一版本已展示，不覆盖、不强弹
 			if (current.phase === 'downloading' || current.phase === 'ready') return
 			if (
@@ -226,8 +233,9 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			) {
 				return
 			}
-			// 仅提醒默认弹窗；自动下载不弹窗打扰
-			const openDialog = current.checkMode !== 'autoDownload'
+			// hydrate：若用户本会话已 dismiss 该版本，只恢复 footer、不强弹
+			const dismissed = current.dismissedVersion === version
+			const openDialog = !dismissed && current.checkMode !== 'autoDownload'
 			set({
 				phase: 'available',
 				updateInfo: { version, body, pubDate },
@@ -253,8 +261,9 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			return
 		}
 
-		// ready
+		// ready：会话恢复也视为「可安装」，展示悬浮栏（除非本会话已点「稍后」）
 		if (!version) return
+		const chipDismissed = get().readyChipDismissedVersion === version
 		set({
 			phase: 'ready',
 			progress: null,
@@ -262,6 +271,8 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			downloadUiAbandoned: false,
 			dialogVisible: false,
 			updateInfo: { version, body, pubDate },
+			// 首次恢复 ready 时确保 chip 可见；已点「稍后」则尊重
+			readyChipDismissedVersion: chipDismissed ? version : null,
 		})
 	},
 

@@ -1,6 +1,6 @@
 //! 应用更新相关 Tauri IPC 命令。
 
-use tauri::{ipc::Channel, AppHandle, State};
+use tauri::{ipc::Channel, State};
 
 use crate::app::error::AppError;
 use crate::services::update_events::UpdatePhasePayload;
@@ -18,10 +18,9 @@ pub async fn check_update(
     Ok(info)
 }
 
-/// 下载并安装；通过 Channel 推送与全局 `update-phase` 同构的 phase 事件。
+/// 下载并**暂存**安装包（不安装）；通过 Channel 推送 phase 事件。
 ///
-/// 不再预先 `check_update`：版本优先用会话 pending（用户刚检查过），
-/// 真正远端 check 只发生在 adapter 内一次。
+/// 真正安装在 [`restart_and_install`]：用户确认后才 install（Windows 会退出进程）。
 #[tauri::command]
 pub async fn download_and_install(
     on_event: Channel<UpdatePhasePayload>,
@@ -84,10 +83,12 @@ pub async fn download_and_install(
     }
 }
 
+/// 安装已暂存的更新并重启（用户点击「立即重启」）。
 #[tauri::command]
-pub async fn restart_and_install(app: AppHandle) -> Result<(), AppError> {
-    app.restart();
-    #[allow(unreachable_code)]
+pub async fn restart_and_install(
+    service: State<'_, RuntimeUpdateService>,
+) -> Result<(), AppError> {
+    service.apply_and_restart().await?;
     Ok(())
 }
 

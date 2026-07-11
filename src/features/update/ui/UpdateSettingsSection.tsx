@@ -50,7 +50,8 @@ const CHECK_MODE_OPTIONS: Array<{
 	{
 		value: 'autoDownload',
 		label: '自动下载',
-		description: '自动检查并在后台静默下载。下载完成后提醒你重启生效。',
+		description:
+			'自动检查并在后台静默下载（不会自动安装/自动重启）。下载完成后底部悬浮栏提示，由你决定何时重启生效。',
 	},
 ]
 

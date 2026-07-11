@@ -29,7 +29,7 @@ vi.mock('@/features/update/api/updates', () => ({
 	getUpdateSettings: vi.fn(async () => ({
 		checkMode: 'notifyOnly',
 		channel: 'stable',
-		skippedVersions: [],
+		skippedVersion: null,
 		lastCheckedAt: null,
 		checkIntervalSecs: 21600,
 	})),

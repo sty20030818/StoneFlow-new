@@ -15,7 +15,10 @@ const STORE_PATH: &str = "update-settings.json";
 /// 存储键名。
 const KEY_CHECK_MODE: &str = "checkMode";
 const KEY_CHANNEL: &str = "channel";
-const KEY_SKIPPED_VERSIONS: &str = "skippedVersions";
+/// 新键：单一跳过版本。
+const KEY_SKIPPED_VERSION: &str = "skippedVersion";
+/// 旧键：数组；读时迁移为单一值后写回新键。
+const KEY_SKIPPED_VERSIONS_LEGACY: &str = "skippedVersions";
 const KEY_LAST_CHECKED_AT: &str = "lastCheckedAt";
 const KEY_CHECK_INTERVAL_SECS: &str = "checkIntervalSecs";
 
@@ -35,6 +38,35 @@ impl StoreUpdateSettingsAdapter {
             .store(STORE_PATH)
             .map_err(|e| UsecaseError::update(format!("打开更新设置 store 失败: {e}")))
     }
+}
+
+/// 读取跳过版本：优先新键；兼容旧数组（取最后一个）。
+fn load_skipped_version(
+    store: &tauri_plugin_store::Store<tauri::Wry>,
+) -> (Option<String>, bool /* needs_migrate */) {
+    if let Some(v) = store.get(KEY_SKIPPED_VERSION) {
+        if v.is_null() {
+            return (None, store.get(KEY_SKIPPED_VERSIONS_LEGACY).is_some());
+        }
+        if let Ok(s) = serde_json::from_value::<String>(v.clone()) {
+            let needs = store.get(KEY_SKIPPED_VERSIONS_LEGACY).is_some();
+            return (if s.is_empty() { None } else { Some(s) }, needs);
+        }
+        if let Ok(opt) = serde_json::from_value::<Option<String>>(v.clone()) {
+            let needs = store.get(KEY_SKIPPED_VERSIONS_LEGACY).is_some();
+            return (opt.filter(|s| !s.is_empty()), needs);
+        }
+    }
+
+    // 旧格式：string[]
+    if let Some(v) = store.get(KEY_SKIPPED_VERSIONS_LEGACY) {
+        if let Ok(list) = serde_json::from_value::<Vec<String>>(v.clone()) {
+            let last = list.into_iter().rev().find(|s| !s.is_empty());
+            return (last, true);
+        }
+    }
+
+    (None, false)
 }
 
 impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
@@ -59,10 +91,7 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
             .and_then(|v| serde_json::from_value::<UpdateChannel>(v.clone()).ok())
             .unwrap_or_default();
 
-        let skipped_versions = store
-            .get(KEY_SKIPPED_VERSIONS)
-            .and_then(|v| serde_json::from_value::<Vec<String>>(v.clone()).ok())
-            .unwrap_or_default();
+        let (skipped_version, skip_needs_migrate) = load_skipped_version(store.as_ref());
 
         let last_checked_at = store
             .get(KEY_LAST_CHECKED_AT)
@@ -80,12 +109,12 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
         let settings = UpdateSettings {
             check_mode,
             channel,
-            skipped_versions,
+            skipped_version,
             last_checked_at,
             check_interval_secs,
         };
 
-        if mode_needs_rewrite || interval_needs_rewrite {
+        if mode_needs_rewrite || interval_needs_rewrite || skip_needs_migrate {
             self.save(&settings).await?;
         }
 
@@ -106,10 +135,12 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
                 .map_err(|e| UsecaseError::update(format!("序列化 channel 失败: {e}")))?,
         );
         store.set(
-            KEY_SKIPPED_VERSIONS,
-            serde_json::to_value(&settings.skipped_versions)
-                .map_err(|e| UsecaseError::update(format!("序列化 skipped_versions 失败: {e}")))?,
+            KEY_SKIPPED_VERSION,
+            serde_json::to_value(&settings.skipped_version)
+                .map_err(|e| UsecaseError::update(format!("序列化 skipped_version 失败: {e}")))?,
         );
+        // 清掉旧数组键，避免双源
+        store.delete(KEY_SKIPPED_VERSIONS_LEGACY);
         store.set(
             KEY_LAST_CHECKED_AT,
             serde_json::to_value(settings.last_checked_at)

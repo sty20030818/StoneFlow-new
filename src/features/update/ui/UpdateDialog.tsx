@@ -54,7 +54,7 @@ export function UpdateDialog() {
 	const displayVersion = updateInfo?.version ?? ''
 
 	const titleText = isReady
-		? '更新已准备就绪'
+		? '更新已下载，等待安装'
 		: isDownloading
 			? '正在下载更新'
 			: isError
@@ -64,9 +64,9 @@ export function UpdateDialog() {
 					: `发现新版本 ${displayVersion}`
 
 	const descText = isReady
-		? `版本 ${displayVersion} 已下载完成，重启 StoneFlow 即可完成安装。`
+		? `版本 ${displayVersion} 已下载完成。点击「立即重启」才会安装；关闭应用或稍后再说都不会自动安装。`
 		: isDownloading
-			? '正在下载更新文件。可关闭此窗口，进度会显示在底部状态栏。'
+			? '正在下载更新文件。整段进度可点回此窗口；取消后可重新下载。'
 			: isError
 				? (errorMessage ?? '更新失败')
 				: isChecking
@@ -109,7 +109,7 @@ export function UpdateDialog() {
 					{isReady ? (
 						<div className={successCardClass}>
 							<p className='text-[13px] leading-5 text-green-700 dark:text-green-300'>
-								重启 StoneFlow 后将自动安装更新。
+								安装包已就绪。只有点击「立即重启」才会开始安装并退出当前进程。
 							</p>
 						</div>
 					) : null}
@@ -136,13 +136,15 @@ export function UpdateDialog() {
 						</>
 					) : isDownloading ? (
 						<>
+							{/* 取消下载单独靠左，远离右侧主操作，降低误触 */}
 							<Button
 								onClick={() => void cancelDownloadUi()}
 								size='sm'
 								type='button'
 								variant='ghost'
+								className='mr-auto text-muted-foreground'
 							>
-								取消
+								取消下载
 							</Button>
 							<Button onClick={closeDialog} size='sm' type='button' variant='ghost'>
 								后台继续
