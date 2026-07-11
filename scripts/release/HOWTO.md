@@ -284,3 +284,23 @@ Cloudflare R2 公共访问配置（你已经配好了）：
 - 把 R2 上的 `latest.json` 回退到上一个版本的内容即可
 - 已下载但未重启的用户，重启后会安装当前 latest.json 指向的版本
 - 已安装坏版本的用户会在下一次检查时收到好版本的更新（如果好版本号更高）
+
+### Q: 发布的 beta 版本号是新的，但装完还是旧 UI / 旧功能？
+这是「版本新、包旧」类事故，通常不是前端没编进去，而是**发布脚本选错了历史安装包**。
+
+发布脚本已内建防护（方案 B，长期默认行为）：
+
+1. **构建前清空** `src-tauri/target/release/bundle/{nsis,msi,dmg,macos,appimage}`，杜绝旧包残留  
+2. **按本次 `VERSION` 精确匹配**产物文件名（必须含 `_0.1.1-beta.2_` 这类标记），禁止 `files[0]`  
+3. **签名与产物一一配对**（同路径 `.sig`，并检查 `file:` 声明）  
+4. **生成 `latest.json` 后、上传前硬校验**：version / URL 路径 / 文件名 / 上传列表必须一致，失败则中止上传  
+
+发布日志应能看到被选中的完整 `path / size / mtime`。上传后请人工确认远端：
+
+```text
+https://release.sty20030818.space/stoneflow/updates/beta/windows-x86_64/latest.json
+```
+
+其中 `platforms.*.url` 的文件名必须是本次版本（例如 `StoneFlow_0.1.1-beta.3_x64-setup.exe`），**不能再出现旧的 `StoneFlow_0.1.0_...`**。
+
+若线上已误发，应修脚本后重新 `bun run release:beta`（会递增 beta.N），并让用户重装或拉新更新。

@@ -4,7 +4,8 @@
 		"target": "es2023",
 		"lib": ["ES2023"],
 		"module": "esnext",
-		"types": ["node"],
+		// node：vite/vitest 配置；bun：scripts/release 等 bun 脚本
+		"types": ["node", "bun"],
 		"skipLibCheck": true,
 
 		/* Bundler mode */
@@ -20,5 +21,5 @@
 		"erasableSyntaxOnly": true,
 		"noFallthroughCasesInSwitch": true
 	},
-	"include": ["vite.config.ts", "vitest.config.ts"]
+	"include": ["vite.config.ts", "vitest.config.ts", "scripts/**/*.ts"]
 }

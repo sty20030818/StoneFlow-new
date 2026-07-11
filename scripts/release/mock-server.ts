@@ -213,7 +213,6 @@ const server = serve({
 			const mockSize = 1024 * 1024 // 1MB
 			// 用分块传输模拟慢下载
 			if (SLOW_MODE) {
-				const encoder = new TextEncoder()
 				const chunk = new Uint8Array(64 * 1024) // 64KB per chunk
 				let sent = 0
 				const stream = new ReadableStream({
@@ -315,11 +314,11 @@ const scenarioText = {
 }[SCENARIO]
 
 console.log(`\n🚀 StoneFlow Mock 更新服务器已启动`)
-console.log(`   地址: http://localhost:${PORT}`)
+console.log(`   地址: ${server.url}`)
 console.log(`   版本: ${MOCK_VERSION}`)
 console.log(`   渠道: ${CHANNEL}`)
 console.log(`   场景: ${scenarioText}`)
 if (SLOW_MODE) console.log(`   慢模式: 开启 (${SLOW_DELAY_MS}ms 延迟)`)
-console.log(`\n   Stable: http://localhost:${PORT}/stoneflow/updates/stable/<platform>/latest.json`)
-console.log(`   Beta:   http://localhost:${PORT}/stoneflow/updates/beta/<platform>/latest.json`)
+console.log(`\n   Stable: ${server.url}stoneflow/updates/stable/<platform>/latest.json`)
+console.log(`   Beta:   ${server.url}stoneflow/updates/beta/<platform>/latest.json`)
 console.log(`\n   按 Ctrl+C 停止\n`)

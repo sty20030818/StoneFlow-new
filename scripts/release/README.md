@@ -81,6 +81,17 @@ bun run release:beta
 bun run release -- --no-upload
 ```
 
+### 产物安全（防「版本新、包旧」）
+
+脚本默认执行：
+
+1. 构建前清空 `bundle/{nsis,msi,dmg,macos,appimage}` 历史产物  
+2. 按本次 `VERSION` 精确匹配安装包文件名，不取目录第一个文件  
+3. 要求 `.sig` 与产物同路径配对  
+4. 上传前校验 `latest.json` 的 version / URL / 文件名与上传列表一致  
+
+任一校验失败会中止上传。发布后请确认 `latest.json` 里的 url 文件名含正确版本号。
+
 ## 5. latest.json 格式
 
 Tauri updater 期望的 JSON 格式：
