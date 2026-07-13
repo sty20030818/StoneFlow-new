@@ -6,31 +6,54 @@ import {
 
 const STORAGE_KEY = 'stoneflow.settings.lastSection'
 
-export function readLastSettingsSection(): SettingsSectionKey {
-	if (typeof sessionStorage === 'undefined') {
-		return DEFAULT_SETTINGS_SECTION
-	}
+/** 内存兜底：localStorage 不可用时仍能在同会话内记住 */
+let memoryLastSection: SettingsSectionKey = DEFAULT_SETTINGS_SECTION
 
+function readStorage(): string | null {
 	try {
-		const raw = sessionStorage.getItem(STORAGE_KEY)
-		if (raw && isSettingsSectionKey(raw)) {
-			return raw
+		if (typeof localStorage !== 'undefined') {
+			return localStorage.getItem(STORAGE_KEY)
 		}
-	} catch {
-		// ignore quota / private mode
-	}
-
-	return DEFAULT_SETTINGS_SECTION
-}
-
-export function writeLastSettingsSection(section: SettingsSectionKey) {
-	if (typeof sessionStorage === 'undefined') {
-		return
-	}
-
-	try {
-		sessionStorage.setItem(STORAGE_KEY, section)
 	} catch {
 		// ignore
 	}
+	try {
+		if (typeof sessionStorage !== 'undefined') {
+			return sessionStorage.getItem(STORAGE_KEY)
+		}
+	} catch {
+		// ignore
+	}
+	return null
+}
+
+function writeStorage(section: SettingsSectionKey) {
+	try {
+		if (typeof localStorage !== 'undefined') {
+			localStorage.setItem(STORAGE_KEY, section)
+		}
+	} catch {
+		// ignore
+	}
+	try {
+		if (typeof sessionStorage !== 'undefined') {
+			sessionStorage.setItem(STORAGE_KEY, section)
+		}
+	} catch {
+		// ignore
+	}
+}
+
+export function readLastSettingsSection(): SettingsSectionKey {
+	const raw = readStorage()
+	if (raw && isSettingsSectionKey(raw)) {
+		memoryLastSection = raw
+		return raw
+	}
+	return memoryLastSection
+}
+
+export function writeLastSettingsSection(section: SettingsSectionKey) {
+	memoryLastSection = section
+	writeStorage(section)
 }

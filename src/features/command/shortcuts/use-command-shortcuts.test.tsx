@@ -24,7 +24,7 @@ const bindings: Keybinding[] = [
 	createBinding(COMMAND_IDS.goProjects, [{ key: 'g' }, { key: 'p' }]),
 	createBinding(COMMAND_IDS.goArchive, [{ key: 'g' }, { key: 'a' }]),
 	createBinding(COMMAND_IDS.goTrash, [{ key: 'g' }, { key: 'x' }]),
-	createBinding(COMMAND_IDS.goSettings, [{ key: 'g' }, { key: 's' }]),
+	createBinding(COMMAND_IDS.openSettings, [{ key: 'g' }, { key: 's' }]),
 	createBinding(COMMAND_IDS.goRecent, [{ key: 'g' }, { key: 'r' }]),
 	createBinding(COMMAND_IDS.openSearch, [{ key: '/' }]),
 	createBinding(COMMAND_IDS.openShortcutHelp, [{ key: '/', meta: true }], true),
@@ -138,7 +138,7 @@ describe('useCommandShortcuts', () => {
 		expect(onTrigger).toHaveBeenNthCalledWith(7, COMMAND_IDS.goProjects)
 		expect(onTrigger).toHaveBeenNthCalledWith(8, COMMAND_IDS.goArchive)
 		expect(onTrigger).toHaveBeenNthCalledWith(9, COMMAND_IDS.goTrash)
-		expect(onTrigger).toHaveBeenNthCalledWith(10, COMMAND_IDS.goSettings)
+		expect(onTrigger).toHaveBeenNthCalledWith(10, COMMAND_IDS.openSettings)
 		expect(onTrigger).toHaveBeenNthCalledWith(11, COMMAND_IDS.goRecent)
 	})
 

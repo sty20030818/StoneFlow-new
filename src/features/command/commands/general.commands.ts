@@ -79,8 +79,8 @@ export const generalCommands: Command[] = [
 		title: '打开设置',
 		category: 'general',
 		scope: ['global'],
-		description: '打开设置页面。',
-		keywords: ['settings', '设置'],
+		description: '打开设置。再次进入时回到上次查看的分区。',
+		keywords: ['settings', 'preferences', '设置', '偏好'],
 		run: () => {},
 	},
 	{

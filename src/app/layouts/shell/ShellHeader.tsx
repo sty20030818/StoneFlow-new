@@ -56,7 +56,7 @@ import {
 	MinusIcon,
 	PanelLeftCloseIcon,
 	PanelLeftOpenIcon,
-	Settings2Icon,
+	SettingsIcon,
 	SquarePenIcon,
 	SquareIcon,
 	XIcon,
@@ -425,7 +425,7 @@ export function ShellHeader({
 									type='button'
 									variant='ghost'
 								>
-									<Settings2Icon className='size-3.5' />
+									<SettingsIcon className='size-3.5' />
 								</Button>
 								<Avatar className='size-7.5'>
 									<AvatarImage alt='当前用户头像' src='/avatar.jpg' />

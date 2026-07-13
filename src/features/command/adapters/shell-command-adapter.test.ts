@@ -127,7 +127,7 @@ describe('Shell command adapter', () => {
 		[COMMAND_IDS.goProjects, 'projects'],
 		[COMMAND_IDS.goArchive, 'archive'],
 		[COMMAND_IDS.goTrash, 'trash'],
-		[COMMAND_IDS.goSettings, 'settings'],
+		[COMMAND_IDS.openSettings, 'settings'],
 	] as const)('执行 %s 时导航到 %s', async (commandId, target) => {
 		const actions = createActions()
 		const runtime = createRuntime(actions)

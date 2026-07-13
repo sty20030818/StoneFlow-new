@@ -52,9 +52,12 @@ export function SettingsPage() {
 	const section = resolveActiveSection(shellRoute.settingsSection)
 	const sectionLabel = getSettingsSectionLabel(section)
 
+	// 仅在路由明确带合法分区时写入，避免 null→general 覆盖用户上次选择
 	useEffect(() => {
-		writeLastSettingsSection(section)
-	}, [section])
+		if (shellRoute.settingsSection) {
+			writeLastSettingsSection(shellRoute.settingsSection)
+		}
+	}, [shellRoute.settingsSection])
 
 	return (
 		<EntityScene

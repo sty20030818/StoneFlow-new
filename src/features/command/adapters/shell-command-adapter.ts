@@ -73,6 +73,8 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 		case COMMAND_IDS.openSearch:
 			return { ...command, run: adapter.focusSearch }
 		case COMMAND_IDS.openSettings:
+		case COMMAND_IDS.goSettings:
+			// goSettings 保留 id 兼容旧绑定；行为与 openSettings 相同
 			return { ...command, run: () => adapter.navigateTo('settings') }
 		case COMMAND_IDS.close:
 			return { ...command, run: adapter.closeCurrentLayer }
@@ -197,8 +199,6 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return { ...command, run: () => adapter.navigateTo('archive') }
 		case COMMAND_IDS.goTrash:
 			return { ...command, run: () => adapter.navigateTo('trash') }
-		case COMMAND_IDS.goSettings:
-			return { ...command, run: () => adapter.navigateTo('settings') }
 		case COMMAND_IDS.goToday:
 		case COMMAND_IDS.goUpcoming:
 		case COMMAND_IDS.goRecent:

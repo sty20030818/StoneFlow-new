@@ -298,7 +298,8 @@ export const DEFAULT_KEYBINDINGS: Keybinding[] = [
 		allowInEditable: false,
 	},
 	{
-		commandId: COMMAND_IDS.goSettings,
+		// 与 Cmd+, 同一命令：打开设置（记住上次分区）
+		commandId: COMMAND_IDS.openSettings,
 		sequence: [{ key: 'g' }, { key: 's' }],
 		scope: 'global',
 		preventDefault: true,

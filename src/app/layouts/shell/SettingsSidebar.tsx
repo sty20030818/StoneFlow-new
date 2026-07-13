@@ -1,5 +1,6 @@
 import { openStartupFallback } from '@/app/navigation/intents'
 import { SETTINGS_NAV_GROUPS } from '@/app/layouts/shell/settingsNav'
+import { writeLastSettingsSection } from '@/features/settings/model/lastSettingsSection'
 import type { SettingsSectionKey } from '@/features/settings/model/settingsSection'
 import type { Scope } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
@@ -53,7 +54,9 @@ export function SettingsSidebar({
 		navigate(target)
 	}
 
-	function handleOpenSection(path: string) {
+	function handleOpenSection(path: string, section: SettingsSectionKey) {
+		// 立即记住分区，避免仅依赖 SettingsPage effect
+		writeLastSettingsSection(section)
 		// 设置内分区间不堆 history
 		navigate(path, { replace: true })
 	}
@@ -94,7 +97,7 @@ export function SettingsSidebar({
 												<SidebarMenuButton
 													className='justify-start text-left'
 													isActive={isActive}
-													onClick={() => handleOpenSection(to)}
+													onClick={() => handleOpenSection(to, item.key)}
 													tooltip={item.label}
 													type='button'
 												>

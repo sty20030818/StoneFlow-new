@@ -44,7 +44,7 @@ describe('keybinding', () => {
 			['p', COMMAND_IDS.goProjects],
 			['a', COMMAND_IDS.goArchive],
 			['x', COMMAND_IDS.goTrash],
-			['s', COMMAND_IDS.goSettings],
+			['s', COMMAND_IDS.openSettings],
 			['r', COMMAND_IDS.goRecent],
 		] as const
 
