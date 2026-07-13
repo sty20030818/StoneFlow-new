@@ -9,7 +9,6 @@ import {
 	SidebarContent,
 	SidebarGroup,
 	SidebarGroupContent,
-	SidebarGroupLabel,
 	SidebarHeader,
 	SidebarMenu,
 	SidebarMenuButton,
@@ -23,6 +22,12 @@ import {
 } from '@/shared/ui/patterns/sidebar-item'
 import { ChevronLeftIcon } from 'lucide-react'
 
+/** 设置侧栏分区标题：与原「设置」主标题同级样式，左对齐 */
+const settingsSidebarSectionTitleClass = cn(
+	'px-2.5 pb-1 pt-3 text-left text-[13px] font-semibold tracking-tight text-foreground',
+	'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:sr-only group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:sr-only',
+)
+
 type SettingsSidebarProps = {
 	currentScope: Scope
 	currentSpaceId: string | null
@@ -31,7 +36,7 @@ type SettingsSidebarProps = {
 }
 
 /**
- * Settings Mode 侧栏：返回应用 + 设置分区导航。
+ * Settings Mode 侧栏：返回应用 + 分区导航（偏好 / 数据）。
  * 不渲染 Space switcher / 项目列表 / 同步底条。
  */
 export function SettingsSidebar({
@@ -55,35 +60,28 @@ export function SettingsSidebar({
 
 	return (
 		<Sidebar collapsible='icon'>
-			<SidebarHeader className='gap-1 px-3 pb-2 pt-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
+			<SidebarHeader className='gap-1 px-3 pb-1 pt-2 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'>
 				<div className={sidebarShellNavLinkStretchClass}>
 					<SidebarMenuButton
 						aria-label='返回应用'
-						className='h-10 min-h-10'
+						className='h-10 min-h-10 justify-start text-left'
 						onClick={handleBack}
 						tooltip='返回应用'
 						type='button'
 					>
 						<ChevronLeftIcon className={sidebarMenuIconClass} />
-						<span className={sidebarMenuLabelClass}>返回应用</span>
+						<span className={cn(sidebarMenuLabelClass, 'text-left')}>返回应用</span>
 					</SidebarMenuButton>
 				</div>
-				<p
-					className={cn(
-						'px-2 pt-2 text-[13px] font-semibold tracking-tight text-foreground',
-						'group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:sr-only group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:sr-only',
-					)}
-				>
-					设置
-				</p>
 			</SidebarHeader>
 
 			<SidebarContent className='px-0'>
 				{SETTINGS_NAV_GROUPS.map((group) => (
-					<SidebarGroup className='px-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2' key={group.key}>
-						<SidebarGroupLabel className='group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:sr-only group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:sr-only'>
-							{group.label}
-						</SidebarGroupLabel>
+					<SidebarGroup
+						className='px-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2'
+						key={group.key}
+					>
+						<p className={settingsSidebarSectionTitleClass}>{group.label}</p>
 						<SidebarGroupContent>
 							<SidebarMenu>
 								{group.items.map((item) => {
@@ -94,13 +92,16 @@ export function SettingsSidebar({
 										<SidebarMenuItem key={item.key}>
 											<div className={sidebarShellNavLinkStretchClass}>
 												<SidebarMenuButton
+													className='justify-start text-left'
 													isActive={isActive}
 													onClick={() => handleOpenSection(to)}
 													tooltip={item.label}
 													type='button'
 												>
 													<Icon className={sidebarMenuIconClass} />
-													<span className={sidebarMenuLabelClass}>{item.label}</span>
+													<span className={cn(sidebarMenuLabelClass, 'text-left')}>
+														{item.label}
+													</span>
 												</SidebarMenuButton>
 											</div>
 										</SidebarMenuItem>

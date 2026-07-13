@@ -11,7 +11,9 @@ describe('SettingsSidebar', () => {
 		renderSettingsSidebar('sync')
 
 		expect(screen.getByRole('button', { name: '返回应用' })).toBeInTheDocument()
-		expect(screen.getByText('设置')).toBeInTheDocument()
+		expect(screen.queryByText('设置')).not.toBeInTheDocument()
+		expect(screen.getByText('偏好')).toBeInTheDocument()
+		expect(screen.getByText('数据')).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '通用' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '侧边栏' })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: '云同步' })).toBeInTheDocument()

@@ -8,10 +8,8 @@ import {
 	buildTaskDetailPath,
 } from '@/app/routing'
 import type { ShellNavigationTarget } from '@/features/command'
-import {
-	DEFAULT_SETTINGS_SECTION,
-	type SettingsSectionKey,
-} from '@/features/settings/model/settingsSection'
+import { readLastSettingsSection } from '@/features/settings/model/lastSettingsSection'
+import type { SettingsSectionKey } from '@/features/settings/model/settingsSection'
 import type { Scope } from '@/shared/types'
 
 export function openSection(
@@ -28,22 +26,25 @@ export function openSection(
 	fallbackSpaceId?: string | null,
 ) {
 	if (section === 'settings') {
-		return openSettings(scope, DEFAULT_SETTINGS_SECTION, fallbackSpaceId)
+		return openSettings(scope, undefined, fallbackSpaceId)
 	}
 
 	return buildCanonicalSectionPath(scope, section, fallbackSpaceId)
 }
 
 /**
- * 打开设置分区。默认 `general`。
+ * 打开设置分区。
+ * - 传入 section → 直达该分区
+ * - 省略 section → 使用 session 内上次分区（无则 general）
  * 分区间导航请在调用方使用 `replace: true`（见设计方案）。
  */
 export function openSettings(
 	scope: Scope,
-	section: SettingsSectionKey = DEFAULT_SETTINGS_SECTION,
+	section?: SettingsSectionKey | null,
 	fallbackSpaceId?: string | null,
 ) {
-	return buildScopedSettingsPath(scope, fallbackSpaceId, section)
+	const resolved = section ?? readLastSettingsSection()
+	return buildScopedSettingsPath(scope, fallbackSpaceId, resolved)
 }
 
 export function openView(scope: Scope, viewId?: string | null, fallbackSpaceId?: string | null) {
@@ -80,7 +81,7 @@ export function openShellNavigationTarget(
 	},
 ) {
 	if (target === 'settings') {
-		return openSettings(input.scope, DEFAULT_SETTINGS_SECTION, input.fallbackSpaceId)
+		return openSettings(input.scope, undefined, input.fallbackSpaceId)
 	}
 
 	if (target.startsWith('views/')) {

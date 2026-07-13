@@ -29,3 +29,14 @@ export function resolveSettingsSectionKey(
 ): SettingsSectionKey {
 	return parseSettingsSectionKey(value) ?? DEFAULT_SETTINGS_SECTION
 }
+
+const SETTINGS_SECTION_LABELS: Record<SettingsSectionKey, string> = {
+	general: '通用',
+	sidebar: '侧边栏',
+	sync: '云同步',
+	update: '更新',
+}
+
+export function getSettingsSectionLabel(section: SettingsSectionKey): string {
+	return SETTINGS_SECTION_LABELS[section]
+}

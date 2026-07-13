@@ -63,12 +63,16 @@ vi.mock('@/features/sync/api/sync', () => ({
 		updateSyncPolicySpy(input),
 }))
 
+let mockSettingsSection: 'general' | 'sidebar' | 'sync' | 'update' = 'sidebar'
+
 vi.mock('@/app/layouts/shell/model/ShellRouteContext', () => ({
 	useCurrentShellRoute: () => ({
 		kind: 'shell-section',
 		scope: { type: 'all' },
 		spaceId: null,
 		section: 'settings',
+		settingsSection: mockSettingsSection,
+		isSettingsPath: true,
 	}),
 }))
 
@@ -167,6 +171,7 @@ vi.mock('@/shared/ui/base/select', () => {
 
 describe('SettingsPage', () => {
 	beforeEach(() => {
+		mockSettingsSection = 'sidebar'
 		loadSidebarSettingsSpy.mockReset()
 		loadSidebarSettingsSpy.mockResolvedValue(undefined)
 		setItemVisibilitySpy.mockReset()
@@ -302,23 +307,23 @@ describe('SettingsPage', () => {
 		vi.useRealTimers()
 	})
 
-	it('渲染真实设置项并触发初始化加载', async () => {
+	it('渲染侧边栏设置分区并触发初始化加载', async () => {
+		mockSettingsSection = 'sidebar'
 		await renderSettingsPage()
 
 		await waitFor(() => {
 			expect(loadSidebarSettingsSpy).toHaveBeenCalledTimes(1)
 		})
 
-		expect(screen.getByText('工作区设置')).toBeInTheDocument()
-		expect(screen.getByText('Sidebar 主入口')).toBeInTheDocument()
+		expect(screen.getByText('主导航')).toBeInTheDocument()
 		expect(screen.getByText('辅助入口')).toBeInTheDocument()
 		expect(screen.getByText('项目分区')).toBeInTheDocument()
-		expect(screen.getByText('默认空间')).toBeInTheDocument()
-		expect(screen.getByText('云同步')).toBeInTheDocument()
+		expect(screen.queryByText('默认空间')).not.toBeInTheDocument()
 		expect(screen.queryByText('设置功能建设中')).not.toBeInTheDocument()
 	})
 
 	it('切换主入口显隐时调用 sidebar settings store', async () => {
+		mockSettingsSection = 'sidebar'
 		await renderSettingsPage()
 
 		fireEvent.click(getCheckboxByLabel('所有任务'))
@@ -329,6 +334,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('切换辅助入口显隐时调用 sidebar settings store', async () => {
+		mockSettingsSection = 'sidebar'
 		await renderSettingsPage()
 
 		fireEvent.click(getCheckboxByLabel('回收站'))
@@ -339,6 +345,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('修改 projects section 配置时调用更新方法', async () => {
+		mockSettingsSection = 'sidebar'
 		await renderSettingsPage()
 
 		fireEvent.click(getCheckboxByLabel('显示已完成项目'))
@@ -352,6 +359,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('切换默认 Space 时调用 setDefaultSpace', async () => {
+		mockSettingsSection = 'general'
 		await renderSettingsPage()
 
 		fireEvent.change(screen.getByLabelText('默认空间'), { target: { value: 'space-2' } })
@@ -362,6 +370,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('保存同步配置时调用 configureSync 并刷新状态', async () => {
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 		openSyncConfigDialog()
 
@@ -401,6 +410,7 @@ describe('SettingsPage', () => {
 			}),
 		)
 
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 		openSyncConfigDialog()
 
@@ -414,6 +424,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('未配置同步时展示本地优先提示', async () => {
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 
 		expect(screen.getByText('尚未启用云同步')).toBeInTheDocument()
@@ -467,6 +478,7 @@ describe('SettingsPage', () => {
 				}),
 			)
 
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 		openSyncConfigDialog()
 
@@ -507,6 +519,7 @@ describe('SettingsPage', () => {
 			}),
 		)
 
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 
 		fireEvent.click(screen.getByRole('button', { name: '立即同步' }))
@@ -535,6 +548,7 @@ describe('SettingsPage', () => {
 			}),
 		)
 
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 
 		fireEvent.change(screen.getByLabelText('同步频率'), { target: { value: 'manual:15' } })
@@ -569,6 +583,7 @@ describe('SettingsPage', () => {
 			}),
 		)
 
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 
 		expect(screen.getByText('等待同步')).toBeInTheDocument()
@@ -596,6 +611,7 @@ describe('SettingsPage', () => {
 			}),
 		)
 
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 		openSyncDetails()
 
@@ -648,6 +664,7 @@ describe('SettingsPage', () => {
 				}),
 			)
 
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 		openSyncDetails()
 
@@ -696,6 +713,7 @@ describe('SettingsPage', () => {
 				}),
 			)
 
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 
 		await waitFor(() => {
@@ -721,6 +739,7 @@ describe('SettingsPage', () => {
 	})
 
 	it('保存同步配置成功后会清空 token 输入框', async () => {
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 		openSyncConfigDialog()
 
@@ -761,6 +780,7 @@ describe('SettingsPage', () => {
 			}),
 		)
 
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 
 		expect(screen.getByText('当前设备需要建立同步基线')).toBeInTheDocument()
@@ -787,6 +807,7 @@ describe('SettingsPage', () => {
 			}),
 		)
 
+		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 		openSyncDetails()
 
@@ -824,17 +845,25 @@ function createSyncStatusPayload(overrides: Record<string, unknown>) {
 }
 
 function getCheckboxByLabel(label: string) {
-	const container = screen.getByText(label).closest('label')
-	if (!container) {
+	const labelEl = screen.getByText(label).closest('label')
+	if (!labelEl) {
 		throw new Error(`未找到 ${label} 对应的设置项容器`)
 	}
 
-	const input = container.querySelector('input[type="checkbox"]')
-	if (!(input instanceof HTMLInputElement)) {
-		throw new Error(`未找到 ${label} 对应的 checkbox`)
+	const htmlFor = labelEl.getAttribute('for')
+	if (htmlFor) {
+		const byId = document.getElementById(htmlFor)
+		if (byId instanceof HTMLInputElement) {
+			return byId
+		}
 	}
 
-	return input
+	const nested = labelEl.querySelector('input[type="checkbox"]')
+	if (nested instanceof HTMLInputElement) {
+		return nested
+	}
+
+	throw new Error(`未找到 ${label} 对应的 checkbox`)
 }
 
 function createSidebarStoreState() {
