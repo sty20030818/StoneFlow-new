@@ -56,6 +56,7 @@ import {
 	MinusIcon,
 	PanelLeftCloseIcon,
 	PanelLeftOpenIcon,
+	Settings2Icon,
 	SquarePenIcon,
 	SquareIcon,
 	XIcon,
@@ -409,7 +410,23 @@ export function ShellHeader({
 								</div>
 							</div>
 
-							<div className={shellChromeAvatarClusterClass} data-tauri-drag-region>
+							<div className={shellChromeAvatarClusterClass}>
+								<Button
+									aria-label='设置'
+									aria-pressed={activeSection === 'settings'}
+									className={cn(
+										shellChromeNavCircleButtonClass,
+										'focus-visible:ring-0',
+										activeSection === 'settings' &&
+											'bg-sf-shell-hover-strong text-foreground',
+									)}
+									onClick={() => onRunCommand(COMMAND_IDS.openSettings)}
+									size='icon-sm'
+									type='button'
+									variant='ghost'
+								>
+									<Settings2Icon className='size-3.5' />
+								</Button>
 								<Avatar className='size-7.5'>
 									<AvatarImage alt='当前用户头像' src='/avatar.jpg' />
 									<AvatarFallback>U</AvatarFallback>

@@ -5,6 +5,7 @@ import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
 import { resolveRememberedPathForScope } from '@/app/layouts/shell/model/shellDevicePreferences'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { SubmitRegistryProvider } from '@/features/submit/model'
+import { SyncStatusProvider } from '@/features/sync/model/SyncStatusProvider'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import { TooltipProvider } from '@/shared/ui/base/tooltip'
 import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
@@ -27,7 +28,7 @@ describe('ShellSidebar', () => {
 		mockedResolveRememberedPathForScope.mockImplementation(async ({ defaultPath }) => defaultPath)
 	})
 
-	it('按 settings 渲染主导航，并把设置固定放在回收站之后', () => {
+	it('按 settings 渲染主导航；App 侧栏不再展示设置入口', () => {
 		renderShellSidebar({
 			mainItems: {
 				inbox: { visible: true, order: 100 },
@@ -55,16 +56,9 @@ describe('ShellSidebar', () => {
 		expect(screen.queryByRole('link', { name: '所有任务' })).not.toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '项目总览' })).toBeInTheDocument()
-		const archiveLink = screen.getByRole('link', { name: '归档' })
-		const trashLink = screen.getByRole('link', { name: '回收站' })
-		const settingsLink = screen.getByRole('link', { name: '设置' })
-
-		expect(archiveLink).toBeInTheDocument()
-		expect(trashLink).toBeInTheDocument()
-		expect(settingsLink).toBeInTheDocument()
-		expect(
-			trashLink.compareDocumentPosition(settingsLink) & Node.DOCUMENT_POSITION_FOLLOWING,
-		).toBeTruthy()
+		expect(screen.getByRole('link', { name: '归档' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '回收站' })).toBeInTheDocument()
+		expect(screen.queryByRole('link', { name: '设置' })).not.toBeInTheDocument()
 	})
 
 	it('项目 badge 会显示在 sidebar 项目行上', () => {
@@ -340,27 +334,29 @@ function renderShellSidebar(
 	return renderWithRouterContext(
 		<SubmitRegistryProvider>
 			<DangerConfirmProvider>
-				<TooltipProvider>
-					<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
-						<LocationProbe />
-						<ShellSidebar
-							currentScope={{ type: 'space', spaceId: 'space-personal' }}
-							currentSpaceId='space-personal'
-							onArchiveSpace={async () => mockSpace}
-							onCreateSpace={async () => mockSpace}
-							onDeleteSpace={async () => mockSpace}
-							onOpenProjectCreateDialog={() => undefined}
-							onResetMainItemsVisibility={() => undefined}
-							onSetDefaultSpace={async () => mockSpace}
-							onUpdateItemVisibility={() => undefined}
-							onUpdateSpace={async () => mockSpace}
-							projects={projects}
-							spaces={[mockSpace]}
-							settings={settings}
-							{...overrides}
-						/>
-					</SidebarProvider>
-				</TooltipProvider>
+				<SyncStatusProvider>
+					<TooltipProvider>
+						<SidebarProvider desktopPreference='expanded' sidebarWidth={settings.width}>
+							<LocationProbe />
+							<ShellSidebar
+								currentScope={{ type: 'space', spaceId: 'space-personal' }}
+								currentSpaceId='space-personal'
+								onArchiveSpace={async () => mockSpace}
+								onCreateSpace={async () => mockSpace}
+								onDeleteSpace={async () => mockSpace}
+								onOpenProjectCreateDialog={() => undefined}
+								onResetMainItemsVisibility={() => undefined}
+								onSetDefaultSpace={async () => mockSpace}
+								onUpdateItemVisibility={() => undefined}
+								onUpdateSpace={async () => mockSpace}
+								projects={projects}
+								spaces={[mockSpace]}
+								settings={settings}
+								{...overrides}
+							/>
+						</SidebarProvider>
+					</TooltipProvider>
+				</SyncStatusProvider>
 			</DangerConfirmProvider>
 		</SubmitRegistryProvider>,
 		{

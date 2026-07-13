@@ -3,11 +3,16 @@ import {
 	useCallback,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 	type PropsWithChildren,
 } from 'react'
 
-import { openShellNavigationTarget, openTaskDetail } from '@/app/navigation/intents'
+import {
+	openShellNavigationTarget,
+	openStartupFallback,
+	openTaskDetail,
+} from '@/app/navigation/intents'
 import { useNavigate } from '@/app/routing/tanstackCompat'
 import type { ShellRoute } from '@/app/navigation/shellRoute'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
@@ -34,7 +39,9 @@ import {
 } from '@/app/layouts/shell/model/useSidebarSettingsStore'
 import { ShellHeader } from '@/app/layouts/shell/ShellHeader'
 import { ShellMain } from '@/app/layouts/shell/ShellMain'
+import { SettingsSidebar } from '@/app/layouts/shell/SettingsSidebar'
 import { ShellSidebar } from '@/app/layouts/shell/ShellSidebar'
+import { DEFAULT_SETTINGS_SECTION } from '@/features/settings/model/settingsSection'
 import {
 	resolveCommandOpenTargetPath,
 	resolveShellDetailState,
@@ -232,6 +239,12 @@ function ShellLayoutContent({
 	shellRoute,
 }: ShellLayoutProps) {
 	const navigate = useNavigate()
+	const isSettingsMode = shellRoute.isSettingsPath
+	/** 仅在非设置路由时更新，进入设置后保留上一工作路径供「返回应用」 */
+	const settingsReturnPathRef = useRef(openStartupFallback(currentScope))
+	if (!isSettingsMode) {
+		settingsReturnPathRef.current = shellRoute.pathname || openStartupFallback(currentScope)
+	}
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
 	const commandMenuMode = useDialogStore(selectCommandMenuMode)
 	const commandMenuFilterKind = useDialogStore(selectCommandMenuFilterKind)
@@ -1010,26 +1023,35 @@ function ShellLayoutContent({
 			/>
 			<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-sf-shell'>
 				<div className='flex min-h-0 w-(--sf-shell-sidebar-reserved-width) shrink-0 flex-col overflow-hidden transition-[width] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) motion-reduce:transition-none group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none'>
-					<ShellSidebar
-						currentScope={currentScope}
-						currentSpaceId={currentSpaceId}
-						navBadges={navBadges}
-						onArchiveSpace={(spaceId) => archiveSpace.mutateAsync(spaceId)}
-						onCreateSpace={(input) => createSpace.mutateAsync(input)}
-						onDeleteSpace={(spaceId) => deleteSpace.mutateAsync(spaceId)}
-						onOpenProjectCreateDialog={openProjectCreateDialog}
-						onResetMainItemsVisibility={() => {
-							void resetSidebarMainItemsVisibility()
-						}}
-						onSetDefaultSpace={(spaceId) => setDefaultSpace.mutateAsync(spaceId)}
-						onUpdateItemVisibility={(target, visible) => {
-							void setSidebarItemVisibility(target, visible)
-						}}
-						onUpdateSpace={(input) => updateSpace.mutateAsync(input)}
-						projects={sidebarProjectLinks}
-						spaces={spaces}
-						settings={sidebarSettings}
-					/>
+					{isSettingsMode ? (
+						<SettingsSidebar
+							activeSettingsSection={shellRoute.settingsSection ?? DEFAULT_SETTINGS_SECTION}
+							currentScope={currentScope}
+							currentSpaceId={currentSpaceId}
+							returnPath={settingsReturnPathRef.current}
+						/>
+					) : (
+						<ShellSidebar
+							currentScope={currentScope}
+							currentSpaceId={currentSpaceId}
+							navBadges={navBadges}
+							onArchiveSpace={(spaceId) => archiveSpace.mutateAsync(spaceId)}
+							onCreateSpace={(input) => createSpace.mutateAsync(input)}
+							onDeleteSpace={(spaceId) => deleteSpace.mutateAsync(spaceId)}
+							onOpenProjectCreateDialog={openProjectCreateDialog}
+							onResetMainItemsVisibility={() => {
+								void resetSidebarMainItemsVisibility()
+							}}
+							onSetDefaultSpace={(spaceId) => setDefaultSpace.mutateAsync(spaceId)}
+							onUpdateItemVisibility={(target, visible) => {
+								void setSidebarItemVisibility(target, visible)
+							}}
+							onUpdateSpace={(input) => updateSpace.mutateAsync(input)}
+							projects={sidebarProjectLinks}
+							spaces={spaces}
+							settings={sidebarSettings}
+						/>
+					)}
 				</div>
 
 				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sf-shell'>
