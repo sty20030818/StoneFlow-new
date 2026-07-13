@@ -15,23 +15,15 @@ import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import type { Scope, Space, TaskStatus } from '@/shared/types'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/base/avatar'
 import { Button } from '@/shared/ui/base/button'
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from '@/shared/ui/base/dropdown-menu'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
 import {
 	ChordHint,
 	CommandMenu,
 	ShortcutHelp,
-	ShortcutTokens,
 	type CommandMenuMode,
 } from '@/features/command/ui'
-import { getCommandShortcutTokens, type CommandChordSession } from '@/features/command/shortcuts'
+import { type CommandChordSession } from '@/features/command/shortcuts'
 import {
 	COMMAND_IDS,
 	type CommandContext,
@@ -44,16 +36,12 @@ import {
 	shellChromeAvatarClusterClass,
 	shellChromeCommandDialogClass,
 	shellChromeIconActionClass,
-	shellChromeInlineGroupClass,
 	shellChromeNavCircleButtonClass,
-	shellChromePrimaryActionClass,
 	shellChromeWindowControlsRowClass,
 	shellChromeWindowControlClass,
 } from '@/shared/ui/patterns/shell-chrome'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import {
-	ChevronDownIcon,
-	FolderPlusIcon,
 	MinusIcon,
 	PanelLeftCloseIcon,
 	PanelLeftOpenIcon,
@@ -136,7 +124,6 @@ export function ShellHeader({
 	const sidebarToggleOpen =
 		sidebarVisualState === 'desktop-expanded' || sidebarVisualState === 'mobile-open'
 	const SidebarToggleIcon = sidebarToggleOpen ? PanelLeftCloseIcon : PanelLeftOpenIcon
-	const taskCreateShortcutTokens = getCommandShortcutTokens(COMMAND_IDS.newQuickTask)
 
 	/** 与 `max-sm` 同为 640px 阈；`display: contents` 与变体并用时纯 CSS 不可靠，故用媒体查询做显示开关 */
 	const [isAtLeastSm, setIsAtLeastSm] = useState(() => {
@@ -357,58 +344,17 @@ export function ShellHeader({
 							data-slot='shell-header-right'
 							data-tauri-drag-region
 						>
-							<div className={shellChromeInlineGroupClass} data-tauri-drag-region>
-								<Button
-									className={`${shellChromePrimaryActionClass} group-data-[sidebar-layout=mobile]/sidebar-wrapper:hidden`}
-									onClick={() => onRunCommand(COMMAND_IDS.newQuickTask)}
-									size='default'
-									variant='outline'
-								>
-									<span>新建任务</span>
-									{taskCreateShortcutTokens ? (
-										<ShortcutTokens
-											kbdClassName='h-5 min-w-5 rounded-sm border border-sf-border-subtle bg-background/90 px-1 text-[11px] text-sf-text-secondary'
-											tokens={taskCreateShortcutTokens}
-										/>
-									) : null}
-								</Button>
-								<Button
-									aria-label='新建任务'
-									className={`hidden ${shellChromeIconActionClass} group-data-[sidebar-layout=mobile]/sidebar-wrapper:inline-flex`}
-									onClick={() => onRunCommand(COMMAND_IDS.newQuickTask)}
-									size='icon'
-									variant='outline'
-								>
-									<SquarePenIcon className='size-3.5' />
-								</Button>
-
-								<div className='max-sm:hidden' data-tauri-drag-region>
-									<DropdownMenu>
-										<DropdownMenuTrigger asChild>
-											<Button
-												aria-label='打开创建菜单'
-												className={shellChromeIconActionClass}
-												size='icon'
-												variant='outline'
-											>
-												<ChevronDownIcon />
-											</Button>
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align='end'>
-											<DropdownMenuGroup>
-												<DropdownMenuItem onSelect={() => onRunCommand(COMMAND_IDS.newFullTask)}>
-													<SquarePenIcon />
-													新建任务
-												</DropdownMenuItem>
-												<DropdownMenuItem onSelect={() => onRunCommand(COMMAND_IDS.newProject)}>
-													<FolderPlusIcon />
-													新建项目
-												</DropdownMenuItem>
-											</DropdownMenuGroup>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</div>
-							</div>
+							{/* 单一创建入口：与 C 键同源 quick task；完整任务/项目走 Command / 侧栏 */}
+							<Button
+								aria-label='快速新建任务'
+								className={shellChromeIconActionClass}
+								onClick={() => onRunCommand(COMMAND_IDS.newQuickTask)}
+								size='icon'
+								type='button'
+								variant='outline'
+							>
+								<SquarePenIcon className='size-3.5' />
+							</Button>
 
 							<div className={shellChromeAvatarClusterClass}>
 								<UserAppMenu
