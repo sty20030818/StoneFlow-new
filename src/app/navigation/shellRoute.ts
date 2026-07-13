@@ -1,6 +1,12 @@
+import {
+	isSettingsSectionKey,
+	type SettingsSectionKey,
+} from '@/features/settings/model/settingsSection'
 import type { Scope } from '@/shared/types'
 
 export type RouteScope = Scope
+
+export type { SettingsSectionKey }
 
 export type ShellScopeKey = 'all' | `space:${string}`
 
@@ -112,6 +118,8 @@ export type ShellRoute = {
 	scope: RouteScope | null
 	spaceId: string | null
 	section: ShellSectionKey
+	/** 设置子分区；仅 `isSettingsPath` 且 URL 含合法 `$section` 时有值 */
+	settingsSection: SettingsSectionKey | null
 	viewId: string | null
 	projectId: string | null
 	taskId: string | null
@@ -143,6 +151,8 @@ const CANONICAL_SPACE_PATH = /^\/spaces\/([^/]+)(?:\/(.+))?$/
 const TASK_DETAIL_PATH = /^\/spaces\/([^/]+)\/tasks\/([^/]+)$/
 const PROJECT_PAGE_PATH = /^\/spaces\/([^/]+)\/projects\/([^/]+)$/
 const VIEW_DETAIL_REMAINDER = /^views\/([^/]+)$/
+/** bare `settings` 或 `settings/<section>`（单段） */
+const SETTINGS_REMAINDER = /^settings(?:\/([^/]+))?$/
 
 function stripQueryAndHash(pathname: string) {
 	return pathname.split(/[?#]/)[0] || '/'
@@ -196,6 +206,7 @@ export function parseShellRoute(input: ShellRouteLocationLike): ShellRoute {
 						: null
 					: null,
 		section: resolveShellSection(appRoute),
+		settingsSection: resolveSettingsSectionFromAppRoute(appRoute, normalizedPath),
 		viewId: appRoute.kind === 'view' ? appRoute.viewId : null,
 		projectId: appRoute.kind === 'project' ? appRoute.projectId : null,
 		taskId: appRoute.kind === 'task' ? appRoute.taskId : null,
@@ -403,7 +414,9 @@ function parseScopedWorkRoute(
 		return { kind: 'shell-section', scope, section: 'trash', pathname, search, hash, fullPath }
 	}
 
-	if (remainder === 'settings') {
+	const settingsMatch = remainder.match(SETTINGS_REMAINDER)
+	if (settingsMatch) {
+		// bare 与 `settings/<any-single-segment>` 均识别为设置（非法 section 由路由层 redirect）
 		return { kind: 'shell-section', scope, section: 'settings', pathname, search, hash, fullPath }
 	}
 
@@ -416,6 +429,26 @@ function parseScopedWorkRoute(
 	}
 }
 
+function resolveSettingsSectionFromAppRoute(
+	appRoute: AppRoute,
+	pathname: string,
+): SettingsSectionKey | null {
+	if (appRoute.kind !== 'shell-section' || appRoute.section !== 'settings') {
+		return null
+	}
+
+	const settingsMatch = pathname.match(/\/settings(?:\/([^/]+))?\/?$/)
+	const segment = settingsMatch?.[1]
+	if (!segment) {
+		return null
+	}
+	return isSettingsSectionKey(segment) ? segment : null
+}
+
+function isSettingsRemainder(remainder: string) {
+	return SETTINGS_REMAINDER.test(remainder)
+}
+
 function isCanonicalAllRemainder(remainder: string) {
 	return (
 		remainder === 'inbox' ||
@@ -425,7 +458,7 @@ function isCanonicalAllRemainder(remainder: string) {
 		remainder === 'no-project' ||
 		remainder === 'archive' ||
 		remainder === 'trash' ||
-		remainder === 'settings' ||
+		isSettingsRemainder(remainder) ||
 		Boolean(remainder.match(VIEW_DETAIL_REMAINDER))
 	)
 }
@@ -439,7 +472,7 @@ function isCanonicalSpaceRemainder(remainder: string) {
 		remainder === 'no-project' ||
 		remainder === 'archive' ||
 		remainder === 'trash' ||
-		remainder === 'settings' ||
+		isSettingsRemainder(remainder) ||
 		Boolean(remainder.match(VIEW_DETAIL_REMAINDER))
 	)
 }

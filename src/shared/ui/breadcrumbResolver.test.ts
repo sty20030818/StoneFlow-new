@@ -179,6 +179,7 @@ function createRoute(overrides: Partial<ShellRoute>): ShellRoute {
 		scope: { type: 'all' },
 		spaceId: null,
 		section: 'inbox',
+		settingsSection: null,
 		viewId: null,
 		projectId: null,
 		taskId: null,

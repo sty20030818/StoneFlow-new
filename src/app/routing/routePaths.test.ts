@@ -2,6 +2,8 @@ import {
 	buildCanonicalProjectPath,
 	buildCanonicalSectionPath,
 	buildProjectPath,
+	buildScopedSettingsPath,
+	buildSettingsPath,
 	buildStartupFallbackPath,
 	buildTaskDetailPath,
 } from './routePaths'
@@ -38,5 +40,18 @@ describe('routePaths', () => {
 		expect(buildStartupFallbackPath({ type: 'space', spaceId: 'space-a' })).toBe(
 			'/spaces/space-a/inbox',
 		)
+	})
+
+	it('构建 settings 路径：bare 与带分区', () => {
+		expect(buildScopedSettingsPath({ type: 'all' })).toBe('/all/settings')
+		expect(buildScopedSettingsPath({ type: 'all' }, null, 'sync')).toBe('/all/settings/sync')
+		expect(buildScopedSettingsPath({ type: 'space', spaceId: 'space-a' }, null, 'general')).toBe(
+			'/spaces/space-a/settings/general',
+		)
+		expect(buildScopedSettingsPath({ type: 'space', spaceId: '' as never }, 'space-b', 'update')).toBe(
+			'/spaces/space-b/settings/update',
+		)
+		expect(buildSettingsPath()).toBe('/all/settings/general')
+		expect(buildSettingsPath('sidebar')).toBe('/all/settings/sidebar')
 	})
 })

@@ -105,6 +105,7 @@ vi.mock('@/app/layouts/shell/model/ShellRouteContext', () => ({
 		scope: { type: 'all' },
 		spaceId: null,
 		section: 'projects',
+		settingsSection: null,
 		viewId: null,
 		projectId: null,
 		taskId: null,

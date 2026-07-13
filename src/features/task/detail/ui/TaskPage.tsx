@@ -76,6 +76,7 @@ function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedPr
 					scope: { type: 'space', spaceId: task.spaceId },
 					spaceId: task.spaceId,
 					section: 'tasks',
+					settingsSection: null,
 					viewId: null,
 					projectId: task.projectId,
 					taskId: task.id,

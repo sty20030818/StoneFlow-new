@@ -1,4 +1,8 @@
 import type { RouteScope, ShellSectionKey, ShellSectionSegment } from '@/app/navigation/shellRoute'
+import {
+	DEFAULT_SETTINGS_SECTION,
+	type SettingsSectionKey,
+} from '@/features/settings/model/settingsSection'
 
 const DEFAULT_SPACE_SECTION: ShellSectionSegment = 'inbox'
 const DEFAULT_ALL_SECTION: ShellSectionSegment = 'tasks'
@@ -53,12 +57,26 @@ export function buildProjectPath(spaceId: string, projectId: string) {
 	return `/spaces/${encodeURIComponent(spaceId)}/projects/${encodeURIComponent(projectId)}`
 }
 
-export function buildSettingsPath() {
-	return '/all/settings'
+/** 全局默认设置入口（all scope + 默认分区） */
+export function buildSettingsPath(section: SettingsSectionKey = DEFAULT_SETTINGS_SECTION) {
+	return buildScopedSettingsPath({ type: 'all' }, null, section)
 }
 
-export function buildScopedSettingsPath(scope: RouteScope, fallbackSpaceId?: string | null) {
-	return buildCanonicalSectionPath(scope, 'settings', fallbackSpaceId)
+/**
+ * 构建当前 scope 下的设置路径。
+ * - 传入 section → `/…/settings/<section>`
+ * - 省略 section → bare `/…/settings`（供 index redirect 使用）
+ */
+export function buildScopedSettingsPath(
+	scope: RouteScope,
+	fallbackSpaceId?: string | null,
+	section?: SettingsSectionKey | null,
+) {
+	const base = buildCanonicalSectionPath(scope, 'settings', fallbackSpaceId)
+	if (!section) {
+		return base
+	}
+	return `${base}/${section}`
 }
 
 export function buildDebugActivityPath() {

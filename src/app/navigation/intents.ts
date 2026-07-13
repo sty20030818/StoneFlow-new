@@ -8,6 +8,10 @@ import {
 	buildTaskDetailPath,
 } from '@/app/routing'
 import type { ShellNavigationTarget } from '@/features/command'
+import {
+	DEFAULT_SETTINGS_SECTION,
+	type SettingsSectionKey,
+} from '@/features/settings/model/settingsSection'
 import type { Scope } from '@/shared/types'
 
 export function openSection(
@@ -24,10 +28,22 @@ export function openSection(
 	fallbackSpaceId?: string | null,
 ) {
 	if (section === 'settings') {
-		return buildScopedSettingsPath(scope, fallbackSpaceId)
+		return openSettings(scope, DEFAULT_SETTINGS_SECTION, fallbackSpaceId)
 	}
 
 	return buildCanonicalSectionPath(scope, section, fallbackSpaceId)
+}
+
+/**
+ * 打开设置分区。默认 `general`。
+ * 分区间导航请在调用方使用 `replace: true`（见设计方案）。
+ */
+export function openSettings(
+	scope: Scope,
+	section: SettingsSectionKey = DEFAULT_SETTINGS_SECTION,
+	fallbackSpaceId?: string | null,
+) {
+	return buildScopedSettingsPath(scope, fallbackSpaceId, section)
 }
 
 export function openView(scope: Scope, viewId?: string | null, fallbackSpaceId?: string | null) {
@@ -64,7 +80,7 @@ export function openShellNavigationTarget(
 	},
 ) {
 	if (target === 'settings') {
-		return openSection(input.scope, 'settings', input.fallbackSpaceId)
+		return openSettings(input.scope, DEFAULT_SETTINGS_SECTION, input.fallbackSpaceId)
 	}
 
 	if (target.startsWith('views/')) {

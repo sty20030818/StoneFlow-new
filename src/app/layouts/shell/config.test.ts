@@ -27,6 +27,7 @@ describe('shell config helpers', () => {
 		expect(resolveShellSection('/spaces/space-personal/archive')).toBe('archive')
 		expect(resolveShellSection('/spaces/space-personal/trash')).toBe('trash')
 		expect(resolveShellSection('/spaces/space-personal/settings')).toBe('settings')
+		expect(resolveShellSection('/spaces/space-personal/settings/sync')).toBe('settings')
 		expect(resolveShellSection('/spaces/space-personal/projects/stoneflow-v1')).toBe('projects')
 	})
 
@@ -42,10 +43,14 @@ describe('shell config helpers', () => {
 		expect(getScopeLabel({ type: 'space', spaceId: 'space-personal' }, spaces)).toBe('个人')
 	})
 
-	it('设置页路径跟随当前 scope', () => {
+	it('设置页路径跟随当前 scope（bare 与分区）', () => {
 		expect(buildScopedSettingsPath({ type: 'all' })).toBe('/all/settings')
 		expect(buildScopedSettingsPath({ type: 'space', spaceId: 'space-personal' })).toBe(
 			'/spaces/space-personal/settings',
+		)
+		expect(buildScopedSettingsPath({ type: 'all' }, null, 'general')).toBe('/all/settings/general')
+		expect(buildScopedSettingsPath({ type: 'space', spaceId: 'space-personal' }, null, 'update')).toBe(
+			'/spaces/space-personal/settings/update',
 		)
 	})
 
