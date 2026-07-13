@@ -6,13 +6,14 @@ import { useNavigate } from '@/app/routing/tanstackCompat'
 import type { ShellRouteHistoryEntry } from '@/app/layouts/shell/model/useShellRouteHistory'
 import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
 import { NavBackForward } from '@/app/layouts/shell/header/NavBackForward'
+import { UserAppMenu } from '@/app/layouts/shell/header/UserAppMenu'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import { GlobalSearchInput } from '@/features/global-search/ui/GlobalSearchInput'
 import { resolveProjectSearchTargetPath } from '@/features/global-search/model/searchNavigation'
 import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter/model'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import type { Scope, Space, TaskStatus } from '@/shared/types'
-import { Avatar, AvatarFallback, AvatarImage, AvatarBadge } from '@/shared/ui/base/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/base/avatar'
 import { Button } from '@/shared/ui/base/button'
 import {
 	DropdownMenu,
@@ -56,7 +57,6 @@ import {
 	MinusIcon,
 	PanelLeftCloseIcon,
 	PanelLeftOpenIcon,
-	SettingsIcon,
 	SquarePenIcon,
 	SquareIcon,
 	XIcon,
@@ -411,27 +411,10 @@ export function ShellHeader({
 							</div>
 
 							<div className={shellChromeAvatarClusterClass}>
-								<Button
-									aria-label='设置'
-									aria-pressed={activeSection === 'settings'}
-									className={cn(
-										shellChromeNavCircleButtonClass,
-										'focus-visible:ring-0',
-										activeSection === 'settings' &&
-											'bg-sf-shell-hover-strong text-foreground',
-									)}
-									onClick={() => onRunCommand(COMMAND_IDS.openSettings)}
-									size='icon-sm'
-									type='button'
-									variant='ghost'
-								>
-									<SettingsIcon className='size-3.5' />
-								</Button>
-								<Avatar className='size-7.5'>
-									<AvatarImage alt='当前用户头像' src='/avatar.jpg' />
-									<AvatarFallback>U</AvatarFallback>
-									<AvatarBadge className='bg-green-600 dark:bg-green-800' />
-								</Avatar>
+								<UserAppMenu
+									isSettingsActive={activeSection === 'settings'}
+									onRunCommand={onRunCommand}
+								/>
 							</div>
 
 							{!isMac && (
