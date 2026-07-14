@@ -1,6 +1,9 @@
 import type { ShellRoute } from '@/app/navigation/shellRoute'
 import type { Scope } from '@/shared/types'
 
+/**
+ * Shell scope 推导规则。优先使用 route 显式 scope，detail 页则从 spaceId 还原 scope。
+ */
 const ALL_SCOPE = { type: 'all' } as const satisfies Scope
 
 export function resolveShellRouteScope(shellRoute: Pick<ShellRoute, 'scope' | 'spaceId'>): Scope {

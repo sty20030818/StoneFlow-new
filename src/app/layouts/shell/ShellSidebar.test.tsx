@@ -8,7 +8,7 @@ import { SubmitRegistryProvider } from '@/features/submit/model'
 import { SyncStatusProvider } from '@/features/sync/model/SyncStatusProvider'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import { TooltipProvider } from '@/shared/ui/base/tooltip'
-import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
+import { renderWithRouterContext } from '@/test/renderWithRouter'
 
 vi.mock('@/app/navigation/routeMemoryStore', async () => {
 	const actual = await vi.importActual<typeof import('@/app/navigation/routeMemoryStore')>(

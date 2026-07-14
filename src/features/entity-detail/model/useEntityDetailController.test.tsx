@@ -2,7 +2,7 @@ import { useLocation } from '@tanstack/react-router'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { renderWithMatchedRoute } from '@/test-utils/renderWithRouter'
+import { renderWithMatchedRoute } from '@/test/renderWithRouter'
 import { useEntityDetailController } from './useEntityDetailController'
 
 const getTaskDetailMock = vi.hoisted(() => vi.fn())

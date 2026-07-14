@@ -4,6 +4,10 @@ import {
 } from '@/features/settings/model/settingsSection'
 import type { Scope } from '@/shared/types'
 
+/**
+ * StoneFlow 的路由语义层：把 URL 解析成 app/shell 可以消费的结构化 route。
+ * TanStack Router 仍是 URL 真相源；本文件只负责产品语义解析，不负责导航副作用。
+ */
 export type RouteScope = Scope
 
 export type { SettingsSectionKey }

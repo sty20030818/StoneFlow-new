@@ -10,7 +10,7 @@ import {
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { LifecycleList } from '@/features/lifecycle/ui/LifecycleList'
 import type { LifecycleEntry, Scope } from '@/shared/types'
-import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
+import { renderWithRouterContext } from '@/test/renderWithRouter'
 
 const loadArchiveSpy = vi.fn<(scope: Scope) => Promise<void>>()
 const loadTrashSpy = vi.fn<(scope: Scope) => Promise<void>>()

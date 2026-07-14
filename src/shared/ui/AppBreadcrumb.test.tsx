@@ -4,7 +4,7 @@ import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { BoxIcon } from 'lucide-react'
 
-import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
+import { renderWithRouterContext } from '@/test/renderWithRouter'
 import { AppBreadcrumb, type BreadcrumbNode } from './AppBreadcrumb'
 
 describe('AppBreadcrumb', () => {

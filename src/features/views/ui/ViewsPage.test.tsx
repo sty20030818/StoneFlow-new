@@ -5,7 +5,7 @@ import { vi } from 'vitest'
 import { ShellRouteProvider } from '@/app/layouts/shell/model/ShellRouteContext'
 import { parseShellRoute } from '@/app/navigation/shellRoute'
 import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection/model'
-import { renderWithMatchedRoute } from '@/test-utils/renderWithRouter'
+import { renderWithMatchedRoute } from '@/test/renderWithRouter'
 import { ViewsPage } from '@/features/views/ui/ViewsPage'
 
 const loadTaskViewsSpy = vi.fn<() => Promise<void>>()

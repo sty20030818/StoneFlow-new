@@ -6,7 +6,7 @@ import type * as TauriEvent from '@tauri-apps/api/event'
 import type { ShellSidebarSettings } from '@/app/layouts/shell/model/shellDevicePreferences'
 import { SettingsPage } from '@/features/settings/ui/SettingsPage'
 import type { Space } from '@/shared/types'
-import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
+import { renderWithRouterContext } from '@/test/renderWithRouter'
 
 const loadSidebarSettingsSpy = vi.fn<() => Promise<void>>()
 const setItemVisibilitySpy =

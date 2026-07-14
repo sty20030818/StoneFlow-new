@@ -12,6 +12,10 @@ import { readLastSettingsSection } from '@/features/settings/model/lastSettingsS
 import type { SettingsSectionKey } from '@/features/settings/model/settingsSection'
 import type { Scope } from '@/shared/types'
 
+/**
+ * 业务导航意图层：把“打开项目 / 打开设置 / 返回启动页”等产品动作映射为 path。
+ * 调用方仍负责使用 TanStack Router 执行 navigate/redirect。
+ */
 export function openSection(
 	scope: Scope,
 	section:

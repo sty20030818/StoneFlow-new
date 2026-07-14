@@ -3,7 +3,7 @@ import { fireEvent, screen } from '@testing-library/react'
 import { SettingsSidebar } from '@/app/layouts/shell/SettingsSidebar'
 import { SidebarProvider } from '@/shared/ui/base/sidebar'
 import { TooltipProvider } from '@/shared/ui/base/tooltip'
-import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
+import { renderWithRouterContext } from '@/test/renderWithRouter'
 import { useLocation } from '@tanstack/react-router'
 
 describe('SettingsSidebar', () => {

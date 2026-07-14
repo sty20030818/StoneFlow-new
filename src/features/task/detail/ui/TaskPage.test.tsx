@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AutosaveController } from '@/shared/autosave'
 import type { TaskDetail } from '@/shared/types'
-import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
+import { renderWithRouterContext } from '@/test/renderWithRouter'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskPage } from './TaskPage'

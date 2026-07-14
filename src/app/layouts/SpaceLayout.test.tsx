@@ -3,7 +3,7 @@ import { beforeEach, vi } from 'vitest'
 
 import { ShellRouteProvider } from '@/app/layouts/shell/model/ShellRouteContext'
 import { parseShellRoute } from '@/app/navigation/shellRoute'
-import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
+import { renderWithRouterContext } from '@/test/renderWithRouter'
 import { SpaceLayout } from './SpaceLayout'
 
 const setActiveScopeMock = vi.hoisted(() => vi.fn<(scope: unknown) => Promise<void>>())

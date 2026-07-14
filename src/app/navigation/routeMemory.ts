@@ -9,6 +9,10 @@ import {
 	type ShellScopeKey,
 } from '@/app/navigation/shellRoute'
 
+/**
+ * Route memory 的纯规则层：规范化、校验、解析启动恢复和 scope 上次位置。
+ * 不读写 Tauri Store；持久化边界在 `routeMemoryStore.ts`。
+ */
 const ROUTE_MEMORY_VERSION = 2
 
 const ALLOWED_SECTION_SEGMENTS = new Set([

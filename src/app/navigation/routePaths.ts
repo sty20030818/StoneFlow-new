@@ -4,6 +4,10 @@ import {
 	type SettingsSectionKey,
 } from '@/features/settings/model/settingsSection'
 
+/**
+ * Canonical path builder：只拼 StoneFlow 认可的 URL 字符串。
+ * 这里不读取 router/store，也不做跳转；业务意图请放到 `intents.ts`。
+ */
 const DEFAULT_SPACE_SECTION: ShellSectionSegment = 'inbox'
 const DEFAULT_ALL_SECTION: ShellSectionSegment = 'tasks'
 

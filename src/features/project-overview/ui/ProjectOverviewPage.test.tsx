@@ -9,7 +9,7 @@ import {
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ProjectOverviewPage } from '@/features/project-overview/ui/ProjectOverviewPage'
 import type { ProjectOverviewItem, Scope } from '@/shared/types'
-import { renderWithRouterContext } from '@/test-utils/renderWithRouter'
+import { renderWithRouterContext } from '@/test/renderWithRouter'
 
 const loadOverviewSpy = vi.fn<(scope: Scope, viewKey: string) => Promise<void>>()
 const loadProjectViewsSpy = vi.fn<() => Promise<void>>()

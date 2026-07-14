@@ -18,6 +18,10 @@ import {
 	type LucideIcon,
 } from 'lucide-react'
 
+/**
+ * 当前应用会话内的最近浏览列表和 Header back/forward 状态。
+ * 它不是启动恢复，也不替代浏览器 history；真正前进后退仍走 TanStack Router history。
+ */
 export type ShellRouteHistoryEntry = {
 	path: string
 	label: string
