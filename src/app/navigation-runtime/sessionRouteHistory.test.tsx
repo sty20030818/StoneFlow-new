@@ -11,7 +11,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { useNavigate } from '@/app/routing/tanstackCompat'
 import { describe, expect, it } from 'vitest'
 
-import { useShellRouteHistory } from './useShellRouteHistory'
+import { useShellSessionRouteHistory } from './sessionRouteHistory'
 
 const spaces = [
 	{ id: 'space-a', name: '工作' },
@@ -22,7 +22,7 @@ const projects = [
 	{ id: 'project-a', label: '项目 A', spaceId: 'space-a', spaceName: '工作' },
 ] as never
 
-describe('useShellRouteHistory', () => {
+describe('useShellSessionRouteHistory', () => {
 	it('基于 ShellRoute 生成 canonical label 并剥离 drawer query', async () => {
 		await renderHistoryProbe('/spaces/space-a/inbox?task=task-a')
 
@@ -87,6 +87,45 @@ describe('useShellRouteHistory', () => {
 			)
 		})
 		expect(screen.getByTestId('history-entries')).toHaveTextContent('empty')
+	})
+
+	it('back/forward 走 router history，entries 只是最近浏览列表', async () => {
+		await renderHistoryProbe('/spaces/space-a/inbox')
+
+		fireEvent.click(screen.getByRole('button', { name: 'go task detail' }))
+		await waitFor(() => {
+			expect(screen.getByTestId('current-entry')).toHaveTextContent(
+				'/spaces/space-a/tasks/task-a|任务详情|space-a|工作',
+			)
+		})
+
+		fireEvent.click(screen.getByRole('button', { name: 'go project detail' }))
+		await waitFor(() => {
+			expect(screen.getByTestId('current-entry')).toHaveTextContent(
+				'/spaces/space-a/projects/project-a|项目 A|space-a|工作',
+			)
+		})
+
+		expect(screen.getByTestId('history-state')).toHaveTextContent('back:true|forward:false')
+		expect(screen.getByTestId('history-entries')).toHaveTextContent(
+			'/spaces/space-a/tasks/task-a|任务详情|space-a|工作',
+		)
+
+		fireEvent.click(screen.getByRole('button', { name: 'history back' }))
+		await waitFor(() => {
+			expect(screen.getByTestId('current-entry')).toHaveTextContent(
+				'/spaces/space-a/tasks/task-a|任务详情|space-a|工作',
+			)
+		})
+
+		expect(screen.getByTestId('history-state')).toHaveTextContent('back:true|forward:true')
+
+		fireEvent.click(screen.getByRole('button', { name: 'history forward' }))
+		await waitFor(() => {
+			expect(screen.getByTestId('current-entry')).toHaveTextContent(
+				'/spaces/space-a/projects/project-a|项目 A|space-a|工作',
+			)
+		})
 	})
 })
 
@@ -202,7 +241,7 @@ async function renderHistoryProbe(initialEntry: string) {
 
 function HistoryProbeLayout() {
 	const navigate = useNavigate()
-	const history = useShellRouteHistory({
+	const history = useShellSessionRouteHistory({
 		currentScope: { type: 'space', spaceId: 'space-a' },
 		currentSpaceId: 'space-a',
 		spaces,
@@ -212,6 +251,9 @@ function HistoryProbeLayout() {
 	return (
 		<div>
 			<div data-testid='current-entry'>{formatEntry(history.currentEntry)}</div>
+			<div data-testid='history-state'>
+				back:{String(history.canGoBack)}|forward:{String(history.canGoForward)}
+			</div>
 			<div data-testid='history-entries'>
 				{history.entries.length > 0 ? history.entries.map(formatEntry).join('\n') : 'empty'}
 			</div>
@@ -229,6 +271,12 @@ function HistoryProbeLayout() {
 				type='button'
 			>
 				replace views
+			</button>
+			<button onClick={history.goBack} type='button'>
+				history back
+			</button>
+			<button onClick={history.goForward} type='button'>
+				history forward
 			</button>
 			<Outlet />
 		</div>

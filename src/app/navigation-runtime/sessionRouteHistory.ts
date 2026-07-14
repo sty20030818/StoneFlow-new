@@ -68,9 +68,10 @@ function resolveEntryIcon(route: ShellRoute): LucideIcon {
 }
 
 /**
- * 收集当前应用会话内访问过的 Shell 路由，供 Header 的历史下拉使用。
+ * 收集当前应用会话内访问过的 Shell 路由，供 Header 的最近浏览和 back/forward 状态使用。
+ * 不持久化、不恢复启动路径；启动恢复由 route memory store 负责。
  */
-export function useShellRouteHistory({
+export function useShellSessionRouteHistory({
 	currentScope,
 	currentSpaceId,
 	currentRoute,
@@ -239,14 +240,12 @@ function reduceRouteHistory(
 		return { entries: nextEntries, currentIndex: previous.currentIndex }
 	}
 
-	if (navigationType === 'POP') {
-		const existingIndex = previous.entries.findIndex((entry) => entry.path === nextEntry.path)
+	const existingIndex = previous.entries.findIndex((entry) => entry.path === nextEntry.path)
 
-		if (existingIndex >= 0) {
-			return {
-				entries: replaceEntry(previous.entries, existingIndex, nextEntry),
-				currentIndex: existingIndex,
-			}
+	if (existingIndex >= 0 && (navigationType === 'POP' || existingIndex !== previous.currentIndex)) {
+		return {
+			entries: replaceEntry(previous.entries, existingIndex, nextEntry),
+			currentIndex: existingIndex,
 		}
 	}
 

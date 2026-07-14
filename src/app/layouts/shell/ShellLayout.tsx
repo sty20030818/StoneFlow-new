@@ -17,7 +17,7 @@ import { useNavigate } from '@/app/routing/tanstackCompat'
 import type { ShellRoute } from '@/app/navigation/shellRoute'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
-import { useShellRouteHistory } from '@/app/layouts/shell/model/useShellRouteHistory'
+import { useShellSessionRouteHistory } from '@/app/navigation-runtime/sessionRouteHistory'
 import { useSidebarNavBadges } from '@/app/layouts/shell/model/useSidebarNavBadges'
 import {
 	selectCommandMenuMode,
@@ -469,7 +469,7 @@ function ShellLayoutContent({
 		goBack,
 		goForward,
 		navigateToHistoryEntry,
-	} = useShellRouteHistory({
+	} = useShellSessionRouteHistory({
 		currentScope,
 		currentSpaceId,
 		currentRoute: shellRoute,
