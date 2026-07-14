@@ -5,7 +5,10 @@ import { parseShellRoute } from '@/app/navigation/shellRoute'
 import { useLocation, useNavigate, useNavigationType } from '@/app/routing/tanstackCompat'
 import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import type { Scope, Space } from '@/shared/types'
-import { isRememberableShellPath, normalizeShellMemoryPath } from '@/app/routing/routeMemory'
+import {
+	isRememberableShellPath,
+	normalizeShellMemoryPath,
+} from '@/app/navigation-runtime/routeMemory'
 import {
 	ArchiveIcon,
 	BoxIcon,

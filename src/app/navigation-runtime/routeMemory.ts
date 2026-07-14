@@ -2,7 +2,7 @@ import { getProjectDetail } from '@/features/project/api/projects'
 import { getTaskDetail } from '@/features/task/api/tasks'
 import type { Scope, Space } from '@/shared/types'
 
-import { buildCanonicalSectionPath, buildStartupFallbackPath } from './routePaths'
+import { buildCanonicalSectionPath, buildStartupFallbackPath } from '@/app/routing/routePaths'
 import {
 	buildShellScopeKey,
 	type ShellRouteMemory,

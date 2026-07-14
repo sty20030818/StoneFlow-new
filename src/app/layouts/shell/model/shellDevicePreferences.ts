@@ -9,7 +9,7 @@ import {
 	resolveRememberedPathForScope as resolveRememberedRoutePathForScope,
 	resolveStartupPathFromMemory,
 	validateShellRouteMemoryPaths,
-} from '@/app/routing/routeMemory'
+} from '@/app/navigation-runtime/routeMemory'
 import type { ShellRouteMemory, ShellScopeKey } from '@/app/navigation/shellRoute'
 import type {
 	SidebarPreferenceSettings,

@@ -5,9 +5,9 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
-		"build": "tsgo -b && vite build",
+		"build": "tsc -b && vite build",
 		"tauri": "tauri",
-		"typecheck": "tsgo -b",
+		"typecheck": "tsc -b",
 		"lint": "oxlint",
 		"lint:fix": "oxlint --fix",
 		"format": "oxfmt",
@@ -20,7 +20,6 @@
 		"release": "bun run scripts/release/release.ts stable",
 		"release:stable": "bun run scripts/release/release.ts stable",
 		"release:beta": "bun run scripts/release/release.ts beta",
-		"release:keygen": "bunx tauri signer generate -w ~/.tauri/stoneflow.key",
 		"mock:updates": "bun run scripts/release/mock-server.ts",
 		"mock:updates:beta": "bun run scripts/release/mock-server.ts --channel beta"
 	},
@@ -28,8 +27,8 @@
 		"@hookform/resolvers": "^5.4.0",
 		"@radix-ui/react-avatar": "^1.2.2",
 		"@tanstack/react-query": "^5.101.2",
-		"@tanstack/react-router": "^1.170.17",
-		"@tanstack/router-plugin": "^1.168.19",
+		"@tanstack/react-router": "^1.170.18",
+		"@tanstack/router-plugin": "^1.168.20",
 		"@tauri-apps/api": "^2.11.1",
 		"@tauri-apps/plugin-dialog": "^2.7.1",
 		"@tauri-apps/plugin-opener": "^2.5.4",
@@ -51,7 +50,7 @@
 		"zustand": "^5.0.14"
 	},
 	"devDependencies": {
-		"@aws-sdk/client-s3": "^3.1085.0",
+		"@aws-sdk/client-s3": "^3.1086.0",
 		"@tailwindcss/vite": "^4.3.2",
 		"@tauri-apps/cli": "^2.11.4",
 		"@testing-library/dom": "^10.4.1",
@@ -61,14 +60,14 @@
 		"@types/node": "^26.1.1",
 		"@types/react": "^19.2.17",
 		"@types/react-dom": "^19.2.3",
-		"@typescript/native-preview": "^7.0.0-dev.20260707.2",
 		"@vitejs/plugin-react": "^6.0.3",
 		"@vitest/coverage-v8": "^4.1.10",
 		"jsdom": "^29.1.1",
-		"oxfmt": "^0.58.0",
-		"oxlint": "^1.73.0",
+		"oxfmt": "^0.59.0",
+		"oxlint": "^1.74.0",
 		"tailwindcss": "^4.3.2",
 		"tw-animate-css": "^1.4.0",
+		"typescript": "7.0.2",
 		"vite": "^8.1.4",
 		"vitest": "^4.1.10"
 	}
