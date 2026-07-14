@@ -973,163 +973,163 @@ function ShellLayoutContent({
 			sidebarWidth={sidebarSettings.width}
 		>
 			<SyncStatusProvider>
-			<CommandShortcutLayer
-				bindings={activeShortcutBindings}
-				onChordStateChange={setChordSession}
-				onTrigger={runCommand}
-				shouldTrigger={shouldTriggerCommandShortcut}
-			/>
-			<ShellHeader
-				activeSection={activeSection}
-				canGoBack={canGoBack}
-				chordSession={chordSession}
-				canGoForward={canGoForward}
-				commandContext={commandContext}
-				commandMenuMode={commandMenuMode}
-				commandMenuFilterKind={commandMenuFilterKind}
-				commandRuntime={commandRuntime}
-				currentSpaceId={currentSpaceId}
-				currentScope={currentScope}
-				isCommandOpen={isCommandOpen}
-				isShortcutHelpOpen={isShortcutHelpOpen}
-				onCloseDrawer={closeEntityDrawer}
-				onCommandOpenChange={handleCommandMenuOpenChange}
-				onNavigateToHistoryEntry={navigateToHistoryEntry}
-				onOpenTaskPage={(task) => {
-					openTaskPage({ taskId: task.id, spaceId: task.spaceId })
-				}}
-				onRunCommand={runCommand}
-				onSelectFilterKind={(kind) => {
-					pageFilter.actions.openFilterPicker(kind)
-					setCommandMenuFilterKind(kind)
-				}}
-				onApplyFilter={(input) => {
-					pageFilter.actions.applyFilter(input)
-				}}
-				onClearAllFilters={() => {
-					pageFilter.actions.clearAll()
-				}}
-				onToggleCompletedFilter={() => {
-					pageFilter.actions.toggleCompleted()
-				}}
-				onSelectTaskDate={handleSelectTaskDate}
-				onSelectTaskPlacement={handleSelectTaskPlacement}
-				onSelectTaskPriority={handleSelectTaskPriority}
-				onSelectTaskStatus={handleSelectTaskStatus}
-				onShortcutHelpOpenChange={setShortcutHelpOpen}
-				projects={commandProjectLinks.length > 0 ? commandProjectLinks : sidebarProjectLinks}
-				routeHistoryEntries={routeHistoryEntries}
-				spaces={spaces}
-			/>
-			<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-sf-shell'>
-				<div className='flex min-h-0 w-(--sf-shell-sidebar-reserved-width) shrink-0 flex-col overflow-hidden transition-[width] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) motion-reduce:transition-none group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none'>
-					{isSettingsMode ? (
-						<SettingsSidebar
-							activeSettingsSection={shellRoute.settingsSection ?? DEFAULT_SETTINGS_SECTION}
-							currentScope={currentScope}
-							currentSpaceId={currentSpaceId}
-							returnPath={settingsReturnPathRef.current}
-						/>
-					) : (
-						<ShellSidebar
-							currentScope={currentScope}
-							currentSpaceId={currentSpaceId}
-							navBadges={navBadges}
-							onArchiveSpace={(spaceId) => archiveSpace.mutateAsync(spaceId)}
-							onCreateSpace={(input) => createSpace.mutateAsync(input)}
-							onDeleteSpace={(spaceId) => deleteSpace.mutateAsync(spaceId)}
-							onOpenProjectCreateDialog={openProjectCreateDialog}
-							onResetMainItemsVisibility={() => {
-								void resetSidebarMainItemsVisibility()
-							}}
-							onSetDefaultSpace={(spaceId) => setDefaultSpace.mutateAsync(spaceId)}
-							onUpdateItemVisibility={(target, visible) => {
-								void setSidebarItemVisibility(target, visible)
-							}}
-							onUpdateSpace={(input) => updateSpace.mutateAsync(input)}
-							projects={sidebarProjectLinks}
-							spaces={spaces}
-							settings={sidebarSettings}
-						/>
-					)}
-				</div>
+				<CommandShortcutLayer
+					bindings={activeShortcutBindings}
+					onChordStateChange={setChordSession}
+					onTrigger={runCommand}
+					shouldTrigger={shouldTriggerCommandShortcut}
+				/>
+				<ShellHeader
+					activeSection={activeSection}
+					canGoBack={canGoBack}
+					chordSession={chordSession}
+					canGoForward={canGoForward}
+					commandContext={commandContext}
+					commandMenuMode={commandMenuMode}
+					commandMenuFilterKind={commandMenuFilterKind}
+					commandRuntime={commandRuntime}
+					currentSpaceId={currentSpaceId}
+					currentScope={currentScope}
+					isCommandOpen={isCommandOpen}
+					isShortcutHelpOpen={isShortcutHelpOpen}
+					onCloseDrawer={closeEntityDrawer}
+					onCommandOpenChange={handleCommandMenuOpenChange}
+					onNavigateToHistoryEntry={navigateToHistoryEntry}
+					onOpenTaskPage={(task) => {
+						openTaskPage({ taskId: task.id, spaceId: task.spaceId })
+					}}
+					onRunCommand={runCommand}
+					onSelectFilterKind={(kind) => {
+						pageFilter.actions.openFilterPicker(kind)
+						setCommandMenuFilterKind(kind)
+					}}
+					onApplyFilter={(input) => {
+						pageFilter.actions.applyFilter(input)
+					}}
+					onClearAllFilters={() => {
+						pageFilter.actions.clearAll()
+					}}
+					onToggleCompletedFilter={() => {
+						pageFilter.actions.toggleCompleted()
+					}}
+					onSelectTaskDate={handleSelectTaskDate}
+					onSelectTaskPlacement={handleSelectTaskPlacement}
+					onSelectTaskPriority={handleSelectTaskPriority}
+					onSelectTaskStatus={handleSelectTaskStatus}
+					onShortcutHelpOpenChange={setShortcutHelpOpen}
+					projects={commandProjectLinks.length > 0 ? commandProjectLinks : sidebarProjectLinks}
+					routeHistoryEntries={routeHistoryEntries}
+					spaces={spaces}
+				/>
+				<div className='relative flex min-h-0 min-w-0 flex-1 overflow-hidden bg-sf-shell'>
+					<div className='flex min-h-0 w-(--sf-shell-sidebar-reserved-width) shrink-0 flex-col overflow-hidden transition-[width] duration-(--sf-shell-layout-sync-duration) ease-(--sf-shell-layout-sync-easing) motion-reduce:transition-none group-data-[sidebar-resizing=true]/sidebar-wrapper:transition-none'>
+						{isSettingsMode ? (
+							<SettingsSidebar
+								activeSettingsSection={shellRoute.settingsSection ?? DEFAULT_SETTINGS_SECTION}
+								currentScope={currentScope}
+								currentSpaceId={currentSpaceId}
+								returnPath={settingsReturnPathRef.current}
+							/>
+						) : (
+							<ShellSidebar
+								currentScope={currentScope}
+								currentSpaceId={currentSpaceId}
+								navBadges={navBadges}
+								onArchiveSpace={(spaceId) => archiveSpace.mutateAsync(spaceId)}
+								onCreateSpace={(input) => createSpace.mutateAsync(input)}
+								onDeleteSpace={(spaceId) => deleteSpace.mutateAsync(spaceId)}
+								onOpenProjectCreateDialog={openProjectCreateDialog}
+								onResetMainItemsVisibility={() => {
+									void resetSidebarMainItemsVisibility()
+								}}
+								onSetDefaultSpace={(spaceId) => setDefaultSpace.mutateAsync(spaceId)}
+								onUpdateItemVisibility={(target, visible) => {
+									void setSidebarItemVisibility(target, visible)
+								}}
+								onUpdateSpace={(input) => updateSpace.mutateAsync(input)}
+								projects={sidebarProjectLinks}
+								spaces={spaces}
+								settings={sidebarSettings}
+							/>
+						)}
+					</div>
 
-				<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sf-shell'>
-					<ShellMain
-						activeDetail={activeDetail}
-						currentSpaceLabel={currentSpaceLabel}
-						isDrawerOpen={isDrawerOpen}
-						onCloseDrawer={closeEntityDrawer}
-						onOpenProjectCreateDialog={() => openProjectCreateDialog()}
-						onOpenTaskCreateDialog={handleOpenTaskCreate}
-						showPreview
-					>
-						{children}
-					</ShellMain>
+					<div className='relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-sf-shell'>
+						<ShellMain
+							activeDetail={activeDetail}
+							currentSpaceLabel={currentSpaceLabel}
+							isDrawerOpen={isDrawerOpen}
+							onCloseDrawer={closeEntityDrawer}
+							onOpenProjectCreateDialog={() => openProjectCreateDialog()}
+							onOpenTaskCreateDialog={handleOpenTaskCreate}
+							showPreview
+						>
+							{children}
+						</ShellMain>
+					</div>
 				</div>
-			</div>
-			<CreateDialogShell
-				description={
-					createDialogType === 'task'
-						? '创建新任务，设置标题、描述、状态、优先级与归属。'
-						: '在目标 Space 中创建新项目，填写名称与说明。'
-				}
-				onClose={() => {
-					if (createDialogType === 'task') {
-						closeTaskCreateDialog()
-					} else {
-						closeProjectCreateDialog()
+				<CreateDialogShell
+					description={
+						createDialogType === 'task'
+							? '创建新任务，设置标题、描述、状态、优先级与归属。'
+							: '在目标 Space 中创建新项目，填写名称与说明。'
 					}
-				}}
-				onSelectSpace={setSelectedSpaceId}
-				open={createDialogType !== null && !shouldDelayTaskCreateDialog}
-				selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
-				fullscreen={createDialogType === 'task' && taskCreatePresentation === 'fullscreen'}
-				showFullscreenToggle={createDialogType === 'task'}
-				onToggleFullscreen={toggleTaskCreatePresentation}
-				spaces={spaces}
-				title={createDialogType === 'task' ? '新建任务' : '新建项目'}
-			>
-				{createDialogType === 'task' ? (
-					<TaskCreateContent
-						currentScope={currentScope}
-						initialPlacement={taskCreateDraft.placement ?? null}
-						initialProjectId={taskCreateDraft.projectId ?? null}
-						initialStatus={taskCreateDraft.status ?? 'todo'}
-						onClose={closeTaskCreateDialog}
-						projects={projectOptions}
-						projectsLoading={sidebarProjects.status === 'loading'}
-						selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
-						spaces={spaces}
-					/>
-				) : createDialogType === 'project' ? (
-					<ProjectCreateContent
-						onClose={closeProjectCreateDialog}
-						selectedSpaceId={selectedSpaceId}
-					/>
-				) : null}
-			</CreateDialogShell>
-			{customDateDialog ? (
-				<CustomDateDialog
-					fieldKey={customDateDialog.fieldKey}
-					hasExistingValue={customDateDialog.hasExistingValue}
-					label={customDateDialog.label}
-					open
-					value={customDateDialog.value}
-					onOpenChange={(open) => {
-						if (!open) {
-							closeCustomDateDialog()
+					onClose={() => {
+						if (createDialogType === 'task') {
+							closeTaskCreateDialog()
+						} else {
+							closeProjectCreateDialog()
 						}
 					}}
-					onSubmit={(value) => {
-						customDateDialog.onSubmit?.(value)
-						closeCustomDateDialog()
-					}}
-				/>
-			) : null}
-			<UpdateDialog />
-			<SystemStatusChip />
-			<ShellFooter />
+					onSelectSpace={setSelectedSpaceId}
+					open={createDialogType !== null && !shouldDelayTaskCreateDialog}
+					selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
+					fullscreen={createDialogType === 'task' && taskCreatePresentation === 'fullscreen'}
+					showFullscreenToggle={createDialogType === 'task'}
+					onToggleFullscreen={toggleTaskCreatePresentation}
+					spaces={spaces}
+					title={createDialogType === 'task' ? '新建任务' : '新建项目'}
+				>
+					{createDialogType === 'task' ? (
+						<TaskCreateContent
+							currentScope={currentScope}
+							initialPlacement={taskCreateDraft.placement ?? null}
+							initialProjectId={taskCreateDraft.projectId ?? null}
+							initialStatus={taskCreateDraft.status ?? 'todo'}
+							onClose={closeTaskCreateDialog}
+							projects={projectOptions}
+							projectsLoading={sidebarProjects.status === 'loading'}
+							selectedSpaceId={selectedSpaceId ?? defaultCreateSpaceId}
+							spaces={spaces}
+						/>
+					) : createDialogType === 'project' ? (
+						<ProjectCreateContent
+							onClose={closeProjectCreateDialog}
+							selectedSpaceId={selectedSpaceId}
+						/>
+					) : null}
+				</CreateDialogShell>
+				{customDateDialog ? (
+					<CustomDateDialog
+						fieldKey={customDateDialog.fieldKey}
+						hasExistingValue={customDateDialog.hasExistingValue}
+						label={customDateDialog.label}
+						open
+						value={customDateDialog.value}
+						onOpenChange={(open) => {
+							if (!open) {
+								closeCustomDateDialog()
+							}
+						}}
+						onSubmit={(value) => {
+							customDateDialog.onSubmit?.(value)
+							closeCustomDateDialog()
+						}}
+					/>
+				) : null}
+				<UpdateDialog />
+				<SystemStatusChip />
+				<ShellFooter />
 			</SyncStatusProvider>
 		</SidebarProvider>
 	)

@@ -40,12 +40,7 @@ export type UpdateFooterViewInput = {
 export function isUpdateFooterVisiblePhase(
 	phase: UpdateUiPhase,
 ): phase is UpdateFooterVisiblePhase {
-	return (
-		phase === 'available' ||
-		phase === 'downloading' ||
-		phase === 'ready' ||
-		phase === 'error'
-	)
+	return phase === 'available' || phase === 'downloading' || phase === 'ready' || phase === 'error'
 }
 
 export function deriveUpdateFooterView(input: UpdateFooterViewInput): UpdateFooterView | null {

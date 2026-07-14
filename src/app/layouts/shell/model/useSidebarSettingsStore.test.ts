@@ -187,7 +187,6 @@ function createShellDeviceState() {
 	return {
 		sidebar: createSidebarDevicePreferences(),
 		ui: createUiDevicePreferences(),
-		navigationRestore: null,
 	}
 }
 

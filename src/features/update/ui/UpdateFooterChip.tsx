@@ -39,12 +39,7 @@ export function UpdateFooterChip({ view, onOpen }: UpdateFooterChipProps) {
 				variant='default'
 				className='max-w-38 cursor-pointer text-[11px] active:scale-[0.96]'
 			>
-				<button
-					type='button'
-					title={view.title}
-					aria-label={view.title}
-					onClick={onOpen}
-				>
+				<button type='button' title={view.title} aria-label={view.title} onClick={onOpen}>
 					{/* 光学：箭头略偏下 */}
 					<DownloadIcon aria-hidden data-icon='inline-start' className='translate-y-px' />
 					<span className='min-w-0 truncate'>{view.label}</span>

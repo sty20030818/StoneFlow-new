@@ -28,9 +28,7 @@ describe('SettingsSidebar', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: '返回应用' }))
 
-		expect(await screen.findByTestId('location')).toHaveTextContent(
-			'/spaces/space-personal/inbox',
-		)
+		expect(await screen.findByTestId('location')).toHaveTextContent('/spaces/space-personal/inbox')
 	})
 
 	it('点击分区以 replace 切换 URL', async () => {

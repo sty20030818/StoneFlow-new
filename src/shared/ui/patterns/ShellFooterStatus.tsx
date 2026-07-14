@@ -27,11 +27,7 @@ function Root({
 	)
 }
 
-function Dot({
-	className,
-	busy,
-	...props
-}: ComponentPropsWithoutRef<'span'> & { busy?: boolean }) {
+function Dot({ className, busy, ...props }: ComponentPropsWithoutRef<'span'> & { busy?: boolean }) {
 	return (
 		<span
 			className={cn(shellFooterStatusDotClass, busy && 'animate-pulse', className)}
@@ -88,7 +84,12 @@ function IconButton({
 	ref?: Ref<HTMLButtonElement>
 }) {
 	return (
-		<button ref={ref} type='button' className={cn(shellFooterIconButtonClass, className)} {...props}>
+		<button
+			ref={ref}
+			type='button'
+			className={cn(shellFooterIconButtonClass, className)}
+			{...props}
+		>
 			{children}
 		</button>
 	)

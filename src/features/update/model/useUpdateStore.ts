@@ -107,8 +107,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			dialogVisible: openDialog,
 			downloadUiAbandoned: false,
 			// 用户再次看到该版本 → 清掉内存 dismiss
-			dismissedVersion:
-				get().dismissedVersion === info.version ? null : get().dismissedVersion,
+			dismissedVersion: get().dismissedVersion === info.version ? null : get().dismissedVersion,
 		})
 	},
 
@@ -227,10 +226,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			const current = get()
 			// 已在下载/就绪，或同一版本已展示，不覆盖、不强弹
 			if (current.phase === 'downloading' || current.phase === 'ready') return
-			if (
-				current.phase === 'available' &&
-				current.updateInfo?.version === version
-			) {
+			if (current.phase === 'available' && current.updateInfo?.version === version) {
 				return
 			}
 			// hydrate：若用户本会话已 dismiss 该版本，只恢复 footer、不强弹
@@ -254,9 +250,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 				errorMessage: null,
 				downloadUiAbandoned: false,
 				dialogVisible: false,
-				updateInfo: version
-					? { version, body, pubDate }
-					: get().updateInfo,
+				updateInfo: version ? { version, body, pubDate } : get().updateInfo,
 			})
 			return
 		}

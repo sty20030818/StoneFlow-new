@@ -54,10 +54,7 @@ describe('applyUpdatePhaseEvent', () => {
 			{ phase: 'downloading', version: '1.2.0', downloaded: 10, total: 100 },
 			actions,
 		)
-		expect(actions.setDownloading).toHaveBeenCalledWith(
-			{ downloaded: 10, total: 100 },
-			'1.2.0',
-		)
+		expect(actions.setDownloading).toHaveBeenCalledWith({ downloaded: 10, total: 100 }, '1.2.0')
 	})
 
 	it('marks ready and returns toast side effect once', () => {

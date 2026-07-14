@@ -7,8 +7,7 @@
  * - 按钮：唯一可点动作
  */
 
-export const shellFooterTrackClass =
-	'text-[11px] leading-none text-sf-shell-text-tertiary'
+export const shellFooterTrackClass = 'text-[11px] leading-none text-sf-shell-text-tertiary'
 
 /** 左侧：同步区 */
 export const shellFooterLeftTrackClass = `flex min-w-0 flex-1 items-center gap-2 ${shellFooterTrackClass}`
@@ -50,8 +49,7 @@ export const shellFooterHitClass =
 export type ShellFooterHitTone = 'neutral' | 'success' | 'danger'
 
 export const shellFooterHitToneClass: Record<ShellFooterHitTone, string> = {
-	neutral:
-		'text-sf-shell-text-tertiary hover:bg-muted/50 hover:text-sf-shell-text-secondary',
+	neutral: 'text-sf-shell-text-tertiary hover:bg-muted/50 hover:text-sf-shell-text-secondary',
 	success: 'text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400',
 	danger:
 		'text-red-600 hover:bg-red-500/10 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300',

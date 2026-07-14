@@ -44,10 +44,7 @@ export function ShellFooterHit({
 			className={cn(shellFooterHitClass, shellFooterHitToneClass[tone], className)}
 			{...props}
 		>
-			<span
-				className='relative flex size-3.5 shrink-0 items-center justify-center'
-				aria-hidden
-			>
+			<span className='relative flex size-3.5 shrink-0 items-center justify-center' aria-hidden>
 				{children}
 			</span>
 			<span className='min-w-0 truncate'>{label}</span>

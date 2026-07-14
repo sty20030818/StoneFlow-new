@@ -24,9 +24,7 @@ export function parseSettingsSectionKey(
 }
 
 /** 非法或空值回落默认分区 */
-export function resolveSettingsSectionKey(
-	value: string | null | undefined,
-): SettingsSectionKey {
+export function resolveSettingsSectionKey(value: string | null | undefined): SettingsSectionKey {
 	return parseSettingsSectionKey(value) ?? DEFAULT_SETTINGS_SECTION
 }
 

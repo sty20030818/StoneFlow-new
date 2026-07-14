@@ -278,9 +278,7 @@ export function SettingsSyncPanel() {
 									<SettingsIcon />
 								</Button>
 								<Button
-									disabled={
-										syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresBaseline
-									}
+									disabled={syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresBaseline}
 									onClick={() => void handleRunSync()}
 									type='button'
 									variant='secondary'
@@ -289,7 +287,7 @@ export function SettingsSyncPanel() {
 								</Button>
 							</div>
 						</div>
-		
+
 						<div className='mt-4 grid gap-2 md:grid-cols-4'>
 							<SyncMetricCard
 								label='上次提交'
@@ -312,7 +310,7 @@ export function SettingsSyncPanel() {
 								value={formatReplicaState(syncStatus?.replicaState ?? 'uninitialized')}
 							/>
 						</div>
-		
+
 						<div className='mt-4 grid gap-3 md:grid-cols-[minmax(0,18rem)_1fr] md:items-end'>
 							<label className={formFieldStackClass}>
 								<span className={formFieldLabelVariants()}>同步频率</span>
@@ -338,7 +336,7 @@ export function SettingsSyncPanel() {
 							<p className={formFieldHintClass}>{formatSyncPolicySummary(syncStatus)}</p>
 						</div>
 					</div>
-		
+
 					<Collapsible onOpenChange={setSyncDetailsOpen} open={syncDetailsOpen}>
 						<CollapsibleTrigger
 							className={cn(
@@ -362,7 +360,7 @@ export function SettingsSyncPanel() {
 									title={syncStatusCopy.title}
 									variant={syncStatusCopy.variant}
 								/>
-		
+
 								{syncRequiresBaseline && syncStatus?.replicaReason ? (
 									<StatusNotice
 										description={syncStatus.replicaReason}
@@ -370,7 +368,7 @@ export function SettingsSyncPanel() {
 										variant='warning'
 									/>
 								) : null}
-		
+
 								{effectiveSyncError ? (
 									<StatusNotice
 										className={statusNoticeCompactTextClass}
@@ -381,14 +379,13 @@ export function SettingsSyncPanel() {
 										variant='danger'
 									/>
 								) : null}
-		
+
 								<div className='flex flex-col gap-3'>
 									<div className='flex items-center justify-between gap-3'>
 										<div className='min-w-0'>
 											<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
 											<p className={formFieldHintClass}>
-												只读查看当前设备与 Turso 远端的 server_seq
-												和工作集摘要，用于排查同步问题。
+												只读查看当前设备与 Turso 远端的 server_seq 和工作集摘要，用于排查同步问题。
 											</p>
 										</div>
 										<Button
@@ -401,7 +398,7 @@ export function SettingsSyncPanel() {
 											{syncDiagnosing ? '诊断中...' : '刷新诊断'}
 										</Button>
 									</div>
-		
+
 									{syncDiagnostics ? (
 										<div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
 											<SettingInfoRow
@@ -423,9 +420,7 @@ export function SettingsSyncPanel() {
 											<SettingInfoRow
 												description='Turso 远端 remote_change_log 当前看到的最新 server_seq。'
 												label='远端 server_seq'
-												value={
-													<SyncCursorValue value={syncDiagnostics.remote.latestServerSeq} />
-												}
+												value={<SyncCursorValue value={syncDiagnostics.remote.latestServerSeq} />}
 											/>
 											<SettingInfoRow
 												description='当前设备本地还没提交成功的 mutation 数量。'
@@ -444,9 +439,7 @@ export function SettingsSyncPanel() {
 											<SettingInfoRow
 												description='Turso 远端当前镜像表的计数摘要。'
 												label='远端工作集'
-												value={
-													<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />
-												}
+												value={<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />}
 											/>
 										</div>
 									) : (
@@ -459,7 +452,7 @@ export function SettingsSyncPanel() {
 											title='尚未读取同步诊断'
 										/>
 									)}
-		
+
 									{syncDiagnosticsMessage ? (
 										<StatusNotice
 											className={statusNoticeCompactTextClass}
@@ -475,7 +468,7 @@ export function SettingsSyncPanel() {
 						</CollapsibleContent>
 					</Collapsible>
 				</div>
-		
+
 				<SyncConfigDialog
 					onClose={() => setSyncConfigDialogOpen(false)}
 					onSave={handleSaveSyncConfig}

@@ -3,12 +3,7 @@ import type { ComponentType } from 'react'
 import { openSettings } from '@/app/navigation/intents'
 import type { SettingsSectionKey } from '@/features/settings/model/settingsSection'
 import type { Scope } from '@/shared/types'
-import {
-	CloudIcon,
-	PanelLeftIcon,
-	SlidersHorizontalIcon,
-	SparklesIcon,
-} from 'lucide-react'
+import { CloudIcon, PanelLeftIcon, SlidersHorizontalIcon, SparklesIcon } from 'lucide-react'
 
 export type SettingsNavItem = {
 	key: SettingsSectionKey

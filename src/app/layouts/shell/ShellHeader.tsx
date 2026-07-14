@@ -17,12 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/base/avatar'
 import { Button } from '@/shared/ui/base/button'
 import { useSidebar } from '@/shared/ui/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
-import {
-	ChordHint,
-	CommandMenu,
-	ShortcutHelp,
-	type CommandMenuMode,
-} from '@/features/command/ui'
+import { ChordHint, CommandMenu, ShortcutHelp, type CommandMenuMode } from '@/features/command/ui'
 import { type CommandChordSession } from '@/features/command/shortcuts'
 import {
 	COMMAND_IDS,

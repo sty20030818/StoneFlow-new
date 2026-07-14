@@ -233,9 +233,7 @@ function resolveUniqueArtifact(
 	}
 	if (candidates.length === 1) return candidates[0]!
 
-	throw new Error(
-		`${label}: 无法唯一确定产物（目录应在构建前清空）。候选: ${names(candidates)}`,
-	)
+	throw new Error(`${label}: 无法唯一确定产物（目录应在构建前清空）。候选: ${names(candidates)}`)
 }
 
 async function requireSignaturePair(artifactPath: string): Promise<string> {
@@ -356,23 +354,17 @@ function assertLatestJsonConsistency(
 
 		// 对外安装包统一使用含版本的文件名（含 mac 重命名后的 app.tar.gz）
 		if (urlFileName.startsWith('StoneFlow') && !urlFileName.includes(version)) {
-			errors.push(
-				`platform ${platformKey}: 产物文件名未包含版本 ${version}: ${urlFileName}`,
-			)
+			errors.push(`platform ${platformKey}: 产物文件名未包含版本 ${version}: ${urlFileName}`)
 		}
 
 		const artifactUpload = uploadByBaseName.get(urlFileName)
 		if (!artifactUpload || !artifactUpload.key.includes(`/${version}/`)) {
-			errors.push(
-				`platform ${platformKey}: 上传列表中找不到版本目录下的 ${urlFileName}`,
-			)
+			errors.push(`platform ${platformKey}: 上传列表中找不到版本目录下的 ${urlFileName}`)
 		}
 
 		const sigUpload = uploadByBaseName.get(`${urlFileName}.sig`)
 		if (!sigUpload || !sigUpload.key.includes(`/${version}/`)) {
-			errors.push(
-				`platform ${platformKey}: 上传列表中找不到版本目录下的 ${urlFileName}.sig`,
-			)
+			errors.push(`platform ${platformKey}: 上传列表中找不到版本目录下的 ${urlFileName}.sig`)
 		}
 	}
 
@@ -483,9 +475,7 @@ async function main() {
 	try {
 		if (CHANNEL === 'beta' && PLATFORM_KEY.startsWith('windows-')) {
 			console.log(
-				chalk.yellow(
-					'   Windows beta 版本跳过 MSI，仅构建 NSIS（MSI 不支持 beta 预发布标识）',
-				),
+				chalk.yellow('   Windows beta 版本跳过 MSI，仅构建 NSIS（MSI 不支持 beta 预发布标识）'),
 			)
 			await $`bun run tauri build --bundles nsis`
 		} else {
@@ -719,9 +709,7 @@ async function main() {
 			),
 		)
 		console.log(chalk.yellow('\n💡 提示: 构建产物已保存到:'), WORK_DIR)
-		console.log(
-			chalk.yellow('   你可以按 .release-tmp 下的 updates / downloads 目录手动上传到 R2'),
-		)
+		console.log(chalk.yellow('   你可以按 .release-tmp 下的 updates / downloads 目录手动上传到 R2'))
 		process.exit(1)
 	}
 
@@ -752,9 +740,7 @@ async function main() {
 				Bucket: R2_BUCKET,
 				Key: item.key,
 				Body: body,
-				ContentType: fileName.endsWith('.json')
-					? 'application/json'
-					: 'application/octet-stream',
+				ContentType: fileName.endsWith('.json') ? 'application/json' : 'application/octet-stream',
 				CacheControl: isMutableFile ? 'no-cache' : 'public, max-age=31536000, immutable',
 			}),
 		)
@@ -765,13 +751,9 @@ async function main() {
 	// 9. 完成
 	console.log(chalk.green('\n✅ 发布完成!'))
 	console.log(
-		chalk.gray(
-			`\n   更新地址: ${R2_PUBLIC_URL}/updates/${CHANNEL}/${PLATFORM_KEY}/latest.json`,
-		),
+		chalk.gray(`\n   更新地址: ${R2_PUBLIC_URL}/updates/${CHANNEL}/${PLATFORM_KEY}/latest.json`),
 	)
-	console.log(
-		chalk.gray(`   下载目录: ${R2_PUBLIC_URL}/downloads/${CHANNEL}/${PLATFORM_KEY}/`),
-	)
+	console.log(chalk.gray(`   下载目录: ${R2_PUBLIC_URL}/downloads/${CHANNEL}/${PLATFORM_KEY}/`))
 	console.log(chalk.gray(`   版本: ${VERSION}`))
 	console.log(chalk.gray(`   平台: ${Object.keys(platforms).join(', ')}\n`))
 

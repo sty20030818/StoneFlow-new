@@ -8,10 +8,6 @@ export const Route = createFileRoute('/settings')({
 
 function SettingsRedirect() {
 	return (
-		<Navigate
-			params={{ section: readLastSettingsSection() }}
-			replace
-			to='/all/settings/$section'
-		/>
+		<Navigate params={{ section: readLastSettingsSection() }} replace to='/all/settings/$section' />
 	)
 }

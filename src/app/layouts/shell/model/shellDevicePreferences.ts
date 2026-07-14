@@ -2,25 +2,14 @@ import { invoke } from '@tauri-apps/api/core'
 import { LazyStore } from '@tauri-apps/plugin-store'
 import { clamp } from 'es-toolkit/math'
 
-import {
-	createNextShellRouteMemory,
-	isRememberableShellPath as isRememberableShellRoutePath,
-	normalizeShellRouteMemory,
-	resolveRememberedPathForScope as resolveRememberedRoutePathForScope,
-	resolveStartupPathFromMemory,
-	validateShellRouteMemoryPaths,
-} from '@/app/navigation-runtime/routeMemory'
-import type { ShellRouteMemory, ShellScopeKey } from '@/app/navigation/shellRoute'
 import type {
 	SidebarPreferenceSettings,
 	SidebarProjectSectionPreferenceConfig,
 } from '@/features/settings/api/sidebarSettings'
-import type { Scope, Space } from '@/shared/types'
 
 const SHELL_DEVICE_STORE_PATH = 'shell-device-preferences.json'
 const SIDEBAR_DEVICE_KEY = 'shell.sidebar.device'
 const UI_DEVICE_KEY = 'shell.ui.device'
-const NAVIGATION_RESTORE_KEY = 'shell.navigation.restore'
 const SIDEBAR_WIDTH_MIN = 220
 const SIDEBAR_WIDTH_MAX = 330
 const DEFAULT_SIDEBAR_WIDTH = 256
@@ -46,8 +35,6 @@ export type ShellUiDevicePreferences = {
 	taskDrawerWidth: number
 }
 
-export type ShellNavigationRestore = ShellRouteMemory
-
 export type ShellSidebarProjectSectionSettings = SidebarProjectSectionPreferenceConfig & {
 	collapsed: boolean
 	maxVisible: number | null
@@ -62,24 +49,12 @@ export type ShellSidebarSettings = SidebarPreferenceSettings & {
 export type ShellDeviceState = {
 	sidebar: ShellSidebarDevicePreferences
 	ui: ShellUiDevicePreferences
-	navigationRestore: ShellNavigationRestore | null
-}
-
-type ResolveRememberedPathInput = {
-	scopeKey: ShellScopeKey
-	spaces: Space[]
-	defaultPath: string
-}
-
-type ResolveStartupPathInput = {
-	spaces: Space[]
 }
 
 export async function loadShellDeviceState(): Promise<ShellDeviceState> {
-	const [sidebar, ui, navigationRestore] = await Promise.all([
+	const [sidebar, ui] = await Promise.all([
 		shellDeviceStore.get<ShellSidebarDevicePreferences>(SIDEBAR_DEVICE_KEY),
 		shellDeviceStore.get<ShellUiDevicePreferences>(UI_DEVICE_KEY),
-		shellDeviceStore.get<ShellNavigationRestore>(NAVIGATION_RESTORE_KEY),
 	])
 
 	const { sidebar: resolvedSidebar, ui: resolvedUi } = await migrateLegacyDevicePreferencesIfNeeded(
@@ -88,19 +63,10 @@ export async function loadShellDeviceState(): Promise<ShellDeviceState> {
 			ui: ui ?? null,
 		},
 	)
-	const resolvedNavigationRestore = await validateShellRouteMemoryPaths(
-		normalizeShellRouteMemory(navigationRestore ?? null),
-		[],
-	)
-	if (navigationRestore && resolvedNavigationRestore) {
-		await shellDeviceStore.set(NAVIGATION_RESTORE_KEY, resolvedNavigationRestore)
-		await shellDeviceStore.save()
-	}
 
 	return {
 		sidebar: normalizeSidebarDevicePreferences(resolvedSidebar),
 		ui: normalizeUiDevicePreferences(resolvedUi),
-		navigationRestore: resolvedNavigationRestore,
 	}
 }
 
@@ -152,49 +118,6 @@ export async function updateShellUiDevicePreferences(
 	await shellDeviceStore.set(UI_DEVICE_KEY, next)
 	await shellDeviceStore.save()
 	return next
-}
-
-export async function rememberShellRoute(scope: Scope, path: string): Promise<void> {
-	const current = normalizeShellRouteMemory(
-		(await shellDeviceStore.get<ShellNavigationRestore>(NAVIGATION_RESTORE_KEY)) ?? null,
-	)
-	const next = createNextShellRouteMemory(current, scope, path)
-	if (!next) {
-		return
-	}
-
-	await shellDeviceStore.set(NAVIGATION_RESTORE_KEY, next)
-	await shellDeviceStore.save()
-}
-
-export async function resolveRememberedPathForScope({
-	scopeKey,
-	spaces,
-	defaultPath,
-}: ResolveRememberedPathInput): Promise<string> {
-	const navigationRestore = normalizeShellRouteMemory(
-		(await shellDeviceStore.get<ShellNavigationRestore>(NAVIGATION_RESTORE_KEY)) ?? null,
-	)
-	return resolveRememberedRoutePathForScope({
-		scopeKey,
-		routeMemory: navigationRestore,
-		spaces,
-		defaultPath,
-	})
-}
-
-export async function resolveStartupPath({ spaces }: ResolveStartupPathInput): Promise<string> {
-	const navigationRestore = normalizeShellRouteMemory(
-		(await shellDeviceStore.get<ShellNavigationRestore>(NAVIGATION_RESTORE_KEY)) ?? null,
-	)
-	return resolveStartupPathFromMemory({
-		routeMemory: navigationRestore,
-		spaces,
-	})
-}
-
-export function isRememberableShellPath(path: string): boolean {
-	return isRememberableShellRoutePath(path)
 }
 
 async function migrateLegacyDevicePreferencesIfNeeded(input: {

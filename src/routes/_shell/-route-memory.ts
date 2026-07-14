@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from '@tanstack/react-router'
 
-import { rememberShellRoute } from '@/app/layouts/shell/model/shellDevicePreferences'
+import { rememberShellRoute } from '@/app/navigation-runtime/routeMemoryStore'
 import type { Scope } from '@/shared/types'
 
 /**

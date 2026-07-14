@@ -48,9 +48,9 @@ describe('routePaths', () => {
 		expect(buildScopedSettingsPath({ type: 'space', spaceId: 'space-a' }, null, 'general')).toBe(
 			'/spaces/space-a/settings/general',
 		)
-		expect(buildScopedSettingsPath({ type: 'space', spaceId: '' as never }, 'space-b', 'update')).toBe(
-			'/spaces/space-b/settings/update',
-		)
+		expect(
+			buildScopedSettingsPath({ type: 'space', spaceId: '' as never }, 'space-b', 'update'),
+		).toBe('/spaces/space-b/settings/update')
 		expect(buildSettingsPath()).toBe('/all/settings/general')
 		expect(buildSettingsPath('sidebar')).toBe('/all/settings/sidebar')
 	})

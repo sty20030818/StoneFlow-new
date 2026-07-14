@@ -7,12 +7,7 @@ import type { ReactNode } from 'react'
 import { DownloadIcon, RefreshCwIcon, XIcon } from 'lucide-react'
 
 import { Button } from '@/shared/ui/base/button'
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogTitle,
-} from '@/shared/ui/base/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/shared/ui/base/dialog'
 import { cn } from '@/shared/lib/utils'
 import { skipVersion } from '@/features/update/api/updates'
 import { useUpdateStore } from '@/features/update/model/useUpdateStore'
@@ -51,15 +46,12 @@ export function UpdateDialog() {
 	const isReady = phase === 'ready'
 	const isError = phase === 'error'
 	const isChecking = phase === 'checking'
-	const canDownload =
-		phase === 'available' || phase === 'idle' || phase === 'upToDate' || isError
+	const canDownload = phase === 'available' || phase === 'idle' || phase === 'upToDate' || isError
 
 	const downloaded = progress?.downloaded ?? 0
 	const total = progress?.total ?? null
 	// 无 total 时必须给 0，禁止 width:undefined（块级条会撑满成「100%」）
-	const progressPercent = isDownloading
-		? downloadProgressBarValue(downloaded, total)
-		: 0
+	const progressPercent = isDownloading ? downloadProgressBarValue(downloaded, total) : 0
 
 	const displayVersion = updateInfo?.version ?? ''
 	const showNotes = !isDownloading && !isReady && Boolean(updateInfo?.body)

@@ -5,10 +5,7 @@
 import type { UpdateUiPhase } from '@/features/update/model/useUpdateStore'
 
 /** 0–100；total 未知时返回 null（不确定进度） */
-export function formatDownloadPercent(
-	downloaded: number,
-	total: number | null,
-): string | null {
+export function formatDownloadPercent(downloaded: number, total: number | null): string | null {
 	if (total === null || total <= 0) return null
 	return `${Math.min(100, Math.round((downloaded / total) * 100))}%`
 }
@@ -18,10 +15,7 @@ export function formatDownloadPercent(
  * - 有 total：真实百分比
  * - 无 total：固定 0（不要用 undefined 宽度，块级元素会撑成「满条」）
  */
-export function downloadProgressBarValue(
-	downloaded: number,
-	total: number | null,
-): number {
+export function downloadProgressBarValue(downloaded: number, total: number | null): number {
 	if (total === null || total <= 0) return 0
 	return Math.min(100, Math.max(0, Math.round((downloaded / total) * 100)))
 }

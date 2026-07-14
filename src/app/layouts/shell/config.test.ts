@@ -49,9 +49,9 @@ describe('shell config helpers', () => {
 			'/spaces/space-personal/settings',
 		)
 		expect(buildScopedSettingsPath({ type: 'all' }, null, 'general')).toBe('/all/settings/general')
-		expect(buildScopedSettingsPath({ type: 'space', spaceId: 'space-personal' }, null, 'update')).toBe(
-			'/spaces/space-personal/settings/update',
-		)
+		expect(
+			buildScopedSettingsPath({ type: 'space', spaceId: 'space-personal' }, null, 'update'),
+		).toBe('/spaces/space-personal/settings/update')
 	})
 
 	it('为未知值返回兜底标签', () => {

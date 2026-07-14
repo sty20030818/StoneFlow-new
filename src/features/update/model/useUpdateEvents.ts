@@ -29,8 +29,7 @@ function storePhaseActions() {
 		setDownloading: store.setDownloading,
 		setReady: store.setReady,
 		setError: store.setError,
-		shouldToastReady: (version: string) =>
-			useUpdateStore.getState().readyToastVersion !== version,
+		shouldToastReady: (version: string) => useUpdateStore.getState().readyToastVersion !== version,
 		markReadyToasted: (version: string) => {
 			useUpdateStore.setState({ readyToastVersion: version })
 		},

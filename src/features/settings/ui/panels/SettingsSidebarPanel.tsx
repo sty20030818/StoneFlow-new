@@ -131,13 +131,7 @@ export function SettingsSidebarPanel() {
 	}
 
 	if (isSettingsLoading) {
-		return (
-			<StatusNotice
-				description='正在读取 Sidebar 设置。'
-				title='加载中'
-				variant='warning'
-			/>
-		)
+		return <StatusNotice description='正在读取 Sidebar 设置。' title='加载中' variant='warning' />
 	}
 
 	if (sidebarStatus === 'error' && sidebarSettings === null) {
@@ -176,8 +170,7 @@ export function SettingsSidebarPanel() {
 				<SettingsPreferenceGroup>
 					{MAIN_ITEM_OPTIONS.map((item) => {
 						const checked = sidebarSettings.mainItems[item.key].visible
-						const disabled =
-							pendingSections.mainItems || (checked && visibleMainItemCount === 1)
+						const disabled = pendingSections.mainItems || (checked && visibleMainItemCount === 1)
 						return (
 							<SettingCheckboxRow
 								checked={checked}
@@ -185,9 +178,7 @@ export function SettingsSidebarPanel() {
 								disabled={disabled}
 								key={item.key}
 								label={item.label}
-								onChange={(nextChecked) =>
-									handleMainItemVisibilityChange(item.key, nextChecked)
-								}
+								onChange={(nextChecked) => handleMainItemVisibilityChange(item.key, nextChecked)}
 							/>
 						)
 					})}

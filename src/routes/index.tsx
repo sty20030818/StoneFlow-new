@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { resolveStartupPath } from '@/app/layouts/shell/model/shellDevicePreferences'
+import { resolveStartupPath } from '@/app/navigation-runtime/routeMemoryStore'
 import { spaceKeys } from '@/features/space/query/space.keys'
 import { listVisibleSpaces } from '@/features/space/api/spaces'
 import { RouterFeedbackPage } from './-router-feedback'

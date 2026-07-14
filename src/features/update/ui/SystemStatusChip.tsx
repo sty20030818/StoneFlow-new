@@ -8,15 +8,9 @@
 import { RefreshCwIcon } from 'lucide-react'
 
 import { useSharedSyncStatus } from '@/features/sync/model/SyncStatusProvider'
-import {
-	formatReplicaState,
-	formatSyncStatus,
-} from '@/features/sync/model/syncStatusPresentation'
+import { formatReplicaState, formatSyncStatus } from '@/features/sync/model/syncStatusPresentation'
 import { useUpdateActions } from '@/features/update/model/useUpdateEvents'
-import {
-	selectReadyChipVisible,
-	useUpdateStore,
-} from '@/features/update/model/useUpdateStore'
+import { selectReadyChipVisible, useUpdateStore } from '@/features/update/model/useUpdateStore'
 import { Button } from '@/shared/ui/base/button'
 import { cn } from '@/shared/lib/utils'
 
@@ -42,9 +36,7 @@ export function SystemStatusChip() {
 	const replicaState = statusPayload?.replicaState ?? 'uninitialized'
 	const blocked = replicaState === 'baseline_required' || replicaState === 'diverged'
 	const syncAttention =
-		displayedStatus === 'error' ||
-		displayedStatus === 'needs_attention' ||
-		blocked
+		displayedStatus === 'error' || displayedStatus === 'needs_attention' || blocked
 
 	const active = resolveActiveChip({ updateReady, syncAttention })
 	if (!active) return null

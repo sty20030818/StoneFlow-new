@@ -299,12 +299,8 @@ export function UpdateSettingsSection() {
 				{/* 自动检查间隔：仅非手动模式有意义 */}
 				{settings?.checkMode !== 'manual' ? (
 					<div className='grid gap-3 pt-1'>
-						<p className={cn(formFieldHintClass, 'text-foreground font-medium')}>
-							自动检查间隔
-						</p>
-						<p className={formFieldHintClass}>
-							启动约 3 秒后会检查一次；之后按此间隔定期检查。
-						</p>
+						<p className={cn(formFieldHintClass, 'text-foreground font-medium')}>自动检查间隔</p>
+						<p className={formFieldHintClass}>启动约 3 秒后会检查一次；之后按此间隔定期检查。</p>
 						<div className='flex flex-wrap gap-2'>
 							{INTERVAL_OPTIONS.map((option) => {
 								const checked = settings?.checkIntervalSecs === option.value
