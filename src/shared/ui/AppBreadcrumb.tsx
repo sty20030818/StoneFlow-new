@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 
-import { Link } from '@/app/routing/tanstackCompat'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -99,7 +99,7 @@ function BreadcrumbNodeItem({
 					</BreadcrumbPage>
 				) : (
 					<BreadcrumbLink asChild className={labelClassName}>
-						<Link to={to}>
+						<Link from='/' to={to as never}>
 							{Icon ? <Icon aria-hidden className={breadcrumbLeadIconClass} /> : null}
 							{label}
 						</Link>

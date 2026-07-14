@@ -7,13 +7,13 @@ import {
 	useState,
 	type PropsWithChildren,
 } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 
 import {
 	openShellNavigationTarget,
 	openStartupFallback,
 	openTaskDetail,
 } from '@/app/navigation/intents'
-import { useNavigate } from '@/app/routing/tanstackCompat'
 import type { ShellRoute } from '@/app/navigation/shellRoute'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
@@ -238,7 +238,7 @@ function ShellLayoutContent({
 	activeSection,
 	shellRoute,
 }: ShellLayoutProps) {
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
 	const isSettingsMode = shellRoute.isSettingsPath
 	/** 仅在非设置路由时更新，进入设置后保留上一工作路径供「返回应用」 */
 	const settingsReturnPathRef = useRef(openStartupFallback(currentScope))
@@ -323,7 +323,7 @@ function ShellLayoutContent({
 			}
 
 			startTransition(() => {
-				navigate(targetPath)
+				void navigate({ to: targetPath as never })
 			})
 		},
 		[closeEntityDrawer, closeTaskPreview, navigate, shellRoute.pathname],
@@ -427,7 +427,7 @@ function ShellLayoutContent({
 			}
 
 			startTransition(() => {
-				navigate(targetPath)
+				void navigate({ to: targetPath as never })
 			})
 		},
 		[closeEntityDrawer, navigate, openTaskPage, shellRoute.pathname],
@@ -679,12 +679,12 @@ function ShellLayoutContent({
 				),
 			navigateTo: (target: ShellNavigationTarget) => {
 				startTransition(() => {
-					navigate(
-						openShellNavigationTarget(target, {
+					void navigate({
+						to: openShellNavigationTarget(target, {
 							scope: currentScope,
 							fallbackSpaceId: currentSpaceId,
-						}),
-					)
+						}) as never,
+					})
 				})
 			},
 			goBack,

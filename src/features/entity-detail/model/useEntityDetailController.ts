@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, startTransition } from 'react'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 
 import {
 	closeEntityDrawerTarget,
@@ -11,14 +12,17 @@ import {
 	parseEntityDetailRouteState,
 } from './entityDetailRouteState'
 import type { EntityDetailTarget } from './entityDetailTypes'
-import { useLocation, useNavigate } from '@/app/routing/tanstackCompat'
 
 export function useEntityDetailController() {
 	const location = useLocation()
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
 	const parsedRouteState = useMemo(
-		() => parseEntityDetailRouteState(location.search),
-		[location.search],
+		() => parseEntityDetailRouteState(location.searchStr),
+		[location.searchStr],
+	)
+	const locationTarget = useMemo(
+		() => ({ pathname: location.pathname, search: location.searchStr }),
+		[location.pathname, location.searchStr],
 	)
 	const activeDetail = parsedRouteState.activeDetail
 
@@ -28,65 +32,59 @@ export function useEntityDetailController() {
 		}
 
 		startTransition(() => {
-			navigate(
-				{
-					pathname: location.pathname,
-					search: activeDetail
-						? buildEntityDetailSearch(location.search, activeDetail)
-						: clearEntityDetailSearch(location.search),
-				},
-				{ replace: true },
-			)
+			void navigate({
+				to: location.pathname as never,
+				search: searchRecord(
+					activeDetail
+						? buildEntityDetailSearch(location.searchStr, activeDetail)
+						: clearEntityDetailSearch(location.searchStr),
+				) as never,
+				replace: true,
+			})
 		})
 	}, [
 		activeDetail,
 		location.pathname,
-		location.search,
+		location.searchStr,
 		navigate,
 		parsedRouteState.shouldCleanSearch,
 	])
 
 	const openDrawer = useCallback(
 		(target: EntityDetailTarget) => {
-			const nextTarget = openEntityDrawerTarget(location, target)
+			const nextTarget = openEntityDrawerTarget(locationTarget, target)
 			startTransition(() => {
-				navigate(
-					{
-						pathname: nextTarget.pathname,
-						search: nextTarget.search,
-					},
-					{ replace: nextTarget.replace },
-				)
+				void navigate({
+					to: nextTarget.pathname as never,
+					search: searchRecord(nextTarget.search) as never,
+					replace: nextTarget.replace,
+				})
 			})
 		},
-		[location, navigate],
+		[locationTarget, navigate],
 	)
 
 	const closeDrawer = useCallback(() => {
-		const nextTarget = closeEntityDrawerTarget(location)
+		const nextTarget = closeEntityDrawerTarget(locationTarget)
 		startTransition(() => {
-			navigate(
-				{
-					pathname: nextTarget.pathname,
-					search: nextTarget.search,
-				},
-				{ replace: nextTarget.replace },
-			)
+			void navigate({
+				to: nextTarget.pathname as never,
+				search: searchRecord(nextTarget.search) as never,
+				replace: nextTarget.replace,
+			})
 		})
-	}, [location, navigate])
+	}, [locationTarget, navigate])
 
 	const openPage = useCallback(
 		(target: EntityDetailTarget) => {
 			void resolveEntityPageTarget(target)
 				.then((nextTarget) => {
 					startTransition(() => {
-						navigate(
-							{
-								pathname: nextTarget.pathname,
-								search: '',
-							},
-							{ replace: nextTarget.replace },
-						)
+						void navigate({
+							to: nextTarget.pathname as never,
+							search: {} as never,
+							replace: nextTarget.replace,
+						})
 					})
 				})
 				.catch((error) => {
@@ -103,4 +101,8 @@ export function useEntityDetailController() {
 		closeDrawer,
 		openPage,
 	}
+}
+
+function searchRecord(search: string) {
+	return Object.fromEntries(new URLSearchParams(search))
 }

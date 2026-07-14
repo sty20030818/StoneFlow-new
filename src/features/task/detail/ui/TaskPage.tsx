@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { openSection } from '@/app/navigation/intents'
-import { useNavigate } from '@/app/routing/tanstackCompat'
 import { useProjectOptions } from '@/features/project/query'
 import { useSpaces } from '@/features/space/query'
 import type { Scope, Space, TaskDetail } from '@/shared/types'
@@ -24,7 +24,7 @@ type TaskPageProps = {
 }
 
 export function TaskPage({ taskId, scope }: TaskPageProps) {
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
 	const projects = useProjectOptions(scope)
 	const { spaces } = useSpaces()
 	const { data: task } = useSuspenseTaskDetailQuery(taskId)
@@ -36,7 +36,9 @@ export function TaskPage({ taskId, scope }: TaskPageProps) {
 				actionLabel='返回任务列表'
 				description='这个任务不存在，或者当前已经不可见。'
 				onAction={() =>
-					navigate(openSection(scope, 'tasks', scope.type === 'space' ? scope.spaceId : null))
+					void navigate({
+						to: openSection(scope, 'tasks', scope.type === 'space' ? scope.spaceId : null) as never,
+					})
 				}
 				title='任务不存在'
 			/>

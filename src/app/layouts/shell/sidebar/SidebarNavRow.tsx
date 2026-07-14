@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react'
+import { Link, useMatchRoute, useRouterState } from '@tanstack/react-router'
 
-import { Link, useMatch } from '@/app/routing/tanstackCompat'
 import { ContextMenu, ContextMenuTrigger } from '@/shared/ui/base/context-menu'
 import { SidebarMenuBadge, SidebarMenuButton } from '@/shared/ui/base/sidebar'
 import {
@@ -54,11 +54,13 @@ export function SidebarNavRow({
 	tooltip,
 	contextMenuContent,
 }: SidebarNavRowProps) {
-	const isActive = !!useMatch({ end: true, path: to })
+	const matchRoute = useMatchRoute()
+	const pathname = useRouterState({ select: (state) => state.location.pathname })
+	const isActive = Boolean(matchRoute({ to: to as never, pending: false })) || pathname === to
 
 	const buttonRow = (
 		<SidebarMenuButton asChild isActive={isActive} tooltip={tooltip ?? label}>
-			<Link to={to}>
+			<Link from='/' to={to as never}>
 				<SidebarNavRowLayout badge={badge} icon={icon} label={label} />
 			</Link>
 		</SidebarMenuButton>

@@ -1,8 +1,8 @@
 import { useEffect, type PropsWithChildren } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 
 import type { ShellRoute } from '@/app/navigation/shellRoute'
 import { openSection } from '@/app/navigation/intents'
-import { useNavigate } from '@/app/routing/tanstackCompat'
 import type { Scope } from '@/shared/types'
 import { ShellRouteProvider } from './shell/model/ShellRouteContext'
 import {
@@ -26,7 +26,7 @@ function toSectionNavigationTarget(section: ShellRoute['section']) {
 }
 
 export function ShellRouteLayout({ children, scope, shellRoute }: ShellRouteLayoutProps) {
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
 	const isWorkPath = shellRoute.isWorkPath
 	const scopeType = scope.type
 	const scopeSpaceId = scope.type === 'space' ? scope.spaceId : null
@@ -54,17 +54,17 @@ export function ShellRouteLayout({ children, scope, shellRoute }: ShellRouteLayo
 			return
 		}
 
-		navigate(
-			openSection(
+		void navigate({
+			to: openSection(
 				{
 					type: 'space',
 					spaceId: fallbackSpaceId,
 				},
 				toSectionNavigationTarget(shellRoute.section),
 				fallbackSpaceId,
-			),
-			{ replace: true },
-		)
+			) as never,
+			replace: true,
+		})
 	}, [fallbackSpaceId, navigate, routeSpaceIsMissing, shellRoute.section])
 
 	useEffect(() => {

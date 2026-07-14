@@ -1,8 +1,8 @@
 import { startTransition, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 
 import { getSectionLabel, getScopeLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import { openProjectDetail } from '@/app/navigation/intents'
-import { useNavigate } from '@/app/routing/tanstackCompat'
 import type { ShellRouteHistoryEntry } from '@/app/navigation-runtime/sessionRouteHistory'
 import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
 import { NavBackForward } from '@/app/layouts/shell/header/NavBackForward'
@@ -108,7 +108,7 @@ export function ShellHeader({
 	spaces,
 	commandMenuFilterKind,
 }: ShellHeaderProps) {
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
 	const [isMaximized, setIsMaximized] = useState(false)
 	const isMac = useMemo(() => /Mac|iPhone|iPad|iPod/i.test(window.navigator.userAgent), [])
 	const isWin = useMemo(
@@ -163,7 +163,7 @@ export function ShellHeader({
 	const handleNavigate = (to: string) => {
 		onCommandOpenChange(false)
 		startTransition(() => {
-			navigate(to)
+			void navigate({ to: to as never })
 		})
 	}
 
@@ -171,7 +171,7 @@ export function ShellHeader({
 		onCloseDrawer()
 		const targetPath = resolveProjectSearchTargetPath(project)
 		startTransition(() => {
-			navigate(targetPath)
+			void navigate({ to: targetPath as never })
 		})
 	}
 

@@ -1,4 +1,4 @@
-import { redirect } from '@tanstack/react-router'
+import { redirect, useNavigate } from '@tanstack/react-router'
 
 import {
 	openCanonicalProjectDetail,
@@ -12,7 +12,6 @@ import type { Scope, Space, TaskDetail } from '@/shared/types'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ProjectDetail } from '@/features/project/model/types'
 import { TaskPageState } from '@/features/task/detail/ui/TaskPageState'
-import { useNavigate } from '@/app/routing/tanstackCompat'
 
 export type DetailRouteErrorState = {
 	title: string
@@ -163,7 +162,7 @@ export function DetailRouteErrorStateView({
 	fallback: (error: unknown) => DetailRouteErrorState
 }) {
 	const detailError = isDetailRouteError(error) ? error : fallback(error)
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
 	const actionTo = detailError.actionTo
 
 	return (
@@ -173,7 +172,7 @@ export function DetailRouteErrorStateView({
 			onAction={
 				actionTo
 					? () => {
-							navigate(actionTo, { replace: true })
+							void navigate({ to: actionTo as never, replace: true })
 						}
 					: undefined
 			}

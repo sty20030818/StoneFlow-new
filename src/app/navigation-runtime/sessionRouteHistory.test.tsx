@@ -6,9 +6,9 @@ import {
 	createRootRouteWithContext,
 	createRoute,
 	createRouter,
+	useNavigate,
 } from '@tanstack/react-router'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { useNavigate } from '@/app/routing/tanstackCompat'
 import { describe, expect, it } from 'vitest'
 
 import { useShellSessionRouteHistory } from './sessionRouteHistory'
@@ -240,7 +240,7 @@ async function renderHistoryProbe(initialEntry: string) {
 }
 
 function HistoryProbeLayout() {
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
 	const history = useShellSessionRouteHistory({
 		currentScope: { type: 'space', spaceId: 'space-a' },
 		currentSpaceId: 'space-a',
@@ -257,17 +257,26 @@ function HistoryProbeLayout() {
 			<div data-testid='history-entries'>
 				{history.entries.length > 0 ? history.entries.map(formatEntry).join('\n') : 'empty'}
 			</div>
-			<button onClick={() => navigate('/spaces/space-a/projects/project-a')} type='button'>
+			<button
+				onClick={() => void navigate({ to: '/spaces/space-a/projects/project-a' as never })}
+				type='button'
+			>
 				go project
 			</button>
-			<button onClick={() => navigate('/spaces/space-a/tasks/task-a')} type='button'>
+			<button
+				onClick={() => void navigate({ to: '/spaces/space-a/tasks/task-a' as never })}
+				type='button'
+			>
 				go task detail
 			</button>
-			<button onClick={() => navigate('/spaces/space-a/projects/project-a')} type='button'>
+			<button
+				onClick={() => void navigate({ to: '/spaces/space-a/projects/project-a' as never })}
+				type='button'
+			>
 				go project detail
 			</button>
 			<button
-				onClick={() => navigate('/spaces/space-a/views/today', { replace: true })}
+				onClick={() => void navigate({ to: '/spaces/space-a/views/today' as never, replace: true })}
 				type='button'
 			>
 				replace views

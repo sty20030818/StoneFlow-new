@@ -1,10 +1,11 @@
+import { useNavigate } from '@tanstack/react-router'
+
 import { openStartupFallback } from '@/app/navigation/intents'
 import { SETTINGS_NAV_GROUPS } from '@/app/layouts/shell/settingsNav'
 import { writeLastSettingsSection } from '@/features/settings/model/lastSettingsSection'
 import type { SettingsSectionKey } from '@/features/settings/model/settingsSection'
 import type { Scope } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
-import { useNavigate } from '@/app/routing/tanstackCompat'
 import {
 	Sidebar,
 	SidebarContent,
@@ -46,19 +47,19 @@ export function SettingsSidebar({
 	activeSettingsSection,
 	returnPath,
 }: SettingsSidebarProps) {
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
 	const fallbackSpaceId = currentScope.type === 'space' ? currentScope.spaceId : currentSpaceId
 
 	function handleBack() {
 		const target = returnPath.trim().length > 0 ? returnPath : openStartupFallback(currentScope)
-		navigate(target)
+		void navigate({ to: target as never })
 	}
 
 	function handleOpenSection(path: string, section: SettingsSectionKey) {
 		// 立即记住分区，避免仅依赖 SettingsPage effect
 		writeLastSettingsSection(section)
 		// 设置内分区间不堆 history
-		navigate(path, { replace: true })
+		void navigate({ to: path as never, replace: true })
 	}
 
 	return (

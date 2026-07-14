@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
+import { useNavigate, useParams } from '@tanstack/react-router'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
 import { openSection } from '@/app/navigation/intents'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
-import { useNavigate, useParams } from '@/app/routing/tanstackCompat'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
 	applyTaskDisplayOptionsToTasks,
@@ -65,8 +65,8 @@ type ProjectPageProps = {
 }
 
 export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
-	const navigate = useNavigate()
-	const { projectId = '' } = useParams()
+	const navigate = useNavigate({ from: '/' })
+	const { projectId = '' } = useParams({ strict: false }) as { projectId?: string }
 	const shellRoute = useCurrentShellRoute()
 	const scope = scopeOverride ?? resolveShellRouteScope(shellRoute)
 	const spaceId = scope.type === 'space' ? scope.spaceId : null
@@ -272,7 +272,9 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 							</EmptyHeader>
 							<EmptyContent>
 								<Button
-									onClick={() => navigate(openSection(scope, 'projects', spaceId))}
+									onClick={() =>
+										void navigate({ to: openSection(scope, 'projects', spaceId) as never })
+									}
 									type='button'
 								>
 									返回项目总览
@@ -324,7 +326,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 								}
 								void runAction('archive', async () => {
 									await archiveProject.mutateAsync(project.id)
-									navigate(openSection(scope, 'projects', spaceId))
+									void navigate({ to: openSection(scope, 'projects', spaceId) as never })
 								})
 							}}
 							size='sm'
@@ -346,7 +348,7 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 								}
 								void runAction('delete', async () => {
 									await deleteProject.mutateAsync(project.id)
-									navigate(openSection(scope, 'projects', spaceId))
+									void navigate({ to: openSection(scope, 'projects', spaceId) as never })
 								})
 							}}
 							size='sm'

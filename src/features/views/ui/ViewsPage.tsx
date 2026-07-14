@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from '@tanstack/react-router'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
 import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
 import { openView } from '@/app/navigation/intents'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
-import { useNavigate, useParams } from '@/app/routing/tanstackCompat'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import {
@@ -48,8 +48,8 @@ export function ViewsPage() {
 	const shellRoute = useCurrentShellRoute()
 	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
-	const navigate = useNavigate()
-	const { viewId: routeViewId } = useParams()
+	const navigate = useNavigate({ from: '/' })
+	const { viewId: routeViewId } = useParams({ strict: false }) as { viewId?: string }
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
@@ -143,7 +143,7 @@ export function ViewsPage() {
 			return
 		}
 
-		void navigate(openView(scope, nextViewValue, spaceId), { replace: true })
+		void navigate({ to: openView(scope, nextViewValue, spaceId) as never, replace: true })
 	}, [
 		activeView,
 		navigate,
@@ -202,14 +202,14 @@ export function ViewsPage() {
 	})
 
 	function navigateToView(view: View) {
-		void navigate(openView(scope, view.id, spaceId))
+		void navigate({ to: openView(scope, view.id, spaceId) as never })
 	}
 
 	async function handleCreateView(input: Parameters<typeof createTaskView.mutateAsync>[0]) {
 		setIsSavingView(true)
 		try {
 			const created = await createTaskView.mutateAsync(input)
-			void navigate(openView(scope, created.id, spaceId))
+			void navigate({ to: openView(scope, created.id, spaceId) as never })
 		} finally {
 			setIsSavingView(false)
 		}

@@ -1,4 +1,4 @@
-import { Outlet } from '@/app/routing/tanstackCompat'
+import { Outlet } from '@tanstack/react-router'
 import { ShellRouteLayout } from './ShellRouteLayout'
 import { useCurrentShellRoute } from './shell/model/ShellRouteContext'
 

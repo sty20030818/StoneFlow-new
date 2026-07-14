@@ -1,8 +1,8 @@
-import { startTransition, useEffect, useMemo, useState } from 'react'
+import { startTransition, useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useLocation, useNavigate, useRouter } from '@tanstack/react-router'
 
 import { type ShellRoute } from '@/app/navigation/shellRoute'
 import { parseShellRoute } from '@/app/navigation/shellRoute'
-import { useLocation, useNavigate, useNavigationType } from '@/app/routing/tanstackCompat'
 import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import type { Scope, Space } from '@/shared/types'
 import {
@@ -44,6 +44,7 @@ type UseShellRouteHistoryOptions = {
 }
 
 const DEFAULT_MAX_HISTORY_ENTRIES = 8
+let lastNavigationAction: string = 'POP'
 
 const SECTION_ICON_MAP: Record<string, LucideIcon> = {
 	tasks: ListTodoIcon,
@@ -81,15 +82,16 @@ export function useShellSessionRouteHistory({
 }: UseShellRouteHistoryOptions) {
 	const location = useLocation()
 	const navigationType = useNavigationType()
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
+	const router = useRouter()
 	const locationRoute = useMemo(
 		() =>
 			parseShellRoute({
 				pathname: location.pathname,
-				search: location.search,
-				hash: location.hash,
+				search: location.searchStr,
+				hash: location.hash ? `#${location.hash}` : '',
 			}),
-		[location.hash, location.pathname, location.search],
+		[location.hash, location.pathname, location.searchStr],
 	)
 	const route = currentRoute ?? locationRoute
 	const currentPath = normalizeShellMemoryPath(route.fullPath)
@@ -120,7 +122,7 @@ export function useShellSessionRouteHistory({
 		}
 
 		startTransition(() => {
-			navigate(-1)
+			router.history.go(-1)
 		})
 	}
 
@@ -130,7 +132,7 @@ export function useShellSessionRouteHistory({
 		}
 
 		startTransition(() => {
-			navigate(1)
+			router.history.go(1)
 		})
 	}
 
@@ -140,7 +142,7 @@ export function useShellSessionRouteHistory({
 		}
 
 		startTransition(() => {
-			navigate(entry.path)
+			void navigate({ to: entry.path as never })
 		})
 	}
 
@@ -153,6 +155,20 @@ export function useShellSessionRouteHistory({
 		goForward,
 		navigateToHistoryEntry,
 	}
+}
+
+function useNavigationType() {
+	const router = useRouter()
+
+	return useSyncExternalStore(
+		(onStoreChange) =>
+			router.history.subscribe(({ action }) => {
+				lastNavigationAction = action.type
+				onStoreChange()
+			}),
+		() => lastNavigationAction,
+		() => 'POP',
+	)
 }
 
 export function buildShellRouteHistoryEntry(

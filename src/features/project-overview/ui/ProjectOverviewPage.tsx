@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 
 import { EntityScene } from '@/app/layouts/entity-scene'
 import { MainCard } from '@/app/layouts/main-card/MainCardLayout'
@@ -16,7 +17,6 @@ import {
 } from '@/features/bulk-action'
 import { Button } from '@/shared/ui/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
-import { useNavigate } from '@/app/routing/tanstackCompat'
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
 import type { ProjectOverviewViewKey } from '@/features/project/model/types'
 import {
@@ -38,7 +38,7 @@ import { useViewsQuery } from '@/features/view/query'
 import { PlusIcon } from 'lucide-react'
 
 export function ProjectOverviewPage() {
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
 	const shellRoute = useCurrentShellRoute()
 	const scope = resolveShellRouteScope(shellRoute)
 	const spaceId = shellRoute.spaceId
@@ -162,7 +162,9 @@ export function ProjectOverviewPage() {
 					},
 					onEmptyAction: () => openProjectCreateDialog(),
 					onOpenProject: (projectId) =>
-						navigate(openProjectDetail(projectId, { scope, fallbackSpaceId: spaceId })),
+						void navigate({
+							to: openProjectDetail(projectId, { scope, fallbackSpaceId: spaceId }) as never,
+						}),
 					onSelectAllProjects: selectProjectIds,
 					onReopenProject: (projectId) => {
 						void runRowAction(projectId, async () => {

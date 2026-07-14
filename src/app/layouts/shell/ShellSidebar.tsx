@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 
 import { openSection, openStartupFallback } from '@/app/navigation/intents'
-import { useNavigate } from '@/app/routing/tanstackCompat'
 import {
 	SHELL_FOOTER_ITEMS,
 	SHELL_NAV_ITEMS,
@@ -128,7 +128,7 @@ export function ShellSidebar({
 	onUpdateItemVisibility,
 	onResetMainItemsVisibility,
 }: ShellSidebarProps) {
-	const navigate = useNavigate()
+	const navigate = useNavigate({ from: '/' })
 	const { isMobile } = useSidebar()
 	const { requestDangerConfirm } = useDangerConfirm()
 	const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create')
@@ -225,7 +225,7 @@ export function ShellSidebar({
 				defaultPath,
 			})
 				.then((path) => {
-					navigate(path)
+					void navigate({ to: path as never })
 				})
 				.catch((error) => {
 					console.error('space switch restore failed', {
@@ -234,7 +234,7 @@ export function ShellSidebar({
 						error,
 					})
 					setDropdownError(error instanceof Error ? error.message : 'Space 切换失败')
-					navigate(defaultPath)
+					void navigate({ to: defaultPath as never })
 				})
 		},
 		[navigate, spaces],
@@ -261,7 +261,13 @@ export function ShellSidebar({
 		async (input: { name: string; iconKey: string; colorKey: string }) => {
 			if (editorMode === 'create') {
 				const createdSpace = await onCreateSpace(input)
-				navigate(openSection({ type: 'space', spaceId: createdSpace.id }, 'inbox', createdSpace.id))
+				void navigate({
+					to: openSection(
+						{ type: 'space', spaceId: createdSpace.id },
+						'inbox',
+						createdSpace.id,
+					) as never,
+				})
 				return
 			}
 
@@ -451,7 +457,9 @@ export function ShellSidebar({
 																await runSpaceMutation(async () => {
 																	await onArchiveSpace(activeSpace.id)
 																	if (currentScope.type === 'space') {
-																		navigate(resolvePostSpaceRemovalPath(activeSpace.id))
+																		void navigate({
+																			to: resolvePostSpaceRemovalPath(activeSpace.id) as never,
+																		})
 																	}
 																})
 															}}
@@ -478,7 +486,9 @@ export function ShellSidebar({
 																await runSpaceMutation(async () => {
 																	await onDeleteSpace(activeSpace.id)
 																	if (currentScope.type === 'space') {
-																		navigate(resolvePostSpaceRemovalPath(activeSpace.id))
+																		void navigate({
+																			to: resolvePostSpaceRemovalPath(activeSpace.id) as never,
+																		})
 																	}
 																})
 															}}
