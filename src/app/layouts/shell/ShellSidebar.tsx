@@ -25,7 +25,7 @@ import type {
 } from '@/features/settings/api/sidebarSettings'
 import { SyncSidebarStatusStrip } from '@/features/sync/ui/SyncSidebarStatusStrip'
 import { type ShellSidebarSettings } from '@/app/layouts/shell/model/shellDevicePreferences'
-import { resolveRememberedPathForScope } from '@/app/navigation-runtime/routeMemoryStore'
+import { resolveRememberedPathForScope } from '@/app/navigation/routeMemoryStore'
 import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
 import { SpaceEditorDialog } from '@/features/space/ui/SpaceEditorDialog'
 import type { Scope, Space } from '@/shared/types'

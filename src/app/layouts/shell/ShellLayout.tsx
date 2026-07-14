@@ -17,7 +17,7 @@ import {
 import type { ShellRoute } from '@/app/navigation/shellRoute'
 import type { ShellSectionKey } from '@/app/layouts/shell/types'
 import type { Scope } from '@/shared/types'
-import { useShellSessionRouteHistory } from '@/app/navigation-runtime/sessionRouteHistory'
+import { useShellSessionRouteHistory } from '@/app/navigation/sessionRouteHistory'
 import { useSidebarNavBadges } from '@/app/layouts/shell/model/useSidebarNavBadges'
 import {
 	selectCommandMenuMode,

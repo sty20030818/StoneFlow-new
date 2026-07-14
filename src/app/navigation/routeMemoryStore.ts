@@ -7,7 +7,7 @@ import {
 	resolveRememberedPathForScope as resolveRememberedRoutePathForScope,
 	resolveStartupPathFromMemory,
 	validateShellRouteMemoryPaths,
-} from '@/app/navigation-runtime/routeMemory'
+} from '@/app/navigation/routeMemory'
 import type { Scope, Space } from '@/shared/types'
 
 const SHELL_DEVICE_STORE_PATH = 'shell-device-preferences.json'

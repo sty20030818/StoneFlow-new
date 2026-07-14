@@ -11,7 +11,7 @@ import {
 	resolveStartupPathFromMemory,
 	stripShellDetailSearch,
 	validateShellRouteMemoryPaths,
-} from '@/app/navigation-runtime/routeMemory'
+} from '@/app/navigation/routeMemory'
 
 const OLD_SPACE_INBOX_PATH = `/${'space'}/space-a/inbox`
 const OLD_SPACE_VIEWS_PATH = `/${'space'}/space-a/views?view=today`

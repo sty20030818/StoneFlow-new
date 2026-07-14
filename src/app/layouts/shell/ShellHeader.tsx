@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { getSectionLabel, getScopeLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
 import { openProjectDetail } from '@/app/navigation/intents'
-import type { ShellRouteHistoryEntry } from '@/app/navigation-runtime/sessionRouteHistory'
+import type { ShellRouteHistoryEntry } from '@/app/navigation/sessionRouteHistory'
 import { HistoryDropdown } from '@/app/layouts/shell/header/HistoryDropdown'
 import { NavBackForward } from '@/app/layouts/shell/header/NavBackForward'
 import { UserAppMenu } from '@/app/layouts/shell/header/UserAppMenu'
