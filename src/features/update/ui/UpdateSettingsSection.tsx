@@ -4,7 +4,7 @@
  * 提供更新检查模式选择、更新渠道选择、手动检查更新按钮。
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { RefreshCwIcon } from 'lucide-react'
 
 import {
@@ -92,11 +92,7 @@ export function UpdateSettingsSection() {
 	const showAvailable = useUpdateStore((s) => s.showAvailable)
 	const setStoreCheckMode = useUpdateStore((s) => s.setCheckMode)
 
-	useEffect(() => {
-		void loadSettings()
-	}, [])
-
-	async function loadSettings() {
+	const loadSettings = useCallback(async () => {
 		setLoading(true)
 		setError(null)
 		try {
@@ -117,7 +113,11 @@ export function UpdateSettingsSection() {
 		} finally {
 			setLoading(false)
 		}
-	}
+	}, [setStoreCheckMode])
+
+	useEffect(() => {
+		void loadSettings()
+	}, [loadSettings])
 
 	async function handleCheckModeChange(mode: UpdateCheckMode) {
 		if (!settings || settings.checkMode === mode) return

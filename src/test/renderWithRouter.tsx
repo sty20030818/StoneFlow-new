@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
 	Outlet,
 	RouterContextProvider,
@@ -63,9 +63,11 @@ export async function renderWithRouterContext(node: ReactNode, options: BaseOpti
 
 	function renderNode(nextNode: ReactNode) {
 		const content = (
-			<RouterContextProvider context={{ queryClient }} router={router}>
-				{nextNode}
-			</RouterContextProvider>
+			<QueryClientProvider client={queryClient}>
+				<RouterContextProvider context={{ queryClient }} router={router}>
+					{nextNode}
+				</RouterContextProvider>
+			</QueryClientProvider>
 		)
 
 		return options.wrap ? options.wrap(content) : content
@@ -114,7 +116,11 @@ export async function renderWithMatchedRoute(node: ReactNode, options: MatchedRo
 	})
 
 	function renderNode() {
-		const content = <RouterProvider context={{ queryClient }} router={router} />
+		const content = (
+			<QueryClientProvider client={queryClient}>
+				<RouterProvider context={{ queryClient }} router={router} />
+			</QueryClientProvider>
+		)
 		return options.wrap ? options.wrap(content) : content
 	}
 
