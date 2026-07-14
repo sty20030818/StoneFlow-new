@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { useRememberCurrentShellRoute } from '../-route-memory'
+import { useRememberCurrentShellRoute } from '@/app/navigation-runtime/useRememberCurrentShellRoute'
+
 import { ScopedShellRouteLayout } from '../-scoped-shell-route-layout'
 
 export const Route = createFileRoute('/_shell/all')({

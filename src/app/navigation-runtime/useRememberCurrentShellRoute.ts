@@ -5,7 +5,7 @@ import { rememberShellRoute } from '@/app/navigation-runtime/routeMemoryStore'
 import type { Scope } from '@/shared/types'
 
 /**
- * Phase 5 起由 file route 自己驱动 route memory 写入，避免壳层继续承担路由真相。
+ * 由 file route 驱动当前 Shell route 写入，避免 Shell UI 壳层承担路由记忆职责。
  */
 export function useRememberCurrentShellRoute(scope: Scope) {
 	const location = useLocation()
