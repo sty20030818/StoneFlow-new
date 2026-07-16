@@ -1,4 +1,4 @@
-import type { SpaceVisualDefinition } from '@/features/space/model/spaceVisuals'
+import type { SpaceVisualDefinition } from '@/features/space'
 import { cn } from '@/shared/lib/utils'
 
 type SpaceIconBadgeProps = {

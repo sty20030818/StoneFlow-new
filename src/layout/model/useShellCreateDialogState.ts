@@ -9,7 +9,7 @@ import {
 	selectTaskCreatePresentation,
 	useDialogStore,
 } from '@/layout/model/useDialogStore'
-import type { ProjectOption } from '@/features/project/model/types'
+import type { ProjectOption } from '@/features/project'
 
 /**
  * 创建任务/项目弹窗相关状态。

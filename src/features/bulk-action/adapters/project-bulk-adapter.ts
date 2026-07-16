@@ -1,8 +1,8 @@
 import {
 	archiveProject as archiveProjectApi,
 	deleteProject as deleteProjectApi,
-} from '@/features/project/api/projects'
-import type { ProjectDetail } from '@/features/project/model/types'
+} from '@/features/project'
+import type { ProjectDetail } from '@/features/project'
 import { emitEvent } from '@/shared/events'
 
 export type ProjectBulkMutationReport = {

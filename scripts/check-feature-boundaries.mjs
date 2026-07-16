@@ -18,12 +18,24 @@ import { join, relative } from 'node:path'
 
 /**
  * 已收口 public 的 feature。
- * β-acl-1: task · β-acl-2: selection / submit / filter / danger-confirm
+ * β-acl-1: task
+ * β-acl-2: selection / submit / filter / danger-confirm
+ * β-acl-3: project / space / view / lifecycle
  * 扩全仓时按波次追加 name。
  *
  * @type {readonly string[]}
  */
-const FEATURES = ['task', 'selection', 'submit', 'filter', 'danger-confirm']
+const FEATURES = [
+	'task',
+	'selection',
+	'submit',
+	'filter',
+	'danger-confirm',
+	'project',
+	'space',
+	'view',
+	'lifecycle',
+]
 
 const SRC = join(import.meta.dir, '..', 'src')
 

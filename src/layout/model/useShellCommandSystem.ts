@@ -23,12 +23,12 @@ import {
 	selectIsShortcutHelpOpen,
 	useDialogStore,
 } from '@/layout/model/useDialogStore'
-import { listAllVisibleProjects } from '@/features/project/api/projects'
+import { listAllVisibleProjects } from '@/features/project'
 import { useCommandSelectionContext } from '@/features/selection'
 import { usePageFilterContext } from '@/features/filter'
 import { useSubmitRegistryActions, useSubmitRegistryContext } from '@/features/submit'
-import { takePendingCommandOpenIntent } from '@/features/space/api/spaces'
-import { useSpaces } from '@/features/space/hooks'
+import { takePendingCommandOpenIntent } from '@/features/space'
+import { useSpaces } from '@/features/space'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useTaskPreviewController } from '@/features/task'
 import { useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'

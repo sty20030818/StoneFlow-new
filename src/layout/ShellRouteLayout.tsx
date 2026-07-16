@@ -12,8 +12,8 @@ import {
 	useShellNavStore,
 } from './model/useShellNavStore'
 import { AppLayout } from './AppLayout'
-import { setActiveScope } from '@/features/space/api/spaces'
-import { useSpaces } from '@/features/space/hooks'
+import { setActiveScope } from '@/features/space'
+import { useSpaces } from '@/features/space'
 import { useWorkspaceSync } from '@/features/workspace/model/useWorkspaceSync'
 
 type ShellRouteLayoutProps = PropsWithChildren<{

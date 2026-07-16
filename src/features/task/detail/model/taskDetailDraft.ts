@@ -1,4 +1,4 @@
-import type { ProjectOption } from '@/features/project/model/types'
+import type { ProjectOption } from '@/features/project'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskDetail, TaskStatus, UpdateTaskInput } from '@/shared/types'

@@ -4,7 +4,7 @@ import {
 	resolveTaskPlacementTarget,
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
-import type { ProjectOption } from '@/features/project/model/types'
+import type { ProjectOption } from '@/features/project'
 import type { AutosaveController } from '@/shared/autosave'
 import { DetailFieldRow } from '@/shared/components/detail'
 

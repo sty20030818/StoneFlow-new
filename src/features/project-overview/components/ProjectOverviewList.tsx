@@ -2,7 +2,7 @@ import type { ProjectOverviewItem } from '@/shared/types'
 import { EmptyPage } from '@/shared/components/base/empty'
 import { entityBoardLoadingCardClass } from '@/shared/components/patterns/entity-board'
 
-import { ProjectRowAdapter } from '@/features/project/components/ProjectRowAdapter'
+import { ProjectRowAdapter } from '@/features/project'
 
 type ProjectOverviewListProps = {
 	items: ProjectOverviewItem[]

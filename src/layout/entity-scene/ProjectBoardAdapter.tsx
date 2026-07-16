@@ -1,4 +1,4 @@
-import { ProjectBoard } from '@/features/project/components/ProjectBoard'
+import { ProjectBoard } from '@/features/project'
 
 import type {
 	EntitySceneProjectBoardActions,

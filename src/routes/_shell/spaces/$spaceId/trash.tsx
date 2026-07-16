@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Trash2Icon } from 'lucide-react'
 
-import { LifecycleList } from '@/features/lifecycle/components/LifecycleList'
+import { LifecycleList } from '@/features/lifecycle'
 
 export const Route = createFileRoute('/_shell/spaces/$spaceId/trash')({
 	component: TrashRoute,

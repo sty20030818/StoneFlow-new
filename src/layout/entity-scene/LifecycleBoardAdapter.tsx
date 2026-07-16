@@ -1,4 +1,4 @@
-import { LifecycleBoard } from '@/features/lifecycle/components/LifecycleBoard'
+import { LifecycleBoard } from '@/features/lifecycle'
 
 import type {
 	EntitySceneLifecycleBoardActions,

@@ -69,26 +69,32 @@ vi.mock('@/layout/model/useDialogStore', () => ({
 		}),
 }))
 
-vi.mock('@/features/project/hooks', () => ({
-	useProjectOverviewData: () => ({
-		items: storeState.overview.items,
-		status: storeState.overview.status,
-		error: storeState.overview.error ?? null,
-		refetch: loadOverviewSpy,
-	}),
-	useCompleteProjectMutation: () => ({
-		mutateAsync: vi.fn(),
-	}),
-	useReopenProjectMutation: () => ({
-		mutateAsync: vi.fn(),
-	}),
-	useArchiveProjectMutation: () => ({
-		mutateAsync: archiveProjectSpy,
-	}),
-	useDeleteProjectMutation: () => ({
-		mutateAsync: deleteProjectSpy,
-	}),
-}))
+vi.mock('@/features/project', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/features/project')>()
+	return {
+		...actual,
+		useProjectOverviewData: () => ({
+			items: storeState.overview.items,
+			status: storeState.overview.status,
+			error: storeState.overview.error ?? null,
+			refetch: loadOverviewSpy,
+		}),
+		useCompleteProjectMutation: () => ({
+			mutateAsync: vi.fn(),
+		}),
+		useReopenProjectMutation: () => ({
+			mutateAsync: vi.fn(),
+		}),
+		useArchiveProjectMutation: () => ({
+			mutateAsync: archiveProjectSpy,
+		}),
+		useDeleteProjectMutation: () => ({
+			mutateAsync: deleteProjectSpy,
+		}),
+		archiveProject: (projectId: string) => archiveProjectSpy(projectId),
+		deleteProject: (projectId: string) => deleteProjectSpy(projectId),
+	}
+})
 
 vi.mock('@/layout/model/ShellRouteContext', () => ({
 	useCurrentShellRoute: () => ({
@@ -121,7 +127,7 @@ vi.mock('@/layout/model/ShellRouteContext', () => ({
 	}),
 }))
 
-vi.mock('@/features/view/hooks', () => ({
+vi.mock('@/features/view', () => ({
 	useViewsQuery: () => ({
 		data: viewState.projectViews.items,
 		isError: viewState.projectViews.status === 'error',
@@ -130,11 +136,6 @@ vi.mock('@/features/view/hooks', () => ({
 		error: viewState.projectViews.error,
 		refetch: loadProjectViewsSpy,
 	}),
-}))
-
-vi.mock('@/features/project/api/projects', () => ({
-	archiveProject: (projectId: string) => archiveProjectSpy(projectId),
-	deleteProject: (projectId: string) => deleteProjectSpy(projectId),
 }))
 
 vi.mock('sonner', () => ({

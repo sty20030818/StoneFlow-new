@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import type { ProjectOption } from '@/features/project/model/types'
-import { useProjectOptions } from '@/features/project/hooks'
-import { useSpaces } from '@/features/space/hooks'
+import type { ProjectOption } from '@/features/project'
+import { useProjectOptions } from '@/features/project'
+import { useSpaces } from '@/features/space'
 import { DetailDrawerShell } from '@/shared/components/detail'
 import { Button } from '@/shared/components/base/button'
 import type { Space, TaskDetail } from '@/shared/types'

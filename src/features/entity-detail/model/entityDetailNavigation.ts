@@ -1,5 +1,5 @@
 import { openCanonicalProjectDetail, openTaskDetail } from '@/app/navigation/intents'
-import { getProjectDetail } from '@/features/project/api/projects'
+import { getProjectDetail } from '@/features/project'
 import { getTaskDetail } from '@/features/task'
 import {
 	buildEntityDetailSearch,

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ArchiveIcon } from 'lucide-react'
 
-import { LifecycleList } from '@/features/lifecycle/components/LifecycleList'
+import { LifecycleList } from '@/features/lifecycle'
 
 export const Route = createFileRoute('/_shell/all/archive')({
 	component: ArchiveRoute,

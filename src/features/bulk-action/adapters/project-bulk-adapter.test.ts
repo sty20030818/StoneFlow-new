@@ -1,6 +1,6 @@
 import { createProjectBulkAdapter } from './project-bulk-adapter'
 import { emitEvent } from '@/shared/events'
-import type { ProjectDetail } from '@/features/project/model/types'
+import type { ProjectDetail } from '@/features/project'
 
 vi.mock('@/shared/events', () => ({
 	emitEvent: vi.fn<(event: unknown) => void>(),

@@ -1,6 +1,6 @@
 import { CalendarX2Icon } from 'lucide-react'
 
-import type { ProjectOption } from '@/features/project/model/types'
+import type { ProjectOption } from '@/features/project'
 import {
 	createPlacementActionSpec,
 	mapMetadataActionSpecToDropdownProps,

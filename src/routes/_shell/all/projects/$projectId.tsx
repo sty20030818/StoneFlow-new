@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { ProjectPage } from '@/features/project/components/ProjectPage'
-import { useVisibleSpacesQuery } from '@/features/space/hooks/space.queries'
+import { ProjectPage } from '@/features/project'
+import { useVisibleSpacesQuery } from '@/features/space'
 import {
 	createProjectLoaderError,
 	DetailRouteErrorStateView,

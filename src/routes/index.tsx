@@ -1,8 +1,8 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
 import { resolveStartupPath } from '@/app/navigation/routeMemoryStore'
-import { spaceKeys } from '@/features/space/hooks/space.keys'
-import { listVisibleSpaces } from '@/features/space/api/spaces'
+import { spaceKeys } from '@/features/space'
+import { listVisibleSpaces } from '@/features/space'
 import { RouterFeedbackPage } from './-router-feedback'
 
 export const Route = createFileRoute('/')({

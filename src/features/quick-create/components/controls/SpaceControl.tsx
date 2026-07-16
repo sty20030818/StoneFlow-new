@@ -1,7 +1,7 @@
 import { CheckIcon } from 'lucide-react'
 
 import type { QuickCreateSpaceSummary } from '@/features/quick-create/model/types'
-import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
+import { getSpaceVisual } from '@/features/space'
 import { Button } from '@/shared/components/base/button'
 import {
 	DropdownMenu,

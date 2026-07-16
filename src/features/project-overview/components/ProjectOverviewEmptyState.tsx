@@ -1,4 +1,4 @@
-import type { ProjectOverviewViewKey } from '@/features/project/model/types'
+import type { ProjectOverviewViewKey } from '@/features/project'
 import { Button } from '@/shared/components/base/button'
 import {
 	Empty,

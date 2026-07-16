@@ -15,8 +15,8 @@ import {
 import { createTaskDisplayViewPageKey } from '@/features/display-options/core'
 import { useTaskDisplayOptions } from '@/features/display-options/model'
 import { DisplayOptionsButton } from '@/features/display-options/components'
-import { useProjectOptions } from '@/features/project/hooks'
-import { useSpaces } from '@/features/space/hooks'
+import { useProjectOptions } from '@/features/project'
+import { useSpaces } from '@/features/space'
 import {
 	buildTaskCommandSelection,
 	useEntitySelectionEscape,

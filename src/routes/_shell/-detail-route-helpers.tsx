@@ -5,12 +5,12 @@ import {
 	openStartupFallback,
 	openTaskDetail,
 } from '@/app/navigation/intents'
-import { listVisibleSpaces } from '@/features/space/api/spaces'
-import { projectDetailQueryOptions } from '@/features/project/hooks'
+import { listVisibleSpaces } from '@/features/space'
+import { projectDetailQueryOptions } from '@/features/project'
 import { taskDetailQueryOptions } from '@/features/task'
 import type { Scope, Space, TaskDetail } from '@/shared/types'
 import type { QueryClient } from '@tanstack/react-query'
-import type { ProjectDetail } from '@/features/project/model/types'
+import type { ProjectDetail } from '@/features/project'
 import { TaskPageState } from '@/features/task'
 
 export type DetailRouteErrorState = {

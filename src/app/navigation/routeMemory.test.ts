@@ -21,7 +21,7 @@ const PROJECT_SHORTCUT_PATH = `/${'projects'}/project-a`
 const getProjectDetailMock = vi.hoisted(() => vi.fn())
 const getTaskDetailMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@/features/project/api/projects', () => ({
+vi.mock('@/features/project', () => ({
 	getProjectDetail: getProjectDetailMock,
 }))
 

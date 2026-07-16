@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 
 import { useEntityDetailController } from '@/features/entity-detail'
 import { MetadataDateDropdown, taskDateMetadataIcons } from '@/features/metadata-fields'
-import type { ProjectOption } from '@/features/project/model/types'
+import type { ProjectOption } from '@/features/project'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { useCreateTaskMutation } from '@/features/task/hooks'
 import {

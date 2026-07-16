@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import type { ShellSectionKey } from '@/layout/types'
-import { listLifecycleEntries } from '@/features/lifecycle/api/lifecycle'
-import { listSidebarProjects } from '@/features/project/api/projects'
+import { listLifecycleEntries } from '@/features/lifecycle'
+import { listSidebarProjects } from '@/features/project'
 import { listTasks } from '@/features/task'
 import { useEventSubscription } from '@/shared/events'
 import type { Scope } from '@/shared/types'

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { SettingsSection } from '@/features/settings/components/settingsShared'
-import { useSetDefaultSpaceMutation, useSpaces } from '@/features/space/hooks'
+import { useSetDefaultSpaceMutation, useSpaces } from '@/features/space'
 import { Button } from '@/shared/components/base/button'
 import {
 	Select,

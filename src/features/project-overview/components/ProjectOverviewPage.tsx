@@ -18,14 +18,14 @@ import {
 import { Button } from '@/shared/components/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/components/patterns/bulk-action'
 import { useDialogStore } from '@/layout/model/useDialogStore'
-import type { ProjectOverviewViewKey } from '@/features/project/model/types'
+import type { ProjectOverviewViewKey } from '@/features/project'
 import {
 	useArchiveProjectMutation,
 	useCompleteProjectMutation,
 	useDeleteProjectMutation,
 	useProjectOverviewData,
 	useReopenProjectMutation,
-} from '@/features/project/hooks'
+} from '@/features/project'
 import {
 	buildProjectCommandSelection,
 	useEntitySelection,
@@ -34,7 +34,7 @@ import {
 } from '@/features/selection'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
-import { useViewsQuery } from '@/features/view/hooks'
+import { useViewsQuery } from '@/features/view'
 import { PlusIcon } from 'lucide-react'
 
 export function ProjectOverviewPage() {

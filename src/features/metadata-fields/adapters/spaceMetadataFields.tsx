@@ -1,4 +1,4 @@
-import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
+import { getSpaceVisual } from '@/features/space'
 import {
 	createSpaceActionSpec,
 	mapMetadataActionSpecToDropdownProps,

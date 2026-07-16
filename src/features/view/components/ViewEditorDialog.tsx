@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
-import type { ProjectOption } from '@/features/project/model/types'
+import type { ProjectOption } from '@/features/project'
 import { useZodForm } from '@/shared/form'
 import { useSubmitTargetFromForm } from '@/features/submit'
 import { cn } from '@/shared/lib/utils'

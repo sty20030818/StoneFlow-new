@@ -125,14 +125,14 @@ vi.mock('@/layout/model/useDialogStore', () => ({
 		}),
 }))
 
-vi.mock('@/features/project/hooks', () => ({
+vi.mock('@/features/project', () => ({
 	useProjectOptions: (scope: { type: string }) => {
 		loadSidebarSpy(scope)
 		return [{ id: 'project-1', name: '阶段 8', spaceId: 'space-1' }]
 	},
 }))
 
-vi.mock('@/features/space/hooks', () => ({
+vi.mock('@/features/space', () => ({
 	useSpaces: () => ({
 		spaces: [{ id: 'space-1', name: '工作' }],
 		status: 'ready',

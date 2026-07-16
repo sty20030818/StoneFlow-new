@@ -3,8 +3,8 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import type { AppLayoutProps } from '@/layout/appLayoutTypes'
 import { ShellLayoutContent } from '@/layout/ShellLayoutContent'
-import { listLifecycleEntries } from '@/features/lifecycle/api/lifecycle'
-import { listAllVisibleProjects } from '@/features/project/api/projects'
+import { listLifecycleEntries } from '@/features/lifecycle'
+import { listAllVisibleProjects } from '@/features/project'
 import {
 	BulkActionProvider,
 	createLifecycleBulkAdapter,

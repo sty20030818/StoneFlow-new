@@ -6,20 +6,20 @@ import {
 	permanentlyDeleteLifecycleEntry,
 	restoreLifecycleEntry,
 } from '@/features/lifecycle/api/lifecycle'
-import { deleteProject, restoreProject } from '@/features/project/api/projects'
-import { deleteSpace, restoreSpace } from '@/features/space/api/spaces'
+import { deleteProject, restoreProject } from '@/features/project'
+import { deleteSpace, restoreSpace } from '@/features/space'
 import { deleteTask, restoreTask } from '@/features/task'
 
 vi.mock('@tauri-apps/api/core', () => ({
 	invoke: vi.fn<(cmd: string, args?: Record<string, unknown>) => Promise<unknown>>(),
 }))
 
-vi.mock('@/features/project/api/projects', () => ({
+vi.mock('@/features/project', () => ({
 	deleteProject: vi.fn<(projectId: string) => Promise<unknown>>(),
 	restoreProject: vi.fn<(projectId: string) => Promise<unknown>>(),
 }))
 
-vi.mock('@/features/space/api/spaces', () => ({
+vi.mock('@/features/space', () => ({
 	deleteSpace: vi.fn<(spaceId: string) => Promise<unknown>>(),
 	restoreSpace: vi.fn<(spaceId: string) => Promise<unknown>>(),
 }))

@@ -42,7 +42,7 @@ vi.mock('@/layout/model/useSidebarSettingsStore', () => ({
 		selector(sidebarStoreState),
 }))
 
-vi.mock('@/features/space/hooks', () => ({
+vi.mock('@/features/space', () => ({
 	useSpaces: () => ({
 		spaces: spaceStoreState.spaces,
 		status: spaceStoreState.status,

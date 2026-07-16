@@ -8,7 +8,7 @@ import {
 	selectSidebarSettingsStatus,
 	useSidebarSettingsStore,
 } from '@/layout/model/useSidebarSettingsStore'
-import { useProjectOptions, useProjectSidebarData } from '@/features/project/hooks'
+import { useProjectOptions, useProjectSidebarData } from '@/features/project'
 import {
 	useArchiveSpaceMutation,
 	useCreateSpaceMutation,
@@ -16,7 +16,7 @@ import {
 	useSetDefaultSpaceMutation,
 	useSpaces,
 	useUpdateSpaceMutation,
-} from '@/features/space/hooks'
+} from '@/features/space'
 
 /**
  * 壳 Chrome 数据面：spaces、侧栏设置/项目、导航 badge、space CRUD mutations。

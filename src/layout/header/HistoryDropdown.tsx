@@ -1,6 +1,6 @@
 import { memo } from 'react'
 
-import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
+import { getSpaceVisual } from '@/features/space'
 import type { ShellRouteHistoryEntry } from '@/app/navigation/sessionRouteHistory'
 import type { Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
@@ -18,7 +18,7 @@ import {
 	shellChromeNavCircleButtonExpandedClass,
 	shellChromeTruncateLabelClass,
 } from '@/shared/components/patterns/shell-chrome'
-import type { SpaceVisualDefinition } from '@/features/space/model/spaceVisuals'
+import type { SpaceVisualDefinition } from '@/features/space'
 import { HistoryIcon, OrbitIcon } from 'lucide-react'
 
 const ALL_SPACES_VISUAL: SpaceVisualDefinition = {

@@ -13,7 +13,7 @@ vi.mock('@/features/task', () => ({
 	getTaskDetail: (taskId: string) => getTaskDetailMock(taskId),
 }))
 
-vi.mock('@/features/project/api/projects', () => ({
+vi.mock('@/features/project', () => ({
 	getProjectDetail: (projectId: string) => getProjectDetailMock(projectId),
 }))
 

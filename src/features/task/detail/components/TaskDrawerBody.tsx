@@ -1,6 +1,6 @@
 import type { AutosaveController } from '@/shared/autosave'
 import { DetailBody } from '@/shared/components/detail'
-import type { ProjectOption } from '@/features/project/model/types'
+import type { ProjectOption } from '@/features/project'
 import type { Space } from '@/shared/types'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'

@@ -15,7 +15,7 @@ import type {
 	ActivityTimelineEntry,
 } from '@/features/activity/api/getEntityActivities'
 import { taskDateMetadataIcons } from '@/features/metadata-fields'
-import { getSpaceVisual } from '@/features/space/model/spaceVisuals'
+import { getSpaceVisual } from '@/features/space'
 import {
 	formatTaskPriorityLabel,
 	normalizeTaskPriorityValue,
@@ -23,7 +23,7 @@ import {
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
 import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
-import type { ProjectOption } from '@/features/project/model/types'
+import type { ProjectOption } from '@/features/project'
 import type { Space, TaskStatus } from '@/shared/types'
 
 type ActivityDisplayItem = {

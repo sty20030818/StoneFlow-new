@@ -63,7 +63,7 @@ vi.mock('../model/useTaskAutosaveAdapter', () => ({
 	useTaskAutosaveAdapter: () => mockAutosave.value,
 }))
 
-vi.mock('@/features/project/hooks', () => ({
+vi.mock('@/features/project', () => ({
 	useProjectOptions: () => [
 		{
 			id: 'project-1',
@@ -78,7 +78,7 @@ vi.mock('@/features/project/hooks', () => ({
 	],
 }))
 
-vi.mock('@/features/space/hooks', () => ({
+vi.mock('@/features/space', () => ({
 	useSpaces: () => ({
 		spaces: [
 			{

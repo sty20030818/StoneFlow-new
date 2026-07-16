@@ -23,7 +23,7 @@ import {
 	useReopenProjectMutation,
 	useSuspenseProjectDetailQuery,
 } from '@/features/project/hooks'
-import { useSpaces } from '@/features/space/hooks'
+import { useSpaces } from '@/features/space'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection'
 import { useTaskListController } from '@/features/task'
 import { formatTaskStatusLabel } from '@/features/task'

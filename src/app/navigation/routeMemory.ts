@@ -1,4 +1,4 @@
-import { getProjectDetail } from '@/features/project/api/projects'
+import { getProjectDetail } from '@/features/project'
 import { getTaskDetail } from '@/features/task'
 import type { Scope, Space } from '@/shared/types'
 

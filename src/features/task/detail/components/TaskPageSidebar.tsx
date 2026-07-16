@@ -1,7 +1,7 @@
 import type { AutosaveController } from '@/shared/autosave'
 import { DetailPageStatusBlock, DetailSection } from '@/shared/components/detail'
 import type { TaskDetail } from '@/shared/types'
-import type { ProjectOption } from '@/features/project/model/types'
+import type { ProjectOption } from '@/features/project'
 import type { Space } from '@/shared/types'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
