@@ -12,7 +12,7 @@ import {
 import {
 	createEmptyCommandSelectionContext,
 	type CommandSelectionContext,
-} from '@/features/command/core'
+} from '@/features/command'
 
 type CommandSelectionRegistration = CommandSelectionContext
 

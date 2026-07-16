@@ -54,14 +54,18 @@ vi.mock('@/features/space', () => ({
 	}),
 }))
 
-vi.mock('@/features/sync/api/sync', () => ({
-	getSyncStatus: () => getSyncStatusSpy(),
-	getSyncDiagnostics: () => getSyncDiagnosticsSpy(),
-	configureSync: (input: { url: string; token: string }) => configureSyncSpy(input),
-	runSync: () => runSyncSpy(),
-	updateSyncPolicy: (input: { mode: 'interval' | 'manual'; intervalMinutes: 5 | 15 | 30 }) =>
-		updateSyncPolicySpy(input),
-}))
+vi.mock('@/features/sync', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/features/sync')>()
+	return {
+		...actual,
+		getSyncStatus: () => getSyncStatusSpy(),
+		getSyncDiagnostics: () => getSyncDiagnosticsSpy(),
+		configureSync: (input: { url: string; token: string }) => configureSyncSpy(input),
+		runSync: () => runSyncSpy(),
+		updateSyncPolicy: (input: { mode: 'interval' | 'manual'; intervalMinutes: 5 | 15 | 30 }) =>
+			updateSyncPolicySpy(input),
+	}
+})
 
 let mockSettingsSection: 'general' | 'sidebar' | 'sync' | 'update' = 'sidebar'
 

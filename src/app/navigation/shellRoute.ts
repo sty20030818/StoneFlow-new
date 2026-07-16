@@ -1,7 +1,4 @@
-import {
-	isSettingsSectionKey,
-	type SettingsSectionKey,
-} from '@/features/settings/model/settingsSection'
+import { isSettingsSectionKey, type SettingsSectionKey } from '@/features/settings'
 import type { Scope } from '@/shared/types'
 
 /**

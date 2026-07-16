@@ -2,8 +2,8 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { openStartupFallback } from '@/app/navigation/intents'
 import { SETTINGS_NAV_GROUPS } from '@/layout/settingsNav'
-import { writeLastSettingsSection } from '@/features/settings/model/lastSettingsSection'
-import type { SettingsSectionKey } from '@/features/settings/model/settingsSection'
+import { writeLastSettingsSection } from '@/features/settings'
+import type { SettingsSectionKey } from '@/features/settings'
 import type { Scope } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
 import {

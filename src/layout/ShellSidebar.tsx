@@ -15,11 +15,8 @@ import {
 	type MainNavItemViewModel,
 } from '@/layout/sidebar'
 import type { ShellSectionKey } from '@/layout/types'
-import type {
-	SidebarItemVisibilityTarget,
-	SidebarMainItemKey,
-} from '@/features/settings/api/sidebarSettings'
-import { SyncSidebarStatusStrip } from '@/features/sync/components/SyncSidebarStatusStrip'
+import type { SidebarItemVisibilityTarget, SidebarMainItemKey } from '@/features/settings'
+import { SyncSidebarStatusStrip } from '@/features/sync'
 import { type ShellSidebarSettings } from '@/layout/model/shellDevicePreferences'
 import { resolveRememberedPathForScope } from '@/app/navigation/routeMemoryStore'
 import { getSpaceVisual } from '@/features/space'

@@ -26,4 +26,4 @@ export type {
 	CommandViewContext,
 	KnownCommandId,
 } from './command.types'
-export type { TaskPlacementTarget } from '@/features/metadata-fields/core'
+export type { TaskPlacementTarget } from '@/features/metadata-fields'

@@ -2,7 +2,7 @@ import { fireEvent, screen } from '@testing-library/react'
 import { render } from '@testing-library/react'
 
 import { UserAppMenu } from '@/layout/header/UserAppMenu'
-import { COMMAND_IDS } from '@/features/command/core'
+import { COMMAND_IDS } from '@/features/command'
 import { TooltipProvider } from '@/shared/components/base/tooltip'
 
 describe('UserAppMenu', () => {

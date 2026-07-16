@@ -7,7 +7,9 @@ import {
 	buildStartupFallbackPath,
 	buildTaskDetailPath,
 } from '@/app/navigation/routePaths'
-import type { ShellNavigationTarget } from '@/features/command'
+// 类型从 adapters 源文件取，避免 @/features/command 桶初始化拖死 navigation
+import type { ShellNavigationTarget } from '@/features/command/adapters/shell-command-adapter'
+// 仅取纯 model，避免经 settings public 拉 SettingsPage → layout 形成环
 import { readLastSettingsSection } from '@/features/settings/model/lastSettingsSection'
 import type { SettingsSectionKey } from '@/features/settings/model/settingsSection'
 import type { Scope } from '@/shared/types'

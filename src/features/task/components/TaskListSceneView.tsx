@@ -2,7 +2,7 @@ import { Layers3Icon, PlusIcon } from 'lucide-react'
 
 import { EntityScene } from '@/layout/entity-scene'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
-import { DisplayOptionsButton } from '@/features/display-options/components'
+import { DisplayOptionsButton } from '@/features/display-options'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useTaskListScene, type TaskListSceneVariant } from '@/features/task/hooks/useTaskListScene'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'

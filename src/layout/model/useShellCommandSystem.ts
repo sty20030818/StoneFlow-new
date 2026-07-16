@@ -42,7 +42,7 @@ import {
 	useCommandRuntime,
 	type TaskPlacementTarget,
 } from '@/features/command'
-import { COMMAND_IDS, type CommandContext, type CommandId } from '@/features/command/core'
+import { COMMAND_IDS, type CommandContext, type CommandId } from '@/features/command'
 import {
 	TASK_BULK_ACTION_IDS,
 	createCommandBulkSelectionSnapshot,

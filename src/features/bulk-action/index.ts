@@ -1,6 +1,5 @@
-export * from './actions'
-export * from './adapters'
-export * from './core'
-export * from './runtime'
-export * from './selection'
-export * from './components'
+/**
+ * 目录入口：`@/features/bulk-action` → public。
+ * 契约见 {@link ./index.public.ts}。
+ */
+export * from './index.public'

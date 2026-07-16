@@ -1,6 +1,6 @@
 import { render, renderHook, screen } from '@testing-library/react'
 
-import type { CommandSelectionContext } from '@/features/command/core'
+import type { CommandSelectionContext } from '@/features/command'
 
 import {
 	CommandSelectionProvider,

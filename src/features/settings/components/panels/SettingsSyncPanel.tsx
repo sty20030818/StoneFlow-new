@@ -12,14 +12,14 @@ import {
 	type SyncReplicaState,
 	type SyncStatus,
 	type SyncStatusPayload,
-} from '@/features/sync/api/sync'
-import { SyncConfigDialog } from '@/features/sync/components/SyncConfigDialog'
+} from '@/features/sync'
+import { SyncConfigDialog } from '@/features/sync'
 import {
 	formatReplicaState,
 	formatSyncStatus,
 	getSyncReplicaTone,
 	getSyncStatusTone,
-} from '@/features/sync/model/syncStatusPresentation'
+} from '@/features/sync'
 import { cn } from '@/shared/lib/utils'
 import { Badge } from '@/shared/components/base/badge'
 import { Button } from '@/shared/components/base/button'

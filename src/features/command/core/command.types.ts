@@ -167,14 +167,14 @@ export type CommandProjectContext = {
 	currentProjectId?: string
 }
 
-import type { TaskPriorityValue } from '@/features/task'
-import type { TaskStatus } from '@/shared/types'
+import type { TaskPriority, TaskStatus } from '@/shared/types'
 
 export type CommandViewContext = {
 	currentViewId?: string
 	hasActiveFilters: boolean
 	showCompleted: boolean
-	priorityFilterValues: TaskPriorityValue[]
+	/** 与 task public 的 TaskPriorityValue 同构（shared TaskPriority） */
+	priorityFilterValues: TaskPriority[]
 	statusFilterValues: TaskStatus[]
 	dateFilterValue: string
 	projectFilterId: string | null

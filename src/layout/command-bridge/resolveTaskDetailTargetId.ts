@@ -1,4 +1,4 @@
-import type { CommandContext } from '@/features/command/core'
+import type { CommandContext } from '@/features/command'
 
 /** 从命令上下文解析当前应操作的任务 id（行焦点 / 单选 / primary）。 */
 export function resolveTaskDetailTargetId(ctx: CommandContext): string | null {

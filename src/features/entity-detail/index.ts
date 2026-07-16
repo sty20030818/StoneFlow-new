@@ -1,21 +1,5 @@
-export type {
-	EntityDetailKind,
-	EntityDetailNavigationTarget,
-	EntityDetailOpenMode,
-	EntityDetailParseResult,
-	EntityDetailRouteState,
-	EntityDetailTarget,
-} from './model/entityDetailTypes'
-export {
-	buildEntityDetailSearch,
-	clearEntityDetailSearch,
-	normalizeEntityDetailId,
-	parseEntityDetailRouteState,
-} from './model/entityDetailRouteState'
-export {
-	closeEntityDrawerTarget,
-	openEntityDrawerTarget,
-	resolveEntityPageTarget,
-} from './model/entityDetailNavigation'
-export { useEntityDetailController } from './model/useEntityDetailController'
-export { EntityDetailDrawerHost } from './components/EntityDetailDrawerHost'
+/**
+ * 目录入口：`@/features/entity-detail` → public。
+ * 契约见 {@link ./index.public.ts}。
+ */
+export * from './index.public'

@@ -1,25 +1,23 @@
 import { render, screen } from '@testing-library/react'
 
 import { ShellFooter } from '@/layout/ShellFooter'
-import { SyncStatusProvider } from '@/features/sync/model/SyncStatusProvider'
 
-vi.mock('@/features/sync/model/useSyncStatusController', () => ({
-	useSyncStatusController: () => ({
-		displayedStatus: 'synced' as const,
-		loading: false,
-		message: null,
-		refresh: vi.fn(),
-		runNow: vi.fn(),
-		running: false,
-		statusPayload: {
-			status: 'synced',
-			hasRemoteConfig: true,
-			replicaState: 'ready',
-			lastSyncAt: null,
-			lastError: null,
-		},
-	}),
-}))
+vi.mock('@/features/sync', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/features/sync')>()
+	return {
+		...actual,
+		/** 壳 footer 只测拼装；同步条内部状态用桩替代 */
+		SyncFooterStatusItem: () => (
+			<div role='status' aria-label='已同步'>
+				<span aria-hidden className='rounded-full' />
+				<span>已同步</span>
+				<button type='button' aria-label='立即同步'>
+					立即同步
+				</button>
+			</div>
+		),
+	}
+})
 
 vi.mock('@tauri-apps/api/app', () => ({
 	getVersion: vi.fn(async () => '0.1.0'),
@@ -37,11 +35,7 @@ vi.mock('@/features/update/api/updates', () => ({
 
 describe('ShellFooter', () => {
 	it('左侧：状态灯 + 文案 + 同步按钮分离；右侧：版本；无快捷键', async () => {
-		const { container } = render(
-			<SyncStatusProvider>
-				<ShellFooter />
-			</SyncStatusProvider>,
-		)
+		const { container } = render(<ShellFooter />)
 
 		// 文案独立
 		expect(screen.getByText('已同步')).toBeInTheDocument()

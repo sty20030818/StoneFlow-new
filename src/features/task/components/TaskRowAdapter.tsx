@@ -1,7 +1,7 @@
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { TaskContextMenu } from '@/features/task/components/TaskContextMenu'
 import type { TaskContextMenuBulkActions } from '@/features/task/components/useTaskContextMenuBulkActions'
-import type { TaskDisplayPropertyKey } from '@/features/display-options/core'
+import type { TaskDisplayPropertyKey } from '@/features/display-options'
 import {
 	createTaskPlacementGroupedDropdownProps,
 	createTaskPriorityMetadataDropdownProps,

@@ -17,20 +17,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/base/av
 import { Button } from '@/shared/components/base/button'
 import { useSidebar } from '@/shared/components/base/sidebar-context'
 import { cn } from '@/shared/lib/utils'
-import {
-	ChordHint,
-	CommandMenu,
-	ShortcutHelp,
-	type CommandMenuMode,
-} from '@/features/command/components'
-import { type CommandChordSession } from '@/features/command/shortcuts'
+import { ChordHint, CommandMenu, ShortcutHelp, type CommandMenuMode } from '@/features/command'
+import { type CommandChordSession } from '@/features/command'
 import {
 	COMMAND_IDS,
 	type CommandContext,
 	type CommandId,
 	type CommandRuntime,
 	type TaskPlacementTarget,
-} from '@/features/command/core'
+} from '@/features/command'
 import type { TaskPriorityValue } from '@/features/task'
 import {
 	shellChromeAvatarClusterClass,

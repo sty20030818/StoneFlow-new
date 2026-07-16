@@ -10,7 +10,7 @@ import { ShellChrome } from '@/layout/ShellChrome'
 import { ShellLayoutSkeleton } from '@/layout/ShellLayoutSkeleton'
 import { ShellOverlays } from '@/layout/overlays/ShellOverlays'
 import { SidebarProvider } from '@/shared/components/base/sidebar'
-import { SyncStatusProvider } from '@/features/sync/model/SyncStatusProvider'
+import { SyncStatusProvider } from '@/features/sync'
 import { useUpdateEvents } from '@/features/update'
 
 /**

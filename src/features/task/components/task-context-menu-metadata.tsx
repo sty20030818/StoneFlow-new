@@ -2,7 +2,7 @@ import {
 	mapMetadataActionSpecToDropdownProps,
 	type MetadataActionSpec,
 	type MetadataDropdownMappedProps,
-} from '@/features/metadata-fields/core'
+} from '@/features/metadata-fields'
 
 export type TaskContextMenuMetadataOption<TValue> = {
 	key: string

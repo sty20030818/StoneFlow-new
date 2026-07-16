@@ -2,7 +2,7 @@ import type {
 	SidebarFooterItemKey,
 	SidebarItemVisibilityTarget,
 	SidebarMainItemKey,
-} from '@/features/settings/api/sidebarSettings'
+} from '@/features/settings'
 
 import { SidebarItemContextMenu } from './SidebarItemContextMenu'
 import type { MainNavItemViewModel } from './types'

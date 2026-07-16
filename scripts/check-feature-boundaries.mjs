@@ -35,6 +35,14 @@ const FEATURES = [
 	'space',
 	'view',
 	'lifecycle',
+	// β-acl-4
+	'command',
+	'settings',
+	'entity-detail',
+	'metadata-fields',
+	'display-options',
+	'bulk-action',
+	'sync',
 ]
 
 const SRC = join(import.meta.dir, '..', 'src')
@@ -71,6 +79,43 @@ function isInsideFeature(fileAbs, feature) {
 	return rel.startsWith(`features/${feature}/`) || rel === `features/${feature}`
 }
 
+/**
+ * 已知的「有意深 import」（避免 public 桶拉 UI 形成环）。
+ * 仅限纯 model / 无 React 装配路径。
+ *
+ * @param {string} fileAbs
+ * @param {string} feature
+ * @param {string} line
+ */
+function isAllowlistedDeepImport(fileAbs, feature, line) {
+	const rel = relative(SRC, fileAbs).replaceAll('\\', '/')
+	// navigation intents 只读 settings 分区记忆，不可经 public 拉 SettingsPage
+	if (
+		feature === 'settings' &&
+		rel.startsWith('app/navigation/') &&
+		/from\s+['"]@\/features\/settings\/model\//.test(line)
+	) {
+		return true
+	}
+	// task shortcuts 只取 command 纯 core/keybinding，避免 command↔task public 桶环依赖
+	if (
+		feature === 'command' &&
+		rel.startsWith('features/task/') &&
+		/from\s+['"]@\/features\/command\/(core|keybinding)/.test(line)
+	) {
+		return true
+	}
+	// navigation 只取 command adapter 类型定义，避免 command 桶初始化
+	if (
+		feature === 'command' &&
+		rel.startsWith('app/navigation/') &&
+		/from\s+['"]@\/features\/command\/adapters\//.test(line)
+	) {
+		return true
+	}
+	return false
+}
+
 const deepImportRe = (feature) =>
 	new RegExp(String.raw`from\s+['"]@/features/${feature}/[^'"]+['"]`, 'g')
 
@@ -85,12 +130,14 @@ for (const file of walkTsFiles(SRC)) {
 		const re = deepImportRe(feature)
 		lines.forEach((line, idx) => {
 			if (re.test(line)) {
-				violations.push({
-					file: relative(join(SRC, '..'), file),
-					feature,
-					line: idx + 1,
-					text: line.trim(),
-				})
+				if (!isAllowlistedDeepImport(file, feature, line)) {
+					violations.push({
+						file: relative(join(SRC, '..'), file),
+						feature,
+						line: idx + 1,
+						text: line.trim(),
+					})
+				}
 			}
 			re.lastIndex = 0
 		})

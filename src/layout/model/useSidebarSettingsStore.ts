@@ -7,7 +7,7 @@ import {
 	type SidebarProjectSectionPreferenceConfig,
 	updateSidebarItemVisibility,
 	updateSidebarProjectSection,
-} from '@/features/settings/api/sidebarSettings'
+} from '@/features/settings'
 import {
 	buildShellSidebarSettings,
 	loadShellDeviceState,

@@ -9,9 +9,9 @@ import { useDialogStore } from '@/layout/model/useDialogStore'
 import {
 	applyTaskDisplayOptionsToTasks,
 	createTaskDisplayApplyContext,
-} from '@/features/display-options/adapters/task'
-import { useTaskDisplayOptions } from '@/features/display-options/model'
-import { DisplayOptionsButton } from '@/features/display-options/components'
+} from '@/features/display-options'
+import { useTaskDisplayOptions } from '@/features/display-options'
+import { DisplayOptionsButton } from '@/features/display-options'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDangerConfirm } from '@/features/danger-confirm'
 import { useRegisterPageFilterController, useTaskPageFilterController } from '@/features/filter'

@@ -8,7 +8,7 @@ import {
 	normalizeMetadataDateValue,
 	type TaskPlacementGroup,
 	type TaskPlacementTarget,
-} from '@/features/metadata-fields/core'
+} from '@/features/metadata-fields'
 import type { TaskStatus } from '@/shared/types'
 import type { ReactNode } from 'react'
 import {

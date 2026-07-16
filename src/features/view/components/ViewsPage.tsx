@@ -11,10 +11,10 @@ import { useDialogStore } from '@/layout/model/useDialogStore'
 import {
 	applyTaskDisplayOptionsToTasks,
 	createTaskDisplayApplyContext,
-} from '@/features/display-options/adapters/task'
-import { createTaskDisplayViewPageKey } from '@/features/display-options/core'
-import { useTaskDisplayOptions } from '@/features/display-options/model'
-import { DisplayOptionsButton } from '@/features/display-options/components'
+} from '@/features/display-options'
+import { createTaskDisplayViewPageKey } from '@/features/display-options'
+import { useTaskDisplayOptions } from '@/features/display-options'
+import { DisplayOptionsButton } from '@/features/display-options'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
 import {

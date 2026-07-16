@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-import type { SidebarMainItemKey } from '@/features/settings/api/sidebarSettings'
+import type { SidebarMainItemKey } from '@/features/settings'
 import type { ShellSectionKey } from '@/layout/types'
 
 /** 侧栏导航链接行的最小视图模型（不含 settings key） */

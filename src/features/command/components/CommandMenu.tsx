@@ -43,7 +43,7 @@ import {
 	normalizeMetadataDateValue,
 	resolveTaskPlacementTarget,
 	type TaskPlacementGroup,
-} from '@/features/metadata-fields/core'
+} from '@/features/metadata-fields'
 import type { ShortcutMenuItem } from '@/shared/components/shortcut-menu'
 import { ShortcutDigitSelectLayer } from '@/shared/components/shortcut-menu'
 import {
@@ -66,8 +66,13 @@ import type {
 	CommandSelectedEntity,
 	TaskPlacementTarget,
 } from '@/features/command/core'
-import type { SearchProjectItem, SearchTaskItem, Space, TaskStatus } from '@/shared/types'
-import { type TaskPriorityValue } from '@/features/task'
+import type {
+	SearchProjectItem,
+	SearchTaskItem,
+	Space,
+	TaskPriority,
+	TaskStatus,
+} from '@/shared/types'
 
 import { ShortcutTokens } from './ShortcutTokens'
 import { buildCommandMenuGroups, type CommandMenuEntry } from './command-menu-model'
@@ -110,7 +115,7 @@ type CommandMenuProps = {
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
-	onSelectTaskPriority: (priority: TaskPriorityValue) => void
+	onSelectTaskPriority: (priority: TaskPriority) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
 	onToggleCompletedFilter: () => void
 	onRunCommand: (id: CommandId) => void
@@ -626,7 +631,7 @@ function ScopedPickerCommandGroup({
 	onSelectTaskPlacement: (target: TaskPlacementTarget) => void
 	onSelectTask: (task: SearchTaskItem) => void
 	onSelectTaskDate: (dueAt: string | null) => void
-	onSelectTaskPriority: (priority: TaskPriorityValue) => void
+	onSelectTaskPriority: (priority: TaskPriority) => void
 	onSelectTaskStatus: (status: TaskStatus) => void
 	onToggleCompletedFilter: () => void
 	onOpenCustomDateDialog: (state: CustomDateDialogState) => void
@@ -654,8 +659,8 @@ function ScopedPickerCommandGroup({
 	if (mode === 'task-priority-picker') {
 		const group = mapMetadataActionSpecToCommandMenuGroup(createPriorityActionSpec())
 		const options = group.options
-		const selectedPriorityValues = getSelectedTaskPriorityValues(context)
-		const shortcutItems: ShortcutMenuItem<TaskPriorityValue>[] = options.map((option) => ({
+		const selectedPriorityValues = getSelectedTaskPrioritys(context)
+		const shortcutItems: ShortcutMenuItem<TaskPriority>[] = options.map((option) => ({
 			label: option.label,
 			value: option.value,
 			disabled: false,
@@ -1054,7 +1059,7 @@ function FilterPickerCommandGroup({
 						<CommandItem
 							key={option.value}
 							onSelect={() => {
-								const nextValues: TaskPriorityValue[] = selected
+								const nextValues: TaskPriority[] = selected
 									? context.view.priorityFilterValues.filter(
 											(value): value is (typeof context.view.priorityFilterValues)[number] =>
 												value !== option.value,
@@ -1203,7 +1208,7 @@ function FilterPickerCommandGroup({
 	)
 }
 
-function getSelectedTaskPriorityValues(context: CommandContext) {
+function getSelectedTaskPrioritys(context: CommandContext) {
 	const values = new Set<string>()
 	for (const entity of context.selection.entities) {
 		if (entity.type === 'task' && entity.priority != null) {

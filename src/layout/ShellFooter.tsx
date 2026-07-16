@@ -4,7 +4,7 @@
  * 右：更新事务 + 版本（无快捷键）
  */
 
-import { SyncFooterStatusItem } from '@/features/sync/components/SyncFooterStatusItem'
+import { SyncFooterStatusItem } from '@/features/sync'
 import { AppVersionFooterItem } from '@/features/update/components/AppVersionFooterItem'
 import { UpdateStatusFooterItem } from '@/features/update/components/UpdateStatusFooterItem'
 import {

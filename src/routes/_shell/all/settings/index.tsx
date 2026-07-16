@@ -1,6 +1,6 @@
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 
-import { readLastSettingsSection } from '@/features/settings/model/lastSettingsSection'
+import { readLastSettingsSection } from '@/features/settings'
 
 export const Route = createFileRoute('/_shell/all/settings/')({
 	component: AllSettingsIndexRedirect,

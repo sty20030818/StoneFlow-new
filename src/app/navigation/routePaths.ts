@@ -1,8 +1,5 @@
 import type { RouteScope, ShellSectionKey, ShellSectionSegment } from '@/app/navigation/shellRoute'
-import {
-	DEFAULT_SETTINGS_SECTION,
-	type SettingsSectionKey,
-} from '@/features/settings/model/settingsSection'
+import { DEFAULT_SETTINGS_SECTION, type SettingsSectionKey } from '@/features/settings'
 
 /**
  * Canonical path builder：只拼 StoneFlow 认可的 URL 字符串。

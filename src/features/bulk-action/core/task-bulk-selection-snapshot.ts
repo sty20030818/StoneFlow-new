@@ -1,4 +1,4 @@
-import type { CommandSelectionContext } from '@/features/command/core'
+import type { CommandSelectionContext } from '@/features/command'
 import type { TaskListItem } from '@/shared/types'
 
 import type { BulkSelectionSource } from './bulk-action.types'

@@ -1,7 +1,4 @@
-import type {
-	SidebarFooterItemKey,
-	SidebarItemVisibilityTarget,
-} from '@/features/settings/api/sidebarSettings'
+import type { SidebarFooterItemKey, SidebarItemVisibilityTarget } from '@/features/settings'
 import {
 	ContextMenuCheckboxItem,
 	ContextMenuGroup,

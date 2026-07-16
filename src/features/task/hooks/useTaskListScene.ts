@@ -14,9 +14,9 @@ import { resolveShellRouteScope } from '@/app/navigation/scope'
 import {
 	applyTaskDisplayOptionsToTasks,
 	createTaskDisplayApplyContext,
-} from '@/features/display-options/adapters/task'
-import type { TaskDisplayPageKey } from '@/features/display-options/core'
-import { useTaskDisplayOptions } from '@/features/display-options/model'
+} from '@/features/display-options'
+import type { TaskDisplayPageKey } from '@/features/display-options'
+import { useTaskDisplayOptions } from '@/features/display-options'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useRegisterPageFilterController, useTaskPageFilterController } from '@/features/filter'
 import { useProjectOptions } from '@/features/project'

@@ -1,6 +1,6 @@
-import { getCommandShortcutTokens } from '@/features/command/shortcuts'
-import { ShortcutTokens } from '@/features/command/components'
-import { COMMAND_IDS, type CommandId } from '@/features/command/core'
+import { getCommandShortcutTokens } from '@/features/command'
+import { ShortcutTokens } from '@/features/command'
+import { COMMAND_IDS, type CommandId } from '@/features/command'
 import { cn } from '@/shared/lib/utils'
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from '@/shared/components/base/avatar'
 import {

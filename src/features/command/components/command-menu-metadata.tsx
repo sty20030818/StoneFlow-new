@@ -2,7 +2,7 @@ import {
 	mapMetadataActionSpecToDropdownProps,
 	type MetadataActionSpec,
 	type MetadataDropdownMappedProps,
-} from '@/features/metadata-fields/core'
+} from '@/features/metadata-fields'
 
 export type CommandMenuMetadataOption<TValue> = {
 	key: string

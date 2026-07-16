@@ -1,4 +1,4 @@
-import type { CommandSelectionContext } from '@/features/command/core'
+import type { CommandSelectionContext } from '@/features/command'
 
 import type { BulkEntityType, BulkSelectionSource } from './bulk-action.types'
 import { createBulkSelectionSnapshot } from './bulk-selection-snapshot'

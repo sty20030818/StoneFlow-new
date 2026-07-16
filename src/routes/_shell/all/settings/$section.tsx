@@ -1,10 +1,7 @@
 import { Navigate, createFileRoute } from '@tanstack/react-router'
 
-import {
-	DEFAULT_SETTINGS_SECTION,
-	isSettingsSectionKey,
-} from '@/features/settings/model/settingsSection'
-import { SettingsPage } from '@/features/settings/components/SettingsPage'
+import { DEFAULT_SETTINGS_SECTION, isSettingsSectionKey } from '@/features/settings'
+import { SettingsPage } from '@/features/settings'
 
 export const Route = createFileRoute('/_shell/all/settings/$section')({
 	component: AllSettingsSectionPage,

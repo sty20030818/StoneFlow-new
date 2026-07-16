@@ -2,7 +2,7 @@ import type {
 	SidebarFooterItemKey,
 	SidebarItemVisibilityTarget,
 	SidebarMainItemKey,
-} from '@/features/settings/api/sidebarSettings'
+} from '@/features/settings'
 import { SidebarMenuItem } from '@/shared/components/base/sidebar'
 
 import { MainNavRowContextMenu } from './MainNavRowContextMenu'

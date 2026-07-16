@@ -6,9 +6,9 @@ import {
 	shouldClearBulkSelection,
 	type BulkActionId,
 	type BulkActionPayload,
-} from '@/features/bulk-action/core'
-import { useBulkActionContext } from '@/features/bulk-action/runtime'
-import { showBulkActionResultToast } from '@/features/bulk-action/components'
+} from '@/features/bulk-action'
+import { useBulkActionContext } from '@/features/bulk-action'
+import { showBulkActionResultToast } from '@/features/bulk-action'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
 import type { TaskListItem, TaskStatus } from '@/shared/types'

@@ -1,4 +1,4 @@
-import type { CommandSelectionContext } from '@/features/command/core'
+import type { CommandSelectionContext } from '@/features/command'
 import type {
 	LifecycleEntry,
 	LifecycleMode,

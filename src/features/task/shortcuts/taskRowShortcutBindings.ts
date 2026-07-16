@@ -1,3 +1,4 @@
+// 深路径：仅取 command 纯常量/类型，避免 @/features/command 桶 ↔ task 桶环依赖
 import { COMMAND_IDS } from '@/features/command/core'
 import type { Keybinding } from '@/features/command/keybinding'
 

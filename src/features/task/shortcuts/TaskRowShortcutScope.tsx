@@ -6,6 +6,7 @@ import {
 	createTaskBulkSelectionSnapshotFromTasks,
 	useBulkActionContext,
 } from '@/features/bulk-action'
+// 深路径：core/keybinding 纯面，避免 command public 桶与 task 环依赖
 import {
 	COMMAND_IDS,
 	CommandRegistry,

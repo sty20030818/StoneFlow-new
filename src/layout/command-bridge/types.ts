@@ -2,7 +2,7 @@ import type { NavigateOptions } from '@tanstack/react-router'
 
 import type { Scope } from '@/shared/types'
 import { useDialogStore } from '@/layout/model/useDialogStore'
-import type { CommandContext } from '@/features/command/core'
+import type { CommandContext } from '@/features/command'
 import type {
 	BulkActionId,
 	BulkActionPayload,

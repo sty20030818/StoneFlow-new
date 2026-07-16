@@ -9,14 +9,14 @@ import {
 	loadShellDeviceState,
 	updateShellSidebarDevicePreferences,
 } from '@/layout/model/shellDevicePreferences'
-import type { SidebarPreferenceSettings } from '@/features/settings/api/sidebarSettings'
+import type { SidebarPreferenceSettings } from '@/features/settings'
 import {
 	getSidebarSettings,
 	updateSidebarItemVisibility,
 	updateSidebarProjectSection,
-} from '@/features/settings/api/sidebarSettings'
+} from '@/features/settings'
 
-vi.mock('@/features/settings/api/sidebarSettings', () => ({
+vi.mock('@/features/settings', () => ({
 	getSidebarSettings: vi.fn<() => Promise<SidebarPreferenceSettings>>(),
 	updateSidebarItemVisibility:
 		vi.fn<

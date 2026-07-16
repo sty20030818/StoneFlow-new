@@ -1,3 +1,5 @@
+import { openSettings } from '@/app/navigation/intents'
+
 import {
 	readLastSettingsSection,
 	writeLastSettingsSection,
@@ -27,8 +29,7 @@ describe('lastSettingsSection', () => {
 		expect(readLastSettingsSection()).toBe('update')
 	})
 
-	it('openSettings 路径应带上 last section', async () => {
-		const { openSettings } = await import('@/app/navigation/intents')
+	it('openSettings 路径应带上 last section', () => {
 		writeLastSettingsSection('update')
 		expect(openSettings({ type: 'all' })).toBe('/all/settings/update')
 		expect(openSettings({ type: 'space', spaceId: 'space-a' })).toBe(

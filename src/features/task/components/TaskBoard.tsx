@@ -18,7 +18,7 @@ import {
 } from '@/shared/components/board'
 import { useDialogStore } from '@/layout/model/useDialogStore'
 import { useSectionSelection } from '@/features/bulk-action'
-import type { TaskDisplayPropertyKey } from '@/features/display-options/core'
+import type { TaskDisplayPropertyKey } from '@/features/display-options'
 import {
 	TASK_BOARD_STATUS_ORDER,
 	orderTasksByTaskBoardVisualOrder,
