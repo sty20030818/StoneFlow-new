@@ -71,7 +71,7 @@ import type {
 	TaskPlacementTarget,
 } from '@/features/command/core'
 import type { SearchProjectItem, SearchTaskItem, Space, TaskStatus } from '@/shared/types'
-import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
+import { type TaskPriorityValue } from '@/features/task'
 
 import { ShortcutTokens } from './ShortcutTokens'
 import { buildCommandMenuGroups, type CommandMenuEntry } from './command-menu-model'

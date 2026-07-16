@@ -1,6 +1,6 @@
 import type { ProjectExecutionTask } from '@/features/project/model/types'
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
-import { TaskBoard } from '@/features/task/components/TaskBoard'
+import type { TaskPriorityValue } from '@/features/task'
+import { TaskBoard } from '@/features/task'
 import { useDialogStore } from '@/layout/model/useDialogStore'
 import type { TaskStatus } from '@/shared/types'
 

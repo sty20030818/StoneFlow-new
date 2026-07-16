@@ -8,7 +8,7 @@ import {
 } from '@/features/lifecycle/api/lifecycle'
 import { deleteProject, restoreProject } from '@/features/project/api/projects'
 import { deleteSpace, restoreSpace } from '@/features/space/api/spaces'
-import { deleteTask, restoreTask } from '@/features/task/api/tasks'
+import { deleteTask, restoreTask } from '@/features/task'
 
 vi.mock('@tauri-apps/api/core', () => ({
 	invoke: vi.fn<(cmd: string, args?: Record<string, unknown>) => Promise<unknown>>(),
@@ -24,7 +24,7 @@ vi.mock('@/features/space/api/spaces', () => ({
 	restoreSpace: vi.fn<(spaceId: string) => Promise<unknown>>(),
 }))
 
-vi.mock('@/features/task/api/tasks', () => ({
+vi.mock('@/features/task', () => ({
 	deleteTask: vi.fn<(taskId: string) => Promise<unknown>>(),
 	restoreTask: vi.fn<(taskId: string) => Promise<unknown>>(),
 }))

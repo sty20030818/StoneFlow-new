@@ -3,10 +3,10 @@ import { useEffect, useRef } from 'react'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
-import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
-import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
-import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
-import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
+import { formatTaskPriorityLabel } from '@/features/task'
+import { formatTaskStatusLabel } from '@/features/task'
+import { PriorityIcon } from '@/features/task'
+import { TaskStatusIndicator } from '@/features/task'
 import {
 	globalSearchGroupHeadingClass,
 	globalSearchResultsPopoverClass,

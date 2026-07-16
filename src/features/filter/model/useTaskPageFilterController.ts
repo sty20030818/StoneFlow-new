@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 
 import type { ProjectOption } from '@/features/project/model/types'
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskPriorityValue } from '@/features/task'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 
 import {

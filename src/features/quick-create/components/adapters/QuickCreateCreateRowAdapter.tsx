@@ -1,7 +1,7 @@
 import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import { formatDateLabel } from '@/features/quick-create/model/quickCreateFormatters'
-import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
-import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
+import { PriorityIcon } from '@/features/task'
+import { TaskStatusIndicator } from '@/features/task'
 import { RowShell } from '@/shared/components/row'
 
 /**

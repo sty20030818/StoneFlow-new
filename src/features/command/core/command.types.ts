@@ -167,7 +167,7 @@ export type CommandProjectContext = {
 	currentProjectId?: string
 }
 
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskPriorityValue } from '@/features/task'
 import type { TaskStatus } from '@/shared/types'
 
 export type CommandViewContext = {

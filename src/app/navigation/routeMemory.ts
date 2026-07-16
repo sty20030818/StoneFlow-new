@@ -1,5 +1,5 @@
 import { getProjectDetail } from '@/features/project/api/projects'
-import { getTaskDetail } from '@/features/task/api/tasks'
+import { getTaskDetail } from '@/features/task'
 import type { Scope, Space } from '@/shared/types'
 
 import { buildCanonicalSectionPath, buildStartupFallbackPath } from '@/app/navigation/routePaths'

@@ -2,9 +2,9 @@ import {
 	archiveTask as archiveTaskApi,
 	deleteTask as deleteTaskApi,
 	updateTask as updateTaskApi,
-} from '@/features/task/api/tasks'
+} from '@/features/task'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskPriorityValue } from '@/features/task'
 import type { BulkSelectionSnapshot } from '@/features/bulk-action/core'
 import { emitEvent } from '@/shared/events'
 import type { TaskDetail, TaskStatus } from '@/shared/types'

@@ -189,7 +189,7 @@ vi.mock('@/shared/events', () => ({
 		vi.fn<(scope: unknown, onTaskChanged: (payload: unknown) => void) => void>(),
 }))
 
-vi.mock('@/features/task/model/useTaskListController', () => ({
+vi.mock('@/features/task', () => ({
 	useTaskListController: () => ({
 		pendingTaskId: null,
 		updateTaskPriority: vi.fn<(task: unknown, priority: unknown) => Promise<void>>(),
@@ -198,9 +198,6 @@ vi.mock('@/features/task/model/useTaskListController', () => ({
 		archiveListTask: vi.fn<(task: unknown) => Promise<void>>(),
 		deleteListTask: vi.fn<(task: unknown) => Promise<void>>(),
 	}),
-}))
-
-vi.mock('@/features/task/model/useTaskSelection', () => ({
 	useTaskSelection: () => ({
 		selectedTaskIdSet: new Set(['task-1']),
 		selectionSnapshot: {
@@ -215,18 +212,16 @@ vi.mock('@/features/task/model/useTaskSelection', () => ({
 		selectedCount: 1,
 		toggleTaskSelection: vi.fn<(taskId: string) => void>(),
 		clearTaskSelection: vi.fn<() => void>(),
+		focusedTaskId: null,
+		setFocusedTaskId: vi.fn(),
+		moveFocus: vi.fn(),
+		selectTaskIds: vi.fn(),
 	}),
-}))
-
-vi.mock('@/features/task/detail', () => ({
 	useRegisterTaskPreviewSource: vi.fn(),
 	useTaskPreviewController: () => ({
 		closePreview: vi.fn(),
 		openPreview: vi.fn(),
 	}),
-}))
-
-vi.mock('@/features/task/components/TaskBoard', () => ({
 	TaskBoard: ({
 		emptyActionLabel,
 		emptyDescription,
@@ -251,6 +246,7 @@ vi.mock('@/features/task/components/TaskBoard', () => ({
 			<div>{tasks.map((task) => task.title).join(',')}</div>
 		</div>
 	),
+	formatTaskStatusLabel: (status: string) => status,
 }))
 
 vi.mock('@/features/bulk-action', () => ({

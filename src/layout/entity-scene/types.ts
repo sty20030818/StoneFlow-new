@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import type { MainCardToolbarPill } from '@/shared/components/main-card/MainCardLayout'
 import type { TaskDisplayPropertyKey } from '@/features/display-options/core'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskPriorityValue } from '@/features/task'
 import type {
 	LifecycleEntry,
 	LifecycleMode,

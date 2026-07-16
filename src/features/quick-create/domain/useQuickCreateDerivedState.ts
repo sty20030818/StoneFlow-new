@@ -9,8 +9,8 @@ import type {
 	QuickCreatePanelState,
 	QuickCreateResultItem,
 } from '@/features/quick-create/model/types'
-import { formatTaskPlacementLabel } from '@/features/task/model/taskPlacement'
-import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
+import { formatTaskPlacementLabel } from '@/features/task'
+import { formatTaskPriorityLabel } from '@/features/task'
 
 const QUICK_CREATE_MAX_ROWS_PER_BOARD = 3
 

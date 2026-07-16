@@ -7,7 +7,7 @@ import {
 } from '@/features/bulk-action/core'
 import type { TaskBulkAdapter, TaskBulkMutationReport } from '@/features/bulk-action/adapters'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskPriorityValue } from '@/features/task'
 import type { TaskStatus } from '@/shared/types'
 
 type TaskBulkActionDefinition = Omit<BulkAction, 'run'>

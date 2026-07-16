@@ -22,10 +22,10 @@ import {
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
-import { useTaskListController } from '@/features/task/model/useTaskListController'
-import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { useTaskListController } from '@/features/task'
+import { useTaskSelection } from '@/features/task'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
-import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
+import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task'
 import {
 	useCreateViewMutation,
 	useDeleteViewMutation,

@@ -6,7 +6,7 @@ import {
 	selectTaskRange,
 	toggleTaskSelectionByVisibleOrder,
 	type TaskSelectionFocusState,
-} from '@/features/task/model/taskSelection'
+} from '@/features/task'
 
 export type EntitySelectionSnapshot = {
 	type: 'entity'

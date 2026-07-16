@@ -13,7 +13,11 @@ type TaskListSceneViewProps = {
 
 /**
  * inbox / all-tasks / no-project 共用场景视图。
- * 业务 wiring 在 useTaskListScene；本组件只拼 EntityScene 槽位。
+ *
+ * 业务 wiring 在 {@link useTaskListScene}；本组件只拼 EntityScene 槽位。
+ * routes 薄页应：`import { TaskListSceneView } from '@/features/task'`。
+ *
+ * @public 经 `@/features/task` 导出
  */
 export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 	const scene = useTaskListScene(variant)

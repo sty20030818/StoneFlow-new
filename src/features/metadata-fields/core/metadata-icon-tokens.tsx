@@ -11,9 +11,9 @@ import {
 	TargetIcon,
 } from 'lucide-react'
 
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
-import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
-import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
+import type { TaskPriorityValue } from '@/features/task'
+import { PriorityIcon } from '@/features/task'
+import { TaskStatusIndicator } from '@/features/task'
 import type { TaskStatus } from '@/shared/types'
 
 import type { MetadataActionIconKey } from './metadata-action-spec'

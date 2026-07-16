@@ -30,7 +30,7 @@ import { useSubmitRegistryActions, useSubmitRegistryContext } from '@/features/s
 import { takePendingCommandOpenIntent } from '@/features/space/api/spaces'
 import { useSpaces } from '@/features/space/hooks'
 import { useEntityDetailController } from '@/features/entity-detail'
-import { useTaskPreviewController } from '@/features/task/detail'
+import { useTaskPreviewController } from '@/features/task'
 import { useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
 import { type CommandOpenPayload, useCommandOpenListener } from '@/shared/events'
 import {
@@ -54,7 +54,7 @@ import {
 	type BulkActionResultMessageLabels,
 	type BulkEntityType,
 } from '@/features/bulk-action'
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskPriorityValue } from '@/features/task'
 import type { TaskStatus } from '@/shared/types'
 
 type OpenTaskCreate = ReturnType<typeof useDialogStore.getState>['openTaskCreateDialog']

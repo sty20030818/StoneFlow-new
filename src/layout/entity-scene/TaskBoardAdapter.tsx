@@ -1,7 +1,7 @@
 import { Button } from '@/shared/components/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/components/patterns/bulk-action'
 
-import { TaskBoard } from '@/features/task/components/TaskBoard'
+import { TaskBoard } from '@/features/task'
 
 import type {
 	EntitySceneTaskBoardActions,

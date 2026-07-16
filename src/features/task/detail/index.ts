@@ -1,3 +1,15 @@
+/**
+ * @internal **task 内部 barrel · 不是 public 入口**
+ *
+ * 外模块请使用：
+ * ```ts
+ * import { TaskDrawer, TaskPreview, … } from '@/features/task'
+ * ```
+ *
+ * 本文件仅方便 `features/task/**` 内短路径引用；跨 feature 深路径
+ * `@/features/task/detail` 由边界扫描禁止。
+ */
+
 export { TaskDrawer } from './components/TaskDrawer'
 export { TaskPage } from './components/TaskPage'
 export { TaskPreview } from './components/TaskPreview'

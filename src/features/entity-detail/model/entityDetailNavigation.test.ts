@@ -9,7 +9,7 @@ import {
 const getTaskDetailMock = vi.hoisted(() => vi.fn())
 const getProjectDetailMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@/features/task/api/tasks', () => ({
+vi.mock('@/features/task', () => ({
 	getTaskDetail: (taskId: string) => getTaskDetailMock(taskId),
 }))
 

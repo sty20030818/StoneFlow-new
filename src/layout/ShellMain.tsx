@@ -2,7 +2,7 @@ import { useEffect, type MouseEvent, type PropsWithChildren } from 'react'
 
 import { ShellDrawer } from '@/layout/ShellDrawer'
 import type { EntityDetailRouteState } from '@/features/entity-detail'
-import { TaskPreview, useTaskPreviewController } from '@/features/task/detail'
+import { TaskPreview, useTaskPreviewController } from '@/features/task'
 import {
 	ContextMenu,
 	ContextMenuContent,

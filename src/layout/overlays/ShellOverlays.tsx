@@ -3,7 +3,7 @@ import type { ProjectOption } from '@/features/project/model/types'
 import type { CustomDateDialogState } from '@/layout/model/useDialogStore'
 import { CreateDialogShell } from '@/layout/CreateDialogShell'
 import { ProjectCreateContent } from '@/features/project/components/ProjectCreateContent'
-import { TaskCreateContent } from '@/features/task/components/TaskCreateContent'
+import { TaskCreateContent } from '@/features/task'
 import { CustomDateDialog } from '@/features/metadata-fields'
 import { SystemStatusChip, UpdateDialog } from '@/features/update'
 

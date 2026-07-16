@@ -1,7 +1,7 @@
 import { differenceInCalendarDays, isThisWeek, parseISO } from 'date-fns'
 
-import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
-import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
+import { formatTaskPriorityLabel } from '@/features/task'
+import { formatTaskStatusLabel } from '@/features/task'
 import type { TaskListItem } from '@/shared/types'
 
 import type { ResolvedTaskDisplayOptions } from '@/features/display-options/core'

@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core'
 
 import { deleteProject, restoreProject } from '@/features/project/api/projects'
 import { deleteSpace, restoreSpace } from '@/features/space/api/spaces'
-import { deleteTask, restoreTask } from '@/features/task/api/tasks'
+import { deleteTask, restoreTask } from '@/features/task'
 import type {
 	LifecycleEntry,
 	LifecycleEntityType,

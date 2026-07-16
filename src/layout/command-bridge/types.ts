@@ -12,7 +12,7 @@ import type {
 import type { PageFilterKind } from '@/features/filter/model'
 import type { usePageFilterContext } from '@/features/filter/model'
 import type { useSubmitRegistryActions } from '@/features/submit/model'
-import type { useTaskPreviewController } from '@/features/task/detail'
+import type { useTaskPreviewController } from '@/features/task'
 
 export type PageFilter = ReturnType<typeof usePageFilterContext>
 export type SubmitActions = ReturnType<typeof useSubmitRegistryActions>

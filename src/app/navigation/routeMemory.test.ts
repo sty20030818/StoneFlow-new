@@ -25,7 +25,7 @@ vi.mock('@/features/project/api/projects', () => ({
 	getProjectDetail: getProjectDetailMock,
 }))
 
-vi.mock('@/features/task/api/tasks', () => ({
+vi.mock('@/features/task', () => ({
 	getTaskDetail: getTaskDetailMock,
 }))
 

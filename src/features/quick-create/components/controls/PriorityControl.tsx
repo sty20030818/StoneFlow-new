@@ -1,8 +1,8 @@
 import { CheckIcon } from 'lucide-react'
 
 import type { QuickCreatePriority } from '@/features/quick-create/model/types'
-import { TASK_PRIORITY_OPTIONS } from '@/features/task/model/taskPriority'
-import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
+import { TASK_PRIORITY_OPTIONS } from '@/features/task'
+import { PriorityIcon } from '@/features/task'
 import { Button } from '@/shared/components/base/button'
 import {
 	DropdownMenu,

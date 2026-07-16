@@ -31,7 +31,7 @@ import {
 	type CommandRuntime,
 	type TaskPlacementTarget,
 } from '@/features/command/core'
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskPriorityValue } from '@/features/task'
 import {
 	shellChromeAvatarClusterClass,
 	shellChromeCommandDialogClass,

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { EntityDetailDrawerHost } from './EntityDetailDrawerHost'
 
-vi.mock('@/features/task/detail', () => ({
+vi.mock('@/features/task', () => ({
 	TaskDrawer: ({ taskId, onClose }: { taskId: string; onClose: () => void }) => (
 		<div data-testid='task-drawer'>
 			<span>{taskId}</span>

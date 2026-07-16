@@ -121,7 +121,13 @@ const NO_PROJECT_FILTERS: Array<'all' | TaskStatus> = [
 
 /**
  * 三列表页（inbox / all-tasks / no-project）的唯一 wiring 入口。
- * 数据、filter、display、selection、bulk 注册、preview 注册集中在此。
+ *
+ * 收口：list data、filter、display、selection、command selection、
+ * bulk 可见性、preview source 注册，以及 EntityScene board 打包字段。
+ *
+ * @param variant - 列表场景变体（placement / pageKey / pills / 新建草稿等）
+ * @returns 供 {@link TaskListSceneView} 或厚页消费的 facade（勿把碎片再拆出 public）
+ * @public 经 `@/features/task` 导出
  */
 export function useTaskListScene(variant: TaskListSceneVariant) {
 	const config = VARIANT_CONFIG[variant]

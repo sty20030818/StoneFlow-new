@@ -7,11 +7,11 @@ import {
 } from '@/app/navigation/intents'
 import { listVisibleSpaces } from '@/features/space/api/spaces'
 import { projectDetailQueryOptions } from '@/features/project/hooks'
-import { taskDetailQueryOptions } from '@/features/task/hooks/task.queries'
+import { taskDetailQueryOptions } from '@/features/task'
 import type { Scope, Space, TaskDetail } from '@/shared/types'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ProjectDetail } from '@/features/project/model/types'
-import { TaskPageState } from '@/features/task/detail/components/TaskPageState'
+import { TaskPageState } from '@/features/task'
 
 export type DetailRouteErrorState = {
 	title: string

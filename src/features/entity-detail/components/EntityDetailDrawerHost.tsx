@@ -1,4 +1,4 @@
-import { TaskDrawer } from '@/features/task/detail'
+import { TaskDrawer } from '@/features/task'
 import { Button } from '@/shared/components/base/button'
 import { DetailBody, DetailSection } from '@/shared/components/detail'
 

@@ -16,7 +16,7 @@ import {
 	type MetadataActionIconKey,
 } from '@/features/metadata-fields/core'
 import type { TaskStatus } from '@/shared/types'
-import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import type { TaskPriorityValue } from '@/features/task'
 
 import { mapMetadataActionSpecToCommandMenuGroup } from './command-menu-metadata'
 

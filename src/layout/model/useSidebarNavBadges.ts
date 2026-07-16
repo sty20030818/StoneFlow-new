@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ShellSectionKey } from '@/layout/types'
 import { listLifecycleEntries } from '@/features/lifecycle/api/lifecycle'
 import { listSidebarProjects } from '@/features/project/api/projects'
-import { listTasks } from '@/features/task/api/tasks'
+import { listTasks } from '@/features/task'
 import { useEventSubscription } from '@/shared/events'
 import type { Scope } from '@/shared/types'
 
