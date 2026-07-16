@@ -1,7 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { InboxPage } from '@/features/inbox/ui/InboxPage'
+import { TaskListSceneView } from '@/features/task/ui/TaskListSceneView'
 
 export const Route = createFileRoute('/_shell/spaces/$spaceId/inbox')({
-	component: InboxPage,
+	component: InboxRoute,
 })
+
+function InboxRoute() {
+	return <TaskListSceneView variant='inbox' />
+}

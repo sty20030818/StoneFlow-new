@@ -1,7 +1,7 @@
 import { FolderIcon } from 'lucide-react'
 
-import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
-import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
+import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
+import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
 import type { QuickCreateTaskItem } from '@/features/quick-create/model/types'
 import { RowShell } from '@/shared/ui/row'
 import { cn } from '@/shared/lib/utils'

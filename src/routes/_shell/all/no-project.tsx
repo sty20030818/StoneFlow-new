@@ -1,7 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { NoProjectPage } from '@/features/no-project/ui/NoProjectPage'
+import { TaskListSceneView } from '@/features/task/ui/TaskListSceneView'
 
 export const Route = createFileRoute('/_shell/all/no-project')({
-	component: NoProjectPage,
+	component: NoProjectRoute,
 })
+
+function NoProjectRoute() {
+	return <TaskListSceneView variant='no-project' />
+}

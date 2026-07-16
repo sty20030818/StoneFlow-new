@@ -2,7 +2,7 @@ import { CheckIcon } from 'lucide-react'
 
 import { formatStatusLabel } from '@/features/quick-create/model/quickCreateFormatters'
 import type { QuickCreateStatus } from '@/features/quick-create/model/types'
-import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
+import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
 import { Button } from '@/shared/ui/base/button'
 import {
 	DropdownMenu,

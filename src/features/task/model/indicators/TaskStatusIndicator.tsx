@@ -37,6 +37,7 @@ function SolidCircleIcon({
 	)
 }
 
+/** 纯展示：任务状态指示器（无业务 hook；可供 metadata-fields 使用） */
 export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 	switch (status) {
 		case 'done':

@@ -3,7 +3,7 @@ import { type ReactNode } from 'react'
 import { taskDateMetadataIcons } from '@/features/metadata-fields'
 import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
-import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
+import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
 import { formatShortDate } from '@/shared/lib/date'
 import { cn } from '@/shared/lib/utils'
 import type { TaskListItem } from '@/shared/types'
@@ -79,7 +79,7 @@ export function TaskPreview({
 						</span>
 					</div>
 					<div className='flex flex-col gap-1.5'>
-						<h2 className='line-clamp-2 text-[20px] font-semibold leading-[1.25] text-foreground'>
+						<h2 className='line-clamp-2 text-[20px] font-semibold leading-tight text-foreground'>
 							{task.title}
 						</h2>
 						<div className={taskPreviewMetaRowClass}>

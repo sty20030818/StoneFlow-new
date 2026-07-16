@@ -21,8 +21,8 @@ import {
 	normalizeTaskPriorityValue,
 } from '@/features/task/model/taskPriority'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
-import { PriorityIcon } from '@/features/task/ui/PriorityIcon'
-import { TaskStatusIndicator } from '@/features/task/ui/TaskMetadataSelect'
+import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
+import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
 import type { ProjectOption } from '@/features/project/model/types'
 import type { Space, TaskStatus } from '@/shared/types'
 
