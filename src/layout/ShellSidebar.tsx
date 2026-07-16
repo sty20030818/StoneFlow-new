@@ -17,7 +17,7 @@ import {
 import type { ShellSectionKey } from '@/layout/types'
 import type { SidebarItemVisibilityTarget, SidebarMainItemKey } from '@/features/settings'
 import { SyncSidebarStatusStrip } from '@/features/sync'
-import { type ShellSidebarSettings } from '@/layout/model/shellDevicePreferences'
+import { type ShellSidebarSettings } from '@/features/settings'
 import { resolveRememberedPathForScope } from '@/app/navigation/routeMemoryStore'
 import { getSpaceVisual } from '@/features/space'
 import { SpaceEditorDialog } from '@/features/space'

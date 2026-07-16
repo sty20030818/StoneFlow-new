@@ -93,6 +93,10 @@ export { useTaskSelection } from './model/useTaskSelection'
 /** 列表数据 facade（Query → items + status）。 */
 export { useTaskListData } from './hooks/useTaskData'
 
+/** 列表 Query（与 list 页同 key，供 nav badges 等复用缓存）。 */
+export { useTaskListQuery, taskListQueryOptions } from './hooks/task.queries'
+export { taskKeys } from './hooks/task.keys'
+
 /** 详情 loader / ensureQueryData 用的稳定 queryOptions。 */
 export { taskDetailQueryOptions } from './hooks/task.queries'
 

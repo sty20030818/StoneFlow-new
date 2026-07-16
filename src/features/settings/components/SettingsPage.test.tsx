@@ -3,7 +3,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { listen } from '@tauri-apps/api/event'
 import type * as TauriEvent from '@tauri-apps/api/event'
 
-import type { ShellSidebarSettings } from '@/layout/model/shellDevicePreferences'
+import type { ShellSidebarSettings } from '@/features/settings'
 import { SettingsPage } from '@/features/settings/components/SettingsPage'
 import type { Space } from '@/shared/types'
 import { renderWithRouterContext } from '@/test/renderWithRouter'

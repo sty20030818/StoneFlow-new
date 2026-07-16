@@ -4,40 +4,32 @@ import type {
 	ShellSidebarProjectSectionSettings,
 	ShellSidebarSettings,
 	ShellUiDevicePreferences,
-} from '@/layout/model/shellDevicePreferences'
-import {
-	loadShellDeviceState,
-	updateShellSidebarDevicePreferences,
-} from '@/layout/model/shellDevicePreferences'
-import type { SidebarPreferenceSettings } from '@/features/settings'
+	SidebarPreferenceSettings,
+} from '@/features/settings'
 import {
 	getSidebarSettings,
+	loadShellDeviceState,
 	updateSidebarItemVisibility,
 	updateSidebarProjectSection,
+	updateShellSidebarDevicePreferences,
 } from '@/features/settings'
 
-vi.mock('@/features/settings', () => ({
-	getSidebarSettings: vi.fn<() => Promise<SidebarPreferenceSettings>>(),
-	updateSidebarItemVisibility:
-		vi.fn<
-			(
-				target: { kind: 'main' | 'footer'; key: string },
-				visible: boolean,
-			) => Promise<SidebarPreferenceSettings>
-		>(),
-	updateSidebarProjectSection:
-		vi.fn<
-			(config: SidebarPreferenceSettings['projectSection']) => Promise<SidebarPreferenceSettings>
-		>(),
-}))
-
-vi.mock('@/layout/model/shellDevicePreferences', async () => {
-	const actual = await vi.importActual<typeof import('@/layout/model/shellDevicePreferences')>(
-		'@/layout/model/shellDevicePreferences',
-	)
-
+vi.mock('@/features/settings', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/features/settings')>()
 	return {
 		...actual,
+		getSidebarSettings: vi.fn<() => Promise<SidebarPreferenceSettings>>(),
+		updateSidebarItemVisibility:
+			vi.fn<
+				(
+					target: { kind: 'main' | 'footer'; key: string },
+					visible: boolean,
+				) => Promise<SidebarPreferenceSettings>
+			>(),
+		updateSidebarProjectSection:
+			vi.fn<
+				(config: SidebarPreferenceSettings['projectSection']) => Promise<SidebarPreferenceSettings>
+			>(),
 		loadShellDeviceState: vi.fn(),
 		updateShellSidebarDevicePreferences: vi.fn(),
 	}

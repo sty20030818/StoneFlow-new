@@ -43,4 +43,22 @@ export {
 	updateSidebarProjectSection,
 } from './api/sidebarSettings'
 
+// ── 设备级偏好（本机 Store + legacy invoke 收口）──────────────────────────
+
+export type {
+	SidebarDesktopPreference,
+	ShellSidebarDevicePreferences,
+	ShellUiDevicePreferences,
+	ShellSidebarProjectSectionSettings,
+	ShellSidebarSettings,
+	ShellDeviceState,
+} from './api/shellDevicePreferences'
+
+export {
+	loadShellDeviceState,
+	buildShellSidebarSettings,
+	updateShellSidebarDevicePreferences,
+	updateShellUiDevicePreferences,
+} from './api/shellDevicePreferences'
+
 // 注意：SettingsPage 在 ./page，不在本文件

@@ -1,61 +1,59 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useMemo } from 'react'
 
 import type { ShellSectionKey } from '@/layout/types'
-import { listLifecycleEntries } from '@/features/lifecycle'
-import { listSidebarProjects } from '@/features/project'
-import { listTasks } from '@/features/task'
-import { useEventSubscription } from '@/shared/events'
+import { useLifecycleEntriesQuery } from '@/features/lifecycle'
+import { useProjectSidebarQuery } from '@/features/project'
+import { useTaskListQuery } from '@/features/task'
 import type { Scope } from '@/shared/types'
 
 type NavBadges = Partial<Record<ShellSectionKey, string>>
 
+/**
+ * 侧栏角标：与列表页共用 React Query keys。
+ * 数据随 mutation / workspace invalidate 自动刷新，不再直刷 api + 手写事件。
+ */
 export function useSidebarNavBadges(scope: Scope): NavBadges {
-	const [badges, setBadges] = useState<NavBadges>({})
+	const allTasks = useTaskListQuery({
+		scope,
+		viewKey: 'active',
+		placement: { kind: 'all' },
+	})
+	const inboxTasks = useTaskListQuery({
+		scope,
+		viewKey: 'active',
+		placement: { kind: 'inbox' },
+	})
+	const noProjectTasks = useTaskListQuery({
+		scope,
+		viewKey: 'active',
+		placement: { kind: 'noProject' },
+	})
+	const archiveEntries = useLifecycleEntriesQuery('archive', scope)
+	const trashEntries = useLifecycleEntriesQuery('trash', scope)
+	const sidebarProjects = useProjectSidebarQuery(scope)
 
-	const doRefresh = useCallback(async () => {
-		try {
-			const [allTasks, inboxItems, noProjectItems, archiveItems, trashItems, projects] =
-				await Promise.all([
-					listTasks({ scope, viewKey: 'active', placement: { kind: 'all' } }),
-					listTasks({ scope, viewKey: 'active', placement: { kind: 'inbox' } }),
-					listTasks({ scope, viewKey: 'active', placement: { kind: 'noProject' } }),
-					listLifecycleEntries({ mode: 'archive', scope }),
-					listLifecycleEntries({ mode: 'trash', scope }),
-					listSidebarProjects(scope),
-				])
+	return useMemo(() => {
+		const next: NavBadges = {}
+		const allCount = allTasks.data?.length ?? 0
+		const inboxCount = inboxTasks.data?.length ?? 0
+		const noProjectCount = noProjectTasks.data?.length ?? 0
+		const projectCount = sidebarProjects.data?.length ?? 0
+		const archiveCount = archiveEntries.data?.length ?? 0
+		const trashCount = trashEntries.data?.length ?? 0
 
-			const next: NavBadges = {}
-			if (allTasks.length > 0) next.tasks = String(allTasks.length)
-			if (inboxItems.length > 0) next.inbox = String(inboxItems.length)
-			if (noProjectItems.length > 0) next.noProject = String(noProjectItems.length)
-			if (projects.length > 0) next.projects = String(projects.length)
-			if (archiveItems.length > 0) next.archive = String(archiveItems.length)
-			if (trashItems.length > 0) next.trash = String(trashItems.length)
-			setBadges(next)
-		} catch {
-			// ignore count errors silently
-		}
-	}, [scope])
-
-	const scheduleRefresh = useCallback(() => {
-		void doRefresh()
-	}, [doRefresh])
-
-	useEffect(() => {
-		void doRefresh()
-	}, [doRefresh])
-
-	useEventSubscription('task:created', scheduleRefresh)
-	useEventSubscription('task:updated', scheduleRefresh)
-	useEventSubscription('task:deleted', scheduleRefresh)
-	useEventSubscription('lifecycle:changed', scheduleRefresh)
-	useEventSubscription('project:created', scheduleRefresh)
-	useEventSubscription('project:updated', scheduleRefresh)
-	useEventSubscription('project:deleted', scheduleRefresh)
-	useEventSubscription('space:created', scheduleRefresh)
-	useEventSubscription('space:updated', scheduleRefresh)
-	useEventSubscription('space:deleted', scheduleRefresh)
-	useEventSubscription('workspace:restored', scheduleRefresh)
-
-	return badges
+		if (allCount > 0) next.tasks = String(allCount)
+		if (inboxCount > 0) next.inbox = String(inboxCount)
+		if (noProjectCount > 0) next.noProject = String(noProjectCount)
+		if (projectCount > 0) next.projects = String(projectCount)
+		if (archiveCount > 0) next.archive = String(archiveCount)
+		if (trashCount > 0) next.trash = String(trashCount)
+		return next
+	}, [
+		allTasks.data,
+		inboxTasks.data,
+		noProjectTasks.data,
+		sidebarProjects.data,
+		archiveEntries.data,
+		trashEntries.data,
+	])
 }

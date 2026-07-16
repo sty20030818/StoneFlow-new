@@ -1,22 +1,20 @@
 import { create } from 'zustand'
 
 import {
-	getSidebarSettings,
-	type SidebarItemVisibilityTarget,
-	type SidebarPreferenceSettings,
-	type SidebarProjectSectionPreferenceConfig,
-	updateSidebarItemVisibility,
-	updateSidebarProjectSection,
-} from '@/features/settings'
-import {
 	buildShellSidebarSettings,
+	getSidebarSettings,
 	loadShellDeviceState,
 	type ShellSidebarDevicePreferences,
 	type ShellSidebarProjectSectionSettings,
 	type ShellSidebarSettings,
 	type ShellUiDevicePreferences,
+	type SidebarItemVisibilityTarget,
+	type SidebarPreferenceSettings,
+	type SidebarProjectSectionPreferenceConfig,
+	updateSidebarItemVisibility,
+	updateSidebarProjectSection,
 	updateShellSidebarDevicePreferences,
-} from '@/layout/model/shellDevicePreferences'
+} from '@/features/settings'
 
 type SidebarSettingsStatus = 'idle' | 'loading' | 'ready' | 'error'
 
