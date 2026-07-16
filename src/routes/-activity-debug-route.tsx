@@ -1,4 +1,4 @@
-import { Button } from '@/shared/ui/base/button'
+import { Button } from '@/shared/components/base/button'
 import { Link, getRouteApi } from '@tanstack/react-router'
 import { type FormEvent, useEffect, useState } from 'react'
 
@@ -9,7 +9,7 @@ import {
 import {
 	ActivityDebugPage,
 	type ActivityDebugLoadState,
-} from '@/features/activity/ui/ActivityDebugPage'
+} from '@/features/activity/components/ActivityDebugPage'
 
 import { normalizeActivityDebugSearch } from './-activity-debug-search'
 

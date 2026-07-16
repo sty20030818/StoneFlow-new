@@ -6,12 +6,12 @@ import {
 	openTaskDetail,
 } from '@/app/navigation/intents'
 import { listVisibleSpaces } from '@/features/space/api/spaces'
-import { projectDetailQueryOptions } from '@/features/project/query'
-import { taskDetailQueryOptions } from '@/features/task/query/task.queries'
+import { projectDetailQueryOptions } from '@/features/project/hooks'
+import { taskDetailQueryOptions } from '@/features/task/hooks/task.queries'
 import type { Scope, Space, TaskDetail } from '@/shared/types'
 import type { QueryClient } from '@tanstack/react-query'
 import type { ProjectDetail } from '@/features/project/model/types'
-import { TaskPageState } from '@/features/task/detail/ui/TaskPageState'
+import { TaskPageState } from '@/features/task/detail/components/TaskPageState'
 
 export type DetailRouteErrorState = {
 	title: string

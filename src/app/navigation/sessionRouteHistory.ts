@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useRouter } from '@tanstack/react-router'
 
 import { type ShellRoute } from '@/app/navigation/shellRoute'
 import { parseShellRoute } from '@/app/navigation/shellRoute'
-import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/app/layouts/shell/config'
+import { getSectionLabel, getSpaceLabel, type ShellProjectLink } from '@/layout/config'
 import type { Scope, Space } from '@/shared/types'
 import { isRememberableShellPath, normalizeShellMemoryPath } from '@/app/navigation/routeMemory'
 import {

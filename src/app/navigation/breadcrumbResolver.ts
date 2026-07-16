@@ -9,14 +9,14 @@ import {
 	Trash2Icon,
 } from 'lucide-react'
 
-import { getSectionLabel } from '@/app/layouts/shell/config'
+import { getSectionLabel } from '@/layout/config'
 import type { ShellRoute } from '@/app/navigation/shellRoute'
 import { openProjectDetail, openSection } from '@/app/navigation/intents'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
 import type { ShellSectionKey } from '@/app/navigation/shellRoute'
 import type { ProjectDetail } from '@/features/project/model/types'
 import type { TaskDetail } from '@/shared/types'
-import type { BreadcrumbNode } from '@/shared/ui/AppBreadcrumb'
+import type { BreadcrumbNode } from '@/shared/components/AppBreadcrumb'
 
 type BreadcrumbContext = {
 	route: ShellRoute

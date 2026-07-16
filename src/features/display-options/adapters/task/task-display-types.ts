@@ -1,4 +1,4 @@
-import type { EntitySceneTaskBoardConfig } from '@/app/layouts/entity-scene/types'
+import type { EntitySceneTaskBoardConfig } from '@/layout/entity-scene/types'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 
 import type {

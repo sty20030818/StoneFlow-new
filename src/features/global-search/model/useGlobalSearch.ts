@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { useSearchEntitiesQuery } from '@/features/global-search/query'
+import { useSearchEntitiesQuery } from '@/features/global-search/hooks'
 import type { SearchEntitiesResult } from '@/shared/types'
 
 const SEARCH_DEBOUNCE_MS = 150

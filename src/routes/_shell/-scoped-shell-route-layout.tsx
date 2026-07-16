@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from '@tanstack/react-router'
 import { useMemo } from 'react'
 
-import { ShellRouteLayout } from '@/app/layouts/ShellRouteLayout'
+import { ShellRouteLayout } from '@/layout/ShellRouteLayout'
 import { parseShellRoute } from '@/app/navigation/shellRoute'
 import type { Scope } from '@/shared/types'
 

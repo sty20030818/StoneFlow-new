@@ -4,7 +4,7 @@ import {
 	DEFAULT_SETTINGS_SECTION,
 	isSettingsSectionKey,
 } from '@/features/settings/model/settingsSection'
-import { SettingsPage } from '@/features/settings/ui/SettingsPage'
+import { SettingsPage } from '@/features/settings/components/SettingsPage'
 
 export const Route = createFileRoute('/_shell/spaces/$spaceId/settings/$section')({
 	component: SpaceSettingsSectionPage,

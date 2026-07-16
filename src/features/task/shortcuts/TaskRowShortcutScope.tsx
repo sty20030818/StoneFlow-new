@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+import { useDialogStore } from '@/layout/model/useDialogStore'
 import {
 	TASK_BULK_ACTION_IDS,
 	createTaskBulkSelectionSnapshotFromTasks,

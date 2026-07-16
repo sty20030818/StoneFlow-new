@@ -1,4 +1,4 @@
-import { Button } from '@/shared/ui/base/button'
+import { Button } from '@/shared/components/base/button'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 
 import { RouterFeedbackPage } from '../-router-feedback'

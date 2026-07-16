@@ -1,4 +1,4 @@
-import { Button } from '@/shared/ui/base/button'
+import { Button } from '@/shared/components/base/button'
 import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
 
 import type { AppRouterContext } from '@/app/router'

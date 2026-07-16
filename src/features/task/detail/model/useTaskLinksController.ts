@@ -7,7 +7,7 @@ import {
 	useDeleteTaskLinkMutation,
 	useTaskLinksQuery,
 	useUpdateTaskLinkMutation,
-} from '@/features/task/query'
+} from '@/features/task/hooks'
 import type { TaskLink } from '@/shared/types'
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error'

@@ -1,6 +1,6 @@
-export { TaskDrawer } from './ui/TaskDrawer'
-export { TaskPage } from './ui/TaskPage'
-export { TaskPreview } from './ui/TaskPreview'
+export { TaskDrawer } from './components/TaskDrawer'
+export { TaskPage } from './components/TaskPage'
+export { TaskPreview } from './components/TaskPreview'
 export type { TaskDetailDraft, TaskDetailPatch } from './model/taskDetailDraft'
 export {
 	applyTaskProjectDraftChange,

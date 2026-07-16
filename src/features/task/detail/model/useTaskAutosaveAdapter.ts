@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 
 import { useAutosaveController } from '@/shared/autosave'
-import { useUpdateTaskMutation } from '@/features/task/query'
+import { useUpdateTaskMutation } from '@/features/task/hooks'
 
 import {
 	createTaskDetailDraft,

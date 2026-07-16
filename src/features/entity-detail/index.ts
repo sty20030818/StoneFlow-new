@@ -18,4 +18,4 @@ export {
 	resolveEntityPageTarget,
 } from './model/entityDetailNavigation'
 export { useEntityDetailController } from './model/useEntityDetailController'
-export { EntityDetailDrawerHost } from './ui/EntityDetailDrawerHost'
+export { EntityDetailDrawerHost } from './components/EntityDetailDrawerHost'

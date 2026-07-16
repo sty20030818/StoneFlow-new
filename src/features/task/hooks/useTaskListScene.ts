@@ -1,14 +1,14 @@
 import { useCallback, useMemo, type ReactNode } from 'react'
 
-import type { MainCardToolbarPill } from '@/app/layouts/main-card/MainCardLayout'
+import type { MainCardToolbarPill } from '@/shared/components/main-card/MainCardLayout'
 import type {
 	EntitySceneTaskBoardActions,
 	EntitySceneTaskBoardConfig,
 	EntitySceneTaskBoardData,
 	EntitySceneVariant,
-} from '@/app/layouts/entity-scene'
-import { useCurrentShellRoute } from '@/app/layouts/shell/model/ShellRouteContext'
-import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
+} from '@/layout/entity-scene'
+import { useCurrentShellRoute } from '@/layout/model/ShellRouteContext'
+import { useDialogStore } from '@/layout/model/useDialogStore'
 import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
 import {
@@ -22,14 +22,14 @@ import {
 	useRegisterPageFilterController,
 	useTaskPageFilterController,
 } from '@/features/filter/model'
-import { useProjectOptions } from '@/features/project/query'
+import { useProjectOptions } from '@/features/project/hooks'
 import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
-import { useSpaces } from '@/features/space/query'
+import { useSpaces } from '@/features/space/hooks'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import { useTaskListController } from '@/features/task/model/useTaskListController'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
-import { useTaskListData } from '@/features/task/query'
+import { useTaskListData } from '@/features/task/hooks'
 import type { TaskPlacement, TaskStatus } from '@/shared/types'
 
 export type TaskListSceneVariant = 'inbox' | 'all' | 'no-project'

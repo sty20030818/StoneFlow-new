@@ -1,4 +1,4 @@
-import type { BadgeVariant } from '@/shared/ui/base/badge'
+import type { BadgeVariant } from '@/shared/components/base/badge'
 
 import type { SyncReplicaState, SyncStatus } from '@/features/sync/api/sync'
 

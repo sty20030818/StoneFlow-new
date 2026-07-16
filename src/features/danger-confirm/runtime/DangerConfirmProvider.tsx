@@ -14,7 +14,7 @@ import {
 	type DangerConfirmCopy,
 	type DangerConfirmRequest,
 } from '@/features/danger-confirm/model/dangerConfirm'
-import { DangerConfirmDialog } from '@/features/danger-confirm/ui/DangerConfirmDialog'
+import { DangerConfirmDialog } from '@/features/danger-confirm/components/DangerConfirmDialog'
 
 type PendingDangerConfirm = {
 	request: DangerConfirmRequest

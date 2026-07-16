@@ -3,7 +3,7 @@ import type {
 	MetadataFieldOption,
 	MetadataValueComparator,
 } from './metadata-field.types'
-import type { ShortcutMenuItem } from '@/shared/ui/shortcut-menu'
+import type { ShortcutMenuItem } from '@/shared/components/shortcut-menu'
 
 export type MetadataShortcutMode = 'default' | 'clear-only'
 

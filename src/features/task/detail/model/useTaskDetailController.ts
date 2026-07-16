@@ -4,7 +4,7 @@ import {
 	useDeleteTaskMutation,
 	useRestoreTaskMutation,
 	useTaskDetailData,
-} from '@/features/task/query'
+} from '@/features/task/hooks'
 
 export function useTaskDetailController(taskId: string) {
 	const detail = useTaskDetailData(taskId)

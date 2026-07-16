@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { TaskPage } from '@/features/task/detail/ui/TaskPage'
-import { useVisibleSpacesQuery } from '@/features/space/query/space.queries'
+import { TaskPage } from '@/features/task/detail/components/TaskPage'
+import { useVisibleSpacesQuery } from '@/features/space/hooks/space.queries'
 import {
 	createTaskLoaderError,
 	DetailRouteErrorStateView,

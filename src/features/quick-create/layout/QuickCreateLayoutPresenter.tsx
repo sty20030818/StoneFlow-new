@@ -8,7 +8,7 @@ import {
 import { useQuickCreateLayout } from '@/features/quick-create/layout/useQuickCreateLayout'
 import { useQuickCreateSession } from '@/features/quick-create/runtime/useQuickCreateSession'
 import type { QuickCreateSessionPhase } from '@/features/quick-create/runtime/quickCreateSessionTypes'
-import { QuickCreateFrame } from '@/features/quick-create/ui/QuickCreateFrame'
+import { QuickCreateFrame } from '@/features/quick-create/components/QuickCreateFrame'
 
 const QUICK_CREATE_MIN_WINDOW_HEIGHT = 364
 const QUICK_CREATE_RESIZE_THRESHOLD = 2
