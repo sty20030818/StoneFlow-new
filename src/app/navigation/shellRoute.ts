@@ -1,4 +1,4 @@
-import { isSettingsSectionKey, type SettingsSectionKey } from '@/features/settings'
+import { isSettingsSectionKey, type SettingsSectionKey } from '@/features/settings/contract'
 import type { Scope } from '@/shared/types'
 
 /**

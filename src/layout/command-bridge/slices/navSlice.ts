@@ -1,6 +1,7 @@
 import { startTransition } from 'react'
 
-import type { ShellCommandActions, ShellNavigationTarget } from '@/features/command'
+import type { ShellCommandActions } from '@/features/command'
+import type { ShellNavigationTarget } from '@/shared/types'
 import { openShellNavigationTarget } from '@/app/navigation/intents'
 import { requestSidebarToggle } from '@/shared/components/base/sidebar'
 import type { ShellCommandBridgeDeps } from '../types'

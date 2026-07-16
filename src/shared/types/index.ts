@@ -1,4 +1,5 @@
 export type { TaskPriority } from './taskPriority'
+export type { ShellNavigationTarget } from './shellNavigation'
 export type {
 	CreateTaskInput,
 	CreateTaskLinkInput,

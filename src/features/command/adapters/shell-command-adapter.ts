@@ -1,16 +1,9 @@
 import type { Command, CommandContext, TaskPlacementTarget } from '@/features/command/core'
 import { COMMAND_IDS } from '@/features/command/core'
 import type { PageFilterKind } from '@/features/filter'
+import type { ShellNavigationTarget } from '@/shared/types'
 
-export type ShellNavigationTarget =
-	| 'inbox'
-	| 'tasks'
-	| 'views'
-	| `views/${string}`
-	| 'projects'
-	| 'archive'
-	| 'trash'
-	| 'settings'
+export type { ShellNavigationTarget }
 
 export type ShellCommandActions = {
 	openCommandMenu: () => void

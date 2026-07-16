@@ -1,13 +1,18 @@
 /**
- * @fileoverview **settings · 唯一对外公共面（`@/features/settings`）**
+ * @fileoverview **settings · 主入口（`@/features/settings`）**
  *
- * 设置页、侧栏偏好 API、settings section 路由语义。
+ * ## 三入口约定
  *
- * 外模块：`import { … } from '@/features/settings'`
- * 禁止：`@/features/settings/api|model|components/…`
+ * | 入口 | 用途 |
+ * |------|------|
+ * | `@/features/settings` | 壳用 API / 类型；**含 contract 再导出**；**不含 Page** |
+ * | `@/features/settings/contract` | 纯分区记忆与类型（navigation 优先） |
+ * | `@/features/settings/page` | 仅 routes 挂 SettingsPage |
+ *
+ * 禁止：`@/features/settings/api|model|components/…`（feature 内部除外）
  */
 
-// ── Section 模型 ────────────────────────────────────────────────────────────
+// ── contract（主入口再导出，layout 可只记一个路径）────────────────────────
 
 export {
 	SETTINGS_SECTION_KEYS,
@@ -17,9 +22,9 @@ export {
 	resolveSettingsSectionKey,
 	getSettingsSectionLabel,
 	type SettingsSectionKey,
-} from './model/settingsSection'
-
-export { readLastSettingsSection, writeLastSettingsSection } from './model/lastSettingsSection'
+	readLastSettingsSection,
+	writeLastSettingsSection,
+} from './contract'
 
 // ── Sidebar preference API ──────────────────────────────────────────────────
 
@@ -38,7 +43,4 @@ export {
 	updateSidebarProjectSection,
 } from './api/sidebarSettings'
 
-// ── 官方页面 ────────────────────────────────────────────────────────────────
-
-/** 设置页（routes `/settings` 与 shell settings 段）。 */
-export { SettingsPage } from './components/SettingsPage'
+// 注意：SettingsPage 在 ./page，不在本文件

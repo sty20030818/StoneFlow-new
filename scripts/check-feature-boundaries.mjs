@@ -1,30 +1,25 @@
 #!/usr/bin/env bun
 /**
- * Feature public-surface boundary check（β-acl）。
+ * Feature public-surface boundary check（β-acl 终态）。
  *
- * ## 规则
- * - 已收口 feature 对外**只能** `from '@/features/<name>'`
- * - 禁止 `from '@/features/<name>/…`（深路径）
- * - 同 feature 目录内的深 import **允许**（实现细节）
- * - 可选：`*.test.*` 在「被测 feature 外」也禁止深路径（与生产一致）
+ * ## 合法跨 feature import
  *
- * ## 扩全仓
- * 将 FEATURES 数组加入更多 name 即可；全绿后可考虑 eslint-plugin-boundaries。
+ * ```ts
+ * from '@/features/<name>'            // 主入口
+ * from '@/features/<name>/contract'   // 纯契约（无 React Page）
+ * from '@/features/<name>/page'       // 仅页面（routes）
+ * ```
+ *
+ * ## 禁止
+ * - `@/features/<name>/api|hooks|model|components|…` 任意其它深路径
+ * - 同 feature 内部深 import **允许**
  *
  * 用法：`bun run scripts/check-feature-boundaries.mjs`
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
-/**
- * 已收口 public 的 feature。
- * β-acl-1: task
- * β-acl-2: selection / submit / filter / danger-confirm
- * β-acl-3: project / space / view / lifecycle
- * 扩全仓时按波次追加 name。
- *
- * @type {readonly string[]}
- */
+/** @type {readonly string[]} */
 const FEATURES = [
 	'task',
 	'selection',
@@ -35,7 +30,6 @@ const FEATURES = [
 	'space',
 	'view',
 	'lifecycle',
-	// β-acl-4
 	'command',
 	'settings',
 	'entity-detail',
@@ -43,7 +37,6 @@ const FEATURES = [
 	'display-options',
 	'bulk-action',
 	'sync',
-	// β-acl-5
 	'quick-create',
 	'global-search',
 	'update',
@@ -51,6 +44,9 @@ const FEATURES = [
 	'activity',
 	'project-overview',
 ]
+
+/** 稳定第二/第三入口（目前仅 settings 落地；其它 feature 尚未建文件也不算违规，但禁止任意深路径） */
+const STABLE_SUFFIXES = ['contract', 'page']
 
 const SRC = join(import.meta.dir, '..', 'src')
 
@@ -77,7 +73,6 @@ function walkTsFiles(dir) {
 }
 
 /**
- * importer 是否位于某 feature 树内（允许深 import 自己）。
  * @param {string} fileAbs
  * @param {string} feature
  */
@@ -87,63 +82,67 @@ function isInsideFeature(fileAbs, feature) {
 }
 
 /**
- * 唯一允许的跨 feature 深路径（非兼容层，是环依赖断点）：
- * `app/navigation` → `settings/model/*` 纯分区记忆。
- * 不可经 `@/features/settings` 桶，否则会加载 SettingsPage → layout 环。
+ * `@/features/foo` | `@/features/foo/contract` | `@/features/foo/page` → legal
+ * `@/features/foo/model/x` → illegal
  *
- * @param {string} fileAbs
  * @param {string} feature
- * @param {string} line
+ * @param {string} importPath  // without quotes, e.g. @/features/settings/contract
  */
-function isAllowlistedDeepImport(fileAbs, feature, line) {
-	const rel = relative(SRC, fileAbs).replaceAll('\\', '/')
-	if (
-		feature === 'settings' &&
-		rel.startsWith('app/navigation/') &&
-		/from\s+['"]@\/features\/settings\/model\//.test(line)
-	) {
-		return true
+function isLegalFeatureImportPath(feature, importPath) {
+	const base = `@/features/${feature}`
+	if (importPath === base) return true
+	for (const suffix of STABLE_SUFFIXES) {
+		if (importPath === `${base}/${suffix}`) return true
 	}
 	return false
 }
 
-const deepImportRe = (feature) =>
-	new RegExp(String.raw`from\s+['"]@/features/${feature}/[^'"]+['"]`, 'g')
-
 /** @type {Array<{ file: string, feature: string, line: number, text: string }>} */
 const violations = []
+
+const importPathRe = /from\s+['"](@\/features\/[^'"]+)['"]/g
+const mockPathRe = /vi\.mock\(\s*['"](@\/features\/[^'"]+)['"]/g
 
 for (const file of walkTsFiles(SRC)) {
 	const text = readFileSync(file, 'utf8')
 	const lines = text.split('\n')
-	for (const feature of FEATURES) {
-		if (isInsideFeature(file, feature)) continue
-		const re = deepImportRe(feature)
-		lines.forEach((line, idx) => {
-			if (re.test(line)) {
-				if (!isAllowlistedDeepImport(file, feature, line)) {
-					violations.push({
-						file: relative(join(SRC, '..'), file),
-						feature,
-						line: idx + 1,
-						text: line.trim(),
-					})
+	lines.forEach((line, idx) => {
+		for (const re of [importPathRe, mockPathRe]) {
+			re.lastIndex = 0
+			let m
+			while ((m = re.exec(line)) !== null) {
+				const importPath = m[1]
+				for (const feature of FEATURES) {
+					const prefix = `@/features/${feature}`
+					if (importPath !== prefix && !importPath.startsWith(`${prefix}/`)) {
+						continue
+					}
+					if (isInsideFeature(file, feature)) {
+						continue
+					}
+					if (!isLegalFeatureImportPath(feature, importPath)) {
+						violations.push({
+							file: relative(join(SRC, '..'), file),
+							feature,
+							line: idx + 1,
+							text: line.trim(),
+						})
+					}
 				}
 			}
-			re.lastIndex = 0
-		})
-	}
+		}
+	})
 }
 
 if (violations.length > 0) {
-	console.error('Feature boundary violations (deep import of public features):\n')
+	console.error('Feature boundary violations:\n')
 	for (const v of violations) {
 		console.error(`  ${v.file}:${v.line}`)
 		console.error(`    ${v.text}`)
-		console.error(`    → use: import { … } from '@/features/${v.feature}'\n`)
+		console.error(`    → 合法: @/features/${v.feature} | …/contract | …/page（禁止其它深路径）\n`)
 	}
-	console.error(`Total: ${violations.length} (pilot features: ${FEATURES.join(', ')})`)
+	console.error(`Total: ${violations.length}`)
 	process.exit(1)
 }
 
-console.log(`Feature boundaries OK (${FEATURES.length} features: ${FEATURES.join(', ')}).`)
+console.log(`Feature boundaries OK (${FEATURES.length} features; entries: . | contract | page).`)

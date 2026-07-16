@@ -1,14 +1,101 @@
 /**
- * @fileoverview **metadata-fields · 唯一对外公共面（`@/features/metadata-fields`）**
+ * @fileoverview **metadata-fields · 主入口（`@/features/metadata-fields`）**
  *
- * 元数据控件与 action spec（状态/优先级/日期/归属）。task/project/command 复用。
- *
- * 外模块：`import { … } from '@/features/metadata-fields'`
- * 禁止：`@/features/metadata-fields/core|components|adapters/…`
- *
- * 注意：纯 task 标签/图标优先走 `@/features/task`；本 feature 提供通用 metadata UI 协议。
+ * 显式 export 清单。纯 task 标签/图标优先 `@/features/task`。
  */
 
-export * from './core'
-export * from './components'
-export * from './adapters'
+// ── core ────────────────────────────────────────────────────────────────────
+
+export type {
+	MetadataActionFieldKey,
+	MetadataActionIconKey,
+	MetadataActionOption,
+	MetadataActionSpec,
+	MetadataDateOption,
+	MetadataDateOptionKey,
+	MetadataFieldIndicator,
+	MetadataFieldOption,
+	MetadataFieldValue,
+	MetadataValueComparator,
+	BuildTaskPlacementGroupsInput,
+	TaskPlacementGroup,
+	TaskPlacementGroupItem,
+	TaskPlacementGroupProject,
+	TaskPlacementGroupSpace,
+	TaskPlacementTarget,
+	CustomDateFieldKey,
+	MetadataDropdownMappedProps,
+	MetadataShortcutMode,
+} from './core'
+
+export {
+	createDueDateActionSpec,
+	createPlacementActionSpec,
+	createPriorityActionSpec,
+	createSpaceActionSpec,
+	createStatusActionSpec,
+	mapMetadataActionSpecToDropdownProps,
+	renderMetadataActionIcon,
+	buildMetadataShortcutItems,
+	defaultMetadataValueComparator,
+	getMetadataFieldIndicator,
+	addLocalDays,
+	createMetadataDateOptions,
+	createMetadataDateOptionsConfig,
+	formatMetadataDisplayDate,
+	formatLocalDate,
+	getEndOfLocalWeek,
+	normalizeMetadataDateValue,
+	startOfLocalDay,
+	formatCustomDateInputValue,
+	formatCustomDateStorageValue,
+	getCustomDateDialogDescription,
+	getCustomDateDialogRemoveLabel,
+	getCustomDateDialogSubmitLabel,
+	getCustomDateDialogTitle,
+	normalizeCustomDateInputValue,
+	parseCustomDateInputValue,
+	buildTaskPlacementGroups,
+	findTaskPlacementGroupItem,
+	getTaskPlacementGroupSearchText,
+	getTaskPlacementTargetValue,
+	isTaskPlacementTargetEqual,
+	resolveTaskPlacementTarget,
+} from './core'
+
+// ── components ──────────────────────────────────────────────────────────────
+
+export {
+	MetadataFieldButton,
+	stopMetadataFieldEventPropagation,
+	type MetadataFieldButtonProps,
+	MetadataFieldMenuItem,
+	type MetadataFieldMenuItemProps,
+	MetadataFieldDropdown,
+	type MetadataFieldDropdownProps,
+	MetadataDateDropdown,
+	type MetadataDateDropdownProps,
+	MetadataDateButton,
+	type MetadataDateButtonProps,
+	CustomDateDialog,
+	MetadataPlacementDropdown,
+	type MetadataPlacementDropdownProps,
+	MetadataPlacementGroupList,
+	type MetadataPlacementGroupListProps,
+} from './components'
+
+// ── adapters ────────────────────────────────────────────────────────────────
+
+export {
+	createTaskPlacementGroupedDropdownProps,
+	createTaskPriorityMetadataDropdownProps,
+	createTaskPriorityMetadataOptions,
+	createTaskStatusMetadataDropdownProps,
+	createTaskStatusMetadataOptions,
+	taskDateMetadataIcons,
+	createProjectParentMetadataDropdownProps,
+	projectDateMetadataIcons,
+	createSpaceMetadataDropdownProps,
+	createSpaceMetadataOptions,
+	getSpaceMetadataButtonVisual,
+} from './adapters'

@@ -1,15 +1,49 @@
 /**
- * @fileoverview **update · 唯一对外公共面（`@/features/update`）**
+ * @fileoverview **update · 主入口（`@/features/update`）**
  *
- * 应用内更新检查/下载/安装、状态芯片与设置区块。
- *
- * 外模块：`import { … } from '@/features/update'`
- * 禁止：`@/features/update/api|model|components/…`
+ * 显式 export 清单（禁止 `export *`）。
  */
 
-export * from './api/updates'
-export * from './model/useUpdateStore'
-export * from './model/useUpdateEvents'
+// ── api ─────────────────────────────────────────────────────────────────────
+
+export type {
+	UpdateChannel,
+	UpdateCheckMode,
+	UpdateInfo,
+	UpdateSettings,
+	CheckIntervalSecs,
+	UpdatePhasePayload,
+	UpdateSessionPhase,
+	UpdateSessionSnapshot,
+} from './api/updates'
+
+export {
+	ALLOWED_CHECK_INTERVAL_SECS,
+	UPDATE_EVENTS,
+	checkUpdate,
+	downloadAndInstall,
+	restartAndInstall,
+	skipVersion,
+	setCheckMode,
+	setChannel,
+	setCheckIntervalSecs,
+	getUpdateSettings,
+	getUpdateSession,
+	cancelUpdateDownload,
+} from './api/updates'
+
+// ── model ───────────────────────────────────────────────────────────────────
+
+export type { UpdateUiPhase, UpdateProgress } from './model/useUpdateStore'
+export {
+	useUpdateStore,
+	selectReadyChipVisible,
+	selectFooterUpdateVisible,
+} from './model/useUpdateStore'
+
+export { useUpdateEvents, useUpdateActions } from './model/useUpdateEvents'
+
+// ── UI ──────────────────────────────────────────────────────────────────────
 
 export { UpdateDialog } from './components/UpdateDialog'
 export { SystemStatusChip } from './components/SystemStatusChip'

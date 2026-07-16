@@ -6,8 +6,8 @@ import {
 	getSettingsSectionLabel,
 	DEFAULT_SETTINGS_SECTION,
 	type SettingsSectionKey,
-} from '@/features/settings/model/settingsSection'
-import { writeLastSettingsSection } from '@/features/settings/model/lastSettingsSection'
+	writeLastSettingsSection,
+} from '../contract'
 import { SettingsGeneralPanel } from '@/features/settings/components/panels/SettingsGeneralPanel'
 import { SettingsSidebarPanel } from '@/features/settings/components/panels/SettingsSidebarPanel'
 import { SettingsSyncPanel } from '@/features/settings/components/panels/SettingsSyncPanel'
