@@ -1,14 +1,14 @@
 import {
 	createTaskPriorityMetadataDropdownProps,
 	createTaskStatusMetadataDropdownProps,
-	formatTaskPriorityLabel,
-	formatTaskStatusLabel,
 	MetadataDateDropdown,
 	MetadataFieldDropdown,
 	taskDateMetadataIcons,
 } from '@/features/metadata-fields'
 import type { AutosaveController } from '@/shared/autosave'
 import { DetailFieldRow } from '@/shared/components/detail'
+import { formatTaskPriorityLabel } from '@/features/task/model/taskPriority'
+import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 

@@ -7,12 +7,24 @@ import {
 	buildStartupFallbackPath,
 	buildTaskDetailPath,
 } from '@/app/navigation/routePaths'
-// 类型从 adapters 源文件取，避免 @/features/command 桶初始化拖死 navigation
-import type { ShellNavigationTarget } from '@/features/command/adapters/shell-command-adapter'
-// 仅取纯 model，避免经 settings public 拉 SettingsPage → layout 形成环
+// 仅取 settings 纯 model（禁止经 public 拉 SettingsPage → layout 环依赖）
 import { readLastSettingsSection } from '@/features/settings/model/lastSettingsSection'
 import type { SettingsSectionKey } from '@/features/settings/model/settingsSection'
 import type { Scope } from '@/shared/types'
+
+/**
+ * 壳导航目标（与 command adapter 的 ShellNavigationTarget 同构）。
+ * 定义在 navigation，避免 intents 依赖 command 桶。
+ */
+export type ShellNavigationTarget =
+	| 'inbox'
+	| 'tasks'
+	| 'views'
+	| `views/${string}`
+	| 'projects'
+	| 'archive'
+	| 'trash'
+	| 'settings'
 
 /**
  * 业务导航意图层：把“打开项目 / 打开设置 / 返回启动页”等产品动作映射为 path。

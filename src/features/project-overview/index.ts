@@ -1,5 +1,11 @@
 /**
- * 目录入口：`@/features/project-overview` → public。
- * 契约见 {@link ./index.public.ts}。
+ * @fileoverview **project-overview · 唯一对外公共面（`@/features/project-overview`）**
+ *
+ * 项目总览 scene 页（数据走 project public hooks）。
+ *
+ * 外模块：`import { … } from '@/features/project-overview'`
+ * 禁止：`@/features/project-overview/components/…`
  */
-export * from './index.public'
+
+/** 项目总览页（routes `/projects`）。 */
+export { ProjectOverviewPage } from './components/ProjectOverviewPage'

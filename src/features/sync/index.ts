@@ -1,5 +1,49 @@
 /**
- * 目录入口：`@/features/sync` → public。
- * 契约见 {@link ./index.public.ts}。
+ * @fileoverview **sync · 唯一对外公共面（`@/features/sync`）**
+ *
+ * 同步状态 Provider、配置/运行 API、页脚/侧栏状态 UI。
+ *
+ * 外模块：`import { … } from '@/features/sync'`
+ * 禁止：`@/features/sync/api|model|components/…`
  */
-export * from './index.public'
+
+// ── API types + IO ──────────────────────────────────────────────────────────
+
+export type {
+	SyncStatus,
+	SyncReplicaState,
+	SyncPolicyMode,
+	SyncStatusPayload,
+	SyncDiagnosticsPayload,
+} from './api/sync'
+
+export {
+	getSyncStatus,
+	getSyncDiagnostics,
+	configureSync,
+	updateSyncPolicy,
+	runSync,
+} from './api/sync'
+
+// ── Status presentation ─────────────────────────────────────────────────────
+
+export type { SyncStatusTone, SyncReplicaTone } from './model/syncStatusPresentation'
+
+export {
+	getSyncStatusTone,
+	getSyncReplicaTone,
+	getSyncReplicaBadgeVariant,
+	formatSyncStatus,
+	formatReplicaState,
+} from './model/syncStatusPresentation'
+
+// ── Provider ────────────────────────────────────────────────────────────────
+
+/** 壳级同步状态共享（layout 挂载）。 */
+export { SyncStatusProvider, useSharedSyncStatus } from './model/SyncStatusProvider'
+
+// ── UI ──────────────────────────────────────────────────────────────────────
+
+export { SyncFooterStatusItem } from './components/SyncFooterStatusItem'
+export { SyncSidebarStatusStrip } from './components/SyncSidebarStatusStrip'
+export { SyncConfigDialog } from './components/SyncConfigDialog'

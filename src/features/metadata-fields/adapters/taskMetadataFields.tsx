@@ -1,7 +1,6 @@
 import { CalendarClockIcon, CalendarX2Icon, BellIcon } from 'lucide-react'
 
-import { formatTaskPriorityLabel, type TaskPriorityValue } from '@/features/task'
-import { formatTaskStatusLabel } from '@/features/task'
+import type { TaskPriorityValue } from '@/features/task'
 import {
 	buildTaskPlacementGroups,
 	createPriorityActionSpec,
@@ -71,5 +70,3 @@ export const taskDateMetadataIcons = {
 	scheduled: <CalendarClockIcon className='size-3.5' />,
 	reminder: <BellIcon className='size-3.5' />,
 } as const
-
-export { formatTaskPriorityLabel, formatTaskStatusLabel }

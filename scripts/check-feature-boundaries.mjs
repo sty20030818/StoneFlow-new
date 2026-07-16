@@ -87,8 +87,9 @@ function isInsideFeature(fileAbs, feature) {
 }
 
 /**
- * 已知的「有意深 import」（避免 public 桶拉 UI 形成环）。
- * 仅限纯 model / 无 React 装配路径。
+ * 唯一允许的跨 feature 深路径（非兼容层，是环依赖断点）：
+ * `app/navigation` → `settings/model/*` 纯分区记忆。
+ * 不可经 `@/features/settings` 桶，否则会加载 SettingsPage → layout 环。
  *
  * @param {string} fileAbs
  * @param {string} feature
@@ -96,27 +97,10 @@ function isInsideFeature(fileAbs, feature) {
  */
 function isAllowlistedDeepImport(fileAbs, feature, line) {
 	const rel = relative(SRC, fileAbs).replaceAll('\\', '/')
-	// navigation intents 只读 settings 分区记忆，不可经 public 拉 SettingsPage
 	if (
 		feature === 'settings' &&
 		rel.startsWith('app/navigation/') &&
 		/from\s+['"]@\/features\/settings\/model\//.test(line)
-	) {
-		return true
-	}
-	// task shortcuts 只取 command 纯 core/keybinding，避免 command↔task public 桶环依赖
-	if (
-		feature === 'command' &&
-		rel.startsWith('features/task/') &&
-		/from\s+['"]@\/features\/command\/(core|keybinding)/.test(line)
-	) {
-		return true
-	}
-	// navigation 只取 command adapter 类型定义，避免 command 桶初始化
-	if (
-		feature === 'command' &&
-		rel.startsWith('app/navigation/') &&
-		/from\s+['"]@\/features\/command\/adapters\//.test(line)
 	) {
 		return true
 	}

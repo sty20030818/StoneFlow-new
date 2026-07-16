@@ -4,8 +4,6 @@ export {
 	createTaskPriorityMetadataOptions,
 	createTaskStatusMetadataDropdownProps,
 	createTaskStatusMetadataOptions,
-	formatTaskPriorityLabel,
-	formatTaskStatusLabel,
 	taskDateMetadataIcons,
 } from './taskMetadataFields'
 export {

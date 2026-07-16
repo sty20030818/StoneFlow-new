@@ -1,4 +1,4 @@
-import type { CommandRowTargetContext, CommandSelectionContext } from '@/features/command/core'
+import type { CommandRowTargetContext, CommandSelectionContext } from '@/features/command'
 
 export type TaskRowRef = {
 	targetId: string
