@@ -9,7 +9,7 @@ import type { Scope, Space, TaskDetail } from '@/shared/types'
 import type { ProjectOption } from '@/features/project/model/types'
 import { DetailPageGrid, DetailPageMain, DetailPageSidebar } from '@/shared/ui/detail'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
-import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 
 import { createTaskDetailDraft } from '../model/taskDetailDraft'
 import { useTaskAutosaveAdapter } from '../model/useTaskAutosaveAdapter'

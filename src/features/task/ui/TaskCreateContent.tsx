@@ -12,8 +12,8 @@ import {
 	PlacementMetaAction,
 	StatusMetaAction,
 } from '@/features/task/ui/TaskCreateMetaActions'
-import type { SubmitIntent } from '@/features/submit/model'
-import { normalizeSubmitError, useSubmitTargetFromForm, useZodForm } from '@/shared/form'
+import { useSubmitTargetFromForm, type SubmitIntent } from '@/features/submit/model'
+import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { Input } from '@/shared/ui/base/input'

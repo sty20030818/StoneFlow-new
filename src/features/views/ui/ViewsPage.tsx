@@ -40,7 +40,7 @@ import { ViewEditorDialog } from '@/features/view/ui/ViewEditorDialog'
 import { useTaskChangedListener } from '@/shared/events'
 import type { View } from '@/shared/types'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
-import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 import { PlusIcon } from 'lucide-react'
 const EMPTY_TASK_VIEWS: View[] = []
 

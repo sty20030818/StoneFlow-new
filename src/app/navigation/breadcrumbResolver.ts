@@ -16,8 +16,7 @@ import { resolveShellRouteScope } from '@/app/navigation/scope'
 import type { ShellSectionKey } from '@/app/navigation/shellRoute'
 import type { ProjectDetail } from '@/features/project/model/types'
 import type { TaskDetail } from '@/shared/types'
-
-import type { BreadcrumbNode } from './AppBreadcrumb'
+import type { BreadcrumbNode } from '@/shared/ui/AppBreadcrumb'
 
 type BreadcrumbContext = {
 	route: ShellRoute

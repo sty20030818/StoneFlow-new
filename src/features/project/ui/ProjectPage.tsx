@@ -37,7 +37,7 @@ import { useTaskListData } from '@/features/task/query'
 import type { Scope, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/ui/base/button'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
-import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 import {
 	Empty,
 	EmptyContent,

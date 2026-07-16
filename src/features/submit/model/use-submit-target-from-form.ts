@@ -5,7 +5,7 @@ import {
 	useRegisterSubmitTarget,
 	type SubmitIntent,
 	type SubmitTargetContext,
-} from '@/features/submit/model'
+} from './SubmitRegistryProvider'
 
 type UseSubmitTargetFromFormOptions<TFieldValues extends FieldValues> = {
 	id: string | null

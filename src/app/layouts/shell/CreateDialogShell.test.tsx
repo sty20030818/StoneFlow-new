@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 
 import type { Space } from '@/shared/types'
-import { CreateDialogShell } from './create-dialog-shell'
+import { CreateDialogShell } from './CreateDialogShell'
 
 describe('CreateDialogShell', () => {
 	it('在 Header 显示当前 Space，并可选择其他 Space', async () => {

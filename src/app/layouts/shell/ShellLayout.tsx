@@ -72,7 +72,7 @@ import { ProjectCreateContent } from '@/features/project/ui/ProjectCreateContent
 import { TaskPreviewProvider, useTaskPreviewController } from '@/features/task/detail'
 import { TaskCreateContent } from '@/features/task/ui/TaskCreateContent'
 import { CustomDateDialog } from '@/features/metadata-fields'
-import { CreateDialogShell } from '@/shared/ui/create-dialog-shell'
+import { CreateDialogShell } from '@/app/layouts/shell/CreateDialogShell'
 import { requestSidebarToggle, SidebarProvider } from '@/shared/ui/base/sidebar'
 import {
 	shellChromeSkeletonMainCardClass,

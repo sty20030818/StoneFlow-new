@@ -33,7 +33,7 @@ import {
 	useRegisterCommandSelection,
 } from '@/features/selection/model'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
-import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 import { useViewsQuery } from '@/features/view/query'
 import { PlusIcon } from 'lucide-react'
 

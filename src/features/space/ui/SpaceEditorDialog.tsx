@@ -9,7 +9,8 @@ import {
 	SPACE_ICON_OPTIONS,
 } from '@/features/space/model/spaceVisuals'
 import type { Space } from '@/shared/types'
-import { normalizeSubmitError, useSubmitTargetFromForm, useZodForm } from '@/shared/form'
+import { normalizeSubmitError, useZodForm } from '@/shared/form'
+import { useSubmitTargetFromForm } from '@/features/submit/model'
 import { cn } from '@/shared/lib/utils'
 import { StatusNotice } from '@/shared/ui/StatusNotice'
 import { Button } from '@/shared/ui/base/button'

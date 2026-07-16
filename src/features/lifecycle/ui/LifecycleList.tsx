@@ -32,7 +32,7 @@ import { Button } from '@/shared/ui/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/ui/patterns/bulk-action'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
 import type { LucideIcon } from 'lucide-react'
-import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 
 type LifecycleListProps = {
 	mode: LifecycleMode

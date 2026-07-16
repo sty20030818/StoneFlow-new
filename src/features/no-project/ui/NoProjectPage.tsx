@@ -26,7 +26,7 @@ import { useTaskListData } from '@/features/task/query'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
-import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 import { Layers3Icon, PlusIcon } from 'lucide-react'
 import type { TaskStatus } from '@/shared/types'
 

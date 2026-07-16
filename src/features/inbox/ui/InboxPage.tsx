@@ -25,7 +25,7 @@ import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useTaskListData } from '@/features/task/query'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
-import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 import { PlusIcon } from 'lucide-react'
 
 const INBOX_DISPLAY_PAGE_KEY = 'task:inbox'

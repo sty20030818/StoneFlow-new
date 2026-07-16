@@ -27,7 +27,7 @@ import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/featur
 import { useSpaces } from '@/features/space/query'
 import type { TaskStatus } from '@/shared/types'
 import { AppBreadcrumb } from '@/shared/ui/AppBreadcrumb'
-import { resolveBreadcrumb } from '@/shared/ui/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 import { PlusIcon } from 'lucide-react'
 
 const TASK_FILTERS: Array<'all' | 'noProject' | TaskStatus> = [

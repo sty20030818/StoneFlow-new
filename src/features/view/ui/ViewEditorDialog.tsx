@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo } from 'react'
 import { FormProvider, useController } from 'react-hook-form'
 
 import type { ProjectOption } from '@/features/project/model/types'
-import { useSubmitTargetFromForm, useZodForm } from '@/shared/form'
+import { useZodForm } from '@/shared/form'
+import { useSubmitTargetFromForm } from '@/features/submit/model'
 import { cn } from '@/shared/lib/utils'
 import type {
 	CreateViewInput,

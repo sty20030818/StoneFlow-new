@@ -3,10 +3,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { FormProvider } from 'react-hook-form'
 
 import { SubmitRegistryProvider, useSubmitRegistryContext } from '@/features/submit/model'
+import { useZodForm } from '@/shared/form/use-zod-form'
+import { z } from 'zod'
 
 import { useSubmitTargetFromForm } from './use-submit-target-from-form'
-import { useZodForm } from './use-zod-form'
-import { z } from 'zod'
 
 const schema = z.object({
 	name: z.string().trim().min(1, '请输入名称'),
