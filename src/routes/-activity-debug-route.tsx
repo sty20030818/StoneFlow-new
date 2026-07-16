@@ -2,14 +2,8 @@ import { Button } from '@/shared/components/base/button'
 import { Link, getRouteApi } from '@tanstack/react-router'
 import { type FormEvent, useEffect, useState } from 'react'
 
-import {
-	getEntityActivities,
-	type ActivityEntityType,
-} from '@/features/activity/api/getEntityActivities'
-import {
-	ActivityDebugPage,
-	type ActivityDebugLoadState,
-} from '@/features/activity/components/ActivityDebugPage'
+import { getEntityActivities, type ActivityEntityType } from '@/features/activity'
+import { ActivityDebugPage, type ActivityDebugLoadState } from '@/features/activity'
 
 import { normalizeActivityDebugSearch } from './-activity-debug-search'
 

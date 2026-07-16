@@ -1,4 +1,4 @@
-import type { ActivityEntityType } from '@/features/activity/api/getEntityActivities'
+import type { ActivityEntityType } from '@/features/activity'
 
 const ACTIVITY_ENTITY_TYPES = new Set<ActivityEntityType>([
 	'task',

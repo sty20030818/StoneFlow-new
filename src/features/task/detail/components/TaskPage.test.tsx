@@ -11,7 +11,7 @@ import { renderWithRouterContext } from '@/test/renderWithRouter'
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskPage } from './TaskPage'
 
-const getEntityActivitiesMock = vi.hoisted(() => vi.fn<() => Promise<unknown[]>>())
+const getEntityActivitiesMock = vi.hoisted(() => vi.fn<(input?: unknown) => Promise<unknown[]>>())
 
 const mockAutosave = vi.hoisted(() => ({
 	value: createAutosaveController(),
@@ -61,9 +61,30 @@ vi.mock('../components/TaskLinksSection', () => ({
 	TaskLinksSection: ({ taskId }: { taskId: string }) => <div>Links for {taskId}</div>,
 }))
 
-vi.mock('@/features/activity/api/getEntityActivities', () => ({
-	getEntityActivities: getEntityActivitiesMock,
-}))
+vi.mock('@/features/activity', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/features/activity')>()
+	return {
+		...actual,
+		getEntityActivities: getEntityActivitiesMock,
+		useEntityActivitiesQuery: (
+			input: { entityType: string; entityId: string; limit?: number } | null,
+		) => {
+			if (input) {
+				void getEntityActivitiesMock(input)
+			}
+			const data = getEntityActivitiesMock.mock.results.at(-1)?.value
+			return {
+				data: Array.isArray(data) ? data : [],
+				isError: false,
+				isLoading: false,
+				isPending: false,
+				isFetching: false,
+				error: null,
+				refetch: () => getEntityActivitiesMock(input),
+			}
+		},
+	}
+})
 
 describe('TaskPage', () => {
 	beforeEach(() => {

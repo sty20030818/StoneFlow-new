@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { useEntityActivitiesQuery } from '@/features/activity/hooks'
-import type { ActivityTimelineEntry } from '@/features/activity/api/getEntityActivities'
+import { useEntityActivitiesQuery } from '@/features/activity'
+import type { ActivityTimelineEntry } from '@/features/activity'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
 import { useEventSubscription, type AppEvent } from '@/shared/events'

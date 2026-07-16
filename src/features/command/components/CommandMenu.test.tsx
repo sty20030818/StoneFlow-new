@@ -1,7 +1,7 @@
+import { useEffect, useState } from 'react'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-import { searchEntities } from '@/features/global-search/api/searchEntities'
 import { createShellCommandRegistry } from '@/features/command/commands'
 import {
 	CommandRuntime,
@@ -17,11 +17,65 @@ import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/
 import { CommandMenu } from './CommandMenu'
 import type { CommandMenuMode } from './command-menu-types'
 
-vi.mock('@/features/global-search/api/searchEntities', () => ({
-	searchEntities: vi.fn<typeof searchEntities>(),
-}))
+const mockedSearchEntities = vi.hoisted(() =>
+	vi.fn<(input: { query: string; limitPerSection?: number }) => Promise<SearchEntitiesResult>>(),
+)
 
-const mockedSearchEntities = searchEntities as ReturnType<typeof vi.fn<typeof searchEntities>>
+function emptySearchResult(): SearchEntitiesResult {
+	return {
+		tasks: [],
+		projects: [],
+		completedTasks: [],
+		completedProjects: [],
+	}
+}
+
+vi.mock('@/features/global-search', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/features/global-search')>()
+	return {
+		...actual,
+		searchEntities: mockedSearchEntities,
+		/** 命令菜单测搜索：桩掉 hook，仍走 debounce + mock searchEntities */
+		useGlobalSearch: (query: string) => {
+			const normalized = query.trim()
+			const [result, setResult] = useState(emptySearchResult)
+			const [isLoading, setIsLoading] = useState(false)
+			const [hasResolvedQuery, setHasResolvedQuery] = useState(false)
+
+			useEffect(() => {
+				if (!normalized) {
+					setResult(emptySearchResult())
+					setHasResolvedQuery(false)
+					setIsLoading(false)
+					return
+				}
+
+				setIsLoading(true)
+				const timerId = window.setTimeout(() => {
+					void mockedSearchEntities({ query: normalized, limitPerSection: 5 })
+						.then((data) => {
+							setResult(data ?? emptySearchResult())
+							setHasResolvedQuery(true)
+						})
+						.finally(() => {
+							setIsLoading(false)
+						})
+				}, 150)
+
+				return () => {
+					window.clearTimeout(timerId)
+				}
+			}, [normalized])
+
+			return {
+				result,
+				isLoading: Boolean(normalized) && isLoading,
+				errorMessage: null,
+				hasResolvedQuery,
+			}
+		},
+	}
+})
 
 describe('CommandMenu', () => {
 	beforeEach(() => {

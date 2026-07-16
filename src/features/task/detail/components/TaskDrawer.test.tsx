@@ -7,7 +7,7 @@ import type { TaskDetail } from '@/shared/types'
 import type { TaskDetailDraft } from '../model/taskDetailDraft'
 import { TaskDrawer } from './TaskDrawer'
 
-const getEntityActivitiesMock = vi.hoisted(() => vi.fn<() => Promise<unknown[]>>())
+const getEntityActivitiesMock = vi.hoisted(() => vi.fn<(input?: unknown) => Promise<unknown[]>>())
 const mockDetailController = vi.hoisted(() => ({
 	value: {
 		task: null as TaskDetail | null,
@@ -120,9 +120,30 @@ vi.mock('@/features/entity-detail', () => ({
 	useEntityDetailController: () => mockEntityDetailController.value,
 }))
 
-vi.mock('@/features/activity/api/getEntityActivities', () => ({
-	getEntityActivities: getEntityActivitiesMock,
-}))
+vi.mock('@/features/activity', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/features/activity')>()
+	return {
+		...actual,
+		getEntityActivities: getEntityActivitiesMock,
+		useEntityActivitiesQuery: (
+			input: { entityType: string; entityId: string; limit?: number } | null,
+		) => {
+			if (input) {
+				void getEntityActivitiesMock(input)
+			}
+			const data = getEntityActivitiesMock.mock.results.at(-1)?.value
+			return {
+				data: Array.isArray(data) ? data : [],
+				isError: false,
+				isLoading: false,
+				isPending: false,
+				isFetching: false,
+				error: null,
+				refetch: () => getEntityActivitiesMock(input),
+			}
+		},
+	}
+})
 
 describe('TaskDrawer', () => {
 	beforeEach(() => {

@@ -43,6 +43,13 @@ const FEATURES = [
 	'display-options',
 	'bulk-action',
 	'sync',
+	// β-acl-5
+	'quick-create',
+	'global-search',
+	'update',
+	'workspace',
+	'activity',
+	'project-overview',
 ]
 
 const SRC = join(import.meta.dir, '..', 'src')

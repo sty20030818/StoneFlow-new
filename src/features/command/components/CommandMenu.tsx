@@ -56,7 +56,7 @@ import {
 	CommandList,
 } from '@/shared/components/base/command'
 import { getProjectStatusBadgeVariant } from '@/shared/components/badgeSemantics'
-import { useGlobalSearch } from '@/features/global-search/model/useGlobalSearch'
+import { useGlobalSearch } from '@/features/global-search'
 import { useDialogStore, type CustomDateDialogState } from '@/layout/model/useDialogStore'
 import type { PageDateFilterValue, PageFilterApplyInput, PageFilterKind } from '@/features/filter'
 import type {

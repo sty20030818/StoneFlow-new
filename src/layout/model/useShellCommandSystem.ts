@@ -31,7 +31,7 @@ import { takePendingCommandOpenIntent } from '@/features/space'
 import { useSpaces } from '@/features/space'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useTaskPreviewController } from '@/features/task'
-import { useSearchFocusIntentStore } from '@/features/global-search/model/useSearchFocusIntentStore'
+import { useSearchFocusIntentStore } from '@/features/global-search'
 import { type CommandOpenPayload, useCommandOpenListener } from '@/shared/events'
 import {
 	DEFAULT_KEYBINDINGS,

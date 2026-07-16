@@ -14,7 +14,7 @@ import {
 import { AppLayout } from './AppLayout'
 import { setActiveScope } from '@/features/space'
 import { useSpaces } from '@/features/space'
-import { useWorkspaceSync } from '@/features/workspace/model/useWorkspaceSync'
+import { useWorkspaceSync } from '@/features/workspace'
 
 type ShellRouteLayoutProps = PropsWithChildren<{
 	scope: Scope

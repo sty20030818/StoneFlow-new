@@ -10,10 +10,7 @@ import {
 	Undo2Icon,
 } from 'lucide-react'
 
-import type {
-	ActivityTimelineChange,
-	ActivityTimelineEntry,
-} from '@/features/activity/api/getEntityActivities'
+import type { ActivityTimelineChange, ActivityTimelineEntry } from '@/features/activity'
 import { taskDateMetadataIcons } from '@/features/metadata-fields'
 import { getSpaceVisual } from '@/features/space'
 import {

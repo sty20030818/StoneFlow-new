@@ -5,8 +5,8 @@
  */
 
 import { SyncFooterStatusItem } from '@/features/sync'
-import { AppVersionFooterItem } from '@/features/update/components/AppVersionFooterItem'
-import { UpdateStatusFooterItem } from '@/features/update/components/UpdateStatusFooterItem'
+import { AppVersionFooterItem } from '@/features/update'
+import { UpdateStatusFooterItem } from '@/features/update'
 import {
 	shellFooterLeftTrackClass,
 	shellFooterRightTrackClass,

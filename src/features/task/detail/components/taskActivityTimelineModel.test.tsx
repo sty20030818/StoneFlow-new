@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import type { ActivityTimelineEntry } from '@/features/activity/api/getEntityActivities'
+import type { ActivityTimelineEntry } from '@/features/activity'
 import type { ProjectOption } from '@/features/project'
 import type { Space } from '@/shared/types'
 
