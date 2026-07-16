@@ -49,11 +49,14 @@ vi.mock('@/app/layouts/main-card/MainCardLayout', () => ({
 	},
 }))
 
-vi.mock('@/app/layouts/shell/model/useDrawerStore', () => ({
-	useDrawerStore: (selector: (state: { openDrawer: typeof openDrawerSpy }) => unknown) =>
-		selector({
-			openDrawer: openDrawerSpy,
-		}),
+vi.mock('@/features/entity-detail', () => ({
+	useEntityDetailController: () => ({
+		activeDetail: null,
+		isOpen: false,
+		openDrawer: openDrawerSpy,
+		closeDrawer: vi.fn(),
+		openPage: vi.fn(),
+	}),
 }))
 
 vi.mock('@/features/lifecycle/query', () => ({

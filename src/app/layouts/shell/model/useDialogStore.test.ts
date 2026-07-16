@@ -1,5 +1,4 @@
 import { useDialogStore } from '@/app/layouts/shell/model/useDialogStore'
-import { useDrawerStore } from '@/app/layouts/shell/model/useDrawerStore'
 
 describe('useDialogStore', () => {
 	beforeEach(() => {
@@ -13,11 +12,6 @@ describe('useDialogStore', () => {
 				placement: undefined,
 			},
 			taskCreatePresentation: 'default',
-		})
-		useDrawerStore.setState({
-			isDrawerOpen: false,
-			activeDrawerKind: null,
-			activeDrawerId: null,
 		})
 	})
 

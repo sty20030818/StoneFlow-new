@@ -6,8 +6,6 @@ import type { CustomDateFieldKey } from '@/features/metadata-fields/core'
 import type { CommandMenuMode } from '@/features/command/ui/command-menu-types'
 import type { TaskPlacement, TaskStatus } from '@/shared/types'
 
-import { useDrawerStore } from './useDrawerStore'
-
 // ----- 类型 -----
 type TaskCreateDialogDraft = {
 	projectId?: string | null
@@ -81,7 +79,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 	customDateDialog: null,
 
 	openCommand: (mode = 'default', selectionOverride = null, filterKind = 'root') => {
-		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: true,
 			commandMenuMode: mode,
@@ -102,9 +99,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 			commandMenuFilterKind: 'root',
 		}),
 	setCommandOpen: (open) => {
-		if (open) {
-			useDrawerStore.getState().closeDrawer()
-		}
 		set({
 			isCommandOpen: open,
 			commandMenuMode: open ? useDialogStore.getState().commandMenuMode : 'default',
@@ -115,7 +109,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 	},
 	setCommandMenuFilterKind: (kind) => set({ commandMenuFilterKind: kind }),
 	openShortcutHelp: () => {
-		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: false,
 			commandMenuMode: 'default',
@@ -138,9 +131,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 			isShortcutHelpOpen: !state.isShortcutHelpOpen,
 		})),
 	setShortcutHelpOpen: (open) => {
-		if (open) {
-			useDrawerStore.getState().closeDrawer()
-		}
 		set({
 			isCommandOpen: open ? false : useDialogStore.getState().isCommandOpen,
 			commandMenuMode: open ? 'default' : useDialogStore.getState().commandMenuMode,
@@ -151,7 +141,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 	},
 
 	openTaskCreateDialog: (draft, presentation = 'default') => {
-		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: false,
 			commandMenuMode: 'default',
@@ -181,7 +170,6 @@ export const useDialogStore = create<DialogState>((set) => ({
 		})),
 
 	openProjectCreateDialog: () => {
-		useDrawerStore.getState().closeDrawer()
 		set({
 			isCommandOpen: false,
 			commandMenuMode: 'default',

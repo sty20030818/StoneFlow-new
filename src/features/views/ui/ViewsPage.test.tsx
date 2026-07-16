@@ -108,13 +108,14 @@ const mockViewQueryState: {
 	taskRun: mockTaskRunState,
 }
 
-vi.mock('@/app/layouts/shell/model/useDrawerStore', () => ({
-	useDrawerStore: (selector: (state: unknown) => unknown) =>
-		selector({
-			activeDrawerId: null,
-			activeDrawerKind: null,
-			openDrawer: openDrawerSpy,
-		}),
+vi.mock('@/features/entity-detail', () => ({
+	useEntityDetailController: () => ({
+		activeDetail: null,
+		isOpen: false,
+		openDrawer: openDrawerSpy,
+		closeDrawer: vi.fn(),
+		openPage: vi.fn(),
+	}),
 }))
 
 vi.mock('@/app/layouts/shell/model/useDialogStore', () => ({
