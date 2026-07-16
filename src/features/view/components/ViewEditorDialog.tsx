@@ -3,7 +3,7 @@ import { FormProvider, useController } from 'react-hook-form'
 
 import type { ProjectOption } from '@/features/project/model/types'
 import { useZodForm } from '@/shared/form'
-import { useSubmitTargetFromForm } from '@/features/submit/model'
+import { useSubmitTargetFromForm } from '@/features/submit'
 import { cn } from '@/shared/lib/utils'
 import type {
 	CreateViewInput,

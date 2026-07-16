@@ -21,7 +21,7 @@ import {
 	buildTaskCommandSelection,
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
-} from '@/features/selection/model'
+} from '@/features/selection'
 import { useTaskListController } from '@/features/task'
 import { useTaskSelection } from '@/features/task'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'

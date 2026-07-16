@@ -5,7 +5,7 @@ import {
 	SubmitRegistryProvider,
 	useSubmitRegistryActions,
 	useSubmitRegistryContext,
-} from '@/features/submit/model'
+} from '@/features/submit'
 import { TaskCreateContent } from './TaskCreateContent'
 
 const createTaskMock = vi.fn()

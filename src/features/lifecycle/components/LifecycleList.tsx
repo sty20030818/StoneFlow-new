@@ -26,7 +26,7 @@ import {
 	useEntitySelection,
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
-} from '@/features/selection/model'
+} from '@/features/selection'
 import type { LifecycleEntry, LifecycleMode, Scope } from '@/shared/types'
 import { Button } from '@/shared/components/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/components/patterns/bulk-action'

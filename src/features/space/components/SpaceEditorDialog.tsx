@@ -10,7 +10,7 @@ import {
 } from '@/features/space/model/spaceVisuals'
 import type { Space } from '@/shared/types'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
-import { useSubmitTargetFromForm } from '@/features/submit/model'
+import { useSubmitTargetFromForm } from '@/features/submit'
 import { cn } from '@/shared/lib/utils'
 import { StatusNotice } from '@/shared/components/StatusNotice'
 import { Button } from '@/shared/components/base/button'

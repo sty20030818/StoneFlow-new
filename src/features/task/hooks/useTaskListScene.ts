@@ -18,12 +18,9 @@ import {
 import type { TaskDisplayPageKey } from '@/features/display-options/core'
 import { useTaskDisplayOptions } from '@/features/display-options/model'
 import { useEntityDetailController } from '@/features/entity-detail'
-import {
-	useRegisterPageFilterController,
-	useTaskPageFilterController,
-} from '@/features/filter/model'
+import { useRegisterPageFilterController, useTaskPageFilterController } from '@/features/filter'
 import { useProjectOptions } from '@/features/project/hooks'
-import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection/model'
+import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection'
 import { useSpaces } from '@/features/space/hooks'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task/detail'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'

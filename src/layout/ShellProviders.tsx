@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 
-import { CommandSelectionProvider } from '@/features/selection/model'
-import { PageFilterProvider } from '@/features/filter/model'
-import { SubmitRegistryProvider } from '@/features/submit/model'
+import { CommandSelectionProvider } from '@/features/selection'
+import { PageFilterProvider } from '@/features/filter'
+import { SubmitRegistryProvider } from '@/features/submit'
 import { TaskPreviewProvider } from '@/features/task'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 

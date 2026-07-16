@@ -3,7 +3,7 @@
  * Feature public-surface boundary check（β-acl）。
  *
  * ## 规则
- * - 试点 feature（当前：`task`）对外**只能** `from '@/features/<name>'`
+ * - 已收口 feature 对外**只能** `from '@/features/<name>'`
  * - 禁止 `from '@/features/<name>/…`（深路径）
  * - 同 feature 目录内的深 import **允许**（实现细节）
  * - 可选：`*.test.*` 在「被测 feature 外」也禁止深路径（与生产一致）
@@ -16,8 +16,14 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
-/** @type {readonly string[]} 已收口 public 的 feature（试点起：task） */
-const FEATURES = ['task']
+/**
+ * 已收口 public 的 feature。
+ * β-acl-1: task · β-acl-2: selection / submit / filter / danger-confirm
+ * 扩全仓时按波次追加 name。
+ *
+ * @type {readonly string[]}
+ */
+const FEATURES = ['task', 'selection', 'submit', 'filter', 'danger-confirm']
 
 const SRC = join(import.meta.dir, '..', 'src')
 
@@ -90,6 +96,4 @@ if (violations.length > 0) {
 	process.exit(1)
 }
 
-console.log(
-	`Feature boundaries OK (pilot: ${FEATURES.join(', ')}; no deep imports outside own tree).`,
-)
+console.log(`Feature boundaries OK (${FEATURES.length} features: ${FEATURES.join(', ')}).`)

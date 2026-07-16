@@ -12,7 +12,7 @@ import {
 	type TaskPlacementTarget,
 } from '@/features/command/core'
 import type { ShellCommandActions } from '@/features/command/adapters'
-import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter/model'
+import type { PageFilterApplyInput, PageFilterKind } from '@/features/filter'
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
 import { CommandMenu } from './CommandMenu'
 import type { CommandMenuMode } from './command-menu-types'

@@ -31,7 +31,7 @@ import {
 	useEntitySelection,
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
-} from '@/features/selection/model'
+} from '@/features/selection'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 import { useViewsQuery } from '@/features/view/hooks'

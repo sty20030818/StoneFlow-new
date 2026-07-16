@@ -4,7 +4,7 @@ import { vi } from 'vitest'
 
 import { ShellRouteProvider } from '@/layout/model/ShellRouteContext'
 import { parseShellRoute } from '@/app/navigation/shellRoute'
-import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection/model'
+import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection'
 import { renderWithMatchedRoute } from '@/test/renderWithRouter'
 import { ViewsPage } from '@/features/view/components/ViewsPage'
 

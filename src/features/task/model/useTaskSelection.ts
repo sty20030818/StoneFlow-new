@@ -1,4 +1,4 @@
-import { useEntitySelection } from '@/features/selection/model'
+import { useEntitySelection } from '@/features/selection'
 
 /**
  * 为任务列表提供最小可用的本地选择状态，并在数据刷新后自动剔除失效项。

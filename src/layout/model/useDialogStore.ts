@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 import type { CommandSelectionContext } from '@/features/command/core'
-import type { PageFilterKind } from '@/features/filter/model'
+import type { PageFilterKind } from '@/features/filter'
 import type { CustomDateFieldKey } from '@/features/metadata-fields/core'
 import type { CommandMenuMode } from '@/features/command/components/command-menu-types'
 import type { TaskPlacement, TaskStatus } from '@/shared/types'

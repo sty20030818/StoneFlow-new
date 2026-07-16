@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
-import { SubmitRegistryProvider, useSubmitRegistryActions } from '@/features/submit/model'
+import { SubmitRegistryProvider, useSubmitRegistryActions } from '@/features/submit'
 import { ProjectCreateContent } from './ProjectCreateContent'
 
 const createProjectMock = vi.fn()

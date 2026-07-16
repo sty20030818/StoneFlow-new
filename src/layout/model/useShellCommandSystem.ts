@@ -24,9 +24,9 @@ import {
 	useDialogStore,
 } from '@/layout/model/useDialogStore'
 import { listAllVisibleProjects } from '@/features/project/api/projects'
-import { useCommandSelectionContext } from '@/features/selection/model'
-import { usePageFilterContext } from '@/features/filter/model'
-import { useSubmitRegistryActions, useSubmitRegistryContext } from '@/features/submit/model'
+import { useCommandSelectionContext } from '@/features/selection'
+import { usePageFilterContext } from '@/features/filter'
+import { useSubmitRegistryActions, useSubmitRegistryContext } from '@/features/submit'
 import { takePendingCommandOpenIntent } from '@/features/space/api/spaces'
 import { useSpaces } from '@/features/space/hooks'
 import { useEntityDetailController } from '@/features/entity-detail'

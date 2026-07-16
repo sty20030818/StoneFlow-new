@@ -5,7 +5,7 @@ import {
 	SubmitRegistryProvider,
 	useRegisterSubmitTarget,
 	useSubmitRegistryContext,
-} from '@/features/submit/model'
+} from '@/features/submit'
 import { SpaceEditorDialog } from './SpaceEditorDialog'
 
 describe('SpaceEditorDialog', () => {

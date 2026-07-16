@@ -3,7 +3,7 @@ import { FormProvider, useController } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { useCreateProjectMutation } from '@/features/project/hooks'
-import { useSubmitTargetFromForm, type SubmitIntent } from '@/features/submit/model'
+import { useSubmitTargetFromForm, type SubmitIntent } from '@/features/submit'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import { Button } from '@/shared/components/base/button'
 import { Input } from '@/shared/components/base/input'

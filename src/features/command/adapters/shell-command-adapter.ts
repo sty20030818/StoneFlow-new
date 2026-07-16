@@ -1,6 +1,6 @@
 import type { Command, CommandContext, TaskPlacementTarget } from '@/features/command/core'
 import { COMMAND_IDS } from '@/features/command/core'
-import type { PageFilterKind } from '@/features/filter/model'
+import type { PageFilterKind } from '@/features/filter'
 
 export type ShellNavigationTarget =
 	| 'inbox'

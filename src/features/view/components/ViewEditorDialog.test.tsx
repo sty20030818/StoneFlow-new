@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 
-import { SubmitRegistryProvider, useSubmitRegistryContext } from '@/features/submit/model'
+import { SubmitRegistryProvider, useSubmitRegistryContext } from '@/features/submit'
 import type { View } from '@/shared/types'
 
 import { ViewEditorDialog } from './ViewEditorDialog'
