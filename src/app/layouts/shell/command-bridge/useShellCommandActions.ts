@@ -25,25 +25,44 @@ type PageFilter = ReturnType<typeof usePageFilterContext>
 type SubmitActions = ReturnType<typeof useSubmitRegistryActions>
 type TaskPreview = ReturnType<typeof useTaskPreviewController>
 
+/**
+ * Command bridge 依赖袋。
+ * 字段多是因为 ShellCommandActions 有 ~34 个方法，各自要闭包不同能力；
+ * 不是同一状态的重复订阅（订阅发生在 Content/hooks 层，这里是纯入参）。
+ */
 export type ShellCommandBridgeDeps = {
+	/** 当前工作区 scope，用于 navigateTo 拼 path */
 	currentScope: Scope
+	/** 当前 spaceId（all 时可能为 fallback），用于 navigate 默认 space */
 	currentSpaceId: string | null
+	/** 当前 URL 抽屉详情；closeCurrentLayer / togglePreview 用 */
 	activeDetail: { kind: string; id: string } | null
+	/** 会话历史后退 */
 	goBack: () => void
+	/** 会话历史前进 */
 	goForward: () => void
+	/** Esc 关层时是否还能后退 */
 	canGoBack: boolean
+	/** 关实体抽屉（URL search） */
 	closeEntityDrawer: () => void
 	closeProjectCreateDialog: () => void
 	closeTaskCreateDialog: () => void
+	/** 当前创建弹窗类型；关层优先级判断 */
 	createDialogType: 'task' | 'project' | null
+	/** 按当前页预填的「快速新建任务」 */
 	handleOpenTaskCreate: () => void
+	/** 命令板是否打开；关层顺序 */
 	isCommandOpen: boolean
+	/** 快捷键帮助是否打开 */
 	isShortcutHelpOpen: boolean
 	navigate: (opts: { to: never } | NavigateOptions) => unknown
 	openProjectCreateDialog: () => void
 	openTaskCreateDialog: ReturnType<typeof useDialogStore.getState>['openTaskCreateDialog']
+	/** 页筛选 context（filter 类命令） */
 	pageFilter: PageFilter
+	/** 全局搜索聚焦意图 */
 	requestSearchFocus: () => void
+	/** 命令 → bulk 执行桥 */
 	runEntityBulkActionFromCommand: (
 		ctx: CommandContext,
 		entity: BulkEntityType,
@@ -51,8 +70,11 @@ export type ShellCommandBridgeDeps = {
 		labels: BulkActionResultMessageLabels,
 		payload?: BulkActionPayload,
 	) => Promise<void>
+	/** 同步命令板 filter kind 与 dialog store */
 	setCommandMenuFilterKind: (kind: PageFilterKind) => void
+	/** 表单提交 registry actions */
 	submitRegistryActions: SubmitActions
+	/** 右侧任务预览控制器 */
 	taskPreviewController: TaskPreview
 	toggleShortcutHelp: () => void
 }
