@@ -1,13 +1,14 @@
+import type { BulkSelectionSnapshot } from '@/features/bulk-action'
+import type { TaskPlacementTarget } from '@/features/metadata-fields'
+import { emitEvent } from '@/shared/events'
+import type { TaskDetail, TaskStatus } from '@/shared/types'
+
 import {
 	archiveTask as archiveTaskApi,
 	deleteTask as deleteTaskApi,
 	updateTask as updateTaskApi,
-} from '@/features/task'
-import type { TaskPlacementTarget } from '@/features/metadata-fields'
-import type { TaskPriorityValue } from '@/features/task'
-import type { BulkSelectionSnapshot } from '@/features/bulk-action/core'
-import { emitEvent } from '@/shared/events'
-import type { TaskDetail, TaskStatus } from '@/shared/types'
+} from '../api/tasks'
+import type { TaskPriorityValue } from '../model/taskPriority'
 
 export type TaskBulkMutationReport = {
 	requestedIds: string[]

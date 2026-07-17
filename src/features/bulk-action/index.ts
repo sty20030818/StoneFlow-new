@@ -44,35 +44,8 @@ export {
 	createProjectBulkSelectionSnapshotFromProjects,
 } from './core'
 
-// ── actions ─────────────────────────────────────────────────────────────────
-
-export {
-	getTaskBulkActionDefinition,
-	taskBulkActionDefinitions,
-	taskBulkActions,
-	type TaskBulkActionPayload,
-	getLifecycleBulkActionDefinition,
-	lifecycleBulkActionDefinitions,
-	lifecycleBulkActions,
-	getProjectBulkActionDefinition,
-	projectBulkActionDefinitions,
-	projectBulkActions,
-} from './actions'
-
-// ── adapters ────────────────────────────────────────────────────────────────
-
-export {
-	createTaskBulkAdapter,
-	resolveBulkCompleteStatus,
-	type TaskBulkAdapter,
-	type TaskBulkMutationReport,
-	createLifecycleBulkAdapter,
-	type LifecycleBulkAdapter,
-	type LifecycleBulkMutationReport,
-	createProjectBulkAdapter,
-	type ProjectBulkAdapter,
-	type ProjectBulkMutationReport,
-} from './adapters'
+// 域动作 / adapter 已迁至 task|project|lifecycle 的 bulk/（B3）
+// 本包只保留引擎：core · runtime · selection · components
 
 // ── runtime ─────────────────────────────────────────────────────────────────
 

@@ -3,17 +3,18 @@ import { useQueryClient } from '@tanstack/react-query'
 
 import type { AppLayoutProps } from '@/layout/appLayoutTypes'
 import { ShellLayoutContent } from '@/layout/ShellLayoutContent'
-import { listLifecycleEntries } from '@/features/lifecycle'
-import { listAllVisibleProjects } from '@/features/project'
+import { BulkActionProvider } from '@/features/bulk-action'
 import {
-	BulkActionProvider,
 	createLifecycleBulkAdapter,
-	createProjectBulkAdapter,
-	createTaskBulkAdapter,
 	lifecycleBulkActions,
+	listLifecycleEntries,
+} from '@/features/lifecycle'
+import {
+	createProjectBulkAdapter,
+	listAllVisibleProjects,
 	projectBulkActions,
-	taskBulkActions,
-} from '@/features/bulk-action'
+} from '@/features/project'
+import { createTaskBulkAdapter, taskBulkActions } from '@/features/task'
 import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'
 
 export function ShellBulkActionBoundary({

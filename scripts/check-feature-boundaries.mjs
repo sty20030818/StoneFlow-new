@@ -43,7 +43,6 @@ const FEATURES = [
 	'workspace',
 	'activity',
 	'project-overview',
-	// T2/DEP-INV：从 layout 迁出的壳级共享能力（见 10-T2重构执行计划 史诗 1）
 	'shell-dialogs',
 	'entity-scene',
 ]

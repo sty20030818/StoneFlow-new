@@ -2,9 +2,9 @@ import {
 	LIFECYCLE_BULK_ACTION_IDS,
 	createBulkSelectionSnapshot,
 	shouldConfirmAction,
-} from '@/features/bulk-action/core'
-import type { LifecycleBulkAdapter } from '@/features/bulk-action/adapters'
+} from '@/features/bulk-action'
 
+import type { LifecycleBulkAdapter } from './lifecycle-bulk-adapter'
 import { lifecycleBulkActions } from './lifecycle.bulk-actions'
 
 const snapshot = createBulkSelectionSnapshot({

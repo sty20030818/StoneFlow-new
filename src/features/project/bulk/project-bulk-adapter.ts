@@ -1,9 +1,10 @@
+import { emitEvent } from '@/shared/events'
+
 import {
 	archiveProject as archiveProjectApi,
 	deleteProject as deleteProjectApi,
-} from '@/features/project'
-import type { ProjectDetail } from '@/features/project'
-import { emitEvent } from '@/shared/events'
+} from '../api/projects'
+import type { ProjectDetail } from '../model/types'
 
 export type ProjectBulkMutationReport = {
 	requestedIds: string[]

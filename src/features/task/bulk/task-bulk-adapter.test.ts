@@ -1,6 +1,6 @@
 import { emitEvent } from '@/shared/events'
 import type { TaskDetail } from '@/shared/types'
-import { createBulkSelectionSnapshot } from '@/features/bulk-action/core'
+import { createBulkSelectionSnapshot } from '@/features/bulk-action'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 
 import { createTaskBulkAdapter, resolveBulkCompleteStatus } from './task-bulk-adapter'

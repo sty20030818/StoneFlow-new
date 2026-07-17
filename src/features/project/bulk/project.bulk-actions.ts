@@ -1,6 +1,12 @@
-import type { BulkAction, BulkActionId, BulkSelectionSnapshot } from '@/features/bulk-action/core'
-import { PROJECT_BULK_ACTION_IDS, createBulkActionResult } from '@/features/bulk-action/core'
-import type { ProjectBulkAdapter, ProjectBulkMutationReport } from '@/features/bulk-action/adapters'
+import {
+	PROJECT_BULK_ACTION_IDS,
+	createBulkActionResult,
+	type BulkAction,
+	type BulkActionId,
+	type BulkSelectionSnapshot,
+} from '@/features/bulk-action'
+
+import type { ProjectBulkAdapter, ProjectBulkMutationReport } from './project-bulk-adapter'
 
 type ProjectBulkActionDefinition = Omit<BulkAction, 'run'>
 

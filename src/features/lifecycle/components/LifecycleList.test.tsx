@@ -2,12 +2,9 @@ import type { ReactNode } from 'react'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { ArchiveIcon, Trash2Icon, type LucideIcon } from 'lucide-react'
 
-import {
-	BulkActionProvider,
-	createLifecycleBulkAdapter,
-	lifecycleBulkActions,
-} from '@/features/bulk-action'
+import { BulkActionProvider } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
+import { createLifecycleBulkAdapter, lifecycleBulkActions } from '@/features/lifecycle'
 import { LifecycleList } from '@/features/lifecycle/components/LifecycleList'
 import type { LifecycleEntry, Scope } from '@/shared/types'
 import { renderWithRouterContext } from '@/test/renderWithRouter'

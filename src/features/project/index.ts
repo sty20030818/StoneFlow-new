@@ -74,3 +74,16 @@ export { ProjectCreateContent } from './components/ProjectCreateContent'
 
 /** 项目行适配器（overview 列表复用）。 */
 export { ProjectRowAdapter } from './components/ProjectRowAdapter'
+
+/**
+ * 项目批量：动作定义 + adapter。
+ * 壳 Boundary 只 compose 各域 public，bulk-action 只做引擎。
+ */
+export {
+	getProjectBulkActionDefinition,
+	projectBulkActionDefinitions,
+	projectBulkActions,
+	createProjectBulkAdapter,
+	type ProjectBulkAdapter,
+	type ProjectBulkMutationReport,
+} from './bulk'

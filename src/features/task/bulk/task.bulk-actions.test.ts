@@ -1,7 +1,7 @@
-import { createBulkSelectionSnapshot, TASK_BULK_ACTION_IDS } from '@/features/bulk-action/core'
-import type { TaskBulkAdapter } from '@/features/bulk-action/adapters'
+import { createBulkSelectionSnapshot, TASK_BULK_ACTION_IDS } from '@/features/bulk-action'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 
+import type { TaskBulkAdapter } from './task-bulk-adapter'
 import { taskBulkActions } from './task.bulk-actions'
 
 const snapshot = createBulkSelectionSnapshot({

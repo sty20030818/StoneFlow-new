@@ -2,9 +2,9 @@ import {
 	PROJECT_BULK_ACTION_IDS,
 	createBulkSelectionSnapshot,
 	shouldConfirmAction,
-} from '@/features/bulk-action/core'
-import type { ProjectBulkAdapter } from '@/features/bulk-action/adapters'
+} from '@/features/bulk-action'
 
+import type { ProjectBulkAdapter } from './project-bulk-adapter'
 import { projectBulkActions } from './project.bulk-actions'
 
 const snapshot = createBulkSelectionSnapshot({

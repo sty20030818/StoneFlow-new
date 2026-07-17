@@ -35,3 +35,16 @@ export { LifecycleList } from './components/LifecycleList'
 
 /** 生命周期看板（EntityScene adapter / 测试）。 */
 export { LifecycleBoard } from './components/LifecycleBoard'
+
+/**
+ * 生命周期批量：动作定义 + adapter。
+ * 壳 Boundary 只 compose 各域 public，bulk-action 只做引擎。
+ */
+export {
+	getLifecycleBulkActionDefinition,
+	lifecycleBulkActionDefinitions,
+	lifecycleBulkActions,
+	createLifecycleBulkAdapter,
+	type LifecycleBulkAdapter,
+	type LifecycleBulkMutationReport,
+} from './bulk'

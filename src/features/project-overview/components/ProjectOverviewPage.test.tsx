@@ -1,11 +1,8 @@
 import type { ReactNode } from 'react'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 
-import {
-	BulkActionProvider,
-	createProjectBulkAdapter,
-	projectBulkActions,
-} from '@/features/bulk-action'
+import { BulkActionProvider } from '@/features/bulk-action'
+import { createProjectBulkAdapter, projectBulkActions } from '@/features/project'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { ProjectOverviewPage } from '@/features/project-overview/components/ProjectOverviewPage'
 import type { ProjectOverviewItem, Scope } from '@/shared/types'

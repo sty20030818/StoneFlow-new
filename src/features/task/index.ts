@@ -66,6 +66,21 @@ export {
  */
 export { resolveCommandOpenTargetPath, resolveShellDetailState } from './model/taskOpenStrategy'
 
+/**
+ * 任务批量：动作定义 + adapter。
+ * 壳 Boundary 只 compose 各域 public，bulk-action 只做引擎。
+ */
+export {
+	getTaskBulkActionDefinition,
+	taskBulkActionDefinitions,
+	taskBulkActions,
+	type TaskBulkActionPayload,
+	createTaskBulkAdapter,
+	resolveBulkCompleteStatus,
+	type TaskBulkAdapter,
+	type TaskBulkMutationReport,
+} from './bulk'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 详情三形态（detail 子树 · 经本文件再导出，外层不 import detail/）
 // ─────────────────────────────────────────────────────────────────────────────

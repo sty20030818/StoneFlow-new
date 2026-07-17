@@ -1,10 +1,11 @@
+import { emitEvent } from '@/shared/events'
+import type { LifecycleEntry } from '@/shared/types'
+
 import {
 	deleteLifecycleEntry as deleteLifecycleEntryApi,
 	permanentlyDeleteLifecycleEntry as permanentlyDeleteLifecycleEntryApi,
 	restoreLifecycleEntry as restoreLifecycleEntryApi,
-} from '@/features/lifecycle'
-import { emitEvent } from '@/shared/events'
-import type { LifecycleEntry } from '@/shared/types'
+} from '../api/lifecycle'
 
 export type LifecycleBulkMutationReport = {
 	requestedIds: string[]

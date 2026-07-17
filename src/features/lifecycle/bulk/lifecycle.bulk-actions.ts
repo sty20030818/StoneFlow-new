@@ -1,9 +1,12 @@
-import type { BulkAction, BulkActionId, BulkSelectionSnapshot } from '@/features/bulk-action/core'
-import { LIFECYCLE_BULK_ACTION_IDS, createBulkActionResult } from '@/features/bulk-action/core'
-import type {
-	LifecycleBulkAdapter,
-	LifecycleBulkMutationReport,
-} from '@/features/bulk-action/adapters'
+import {
+	LIFECYCLE_BULK_ACTION_IDS,
+	createBulkActionResult,
+	type BulkAction,
+	type BulkActionId,
+	type BulkSelectionSnapshot,
+} from '@/features/bulk-action'
+
+import type { LifecycleBulkAdapter, LifecycleBulkMutationReport } from './lifecycle-bulk-adapter'
 
 type LifecycleBulkActionDefinition = Omit<BulkAction, 'run'>
 
