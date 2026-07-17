@@ -16,10 +16,7 @@ import {
 	reportLayoutDiagnostics,
 	search,
 } from '@/features/quick-create/api/quickCreate'
-import {
-	QUICK_CREATE_SHADOW_PADDING_PX,
-	measureQuickCreateTargetHeight,
-} from '@/features/quick-create/layout/measureQuickCreateLayout'
+import { measureQuickCreateTargetHeight } from '@/features/quick-create/layout/measureQuickCreateLayout'
 import { QuickCreatePage } from '@/features/quick-create/components/QuickCreatePage'
 import type {
 	QuickCreateInitialState,
@@ -248,348 +245,32 @@ describe('QuickCreatePage', () => {
 		expect(screen.getByTestId('quick-create-footer')).toBeInTheDocument()
 	})
 
-	it('resize 使用完整内容流高度和前端阴影安全区，避免 footer 或阴影被裁切', async () => {
-		const regionSumHeight = 96 + 44 + 118 + 120 + 46
-		const contentFlowHeight = regionSumHeight + 24
-		const surfaceHeight = contentFlowHeight + 2
-		const expectedHeight = surfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
-		const offsetHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
-					return surfaceHeight
-				}
-				if (this.dataset.testid === 'quick-create-content-flow') {
-					return contentFlowHeight
-				}
-				if (this.querySelector('[data-testid="quick-create-composer"]')) {
-					return 96
-				}
-				if (this.querySelector('[data-testid="quick-create-create-section"]')) {
-					return 44
-				}
-				if (this.dataset.testid === 'quick-create-task-board-region') {
-					return 118
-				}
-				if (this.dataset.testid === 'quick-create-project-board-region') {
-					return 120
-				}
-				if (this.querySelector('[data-testid="quick-create-footer"]')) {
-					return 46
-				}
+	it('打开会话直接 present，不再 commitLayout', async () => {
+		render(<QuickCreatePage />)
 
-				return 0
-			})
-		const scrollHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.dataset.testid === 'quick-create-content-flow') {
-					return contentFlowHeight
-				}
-
-				return 0
-			})
-		const clientHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'clientHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
-					return surfaceHeight - 2
-				}
-
-				return 0
-			})
-
-		try {
-			render(<QuickCreatePage />)
-
-			await screen.findByTestId('quick-create-recent-tasks-section')
-			await waitFor(() => {
-				expect(mockedCommitLayout).toHaveBeenCalledWith({
-					devicePixelRatio: 1,
-					height: expectedHeight,
-					sessionId: DEFAULT_SESSION_ID,
-				})
-			})
-
-			expect(mockedCommitLayout).not.toHaveBeenCalledWith(
-				expect.objectContaining({ height: surfaceHeight }),
-			)
-		} finally {
-			offsetHeightSpy.mockRestore()
-			scrollHeightSpy.mockRestore()
-			clientHeightSpy.mockRestore()
-		}
+		await screen.findByTestId('quick-create-recent-tasks-section')
+		await waitFor(() => {
+			expect(mockedPresentSession).toHaveBeenCalledWith({ sessionId: DEFAULT_SESSION_ID })
+		})
+		expect(mockedCommitLayout).not.toHaveBeenCalled()
+		expect(mockedReportLayoutDiagnostics).not.toHaveBeenCalled()
 	})
 
-	it('首次打开会等待 open context 驱动的完整内容高度，不会先提交最小窗口高度', async () => {
-		let measurePass = 0
-		const minimalHeight = 364
-		const fullContentHeight = 96 + 44 + 118 + 120 + 46 + 24
-		const fullSurfaceHeight = fullContentHeight + 2
-		const fullWindowHeight = fullSurfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
-		const offsetHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
-					return measurePass === 0 ? 180 : fullSurfaceHeight
-				}
-				if (this.dataset.testid === 'quick-create-content-flow') {
-					return measurePass === 0 ? 180 : fullContentHeight
-				}
-				if (this.querySelector('[data-testid="quick-create-composer"]')) {
-					return 96
-				}
-				if (this.querySelector('[data-testid="quick-create-create-section"]')) {
-					return 44
-				}
-				if (this.dataset.testid === 'quick-create-task-board-region') {
-					return measurePass === 0 ? 0 : 118
-				}
-				if (this.dataset.testid === 'quick-create-project-board-region') {
-					return measurePass === 0 ? 0 : 120
-				}
-				if (this.querySelector('[data-testid="quick-create-footer"]')) {
-					return 46
-				}
+	it('展开 advanced 或输入变长仍不调用 commitLayout', async () => {
+		render(<QuickCreatePage />)
+		await screen.findByTestId('quick-create-recent-tasks-section')
+		await waitFor(() => {
+			expect(mockedPresentSession).toHaveBeenCalled()
+		})
+		mockedCommitLayout.mockClear()
 
-				return 0
-			})
-		const scrollHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.dataset.testid === 'quick-create-content-flow') {
-					return measurePass === 0 ? 180 : fullContentHeight
-				}
-
-				return 0
-			})
-		const clientHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'clientHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
-					return measurePass === 0 ? 178 : fullSurfaceHeight - 2
-				}
-
-				return 0
-			})
-
-		try {
-			render(<QuickCreatePage />)
-
-			measurePass = 1
-			await screen.findByTestId('quick-create-recent-tasks-section')
-			await waitFor(() => {
-				expect(mockedCommitLayout).toHaveBeenCalledWith({
-					devicePixelRatio: 1,
-					height: fullWindowHeight,
-					sessionId: DEFAULT_SESSION_ID,
-				})
-			})
-			expect(mockedCommitLayout).not.toHaveBeenCalledWith(
-				expect.objectContaining({
-					height: minimalHeight,
-				}),
-			)
-		} finally {
-			offsetHeightSpy.mockRestore()
-			scrollHeightSpy.mockRestore()
-			clientHeightSpy.mockRestore()
-		}
-	})
-
-	it('可见后内容变高会再次提交 layout，避免 advanced/create row/双 board 裁切', async () => {
-		let measurePass = 0
-		const initialRegionSumHeight = 96 + 118 + 120 + 46
-		const initialContentFlowHeight = initialRegionSumHeight + 24
-		const initialSurfaceHeight = initialContentFlowHeight + 2
-		const initialWindowHeight = initialSurfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
-		const expandedRegionSumHeight = 104 + 48 + 126 + 126 + 46
-		const expandedContentFlowHeight = expandedRegionSumHeight + 24
-		const expandedSurfaceHeight = expandedContentFlowHeight + 2
-		const expandedWindowHeight = expandedSurfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
-
-		const offsetHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
-					return measurePass === 0 ? initialSurfaceHeight : expandedSurfaceHeight
-				}
-				if (this.dataset.testid === 'quick-create-content-flow') {
-					return measurePass === 0 ? initialContentFlowHeight : expandedContentFlowHeight
-				}
-				if (this.querySelector('[data-testid="quick-create-composer"]')) {
-					return measurePass === 0 ? 96 : 104
-				}
-				if (this.querySelector('[data-testid="quick-create-create-section"]')) {
-					return measurePass === 0 ? 0 : 48
-				}
-				if (this.dataset.testid === 'quick-create-task-board-region') {
-					return measurePass === 0 ? 118 : 126
-				}
-				if (this.dataset.testid === 'quick-create-project-board-region') {
-					return measurePass === 0 ? 120 : 126
-				}
-				if (this.querySelector('[data-testid="quick-create-footer"]')) {
-					return 46
-				}
-
-				return 0
-			})
-		const scrollHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.dataset.testid === 'quick-create-content-flow') {
-					return measurePass === 0 ? initialContentFlowHeight : expandedContentFlowHeight
-				}
-
-				return 0
-			})
-		const clientHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'clientHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
-					return (measurePass === 0 ? initialSurfaceHeight : expandedSurfaceHeight) - 2
-				}
-
-				return 0
-			})
-
-		try {
-			render(<QuickCreatePage />)
-
-			await screen.findByTestId('quick-create-recent-tasks-section')
-			await waitFor(() => {
-				expect(mockedCommitLayout).toHaveBeenCalledWith({
-					devicePixelRatio: 1,
-					height: initialWindowHeight,
-					sessionId: DEFAULT_SESSION_ID,
-				})
-			})
-
-			measurePass = 1
-			fireEvent.click(screen.getByLabelText('更多参数'))
-			fireEvent.change(screen.getByLabelText('Quick Create 输入'), {
-				target: { value: '需要创建' },
-			})
-
-			await waitFor(() => {
-				expect(mockedCommitLayout).toHaveBeenCalledWith({
-					devicePixelRatio: 1,
-					height: expandedWindowHeight,
-					sessionId: DEFAULT_SESSION_ID,
-				})
-			})
-		} finally {
-			offsetHeightSpy.mockRestore()
-			scrollHeightSpy.mockRestore()
-			clientHeightSpy.mockRestore()
-		}
-	})
-
-	it('recent 静默刷新导致内容变高时会再次提交 layout，避免 reopen 后底部裁切', async () => {
-		mockedGetOpenContextSnapshot.mockResolvedValueOnce({
-			...createInitialState(),
-			recentTasks: [
-				createTaskResult({ id: 'task-1', title: '新任务 1' }),
-				createTaskResult({ id: 'task-2', title: '新任务 2' }),
-				createTaskResult({ id: 'task-3', title: '新任务 3' }),
-			],
-			recentProjects: [
-				createProjectResult({ id: 'project-1', name: '新项目 1' }),
-				createProjectResult({ id: 'project-2', name: '新项目 2' }),
-				createProjectResult({ id: 'project-3', name: '新项目 3' }),
-			],
+		fireEvent.click(screen.getByLabelText('更多参数'))
+		fireEvent.change(screen.getByLabelText('Quick Create 输入'), {
+			target: { value: '需要创建一条较长标题来撑高内容' },
 		})
 
-		let measurePass = 0
-		const initialRegionSumHeight = 96 + 118 + 120 + 46
-		const initialContentFlowHeight = initialRegionSumHeight + 24
-		const initialSurfaceHeight = initialContentFlowHeight + 2
-		const initialWindowHeight = initialSurfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
-		const refreshedRegionSumHeight = 96 + 126 + 126 + 46
-		const refreshedContentFlowHeight = refreshedRegionSumHeight + 24
-		const refreshedSurfaceHeight = refreshedContentFlowHeight + 2
-		const refreshedWindowHeight = refreshedSurfaceHeight + QUICK_CREATE_SHADOW_PADDING_PX * 2
-
-		const offsetHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
-					return measurePass === 0 ? initialSurfaceHeight : refreshedSurfaceHeight
-				}
-				if (this.dataset.testid === 'quick-create-content-flow') {
-					return measurePass === 0 ? initialContentFlowHeight : refreshedContentFlowHeight
-				}
-				if (this.querySelector('[data-testid="quick-create-composer"]')) {
-					return 96
-				}
-				if (this.querySelector('[data-testid="quick-create-create-section"]')) {
-					return 0
-				}
-				if (this.dataset.testid === 'quick-create-task-board-region') {
-					return measurePass === 0 ? 118 : 126
-				}
-				if (this.dataset.testid === 'quick-create-project-board-region') {
-					return measurePass === 0 ? 120 : 126
-				}
-				if (this.querySelector('[data-testid="quick-create-footer"]')) {
-					return 46
-				}
-
-				return 0
-			})
-		const scrollHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.dataset.testid === 'quick-create-content-flow') {
-					return measurePass === 0 ? initialContentFlowHeight : refreshedContentFlowHeight
-				}
-
-				return 0
-			})
-		const clientHeightSpy = vi
-			.spyOn(HTMLElement.prototype, 'clientHeight', 'get')
-			.mockImplementation(function (this: HTMLElement) {
-				if (this.getAttribute('aria-label') === 'StoneFlow Quick Create') {
-					return (measurePass === 0 ? initialSurfaceHeight : refreshedSurfaceHeight) - 2
-				}
-
-				return 0
-			})
-
-		try {
-			render(<QuickCreatePage />)
-
-			await screen.findByTestId('quick-create-recent-tasks-section')
-			await waitFor(() => {
-				expect(mockedCommitLayout).toHaveBeenCalledWith({
-					devicePixelRatio: 1,
-					height: initialWindowHeight,
-					sessionId: DEFAULT_SESSION_ID,
-				})
-			})
-
-			measurePass = 1
-			fireEvent.change(screen.getByLabelText('Quick Create 输入'), {
-				target: { value: '连续创建任务' },
-			})
-			fireEvent.keyDown(screen.getByLabelText('Quick Create 输入'), {
-				key: 'Enter',
-				shiftKey: true,
-			})
-
-			await waitFor(() => {
-				expect(mockedCommitLayout).toHaveBeenCalledWith({
-					devicePixelRatio: 1,
-					height: refreshedWindowHeight,
-					sessionId: DEFAULT_SESSION_ID,
-				})
-			})
-		} finally {
-			offsetHeightSpy.mockRestore()
-			scrollHeightSpy.mockRestore()
-			clientHeightSpy.mockRestore()
-		}
+		await screen.findByTestId('quick-create-advanced-meta-bar')
+		expect(mockedCommitLayout).not.toHaveBeenCalled()
 	})
 
 	it('composer 保持 primary/advanced 分区，展开 advanced 不影响基础输入区', async () => {

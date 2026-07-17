@@ -128,7 +128,12 @@ impl QuickPopupRuntimeState {
         session_id: &str,
     ) -> Result<QuickPopupSession, &'static str> {
         let mut guard = self.inner.write().await;
-        if guard.phase != QuickPopupPhase::WaitingLayout {
+        // 固定壳后前端不再 commit_layout；Preparing 可直接 present。
+        // WaitingLayout 保留兼容旧路径（彻底删除 commit 前）。
+        if !matches!(
+            guard.phase,
+            QuickPopupPhase::Preparing | QuickPopupPhase::WaitingLayout
+        ) {
             return Err("popup runtime cannot present from current phase");
         }
         validate_active_session(&guard, session_id)?;
@@ -254,6 +259,26 @@ mod tests {
         let snapshot = runtime.snapshot().await;
         assert_eq!(snapshot.phase, QuickPopupPhase::Idle);
         assert!(snapshot.current_session.is_none());
+    }
+
+    #[tokio::test]
+    async fn runtime_should_allow_present_from_preparing_without_waiting_layout() {
+        let runtime = QuickPopupRuntimeState::default();
+        let session = runtime
+            .begin_open(QuickPopupOpenReason::GlobalShortcut)
+            .await
+            .expect("open should succeed");
+        runtime
+            .mark_presenting_for(&session.session_id)
+            .await
+            .expect("presenting from preparing should succeed");
+        runtime
+            .mark_visible_for(&session.session_id)
+            .await
+            .expect("visible should succeed");
+
+        let snapshot = runtime.snapshot().await;
+        assert_eq!(snapshot.phase, QuickPopupPhase::Visible);
     }
 
     #[tokio::test]

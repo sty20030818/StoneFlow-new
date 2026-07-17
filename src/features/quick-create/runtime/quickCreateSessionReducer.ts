@@ -36,32 +36,20 @@ export function quickCreateSessionReducer(
 					openContext: action.payload,
 				},
 			}
-		case 'sessionMeasuring':
+		case 'sessionPresenting':
 			if (state.phase.type !== 'preparing' || state.phase.sessionId !== action.sessionId) {
 				return state
 			}
 			return {
 				...state,
 				phase: {
-					type: 'measuring',
-					sessionId: action.sessionId,
-					openContext: state.phase.openContext,
-				},
-			}
-		case 'sessionReadyToPresent':
-			if (state.phase.type !== 'measuring' || state.phase.sessionId !== action.sessionId) {
-				return state
-			}
-			return {
-				...state,
-				phase: {
-					type: 'readyToPresent',
+					type: 'presenting',
 					sessionId: action.sessionId,
 					openContext: state.phase.openContext,
 				},
 			}
 		case 'sessionPresented':
-			if (state.phase.type !== 'readyToPresent' || state.phase.sessionId !== action.sessionId) {
+			if (state.phase.type !== 'presenting' || state.phase.sessionId !== action.sessionId) {
 				return state
 			}
 			return {

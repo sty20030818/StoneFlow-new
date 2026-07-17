@@ -30,8 +30,7 @@ export function QuickCreateSessionProvider({ children }: PropsWithChildren) {
 			const phase = state.phase
 			if (
 				phase.type !== 'visible' &&
-				phase.type !== 'readyToPresent' &&
-				phase.type !== 'measuring' &&
+				phase.type !== 'presenting' &&
 				phase.type !== 'preparing'
 			) {
 				return
@@ -56,11 +55,8 @@ export function QuickCreateSessionProvider({ children }: PropsWithChildren) {
 		() => ({
 			state,
 			actions: {
-				commitMeasured: (sessionId) => {
-					dispatch({ type: 'sessionMeasuring', sessionId })
-				},
-				markReadyToPresent: (sessionId) => {
-					dispatch({ type: 'sessionReadyToPresent', sessionId })
+				markPresenting: (sessionId) => {
+					dispatch({ type: 'sessionPresenting', sessionId })
 				},
 				requestClose,
 			},

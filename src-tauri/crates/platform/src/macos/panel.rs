@@ -8,7 +8,7 @@
 //!     **不依赖** Tauri 的 `WindowEvent::Focused(false)`——
 //!     NonActivating 面板不会让 owning app 激活，Tauri 的 focus 事件链不可靠。
 //!   - 前端准备阶段：快捷键触发后先 emit `quick-create:session-prepared`，
-//!     由前端在隐藏态完成首轮布局测量与 `commit_layout`，再由 Rust 执行真正的 show。
+//!     前端渲染后调用 `present_session`；固定壳不再依赖测高 `commit_layout`。
 //!   - 前端呈现同步：`windowDidBecomeKey:` 回调里由运行时注入 `on_became_key`。
 //!     此时 panel 已真正成为 key window，前端 `input.focus()` 才能命中；
 //!     如果在 `show_and_make_key()` 返回后立刻 emit，key 状态可能还没 flush。
