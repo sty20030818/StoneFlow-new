@@ -14,7 +14,7 @@ import {
 	presentSession,
 	search,
 } from '@/features/quick-create/api/quickCreate'
-import { QuickCreatePage } from '@/features/quick-create/components/QuickCreatePage'
+import { QuickCreatePage } from '@/features/quick-create/ui/QuickCreatePage'
 import type {
 	QuickCreateInitialState,
 	QuickCreateProjectItem,
@@ -483,25 +483,6 @@ describe('QuickCreatePage', () => {
 		await waitFor(() => {
 			expect(mockedCloseSession).toHaveBeenCalledWith({
 				reason: 'escape',
-				sessionId: DEFAULT_SESSION_ID,
-			})
-		})
-	})
-
-	it('点击阴影安全区会按 blur 关闭窗口', async () => {
-		render(<QuickCreatePage />)
-		await screen.findByTestId('quick-create-recent-tasks-section')
-
-		const surface = screen.getByLabelText('StoneFlow Quick Create')
-		await waitFor(() => {
-			expect(surface).toHaveClass('opacity-100')
-		})
-
-		fireEvent.pointerDown(surface.parentElement!)
-
-		await waitFor(() => {
-			expect(mockedCloseSession).toHaveBeenCalledWith({
-				reason: 'blur',
 				sessionId: DEFAULT_SESSION_ID,
 			})
 		})

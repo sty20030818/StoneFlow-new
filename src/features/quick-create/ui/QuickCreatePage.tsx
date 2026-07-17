@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 
 import { QuickCreateDomainProvider } from '@/features/quick-create/domain/QuickCreateDomainProvider'
-import { QuickCreateSessionProvider } from '@/features/quick-create/runtime/QuickCreateSessionProvider'
-import { QuickCreateWindowShell } from '@/features/quick-create/shell/QuickCreateWindowShell'
+import { QuickCreateSessionProvider } from '@/features/quick-create/session/SessionProvider'
+import { PresentSession } from '@/features/quick-create/session/usePresentSession'
+import { QuickCreatePanel } from '@/features/quick-create/ui/QuickCreatePanel'
 
 export function QuickCreatePage() {
 	useEffect(() => {
@@ -16,7 +17,8 @@ export function QuickCreatePage() {
 		<div className='flex h-full min-h-0 w-full bg-transparent'>
 			<QuickCreateSessionProvider>
 				<QuickCreateDomainProvider>
-					<QuickCreateWindowShell />
+					<PresentSession />
+					<QuickCreatePanel />
 				</QuickCreateDomainProvider>
 			</QuickCreateSessionProvider>
 		</div>

@@ -11,7 +11,7 @@ import type {
 	QuickCreateSessionAction,
 	QuickCreateSessionClosePayload,
 	QuickCreateSessionEventPayload,
-} from '@/features/quick-create/runtime/quickCreateSessionTypes'
+} from '@/features/quick-create/session/sessionTypes'
 
 const QUICK_CREATE_SESSION_PREPARED_EVENT = 'quick-create:session-prepared'
 const QUICK_CREATE_SESSION_PRESENTED_EVENT = 'quick-create:session-presented'
@@ -19,7 +19,7 @@ const QUICK_CREATE_SESSION_CLOSE_REQUESTED_EVENT = 'quick-create:session-close-r
 const QUICK_CREATE_SESSION_INVALIDATED_EVENT = 'quick-create:session-invalidated'
 
 /**
- * 把 runtime 事件监听与 frontend ready/unready 通知收口到 session bridge。
+ * 把原生窗事件与 frontend ready/unready 通知收口到 session bridge。
  * provider 只维护 session state，不再直接知道外部事件源。
  */
 export function useQuickCreateSessionBridge(

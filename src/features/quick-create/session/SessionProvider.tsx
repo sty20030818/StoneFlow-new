@@ -8,12 +8,12 @@ import {
 } from 'react'
 
 import { closeSession, type QuickCreateCloseReason } from '@/features/quick-create/api/quickCreate'
+import { useQuickCreateSessionBridge } from '@/features/quick-create/session/sessionBridge'
 import {
 	createQuickCreateSessionState,
 	quickCreateSessionReducer,
-} from '@/features/quick-create/runtime/quickCreateSessionReducer'
-import { useQuickCreateSessionBridge } from '@/features/quick-create/runtime/quickCreateSessionBridge'
-import type { QuickCreateSessionContextValue } from '@/features/quick-create/runtime/quickCreateSessionTypes'
+} from '@/features/quick-create/session/sessionReducer'
+import type { QuickCreateSessionContextValue } from '@/features/quick-create/session/sessionTypes'
 
 const QuickCreateSessionContext = createContext<QuickCreateSessionContextValue | null>(null)
 

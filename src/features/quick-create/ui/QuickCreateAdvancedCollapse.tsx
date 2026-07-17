@@ -1,5 +1,5 @@
 import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
-import { QuickCreateAdvancedMetaBar } from '@/features/quick-create/components/QuickCreateAdvancedMetaBar'
+import { QuickCreateAdvancedMetaBar } from '@/features/quick-create/ui/QuickCreateAdvancedMetaBar'
 import { cn } from '@/shared/lib/utils'
 
 /**

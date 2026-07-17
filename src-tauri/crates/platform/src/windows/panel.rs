@@ -29,7 +29,6 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
     )
     .title(QUICK_CREATE_TITLE)
     .inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
-    .auto_resize()
     .resizable(false)
     .fullscreen(false)
     .always_on_top(true)

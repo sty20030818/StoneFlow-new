@@ -8,8 +8,8 @@ use crate::{
     app::{error::AppError, state::ActiveScopeSnapshot},
     services::{
         activity::ActivityService, quick_create_adapter::QuickCreatePortsAdapter,
-        quick_create_service::map_active_scope, ProjectService, QuickCreateService, SearchService,
-        SpaceService, TaskService,
+        quick_create_service::map_active_scope, ProjectService, QuickCreateService, SpaceService,
+        TaskService,
     },
 };
 use stoneflow_storage::repositories::{
@@ -52,11 +52,6 @@ impl QuickCreateOpenContextService {
                 task_repository.clone(),
                 SyncRepository::new(connection.clone()),
                 activity_service,
-            ),
-            SearchService::new(
-                space_repository.clone(),
-                project_repository.clone(),
-                task_repository.clone(),
             ),
             space_repository,
             project_repository,

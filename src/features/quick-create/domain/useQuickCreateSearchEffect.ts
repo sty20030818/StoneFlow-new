@@ -1,6 +1,6 @@
 import { startTransition, useEffect, useRef } from 'react'
 
-import type { QuickCreateAction } from '@/features/quick-create/domain/quickCreateDomainReducer'
+import type { QuickCreateAction } from '@/features/quick-create/domain/quickCreateDomainTypes'
 import type { QuickCreateSearchResponse } from '@/features/quick-create/model/types'
 
 const SEARCH_DEBOUNCE_MS = 120

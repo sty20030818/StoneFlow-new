@@ -2,8 +2,8 @@ import { BellIcon, CalendarIcon, Clock3Icon } from 'lucide-react'
 
 import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import type { QuickCreatePopoverKey } from '@/features/quick-create/model/types'
-import { DateControl } from '@/features/quick-create/components/controls/DateControl'
-import { StatusControl } from '@/features/quick-create/components/controls/StatusControl'
+import { DateControl } from '@/features/quick-create/ui/controls/DateControl'
+import { StatusControl } from '@/features/quick-create/ui/controls/StatusControl'
 import { quickCreateAdvancedRowClass } from '@/shared/components/patterns/quick-create'
 
 /**

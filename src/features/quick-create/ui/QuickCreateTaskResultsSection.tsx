@@ -5,7 +5,7 @@ import { entityBoardMutedIconClass } from '@/shared/components/patterns/entity-b
 import { quickCreateBoardCollapsibleClass } from '@/shared/components/patterns/quick-create'
 
 import type { QuickCreateTaskItem } from '@/features/quick-create/model/types'
-import { QuickCreateTaskResultRowAdapter } from '@/features/quick-create/components/adapters/QuickCreateTaskResultRowAdapter'
+import { QuickCreateTaskResultRowAdapter } from '@/features/quick-create/ui/adapters/QuickCreateTaskResultRowAdapter'
 
 type QuickCreateTaskResultsSectionProps = {
 	title: string

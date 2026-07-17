@@ -24,7 +24,7 @@ import {
 	createQuickCreateInitialState,
 	quickCreateDomainReducer,
 } from '@/features/quick-create/domain/quickCreateDomainReducer'
-import { useQuickCreateSession } from '@/features/quick-create/runtime/useQuickCreateSession'
+import { useQuickCreateSession } from '@/features/quick-create/session/SessionProvider'
 
 const QuickCreateDomainContext = createContext<QuickCreateContextValue | null>(null)
 

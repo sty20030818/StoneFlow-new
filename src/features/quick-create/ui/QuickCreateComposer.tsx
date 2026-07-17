@@ -1,4 +1,4 @@
-import { QuickCreatePrimaryMetaBar } from '@/features/quick-create/components/QuickCreatePrimaryMetaBar'
+import { QuickCreatePrimaryMetaBar } from '@/features/quick-create/ui/QuickCreatePrimaryMetaBar'
 
 /**
  * Composer 只承接主输入栏；Advanced 由面板独立折叠槽挂载。

@@ -1,15 +1,14 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 
 import { presentSession } from '@/features/quick-create/api/quickCreate'
-import { QuickCreateFrame } from '@/features/quick-create/components/QuickCreateFrame'
-import { useQuickCreateSession } from '@/features/quick-create/runtime/useQuickCreateSession'
-import type { QuickCreateSessionPhase } from '@/features/quick-create/runtime/quickCreateSessionTypes'
+import { useQuickCreateSession } from '@/features/quick-create/session/SessionProvider'
+import type { QuickCreateSessionPhase } from '@/features/quick-create/session/sessionTypes'
 
 /**
- * 编排 present：收到 preparing 后请求原生 show，等待 becameKey 的 session-presented。
- * 窗口高度由平台固定尺寸决定，不再测高或 commitLayout。
+ * preparing → 请求原生 show；等待 becameKey 的 session-presented。
+ * 不渲染 UI；窗尺寸由平台固定规格决定。
  */
-export function QuickCreateLayoutPresenter() {
+export function PresentSession() {
 	const { actions: sessionActions, state: sessionState } = useQuickCreateSession()
 	const presentationSentRef = useRef(false)
 	const lastSessionIdRef = useRef<string | null>(null)
@@ -35,22 +34,13 @@ export function QuickCreateLayoutPresenter() {
 		})
 	}, [sessionActions, sessionState.phase])
 
-	const isVisible = isPresentedSurfacePhase(sessionState.phase) && activeSessionId !== null
-
-	return (
-		<QuickCreateFrame
-			isVisible={isVisible}
-			onRequestClose={() => {
-				void sessionActions.requestClose('blur')
-			}}
-		/>
-	)
+	return null
 }
 
-function isPresentedSurfacePhase(phase: QuickCreateSessionPhase) {
+export function isPresentedSurfacePhase(phase: QuickCreateSessionPhase) {
 	return phase.type === 'presenting' || phase.type === 'visible'
 }
 
-function readActiveSessionId(phase: QuickCreateSessionPhase): string | null {
+export function readActiveSessionId(phase: QuickCreateSessionPhase): string | null {
 	return 'sessionId' in phase ? (phase.sessionId ?? null) : null
 }

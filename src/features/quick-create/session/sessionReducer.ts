@@ -2,7 +2,7 @@ import type {
 	QuickCreateSessionAction,
 	QuickCreateSessionPhase,
 	QuickCreateSessionState,
-} from './quickCreateSessionTypes'
+} from './sessionTypes'
 
 export function createQuickCreateSessionState(): QuickCreateSessionState {
 	return {

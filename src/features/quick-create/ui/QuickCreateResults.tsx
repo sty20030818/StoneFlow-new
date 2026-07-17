@@ -7,8 +7,8 @@ import type {
 	QuickCreateProjectItem,
 	QuickCreateTaskItem,
 } from '@/features/quick-create/model/types'
-import { QuickCreateProjectResultsSection } from '@/features/quick-create/components/QuickCreateProjectResultsSection'
-import { QuickCreateTaskResultsSection } from '@/features/quick-create/components/QuickCreateTaskResultsSection'
+import { QuickCreateProjectResultsSection } from '@/features/quick-create/ui/QuickCreateProjectResultsSection'
+import { QuickCreateTaskResultsSection } from '@/features/quick-create/ui/QuickCreateTaskResultsSection'
 import { cn } from '@/shared/lib/utils'
 import {
 	quickCreateBoardResultsStackClass,
@@ -19,7 +19,7 @@ import { BoardRoot } from '@/shared/components/board'
 /**
  * Results 区内容：任务/项目列表与空状态。滚动由面板 Results 槽位负责。
  */
-export function QuickCreateBoardRegion() {
+export function QuickCreateResults() {
 	const { actions, derived, state } = useQuickCreate()
 	const [taskSectionOpen, setTaskSectionOpen] = useState(true)
 	const [projectSectionOpen, setProjectSectionOpen] = useState(true)

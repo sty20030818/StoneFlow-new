@@ -1,9 +1,8 @@
 //! Quick Create Service：真源在 `stoneflow-usecase`。
 
 use stoneflow_usecase::quick_create::{
-    ActiveScopeInput, ActiveScopeKind, QuickCreateInput, QuickCreateService as QuickCreateUsecase,
-    QuickCreatedDto, QuickListProjectsBySpaceInput, QuickProjectsBySpaceDto, QuickSearchInput,
-    QuickSearchResultDto,
+    ActiveScopeInput, ActiveScopeKind, QuickCreateService as QuickCreateUsecase,
+    QuickListProjectsBySpaceInput, QuickProjectsBySpaceDto,
 };
 
 pub use stoneflow_usecase::quick_create::{QuickResolvedOpenTarget, QuickResolvedPlacement};
@@ -12,7 +11,7 @@ use crate::{
     app::{error::AppError, state::ActiveScopeSnapshot},
     services::{
         activity::ActivityService, quick_create_adapter::QuickCreatePortsAdapter, ProjectService,
-        SearchService, SpaceService, TaskDetailDto, TaskService,
+        SpaceService, TaskDetailDto, TaskService,
     },
 };
 use stoneflow_storage::repositories::{
@@ -54,16 +53,10 @@ impl QuickCreateService {
             SyncRepository::new(task_repository.connection().clone()),
             activity_service,
         );
-        let search_service = SearchService::new(
-            space_repository.clone(),
-            project_repository.clone(),
-            task_repository.clone(),
-        );
         let ports = QuickCreatePortsAdapter::new(
             space_service,
             project_service,
             task_service.clone(),
-            search_service,
             space_repository,
             project_repository,
             task_repository,
@@ -81,28 +74,6 @@ impl QuickCreateService {
     ) -> Result<QuickProjectsBySpaceDto, AppError> {
         self.inner
             .list_projects_by_space(input)
-            .await
-            .map_err(AppError::from)
-    }
-
-    pub async fn search(
-        &self,
-        input: QuickSearchInput,
-        active_scope: Option<ActiveScopeSnapshot>,
-    ) -> Result<QuickSearchResultDto, AppError> {
-        self.inner
-            .search(input, map_active_scope(active_scope))
-            .await
-            .map_err(AppError::from)
-    }
-
-    pub async fn create(
-        &self,
-        input: QuickCreateInput,
-        active_scope: Option<ActiveScopeSnapshot>,
-    ) -> Result<QuickCreatedDto, AppError> {
-        self.inner
-            .create(input, map_active_scope(active_scope))
             .await
             .map_err(AppError::from)
     }

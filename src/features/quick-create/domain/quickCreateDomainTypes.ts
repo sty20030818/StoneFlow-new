@@ -1,6 +1,8 @@
 import type { KeyboardEvent, RefObject } from 'react'
 
 import type {
+	QuickCreateFocusTarget,
+	QuickCreateInitialState,
 	QuickCreatePanelState,
 	QuickCreatePlacement,
 	QuickCreatePopoverKey,
@@ -8,10 +10,39 @@ import type {
 	QuickCreateProjectItem,
 	QuickCreateProjectOption,
 	QuickCreateResultItem,
+	QuickCreateSearchResponse,
 	QuickCreateStatus,
 	QuickCreateSubmitAction,
 	QuickCreateTaskItem,
 } from '@/features/quick-create/model/types'
+
+export type QuickCreateAction =
+	| { type: 'sessionOpened'; payload: QuickCreateInitialState }
+	| { type: 'recentDataRefreshed'; payload: QuickCreateInitialState }
+	| { type: 'bootstrapFailed'; message: string }
+	| { type: 'titleChanged'; title: string }
+	| { type: 'priorityChanged'; priority: QuickCreatePriority }
+	| { type: 'statusChanged'; status: QuickCreateStatus }
+	| { type: 'spaceChanged'; spaceId: string }
+	| { type: 'placementChanged'; placement: QuickCreatePlacement }
+	| { type: 'dateChanged'; field: 'dueAt' | 'scheduledAt' | 'reminderAt'; value: string | null }
+	| { type: 'advancedToggled' }
+	| { type: 'activePopoverChanged'; key: QuickCreatePopoverKey | null }
+	| { type: 'projectSearchChanged'; query: string }
+	| { type: 'projectsLoadingStarted' }
+	| { type: 'projectsLoadingSucceeded'; options: QuickCreateProjectOption[] }
+	| { type: 'projectsLoadingFailed'; message: string }
+	| { type: 'searchStarted' }
+	| { type: 'searchSucceeded'; payload: QuickCreateSearchResponse }
+	| { type: 'searchCleared' }
+	| { type: 'searchFailed'; message: string }
+	| { type: 'focusChanged'; focusTarget: QuickCreateFocusTarget }
+	| { type: 'submitStarted'; message: string }
+	| { type: 'submitFailed'; message: string }
+	| { type: 'submitCompleted'; message: string }
+	| { type: 'continuousCreateSucceeded'; message: string }
+	| { type: 'titleCleared' }
+	| { type: 'activePopoverClosed' }
 
 export type QuickCreateDerivedState = {
 	hasTitle: boolean

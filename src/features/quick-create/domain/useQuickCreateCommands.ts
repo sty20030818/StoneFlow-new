@@ -6,7 +6,7 @@ import {
 	openTarget,
 	type QuickCreateInput,
 } from '@/features/quick-create/api/quickCreate'
-import type { QuickCreateAction } from '@/features/quick-create/domain/quickCreateDomainReducer'
+import type { QuickCreateAction } from '@/features/quick-create/domain/quickCreateDomainTypes'
 import type { QuickCreateDraft, QuickCreateResultItem } from '@/features/quick-create/model/types'
 
 type UseQuickCreateCommandsArgs = {

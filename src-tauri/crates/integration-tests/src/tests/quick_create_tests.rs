@@ -4,8 +4,7 @@ use sea_orm::TransactionTrait;
 use stoneflow_schema::common::TaskStatus;
 use stoneflow_test_support::TestDatabase;
 use stoneflow_usecase::quick_create::{
-    QuickCreateInput, QuickListProjectsBySpaceInput, QuickPlacementDto, QuickPlacementKind,
-    QuickProjectOptionKind, QuickScopeKind, QuickSearchInput,
+    QuickListProjectsBySpaceInput, QuickPlacementKind, QuickProjectOptionKind, QuickScopeKind,
 };
 use uuid::Uuid;
 
@@ -193,140 +192,7 @@ async fn quick_create_list_projects_by_space_should_include_virtual_placements()
 }
 
 #[tokio::test]
-async fn quick_create_search_should_clamp_to_three_and_include_closed_results() {
-    let database = TestDatabase::bootstrap_in_memory()
-        .await
-        .expect("test database should bootstrap");
-    let service = build_quick_create_service(&database);
-    let default_space = default_space(&database).await;
-
-    for index in 0..4 {
-        insert_project_record(
-            &database,
-            CreateProjectRecord {
-                id: format!("project-{index}"),
-                space_id: default_space.id.clone(),
-                name: format!("Stone 项目 {index}"),
-                description: None,
-                due_at: None,
-                sort_order: 1000 + index,
-                created_at: format!("2026-05-09T0{}:00:00Z", index + 1),
-                updated_at: format!("2026-05-09T0{}:00:00Z", index + 1),
-            },
-        )
-        .await;
-    }
-
-    let completed_project = insert_project_record(
-        &database,
-        CreateProjectRecord {
-            id: "project-done".to_owned(),
-            space_id: default_space.id.clone(),
-            name: "Stone 已完成项目".to_owned(),
-            description: None,
-            due_at: None,
-            sort_order: 9999,
-            created_at: "2026-05-09T09:00:00Z".to_owned(),
-            updated_at: "2026-05-09T09:00:00Z".to_owned(),
-        },
-    )
-    .await;
-    set_project_completed_at(&database, &completed_project.id, "2026-05-09T09:30:00Z").await;
-
-    for index in 0..4 {
-        insert_task(
-            &database,
-            CreateTaskRecord {
-                id: format!("task-{index}"),
-                space_id: default_space.id.clone(),
-                project_id: None,
-                title: format!("Stone 任务 {index}"),
-                note: None,
-                status: TaskStatus::Todo,
-                status_changed_at: format!("2026-05-09T1{}:00:00Z", index),
-                priority: 1,
-                inbox_at: Some(format!("2026-05-09T1{}:00:00Z", index)),
-                due_at: None,
-                scheduled_at: None,
-                reminder_at: None,
-                sort_order: 1000 + index,
-                completed_at: None,
-                canceled_at: None,
-                created_at: format!("2026-05-09T1{}:00:00Z", index),
-                updated_at: format!("2026-05-09T1{}:00:00Z", index),
-            },
-        )
-        .await;
-    }
-    insert_task(
-        &database,
-        CreateTaskRecord {
-            id: "task-done".to_owned(),
-            space_id: default_space.id.clone(),
-            project_id: None,
-            title: "Stone 已完成任务".to_owned(),
-            note: None,
-            status: TaskStatus::Done,
-            status_changed_at: "2026-05-09T18:00:00Z".to_owned(),
-            priority: 1,
-            inbox_at: None,
-            due_at: None,
-            scheduled_at: None,
-            reminder_at: None,
-            sort_order: 9999,
-            completed_at: Some("2026-05-09T18:00:00Z".to_owned()),
-            canceled_at: None,
-            created_at: "2026-05-09T18:00:00Z".to_owned(),
-            updated_at: "2026-05-09T18:00:00Z".to_owned(),
-        },
-    )
-    .await;
-
-    let result = service
-        .search(
-            QuickSearchInput {
-                query: "stone".to_owned(),
-                limit: 99,
-            },
-            None,
-        )
-        .await
-        .expect("search should succeed");
-
-    assert_eq!(result.tasks.len(), 3);
-    assert_eq!(result.projects.len(), 3);
-
-    let closed_result = service
-        .search(
-            QuickSearchInput {
-                query: "Stone 已完成任务".to_owned(),
-                limit: 3,
-            },
-            None,
-        )
-        .await
-        .expect("closed search should succeed");
-
-    assert_eq!(closed_result.tasks.len(), 1);
-    assert_eq!(closed_result.tasks[0].id, "task-done");
-
-    let closed_project_result = service
-        .search(
-            QuickSearchInput {
-                query: "Stone 已完成项目".to_owned(),
-                limit: 3,
-            },
-            None,
-        )
-        .await
-        .expect("closed project search should succeed");
-
-    assert_eq!(closed_project_result.projects.len(), 1);
-    assert_eq!(closed_project_result.projects[0].id, "project-done");
-}
-
-#[tokio::test]
-async fn quick_create_create_and_resolve_open_target_should_preserve_placement_and_dates() {
+async fn quick_create_resolve_open_target_should_preserve_placement_and_dates() {
     let database = TestDatabase::bootstrap_in_memory()
         .await
         .expect("test database should bootstrap");
@@ -347,32 +213,29 @@ async fn quick_create_create_and_resolve_open_target_should_preserve_placement_a
     )
     .await;
 
-    let created = service
-        .create(
-            QuickCreateInput {
-                space_id: Some(default_space.id.clone()),
-                placement: QuickPlacementDto {
-                    kind: QuickPlacementKind::Project,
-                    project_id: Some(project.id.clone()),
-                },
-                title: "Quick Create 任务".to_owned(),
-                note: Some("带日期字段".to_owned()),
-                status: Some("todo".to_owned()),
-                priority: Some(3),
-                due_at: Some("2026-05-12".to_owned()),
-                scheduled_at: Some("2026-05-13".to_owned()),
-                reminder_at: Some("2026-05-11".to_owned()),
-            },
-            Some(ActiveScopeSnapshot {
-                id: Uuid::new_v4(),
-                kind: ActiveScopeKind::Space,
-                space_id: Some(
-                    Uuid::parse_str(&default_space.id).expect("space id should be uuid"),
-                ),
-            }),
-        )
-        .await
-        .expect("create should succeed");
+    let created = insert_task(
+        &database,
+        CreateTaskRecord {
+            id: create_id().to_string(),
+            space_id: default_space.id.clone(),
+            project_id: Some(project.id.clone()),
+            title: "Quick Create 任务".to_owned(),
+            note: Some("带日期字段".to_owned()),
+            status: TaskStatus::Todo,
+            status_changed_at: "2026-05-09T10:00:00Z".to_owned(),
+            priority: 3,
+            inbox_at: None,
+            due_at: Some("2026-05-12".to_owned()),
+            scheduled_at: Some("2026-05-13".to_owned()),
+            reminder_at: Some("2026-05-11".to_owned()),
+            sort_order: 1000,
+            completed_at: None,
+            canceled_at: None,
+            created_at: "2026-05-09T10:00:00Z".to_owned(),
+            updated_at: "2026-05-09T10:00:00Z".to_owned(),
+        },
+    )
+    .await;
 
     let detail = service
         .get_task_detail(&created.id)
@@ -500,23 +363,3 @@ async fn insert_task(
     created
 }
 
-async fn set_project_completed_at(
-    database: &stoneflow_storage::database::DatabaseRuntimeState,
-    project_id: &str,
-    completed_at: &str,
-) {
-    let repository = ProjectRepository::new(database.connection().clone());
-    let transaction = repository
-        .connection()
-        .begin()
-        .await
-        .expect("transaction should begin");
-    repository
-        .complete_raw(&transaction, project_id, completed_at, completed_at)
-        .await
-        .expect("complete project should succeed");
-    transaction
-        .commit()
-        .await
-        .expect("transaction commit should succeed");
-}

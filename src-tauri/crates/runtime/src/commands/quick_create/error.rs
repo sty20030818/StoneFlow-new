@@ -5,7 +5,7 @@ use serde::Serialize;
 use stoneflow_usecase::quick_create::{
     QuickPlacementDto, QuickPlacementKind, QuickProjectItemDto, QuickProjectOptionDto,
     QuickProjectOptionKind, QuickProjectsBySpaceDto, QuickScopeDto, QuickScopeKind,
-    QuickSearchResultDto, QuickSpaceSummaryDto, QuickTaskItemDto,
+    QuickSpaceSummaryDto, QuickTaskItemDto,
 };
 use stoneflow_usecase::quick_create_context::QuickInitialStateDto;
 
@@ -151,12 +151,6 @@ pub struct QuickCreateProjectsBySpaceResponse {
     pub projects: Vec<QuickCreateProjectOptionResponse>,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct QuickCreateSearchResponse {
-    pub tasks: Vec<QuickCreateTaskItemResponse>,
-    pub projects: Vec<QuickCreateProjectItemResponse>,
-}
 
 fn map_scope(payload: QuickScopeDto) -> QuickCreateScopeResponse {
     QuickCreateScopeResponse {
@@ -246,9 +240,3 @@ pub(crate) fn map_projects_by_space(
     }
 }
 
-pub(crate) fn map_search_response(payload: QuickSearchResultDto) -> QuickCreateSearchResponse {
-    QuickCreateSearchResponse {
-        tasks: payload.tasks.into_iter().map(map_task_item).collect(),
-        projects: payload.projects.into_iter().map(map_project_item).collect(),
-    }
-}

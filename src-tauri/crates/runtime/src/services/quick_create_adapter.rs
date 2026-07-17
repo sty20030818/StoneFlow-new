@@ -6,20 +6,17 @@ use stoneflow_domain::QuickCreateSpaceCandidate;
 use stoneflow_schema::{project, space, task};
 use stoneflow_usecase::{
     quick_create::{
-        QuickCreatePorts, QuickCreateTaskDetail, QuickCreateTaskInput, QuickCreateTaskPlacement,
-        QuickPlacementKind, QuickProjectItemDto, QuickSidebarProjectDto, QuickSpaceSummaryDto,
-        QuickTaskItemDto,
+        QuickCreatePorts, QuickCreateTaskDetail, QuickProjectItemDto, QuickSidebarProjectDto,
+        QuickSpaceSummaryDto, QuickTaskItemDto,
     },
-    search::SearchEntitiesInput,
     UsecaseError,
 };
 
 use crate::{
     app::error::AppError,
     services::{
-        CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
         ListSidebarProjectsInput, ProjectScopeInput, ProjectScopeKind, ProjectService,
-        SearchService, SpaceService, TaskDetailDto, TaskIdInput, TaskService,
+        SpaceService, TaskDetailDto, TaskIdInput, TaskService,
     },
 };
 use stoneflow_storage::{
@@ -32,7 +29,6 @@ pub struct QuickCreatePortsAdapter {
     space_service: SpaceService,
     project_service: ProjectService,
     task_service: TaskService,
-    search_service: SearchService,
     space_repository: SpaceRepository,
     project_repository: ProjectRepository,
     task_repository: TaskRepository,
@@ -43,7 +39,6 @@ impl QuickCreatePortsAdapter {
         space_service: SpaceService,
         project_service: ProjectService,
         task_service: TaskService,
-        search_service: SearchService,
         space_repository: SpaceRepository,
         project_repository: ProjectRepository,
         task_repository: TaskRepository,
@@ -52,7 +47,6 @@ impl QuickCreatePortsAdapter {
             space_service,
             project_service,
             task_service,
-            search_service,
             space_repository,
             project_repository,
             task_repository,
@@ -136,37 +130,6 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
                     })
                     .collect()
             })
-            .map_err(map_app_error)
-    }
-
-    async fn search_entities(
-        &self,
-        input: SearchEntitiesInput,
-    ) -> Result<stoneflow_usecase::search::SearchEntitiesResultDto, UsecaseError> {
-        self.search_service
-            .search_entities(input)
-            .await
-            .map_err(map_app_error)
-    }
-
-    async fn create_task(
-        &self,
-        input: QuickCreateTaskInput,
-    ) -> Result<QuickCreateTaskDetail, UsecaseError> {
-        self.task_service
-            .create_task(CreateTaskInput {
-                space_id: input.space_id,
-                placement: map_task_placement_input(&input.placement),
-                title: input.title,
-                note: input.note,
-                status: input.status,
-                priority: input.priority,
-                due_at: input.due_at,
-                scheduled_at: input.scheduled_at,
-                reminder_at: input.reminder_at,
-            })
-            .await
-            .map(map_task_detail)
             .map_err(map_app_error)
     }
 
@@ -255,17 +218,6 @@ impl QuickCreatePorts for QuickCreatePortsAdapter {
             .into_iter()
             .map(|project| map_project_model(project, &space_map))
             .collect())
-    }
-}
-
-fn map_task_placement_input(placement: &QuickCreateTaskPlacement) -> CreateTaskPlacementInput {
-    CreateTaskPlacementInput {
-        kind: match placement.kind {
-            QuickPlacementKind::Inbox => CreateTaskPlacementKind::Inbox,
-            QuickPlacementKind::NoProject => CreateTaskPlacementKind::NoProject,
-            QuickPlacementKind::Project => CreateTaskPlacementKind::Project,
-        },
-        project_id: placement.project_id.clone(),
     }
 }
 

@@ -2,7 +2,7 @@ import { startTransition, useEffect, useLayoutEffect, useRef } from 'react'
 
 import type { QuickCreateInitialState } from '@/features/quick-create/model/types'
 import type { QuickCreateOpenSessionResponse } from '@/features/quick-create/api/quickCreate'
-import type { QuickCreateAction } from '@/features/quick-create/domain/quickCreateDomainReducer'
+import type { QuickCreateAction } from '@/features/quick-create/domain/quickCreateDomainTypes'
 
 type UseQuickCreateLifecycleBridgeArgs = {
 	dispatch: React.ActionDispatch<[action: QuickCreateAction]>

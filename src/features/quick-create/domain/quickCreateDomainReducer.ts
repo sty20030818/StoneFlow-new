@@ -1,14 +1,8 @@
+import type { QuickCreateAction } from '@/features/quick-create/domain/quickCreateDomainTypes'
 import type {
 	QuickCreateDraft,
-	QuickCreateFocusTarget,
-	QuickCreateInitialState,
 	QuickCreatePanelState,
 	QuickCreatePlacement,
-	QuickCreatePriority,
-	QuickCreatePopoverKey,
-	QuickCreateProjectOption,
-	QuickCreateSearchResponse,
-	QuickCreateStatus,
 } from '@/features/quick-create/model/types'
 
 const defaultDraft: QuickCreateDraft = {
@@ -42,34 +36,6 @@ export function createQuickCreateInitialState(): QuickCreatePanelState {
 		errorMessage: null,
 	}
 }
-
-export type QuickCreateAction =
-	| { type: 'sessionOpened'; payload: QuickCreateInitialState }
-	| { type: 'recentDataRefreshed'; payload: QuickCreateInitialState }
-	| { type: 'bootstrapFailed'; message: string }
-	| { type: 'titleChanged'; title: string }
-	| { type: 'priorityChanged'; priority: QuickCreatePriority }
-	| { type: 'statusChanged'; status: QuickCreateStatus }
-	| { type: 'spaceChanged'; spaceId: string }
-	| { type: 'placementChanged'; placement: QuickCreatePlacement }
-	| { type: 'dateChanged'; field: 'dueAt' | 'scheduledAt' | 'reminderAt'; value: string | null }
-	| { type: 'advancedToggled' }
-	| { type: 'activePopoverChanged'; key: QuickCreatePopoverKey | null }
-	| { type: 'projectSearchChanged'; query: string }
-	| { type: 'projectsLoadingStarted' }
-	| { type: 'projectsLoadingSucceeded'; options: QuickCreateProjectOption[] }
-	| { type: 'projectsLoadingFailed'; message: string }
-	| { type: 'searchStarted' }
-	| { type: 'searchSucceeded'; payload: QuickCreateSearchResponse }
-	| { type: 'searchCleared' }
-	| { type: 'searchFailed'; message: string }
-	| { type: 'focusChanged'; focusTarget: QuickCreateFocusTarget }
-	| { type: 'submitStarted'; message: string }
-	| { type: 'submitFailed'; message: string }
-	| { type: 'submitCompleted'; message: string }
-	| { type: 'continuousCreateSucceeded'; message: string }
-	| { type: 'titleCleared' }
-	| { type: 'activePopoverClosed' }
 
 export function quickCreateDomainReducer(
 	state: QuickCreatePanelState,

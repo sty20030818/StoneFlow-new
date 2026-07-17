@@ -1,6 +1,6 @@
 import { BoardGroup, BoardRows } from '@/shared/components/board'
 
-import { QuickCreateCreateRowAdapter } from '@/features/quick-create/components/adapters/QuickCreateCreateRowAdapter'
+import { QuickCreateCreateRowAdapter } from '@/features/quick-create/ui/adapters/QuickCreateCreateRowAdapter'
 import { quickCreateBoardGroupClass } from '@/shared/components/patterns/quick-create'
 
 export function QuickCreateCreateSection() {

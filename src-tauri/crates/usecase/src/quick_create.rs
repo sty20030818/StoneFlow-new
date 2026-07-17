@@ -3,18 +3,9 @@
 #![allow(async_fn_in_trait)]
 
 use serde::{Deserialize, Serialize};
-use stoneflow_domain::{resolve_default_space_id, QuickCreateSpaceCandidate, TaskStatus};
+use stoneflow_domain::{resolve_default_space_id, QuickCreateSpaceCandidate};
 
-use crate::{
-    quick_create_search_ranking::{
-        rank_quick_create_projects, rank_quick_create_tasks, QuickSearchScopeContext,
-        QUICK_CREATE_SEARCH_POOL_LIMIT,
-    },
-    search::SearchEntitiesInput,
-    UsecaseError,
-};
-
-pub const QUICK_CREATE_SEARCH_LIMIT: u64 = 3;
+use crate::UsecaseError;
 
 /// 当前 Scope 的轻量输入（与 Tauri 运行时解耦）。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -148,65 +139,6 @@ pub struct QuickProjectsBySpaceDto {
     pub projects: Vec<QuickProjectOptionDto>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct QuickSearchInput {
-    pub query: String,
-    pub limit: u64,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct QuickSearchResultDto {
-    pub tasks: Vec<QuickTaskItemDto>,
-    pub projects: Vec<QuickProjectItemDto>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct QuickCreateInput {
-    pub space_id: Option<String>,
-    pub placement: QuickPlacementDto,
-    pub title: String,
-    pub note: Option<String>,
-    pub status: Option<String>,
-    pub priority: Option<i32>,
-    pub due_at: Option<String>,
-    pub scheduled_at: Option<String>,
-    pub reminder_at: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct QuickCreatedDto {
-    pub id: String,
-    pub title: String,
-    pub space_id: String,
-    pub project_id: Option<String>,
-    pub inbox_at: Option<String>,
-    pub space_fallback: bool,
-}
-
-/// Quick Create 任务创建输入（Task 服务未迁完前的 port 边界）。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct QuickCreateTaskInput {
-    pub space_id: Option<String>,
-    pub placement: QuickCreateTaskPlacement,
-    pub title: String,
-    pub note: Option<String>,
-    pub status: Option<TaskStatus>,
-    pub priority: Option<i32>,
-    pub due_at: Option<String>,
-    pub scheduled_at: Option<String>,
-    pub reminder_at: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct QuickCreateTaskPlacement {
-    pub kind: QuickPlacementKind,
-    pub project_id: Option<String>,
-}
-
 /// Quick Create 读取任务详情所需字段。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct QuickCreateTaskDetail {
@@ -241,14 +173,6 @@ pub trait QuickCreatePorts: Send + Sync + Clone {
         &self,
         space_id: &str,
     ) -> Result<Vec<QuickSidebarProjectDto>, UsecaseError>;
-    async fn search_entities(
-        &self,
-        input: SearchEntitiesInput,
-    ) -> Result<crate::search::SearchEntitiesResultDto, UsecaseError>;
-    async fn create_task(
-        &self,
-        input: QuickCreateTaskInput,
-    ) -> Result<QuickCreateTaskDetail, UsecaseError>;
     async fn get_task_detail(&self, task_id: &str) -> Result<QuickCreateTaskDetail, UsecaseError>;
     async fn get_project_space_id(&self, project_id: &str) -> Result<String, UsecaseError>;
     async fn list_recent_tasks(&self, limit: usize) -> Result<Vec<QuickTaskItemDto>, UsecaseError>;
@@ -314,97 +238,6 @@ impl<P: QuickCreatePorts> QuickCreateService<P> {
         })
     }
 
-    pub async fn search(
-        &self,
-        input: QuickSearchInput,
-        active_scope: Option<ActiveScopeInput>,
-    ) -> Result<QuickSearchResultDto, UsecaseError> {
-        let limit = input.limit.clamp(1, QUICK_CREATE_SEARCH_LIMIT) as usize;
-        let candidates = self.ports.list_space_candidates().await?;
-        let default_space_id =
-            resolve_default_space_from_candidates(active_scope.as_ref(), &candidates).ok();
-        let current_space_id = match active_scope.as_ref() {
-            Some(scope) if scope.kind == ActiveScopeKind::Space => scope.space_id.clone(),
-            _ => None,
-        };
-        let scope = QuickSearchScopeContext {
-            current_space_id,
-            default_space_id,
-        };
-
-        let result = self
-            .ports
-            .search_entities(SearchEntitiesInput {
-                query: input.query.clone(),
-                limit_per_section: Some(QUICK_CREATE_SEARCH_POOL_LIMIT),
-            })
-            .await?;
-
-        let mut tasks = result
-            .tasks
-            .into_iter()
-            .map(map_search_task)
-            .chain(result.completed_tasks.into_iter().map(map_search_task))
-            .collect::<Vec<_>>();
-        let mut projects = result
-            .projects
-            .into_iter()
-            .map(map_search_project)
-            .chain(
-                result
-                    .completed_projects
-                    .into_iter()
-                    .map(map_search_project),
-            )
-            .collect::<Vec<_>>();
-
-        rank_quick_create_tasks(&mut tasks, &input.query, &scope);
-        rank_quick_create_projects(&mut projects, &input.query, &scope);
-
-        tasks.truncate(limit);
-        projects.truncate(limit);
-
-        Ok(QuickSearchResultDto { tasks, projects })
-    }
-
-    pub async fn create(
-        &self,
-        input: QuickCreateInput,
-        active_scope: Option<ActiveScopeInput>,
-    ) -> Result<QuickCreatedDto, UsecaseError> {
-        let candidates = self.ports.list_space_candidates().await?;
-        let default_space_id = resolve_default_space_id(
-            active_scope
-                .as_ref()
-                .and_then(|scope| scope.space_id.as_deref()),
-            &candidates,
-        )
-        .map_err(map_default_space_domain_error)?;
-        let resolved_space_id = input
-            .space_id
-            .clone()
-            .unwrap_or_else(|| default_space_id.clone());
-        let detail = self
-            .ports
-            .create_task(QuickCreateTaskInput {
-                space_id: Some(resolved_space_id.clone()),
-                placement: map_create_placement(&input.placement)?,
-                title: input.title,
-                note: input.note,
-                status: parse_task_status(input.status.as_deref())?,
-                priority: input.priority,
-                due_at: input.due_at,
-                scheduled_at: input.scheduled_at,
-                reminder_at: input.reminder_at,
-            })
-            .await?;
-
-        Ok(map_created_dto(
-            detail,
-            input.space_id.is_none() || default_space_id != resolved_space_id,
-        ))
-    }
-
     pub async fn get_task_detail(
         &self,
         task_id: &str,
@@ -444,47 +277,6 @@ impl<P: QuickCreatePorts> QuickCreateService<P> {
     }
 }
 
-fn map_create_placement(
-    input: &QuickPlacementDto,
-) -> Result<QuickCreateTaskPlacement, UsecaseError> {
-    if matches!(input.kind, QuickPlacementKind::Project) && input.project_id.is_none() {
-        return Err(UsecaseError::validation(
-            "placement.kind=project 时必须提供 projectId",
-        ));
-    }
-
-    Ok(QuickCreateTaskPlacement {
-        kind: input.kind,
-        project_id: input.project_id.clone(),
-    })
-}
-
-fn parse_task_status(status: Option<&str>) -> Result<Option<TaskStatus>, UsecaseError> {
-    let Some(status) = status else {
-        return Ok(None);
-    };
-
-    match status {
-        "todo" => Ok(Some(TaskStatus::Todo)),
-        "doing" => Ok(Some(TaskStatus::Doing)),
-        "waiting" => Ok(Some(TaskStatus::Waiting)),
-        "done" => Ok(Some(TaskStatus::Done)),
-        "canceled" => Ok(Some(TaskStatus::Canceled)),
-        other => Err(UsecaseError::validation(format!("未知任务状态: {other}"))),
-    }
-}
-
-fn map_created_dto(detail: QuickCreateTaskDetail, space_fallback: bool) -> QuickCreatedDto {
-    QuickCreatedDto {
-        id: detail.id,
-        title: detail.title,
-        space_id: detail.space_id,
-        project_id: detail.project_id,
-        inbox_at: detail.inbox_at,
-        space_fallback,
-    }
-}
-
 fn resolve_task_placement(detail: &QuickCreateTaskDetail) -> QuickResolvedPlacement {
     if detail.project_id.is_some() {
         return QuickResolvedPlacement::Project;
@@ -495,46 +287,6 @@ fn resolve_task_placement(detail: &QuickCreateTaskDetail) -> QuickResolvedPlacem
     }
 
     QuickResolvedPlacement::NoProject
-}
-
-fn map_search_task(task: crate::search::SearchTaskItemDto) -> QuickTaskItemDto {
-    QuickTaskItemDto {
-        id: task.id,
-        space_id: task.space_id,
-        space_name: task.space_name,
-        project_id: task.project_id,
-        project_name: task.project_name,
-        inbox_at: task.inbox_at,
-        title: task.title,
-        note: task.note,
-        priority: task.priority,
-        status: map_task_status(task.status),
-        updated_at: task.updated_at,
-        completed_at: task.completed_at,
-    }
-}
-
-fn map_search_project(project: crate::search::SearchProjectItemDto) -> QuickProjectItemDto {
-    QuickProjectItemDto {
-        id: project.id,
-        space_id: project.space_id,
-        space_name: project.space_name,
-        name: project.name,
-        note: project.note,
-        updated_at: project.updated_at,
-        completed_at: project.completed_at,
-    }
-}
-
-fn map_task_status(status: TaskStatus) -> String {
-    match status {
-        TaskStatus::Todo => "todo",
-        TaskStatus::Doing => "doing",
-        TaskStatus::Waiting => "waiting",
-        TaskStatus::Done => "done",
-        TaskStatus::Canceled => "canceled",
-    }
-    .to_owned()
 }
 
 fn map_default_space_domain_error(error: stoneflow_domain::DomainError) -> UsecaseError {

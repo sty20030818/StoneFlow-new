@@ -77,6 +77,7 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
     .always_on_top(true)
     .skip_taskbar(true)
     .decorations(false)
+    // NSPanel setHasShadow(true) 为权威阴影源；Tauri builder shadow 对 panel 不可靠。
     .shadow(false)
     .transparent(true)
     .visible(false)

@@ -13,7 +13,6 @@ pub mod ports;
 pub mod project;
 pub mod quick_create;
 pub mod quick_create_context;
-pub mod quick_create_search_ranking;
 pub mod search;
 pub mod settings;
 pub mod space;

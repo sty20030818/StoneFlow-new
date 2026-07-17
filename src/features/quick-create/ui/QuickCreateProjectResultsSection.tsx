@@ -5,7 +5,7 @@ import { entityBoardMutedIconClass } from '@/shared/components/patterns/entity-b
 import { quickCreateBoardCollapsibleClass } from '@/shared/components/patterns/quick-create'
 
 import type { QuickCreateProjectItem } from '@/features/quick-create/model/types'
-import { QuickCreateProjectResultRowAdapter } from '@/features/quick-create/components/adapters/QuickCreateProjectResultRowAdapter'
+import { QuickCreateProjectResultRowAdapter } from '@/features/quick-create/ui/adapters/QuickCreateProjectResultRowAdapter'
 
 type QuickCreateProjectResultsSectionProps = {
 	title: string
