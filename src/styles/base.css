@@ -29,18 +29,19 @@
 		isolation: isolate;
 	}
 
-	/* Quick Create 浮层：窗口透明由面板自身圆角裁切，避免 body/#root 在圆角外露出白底。 */
+	/* Quick Create：固定壳填满原生窗；透明底交给面板 / 系统材质。 */
 	body[data-quick-create] {
 		background: transparent !important;
-		height: auto;
-		min-height: 0;
+		height: 100%;
+		min-height: 100%;
+		overflow: hidden;
 	}
 
 	body[data-quick-create] #root {
 		background: transparent !important;
-		height: auto;
-		min-height: 0;
-		overflow: visible;
+		height: 100%;
+		min-height: 100%;
+		overflow: hidden;
 	}
 
 	a {

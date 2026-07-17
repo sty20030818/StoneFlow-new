@@ -1,14 +1,12 @@
-import { useEffect, useState, type RefCallback } from 'react'
+import { useState } from 'react'
 
 import { SearchIcon } from 'lucide-react'
 
 import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
-import { useQuickCreateSession } from '@/features/quick-create/runtime/useQuickCreateSession'
 import type {
 	QuickCreateProjectItem,
 	QuickCreateTaskItem,
 } from '@/features/quick-create/model/types'
-import { QuickCreateCreateSection } from '@/features/quick-create/components/QuickCreateCreateSection'
 import { QuickCreateProjectResultsSection } from '@/features/quick-create/components/QuickCreateProjectResultsSection'
 import { QuickCreateTaskResultsSection } from '@/features/quick-create/components/QuickCreateTaskResultsSection'
 import { cn } from '@/shared/lib/utils'
@@ -18,21 +16,11 @@ import {
 } from '@/shared/components/patterns/quick-create'
 import { BoardRoot } from '@/shared/components/board'
 
-type QuickCreateBoardRegionProps = {
-	createRowRef: RefCallback<HTMLElement>
-	taskBoardRef: RefCallback<HTMLElement>
-	projectBoardRef: RefCallback<HTMLElement>
-	onLayoutChange: () => void
-}
-
-export function QuickCreateBoardRegion({
-	createRowRef,
-	onLayoutChange,
-	projectBoardRef,
-	taskBoardRef,
-}: QuickCreateBoardRegionProps) {
+/**
+ * Results 区内容：任务/项目列表与空状态。滚动由面板 Results 槽位负责。
+ */
+export function QuickCreateBoardRegion() {
 	const { actions, derived, state } = useQuickCreate()
-	const { state: sessionState } = useQuickCreateSession()
 	const [taskSectionOpen, setTaskSectionOpen] = useState(true)
 	const [projectSectionOpen, setProjectSectionOpen] = useState(true)
 
@@ -45,114 +33,73 @@ export function QuickCreateBoardRegion({
 	const showProjectBoard =
 		!showRecentEmpty && !showSearchingEmpty && derived.displayProjects.length > 0
 
-	useEffect(() => {
-		onLayoutChange()
-	}, [
-		derived.displayProjects.length,
-		derived.displayTasks.length,
-		onLayoutChange,
-		projectSectionOpen,
-		showProjectBoard,
-		showRecentEmpty,
-		showSearchingEmpty,
-		showTaskBoard,
-		sessionState.phase,
-		taskSectionOpen,
-	])
-
 	return (
-		<div
-			className='w-full min-h-0 shrink-0 overflow-visible'
-			data-testid='quick-create-action-board'
-		>
-			<div className='w-full overflow-x-hidden overflow-y-visible'>
-				<div className='flex w-full flex-col px-2'>
-					<BoardRoot className={quickCreateBoardStackClass}>
-						<div className='shrink-0 pb-0.5' ref={createRowRef}>
-							<QuickCreateCreateSection />
-						</div>
-						{showRecentEmpty ? (
-							<div
-								className='shrink-0'
-								data-testid='quick-create-empty-board-region'
-								ref={taskBoardRef}
-							>
-								<QuickCreateBoardState title='还没有最近任务或项目' />
-							</div>
-						) : showSearchingEmpty ? (
-							<div
-								className='shrink-0'
-								data-testid='quick-create-empty-board-region'
-								ref={taskBoardRef}
-							>
-								<QuickCreateSearchEmptyState
-									errorMessage={state.searchError}
-									title={state.draft.title.trim()}
+		<div className='w-full px-2' data-testid='quick-create-action-board'>
+			<BoardRoot className={quickCreateBoardStackClass}>
+				{showRecentEmpty ? (
+					<div data-testid='quick-create-empty-board-region'>
+						<QuickCreateBoardState title='还没有最近任务或项目' />
+					</div>
+				) : showSearchingEmpty ? (
+					<div data-testid='quick-create-empty-board-region'>
+						<QuickCreateSearchEmptyState
+							errorMessage={state.searchError}
+							title={state.draft.title.trim()}
+						/>
+					</div>
+				) : (
+					<div className={quickCreateBoardResultsStackClass}>
+						{showTaskBoard ? (
+							<div data-testid='quick-create-task-board-region'>
+								<QuickCreateTaskResultsSection
+									activeIndex={derived.activeResultIndex}
+									items={derived.displayTasks}
+									onOpenChange={setTaskSectionOpen}
+									onHover={actions.focusResult}
+									onOpen={(item: QuickCreateTaskItem) =>
+										void actions.openResult({ kind: 'task', ...item })
+									}
+									open={taskSectionOpen}
+									testId={
+										derived.isShowingRecent
+											? 'quick-create-recent-tasks-section'
+											: 'quick-create-tasks-section'
+									}
+									title={derived.isShowingRecent ? '最近任务' : '任务'}
 								/>
 							</div>
-						) : (
-							<div className={quickCreateBoardResultsStackClass}>
-								{showTaskBoard ? (
-									<div
-										className='shrink-0'
-										data-testid='quick-create-task-board-region'
-										ref={taskBoardRef}
-									>
-										<QuickCreateTaskResultsSection
-											activeIndex={derived.activeResultIndex}
-											items={derived.displayTasks}
-											onOpenChange={setTaskSectionOpen}
-											onHover={actions.focusResult}
-											onOpen={(item: QuickCreateTaskItem) =>
-												void actions.openResult({ kind: 'task', ...item })
-											}
-											open={taskSectionOpen}
-											testId={
-												derived.isShowingRecent
-													? 'quick-create-recent-tasks-section'
-													: 'quick-create-tasks-section'
-											}
-											title={derived.isShowingRecent ? '最近任务' : '任务'}
-										/>
-									</div>
-								) : null}
-								{showProjectBoard ? (
-									<div
-										className='shrink-0'
-										data-testid='quick-create-project-board-region'
-										ref={projectBoardRef}
-									>
-										<QuickCreateProjectResultsSection
-											activeIndex={derived.activeResultIndex}
-											baseIndex={derived.displayTasks.length}
-											items={derived.displayProjects}
-											onOpenChange={setProjectSectionOpen}
-											onHover={actions.focusResult}
-											onOpen={(item: QuickCreateProjectItem) =>
-												void actions.openResult({ kind: 'project', ...item })
-											}
-											open={projectSectionOpen}
-											testId={
-												derived.isShowingRecent
-													? 'quick-create-recent-projects-section'
-													: 'quick-create-projects-section'
-											}
-											title={derived.isShowingRecent ? '最近项目' : '项目'}
-										/>
-									</div>
-								) : null}
+						) : null}
+						{showProjectBoard ? (
+							<div data-testid='quick-create-project-board-region'>
+								<QuickCreateProjectResultsSection
+									activeIndex={derived.activeResultIndex}
+									baseIndex={derived.displayTasks.length}
+									items={derived.displayProjects}
+									onOpenChange={setProjectSectionOpen}
+									onHover={actions.focusResult}
+									onOpen={(item: QuickCreateProjectItem) =>
+										void actions.openResult({ kind: 'project', ...item })
+									}
+									open={projectSectionOpen}
+									testId={
+										derived.isShowingRecent
+											? 'quick-create-recent-projects-section'
+											: 'quick-create-projects-section'
+									}
+									title={derived.isShowingRecent ? '最近项目' : '项目'}
+								/>
 							</div>
-						)}
-					</BoardRoot>
-				</div>
-			</div>
+						) : null}
+					</div>
+				)}
+			</BoardRoot>
 		</div>
 	)
 }
 
 function QuickCreateBoardState({ description, title }: { description?: string; title: string }) {
 	return (
-		<div className={cn('min-h-44 px-5 py-6', 'flex items-center justify-center')}>
+		<div className={cn('flex min-h-40 items-center justify-center px-5 py-6')}>
 			<div className='flex items-center gap-2 rounded-full border border-sf-border-subtle bg-muted/50 px-3 py-2 text-[12px] text-sf-text-secondary'>
 				<SearchIcon className='size-4' />
 				<span>{title}</span>
@@ -172,7 +119,7 @@ function QuickCreateSearchEmptyState({
 	return (
 		<div className='px-3 pb-3 pt-2'>
 			<div className='flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-sf-border-subtle bg-muted/30 px-5 py-6 text-center'>
-				<div className='mb-3 flex size-9 items-center justify-center rounded-lg bg-background text-sf-text-tertiary shadow-sm ring-1 ring-sf-border-subtle/80'>
+				<div className='mb-3 flex size-9 items-center justify-center rounded-lg bg-background/80 text-sf-text-tertiary ring-1 ring-sf-border-subtle/80'>
 					<SearchIcon className='size-4' />
 				</div>
 				<div className='text-[13px] font-medium text-foreground'>

@@ -278,12 +278,28 @@ describe('QuickCreatePage', () => {
 		await screen.findByTestId('quick-create-recent-tasks-section')
 
 		expect(screen.getByTestId('quick-create-primary-meta-bar')).toBeInTheDocument()
-		expect(screen.queryByTestId('quick-create-advanced-meta-bar')).not.toBeInTheDocument()
+		expect(screen.getByTestId('quick-create-advanced-collapse')).toHaveAttribute(
+			'aria-hidden',
+			'true',
+		)
 
 		fireEvent.click(screen.getByLabelText('更多参数'))
 
+		expect(screen.getByTestId('quick-create-advanced-collapse')).toHaveAttribute(
+			'aria-hidden',
+			'false',
+		)
 		expect(screen.getByTestId('quick-create-advanced-meta-bar')).toBeInTheDocument()
 		expect(screen.getByLabelText('Quick Create 输入')).toBeInTheDocument()
+	})
+
+	it('固定壳包含 panel 与 Results 内滚槽位', async () => {
+		render(<QuickCreatePage />)
+		await screen.findByTestId('quick-create-recent-tasks-section')
+
+		expect(screen.getByTestId('quick-create-panel')).toBeInTheDocument()
+		expect(screen.getByTestId('quick-create-results-scroll')).toBeInTheDocument()
+		expect(screen.getByTestId('quick-create-results-scroll')).toHaveClass('overflow-y-auto')
 	})
 
 	it('搜索时先保留旧结果，不显示正在搜索状态', async () => {

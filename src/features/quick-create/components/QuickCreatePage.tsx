@@ -13,7 +13,7 @@ export function QuickCreatePage() {
 	}, [])
 
 	return (
-		<div className='flex h-full min-h-0 items-start bg-transparent'>
+		<div className='flex h-full min-h-0 w-full bg-transparent'>
 			<QuickCreateSessionProvider>
 				<QuickCreateDomainProvider>
 					<QuickCreateWindowShell />

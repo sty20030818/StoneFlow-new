@@ -2,9 +2,11 @@
  * Quick Create 顶部两行控件的共享视觉 pattern。
  * 这层承接产品表达，避免 feature 内部重复散落同一套按钮/菜单样式。
  */
-export const quickCreateToolbarRowClass = 'flex items-center gap-2 px-3 py-2.5'
+export const quickCreateToolbarRowClass = 'flex h-11 items-center gap-2 px-3'
 
-export const quickCreateAdvancedRowClass = 'flex flex-wrap items-center gap-2 px-3 pb-1'
+/** Advanced 单行横滑，避免折行挤占 Results */
+export const quickCreateAdvancedRowClass =
+	'flex h-10 flex-nowrap items-center gap-2 overflow-x-auto px-3'
 
 /**
  * Quick Create board spacing contract:

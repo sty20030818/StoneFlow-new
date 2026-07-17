@@ -6,12 +6,11 @@ import { DateControl } from '@/features/quick-create/components/controls/DateCon
 import { StatusControl } from '@/features/quick-create/components/controls/StatusControl'
 import { quickCreateAdvancedRowClass } from '@/shared/components/patterns/quick-create'
 
+/**
+ * Advanced 字段行；显隐由壳内折叠槽控制，本组件始终渲染内容以便动画收合。
+ */
 export function QuickCreateAdvancedMetaBar() {
 	const { actions, state } = useQuickCreate()
-
-	if (!state.isAdvancedOpen) {
-		return null
-	}
 
 	return (
 		<div className={quickCreateAdvancedRowClass} data-testid='quick-create-advanced-meta-bar'>

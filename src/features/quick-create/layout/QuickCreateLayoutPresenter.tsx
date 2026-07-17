@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useRef } from 'react'
 
 import { presentSession } from '@/features/quick-create/api/quickCreate'
 import { QuickCreateFrame } from '@/features/quick-create/components/QuickCreateFrame'
-import { useQuickCreateLayout } from '@/features/quick-create/layout/useQuickCreateLayout'
 import { useQuickCreateSession } from '@/features/quick-create/runtime/useQuickCreateSession'
 import type { QuickCreateSessionPhase } from '@/features/quick-create/runtime/quickCreateSessionTypes'
 
@@ -12,10 +11,6 @@ import type { QuickCreateSessionPhase } from '@/features/quick-create/runtime/qu
  */
 export function QuickCreateLayoutPresenter() {
 	const { actions: sessionActions, state: sessionState } = useQuickCreateSession()
-	const measureKey =
-		'openContext' in sessionState.phase ? sessionState.phase.sessionId : sessionState.phase.type
-	// 仍挂 region ref 供 Frame 装配；测量结果不再驱动窗口高度。
-	const layout = useQuickCreateLayout(measureKey)
 	const presentationSentRef = useRef(false)
 	const lastSessionIdRef = useRef<string | null>(null)
 	const activeSessionId = readActiveSessionId(sessionState.phase)
@@ -45,7 +40,6 @@ export function QuickCreateLayoutPresenter() {
 	return (
 		<QuickCreateFrame
 			isVisible={isVisible}
-			layout={layout}
 			onRequestClose={() => {
 				void sessionActions.requestClose('blur')
 			}}
