@@ -3,9 +3,9 @@ import { useNavigate, useParams } from '@tanstack/react-router'
 
 import { EntityScene } from '@/features/entity-scene'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
-import { useCurrentShellRoute } from '@/app/navigation/ShellRouteContext'
-import { openView } from '@/app/navigation/intents'
-import { resolveShellRouteScope } from '@/app/navigation/scope'
+import { useCurrentShellRoute } from '@/app/navigation'
+import { openView } from '@/app/navigation'
+import { resolveShellRouteScope } from '@/app/navigation'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDialogStore } from '@/features/shell-dialogs'
 import {
@@ -35,7 +35,7 @@ import { ViewEditorDialog } from '@/features/view/components/ViewEditorDialog'
 import { useTaskChangedListener } from '@/shared/events'
 import type { View } from '@/shared/types'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
-import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation'
 import { PlusIcon } from 'lucide-react'
 const EMPTY_TASK_VIEWS: View[] = []
 

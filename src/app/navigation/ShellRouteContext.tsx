@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react'
 
-import type { ShellRoute } from '@/app/navigation/shellRoute'
+import type { ShellRoute } from './shellLocation'
 
 const ShellRouteContext = createContext<ShellRoute | null>(null)
 

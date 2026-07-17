@@ -1,7 +1,7 @@
 import type { ReactNode, RefObject } from 'react'
 
 import type { Scope } from '@/shared/types'
-import type { ShellRoute } from '@/app/navigation/shellRoute'
+import type { ShellRoute } from '@/app/navigation'
 import type { ShellSectionKey } from '@/layout/types'
 import { ShellHeader } from '@/layout/ShellHeader'
 import { ShellMain } from '@/layout/ShellMain'
@@ -13,7 +13,7 @@ import { CommandShortcutLayer } from '@/features/command'
 import type { useShellCommandSystem } from '@/layout/model/useShellCommandSystem'
 import type { useShellChromeData } from '@/layout/model/useShellChromeData'
 import type { useShellCreateDialogState } from '@/layout/model/useShellCreateDialogState'
-import type { useShellSessionRouteHistory } from '@/app/navigation/sessionRouteHistory'
+import type { useShellSessionRouteHistory } from '@/app/navigation'
 
 type CommandHost = ReturnType<typeof useShellCommandSystem>
 type ChromeData = ReturnType<typeof useShellChromeData>

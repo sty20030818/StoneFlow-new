@@ -1,10 +1,6 @@
 import { redirect, useNavigate } from '@tanstack/react-router'
 
-import {
-	openCanonicalProjectDetail,
-	openStartupFallback,
-	openTaskDetail,
-} from '@/app/navigation/intents'
+import { openCanonicalProjectDetail, openStartupFallback, openTaskDetail } from '@/app/navigation'
 import { listVisibleSpaces } from '@/features/space'
 import { projectDetailQueryOptions } from '@/features/project'
 import { taskDetailQueryOptions } from '@/features/task'

@@ -2,7 +2,7 @@ import { useLocation } from '@tanstack/react-router'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 
 import { ShellSidebar } from '@/layout/ShellSidebar'
-import { resolveRememberedPathForScope } from '@/app/navigation/routeMemoryStore'
+import { resolveRememberedPathForScope } from '@/app/navigation'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
 import { SubmitRegistryProvider } from '@/features/submit'
 import { SyncStatusProvider } from '@/features/sync'
@@ -10,11 +10,8 @@ import { SidebarProvider } from '@/shared/components/base/sidebar'
 import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { renderWithRouterContext } from '@/test/renderWithRouter'
 
-vi.mock('@/app/navigation/routeMemoryStore', async () => {
-	const actual = await vi.importActual<typeof import('@/app/navigation/routeMemoryStore')>(
-		'@/app/navigation/routeMemoryStore',
-	)
-
+vi.mock('@/app/navigation', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/app/navigation')>()
 	return {
 		...actual,
 		resolveRememberedPathForScope: vi.fn(actual.resolveRememberedPathForScope),

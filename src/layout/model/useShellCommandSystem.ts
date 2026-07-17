@@ -1,8 +1,8 @@
 import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
-import { openTaskDetail } from '@/app/navigation/intents'
-import type { ShellRoute } from '@/app/navigation/shellRoute'
+import { openTaskDetail } from '@/app/navigation'
+import type { ShellRoute } from '@/app/navigation'
 import type { Scope } from '@/shared/types'
 import type { ShellSectionKey } from '@/layout/types'
 import { useShellCommandActions } from '@/layout/command-bridge/useShellCommandActions'

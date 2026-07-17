@@ -1,6 +1,6 @@
 import { startTransition } from 'react'
 
-import { openShellNavigationTarget } from '@/app/navigation/intents'
+import { openShellNavigationTarget } from '@/app/navigation'
 import type { CommandHostContext, ShellCommandActions } from '@/features/command'
 import { useDialogStore } from '@/features/shell-dialogs'
 import { requestSidebarToggle } from '@/shared/components/base/sidebar'

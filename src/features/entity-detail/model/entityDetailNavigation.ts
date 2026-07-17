@@ -1,4 +1,4 @@
-import { openCanonicalProjectDetail, openTaskDetail } from '@/app/navigation/intents'
+import { openCanonicalProjectDetail, openTaskDetail } from '@/app/navigation'
 import { getProjectDetail } from '@/features/project'
 import { getTaskDetail } from '@/features/task'
 import {

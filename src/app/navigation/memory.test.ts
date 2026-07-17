@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { buildShellScopeKey } from '@/app/navigation/shellRoute'
+import { buildShellScopeKey } from './shellLocation'
 import {
 	createNextShellRouteMemory,
 	isRememberableShellPath,
@@ -11,7 +11,7 @@ import {
 	resolveStartupPathFromMemory,
 	stripShellDetailSearch,
 	validateShellRouteMemoryPaths,
-} from '@/app/navigation/routeMemory'
+} from './memory'
 
 const OLD_SPACE_INBOX_PATH = `/${'space'}/space-a/inbox`
 const OLD_SPACE_VIEWS_PATH = `/${'space'}/space-a/views?view=today`

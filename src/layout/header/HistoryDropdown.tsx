@@ -1,7 +1,7 @@
 import { memo } from 'react'
 
 import { getSpaceVisual } from '@/features/space'
-import type { ShellRouteHistoryEntry } from '@/app/navigation/sessionRouteHistory'
+import type { ShellRouteHistoryEntry } from '@/app/navigation'
 import type { Space } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/base/button'

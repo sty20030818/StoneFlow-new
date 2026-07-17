@@ -6,7 +6,7 @@ import {
 	buildScopedSettingsPath,
 	buildStartupFallbackPath,
 	buildTaskDetailPath,
-} from '@/app/navigation/routePaths'
+} from './path'
 import { readLastSettingsSection, type SettingsSectionKey } from '@/features/settings/contract'
 import type { Scope, ShellNavigationTarget } from '@/shared/types'
 

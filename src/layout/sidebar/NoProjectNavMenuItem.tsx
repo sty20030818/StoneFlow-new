@@ -1,4 +1,4 @@
-import { openSection } from '@/app/navigation/intents'
+import { openSection } from '@/app/navigation'
 import type { Scope } from '@/shared/types'
 import { SidebarMenuItem } from '@/shared/components/base/sidebar'
 import { TargetIcon } from 'lucide-react'

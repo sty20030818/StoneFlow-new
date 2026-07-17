@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ShellRoute } from '@/app/navigation/shellRoute'
+import type { ShellRoute } from './shellLocation'
 
-import { resolveBreadcrumb } from './breadcrumbResolver'
+import { resolveBreadcrumb } from './breadcrumb'
 
 describe('resolveBreadcrumb', () => {
 	it('projects section 生成项目总览节点', () => {

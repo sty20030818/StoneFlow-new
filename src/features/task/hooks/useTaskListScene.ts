@@ -7,10 +7,10 @@ import type {
 	EntitySceneTaskBoardData,
 	EntitySceneVariant,
 } from '@/features/entity-scene'
-import { useCurrentShellRoute } from '@/app/navigation/ShellRouteContext'
+import { useCurrentShellRoute } from '@/app/navigation'
 import { useDialogStore } from '@/features/shell-dialogs'
-import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
-import { resolveShellRouteScope } from '@/app/navigation/scope'
+import { resolveBreadcrumb } from '@/app/navigation'
+import { resolveShellRouteScope } from '@/app/navigation'
 import {
 	applyTaskDisplayOptionsToTasks,
 	createTaskDisplayApplyContext,

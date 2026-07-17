@@ -1,4 +1,4 @@
-import { openProjectDetail, openTaskDetail } from '@/app/navigation/intents'
+import { openProjectDetail, openTaskDetail } from '@/app/navigation'
 import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
 
 export function resolveProjectSearchTargetPath(project: SearchProjectItem) {

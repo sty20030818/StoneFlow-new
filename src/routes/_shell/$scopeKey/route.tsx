@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { decodeScopeKey } from '@/app/navigation/pathDialect'
-import { useRememberCurrentShellRoute } from '@/app/navigation/useRememberCurrentShellRoute'
+import { decodeScopeKey } from '@/app/navigation'
+import { useRememberCurrentShellRoute } from '@/app/navigation'
 import type { Scope } from '@/shared/types'
 
 import { ScopedShellRouteLayout } from '../-scoped-shell-route-layout'

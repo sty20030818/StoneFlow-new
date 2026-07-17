@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 
-import { openSection } from '@/app/navigation/intents'
+import { openSection } from '@/app/navigation'
 import type { ShellSectionKey } from '@/layout/types'
 import type { Scope, Space } from '@/shared/types'
 import {

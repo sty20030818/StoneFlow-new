@@ -1,18 +1,17 @@
 import { LazyStore } from '@tauri-apps/plugin-store'
 
-import type { ShellRouteMemory, ShellScopeKey } from '@/app/navigation/shellRoute'
+import type { ShellRouteMemory, ShellScopeKey } from './shellLocation'
 import {
 	createNextShellRouteMemory,
 	normalizeShellRouteMemory,
 	resolveRememberedPathForScope as resolveRememberedRoutePathForScope,
 	resolveStartupPathFromMemory,
 	validateShellRouteMemoryPaths,
-} from '@/app/navigation/routeMemory'
+} from './memory'
 import type { Scope, Space } from '@/shared/types'
 
 /**
  * Route memory 的本机持久化边界。
- * Store 文件名沿用旧设备偏好文件，避免为了目录收口做无收益数据迁移。
  */
 const SHELL_DEVICE_STORE_PATH = 'shell-device-preferences.json'
 const NAVIGATION_RESTORE_KEY = 'shell.navigation.restore'

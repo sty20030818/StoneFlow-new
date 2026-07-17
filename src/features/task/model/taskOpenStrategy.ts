@@ -1,5 +1,5 @@
-import { openProjectDetail, openTaskDetail } from '@/app/navigation/intents'
-import type { AppRouteKind } from '@/app/navigation/shellRoute'
+import { openProjectDetail, openTaskDetail } from '@/app/navigation'
+import type { AppRouteKind } from '@/app/navigation'
 import type { CommandOpenPayload } from '@/shared/events'
 
 type ActiveDetailKind = 'task' | 'project' | null

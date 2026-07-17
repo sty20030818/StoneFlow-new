@@ -3,9 +3,9 @@ import { useNavigate } from '@tanstack/react-router'
 
 import { EntityScene } from '@/features/entity-scene'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
-import { useCurrentShellRoute } from '@/app/navigation/ShellRouteContext'
-import { openProjectDetail } from '@/app/navigation/intents'
-import { resolveShellRouteScope } from '@/app/navigation/scope'
+import { useCurrentShellRoute } from '@/app/navigation'
+import { openProjectDetail } from '@/app/navigation'
+import { resolveShellRouteScope } from '@/app/navigation'
 import {
 	BulkActionBar,
 	PROJECT_BULK_ACTION_IDS,
@@ -33,7 +33,7 @@ import {
 	useRegisterCommandSelection,
 } from '@/features/selection'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
-import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation'
 import { useViewsQuery } from '@/features/view'
 import { PlusIcon } from 'lucide-react'
 

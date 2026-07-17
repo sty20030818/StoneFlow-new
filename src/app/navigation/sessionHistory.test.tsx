@@ -11,7 +11,7 @@ import {
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { useShellSessionRouteHistory } from './sessionRouteHistory'
+import { useShellSessionRouteHistory } from './sessionHistory'
 
 const spaces = [
 	{ id: 'space-a', name: '工作' },

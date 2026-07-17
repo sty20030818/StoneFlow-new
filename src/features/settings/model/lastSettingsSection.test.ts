@@ -1,4 +1,4 @@
-import { openSettings } from '@/app/navigation/intents'
+import { openSettings } from '@/app/navigation'
 
 import { readLastSettingsSection, writeLastSettingsSection } from '@/features/settings/contract'
 

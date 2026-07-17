@@ -1,8 +1,8 @@
 import { useMemo, useRef } from 'react'
 
-import { openStartupFallback } from '@/app/navigation/intents'
+import { openStartupFallback } from '@/app/navigation'
 import type { AppLayoutProps } from '@/layout/appLayoutTypes'
-import { useShellSessionRouteHistory } from '@/app/navigation/sessionRouteHistory'
+import { useShellSessionRouteHistory } from '@/app/navigation'
 import { useShellChromeData } from '@/layout/model/useShellChromeData'
 import { useShellCreateDialogState } from '@/layout/model/useShellCreateDialogState'
 import { useShellCommandSystem } from '@/layout/model/useShellCommandSystem'

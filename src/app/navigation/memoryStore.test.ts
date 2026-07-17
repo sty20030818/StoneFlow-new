@@ -5,7 +5,7 @@ import {
 	rememberShellRoute,
 	resolveRememberedPathForScope,
 	resolveStartupPath,
-} from './routeMemoryStore'
+} from './memoryStore'
 
 const OLD_SPACE_INBOX_PATH = `/${'space'}/space-a/inbox`
 const OLD_SPACE_VIEWS_PATH = `/${'space'}/space-a/views?view=today&project=project-a`

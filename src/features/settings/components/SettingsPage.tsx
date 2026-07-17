@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
 import { EntityScene } from '@/features/entity-scene'
-import { useCurrentShellRoute } from '@/app/navigation/ShellRouteContext'
+import { useCurrentShellRoute } from '@/app/navigation'
 import {
 	getSettingsSectionLabel,
 	DEFAULT_SETTINGS_SECTION,

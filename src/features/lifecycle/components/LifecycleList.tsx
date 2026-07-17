@@ -2,9 +2,9 @@ import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
 import { EntityScene } from '@/features/entity-scene'
-import { useCurrentShellRoute } from '@/app/navigation/ShellRouteContext'
-import { openSection } from '@/app/navigation/intents'
-import { resolveShellRouteScope } from '@/app/navigation/scope'
+import { useCurrentShellRoute } from '@/app/navigation'
+import { openSection } from '@/app/navigation'
+import { resolveShellRouteScope } from '@/app/navigation'
 import {
 	BulkActionBar,
 	LIFECYCLE_BULK_ACTION_IDS,
@@ -32,7 +32,7 @@ import { Button } from '@/shared/components/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/components/patterns/bulk-action'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
 import type { LucideIcon } from 'lucide-react'
-import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
+import { resolveBreadcrumb } from '@/app/navigation'
 
 type LifecycleListProps = {
 	mode: LifecycleMode

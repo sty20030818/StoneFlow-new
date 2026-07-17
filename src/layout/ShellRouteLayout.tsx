@@ -1,10 +1,10 @@
 import { useEffect, type PropsWithChildren } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
-import type { ShellRoute } from '@/app/navigation/shellRoute'
-import { openSection } from '@/app/navigation/intents'
+import type { ShellRoute } from '@/app/navigation'
+import { openSection } from '@/app/navigation'
 import type { Scope } from '@/shared/types'
-import { ShellRouteProvider } from '@/app/navigation/ShellRouteContext'
+import { ShellRouteProvider } from '@/app/navigation'
 import {
 	selectActiveSection,
 	selectCurrentSpaceId,

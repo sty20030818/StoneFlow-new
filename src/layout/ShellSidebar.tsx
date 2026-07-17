@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
-import { openSection, openStartupFallback } from '@/app/navigation/intents'
+import { openSection, openStartupFallback } from '@/app/navigation'
 import { SHELL_FOOTER_ITEMS, SHELL_NAV_ITEMS, type ShellProjectLink } from '@/layout/config'
 import {
 	SIDEBAR_ENTITY_SELECTOR,
@@ -18,7 +18,7 @@ import type { ShellSectionKey } from '@/layout/types'
 import type { SidebarItemVisibilityTarget, SidebarMainItemKey } from '@/features/settings'
 import { SyncSidebarStatusStrip } from '@/features/sync'
 import { type ShellSidebarSettings } from '@/features/settings'
-import { resolveRememberedPathForScope } from '@/app/navigation/routeMemoryStore'
+import { resolveRememberedPathForScope } from '@/app/navigation'
 import { getSpaceVisual } from '@/features/space'
 import { SpaceEditorDialog } from '@/features/space'
 import type { Scope, Space } from '@/shared/types'

@@ -1,4 +1,4 @@
-import { openProjectDetail } from '@/app/navigation/intents'
+import { openProjectDetail } from '@/app/navigation'
 import type { ShellProjectLink } from '@/layout/config'
 import type { Scope } from '@/shared/types'
 import { SidebarMenuItem } from '@/shared/components/base/sidebar'
