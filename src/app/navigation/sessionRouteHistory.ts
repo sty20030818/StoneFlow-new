@@ -51,16 +51,19 @@ export function useShellSessionRouteHistory({
 	const navigationType = useNavigationType()
 	const navigate = useNavigate({ from: '/' })
 	const router = useRouter()
+	// 有壳注入的 currentRoute 时不再字符串 parse；仅 fallback（无 Provider）才 parse。
 	const locationRoute = useMemo(
 		() =>
-			parseShellRoute({
-				pathname: location.pathname,
-				search: location.searchStr,
-				hash: location.hash ? `#${location.hash}` : '',
-			}),
-		[location.hash, location.pathname, location.searchStr],
+			currentRoute
+				? null
+				: parseShellRoute({
+						pathname: location.pathname,
+						search: location.searchStr,
+						hash: location.hash ? `#${location.hash}` : '',
+					}),
+		[currentRoute, location.hash, location.pathname, location.searchStr],
 	)
-	const route = currentRoute ?? locationRoute
+	const route = currentRoute ?? locationRoute!
 	const currentPath = normalizeShellMemoryPath(route.fullPath)
 	const currentEntry = useMemo(
 		() => buildShellRouteHistoryEntry(route, currentScope, currentSpaceId, spaces, projects),

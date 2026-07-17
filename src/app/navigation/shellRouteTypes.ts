@@ -13,7 +13,7 @@ export type { SettingsSectionKey }
 export type ShellScopeKey = 'all' | `space:${string}`
 
 export type ShellRouteMemory = {
-	version: 2
+	version: 3
 	lastScopeKey: ShellScopeKey
 	lastRouteByScopeKey: Record<string, string>
 }

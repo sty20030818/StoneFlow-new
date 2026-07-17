@@ -13,7 +13,7 @@ describe('shellRoute settings paths', () => {
 		expect(syncAll.settingsSection).toBe('sync')
 		expect(syncAll.isShellPath).toBe(true)
 
-		const generalSpace = parseShellRoute('/spaces/space-a/settings/general')
+		const generalSpace = parseShellRoute('/space-a/settings/general')
 		expect(generalSpace.isSettingsPath).toBe(true)
 		expect(generalSpace.settingsSection).toBe('general')
 		expect(generalSpace.scope).toEqual({ type: 'space', spaceId: 'space-a' })
@@ -34,7 +34,7 @@ describe('shellRoute settings paths', () => {
 
 	it('parseShellScopePath 接受 settings 子路径', () => {
 		expect(parseShellScopePath('/all/settings/update')).toEqual({ type: 'all' })
-		expect(parseShellScopePath('/spaces/s1/settings/sidebar')).toEqual({
+		expect(parseShellScopePath('/s1/settings/sidebar')).toEqual({
 			type: 'space',
 			spaceId: 's1',
 		})

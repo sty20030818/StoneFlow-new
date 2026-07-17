@@ -262,7 +262,7 @@ describe('ShellSidebar', () => {
 		fireEvent.click(await screen.findByRole('menuitem', { name: '工作' }))
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-work/inbox')
+			expect(screen.getByTestId('location')).toHaveTextContent('/space-work/inbox')
 		})
 	})
 
@@ -316,7 +316,7 @@ describe('ShellSidebar', () => {
 			expect(onDeleteSpace).toHaveBeenCalledWith('space-personal')
 		})
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-work/inbox')
+			expect(screen.getByTestId('location')).toHaveTextContent('/space-work/inbox')
 		})
 	})
 })
@@ -360,7 +360,7 @@ function renderShellSidebar(
 			</DangerConfirmProvider>
 		</SubmitRegistryProvider>,
 		{
-			initialEntry: '/spaces/space-personal/inbox',
+			initialEntry: '/space-personal/inbox',
 		},
 	)
 }

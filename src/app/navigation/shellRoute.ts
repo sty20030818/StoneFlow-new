@@ -1,6 +1,6 @@
 /**
  * 路由语义入口（薄 re-export）。
- * 实现拆分：shellRouteTypes · shellRouteParse · shellRouteGuards。
+ * 实现：types · segments · build · parse · fromMatch · guards。
  */
 
 export type {
@@ -22,6 +22,12 @@ export {
 	parseShellRoute,
 	resolveShellSection,
 } from '@/app/navigation/shellRouteParse'
+
+export { shellRouteFromMatch } from '@/app/navigation/shellRouteFromMatch'
+export type {
+	ShellRouteMatchInput,
+	ShellRouteMatchParams,
+} from '@/app/navigation/shellRouteFromMatch'
 
 export {
 	isProjectShellPath,

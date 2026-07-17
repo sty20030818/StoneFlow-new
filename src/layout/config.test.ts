@@ -20,15 +20,15 @@ const spaces = [
 describe('shell config helpers', () => {
 	it('routing 按 canonical 路由解析主分区', () => {
 		expect(resolveShellSection('/all/views')).toBe('views')
-		expect(resolveShellSection('/spaces/space-personal/inbox')).toBe('inbox')
-		expect(resolveShellSection('/spaces/space-personal/tasks')).toBe('tasks')
-		expect(resolveShellSection('/spaces/space-personal/no-project')).toBe('noProject')
-		expect(resolveShellSection('/spaces/space-personal/projects')).toBe('projects')
-		expect(resolveShellSection('/spaces/space-personal/archive')).toBe('archive')
-		expect(resolveShellSection('/spaces/space-personal/trash')).toBe('trash')
-		expect(resolveShellSection('/spaces/space-personal/settings')).toBe('settings')
-		expect(resolveShellSection('/spaces/space-personal/settings/sync')).toBe('settings')
-		expect(resolveShellSection('/spaces/space-personal/projects/stoneflow-v1')).toBe('projects')
+		expect(resolveShellSection('/space-personal/inbox')).toBe('inbox')
+		expect(resolveShellSection('/space-personal/tasks')).toBe('tasks')
+		expect(resolveShellSection('/space-personal/no-project')).toBe('noProject')
+		expect(resolveShellSection('/space-personal/projects')).toBe('projects')
+		expect(resolveShellSection('/space-personal/archive')).toBe('archive')
+		expect(resolveShellSection('/space-personal/trash')).toBe('trash')
+		expect(resolveShellSection('/space-personal/settings')).toBe('settings')
+		expect(resolveShellSection('/space-personal/settings/sync')).toBe('settings')
+		expect(resolveShellSection('/space-personal/projects/stoneflow-v1')).toBe('projects')
 	})
 
 	it('为已知分区和空间返回标签', () => {
@@ -46,12 +46,12 @@ describe('shell config helpers', () => {
 	it('设置页路径跟随当前 scope（bare 与分区）', () => {
 		expect(buildScopedSettingsPath({ type: 'all' })).toBe('/all/settings')
 		expect(buildScopedSettingsPath({ type: 'space', spaceId: 'space-personal' })).toBe(
-			'/spaces/space-personal/settings',
+			'/space-personal/settings',
 		)
 		expect(buildScopedSettingsPath({ type: 'all' }, null, 'general')).toBe('/all/settings/general')
 		expect(
 			buildScopedSettingsPath({ type: 'space', spaceId: 'space-personal' }, null, 'update'),
-		).toBe('/spaces/space-personal/settings/update')
+		).toBe('/space-personal/settings/update')
 	})
 
 	it('为未知值返回兜底标签', () => {

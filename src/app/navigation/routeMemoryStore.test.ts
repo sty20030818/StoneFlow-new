@@ -37,14 +37,14 @@ describe('routeMemoryStore', () => {
 	it('rememberShellRoute 写入 canonical path 并删除 drawer query', async () => {
 		await rememberShellRoute(
 			{ type: 'space', spaceId: 'space-a' },
-			'/spaces/space-a/views/today?task=task-a',
+			'/space-a/views/today?task=task-a',
 		)
 
 		expect(storeState.get('shell.navigation.restore')).toEqual({
-			version: 2,
+			version: 3,
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
-				'space:space-a': '/spaces/space-a/views/today',
+				'space:space-a': '/space-a/views/today',
 			},
 		})
 	})
@@ -55,7 +55,7 @@ describe('routeMemoryStore', () => {
 		expect(storeSetMock).not.toHaveBeenCalledWith('shell.navigation.restore', expect.anything())
 	})
 
-	it('loadShellNavigationRestore 校验旧 payload 并写回 fallback', async () => {
+	it('loadShellNavigationRestore 丢弃无 version 3 的旧 payload（不做迁移）', async () => {
 		storeState.set('shell.navigation.restore', {
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
@@ -63,23 +63,11 @@ describe('routeMemoryStore', () => {
 			},
 		})
 
-		await expect(loadShellNavigationRestore()).resolves.toEqual({
-			version: 2,
-			lastScopeKey: 'space:space-a',
-			lastRouteByScopeKey: {
-				'space:space-a': '/all/tasks',
-			},
-		})
-		expect(storeSetMock).toHaveBeenCalledWith('shell.navigation.restore', {
-			version: 2,
-			lastScopeKey: 'space:space-a',
-			lastRouteByScopeKey: {
-				'space:space-a': '/all/tasks',
-			},
-		})
+		await expect(loadShellNavigationRestore()).resolves.toBeNull()
+		expect(storeSetMock).not.toHaveBeenCalled()
 	})
 
-	it('resolveStartupPath 遇到旧 stored path 返回 canonical fallback', async () => {
+	it('resolveStartupPath 遇到旧 stored path 走默认启动路径', async () => {
 		storeState.set('shell.navigation.restore', {
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
@@ -88,13 +76,13 @@ describe('routeMemoryStore', () => {
 		})
 
 		await expect(resolveStartupPath({ spaces: [{ id: 'space-a' } as never] })).resolves.toBe(
-			'/spaces/space-a/inbox',
+			'/all/tasks',
 		)
 	})
 
 	it('resolveRememberedPathForScope 遇到旧 stored path 返回 defaultPath', async () => {
 		storeState.set('shell.navigation.restore', {
-			version: 2,
+			version: 3,
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
 				'space:space-a': OLD_SPACE_INBOX_PATH,
@@ -105,8 +93,8 @@ describe('routeMemoryStore', () => {
 			resolveRememberedPathForScope({
 				scopeKey: 'space:space-a',
 				spaces: [{ id: 'space-a' } as never],
-				defaultPath: '/spaces/space-a/inbox',
+				defaultPath: '/space-a/inbox',
 			}),
-		).resolves.toBe('/spaces/space-a/inbox')
+		).resolves.toBe('/space-a/inbox')
 	})
 })

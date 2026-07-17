@@ -6,13 +6,18 @@ import {
 	type ShellRouteMemory,
 	type ShellScopeKey,
 } from '@/app/navigation/shellRoute'
+import {
+	isCanonicalWorkRemainder,
+	splitWorkspacePath,
+	stripQueryAndHash,
+} from '@/app/navigation/shellRouteSegments'
 
 /**
  * Route memory 规范化：纯路径规则与 memory 形状。
- * 不读写 Tauri Store；不请求 entity detail。
+ * v3：仅认 S1 方言 /:scopeKey/...；旧 version 整包丢弃。
  */
 
-export const ROUTE_MEMORY_VERSION = 2
+export const ROUTE_MEMORY_VERSION = 3
 
 export const ALLOWED_SECTION_SEGMENTS = new Set([
 	'inbox',
@@ -23,12 +28,6 @@ export const ALLOWED_SECTION_SEGMENTS = new Set([
 	'archive',
 	'trash',
 ])
-
-export const ALL_SECTION_PATH = /^\/all\/([^/?#]+)(?:[?#].*)?$/
-export const SPACE_SECTION_PATH = /^\/spaces\/([^/]+)\/([^/?#]+)(?:[?#].*)?$/
-export const VIEW_PATH = /^\/(?:all|spaces\/([^/]+))\/views\/([^/?#]+)(?:[?#].*)?$/
-export const TASK_DETAIL_PATH = /^\/spaces\/([^/]+)\/tasks\/([^/?#]+)(?:[?#].*)?$/
-export const PROJECT_DETAIL_PATH = /^\/spaces\/([^/]+)\/projects\/([^/?#]+)(?:[?#].*)?$/
 
 export function defaultShellRouteMemory(): ShellRouteMemory {
 	return {
@@ -41,7 +40,7 @@ export function defaultShellRouteMemory(): ShellRouteMemory {
 export function normalizeShellRouteMemory(
 	candidate: ShellRouteMemory | null | undefined,
 ): ShellRouteMemory | null {
-	if (!candidate) {
+	if (!candidate || candidate.version !== ROUTE_MEMORY_VERSION) {
 		return null
 	}
 
@@ -89,27 +88,23 @@ export function normalizeShellMemoryPath(path: string): string {
 
 export function isRememberableShellPath(path: string): boolean {
 	const canonicalPath = normalizeShellMemoryPath(path)
-	const pathname = canonicalPath.split(/[?#]/)[0] ?? canonicalPath
+	const pathname = stripQueryAndHash(canonicalPath)
 
 	if (pathname === '/quick-create' || pathname === '/' || pathname.length === 0) {
 		return false
 	}
 
-	const allMatch = pathname.match(/^\/all\/([^/]+)$/)
-	if (allMatch?.[1]) {
-		return ALLOWED_SECTION_SEGMENTS.has(allMatch[1])
+	const workspace = splitWorkspacePath(pathname)
+	if (!workspace) {
+		return false
 	}
 
-	const spaceSectionMatch = pathname.match(/^\/spaces\/([^/]+)\/([^/]+)$/)
-	if (spaceSectionMatch?.[2]) {
-		return ALLOWED_SECTION_SEGMENTS.has(spaceSectionMatch[2])
+	if (workspace.remainder[0] === 'settings') {
+		return false
 	}
 
-	return (
-		VIEW_PATH.test(pathname) ||
-		TASK_DETAIL_PATH.test(pathname) ||
-		PROJECT_DETAIL_PATH.test(pathname)
-	)
+	const allowDetail = workspace.scope.type === 'space'
+	return isCanonicalWorkRemainder(workspace.remainder, allowDetail)
 }
 
 export function stripShellDetailSearch(path: string): string {
@@ -140,45 +135,47 @@ export function extractSpaceIdFromScopeKey(scopeKey: ShellScopeKey): string | nu
 }
 
 export function extractSpaceIdFromPath(path: string): string | null {
-	const pathname = path.split(/[?#]/)[0] ?? path
-	const detailMatch = pathname.match(/^\/spaces\/([^/]+)\//)
-
-	return detailMatch?.[1] ? decodeURIComponent(detailMatch[1]) : null
+	const workspace = splitWorkspacePath(stripQueryAndHash(path))
+	if (!workspace || workspace.scope.type !== 'space') {
+		return null
+	}
+	return workspace.scope.spaceId
 }
 
 export function doesPathMatchScopeKey(path: string, scopeKey: ShellScopeKey) {
-	const pathname = path.split(/[?#]/)[0] ?? path
-
-	if (scopeKey === 'all') {
-		return pathname.startsWith('/all/')
-	}
-
-	const expectedSpaceId = extractSpaceIdFromScopeKey(scopeKey)
-	if (!expectedSpaceId) {
+	const workspace = splitWorkspacePath(stripQueryAndHash(path))
+	if (!workspace) {
 		return false
 	}
 
-	return extractSpaceIdFromPath(path) === expectedSpaceId
+	if (scopeKey === 'all') {
+		return workspace.scope.type === 'all'
+	}
+
+	const expectedSpaceId = extractSpaceIdFromScopeKey(scopeKey)
+	return workspace.scope.type === 'space' && workspace.scope.spaceId === expectedSpaceId
 }
 
 export function detectRememberedPathKind(
 	path: string,
 ): 'section' | 'view' | 'task' | 'project' | null {
-	const pathname = path.split(/[?#]/)[0] ?? path
+	const pathname = stripQueryAndHash(path)
+	const workspace = splitWorkspacePath(pathname)
+	if (!workspace || workspace.remainder.length === 0) {
+		return null
+	}
 
-	if (TASK_DETAIL_PATH.test(pathname)) {
+	const [head, second] = workspace.remainder
+	if (head === 'tasks' && second && workspace.scope.type === 'space') {
 		return 'task'
 	}
-
-	if (PROJECT_DETAIL_PATH.test(pathname)) {
+	if (head === 'projects' && second && workspace.scope.type === 'space') {
 		return 'project'
 	}
-
-	if (VIEW_PATH.test(pathname)) {
+	if (head === 'views' && second) {
 		return 'view'
 	}
-
-	if (ALL_SECTION_PATH.test(pathname) || SPACE_SECTION_PATH.test(pathname)) {
+	if (workspace.remainder.length === 1 && ALLOWED_SECTION_SEGMENTS.has(head)) {
 		return 'section'
 	}
 

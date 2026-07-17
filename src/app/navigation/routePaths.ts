@@ -1,31 +1,29 @@
-import type { RouteScope, ShellSectionKey, ShellSectionSegment } from '@/app/navigation/shellRoute'
+import {
+	DEFAULT_ALL_SECTION,
+	DEFAULT_SPACE_SECTION,
+	encodeScopeKey,
+	toSectionSegment,
+} from '@/app/navigation/pathDialect'
+import type {
+	RouteScope,
+	ShellSectionKey,
+	ShellSectionSegment,
+} from '@/app/navigation/shellRouteTypes'
 import { DEFAULT_SETTINGS_SECTION, type SettingsSectionKey } from '@/features/settings/contract'
 
 /**
- * Canonical path builder：只拼 StoneFlow 认可的 URL 字符串。
- * 这里不读取 router/store，也不做跳转；业务意图请放到 `intents.ts`。
+ * Canonical path builder：只拼方言认可的 URL。
+ * 形态：/:scopeKey/<section>[/id] ；详情任务/项目仅 space scopeKey。
  */
-const DEFAULT_SPACE_SECTION: ShellSectionSegment = 'inbox'
-const DEFAULT_ALL_SECTION: ShellSectionSegment = 'tasks'
-
-function toSectionSegment(section: ShellSectionKey | ShellSectionSegment) {
-	return section === 'noProject' ? 'no-project' : section
-}
 
 export function buildCanonicalSectionPath(
 	scope: RouteScope,
 	section: ShellSectionKey | ShellSectionSegment,
 	fallbackSpaceId?: string | null,
 ) {
+	const scopeKey = encodeScopeKey(scope, fallbackSpaceId)
 	const segment = toSectionSegment(section)
-	if (scope.type === 'all') {
-		return `/all/${segment}`
-	}
-
-	const spaceId = scope.spaceId || fallbackSpaceId
-	return spaceId
-		? `/spaces/${encodeURIComponent(spaceId)}/${segment}`
-		: `/all/${DEFAULT_ALL_SECTION}`
+	return `/${scopeKey}/${segment}`
 }
 
 export function buildCanonicalViewPath(
@@ -37,6 +35,10 @@ export function buildCanonicalViewPath(
 	return viewId ? `${sectionPath}/${encodeURIComponent(viewId)}` : sectionPath
 }
 
+/**
+ * 项目详情：永远落在真实 space 下。
+ * 无 projectId/spaceId 时退回 projects 列表（可在 all）。
+ */
 export function buildCanonicalProjectPath(
 	scope: RouteScope,
 	projectId?: string | null,
@@ -46,28 +48,21 @@ export function buildCanonicalProjectPath(
 	if (!projectId || !spaceId) {
 		return buildCanonicalSectionPath(scope, 'projects', fallbackSpaceId)
 	}
-
-	return `/spaces/${encodeURIComponent(spaceId)}/projects/${encodeURIComponent(projectId)}`
+	return buildProjectPath(spaceId, projectId)
 }
 
 export function buildTaskDetailPath(spaceId: string, taskId: string) {
-	return `/spaces/${encodeURIComponent(spaceId)}/tasks/${encodeURIComponent(taskId)}`
+	return `/${encodeURIComponent(spaceId)}/tasks/${encodeURIComponent(taskId)}`
 }
 
 export function buildProjectPath(spaceId: string, projectId: string) {
-	return `/spaces/${encodeURIComponent(spaceId)}/projects/${encodeURIComponent(projectId)}`
+	return `/${encodeURIComponent(spaceId)}/projects/${encodeURIComponent(projectId)}`
 }
 
-/** 全局默认设置入口（all scope + 默认分区） */
 export function buildSettingsPath(section: SettingsSectionKey = DEFAULT_SETTINGS_SECTION) {
 	return buildScopedSettingsPath({ type: 'all' }, null, section)
 }
 
-/**
- * 构建当前 scope 下的设置路径。
- * - 传入 section → `/…/settings/<section>`
- * - 省略 section → bare `/…/settings`（供 index redirect 使用）
- */
 export function buildScopedSettingsPath(
 	scope: RouteScope,
 	fallbackSpaceId?: string | null,
@@ -88,16 +83,11 @@ export function buildStartupFallbackPath(
 	scope?: RouteScope | null,
 	fallbackSpaceId?: string | null,
 ) {
-	if (!scope) {
-		return `/all/${DEFAULT_ALL_SECTION}`
+	if (!scope || scope.type === 'all') {
+		return `/${encodeScopeKey({ type: 'all' })}/${DEFAULT_ALL_SECTION}`
 	}
-
-	if (scope.type === 'all') {
-		return `/all/${DEFAULT_ALL_SECTION}`
-	}
-
 	const spaceId = scope.spaceId || fallbackSpaceId
 	return spaceId
 		? buildCanonicalSectionPath({ type: 'space', spaceId }, DEFAULT_SPACE_SECTION)
-		: `/all/${DEFAULT_ALL_SECTION}`
+		: `/${encodeScopeKey({ type: 'all' })}/${DEFAULT_ALL_SECTION}`
 }

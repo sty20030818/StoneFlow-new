@@ -12,7 +12,7 @@ describe('taskOpenStrategy', () => {
 				projectId: 'project-1',
 				placement: 'project',
 			}),
-		).toBe('/spaces/space-1/tasks/task-1')
+		).toBe('/space-1/tasks/task-1')
 
 		expect(
 			resolveCommandOpenTargetPath({
@@ -22,7 +22,7 @@ describe('taskOpenStrategy', () => {
 				projectId: null,
 				placement: 'inbox',
 			}),
-		).toBe('/spaces/space-2/tasks/task-2')
+		).toBe('/space-2/tasks/task-2')
 	})
 
 	it('project 打开行为保持原来的项目页目标', () => {
@@ -34,7 +34,7 @@ describe('taskOpenStrategy', () => {
 				projectId: null,
 				placement: 'project',
 			}),
-		).toBe('/spaces/space-1/projects/project-1')
+		).toBe('/space-1/projects/project-1')
 	})
 
 	it('task route 也被视为 detail context', () => {

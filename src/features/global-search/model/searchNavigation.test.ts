@@ -16,7 +16,7 @@ describe('searchNavigation', () => {
 				updatedAt: '2026-05-09T10:00:00Z',
 				completedAt: null,
 			}),
-		).toBe('/spaces/space-1/projects/project-1')
+		).toBe('/space-1/projects/project-1')
 	})
 
 	it('任务结果一律跳转到独立详情页', () => {
@@ -36,7 +36,7 @@ describe('searchNavigation', () => {
 				updatedAt: '2026-05-09T10:00:00Z',
 				completedAt: null,
 			}),
-		).toBe('/spaces/space-1/tasks/task-project')
+		).toBe('/space-1/tasks/task-project')
 
 		expect(
 			resolveTaskSearchTargetPath({
@@ -54,7 +54,7 @@ describe('searchNavigation', () => {
 				updatedAt: '2026-05-09T10:00:00Z',
 				completedAt: null,
 			}),
-		).toBe('/spaces/space-2/tasks/task-inbox')
+		).toBe('/space-2/tasks/task-inbox')
 
 		expect(
 			resolveTaskSearchTargetPath({
@@ -72,6 +72,6 @@ describe('searchNavigation', () => {
 				updatedAt: '2026-05-09T10:00:00Z',
 				completedAt: null,
 			}),
-		).toBe('/spaces/space-3/tasks/task-no-project')
+		).toBe('/space-3/tasks/task-no-project')
 	})
 })

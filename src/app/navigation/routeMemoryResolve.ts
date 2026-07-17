@@ -4,9 +4,8 @@ import type { Space } from '@/shared/types'
 
 import { buildCanonicalSectionPath, buildStartupFallbackPath } from '@/app/navigation/routePaths'
 import type { ShellRouteMemory, ShellScopeKey } from '@/app/navigation/shellRoute'
+import { parseShellRoute } from '@/app/navigation/shellRouteParse'
 import {
-	PROJECT_DETAIL_PATH,
-	TASK_DETAIL_PATH,
 	buildFallbackPathForScopeKey,
 	detectRememberedPathKind,
 	doesPathMatchScopeKey,
@@ -169,31 +168,20 @@ export async function normalizeRememberedShellPath(
 		return canonicalPath
 	}
 
+	const route = parseShellRoute(canonicalPath)
+
 	if (routeKind === 'project') {
-		const detailMatch = canonicalPath.match(PROJECT_DETAIL_PATH)
-		if (!detailMatch?.[1] || !detailMatch[2]) {
+		if (route.kind !== 'project' || !route.projectId || !route.spaceId) {
 			return fallbackPath
 		}
-
-		return validateProjectSpace(
-			detailMatch[2],
-			decodeURIComponent(detailMatch[1]),
-			canonicalPath,
-			fallbackPath,
-		)
+		return validateProjectSpace(route.projectId, route.spaceId, canonicalPath, fallbackPath)
 	}
 
-	const detailMatch = canonicalPath.match(TASK_DETAIL_PATH)
-	if (!detailMatch?.[1] || !detailMatch[2]) {
+	if (route.kind !== 'task' || !route.taskId || !route.spaceId) {
 		return fallbackPath
 	}
 
-	return validateTaskSpace(
-		detailMatch[2],
-		decodeURIComponent(detailMatch[1]),
-		canonicalPath,
-		fallbackPath,
-	)
+	return validateTaskSpace(route.taskId, route.spaceId, canonicalPath, fallbackPath)
 }
 
 async function resolveScopePath(input: {

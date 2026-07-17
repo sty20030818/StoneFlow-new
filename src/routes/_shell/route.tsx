@@ -24,7 +24,7 @@ function ShellRouteGroupError({ error, reset }: { error: unknown; reset: () => v
 						重试
 					</Button>
 					<Button asChild type='button' variant='ghost'>
-						<Link from='/' to='/all/tasks'>
+						<Link from='/' to='/$scopeKey/tasks' params={{ scopeKey: 'all' }}>
 							回到全部任务
 						</Link>
 					</Button>
@@ -41,7 +41,7 @@ function ShellRouteGroupNotFound() {
 		<RouterFeedbackPage
 			action={
 				<Button asChild type='button' variant='outline'>
-					<Link from='/' to='/all/tasks'>
+					<Link from='/' to='/$scopeKey/tasks' params={{ scopeKey: 'all' }}>
 						回到全部任务
 					</Link>
 				</Button>

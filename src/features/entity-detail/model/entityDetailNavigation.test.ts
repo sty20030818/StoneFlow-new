@@ -26,11 +26,11 @@ describe('entityDetailNavigation', () => {
 	it('首次打开 Drawer 使用 push', () => {
 		expect(
 			openEntityDrawerTarget(
-				{ pathname: '/spaces/work/inbox', search: '' },
+				{ pathname: '/work/inbox', search: '' },
 				{ kind: 'task', id: 'task-a' },
 			),
 		).toEqual({
-			pathname: '/spaces/work/inbox',
+			pathname: '/work/inbox',
 			search: '?task=task-a',
 			replace: false,
 		})
@@ -39,11 +39,11 @@ describe('entityDetailNavigation', () => {
 	it('切换 task 使用 replace', () => {
 		expect(
 			openEntityDrawerTarget(
-				{ pathname: '/spaces/work/inbox', search: '?task=task-a' },
+				{ pathname: '/work/inbox', search: '?task=task-a' },
 				{ kind: 'task', id: 'task-b' },
 			),
 		).toEqual({
-			pathname: '/spaces/work/inbox',
+			pathname: '/work/inbox',
 			search: '?task=task-b',
 			replace: true,
 		})
@@ -52,11 +52,11 @@ describe('entityDetailNavigation', () => {
 	it('task 切 project 使用 replace 并删除 task query', () => {
 		expect(
 			openEntityDrawerTarget(
-				{ pathname: '/spaces/projects', search: '?task=task-a&view=today' },
+				{ pathname: '/projects', search: '?task=task-a&view=today' },
 				{ kind: 'project', id: 'project-a' },
 			),
 		).toEqual({
-			pathname: '/spaces/projects',
+			pathname: '/projects',
 			search: '?view=today&project=project-a',
 			replace: true,
 		})
@@ -64,9 +64,9 @@ describe('entityDetailNavigation', () => {
 
 	it('关闭 Drawer 使用 replace', () => {
 		expect(
-			closeEntityDrawerTarget({ pathname: '/spaces/views', search: '?view=today&task=task-a' }),
+			closeEntityDrawerTarget({ pathname: '/views', search: '?view=today&task=task-a' }),
 		).toEqual({
-			pathname: '/spaces/views',
+			pathname: '/views',
 			search: '?view=today',
 			replace: true,
 		})
@@ -79,7 +79,7 @@ describe('entityDetailNavigation', () => {
 		})
 
 		await expect(resolveEntityPageTarget({ kind: 'task', id: 'task/a' })).resolves.toEqual({
-			pathname: '/spaces/space%2Fa/tasks/task%2Fa',
+			pathname: '/space%2Fa/tasks/task%2Fa',
 			search: '',
 			replace: false,
 		})
@@ -92,7 +92,7 @@ describe('entityDetailNavigation', () => {
 		})
 
 		await expect(resolveEntityPageTarget({ kind: 'project', id: 'project/a' })).resolves.toEqual({
-			pathname: '/spaces/space-a/projects/project%2Fa',
+			pathname: '/space-a/projects/project%2Fa',
 			search: '',
 			replace: false,
 		})

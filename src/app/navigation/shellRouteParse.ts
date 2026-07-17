@@ -1,29 +1,29 @@
-import { isSettingsSectionKey } from '@/features/settings/contract'
-
+import {
+	buildShellRouteFromAppRoute,
+	resolveShellSectionFromAppRouteOnly,
+} from '@/app/navigation/shellRouteBuild'
+import {
+	isCanonicalWorkRemainder,
+	isSingleSettingsRemainder,
+	SECTION_SEGMENT_TO_KEY,
+	splitPathSegments,
+	splitWorkspacePath,
+	stripQueryAndHash,
+} from '@/app/navigation/shellRouteSegments'
 import type {
 	AppRoute,
 	RouteScope,
-	SettingsSectionKey,
 	ShellRoute,
 	ShellRouteLocationLike,
+	ShellSectionKey,
 } from '@/app/navigation/shellRouteTypes'
 
 /**
- * 路由解析：URL → ShellRoute / AppRoute 结构化语义。
- * 类型见 shellRouteTypes；谓词见 shellRouteGuards。
+ * 字符串路由解析：仅 memory / IPC / 历史 fallback。
+ * 方言 S1：/:scopeKey/<section>[/id]；任务/项目详情仅 space。
  */
 
-const CANONICAL_ALL_PATH = /^\/all(?:\/(.+))?$/
-const CANONICAL_SPACE_PATH = /^\/spaces\/([^/]+)(?:\/(.+))?$/
-const TASK_DETAIL_PATH = /^\/spaces\/([^/]+)\/tasks\/([^/]+)$/
-const PROJECT_PAGE_PATH = /^\/spaces\/([^/]+)\/projects\/([^/]+)$/
-const VIEW_DETAIL_REMAINDER = /^views\/([^/]+)$/
-/** bare `settings` 或 `settings/<section>`（单段） */
-const SETTINGS_REMAINDER = /^settings(?:\/([^/]+))?$/
-
-function stripQueryAndHash(pathname: string) {
-	return pathname.split(/[?#]/)[0] || '/'
-}
+export { stripQueryAndHash }
 
 function splitLocationLike(input: ShellRouteLocationLike) {
 	if (typeof input !== 'string') {
@@ -53,44 +53,12 @@ export function parseShellRoute(input: ShellRouteLocationLike): ShellRoute {
 	const normalizedPath = stripQueryAndHash(pathname)
 	const fullPath = `${normalizedPath}${search}${hash}`
 	const appRoute = parseAppRoute(normalizedPath, search, hash, fullPath)
-	const isShellPath = appRoute.kind === 'shell-section' || appRoute.kind === 'view'
-
-	return {
-		appRoute,
-		kind: appRoute.kind,
-		scope:
-			appRoute.kind === 'shell-section' || appRoute.kind === 'view'
-				? appRoute.scope
-				: appRoute.kind === 'task' || appRoute.kind === 'project'
-					? { type: 'space', spaceId: appRoute.spaceId }
-					: null,
-		spaceId:
-			appRoute.kind === 'task' || appRoute.kind === 'project'
-				? appRoute.spaceId
-				: appRoute.kind === 'shell-section' || appRoute.kind === 'view'
-					? appRoute.scope.type === 'space'
-						? appRoute.scope.spaceId
-						: null
-					: null,
-		section: resolveShellSection(appRoute),
-		settingsSection: resolveSettingsSectionFromAppRoute(appRoute, normalizedPath),
-		viewId: appRoute.kind === 'view' ? appRoute.viewId : null,
-		projectId: appRoute.kind === 'project' ? appRoute.projectId : null,
-		taskId: appRoute.kind === 'task' ? appRoute.taskId : null,
+	return buildShellRouteFromAppRoute(appRoute, {
 		pathname: normalizedPath,
 		search,
 		hash,
 		fullPath,
-		isShellPath,
-		isSettingsPath: appRoute.kind === 'shell-section' && appRoute.section === 'settings',
-		isDebugPath: appRoute.kind === 'debug-activity',
-		isQuickCreatePath: appRoute.kind === 'quick-create',
-		isWorkPath:
-			appRoute.kind === 'shell-section' ||
-			appRoute.kind === 'view' ||
-			appRoute.kind === 'task' ||
-			appRoute.kind === 'project',
-	}
+	})
 }
 
 export function parseAppRoute(
@@ -99,49 +67,25 @@ export function parseAppRoute(
 	hash = '',
 	fullPath = `${pathname}${search}${hash}`,
 ): AppRoute {
-	if (pathname === '/') {
+	const segments = splitPathSegments(pathname)
+
+	if (segments.length === 0) {
 		return { kind: 'startup', pathname: '/', search, hash, fullPath }
 	}
 
-	if (pathname === '/quick-create') {
+	if (segments.length === 1 && segments[0] === 'quick-create') {
 		return { kind: 'quick-create', pathname: '/quick-create', search, hash, fullPath }
 	}
 
-	if (pathname === '/debug/activity') {
+	if (segments[0] === 'debug' && segments[1] === 'activity' && segments.length === 2) {
 		return { kind: 'debug-activity', pathname: '/debug/activity', search, hash, fullPath }
 	}
 
-	const taskMatch = pathname.match(TASK_DETAIL_PATH)
-	if (taskMatch?.[1] && taskMatch[2]) {
-		return {
-			kind: 'task',
-			spaceId: decodeURIComponent(taskMatch[1]),
-			taskId: decodeURIComponent(taskMatch[2]),
-			pathname,
-			search,
-			hash,
-			fullPath,
-		}
-	}
-
-	const projectMatch = pathname.match(PROJECT_PAGE_PATH)
-	if (projectMatch?.[1] && projectMatch[2]) {
-		return {
-			kind: 'project',
-			spaceId: decodeURIComponent(projectMatch[1]),
-			projectId: decodeURIComponent(projectMatch[2]),
-			pathname,
-			search,
-			hash,
-			fullPath,
-		}
-	}
-
-	const allMatch = pathname.match(CANONICAL_ALL_PATH)
-	if (allMatch) {
-		return parseScopedWorkRoute(
-			{ type: 'all' },
-			allMatch[1] ?? '',
+	const workspace = splitWorkspacePath(pathname)
+	if (workspace) {
+		return parseWorkRemainder(
+			workspace.scope,
+			workspace.remainder,
 			pathname,
 			search,
 			hash,
@@ -149,72 +93,34 @@ export function parseAppRoute(
 		)
 	}
 
-	const spaceMatch = pathname.match(CANONICAL_SPACE_PATH)
-	if (spaceMatch?.[1]) {
-		return parseScopedWorkRoute(
-			{ type: 'space', spaceId: decodeURIComponent(spaceMatch[1]) },
-			spaceMatch[2] ?? '',
-			pathname,
-			search,
-			hash,
-			fullPath,
-		)
-	}
-
-	return {
-		kind: 'unknown',
-		pathname,
-		search,
-		hash,
-		fullPath,
-	}
+	return { kind: 'unknown', pathname, search, hash, fullPath }
 }
 
-export function resolveShellSection(routeOrPath: AppRoute | string) {
-	const route =
-		typeof routeOrPath === 'string' ? parseAppRoute(stripQueryAndHash(routeOrPath)) : routeOrPath
-
-	switch (route.kind) {
-		case 'shell-section':
-			return route.section
-		case 'view':
-			return 'views'
-		case 'task':
-			return 'tasks'
-		case 'project':
-			return 'projects'
-		default:
-			return 'inbox'
+export function resolveShellSection(routeOrPath: AppRoute | string): ShellSectionKey {
+	if (typeof routeOrPath !== 'string') {
+		return resolveShellSectionFromAppRouteOnly(routeOrPath)
 	}
+	return resolveShellSectionFromAppRouteOnly(parseAppRoute(stripQueryAndHash(routeOrPath)))
 }
 
 export function parseShellScopePath(pathname: string): RouteScope | null {
-	const normalizedPath = stripQueryAndHash(pathname)
-	const taskMatch = normalizedPath.match(TASK_DETAIL_PATH)
-	if (taskMatch?.[1]) {
-		return { type: 'space', spaceId: decodeURIComponent(taskMatch[1]) }
+	const workspace = splitWorkspacePath(stripQueryAndHash(pathname))
+	if (!workspace) {
+		return null
 	}
-
-	const projectMatch = normalizedPath.match(PROJECT_PAGE_PATH)
-	if (projectMatch?.[1]) {
-		return { type: 'space', spaceId: decodeURIComponent(projectMatch[1]) }
+	const allowDetail = workspace.scope.type === 'space'
+	if (!isCanonicalWorkRemainder(workspace.remainder, allowDetail)) {
+		return null
 	}
-
-	const allMatch = normalizedPath.match(CANONICAL_ALL_PATH)
-	if (allMatch && isCanonicalAllRemainder(allMatch[1] ?? '')) {
-		return { type: 'all' }
-	}
-
-	const spaceMatch = normalizedPath.match(CANONICAL_SPACE_PATH)
-	if (spaceMatch?.[1] && isCanonicalSpaceRemainder(spaceMatch[2] ?? '')) {
-		return { type: 'space', spaceId: decodeURIComponent(spaceMatch[1]) }
-	}
-
-	return null
+	return workspace.scope
 }
 
 export function isProjectShellPath(pathname: string) {
-	return PROJECT_PAGE_PATH.test(stripQueryAndHash(pathname))
+	const workspace = splitWorkspacePath(stripQueryAndHash(pathname))
+	if (!workspace || workspace.scope.type !== 'space') {
+		return false
+	}
+	return workspace.remainder[0] === 'projects' && workspace.remainder.length === 2
 }
 
 export function isShellPath(pathname: string) {
@@ -222,17 +128,26 @@ export function isShellPath(pathname: string) {
 	return route.kind === 'shell-section' || route.kind === 'view'
 }
 
-function parseScopedWorkRoute(
+function parseWorkRemainder(
 	scope: RouteScope,
-	remainder: string,
+	remainder: string[],
 	pathname: string,
 	search: string,
 	hash: string,
 	fullPath: string,
 ): AppRoute {
-	if (!remainder) {
+	if (remainder.length === 0) {
+		return { kind: 'unknown', pathname, search, hash, fullPath }
+	}
+
+	const head = remainder[0]
+
+	// 任务/项目详情：仅 space scope
+	if (scope.type === 'space' && head === 'tasks' && remainder.length === 2) {
 		return {
-			kind: 'unknown',
+			kind: 'task',
+			spaceId: scope.spaceId,
+			taskId: remainder[1],
 			pathname,
 			search,
 			hash,
@@ -240,24 +155,28 @@ function parseScopedWorkRoute(
 		}
 	}
 
-	if (remainder === 'inbox') {
-		return { kind: 'shell-section', scope, section: 'inbox', pathname, search, hash, fullPath }
+	if (scope.type === 'space' && head === 'projects' && remainder.length === 2) {
+		return {
+			kind: 'project',
+			spaceId: scope.spaceId,
+			projectId: remainder[1],
+			pathname,
+			search,
+			hash,
+			fullPath,
+		}
 	}
 
-	if (remainder === 'tasks') {
-		return { kind: 'shell-section', scope, section: 'tasks', pathname, search, hash, fullPath }
+	// all 下误进详情 → unknown（运行时 loader 会纠正；memory 不记）
+	if (scope.type === 'all' && (head === 'tasks' || head === 'projects') && remainder.length === 2) {
+		return { kind: 'unknown', pathname, search, hash, fullPath }
 	}
 
-	if (remainder === 'views') {
-		return { kind: 'shell-section', scope, section: 'views', pathname, search, hash, fullPath }
-	}
-
-	const viewMatch = remainder.match(VIEW_DETAIL_REMAINDER)
-	if (viewMatch?.[1]) {
+	if (head === 'views' && remainder.length === 2) {
 		return {
 			kind: 'view',
 			scope,
-			viewId: decodeURIComponent(viewMatch[1]),
+			viewId: remainder[1],
 			pathname,
 			search,
 			hash,
@@ -265,81 +184,32 @@ function parseScopedWorkRoute(
 		}
 	}
 
-	if (remainder === 'projects') {
-		return { kind: 'shell-section', scope, section: 'projects', pathname, search, hash, fullPath }
+	if (isSingleSettingsRemainder(remainder)) {
+		return {
+			kind: 'shell-section',
+			scope,
+			section: 'settings',
+			pathname,
+			search,
+			hash,
+			fullPath,
+		}
 	}
 
-	if (remainder === 'no-project') {
-		return { kind: 'shell-section', scope, section: 'noProject', pathname, search, hash, fullPath }
+	if (remainder.length === 1) {
+		const section = SECTION_SEGMENT_TO_KEY[head]
+		if (section) {
+			return {
+				kind: 'shell-section',
+				scope,
+				section,
+				pathname,
+				search,
+				hash,
+				fullPath,
+			}
+		}
 	}
 
-	if (remainder === 'archive') {
-		return { kind: 'shell-section', scope, section: 'archive', pathname, search, hash, fullPath }
-	}
-
-	if (remainder === 'trash') {
-		return { kind: 'shell-section', scope, section: 'trash', pathname, search, hash, fullPath }
-	}
-
-	const settingsMatch = remainder.match(SETTINGS_REMAINDER)
-	if (settingsMatch) {
-		// bare 与 `settings/<any-single-segment>` 均识别为设置（非法 section 由路由层 redirect）
-		return { kind: 'shell-section', scope, section: 'settings', pathname, search, hash, fullPath }
-	}
-
-	return {
-		kind: 'unknown',
-		pathname,
-		search,
-		hash,
-		fullPath,
-	}
-}
-
-function resolveSettingsSectionFromAppRoute(
-	appRoute: AppRoute,
-	pathname: string,
-): SettingsSectionKey | null {
-	if (appRoute.kind !== 'shell-section' || appRoute.section !== 'settings') {
-		return null
-	}
-
-	const settingsMatch = pathname.match(/\/settings(?:\/([^/]+))?\/?$/)
-	const segment = settingsMatch?.[1]
-	if (!segment) {
-		return null
-	}
-	return isSettingsSectionKey(segment) ? segment : null
-}
-
-function isSettingsRemainder(remainder: string) {
-	return SETTINGS_REMAINDER.test(remainder)
-}
-
-function isCanonicalAllRemainder(remainder: string) {
-	return (
-		remainder === 'inbox' ||
-		remainder === 'tasks' ||
-		remainder === 'views' ||
-		remainder === 'projects' ||
-		remainder === 'no-project' ||
-		remainder === 'archive' ||
-		remainder === 'trash' ||
-		isSettingsRemainder(remainder) ||
-		Boolean(remainder.match(VIEW_DETAIL_REMAINDER))
-	)
-}
-
-function isCanonicalSpaceRemainder(remainder: string) {
-	return (
-		remainder === 'inbox' ||
-		remainder === 'tasks' ||
-		remainder === 'views' ||
-		remainder === 'projects' ||
-		remainder === 'no-project' ||
-		remainder === 'archive' ||
-		remainder === 'trash' ||
-		isSettingsRemainder(remainder) ||
-		Boolean(remainder.match(VIEW_DETAIL_REMAINDER))
-	)
+	return { kind: 'unknown', pathname, search, hash, fullPath }
 }

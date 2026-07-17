@@ -29,8 +29,6 @@ describe('lastSettingsSection', () => {
 	it('openSettings 路径应带上 last section', () => {
 		writeLastSettingsSection('update')
 		expect(openSettings({ type: 'all' })).toBe('/all/settings/update')
-		expect(openSettings({ type: 'space', spaceId: 'space-a' })).toBe(
-			'/spaces/space-a/settings/update',
-		)
+		expect(openSettings({ type: 'space', spaceId: 'space-a' })).toBe('/space-a/settings/update')
 	})
 })

@@ -15,7 +15,7 @@ describe('AppBreadcrumb', () => {
 					{
 						key: 'projects',
 						label: '项目总览',
-						to: '/spaces/space-1/projects',
+						to: '/space-1/projects',
 						icon: BoxIcon,
 					},
 					{
@@ -29,7 +29,7 @@ describe('AppBreadcrumb', () => {
 
 		expect(screen.getByRole('link', { name: '项目总览' })).toHaveAttribute(
 			'href',
-			'/spaces/space-1/projects',
+			'/space-1/projects',
 		)
 		expect(screen.getByText('项目 A')).toHaveAttribute('aria-current', 'page')
 	})

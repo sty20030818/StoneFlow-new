@@ -26,7 +26,7 @@ describe('resolveBreadcrumb', () => {
 				},
 			}),
 		).toMatchObject([
-			{ label: '项目总览', current: false, to: '/spaces/space-1/projects' },
+			{ label: '项目总览', current: false, to: '/space-1/projects' },
 			{ label: '项目 A', current: true },
 		])
 	})
@@ -49,8 +49,8 @@ describe('resolveBreadcrumb', () => {
 				},
 			}),
 		).toMatchObject([
-			{ label: '项目总览', to: '/spaces/space-1/projects' },
-			{ label: '项目 A', to: '/spaces/space-1/projects/project-1' },
+			{ label: '项目总览', to: '/space-1/projects' },
+			{ label: '项目 A', to: '/space-1/projects/project-1' },
 			{ label: '任务 A', current: true },
 		])
 	})
@@ -73,7 +73,7 @@ describe('resolveBreadcrumb', () => {
 				},
 			}),
 		).toMatchObject([
-			{ label: '收件箱', to: '/spaces/space-1/inbox' },
+			{ label: '收件箱', to: '/space-1/inbox' },
 			{ label: '任务 A', current: true },
 		])
 	})
@@ -96,7 +96,7 @@ describe('resolveBreadcrumb', () => {
 				},
 			}),
 		).toMatchObject([
-			{ label: '独立事项', to: '/spaces/space-1/no-project' },
+			{ label: '独立事项', to: '/space-1/no-project' },
 			{ label: '任务 A', current: true },
 		])
 	})

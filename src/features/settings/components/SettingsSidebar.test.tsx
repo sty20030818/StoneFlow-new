@@ -24,11 +24,11 @@ describe('SettingsSidebar', () => {
 	})
 
 	it('点击返回应用导航到 returnPath', async () => {
-		renderSettingsSidebar('general', '/spaces/space-personal/inbox')
+		renderSettingsSidebar('general', '/space-personal/inbox')
 
 		fireEvent.click(screen.getByRole('button', { name: '返回应用' }))
 
-		expect(await screen.findByTestId('location')).toHaveTextContent('/spaces/space-personal/inbox')
+		expect(await screen.findByTestId('location')).toHaveTextContent('/space-personal/inbox')
 	})
 
 	it('点击分区以 replace 切换 URL', async () => {

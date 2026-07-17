@@ -17,40 +17,38 @@ describe('useEntityDetailController', () => {
 	})
 
 	it('从 URL 恢复 active detail', async () => {
-		await renderController('/spaces/work/inbox?task=task-a')
+		await renderController('/work/inbox?task=task-a')
 
 		expect(screen.getByTestId('active-detail')).toHaveTextContent('task:task-a')
 		expect(screen.getByTestId('is-open')).toHaveTextContent('open')
 	})
 
 	it('openDrawer 更新 URL', async () => {
-		await renderController('/spaces/work/inbox')
+		await renderController('/work/inbox')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务' }))
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/work/inbox?task=task-a')
+			expect(screen.getByTestId('location')).toHaveTextContent('/work/inbox?task=task-a')
 		})
 	})
 
 	it('closeDrawer 清理 URL 并保留其他 query', async () => {
-		await renderController('/spaces/space-a/views/today?task=task-a')
+		await renderController('/space-a/views/today?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '关闭详情' }))
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-a/views/today')
+			expect(screen.getByTestId('location')).toHaveTextContent('/space-a/views/today')
 		})
 	})
 
 	it('双 query 初始化后自动清理 project', async () => {
-		await renderController('/spaces/space-a/views/today?task=task-a&project=project-a')
+		await renderController('/space-a/views/today?task=task-a&project=project-a')
 
 		await waitFor(() => {
 			expect(screen.getByTestId('active-detail')).toHaveTextContent('task:task-a')
-			expect(screen.getByTestId('location')).toHaveTextContent(
-				'/spaces/space-a/views/today?task=task-a',
-			)
+			expect(screen.getByTestId('location')).toHaveTextContent('/space-a/views/today?task=task-a')
 		})
 	})
 
@@ -59,25 +57,25 @@ describe('useEntityDetailController', () => {
 			id: 'task-a',
 			spaceId: 'space-work',
 		})
-		await renderController('/spaces/work/inbox?task=task-a')
+		await renderController('/work/inbox?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/spaces/space-work/tasks/task-a')
+			expect(screen.getByTestId('location')).toHaveTextContent('/space-work/tasks/task-a')
 		})
 	})
 
 	it('openPage 解析失败时停留在当前页面', async () => {
 		getTaskDetailMock.mockRejectedValue(new Error('not found'))
-		await renderController('/spaces/work/inbox?task=task-a')
+		await renderController('/work/inbox?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))
 
 		await waitFor(() => {
 			expect(getTaskDetailMock).toHaveBeenCalledWith('task-a')
 		})
-		expect(screen.getByTestId('location')).toHaveTextContent('/spaces/work/inbox?task=task-a')
+		expect(screen.getByTestId('location')).toHaveTextContent('/work/inbox?task=task-a')
 	})
 })
 

@@ -24,11 +24,11 @@ const projects = [
 
 describe('useShellSessionRouteHistory', () => {
 	it('基于 ShellRoute 生成 canonical label 并剥离 drawer query', async () => {
-		await renderHistoryProbe('/spaces/space-a/inbox?task=task-a')
+		await renderHistoryProbe('/space-a/inbox?task=task-a')
 
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/inbox|收件箱|space-a|工作',
+				'/space-a/inbox|收件箱|space-a|工作',
 			)
 		})
 	})
@@ -40,7 +40,7 @@ describe('useShellSessionRouteHistory', () => {
 
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/projects/project-a|项目 A|space-a|工作',
+				'/space-a/projects/project-a|项目 A|space-a|工作',
 			)
 		})
 		expect(screen.getByTestId('history-entries')).toHaveTextContent(
@@ -49,17 +49,17 @@ describe('useShellSessionRouteHistory', () => {
 	})
 
 	it('canonical detail 进入历史记录', async () => {
-		await renderHistoryProbe('/spaces/space-a/tasks/task-a')
+		await renderHistoryProbe('/space-a/tasks/task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: 'go project detail' }))
 
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/projects/project-a|项目 A|space-a|工作',
+				'/space-a/projects/project-a|项目 A|space-a|工作',
 			)
 		})
 		expect(screen.getByTestId('history-entries')).toHaveTextContent(
-			'/spaces/space-a/tasks/task-a|任务详情|space-a|工作',
+			'/space-a/tasks/task-a|任务详情|space-a|工作',
 		)
 	})
 
@@ -70,51 +70,51 @@ describe('useShellSessionRouteHistory', () => {
 
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/tasks/task-a|任务详情|space-a|工作',
+				'/space-a/tasks/task-a|任务详情|space-a|工作',
 			)
 		})
 		expect(screen.getByTestId('history-entries')).toHaveTextContent('empty')
 	})
 
 	it('REPLACE 会替换当前 history entry', async () => {
-		await renderHistoryProbe('/spaces/space-a/inbox')
+		await renderHistoryProbe('/space-a/inbox')
 
 		fireEvent.click(screen.getByRole('button', { name: 'replace views' }))
 
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/views/today|视图|space-a|工作',
+				'/space-a/views/today|视图|space-a|工作',
 			)
 		})
 		expect(screen.getByTestId('history-entries')).toHaveTextContent('empty')
 	})
 
 	it('back/forward 走 router history，entries 只是最近浏览列表', async () => {
-		await renderHistoryProbe('/spaces/space-a/inbox')
+		await renderHistoryProbe('/space-a/inbox')
 
 		fireEvent.click(screen.getByRole('button', { name: 'go task detail' }))
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/tasks/task-a|任务详情|space-a|工作',
+				'/space-a/tasks/task-a|任务详情|space-a|工作',
 			)
 		})
 
 		fireEvent.click(screen.getByRole('button', { name: 'go project detail' }))
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/projects/project-a|项目 A|space-a|工作',
+				'/space-a/projects/project-a|项目 A|space-a|工作',
 			)
 		})
 
 		expect(screen.getByTestId('history-state')).toHaveTextContent('back:true|forward:false')
 		expect(screen.getByTestId('history-entries')).toHaveTextContent(
-			'/spaces/space-a/tasks/task-a|任务详情|space-a|工作',
+			'/space-a/tasks/task-a|任务详情|space-a|工作',
 		)
 
 		fireEvent.click(screen.getByRole('button', { name: 'history back' }))
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/tasks/task-a|任务详情|space-a|工作',
+				'/space-a/tasks/task-a|任务详情|space-a|工作',
 			)
 		})
 
@@ -123,7 +123,7 @@ describe('useShellSessionRouteHistory', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'history forward' }))
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/spaces/space-a/projects/project-a|项目 A|space-a|工作',
+				'/space-a/projects/project-a|项目 A|space-a|工作',
 			)
 		})
 	})
@@ -258,25 +258,22 @@ function HistoryProbeLayout() {
 				{history.entries.length > 0 ? history.entries.map(formatEntry).join('\n') : 'empty'}
 			</div>
 			<button
-				onClick={() => void navigate({ to: '/spaces/space-a/projects/project-a' as never })}
+				onClick={() => void navigate({ to: '/space-a/projects/project-a' as never })}
 				type='button'
 			>
 				go project
 			</button>
-			<button
-				onClick={() => void navigate({ to: '/spaces/space-a/tasks/task-a' as never })}
-				type='button'
-			>
+			<button onClick={() => void navigate({ to: '/space-a/tasks/task-a' as never })} type='button'>
 				go task detail
 			</button>
 			<button
-				onClick={() => void navigate({ to: '/spaces/space-a/projects/project-a' as never })}
+				onClick={() => void navigate({ to: '/space-a/projects/project-a' as never })}
 				type='button'
 			>
 				go project detail
 			</button>
 			<button
-				onClick={() => void navigate({ to: '/spaces/space-a/views/today' as never, replace: true })}
+				onClick={() => void navigate({ to: '/space-a/views/today' as never, replace: true })}
 				type='button'
 			>
 				replace views

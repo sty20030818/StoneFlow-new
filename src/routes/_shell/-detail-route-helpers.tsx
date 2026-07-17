@@ -53,9 +53,9 @@ export async function ensureTaskDetailRouteData(input: {
 
 	if (scope.spaceId !== input.routeSpaceId) {
 		throw redirect({
-			to: '/spaces/$spaceId/tasks/$taskId',
+			to: '/$scopeKey/tasks/$taskId',
 			params: {
-				spaceId: scope.spaceId,
+				scopeKey: scope.spaceId,
 				taskId: input.taskId,
 			},
 			replace: true,
@@ -85,9 +85,9 @@ export async function ensureProjectDetailRouteData(input: {
 
 	if (scope.spaceId !== input.routeSpaceId) {
 		throw redirect({
-			to: '/spaces/$spaceId/projects/$projectId',
+			to: '/$scopeKey/projects/$projectId',
 			params: {
-				spaceId: scope.spaceId,
+				scopeKey: scope.spaceId,
 				projectId: input.projectId,
 			},
 			replace: true,
