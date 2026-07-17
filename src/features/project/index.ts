@@ -90,3 +90,6 @@ export {
 
 /** 命令选中快照（项目列表 → command）。 */
 export { buildProjectCommandSelection } from './model/buildProjectCommandSelection'
+
+/** 项目多选 bulk 命令 handlers（供壳 compose）。 */
+export { registerProjectCommands } from './commands/registerProjectCommands'

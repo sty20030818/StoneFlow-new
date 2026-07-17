@@ -21,7 +21,16 @@ describe('task bulk command handlers', () => {
 				void actionId
 			},
 		)
-		const actions = registerTaskCommands({ runEntityBulkActionFromCommand: run })
+		const actions = registerTaskCommands({
+			runEntityBulkActionFromCommand: run,
+			activeDetail: null,
+			closeEntityDrawer: vi.fn(),
+			taskPreviewController: {
+				previewState: { open: false },
+				openPreview: vi.fn(),
+				closePreview: vi.fn(),
+			},
+		})
 		const ctx = {
 			selection: { type: 'task' as const, ids: ['t1'] },
 		} as never

@@ -1,3 +1,5 @@
+import type { NavigateOptions } from '@tanstack/react-router'
+
 import type { CommandContext } from '@/features/command/core'
 import type {
 	BulkActionId,
@@ -5,10 +7,15 @@ import type {
 	BulkActionResultMessageLabels,
 	BulkEntityType,
 } from '@/features/bulk-action'
+import type { PageFilterKind } from '@/features/filter'
+import type { Scope } from '@/shared/types'
 
 /**
- * 壳宿主提供给域 `registerXxxCommands` 的端口（C3）。
- * 试点只含 bulk 执行；史诗 6 再扩 navigate / dialog / filter 等。
+ * 壳命令宿主端口：供各域 `registerXxxCommands(host)` 闭包使用。
+ *
+ * - layout 负责装配这些能力（导航、bulk 执行、dialog、筛选上下文等）并挂载命令 UI
+ * - 各 feature 只依赖本类型，不直接 import layout 实现
+ * - 形状与 `ShellCommandBridgeDeps` 对齐，Host 可原样传入 register*
  */
 export type CommandHostContext = {
 	runEntityBulkActionFromCommand: (
@@ -18,4 +25,43 @@ export type CommandHostContext = {
 		labels: BulkActionResultMessageLabels,
 		payload?: BulkActionPayload,
 	) => Promise<void>
+
+	pageFilter: {
+		actions: {
+			openFilterPicker: (kind?: PageFilterKind) => void
+			toggleCompleted: () => void
+			clearAll: () => void
+		}
+	}
+	setCommandMenuFilterKind: (kind: PageFilterKind) => void
+
+	submitRegistryActions: {
+		submitActiveTarget: (intent?: 'default' | 'continue' | 'open') => Promise<unknown>
+	}
+
+	currentScope: Scope
+	currentSpaceId: string | null
+	activeDetail: { kind: string; id: string } | null
+	goBack: () => void
+	goForward: () => void
+	canGoBack: boolean
+	closeEntityDrawer: () => void
+	closeProjectCreateDialog: () => void
+	closeTaskCreateDialog: () => void
+	createDialogType: 'task' | 'project' | null
+	handleOpenTaskCreate: () => void
+	isCommandOpen: boolean
+	isShortcutHelpOpen: boolean
+	navigate: (opts: { to: never } | NavigateOptions) => unknown
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	openProjectCreateDialog: (...args: any[]) => void
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	openTaskCreateDialog: (...args: any[]) => void
+	requestSearchFocus: () => void
+	taskPreviewController: {
+		previewState: { open: boolean }
+		openPreview: (taskId: string, source: 'keyboard' | 'pointer') => void
+		closePreview: () => void
+	}
+	toggleShortcutHelp: () => void
 }

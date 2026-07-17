@@ -44,8 +44,7 @@ export {
 	createProjectBulkSelectionSnapshotFromProjects,
 } from './core'
 
-// 域动作 / adapter 已迁至 task|project|lifecycle 的 bulk/（B3）
-// 本包只保留引擎：core · runtime · selection · components
+// 域动作定义与 adapter 在 task|project|lifecycle 的 bulk/；本包只保留执行引擎
 
 // ── runtime ─────────────────────────────────────────────────────────────────
 

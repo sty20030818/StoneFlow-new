@@ -26,3 +26,6 @@ export type {
  * Task/Project/Space/View 创建编辑对话框使用。
  */
 export { useSubmitTargetFromForm } from './model/use-submit-target-from-form'
+
+/** 表单提交命令 handlers（供壳 compose）。 */
+export { registerSubmitCommands } from './commands/registerSubmitCommands'

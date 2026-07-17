@@ -1,40 +1,37 @@
 import { useMemo } from 'react'
 
 import type { ShellCommandActions } from '@/features/command'
+import { registerFilterCommands } from '@/features/filter'
+import { registerLifecycleCommands } from '@/features/lifecycle'
+import { registerProjectCommands } from '@/features/project'
+import { registerSubmitCommands } from '@/features/submit'
+import { registerTaskCommands } from '@/features/task'
+
 import { composeShellCommandActions } from './composeShellCommandActions'
+import { registerShellChromeCommands } from './registerShellChromeCommands'
 import type { ShellCommandBridgeDeps } from './types'
-import { createMenuSlice } from './slices/menuSlice'
-import { createCreateSlice } from './slices/createSlice'
-import { createLayerSlice } from './slices/layerSlice'
-import { createSubmitSlice } from './slices/submitSlice'
-import { createNavSlice } from './slices/navSlice'
-import { createPreviewSlice } from './slices/previewSlice'
-import { createFilterSlice } from './slices/filterSlice'
-import { createTaskMetaSlice } from './slices/taskMetaSlice'
-import { createBulkSlice } from './slices/bulkSlice'
 
 export type { ShellCommandBridgeDeps } from './types'
 
 /**
- * 组合各 command slice → 完整 ShellCommandActions。
- * 新增命令：在对应 slices/* 加方法，并确认 compose 能覆盖。
+ * 组装完整 `ShellCommandActions`：
+ * 1. 壳铬架（菜单 / 创建 dialog / 关层 / 导航）
+ * 2. 各 domain 的 `registerXxxCommands(host)`（task / project / lifecycle / filter / submit）
+ *
+ * layout 只做 compose 与 Host 装配，不在此文件写领域 mutation 规则。
  */
 export function useShellCommandActions(deps: ShellCommandBridgeDeps): ShellCommandActions {
 	return useMemo(
 		() =>
 			composeShellCommandActions(
-				createMenuSlice(deps),
-				createCreateSlice(deps),
-				createLayerSlice(deps),
-				createSubmitSlice(deps),
-				createNavSlice(deps),
-				createPreviewSlice(deps),
-				createFilterSlice(deps),
-				createTaskMetaSlice(deps),
-				createBulkSlice(deps),
+				registerShellChromeCommands(deps),
+				registerTaskCommands(deps),
+				registerProjectCommands(deps),
+				registerLifecycleCommands(deps),
+				registerFilterCommands(deps),
+				registerSubmitCommands(deps),
 			),
-		// deps 对象字段由调用方稳定引用；整袋依赖避免漏字段
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- bridge deps 袋由上层 useMemo/useCallback 组装
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- bridge deps 袋由上层组装
 		[
 			deps.currentScope,
 			deps.currentSpaceId,

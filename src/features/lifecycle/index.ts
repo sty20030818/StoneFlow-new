@@ -51,3 +51,6 @@ export {
 
 /** 命令选中快照（归档/回收站 → command）。 */
 export { buildLifecycleCommandSelection } from './model/buildLifecycleCommandSelection'
+
+/** 归档/回收站 bulk 命令 handlers（供壳 compose）。 */
+export { registerLifecycleCommands } from './commands/registerLifecycleCommands'

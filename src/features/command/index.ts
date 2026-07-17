@@ -125,6 +125,6 @@ export { allCommands, commandRegistry, createShellCommandRegistry } from './comm
 
 export { takePendingCommandOpenIntent } from './api/commandOpenIntent'
 
-// ── C3 Host · 域 register 的端口类型 ────────────────────────────────────────
+// ── 命令宿主端口（供各域 registerXxxCommands 使用）────────────────────────
 
 export type { CommandHostContext } from './host'

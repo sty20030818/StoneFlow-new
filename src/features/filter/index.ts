@@ -25,3 +25,6 @@ export type {
 	PageFilterKind,
 	PageFilterState,
 } from './model/PageFilterProvider'
+
+/** 页筛选命令 handlers（供壳 compose）。 */
+export { registerFilterCommands } from './commands/registerFilterCommands'

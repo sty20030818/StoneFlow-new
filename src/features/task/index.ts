@@ -111,8 +111,8 @@ export {
 export { registerTaskMetadataIcons } from './model/registerTaskMetadataIcons'
 
 /**
- * C3 试点：任务 bulk 命令 handlers（complete/archive/delete）。
- * 命令菜单经 layout bulkSlice 转发；行快捷键共用 runTaskRowBulkCommand。
+ * 命令宿主注册表 + 行快捷键共用的 bulk 执行。
+ * 命令板与行快捷键必须走同一 action id，避免行为分叉。
  */
 export {
 	registerTaskCommands,

@@ -1,23 +1,19 @@
-# Shell Command Bridge
+# Shell Command Bridge（命令宿主装配）
 
-把壳侧能力组装成 `ShellCommandActions`，供 `useCommandRuntime` 使用。
+把壳上可用的端口组装成 `ShellCommandActions`，交给 `useCommandRuntime` 绑定命令元数据。
 
-## 新增命令动作
-
-1. 在 `slices/` 对应文件加方法（或新建 slice）  
-2. 在 `useShellCommandActions.ts` 的 `composeShellCommandActions(...)` 里挂上  
-3. 若改了 `ShellCommandActions` 类型，同步 `features/command/adapters`
-
-## 切片
+业务 handlers 不在本目录实现，而由各 feature 的 `registerXxxCommands(host)` 贡献；此处只保留：
 
 | 文件 | 职责 |
 |------|------|
-| menuSlice | 命令板、帮助、搜索 |
-| createSlice | 新建任务/项目、picker |
-| layerSlice | Esc 关层优先级 |
-| submitSlice | 表单提交 |
-| navSlice | 导航、侧栏、前进后退 |
-| previewSlice | 右侧预览 |
-| filterSlice | 页筛选 |
-| taskMetaSlice | 任务 meta picker |
-| bulkSlice | 批量归档/删除等 |
+| `useShellCommandActions.ts` | compose 壳 chrome + 各域 register |
+| `registerShellChromeCommands.ts` | 菜单 / 创建 dialog / 关层 / 导航（壳侧） |
+| `composeShellCommandActions.ts` | 合并 `Partial<ShellCommandActions>` 并校验必填方法 |
+| `types.ts` | Host 依赖袋（与 `CommandHostContext` 对齐） |
+
+## 新增命令动作
+
+1. 在对应 **domain** 的 `register*Commands` 增加 handler  
+2. 若需新 Host 端口：同时扩 `CommandHostContext` 与 `ShellCommandBridgeDeps`  
+3. 在 `useShellCommandActions` 的 compose 列表挂上  
+4. 同步 `features/command/adapters` 的 `ShellCommandActions` 与 `bindShellCommand`
