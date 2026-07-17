@@ -12,6 +12,7 @@ import {
 	useShellNavStore,
 } from './model/useShellNavStore'
 import { AppLayout } from './AppLayout'
+import { ShellProvider } from './model/ShellContext'
 import { setActiveScope } from '@/features/space'
 import { useSpaces } from '@/features/space'
 import { useWorkspaceSync } from '@/features/workspace'
@@ -108,16 +109,27 @@ export function ShellRouteLayout({ children, scope, shellRoute }: ShellRouteLayo
 		})
 	}, [isWorkPath, scope])
 
+	const resolvedSpaceId = scope.type === 'space' ? scope.spaceId : fallbackSpaceId
+
 	return (
 		<ShellRouteProvider shellRoute={shellRoute}>
-			<AppLayout
-				activeSection={activeSection}
-				currentScope={scope}
-				currentSpaceId={scope.type === 'space' ? scope.spaceId : fallbackSpaceId}
-				shellRoute={shellRoute}
+			<ShellProvider
+				value={{
+					scope,
+					shellRoute,
+					currentSpaceId: resolvedSpaceId,
+					activeSection,
+				}}
 			>
-				{children}
-			</AppLayout>
+				<AppLayout
+					activeSection={activeSection}
+					currentScope={scope}
+					currentSpaceId={resolvedSpaceId}
+					shellRoute={shellRoute}
+				>
+					{children}
+				</AppLayout>
+			</ShellProvider>
 		</ShellRouteProvider>
 	)
 }

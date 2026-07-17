@@ -70,4 +70,13 @@ export {
 	selectSidebarSettingsError,
 } from './model/useSidebarSettingsStore'
 
+/** 设置模式侧栏（壳在 isSettingsPath 时挂载）。 */
+export { SettingsSidebar } from './components/SettingsSidebar'
+
+export {
+	SETTINGS_NAV_GROUPS,
+	type SettingsNavGroup,
+	type SettingsNavItem,
+} from './model/settingsNav'
+
 // 注意：SettingsPage 在 ./page，不在本文件

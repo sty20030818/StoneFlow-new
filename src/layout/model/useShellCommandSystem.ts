@@ -37,11 +37,9 @@ import {
 	useCommandContext,
 	useCommandRunner,
 	useCommandRuntime,
-	type TaskPlacementTarget,
 } from '@/features/command'
 import { COMMAND_IDS, type CommandContext, type CommandId } from '@/features/command'
 import {
-	TASK_BULK_ACTION_IDS,
 	createCommandBulkSelectionSnapshot,
 	shouldClearBulkSelection,
 	showBulkActionResultToast,
@@ -51,8 +49,7 @@ import {
 	type BulkActionResultMessageLabels,
 	type BulkEntityType,
 } from '@/features/bulk-action'
-import type { TaskPriorityValue } from '@/features/task'
-import type { TaskStatus } from '@/shared/types'
+import { createShellCommandTaskMetaHandlers } from '@/layout/model/shellCommandTaskMeta'
 
 type OpenTaskCreate = ReturnType<typeof useDialogStore.getState>['openTaskCreateDialog']
 
@@ -402,61 +399,9 @@ export function useShellCommandSystem({
 		[isShortcutHelpOpen],
 	)
 
-	const updateSelectedTasks = useCallback(
-		async (
-			actionId: BulkActionId,
-			payload?: {
-				priority?: TaskPriorityValue
-				status?: TaskStatus
-				dueAt?: string | null
-				target?: TaskPlacementTarget
-			},
-		) => {
-			if (commandContext.selection.type !== 'task' || commandContext.selection.ids.length === 0) {
-				return
-			}
-			await runEntityBulkActionFromCommand(
-				commandContext,
-				'task',
-				actionId,
-				{ successVerb: '更新', entityLabel: '任务' },
-				payload,
-			)
-		},
+	const taskMetaHandlers = useMemo(
+		() => createShellCommandTaskMetaHandlers(commandContext, runEntityBulkActionFromCommand),
 		[commandContext, runEntityBulkActionFromCommand],
-	)
-
-	const onSelectTaskPriority = useCallback(
-		(priority: TaskPriorityValue) => {
-			void updateSelectedTasks(TASK_BULK_ACTION_IDS.setPrioritySelected, { priority }).catch(
-				() => undefined,
-			)
-		},
-		[updateSelectedTasks],
-	)
-	const onSelectTaskStatus = useCallback(
-		(status: TaskStatus) => {
-			void updateSelectedTasks(TASK_BULK_ACTION_IDS.setStatusSelected, { status }).catch(
-				() => undefined,
-			)
-		},
-		[updateSelectedTasks],
-	)
-	const onSelectTaskPlacement = useCallback(
-		(target: TaskPlacementTarget) => {
-			void updateSelectedTasks(TASK_BULK_ACTION_IDS.setPlacementSelected, { target }).catch(
-				() => undefined,
-			)
-		},
-		[updateSelectedTasks],
-	)
-	const onSelectTaskDate = useCallback(
-		(dueAt: string | null) => {
-			void updateSelectedTasks(TASK_BULK_ACTION_IDS.setDateSelected, { dueAt }).catch(
-				() => undefined,
-			)
-		},
-		[updateSelectedTasks],
 	)
 
 	return {
@@ -481,9 +426,6 @@ export function useShellCommandSystem({
 		/** 命令板项目列表；空时 Header 可回退侧栏 projects */
 		commandProjects,
 		pageFilter,
-		onSelectTaskPriority,
-		onSelectTaskStatus,
-		onSelectTaskPlacement,
-		onSelectTaskDate,
+		...taskMetaHandlers,
 	}
 }

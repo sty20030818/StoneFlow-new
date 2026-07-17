@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
 
 import { openSettings } from '@/app/navigation/intents'
-import type { SettingsSectionKey } from '@/features/settings'
+import type { SettingsSectionKey } from '@/features/settings/contract'
 import type { Scope } from '@/shared/types'
 import { CloudIcon, PanelLeftIcon, SlidersHorizontalIcon, SparklesIcon } from 'lucide-react'
 
@@ -18,6 +18,7 @@ export type SettingsNavGroup = {
 	items: SettingsNavItem[]
 }
 
+/** 设置侧栏导航分组（偏好 / 数据）。 */
 export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
 	{
 		key: 'preferences',
