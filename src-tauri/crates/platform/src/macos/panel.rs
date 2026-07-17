@@ -35,8 +35,13 @@ use crate::quick_window::{
     QuickWindowCallbacks,
 };
 
-/// 与 FE `rounded-xl`（12px）对齐，避免 vibrancy 圆角与 hairline 错位。
-const QUICK_CREATE_CORNER_RADIUS: f64 = 12.0;
+/// 与 FE `rounded-2xl`（16px）对齐；裁在 contentView 上兜底直角。
+///
+/// 阴影：只用系统 `hasShadow`。不能加 `Titled`——tauri-nspanel 要求从
+/// `decorations(false)` 转成 NonActivatingPanel；再混入 Titled 会抛 ObjC 异常
+///（维护者 issue #19/#22），Rust 无法捕获 → 进程 abort。
+/// Spotlight 文档里的 titled 阴影只适用于纯 AppKit NSPanel，不适用于本路径。
+const QUICK_CREATE_CORNER_RADIUS: f64 = 16.0;
 
 // 同时声明 NSPanel 子类 + NSWindowDelegate 子类：
 //  - QuickCreatePanel：can_become_key_window + is_floating_panel。
@@ -77,8 +82,8 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
     .always_on_top(true)
     .skip_taskbar(true)
     .decorations(false)
-    // NSPanel setHasShadow(true) 为权威阴影源；Tauri builder shadow 对 panel 不可靠。
-    .shadow(false)
+    // builder 先开 shadow；to_panel 后仍以 NSPanel setHasShadow(true) 为准。
+    .shadow(true)
     .transparent(true)
     .visible(false)
     .build()
@@ -102,9 +107,13 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
 
     // 层级、样式、集合行为三件套（缺一不可）。
     panel.set_level(101); // NSPopUpMenuWindowLevel
+    // 仅 NonActivating：tauri-nspanel 官方示例与 issue #19/#22 均要求
+    // decorations(false) 起步，禁止再 OR Titled（会 foreign exception abort）。
     panel.set_style_mask(StyleMask::empty().nonactivating_panel().into());
-    // 深度交给系统阴影；FE 不再画 CSS 大阴影。
-    set_panel_shadow(panel.as_ref(), true);
+    panel.set_has_shadow(true);
+    invalidate_panel_shadow(panel.as_ref());
+    // 圆角：与 FE 对齐；不设 masksToBounds，避免削弱窗轮廓阴影。
+    panel.set_corner_radius(QUICK_CREATE_CORNER_RADIUS);
     panel.set_collection_behavior(
         CollectionBehavior::new()
             .move_to_active_space()
@@ -162,6 +171,9 @@ pub fn present_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<(), Str
                 "platform: Quick Create 弹窗已准备完毕，执行 show_and_make_key（快捷键={QUICK_CREATE_SHORTCUT}）"
             );
             panel.show_and_make_key();
+            // 透明窗 show 后刷新系统阴影轮廓（否则可能残留直角/残影）。
+            panel.set_has_shadow(true);
+            invalidate_panel_shadow(panel.as_ref());
         })
         .map_err(|error| format!("主线程显示 quick create panel 失败: {error}"))
 }
@@ -197,10 +209,10 @@ pub fn prepare_hidden_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<
         .map_err(|error| format!("主线程准备 hidden quick create panel 失败: {error}"))
 }
 
-fn set_panel_shadow(panel: &dyn tauri_nspanel::Panel, enabled: bool) {
+/// 刷新 Window Server 阴影轮廓（透明窗 show / 形状变化后需要）。
+fn invalidate_panel_shadow(panel: &dyn tauri_nspanel::Panel) {
     let ns_panel = panel.as_panel();
     unsafe {
-        let _: () = objc2::msg_send![ns_panel, setHasShadow: enabled];
         let _: () = objc2::msg_send![ns_panel, invalidateShadow];
     }
 }

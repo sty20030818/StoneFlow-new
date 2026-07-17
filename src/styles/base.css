@@ -29,7 +29,7 @@
 		isolation: isolate;
 	}
 
-	/* Quick Create：固定壳填满原生窗；透明底交给面板 / 系统材质。 */
+	/* Quick Create：窗体透明，深度交给原生 shadow；FE 只负责内容壳材质。 */
 	body[data-quick-create] {
 		background: transparent !important;
 		height: 100%;

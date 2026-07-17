@@ -100,7 +100,7 @@ export function QuickCreateResults() {
 function QuickCreateBoardState({ description, title }: { description?: string; title: string }) {
 	return (
 		<div className={cn('flex min-h-40 items-center justify-center px-5 py-6')}>
-			<div className='flex items-center gap-2 rounded-full border border-sf-border-subtle bg-muted/50 px-3 py-2 text-[12px] text-sf-text-secondary'>
+			<div className='flex items-center gap-2 rounded-full border border-black/[0.06] bg-background/90 px-3 py-2 text-[12px] text-sf-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]'>
 				<SearchIcon className='size-4' />
 				<span>{title}</span>
 				{description ? <span className='text-sf-text-quaternary'>{description}</span> : null}
@@ -118,8 +118,8 @@ function QuickCreateSearchEmptyState({
 }) {
 	return (
 		<div className='px-3 pb-3 pt-2'>
-			<div className='flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-sf-border-subtle bg-muted/30 px-5 py-6 text-center'>
-				<div className='mb-3 flex size-9 items-center justify-center rounded-lg bg-background/80 text-sf-text-tertiary ring-1 ring-sf-border-subtle/80'>
+			<div className='flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed border-black/[0.08] bg-background/70 px-5 py-6 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]'>
+				<div className='mb-3 flex size-9 items-center justify-center rounded-lg bg-background text-sf-text-tertiary ring-1 ring-black/[0.06]'>
 					<SearchIcon className='size-4' />
 				</div>
 				<div className='text-[13px] font-medium text-foreground'>

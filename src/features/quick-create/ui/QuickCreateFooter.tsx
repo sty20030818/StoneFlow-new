@@ -3,13 +3,17 @@ import { AlertTriangleIcon, CheckCircle2Icon, LoaderCircleIcon } from 'lucide-re
 import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
 import { cn } from '@/shared/lib/utils'
 import { Kbd } from '@/shared/components/base/kbd'
+import { quickCreateFooterChromeClass } from '@/shared/components/patterns/quick-create'
 
 export function QuickCreateFooter() {
 	const { derived, state } = useQuickCreate()
 
 	return (
 		<div
-			className='flex min-h-11 items-center gap-3 border-t border-sf-divider bg-muted/65 px-4 text-[11px] text-sf-text-quaternary'
+			className={cn(
+				quickCreateFooterChromeClass,
+				'flex min-h-11 items-center gap-3 px-4 text-[11px] text-sf-text-tertiary',
+			)}
 			data-testid='quick-create-footer'
 		>
 			<div
@@ -20,7 +24,7 @@ export function QuickCreateFooter() {
 						? 'text-sf-danger-surface-text'
 						: state.submitState === 'success'
 							? 'text-sf-success-surface-text'
-							: 'text-sf-text-quaternary',
+							: 'text-sf-text-tertiary',
 				)}
 			>
 				{state.submitState === 'error' ? <AlertTriangleIcon className='size-3.5 shrink-0' /> : null}

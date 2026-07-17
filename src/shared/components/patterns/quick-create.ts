@@ -9,6 +9,30 @@ export const quickCreateAdvancedRowClass =
 	'flex h-10 flex-nowrap items-center gap-2 overflow-x-auto px-3'
 
 /**
+ * 内容壳：致密玻璃 + 折射描边。
+ * 外阴影交给 macOS NSPanel `setHasShadow` / Windows `set_shadow`，FE 不画投影。
+ */
+export const quickCreateSurfaceClipClass = [
+	'relative flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl',
+	'[clip-path:inset(0_round_16px)]',
+	'border border-black/[0.05]',
+	'bg-background/92',
+	'shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_0_0_0.5px_rgba(0,0,0,0.025)]',
+].join(' ')
+
+/** Composer 顶栏衬底（与 Results 之间只保留这一条分隔） */
+export const quickCreateChromeClass =
+	'shrink-0 border-b border-black/[0.05] bg-background/96'
+
+/** Results 内滚区：略透，仍保证行文可读 */
+export const quickCreateResultsPaneClass =
+	'min-h-0 overflow-x-hidden overflow-y-auto bg-background/78'
+
+/** Footer 底栏 */
+export const quickCreateFooterChromeClass =
+	'shrink-0 rounded-b-2xl border-t border-black/[0.06] bg-background/96'
+
+/**
  * Quick Create board spacing contract:
  * - create row 和结果区分开，结果区容器统一管理两个 board 的外部间距
  * - board 自身不再追加上下 padding
