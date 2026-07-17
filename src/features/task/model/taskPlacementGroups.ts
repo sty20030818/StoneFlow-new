@@ -1,4 +1,4 @@
-import type { TaskPlacementTarget } from './task-placement-target'
+import type { TaskPlacementTarget } from './taskPlacementTarget'
 
 export type TaskPlacementGroupProject = {
 	id: string

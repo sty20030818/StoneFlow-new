@@ -118,12 +118,16 @@ vi.mock('@/features/entity-detail', () => ({
 	}),
 }))
 
-vi.mock('@/features/shell-dialogs', () => ({
-	useDialogStore: (selector: (state: unknown) => unknown) =>
-		selector({
-			openTaskCreateDialog: openTaskCreateDialogSpy,
-		}),
-}))
+vi.mock('@/features/shell-dialogs', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('@/features/shell-dialogs')>()
+	return {
+		...actual,
+		useDialogStore: (selector: (state: unknown) => unknown) =>
+			selector({
+				openTaskCreateDialog: openTaskCreateDialogSpy,
+			}),
+	}
+})
 
 vi.mock('@/features/project', () => ({
 	useProjectOptions: (scope: { type: string }) => {
@@ -189,65 +193,70 @@ vi.mock('@/shared/events', () => ({
 		vi.fn<(scope: unknown, onTaskChanged: (payload: unknown) => void) => void>(),
 }))
 
-vi.mock('@/features/task', () => ({
-	useTaskListController: () => ({
-		pendingTaskId: null,
-		updateTaskPriority: vi.fn<(task: unknown, priority: unknown) => Promise<void>>(),
-		updateTaskStatus: vi.fn<(task: unknown, status: unknown) => Promise<void>>(),
-		toggleTaskStatus: vi.fn<(task: unknown) => Promise<void>>(),
-		archiveListTask: vi.fn<(task: unknown) => Promise<void>>(),
-		deleteListTask: vi.fn<(task: unknown) => Promise<void>>(),
-	}),
-	useTaskSelection: () => ({
-		selectedTaskIdSet: new Set(['task-1']),
-		selectionSnapshot: {
-			type: 'task',
-			ids: ['task-1'],
-			idSet: new Set(['task-1']),
-			count: 1,
-			hasSelection: true,
-			isSingleSelection: true,
-			isMultiSelection: false,
-		},
-		selectedCount: 1,
-		toggleTaskSelection: vi.fn<(taskId: string) => void>(),
-		clearTaskSelection: vi.fn<() => void>(),
-		focusedTaskId: null,
-		setFocusedTaskId: vi.fn(),
-		moveFocus: vi.fn(),
-		selectTaskIds: vi.fn(),
-	}),
-	useRegisterTaskPreviewSource: vi.fn(),
-	useTaskPreviewController: () => ({
-		closePreview: vi.fn(),
-		openPreview: vi.fn(),
-	}),
-	TaskBoard: ({
-		emptyActionLabel,
-		emptyDescription,
-		emptyTitle,
-		onEmptyAction,
-		tasks,
-	}: {
-		emptyActionLabel?: string
-		emptyDescription?: string
-		emptyTitle: string
-		onEmptyAction?: () => void
-		tasks: Array<{ title: string }>
-	}) => (
-		<div>
-			<div>{emptyTitle}</div>
-			{emptyDescription ? <div>{emptyDescription}</div> : null}
-			{emptyActionLabel && onEmptyAction ? (
-				<button onClick={onEmptyAction} type='button'>
-					{emptyActionLabel}
-				</button>
-			) : null}
-			<div>{tasks.map((task) => task.title).join(',')}</div>
-		</div>
-	),
-	formatTaskStatusLabel: (status: string) => status,
-}))
+vi.mock('@/features/task', async () => {
+	const { buildTaskCommandSelection } =
+		await import('@/features/task/model/buildTaskCommandSelection')
+	return {
+		buildTaskCommandSelection,
+		useTaskListController: () => ({
+			pendingTaskId: null,
+			updateTaskPriority: vi.fn<(task: unknown, priority: unknown) => Promise<void>>(),
+			updateTaskStatus: vi.fn<(task: unknown, status: unknown) => Promise<void>>(),
+			toggleTaskStatus: vi.fn<(task: unknown) => Promise<void>>(),
+			archiveListTask: vi.fn<(task: unknown) => Promise<void>>(),
+			deleteListTask: vi.fn<(task: unknown) => Promise<void>>(),
+		}),
+		useTaskSelection: () => ({
+			selectedTaskIdSet: new Set(['task-1']),
+			selectionSnapshot: {
+				type: 'task',
+				ids: ['task-1'],
+				idSet: new Set(['task-1']),
+				count: 1,
+				hasSelection: true,
+				isSingleSelection: true,
+				isMultiSelection: false,
+			},
+			selectedCount: 1,
+			toggleTaskSelection: vi.fn<(taskId: string) => void>(),
+			clearTaskSelection: vi.fn<() => void>(),
+			focusedTaskId: null,
+			setFocusedTaskId: vi.fn(),
+			moveFocus: vi.fn(),
+			selectTaskIds: vi.fn(),
+		}),
+		useRegisterTaskPreviewSource: vi.fn(),
+		useTaskPreviewController: () => ({
+			closePreview: vi.fn(),
+			openPreview: vi.fn(),
+		}),
+		TaskBoard: ({
+			emptyActionLabel,
+			emptyDescription,
+			emptyTitle,
+			onEmptyAction,
+			tasks,
+		}: {
+			emptyActionLabel?: string
+			emptyDescription?: string
+			emptyTitle: string
+			onEmptyAction?: () => void
+			tasks: Array<{ title: string }>
+		}) => (
+			<div>
+				<div>{emptyTitle}</div>
+				{emptyDescription ? <div>{emptyDescription}</div> : null}
+				{emptyActionLabel && onEmptyAction ? (
+					<button onClick={onEmptyAction} type='button'>
+						{emptyActionLabel}
+					</button>
+				) : null}
+				<div>{tasks.map((task) => task.title).join(',')}</div>
+			</div>
+		),
+		formatTaskStatusLabel: (status: string) => status,
+	}
+})
 
 vi.mock('@/features/bulk-action', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('@/features/bulk-action')>()

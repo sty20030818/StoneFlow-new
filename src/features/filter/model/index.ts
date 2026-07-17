@@ -14,4 +14,3 @@ export type {
 	PageFilterKind,
 	PageFilterState,
 } from './PageFilterProvider'
-export { useTaskPageFilterController } from './useTaskPageFilterController'

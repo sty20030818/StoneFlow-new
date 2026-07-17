@@ -20,6 +20,7 @@ import { BULK_ACTION_BUTTON_CLASS } from '@/shared/components/patterns/bulk-acti
 import { useDialogStore } from '@/features/shell-dialogs'
 import type { ProjectOverviewViewKey } from '@/features/project'
 import {
+	buildProjectCommandSelection,
 	useArchiveProjectMutation,
 	useCompleteProjectMutation,
 	useDeleteProjectMutation,
@@ -27,7 +28,6 @@ import {
 	useReopenProjectMutation,
 } from '@/features/project'
 import {
-	buildProjectCommandSelection,
 	useEntitySelection,
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,

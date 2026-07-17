@@ -34,7 +34,6 @@ export {
 	restoreSpace,
 	deleteSpace,
 	setActiveScope,
-	takePendingCommandOpenIntent,
 } from './api/spaces'
 
 // ── 视觉（侧栏 / metadata / 历史） ──────────────────────────────────────────

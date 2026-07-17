@@ -17,13 +17,8 @@ import { useTaskDisplayOptions } from '@/features/display-options'
 import { DisplayOptionsButton } from '@/features/display-options'
 import { useProjectOptions } from '@/features/project'
 import { useSpaces } from '@/features/space'
-import {
-	buildTaskCommandSelection,
-	useEntitySelectionEscape,
-	useRegisterCommandSelection,
-} from '@/features/selection'
-import { useTaskListController } from '@/features/task'
-import { useTaskSelection } from '@/features/task'
+import { useEntitySelectionEscape, useRegisterCommandSelection } from '@/features/selection'
+import { buildTaskCommandSelection, useTaskListController, useTaskSelection } from '@/features/task'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { useRegisterTaskPreviewSource, useTaskPreviewController } from '@/features/task'
 import {

@@ -1,9 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
 
-import type { ProjectOption } from '@/features/project'
-import type { TaskPriorityValue } from '@/features/task'
-import type { TaskListItem, TaskStatus } from '@/shared/types'
-
 import {
 	hasTaskDate,
 	isTaskCompleted,
@@ -12,7 +8,11 @@ import {
 	type PageFilterCapabilities,
 	type PageFilterController,
 	type PageFilterKind,
-} from './PageFilterProvider'
+} from '@/features/filter'
+import type { ProjectOption } from '@/features/project'
+import type { TaskListItem, TaskStatus } from '@/shared/types'
+
+import type { TaskPriorityValue } from '../model/taskPriority'
 
 type UseTaskPageFilterControllerOptions = {
 	tasks: TaskListItem[]

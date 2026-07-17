@@ -120,3 +120,7 @@ export type { ShellCommandActions, ShellCommandAdapter, ShellNavigationTarget } 
 // ── Registry factory ────────────────────────────────────────────────────────
 
 export { allCommands, commandRegistry, createShellCommandRegistry } from './commands'
+
+// ── IPC · 外部/唤起打开意图 ─────────────────────────────────────────────────
+
+export { takePendingCommandOpenIntent } from './api/commandOpenIntent'

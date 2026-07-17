@@ -87,3 +87,6 @@ export {
 	type ProjectBulkAdapter,
 	type ProjectBulkMutationReport,
 } from './bulk'
+
+/** 命令选中快照（项目列表 → command）。 */
+export { buildProjectCommandSelection } from './model/buildProjectCommandSelection'

@@ -16,13 +16,7 @@ export {
 	useRegisterCommandSelection,
 } from './model/CommandSelectionProvider'
 
-// ── 构建命令选中快照 ────────────────────────────────────────────────────────
-
-export {
-	buildTaskCommandSelection,
-	buildProjectCommandSelection,
-	buildLifecycleCommandSelection,
-} from './model/commandSelection'
+// 域 selection 快照 builder 已迁至 task/project/lifecycle public
 
 // ── 实体列表选择 ────────────────────────────────────────────────────────────
 

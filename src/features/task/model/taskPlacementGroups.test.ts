@@ -4,9 +4,8 @@ import {
 	buildTaskPlacementGroups,
 	findTaskPlacementGroupItem,
 	getTaskPlacementGroupSearchText,
-	getTaskPlacementTargetValue,
-	isTaskPlacementTargetEqual,
-} from '@/features/metadata-fields/core'
+} from './taskPlacementGroups'
+import { getTaskPlacementTargetValue, isTaskPlacementTargetEqual } from './taskPlacementTarget'
 
 describe('task-placement-groups', () => {
 	it('无 currentSpaceId 时返回空数组', () => {

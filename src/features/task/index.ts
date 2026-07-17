@@ -81,6 +81,35 @@ export {
 	type TaskBulkMutationReport,
 } from './bulk'
 
+/** 任务列表页筛选 controller（平台 filter 只提供 Provider）。 */
+export { useTaskPageFilterController } from './hooks/useTaskPageFilterController'
+
+/** 命令选中快照（列表 → command）。 */
+export { buildTaskCommandSelection } from './model/buildTaskCommandSelection'
+
+/** placement 目标与分组（窄契约亦见 `./contract`）。 */
+export type { TaskPlacementTarget } from './model/taskPlacementTarget'
+export {
+	getTaskPlacementTargetValue,
+	isTaskPlacementTargetEqual,
+	resolveTaskPlacementTarget,
+} from './model/taskPlacementTarget'
+export type {
+	BuildTaskPlacementGroupsInput,
+	TaskPlacementGroup,
+	TaskPlacementGroupItem,
+	TaskPlacementGroupProject,
+	TaskPlacementGroupSpace,
+} from './model/taskPlacementGroups'
+export {
+	buildTaskPlacementGroups,
+	findTaskPlacementGroupItem,
+	getTaskPlacementGroupSearchText,
+} from './model/taskPlacementGroups'
+
+/** 装配根注册 metadata 的 status/priority 图标。 */
+export { registerTaskMetadataIcons } from './model/registerTaskMetadataIcons'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 详情三形态（detail 子树 · 经本文件再导出，外层不 import detail/）
 // ─────────────────────────────────────────────────────────────────────────────

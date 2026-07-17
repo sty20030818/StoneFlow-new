@@ -1,7 +1,7 @@
 /**
  * @fileoverview **filter · 唯一对外公共面（`@/features/filter`）**
  *
- * 页级筛选 Provider + task 列表页 filter controller。
+ * 页级筛选平台：Provider + 通用类型/工具。任务页 controller 在 `@/features/task`。
  *
  * 外模块：`import { … } from '@/features/filter'`
  * 禁止：`@/features/filter/model/…`
@@ -25,9 +25,3 @@ export type {
 	PageFilterKind,
 	PageFilterState,
 } from './model/PageFilterProvider'
-
-/**
- * 任务列表页筛选控制器（status/priority/date/projectless 等）。
- * 与 {@link useRegisterPageFilterController} 成对使用。
- */
-export { useTaskPageFilterController } from './model/useTaskPageFilterController'

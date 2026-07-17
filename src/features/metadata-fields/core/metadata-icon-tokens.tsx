@@ -10,37 +10,29 @@ import {
 	OrbitIcon,
 	TargetIcon,
 } from 'lucide-react'
-
-import type { TaskPriorityValue } from '@/features/task'
-import { PriorityIcon } from '@/features/task'
-import { TaskStatusIndicator } from '@/features/task'
-import type { TaskStatus } from '@/shared/types'
+import type { ReactNode } from 'react'
 
 import type { MetadataActionIconKey } from './metadata-action-spec'
+
+/** 域图标渲染器（由 task 等在装配根注册，断开 meta→task 硬依赖）。 */
+type DomainIconRenderer = (iconKey: MetadataActionIconKey) => ReactNode
+
+let domainIconRenderer: DomainIconRenderer | null = null
+
+export function setMetadataDomainIconRenderer(renderer: DomainIconRenderer | null) {
+	domainIconRenderer = renderer
+}
 
 export function renderMetadataActionIcon(iconKey: MetadataActionIconKey | undefined) {
 	if (!iconKey) {
 		return null
 	}
 
+	if (iconKey.startsWith('status-') || iconKey.startsWith('priority-')) {
+		return domainIconRenderer?.(iconKey) ?? null
+	}
+
 	switch (iconKey) {
-		case 'status-todo':
-		case 'status-doing':
-		case 'status-waiting':
-		case 'status-done':
-		case 'status-canceled':
-			return <TaskStatusIndicator status={iconKey.replace('status-', '') as TaskStatus} />
-		case 'priority-0':
-		case 'priority-1':
-		case 'priority-2':
-		case 'priority-3':
-		case 'priority-4':
-			return (
-				<PriorityIcon
-					priority={Number(iconKey.replace('priority-', '')) as TaskPriorityValue}
-					size='md'
-				/>
-			)
 		case 'calendar-off':
 			return <CalendarOffIcon className='size-3.5 text-sf-icon-secondary' />
 		case 'calendar-1':

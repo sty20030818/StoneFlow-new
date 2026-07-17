@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
 
-import type { CommandOpenPayload } from '@/shared/events'
 import type { Scope, Space } from '@/shared/types'
 
 type ActiveScopeResponse = {
@@ -25,14 +24,6 @@ type UpdateSpaceInput = {
 export type ActiveScopePayload = {
 	activeScopeId: string
 	scope: Scope
-}
-
-type PendingCommandOpenResponse = {
-	kind: 'task' | 'project'
-	id: string
-	spaceId: string
-	projectId: string | null
-	placement: 'project' | 'inbox' | 'no_project'
 }
 
 /**
@@ -132,11 +123,4 @@ export async function setActiveScope(scope: Scope): Promise<ActiveScopePayload> 
 						spaceId: payload.spaceId ?? '',
 					},
 	}
-}
-
-/**
- * 读取主窗口尚未消费的打开意图。
- */
-export async function takePendingCommandOpenIntent(): Promise<CommandOpenPayload | null> {
-	return invoke<PendingCommandOpenResponse | null>('take_pending_command_open_intent')
 }

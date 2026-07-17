@@ -14,7 +14,8 @@ import { useTaskDisplayOptions } from '@/features/display-options'
 import { DisplayOptionsButton } from '@/features/display-options'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useDangerConfirm } from '@/features/danger-confirm'
-import { useRegisterPageFilterController, useTaskPageFilterController } from '@/features/filter'
+import { useRegisterPageFilterController } from '@/features/filter'
+import { useTaskPageFilterController } from '@/features/task'
 import {
 	useArchiveProjectMutation,
 	useCompleteProjectMutation,
@@ -24,7 +25,8 @@ import {
 	useSuspenseProjectDetailQuery,
 } from '@/features/project/hooks'
 import { useSpaces } from '@/features/space'
-import { buildTaskCommandSelection, useRegisterCommandSelection } from '@/features/selection'
+import { useRegisterCommandSelection } from '@/features/selection'
+import { buildTaskCommandSelection } from '@/features/task'
 import { useTaskListController } from '@/features/task'
 import { formatTaskStatusLabel } from '@/features/task'
 import { useTaskSelection } from '@/features/task'

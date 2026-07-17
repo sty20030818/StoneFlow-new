@@ -16,13 +16,13 @@ import {
 } from '@/features/bulk-action'
 import { useEntityDetailController } from '@/features/entity-detail'
 import {
+	buildLifecycleCommandSelection,
 	useDeleteLifecycleEntryMutation,
 	useLifecycleEntriesQuery,
 	usePermanentlyDeleteLifecycleEntryMutation,
 	useRestoreLifecycleEntryMutation,
-} from '@/features/lifecycle/hooks'
+} from '@/features/lifecycle'
 import {
-	buildLifecycleCommandSelection,
 	useEntitySelection,
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,

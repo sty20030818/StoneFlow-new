@@ -48,3 +48,6 @@ export {
 	type LifecycleBulkAdapter,
 	type LifecycleBulkMutationReport,
 } from './bulk'
+
+/** 命令选中快照（归档/回收站 → command）。 */
+export { buildLifecycleCommandSelection } from './model/buildLifecycleCommandSelection'

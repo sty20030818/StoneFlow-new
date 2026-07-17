@@ -12,14 +12,15 @@ export type {
 	MetadataFieldValue,
 	MetadataValueComparator,
 } from './metadata-field.types'
+// placement 所有权在 task；经 contract 引用避免主 barrel 环
 export type {
 	BuildTaskPlacementGroupsInput,
 	TaskPlacementGroup,
 	TaskPlacementGroupItem,
 	TaskPlacementGroupProject,
 	TaskPlacementGroupSpace,
-} from './task-placement-groups'
-export type { TaskPlacementTarget } from './task-placement-target'
+	TaskPlacementTarget,
+} from '@/features/task/contract'
 export {
 	createDueDateActionSpec,
 	createPlacementActionSpec,
@@ -31,7 +32,7 @@ export {
 	mapMetadataActionSpecToDropdownProps,
 	type MetadataDropdownMappedProps,
 } from './dropdown-spec-mapping'
-export { renderMetadataActionIcon } from './metadata-icon-tokens'
+export { renderMetadataActionIcon, setMetadataDomainIconRenderer } from './metadata-icon-tokens'
 export {
 	buildMetadataShortcutItems,
 	defaultMetadataValueComparator,
@@ -63,9 +64,7 @@ export {
 	buildTaskPlacementGroups,
 	findTaskPlacementGroupItem,
 	getTaskPlacementGroupSearchText,
-} from './task-placement-groups'
-export {
 	getTaskPlacementTargetValue,
 	isTaskPlacementTargetEqual,
 	resolveTaskPlacementTarget,
-} from './task-placement-target'
+} from '@/features/task/contract'

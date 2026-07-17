@@ -36,6 +36,7 @@ export {
 	createStatusActionSpec,
 	mapMetadataActionSpecToDropdownProps,
 	renderMetadataActionIcon,
+	setMetadataDomainIconRenderer,
 	buildMetadataShortcutItems,
 	defaultMetadataValueComparator,
 	getMetadataFieldIndicator,
