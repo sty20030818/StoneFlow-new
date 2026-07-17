@@ -197,9 +197,9 @@ describe('QuickCreatePage', () => {
 		mockedCommitLayout.mockReset()
 		mockedCommitLayout.mockResolvedValue(undefined)
 		mockedCreate.mockReset()
-		mockedCreate.mockResolvedValue(undefined)
+		mockedCreate.mockResolvedValue(createTaskDetail())
 		mockedCreateAndOpen.mockReset()
-		mockedCreateAndOpen.mockResolvedValue(undefined)
+		mockedCreateAndOpen.mockResolvedValue(createTaskDetail())
 		mockedGetOpenContextSnapshot.mockReset()
 		mockedGetOpenContextSnapshot.mockResolvedValue(createInitialState())
 		mockedListProjectsBySpace.mockReset()
@@ -1260,6 +1260,33 @@ function createTaskResult(overrides: Partial<QuickCreateTaskItem> = {}): QuickCr
 		updatedAt: '2026-05-10T10:00:00Z',
 		completedAt: null,
 		...overrides,
+	}
+}
+
+function createTaskDetail() {
+	return {
+		id: 'task-created',
+		spaceId: 'space-1',
+		spaceName: '产品研发',
+		spaceSlug: 'work',
+		projectId: null,
+		projectName: null,
+		inboxAt: '2026-05-10T10:00:00Z',
+		title: '新任务',
+		note: null,
+		priority: 0 as const,
+		status: 'todo' as const,
+		statusChangedAt: '2026-05-10T10:00:00Z',
+		dueAt: null,
+		scheduledAt: null,
+		reminderAt: null,
+		completedAt: null,
+		canceledAt: null,
+		archivedAt: null,
+		createdAt: '2026-05-10T10:00:00Z',
+		updatedAt: '2026-05-10T10:00:00Z',
+		sortOrder: 0,
+		deletedAt: null,
 	}
 }
 
