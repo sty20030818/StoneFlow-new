@@ -8,7 +8,6 @@ use uuid::Uuid;
 pub enum QuickPopupPhase {
     Idle,
     Preparing,
-    WaitingLayout,
     Presenting,
     Visible,
     Closing,
@@ -90,7 +89,6 @@ impl QuickPopupRuntimeState {
             QuickPopupPhase::Idle => Ok(None),
             QuickPopupPhase::Closing => Err("popup runtime is already closing"),
             QuickPopupPhase::Preparing
-            | QuickPopupPhase::WaitingLayout
             | QuickPopupPhase::Presenting
             | QuickPopupPhase::Visible
             | QuickPopupPhase::Error => {
@@ -101,39 +99,12 @@ impl QuickPopupRuntimeState {
         }
     }
 
-    pub async fn mark_waiting_layout_for(
-        &self,
-        session_id: &str,
-    ) -> Result<QuickPopupSession, &'static str> {
-        let mut guard = self.inner.write().await;
-        if !matches!(
-            guard.phase,
-            QuickPopupPhase::Preparing
-                | QuickPopupPhase::WaitingLayout
-                | QuickPopupPhase::Presenting
-                | QuickPopupPhase::Visible
-        ) {
-            return Err("popup runtime cannot wait for layout from current phase");
-        }
-        validate_active_session(&guard, session_id)?;
-        let Some(session) = guard.current_session.clone() else {
-            return Err("popup runtime missing current session");
-        };
-        guard.phase = QuickPopupPhase::WaitingLayout;
-        Ok(session)
-    }
-
     pub async fn mark_presenting_for(
         &self,
         session_id: &str,
     ) -> Result<QuickPopupSession, &'static str> {
         let mut guard = self.inner.write().await;
-        // 固定壳后前端不再 commit_layout；Preparing 可直接 present。
-        // WaitingLayout 保留兼容旧路径（彻底删除 commit 前）。
-        if !matches!(
-            guard.phase,
-            QuickPopupPhase::Preparing | QuickPopupPhase::WaitingLayout
-        ) {
+        if guard.phase != QuickPopupPhase::Preparing {
             return Err("popup runtime cannot present from current phase");
         }
         validate_active_session(&guard, session_id)?;
@@ -236,10 +207,6 @@ mod tests {
             .await
             .expect("open should succeed");
         runtime
-            .mark_waiting_layout_for(&session.session_id)
-            .await
-            .expect("waiting layout should succeed");
-        runtime
             .mark_presenting_for(&session.session_id)
             .await
             .expect("presenting should succeed");
@@ -335,33 +302,10 @@ mod tests {
             .await
             .expect("open should succeed");
         let err = runtime
-            .mark_waiting_layout_for("wrong-session")
+            .mark_presenting_for("wrong-session")
             .await
             .expect_err("mismatched session should fail");
         assert_eq!(err, "popup runtime session mismatch");
-    }
-
-    #[tokio::test]
-    async fn runtime_should_reject_finish_close_for_stale_session() {
-        let runtime = QuickPopupRuntimeState::default();
-        let session = runtime
-            .begin_open(QuickPopupOpenReason::GlobalShortcut)
-            .await
-            .expect("open should succeed");
-        let err = runtime
-            .finish_close_for("stale-session")
-            .await
-            .expect_err("stale session should fail");
-        assert_eq!(err, "popup runtime session mismatch");
-
-        runtime
-            .begin_close_for(&session.session_id, QuickPopupCloseReason::Invalidated)
-            .await
-            .expect("close should succeed");
-        runtime
-            .finish_close_for(&session.session_id)
-            .await
-            .expect("finish close should succeed");
     }
 
     #[tokio::test]
@@ -371,10 +315,6 @@ mod tests {
             .begin_open(QuickPopupOpenReason::GlobalShortcut)
             .await
             .expect("open should succeed");
-        runtime
-            .mark_waiting_layout_for(&session.session_id)
-            .await
-            .expect("waiting layout should succeed");
         runtime
             .mark_presenting_for(&session.session_id)
             .await
@@ -393,16 +333,12 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn runtime_should_allow_recommit_layout_while_visible() {
+    async fn runtime_should_reject_present_while_visible() {
         let runtime = QuickPopupRuntimeState::default();
         let session = runtime
             .begin_open(QuickPopupOpenReason::GlobalShortcut)
             .await
             .expect("open should succeed");
-        runtime
-            .mark_waiting_layout_for(&session.session_id)
-            .await
-            .expect("waiting layout should succeed");
         runtime
             .mark_presenting_for(&session.session_id)
             .await
@@ -412,13 +348,10 @@ mod tests {
             .await
             .expect("visible should succeed");
 
-        let waiting_session = runtime
-            .mark_waiting_layout_for(&session.session_id)
+        let err = runtime
+            .mark_presenting_for(&session.session_id)
             .await
-            .expect("visible session should allow recommit layout");
-        assert_eq!(waiting_session.session_id, session.session_id);
-
-        let snapshot = runtime.snapshot().await;
-        assert_eq!(snapshot.phase, QuickPopupPhase::WaitingLayout);
+            .expect_err("visible session should not re-enter presenting");
+        assert_eq!(err, "popup runtime cannot present from current phase");
     }
 }

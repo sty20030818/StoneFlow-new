@@ -4,7 +4,6 @@ import type { PropsWithChildren } from 'react'
 
 import {
 	closeSession,
-	commitLayout,
 	create,
 	createAndOpen,
 	getOpenContextSnapshot,
@@ -13,7 +12,6 @@ import {
 	notifyFrontendUnready,
 	openTarget,
 	presentSession,
-	reportLayoutDiagnostics,
 	search,
 } from '@/features/quick-create/api/quickCreate'
 import { measureQuickCreateTargetHeight } from '@/features/quick-create/layout/measureQuickCreateLayout'
@@ -34,7 +32,6 @@ const DEFAULT_SESSION_ID = 'session-1'
 
 vi.mock('@/features/quick-create/api/quickCreate', () => ({
 	closeSession: vi.fn<typeof closeSession>(),
-	commitLayout: vi.fn<typeof commitLayout>(),
 	create: vi.fn<typeof create>(),
 	createAndOpen: vi.fn<typeof createAndOpen>(),
 	getOpenContextSnapshot: vi.fn<typeof getOpenContextSnapshot>(),
@@ -43,7 +40,6 @@ vi.mock('@/features/quick-create/api/quickCreate', () => ({
 	notifyFrontendUnready: vi.fn<typeof notifyFrontendUnready>(),
 	openTarget: vi.fn<typeof openTarget>(),
 	presentSession: vi.fn<typeof presentSession>(),
-	reportLayoutDiagnostics: vi.fn<typeof reportLayoutDiagnostics>(),
 	search: vi.fn<typeof search>(),
 }))
 
@@ -136,7 +132,6 @@ vi.mock('@/shared/components/base/calendar', () => ({
 }))
 
 const mockedCloseSession = vi.mocked(closeSession)
-const mockedCommitLayout = vi.mocked(commitLayout)
 const mockedCreate = vi.mocked(create)
 const mockedCreateAndOpen = vi.mocked(createAndOpen)
 const mockedGetOpenContextSnapshot = vi.mocked(getOpenContextSnapshot)
@@ -145,7 +140,6 @@ const mockedNotifyFrontendReady = vi.mocked(notifyFrontendReady)
 const mockedNotifyFrontendUnready = vi.mocked(notifyFrontendUnready)
 const mockedOpenTarget = vi.mocked(openTarget)
 const mockedPresentSession = vi.mocked(presentSession)
-const mockedReportLayoutDiagnostics = vi.mocked(reportLayoutDiagnostics)
 const mockedSearch = vi.mocked(search)
 
 type PreparedSessionHandler = (event: {
@@ -191,8 +185,6 @@ describe('QuickCreatePage', () => {
 		})
 		mockedCloseSession.mockReset()
 		mockedCloseSession.mockResolvedValue(undefined)
-		mockedCommitLayout.mockReset()
-		mockedCommitLayout.mockResolvedValue(undefined)
 		mockedCreate.mockReset()
 		mockedCreate.mockResolvedValue(createTaskDetail())
 		mockedCreateAndOpen.mockReset()
@@ -209,8 +201,6 @@ describe('QuickCreatePage', () => {
 		mockedOpenTarget.mockResolvedValue(undefined)
 		mockedPresentSession.mockReset()
 		mockedPresentSession.mockResolvedValue(undefined)
-		mockedReportLayoutDiagnostics.mockReset()
-		mockedReportLayoutDiagnostics.mockResolvedValue(undefined)
 		mockedSearch.mockReset()
 		mockedSearch.mockResolvedValue({
 			tasks: [createTaskResult({ id: 'task-search', title: 'Stone 搜索任务' })],
@@ -245,24 +235,21 @@ describe('QuickCreatePage', () => {
 		expect(screen.getByTestId('quick-create-footer')).toBeInTheDocument()
 	})
 
-	it('打开会话直接 present，不再 commitLayout', async () => {
+	it('打开会话直接 present', async () => {
 		render(<QuickCreatePage />)
 
 		await screen.findByTestId('quick-create-recent-tasks-section')
 		await waitFor(() => {
 			expect(mockedPresentSession).toHaveBeenCalledWith({ sessionId: DEFAULT_SESSION_ID })
 		})
-		expect(mockedCommitLayout).not.toHaveBeenCalled()
-		expect(mockedReportLayoutDiagnostics).not.toHaveBeenCalled()
 	})
 
-	it('展开 advanced 或输入变长仍不调用 commitLayout', async () => {
+	it('展开 advanced 或输入变长仍只 present 一次', async () => {
 		render(<QuickCreatePage />)
 		await screen.findByTestId('quick-create-recent-tasks-section')
 		await waitFor(() => {
-			expect(mockedPresentSession).toHaveBeenCalled()
+			expect(mockedPresentSession).toHaveBeenCalledTimes(1)
 		})
-		mockedCommitLayout.mockClear()
 
 		fireEvent.click(screen.getByLabelText('更多参数'))
 		fireEvent.change(screen.getByLabelText('Quick Create 输入'), {
@@ -270,7 +257,7 @@ describe('QuickCreatePage', () => {
 		})
 
 		await screen.findByTestId('quick-create-advanced-meta-bar')
-		expect(mockedCommitLayout).not.toHaveBeenCalled()
+		expect(mockedPresentSession).toHaveBeenCalledTimes(1)
 	})
 
 	it('composer 保持 primary/advanced 分区，展开 advanced 不影响基础输入区', async () => {

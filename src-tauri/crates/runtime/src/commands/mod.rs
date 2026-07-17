@@ -91,11 +91,9 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         quick_create::domain::quick_create_create_and_open,
         quick_create::domain::quick_create_open_target,
         quick_create::window::quick_create_prepare_session,
-        quick_create::window::quick_create_commit_layout,
         quick_create::window::quick_create_present_session,
         quick_create::window::quick_create_close_session,
         quick_create::window::quick_create_frontend_ready,
         quick_create::window::quick_create_frontend_unready,
-        quick_create::window::quick_create_report_layout_diagnostics
     ]
 }

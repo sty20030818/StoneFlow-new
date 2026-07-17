@@ -7,7 +7,6 @@ pub trait QuickPopupWindowController {
     fn is_visible(&self) -> Result<bool, String>;
     fn hide(&self) -> Result<(), String>;
     fn prepare_hidden(&self) -> Result<(), String>;
-    fn apply_height(&self, target_window_height: f64) -> Result<(), String>;
     fn present(&self) -> Result<(), String>;
 }
 
@@ -55,10 +54,6 @@ mod macos {
             panel::prepare_hidden_quick_create_panel(&self.app_handle)
         }
 
-        fn apply_height(&self, target_window_height: f64) -> Result<(), String> {
-            panel::resize_quick_create_panel_preserving_top(&self.app_handle, target_window_height)
-        }
-
         fn present(&self) -> Result<(), String> {
             panel::present_quick_create_panel(&self.app_handle)
         }
@@ -97,10 +92,6 @@ mod windows {
 
         fn prepare_hidden(&self) -> Result<(), String> {
             panel::prepare_hidden_quick_create_window(&self.app_handle)
-        }
-
-        fn apply_height(&self, target_window_height: f64) -> Result<(), String> {
-            panel::apply_quick_create_window_height(&self.app_handle, target_window_height)
         }
 
         fn present(&self) -> Result<(), String> {

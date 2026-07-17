@@ -1,7 +1,7 @@
 //! Quick Create Windows 浮窗生命周期。
 //!
 //! Windows 没有 macOS `NSPanel` 等价物；这里使用标准 `WebviewWindow`
-//! 承载透明 WebView，阴影由前端 CSS 在安全区内绘制。
+//! 承载透明固定壳；尺寸与 macOS 共用 `quick_window::spec`。
 
 use tauri::{
     AppHandle, Manager, Monitor, PhysicalPosition, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
@@ -115,29 +115,6 @@ pub fn prepare_hidden_quick_create_window(app_handle: &AppHandle<Wry>) -> Result
     Ok(())
 }
 
-pub fn apply_quick_create_window_height(
-    app_handle: &AppHandle<Wry>,
-    target_window_height: f64,
-) -> Result<(), String> {
-    let Some(window) = app_handle.get_webview_window(QUICK_CREATE_LABEL) else {
-        return Err("quick create 窗口未初始化".to_owned());
-    };
-
-    let target_size = tauri::Size::Logical(tauri::LogicalSize::new(
-        QUICK_CREATE_WINDOW_WIDTH,
-        target_window_height,
-    ));
-    window
-        .set_size(target_size)
-        .map_err(|error| format!("调整 quick create 窗口高度失败: {error}"))?;
-    window
-        .as_ref()
-        .set_size(target_size)
-        .map_err(|error| format!("调整 quick create WebView 高度失败: {error}"))?;
-
-    Ok(())
-}
-
 fn reset_webview_zoom(window: &WebviewWindow<Wry>) {
     if let Err(error) = window.set_zoom(1.0) {
         log::warn!("platform: 重置 windows quick create WebView zoom 失败: {error}");
@@ -183,18 +160,16 @@ pub(crate) fn position_window_on_active_monitor(window: &WebviewWindow<Wry>) {
 
     let work_area = monitor.work_area();
     let scale_factor = monitor.scale_factor();
-    let (window_width, window_height) = match window.inner_size() {
-        Ok(size) => (size.width as f64, size.height as f64),
-        Err(error) => {
-            log::warn!(
-                "platform: 读取 windows quick create 当前 inner_size 失败，回退默认尺寸: {error}"
-            );
-            (
-                QUICK_CREATE_WINDOW_WIDTH * scale_factor,
-                QUICK_CREATE_WINDOW_HEIGHT * scale_factor,
-            )
-        }
-    };
+    // 固定壳：定位前强制规格尺寸，避免残留高度。
+    let logical_size = tauri::Size::Logical(tauri::LogicalSize::new(
+        QUICK_CREATE_WINDOW_WIDTH,
+        QUICK_CREATE_WINDOW_HEIGHT,
+    ));
+    if let Err(error) = window.set_size(logical_size) {
+        log::warn!("platform: windows quick create 强制规格尺寸失败: {error}");
+    }
+    let window_width = QUICK_CREATE_WINDOW_WIDTH * scale_factor;
+    let window_height = QUICK_CREATE_WINDOW_HEIGHT * scale_factor;
     let x = work_area.position.x as f64 + (work_area.size.width as f64 - window_width) / 2.0;
     let y = work_area.position.y as f64 + (work_area.size.height as f64 - window_height) / 2.0;
 

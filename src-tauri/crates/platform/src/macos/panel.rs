@@ -189,34 +189,6 @@ pub fn prepare_hidden_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<
         .map_err(|error| format!("主线程准备 hidden quick create panel 失败: {error}"))
 }
 
-/// macOS 下调整 Quick Create 高度时，保持窗口顶部边界不变。
-pub fn resize_quick_create_panel_preserving_top(
-    app_handle: &AppHandle<Wry>,
-    target_window_height: f64,
-) -> Result<(), String> {
-    let panel = app_handle
-        .get_webview_panel(QUICK_CREATE_LABEL)
-        .map_err(|error| format!("获取 quick create panel 失败: {error:?}"))?;
-
-    app_handle
-        .run_on_main_thread(move || {
-            let ns_panel = panel.as_panel();
-            let current_frame: objc2_foundation::NSRect =
-                unsafe { objc2::msg_send![ns_panel, frame] };
-            let current_top = current_frame.origin.y + current_frame.size.height;
-            let next_origin_y = current_top - target_window_height;
-            let next_frame = objc2_foundation::NSRect::new(
-                objc2_foundation::NSPoint::new(current_frame.origin.x, next_origin_y),
-                objc2_foundation::NSSize::new(current_frame.size.width, target_window_height),
-            );
-
-            unsafe {
-                let _: () = objc2::msg_send![ns_panel, setFrame: next_frame, display: false];
-            }
-        })
-        .map_err(|error| format!("主线程调整 quick create frame 失败: {error}"))
-}
-
 fn set_panel_shadow(panel: &dyn tauri_nspanel::Panel, enabled: bool) {
     let ns_panel = panel.as_panel();
     unsafe {
@@ -263,12 +235,9 @@ fn place_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel, phase: &str) {
     let screen_frame: objc2_foundation::NSRect =
         unsafe { objc2::msg_send![&*screen, visibleFrame] };
     let ns_panel = panel.as_panel();
-    let current_frame: objc2_foundation::NSRect = unsafe { objc2::msg_send![ns_panel, frame] };
-    // present 阶段只负责定位，不再重置尺寸。
-    // 尺寸真相源是前端 prepare 阶段完成的实测 resize；这里如果回写默认高度，
-    // 首次打开会把刚算好的高度覆盖掉，直到后续交互再次触发 resize 才恢复。
-    let panel_width = current_frame.size.width.max(QUICK_CREATE_WINDOW_WIDTH);
-    let panel_height = current_frame.size.height;
+    // 固定壳：定位时强制写入规格尺寸，避免旧 frame / DPI 残留导致首开高度漂移。
+    let panel_width = QUICK_CREATE_WINDOW_WIDTH;
+    let panel_height = QUICK_CREATE_WINDOW_HEIGHT;
     let x = screen_frame.origin.x + (screen_frame.size.width - panel_width) / 2.0;
     let top_offset = screen_frame.size.height * QUICK_CREATE_SCREEN_TOP_OFFSET_RATIO;
     let panel_top = screen_frame.origin.y + screen_frame.size.height - top_offset;
