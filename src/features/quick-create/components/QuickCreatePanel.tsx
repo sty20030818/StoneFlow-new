@@ -41,9 +41,9 @@ export function QuickCreatePanel({ isVisible }: QuickCreatePanelProps) {
 					<QuickCreateBoardRegion />
 				</div>
 
-				<div className='shrink-0'>
-					<QuickCreateFooter />
-				</div>
+					<div className='shrink-0'>
+						<QuickCreateFooter />
+					</div>
 			</div>
 		</QuickCreateSurface>
 	)

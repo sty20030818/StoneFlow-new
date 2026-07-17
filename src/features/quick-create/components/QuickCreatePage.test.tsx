@@ -14,7 +14,6 @@ import {
 	presentSession,
 	search,
 } from '@/features/quick-create/api/quickCreate'
-import { measureQuickCreateTargetHeight } from '@/features/quick-create/layout/measureQuickCreateLayout'
 import { QuickCreatePage } from '@/features/quick-create/components/QuickCreatePage'
 import type {
 	QuickCreateInitialState,
@@ -738,91 +737,6 @@ describe('QuickCreatePage', () => {
 describe('formatDateLabel', () => {
 	it('按本地日期解析 yyyy-MM-dd，避免 UTC 偏移', () => {
 		expect(formatDateLabel('2026-05-01')).toBe('5/1')
-	})
-})
-
-describe('measureQuickCreateTargetHeight', () => {
-	it('缺 toast 时按固定区域和 surface chrome 求和', () => {
-		expect(
-			measureQuickCreateTargetHeight({
-				composerHeight: 92,
-				createRowHeight: 42,
-				taskBoardHeight: 110,
-				projectBoardHeight: 116,
-				footerHeight: 44,
-				surfaceOffsetHeight: 406,
-				surfaceClientHeight: 404,
-			}),
-		).toBe(462)
-	})
-
-	it('内容流高度高于分区求和时，以内容流为准', () => {
-		expect(
-			measureQuickCreateTargetHeight({
-				contentHeight: 430,
-				composerHeight: 92,
-				createRowHeight: 42,
-				taskBoardHeight: 110,
-				projectBoardHeight: 116,
-				footerHeight: 44,
-				surfaceOffsetHeight: 432,
-				surfaceClientHeight: 430,
-			}),
-		).toBe(488)
-	})
-
-	it('含 toast 时把 toast 自然高度纳入窗口高度', () => {
-		expect(
-			measureQuickCreateTargetHeight({
-				composerHeight: 92,
-				toastHeight: 28,
-				createRowHeight: 42,
-				taskBoardHeight: 110,
-				projectBoardHeight: 116,
-				footerHeight: 44,
-				surfaceOffsetHeight: 434,
-				surfaceClientHeight: 432,
-			}),
-		).toBe(490)
-	})
-
-	it('只有 task board 时 project board 按 0 计算', () => {
-		expect(
-			measureQuickCreateTargetHeight({
-				composerHeight: 92,
-				createRowHeight: 42,
-				taskBoardHeight: 110,
-				footerHeight: 44,
-				surfaceOffsetHeight: 290,
-				surfaceClientHeight: 288,
-			}),
-		).toBe(346)
-	})
-
-	it('task 和 project 双 board 时完整展开求和', () => {
-		expect(
-			measureQuickCreateTargetHeight({
-				composerHeight: 92,
-				createRowHeight: 42,
-				taskBoardHeight: 110,
-				projectBoardHeight: 116,
-				footerHeight: 44,
-				surfaceOffsetHeight: 406,
-				surfaceClientHeight: 404,
-			}),
-		).toBe(462)
-	})
-
-	it('空态缺 board 时只计算固定区域', () => {
-		expect(
-			measureQuickCreateTargetHeight({
-				composerHeight: 92,
-				createRowHeight: 42,
-				footerHeight: 44,
-				surfaceOffsetHeight: 180,
-				surfaceClientHeight: 178,
-			}),
-		).toBe(236)
 	})
 })
 

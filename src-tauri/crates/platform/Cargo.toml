@@ -13,6 +13,7 @@ log.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tauri = { workspace = true, features = ["macos-private-api"] }
+window-vibrancy = "0.6"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }

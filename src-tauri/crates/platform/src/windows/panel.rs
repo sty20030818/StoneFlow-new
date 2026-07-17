@@ -35,7 +35,7 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
     .always_on_top(true)
     .skip_taskbar(true)
     .decorations(false)
-    .shadow(false)
+    .shadow(true)
     .transparent(true)
     .zoom_hotkeys_enabled(false)
     .center()
@@ -50,8 +50,12 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
     };
 
     install_focus_auto_hide(&window, callbacks);
-    if let Err(error) = window.set_shadow(false) {
-        log::warn!("platform: 关闭 windows quick create 原生阴影失败: {error}");
+    if let Err(error) = window.set_shadow(true) {
+        log::warn!("platform: 开启 windows quick create 原生阴影失败: {error}");
+    }
+    // Acrylic best-effort：失败不阻断浮窗（旧系统 / 策略可能不支持）。
+    if let Err(error) = window_vibrancy::apply_acrylic(&window, None) {
+        log::warn!("platform: windows quick create acrylic 失败: {error}");
     }
     reset_webview_zoom(&window);
     log::info!("platform: windows quick create 浮窗初始化完成 [Tauri WebviewWindow]");

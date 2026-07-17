@@ -22,8 +22,9 @@
 // 本文件其余代码不存在手写的冗余 `-> ()`，抑制范围可控。
 #![allow(clippy::unused_unit)]
 
-use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder, Wry};
+use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder, Wry};
 use tauri_nspanel::{CollectionBehavior, ManagerExt, StyleMask, WebviewWindowExt};
+use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
 
 use crate::quick_window::{
     spec::{
@@ -33,6 +34,9 @@ use crate::quick_window::{
     },
     QuickWindowCallbacks,
 };
+
+/// 与 FE `rounded-xl`（12px）对齐，避免 vibrancy 圆角与 hairline 错位。
+const QUICK_CREATE_CORNER_RADIUS: f64 = 12.0;
 
 // 同时声明 NSPanel 子类 + NSWindowDelegate 子类：
 //  - QuickCreatePanel：can_become_key_window + is_floating_panel。
@@ -85,6 +89,8 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
         }
     };
 
+    apply_quick_create_vibrancy(&window);
+
     let panel = match window.to_panel::<QuickCreatePanel>() {
         Ok(p) => p,
         Err(error) => {
@@ -96,7 +102,8 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
     // 层级、样式、集合行为三件套（缺一不可）。
     panel.set_level(101); // NSPopUpMenuWindowLevel
     panel.set_style_mask(StyleMask::empty().nonactivating_panel().into());
-    set_panel_shadow(panel.as_ref(), false);
+    // 深度交给系统阴影；FE 不再画 CSS 大阴影。
+    set_panel_shadow(panel.as_ref(), true);
     panel.set_collection_behavior(
         CollectionBehavior::new()
             .move_to_active_space()
@@ -194,6 +201,18 @@ fn set_panel_shadow(panel: &dyn tauri_nspanel::Panel, enabled: bool) {
     unsafe {
         let _: () = objc2::msg_send![ns_panel, setHasShadow: enabled];
         let _: () = objc2::msg_send![ns_panel, invalidateShadow];
+    }
+}
+
+fn apply_quick_create_vibrancy(window: &WebviewWindow<Wry>) {
+    // NonActivatingPanel 不一定处于「active」外观；固定 Active 保证亮色可读。
+    if let Err(error) = apply_vibrancy(
+        window,
+        NSVisualEffectMaterial::Popover,
+        Some(NSVisualEffectState::Active),
+        Some(QUICK_CREATE_CORNER_RADIUS),
+    ) {
+        log::warn!("platform: quick create vibrancy 失败: {error}");
     }
 }
 
