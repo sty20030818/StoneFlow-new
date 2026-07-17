@@ -124,3 +124,7 @@ export { allCommands, commandRegistry, createShellCommandRegistry } from './comm
 // ── IPC · 外部/唤起打开意图 ─────────────────────────────────────────────────
 
 export { takePendingCommandOpenIntent } from './api/commandOpenIntent'
+
+// ── C3 Host · 域 register 的端口类型 ────────────────────────────────────────
+
+export type { CommandHostContext } from './host'

@@ -110,6 +110,17 @@ export {
 /** 装配根注册 metadata 的 status/priority 图标。 */
 export { registerTaskMetadataIcons } from './model/registerTaskMetadataIcons'
 
+/**
+ * C3 试点：任务 bulk 命令 handlers（complete/archive/delete）。
+ * 命令菜单经 layout bulkSlice 转发；行快捷键共用 runTaskRowBulkCommand。
+ */
+export {
+	registerTaskCommands,
+	runTaskRowBulkCommand,
+	getTaskBulkCommandActionId,
+	type TaskBulkCommandKind,
+} from './commands'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 详情三形态（detail 子树 · 经本文件再导出，外层不 import detail/）
 // ─────────────────────────────────────────────────────────────────────────────

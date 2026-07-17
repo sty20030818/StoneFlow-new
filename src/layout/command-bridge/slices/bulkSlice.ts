@@ -1,32 +1,19 @@
 import type { ShellCommandActions } from '@/features/command'
-import {
-	LIFECYCLE_BULK_ACTION_IDS,
-	PROJECT_BULK_ACTION_IDS,
-	TASK_BULK_ACTION_IDS,
-} from '@/features/bulk-action'
+import { LIFECYCLE_BULK_ACTION_IDS, PROJECT_BULK_ACTION_IDS } from '@/features/bulk-action'
+import { registerTaskCommands } from '@/features/task'
 import type { ShellCommandBridgeDeps } from '../types'
 
-/** 批量完成/归档/删除（task / project / lifecycle） */
+/**
+ * 批量完成/归档/删除。
+ * task 段：C3 试点 — 转发给 task.registerTaskCommands（业务在 domain）。
+ * project/lifecycle：史诗 6 再迁。
+ */
 export function createBulkSlice(
 	deps: Pick<ShellCommandBridgeDeps, 'runEntityBulkActionFromCommand'>,
 ): Partial<ShellCommandActions> {
 	const run = deps.runEntityBulkActionFromCommand
 	return {
-		completeSelectedTasks: (ctx) =>
-			run(ctx, 'task', TASK_BULK_ACTION_IDS.completeSelected, {
-				successVerb: '更新',
-				entityLabel: '任务',
-			}),
-		requestArchiveSelectedTasks: (ctx) =>
-			run(ctx, 'task', TASK_BULK_ACTION_IDS.archiveSelected, {
-				successVerb: '更新',
-				entityLabel: '任务',
-			}),
-		requestDeleteSelectedTasks: (ctx) =>
-			run(ctx, 'task', TASK_BULK_ACTION_IDS.deleteSelected, {
-				successVerb: '更新',
-				entityLabel: '任务',
-			}),
+		...registerTaskCommands({ runEntityBulkActionFromCommand: run }),
 		requestArchiveSelectedProjects: (ctx) =>
 			run(ctx, 'project', PROJECT_BULK_ACTION_IDS.archiveSelected, {
 				successVerb: '处理',

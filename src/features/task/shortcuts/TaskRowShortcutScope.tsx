@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { useDialogStore } from '@/features/shell-dialogs'
-import {
-	TASK_BULK_ACTION_IDS,
-	createTaskBulkSelectionSnapshotFromTasks,
-	useBulkActionContext,
-} from '@/features/bulk-action'
+import { useBulkActionContext } from '@/features/bulk-action'
 import {
 	COMMAND_IDS,
 	CommandRegistry,
@@ -22,6 +18,7 @@ import { isGlobalChordPending } from '@/shared/lib/global-chord-guard'
 import type { TaskListItem } from '@/shared/types'
 import { useTaskPreviewController } from '@/features/task/detail'
 
+import { runTaskRowBulkCommand } from '../commands/taskBulkCommandHandlers'
 import { resolveTaskRowTarget, type TaskRowRef } from './rowTargetResolver'
 import { TASK_ROW_SHORTCUT_BINDINGS } from './taskRowShortcutBindings'
 
@@ -652,17 +649,18 @@ function createTaskRowCommandActions({
 }): TaskRowCommandActions {
 	const batchTasks = selectedTasks.length > 0 ? selectedTasks : targetTask ? [targetTask] : []
 
-	async function runTaskBulkAction(actionId: string) {
-		const snapshot = createTaskBulkSelectionSnapshotFromTasks(batchTasks, 'row-shortcut')
-		const result = await runBulkAction(actionId, snapshot)
-		if (result.status === 'success' && result.shouldClearSelection) {
-			onClearTaskSelection?.()
-		}
+	async function runSharedBulk(kind: 'complete' | 'archive' | 'delete') {
+		await runTaskRowBulkCommand({
+			kind,
+			tasks: batchTasks,
+			runBulkAction,
+			clearSelection: onClearTaskSelection,
+		})
 	}
 
 	return {
 		complete: async () => {
-			await runTaskBulkAction(TASK_BULK_ACTION_IDS.completeSelected)
+			await runSharedBulk('complete')
 		},
 		select: () => {
 			if (rowTarget.targetId) {
@@ -680,10 +678,10 @@ function createTaskRowCommandActions({
 			}
 		},
 		archive: async () => {
-			await runTaskBulkAction(TASK_BULK_ACTION_IDS.archiveSelected)
+			await runSharedBulk('archive')
 		},
 		deleteTask: async () => {
-			await runTaskBulkAction(TASK_BULK_ACTION_IDS.deleteSelected)
+			await runSharedBulk('delete')
 		},
 		openPriorityMenu: () => {
 			openTaskPropertyPicker('task-priority-picker', batchTasks)
