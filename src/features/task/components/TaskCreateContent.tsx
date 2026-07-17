@@ -25,7 +25,7 @@ import {
 	buildTaskCreateDefaultValues,
 	taskCreateSchema,
 	toTaskCreateInput,
-} from './TaskCreateContent.form'
+} from '@/features/task/create/taskCreateForm'
 
 type TaskCreateContentProps = {
 	currentScope: Scope

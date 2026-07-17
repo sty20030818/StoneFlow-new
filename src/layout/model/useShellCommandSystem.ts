@@ -10,10 +10,7 @@ import {
 	resolveCommandRoutePage,
 	resolveCommandActivePanel,
 } from '@/layout/shellCommandRouteHelpers'
-import {
-	resolveCommandOpenTargetPath,
-	resolveShellDetailState,
-} from '@/layout/model/taskOpenStrategy'
+import { resolveCommandOpenTargetPath, resolveShellDetailState } from '@/features/task'
 import {
 	selectCommandMenuFilterKind,
 	selectCommandMenuMode,

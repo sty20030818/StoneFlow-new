@@ -38,10 +38,7 @@ function ProjectDetailPlaceholder({
 	return (
 		<DetailBody>
 			<div className='space-y-4 px-4 py-4'>
-				<DetailSection
-					description='项目详情页尚未接入，当前仅占位展示。'
-					title='项目详情'
-				>
+				<DetailSection description='项目详情页尚未接入，当前仅占位展示。' title='项目详情'>
 					<div className='rounded-md border border-sf-border-subtle bg-sf-surface-panel-muted px-3 py-2 text-[12px] leading-5 text-sf-text-secondary'>
 						{projectId}
 					</div>

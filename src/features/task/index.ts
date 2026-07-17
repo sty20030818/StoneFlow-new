@@ -49,6 +49,23 @@ export { TaskBoard } from './components/TaskBoard'
 /** 壳层「新建任务」对话框内容。 */
 export { TaskCreateContent } from './components/TaskCreateContent'
 
+/**
+ * 创建表单内核：schema / 默认值 / → CreateTaskInput。
+ * 主窗 Create 与后续 QC 等入口共用，禁止各端再复制一套字段映射。
+ */
+export {
+	taskCreateSchema,
+	buildTaskCreateDefaultValues,
+	toTaskCreateInput,
+	type TaskCreateFormValues,
+} from './create/taskCreateForm'
+
+/**
+ * 外部打开任务/项目目标 path，以及壳层 detail 开关判定。
+ * 命令宿主 / open intent 只调这里，不在 layout 内维护打开规则。
+ */
+export { resolveCommandOpenTargetPath, resolveShellDetailState } from './model/taskOpenStrategy'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 详情三形态（detail 子树 · 经本文件再导出，外层不 import detail/）
 // ─────────────────────────────────────────────────────────────────────────────
