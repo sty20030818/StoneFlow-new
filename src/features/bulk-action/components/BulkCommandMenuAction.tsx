@@ -1,6 +1,6 @@
 import { CommandIcon } from 'lucide-react'
 
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 import { Button } from '@/shared/components/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/components/patterns/bulk-action'
 

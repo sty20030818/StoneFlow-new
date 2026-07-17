@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
-import { EntityScene } from '@/layout/entity-scene'
+import { EntityScene } from '@/features/entity-scene'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
-import { useCurrentShellRoute } from '@/layout/model/ShellRouteContext'
+import { useCurrentShellRoute } from '@/app/navigation/ShellRouteContext'
 import { openProjectDetail } from '@/app/navigation/intents'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
 import {
@@ -17,7 +17,7 @@ import {
 } from '@/features/bulk-action'
 import { Button } from '@/shared/components/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/components/patterns/bulk-action'
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 import type { ProjectOverviewViewKey } from '@/features/project'
 import {
 	useArchiveProjectMutation,

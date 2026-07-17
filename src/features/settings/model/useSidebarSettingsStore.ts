@@ -1,20 +1,23 @@
 import { create } from 'zustand'
 
+// 同 feature 内直引 api，避免经 barrel 自引用 + 测试 mock 环
+import {
+	getSidebarSettings,
+	updateSidebarItemVisibility,
+	updateSidebarProjectSection,
+	type SidebarItemVisibilityTarget,
+	type SidebarPreferenceSettings,
+	type SidebarProjectSectionPreferenceConfig,
+} from '@/features/settings/api/sidebarSettings'
 import {
 	buildShellSidebarSettings,
-	getSidebarSettings,
 	loadShellDeviceState,
+	updateShellSidebarDevicePreferences,
 	type ShellSidebarDevicePreferences,
 	type ShellSidebarProjectSectionSettings,
 	type ShellSidebarSettings,
 	type ShellUiDevicePreferences,
-	type SidebarItemVisibilityTarget,
-	type SidebarPreferenceSettings,
-	type SidebarProjectSectionPreferenceConfig,
-	updateSidebarItemVisibility,
-	updateSidebarProjectSection,
-	updateShellSidebarDevicePreferences,
-} from '@/features/settings'
+} from '@/features/settings/api/shellDevicePreferences'
 
 type SidebarSettingsStatus = 'idle' | 'loading' | 'ready' | 'error'
 

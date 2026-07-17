@@ -1,4 +1,5 @@
-import type { EntitySceneTaskBoardConfig } from '@/layout/entity-scene/types'
+// boardPatch 形状与 entity-scene 对齐（public 引用）
+import type { EntitySceneTaskBoardConfig } from '@/features/entity-scene'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 
 import type {

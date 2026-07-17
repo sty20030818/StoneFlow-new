@@ -6,9 +6,9 @@ import type {
 	EntitySceneTaskBoardConfig,
 	EntitySceneTaskBoardData,
 	EntitySceneVariant,
-} from '@/layout/entity-scene'
-import { useCurrentShellRoute } from '@/layout/model/ShellRouteContext'
-import { useDialogStore } from '@/layout/model/useDialogStore'
+} from '@/features/entity-scene'
+import { useCurrentShellRoute } from '@/app/navigation/ShellRouteContext'
+import { useDialogStore } from '@/features/shell-dialogs'
 import { resolveBreadcrumb } from '@/app/navigation/breadcrumbResolver'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
 import {

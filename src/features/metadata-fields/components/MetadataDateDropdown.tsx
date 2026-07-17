@@ -11,7 +11,7 @@ import {
 	startOfLocalDay,
 	addLocalDays,
 } from '@/features/metadata-fields/core'
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 
 import { MetadataFieldDropdown } from './MetadataFieldDropdown'
 

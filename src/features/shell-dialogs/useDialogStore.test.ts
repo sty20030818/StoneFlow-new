@@ -1,4 +1,4 @@
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 
 describe('useDialogStore', () => {
 	beforeEach(() => {

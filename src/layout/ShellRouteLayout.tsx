@@ -4,7 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 import type { ShellRoute } from '@/app/navigation/shellRoute'
 import { openSection } from '@/app/navigation/intents'
 import type { Scope } from '@/shared/types'
-import { ShellRouteProvider } from './model/ShellRouteContext'
+import { ShellRouteProvider } from '@/app/navigation/ShellRouteContext'
 import {
 	selectActiveSection,
 	selectCurrentSpaceId,

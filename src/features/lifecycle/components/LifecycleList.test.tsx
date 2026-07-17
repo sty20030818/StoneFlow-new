@@ -89,7 +89,7 @@ vi.mock('@/features/lifecycle/api/lifecycle', () => ({
 		permanentlyDeleteLifecycleEntrySpy(entry),
 }))
 
-vi.mock('@/layout/model/ShellRouteContext', () => ({
+vi.mock('@/app/navigation/ShellRouteContext', () => ({
 	useCurrentShellRoute: () => ({
 		scope: mockScope,
 		spaceId: mockScope.type === 'space' ? mockScope.spaceId : null,

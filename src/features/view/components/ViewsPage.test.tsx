@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 
-import { ShellRouteProvider } from '@/layout/model/ShellRouteContext'
+import { ShellRouteProvider } from '@/app/navigation/ShellRouteContext'
 import { parseShellRoute } from '@/app/navigation/shellRoute'
 import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection'
 import { renderWithMatchedRoute } from '@/test/renderWithRouter'
@@ -118,7 +118,7 @@ vi.mock('@/features/entity-detail', () => ({
 	}),
 }))
 
-vi.mock('@/layout/model/useDialogStore', () => ({
+vi.mock('@/features/shell-dialogs', () => ({
 	useDialogStore: (selector: (state: unknown) => unknown) =>
 		selector({
 			openTaskCreateDialog: openTaskCreateDialogSpy,

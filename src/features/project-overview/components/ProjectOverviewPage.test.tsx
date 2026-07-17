@@ -62,7 +62,7 @@ vi.mock('@/shared/components/main-card/MainCardLayout', () => ({
 	},
 }))
 
-vi.mock('@/layout/model/useDialogStore', () => ({
+vi.mock('@/features/shell-dialogs', () => ({
 	useDialogStore: (selector: (state: { openProjectCreateDialog: () => void }) => unknown) =>
 		selector({
 			openProjectCreateDialog: vi.fn(),
@@ -96,7 +96,7 @@ vi.mock('@/features/project', async (importOriginal) => {
 	}
 })
 
-vi.mock('@/layout/model/ShellRouteContext', () => ({
+vi.mock('@/app/navigation/ShellRouteContext', () => ({
 	useCurrentShellRoute: () => ({
 		appRoute: {
 			kind: 'shell-section',

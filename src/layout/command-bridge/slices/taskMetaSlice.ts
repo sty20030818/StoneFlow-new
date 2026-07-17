@@ -1,5 +1,5 @@
 import type { ShellCommandActions } from '@/features/command'
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 import { TASK_BULK_ACTION_IDS } from '@/features/bulk-action'
 import type { ShellCommandBridgeDeps } from '../types'
 

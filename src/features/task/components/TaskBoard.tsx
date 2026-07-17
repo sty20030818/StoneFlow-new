@@ -4,7 +4,7 @@ import { groupBy, uniq } from 'es-toolkit/array'
 import {
 	selectProjectTaskBoardOpenSections,
 	useShellPreferenceStore,
-} from '@/layout/model/useShellPreferenceStore'
+} from '@/features/shell-dialogs'
 import {
 	BoardCollapsibleSection,
 	BoardEmptyState,
@@ -16,7 +16,7 @@ import {
 	BoardSectionContextMenu,
 	BOARD_GROUP_HEADER_CLASS,
 } from '@/shared/components/board'
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 import { useSectionSelection } from '@/features/bulk-action'
 import type { TaskDisplayPropertyKey } from '@/features/display-options'
 import {

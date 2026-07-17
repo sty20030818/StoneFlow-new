@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 
-import { EntityScene } from '@/layout/entity-scene'
+import { EntityScene } from '@/features/entity-scene'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
-import { useCurrentShellRoute } from '@/layout/model/ShellRouteContext'
+import { useCurrentShellRoute } from '@/app/navigation/ShellRouteContext'
 import { openView } from '@/app/navigation/intents'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
 import { useEntityDetailController } from '@/features/entity-detail'
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 import {
 	applyTaskDisplayOptionsToTasks,
 	createTaskDisplayApplyContext,

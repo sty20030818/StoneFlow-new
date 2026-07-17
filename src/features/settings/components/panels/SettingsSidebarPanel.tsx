@@ -5,7 +5,7 @@ import {
 	selectSidebarSettingsError,
 	selectSidebarSettingsStatus,
 	useSidebarSettingsStore,
-} from '@/layout/model/useSidebarSettingsStore'
+} from '@/features/settings'
 import type { SidebarMainItemKey } from '@/features/settings/api/sidebarSettings'
 import {
 	SettingCheckboxRow,

@@ -34,7 +34,7 @@ vi.mock('@tauri-apps/api/event', () => ({
 	listen: vi.fn<typeof TauriEvent.listen>(),
 }))
 
-vi.mock('@/layout/model/useSidebarSettingsStore', () => ({
+vi.mock('@/features/settings/model/useSidebarSettingsStore', () => ({
 	selectSidebarSettings: (state: typeof sidebarStoreState) => state.settings,
 	selectSidebarSettingsStatus: (state: typeof sidebarStoreState) => state.status,
 	selectSidebarSettingsError: (state: typeof sidebarStoreState) => state.errorMessage,
@@ -69,7 +69,7 @@ vi.mock('@/features/sync', async (importOriginal) => {
 
 let mockSettingsSection: 'general' | 'sidebar' | 'sync' | 'update' = 'sidebar'
 
-vi.mock('@/layout/model/ShellRouteContext', () => ({
+vi.mock('@/app/navigation/ShellRouteContext', () => ({
 	useCurrentShellRoute: () => ({
 		kind: 'shell-section',
 		scope: { type: 'all' },

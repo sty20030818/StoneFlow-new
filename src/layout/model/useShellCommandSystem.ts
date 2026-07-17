@@ -22,7 +22,7 @@ import {
 	selectIsCommandOpen,
 	selectIsShortcutHelpOpen,
 	useDialogStore,
-} from '@/layout/model/useDialogStore'
+} from '@/features/shell-dialogs'
 import { listAllVisibleProjects } from '@/features/project'
 import { useCommandSelectionContext } from '@/features/selection'
 import { usePageFilterContext } from '@/features/filter'

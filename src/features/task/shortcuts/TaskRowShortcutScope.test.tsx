@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useTaskSelection } from '@/features/task/model/useTaskSelection'
 
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 import {
 	setGlobalChordPending,
 	__resetGlobalChordGuardForTests,

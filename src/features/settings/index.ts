@@ -61,4 +61,13 @@ export {
 	updateShellUiDevicePreferences,
 } from './api/shellDevicePreferences'
 
+// ── 侧栏设置 Zustand（壳与设置面板共用）────────
+
+export {
+	useSidebarSettingsStore,
+	selectSidebarSettingsStatus,
+	selectSidebarSettings,
+	selectSidebarSettingsError,
+} from './model/useSidebarSettingsStore'
+
 // 注意：SettingsPage 在 ./page，不在本文件

@@ -8,7 +8,7 @@ import {
 	selectTaskCreateDraft,
 	selectTaskCreatePresentation,
 	useDialogStore,
-} from '@/layout/model/useDialogStore'
+} from '@/features/shell-dialogs'
 import type { ProjectOption } from '@/features/project'
 
 /**

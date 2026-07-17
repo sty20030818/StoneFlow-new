@@ -7,7 +7,7 @@ import {
 	selectSidebarSettingsError,
 	selectSidebarSettingsStatus,
 	useSidebarSettingsStore,
-} from '@/layout/model/useSidebarSettingsStore'
+} from '@/features/settings'
 import { useProjectOptions, useProjectSidebarData } from '@/features/project'
 import {
 	useArchiveSpaceMutation,

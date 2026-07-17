@@ -1,6 +1,6 @@
 import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
 import type { ProjectOption } from '@/features/project'
-import type { CustomDateDialogState } from '@/layout/model/useDialogStore'
+import type { CustomDateDialogState } from '@/features/shell-dialogs'
 import { CreateDialogShell } from '@/layout/CreateDialogShell'
 import { ProjectCreateContent } from '@/features/project'
 import { TaskCreateContent } from '@/features/task'

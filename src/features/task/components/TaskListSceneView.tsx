@@ -1,6 +1,6 @@
 import { Layers3Icon, PlusIcon } from 'lucide-react'
 
-import { EntityScene } from '@/layout/entity-scene'
+import { EntityScene } from '@/features/entity-scene'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { DisplayOptionsButton } from '@/features/display-options'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'

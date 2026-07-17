@@ -1,5 +1,5 @@
 import type { ShellCommandActions } from '@/features/command'
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 import type { ShellCommandBridgeDeps } from '../types'
 
 /** 页筛选：打开 picker / 切换已完成 / 清空 */

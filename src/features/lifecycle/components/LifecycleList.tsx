@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
-import { EntityScene } from '@/layout/entity-scene'
-import { useCurrentShellRoute } from '@/layout/model/ShellRouteContext'
+import { EntityScene } from '@/features/entity-scene'
+import { useCurrentShellRoute } from '@/app/navigation/ShellRouteContext'
 import { openSection } from '@/app/navigation/intents'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
 import {

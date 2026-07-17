@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from '@tanstack/react-router'
 
-import { EntityScene } from '@/layout/entity-scene'
-import { useCurrentShellRoute } from '@/layout/model/ShellRouteContext'
+import { EntityScene } from '@/features/entity-scene'
+import { useCurrentShellRoute } from '@/app/navigation/ShellRouteContext'
 import { openSection } from '@/app/navigation/intents'
 import { resolveShellRouteScope } from '@/app/navigation/scope'
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 import {
 	applyTaskDisplayOptionsToTasks,
 	createTaskDisplayApplyContext,

@@ -1,5 +1,5 @@
 import { useDangerConfirm } from '@/features/danger-confirm'
-import { useDialogStore } from '@/layout/model/useDialogStore'
+import { useDialogStore } from '@/features/shell-dialogs'
 import {
 	createDueDateActionSpec,
 	createPriorityActionSpec,

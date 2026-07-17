@@ -9,9 +9,7 @@ type ShellRouteProviderProps = {
 	children: ReactNode
 }
 
-/**
- * Phase 4 过渡期统一提供当前 shellRoute，避免页面各自重复解析 location。
- */
+/** 壳层注入当前 shellRoute，页面与 feature 通过 useCurrentShellRoute 读取，避免各自解析 location。 */
 export function ShellRouteProvider({ shellRoute, children }: ShellRouteProviderProps) {
 	return <ShellRouteContext.Provider value={shellRoute}>{children}</ShellRouteContext.Provider>
 }
