@@ -1,9 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import {
-	getEntityActivities,
-	type GetEntityActivitiesRequest,
-} from '@/features/activity/api/getEntityActivities'
+import { getEntityActivities, type GetEntityActivitiesRequest } from '../api/getEntityActivities'
 
 import { activityKeys } from './activity.keys'
 

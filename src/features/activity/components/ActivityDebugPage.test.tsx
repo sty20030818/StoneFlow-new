@@ -1,9 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import type { FormEvent } from 'react'
 
-import type { ActivityEntityType } from '@/features/activity/api/getEntityActivities'
-import { ActivityDebugPage } from '@/features/activity/components/ActivityDebugPage'
-import type { ActivityDebugLoadState } from '@/features/activity/components/ActivityDebugPage'
+import type { ActivityEntityType } from '../api/getEntityActivities'
+import { ActivityDebugPage } from './ActivityDebugPage'
+import type { ActivityDebugLoadState } from './ActivityDebugPage'
 
 describe('ActivityDebugPage', () => {
 	it('在空查询参数下渲染等待态', async () => {

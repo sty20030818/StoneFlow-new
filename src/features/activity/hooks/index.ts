@@ -1,2 +1,2 @@
-export * from './activity.keys'
-export * from './activity.queries'
+export { activityKeys } from './activity.keys'
+export { useEntityActivitiesQuery } from './activity.queries'

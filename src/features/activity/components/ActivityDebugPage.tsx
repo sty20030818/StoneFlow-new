@@ -1,8 +1,6 @@
 import type { FormEvent, ReactNode } from 'react'
-import {
-	type ActivityEntityType,
-	type ActivityTimelineEntry,
-} from '@/features/activity/api/getEntityActivities'
+
+import type { ActivityEntityType, ActivityTimelineEntry } from '../api/getEntityActivities'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { Button } from '@/shared/components/base/button'
 import { Input } from '@/shared/components/base/input'

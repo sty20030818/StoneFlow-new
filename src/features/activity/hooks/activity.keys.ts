@@ -1,4 +1,4 @@
-import type { GetEntityActivitiesRequest } from '@/features/activity/api/getEntityActivities'
+import type { GetEntityActivitiesRequest } from '../api/getEntityActivities'
 
 export const activityKeys = {
 	all: ['activity'] as const,

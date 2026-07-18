@@ -1,24 +1,31 @@
 /**
- * @fileoverview **activity · 唯一对外公共面（`@/features/activity`）**
+ * activity 域对外公共面（`@/features/activity`）。
  *
- * 实体活动时间线查询与 debug 页。
- *
- * 外模块：`import { … } from '@/features/activity'`
- * 禁止：`@/features/activity/api|hooks|components/…`
+ * @remarks
+ * 外模块只能：`import { … } from '@/features/activity'`。
+ * 禁止深路径进 api/hooks/components。
+ * 实体活动时间线查询单源；task 详情 UI 只消费本域 query。
  */
+
+// ── 类型 ────────────────────────────────────────────────────────────────────
 
 export type {
 	ActivityEntityType,
-	ActivityActorType,
-	ActivitySourceType,
-	GetEntityActivitiesRequest,
 	ActivityTimelineChange,
 	ActivityTimelineEntry,
 } from './api/getEntityActivities'
 
+// ── IO / Query ──────────────────────────────────────────────────────────────
+
+/** 拉取实体活动时间线（debug 路由等）。 */
 export { getEntityActivities } from './api/getEntityActivities'
 
-export { useEntityActivitiesQuery, activityKeys } from './hooks'
+/** 生产路径 Query（task 详情时间线等）。 */
+export { useEntityActivitiesQuery } from './hooks'
+
+// ── Debug UI ────────────────────────────────────────────────────────────────
 
 export type { ActivityDebugLoadState } from './components/ActivityDebugPage'
+
+/** `/debug/activity` 展示壳（路由装配数据）。 */
 export { ActivityDebugPage } from './components/ActivityDebugPage'

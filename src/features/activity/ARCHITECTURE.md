@@ -1,74 +1,64 @@
 # activity · 实体活动时间线
 
-> 作用：描述 **当前已落地** 的 `src/features/activity` 边界  
-> 最后更新：2026-07-18
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
 
 ---
 
-## 1. 职责 / 不负责
+## 1. 心智
 
-**负责：**
+```txt
+查询端口（单源）
+  → getEntityActivities / useEntityActivitiesQuery
+  → task 详情时间线 UI 只消费本域 public
 
-- 按实体拉取活动时间线（`getEntityActivities`）
-- React Query hook（`useEntityActivitiesQuery`）
-- 开发用 Activity debug 页（`ActivityDebugPage`）
+不负责
+  → 时间线展示映射（→ task/detail TaskActivityTimeline*）
+  → 写入活动（后端 / 各域 mutation）
+  → 主壳 chrome / layout
+```
 
-**不负责：**
-
-- 时间线展示样式与字段映射（→ `task/detail` 内 `TaskActivityTimeline`）
-- 写入活动记录（后端 / 各域 mutation 侧）
-- 生产路由壳编排（debug 路由在 `routes/`）
+跨模块 **只** `import { … } from '@/features/activity'`。
+**禁止** `features/activity` → `@/layout/**`。
+**禁止** 另开第二套 activity 拉取路径。
 
 ---
 
-## 2. 目录（简树）
+## 2. 目录结构（定稿）
 
 ```txt
 src/features/activity/
 ├── ARCHITECTURE.md
 ├── index.ts
 ├── api/getEntityActivities.ts
-├── hooks/                # activityKeys · useEntityActivitiesQuery
+├── hooks/                   # keys · useEntityActivitiesQuery
 └── components/
-    └── ActivityDebugPage.tsx
+    └── ActivityDebugPage.tsx  # /debug/activity 展示壳
 ```
 
 ---
 
-## 3. Public 最小集（要点）
+## 3. Public 要点
 
-| 类 | 符号 |
+| 类 | 示例 |
 |----|------|
-| 类型 | `ActivityEntityType` · `ActivityActorType` · `ActivitySourceType` · `GetEntityActivitiesRequest` · `ActivityTimelineEntry` · `ActivityTimelineChange` |
-| API | `getEntityActivities` |
-| Query | `useEntityActivitiesQuery` · `activityKeys` |
+| 类型 | `ActivityEntityType` · `ActivityTimelineEntry` · `ActivityTimelineChange` |
+| IO / Query | `getEntityActivities` · `useEntityActivitiesQuery` |
 | Debug | `ActivityDebugPage` · `ActivityDebugLoadState` |
 
----
-
-## 4. 禁止依赖
-
-- **不得** `import` `@/layout/**`
-- **不得** 外模块深路径 import
-- 不在本域实现任务/项目 UI 或 mutation
-- 消费方（如 `task` 详情）只 import 类型与 query public
+新增导出前确认已有外消费者。`activityKeys`、请求/actor/source 细类型默认包内。
 
 ---
 
-## 5. 装配点
+## 4. 与其它模块
 
-| 位置 | 挂载 |
+| 协作 | 方向 |
 |------|------|
-| `task/detail/TaskActivityTimeline.tsx` | `useEntityActivitiesQuery` + 条目类型 |
-| `routes/-activity-debug-route.tsx` | `ActivityDebugPage` · `getEntityActivities` |
-| `routes/-activity-debug-search.ts` | `ActivityEntityType` |
+| task/detail | 时间线 UI + 展示映射；数据只走本域 query |
+| routes | debug 路由挂 `ActivityDebugPage` + `getEntityActivities` |
+| layout | **禁**本域依赖 |
 
 ---
 
-## 6. 状态落点（URL | Query | UI）
+## 5. 变更纪律
 
-| 状态 | 落点 |
-|------|------|
-| 时间线条目 | **Query** `activityKeys` + `useEntityActivitiesQuery` |
-| Debug 页筛选 | **URL search**（`routes/-activity-debug-search`） |
-| Debug 加载态 | **UI** `ActivityDebugLoadState`（页内） |
+改定稿目录或 public 时更新本文件。`bun run check`（或至少 tsc + boundaries + activity vitest）。

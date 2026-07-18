@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 
-import { getEntityActivities } from '@/features/activity/api/getEntityActivities'
+import { getEntityActivities } from './getEntityActivities'
 
 vi.mock('@tauri-apps/api/core', () => ({
 	invoke: vi.fn<(cmd: string, args?: Record<string, unknown>) => Promise<unknown>>(),
