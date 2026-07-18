@@ -1,35 +1,18 @@
 /**
- * @fileoverview **view · 唯一对外公共面（`@/features/view`）**
+ * view 域对外公共面（`@/features/view`）。
  *
- * 自定义视图定义与执行：列表/run Query、mutations、Views 页与编辑器。
- * （原 `features/views` 已合并入本 feature。）
- *
- * 外模块：`import { … } from '@/features/view'`
- * 禁止：`@/features/view/api|hooks|components/…`
+ * @remarks
+ * 外模块只能：`import { … } from '@/features/view'`。
+ * 禁止深路径进 api/hooks/components。
+ * 自定义视图定义 + 跑任务板编排；任务写路径只组合 task public。
  */
 
 // ── Hooks ───────────────────────────────────────────────────────────────────
 
-export {
-	useViewsQuery,
-	useTaskViewRunQuery,
-	useCreateViewMutation,
-	useUpdateViewMutation,
-	useDeleteViewMutation,
-	useToggleViewVisibleMutation,
-	useReorderViewsMutation,
-	viewKeys,
-} from './hooks'
+/** 视图列表 Query（project-overview 侧栏等）。 */
+export { useViewsQuery } from './hooks'
 
-// ── 官方组件 ────────────────────────────────────────────────────────────────
+// ── UI ──────────────────────────────────────────────────────────────────────
 
-/**
- * 视图列表/执行页（routes `/views`、`/views/$viewId`）。
- */
+/** 自定义视图页（routes `/views`、`/views/$viewId`）。 */
 export { ViewsPage } from './components/ViewsPage'
-
-/** 创建/编辑视图对话框（也可被页内使用；外层一般只挂 ViewsPage）。 */
-export { ViewEditorDialog } from './components/ViewEditorDialog'
-
-/** 视图行操作菜单。 */
-export { ViewActionsMenu } from './components/ViewActionsMenu'

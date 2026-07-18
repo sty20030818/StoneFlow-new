@@ -12,11 +12,6 @@ const loadTaskViewsSpy = vi.fn<() => Promise<void>>()
 const runTaskViewSpy =
 	vi.fn<(input: { scope: { type: string }; viewId: string }) => Promise<void>>()
 const refreshTaskRunSpy = vi.fn<() => Promise<void>>()
-const createTaskViewSpy = vi.fn<(input: unknown) => Promise<unknown>>()
-const updateTaskViewSpy = vi.fn<(input: unknown) => Promise<unknown>>()
-const deleteTaskViewSpy = vi.fn<(viewId: string) => Promise<void>>()
-const toggleTaskViewVisibleSpy = vi.fn<(viewId: string, visible: boolean) => Promise<unknown>>()
-const reorderTaskViewsSpy = vi.fn<(input: unknown) => Promise<unknown>>()
 const loadSidebarSpy = vi.fn<(scope: { type: string }) => Promise<void>>()
 const openDrawerSpy = vi.fn<(kind: string, id: string) => void>()
 const openTaskCreateDialogSpy = vi.fn<(draft?: unknown) => void>()
@@ -145,7 +140,7 @@ vi.mock('@/features/space', () => ({
 	}),
 }))
 
-vi.mock('@/features/view/hooks', () => ({
+vi.mock('@/features/view/hooks/view.queries', () => ({
 	useViewsQuery: () => {
 		loadTaskViewsSpy()
 		return {
@@ -171,23 +166,25 @@ vi.mock('@/features/view/hooks', () => ({
 			refetch: refreshTaskRunSpy,
 		}
 	},
-	useCreateViewMutation: () => ({
-		mutateAsync: createTaskViewSpy,
-	}),
-	useUpdateViewMutation: () => ({
-		mutateAsync: updateTaskViewSpy,
-	}),
-	useDeleteViewMutation: () => ({
-		mutateAsync: deleteTaskViewSpy,
-	}),
-	useToggleViewVisibleMutation: () => ({
-		mutateAsync: toggleTaskViewVisibleSpy,
-	}),
-	useReorderViewsMutation: () => ({
-		mutateAsync: reorderTaskViewsSpy,
-	}),
 }))
 
+vi.mock('@/features/view/hooks/view.mutations', () => ({
+	useCreateViewMutation: () => ({
+		mutateAsync: vi.fn(),
+	}),
+	useUpdateViewMutation: () => ({
+		mutateAsync: vi.fn(),
+	}),
+	useDeleteViewMutation: () => ({
+		mutateAsync: vi.fn(),
+	}),
+	useToggleViewVisibleMutation: () => ({
+		mutateAsync: vi.fn(),
+	}),
+	useReorderViewsMutation: () => ({
+		mutateAsync: vi.fn(),
+	}),
+}))
 vi.mock('@/shared/events', () => ({
 	useTaskChangedListener:
 		vi.fn<(scope: unknown, onTaskChanged: (payload: unknown) => void) => void>(),

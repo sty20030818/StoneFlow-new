@@ -14,7 +14,7 @@ import { optionalTrimmedString, titleString } from '@/shared/validation'
 
 export type InboxMode = 'any' | 'inbox' | 'notInbox'
 export type PriorityMode = 'any' | 'p4' | 'p3+' | 'p2+' | 'p1+'
-export type ProjectMode = 'any' | 'none' | 'specific'
+type ProjectMode = 'any' | 'none' | 'specific'
 
 export const viewEditorSchema = z
 	.object({

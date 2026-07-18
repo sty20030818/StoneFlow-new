@@ -6,7 +6,6 @@ import type {
 	ReorderViewsInput,
 	RunTaskViewInput,
 	RunTaskViewResult,
-	TaskViewFilters,
 	UpdateViewInput,
 	View,
 	ViewEntityType,
@@ -24,10 +23,6 @@ type ScopePayload =
 
 function toScopePayload(scope: Scope): ScopePayload {
 	return scope.type === 'all' ? { type: 'all' } : { type: 'space', spaceId: scope.spaceId }
-}
-
-function toFiltersPayload(filters: TaskViewFilters) {
-	return filters
 }
 
 function toSortPayload(sort: ViewSortRule[]) {
@@ -69,7 +64,7 @@ export async function createView(input: CreateViewInput) {
 			entityType: input.entityType,
 			name: input.name,
 			description: input.description ?? null,
-			filters: toFiltersPayload(input.filters),
+			filters: input.filters,
 			sort: toSortPayload(input.sort),
 			groupBy: input.groupBy ?? null,
 		},
@@ -82,7 +77,7 @@ export async function updateView(input: UpdateViewInput) {
 			viewId: input.viewId,
 			name: input.name,
 			description: input.description,
-			filters: input.filters ? toFiltersPayload(input.filters) : undefined,
+			filters: input.filters,
 			sort: input.sort ? toSortPayload(input.sort) : undefined,
 			groupBy: input.groupBy,
 		},

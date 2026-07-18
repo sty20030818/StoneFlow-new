@@ -1,81 +1,75 @@
 # view · 自定义视图
 
-> 作用：描述 **当前已落地** 的 `src/features/view` 边界  
-> 最后更新：2026-07-18
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
 
 ---
 
-## 1. 职责 / 不负责
+## 1. 心智
 
-**负责：**
+```txt
+routes 薄页
+  → ViewsPage（薄壳）
+  → useViewsScene（视图轨 / run / 选择 / 任务板 / 编辑器）
+  → EntityScene（boardKind=task，组合 task public）
 
-- 自定义视图（View）定义 CRUD、排序、可见性切换
-- 按视图条件执行任务列表 run（`runTaskView`）
-- Views 场景页：列表浏览、编辑器、行操作菜单
+写路径
+  → 视图定义 CRUD：本域 api / mutations
+  → 任务行动作：只调 task public（controller / selection / preview）
+  → 显示选项：display-options public（pageKey = view）
 
-**不负责：**
+不负责
+  → 主壳导航 / layout
+  → 复制 task list-scene
+  → 拆回空壳 features/views
+```
 
-- 任务业务规则与 mutation（→ `@/features/task`）
-- 显示选项（分组/排序/字段）（→ `@/features/display-options`）
-- 实体抽屉 URL 契约（→ `@/features/entity-detail`）
-- 路由注册与壳布局（→ `layout` / `routes`）
+跨模块 **只** `import { … } from '@/features/view'`。
+**禁止** `features/view` → `@/layout/**`。
 
 ---
 
-## 2. 目录（简树）
+## 2. 目录结构（定稿）
 
 ```txt
 src/features/view/
 ├── ARCHITECTURE.md
-├── index.ts              # 唯一 public
-├── api/views.ts          # Tauri invoke：list/run/CRUD
-├── hooks/                # viewKeys · queries · mutations
+├── index.ts                 # 主 public
+├── api/views.ts             # list / run / CRUD invoke
+├── hooks/                   # keys · queries · mutations · useViewsScene
 └── components/
-    ├── ViewsPage.tsx
-    ├── ViewEditorDialog.tsx
-    ├── ViewActionsMenu.tsx
-    └── ViewEditorDialog.form.ts
+    ├── ViewsPage            # 页薄壳（槽位 + 编辑器）
+    ├── ViewActionsMenu
+    ├── ViewEditorDialog · ViewEditorDialog.form
 ```
 
+列表与任务板编排在 `hooks/useViewsScene`；`ViewsPage` 只拼 EntityScene 槽位与编辑器。
+
 ---
 
-## 3. Public 最小集（要点）
+## 3. Public 要点
 
-| 类 | 符号 |
+| 类 | 示例 |
 |----|------|
-| Query | `useViewsQuery` · `useTaskViewRunQuery` · `viewKeys` |
-| Mutation | `useCreateViewMutation` · `useUpdateViewMutation` · `useDeleteViewMutation` · `useToggleViewVisibleMutation` · `useReorderViewsMutation` |
 | 页面 | `ViewsPage` |
-| 组件 | `ViewEditorDialog` · `ViewActionsMenu` |
+| 数据 | `useViewsQuery`（project-overview 侧栏等） |
 
-外模块只 `import { … } from '@/features/view'`。
-
----
-
-## 4. 禁止依赖
-
-- **不得** `import` `@/layout/**`
-- **不得** `import` 本 feature 深路径（`api/`、`hooks/`、`components/`）
-- 跨 feature 只走对方 public（如 `task`、`display-options`、`entity-detail`）
-- 不在本域实现 bulk / 命令 handler（由 `task` / `bulk-action` 贡献）
+新增导出前确认已有外消费者。导出符合 CONVENTIONS TSDoc L1。
+run query、mutations、编辑器、ActionsMenu、`viewKeys` 默认包内使用，不预防性外放。
 
 ---
 
-## 5. 装配点
+## 4. 与其它模块
 
-| 位置 | 挂载 |
+| 协作 | 方向 |
 |------|------|
-| `routes/_shell/-workspace-pages.tsx` | `WorkspaceViewsPage` / `WorkspaceViewDetailPage` → `ViewsPage` |
-| `routes/_shell/$scopeKey/views/$viewId.tsx` | 带 `viewId` 的路由入口 |
-| `project-overview` | `useViewsQuery`（侧栏视图列表，非页面本体） |
+| task | 任务板只组合其 public（controller / selection / preview / command selection） |
+| display-options | pageKey = view；应用分组/字段走其 public |
+| entity-scene / entity-detail / selection / bulk-action | 页编排消费；禁本域 → layout |
+| project-overview | 只 `useViewsQuery` |
+| routes | 极薄：只挂 `ViewsPage` |
 
 ---
 
-## 6. 状态落点（URL | Query | UI）
+## 5. 变更纪律
 
-| 状态 | 落点 |
-|------|------|
-| 当前视图 id | **URL** `/$scopeKey/views/$viewId`（无 id 时列表态） |
-| 视图定义 / run 结果 | **Query** `viewKeys` + `useTaskViewRunQuery` |
-| 编辑器开关、表单草稿 | **UI** `ViewsPage` / `ViewEditorDialog` 本地 state |
-| 显示选项偏好 | **Query**（经 `display-options` public，非本域持久化） |
+改定稿目录或 public 时更新本文件。`bun run check`（或至少 tsc + boundaries + view vitest）。

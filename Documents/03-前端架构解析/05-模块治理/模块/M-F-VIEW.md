@@ -1,10 +1,10 @@
 # M-F-VIEW · features/view
 
-> 日期：2026-07-17  
-> 状态：**decided（方案对比）** · **decide-only**  
-> 路径：`src/features/view`（原 `features/views` scene 已合并）  
-> 类型：**domain + thick scene（混合）→ 目标拆清**  
-> 关联：task T2a · selection L2 · display-options · routes `/views`  
+> 日期：2026-07-17
+> 状态：**decided（方案对比）** · **V2 已落地（[15](../15-View样板重构执行计划.md)）** · 2026-07-19
+> 路径：`src/features/view`（原 `features/views` scene 已合并）
+> 类型：**domain + thick scene（混合）→ 目标拆清**
+> 关联：task T2a · selection L2 · display-options · routes `/views`
 
 ---
 
@@ -31,8 +31,8 @@ features/view/
 
 ### A.3 路由
 
-- `/views` · `/views/$viewId`（all + spaces 双树）→ 都挂 **同一** `ViewsPage`  
-- 无独立「只定义不执行」路由  
+- `/views` · `/views/$viewId`（all + spaces 双树）→ 都挂 **同一** `ViewsPage`
+- 无独立「只定义不执行」路由
 
 ### A.4 消费者
 
@@ -44,10 +44,10 @@ features/view/
 
 ### A.5 已做对的
 
-- 旧 `views` scene 壳已合并进 **view** domain 命名  
-- public 未乱 export 整树  
-- 执行列表用专用 run query，不是假客户端滤全表（需保持）  
-- 编辑器与页分离组件  
+- 旧 `views` scene 壳已合并进 **view** domain 命名
+- public 未乱 export 整树
+- 执行列表用专用 run query，不是假客户端滤全表（需保持）
+- 编辑器与页分离组件
 
 ### A.6 问题
 
@@ -166,7 +166,7 @@ task
 routes /views[/id] → ViewsPage
 ViewsPage
   ├─ useViewsQuery / mutations / ViewEditor
-  └─ useViewTaskScene(viewId) 
+  └─ useViewTaskScene(viewId)
         ├─ useTaskViewRunQuery
         ├─ task: controller / selection / preview register
         ├─ selection register
@@ -180,8 +180,8 @@ command C3 → 可选 registerViewCommands（新建视图等）
 
 ### D.3 public 目标
 
-**宜：** views/run queries & mutations、keys、ViewsPage、ViewEditorDialog、ViewActionsMenu。  
-**可选：** `useViewTaskScene` 若 project 外还要嵌视图板。  
+**宜：** views/run queries & mutations、keys、ViewsPage、ViewEditorDialog、ViewActionsMenu。
+**可选：** `useViewTaskScene` 若 project 外还要嵌视图板。
 **model：** 纯函数默认值/转换从 form 文件抽离。
 
 ### D.4 与 task / project 页模式对齐
@@ -200,17 +200,17 @@ command C3 → 可选 registerViewCommands（新建视图等）
 
 **Do**
 
-- 定义与 run **分 query key**  
-- 改视图定义后失效 run 缓存（mutation 已有则保持）  
-- 编辑器用 zod/form；提交走 view mutations  
-- 打开视图用 `openView` intent  
+- 定义与 run **分 query key**
+- 改视图定义后失效 run 缓存（mutation 已有则保持）
+- 编辑器用 zod/form；提交走 view mutations
+- 打开视图用 `openView` intent
 
 **Don't**
 
-- ViewsPage import layout  
-- 在 view 内再实现 archiveTask  
-- 为「干净」再建空 `features/views`  
-- 手拼 `/views/id`  
+- ViewsPage import layout
+- 在 view 内再实现 archiveTask
+- 为「干净」再建空 `features/views`
+- 手拼 `/views/id`
 
 ---
 
@@ -262,8 +262,8 @@ command C3 → 可选 registerViewCommands（新建视图等）
 
 ### 开放问题
 
-- [ ] 视图是否支持非 task 实体（长期）；若否，命名可保留 task-run 专用 API  
-- [ ] `$viewId` 缺失时落地列表第一可见视图 vs 空态（产品）  
+- [ ] 视图是否支持非 task 实体（长期）；若否，命名可保留 task-run 专用 API
+- [ ] `$viewId` 缺失时落地列表第一可见视图 vs 空态（产品）
 
 ---
 
@@ -272,3 +272,4 @@ command C3 → 可选 registerViewCommands（新建视图等）
 | 日期 | 变更 |
 |------|------|
 | 2026-07-17 | 初版：混合厚页问题、V1–V5、推荐 V2 |
+| 2026-07-19 | V2 落地：useViewsScene + public 收窄；见 [15](../15-View样板重构执行计划.md) |

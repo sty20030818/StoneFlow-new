@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { listViews, runTaskView } from '@/features/view/api/views'
+import { listViews, runTaskView } from '../api/views'
 import type { RunTaskViewInput, View, ViewEntityType } from '@/shared/types'
 
 import { viewKeys } from './view.keys'

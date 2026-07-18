@@ -6,7 +6,7 @@ import {
 	reorderViews,
 	toggleViewVisible,
 	updateView,
-} from '@/features/view/api/views'
+} from '../api/views'
 import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'
 
 import { viewKeys } from './view.keys'
