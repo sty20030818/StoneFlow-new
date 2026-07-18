@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { useTaskSelection } from '@/features/task/model/useTaskSelection'
+import { useTaskSelection } from '@/features/task/hooks/useTaskSelection'
 
 import { useDialogStore } from '@/features/shell-dialogs'
 import {

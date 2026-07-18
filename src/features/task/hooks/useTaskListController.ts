@@ -8,7 +8,7 @@ import {
 	useArchiveTaskMutation,
 	useDeleteTaskMutation,
 	useUpdateTaskMutation,
-} from '@/features/task/hooks'
+} from '@/features/task/hooks/task.mutations'
 
 /**
  * 统一收口任务列表页的常用动作，避免每个页面重复维护 pending / mutation 编排。

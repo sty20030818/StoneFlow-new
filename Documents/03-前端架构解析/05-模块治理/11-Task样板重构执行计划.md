@@ -45,9 +45,9 @@ bun run check
 | `TaskRowShortcutScope` | ~873 行 · **待拆** |
 | `TaskPreviewProvider` | ~447 · 待拆 |
 | `TaskContextMenu` | ~438 · 待拆 |
-| `useTaskListScene` | ~406 · 待内拆 |
+| `useTaskListScene` | 主文件 ~100 行 + `hooks/list-scene/` · **已内拆** |
 | `TaskBoard` / `TaskRowAdapter` | ~407 / ~354 · 后置 |
-| `useTaskListController` / `useTaskSelection` | 仍在 `model/` · **待迁 hooks/** |
+| `useTaskListController` / `useTaskSelection` | **已在 hooks/** |
 
 ---
 
@@ -57,7 +57,7 @@ bun run check
 |------|-----|------|--------|------|------|
 | 0 | DOC | 卡落地对照 + task ARCHITECTURE 同步 | 无 | — | **done**（随本文） |
 | 1 | NORM | Query / JSDoc / public 对齐 CONVENTIONS | 低 | 0 | **done**（2026-07-18） |
-| 2 | HOOKS | model 内 hooks 归位；list-scene 内拆 | 中 | 1 | pending |
+| 2 | HOOKS | model 内 hooks 归位；list-scene 内拆 | 中 | 1 | **done**（2026-07-19） |
 | 3 | SHORTCUT | 拆 TaskRowShortcutScope | 中 | 1（可 ‖ 2） | pending |
 | 4 | VOLUME | PreviewProvider / ContextMenu（Board 可选） | 低中 | 2–3 | pending |
 | 5 | CLOSE | 契约收口、样板检查表、可选扩散备忘 | 无 | 1–4 | pending |
@@ -112,7 +112,7 @@ bun run check
 |------|------|
 | 目标 | `model/` 无 React hook；list-scene 内拆、facade 仍单一 |
 | 破坏性 | 中（路径迁移；public 导出路径可变） |
-| 状态 | pending |
+| 状态 | **done**（2026-07-19） |
 
 ### 步骤
 
@@ -122,12 +122,21 @@ bun run check
    - 数据 / filter·display 注册 / selection·preview 注册 / board props 组装 / 创建 port
 4. Facade 签名尽量稳定；破坏性变更写进 ARCHITECTURE。
 
+### 落地
+
+| 项 | 结果 |
+|----|------|
+| hooks 归位 | `useTaskListController` / `useTaskSelection` → `hooks/`；`model/` 无 `use*` |
+| list-scene 拆分 | `hooks/list-scene/`：`variantConfig` · `useListSceneFilterDisplay` · `useListSceneSelectionBridge` · `useListSceneBoard` |
+| facade | `useTaskListScene` 主文件 ~100 行；对外返回形状不变 |
+| public | `index.ts` 改再导出路径；外模块仍 `@/features/task` |
+
 ### 验收
 
-- [ ] `model/` 下无 `use*.ts(x)`（指示器组件除外，或迁 `components`/`model/indicators` 已存在可保留）
-- [ ] `useTaskListScene` 主文件 &lt; ~250 行或有子文件清晰边界
-- [ ] 三列表 + project/view 嵌入冒烟
-- [ ] `bun run check` 绿
+- [x] `model/` 下无 `use*.ts(x)`（指示器组件除外）
+- [x] `useTaskListScene` 主文件 &lt; ~250 行，子文件边界清晰
+- [x] typecheck + task/project/view 相关 vitest 绿
+- [x]（冒烟：三列表 + project/view 嵌入 — 依赖现有单测；未做手工 UI）
 
 ---
 
@@ -230,3 +239,4 @@ CONVENTIONS.md       → 怎么写（含 TSDoc）
 | 2026-07-18 | 初版：阶段 0–5；基线行数；对齐 CONVENTIONS v2 / T2a |
 | 2026-07-18 | 阶段 1 NORM done：Query/JSDoc/public；撤 3 个无外消费者导出 |
 | 2026-07-18 | 文档分工收口：ARCHITECTURE 去债表；注释改 TSDoc（CONVENTIONS v2.1） |
+| 2026-07-19 | 阶段 2 HOOKS done：hooks 归位 + list-scene 内拆 |

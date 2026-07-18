@@ -1,6 +1,6 @@
 # task · 任务域
 
-> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-18
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
 
 ---
 
@@ -40,6 +40,7 @@ src/features/task/
 ├── contract.ts              # placement 类型/纯函数（避免主 barrel 环）
 ├── api/                     # IO only
 ├── hooks/                   # Query · list-scene · filter · 列表编排 hooks
+│   └── list-scene/          # variantConfig · filter/display · selection · board
 ├── model/                   # 纯规则（无 React hook）
 ├── create/                  # 创建表单内核
 ├── bulk/                    # 批量动作 + adapter

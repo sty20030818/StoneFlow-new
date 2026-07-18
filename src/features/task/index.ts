@@ -141,12 +141,12 @@ export { useRegisterTaskPreviewSource } from './detail/model/TaskPreviewProvider
 /**
  * 列表 mutation 编排（状态/优先级/日期/归档等 + pending id）。
  */
-export { useTaskListController } from './model/useTaskListController'
+export { useTaskListController } from './hooks/useTaskListController'
 
 /**
  * 列表多选 / 焦点 / 范围选择。
  */
-export { useTaskSelection } from './model/useTaskSelection'
+export { useTaskSelection } from './hooks/useTaskSelection'
 
 /**
  * 列表数据 facade（Query → items + status）。
