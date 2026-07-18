@@ -1,10 +1,10 @@
 # M-F-SPACE · features/space
 
-> 日期：2026-07-17  
-> 状态：**decided（方案对比）** · **decide-only**  
-> 路径：`src/features/space`  
-> 类型：**domain**（工作区/空间实体 + 与 Rust 的 active scope 同步端口）  
-> 规范：T2 · navigation · layout · task/project  
+> 日期：2026-07-17
+> 状态：**decided（方案对比）** · **S2 已落地（[16](../16-Space样板重构执行计划.md)）** · 2026-07-19
+> 路径：`src/features/space`
+> 类型：**domain**（工作区/空间实体 + 与 Rust 的 active scope 同步端口）
+> 规范：T2 · navigation · layout · task/project
 
 ---
 
@@ -39,10 +39,10 @@ features/space/
 
 ### A.4 已做对的
 
-- 四夹齐全、**几乎无 → layout 倒依赖**（编辑对话框被壳挂载，实现在 space）  
-- public 面相对紧：hooks + api + visuals + 一个 Dialog  
-- Query facade `useSpaces` 简单清晰  
-- 视觉单源 `getSpaceVisual`（侧栏/历史/metadata/QC 共用）  
+- 四夹齐全、**几乎无 → layout 倒依赖**（编辑对话框被壳挂载，实现在 space）
+- public 面相对紧：hooks + api + visuals + 一个 Dialog
+- Query facade `useSpaces` 简单清晰
+- 视觉单源 `getSpaceVisual`（侧栏/历史/metadata/QC 共用）
 
 ### A.5 问题 / 灰区
 
@@ -193,8 +193,8 @@ lifecycle
 
 ### D.4 public 目标
 
-**宜：** `useSpaces` / visible query / mutations / keys、list+CRUD api、`setActiveScope`、visuals、`SpaceEditorDialog`。  
-**迁出后不宜：** `takePendingCommandOpenIntent`。  
+**宜：** `useSpaces` / visible query / mutations / keys、list+CRUD api、`setActiveScope`、visuals、`SpaceEditorDialog`。
+**迁出后不宜：** `takePendingCommandOpenIntent`。
 **hooks：** 去掉 `export *`，显式列出。
 
 ### D.5 命令（可选，非阻塞）
@@ -207,15 +207,15 @@ C3 时可 `registerSpaceCommands`：新建/编辑焦点、设默认——**非�
 
 **Do**
 
-- Space 变更只走 hooks/api；视觉只走 getSpaceVisual  
-- URL 变 → L1 调 setActiveScope；**不要**用 activeScopeId 反推路由  
-- 编辑 UI 在 space，开关状态可在壳  
+- Space 变更只走 hooks/api；视觉只走 getSpaceVisual
+- URL 变 → L1 调 setActiveScope；**不要**用 activeScopeId 反推路由
+- 编辑 UI 在 space，开关状态可在壳
 
 **Don't**
 
-- 在 space 实现导航 intent 表  
-- 侧栏复制图标色映射  
-- 把 workspace invalidate 写进 space mutations 乱调（走统一事件/invalidate 策略）  
+- 在 space 实现导航 intent 表
+- 侧栏复制图标色映射
+- 把 workspace invalidate 写进 space mutations 乱调（走统一事件/invalidate 策略）
 
 ---
 
@@ -268,8 +268,8 @@ C3 时可 `registerSpaceCommands`：新建/编辑焦点、设默认——**非�
 
 ### 开放问题
 
-- [ ] takePending 最终落 **command** 还是 **app/navigation 旁路 runtime**（推荐：**command 或 app/ipc 小模块**，贴近「打开意图」）  
-- [ ] 是否要 space 设置页（多空间管理）独立 scene——产品未定时不建 feature  
+- [ ] takePending 最终落 **command** 还是 **app/navigation 旁路 runtime**（推荐：**command 或 app/ipc 小模块**，贴近「打开意图」）
+- [ ] 是否要 space 设置页（多空间管理）独立 scene——产品未定时不建 feature
 
 ---
 
@@ -278,3 +278,4 @@ C3 时可 `registerSpaceCommands`：新建/编辑焦点、设默认——**非�
 | 日期 | 变更 |
 |------|------|
 | 2026-07-17 | 初版：灰区、S1–S5、推荐 S2/S2a |
+| 2026-07-19 | S2 落地：intent 已在 command；public 收窄；见 [16](../16-Space样板重构执行计划.md) |

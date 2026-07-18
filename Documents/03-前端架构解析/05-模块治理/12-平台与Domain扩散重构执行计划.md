@@ -1,6 +1,6 @@
 # 平台与 Domain 扩散重构执行计划（task 样板之后）
 
-> 状态：**可执行** · command/project/lifecycle/view **已收口** · 下一刀 **space** · 2026-07-19
+> 状态：**可执行** · command/project/lifecycle/view/space **已收口** · 下一刀 **activity** · 2026-07-19
 > 前置：[11-Task样板重构](./11-Task样板重构执行计划.md)（**0–5 done**）· 决议：[09-决议总表](./09-决议总表.md) · 写法：[CONVENTIONS v2.1](../../../src/CONVENTIONS.md)
 > **原则：** 大→小但**不同构不硬排**；串行波次；每阶段末相关门禁；开放前可破坏须清干净；源码禁史诗号。
 > **文档：** `src/**/ARCHITECTURE` = 定稿最优（无债表）；**债/进度只写本文或子计划**；src 不回链执行计划。
@@ -41,7 +41,7 @@
 | **2** | project | 2.8k | domain | **done（[13](./13-Project样板重构执行计划.md) 0–4）** | 下一刀 lifecycle |
 | 2 | lifecycle | 2.5k | domain | **done（[14](./14-Lifecycle样板重构执行计划.md) 0–4）** | 下一刀 view |
 | 2 | view | 1.8k | domain | **done（[15](./15-View样板重构执行计划.md) 0–4）** | 下一刀 space |
-| 2 | space | 0.8k | domain | pending | S2 |
+| 2 | space | 0.8k | domain | **done（[16](./16-Space样板重构执行计划.md) 0–4）** | 下一刀 activity |
 | 2 | activity | 0.5k | domain | pending | A1 观察/薄收 |
 | **3** | launcher | 4.4k | window | pending | 窗边界；创建已复用 task |
 | 3 | settings | 3.5k | scene | pending | 三入口 + sync/update |
@@ -233,8 +233,8 @@
 | 1 | project | P2 | **done** · [13](./13-Project样板重构执行计划.md) |
 | 2 | lifecycle | Y2 | **done** · [14](./14-Lifecycle样板重构执行计划.md) |
 | 3 | view | V2 | **done** · [15](./15-View样板重构执行计划.md) |
-| 4 | space | S2 | pending intent 纯化 · **下一刀** |
-| 5 | activity | A1 | 单源 query；可极薄 |
+| 4 | space | S2 | **done** · [16](./16-Space样板重构执行计划.md) |
+| 5 | activity | A1 | 单源 query；可极薄 · **下一刀** |
 
 波次 3（launcher / settings）在波次 2 至少 **project 收口** 后再排期。
 
@@ -298,3 +298,4 @@ src/CONVENTIONS.md             → HOW
 | 2026-07-19 | lifecycle 0–4 全收口；下一刀 view |
 | 2026-07-19 | view 开刀：[15](./15-View样板重构执行计划.md) DOC+NORM+SCENE |
 | 2026-07-19 | view 0–4 全收口；下一刀 space |
+| 2026-07-19 | space 0–4 全收口（[16](./16-Space样板重构执行计划.md)）；下一刀 activity |

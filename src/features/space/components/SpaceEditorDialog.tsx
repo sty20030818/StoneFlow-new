@@ -7,7 +7,7 @@ import {
 	getSpaceVisual,
 	SPACE_COLOR_OPTIONS,
 	SPACE_ICON_OPTIONS,
-} from '@/features/space/model/spaceVisuals'
+} from '../model/spaceVisuals'
 import type { Space } from '@/shared/types'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import { useSubmitTargetFromForm } from '@/features/submit'

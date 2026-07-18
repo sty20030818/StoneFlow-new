@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { listVisibleSpaces } from '@/features/space/api/spaces'
+import { listVisibleSpaces } from '../api/spaces'
 
 import { spaceKeys } from './space.keys'
 

@@ -4,10 +4,9 @@ import {
 	archiveSpace,
 	createSpace,
 	deleteSpace,
-	restoreSpace,
 	setDefaultSpace,
 	updateSpace,
-} from '@/features/space/api/spaces'
+} from '../api/spaces'
 import { emitEvent } from '@/shared/events'
 
 import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'
@@ -65,22 +64,6 @@ export function useArchiveSpaceMutation() {
 
 	return useMutation({
 		mutationFn: archiveSpace,
-		onSuccess: async (space) => {
-			emitEvent({ type: 'space:updated', payload: { spaceId: space.id } })
-			emitEvent({
-				type: 'lifecycle:changed',
-				payload: { entityType: 'space', entityId: space.id },
-			})
-			await invalidate()
-		},
-	})
-}
-
-export function useRestoreSpaceMutation() {
-	const invalidate = useInvalidateSpaceMutation()
-
-	return useMutation({
-		mutationFn: restoreSpace,
 		onSuccess: async (space) => {
 			emitEvent({ type: 'space:updated', payload: { spaceId: space.id } })
 			emitEvent({
