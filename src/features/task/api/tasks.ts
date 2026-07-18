@@ -1,3 +1,9 @@
+/**
+ * 任务实体 Tauri IO（list / detail / create / update / archive / restore / delete）。
+ *
+ * 仅本文件与同夹其它 api 允许 `invoke`；UI 与 hooks 不得直接 invoke。
+ */
+
 import { invoke } from '@tauri-apps/api/core'
 
 import type {

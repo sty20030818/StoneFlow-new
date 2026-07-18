@@ -1,3 +1,10 @@
+/**
+ * 任务写路径 mutations。
+ *
+ * `mutationFn` 只调 `api/`；成功后按 {@link taskKeys} 前缀失效，
+ * 并视情况刷新 workspace（排除 tasks 根以免重复）。
+ */
+
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import {

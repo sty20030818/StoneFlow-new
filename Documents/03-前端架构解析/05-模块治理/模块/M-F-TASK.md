@@ -26,7 +26,7 @@
 | EntityScene / 创建经端口、不依赖 layout 实现 | **done**（边界） | 体量/内部分层仍欠 |
 | model 无 React；hooks 归位 | **未完** | `useTaskListController` 等仍在 `model/` |
 | 巨石拆分（Shortcut / list-scene / Preview…） | **未完** | 见执行计划阶段 2–4 |
-| Public + JSDoc 对齐 CONVENTIONS v2 | **未完** | 阶段 1 |
+| Public + JSDoc 对齐 CONVENTIONS v2 | **阶段 1 done** | 仍欠：model hooks 归位等见执行计划 2+ |
 
 **本文角色：** WHY（方案对比、否决项、决议）。
 **改码请读：** `ARCHITECTURE.md` + `11-Task样板重构执行计划.md`。

@@ -1,9 +1,10 @@
 # Task 样板重构执行计划（T2a 实现债 · 对齐 CONVENTIONS v2）
 
 > 状态：**可执行** · 2026-07-18
-> 决议源：[M-F-TASK](./模块/M-F-TASK.md)（T2a）· 写法：[CONVENTIONS v2](../../../src/CONVENTIONS.md) · 现网契约：[task/ARCHITECTURE.md](../../../src/features/task/ARCHITECTURE.md)
+> 决议源：[M-F-TASK](./模块/M-F-TASK.md)（T2a）· 写法：[CONVENTIONS v2.1](../../../src/CONVENTIONS.md) · 定稿契约：[task/ARCHITECTURE.md](../../../src/features/task/ARCHITECTURE.md)
 > **前提：** T2 边界刀已完成（禁 task→layout、open/bulk/命令回家）。本计划只还 **实现债 + 规范对齐**，**不重开切分**（不拆 task-list/task-detail 包）。
 > **原则：** 串行；每阶段末 `bun run check`；开放前可破坏但须清理干净；源码注释禁止史诗号。
+> **文档分工：** `ARCHITECTURE` = 定稿最优形态（无债表）；**债 / 进度只写本文**。
 
 ---
 
@@ -55,7 +56,7 @@ bun run check
 | 阶段 | ID | 内容 | 破坏性 | 依赖 | 状态 |
 |------|-----|------|--------|------|------|
 | 0 | DOC | 卡落地对照 + task ARCHITECTURE 同步 | 无 | — | **done**（随本文） |
-| 1 | NORM | Query / JSDoc / public 对齐 CONVENTIONS | 低 | 0 | pending |
+| 1 | NORM | Query / JSDoc / public 对齐 CONVENTIONS | 低 | 0 | **done**（2026-07-18） |
 | 2 | HOOKS | model 内 hooks 归位；list-scene 内拆 | 中 | 1 | pending |
 | 3 | SHORTCUT | 拆 TaskRowShortcutScope | 中 | 1（可 ‖ 2） | pending |
 | 4 | VOLUME | PreviewProvider / ContextMenu（Board 可选） | 低中 | 2–3 | pending |
@@ -69,12 +70,12 @@ bun run check
 
 | 字段 | 内容 |
 |------|------|
-| 目标 | M-F-TASK = 决议档案 + 落地对照；ARCHITECTURE = 日常真相 |
-| 状态 | **done** |
+| 目标 | M-F-TASK = 决议档案 + 落地对照；ARCHITECTURE = 定稿最优（无债表） |
+| 状态 | **done**（2026-07-18 再收：去掉 ARCHITECTURE 债表） |
 
 - [x] M-F-TASK：状态改为 archived-decision；加「T2 后落地对照」
 - [x] 本文执行计划落盘
-- [x] `src/features/task/ARCHITECTURE.md` 更新现网 + 债表 + 链到本文
+- [x] `src/features/task/ARCHITECTURE.md` = 定稿最优；债只留本文
 
 ---
 
@@ -83,31 +84,25 @@ bun run check
 | 字段 | 内容 |
 |------|------|
 | 目标 | Query / 注释 / public 成为样板写法 |
-| 破坏性 | 低（以补文档与小收口为主；可删无消费者导出） |
-| 状态 | pending |
+| 破坏性 | 低 |
+| 状态 | **done**（2026-07-18） |
 
-### 步骤
+### 落地
 
-1. **Query**
-   - 审计 `task.keys` / `task.queries` / `task.mutations`：一律 `queryOptions` 共用；mutation 只按 keys 前缀 invalidate。
-   - Route loader / 页内 query 禁止第二套 fetch。
-   - 文件头 JSDoc（L0）说明 keys 前缀语义。
-2. **JSDoc L1**
-   - `index.ts` / `contract.ts` 每个导出补齐中文职责注释（CONVENTIONS §1.3）。
-3. **Public**
-   - 再跑外部引用审计；无消费者且非契约承诺的符号移出 `index.ts`（调用方已在 feature 内则改深路径）。
-4. **api/**
-   - 确认无 UI；裸 invoke 只在 api。
+| 项 | 结果 |
+|----|------|
+| Query keys | `task.keys.ts` 补 L0；约定 `taskKeys.all` 前缀失效 |
+| queryOptions | list/detail/links 均工厂化；hooks 共用 |
+| mutations | 文件头写明 api-only + keys invalidate |
+| api | `tasks.ts` 标明唯一 invoke 层 |
+| TSDoc L1 | `index.ts` / `contract.ts` 导出均有中文摘要（多行 `/**`；入口用 `@remarks`） |
+| public 收窄 | 撤无外部消费者：`getTaskPriorityOption` · `normalizeTaskPriorityValue` · `getTaskStatusOption` |
 
 ### 验收
 
-- [ ] `index.ts` 导出均有 L1 JSDoc
-- [ ] keys / queryOptions / mutations 符合 CONVENTIONS §4
-- [ ] `bun run check` 绿
-
-### 改哪些（以 rg 为准）
-
-`index.ts` · `contract.ts` · `hooks/task.*` · `api/tasks.ts` · 必要时 `ARCHITECTURE.md` public 表
+- [x] `index.ts` 导出均有 L1 TSDoc（对齐 CONVENTIONS v2.1）
+- [x] keys / queryOptions / mutations 符合 CONVENTIONS §4
+- [x] typecheck + `vitest run src/features/task` 绿（150）
 
 ---
 
@@ -189,20 +184,20 @@ bun run check
 
 | 字段 | 内容 |
 |------|------|
-| 目标 | 样板可复制；文档与债表一致 |
+| 目标 | 样板可复制；定稿架构与债清零一致 |
 | 状态 | pending |
 
 ### 步骤
 
-1. 更新 `task/ARCHITECTURE.md`：目录树、public、**已清债 / 仍记债**。
+1. 更新 `task/ARCHITECTURE.md` 为**当时定稿**（目录树、public）；**不写债表**——未清项只留本文。
 2. 回写本文各阶段状态 + M-F-TASK 落地对照勾选。
-3. 写一小节 **「复制到 project/view 的检查表」**（Query keys 形态、hooks 归位、禁 layout、JSDoc L1）——只备忘，本阶段不改其它 feature。
+3. 写一小节 **「复制到 project/view 的检查表」**（Query keys 形态、hooks 归位、禁 layout、TSDoc L1）——只备忘，本阶段不改其它 feature。
 4. 全量 `bun run check`；相关 vitest。
 
 ### 验收
 
 - [ ] 本文阶段 1–4 done
-- [ ] ARCHITECTURE 与现网一致
+- [ ] ARCHITECTURE = 定稿最优，且与代码一致
 - [ ] 检查表可给下一 feature 用
 
 ---
@@ -221,9 +216,9 @@ bun run check
 
 ```txt
 M-F-TASK.md          → WHY / 决议 / 落地对照（档案）
-本文                 → 刀序与验收（进度）
-task/ARCHITECTURE.md → 现网契约（日常）
-CONVENTIONS.md       → 怎么写
+本文                 → 刀序、债、验收（进度）
+task/ARCHITECTURE.md → 定稿最优契约（日常；无债表）
+CONVENTIONS.md       → 怎么写（含 TSDoc）
 ```
 
 ---
@@ -233,3 +228,5 @@ CONVENTIONS.md       → 怎么写
 | 日期 | 变更 |
 |------|------|
 | 2026-07-18 | 初版：阶段 0–5；基线行数；对齐 CONVENTIONS v2 / T2a |
+| 2026-07-18 | 阶段 1 NORM done：Query/JSDoc/public；撤 3 个无外消费者导出 |
+| 2026-07-18 | 文档分工收口：ARCHITECTURE 去债表；注释改 TSDoc（CONVENTIONS v2.1） |

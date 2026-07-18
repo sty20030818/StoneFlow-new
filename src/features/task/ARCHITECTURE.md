@@ -1,14 +1,10 @@
 # task · 任务域
 
-> 作用：描述 **当前已落地** 的 `src/features/task` 边界（日常改码入口）
-> 最后更新：2026-07-18
-> 决议档案：[M-F-TASK](../../../Documents/03-前端架构解析/05-模块治理/模块/M-F-TASK.md)
-> 实现债刀序：[11-Task样板重构执行计划](../../../Documents/03-前端架构解析/05-模块治理/11-Task样板重构执行计划.md)
-> 写法：[`CONVENTIONS.md`](../../CONVENTIONS.md)
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-18
 
 ---
 
-## 1. 当前真实心智
+## 1. 心智
 
 ```txt
 列表薄页 / project / view
@@ -35,7 +31,7 @@
 
 ---
 
-## 2. 目录结构
+## 2. 目录结构（定稿）
 
 ```txt
 src/features/task/
@@ -43,14 +39,14 @@ src/features/task/
 ├── index.ts                 # 主 public
 ├── contract.ts              # placement 类型/纯函数（避免主 barrel 环）
 ├── api/                     # IO only
-├── hooks/                   # Query · useTaskListScene · filter controller
-├── model/                   # 纯规则为主；仍有少量 use* 待迁 hooks/（见债表）
+├── hooks/                   # Query · list-scene · filter · 列表编排 hooks
+├── model/                   # 纯规则（无 React hook）
 ├── create/                  # 创建表单内核
 ├── bulk/                    # 批量动作 + adapter
 ├── commands/                # registerTaskCommands · 行快捷键共用 bulk
-├── components/
+├── components/              # 列表场景 UI
 ├── detail/                  # 详情子树（外层不 import detail/）
-└── shortcuts/               # TaskRowShortcutScope（巨石 · 待拆）
+└── shortcuts/               # 行快捷键（按职责拆文件，单一入口）
 ```
 
 ---
@@ -71,7 +67,7 @@ src/features/task/
 | 展示 | `PriorityIcon` · `TaskStatusIndicator` · 标签 formatters |
 | IO | `getTaskDetail` · `createTask` · `deleteTask` · `restoreTask` · `useTaskListQuery` 等（仅已有外消费者） |
 
-新增导出前确认已有外消费者；禁止预防性撑大 public。导出须有 JSDoc（CONVENTIONS L1）。
+新增导出前确认已有外消费者；禁止预防性撑大 public。导出须符合 CONVENTIONS TSDoc L1。
 
 ---
 
@@ -89,19 +85,6 @@ src/features/task/
 
 ---
 
-## 5. 实现债（样板重构）
+## 5. 变更纪律
 
-| 债 | 阶段（见执行计划） |
-|----|-------------------|
-| Query / JSDoc / public 对齐 CONVENTIONS | 1 NORM |
-| `model/` 内 React hooks 迁 `hooks/`；list-scene 内拆 | 2 HOOKS |
-| `TaskRowShortcutScope` ~873 拆文件 | 3 SHORTCUT |
-| PreviewProvider / ContextMenu（Board 可选） | 4 VOLUME |
-
-**目标形态不变：** 单 feature · 唯一 list-scene facade · 禁 → layout。
-
----
-
-## 6. 变更纪律
-
-改目录树或 public 表时更新本文件与执行计划进度；`bun run check`。
+改定稿目录或 public 时更新本文件。`bun run check`。

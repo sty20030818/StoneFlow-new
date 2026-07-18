@@ -1,22 +1,11 @@
 # StoneFlow 前端架构（src）
 
-> 版本：v5 · 2026-07-18
-> 作用：描述 `src/` **现网分层与地图**（WHAT / WHERE）。
-> 怎么写：见 [`CONVENTIONS.md`](./CONVENTIONS.md)。
-> 重构进度：只写在 `Documents/03-前端架构解析/05-模块治理/10-T2重构执行计划.md`。
+> 版本：v5.1 · 2026-07-18
+> 作用：`src/` **定稿最优架构**（WHAT / WHERE）。日常改码以本文 + [`CONVENTIONS.md`](./CONVENTIONS.md) + 各模块 `ARCHITECTURE.md` 为准。
+> 不写：债表、阶段进度、史诗号（那些属于 Docs 执行计划，且不得与本文抢权威）。
 
-### 必读
-
-| 文档 | 用途 |
-|------|------|
-| [`CONVENTIONS.md`](./CONVENTIONS.md) | 注释 / 命名 / Query / Router / 破坏性纪律 |
-| [`05-模块设计规范.md`](../Documents/03-前端架构解析/05-模块治理/05-模块设计规范.md) | 纯化 / 类型 / 检查表（Docs） |
-| [`09-决议总表.md`](../Documents/03-前端架构解析/05-模块治理/09-决议总表.md) | 目标决议一览 |
-| [`07-Feature切分与边界总览.md`](../Documents/03-前端架构解析/05-模块治理/07-Feature切分与边界总览.md) | 并 / 拆 / Keep |
-
-**冲突时：** `CONVENTIONS` + 本文现网段 ≥ 过时 As-Is / 过时讨论卡路径。
-**改模块时：** 同步该模块 `ARCHITECTURE.md`（无则按模板新建）。
-**源码注释：** 写职责与原因；禁止史诗号（见 CONVENTIONS §1）。
+**冲突时：** 本文 + `CONVENTIONS` ≥ Docs 讨论卡 / 过时 As-Is。
+**改模块时：** 只更新该模块 `ARCHITECTURE.md` 的定稿形态。
 
 ---
 
@@ -166,7 +155,7 @@ Token、shadcn 映射、Tailwind 入口。见 [`styles/ARCHITECTURE.md`](./style
 
 ---
 
-## 6. 装配三角（现网）
+## 6. 装配三角（定稿）
 
 | 模块 | 一句话 |
 |------|--------|
@@ -256,5 +245,6 @@ bun run check
 
 | 日期 | 变更 |
 |------|------|
+| 2026-07-18 | v5.1：本文定位改为定稿最优架构（进度/债归执行计划）；对齐 CONVENTIONS v2.1 TSDoc |
 | 2026-07-18 | v5：对齐 T2 收口；feature 全图；破坏性阶段；链 CONVENTIONS v2 |
-| 2026-07-17 | v4.x：T2 执行期现网 |
+| 2026-07-17 | v4.x：T2 执行期地图 |

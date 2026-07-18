@@ -1,9 +1,11 @@
 # src 代码规范（CONVENTIONS）
 
-> 作用：约束 `src/` 下**怎么写**（HOW）。违反即视为不合格改动。
-> 版本：v2 · 2026-07-18
-> 配套：[`ARCHITECTURE.md`](./ARCHITECTURE.md)（分层与地图）· 各模块 `ARCHITECTURE.md`（短契约）
-> Docs 决议/讨论：`Documents/03-前端架构解析/05-模块治理/`（WHY；不替代本文日常入口）
+> 作用：约束 `src/` **怎么写**（HOW）。违反即不合格。
+> 版本：v2.1 · 2026-07-18
+> 权威三角：本文（HOW）· [`ARCHITECTURE.md`](./ARCHITECTURE.md)（WHERE）· `features/*/ARCHITECTURE.md`（模块契约）
+>
+> Docs（`Documents/.../05-模块治理/`）只做决议档案与执行进度；**改码以本三角为准**，不在 src 文档里回链执行计划。
+
 
 ---
 
@@ -17,7 +19,7 @@
 ### 0.2 冲突裁决
 
 ```txt
-本规范 + ARCHITECTURE 现网段
+本规范 + ARCHITECTURE 定稿
   ≥ Docs 模块讨论卡（过时路径以 src 为准）
   ≥ 个人偏好 /「先兼容一下」
 ```
@@ -45,14 +47,17 @@
 
 ---
 
-## 1. 注释与 JSDoc（强制分层）
+## 1. 文档注释（TSDoc）
 
-> **规范要详细，代码注释要分层。**
-> 「非常详细」= 边界、契约、不变量写清楚；**不是**每个函数、每行都写 JSDoc。
+> **权威语法：** [TSDoc](https://tsdoc.org/)（Microsoft；TypeScript 文档注释标准）。
+> JSDoc 是 JS 时代惯例，**类型写在注释里**；本仓是 TypeScript，**类型以 TS 为准**，注释只补语义与契约。
+> 工程实践可参考 [Fluid Framework · TSDoc Guidelines](https://github.com/microsoft/FluidFramework/wiki/TSDoc-Guidelines)。
+>
+> 「规范要详细」≠「每个符号都写长文」。边界与不变量写清楚；私有实现默认靠命名。
 
 ### 1.1 中文默认
 
-- 面向开发者的注释、JSDoc、`ARCHITECTURE.md` 正文：**中文**。
+- 面向开发者的注释、`ARCHITECTURE.md` 正文：**中文**。
 - 标识符（函数名、类型名、文件名）：**英文**。
 - 禁止用英文注释复述英文函数名。
 
@@ -60,7 +65,7 @@
 
 **必须写：**
 
-- 模块 / 文件职责与**不负责**什么；
+- 模块 / 公共面职责与**不负责**什么；
 - 业务不变量、边界条件、容易踩的坑；
 - 跨层端口：谁注入、为何禁止某类 import（写原因，不写史诗号）；
 - 外部契约：IPC command、Store key、URL/search 语义、序列化版本；
@@ -69,58 +74,92 @@
 **禁止写：**
 
 - 「调用 xxx」「设置变量」类复述；
+- 复述 TypeScript 已表达的类型（禁止 `@param {string} id` 这类）；
 - 给每个私有小函数机械补说明；
 - 用注释掩盖命名不清；
-- 史诗号 / 目标码 / Phase / 试点 / 过渡期（如 `T2a`、`史诗 12`）；进度只在 Docs 执行计划；
+- 史诗号 / 目标码 / Phase / 进度（进度只在 Docs 执行计划）；
 - 把整份规范或执行计划贴进源码。
 
-### 1.3 JSDoc 强制层级
+### 1.3 标准块结构（TSDoc）
 
-| 层级 | 何时必须 JSDoc | 最低内容 |
-|------|----------------|----------|
-| **L0 模块头** | 每个 feature / 重要目录的 `index.ts`、主入口、`ARCHITECTURE` 已覆盖的可省略重复长文 | `@fileoverview`：职责、不负责、消费者 |
-| **L1 Public API** | `index.ts` / `contract.ts` / `page.ts` 导出的**每个**符号 | 一句话职责；关键参数/返回；禁止用法（若有） |
-| **L2 契约与纯规则** | `model/` 不变量、path builder、open 策略、key 工厂、adapter 端口类型 | 不变量、输入约束、失败语义 |
-| **L3 复杂分支** | 非显而易见的 `if` / 并发 / 清理 / 兼容删除点 | 行内 `//` 说明原因；临时代码写**删除条件** |
-| **L4 私有实现** | 默认**不写** JSDoc | 命名即文档；例外：算法难、安全/数据丢失风险 |
+公开符号用**多行** `/** … */`（禁止 public 用单行 `/** 一句 */`）。
+
+**默认够用（本仓优先）：** 摘要 + 空行 + 两三句约束，**不必**上 `@remarks`。
 
 ```ts
 /**
- * @fileoverview **task · 对外公共面**
+ * 任务 Query key 工厂。
  *
- * 列表/详情/创建/打开策略/批量与命令注册。外模块只从此文件 import。
- * 不负责：壳铬架、命令 Runtime 框架、其它实体的持久化。
+ * 前缀：`['tasks']` 为根；`invalidateQueries({ queryKey: taskKeys.all })` 可清全部任务缓存。
+ * 组件与 hooks 禁止手写散落 key，一律经本工厂。
+ */
+```
+
+**仅当细节较长时**再拆 `@remarks`（摘要保持一两句，细节进 remarks，勿复述摘要）：
+
+```ts
+/**
+ * 将打开目标解析为 canonical path。
+ *
+ * @remarks
+ * 命令 / IPC 只调此函数。禁止手拼 `/all/`、`/spaces/`。
+ * 失败时返回 null，由调用方决定是否回退首页。
+ *
+ * @param target - 打开意图（任务或项目）
+ */
+```
+
+| 标签 | 何时用 |
+|------|--------|
+| （无标签，多段摘要） | **默认**：文件头、再导出、短契约 |
+| `@remarks` | 摘要之外还有大段边界 / 禁止用法 |
+| `@param` / `@returns` / `@throws` / `@example` | 语义非显然时；不写 TS 已有的类型 |
+| `{@link symbol}` | 指向相关符号时 |
+
+**不要**在注释里堆 Markdown 表格当排版。行内原因用 `//`。
+
+### 1.4 何处写（强制层级）
+
+| 层级 | 何时必须 | 最低内容 |
+|------|----------|----------|
+| **L0 入口头** | `index.ts` / `contract.ts` 等公共入口顶部 | 职责、不负责、合法消费者（长则用 `@remarks`） |
+| **L1 Public** | 入口再导出的每个符号 | 多行摘要；有非显然约束再加 `@remarks` / `@param` |
+| **L2 契约与纯规则** | key 工厂、open 策略、path builder、adapter 端口 | 不变量写进摘要即可；勿空挂 `@remarks` |
+| **L3 复杂分支** | 非显然并发 / 清理 / 临时代码 | `//` 写原因与删除条件 |
+| **L4 私有实现** | 默认不写 | 命名即文档 |
+
+```ts
+/**
+ * task 域对外公共面（`@/features/task`）。
+ *
+ * @remarks
+ * 外模块只从此文件（或 `./contract`）导入；禁止深路径。
+ * 不负责：壳铬架、命令 Runtime、其它实体持久化。
  */
 
 /**
  * 将打开目标解析为 canonical path。
- * 命令 / IPC 打开意图只调此函数，禁止手拼 `/all/`、`/spaces/`。
+ *
+ * 命令 / IPC 打开意图只调此函数，禁止手拼产品 path。
  */
 export function resolveCommandOpenTargetPath(/* ... */) {}
 ```
 
-复杂分支：
+### 1.5 标签：采用 / 不用
 
-```ts
-// 列表 feature 不得 import layout；创建弹窗由壳经 onRequestCreate 注入。
-```
+**采用（按需）：** `@remarks` · `@param` · `@returns` · `@throws` · `@example` · `@see` · 行内 `{@link symbol}`
 
-### 1.4 JSDoc 标签约定（本仓）
+**本仓不用 / 慎用：**
 
-**常用：**
+| 标签 | 原因 |
+|------|------|
+| `@fileoverview` | 非 TSDoc；改用文件顶摘要 + `@remarks` |
+| `@packageDocumentation` | 面向 npm 包入口；feature barrel 不必 |
+| `{string}` 等类型注解 | TS 已有类型 |
+| `@deprecated` | 开放前默认**删旧面**；极短迁移须写删除条件与日期 |
+| `@experimental` / 史诗标签 | 禁用 |
 
-- `@fileoverview` — 文件级职责（L0）
-- `@param` / `@returns` — public 或非显而易见时写；类型已由 TS 表达清楚可省略类型重复，写**语义**
-- `@throws` — 会抛给调用方处理的错误
-- `@see` — 指向模块 `ARCHITECTURE.md` 或相关符号（少用 URL 堆砌）
-
-**慎用 / 禁用：**
-
-- `@deprecated` — 开放前默认**直接删除旧 API**，不靠 deprecated 吊命；若极短迁移必须写，须注明删除条件与截止日期
-- `@experimental` — 不用
-- 史诗 / Phase 标签 — 禁用
-
-### 1.5 测试文件注释
+### 1.6 测试文件注释
 
 - 描述**行为与不变量**，不描述实现步骤；
 - `describe` / `it` 标题用中文业务语句（与现网一致即可）。
@@ -371,14 +410,26 @@ bun run check
 
 ---
 
-## 10. 文档地图
+## 10. 文档地图（单向权威）
+
+```txt
+改码权威（src，少互链）
+  CONVENTIONS.md          HOW
+  ARCHITECTURE.md         WHERE（全局）
+  features/*/ARCHITECTURE 模块定稿
+
+档案 / 进度（Docs → 可链到 src；src 不回链计划）
+  Documents/.../05-模块治理/
+```
 
 | 文档 | 写什么 |
 |------|--------|
-| 本文 `CONVENTIONS.md` | HOW：注释、命名、React、Query、Router、破坏性 |
-| `ARCHITECTURE.md` | WHAT/WHERE：分层、依赖、feature 地图、不变式 |
-| `*/ARCHITECTURE.md` | 模块契约：职责、public、禁依赖、装配点 |
-| `Documents/.../05-模块治理/` | WHY：决议、讨论、执行计划 |
+| `CONVENTIONS.md` | HOW |
+| `ARCHITECTURE.md` | 全局定稿架构 |
+| `*/ARCHITECTURE.md` | 模块定稿契约 |
+| Docs 模块治理 | WHY、决议、执行计划与债（不抢日常入口） |
+
+> 达标后只改 src 定稿；计划里删对应债项。禁止在每个模块 ARCHITECTURE 头上挂决议卡 + 执行计划链接。
 
 ---
 
@@ -386,5 +437,6 @@ bun run check
 
 | 日期 | 变更 |
 |------|------|
-| 2026-07-18 | v2：开放前破坏性纪律；JSDoc 分层；Query/Router/React 组合；对齐 T2 后现网 |
+| 2026-07-18 | v2.1：权威三角在 src；注释默认不用 `@remarks`；架构去 Docs 回链 |
+| 2026-07-18 | v2：开放前破坏性纪律；注释分层；Query/Router/React 组合 |
 | （既有） | v1：注释、命名、React、导航摘录 |
