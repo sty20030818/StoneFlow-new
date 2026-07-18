@@ -1,10 +1,36 @@
 # M-F-TASK · features/task
 
-> 日期：2026-07-17  
-> 状态：**decided（方案对比 · domain 标杆 · 对齐 T2/C3）** · **decide-only**  
-> 路径：`src/features/task`  
-> 类型：**domain（产品内核）**  
-> 规范：[`05-模块设计规范`](../05-模块设计规范.md) · 命令：[`M-F-COMMAND`](./M-F-COMMAND.md) C3 · 装配：[`04-长期目标`](../04-长期目标-装配三角.md)
+> 日期：2026-07-17 · **落地对照更新 2026-07-18**
+> 状态：**archived-decision（T2a 边界已执行；实现债见执行计划）**
+> 路径：`src/features/task`
+> 类型：**domain（产品内核）**
+> **日常契约：** [`src/features/task/ARCHITECTURE.md`](../../../src/features/task/ARCHITECTURE.md)
+> **实现债刀序：** [`11-Task样板重构执行计划.md`](../11-Task样板重构执行计划.md)
+> 规范：[`05-模块设计规范`](../05-模块设计规范.md) · [`src/CONVENTIONS.md`](../../../src/CONVENTIONS.md)
+
+---
+
+## 0. T2 后落地对照（2026-07-18）
+
+> 本节回答「卡上的目标哪些已经变成现网」。细节与行数以执行计划 §1 为准。
+
+| 卡上目标（T2a） | 现网 | 说明 |
+|-----------------|------|------|
+| 禁止 task → layout | **done** | rg 无 `from '@/layout` |
+| open 策略在 task public | **done** | `taskOpenStrategy` |
+| 创建内核单源 | **done** | `create/taskCreateForm`；Launcher 复用 |
+| bulk 贡献在 task | **done** | `bulk/` + Boundary compose |
+| `registerTaskCommands` + 行快捷键同 handlers | **done** | `runTaskRowBulkCommand` |
+| list-scene 唯一 facade、不拆 feature 包 | **done** | `TaskListSceneView` / `useTaskListScene` |
+| Preview 实现在 task、挂载在壳 | **done** | 装配正确 |
+| EntityScene / 创建经端口、不依赖 layout 实现 | **done**（边界） | 体量/内部分层仍欠 |
+| model 无 React；hooks 归位 | **未完** | `useTaskListController` 等仍在 `model/` |
+| 巨石拆分（Shortcut / list-scene / Preview…） | **未完** | 见执行计划阶段 2–4 |
+| Public + JSDoc 对齐 CONVENTIONS v2 | **未完** | 阶段 1 |
+
+**本文角色：** WHY（方案对比、否决项、决议）。
+**改码请读：** `ARCHITECTURE.md` + `11-Task样板重构执行计划.md`。
+与 src 冲突时：**以 src 为准**，并回写本节对照表。
 
 ---
 
@@ -97,12 +123,12 @@ shortcuts/ 薄封装：消费同一 handlers / command scope API
 
 **关键翻转：**
 
-1. **去掉 task → layout import**  
-   - EntityScene：由 `TaskListSceneView` 接收 **render props / 已解析 board props**，或定义 `TaskBoardSlotModel` 在 **task 或 shared 无壳语义** 类型中；layout adapter 只做映射。  
-   - 面包屑：list-scene 返回 `breadcrumbModel`，页/layout 调 `resolveBreadcrumb`，或 navigation 只收 labels。  
-   - 创建：注入 `requestCreateTask(draft)` port，实现放 layout host。  
-2. **openTask / openDetail 策略** 迁入 task public。  
-3. **registerTaskCommands** 供全局 command host；行快捷键 **优先复用同一 handlers**。  
+1. **去掉 task → layout import**
+   - EntityScene：由 `TaskListSceneView` 接收 **render props / 已解析 board props**，或定义 `TaskBoardSlotModel` 在 **task 或 shared 无壳语义** 类型中；layout adapter 只做映射。
+   - 面包屑：list-scene 返回 `breadcrumbModel`，页/layout 调 `resolveBreadcrumb`，或 navigation 只收 labels。
+   - 创建：注入 `requestCreateTask(draft)` port，实现放 layout host。
+2. **openTask / openDetail 策略** 迁入 task public。
+3. **registerTaskCommands** 供全局 command host；行快捷键 **优先复用同一 handlers**。
 4. list-scene **保留单一 facade**（高内聚入口），内部拆子 hooks。
 
 | 优点 | 缺点 |
@@ -208,19 +234,19 @@ useTaskListScene
 
 **Do**
 
-- 四层纯化：model 无 React；api 无 JSX  
-- 列表一处 wiring；薄页零逻辑  
-- 外依赖只 public；换页只 navigation  
-- 打开/命令策略与 mutation 同模块  
-- Provider 实现在 task、挂载在 layout  
+- 四层纯化：model 无 React；api 无 JSX
+- 列表一处 wiring；薄页零逻辑
+- 外依赖只 public；换页只 navigation
+- 打开/命令策略与 mutation 同模块
+- Provider 实现在 task、挂载在 layout
 
 **Don't**
 
-- import `@/layout/**`  
-- 三列表复制粘贴  
-- 在 Board 里裸 invoke  
-- 在 layout Bridge 写任务完成  
-- public `export *`  
+- import `@/layout/**`
+- 三列表复制粘贴
+- 在 Board 里裸 invoke
+- 在 layout Bridge 写任务完成
+- public `export *`
 
 ---
 
@@ -272,12 +298,16 @@ useTaskListScene
 | 3 | open 策略 + 命令 handlers 在 task；对齐 command **C3** |
 | 4 | list-scene 保持 **唯一列表 facade**，内拆不外拆 feature |
 | 5 | Preview Provider 实现在 task、挂载在 layout |
-| 6 | decide-only；动刀顺序见 §H |
+| 6 | **边界刀已随 T2 执行**；实现债见 [11-Task样板重构执行计划](../11-Task样板重构执行计划.md) |
 
 ### 开放问题
 
-- [ ] EntityScene 槽位类型最终放 **shared** 还是 **layout 导出类型-only 包**（仍禁 task→layout 实现）— 推荐：**task 定义 BoardViewModel，layout adapter 适配**  
-- [ ] 行级与全局 command 是否强制同一 Registry 实例（推荐：同 handlers，Registry 可分行 scope）  
+- [x] EntityScene：现网由 entity-scene + task Board public 协作（不再阻塞）
+- [x] 行级与全局：同 handlers（`runTaskRowBulkCommand`）；Registry 可分行 scope
+
+仍开放（实现层）：
+
+- [ ] list-scene / Shortcut / Preview 体量拆分节奏（见执行计划阶段 2–4）
 
 ---
 
@@ -286,3 +316,4 @@ useTaskListScene
 | 日期 | 变更 |
 |------|------|
 | 2026-07-17 | 初版：争议、T1/T2a/T2b/T3、协作、债、刀序 |
+| 2026-07-18 | **archived-decision**：加 §0 落地对照；链 ARCHITECTURE + 11 执行计划；决议 #6 更新 |

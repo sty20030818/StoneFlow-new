@@ -1,9 +1,10 @@
 # 模块治理工作区
 
 > 启动：2026-07-17
-> 目的：在 **目录骨架已定（Phase D）** 之后，逐模块讨论边界、最佳实践与治理动作。
+> 目的：讨论边界、决议与执行计划（**WHY / 进度**）。
+> **日常改码入口（HOW / WHAT）：** [`src/CONVENTIONS.md`](../../../src/CONVENTIONS.md) · [`src/ARCHITECTURE.md`](../../../src/ARCHITECTURE.md) · 各模块 `src/**/ARCHITECTURE.md`
 > 品质门禁：[`../03-To-Be/08-Feature品质验收标准.md`](../03-To-Be/08-Feature品质验收标准.md)
-> 历史调研：[`../01-As-Is/`](../01-As-Is/)（路径可能过时，本工作区以**现网**为准）
+> 历史调研：[`../01-As-Is/`](../01-As-Is/)（路径可能过时，以 `src/` 为准）
 
 ---
 
@@ -11,6 +12,7 @@
 
 | 序 | 文档 | 状态 |
 |----|------|------|
+| — | **`src/CONVENTIONS.md` / `src/ARCHITECTURE.md`** | **日常约束 · 优先于本目录过时路径叙述** |
 | 0 | [03-模块白话导读.md](./03-模块白话导读.md) | **给人读**：谁大谁小、干什么 |
 | 0b | [04-长期目标-装配三角.md](./04-长期目标-装配三角.md) | **T2 已锁定**（nav/routes/layout 目标） |
 | 0c | [05-模块设计规范.md](./05-模块设计规范.md) | **全仓模块怎么设计**（纯化/协作/检查表） |
@@ -22,7 +24,7 @@
 | 4 | [模块/M-ROUTE.md](./模块/M-ROUTE.md) | **已讨论**：薄页、场景表、loader 门闸 |
 | 5 | [模块/M-LAYOUT.md](./模块/M-LAYOUT.md) | **已讨论**：L1–L7 层模型 + 巨石拆分 |
 | 6 | [模块/M-F-COMMAND.md](./模块/M-F-COMMAND.md) | **已讨论**：C3 注册式 vs Bridge |
-| 7 | [模块/M-F-TASK.md](./模块/M-F-TASK.md) | **已讨论**：T2a 纯化 + list-scene + 命令 |
+| 7 | [模块/M-F-TASK.md](./模块/M-F-TASK.md) | **archived-decision**：T2a 边界已落地；实现债 → [11](./11-Task样板重构执行计划.md) |
 | 8 | [模块/M-F-BULK.md](./模块/M-F-BULK.md) | **已讨论**：B3 引擎纯化 + 域贡献 |
 | 9 | [模块/M-F-LAUNCHER.md](./模块/M-F-LAUNCHER.md) | **已落地**：Launcher 独立窗；活跃契约见 `src/features/launcher/ARCHITECTURE.md` |
 | 10 | [模块/M-F-PROJECT.md](./模块/M-F-PROJECT.md) | **已讨论**：P2 纯化 + overview Keep |
@@ -46,7 +48,8 @@
 | 28 | `模块/<id>.md` | （22 feature 卡已齐 · 装配三角另卡） |
 | 29 | [08-破坏性重构-准备清单.md](./08-破坏性重构-准备清单.md) | 讨论→动刀：纪律、DoR |
 | 30 | [09-决议总表.md](./09-决议总表.md) | **一页目标码总表** |
-| 31 | [10-T2重构执行计划.md](./10-T2重构执行计划.md) | **史诗 0–12 + DEP-INV 文件表** |
+| 31 | [10-T2重构执行计划.md](./10-T2重构执行计划.md) | **史诗 0–12 done** |
+| 32 | [11-Task样板重构执行计划.md](./11-Task样板重构执行计划.md) | **可执行**：task 实现债 · 阶段 0–5 |
 
 ---
 

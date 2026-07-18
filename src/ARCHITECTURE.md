@@ -1,327 +1,260 @@
-> 版本：v4.1
-> 作用：定义 `src/` 前端架构边界（**现网事实**；重构进度见 Docs 执行计划）
-> 最后更新：2026-07-18
->
-> ### 必读文档
->
-> | 文档 | 用途 |
-> |------|------|
-> | [`05-模块设计规范.md`](../Docs/03-前端架构解析/05-模块治理/05-模块设计规范.md) | 纯化 / 类型 / 协作端口 / 检查表 |
-> | [`09-决议总表.md`](../Docs/03-前端架构解析/05-模块治理/09-决议总表.md) | 目标决议一览 |
-> | [`10-T2重构执行计划.md`](../Docs/03-前端架构解析/05-模块治理/10-T2重构执行计划.md) | **重构刀序与进度**（过程标签只写这里） |
-> | [`04-长期目标-装配三角.md`](../Docs/03-前端架构解析/05-模块治理/04-长期目标-装配三角.md) | 长期蓝图 |
-> | [`07-Feature切分与边界总览.md`](../Docs/03-前端架构解析/05-模块治理/07-Feature切分与边界总览.md) | 并/拆/Keep |
-> | [`08-Feature品质验收标准.md`](../Docs/03-前端架构解析/03-To-Be/08-Feature品质验收标准.md) | P0 品质勾选 |
->
-> **冲突时：** 决议总表 + 设计规范 > 本文「现网」段 > 过时 As-Is。
-> **改模块时：** 同步该模块 `ARCHITECTURE.md`（无则新建短契约）。
-> **源码注释：** 写职责与边界原因，禁止写史诗号/目标码/Phase（见 `CONVENTIONS.md`）。
+# StoneFlow 前端架构（src）
+
+> 版本：v5 · 2026-07-18
+> 作用：描述 `src/` **现网分层与地图**（WHAT / WHERE）。
+> 怎么写：见 [`CONVENTIONS.md`](./CONVENTIONS.md)。
+> 重构进度：只写在 `Documents/03-前端架构解析/05-模块治理/10-T2重构执行计划.md`。
+
+### 必读
+
+| 文档 | 用途 |
+|------|------|
+| [`CONVENTIONS.md`](./CONVENTIONS.md) | 注释 / 命名 / Query / Router / 破坏性纪律 |
+| [`05-模块设计规范.md`](../Documents/03-前端架构解析/05-模块治理/05-模块设计规范.md) | 纯化 / 类型 / 检查表（Docs） |
+| [`09-决议总表.md`](../Documents/03-前端架构解析/05-模块治理/09-决议总表.md) | 目标决议一览 |
+| [`07-Feature切分与边界总览.md`](../Documents/03-前端架构解析/05-模块治理/07-Feature切分与边界总览.md) | 并 / 拆 / Keep |
+
+**冲突时：** `CONVENTIONS` + 本文现网段 ≥ 过时 As-Is / 过时讨论卡路径。
+**改模块时：** 同步该模块 `ARCHITECTURE.md`（无则按模板新建）。
+**源码注释：** 写职责与原因；禁止史诗号（见 CONVENTIONS §1）。
 
 ---
 
-## 1. 文档定位
+## 1. 定位
 
-本文描述 **今天代码真实分层**（日常开发对照）。
-重构过程进度只维护在 `Docs/.../10-T2重构执行计划.md`，不在源码注释里堆过程标签。
-
-不负责：逐步 diff 流水账、页面交互文案、Rust crate 细账。
+本文回答：代码落在哪一层、谁依赖谁、状态三轨、feature 地图。
+不负责：逐步 diff、交互文案、Rust 细账、视觉营销稿。
 
 ---
 
-## 1.1 目标心智与横切规则
+## 2. 心智图
 
 ```txt
-目标方向（部分已落地）：
-- navigation：path 方言 + memory；业务 open 策略在 domain
-- routes：单工作区树 + scope context；薄页
-- layout：铬架 + Host 装配；无 domain 业务 command 表
-- command：元数据在 command；handlers 由各 domain register
-- bulk：纯引擎；actions/adapters 在各 domain
-- 禁止：features/** import @/layout/**
-```
-
-横切硬规则：
-
-1. `features/*` **不得** `import '@/layout/**'`。
-2. 跨 feature 仅 `@/features/<name>` 或 `/contract` `/page`。
-3. 换页经 `app/navigation` intent/path；打开策略在 domain public。
-4. selection ≠ bulk ≠ command；filter ≠ display-options。
-
----
-
-## 2. 当前真实心智
-
-```txt
-启动接线在 app · 铬架在 layout · URL 薄页在 routes ·
-能力在 features（model/api/hooks/components + public）·
-纯零件在 shared · 样式在 styles
+启动接线在 app
+铬架在 layout
+URL 薄页在 routes
+能力在 features（model / api / hooks / components + public）
+纯零件在 shared
+样式在 styles
 ```
 
 ```txt
-TanStack Router (hash + file routes)
+TanStack Router（hash + file routes）
   → routes/_shell 挂 layout 铬架
   → features/* 业务能力 / 数据接线
-  → shared/* 跨业务 UI · query 工具 · lib
-  → styles/*
+  → shared/* · styles/*
   → Tauri IPC 经 feature api facade
 ```
 
-状态边界：
-
-```txt
-TanStack Query          → 服务端 / 可回源数据
-Zustand + React state
-  + useSyncExternalStore → 客户端 UI 瞬时态
-```
-
-若把服务器状态塞回 store、组件散落裸 `invoke()`、`shared` 反向依赖业务、或跨 feature 深路径 import，视为架构退化。
-
----
-
-## 3. 当前目录结构
-
-```txt
-src/
-├── main.tsx
-├── app/                         # 组合根：Providers、router 装配、导航语义
-│   ├── App.tsx
-│   ├── router.tsx
-│   ├── providers/
-│   └── navigation/              # path 语义 · intent · route memory（非视觉）
-├── layout/                      # 产品铬架：侧栏/顶栏/主区/overlay/command-bridge
-├── routes/                      # TanStack file routes + 薄页
-│   ├── __root.tsx
-│   ├── index.tsx / launcher.tsx / settings.tsx / debug.activity.tsx
-│   └── _shell/
-│       ├── route.tsx
-│       ├── all/…
-│       └── spaces/$spaceId/…
-├── features/                    # 业务垂直切片（见 §4.3）
-├── shared/                      # 无业务归属的共享层
-│   ├── components/              # base · board · row · main-card · patterns…
-│   ├── hooks/ · lib/ · query/ · types/ · events/ · form/ …
-├── styles/
-├── test/
-├── ARCHITECTURE.md
-└── CONVENTIONS.md
-```
-
-**已删除 / 勿再写为现状：** 顶层 `pages/`、`app/layouts`（已迁 `layout/`）、`shared/ui`（已迁 `shared/components`）、独立 feature 壳 `inbox` / `all-tasks` / `archive` / `trash` / `no-project` / `views`（列表场景走路由薄页 + domain feature）、`healthcheck` / `task-drawer` 等旧目录。
-
----
-
-## 4. 分层与职责
-
-### 4.1 `app/`：组合根
-
-**负责：**
-
-1. 入口装配、`RouterProvider` / 全局 Provider 树（QueryClient 默认选项等）；
-2. `app/navigation/*`：shell route 语义、scope、canonical path、intent、启动恢复、会话历史；
-3. `app/router.tsx`：TanStack Router 实例。
-
-**不负责：** 侧栏/顶栏视觉、实体规则、list-scene、board 实现。
-
-### 4.2 `layout/`：产品铬架
-
-**负责：**
-
-1. `ShellRouteLayout` / `AppLayout` / Chrome（Header · Sidebar · Main · Footer · Drawer）；
-2. 壳级 Provider 嵌套、CommandBridge 装配、Overlays 挂载；
-3. `ShellBulkActionBoundary`：**只 compose** 各域 bulk public（不写动作/adapter 实现）。
-
-**不负责：** 实体 Query 真相、task/project 业务规则、EntityScene 实现（→ `features/entity-scene`）、写路径记忆（scope route + `app/navigation`）。
-
-短契约细节：[`layout/ARCHITECTURE.md`](./layout/ARCHITECTURE.md)。
-
-### 4.3 `routes/`：薄页
-
-**负责：** URL 匹配、loader/redirect、把 params/search 交给 feature 出口。
-
-**不负责：** 厚业务组件、裸 `invoke()`。
-
-正式工作路径：`/all/*`、`/spaces/:spaceId/*`（以及 `/launcher`、`/debug/activity` 等）。
-
-### 4.4 `features/`：业务能力
-
-每个 feature 是可删的垂直切片。推荐内部分层（可按需省略空夹）：
-
-| 目录 | 职责 |
-|------|------|
-| `model/` | 类型、纯规则、ports |
-| `api/` | 仅 IO：invoke / Store / listen |
-| `hooks/` | Query / Mutation / list-scene facade |
-| `components/` | 业务 UI |
-| `index.ts` | **默认 public**（跨模块只应从这里 import） |
-| `contract.ts` | 可选极窄契约（如 settings） |
-| `page.ts` | 可选页面出口（供 routes） |
-
-**Feature 内依赖：** `components → hooks → api → model`；可依赖 `shared`；跨 feature **只走 public**（`. | contract | page`）。
-
-**禁止：** `@/features/<name>/api|hooks|model|components|…` 深路径跨 feature import。
-校验：`bun run scripts/check-feature-boundaries.mjs`（含于 `bun run check`）。
-
-当前 feature 目录名：`activity` · `bulk-action` · `command` · `danger-confirm` · `display-options` · `entity-detail` · `entity-scene` · `filter` · `global-search` · `launcher` · `lifecycle` · `metadata-fields` · `project` · `project-overview` · `selection` · `settings` · `shell-dialogs` · `space` · `submit` · `sync` · `task` · `update` · `view` · `workspace`。
-
-列表类 URL（inbox / tasks / archive / trash / no-project 等）**不再各自成 feature**；薄页 + `task`（等）list-scene facade（如 `useTaskListScene`）。
-
-**已有模块 ARCHITECTURE：**
-`bulk-action` · `command` · `launcher` · `task` · `project` · `lifecycle` · `settings` · `shell-dialogs` · `entity-scene` · `filter` · `selection` · `submit` · `space` · `metadata-fields` · 以及 `layout/` · `app/navigation/` · 本文。其余 feature 在动刀时补短契约。
-
-### 4.5 `shared/`：共享基础设施
-
-只放跨 feature 真正共用、**不携带产品业务归属**的内容：
-
-- `shared/components/*`：shadcn/base、board/row、main-card、patterns…
-- `shared/query`：跨 feature invalidation 等
-- `shared/events` · `lib` · `types` · `form` · `config` · `autosave` · `validation` …
-
-禁止：task/project/space 专属规则、feature 专属 API、单页专用组合逻辑、`shared` 依赖 `features` / `layout` / `app` 业务语义。
-
-### 4.6 `styles/`
-
-全局视觉真相源：token、shadcn 映射、Tailwind v4 入口、reset / utility。见 `styles/ARCHITECTURE.md`。
-
----
-
-## 5. 路由与导航
-
-```txt
-@tanstack/react-router
-  + createHashHistory
-  + file routes (src/routes) → routeTree.gen.ts
-```
-
-壳内装配链：
-
-```txt
-routes/_shell/{all|spaces}/route
-  → useRememberCurrentShellRoute(scope)     # app/navigation
-  → ScopedShellRouteLayout
-       → ShellRouteLayout
-            → workspace sync · nav store 衍生 · Shell chrome
-            → <Outlet /> 薄页 → feature page / scene
-```
-
-三层真相：
-
-1. `src/routes/**`：file tree、loader、redirect；
-2. `app/navigation/*`：结构化 shell route、path builder、intent、memory；
-3. `app/router.tsx`：Router 实例。
-
-不保留 react-router / 兼容 DSL 第二套。导航文件边界见 `CONVENTIONS.md` 与 `app/navigation/ARCHITECTURE.md`。
-
----
-
-## 6. 数据与状态边界
-
-### 6.1 服务器状态
-
-统一 TanStack Query。落点：
-
-```txt
-features/{feature}/api    → Tauri invoke facade
-features/{feature}/hooks  → keys / queries / mutations / useXxx
-features/{feature}/model  → 纯规则 · 客户端局部模型
-shared/query              → 跨 feature 失效等
-```
-
-已落地领域示例：`space` · `project` · `task` · `lifecycle` · `view` · `activity` · `search` · `settings`（含设备偏好）· badges 等。
-
-QueryClient 默认（`app/providers`）：`staleTime 30s` · `gcTime 10min` · `refetchOnWindowFocus: false` · query `retry: 1` · mutation `retry: 0`。
-
-### 6.2 客户端状态
-
-- Zustand：壳 nav 衍生、dialog、sidebar settings、search focus intent 等
-- React state：页局部
-- `useSyncExternalStore`：如 SubmitRegistry
-- reducer/provider：如 Launcher session
-
-禁止用 store 复制 Query 中已有的服务器数据。
-
-### 6.3 工作区刷新
-
-`features/workspace`：听事件 → debounce → `invalidateWorkspaceQueries`。薄同步边界，不是统一 API 工厂。
-
----
-
-## 7. 关键跨层边界（摘要）
-
-| Feature | 角色 |
-|---------|------|
-| `submit` | 壳级提交目标注册表（非表单库 / 非 mutation 层） |
-| `selection` | 实体多选与 CommandSelection（非 bulk 实现本身） |
-| `command` | registry / keybinding / menu / shortcut runtime |
-| `bulk-action` | bulk contract · registry · adapter · UI |
-| `launcher` | 独立窗口：session / domain / chrome / composer / create / results |
-| `entity-detail` | 抽屉打开真相 = **URL search**，非全局 drawer store |
-| `settings` | 设置页 + `contract` / `page` 三入口约定 |
-
-feature 级细文：`features/{command,bulk-action,launcher}/ARCHITECTURE.md` 等。
-
----
-
-## 8. 依赖方向
+### 2.1 依赖方向（硬）
 
 ```txt
 app      → features(public) · layout · shared · styles · routes 装配
-layout   → features(public) · shared · styles · app/navigation（语义）
+layout   → features(public) · shared · styles · app/navigation
 routes   → layout · features(public|page) · app/navigation
 features → shared · styles · 其它 feature 的 public 仅
 shared   → styles（及同层工具）；❌ features / layout / app 业务
 styles   → 不依赖业务层
 ```
 
-**禁止：**
+**禁止：** `features/**` → `@/layout/**`；跨 feature 深路径；`shared` 吸收实体规则。
 
-1. `shared` → `features` / `layout`
-2. 跨 feature 深路径 import
-3. 组件裸 `invoke()`
-4. store 复制 Query 服务器数据
-5. 某 feature 私有状态冒充全局真相
+闸门：`bun run lint:boundaries`。
 
----
+### 2.2 状态三轨
 
-## 9. 新代码落点
+| 轨 | 技术 | 例 |
+|----|------|-----|
+| URL | TanStack Router | 当前壳路由、抽屉 search、设置 section |
+| Query | TanStack Query | 任务/项目列表与详情、同步配置 |
+| UI | React state / 限定 Zustand / reducer | 命令板开关、草稿、Launcher session |
 
-| 问题 | 落点 |
-|------|------|
-| 启动、全局 Provider、导航语义 | `app/` |
-| 壳 UI、CommandBridge、EntityScene | `layout/` |
-| URL / 薄页 | `routes/` |
-| 业务能力 / 查询 / 业务 UI | `features/{name}/` |
-| 无归属通用 UI / 工具 | `shared/` |
-| token / 全局样式 | `styles/` |
-
-只被一个 feature 用一次的东西，**不要**提前升 `shared/`。
+禁止：用 store 复制 Query 服务器数据；用 Query 存纯 UI 选中态当「服务器真相」。
 
 ---
 
-## 10. 架构不变式
+## 3. 目录结构
 
-视为回退：
+```txt
+src/
+├── main.tsx
+├── app/                    # 组合根：Providers、router、navigation 语义
+├── layout/                 # 产品铬架：Header / Sidebar / Main / overlays / command-bridge
+├── routes/                 # file routes + 薄页
+├── features/               # 业务垂直切片（§5）
+├── shared/                 # 无业务归属共享层
+├── styles/
+├── test/
+├── ARCHITECTURE.md
+└── CONVENTIONS.md
+```
 
-1. 以 store 为服务器状态真相源
+**勿再当作现状：** 顶层 `pages/`、`app/layouts`、`shared/ui`、独立 feature 壳 `inbox` / `all-tasks` / `archive` / `trash` / `no-project` / `views`、`healthcheck` / `task-drawer`。
+
+列表类 URL → 薄页 + domain list-scene（如 `TaskListSceneView`），不再各做 feature 包。
+
+---
+
+## 4. 分层职责
+
+### 4.1 `app/` · 组合根
+
+**负责：** Provider 树、Router 实例、`app/navigation`（path / intent / memory / session history）。
+**不负责：** 侧栏视觉、实体规则、board 实现。
+
+短契约：[`app/navigation/ARCHITECTURE.md`](./app/navigation/ARCHITECTURE.md)。
+
+### 4.2 `layout/` · 铬架
+
+**负责：** Shell 布局与铬架、壳级 Provider 嵌套、Command Host 装配、Overlays、`ShellBulkActionBoundary`（只 compose 各域 bulk public）。
+**不负责：** 实体 Query 真相、domain 命令 handlers、EntityScene 实现（→ `features/entity-scene`）。
+
+短契约：[`layout/ARCHITECTURE.md`](./layout/ARCHITECTURE.md)。
+
+### 4.3 `routes/` · 薄页
+
+**负责：** 匹配、loader/redirect、挂载 feature page/scene。
+**不负责：** 厚业务、裸 `invoke()`。
+
+正式工作路径：`/:scopeKey/...`（`all` 与 `spaces/:id` 语义）；另有 `/launcher`、debug 等。
+
+### 4.4 `features/` · 能力切片
+
+内部分层见 CONVENTIONS §2.4。跨模块只经 `. | contract | page`。
+
+### 4.5 `shared/` · 共享
+
+base UI、board/row、query 跨域失效工具、types、lib、events、form…
+禁止实体业务规则、feature 专属 API。
+
+### 4.6 `styles/`
+
+Token、shadcn 映射、Tailwind 入口。见 [`styles/ARCHITECTURE.md`](./styles/ARCHITECTURE.md)。
+
+---
+
+## 5. Feature 地图
+
+| Feature | 类 | 一句话 | 契约 |
+|---------|-----|--------|------|
+| task | domain | 任务实体：列表场景、详情、创建内核、打开策略、bulk/命令 | [task](./features/task/ARCHITECTURE.md) |
+| project | domain | 项目实体；页内嵌任务列表走 task public | [project](./features/project/ARCHITECTURE.md) |
+| space | domain | 空间实体与视觉 | [space](./features/space/ARCHITECTURE.md) |
+| view | domain+scene | 视图定义 + 跑任务列表 | [view](./features/view/ARCHITECTURE.md) |
+| lifecycle | domain 编排 | 归档 / 回收站跨实体编排 | [lifecycle](./features/lifecycle/ARCHITECTURE.md) |
+| activity | domain 薄 | 活动时间线查询 | [activity](./features/activity/ARCHITECTURE.md) |
+| command | platform | 命令元数据、Runtime、菜单、快捷键；handlers 在各域 register | [command](./features/command/ARCHITECTURE.md) |
+| bulk-action | platform | 批量引擎；动作/adapter 在各域 | [bulk-action](./features/bulk-action/ARCHITECTURE.md) |
+| selection | platform | 多选与 CommandSelection 总线 | [selection](./features/selection/ARCHITECTURE.md) |
+| filter | platform | 页筛选总线 | [filter](./features/filter/ARCHITECTURE.md) |
+| display-options | platform | 展示偏好（≠ 筛选） | [display-options](./features/display-options/ARCHITECTURE.md) |
+| metadata-fields | platform | 跨实体字段 chrome；域组装选项 | [metadata-fields](./features/metadata-fields/ARCHITECTURE.md) |
+| submit | platform | 壳级提交目标注册 | [submit](./features/submit/ARCHITECTURE.md) |
+| danger-confirm | platform | 危险确认 UI 协议 | [danger-confirm](./features/danger-confirm/ARCHITECTURE.md) |
+| entity-detail | platform | 抽屉打开 = URL search 契约 | [entity-detail](./features/entity-detail/ARCHITECTURE.md) |
+| entity-scene | platform | 列表页槽位编排 | [entity-scene](./features/entity-scene/ARCHITECTURE.md) |
+| global-search | platform | 主窗搜索 | [global-search](./features/global-search/ARCHITECTURE.md) |
+| workspace | platform | 听事件 → invalidate | [workspace](./features/workspace/ARCHITECTURE.md) |
+| sync | platform | 云同步 | [sync](./features/sync/ARCHITECTURE.md) |
+| update | platform | 应用更新 | [update](./features/update/ARCHITECTURE.md) |
+| settings | scene | 设置三入口 | [settings](./features/settings/ARCHITECTURE.md) |
+| project-overview | scene | 项目概览薄页 | [project-overview](./features/project-overview/ARCHITECTURE.md) |
+| shell-dialogs | platform | 壳级对话框 / 命令菜单 UI 态 | [shell-dialogs](./features/shell-dialogs/ARCHITECTURE.md) |
+| launcher | window | 独立窗：搜 + 建；创建内核复用 task | [launcher](./features/launcher/ARCHITECTURE.md) |
+
+**切分裁决（冻结）：** 不大合并 selection/bulk/command/filter/display；不拆 task 为多 feature 包名；不取消 navigation 包。
+
+---
+
+## 6. 装配三角（现网）
+
+| 模块 | 一句话 |
+|------|--------|
+| navigation | path 方言 + memory + history；**无**领域 open 策略 |
+| routes | 单工作区树 + scope；薄页；match 为运行时真相 |
+| layout | 铬架 + Host；**无** domain 命令实现表 |
+
+命令：feature `registerXxxCommands(host)`；layout 只装配 Host。
+Bulk：引擎在 `bulk-action`；`task|project|lifecycle` 贡献 actions/adapter。
+
+---
+
+## 7. 数据与 IO
+
+```txt
+features/{f}/api     → invoke / Store / listen
+features/{f}/hooks   → keys · queryOptions · mutations
+features/{f}/model   → 纯规则
+shared/query         → 跨 feature 失效等
+```
+
+QueryClient 默认（`app/providers`）：`staleTime 30s` · `gcTime 10min` · `refetchOnWindowFocus: false` · query `retry: 1` · mutation `retry: 0`。
+
+细则：CONVENTIONS §4–§5。
+
+---
+
+## 8. 窗与壳
+
+- **主窗：** `layout` 铬架 + `_shell` 路由树。
+- **Launcher：** 独立窗 + `/launcher`；session/domain 在 `features/launcher`；固定壳几何见该模块契约。
+- **Overlays：** 主窗创建等挂在 layout overlays，内容组件来自 feature public。
+
+---
+
+## 9. 开放前破坏性阶段
+
+与 CONVENTIONS §0.3 一致：
+
+- 发布前可硬切 API / IPC / Store / URL / 记忆数据；
+- 每次必须删净旧面，不留双轨；
+- 模块契约与本文在破坏后同步更新。
+
+---
+
+## 10. 架构不变式（回退即退化）
+
+1. store 当服务器状态真相
 2. 页面 / shared 裸 `invoke()`
 3. `shared` 塞实体业务
-4. 第二套路由 DSL 与 route file / memory 分叉
-5. QC runtime/domain/layout 揉成巨型 provider
-6. 命令 / 批量塞回单页内部
-7. 跨 feature 绕过 public 深 import
-8. 再引入 `SpaceLayout` / `app/layouts` / `shared/ui` 旧路径叙述
+4. 第二套路由 DSL 与 file route / memory 分叉
+5. 命令 / 批量实现塞回单页或 layout 上帝表
+6. 跨 feature 绕过 public
+7. feature → layout
+8. 永久兼容层 / 只转发目录
 
 ---
 
-## 11. 推荐验证
+## 11. 模块契约模板
+
+新建 `ARCHITECTURE.md` 时用：
+
+```md
+# {name} · 一句话
+
+> 最后更新：YYYY-MM-DD
+
+## 职责 / 不负责
+## 目录
+## Public 最小集
+## 禁止依赖
+## 装配点（谁 import）
+## 状态落点（URL | Query | UI）
+```
+
+---
+
+## 12. 验证
 
 ```bash
 bun run check
-# 含 typecheck · lint · feature boundaries · format · tests · rust
 ```
 
-文档核对：
+---
 
-1. 路由仍是 TanStack hash + `src/routes/**`
-2. 壳路径是 `layout/`，不是 `app/layouts`
-3. public 与 boundaries 仍绿
-4. 无 React Router / 已删 feature 壳的误导描述
+## 变更记录
+
+| 日期 | 变更 |
+|------|------|
+| 2026-07-18 | v5：对齐 T2 收口；feature 全图；破坏性阶段；链 CONVENTIONS v2 |
+| 2026-07-17 | v4.x：T2 执行期现网 |

@@ -1,0 +1,235 @@
+# Task 样板重构执行计划（T2a 实现债 · 对齐 CONVENTIONS v2）
+
+> 状态：**可执行** · 2026-07-18
+> 决议源：[M-F-TASK](./模块/M-F-TASK.md)（T2a）· 写法：[CONVENTIONS v2](../../../src/CONVENTIONS.md) · 现网契约：[task/ARCHITECTURE.md](../../../src/features/task/ARCHITECTURE.md)
+> **前提：** T2 边界刀已完成（禁 task→layout、open/bulk/命令回家）。本计划只还 **实现债 + 规范对齐**，**不重开切分**（不拆 task-list/task-detail 包）。
+> **原则：** 串行；每阶段末 `bun run check`；开放前可破坏但须清理干净；源码注释禁止史诗号。
+
+---
+
+## 0. 目标与非目标
+
+### 0.1 目标
+
+1. task 成为 **domain 样板**：可被 project / view / lifecycle 抄 Query、分层、注释、public 纪律。
+2. 巨石可控：优先 Shortcut / list-scene；其余按收益拆。
+3. `model/` 尽量无 React；hooks 归 `hooks/`。
+4. Public + JSDoc（L0/L1）与 CONVENTIONS 一致。
+
+### 0.2 非目标
+
+- 不拆成多个 `features/task-*` 包
+- 不把 list-scene 下沉 layout
+- 不做视觉 / View Transition 专项（属体验波次）
+- 不顺手重构 project/view（样板绿后再复制）
+
+### 0.3 门禁
+
+```bash
+bun run check
+# 相关：bunx vitest run src/features/task
+```
+
+冒烟（人工）：三列表、项目内任务板、创建、抽屉/全页/预览、命令板与行快捷键 complete/archive 一致。
+
+---
+
+## 1. 现网基线（2026-07-18）
+
+| 项 | 状态 |
+|----|------|
+| task → layout | **0**（已断） |
+| open / create 内核 / bulk / registerTaskCommands | **已在 task** |
+| 行快捷键共用 `runTaskRowBulkCommand` | **已接** |
+| `TaskRowShortcutScope` | ~873 行 · **待拆** |
+| `TaskPreviewProvider` | ~447 · 待拆 |
+| `TaskContextMenu` | ~438 · 待拆 |
+| `useTaskListScene` | ~406 · 待内拆 |
+| `TaskBoard` / `TaskRowAdapter` | ~407 / ~354 · 后置 |
+| `useTaskListController` / `useTaskSelection` | 仍在 `model/` · **待迁 hooks/** |
+
+---
+
+## 阶段总表
+
+| 阶段 | ID | 内容 | 破坏性 | 依赖 | 状态 |
+|------|-----|------|--------|------|------|
+| 0 | DOC | 卡落地对照 + task ARCHITECTURE 同步 | 无 | — | **done**（随本文） |
+| 1 | NORM | Query / JSDoc / public 对齐 CONVENTIONS | 低 | 0 | pending |
+| 2 | HOOKS | model 内 hooks 归位；list-scene 内拆 | 中 | 1 | pending |
+| 3 | SHORTCUT | 拆 TaskRowShortcutScope | 中 | 1（可 ‖ 2） | pending |
+| 4 | VOLUME | PreviewProvider / ContextMenu（Board 可选） | 低中 | 2–3 | pending |
+| 5 | CLOSE | 契约收口、样板检查表、可选扩散备忘 | 无 | 1–4 | pending |
+
+推荐串行：**0 → 1 → 2 → 3 → 4 → 5**。若赶体量，**3 可与 2 弱并行**（冲突文件少时）。
+
+---
+
+## 阶段 0 · DOC（文档同步）
+
+| 字段 | 内容 |
+|------|------|
+| 目标 | M-F-TASK = 决议档案 + 落地对照；ARCHITECTURE = 日常真相 |
+| 状态 | **done** |
+
+- [x] M-F-TASK：状态改为 archived-decision；加「T2 后落地对照」
+- [x] 本文执行计划落盘
+- [x] `src/features/task/ARCHITECTURE.md` 更新现网 + 债表 + 链到本文
+
+---
+
+## 阶段 1 · NORM（规范对齐）
+
+| 字段 | 内容 |
+|------|------|
+| 目标 | Query / 注释 / public 成为样板写法 |
+| 破坏性 | 低（以补文档与小收口为主；可删无消费者导出） |
+| 状态 | pending |
+
+### 步骤
+
+1. **Query**
+   - 审计 `task.keys` / `task.queries` / `task.mutations`：一律 `queryOptions` 共用；mutation 只按 keys 前缀 invalidate。
+   - Route loader / 页内 query 禁止第二套 fetch。
+   - 文件头 JSDoc（L0）说明 keys 前缀语义。
+2. **JSDoc L1**
+   - `index.ts` / `contract.ts` 每个导出补齐中文职责注释（CONVENTIONS §1.3）。
+3. **Public**
+   - 再跑外部引用审计；无消费者且非契约承诺的符号移出 `index.ts`（调用方已在 feature 内则改深路径）。
+4. **api/**
+   - 确认无 UI；裸 invoke 只在 api。
+
+### 验收
+
+- [ ] `index.ts` 导出均有 L1 JSDoc
+- [ ] keys / queryOptions / mutations 符合 CONVENTIONS §4
+- [ ] `bun run check` 绿
+
+### 改哪些（以 rg 为准）
+
+`index.ts` · `contract.ts` · `hooks/task.*` · `api/tasks.ts` · 必要时 `ARCHITECTURE.md` public 表
+
+---
+
+## 阶段 2 · HOOKS（分层归位 + list-scene）
+
+| 字段 | 内容 |
+|------|------|
+| 目标 | `model/` 无 React hook；list-scene 内拆、facade 仍单一 |
+| 破坏性 | 中（路径迁移；public 导出路径可变） |
+| 状态 | pending |
+
+### 步骤
+
+1. `useTaskListController` · `useTaskSelection`：`model/` → `hooks/`（纯 selection 算法可留 `model/taskSelection.ts`）。
+2. 更新内部 import 与 `index.ts` 再导出（外模块仍只走 `@/features/task`）。
+3. **拆 `useTaskListScene`**（不拆 feature）建议子模块：
+   - 数据 / filter·display 注册 / selection·preview 注册 / board props 组装 / 创建 port
+4. Facade 签名尽量稳定；破坏性变更写进 ARCHITECTURE。
+
+### 验收
+
+- [ ] `model/` 下无 `use*.ts(x)`（指示器组件除外，或迁 `components`/`model/indicators` 已存在可保留）
+- [ ] `useTaskListScene` 主文件 &lt; ~250 行或有子文件清晰边界
+- [ ] 三列表 + project/view 嵌入冒烟
+- [ ] `bun run check` 绿
+
+---
+
+## 阶段 3 · SHORTCUT（行快捷键巨石）
+
+| 字段 | 内容 |
+|------|------|
+| 目标 | `TaskRowShortcutScope` 可维护；仍共用 commands handlers |
+| 破坏性 | 中（仅拆文件，行为不变） |
+| 状态 | pending |
+
+### 建议拆分
+
+| 文件 | 职责 |
+|------|------|
+| `TaskRowShortcutScope.tsx` | 壳：Provider / 绑定入口（目标 &lt;250） |
+| `taskRowShortcutBindings`（已有可扩） | 键位表 |
+| `rowTargetResolver`（已有） | 行目标解析 |
+| 新增：导航 / bulk / meta picker 等 handler 分段文件 | 按现网分支切 |
+
+**禁止：** 再引入第二套 complete/archive 业务实现；必须走 `runTaskRowBulkCommand` / 既有 register handlers。
+
+### 验收
+
+- [ ] 主文件明显下降；现有 `TaskRowShortcutScope` 单测绿
+- [ ] 行快捷键与命令板 complete/archive/delete 一致
+- [ ] `bun run check` 绿
+
+---
+
+## 阶段 4 · VOLUME（其余体量）
+
+| 字段 | 内容 |
+|------|------|
+| 目标 | Preview / ContextMenu 可控；Board 按余力 |
+| 破坏性 | 低中 |
+| 状态 | pending |
+
+| 优先级 | 文件 | 动作 |
+|--------|------|------|
+| P0 | `TaskPreviewProvider` | 拆 state / actions / register source |
+| P1 | `TaskContextMenu` | 拆菜单段 / metadata |
+| P2 | `TaskBoard` · `TaskRowAdapter` | 有余力再拆；不挡样板关闭 |
+
+### 验收
+
+- [ ] Preview 开合 / 列表注册 source 正常
+- [ ] 上下文菜单 bulk/meta 冒烟
+- [ ] `bun run check` 绿
+
+---
+
+## 阶段 5 · CLOSE（收口）
+
+| 字段 | 内容 |
+|------|------|
+| 目标 | 样板可复制；文档与债表一致 |
+| 状态 | pending |
+
+### 步骤
+
+1. 更新 `task/ARCHITECTURE.md`：目录树、public、**已清债 / 仍记债**。
+2. 回写本文各阶段状态 + M-F-TASK 落地对照勾选。
+3. 写一小节 **「复制到 project/view 的检查表」**（Query keys 形态、hooks 归位、禁 layout、JSDoc L1）——只备忘，本阶段不改其它 feature。
+4. 全量 `bun run check`；相关 vitest。
+
+### 验收
+
+- [ ] 本文阶段 1–4 done
+- [ ] ARCHITECTURE 与现网一致
+- [ ] 检查表可给下一 feature 用
+
+---
+
+## 依赖与风险
+
+| 风险 | 缓解 |
+|------|------|
+| list-scene 拆坏 project/view | 每阶段跑 task + project + view 相关测；保持 facade 导出稳定 |
+| Shortcut 拆文件漏绑 | 单测优先；冒烟行快捷键表 |
+| public 收窄漏引用 | 改前 rg 外部引用；boundaries + tsc |
+
+---
+
+## 与其它文档关系
+
+```txt
+M-F-TASK.md          → WHY / 决议 / 落地对照（档案）
+本文                 → 刀序与验收（进度）
+task/ARCHITECTURE.md → 现网契约（日常）
+CONVENTIONS.md       → 怎么写
+```
+
+---
+
+## 变更记录
+
+| 日期 | 变更 |
+|------|------|
+| 2026-07-18 | 初版：阶段 0–5；基线行数；对齐 CONVENTIONS v2 / T2a |
