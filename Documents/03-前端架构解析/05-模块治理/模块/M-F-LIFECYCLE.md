@@ -1,14 +1,14 @@
 # M-F-LIFECYCLE · features/lifecycle
 
 > 日期：2026-07-17 · **落地对照更新 2026-07-19**
-> 状态：**archived-decision（Y2 · P0–P1 done；余 SCENE 见 [14](../14-Lifecycle样板重构执行计划.md)）**
+> 状态：**archived-decision（Y2 · 0–4 全收口）** · 执行档案：[14](../14-Lifecycle样板重构执行计划.md)
 > 路径：`src/features/lifecycle`
 > **日常契约：** [`src/features/lifecycle/ARCHITECTURE.md`](../../../src/features/lifecycle/ARCHITECTURE.md)
 > 类型：**domain 编排（跨实体）** — 不是 task 子集
 
 ---
 
-## 0. 落地对照（2026-07-19）
+## 0. 落地对照（2026-07-19 · CLOSE）
 
 | 卡上目标（Y2） | 现网 | 说明 |
 |----------------|------|------|
@@ -17,8 +17,9 @@
 | bulk 在 `lifecycle/bulk` | **done** | B3 已迁 |
 | `registerLifecycleCommands` | **done** | C3 已挂 |
 | 写路径委托 t/p/s public | **done** | api 已委托 |
-| `useLifecycleScene` / List 薄壳 | **未完** | List ~356 · 计划 SCENE |
+| `useLifecycleScene` / List 薄壳 | **done** | List ~88；facade ~245 |
 | ARCHITECTURE + public/TSDoc | **done** | DOC + NORM |
+| VOLUME 巨石 | **N/A** | 无 &gt;400；Board 无痛不拆 |
 
 **改码请读：** `src/features/lifecycle/ARCHITECTURE.md` + `src/CONVENTIONS.md`。
 与 src 冲突时：**以 src 为准**，并回写本节。

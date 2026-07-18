@@ -2,7 +2,6 @@
  * 工作区叶子单源（S1 单树 /:scopeKey/...）。
  */
 import { Navigate } from '@tanstack/react-router'
-import { ArchiveIcon, Trash2Icon } from 'lucide-react'
 import type { QueryClient } from '@tanstack/react-query'
 
 import {
@@ -40,11 +39,11 @@ export function WorkspaceNoProjectPage() {
 }
 
 export function WorkspaceArchivePage() {
-	return <LifecycleList icon={ArchiveIcon} mode='archive' title='归档' />
+	return <LifecycleList mode='archive' />
 }
 
 export function WorkspaceTrashPage() {
-	return <LifecycleList icon={Trash2Icon} mode='trash' title='回收站' />
+	return <LifecycleList mode='trash' />
 }
 
 export function WorkspaceProjectsIndexPage() {

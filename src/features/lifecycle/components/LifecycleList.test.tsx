@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { ArchiveIcon, Trash2Icon, type LucideIcon } from 'lucide-react'
 
 import { BulkActionProvider } from '@/features/bulk-action'
 import { DangerConfirmProvider } from '@/features/danger-confirm'
@@ -56,7 +55,7 @@ vi.mock('@/features/entity-detail', () => ({
 	}),
 }))
 
-vi.mock('@/features/lifecycle/hooks', () => ({
+vi.mock('@/features/lifecycle/hooks/lifecycle.queries', () => ({
 	useLifecycleEntriesQuery: (mode: 'archive' | 'trash') => {
 		const slice = mode === 'archive' ? storeState.archiveEntries : storeState.trashEntries
 		return {
@@ -68,6 +67,9 @@ vi.mock('@/features/lifecycle/hooks', () => ({
 			refetch: mode === 'archive' ? loadArchiveSpy : loadTrashSpy,
 		}
 	},
+}))
+
+vi.mock('@/features/lifecycle/hooks/lifecycle.mutations', () => ({
 	useRestoreLifecycleEntryMutation: () => ({
 		mutateAsync: restoreEntrySpy,
 	}),
@@ -127,11 +129,7 @@ describe('LifecycleList', () => {
 	})
 
 	it('Archive 模式渲染三分区与对应操作按钮', async () => {
-		await renderLifecycleList({
-			mode: 'archive',
-			title: '归档',
-			icon: ArchiveIcon,
-		})
+		await renderLifecycleList({ mode: 'archive' })
 
 		expect(screen.getByText('已归档的空间')).toBeInTheDocument()
 		expect(screen.getByText('已归档的项目')).toBeInTheDocument()
@@ -142,11 +140,7 @@ describe('LifecycleList', () => {
 	})
 
 	it('Archive 模式多选后通过批量条恢复并清空 selection', async () => {
-		await renderLifecycleList({
-			mode: 'archive',
-			title: '归档',
-			icon: ArchiveIcon,
-		})
+		await renderLifecycleList({ mode: 'archive' })
 
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择 工作' }))
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择 补齐生命周期页面' }))
@@ -182,11 +176,7 @@ describe('LifecycleList', () => {
 			},
 		})
 
-		await renderLifecycleList({
-			mode: 'trash',
-			title: '回收站',
-			icon: Trash2Icon,
-		})
+		await renderLifecycleList({ mode: 'trash' })
 
 		expect(screen.getByText('当前没有已删除内容')).toBeInTheDocument()
 		expect(
@@ -195,11 +185,7 @@ describe('LifecycleList', () => {
 	})
 
 	it('Trash 模式多选后展示恢复与永久删除入口', async () => {
-		await renderLifecycleList({
-			mode: 'trash',
-			title: '回收站',
-			icon: Trash2Icon,
-		})
+		await renderLifecycleList({ mode: 'trash' })
 
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择 待永久删除任务' }))
 
@@ -209,11 +195,7 @@ describe('LifecycleList', () => {
 	})
 
 	it('Trash 模式永久删除先确认再执行', async () => {
-		await renderLifecycleList({
-			mode: 'trash',
-			title: '回收站',
-			icon: Trash2Icon,
-		})
+		await renderLifecycleList({ mode: 'trash' })
 
 		fireEvent.click(screen.getByRole('checkbox', { name: '选择 待永久删除任务' }))
 		fireEvent.click(
@@ -241,11 +223,7 @@ describe('LifecycleList', () => {
 	})
 
 	it('archive 单条 task 右键可移入回收站，trash 单条 task 右键可永久删除', async () => {
-		await renderLifecycleList({
-			mode: 'archive',
-			title: '归档',
-			icon: ArchiveIcon,
-		})
+		await renderLifecycleList({ mode: 'archive' })
 
 		fireEvent.contextMenu(screen.getByRole('button', { name: '打开 补齐生命周期页面' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
@@ -257,11 +235,7 @@ describe('LifecycleList', () => {
 			)
 		})
 
-		await renderLifecycleList({
-			mode: 'trash',
-			title: '回收站',
-			icon: Trash2Icon,
-		})
+		await renderLifecycleList({ mode: 'trash' })
 
 		fireEvent.contextMenu(screen.getByText('待永久删除任务'))
 		fireEvent.click(await screen.findByRole('menuitem', { name: '永久删除' }))
@@ -275,11 +249,7 @@ describe('LifecycleList', () => {
 	})
 })
 
-async function renderLifecycleList(props: {
-	mode: 'archive' | 'trash'
-	title: string
-	icon: LucideIcon
-}) {
+async function renderLifecycleList(props: { mode: 'archive' | 'trash' }) {
 	return renderWithRouterContext(
 		<TestBulkActionBoundary mode={props.mode}>
 			<LifecycleList {...props} />

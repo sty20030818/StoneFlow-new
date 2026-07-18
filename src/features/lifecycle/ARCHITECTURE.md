@@ -8,8 +8,8 @@
 
 ```txt
 routes 薄页
-  → <LifecycleList mode="archive"|"trash" />
-  →（目标）useLifecycleScene(mode) 编排选择 / bulk / 打开详情
+  → LifecycleList（薄壳）
+  → useLifecycleScene(mode)（选择 / bulk / 打开详情）
   → LifecycleBoard（EntityScene）
 
 写路径
@@ -34,16 +34,16 @@ src/features/lifecycle/
 ├── ARCHITECTURE.md
 ├── index.ts                 # 主 public
 ├── api/                     # list + 编排型 delete/restore/permanent
-├── hooks/                   # keys · queries · mutations
-├── model/                   # buildLifecycleCommandSelection（纯）
+├── hooks/                   # keys · queries · mutations · useLifecycleScene
+├── model/                   # command selection · sections 纯函数
 ├── bulk/                    # 批量动作 + adapter
 ├── commands/                # registerLifecycleCommands
 └── components/
-    ├── LifecycleList        # 页（可抽 scene facade）
+    ├── LifecycleList        # 页薄壳（槽位拼装）
     ├── LifecycleBoard · LifecycleRowAdapter · LifecycleContextMenu
 ```
 
-列表编排优先落在 `hooks/useLifecycleScene`（待 SCENE）；`LifecycleList` 变薄壳。
+列表编排在 `hooks/useLifecycleScene`；`LifecycleList` 只拼 EntityScene 槽位。
 
 ---
 
@@ -71,7 +71,7 @@ src/features/lifecycle/
 | command | 经 `registerLifecycleCommands` 注入 handlers |
 | entity-scene | Board adapter 挂本域 `LifecycleBoard` |
 | layout | badges 用 `useLifecycleEntriesQuery`；**禁**本域 → layout |
-| routes | 极薄：只挂 `LifecycleList` + mode |
+| routes | 极薄：只挂 `LifecycleList mode` |
 
 ---
 
