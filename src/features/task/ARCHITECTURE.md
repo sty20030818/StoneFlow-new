@@ -47,7 +47,7 @@ src/features/task/
 ├── commands/                # registerTaskCommands · 行快捷键共用 bulk
 ├── components/              # 列表场景 UI
 ├── detail/                  # 详情子树（外层不 import detail/）
-└── shortcuts/               # 行快捷键（按职责拆文件，单一入口）
+└── shortcuts/               # TaskRowShortcutScope 壳 + navigation/runtime/scroll/guards
 ```
 
 ---

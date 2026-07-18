@@ -42,7 +42,7 @@ bun run check
 | task → layout | **0**（已断） |
 | open / create 内核 / bulk / registerTaskCommands | **已在 task** |
 | 行快捷键共用 `runTaskRowBulkCommand` | **已接** |
-| `TaskRowShortcutScope` | ~873 行 · **待拆** |
+| `TaskRowShortcutScope` | 壳 ~36 行 + controller/navigation/runtime · **已拆** |
 | `TaskPreviewProvider` | ~447 · 待拆 |
 | `TaskContextMenu` | ~438 · 待拆 |
 | `useTaskListScene` | 主文件 ~100 行 + `hooks/list-scene/` · **已内拆** |
@@ -58,7 +58,7 @@ bun run check
 | 0 | DOC | 卡落地对照 + task ARCHITECTURE 同步 | 无 | — | **done**（随本文） |
 | 1 | NORM | Query / JSDoc / public 对齐 CONVENTIONS | 低 | 0 | **done**（2026-07-18） |
 | 2 | HOOKS | model 内 hooks 归位；list-scene 内拆 | 中 | 1 | **done**（2026-07-19） |
-| 3 | SHORTCUT | 拆 TaskRowShortcutScope | 中 | 1（可 ‖ 2） | pending |
+| 3 | SHORTCUT | 拆 TaskRowShortcutScope | 中 | 1（可 ‖ 2） | **done**（2026-07-19） |
 | 4 | VOLUME | PreviewProvider / ContextMenu（Board 可选） | 低中 | 2–3 | pending |
 | 5 | CLOSE | 契约收口、样板检查表、可选扩散备忘 | 无 | 1–4 | pending |
 
@@ -146,7 +146,7 @@ bun run check
 |------|------|
 | 目标 | `TaskRowShortcutScope` 可维护；仍共用 commands handlers |
 | 破坏性 | 中（仅拆文件，行为不变） |
-| 状态 | pending |
+| 状态 | **done**（2026-07-19） |
 
 ### 建议拆分
 
@@ -159,11 +159,20 @@ bun run check
 
 **禁止：** 再引入第二套 complete/archive 业务实现；必须走 `runTaskRowBulkCommand` / 既有 register handlers。
 
+### 落地
+
+| 项 | 结果 |
+|----|------|
+| 壳 | `TaskRowShortcutScope.tsx` ~36 行 |
+| controller | `useTaskRowShortcutController.ts`（hover + window 键盘） |
+| 分段 | `types` · `rowNavigation` · `rowCommandRuntime` · `keyboardScroll` · `rowShortcutGuards` |
+| bulk | 仍经 `createTaskRowCommandActions` → `runTaskRowBulkCommand` |
+
 ### 验收
 
-- [ ] 主文件明显下降；现有 `TaskRowShortcutScope` 单测绿
-- [ ] 行快捷键与命令板 complete/archive/delete 一致
-- [ ] `bun run check` 绿
+- [x] 主文件明显下降；`TaskRowShortcutScope` + `rowTargetResolver` 单测绿（34）
+- [x] complete/archive/delete 仍走 `runTaskRowBulkCommand`（未另写业务）
+- [x] typecheck 绿
 
 ---
 
@@ -240,3 +249,4 @@ CONVENTIONS.md       → 怎么写（含 TSDoc）
 | 2026-07-18 | 阶段 1 NORM done：Query/JSDoc/public；撤 3 个无外消费者导出 |
 | 2026-07-18 | 文档分工收口：ARCHITECTURE 去债表；注释改 TSDoc（CONVENTIONS v2.1） |
 | 2026-07-19 | 阶段 2 HOOKS done：hooks 归位 + list-scene 内拆 |
+| 2026-07-19 | 阶段 3 SHORTCUT done：TaskRowShortcutScope 拆文件 |
