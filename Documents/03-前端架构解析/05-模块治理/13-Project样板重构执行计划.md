@@ -1,6 +1,6 @@
 # Project 样板重构执行计划（P2 · 对齐 task / command）
 
-> 状态：**P0–P1 done** · 下一刀 **SCENE** · 2026-07-19
+> 状态：**P0–P2 done** · 下一刀 **VOLUME** · 2026-07-19
 > 决议源：[M-F-PROJECT](./模块/M-F-PROJECT.md)（P2）· 写法：[CONVENTIONS v2.1](../../../src/CONVENTIONS.md) · 定稿契约：[project/ARCHITECTURE.md](../../../src/features/project/ARCHITECTURE.md)
 > 前置：[11-Task样板](./11-Task样板重构执行计划.md)（0–5 done）· [12 扩散计划](./12-平台与Domain扩散重构执行计划.md)（command C0–C5 done）
 > **原则：** 串行；每阶段末相关门禁；开放前可破坏须清干净；源码禁史诗号。
@@ -42,7 +42,7 @@ bunx vitest run src/features/project
 |----|------|
 | project → layout | **0** |
 | bulk/ · `registerProjectCommands` | **已在 project**（B3/C3 已收） |
-| `ProjectPage` | **~370**；内联组合 task hooks；**待抽 facade** |
+| `ProjectPage` | **~95** 薄壳；wiring 在 `useProjectDetailScene` ~324 |
 | `ProjectBoard` / `ProjectRowAdapter` | ~273 / ~237 · 临界，VOLUME 按痛 |
 | `index.ts` | **NORM done**（TSDoc + 收窄 public） |
 | ARCHITECTURE | **定稿最优** |
@@ -55,7 +55,7 @@ bunx vitest run src/features/project
 |------|-----|------|--------|------|
 | 0 | DOC | ARCHITECTURE 定稿；M-F-PROJECT 落地对照；本文落盘 | 无 | **done**（2026-07-19） |
 | 1 | NORM | TSDoc / public；去 `@fileoverview`；审计导出 | 低 | **done**（2026-07-19） |
-| 2 | SCENE | 抽详情编排（`useProjectDetailScene` 或等价）；压薄 ProjectPage | 中 | pending |
+| 2 | SCENE | 抽详情编排（`useProjectDetailScene` 或等价）；压薄 ProjectPage | 中 | **done**（2026-07-19） |
 | 3 | VOLUME | Board/Row/ContextMenu 按痛内拆 | 低 | pending |
 | 4 | CLOSE | 对照勾选；lifecycle/view 检查表备忘 | 无 | pending |
 
@@ -101,12 +101,16 @@ bunx vitest run src/features/project
 |------|------|
 | 目标 | 详情页可扫完；任务板 wiring 进 hooks facade |
 | 破坏性 | 中 |
-| 状态 | pending |
+| 状态 | **done**（2026-07-19） |
 
-- [ ] 抽 `useProjectDetailScene`（或等价）：filter / selection / preview / bulk / 项目头动作
-- [ ] `ProjectPage` 变薄壳（目标 &lt;~250）
-- [ ] 仍只组合 `@/features/task` public；禁复制 task mutation
-- [ ] 相关 vitest 绿
+### 落地
+
+| 项 | 结果 |
+|----|------|
+| facade | `hooks/useProjectDetailScene.ts`（组合 task public） |
+| `ProjectPage` | ~370 → **~95** 薄壳（只拼 EntityScene 槽位） |
+| 行为 | 未改产品路径；禁 layout / 禁复制 task mutation |
+| 门禁 | tsc · boundaries · project+overview 33 测绿 |
 
 ---
 
@@ -157,3 +161,4 @@ CONVENTIONS.md     → HOW
 |------|------|
 | 2026-07-19 | 初版：阶段 0–4；基线；DOC done |
 | 2026-07-19 | NORM done：public 收窄 + TSDoc；包内相对路径 |
+| 2026-07-19 | SCENE done：useProjectDetailScene；ProjectPage ~95 |

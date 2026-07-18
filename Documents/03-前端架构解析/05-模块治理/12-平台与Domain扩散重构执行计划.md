@@ -38,7 +38,7 @@
 | **0** | task | 13k | domain | **done** | [11](./11-Task样板重构执行计划.md) |
 | **1** | **command** | 7.3k | platform | **C0–C5 done** | 波次 1 收口 |
 | 1b | bulk-action | 1.7k | platform | **done（轻扫）** | B3 已落地；无独立刀 |
-| **2** | project | 2.8k | domain | **P0–P1 done · 余 SCENE–CLOSE** | [13](./13-Project样板重构执行计划.md) |
+| **2** | project | 2.8k | domain | **P0–P2 done · 余 VOLUME–CLOSE** | [13](./13-Project样板重构执行计划.md) |
 | 2 | lifecycle | 2.5k | domain | pending | Y2 |
 | 2 | view | 1.8k | domain | pending | V2 |
 | 2 | space | 0.8k | domain | pending | S2 |

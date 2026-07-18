@@ -38,18 +38,19 @@ src/features/project/
 ├── api/                     # IO only（唯一 invoke）
 ├── hooks/
 │   ├── project.keys|queries|mutations
-│   └── useProjectData       # options / sidebar / overview / detail
+│   ├── useProjectData       # options / sidebar / overview / detail
+│   └── useProjectDetailScene  # 详情页编排（组合 task public）
 ├── model/                   # 纯类型 + buildProjectCommandSelection（无 React hook）
 ├── bulk/                    # 批量动作 + adapter
 ├── commands/                # registerProjectCommands
 └── components/
-    ├── ProjectPage          # 详情页（可抽 detail-scene 编排）
+    ├── ProjectPage          # 详情页薄壳（槽位拼装）
     ├── ProjectTaskBoard     # 嵌入 TaskBoard 的薄适配
     ├── ProjectBoard · ProjectRowAdapter · ProjectContextMenu
     └── ProjectCreateContent · form
 ```
 
-详情任务板编排优先落在 `hooks/`（如 `useProjectDetailScene`），不堆进无边界的 Page 巨石。
+详情任务板编排在 `hooks/useProjectDetailScene`；`ProjectPage` 只拼 EntityScene 槽位。
 
 ---
 
