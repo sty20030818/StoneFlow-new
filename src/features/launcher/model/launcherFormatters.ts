@@ -1,6 +1,6 @@
 import { addDays, endOfWeek, format } from 'date-fns'
 
-import type { LauncherStatus } from '@/features/launcher/model/types'
+import type { LauncherStatus } from './types'
 
 export function getLauncherDatePreset(
 	preset: 'today' | 'tomorrow' | 'week',
@@ -17,7 +17,7 @@ export function getLauncherDatePreset(
 	return formatDateValue(endOfWeek(referenceDate, { weekStartsOn: 1 }))
 }
 
-export function formatDateValue(date: Date) {
+function formatDateValue(date: Date) {
 	return format(date, 'yyyy-MM-dd')
 }
 

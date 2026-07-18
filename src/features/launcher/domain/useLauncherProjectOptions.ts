@@ -1,7 +1,7 @@
 import { startTransition, useCallback } from 'react'
 
-import { listProjectsBySpace } from '@/features/launcher/api/launcherApi'
-import type { LauncherAction } from '@/features/launcher/domain/launcherDomainTypes'
+import { listProjectsBySpace } from '../api/launcherApi'
+import type { LauncherAction } from './launcherDomainTypes'
 
 type UseLauncherProjectOptionsArgs = {
 	dispatch: React.ActionDispatch<[action: LauncherAction]>

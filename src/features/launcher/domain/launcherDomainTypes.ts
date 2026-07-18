@@ -14,7 +14,7 @@ import type {
 	LauncherStatus,
 	LauncherSubmitAction,
 	LauncherTaskItem,
-} from '@/features/launcher/model/types'
+} from '../model/types'
 
 export type LauncherAction =
 	| { type: 'sessionOpened'; payload: LauncherInitialState }

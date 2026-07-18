@@ -1,19 +1,19 @@
 import { useMemo } from 'react'
 
-import type { LauncherDerivedState } from '@/features/launcher/domain/launcherDomainTypes'
-import { formatDateLabel, formatStatusLabel } from '@/features/launcher/model/launcherFormatters'
+import type { LauncherDerivedState } from './launcherDomainTypes'
+import { formatDateLabel, formatStatusLabel } from '../model/launcherFormatters'
 import type {
 	LauncherPanelState,
 	LauncherProjectItem,
 	LauncherResultItem,
 	LauncherTaskItem,
-} from '@/features/launcher/model/types'
-import { interleaveTaskProjectResults } from '@/features/launcher/model/interleaveResults'
+} from '../model/types'
+import { interleaveTaskProjectResults } from '../model/interleaveResults'
 import { formatTaskPlacementLabel } from '@/features/task'
 import { formatTaskPriorityLabel } from '@/features/task'
 
-export const RECENT_TASK_LIMIT = 5
-export const RECENT_PROJECT_LIMIT = 5
+const RECENT_TASK_LIMIT = 5
+const RECENT_PROJECT_LIMIT = 5
 export const SEARCH_RESULT_LIMIT = 20
 
 export function useLauncherDerivedState(state: LauncherPanelState): LauncherDerivedState {

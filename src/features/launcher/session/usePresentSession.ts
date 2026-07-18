@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 
-import { presentSession } from '@/features/launcher/api/launcherApi'
-import { useLauncherSession } from '@/features/launcher/session/SessionProvider'
-import type { LauncherSessionPhase } from '@/features/launcher/session/sessionTypes'
+import { presentSession } from '../api/launcherApi'
+import { useLauncherSession } from './SessionProvider'
+import type { LauncherSessionPhase } from './sessionTypes'
 
 /**
  * preparing → 请求原生 show；等待 becameKey 的 session-presented。

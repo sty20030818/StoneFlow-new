@@ -2,7 +2,7 @@ import type {
 	LauncherProjectItem,
 	LauncherResultItem,
 	LauncherTaskItem,
-} from '@/features/launcher/model/types'
+} from './types'
 
 /**
  * 搜索结果混排：各自保序，按 task, project, task, project… 交错；

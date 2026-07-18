@@ -1,5 +1,5 @@
-import type { LauncherAction } from '@/features/launcher/domain/launcherDomainTypes'
-import type { LauncherDraft, LauncherPanelState } from '@/features/launcher/model/types'
+import type { LauncherAction } from './launcherDomainTypes'
+import type { LauncherDraft, LauncherPanelState } from '../model/types'
 
 const defaultDraft: LauncherDraft = {
 	title: '',

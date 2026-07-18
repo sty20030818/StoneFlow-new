@@ -2,7 +2,7 @@ import type {
 	LauncherProjectItem,
 	LauncherSearchResponse,
 	LauncherTaskItem,
-} from '@/features/launcher/model/types'
+} from '../model/types'
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
 
 /**

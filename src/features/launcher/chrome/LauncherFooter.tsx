@@ -1,6 +1,6 @@
 import { AlertTriangleIcon, CheckCircle2Icon, LoaderCircleIcon } from 'lucide-react'
 
-import { useLauncher } from '@/features/launcher/domain/LauncherDomainProvider'
+import { useLauncher } from '../domain/LauncherDomainProvider'
 import { cn } from '@/shared/lib/utils'
 import { Kbd } from '@/shared/components/base/kbd'
 import { launcherFooterChromeClass } from '@/shared/components/patterns/launcher'

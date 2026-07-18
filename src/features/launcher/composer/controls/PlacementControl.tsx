@@ -1,6 +1,6 @@
 import { CheckIcon, FolderIcon, InboxIcon, TargetIcon } from 'lucide-react'
 
-import type { LauncherPlacement, LauncherProjectOption } from '@/features/launcher/model/types'
+import type { LauncherPlacement, LauncherProjectOption } from '../../model/types'
 import { Button } from '@/shared/components/base/button'
 import {
 	DropdownMenu,

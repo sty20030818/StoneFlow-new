@@ -7,24 +7,24 @@ import {
 	type PropsWithChildren,
 } from 'react'
 
-import { getOpenContextSnapshot, search } from '@/features/launcher/api/launcherApi'
+import { getOpenContextSnapshot, search } from '../api/launcherApi'
 import type {
 	LauncherContextValue,
 	LauncherDomainActions,
-} from '@/features/launcher/domain/launcherDomainTypes'
-import { useLauncherCommands } from '@/features/launcher/domain/useLauncherCommands'
-import { useLauncherDraftActions } from '@/features/launcher/domain/useLauncherDraftActions'
-import { useLauncherDerivedState } from '@/features/launcher/domain/useLauncherDerivedState'
-import { useLauncherLifecycleBridge } from '@/features/launcher/domain/useLauncherLifecycleBridge'
-import { useLauncherProjectOptions } from '@/features/launcher/domain/useLauncherProjectOptions'
-import { useLauncherSearchEffect } from '@/features/launcher/domain/useLauncherSearchEffect'
-import { useLauncherSubmitActions } from '@/features/launcher/domain/useLauncherSubmitActions'
-import { useLauncherTransientUi } from '@/features/launcher/domain/useLauncherTransientUi'
+} from './launcherDomainTypes'
+import { useLauncherCommands } from './useLauncherCommands'
+import { useLauncherDraftActions } from './useLauncherDraftActions'
+import { useLauncherDerivedState } from './useLauncherDerivedState'
+import { useLauncherLifecycleBridge } from './useLauncherLifecycleBridge'
+import { useLauncherProjectOptions } from './useLauncherProjectOptions'
+import { useLauncherSearchEffect } from './useLauncherSearchEffect'
+import { useLauncherSubmitActions } from './useLauncherSubmitActions'
+import { useLauncherTransientUi } from './useLauncherTransientUi'
 import {
 	createLauncherInitialState,
 	launcherDomainReducer,
-} from '@/features/launcher/domain/launcherDomainReducer'
-import { useLauncherSession } from '@/features/launcher/session/SessionProvider'
+} from './launcherDomainReducer'
+import { useLauncherSession } from '../session/SessionProvider'
 
 const LauncherDomainContext = createContext<LauncherContextValue | null>(null)
 

@@ -1,14 +1,14 @@
 import { useCallback, type KeyboardEvent } from 'react'
 
-import type { LauncherInput } from '@/features/launcher/api/launcherApi'
-import type { LauncherAction } from '@/features/launcher/domain/launcherDomainTypes'
+import type { LauncherInput } from '../api/launcherApi'
+import type { LauncherAction } from './launcherDomainTypes'
 import type {
 	LauncherDraft,
 	LauncherFocusTarget,
 	LauncherResultItem,
 	LauncherSubmitAction,
 	LauncherSubmitState,
-} from '@/features/launcher/model/types'
+} from '../model/types'
 
 type UseLauncherSubmitActionsArgs = {
 	buildCreateInput: (draft: LauncherDraft) => LauncherInput

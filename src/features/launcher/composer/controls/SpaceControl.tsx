@@ -1,6 +1,6 @@
 import { CheckIcon } from 'lucide-react'
 
-import type { LauncherSpaceSummary } from '@/features/launcher/model/types'
+import type { LauncherSpaceSummary } from '../../model/types'
 import { getSpaceVisual } from '@/features/space'
 import { Button } from '@/shared/components/base/button'
 import {

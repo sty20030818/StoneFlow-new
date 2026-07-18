@@ -1,17 +1,17 @@
-import { AdvancedCollapse } from '@/features/launcher/composer/AdvancedCollapse'
-import { LauncherComposer } from '@/features/launcher/composer/LauncherComposer'
-import { CreateRow } from '@/features/launcher/create/CreateRow'
-import { useLauncher } from '@/features/launcher/domain/LauncherDomainProvider'
-import { ContinuousToast } from '@/features/launcher/results/ContinuousToast'
-import { LauncherResults } from '@/features/launcher/results/LauncherResults'
-import { SectionLabel } from '@/features/launcher/results/SectionLabel'
-import { LauncherFooter } from '@/features/launcher/chrome/LauncherFooter'
-import { LauncherSurface } from '@/features/launcher/chrome/LauncherSurface'
+import { AdvancedCollapse } from '../composer/AdvancedCollapse'
+import { PrimaryMetaBar } from '../composer/PrimaryMetaBar'
+import { CreateRow } from '../create/CreateRow'
+import { useLauncher } from '../domain/LauncherDomainProvider'
+import { ContinuousToast } from '../results/ContinuousToast'
+import { LauncherResults } from '../results/LauncherResults'
+import { SectionLabel } from '../results/SectionLabel'
+import { LauncherFooter } from './LauncherFooter'
+import { LauncherSurface } from './LauncherSurface'
 import {
 	isPresentedSurfacePhase,
 	readActiveSessionId,
-} from '@/features/launcher/session/usePresentSession'
-import { useLauncherSession } from '@/features/launcher/session/SessionProvider'
+} from '../session/usePresentSession'
+import { useLauncherSession } from '../session/SessionProvider'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import {
 	launcherChromeClass,
@@ -47,7 +47,9 @@ export function LauncherPanel() {
 				data-testid='launcher-panel'
 			>
 				<div className={launcherChromeClass}>
-					<LauncherComposer />
+					<div className='shrink-0' data-testid='launcher-composer'>
+						<PrimaryMetaBar />
+					</div>
 				</div>
 
 				<div className='shrink-0 bg-background/96'>

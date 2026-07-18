@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
 	createLauncherSessionState,
 	LauncherSessionReducer,
-} from '@/features/launcher/session/sessionReducer'
-import type { LauncherOpenSessionResponse } from '@/features/launcher/api/launcherApi'
+} from './sessionReducer'
+import type { LauncherOpenSessionResponse } from '../api/launcherApi'
 
 const openContext: LauncherOpenSessionResponse = {
 	sessionId: 'session-1',

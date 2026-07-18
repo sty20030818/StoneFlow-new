@@ -1,4 +1,4 @@
-import { mapLauncherToTaskInput } from '@/features/launcher/api/mapLauncherToTaskInput'
+import { mapLauncherToTaskInput } from './mapLauncherToTaskInput'
 
 describe('mapLauncherToTaskInput', () => {
 	it('inbox placement 保留 spaceId', () => {

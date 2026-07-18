@@ -1,4 +1,4 @@
-import type { LauncherInput } from '@/features/launcher/api/launcherApi'
+import type { LauncherInput } from './launcherApi'
 import type { CreateTaskInput, TaskPriority, TaskStatus } from '@/shared/types'
 
 /**

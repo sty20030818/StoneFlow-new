@@ -1,14 +1,14 @@
 import { invoke } from '@tauri-apps/api/core'
 
 import { searchEntities } from '@/features/global-search'
-import { mapLauncherToTaskInput } from '@/features/launcher/api/mapLauncherToTaskInput'
-import { mapSearchEntitiesToLauncher } from '@/features/launcher/api/mapSearchEntitiesToLauncher'
+import { mapLauncherToTaskInput } from './mapLauncherToTaskInput'
+import { mapSearchEntitiesToLauncher } from './mapSearchEntitiesToLauncher'
 import type {
 	LauncherInitialState,
 	LauncherPlacement,
 	LauncherProjectsBySpace,
 	LauncherSearchResponse,
-} from '@/features/launcher/model/types'
+} from '../model/types'
 import { createTask } from '@/features/task'
 
 export type LauncherInput = {
@@ -91,7 +91,7 @@ export async function create(input: LauncherInput) {
  * 创建后打开：同源 create_task，再经窗 IPC 聚焦主窗并导航。
  */
 export async function createAndOpen(input: LauncherInput) {
-	const task = await createTask(mapLauncherToTaskInput(input))
+	const task = await create(input)
 	await openTarget({ kind: 'task', id: task.id })
 	return task
 }

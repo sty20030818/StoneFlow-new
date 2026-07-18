@@ -1,4 +1,4 @@
-import { mapSearchEntitiesToLauncher } from '@/features/launcher/api/mapSearchEntitiesToLauncher'
+import { mapSearchEntitiesToLauncher } from './mapSearchEntitiesToLauncher'
 import type { SearchEntitiesResult } from '@/shared/types'
 
 describe('mapSearchEntitiesToLauncher', () => {

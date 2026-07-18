@@ -5,9 +5,9 @@ import {
 	createAndOpen,
 	openTarget,
 	type LauncherInput,
-} from '@/features/launcher/api/launcherApi'
-import type { LauncherAction } from '@/features/launcher/domain/launcherDomainTypes'
-import type { LauncherDraft, LauncherResultItem } from '@/features/launcher/model/types'
+} from '../api/launcherApi'
+import type { LauncherAction } from './launcherDomainTypes'
+import type { LauncherDraft, LauncherResultItem } from '../model/types'
 
 type UseLauncherCommandsArgs = {
 	dispatch: React.ActionDispatch<[action: LauncherAction]>

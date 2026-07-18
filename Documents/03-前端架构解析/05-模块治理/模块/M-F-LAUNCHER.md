@@ -1,7 +1,7 @@
 # M-F-LAUNCHER · features/launcher（Launcher 独立窗）
 
 > 日期：2026-07-18
-> 状态：**落地中 · 活跃契约以代码为准**
+> 状态：**S 样板已收口（[18](../18-Launcher样板重构执行计划.md)）** · 2026-07-19
 > 路径：`src/features/launcher` · 路由：`routes/launcher.tsx`
 > 类型：**window**（独立窗完整栈）
 > 活跃契约：[ARCHITECTURE.md](../../../../src/features/launcher/ARCHITECTURE.md)
@@ -32,3 +32,13 @@ routes/launcher
 外模块只 `import { LauncherPage } from '@/features/launcher'`。
 
 详情、IPC、列表 IA、键盘 focus lane：见 `src/features/launcher/ARCHITECTURE.md`。
+
+---
+
+## 变更记录
+
+| 日期 | 变更 |
+|------|------|
+| 2026-07-18 | 初版（自 QC 迁名） |
+| 2026-07-19 | 样板收口：相对路径 + 清死字段；见 [18](../18-Launcher样板重构执行计划.md) |
+

@@ -1,18 +1,14 @@
-# launcher · 架构契约
+# launcher · 独立窗 Launcher
 
-> 作用：描述 **当前已落地** 的 `src/features/launcher` 边界
-> 最后更新：2026-07-18
-
-独立窗 **Launcher**：快速记任务 + 打开已有任务/项目。
-窗生命周期（session）+ 固定壳 UI + 适配主产品能力（task / global-search）。
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
 
 ---
 
-## 1. 心智模型
+## 1. 心智
 
 ```txt
 routes/launcher
-  → LauncherPage
+  → LauncherPage（薄壳：半径 CSS + 挂载）
       → SessionProvider          // phase / bridge / close
       → DomainProvider           // draft / search / submit / derived
       → PresentSession           // preparing → present_session
@@ -28,11 +24,11 @@ routes/launcher
 | **api** | 窗 IPC + map*（create→task，search→global-search） | 第二套 create/search 规则 |
 
 跨模块 **只** `import { LauncherPage } from '@/features/launcher'`。
-禁止 deep-import。
+**禁止** deep-import；**禁止** `features/launcher` → `@/layout/**`。
 
 ---
 
-## 2. 目录
+## 2. 目录结构（定稿）
 
 ```txt
 src/features/launcher/
@@ -48,8 +44,7 @@ src/features/launcher/
 └── model/                   # types · formatters · interleaveResults
 ```
 
-共享 pattern：`src/shared/components/patterns/launcher.ts`（class 助手，非第二套设计 token）。
-
+共享 pattern：`src/shared/components/patterns/launcher.ts`。
 关闭：`SessionProvider.requestClose` → `launcher_close_session`。
 
 ---
@@ -59,15 +54,12 @@ src/features/launcher/
 | 项 | 约定 |
 |----|------|
 | 壳尺寸 | **720 × 500** logical px |
-| 空态 | 最近任务 ≤5 + 最近项目 ≤5（FE + Rust `DEFAULT_RECENT_LIMIT` 对齐）；轻标题；无折叠 / sticky / 灰条 |
-| Results 滚动 | `AppScrollArea`（与 Command / GlobalSearch 同协议） |
-| 搜索 | 统一 flat 交错流；「搜索结果」轻标题钉在滚动区外；无类型 filter |
-| 新建行 | 有标题时钉在 Results 上方；↑↓ 独立 focus lane（`focusTarget: 'create' | result`） |
-| 圆角 | Win **8** / Mac **16** → CSS `--launcher-panel-radius`；Surface 唯一消费 |
-| 深度 | 原生 shadow；FE 只材质 / clip |
+| 空态 | 最近任务 ≤5 + 最近项目 ≤5；轻标题；无折叠 / sticky / 灰条 |
+| Results 滚动 | `AppScrollArea` |
+| 搜索 | flat 交错流；「搜索结果」轻标题钉在滚动区外 |
+| 新建行 | 有标题时钉在 Results 上方；↑↓ 独立 focus lane |
+| 圆角 | Win **8** / Mac **16** → `--launcher-panel-radius` |
 | 复用 | 主站 sf token + RowShell 原样；禁止 RowShell/Board launcher variant |
-
-轻标题：`text-xs font-medium text-sf-text-tertiary` + `px-3 pt-2 pb-1`；数量 `tabular-nums`。
 
 ---
 
@@ -79,17 +71,15 @@ RECENT_PROJECT_LIMIT = 5
 SEARCH_RESULT_LIMIT = 20
 
 mode: 'recent' | 'search' | 'search-empty' | 'recent-empty'
-flatItems: ResultItem[]     # 搜索渲染与结果焦点主序列
+flatItems: ResultItem[]
 focusTarget: 'none' | 'create' | { kind: 'result', index }
 ```
 
-Create **不在** `flatItems` 内；有标题时与结果列表共用 ↑↓，Create 为独立 lane。
-
-搜索混排：`interleaveTaskProjectResults` — 各自保序，task/project 交错；一侧耗尽则追加另一侧。
+Create **不在** `flatItems` 内。搜索混排：`interleaveTaskProjectResults`。
 
 ---
 
-## 5. 窗 IPC
+## 5. 窗 IPC / Session
 
 | 命令 | 用途 |
 |------|------|
@@ -99,18 +89,15 @@ Create **不在** `flatItems` 内；有标题时与结果列表共用 ↑↓，C
 | `launcher_prepare/present/close_session` | 会话显隐 |
 | `launcher_frontend_ready/unready` | 前端监听器就绪 |
 
-事件：`launcher:session-prepared` · `launcher:session-presented` · `launcher:session-invalidated`
-
-平台：窗 label `launcher`，URL `index.html#/launcher`，capabilities `launcher.json`。
-设置种子：`app.launcher`。
-
----
-
-## 6. Session
-
 ```txt
 booting → hidden → preparing → presenting → visible → closing
                  ↘ error
 ```
 
-`preparing` 后立即 `present_session`；`session-presented`（becameKey）后 `visible` 并允许 focus。
+平台：窗 label `launcher`，URL `index.html#/launcher`，capabilities `launcher.json`。
+
+---
+
+## 6. 变更纪律
+
+改定稿目录或 public 时更新本文件。`bun run check`（或至少 tsc + boundaries + launcher vitest）。

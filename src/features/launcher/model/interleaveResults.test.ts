@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { interleaveTaskProjectResults } from '@/features/launcher/model/interleaveResults'
-import type { LauncherProjectItem, LauncherTaskItem } from '@/features/launcher/model/types'
+import { interleaveTaskProjectResults } from './interleaveResults'
+import type { LauncherProjectItem, LauncherTaskItem } from './types'
 
 function task(id: string): LauncherTaskItem {
 	return {

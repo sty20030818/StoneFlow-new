@@ -7,13 +7,13 @@ import {
 	type PropsWithChildren,
 } from 'react'
 
-import { closeSession, type LauncherCloseReason } from '@/features/launcher/api/launcherApi'
-import { useLauncherSessionBridge } from '@/features/launcher/session/sessionBridge'
+import { closeSession, type LauncherCloseReason } from '../api/launcherApi'
+import { useLauncherSessionBridge } from './sessionBridge'
 import {
 	createLauncherSessionState,
 	LauncherSessionReducer,
-} from '@/features/launcher/session/sessionReducer'
-import type { LauncherSessionContextValue } from '@/features/launcher/session/sessionTypes'
+} from './sessionReducer'
+import type { LauncherSessionContextValue } from './sessionTypes'
 
 const LauncherSessionContext = createContext<LauncherSessionContextValue | null>(null)
 

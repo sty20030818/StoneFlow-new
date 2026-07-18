@@ -13,23 +13,23 @@ import {
 	openTarget,
 	presentSession,
 	search,
-} from '@/features/launcher/api/launcherApi'
-import { LauncherPage } from '@/features/launcher/LauncherPage'
+} from './api/launcherApi'
+import { LauncherPage } from './LauncherPage'
 import type {
 	LauncherInitialState,
 	LauncherProjectItem,
 	LauncherProjectOption,
 	LauncherProjectsBySpace,
 	LauncherTaskItem,
-} from '@/features/launcher/model/types'
-import { formatDateLabel } from '@/features/launcher/model/launcherFormatters'
+} from './model/types'
+import { formatDateLabel } from './model/launcherFormatters'
 
 const listenMock = vi.fn()
 const originalRequestAnimationFrame = window.requestAnimationFrame
 const originalCancelAnimationFrame = window.cancelAnimationFrame
 const DEFAULT_SESSION_ID = 'session-1'
 
-vi.mock('@/features/launcher/api/launcherApi', () => ({
+vi.mock('./api/launcherApi', () => ({
 	closeSession: vi.fn<typeof closeSession>(),
 	create: vi.fn<typeof create>(),
 	createAndOpen: vi.fn<typeof createAndOpen>(),

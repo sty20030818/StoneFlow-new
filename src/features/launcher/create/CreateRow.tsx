@@ -1,5 +1,4 @@
-import { useLauncher } from '@/features/launcher/domain/LauncherDomainProvider'
-import { formatDateLabel } from '@/features/launcher/model/launcherFormatters'
+import { useLauncher } from '../domain/LauncherDomainProvider'
 import { PriorityIcon } from '@/features/task'
 import { TaskStatusIndicator } from '@/features/task'
 import { RowShell } from '@/shared/components/row'
@@ -42,13 +41,7 @@ export function CreateRow() {
 								{state.draft.title.trim()}
 							</div>
 							<div className='mt-0.5 truncate text-[11px] text-sf-text-quaternary'>
-								{buildCreateRowMeta({
-									spaceName: derived.spaceName,
-									placementLabel: derived.placementLabel,
-									dueAt: state.draft.dueAt,
-									scheduledAt: state.draft.scheduledAt,
-									reminderAt: state.draft.reminderAt,
-								})}
+								{derived.createMeta}
 							</div>
 						</div>
 					</RowShell.Title>
@@ -56,32 +49,4 @@ export function CreateRow() {
 			</RowShell.Root>
 		</div>
 	)
-}
-
-function buildCreateRowMeta({
-	spaceName,
-	placementLabel,
-	dueAt,
-	scheduledAt,
-	reminderAt,
-}: {
-	spaceName: string
-	placementLabel: string
-	dueAt: string | null
-	scheduledAt: string | null
-	reminderAt: string | null
-}) {
-	const parts = [`${spaceName} / ${placementLabel}`]
-
-	if (dueAt) {
-		parts.push(`截止 ${formatDateLabel(dueAt)}`)
-	}
-	if (scheduledAt) {
-		parts.push(`计划 ${formatDateLabel(scheduledAt)}`)
-	}
-	if (reminderAt) {
-		parts.push(`提醒 ${formatDateLabel(reminderAt)}`)
-	}
-
-	return parts.join(' · ')
 }

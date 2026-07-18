@@ -1,8 +1,8 @@
 import { startTransition, useEffect, useRef } from 'react'
 
-import type { LauncherAction } from '@/features/launcher/domain/launcherDomainTypes'
-import { SEARCH_RESULT_LIMIT } from '@/features/launcher/domain/useLauncherDerivedState'
-import type { LauncherSearchResponse } from '@/features/launcher/model/types'
+import type { LauncherAction } from './launcherDomainTypes'
+import { SEARCH_RESULT_LIMIT } from './useLauncherDerivedState'
+import type { LauncherSearchResponse } from '../model/types'
 
 const SEARCH_DEBOUNCE_MS = 120
 

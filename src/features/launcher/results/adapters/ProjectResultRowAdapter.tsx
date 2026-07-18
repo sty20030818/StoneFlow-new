@@ -1,6 +1,6 @@
 import { FolderIcon } from 'lucide-react'
 
-import type { LauncherProjectItem } from '@/features/launcher/model/types'
+import type { LauncherProjectItem } from '../../model/types'
 import { RowShell } from '@/shared/components/row'
 
 type ProjectResultRowAdapterProps = {

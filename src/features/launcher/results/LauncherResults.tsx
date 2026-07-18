@@ -1,13 +1,13 @@
-import { useLauncher } from '@/features/launcher/domain/LauncherDomainProvider'
+import { useLauncher } from '../domain/LauncherDomainProvider'
 import type {
 	LauncherProjectItem,
 	LauncherResultItem,
 	LauncherTaskItem,
-} from '@/features/launcher/model/types'
-import { EmptyHint, SearchEmptyHint } from '@/features/launcher/results/EmptyHint'
-import { ProjectResultRowAdapter } from '@/features/launcher/results/adapters/ProjectResultRowAdapter'
-import { TaskResultRowAdapter } from '@/features/launcher/results/adapters/TaskResultRowAdapter'
-import { SectionLabel } from '@/features/launcher/results/SectionLabel'
+} from '../model/types'
+import { EmptyHint, SearchEmptyHint } from './EmptyHint'
+import { ProjectResultRowAdapter } from './adapters/ProjectResultRowAdapter'
+import { TaskResultRowAdapter } from './adapters/TaskResultRowAdapter'
+import { SectionLabel } from './SectionLabel'
 import { launcherResultsStackClass } from '@/shared/components/patterns/launcher'
 
 /**

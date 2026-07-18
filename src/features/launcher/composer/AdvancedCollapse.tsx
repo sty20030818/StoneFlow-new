@@ -1,5 +1,5 @@
-import { useLauncher } from '@/features/launcher/domain/LauncherDomainProvider'
-import { AdvancedMetaBar } from '@/features/launcher/composer/AdvancedMetaBar'
+import { useLauncher } from '../domain/LauncherDomainProvider'
+import { AdvancedMetaBar } from './AdvancedMetaBar'
 import { cn } from '@/shared/lib/utils'
 
 /**

@@ -1,13 +1,13 @@
 import { useCallback } from 'react'
 
-import type { LauncherAction } from '@/features/launcher/domain/launcherDomainTypes'
+import type { LauncherAction } from './launcherDomainTypes'
 import type {
 	LauncherFocusTarget,
 	LauncherPlacement,
 	LauncherPopoverKey,
 	LauncherPriority,
 	LauncherStatus,
-} from '@/features/launcher/model/types'
+} from '../model/types'
 
 type UseLauncherDraftActionsArgs = {
 	dispatch: React.ActionDispatch<[action: LauncherAction]>

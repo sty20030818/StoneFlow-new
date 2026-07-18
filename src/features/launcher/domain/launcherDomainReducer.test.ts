@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
 	createLauncherInitialState,
 	launcherDomainReducer,
-} from '@/features/launcher/domain/launcherDomainReducer'
-import type { LauncherAction } from '@/features/launcher/domain/launcherDomainTypes'
-import type { LauncherInitialState } from '@/features/launcher/model/types'
+} from './launcherDomainReducer'
+import type { LauncherAction } from './launcherDomainTypes'
+import type { LauncherInitialState } from '../model/types'
 
 function openSession(
 	overrides: Partial<LauncherInitialState> = {},

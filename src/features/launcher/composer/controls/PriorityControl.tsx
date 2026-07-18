@@ -1,6 +1,6 @@
 import { CheckIcon } from 'lucide-react'
 
-import type { LauncherPriority } from '@/features/launcher/model/types'
+import type { LauncherPriority } from '../../model/types'
 import { TASK_PRIORITY_OPTIONS } from '@/features/task'
 import { PriorityIcon } from '@/features/task'
 import { Button } from '@/shared/components/base/button'

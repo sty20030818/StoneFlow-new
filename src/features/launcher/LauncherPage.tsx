@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 
-import { LauncherDomainProvider } from '@/features/launcher/domain/LauncherDomainProvider'
-import { LauncherPanel } from '@/features/launcher/chrome/LauncherPanel'
-import { LauncherSessionProvider } from '@/features/launcher/session/SessionProvider'
-import { PresentSession } from '@/features/launcher/session/usePresentSession'
+import { LauncherDomainProvider } from './domain/LauncherDomainProvider'
+import { LauncherPanel } from './chrome/LauncherPanel'
+import { LauncherSessionProvider } from './session/SessionProvider'
+import { PresentSession } from './session/usePresentSession'
 
 /** 与 Rust `LAUNCHER_PANEL_RADIUS` 对齐：macOS 16 / 其余 8。 */
 function applyLauncherPanelRadius() {

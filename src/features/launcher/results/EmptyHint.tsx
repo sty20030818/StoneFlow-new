@@ -2,13 +2,12 @@ import { SearchIcon } from 'lucide-react'
 
 import { cn } from '@/shared/lib/utils'
 
-export function EmptyHint({ title, description }: { title: string; description?: string }) {
+export function EmptyHint({ title }: { title: string }) {
 	return (
 		<div className={cn('flex min-h-40 items-center justify-center px-5 py-6')}>
 			<div className='flex items-center gap-2 rounded-full border border-black/[0.06] bg-background/90 px-3 py-2 text-[12px] text-sf-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]'>
 				<SearchIcon className='size-4' />
 				<span>{title}</span>
-				{description ? <span className='text-sf-text-quaternary'>{description}</span> : null}
 			</div>
 		</div>
 	)

@@ -1,9 +1,9 @@
 import { BellIcon, CalendarIcon, Clock3Icon } from 'lucide-react'
 
-import { useLauncher } from '@/features/launcher/domain/LauncherDomainProvider'
-import type { LauncherPopoverKey } from '@/features/launcher/model/types'
-import { DateControl } from '@/features/launcher/composer/controls/DateControl'
-import { StatusControl } from '@/features/launcher/composer/controls/StatusControl'
+import { useLauncher } from '../domain/LauncherDomainProvider'
+import type { LauncherPopoverKey } from '../model/types'
+import { DateControl } from './controls/DateControl'
+import { StatusControl } from './controls/StatusControl'
 import { launcherAdvancedRowClass } from '@/shared/components/patterns/launcher'
 
 /**

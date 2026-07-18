@@ -1,7 +1,7 @@
 import { CheckIcon } from 'lucide-react'
 
-import { formatStatusLabel } from '@/features/launcher/model/launcherFormatters'
-import type { LauncherStatus } from '@/features/launcher/model/types'
+import { formatStatusLabel } from '../../model/launcherFormatters'
+import type { LauncherStatus } from '../../model/types'
 import { TaskStatusIndicator } from '@/features/task'
 import { Button } from '@/shared/components/base/button'
 import {

@@ -1,8 +1,8 @@
 import { startTransition, useEffect, useLayoutEffect, useRef } from 'react'
 
-import type { LauncherInitialState } from '@/features/launcher/model/types'
-import type { LauncherOpenSessionResponse } from '@/features/launcher/api/launcherApi'
-import type { LauncherAction } from '@/features/launcher/domain/launcherDomainTypes'
+import type { LauncherInitialState } from '../model/types'
+import type { LauncherOpenSessionResponse } from '../api/launcherApi'
+import type { LauncherAction } from './launcherDomainTypes'
 
 type UseLauncherLifecycleBridgeArgs = {
 	dispatch: React.ActionDispatch<[action: LauncherAction]>

@@ -5,12 +5,12 @@ import {
 	notifyFrontendReady,
 	notifyFrontendUnready,
 	type LauncherOpenSessionResponse,
-} from '@/features/launcher/api/launcherApi'
+} from '../api/launcherApi'
 import type {
 	LauncherSessionAction,
 	LauncherSessionClosePayload,
 	LauncherSessionEventPayload,
-} from '@/features/launcher/session/sessionTypes'
+} from './sessionTypes'
 
 const LAUNCHER_SESSION_PREPARED_EVENT = 'launcher:session-prepared'
 const LAUNCHER_SESSION_PRESENTED_EVENT = 'launcher:session-presented'

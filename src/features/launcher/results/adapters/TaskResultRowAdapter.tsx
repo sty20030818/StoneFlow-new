@@ -2,7 +2,7 @@ import { FolderIcon } from 'lucide-react'
 
 import { PriorityIcon } from '@/features/task'
 import { TaskStatusIndicator } from '@/features/task'
-import type { LauncherTaskItem } from '@/features/launcher/model/types'
+import type { LauncherTaskItem } from '../../model/types'
 import { RowShell } from '@/shared/components/row'
 import { cn } from '@/shared/lib/utils'
 

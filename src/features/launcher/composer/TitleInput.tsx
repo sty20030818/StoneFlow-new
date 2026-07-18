@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 
-import { useLauncher } from '@/features/launcher/domain/LauncherDomainProvider'
+import { useLauncher } from '../domain/LauncherDomainProvider'
 import { Input } from '@/shared/components/base/input'
 
 /**

@@ -1,4 +1,4 @@
-import { useLauncher } from '@/features/launcher/domain/LauncherDomainProvider'
+import { useLauncher } from '../domain/LauncherDomainProvider'
 import { cn } from '@/shared/lib/utils'
 
 /** 连续创建提示条；挂在 Results 滚动区顶部，不撑外窗。 */
