@@ -48,7 +48,7 @@ src/features/command/
 ├── index.ts                 # 主 public
 ├── api/                     # 外部唤起打开意图等
 ├── host/                    # CommandHostContext 端口类型
-├── adapters/                # chrome/domain 形状 + bindShellCommand
+├── adapters/                # chrome/domain 形状 + bind（actions / bind / helpers）
 ├── commands/                # 元数据 + createShellCommandRegistry
 ├── core/                    # Registry / Runtime / Context
 ├── components/              # Menu 壳 + 分段 / Help / Hint
@@ -62,6 +62,15 @@ layout 侧装配（非本夹，但契约相关）：
 ```txt
 layout/command-bridge/       # chrome register + compose 各域 register
 layout/model/useShellCommandSystem.ts  # Host：组 Context + Runtime + 挂 UI
+```
+
+adapters 内拆（体积）：
+
+```txt
+shell-command-actions.ts       # 类型 + chrome keys + disabled 工厂
+bind-shell-command.ts          # id → handler 主开关
+bind-shell-command-helpers.ts  # selection / filter / delete 绑定
+shell-command-adapter.ts       # 兼容再导出
 ```
 
 ---

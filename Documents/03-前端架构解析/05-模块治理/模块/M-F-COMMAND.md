@@ -1,7 +1,7 @@
 # M-F-COMMAND · features/command
 
 > 日期：2026-07-17 · **落地对照更新 2026-07-19**
-> 状态：**archived-decision（C0–C3 done；余 C4–C5 / 方案 B 见 [12 执行计划](../12-平台与Domain扩散重构执行计划.md)）**
+> 状态：**archived-decision（C0–C4 done；余 C5 见 [12 执行计划](../12-平台与Domain扩散重构执行计划.md)）**
 > 路径：`src/features/command` + 装配 `layout/command-bridge` · `layout/model/useShellCommandSystem`
 > **日常契约：** [`src/features/command/ARCHITECTURE.md`](../../../src/features/command/ARCHITECTURE.md)
 > 类型：**platform**

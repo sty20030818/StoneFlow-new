@@ -36,7 +36,7 @@
 | 波次 | 模块 | ~行 | 类 | 状态 | 说明 |
 |------|------|-----|-----|------|------|
 | **0** | task | 13k | domain | **done** | [11](./11-Task样板重构执行计划.md) |
-| **1** | **command** | 7.3k | platform | **C0–C3 done · 余 C4–C5** | VOLUME/CLOSE |
+| **1** | **command** | 7.3k | platform | **C0–C4 done · 余 C5** | CLOSE |
 | 1b | bulk-action | 1.7k | platform | pending | 轻扫 B3；无债则勾掉 |
 | **2** | project | 2.8k | domain | pending | 抄 task 检查表（P2） |
 | 2 | lifecycle | 2.5k | domain | pending | Y2 |
@@ -100,7 +100,7 @@
 | 1 | NORM | public / TSDoc；入口头注释 | 低 | **done**（2026-07-19） |
 | 2 | HOST | 瘦 `useShellCommandSystem`；bridge 只 chrome+compose | 中 | **done**（2026-07-19） |
 | 3 | ADAPTER | 缩 `ShellCommandActions` / bind 摩擦（或登记表进化） | 中高 | **done**（方案 A · 2026-07-19） |
-| 4 | VOLUME | 菜单/keybinding 边角（按余力） | 低 | pending |
+| 4 | VOLUME | 菜单/keybinding 边角（按余力） | 低 | **done**（2026-07-19） |
 | 5 | CLOSE | 对照勾选；bulk 轻扫；波次 2 入口备忘 | 无 | pending |
 
 推荐串行：**0 → 1 → 2 → 3 → 4 → 5**。H3 若风险大，可拆成「先删必填上帝校验、保留形状」与「再收窄类型」两刀。
@@ -182,13 +182,14 @@
 | 字段 | 内容 |
 |------|------|
 | 目标 | 边角可控；不挡 CLOSE |
-| 状态 | pending |
+| 状态 | **done**（2026-07-19） |
 
-| 优先级 | 项 | 动作 |
-|--------|-----|------|
-| P0 | 若仍有 &gt;400 行单文件 | 内拆 |
-| P1 | `default-keybindings` | 可按域拆文件（非必须） |
-| P2 | Menu 边角组件 | 有痛再拆 |
+| 优先级 | 项 | 动作 | 结果 |
+|--------|-----|------|------|
+| P0 | 若仍有 &gt;400 行单文件 | 内拆 | **done**：`shell-command-adapter` → actions / bind / helpers（生产最大源 &lt;300） |
+| P1 | `default-keybindings` | 可按域拆文件（非必须） | **跳过**：~355 行、无编辑痛；有痛再拆 |
+| P2 | Menu 边角组件 | 有痛再拆 | **跳过**：主 Menu ~196；ScopedPicker ~368 无当前痛 |
+| 注 | `CommandMenu.test.tsx` ~794 | 测文件 | **不拆**（不挡 CLOSE；有维护痛再拆） |
 
 ---
 
