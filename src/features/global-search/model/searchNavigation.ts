@@ -1,12 +1,8 @@
-import { openProjectDetail, openTaskDetail } from '@/app/navigation'
-import type { SearchProjectItem, SearchTaskItem } from '@/shared/types'
+import { openProjectDetail } from '@/app/navigation'
+import type { SearchProjectItem } from '@/shared/types'
 
 export function resolveProjectSearchTargetPath(project: SearchProjectItem) {
 	return openProjectDetail(project.id, {
 		scope: { type: 'space', spaceId: project.spaceId },
 	})
-}
-
-export function resolveTaskSearchTargetPath(task: SearchTaskItem) {
-	return openTaskDetail(task.id, task.spaceId)
 }

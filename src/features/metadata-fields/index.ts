@@ -1,23 +1,17 @@
 /**
- * @fileoverview **metadata-fields · 主入口（`@/features/metadata-fields`）**
+ * metadata-fields 对外公共面（`@/features/metadata-fields`）。
  *
- * 显式 export 清单。纯 task 标签/图标优先 `@/features/task`。
- * 仅包内 UI 原语与日期文案工具不进 public。
+ * @remarks
+ * 外模块只能：`import { … } from '@/features/metadata-fields'`。
+ * 禁止深路径进 core/components/adapters。
+ * 纯 task 标签/图标优先 `@/features/task`。
  */
 
 // ── core ────────────────────────────────────────────────────────────────────
 
 export type {
-	MetadataActionFieldKey,
 	MetadataActionIconKey,
-	MetadataActionOption,
 	MetadataActionSpec,
-	MetadataDateOption,
-	MetadataDateOptionKey,
-	MetadataFieldIndicator,
-	MetadataFieldOption,
-	MetadataFieldValue,
-	MetadataValueComparator,
 	BuildTaskPlacementGroupsInput,
 	TaskPlacementGroup,
 	TaskPlacementGroupItem,
@@ -26,7 +20,6 @@ export type {
 	TaskPlacementTarget,
 	CustomDateFieldKey,
 	MetadataDropdownMappedProps,
-	MetadataShortcutMode,
 } from './core'
 
 export {
@@ -46,14 +39,10 @@ export {
 
 export {
 	MetadataFieldDropdown,
-	type MetadataFieldDropdownProps,
 	MetadataDateDropdown,
-	type MetadataDateDropdownProps,
 	MetadataDateButton,
-	type MetadataDateButtonProps,
 	CustomDateDialog,
 	MetadataPlacementDropdown,
-	type MetadataPlacementDropdownProps,
 } from './components'
 
 // ── adapters ────────────────────────────────────────────────────────────────

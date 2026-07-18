@@ -113,5 +113,3 @@ export const MetadataFieldButton = forwardRef<HTMLButtonElement, MetadataFieldBu
 		)
 	},
 )
-
-export { stopMetadataFieldEventPropagation }

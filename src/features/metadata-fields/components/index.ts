@@ -1,8 +1,4 @@
-export {
-	MetadataFieldButton,
-	stopMetadataFieldEventPropagation,
-	type MetadataFieldButtonProps,
-} from './MetadataFieldButton'
+export { MetadataFieldButton, type MetadataFieldButtonProps } from './MetadataFieldButton'
 export { MetadataFieldMenuItem, type MetadataFieldMenuItemProps } from './MetadataFieldMenuItem'
 export { MetadataFieldDropdown, type MetadataFieldDropdownProps } from './MetadataFieldDropdown'
 export { MetadataDateDropdown, type MetadataDateDropdownProps } from './MetadataDateDropdown'

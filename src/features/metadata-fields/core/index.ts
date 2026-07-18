@@ -41,7 +41,6 @@ export {
 } from './metadata-selection'
 export {
 	addLocalDays,
-	createMetadataDateOptions,
 	createMetadataDateOptionsConfig,
 	formatMetadataDisplayDate,
 	formatLocalDate,

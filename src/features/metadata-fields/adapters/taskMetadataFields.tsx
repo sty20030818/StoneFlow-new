@@ -7,7 +7,6 @@ import {
 	createStatusActionSpec,
 	mapMetadataActionSpecToDropdownProps,
 	type MetadataDropdownMappedProps,
-	type MetadataFieldOption,
 	type TaskPlacementGroup,
 } from '@/features/metadata-fields/core'
 import type { TaskStatus } from '@/shared/types'
@@ -16,16 +15,8 @@ export function createTaskStatusMetadataDropdownProps(): MetadataDropdownMappedP
 	return mapMetadataActionSpecToDropdownProps(createStatusActionSpec())
 }
 
-export function createTaskStatusMetadataOptions(): Array<MetadataFieldOption<TaskStatus>> {
-	return createTaskStatusMetadataDropdownProps().options
-}
-
 export function createTaskPriorityMetadataDropdownProps(): MetadataDropdownMappedProps<TaskPriorityValue> {
 	return mapMetadataActionSpecToDropdownProps(createPriorityActionSpec())
-}
-
-export function createTaskPriorityMetadataOptions(): Array<MetadataFieldOption<TaskPriorityValue>> {
-	return createTaskPriorityMetadataDropdownProps().options
 }
 
 export function createTaskPlacementGroupedDropdownProps({

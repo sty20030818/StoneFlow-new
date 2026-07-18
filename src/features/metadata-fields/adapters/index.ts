@@ -1,9 +1,7 @@
 export {
 	createTaskPlacementGroupedDropdownProps,
 	createTaskPriorityMetadataDropdownProps,
-	createTaskPriorityMetadataOptions,
 	createTaskStatusMetadataDropdownProps,
-	createTaskStatusMetadataOptions,
 	taskDateMetadataIcons,
 } from './taskMetadataFields'
 export {

@@ -1,12 +1,5 @@
 import type { MetadataDateOption } from './metadata-field.types'
 
-export function createMetadataDateOptions(currentValue?: string | null): MetadataDateOption[] {
-	return createMetadataDateOptionsConfig({
-		currentValue,
-		showClearOption: Boolean(normalizeMetadataDateValue(currentValue)),
-	})
-}
-
 export function createMetadataDateOptionsConfig({
 	currentValue,
 	showClearOption,

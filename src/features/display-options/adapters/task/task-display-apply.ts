@@ -5,7 +5,6 @@ import type {
 
 import { createTaskDisplayComparator } from './task-display-compare'
 import { buildTaskDisplaySections } from './task-display-groups'
-import { resolveVisibleTaskDisplayProperties } from './task-display-properties'
 import type { TaskDisplayApplyContext, TaskDisplayApplyResult } from './task-display-types'
 import type { TaskListItem } from '@/shared/types'
 
@@ -25,7 +24,7 @@ export function applyTaskDisplayOptionsToTasks({
 	)
 	const sections = buildTaskDisplaySections(orderedItems, options, context)
 	const selectionOrderIds = sections.flatMap((section) => section.tasks.map((task) => task.id))
-	const visibleProperties = resolveVisibleTaskDisplayProperties(options.visibleProperties)
+	const visibleProperties = [...options.visibleProperties]
 
 	return {
 		options,

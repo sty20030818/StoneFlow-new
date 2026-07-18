@@ -1,6 +1,6 @@
 # display-options · 任务列表显示选项
 
-> 作用：描述 **当前已落地** 的 `src/features/display-options` 边界  
+> 作用：描述 **当前已落地** 的 `src/features/display-options` 边界
 > 最后更新：2026-07-18
 
 ---
@@ -42,8 +42,8 @@ src/features/display-options/
 
 | 类 | 符号 |
 |----|------|
-| 类型 / 键 | `TaskDisplayPageKey` · `TaskDisplayPropertyKey` · `createTaskDisplayViewPageKey` · `isTaskDisplayPageKey` · `TASK_DISPLAY_STATIC_PAGE_KEYS` |
-| Hook | `useTaskDisplayOptions` · `taskDisplayOptionsKeys` |
+| 类型 / 键 | `TaskDisplayPageKey` · `TaskDisplayPropertyKey` · `createTaskDisplayViewPageKey` |
+| Hook | `useTaskDisplayOptions` |
 | 适配 | `applyTaskDisplayOptionsToTasks` · `createTaskDisplayApplyContext` |
 | UI | `DisplayOptionsButton` |
 

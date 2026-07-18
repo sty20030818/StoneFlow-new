@@ -1,6 +1,6 @@
 # global-search · 全局搜索
 
-> 作用：描述 **当前已落地** 的 `src/features/global-search` 边界  
+> 作用：描述 **当前已落地** 的 `src/features/global-search` 边界
 > 最后更新：2026-07-18
 
 ---
@@ -45,12 +45,11 @@ src/features/global-search/
 
 | 类 | 符号 |
 |----|------|
-| API | `searchEntities` · `SearchEntitiesInput` |
-| Query | `useSearchEntitiesQuery` · `searchKeys` |
+| API | `searchEntities` |
 | 组合 | `useGlobalSearch` |
-| 聚焦 | `useSearchFocusIntentStore` · `selectSearchFocusRequestVersion` |
-| 导航 | `resolveTaskSearchTargetPath` · `resolveProjectSearchTargetPath` |
-| UI | `GlobalSearchInput` · `GlobalSearchResults` |
+| 聚焦 | `useSearchFocusIntentStore` |
+| 导航 | `resolveProjectSearchTargetPath` |
+| UI | `GlobalSearchInput` |
 
 ---
 

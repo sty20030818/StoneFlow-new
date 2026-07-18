@@ -14,7 +14,6 @@ export {
 	resolveTaskDateBucket,
 	resolveTaskGroupValue,
 } from './task-display-groups'
-export { resolveVisibleTaskDisplayProperties } from './task-display-properties'
 export type {
 	TaskDateBucketKey,
 	TaskDisplayApplyContext,

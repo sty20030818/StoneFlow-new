@@ -1,25 +1,21 @@
 /**
- * @fileoverview **display-options · 唯一对外公共面（`@/features/display-options`）**
+ * display-options 对外公共面（`@/features/display-options`）。
  *
- * 任务列表显示选项（分组/排序/属性可见性）与 apply 适配器。
- *
- * 外模块：`import { … } from '@/features/display-options'`
- * 禁止：`@/features/display-options/core|model|adapters|components/…`
+ * @remarks
+ * 外模块只能：`import { … } from '@/features/display-options'`。
+ * 禁止深路径进 core/model/adapters/components。
+ * 任务列表显示选项（分组/排序/属性）与 apply 适配器。
  */
 
 // ── Core keys / types ───────────────────────────────────────────────────────
 
 export type { TaskDisplayPageKey, TaskDisplayPropertyKey } from './core'
 
-export {
-	createTaskDisplayViewPageKey,
-	isTaskDisplayPageKey,
-	TASK_DISPLAY_STATIC_PAGE_KEYS,
-} from './core'
+export { createTaskDisplayViewPageKey } from './core'
 
 // ── Model hooks ─────────────────────────────────────────────────────────────
 
-export { useTaskDisplayOptions, taskDisplayOptionsKeys } from './model'
+export { useTaskDisplayOptions } from './model'
 
 // ── Task adapter（列表页 apply） ────────────────────────────────────────────
 
