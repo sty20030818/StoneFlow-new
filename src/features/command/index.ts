@@ -24,7 +24,6 @@ export type {
 	CommandId,
 	CommandRouteContext,
 	CommandRowTargetContext,
-	CommandSelectedEntity,
 	CommandSelectionContext,
 	TaskPlacementTarget,
 } from './core'

@@ -15,8 +15,6 @@ use crate::{
 };
 
 const SIDEBAR_PREFERENCE_SETTING_KEY: &str = "app.sidebar.preferences";
-const LEGACY_SIDEBAR_SETTING_KEY: &str = "app.sidebar";
-const LEGACY_UI_SETTING_KEY: &str = "app.ui";
 
 /// Settings 持久化边界。
 pub trait SettingsPersistence: Send + Sync {
@@ -74,15 +72,6 @@ impl SidebarFooterItemKey {
             Self::Trash => "trash",
         }
     }
-}
-
-/// 桌面态 sidebar 偏好。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[serde(rename_all = "snake_case")]
-pub enum SidebarDesktopPreference {
-    #[default]
-    Expanded,
-    Collapsed,
 }
 
 /// 可见性与排序配置。
@@ -159,41 +148,16 @@ pub struct SidebarProjectSectionPreferenceConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SidebarPreferenceSettings {
-    pub main_items: SidebarMainItems,
-    pub project_section: SidebarProjectSectionPreferenceConfig,
-    pub footer_items: SidebarFooterItems,
-}
-
-/// 供前端迁移一次性读取的 legacy sidebar 设备偏好。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LegacySidebarDevicePreferences {
-    pub width: u16,
-    pub desktop_preference: SidebarDesktopPreference,
-    pub project_section_collapsed: bool,
-    pub project_section_max_visible: Option<u16>,
-}
-
-/// 供前端迁移一次性读取的 legacy UI 设备偏好。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LegacyUiDevicePreferences {
-    pub task_drawer_width: u16,
+	pub main_items: SidebarMainItems,
+	pub project_section: SidebarProjectSectionPreferenceConfig,
+	pub footer_items: SidebarFooterItems,
 }
 
 /// Rust command 返回的 typed payload。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetSidebarSettingsOutput {
-    pub settings: SidebarPreferenceSettings,
-}
-
-/// 只读 legacy 设备偏好，供前端首次迁移本地 JSON store。
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GetLegacyShellDevicePreferencesOutput {
-    pub sidebar: Option<LegacySidebarDevicePreferences>,
-    pub ui: Option<LegacyUiDevicePreferences>,
+	pub settings: SidebarPreferenceSettings,
 }
 
 /// 更新主区或 footer 某一项的可见性。
@@ -240,44 +204,21 @@ where
         }
     }
 
-    /// 读取 Sidebar sync settings，并对 legacy DB 做只读兼容。
-    pub async fn get_sidebar_settings(&self) -> Result<SidebarPreferenceSettings, UsecaseError> {
-        if let Some(settings) = self
-            .find_json_setting::<SidebarPreferenceSettings>(SIDEBAR_PREFERENCE_SETTING_KEY)
-            .await?
-        {
-            return normalize_sidebar_settings(settings);
-        }
+	/// 读取 Sidebar sync settings。
+	pub async fn get_sidebar_settings(&self) -> Result<SidebarPreferenceSettings, UsecaseError> {
+		if let Some(settings) = self
+			.find_json_setting::<SidebarPreferenceSettings>(SIDEBAR_PREFERENCE_SETTING_KEY)
+			.await?
+		{
+			return normalize_sidebar_settings(settings);
+		}
 
-        if let Some(legacy_settings) = self
-            .find_json_setting::<LegacySidebarSettings>(LEGACY_SIDEBAR_SETTING_KEY)
-            .await?
-        {
-            return normalize_sidebar_settings(extract_sidebar_preferences(legacy_settings));
-        }
+		Err(UsecaseError::not_found(format!(
+			"setting `{SIDEBAR_PREFERENCE_SETTING_KEY}` 不存在"
+		)))
+	}
 
-        Err(UsecaseError::not_found(format!(
-            "setting `{SIDEBAR_PREFERENCE_SETTING_KEY}` 不存在"
-        )))
-    }
-
-    /// 读取 legacy 设备偏好，供前端首次迁移本地 JSON store。
-    pub async fn get_legacy_shell_device_preferences(
-        &self,
-    ) -> Result<GetLegacyShellDevicePreferencesOutput, UsecaseError> {
-        let sidebar = self
-            .find_json_setting::<LegacySidebarSettings>(LEGACY_SIDEBAR_SETTING_KEY)
-            .await?
-            .map(extract_legacy_sidebar_device_preferences);
-        let ui = self
-            .find_json_setting::<LegacyUiSettings>(LEGACY_UI_SETTING_KEY)
-            .await?
-            .map(extract_legacy_ui_device_preferences);
-
-        Ok(GetLegacyShellDevicePreferencesOutput { sidebar, ui })
-    }
-
-    /// 更新单个可见性开关。
+	/// 更新单个可见性开关。
     pub async fn update_sidebar_item_visibility(
         &self,
         input: UpdateSidebarItemVisibilityInput,
@@ -408,78 +349,19 @@ where
         }
 
         self.persistence.commit(transaction).await?;
-        Ok(normalized)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct LegacySidebarProjectSectionConfig {
-    visible: bool,
-    order: i32,
-    collapsed: bool,
-    show_counts: bool,
-    show_completed: bool,
-    max_visible: Option<u16>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct LegacySidebarSettings {
-    main_items: SidebarMainItems,
-    project_section: LegacySidebarProjectSectionConfig,
-    footer_items: SidebarFooterItems,
-    width: u16,
-    #[serde(default)]
-    desktop_preference: SidebarDesktopPreference,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct LegacyUiSettings {
-    #[serde(default = "default_task_drawer_width")]
-    task_drawer_width: u16,
+		Ok(normalized)
+	}
 }
 
 fn normalize_sidebar_settings(
-    settings: SidebarPreferenceSettings,
+	settings: SidebarPreferenceSettings,
 ) -> Result<SidebarPreferenceSettings, UsecaseError> {
-    validate_main_items(&settings.main_items)?;
-    Ok(settings)
+	validate_main_items(&settings.main_items)?;
+	Ok(settings)
 }
 
 fn validate_main_items(main_items: &SidebarMainItems) -> Result<(), UsecaseError> {
-    validate_sidebar_main_visible_count(main_items.visible_count()).map_err(UsecaseError::from)
-}
-
-fn extract_sidebar_preferences(legacy: LegacySidebarSettings) -> SidebarPreferenceSettings {
-    SidebarPreferenceSettings {
-        main_items: legacy.main_items,
-        project_section: SidebarProjectSectionPreferenceConfig {
-            visible: legacy.project_section.visible,
-            order: legacy.project_section.order,
-            show_counts: legacy.project_section.show_counts,
-            show_completed: legacy.project_section.show_completed,
-        },
-        footer_items: legacy.footer_items,
-    }
-}
-
-fn extract_legacy_sidebar_device_preferences(
-    legacy: LegacySidebarSettings,
-) -> LegacySidebarDevicePreferences {
-    LegacySidebarDevicePreferences {
-        width: legacy.width,
-        desktop_preference: legacy.desktop_preference,
-        project_section_collapsed: legacy.project_section.collapsed,
-        project_section_max_visible: legacy.project_section.max_visible,
-    }
-}
-
-fn extract_legacy_ui_device_preferences(legacy: LegacyUiSettings) -> LegacyUiDevicePreferences {
-    LegacyUiDevicePreferences {
-        task_drawer_width: legacy.task_drawer_width,
-    }
+	validate_sidebar_main_visible_count(main_items.visible_count()).map_err(UsecaseError::from)
 }
 
 fn push_change_if_needed(
@@ -501,14 +383,10 @@ fn push_change_if_needed(
 
 fn deserialize_setting<T>(key: &str, raw: &str) -> Result<T, UsecaseError>
 where
-    T: for<'de> Deserialize<'de>,
+	T: for<'de> Deserialize<'de>,
 {
-    serde_json::from_str(raw)
-        .map_err(|error| UsecaseError::storage(format!("setting `{key}` 反序列化失败: {error}")))
-}
-
-fn default_task_drawer_width() -> u16 {
-    420
+	serde_json::from_str(raw)
+		.map_err(|error| UsecaseError::storage(format!("setting `{key}` 反序列化失败: {error}")))
 }
 
 #[cfg(test)]

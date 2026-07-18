@@ -53,7 +53,6 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         views::toggle_view_visible,
         views::reorder_views,
         settings::get_sidebar_settings,
-        settings::get_legacy_shell_device_preferences,
         settings::update_sidebar_item_visibility,
         settings::update_sidebar_project_section,
         sync::get_sync_status,

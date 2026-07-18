@@ -6,7 +6,6 @@ import {
 	normalizeShellRouteMemory,
 	resolveRememberedPathForScope as resolveRememberedRoutePathForScope,
 	resolveStartupPathFromMemory,
-	validateShellRouteMemoryPaths,
 } from './memory'
 import type { Scope, Space } from '@/shared/types'
 
@@ -26,19 +25,6 @@ type ResolveRememberedPathInput = {
 
 type ResolveStartupPathInput = {
 	spaces: Space[]
-}
-
-export async function loadShellNavigationRestore(): Promise<ShellRouteMemory | null> {
-	const current = normalizeShellRouteMemory(
-		(await routeMemoryStore.get<ShellRouteMemory>(NAVIGATION_RESTORE_KEY)) ?? null,
-	)
-	const resolved = await validateShellRouteMemoryPaths(current, [])
-	if (current && resolved) {
-		await routeMemoryStore.set(NAVIGATION_RESTORE_KEY, resolved)
-		await routeMemoryStore.save()
-	}
-
-	return resolved
 }
 
 export async function rememberShellRoute(scope: Scope, path: string): Promise<void> {

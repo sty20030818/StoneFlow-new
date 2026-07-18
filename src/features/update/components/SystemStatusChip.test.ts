@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import { pickSystemChip } from './SystemStatusChip'
+import { resolveActiveChip } from './SystemStatusChip'
 
-describe('pickSystemChip', () => {
+describe('resolveActiveChip', () => {
 	it('prefers update ready over sync attention', () => {
-		expect(pickSystemChip({ updateReady: true, syncAttention: true })).toBe('update-ready')
+		expect(resolveActiveChip({ updateReady: true, syncAttention: true })).toBe('update-ready')
 	})
 
 	it('shows sync when no update ready', () => {
-		expect(pickSystemChip({ updateReady: false, syncAttention: true })).toBe('sync-attention')
+		expect(resolveActiveChip({ updateReady: false, syncAttention: true })).toBe('sync-attention')
 	})
 
 	it('returns null when idle', () => {
-		expect(pickSystemChip({ updateReady: false, syncAttention: false })).toBeNull()
+		expect(resolveActiveChip({ updateReady: false, syncAttention: false })).toBeNull()
 	})
 })

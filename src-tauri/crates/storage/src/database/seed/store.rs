@@ -72,35 +72,12 @@ where
 }
 
 pub async fn insert_setting<C>(
-    connection: &C,
-    model: setting::ActiveModel,
+	connection: &C,
+	model: setting::ActiveModel,
 ) -> Result<(), sea_orm::DbErr>
 where
-    C: ConnectionTrait,
+	C: ConnectionTrait,
 {
-    model.insert(connection).await?;
-    Ok(())
-}
-
-pub async fn get_setting_value<C>(
-    connection: &C,
-    key: &str,
-) -> Result<Option<String>, sea_orm::DbErr>
-where
-    C: ConnectionTrait,
-{
-    setting::Entity::find_by_id(key.to_owned())
-        .one(connection)
-        .await
-        .map(|model| model.map(|item| item.value))
-}
-
-pub async fn delete_setting<C>(connection: &C, key: &str) -> Result<(), sea_orm::DbErr>
-where
-    C: ConnectionTrait,
-{
-    setting::Entity::delete_by_id(key.to_owned())
-        .exec(connection)
-        .await?;
-    Ok(())
+	model.insert(connection).await?;
+	Ok(())
 }

@@ -1,23 +1,10 @@
 /**
- * navigation 公共出口。业务侧优先从此 import。
+ * navigation 公共出口。业务侧优先从此 import；path/memory 构建函数留包内。
  */
 
 export {
 	decodeScopeKey,
-	encodeScopeKey,
-	buildCanonicalSectionPath,
-	buildCanonicalViewPath,
-	buildCanonicalProjectPath,
-	buildTaskDetailPath,
-	buildProjectPath,
-	buildSettingsPath,
 	buildScopedSettingsPath,
-	buildStartupFallbackPath,
-	buildDebugActivityPath,
-	parseAppRoute,
-	parseShellScopePath,
-	isShellPath,
-	isProjectShellPath,
 	type AppRoute,
 	type AppRouteKind,
 	type RouteScope,
@@ -31,7 +18,6 @@ export {
 	shellRouteFromMatch,
 	resolveShellSection,
 	resolveShellRouteScope,
-	buildShellScopeKey,
 	type ShellRoute,
 	type ShellRouteMemory,
 	type ShellScopeKey,
@@ -54,30 +40,12 @@ export {
 	type ShellNavigationTarget,
 } from './intents'
 
-export {
-	rememberShellRoute,
-	resolveStartupPath,
-	resolveRememberedPathForScope,
-	loadShellNavigationRestore,
-} from './memoryStore'
+export { resolveStartupPath, resolveRememberedPathForScope } from './memoryStore'
 
 export {
 	useShellSessionRouteHistory,
-	buildShellRouteHistoryEntry,
 	type ShellRouteHistoryEntry,
 } from './sessionHistory'
 
 export { resolveBreadcrumb } from './breadcrumb'
 export { useRememberCurrentShellRoute } from './useRememberCurrentShellRoute'
-
-export {
-	isRememberableShellPath,
-	normalizeShellMemoryPath,
-	normalizeShellRouteMemory,
-	createNextShellRouteMemory,
-	defaultShellRouteMemory,
-	stripShellDetailSearch,
-	normalizeRememberedShellPath,
-	resolveStartupPathFromMemory,
-	validateShellRouteMemoryPaths,
-} from './memory'

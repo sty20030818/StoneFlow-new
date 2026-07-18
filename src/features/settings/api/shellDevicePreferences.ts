@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api/core'
 import { LazyStore } from '@tauri-apps/plugin-store'
 import { clamp } from 'es-toolkit/math'
 
@@ -16,11 +15,6 @@ const DEFAULT_SIDEBAR_WIDTH = 256
 const DEFAULT_TASK_DRAWER_WIDTH = 420
 
 const shellDeviceStore = new LazyStore(SHELL_DEVICE_STORE_PATH)
-
-type LegacyShellDevicePreferencesPayload = {
-	sidebar: ShellSidebarDevicePreferences | null
-	ui: ShellUiDevicePreferences | null
-}
 
 export type SidebarDesktopPreference = 'expanded' | 'collapsed'
 
@@ -57,16 +51,9 @@ export async function loadShellDeviceState(): Promise<ShellDeviceState> {
 		shellDeviceStore.get<ShellUiDevicePreferences>(UI_DEVICE_KEY),
 	])
 
-	const { sidebar: resolvedSidebar, ui: resolvedUi } = await migrateLegacyDevicePreferencesIfNeeded(
-		{
-			sidebar: sidebar ?? null,
-			ui: ui ?? null,
-		},
-	)
-
 	return {
-		sidebar: normalizeSidebarDevicePreferences(resolvedSidebar),
-		ui: normalizeUiDevicePreferences(resolvedUi),
+		sidebar: normalizeSidebarDevicePreferences(sidebar ?? defaultShellSidebarDevicePreferences()),
+		ui: normalizeUiDevicePreferences(ui ?? defaultShellUiDevicePreferences()),
 	}
 }
 
@@ -118,45 +105,6 @@ export async function updateShellUiDevicePreferences(
 	await shellDeviceStore.set(UI_DEVICE_KEY, next)
 	await shellDeviceStore.save()
 	return next
-}
-
-async function migrateLegacyDevicePreferencesIfNeeded(input: {
-	sidebar: ShellSidebarDevicePreferences | null
-	ui: ShellUiDevicePreferences | null
-}): Promise<{
-	sidebar: ShellSidebarDevicePreferences
-	ui: ShellUiDevicePreferences
-}> {
-	let nextSidebar = input.sidebar ? normalizeSidebarDevicePreferences(input.sidebar) : null
-	let nextUi = input.ui ? normalizeUiDevicePreferences(input.ui) : null
-
-	if (nextSidebar && nextUi) {
-		return {
-			sidebar: nextSidebar,
-			ui: nextUi,
-		}
-	}
-
-	const legacy = await invoke<LegacyShellDevicePreferencesPayload>(
-		'get_legacy_shell_device_preferences',
-	)
-	if (!nextSidebar) {
-		nextSidebar = normalizeSidebarDevicePreferences(
-			legacy.sidebar ?? defaultShellSidebarDevicePreferences(),
-		)
-		await shellDeviceStore.set(SIDEBAR_DEVICE_KEY, nextSidebar)
-	}
-	if (!nextUi) {
-		nextUi = normalizeUiDevicePreferences(legacy.ui ?? defaultShellUiDevicePreferences())
-		await shellDeviceStore.set(UI_DEVICE_KEY, nextUi)
-	}
-
-	await shellDeviceStore.save()
-
-	return {
-		sidebar: nextSidebar,
-		ui: nextUi,
-	}
 }
 
 function normalizeSidebarDevicePreferences(

@@ -6,18 +6,11 @@
  * 禁止深路径进 api/model/components。
  */
 
-// ── contract（主入口再导出，layout 可只记一个路径）────────────────────────
-
+/** 壳 Chrome 比对 settings 默认分区；分区类型一并从主入口可得。 */
 export {
-	SETTINGS_SECTION_KEYS,
 	DEFAULT_SETTINGS_SECTION,
-	isSettingsSectionKey,
-	parseSettingsSectionKey,
-	resolveSettingsSectionKey,
-	getSettingsSectionLabel,
 	type SettingsSectionKey,
-	readLastSettingsSection,
-	writeLastSettingsSection,
+	getSettingsSectionLabel,
 } from './contract'
 
 // ── 壳用侧栏类型 ────────────────────────────────────────────────────────────

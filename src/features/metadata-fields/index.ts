@@ -12,11 +12,7 @@
 export type {
 	MetadataActionIconKey,
 	MetadataActionSpec,
-	BuildTaskPlacementGroupsInput,
 	TaskPlacementGroup,
-	TaskPlacementGroupItem,
-	TaskPlacementGroupProject,
-	TaskPlacementGroupSpace,
 	TaskPlacementTarget,
 	CustomDateFieldKey,
 	MetadataDropdownMappedProps,
@@ -31,7 +27,6 @@ export {
 	normalizeMetadataDateValue,
 	buildTaskPlacementGroups,
 	getTaskPlacementTargetValue,
-	isTaskPlacementTargetEqual,
 	resolveTaskPlacementTarget,
 } from './core'
 

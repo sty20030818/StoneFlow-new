@@ -1,15 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-	loadShellNavigationRestore,
 	rememberShellRoute,
 	resolveRememberedPathForScope,
 	resolveStartupPath,
 } from './memoryStore'
+import { normalizeShellRouteMemory } from './memory'
 
-const OLD_SPACE_INBOX_PATH = `/${'space'}/space-a/inbox`
-const OLD_SPACE_VIEWS_PATH = `/${'space'}/space-a/views?view=today&project=project-a`
-const TASK_SHORTCUT_PATH = `/${'tasks'}/task-a`
+const TASK_SHORTCUT_PATH = '/tasks/task-a'
 
 const storeState = vi.hoisted(() => new Map<string, unknown>())
 const storeSetMock = vi.hoisted(() => vi.fn())
@@ -55,23 +53,22 @@ describe('routeMemoryStore', () => {
 		expect(storeSetMock).not.toHaveBeenCalledWith('shell.navigation.restore', expect.anything())
 	})
 
-	it('loadShellNavigationRestore 丢弃无 version 3 的旧 payload（不做迁移）', async () => {
-		storeState.set('shell.navigation.restore', {
-			lastScopeKey: 'space:space-a',
-			lastRouteByScopeKey: {
-				'space:space-a': OLD_SPACE_INBOX_PATH,
-			},
-		})
-
-		await expect(loadShellNavigationRestore()).resolves.toBeNull()
-		expect(storeSetMock).not.toHaveBeenCalled()
+	it('normalizeShellRouteMemory 丢弃非法 payload（缺 version）', () => {
+		expect(
+			normalizeShellRouteMemory({
+				lastScopeKey: 'space:space-a',
+				lastRouteByScopeKey: {
+					'space:space-a': '/space-a/inbox',
+				},
+			}),
+		).toBeNull()
 	})
 
-	it('resolveStartupPath 遇到旧 stored path 走默认启动路径', async () => {
+	it('resolveStartupPath 遇到非法 payload 走默认启动路径', async () => {
 		storeState.set('shell.navigation.restore', {
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
-				'space:space-a': OLD_SPACE_VIEWS_PATH,
+				'space:space-a': '/space-a/views/today',
 			},
 		})
 
@@ -80,12 +77,12 @@ describe('routeMemoryStore', () => {
 		)
 	})
 
-	it('resolveRememberedPathForScope 遇到旧 stored path 返回 defaultPath', async () => {
+	it('resolveRememberedPathForScope 遇到非法 path 返回 defaultPath', async () => {
 		storeState.set('shell.navigation.restore', {
 			version: 3,
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
-				'space:space-a': OLD_SPACE_INBOX_PATH,
+				'space:space-a': '/garbage',
 			},
 		})
 

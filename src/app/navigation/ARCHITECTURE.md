@@ -20,6 +20,6 @@ useRememberCurrentShellRoute.ts
 ## 纪律
 
 - 业务侧只 `from '@/app/navigation'`
-- 禁止第二套 path 规则 / 旧 `/spaces` 兼容
+- 禁止第二套 path 规则
 - 运行时：`shellRouteFromMatch`；字符串 parse 仅 memory/历史
-- memory **v3**，旧数据丢弃
+- memory **v3**：只记 rememberable 白名单内的 canonical 工作区 path；非法 payload / path 丢弃并回退 fallback

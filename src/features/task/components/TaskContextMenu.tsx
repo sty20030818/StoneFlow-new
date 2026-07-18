@@ -5,6 +5,7 @@ import {
 	createPriorityActionSpec,
 	createStatusActionSpec,
 	getTaskPlacementTargetValue,
+	normalizeMetadataDateValue,
 	type TaskPlacementGroup,
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
@@ -31,7 +32,6 @@ import {
 	getIndicatorValues,
 	getPlacementOptionIndicator,
 	getPropertyOptionIndicator,
-	normalizeDateValue,
 	TASK_CONTEXT_SHORTCUTS,
 } from './task-context-menu-helpers'
 import {
@@ -103,17 +103,19 @@ export function TaskContextMenu({
 	const canSelectPlacement = Boolean(
 		onSelectPlacement && placementValue && placementGroups.length > 0,
 	)
-	const currentDueDate = normalizeDateValue(dueAt)
+	const currentDueDate = normalizeMetadataDateValue(dueAt)
 	const deleteShortcut = getDeleteShortcutLabel()
 	const statusIndicatorValues = getIndicatorValues(selectionValues?.statuses ?? [status])
 	const priorityIndicatorValues = getIndicatorValues(
 		(selectionValues?.priorities ?? [priority]).map((value) => String(value)),
 	)
 	const dueDateIndicatorValues = getIndicatorValues(
-		(selectionValues?.dueDates ?? [currentDueDate]).map((value) => normalizeDateValue(value)),
+		(selectionValues?.dueDates ?? [currentDueDate]).map((value) =>
+			normalizeMetadataDateValue(value),
+		),
 	)
 	const normalizedDueDates = (selectionValues?.dueDates ?? [currentDueDate]).map((value) =>
-		normalizeDateValue(value),
+		normalizeMetadataDateValue(value),
 	)
 	const statusGroup = mapMetadataActionSpecToTaskContextMenuGroup(createStatusActionSpec())
 	const priorityGroup = mapMetadataActionSpecToTaskContextMenuGroup(createPriorityActionSpec())

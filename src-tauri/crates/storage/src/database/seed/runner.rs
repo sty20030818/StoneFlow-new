@@ -13,12 +13,6 @@ use super::{
 };
 
 const MULTIPLE_DEFAULT_SPACES_ERROR: &str = "数据库存在多个活跃默认 Space，无法继续初始化";
-const SIDEBAR_PREFERENCE_SETTING_KEY: &str = "app.sidebar.preferences";
-const LEGACY_SIDEBAR_SETTING_KEY: &str = "app.sidebar";
-const UI_PREFERENCE_SETTING_KEY: &str = "app.ui.preferences";
-const LEGACY_UI_SETTING_KEY: &str = "app.ui";
-const LAUNCHER_SETTING_KEY: &str = "app.launcher";
-const LEGACY_LAUNCHER_SETTING_KEY: &str = "app.quickCreate";
 
 /// 返回多个默认 Space 的统一初始化错误。
 pub fn multiple_default_spaces_error() -> StorageError {
@@ -107,144 +101,27 @@ where
 
 async fn ensure_settings<C>(connection: &C) -> Result<(), StorageError>
 where
-    C: sea_orm::ConnectionTrait,
+	C: sea_orm::ConnectionTrait,
 {
-    migrate_legacy_settings(connection).await?;
+	for seed in default_settings() {
+		if store::setting_exists(connection, seed.key).await? {
+			continue;
+		}
 
-    for seed in default_settings() {
-        if store::setting_exists(connection, seed.key).await? {
-            continue;
-        }
+		let now = timestamp_now();
+		store::insert_setting(
+			connection,
+			setting::ActiveModel {
+				key: Set(seed.key.to_owned()),
+				value: Set(json_string(&seed.value)?),
+				created_at: Set(now.clone()),
+				updated_at: Set(now),
+			},
+		)
+		.await?;
+	}
 
-        let now = timestamp_now();
-        store::insert_setting(
-            connection,
-            setting::ActiveModel {
-                key: Set(seed.key.to_owned()),
-                value: Set(json_string(&seed.value)?),
-                created_at: Set(now.clone()),
-                updated_at: Set(now),
-            },
-        )
-        .await?;
-    }
-
-    Ok(())
-}
-
-async fn migrate_legacy_settings<C>(connection: &C) -> Result<(), StorageError>
-where
-    C: sea_orm::ConnectionTrait,
-{
-    if !store::setting_exists(connection, SIDEBAR_PREFERENCE_SETTING_KEY).await? {
-        if let Some(raw_sidebar) =
-            store::get_setting_value(connection, LEGACY_SIDEBAR_SETTING_KEY).await?
-        {
-            if let Some(next_sidebar_preferences) =
-                extract_sidebar_preferences_from_legacy_json(&raw_sidebar)?
-            {
-                insert_setting_json(
-                    connection,
-                    SIDEBAR_PREFERENCE_SETTING_KEY,
-                    &next_sidebar_preferences,
-                )
-                .await?;
-            }
-        }
-    }
-
-    if !store::setting_exists(connection, UI_PREFERENCE_SETTING_KEY).await? {
-        if let Some(raw_ui) = store::get_setting_value(connection, LEGACY_UI_SETTING_KEY).await? {
-            if let Some(next_ui_preferences) = extract_ui_preferences_from_legacy_json(&raw_ui)? {
-                insert_setting_json(connection, UI_PREFERENCE_SETTING_KEY, &next_ui_preferences)
-                    .await?;
-            }
-        }
-    }
-
-    if !store::setting_exists(connection, LAUNCHER_SETTING_KEY).await? {
-        if let Some(raw_launcher) =
-            store::get_setting_value(connection, LEGACY_LAUNCHER_SETTING_KEY).await?
-        {
-            let now = timestamp_now();
-            store::insert_setting(
-                connection,
-                setting::ActiveModel {
-                    key: Set(LAUNCHER_SETTING_KEY.to_owned()),
-                    value: Set(raw_launcher),
-                    created_at: Set(now.clone()),
-                    updated_at: Set(now),
-                },
-            )
-            .await?;
-            store::delete_setting(connection, LEGACY_LAUNCHER_SETTING_KEY).await?;
-        }
-    } else if store::setting_exists(connection, LEGACY_LAUNCHER_SETTING_KEY).await? {
-        store::delete_setting(connection, LEGACY_LAUNCHER_SETTING_KEY).await?;
-    }
-
-    Ok(())
-}
-
-async fn insert_setting_json<C>(
-    connection: &C,
-    key: &str,
-    value: &Value,
-) -> Result<(), StorageError>
-where
-    C: sea_orm::ConnectionTrait,
-{
-    let now = timestamp_now();
-    store::insert_setting(
-        connection,
-        setting::ActiveModel {
-            key: Set(key.to_owned()),
-            value: Set(json_string(value)?),
-            created_at: Set(now.clone()),
-            updated_at: Set(now),
-        },
-    )
-    .await?;
-
-    Ok(())
-}
-
-fn extract_sidebar_preferences_from_legacy_json(raw: &str) -> Result<Option<Value>, StorageError> {
-    let legacy = serde_json::from_str::<Value>(raw).map_err(|error| {
-        StorageError::initialization(format!("legacy app.sidebar 反序列化失败: {error}"))
-    })?;
-
-    let Some(main_items) = legacy.get("mainItems").cloned() else {
-        return Ok(None);
-    };
-    let Some(project_section) = legacy.get("projectSection") else {
-        return Ok(None);
-    };
-    let Some(footer_items) = legacy.get("footerItems").cloned() else {
-        return Ok(None);
-    };
-
-    Ok(Some(serde_json::json!({
-        "mainItems": main_items,
-        "projectSection": {
-            "visible": project_section.get("visible").cloned().unwrap_or(serde_json::json!(true)),
-            "order": project_section.get("order").cloned().unwrap_or(serde_json::json!(500)),
-            "showCounts": project_section.get("showCounts").cloned().unwrap_or(serde_json::json!(true)),
-            "showCompleted": project_section.get("showCompleted").cloned().unwrap_or(serde_json::json!(true))
-        },
-        "footerItems": footer_items
-    })))
-}
-
-fn extract_ui_preferences_from_legacy_json(raw: &str) -> Result<Option<Value>, StorageError> {
-    let legacy = serde_json::from_str::<Value>(raw).map_err(|error| {
-        StorageError::initialization(format!("legacy app.ui 反序列化失败: {error}"))
-    })?;
-
-    Ok(Some(serde_json::json!({
-        "theme": legacy.get("theme").cloned().unwrap_or(serde_json::json!("system")),
-        "density": legacy.get("density").cloned().unwrap_or(serde_json::json!("comfortable"))
-    })))
+	Ok(())
 }
 
 fn timestamp_now() -> String {

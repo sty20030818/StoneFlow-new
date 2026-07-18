@@ -25,6 +25,9 @@ function resolveActiveChip(input: {
 	return null
 }
 
+/** 纯函数：chip 优先级（单测） */
+export { resolveActiveChip }
+
 export function SystemStatusChip() {
 	const updateReady = useUpdateStore(selectReadyChipVisible)
 	const updateInfo = useUpdateStore((s) => s.updateInfo)
@@ -114,12 +117,4 @@ export function SystemStatusChip() {
 			</div>
 		</div>
 	)
-}
-
-/** 纯函数：优先级选择（单测） */
-export function pickSystemChip(input: {
-	updateReady: boolean
-	syncAttention: boolean
-}): ChipKind | null {
-	return resolveActiveChip(input)
 }

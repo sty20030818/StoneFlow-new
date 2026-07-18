@@ -13,10 +13,8 @@ import {
 	validateShellRouteMemoryPaths,
 } from './memory'
 
-const OLD_SPACE_INBOX_PATH = `/${'space'}/space-a/inbox`
-const OLD_SPACE_VIEWS_PATH = `/${'space'}/space-a/views?view=today`
-const TASK_SHORTCUT_PATH = `/${'tasks'}/task-a`
-const PROJECT_SHORTCUT_PATH = `/${'projects'}/project-a`
+const TASK_SHORTCUT_PATH = '/tasks/task-a'
+const PROJECT_SHORTCUT_PATH = '/projects/project-a'
 
 const getProjectDetailMock = vi.hoisted(() => vi.fn())
 const getTaskDetailMock = vi.hoisted(() => vi.fn())
@@ -35,7 +33,7 @@ describe('routeMemory', () => {
 		getTaskDetailMock.mockReset()
 	})
 
-	it('构建 scope key 并把 payload 规范化为 v3 memory；旧 version 丢弃', () => {
+	it('构建 scope key；只接受合法 v3 payload', () => {
 		expect(buildShellScopeKey({ type: 'all' })).toBe('all')
 		expect(buildShellScopeKey({ type: 'space', spaceId: 'space-a' })).toBe('space:space-a')
 		expect(
@@ -81,7 +79,7 @@ describe('routeMemory', () => {
 		})
 	})
 
-	it('不迁移旧 memory path，校验时回退到当前 scope fallback', async () => {
+	it('校验时非法 path 回退到当前 scope fallback', async () => {
 		await expect(
 			validateShellRouteMemoryPaths(
 				{
@@ -89,7 +87,7 @@ describe('routeMemory', () => {
 					lastScopeKey: 'space:space-a',
 					lastRouteByScopeKey: {
 						all: '/views?view=today&task=task-a',
-						'space:space-a': `${OLD_SPACE_INBOX_PATH}?project=project-a`,
+						'space:space-a': '/unknown/path',
 					},
 				},
 				[{ id: 'space-a' } as never],
@@ -104,26 +102,24 @@ describe('routeMemory', () => {
 		})
 	})
 
-	it('不保存 launcher、顶层详情入口、旧路径和非法 path', () => {
+	it('不保存 launcher、shortcut、缺 scope 与未知 path', () => {
 		expect(createNextShellRouteMemory(null, { type: 'all' }, '/launcher')).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, TASK_SHORTCUT_PATH)).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, PROJECT_SHORTCUT_PATH)).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, '/inbox')).toBeNull()
-		expect(
-			createNextShellRouteMemory(null, { type: 'space', spaceId: 'space-a' }, OLD_SPACE_INBOX_PATH),
-		).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, '/unknown')).toBeNull()
 	})
 
-	it('判断 rememberable route 并保留 canonical detail path', () => {
+	it('rememberable 白名单：canonical 工作区路径可记，其余不可', () => {
 		expect(isRememberableShellPath('/all/inbox')).toBe(true)
 		expect(isRememberableShellPath('/all/views/today')).toBe(true)
 		expect(isRememberableShellPath('/space-a/projects/project-a')).toBe(true)
 		expect(isRememberableShellPath('/space-a/tasks/task-a')).toBe(true)
 		expect(isRememberableShellPath('/space-a/views/today')).toBe(true)
-		expect(isRememberableShellPath('/space-a/projects/project-a')).toBe(true)
 		expect(isRememberableShellPath('/inbox')).toBe(false)
 		expect(isRememberableShellPath(TASK_SHORTCUT_PATH)).toBe(false)
+		expect(isRememberableShellPath('/launcher')).toBe(false)
+		expect(isRememberableShellPath('/all/settings/general')).toBe(false)
 	})
 
 	it('规范化 shell memory path 只剥离 drawer query', () => {
@@ -133,14 +129,14 @@ describe('routeMemory', () => {
 		expect(stripShellDetailSearch('/all/views/focus?task=task-a#top')).toBe('/all/views/focus#top')
 	})
 
-	it('启动恢复遇到旧 stored path 时回退到 canonical inbox', async () => {
+	it('启动恢复遇到非法 path 时回退到 canonical inbox', async () => {
 		await expect(
 			resolveStartupPathFromMemory({
 				routeMemory: {
 					version: 3,
 					lastScopeKey: 'space:space-a',
 					lastRouteByScopeKey: {
-						'space:space-a': `${OLD_SPACE_INBOX_PATH}?task=task-a`,
+						'space:space-a': '/not-a-real-route',
 					},
 				},
 				spaces: [{ id: 'space-a' } as never],
@@ -148,7 +144,7 @@ describe('routeMemory', () => {
 		).resolves.toBe('/space-a/inbox')
 	})
 
-	it('scope remembered path 遇到旧 path 时返回 defaultPath', async () => {
+	it('scope remembered path 遇到非法 path 时返回 defaultPath', async () => {
 		await expect(
 			resolveRememberedPathForScope({
 				scopeKey: 'space:space-a',
@@ -156,7 +152,7 @@ describe('routeMemory', () => {
 					version: 3,
 					lastScopeKey: 'space:space-a',
 					lastRouteByScopeKey: {
-						'space:space-a': OLD_SPACE_VIEWS_PATH,
+						'space:space-a': '/garbage',
 					},
 				},
 				spaces: [{ id: 'space-a' } as never],

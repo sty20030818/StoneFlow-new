@@ -39,11 +39,10 @@ pub use search_service::{
     SearchTaskItemDto,
 };
 pub use settings_service::{
-    GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput,
-    LegacySidebarDevicePreferences, LegacyUiDevicePreferences, SettingsService,
-    SidebarDesktopPreference, SidebarFooterItemKey, SidebarItemConfig, SidebarItemVisibilityTarget,
-    SidebarMainItemKey, SidebarMainItems, SidebarPreferenceSettings, SidebarProjectSectionPreferenceConfig,
-    UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
+	GetSidebarSettingsOutput, SettingsService, SidebarFooterItemKey, SidebarItemConfig,
+	SidebarItemVisibilityTarget, SidebarMainItemKey, SidebarMainItems, SidebarPreferenceSettings,
+	SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
+	UpdateSidebarProjectSectionInput,
 };
 pub use space_service::{
     CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService, UpdateSpaceInput,

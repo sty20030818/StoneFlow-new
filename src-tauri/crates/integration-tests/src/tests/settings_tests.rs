@@ -13,104 +13,18 @@ use stoneflow_storage::repositories::{ActivityRepository, SettingsRepository, Sy
 
 #[tokio::test]
 async fn settings_service_should_read_sidebar_settings() {
-    let database = TestDatabase::bootstrap_in_memory()
-        .await
-        .expect("test database should bootstrap");
-    let service = build_settings_service(&database);
+	let database = TestDatabase::bootstrap_in_memory()
+		.await
+		.expect("test database should bootstrap");
+	let service = build_settings_service(&database);
 
-    let settings = service
-        .get_sidebar_settings()
-        .await
-        .expect("get sidebar settings should succeed");
+	let settings = service
+		.get_sidebar_settings()
+		.await
+		.expect("get sidebar settings should succeed");
 
-    assert!(settings.main_items.inbox.visible);
-    assert!(settings.project_section.show_counts);
-}
-
-#[tokio::test]
-async fn settings_service_should_read_legacy_device_preferences() {
-    let database = TestDatabase::bootstrap_in_memory()
-        .await
-        .expect("test database should bootstrap");
-    let service = build_settings_service(&database);
-
-    database
-        .connection()
-        .execute(Statement::from_sql_and_values(
-            DatabaseBackend::Sqlite,
-            "INSERT INTO settings (key, value, created_at, updated_at) VALUES (?, ?, ?, ?)",
-            [
-                "app.sidebar".into(),
-                serde_json::json!({
-                    "mainItems": {
-                        "inbox": { "visible": true, "order": 100 },
-                        "allTasks": { "visible": true, "order": 200 },
-                        "views": { "visible": true, "order": 300 },
-                        "projectOverview": { "visible": true, "order": 400 }
-                    },
-                    "projectSection": {
-                        "visible": true,
-                        "order": 500,
-                        "collapsed": false,
-                        "showCounts": true,
-                        "showCompleted": true,
-                        "maxVisible": 6
-                    },
-                    "footerItems": {
-                        "archive": { "visible": true, "order": 900 },
-                        "trash": { "visible": true, "order": 1000 }
-                    },
-                    "width": 256,
-                    "desktopPreference": "expanded"
-                })
-                .to_string()
-                .into(),
-                "2026-04-29T00:00:00+00:00".into(),
-                "2026-04-29T00:00:00+00:00".into(),
-            ],
-        ))
-        .await
-        .expect("legacy sidebar setting should be inserted");
-    database
-        .connection()
-        .execute(Statement::from_sql_and_values(
-            DatabaseBackend::Sqlite,
-            "INSERT INTO settings (key, value, created_at, updated_at) VALUES (?, ?, ?, ?)",
-            [
-                "app.ui".into(),
-                serde_json::json!({
-                    "theme": "system",
-                    "density": "comfortable",
-                    "taskDrawerWidth": 420
-                })
-                .to_string()
-                .into(),
-                "2026-04-29T00:00:00+00:00".into(),
-                "2026-04-29T00:00:00+00:00".into(),
-            ],
-        ))
-        .await
-        .expect("legacy ui setting should be inserted");
-
-    let device_preferences = service
-        .get_legacy_shell_device_preferences()
-        .await
-        .expect("get legacy device preferences should succeed");
-
-    assert_eq!(
-        device_preferences
-            .sidebar
-            .expect("sidebar should exist")
-            .width,
-        256
-    );
-    assert_eq!(
-        device_preferences
-            .ui
-            .expect("ui should exist")
-            .task_drawer_width,
-        420
-    );
+	assert!(settings.main_items.inbox.visible);
+	assert!(settings.project_section.show_counts);
 }
 
 #[tokio::test]

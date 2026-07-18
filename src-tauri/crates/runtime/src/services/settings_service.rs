@@ -14,11 +14,10 @@ use crate::{
 use stoneflow_storage::repositories::{SettingsRepository, SyncRepository};
 
 pub use stoneflow_usecase::settings::{
-    GetLegacyShellDevicePreferencesOutput, GetSidebarSettingsOutput,
-    LegacySidebarDevicePreferences, LegacyUiDevicePreferences, SidebarDesktopPreference,
-    SidebarFooterItemKey, SidebarItemConfig, SidebarItemVisibilityTarget, SidebarMainItemKey,
-    SidebarMainItems, SidebarPreferenceSettings, SidebarProjectSectionPreferenceConfig,
-    UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
+	GetSidebarSettingsOutput, SidebarFooterItemKey, SidebarItemConfig, SidebarItemVisibilityTarget,
+	SidebarMainItemKey, SidebarMainItems, SidebarPreferenceSettings,
+	SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
+	UpdateSidebarProjectSectionInput,
 };
 
 /// Settings 编排兼容壳。
@@ -49,23 +48,14 @@ impl SettingsService {
         &self.repository
     }
 
-    pub async fn get_sidebar_settings(&self) -> Result<SidebarPreferenceSettings, AppError> {
-        self.inner
-            .get_sidebar_settings()
-            .await
-            .map_err(AppError::from)
-    }
+	pub async fn get_sidebar_settings(&self) -> Result<SidebarPreferenceSettings, AppError> {
+		self.inner
+			.get_sidebar_settings()
+			.await
+			.map_err(AppError::from)
+	}
 
-    pub async fn get_legacy_shell_device_preferences(
-        &self,
-    ) -> Result<GetLegacyShellDevicePreferencesOutput, AppError> {
-        self.inner
-            .get_legacy_shell_device_preferences()
-            .await
-            .map_err(AppError::from)
-    }
-
-    pub async fn update_sidebar_item_visibility(
+	pub async fn update_sidebar_item_visibility(
         &self,
         input: UpdateSidebarItemVisibilityInput,
     ) -> Result<SidebarPreferenceSettings, AppError> {

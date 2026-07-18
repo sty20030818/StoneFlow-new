@@ -29,18 +29,6 @@ export { TaskBoard } from './components/TaskBoard'
 export { TaskCreateContent } from './components/TaskCreateContent'
 
 /**
- * 创建表单内核：schema / 默认值 / → CreateTaskInput。
- *
- * 各入口共用，禁止再复制字段映射。
- */
-export {
-	taskCreateSchema,
-	buildTaskCreateDefaultValues,
-	toTaskCreateInput,
-	type TaskCreateFormValues,
-} from './create/taskCreateForm'
-
-/**
  * 打开目标 path 与壳层 detail 开关判定。
  *
  * 命令 / open intent 只调这里，不在 layout 维护打开规则。
@@ -52,10 +40,8 @@ export { resolveCommandOpenTargetPath, resolveShellDetailState } from './model/t
  */
 export {
 	taskBulkActions,
-	type TaskBulkActionPayload,
 	createTaskBulkAdapter,
 	type TaskBulkAdapter,
-	type TaskBulkMutationReport,
 } from './bulk'
 
 /**
@@ -72,18 +58,6 @@ export { buildTaskCommandSelection } from './model/buildTaskCommandSelection'
  * placement 目标类型（亦可走 `./contract`）。
  */
 export type { TaskPlacementTarget } from './model/taskPlacementTarget'
-
-/**
- * 按空间组装可放置目标分组（metadata-fields 用）。
- */
-export { buildTaskPlacementGroups } from './model/taskPlacementGroups'
-export type {
-	BuildTaskPlacementGroupsInput,
-	TaskPlacementGroup,
-	TaskPlacementGroupItem,
-	TaskPlacementGroupProject,
-	TaskPlacementGroupSpace,
-} from './model/taskPlacementGroups'
 
 /**
  * 装配根注册 metadata 的 status/priority 图标（壳启动一次）。
@@ -200,10 +174,7 @@ export { TaskStatusIndicator } from './model/indicators/TaskStatusIndicator'
  * 选择算法纯函数（带状态请用 {@link useTaskSelection}）。
  */
 export {
-	type TaskSelectionSnapshot,
 	type TaskSelectionFocusState,
-	pruneTaskSelection,
-	toggleTaskIdSelection,
 	moveTaskSelectionFocus,
 	selectTaskRange,
 	mergeTaskSelectionRange,

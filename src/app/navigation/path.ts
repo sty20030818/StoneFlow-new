@@ -256,10 +256,6 @@ export function buildScopedSettingsPath(
 	return section ? `${base}/${section}` : base
 }
 
-export function buildDebugActivityPath() {
-	return '/debug/activity'
-}
-
 export function buildStartupFallbackPath(
 	scope?: RouteScope | null,
 	fallbackSpaceId?: string | null,
@@ -372,25 +368,6 @@ function parseWorkRemainder(
 		}
 	}
 	return { kind: 'unknown', pathname, search, hash, fullPath }
-}
-
-export function parseShellScopePath(pathname: string): RouteScope | null {
-	const workspace = splitWorkspacePath(stripQueryAndHash(pathname))
-	if (!workspace) return null
-	const allowDetail = workspace.scope.type === 'space'
-	if (!isCanonicalWorkRemainder(workspace.remainder, allowDetail)) return null
-	return workspace.scope
-}
-
-export function isProjectShellPath(pathname: string) {
-	const workspace = splitWorkspacePath(stripQueryAndHash(pathname))
-	if (!workspace || workspace.scope.type !== 'space') return false
-	return workspace.remainder[0] === 'projects' && workspace.remainder.length === 2
-}
-
-export function isShellPath(pathname: string) {
-	const route = parseAppRoute(stripQueryAndHash(pathname))
-	return route.kind === 'shell-section' || route.kind === 'view'
 }
 
 export function locationPartsFromInput(input: ShellRouteLocationLike) {

@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShellRouteRouteImport } from './routes/_shell/route'
 import { Route as LauncherRouteImport } from './routes/launcher'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ShellScopeKeyRouteRouteImport } from './routes/_shell/$scopeKey/route'
 import { Route as DebugActivityRouteImport } from './routes/debug.activity'
 import { Route as ShellScopeKeyIndexRouteImport } from './routes/_shell/$scopeKey/index'
@@ -45,11 +44,6 @@ const ShellRouteRoute = ShellRouteRouteImport.update({
 const LauncherRoute = LauncherRouteImport.update({
   id: '/launcher',
   path: '/launcher',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShellScopeKeyRouteRoute = ShellScopeKeyRouteRouteImport.update({
@@ -159,7 +153,6 @@ const ShellScopeKeyViewsViewIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/launcher': typeof LauncherRoute
-  '/settings': typeof SettingsRoute
   '/$scopeKey': typeof ShellScopeKeyRouteRouteWithChildren
   '/debug/activity': typeof DebugActivityRoute
   '/$scopeKey/projects': typeof ShellScopeKeyProjectsRouteRouteWithChildren
@@ -183,7 +176,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/launcher': typeof LauncherRoute
-  '/settings': typeof SettingsRoute
   '/debug/activity': typeof DebugActivityRoute
   '/$scopeKey/archive': typeof ShellScopeKeyArchiveRoute
   '/$scopeKey/inbox': typeof ShellScopeKeyInboxRoute
@@ -204,7 +196,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_shell': typeof ShellRouteRouteWithChildren
   '/launcher': typeof LauncherRoute
-  '/settings': typeof SettingsRoute
   '/_shell/$scopeKey': typeof ShellScopeKeyRouteRouteWithChildren
   '/debug/activity': typeof DebugActivityRoute
   '/_shell/$scopeKey/projects': typeof ShellScopeKeyProjectsRouteRouteWithChildren
@@ -230,7 +221,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/launcher'
-    | '/settings'
     | '/$scopeKey'
     | '/debug/activity'
     | '/$scopeKey/projects'
@@ -254,7 +244,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/launcher'
-    | '/settings'
     | '/debug/activity'
     | '/$scopeKey/archive'
     | '/$scopeKey/inbox'
@@ -274,7 +263,6 @@ export interface FileRouteTypes {
     | '/'
     | '/_shell'
     | '/launcher'
-    | '/settings'
     | '/_shell/$scopeKey'
     | '/debug/activity'
     | '/_shell/$scopeKey/projects'
@@ -300,7 +288,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ShellRouteRoute: typeof ShellRouteRouteWithChildren
   LauncherRoute: typeof LauncherRoute
-  SettingsRoute: typeof SettingsRoute
   DebugActivityRoute: typeof DebugActivityRoute
 }
 
@@ -325,13 +312,6 @@ declare module '@tanstack/react-router' {
       path: '/launcher'
       fullPath: '/launcher'
       preLoaderRoute: typeof LauncherRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_shell/$scopeKey': {
@@ -577,7 +557,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ShellRouteRoute: ShellRouteRouteWithChildren,
   LauncherRoute: LauncherRoute,
-  SettingsRoute: SettingsRoute,
   DebugActivityRoute: DebugActivityRoute,
 }
 export const routeTree = rootRouteImport

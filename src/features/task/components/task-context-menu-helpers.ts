@@ -1,6 +1,5 @@
 import {
 	getTaskPlacementTargetValue,
-	normalizeMetadataDateValue,
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
 
@@ -38,10 +37,6 @@ export function getPlacementOptionIndicator(
 	}
 
 	return values.size === 1 ? 'checked' : 'mixed'
-}
-
-export function normalizeDateValue(value: string | null | undefined) {
-	return normalizeMetadataDateValue(value)
 }
 
 function isApplePlatform() {

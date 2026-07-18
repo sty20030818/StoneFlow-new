@@ -7,11 +7,8 @@
  */
 
 export {
-	SETTINGS_SECTION_KEYS,
 	DEFAULT_SETTINGS_SECTION,
 	isSettingsSectionKey,
-	parseSettingsSectionKey,
-	resolveSettingsSectionKey,
 	getSettingsSectionLabel,
 	type SettingsSectionKey,
 } from './model/settingsSection'

@@ -1,5 +1,5 @@
 /**
- * @fileoverview **sync · 唯一对外公共面（`@/features/sync`）**
+ * sync · 唯一对外公共面（`@/features/sync`）
  *
  * 同步状态 Provider、配置/运行 API、页脚/侧栏状态 UI。
  *
@@ -27,12 +27,9 @@ export {
 
 // ── Status presentation ─────────────────────────────────────────────────────
 
-export type { SyncStatusTone, SyncReplicaTone } from './model/syncStatusPresentation'
-
 export {
 	getSyncStatusTone,
 	getSyncReplicaTone,
-	getSyncReplicaBadgeVariant,
 	formatSyncStatus,
 	formatReplicaState,
 } from './model/syncStatusPresentation'
