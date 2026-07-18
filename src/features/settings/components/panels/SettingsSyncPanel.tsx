@@ -3,9 +3,11 @@ import { listen } from '@tauri-apps/api/event'
 
 import {
 	configureSync,
+	formatReplicaState,
 	getSyncDiagnostics,
 	getSyncStatus,
 	runSync,
+	SyncConfigDialog,
 	updateSyncPolicy,
 	type SyncDiagnosticsPayload,
 	type SyncPolicyMode,
@@ -13,8 +15,6 @@ import {
 	type SyncStatus,
 	type SyncStatusPayload,
 } from '@/features/sync'
-import { SyncConfigDialog } from '@/features/sync'
-import { formatReplicaState } from '@/features/sync'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/base/button'
 import {
@@ -234,7 +234,8 @@ export function SettingsSyncPanel() {
 	const effectiveSyncErrorTitle = getSyncErrorTitle(syncStatus?.lastErrorMode ?? null, syncRunning)
 	const syncBusy = syncSaving || syncRunning || syncLoading
 	const syncActionBusy = syncBusy || syncDiagnosing
-	const syncRequiresBaseline = syncStatus?.replicaState === 'baseline_required'
+	const replicaState: SyncReplicaState = syncStatus?.replicaState ?? 'uninitialized'
+	const syncRequiresBaseline = replicaState === 'baseline_required'
 	const syncPolicyValue = syncStatus
 		? `${syncStatus.policyMode}:${syncStatus.policyIntervalMinutes}`
 		: 'interval:15'
@@ -247,7 +248,7 @@ export function SettingsSyncPanel() {
 		dirtySince: syncStatus?.dirtySince ?? null,
 		pendingResync: syncStatus?.pendingResync ?? false,
 		hasRemoteConfig: syncStatus?.hasRemoteConfig ?? false,
-		replicaState: syncStatus?.replicaState ?? 'uninitialized',
+		replicaState,
 		replicaReason: syncStatus?.replicaReason ?? null,
 		status: displayedSyncStatus,
 		syncLoading,
@@ -267,7 +268,7 @@ export function SettingsSyncPanel() {
 							<div className='min-w-0'>
 								<div className='flex flex-wrap items-center gap-2'>
 									<SyncStatusBadge status={displayedSyncStatus} />
-									<SyncReplicaBadge state={syncStatus?.replicaState ?? 'uninitialized'} />
+									<SyncReplicaBadge state={replicaState} />
 									<SyncTursoConfigBadge configured={syncStatus?.hasRemoteConfig ?? false} />
 								</div>
 								<h3 className='mt-3 text-base font-semibold tracking-tight text-foreground'>
@@ -318,7 +319,7 @@ export function SettingsSyncPanel() {
 							/>
 							<SyncMetricCard
 								label='副本状态'
-								value={formatReplicaState(syncStatus?.replicaState ?? 'uninitialized')}
+								value={formatReplicaState(replicaState)}
 							/>
 						</div>
 

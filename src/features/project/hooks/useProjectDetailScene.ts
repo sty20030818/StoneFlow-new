@@ -265,8 +265,7 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		active:
 			filter === 'all'
 				? controller.state.statusValues.length === 0
-				: controller.state.statusValues.length === 1 &&
-					controller.state.statusValues[0] === filter,
+				: controller.state.statusValues.length === 1 && controller.state.statusValues[0] === filter,
 		onClick: () =>
 			controller.actions.applyFilter({
 				kind: 'status',

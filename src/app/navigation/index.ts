@@ -42,10 +42,7 @@ export {
 
 export { resolveStartupPath, resolveRememberedPathForScope } from './memoryStore'
 
-export {
-	useShellSessionRouteHistory,
-	type ShellRouteHistoryEntry,
-} from './sessionHistory'
+export { useShellSessionRouteHistory, type ShellRouteHistoryEntry } from './sessionHistory'
 
 export { resolveBreadcrumb } from './breadcrumb'
 export { useRememberCurrentShellRoute } from './useRememberCurrentShellRoute'

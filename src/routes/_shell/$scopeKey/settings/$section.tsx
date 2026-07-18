@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { WorkspaceSettingsSectionGuard } from '../../-workspace-pages'
+import { WorkspaceSettingsSectionGuard } from '../../-workspace-settings-section'
 
 export const Route = createFileRoute('/_shell/$scopeKey/settings/$section')({
 	component: SettingsSection,

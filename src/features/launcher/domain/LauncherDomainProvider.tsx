@@ -8,10 +8,7 @@ import {
 } from 'react'
 
 import { getOpenContextSnapshot, search } from '../api/launcherApi'
-import type {
-	LauncherContextValue,
-	LauncherDomainActions,
-} from './launcherDomainTypes'
+import type { LauncherContextValue, LauncherDomainActions } from './launcherDomainTypes'
 import { useLauncherCommands } from './useLauncherCommands'
 import { useLauncherDraftActions } from './useLauncherDraftActions'
 import { useLauncherDerivedState } from './useLauncherDerivedState'
@@ -20,10 +17,7 @@ import { useLauncherProjectOptions } from './useLauncherProjectOptions'
 import { useLauncherSearchEffect } from './useLauncherSearchEffect'
 import { useLauncherSubmitActions } from './useLauncherSubmitActions'
 import { useLauncherTransientUi } from './useLauncherTransientUi'
-import {
-	createLauncherInitialState,
-	launcherDomainReducer,
-} from './launcherDomainReducer'
+import { createLauncherInitialState, launcherDomainReducer } from './launcherDomainReducer'
 import { useLauncherSession } from '../session/SessionProvider'
 
 const LauncherDomainContext = createContext<LauncherContextValue | null>(null)

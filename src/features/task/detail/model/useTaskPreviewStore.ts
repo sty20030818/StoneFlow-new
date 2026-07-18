@@ -2,11 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { listTaskLinks } from '@/features/task/api/taskLinks'
 
-import {
-	areSameTaskPreviewSource,
-	hasValidTask,
-	resolvePreviewTarget,
-} from './taskPreviewHelpers'
+import { areSameTaskPreviewSource, hasValidTask, resolvePreviewTarget } from './taskPreviewHelpers'
 import {
 	INITIAL_TASK_PREVIEW_STATE,
 	TASK_PREVIEW_CLOSE_DELAY_MS,

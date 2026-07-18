@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-	createLauncherInitialState,
-	launcherDomainReducer,
-} from './launcherDomainReducer'
+import { createLauncherInitialState, launcherDomainReducer } from './launcherDomainReducer'
 import type { LauncherAction } from './launcherDomainTypes'
 import type { LauncherInitialState } from '../model/types'
 

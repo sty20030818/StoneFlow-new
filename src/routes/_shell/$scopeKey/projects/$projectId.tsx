@@ -4,7 +4,7 @@ import {
 	loadProjectDetail,
 	WorkspaceProjectDetailError,
 	WorkspaceProjectDetailPage,
-} from '../../-workspace-pages'
+} from '../../-workspace-project-detail'
 
 export const Route = createFileRoute('/_shell/$scopeKey/projects/$projectId')({
 	loader: async ({ context, params }) =>

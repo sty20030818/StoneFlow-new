@@ -7,10 +7,7 @@ import { LauncherResults } from '../results/LauncherResults'
 import { SectionLabel } from '../results/SectionLabel'
 import { LauncherFooter } from './LauncherFooter'
 import { LauncherSurface } from './LauncherSurface'
-import {
-	isPresentedSurfacePhase,
-	readActiveSessionId,
-} from '../session/usePresentSession'
+import { isPresentedSurfacePhase, readActiveSessionId } from '../session/usePresentSession'
 import { useLauncherSession } from '../session/SessionProvider'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
 import {

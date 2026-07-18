@@ -26,10 +26,7 @@ import { cn } from '@/shared/lib/utils'
 import { skipVersion } from '../api/updates'
 import { useUpdateStore } from '../model/useUpdateStore'
 import { useUpdateActions } from '../model/useUpdateEvents'
-import {
-	downloadProgressBarValue,
-	formatDownloadBytesLine,
-} from '../model/updatePresentation'
+import { downloadProgressBarValue, formatDownloadBytesLine } from '../model/updatePresentation'
 import { UpdateNotesMarkdown } from './UpdateDialog.presentation'
 
 export function UpdateDialog() {

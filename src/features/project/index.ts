@@ -9,11 +9,7 @@
 
 // ── 类型 ────────────────────────────────────────────────────────────────────
 
-export type {
-	ProjectDetail,
-	ProjectOption,
-	ProjectOverviewViewKey,
-} from './model/types'
+export type { ProjectDetail, ProjectOption, ProjectOverviewViewKey } from './model/types'
 
 // ── Hooks / Query ───────────────────────────────────────────────────────────
 

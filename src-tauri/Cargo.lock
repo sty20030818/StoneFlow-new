@@ -5685,7 +5685,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stoneflow"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "serde_json",
  "stoneflow-runtime",
@@ -5700,7 +5700,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-domain"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "serde",
@@ -5711,7 +5711,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-integration-tests"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "sea-orm",
@@ -5730,7 +5730,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-migration"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "sea-orm",
  "sea-orm-migration",
@@ -5741,7 +5741,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-platform"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "log",
  "objc2",
@@ -5756,7 +5756,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-runtime"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -5788,7 +5788,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-schema"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "sea-orm",
  "serde",
@@ -5796,7 +5796,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-storage"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "sea-orm",
@@ -5814,7 +5814,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-sync-worker"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "libsql",
  "serde",
@@ -5827,7 +5827,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-test-support"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "log",
  "sea-orm",
@@ -5838,7 +5838,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-usecase"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "serde",

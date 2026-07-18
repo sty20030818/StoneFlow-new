@@ -1,6 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
-
-import { WorkspaceScopeIndexRedirect } from '../-workspace-pages'
+import { Navigate, createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_shell/$scopeKey/')({
 	component: ScopeIndex,
@@ -8,5 +6,8 @@ export const Route = createFileRoute('/_shell/$scopeKey/')({
 
 function ScopeIndex() {
 	const { scopeKey } = Route.useParams()
-	return <WorkspaceScopeIndexRedirect scopeKey={scopeKey} />
+	if (scopeKey === 'all') {
+		return <Navigate params={{ scopeKey: 'all' }} replace to='/$scopeKey/tasks' />
+	}
+	return <Navigate params={{ scopeKey }} replace to='/$scopeKey/inbox' />
 }

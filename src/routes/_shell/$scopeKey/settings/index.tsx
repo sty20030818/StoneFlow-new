@@ -1,6 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Navigate, createFileRoute } from '@tanstack/react-router'
 
-import { WorkspaceSettingsIndexRedirect } from '../../-workspace-pages'
+import { readLastSettingsSection } from '@/features/settings/contract'
 
 export const Route = createFileRoute('/_shell/$scopeKey/settings/')({
 	component: SettingsIndex,
@@ -8,5 +8,11 @@ export const Route = createFileRoute('/_shell/$scopeKey/settings/')({
 
 function SettingsIndex() {
 	const { scopeKey } = Route.useParams()
-	return <WorkspaceSettingsIndexRedirect scopeKey={scopeKey} />
+	return (
+		<Navigate
+			params={{ scopeKey, section: readLastSettingsSection() }}
+			replace
+			to='/$scopeKey/settings/$section'
+		/>
+	)
 }

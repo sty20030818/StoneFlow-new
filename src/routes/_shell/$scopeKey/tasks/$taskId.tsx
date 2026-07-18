@@ -4,7 +4,7 @@ import {
 	loadTaskDetail,
 	WorkspaceTaskDetailError,
 	WorkspaceTaskDetailPage,
-} from '../../-workspace-pages'
+} from '../../-workspace-task-detail'
 
 export const Route = createFileRoute('/_shell/$scopeKey/tasks/$taskId')({
 	loader: async ({ context, params }) =>

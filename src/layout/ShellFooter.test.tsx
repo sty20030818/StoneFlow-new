@@ -20,7 +20,7 @@ vi.mock('@/features/sync', async (importOriginal) => {
 })
 
 vi.mock('@tauri-apps/api/app', () => ({
-	getVersion: vi.fn(async () => '0.1.0'),
+	getVersion: vi.fn(async () => '0.1.1'),
 }))
 
 describe('ShellFooter', () => {
@@ -42,7 +42,7 @@ describe('ShellFooter', () => {
 		expect(dot?.className).toMatch(/rounded-full/)
 
 		// 右侧版本
-		expect(await screen.findByText('v0.1.0')).toBeInTheDocument()
+		expect(await screen.findByText('v0.1.1')).toBeInTheDocument()
 
 		// 无快捷键提示
 		expect(screen.queryByText('命令')).not.toBeInTheDocument()

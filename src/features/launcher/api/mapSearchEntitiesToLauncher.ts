@@ -1,8 +1,4 @@
-import type {
-	LauncherProjectItem,
-	LauncherSearchResponse,
-	LauncherTaskItem,
-} from '../model/types'
+import type { LauncherProjectItem, LauncherSearchResponse, LauncherTaskItem } from '../model/types'
 import type { SearchEntitiesResult, SearchProjectItem, SearchTaskItem } from '@/shared/types'
 
 /**

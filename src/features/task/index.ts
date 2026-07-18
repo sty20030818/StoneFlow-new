@@ -38,11 +38,7 @@ export { resolveCommandOpenTargetPath, resolveShellDetailState } from './model/t
 /**
  * 任务批量：动作定义 + adapter（引擎在 bulk-action）。
  */
-export {
-	taskBulkActions,
-	createTaskBulkAdapter,
-	type TaskBulkAdapter,
-} from './bulk'
+export { taskBulkActions, createTaskBulkAdapter, type TaskBulkAdapter } from './bulk'
 
 /**
  * 任务列表页筛选 controller（平台 filter 只提供 Provider）。

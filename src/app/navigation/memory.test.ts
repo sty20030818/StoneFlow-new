@@ -43,7 +43,7 @@ describe('routeMemory', () => {
 				lastRouteByScopeKey: {
 					'space:space-a': '/space-a/inbox',
 				},
-			} as never),
+			}),
 		).toBeNull()
 		expect(
 			normalizeShellRouteMemory({
@@ -53,7 +53,7 @@ describe('routeMemory', () => {
 					'space:space-a': '/space-a/inbox',
 					bad: '/all/inbox',
 				},
-			} as never),
+			}),
 		).toEqual({
 			version: 3,
 			lastScopeKey: 'space:space-a',

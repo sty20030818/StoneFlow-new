@@ -1,7 +1,4 @@
-import type {
-	LauncherCloseReason,
-	LauncherOpenSessionResponse,
-} from '../api/launcherApi'
+import type { LauncherCloseReason, LauncherOpenSessionResponse } from '../api/launcherApi'
 
 export type LauncherSessionPhase =
 	| { type: 'booting' }
@@ -22,9 +19,7 @@ export type LauncherSessionContextValue = {
 	actions: {
 		/** 前端已请求原生 show；等待 becameKey → session-presented */
 		markPresenting: (sessionId: string) => void
-		requestClose: (
-			reason: import('../api/launcherApi').LauncherCloseReason,
-		) => Promise<void>
+		requestClose: (reason: import('../api/launcherApi').LauncherCloseReason) => Promise<void>
 	}
 }
 

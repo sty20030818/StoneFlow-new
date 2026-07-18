@@ -7,11 +7,7 @@ import {
 	useSidebarSettingsStore,
 } from '../../model/useSidebarSettingsStore'
 import type { SidebarMainItemKey } from '../../api/sidebarSettings'
-import {
-	SettingCheckboxRow,
-	SettingsPreferenceGroup,
-	SettingsSection,
-} from '../settingsShared'
+import { SettingCheckboxRow, SettingsPreferenceGroup, SettingsSection } from '../settingsShared'
 import { Button } from '@/shared/components/base/button'
 import { statusNoticeCompactTextClass } from '@/shared/components/patterns/status-notice'
 import { StatusNotice } from '@/shared/components/StatusNotice'

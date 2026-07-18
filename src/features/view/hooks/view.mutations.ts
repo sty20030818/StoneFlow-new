@@ -1,12 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import {
-	createView,
-	deleteView,
-	reorderViews,
-	toggleViewVisible,
-	updateView,
-} from '../api/views'
+import { createView, deleteView, reorderViews, toggleViewVisible, updateView } from '../api/views'
 import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'
 
 import { viewKeys } from './view.keys'

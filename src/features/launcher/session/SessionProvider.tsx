@@ -9,10 +9,7 @@ import {
 
 import { closeSession, type LauncherCloseReason } from '../api/launcherApi'
 import { useLauncherSessionBridge } from './sessionBridge'
-import {
-	createLauncherSessionState,
-	LauncherSessionReducer,
-} from './sessionReducer'
+import { createLauncherSessionState, LauncherSessionReducer } from './sessionReducer'
 import type { LauncherSessionContextValue } from './sessionTypes'
 
 const LauncherSessionContext = createContext<LauncherSessionContextValue | null>(null)

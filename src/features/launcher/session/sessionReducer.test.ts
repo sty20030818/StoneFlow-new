@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-	createLauncherSessionState,
-	LauncherSessionReducer,
-} from './sessionReducer'
+import { createLauncherSessionState, LauncherSessionReducer } from './sessionReducer'
 import type { LauncherOpenSessionResponse } from '../api/launcherApi'
 
 const openContext: LauncherOpenSessionResponse = {
@@ -46,10 +43,11 @@ describe('LauncherSessionReducer', () => {
 			type: 'sessionPresented',
 			sessionId: 'session-1',
 		})
-		expect(state.phase.type).toBe('visible')
-		if (state.phase.type === 'visible') {
-			expect(state.phase.openContext.sessionId).toBe('session-1')
-		}
+		expect(state.phase).toEqual({
+			type: 'visible',
+			sessionId: 'session-1',
+			openContext,
+		})
 	})
 
 	it('忽略已关闭 session 的迟到 prepared', () => {

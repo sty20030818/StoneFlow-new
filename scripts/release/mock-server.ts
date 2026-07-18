@@ -46,7 +46,7 @@ const SLOW_MODE = hasFlag('--slow')
 const SLOW_DELAY_MS = 3000
 
 // 当前应用版本（用于 no-update 场景返回比它低的版本）
-const CURRENT_APP_VERSION = '0.1.0'
+const CURRENT_APP_VERSION = '0.1.1'
 
 // ─── 构建响应数据 ─────────────────────────────────────────
 

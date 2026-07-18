@@ -28,7 +28,10 @@ export function resolvePreviewTarget({
 	return null
 }
 
-export function hasValidTask(taskIds: string[] | TaskListItem[], taskId: string | null | undefined) {
+export function hasValidTask(
+	taskIds: string[] | TaskListItem[],
+	taskId: string | null | undefined,
+) {
 	if (!taskId) {
 		return false
 	}

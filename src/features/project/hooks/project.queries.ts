@@ -1,10 +1,6 @@
 import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 
-import {
-	getProjectDetail,
-	listProjectOverview,
-	listSidebarProjects,
-} from '../api/projects'
+import { getProjectDetail, listProjectOverview, listSidebarProjects } from '../api/projects'
 import type { ProjectOption, ProjectOverviewViewKey } from '../model/types'
 import type { Scope } from '@/shared/types'
 

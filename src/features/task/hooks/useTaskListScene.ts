@@ -12,10 +12,7 @@ import { useTaskListController } from './useTaskListController'
 import { useListSceneBoard } from './list-scene/useListSceneBoard'
 import { useListSceneFilterDisplay } from './list-scene/useListSceneFilterDisplay'
 import { useListSceneSelectionBridge } from './list-scene/useListSceneSelectionBridge'
-import {
-	VARIANT_CONFIG,
-	type TaskListSceneVariant,
-} from './list-scene/variantConfig'
+import { VARIANT_CONFIG, type TaskListSceneVariant } from './list-scene/variantConfig'
 
 export type { TaskListSceneVariant } from './list-scene/variantConfig'
 

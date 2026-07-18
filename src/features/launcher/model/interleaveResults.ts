@@ -1,8 +1,4 @@
-import type {
-	LauncherProjectItem,
-	LauncherResultItem,
-	LauncherTaskItem,
-} from './types'
+import type { LauncherProjectItem, LauncherResultItem, LauncherTaskItem } from './types'
 
 /**
  * 搜索结果混排：各自保序，按 task, project, task, project… 交错；

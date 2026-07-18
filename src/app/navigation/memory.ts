@@ -40,20 +40,38 @@ export function defaultShellRouteMemory(): ShellRouteMemory {
 	}
 }
 
-export function normalizeShellRouteMemory(
-	candidate: ShellRouteMemory | null | undefined,
-): ShellRouteMemory | null {
-	if (!candidate || candidate.version !== ROUTE_MEMORY_VERSION) {
+/**
+ * 规范化 store / 外部 payload。入参按 unknown 校验，不信任调用方类型。
+ */
+export function normalizeShellRouteMemory(candidate: unknown): ShellRouteMemory | null {
+	if (!candidate || typeof candidate !== 'object') {
 		return null
 	}
 
-	const lastScopeKey = isShellScopeKey(candidate.lastScopeKey) ? candidate.lastScopeKey : 'all'
-	const lastRouteByScopeKey = Object.fromEntries(
-		Object.entries(candidate.lastRouteByScopeKey ?? {}).filter(
-			([scopeKey, path]) =>
-				isShellScopeKey(scopeKey) && typeof path === 'string' && path.length > 0,
-		),
-	)
+	const record = candidate as Record<string, unknown>
+	if (record.version !== ROUTE_MEMORY_VERSION) {
+		return null
+	}
+
+	const lastScopeKey =
+		typeof record.lastScopeKey === 'string' && isShellScopeKey(record.lastScopeKey)
+			? record.lastScopeKey
+			: 'all'
+
+	const rawRoutes = record.lastRouteByScopeKey
+	const lastRouteByScopeKey =
+		rawRoutes && typeof rawRoutes === 'object'
+			? Object.fromEntries(
+					Object.entries(rawRoutes as Record<string, unknown>).filter(
+						(entry): entry is [ShellScopeKey, string] => {
+							const [scopeKey, path] = entry
+							return (
+								isShellScopeKey(scopeKey) && typeof path === 'string' && path.length > 0
+							)
+						},
+					),
+				)
+			: {}
 
 	return {
 		version: ROUTE_MEMORY_VERSION,

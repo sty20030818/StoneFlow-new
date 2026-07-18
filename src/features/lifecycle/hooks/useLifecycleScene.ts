@@ -31,10 +31,7 @@ import {
 } from './lifecycle.mutations'
 import { useLifecycleEntriesQuery } from './lifecycle.queries'
 import { buildLifecycleCommandSelection } from '../model/buildLifecycleCommandSelection'
-import {
-	buildLifecycleSections,
-	type LifecycleEntityFilter,
-} from '../model/buildLifecycleSections'
+import { buildLifecycleSections, type LifecycleEntityFilter } from '../model/buildLifecycleSections'
 
 const EMPTY_LIFECYCLE_ENTRIES: LifecycleEntry[] = []
 

@@ -1,11 +1,6 @@
 import { useCallback } from 'react'
 
-import {
-	create,
-	createAndOpen,
-	openTarget,
-	type LauncherInput,
-} from '../api/launcherApi'
+import { create, createAndOpen, openTarget, type LauncherInput } from '../api/launcherApi'
 import type { LauncherAction } from './launcherDomainTypes'
 import type { LauncherDraft, LauncherResultItem } from '../model/types'
 

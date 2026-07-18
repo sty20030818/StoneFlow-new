@@ -1,12 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import {
-	archiveSpace,
-	createSpace,
-	deleteSpace,
-	setDefaultSpace,
-	updateSpace,
-} from '../api/spaces'
+import { archiveSpace, createSpace, deleteSpace, setDefaultSpace, updateSpace } from '../api/spaces'
 import { emitEvent } from '@/shared/events'
 
 import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'

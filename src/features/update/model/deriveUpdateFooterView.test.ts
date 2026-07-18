@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-	deriveUpdateFooterView,
-	isUpdateFooterVisiblePhase,
-} from './deriveUpdateFooterView'
+import { deriveUpdateFooterView, isUpdateFooterVisiblePhase } from './deriveUpdateFooterView'
 
 describe('isUpdateFooterVisiblePhase', () => {
 	it('only transaction phases', () => {

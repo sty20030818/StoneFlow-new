@@ -1,9 +1,5 @@
 import { useLauncher } from '../domain/LauncherDomainProvider'
-import type {
-	LauncherProjectItem,
-	LauncherResultItem,
-	LauncherTaskItem,
-} from '../model/types'
+import type { LauncherProjectItem, LauncherResultItem, LauncherTaskItem } from '../model/types'
 import { EmptyHint, SearchEmptyHint } from './EmptyHint'
 import { ProjectResultRowAdapter } from './adapters/ProjectResultRowAdapter'
 import { TaskResultRowAdapter } from './adapters/TaskResultRowAdapter'

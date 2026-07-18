@@ -1,9 +1,6 @@
 import type { ReactNode } from 'react'
 
-import {
-	formatDateLabel,
-	getLauncherDatePreset,
-} from '../../model/launcherFormatters'
+import { formatDateLabel, getLauncherDatePreset } from '../../model/launcherFormatters'
 import type { LauncherPopoverKey } from '../../model/types'
 import { Button } from '@/shared/components/base/button'
 import { Calendar } from '@/shared/components/base/calendar'
