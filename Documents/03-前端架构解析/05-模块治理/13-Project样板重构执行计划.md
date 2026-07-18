@@ -1,6 +1,6 @@
 # Project 样板重构执行计划（P2 · 对齐 task / command）
 
-> 状态：**P0–P2 done** · 下一刀 **VOLUME** · 2026-07-19
+> 状态：**阶段 0–4 已收口** · 2026-07-19
 > 决议源：[M-F-PROJECT](./模块/M-F-PROJECT.md)（P2）· 写法：[CONVENTIONS v2.1](../../../src/CONVENTIONS.md) · 定稿契约：[project/ARCHITECTURE.md](../../../src/features/project/ARCHITECTURE.md)
 > 前置：[11-Task样板](./11-Task样板重构执行计划.md)（0–5 done）· [12 扩散计划](./12-平台与Domain扩散重构执行计划.md)（command C0–C5 done）
 > **原则：** 串行；每阶段末相关门禁；开放前可破坏须清干净；源码禁史诗号。
@@ -36,15 +36,16 @@ bunx vitest run src/features/project
 
 ---
 
-## 1. 现网基线（2026-07-19）
+## 1. 现网基线（收口 · 2026-07-19）
 
 | 项 | 状态 |
 |----|------|
 | project → layout | **0** |
-| bulk/ · `registerProjectCommands` | **已在 project**（B3/C3 已收） |
-| `ProjectPage` | **~95** 薄壳；wiring 在 `useProjectDetailScene` ~324 |
-| `ProjectBoard` / `ProjectRowAdapter` | ~273 / ~237 · 临界，VOLUME 按痛 |
-| `index.ts` | **NORM done**（TSDoc + 收窄 public） |
+| bulk/ · `registerProjectCommands` | **已在 project** |
+| `ProjectPage` | **~95** 薄壳 |
+| `useProjectDetailScene` | **~325**（&lt;400，VOLUME 不拆） |
+| `ProjectBoard` / `ProjectRowAdapter` | ~273 / ~237 · **无痛不拆** |
+| `index.ts` | TSDoc + 收窄 public |
 | ARCHITECTURE | **定稿最优** |
 
 ---
@@ -53,93 +54,79 @@ bunx vitest run src/features/project
 
 | 阶段 | ID | 内容 | 破坏性 | 状态 |
 |------|-----|------|--------|------|
-| 0 | DOC | ARCHITECTURE 定稿；M-F-PROJECT 落地对照；本文落盘 | 无 | **done**（2026-07-19） |
-| 1 | NORM | TSDoc / public；去 `@fileoverview`；审计导出 | 低 | **done**（2026-07-19） |
-| 2 | SCENE | 抽详情编排（`useProjectDetailScene` 或等价）；压薄 ProjectPage | 中 | **done**（2026-07-19） |
-| 3 | VOLUME | Board/Row/ContextMenu 按痛内拆 | 低 | pending |
-| 4 | CLOSE | 对照勾选；lifecycle/view 检查表备忘 | 无 | pending |
-
-推荐串行：**0 → 1 → 2 → 3 → 4**。bulk/命令已回家，**无**独立 B3/C3 阶段。
+| 0 | DOC | ARCHITECTURE 定稿；M-F-PROJECT 落地对照；本文落盘 | 无 | **done** |
+| 1 | NORM | TSDoc / public；去 `@fileoverview`；审计导出 | 低 | **done** |
+| 2 | SCENE | 抽 `useProjectDetailScene`；压薄 ProjectPage | 中 | **done** |
+| 3 | VOLUME | Board/Row/ContextMenu 按痛内拆 | 低 | **done**（跳过拆分） |
+| 4 | CLOSE | 对照勾选；lifecycle/view 检查表备忘 | 无 | **done** |
 
 ---
 
-## 阶段 0 · DOC
+## 阶段 0 · DOC · **done**
 
-| 字段 | 内容 |
-|------|------|
-| 目标 | 卡 + ARCHITECTURE + 本文对齐；债只留本文 |
-| 状态 | **done**（2026-07-19） |
-
-- [x] `src/features/project/ARCHITECTURE.md`：定稿最优；无债表
-- [x] `M-F-PROJECT`：落地对照；archived-decision；链本文
-- [x] [12](./12-平台与Domain扩散重构执行计划.md) 波次 2 project 指向本文
+- [x] `ARCHITECTURE` 定稿最优
+- [x] `M-F-PROJECT` 落地对照 + archived-decision
+- [x] 本文落盘；[12](./12-平台与Domain扩散重构执行计划.md) 指向本文
 
 ---
 
-## 阶段 1 · NORM
-
-| 字段 | 内容 |
-|------|------|
-| 目标 | public + TSDoc 对齐 task/command 样板 |
-| 破坏性 | 低 |
-| 状态 | **done**（2026-07-19） |
-
-### 落地
+## 阶段 1 · NORM · **done**
 
 | 项 | 结果 |
 |----|------|
 | `index.ts` | 多行摘要 + `@remarks`；去掉 `@fileoverview` |
-| public 收窄 | 撤无外消费者：低层 query/keys、create/update api、bulk 定义表、内部类型等 |
-| 包内路径 | components/hooks/api 改相对路径 |
-| 门禁 | tsc · boundaries · project+overview 33 测绿 |
+| public 收窄 | 撤无外消费者导出 |
+| 包内路径 | 相对路径 |
+| 门禁 | 绿 |
 
 ---
 
-## 阶段 2 · SCENE
-
-| 字段 | 内容 |
-|------|------|
-| 目标 | 详情页可扫完；任务板 wiring 进 hooks facade |
-| 破坏性 | 中 |
-| 状态 | **done**（2026-07-19） |
-
-### 落地
+## 阶段 2 · SCENE · **done**
 
 | 项 | 结果 |
 |----|------|
-| facade | `hooks/useProjectDetailScene.ts`（组合 task public） |
-| `ProjectPage` | ~370 → **~95** 薄壳（只拼 EntityScene 槽位） |
-| 行为 | 未改产品路径；禁 layout / 禁复制 task mutation |
-| 门禁 | tsc · boundaries · project+overview 33 测绿 |
+| facade | `hooks/useProjectDetailScene.ts` |
+| `ProjectPage` | ~370 → **~95** |
+| 门禁 | 绿 |
 
 ---
 
-## 阶段 3 · VOLUME
+## 阶段 3 · VOLUME · **done**（跳过拆分）
 
-| 字段 | 内容 |
-|------|------|
-| 目标 | 边角可控；不挡 CLOSE |
-| 状态 | pending |
-
-| 优先级 | 项 | 动作 |
+| 优先级 | 项 | 结果 |
 |--------|-----|------|
-| P0 | 若 SCENE 后仍有 &gt;400 生产单文件 | 内拆 |
-| P1 | `ProjectBoard` / `RowAdapter` | 有痛再拆 |
-| P2 | ContextMenu | 有痛再拆 |
+| P0 | &gt;400 生产单文件 | **无**（最大 facade ~325） |
+| P1 | Board / RowAdapter | **跳过**（~273 / ~237，无编辑痛） |
+| P2 | ContextMenu | **跳过**（无痛） |
 
 ---
 
-## 阶段 4 · CLOSE
+## 阶段 4 · CLOSE · **done**
 
-| 字段 | 内容 |
-|------|------|
-| 目标 | project 可当第二样板；lifecycle/view 可开工 |
-| 状态 | pending |
+- [x] M-F-PROJECT 对照勾满；ARCHITECTURE 与代码一致
+- [x] 检查表结论见下
+- [x] 「复制到 lifecycle/view」增补见下
+- [x] 门禁：`tsc` · `lint:boundaries` · `vitest run src/features/project`（+ overview）
 
-- [ ] 回写 M-F-PROJECT 对照；ARCHITECTURE 与代码一致
-- [ ] 检查表：11 附录 + 12 增补 C1–C6 勾选结论
-- [ ] 写下节「复制到 lifecycle/view」增补（若有）
-- [ ] 门禁绿
+### 检查表结论（11 附录 + 12 C1–C6）
+
+| # | 结论 |
+|---|------|
+| 11·1–10 | **通过**（禁 layout、public、Query keys、api invoke、model 无 hook、TSDoc） |
+| C1–C4 | **通过**（register / bulk 已在本域；Host 双边既有纪律） |
+| C5 | **通过**（`useProjectDetailScene` 只组合 task public） |
+| C6 | **通过**（ARCHITECTURE 定稿；进度在本文） |
+
+### 附录 · 复制到 lifecycle / view 的增补
+
+> 开刀时：**先跑 11 附录 + 12 C1–C6（若有命令/bulk）**，再加：
+
+| # | 检查项 | 说明 |
+|---|--------|------|
+| L1 | lifecycle：编排 facade；**禁**吞进 task / project | Y2 |
+| L2 | lifecycle bulk/commands 若有：留本域，layout 只 compose | 对标 project |
+| V1 | view：任务列表走 task public / facade；禁复制 list-scene | V2 |
+| V2 | view 自身 CRUD 与任务板 wiring 分清；厚页可抽 `useViewsScene` | 对标 ProjectPage |
 
 ---
 
@@ -147,9 +134,9 @@ bunx vitest run src/features/project
 
 ```txt
 M-F-PROJECT.md     → WHY / 决议 / 落地对照（档案）
-本文               → 刀序、债、验收（进度）
+本文               → 刀序、债、验收（进度 · 已收口）
 project/ARCHITECTURE → 定稿日常
-12 扩散计划        → 波次顺序
+12 扩散计划        → 波次顺序（下一刀 lifecycle）
 CONVENTIONS.md     → HOW
 ```
 
@@ -162,3 +149,5 @@ CONVENTIONS.md     → HOW
 | 2026-07-19 | 初版：阶段 0–4；基线；DOC done |
 | 2026-07-19 | NORM done：public 收窄 + TSDoc；包内相对路径 |
 | 2026-07-19 | SCENE done：useProjectDetailScene；ProjectPage ~95 |
+| 2026-07-19 | VOLUME 跳过（无 &gt;400 / 无痛）；CLOSE done；波次 2 project 收口 |
+| 2026-07-19 | 收尾清死代码：ProjectTaskBoard、无消费者 alias/hook/bulk getter |

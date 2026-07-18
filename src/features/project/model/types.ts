@@ -1,4 +1,4 @@
-import type { Project, ProjectOverviewItem, ProjectSidebarItem, TaskListItem } from '@/shared/types'
+import type { Project, ProjectOverviewItem, ProjectSidebarItem } from '@/shared/types'
 
 export type ProjectOverviewViewKey =
 	| 'active'
@@ -21,8 +21,6 @@ export type ProjectOption = {
 	spaceId: string
 	name: string
 }
-
-export type ProjectExecutionTask = TaskListItem
 
 export type ProjectFormInput = {
 	spaceId: string

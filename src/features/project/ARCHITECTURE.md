@@ -8,8 +8,8 @@
 
 ```txt
 详情页
-  → ProjectPage（壳：项目头 / 项目动作）
-  → 内嵌任务板：组合 task public（list data / selection / preview / bulk）
+  → ProjectPage（薄壳）
+  → useProjectDetailScene（组合 task public：list / filter / selection / preview / bulk）
   → 不复制 task mutation；不 import layout
 
 概览（独立 scene）
@@ -45,7 +45,6 @@ src/features/project/
 ├── commands/                # registerProjectCommands
 └── components/
     ├── ProjectPage          # 详情页薄壳（槽位拼装）
-    ├── ProjectTaskBoard     # 嵌入 TaskBoard 的薄适配
     ├── ProjectBoard · ProjectRowAdapter · ProjectContextMenu
     └── ProjectCreateContent · form
 ```

@@ -337,5 +337,3 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		},
 	}
 }
-
-export type ProjectDetailSceneFacade = ReturnType<typeof useProjectDetailScene>

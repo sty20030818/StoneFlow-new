@@ -4,10 +4,8 @@ import type { QueryLoadStatus } from '@/shared/query/queryStatus'
 
 import {
 	toProjectOptions,
-	useProjectDetailQuery,
 	useProjectOverviewQuery,
 	useProjectSidebarQuery,
-	useViewsProjectOptionsQuery,
 } from './project.queries'
 
 const EMPTY_PROJECT_OVERVIEW_ITEMS: ProjectOverviewItem[] = []
@@ -48,24 +46,7 @@ export function useProjectSidebarData(scope: Scope) {
 }
 
 export function useProjectOptions(scope: Scope) {
-	const query = useViewsProjectOptionsQuery(scope)
+	const query = useProjectSidebarQuery(scope)
 
 	return toProjectOptions(query.data)
-}
-
-export function useProjectDetailData(projectId: string | null | undefined) {
-	const query = useProjectDetailQuery(projectId)
-	const status: QueryLoadStatus = query.isError
-		? 'error'
-		: query.isLoading || query.isPending
-			? 'loading'
-			: 'ready'
-
-	return {
-		item: query.data ?? null,
-		status,
-		error: query.error instanceof Error ? query.error.message : null,
-		projectId: projectId ?? null,
-		refetch: query.refetch,
-	}
 }

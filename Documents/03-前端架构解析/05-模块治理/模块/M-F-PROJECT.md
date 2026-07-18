@@ -1,24 +1,25 @@
 # M-F-PROJECT · features/project
 
 > 日期：2026-07-17 · **落地对照更新 2026-07-19**
-> 状态：**archived-decision（P2 · P0–P2 done；余 VOLUME/CLOSE 见 [13](../13-Project样板重构执行计划.md)）**
+> 状态：**archived-decision（P2 · 0–4 全收口）** · 执行档案：[13](../13-Project样板重构执行计划.md)
 > 路径：`src/features/project`（关联 scene：`features/project-overview`）
 > **日常契约：** [`src/features/project/ARCHITECTURE.md`](../../../src/features/project/ARCHITECTURE.md)
 > 类型：**domain**
 
 ---
 
-## 0. 落地对照（2026-07-19）
+## 0. 落地对照（2026-07-19 · CLOSE）
 
 | 卡上目标（P2） | 现网 | 说明 |
 |----------------|------|------|
 | 禁 project → layout | **done** | 0 引用 |
 | bulk 在 `project/bulk` | **done** | B3 已迁 |
 | `registerProjectCommands` | **done** | C3 已挂 |
-| 详情任务板只组合 task public | **done** | `useProjectDetailScene` 组合 task public |
-| ProjectPage 去巨石 / facade | **done** | Page ~95；facade ~324 |
+| 详情任务板只组合 task public | **done** | `useProjectDetailScene` |
+| ProjectPage 去巨石 / facade | **done** | Page ~95；facade ~325 |
 | ARCHITECTURE 定稿 + public/TSDoc | **done** | DOC + NORM |
 | project-overview Keep 薄 scene | **done** | 独立 feature |
+| VOLUME 巨石 | **N/A** | 无 &gt;400；Board/Row 无痛不拆 |
 
 **改码请读：** `src/features/project/ARCHITECTURE.md` + `src/CONVENTIONS.md`。
 与 src 冲突时：**以 src 为准**，并回写本节。

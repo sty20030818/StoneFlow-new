@@ -10,7 +10,7 @@ import type { ProjectBulkAdapter, ProjectBulkMutationReport } from './project-bu
 
 type ProjectBulkActionDefinition = Omit<BulkAction, 'run'>
 
-export const projectBulkActionDefinitions: ProjectBulkActionDefinition[] = [
+const projectBulkActionDefinitions: ProjectBulkActionDefinition[] = [
 	{
 		id: PROJECT_BULK_ACTION_IDS.archiveSelected,
 		entity: 'project',
@@ -84,10 +84,6 @@ export const projectBulkActions: BulkAction[] = projectBulkActionDefinitions.map
 		}
 	},
 }))
-
-export function getProjectBulkActionDefinition(actionId: BulkActionId) {
-	return projectBulkActionDefinitions.find((action) => action.id === actionId) ?? null
-}
 
 function getProjectBulkAdapter(adapter: unknown): ProjectBulkAdapter | null {
 	if (

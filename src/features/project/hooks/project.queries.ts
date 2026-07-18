@@ -24,14 +24,6 @@ export function useProjectSidebarQuery(scope: Scope) {
 	})
 }
 
-export function useProjectOptionsQuery(scope: Scope) {
-	return useProjectSidebarQuery(scope)
-}
-
-export function useViewsProjectOptionsQuery(scope: Scope) {
-	return useProjectSidebarQuery(scope)
-}
-
 export function toProjectOptions(
 	projects: Array<{ id: string; spaceId: string; name: string }> | undefined,
 ): ProjectOption[] {
@@ -42,13 +34,6 @@ export function toProjectOptions(
 			name: project.name,
 		})) ?? []
 	)
-}
-
-export function useProjectDetailQuery(projectId: string | null | undefined) {
-	return useQuery({
-		...(projectId ? projectDetailQueryOptions(projectId) : projectDetailQueryOptions('')),
-		enabled: Boolean(projectId),
-	})
 }
 
 export function projectDetailQueryOptions(projectId: string) {

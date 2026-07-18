@@ -1,6 +1,6 @@
 # 平台与 Domain 扩散重构执行计划（task 样板之后）
 
-> 状态：**可执行** · 波次 1（command）**已收口** · 波次 2 **project**（[13](./13-Project样板重构执行计划.md)）· 2026-07-19
+> 状态：**可执行** · 波次 1（command）**已收口** · 波次 2 **project 已收口** · 下一刀 **lifecycle** · 2026-07-19
 > 前置：[11-Task样板重构](./11-Task样板重构执行计划.md)（**0–5 done**）· 决议：[09-决议总表](./09-决议总表.md) · 写法：[CONVENTIONS v2.1](../../../src/CONVENTIONS.md)
 > **原则：** 大→小但**不同构不硬排**；串行波次；每阶段末相关门禁；开放前可破坏须清干净；源码禁史诗号。
 > **文档：** `src/**/ARCHITECTURE` = 定稿最优（无债表）；**债/进度只写本文或子计划**；src 不回链执行计划。
@@ -38,7 +38,7 @@
 | **0** | task | 13k | domain | **done** | [11](./11-Task样板重构执行计划.md) |
 | **1** | **command** | 7.3k | platform | **C0–C5 done** | 波次 1 收口 |
 | 1b | bulk-action | 1.7k | platform | **done（轻扫）** | B3 已落地；无独立刀 |
-| **2** | project | 2.8k | domain | **P0–P2 done · 余 VOLUME–CLOSE** | [13](./13-Project样板重构执行计划.md) |
+| **2** | project | 2.8k | domain | **done（[13](./13-Project样板重构执行计划.md) 0–4）** | 下一刀 lifecycle |
 | 2 | lifecycle | 2.5k | domain | pending | Y2 |
 | 2 | view | 1.8k | domain | pending | V2 |
 | 2 | space | 0.8k | domain | pending | S2 |
@@ -230,8 +230,8 @@
 
 | 序 | 模块 | 决议 | 相对 task 检查表加项 |
 |----|------|------|----------------------|
-| 1 | project | P2 | 详情内任务板只调 task public；bulk/命令 register 已在则验 |
-| 2 | lifecycle | Y2 | 编排 facade；禁吞进 task |
+| 1 | project | P2 | **done** · [13](./13-Project样板重构执行计划.md) |
+| 2 | lifecycle | Y2 | 编排 facade；禁吞进 task · **下一刀** |
 | 3 | view | V2 | view-task facade |
 | 4 | space | S2 | pending intent 纯化 |
 | 5 | activity | A1 | 单源 query；可极薄 |
@@ -293,3 +293,4 @@ src/CONVENTIONS.md             → HOW
 | 2026-07-19 | C4 VOLUME done：adapter 拆 actions/bind/helpers |
 | 2026-07-19 | C5 CLOSE done：清兼容层；bulk 轻扫勾掉；project 检查表增补；波次 1 收口 |
 | 2026-07-19 | 波次 2 project 开刀：落 [13](./13-Project样板重构执行计划.md)；P0 DOC done |
+| 2026-07-19 | project P0–P4 全收口；下一刀 lifecycle |
