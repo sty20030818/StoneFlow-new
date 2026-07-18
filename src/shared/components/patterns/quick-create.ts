@@ -21,8 +21,7 @@ export const quickCreateSurfaceClipClass = [
 ].join(' ')
 
 /** Composer 顶栏衬底（与 Results 之间只保留这一条分隔） */
-export const quickCreateChromeClass =
-	'shrink-0 border-b border-black/[0.05] bg-background/96'
+export const quickCreateChromeClass = 'shrink-0 border-b border-black/[0.05] bg-background/96'
 
 /** Results 内滚区：略透，仍保证行文可读 */
 export const quickCreateResultsPaneClass =

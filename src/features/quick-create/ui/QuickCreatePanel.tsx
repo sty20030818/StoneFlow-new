@@ -6,6 +6,7 @@ import { QuickCreateFooter } from '@/features/quick-create/ui/QuickCreateFooter'
 import { QuickCreateResults } from '@/features/quick-create/ui/QuickCreateResults'
 import { QuickCreateSurface } from '@/features/quick-create/ui/QuickCreateSurface'
 import { useQuickCreate } from '@/features/quick-create/domain/QuickCreateDomainProvider'
+import { cn } from '@/shared/lib/utils'
 import {
 	isPresentedSurfacePhase,
 	readActiveSessionId,
@@ -52,12 +53,12 @@ export function QuickCreatePanel() {
 				</div>
 
 				{derived.hasTitle ? (
-					<div className='shrink-0 border-b border-black/[0.05] bg-background/88 px-2 pt-0.5'>
+					<div className='shrink-0 bg-background/88 px-2 pt-0.5'>
 						<QuickCreateCreateSection />
 					</div>
 				) : null}
 
-				<div className={quickCreateResultsPaneClass} data-testid='quick-create-results-scroll'>
+				<div className={cn(quickCreateResultsPaneClass, 'pt-0.5')} data-testid='quick-create-results-scroll'>
 					<QuickCreateContinuousToast />
 					<QuickCreateResults />
 				</div>
