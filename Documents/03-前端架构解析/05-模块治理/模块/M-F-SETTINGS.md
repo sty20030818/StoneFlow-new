@@ -1,9 +1,9 @@
 # M-F-SETTINGS · features/settings
 
-> 日期：2026-07-17  
-> 状态：**decided** · **decide-only**  
-> 类型：**scene + 本机/侧栏配置 API**（mixed）  
-> 切分：**Keep**；**三入口**已是最佳实践标杆  
+> 日期：2026-07-17
+> 状态：**decided** · **S1 已落地（[19](../19-Settings样板重构执行计划.md)）** · 2026-07-19
+> 类型：**scene + 本机/侧栏配置 API**（mixed）
+> 切分：**Keep**；**三入口**已是最佳实践标杆
 
 ---
 
@@ -19,15 +19,15 @@
 
 ### 内容
 
-- `SettingsPage` 薄路由壳 + **panels**：General / Sidebar / Sync / Update  
-- Sync/Update **面板消费 sync/update public**（Sync 面板 ~806 行偏厚）  
-- `sidebarSettings` / `shellDevicePreferences` api（刀已收口设备偏好）  
+- `SettingsPage` 薄路由壳 + **panels**：General / Sidebar / Sync / Update
+- Sync/Update **面板消费 sync/update public**（Sync 面板 ~806 行偏厚）
+- `sidebarSettings` / `shellDevicePreferences` api（刀已收口设备偏好）
 
 ### 已做对
 
-- 三入口防环（navigation 不拉 Page）  
-- 系统能力不重写，装配 sync/update  
-- 设置模式侧栏与 routes section 协作  
+- 三入口防环（navigation 不拉 Page）
+- 系统能力不重写，装配 sync/update
+- 设置模式侧栏与 routes section 协作
 
 ### 问题
 
@@ -52,9 +52,19 @@
 
 ## C. 决议
 
-1. **Keep** settings；三入口 **冻结为规范**  
-2. 面板只 **装配** sync/update/space public  
-3. SyncPanel 体量债内拆，非切分问题  
-4. decide-only  
+1. **Keep** settings；三入口 **冻结为规范**
+2. 面板只 **装配** sync/update/space public
+3. SyncPanel 体量债内拆，非切分问题
+4. decide-only
 
 协作：routes → page；navigation → contract；layout chrome → 主入口 API；Settings 模式骨架可在 layout。
+
+---
+
+## 变更记录
+
+| 日期 | 变更 |
+|------|------|
+| 2026-07-17 | 初版：三入口、S1 |
+| 2026-07-19 | S1 落地：public 收窄 + SyncPanel presentation；见 [19](../19-Settings样板重构执行计划.md) |
+

@@ -1,6 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react'
 
-import { SettingsSidebar } from '@/features/settings/components/SettingsSidebar'
+import { SettingsSidebar } from './SettingsSidebar'
 import { SidebarProvider } from '@/shared/components/base/sidebar'
 import { TooltipProvider } from '@/shared/components/base/tooltip'
 import { renderWithRouterContext } from '@/test/renderWithRouter'

@@ -8,7 +8,7 @@ import {
 	type SidebarItemVisibilityTarget,
 	type SidebarPreferenceSettings,
 	type SidebarProjectSectionPreferenceConfig,
-} from '@/features/settings/api/sidebarSettings'
+} from '../api/sidebarSettings'
 import {
 	buildShellSidebarSettings,
 	loadShellDeviceState,
@@ -17,7 +17,7 @@ import {
 	type ShellSidebarProjectSectionSettings,
 	type ShellSidebarSettings,
 	type ShellUiDevicePreferences,
-} from '@/features/settings/api/shellDevicePreferences'
+} from '../api/shellDevicePreferences'
 
 type SidebarSettingsStatus = 'idle' | 'loading' | 'ready' | 'error'
 

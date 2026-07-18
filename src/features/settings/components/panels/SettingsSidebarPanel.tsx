@@ -5,13 +5,13 @@ import {
 	selectSidebarSettingsError,
 	selectSidebarSettingsStatus,
 	useSidebarSettingsStore,
-} from '@/features/settings'
-import type { SidebarMainItemKey } from '@/features/settings/api/sidebarSettings'
+} from '../../model/useSidebarSettingsStore'
+import type { SidebarMainItemKey } from '../../api/sidebarSettings'
 import {
 	SettingCheckboxRow,
 	SettingsPreferenceGroup,
 	SettingsSection,
-} from '@/features/settings/components/settingsShared'
+} from '../settingsShared'
 import { Button } from '@/shared/components/base/button'
 import { statusNoticeCompactTextClass } from '@/shared/components/patterns/status-notice'
 import { StatusNotice } from '@/shared/components/StatusNotice'

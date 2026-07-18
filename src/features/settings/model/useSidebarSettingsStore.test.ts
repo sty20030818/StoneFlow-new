@@ -3,22 +3,22 @@ import type {
 	ShellSidebarProjectSectionSettings,
 	ShellSidebarSettings,
 	ShellUiDevicePreferences,
-	SidebarPreferenceSettings,
-} from '@/features/settings'
+} from '../api/shellDevicePreferences'
+import type { SidebarPreferenceSettings } from '../api/sidebarSettings'
 import {
 	getSidebarSettings,
 	updateSidebarItemVisibility,
 	updateSidebarProjectSection,
-} from '@/features/settings/api/sidebarSettings'
+} from '../api/sidebarSettings'
 import {
 	loadShellDeviceState,
 	updateShellSidebarDevicePreferences,
-} from '@/features/settings/api/shellDevicePreferences'
-import { useSidebarSettingsStore } from '@/features/settings/model/useSidebarSettingsStore'
+} from '../api/shellDevicePreferences'
+import { useSidebarSettingsStore } from './useSidebarSettingsStore'
 
-// store 直引 api 路径，mock 与实现对齐（避免 barrel 环）
-vi.mock('@/features/settings/api/sidebarSettings', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@/features/settings/api/sidebarSettings')>()
+// store 直引 api 路径，mock 与实现对齐
+vi.mock('./../api/sidebarSettings', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('../api/sidebarSettings')>()
 	return {
 		...actual,
 		getSidebarSettings: vi.fn<() => Promise<SidebarPreferenceSettings>>(),
@@ -36,9 +36,8 @@ vi.mock('@/features/settings/api/sidebarSettings', async (importOriginal) => {
 	}
 })
 
-vi.mock('@/features/settings/api/shellDevicePreferences', async (importOriginal) => {
-	const actual =
-		await importOriginal<typeof import('@/features/settings/api/shellDevicePreferences')>()
+vi.mock('./../api/shellDevicePreferences', async (importOriginal) => {
+	const actual = await importOriginal<typeof import('../api/shellDevicePreferences')>()
 	return {
 		...actual,
 		loadShellDeviceState: vi.fn(),

@@ -1,6 +1,6 @@
 import { openSettings } from '@/app/navigation'
 
-import { readLastSettingsSection, writeLastSettingsSection } from '@/features/settings/contract'
+import { readLastSettingsSection, writeLastSettingsSection } from '../contract'
 
 describe('lastSettingsSection', () => {
 	beforeEach(() => {

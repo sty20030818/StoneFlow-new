@@ -1,6 +1,6 @@
 # update · 应用更新
 
-> 作用：描述 **当前已落地** 的 `src/features/update` 边界  
+> 作用：描述 **当前已落地** 的 `src/features/update` 边界
 > 最后更新：2026-07-18
 
 ---
@@ -76,7 +76,7 @@ src/features/update/
 | `layout/ShellLayoutContent.tsx` | `useUpdateEvents()` |
 | `layout/overlays/ShellOverlays.tsx` | `UpdateDialog` · `SystemStatusChip` |
 | `layout/ShellFooter.tsx` | `UpdateStatusFooterItem` · `AppVersionFooterItem` |
-| `features/settings/SettingsUpdatePanel` | `UpdateSettingsSection` |
+| `features/settings` 页（update 分区） | 直接挂 `UpdateSettingsSection` |
 
 ---
 

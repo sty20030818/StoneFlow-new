@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
 
 import { openSettings } from '@/app/navigation'
-import type { SettingsSectionKey } from '@/features/settings/contract'
+import type { SettingsSectionKey } from '../contract'
 import type { Scope } from '@/shared/types'
 import { CloudIcon, PanelLeftIcon, SlidersHorizontalIcon, SparklesIcon } from 'lucide-react'
 

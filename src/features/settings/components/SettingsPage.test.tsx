@@ -3,8 +3,8 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { listen } from '@tauri-apps/api/event'
 import type * as TauriEvent from '@tauri-apps/api/event'
 
-import type { ShellSidebarSettings } from '@/features/settings'
-import { SettingsPage } from '@/features/settings/components/SettingsPage'
+import type { ShellSidebarSettings } from '../api/shellDevicePreferences'
+import { SettingsPage } from './SettingsPage'
 import type { Space } from '@/shared/types'
 import { renderWithRouterContext } from '@/test/renderWithRouter'
 
@@ -34,7 +34,7 @@ vi.mock('@tauri-apps/api/event', () => ({
 	listen: vi.fn<typeof TauriEvent.listen>(),
 }))
 
-vi.mock('@/features/settings/model/useSidebarSettingsStore', () => ({
+vi.mock('../model/useSidebarSettingsStore', () => ({
 	selectSidebarSettings: (state: typeof sidebarStoreState) => state.settings,
 	selectSidebarSettingsStatus: (state: typeof sidebarStoreState) => state.status,
 	selectSidebarSettingsError: (state: typeof sidebarStoreState) => state.errorMessage,

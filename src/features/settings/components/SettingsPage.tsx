@@ -8,10 +8,10 @@ import {
 	type SettingsSectionKey,
 	writeLastSettingsSection,
 } from '../contract'
-import { SettingsGeneralPanel } from '@/features/settings/components/panels/SettingsGeneralPanel'
-import { SettingsSidebarPanel } from '@/features/settings/components/panels/SettingsSidebarPanel'
-import { SettingsSyncPanel } from '@/features/settings/components/panels/SettingsSyncPanel'
-import { SettingsUpdatePanel } from '@/features/settings/components/panels/SettingsUpdatePanel'
+import { SettingsGeneralPanel } from './panels/SettingsGeneralPanel'
+import { SettingsSidebarPanel } from './panels/SettingsSidebarPanel'
+import { SettingsSyncPanel } from './panels/SettingsSyncPanel'
+import { UpdateSettingsSection } from '@/features/update'
 import {
 	Breadcrumb,
 	BreadcrumbItem,
@@ -38,7 +38,11 @@ function renderPanel(section: SettingsSectionKey) {
 		case 'sync':
 			return <SettingsSyncPanel />
 		case 'update':
-			return <SettingsUpdatePanel />
+			return (
+				<div className='flex w-full min-w-0 flex-col gap-4'>
+					<UpdateSettingsSection />
+				</div>
+			)
 		default: {
 			const _exhaustive: never = section
 			return _exhaustive

@@ -1,8 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 
 import { openStartupFallback } from '@/app/navigation'
-import { writeLastSettingsSection } from '@/features/settings'
-import type { SettingsSectionKey } from '@/features/settings'
+import { writeLastSettingsSection, type SettingsSectionKey } from '../contract'
 import { SETTINGS_NAV_GROUPS } from '../model/settingsNav'
 import type { Scope } from '@/shared/types'
 import { cn } from '@/shared/lib/utils'

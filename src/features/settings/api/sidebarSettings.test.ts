@@ -4,7 +4,7 @@ import {
 	getSidebarSettings,
 	updateSidebarItemVisibility,
 	updateSidebarProjectSection,
-} from '@/features/settings/api/sidebarSettings'
+} from './sidebarSettings'
 
 vi.mock('@tauri-apps/api/core', () => ({
 	invoke: vi.fn<(cmd: string, args?: Record<string, unknown>) => Promise<unknown>>(),

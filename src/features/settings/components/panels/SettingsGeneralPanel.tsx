@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { SettingsSection } from '@/features/settings/components/settingsShared'
+import { SettingsSection } from '../settingsShared'
 import { useSetDefaultSpaceMutation, useSpaces } from '@/features/space'
 import { Button } from '@/shared/components/base/button'
 import {

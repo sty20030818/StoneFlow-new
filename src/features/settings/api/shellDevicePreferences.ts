@@ -5,7 +5,7 @@ import { clamp } from 'es-toolkit/math'
 import type {
 	SidebarPreferenceSettings,
 	SidebarProjectSectionPreferenceConfig,
-} from '@/features/settings'
+} from './sidebarSettings'
 
 const SHELL_DEVICE_STORE_PATH = 'shell-device-preferences.json'
 const SIDEBAR_DEVICE_KEY = 'shell.sidebar.device'

@@ -1,12 +1,9 @@
 /**
- * @fileoverview **settings/contract · 纯契约面（无 React / 无 Page）**
+ * settings/contract · 纯契约面（无 React / 无 Page）。
  *
+ * @remarks
  * 分区类型与「上次打开的设置分区」记忆。
- * 供 `app/navigation`、layout 等纯逻辑安全引用，**不会**加载 SettingsPage。
- *
- * ```ts
- * import { readLastSettingsSection, type SettingsSectionKey } from '@/features/settings/contract'
- * ```
+ * 供 `app/navigation`、layout 等纯逻辑安全引用，不会加载 SettingsPage。
  */
 
 export {

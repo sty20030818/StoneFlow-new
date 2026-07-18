@@ -2,7 +2,7 @@ import {
 	DEFAULT_SETTINGS_SECTION,
 	isSettingsSectionKey,
 	type SettingsSectionKey,
-} from '@/features/settings/model/settingsSection'
+} from './settingsSection'
 
 const STORAGE_KEY = 'stoneflow.settings.lastSection'
 
