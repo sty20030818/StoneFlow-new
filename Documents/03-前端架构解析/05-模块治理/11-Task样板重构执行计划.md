@@ -1,6 +1,6 @@
 # Task 样板重构执行计划（T2a 实现债 · 对齐 CONVENTIONS v2）
 
-> 状态：**可执行** · 2026-07-18
+> 状态：**阶段 0–5 已收口** · 2026-07-19
 > 决议源：[M-F-TASK](./模块/M-F-TASK.md)（T2a）· 写法：[CONVENTIONS v2.1](../../../src/CONVENTIONS.md) · 定稿契约：[task/ARCHITECTURE.md](../../../src/features/task/ARCHITECTURE.md)
 > **前提：** T2 边界刀已完成（禁 task→layout、open/bulk/命令回家）。本计划只还 **实现债 + 规范对齐**，**不重开切分**（不拆 task-list/task-detail 包）。
 > **原则：** 串行；每阶段末 `bun run check`；开放前可破坏但须清理干净；源码注释禁止史诗号。
@@ -60,7 +60,7 @@ bun run check
 | 2 | HOOKS | model 内 hooks 归位；list-scene 内拆 | 中 | 1 | **done**（2026-07-19） |
 | 3 | SHORTCUT | 拆 TaskRowShortcutScope | 中 | 1（可 ‖ 2） | **done**（2026-07-19） |
 | 4 | VOLUME | PreviewProvider / ContextMenu（Board 可选） | 低中 | 2–3 | **done**（2026-07-19） |
-| 5 | CLOSE | 契约收口、样板检查表、可选扩散备忘 | 无 | 1–4 | pending |
+| 5 | CLOSE | 契约收口、样板检查表、可选扩散备忘 | 无 | 1–4 | **done**（2026-07-19） |
 
 推荐串行：**0 → 1 → 2 → 3 → 4 → 5**。若赶体量，**3 可与 2 弱并行**（冲突文件少时）。
 
@@ -212,20 +212,51 @@ bun run check
 | 字段 | 内容 |
 |------|------|
 | 目标 | 样板可复制；定稿架构与债清零一致 |
-| 状态 | pending |
+| 状态 | **done**（2026-07-19） |
 
 ### 步骤
 
 1. 更新 `task/ARCHITECTURE.md` 为**当时定稿**（目录树、public）；**不写债表**——未清项只留本文。
 2. 回写本文各阶段状态 + M-F-TASK 落地对照勾选。
 3. 写一小节 **「复制到 project/view 的检查表」**（Query keys 形态、hooks 归位、禁 layout、TSDoc L1）——只备忘，本阶段不改其它 feature。
-4. 全量 `bun run check`；相关 vitest。
+4. 相关门禁：`tsc` · `lint:boundaries` · `vitest run src/features/task`。
+
+### 落地
+
+- [x] `ARCHITECTURE.md` 目录/public 与代码一致（无债表）
+- [x] M-F-TASK §0 对照表全部 done（Board/Row 标可选后置）
+- [x] 本文阶段 0–5 状态 done
+- [x] 复制检查表见下
 
 ### 验收
 
-- [ ] 本文阶段 1–4 done
-- [ ] ARCHITECTURE = 定稿最优，且与代码一致
-- [ ] 检查表可给下一 feature 用
+- [x] 本文阶段 1–4 done
+- [x] ARCHITECTURE = 定稿最优，且与代码一致
+- [x] 检查表可给下一 feature 用
+
+---
+
+## 附录 · 复制到 project / view 的检查表
+
+> 只备忘；本计划**不**改 project/view。下一切 domain 样板可照抄。
+
+| # | 检查项 | task 样板参照 |
+|---|--------|----------------|
+| 1 | 禁 `features/X` → `@/layout/**` | boundaries + rg |
+| 2 | 外模块只走 `@/features/X`（或窄 `contract`） | `index.ts` / `contract.ts` |
+| 3 | Query：`*.keys.ts` 工厂 + `queryOptions` 共用；禁散落 key | `hooks/task.keys|queries` |
+| 4 | mutations 只调 `api/`；按 key 前缀失效 | `hooks/task.mutations` |
+| 5 | `api/` 唯一 `invoke` | `api/tasks.ts` |
+| 6 | `model/` 无 React hook；编排 hook 在 `hooks/` | controller / selection |
+| 7 | 列表若有 facade：单一入口，内拆不外拆 feature | `useTaskListScene` + `list-scene/` |
+| 8 | 巨石：壳 &lt;~250 或抽 controller；handlers 与命令板同源 | `shortcuts/` · `runTaskRowBulkCommand` |
+| 9 | Public 仅已有外消费者；导出多行 TSDoc 摘要 | CONVENTIONS §1 |
+| 10 | 改码权威在 `src/*/ARCHITECTURE` + `CONVENTIONS`；进度不回链 Docs | 文档单向 |
+
+可选后置（本样板未做完不算失败）：
+
+- Board / RowAdapter 体量继续拆
+- 厚页（project/view）是否收敛到共用 facade（另开刀）
 
 ---
 
@@ -260,3 +291,4 @@ CONVENTIONS.md       → 怎么写（含 TSDoc）
 | 2026-07-19 | 阶段 2 HOOKS done：hooks 归位 + list-scene 内拆 |
 | 2026-07-19 | 阶段 3 SHORTCUT done：TaskRowShortcutScope 拆文件 |
 | 2026-07-19 | 阶段 4 VOLUME done：Preview + ContextMenu；Board 后置 |
+| 2026-07-19 | 阶段 5 CLOSE done：定稿对照 + 复制检查表；样板收口 |

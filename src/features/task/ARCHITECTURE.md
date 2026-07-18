@@ -37,18 +37,20 @@
 src/features/task/
 ├── ARCHITECTURE.md
 ├── index.ts                 # 主 public
-├── contract.ts              # placement 类型/纯函数（避免主 barrel 环）
-├── api/                     # IO only
-├── hooks/                   # Query · list-scene · filter · 列表编排 hooks
-│   └── list-scene/          # variantConfig · filter/display · selection · board
-├── model/                   # 纯规则（无 React hook）
+├── contract.ts              # placement 窄契约（避主 barrel 环）
+├── api/                     # IO only（唯一 invoke）
+├── hooks/
+│   ├── task.keys|queries|mutations
+│   ├── useTaskListController · useTaskSelection · useTaskData · filter
+│   ├── useTaskListScene.ts  # 列表 facade（薄编排）
+│   └── list-scene/          # variant · filter/display · selection · board
+├── model/                   # 纯规则 + indicators（无 React hook）
 ├── create/                  # 创建表单内核
 ├── bulk/                    # 批量动作 + adapter
-├── commands/                # registerTaskCommands · 行快捷键共用 bulk
-├── components/              # 列表场景 UI
+├── commands/                # registerTaskCommands · runTaskRowBulkCommand
+├── components/              # Board · Row · Create · ListSceneView · ContextMenu(+helpers/items)
 ├── detail/                  # 详情子树；preview = Provider 壳 + store/helpers/register
-├── components/              # 列表 UI；ContextMenu = 主拼装 + helpers/items/metadata
-└── shortcuts/               # TaskRowShortcutScope 壳 + navigation/runtime/scroll/guards
+└── shortcuts/               # Scope 壳 + controller/navigation/runtime/scroll/guards
 ```
 
 ---
@@ -64,10 +66,11 @@ src/features/task/
 | 命令选中 | `buildTaskCommandSelection` |
 | placement | 类型 + `buildTaskPlacementGroups` · `./contract` |
 | 批量 | `taskBulkActions` · `createTaskBulkAdapter` |
-| 命令 | `registerTaskCommands`（行快捷键在包内调 handlers，不经 barrel 撑大） |
+| 命令 | `registerTaskCommands`（行快捷键包内调 handlers） |
 | 详情 | `TaskPage` · `TaskDrawer` · `TaskPreview` · Preview Provider/controller |
+| 列表编排 | `useTaskListController` · `useTaskSelection` · `useTaskListData` / Query |
 | 展示 | `PriorityIcon` · `TaskStatusIndicator` · 标签 formatters |
-| IO | `getTaskDetail` · `createTask` · `deleteTask` · `restoreTask` · `useTaskListQuery` 等（仅已有外消费者） |
+| IO | `getTaskDetail` · `createTask` · `deleteTask` · `restoreTask` 等（仅已有外消费者） |
 
 新增导出前确认已有外消费者；禁止预防性撑大 public。导出须符合 CONVENTIONS TSDoc L1。
 

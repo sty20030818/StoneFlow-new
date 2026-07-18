@@ -1,12 +1,10 @@
 /**
- * @fileoverview **command · 唯一对外公共面（`@/features/command`）**
+ * command 域对外公共面（`@/features/command`）。
  *
- * 命令注册表、快捷键、菜单 UI、壳 adapter。外层装配 Runtime / ShortcutLayer / CommandMenu。
- *
- * 外模块：`import { … } from '@/features/command'`
- * 禁止：`@/features/command/core|components|keybinding|…`
- *
- * public 只保留外模块已消费的符号；keybinding/菜单内部工具留在子路径自用。
+ * @remarks
+ * 外模块只能从此文件导入；禁止深路径进 core/components/keybinding。
+ * 负责：Registry/Runtime、快捷键、菜单 UI、Host 端口类型、壳 adapter 形状。
+ * 不负责：各域 mutation；layout 只装配 Host。
  */
 
 // ── Core ────────────────────────────────────────────────────────────────────
@@ -21,22 +19,13 @@ export {
 
 export type {
 	Command,
-	CommandCategory,
 	CommandContext,
-	CommandExecutionResult,
 	CommandFocusContext,
 	CommandId,
-	CommandProjectContext,
 	CommandRouteContext,
 	CommandRowTargetContext,
-	CommandScope,
 	CommandSelectedEntity,
 	CommandSelectionContext,
-	CommandSpaceContext,
-	CommandSubmitContext,
-	CommandUiContext,
-	CommandViewContext,
-	KnownCommandId,
 	TaskPlacementTarget,
 } from './core'
 
@@ -47,14 +36,8 @@ export { DEFAULT_KEYBINDINGS, matchKeybindingEvent } from './keybinding'
 export type {
 	Keybinding,
 	KeybindingChordState,
-	KeybindingConflict,
-	KeybindingKey,
-	KeybindingMatchResult,
 	KeybindingScope,
-	KeybindingSequence,
-	KeybindingStroke,
 	NormalizedKeyEvent,
-	ShortcutToken,
 } from './keybinding'
 
 // ── Runtime hooks ───────────────────────────────────────────────────────────
@@ -63,32 +46,27 @@ export { useCommandContext, useCommandRunner, useCommandRuntime } from './runtim
 
 // ── Shortcuts ───────────────────────────────────────────────────────────────
 
+/**
+ * 全局快捷键层与快捷键展示 tokens。
+ */
 export { CommandShortcutLayer, getCommandShortcutTokens } from './shortcuts'
 
-export type { CommandChordSession, ChordHintOption } from './shortcuts'
+export type { CommandChordSession } from './shortcuts'
 
 // ── UI ──────────────────────────────────────────────────────────────────────
 
 export { ChordHint, CommandMenu, ShortcutTokens, ShortcutHelp } from './components'
 
-export type {
-	CommandMenuProject,
-	CommandMenuMode,
-	CommandMenuEntry,
-	CommandMenuGroup,
-	CommandMenuGroupKey,
-	ShortcutHelpEntry,
-	ShortcutHelpGroup,
-} from './components'
+export type { CommandMenuMode } from './components'
 
-// ── Shell adapter ───────────────────────────────────────────────────────────
+// ── Shell adapter 形状（供 layout compose / 各域 register）──────────────────
 
-export type { ShellCommandActions, ShellCommandAdapter, ShellNavigationTarget } from './adapters'
+export type { ShellCommandActions } from './adapters'
 
 // ── IPC · 外部/唤起打开意图 ─────────────────────────────────────────────────
 
 export { takePendingCommandOpenIntent } from './api/commandOpenIntent'
 
-// ── 命令宿主端口（供各域 registerXxxCommands 使用）────────────────────────
+// ── 命令宿主端口（供各域 registerXxxCommands）───────────────────────────────
 
 export type { CommandHostContext } from './host'

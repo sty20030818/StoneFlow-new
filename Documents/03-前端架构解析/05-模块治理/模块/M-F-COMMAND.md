@@ -1,10 +1,27 @@
 # M-F-COMMAND · features/command
 
-> 日期：2026-07-17  
-> 状态：**decided（方案对比 · 对齐 T2）** · 本阶段 **decide-only**  
-> 路径：`src/features/command` + 现网装配 `layout/command-bridge` · `layout/model/useShellCommandSystem`  
-> 规范：[`05-模块设计规范`](../05-模块设计规范.md) · 目标：[`04-长期目标-装配三角`](../04-长期目标-装配三角.md)  
+> 日期：2026-07-17 · **落地对照更新 2026-07-19**
+> 状态：**archived-decision（C3 半落地；余债见 [12 执行计划](../12-平台与Domain扩散重构执行计划.md)）**
+> 路径：`src/features/command` + 装配 `layout/command-bridge` · `layout/model/useShellCommandSystem`
+> **日常契约：** [`src/features/command/ARCHITECTURE.md`](../../../src/features/command/ARCHITECTURE.md)
 > 类型：**platform**
+
+---
+
+## 0. 落地对照（2026-07-19）
+
+| 卡上目标（C3） | 现网 | 说明 |
+|----------------|------|------|
+| 域 `register*Commands` 贡献 handlers | **done** | task/project/lifecycle/filter/submit |
+| layout 不写 domain mutation | **大致 done** | bridge 只 chrome + compose；Host 仍厚 |
+| CommandMenu 巨石拆分 | **done** | 主文件 ~196 + 分段 |
+| Host 极薄（只 Context + 挂 UI） | **未完** | `useShellCommandSystem` ~402 · 计划 C2 |
+| 缩/淘汰 adapter 必填上帝表 | **未完** | `ShellCommandActions` + compose 必填 · 计划 C3 |
+| ARCHITECTURE 定稿 + public/TSDoc | **进行中** | C0/C1 |
+| 禁 command → layout | **done** | 应保持 0 |
+
+**改码请读：** `src/features/command/ARCHITECTURE.md` + `src/CONVENTIONS.md`。
+与 src 冲突时：**以 src 为准**，并回写本节。
 
 ---
 
@@ -32,7 +49,7 @@ CommandRuntime + ShortcutLayer + CommandMenu
 | `runtime` | React hooks |
 | `components` | Menu / Help / Hint（**CommandMenu ~1541 行**） |
 
-**问题本质：**  
+**问题本质：**
 命令的「是什么」（id/标题/scope）在 command feature，**「怎么执行」大半在 layout Bridge** → 壳成为业务适配上帝，**加任务命令要改 layout**，违反纯化与可删除性。
 
 ---
@@ -54,14 +71,14 @@ CommandRuntime + ShortcutLayer + CommandMenu
 
 ### 该进 command 的
 
-- 注册表、运行时、快捷键匹配、命令菜单/帮助 UI、CommandContext **形状**  
-- **注册协议**（如何 registerHandlers）  
+- 注册表、运行时、快捷键匹配、命令菜单/帮助 UI、CommandContext **形状**
+- **注册协议**（如何 registerHandlers）
 - 与壳无关的纯命令查询（可见性排序）
 
 ### 不该进 command 的
 
-- 具体「完成任务 / 归档」的业务 mutation（→ task 等）  
-- 拼 URL 规则（→ navigation）  
+- 具体「完成任务 / 归档」的业务 mutation（→ task 等）
+- 拼 URL 规则（→ navigation）
 - 侧栏 DOM（→ layout chrome）
 
 ---
@@ -122,7 +139,7 @@ layout (壳宿主):
 | layout 可删业务知识 | 注册时机（mount 顺序）要纪律 |
 | 与六边形一致：command=平台总线 | 初期类型从「一个大接口」变「组合」 |
 
-**成本：** 高；可 **task + navigation 试点** 再铺开。  
+**成本：** 高；可 **task + navigation 试点** 再铺开。
 **结论：长期唯一推荐。**
 
 ---
@@ -186,8 +203,8 @@ layout (壳宿主):
 
 ### D.4 public 收窄（目标）
 
-**宜导出：** Runtime hooks、ShortcutLayer、CommandMenu/Help、Registry 工厂、注册类型、`COMMAND_IDS`、Context 类型。  
-**慎导出 / 内收：** 全部 keybinding 底层工具、adapter 巨接口（随 C3 删除）。  
+**宜导出：** Runtime hooks、ShortcutLayer、CommandMenu/Help、Registry 工厂、注册类型、`COMMAND_IDS`、Context 类型。
+**慎导出 / 内收：** 全部 keybinding 底层工具、adapter 巨接口（随 C3 删除）。
 **禁止：** 外模块深路径 core/commands。
 
 ---
@@ -196,19 +213,19 @@ layout (壳宿主):
 
 **Do**
 
-- 命令 = 元数据 + when + handler；handler 与领域同模块  
-- Context 只读快照；副作用在 handler  
-- 换页走 navigation；写数据走 feature mutation  
-- Menu 纯展示 Runtime 可见列表  
-- 单测：core 纯函数；handler 单测在 domain；Menu 测展示  
+- 命令 = 元数据 + when + handler；handler 与领域同模块
+- Context 只读快照；副作用在 handler
+- 换页走 navigation；写数据走 feature mutation
+- Menu 纯展示 Runtime 可见列表
+- 单测：core 纯函数；handler 单测在 domain；Menu 测展示
 
 **Don't**
 
-- layout 增加业务 slice 方法  
-- bind 大 switch 无限变长  
-- Menu 内直接 invoke  
-- 用 Query 存「当前命令」  
-- 为省事在 command feature 写 task 完成逻辑  
+- layout 增加业务 slice 方法
+- bind 大 switch 无限变长
+- Menu 内直接 invoke
+- 用 Query 存「当前命令」
+- 为省事在 command feature 写 task 完成逻辑
 
 ---
 
@@ -259,17 +276,18 @@ layout (壳宿主):
 | 2 | command = **平台总线 + UI**；业务 handler 在各 feature |
 | 3 | layout = **CommandHost** 极薄；删除业务 bridge 为实现终点 |
 | 4 | 换页命令只碰 navigation path-only |
-| 5 | CommandMenu **必须拆**（体量债） |
-| 6 | public 随 C3 **收窄** |
-| 7 | 本阶段 decide-only；动刀在第一梯队谈完后按 §G |
+| 5 | CommandMenu **已拆**（主文件薄壳 + 分段；余量见执行计划 C4） |
+| 6 | public 随 C3 **收窄**（C1 已按外消费者收口） |
+| 7 | 边界决议归档；实现债刀序见 [12-平台与Domain扩散重构执行计划](../12-平台与Domain扩散重构执行计划.md) |
 
 ### 开放问题
 
-- [ ] HostContext 最小字段集（是否含 dialog openers / 仅 callback ports）  
-- [ ] 命令元数据是否物理搬到各 feature 文件，还是 ids 仍集中 `commands/`、handler 分散  
-- [ ] 行级快捷键（TaskRowShortcutScope）与全局 command 的边界是否合并注册  
+- [x] CommandMenu 巨石：已拆（对照 §0）
+- [ ] HostContext 最小字段集（是否含 dialog openers / 仅 callback ports）· C2
+- [ ] 缩 adapter 必填表 · C3
+- [x] 行级快捷键与全局 command：可继续独立 scope，handlers 与命令板同源（task 样板已证）
 
-**建议默认：** 元数据可暂留 `features/command/commands` 或按域文件；**handler 必须与域同处**；行级可继续独立 scope，逐步共用 registry。
+**建议默认：** 元数据可暂留 `features/command/commands`；**handler 必须与域同处**。
 
 ---
 
@@ -278,3 +296,4 @@ layout (壳宿主):
 | 日期 | 变更 |
 |------|------|
 | 2026-07-17 | 初版：边界争议、C1–C4、推荐 C3、协作、拆分与迁移刀序 |
+| 2026-07-19 | archived-decision：§0 落地对照；链 ARCHITECTURE + 12 计划；C0/C1 启动 |
