@@ -1,5 +1,5 @@
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
-import { LifecycleContextMenu } from '@/features/lifecycle/components/LifecycleContextMenu'
+import { LifecycleContextMenu } from './LifecycleContextMenu'
 import {
 	CreatedAtCell,
 	IconCell,

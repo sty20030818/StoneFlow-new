@@ -1,11 +1,27 @@
 # M-F-LIFECYCLE · features/lifecycle
 
-> 日期：2026-07-17  
-> 状态：**decided（方案对比 · 切分 Keep）** · **decide-only**  
-> 路径：`src/features/lifecycle`  
-> 类型：**domain 编排（跨实体）** — 不是 task 子集  
-> 切分总览：[07](../07-Feature切分与边界总览.md) → lifecycle **Keep**  
-> 关联：task/project/space public · bulk B3 · selection L2 · routes archive/trash  
+> 日期：2026-07-17 · **落地对照更新 2026-07-19**
+> 状态：**archived-decision（Y2 · P0–P1 done；余 SCENE 见 [14](../14-Lifecycle样板重构执行计划.md)）**
+> 路径：`src/features/lifecycle`
+> **日常契约：** [`src/features/lifecycle/ARCHITECTURE.md`](../../../src/features/lifecycle/ARCHITECTURE.md)
+> 类型：**domain 编排（跨实体）** — 不是 task 子集
+
+---
+
+## 0. 落地对照（2026-07-19）
+
+| 卡上目标（Y2） | 现网 | 说明 |
+|----------------|------|------|
+| Keep 独立 feature | **done** | 不并 task |
+| 禁 → layout | **done** | 0 引用 |
+| bulk 在 `lifecycle/bulk` | **done** | B3 已迁 |
+| `registerLifecycleCommands` | **done** | C3 已挂 |
+| 写路径委托 t/p/s public | **done** | api 已委托 |
+| `useLifecycleScene` / List 薄壳 | **未完** | List ~356 · 计划 SCENE |
+| ARCHITECTURE + public/TSDoc | **done** | DOC + NORM |
+
+**改码请读：** `src/features/lifecycle/ARCHITECTURE.md` + `src/CONVENTIONS.md`。
+与 src 冲突时：**以 src 为准**，并回写本节。
 
 ---
 
@@ -19,9 +35,9 @@
   ≠ 某一个实体的列表页变体
 ```
 
-- **列表 IO**：`list_archive_entries` / `list_trash_entries`（专用聚合查询）  
-- **写操作**：按 `entityType` **委托** `deleteTask/restoreTask`、project、space public  
-- **页**：`LifecycleList` 一份组件，`mode: archive | trash`  
+- **列表 IO**：`list_archive_entries` / `list_trash_entries`（专用聚合查询）
+- **写操作**：按 `entityType` **委托** `deleteTask/restoreTask`、project、space public
+- **页**：`LifecycleList` 一份组件，`mode: archive | trash`
 - **路由**：极薄 `archive.tsx` / `trash.tsx` 只传 mode/title/icon —— **标杆薄页**
 
 ### A.2 结构
@@ -51,10 +67,10 @@ lifecycle/
 
 ### A.4 已做对的
 
-- **切分正确**：不并进 task（总览已 Keep）  
-- 路由薄；mode 参数化 archive/trash **DRY**  
-- 写路径委托实体 public，不在 lifecycle 复制业务规则  
-- 与 selection/bulk 协作清晰  
+- **切分正确**：不并进 task（总览已 Keep）
+- 路由薄；mode 参数化 archive/trash **DRY**
+- 写路径委托实体 public，不在 lifecycle 复制业务规则
+- 与 selection/bulk 协作清晰
 
 ### A.5 问题
 
@@ -193,7 +209,7 @@ lifecycle ──×──► layout
 
 ### D.4 public 目标
 
-**宜：** list/mutations/keys、LifecycleList、LifecycleBoard、（迁入后）bulk ids/adapter。  
+**宜：** list/mutations/keys、LifecycleList、LifecycleBoard、（迁入后）bulk ids/adapter。
 **api：** 继续只暴露编排函数；内部只调实体 **public**。
 
 ---
@@ -202,17 +218,17 @@ lifecycle ──×──► layout
 
 **Do**
 
-- 一组件两 mode；路由薄  
-- 写操作委托实体；list 用聚合命令  
-- 选择/bulk 走平台，不在 Board 私写删除  
-- 打开实体走 entity-detail + 域详情  
+- 一组件两 mode；路由薄
+- 写操作委托实体；list 用聚合命令
+- 选择/bulk 走平台，不在 Board 私写删除
+- 打开实体走 entity-detail + 域详情
 
 **Don't**
 
-- lifecycle import layout  
-- 在 lifecycle 复制 updateTask 字段逻辑  
-- 为 archive/trash 再建两个 feature  
-- 列表用客户端硬滤「所有任务」冒充归档库（应用专用 list API）  
+- lifecycle import layout
+- 在 lifecycle 复制 updateTask 字段逻辑
+- 为 archive/trash 再建两个 feature
+- 列表用客户端硬滤「所有任务」冒充归档库（应用专用 list API）
 
 ---
 
@@ -260,12 +276,12 @@ lifecycle ──×──► layout
 | 3 | archive/trash **mode 参数化**，不拆包 |
 | 4 | 禁止 → layout；bulk 贡献回本域 |
 | 5 | 写路径只委托 task/project/space public |
-| 6 | decide-only |
+| 6 | decide-only → **执行见 [14](../14-Lifecycle样板重构执行计划.md)** |
 
 ### 开放问题
 
-- [ ] 徽章是否应用专用 count API 减轻 list 全量（性能后议）  
-- [ ] 永久删除确认是否统一走 danger-confirm（现若有则保持）  
+- [ ] 徽章是否应用专用 count API 减轻 list 全量（性能后议）
+- [ ] 永久删除确认是否统一走 danger-confirm（现若有则保持）
 
 ---
 

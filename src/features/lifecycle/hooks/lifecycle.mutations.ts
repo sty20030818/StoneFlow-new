@@ -4,7 +4,7 @@ import {
 	deleteLifecycleEntry,
 	permanentlyDeleteLifecycleEntry,
 	restoreLifecycleEntry,
-} from '@/features/lifecycle/api/lifecycle'
+} from '../api/lifecycle'
 import { emitEvent } from '@/shared/events'
 import type { LifecycleEntry, LifecycleEntityType } from '@/shared/types'
 import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'

@@ -12,7 +12,7 @@ import { useSectionSelection } from '@/features/bulk-action'
 import { entityBoardMutedIconClass } from '@/shared/components/patterns/entity-board'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { ArchiveIcon, BoxIcon, FolderIcon, TrashIcon } from 'lucide-react'
-import { LifecycleRowAdapter } from '@/features/lifecycle/components/LifecycleRowAdapter'
+import { LifecycleRowAdapter } from './LifecycleRowAdapter'
 import { EntityRowShortcutScope, type EntityRowShortcutState } from '@/features/selection'
 
 export type LifecycleBoardSection = BoardSection<LifecycleEntry>

@@ -10,7 +10,7 @@ import type { LifecycleBulkAdapter, LifecycleBulkMutationReport } from './lifecy
 
 type LifecycleBulkActionDefinition = Omit<BulkAction, 'run'>
 
-export const lifecycleBulkActionDefinitions: LifecycleBulkActionDefinition[] = [
+const lifecycleBulkActionDefinitions: LifecycleBulkActionDefinition[] = [
 	{
 		id: LIFECYCLE_BULK_ACTION_IDS.restoreSelected,
 		entity: 'lifecycle',
@@ -99,10 +99,6 @@ export const lifecycleBulkActions: BulkAction[] = lifecycleBulkActionDefinitions
 		},
 	}),
 )
-
-export function getLifecycleBulkActionDefinition(actionId: BulkActionId) {
-	return lifecycleBulkActionDefinitions.find((action) => action.id === actionId) ?? null
-}
 
 function getLifecycleBulkAdapter(adapter: unknown): LifecycleBulkAdapter | null {
 	if (

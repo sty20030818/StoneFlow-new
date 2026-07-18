@@ -17,11 +17,13 @@ import {
 import { useEntityDetailController } from '@/features/entity-detail'
 import {
 	buildLifecycleCommandSelection,
+} from '../model/buildLifecycleCommandSelection'
+import {
 	useDeleteLifecycleEntryMutation,
 	useLifecycleEntriesQuery,
 	usePermanentlyDeleteLifecycleEntryMutation,
 	useRestoreLifecycleEntryMutation,
-} from '@/features/lifecycle'
+} from '../hooks'
 import {
 	useEntitySelection,
 	useEntitySelectionEscape,

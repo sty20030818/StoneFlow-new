@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { listLifecycleEntries } from '@/features/lifecycle/api/lifecycle'
+import { listLifecycleEntries } from '../api/lifecycle'
 import type { LifecycleEntityType, Scope } from '@/shared/types'
 
 import { lifecycleKeys } from './lifecycle.keys'

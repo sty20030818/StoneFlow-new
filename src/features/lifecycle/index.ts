@@ -1,56 +1,37 @@
 /**
- * @fileoverview **lifecycle · 唯一对外公共面（`@/features/lifecycle`）**
+ * lifecycle 域对外公共面（`@/features/lifecycle`）。
  *
- * 归档 / 回收站编排：列表 IO、Query/mutations、列表页与看板。
- *
- * 外模块：`import { … } from '@/features/lifecycle'`
- * 禁止：`@/features/lifecycle/api|hooks|components/…`
+ * @remarks
+ * 外模块只能：`import { … } from '@/features/lifecycle'`。
+ * 禁止深路径进 api/hooks/components/bulk。
+ * 归档/回收站编排域：列表聚合 + 写路径委托 task/project/space public。
  */
 
-// ── API ─────────────────────────────────────────────────────────────────────
+// ── IO ──────────────────────────────────────────────────────────────────────
 
-export {
-	listLifecycleEntries,
-	deleteLifecycleEntry,
-	restoreLifecycleEntry,
-	permanentlyDeleteLifecycleEntry,
-} from './api/lifecycle'
+/** 归档/回收站列表（徽章、Bulk Boundary 等）。 */
+export { listLifecycleEntries } from './api/lifecycle'
 
 // ── Hooks ───────────────────────────────────────────────────────────────────
 
-export {
-	useLifecycleEntriesQuery,
-	useRestoreLifecycleEntryMutation,
-	useDeleteLifecycleEntryMutation,
-	usePermanentlyDeleteLifecycleEntryMutation,
-	lifecycleKeys,
-} from './hooks'
+/** 列表 Query（侧栏徽章等）。 */
+export { useLifecycleEntriesQuery } from './hooks'
 
-// ── 官方组件 ────────────────────────────────────────────────────────────────
+// ── UI ──────────────────────────────────────────────────────────────────────
 
-/**
- * 归档/回收站列表页（routes 薄页直接挂 mode/title/icon）。
- */
+/** 归档/回收站列表页（routes 薄页挂 mode）。 */
 export { LifecycleList } from './components/LifecycleList'
 
-/** 生命周期看板（EntityScene adapter / 测试）。 */
+/** 生命周期看板（EntityScene adapter）。 */
 export { LifecycleBoard } from './components/LifecycleBoard'
+
+// ── 批量 / 命令 ─────────────────────────────────────────────────────────────
 
 /**
  * 生命周期批量：动作定义 + adapter。
- * 壳 Boundary 只 compose 各域 public，bulk-action 只做引擎。
+ * 壳 Boundary 只 compose 各域 public。
  */
-export {
-	getLifecycleBulkActionDefinition,
-	lifecycleBulkActionDefinitions,
-	lifecycleBulkActions,
-	createLifecycleBulkAdapter,
-	type LifecycleBulkAdapter,
-	type LifecycleBulkMutationReport,
-} from './bulk'
-
-/** 命令选中快照（归档/回收站 → command）。 */
-export { buildLifecycleCommandSelection } from './model/buildLifecycleCommandSelection'
+export { lifecycleBulkActions, createLifecycleBulkAdapter } from './bulk'
 
 /** 归档/回收站 bulk 命令 handlers（供壳 compose）。 */
 export { registerLifecycleCommands } from './commands/registerLifecycleCommands'
