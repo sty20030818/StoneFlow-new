@@ -20,7 +20,7 @@
  *
  * 新增导出前：确认**已有**外消费者；禁止「预防性」撑大 public。
  *
- * @see Docs To-Be T1 §4 Public vs Private
+ * placement 窄契约亦可：`@/features/task/contract` / `@/features/metadata-fields`。
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -33,16 +33,6 @@
  */
 export { TaskListSceneView } from './components/TaskListSceneView'
 
-/**
- * 三列表唯一 wiring：data / filter / display / selection / preview / bulk 注册。
- * 一般经 {@link TaskListSceneView} 使用；厚页（如 project 内嵌）可直接调。
- */
-export {
-	useTaskListScene,
-	type TaskListSceneVariant,
-	type TaskListSceneFacade,
-} from './hooks/useTaskListScene'
-
 /** 任务看板 UI；layout EntityScene adapter、project 页等复用。 */
 export { TaskBoard } from './components/TaskBoard'
 
@@ -51,7 +41,7 @@ export { TaskCreateContent } from './components/TaskCreateContent'
 
 /**
  * 创建表单内核：schema / 默认值 / → CreateTaskInput。
- * 主窗 Create 与后续 QC 等入口共用，禁止各端再复制一套字段映射。
+ * 主窗 Create 与 Launcher 等入口共用，禁止各端再复制一套字段映射。
  */
 export {
 	taskCreateSchema,
@@ -71,12 +61,9 @@ export { resolveCommandOpenTargetPath, resolveShellDetailState } from './model/t
  * 壳 Boundary 只 compose 各域 public，bulk-action 只做引擎。
  */
 export {
-	getTaskBulkActionDefinition,
-	taskBulkActionDefinitions,
 	taskBulkActions,
 	type TaskBulkActionPayload,
 	createTaskBulkAdapter,
-	resolveBulkCompleteStatus,
 	type TaskBulkAdapter,
 	type TaskBulkMutationReport,
 } from './bulk'
@@ -87,13 +74,11 @@ export { useTaskPageFilterController } from './hooks/useTaskPageFilterController
 /** 命令选中快照（列表 → command）。 */
 export { buildTaskCommandSelection } from './model/buildTaskCommandSelection'
 
-/** placement 目标与分组（窄契约亦见 `./contract`）。 */
+/** placement 目标类型（实现细节走 metadata-fields / contract）。 */
 export type { TaskPlacementTarget } from './model/taskPlacementTarget'
-export {
-	getTaskPlacementTargetValue,
-	isTaskPlacementTargetEqual,
-	resolveTaskPlacementTarget,
-} from './model/taskPlacementTarget'
+
+/** metadata-fields adapter 组装 placement 分组。 */
+export { buildTaskPlacementGroups } from './model/taskPlacementGroups'
 export type {
 	BuildTaskPlacementGroupsInput,
 	TaskPlacementGroup,
@@ -101,25 +86,12 @@ export type {
 	TaskPlacementGroupProject,
 	TaskPlacementGroupSpace,
 } from './model/taskPlacementGroups'
-export {
-	buildTaskPlacementGroups,
-	findTaskPlacementGroupItem,
-	getTaskPlacementGroupSearchText,
-} from './model/taskPlacementGroups'
 
 /** 装配根注册 metadata 的 status/priority 图标。 */
 export { registerTaskMetadataIcons } from './model/registerTaskMetadataIcons'
 
-/**
- * 命令宿主注册表 + 行快捷键共用的 bulk 执行。
- * 命令板与行快捷键必须走同一 action id，避免行为分叉。
- */
-export {
-	registerTaskCommands,
-	runTaskRowBulkCommand,
-	getTaskBulkCommandActionId,
-	type TaskBulkCommandKind,
-} from './commands'
+/** 命令宿主注册表（行快捷键在 feature 内直接调 handlers，不经本 barrel）。 */
+export { registerTaskCommands } from './commands'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 详情三形态（detail 子树 · 经本文件再导出，外层不 import detail/）
@@ -166,14 +138,13 @@ export { useTaskSelection } from './model/useTaskSelection'
 export { useTaskListData } from './hooks/useTaskData'
 
 /** 列表 Query（与 list 页同 key，供 nav badges 等复用缓存）。 */
-export { useTaskListQuery, taskListQueryOptions } from './hooks/task.queries'
-export { taskKeys } from './hooks/task.keys'
+export { useTaskListQuery } from './hooks/task.queries'
 
 /** 详情 loader / ensureQueryData 用的稳定 queryOptions。 */
 export { taskDetailQueryOptions } from './hooks/task.queries'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Model · 稳定标签 / 选项 / 指示器（metadata、command、QC 等）
+// Model · 稳定标签 / 选项 / 指示器（metadata、command、Launcher 等）
 // ─────────────────────────────────────────────────────────────────────────────
 
 export {
@@ -186,12 +157,7 @@ export {
 
 export { TASK_STATUS_OPTIONS, formatTaskStatusLabel, getTaskStatusOption } from './model/taskStatus'
 
-export {
-	TASK_CREATE_PLACEMENT_OPTIONS,
-	formatTaskPlacementLabel,
-	getTaskPlacement,
-	buildCreatePlacementInput,
-} from './model/taskPlacement'
+export { formatTaskPlacementLabel } from './model/taskPlacement'
 
 /** 纯展示优先级图标（无业务 hook；metadata 可用）。 */
 export { PriorityIcon } from './model/indicators/PriorityIcon'
@@ -218,15 +184,7 @@ export {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // API · 仅外放「已被壳 / 其它 feature 使用」的 IO
-// 组件与 routes 优先走 hooks；下列函数供 badge、lifecycle、bulk、导航记忆等
+// 组件与 routes 优先走 hooks；下列函数供 badge、lifecycle、导航记忆等
 // ─────────────────────────────────────────────────────────────────────────────
 
-export {
-	listTasks,
-	getTaskDetail,
-	createTask,
-	updateTask,
-	archiveTask,
-	restoreTask,
-	deleteTask,
-} from './api/tasks'
+export { getTaskDetail, createTask, restoreTask, deleteTask } from './api/tasks'

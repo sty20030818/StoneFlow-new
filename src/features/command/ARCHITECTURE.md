@@ -1,7 +1,7 @@
 # command · 命令 / 快捷键 / 命令板
 
-> 作用：描述 **当前已落地** 的 `src/features/command` 边界  
-> 最后更新：2026-07-17
+> 作用：描述 **当前已落地** 的 `src/features/command` 边界
+> 最后更新：2026-07-18
 
 ---
 
@@ -36,13 +36,21 @@ Command 元数据（id / title / when）在 commands/
 ```txt
 src/features/command/
 ├── ARCHITECTURE.md
-├── index.ts
-├── api/                 # 外部唤起打开意图等 IPC
-├── host/                # CommandHostContext 端口类型
-├── adapters/            # ShellCommandActions + bindShellCommand
-├── commands/            # 元数据定义 + createShellCommandRegistry
+├── index.ts                 # public：外模块已消费符号（已收窄）
+├── api/                     # 外部唤起打开意图等 IPC
+├── host/                    # CommandHostContext 端口类型
+├── adapters/                # ShellCommandActions + bindShellCommand
+├── commands/                # 元数据定义 + createShellCommandRegistry
 ├── core/
-├── components/          # CommandMenu · ShortcutHelp …
+├── components/
+│   ├── CommandMenu.tsx              # 壳：Dialog / input / mode 分流
+│   ├── CommandMenuSelectionChips.tsx
+│   ├── CommandMenuListPrimitives.tsx
+│   ├── ScopedPickerCommandGroup.tsx
+│   ├── FilterPickerCommandGroup.tsx
+│   ├── command-menu-helpers.ts      # 占位/空态/meta/icon 纯函数
+│   ├── ShortcutHelp · ChordHint · ShortcutTokens …
+│   └── command-menu-model|types|metadata|option-visuals
 ├── keybinding/
 ├── runtime/
 └── shortcuts/

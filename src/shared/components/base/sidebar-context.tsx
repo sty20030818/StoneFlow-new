@@ -27,11 +27,7 @@ export type SidebarContextValue = {
 	overlayOpacity: number
 	/** 断点切换的首帧防闪标记；只用于关闭 sidebar 面板自身过渡。 */
 	isBreakpointSwitching: boolean
-	/** @deprecated 用 desktopPreference 表达桌面态偏好。 */
-	sidebarState: SidebarDesktopState
 	sidebarWidth: number
-	/** @deprecated 用 mobileOpen 表达移动端抽屉态。 */
-	drawerOpen: boolean
 	isMobile: boolean
 	toggleSidebar: () => void
 	setDrawerOpen: (open: boolean) => void

@@ -1,9 +1,9 @@
 # react-doctor 基线报告摘要
 
-> 扫描时间：2026-07-15（会话日）  
-> 工具：React Doctor v0.7.8  
-> 范围：709 files · 全量  
-> 分数：**51 / 100 Critical**  
+> 扫描时间：2026-07-15（会话日）
+> 工具：React Doctor v0.7.8
+> 范围：709 files · 全量
+> 分数：**51 / 100 Critical**
 > 原始：`baseline-2026-07-15.log` · `baseline-2026-07-15.diagnostics.json`
 
 ## 1. 总量
@@ -81,9 +81,9 @@
 
 ## 6. Phase D 复跑（2026-07-16 · post-phase-d）
 
-> 工具：React Doctor **v0.7.8**（与基线同主版本）  
-> 范围：741 files · 全量  
-> 分数：**51 / 100 Critical**（与基线持平）  
+> 工具：React Doctor **v0.7.8**（与基线同主版本）
+> 范围：741 files · 全量
+> 分数：**51 / 100 Critical**（与基线持平）
 > 原始：`post-phase-d-2026-07-16.log` · `post-phase-d-2026-07-16.diagnostics.json`
 
 ### 6.1 总量对比
@@ -111,9 +111,9 @@
 
 ### 6.3 仍热点（非分层门禁）
 
-- `useWorkspaceSync.ts`（22）— deps/handler 稳定化，**独立小刀**  
-- `-detail-route-helpers.tsx`（11）  
-- `CommandMenu` / `EntityScene` / Providers — 实现债，非 Phase D 未交付  
+- `useWorkspaceSync.ts`（22）— deps/handler 稳定化，**独立小刀**
+- `-detail-route-helpers.tsx`（11）
+- `CommandMenu` / `EntityScene` / Providers — 实现债，非 Phase D 未交付
 
 **结论：** 重构**未引入成片新 error**；总分未升因大量 maintainability 警告与 workspace fresh-deps 仍在。符合 T6「不要求单史诗 80+，要求不因重构引入成片新 error」。
 
@@ -121,6 +121,35 @@
 
 ```bash
 npx react-doctor@latest . -y --verbose --json \
-  --json-out Docs/03-前端架构解析/附录/react-doctor/post-phase-d-YYYY-MM-DD.diagnostics.json
+  --json-out Documents/03-前端架构解析/附录/react-doctor/post-phase-d-YYYY-MM-DD.diagnostics.json
 # 人类可读另存：tee …/post-….log（勿单独 --score，会只输出数字）
 ```
+
+---
+
+## 7. T2 POLISH 复跑（2026-07-18 · post-polish）
+
+> 工具：React Doctor **v0.8.1**（基线/Phase D 为 v0.7.8；规则集有漂移，**分数口径对齐即可**）
+> 分数：**51 / 100 Critical**（与 Phase D 持平 · 验收「不恶化」）
+> 原始：`post-polish-2026-07-18.diagnostics.json`
+
+### 7.1 总量对比
+
+| 指标 | Phase D 2026-07-16 | POLISH 后 | Δ |
+|------|--------------------|-----------|---|
+| 分数 | 51 Critical | 51 Critical | 0 |
+| issues | 262 | 268 | +6（含工具升级噪声） |
+| error | 43 | **40** | **−3** |
+| warning | 219 | 228 | +9 |
+
+### 7.2 本轮代码侧动作（对照）
+
+- public 收窄：command / task / bulk-action / metadata-fields / shell-dialogs
+- 兼容窗删除：`goSettings`、dialog 旧 selectors、sidebar deprecated 字段
+- 体量：`CommandMenu` ~1541 → 壳 196 + 5 子模块
+
+### 7.3 仍热点（T2 后债 · 不挡收口）
+
+- `unused-export` 仍高（public 收窄后包内 re-export 仍会被扫）
+- `TaskRowShortcutScope` / `SettingsSyncPanel` / `ShellSidebar` 等 >400 巨石
+- `useWorkspaceSync` fresh-deps

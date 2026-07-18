@@ -216,13 +216,3 @@ export const selectCreateDialogType = (state: DialogState) => state.createDialog
 export const selectTaskCreateDraft = (state: DialogState) => state.taskCreateDraft
 export const selectTaskCreatePresentation = (state: DialogState) => state.taskCreatePresentation
 export const selectCustomDateDialog = (state: DialogState) => state.customDateDialog
-
-// 向后兼容 selectors（供未迁移的调用方使用）
-export const selectIsTaskCreateOpen = (state: DialogState) => state.createDialogType === 'task'
-export const selectIsProjectCreateOpen = (state: DialogState) =>
-	state.createDialogType === 'project'
-export const selectTaskCreateProjectId = (state: DialogState) =>
-	state.taskCreateDraft.projectId ?? null
-export const selectTaskCreateStatus = (state: DialogState) => state.taskCreateDraft.status ?? 'todo'
-export const selectTaskCreateInitialPlacement = (state: DialogState) =>
-	state.taskCreateDraft.placement ?? null

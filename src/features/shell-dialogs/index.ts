@@ -21,7 +21,5 @@ export {
 
 export {
 	useShellPreferenceStore,
-	selectProjectTreeCollapsed,
 	selectProjectTaskBoardOpenSections,
-	toProjectTreeKey,
 } from './useShellPreferenceStore'

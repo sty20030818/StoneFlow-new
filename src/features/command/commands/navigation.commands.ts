@@ -73,7 +73,6 @@ export const navigationCommands: Command[] = [
 		keywords: ['trash', 'go', '回收站'],
 		run: () => {},
 	},
-	// 设置入口统一用 general.openSettings（Cmd+, / 命令面板「打开设置」）；不再单独注册 goSettings
 	{
 		id: COMMAND_IDS.goRecent,
 		title: '前往最近访问',

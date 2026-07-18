@@ -3,7 +3,6 @@ import { CalendarIcon } from 'lucide-react'
 
 import {
 	createDueDateActionSpec,
-	createPlacementActionSpec,
 	createProjectParentMetadataDropdownProps,
 	createTaskPlacementGroupedDropdownProps,
 	createPriorityActionSpec,
@@ -12,6 +11,7 @@ import {
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
 } from '@/features/metadata-fields'
+import { createPlacementActionSpec } from './core'
 
 describe('metadata-fields', () => {
 	it('status / priority / dueDate action spec 输出最终文案和数字规则', () => {

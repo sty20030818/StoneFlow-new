@@ -3,6 +3,7 @@
  *
  * 显式 export 清单（禁止 `export *` 扫子树）。
  * 新增对外符号时改本文件，勿直接依赖 core/components 深路径。
+ * Registry/Runtime/ConfirmDialog 等引擎内部物不进 public。
  */
 
 // ── core ────────────────────────────────────────────────────────────────────
@@ -26,21 +27,15 @@ export {
 	type BulkSelectionSnapshot,
 	type BulkSelectionSource,
 	type KnownBulkActionId,
-	BulkActionRegistry,
-	BulkActionRuntime,
 	createBulkActionResult,
-	getBulkActionConfirmCopy,
 	shouldConfirmAction,
 	createBulkSelectionSnapshot,
-	getBulkActionResultFeedback,
 	shouldClearBulkSelection,
 	type BulkActionResultMessageLabels,
 	type BulkActionResultFeedback,
 	createCommandBulkSelectionSnapshot,
-	createTaskBulkSelectionSnapshot,
 	createTaskBulkSelectionSnapshotFromTasks,
 	createLifecycleBulkSelectionSnapshot,
-	createProjectBulkSelectionSnapshot,
 	createProjectBulkSelectionSnapshotFromProjects,
 } from './core'
 
@@ -48,12 +43,7 @@ export {
 
 // ── runtime ─────────────────────────────────────────────────────────────────
 
-export {
-	BulkActionProvider,
-	useBulkActionContext,
-	useBulkActionRuntime,
-	useBulkActionRunner,
-} from './runtime'
+export { BulkActionProvider, useBulkActionContext } from './runtime'
 
 // ── selection ───────────────────────────────────────────────────────────────
 
@@ -64,7 +54,6 @@ export { useSectionSelection } from './selection'
 export {
 	BulkActionBar,
 	type BulkActionBarProps,
-	BulkActionConfirmDialog,
 	BulkCommandMenuAction,
 	showBulkActionResultToast,
 } from './components'

@@ -16,7 +16,9 @@ function openSession(
 			currentScope: { type: 'space', spaceId: 'space-1' },
 			defaultSpaceId: 'space-1',
 			defaultPlacement: { kind: 'inbox', projectId: null },
-			spaces: [{ id: 'space-1', name: '工作', iconKey: 'briefcase', colorKey: 'blue', isDefault: true }],
+			spaces: [
+				{ id: 'space-1', name: '工作', iconKey: 'briefcase', colorKey: 'blue', isDefault: true },
+			],
 			projects: [
 				{ kind: 'inbox', id: null, name: '收集箱', spaceId: 'space-1' },
 				{ kind: 'noProject', id: null, name: '无项目', spaceId: 'space-1' },

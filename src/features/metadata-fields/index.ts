@@ -2,6 +2,7 @@
  * @fileoverview **metadata-fields · 主入口（`@/features/metadata-fields`）**
  *
  * 显式 export 清单。纯 task 标签/图标优先 `@/features/task`。
+ * 仅包内 UI 原语与日期文案工具不进 public。
  */
 
 // ── core ────────────────────────────────────────────────────────────────────
@@ -30,35 +31,12 @@ export type {
 
 export {
 	createDueDateActionSpec,
-	createPlacementActionSpec,
 	createPriorityActionSpec,
-	createSpaceActionSpec,
 	createStatusActionSpec,
 	mapMetadataActionSpecToDropdownProps,
-	renderMetadataActionIcon,
 	setMetadataDomainIconRenderer,
-	buildMetadataShortcutItems,
-	defaultMetadataValueComparator,
-	getMetadataFieldIndicator,
-	addLocalDays,
-	createMetadataDateOptions,
-	createMetadataDateOptionsConfig,
-	formatMetadataDisplayDate,
-	formatLocalDate,
-	getEndOfLocalWeek,
 	normalizeMetadataDateValue,
-	startOfLocalDay,
-	formatCustomDateInputValue,
-	formatCustomDateStorageValue,
-	getCustomDateDialogDescription,
-	getCustomDateDialogRemoveLabel,
-	getCustomDateDialogSubmitLabel,
-	getCustomDateDialogTitle,
-	normalizeCustomDateInputValue,
-	parseCustomDateInputValue,
 	buildTaskPlacementGroups,
-	findTaskPlacementGroupItem,
-	getTaskPlacementGroupSearchText,
 	getTaskPlacementTargetValue,
 	isTaskPlacementTargetEqual,
 	resolveTaskPlacementTarget,
@@ -67,11 +45,6 @@ export {
 // ── components ──────────────────────────────────────────────────────────────
 
 export {
-	MetadataFieldButton,
-	stopMetadataFieldEventPropagation,
-	type MetadataFieldButtonProps,
-	MetadataFieldMenuItem,
-	type MetadataFieldMenuItemProps,
 	MetadataFieldDropdown,
 	type MetadataFieldDropdownProps,
 	MetadataDateDropdown,
@@ -81,8 +54,6 @@ export {
 	CustomDateDialog,
 	MetadataPlacementDropdown,
 	type MetadataPlacementDropdownProps,
-	MetadataPlacementGroupList,
-	type MetadataPlacementGroupListProps,
 } from './components'
 
 // ── adapters ────────────────────────────────────────────────────────────────
@@ -90,9 +61,7 @@ export {
 export {
 	createTaskPlacementGroupedDropdownProps,
 	createTaskPriorityMetadataDropdownProps,
-	createTaskPriorityMetadataOptions,
 	createTaskStatusMetadataDropdownProps,
-	createTaskStatusMetadataOptions,
 	taskDateMetadataIcons,
 	createProjectParentMetadataDropdownProps,
 	projectDateMetadataIcons,

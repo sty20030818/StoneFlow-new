@@ -5,18 +5,17 @@
  *
  * 外模块：`import { … } from '@/features/command'`
  * 禁止：`@/features/command/core|components|keybinding|…`
+ *
+ * public 只保留外模块已消费的符号；keybinding/菜单内部工具留在子路径自用。
  */
 
 // ── Core ────────────────────────────────────────────────────────────────────
 
 export {
 	createEmptyCommandContext,
-	createEmptyCommandRowTargetContext,
 	createEmptyCommandSelectionContext,
 	CommandRegistry,
 	CommandRuntime,
-	getVisibleCommands,
-	sortCommandsByPriority,
 	COMMAND_IDS,
 } from './core'
 
@@ -43,21 +42,7 @@ export type {
 
 // ── Keybinding ──────────────────────────────────────────────────────────────
 
-export {
-	DEFAULT_KEYBINDINGS,
-	areStrokesEqual,
-	isChordExpired,
-	KEYBINDING_CHORD_TIMEOUT_MS,
-	matchKeybindingEvent,
-	normalizeKeybindingStroke,
-	KeybindingRegistry,
-	formatKeybindingSequence,
-	formatKeybindingStroke,
-	tokenizeKeybindingSequence,
-	tokenizeKeybindingStroke,
-	isEditableTarget,
-	shouldIgnoreKeybindingEvent,
-} from './keybinding'
+export { DEFAULT_KEYBINDINGS, matchKeybindingEvent } from './keybinding'
 
 export type {
 	Keybinding,
@@ -78,28 +63,13 @@ export { useCommandContext, useCommandRunner, useCommandRuntime } from './runtim
 
 // ── Shortcuts ───────────────────────────────────────────────────────────────
 
-export {
-	CommandShortcutLayer,
-	buildChordSession,
-	getCommandShortcutDisplay,
-	getCommandShortcutTokens,
-	useCommandShortcuts,
-} from './shortcuts'
+export { CommandShortcutLayer, getCommandShortcutTokens } from './shortcuts'
 
 export type { CommandChordSession, ChordHintOption } from './shortcuts'
 
 // ── UI ──────────────────────────────────────────────────────────────────────
 
-export {
-	ChordHint,
-	CommandMenu,
-	buildCommandMenuGroups,
-	getCommandMenuShortcut,
-	ShortcutTokens,
-	ShortcutHelp,
-	buildShortcutHelpGroups,
-	getShortcutHelpShortcut,
-} from './components'
+export { ChordHint, CommandMenu, ShortcutTokens, ShortcutHelp } from './components'
 
 export type {
 	CommandMenuProject,
@@ -113,13 +83,7 @@ export type {
 
 // ── Shell adapter ───────────────────────────────────────────────────────────
 
-export { bindShellCommand, createDisabledCommand, createShellCommandAdapter } from './adapters'
-
 export type { ShellCommandActions, ShellCommandAdapter, ShellNavigationTarget } from './adapters'
-
-// ── Registry factory ────────────────────────────────────────────────────────
-
-export { allCommands, commandRegistry, createShellCommandRegistry } from './commands'
 
 // ── IPC · 外部/唤起打开意图 ─────────────────────────────────────────────────
 

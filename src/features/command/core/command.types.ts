@@ -29,7 +29,6 @@ export const COMMAND_IDS = {
 	goProjects: 'navigation.goProjects',
 	goArchive: 'navigation.goArchive',
 	goTrash: 'navigation.goTrash',
-	goSettings: 'navigation.goSettings',
 	goRecent: 'navigation.goRecent',
 	taskComplete: 'task.complete',
 	taskSelect: 'task.select',
