@@ -36,7 +36,7 @@
 | 波次 | 模块 | ~行 | 类 | 状态 | 说明 |
 |------|------|-----|-----|------|------|
 | **0** | task | 13k | domain | **done** | [11](./11-Task样板重构执行计划.md) |
-| **1** | **command** | 7.3k | platform | **C0–C1 done · 余 C2–C5** | C3 余债：Host/adapter |
+| **1** | **command** | 7.3k | platform | **C0–C2 done · 余 C3–C5** | adapter 必填表仍厚 |
 | 1b | bulk-action | 1.7k | platform | pending | 轻扫 B3；无债则勾掉 |
 | **2** | project | 2.8k | domain | pending | 抄 task 检查表（P2） |
 | 2 | lifecycle | 2.5k | domain | pending | Y2 |
@@ -84,11 +84,12 @@
 | 域 `register*Commands` | **已有**（task/project/lifecycle/filter/submit） |
 | 壳 `registerShellChromeCommands` | **在 layout/command-bridge** |
 | `composeShellCommandActions` + 必填校验 | **仍在** |
-| `bindShellCommand` / `ShellCommandActions` | **仍厚**（~383） |
-| `useShellCommandSystem` | **~402**（Host 胶水） |
+| `bindShellCommand` / `ShellCommandActions` | **仍厚**（~383）· 待 C3 |
+| `useShellCommandSystem` | **~200**（已拆 open/context/projects/bulk） |
 | CommandMenu 主文件 | **~196**（巨石已拆） |
 | `command → layout` | **0** |
 | ARCHITECTURE 定稿 / public TSDoc | **C0–C1 done** |
+| Host 内拆 | **C2 done** |
 
 ### 2.5 阶段总表（command）
 
@@ -96,7 +97,7 @@
 |------|-----|------|--------|------|
 | 0 | DOC | ARCHITECTURE 定稿；M-F-COMMAND 落地对照 | 无 | **done**（2026-07-19） |
 | 1 | NORM | public / TSDoc；入口头注释 | 低 | **done**（2026-07-19） |
-| 2 | HOST | 瘦 `useShellCommandSystem`；bridge 只 chrome+compose | 中 | pending |
+| 2 | HOST | 瘦 `useShellCommandSystem`；bridge 只 chrome+compose | 中 | **done**（2026-07-19） |
 | 3 | ADAPTER | 缩 `ShellCommandActions` / bind 摩擦（或登记表进化） | 中高 | pending |
 | 4 | VOLUME | 菜单/keybinding 边角（按余力） | 低 | pending |
 | 5 | CLOSE | 对照勾选；bulk 轻扫；波次 2 入口备忘 | 无 | pending |
@@ -138,16 +139,18 @@
 |------|------|
 | 目标 | Host 可扫完；layout 无业务 handler 膨胀点 |
 | 破坏性 | 中（路径/钩子可搬，行为不变） |
-| 状态 | pending |
+| 状态 | **done**（2026-07-19） |
 
-**建议落地：**
+### 落地
 
-1. `useShellCommandSystem`：只组 Context + 调 `useShellCommandActions` + 挂 Shortcut/Menu；副作用编排能下沉则下沉。
-2. `command-bridge`：**只** `registerShellChromeCommands` + compose 各域 register；README 与定稿一致。
-3. Host 新端口：同时改 `CommandHostContext` 与 bridge deps（单一扩展点）。
-4. rg 确认：`features/command` 无 `@/layout`；domain register 无 layout 深依赖。
+| 项 | 结果 |
+|----|------|
+| Host 编排 | `useShellCommandSystem` ~200；只接线 |
+| 子模块 | `useShellCommandOpenRouting` · `useShellCommandHostContext` · `useShellCommandProjects` · `runShellCommandBulkAction` · 既有 taskMeta |
+| bridge | 仍只 chrome + compose；README 澄清 |
+| 边界 | command → layout 0；相关测 149 绿 |
 
-**验收：** 命令板开合、任务 complete/archive、壳菜单/创建、导航类命令冒烟；相关单测绿。
+**验收：** tsc · boundaries · command+layout vitest 绿（人工冒烟未跑）。
 
 ---
 
@@ -265,3 +268,4 @@ src/CONVENTIONS.md             → HOW
 |------|------|
 | 2026-07-19 | 初版：波次 0–4；command 阶段 C0–C5；对齐 task 样板后扩散 |
 | 2026-07-19 | C0 DOC + C1 NORM done：定稿 ARCHITECTURE；public 收窄 + TSDoc |
+| 2026-07-19 | C2 HOST done：useShellCommandSystem 内拆至 ~200 |

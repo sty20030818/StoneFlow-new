@@ -15,9 +15,10 @@
 | 域 `register*Commands` 贡献 handlers | **done** | task/project/lifecycle/filter/submit |
 | layout 不写 domain mutation | **大致 done** | bridge 只 chrome + compose；Host 仍厚 |
 | CommandMenu 巨石拆分 | **done** | 主文件 ~196 + 分段 |
-| Host 极薄（只 Context + 挂 UI） | **未完** | `useShellCommandSystem` ~402 · 计划 C2 |
+| Host 极薄（只 Context + 挂 UI） | **进行中** | Host ~200 已内拆；仍可再瘦 · 计划 C3 后复看 |
 | 缩/淘汰 adapter 必填上帝表 | **未完** | `ShellCommandActions` + compose 必填 · 计划 C3 |
-| ARCHITECTURE 定稿 + public/TSDoc | **进行中** | C0/C1 |
+| ARCHITECTURE 定稿 + public/TSDoc | **done** | C0/C1 |
+| Host 内拆（打开/Context/项目列表） | **done** | C2 |
 | 禁 command → layout | **done** | 应保持 0 |
 
 **改码请读：** `src/features/command/ARCHITECTURE.md` + `src/CONVENTIONS.md`。

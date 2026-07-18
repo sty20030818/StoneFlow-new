@@ -1,16 +1,9 @@
-import { startTransition, useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { useCallback, useMemo, useState } from 'react'
 
-import { openTaskDetail } from '@/app/navigation'
 import type { ShellRoute } from '@/app/navigation'
 import type { Scope } from '@/shared/types'
 import type { ShellSectionKey } from '@/layout/types'
 import { useShellCommandActions } from '@/layout/command-bridge/useShellCommandActions'
-import {
-	resolveCommandRoutePage,
-	resolveCommandActivePanel,
-} from '@/layout/shellCommandRouteHelpers'
-import { resolveCommandOpenTargetPath, resolveShellDetailState } from '@/features/task'
 import {
 	selectCommandMenuFilterKind,
 	selectCommandMenuMode,
@@ -20,44 +13,36 @@ import {
 	selectIsShortcutHelpOpen,
 	useDialogStore,
 } from '@/features/shell-dialogs'
-import { listAllVisibleProjects } from '@/features/project'
 import { useCommandSelectionContext } from '@/features/selection'
 import { usePageFilterContext } from '@/features/filter'
 import { useSubmitRegistryActions, useSubmitRegistryContext } from '@/features/submit'
-import { takePendingCommandOpenIntent } from '@/features/command'
 import { useSpaces } from '@/features/space'
 import { useEntityDetailController } from '@/features/entity-detail'
 import { useTaskPreviewController } from '@/features/task'
 import { useSearchFocusIntentStore } from '@/features/global-search'
-import { type CommandOpenPayload, useCommandOpenListener } from '@/shared/events'
 import {
 	DEFAULT_KEYBINDINGS,
 	type CommandChordSession,
 	type Keybinding,
-	useCommandContext,
 	useCommandRunner,
 	useCommandRuntime,
+	COMMAND_IDS,
+	type CommandId,
 } from '@/features/command'
-import { COMMAND_IDS, type CommandContext, type CommandId } from '@/features/command'
-import {
-	createCommandBulkSelectionSnapshot,
-	shouldClearBulkSelection,
-	showBulkActionResultToast,
-	useBulkActionContext,
-	type BulkActionId,
-	type BulkActionPayload,
-	type BulkActionResultMessageLabels,
-	type BulkEntityType,
-} from '@/features/bulk-action'
+import { useBulkActionContext } from '@/features/bulk-action'
 import { createShellCommandTaskMetaHandlers } from '@/layout/model/shellCommandTaskMeta'
+import { createRunEntityBulkActionFromCommand } from '@/layout/model/runShellCommandBulkAction'
+import { useShellCommandOpenRouting } from '@/layout/model/useShellCommandOpenRouting'
+import { useShellCommandProjects } from '@/layout/model/useShellCommandProjects'
+import { useShellCommandHostContext } from '@/layout/model/useShellCommandHostContext'
 
 type OpenTaskCreate = ReturnType<typeof useDialogStore.getState>['openTaskCreateDialog']
 
 /**
- * 命令宿主：把壳上的 route/selection/filter/submit/预览 聚合成 CommandContext + Runtime。
+ * 命令宿主：装配 Host 依赖 → compose actions → Context + Runtime。
  *
- * 输出字段多，是因为 Header / ShortcutLayer / 命令板 需要的形状不同；
- * 不是同一状态的多份拷贝（除 command UI 协议里 isPreviewOpen ≈ isRightPreviewOpen 历史双字段）。
+ * 打开路由 / 项目列表 / Context 切片 / bulk 执行已拆到同夹子模块；
+ * 本文件只做接线，不写 domain mutation。
  */
 export function useShellCommandSystem({
 	currentScope,
@@ -86,8 +71,6 @@ export function useShellCommandSystem({
 	goForward: () => void
 	canGoBack: boolean
 }) {
-	const navigate = useNavigate({ from: '/' })
-
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
 	const commandMenuMode = useDialogStore(selectCommandMenuMode)
 	const commandMenuFilterKind = useDialogStore(selectCommandMenuFilterKind)
@@ -114,124 +97,21 @@ export function useShellCommandSystem({
 	const { status: spaceStatus } = useSpaces()
 
 	const [chordSession, setChordSession] = useState<CommandChordSession | null>(null)
-	const [commandProjects, setCommandProjects] = useState<
-		Array<{
-			id: string
-			label: string
-			spaceId: string
-			spaceName: string
-			completedAt: string | null
-		}>
-	>([])
 
-	const routeProjectId = shellRoute.kind === 'project' ? shellRoute.projectId : null
 	const isTaskDetailPage = shellRoute.kind === 'task'
+	const { openTaskPage, navigate } = useShellCommandOpenRouting({
+		shellRoute,
+		spaceStatus,
+		activeDetail,
+		isTaskDetailPage,
+		closeEntityDrawer,
+		taskPreviewController,
+	})
 
-	const openTaskPage = useCallback(
-		({ taskId, spaceId }: { taskId: string; spaceId: string }) => {
-			const targetPath = openTaskDetail(taskId, spaceId)
-			taskPreviewController.closePreview()
-			closeEntityDrawer()
-			if (shellRoute.pathname === targetPath) {
-				return
-			}
-			startTransition(() => {
-				void navigate({ to: targetPath as never })
-			})
-		},
-		[closeEntityDrawer, navigate, shellRoute.pathname, taskPreviewController],
-	)
+	const commandProjects = useShellCommandProjects(isCommandOpen, spaceStatus)
 
-	useEffect(() => {
-		if (!isCommandOpen || spaceStatus !== 'ready' || commandProjects.length > 0) {
-			return
-		}
-		let cancelled = false
-		void listAllVisibleProjects()
-			.then((items) => {
-				if (cancelled) return
-				setCommandProjects(
-					items.map((project) => ({
-						id: project.id,
-						label: project.name,
-						spaceId: project.spaceId,
-						spaceName: project.spaceName,
-						completedAt: project.completedAt,
-					})),
-				)
-			})
-			.catch(() => {
-				if (!cancelled) setCommandProjects([])
-			})
-		return () => {
-			cancelled = true
-		}
-	}, [commandProjects.length, isCommandOpen, spaceStatus])
-
-	useEffect(() => {
-		if ((!activeDetail && !isTaskDetailPage) || !taskPreviewController.previewState.open) {
-			return
-		}
-		taskPreviewController.closePreview()
-	}, [activeDetail, isTaskDetailPage, taskPreviewController])
-
-	const handleCommandOpen = useCallback(
-		(payload: CommandOpenPayload) => {
-			if (payload.kind === 'task') {
-				openTaskPage({ taskId: payload.id, spaceId: payload.spaceId })
-				return
-			}
-			const targetPath = resolveCommandOpenTargetPath(payload)
-			closeEntityDrawer()
-			if (shellRoute.pathname === targetPath) return
-			startTransition(() => {
-				void navigate({ to: targetPath as never })
-			})
-		},
-		[closeEntityDrawer, navigate, openTaskPage, shellRoute.pathname],
-	)
-
-	useCommandOpenListener(handleCommandOpen)
-
-	useEffect(() => {
-		if (spaceStatus !== 'ready') {
-			return
-		}
-		let cancelled = false
-		void takePendingCommandOpenIntent()
-			.then((payload) => {
-				if (cancelled || !payload) return
-				handleCommandOpen(payload)
-			})
-			.catch((error) => {
-				console.error('take pending command open intent failed', { error })
-			})
-		return () => {
-			cancelled = true
-		}
-	}, [handleCommandOpen, spaceStatus])
-
-	const runEntityBulkActionFromCommand = useCallback(
-		async (
-			ctx: CommandContext,
-			entity: BulkEntityType,
-			actionId: BulkActionId,
-			labels: BulkActionResultMessageLabels,
-			payload?: BulkActionPayload,
-		) => {
-			if (ctx.selection.type !== entity || ctx.selection.ids.length === 0) {
-				return
-			}
-			const snapshot = createCommandBulkSelectionSnapshot(ctx.selection, entity, 'command-menu')
-			const result = await runBulkAction(actionId, snapshot, payload)
-			if (shouldClearBulkSelection(result)) {
-				ctx.selection.clearSelection?.()
-			}
-			const feedback = showBulkActionResultToast(result, labels)
-			if (feedback.shouldThrow) {
-				throw result.error
-			}
-		},
+	const runEntityBulkActionFromCommand = useMemo(
+		() => createRunEntityBulkActionFromCommand(runBulkAction),
 		[runBulkAction],
 	)
 
@@ -261,115 +141,20 @@ export function useShellCommandSystem({
 		toggleShortcutHelp,
 	})
 
-	const detailState = useMemo(
-		() =>
-			resolveShellDetailState({
-				activeDetailKind: activeDetail?.kind ?? null,
-				routeKind: shellRoute.kind,
-			}),
-		[activeDetail?.kind, shellRoute.kind],
-	)
-
-	const commandRoute = useMemo(
-		() => ({
-			page: resolveCommandRoutePage(activeSection),
-			projectId: routeProjectId ?? undefined,
-		}),
-		[activeSection, routeProjectId],
-	)
-
-	const commandFocus = useMemo(
-		() => ({
-			activePanel: resolveCommandActivePanel({
-				isCommandOpen,
-				isShortcutHelpOpen,
-				isModalOpen: createDialogType !== null,
-				isPreviewOpen: taskPreviewController.previewState.open,
-				isDetailOpen: detailState.isDetailOpen,
-			}),
-		}),
-		[
-			createDialogType,
-			detailState.isDetailOpen,
-			isCommandOpen,
-			isShortcutHelpOpen,
-			taskPreviewController.previewState.open,
-		],
-	)
-
-	const previewOpen = taskPreviewController.previewState.open
-
-	const commandUi = useMemo(
-		() => ({
-			isCommandMenuOpen: isCommandOpen,
-			isPreviewOpen: previewOpen,
-			/** command 协议历史字段，与 isPreviewOpen 同值 */
-			isRightPreviewOpen: previewOpen,
-			isDetailOpen: detailState.isDetailOpen,
-			detailEntityType: detailState.detailEntityType,
-			isModalOpen: createDialogType !== null || isShortcutHelpOpen,
-		}),
-		[
-			createDialogType,
-			detailState.detailEntityType,
-			detailState.isDetailOpen,
-			isCommandOpen,
-			isShortcutHelpOpen,
-			previewOpen,
-		],
-	)
-
-	const commandSpace = useMemo(
-		() => ({ currentSpaceId: currentSpaceId ?? undefined }),
-		[currentSpaceId],
-	)
-	const commandProject = useMemo(
-		() => ({ currentProjectId: routeProjectId ?? undefined }),
-		[routeProjectId],
-	)
-	const commandView = useMemo(
-		() => ({
-			hasActiveFilters: pageFilter.state.hasActiveFilters,
-			showCompleted: pageFilter.state.showCompleted,
-			priorityFilterValues: pageFilter.state.priorityValues,
-			statusFilterValues: pageFilter.state.statusValues,
-			dateFilterValue: pageFilter.state.dateValue,
-			projectFilterId: pageFilter.state.projectId,
-			projectlessOnly: pageFilter.state.projectlessOnly,
-			filterCapabilities: pageFilter.capabilities,
-			filterKind: commandMenuFilterKind,
-		}),
-		[
-			commandMenuFilterKind,
-			pageFilter.capabilities,
-			pageFilter.state.dateValue,
-			pageFilter.state.hasActiveFilters,
-			pageFilter.state.priorityValues,
-			pageFilter.state.projectId,
-			pageFilter.state.projectlessOnly,
-			pageFilter.state.showCompleted,
-			pageFilter.state.statusValues,
-		],
-	)
-
 	const commandSelection = commandSelectionOverride ?? registeredCommandSelection
-
-	const commandContext = useCommandContext({
-		route: commandRoute,
-		selection: commandSelection,
-		focus: commandFocus,
-		ui: commandUi,
-		space: commandSpace,
-		project: commandProject,
-		view: commandView,
-		submit: {
-			hasActiveTarget: submitRegistry.hasActiveTarget,
-			canSubmitDefault: submitRegistry.canSubmitIntent('default'),
-			canSubmitContinue: submitRegistry.canSubmitIntent('continue'),
-			canSubmitOpen: submitRegistry.canSubmitIntent('open'),
-			submitContinueDisabledReason: submitRegistry.getIntentDisabledReason('continue'),
-			submitOpenDisabledReason: submitRegistry.getIntentDisabledReason('open'),
-		},
+	const commandContext = useShellCommandHostContext({
+		currentSpaceId,
+		activeSection,
+		shellRoute,
+		activeDetail,
+		isCommandOpen,
+		isShortcutHelpOpen,
+		createDialogType,
+		commandMenuFilterKind,
+		commandSelection,
+		pageFilter,
+		submitRegistry,
+		taskPreviewController,
 	})
 
 	const commandRuntime = useCommandRuntime({

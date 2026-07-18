@@ -1,7 +1,7 @@
 # layout 架构短契约
 
-> 作用：描述 **当前已落地** 的 `src/layout` 职责与装配边界  
-> 总览：`src/ARCHITECTURE.md`  
+> 作用：描述 **当前已落地** 的 `src/layout` 职责与装配边界
+> 总览：`src/ARCHITECTURE.md`
 > 最后更新：2026-07-17
 
 ---
@@ -12,8 +12,8 @@
 
 当前负责：
 
-1. **工作区壳层**骨架与跨 feature **装配**（Provider、命令/批量接线、Chrome）  
-2. **Overlays 挂载**；页级 EntityScene 在 `features/entity-scene`  
+1. **工作区壳层**骨架与跨 feature **装配**（Provider、命令/批量接线、Chrome）
+2. **Overlays 挂载**；页级 EntityScene 在 `features/entity-scene`
 3. **ShellContext**：只读 `scope / shellRoute / currentSpaceId / activeSection`
 
 ```txt
@@ -37,11 +37,15 @@ src/layout/
 ├── ShellChrome.tsx · ShellHeader/Sidebar/Main/Footer/Drawer
 ├── CreateDialogShell.tsx
 ├── config.ts                    # 侧栏导航项与分区标签（已去掉无用 drawer mock）
-├── command-bridge/              # 命令 Host compose
+├── command-bridge/              # chrome register + compose 各域 register
 ├── model/
-│   ├── ShellContext.tsx         # 只读壳上下文
-│   ├── useShellCommandSystem.ts # 命令宿主编排
-│   ├── shellCommandTaskMeta.ts  # 命令板任务 meta handlers
+│   ├── ShellContext.tsx
+│   ├── useShellCommandSystem.ts      # 命令 Host 薄编排
+│   ├── useShellCommandHostContext.ts # CommandContext 切片
+│   ├── useShellCommandOpenRouting.ts # IPC/打开意图
+│   ├── useShellCommandProjects.ts    # 命令板项目列表
+│   ├── runShellCommandBulkAction.ts  # 命令板 → bulk
+│   ├── shellCommandTaskMeta.ts       # 命令板任务 meta handlers
 │   └── useShellChromeData / CreateDialog / nav store …
 ├── overlays/ · header/ · sidebar/
 └── …
