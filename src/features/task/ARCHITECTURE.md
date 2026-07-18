@@ -46,7 +46,8 @@ src/features/task/
 ├── bulk/                    # 批量动作 + adapter
 ├── commands/                # registerTaskCommands · 行快捷键共用 bulk
 ├── components/              # 列表场景 UI
-├── detail/                  # 详情子树（外层不 import detail/）
+├── detail/                  # 详情子树；preview = Provider 壳 + store/helpers/register
+├── components/              # 列表 UI；ContextMenu = 主拼装 + helpers/items/metadata
 └── shortcuts/               # TaskRowShortcutScope 壳 + navigation/runtime/scroll/guards
 ```
 

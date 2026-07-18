@@ -5,7 +5,6 @@ import {
 	createPriorityActionSpec,
 	createStatusActionSpec,
 	getTaskPlacementTargetValue,
-	normalizeMetadataDateValue,
 	type TaskPlacementGroup,
 	type TaskPlacementTarget,
 } from '@/features/metadata-fields'
@@ -20,23 +19,27 @@ import {
 	ContextMenuSeparator,
 	ContextMenuSub,
 	ContextMenuSubContent,
-	ContextMenuSubTrigger,
 	ContextMenuTrigger,
 } from '@/shared/components/base/context-menu'
-import {
-	ArchiveIcon,
-	CalendarX2Icon,
-	CheckIcon,
-	FolderIcon,
-	InboxIcon,
-	MinusIcon,
-	TargetIcon,
-	Trash2Icon,
-} from 'lucide-react'
+import { ArchiveIcon, CalendarX2Icon, Trash2Icon } from 'lucide-react'
 import { type TaskPriorityValue } from '@/features/task/model/taskPriority'
 import { PriorityIcon } from '@/features/task/model/indicators/PriorityIcon'
 import { TaskStatusIndicator } from '@/features/task/model/indicators/TaskStatusIndicator'
 import { mapMetadataActionSpecToTaskContextMenuGroup } from './task-context-menu-metadata'
+import {
+	getDeleteShortcutLabel,
+	getIndicatorValues,
+	getPlacementOptionIndicator,
+	getPropertyOptionIndicator,
+	normalizeDateValue,
+	TASK_CONTEXT_SHORTCUTS,
+} from './task-context-menu-helpers'
+import {
+	getPlacementIcon,
+	MenuShortcut,
+	PropertyOptionItem,
+	PropertySubTrigger,
+} from './task-context-menu-items'
 
 type TaskContextMenuProps = {
 	children: ReactNode
@@ -67,14 +70,6 @@ type TaskContextSelectionValues = {
 	placements: TaskPlacementTarget[]
 	projectNames?: Array<string | null>
 }
-
-const TASK_CONTEXT_SHORTCUTS = {
-	status: 'S',
-	priority: 'P',
-	date: 'D',
-	project: '⇧ P',
-	archive: 'A',
-} as const
 
 /**
  * 任务实体右键菜单只接收当前场景可用动作，避免在页面里重复拼菜单项。
@@ -137,6 +132,7 @@ export function TaskContextMenu({
 	)
 	const customDateDialogValue =
 		uniqueNonEmptyDueDates.length === 1 ? uniqueNonEmptyDueDates[0] : null
+
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger asChild onContextMenu={(event) => event.stopPropagation()}>
@@ -338,124 +334,4 @@ export function TaskContextMenu({
 			</ContextMenuContent>
 		</ContextMenu>
 	)
-}
-
-function getPlacementIcon(target: TaskPlacementTarget) {
-	if (target.kind === 'project') {
-		return <FolderIcon />
-	}
-
-	if (target.kind === 'inbox') {
-		return <InboxIcon />
-	}
-
-	return <TargetIcon />
-}
-
-function PropertySubTrigger({
-	children,
-	disabled,
-	icon,
-	shortcut,
-}: {
-	children: ReactNode
-	disabled?: boolean
-	icon: ReactNode
-	shortcut: string
-}) {
-	return (
-		<ContextMenuSubTrigger disabled={disabled} className='[&>svg:last-child]:ml-1'>
-			{icon}
-			<span>{children}</span>
-			<MenuShortcut>{shortcut}</MenuShortcut>
-		</ContextMenuSubTrigger>
-	)
-}
-
-function PropertyOptionItem({
-	children,
-	checked = false,
-	indicator = checked ? 'checked' : null,
-	disabled,
-	icon,
-	onSelect,
-	shortcut,
-	trailing,
-}: {
-	children: ReactNode
-	checked?: boolean
-	indicator?: PropertyOptionIndicator
-	disabled?: boolean
-	icon: ReactNode
-	onSelect: () => void
-	shortcut?: string
-	trailing?: ReactNode
-}) {
-	return (
-		<ContextMenuItem disabled={disabled} onSelect={onSelect}>
-			{icon}
-			<span className='min-w-0 flex-1 truncate'>{children}</span>
-			<span className='ml-auto flex min-w-12 items-center justify-end gap-2 text-[11px] text-muted-foreground'>
-				<PropertyOptionIndicatorIcon indicator={indicator} />
-				{shortcut ? <span className='tabular-nums'>{shortcut}</span> : null}
-				{!shortcut && trailing ? <span className='tabular-nums'>{trailing}</span> : null}
-			</span>
-		</ContextMenuItem>
-	)
-}
-
-type PropertyOptionIndicator = 'checked' | 'mixed' | null
-
-function PropertyOptionIndicatorIcon({ indicator }: { indicator: PropertyOptionIndicator }) {
-	if (indicator === 'checked') {
-		return <CheckIcon className='size-3.5 text-foreground' />
-	}
-
-	if (indicator === 'mixed') {
-		return <MinusIcon className='size-3.5 text-foreground' />
-	}
-
-	return <CheckIcon className='invisible size-3.5' />
-}
-
-function MenuShortcut({ children }: { children: ReactNode }) {
-	return <span className='ml-auto text-[11px] text-muted-foreground'>{children}</span>
-}
-
-function getIndicatorValues<T>(values: T[]) {
-	return new Set(values)
-}
-
-function getPropertyOptionIndicator<T>(values: Set<T>, value: T): PropertyOptionIndicator {
-	if (!values.has(value)) {
-		return null
-	}
-	return values.size === 1 ? 'checked' : 'mixed'
-}
-
-function getPlacementOptionIndicator(
-	values: Set<string>,
-	target: TaskPlacementTarget,
-): PropertyOptionIndicator {
-	const value = getTaskPlacementTargetValue(target)
-	if (!values.has(value)) {
-		return null
-	}
-
-	return values.size === 1 ? 'checked' : 'mixed'
-}
-
-function normalizeDateValue(value: string | null | undefined) {
-	return normalizeMetadataDateValue(value)
-}
-
-function isApplePlatform() {
-	if (typeof navigator === 'undefined') {
-		return false
-	}
-	return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent)
-}
-
-function getDeleteShortcutLabel() {
-	return isApplePlatform() ? '⌘ ⌫' : 'Ctrl ⌫'
 }

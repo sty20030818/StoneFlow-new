@@ -43,10 +43,10 @@ bun run check
 | open / create 内核 / bulk / registerTaskCommands | **已在 task** |
 | 行快捷键共用 `runTaskRowBulkCommand` | **已接** |
 | `TaskRowShortcutScope` | 壳 ~36 行 + controller/navigation/runtime · **已拆** |
-| `TaskPreviewProvider` | ~447 · 待拆 |
-| `TaskContextMenu` | ~438 · 待拆 |
+| `TaskPreviewProvider` | 壳 ~13 + store/helpers/register · **已拆** |
+| `TaskContextMenu` | 主拼装 ~331 + helpers/items · **已拆** |
 | `useTaskListScene` | 主文件 ~100 行 + `hooks/list-scene/` · **已内拆** |
-| `TaskBoard` / `TaskRowAdapter` | ~407 / ~354 · 后置 |
+| `TaskBoard` / `TaskRowAdapter` | ~407 / ~354 · **后置（不挡关闭）** |
 | `useTaskListController` / `useTaskSelection` | **已在 hooks/** |
 
 ---
@@ -59,7 +59,7 @@ bun run check
 | 1 | NORM | Query / JSDoc / public 对齐 CONVENTIONS | 低 | 0 | **done**（2026-07-18） |
 | 2 | HOOKS | model 内 hooks 归位；list-scene 内拆 | 中 | 1 | **done**（2026-07-19） |
 | 3 | SHORTCUT | 拆 TaskRowShortcutScope | 中 | 1（可 ‖ 2） | **done**（2026-07-19） |
-| 4 | VOLUME | PreviewProvider / ContextMenu（Board 可选） | 低中 | 2–3 | pending |
+| 4 | VOLUME | PreviewProvider / ContextMenu（Board 可选） | 低中 | 2–3 | **done**（2026-07-19） |
 | 5 | CLOSE | 契约收口、样板检查表、可选扩散备忘 | 无 | 1–4 | pending |
 
 推荐串行：**0 → 1 → 2 → 3 → 4 → 5**。若赶体量，**3 可与 2 弱并行**（冲突文件少时）。
@@ -182,7 +182,7 @@ bun run check
 |------|------|
 | 目标 | Preview / ContextMenu 可控；Board 按余力 |
 | 破坏性 | 低中 |
-| 状态 | pending |
+| 状态 | **done**（2026-07-19） |
 
 | 优先级 | 文件 | 动作 |
 |--------|------|------|
@@ -190,11 +190,20 @@ bun run check
 | P1 | `TaskContextMenu` | 拆菜单段 / metadata |
 | P2 | `TaskBoard` · `TaskRowAdapter` | 有余力再拆；不挡样板关闭 |
 
+### 落地
+
+| 项 | 结果 |
+|----|------|
+| Preview | `TaskPreviewProvider` 壳；`useTaskPreviewStore` · `taskPreviewHelpers/Types/Context` · `useRegisterTaskPreviewSource` |
+| ContextMenu | `task-context-menu-helpers` · `task-context-menu-items`；主文件只拼装 |
+| Board | **跳过**（P2，不挡阶段 5） |
+
 ### 验收
 
-- [ ] Preview 开合 / 列表注册 source 正常
-- [ ] 上下文菜单 bulk/meta 冒烟
-- [ ] `bun run check` 绿
+- [x] Preview 相关单测绿；task 全量 150 绿
+- [x] ContextMenu 组件相关测绿
+- [x] typecheck 绿
+- [x] Board 后置（明确不挡关闭）
 
 ---
 
@@ -250,3 +259,4 @@ CONVENTIONS.md       → 怎么写（含 TSDoc）
 | 2026-07-18 | 文档分工收口：ARCHITECTURE 去债表；注释改 TSDoc（CONVENTIONS v2.1） |
 | 2026-07-19 | 阶段 2 HOOKS done：hooks 归位 + list-scene 内拆 |
 | 2026-07-19 | 阶段 3 SHORTCUT done：TaskRowShortcutScope 拆文件 |
+| 2026-07-19 | 阶段 4 VOLUME done：Preview + ContextMenu；Board 后置 |

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import { useTaskPreviewContext } from './TaskPreviewProvider'
+import { useTaskPreviewContext } from './taskPreviewContext'
 
 export function useTaskPreviewController() {
 	const context = useTaskPreviewContext()
