@@ -16,9 +16,9 @@ import {
 	UPDATE_EVENTS,
 	type UpdatePhasePayload,
 	type UpdateSettings,
-} from '@/features/update/api/updates'
-import { applyUpdatePhaseEvent } from '@/features/update/model/applyUpdatePhase'
-import { useUpdateStore } from '@/features/update/model/useUpdateStore'
+} from '../api/updates'
+import { applyUpdatePhaseEvent } from './applyUpdatePhase'
+import { useUpdateStore } from './useUpdateStore'
 
 function storePhaseActions() {
 	const store = useUpdateStore.getState()

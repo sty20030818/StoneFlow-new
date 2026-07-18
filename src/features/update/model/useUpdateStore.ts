@@ -6,7 +6,7 @@
  */
 
 import { create } from 'zustand'
-import type { UpdateCheckMode, UpdateInfo } from '@/features/update/api/updates'
+import type { UpdateCheckMode, UpdateInfo } from '../api/updates'
 
 export type UpdateUiPhase =
 	| 'idle'
@@ -289,13 +289,4 @@ export function selectReadyChipVisible(state: UpdateState): boolean {
 	const version = state.updateInfo?.version
 	if (!version) return false
 	return state.readyChipDismissedVersion !== version
-}
-
-export function selectFooterUpdateVisible(state: UpdateState): boolean {
-	return (
-		state.phase === 'available' ||
-		state.phase === 'downloading' ||
-		state.phase === 'ready' ||
-		state.phase === 'error'
-	)
 }

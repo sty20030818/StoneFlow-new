@@ -5,9 +5,9 @@
  * idle/checking 不渲染（只留版本号）。
  */
 
-import { deriveUpdateFooterView } from '@/features/update/model/deriveUpdateFooterView'
-import { useUpdateStore } from '@/features/update/model/useUpdateStore'
-import { UpdateFooterChip } from '@/features/update/components/UpdateFooterChip'
+import { deriveUpdateFooterView } from '../model/deriveUpdateFooterView'
+import { useUpdateStore } from '../model/useUpdateStore'
+import { UpdateFooterChip } from './UpdateFooterChip'
 
 export function UpdateStatusFooterItem() {
 	const phase = useUpdateStore((s) => s.phase)

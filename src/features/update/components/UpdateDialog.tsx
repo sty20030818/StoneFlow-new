@@ -1,9 +1,8 @@
 /**
- * 更新弹窗：仅提醒 / 手动路径的决策与进度。
- * 状态只读 phase 单轨（无 UpdateStatus）。
+ * UpdateDialog 容器：store / 动作接线与相位编排。
+ * 壳层复用 create-dialog compact；changelog 见 UpdateDialog.presentation。
  */
 
-import type { ReactNode } from 'react'
 import { DownloadIcon, RefreshCwIcon, XIcon } from 'lucide-react'
 
 import { Button } from '@/shared/components/base/button'
@@ -13,14 +12,25 @@ import {
 	DialogDescription,
 	DialogTitle,
 } from '@/shared/components/base/dialog'
+import {
+	createDialogCompactShellClass,
+	createDialogFooterClass,
+	createDialogHeaderClass,
+} from '@/shared/components/patterns/create-dialog'
+import {
+	dialogShellDescriptionClass,
+	dialogShellTitleClass,
+} from '@/shared/components/patterns/dialog-shell'
+import { StatusNotice } from '@/shared/components/StatusNotice'
 import { cn } from '@/shared/lib/utils'
-import { skipVersion } from '@/features/update/api/updates'
-import { useUpdateStore } from '@/features/update/model/useUpdateStore'
-import { useUpdateActions } from '@/features/update/model/useUpdateEvents'
+import { skipVersion } from '../api/updates'
+import { useUpdateStore } from '../model/useUpdateStore'
+import { useUpdateActions } from '../model/useUpdateEvents'
 import {
 	downloadProgressBarValue,
 	formatDownloadBytesLine,
-} from '@/features/update/model/updatePresentation'
+} from '../model/updatePresentation'
+import { UpdateNotesMarkdown } from './UpdateDialog.presentation'
 
 export function UpdateDialog() {
 	const dialogVisible = useUpdateStore((s) => s.dialogVisible)
@@ -88,17 +98,20 @@ export function UpdateDialog() {
 			 * 对齐创建任务/项目弹窗（CreateDialogShell）：
 			 * - 外壳 p-0，分区自管 padding
 			 * - 关闭钮在 header 行内 size-7（不是 absolute top-2 贴边）
-			 * - 底栏 px-3 pb-3 pt-2（createDialogFooterClass）
+			 * - 底栏复用 createDialogFooterClass
 			 */}
-			<DialogContent className={dialogContentClass} showCloseButton={false} disableAnimation>
+			<DialogContent
+				className={createDialogCompactShellClass}
+				showCloseButton={false}
+				disableAnimation
+			>
 				<DialogTitle className='sr-only'>{titleText}</DialogTitle>
 				<DialogDescription className='sr-only'>{descText}</DialogDescription>
 
-				{/* Header：p-3，关闭与标题同一行 — 对齐 createDialogHeaderClass */}
-				<div className={headerClass}>
+				<div className={cn(createDialogHeaderClass, 'items-start gap-2')}>
 					<div className='min-w-0 flex-1 space-y-1'>
-						<h2 className={titleClass}>{titleText}</h2>
-						<p className={descClass}>{descText}</p>
+						<h2 className={dialogShellTitleClass}>{titleText}</h2>
+						<p className={dialogShellDescriptionClass}>{descText}</p>
 					</div>
 					<Button
 						type='button'
@@ -113,9 +126,9 @@ export function UpdateDialog() {
 				</div>
 
 				{showBody ? (
-					<div className={bodyClass}>
+					<div className='min-h-0 space-y-3 px-3'>
 						{showNotes && updateInfo?.body ? (
-							<div className={notesCardClass}>
+							<div className='rounded-xl bg-muted p-3'>
 								<UpdateNotesMarkdown content={updateInfo.body} />
 							</div>
 						) : null}
@@ -135,25 +148,20 @@ export function UpdateDialog() {
 						) : null}
 
 						{isReady ? (
-							<div className={successCardClass}>
-								<p className='text-[13px] leading-5 text-green-700 dark:text-green-300'>
-									安装包已就绪。只有点击「立即重启」才会开始安装并退出当前进程。
-								</p>
-							</div>
+							<StatusNotice
+								size='sm'
+								variant='success'
+								description='安装包已就绪。只有点击「立即重启」才会开始安装并退出当前进程。'
+							/>
 						) : null}
 
 						{isError ? (
-							<div className={errorCardClass}>
-								<p className='text-[13px] leading-5 text-red-700 dark:text-red-300'>
-									{errorMessage}
-								</p>
-							</div>
+							<StatusNotice size='sm' variant='danger' description={errorMessage} />
 						) : null}
 					</div>
 				) : null}
 
-				{/* Footer：对齐 createDialogFooterClass = px-3 pb-3 pt-2 */}
-				<div className={footerClass}>
+				<div className={cn(createDialogFooterClass, 'justify-end')}>
 					{isReady ? (
 						<>
 							<Button onClick={closeDialog} size='sm' type='button' variant='ghost'>
@@ -214,141 +222,3 @@ export function UpdateDialog() {
 		</Dialog>
 	)
 }
-
-/** 外壳 p-0，分区自管边距（对齐 CreateDialogShell） */
-const dialogContentClass = cn(
-	'flex flex-col gap-0 overflow-hidden rounded-3xl border border-border p-0',
-	'shadow-(--sf-shadow-float) top-[15dvh] translate-y-0',
-	'max-w-[calc(100%-1.5rem)] sm:max-w-md',
-)
-
-/** 对齐 createDialogHeaderClass：p-3 + 右侧关闭 */
-const headerClass = 'flex shrink-0 items-start justify-between gap-2 p-3'
-const titleClass = 'text-[15px] font-semibold leading-tight text-foreground'
-const descClass = 'text-[13px] leading-5 text-sf-shell-tertiary'
-/** 内容区左右与 header/footer 对齐 px-3 */
-const bodyClass = 'min-h-0 space-y-3 px-3'
-/** 对齐 createDialogFooterClass */
-const footerClass = 'flex shrink-0 items-center justify-end gap-2 px-3 pb-3 pt-2'
-const notesCardClass = 'rounded-xl bg-muted p-3'
-const successCardClass =
-	'rounded-xl border border-green-200/60 bg-green-50/60 p-3 dark:border-green-900/30 dark:bg-green-950/20'
-const errorCardClass =
-	'rounded-xl border border-red-200/60 bg-red-50/60 p-3 dark:border-red-900/30 dark:bg-red-950/20'
-
-function UpdateNotesMarkdown({ content }: { content: string }) {
-	const blocks = parseSimpleMarkdown(content)
-	return (
-		<div className='text-[13px] leading-6 text-foreground space-y-2.5'>
-			{blocks.map((block, i) => {
-				if (block.type === 'h2') {
-					return (
-						<h3 key={i} className='text-[14px] font-semibold text-foreground m-0'>
-							{renderInline(block.text)}
-						</h3>
-					)
-				}
-				if (block.type === 'h3') {
-					return (
-						<h4 key={i} className='text-[13px] font-semibold text-foreground m-0'>
-							{renderInline(block.text)}
-						</h4>
-					)
-				}
-				if (block.type === 'list') {
-					return (
-						<ul key={i} className='list-none m-0 p-0 space-y-1'>
-							{block.items.map((item, j) => (
-								<li key={j} className='flex items-start gap-2'>
-									<span className='mt-2.25 size-1 shrink-0 rounded-full bg-foreground/40' />
-									<span className='text-sf-shell-tertiary'>{renderInline(item)}</span>
-								</li>
-							))}
-						</ul>
-					)
-				}
-				return (
-					<p key={i} className='m-0 text-sf-shell-tertiary'>
-						{renderInline(block.text)}
-					</p>
-				)
-			})}
-		</div>
-	)
-}
-
-function parseSimpleMarkdown(content: string): MarkdownBlock[] {
-	const lines = content.split('\n')
-	const blocks: MarkdownBlock[] = []
-	let listItems: string[] = []
-	let paragraph: string[] = []
-
-	function flushParagraph() {
-		if (paragraph.length > 0) {
-			blocks.push({ type: 'p', text: paragraph.join(' ').trim() })
-			paragraph = []
-		}
-	}
-	function flushList() {
-		if (listItems.length > 0) {
-			blocks.push({ type: 'list', items: listItems })
-			listItems = []
-		}
-	}
-
-	for (const rawLine of lines) {
-		const line = rawLine.trimEnd()
-		if (line.startsWith('## ')) {
-			flushParagraph()
-			flushList()
-			blocks.push({ type: 'h2', text: line.slice(3).trim() })
-			continue
-		}
-		if (line.startsWith('### ')) {
-			flushParagraph()
-			flushList()
-			blocks.push({ type: 'h3', text: line.slice(4).trim() })
-			continue
-		}
-		if (line.startsWith('- ') || line.startsWith('* ')) {
-			flushParagraph()
-			listItems.push(line.slice(2).trim())
-			continue
-		}
-		if (line.trim() === '') {
-			flushParagraph()
-			flushList()
-			continue
-		}
-		flushList()
-		paragraph.push(line.trim())
-	}
-	flushParagraph()
-	flushList()
-	return blocks
-}
-
-function renderInline(text: string): ReactNode {
-	const parts: ReactNode[] = []
-	const regex = /\*\*(.+?)\*\*/g
-	let lastIndex = 0
-	let match: RegExpExecArray | null
-	let key = 0
-	while ((match = regex.exec(text)) !== null) {
-		if (match.index > lastIndex) {
-			parts.push(text.slice(lastIndex, match.index))
-		}
-		parts.push(<strong key={key++}>{match[1]}</strong>)
-		lastIndex = regex.lastIndex
-	}
-	if (lastIndex < text.length) {
-		parts.push(text.slice(lastIndex))
-	}
-	return parts
-}
-
-type MarkdownBlock =
-	| { type: 'h2'; text: string }
-	| { type: 'h3'; text: string }
-	| { type: 'list'; items: string[] }
-	| { type: 'p'; text: string }

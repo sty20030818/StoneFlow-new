@@ -8,8 +8,8 @@
 
 import { DownloadIcon } from 'lucide-react'
 
-import type { UpdateFooterView } from '@/features/update/model/deriveUpdateFooterView'
-import { UpdateProgressRing } from '@/features/update/components/UpdateProgressRing'
+import type { UpdateFooterView } from '../model/deriveUpdateFooterView'
+import { UpdateProgressRing } from './UpdateProgressRing'
 import { Badge } from '@/shared/components/base/badge'
 import { ShellFooterHit } from '@/shared/components/patterns/ShellFooterHit'
 import type { ShellFooterHitTone } from '@/shared/components/patterns/shell-footer'

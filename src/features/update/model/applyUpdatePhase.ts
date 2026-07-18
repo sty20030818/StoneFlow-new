@@ -2,8 +2,8 @@
  * 将 update-phase 事件应用到 store 动作（纯逻辑，便于单测）。
  */
 
-import type { UpdateCheckMode, UpdateInfo } from '@/features/update/api/updates'
-import type { UpdateProgress } from '@/features/update/model/useUpdateStore'
+import type { UpdateCheckMode, UpdateInfo } from '../api/updates'
+import type { UpdateProgress } from './useUpdateStore'
 
 export type UpdatePhaseEvent = {
 	phase: 'available' | 'downloading' | 'ready' | 'error'

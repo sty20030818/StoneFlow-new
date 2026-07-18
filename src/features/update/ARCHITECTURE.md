@@ -1,7 +1,7 @@
 # update · 应用更新
 
 > 作用：描述 **当前已落地** 的 `src/features/update` 边界
-> 最后更新：2026-07-18
+> 最后更新：2026-07-19
 
 ---
 
@@ -37,12 +37,14 @@ src/features/update/
 │   └── deriveUpdateFooterView.ts
 └── components/
     ├── UpdateDialog.tsx
+    ├── UpdateDialog.presentation.tsx
     ├── SystemStatusChip.tsx
     ├── UpdateFooterChip.tsx
     ├── UpdateStatusFooterItem.tsx
     ├── AppVersionFooterItem.tsx
     ├── UpdateProgressRing.tsx
-    └── UpdateSettingsSection.tsx
+    ├── UpdateSettingsSection.tsx
+    └── UpdateSettingsSection.presentation.tsx
 ```
 
 ---
@@ -51,12 +53,10 @@ src/features/update/
 
 | 类 | 符号 |
 |----|------|
-| API | `checkUpdate` · `downloadAndInstall` · `restartAndInstall` · `skipVersion` · `getUpdateSettings` · `getUpdateSession` · `UPDATE_EVENTS` 等 |
-| Store | `useUpdateStore` · `selectReadyChipVisible` · `selectFooterUpdateVisible` |
-| 事件 | `useUpdateEvents` · `useUpdateActions` |
-| UI | `UpdateDialog` · `SystemStatusChip` · `UpdateStatusFooterItem` · `AppVersionFooterItem` · `UpdateSettingsSection` 等 |
+| 事件 | `useUpdateEvents` |
+| UI | `UpdateDialog` · `SystemStatusChip` · `UpdateStatusFooterItem` · `AppVersionFooterItem` · `UpdateSettingsSection` |
 
-显式 export 清单，禁止 `export *`。
+显式 export 清单，禁止 `export *`。API / store / 内部 chip 组件留包内。
 
 ---
 
@@ -77,6 +77,8 @@ src/features/update/
 | `layout/overlays/ShellOverlays.tsx` | `UpdateDialog` · `SystemStatusChip` |
 | `layout/ShellFooter.tsx` | `UpdateStatusFooterItem` · `AppVersionFooterItem` |
 | `features/settings` 页（update 分区） | 直接挂 `UpdateSettingsSection` |
+
+`UpdateDialog` 壳层复用 `createDialogCompactShellClass`（create-dialog 同族）；ready/error 用 `StatusNotice`；changelog 在 `.presentation`。
 
 ---
 

@@ -7,8 +7,8 @@ import {
 	footerUpdateLabel,
 	footerUpdateTitle,
 	formatDownloadPercent,
-} from '@/features/update/model/updatePresentation'
-import type { UpdateUiPhase } from '@/features/update/model/useUpdateStore'
+} from './updatePresentation'
+import type { UpdateUiPhase } from './useUpdateStore'
 
 export type UpdateFooterVisiblePhase = Extract<
 	UpdateUiPhase,

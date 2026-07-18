@@ -2,7 +2,7 @@
  * 更新 UI 展示纯函数（可单测）。
  */
 
-import type { UpdateUiPhase } from '@/features/update/model/useUpdateStore'
+import type { UpdateUiPhase } from './useUpdateStore'
 
 /** 0–100；total 未知时返回 null（不确定进度） */
 export function formatDownloadPercent(downloaded: number, total: number | null): string | null {

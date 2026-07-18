@@ -20,6 +20,15 @@ export const createDialogShellFullscreenClass = cn(
 	'w-[min(72rem,calc(100vw-1.5rem))] sm:max-w-[min(72rem,calc(100vw-1.5rem))]',
 )
 
+/**
+ * 短决策浮动壳（更新提醒等）：同族圆角/顶偏，无 create 表单的 min/max-h，宽度收成 md。
+ */
+export const createDialogCompactShellClass = cn(
+	'flex flex-col gap-0 overflow-hidden rounded-3xl border border-border',
+	'max-w-[calc(100%-1.5rem)] sm:max-w-md top-[15dvh] translate-y-0',
+	dialogShellFloatingBaseClass,
+)
+
 /** 创建弹窗 Header — 面包屑 + 操作按钮 */
 export const createDialogHeaderClass = 'flex shrink-0 items-center justify-between p-3'
 

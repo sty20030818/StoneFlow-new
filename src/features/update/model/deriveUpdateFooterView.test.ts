@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
 	deriveUpdateFooterView,
 	isUpdateFooterVisiblePhase,
-} from '@/features/update/model/deriveUpdateFooterView'
+} from './deriveUpdateFooterView'
 
 describe('isUpdateFooterVisiblePhase', () => {
 	it('only transaction phases', () => {

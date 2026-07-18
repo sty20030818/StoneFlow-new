@@ -1,54 +1,13 @@
 /**
- * @fileoverview **update · 主入口（`@/features/update`）**
+ * update · 主入口（`@/features/update`）
  *
- * 显式 export 清单（禁止 `export *`）。
+ * 外仓装配面：壳事件 / Dialog·Chip / 页脚 / 设置区块。
+ * 包内 API、store、派生 UI 不对外导出。
  */
 
-// ── api ─────────────────────────────────────────────────────────────────────
-
-export type {
-	UpdateChannel,
-	UpdateCheckMode,
-	UpdateInfo,
-	UpdateSettings,
-	CheckIntervalSecs,
-	UpdatePhasePayload,
-	UpdateSessionPhase,
-	UpdateSessionSnapshot,
-} from './api/updates'
-
-export {
-	ALLOWED_CHECK_INTERVAL_SECS,
-	UPDATE_EVENTS,
-	checkUpdate,
-	downloadAndInstall,
-	restartAndInstall,
-	skipVersion,
-	setCheckMode,
-	setChannel,
-	setCheckIntervalSecs,
-	getUpdateSettings,
-	getUpdateSession,
-	cancelUpdateDownload,
-} from './api/updates'
-
-// ── model ───────────────────────────────────────────────────────────────────
-
-export type { UpdateUiPhase, UpdateProgress } from './model/useUpdateStore'
-export {
-	useUpdateStore,
-	selectReadyChipVisible,
-	selectFooterUpdateVisible,
-} from './model/useUpdateStore'
-
-export { useUpdateEvents, useUpdateActions } from './model/useUpdateEvents'
-
-// ── UI ──────────────────────────────────────────────────────────────────────
-
+export { useUpdateEvents } from './model/useUpdateEvents'
 export { UpdateDialog } from './components/UpdateDialog'
 export { SystemStatusChip } from './components/SystemStatusChip'
-export { UpdateProgressRing } from './components/UpdateProgressRing'
-export { UpdateFooterChip } from './components/UpdateFooterChip'
 export { UpdateStatusFooterItem } from './components/UpdateStatusFooterItem'
 export { AppVersionFooterItem } from './components/AppVersionFooterItem'
 export { UpdateSettingsSection } from './components/UpdateSettingsSection'

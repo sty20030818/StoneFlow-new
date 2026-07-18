@@ -5,7 +5,7 @@
  */
 
 import { cn } from '@/shared/lib/utils'
-import type { UpdateUiPhase } from '@/features/update/model/useUpdateStore'
+import type { UpdateUiPhase } from '../model/useUpdateStore'
 
 export type UpdateProgressRingState = Extract<
 	UpdateUiPhase,

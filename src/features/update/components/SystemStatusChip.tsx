@@ -9,8 +9,8 @@ import { RefreshCwIcon } from 'lucide-react'
 
 import { useSharedSyncStatus } from '@/features/sync'
 import { formatReplicaState, formatSyncStatus } from '@/features/sync'
-import { useUpdateActions } from '@/features/update/model/useUpdateEvents'
-import { selectReadyChipVisible, useUpdateStore } from '@/features/update/model/useUpdateStore'
+import { useUpdateActions } from '../model/useUpdateEvents'
+import { selectReadyChipVisible, useUpdateStore } from '../model/useUpdateStore'
 import { Button } from '@/shared/components/base/button'
 import { cn } from '@/shared/lib/utils'
 

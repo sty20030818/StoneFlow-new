@@ -6,7 +6,7 @@ import {
 	formatBytes,
 	formatDownloadBytesLine,
 	formatDownloadPercent,
-} from '@/features/update/model/updatePresentation'
+} from './updatePresentation'
 
 describe('formatDownloadPercent', () => {
 	it('returns null when total missing', () => {

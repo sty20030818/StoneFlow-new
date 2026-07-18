@@ -23,20 +23,6 @@ vi.mock('@tauri-apps/api/app', () => ({
 	getVersion: vi.fn(async () => '0.1.0'),
 }))
 
-vi.mock('@/features/update', async (importOriginal) => {
-	const actual = await importOriginal<typeof import('@/features/update')>()
-	return {
-		...actual,
-		getUpdateSettings: vi.fn(async () => ({
-			checkMode: 'notifyOnly',
-			channel: 'stable',
-			skippedVersion: null,
-			lastCheckedAt: null,
-			checkIntervalSecs: 21600,
-		})),
-	}
-})
-
 describe('ShellFooter', () => {
 	it('左侧：状态灯 + 文案 + 同步按钮分离；右侧：版本；无快捷键', async () => {
 		const { container } = render(<ShellFooter />)
