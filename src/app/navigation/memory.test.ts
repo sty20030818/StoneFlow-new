@@ -104,8 +104,8 @@ describe('routeMemory', () => {
 		})
 	})
 
-	it('不保存 quick-create、顶层详情入口、旧路径和非法 path', () => {
-		expect(createNextShellRouteMemory(null, { type: 'all' }, '/quick-create')).toBeNull()
+	it('不保存 launcher、顶层详情入口、旧路径和非法 path', () => {
+		expect(createNextShellRouteMemory(null, { type: 'all' }, '/launcher')).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, TASK_SHORTCUT_PATH)).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, PROJECT_SHORTCUT_PATH)).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, '/inbox')).toBeNull()

@@ -1,807 +1,1213 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>StoneFlow Command v5</title>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500;600&display=swap');
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg: #E8EAF0;
-  --panel: #FCFCFD;
-  --panel-border: #D4D7DF;
-  --divider: #ECEEF3;
-  --row-hover: #F1F4FF;
-  --row-create-bg: #F0F4FF;
-  --row-create-border: #D8E0FF;
-  --accent: #4361EE;
-  --accent-soft: #EEF1FF;
-  --text-1: #13161F;
-  --text-2: #525A6E;
-  --text-3: #8E97A8;
-  --shadow: 0 20px 48px rgba(8,12,36,0.13), 0 4px 12px rgba(8,12,36,0.07);
-  --font: 'Geist', ui-sans-serif, -apple-system, sans-serif;
-  --mono: 'Geist Mono', ui-monospace, monospace;
-  --radius: 12px;
-}
-
-body {
-  font-family: var(--font);
-  background: var(--bg);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 48px 24px 80px;
-}
-
-.window-hint {
-  width: 720px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  padding: 0 2px;
-}
-.win-dot { width: 10px; height: 10px; border-radius: 50%; }
-.win-bar { flex: 1; height: 1px; background: #CDD0DA; }
-.win-label { font-size: 11px; color: #9AA0B0; letter-spacing: 0.04em; }
-
-/* ── Panel ── */
-.panel {
-  width: 720px;
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--radius);
-  overflow: visible;
-  box-shadow: var(--shadow);
-  position: relative;
-}
-
-/* ── Input zone ── */
-.input-zone {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 12px;
-  border-bottom: 1px solid var(--divider);
-}
-
-.cmd-input {
-  flex: 1;
-  height: 32px;
-  padding: 0 10px;
-  border: 1px solid #D2D5DF;
-  border-radius: 7px;
-  background: #fff;
-  outline: none;
-  font-family: var(--font);
-  font-size: 13.5px;
-  color: var(--text-1);
-  caret-color: var(--accent);
-  transition: border-color 130ms, box-shadow 130ms;
-  min-width: 0;
-}
-.cmd-input:focus {
-  border-color: #8AA0FF;
-  box-shadow: 0 0 0 3px rgba(67,97,238,0.12);
-}
-.cmd-input::placeholder { color: #A8B2C4; }
-
-/* ── Param buttons ── */
-.param-btns {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.p-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 9px;
-  border-radius: 6px;
-  border: 1px solid #D2D5DF;
-  background: #fff;
-  font-family: var(--font);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-2);
-  cursor: pointer;
-  white-space: nowrap;
-  user-select: none;
-  transition: background 100ms, border-color 100ms, color 100ms;
-}
-.p-btn:hover { background: #F5F7FF; border-color: #9AADFF; color: var(--accent); }
-.p-btn.has-value { color: var(--accent); background: var(--accent-soft); border-color: #B0BFFF; }
-
-/* status button colors */
-.p-btn.status-todo { color: var(--text-2); background: #fff; border-color: #D2D5DF; }
-.p-btn.status-todo:hover { background: #F5F7FF; border-color: #9AADFF; color: var(--accent); }
-.p-btn.status-doing { color: #0E6FCC; background: #EBF5FF; border-color: #93C5FD; }
-.p-btn.status-done  { color: #1A7A50; background: #EDFAF3; border-color: #6EE7B7; }
-
-/* priority box */
-.pri-box {
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10.5px;
-  font-weight: 700;
-  font-family: var(--mono);
-  flex-shrink: 0;
-}
-.pbox-p0 { background: #FFE8E8; color: #B83232; }
-.pbox-p1 { background: #FFF0DE; color: #A85500; }
-.pbox-p2 { background: #ECF0FF; color: #3049D1; }
-.pbox-p3 { background: #F2F4F8; color: #5C6478; }
-
-/* status dot */
-.status-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-}
-.sd-todo  { background: #C0C8D8; }
-.sd-doing { background: #3B9EED; }
-.sd-done  { background: #1F9D62; }
-
-/* ── Popovers ── */
-.popover {
-  position: absolute;
-  z-index: 100;
-  background: #fff;
-  border: 1px solid #D4D7DF;
-  border-radius: 9px;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.06);
-  min-width: 168px;
-  overflow: hidden;
-  display: none;
-  animation: popIn 130ms cubic-bezier(0.2,0.8,0.2,1);
-}
-.popover.visible { display: block; }
-
-@keyframes popIn {
-  from { opacity:0; transform: translateY(-5px) scale(0.97); }
-  to   { opacity:1; transform: translateY(0) scale(1); }
-}
-
-.pop-head {
-  padding: 8px 10px 4px;
-  font-size: 10.5px;
-  font-weight: 500;
-  color: var(--text-3);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.pop-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  font-size: 13px;
-  color: var(--text-2);
-  cursor: pointer;
-  transition: background 70ms;
-}
-.pop-item:hover, .pop-item.kfocus { background: var(--row-hover); color: var(--text-1); }
-.pop-item.selected { color: var(--accent); }
-.pop-check { width: 14px; flex-shrink: 0; text-align: center; font-size: 11px; color: var(--accent); }
-
-.pop-search-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--divider);
-}
-.pop-search-input {
-  flex: 1; border: none; outline: none;
-  font-family: var(--font); font-size: 12.5px;
-  color: var(--text-1); background: transparent;
-  caret-color: var(--accent);
-}
-.pop-search-input::placeholder { color: #B0B8C8; }
-
-/* ── inline popover ── */
-.inline-pop {
-  position: fixed;
-  z-index: 200;
-  background: #fff;
-  border: 1px solid #D4D7DF;
-  border-radius: 9px;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.12);
-  min-width: 168px;
-  overflow: hidden;
-  display: none;
-  animation: popIn 130ms cubic-bezier(0.2,0.8,0.2,1);
-}
-.inline-pop.visible { display: block; }
-
-/* ── Divider ── */
-.h-div { height: 1px; background: var(--divider); }
-
-/* ── Results ── */
-.results { max-height: 340px; overflow-y: auto; }
-.results::-webkit-scrollbar { width: 4px; }
-.results::-webkit-scrollbar-thumb { background: #DDE0E8; border-radius: 2px; }
-
-/* CREATE ROW */
-.create-row {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 14px;
-  background: var(--row-create-bg);
-  border-bottom: 1px solid var(--row-create-border);
-  cursor: pointer;
-  position: relative;
-}
-.create-row.visible { display: flex; }
-.create-row.focused::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--accent);
-  border-radius: 0 2px 2px 0;
-}
-
-.create-icon {
-  width: 24px; height: 24px;
-  border-radius: 6px;
-  background: var(--accent-soft);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-
-.create-body { flex: 1; min-width: 0; }
-.create-label { font-size: 11px; color: var(--accent); font-weight: 500; margin-bottom: 1px; }
-.create-title-text {
-  font-size: 13.5px; color: var(--text-1); font-weight: 500;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-.create-badges {
-  display: flex; align-items: center; gap: 5px; flex-shrink: 0;
-}
-
-.enter-badge {
-  display: flex; align-items: center; gap: 3px;
-  font-size: 11px; color: #8AA0FF;
-  background: #EEF1FF; padding: 2px 7px;
-  border-radius: 4px; border: 1px solid #C8D4FF;
-  font-weight: 500;
-}
-
-/* SECTIONS */
-.section + .section { border-top: 1px solid var(--divider); }
-.sec-head {
-  padding: 10px 14px 4px;
-  font-size: 10.5px; font-weight: 500; color: var(--text-3);
-  letter-spacing: 0.06em; text-transform: uppercase;
-}
-
-/* RESULT ROW */
-.r-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 14px; cursor: pointer; position: relative;
-  transition: background 70ms;
-}
-.r-row:hover, .r-row.focused { background: var(--row-hover); }
-.r-row.focused::before {
-  content: ''; position: absolute;
-  left: 0; top: 0; bottom: 0; width: 3px;
-  background: var(--accent); border-radius: 0 2px 2px 0;
-}
-
-.r-icon {
-  width: 24px; height: 24px; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.ri-t { background: #EEF1FF; }
-.ri-p { background: #EDFAF3; }
-
-.r-body { flex: 1; min-width: 0; }
-.r-title { font-size: 13px; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.r-sub { font-size: 11.5px; color: var(--text-3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.r-right { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
-.meta-pill { font-size: 11px; color: var(--text-3); background: #F2F4F8; padding: 1px 6px; border-radius: 4px; border: 1px solid #E6E9EE; }
-.r-enter { font-size: 11px; color: #B0BACC; opacity: 0; transition: opacity 80ms; flex-shrink: 0; }
-.r-row:hover .r-enter, .r-row.focused .r-enter { opacity: 1; color: #8AA0FF; }
-
-/* ── Footer ── */
-.footer {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 14px;
-  border-top: 1px solid var(--divider);
-  background: #F5F6FA;
-  border-radius: 0 0 var(--radius) var(--radius);
-}
-.f-hint { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-3); white-space: nowrap; }
-.kbd {
-  background: #EAEBEF; border: 1px solid #D2D5DF;
-  border-radius: 4px; padding: 1px 5px;
-  font-size: 10.5px; font-family: var(--mono); color: #6B7489;
-}
-.f-sep { width: 1px; height: 12px; background: var(--divider); flex-shrink: 0; }
-</style>
-</head>
-<body>
-
-<div class="window-hint">
-  <div class="win-dot" style="background:#FF5F57"></div>
-  <div class="win-dot" style="background:#FFBD2E"></div>
-  <div class="win-dot" style="background:#28C840"></div>
-  <div class="win-bar"></div>
-  <span class="win-label">StoneFlow — ⌘K 唤起</span>
-  <div class="win-bar"></div>
-</div>
-
-<div class="panel" id="panel">
-
-  <!-- INPUT ZONE -->
-  <div class="input-zone">
-    <input class="cmd-input" id="mainInput"
-      placeholder="输入任务… ( ! 优先级  @ 状态  # 项目  $ 空间 )"
-      autocomplete="off" spellcheck="false"/>
-
-    <div class="param-btns" id="paramBtns">
-
-      <!-- Priority -->
-      <div class="p-btn" id="btn-pri" data-pop="pop-pri">
-        <div class="pri-box pbox-p1" id="pri-display">P1</div>
-      </div>
-
-      <!-- Status -->
-      <div class="p-btn status-todo" id="btn-status" data-pop="pop-status">
-        <span class="status-dot sd-todo" id="status-dot"></span>
-        <span id="status-label">待执行</span>
-      </div>
-
-      <!-- Project -->
-      <div class="p-btn has-value" id="btn-proj" data-pop="pop-proj">
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-          <rect x=".75" y="1.75" width="8.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1"/>
-          <line x1="2.5" y1="4" x2="7.5" y2="4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-          <line x1="2.5" y1="5.8" x2="5.5" y2="5.8" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-        </svg>
-        <span id="proj-label">StoneFlow 开发</span>
-      </div>
-
-      <!-- Space -->
-      <div class="p-btn has-value" id="btn-space" data-pop="pop-space">
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-          <rect x=".75" y=".75" width="8.5" height="8.5" rx="2" stroke="currentColor" stroke-width="1"/>
-          <path d="M3 5h4M5 3v4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
-        </svg>
-        <span id="space-label">产品研发</span>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- PRIORITY POPOVER -->
-  <div class="popover" id="pop-pri">
-    <div class="pop-head">优先级 <span style="color:#C8CED8;font-weight:400;font-size:10px;margin-left:4px;">! 快捷触发</span></div>
-    <div class="pop-item" data-pri="P0" data-style="pbox-p0"><span class="pop-check" id="ck-P0"></span><div class="pri-box pbox-p0">P0</div><span>紧急</span></div>
-    <div class="pop-item selected" data-pri="P1" data-style="pbox-p1"><span class="pop-check" id="ck-P1">✓</span><div class="pri-box pbox-p1">P1</div><span>高优先级</span></div>
-    <div class="pop-item" data-pri="P2" data-style="pbox-p2"><span class="pop-check" id="ck-P2"></span><div class="pri-box pbox-p2">P2</div><span>中优先级</span></div>
-    <div class="pop-item" data-pri="P3" data-style="pbox-p3"><span class="pop-check" id="ck-P3"></span><div class="pri-box pbox-p3">P3</div><span>低优先级</span></div>
-    <div style="height:4px"></div>
-  </div>
-
-  <!-- STATUS POPOVER -->
-  <div class="popover" id="pop-status">
-    <div class="pop-head">状态 <span style="color:#C8CED8;font-weight:400;font-size:10px;margin-left:4px;">@ 快捷触发</span></div>
-    <div class="pop-item selected" data-status="todo" data-dot="sd-todo" data-label="待执行" data-btn-class="status-todo">
-      <span class="pop-check" id="ck-todo">✓</span><span class="status-dot sd-todo"></span><span>待执行</span>
-    </div>
-    <div class="pop-item" data-status="doing" data-dot="sd-doing" data-label="进行中" data-btn-class="status-doing">
-      <span class="pop-check" id="ck-doing"></span><span class="status-dot sd-doing"></span><span>进行中</span>
-    </div>
-    <div class="pop-item" data-status="done" data-dot="sd-done" data-label="已完成" data-btn-class="status-done">
-      <span class="pop-check" id="ck-done"></span><span class="status-dot sd-done"></span><span>已完成</span>
-    </div>
-    <div style="height:4px"></div>
-  </div>
-
-  <!-- PROJECT POPOVER -->
-  <div class="popover" id="pop-proj" style="min-width:200px;">
-    <div class="pop-head">项目 <span style="color:#C8CED8;font-weight:400;font-size:10px;margin-left:4px;"># 快捷触发</span></div>
-    <div class="pop-search-wrap">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="#A0A8B8" stroke-width="1.2"/><line x1="8.5" y1="8.5" x2="11" y2="11" stroke="#A0A8B8" stroke-width="1.2" stroke-linecap="round"/></svg>
-      <input class="pop-search-input" id="proj-search" placeholder="搜索项目…" autocomplete="off"/>
-    </div>
-    <div id="proj-list"></div>
-    <div style="height:4px"></div>
-  </div>
-
-  <!-- SPACE POPOVER -->
-  <div class="popover" id="pop-space" style="min-width:168px;">
-    <div class="pop-head">空间 <span style="color:#C8CED8;font-weight:400;font-size:10px;margin-left:4px;">$ 快捷触发</span></div>
-    <div id="space-list"></div>
-    <div style="height:4px"></div>
-  </div>
-
-  <!-- INLINE POPOVER -->
-  <div class="inline-pop" id="inline-pop"></div>
-
-  <!-- CREATE ROW -->
-  <div class="create-row" id="createRow">
-    <div class="create-icon">
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <line x1="6" y1="2" x2="6" y2="10" stroke="#4361EE" stroke-width="1.5" stroke-linecap="round"/>
-        <line x1="2" y1="6" x2="10" y2="6" stroke="#4361EE" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-    </div>
-    <div class="create-body">
-      <div class="create-label">创建任务</div>
-      <div class="create-title-text" id="createTitleText"></div>
-    </div>
-    <div class="create-badges" id="createBadges">
-      <div class="pri-box pbox-p1" id="cb-pri">P1</div>
-      <span class="status-dot sd-todo" id="cb-status-dot" style="width:8px;height:8px;"></span>
-      <span style="font-size:11px;color:var(--text-3);" id="cb-status-label">待执行</span>
-      <span class="meta-pill" id="cb-proj">StoneFlow 开发</span>
-      <div class="enter-badge">↵ 创建</div>
-    </div>
-  </div>
-
-  <!-- RESULTS -->
-  <div class="results" id="results"></div>
-
-  <!-- FOOTER -->
-  <div class="footer">
-    <div class="f-hint"><kbd class="kbd">↑↓</kbd> 选择</div>
-    <div class="f-hint"><kbd class="kbd">↵</kbd> 确认</div>
-    <div class="f-sep"></div>
-    <div class="f-hint"><kbd class="kbd">!</kbd> 优先级</div>
-    <div class="f-hint"><kbd class="kbd">@</kbd> 状态</div>
-    <div class="f-hint"><kbd class="kbd">#</kbd> 项目</div>
-    <div class="f-hint"><kbd class="kbd">$</kbd> 空间</div>
-    <div class="f-sep"></div>
-    <div class="f-hint"><kbd class="kbd">Esc</kbd> 关闭</div>
-    <div style="flex:1"></div>
-    <div class="f-hint" style="color:#C0C8D8;"><kbd class="kbd">⌘K</kbd> 唤起</div>
-  </div>
-
-</div>
-
-<script>
-/* ── Data ── */
-const TASKS = [
-  {title:'完善 Command 面板键盘导航', sub:'StoneFlow 开发 · 产品研发', meta:'今天', pri:'P1'},
-  {title:'设计 Drawer 打开动效', sub:'StoneFlow 开发 · 产品研发', meta:'昨天', pri:'P2'},
-  {title:'整理 D1 数据模型文档', sub:'StoneFlow 开发 · 产品研发', meta:'2天前', pri:'P0'},
-  {title:'Space Tabs 激活态样式确认', sub:'StoneFlow 开发 · 产品研发', meta:'3天前', pri:'P2'},
-  {title:'补充 Task Drawer 字段顺序', sub:'StoneFlow 开发 · 产品研发', meta:'4天前', pri:'P1'},
-];
-const PROJECTS = ['StoneFlow 开发','设计系统整理','移动端适配','基础架构重构'];
-const SPACES   = ['产品研发','工程基础','个人成长','生活'];
-
-const PRI_STYLE  = {P0:'pbox-p0', P1:'pbox-p1', P2:'pbox-p2', P3:'pbox-p3'};
-const PRI_NAMES  = {P0:'紧急', P1:'高优先级', P2:'中优先级', P3:'低优先级'};
-const STATUS_CFG = {
-  todo:  {label:'待执行', dot:'sd-todo',  btnClass:'status-todo'},
-  doing: {label:'进行中', dot:'sd-doing', btnClass:'status-doing'},
-  done:  {label:'已完成', dot:'sd-done',  btnClass:'status-done'},
-};
-
-/* ── State ── */
-let S = { pri:'P1', status:'todo', proj:'StoneFlow 开发', space:'产品研发' };
-let focusTarget = 'none'; // 'create' | number
-let allRows = [];
-let activePopId = null;
-let inlineMode = null; // null | '!' | '@' | '#' | '$'
-
-const mainInput  = document.getElementById('mainInput');
-const createRow  = document.getElementById('createRow');
-const resultsZone= document.getElementById('results');
-
-/* ── Build static popover lists ── */
-function buildProjList(containerId, onSelect) {
-  const c = document.getElementById(containerId);
-  c.innerHTML = '';
-  PROJECTS.forEach(p => {
-    const item = document.createElement('div');
-    item.className = 'pop-item' + (p === S.proj ? ' selected' : '');
-    item.dataset.proj = p;
-    item.innerHTML = `<span class="pop-check">${p===S.proj?'✓':''}</span><span>${p}</span>`;
-    item.addEventListener('click', () => onSelect(p));
-    c.appendChild(item);
-  });
-}
-function buildSpaceList() {
-  const c = document.getElementById('space-list');
-  c.innerHTML = '';
-  SPACES.forEach(sp => {
-    const item = document.createElement('div');
-    item.className = 'pop-item' + (sp === S.space ? ' selected' : '');
-    item.dataset.space = sp;
-    item.innerHTML = `<span class="pop-check">${sp===S.space?'✓':''}</span><span>${sp}</span>`;
-    item.addEventListener('click', () => { S.space = sp; syncAll(); closeAllPop(); mainInput.focus(); });
-    c.appendChild(item);
-  });
-}
-
-/* ── Sync UI to state ── */
-function syncAll() {
-  // priority button
-  const pd = document.getElementById('pri-display');
-  pd.className = 'pri-box ' + PRI_STYLE[S.pri];
-  pd.textContent = S.pri;
-
-  // priority popover checks
-  ['P0','P1','P2','P3'].forEach(p => {
-    const ck = document.getElementById('ck-'+p);
-    if (!ck) return;
-    ck.textContent = p === S.pri ? '✓' : '';
-    ck.closest('.pop-item').classList.toggle('selected', p === S.pri);
-  });
-
-  // status button
-  const sc = STATUS_CFG[S.status];
-  const sbtn = document.getElementById('btn-status');
-  sbtn.className = 'p-btn ' + sc.btnClass;
-  document.getElementById('status-dot').className = 'status-dot ' + sc.dot;
-  document.getElementById('status-label').textContent = sc.label;
-
-  // status popover checks
-  ['todo','doing','done'].forEach(s => {
-    const ck = document.getElementById('ck-'+s);
-    if (!ck) return;
-    ck.textContent = s === S.status ? '✓' : '';
-    ck.closest('.pop-item').classList.toggle('selected', s === S.status);
-  });
-
-  // project button
-  document.getElementById('proj-label').textContent = S.proj;
-
-  // space button
-  document.getElementById('space-label').textContent = S.space;
-
-  // create row badges
-  const cbp = document.getElementById('cb-pri');
-  cbp.className = 'pri-box ' + PRI_STYLE[S.pri];
-  cbp.textContent = S.pri;
-  const cbsd = document.getElementById('cb-status-dot');
-  cbsd.className = 'status-dot ' + sc.dot;
-  cbsd.style.cssText = 'width:8px;height:8px;';
-  document.getElementById('cb-status-label').textContent = sc.label;
-  document.getElementById('cb-proj').textContent = S.proj;
-
-  // rebuild static lists
-  buildProjList('proj-list', p => { S.proj=p; syncAll(); closeAllPop(); mainInput.focus(); });
-  buildSpaceList();
-}
-
-/* ── Popover open/close ── */
-function closeAllPop() {
-  document.querySelectorAll('.popover').forEach(p => p.classList.remove('visible'));
-  document.getElementById('inline-pop').classList.remove('visible');
-  activePopId = null;
-  inlineMode = null;
-}
-
-function openPopover(id, anchorId) {
-  closeAllPop();
-  const pop = document.getElementById(id);
-  const anchor = document.getElementById(anchorId);
-  const panelRect = document.getElementById('panel').getBoundingClientRect();
-  const anchorRect = anchor.getBoundingClientRect();
-
-  pop.style.top  = (anchorRect.bottom - panelRect.top + 6) + 'px';
-  pop.style.right = (panelRect.right - anchorRect.right) + 'px';
-  pop.style.left  = 'auto';
-  pop.classList.add('visible');
-  activePopId = id;
-
-  if (id === 'pop-proj') {
-    const si = document.getElementById('proj-search');
-    si.value = '';
-    filterProjSearch('');
-    setTimeout(() => si.focus(), 40);
-  }
-}
-
-function filterProjSearch(q) {
-  document.querySelectorAll('#proj-list .pop-item').forEach(item => {
-    item.style.display = item.dataset.proj.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
-  });
-}
-
-// wire up param buttons
-document.querySelectorAll('[data-pop]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const pid = btn.dataset.pop;
-    const bid = btn.id;
-    if (activePopId === pid) { closeAllPop(); mainInput.focus(); return; }
-    openPopover(pid, bid);
-  });
-});
-
-// wire static popover items
-document.querySelectorAll('#pop-pri .pop-item').forEach(item => {
-  item.addEventListener('click', () => {
-    S.pri = item.dataset.pri;
-    syncAll(); closeAllPop(); mainInput.focus();
-  });
-});
-document.querySelectorAll('#pop-status .pop-item').forEach(item => {
-  item.addEventListener('click', () => {
-    S.status = item.dataset.status;
-    syncAll(); closeAllPop(); mainInput.focus();
-  });
-});
-document.getElementById('proj-search').addEventListener('input', e => filterProjSearch(e.target.value));
-
-/* ── Inline popover (! @ # $) ── */
-const INLINE_TRIGGERS = {'!':'pri', '@':'status', '#':'proj', '$':'space'};
-
-function showInlinePop(triggerChar) {
-  inlineMode = triggerChar;
-  const type = INLINE_TRIGGERS[triggerChar];
-  const pop = document.getElementById('inline-pop');
-  pop.innerHTML = '';
-
-  const inputRect = mainInput.getBoundingClientRect();
-
-  if (type === 'pri') {
-    pop.innerHTML = `<div class="pop-head">优先级</div>`;
-    ['P0','P1','P2','P3'].forEach(p => {
-      const item = document.createElement('div');
-      item.className = 'pop-item' + (p===S.pri?' selected':'');
-      item.innerHTML = `<span class="pop-check">${p===S.pri?'✓':''}</span><div class="pri-box ${PRI_STYLE[p]}">${p}</div><span>${PRI_NAMES[p]}</span>`;
-      item.addEventListener('mousedown', e => {
-        e.preventDefault();
-        S.pri = p;
-        syncAll();
-        stripTrigger(triggerChar);
-        closeAllPop();
-        mainInput.focus();
-        renderResults(mainInput.value);
-      });
-      pop.appendChild(item);
-    });
-    pop.innerHTML += '<div style="height:4px"></div>';
-  } else if (type === 'status') {
-    pop.innerHTML = `<div class="pop-head">状态</div>`;
-    Object.entries(STATUS_CFG).forEach(([key, cfg]) => {
-      const item = document.createElement('div');
-      item.className = 'pop-item' + (key===S.status?' selected':'');
-      item.innerHTML = `<span class="pop-check">${key===S.status?'✓':''}</span><span class="status-dot ${cfg.dot}"></span><span>${cfg.label}</span>`;
-      item.addEventListener('mousedown', e => {
-        e.preventDefault();
-        S.status = key;
-        syncAll();
-        stripTrigger(triggerChar);
-        closeAllPop();
-        mainInput.focus();
-        renderResults(mainInput.value);
-      });
-      pop.appendChild(item);
-    });
-    pop.innerHTML += '<div style="height:4px"></div>';
-  } else if (type === 'proj') {
-    pop.innerHTML = `
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>StoneFlow Command v5</title>
+		<style>
+			@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500;600&display=swap');
+
+			*,
+			*::before,
+			*::after {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+
+			:root {
+				--bg: #e8eaf0;
+				--panel: #fcfcfd;
+				--panel-border: #d4d7df;
+				--divider: #eceef3;
+				--row-hover: #f1f4ff;
+				--row-create-bg: #f0f4ff;
+				--row-create-border: #d8e0ff;
+				--accent: #4361ee;
+				--accent-soft: #eef1ff;
+				--text-1: #13161f;
+				--text-2: #525a6e;
+				--text-3: #8e97a8;
+				--shadow: 0 20px 48px rgba(8, 12, 36, 0.13), 0 4px 12px rgba(8, 12, 36, 0.07);
+				--font: 'Geist', ui-sans-serif, -apple-system, sans-serif;
+				--mono: 'Geist Mono', ui-monospace, monospace;
+				--radius: 12px;
+			}
+
+			body {
+				font-family: var(--font);
+				background: var(--bg);
+				min-height: 100vh;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+				justify-content: flex-start;
+				padding: 48px 24px 80px;
+			}
+
+			.window-hint {
+				width: 720px;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin-bottom: 12px;
+				padding: 0 2px;
+			}
+			.win-dot {
+				width: 10px;
+				height: 10px;
+				border-radius: 50%;
+			}
+			.win-bar {
+				flex: 1;
+				height: 1px;
+				background: #cdd0da;
+			}
+			.win-label {
+				font-size: 11px;
+				color: #9aa0b0;
+				letter-spacing: 0.04em;
+			}
+
+			/* ── Panel ── */
+			.panel {
+				width: 720px;
+				background: var(--panel);
+				border: 1px solid var(--panel-border);
+				border-radius: var(--radius);
+				overflow: visible;
+				box-shadow: var(--shadow);
+				position: relative;
+			}
+
+			/* ── Input zone ── */
+			.input-zone {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				padding: 11px 12px;
+				border-bottom: 1px solid var(--divider);
+			}
+
+			.cmd-input {
+				flex: 1;
+				height: 32px;
+				padding: 0 10px;
+				border: 1px solid #d2d5df;
+				border-radius: 7px;
+				background: #fff;
+				outline: none;
+				font-family: var(--font);
+				font-size: 13.5px;
+				color: var(--text-1);
+				caret-color: var(--accent);
+				transition:
+					border-color 130ms,
+					box-shadow 130ms;
+				min-width: 0;
+			}
+			.cmd-input:focus {
+				border-color: #8aa0ff;
+				box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.12);
+			}
+			.cmd-input::placeholder {
+				color: #a8b2c4;
+			}
+
+			/* ── Param buttons ── */
+			.param-btns {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				flex-shrink: 0;
+			}
+
+			.p-btn {
+				position: relative;
+				display: inline-flex;
+				align-items: center;
+				gap: 5px;
+				height: 28px;
+				padding: 0 9px;
+				border-radius: 6px;
+				border: 1px solid #d2d5df;
+				background: #fff;
+				font-family: var(--font);
+				font-size: 12px;
+				font-weight: 500;
+				color: var(--text-2);
+				cursor: pointer;
+				white-space: nowrap;
+				user-select: none;
+				transition:
+					background 100ms,
+					border-color 100ms,
+					color 100ms;
+			}
+			.p-btn:hover {
+				background: #f5f7ff;
+				border-color: #9aadff;
+				color: var(--accent);
+			}
+			.p-btn.has-value {
+				color: var(--accent);
+				background: var(--accent-soft);
+				border-color: #b0bfff;
+			}
+
+			/* status button colors */
+			.p-btn.status-todo {
+				color: var(--text-2);
+				background: #fff;
+				border-color: #d2d5df;
+			}
+			.p-btn.status-todo:hover {
+				background: #f5f7ff;
+				border-color: #9aadff;
+				color: var(--accent);
+			}
+			.p-btn.status-doing {
+				color: #0e6fcc;
+				background: #ebf5ff;
+				border-color: #93c5fd;
+			}
+			.p-btn.status-done {
+				color: #1a7a50;
+				background: #edfaf3;
+				border-color: #6ee7b7;
+			}
+
+			/* priority box */
+			.pri-box {
+				height: 20px;
+				padding: 0 6px;
+				border-radius: 4px;
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 10.5px;
+				font-weight: 700;
+				font-family: var(--mono);
+				flex-shrink: 0;
+			}
+			.pbox-p0 {
+				background: #ffe8e8;
+				color: #b83232;
+			}
+			.pbox-p1 {
+				background: #fff0de;
+				color: #a85500;
+			}
+			.pbox-p2 {
+				background: #ecf0ff;
+				color: #3049d1;
+			}
+			.pbox-p3 {
+				background: #f2f4f8;
+				color: #5c6478;
+			}
+
+			/* status dot */
+			.status-dot {
+				width: 7px;
+				height: 7px;
+				border-radius: 50%;
+				flex-shrink: 0;
+			}
+			.sd-todo {
+				background: #c0c8d8;
+			}
+			.sd-doing {
+				background: #3b9eed;
+			}
+			.sd-done {
+				background: #1f9d62;
+			}
+
+			/* ── Popovers ── */
+			.popover {
+				position: absolute;
+				z-index: 100;
+				background: #fff;
+				border: 1px solid #d4d7df;
+				border-radius: 9px;
+				box-shadow:
+					0 8px 28px rgba(0, 0, 0, 0.12),
+					0 2px 6px rgba(0, 0, 0, 0.06);
+				min-width: 168px;
+				overflow: hidden;
+				display: none;
+				animation: popIn 130ms cubic-bezier(0.2, 0.8, 0.2, 1);
+			}
+			.popover.visible {
+				display: block;
+			}
+
+			@keyframes popIn {
+				from {
+					opacity: 0;
+					transform: translateY(-5px) scale(0.97);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0) scale(1);
+				}
+			}
+
+			.pop-head {
+				padding: 8px 10px 4px;
+				font-size: 10.5px;
+				font-weight: 500;
+				color: var(--text-3);
+				letter-spacing: 0.06em;
+				text-transform: uppercase;
+			}
+
+			.pop-item {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				padding: 7px 10px;
+				font-size: 13px;
+				color: var(--text-2);
+				cursor: pointer;
+				transition: background 70ms;
+			}
+			.pop-item:hover,
+			.pop-item.kfocus {
+				background: var(--row-hover);
+				color: var(--text-1);
+			}
+			.pop-item.selected {
+				color: var(--accent);
+			}
+			.pop-check {
+				width: 14px;
+				flex-shrink: 0;
+				text-align: center;
+				font-size: 11px;
+				color: var(--accent);
+			}
+
+			.pop-search-wrap {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				padding: 8px 10px;
+				border-bottom: 1px solid var(--divider);
+			}
+			.pop-search-input {
+				flex: 1;
+				border: none;
+				outline: none;
+				font-family: var(--font);
+				font-size: 12.5px;
+				color: var(--text-1);
+				background: transparent;
+				caret-color: var(--accent);
+			}
+			.pop-search-input::placeholder {
+				color: #b0b8c8;
+			}
+
+			/* ── inline popover ── */
+			.inline-pop {
+				position: fixed;
+				z-index: 200;
+				background: #fff;
+				border: 1px solid #d4d7df;
+				border-radius: 9px;
+				box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+				min-width: 168px;
+				overflow: hidden;
+				display: none;
+				animation: popIn 130ms cubic-bezier(0.2, 0.8, 0.2, 1);
+			}
+			.inline-pop.visible {
+				display: block;
+			}
+
+			/* ── Divider ── */
+			.h-div {
+				height: 1px;
+				background: var(--divider);
+			}
+
+			/* ── Results ── */
+			.results {
+				max-height: 340px;
+				overflow-y: auto;
+			}
+			.results::-webkit-scrollbar {
+				width: 4px;
+			}
+			.results::-webkit-scrollbar-thumb {
+				background: #dde0e8;
+				border-radius: 2px;
+			}
+
+			/* CREATE ROW */
+			.create-row {
+				display: none;
+				align-items: center;
+				gap: 10px;
+				padding: 9px 14px;
+				background: var(--row-create-bg);
+				border-bottom: 1px solid var(--row-create-border);
+				cursor: pointer;
+				position: relative;
+			}
+			.create-row.visible {
+				display: flex;
+			}
+			.create-row.focused::before {
+				content: '';
+				position: absolute;
+				left: 0;
+				top: 0;
+				bottom: 0;
+				width: 3px;
+				background: var(--accent);
+				border-radius: 0 2px 2px 0;
+			}
+
+			.create-icon {
+				width: 24px;
+				height: 24px;
+				border-radius: 6px;
+				background: var(--accent-soft);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				flex-shrink: 0;
+			}
+
+			.create-body {
+				flex: 1;
+				min-width: 0;
+			}
+			.create-label {
+				font-size: 11px;
+				color: var(--accent);
+				font-weight: 500;
+				margin-bottom: 1px;
+			}
+			.create-title-text {
+				font-size: 13.5px;
+				color: var(--text-1);
+				font-weight: 500;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+
+			.create-badges {
+				display: flex;
+				align-items: center;
+				gap: 5px;
+				flex-shrink: 0;
+			}
+
+			.enter-badge {
+				display: flex;
+				align-items: center;
+				gap: 3px;
+				font-size: 11px;
+				color: #8aa0ff;
+				background: #eef1ff;
+				padding: 2px 7px;
+				border-radius: 4px;
+				border: 1px solid #c8d4ff;
+				font-weight: 500;
+			}
+
+			/* SECTIONS */
+			.section + .section {
+				border-top: 1px solid var(--divider);
+			}
+			.sec-head {
+				padding: 10px 14px 4px;
+				font-size: 10.5px;
+				font-weight: 500;
+				color: var(--text-3);
+				letter-spacing: 0.06em;
+				text-transform: uppercase;
+			}
+
+			/* RESULT ROW */
+			.r-row {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				padding: 8px 14px;
+				cursor: pointer;
+				position: relative;
+				transition: background 70ms;
+			}
+			.r-row:hover,
+			.r-row.focused {
+				background: var(--row-hover);
+			}
+			.r-row.focused::before {
+				content: '';
+				position: absolute;
+				left: 0;
+				top: 0;
+				bottom: 0;
+				width: 3px;
+				background: var(--accent);
+				border-radius: 0 2px 2px 0;
+			}
+
+			.r-icon {
+				width: 24px;
+				height: 24px;
+				border-radius: 6px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				flex-shrink: 0;
+			}
+			.ri-t {
+				background: #eef1ff;
+			}
+			.ri-p {
+				background: #edfaf3;
+			}
+
+			.r-body {
+				flex: 1;
+				min-width: 0;
+			}
+			.r-title {
+				font-size: 13px;
+				color: var(--text-1);
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+			.r-sub {
+				font-size: 11.5px;
+				color: var(--text-3);
+				margin-top: 1px;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+
+			.r-right {
+				display: flex;
+				align-items: center;
+				gap: 5px;
+				flex-shrink: 0;
+			}
+			.meta-pill {
+				font-size: 11px;
+				color: var(--text-3);
+				background: #f2f4f8;
+				padding: 1px 6px;
+				border-radius: 4px;
+				border: 1px solid #e6e9ee;
+			}
+			.r-enter {
+				font-size: 11px;
+				color: #b0bacc;
+				opacity: 0;
+				transition: opacity 80ms;
+				flex-shrink: 0;
+			}
+			.r-row:hover .r-enter,
+			.r-row.focused .r-enter {
+				opacity: 1;
+				color: #8aa0ff;
+			}
+
+			/* ── Footer ── */
+			.footer {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				padding: 8px 14px;
+				border-top: 1px solid var(--divider);
+				background: #f5f6fa;
+				border-radius: 0 0 var(--radius) var(--radius);
+			}
+			.f-hint {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+				font-size: 11px;
+				color: var(--text-3);
+				white-space: nowrap;
+			}
+			.kbd {
+				background: #eaebef;
+				border: 1px solid #d2d5df;
+				border-radius: 4px;
+				padding: 1px 5px;
+				font-size: 10.5px;
+				font-family: var(--mono);
+				color: #6b7489;
+			}
+			.f-sep {
+				width: 1px;
+				height: 12px;
+				background: var(--divider);
+				flex-shrink: 0;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="window-hint">
+			<div class="win-dot" style="background: #ff5f57"></div>
+			<div class="win-dot" style="background: #ffbd2e"></div>
+			<div class="win-dot" style="background: #28c840"></div>
+			<div class="win-bar"></div>
+			<span class="win-label">StoneFlow — ⌘K 唤起</span>
+			<div class="win-bar"></div>
+		</div>
+
+		<div class="panel" id="panel">
+			<!-- INPUT ZONE -->
+			<div class="input-zone">
+				<input
+					class="cmd-input"
+					id="mainInput"
+					placeholder="输入任务… ( ! 优先级  @ 状态  # 项目  $ 空间 )"
+					autocomplete="off"
+					spellcheck="false"
+				/>
+
+				<div class="param-btns" id="paramBtns">
+					<!-- Priority -->
+					<div class="p-btn" id="btn-pri" data-pop="pop-pri">
+						<div class="pri-box pbox-p1" id="pri-display">P1</div>
+					</div>
+
+					<!-- Status -->
+					<div class="p-btn status-todo" id="btn-status" data-pop="pop-status">
+						<span class="status-dot sd-todo" id="status-dot"></span>
+						<span id="status-label">待执行</span>
+					</div>
+
+					<!-- Project -->
+					<div class="p-btn has-value" id="btn-proj" data-pop="pop-proj">
+						<svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+							<rect
+								x=".75"
+								y="1.75"
+								width="8.5"
+								height="6.5"
+								rx="1.5"
+								stroke="currentColor"
+								stroke-width="1"
+							/>
+							<line
+								x1="2.5"
+								y1="4"
+								x2="7.5"
+								y2="4"
+								stroke="currentColor"
+								stroke-width="1"
+								stroke-linecap="round"
+							/>
+							<line
+								x1="2.5"
+								y1="5.8"
+								x2="5.5"
+								y2="5.8"
+								stroke="currentColor"
+								stroke-width="1"
+								stroke-linecap="round"
+							/>
+						</svg>
+						<span id="proj-label">StoneFlow 开发</span>
+					</div>
+
+					<!-- Space -->
+					<div class="p-btn has-value" id="btn-space" data-pop="pop-space">
+						<svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+							<rect
+								x=".75"
+								y=".75"
+								width="8.5"
+								height="8.5"
+								rx="2"
+								stroke="currentColor"
+								stroke-width="1"
+							/>
+							<path
+								d="M3 5h4M5 3v4"
+								stroke="currentColor"
+								stroke-width="1"
+								stroke-linecap="round"
+							/>
+						</svg>
+						<span id="space-label">产品研发</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- PRIORITY POPOVER -->
+			<div class="popover" id="pop-pri">
+				<div class="pop-head">
+					优先级
+					<span style="color: #c8ced8; font-weight: 400; font-size: 10px; margin-left: 4px"
+						>! 快捷触发</span
+					>
+				</div>
+				<div class="pop-item" data-pri="P0" data-style="pbox-p0">
+					<span class="pop-check" id="ck-P0"></span>
+					<div class="pri-box pbox-p0">P0</div>
+					<span>紧急</span>
+				</div>
+				<div class="pop-item selected" data-pri="P1" data-style="pbox-p1">
+					<span class="pop-check" id="ck-P1">✓</span>
+					<div class="pri-box pbox-p1">P1</div>
+					<span>高优先级</span>
+				</div>
+				<div class="pop-item" data-pri="P2" data-style="pbox-p2">
+					<span class="pop-check" id="ck-P2"></span>
+					<div class="pri-box pbox-p2">P2</div>
+					<span>中优先级</span>
+				</div>
+				<div class="pop-item" data-pri="P3" data-style="pbox-p3">
+					<span class="pop-check" id="ck-P3"></span>
+					<div class="pri-box pbox-p3">P3</div>
+					<span>低优先级</span>
+				</div>
+				<div style="height: 4px"></div>
+			</div>
+
+			<!-- STATUS POPOVER -->
+			<div class="popover" id="pop-status">
+				<div class="pop-head">
+					状态
+					<span style="color: #c8ced8; font-weight: 400; font-size: 10px; margin-left: 4px"
+						>@ 快捷触发</span
+					>
+				</div>
+				<div
+					class="pop-item selected"
+					data-status="todo"
+					data-dot="sd-todo"
+					data-label="待执行"
+					data-btn-class="status-todo"
+				>
+					<span class="pop-check" id="ck-todo">✓</span><span class="status-dot sd-todo"></span
+					><span>待执行</span>
+				</div>
+				<div
+					class="pop-item"
+					data-status="doing"
+					data-dot="sd-doing"
+					data-label="进行中"
+					data-btn-class="status-doing"
+				>
+					<span class="pop-check" id="ck-doing"></span><span class="status-dot sd-doing"></span
+					><span>进行中</span>
+				</div>
+				<div
+					class="pop-item"
+					data-status="done"
+					data-dot="sd-done"
+					data-label="已完成"
+					data-btn-class="status-done"
+				>
+					<span class="pop-check" id="ck-done"></span><span class="status-dot sd-done"></span
+					><span>已完成</span>
+				</div>
+				<div style="height: 4px"></div>
+			</div>
+
+			<!-- PROJECT POPOVER -->
+			<div class="popover" id="pop-proj" style="min-width: 200px">
+				<div class="pop-head">
+					项目
+					<span style="color: #c8ced8; font-weight: 400; font-size: 10px; margin-left: 4px"
+						># 快捷触发</span
+					>
+				</div>
+				<div class="pop-search-wrap">
+					<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+						<circle cx="5.5" cy="5.5" r="4" stroke="#A0A8B8" stroke-width="1.2" />
+						<line
+							x1="8.5"
+							y1="8.5"
+							x2="11"
+							y2="11"
+							stroke="#A0A8B8"
+							stroke-width="1.2"
+							stroke-linecap="round"
+						/>
+					</svg>
+					<input
+						class="pop-search-input"
+						id="proj-search"
+						placeholder="搜索项目…"
+						autocomplete="off"
+					/>
+				</div>
+				<div id="proj-list"></div>
+				<div style="height: 4px"></div>
+			</div>
+
+			<!-- SPACE POPOVER -->
+			<div class="popover" id="pop-space" style="min-width: 168px">
+				<div class="pop-head">
+					空间
+					<span style="color: #c8ced8; font-weight: 400; font-size: 10px; margin-left: 4px"
+						>$ 快捷触发</span
+					>
+				</div>
+				<div id="space-list"></div>
+				<div style="height: 4px"></div>
+			</div>
+
+			<!-- INLINE POPOVER -->
+			<div class="inline-pop" id="inline-pop"></div>
+
+			<!-- CREATE ROW -->
+			<div class="create-row" id="createRow">
+				<div class="create-icon">
+					<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+						<line
+							x1="6"
+							y1="2"
+							x2="6"
+							y2="10"
+							stroke="#4361EE"
+							stroke-width="1.5"
+							stroke-linecap="round"
+						/>
+						<line
+							x1="2"
+							y1="6"
+							x2="10"
+							y2="6"
+							stroke="#4361EE"
+							stroke-width="1.5"
+							stroke-linecap="round"
+						/>
+					</svg>
+				</div>
+				<div class="create-body">
+					<div class="create-label">创建任务</div>
+					<div class="create-title-text" id="createTitleText"></div>
+				</div>
+				<div class="create-badges" id="createBadges">
+					<div class="pri-box pbox-p1" id="cb-pri">P1</div>
+					<span
+						class="status-dot sd-todo"
+						id="cb-status-dot"
+						style="width: 8px; height: 8px"
+					></span>
+					<span style="font-size: 11px; color: var(--text-3)" id="cb-status-label">待执行</span>
+					<span class="meta-pill" id="cb-proj">StoneFlow 开发</span>
+					<div class="enter-badge">↵ 创建</div>
+				</div>
+			</div>
+
+			<!-- RESULTS -->
+			<div class="results" id="results"></div>
+
+			<!-- FOOTER -->
+			<div class="footer">
+				<div class="f-hint"><kbd class="kbd">↑↓</kbd> 选择</div>
+				<div class="f-hint"><kbd class="kbd">↵</kbd> 确认</div>
+				<div class="f-sep"></div>
+				<div class="f-hint"><kbd class="kbd">!</kbd> 优先级</div>
+				<div class="f-hint"><kbd class="kbd">@</kbd> 状态</div>
+				<div class="f-hint"><kbd class="kbd">#</kbd> 项目</div>
+				<div class="f-hint"><kbd class="kbd">$</kbd> 空间</div>
+				<div class="f-sep"></div>
+				<div class="f-hint"><kbd class="kbd">Esc</kbd> 关闭</div>
+				<div style="flex: 1"></div>
+				<div class="f-hint" style="color: #c0c8d8"><kbd class="kbd">⌘K</kbd> 唤起</div>
+			</div>
+		</div>
+
+		<script>
+			/* ── Data ── */
+			const TASKS = [
+				{
+					title: '完善 Command 面板键盘导航',
+					sub: 'StoneFlow 开发 · 产品研发',
+					meta: '今天',
+					pri: 'P1',
+				},
+				{
+					title: '设计 Drawer 打开动效',
+					sub: 'StoneFlow 开发 · 产品研发',
+					meta: '昨天',
+					pri: 'P2',
+				},
+				{
+					title: '整理 D1 数据模型文档',
+					sub: 'StoneFlow 开发 · 产品研发',
+					meta: '2天前',
+					pri: 'P0',
+				},
+				{
+					title: 'Space Tabs 激活态样式确认',
+					sub: 'StoneFlow 开发 · 产品研发',
+					meta: '3天前',
+					pri: 'P2',
+				},
+				{
+					title: '补充 Task Drawer 字段顺序',
+					sub: 'StoneFlow 开发 · 产品研发',
+					meta: '4天前',
+					pri: 'P1',
+				},
+			]
+			const PROJECTS = ['StoneFlow 开发', '设计系统整理', '移动端适配', '基础架构重构']
+			const SPACES = ['产品研发', '工程基础', '个人成长', '生活']
+
+			const PRI_STYLE = { P0: 'pbox-p0', P1: 'pbox-p1', P2: 'pbox-p2', P3: 'pbox-p3' }
+			const PRI_NAMES = { P0: '紧急', P1: '高优先级', P2: '中优先级', P3: '低优先级' }
+			const STATUS_CFG = {
+				todo: { label: '待执行', dot: 'sd-todo', btnClass: 'status-todo' },
+				doing: { label: '进行中', dot: 'sd-doing', btnClass: 'status-doing' },
+				done: { label: '已完成', dot: 'sd-done', btnClass: 'status-done' },
+			}
+
+			/* ── State ── */
+			let S = { pri: 'P1', status: 'todo', proj: 'StoneFlow 开发', space: '产品研发' }
+			let focusTarget = 'none' // 'create' | number
+			let allRows = []
+			let activePopId = null
+			let inlineMode = null // null | '!' | '@' | '#' | '$'
+
+			const mainInput = document.getElementById('mainInput')
+			const createRow = document.getElementById('createRow')
+			const resultsZone = document.getElementById('results')
+
+			/* ── Build static popover lists ── */
+			function buildProjList(containerId, onSelect) {
+				const c = document.getElementById(containerId)
+				c.innerHTML = ''
+				PROJECTS.forEach((p) => {
+					const item = document.createElement('div')
+					item.className = 'pop-item' + (p === S.proj ? ' selected' : '')
+					item.dataset.proj = p
+					item.innerHTML = `<span class="pop-check">${p === S.proj ? '✓' : ''}</span><span>${p}</span>`
+					item.addEventListener('click', () => onSelect(p))
+					c.appendChild(item)
+				})
+			}
+			function buildSpaceList() {
+				const c = document.getElementById('space-list')
+				c.innerHTML = ''
+				SPACES.forEach((sp) => {
+					const item = document.createElement('div')
+					item.className = 'pop-item' + (sp === S.space ? ' selected' : '')
+					item.dataset.space = sp
+					item.innerHTML = `<span class="pop-check">${sp === S.space ? '✓' : ''}</span><span>${sp}</span>`
+					item.addEventListener('click', () => {
+						S.space = sp
+						syncAll()
+						closeAllPop()
+						mainInput.focus()
+					})
+					c.appendChild(item)
+				})
+			}
+
+			/* ── Sync UI to state ── */
+			function syncAll() {
+				// priority button
+				const pd = document.getElementById('pri-display')
+				pd.className = 'pri-box ' + PRI_STYLE[S.pri]
+				pd.textContent = S.pri
+
+				// priority popover checks
+				;['P0', 'P1', 'P2', 'P3'].forEach((p) => {
+					const ck = document.getElementById('ck-' + p)
+					if (!ck) return
+					ck.textContent = p === S.pri ? '✓' : ''
+					ck.closest('.pop-item').classList.toggle('selected', p === S.pri)
+				})
+
+				// status button
+				const sc = STATUS_CFG[S.status]
+				const sbtn = document.getElementById('btn-status')
+				sbtn.className = 'p-btn ' + sc.btnClass
+				document.getElementById('status-dot').className = 'status-dot ' + sc.dot
+				document.getElementById('status-label').textContent = sc.label
+
+				// status popover checks
+				;['todo', 'doing', 'done'].forEach((s) => {
+					const ck = document.getElementById('ck-' + s)
+					if (!ck) return
+					ck.textContent = s === S.status ? '✓' : ''
+					ck.closest('.pop-item').classList.toggle('selected', s === S.status)
+				})
+
+				// project button
+				document.getElementById('proj-label').textContent = S.proj
+
+				// space button
+				document.getElementById('space-label').textContent = S.space
+
+				// create row badges
+				const cbp = document.getElementById('cb-pri')
+				cbp.className = 'pri-box ' + PRI_STYLE[S.pri]
+				cbp.textContent = S.pri
+				const cbsd = document.getElementById('cb-status-dot')
+				cbsd.className = 'status-dot ' + sc.dot
+				cbsd.style.cssText = 'width:8px;height:8px;'
+				document.getElementById('cb-status-label').textContent = sc.label
+				document.getElementById('cb-proj').textContent = S.proj
+
+				// rebuild static lists
+				buildProjList('proj-list', (p) => {
+					S.proj = p
+					syncAll()
+					closeAllPop()
+					mainInput.focus()
+				})
+				buildSpaceList()
+			}
+
+			/* ── Popover open/close ── */
+			function closeAllPop() {
+				document.querySelectorAll('.popover').forEach((p) => p.classList.remove('visible'))
+				document.getElementById('inline-pop').classList.remove('visible')
+				activePopId = null
+				inlineMode = null
+			}
+
+			function openPopover(id, anchorId) {
+				closeAllPop()
+				const pop = document.getElementById(id)
+				const anchor = document.getElementById(anchorId)
+				const panelRect = document.getElementById('panel').getBoundingClientRect()
+				const anchorRect = anchor.getBoundingClientRect()
+
+				pop.style.top = anchorRect.bottom - panelRect.top + 6 + 'px'
+				pop.style.right = panelRect.right - anchorRect.right + 'px'
+				pop.style.left = 'auto'
+				pop.classList.add('visible')
+				activePopId = id
+
+				if (id === 'pop-proj') {
+					const si = document.getElementById('proj-search')
+					si.value = ''
+					filterProjSearch('')
+					setTimeout(() => si.focus(), 40)
+				}
+			}
+
+			function filterProjSearch(q) {
+				document.querySelectorAll('#proj-list .pop-item').forEach((item) => {
+					item.style.display = item.dataset.proj.toLowerCase().includes(q.toLowerCase())
+						? ''
+						: 'none'
+				})
+			}
+
+			// wire up param buttons
+			document.querySelectorAll('[data-pop]').forEach((btn) => {
+				btn.addEventListener('click', () => {
+					const pid = btn.dataset.pop
+					const bid = btn.id
+					if (activePopId === pid) {
+						closeAllPop()
+						mainInput.focus()
+						return
+					}
+					openPopover(pid, bid)
+				})
+			})
+
+			// wire static popover items
+			document.querySelectorAll('#pop-pri .pop-item').forEach((item) => {
+				item.addEventListener('click', () => {
+					S.pri = item.dataset.pri
+					syncAll()
+					closeAllPop()
+					mainInput.focus()
+				})
+			})
+			document.querySelectorAll('#pop-status .pop-item').forEach((item) => {
+				item.addEventListener('click', () => {
+					S.status = item.dataset.status
+					syncAll()
+					closeAllPop()
+					mainInput.focus()
+				})
+			})
+			document
+				.getElementById('proj-search')
+				.addEventListener('input', (e) => filterProjSearch(e.target.value))
+
+			/* ── Inline popover (! @ # $) ── */
+			const INLINE_TRIGGERS = { '!': 'pri', '@': 'status', '#': 'proj', $: 'space' }
+
+			function showInlinePop(triggerChar) {
+				inlineMode = triggerChar
+				const type = INLINE_TRIGGERS[triggerChar]
+				const pop = document.getElementById('inline-pop')
+				pop.innerHTML = ''
+
+				const inputRect = mainInput.getBoundingClientRect()
+
+				if (type === 'pri') {
+					pop.innerHTML = `<div class="pop-head">优先级</div>`
+					;['P0', 'P1', 'P2', 'P3'].forEach((p) => {
+						const item = document.createElement('div')
+						item.className = 'pop-item' + (p === S.pri ? ' selected' : '')
+						item.innerHTML = `<span class="pop-check">${p === S.pri ? '✓' : ''}</span><div class="pri-box ${PRI_STYLE[p]}">${p}</div><span>${PRI_NAMES[p]}</span>`
+						item.addEventListener('mousedown', (e) => {
+							e.preventDefault()
+							S.pri = p
+							syncAll()
+							stripTrigger(triggerChar)
+							closeAllPop()
+							mainInput.focus()
+							renderResults(mainInput.value)
+						})
+						pop.appendChild(item)
+					})
+					pop.innerHTML += '<div style="height:4px"></div>'
+				} else if (type === 'status') {
+					pop.innerHTML = `<div class="pop-head">状态</div>`
+					Object.entries(STATUS_CFG).forEach(([key, cfg]) => {
+						const item = document.createElement('div')
+						item.className = 'pop-item' + (key === S.status ? ' selected' : '')
+						item.innerHTML = `<span class="pop-check">${key === S.status ? '✓' : ''}</span><span class="status-dot ${cfg.dot}"></span><span>${cfg.label}</span>`
+						item.addEventListener('mousedown', (e) => {
+							e.preventDefault()
+							S.status = key
+							syncAll()
+							stripTrigger(triggerChar)
+							closeAllPop()
+							mainInput.focus()
+							renderResults(mainInput.value)
+						})
+						pop.appendChild(item)
+					})
+					pop.innerHTML += '<div style="height:4px"></div>'
+				} else if (type === 'proj') {
+					pop.innerHTML = `
       <div class="pop-head">项目</div>
       <div class="pop-search-wrap">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="#A0A8B8" stroke-width="1.2"/><line x1="8.5" y1="8.5" x2="11" y2="11" stroke="#A0A8B8" stroke-width="1.2" stroke-linecap="round"/></svg>
         <input class="pop-search-input" id="inline-proj-input" placeholder="搜索项目…" autocomplete="off"/>
       </div>
       <div id="inline-proj-items"></div>
-      <div style="height:4px"></div>`;
+      <div style="height:4px"></div>`
 
-    function renderInlineProj(q='') {
-      const c = document.getElementById('inline-proj-items');
-      if (!c) return;
-      c.innerHTML = '';
-      PROJECTS.filter(p => p.toLowerCase().includes(q.toLowerCase())).forEach(p => {
-        const item = document.createElement('div');
-        item.className = 'pop-item' + (p===S.proj?' selected':'');
-        item.innerHTML = `<span class="pop-check">${p===S.proj?'✓':''}</span><span>${p}</span>`;
-        item.addEventListener('mousedown', e => {
-          e.preventDefault();
-          S.proj = p;
-          syncAll();
-          stripTrigger(triggerChar);
-          closeAllPop();
-          mainInput.focus();
-          renderResults(mainInput.value);
-        });
-        c.appendChild(item);
-      });
-    }
-    renderInlineProj();
-    setTimeout(() => {
-      const si = document.getElementById('inline-proj-input');
-      if (si) { si.addEventListener('input', e => renderInlineProj(e.target.value)); si.focus(); }
-    }, 40);
-  } else if (type === 'space') {
-    pop.innerHTML = `<div class="pop-head">空间</div>`;
-    SPACES.forEach(sp => {
-      const item = document.createElement('div');
-      item.className = 'pop-item' + (sp===S.space?' selected':'');
-      item.innerHTML = `<span class="pop-check">${sp===S.space?'✓':''}</span><span>${sp}</span>`;
-      item.addEventListener('mousedown', e => {
-        e.preventDefault();
-        S.space = sp;
-        syncAll();
-        stripTrigger(triggerChar);
-        closeAllPop();
-        mainInput.focus();
-        renderResults(mainInput.value);
-      });
-      pop.appendChild(item);
-    });
-    pop.innerHTML += '<div style="height:4px"></div>';
-  }
+					function renderInlineProj(q = '') {
+						const c = document.getElementById('inline-proj-items')
+						if (!c) return
+						c.innerHTML = ''
+						PROJECTS.filter((p) => p.toLowerCase().includes(q.toLowerCase())).forEach((p) => {
+							const item = document.createElement('div')
+							item.className = 'pop-item' + (p === S.proj ? ' selected' : '')
+							item.innerHTML = `<span class="pop-check">${p === S.proj ? '✓' : ''}</span><span>${p}</span>`
+							item.addEventListener('mousedown', (e) => {
+								e.preventDefault()
+								S.proj = p
+								syncAll()
+								stripTrigger(triggerChar)
+								closeAllPop()
+								mainInput.focus()
+								renderResults(mainInput.value)
+							})
+							c.appendChild(item)
+						})
+					}
+					renderInlineProj()
+					setTimeout(() => {
+						const si = document.getElementById('inline-proj-input')
+						if (si) {
+							si.addEventListener('input', (e) => renderInlineProj(e.target.value))
+							si.focus()
+						}
+					}, 40)
+				} else if (type === 'space') {
+					pop.innerHTML = `<div class="pop-head">空间</div>`
+					SPACES.forEach((sp) => {
+						const item = document.createElement('div')
+						item.className = 'pop-item' + (sp === S.space ? ' selected' : '')
+						item.innerHTML = `<span class="pop-check">${sp === S.space ? '✓' : ''}</span><span>${sp}</span>`
+						item.addEventListener('mousedown', (e) => {
+							e.preventDefault()
+							S.space = sp
+							syncAll()
+							stripTrigger(triggerChar)
+							closeAllPop()
+							mainInput.focus()
+							renderResults(mainInput.value)
+						})
+						pop.appendChild(item)
+					})
+					pop.innerHTML += '<div style="height:4px"></div>'
+				}
 
-  pop.style.top  = (inputRect.bottom + window.scrollY + 6) + 'px';
-  pop.style.left = inputRect.left + 'px';
-  pop.style.right = 'auto';
-  pop.classList.add('visible');
-}
+				pop.style.top = inputRect.bottom + window.scrollY + 6 + 'px'
+				pop.style.left = inputRect.left + 'px'
+				pop.style.right = 'auto'
+				pop.classList.add('visible')
+			}
 
-function stripTrigger(char) {
-  // remove the trigger char from the beginning of input
-  const val = mainInput.value;
-  if (val.startsWith(char)) mainInput.value = val.slice(1);
-}
+			function stripTrigger(char) {
+				// remove the trigger char from the beginning of input
+				const val = mainInput.value
+				if (val.startsWith(char)) mainInput.value = val.slice(1)
+			}
 
-/* ── Render results ── */
-function renderResults(query) {
-  resultsZone.innerHTML = '';
-  allRows = [];
-  const q = query.trim().toLowerCase();
-  const hasQ = q.length > 0;
+			/* ── Render results ── */
+			function renderResults(query) {
+				resultsZone.innerHTML = ''
+				allRows = []
+				const q = query.trim().toLowerCase()
+				const hasQ = q.length > 0
 
-  if (hasQ) {
-    createRow.classList.add('visible');
-    document.getElementById('createTitleText').textContent = query.trim();
-    focusTarget = 'create';
-  } else {
-    createRow.classList.remove('visible');
-    focusTarget = 'none';
-  }
+				if (hasQ) {
+					createRow.classList.add('visible')
+					document.getElementById('createTitleText').textContent = query.trim()
+					focusTarget = 'create'
+				} else {
+					createRow.classList.remove('visible')
+					focusTarget = 'none'
+				}
 
-  const mt = hasQ ? TASKS.filter(t => t.title.toLowerCase().includes(q)) : TASKS;
-  const mp = hasQ
-    ? PROJECTS.filter(p => p.toLowerCase().includes(q)).map(p => ({title:p, sub:'', meta:''}))
-    : [{title:'StoneFlow 开发',sub:'产品研发 · 12 个任务',meta:'活跃'},
-       {title:'设计系统整理',sub:'产品研发 · 5 个任务',meta:'活跃'},
-       {title:'移动端适配',sub:'产品研发 · 3 个任务',meta:'暂停'}];
+				const mt = hasQ ? TASKS.filter((t) => t.title.toLowerCase().includes(q)) : TASKS
+				const mp = hasQ
+					? PROJECTS.filter((p) => p.toLowerCase().includes(q)).map((p) => ({
+							title: p,
+							sub: '',
+							meta: '',
+						}))
+					: [
+							{ title: 'StoneFlow 开发', sub: '产品研发 · 12 个任务', meta: '活跃' },
+							{ title: '设计系统整理', sub: '产品研发 · 5 个任务', meta: '活跃' },
+							{ title: '移动端适配', sub: '产品研发 · 3 个任务', meta: '暂停' },
+						]
 
-  function makeSection(label, items, type) {
-    if (!items.length) return;
-    const sec = document.createElement('div');
-    sec.className = 'section';
-    const head = document.createElement('div');
-    head.className = 'sec-head';
-    head.textContent = hasQ ? label + '搜索结果' : '最近' + label;
-    sec.appendChild(head);
+				function makeSection(label, items, type) {
+					if (!items.length) return
+					const sec = document.createElement('div')
+					sec.className = 'section'
+					const head = document.createElement('div')
+					head.className = 'sec-head'
+					head.textContent = hasQ ? label + '搜索结果' : '最近' + label
+					sec.appendChild(head)
 
-    items.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'r-row';
-      const isTask = type === 'task';
-      row.innerHTML = `
-        <div class="r-icon ${isTask?'ri-t':'ri-p'}">
-          ${isTask
-            ?`<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#4361EE" stroke-width="1.2"/><circle cx="6" cy="6" r="1.8" fill="#4361EE"/></svg>`
-            :`<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x=".75" y="1.75" width="10.5" height="8.5" rx="2" stroke="#1F9D62" stroke-width="1.2"/><line x1="3" y1="5" x2="9" y2="5" stroke="#1F9D62" stroke-width="1.1" stroke-linecap="round"/><line x1="3" y1="7" x2="7" y2="7" stroke="#1F9D62" stroke-width="1.1" stroke-linecap="round"/></svg>`
-          }
+					items.forEach((item) => {
+						const row = document.createElement('div')
+						row.className = 'r-row'
+						const isTask = type === 'task'
+						row.innerHTML = `
+        <div class="r-icon ${isTask ? 'ri-t' : 'ri-p'}">
+          ${
+						isTask
+							? `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#4361EE" stroke-width="1.2"/><circle cx="6" cy="6" r="1.8" fill="#4361EE"/></svg>`
+							: `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x=".75" y="1.75" width="10.5" height="8.5" rx="2" stroke="#1F9D62" stroke-width="1.2"/><line x1="3" y1="5" x2="9" y2="5" stroke="#1F9D62" stroke-width="1.1" stroke-linecap="round"/><line x1="3" y1="7" x2="7" y2="7" stroke="#1F9D62" stroke-width="1.1" stroke-linecap="round"/></svg>`
+					}
         </div>
         <div class="r-body">
           <div class="r-title">${item.title}</div>
@@ -811,77 +1217,104 @@ function renderResults(query) {
           ${isTask ? `<div class="pri-box ${PRI_STYLE[item.pri]}" style="font-size:10px;height:18px;padding:0 5px;">${item.pri}</div>` : ''}
           ${item.meta ? `<span class="meta-pill">${item.meta}</span>` : ''}
           <span class="r-enter">↵</span>
-        </div>`;
-      row.addEventListener('mouseenter', () => {
-        focusTarget = allRows.indexOf(row);
-        syncFocus();
-      });
-      allRows.push(row);
-      sec.appendChild(row);
-    });
-    resultsZone.appendChild(sec);
-  }
+        </div>`
+						row.addEventListener('mouseenter', () => {
+							focusTarget = allRows.indexOf(row)
+							syncFocus()
+						})
+						allRows.push(row)
+						sec.appendChild(row)
+					})
+					resultsZone.appendChild(sec)
+				}
 
-  makeSection('Tasks', mt, 'task');
-  makeSection('项目', mp, 'proj');
+				makeSection('Tasks', mt, 'task')
+				makeSection('项目', mp, 'proj')
 
-  syncFocus();
-}
+				syncFocus()
+			}
 
-function syncFocus() {
-  createRow.classList.toggle('focused', focusTarget === 'create');
-  allRows.forEach((r,i) => r.classList.toggle('focused', focusTarget === i));
-}
+			function syncFocus() {
+				createRow.classList.toggle('focused', focusTarget === 'create')
+				allRows.forEach((r, i) => r.classList.toggle('focused', focusTarget === i))
+			}
 
-/* ── Input handler ── */
-mainInput.addEventListener('input', e => {
-  const val = e.target.value;
-  const trigger = val.length === 1 ? val : null;
+			/* ── Input handler ── */
+			mainInput.addEventListener('input', (e) => {
+				const val = e.target.value
+				const trigger = val.length === 1 ? val : null
 
-  if (trigger && INLINE_TRIGGERS[trigger]) {
-    showInlinePop(trigger);
-    return;
-  }
+				if (trigger && INLINE_TRIGGERS[trigger]) {
+					showInlinePop(trigger)
+					return
+				}
 
-  if (inlineMode && !document.getElementById('inline-pop').classList.contains('visible')) {
-    inlineMode = null;
-  }
+				if (inlineMode && !document.getElementById('inline-pop').classList.contains('visible')) {
+					inlineMode = null
+				}
 
-  renderResults(val);
-});
+				renderResults(val)
+			})
 
-mainInput.addEventListener('keydown', e => {
-  if (activePopId || inlineMode) {
-    if (e.key === 'Escape') { closeAllPop(); e.preventDefault(); return; }
-    return;
-  }
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    if (focusTarget === 'create') { if (allRows.length) { focusTarget=0; syncFocus(); } }
-    else if (focusTarget === 'none') { if (allRows.length) { focusTarget=0; syncFocus(); } }
-    else { focusTarget = Math.min(focusTarget+1, allRows.length-1); syncFocus(); }
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    if (typeof focusTarget === 'number') {
-      if (focusTarget === 0 && createRow.classList.contains('visible')) { focusTarget='create'; syncFocus(); }
-      else { focusTarget = Math.max(focusTarget-1, 0); syncFocus(); }
-    }
-  } else if (e.key === 'Escape') {
-    if (mainInput.value) { mainInput.value=''; renderResults(''); }
-  }
-});
+			mainInput.addEventListener('keydown', (e) => {
+				if (activePopId || inlineMode) {
+					if (e.key === 'Escape') {
+						closeAllPop()
+						e.preventDefault()
+						return
+					}
+					return
+				}
+				if (e.key === 'ArrowDown') {
+					e.preventDefault()
+					if (focusTarget === 'create') {
+						if (allRows.length) {
+							focusTarget = 0
+							syncFocus()
+						}
+					} else if (focusTarget === 'none') {
+						if (allRows.length) {
+							focusTarget = 0
+							syncFocus()
+						}
+					} else {
+						focusTarget = Math.min(focusTarget + 1, allRows.length - 1)
+						syncFocus()
+					}
+				} else if (e.key === 'ArrowUp') {
+					e.preventDefault()
+					if (typeof focusTarget === 'number') {
+						if (focusTarget === 0 && createRow.classList.contains('visible')) {
+							focusTarget = 'create'
+							syncFocus()
+						} else {
+							focusTarget = Math.max(focusTarget - 1, 0)
+							syncFocus()
+						}
+					}
+				} else if (e.key === 'Escape') {
+					if (mainInput.value) {
+						mainInput.value = ''
+						renderResults('')
+					}
+				}
+			})
 
-/* close on outside click */
-document.addEventListener('mousedown', e => {
-  if (!e.target.closest('.popover') && !e.target.closest('.p-btn') && !e.target.closest('.inline-pop')) {
-    closeAllPop();
-  }
-});
+			/* close on outside click */
+			document.addEventListener('mousedown', (e) => {
+				if (
+					!e.target.closest('.popover') &&
+					!e.target.closest('.p-btn') &&
+					!e.target.closest('.inline-pop')
+				) {
+					closeAllPop()
+				}
+			})
 
-/* ── Init ── */
-syncAll();
-renderResults('');
-setTimeout(() => mainInput.focus(), 60);
-</script>
-</body>
+			/* ── Init ── */
+			syncAll()
+			renderResults('')
+			setTimeout(() => mainInput.focus(), 60)
+		</script>
+	</body>
 </html>

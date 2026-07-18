@@ -29,7 +29,7 @@ pub enum UsecaseError {
     #[error("内部错误: {0}")]
     Internal(String),
 
-    /// 默认 Space 不可用（Quick Create 边界）。
+    /// 默认 Space 不可用（Launcher 边界）。
     #[error("默认 Space 不可用: {0}")]
     DefaultSpaceUnavailable(String),
 

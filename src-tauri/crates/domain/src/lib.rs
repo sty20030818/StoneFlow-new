@@ -11,7 +11,7 @@ mod error;
 mod ids;
 mod lifecycle;
 mod project;
-mod quick_create;
+mod launcher;
 mod settings;
 mod space;
 mod task;
@@ -28,7 +28,7 @@ pub use lifecycle::{
     LifecycleMode,
 };
 pub use project::{ensure_project_mutable, validate_project_id};
-pub use quick_create::{resolve_default_space_id, QuickCreateSpaceCandidate};
+pub use launcher::{resolve_default_space_id, LauncherSpaceCandidate};
 pub use settings::validate_sidebar_main_visible_count;
 pub use space::{ensure_space_mutable, validate_space_id};
 pub use task::{validate_task_id, validate_task_priority, TaskStatus};

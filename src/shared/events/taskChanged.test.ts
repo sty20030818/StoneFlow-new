@@ -27,7 +27,7 @@ describe('taskChanged event helpers', () => {
 			space_id: 'space-uuid',
 			space_slug: 'work',
 			task_id: 'task-uuid',
-			source: 'quick_create',
+			source: 'launcher',
 			space_fallback: false,
 		})
 
@@ -35,7 +35,7 @@ describe('taskChanged event helpers', () => {
 			spaceId: 'space-uuid',
 			spaceSlug: 'work',
 			taskId: 'task-uuid',
-			source: 'quick_create',
+			source: 'launcher',
 			spaceFallback: false,
 		})
 		expect(
@@ -74,7 +74,7 @@ describe('taskChanged event helpers', () => {
 				space_id: 'space-uuid',
 				space_slug: 'work',
 				task_id: 'task-uuid',
-				source: 'quick_create',
+				source: 'launcher',
 				space_fallback: true,
 			},
 		})
@@ -113,7 +113,7 @@ describe('taskChanged event helpers', () => {
 				space_id: 'space-other',
 				space_slug: 'other',
 				task_id: 'task-other',
-				source: 'quick_create',
+				source: 'launcher',
 				space_fallback: false,
 			},
 		})
@@ -124,7 +124,7 @@ describe('taskChanged event helpers', () => {
 				space_id: 'space-default',
 				space_slug: 'work',
 				task_id: 'task-default',
-				source: 'quick_create',
+				source: 'launcher',
 				space_fallback: false,
 			},
 		})

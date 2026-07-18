@@ -10,7 +10,7 @@
 
 | ID | 路径 | 文件数 | LOC 页主文件 | 壳厚度 | Delete | 评级 | 建议 |
 |----|------|--------|--------------|--------|--------|------|------|
-| FE-F-QC | `quick-create` | 47+ARCH | 整窗 feature | **thick-feature** | 3–4 | **Optimal–Acceptable** | Keep |
+| FE-F-LAUNCHER | `launcher` | 47+ARCH | 整窗 feature | **thick-feature** | 3–4 | **Optimal–Acceptable** | Keep |
 | FE-F-SETTINGS | `settings` | 13 | 85 | **mixed** | 2 | Acceptable | Keep |
 | FE-F-VIEWS | `views` | 2 | 386 | **thick-scene** | 4 | Acceptable | Keep |
 | FE-F-PROJ-OV | `project-overview` | 4 | 244 | **thick-scene** | 4 | Acceptable | Keep |
@@ -43,7 +43,7 @@
 | `composition-shell` | 单页组装 domain+platform，**无自有 api/query** | `inbox`, `all-tasks`, `no-project` |
 | `thick-scene` | 页内含较多场景状态/多域编排，仍无独立实体 api | `views`, `project-overview` |
 | `mixed` | 页壳 + 被壳/导航复用的 model/api | `settings` |
-| `thick-feature` | 自有 runtime/domain/api，可独立生命周期 | `quick-create` |
+| `thick-feature` | 自有 runtime/domain/api，可独立生命周期 | `launcher` |
 
 > 旧标签 `thin-shell` 拆成 `ultra-thin` 与 `composition-shell`，避免「1 文件 = 可删一行」的误判。
 
@@ -53,7 +53,7 @@
 
 | Scene | all route | spaces route | 页面组件 |
 |-------|-----------|--------------|----------|
-| quick-create | — | — | `routes/quick-create.tsx` → `QuickCreatePage`（独立窗） |
+| quick-create | — | — | `routes/launcher.tsx` → `QuickCreatePage`（独立窗） |
 | settings | `all/settings/*` | `spaces/.../settings/*` + legacy `/settings` | `SettingsPage` |
 | inbox | `all/inbox` | `spaces/.../inbox` | `InboxPage` |
 | all-tasks | `all/tasks/` | `spaces/.../tasks/` | `AllTasksPage`（两边共用） |
@@ -67,7 +67,7 @@
 
 ---
 
-## 3. FE-F-QC · `features/quick-create`（47 files）
+## 3. FE-F-LAUNCHER · `features/launcher`（47 files）
 
 ### A. 身份
 
@@ -76,7 +76,7 @@
 | 形态 | **独立 Tauri 窗口**，非 shell 内页 |
 | 职责 | 全局快捷捕获：session、搜索、创建任务、布局测量/present |
 | 不负责 | 主壳导航、主窗 Query 工作区列表 |
-| 消费者 | **仅** `routes/quick-create.tsx` |
+| 消费者 | **仅** `routes/launcher.tsx` |
 | Delete | **3–4**（主应用仍可运行；失去全局捕获窗） |
 
 ### B. 结构（与自有 ARCHITECTURE.md 一致 ✅）
@@ -272,7 +272,7 @@ scene page
 
 | ID | 壳厚度 | Delete | 评级 | 动作 |
 |----|--------|--------|------|------|
-| FE-F-QC | thick-feature | 3–4 | Optimal–Acceptable | Keep |
+| FE-F-LAUNCHER | thick-feature | 3–4 | Optimal–Acceptable | Keep |
 | FE-F-SETTINGS | mixed | 2 | Acceptable | Keep |
 | FE-F-VIEWS | thick-scene | 4 | Acceptable | Keep |
 | FE-F-PROJ-OV | thick-scene | 4 | Acceptable | Keep |

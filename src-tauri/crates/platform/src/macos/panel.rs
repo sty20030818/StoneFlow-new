@@ -1,4 +1,4 @@
-//! Quick Create NSPanel 生命周期（macOS-only）。
+//! Launcher NSPanel 生命周期（macOS-only）。
 //!
 //! 遵循 tauri-nspanel 官方 `panel_builder` / `fullscreen` 示例组合：
 //!   - Accessory App + NonActivatingPanel + can_become_key_window + is_floating_panel
@@ -7,7 +7,7 @@
 //!   - 失焦隐藏：走 NSWindowDelegate 原生 `windowDidResignKey:` 通知，
 //!     **不依赖** Tauri 的 `WindowEvent::Focused(false)`——
 //!     NonActivating 面板不会让 owning app 激活，Tauri 的 focus 事件链不可靠。
-//!   - 前端准备阶段：快捷键触发后先 emit `quick-create:session-prepared`，
+//!   - 前端准备阶段：快捷键触发后先 emit `launcher:session-prepared`，
 //!     前端渲染后调用 `present_session`；固定壳不再依赖测高 `commit_layout`。
 //!   - 前端呈现同步：`windowDidBecomeKey:` 回调里由运行时注入 `on_became_key`。
 //!     此时 panel 已真正成为 key window，前端 `input.focus()` 才能命中；
@@ -26,36 +26,30 @@ use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
 use tauri_nspanel::{CollectionBehavior, ManagerExt, StyleMask, WebviewWindowExt};
 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial, NSVisualEffectState};
 
-use crate::quick_window::{
+use crate::launcher_window::{
     spec::{
-        QUICK_CREATE_LABEL, QUICK_CREATE_SCREEN_TOP_OFFSET_RATIO, QUICK_CREATE_SHORTCUT,
-        QUICK_CREATE_TITLE, QUICK_CREATE_URL, QUICK_CREATE_WINDOW_HEIGHT,
-        QUICK_CREATE_WINDOW_WIDTH,
+        LAUNCHER_LABEL, LAUNCHER_PANEL_RADIUS, LAUNCHER_SCREEN_TOP_OFFSET_RATIO, LAUNCHER_SHORTCUT,
+        LAUNCHER_TITLE, LAUNCHER_URL, LAUNCHER_WINDOW_HEIGHT, LAUNCHER_WINDOW_WIDTH,
     },
-    QuickWindowCallbacks,
+    LauncherWindowCallbacks,
 };
 
-/// 与 FE `rounded-2xl`（16px）对齐；裁在 contentView 上兜底直角。
-///
-/// 阴影：只用系统 `hasShadow`。不能加 `Titled`——tauri-nspanel 要求从
-/// `decorations(false)` 转成 NonActivatingPanel；再混入 Titled 会抛 ObjC 异常
-///（维护者 issue #19/#22），Rust 无法捕获 → 进程 abort。
-/// Spotlight 文档里的 titled 阴影只适用于纯 AppKit NSPanel，不适用于本路径。
-const QUICK_CREATE_CORNER_RADIUS: f64 = 16.0;
+/// 与 FE `--launcher-panel-radius` / spec::LAUNCHER_PANEL_RADIUS 对齐。
+const LAUNCHER_CORNER_RADIUS: f64 = LAUNCHER_PANEL_RADIUS;
 
 // 同时声明 NSPanel 子类 + NSWindowDelegate 子类：
-//  - QuickCreatePanel：can_become_key_window + is_floating_panel。
-//  - QuickCreatePanelEvents：监听 `windowDidBecomeKey:` / `windowDidResignKey:`，
+//  - LauncherPanel：can_become_key_window + is_floating_panel。
+//  - LauncherPanelEvents：监听 `windowDidBecomeKey:` / `windowDidResignKey:`，
 //    驱动「前端 focus」与「失焦自动隐藏」两件事。
 tauri_nspanel::tauri_panel! {
-    panel!(QuickCreatePanel {
+    panel!(LauncherPanel {
         config: {
             can_become_key_window: true,
             is_floating_panel: true
         }
     })
 
-    panel_event!(QuickCreatePanelEvents {
+    panel_event!(LauncherPanelEvents {
         window_did_become_key(notification: &NSNotification) -> (),
         window_did_resign_key(notification: &NSNotification) -> ()
     })
@@ -65,18 +59,18 @@ tauri_nspanel::tauri_panel! {
 ///
 /// 必须在主线程调用：AppKit 所有 ObjC 操作（`to_panel`、`set_collection_behavior`
 /// 等）都需要主线程语义，否则 `CanJoinAllSpaces` 等 flag 不会生效。
-pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWindowCallbacks) {
-    if app_handle.get_webview_panel(QUICK_CREATE_LABEL).is_ok() {
+pub fn init_launcher_panel(app_handle: &AppHandle<Wry>, callbacks: LauncherWindowCallbacks) {
+    if app_handle.get_webview_panel(LAUNCHER_LABEL).is_ok() {
         return;
     }
 
     let window = match WebviewWindowBuilder::new(
         app_handle,
-        QUICK_CREATE_LABEL,
-        WebviewUrl::App(QUICK_CREATE_URL.into()),
+        LAUNCHER_LABEL,
+        WebviewUrl::App(LAUNCHER_URL.into()),
     )
-    .title(QUICK_CREATE_TITLE)
-    .inner_size(QUICK_CREATE_WINDOW_WIDTH, QUICK_CREATE_WINDOW_HEIGHT)
+    .title(LAUNCHER_TITLE)
+    .inner_size(LAUNCHER_WINDOW_WIDTH, LAUNCHER_WINDOW_HEIGHT)
     .resizable(false)
     .fullscreen(false)
     .always_on_top(true)
@@ -90,17 +84,17 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
     {
         Ok(w) => w,
         Err(error) => {
-            log::error!("platform: quick create 窗口创建失败: {error}");
+            log::error!("platform: launcher 窗口创建失败: {error}");
             return;
         }
     };
 
-    apply_quick_create_vibrancy(&window);
+    apply_launcher_vibrancy(&window);
 
-    let panel = match window.to_panel::<QuickCreatePanel>() {
+    let panel = match window.to_panel::<LauncherPanel>() {
         Ok(p) => p,
         Err(error) => {
-            log::error!("platform: quick create 转换 NSPanel 失败: {error}");
+            log::error!("platform: launcher 转换 NSPanel 失败: {error}");
             return;
         }
     };
@@ -113,7 +107,7 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
     panel.set_has_shadow(true);
     invalidate_panel_shadow(panel.as_ref());
     // 圆角：与 FE 对齐；不设 masksToBounds，避免削弱窗轮廓阴影。
-    panel.set_corner_radius(QUICK_CREATE_CORNER_RADIUS);
+    panel.set_corner_radius(LAUNCHER_CORNER_RADIUS);
     panel.set_collection_behavior(
         CollectionBehavior::new()
             .move_to_active_space()
@@ -129,7 +123,7 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
     // 注：tauri-nspanel 的 `set_event_handler` 会内部 `retain` 这个 handler
     // 并存进 panel 的 ivar（见 src/panel.rs 的实现），因此本地 `handler`
     // 绑定离开作用域后 ObjC delegate 仍然活着，无需额外 leak。
-    let handler = QuickCreatePanelEvents::new();
+    let handler = LauncherPanelEvents::new();
 
     let app_for_became_key = app_handle.clone();
     let on_became_key = callbacks.on_became_key.clone();
@@ -143,7 +137,7 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
     handler.window_did_resign_key(move |_notification| {
         // 失去 key 就意味着用户已经在别处操作，直接隐藏面板。
         // 用 get_webview_panel 重新取引用，避免跨闭包搬运非 Send 类型。
-        if let Ok(panel) = app_for_resign_key.get_webview_panel(QUICK_CREATE_LABEL) {
+        if let Ok(panel) = app_for_resign_key.get_webview_panel(LAUNCHER_LABEL) {
             log::debug!("platform: windowDidResignKey → hide panel");
             panel.hide();
         }
@@ -152,61 +146,71 @@ pub fn init_quick_create_panel(app_handle: &AppHandle<Wry>, callbacks: QuickWind
 
     panel.set_event_handler(Some(handler.as_ref()));
 
-    log::info!("platform: quick create NSPanel 初始化完成");
+    log::info!("platform: launcher NSPanel 初始化完成");
 }
 
 /// Toggle 面板：可见则隐藏，否则只触发前端准备流程，等待 resize 完成后再真正显示。
 ///
 /// 所有 AppKit 操作通过 `run_on_main_thread` 派发，符合线程安全要求。
 /// 真正呈现面板：先定位到当前屏，再执行 show_and_make_key。
-pub fn present_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<(), String> {
+pub fn present_launcher_panel(app_handle: &AppHandle<Wry>) -> Result<(), String> {
     let panel = app_handle
-        .get_webview_panel(QUICK_CREATE_LABEL)
-        .map_err(|error| format!("获取 quick create panel 失败: {error:?}"))?;
+        .get_webview_panel(LAUNCHER_LABEL)
+        .map_err(|error| format!("获取 launcher panel 失败: {error:?}"))?;
+
+    // 平台注入外圆角，供 FE Surface clip（Mac=16）。
+    if let Some(window) = app_handle.get_webview_window(LAUNCHER_LABEL) {
+        let radius_script = format!(
+            "document.documentElement.style.setProperty('--launcher-panel-radius','{LAUNCHER_PANEL_RADIUS}px');"
+        );
+        if let Err(error) = window.eval(&radius_script) {
+            log::warn!("platform: 注入 launcher panel radius 失败: {error}");
+        }
+    }
 
     app_handle
         .run_on_main_thread(move || {
             place_panel_on_active_screen(panel.as_ref(), "present");
             log::info!(
-                "platform: Quick Create 弹窗已准备完毕，执行 show_and_make_key（快捷键={QUICK_CREATE_SHORTCUT}）"
+                "platform: Launcher 弹窗已准备完毕，执行 show_and_make_key（快捷键={LAUNCHER_SHORTCUT}）"
             );
             panel.show_and_make_key();
             // 透明窗 show 后刷新系统阴影轮廓（否则可能残留直角/残影）。
             panel.set_has_shadow(true);
             invalidate_panel_shadow(panel.as_ref());
         })
-        .map_err(|error| format!("主线程显示 quick create panel 失败: {error}"))
+        .map_err(|error| format!("主线程显示 launcher panel 失败: {error}"))
 }
 
-pub fn is_quick_create_panel_visible(app_handle: &AppHandle<Wry>) -> Result<bool, String> {
+pub fn is_launcher_panel_visible(app_handle: &AppHandle<Wry>) -> Result<bool, String> {
     let panel = app_handle
-        .get_webview_panel(QUICK_CREATE_LABEL)
-        .map_err(|error| format!("获取 quick create panel 失败: {error:?}"))?;
+        .get_webview_panel(LAUNCHER_LABEL)
+        .map_err(|error| format!("获取 launcher panel 失败: {error:?}"))?;
     Ok(panel.is_visible())
 }
 
-pub fn hide_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<(), String> {
+pub fn hide_launcher_panel(app_handle: &AppHandle<Wry>) -> Result<(), String> {
     let panel = app_handle
-        .get_webview_panel(QUICK_CREATE_LABEL)
-        .map_err(|error| format!("获取 quick create panel 失败: {error:?}"))?;
+        .get_webview_panel(LAUNCHER_LABEL)
+        .map_err(|error| format!("获取 launcher panel 失败: {error:?}"))?;
     app_handle
         .run_on_main_thread(move || {
             panel.hide();
         })
-        .map_err(|error| format!("主线程隐藏 quick create panel 失败: {error}"))
+        .map_err(|error| format!("主线程隐藏 launcher panel 失败: {error}"))
 }
 
-pub fn prepare_hidden_quick_create_panel(app_handle: &AppHandle<Wry>) -> Result<(), String> {
+pub fn prepare_hidden_launcher_panel(app_handle: &AppHandle<Wry>) -> Result<(), String> {
     let panel = app_handle
-        .get_webview_panel(QUICK_CREATE_LABEL)
-        .map_err(|error| format!("获取 quick create panel 失败: {error:?}"))?;
+        .get_webview_panel(LAUNCHER_LABEL)
+        .map_err(|error| format!("获取 launcher panel 失败: {error:?}"))?;
 
     app_handle
         .run_on_main_thread(move || {
             panel.hide();
             place_panel_on_active_screen(panel.as_ref(), "prepare-hidden");
         })
-        .map_err(|error| format!("主线程准备 hidden quick create panel 失败: {error}"))
+        .map_err(|error| format!("主线程准备 hidden launcher panel 失败: {error}"))
 }
 
 /// 刷新 Window Server 阴影轮廓（透明窗 show / 形状变化后需要）。
@@ -217,15 +221,15 @@ fn invalidate_panel_shadow(panel: &dyn tauri_nspanel::Panel) {
     }
 }
 
-fn apply_quick_create_vibrancy(window: &WebviewWindow<Wry>) {
+fn apply_launcher_vibrancy(window: &WebviewWindow<Wry>) {
     // NonActivatingPanel 不一定处于「active」外观；固定 Active 保证亮色可读。
     if let Err(error) = apply_vibrancy(
         window,
         NSVisualEffectMaterial::Popover,
         Some(NSVisualEffectState::Active),
-        Some(QUICK_CREATE_CORNER_RADIUS),
+        Some(LAUNCHER_CORNER_RADIUS),
     ) {
-        log::warn!("platform: quick create vibrancy 失败: {error}");
+        log::warn!("platform: launcher vibrancy 失败: {error}");
     }
 }
 
@@ -268,10 +272,10 @@ fn place_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel, phase: &str) {
         unsafe { objc2::msg_send![&*screen, visibleFrame] };
     let ns_panel = panel.as_panel();
     // 固定壳：定位时强制写入规格尺寸，避免旧 frame / DPI 残留导致首开高度漂移。
-    let panel_width = QUICK_CREATE_WINDOW_WIDTH;
-    let panel_height = QUICK_CREATE_WINDOW_HEIGHT;
+    let panel_width = LAUNCHER_WINDOW_WIDTH;
+    let panel_height = LAUNCHER_WINDOW_HEIGHT;
     let x = screen_frame.origin.x + (screen_frame.size.width - panel_width) / 2.0;
-    let top_offset = screen_frame.size.height * QUICK_CREATE_SCREEN_TOP_OFFSET_RATIO;
+    let top_offset = screen_frame.size.height * LAUNCHER_SCREEN_TOP_OFFSET_RATIO;
     let panel_top = screen_frame.origin.y + screen_frame.size.height - top_offset;
     let y = panel_top - panel_height;
     let next_frame = objc2_foundation::NSRect::new(
@@ -284,7 +288,7 @@ fn place_panel_on_active_screen(panel: &dyn tauri_nspanel::Panel, phase: &str) {
     }
 
     log::info!(
-        "platform: quick create panel 已定位 phase={} origin=({x:.0},{y:.0}) size=({:.0}×{:.0})",
+        "platform: launcher panel 已定位 phase={} origin=({x:.0},{y:.0}) size=({:.0}×{:.0})",
         phase,
         panel_width,
         panel_height,

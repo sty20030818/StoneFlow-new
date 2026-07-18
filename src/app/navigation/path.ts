@@ -32,7 +32,7 @@ export type ShellSectionKey =
 
 export type AppRouteKind =
 	| 'startup'
-	| 'quick-create'
+	| 'launcher'
 	| 'debug-activity'
 	| 'shell-section'
 	| 'view'
@@ -49,8 +49,8 @@ export type AppRoute =
 			fullPath: string
 	  }
 	| {
-			kind: 'quick-create'
-			pathname: '/quick-create'
+			kind: 'launcher'
+			pathname: '/launcher'
 			search: string
 			hash: string
 			fullPath: string
@@ -120,7 +120,7 @@ export const ALL_SCOPE_KEY = 'all' as const
 export const DEFAULT_SPACE_SECTION: ShellSectionSegment = 'inbox'
 export const DEFAULT_ALL_SECTION: ShellSectionSegment = 'tasks'
 
-export const RESERVED_SCOPE_KEYS = new Set([ALL_SCOPE_KEY, 'quick-create', 'settings', 'debug'])
+export const RESERVED_SCOPE_KEYS = new Set([ALL_SCOPE_KEY, 'launcher', 'settings', 'debug'])
 
 export const SECTION_SEGMENT_TO_KEY: Record<string, ShellSectionKey> = {
 	inbox: 'inbox',
@@ -302,8 +302,8 @@ export function parseAppRoute(
 	if (segments.length === 0) {
 		return { kind: 'startup', pathname: '/', search, hash, fullPath }
 	}
-	if (segments.length === 1 && segments[0] === 'quick-create') {
-		return { kind: 'quick-create', pathname: '/quick-create', search, hash, fullPath }
+	if (segments.length === 1 && segments[0] === 'launcher') {
+		return { kind: 'launcher', pathname: '/launcher', search, hash, fullPath }
 	}
 	if (segments[0] === 'debug' && segments[1] === 'activity' && segments.length === 2) {
 		return { kind: 'debug-activity', pathname: '/debug/activity', search, hash, fullPath }

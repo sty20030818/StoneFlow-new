@@ -61,7 +61,7 @@ feature 边界（目录怎么切）正确
 | **update** | platform | 18 | **Keep** | 不并 sync |
 | **settings** | scene+配置 | 18 | **Keep** | |
 | **project-overview** | scene | 5 | **Keep（默认）** | 可选并 project；非必须 |
-| **quick-create** | window | 48 | **Keep** | 创建内核复用 task，**不并** task |
+| **launcher** | window | 48 | **Keep** | 创建内核复用 task，**不并** task |
 
 **已不在目录、正确删掉的假 feature：** inbox / all-tasks / no-project / archive / trash / views 壳 / healthcheck / task-drawer。
 
@@ -149,7 +149,7 @@ scene/
   project-overview   （可选并进 project）
 
 window/
-  quick-create       （runtime/几何后议；创建规则用 task）
+  launcher       （runtime/几何后议；创建规则用 task）
 ```
 
 **相对现网：目录名几乎不用大变；变的是「谁拥有代码」与「禁止倒依赖」。**

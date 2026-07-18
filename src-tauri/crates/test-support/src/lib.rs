@@ -190,7 +190,7 @@ fn ensure_stale_cleanup() {
 fn is_stoneflow_test_dir(dir_name: &str) -> bool {
     dir_name.starts_with(TEST_DIR_PREFIX)
         || dir_name.starts_with("stoneflow-stage")
-        || dir_name.starts_with("stoneflow-quick-create")
+        || dir_name.starts_with("stoneflow-launcher")
         || dir_name.starts_with("stoneflow-search")
         || dir_name.starts_with("stoneflow-project")
         || dir_name.starts_with("stoneflow-task")

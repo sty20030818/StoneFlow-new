@@ -1,4 +1,4 @@
-//! Tauri setup：状态注册、窗口初始化与 Quick Create 基座。
+//! Tauri setup：状态注册、窗口初始化与 Launcher 基座。
 
 use std::future::Future;
 
@@ -23,8 +23,8 @@ use crate::shortcuts;
 use crate::tray;
 use crate::update_schedule::UpdateScheduleWake;
 use crate::window::main::build_main_window;
-use crate::window::quick_create::frontend::QuickCreateFrontendState;
-use crate::window::QuickPopupRuntimeState;
+use crate::window::launcher::frontend::LauncherFrontendState;
+use crate::window::LauncherWindowRuntimeState;
 
 pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     app.handle().plugin(
@@ -39,13 +39,13 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
 
     let active_scope_state = ActiveScopeState::default();
     let command_open_state = CommandOpenState::default();
-    let quick_frontend_state = QuickCreateFrontendState::default();
-    let quick_runtime_state = QuickPopupRuntimeState::default();
+    let quick_frontend_state = LauncherFrontendState::default();
+    let launcher_runtime_state = LauncherWindowRuntimeState::default();
 
     app.manage(active_scope_state);
     app.manage(command_open_state);
     app.manage(quick_frontend_state);
-    app.manage(quick_runtime_state);
+    app.manage(launcher_runtime_state);
 
     let database_state = tauri::async_runtime::block_on(async {
         let app_data_dir = app

@@ -47,7 +47,7 @@ src/routes/
 ├── __root.tsx                 # 根：error/notFound 壳
 ├── index.tsx                  # `/` 启动恢复 → redirect
 ├── settings.tsx               # legacy `/settings` 兼容
-├── quick-create.tsx           # 独立窗
+├── launcher.tsx           # 独立窗
 ├── debug.activity.tsx         # 调试
 ├── -*.ts(x)                   # 非路由 colocated（`-` 前缀忽略为 path）
 └── _shell/                    # pathless 工作区布局组
@@ -111,7 +111,7 @@ function InboxRoute() {
 
 ### 3.5 独立窗
 
-- `/quick-create`：**只挂** QC page，不进主壳 `_shell`。  
+- `/launcher`：**只挂** QC page，不进主壳 `_shell`。  
 - 不与 main layout 共享壳 store。
 
 ---
@@ -130,7 +130,7 @@ function InboxRoute() {
 | 视图 | `…/views` · `…/:viewId` | all + spaces | **view** |
 | 归档/回收站 | `…/archive` · `trash` | all + spaces | **lifecycle** |
 | 设置 | `…/settings` · `…/$section` | all + spaces | **settings** page/contract |
-| 快速创建 | `/quick-create` | 独立 | **quick-create** |
+| 快速创建 | `/launcher` | 独立 | **launcher** |
 | Activity 调试 | `/debug/activity` | 独立 | **activity** |
 | legacy 设置 | `/settings` | redirect | settings + navigation |
 

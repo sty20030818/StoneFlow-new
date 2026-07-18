@@ -114,7 +114,7 @@ pub(crate) async fn read_local_business_count(local: &Connection) -> Result<i64,
                 (SELECT COUNT(*) FROM settings
                     WHERE key NOT IN (
                         'app.sidebar.preferences',
-                        'app.quickCreate',
+                        'app.launcher',
                         'app.taskDefaults',
                         'app.ui.preferences',
                         'app.sync.config'
@@ -416,7 +416,7 @@ mod tests {
             .expect("system view should insert");
         for key in [
             "app.sidebar.preferences",
-            "app.quickCreate",
+            "app.launcher",
             "app.taskDefaults",
             "app.ui.preferences",
             "app.sync.config",

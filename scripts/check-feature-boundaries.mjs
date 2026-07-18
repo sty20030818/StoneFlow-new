@@ -37,7 +37,7 @@ const FEATURES = [
 	'display-options',
 	'bulk-action',
 	'sync',
-	'quick-create',
+	'launcher',
 	'global-search',
 	'update',
 	'workspace',

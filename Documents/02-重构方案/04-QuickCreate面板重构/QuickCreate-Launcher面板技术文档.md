@@ -1,3 +1,5 @@
+> **已归档（2026-07-18）**：产品/模块已统一为 **Launcher**。活跃契约见 `src/features/launcher/ARCHITECTURE.md`；本文仅作历史参考，勿再按 quick-create / quick_create 落地。
+
 # StoneFlow Quick Create · Launcher 面板技术文档
 
 ## 0. 文档信息

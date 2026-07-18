@@ -1,730 +1,1013 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Linear Light Theme - Design Spec Visualization</title>
-
-  <!-- 引入 Inter Variable 字体，支持精准的字重 510/590 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- 备用引入完整 variable font -->
-  <style>
-    @import url('https://rsms.me/inter/inter.css');
-
-    :root {
-      /* 1. Colors - Backgrounds & Surfaces */
-      --color-page: #f7f8f8;
-      --color-page-alt: #f4f5f8;
-      --color-surface-base: #ffffff;
-      --color-surface-secondary: #f5f6f7;
-      --color-surface-hover: #eef1f4;
-      --color-surface-active: #e9edf2;
-
-      /* 2. Colors - Text */
-      --color-text-primary: #222326;
-      --color-text-secondary: #4c5159;
-      --color-text-tertiary: #6b7280;
-      --color-text-quaternary: #8b93a1;
-      --color-text-disabled: #a8b0bb;
-      --color-text-on-accent: #ffffff;
-
-      /* 3. Colors - Brand & Accent */
-      --color-brand: #5e6ad2;
-      --color-accent: #7170ff;
-      --color-accent-hover: #828fff;
-      --color-accent-soft-bg: #eef0ff;
-      --color-accent-soft-border: #d9ddff;
-      --color-accent-soft-text: #4f5ccf;
-
-      /* 4. Colors - Status */
-      --color-success: #27a644;
-      --color-success-soft-bg: #ecf8ef;
-      --color-success-soft-border: #cdebd4;
-      --color-success-soft-text: #1f8a38;
-
-      --color-warning: #b7791f;
-      --color-warning-soft-bg: #fff7e8;
-      --color-warning-soft-border: #f4dfb4;
-      --color-warning-soft-text: #8c6419;
-
-      --color-danger: #d14343;
-      --color-danger-soft-bg: #fff1f1;
-      --color-danger-soft-border: #f3caca;
-      --color-danger-soft-text: #b83737;
-
-      /* 5. Colors - Borders & Dividers */
-      --color-border-primary: #d0d6e0;
-      --color-border-secondary: #e1e5ea;
-      --color-border-subtle: #e8ebef;
-      --color-divider: #eceff3;
-
-      /* 6. Shadows & Overlays */
-      --color-overlay: rgba(17, 19, 24, 0.48);
-      --shadow-sm: 0 1px 2px rgba(16,24,40,0.04);
-      --shadow-md: 0 8px 24px rgba(16,24,40,0.08), 0 2px 6px rgba(16,24,40,0.04);
-      --shadow-lg: 0 16px 40px rgba(16,24,40,0.10), 0 4px 12px rgba(16,24,40,0.06); /* Level 4 */
-      --shadow-focus: 0 0 0 3px rgba(94,106,210,0.18);
-      --shadow-focus-ghost: 0 0 0 3px rgba(94,106,210,0.14);
-
-      /* 7. Radii */
-      --radius-sm: 4px;
-      --radius-md: 6px;
-      --radius-lg: 8px;
-      --radius-xl: 12px;
-      --radius-full: 9999px;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Inter', -apple-system, system-ui, sans-serif;
-      font-feature-settings: "cv01" 1, "ss03" 1; /* Linear 的灵魂灵魂灵魂 */
-      background-color: var(--color-page);
-      color: var(--color-text-primary);
-      -webkit-font-smoothing: antialiased;
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Typography Classes */
-    .text-h1 { font-size: 32px; font-weight: 400; line-height: 1.13; letter-spacing: -0.704px; }
-    .text-h2 { font-size: 24px; font-weight: 400; line-height: 1.33; letter-spacing: -0.288px; }
-    .text-h3 { font-size: 20px; font-weight: 590; line-height: 1.33; letter-spacing: -0.24px; }
-    .text-body { font-size: 16px; font-weight: 400; line-height: 1.5; }
-    .text-body-m { font-size: 16px; font-weight: 510; line-height: 1.5; }
-    .text-small { font-size: 15px; font-weight: 400; line-height: 1.6; letter-spacing: -0.165px; }
-    .text-small-m { font-size: 15px; font-weight: 510; line-height: 1.6; letter-spacing: -0.165px; }
-    .text-caption { font-size: 13px; font-weight: 510; line-height: 1.5; letter-spacing: -0.13px; }
-    .text-label { font-size: 12px; font-weight: 510; line-height: 1.4; }
-
-    /* Text Colors */
-    .tc-primary { color: var(--color-text-primary); }
-    .tc-secondary { color: var(--color-text-secondary); }
-    .tc-tertiary { color: var(--color-text-tertiary); }
-    .tc-quaternary { color: var(--color-text-quaternary); }
-
-    /* Layout */
-    .menu-item {
-      padding: 6px 12px;
-      margin: 2px 0;
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      font-weight: 510;
-      color: var(--color-text-secondary);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.1s ease;
-      cursor: pointer;
-    }
-
-    .menu-item:hover {
-      background-color: var(--color-surface-hover);
-    }
-
-    .menu-item.active {
-      background-color: var(--color-surface-base);
-      border: 1px solid var(--color-border-subtle);
-      color: var(--color-text-primary);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .main-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 48px;
-      scroll-behavior: smooth;
-    }
-
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-
-    .section-block {
-      margin-bottom: 64px;
-    }
-
-    .section-title {
-      border-bottom: 1px solid var(--color-border-subtle);
-      padding-bottom: 16px;
-      margin-bottom: 32px;
-    }
-
-    /* Grid for display */
-    .grid-swatches {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 16px;
-    }
-
-    .swatch {
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--color-border-subtle);
-      overflow: hidden;
-      background: var(--color-surface-base);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .swatch-color { height: 80px; }
-    .swatch-info { padding: 12px; }
-    .swatch-name { font-size: 13px; font-weight: 510; color: var(--color-text-primary); margin-bottom: 4px; }
-    .swatch-hex { font-size: 12px; font-family: 'Berkeley Mono', monospace; color: var(--color-text-tertiary); }
-
-    /* Buttons */
-    .flex-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 12px;
-      height: 32px;
-      border-radius: var(--radius-md);
-      font-size: 13px;
-      font-weight: 510;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      outline: none;
-      user-select: none;
-    }
-
-    .btn-primary {
-      background-color: var(--color-brand);
-      color: var(--color-text-on-accent);
-      border: 1px solid transparent;
-    }
-    .btn-primary:hover { background-color: var(--color-accent); }
-    .btn-primary:active { background-color: #5562c4; }
-    .btn-primary:focus-visible { box-shadow: var(--shadow-focus); }
-
-    .btn-ghost {
-      background-color: transparent;
-      color: var(--color-text-primary);
-      border: 1px solid var(--color-border-secondary);
-    }
-    .btn-ghost:hover { background-color: var(--color-surface-hover); border-color: var(--color-border-primary); }
-    .btn-ghost:active { background-color: var(--color-surface-active); }
-    .btn-ghost:focus-visible { box-shadow: var(--shadow-focus-ghost); }
-
-    .btn-subtle {
-      background-color: var(--color-surface-secondary);
-      color: var(--color-text-primary);
-      border: 1px solid var(--color-border-subtle);
-    }
-    .btn-subtle:hover { background-color: var(--color-surface-hover); }
-    .btn-subtle:active { background-color: var(--color-surface-active); }
-
-    .btn-icon {
-      width: 32px;
-      padding: 0;
-      border-radius: var(--radius-full);
-      color: var(--color-text-secondary);
-    }
-
-    .pill {
-      height: 24px;
-      padding: 0 10px;
-      border-radius: var(--radius-full);
-      background: transparent;
-      border: 1px solid var(--color-border-secondary);
-      font-size: 12px;
-      color: var(--color-text-secondary);
-    }
-    .pill:hover { background-color: var(--color-surface-secondary); }
-    .pill.selected {
-      background-color: var(--color-accent-soft-bg);
-      color: var(--color-accent-soft-text);
-      border-color: var(--color-accent-soft-border);
-    }
-
-    /* Inputs */
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      width: 300px;
-    }
-    .input-label { font-size: 13px; font-weight: 510; color: var(--color-text-primary); }
-    .input-text {
-      width: 100%;
-      height: 36px;
-      padding: 0 12px;
-      background: var(--color-surface-base);
-      border: 1px solid var(--color-border-primary);
-      border-radius: var(--radius-md);
-      color: var(--color-text-primary);
-      font-family: inherit;
-      font-size: 14px;
-      transition: all 0.15s ease;
-      outline: none;
-    }
-    .input-text::placeholder { color: var(--color-text-quaternary); }
-    .input-text:hover { border-color: var(--color-text-quaternary); }
-    .input-text:focus {
-      border-color: var(--color-brand);
-      box-shadow: var(--shadow-focus-ghost);
-    }
-
-    .input-search {
-      background: var(--color-surface-secondary);
-      border-color: var(--color-border-subtle);
-      padding-left: 36px;
-    }
-
-    .textarea {
-      padding: 12px 14px;
-      resize: vertical;
-      min-height: 80px;
-    }
-
-    /* Modals & Overlays */
-    .modal-backdrop {
-      background: var(--color-overlay);
-      border-radius: var(--radius-xl);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      margin-top: 16px;
-    }
-
-    .modal {
-      background: var(--color-surface-base);
-      border: 1px solid var(--color-border-primary);
-      border-radius: var(--radius-xl);
-      box-shadow: var(--shadow-lg);
-      width: 100%;
-      max-width: 420px;
-      overflow: hidden;
-    }
-
-    .modal-header {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--color-divider);
-    }
-
-    .modal-body {
-      padding: 24px;
-    }
-
-    .modal-footer {
-      padding: 16px 24px;
-      background: var(--color-surface-secondary);
-      border-top: 1px solid var(--color-divider);
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-    }
-
-    /* Table Headers & Top Nav */
-    .top-nav {
-      background: rgba(247,248,248,0.82);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--color-border-subtle);
-      padding: 12px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .table-header-row {
-      display: flex;
-      align-items: center;
-      padding: 8px 24px;
-      background: var(--color-page);
-      border-bottom: 1px solid var(--color-border-subtle);
-      gap: 16px;
-      font-size: 12px;
-      font-weight: 510;
-      color: var(--color-text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    /* Cards & Surfaces */
-    .card-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-
-    .card {
-      background: var(--color-surface-base);
-      border: 1px solid var(--color-border-secondary);
-      border-radius: var(--radius-lg);
-      padding: 24px;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .panel {
-      background: var(--color-surface-secondary);
-      border: 1px solid var(--color-border-subtle);
-      border-radius: var(--radius-xl);
-      padding: 24px;
-    }
-
-    .popover {
-      background: var(--color-surface-base);
-      border: 1px solid var(--color-border-secondary);
-      border-radius: var(--radius-xl);
-      padding: 16px;
-      box-shadow: var(--shadow-md);
-      width: fit-content;
-    }
-
-    /* Badges */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 0 8px;
-      height: 22px;
-      border-radius: var(--radius-full);
-      font-size: 12px;
-      font-weight: 510;
-      border: 1px solid transparent;
-    }
-    .badge-neutral { background: var(--color-surface-secondary); border-color: var(--color-border-subtle); color: var(--color-text-secondary); }
-    .badge-accent { background: var(--color-accent-soft-bg); border-color: var(--color-accent-soft-border); color: var(--color-accent-soft-text); }
-    .badge-success { background: var(--color-success-soft-bg); border-color: var(--color-success-soft-border); color: var(--color-success-soft-text); }
-    .badge-danger { background: var(--color-danger-soft-bg); border-color: var(--color-danger-soft-border); color: var(--color-danger-soft-text); }
-    .badge-warning { background: var(--color-warning-soft-bg); border-color: var(--color-warning-soft-border); color: var(--color-warning-soft-text); }
-
-    /* Example Layout Area */
-    .example-board {
-      border: 1px solid var(--color-border-secondary);
-      border-radius: var(--radius-xl);
-      background: var(--color-surface-base);
-      overflow: hidden;
-      box-shadow: var(--shadow-sm);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .board-header {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--color-divider);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--color-page);
-    }
-
-    .list-row {
-      display: flex;
-      align-items: center;
-      padding: 12px 24px;
-      border-bottom: 1px solid var(--color-divider);
-      gap: 16px;
-      transition: background 0.1s;
-    }
-    .list-row:last-child { border-bottom: none; }
-    .list-row:hover { background: var(--color-surface-secondary); cursor: pointer; }
-    .list-row .id { font-size: 13px; color: var(--color-text-tertiary); font-family: monospace; width: 60px;}
-    .list-row .title { flex: 1; font-size: 14px; font-weight: 510; color: var(--color-text-primary); }
-
-    /* Decorative SVG */
-    svg.icon { width: 16px; height: 16px; fill: currentColor; }
-  </style>
-</head>
-<body>
-
-  <!-- 主内容区 -->
-  <main class="main-content">
-    <div class="container">
-
-      <header style="margin-bottom: 64px;">
-        <h1 class="text-display-xl" style="font-size: 48px; font-weight: 510; letter-spacing: -1.056px; margin-bottom: 16px;">浅色风格规范演示</h1>
-        <p class="text-body tc-secondary" style="max-width: 600px;">
-          高精度、低噪音、强秩序感。基于背景灰度差、轻边框与极轻微阴影构建层级。克制使用纯白，品牌色仅用于焦点交互。
-        </p>
-      </header>
-
-      <!-- 1. Colors -->
-      <section id="colors" class="section-block">
-        <div class="section-title">
-          <h2 class="text-h2">Colors & Backgrounds</h2>
-          <p class="text-small tc-tertiary" style="margin-top: 8px;">避免使用大面积纯白，主要依靠柔和灰白建立底色。</p>
-        </div>
-
-        <h3 class="text-body-m tc-secondary" style="margin-bottom: 16px;">Surfaces</h3>
-        <div class="grid-swatches" style="margin-bottom: 32px;">
-          <div class="swatch">
-            <div class="swatch-color" style="background: var(--color-page);"></div>
-            <div class="swatch-info">
-              <div class="swatch-name">Page Background</div>
-              <div class="swatch-hex">#f7f8f8</div>
-            </div>
-          </div>
-          <div class="swatch">
-            <div class="swatch-color" style="background: var(--color-surface-base); border-bottom: 1px solid var(--color-border-subtle);"></div>
-            <div class="swatch-info">
-              <div class="swatch-name">Surface Base</div>
-              <div class="swatch-hex">#ffffff</div>
-            </div>
-          </div>
-          <div class="swatch">
-            <div class="swatch-color" style="background: var(--color-surface-secondary);"></div>
-            <div class="swatch-info">
-              <div class="swatch-name">Surface Secondary</div>
-              <div class="swatch-hex">#f5f6f7</div>
-            </div>
-          </div>
-        </div>
-
-        <h3 class="text-body-m tc-secondary" style="margin-bottom: 16px;">Brand & Accents</h3>
-        <div class="grid-swatches">
-          <div class="swatch">
-            <div class="swatch-color" style="background: var(--color-brand);"></div>
-            <div class="swatch-info">
-              <div class="swatch-name">Brand Indigo</div>
-              <div class="swatch-hex">#5e6ad2</div>
-            </div>
-          </div>
-          <div class="swatch">
-            <div class="swatch-color" style="background: var(--color-accent-soft-bg); border-bottom: 1px solid var(--color-accent-soft-border);"></div>
-            <div class="swatch-info">
-              <div class="swatch-name">Accent Soft Bg</div>
-              <div class="swatch-hex">#eef0ff</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 2. Typography -->
-      <section id="typography" class="section-block">
-        <div class="section-title">
-          <h2 class="text-h2">Typography</h2>
-          <p class="text-small tc-tertiary" style="margin-top: 8px;">主层级靠字重和密度，控制灰度文本数量防止发灰发虚。</p>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 24px; background: var(--color-surface-base); padding: 32px; border-radius: var(--radius-lg); border: 1px solid var(--color-border-secondary);">
-          <div class="flex-row" style="align-items: baseline; justify-content: space-between; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: 16px;">
-            <div class="text-h1 tc-primary">H1 Block Title</div>
-            <div class="text-label tc-quaternary">32px / 400</div>
-          </div>
-          <div class="flex-row" style="align-items: baseline; justify-content: space-between; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: 16px;">
-            <div class="text-h2 tc-primary">H2 Section Title</div>
-            <div class="text-label tc-quaternary">24px / 400</div>
-          </div>
-          <div class="flex-row" style="align-items: baseline; justify-content: space-between; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: 16px;">
-            <div class="text-h3 tc-primary">H3 Module Title</div>
-            <div class="text-label tc-quaternary">20px / 590</div>
-          </div>
-          <div class="flex-row" style="align-items: baseline; justify-content: space-between;">
-            <div class="text-body-m tc-secondary">Body M (UI Default Emphasis)</div>
-            <div class="text-label tc-quaternary">16px / 510</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 3. Buttons -->
-      <section id="buttons" class="section-block">
-        <div class="section-title">
-          <h2 class="text-h2">Buttons & Actions</h2>
-          <p class="text-small tc-tertiary" style="margin-top: 8px;">焦点态依然克制，Hover 不依赖饱和度变化而是灰阶收紧。</p>
-        </div>
-
-        <div class="card flex-row" style="gap: 24px;">
-          <button class="btn btn-primary">Primary Action</button>
-          <button class="btn btn-ghost">Ghost Button</button>
-          <button class="btn btn-subtle">Subtle Tool</button>
-
-          <button class="btn btn-ghost btn-icon">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </button>
-
-          <div style="width: 1px; height: 24px; background: var(--color-divider); margin: 0 8px;"></div>
-
-          <button class="pill">All filters</button>
-          <button class="pill selected">Assigned to me</button>
-        </div>
-      </section>
-
-      <!-- 4. Inputs -->
-      <section id="inputs" class="section-block">
-        <div class="section-title">
-          <h2 class="text-h2">Inputs & Forms</h2>
-        </div>
-
-        <div class="card flex-row" style="align-items: flex-start; gap: 48px;">
-          <div class="input-group">
-            <label class="input-label">Project Name</label>
-            <input type="text" class="input-text" placeholder="e.g. Design System">
-          </div>
-
-          <div class="input-group">
-            <label class="input-label">Search (Subtle)</label>
-            <div style="position: relative;">
-              <svg class="icon" style="position: absolute; left: 12px; top: 10px; color: var(--color-text-quaternary);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              <input type="text" class="input-text input-search" placeholder="Search issues...">
-            </div>
-          </div>
-
-          <div class="input-group" style="width: 100%; max-width: 300px;">
-            <label class="input-label">Description (Text Area)</label>
-            <textarea class="input-text textarea" placeholder="Add more details to this issue..."></textarea>
-          </div>
-        </div>
-      </section>
-
-      <!-- 5. Badges -->
-      <section id="badges" class="section-block">
-        <div class="section-title">
-          <h2 class="text-h2">Badges & Status</h2>
-        </div>
-
-        <div class="card flex-row">
-          <span class="badge badge-neutral">Draft</span>
-          <span class="badge badge-accent">In Progress</span>
-          <span class="badge badge-success">Completed</span>
-          <span class="badge badge-warning">Delayed</span>
-          <span class="badge badge-danger">Canceled</span>
-        </div>
-      </section>
-
-      <!-- 6. Surfaces -->
-      <section id="surfaces" class="section-block">
-        <div class="section-title">
-          <h2 class="text-h2">Surfaces & Depths</h2>
-          <p class="text-small tc-tertiary" style="margin-top: 8px;">卡片不是到处飞，大部分只依靠轻边框和极轻阴影区分。</p>
-        </div>
-
-        <div class="card-grid">
-          <div class="card">
-            <h3 class="text-h3" style="margin-bottom: 8px;">Standard Card</h3>
-            <p class="text-small tc-secondary">Level 2: Background #ffffff, border #e1e5ea, extreme subtle shadow. Perfect for main content blocks.</p>
-          </div>
-
-          <div class="panel">
-            <h3 class="text-h3" style="margin-bottom: 8px;">Panel / Container</h3>
-            <p class="text-small tc-secondary">Level 1: Background #f5f6f7, border #e8ebef, no shadow. Good for nested groups or secondary areas.</p>
-          </div>
-
-          <div class="popover">
-            <div class="text-caption tc-tertiary" style="margin-bottom: 8px; padding: 0 8px;">ACTIONS</div>
-            <div class="menu-item active">Edit details...</div>
-            <div class="menu-item">Copy link</div>
-            <div style="height: 1px; background: var(--color-divider); margin: 8px 0;"></div>
-            <div class="menu-item" style="color: var(--color-danger-soft-text);">Delete issue</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 7. Modals & Overlays -->
-      <section id="modals" class="section-block">
-        <div class="section-title">
-          <h2 class="text-h2">Modals & Overlays</h2>
-          <p class="text-small tc-tertiary" style="margin-top: 8px;">Level 4 层级。使用半透明中性灰遮罩与明显的浮层投影隔离焦点，杜绝纯黑带来的压迫感。</p>
-        </div>
-
-        <div class="modal-backdrop">
-          <div class="modal">
-            <div class="modal-header">
-              <h3 class="text-h3">Delete Issue</h3>
-            </div>
-            <div class="modal-body">
-              <p class="text-body tc-secondary">Are you sure you want to delete this issue? This action cannot be undone and all associated data will be lost.</p>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-ghost">Cancel</button>
-              <button class="btn btn-primary" style="background-color: var(--color-danger); border-color: transparent;">Delete</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 8. Example Board -->
-      <section id="example" class="section-block">
-        <div class="section-title">
-          <h2 class="text-h2">Example Application View</h2>
-          <p class="text-small tc-tertiary" style="margin-top: 8px;">加入 Top Nav 和 Table Header 后，体会细线、字体和面共同组织的信息流。</p>
-        </div>
-
-        <div class="example-board" style="height: 400px; overflow-y: auto; position: relative;">
-
-          <!-- Top Navigation -->
-          <div class="top-nav">
-            <div class="flex-row">
-              <div class="btn-icon" style="background: var(--color-surface-secondary); display:flex; align-items:center; justify-content:center; border: 1px solid var(--color-border-subtle);">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-              </div>
-              <span class="text-body-m tc-primary">Linear Web</span>
-              <span class="text-body tc-tertiary">/</span>
-              <span class="text-body-m tc-secondary">Issues</span>
-            </div>
-            <div class="flex-row">
-               <button class="btn btn-ghost btn-icon"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
-            </div>
-          </div>
-
-          <div class="board-header">
-            <div class="flex-row">
-              <span class="badge badge-neutral" style="font-size: 11px;">FEA-2</span>
-              <h3 class="text-h3">Frontend Architecture</h3>
-            </div>
-            <div class="flex-row">
-              <button class="pill">Filter</button>
-              <button class="btn btn-primary" style="height: 28px;">New Issue</button>
-            </div>
-          </div>
-
-          <!-- Table Header -->
-          <div class="table-header-row">
-            <span class="id">ID</span>
-            <span style="width: 100px;">Status</span>
-            <span class="title" style="flex: 1;">Title</span>
-            <span style="width: 80px; text-align: right;">Date</span>
-          </div>
-
-          <!-- Rows -->
-          <div class="list-row">
-            <span class="id">LIN-101</span>
-            <span style="width: 100px;"><span class="badge badge-success">Done</span></span>
-            <span class="title">Extract design tokens to CSS variables</span>
-            <span class="text-caption tc-tertiary" style="width: 80px; text-align: right;">Oct 12</span>
-          </div>
-          <div class="list-row">
-            <span class="id">LIN-102</span>
-            <span style="width: 100px;"><span class="badge badge-accent">In Progress</span></span>
-            <span class="title">Refactor ghost button hover states</span>
-            <span class="text-caption tc-tertiary" style="width: 80px; text-align: right;">Today</span>
-          </div>
-          <div class="list-row">
-            <span class="id">LIN-103</span>
-            <span style="width: 100px;"><span class="badge badge-neutral">Todo</span></span>
-            <span class="title">Check input focus ring accessibility</span>
-            <span class="text-caption tc-tertiary" style="width: 80px; text-align: right;">Tomorrow</span>
-          </div>
-          <div class="list-row">
-            <span class="id">LIN-104</span>
-            <span style="width: 100px;"><span class="badge badge-danger">Blocked</span></span>
-            <span class="title">Update typography scale for mobile</span>
-            <span class="text-caption tc-tertiary" style="width: 80px; text-align: right;">Next Week</span>
-          </div>
-          <div class="list-row">
-            <span class="id">LIN-105</span>
-            <span style="width: 100px;"><span class="badge badge-neutral">Todo</span></span>
-            <span class="title">Finalize Light Theme spec components</span>
-            <span class="text-caption tc-tertiary" style="width: 80px; text-align: right;">Next Week</span>
-          </div>
-        </div>
-      </section>
-
-    </div>
-  </main>
-
-</body>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Linear Light Theme - Design Spec Visualization</title>
+
+		<!-- 引入 Inter Variable 字体，支持精准的字重 510/590 -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+			rel="stylesheet"
+		/>
+		<!-- 备用引入完整 variable font -->
+		<style>
+			@import url('https://rsms.me/inter/inter.css');
+
+			:root {
+				/* 1. Colors - Backgrounds & Surfaces */
+				--color-page: #f7f8f8;
+				--color-page-alt: #f4f5f8;
+				--color-surface-base: #ffffff;
+				--color-surface-secondary: #f5f6f7;
+				--color-surface-hover: #eef1f4;
+				--color-surface-active: #e9edf2;
+
+				/* 2. Colors - Text */
+				--color-text-primary: #222326;
+				--color-text-secondary: #4c5159;
+				--color-text-tertiary: #6b7280;
+				--color-text-quaternary: #8b93a1;
+				--color-text-disabled: #a8b0bb;
+				--color-text-on-accent: #ffffff;
+
+				/* 3. Colors - Brand & Accent */
+				--color-brand: #5e6ad2;
+				--color-accent: #7170ff;
+				--color-accent-hover: #828fff;
+				--color-accent-soft-bg: #eef0ff;
+				--color-accent-soft-border: #d9ddff;
+				--color-accent-soft-text: #4f5ccf;
+
+				/* 4. Colors - Status */
+				--color-success: #27a644;
+				--color-success-soft-bg: #ecf8ef;
+				--color-success-soft-border: #cdebd4;
+				--color-success-soft-text: #1f8a38;
+
+				--color-warning: #b7791f;
+				--color-warning-soft-bg: #fff7e8;
+				--color-warning-soft-border: #f4dfb4;
+				--color-warning-soft-text: #8c6419;
+
+				--color-danger: #d14343;
+				--color-danger-soft-bg: #fff1f1;
+				--color-danger-soft-border: #f3caca;
+				--color-danger-soft-text: #b83737;
+
+				/* 5. Colors - Borders & Dividers */
+				--color-border-primary: #d0d6e0;
+				--color-border-secondary: #e1e5ea;
+				--color-border-subtle: #e8ebef;
+				--color-divider: #eceff3;
+
+				/* 6. Shadows & Overlays */
+				--color-overlay: rgba(17, 19, 24, 0.48);
+				--shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04);
+				--shadow-md: 0 8px 24px rgba(16, 24, 40, 0.08), 0 2px 6px rgba(16, 24, 40, 0.04);
+				--shadow-lg:
+					0 16px 40px rgba(16, 24, 40, 0.1), 0 4px 12px rgba(16, 24, 40, 0.06); /* Level 4 */
+				--shadow-focus: 0 0 0 3px rgba(94, 106, 210, 0.18);
+				--shadow-focus-ghost: 0 0 0 3px rgba(94, 106, 210, 0.14);
+
+				/* 7. Radii */
+				--radius-sm: 4px;
+				--radius-md: 6px;
+				--radius-lg: 8px;
+				--radius-xl: 12px;
+				--radius-full: 9999px;
+			}
+
+			* {
+				box-sizing: border-box;
+				margin: 0;
+				padding: 0;
+			}
+
+			body {
+				font-family:
+					'Inter',
+					-apple-system,
+					system-ui,
+					sans-serif;
+				font-feature-settings:
+					'cv01' 1,
+					'ss03' 1; /* Linear 的灵魂灵魂灵魂 */
+				background-color: var(--color-page);
+				color: var(--color-text-primary);
+				-webkit-font-smoothing: antialiased;
+				display: flex;
+				height: 100vh;
+				overflow: hidden;
+			}
+
+			/* Typography Classes */
+			.text-h1 {
+				font-size: 32px;
+				font-weight: 400;
+				line-height: 1.13;
+				letter-spacing: -0.704px;
+			}
+			.text-h2 {
+				font-size: 24px;
+				font-weight: 400;
+				line-height: 1.33;
+				letter-spacing: -0.288px;
+			}
+			.text-h3 {
+				font-size: 20px;
+				font-weight: 590;
+				line-height: 1.33;
+				letter-spacing: -0.24px;
+			}
+			.text-body {
+				font-size: 16px;
+				font-weight: 400;
+				line-height: 1.5;
+			}
+			.text-body-m {
+				font-size: 16px;
+				font-weight: 510;
+				line-height: 1.5;
+			}
+			.text-small {
+				font-size: 15px;
+				font-weight: 400;
+				line-height: 1.6;
+				letter-spacing: -0.165px;
+			}
+			.text-small-m {
+				font-size: 15px;
+				font-weight: 510;
+				line-height: 1.6;
+				letter-spacing: -0.165px;
+			}
+			.text-caption {
+				font-size: 13px;
+				font-weight: 510;
+				line-height: 1.5;
+				letter-spacing: -0.13px;
+			}
+			.text-label {
+				font-size: 12px;
+				font-weight: 510;
+				line-height: 1.4;
+			}
+
+			/* Text Colors */
+			.tc-primary {
+				color: var(--color-text-primary);
+			}
+			.tc-secondary {
+				color: var(--color-text-secondary);
+			}
+			.tc-tertiary {
+				color: var(--color-text-tertiary);
+			}
+			.tc-quaternary {
+				color: var(--color-text-quaternary);
+			}
+
+			/* Layout */
+			.menu-item {
+				padding: 6px 12px;
+				margin: 2px 0;
+				border-radius: var(--radius-md);
+				font-size: 14px;
+				font-weight: 510;
+				color: var(--color-text-secondary);
+				text-decoration: none;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				transition: all 0.1s ease;
+				cursor: pointer;
+			}
+
+			.menu-item:hover {
+				background-color: var(--color-surface-hover);
+			}
+
+			.menu-item.active {
+				background-color: var(--color-surface-base);
+				border: 1px solid var(--color-border-subtle);
+				color: var(--color-text-primary);
+				box-shadow: var(--shadow-sm);
+			}
+
+			.main-content {
+				flex: 1;
+				overflow-y: auto;
+				padding: 48px;
+				scroll-behavior: smooth;
+			}
+
+			.container {
+				max-width: 1000px;
+				margin: 0 auto;
+			}
+
+			.section-block {
+				margin-bottom: 64px;
+			}
+
+			.section-title {
+				border-bottom: 1px solid var(--color-border-subtle);
+				padding-bottom: 16px;
+				margin-bottom: 32px;
+			}
+
+			/* Grid for display */
+			.grid-swatches {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+				gap: 16px;
+			}
+
+			.swatch {
+				border-radius: var(--radius-lg);
+				border: 1px solid var(--color-border-subtle);
+				overflow: hidden;
+				background: var(--color-surface-base);
+				box-shadow: var(--shadow-sm);
+			}
+
+			.swatch-color {
+				height: 80px;
+			}
+			.swatch-info {
+				padding: 12px;
+			}
+			.swatch-name {
+				font-size: 13px;
+				font-weight: 510;
+				color: var(--color-text-primary);
+				margin-bottom: 4px;
+			}
+			.swatch-hex {
+				font-size: 12px;
+				font-family: 'Berkeley Mono', monospace;
+				color: var(--color-text-tertiary);
+			}
+
+			/* Buttons */
+			.flex-row {
+				display: flex;
+				gap: 12px;
+				align-items: center;
+				flex-wrap: wrap;
+			}
+
+			.btn {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				padding: 0 12px;
+				height: 32px;
+				border-radius: var(--radius-md);
+				font-size: 13px;
+				font-weight: 510;
+				cursor: pointer;
+				transition: all 0.15s ease;
+				outline: none;
+				user-select: none;
+			}
+
+			.btn-primary {
+				background-color: var(--color-brand);
+				color: var(--color-text-on-accent);
+				border: 1px solid transparent;
+			}
+			.btn-primary:hover {
+				background-color: var(--color-accent);
+			}
+			.btn-primary:active {
+				background-color: #5562c4;
+			}
+			.btn-primary:focus-visible {
+				box-shadow: var(--shadow-focus);
+			}
+
+			.btn-ghost {
+				background-color: transparent;
+				color: var(--color-text-primary);
+				border: 1px solid var(--color-border-secondary);
+			}
+			.btn-ghost:hover {
+				background-color: var(--color-surface-hover);
+				border-color: var(--color-border-primary);
+			}
+			.btn-ghost:active {
+				background-color: var(--color-surface-active);
+			}
+			.btn-ghost:focus-visible {
+				box-shadow: var(--shadow-focus-ghost);
+			}
+
+			.btn-subtle {
+				background-color: var(--color-surface-secondary);
+				color: var(--color-text-primary);
+				border: 1px solid var(--color-border-subtle);
+			}
+			.btn-subtle:hover {
+				background-color: var(--color-surface-hover);
+			}
+			.btn-subtle:active {
+				background-color: var(--color-surface-active);
+			}
+
+			.btn-icon {
+				width: 32px;
+				padding: 0;
+				border-radius: var(--radius-full);
+				color: var(--color-text-secondary);
+			}
+
+			.pill {
+				height: 24px;
+				padding: 0 10px;
+				border-radius: var(--radius-full);
+				background: transparent;
+				border: 1px solid var(--color-border-secondary);
+				font-size: 12px;
+				color: var(--color-text-secondary);
+			}
+			.pill:hover {
+				background-color: var(--color-surface-secondary);
+			}
+			.pill.selected {
+				background-color: var(--color-accent-soft-bg);
+				color: var(--color-accent-soft-text);
+				border-color: var(--color-accent-soft-border);
+			}
+
+			/* Inputs */
+			.input-group {
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+				width: 300px;
+			}
+			.input-label {
+				font-size: 13px;
+				font-weight: 510;
+				color: var(--color-text-primary);
+			}
+			.input-text {
+				width: 100%;
+				height: 36px;
+				padding: 0 12px;
+				background: var(--color-surface-base);
+				border: 1px solid var(--color-border-primary);
+				border-radius: var(--radius-md);
+				color: var(--color-text-primary);
+				font-family: inherit;
+				font-size: 14px;
+				transition: all 0.15s ease;
+				outline: none;
+			}
+			.input-text::placeholder {
+				color: var(--color-text-quaternary);
+			}
+			.input-text:hover {
+				border-color: var(--color-text-quaternary);
+			}
+			.input-text:focus {
+				border-color: var(--color-brand);
+				box-shadow: var(--shadow-focus-ghost);
+			}
+
+			.input-search {
+				background: var(--color-surface-secondary);
+				border-color: var(--color-border-subtle);
+				padding-left: 36px;
+			}
+
+			.textarea {
+				padding: 12px 14px;
+				resize: vertical;
+				min-height: 80px;
+			}
+
+			/* Modals & Overlays */
+			.modal-backdrop {
+				background: var(--color-overlay);
+				border-radius: var(--radius-xl);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				padding: 24px;
+				margin-top: 16px;
+			}
+
+			.modal {
+				background: var(--color-surface-base);
+				border: 1px solid var(--color-border-primary);
+				border-radius: var(--radius-xl);
+				box-shadow: var(--shadow-lg);
+				width: 100%;
+				max-width: 420px;
+				overflow: hidden;
+			}
+
+			.modal-header {
+				padding: 16px 24px;
+				border-bottom: 1px solid var(--color-divider);
+			}
+
+			.modal-body {
+				padding: 24px;
+			}
+
+			.modal-footer {
+				padding: 16px 24px;
+				background: var(--color-surface-secondary);
+				border-top: 1px solid var(--color-divider);
+				display: flex;
+				justify-content: flex-end;
+				gap: 12px;
+			}
+
+			/* Table Headers & Top Nav */
+			.top-nav {
+				background: rgba(247, 248, 248, 0.82);
+				backdrop-filter: blur(12px);
+				-webkit-backdrop-filter: blur(12px);
+				border-bottom: 1px solid var(--color-border-subtle);
+				padding: 12px 24px;
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				position: sticky;
+				top: 0;
+				z-index: 10;
+			}
+
+			.table-header-row {
+				display: flex;
+				align-items: center;
+				padding: 8px 24px;
+				background: var(--color-page);
+				border-bottom: 1px solid var(--color-border-subtle);
+				gap: 16px;
+				font-size: 12px;
+				font-weight: 510;
+				color: var(--color-text-tertiary);
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+			}
+
+			/* Cards & Surfaces */
+			.card-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 24px;
+			}
+
+			.card {
+				background: var(--color-surface-base);
+				border: 1px solid var(--color-border-secondary);
+				border-radius: var(--radius-lg);
+				padding: 24px;
+				box-shadow: var(--shadow-sm);
+			}
+
+			.panel {
+				background: var(--color-surface-secondary);
+				border: 1px solid var(--color-border-subtle);
+				border-radius: var(--radius-xl);
+				padding: 24px;
+			}
+
+			.popover {
+				background: var(--color-surface-base);
+				border: 1px solid var(--color-border-secondary);
+				border-radius: var(--radius-xl);
+				padding: 16px;
+				box-shadow: var(--shadow-md);
+				width: fit-content;
+			}
+
+			/* Badges */
+			.badge {
+				display: inline-flex;
+				align-items: center;
+				padding: 0 8px;
+				height: 22px;
+				border-radius: var(--radius-full);
+				font-size: 12px;
+				font-weight: 510;
+				border: 1px solid transparent;
+			}
+			.badge-neutral {
+				background: var(--color-surface-secondary);
+				border-color: var(--color-border-subtle);
+				color: var(--color-text-secondary);
+			}
+			.badge-accent {
+				background: var(--color-accent-soft-bg);
+				border-color: var(--color-accent-soft-border);
+				color: var(--color-accent-soft-text);
+			}
+			.badge-success {
+				background: var(--color-success-soft-bg);
+				border-color: var(--color-success-soft-border);
+				color: var(--color-success-soft-text);
+			}
+			.badge-danger {
+				background: var(--color-danger-soft-bg);
+				border-color: var(--color-danger-soft-border);
+				color: var(--color-danger-soft-text);
+			}
+			.badge-warning {
+				background: var(--color-warning-soft-bg);
+				border-color: var(--color-warning-soft-border);
+				color: var(--color-warning-soft-text);
+			}
+
+			/* Example Layout Area */
+			.example-board {
+				border: 1px solid var(--color-border-secondary);
+				border-radius: var(--radius-xl);
+				background: var(--color-surface-base);
+				overflow: hidden;
+				box-shadow: var(--shadow-sm);
+				display: flex;
+				flex-direction: column;
+			}
+
+			.board-header {
+				padding: 16px 24px;
+				border-bottom: 1px solid var(--color-divider);
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				background: var(--color-page);
+			}
+
+			.list-row {
+				display: flex;
+				align-items: center;
+				padding: 12px 24px;
+				border-bottom: 1px solid var(--color-divider);
+				gap: 16px;
+				transition: background 0.1s;
+			}
+			.list-row:last-child {
+				border-bottom: none;
+			}
+			.list-row:hover {
+				background: var(--color-surface-secondary);
+				cursor: pointer;
+			}
+			.list-row .id {
+				font-size: 13px;
+				color: var(--color-text-tertiary);
+				font-family: monospace;
+				width: 60px;
+			}
+			.list-row .title {
+				flex: 1;
+				font-size: 14px;
+				font-weight: 510;
+				color: var(--color-text-primary);
+			}
+
+			/* Decorative SVG */
+			svg.icon {
+				width: 16px;
+				height: 16px;
+				fill: currentColor;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- 主内容区 -->
+		<main class="main-content">
+			<div class="container">
+				<header style="margin-bottom: 64px">
+					<h1
+						class="text-display-xl"
+						style="font-size: 48px; font-weight: 510; letter-spacing: -1.056px; margin-bottom: 16px"
+					>
+						浅色风格规范演示
+					</h1>
+					<p class="text-body tc-secondary" style="max-width: 600px">
+						高精度、低噪音、强秩序感。基于背景灰度差、轻边框与极轻微阴影构建层级。克制使用纯白，品牌色仅用于焦点交互。
+					</p>
+				</header>
+
+				<!-- 1. Colors -->
+				<section id="colors" class="section-block">
+					<div class="section-title">
+						<h2 class="text-h2">Colors & Backgrounds</h2>
+						<p class="text-small tc-tertiary" style="margin-top: 8px">
+							避免使用大面积纯白，主要依靠柔和灰白建立底色。
+						</p>
+					</div>
+
+					<h3 class="text-body-m tc-secondary" style="margin-bottom: 16px">Surfaces</h3>
+					<div class="grid-swatches" style="margin-bottom: 32px">
+						<div class="swatch">
+							<div class="swatch-color" style="background: var(--color-page)"></div>
+							<div class="swatch-info">
+								<div class="swatch-name">Page Background</div>
+								<div class="swatch-hex">#f7f8f8</div>
+							</div>
+						</div>
+						<div class="swatch">
+							<div
+								class="swatch-color"
+								style="
+									background: var(--color-surface-base);
+									border-bottom: 1px solid var(--color-border-subtle);
+								"
+							></div>
+							<div class="swatch-info">
+								<div class="swatch-name">Surface Base</div>
+								<div class="swatch-hex">#ffffff</div>
+							</div>
+						</div>
+						<div class="swatch">
+							<div class="swatch-color" style="background: var(--color-surface-secondary)"></div>
+							<div class="swatch-info">
+								<div class="swatch-name">Surface Secondary</div>
+								<div class="swatch-hex">#f5f6f7</div>
+							</div>
+						</div>
+					</div>
+
+					<h3 class="text-body-m tc-secondary" style="margin-bottom: 16px">Brand & Accents</h3>
+					<div class="grid-swatches">
+						<div class="swatch">
+							<div class="swatch-color" style="background: var(--color-brand)"></div>
+							<div class="swatch-info">
+								<div class="swatch-name">Brand Indigo</div>
+								<div class="swatch-hex">#5e6ad2</div>
+							</div>
+						</div>
+						<div class="swatch">
+							<div
+								class="swatch-color"
+								style="
+									background: var(--color-accent-soft-bg);
+									border-bottom: 1px solid var(--color-accent-soft-border);
+								"
+							></div>
+							<div class="swatch-info">
+								<div class="swatch-name">Accent Soft Bg</div>
+								<div class="swatch-hex">#eef0ff</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- 2. Typography -->
+				<section id="typography" class="section-block">
+					<div class="section-title">
+						<h2 class="text-h2">Typography</h2>
+						<p class="text-small tc-tertiary" style="margin-top: 8px">
+							主层级靠字重和密度，控制灰度文本数量防止发灰发虚。
+						</p>
+					</div>
+
+					<div
+						style="
+							display: flex;
+							flex-direction: column;
+							gap: 24px;
+							background: var(--color-surface-base);
+							padding: 32px;
+							border-radius: var(--radius-lg);
+							border: 1px solid var(--color-border-secondary);
+						"
+					>
+						<div
+							class="flex-row"
+							style="
+								align-items: baseline;
+								justify-content: space-between;
+								border-bottom: 1px solid var(--color-border-subtle);
+								padding-bottom: 16px;
+							"
+						>
+							<div class="text-h1 tc-primary">H1 Block Title</div>
+							<div class="text-label tc-quaternary">32px / 400</div>
+						</div>
+						<div
+							class="flex-row"
+							style="
+								align-items: baseline;
+								justify-content: space-between;
+								border-bottom: 1px solid var(--color-border-subtle);
+								padding-bottom: 16px;
+							"
+						>
+							<div class="text-h2 tc-primary">H2 Section Title</div>
+							<div class="text-label tc-quaternary">24px / 400</div>
+						</div>
+						<div
+							class="flex-row"
+							style="
+								align-items: baseline;
+								justify-content: space-between;
+								border-bottom: 1px solid var(--color-border-subtle);
+								padding-bottom: 16px;
+							"
+						>
+							<div class="text-h3 tc-primary">H3 Module Title</div>
+							<div class="text-label tc-quaternary">20px / 590</div>
+						</div>
+						<div class="flex-row" style="align-items: baseline; justify-content: space-between">
+							<div class="text-body-m tc-secondary">Body M (UI Default Emphasis)</div>
+							<div class="text-label tc-quaternary">16px / 510</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- 3. Buttons -->
+				<section id="buttons" class="section-block">
+					<div class="section-title">
+						<h2 class="text-h2">Buttons & Actions</h2>
+						<p class="text-small tc-tertiary" style="margin-top: 8px">
+							焦点态依然克制，Hover 不依赖饱和度变化而是灰阶收紧。
+						</p>
+					</div>
+
+					<div class="card flex-row" style="gap: 24px">
+						<button class="btn btn-primary">Primary Action</button>
+						<button class="btn btn-ghost">Ghost Button</button>
+						<button class="btn btn-subtle">Subtle Tool</button>
+
+						<button class="btn btn-ghost btn-icon">
+							<svg class="icon" viewBox="0 0 24 24">
+								<path
+									d="M12 5v14M5 12h14"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+								/>
+							</svg>
+						</button>
+
+						<div
+							style="width: 1px; height: 24px; background: var(--color-divider); margin: 0 8px"
+						></div>
+
+						<button class="pill">All filters</button>
+						<button class="pill selected">Assigned to me</button>
+					</div>
+				</section>
+
+				<!-- 4. Inputs -->
+				<section id="inputs" class="section-block">
+					<div class="section-title">
+						<h2 class="text-h2">Inputs & Forms</h2>
+					</div>
+
+					<div class="card flex-row" style="align-items: flex-start; gap: 48px">
+						<div class="input-group">
+							<label class="input-label">Project Name</label>
+							<input type="text" class="input-text" placeholder="e.g. Design System" />
+						</div>
+
+						<div class="input-group">
+							<label class="input-label">Search (Subtle)</label>
+							<div style="position: relative">
+								<svg
+									class="icon"
+									style="
+										position: absolute;
+										left: 12px;
+										top: 10px;
+										color: var(--color-text-quaternary);
+									"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+								>
+									<circle cx="11" cy="11" r="8" />
+									<path d="m21 21-4.3-4.3" />
+								</svg>
+								<input type="text" class="input-text input-search" placeholder="Search issues..." />
+							</div>
+						</div>
+
+						<div class="input-group" style="width: 100%; max-width: 300px">
+							<label class="input-label">Description (Text Area)</label>
+							<textarea
+								class="input-text textarea"
+								placeholder="Add more details to this issue..."
+							></textarea>
+						</div>
+					</div>
+				</section>
+
+				<!-- 5. Badges -->
+				<section id="badges" class="section-block">
+					<div class="section-title">
+						<h2 class="text-h2">Badges & Status</h2>
+					</div>
+
+					<div class="card flex-row">
+						<span class="badge badge-neutral">Draft</span>
+						<span class="badge badge-accent">In Progress</span>
+						<span class="badge badge-success">Completed</span>
+						<span class="badge badge-warning">Delayed</span>
+						<span class="badge badge-danger">Canceled</span>
+					</div>
+				</section>
+
+				<!-- 6. Surfaces -->
+				<section id="surfaces" class="section-block">
+					<div class="section-title">
+						<h2 class="text-h2">Surfaces & Depths</h2>
+						<p class="text-small tc-tertiary" style="margin-top: 8px">
+							卡片不是到处飞，大部分只依靠轻边框和极轻阴影区分。
+						</p>
+					</div>
+
+					<div class="card-grid">
+						<div class="card">
+							<h3 class="text-h3" style="margin-bottom: 8px">Standard Card</h3>
+							<p class="text-small tc-secondary">
+								Level 2: Background #ffffff, border #e1e5ea, extreme subtle shadow. Perfect for main
+								content blocks.
+							</p>
+						</div>
+
+						<div class="panel">
+							<h3 class="text-h3" style="margin-bottom: 8px">Panel / Container</h3>
+							<p class="text-small tc-secondary">
+								Level 1: Background #f5f6f7, border #e8ebef, no shadow. Good for nested groups or
+								secondary areas.
+							</p>
+						</div>
+
+						<div class="popover">
+							<div class="text-caption tc-tertiary" style="margin-bottom: 8px; padding: 0 8px">
+								ACTIONS
+							</div>
+							<div class="menu-item active">Edit details...</div>
+							<div class="menu-item">Copy link</div>
+							<div style="height: 1px; background: var(--color-divider); margin: 8px 0"></div>
+							<div class="menu-item" style="color: var(--color-danger-soft-text)">Delete issue</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- 7. Modals & Overlays -->
+				<section id="modals" class="section-block">
+					<div class="section-title">
+						<h2 class="text-h2">Modals & Overlays</h2>
+						<p class="text-small tc-tertiary" style="margin-top: 8px">
+							Level 4 层级。使用半透明中性灰遮罩与明显的浮层投影隔离焦点，杜绝纯黑带来的压迫感。
+						</p>
+					</div>
+
+					<div class="modal-backdrop">
+						<div class="modal">
+							<div class="modal-header">
+								<h3 class="text-h3">Delete Issue</h3>
+							</div>
+							<div class="modal-body">
+								<p class="text-body tc-secondary">
+									Are you sure you want to delete this issue? This action cannot be undone and all
+									associated data will be lost.
+								</p>
+							</div>
+							<div class="modal-footer">
+								<button class="btn btn-ghost">Cancel</button>
+								<button
+									class="btn btn-primary"
+									style="background-color: var(--color-danger); border-color: transparent"
+								>
+									Delete
+								</button>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- 8. Example Board -->
+				<section id="example" class="section-block">
+					<div class="section-title">
+						<h2 class="text-h2">Example Application View</h2>
+						<p class="text-small tc-tertiary" style="margin-top: 8px">
+							加入 Top Nav 和 Table Header 后，体会细线、字体和面共同组织的信息流。
+						</p>
+					</div>
+
+					<div class="example-board" style="height: 400px; overflow-y: auto; position: relative">
+						<!-- Top Navigation -->
+						<div class="top-nav">
+							<div class="flex-row">
+								<div
+									class="btn-icon"
+									style="
+										background: var(--color-surface-secondary);
+										display: flex;
+										align-items: center;
+										justify-content: center;
+										border: 1px solid var(--color-border-subtle);
+									"
+								>
+									<svg
+										class="icon"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+									>
+										<path d="M3 12h18M3 6h18M3 18h18" />
+									</svg>
+								</div>
+								<span class="text-body-m tc-primary">Linear Web</span>
+								<span class="text-body tc-tertiary">/</span>
+								<span class="text-body-m tc-secondary">Issues</span>
+							</div>
+							<div class="flex-row">
+								<button class="btn btn-ghost btn-icon">
+									<svg
+										class="icon"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+									>
+										<circle cx="11" cy="11" r="8" />
+										<path d="m21 21-4.3-4.3" />
+									</svg>
+								</button>
+							</div>
+						</div>
+
+						<div class="board-header">
+							<div class="flex-row">
+								<span class="badge badge-neutral" style="font-size: 11px">FEA-2</span>
+								<h3 class="text-h3">Frontend Architecture</h3>
+							</div>
+							<div class="flex-row">
+								<button class="pill">Filter</button>
+								<button class="btn btn-primary" style="height: 28px">New Issue</button>
+							</div>
+						</div>
+
+						<!-- Table Header -->
+						<div class="table-header-row">
+							<span class="id">ID</span>
+							<span style="width: 100px">Status</span>
+							<span class="title" style="flex: 1">Title</span>
+							<span style="width: 80px; text-align: right">Date</span>
+						</div>
+
+						<!-- Rows -->
+						<div class="list-row">
+							<span class="id">LIN-101</span>
+							<span style="width: 100px"><span class="badge badge-success">Done</span></span>
+							<span class="title">Extract design tokens to CSS variables</span>
+							<span class="text-caption tc-tertiary" style="width: 80px; text-align: right"
+								>Oct 12</span
+							>
+						</div>
+						<div class="list-row">
+							<span class="id">LIN-102</span>
+							<span style="width: 100px"><span class="badge badge-accent">In Progress</span></span>
+							<span class="title">Refactor ghost button hover states</span>
+							<span class="text-caption tc-tertiary" style="width: 80px; text-align: right"
+								>Today</span
+							>
+						</div>
+						<div class="list-row">
+							<span class="id">LIN-103</span>
+							<span style="width: 100px"><span class="badge badge-neutral">Todo</span></span>
+							<span class="title">Check input focus ring accessibility</span>
+							<span class="text-caption tc-tertiary" style="width: 80px; text-align: right"
+								>Tomorrow</span
+							>
+						</div>
+						<div class="list-row">
+							<span class="id">LIN-104</span>
+							<span style="width: 100px"><span class="badge badge-danger">Blocked</span></span>
+							<span class="title">Update typography scale for mobile</span>
+							<span class="text-caption tc-tertiary" style="width: 80px; text-align: right"
+								>Next Week</span
+							>
+						</div>
+						<div class="list-row">
+							<span class="id">LIN-105</span>
+							<span style="width: 100px"><span class="badge badge-neutral">Todo</span></span>
+							<span class="title">Finalize Light Theme spec components</span>
+							<span class="text-caption tc-tertiary" style="width: 80px; text-align: right"
+								>Next Week</span
+							>
+						</div>
+					</div>
+				</section>
+			</div>
+		</main>
+	</body>
 </html>

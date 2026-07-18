@@ -89,7 +89,7 @@ function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedPr
 					isShellPath: false,
 					isSettingsPath: false,
 					isDebugPath: false,
-					isQuickCreatePath: false,
+					isLauncherPath: false,
 					isWorkPath: true,
 				},
 				taskDetail: {

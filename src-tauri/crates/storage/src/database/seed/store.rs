@@ -94,3 +94,13 @@ where
         .await
         .map(|model| model.map(|item| item.value))
 }
+
+pub async fn delete_setting<C>(connection: &C, key: &str) -> Result<(), sea_orm::DbErr>
+where
+    C: ConnectionTrait,
+{
+    setting::Entity::delete_by_id(key.to_owned())
+        .exec(connection)
+        .await?;
+    Ok(())
+}

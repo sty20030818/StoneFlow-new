@@ -5,7 +5,7 @@ use tauri::ipc::Invoke;
 pub(crate) mod activity;
 pub(crate) mod lifecycle;
 pub(crate) mod projects;
-pub(crate) mod quick_create;
+pub(crate) mod launcher;
 pub(crate) mod search;
 pub(crate) mod settings;
 pub(crate) mod spaces;
@@ -81,16 +81,16 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         update::cancel_update_download,
         workspace::healthcheck,
         workspace::set_active_scope,
-        quick_create::restore_main_window,
-        quick_create::quit_stoneflow,
-        quick_create::take_pending_command_open_intent,
-        quick_create::domain::quick_create_get_initial_state,
-        quick_create::domain::quick_create_list_projects_by_space,
-        quick_create::domain::quick_create_open_target,
-        quick_create::window::quick_create_prepare_session,
-        quick_create::window::quick_create_present_session,
-        quick_create::window::quick_create_close_session,
-        quick_create::window::quick_create_frontend_ready,
-        quick_create::window::quick_create_frontend_unready,
+        launcher::restore_main_window,
+        launcher::quit_stoneflow,
+        launcher::take_pending_command_open_intent,
+        launcher::domain::launcher_get_initial_state,
+        launcher::domain::launcher_list_projects_by_space,
+        launcher::domain::launcher_open_target,
+        launcher::window::launcher_prepare_session,
+        launcher::window::launcher_present_session,
+        launcher::window::launcher_close_session,
+        launcher::window::launcher_frontend_ready,
+        launcher::window::launcher_frontend_unready,
     ]
 }

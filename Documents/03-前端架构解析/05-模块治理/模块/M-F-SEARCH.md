@@ -1,11 +1,11 @@
 # M-F-SEARCH · features/global-search
 
-> 日期：2026-07-17  
-> 状态：**decided（方案对比 · 与 QC 搜索）** · **decide-only**  
-> 路径：`src/features/global-search`  
-> 类型：**platform（全局实体搜索）**  
-> 切分总览：**Keep**；与 QC **共享查询端口、不并包**  
-> 关联：layout Header · command 面板搜 · QC Q3/S2 · navigation path  
+> 日期：2026-07-17
+> 状态：**decided（方案对比 · 与 QC 搜索）** · **decide-only**
+> 路径：`src/features/global-search`
+> 类型：**platform（全局实体搜索）**
+> 切分总览：**Keep**；与 QC **共享查询端口、不并包**
+> 关联：layout Header · command 面板搜 · QC Q3/S2 · navigation path
 
 ---
 
@@ -42,10 +42,10 @@ global-search/
 
 ### A.4 已做对的
 
-- api / query / UI 分层清楚  
-- Query `enabled` 随非空 query；keepPreviousData  
-- focus 用轻量 store 而非污染 URL  
-- 切分 Keep；不并 QC 窗  
+- api / query / UI 分层清楚
+- Query `enabled` 随非空 query；keepPreviousData
+- focus 用轻量 store 而非污染 URL
+- 切分 Keep；不并 QC 窗
 
 ### A.5 问题
 
@@ -97,7 +97,7 @@ global-search
   = Header UI + useGlobalSearch + focus store
   + 导航走 navigation/entity policy
 
-quick-create
+launcher
   = 调用同一 searchEntities（limit=3）
   = 自有结果板 UI / 键盘
   = 废弃或委托 quick_create_search（后端可合并命令后议）
@@ -177,7 +177,7 @@ QC → searchEntities({ limit: 3 })  // 同一端口
 
 ### D.4 public 目标
 
-**宜：** `searchEntities`、query hooks、`useGlobalSearch`、Input/Results、focus store、（过渡）resolve path 或改为 intent。  
+**宜：** `searchEntities`、query hooks、`useGlobalSearch`、Input/Results、focus store、（过渡）resolve path 或改为 intent。
 **收窄：** 内部 debounce 细节不导出。
 
 ---
@@ -186,16 +186,16 @@ QC → searchEntities({ limit: 3 })  // 同一端口
 
 **Do**
 
-- 空 query 不请求  
-- debounce 在 UI/hook  
-- 打开走统一导航端口  
-- QC/主窗同一 search facade  
+- 空 query 不请求
+- debounce 在 UI/hook
+- 打开走统一导航端口
+- QC/主窗同一 search facade
 
 **Don't**
 
-- 第二套 search invoke 无适配层  
-- 在 search 里写 bulk/mutation  
-- 结果页复制整 TaskBoard 业务  
+- 第二套 search invoke 无适配层
+- 在 search 里写 bulk/mutation
+- 结果页复制整 TaskBoard 业务
 
 ---
 
@@ -241,8 +241,8 @@ Input/Results ~250 行级 — 可拆；非切分问题。
 
 ### 开放问题
 
-- [ ] `search_entities` 与 `quick_create_search` 结果字段是否已同构（需对照 DTO）  
-- [ ] 搜索是否含 space/view（产品扩展）  
+- [ ] `search_entities` 与 `quick_create_search` 结果字段是否已同构（需对照 DTO）
+- [ ] 搜索是否含 space/view（产品扩展）
 
 ---
 

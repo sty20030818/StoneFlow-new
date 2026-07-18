@@ -9,52 +9,47 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as QuickCreateRouteImport } from './routes/quick-create'
-import { Route as ShellRouteRouteImport } from './routes/_shell/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DebugActivityRouteImport } from './routes/debug.activity'
+import { Route as ShellRouteRouteImport } from './routes/_shell/route'
+import { Route as LauncherRouteImport } from './routes/launcher'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ShellScopeKeyRouteRouteImport } from './routes/_shell/$scopeKey/route'
+import { Route as DebugActivityRouteImport } from './routes/debug.activity'
 import { Route as ShellScopeKeyIndexRouteImport } from './routes/_shell/$scopeKey/index'
-import { Route as ShellScopeKeyTrashRouteImport } from './routes/_shell/$scopeKey/trash'
-import { Route as ShellScopeKeyNoProjectRouteImport } from './routes/_shell/$scopeKey/no-project'
-import { Route as ShellScopeKeyInboxRouteImport } from './routes/_shell/$scopeKey/inbox'
 import { Route as ShellScopeKeyArchiveRouteImport } from './routes/_shell/$scopeKey/archive'
-import { Route as ShellScopeKeyViewsRouteRouteImport } from './routes/_shell/$scopeKey/views/route'
-import { Route as ShellScopeKeyTasksRouteRouteImport } from './routes/_shell/$scopeKey/tasks/route'
-import { Route as ShellScopeKeySettingsRouteRouteImport } from './routes/_shell/$scopeKey/settings/route'
+import { Route as ShellScopeKeyInboxRouteImport } from './routes/_shell/$scopeKey/inbox'
+import { Route as ShellScopeKeyNoProjectRouteImport } from './routes/_shell/$scopeKey/no-project'
 import { Route as ShellScopeKeyProjectsRouteRouteImport } from './routes/_shell/$scopeKey/projects/route'
-import { Route as ShellScopeKeyViewsIndexRouteImport } from './routes/_shell/$scopeKey/views/index'
-import { Route as ShellScopeKeyTasksIndexRouteImport } from './routes/_shell/$scopeKey/tasks/index'
-import { Route as ShellScopeKeySettingsIndexRouteImport } from './routes/_shell/$scopeKey/settings/index'
+import { Route as ShellScopeKeySettingsRouteRouteImport } from './routes/_shell/$scopeKey/settings/route'
+import { Route as ShellScopeKeyTasksRouteRouteImport } from './routes/_shell/$scopeKey/tasks/route'
+import { Route as ShellScopeKeyTrashRouteImport } from './routes/_shell/$scopeKey/trash'
+import { Route as ShellScopeKeyViewsRouteRouteImport } from './routes/_shell/$scopeKey/views/route'
 import { Route as ShellScopeKeyProjectsIndexRouteImport } from './routes/_shell/$scopeKey/projects/index'
-import { Route as ShellScopeKeyViewsViewIdRouteImport } from './routes/_shell/$scopeKey/views/$viewId'
-import { Route as ShellScopeKeyTasksTaskIdRouteImport } from './routes/_shell/$scopeKey/tasks/$taskId'
-import { Route as ShellScopeKeySettingsSectionRouteImport } from './routes/_shell/$scopeKey/settings/$section'
 import { Route as ShellScopeKeyProjectsProjectIdRouteImport } from './routes/_shell/$scopeKey/projects/$projectId'
+import { Route as ShellScopeKeySettingsIndexRouteImport } from './routes/_shell/$scopeKey/settings/index'
+import { Route as ShellScopeKeySettingsSectionRouteImport } from './routes/_shell/$scopeKey/settings/$section'
+import { Route as ShellScopeKeyTasksIndexRouteImport } from './routes/_shell/$scopeKey/tasks/index'
+import { Route as ShellScopeKeyTasksTaskIdRouteImport } from './routes/_shell/$scopeKey/tasks/$taskId'
+import { Route as ShellScopeKeyViewsIndexRouteImport } from './routes/_shell/$scopeKey/views/index'
+import { Route as ShellScopeKeyViewsViewIdRouteImport } from './routes/_shell/$scopeKey/views/$viewId'
 
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QuickCreateRoute = QuickCreateRouteImport.update({
-  id: '/quick-create',
-  path: '/quick-create',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShellRouteRoute = ShellRouteRouteImport.update({
   id: '/_shell',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LauncherRoute = LauncherRouteImport.update({
+  id: '/launcher',
+  path: '/launcher',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DebugActivityRoute = DebugActivityRouteImport.update({
-  id: '/debug/activity',
-  path: '/debug/activity',
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShellScopeKeyRouteRoute = ShellScopeKeyRouteRouteImport.update({
@@ -62,24 +57,14 @@ const ShellScopeKeyRouteRoute = ShellScopeKeyRouteRouteImport.update({
   path: '/$scopeKey',
   getParentRoute: () => ShellRouteRoute,
 } as any)
+const DebugActivityRoute = DebugActivityRouteImport.update({
+  id: '/debug/activity',
+  path: '/debug/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShellScopeKeyIndexRoute = ShellScopeKeyIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => ShellScopeKeyRouteRoute,
-} as any)
-const ShellScopeKeyTrashRoute = ShellScopeKeyTrashRouteImport.update({
-  id: '/trash',
-  path: '/trash',
-  getParentRoute: () => ShellScopeKeyRouteRoute,
-} as any)
-const ShellScopeKeyNoProjectRoute = ShellScopeKeyNoProjectRouteImport.update({
-  id: '/no-project',
-  path: '/no-project',
-  getParentRoute: () => ShellScopeKeyRouteRoute,
-} as any)
-const ShellScopeKeyInboxRoute = ShellScopeKeyInboxRouteImport.update({
-  id: '/inbox',
-  path: '/inbox',
   getParentRoute: () => ShellScopeKeyRouteRoute,
 } as any)
 const ShellScopeKeyArchiveRoute = ShellScopeKeyArchiveRouteImport.update({
@@ -87,67 +72,48 @@ const ShellScopeKeyArchiveRoute = ShellScopeKeyArchiveRouteImport.update({
   path: '/archive',
   getParentRoute: () => ShellScopeKeyRouteRoute,
 } as any)
-const ShellScopeKeyViewsRouteRoute = ShellScopeKeyViewsRouteRouteImport.update({
-  id: '/views',
-  path: '/views',
+const ShellScopeKeyInboxRoute = ShellScopeKeyInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
   getParentRoute: () => ShellScopeKeyRouteRoute,
 } as any)
-const ShellScopeKeyTasksRouteRoute = ShellScopeKeyTasksRouteRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
+const ShellScopeKeyNoProjectRoute = ShellScopeKeyNoProjectRouteImport.update({
+  id: '/no-project',
+  path: '/no-project',
   getParentRoute: () => ShellScopeKeyRouteRoute,
 } as any)
-const ShellScopeKeySettingsRouteRoute =
-  ShellScopeKeySettingsRouteRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => ShellScopeKeyRouteRoute,
-  } as any)
 const ShellScopeKeyProjectsRouteRoute =
   ShellScopeKeyProjectsRouteRouteImport.update({
     id: '/projects',
     path: '/projects',
     getParentRoute: () => ShellScopeKeyRouteRoute,
   } as any)
-const ShellScopeKeyViewsIndexRoute = ShellScopeKeyViewsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ShellScopeKeyViewsRouteRoute,
-} as any)
-const ShellScopeKeyTasksIndexRoute = ShellScopeKeyTasksIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ShellScopeKeyTasksRouteRoute,
-} as any)
-const ShellScopeKeySettingsIndexRoute =
-  ShellScopeKeySettingsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => ShellScopeKeySettingsRouteRoute,
+const ShellScopeKeySettingsRouteRoute =
+  ShellScopeKeySettingsRouteRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => ShellScopeKeyRouteRoute,
   } as any)
+const ShellScopeKeyTasksRouteRoute = ShellScopeKeyTasksRouteRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => ShellScopeKeyRouteRoute,
+} as any)
+const ShellScopeKeyTrashRoute = ShellScopeKeyTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => ShellScopeKeyRouteRoute,
+} as any)
+const ShellScopeKeyViewsRouteRoute = ShellScopeKeyViewsRouteRouteImport.update({
+  id: '/views',
+  path: '/views',
+  getParentRoute: () => ShellScopeKeyRouteRoute,
+} as any)
 const ShellScopeKeyProjectsIndexRoute =
   ShellScopeKeyProjectsIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => ShellScopeKeyProjectsRouteRoute,
-  } as any)
-const ShellScopeKeyViewsViewIdRoute =
-  ShellScopeKeyViewsViewIdRouteImport.update({
-    id: '/$viewId',
-    path: '/$viewId',
-    getParentRoute: () => ShellScopeKeyViewsRouteRoute,
-  } as any)
-const ShellScopeKeyTasksTaskIdRoute =
-  ShellScopeKeyTasksTaskIdRouteImport.update({
-    id: '/$taskId',
-    path: '/$taskId',
-    getParentRoute: () => ShellScopeKeyTasksRouteRoute,
-  } as any)
-const ShellScopeKeySettingsSectionRoute =
-  ShellScopeKeySettingsSectionRouteImport.update({
-    id: '/$section',
-    path: '/$section',
-    getParentRoute: () => ShellScopeKeySettingsRouteRoute,
   } as any)
 const ShellScopeKeyProjectsProjectIdRoute =
   ShellScopeKeyProjectsProjectIdRouteImport.update({
@@ -155,10 +121,44 @@ const ShellScopeKeyProjectsProjectIdRoute =
     path: '/$projectId',
     getParentRoute: () => ShellScopeKeyProjectsRouteRoute,
   } as any)
+const ShellScopeKeySettingsIndexRoute =
+  ShellScopeKeySettingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ShellScopeKeySettingsRouteRoute,
+  } as any)
+const ShellScopeKeySettingsSectionRoute =
+  ShellScopeKeySettingsSectionRouteImport.update({
+    id: '/$section',
+    path: '/$section',
+    getParentRoute: () => ShellScopeKeySettingsRouteRoute,
+  } as any)
+const ShellScopeKeyTasksIndexRoute = ShellScopeKeyTasksIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShellScopeKeyTasksRouteRoute,
+} as any)
+const ShellScopeKeyTasksTaskIdRoute =
+  ShellScopeKeyTasksTaskIdRouteImport.update({
+    id: '/$taskId',
+    path: '/$taskId',
+    getParentRoute: () => ShellScopeKeyTasksRouteRoute,
+  } as any)
+const ShellScopeKeyViewsIndexRoute = ShellScopeKeyViewsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShellScopeKeyViewsRouteRoute,
+} as any)
+const ShellScopeKeyViewsViewIdRoute =
+  ShellScopeKeyViewsViewIdRouteImport.update({
+    id: '/$viewId',
+    path: '/$viewId',
+    getParentRoute: () => ShellScopeKeyViewsRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/quick-create': typeof QuickCreateRoute
+  '/launcher': typeof LauncherRoute
   '/settings': typeof SettingsRoute
   '/$scopeKey': typeof ShellScopeKeyRouteRouteWithChildren
   '/debug/activity': typeof DebugActivityRoute
@@ -182,7 +182,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/quick-create': typeof QuickCreateRoute
+  '/launcher': typeof LauncherRoute
   '/settings': typeof SettingsRoute
   '/debug/activity': typeof DebugActivityRoute
   '/$scopeKey/archive': typeof ShellScopeKeyArchiveRoute
@@ -203,7 +203,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_shell': typeof ShellRouteRouteWithChildren
-  '/quick-create': typeof QuickCreateRoute
+  '/launcher': typeof LauncherRoute
   '/settings': typeof SettingsRoute
   '/_shell/$scopeKey': typeof ShellScopeKeyRouteRouteWithChildren
   '/debug/activity': typeof DebugActivityRoute
@@ -229,7 +229,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/quick-create'
+    | '/launcher'
     | '/settings'
     | '/$scopeKey'
     | '/debug/activity'
@@ -253,7 +253,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/quick-create'
+    | '/launcher'
     | '/settings'
     | '/debug/activity'
     | '/$scopeKey/archive'
@@ -273,7 +273,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_shell'
-    | '/quick-create'
+    | '/launcher'
     | '/settings'
     | '/_shell/$scopeKey'
     | '/debug/activity'
@@ -299,25 +299,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ShellRouteRoute: typeof ShellRouteRouteWithChildren
-  QuickCreateRoute: typeof QuickCreateRoute
+  LauncherRoute: typeof LauncherRoute
   SettingsRoute: typeof SettingsRoute
   DebugActivityRoute: typeof DebugActivityRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/quick-create': {
-      id: '/quick-create'
-      path: '/quick-create'
-      fullPath: '/quick-create'
-      preLoaderRoute: typeof QuickCreateRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_shell': {
@@ -327,18 +320,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/launcher': {
+      id: '/launcher'
+      path: '/launcher'
+      fullPath: '/launcher'
+      preLoaderRoute: typeof LauncherRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/debug/activity': {
-      id: '/debug/activity'
-      path: '/debug/activity'
-      fullPath: '/debug/activity'
-      preLoaderRoute: typeof DebugActivityRouteImport
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_shell/$scopeKey': {
@@ -348,32 +341,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellScopeKeyRouteRouteImport
       parentRoute: typeof ShellRouteRoute
     }
+    '/debug/activity': {
+      id: '/debug/activity'
+      path: '/debug/activity'
+      fullPath: '/debug/activity'
+      preLoaderRoute: typeof DebugActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_shell/$scopeKey/': {
       id: '/_shell/$scopeKey/'
       path: '/'
       fullPath: '/$scopeKey/'
       preLoaderRoute: typeof ShellScopeKeyIndexRouteImport
-      parentRoute: typeof ShellScopeKeyRouteRoute
-    }
-    '/_shell/$scopeKey/trash': {
-      id: '/_shell/$scopeKey/trash'
-      path: '/trash'
-      fullPath: '/$scopeKey/trash'
-      preLoaderRoute: typeof ShellScopeKeyTrashRouteImport
-      parentRoute: typeof ShellScopeKeyRouteRoute
-    }
-    '/_shell/$scopeKey/no-project': {
-      id: '/_shell/$scopeKey/no-project'
-      path: '/no-project'
-      fullPath: '/$scopeKey/no-project'
-      preLoaderRoute: typeof ShellScopeKeyNoProjectRouteImport
-      parentRoute: typeof ShellScopeKeyRouteRoute
-    }
-    '/_shell/$scopeKey/inbox': {
-      id: '/_shell/$scopeKey/inbox'
-      path: '/inbox'
-      fullPath: '/$scopeKey/inbox'
-      preLoaderRoute: typeof ShellScopeKeyInboxRouteImport
       parentRoute: typeof ShellScopeKeyRouteRoute
     }
     '/_shell/$scopeKey/archive': {
@@ -383,25 +362,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellScopeKeyArchiveRouteImport
       parentRoute: typeof ShellScopeKeyRouteRoute
     }
-    '/_shell/$scopeKey/views': {
-      id: '/_shell/$scopeKey/views'
-      path: '/views'
-      fullPath: '/$scopeKey/views'
-      preLoaderRoute: typeof ShellScopeKeyViewsRouteRouteImport
+    '/_shell/$scopeKey/inbox': {
+      id: '/_shell/$scopeKey/inbox'
+      path: '/inbox'
+      fullPath: '/$scopeKey/inbox'
+      preLoaderRoute: typeof ShellScopeKeyInboxRouteImport
       parentRoute: typeof ShellScopeKeyRouteRoute
     }
-    '/_shell/$scopeKey/tasks': {
-      id: '/_shell/$scopeKey/tasks'
-      path: '/tasks'
-      fullPath: '/$scopeKey/tasks'
-      preLoaderRoute: typeof ShellScopeKeyTasksRouteRouteImport
-      parentRoute: typeof ShellScopeKeyRouteRoute
-    }
-    '/_shell/$scopeKey/settings': {
-      id: '/_shell/$scopeKey/settings'
-      path: '/settings'
-      fullPath: '/$scopeKey/settings'
-      preLoaderRoute: typeof ShellScopeKeySettingsRouteRouteImport
+    '/_shell/$scopeKey/no-project': {
+      id: '/_shell/$scopeKey/no-project'
+      path: '/no-project'
+      fullPath: '/$scopeKey/no-project'
+      preLoaderRoute: typeof ShellScopeKeyNoProjectRouteImport
       parentRoute: typeof ShellScopeKeyRouteRoute
     }
     '/_shell/$scopeKey/projects': {
@@ -411,26 +383,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellScopeKeyProjectsRouteRouteImport
       parentRoute: typeof ShellScopeKeyRouteRoute
     }
-    '/_shell/$scopeKey/views/': {
-      id: '/_shell/$scopeKey/views/'
-      path: '/'
-      fullPath: '/$scopeKey/views/'
-      preLoaderRoute: typeof ShellScopeKeyViewsIndexRouteImport
-      parentRoute: typeof ShellScopeKeyViewsRouteRoute
+    '/_shell/$scopeKey/settings': {
+      id: '/_shell/$scopeKey/settings'
+      path: '/settings'
+      fullPath: '/$scopeKey/settings'
+      preLoaderRoute: typeof ShellScopeKeySettingsRouteRouteImport
+      parentRoute: typeof ShellScopeKeyRouteRoute
     }
-    '/_shell/$scopeKey/tasks/': {
-      id: '/_shell/$scopeKey/tasks/'
-      path: '/'
-      fullPath: '/$scopeKey/tasks/'
-      preLoaderRoute: typeof ShellScopeKeyTasksIndexRouteImport
-      parentRoute: typeof ShellScopeKeyTasksRouteRoute
+    '/_shell/$scopeKey/tasks': {
+      id: '/_shell/$scopeKey/tasks'
+      path: '/tasks'
+      fullPath: '/$scopeKey/tasks'
+      preLoaderRoute: typeof ShellScopeKeyTasksRouteRouteImport
+      parentRoute: typeof ShellScopeKeyRouteRoute
     }
-    '/_shell/$scopeKey/settings/': {
-      id: '/_shell/$scopeKey/settings/'
-      path: '/'
-      fullPath: '/$scopeKey/settings/'
-      preLoaderRoute: typeof ShellScopeKeySettingsIndexRouteImport
-      parentRoute: typeof ShellScopeKeySettingsRouteRoute
+    '/_shell/$scopeKey/trash': {
+      id: '/_shell/$scopeKey/trash'
+      path: '/trash'
+      fullPath: '/$scopeKey/trash'
+      preLoaderRoute: typeof ShellScopeKeyTrashRouteImport
+      parentRoute: typeof ShellScopeKeyRouteRoute
+    }
+    '/_shell/$scopeKey/views': {
+      id: '/_shell/$scopeKey/views'
+      path: '/views'
+      fullPath: '/$scopeKey/views'
+      preLoaderRoute: typeof ShellScopeKeyViewsRouteRouteImport
+      parentRoute: typeof ShellScopeKeyRouteRoute
     }
     '/_shell/$scopeKey/projects/': {
       id: '/_shell/$scopeKey/projects/'
@@ -439,19 +418,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellScopeKeyProjectsIndexRouteImport
       parentRoute: typeof ShellScopeKeyProjectsRouteRoute
     }
-    '/_shell/$scopeKey/views/$viewId': {
-      id: '/_shell/$scopeKey/views/$viewId'
-      path: '/$viewId'
-      fullPath: '/$scopeKey/views/$viewId'
-      preLoaderRoute: typeof ShellScopeKeyViewsViewIdRouteImport
-      parentRoute: typeof ShellScopeKeyViewsRouteRoute
+    '/_shell/$scopeKey/projects/$projectId': {
+      id: '/_shell/$scopeKey/projects/$projectId'
+      path: '/$projectId'
+      fullPath: '/$scopeKey/projects/$projectId'
+      preLoaderRoute: typeof ShellScopeKeyProjectsProjectIdRouteImport
+      parentRoute: typeof ShellScopeKeyProjectsRouteRoute
     }
-    '/_shell/$scopeKey/tasks/$taskId': {
-      id: '/_shell/$scopeKey/tasks/$taskId'
-      path: '/$taskId'
-      fullPath: '/$scopeKey/tasks/$taskId'
-      preLoaderRoute: typeof ShellScopeKeyTasksTaskIdRouteImport
-      parentRoute: typeof ShellScopeKeyTasksRouteRoute
+    '/_shell/$scopeKey/settings/': {
+      id: '/_shell/$scopeKey/settings/'
+      path: '/'
+      fullPath: '/$scopeKey/settings/'
+      preLoaderRoute: typeof ShellScopeKeySettingsIndexRouteImport
+      parentRoute: typeof ShellScopeKeySettingsRouteRoute
     }
     '/_shell/$scopeKey/settings/$section': {
       id: '/_shell/$scopeKey/settings/$section'
@@ -460,12 +439,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellScopeKeySettingsSectionRouteImport
       parentRoute: typeof ShellScopeKeySettingsRouteRoute
     }
-    '/_shell/$scopeKey/projects/$projectId': {
-      id: '/_shell/$scopeKey/projects/$projectId'
-      path: '/$projectId'
-      fullPath: '/$scopeKey/projects/$projectId'
-      preLoaderRoute: typeof ShellScopeKeyProjectsProjectIdRouteImport
-      parentRoute: typeof ShellScopeKeyProjectsRouteRoute
+    '/_shell/$scopeKey/tasks/': {
+      id: '/_shell/$scopeKey/tasks/'
+      path: '/'
+      fullPath: '/$scopeKey/tasks/'
+      preLoaderRoute: typeof ShellScopeKeyTasksIndexRouteImport
+      parentRoute: typeof ShellScopeKeyTasksRouteRoute
+    }
+    '/_shell/$scopeKey/tasks/$taskId': {
+      id: '/_shell/$scopeKey/tasks/$taskId'
+      path: '/$taskId'
+      fullPath: '/$scopeKey/tasks/$taskId'
+      preLoaderRoute: typeof ShellScopeKeyTasksTaskIdRouteImport
+      parentRoute: typeof ShellScopeKeyTasksRouteRoute
+    }
+    '/_shell/$scopeKey/views/': {
+      id: '/_shell/$scopeKey/views/'
+      path: '/'
+      fullPath: '/$scopeKey/views/'
+      preLoaderRoute: typeof ShellScopeKeyViewsIndexRouteImport
+      parentRoute: typeof ShellScopeKeyViewsRouteRoute
+    }
+    '/_shell/$scopeKey/views/$viewId': {
+      id: '/_shell/$scopeKey/views/$viewId'
+      path: '/$viewId'
+      fullPath: '/$scopeKey/views/$viewId'
+      preLoaderRoute: typeof ShellScopeKeyViewsViewIdRouteImport
+      parentRoute: typeof ShellScopeKeyViewsRouteRoute
     }
   }
 }
@@ -576,7 +576,7 @@ const ShellRouteRouteWithChildren = ShellRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ShellRouteRoute: ShellRouteRouteWithChildren,
-  QuickCreateRoute: QuickCreateRoute,
+  LauncherRoute: LauncherRoute,
   SettingsRoute: SettingsRoute,
   DebugActivityRoute: DebugActivityRoute,
 }

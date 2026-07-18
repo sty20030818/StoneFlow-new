@@ -206,7 +206,7 @@ pub fn default_settings() -> Vec<DefaultSettingSeed> {
             }),
         },
         DefaultSettingSeed {
-            key: "app.quickCreate",
+            key: "app.launcher",
             value: json!({
                 "defaultSpaceStrategy": "current_or_default",
                 "whenScopeAll": "default_space",

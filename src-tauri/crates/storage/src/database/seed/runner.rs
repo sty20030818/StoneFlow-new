@@ -17,6 +17,8 @@ const SIDEBAR_PREFERENCE_SETTING_KEY: &str = "app.sidebar.preferences";
 const LEGACY_SIDEBAR_SETTING_KEY: &str = "app.sidebar";
 const UI_PREFERENCE_SETTING_KEY: &str = "app.ui.preferences";
 const LEGACY_UI_SETTING_KEY: &str = "app.ui";
+const LAUNCHER_SETTING_KEY: &str = "app.launcher";
+const LEGACY_LAUNCHER_SETTING_KEY: &str = "app.quickCreate";
 
 /// 返回多个默认 Space 的统一初始化错误。
 pub fn multiple_default_spaces_error() -> StorageError {
@@ -158,6 +160,27 @@ where
                     .await?;
             }
         }
+    }
+
+    if !store::setting_exists(connection, LAUNCHER_SETTING_KEY).await? {
+        if let Some(raw_launcher) =
+            store::get_setting_value(connection, LEGACY_LAUNCHER_SETTING_KEY).await?
+        {
+            let now = timestamp_now();
+            store::insert_setting(
+                connection,
+                setting::ActiveModel {
+                    key: Set(LAUNCHER_SETTING_KEY.to_owned()),
+                    value: Set(raw_launcher),
+                    created_at: Set(now.clone()),
+                    updated_at: Set(now),
+                },
+            )
+            .await?;
+            store::delete_setting(connection, LEGACY_LAUNCHER_SETTING_KEY).await?;
+        }
+    } else if store::setting_exists(connection, LEGACY_LAUNCHER_SETTING_KEY).await? {
+        store::delete_setting(connection, LEGACY_LAUNCHER_SETTING_KEY).await?;
     }
 
     Ok(())

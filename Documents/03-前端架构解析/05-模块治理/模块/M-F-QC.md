@@ -1,10 +1,14 @@
-# M-F-QC · features/quick-create（快速创建窗）
+> **已归档（2026-07-18）**：产品/模块已统一为 **Launcher**。
+> 活跃契约与模块卡：[`src/features/launcher/ARCHITECTURE.md`](../../../../src/features/launcher/ARCHITECTURE.md) · [M-F-LAUNCHER.md](./M-F-LAUNCHER.md)。
+> 本文仅作历史参考，勿再按 `quick-create` / `quick_create` 落地。
 
-> 日期：2026-07-17  
-> 状态：**decided（重点 · 方案对比 · 复用主窗能力）** · **decide-only**  
-> 路径：`src/features/quick-create` · 路由：`routes/quick-create.tsx`  
-> 类型：**window**（独立窗完整栈）  
-> 规范：[`05-模块设计规范`](../05-模块设计规范.md) · T2 · task T2a · command C3  
+# M-F-QC · features/quick-create（历史稿）
+
+> 日期：2026-07-17
+> 状态：**decided（重点 · 方案对比 · 复用主窗能力）** · **decide-only**
+> 路径：`src/features/quick-create` · 路由：`routes/quick-create.tsx`
+> 类型：**window**（独立窗完整栈）
+> 规范：[`05-模块设计规范`](../05-模块设计规范.md) · T2 · task T2a · command C3
 
 ---
 
@@ -19,7 +23,7 @@
 
 **设计北极星：**
 
-> QC = **窗专属壳（session + 固定 720×500 + 原生材质）** + **复用主产品能力（创建任务规则、搜索端口）**；  
+> QC = **窗专属壳（session + 固定 720×500 + 原生材质）** + **复用主产品能力（创建任务规则、搜索端口）**；
 > 禁止复制第二套 task 领域，禁止测高/commitLayout，禁止 QC import 主 layout。
 
 ---
@@ -46,8 +50,8 @@ routes/quick-create → QuickCreatePage
 
 ### B.2 已与主产品有的弱复用
 
-- 展示：`TaskStatusIndicator` / `PriorityIcon` / `TASK_PRIORITY_OPTIONS` / `formatTask*` / `getSpaceVisual`（经 public）  
-- **未复用：** `TaskCreateContent` 表单 schema、`useCreateTaskMutation`、metadata-fields 主路径、submit registry、global-search feature、主窗 command 注册  
+- 展示：`TaskStatusIndicator` / `PriorityIcon` / `TASK_PRIORITY_OPTIONS` / `formatTask*` / `getSpaceVisual`（经 public）
+- **未复用：** `TaskCreateContent` 表单 schema、`useCreateTaskMutation`、metadata-fields 主路径、submit registry、global-search feature、主窗 command 注册
 
 ### B.3 主窗创建 vs QC（对照）
 
@@ -241,18 +245,18 @@ features/quick-create
 
 **Do**
 
-- 守住 **runtime ≠ domain ≠ 主 layout**  
-- 新字段先 task 内核再两边接  
-- 指示器/options/metadata **只走 public**  
-- 打开实体走 **policy + navigation**，不手拼 path  
-- 窗关闭原因、测高、present 单测/文档化  
+- 守住 **runtime ≠ domain ≠ 主 layout**
+- 新字段先 task 内核再两边接
+- 指示器/options/metadata **只走 public**
+- 打开实体走 **policy + navigation**，不手拼 path
+- 窗关闭原因、测高、present 单测/文档化
 
 **Don't**
 
-- 复制第二套 TaskCreate schema  
-- QC 依赖主壳 Provider 树  
-- 把搜索结果做成完整 TaskBoard 业务页  
-- 在 QC 里实现 bulk/command 上帝表  
+- 复制第二套 TaskCreate schema
+- QC 依赖主壳 Provider 树
+- 把搜索结果做成完整 TaskBoard 业务页
+- 在 QC 里实现 bulk/command 上帝表
 
 ---
 
@@ -307,14 +311,14 @@ features/quick-create
 
 ### 开放问题（产品+技术）
 
-- [ ] createAndOpen：主窗未启动时是否拉起主窗（Tauri 生命周期）  
-- [ ] QC 是否需要登录态/同步态提示（复用 sync public 芯片？）  
-- [ ] 连续创建是否写回主窗「上次创建草稿默认值」  
-- [ ] 高级区字段清单与主窗 Dialog 是否 **字段集强制一致**（推荐：核心字段一致，QC 可少不可两套语义）  
+- [ ] createAndOpen：主窗未启动时是否拉起主窗（Tauri 生命周期）
+- [ ] QC 是否需要登录态/同步态提示（复用 sync public 芯片？）
+- [ ] 连续创建是否写回主窗「上次创建草稿默认值」
+- [ ] 高级区字段清单与主窗 Dialog 是否 **字段集强制一致**（推荐：核心字段一致，QC 可少不可两套语义）
 
 ### 开放问题 · 窗技术架构（**已定稿 · 2026-07-17**）
 
-> 专题方案已落盘：[`Docs/02-重构方案/04-QuickCreate面板重构/QuickCreate-Launcher面板技术文档.md`](../../../02-重构方案/04-QuickCreate面板重构/QuickCreate-Launcher面板技术文档.md)  
+> 专题方案已落盘：[`Docs/02-重构方案/04-QuickCreate面板重构/QuickCreate-Launcher面板技术文档.md`](../../../02-重构方案/04-QuickCreate面板重构/QuickCreate-Launcher面板技术文档.md)
 > 对应 T2 史诗 11（QC-GEO → Launcher 固定壳）。
 
 | # | 原开放项 | 决议 |

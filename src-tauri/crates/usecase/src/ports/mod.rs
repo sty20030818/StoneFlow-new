@@ -11,7 +11,7 @@ pub use crate::lifecycle::{
     LifecycleProjectPersistence, LifecycleSpacePersistence, LifecycleTaskPersistence,
 };
 pub use crate::project::{ProjectPersistence, ProjectSpaceReader, ProjectTaskCounter};
-pub use crate::quick_create::QuickCreatePorts;
+pub use crate::launcher::LauncherPorts;
 pub use crate::search::{SearchProjectReader, SearchSpaceReader, SearchTaskReader};
 pub use crate::settings::SettingsPersistence;
 pub use crate::space::SpacePersistence;

@@ -64,7 +64,7 @@ describe('useShellSessionRouteHistory', () => {
 	})
 
 	it('非 shell 路径不作为历史 entry', async () => {
-		await renderHistoryProbe('/quick-create')
+		await renderHistoryProbe('/launcher')
 
 		fireEvent.click(screen.getByRole('button', { name: 'go task detail' }))
 
@@ -199,9 +199,9 @@ async function renderHistoryProbe(initialEntry: string) {
 		path: '$projectId',
 		component: () => null,
 	})
-	const quickCreateRoute = createRoute({
+	const launcherRoute = createRoute({
 		getParentRoute: () => rootRoute,
-		path: 'quick-create',
+		path: 'launcher',
 		component: () => null,
 	})
 	const routeTree = rootRoute.addChildren([
@@ -214,7 +214,7 @@ async function renderHistoryProbe(initialEntry: string) {
 				projectsRoute.addChildren([projectDetailRoute]),
 			]),
 		]),
-		quickCreateRoute,
+		launcherRoute,
 	])
 	const router = createRouter({
 		routeTree,

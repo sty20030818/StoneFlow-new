@@ -1,358 +1,1006 @@
-
 <style>
-*{box-sizing:border-box;margin:0;padding:0;}
-.os-row{display:flex;gap:6px;margin-bottom:12px;align-items:center;font-size:12px;color:var(--color-text-secondary);}
-.os-btn{padding:3px 10px;border-radius:5px;font-size:12px;cursor:pointer;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);color:var(--color-text-secondary);transition:all .12s;}
-.os-btn.on{background:var(--color-background-tertiary);color:var(--color-text-primary);font-weight:500;border-color:var(--color-border-primary);}
+	* {
+		box-sizing: border-box;
+		margin: 0;
+		padding: 0;
+	}
+	.os-row {
+		display: flex;
+		gap: 6px;
+		margin-bottom: 12px;
+		align-items: center;
+		font-size: 12px;
+		color: var(--color-text-secondary);
+	}
+	.os-btn {
+		padding: 3px 10px;
+		border-radius: 5px;
+		font-size: 12px;
+		cursor: pointer;
+		background: var(--color-background-secondary);
+		border: 0.5px solid var(--color-border-secondary);
+		color: var(--color-text-secondary);
+		transition: all 0.12s;
+	}
+	.os-btn.on {
+		background: var(--color-background-tertiary);
+		color: var(--color-text-primary);
+		font-weight: 500;
+		border-color: var(--color-border-primary);
+	}
 
-/* ── SHELL ── */
-.app{
-  width:100%;height:520px;
-  border-radius:10px;overflow:hidden;
-  display:flex;flex-direction:column;
-  background:#E9E9E9;
-  border:0.5px solid rgba(0,0,0,0.14);
-  font-family:-apple-system,'SF Pro Text','Helvetica Neue',sans-serif;
-  color:#1a1a1a;
-}
-.app.win{border-radius:0;}
+	/* ── SHELL ── */
+	.app {
+		width: 100%;
+		height: 520px;
+		border-radius: 10px;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		background: #e9e9e9;
+		border: 0.5px solid rgba(0, 0, 0, 0.14);
+		font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+		color: #1a1a1a;
+	}
+	.app.win {
+		border-radius: 0;
+	}
 
-/* ── HEADER ── */
-.hdr{
-  height:44px;background:#E9E9E9;
-  display:flex;align-items:center;
-  flex-shrink:0;position:relative;
-}
-/* Left zone — matches sidebar width */
-.hdr-left{width:214px;flex-shrink:0;display:flex;align-items:center;padding:0 14px;gap:6px;}
-.tl{display:flex;gap:6px;align-items:center;}
-.dot{width:11px;height:11px;border-radius:50%;}
-.dot.r{background:#FF5F57;}.dot.y{background:#FFBD2E;}.dot.g{background:#28C840;}
-.win-logo{width:20px;height:20px;border-radius:5px;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;}
-.win-name{font-size:13px;font-weight:500;color:#1a1a1a;}
-/* Center search absolute */
-.hdr-center{position:absolute;left:214px;right:0;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none;}
-.srch{pointer-events:all;height:27px;width:210px;border-radius:7px;background:rgba(0,0,0,0.07);border:0.5px solid rgba(0,0,0,0.1);display:flex;align-items:center;gap:6px;padding:0 9px;cursor:pointer;}
-.srch svg{flex-shrink:0;opacity:.45;}
-.srch span{font-size:12px;color:#888;flex:1;}
-.srch .kbd{font-size:10px;color:#AAA;background:rgba(0,0,0,0.07);padding:1px 4px;border-radius:3px;font-family:monospace;}
-/* Right actions */
-.hdr-right{margin-left:auto;display:flex;align-items:center;gap:5px;padding-right:10px;flex-shrink:0;}
-.new-btn{height:26px;padding:0 9px;border-radius:6px;background:rgba(0,0,0,0.09);border:0.5px solid rgba(0,0,0,0.12);font-size:12px;font-weight:500;color:#222;display:flex;align-items:center;gap:4px;cursor:pointer;}
-.new-btn .kbd{font-size:10px;color:#AAA;background:rgba(0,0,0,0.07);padding:1px 4px;border-radius:3px;font-family:monospace;}
-/* Windows controls */
-.wctrl{display:flex;}
-.wc{width:38px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.5;transition:background .1s,opacity .1s;}
-.wc:hover{background:rgba(0,0,0,0.08);opacity:1;}
-.wc.cx:hover{background:#E81123;opacity:1;}
-.wc.cx:hover svg{stroke:#fff;}
-.wc svg{width:11px;height:11px;}
+	/* ── HEADER ── */
+	.hdr {
+		height: 44px;
+		background: #e9e9e9;
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+		position: relative;
+	}
+	/* Left zone — matches sidebar width */
+	.hdr-left {
+		width: 214px;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		padding: 0 14px;
+		gap: 6px;
+	}
+	.tl {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+	}
+	.dot {
+		width: 11px;
+		height: 11px;
+		border-radius: 50%;
+	}
+	.dot.r {
+		background: #ff5f57;
+	}
+	.dot.y {
+		background: #ffbd2e;
+	}
+	.dot.g {
+		background: #28c840;
+	}
+	.win-logo {
+		width: 20px;
+		height: 20px;
+		border-radius: 5px;
+		background: #2a2a2a;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 10px;
+		font-weight: 700;
+		color: #fff;
+		flex-shrink: 0;
+	}
+	.win-name {
+		font-size: 13px;
+		font-weight: 500;
+		color: #1a1a1a;
+	}
+	/* Center search absolute */
+	.hdr-center {
+		position: absolute;
+		left: 214px;
+		right: 0;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		pointer-events: none;
+	}
+	.srch {
+		pointer-events: all;
+		height: 27px;
+		width: 210px;
+		border-radius: 7px;
+		background: rgba(0, 0, 0, 0.07);
+		border: 0.5px solid rgba(0, 0, 0, 0.1);
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 0 9px;
+		cursor: pointer;
+	}
+	.srch svg {
+		flex-shrink: 0;
+		opacity: 0.45;
+	}
+	.srch span {
+		font-size: 12px;
+		color: #888;
+		flex: 1;
+	}
+	.srch .kbd {
+		font-size: 10px;
+		color: #aaa;
+		background: rgba(0, 0, 0, 0.07);
+		padding: 1px 4px;
+		border-radius: 3px;
+		font-family: monospace;
+	}
+	/* Right actions */
+	.hdr-right {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		padding-right: 10px;
+		flex-shrink: 0;
+	}
+	.new-btn {
+		height: 26px;
+		padding: 0 9px;
+		border-radius: 6px;
+		background: rgba(0, 0, 0, 0.09);
+		border: 0.5px solid rgba(0, 0, 0, 0.12);
+		font-size: 12px;
+		font-weight: 500;
+		color: #222;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		cursor: pointer;
+	}
+	.new-btn .kbd {
+		font-size: 10px;
+		color: #aaa;
+		background: rgba(0, 0, 0, 0.07);
+		padding: 1px 4px;
+		border-radius: 3px;
+		font-family: monospace;
+	}
+	/* Windows controls */
+	.wctrl {
+		display: flex;
+	}
+	.wc {
+		width: 38px;
+		height: 44px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		opacity: 0.5;
+		transition:
+			background 0.1s,
+			opacity 0.1s;
+	}
+	.wc:hover {
+		background: rgba(0, 0, 0, 0.08);
+		opacity: 1;
+	}
+	.wc.cx:hover {
+		background: #e81123;
+		opacity: 1;
+	}
+	.wc.cx:hover svg {
+		stroke: #fff;
+	}
+	.wc svg {
+		width: 11px;
+		height: 11px;
+	}
 
-/* ── BODY ── */
-.body{flex:1;display:flex;overflow:hidden;}
+	/* ── BODY ── */
+	.body {
+		flex: 1;
+		display: flex;
+		overflow: hidden;
+	}
 
-/* ── SIDEBAR ── */
-.sb{
-  width:214px;background:#E9E9E9;
-  flex-shrink:0;display:flex;flex-direction:column;
-  overflow:hidden;
-}
-/* Space tabs — full width */
-.sp-tabs{display:flex;padding:6px 6px 4px;gap:2px;}
-.sp-tab{flex:1;height:26px;border-radius:6px;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .12s;}
-.sp-tab.on{background:rgba(0,0,0,0.11);color:#111;}
-.sp-tab.off{color:#888;}
-.sp-tab.off:hover{background:rgba(0,0,0,0.05);}
-/* Nav items */
-.sb-body{flex:1;overflow-y:auto;padding:2px 0;}
-.sb-body::-webkit-scrollbar{display:none;}
-.sbi{height:30px;padding:0 8px 0 12px;display:flex;align-items:center;gap:8px;font-size:13px;color:#555;cursor:pointer;border-radius:6px;margin:1px 4px;transition:background .1s;}
-.sbi:hover{background:rgba(0,0,0,0.05);}
-.sbi.on{background:rgba(0,0,0,0.09);color:#111;font-weight:500;}
-.sbi .ico{width:14px;height:14px;border-radius:3px;background:rgba(0,0,0,0.16);flex-shrink:0;}
-.sbi .ico.ring{border-radius:50%;background:none;border:1.5px solid rgba(0,0,0,0.28);}
-.sbi .badge{margin-left:auto;font-size:11px;color:#888;background:rgba(0,0,0,0.09);padding:1px 5px;border-radius:8px;}
-.sb-div{height:0.5px;background:rgba(0,0,0,0.08);margin:4px 12px;}
-.sb-lbl{font-size:11px;color:#AAA;font-weight:500;padding:6px 14px 2px;letter-spacing:.03em;}
-.sb-ind{padding-left:28px!important;}
+	/* ── SIDEBAR ── */
+	.sb {
+		width: 214px;
+		background: #e9e9e9;
+		flex-shrink: 0;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	/* Space tabs — full width */
+	.sp-tabs {
+		display: flex;
+		padding: 6px 6px 4px;
+		gap: 2px;
+	}
+	.sp-tab {
+		flex: 1;
+		height: 26px;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 500;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: background 0.12s;
+	}
+	.sp-tab.on {
+		background: rgba(0, 0, 0, 0.11);
+		color: #111;
+	}
+	.sp-tab.off {
+		color: #888;
+	}
+	.sp-tab.off:hover {
+		background: rgba(0, 0, 0, 0.05);
+	}
+	/* Nav items */
+	.sb-body {
+		flex: 1;
+		overflow-y: auto;
+		padding: 2px 0;
+	}
+	.sb-body::-webkit-scrollbar {
+		display: none;
+	}
+	.sbi {
+		height: 30px;
+		padding: 0 8px 0 12px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-size: 13px;
+		color: #555;
+		cursor: pointer;
+		border-radius: 6px;
+		margin: 1px 4px;
+		transition: background 0.1s;
+	}
+	.sbi:hover {
+		background: rgba(0, 0, 0, 0.05);
+	}
+	.sbi.on {
+		background: rgba(0, 0, 0, 0.09);
+		color: #111;
+		font-weight: 500;
+	}
+	.sbi .ico {
+		width: 14px;
+		height: 14px;
+		border-radius: 3px;
+		background: rgba(0, 0, 0, 0.16);
+		flex-shrink: 0;
+	}
+	.sbi .ico.ring {
+		border-radius: 50%;
+		background: none;
+		border: 1.5px solid rgba(0, 0, 0, 0.28);
+	}
+	.sbi .badge {
+		margin-left: auto;
+		font-size: 11px;
+		color: #888;
+		background: rgba(0, 0, 0, 0.09);
+		padding: 1px 5px;
+		border-radius: 8px;
+	}
+	.sb-div {
+		height: 0.5px;
+		background: rgba(0, 0, 0, 0.08);
+		margin: 4px 12px;
+	}
+	.sb-lbl {
+		font-size: 11px;
+		color: #aaa;
+		font-weight: 500;
+		padding: 6px 14px 2px;
+		letter-spacing: 0.03em;
+	}
+	.sb-ind {
+		padding-left: 28px !important;
+	}
 
-/* ── SIDEBAR FOOTER ── */
-.sb-footer{
-  flex-shrink:0;
-  border-top:0.5px solid rgba(0,0,0,0.08);
-  padding:4px 4px;
-  display:flex;flex-direction:column;gap:0;
-}
-.sb-status-bar{
-  display:flex;align-items:center;gap:6px;
-  padding:5px 10px;
-  font-size:11px;color:#999;
-  cursor:pointer;border-radius:6px;
-  transition:background .1s;
-}
-.sb-status-bar:hover{background:rgba(0,0,0,0.05);}
-.status-dot{width:7px;height:7px;border-radius:50%;background:#4ADE80;flex-shrink:0;}
-.status-dot.sync{background:#FACC15;}
-.sb-footer-row{display:flex;align-items:center;gap:2px;}
-.sb-footer-btn{
-  flex:1;height:28px;padding:0 8px;
-  display:flex;align-items:center;gap:6px;
-  font-size:12px;color:#777;
-  border-radius:6px;cursor:pointer;
-  transition:background .1s;
-}
-.sb-footer-btn:hover{background:rgba(0,0,0,0.05);}
-.sb-footer-btn svg{opacity:.55;flex-shrink:0;}
-.sb-footer-btn.trash{color:#999;}
+	/* ── SIDEBAR FOOTER ── */
+	.sb-footer {
+		flex-shrink: 0;
+		border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+		padding: 4px 4px;
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+	.sb-status-bar {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 5px 10px;
+		font-size: 11px;
+		color: #999;
+		cursor: pointer;
+		border-radius: 6px;
+		transition: background 0.1s;
+	}
+	.sb-status-bar:hover {
+		background: rgba(0, 0, 0, 0.05);
+	}
+	.status-dot {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: #4ade80;
+		flex-shrink: 0;
+	}
+	.status-dot.sync {
+		background: #facc15;
+	}
+	.sb-footer-row {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+	}
+	.sb-footer-btn {
+		flex: 1;
+		height: 28px;
+		padding: 0 8px;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		color: #777;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: background 0.1s;
+	}
+	.sb-footer-btn:hover {
+		background: rgba(0, 0, 0, 0.05);
+	}
+	.sb-footer-btn svg {
+		opacity: 0.55;
+		flex-shrink: 0;
+	}
+	.sb-footer-btn.trash {
+		color: #999;
+	}
 
-/* ── MAIN ── */
-.main{flex:1;padding:6px 6px 6px 0;display:flex;overflow:hidden;}
+	/* ── MAIN ── */
+	.main {
+		flex: 1;
+		padding: 6px 6px 6px 0;
+		display: flex;
+		overflow: hidden;
+	}
 
-/* ── CARD ── */
-.card{flex:1;background:#fff;border-radius:10px;border:0.5px solid rgba(0,0,0,0.1);box-shadow:0 1px 4px rgba(0,0,0,0.07);display:flex;flex-direction:column;overflow:hidden;}
-.card-hdr{height:42px;padding:0 14px;border-bottom:0.5px solid rgba(0,0,0,0.07);display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.card-title{font-size:14px;font-weight:500;color:#111;}
-.card-sub{font-size:12px;color:#CCC;}
-.csep{flex:1;}
-.cbtn{height:22px;padding:0 7px;border-radius:4px;font-size:11px;color:#888;background:rgba(0,0,0,0.04);border:0.5px solid rgba(0,0,0,0.07);display:flex;align-items:center;gap:3px;cursor:pointer;}
-.stabs{height:36px;padding:0 14px;display:flex;align-items:center;gap:2px;border-bottom:0.5px solid rgba(0,0,0,0.06);flex-shrink:0;}
-.stab{height:24px;padding:0 9px;border-radius:5px;font-size:12px;font-weight:500;display:flex;align-items:center;cursor:pointer;}
-.stab.on{background:rgba(0,0,0,0.07);color:#111;}
-.stab.off{color:#C0C0C0;}
-.cbody{flex:1;display:flex;overflow:hidden;}
-.tlist{flex:1;overflow-y:auto;padding:4px 0;}
-.tlist::-webkit-scrollbar{display:none;}
-.tgl{font-size:11px;font-weight:500;color:#D0D0D0;padding:7px 14px 3px;letter-spacing:.04em;}
-.tr{height:36px;padding:0 14px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:background .1s;}
-.tr:hover{background:rgba(0,0,0,0.02);}
-.tr.sel{background:rgba(0,0,0,0.035);}
-.tdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.tdot.hi{background:#F97316;}.tdot.me{background:#FACC15;}.tdot.lo{background:#CBD5E1;}
-.tck{width:14px;height:14px;border-radius:50%;border:1.5px solid #D8D8D8;flex-shrink:0;}
-.tck.dn{background:#4ADE80;border-color:#4ADE80;}
-.ttl{flex:1;font-size:13px;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.ttl.dn{color:#CCC;text-decoration:line-through;}
-.tdt{font-size:11px;color:#D0D0D0;flex-shrink:0;}
-.tdiv{height:0.5px;background:rgba(0,0,0,0.04);margin:0 14px;}
+	/* ── CARD ── */
+	.card {
+		flex: 1;
+		background: #fff;
+		border-radius: 10px;
+		border: 0.5px solid rgba(0, 0, 0, 0.1);
+		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	.card-hdr {
+		height: 42px;
+		padding: 0 14px;
+		border-bottom: 0.5px solid rgba(0, 0, 0, 0.07);
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-shrink: 0;
+	}
+	.card-title {
+		font-size: 14px;
+		font-weight: 500;
+		color: #111;
+	}
+	.card-sub {
+		font-size: 12px;
+		color: #ccc;
+	}
+	.csep {
+		flex: 1;
+	}
+	.cbtn {
+		height: 22px;
+		padding: 0 7px;
+		border-radius: 4px;
+		font-size: 11px;
+		color: #888;
+		background: rgba(0, 0, 0, 0.04);
+		border: 0.5px solid rgba(0, 0, 0, 0.07);
+		display: flex;
+		align-items: center;
+		gap: 3px;
+		cursor: pointer;
+	}
+	.stabs {
+		height: 36px;
+		padding: 0 14px;
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+		flex-shrink: 0;
+	}
+	.stab {
+		height: 24px;
+		padding: 0 9px;
+		border-radius: 5px;
+		font-size: 12px;
+		font-weight: 500;
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+	}
+	.stab.on {
+		background: rgba(0, 0, 0, 0.07);
+		color: #111;
+	}
+	.stab.off {
+		color: #c0c0c0;
+	}
+	.cbody {
+		flex: 1;
+		display: flex;
+		overflow: hidden;
+	}
+	.tlist {
+		flex: 1;
+		overflow-y: auto;
+		padding: 4px 0;
+	}
+	.tlist::-webkit-scrollbar {
+		display: none;
+	}
+	.tgl {
+		font-size: 11px;
+		font-weight: 500;
+		color: #d0d0d0;
+		padding: 7px 14px 3px;
+		letter-spacing: 0.04em;
+	}
+	.tr {
+		height: 36px;
+		padding: 0 14px;
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		cursor: pointer;
+		transition: background 0.1s;
+	}
+	.tr:hover {
+		background: rgba(0, 0, 0, 0.02);
+	}
+	.tr.sel {
+		background: rgba(0, 0, 0, 0.035);
+	}
+	.tdot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		flex-shrink: 0;
+	}
+	.tdot.hi {
+		background: #f97316;
+	}
+	.tdot.me {
+		background: #facc15;
+	}
+	.tdot.lo {
+		background: #cbd5e1;
+	}
+	.tck {
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
+		border: 1.5px solid #d8d8d8;
+		flex-shrink: 0;
+	}
+	.tck.dn {
+		background: #4ade80;
+		border-color: #4ade80;
+	}
+	.ttl {
+		flex: 1;
+		font-size: 13px;
+		color: #1a1a1a;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.ttl.dn {
+		color: #ccc;
+		text-decoration: line-through;
+	}
+	.tdt {
+		font-size: 11px;
+		color: #d0d0d0;
+		flex-shrink: 0;
+	}
+	.tdiv {
+		height: 0.5px;
+		background: rgba(0, 0, 0, 0.04);
+		margin: 0 14px;
+	}
 
-/* ── DRAWER ── */
-.drw{width:248px;flex-shrink:0;border-left:0.5px solid rgba(0,0,0,0.07);background:#FAFAFA;display:flex;flex-direction:column;overflow-y:auto;}
-.drw::-webkit-scrollbar{display:none;}
-.drh{height:42px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid rgba(0,0,0,0.06);flex-shrink:0;}
-.drt{font-size:13px;font-weight:500;color:#111;}
-.drx{width:18px;height:18px;border-radius:4px;background:rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;font-size:10px;color:#888;cursor:pointer;}
-.drb{padding:10px 14px;display:flex;flex-direction:column;gap:10px;}
-.drtask{font-size:13px;font-weight:500;color:#111;line-height:1.45;}
-.drf{display:flex;flex-direction:column;gap:3px;}
-.drl{font-size:11px;color:#C0C0C0;font-weight:500;letter-spacing:.03em;}
-.drv{font-size:12px;color:#333;background:rgba(0,0,0,0.035);border-radius:5px;padding:4px 8px;border:0.5px solid rgba(0,0,0,0.06);display:flex;align-items:center;gap:5px;}
-.drn{font-size:12px;color:#AAA;font-style:italic;background:rgba(0,0,0,0.025);border-radius:5px;padding:7px 8px;min-height:48px;border:0.5px solid rgba(0,0,0,0.05);}
-.drres{display:flex;align-items:center;gap:6px;font-size:12px;color:#5B8DEF;padding:4px 8px;border-radius:5px;background:rgba(91,141,239,0.06);border:0.5px solid rgba(91,141,239,0.13);}
-.drrd{width:5px;height:5px;border-radius:50%;background:#5B8DEF;flex-shrink:0;}
+	/* ── DRAWER ── */
+	.drw {
+		width: 248px;
+		flex-shrink: 0;
+		border-left: 0.5px solid rgba(0, 0, 0, 0.07);
+		background: #fafafa;
+		display: flex;
+		flex-direction: column;
+		overflow-y: auto;
+	}
+	.drw::-webkit-scrollbar {
+		display: none;
+	}
+	.drh {
+		height: 42px;
+		padding: 0 14px;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		border-bottom: 0.5px solid rgba(0, 0, 0, 0.06);
+		flex-shrink: 0;
+	}
+	.drt {
+		font-size: 13px;
+		font-weight: 500;
+		color: #111;
+	}
+	.drx {
+		width: 18px;
+		height: 18px;
+		border-radius: 4px;
+		background: rgba(0, 0, 0, 0.06);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 10px;
+		color: #888;
+		cursor: pointer;
+	}
+	.drb {
+		padding: 10px 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+	.drtask {
+		font-size: 13px;
+		font-weight: 500;
+		color: #111;
+		line-height: 1.45;
+	}
+	.drf {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+	.drl {
+		font-size: 11px;
+		color: #c0c0c0;
+		font-weight: 500;
+		letter-spacing: 0.03em;
+	}
+	.drv {
+		font-size: 12px;
+		color: #333;
+		background: rgba(0, 0, 0, 0.035);
+		border-radius: 5px;
+		padding: 4px 8px;
+		border: 0.5px solid rgba(0, 0, 0, 0.06);
+		display: flex;
+		align-items: center;
+		gap: 5px;
+	}
+	.drn {
+		font-size: 12px;
+		color: #aaa;
+		font-style: italic;
+		background: rgba(0, 0, 0, 0.025);
+		border-radius: 5px;
+		padding: 7px 8px;
+		min-height: 48px;
+		border: 0.5px solid rgba(0, 0, 0, 0.05);
+	}
+	.drres {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12px;
+		color: #5b8def;
+		padding: 4px 8px;
+		border-radius: 5px;
+		background: rgba(91, 141, 239, 0.06);
+		border: 0.5px solid rgba(91, 141, 239, 0.13);
+	}
+	.drrd {
+		width: 5px;
+		height: 5px;
+		border-radius: 50%;
+		background: #5b8def;
+		flex-shrink: 0;
+	}
 
-/* complete btn inside drawer */
-.dr-complete{margin:2px 0 4px;height:30px;border-radius:6px;background:rgba(0,0,0,0.05);border:0.5px solid rgba(0,0,0,0.08);display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:500;color:#444;cursor:pointer;}
-.dr-complete:hover{background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.3);color:#16a34a;}
+	/* complete btn inside drawer */
+	.dr-complete {
+		margin: 2px 0 4px;
+		height: 30px;
+		border-radius: 6px;
+		background: rgba(0, 0, 0, 0.05);
+		border: 0.5px solid rgba(0, 0, 0, 0.08);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		font-size: 12px;
+		font-weight: 500;
+		color: #444;
+		cursor: pointer;
+	}
+	.dr-complete:hover {
+		background: rgba(74, 222, 128, 0.1);
+		border-color: rgba(74, 222, 128, 0.3);
+		color: #16a34a;
+	}
 </style>
 
 <div class="os-row">
-  <div class="os-btn on" id="bm" onclick="setOS('mac')">macOS</div>
-  <div class="os-btn" id="bw" onclick="setOS('win')">Windows</div>
+	<div class="os-btn on" id="bm" onclick="setOS('mac')">macOS</div>
+	<div class="os-btn" id="bw" onclick="setOS('win')">Windows</div>
 </div>
 
 <div class="app" id="app">
+	<!-- HEADER -->
+	<div class="hdr" id="hdr">
+		<div class="hdr-left" id="hl">
+			<div class="tl" id="tl">
+				<div class="dot r"></div>
+				<div class="dot y"></div>
+				<div class="dot g"></div>
+			</div>
+			<div id="wl" style="display: none; display: none; gap: 7px; align-items: center">
+				<div class="win-logo">S</div>
+				<span class="win-name">StoneFlow</span>
+			</div>
+		</div>
+		<div class="hdr-center">
+			<div class="srch">
+				<svg
+					width="12"
+					height="12"
+					viewBox="0 0 12 12"
+					fill="none"
+					stroke="#888"
+					stroke-width="1.4"
+				>
+					<circle cx="5" cy="5" r="3.5" />
+					<line x1="8" y1="8" x2="11" y2="11" />
+				</svg>
+				<span>Search...</span><span class="kbd">⌘K</span>
+			</div>
+		</div>
+		<div class="hdr-right">
+			<div class="new-btn">
+				<svg
+					width="10"
+					height="10"
+					viewBox="0 0 10 10"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.6"
+				>
+					<line x1="5" y1="1" x2="5" y2="9" />
+					<line x1="1" y1="5" x2="9" y2="5" />
+				</svg>
+				New task<span class="kbd">C</span>
+			</div>
+			<div class="wctrl" id="wctrl" style="display: none">
+				<div class="wc">
+					<svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.2">
+						<line x1="1" y1="5.5" x2="10" y2="5.5" />
+					</svg>
+				</div>
+				<div class="wc">
+					<svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.2">
+						<rect x="1.5" y="1.5" width="8" height="8" />
+					</svg>
+				</div>
+				<div class="wc cx">
+					<svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3">
+						<line x1="1.5" y1="1.5" x2="9.5" y2="9.5" />
+						<line x1="9.5" y1="1.5" x2="1.5" y2="9.5" />
+					</svg>
+				</div>
+			</div>
+		</div>
+	</div>
 
-  <!-- HEADER -->
-  <div class="hdr" id="hdr">
-    <div class="hdr-left" id="hl">
-      <div class="tl" id="tl"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div></div>
-      <div id="wl" style="display:none;display:none;gap:7px;align-items:center;"><div class="win-logo">S</div><span class="win-name">StoneFlow</span></div>
-    </div>
-    <div class="hdr-center">
-      <div class="srch">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#888" stroke-width="1.4"><circle cx="5" cy="5" r="3.5"/><line x1="8" y1="8" x2="11" y2="11"/></svg>
-        <span>Search...</span><span class="kbd">⌘K</span>
-      </div>
-    </div>
-    <div class="hdr-right">
-      <div class="new-btn">
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="5" y1="1" x2="5" y2="9"/><line x1="1" y1="5" x2="9" y2="5"/></svg>
-        New task<span class="kbd">C</span>
-      </div>
-      <div class="wctrl" id="wctrl" style="display:none;">
-        <div class="wc"><svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.2"><line x1="1" y1="5.5" x2="10" y2="5.5"/></svg></div>
-        <div class="wc"><svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1.5" y="1.5" width="8" height="8"/></svg></div>
-        <div class="wc cx"><svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3"><line x1="1.5" y1="1.5" x2="9.5" y2="9.5"/><line x1="9.5" y1="1.5" x2="1.5" y2="9.5"/></svg></div>
-      </div>
-    </div>
-  </div>
+	<!-- BODY -->
+	<div class="body">
+		<!-- SIDEBAR -->
+		<div class="sb">
+			<!-- Space tabs full width -->
+			<div class="sp-tabs">
+				<div class="sp-tab on">工作</div>
+				<div class="sp-tab off">学习</div>
+				<div class="sp-tab off">生活</div>
+			</div>
 
-  <!-- BODY -->
-  <div class="body">
+			<!-- Nav -->
+			<div class="sb-body">
+				<div class="sbi">
+					<div class="ico ring"></div>
+					Inbox<span class="badge">3</span>
+				</div>
+				<div class="sbi on">
+					<div class="ico" style="background: rgba(0, 0, 0, 0.22)"></div>
+					Focus
+				</div>
+				<div class="sb-div"></div>
+				<div class="sb-lbl">Projects</div>
+				<div class="sbi">
+					<div class="ico" style="background: #5b8def66"></div>
+					产品设计
+				</div>
+				<div class="sbi">
+					<div class="ico" style="background: #f9731666"></div>
+					工程开发
+				</div>
+				<div class="sbi sb-ind" style="font-size: 12px; color: #999">
+					<div class="ico" style="background: rgba(0, 0, 0, 0.1)"></div>
+					StoneFlow V1
+				</div>
+				<div class="sbi">
+					<div class="ico" style="background: #22c55e66"></div>
+					市场推广
+				</div>
+			</div>
 
-    <!-- SIDEBAR -->
-    <div class="sb">
-      <!-- Space tabs full width -->
-      <div class="sp-tabs">
-        <div class="sp-tab on">工作</div>
-        <div class="sp-tab off">学习</div>
-        <div class="sp-tab off">生活</div>
-      </div>
+			<!-- SIDEBAR FOOTER -->
+			<div class="sb-footer">
+				<!-- Status row -->
+				<div class="sb-status-bar">
+					<div class="status-dot"></div>
+					<span>All synced</span>
+					<span style="margin-left: auto; font-size: 11px; color: #ccc">Apr 18</span>
+				</div>
+				<!-- Trash + settings row -->
+				<div class="sb-footer-row">
+					<div class="sb-footer-btn trash">
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 14 14"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.3"
+						>
+							<polyline points="1 3 13 3" />
+							<path d="M5 3V2h4v1" />
+							<rect x="2.5" y="3" width="9" height="9" rx="1.5" />
+							<line x1="5.5" y1="6" x2="5.5" y2="10" />
+							<line x1="8.5" y1="6" x2="8.5" y2="10" />
+						</svg>
+						Trash
+					</div>
+					<div class="sb-footer-btn" style="flex: 0; width: 30px; justify-content: center">
+						<svg
+							width="13"
+							height="13"
+							viewBox="0 0 14 14"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.3"
+						>
+							<circle cx="7" cy="7" r="5.5" />
+							<circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" />
+							<line x1="7" y1="1.5" x2="7" y2="3" />
+							<line x1="7" y1="11" x2="7" y2="12.5" />
+							<line x1="1.5" y1="7" x2="3" y2="7" />
+							<line x1="11" y1="7" x2="12.5" y2="7" />
+						</svg>
+					</div>
+				</div>
+			</div>
+		</div>
 
-      <!-- Nav -->
-      <div class="sb-body">
-        <div class="sbi"><div class="ico ring"></div>Inbox<span class="badge">3</span></div>
-        <div class="sbi on"><div class="ico" style="background:rgba(0,0,0,0.22);"></div>Focus</div>
-        <div class="sb-div"></div>
-        <div class="sb-lbl">Projects</div>
-        <div class="sbi"><div class="ico" style="background:#5B8DEF66;"></div>产品设计</div>
-        <div class="sbi"><div class="ico" style="background:#F9731666;"></div>工程开发</div>
-        <div class="sbi sb-ind" style="font-size:12px;color:#999;">
-          <div class="ico" style="background:rgba(0,0,0,0.1);"></div>StoneFlow V1
-        </div>
-        <div class="sbi"><div class="ico" style="background:#22C55E66;"></div>市场推广</div>
-      </div>
+		<!-- MAIN -->
+		<div class="main">
+			<div class="card">
+				<div class="card-hdr">
+					<span class="card-title">Focus</span>
+					<span class="card-sub">工作 · 5 tasks</span>
+					<div class="csep"></div>
+					<div class="cbtn">
+						<svg
+							width="10"
+							height="10"
+							viewBox="0 0 12 12"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.4"
+						>
+							<path d="M1 3h10M3 6h6M5 9h2" />
+						</svg>
+						Filter
+					</div>
+					<div class="cbtn">Group</div>
+				</div>
 
-      <!-- SIDEBAR FOOTER -->
-      <div class="sb-footer">
-        <!-- Status row -->
-        <div class="sb-status-bar">
-          <div class="status-dot"></div>
-          <span>All synced</span>
-          <span style="margin-left:auto;font-size:11px;color:#CCC;">Apr 18</span>
-        </div>
-        <!-- Trash + settings row -->
-        <div class="sb-footer-row">
-          <div class="sb-footer-btn trash">
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3">
-              <polyline points="1 3 13 3"/><path d="M5 3V2h4v1"/><rect x="2.5" y="3" width="9" height="9" rx="1.5"/>
-              <line x1="5.5" y1="6" x2="5.5" y2="10"/><line x1="8.5" y1="6" x2="8.5" y2="10"/>
-            </svg>
-            Trash
-          </div>
-          <div class="sb-footer-btn" style="flex:0;width:30px;justify-content:center;">
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3">
-              <circle cx="7" cy="7" r="5.5"/><circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none"/>
-              <line x1="7" y1="1.5" x2="7" y2="3"/><line x1="7" y1="11" x2="7" y2="12.5"/>
-              <line x1="1.5" y1="7" x2="3" y2="7"/><line x1="11" y1="7" x2="12.5" y2="7"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
+				<div class="stabs">
+					<div class="stab on">Focus</div>
+					<div class="stab off">Upcoming</div>
+					<div class="stab off">最近添加</div>
+					<div class="stab off">高优先级</div>
+				</div>
 
-    <!-- MAIN -->
-    <div class="main">
-      <div class="card">
-        <div class="card-hdr">
-          <span class="card-title">Focus</span>
-          <span class="card-sub">工作 · 5 tasks</span>
-          <div class="csep"></div>
-          <div class="cbtn">
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 3h10M3 6h6M5 9h2"/></svg>
-            Filter
-          </div>
-          <div class="cbtn">Group</div>
-        </div>
+				<div class="cbody">
+					<div class="tlist">
+						<div class="tgl">Pinned</div>
+						<div class="tr sel">
+							<div class="tdot hi"></div>
+							<div class="tck"></div>
+							<div class="ttl">完成 StoneFlow Inbox 模块原型设计</div>
+							<div class="tdt">Apr 21</div>
+						</div>
+						<div class="tdiv"></div>
+						<div class="tr">
+							<div class="tdot hi"></div>
+							<div class="tck"></div>
+							<div class="ttl">Review T1 系统设计文档并确认技术栈</div>
+							<div class="tdt">Apr 22</div>
+						</div>
+						<div class="tdiv"></div>
+						<div class="tgl" style="margin-top: 4px">Todo</div>
+						<div class="tr">
+							<div class="tdot me"></div>
+							<div class="tck"></div>
+							<div class="ttl">整理 U1 设计系统 Token 规范</div>
+							<div class="tdt">Apr 24</div>
+						</div>
+						<div class="tdiv"></div>
+						<div class="tr">
+							<div class="tdot me"></div>
+							<div class="tck"></div>
+							<div class="ttl">搭建 Tauri + React 基础项目结构</div>
+							<div class="tdt"></div>
+						</div>
+						<div class="tdiv"></div>
+						<div class="tr">
+							<div class="tdot lo"></div>
+							<div class="tck"></div>
+							<div class="ttl">撰写 V1 M1 里程碑验收标准</div>
+							<div class="tdt">Apr 28</div>
+						</div>
+						<div class="tdiv"></div>
+						<div class="tgl" style="margin-top: 4px">Done</div>
+						<div class="tr">
+							<div class="tdot lo" style="opacity: 0.3"></div>
+							<div class="tck dn"></div>
+							<div class="ttl dn">完成 P1 产品内核文档</div>
+							<div class="tdt">Apr 17</div>
+						</div>
+					</div>
 
-        <div class="stabs">
-          <div class="stab on">Focus</div>
-          <div class="stab off">Upcoming</div>
-          <div class="stab off">最近添加</div>
-          <div class="stab off">高优先级</div>
-        </div>
-
-        <div class="cbody">
-          <div class="tlist">
-            <div class="tgl">Pinned</div>
-            <div class="tr sel">
-              <div class="tdot hi"></div><div class="tck"></div>
-              <div class="ttl">完成 StoneFlow Inbox 模块原型设计</div>
-              <div class="tdt">Apr 21</div>
-            </div>
-            <div class="tdiv"></div>
-            <div class="tr">
-              <div class="tdot hi"></div><div class="tck"></div>
-              <div class="ttl">Review T1 系统设计文档并确认技术栈</div>
-              <div class="tdt">Apr 22</div>
-            </div>
-            <div class="tdiv"></div>
-            <div class="tgl" style="margin-top:4px;">Todo</div>
-            <div class="tr">
-              <div class="tdot me"></div><div class="tck"></div>
-              <div class="ttl">整理 U1 设计系统 Token 规范</div>
-              <div class="tdt">Apr 24</div>
-            </div>
-            <div class="tdiv"></div>
-            <div class="tr">
-              <div class="tdot me"></div><div class="tck"></div>
-              <div class="ttl">搭建 Tauri + React 基础项目结构</div>
-              <div class="tdt"></div>
-            </div>
-            <div class="tdiv"></div>
-            <div class="tr">
-              <div class="tdot lo"></div><div class="tck"></div>
-              <div class="ttl">撰写 V1 M1 里程碑验收标准</div>
-              <div class="tdt">Apr 28</div>
-            </div>
-            <div class="tdiv"></div>
-            <div class="tgl" style="margin-top:4px;">Done</div>
-            <div class="tr">
-              <div class="tdot lo" style="opacity:.3;"></div><div class="tck dn"></div>
-              <div class="ttl dn">完成 P1 产品内核文档</div>
-              <div class="tdt">Apr 17</div>
-            </div>
-          </div>
-
-          <!-- DRAWER -->
-          <div class="drw">
-            <div class="drh">
-              <div class="drt">Task detail</div>
-              <div class="drx">✕</div>
-            </div>
-            <div class="drb">
-              <div class="drtask">完成 StoneFlow Inbox 模块原型设计</div>
-              <div class="dr-complete">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2 6 5 9 10 3"/></svg>
-                Mark complete
-              </div>
-              <div class="drf"><div class="drl">Project</div><div class="drv">产品设计</div></div>
-              <div class="drf">
-                <div class="drl">Priority</div>
-                <div class="drv"><div class="tdot hi" style="width:6px;height:6px;margin:0;"></div> High</div>
-              </div>
-              <div class="drf"><div class="drl">Due date</div><div class="drv">Apr 21, 2026</div></div>
-              <div class="drf"><div class="drl">Tags</div><div class="drv" style="gap:4px;">
-                <span style="font-size:11px;background:rgba(91,141,239,0.1);color:#3a6bc9;padding:1px 6px;border-radius:4px;">设计</span>
-                <span style="font-size:11px;background:rgba(249,115,22,0.1);color:#c05a0e;padding:1px 6px;border-radius:4px;">V1</span>
-              </div></div>
-              <div class="drf"><div class="drl">Note</div><div class="drn">包括 Inbox 行内整理交互和快捷键方案...</div></div>
-              <div class="drf">
-                <div class="drl">Resources</div>
-                <div class="drres"><div class="drrd"></div>Figma · Inbox flow draft</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+					<!-- DRAWER -->
+					<div class="drw">
+						<div class="drh">
+							<div class="drt">Task detail</div>
+							<div class="drx">✕</div>
+						</div>
+						<div class="drb">
+							<div class="drtask">完成 StoneFlow Inbox 模块原型设计</div>
+							<div class="dr-complete">
+								<svg
+									width="12"
+									height="12"
+									viewBox="0 0 12 12"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+								>
+									<polyline points="2 6 5 9 10 3" />
+								</svg>
+								Mark complete
+							</div>
+							<div class="drf">
+								<div class="drl">Project</div>
+								<div class="drv">产品设计</div>
+							</div>
+							<div class="drf">
+								<div class="drl">Priority</div>
+								<div class="drv">
+									<div class="tdot hi" style="width: 6px; height: 6px; margin: 0"></div>
+									High
+								</div>
+							</div>
+							<div class="drf">
+								<div class="drl">Due date</div>
+								<div class="drv">Apr 21, 2026</div>
+							</div>
+							<div class="drf">
+								<div class="drl">Tags</div>
+								<div class="drv" style="gap: 4px">
+									<span
+										style="
+											font-size: 11px;
+											background: rgba(91, 141, 239, 0.1);
+											color: #3a6bc9;
+											padding: 1px 6px;
+											border-radius: 4px;
+										"
+										>设计</span
+									>
+									<span
+										style="
+											font-size: 11px;
+											background: rgba(249, 115, 22, 0.1);
+											color: #c05a0e;
+											padding: 1px 6px;
+											border-radius: 4px;
+										"
+										>V1</span
+									>
+								</div>
+							</div>
+							<div class="drf">
+								<div class="drl">Note</div>
+								<div class="drn">包括 Inbox 行内整理交互和快捷键方案...</div>
+							</div>
+							<div class="drf">
+								<div class="drl">Resources</div>
+								<div class="drres">
+									<div class="drrd"></div>
+									Figma · Inbox flow draft
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
 <script>
-function setOS(os){
-  document.getElementById('bm').classList.toggle('on', os==='mac');
-  document.getElementById('bw').classList.toggle('on', os==='win');
-  const tl=document.getElementById('tl');
-  const wl=document.getElementById('wl');
-  const wc=document.getElementById('wctrl');
-  const app=document.getElementById('app');
-  if(os==='mac'){
-    tl.style.display='flex'; wl.style.display='none'; wc.style.display='none';
-    app.style.borderRadius='10px';
-  } else {
-    tl.style.display='none'; wl.style.display='flex'; wc.style.display='flex';
-    app.style.borderRadius='0';
-  }
-}
+	function setOS(os) {
+		document.getElementById('bm').classList.toggle('on', os === 'mac')
+		document.getElementById('bw').classList.toggle('on', os === 'win')
+		const tl = document.getElementById('tl')
+		const wl = document.getElementById('wl')
+		const wc = document.getElementById('wctrl')
+		const app = document.getElementById('app')
+		if (os === 'mac') {
+			tl.style.display = 'flex'
+			wl.style.display = 'none'
+			wc.style.display = 'none'
+			app.style.borderRadius = '10px'
+		} else {
+			tl.style.display = 'none'
+			wl.style.display = 'flex'
+			wc.style.display = 'flex'
+			app.style.borderRadius = '0'
+		}
+	}
 </script>

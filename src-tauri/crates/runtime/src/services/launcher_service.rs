@@ -1,0 +1,118 @@
+//! Launcher Service：真源在 `stoneflow-usecase`。
+
+use stoneflow_usecase::launcher::{
+    ActiveScopeInput, ActiveScopeKind, LauncherService as LauncherUsecase,
+    LauncherListProjectsBySpaceInput, LauncherProjectsBySpaceDto,
+};
+
+pub use stoneflow_usecase::launcher::{LauncherResolvedOpenTarget, LauncherResolvedPlacement};
+
+use crate::{
+    app::{error::AppError, state::ActiveScopeSnapshot},
+    services::{
+        activity::ActivityService, launcher_adapter::LauncherPortsAdapter, ProjectService,
+        SpaceService, TaskDetailDto, TaskService,
+    },
+};
+use stoneflow_storage::repositories::{
+    ActivityRepository, ProjectRepository, SpaceRepository, SyncRepository, TaskRepository,
+};
+
+#[derive(Debug, Clone)]
+pub struct LauncherService {
+    inner: LauncherUsecase<LauncherPortsAdapter>,
+    task_service: TaskService,
+}
+
+impl LauncherService {
+    pub fn new(
+        space_repository: SpaceRepository,
+        project_repository: ProjectRepository,
+        task_repository: TaskRepository,
+        activity_repository: ActivityRepository,
+    ) -> Self {
+        let activity_service = ActivityService::new(activity_repository);
+        let space_service = SpaceService::new(
+            space_repository.clone(),
+            SyncRepository::new(space_repository.connection().clone()),
+            project_repository.clone(),
+            task_repository.clone(),
+            activity_service.clone(),
+        );
+        let project_service = ProjectService::new(
+            space_repository.clone(),
+            project_repository.clone(),
+            task_repository.clone(),
+            SyncRepository::new(project_repository.connection().clone()),
+            activity_service.clone(),
+        );
+        let task_service = TaskService::new(
+            space_repository.clone(),
+            project_repository.clone(),
+            task_repository.clone(),
+            SyncRepository::new(task_repository.connection().clone()),
+            activity_service,
+        );
+        let ports = LauncherPortsAdapter::new(
+            space_service,
+            project_service,
+            task_service.clone(),
+            space_repository,
+            project_repository,
+            task_repository,
+        );
+
+        Self {
+            inner: LauncherUsecase::new(ports),
+            task_service,
+        }
+    }
+
+    pub async fn list_projects_by_space(
+        &self,
+        input: LauncherListProjectsBySpaceInput,
+    ) -> Result<LauncherProjectsBySpaceDto, AppError> {
+        self.inner
+            .list_projects_by_space(input)
+            .await
+            .map_err(AppError::from)
+    }
+
+    pub async fn get_task_detail(&self, task_id: &str) -> Result<TaskDetailDto, AppError> {
+        self.task_service
+            .get_task_detail(crate::services::TaskIdInput {
+                task_id: task_id.to_owned(),
+            })
+            .await
+    }
+
+    pub async fn resolve_task_open_target(
+        &self,
+        task_id: &str,
+    ) -> Result<LauncherResolvedOpenTarget, AppError> {
+        self.inner
+            .resolve_task_open_target(task_id)
+            .await
+            .map_err(AppError::from)
+    }
+
+    pub async fn resolve_project_open_target(
+        &self,
+        project_id: &str,
+    ) -> Result<LauncherResolvedOpenTarget, AppError> {
+        self.inner
+            .resolve_project_open_target(project_id)
+            .await
+            .map_err(AppError::from)
+    }
+}
+
+pub(crate) fn map_active_scope(snapshot: Option<ActiveScopeSnapshot>) -> Option<ActiveScopeInput> {
+    snapshot.map(|scope| ActiveScopeInput {
+        kind: match scope.kind {
+            crate::app::state::ActiveScopeKind::All => ActiveScopeKind::All,
+            crate::app::state::ActiveScopeKind::Space => ActiveScopeKind::Space,
+        },
+        space_id: scope.space_id.map(|id| id.to_string()),
+    })
+}

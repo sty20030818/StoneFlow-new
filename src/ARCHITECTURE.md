@@ -1,6 +1,6 @@
-> 版本：v4.1  
-> 作用：定义 `src/` 前端架构边界（**现网事实**；重构进度见 Docs 执行计划）  
-> 最后更新：2026-07-17  
+> 版本：v4.1
+> 作用：定义 `src/` 前端架构边界（**现网事实**；重构进度见 Docs 执行计划）
+> 最后更新：2026-07-17
 >
 > ### 必读文档
 >
@@ -13,15 +13,15 @@
 > | [`07-Feature切分与边界总览.md`](../Docs/03-前端架构解析/05-模块治理/07-Feature切分与边界总览.md) | 并/拆/Keep |
 > | [`08-Feature品质验收标准.md`](../Docs/03-前端架构解析/03-To-Be/08-Feature品质验收标准.md) | P0 品质勾选 |
 >
-> **冲突时：** 决议总表 + 设计规范 > 本文「现网」段 > 过时 As-Is。  
-> **改模块时：** 同步该模块 `ARCHITECTURE.md`（无则新建短契约）。  
+> **冲突时：** 决议总表 + 设计规范 > 本文「现网」段 > 过时 As-Is。
+> **改模块时：** 同步该模块 `ARCHITECTURE.md`（无则新建短契约）。
 > **源码注释：** 写职责与边界原因，禁止写史诗号/目标码/Phase（见 `CONVENTIONS.md`）。
 
 ---
 
 ## 1. 文档定位
 
-本文描述 **今天代码真实分层**（日常开发对照）。  
+本文描述 **今天代码真实分层**（日常开发对照）。
 重构过程进度只维护在 `Docs/.../10-T2重构执行计划.md`，不在源码注释里堆过程标签。
 
 不负责：逐步 diff 流水账、页面交互文案、Rust crate 细账。
@@ -42,9 +42,9 @@
 
 横切硬规则：
 
-1. `features/*` **不得** `import '@/layout/**'`。  
-2. 跨 feature 仅 `@/features/<name>` 或 `/contract` `/page`。  
-3. 换页经 `app/navigation` intent/path；打开策略在 domain public。  
+1. `features/*` **不得** `import '@/layout/**'`。
+2. 跨 feature 仅 `@/features/<name>` 或 `/contract` `/page`。
+3. 换页经 `app/navigation` intent/path；打开策略在 domain public。
 4. selection ≠ bulk ≠ command；filter ≠ display-options。
 
 ---
@@ -91,7 +91,7 @@ src/
 ├── layout/                      # 产品铬架：侧栏/顶栏/主区/overlay/command-bridge
 ├── routes/                      # TanStack file routes + 薄页
 │   ├── __root.tsx
-│   ├── index.tsx / quick-create.tsx / settings.tsx / debug.activity.tsx
+│   ├── index.tsx / launcher.tsx / settings.tsx / debug.activity.tsx
 │   └── _shell/
 │       ├── route.tsx
 │       ├── all/…
@@ -140,7 +140,7 @@ src/
 
 **不负责：** 厚业务组件、裸 `invoke()`。
 
-正式工作路径：`/all/*`、`/spaces/:spaceId/*`（以及 `/quick-create`、`/debug/activity` 等）。
+正式工作路径：`/all/*`、`/spaces/:spaceId/*`（以及 `/launcher`、`/debug/activity` 等）。
 
 ### 4.4 `features/`：业务能力
 
@@ -158,15 +158,15 @@ src/
 
 **Feature 内依赖：** `components → hooks → api → model`；可依赖 `shared`；跨 feature **只走 public**（`. | contract | page`）。
 
-**禁止：** `@/features/<name>/api|hooks|model|components|…` 深路径跨 feature import。  
+**禁止：** `@/features/<name>/api|hooks|model|components|…` 深路径跨 feature import。
 校验：`bun run scripts/check-feature-boundaries.mjs`（含于 `bun run check`）。
 
-当前 feature 目录名：`activity` · `bulk-action` · `command` · `danger-confirm` · `display-options` · `entity-detail` · `entity-scene` · `filter` · `global-search` · `lifecycle` · `metadata-fields` · `project` · `project-overview` · `quick-create` · `selection` · `settings` · `shell-dialogs` · `space` · `submit` · `sync` · `task` · `update` · `view` · `workspace`。
+当前 feature 目录名：`activity` · `bulk-action` · `command` · `danger-confirm` · `display-options` · `entity-detail` · `entity-scene` · `filter` · `global-search` · `launcher` · `lifecycle` · `metadata-fields` · `project` · `project-overview` · `selection` · `settings` · `shell-dialogs` · `space` · `submit` · `sync` · `task` · `update` · `view` · `workspace`。
 
 列表类 URL（inbox / tasks / archive / trash / no-project 等）**不再各自成 feature**；薄页 + `task`（等）list-scene facade（如 `useTaskListScene`）。
 
-**已有模块 ARCHITECTURE：**  
-`bulk-action` · `command` · `quick-create` · `task` · `project` · `lifecycle` · `settings` · `shell-dialogs` · `entity-scene` · `filter` · `selection` · `submit` · `space` · `metadata-fields` · 以及 `layout/` · `app/navigation/` · 本文。其余 feature 在动刀时补短契约。
+**已有模块 ARCHITECTURE：**
+`bulk-action` · `command` · `launcher` · `task` · `project` · `lifecycle` · `settings` · `shell-dialogs` · `entity-scene` · `filter` · `selection` · `submit` · `space` · `metadata-fields` · 以及 `layout/` · `app/navigation/` · 本文。其余 feature 在动刀时补短契约。
 
 ### 4.5 `shared/`：共享基础设施
 
@@ -232,10 +232,10 @@ QueryClient 默认（`app/providers`）：`staleTime 30s` · `gcTime 10min` · `
 
 ### 6.2 客户端状态
 
-- Zustand：壳 nav 衍生、dialog、sidebar settings、search focus intent 等  
-- React state：页局部  
-- `useSyncExternalStore`：如 SubmitRegistry  
-- reducer/provider：如 Quick Create session  
+- Zustand：壳 nav 衍生、dialog、sidebar settings、search focus intent 等
+- React state：页局部
+- `useSyncExternalStore`：如 SubmitRegistry
+- reducer/provider：如 Launcher session
 
 禁止用 store 复制 Query 中已有的服务器数据。
 
@@ -253,11 +253,11 @@ QueryClient 默认（`app/providers`）：`staleTime 30s` · `gcTime 10min` · `
 | `selection` | 实体多选与 CommandSelection（非 bulk 实现本身） |
 | `command` | registry / keybinding / menu / shortcut runtime |
 | `bulk-action` | bulk contract · registry · adapter · UI |
-| `quick-create` | 独立窗口：runtime / domain / layout / shell / components |
+| `launcher` | 独立窗口：session / domain / chrome / composer / create / results |
 | `entity-detail` | 抽屉打开真相 = **URL search**，非全局 drawer store |
 | `settings` | 设置页 + `contract` / `page` 三入口约定 |
 
-feature 级细文：`features/{command,bulk-action,quick-create}/ARCHITECTURE.md` 等。
+feature 级细文：`features/{command,bulk-action,launcher}/ARCHITECTURE.md` 等。
 
 ---
 
@@ -274,11 +274,11 @@ styles   → 不依赖业务层
 
 **禁止：**
 
-1. `shared` → `features` / `layout`  
-2. 跨 feature 深路径 import  
-3. 组件裸 `invoke()`  
-4. store 复制 Query 服务器数据  
-5. 某 feature 私有状态冒充全局真相  
+1. `shared` → `features` / `layout`
+2. 跨 feature 深路径 import
+3. 组件裸 `invoke()`
+4. store 复制 Query 服务器数据
+5. 某 feature 私有状态冒充全局真相
 
 ---
 
@@ -301,14 +301,14 @@ styles   → 不依赖业务层
 
 视为回退：
 
-1. 以 store 为服务器状态真相源  
-2. 页面 / shared 裸 `invoke()`  
-3. `shared` 塞实体业务  
-4. 第二套路由 DSL 与 route file / memory 分叉  
-5. QC runtime/domain/layout 揉成巨型 provider  
-6. 命令 / 批量塞回单页内部  
-7. 跨 feature 绕过 public 深 import  
-8. 再引入 `SpaceLayout` / `app/layouts` / `shared/ui` 旧路径叙述  
+1. 以 store 为服务器状态真相源
+2. 页面 / shared 裸 `invoke()`
+3. `shared` 塞实体业务
+4. 第二套路由 DSL 与 route file / memory 分叉
+5. QC runtime/domain/layout 揉成巨型 provider
+6. 命令 / 批量塞回单页内部
+7. 跨 feature 绕过 public 深 import
+8. 再引入 `SpaceLayout` / `app/layouts` / `shared/ui` 旧路径叙述
 
 ---
 
@@ -321,7 +321,7 @@ bun run check
 
 文档核对：
 
-1. 路由仍是 TanStack hash + `src/routes/**`  
-2. 壳路径是 `layout/`，不是 `app/layouts`  
-3. public 与 boundaries 仍绿  
-4. 无 React Router / 已删 feature 壳的误导描述  
+1. 路由仍是 TanStack hash + `src/routes/**`
+2. 壳路径是 `layout/`，不是 `app/layouts`
+3. public 与 boundaries 仍绿
+4. 无 React Router / 已删 feature 壳的误导描述

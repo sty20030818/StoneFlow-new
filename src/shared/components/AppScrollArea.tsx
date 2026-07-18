@@ -8,7 +8,9 @@ export type AppScrollAreaProps = {
 	className?: string
 	viewportClassName?: string
 	scrollbarClassName?: string
-	viewportProps?: Omit<ComponentProps<'div'>, 'children' | 'className' | 'ref'>
+	viewportProps?: Omit<ComponentProps<'div'>, 'children' | 'className' | 'ref'> & {
+		'data-testid'?: string
+	}
 	children: ReactNode
 	scrollContainerRole?: string
 	thumbClassName?: string

@@ -12,7 +12,7 @@
 StoneFlow 当前是一个单 binary 的 Tauri 桌面应用：
 
 1. 只有一个生产 binary：`stoneflow`
-2. 主窗口和 Quick Create 浮窗由同一个 Tauri Core 管理
+2. 主窗口和 Launcher 浮窗由同一个 Tauri Core 管理
 3. 业务规则在 `domain` / `usecase`
 4. 持久化在 `storage` / `schema` / `migration`
 5. Tauri 壳层、IPC、窗口、shortcut、tray 在 `runtime` / `platform`
@@ -53,7 +53,7 @@ src-tauri/
 │  └─ integration-tests/
 ├─ capabilities/
 │  ├─ main.json
-│  └─ quick-create.json
+│  └─ launcher.json
 ├─ tauri.conf.json
 └─ Cargo.toml
 ```
@@ -85,7 +85,7 @@ src-tauri/
 1. `tauri::Builder` 组装；
 2. 插件注册；
 3. commands 注册；
-4. 主窗口、Quick Create、tray、global shortcut、single-instance；
+4. 主窗口、Launcher、tray、global shortcut、single-instance；
 5. Tauri `State`；
 6. usecase / storage adapter 装配；
 7. event 发射与 pending command open 协调。
@@ -99,11 +99,11 @@ src-tauri/
 
 ### 3.2 `platform`
 
-`platform` 只负责平台相关窗口行为，当前核心是 `quick_window`。
+`platform` 只负责平台相关窗口行为，当前核心是 `launcher_window`。
 
 它负责：
 
-1. Quick Create 浮窗 prepare / present / hide / resize；
+1. Launcher 浮窗 prepare / present / hide / resize；
 2. macOS / Windows 差异封装；
 3. 窗口规格和回调注入点。
 
@@ -112,7 +112,7 @@ src-tauri/
 1. 业务规则；
 2. 数据访问；
 3. Tauri command 语义；
-4. Quick Create 的业务初始化。
+4. Launcher 的业务初始化。
 
 ### 3.3 `domain`
 
@@ -142,7 +142,7 @@ src-tauri/
 2. DTO；
 3. ports / trait；
 4. 跨 repository 的业务语义；
-5. Quick Create、Task、Project、Space、View、Lifecycle 等业务编排。
+5. Launcher、Task、Project、Space、View、Lifecycle 等业务编排。
 
 它不负责：
 
@@ -256,14 +256,14 @@ crates/runtime/src/
 │  ├─ tasks.rs
 │  ├─ views.rs
 │  ├─ workspace.rs
-│  └─ quick_create/
+│  └─ launcher/
 │     ├─ domain.rs
 │     ├─ window.rs
 │     ├─ error.rs
 │     └─ mod.rs
 └─ window/
    ├─ main.rs
-   └─ quick_create/
+   └─ launcher/
       ├─ runtime.rs
       ├─ session.rs
       ├─ controller.rs
@@ -275,37 +275,36 @@ crates/runtime/src/
 这里几个关键点已经确定：
 
 1. `composition.rs` 是 composition root 命名，不再使用旧的 `assembly`
-2. `window/quick_create/*` 是 Quick Create 窗口主线，不再放回主窗口目录
-3. `commands/quick_create` 按 `domain` 和 `window` 分开
+2. `window/launcher/*` 是 Launcher 窗口主线，不再放回主窗口目录
+3. `commands/launcher` 按 `domain` 和 `window` 分开
 
 ---
 
-## 6. Quick Create 后端边界
+## 6. Launcher 后端边界
 
-Quick Create 当前不是一个“前端小弹窗”，而是一条跨 Tauri / runtime / platform / frontend 的完整链路。
+Launcher 当前不是一个“前端小弹窗”，而是一条跨 Tauri / runtime / platform / frontend 的完整链路。
 
 ### 6.1 窗口链路
 
 ```txt
 Option+Space
 -> runtime::shortcuts
--> runtime::window::quick_create::runtime / session
--> platform::quick_window
--> emit quick-create:session-prepared
--> frontend hidden measure
--> quick_create_commit_layout
--> quick_create_present_session
--> emit quick-create:session-presented
+-> runtime::window::launcher::runtime / session
+-> platform::launcher_window
+-> emit launcher:session-prepared
+-> frontend present_session
+-> launcher_present_session
+-> emit launcher:session-presented
 ```
 
 ### 6.2 业务链路
 
 ```txt
-frontend quickCreate.ts
--> invoke("quick_create_*")
--> runtime::commands::quick_create::domain
--> services::QuickCreateService
--> usecase::quick_create
+frontend features/launcher/api
+-> invoke("launcher_*")
+-> runtime::commands::launcher::domain
+-> services::LauncherService
+-> usecase::launcher
 -> storage repositories
 ```
 
@@ -313,12 +312,11 @@ frontend quickCreate.ts
 
 当前前端真正监听的是：
 
-1. `quick-create:session-prepared`
-2. `quick-create:session-presented`
-3. `quick-create:session-close-requested`
-4. `quick-create:session-invalidated`
+1. `launcher:session-prepared`
+2. `launcher:session-presented`
+3. `launcher:session-invalidated`
 
-这说明 Quick Create 的稳态已经是“runtime session + frontend layout orchestration”，不是旧 helper lifecycle 说法。
+这说明 Launcher 的稳态已经是“runtime session + frontend layout orchestration”，不是旧 helper lifecycle 说法。
 
 ---
 
@@ -377,19 +375,19 @@ pub fn run() {
 当前 capability 按窗口拆分：
 
 1. `capabilities/main.json`
-2. `capabilities/quick-create.json`
+2. `capabilities/launcher.json`
 
 长期规则：
 
 1. 主窗口拿完整业务权限
-2. Quick Create 只拿最小必要窗口与事件权限
+2. Launcher 只拿最小必要窗口与事件权限
 3. 不把 `windows: ["*"]` 当正式长期方案
 
 ### 8.3 Global Shortcut
 
 系统级快捷键在 Rust 侧注册，落点是 `shortcuts.rs`。
 
-不要把系统级快捷键职责下放到 Quick Create 前端。
+不要把系统级快捷键职责下放到 Launcher 前端。
 
 ---
 
@@ -444,7 +442,7 @@ cargo fmt --manifest-path src-tauri/Cargo.toml
 2. 在 `schema` 上表达产品默认值决策
 3. `domain` / `usecase` 依赖 Tauri
 4. 生产代码依赖 `test-support`
-5. 把 Quick Create 再揉回“一个文件处理全部窗口行为”
+5. 把 Launcher 再揉回“一个文件处理全部窗口行为”
 6. 让前端绕过 feature api，按命令名散落调用后端
 7. 未同步文档就擅自改 crate 边界或依赖方向
 

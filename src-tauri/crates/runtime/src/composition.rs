@@ -1,8 +1,8 @@
 //! Runtime 组装层：集中构造 commands 与 window 需要的服务。
 
 use crate::services::{
-    activity::ActivityService, LifecycleService, ProjectService, QuickCreateOpenContextService,
-    QuickCreateService, QuickCreateSessionBridge, SearchService, SettingsService, SpaceService,
+    activity::ActivityService, LifecycleService, ProjectService, LauncherOpenContextService,
+    LauncherService, LauncherSessionBridge, SearchService, SettingsService, SpaceService,
     TaskLinkService, TaskService, ViewService,
 };
 use stoneflow_storage::{
@@ -35,9 +35,9 @@ pub fn build_project_service(database: &DatabaseRuntimeState) -> ProjectService 
     )
 }
 
-pub fn build_quick_create_service(database: &DatabaseRuntimeState) -> QuickCreateService {
+pub fn build_launcher_service(database: &DatabaseRuntimeState) -> LauncherService {
     let connection = database.connection().clone();
-    QuickCreateService::new(
+    LauncherService::new(
         SpaceRepository::new(connection.clone()),
         ProjectRepository::new(connection.clone()),
         TaskRepository::new(connection.clone()),
@@ -45,22 +45,22 @@ pub fn build_quick_create_service(database: &DatabaseRuntimeState) -> QuickCreat
     )
 }
 
-pub fn build_quick_create_session_bridge(
+pub fn build_launcher_session_bridge(
     database: &DatabaseRuntimeState,
-) -> QuickCreateSessionBridge {
+) -> LauncherSessionBridge {
     let connection = database.connection().clone();
     let space_repository = SpaceRepository::new(connection.clone());
     let project_repository = ProjectRepository::new(connection.clone());
     let task_repository = TaskRepository::new(connection.clone());
-    let quick_create_service = QuickCreateService::new(
+    let launcher_service = LauncherService::new(
         space_repository.clone(),
         project_repository.clone(),
         task_repository.clone(),
         ActivityRepository::new(connection),
     );
 
-    QuickCreateSessionBridge::new(QuickCreateOpenContextService::new(
-        quick_create_service,
+    LauncherSessionBridge::new(LauncherOpenContextService::new(
+        launcher_service,
         space_repository,
         project_repository,
         task_repository,

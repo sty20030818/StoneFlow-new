@@ -179,7 +179,7 @@ src/app/navigation/
 
 **不允许**（因此不会写入记忆）：
 
-- `/`、`/quick-create`
+- `/`、`/launcher`
 - **`/…/settings` 与 `/…/settings/:section`**（`ALLOWED_SECTION_SEGMENTS` 无 `settings`）
 - 非法/unknown path
 
@@ -190,7 +190,7 @@ src/app/navigation/
 | `AppRoute.kind` | 典型 path | 备注 |
 |-----------------|-----------|------|
 | `startup` | `/` | 仅启动跳板 |
-| `quick-create` | `/quick-create` | 独立窗 |
+| `launcher` | `/launcher` | 独立窗 |
 | `debug-activity` | `/debug/activity` | |
 | `shell-section` | `/all/inbox`、`/spaces/:id/settings/...` 等 | section 含 settings |
 | `view` | `…/views/:viewId` | |
@@ -273,7 +273,7 @@ src/app/navigation/
 src/routes/
   __root.tsx
   index.tsx                         # /
-  quick-create.tsx
+  launcher.tsx
   settings.tsx                      # legacy /settings
   debug.activity.tsx
   -router-feedback.tsx              # 私有 UI
@@ -299,7 +299,7 @@ src/routes/
 |------|----------|-----------|--------|----------|---------------|----------|--------|
 | `__root.tsx` | （root） | — | 无 | 无 | error/notFound → RouterFeedback | Outlet only | 无 |
 | `index.tsx` | `/` | root | spaces + `resolveStartupPath` | **replace → 恢复 path** | pending/error 文案 | 无页面 | 读 store |
-| `quick-create.tsx` | `/quick-create` | root | 无 | 无 | 默认 | `features/quick-create/ui/QuickCreatePage` | 不记忆 |
+| `launcher.tsx` | `/launcher` | root | 无 | 无 | 默认 | `features/launcher/ui/QuickCreatePage` | 不记忆 |
 | `settings.tsx` | `/settings` | root | 无 | Navigate → `/all/settings/$section`（last section） | — | 无 | — |
 | `debug.activity.tsx` | `/debug/activity` | root | 无 | 无 | validateSearch | `-activity-debug-route` → feature UI | 不记忆 |
 

@@ -29,15 +29,15 @@
 		isolation: isolate;
 	}
 
-	/* Quick Create：窗体透明，深度交给原生 shadow；FE 只负责内容壳材质。 */
-	body[data-quick-create] {
+	/* Launcher：窗体透明，深度交给原生 shadow；FE 只负责内容壳材质。 */
+	body[data-launcher] {
 		background: transparent !important;
 		height: 100%;
 		min-height: 100%;
 		overflow: hidden;
 	}
 
-	body[data-quick-create] #root {
+	body[data-launcher] #root {
 		background: transparent !important;
 		height: 100%;
 		min-height: 100%;

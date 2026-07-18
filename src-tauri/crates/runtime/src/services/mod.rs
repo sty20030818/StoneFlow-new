@@ -4,10 +4,10 @@ pub mod activity;
 
 mod lifecycle_service;
 mod project_service;
-mod quick_create_adapter;
-mod quick_create_open_context_service;
-mod quick_create_service;
-mod quick_create_session_bridge;
+mod launcher_adapter;
+mod launcher_open_context_service;
+mod launcher_service;
+mod launcher_session_bridge;
 mod search_service;
 mod settings_service;
 mod space_service;
@@ -29,11 +29,11 @@ pub use project_service::{
     ProjectIdInput, ProjectOverviewItemDto, ProjectScopeInput, ProjectScopeKind, ProjectService,
     ProjectSidebarItemDto, UpdateProjectInput,
 };
-pub use quick_create_open_context_service::QuickCreateOpenContextService;
-pub use quick_create_service::{
-    QuickCreateService, QuickResolvedOpenTarget, QuickResolvedPlacement,
+pub use launcher_open_context_service::LauncherOpenContextService;
+pub use launcher_service::{
+    LauncherService, LauncherResolvedOpenTarget, LauncherResolvedPlacement,
 };
-pub use quick_create_session_bridge::QuickCreateSessionBridge;
+pub use launcher_session_bridge::LauncherSessionBridge;
 pub use search_service::{
     SearchEntitiesInput, SearchEntitiesResultDto, SearchProjectItemDto, SearchService,
     SearchTaskItemDto,
