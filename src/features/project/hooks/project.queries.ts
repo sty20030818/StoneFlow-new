@@ -4,8 +4,8 @@ import {
 	getProjectDetail,
 	listProjectOverview,
 	listSidebarProjects,
-} from '@/features/project/api/projects'
-import type { ProjectOption, ProjectOverviewViewKey } from '@/features/project/model/types'
+} from '../api/projects'
+import type { ProjectOption, ProjectOverviewViewKey } from '../model/types'
 import type { Scope } from '@/shared/types'
 
 import { projectKeys } from './project.keys'

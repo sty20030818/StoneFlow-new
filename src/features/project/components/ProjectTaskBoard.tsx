@@ -1,4 +1,4 @@
-import type { ProjectExecutionTask } from '@/features/project/model/types'
+import type { ProjectExecutionTask } from '../model/types'
 import type { TaskPriorityValue } from '@/features/task'
 import { TaskBoard } from '@/features/task'
 import { useDialogStore } from '@/features/shell-dialogs'

@@ -1,14 +1,31 @@
 # M-F-PROJECT · features/project
 
-> 日期：2026-07-17  
-> 状态：**decided（方案对比）** · **decide-only**  
-> 路径：`src/features/project`（关联 scene：`features/project-overview`）  
-> 类型：**domain**  
-> 规范：T2 · task T2a · bulk B3 · command C3 · [`05-模块设计规范`](../05-模块设计规范.md)
+> 日期：2026-07-17 · **落地对照更新 2026-07-19**
+> 状态：**archived-decision（P2 · P0–P1 done；余 SCENE 见 [13](../13-Project样板重构执行计划.md)）**
+> 路径：`src/features/project`（关联 scene：`features/project-overview`）
+> **日常契约：** [`src/features/project/ARCHITECTURE.md`](../../../src/features/project/ARCHITECTURE.md)
+> 类型：**domain**
 
 ---
 
-## A. 现网事实
+## 0. 落地对照（2026-07-19）
+
+| 卡上目标（P2） | 现网 | 说明 |
+|----------------|------|------|
+| 禁 project → layout | **done** | 0 引用 |
+| bulk 在 `project/bulk` | **done** | B3 已迁 |
+| `registerProjectCommands` | **done** | C3 已挂 |
+| 详情任务板只组合 task public | **大致 done** | Page 内联组合；待 SCENE facade |
+| ProjectPage 去巨石 / facade | **未完** | ~370 · 计划阶段 2 |
+| ARCHITECTURE 定稿 + public/TSDoc | **done** | DOC + NORM |
+| project-overview Keep 薄 scene | **done** | 独立 feature |
+
+**改码请读：** `src/features/project/ARCHITECTURE.md` + `src/CONVENTIONS.md`。
+与 src 冲突时：**以 src 为准**，并回写本节。
+
+---
+
+## A. 它现在是什么（事实，非目标）
 
 ### A.1 职责
 
@@ -44,16 +61,16 @@ features/project/
 
 ### A.4 关联：`project-overview`
 
-- **独立 scene feature**：总览页 UI  
-- 数据走 **project public hooks**（方向对）  
-- routes `/projects` 挂 overview，`/projects/$id` 挂 project  
+- **独立 scene feature**：总览页 UI
+- 数据走 **project public hooks**（方向对）
+- routes `/projects` 挂 overview，`/projects/$id` 挂 project
 
 ### A.5 问题清单
 
 | 问题 | 说明 |
 |------|------|
 | **ProjectPage → layout** | `EntityScene`、`ShellRouteContext`、`useDialogStore` — 与 task 相同倒依赖 |
-| **详情页=半个 task list-scene** | 页内任务筛选/选择/预览/bulk 编排堆在 ProjectPage | 
+| **详情页=半个 task list-scene** | 页内任务筛选/选择/预览/bulk 编排堆在 ProjectPage |
 | **无 registerProjectCommands** | 归档/完成等靠 bridge bulk 片（B3/C3 后应收口） |
 | **create 与 task 对称性** | 有 ProjectCreateContent；可与「创建内核」思路对称，但项目字段更简单 |
 | **navigation 直接 getProjectDetail** | 记忆校验调 domain api：可接受薄 IO，或改为 project public `ensureProjectExists` |
@@ -201,17 +218,17 @@ project ──×──► layout
 
 **Do**
 
-- 四层纯化；外只 public  
-- 详情页 facade 内聚项目动作 + 嵌入 task 能力  
-- 创建内容给壳挂，规则在 project  
-- overview 薄 scene  
+- 四层纯化；外只 public
+- 详情页 facade 内聚项目动作 + 嵌入 task 能力
+- 创建内容给壳挂，规则在 project
+- overview 薄 scene
 
 **Don't**
 
-- ProjectPage import layout  
-- 在 project 内再实现一套 task mutation  
-- overview 里直接 invoke project 私有 api  
-- navigation 散落无封装的详情校验逻辑过多  
+- ProjectPage import layout
+- 在 project 内再实现一套 task mutation
+- overview 里直接 invoke project 私有 api
+- navigation 散落无封装的详情校验逻辑过多
 
 ---
 
@@ -258,12 +275,12 @@ project ──×──► layout
 | 2 | **project-overview Keep** 薄 scene |
 | 3 | 禁止 project → layout；任务板 **组合 task public** |
 | 4 | bulk/命令 所有权回 project（B3/C3） |
-| 5 | decide-only |
+| 5 | decide-only → **执行见 [13](../13-Project样板重构执行计划.md)** |
 
 ### 开放问题
 
-- [ ] 项目页是否要 `TaskListSceneView variant='project'` 正式化（推荐：**专用 facade 名** 避免 variant 无限涨）  
-- [ ] ProjectCreate 是否与 QC 共用「项目创建内核」（项目字段少，P2 后可做，优先级低于任务创建内核）  
+- [ ] 项目页是否要 `TaskListSceneView variant='project'` 正式化（推荐：**专用 facade 名** 避免 variant 无限涨）
+- [ ] ProjectCreate 是否与 QC 共用「项目创建内核」（项目字段少，P2 后可做，优先级低于任务创建内核）
 
 ---
 

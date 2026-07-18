@@ -8,7 +8,7 @@ import {
 	reopenProject,
 	restoreProject,
 	updateProject,
-} from '@/features/project/api/projects'
+} from '../api/projects'
 import { emitEvent } from '@/shared/events'
 import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'
 

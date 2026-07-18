@@ -1,12 +1,10 @@
 /**
- * @fileoverview **project · 唯一对外公共面（`@/features/project`）**
+ * project 域对外公共面（`@/features/project`）。
  *
- * 项目实体：概览/详情/侧栏数据、CRUD mutations、看板与创建 UI。
- *
- * 外模块：`import { … } from '@/features/project'`
- * 禁止：`@/features/project/api|hooks|model|components/…`
- *
- * 注意：`project-overview` 是独立 scene feature，路径勿与本 feature 混淆。
+ * @remarks
+ * 外模块只能：`import { … } from '@/features/project'`。
+ * 禁止深路径进 api/hooks/model/components/bulk。
+ * `project-overview` 是独立 scene，勿与本包路径混淆。
  */
 
 // ── 类型 ────────────────────────────────────────────────────────────────────
@@ -15,58 +13,40 @@ export type {
 	ProjectDetail,
 	ProjectOption,
 	ProjectOverviewViewKey,
-	ProjectExecutionTask,
-	ProjectFormInput,
-	ProjectUpdateInput,
 } from './model/types'
 
 // ── Hooks / Query ───────────────────────────────────────────────────────────
 
+/**
+ * 侧栏 / options / 概览 / 详情数据与 mutations（仅已有外消费者）。
+ */
 export {
 	useProjectOptions,
 	useProjectOverviewData,
 	useProjectSidebarData,
-	useProjectDetailData,
-	useProjectOverviewQuery,
 	useProjectSidebarQuery,
-	useProjectOptionsQuery,
-	useViewsProjectOptionsQuery,
-	useProjectDetailQuery,
-	useSuspenseProjectDetailQuery,
 	projectDetailQueryOptions,
-	toProjectOptions,
-	useCreateProjectMutation,
-	useUpdateProjectMutation,
 	useCompleteProjectMutation,
 	useReopenProjectMutation,
 	useArchiveProjectMutation,
-	useRestoreProjectMutation,
 	useDeleteProjectMutation,
-	projectKeys,
 } from './hooks'
 
-// ── API（badge / bulk / navigation 等） ─────────────────────────────────────
+// ── API（navigation / lifecycle / bulk 装配）────────────────────────────────
 
 export {
-	listProjectOverview,
 	listAllVisibleProjects,
-	listSidebarProjects,
 	getProjectDetail,
-	createProject,
-	updateProject,
-	completeProject,
-	reopenProject,
-	archiveProject,
 	restoreProject,
 	deleteProject,
 } from './api/projects'
 
-// ── 官方组件 ────────────────────────────────────────────────────────────────
+// ── UI ──────────────────────────────────────────────────────────────────────
 
 /** 项目详情页（routes `/projects/$projectId`）。 */
 export { ProjectPage } from './components/ProjectPage'
 
-/** 概览/lifecycle 风格项目看板。 */
+/** 概览 / lifecycle 风格项目看板。 */
 export { ProjectBoard } from './components/ProjectBoard'
 
 /** 壳层新建项目对话框内容。 */
@@ -75,18 +55,13 @@ export { ProjectCreateContent } from './components/ProjectCreateContent'
 /** 项目行适配器（overview 列表复用）。 */
 export { ProjectRowAdapter } from './components/ProjectRowAdapter'
 
+// ── 批量 / 命令 ─────────────────────────────────────────────────────────────
+
 /**
  * 项目批量：动作定义 + adapter。
- * 壳 Boundary 只 compose 各域 public，bulk-action 只做引擎。
+ * 壳 Boundary 只 compose 各域 public。
  */
-export {
-	getProjectBulkActionDefinition,
-	projectBulkActionDefinitions,
-	projectBulkActions,
-	createProjectBulkAdapter,
-	type ProjectBulkAdapter,
-	type ProjectBulkMutationReport,
-} from './bulk'
+export { projectBulkActions, createProjectBulkAdapter } from './bulk'
 
 /** 命令选中快照（项目列表 → command）。 */
 export { buildProjectCommandSelection } from './model/buildProjectCommandSelection'

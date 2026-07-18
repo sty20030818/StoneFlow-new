@@ -18,7 +18,7 @@ import {
 } from '@/shared/components/row'
 import { FolderIcon } from 'lucide-react'
 
-import { ProjectContextMenu } from '@/features/project/components/ProjectContextMenu'
+import { ProjectContextMenu } from './ProjectContextMenu'
 import { projectOverviewActionButtonClass } from '@/shared/components/patterns/project-overview'
 
 type ProjectRowAdapterProps = {

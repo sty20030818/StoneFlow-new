@@ -1,6 +1,6 @@
 # 平台与 Domain 扩散重构执行计划（task 样板之后）
 
-> 状态：**可执行** · 波次 1（command）**已收口** · 下一刀 **project** · 2026-07-19
+> 状态：**可执行** · 波次 1（command）**已收口** · 波次 2 **project**（[13](./13-Project样板重构执行计划.md)）· 2026-07-19
 > 前置：[11-Task样板重构](./11-Task样板重构执行计划.md)（**0–5 done**）· 决议：[09-决议总表](./09-决议总表.md) · 写法：[CONVENTIONS v2.1](../../../src/CONVENTIONS.md)
 > **原则：** 大→小但**不同构不硬排**；串行波次；每阶段末相关门禁；开放前可破坏须清干净；源码禁史诗号。
 > **文档：** `src/**/ARCHITECTURE` = 定稿最优（无债表）；**债/进度只写本文或子计划**；src 不回链执行计划。
@@ -38,7 +38,7 @@
 | **0** | task | 13k | domain | **done** | [11](./11-Task样板重构执行计划.md) |
 | **1** | **command** | 7.3k | platform | **C0–C5 done** | 波次 1 收口 |
 | 1b | bulk-action | 1.7k | platform | **done（轻扫）** | B3 已落地；无独立刀 |
-| **2** | project | 2.8k | domain | pending | 抄 task 检查表（P2） |
+| **2** | project | 2.8k | domain | **P0–P1 done · 余 SCENE–CLOSE** | [13](./13-Project样板重构执行计划.md) |
 | 2 | lifecycle | 2.5k | domain | pending | Y2 |
 | 2 | view | 1.8k | domain | pending | V2 |
 | 2 | space | 0.8k | domain | pending | S2 |
@@ -266,17 +266,17 @@ bunx vitest run src/features/command
 | 缩 adapter 漏绑命令 | compose 校验先缩 chrome 最小集；单测 + 冒烟表 |
 | Host 端口膨胀 | 新端口必须双边同步；禁止域直取 layout |
 | 与 task 样板文档风格漂移 | ARCHITECTURE 只定稿；进度只在本文 |
-| 范围爬到 project | 波次 1 明确非目标；CLOSE 后再开 |
+| 范围爬到 lifecycle | 波次 2 先收 project；CLOSE 后再开 |
 
 ---
 
 ## 6. 文档关系
 
 ```txt
-09-决议总表 / M-F-COMMAND     → WHY
-本文                           → 波次顺序 + command 刀序（进度）
-11-Task…                       → domain 样板（已收口）
-src/features/command/ARCHITECTURE → 定稿日常
+09-决议总表 / M-F-*           → WHY
+本文                           → 波次顺序（进度总表）
+11-Task… / 13-Project…         → 各 feature 刀序
+src/features/*/ARCHITECTURE    → 定稿日常
 src/CONVENTIONS.md             → HOW
 ```
 
@@ -292,3 +292,4 @@ src/CONVENTIONS.md             → HOW
 | 2026-07-19 | C3 ADAPTER done：方案 A 缩 chrome 必填；域可缺禁用 |
 | 2026-07-19 | C4 VOLUME done：adapter 拆 actions/bind/helpers |
 | 2026-07-19 | C5 CLOSE done：清兼容层；bulk 轻扫勾掉；project 检查表增补；波次 1 收口 |
+| 2026-07-19 | 波次 2 project 开刀：落 [13](./13-Project样板重构执行计划.md)；P0 DOC done |

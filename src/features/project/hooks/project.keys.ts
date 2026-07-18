@@ -1,4 +1,4 @@
-import type { ProjectOverviewViewKey } from '@/features/project/model/types'
+import type { ProjectOverviewViewKey } from '../model/types'
 import type { Scope } from '@/shared/types'
 
 export const projectKeys = {

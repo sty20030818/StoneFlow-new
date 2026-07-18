@@ -1,4 +1,4 @@
-import type { ProjectOverviewViewKey } from '@/features/project/model/types'
+import type { ProjectOverviewViewKey } from '../model/types'
 import type { ProjectOverviewItem, ProjectSidebarItem, Scope } from '@/shared/types'
 import type { QueryLoadStatus } from '@/shared/query/queryStatus'
 

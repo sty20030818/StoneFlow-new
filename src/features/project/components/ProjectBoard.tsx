@@ -13,7 +13,7 @@ import type { ProjectOverviewItem } from '@/shared/types'
 import { ArchiveIcon, FolderIcon, PlayIcon, CheckIcon } from 'lucide-react'
 import { entityBoardMutedIconClass } from '@/shared/components/patterns/entity-board'
 
-import { ProjectRowAdapter } from '@/features/project/components/ProjectRowAdapter'
+import { ProjectRowAdapter } from './ProjectRowAdapter'
 import { EntityRowShortcutScope, type EntityRowShortcutState } from '@/features/selection'
 
 type ProjectBoardSectionKey = 'active' | 'completed' | 'archived'

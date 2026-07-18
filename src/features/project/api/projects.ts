@@ -8,7 +8,7 @@ import type {
 	ProjectOverviewViewKey,
 	ProjectSidebarItem,
 	ProjectUpdateInput,
-} from '@/features/project/model/types'
+} from '../model/types'
 
 type ProjectScopePayload =
 	| {
