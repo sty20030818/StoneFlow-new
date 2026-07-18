@@ -5,7 +5,7 @@ import {
 	createEmptyCommandContext,
 	type CommandContext,
 } from '@/features/command/core'
-import type { ShellCommandActions } from './shell-command-adapter'
+import type { ShellCommandActions, ShellCommandAdapter } from './shell-command-adapter'
 
 describe('Shell command adapter', () => {
 	it('执行 general 命令时调用 Shell action', async () => {
@@ -405,10 +405,21 @@ describe('Shell command adapter', () => {
 			error,
 		})
 	})
+
+	it('缺域 handler 时对应命令禁用', async () => {
+		const { completeSelectedTasks: _omit, ...chromeOnly } = createActions()
+		const runtime = createRuntime(chromeOnly)
+
+		await expect(runtime.execute(COMMAND_IDS.taskComplete)).resolves.toMatchObject({
+			status: 'disabled',
+			commandId: COMMAND_IDS.taskComplete,
+			reason: '该命令处理器尚未注册',
+		})
+	})
 })
 
 function createRuntime(
-	actions: ShellCommandActions,
+	actions: ShellCommandAdapter,
 	context: CommandContext = createEmptyCommandContext(),
 ) {
 	return new CommandRuntime({

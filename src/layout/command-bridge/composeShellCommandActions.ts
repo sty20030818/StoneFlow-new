@@ -1,56 +1,24 @@
-import type { ShellCommandActions } from '@/features/command'
+import {
+	SHELL_CHROME_ACTION_KEYS,
+	type ShellCommandActions,
+	type ShellCommandAdapter,
+} from '@/features/command'
 
 /**
- * 合并各 slice 的 Partial actions 为完整 ShellCommandActions。
- * 缺字段时在开发环境抛错，避免静默 undefined 运行时炸掉。
+ * 合并各 slice 的 Partial actions。
+ * DEV 只校验壳 chrome 最小集；域方法由各 `register*Commands` 贡献，缺则 bind 侧禁用命令。
  */
 export function composeShellCommandActions(
 	...slices: Array<Partial<ShellCommandActions>>
-): ShellCommandActions {
+): ShellCommandAdapter {
 	const merged = Object.assign({}, ...slices) as Partial<ShellCommandActions>
 
 	if (import.meta.env.DEV) {
-		const required: Array<keyof ShellCommandActions> = [
-			'openCommandMenu',
-			'openShortcutHelp',
-			'focusSearch',
-			'openQuickTaskCreate',
-			'openFullTaskCreate',
-			'openInboxTaskCreate',
-			'openProjectCreate',
-			'openTaskPicker',
-			'openProjectPicker',
-			'openTaskPlacementPicker',
-			'applyTaskPlacement',
-			'openTaskPriorityPicker',
-			'openTaskStatusPicker',
-			'openTaskDatePicker',
-			'completeSelectedTasks',
-			'requestArchiveSelectedTasks',
-			'requestDeleteSelectedTasks',
-			'requestArchiveSelectedProjects',
-			'requestDeleteSelectedProjects',
-			'restoreSelectedLifecycleEntries',
-			'requestDeleteSelectedLifecycleEntries',
-			'requestDeletePermanentlySelectedLifecycleEntries',
-			'navigateTo',
-			'closeCurrentLayer',
-			'submitActiveForm',
-			'submitAndContinue',
-			'submitAndOpen',
-			'toggleSidebar',
-			'togglePreview',
-			'openFilterPicker',
-			'toggleCompletedFilter',
-			'clearAllFilters',
-			'goBack',
-			'goForward',
-		]
-		const missing = required.filter((key) => typeof merged[key] !== 'function')
+		const missing = SHELL_CHROME_ACTION_KEYS.filter((key) => typeof merged[key] !== 'function')
 		if (missing.length > 0) {
-			throw new Error(`ShellCommandActions 缺少切片方法: ${missing.join(', ')}`)
+			throw new Error(`ShellCommandActions 缺少壳 chrome 方法: ${missing.join(', ')}`)
 		}
 	}
 
-	return merged as ShellCommandActions
+	return merged as ShellCommandAdapter
 }

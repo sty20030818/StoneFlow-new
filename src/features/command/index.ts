@@ -61,7 +61,14 @@ export type { CommandMenuMode } from './components'
 
 // ── Shell adapter 形状（供 layout compose / 各域 register）──────────────────
 
-export type { ShellCommandActions } from './adapters'
+export { SHELL_CHROME_ACTION_KEYS } from './adapters'
+
+export type {
+	ShellChromeCommandActions,
+	ShellCommandActions,
+	ShellCommandAdapter,
+	ShellDomainCommandActions,
+} from './adapters'
 
 // ── IPC · 外部/唤起打开意图 ─────────────────────────────────────────────────
 

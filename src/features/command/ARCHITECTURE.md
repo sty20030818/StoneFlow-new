@@ -9,9 +9,9 @@
 ```txt
 commands/ 元数据（id / title / when）
   → bindShellCommand(adapter) 把 run 绑到 handler
-  → ShellCommandActions = compose(
-       registerShellChromeCommands(host),   // layout：菜单/创建/关层/导航
-       registerTaskCommands(host),
+  → ShellCommandAdapter = compose(
+       registerShellChromeCommands(host),   // layout：菜单/创建/关层/导航（必填）
+       registerTaskCommands(host),          // 域：可缺 → 命令 disabled
        registerProjectCommands(host),
        registerLifecycleCommands(host),
        registerFilterCommands(host),
@@ -27,7 +27,13 @@ commands/ 元数据（id / title / when）
 | **layout** | 装配 Host 依赖 + 壳 chrome register；**不写** domain mutation |
 
 换页只走 navigation intent；写数据只走各域 mutation / bulk。
-`ShellCommandActions` 是 adapter 形状；业务实现只来自各 register。
+
+| 类型 | 含义 |
+|------|------|
+| `ShellChromeCommandActions` | 壳必填；`SHELL_CHROME_ACTION_KEYS` 供 compose DEV 校验 |
+| `ShellDomainCommandActions` | 各域 register 贡献 |
+| `ShellCommandActions` | chrome ∪ domain（全量形状，供 `Pick`） |
+| `ShellCommandAdapter` | chrome ∪ Partial domain（Registry 输入） |
 
 跨模块 **只** `import { … } from '@/features/command'`。
 **禁止** `features/command` → `@/layout/**`。
@@ -42,7 +48,7 @@ src/features/command/
 ├── index.ts                 # 主 public
 ├── api/                     # 外部唤起打开意图等
 ├── host/                    # CommandHostContext 端口类型
-├── adapters/                # ShellCommandActions + bindShellCommand
+├── adapters/                # chrome/domain 形状 + bindShellCommand
 ├── commands/                # 元数据 + createShellCommandRegistry
 ├── core/                    # Registry / Runtime / Context
 ├── components/              # Menu 壳 + 分段 / Help / Hint
@@ -68,7 +74,7 @@ layout/model/useShellCommandSystem.ts  # Host：组 Context + Runtime + 挂 UI
 | 快捷键 | `DEFAULT_KEYBINDINGS` · `matchKeybindingEvent` · `CommandShortcutLayer` |
 | UI | `CommandMenu` · `ShortcutHelp` · `ChordHint` · `ShortcutTokens` |
 | 标识 / 上下文 | `COMMAND_IDS` · `CommandContext` · `CommandSelectionContext` · `CommandHostContext` |
-| 壳适配形状 | `ShellCommandActions`（供 register / compose） |
+| 壳适配形状 | `ShellCommandActions` / `ShellCommandAdapter` / `SHELL_CHROME_ACTION_KEYS` |
 | IPC | `takePendingCommandOpenIntent` |
 
 新增导出前确认已有外消费者。导出符合 CONVENTIONS TSDoc L1。

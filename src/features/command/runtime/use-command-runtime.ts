@@ -5,11 +5,11 @@ import {
 	type CommandContext,
 	type CommandExecutionResult,
 } from '@/features/command/core'
-import { createShellCommandAdapter, type ShellCommandActions } from '@/features/command/adapters'
+import { createShellCommandAdapter, type ShellCommandAdapter } from '@/features/command/adapters'
 import { createShellCommandRegistry } from '@/features/command/commands'
 
 type UseCommandRuntimeOptions = {
-	actions: ShellCommandActions
+	actions: ShellCommandAdapter
 	context: CommandContext
 	onError?: (result: Extract<CommandExecutionResult, { status: 'failed' }>) => void
 }

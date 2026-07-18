@@ -3,6 +3,7 @@ import type { NavigateOptions } from '@tanstack/react-router'
 import type { Scope } from '@/shared/types'
 import { useDialogStore } from '@/features/shell-dialogs'
 import type { CommandContext } from '@/features/command'
+import type { EntityDetailRouteState } from '@/features/entity-detail'
 import type {
 	BulkActionId,
 	BulkActionPayload,
@@ -20,7 +21,7 @@ export type TaskPreview = ReturnType<typeof useTaskPreviewController>
 
 /**
  * Command bridge 依赖袋。
- * 字段多是因为 ShellCommandActions 有 ~34 个方法，各自要闭包不同能力。
+ * 字段对应 chrome + 各域 register 所需 Host 端口，不是「必填 34 方法」上帝表。
  */
 export type ShellCommandBridgeDeps = {
 	/** 当前工作区 scope，用于 navigateTo 拼 path */
@@ -28,7 +29,7 @@ export type ShellCommandBridgeDeps = {
 	/** 当前 spaceId（all 时可能为 fallback） */
 	currentSpaceId: string | null
 	/** 当前 URL 抽屉详情 */
-	activeDetail: { kind: string; id: string } | null
+	activeDetail: EntityDetailRouteState
 	goBack: () => void
 	goForward: () => void
 	canGoBack: boolean

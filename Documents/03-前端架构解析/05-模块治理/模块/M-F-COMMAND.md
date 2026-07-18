@@ -1,7 +1,7 @@
 # M-F-COMMAND · features/command
 
 > 日期：2026-07-17 · **落地对照更新 2026-07-19**
-> 状态：**archived-decision（C3 半落地；余债见 [12 执行计划](../12-平台与Domain扩散重构执行计划.md)）**
+> 状态：**archived-decision（C0–C3 done；余 C4–C5 / 方案 B 见 [12 执行计划](../12-平台与Domain扩散重构执行计划.md)）**
 > 路径：`src/features/command` + 装配 `layout/command-bridge` · `layout/model/useShellCommandSystem`
 > **日常契约：** [`src/features/command/ARCHITECTURE.md`](../../../src/features/command/ARCHITECTURE.md)
 > 类型：**platform**
@@ -15,8 +15,8 @@
 | 域 `register*Commands` 贡献 handlers | **done** | task/project/lifecycle/filter/submit |
 | layout 不写 domain mutation | **大致 done** | bridge 只 chrome + compose；Host 仍厚 |
 | CommandMenu 巨石拆分 | **done** | 主文件 ~196 + 分段 |
-| Host 极薄（只 Context + 挂 UI） | **进行中** | Host ~200 已内拆；仍可再瘦 · 计划 C3 后复看 |
-| 缩/淘汰 adapter 必填上帝表 | **未完** | `ShellCommandActions` + compose 必填 · 计划 C3 |
+| Host 极薄（只 Context + 挂 UI） | **大致 done** | Host ~200 已内拆；C2 |
+| 缩/淘汰 adapter 必填上帝表 | **done（方案 A）** | chrome 最小集校验；域可缺 → disabled；方案 B 未做 |
 | ARCHITECTURE 定稿 + public/TSDoc | **done** | C0/C1 |
 | Host 内拆（打开/Context/项目列表） | **done** | C2 |
 | 禁 command → layout | **done** | 应保持 0 |

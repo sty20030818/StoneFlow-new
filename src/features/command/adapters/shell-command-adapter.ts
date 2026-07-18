@@ -5,7 +5,11 @@ import type { ShellNavigationTarget } from '@/shared/types'
 
 export type { ShellNavigationTarget }
 
-export type ShellCommandActions = {
+/**
+ * 壳铬架必填动作：菜单 / 创建 dialog / 关层 / 导航。
+ * compose 只校验这组；加壳命令时才改这里 + registerShellChromeCommands。
+ */
+export type ShellChromeCommandActions = {
 	openCommandMenu: () => void
 	openShortcutHelp: () => void
 	focusSearch: () => void
@@ -15,6 +19,17 @@ export type ShellCommandActions = {
 	openProjectCreate: () => void
 	openTaskPicker: () => void
 	openProjectPicker: () => void
+	navigateTo: (target: ShellNavigationTarget) => void
+	closeCurrentLayer: (ctx: CommandContext) => void | Promise<void>
+	toggleSidebar: () => void
+	goBack: () => void
+	goForward: () => void
+}
+
+/**
+ * 各域 register 贡献的动作。装配时按 register 出现；缺则 bind 侧禁用对应命令。
+ */
+export type ShellDomainCommandActions = {
 	openTaskPlacementPicker: (ctx: CommandContext) => void
 	applyTaskPlacement: (target: TaskPlacementTarget, ctx: CommandContext) => void | Promise<void>
 	openTaskPriorityPicker: (ctx: CommandContext) => void
@@ -28,23 +43,42 @@ export type ShellCommandActions = {
 	restoreSelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
 	requestDeleteSelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
 	requestDeletePermanentlySelectedLifecycleEntries: (ctx: CommandContext) => void | Promise<void>
-	navigateTo: (target: ShellNavigationTarget) => void
-	closeCurrentLayer: (ctx: CommandContext) => void | Promise<void>
 	submitActiveForm: (ctx: CommandContext) => void | Promise<void>
 	submitAndContinue: (ctx: CommandContext) => void | Promise<void>
 	submitAndOpen: (ctx: CommandContext) => void | Promise<void>
-	toggleSidebar: () => void
 	togglePreview: (ctx: CommandContext) => void | Promise<void>
 	openFilterPicker: (kind: PageFilterKind, ctx: CommandContext) => void
 	toggleCompletedFilter: (ctx: CommandContext) => void
 	clearAllFilters: (ctx: CommandContext) => void
-	goBack: () => void
-	goForward: () => void
 }
 
-export type ShellCommandAdapter = ShellCommandActions
+/** 全量装配形状（chrome ∪ domain）；域 register 用 Pick 从此取键 */
+export type ShellCommandActions = ShellChromeCommandActions & ShellDomainCommandActions
 
-export function createShellCommandAdapter(actions: ShellCommandActions): ShellCommandAdapter {
+/** Registry / bind 输入：chrome 必填，域可缺 */
+export type ShellCommandAdapter = ShellChromeCommandActions & Partial<ShellDomainCommandActions>
+
+/** compose DEV 校验用；与 `registerShellChromeCommands` 返回键对齐 */
+export const SHELL_CHROME_ACTION_KEYS = [
+	'openCommandMenu',
+	'openShortcutHelp',
+	'focusSearch',
+	'openQuickTaskCreate',
+	'openFullTaskCreate',
+	'openInboxTaskCreate',
+	'openProjectCreate',
+	'openTaskPicker',
+	'openProjectPicker',
+	'navigateTo',
+	'closeCurrentLayer',
+	'toggleSidebar',
+	'goBack',
+	'goForward',
+] as const satisfies ReadonlyArray<keyof ShellChromeCommandActions>
+
+const UNREGISTERED_HANDLER_REASON = '该命令处理器尚未注册'
+
+export function createShellCommandAdapter(actions: ShellCommandAdapter): ShellCommandAdapter {
 	return actions
 }
 
@@ -72,27 +106,27 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 		case COMMAND_IDS.selectionDeleteByRoute:
 			return bindDeleteSelectionCommand(command, adapter)
 		case COMMAND_IDS.saveOrSubmit:
-			return {
+			return withDomainHandler(command, adapter.submitActiveForm, (run) => ({
 				...command,
 				isEnabled: (ctx) => ctx.submit.canSubmitDefault,
 				getDisabledReason: (ctx) =>
 					ctx.submit.canSubmitDefault ? undefined : '当前没有可提交内容',
-				run: adapter.submitActiveForm,
-			}
+				run,
+			}))
 		case COMMAND_IDS.submitAndContinue:
-			return {
+			return withDomainHandler(command, adapter.submitAndContinue, (run) => ({
 				...command,
 				isEnabled: (ctx) => ctx.submit.canSubmitContinue,
 				getDisabledReason: (ctx) => ctx.submit.submitContinueDisabledReason,
-				run: adapter.submitAndContinue,
-			}
+				run,
+			}))
 		case COMMAND_IDS.submitAndOpen:
-			return {
+			return withDomainHandler(command, adapter.submitAndOpen, (run) => ({
 				...command,
 				isEnabled: (ctx) => ctx.submit.canSubmitOpen,
 				getDisabledReason: (ctx) => ctx.submit.submitOpenDisabledReason,
-				run: adapter.submitAndOpen,
-			}
+				run,
+			}))
 		case COMMAND_IDS.goBack:
 			return { ...command, run: adapter.goBack }
 		case COMMAND_IDS.goForward:
@@ -102,64 +136,99 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 		case COMMAND_IDS.openProject:
 			return { ...command, run: adapter.openProjectPicker }
 		case COMMAND_IDS.taskComplete:
-			return bindSelectionTaskCommand(command, adapter.completeSelectedTasks)
+			return withDomainHandler(command, adapter.completeSelectedTasks, (run) =>
+				bindSelectionTaskCommand(command, run),
+			)
 		case COMMAND_IDS.taskSetPriority:
-			return bindSelectionTaskCommand(command, adapter.openTaskPriorityPicker)
+			return withDomainHandler(command, adapter.openTaskPriorityPicker, (run) =>
+				bindSelectionTaskCommand(command, run),
+			)
 		case COMMAND_IDS.taskSetStatus:
-			return bindSelectionTaskCommand(command, adapter.openTaskStatusPicker)
+			return withDomainHandler(command, adapter.openTaskStatusPicker, (run) =>
+				bindSelectionTaskCommand(command, run),
+			)
 		case COMMAND_IDS.taskOpenDateMenu:
-			return bindSelectionTaskCommand(command, adapter.openTaskDatePicker)
+			return withDomainHandler(command, adapter.openTaskDatePicker, (run) =>
+				bindSelectionTaskCommand(command, run),
+			)
 		case COMMAND_IDS.taskChangePlacement:
-			return bindSelectionTaskPlacementCommand(command, adapter.openTaskPlacementPicker)
+			return withDomainHandler(command, adapter.openTaskPlacementPicker, (run) =>
+				bindSelectionTaskPlacementCommand(command, run),
+			)
 		case COMMAND_IDS.taskArchive:
-			return bindSelectionTaskCommand(command, adapter.requestArchiveSelectedTasks)
+			return withDomainHandler(command, adapter.requestArchiveSelectedTasks, (run) =>
+				bindSelectionTaskCommand(command, run),
+			)
 		case COMMAND_IDS.taskDelete:
-			return bindSelectionTaskCommand(command, adapter.requestDeleteSelectedTasks)
+			return withDomainHandler(command, adapter.requestDeleteSelectedTasks, (run) =>
+				bindSelectionTaskCommand(command, run),
+			)
 		case COMMAND_IDS.projectArchive:
-			return bindSelectionProjectCommand(command, adapter.requestArchiveSelectedProjects)
+			return withDomainHandler(command, adapter.requestArchiveSelectedProjects, (run) =>
+				bindSelectionProjectCommand(command, run),
+			)
 		case COMMAND_IDS.projectDelete:
-			return bindSelectionProjectCommand(command, adapter.requestDeleteSelectedProjects)
+			return withDomainHandler(command, adapter.requestDeleteSelectedProjects, (run) =>
+				bindSelectionProjectCommand(command, run),
+			)
 		case COMMAND_IDS.lifecycleRestore:
-			return bindSelectionLifecycleCommand(command, adapter.restoreSelectedLifecycleEntries)
+			return withDomainHandler(command, adapter.restoreSelectedLifecycleEntries, (run) =>
+				bindSelectionLifecycleCommand(command, run),
+			)
 		case COMMAND_IDS.lifecycleDelete:
-			return bindSelectionLifecycleCommand(command, adapter.requestDeleteSelectedLifecycleEntries)
+			return withDomainHandler(command, adapter.requestDeleteSelectedLifecycleEntries, (run) =>
+				bindSelectionLifecycleCommand(command, run),
+			)
 		case COMMAND_IDS.lifecycleDeletePermanently:
-			return bindSelectionLifecycleCommand(
+			return withDomainHandler(
 				command,
 				adapter.requestDeletePermanentlySelectedLifecycleEntries,
+				(run) => bindSelectionLifecycleCommand(command, run),
 			)
 		case COMMAND_IDS.filterAdd:
-			return bindFilterPickerCommand(command, adapter, 'root')
+			return withDomainHandler(command, adapter.openFilterPicker, () =>
+				bindFilterPickerCommand(command, adapter, 'root'),
+			)
 		case COMMAND_IDS.filterByPriority:
-			return bindFilterPickerCommand(command, adapter, 'priority')
+			return withDomainHandler(command, adapter.openFilterPicker, () =>
+				bindFilterPickerCommand(command, adapter, 'priority'),
+			)
 		case COMMAND_IDS.filterByStatus:
-			return bindFilterPickerCommand(command, adapter, 'status')
+			return withDomainHandler(command, adapter.openFilterPicker, () =>
+				bindFilterPickerCommand(command, adapter, 'status'),
+			)
 		case COMMAND_IDS.filterByDate:
-			return bindFilterPickerCommand(command, adapter, 'date')
+			return withDomainHandler(command, adapter.openFilterPicker, () =>
+				bindFilterPickerCommand(command, adapter, 'date'),
+			)
 		case COMMAND_IDS.filterByProject:
-			return bindFilterPickerCommand(command, adapter, 'project')
+			return withDomainHandler(command, adapter.openFilterPicker, () =>
+				bindFilterPickerCommand(command, adapter, 'project'),
+			)
 		case COMMAND_IDS.filterToggleCompleted:
-			return {
+			return withDomainHandler(command, adapter.toggleCompletedFilter, (run) => ({
 				...command,
 				isEnabled: (ctx) => ctx.view.filterCapabilities.supportsToggleCompleted,
 				getDisabledReason: (ctx) =>
 					ctx.view.filterCapabilities.supportsToggleCompleted
 						? undefined
 						: '当前页面不支持完成筛选',
-				run: adapter.toggleCompletedFilter,
-			}
+				run,
+			}))
 		case COMMAND_IDS.filterClearAll:
-			return {
+			return withDomainHandler(command, adapter.clearAllFilters, (run) => ({
 				...command,
 				isEnabled: (ctx) => ctx.view.filterCapabilities.supportsClearAll,
 				getDisabledReason: (ctx) =>
 					ctx.view.filterCapabilities.supportsClearAll ? undefined : '当前页面没有可清除的筛选',
-				run: adapter.clearAllFilters,
-			}
+				run,
+			}))
 		case COMMAND_IDS.layoutToggleSidebar:
 			return { ...command, run: adapter.toggleSidebar }
 		case COMMAND_IDS.layoutTogglePreview:
-			return bindTogglePreviewCommand(command, adapter.togglePreview)
+			return withDomainHandler(command, adapter.togglePreview, (run) =>
+				bindTogglePreviewCommand(command, run),
+			)
 		case COMMAND_IDS.openView:
 			return createDisabledCommand(command, '视图搜索尚未接入')
 		case COMMAND_IDS.openSpace:
@@ -197,6 +266,17 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 		default:
 			return command
 	}
+}
+
+function withDomainHandler<T>(
+	command: Command,
+	handler: T | undefined,
+	bind: (handler: NonNullable<T>) => Command,
+): Command {
+	if (typeof handler !== 'function') {
+		return createDisabledCommand(command, UNREGISTERED_HANDLER_REASON)
+	}
+	return bind(handler)
 }
 
 function bindSelectionTaskCommand(
@@ -274,6 +354,16 @@ function hasLifecycleSelection(ctx: CommandContext) {
 }
 
 function bindDeleteSelectionCommand(command: Command, adapter: ShellCommandAdapter): Command {
+	const hasDeleteHandlers =
+		typeof adapter.requestDeleteSelectedTasks === 'function' &&
+		typeof adapter.requestDeleteSelectedProjects === 'function' &&
+		typeof adapter.requestDeleteSelectedLifecycleEntries === 'function' &&
+		typeof adapter.requestDeletePermanentlySelectedLifecycleEntries === 'function'
+
+	if (!hasDeleteHandlers) {
+		return createDisabledCommand(command, UNREGISTERED_HANDLER_REASON)
+	}
+
 	return {
 		...command,
 		isEnabled: (ctx) => getDeleteSelectionDisabledReason(ctx) === undefined,
@@ -281,11 +371,11 @@ function bindDeleteSelectionCommand(command: Command, adapter: ShellCommandAdapt
 		getPriority: (ctx) => (ctx.selection.isMultiSelection ? 120 : 90),
 		run: (ctx) => {
 			if (hasTaskSelection(ctx)) {
-				return adapter.requestDeleteSelectedTasks(ctx)
+				return adapter.requestDeleteSelectedTasks?.(ctx)
 			}
 
 			if (hasProjectSelection(ctx)) {
-				return adapter.requestDeleteSelectedProjects(ctx)
+				return adapter.requestDeleteSelectedProjects?.(ctx)
 			}
 
 			if (!hasLifecycleSelection(ctx)) {
@@ -293,11 +383,11 @@ function bindDeleteSelectionCommand(command: Command, adapter: ShellCommandAdapt
 			}
 
 			if (ctx.route.page === 'archive') {
-				return adapter.requestDeleteSelectedLifecycleEntries(ctx)
+				return adapter.requestDeleteSelectedLifecycleEntries?.(ctx)
 			}
 
 			if (ctx.route.page === 'trash') {
-				return adapter.requestDeletePermanentlySelectedLifecycleEntries(ctx)
+				return adapter.requestDeletePermanentlySelectedLifecycleEntries?.(ctx)
 			}
 		},
 	}
@@ -343,11 +433,16 @@ function bindFilterPickerCommand(
 	adapter: ShellCommandAdapter,
 	kind: PageFilterKind,
 ): Command {
+	const openFilterPicker = adapter.openFilterPicker
+	if (typeof openFilterPicker !== 'function') {
+		return createDisabledCommand(command, UNREGISTERED_HANDLER_REASON)
+	}
+
 	return {
 		...command,
 		isEnabled: (ctx) => getFilterPickerDisabledReason(ctx, kind) === undefined,
 		getDisabledReason: (ctx) => getFilterPickerDisabledReason(ctx, kind),
-		run: (ctx) => adapter.openFilterPicker(kind, ctx),
+		run: (ctx) => openFilterPicker(kind, ctx),
 	}
 }
 

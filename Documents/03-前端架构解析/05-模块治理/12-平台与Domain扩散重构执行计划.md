@@ -36,7 +36,7 @@
 | 波次 | 模块 | ~行 | 类 | 状态 | 说明 |
 |------|------|-----|-----|------|------|
 | **0** | task | 13k | domain | **done** | [11](./11-Task样板重构执行计划.md) |
-| **1** | **command** | 7.3k | platform | **C0–C2 done · 余 C3–C5** | adapter 必填表仍厚 |
+| **1** | **command** | 7.3k | platform | **C0–C3 done · 余 C4–C5** | VOLUME/CLOSE |
 | 1b | bulk-action | 1.7k | platform | pending | 轻扫 B3；无债则勾掉 |
 | **2** | project | 2.8k | domain | pending | 抄 task 检查表（P2） |
 | 2 | lifecycle | 2.5k | domain | pending | Y2 |
@@ -61,7 +61,7 @@
 |----|------|
 | 决议 | **C3** 注册式 · [M-F-COMMAND](./模块/M-F-COMMAND.md) |
 | 已有 | 各域 `register*Commands`（task/project/lifecycle/filter/submit）；CommandMenu 已拆至主文件 ~196 |
-| 仍债 | layout `command-bridge` + `useShellCommandSystem` ~402；`shell-command-adapter` ~383；`ShellCommandActions` 仍是巨形状；ARCHITECTURE 仍写「现网」非纯定稿；TSDoc/public 未按 v2.1 样板 |
+| 仍债 | `bindShellCommand` switch 仍在（方案 B 未做）；VOLUME 边角；CLOSE |
 
 ### 2.2 目标
 
@@ -83,13 +83,14 @@
 |----|------|
 | 域 `register*Commands` | **已有**（task/project/lifecycle/filter/submit） |
 | 壳 `registerShellChromeCommands` | **在 layout/command-bridge** |
-| `composeShellCommandActions` + 必填校验 | **仍在** |
-| `bindShellCommand` / `ShellCommandActions` | **仍厚**（~383）· 待 C3 |
+| `composeShellCommandActions` | **只校 chrome**（`SHELL_CHROME_ACTION_KEYS`） |
+| `bindShellCommand` / 形状 | chrome / domain 拆分；域可缺 → disabled · **C3 A done** |
 | `useShellCommandSystem` | **~200**（已拆 open/context/projects/bulk） |
 | CommandMenu 主文件 | **~196**（巨石已拆） |
 | `command → layout` | **0** |
 | ARCHITECTURE 定稿 / public TSDoc | **C0–C1 done** |
 | Host 内拆 | **C2 done** |
+| Adapter 缩必填 | **C3 A done** |
 
 ### 2.5 阶段总表（command）
 
@@ -98,7 +99,7 @@
 | 0 | DOC | ARCHITECTURE 定稿；M-F-COMMAND 落地对照 | 无 | **done**（2026-07-19） |
 | 1 | NORM | public / TSDoc；入口头注释 | 低 | **done**（2026-07-19） |
 | 2 | HOST | 瘦 `useShellCommandSystem`；bridge 只 chrome+compose | 中 | **done**（2026-07-19） |
-| 3 | ADAPTER | 缩 `ShellCommandActions` / bind 摩擦（或登记表进化） | 中高 | pending |
+| 3 | ADAPTER | 缩 `ShellCommandActions` / bind 摩擦（或登记表进化） | 中高 | **done**（方案 A · 2026-07-19） |
 | 4 | VOLUME | 菜单/keybinding 边角（按余力） | 低 | pending |
 | 5 | CLOSE | 对照勾选；bulk 轻扫；波次 2 入口备忘 | 无 | pending |
 
@@ -160,18 +161,19 @@
 |------|------|
 | 目标 | 降低「加命令改三处类型表」；对齐 C3 终态 |
 | 破坏性 | 中高 |
-| 状态 | pending |
+| 状态 | **done**（方案 A · 2026-07-19） |
 
-**优选路径（择一写进落地，勿双轨）：**
+**落地（方案 A · 缩必填表）：**
 
-| 方案 | 做法 | 适用 |
-|------|------|------|
-| **A · 缩必填表** | compose 只合并 Partial；必填改为「chrome 最小集」；域方法按 register 出现 | 风险较低 |
-| **B · 登记表进化** | Runtime 直接吃 `Command[]`（元数据已含 run）；adapter 退化为壳级绑定 | 更近 C3 原文，改动面大 |
+| 项 | 结果 |
+|----|------|
+| 类型分层 | `ShellChromeCommandActions` / `ShellDomainCommandActions` / `ShellCommandAdapter` |
+| compose | 只校 `SHELL_CHROME_ACTION_KEYS`（14 项 chrome） |
+| bind | 域 handler 缺失 → `createDisabledCommand` |
+| 加域命令 | 元数据 + register + bind；**不必**改 compose 必填表 |
+| 方案 B | **未做**（Runtime 直接吃含 run 的 Command[]）；余债记 CLOSE |
 
-**禁止：** 长期保留「完整 ShellCommandActions 必填 30+ 方法」且每域加命令改 adapter。
-
-**验收：** 新增一条壳或域命令的改动点 ≤ 文档所述清单；旧命令行为不变；adapter 单测绿。
+**验收：** adapter 单测含「缺域 handler 禁用」；tsc / boundaries / command vitest 绿。
 
 ---
 
