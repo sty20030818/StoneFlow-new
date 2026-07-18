@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>StoneFlow Quick Create</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500;600&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+  --bg:#E4E6ED;
+  --panel:#FCFCFD;
+  --panel-border:#D0D3DC;
+  --divider:#ECEEF3;
+  --row-hover:#F0F3FF;
+  --create-bg:#EEF2FF;
+  --create-border:#D4DCFF;
+  --accent:#4361EE;
+  --accent-soft:#EEF1FF;
+  --text-1:#12151E;
+  --text-2:#4E5669;
+  --text-3:#8C95A8;
+  --success:#1A7A50;
+  --success-bg:#EDFAF3;
+  --shadow:0 24px 56px rgba(6,10,32,0.14),0 4px 14px rgba(6,10,32,0.07);
+  --font:'Geist',ui-sans-serif,-apple-system,sans-serif;
+  --mono:'Geist Mono',ui-monospace,monospace;
+  --r:13px;
+}
+
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-start;
+  padding:52px 24px 80px;
+}
+
+/* window chrome hint */
+.chrome{
+  width:720px;display:flex;align-items:center;gap:7px;
+  margin-bottom:10px;padding:0 2px;
+}
+.cdot{width:10px;height:10px;border-radius:50%;}
+.cbar{flex:1;height:1px;background:#C8CBD6;}
+.clabel{font-size:11px;color:#9299AE;letter-spacing:.04em;}
+
+/* ── Panel ── */
+.panel{
+  width:720px;
+  background:var(--panel);
+  border:1px solid var(--panel-border);
+  border-radius:var(--r);
+  overflow:visible;
+  box-shadow:var(--shadow);
+  position:relative;
+}
+
+/* ── Row 1: main input ── */
+.row1{
+  display:flex;align-items:center;gap:6px;
+  padding:11px 12px 10px;
+}
+
+/* param chip (priority, project, expand) */
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  height:30px;padding:0 10px;
+  border-radius:7px;border:1px solid #CDD0DA;
+  background:#fff;
+  font-family:var(--font);font-size:12px;font-weight:500;
+  color:var(--text-2);cursor:pointer;
+  white-space:nowrap;user-select:none;flex-shrink:0;
+  transition:background 90ms,border-color 90ms,color 90ms;
+}
+.chip:hover{background:#F4F6FF;border-color:#9AADFF;color:var(--accent);}
+.chip.active{background:var(--accent-soft);border-color:#B0C0FF;color:var(--accent);}
+
+/* priority chip — no-priority default: subdued */
+.chip.pri-none{color:var(--text-3);border-color:#DDE0E8;}
+.chip.pri-none:hover{color:var(--accent);border-color:#9AADFF;background:#F4F6FF;}
+
+/* priority boxes */
+.pb{display:inline-flex;align-items:center;justify-content:center;
+  height:20px;padding:0 6px;border-radius:4px;
+  font-family:var(--mono);font-size:10.5px;font-weight:700;flex-shrink:0;}
+.pb-none{background:#F0F2F7;color:var(--text-3);}
+.pb-p0{background:#FFE8E8;color:#B83232;}
+.pb-p1{background:#FFF0DE;color:#A85500;}
+.pb-p2{background:#ECF0FF;color:#3049D1;}
+.pb-p3{background:#F2F4F8;color:#5C6478;}
+
+/* main input */
+.main-input{
+  flex:1;min-width:0;
+  height:30px;padding:0 10px;
+  border:1px solid #CDD0DA;border-radius:7px;
+  background:#fff;outline:none;
+  font-family:var(--font);font-size:13.5px;
+  color:var(--text-1);caret-color:var(--accent);
+  transition:border-color 130ms,box-shadow 130ms;
+}
+.main-input:focus{border-color:#8AA0FF;box-shadow:0 0 0 3px rgba(67,97,238,0.12);}
+.main-input::placeholder{color:#B0BAC8;}
+
+/* expand button */
+.expand-btn{
+  width:30px;height:30px;flex-shrink:0;
+  border-radius:7px;border:1px solid #CDD0DA;background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text-3);
+  transition:background 90ms,border-color 90ms,color 90ms,transform 200ms;
+}
+.expand-btn:hover{background:#F4F6FF;border-color:#9AADFF;color:var(--accent);}
+.expand-btn.open{color:var(--accent);background:var(--accent-soft);border-color:#B0C0FF;transform:rotate(180deg);}
+
+/* ── Row 2: advanced params ── */
+.row2{
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;
+  padding:0 12px 10px;
+  max-height:0;opacity:0;overflow:hidden;
+  transition:max-height 220ms cubic-bezier(.4,0,.2,1),opacity 180ms ease,padding 220ms ease;
+}
+.row2.open{max-height:60px;opacity:1;padding:0 12px 10px;}
+
+/* secondary chips — slightly lighter weight */
+.chip2{
+  display:inline-flex;align-items:center;gap:4px;
+  height:26px;padding:0 9px;
+  border-radius:6px;border:1px solid #DDE0E8;
+  background:#F7F8FB;
+  font-family:var(--font);font-size:11.5px;font-weight:500;
+  color:var(--text-3);cursor:pointer;
+  white-space:nowrap;user-select:none;flex-shrink:0;
+  transition:background 90ms,border-color 90ms,color 90ms;
+}
+.chip2:hover{background:#EEF2FF;border-color:#9AADFF;color:var(--accent);}
+.chip2.set{color:var(--text-2);background:#fff;border-color:#C8D0E0;}
+.chip2.set:hover{color:var(--accent);background:#EEF2FF;border-color:#9AADFF;}
+
+/* status dot */
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.sd-todo{background:#C0C8D8;}.sd-doing{background:#3B9EED;}.sd-done{background:#1F9D62;}
+
+/* divider */
+.hdiv{height:1px;background:var(--divider);}
+
+/* ── Create preview row ── */
+.create-row{
+  display:none;align-items:center;gap:10px;
+  padding:9px 14px;
+  background:var(--create-bg);
+  border-bottom:1px solid var(--create-border);
+  cursor:pointer;position:relative;
+}
+.create-row.show{display:flex;}
+.create-row.focused::before{
+  content:'';position:absolute;
+  left:0;top:0;bottom:0;width:3px;
+  background:var(--accent);border-radius:0 2px 2px 0;
+}
+.create-icon{
+  width:24px;height:24px;border-radius:6px;
+  background:var(--accent-soft);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.create-body{flex:1;min-width:0;}
+.create-lbl{font-size:10.5px;color:var(--accent);font-weight:500;margin-bottom:1px;}
+.create-ttl{font-size:13.5px;color:var(--text-1);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.create-meta{font-size:11px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.create-right{flex-shrink:0;display:flex;align-items:center;gap:5px;}
+.enter-tag{
+  display:flex;align-items:center;gap:3px;
+  font-size:11px;color:#7C96FF;
+  background:#E8EDFF;padding:2px 7px;border-radius:4px;
+  border:1px solid #C4D0FF;font-weight:500;
+}
+
+/* ── Results ── */
+.results{max-height:300px;overflow-y:auto;}
+.results::-webkit-scrollbar{width:4px;}
+.results::-webkit-scrollbar-thumb{background:#DDE0E8;border-radius:2px;}
+
+.section{}.section+.section{border-top:1px solid var(--divider);}
+.sec-head{
+  padding:9px 14px 4px;
+  font-size:10.5px;font-weight:500;color:var(--text-3);
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.r-row{
+  display:flex;align-items:center;gap:10px;
+  padding:7px 14px;cursor:pointer;position:relative;
+  transition:background 70ms;
+}
+.r-row:hover,.r-row.focused{background:var(--row-hover);}
+.r-row.focused::before{
+  content:'';position:absolute;
+  left:0;top:0;bottom:0;width:3px;
+  background:var(--accent);border-radius:0 2px 2px 0;
+}
+.r-icon{
+  width:22px;height:22px;border-radius:5px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.ri-t{background:#EEF1FF;}.ri-p{background:#EDFAF3;}
+.r-body{flex:1;min-width:0;}
+.r-ttl{font-size:12.5px;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.r-sub{font-size:11px;color:var(--text-3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.r-right{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.mpill{font-size:10.5px;color:var(--text-3);background:#F2F4F8;padding:1px 5px;border-radius:3px;border:1px solid #E6E9EE;}
+.r-enter{font-size:11px;color:#B8C2D4;opacity:0;transition:opacity 80ms;}
+.r-row:hover .r-enter,.r-row.focused .r-enter{opacity:1;color:#8AA0FF;}
+
+/* ── Continuous create toast ── */
+.cont-toast{
+  display:none;align-items:center;gap:8px;
+  padding:6px 14px;
+  background:var(--success-bg);border-bottom:1px solid #B8EDD8;
+  font-size:11.5px;color:var(--success);
+}
+.cont-toast.show{display:flex;}
+.cont-count{
+  font-weight:600;font-family:var(--mono);
+  background:#D0F5E4;color:var(--success);
+  padding:1px 6px;border-radius:3px;font-size:11px;
+}
+
+/* ── Popover ── */
+.pop{
+  position:absolute;z-index:200;
+  background:#fff;border:1px solid #D0D3DC;
+  border-radius:9px;
+  box-shadow:0 8px 28px rgba(0,0,0,0.11),0 2px 6px rgba(0,0,0,0.05);
+  min-width:160px;overflow:hidden;display:none;
+  animation:popIn 120ms cubic-bezier(.2,.8,.2,1);
+}
+.pop.show{display:block;}
+@keyframes popIn{
+  from{opacity:0;transform:translateY(-5px) scale(.97);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+.pop-head{
+  padding:7px 10px 4px;
+  font-size:10.5px;font-weight:500;color:var(--text-3);
+  letter-spacing:.06em;text-transform:uppercase;
+}
+.pop-item{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 10px;font-size:12.5px;color:var(--text-2);
+  cursor:pointer;transition:background 70ms;
+}
+.pop-item:hover,.pop-item.kf{background:var(--row-hover);color:var(--text-1);}
+.pop-item.sel{color:var(--accent);}
+.pck{width:14px;flex-shrink:0;text-align:center;font-size:11px;color:var(--accent);}
+.pop-sep{height:1px;background:var(--divider);margin:3px 0;}
+.pop-srch{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 10px;border-bottom:1px solid var(--divider);
+}
+.pop-srch input{
+  flex:1;border:none;outline:none;
+  font-family:var(--font);font-size:12.5px;
+  color:var(--text-1);background:transparent;
+  caret-color:var(--accent);
+}
+.pop-srch input::placeholder{color:#B0BAC8;}
+
+/* ── Footer ── */
+.footer{
+  display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  padding:8px 14px;
+  border-top:1px solid var(--divider);
+  background:#F4F5F9;
+  border-radius:0 0 var(--r) var(--r);
+}
+.fhint{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-3);white-space:nowrap;}
+.kbd{
+  background:#E8EAEF;border:1px solid #CDD0DA;
+  border-radius:4px;padding:1px 5px;
+  font-size:10.5px;font-family:var(--mono);color:#6B7489;
+}
+.fsep{width:1px;height:11px;background:#DDE0E8;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="chrome">
+  <div class="cdot" style="background:#FF5F57"></div>
+  <div class="cdot" style="background:#FFBD2E"></div>
+  <div class="cdot" style="background:#28C840"></div>
+  <div class="cbar"></div>
+  <span class="clabel">Quick Create — ⌘K</span>
+  <div class="cbar"></div>
+</div>
+
+<div class="panel" id="panel">
+
+  <!-- ROW 1 -->
+  <div class="row1">
+    <!-- Priority chip -->
+    <div class="chip pri-none" id="chip-pri" data-pop="pop-pri">
+      <span class="pb pb-none" id="pri-display">—</span>
+    </div>
+
+    <!-- Main input -->
+    <input class="main-input" id="mainInput"
+      placeholder="写下任务…"
+      autocomplete="off" spellcheck="false"/>
+
+    <!-- Project chip -->
+    <div class="chip active" id="chip-proj" data-pop="pop-proj">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <rect x=".75" y="1.75" width="8.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1"/>
+        <line x1="2.5" y1="4" x2="7.5" y2="4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+        <line x1="2.5" y1="5.8" x2="5.5" y2="5.8" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+      <span id="proj-display">收件箱</span>
+    </div>
+
+    <!-- Expand button -->
+    <div class="expand-btn" id="expand-btn" title="更多参数">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <path d="M2 3.5l3.5 3.5L9 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ROW 2: advanced -->
+  <div class="row2" id="row2">
+    <div class="chip2 set" id="chip-status" data-pop="pop-status">
+      <span class="sdot sd-todo" id="status-dot"></span>
+      <span id="status-display">待执行</span>
+    </div>
+    <div class="chip2" id="chip-due" data-pop="pop-due">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <rect x=".75" y="1.25" width="8.5" height="8" rx="1.5" stroke="currentColor" stroke-width="1"/>
+        <line x1="3" y1=".5" x2="3" y2="2.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+        <line x1="7" y1=".5" x2="7" y2="2.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+        <line x1="2.5" y1="5.5" x2="7.5" y2="5.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+      <span id="due-display">截止时间</span>
+    </div>
+    <div class="chip2" id="chip-planned" data-pop="pop-planned">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <circle cx="5" cy="5.5" r="3.75" stroke="currentColor" stroke-width="1"/>
+        <line x1="5" y1="3.5" x2="5" y2="5.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+        <line x1="5" y1="5.5" x2="6.5" y2="6.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+      <span id="planned-display">计划时间</span>
+    </div>
+    <div class="chip2" id="chip-remind" data-pop="pop-remind">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M5 1.5v.5M2 3.5A3 3 0 018 3.5V6l1 1H1L2 6V3.5zM4 8.5a1 1 0 002 0" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span id="remind-display">提醒时间</span>
+    </div>
+    <div class="chip2 set" id="chip-space" data-pop="pop-space">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <rect x=".75" y=".75" width="8.5" height="8.5" rx="2" stroke="currentColor" stroke-width="1"/>
+        <path d="M3 5h4M5 3v4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+      <span id="space-display">产品研发</span>
+    </div>
+  </div>
+
+  <div class="hdiv" id="hdiv1"></div>
+
+  <!-- continuous create toast -->
+  <div class="cont-toast" id="cont-toast">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#1A7A50" stroke-width="1.2"/><path d="M3.5 6l1.8 1.8L8.5 4" stroke="#1A7A50" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    已连续创建 <span class="cont-count" id="cont-count">0</span> 条
+  </div>
+
+  <!-- CREATE ROW -->
+  <div class="create-row focused" id="createRow">
+    <div class="create-icon">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <line x1="5.5" y1="1.5" x2="5.5" y2="9.5" stroke="#4361EE" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="1.5" y1="5.5" x2="9.5" y2="5.5" stroke="#4361EE" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="create-body">
+      <div class="create-lbl">创建任务</div>
+      <div class="create-ttl" id="create-ttl">—</div>
+      <div class="create-meta" id="create-meta">— · 待执行 · 产品研发 / 收件箱</div>
+    </div>
+    <div class="create-right">
+      <div class="enter-tag" id="main-enter-tag">↵ 创建</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="results"></div>
+
+  <!-- POPOVERS -->
+
+  <!-- Priority -->
+  <div class="pop" id="pop-pri">
+    <div class="pop-head">优先级</div>
+    <div class="pop-item sel" data-pri="none"><span class="pck">✓</span><span class="pb pb-none">—</span><span>无优先级</span></div>
+    <div class="pop-sep"></div>
+    <div class="pop-item" data-pri="P0"><span class="pck"></span><span class="pb pb-p0">P0</span><span>紧急</span></div>
+    <div class="pop-item" data-pri="P1"><span class="pck"></span><span class="pb pb-p1">P1</span><span>高优先级</span></div>
+    <div class="pop-item" data-pri="P2"><span class="pck"></span><span class="pb pb-p2">P2</span><span>中优先级</span></div>
+    <div class="pop-item" data-pri="P3"><span class="pck"></span><span class="pb pb-p3">P3</span><span>低优先级</span></div>
+    <div style="height:4px"></div>
+  </div>
+
+  <!-- Status -->
+  <div class="pop" id="pop-status">
+    <div class="pop-head">状态</div>
+    <div class="pop-item sel" data-status="todo" data-dot="sd-todo" data-lbl="待执行"><span class="pck">✓</span><span class="sdot sd-todo"></span><span>待执行</span></div>
+    <div class="pop-item" data-status="doing" data-dot="sd-doing" data-lbl="进行中"><span class="pck"></span><span class="sdot sd-doing"></span><span>进行中</span></div>
+    <div class="pop-item" data-status="done" data-dot="sd-done" data-lbl="已完成"><span class="pck"></span><span class="sdot sd-done"></span><span>已完成</span></div>
+    <div style="height:4px"></div>
+  </div>
+
+  <!-- Project -->
+  <div class="pop" id="pop-proj" style="min-width:200px;">
+    <div class="pop-head">项目 <span style="font-size:9.5px;color:#C0C8D8;font-weight:400;margin-left:3px;">产品研发</span></div>
+    <div class="pop-srch">
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5" cy="5" r="3.5" stroke="#A0A8B8" stroke-width="1.1"/><line x1="7.8" y1="7.8" x2="10" y2="10" stroke="#A0A8B8" stroke-width="1.1" stroke-linecap="round"/></svg>
+      <input id="proj-srch-input" placeholder="搜索项目…" autocomplete="off"/>
+    </div>
+    <div id="proj-pop-list"></div>
+    <div style="height:4px"></div>
+  </div>
+
+  <!-- Space -->
+  <div class="pop" id="pop-space">
+    <div class="pop-head">空间</div>
+    <div id="space-pop-list"></div>
+    <div style="height:4px"></div>
+  </div>
+
+  <!-- Due time -->
+  <div class="pop" id="pop-due">
+    <div class="pop-head">截止时间</div>
+    <div class="pop-item" data-time="today" data-lbl="截止 今天"><span class="pck"></span><span>今天</span></div>
+    <div class="pop-item" data-time="tmr" data-lbl="截止 明天"><span class="pck"></span><span>明天</span></div>
+    <div class="pop-item" data-time="week" data-lbl="截止 本周"><span class="pck"></span><span>本周</span></div>
+    <div class="pop-sep"></div>
+    <div class="pop-item" data-time="custom" data-lbl="截止 自定义"><span class="pck"></span><span style="color:var(--text-3)">自定义…</span></div>
+    <div style="height:4px"></div>
+  </div>
+
+  <!-- Planned time -->
+  <div class="pop" id="pop-planned">
+    <div class="pop-head">计划时间</div>
+    <div class="pop-item" data-time="today" data-lbl="计划 今天"><span class="pck"></span><span>今天</span></div>
+    <div class="pop-item" data-time="tmr" data-lbl="计划 明天"><span class="pck"></span><span>明天</span></div>
+    <div class="pop-item" data-time="week" data-lbl="计划 本周"><span class="pck"></span><span>本周</span></div>
+    <div class="pop-sep"></div>
+    <div class="pop-item" data-time="custom" data-lbl="计划 自定义"><span class="pck"></span><span style="color:var(--text-3)">自定义…</span></div>
+    <div style="height:4px"></div>
+  </div>
+
+  <!-- Remind time -->
+  <div class="pop" id="pop-remind">
+    <div class="pop-head">提醒时间</div>
+    <div class="pop-item" data-time="today" data-lbl="提醒 今天"><span class="pck"></span><span>今天</span></div>
+    <div class="pop-item" data-time="tmr" data-lbl="提醒 明天"><span class="pck"></span><span>明天</span></div>
+    <div class="pop-item" data-time="week" data-lbl="提醒 本周"><span class="pck"></span><span>本周</span></div>
+    <div class="pop-sep"></div>
+    <div class="pop-item" data-time="custom" data-lbl="提醒 自定义"><span class="pck"></span><span style="color:var(--text-3)">自定义…</span></div>
+    <div style="height:4px"></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer" id="footer">
+    <div class="fhint"><kbd class="kbd">↑↓</kbd> 选择</div>
+    <div class="fhint"><kbd class="kbd">↵</kbd> 创建</div>
+    <div class="fhint"><kbd class="kbd">⇧↵</kbd> 连续创建</div>
+    <div class="fhint"><kbd class="kbd">⌘↵</kbd> 创建并打开</div>
+    <div class="fsep"></div>
+    <div class="fhint"><kbd class="kbd">Esc</kbd> 清空 / 关闭</div>
+  </div>
+
+</div><!-- end panel -->
+
+<script>
+/* ───────── Data ───────── */
+const PROJECTS_BY_SPACE = {
+  '产品研发': ['收件箱','独立事项','StoneFlow 开发','设计系统整理','移动端适配'],
+  '工程基础': ['收件箱','独立事项','基础架构重构','DevOps 自动化'],
+  '个人成长': ['收件箱','独立事项','读书计划','学习笔记'],
+};
+const SPACES = Object.keys(PROJECTS_BY_SPACE);
+
+const RECENT_TASKS = [
+  {title:'完善 Command 面板键盘导航', sub:'产品研发 / StoneFlow 开发 · P1', meta:'今天', pri:'P1'},
+  {title:'设计 Drawer 打开动效', sub:'产品研发 / StoneFlow 开发 · P2', meta:'昨天', pri:'P2'},
+  {title:'整理 D1 数据模型文档', sub:'产品研发 / StoneFlow 开发 · P0', meta:'2天前', pri:'P0'},
+];
+const RECENT_PROJECTS = [
+  {title:'StoneFlow 开发', sub:'产品研发 · 12 个任务', meta:'活跃'},
+  {title:'设计系统整理', sub:'产品研发 · 5 个任务', meta:'活跃'},
+  {title:'移动端适配', sub:'产品研发 · 3 个任务', meta:'暂停'},
+];
+
+const PRI_STYLE = {none:'pb-none',P0:'pb-p0',P1:'pb-p1',P2:'pb-p2',P3:'pb-p3'};
+const PRI_DISPLAY = {none:'—',P0:'P0',P1:'P1',P2:'P2',P3:'P3'};
+const STATUS_CFG = {
+  todo:{lbl:'待执行',dot:'sd-todo'},
+  doing:{lbl:'进行中',dot:'sd-doing'},
+  done:{lbl:'已完成',dot:'sd-done'},
+};
+
+/* ───────── State ───────── */
+let S = {
+  pri:'none', status:'todo', space:'产品研发', proj:'收件箱',
+  due:null, planned:null, remind:null,
+};
+let expanded = false;
+let focusTarget = 'create'; // 'create' | number
+let allRows = [];
+let activePopId = null;
+let contCount = 0;
+let escCount = 0;
+
+/* ───────── Elements ───────── */
+const mainInput   = document.getElementById('mainInput');
+const createRow   = document.getElementById('createRow');
+const createTtl   = document.getElementById('create-ttl');
+const createMeta  = document.getElementById('create-meta');
+const resultZone  = document.getElementById('results');
+const row2        = document.getElementById('row2');
+const expandBtn   = document.getElementById('expand-btn');
+const contToast   = document.getElementById('cont-toast');
+const contCountEl = document.getElementById('cont-count');
+const footer      = document.getElementById('footer');
+
+/* ───────── Sync UI ───────── */
+function syncUI() {
+  // priority chip
+  const pd = document.getElementById('pri-display');
+  pd.className = 'pb ' + PRI_STYLE[S.pri];
+  pd.textContent = PRI_DISPLAY[S.pri];
+  const chipPri = document.getElementById('chip-pri');
+  chipPri.className = 'chip' + (S.pri === 'none' ? ' pri-none' : ' active');
+
+  // priority pop checks
+  document.querySelectorAll('#pop-pri .pop-item').forEach(item => {
+    const sel = item.dataset.pri === S.pri;
+    item.querySelector('.pck').textContent = sel ? '✓' : '';
+    item.classList.toggle('sel', sel);
+  });
+
+  // status
+  const sc = STATUS_CFG[S.status];
+  document.getElementById('status-dot').className = 'sdot ' + sc.dot;
+  document.getElementById('status-display').textContent = sc.lbl;
+  document.querySelectorAll('#pop-status .pop-item').forEach(item => {
+    const sel = item.dataset.status === S.status;
+    item.querySelector('.pck').textContent = sel ? '✓' : '';
+    item.classList.toggle('sel', sel);
+  });
+
+  // project chip
+  document.getElementById('proj-display').textContent = S.proj;
+  buildProjList();
+
+  // space
+  document.getElementById('space-display').textContent = S.space;
+  buildSpaceList();
+
+  // time chips
+  updateTimeChip('chip-due','due-display','截止时间',S.due);
+  updateTimeChip('chip-planned','planned-display','计划时间',S.planned);
+  updateTimeChip('chip-remind','remind-display','提醒时间',S.remind);
+
+  // create row meta
+  updateCreateMeta();
+}
+
+function updateTimeChip(chipId, displayId, placeholder, val) {
+  const chip = document.getElementById(chipId);
+  const disp = document.getElementById(displayId);
+  if (val) {
+    chip.classList.add('set');
+    disp.textContent = val;
+  } else {
+    chip.classList.remove('set');
+    disp.textContent = placeholder;
+  }
+}
+
+function updateCreateMeta() {
+  const priTxt = S.pri === 'none' ? '无优先级' : S.pri;
+  const statusTxt = STATUS_CFG[S.status].lbl;
+  const locTxt = S.space + ' / ' + S.proj;
+  const timeParts = [S.due, S.planned, S.remind].filter(Boolean);
+  const parts = [priTxt, statusTxt, locTxt, ...timeParts];
+  createMeta.textContent = parts.join(' · ');
+}
+
+/* ───────── Project & Space lists ───────── */
+function buildProjList(filter='') {
+  const list = document.getElementById('proj-pop-list');
+  list.innerHTML = '';
+  const projs = PROJECTS_BY_SPACE[S.space] || [];
+  projs.filter(p => p.toLowerCase().includes(filter.toLowerCase())).forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'pop-item' + (p === S.proj ? ' sel' : '');
+    item.dataset.proj = p;
+    item.innerHTML = `<span class="pck">${p===S.proj?'✓':''}</span><span>${p}</span>`;
+    item.addEventListener('click', () => { S.proj = p; syncUI(); closePop(); mainInput.focus(); });
+    list.appendChild(item);
+  });
+}
+
+function buildSpaceList() {
+  const list = document.getElementById('space-pop-list');
+  list.innerHTML = '';
+  SPACES.forEach(sp => {
+    const item = document.createElement('div');
+    item.className = 'pop-item' + (sp === S.space ? ' sel' : '');
+    item.dataset.space = sp;
+    item.innerHTML = `<span class="pck">${sp===S.space?'✓':''}</span><span>${sp}</span>`;
+    item.addEventListener('click', () => {
+      S.space = sp; S.proj = '收件箱';
+      syncUI(); closePop(); mainInput.focus();
+    });
+    list.appendChild(item);
+  });
+}
+
+/* ───────── Popovers ───────── */
+function openPop(id, anchorId) {
+  closePop();
+  const pop = document.getElementById(id);
+  const anchor = document.getElementById(anchorId);
+  const panelRect = document.getElementById('panel').getBoundingClientRect();
+  const aRect = anchor.getBoundingClientRect();
+
+  pop.style.top = (aRect.bottom - panelRect.top + 6) + 'px';
+
+  // determine left/right positioning
+  const popWidth = parseInt(pop.style.minWidth) || 170;
+  const rightAlign = (aRect.right - panelRect.left) > (panelRect.width / 2);
+  if (rightAlign) {
+    pop.style.right = (panelRect.right - aRect.right) + 'px';
+    pop.style.left = 'auto';
+  } else {
+    pop.style.left = (aRect.left - panelRect.left) + 'px';
+    pop.style.right = 'auto';
+  }
+
+  pop.classList.add('show');
+  activePopId = id;
+
+  // focus search input if present
+  if (id === 'pop-proj') {
+    const si = document.getElementById('proj-srch-input');
+    si.value = ''; buildProjList('');
+    setTimeout(() => si.focus(), 40);
+  }
+
+  setFooterMode('popover');
+}
+
+function closePop() {
+  document.querySelectorAll('.pop').forEach(p => p.classList.remove('show'));
+  activePopId = null;
+  setFooterMode(mainInput.value ? 'has-input' : 'default');
+}
+
+// wire chip clicks
+document.querySelectorAll('[data-pop]').forEach(el => {
+  el.addEventListener('click', () => {
+    const pid = el.dataset.pop;
+    if (activePopId === pid) { closePop(); mainInput.focus(); return; }
+    openPop(pid, el.id);
+  });
+});
+
+// priority items
+document.querySelectorAll('#pop-pri .pop-item').forEach(item => {
+  item.addEventListener('click', () => {
+    S.pri = item.dataset.pri; syncUI(); closePop(); mainInput.focus();
+  });
+});
+
+// status items
+document.querySelectorAll('#pop-status .pop-item').forEach(item => {
+  item.addEventListener('click', () => {
+    S.status = item.dataset.status; syncUI(); closePop(); mainInput.focus();
+  });
+});
+
+// time popovers (due, planned, remind)
+['pop-due','pop-planned','pop-remind'].forEach(popId => {
+  const key = popId === 'pop-due' ? 'due' : popId === 'pop-planned' ? 'planned' : 'remind';
+  document.querySelectorAll(`#${popId} .pop-item[data-time]`).forEach(item => {
+    item.addEventListener('click', () => {
+      S[key] = item.dataset.lbl;
+      // update check marks in this popover
+      document.querySelectorAll(`#${popId} .pop-item`).forEach(i => {
+        i.querySelector('.pck').textContent = i.dataset.lbl === S[key] ? '✓' : '';
+        i.classList.toggle('sel', i.dataset.lbl === S[key]);
+      });
+      syncUI(); closePop(); mainInput.focus();
+    });
+  });
+});
+
+// project search
+document.getElementById('proj-srch-input').addEventListener('input', e => buildProjList(e.target.value));
+
+// outside click
+document.addEventListener('mousedown', e => {
+  if (!e.target.closest('.pop') && !e.target.closest('[data-pop]') &&
+      !e.target.closest('#expand-btn')) {
+    if (activePopId) closePop();
+  }
+});
+
+/* ───────── Expand ───────── */
+expandBtn.addEventListener('click', () => {
+  expanded = !expanded;
+  row2.classList.toggle('open', expanded);
+  expandBtn.classList.toggle('open', expanded);
+});
+
+/* ───────── Render results ───────── */
+function renderResults(query) {
+  resultZone.innerHTML = '';
+  allRows = [];
+  const q = query.trim().toLowerCase();
+  const hasQ = q.length > 0;
+
+  if (hasQ) {
+    createRow.classList.add('show');
+    createTtl.textContent = query.trim();
+    focusTarget = 'create';
+  } else {
+    createRow.classList.remove('show');
+    focusTarget = 'none';
+  }
+
+  const mt = hasQ ? RECENT_TASKS.filter(t => t.title.toLowerCase().includes(q)) : RECENT_TASKS;
+  const mp = hasQ
+    ? RECENT_PROJECTS.filter(p => p.title.toLowerCase().includes(q))
+    : RECENT_PROJECTS;
+
+  function makeSection(label, items, type) {
+    if (!items.length) return;
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    const head = document.createElement('div');
+    head.className = 'sec-head';
+    head.textContent = hasQ ? label + '搜索结果' : '最近' + label;
+    sec.appendChild(head);
+
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'r-row';
+      const isT = type === 'task';
+      row.innerHTML = `
+        <div class="r-icon ${isT?'ri-t':'ri-p'}">
+          ${isT
+            ?`<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="4" stroke="#4361EE" stroke-width="1.2"/><circle cx="5.5" cy="5.5" r="1.6" fill="#4361EE"/></svg>`
+            :`<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x=".75" y="1.5" width="9.5" height="8" rx="1.8" stroke="#1F9D62" stroke-width="1.2"/><line x1="2.5" y1="4.5" x2="8.5" y2="4.5" stroke="#1F9D62" stroke-width="1" stroke-linecap="round"/><line x1="2.5" y1="6.5" x2="6.5" y2="6.5" stroke="#1F9D62" stroke-width="1" stroke-linecap="round"/></svg>`
+          }
+        </div>
+        <div class="r-body">
+          <div class="r-ttl">${item.title}</div>
+          <div class="r-sub">${item.sub}</div>
+        </div>
+        <div class="r-right">
+          ${isT&&item.pri?`<span class="pb ${PRI_STYLE[item.pri]}" style="font-size:9.5px;height:17px;padding:0 5px;">${item.pri}</span>`:''}
+          <span class="mpill">${item.meta}</span>
+          <span class="r-enter">↵ 打开</span>
+        </div>`;
+      row.addEventListener('mouseenter', () => {
+        focusTarget = allRows.indexOf(row);
+        syncFocus();
+      });
+      allRows.push(row);
+      sec.appendChild(row);
+    });
+    resultZone.appendChild(sec);
+  }
+
+  makeSection('任务', mt, 'task');
+  makeSection('项目', mp, 'proj');
+  syncFocus();
+}
+
+function syncFocus() {
+  createRow.classList.toggle('focused', focusTarget === 'create');
+  allRows.forEach((r,i) => r.classList.toggle('focused', focusTarget === i));
+
+  // update enter tag text
+  const tag = document.getElementById('main-enter-tag');
+  if (focusTarget === 'create') tag.textContent = '↵ 创建';
+  else tag.textContent = '↵ 打开';
+}
+
+/* ───────── Footer modes ───────── */
+function setFooterMode(mode) {
+  const hints = {
+    default: `
+      <div class="fhint"><kbd class="kbd">↑↓</kbd> 选择</div>
+      <div class="fhint"><kbd class="kbd">↵</kbd> 创建</div>
+      <div class="fhint"><kbd class="kbd">⇧↵</kbd> 连续创建</div>
+      <div class="fhint"><kbd class="kbd">⌘↵</kbd> 创建并打开</div>
+      <div class="fsep"></div>
+      <div class="fhint"><kbd class="kbd">Esc</kbd> 清空 / 关闭</div>`,
+    'has-input': `
+      <div class="fhint"><kbd class="kbd">↑↓</kbd> 选择</div>
+      <div class="fhint"><kbd class="kbd">↵</kbd> 创建</div>
+      <div class="fhint"><kbd class="kbd">⇧↵</kbd> 连续创建</div>
+      <div class="fhint"><kbd class="kbd">⌘↵</kbd> 创建并打开</div>
+      <div class="fsep"></div>
+      <div class="fhint"><kbd class="kbd">Esc</kbd> 清空</div>`,
+    popover: `
+      <div class="fhint"><kbd class="kbd">↑↓</kbd> 选择</div>
+      <div class="fhint"><kbd class="kbd">↵</kbd> 确认</div>
+      <div class="fsep"></div>
+      <div class="fhint"><kbd class="kbd">Esc</kbd> 关闭</div>`,
+  };
+  footer.innerHTML = hints[mode] || hints.default;
+}
+
+/* ───────── Input ───────── */
+mainInput.addEventListener('input', e => {
+  escCount = 0;
+  renderResults(e.target.value);
+  setFooterMode(e.target.value ? 'has-input' : 'default');
+  updateCreateMeta();
+});
+
+mainInput.addEventListener('keydown', e => {
+  if (activePopId) {
+    if (e.key === 'Escape') { e.preventDefault(); closePop(); mainInput.focus(); }
+    return;
+  }
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (focusTarget === 'create' || focusTarget === 'none') {
+      if (allRows.length) { focusTarget = 0; syncFocus(); }
+    } else {
+      focusTarget = Math.min(focusTarget + 1, allRows.length - 1);
+      syncFocus();
+    }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (typeof focusTarget === 'number') {
+      if (focusTarget === 0) {
+        if (createRow.classList.contains('show')) { focusTarget = 'create'; syncFocus(); }
+      } else {
+        focusTarget = Math.max(focusTarget - 1, 0); syncFocus();
+      }
+    }
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (!mainInput.value.trim()) return;
+
+    if (e.shiftKey) {
+      // continuous create
+      contCount++;
+      contCountEl.textContent = contCount;
+      contToast.classList.add('show');
+      mainInput.value = '';
+      renderResults('');
+      setFooterMode('default');
+      updateCreateMeta();
+    } else {
+      // normal create — flash feedback then reset
+      flashCreate();
+    }
+  } else if (e.key === 'Escape') {
+    escCount++;
+    if (escCount === 1 && mainInput.value) {
+      mainInput.value = ''; renderResults(''); setFooterMode('default');
+    } else {
+      // close (simulate by resetting everything)
+      mainInput.value = ''; renderResults('');
+      contCount = 0; contToast.classList.remove('show');
+      setFooterMode('default'); escCount = 0;
+    }
+  }
+});
+
+function flashCreate() {
+  const orig = createRow.style.background;
+  createRow.style.background = '#D8E4FF';
+  createRow.style.transition = 'background 80ms';
+  setTimeout(() => {
+    createRow.style.background = '';
+    mainInput.value = '';
+    renderResults('');
+    contCount = 0; contToast.classList.remove('show');
+    setFooterMode('default');
+  }, 120);
+}
+
+/* ───────── Init ───────── */
+syncUI();
+renderResults('');
+buildProjList();
+buildSpaceList();
+setTimeout(() => mainInput.focus(), 60);
+</script>
+</body>
+</html>

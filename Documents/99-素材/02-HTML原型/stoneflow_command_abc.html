@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>StoneFlow Command — A / B / C</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ECEEF2;
+  --panel-bg: #FCFCFD;
+  --panel-border: #D6D9E0;
+  --input-border: #D0D4DC;
+  --input-focus: #6B8AFF;
+  --divider: #EAECF0;
+  --section-label: #A0A8B8;
+  --text-primary: #141720;
+  --text-secondary: #5C6478;
+  --text-muted: #9099AC;
+  --row-hover: #F2F5FF;
+  --row-active-bar: #4C6FFF;
+  --chip-bg: #F4F5F8;
+  --chip-border: #D0D4DC;
+  --chip-active-bg: #EEF1FF;
+  --chip-active-border: #8BA0FF;
+  --chip-active-text: #3A5EFF;
+  --btn-create-bg: #4C6FFF;
+  --btn-create-hover: #3B5EEE;
+  --shadow: 0 16px 40px rgba(10,15,40,0.12), 0 2px 8px rgba(10,15,40,0.06);
+  --radius: 13px;
+  --font: 'Geist', ui-sans-serif, -apple-system, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, monospace;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 24px 60px;
+}
+
+/* ── Switcher ── */
+.switcher {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 28px;
+  background: #E4E6EC;
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.sw-btn {
+  padding: 6px 20px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  font-family: var(--font);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #7A8299;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, box-shadow 150ms;
+}
+
+.sw-btn.active {
+  background: #fff;
+  color: #141720;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+
+.variant-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+/* ── Panel shell ── */
+.panel {
+  width: 700px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+/* ── Header ── */
+.header { padding: 13px 14px 0; }
+
+.top-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.input-wrap { flex: 1; position: relative; height: 35px; }
+
+.cmd-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: #fff;
+  outline: none;
+  font-family: var(--font);
+  font-size: 13.5px;
+  color: var(--text-primary);
+  caret-color: var(--row-active-bar);
+  transition: border-color 140ms, box-shadow 140ms;
+}
+.cmd-input:focus {
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 3px rgba(107,138,255,0.14);
+}
+.cmd-input::placeholder { color: #A8B0C2; }
+
+/* token input (variant B) */
+.token-input-wrap {
+  flex: 1;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: #fff;
+  transition: border-color 140ms, box-shadow 140ms;
+  cursor: text;
+}
+.token-input-wrap:focus-within {
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 3px rgba(107,138,255,0.14);
+}
+
+.token {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 500;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+}
+.token-remove {
+  font-size: 10px;
+  opacity: 0.5;
+  line-height: 1;
+}
+.token-remove:hover { opacity: 1; }
+
+.token-real-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text-primary);
+  background: transparent;
+  min-width: 80px;
+  caret-color: var(--row-active-bar);
+}
+.token-real-input::placeholder { color: #A8B0C2; }
+
+/* action button */
+.action-btn {
+  height: 35px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--chip-border);
+  background: #fff;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: background 100ms, border-color 100ms, color 100ms, box-shadow 100ms;
+}
+.action-btn:hover { background: #F5F7FF; border-color: #9AADFF; color: var(--chip-active-text); }
+.action-btn.create {
+  background: var(--btn-create-bg);
+  border-color: var(--btn-create-bg);
+  color: #fff;
+}
+.action-btn.create:hover { background: var(--btn-create-hover); border-color: var(--btn-create-hover); }
+
+/* ── Params (A & original) ── */
+.params-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0 12px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  max-height: 44px;
+  opacity: 1;
+  transition: max-height 260ms cubic-bezier(0.4,0,0.2,1),
+              opacity 200ms ease,
+              padding 260ms ease;
+}
+.params-row.hidden {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.p-label { font-size: 11.5px; color: var(--section-label); white-space: nowrap; flex-shrink: 0; }
+
+.pri-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: var(--mono);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  border: 1.5px solid transparent;
+  transition: opacity 120ms, box-shadow 120ms;
+}
+.pri-chip:not(.active) { opacity: 0.35; }
+.pri-chip.active { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--pc); }
+.pc-p0 { background: #FFE8E8; color: #B83232; --pc: #B83232; }
+.pc-p1 { background: #FFF0DE; color: #A85500; --pc: #A85500; }
+.pc-p2 { background: #ECF0FF; color: #3049D1; --pc: #3049D1; }
+.pc-p3 { background: #F2F4F8; color: #5C6478; --pc: #8A94A6; }
+
+.chip-sep { width: 1px; height: 15px; background: var(--divider); margin: 0 3px; flex-shrink: 0; }
+
+.param-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  border: 1px solid var(--chip-border);
+  background: #fff;
+  color: #3A4152;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: background 100ms, border-color 100ms, color 100ms;
+}
+.param-chip:hover { background: #F5F7FF; border-color: #9AADFF; color: var(--chip-active-text); }
+.param-chip.active { background: var(--chip-active-bg); border-color: var(--chip-active-border); color: var(--chip-active-text); font-weight: 500; }
+
+/* ── Divider ── */
+.h-divider { height: 1px; background: var(--divider); }
+
+/* ── Mode hint banner ── */
+.mode-banner {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  font-size: 11.5px;
+  color: #6070A0;
+  background: #F4F6FF;
+  border-bottom: 1px solid #DDE3FF;
+  overflow: hidden;
+  max-height: 38px;
+  opacity: 1;
+  transition: max-height 240ms ease, opacity 200ms ease, padding 240ms ease;
+}
+.mode-banner.hidden { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; }
+.mode-banner b { color: #3A5EFF; font-weight: 500; }
+.banner-dismiss { margin-left: auto; font-size: 11px; color: #A0AABF; cursor: pointer; flex-shrink: 0; }
+.banner-dismiss:hover { color: #3A5EFF; }
+
+/* ── Results ── */
+.results-zone {}
+
+.section { border-bottom: 1px solid var(--divider); }
+.section:last-child { border-bottom: none; }
+
+.sec-head {
+  padding: 9px 16px 5px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--section-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.result-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  position: relative;
+  transition: background 70ms;
+}
+.result-row:hover, .result-row.focused { background: var(--row-hover); }
+.result-row.focused::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--row-active-bar);
+  border-radius: 0 2px 2px 0;
+}
+
+.r-icon {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.ri-task { background: #EEF1FF; }
+.ri-proj { background: #EDFAF3; }
+
+.r-body { flex: 1; min-width: 0; }
+.r-title { font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.r-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* priority badge in row */
+.pb {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: var(--mono);
+}
+.pb-p0 { background: #FFE8E8; color: #B83232; }
+.pb-p1 { background: #FFF0DE; color: #A85500; }
+.pb-p2 { background: #ECF0FF; color: #3049D1; }
+.pb-p3 { background: #F2F4F8; color: #5C6478; }
+
+.meta {
+  font-size: 11px; color: var(--text-muted);
+  background: #F2F4F8;
+  padding: 1px 6px; border-radius: 4px;
+  border: 1px solid #E6E9EE;
+}
+
+/* C: action pills on hover */
+.row-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 100ms;
+}
+.result-row:hover .row-actions,
+.result-row.focused .row-actions { opacity: 1; }
+.act-pill {
+  padding: 2px 8px;
+  border-radius: 5px;
+  background: #EAECF2;
+  font-size: 10.5px;
+  color: #4A5568;
+  border: 1px solid #D8DCE8;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 80ms, color 80ms;
+}
+.act-pill:hover { background: #E0E5FF; color: #3A5EFF; border-color: #B0BFFF; }
+
+.r-enter {
+  font-size: 11px;
+  color: #B0BACC;
+  opacity: 0;
+  transition: opacity 80ms;
+  flex-shrink: 0;
+}
+.result-row:hover .r-enter,
+.result-row.focused .r-enter { opacity: 1; color: #8AA0FF; }
+
+.no-result {
+  padding: 22px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ── Footer ── */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--divider);
+  background: #F7F8FA;
+}
+.f-hint {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--text-muted);
+}
+.kbd {
+  background: #EBEBED;
+  border: 1px solid #D4D7DF;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10.5px;
+  font-family: var(--mono);
+  color: #697386;
+}
+
+/* B: suggestions dropdown */
+.suggestions {
+  position: relative;
+}
+.suggest-drop {
+  position: absolute;
+  left: 0; right: 0; top: calc(100% + 4px);
+  background: #fff;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+  overflow: hidden;
+  z-index: 10;
+  display: none;
+}
+.suggest-drop.visible { display: block; }
+.sug-item {
+  padding: 7px 12px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 80ms;
+}
+.sug-item:hover { background: var(--row-hover); color: var(--chip-active-text); }
+.sug-tag {
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: var(--mono);
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #F2F4F8;
+  color: var(--text-muted);
+}
+
+/* hint text under B input */
+.b-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 5px 14px 8px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.b-hint code {
+  font-family: var(--mono);
+  background: #F2F4F8;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  color: #697386;
+}
+
+/* variant panels hidden */
+.variant { display: none; }
+.variant.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <button class="sw-btn active" onclick="switchVariant('a',this)">方案 A — 参数后置</button>
+  <button class="sw-btn" onclick="switchVariant('b',this)">方案 B — 输入解析</button>
+  <button class="sw-btn" onclick="switchVariant('c',this)">方案 C — 次级操作</button>
+</div>
+
+<!-- ═══════════════════ VARIANT A ═══════════════════ -->
+<div class="variant active" id="va">
+  <div class="variant-label">搜索时参数隐藏 · 创建模式时滑入参数行</div>
+  <div class="panel">
+    <div class="header">
+      <div class="top-row">
+        <div class="input-wrap">
+          <input class="cmd-input" id="a-input" placeholder="输入任务标题，或搜索现有任务…" autocomplete="off" spellcheck="false"/>
+        </div>
+        <button class="action-btn" id="a-btn">
+          <svg id="a-icon" width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="8" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          <span id="a-btn-label">搜索</span>
+        </button>
+      </div>
+      <div class="params-row hidden" id="a-params">
+        <span class="p-label">优先级</span>
+        <div class="pri-chip pc-p0" data-v="a" data-p="P0">P0</div>
+        <div class="pri-chip pc-p1 active" data-v="a" data-p="P1">P1</div>
+        <div class="pri-chip pc-p2" data-v="a" data-p="P2">P2</div>
+        <div class="pri-chip pc-p3" data-v="a" data-p="P3">P3</div>
+        <div class="chip-sep"></div>
+        <span class="p-label">所属空间</span>
+        <div class="param-chip active">产品研发</div>
+        <div class="chip-sep"></div>
+        <span class="p-label">所属项目</span>
+        <div class="param-chip active">StoneFlow 开发</div>
+      </div>
+    </div>
+    <div class="h-divider"></div>
+    <div class="mode-banner" id="a-banner">
+      输入新标题时自动切换为<b>创建模式</b>，匹配已有任务时为<b>搜索模式</b>
+      <span class="banner-dismiss" onclick="document.getElementById('a-banner').classList.add('hidden')">知道了</span>
+    </div>
+    <div class="results-zone" id="a-results"></div>
+    <div class="footer">
+      <div class="f-hint"><kbd class="kbd">↑↓</kbd> 选择</div>
+      <div class="f-hint"><kbd class="kbd">↵</kbd> 确认</div>
+      <div class="f-hint"><kbd class="kbd">Tab</kbd> 切优先级</div>
+      <div class="f-hint"><kbd class="kbd">Esc</kbd> 关闭</div>
+      <div style="flex:1"></div>
+      <div class="f-hint"><kbd class="kbd">⌘K</kbd> 唤起</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ VARIANT B ═══════════════════ -->
+<div class="variant" id="vb">
+  <div class="variant-label">输入框内解析优先级 / 项目 token · 键盘驱动</div>
+  <div class="panel">
+    <div class="header">
+      <div class="top-row">
+        <div class="suggestions" style="flex:1;">
+          <div class="token-input-wrap" id="b-wrap">
+            <input class="token-real-input" id="b-input" placeholder="p1 任务标题，或 #项目名…" autocomplete="off" spellcheck="false"/>
+          </div>
+          <div class="suggest-drop" id="b-suggest"></div>
+        </div>
+        <button class="action-btn" id="b-btn">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="8" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          <span id="b-btn-label">搜索</span>
+        </button>
+      </div>
+      <div class="b-hint">
+        <span>优先级：<code>p0</code> <code>p1</code> <code>p2</code> <code>p3</code></span>
+        <span>绑定项目：<code>#项目名</code></span>
+        <span>绑定空间：<code>@空间名</code></span>
+      </div>
+    </div>
+    <div class="h-divider"></div>
+    <div class="results-zone" id="b-results"></div>
+    <div class="footer">
+      <div class="f-hint"><kbd class="kbd">↑↓</kbd> 选择</div>
+      <div class="f-hint"><kbd class="kbd">↵</kbd> 确认</div>
+      <div class="f-hint"><kbd class="kbd">Space</kbd> 确认 token</div>
+      <div class="f-hint"><kbd class="kbd">Backspace</kbd> 删除 token</div>
+      <div style="flex:1"></div>
+      <div class="f-hint"><kbd class="kbd">⌘K</kbd> 唤起</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ VARIANT C ═══════════════════ -->
+<div class="variant" id="vc">
+  <div class="variant-label">悬停行展开次级操作 · ⌘↵ 触发次级</div>
+  <div class="panel">
+    <div class="header">
+      <div class="top-row">
+        <div class="input-wrap">
+          <input class="cmd-input" id="c-input" placeholder="输入任务标题，或搜索现有任务…" autocomplete="off" spellcheck="false"/>
+        </div>
+        <button class="action-btn" id="c-btn">
+          <svg id="c-icon" width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="8" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          <span id="c-btn-label">搜索</span>
+        </button>
+      </div>
+      <div class="params-row" id="c-params">
+        <span class="p-label">优先级</span>
+        <div class="pri-chip pc-p0" data-v="c" data-p="P0">P0</div>
+        <div class="pri-chip pc-p1 active" data-v="c" data-p="P1">P1</div>
+        <div class="pri-chip pc-p2" data-v="c" data-p="P2">P2</div>
+        <div class="pri-chip pc-p3" data-v="c" data-p="P3">P3</div>
+        <div class="chip-sep"></div>
+        <span class="p-label">所属空间</span>
+        <div class="param-chip active">产品研发</div>
+        <div class="chip-sep"></div>
+        <span class="p-label">所属项目</span>
+        <div class="param-chip active">StoneFlow 开发</div>
+      </div>
+    </div>
+    <div class="h-divider"></div>
+    <div class="results-zone" id="c-results"></div>
+    <div class="footer">
+      <div class="f-hint"><kbd class="kbd">↑↓</kbd> 选择</div>
+      <div class="f-hint"><kbd class="kbd">↵</kbd> 打开任务</div>
+      <div class="f-hint"><kbd class="kbd">⌘↵</kbd> 次级操作</div>
+      <div class="f-hint"><kbd class="kbd">Esc</kbd> 关闭</div>
+      <div style="flex:1"></div>
+      <div class="f-hint"><kbd class="kbd">⌘K</kbd> 唤起</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Data ── */
+const TASKS = [
+  {title:'完善 Command 面板键盘导航',sub:'StoneFlow 开发 · 产品研发',meta:'今天',pri:'p1'},
+  {title:'设计 Drawer 打开动效',sub:'StoneFlow 开发 · 产品研发',meta:'昨天',pri:'p2'},
+  {title:'整理 D1 数据模型文档',sub:'StoneFlow 开发 · 产品研发',meta:'2天前',pri:'p0'},
+  {title:'Space Tabs 激活态样式确认',sub:'StoneFlow 开发 · 产品研发',meta:'3天前',pri:'p2'},
+  {title:'补充 Task Drawer 字段顺序',sub:'StoneFlow 开发 · 产品研发',meta:'4天前',pri:'p1'},
+];
+const PROJECTS = [
+  {title:'StoneFlow 开发',sub:'产品研发 · 12 个任务进行中',meta:'活跃'},
+  {title:'设计系统整理',sub:'产品研发 · 5 个任务进行中',meta:'活跃'},
+  {title:'移动端适配',sub:'产品研发 · 3 个任务进行中',meta:'暂停'},
+];
+const PROJECTS_LIST = ['StoneFlow 开发','设计系统整理','移动端适配'];
+const SPACES_LIST = ['产品研发','工程基础','增长'];
+
+function taskSVG(color='#4C6FFF'){return`<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="${color}" stroke-width="1.2"/><circle cx="6" cy="6" r="1.8" fill="${color}"/></svg>`;}
+function projSVG(){return`<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x=".75" y="1.75" width="10.5" height="8.5" rx="2" stroke="#1F9D62" stroke-width="1.2"/><line x1="3" y1="5" x2="9" y2="5" stroke="#1F9D62" stroke-width="1.1" stroke-linecap="round"/><line x1="3" y1="7" x2="7" y2="7" stroke="#1F9D62" stroke-width="1.1" stroke-linecap="round"/></svg>`;}
+function plusSVG(){return`<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><line x1="5.5" y1="2" x2="5.5" y2="9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="2" y1="5.5" x2="9" y2="5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;}
+function searchSVG(){return`<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="8" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`;}
+
+/* ── Generic render ── */
+function renderResults(zone, query, withActions=false) {
+  zone.innerHTML = '';
+  const rows = [];
+  const q = query.trim().toLowerCase();
+  const mt = q ? TASKS.filter(t=>t.title.toLowerCase().includes(q)) : TASKS;
+  const mp = q ? PROJECTS.filter(p=>p.title.toLowerCase().includes(q)) : PROJECTS;
+
+  function makeSection(label, items, type) {
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    const head = document.createElement('div');
+    head.className = 'sec-head';
+    head.textContent = q ? label+'搜索结果' : label;
+    sec.appendChild(head);
+    if (!items.length) {
+      const e = document.createElement('div');
+      e.className = 'no-result';
+      e.textContent = '没有匹配结果';
+      sec.appendChild(e);
+    } else {
+      items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'result-row';
+        const isTask = type==='task';
+        const rightHtml = withActions
+          ? `<div class="row-actions">
+               <span class="act-pill">打开</span>
+               <span class="act-pill">指派</span>
+               <span class="act-pill">复制链接</span>
+             </div>`
+          : `<span class="r-enter">↵</span>`;
+        row.innerHTML = `
+          <div class="r-icon ${isTask?'ri-task':'ri-proj'}">${isTask?taskSVG():projSVG()}</div>
+          <div class="r-body">
+            <div class="r-title">${item.title}</div>
+            <div class="r-sub">${item.sub}</div>
+          </div>
+          <div class="r-right">
+            ${isTask?`<span class="pb pb-${item.pri}">${item.pri.toUpperCase()}</span>`:''}
+            <span class="meta">${item.meta}</span>
+            ${rightHtml}
+          </div>`;
+        row.addEventListener('mouseenter', ()=>setFocus(rows, rows.indexOf(row)));
+        rows.push(row);
+        sec.appendChild(row);
+      });
+    }
+    zone.appendChild(sec);
+  }
+  makeSection('任务', mt, 'task');
+  makeSection('项目', mp, 'proj');
+  if (rows.length) setFocus(rows, 0);
+  return rows;
+}
+
+function setFocus(rows, idx) {
+  rows.forEach((r,i)=>r.classList.toggle('focused', i===idx));
+}
+
+/* ────────── VARIANT A ────────── */
+(function(){
+  const input = document.getElementById('a-input');
+  const btn   = document.getElementById('a-btn');
+  const btnLbl= document.getElementById('a-btn-label');
+  const icon  = document.getElementById('a-icon');
+  const params= document.getElementById('a-params');
+  const zone  = document.getElementById('a-results');
+  let rows=[], focIdx=0;
+
+  function setMode(create){
+    if(create){
+      btn.classList.add('create');
+      btnLbl.textContent='创建任务';
+      icon.innerHTML=plusSVG();
+      params.classList.remove('hidden');
+    } else {
+      btn.classList.remove('create');
+      btnLbl.textContent='搜索';
+      icon.innerHTML=searchSVG();
+      params.classList.add('hidden');
+    }
+  }
+
+  function update(){
+    const q=input.value;
+    rows=renderResults(zone, q, false);
+    focIdx=0;
+    const qL=q.trim().toLowerCase();
+    const hasMatch=TASKS.some(t=>t.title.toLowerCase().includes(qL))||PROJECTS.some(p=>p.title.toLowerCase().includes(qL));
+    setMode(q.trim().length>0 && !hasMatch);
+  }
+
+  input.addEventListener('input', update);
+  document.querySelectorAll('[data-v="a"]').forEach(c=>{
+    c.addEventListener('click',()=>{
+      document.querySelectorAll('[data-v="a"]').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+    });
+  });
+  document.getElementById('va').addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){e.preventDefault();focIdx=Math.min(focIdx+1,rows.length-1);setFocus(rows,focIdx);}
+    else if(e.key==='ArrowUp'){e.preventDefault();focIdx=Math.max(focIdx-1,0);setFocus(rows,focIdx);}
+    else if(e.key==='Tab'){
+      e.preventDefault();
+      const chips=[...document.querySelectorAll('[data-v="a"]')];
+      const i=chips.findIndex(c=>c.classList.contains('active'));
+      chips.forEach(c=>c.classList.remove('active'));
+      chips[(i+1)%chips.length].classList.add('active');
+    }
+  });
+  update();
+})();
+
+/* ────────── VARIANT B ────────── */
+(function(){
+  const input  = document.getElementById('b-input');
+  const wrap   = document.getElementById('b-wrap');
+  const btn    = document.getElementById('b-btn');
+  const btnLbl = document.getElementById('b-btn-label');
+  const drop   = document.getElementById('b-suggest');
+  const zone   = document.getElementById('b-results');
+  let tokens=[], rows=[], focIdx=0;
+  let priToken=null, projToken=null, spaceToken=null;
+
+  const priMap={p0:{label:'P0',cls:'pc-p0',style:'background:#FFE8E8;color:#B83232'},p1:{label:'P1',cls:'pc-p1',style:'background:#FFF0DE;color:#A85500'},p2:{label:'P2',cls:'pc-p2',style:'background:#ECF0FF;color:#3049D1'},p3:{label:'P3',cls:'pc-p3',style:'background:#F2F4F8;color:#5C6478'}};
+
+  function renderTokens(){
+    [...wrap.querySelectorAll('.token')].forEach(t=>t.remove());
+    tokens.forEach(tok=>{
+      const el=document.createElement('span');
+      el.className='token';
+      el.style.cssText=tok.style;
+      el.innerHTML=`${tok.label} <span class="token-remove" data-id="${tok.id}">×</span>`;
+      el.querySelector('.token-remove').addEventListener('click',()=>{
+        tokens=tokens.filter(t=>t.id!==tok.id);
+        if(tok.id==='pri') priToken=null;
+        if(tok.id==='proj') projToken=null;
+        if(tok.id==='space') spaceToken=null;
+        renderTokens(); update();
+      });
+      wrap.insertBefore(el, input);
+    });
+  }
+
+  function addToken(id, label, style){
+    tokens=tokens.filter(t=>t.id!==id);
+    tokens.push({id,label,style});
+    if(id==='pri') priToken=label;
+    if(id==='proj') projToken=label;
+    if(id==='space') spaceToken=label;
+    renderTokens();
+    input.value='';
+    drop.classList.remove('visible');
+    drop.innerHTML='';
+    update();
+  }
+
+  function showSuggestions(items, onSelect){
+    drop.innerHTML='';
+    if(!items.length){drop.classList.remove('visible');return;}
+    items.forEach(item=>{
+      const el=document.createElement('div');
+      el.className='sug-item';
+      el.innerHTML=`<span>${item.label}</span><span class="sug-tag">${item.hint||''}</span>`;
+      el.addEventListener('mousedown',e=>{e.preventDefault();onSelect(item);});
+      drop.appendChild(el);
+    });
+    drop.classList.add('visible');
+  }
+
+  function update(){
+    const raw=input.value;
+    const q=raw.trim().toLowerCase();
+    const hasMatch=TASKS.some(t=>t.title.toLowerCase().includes(q))||PROJECTS.some(p=>p.title.toLowerCase().includes(q));
+    const isCreate=q.length>0&&!hasMatch;
+    if(isCreate){btn.classList.add('create');btnLbl.textContent='创建任务';}
+    else{btn.classList.remove('create');btnLbl.textContent='搜索';}
+    rows=renderResults(zone, raw, false);
+    focIdx=0;
+  }
+
+  input.addEventListener('input',()=>{
+    const val=input.value;
+    const q=val.toLowerCase();
+
+    // Priority prefix p0~p3
+    const priMatch=q.match(/^(p[0-3])\s/);
+    if(priMatch&&!priToken){
+      const key=priMatch[1];
+      const m=priMap[key];
+      addToken('pri',m.label,m.style);
+      return;
+    }
+
+    // # project
+    if(val.startsWith('#')){
+      const search=val.slice(1).toLowerCase();
+      showSuggestions(
+        PROJECTS_LIST.filter(p=>p.toLowerCase().includes(search)).map(p=>({label:'#'+p,hint:'项目',raw:p})),
+        item=>{addToken('proj','#'+item.raw,'background:#ECF0FF;color:#3049D1');}
+      );
+      update(); return;
+    }
+
+    // @ space
+    if(val.startsWith('@')){
+      const search=val.slice(1).toLowerCase();
+      showSuggestions(
+        SPACES_LIST.filter(s=>s.toLowerCase().includes(search)).map(s=>({label:'@'+s,hint:'空间',raw:s})),
+        item=>{addToken('space','@'+item.raw,'background:#EDFAF3;color:#1A7A50');}
+      );
+      update(); return;
+    }
+
+    drop.classList.remove('visible');
+    update();
+  });
+
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Backspace'&&input.value===''&&tokens.length){
+      e.preventDefault();
+      const last=tokens[tokens.length-1];
+      tokens=tokens.filter(t=>t.id!==last.id);
+      if(last.id==='pri') priToken=null;
+      if(last.id==='proj') projToken=null;
+      if(last.id==='space') spaceToken=null;
+      renderTokens(); update();
+    }
+    if(e.key==='ArrowDown'){e.preventDefault();focIdx=Math.min(focIdx+1,rows.length-1);setFocus(rows,focIdx);}
+    if(e.key==='ArrowUp'){e.preventDefault();focIdx=Math.max(focIdx-1,0);setFocus(rows,focIdx);}
+    if(e.key==='Escape'){drop.classList.remove('visible');}
+  });
+
+  wrap.addEventListener('click',()=>input.focus());
+  update();
+})();
+
+/* ────────── VARIANT C ────────── */
+(function(){
+  const input = document.getElementById('c-input');
+  const btn   = document.getElementById('c-btn');
+  const btnLbl= document.getElementById('c-btn-label');
+  const icon  = document.getElementById('c-icon');
+  const zone  = document.getElementById('c-results');
+  let rows=[], focIdx=0;
+
+  function update(){
+    const q=input.value;
+    rows=renderResults(zone, q, true);
+    focIdx=0;
+    const qL=q.trim().toLowerCase();
+    const hasMatch=TASKS.some(t=>t.title.toLowerCase().includes(qL))||PROJECTS.some(p=>p.title.toLowerCase().includes(qL));
+    if(q.trim()&&!hasMatch){btn.classList.add('create');btnLbl.textContent='创建任务';icon.innerHTML=plusSVG();}
+    else{btn.classList.remove('create');btnLbl.textContent='搜索';icon.innerHTML=searchSVG();}
+  }
+
+  input.addEventListener('input', update);
+  document.querySelectorAll('[data-v="c"]').forEach(c=>{
+    c.addEventListener('click',()=>{
+      document.querySelectorAll('[data-v="c"]').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+    });
+  });
+  document.getElementById('vc').addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){e.preventDefault();focIdx=Math.min(focIdx+1,rows.length-1);setFocus(rows,focIdx);}
+    else if(e.key==='ArrowUp'){e.preventDefault();focIdx=Math.max(focIdx-1,0);setFocus(rows,focIdx);}
+  });
+  update();
+})();
+
+/* ── Switcher ── */
+function switchVariant(id, btn){
+  document.querySelectorAll('.variant').forEach(v=>v.classList.remove('active'));
+  document.getElementById('v'+id).classList.add('active');
+  document.querySelectorAll('.sw-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const inputs={a:'a-input',b:'b-input',c:'c-input'};
+  setTimeout(()=>document.getElementById(inputs[id]).focus(),60);
+}
+</script>
+</body>
+</html>

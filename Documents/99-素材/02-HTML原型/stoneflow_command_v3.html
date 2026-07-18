@@ -1,0 +1,320 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;}
+.scene{min-height:580px;background:#EBEBEB;display:flex;align-items:flex-start;justify-content:center;padding:48px 24px;}
+.panel{width:720px;background:#FAFAFA;border:1px solid #D8DBE2;border-radius:14px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.10),0 2px 6px rgba(0,0,0,0.06);}
+
+/* header */
+.header{padding:12px 14px 0;}
+.top-row{display:flex;align-items:center;gap:10px;}
+.input-wrap{flex:1;position:relative;height:34px;}
+.cmd-input{width:100%;height:100%;padding:0 12px;border:1px solid #D0D5DD;border-radius:8px;background:#FFF;outline:none;font-size:13.5px;font-family:inherit;color:#151821;caret-color:#4C6FFF;transition:border-color 120ms,box-shadow 120ms;}
+.cmd-input:focus{border-color:#7C96FF;box-shadow:0 0 0 3px rgba(76,111,255,0.12);}
+.cmd-input::placeholder{color:#A3A9B5;}
+
+.action-btn{height:34px;padding:0 14px;border-radius:8px;border:1px solid #D0D5DD;background:#FFF;font-size:12px;color:#4A5568;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap;transition:background 100ms,border-color 100ms,color 100ms;}
+.action-btn.create-mode{background:#4C6FFF;border-color:#4C6FFF;color:#fff;font-weight:500;}
+.action-btn.create-mode:hover{background:#3A5EEE;border-color:#3A5EEE;}
+.action-btn:not(.create-mode):hover{background:#F5F7FF;border-color:#7C96FF;color:#4C6FFF;}
+
+/* params */
+.params-row{display:flex;align-items:center;gap:6px;padding:10px 0 12px;}
+.param-label{font-size:11.5px;color:#8A93A6;white-space:nowrap;flex-shrink:0;}
+.sep{width:1px;height:16px;background:#E2E5EC;margin:0 4px;flex-shrink:0;}
+
+/* priority boxes — colored background */
+.pri-chip{display:inline-flex;align-items:center;justify-content:center;padding:3px 9px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;user-select:none;transition:opacity 120ms,box-shadow 120ms;border:1.5px solid transparent;letter-spacing:0.02em;}
+.pri-chip:not(.active){opacity:0.38;}
+.pri-chip.active{opacity:1;box-shadow:0 0 0 2px #fff,0 0 0 3.5px var(--accent);}
+
+.p0{background:#FFECEC;color:#C0392B;--accent:#C0392B;}
+.p1{background:#FFF3E0;color:#B35C00;--accent:#B35C00;}
+.p2{background:#EEF2FF;color:#3A5EEE;--accent:#3A5EEE;}
+.p3{background:#F2F4F8;color:#6B7489;--accent:#8A94A6;}
+
+/* space / project chips */
+.param-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;font-size:12px;border:1px solid #D0D5DD;background:#FFF;color:#3A4152;cursor:pointer;white-space:nowrap;transition:background 100ms,border-color 100ms,color 100ms;user-select:none;}
+.param-chip:hover{background:#F5F7FF;border-color:#A8B8FF;color:#4C6FFF;}
+.param-chip.active{background:#EEF2FF;border-color:#7C96FF;color:#4C6FFF;font-weight:500;}
+
+.header-divider{height:1px;background:#E6E9EE;}
+
+/* mode hint */
+.mode-hint{display:flex;align-items:center;gap:6px;padding:7px 14px;background:#F5F7FF;border-bottom:1px solid #E0E6FF;font-size:11.5px;color:#6878A8;}
+.mode-hint span{font-weight:500;color:#4C6FFF;}
+.hint-dismiss{margin-left:auto;cursor:pointer;color:#A0AABF;font-size:11px;}
+.hint-dismiss:hover{color:#4C6FFF;}
+
+/* results */
+.results-zone{display:flex;flex-direction:column;}
+.section{border-bottom:1px solid #EDF0F4;}
+.section:last-child{border-bottom:none;}
+.section-head{padding:10px 16px 5px;font-size:10.5px;color:#A0A8B8;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;}
+.result-row{display:flex;align-items:center;gap:10px;padding:7px 16px;cursor:pointer;position:relative;transition:background 80ms;}
+.result-row:hover,.result-row.focused{background:#F0F3FF;}
+.result-row.focused::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#4C6FFF;border-radius:0 2px 2px 0;}
+.row-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.icon-task{background:#EEF2FF;}
+.icon-project{background:#EDFAF4;}
+.row-body{flex:1;min-width:0;}
+.row-title{font-size:13px;color:#151821;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.row-sub{font-size:11.5px;color:#8A93A6;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.row-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.meta-tag{font-size:11px;color:#8A93A6;background:#F2F4F8;padding:1px 6px;border-radius:4px;border:1px solid #E6E9EE;}
+.row-enter{font-size:11px;color:#B0BACC;opacity:0;transition:opacity 80ms;}
+.result-row.focused .row-enter,.result-row:hover .row-enter{opacity:1;color:#7C96FF;}
+
+/* inline priority badge in row */
+.pri-badge{display:inline-flex;align-items:center;justify-content:center;padding:1px 6px;border-radius:4px;font-size:10.5px;font-weight:600;}
+.pb-p0{background:#FFECEC;color:#C0392B;}
+.pb-p1{background:#FFF3E0;color:#B35C00;}
+.pb-p2{background:#EEF2FF;color:#3A5EEE;}
+.pb-p3{background:#F2F4F8;color:#6B7489;}
+
+.no-results{padding:24px 16px;text-align:center;font-size:13px;color:#A0A8B8;}
+
+/* footer */
+.footer{display:flex;align-items:center;gap:12px;padding:8px 16px;border-top:1px solid #E6E9EE;background:#F5F6F8;}
+.footer-hint{display:flex;align-items:center;gap:4px;font-size:11px;color:#A0A8B8;}
+.kbd{background:#EBEBEB;border:1px solid #D0D5DD;border-radius:4px;padding:1px 5px;font-size:10.5px;font-family:ui-monospace,monospace;color:#697386;}
+</style>
+
+<h2 class="sr-only">StoneFlow Command 面板 — 输入内容为已有任务时进入搜索模式，输入新内容时进入创建任务模式</h2>
+
+<div class="scene">
+<div class="panel">
+
+  <div class="header">
+    <div class="top-row">
+      <div class="input-wrap">
+        <input class="cmd-input" id="cmdInput" placeholder="输入任务标题，或搜索现有任务…" autocomplete="off" spellcheck="false"/>
+      </div>
+      <button class="action-btn" id="actionBtn">
+        <svg id="btnIcon" width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="8" y1="8" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        <span id="btnLabel">搜索</span>
+      </button>
+    </div>
+
+    <div class="params-row">
+      <span class="param-label">优先级</span>
+      <div class="pri-chip p0" data-priority="P0">P0</div>
+      <div class="pri-chip p1 active" data-priority="P1">P1</div>
+      <div class="pri-chip p2" data-priority="P2">P2</div>
+      <div class="pri-chip p3" data-priority="P3">P3</div>
+
+      <div class="sep"></div>
+      <span class="param-label">所属空间</span>
+      <div class="param-chip active">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="0.75" y="0.75" width="8.5" height="8.5" rx="2" stroke="#4C6FFF" stroke-width="1"/><path d="M3 5h4M5 3v4" stroke="#4C6FFF" stroke-width="1" stroke-linecap="round"/></svg>
+        产品研发
+      </div>
+
+      <div class="sep"></div>
+      <span class="param-label">所属项目</span>
+      <div class="param-chip active">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="0.75" y="1.75" width="8.5" height="6.5" rx="1.5" stroke="#4C6FFF" stroke-width="1"/><line x1="2.5" y1="4" x2="7.5" y2="4" stroke="#4C6FFF" stroke-width="1" stroke-linecap="round"/><line x1="2.5" y1="5.8" x2="5.5" y2="5.8" stroke="#4C6FFF" stroke-width="1" stroke-linecap="round"/></svg>
+        StoneFlow 开发
+      </div>
+    </div>
+  </div>
+
+  <div class="header-divider"></div>
+
+  <div class="mode-hint" id="modeHint">
+    当前：<span id="modeHintText">输入内容匹配已有任务时自动搜索，输入新标题则切换为创建模式</span>
+    <span class="hint-dismiss" id="hintDismiss">知道了</span>
+  </div>
+
+  <div class="results-zone" id="resultsZone"></div>
+
+  <div class="footer">
+    <div class="footer-hint"><kbd class="kbd">↑↓</kbd> 选择</div>
+    <div class="footer-hint"><kbd class="kbd">↵</kbd> 确认</div>
+    <div class="footer-hint"><kbd class="kbd">Tab</kbd> 切优先级</div>
+    <div class="footer-hint"><kbd class="kbd">Esc</kbd> 关闭</div>
+    <div style="flex:1"></div>
+    <div class="footer-hint"><kbd class="kbd">⌘K</kbd> 唤起</div>
+  </div>
+
+</div>
+</div>
+
+<script>
+const allTasks = [
+  {title:'完善 Command 面板键盘导航',sub:'StoneFlow 开发 · 产品研发',meta:'今天',priority:'p1'},
+  {title:'设计 Drawer 打开动效',sub:'StoneFlow 开发 · 产品研发',meta:'昨天',priority:'p2'},
+  {title:'整理 D1 数据模型文档',sub:'StoneFlow 开发 · 产品研发',meta:'2天前',priority:'p0'},
+  {title:'Space Tabs 激活态样式确认',sub:'StoneFlow 开发 · 产品研发',meta:'3天前',priority:'p2'},
+  {title:'补充 Task Drawer 字段顺序',sub:'StoneFlow 开发 · 产品研发',meta:'4天前',priority:'p1'},
+];
+
+const allProjects = [
+  {title:'StoneFlow 开发',sub:'产品研发 · 12 个任务进行中',meta:'活跃'},
+  {title:'设计系统整理',sub:'产品研发 · 5 个任务进行中',meta:'活跃'},
+  {title:'移动端适配',sub:'产品研发 · 3 个任务进行中',meta:'暂停'},
+];
+
+const pbClass = {p0:'pb-p0',p1:'pb-p1',p2:'pb-p2',p3:'pb-p3'};
+
+let focusedIndex = 0;
+let allRows = [];
+let isCreateMode = false;
+
+const cmdInput = document.getElementById('cmdInput');
+const resultsZone = document.getElementById('resultsZone');
+const actionBtn = document.getElementById('actionBtn');
+const btnLabel = document.getElementById('btnLabel');
+const btnIcon = document.getElementById('btnIcon');
+const modeHint = document.getElementById('modeHint');
+const modeHintText = document.getElementById('modeHintText');
+const hintDismiss = document.getElementById('hintDismiss');
+
+hintDismiss.addEventListener('click', () => { modeHint.style.display = 'none'; });
+
+function taskIcon(){return`<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="#4C6FFF" stroke-width="1.2"/><circle cx="6" cy="6" r="1.5" fill="#4C6FFF"/></svg>`;}
+function projIcon(){return`<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="0.75" y="1.75" width="10.5" height="8.5" rx="2" stroke="#1F9D62" stroke-width="1.2"/><line x1="3" y1="5" x2="9" y2="5" stroke="#1F9D62" stroke-width="1.1" stroke-linecap="round"/><line x1="3" y1="7" x2="7" y2="7" stroke="#1F9D62" stroke-width="1.1" stroke-linecap="round"/></svg>`;}
+function searchIcon(){return`<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5" cy="5" r="3.5" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="8" x2="10.5" y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`;}
+function plusIcon(){return`<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><line x1="5.5" y1="2" x2="5.5" y2="9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="2" y1="5.5" x2="9" y2="5.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`;}
+
+function setMode(createMode) {
+  isCreateMode = createMode;
+  if (createMode) {
+    actionBtn.classList.add('create-mode');
+    btnIcon.innerHTML = plusIcon();
+    btnLabel.textContent = '创建任务';
+    modeHintText.textContent = '这是新标题，回车将创建为任务';
+    modeHint.style.background = '#F5F7FF';
+    modeHint.style.borderBottomColor = '#E0E6FF';
+  } else {
+    actionBtn.classList.remove('create-mode');
+    btnIcon.innerHTML = searchIcon();
+    btnLabel.textContent = '搜索';
+    modeHintText.textContent = '输入内容匹配已有任务时自动搜索，输入新标题则切换为创建模式';
+    modeHint.style.background = '#F5F7FF';
+    modeHint.style.borderBottomColor = '#E0E6FF';
+  }
+}
+
+function renderResults(query) {
+  resultsZone.innerHTML = '';
+  allRows = [];
+
+  const q = query.trim().toLowerCase();
+
+  const matchedTasks = q ? allTasks.filter(t => t.title.toLowerCase().includes(q)) : allTasks;
+  const matchedProjects = q ? allProjects.filter(p => p.title.toLowerCase().includes(q)) : allProjects;
+  const hasMatch = matchedTasks.length > 0 || matchedProjects.length > 0;
+
+  // Determine mode: if query exists and no match → create mode; if query matches → search mode; if empty → default search/browse
+  if (q && !hasMatch) {
+    setMode(true);
+  } else {
+    setMode(false);
+  }
+
+  // Tasks section
+  const taskSec = document.createElement('div');
+  taskSec.className = 'section';
+  const taskHead = document.createElement('div');
+  taskHead.className = 'section-head';
+  taskHead.textContent = q ? '任务搜索结果' : '最近 Tasks';
+  taskSec.appendChild(taskHead);
+
+  if (matchedTasks.length === 0 && q) {
+    const e = document.createElement('div');
+    e.className = 'no-results';
+    e.textContent = '没有匹配的任务';
+    taskSec.appendChild(e);
+  } else {
+    (q ? matchedTasks : allTasks).forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'result-row';
+      row.innerHTML = `
+        <div class="row-icon icon-task">${taskIcon()}</div>
+        <div class="row-body">
+          <div class="row-title">${item.title}</div>
+          <div class="row-sub">${item.sub}</div>
+        </div>
+        <div class="row-right">
+          <span class="pri-badge ${pbClass[item.priority]}">${item.priority.toUpperCase()}</span>
+          <span class="meta-tag">${item.meta}</span>
+          <span class="row-enter">↵</span>
+        </div>`;
+      row.addEventListener('mouseenter', () => setFocus(allRows.indexOf(row)));
+      allRows.push(row);
+      taskSec.appendChild(row);
+    });
+  }
+  resultsZone.appendChild(taskSec);
+
+  // Projects section
+  const projSec = document.createElement('div');
+  projSec.className = 'section';
+  const projHead = document.createElement('div');
+  projHead.className = 'section-head';
+  projHead.textContent = q ? '项目搜索结果' : '最近项目';
+  projSec.appendChild(projHead);
+
+  if (matchedProjects.length === 0 && q) {
+    const e = document.createElement('div');
+    e.className = 'no-results';
+    e.textContent = '没有匹配的项目';
+    projSec.appendChild(e);
+  } else {
+    (q ? matchedProjects : allProjects).forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'result-row';
+      row.innerHTML = `
+        <div class="row-icon icon-project">${projIcon()}</div>
+        <div class="row-body">
+          <div class="row-title">${item.title}</div>
+          <div class="row-sub">${item.sub}</div>
+        </div>
+        <div class="row-right">
+          <span class="meta-tag">${item.meta}</span>
+          <span class="row-enter">↵</span>
+        </div>`;
+      row.addEventListener('mouseenter', () => setFocus(allRows.indexOf(row)));
+      allRows.push(row);
+      projSec.appendChild(row);
+    });
+  }
+  resultsZone.appendChild(projSec);
+
+  if (allRows.length > 0) setFocus(0);
+}
+
+function setFocus(idx) {
+  allRows.forEach((r, i) => r.classList.toggle('focused', i === idx));
+  focusedIndex = idx;
+}
+
+document.querySelectorAll('[data-priority]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('[data-priority]').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    cmdInput.focus();
+  });
+});
+
+cmdInput.addEventListener('input', e => renderResults(e.target.value));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); setFocus(Math.min(focusedIndex+1, allRows.length-1)); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); setFocus(Math.max(focusedIndex-1, 0)); }
+  else if (e.key === 'Tab') {
+    e.preventDefault();
+    const chips = [...document.querySelectorAll('[data-priority]')];
+    const idx = chips.findIndex(c => c.classList.contains('active'));
+    chips.forEach(c => c.classList.remove('active'));
+    chips[(idx+1) % chips.length].classList.add('active');
+  }
+});
+
+renderResults('');
+setTimeout(() => cmdInput.focus(), 80);
+</script>
