@@ -5,7 +5,7 @@ import {
 	type CommandContext,
 	type CommandExecutionResult,
 } from '@/features/command/core'
-import { createShellCommandAdapter, type ShellCommandAdapter } from '@/features/command/adapters'
+import type { ShellCommandAdapter } from '@/features/command/adapters'
 import { createShellCommandRegistry } from '@/features/command/commands'
 
 type UseCommandRuntimeOptions = {
@@ -15,10 +15,7 @@ type UseCommandRuntimeOptions = {
 }
 
 export function useCommandRuntime({ actions, context, onError }: UseCommandRuntimeOptions) {
-	const registry = useMemo(() => {
-		const adapter = createShellCommandAdapter(actions)
-		return createShellCommandRegistry(adapter)
-	}, [actions])
+	const registry = useMemo(() => createShellCommandRegistry(actions), [actions])
 
 	return useMemo(
 		() =>

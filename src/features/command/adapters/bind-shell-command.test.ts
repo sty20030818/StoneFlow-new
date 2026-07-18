@@ -5,9 +5,9 @@ import {
 	createEmptyCommandContext,
 	type CommandContext,
 } from '@/features/command/core'
-import type { ShellCommandActions, ShellCommandAdapter } from './shell-command-adapter'
+import type { ShellCommandActions, ShellCommandAdapter } from './shell-command-actions'
 
-describe('Shell command adapter', () => {
+describe('bindShellCommand / ShellCommandAdapter', () => {
 	it('执行 general 命令时调用 Shell action', async () => {
 		const actions = createActions()
 		const runtime = createRuntime(actions)

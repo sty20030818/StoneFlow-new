@@ -1,13 +1,8 @@
-export {
-	bindShellCommand,
-	createDisabledCommand,
-	createShellCommandAdapter,
-	SHELL_CHROME_ACTION_KEYS,
-} from './shell-command-adapter'
+export { bindShellCommand } from './bind-shell-command'
+export { SHELL_CHROME_ACTION_KEYS } from './shell-command-actions'
 export type {
 	ShellChromeCommandActions,
 	ShellCommandActions,
 	ShellCommandAdapter,
 	ShellDomainCommandActions,
-	ShellNavigationTarget,
-} from './shell-command-adapter'
+} from './shell-command-actions'

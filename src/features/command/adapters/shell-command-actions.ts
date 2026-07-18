@@ -2,8 +2,6 @@ import type { Command, CommandContext, TaskPlacementTarget } from '@/features/co
 import type { PageFilterKind } from '@/features/filter'
 import type { ShellNavigationTarget } from '@/shared/types'
 
-export type { ShellNavigationTarget }
-
 /**
  * 壳铬架必填动作：菜单 / 创建 dialog / 关层 / 导航。
  * compose 只校验这组；加壳命令时才改这里 + registerShellChromeCommands。
@@ -77,10 +75,6 @@ export const SHELL_CHROME_ACTION_KEYS = [
 
 /** 域 handler 未 register 时的禁用文案 */
 export const UNREGISTERED_HANDLER_REASON = '该命令处理器尚未注册'
-
-export function createShellCommandAdapter(actions: ShellCommandAdapter): ShellCommandAdapter {
-	return actions
-}
 
 export function createDisabledCommand(command: Command, reason: string): Command {
 	return {

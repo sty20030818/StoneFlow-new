@@ -1,6 +1,6 @@
 # 平台与 Domain 扩散重构执行计划（task 样板之后）
 
-> 状态：**可执行** · 首刀 **command** · 2026-07-19
+> 状态：**可执行** · 波次 1（command）**已收口** · 下一刀 **project** · 2026-07-19
 > 前置：[11-Task样板重构](./11-Task样板重构执行计划.md)（**0–5 done**）· 决议：[09-决议总表](./09-决议总表.md) · 写法：[CONVENTIONS v2.1](../../../src/CONVENTIONS.md)
 > **原则：** 大→小但**不同构不硬排**；串行波次；每阶段末相关门禁；开放前可破坏须清干净；源码禁史诗号。
 > **文档：** `src/**/ARCHITECTURE` = 定稿最优（无债表）；**债/进度只写本文或子计划**；src 不回链执行计划。
@@ -10,7 +10,7 @@
 ## 0. 总目标
 
 1. 把 task 样板的纪律（Query / hooks / public / TSDoc / 禁 layout）**扩散**到同构 domain。
-2. 先收干净 **command 总线（C3 余债）**，再抄 domain，避免每域重复踩壳 Bridge。
+2. 先收干净 **command 总线**，再抄 domain，避免每域重复踩壳 Bridge。
 3. 窗/场景（launcher、settings）另波，不和 domain 样板混刀。
 
 ### 非目标
@@ -36,8 +36,8 @@
 | 波次 | 模块 | ~行 | 类 | 状态 | 说明 |
 |------|------|-----|-----|------|------|
 | **0** | task | 13k | domain | **done** | [11](./11-Task样板重构执行计划.md) |
-| **1** | **command** | 7.3k | platform | **C0–C4 done · 余 C5** | CLOSE |
-| 1b | bulk-action | 1.7k | platform | pending | 轻扫 B3；无债则勾掉 |
+| **1** | **command** | 7.3k | platform | **C0–C5 done** | 波次 1 收口 |
+| 1b | bulk-action | 1.7k | platform | **done（轻扫）** | B3 已落地；无独立刀 |
 | **2** | project | 2.8k | domain | pending | 抄 task 检查表（P2） |
 | 2 | lifecycle | 2.5k | domain | pending | Y2 |
 | 2 | view | 1.8k | domain | pending | V2 |
@@ -61,7 +61,7 @@
 |----|------|
 | 决议 | **C3** 注册式 · [M-F-COMMAND](./模块/M-F-COMMAND.md) |
 | 已有 | 各域 `register*Commands`（task/project/lifecycle/filter/submit）；CommandMenu 已拆至主文件 ~196 |
-| 仍债 | `bindShellCommand` switch 仍在（方案 B 未做）；VOLUME 边角；CLOSE |
+| 仍债 | 无阻塞债；方案 B / keybindings 拆分 **刻意不做** |
 
 ### 2.2 目标
 
@@ -101,7 +101,7 @@
 | 2 | HOST | 瘦 `useShellCommandSystem`；bridge 只 chrome+compose | 中 | **done**（2026-07-19） |
 | 3 | ADAPTER | 缩 `ShellCommandActions` / bind 摩擦（或登记表进化） | 中高 | **done**（方案 A · 2026-07-19） |
 | 4 | VOLUME | 菜单/keybinding 边角（按余力） | 低 | **done**（2026-07-19） |
-| 5 | CLOSE | 对照勾选；bulk 轻扫；波次 2 入口备忘 | 无 | pending |
+| 5 | CLOSE | 对照勾选；bulk 轻扫；波次 2 入口备忘 | 无 | **done**（2026-07-19） |
 
 推荐串行：**0 → 1 → 2 → 3 → 4 → 5**。H3 若风险大，可拆成「先删必填上帝校验、保留形状」与「再收窄类型」两刀。
 
@@ -171,7 +171,7 @@
 | compose | 只校 `SHELL_CHROME_ACTION_KEYS`（14 项 chrome） |
 | bind | 域 handler 缺失 → `createDisabledCommand` |
 | 加域命令 | 元数据 + register + bind；**不必**改 compose 必填表 |
-| 方案 B | **未做**（Runtime 直接吃含 run 的 Command[]）；余债记 CLOSE |
+| 方案 B | **刻意不做**（Runtime 直接吃含 run 的 Command[]；改动面大、收益不值） |
 
 **验收：** adapter 单测含「缺域 handler 禁用」；tsc / boundaries / command vitest 绿。
 
@@ -198,12 +198,29 @@
 | 字段 | 内容 |
 |------|------|
 | 目标 | command 可当平台样板；波次 2 可开工 |
-| 状态 | pending |
+| 状态 | **done**（2026-07-19） |
 
-- [ ] 回写 M-F-COMMAND 对照；ARCHITECTURE 与代码一致
-- [ ] **bulk-action 轻扫**：对照 B3；引擎纯 / 域 adapter 已回家 → 勾掉或另开 3 行债
-- [ ] 写下节「复制到 project 的检查表增补」（相对 task 附录多 Host/register）
-- [ ] `tsc` · `lint:boundaries` · `vitest run src/features/command`（+ 必要 layout/command 测）
+- [x] 回写 M-F-COMMAND 对照；ARCHITECTURE 与代码一致（无兼容再导出 / 无 identity adapter 工厂）
+- [x] **bulk-action 轻扫**：B3 已落地（`bulk-action` 无 domain adapters；域在 `task|project|lifecycle/bulk`；`ShellBulkActionBoundary` 只 compose）→ **勾掉**，不另开刀
+- [x] 「复制到 project 的检查表增补」见下节
+- [x] `tsc` · `lint:boundaries` · `vitest run src/features/command`（+ layout/command-bridge）
+
+**余债（刻意不做）：** bind switch 方案 B（元数据含 run）；`default-keybindings` / Menu 测文件体量（无痛）。
+
+---
+
+### 附录 · 复制到 project 的检查表增补（相对 [11](./11-Task样板重构执行计划.md) 附录）
+
+> 波次 2 开 project 时，**先跑 11 附录 1–10**，再加下列项。
+
+| # | 检查项 | 说明 |
+|---|--------|------|
+| C1 | `registerProjectCommands` 只在 project；layout 只 compose | 对标 task；禁 layout 写 project mutation |
+| C2 | 加命令改动点：元数据 + register + `ShellDomainCommandActions`/`bind` | **不必**改 compose chrome 必填表 |
+| C3 | Host 新端口：`CommandHostContext` ↔ `ShellCommandBridgeDeps` 双边同步 | 禁域直取 layout |
+| C4 | bulk：动作/adapter 在 `project/bulk`；Boundary 只 compose public | 对标 B3 |
+| C5 | 详情内任务板只调 `@/features/task` public | P2；不复制 task list-scene |
+| C6 | `ARCHITECTURE` 定稿最优；进度只写执行计划 | 同 task 样板 |
 
 ---
 
@@ -272,3 +289,6 @@ src/CONVENTIONS.md             → HOW
 | 2026-07-19 | 初版：波次 0–4；command 阶段 C0–C5；对齐 task 样板后扩散 |
 | 2026-07-19 | C0 DOC + C1 NORM done：定稿 ARCHITECTURE；public 收窄 + TSDoc |
 | 2026-07-19 | C2 HOST done：useShellCommandSystem 内拆至 ~200 |
+| 2026-07-19 | C3 ADAPTER done：方案 A 缩 chrome 必填；域可缺禁用 |
+| 2026-07-19 | C4 VOLUME done：adapter 拆 actions/bind/helpers |
+| 2026-07-19 | C5 CLOSE done：清兼容层；bulk 轻扫勾掉；project 检查表增补；波次 1 收口 |

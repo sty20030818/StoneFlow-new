@@ -70,7 +70,7 @@ adapters 内拆（体积）：
 shell-command-actions.ts       # 类型 + chrome keys + disabled 工厂
 bind-shell-command.ts          # id → handler 主开关
 bind-shell-command-helpers.ts  # selection / filter / delete 绑定
-shell-command-adapter.ts       # 兼容再导出
+index.ts                       # adapters public
 ```
 
 ---
@@ -87,7 +87,7 @@ shell-command-adapter.ts       # 兼容再导出
 | IPC | `takePendingCommandOpenIntent` |
 
 新增导出前确认已有外消费者。导出符合 CONVENTIONS TSDoc L1。
-keybinding 底层工具、Menu 内部分组类型、adapter 工厂默认不外放。
+keybinding 底层工具、Menu 内部分组、`createDisabledCommand` 等 bind 内部件默认不外放。
 
 ---
 
