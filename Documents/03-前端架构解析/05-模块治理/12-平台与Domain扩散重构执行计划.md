@@ -1,6 +1,6 @@
 # 平台与 Domain 扩散重构执行计划（task 样板之后）
 
-> 状态：**可执行** · 波次 2 domain + launcher/settings **已收口** · 下一刀 **project-overview** · 2026-07-19
+> 状态：**可执行** · 波次 2–3 **全收口** · 下一档 **波次 4 platform 短刀** · 2026-07-19
 > 前置：[11-Task样板重构](./11-Task样板重构执行计划.md)（**0–5 done**）· 决议：[09-决议总表](./09-决议总表.md) · 写法：[CONVENTIONS v2.1](../../../src/CONVENTIONS.md)
 > **原则：** 大→小但**不同构不硬排**；串行波次；每阶段末相关门禁；开放前可破坏须清干净；源码禁史诗号。
 > **文档：** `src/**/ARCHITECTURE` = 定稿最优（无债表）；**债/进度只写本文或子计划**；src 不回链执行计划。
@@ -45,8 +45,8 @@
 | 2 | activity | 0.5k | domain | **done（[17](./17-Activity样板重构执行计划.md) 0–4）** | 波次 2 收口 |
 | **3** | launcher | 4.4k | window | **done（[18](./18-Launcher样板重构执行计划.md) 0–4）** | 下一刀 settings |
 | 3 | settings | 3.5k | scene | **done（[19](./19-Settings样板重构执行计划.md) 0–4）** | 下一刀 project-overview |
-| 3 | project-overview | 0.6k | scene | pending | 薄对齐 · **下一刀** |
-| **4** | display-options · metadata-fields · selection · global-search · … | 中→小 | platform | pending | 按债短刀 |
+| 3 | project-overview | 0.6k | scene | **done（[20](./20-ProjectOverview样板重构执行计划.md) 0–4）** | 波次 3 收口 |
+| **4** | display-options · metadata-fields · selection · global-search · … | 中→小 | platform | pending | 按债短刀 · **下一档** |
 | 4 | submit · danger-confirm · filter · workspace | 小 | platform | pending | 多标杆 → **只验收** |
 
 > **为何不先 launcher：** 行数大但与 task 检查表重叠少；command 清完对全仓注册收益更大。
@@ -236,7 +236,7 @@
 | 4 | space | S2 | **done** · [16](./16-Space样板重构执行计划.md) |
 | 5 | activity | A1 | **done** · [17](./17-Activity样板重构执行计划.md) |
 
-波次 2 domain **收口**。波次 3：launcher **done** → settings **done** → project-overview（**下一刀**）。
+波次 2–3 **收口**。下一档：波次 4 platform（display-options / metadata-fields / selection / global-search…）按债短刀；submit 等只验收。
 
 ---
 
@@ -302,3 +302,4 @@ src/CONVENTIONS.md             → HOW
 | 2026-07-19 | activity 0–4 全收口（[17](./17-Activity样板重构执行计划.md)）；波次 2 domain 收口；下一刀 launcher |
 | 2026-07-19 | launcher 0–4 全收口（[18](./18-Launcher样板重构执行计划.md)）；下一刀 settings |
 | 2026-07-19 | settings 0–4 全收口（[19](./19-Settings样板重构执行计划.md)）；下一刀 project-overview |
+| 2026-07-19 | project-overview 0–4 全收口（[20](./20-ProjectOverview样板重构执行计划.md)）；波次 3 收口；下一档波次 4 |

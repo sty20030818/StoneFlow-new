@@ -1,10 +1,10 @@
 /**
- * @fileoverview **project-overview · 唯一对外公共面（`@/features/project-overview`）**
+ * project-overview 对外公共面（`@/features/project-overview`）。
  *
- * 项目总览 scene 页（数据走 project public hooks）。
- *
- * 外模块：`import { … } from '@/features/project-overview'`
- * 禁止：`@/features/project-overview/components/…`
+ * @remarks
+ * 外模块只能：`import { ProjectOverviewPage } from '@/features/project-overview'`。
+ * 禁止深路径进 components/hooks。
+ * 薄 scene：数据与 mutation 只走 `@/features/project` public。
  */
 
 /** 项目总览页（routes `/projects`）。 */

@@ -1,18 +1,18 @@
 # M-F-PROJ-OV · features/project-overview
 
-> 日期：2026-07-17  
-> 状态：**decided** · **decide-only**  
-> 类型：**scene（薄）**  
-> 切分：**Keep 默认**（可并 project，非必须）  
+> 日期：2026-07-17
+> 状态：**decided** · **O1 已落地（[20](../20-ProjectOverview样板重构执行计划.md)）** · 2026-07-19
+> 类型：**scene（薄）**
+> 切分：**Keep 默认**（可并 project，非必须）
 
 ---
 
 ## A. 现网
 
-- 仅 `ProjectOverviewPage` + List/Empty  
-- 数据：`@/features/project` public hooks  
-- 行：`ProjectRowAdapter` from project  
-- routes `/projects` 挂本页；详情 `/projects/$id` 挂 project  
+- 仅 `ProjectOverviewPage` + List/Empty
+- 数据：`@/features/project` public hooks
+- 行：`ProjectRowAdapter` from project
+- routes `/projects` 挂本页；详情 `/projects/$id` 挂 project
 
 ## B. 边界
 
@@ -31,9 +31,19 @@
 
 ## D. 决议
 
-1. **Keep** project-overview  
-2. **只**依赖 project public + selection 等平台  
-3. 禁止倒依赖 layout（若有则同其它页去掉）  
-4. decide-only  
+1. **Keep** project-overview
+2. **只**依赖 project public + selection 等平台
+3. 禁止倒依赖 layout（若有则同其它页去掉）
+4. decide-only
 
 与 **project P2** 一致：domain / scene 分离清晰。
+
+---
+
+## 变更记录
+
+| 日期 | 变更 |
+|------|------|
+| 2026-07-17 | 初版 O1 |
+| 2026-07-19 | O1 落地：facade + 删死 List/Empty；见 [20](../20-ProjectOverview样板重构执行计划.md) |
+

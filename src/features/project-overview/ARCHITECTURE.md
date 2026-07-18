@@ -1,45 +1,44 @@
 # project-overview · 项目总览
 
-> 作用：描述 **当前已落地** 的 `src/features/project-overview` 边界  
-> 最后更新：2026-07-18
+> 定稿最优架构。写法见 [`CONVENTIONS.md`](../../CONVENTIONS.md)。最后更新：2026-07-19
 
 ---
 
-## 1. 职责 / 不负责
+## 1. 心智
 
-**负责：**
+```txt
+routes 薄页
+  → ProjectOverviewPage（薄壳）
+  → useProjectOverviewScene（视图轨 / 选择 / bulk / 行动作）
+  → EntityScene（boardKind=project，组合 project public）
 
-- 项目总览 scene 页（`/projects`）：列表、空态、视图切换
-- 组合 `EntityScene`、bulk 选择、命令选中注册
-- 行级归档/完成/删除等操作编排（调用 `project` public mutations）
+不负责
+  → project CRUD / overview 数据 hook（→ project）
+  → ProjectRowAdapter（→ project）
+  → layout
+```
 
-**不负责：**
-
-- 项目 CRUD 与 overview 数据 hook 定义（→ `@/features/project`）
-- 项目行 UI 适配器（→ `project` `ProjectRowAdapter`）
-- 危险确认实现（→ `@/features/danger-confirm`）
-- 自定义视图定义（→ `@/features/view`，仅 `useViewsQuery` 读侧栏）
+跨模块 **只** `import { ProjectOverviewPage } from '@/features/project-overview'`。
+**禁止** `features/project-overview` → `@/layout/**`。
+**Keep** 独立 scene（不并回 project）。
 
 ---
 
-## 2. 目录（简树）
+## 2. 目录结构（定稿）
 
 ```txt
 src/features/project-overview/
 ├── ARCHITECTURE.md
 ├── index.ts
-└── components/
-    ├── ProjectOverviewPage.tsx
-    ├── ProjectOverviewList.tsx
-    ├── ProjectOverviewEmptyState.tsx
-    └── ProjectOverviewPage.test.tsx
+├── hooks/useProjectOverviewScene.ts
+└── components/ProjectOverviewPage.tsx
 ```
 
 ---
 
-## 3. Public 最小集（要点）
+## 3. Public 要点
 
-| 类 | 符号 |
+| 类 | 示例 |
 |----|------|
 | 页面 | `ProjectOverviewPage` |
 
@@ -47,29 +46,17 @@ src/features/project-overview/
 
 ---
 
-## 4. 禁止依赖
+## 4. 与其它模块
 
-- **不得** `import` `@/layout/**`
-- **不得** 外模块 `import` `components/` 深路径
-- 数据与 mutation 只走 `@/features/project` public
-- bulk / selection / dialog 只走各域 public，不在此重复引擎
+| 协作 | 方向 |
+|------|------|
+| project | overview 数据 + mutations + command selection |
+| view | `useViewsQuery('project')` 侧栏视图轨 |
+| selection / bulk-action / shell-dialogs | 页编排消费 |
+| routes | 极薄挂 Page |
 
 ---
 
-## 5. 装配点
+## 5. 变更纪律
 
-| 位置 | 挂载 |
-|------|------|
-| `routes/_shell/-workspace-pages.tsx` | `WorkspaceProjectsPage` → `ProjectOverviewPage` |
-
----
-
-## 6. 状态落点（URL | Query | UI）
-
-| 状态 | 落点 |
-|------|------|
-| 列表数据 | **Query** `useProjectOverviewData`（`project` public） |
-| 视图键（全部/进行中/…） | **UI** `viewKey` 本地 state |
-| 行 busy | **UI** `busyProjectId` |
-| 打开项目详情 | **URL** `openProjectDetail`（`app/navigation`） |
-| Bulk 选中 | **UI** `useEntitySelection`（`selection` public） |
+改定稿目录或 public 时更新本文件。`bun run check`（或至少 tsc + boundaries + project-overview vitest）。
