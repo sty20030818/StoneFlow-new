@@ -16,7 +16,6 @@ import {
 } from '@/layout/sidebar'
 import type { ShellSectionKey } from '@/layout/types'
 import type { SidebarItemVisibilityTarget, SidebarMainItemKey } from '@/features/settings'
-import { SyncSidebarStatusStrip } from '@/features/sync'
 import { type ShellSidebarSettings } from '@/features/settings'
 import { resolveRememberedPathForScope } from '@/app/navigation'
 import { getSpaceVisual } from '@/features/space'
@@ -619,7 +618,6 @@ export function ShellSidebar({
 										</SidebarMenuItem>
 									))}
 								</SidebarMenu>
-								<SyncSidebarStatusStrip />
 							</SidebarFooter>
 						</AppScrollArea>
 					</SidebarContent>

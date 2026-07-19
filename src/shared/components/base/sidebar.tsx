@@ -5,6 +5,12 @@ import { Slot } from 'radix-ui'
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react'
 
 import { cn } from '@/shared/lib/utils'
+import {
+	DEFAULT_SIDEBAR_WIDTH,
+	SIDEBAR_ICON_RAIL_PX,
+	SIDEBAR_WIDTH_MAX,
+	SIDEBAR_WIDTH_MIN,
+} from '@/shared/lib/shellSidebarGeometry'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/base/tooltip'
 import {
 	SidebarContext,
@@ -18,12 +24,8 @@ import {
 
 // Shell 响应式断点：>=1024 视作 desktop（桌面态），<1024 视作 mobile（抽屉态）
 const SIDEBAR_DESKTOP_BREAKPOINT_PX = 1024
-const SIDEBAR_WIDTH_MIN = 220
-const SIDEBAR_WIDTH_MAX = 330
 /** 移动端 offcanvas 抽屉宽度（固定，不参与桌面可变宽） */
 const SIDEBAR_MOBILE_DRAWER_WIDTH_PX = 220
-/** 与 index.css `--sf-shell-sidebar-width-icon: 3rem` 对齐，几何内联用 px 以便与展开宽度插值动画 */
-const SIDEBAR_ICON_RAIL_PX = 48
 const SIDEBAR_TOGGLE_EVENT = 'stoneflow:sidebar-toggle'
 
 export function requestSidebarToggle() {
@@ -132,7 +134,7 @@ function SidebarProvider({
 	className,
 	children,
 	desktopPreference = 'expanded',
-	sidebarWidth = 245,
+	sidebarWidth = DEFAULT_SIDEBAR_WIDTH,
 	onDesktopPreferenceChange,
 	onSidebarWidthCommit,
 	...props

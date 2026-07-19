@@ -125,7 +125,7 @@ layout token 表达 StoneFlow 产品结构语义。
 2. `--sf-sidebar-active`
 3. `--sf-main-bg`
 4. `--sf-control-bg`
-5. `--sf-shell-sidebar-width`
+5. `--sf-shell-sidebar-reserved-width`（运行时由 SidebarProvider 写入；默认数值见 `shared/lib/shellSidebarGeometry.ts`）
 
 因此页面或 layout 层优先消费 layout token，而不是跳回 primitive 值。
 

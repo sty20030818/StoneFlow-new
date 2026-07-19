@@ -8,6 +8,7 @@ import {
 	SidebarRail,
 	SidebarTrigger,
 } from '@/shared/components/base/sidebar'
+import { DEFAULT_SIDEBAR_WIDTH } from '@/shared/lib/shellSidebarGeometry'
 
 type MatchMediaController = {
 	setMatches: (matches: boolean) => void
@@ -22,9 +23,13 @@ describe('Sidebar primitive', () => {
 
 		expect(provider).toHaveAttribute('data-sidebar-layout', 'desktop')
 		expect(provider).toHaveAttribute('data-sidebar-mode', 'desktop-expanded')
-		expect(provider.style.getPropertyValue('--sf-shell-sidebar-panel-width')).toBe('245px')
+		expect(provider.style.getPropertyValue('--sf-shell-sidebar-panel-width')).toBe(
+			`${DEFAULT_SIDEBAR_WIDTH}px`,
+		)
 		expect(provider.style.getPropertyValue('--sf-shell-sidebar-panel-offset-x')).toBe('0px')
-		expect(provider.style.getPropertyValue('--sf-shell-sidebar-reserved-width')).toBe('245px')
+		expect(provider.style.getPropertyValue('--sf-shell-sidebar-reserved-width')).toBe(
+			`${DEFAULT_SIDEBAR_WIDTH}px`,
+		)
 		expect(document.querySelectorAll('[data-slot="sidebar"]')).toHaveLength(1)
 		expect(document.querySelectorAll('[data-slot="sidebar-overlay"]')).toHaveLength(0)
 	})
@@ -155,14 +160,14 @@ describe('Sidebar primitive', () => {
 		expect(document.body.style.cursor).toBe('col-resize')
 		fireEvent.pointerMove(rail, { clientX: 50, pointerId: 1 })
 
-		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-panel-width')).toBe('295px')
+		expect(getProvider().style.getPropertyValue('--sf-shell-sidebar-panel-width')).toBe('306px')
 		expect(onSidebarWidthCommit).not.toHaveBeenCalled()
 
 		fireEvent.pointerUp(rail, { pointerId: 1 })
 		expect(document.body.style.cursor).toBe('')
 
 		await waitFor(() => {
-			expect(onSidebarWidthCommit).toHaveBeenCalledWith(295)
+			expect(onSidebarWidthCommit).toHaveBeenCalledWith(306)
 		})
 
 		window.requestAnimationFrame = originalRequestAnimationFrame
@@ -172,7 +177,7 @@ describe('Sidebar primitive', () => {
 
 function renderSidebarFixture({
 	desktopPreference = 'expanded',
-	sidebarWidth = 245,
+	sidebarWidth = DEFAULT_SIDEBAR_WIDTH,
 	onSidebarWidthCommit,
 }: {
 	desktopPreference?: 'expanded' | 'collapsed'

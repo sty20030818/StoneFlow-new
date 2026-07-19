@@ -1,7 +1,7 @@
 /**
  * sync · 唯一对外公共面（`@/features/sync`）
  *
- * 同步状态 Provider、配置/运行 API、页脚/侧栏状态 UI。
+ * 同步状态 Provider、配置/运行 API、页脚状态 UI。
  *
  * 外模块：`import { … } from '@/features/sync'`
  * 禁止：`@/features/sync/api|model|components/…`
@@ -42,5 +42,4 @@ export { SyncStatusProvider, useSharedSyncStatus } from './model/SyncStatusProvi
 // ── UI ──────────────────────────────────────────────────────────────────────
 
 export { SyncFooterStatusItem } from './components/SyncFooterStatusItem'
-export { SyncSidebarStatusStrip } from './components/SyncSidebarStatusStrip'
 export { SyncConfigDialog } from './components/SyncConfigDialog'

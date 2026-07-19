@@ -1,6 +1,6 @@
 # sync · 数据同步状态
 
-> 作用：描述 **当前已落地** 的 `src/features/sync` 边界  
+> 作用：描述 **当前已落地** 的 `src/features/sync` 边界
 > 最后更新：2026-07-18
 
 ---
@@ -12,7 +12,7 @@
 - 同步状态 / 诊断 / 配置 / 手动运行 API（Tauri invoke）
 - 壳级 `SyncStatusProvider` 共享 controller
 - 状态文案与色调（`syncStatusPresentation`）
-- 侧栏条、页脚项、配置对话框 UI
+- 页脚同步项、配置对话框 UI
 
 **不负责：**
 
@@ -36,7 +36,6 @@ src/features/sync/
 │   └── deriveSyncFooterView.ts
 └── components/
     ├── SyncFooterStatusItem.tsx
-    ├── SyncSidebarStatusStrip.tsx
     └── SyncConfigDialog.tsx
 ```
 
@@ -44,13 +43,13 @@ src/features/sync/
 
 ## 3. Public 最小集（要点）
 
-| 类 | 符号 |
-|----|------|
-| API | `getSyncStatus` · `getSyncDiagnostics` · `configureSync` · `updateSyncPolicy` · `runSync` |
-| 类型 | `SyncStatus` · `SyncReplicaState` · `SyncPolicyMode` · `SyncStatusPayload` · `SyncDiagnosticsPayload` |
-| 展示 | `getSyncStatusTone` · `formatSyncStatus` · `formatReplicaState` 等 |
-| Provider | `SyncStatusProvider` · `useSharedSyncStatus` |
-| UI | `SyncFooterStatusItem` · `SyncSidebarStatusStrip` · `SyncConfigDialog` |
+| 类       | 符号                                                                                                  |
+| -------- | ----------------------------------------------------------------------------------------------------- |
+| API      | `getSyncStatus` · `getSyncDiagnostics` · `configureSync` · `updateSyncPolicy` · `runSync`             |
+| 类型     | `SyncStatus` · `SyncReplicaState` · `SyncPolicyMode` · `SyncStatusPayload` · `SyncDiagnosticsPayload` |
+| 展示     | `getSyncStatusTone` · `formatSyncStatus` · `formatReplicaState` 等                                    |
+| Provider | `SyncStatusProvider` · `useSharedSyncStatus`                                                          |
+| UI       | `SyncFooterStatusItem` · `SyncConfigDialog`                                                           |
 
 ---
 
@@ -65,20 +64,19 @@ src/features/sync/
 
 ## 5. 装配点
 
-| 位置 | 挂载 |
-|------|------|
-| `layout/ShellLayoutContent.tsx` | `SyncStatusProvider` |
-| `layout/ShellSidebar.tsx` | `SyncSidebarStatusStrip` |
-| `layout/ShellFooter.tsx` | `SyncFooterStatusItem` |
+| 位置                                  | 挂载                     |
+| ------------------------------------- | ------------------------ |
+| `layout/ShellLayoutContent.tsx`       | `SyncStatusProvider`     |
+| `layout/ShellFooter.tsx`              | `SyncFooterStatusItem`   |
 | `features/settings/SettingsSyncPanel` | API + `SyncConfigDialog` |
 
 ---
 
 ## 6. 状态落点（URL | Query | UI）
 
-| 状态 | 落点 |
-|------|------|
+| 状态             | 落点                                                |
+| ---------------- | --------------------------------------------------- |
 | 同步状态 payload | **UI** `useSyncStatusController`（Provider 内单例） |
-| Tauri 推送 | **事件** `stoneflow://sync/status-changed` |
-| 配置表单 | **UI** `SyncConfigDialog` 本地 state + API 持久化 |
-| 页脚/侧栏文案 | **派生** `deriveSyncFooterView`（无独立 store） |
+| Tauri 推送       | **事件** `stoneflow://sync/status-changed`          |
+| 配置表单         | **UI** `SyncConfigDialog` 本地 state + API 持久化   |
+| 页脚文案         | **派生** `deriveSyncFooterView`（无独立 store）     |

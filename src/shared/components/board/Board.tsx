@@ -37,6 +37,7 @@ import {
 	entityBoardSectionToggleClass,
 } from '@/shared/components/patterns/entity-board'
 import {
+	ROW_SHELL_BASE_CLASS,
 	ROW_SHELL_SECTION_HEADER_CLASS,
 	type RowSelectionGroupPosition,
 } from '@/shared/components/patterns/row-tokens'
@@ -316,14 +317,37 @@ export function BoardChevron({ className, ...props }: ComponentProps<'span'>) {
 }
 
 export function BoardLoadingState({ label, className }: { label?: ReactNode; className?: string }) {
-	if (!label) {
-		return <EmptyPage aria-busy='true' />
+	if (label) {
+		return (
+			<EmptyPage aria-busy='true'>
+				<div className={cn(entityBoardLoadingCardClass, className)}>{label}</div>
+			</EmptyPage>
+		)
 	}
 
 	return (
-		<EmptyPage aria-busy='true'>
-			<div className={cn(entityBoardLoadingCardClass, className)}>{label}</div>
-		</EmptyPage>
+		<div aria-busy='true' className={cn(BOARD_STACK_CLASS, className)} data-board-loading='list'>
+			{Array.from({ length: 2 }).map((_, sectionIndex) => (
+				<div className='flex flex-col gap-0.5' key={`board-loading-section-${sectionIndex}`}>
+					<div className={BOARD_GROUP_HEADER_CLASS}>
+						<div className='size-3 rounded-sm bg-sf-surface-panel-muted' />
+						<div className='h-3 w-24 rounded-full bg-sf-surface-panel-muted' />
+					</div>
+					<BoardRows>
+						{Array.from({ length: sectionIndex === 0 ? 4 : 3 }).map((_, rowIndex) => (
+							<div
+								className={ROW_SHELL_BASE_CLASS}
+								key={`board-loading-row-${sectionIndex}-${rowIndex}`}
+							>
+								<div className='size-4 shrink-0 rounded-full bg-sf-surface-panel-muted' />
+								<div className='h-3 min-w-0 flex-1 rounded-full bg-sf-surface-panel-muted' />
+								<div className='h-3 w-12 shrink-0 rounded-full bg-sf-surface-panel-muted' />
+							</div>
+						))}
+					</BoardRows>
+				</div>
+			))}
+		</div>
 	)
 }
 

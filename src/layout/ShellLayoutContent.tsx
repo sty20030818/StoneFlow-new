@@ -86,10 +86,13 @@ export function ShellLayoutContent({
 	})
 
 	if (!chrome.isChromeReady || !chrome.sidebarSettings) {
+		const sidebarSettings = chrome.sidebarSettings
 		return (
 			<ShellLayoutSkeleton
+				desktopPreference={sidebarSettings?.desktopPreference}
 				message={chrome.sidebarSettingsError ?? chrome.spaceError}
-				status={chrome.sidebarSettings ? chrome.spaceStatus : chrome.sidebarSettingsStatus}
+				sidebarWidth={sidebarSettings?.width}
+				status={sidebarSettings ? chrome.spaceStatus : chrome.sidebarSettingsStatus}
 			/>
 		)
 	}

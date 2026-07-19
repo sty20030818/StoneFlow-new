@@ -22,6 +22,8 @@ export type {
 } from './api/sidebarSettings'
 
 export type { ShellSidebarSettings } from './api/shellDevicePreferences'
+/** 壳/骨架侧栏默认宽（与设备偏好默认一致）。 */
+export { DEFAULT_SIDEBAR_WIDTH } from './api/shellDevicePreferences'
 
 // ── 侧栏设置 Zustand（壳与设置面板共用）────────────────────────────────────
 

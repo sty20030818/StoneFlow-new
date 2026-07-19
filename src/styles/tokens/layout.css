@@ -45,9 +45,9 @@
 		var(--sf-accent-primary) 22%
 	);
 
-	/* Shared geometry and motion */
-	--sf-shell-sidebar-width: 245px;
-	--sf-shell-sidebar-width-icon: 3rem;
+	/* Shared geometry and motion
+	 * 侧栏展开宽运行时真源：`--sf-shell-sidebar-reserved-width`（SidebarProvider 写入）。
+	 * 默认数值见 `shared/lib/shellSidebarGeometry.ts`，勿在 CSS 再维护一份默认宽。 */
 	--sf-shell-drawer-width: 40rem;
 	--sf-shell-layout-sync-duration: var(--sf-motion-duration-layout-sync);
 	--sf-shell-layout-sync-easing: var(--sf-motion-easing-layout-sync);

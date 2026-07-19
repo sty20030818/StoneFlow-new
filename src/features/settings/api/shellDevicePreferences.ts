@@ -1,6 +1,11 @@
 import { LazyStore } from '@tauri-apps/plugin-store'
 import { clamp } from 'es-toolkit/math'
 
+import {
+	DEFAULT_SIDEBAR_WIDTH,
+	SIDEBAR_WIDTH_MAX,
+	SIDEBAR_WIDTH_MIN,
+} from '@/shared/lib/shellSidebarGeometry'
 import type {
 	SidebarPreferenceSettings,
 	SidebarProjectSectionPreferenceConfig,
@@ -9,10 +14,9 @@ import type {
 const SHELL_DEVICE_STORE_PATH = 'shell-device-preferences.json'
 const SIDEBAR_DEVICE_KEY = 'shell.sidebar.device'
 const UI_DEVICE_KEY = 'shell.ui.device'
-const SIDEBAR_WIDTH_MIN = 220
-const SIDEBAR_WIDTH_MAX = 330
-const DEFAULT_SIDEBAR_WIDTH = 256
 const DEFAULT_TASK_DRAWER_WIDTH = 420
+
+export { DEFAULT_SIDEBAR_WIDTH } from '@/shared/lib/shellSidebarGeometry'
 
 const shellDeviceStore = new LazyStore(SHELL_DEVICE_STORE_PATH)
 
