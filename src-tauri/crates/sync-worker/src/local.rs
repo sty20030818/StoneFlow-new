@@ -5,7 +5,7 @@ use stoneflow_domain::now_utc;
 
 use crate::{
     error::SyncWorkerError,
-    schema::{DEVICE_ID_SCOPE, LocalMutationRecord, SERVER_SEQ_CURSOR_SCOPE},
+    schema::{LocalMutationRecord, DEVICE_ID_SCOPE, SERVER_SEQ_CURSOR_SCOPE},
 };
 
 const SYNC_CONFIG_SETTING_KEY: &str = "app.sync.config";
@@ -29,11 +29,9 @@ pub async fn list_pending_mutations(
         .map_err(|error| SyncWorkerError::local_database(format!("读取本地 sync_mutations 失败: {error}")))?;
     let mut records = Vec::new();
 
-    while let Some(row) = rows
-        .next()
-        .await
-        .map_err(|error| SyncWorkerError::local_database(format!("遍历本地 sync_mutations 失败: {error}")))?
-    {
+    while let Some(row) = rows.next().await.map_err(|error| {
+        SyncWorkerError::local_database(format!("遍历本地 sync_mutations 失败: {error}"))
+    })? {
         records.push(LocalMutationRecord {
             client_id: row
                 .get::<String>(0)
@@ -69,10 +67,9 @@ pub async fn mark_mutations_acked(
     local: &Connection,
     batch: &[LocalMutationRecord],
 ) -> Result<(), SyncWorkerError> {
-    let transaction = local
-        .transaction()
-        .await
-        .map_err(|error| SyncWorkerError::local_database(format!("开启本地 mutation ack 事务失败: {error}")))?;
+    let transaction = local.transaction().await.map_err(|error| {
+        SyncWorkerError::local_database(format!("开启本地 mutation ack 事务失败: {error}"))
+    })?;
     let now = now_utc().to_rfc3339();
 
     for record in batch {
@@ -86,13 +83,16 @@ pub async fn mark_mutations_acked(
                 params![now.clone(), record.client_id.clone(), record.client_seq],
             )
             .await
-            .map_err(|error| SyncWorkerError::local_database(format!("更新本地 sync_mutations 状态失败: {error}")))?;
+            .map_err(|error| {
+                SyncWorkerError::local_database(format!(
+                    "更新本地 sync_mutations 状态失败: {error}"
+                ))
+            })?;
     }
 
-    transaction
-        .commit()
-        .await
-        .map_err(|error| SyncWorkerError::local_database(format!("提交本地 mutation ack 事务失败: {error}")))?;
+    transaction.commit().await.map_err(|error| {
+        SyncWorkerError::local_database(format!("提交本地 mutation ack 事务失败: {error}"))
+    })?;
     Ok(())
 }
 
@@ -101,9 +101,9 @@ pub async fn read_server_seq_cursor(local: &Connection) -> Result<Option<i64>, S
         return Ok(None);
     };
 
-    raw.parse::<i64>()
-        .map(Some)
-        .map_err(|error| SyncWorkerError::serialization(format!("解析 server_seq cursor 失败: {error}")))
+    raw.parse::<i64>().map(Some).map_err(|error| {
+        SyncWorkerError::serialization(format!("解析 server_seq cursor 失败: {error}"))
+    })
 }
 
 pub async fn write_server_seq_cursor_in_transaction(
@@ -163,7 +163,9 @@ pub async fn delete_sync_shadow(
             params![entity_type.to_owned(), entity_id.to_owned()],
         )
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("删除 sync_shadow 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("删除 sync_shadow 失败: {error}"))
+        })?;
     Ok(())
 }
 
@@ -224,11 +226,12 @@ async fn read_text_cursor(
             params![scope.to_owned()],
         )
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("读取 sync_cursor 失败: {error}")))?;
-    let row = rows
-        .next()
-        .await
-        .map_err(|error| SyncWorkerError::local_database(format!("遍历 sync_cursor 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("读取 sync_cursor 失败: {error}"))
+        })?;
+    let row = rows.next().await.map_err(|error| {
+        SyncWorkerError::local_database(format!("遍历 sync_cursor 失败: {error}"))
+    })?;
 
     row.map(|row| {
         row.get::<Option<String>>(0)
@@ -252,10 +255,16 @@ async fn write_text_cursor_in_transaction(
                 cursor = excluded.cursor,
                 updated_at = excluded.updated_at
             "#,
-            params![scope.to_owned(), cursor.map(str::to_owned), now_utc().to_rfc3339()],
+            params![
+                scope.to_owned(),
+                cursor.map(str::to_owned),
+                now_utc().to_rfc3339()
+            ],
         )
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("写入 sync_cursor 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("写入 sync_cursor 失败: {error}"))
+        })?;
     Ok(())
 }
 

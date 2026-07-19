@@ -101,27 +101,27 @@ where
 
 async fn ensure_settings<C>(connection: &C) -> Result<(), StorageError>
 where
-	C: sea_orm::ConnectionTrait,
+    C: sea_orm::ConnectionTrait,
 {
-	for seed in default_settings() {
-		if store::setting_exists(connection, seed.key).await? {
-			continue;
-		}
+    for seed in default_settings() {
+        if store::setting_exists(connection, seed.key).await? {
+            continue;
+        }
 
-		let now = timestamp_now();
-		store::insert_setting(
-			connection,
-			setting::ActiveModel {
-				key: Set(seed.key.to_owned()),
-				value: Set(json_string(&seed.value)?),
-				created_at: Set(now.clone()),
-				updated_at: Set(now),
-			},
-		)
-		.await?;
-	}
+        let now = timestamp_now();
+        store::insert_setting(
+            connection,
+            setting::ActiveModel {
+                key: Set(seed.key.to_owned()),
+                value: Set(json_string(&seed.value)?),
+                created_at: Set(now.clone()),
+                updated_at: Set(now),
+            },
+        )
+        .await?;
+    }
 
-	Ok(())
+    Ok(())
 }
 
 fn timestamp_now() -> String {

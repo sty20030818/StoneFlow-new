@@ -8,11 +8,11 @@
 
 pub mod activity;
 pub mod error;
+pub mod launcher;
+pub mod launcher_context;
 pub mod lifecycle;
 pub mod ports;
 pub mod project;
-pub mod launcher;
-pub mod launcher_context;
 pub mod search;
 pub mod settings;
 pub mod space;

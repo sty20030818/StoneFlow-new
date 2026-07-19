@@ -7,9 +7,9 @@ use libsql::{params, Builder, Connection, Transaction};
 use crate::{
     error::SyncWorkerError,
     schema::{
-        LocalMutationRecord, ProjectPayload, REMOTE_SCHEMA_STATEMENTS, RemoteChangeKind,
-        RemoteChangeRecord, SettingPayload, SpacePayload, SyncOperationPayload, TaskLinkPayload,
-        TaskPayload, ViewPayload,
+        LocalMutationRecord, ProjectPayload, RemoteChangeKind, RemoteChangeRecord, SettingPayload,
+        SpacePayload, SyncOperationPayload, TaskLinkPayload, TaskPayload, ViewPayload,
+        REMOTE_SCHEMA_STATEMENTS,
     },
     types::SyncRemoteConfig,
 };
@@ -20,7 +20,9 @@ pub async fn open_local_sqlite(database_path: &str) -> Result<Connection, SyncWo
     let database = Builder::new_local(Path::new(database_path))
         .build()
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("打开本地 SQLite 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("打开本地 SQLite 失败: {error}"))
+        })?;
 
     database
         .connect()
@@ -43,11 +45,12 @@ pub async fn find_remote_mutation_ack(
             params![client_id.to_owned(), client_seq],
         )
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 remote_mutations 失败: {error}")))?;
-    let row = rows
-        .next()
-        .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("遍历远端 remote_mutations 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::remote_database(format!("读取远端 remote_mutations 失败: {error}"))
+        })?;
+    let row = rows.next().await.map_err(|error| {
+        SyncWorkerError::remote_database(format!("遍历远端 remote_mutations 失败: {error}"))
+    })?;
 
     row.map(|row| {
         row.get::<i64>(0)
@@ -65,7 +68,9 @@ pub async fn insert_change_and_ack(
     let patch = patch
         .map(serde_json::to_string)
         .transpose()
-        .map_err(|error| SyncWorkerError::serialization(format!("序列化 remote_change_log.patch 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::serialization(format!("序列化 remote_change_log.patch 失败: {error}"))
+        })?;
     transaction
         .execute(
             r#"
@@ -86,16 +91,22 @@ pub async fn insert_change_and_ack(
             ],
         )
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("写入远端 remote_change_log 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::remote_database(format!("写入远端 remote_change_log 失败: {error}"))
+        })?;
 
     let mut rows = transaction
         .query("SELECT last_insert_rowid()", params![])
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("读取 server_seq 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::remote_database(format!("读取 server_seq 失败: {error}"))
+        })?;
     let row = rows
         .next()
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("遍历 server_seq 失败: {error}")))?
+        .map_err(|error| {
+            SyncWorkerError::remote_database(format!("遍历 server_seq 失败: {error}"))
+        })?
         .ok_or_else(|| SyncWorkerError::remote_database("读取 server_seq 失败: 缺少结果行"))?;
     let server_seq = row
         .get::<i64>(0)
@@ -138,14 +149,14 @@ pub async fn fetch_changes_after(
             params![after_server_seq, limit],
         )
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 remote_change_log 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::remote_database(format!("读取远端 remote_change_log 失败: {error}"))
+        })?;
     let mut changes = Vec::new();
 
-    while let Some(row) = rows
-        .next()
-        .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("遍历远端 remote_change_log 失败: {error}")))?
-    {
+    while let Some(row) = rows.next().await.map_err(|error| {
+        SyncWorkerError::remote_database(format!("遍历远端 remote_change_log 失败: {error}"))
+    })? {
         let change_kind = RemoteChangeKind::parse(
             row.get::<String>(3)
                 .map_err(remote_column_error("remote_change_log.change_kind"))?
@@ -157,7 +168,9 @@ pub async fn fetch_changes_after(
         let patch = patch_raw
             .map(|raw| {
                 serde_json::from_str::<SyncOperationPayload>(&raw).map_err(|error| {
-                    SyncWorkerError::serialization(format!("解析 remote_change_log.patch 失败: {error}"))
+                    SyncWorkerError::serialization(format!(
+                        "解析 remote_change_log.patch 失败: {error}"
+                    ))
                 })
             })
             .transpose()?;
@@ -174,12 +187,12 @@ pub async fn fetch_changes_after(
                 .map_err(remote_column_error("remote_change_log.entity_id"))?,
             change_kind,
             patch,
-            changed_by_client_id: row
-                .get::<String>(5)
-                .map_err(remote_column_error("remote_change_log.changed_by_client_id"))?,
-            changed_by_client_seq: row
-                .get::<i64>(6)
-                .map_err(remote_column_error("remote_change_log.changed_by_client_seq"))?,
+            changed_by_client_id: row.get::<String>(5).map_err(remote_column_error(
+                "remote_change_log.changed_by_client_id",
+            ))?,
+            changed_by_client_seq: row.get::<i64>(6).map_err(remote_column_error(
+                "remote_change_log.changed_by_client_seq",
+            ))?,
             committed_at: row
                 .get::<String>(7)
                 .map_err(remote_column_error("remote_change_log.committed_at"))?,
@@ -191,13 +204,17 @@ pub async fn fetch_changes_after(
 
 pub async fn fetch_latest_server_seq(remote: &Connection) -> Result<Option<i64>, SyncWorkerError> {
     let mut rows = remote
-        .query("SELECT MAX(server_seq) FROM remote_change_log LIMIT 1", params![])
+        .query(
+            "SELECT MAX(server_seq) FROM remote_change_log LIMIT 1",
+            params![],
+        )
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("读取远端最新 server_seq 失败: {error}")))?;
-    let row = rows
-        .next()
-        .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("遍历远端最新 server_seq 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::remote_database(format!("读取远端最新 server_seq 失败: {error}"))
+        })?;
+    let row = rows.next().await.map_err(|error| {
+        SyncWorkerError::remote_database(format!("遍历远端最新 server_seq 失败: {error}"))
+    })?;
 
     row.map(|row| {
         row.get::<Option<i64>>(0).map_err(|error| {
@@ -223,7 +240,13 @@ pub async fn insert_baseline_changes_if_empty(
     })?;
 
     for space in &snapshot.spaces {
-        insert_baseline_change(&transaction, SyncOperationPayload::Space { snapshot: space.clone() }).await?;
+        insert_baseline_change(
+            &transaction,
+            SyncOperationPayload::Space {
+                snapshot: space.clone(),
+            },
+        )
+        .await?;
     }
     for project in &snapshot.projects {
         insert_baseline_change(
@@ -235,7 +258,13 @@ pub async fn insert_baseline_changes_if_empty(
         .await?;
     }
     for task in &snapshot.tasks {
-        insert_baseline_change(&transaction, SyncOperationPayload::Task { snapshot: task.clone() }).await?;
+        insert_baseline_change(
+            &transaction,
+            SyncOperationPayload::Task {
+                snapshot: task.clone(),
+            },
+        )
+        .await?;
     }
     for task_link in &snapshot.task_links {
         insert_baseline_change(
@@ -247,7 +276,13 @@ pub async fn insert_baseline_changes_if_empty(
         .await?;
     }
     for view in &snapshot.views {
-        insert_baseline_change(&transaction, SyncOperationPayload::View { snapshot: view.clone() }).await?;
+        insert_baseline_change(
+            &transaction,
+            SyncOperationPayload::View {
+                snapshot: view.clone(),
+            },
+        )
+        .await?;
     }
     for setting in &snapshot.settings {
         insert_baseline_change(
@@ -270,8 +305,9 @@ async fn insert_baseline_change(
     payload: SyncOperationPayload,
 ) -> Result<(), SyncWorkerError> {
     let committed_at = payload_updated_at(&payload).to_owned();
-    let patch = serde_json::to_string(&payload)
-        .map_err(|error| SyncWorkerError::serialization(format!("序列化同步基线 patch 失败: {error}")))?;
+    let patch = serde_json::to_string(&payload).map_err(|error| {
+        SyncWorkerError::serialization(format!("序列化同步基线 patch 失败: {error}"))
+    })?;
     transaction
         .execute(
             r#"
@@ -289,7 +325,9 @@ async fn insert_baseline_change(
             ],
         )
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("写入远端同步基线 change 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::remote_database(format!("写入远端同步基线 change 失败: {error}"))
+        })?;
     Ok(())
 }
 
@@ -322,9 +360,7 @@ pub async fn bootstrap_remote_schema(remote: &Connection) -> Result<(), SyncWork
             .execute(statement, params![])
             .await
             .map_err(|error| {
-                SyncWorkerError::remote_database(format!(
-                    "初始化 Turso 远端表结构失败: {error}"
-                ))
+                SyncWorkerError::remote_database(format!("初始化 Turso 远端表结构失败: {error}"))
             })?;
     }
 
@@ -370,8 +406,12 @@ async fn fetch_spaces(remote: &Connection) -> Result<Vec<SpacePayload>, SyncWork
 
     while let Some(row) = rows.next().await.map_err(remote_row_walk_error("spaces"))? {
         records.push(SpacePayload {
-            id: row.get::<String>(0).map_err(remote_column_error("spaces.id"))?,
-            name: row.get::<String>(1).map_err(remote_column_error("spaces.name"))?,
+            id: row
+                .get::<String>(0)
+                .map_err(remote_column_error("spaces.id"))?,
+            name: row
+                .get::<String>(1)
+                .map_err(remote_column_error("spaces.name"))?,
             icon_key: row
                 .get::<String>(2)
                 .map_err(remote_column_error("spaces.icon_key"))?,
@@ -417,13 +457,21 @@ async fn fetch_projects(remote: &Connection) -> Result<Vec<ProjectPayload>, Sync
         .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 projects 失败: {error}")))?;
     let mut records = Vec::new();
 
-    while let Some(row) = rows.next().await.map_err(remote_row_walk_error("projects"))? {
+    while let Some(row) = rows
+        .next()
+        .await
+        .map_err(remote_row_walk_error("projects"))?
+    {
         records.push(ProjectPayload {
-            id: row.get::<String>(0).map_err(remote_column_error("projects.id"))?,
+            id: row
+                .get::<String>(0)
+                .map_err(remote_column_error("projects.id"))?,
             space_id: row
                 .get::<String>(1)
                 .map_err(remote_column_error("projects.space_id"))?,
-            name: row.get::<String>(2).map_err(remote_column_error("projects.name"))?,
+            name: row
+                .get::<String>(2)
+                .map_err(remote_column_error("projects.name"))?,
             description: row
                 .get::<Option<String>>(3)
                 .map_err(remote_column_error("projects.description"))?,
@@ -470,18 +518,24 @@ async fn fetch_tasks(remote: &Connection) -> Result<Vec<TaskPayload>, SyncWorker
 
     while let Some(row) = rows.next().await.map_err(remote_row_walk_error("tasks"))? {
         records.push(TaskPayload {
-            id: row.get::<String>(0).map_err(remote_column_error("tasks.id"))?,
+            id: row
+                .get::<String>(0)
+                .map_err(remote_column_error("tasks.id"))?,
             space_id: row
                 .get::<String>(1)
                 .map_err(remote_column_error("tasks.space_id"))?,
             project_id: row
                 .get::<Option<String>>(2)
                 .map_err(remote_column_error("tasks.project_id"))?,
-            title: row.get::<String>(3).map_err(remote_column_error("tasks.title"))?,
+            title: row
+                .get::<String>(3)
+                .map_err(remote_column_error("tasks.title"))?,
             note: row
                 .get::<Option<String>>(4)
                 .map_err(remote_column_error("tasks.note"))?,
-            status: row.get::<String>(5).map_err(remote_column_error("tasks.status"))?,
+            status: row
+                .get::<String>(5)
+                .map_err(remote_column_error("tasks.status"))?,
             status_changed_at: row
                 .get::<String>(6)
                 .map_err(remote_column_error("tasks.status_changed_at"))?,
@@ -538,19 +592,29 @@ async fn fetch_task_links(remote: &Connection) -> Result<Vec<TaskLinkPayload>, S
             params![],
         )
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 task_links 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::remote_database(format!("读取远端 task_links 失败: {error}"))
+        })?;
     let mut records = Vec::new();
 
-    while let Some(row) = rows.next().await.map_err(remote_row_walk_error("task_links"))? {
+    while let Some(row) = rows
+        .next()
+        .await
+        .map_err(remote_row_walk_error("task_links"))?
+    {
         records.push(TaskLinkPayload {
-            id: row.get::<String>(0).map_err(remote_column_error("task_links.id"))?,
+            id: row
+                .get::<String>(0)
+                .map_err(remote_column_error("task_links.id"))?,
             task_id: row
                 .get::<String>(1)
                 .map_err(remote_column_error("task_links.task_id"))?,
             title: row
                 .get::<String>(2)
                 .map_err(remote_column_error("task_links.title"))?,
-            url: row.get::<String>(3).map_err(remote_column_error("task_links.url"))?,
+            url: row
+                .get::<String>(3)
+                .map_err(remote_column_error("task_links.url"))?,
             sort_order: row
                 .get::<i32>(4)
                 .map_err(remote_column_error("task_links.sort_order"))?,
@@ -582,12 +646,18 @@ async fn fetch_views(remote: &Connection) -> Result<Vec<ViewPayload>, SyncWorker
 
     while let Some(row) = rows.next().await.map_err(remote_row_walk_error("views"))? {
         records.push(ViewPayload {
-            id: row.get::<String>(0).map_err(remote_column_error("views.id"))?,
-            name: row.get::<String>(1).map_err(remote_column_error("views.name"))?,
+            id: row
+                .get::<String>(0)
+                .map_err(remote_column_error("views.id"))?,
+            name: row
+                .get::<String>(1)
+                .map_err(remote_column_error("views.name"))?,
             description: row
                 .get::<Option<String>>(2)
                 .map_err(remote_column_error("views.description"))?,
-            kind: row.get::<String>(3).map_err(remote_column_error("views.type"))?,
+            kind: row
+                .get::<String>(3)
+                .map_err(remote_column_error("views.type"))?,
             entity_type: row
                 .get::<String>(4)
                 .map_err(remote_column_error("views.entity_type"))?,
@@ -597,7 +667,9 @@ async fn fetch_views(remote: &Connection) -> Result<Vec<ViewPayload>, SyncWorker
             filters: row
                 .get::<String>(6)
                 .map_err(remote_column_error("views.filters"))?,
-            sort: row.get::<String>(7).map_err(remote_column_error("views.sort"))?,
+            sort: row
+                .get::<String>(7)
+                .map_err(remote_column_error("views.sort"))?,
             group_by: row
                 .get::<Option<String>>(8)
                 .map_err(remote_column_error("views.group_by"))?,
@@ -632,12 +704,20 @@ async fn fetch_settings(remote: &Connection) -> Result<Vec<SettingPayload>, Sync
             params![SYNC_CONFIG_SETTING_KEY],
         )
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("读取远端 settings 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::remote_database(format!("读取远端 settings 失败: {error}"))
+        })?;
     let mut records = Vec::new();
 
-    while let Some(row) = rows.next().await.map_err(remote_row_walk_error("settings"))? {
+    while let Some(row) = rows
+        .next()
+        .await
+        .map_err(remote_row_walk_error("settings"))?
+    {
         records.push(SettingPayload {
-            key: row.get::<String>(0).map_err(remote_column_error("settings.key"))?,
+            key: row
+                .get::<String>(0)
+                .map_err(remote_column_error("settings.key"))?,
             raw_value: row
                 .get::<String>(1)
                 .map_err(remote_column_error("settings.value"))?,

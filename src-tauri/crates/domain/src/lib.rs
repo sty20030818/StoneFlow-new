@@ -9,9 +9,9 @@
 mod activity;
 mod error;
 mod ids;
+mod launcher;
 mod lifecycle;
 mod project;
-mod launcher;
 mod settings;
 mod space;
 mod task;
@@ -23,12 +23,12 @@ mod view;
 pub use activity::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind};
 pub use error::DomainError;
 pub use ids::{create_id, next_runtime_id};
+pub use launcher::{resolve_default_space_id, LauncherSpaceCandidate};
 pub use lifecycle::{
     ensure_deleted, ensure_not_only_active_default, restore_hint, LifecycleEntityType,
     LifecycleMode,
 };
 pub use project::{ensure_project_mutable, validate_project_id};
-pub use launcher::{resolve_default_space_id, LauncherSpaceCandidate};
 pub use settings::validate_sidebar_main_visible_count;
 pub use space::{ensure_space_mutable, validate_space_id};
 pub use task::{validate_task_id, validate_task_priority, TaskStatus};

@@ -9,23 +9,25 @@ use crate::{
     local::{list_pending_mutations, mark_mutations_acked},
     remote::{find_remote_mutation_ack, insert_change_and_ack},
     schema::{
-        HardDeletePayload, LocalMutationRecord, ProjectPayload, PUSH_BATCH_SIZE,
-        RemoteChangeKind, RemoteOperationRecord, SettingPayload, SpacePayload, SyncAction,
-        SyncOperationPayload, TaskLinkPayload, TaskPayload, ViewPayload,
+        HardDeletePayload, LocalMutationRecord, ProjectPayload, RemoteChangeKind,
+        RemoteOperationRecord, SettingPayload, SpacePayload, SyncAction, SyncOperationPayload,
+        TaskLinkPayload, TaskPayload, ViewPayload, PUSH_BATCH_SIZE,
     },
 };
 
-pub async fn push_local_changes(local: &Connection, remote: &Connection) -> Result<(), SyncWorkerError> {
+pub async fn push_local_changes(
+    local: &Connection,
+    remote: &Connection,
+) -> Result<(), SyncWorkerError> {
     loop {
         let batch = list_pending_mutations(local, PUSH_BATCH_SIZE).await?;
         if batch.is_empty() {
             break;
         }
 
-        let remote_tx = remote
-            .transaction()
-            .await
-            .map_err(|error| SyncWorkerError::remote_database(format!("开启远端 push 事务失败: {error}")))?;
+        let remote_tx = remote.transaction().await.map_err(|error| {
+            SyncWorkerError::remote_database(format!("开启远端 push 事务失败: {error}"))
+        })?;
 
         for mutation in &batch {
             if find_remote_mutation_ack(&remote_tx, &mutation.client_id, mutation.client_seq)
@@ -40,10 +42,9 @@ pub async fn push_local_changes(local: &Connection, remote: &Connection) -> Resu
             insert_change_and_ack(&remote_tx, mutation, change_kind, patch.as_ref()).await?;
         }
 
-        remote_tx
-            .commit()
-            .await
-            .map_err(|error| SyncWorkerError::remote_database(format!("提交远端 push 事务失败: {error}")))?;
+        remote_tx.commit().await.map_err(|error| {
+            SyncWorkerError::remote_database(format!("提交远端 push 事务失败: {error}"))
+        })?;
         mark_mutations_acked(local, &batch).await?;
     }
 
@@ -52,7 +53,14 @@ pub async fn push_local_changes(local: &Connection, remote: &Connection) -> Resu
 
 fn normalize_mutation_record(
     record: &LocalMutationRecord,
-) -> Result<(RemoteOperationRecord, RemoteChangeKind, Option<SyncOperationPayload>), SyncWorkerError> {
+) -> Result<
+    (
+        RemoteOperationRecord,
+        RemoteChangeKind,
+        Option<SyncOperationPayload>,
+    ),
+    SyncWorkerError,
+> {
     let payload = if record.operation == "hard_delete" {
         None
     } else {
@@ -69,16 +77,16 @@ fn normalize_mutation_record(
             )))
         }
     };
-    let operation_payload = payload.clone().unwrap_or_else(|| {
-        SyncOperationPayload::HardDelete {
+    let operation_payload = payload
+        .clone()
+        .unwrap_or_else(|| SyncOperationPayload::HardDelete {
             target: HardDeletePayload {
                 entity_type: record.entity_type.clone(),
                 entity_id: record.entity_id.clone(),
                 deleted_at: record.updated_at.clone(),
                 metadata: None,
             },
-        }
-    });
+        });
     let action = match change_kind {
         RemoteChangeKind::Upsert | RemoteChangeKind::Restore => SyncAction::Upsert,
         RemoteChangeKind::SoftDelete | RemoteChangeKind::HardDelete => SyncAction::Delete,
@@ -101,36 +109,48 @@ fn normalize_mutation_record(
     ))
 }
 
-fn parse_mutation_payload(record: &LocalMutationRecord) -> Result<SyncOperationPayload, SyncWorkerError> {
-    let value = serde_json::from_str::<Value>(&record.payload)
-        .map_err(|error| SyncWorkerError::serialization(format!("解析本地 mutation payload 失败: {error}")))?;
+fn parse_mutation_payload(
+    record: &LocalMutationRecord,
+) -> Result<SyncOperationPayload, SyncWorkerError> {
+    let value = serde_json::from_str::<Value>(&record.payload).map_err(|error| {
+        SyncWorkerError::serialization(format!("解析本地 mutation payload 失败: {error}"))
+    })?;
 
     match record.entity_type.as_str() {
         "space" => Ok(SyncOperationPayload::Space {
-            snapshot: serde_json::from_value::<SpacePayload>(value)
-                .map_err(|error| SyncWorkerError::serialization(format!("解析 Space mutation payload 失败: {error}")))?,
+            snapshot: serde_json::from_value::<SpacePayload>(value).map_err(|error| {
+                SyncWorkerError::serialization(format!("解析 Space mutation payload 失败: {error}"))
+            })?,
         }),
         "project" => Ok(SyncOperationPayload::Project {
             snapshot: serde_json::from_value::<ProjectPayload>(value).map_err(|error| {
-                SyncWorkerError::serialization(format!("解析 Project mutation payload 失败: {error}"))
+                SyncWorkerError::serialization(format!(
+                    "解析 Project mutation payload 失败: {error}"
+                ))
             })?,
         }),
         "view" => Ok(SyncOperationPayload::View {
-            snapshot: serde_json::from_value::<ViewPayload>(value)
-                .map_err(|error| SyncWorkerError::serialization(format!("解析 View mutation payload 失败: {error}")))?,
+            snapshot: serde_json::from_value::<ViewPayload>(value).map_err(|error| {
+                SyncWorkerError::serialization(format!("解析 View mutation payload 失败: {error}"))
+            })?,
         }),
         "setting" => Ok(SyncOperationPayload::Setting {
             snapshot: serde_json::from_value::<SettingPayload>(value).map_err(|error| {
-                SyncWorkerError::serialization(format!("解析 Setting mutation payload 失败: {error}"))
+                SyncWorkerError::serialization(format!(
+                    "解析 Setting mutation payload 失败: {error}"
+                ))
             })?,
         }),
         "task" => Ok(SyncOperationPayload::Task {
-            snapshot: serde_json::from_value::<TaskPayload>(value)
-                .map_err(|error| SyncWorkerError::serialization(format!("解析 Task mutation payload 失败: {error}")))?,
+            snapshot: serde_json::from_value::<TaskPayload>(value).map_err(|error| {
+                SyncWorkerError::serialization(format!("解析 Task mutation payload 失败: {error}"))
+            })?,
         }),
         "task_link" => Ok(SyncOperationPayload::TaskLink {
             snapshot: serde_json::from_value::<TaskLinkPayload>(value).map_err(|error| {
-                SyncWorkerError::serialization(format!("解析 TaskLink mutation payload 失败: {error}"))
+                SyncWorkerError::serialization(format!(
+                    "解析 TaskLink mutation payload 失败: {error}"
+                ))
             })?,
         }),
         other => Err(SyncWorkerError::protocol(format!(
@@ -184,18 +204,30 @@ mod tests {
             .await
             .expect("push should succeed");
 
-        let remote_setting = read_text(&remote, "SELECT value FROM settings WHERE key = 'app.theme'")
-            .await
-            .expect("remote setting should exist");
-        let change_kind = read_text(&remote, "SELECT change_kind FROM remote_change_log WHERE server_seq = 1")
-            .await
-            .expect("remote change should exist");
-        let ack_status = read_text(&remote, "SELECT status FROM remote_mutations WHERE client_id = 'client-a' AND client_seq = 1")
-            .await
-            .expect("remote ack should exist");
-        let local_status = read_text(&local, "SELECT status FROM sync_mutations WHERE client_id = 'client-a' AND client_seq = 1")
-            .await
-            .expect("local mutation should exist");
+        let remote_setting = read_text(
+            &remote,
+            "SELECT value FROM settings WHERE key = 'app.theme'",
+        )
+        .await
+        .expect("remote setting should exist");
+        let change_kind = read_text(
+            &remote,
+            "SELECT change_kind FROM remote_change_log WHERE server_seq = 1",
+        )
+        .await
+        .expect("remote change should exist");
+        let ack_status = read_text(
+            &remote,
+            "SELECT status FROM remote_mutations WHERE client_id = 'client-a' AND client_seq = 1",
+        )
+        .await
+        .expect("remote ack should exist");
+        let local_status = read_text(
+            &local,
+            "SELECT status FROM sync_mutations WHERE client_id = 'client-a' AND client_seq = 1",
+        )
+        .await
+        .expect("local mutation should exist");
 
         assert_eq!(remote_setting, "\"dark\"");
         assert_eq!(change_kind, "upsert");
@@ -210,9 +242,7 @@ mod tests {
             .build()
             .await
             .expect("test database should build");
-        let connection = database
-            .connect()
-            .expect("test database should connect");
+        let connection = database.connect().expect("test database should connect");
 
         (temp_dir, connection)
     }

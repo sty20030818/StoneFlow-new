@@ -181,7 +181,10 @@ mod tests {
     #[test]
     fn parse_check_mode_unknown_defaults_to_notify_only() {
         assert_eq!(parse_check_mode("autoInstall"), UpdateCheckMode::NotifyOnly);
-        assert_eq!(parse_check_mode("somethingElse"), UpdateCheckMode::NotifyOnly);
+        assert_eq!(
+            parse_check_mode("somethingElse"),
+            UpdateCheckMode::NotifyOnly
+        );
         assert_eq!(parse_check_mode(""), UpdateCheckMode::NotifyOnly);
     }
 
@@ -203,8 +206,14 @@ mod tests {
 
     #[test]
     fn should_auto_check_after_interval() {
-        assert!(should_auto_check(1000 + AUTO_CHECK_INTERVAL_SECS, Some(1000)));
-        assert!(!should_auto_check(1000 + AUTO_CHECK_INTERVAL_SECS - 1, Some(1000)));
+        assert!(should_auto_check(
+            1000 + AUTO_CHECK_INTERVAL_SECS,
+            Some(1000)
+        ));
+        assert!(!should_auto_check(
+            1000 + AUTO_CHECK_INTERVAL_SECS - 1,
+            Some(1000)
+        ));
     }
 
     #[test]
@@ -217,7 +226,11 @@ mod tests {
     #[test]
     fn should_auto_check_with_custom_interval() {
         let one_hour = 3600;
-        assert!(should_auto_check_with_interval(1000 + one_hour, Some(1000), one_hour));
+        assert!(should_auto_check_with_interval(
+            1000 + one_hour,
+            Some(1000),
+            one_hour
+        ));
         assert!(!should_auto_check_with_interval(
             1000 + one_hour - 1,
             Some(1000),

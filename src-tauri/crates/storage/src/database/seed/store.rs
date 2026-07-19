@@ -72,12 +72,12 @@ where
 }
 
 pub async fn insert_setting<C>(
-	connection: &C,
-	model: setting::ActiveModel,
+    connection: &C,
+    model: setting::ActiveModel,
 ) -> Result<(), sea_orm::DbErr>
 where
-	C: ConnectionTrait,
+    C: ConnectionTrait,
 {
-	model.insert(connection).await?;
-	Ok(())
+    model.insert(connection).await?;
+    Ok(())
 }

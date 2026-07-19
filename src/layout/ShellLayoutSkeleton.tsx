@@ -3,14 +3,21 @@ import {
 	shellChromeSkeletonStatusTextClass,
 } from '@/shared/components/patterns/shell-chrome'
 
-/** 侧栏设置 / spaces 未就绪时的占位骨架（避免白屏闪一下）。 */
-export function ShellLayoutSkeleton({
-	status,
-	message,
-}: {
-	status: 'idle' | 'loading' | 'ready' | 'error'
-	message: string | null
-}) {
+type ShellLayoutSkeletonStatus = 'idle' | 'loading' | 'ready' | 'error'
+
+type ShellLayoutSkeletonProps = {
+	status: ShellLayoutSkeletonStatus
+	/** error 时为错误文案；loading 时可覆盖默认「正在加载工作区…」 */
+	message?: string | null
+}
+
+/**
+ * 壳层统一首屏骨架（开屏 W2）。
+ * `/` pending 与 chrome 未就绪共用，避免「居中文案页 → 骨架」两跳。
+ */
+export function ShellLayoutSkeleton({ status, message = null }: ShellLayoutSkeletonProps) {
+	const statusText = status === 'error' ? (message ?? '加载失败') : (message ?? '正在加载工作区…')
+
 	return (
 		<div className='relative flex h-full min-h-0 flex-col overflow-hidden bg-background'>
 			<div className='flex h-12 shrink-0 items-center justify-between border-b border-sf-border-subtle bg-sf-shell px-4'>
@@ -52,9 +59,7 @@ export function ShellLayoutSkeleton({
 							<div className='h-16 rounded-2xl bg-sf-surface-panel-muted' />
 							<div className='h-28 rounded-3xl bg-sf-surface-panel-muted' />
 						</div>
-						<div className={shellChromeSkeletonStatusTextClass}>
-							{status === 'error' ? (message ?? 'Sidebar 设置加载失败') : '正在读取 Sidebar 配置…'}
-						</div>
+						<div className={shellChromeSkeletonStatusTextClass}>{statusText}</div>
 					</div>
 				</div>
 			</div>

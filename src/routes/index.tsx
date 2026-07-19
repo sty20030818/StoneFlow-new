@@ -3,7 +3,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router'
 import { resolveStartupPath } from '@/app/navigation'
 import { spaceKeys } from '@/features/space'
 import { listVisibleSpaces } from '@/features/space'
-import { RouterFeedbackPage } from './-router-feedback'
+import { ShellLayoutSkeleton } from '@/layout/ShellLayoutSkeleton'
 
 export const Route = createFileRoute('/')({
 	loader: async ({ context }) => {
@@ -23,11 +23,10 @@ export const Route = createFileRoute('/')({
 })
 
 function RootRestorePending() {
-	return <RouterFeedbackPage title='正在恢复上次工作区...' />
+	return <ShellLayoutSkeleton message='正在恢复上次工作区…' status='loading' />
 }
 
 function RootRestoreError({ error }: { error: unknown }) {
 	const message = error instanceof Error ? error.message : '恢复工作区失败'
-
-	return <RouterFeedbackPage description={message} title='恢复工作区失败' />
+	return <ShellLayoutSkeleton message={message} status='error' />
 }

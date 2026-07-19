@@ -4,10 +4,7 @@
  */
 import { Navigate } from '@tanstack/react-router'
 
-import {
-	DEFAULT_SETTINGS_SECTION,
-	isSettingsSectionKey,
-} from '@/features/settings/contract'
+import { DEFAULT_SETTINGS_SECTION, isSettingsSectionKey } from '@/features/settings/contract'
 import { SettingsPage } from '@/features/settings/page'
 
 export function WorkspaceSettingsSectionGuard({

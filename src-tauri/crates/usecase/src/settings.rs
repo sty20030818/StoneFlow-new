@@ -148,16 +148,16 @@ pub struct SidebarProjectSectionPreferenceConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SidebarPreferenceSettings {
-	pub main_items: SidebarMainItems,
-	pub project_section: SidebarProjectSectionPreferenceConfig,
-	pub footer_items: SidebarFooterItems,
+    pub main_items: SidebarMainItems,
+    pub project_section: SidebarProjectSectionPreferenceConfig,
+    pub footer_items: SidebarFooterItems,
 }
 
 /// Rust command 返回的 typed payload。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetSidebarSettingsOutput {
-	pub settings: SidebarPreferenceSettings,
+    pub settings: SidebarPreferenceSettings,
 }
 
 /// 更新主区或 footer 某一项的可见性。
@@ -204,21 +204,21 @@ where
         }
     }
 
-	/// 读取 Sidebar sync settings。
-	pub async fn get_sidebar_settings(&self) -> Result<SidebarPreferenceSettings, UsecaseError> {
-		if let Some(settings) = self
-			.find_json_setting::<SidebarPreferenceSettings>(SIDEBAR_PREFERENCE_SETTING_KEY)
-			.await?
-		{
-			return normalize_sidebar_settings(settings);
-		}
+    /// 读取 Sidebar sync settings。
+    pub async fn get_sidebar_settings(&self) -> Result<SidebarPreferenceSettings, UsecaseError> {
+        if let Some(settings) = self
+            .find_json_setting::<SidebarPreferenceSettings>(SIDEBAR_PREFERENCE_SETTING_KEY)
+            .await?
+        {
+            return normalize_sidebar_settings(settings);
+        }
 
-		Err(UsecaseError::not_found(format!(
-			"setting `{SIDEBAR_PREFERENCE_SETTING_KEY}` 不存在"
-		)))
-	}
+        Err(UsecaseError::not_found(format!(
+            "setting `{SIDEBAR_PREFERENCE_SETTING_KEY}` 不存在"
+        )))
+    }
 
-	/// 更新单个可见性开关。
+    /// 更新单个可见性开关。
     pub async fn update_sidebar_item_visibility(
         &self,
         input: UpdateSidebarItemVisibilityInput,
@@ -349,19 +349,19 @@ where
         }
 
         self.persistence.commit(transaction).await?;
-		Ok(normalized)
-	}
+        Ok(normalized)
+    }
 }
 
 fn normalize_sidebar_settings(
-	settings: SidebarPreferenceSettings,
+    settings: SidebarPreferenceSettings,
 ) -> Result<SidebarPreferenceSettings, UsecaseError> {
-	validate_main_items(&settings.main_items)?;
-	Ok(settings)
+    validate_main_items(&settings.main_items)?;
+    Ok(settings)
 }
 
 fn validate_main_items(main_items: &SidebarMainItems) -> Result<(), UsecaseError> {
-	validate_sidebar_main_visible_count(main_items.visible_count()).map_err(UsecaseError::from)
+    validate_sidebar_main_visible_count(main_items.visible_count()).map_err(UsecaseError::from)
 }
 
 fn push_change_if_needed(
@@ -383,10 +383,10 @@ fn push_change_if_needed(
 
 fn deserialize_setting<T>(key: &str, raw: &str) -> Result<T, UsecaseError>
 where
-	T: for<'de> Deserialize<'de>,
+    T: for<'de> Deserialize<'de>,
 {
-	serde_json::from_str(raw)
-		.map_err(|error| UsecaseError::storage(format!("setting `{key}` 反序列化失败: {error}")))
+    serde_json::from_str(raw)
+        .map_err(|error| UsecaseError::storage(format!("setting `{key}` 反序列化失败: {error}")))
 }
 
 #[cfg(test)]

@@ -7,11 +7,11 @@
 //! S3 当前先把契约立住；具体 trait 细化与 runtime adapter 接线会继续在后续迁移中完成。
 
 pub use crate::activity::ActivityPersistence;
+pub use crate::launcher::LauncherPorts;
 pub use crate::lifecycle::{
     LifecycleProjectPersistence, LifecycleSpacePersistence, LifecycleTaskPersistence,
 };
 pub use crate::project::{ProjectPersistence, ProjectSpaceReader, ProjectTaskCounter};
-pub use crate::launcher::LauncherPorts;
 pub use crate::search::{SearchProjectReader, SearchSpaceReader, SearchTaskReader};
 pub use crate::settings::SettingsPersistence;
 pub use crate::space::SpacePersistence;

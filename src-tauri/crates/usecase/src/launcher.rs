@@ -175,7 +175,10 @@ pub trait LauncherPorts: Send + Sync + Clone {
     ) -> Result<Vec<LauncherSidebarProjectDto>, UsecaseError>;
     async fn get_task_detail(&self, task_id: &str) -> Result<LauncherTaskDetail, UsecaseError>;
     async fn get_project_space_id(&self, project_id: &str) -> Result<String, UsecaseError>;
-    async fn list_recent_tasks(&self, limit: usize) -> Result<Vec<LauncherTaskItemDto>, UsecaseError>;
+    async fn list_recent_tasks(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<LauncherTaskItemDto>, UsecaseError>;
     async fn list_recent_projects(
         &self,
         limit: usize,
@@ -238,10 +241,7 @@ impl<P: LauncherPorts> LauncherService<P> {
         })
     }
 
-    pub async fn get_task_detail(
-        &self,
-        task_id: &str,
-    ) -> Result<LauncherTaskDetail, UsecaseError> {
+    pub async fn get_task_detail(&self, task_id: &str) -> Result<LauncherTaskDetail, UsecaseError> {
         self.ports.get_task_detail(task_id).await
     }
 

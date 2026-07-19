@@ -3,8 +3,10 @@
 //! 长期同步协议使用 `sync_clients`、`sync_mutations`、`sync_shadow` 与 `sync_cursor`。
 
 use chrono::Utc;
-use sea_orm::{ConnectionTrait, DatabaseBackend, DatabaseConnection, DbBackend, QueryResult, Statement};
 use sea_orm::Value;
+use sea_orm::{
+    ConnectionTrait, DatabaseBackend, DatabaseConnection, DbBackend, QueryResult, Statement,
+};
 use stoneflow_domain::create_id;
 
 use crate::error::StorageError;
@@ -202,10 +204,7 @@ impl SyncRepository {
     }
 
     /// 读取指定 scope 的游标；不存在时返回 None。
-    pub async fn find_cursor(
-        &self,
-        scope: &str,
-    ) -> Result<Option<SyncCursorRecord>, StorageError> {
+    pub async fn find_cursor(&self, scope: &str) -> Result<Option<SyncCursorRecord>, StorageError> {
         let row = self
             .connection()
             .query_one(Statement::from_sql_and_values(
@@ -250,7 +249,10 @@ impl SyncRepository {
     where
         C: ConnectionTrait,
     {
-        if let Some(cursor) = self.find_cursor_in_connection(connection, DEVICE_ID_SCOPE).await? {
+        if let Some(cursor) = self
+            .find_cursor_in_connection(connection, DEVICE_ID_SCOPE)
+            .await?
+        {
             if let Some(client_id) = cursor.cursor.filter(|value| !value.trim().is_empty()) {
                 self.upsert_client(
                     connection,
@@ -350,16 +352,16 @@ fn mutation_insert_statement(record: &SyncMutationRecord) -> Statement {
 fn map_mutation_row(row: QueryResult) -> Result<SyncMutationRecord, StorageError> {
     Ok(SyncMutationRecord {
         client_id: try_get_required_string(&row, "client_id")?,
-        client_seq: row
-            .try_get("", "client_seq")
-            .map_err(|error| StorageError::database(format!("读取 sync_mutations.client_seq 失败: {error}")))?,
+        client_seq: row.try_get("", "client_seq").map_err(|error| {
+            StorageError::database(format!("读取 sync_mutations.client_seq 失败: {error}"))
+        })?,
         entity_type: try_get_required_string(&row, "entity_type")?,
         entity_id: try_get_required_string(&row, "entity_id")?,
         operation: try_get_required_string(&row, "operation")?,
         payload: try_get_required_string(&row, "payload")?,
-        base_server_seq: row
-            .try_get("", "base_server_seq")
-            .map_err(|error| StorageError::database(format!("读取 sync_mutations.base_server_seq 失败: {error}")))?,
+        base_server_seq: row.try_get("", "base_server_seq").map_err(|error| {
+            StorageError::database(format!("读取 sync_mutations.base_server_seq 失败: {error}"))
+        })?,
         status: try_get_required_string(&row, "status")?,
         error_message: try_get_optional_string(&row, "error_message")?,
         created_at: try_get_required_string(&row, "created_at")?,

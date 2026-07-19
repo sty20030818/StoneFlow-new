@@ -306,7 +306,11 @@ mod tests {
 
         assert_eq!(read_count(&remote, "remote_change_log").await, 1);
         assert_eq!(
-            read_text(&local, "SELECT cursor FROM sync_cursor WHERE scope = 'sync:last_pulled_server_seq'").await,
+            read_text(
+                &local,
+                "SELECT cursor FROM sync_cursor WHERE scope = 'sync:last_pulled_server_seq'"
+            )
+            .await,
             None
         );
     }

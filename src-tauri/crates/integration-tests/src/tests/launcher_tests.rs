@@ -4,15 +4,16 @@ use sea_orm::TransactionTrait;
 use stoneflow_schema::common::TaskStatus;
 use stoneflow_test_support::TestDatabase;
 use stoneflow_usecase::launcher::{
-    LauncherListProjectsBySpaceInput, LauncherPlacementKind, LauncherProjectOptionKind, LauncherScopeKind,
+    LauncherListProjectsBySpaceInput, LauncherPlacementKind, LauncherProjectOptionKind,
+    LauncherScopeKind,
 };
 use uuid::Uuid;
 
 use crate::{
     app::state::{ActiveScopeKind, ActiveScopeSnapshot},
     services::{
-        LauncherOpenContextService, LauncherService, LauncherSessionBridge,
-        LauncherResolvedPlacement,
+        LauncherOpenContextService, LauncherResolvedPlacement, LauncherService,
+        LauncherSessionBridge,
     },
 };
 use stoneflow_domain::create_id;
@@ -362,4 +363,3 @@ async fn insert_task(
         .expect("transaction commit should succeed");
     created
 }
-

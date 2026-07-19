@@ -13,18 +13,18 @@ use stoneflow_storage::repositories::{ActivityRepository, SettingsRepository, Sy
 
 #[tokio::test]
 async fn settings_service_should_read_sidebar_settings() {
-	let database = TestDatabase::bootstrap_in_memory()
-		.await
-		.expect("test database should bootstrap");
-	let service = build_settings_service(&database);
+    let database = TestDatabase::bootstrap_in_memory()
+        .await
+        .expect("test database should bootstrap");
+    let service = build_settings_service(&database);
 
-	let settings = service
-		.get_sidebar_settings()
-		.await
-		.expect("get sidebar settings should succeed");
+    let settings = service
+        .get_sidebar_settings()
+        .await
+        .expect("get sidebar settings should succeed");
 
-	assert!(settings.main_items.inbox.visible);
-	assert!(settings.project_section.show_counts);
+    assert!(settings.main_items.inbox.visible);
+    assert!(settings.project_section.show_counts);
 }
 
 #[tokio::test]
@@ -137,7 +137,9 @@ async fn settings_service_should_enqueue_setting_mutation_on_visibility_update()
     assert_eq!(pending[0].entity_type, "setting");
     assert_eq!(pending[0].entity_id, "app.sidebar.preferences");
     assert_eq!(pending[0].operation, "upsert");
-    assert!(pending[0].payload.contains("\"key\":\"app.sidebar.preferences\""));
+    assert!(pending[0]
+        .payload
+        .contains("\"key\":\"app.sidebar.preferences\""));
 }
 
 #[tokio::test]

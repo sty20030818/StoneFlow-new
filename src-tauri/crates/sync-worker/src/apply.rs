@@ -358,7 +358,10 @@ async fn delete_view(
     }
 
     transaction
-        .execute("DELETE FROM views WHERE id = ?1", params![snapshot.id.clone()])
+        .execute(
+            "DELETE FROM views WHERE id = ?1",
+            params![snapshot.id.clone()],
+        )
         .await
         .map_err(|error| target.database_error(format!("删除 View 镜像失败: {error}")))?;
     insert_activity_tombstone(
@@ -468,7 +471,10 @@ async fn delete_task_link(
     }
 
     transaction
-        .execute("DELETE FROM task_links WHERE id = ?1", params![snapshot.id.clone()])
+        .execute(
+            "DELETE FROM task_links WHERE id = ?1",
+            params![snapshot.id.clone()],
+        )
         .await
         .map_err(|error| target.database_error(format!("删除 TaskLink 镜像失败: {error}")))?;
     insert_activity_tombstone(
@@ -536,7 +542,9 @@ async fn apply_hard_delete(
                 params![target_payload.entity_id.clone()],
             )
             .await
-            .map_err(|error| target.database_error(format!("删除任务关联 TaskLink 失败: {error}")))?;
+            .map_err(|error| {
+                target.database_error(format!("删除任务关联 TaskLink 失败: {error}"))
+            })?;
     }
 
     Ok(())
@@ -551,9 +559,14 @@ async fn should_apply_record(
     tombstone: Option<(&str, &str)>,
     target: ApplyTarget,
 ) -> Result<bool, SyncWorkerError> {
-    if let Some(current_updated_at) =
-        query_current_updated_at(connection, table_name, primary_key_column, primary_key, target)
-            .await?
+    if let Some(current_updated_at) = query_current_updated_at(
+        connection,
+        table_name,
+        primary_key_column,
+        primary_key,
+        target,
+    )
+    .await?
     {
         return Ok(current_updated_at.as_str() <= incoming_updated_at);
     }
@@ -602,7 +615,8 @@ async fn should_apply_task_link(
         return Ok(current_updated_at.as_str() <= incoming_updated_at);
     }
 
-    if let Some(tombstone_at) = query_latest_task_link_tombstone_at(connection, link_id, target).await?
+    if let Some(tombstone_at) =
+        query_latest_task_link_tombstone_at(connection, link_id, target).await?
     {
         return Ok(tombstone_at.as_str() < incoming_updated_at);
     }
@@ -626,9 +640,8 @@ async fn query_current_updated_at(
     primary_key: &str,
     target: ApplyTarget,
 ) -> Result<Option<String>, SyncWorkerError> {
-    let sql = format!(
-        "SELECT updated_at FROM {table_name} WHERE {primary_key_column} = ?1 LIMIT 1"
-    );
+    let sql =
+        format!("SELECT updated_at FROM {table_name} WHERE {primary_key_column} = ?1 LIMIT 1");
     let mut rows = connection
         .query(&sql, params![primary_key.to_owned()])
         .await
@@ -661,7 +674,11 @@ async fn query_latest_tombstone_at(
             ORDER BY created_at DESC, id DESC
             LIMIT 1
             "#,
-            params![entity_type.to_owned(), entity_id.to_owned(), action.to_owned()],
+            params![
+                entity_type.to_owned(),
+                entity_id.to_owned(),
+                action.to_owned()
+            ],
         )
         .await
         .map_err(|error| target.database_error(format!("读取 tombstone 失败: {error}")))?;
@@ -671,8 +688,9 @@ async fn query_latest_tombstone_at(
         .map_err(|error| target.database_error(format!("遍历 tombstone 失败: {error}")))?;
 
     row.map(|row| {
-        row.get::<String>(0)
-            .map_err(|error| target.database_error(format!("读取 tombstone.created_at 失败: {error}")))
+        row.get::<String>(0).map_err(|error| {
+            target.database_error(format!("读取 tombstone.created_at 失败: {error}"))
+        })
     })
     .transpose()
 }
@@ -846,9 +864,7 @@ mod tests {
             .build()
             .await
             .expect("test database should build");
-        let connection = database
-            .connect()
-            .expect("test database should connect");
+        let connection = database.connect().expect("test database should connect");
 
         (temp_dir, connection)
     }

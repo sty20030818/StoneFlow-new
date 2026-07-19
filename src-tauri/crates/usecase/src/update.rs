@@ -92,9 +92,7 @@ impl Default for SessionInner {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DownloadOutcome {
     /// 下载并预装完成，等待重启。
-    Completed {
-        version: String,
-    },
+    Completed { version: String },
     /// 用户在下载中取消（网络任务已 abort）。
     Cancelled,
 }
@@ -184,7 +182,9 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
     pub fn session_snapshot(&self) -> UpdateSessionSnapshot {
         let s = self.session.lock().unwrap_or_else(|e| e.into_inner());
         let version = match s.phase {
-            UpdateSessionPhase::Available => s.pending_version.clone().or_else(|| s.version.clone()),
+            UpdateSessionPhase::Available => {
+                s.pending_version.clone().or_else(|| s.version.clone())
+            }
             _ => s.version.clone().or_else(|| s.pending_version.clone()),
         };
         UpdateSessionSnapshot {
@@ -235,8 +235,7 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
     /// 读取当前更新设置（间隔字段已规范化）。
     pub async fn get_settings(&self) -> Result<UpdateSettings, UsecaseError> {
         let mut settings = self.settings_port.load().await?;
-        settings.check_interval_secs =
-            normalize_check_interval_secs(settings.check_interval_secs);
+        settings.check_interval_secs = normalize_check_interval_secs(settings.check_interval_secs);
         Ok(settings)
     }
 
@@ -292,9 +291,9 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
                 other => (other, false),
             }
         } else {
-            let clear = update
-                .as_ref()
-                .is_some_and(|info| settings.skipped_version.as_deref() == Some(info.version.as_str()));
+            let clear = update.as_ref().is_some_and(|info| {
+                settings.skipped_version.as_deref() == Some(info.version.as_str())
+            });
             (update, clear)
         };
 
@@ -684,7 +683,12 @@ mod tests {
         assert!(result.is_some());
         assert_eq!(result.unwrap().version, "0.2.0");
         // 手动检查会清除对该版本的跳过
-        assert!(service.get_settings().await.unwrap().skipped_version.is_none());
+        assert!(service
+            .get_settings()
+            .await
+            .unwrap()
+            .skipped_version
+            .is_none());
     }
 
     #[tokio::test]
@@ -768,10 +772,7 @@ mod tests {
             "second concurrent download must be single-flighted"
         );
         assert!(!service.is_download_in_flight());
-        assert!(matches!(
-            r1.unwrap(),
-            DownloadOutcome::Completed { .. }
-        ));
+        assert!(matches!(r1.unwrap(), DownloadOutcome::Completed { .. }));
     }
 
     #[tokio::test]
@@ -797,10 +798,7 @@ mod tests {
             DownloadOutcome::Completed { version } if version == "0.2.0"
         ));
         assert_eq!(*download_count.lock().unwrap(), 1);
-        assert_eq!(
-            service.session_snapshot().phase,
-            UpdateSessionPhase::Ready
-        );
+        assert_eq!(service.session_snapshot().phase, UpdateSessionPhase::Ready);
     }
 
     #[tokio::test]

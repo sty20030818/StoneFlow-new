@@ -7,14 +7,13 @@ use crate::{
     error::SyncWorkerError,
     local::{
         delete_sync_shadow, read_server_seq_cursor, reset_local_replica_for_snapshot,
-        upsert_sync_shadow,
-        write_server_seq_cursor_in_transaction,
+        upsert_sync_shadow, write_server_seq_cursor_in_transaction,
     },
     migrate::{read_local_business_count, snapshot_business_count},
     remote::{fetch_changes_after, fetch_latest_server_seq, fetch_restore_snapshot},
     schema::{
-        HardDeletePayload, RemoteChangeKind, RemoteChangeRecord, RemoteOperationRecord,
-        SyncAction, SyncOperationPayload, PULL_BATCH_SIZE,
+        HardDeletePayload, RemoteChangeKind, RemoteChangeRecord, RemoteOperationRecord, SyncAction,
+        SyncOperationPayload, PULL_BATCH_SIZE,
     },
 };
 
@@ -45,20 +44,18 @@ pub async fn pull_remote_changes(
             ));
         };
         let last_server_seq = last_change.server_seq;
-        let transaction = local
-            .transaction()
-            .await
-            .map_err(|error| SyncWorkerError::local_database(format!("开启本地 pull 事务失败: {error}")))?;
+        let transaction = local.transaction().await.map_err(|error| {
+            SyncWorkerError::local_database(format!("开启本地 pull 事务失败: {error}"))
+        })?;
 
         for change in &changes {
             apply_change_to_local(&transaction, change).await?;
         }
 
         write_server_seq_cursor_in_transaction(&transaction, last_server_seq).await?;
-        transaction
-            .commit()
-            .await
-            .map_err(|error| SyncWorkerError::local_database(format!("提交本地 pull 事务失败: {error}")))?;
+        transaction.commit().await.map_err(|error| {
+            SyncWorkerError::local_database(format!("提交本地 pull 事务失败: {error}"))
+        })?;
     }
 
     Ok(())
@@ -79,10 +76,9 @@ async fn should_repair_seed_only_replica(
 async fn pull_snapshot(local: &Connection, remote: &Connection) -> Result<(), SyncWorkerError> {
     let snapshot = fetch_restore_snapshot(remote).await?;
     let server_seq = fetch_latest_server_seq(remote).await?.unwrap_or(0);
-    let transaction = local
-        .transaction()
-        .await
-        .map_err(|error| SyncWorkerError::local_database(format!("开启本地 snapshot 事务失败: {error}")))?;
+    let transaction = local.transaction().await.map_err(|error| {
+        SyncWorkerError::local_database(format!("开启本地 snapshot 事务失败: {error}"))
+    })?;
 
     reset_local_replica_for_snapshot(&transaction).await?;
     for space in &snapshot.spaces {
@@ -107,7 +103,14 @@ async fn pull_snapshot(local: &Connection, remote: &Connection) -> Result<(), Sy
         let payload = SyncOperationPayload::TaskLink {
             snapshot: task_link.clone(),
         };
-        apply_snapshot_payload(&transaction, server_seq, "task_link", &task_link.id, payload).await?;
+        apply_snapshot_payload(
+            &transaction,
+            server_seq,
+            "task_link",
+            &task_link.id,
+            payload,
+        )
+        .await?;
     }
     for view in &snapshot.views {
         let payload = SyncOperationPayload::View {
@@ -123,10 +126,9 @@ async fn pull_snapshot(local: &Connection, remote: &Connection) -> Result<(), Sy
     }
 
     write_server_seq_cursor_in_transaction(&transaction, server_seq).await?;
-    transaction
-        .commit()
-        .await
-        .map_err(|error| SyncWorkerError::local_database(format!("提交本地 snapshot 事务失败: {error}")))?;
+    transaction.commit().await.map_err(|error| {
+        SyncWorkerError::local_database(format!("提交本地 snapshot 事务失败: {error}"))
+    })?;
     Ok(())
 }
 
@@ -148,8 +150,9 @@ async fn apply_snapshot_payload(
         committed_at: "remote_snapshot".to_owned(),
     };
     apply_operation_to_local(transaction, &operation).await?;
-    let snapshot = serde_json::to_string(&operation.payload)
-        .map_err(|error| SyncWorkerError::serialization(format!("序列化 sync_shadow snapshot 失败: {error}")))?;
+    let snapshot = serde_json::to_string(&operation.payload).map_err(|error| {
+        SyncWorkerError::serialization(format!("序列化 sync_shadow snapshot 失败: {error}"))
+    })?;
     upsert_sync_shadow(
         transaction,
         entity_type,
@@ -216,8 +219,9 @@ async fn apply_change_to_local(
         committed_at: change.committed_at.clone(),
     };
     apply_operation_to_local(transaction, &operation).await?;
-    let snapshot = serde_json::to_string(&operation.payload)
-        .map_err(|error| SyncWorkerError::serialization(format!("序列化 sync_shadow snapshot 失败: {error}")))?;
+    let snapshot = serde_json::to_string(&operation.payload).map_err(|error| {
+        SyncWorkerError::serialization(format!("序列化 sync_shadow snapshot 失败: {error}"))
+    })?;
     upsert_sync_shadow(
         transaction,
         &change.entity_type,
@@ -274,11 +278,7 @@ mod tests {
         local
             .execute(
                 "INSERT INTO sync_cursor(scope, cursor, updated_at) VALUES (?1, ?2, ?3)",
-                params![
-                    "sync:last_pulled_server_seq",
-                    "0",
-                    "2026-06-29T09:00:00Z"
-                ],
+                params!["sync:last_pulled_server_seq", "0", "2026-06-29T09:00:00Z"],
             )
             .await
             .expect("local server_seq cursor should insert");
@@ -405,11 +405,7 @@ mod tests {
         local
             .execute(
                 "INSERT INTO sync_cursor(scope, cursor, updated_at) VALUES (?1, ?2, ?3)",
-                params![
-                    "sync:last_pulled_server_seq",
-                    "1",
-                    "2026-06-29T10:00:00Z"
-                ],
+                params!["sync:last_pulled_server_seq", "1", "2026-06-29T10:00:00Z"],
             )
             .await
             .expect("existing cursor should insert");
@@ -469,9 +465,7 @@ mod tests {
             .build()
             .await
             .expect("test database should build");
-        let connection = database
-            .connect()
-            .expect("test database should connect");
+        let connection = database.connect().expect("test database should connect");
 
         (temp_dir, connection)
     }

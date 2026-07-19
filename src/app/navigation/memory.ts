@@ -65,9 +65,7 @@ export function normalizeShellRouteMemory(candidate: unknown): ShellRouteMemory 
 					Object.entries(rawRoutes as Record<string, unknown>).filter(
 						(entry): entry is [ShellScopeKey, string] => {
 							const [scopeKey, path] = entry
-							return (
-								isShellScopeKey(scopeKey) && typeof path === 'string' && path.length > 0
-							)
+							return isShellScopeKey(scopeKey) && typeof path === 'string' && path.length > 0
 						},
 					),
 				)

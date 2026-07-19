@@ -101,8 +101,8 @@ pub fn init_launcher_panel(app_handle: &AppHandle<Wry>, callbacks: LauncherWindo
 
     // 层级、样式、集合行为三件套（缺一不可）。
     panel.set_level(101); // NSPopUpMenuWindowLevel
-    // 仅 NonActivating：tauri-nspanel 官方示例与 issue #19/#22 均要求
-    // decorations(false) 起步，禁止再 OR Titled（会 foreign exception abort）。
+                          // 仅 NonActivating：tauri-nspanel 官方示例与 issue #19/#22 均要求
+                          // decorations(false) 起步，禁止再 OR Titled（会 foreign exception abort）。
     panel.set_style_mask(StyleMask::empty().nonactivating_panel().into());
     panel.set_has_shadow(true);
     invalidate_panel_shadow(panel.as_ref());

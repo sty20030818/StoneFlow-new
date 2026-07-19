@@ -359,7 +359,9 @@ where
             let mut task = task.clone();
             task.archived_at = Some(now.clone());
             task.updated_at = now.clone();
-            self.sync_hook.enqueue_task_upsert(&transaction, &task).await?;
+            self.sync_hook
+                .enqueue_task_upsert(&transaction, &task)
+                .await?;
         }
 
         self.record_space_activity(
@@ -543,7 +545,9 @@ where
             let mut task = task.clone();
             task.deleted_at = Some(now.clone());
             task.updated_at = now.clone();
-            self.sync_hook.enqueue_task_delete(&transaction, &task).await?;
+            self.sync_hook
+                .enqueue_task_delete(&transaction, &task)
+                .await?;
         }
 
         self.record_space_activity(
@@ -735,7 +739,9 @@ where
             let mut task = task.clone();
             task.archived_at = Some(now.clone());
             task.updated_at = now.clone();
-            self.sync_hook.enqueue_task_upsert(&transaction, &task).await?;
+            self.sync_hook
+                .enqueue_task_upsert(&transaction, &task)
+                .await?;
         }
 
         self.record_project_activity(
@@ -868,7 +874,9 @@ where
             let mut task = task.clone();
             task.deleted_at = Some(now.clone());
             task.updated_at = now.clone();
-            self.sync_hook.enqueue_task_delete(&transaction, &task).await?;
+            self.sync_hook
+                .enqueue_task_delete(&transaction, &task)
+                .await?;
         }
 
         self.record_project_activity(
@@ -992,7 +1000,9 @@ where
             .archive_raw(&transaction, &task_id, &now, &task_id, &now)
             .await?
             .ok_or_else(|| UsecaseError::not_found("Task 不存在"))?;
-        self.sync_hook.enqueue_task_upsert(&transaction, &updated).await?;
+        self.sync_hook
+            .enqueue_task_upsert(&transaction, &updated)
+            .await?;
 
         self.record_task_activity(
             &transaction,
@@ -1076,7 +1086,9 @@ where
             )
             .await?
             .ok_or_else(|| UsecaseError::not_found("Task 不存在"))?;
-        self.sync_hook.enqueue_task_upsert(&transaction, &updated).await?;
+        self.sync_hook
+            .enqueue_task_upsert(&transaction, &updated)
+            .await?;
 
         self.record_task_activity(
             &transaction,
@@ -1139,7 +1151,9 @@ where
             .delete_raw(&transaction, &task_id, &now, &task_id, &now)
             .await?
             .ok_or_else(|| UsecaseError::not_found("Task 不存在"))?;
-        self.sync_hook.enqueue_task_delete(&transaction, &updated).await?;
+        self.sync_hook
+            .enqueue_task_delete(&transaction, &updated)
+            .await?;
 
         self.record_task_activity(
             &transaction,

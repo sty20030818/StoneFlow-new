@@ -52,9 +52,7 @@ pub struct SyncProbeOutput {
     pub schema_version: Option<i64>,
 }
 
-pub async fn collect_sync_probe(
-    remote: &Connection,
-) -> Result<SyncProbeOutput, SyncWorkerError> {
+pub async fn collect_sync_probe(remote: &Connection) -> Result<SyncProbeOutput, SyncWorkerError> {
     Ok(SyncProbeOutput {
         latest_server_seq: read_latest_server_seq(remote).await?,
         schema_version: None,
@@ -68,7 +66,8 @@ pub async fn collect_sync_diagnostics(
     Ok(SyncDiagnosticsOutput {
         local: LocalSyncDiagnosticsOutput {
             device_id: read_text_cursor(local, DEVICE_ID_SCOPE).await?,
-            last_pulled_server_seq: read_optional_i64_cursor(local, SERVER_SEQ_CURSOR_SCOPE).await?,
+            last_pulled_server_seq: read_optional_i64_cursor(local, SERVER_SEQ_CURSOR_SCOPE)
+                .await?,
             pending_mutation_count: read_pending_mutation_count(local).await?,
             counts: read_local_counts(local).await?,
         },
@@ -89,15 +88,17 @@ async fn read_text_cursor(
             params![scope.to_owned()],
         )
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("读取本地 sync_cursor 失败: {error}")))?;
-    let row = rows
-        .next()
-        .await
-        .map_err(|error| SyncWorkerError::local_database(format!("遍历本地 sync_cursor 失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("读取本地 sync_cursor 失败: {error}"))
+        })?;
+    let row = rows.next().await.map_err(|error| {
+        SyncWorkerError::local_database(format!("遍历本地 sync_cursor 失败: {error}"))
+    })?;
 
     row.map(|row| {
-        row.get::<Option<String>>(0)
-            .map_err(|error| SyncWorkerError::local_database(format!("读取本地 sync_cursor.cursor 失败: {error}")))
+        row.get::<Option<String>>(0).map_err(|error| {
+            SyncWorkerError::local_database(format!("读取本地 sync_cursor.cursor 失败: {error}"))
+        })
     })
     .transpose()
     .map(Option::flatten)
@@ -123,11 +124,12 @@ async fn read_pending_mutation_count(connection: &Connection) -> Result<i64, Syn
             params![],
         )
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("读取本地待同步 mutation 数量失败: {error}")))?;
-    let row = rows
-        .next()
-        .await
-        .map_err(|error| SyncWorkerError::local_database(format!("遍历本地待同步 mutation 数量失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("读取本地待同步 mutation 数量失败: {error}"))
+        })?;
+    let row = rows.next().await.map_err(|error| {
+        SyncWorkerError::local_database(format!("遍历本地待同步 mutation 数量失败: {error}"))
+    })?;
 
     row.map(|row| {
         row.get::<i64>(0).map_err(|error| {
@@ -138,7 +140,9 @@ async fn read_pending_mutation_count(connection: &Connection) -> Result<i64, Syn
     .map(|value| value.unwrap_or(0))
 }
 
-async fn read_local_counts(connection: &Connection) -> Result<SyncDiagnosticsCountsOutput, SyncWorkerError> {
+async fn read_local_counts(
+    connection: &Connection,
+) -> Result<SyncDiagnosticsCountsOutput, SyncWorkerError> {
     let mut rows = connection
         .query(
             r#"
@@ -153,19 +157,26 @@ async fn read_local_counts(connection: &Connection) -> Result<SyncDiagnosticsCou
             params![SYNC_CONFIG_SETTING_KEY],
         )
         .await
-        .map_err(|error| SyncWorkerError::local_database(format!("读取本地业务表摘要失败: {error}")))?;
-    let row = rows
-        .next()
-        .await
-        .map_err(|error| SyncWorkerError::local_database(format!("遍历本地业务表摘要失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::local_database(format!("读取本地业务表摘要失败: {error}"))
+        })?;
+    let row = rows.next().await.map_err(|error| {
+        SyncWorkerError::local_database(format!("遍历本地业务表摘要失败: {error}"))
+    })?;
     let Some(row) = row else {
-        return Err(SyncWorkerError::protocol("读取本地业务表摘要失败: 缺少结果行"));
+        return Err(SyncWorkerError::protocol(
+            "读取本地业务表摘要失败: 缺少结果行",
+        ));
     };
 
-    build_counts_from_row(row, "本地", |message| SyncWorkerError::local_database(message))
+    build_counts_from_row(row, "本地", |message| {
+        SyncWorkerError::local_database(message)
+    })
 }
 
-async fn read_remote_counts(connection: &Connection) -> Result<SyncDiagnosticsCountsOutput, SyncWorkerError> {
+async fn read_remote_counts(
+    connection: &Connection,
+) -> Result<SyncDiagnosticsCountsOutput, SyncWorkerError> {
     let mut rows = connection
         .query(
             r#"
@@ -180,16 +191,21 @@ async fn read_remote_counts(connection: &Connection) -> Result<SyncDiagnosticsCo
             params![SYNC_CONFIG_SETTING_KEY],
         )
         .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("读取远端业务表摘要失败: {error}")))?;
-    let row = rows
-        .next()
-        .await
-        .map_err(|error| SyncWorkerError::remote_database(format!("遍历远端业务表摘要失败: {error}")))?;
+        .map_err(|error| {
+            SyncWorkerError::remote_database(format!("读取远端业务表摘要失败: {error}"))
+        })?;
+    let row = rows.next().await.map_err(|error| {
+        SyncWorkerError::remote_database(format!("遍历远端业务表摘要失败: {error}"))
+    })?;
     let Some(row) = row else {
-        return Err(SyncWorkerError::protocol("读取远端业务表摘要失败: 缺少结果行"));
+        return Err(SyncWorkerError::protocol(
+            "读取远端业务表摘要失败: 缺少结果行",
+        ));
     };
 
-    build_counts_from_row(row, "远端", |message| SyncWorkerError::remote_database(message))
+    build_counts_from_row(row, "远端", |message| {
+        SyncWorkerError::remote_database(message)
+    })
 }
 
 fn build_counts_from_row<F>(
@@ -232,17 +248,17 @@ where
 
 async fn read_latest_server_seq(remote: &Connection) -> Result<Option<i64>, SyncWorkerError> {
     let mut rows = remote
-        .query("SELECT MAX(server_seq) FROM remote_change_log LIMIT 1", params![])
+        .query(
+            "SELECT MAX(server_seq) FROM remote_change_log LIMIT 1",
+            params![],
+        )
         .await
         .map_err(|error| {
             SyncWorkerError::remote_database(format!("读取远端最新 server_seq 失败: {error}"))
         })?;
-    let row = rows
-        .next()
-        .await
-        .map_err(|error| {
-            SyncWorkerError::remote_database(format!("遍历远端最新 server_seq 失败: {error}"))
-        })?;
+    let row = rows.next().await.map_err(|error| {
+        SyncWorkerError::remote_database(format!("遍历远端最新 server_seq 失败: {error}"))
+    })?;
 
     row.map(|row| {
         row.get::<Option<i64>>(0).map_err(|error| {

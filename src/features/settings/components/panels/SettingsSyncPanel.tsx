@@ -317,10 +317,7 @@ export function SettingsSyncPanel() {
 									</span>
 								}
 							/>
-							<SyncMetricCard
-								label='副本状态'
-								value={formatReplicaState(replicaState)}
-							/>
+							<SyncMetricCard label='副本状态' value={formatReplicaState(replicaState)} />
 						</div>
 
 						<div className='mt-4 grid gap-3 md:grid-cols-[minmax(0,18rem)_1fr] md:items-end'>

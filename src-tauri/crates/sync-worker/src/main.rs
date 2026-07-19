@@ -1,4 +1,7 @@
-#![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
+#![cfg_attr(
+    all(target_os = "windows", not(debug_assertions)),
+    windows_subsystem = "windows"
+)]
 
 use std::thread;
 
@@ -13,8 +16,8 @@ mod remote;
 mod schema;
 mod types;
 
-use error::SyncWorkerError;
 use diagnose::{collect_sync_diagnostics, collect_sync_probe};
+use error::SyncWorkerError;
 use migrate::migrate_baseline;
 use pull::pull_remote_changes;
 use push::push_local_changes;
@@ -120,9 +123,9 @@ where
     let mut iter = args.into_iter();
 
     while let Some(flag) = iter.next() {
-        let value = iter.next().ok_or_else(|| {
-            SyncWorkerError::validation(format!("参数 {flag} 缺少取值"))
-        })?;
+        let value = iter
+            .next()
+            .ok_or_else(|| SyncWorkerError::validation(format!("参数 {flag} 缺少取值")))?;
         match flag.as_str() {
             "--database-path" => database_path = Some(value),
             "--remote-url" => url = Some(value),
