@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 
 import { openStartupFallback } from '@/app/navigation'
 import type { AppLayoutProps } from '@/layout/appLayoutTypes'
@@ -12,6 +12,7 @@ import { ShellOverlays } from '@/layout/overlays/ShellOverlays'
 import { SidebarProvider } from '@/shared/components/base/sidebar'
 import { SyncStatusProvider } from '@/features/sync'
 import { useUpdateEvents } from '@/features/update'
+import { dismissBootShell } from '@/shared/lib/bootShell'
 
 /**
  * 壳主体：组合数据 hooks → Chrome + Overlays。
@@ -120,6 +121,7 @@ export function ShellLayoutContent({
 			}}
 			sidebarWidth={chrome.sidebarSettings.width}
 		>
+			<BootShellDismiss />
 			<SyncStatusProvider>
 				<ShellChrome
 					activeSection={activeSection}
@@ -159,4 +161,12 @@ export function ShellLayoutContent({
 			</SyncStatusProvider>
 		</SidebarProvider>
 	)
+}
+
+/** 真壳路径兜底：跳过骨架直接进壳时也要撤 HTML 遮罩 */
+function BootShellDismiss() {
+	useLayoutEffect(() => {
+		dismissBootShell()
+	}, [])
+	return null
 }

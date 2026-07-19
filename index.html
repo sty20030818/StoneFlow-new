@@ -6,21 +6,109 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>stoneflow</title>
 		<!--
-			首帧壳色：与 --sf-neutral-100 / --sf-shell-bg 对齐。
-			在 CSS/JS 就绪前铺底，避免 WebView 默认白闪（开屏方案 W1）。
-			改 token 时请同步此处硬编码色。
+			开屏首帧（须在 CSS/JS 就绪前生效）：
+			1. 壳色：与 --sf-neutral-100 / 原生 background_color 对齐（#f3f3f4）
+			2. 主窗静态骨架：复刻 ShellLayoutSkeleton（灰壳 + 白卡）；改尺寸/色时两边一起改
+			3. 骨架在 #root 外作遮罩，避免 createRoot 清空 root 时闪空帧；React 首帧后再撤
+			4. Launcher 共用本页（#/launcher）：不画主壳骨架
+			几何默认宽 = shared/lib/shellSidebarGeometry DEFAULT_SIDEBAR_WIDTH（256）
 		-->
+		<script>
+			;(function () {
+				var hash = location.hash || ''
+				var isLauncher =
+					hash === '#/launcher' ||
+					hash.indexOf('#/launcher?') === 0 ||
+					hash.indexOf('#/launcher/') === 0
+				document.documentElement.setAttribute('data-sf-boot', isLauncher ? 'launcher' : 'main')
+			})()
+		</script>
 		<style>
 			html,
 			body,
 			#root {
 				margin: 0;
-				min-height: 100%;
+				height: 100%;
+				background: #f3f3f4;
+			}
+
+			/*
+			 * 固定遮罩：盖在 #root 之上。
+			 * 不能放进 #root——createRoot.render 会同步清空子节点，造成 HTML→React 空帧闪一下。
+			 */
+			#sf-boot-shell {
+				position: fixed;
+				inset: 0;
+				z-index: 2147483000;
+				display: flex;
+				flex-direction: column;
+				overflow: hidden;
+				background: #f3f3f4;
+			}
+
+			html[data-sf-boot='launcher'] #sf-boot-shell {
+				display: none;
+			}
+
+			#sf-boot-shell .sf-boot-header {
+				flex-shrink: 0;
+				height: 48px; /* h-12 */
+				background: #f3f3f4;
+			}
+
+			#sf-boot-shell .sf-boot-body {
+				display: flex;
+				flex: 1;
+				min-height: 0;
+				overflow: hidden;
+				background: #f3f3f4;
+			}
+
+			#sf-boot-shell .sf-boot-sidebar {
+				flex-shrink: 0;
+				width: 256px; /* DEFAULT_SIDEBAR_WIDTH */
+				background: #f3f3f4;
+			}
+
+			#sf-boot-shell .sf-boot-main {
+				display: flex;
+				flex: 1;
+				min-width: 0;
+				min-height: 0;
+				overflow: hidden;
+				padding-right: 8px; /* pr-2 */
+				background: #f3f3f4;
+			}
+
+			#sf-boot-shell .sf-boot-card {
+				flex: 1;
+				min-width: 0;
+				min-height: 0;
+				overflow: hidden;
+				border-radius: 8px; /* rounded-lg */
+				border: 1px solid #e5e5e6; /* --sf-border-subtle / neutral-200 */
+				background: #fcfcfd; /* --sf-surface-panel / neutral-25 */
+			}
+
+			#sf-boot-shell .sf-boot-footer {
+				flex-shrink: 0;
+				height: 28px; /* h-7 */
 				background: #f3f3f4;
 			}
 		</style>
 	</head>
 	<body>
+		<!-- 主窗静态开屏遮罩；由 dismissBootShell() 在 React 首帧 layout 后移除 -->
+		<div aria-busy="true" aria-label="正在加载工作区…" id="sf-boot-shell">
+			<div class="sf-boot-header"></div>
+			<div class="sf-boot-body">
+				<div class="sf-boot-sidebar"></div>
+				<div class="sf-boot-main">
+					<div class="sf-boot-card"></div>
+				</div>
+			</div>
+			<div class="sf-boot-footer"></div>
+		</div>
 		<div id="root"></div>
 		<script type="module" src="/src/main.tsx"></script>
 	</body>

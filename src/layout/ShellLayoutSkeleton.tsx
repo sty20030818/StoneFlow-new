@@ -1,5 +1,6 @@
-import type { CSSProperties } from 'react'
+import { useLayoutEffect, type CSSProperties } from 'react'
 
+import { dismissBootShell } from '@/shared/lib/bootShell'
 import {
 	DEFAULT_SIDEBAR_WIDTH,
 	SIDEBAR_ICON_RAIL_PX,
@@ -29,6 +30,11 @@ type ShellLayoutSkeletonProps = {
  * - 左侧 reserved：有 settings 时用真实 width / 折叠态 icon 轨；否则 DEFAULT_SIDEBAR_WIDTH。
  * - 右侧 gutter = `pr-2`（8px），仅右、不左。
  * - 顶 Header `h-12` / 底 Footer `h-7`。
+ *
+ * 同步契约：`index.html` `#sf-boot-shell` 是同结构的静态首帧遮罩（仅默认 256、无用户宽）。
+ * 改布局/色值时必须两边一起改；Launcher（`data-sf-boot=launcher`）不画 HTML 骨架。
+ * 遮罩在 #root 外；须等本组件（或真壳/Launcher）首帧后再 `dismissBootShell`，
+ * 不可在 App 挂载时就撤——否则路由/chunk 空窗期会闪全灰。
  */
 export function ShellLayoutSkeleton({
 	status,
@@ -41,6 +47,10 @@ export function ShellLayoutSkeleton({
 		desktopPreference === 'collapsed'
 			? SIDEBAR_ICON_RAIL_PX
 			: (sidebarWidth ?? DEFAULT_SIDEBAR_WIDTH)
+
+	useLayoutEffect(() => {
+		dismissBootShell()
+	}, [])
 
 	return (
 		<div

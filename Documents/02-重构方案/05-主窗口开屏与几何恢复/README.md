@@ -21,6 +21,7 @@
 - 关窗 = `hide`（托盘常驻）：**不持久化 `VISIBLE`**；用户关窗时额外落盘一次（hide ≠ Exit）。不为开发态 Ctrl+C 做防抖写盘。
 - 真正退出（托盘/命令）：先落盘 → `destroy` 全部 WebView → `exit`，减轻 Windows `Chrome_WidgetWin_0` / 1412 噪音（Chromium 底层仍可能偶发，属已知问题）。
 - **W1 首帧壳色**：`index.html` inline `#f3f3f4` + 主窗 `background_color`（窗层与 WebView）对齐 `--sf-neutral-100`。
+- **W1.5 静态壳骨架**：`index.html` `#sf-boot-shell` 复刻极简灰壳+白卡（默认宽 256）；作 `#root` 外遮罩；等 React 骨架/真壳/Launcher 首帧后再撤（勿在 App 挂载时撤，否则路由空窗会闪全灰）；`#/launcher` 不画。
 - **W2 统一首屏**：`/` pending/error 与 chrome 未就绪共用 `ShellLayoutSkeleton`，不再出现居中「正在恢复…」中间页。
 - **骨架侧栏宽**：几何常量单一真源 `shared/lib/shellSidebarGeometry.ts`；settings 未就绪用默认 256，就绪后透传用户 `width` / 折叠态。
 - **W3 稳健性**：restore 后离屏 → 隐藏态居中；非最大化时钳 `MAIN_WINDOW_MIN_*`。主题底色联动等暗色主题。
