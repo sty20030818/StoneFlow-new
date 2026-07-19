@@ -57,6 +57,8 @@ export function useShellCommandSystem({
 	goBack,
 	goForward,
 	canGoBack,
+	isSettingsMode = false,
+	settingsReturnPath,
 }: {
 	currentScope: Scope
 	currentSpaceId: string | null
@@ -70,6 +72,9 @@ export function useShellCommandSystem({
 	goBack: () => void
 	goForward: () => void
 	canGoBack: boolean
+	/** Settings Mode：Esc 关层无上层时可退出设置 */
+	isSettingsMode?: boolean
+	settingsReturnPath?: string
 }) {
 	const isCommandOpen = useDialogStore(selectIsCommandOpen)
 	const commandMenuMode = useDialogStore(selectCommandMenuMode)
@@ -129,6 +134,7 @@ export function useShellCommandSystem({
 		handleOpenTaskCreate,
 		isCommandOpen,
 		isShortcutHelpOpen,
+		isSettingsMode,
 		navigate,
 		openProjectCreateDialog,
 		openTaskCreateDialog,
@@ -136,6 +142,7 @@ export function useShellCommandSystem({
 		requestSearchFocus,
 		runEntityBulkActionFromCommand,
 		setCommandMenuFilterKind,
+		settingsReturnPath,
 		submitRegistryActions,
 		taskPreviewController,
 		toggleShortcutHelp,

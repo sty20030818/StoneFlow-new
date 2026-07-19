@@ -74,10 +74,8 @@ export function useShellChromeData(currentScope: Scope) {
 		[sidebarProjects.items, sidebarSettings?.projectSection.showCounts, spaces],
 	)
 
-	const isChromeReady =
-		Boolean(sidebarSettings) &&
-		spaceStatus !== 'loading' &&
-		!(spaceStatus === 'ready' && spaces.length === 0)
+	// spaces 为空是合法态（设置页已有空态 UI），不得永久卡死壳；仅 loading 时挡首屏。
+	const isChromeReady = Boolean(sidebarSettings) && spaceStatus !== 'loading'
 
 	return {
 		spaces,

@@ -53,6 +53,9 @@ export type ShellCommandBridgeDeps = {
 		payload?: BulkActionPayload,
 	) => Promise<void>
 	setCommandMenuFilterKind: (kind: PageFilterKind) => void
+	/** Settings Mode 下 Esc 关层最终出口 */
+	isSettingsMode?: boolean
+	settingsReturnPath?: string
 	submitRegistryActions: SubmitActions
 	taskPreviewController: TaskPreview
 	toggleShortcutHelp: () => void

@@ -41,6 +41,7 @@ export {
 } from './intents'
 
 export { resolveStartupPath, resolveRememberedPathForScope } from './memoryStore'
+export { isRememberableShellPath, normalizeShellMemoryPath } from './memory'
 
 export { useShellSessionRouteHistory, type ShellRouteHistoryEntry } from './sessionHistory'
 

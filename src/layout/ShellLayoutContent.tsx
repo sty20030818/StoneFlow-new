@@ -1,11 +1,11 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo } from 'react'
 
-import { openStartupFallback } from '@/app/navigation'
 import type { AppLayoutProps } from '@/layout/appLayoutTypes'
 import { useShellSessionRouteHistory } from '@/app/navigation'
 import { useShellChromeData } from '@/layout/model/useShellChromeData'
 import { useShellCreateDialogState } from '@/layout/model/useShellCreateDialogState'
 import { useShellCommandSystem } from '@/layout/model/useShellCommandSystem'
+import { useSettingsReturnPath } from '@/layout/model/useSettingsReturnPath'
 import { ShellChrome } from '@/layout/ShellChrome'
 import { ShellLayoutSkeleton } from '@/layout/ShellLayoutSkeleton'
 import { ShellOverlays } from '@/layout/overlays/ShellOverlays'
@@ -33,11 +33,8 @@ export function ShellLayoutContent({
 	useUpdateEvents()
 
 	const isSettingsMode = shellRoute.isSettingsPath
-	/** 进入设置前的工作路径，供 SettingsSidebar「返回应用」 */
-	const settingsReturnPathRef = useRef(openStartupFallback(currentScope))
-	if (!isSettingsMode) {
-		settingsReturnPathRef.current = shellRoute.pathname || openStartupFallback(currentScope)
-	}
+	/** 进入设置前的工作路径（边沿捕获）；供「返回应用」与 Esc 关层 */
+	const settingsReturnPath = useSettingsReturnPath(shellRoute, currentScope)
 
 	const chrome = useShellChromeData(currentScope)
 
@@ -84,6 +81,8 @@ export function ShellLayoutContent({
 		goBack: routeHistory.goBack,
 		goForward: routeHistory.goForward,
 		canGoBack: routeHistory.canGoBack,
+		isSettingsMode,
+		settingsReturnPath,
 	})
 
 	if (!chrome.isChromeReady || !chrome.sidebarSettings) {
@@ -135,7 +134,7 @@ export function ShellLayoutContent({
 					headerProjects={headerProjects}
 					isSettingsMode={isSettingsMode}
 					routeHistory={routeHistory}
-					settingsReturnPathRef={settingsReturnPathRef}
+					settingsReturnPath={settingsReturnPath}
 					shellRoute={shellRoute}
 				>
 					{children}

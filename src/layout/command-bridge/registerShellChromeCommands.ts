@@ -82,6 +82,11 @@ export function registerShellChromeCommands(
 				ctx.selection.clearSelection?.()
 				return
 			}
+			// Settings Mode：会话历史不跟踪 settings，Esc 应走 returnPath，而非无效 goBack
+			if (host.isSettingsMode && host.settingsReturnPath) {
+				void host.navigate({ to: host.settingsReturnPath as never })
+				return
+			}
 			if (host.canGoBack) {
 				host.goBack()
 			}

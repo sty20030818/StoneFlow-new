@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject } from 'react'
+import type { ReactNode } from 'react'
 
 import type { Scope } from '@/shared/types'
 import type { ShellRoute } from '@/app/navigation'
@@ -28,8 +28,8 @@ type ShellChromeProps = {
 	currentSpaceId: string | null
 	activeSection: ShellSectionKey
 	shellRoute: ShellRoute
-	/** 设置模式「返回应用」路径 */
-	settingsReturnPathRef: RefObject<string>
+	/** 进入设置前捕获的工作路径，供「返回应用」 */
+	settingsReturnPath: string
 	/** 顶栏当前 Space 文案 */
 	currentSpaceLabel: string
 	/** Header 项目列表（命令板缓存或侧栏） */
@@ -52,7 +52,7 @@ export function ShellChrome({
 	currentSpaceId,
 	activeSection,
 	shellRoute,
-	settingsReturnPathRef,
+	settingsReturnPath,
 	currentSpaceLabel,
 	headerProjects,
 	chrome,
@@ -118,7 +118,7 @@ export function ShellChrome({
 							activeSettingsSection={shellRoute.settingsSection ?? DEFAULT_SETTINGS_SECTION}
 							currentScope={currentScope}
 							currentSpaceId={currentSpaceId}
-							returnPath={settingsReturnPathRef.current}
+							returnPath={settingsReturnPath}
 						/>
 					) : (
 						<ShellSidebar
