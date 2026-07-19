@@ -31,7 +31,11 @@ export function resolveSettingsReturnPath(
 export function useSettingsReturnPath(shellRoute: ShellRoute, currentScope: Scope) {
 	const isSettingsMode = shellRoute.isSettingsPath
 	const [returnPath, setReturnPath] = useState(() => openStartupFallback(currentScope))
-	const lastWorkPathRef = useRef(openStartupFallback(currentScope))
+	// 用惰性初始化（首次渲染才计算 fallback 值），避免每次渲染都重新调用 openStartupFallback
+	const lastWorkPathRef = useRef<string | null>(null)
+	if (lastWorkPathRef.current === null) {
+		lastWorkPathRef.current = openStartupFallback(currentScope)
+	}
 	const wasSettingsModeRef = useRef(isSettingsMode)
 
 	useEffect(() => {

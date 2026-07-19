@@ -32,27 +32,29 @@ export function buildChordSession(
 	bindings: Keybinding[],
 	chordState: KeybindingChordState,
 ): CommandChordSession {
-	const options = bindings
-		.filter(
-			(binding) =>
-				binding.scope === chordState.scope &&
-				binding.sequence.length === 2 &&
-				areStrokesEqual(binding.sequence[0], chordState.prefix),
-		)
-		.map((binding) => {
-			const stroke = binding.sequence[1]
-			if (!stroke) {
-				return null
-			}
+	// 合并 filter + map + filter 为单次遍历
+	const options: ChordHintOption[] = []
+	for (const binding of bindings) {
+		if (
+			binding.scope !== chordState.scope ||
+			binding.sequence.length !== 2 ||
+			!areStrokesEqual(binding.sequence[0], chordState.prefix)
+		) {
+			continue
+		}
 
-			return {
-				commandId: binding.commandId,
-				stroke,
-				display: formatKeybindingStroke(stroke),
-				tokens: tokenizeKeybindingStroke(stroke),
-			}
+		const stroke = binding.sequence[1]
+		if (!stroke) {
+			continue
+		}
+
+		options.push({
+			commandId: binding.commandId,
+			stroke,
+			display: formatKeybindingStroke(stroke),
+			tokens: tokenizeKeybindingStroke(stroke),
 		})
-		.filter((option): option is ChordHintOption => option !== null)
+	}
 
 	return {
 		prefix: chordState.prefix,

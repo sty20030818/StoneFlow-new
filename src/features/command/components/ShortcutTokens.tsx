@@ -24,21 +24,37 @@ export function ShortcutTokens({
 		return null
 	}
 
+	const keyedTokens = attachTokenKeys(tokens)
+
 	return (
 		<KbdGroup className={cn('shrink-0 gap-1.5', className)}>
-			{tokens.map((token, index) =>
+			{keyedTokens.map(({ token, key }) =>
 				token.type === 'separator' ? (
 					<ArrowRightIcon
 						aria-hidden='true'
 						className={cn('size-3 shrink-0 text-sf-text-quaternary', separatorClassName)}
-						key={`${token.type}-${token.value}-${index}`}
+						key={key}
 					/>
 				) : (
-					<Kbd className={kbdClassName} key={`${token.type}-${token.value}-${index}`}>
+					<Kbd className={kbdClassName} key={key}>
 						{token.value}
 					</Kbd>
 				),
 			)}
 		</KbdGroup>
 	)
+}
+
+/**
+ * 同一序列里可能出现重复 token（如非 Mac 平台 meta+ctrl 都渲染成 "Ctrl"），
+ * 用内容 + 出现次数生成稳定 key，避免依赖数组下标。
+ */
+function attachTokenKeys(tokens: ShortcutToken[]) {
+	const seenCount = new Map<string, number>()
+	return tokens.map((token) => {
+		const base = `${token.type}-${token.value}`
+		const occurrence = seenCount.get(base) ?? 0
+		seenCount.set(base, occurrence + 1)
+		return { token, key: occurrence === 0 ? base : `${base}-${occurrence}` }
+	})
 }

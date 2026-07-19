@@ -164,7 +164,7 @@ function sortTasks(
 	options: ResolvedTaskDisplayOptions,
 	context: TaskDisplayApplyContext,
 ) {
-	return [...items].sort(createTaskDisplayComparator(options, { pageKey: context.pageKey }))
+	return items.toSorted(createTaskDisplayComparator(options, { pageKey: context.pageKey }))
 }
 
 function buildProjectGroups(items: TaskListItem[], includeEmpty: boolean): TaskGroupDefinition[] {

@@ -9,24 +9,30 @@ export function UpdateNotesMarkdown({ content }: { content: string }) {
 	const blocks = parseSimpleMarkdown(content)
 	return (
 		<div className='text-[13px] leading-6 text-foreground space-y-2.5'>
-			{blocks.map((block, i) => {
+			{blocks.map((block) => {
 				if (block.type === 'h2') {
 					return (
-						<h3 key={i} className='text-[14px] font-semibold text-foreground m-0'>
+						<h3
+							key={`h2-${block.text}`}
+							className='text-[14px] font-semibold text-foreground m-0'
+						>
 							{renderInline(block.text)}
 						</h3>
 					)
 				}
 				if (block.type === 'h3') {
 					return (
-						<h4 key={i} className='text-[13px] font-semibold text-foreground m-0'>
+						<h4
+							key={`h3-${block.text}`}
+							className='text-[13px] font-semibold text-foreground m-0'
+						>
 							{renderInline(block.text)}
 						</h4>
 					)
 				}
 				if (block.type === 'list') {
 					return (
-						<ul key={i} className='list-none m-0 p-0 space-y-1'>
+						<ul key={`list-${block.items.join('|')}`} className='list-none m-0 p-0 space-y-1'>
 							{block.items.map((item, j) => (
 								<li key={j} className='flex items-start gap-2'>
 									<span className='mt-2.25 size-1 shrink-0 rounded-full bg-foreground/40' />
@@ -37,7 +43,7 @@ export function UpdateNotesMarkdown({ content }: { content: string }) {
 					)
 				}
 				return (
-					<p key={i} className='m-0 text-sf-shell-tertiary'>
+					<p key={`p-${block.text}`} className='m-0 text-sf-shell-tertiary'>
 						{renderInline(block.text)}
 					</p>
 				)

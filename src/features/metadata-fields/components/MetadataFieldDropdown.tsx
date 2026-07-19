@@ -146,7 +146,7 @@ export function MetadataFieldDropdown<TValue>({
 									selectedValues,
 									isValueEqual,
 								})}
-								key={option.key ?? String(index)}
+								key={option.key ?? String(option.value)}
 								label={option.label}
 								stopPropagation={stopPropagation}
 								trailing={option.trailing}

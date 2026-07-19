@@ -26,7 +26,7 @@ export function orderTasksByTaskBoardVisualOrder(
 	}
 
 	const statusRank = new Map(statusOrder.map((status, index) => [status, index]))
-	return [...tasks].sort((left, right) => {
+	return tasks.toSorted((left, right) => {
 		const leftRank = statusRank.get(left.status) ?? statusOrder.length
 		const rightRank = statusRank.get(right.status) ?? statusOrder.length
 

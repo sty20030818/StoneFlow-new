@@ -52,7 +52,8 @@ export function useShortcutDigitSelect<TValue>({
 
 		window.addEventListener('keydown', handleKeyDown, true)
 		return () => window.removeEventListener('keydown', handleKeyDown, true)
-	}, [])
+		// mapRef/onSelectRef 由 useLatestRef 提供，引用稳定，纳入依赖只是满足 exhaustive-deps 检查。
+	}, [mapRef, onSelectRef])
 
 	return {
 		digitShortcutMap,

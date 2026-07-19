@@ -7,7 +7,7 @@ import { ProjectCreateContent } from './ProjectCreateContent'
 
 const createProjectMock = vi.fn()
 
-vi.mock('@/features/project/hooks', () => ({
+vi.mock('@/features/project/hooks/project.mutations', () => ({
 	useCreateProjectMutation: () => ({
 		mutateAsync: createProjectMock,
 	}),

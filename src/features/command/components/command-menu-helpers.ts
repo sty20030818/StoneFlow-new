@@ -196,12 +196,13 @@ export function resolveTaskPlacementCurrentSpaceId(context: CommandContext) {
 		return context.space.currentSpaceId
 	}
 
-	const selectionSpaceIds = new Set(
-		context.selection.entities
-			.filter((entity) => entity.type === 'task')
-			.map((entity) => entity.spaceId)
-			.filter((spaceId): spaceId is string => Boolean(spaceId)),
-	)
+	// 合并 filter + map + filter 为单次遍历
+	const selectionSpaceIds = new Set<string>()
+	for (const entity of context.selection.entities) {
+		if (entity.type === 'task' && entity.spaceId) {
+			selectionSpaceIds.add(entity.spaceId)
+		}
+	}
 
 	return selectionSpaceIds.size === 1 ? (Array.from(selectionSpaceIds)[0] ?? null) : null
 }

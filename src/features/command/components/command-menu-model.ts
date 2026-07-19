@@ -71,31 +71,38 @@ export function buildCommandMenuGroups(
 	runtime: CommandRuntime,
 	context: CommandContext,
 ): CommandMenuGroup[] {
-	const entries = runtime
-		.getCommands()
-		.map((command) => {
-			const state = runtime.getCommandState(command, context)
-			return {
-				command,
-				state,
-			}
-		})
-		.filter(({ command, state }) => state.visible && !DEFAULT_HIDDEN_COMMAND_IDS.has(command.id))
-		.sort((left, right) => right.state.priority - left.state.priority)
+	// 合并 map + filter 为单次遍历，排序仍需在完整数组上进行
+	const visibleEntries: Array<{
+		command: Command
+		state: ReturnType<CommandRuntime['getCommandState']>
+	}> = []
+	for (const command of runtime.getCommands()) {
+		const state = runtime.getCommandState(command, context)
+		if (state.visible && !DEFAULT_HIDDEN_COMMAND_IDS.has(command.id)) {
+			visibleEntries.push({ command, state })
+		}
+	}
+	const entries = visibleEntries.sort((left, right) => right.state.priority - left.state.priority)
 
-	const defaultGroups = GROUPS.map<CommandMenuGroup>(({ key, heading, categories }) => ({
-		key,
-		heading,
-		entries: entries
-			.filter(({ command }) => categories.includes(command.category))
-			.filter(({ command }) => !shouldHideDefaultTaskCommand(command.id, context))
-			.map(({ command, state }) => ({
+	const defaultGroups = GROUPS.map<CommandMenuGroup>(({ key, heading, categories }) => {
+		// 合并两次 filter + map 为单次遍历
+		const groupEntries: CommandMenuEntry[] = []
+		for (const { command, state } of entries) {
+			if (!categories.includes(command.category)) {
+				continue
+			}
+			if (shouldHideDefaultTaskCommand(command.id, context)) {
+				continue
+			}
+			groupEntries.push({
 				command,
 				disabled: !state.enabled,
 				disabledReason: state.disabledReason,
 				shortcut: getCommandMenuShortcut(command.id),
-			})),
-	})).filter((group) => group.entries.length > 0)
+			})
+		}
+		return { key, heading, entries: groupEntries }
+	}).filter((group) => group.entries.length > 0)
 
 	const bulkGroup = buildBulkCommandMenuGroup(entries, context)
 	return bulkGroup ? [bulkGroup, ...defaultGroups] : defaultGroups
@@ -123,14 +130,19 @@ function buildBulkCommandMenuGroup(
 	}
 	const bulkCommandIds = getBulkCommandIds(context.selection.type)
 
-	const bulkEntries = entries
-		.filter(({ command }) => bulkCommandIds.has(command.id))
-		.map(({ command, state }) => ({
+	// 合并 filter + map 为单次遍历
+	const bulkEntries: CommandMenuEntry[] = []
+	for (const { command, state } of entries) {
+		if (!bulkCommandIds.has(command.id)) {
+			continue
+		}
+		bulkEntries.push({
 			command,
 			disabled: !state.enabled,
 			disabledReason: state.disabledReason,
 			shortcut: getCommandMenuShortcut(command.id),
-		}))
+		})
+	}
 
 	if (bulkEntries.length === 0) {
 		return null

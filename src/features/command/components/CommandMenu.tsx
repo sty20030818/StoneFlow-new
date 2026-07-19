@@ -36,6 +36,9 @@ import { isCommandMenuSearchMode, type CommandMenuMode } from './command-menu-ty
 
 export type { CommandMenuMode } from './command-menu-types'
 
+// 模块级空数组常量，避免每次渲染都创建新的默认值引用
+const EMPTY_SPACES: Space[] = []
+
 export type CommandMenuProject = {
 	id: string
 	label: string
@@ -93,7 +96,7 @@ export function CommandMenu({
 	open,
 	projects: projectLinks,
 	runtime,
-	spaces = [],
+	spaces = EMPTY_SPACES,
 	title,
 }: CommandMenuProps) {
 	const [query, setQuery] = useState('')

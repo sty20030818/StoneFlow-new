@@ -1,5 +1,16 @@
 import type { MetadataDateOption } from './metadata-field.types'
 
+// 模块级 Intl 格式化器：避免每次调用都重建，格式选项固定不变
+const shortDateFormatter = new Intl.DateTimeFormat('zh-CN', {
+	month: 'numeric',
+	day: 'numeric',
+})
+const longDateFormatter = new Intl.DateTimeFormat('zh-CN', {
+	year: 'numeric',
+	month: 'numeric',
+	day: 'numeric',
+})
+
 export function createMetadataDateOptionsConfig({
 	currentValue,
 	showClearOption,
@@ -84,17 +95,10 @@ export function formatMetadataDisplayDate(value: string) {
 	}
 
 	if (date.getFullYear() === new Date().getFullYear()) {
-		return new Intl.DateTimeFormat('zh-CN', {
-			month: 'numeric',
-			day: 'numeric',
-		}).format(date)
+		return shortDateFormatter.format(date)
 	}
 
-	return new Intl.DateTimeFormat('zh-CN', {
-		year: 'numeric',
-		month: 'numeric',
-		day: 'numeric',
-	}).format(date)
+	return longDateFormatter.format(date)
 }
 
 export function formatLocalDate(value: Date) {
@@ -120,8 +124,5 @@ export function getEndOfLocalWeek(value: Date) {
 }
 
 function formatMetaDate(value: Date) {
-	return new Intl.DateTimeFormat('zh-CN', {
-		month: 'numeric',
-		day: 'numeric',
-	}).format(value)
+	return shortDateFormatter.format(value)
 }

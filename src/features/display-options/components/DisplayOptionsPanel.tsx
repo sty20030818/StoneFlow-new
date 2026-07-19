@@ -116,6 +116,22 @@ export function DisplayOptionsPanel({
 		getAllowedSubGroupChoices(pageKey, options.layout).filter((item) => item !== 'none').length > 0
 	const canToggleShowEmptyGroups =
 		capabilities.supportsShowEmptyGroups && options.groupBy !== 'none'
+	// 用 Set 承载已显示属性，避免下方 map 循环内重复 array.includes 扫描
+	const visiblePropertySet = new Set(options.visibleProperties)
+
+	// 合并 filter + map 为单次遍历，并用 Set 承载允许的排序值以避免循环内重复 includes 扫描
+	const allowedCompletedOrderSet = new Set(capabilities.allowedCompletedOrder)
+	const completedOrderItems: ReactNode[] = []
+	for (const value of TASK_DISPLAY_COMPLETED_ORDER_VALUES) {
+		if (!allowedCompletedOrderSet.has(value)) {
+			continue
+		}
+		completedOrderItems.push(
+			<SelectItem key={value} value={value}>
+				{COMPLETED_ORDER_LABELS[value]}
+			</SelectItem>,
+		)
+	}
 
 	return (
 		<div className={cn('flex w-full min-w-0 flex-col gap-3', className)}>
@@ -256,15 +272,7 @@ export function DisplayOptionsPanel({
 								<SelectValue placeholder='选择已完成排序' />
 							</SelectTrigger>
 							<SelectContent position='popper'>
-								<SelectGroup>
-									{TASK_DISPLAY_COMPLETED_ORDER_VALUES.filter((value) =>
-										capabilities.allowedCompletedOrder.includes(value),
-									).map((value) => (
-										<SelectItem key={value} value={value}>
-											{COMPLETED_ORDER_LABELS[value]}
-										</SelectItem>
-									))}
-								</SelectGroup>
+								<SelectGroup>{completedOrderItems}</SelectGroup>
 							</SelectContent>
 						</Select>
 					</DisplayOptionRow>
@@ -300,7 +308,7 @@ export function DisplayOptionsPanel({
 					items={capabilities.allowedVisibleProperties.map((key) => ({
 						key,
 						label: PROPERTY_META[key].label,
-						checked: options.visibleProperties.includes(key),
+						checked: visiblePropertySet.has(key),
 						disabled: isPending,
 						onToggle: () => {
 							const next = toggleVisibleProperty(options.visibleProperties, key)

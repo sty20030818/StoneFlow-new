@@ -43,6 +43,12 @@ type PrimitiveActivityValue = string | number | boolean | null
 
 const EMPTY_VALUE_LABEL = '空'
 
+// 模块级 Intl 格式化器：避免每次调用都重建，格式选项固定不变
+const shortDateFormatter = new Intl.DateTimeFormat('zh-CN', {
+	month: 'numeric',
+	day: 'numeric',
+})
+
 export function buildTaskActivityDisplayItems({
 	entries,
 	projects,
@@ -434,10 +440,7 @@ function formatDateLabel(value: string | null) {
 		return value
 	}
 
-	return new Intl.DateTimeFormat('zh-CN', {
-		month: 'numeric',
-		day: 'numeric',
-	}).format(date)
+	return shortDateFormatter.format(date)
 }
 
 function formatPrimitiveValue(value: unknown) {

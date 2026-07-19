@@ -225,7 +225,7 @@ npx react-doctor@latest . -y --verbose --json \
 
 - 人类可读可 tee 到同目录 `.log`
 - 基线保留在归档附录，不覆盖
-- W0 起运行产物可放本主题 `runs/`（执行时再建目录）
+- 运行产物可临时输出到任意路径；不必在本主题下长期保留 `runs/`
 
 ---
 
@@ -267,6 +267,7 @@ npx react-doctor@latest . -y --verbose --json \
 | 2026-07-20 | post-W3           | 70 Needs work     | **0** | 185     | ref-in-render 清完                        |
 | 2026-07-20 | post-W4           | **70 Needs work** | **0** | 177     | 忽略 Documents；移除 FE plugin-dialog     |
 | 2026-07-20 | post-unused       | **71 Needs work** | **0** | 128     | 恢复 dialog；unused→0；shadcn 库存 ignore |
+| 2026-07-20 | post-bugs-perf    | **86 Great**      | **0** | 39      | Bugs+Performance 点杀；合法 reset ignore  |
 
 ### 8.3 相关文档
 
@@ -274,4 +275,4 @@ npx react-doctor@latest . -y --verbose --json \
 - 日常权威：`src/ARCHITECTURE.md`、`src/CONVENTIONS.md`
 - 配置：仓库根 `doctor.config.json`
 - doctor 历史 README：`…/附录/react-doctor/README.md`
-- 本主题 runs：`Documents/02-重构方案/06-ReactDoctor健康治理/runs/`
+- 各波次原始 JSON 不必长期保留；复跑结论见 §8.2

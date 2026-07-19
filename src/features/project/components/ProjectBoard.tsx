@@ -95,9 +95,13 @@ export function ProjectBoard(props: ProjectBoardProps) {
 		setOpenSections(new Set(sections.map((s) => s.key)))
 	}
 
-	const visibleProjects = sections
-		.filter((section) => openSections.has(section.key))
-		.flatMap((section) => section.items)
+	// 合并 filter + flatMap 为单次遍历
+	const visibleProjects: ProjectOverviewItem[] = []
+	for (const section of sections) {
+		if (openSections.has(section.key)) {
+			visibleProjects.push(...section.items)
+		}
+	}
 
 	return (
 		<EntityRowShortcutScope

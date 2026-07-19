@@ -27,6 +27,38 @@
       {
         "files": ["src/features/selection/model/useEntitySelection.ts"],
         "rules": ["react-doctor/no-impure-state-updater"]
+      },
+      // 对话框 / 面板：open 或实体切换时重置表单与瞬时 UI（合法模式，非双源 bug）
+      {
+        "files": [
+          "src/features/command/components/CommandMenu.tsx",
+          "src/features/space/components/SpaceEditorDialog.tsx",
+          "src/features/sync/components/SyncConfigDialog.tsx",
+          "src/features/task/detail/components/TaskLinkEditorPopover.tsx",
+          "src/features/task/detail/components/TaskActivityTimeline.tsx",
+          "src/layout/model/useShellCreateDialogState.ts"
+        ],
+        "rules": [
+          "react-doctor/no-adjust-state-on-prop-change",
+          "react-doctor/no-reset-all-state-on-prop-change",
+          "react-doctor/no-effect-chain"
+        ]
+      },
+      // 行快捷键 / 焦点桥：props ↔ 本地 focus/hover 同步是交互真源，非可派生纯展示
+      {
+        "files": [
+          "src/features/selection/components/EntityRowShortcutScope.tsx",
+          "src/features/task/shortcuts/useTaskRowShortcutController.ts",
+          "src/features/task/detail/components/TaskDrawer.tsx",
+          "src/features/global-search/model/useGlobalSearch.ts"
+        ],
+        "rules": [
+          "react-doctor/no-adjust-state-on-prop-change",
+          "react-doctor/no-derived-state",
+          "react-doctor/no-derived-state-effect",
+          "react-doctor/no-pass-data-to-parent",
+          "react-doctor/no-prop-callback-in-effect"
+        ]
       }
     ]
   }

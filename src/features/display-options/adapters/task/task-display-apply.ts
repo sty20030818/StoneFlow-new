@@ -19,7 +19,7 @@ export function applyTaskDisplayOptionsToTasks({
 	options,
 	context,
 }: ApplyTaskDisplayOptionsInput): TaskDisplayApplyResult {
-	const orderedItems = [...items].sort(
+	const orderedItems = items.toSorted(
 		createTaskDisplayComparator(options, { pageKey: context.pageKey }),
 	)
 	const sections = buildTaskDisplaySections(orderedItems, options, context)

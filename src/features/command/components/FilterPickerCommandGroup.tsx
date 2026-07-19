@@ -132,6 +132,8 @@ export function FilterPickerCommandGroup({
 
 	if (filterKind === 'priority') {
 		const options = getCommandMenuPriorityOptions()
+		// 用 Set 承载已选优先级，避免 map 循环内重复 array.includes 扫描
+		const selectedPriorityValueSet = new Set(context.view.priorityFilterValues)
 		return (
 			<CommandGroup className='pt-2' heading='优先级筛选'>
 				<CommandItem
@@ -144,7 +146,7 @@ export function FilterPickerCommandGroup({
 					<CommandRow leading={getCommandMenuDateLeading('none')} title='不过滤优先级' />
 				</CommandItem>
 				{options.map((option) => {
-					const selected = context.view.priorityFilterValues.includes(option.value)
+					const selected = selectedPriorityValueSet.has(option.value)
 					return (
 						<CommandItem
 							key={option.value}
@@ -181,6 +183,8 @@ export function FilterPickerCommandGroup({
 
 	if (filterKind === 'status') {
 		const options = getCommandMenuStatusOptions()
+		// 用 Set 承载已选状态，避免 map 循环内重复 array.includes 扫描
+		const selectedStatusValueSet = new Set(context.view.statusFilterValues)
 		return (
 			<CommandGroup className='pt-2' heading='状态筛选'>
 				<CommandItem
@@ -193,7 +197,7 @@ export function FilterPickerCommandGroup({
 					<CommandRow leading={getCommandMenuDateLeading('none')} title='不过滤状态' />
 				</CommandItem>
 				{options.map((option) => {
-					const selected = context.view.statusFilterValues.includes(option.value)
+					const selected = selectedStatusValueSet.has(option.value)
 					return (
 						<CommandItem
 							key={option.value}

@@ -18,9 +18,13 @@ export async function invalidateWorkspaceQueries(
 	const excludedDomains = new Set(options.exclude ?? [])
 	const domains = options.include ?? WORKSPACE_QUERY_DOMAINS
 
-	await Promise.all(
-		domains
-			.filter((domain) => !excludedDomains.has(domain))
-			.map((domain) => queryClient.invalidateQueries({ queryKey: [domain] })),
-	)
+	// 合并 filter + map 为单次遍历
+	const invalidations: Array<Promise<void>> = []
+	for (const domain of domains) {
+		if (!excludedDomains.has(domain)) {
+			invalidations.push(queryClient.invalidateQueries({ queryKey: [domain] }))
+		}
+	}
+
+	await Promise.all(invalidations)
 }

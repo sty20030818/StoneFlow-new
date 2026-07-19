@@ -20,6 +20,9 @@ type FooterCustomizeItem = {
 	icon: React.ComponentType<{ className?: string }>
 }
 
+// 模块级空数组常量，避免每次渲染都创建新的默认值引用
+const EMPTY_FOOTER_ITEMS: FooterCustomizeItem[] = []
+
 export type SidebarItemContextMenuProps = {
 	/** 当前右键项的可见性目标 */
 	target: SidebarItemVisibilityTarget
@@ -40,7 +43,7 @@ export function SidebarItemContextMenu({
 	visible,
 	isLastVisible,
 	navItems,
-	footerItems = [],
+	footerItems = EMPTY_FOOTER_ITEMS,
 	visibleNavItemCount,
 	onUpdateItemVisibility,
 	onResetMainItemsVisibility,

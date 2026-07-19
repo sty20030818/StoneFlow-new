@@ -131,9 +131,13 @@ export function LifecycleBoard({
 		setOpenSections(new Set(visibleSections.map((s) => s.key)))
 	}
 
-	const visibleEntries = visibleSections
-		.filter((section) => openSections.has(section.key))
-		.flatMap((section) => section.items)
+	// 合并 filter + flatMap 为单次遍历
+	const visibleEntries: LifecycleEntry[] = []
+	for (const section of visibleSections) {
+		if (openSections.has(section.key)) {
+			visibleEntries.push(...section.items)
+		}
+	}
 	const allSelectedEntries = visibleEntries.filter(
 		(entry) => selectedEntryIdSet?.has(entry.id) ?? false,
 	)

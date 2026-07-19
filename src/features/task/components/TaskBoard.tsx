@@ -216,6 +216,34 @@ export function TaskBoard({
 		)
 	}
 
+	function renderStatusSections(rowShortcutState?: TaskRowShortcutState) {
+		// 合并 filter + map 为单次遍历；用 Set 承载展开状态，避免循环内重复 array.includes 扫描
+		const openSectionSet = new Set(openSections)
+		const sections: ReactNode[] = []
+		for (const status of statusOrder) {
+			if (hideEmptySections && groupedTasks[status].length === 0) {
+				continue
+			}
+			sections.push(
+				<TaskStatusSection
+					createProjectId={createProjectId}
+					key={status}
+					label={formatTaskStatusLabel(status)}
+					onCollapseAll={handleCollapseAll}
+					onExpandAll={handleExpandAll}
+					onOpenChange={(open) => handleSectionOpenChange(status, open)}
+					onToggleTaskSelection={onToggleTaskSelection}
+					open={openSectionSet.has(status)}
+					renderTaskRow={(task) => renderTaskRow(task, rowShortcutState)}
+					selectedTaskIdSet={selectedTaskIdSet}
+					status={status}
+					tasks={groupedTasks[status]}
+				/>,
+			)
+		}
+		return sections
+	}
+
 	if (status === 'idle' || status === 'loading') {
 		return <BoardLoadingState />
 	}
@@ -270,26 +298,7 @@ export function TaskBoard({
 						)}
 					</BoardRoot>
 				) : (
-					<BoardRoot>
-						{statusOrder
-							.filter((status) => !hideEmptySections || groupedTasks[status].length > 0)
-							.map((status) => (
-								<TaskStatusSection
-									createProjectId={createProjectId}
-									key={status}
-									label={formatTaskStatusLabel(status)}
-									onCollapseAll={handleCollapseAll}
-									onExpandAll={handleExpandAll}
-									onOpenChange={(open) => handleSectionOpenChange(status, open)}
-									onToggleTaskSelection={onToggleTaskSelection}
-									open={openSections.includes(status)}
-									renderTaskRow={(task) => renderTaskRow(task, rowShortcutState)}
-									selectedTaskIdSet={selectedTaskIdSet}
-									status={status}
-									tasks={groupedTasks[status]}
-								/>
-							))}
-					</BoardRoot>
+					<BoardRoot>{renderStatusSections(rowShortcutState)}</BoardRoot>
 				)
 			}
 		</TaskRowShortcutScope>

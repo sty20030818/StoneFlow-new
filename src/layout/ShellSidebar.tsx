@@ -163,16 +163,29 @@ export function ShellSidebar({
 		icon: item.icon,
 		visible: settings.footerItems[item.key].visible,
 	}))
-	const footerItems = [...SHELL_FOOTER_ITEMS]
-		.map((item) => ({
+	// 合并 map + filter 为单次遍历
+	const footerItems: Array<
+		Omit<(typeof SHELL_FOOTER_ITEMS)[number], 'to'> & {
+			badge?: string
+			to: string
+			visible: boolean
+			order: number
+		}
+	> = []
+	for (const item of SHELL_FOOTER_ITEMS) {
+		const visible = settings.footerItems[item.key].visible
+		if (!visible) {
+			continue
+		}
+		footerItems.push({
 			...item,
 			badge: navBadges[item.section],
 			to: item.to(currentScope, currentSpaceId),
-			visible: settings.footerItems[item.key].visible,
+			visible,
 			order: settings.footerItems[item.key].order,
-		}))
-		.filter((item) => item.visible)
-		.sort((left, right) => left.order - right.order)
+		})
+	}
+	footerItems.sort((left, right) => left.order - right.order)
 	const projectLinks = settings.projectSection.maxVisible
 		? scopedProjectLinks.slice(0, settings.projectSection.maxVisible)
 		: scopedProjectLinks

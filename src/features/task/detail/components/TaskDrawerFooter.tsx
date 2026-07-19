@@ -3,6 +3,14 @@ import { DetailFooter } from '@/shared/components/detail'
 import type { TaskDetail } from '@/shared/types'
 import { ArchiveIcon, MoreHorizontalIcon, Trash2Icon } from 'lucide-react'
 
+// 模块级 Intl 格式化器：避免每次调用都重建，格式选项固定不变
+const updatedAtFormatter = new Intl.DateTimeFormat('zh-CN', {
+	month: 'numeric',
+	day: 'numeric',
+	hour: 'numeric',
+	minute: 'numeric',
+})
+
 type TaskDrawerFooterProps = {
 	task: TaskDetail
 	isArchiveBusy: boolean
@@ -64,10 +72,5 @@ function formatUpdatedAt(value: string) {
 		return value
 	}
 
-	return new Intl.DateTimeFormat('zh-CN', {
-		month: 'numeric',
-		day: 'numeric',
-		hour: 'numeric',
-		minute: 'numeric',
-	}).format(date)
+	return updatedAtFormatter.format(date)
 }

@@ -212,13 +212,16 @@ function filterVisibleProperties(
 	allowed: readonly TaskDisplayPropertyKey[],
 ): TaskDisplayPropertyKey[] {
 	const allowedSet = new Set<string>(allowed)
+	// 用 Set 记录已加入的值，避免循环内重复 array.includes 扫描
+	const seen = new Set<TaskDisplayPropertyKey>()
 	const result: TaskDisplayPropertyKey[] = []
 
 	for (const value of values) {
-		if (!PROPERTY_KEY_SET.has(value) || !allowedSet.has(value) || result.includes(value)) {
+		if (!PROPERTY_KEY_SET.has(value) || !allowedSet.has(value) || seen.has(value)) {
 			continue
 		}
 
+		seen.add(value)
 		result.push(value)
 	}
 

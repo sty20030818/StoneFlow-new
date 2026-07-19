@@ -54,13 +54,14 @@ function hasResolvedTaskPlacementSpaceId(ctx: CommandContext) {
 		return true
 	}
 
-	const selectionSpaceIds = new Set(
-		ctx.selection.entities
-			.filter((entity) => entity.type === 'task')
-			.map((entity) => entity.spaceId ?? null),
-	)
+	// 合并 filter + map 为单次遍历，直接跳过 null spaceId（等价于原先 delete(null)）
+	const selectionSpaceIds = new Set<string>()
+	for (const entity of ctx.selection.entities) {
+		if (entity.type === 'task' && entity.spaceId) {
+			selectionSpaceIds.add(entity.spaceId)
+		}
+	}
 
-	selectionSpaceIds.delete(null)
 	return selectionSpaceIds.size === 1
 }
 

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
+import { useLatestRef } from '@/shared/lib/useLatestRef'
+
 type EntityRowShortcutScopeProps = {
 	children: (state: EntityRowShortcutState) => ReactNode
 	ids: string[]
@@ -63,6 +65,12 @@ export function EntityRowShortcutScope({
 	const hoverSourceRef = useRef<'pointer' | 'keyboard' | null>(
 		externalFocusedId ? 'keyboard' : null,
 	)
+	// 以下 4 个回调只在 keydown 处理函数内部触发，不影响副作用的订阅逻辑本身，
+	// 用 useLatestRef 读取最新值，避免每次父组件重渲染都重新绑定 keydown 监听。
+	const onClearSelectionRef = useLatestRef(onClearSelection)
+	const onMoveFocusRef = useLatestRef(onMoveFocus)
+	const onSelectAllRef = useLatestRef(onSelectAll)
+	const onToggleSelectionRef = useLatestRef(onToggleSelection)
 
 	useEffect(() => {
 		if (externalFocusedId === null) {
@@ -124,14 +132,14 @@ export function EntityRowShortcutScope({
 			) {
 				event.preventDefault()
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
-				onSelectAll?.(ids)
+				onSelectAllRef.current?.(ids)
 				updateHoveredRow(null, null)
 				return
 			}
 
 			if (event.key === 'Escape' && selectedIdSet && selectedIdSet.size > 0) {
 				event.preventDefault()
-				onClearSelection?.()
+				onClearSelectionRef.current?.()
 				shiftToggleSessionRef.current = EMPTY_SHIFT_TOGGLE_SESSION
 				return
 			}
@@ -140,19 +148,21 @@ export function EntityRowShortcutScope({
 				return
 			}
 
-			if (!onMoveFocus) {
+			const moveFocus = onMoveFocusRef.current
+			if (!moveFocus) {
 				return
 			}
 
 			event.preventDefault()
 			const delta = event.key === 'ArrowDown' ? 1 : -1
-			if (event.shiftKey && onToggleSelection) {
+			const toggleSelection = onToggleSelectionRef.current
+			if (event.shiftKey && toggleSelection) {
 				const nextSession = handleShiftToggleNavigation({
 					delta,
 					focusedId: focusId,
 					ids,
 					shiftToggleSession: shiftToggleSessionRef.current,
-					onToggleSelection,
+					onToggleSelection: toggleSelection,
 					setFocusId: (id, options) => {
 						updateHoveredRow(id, 'keyboard', options)
 					},
@@ -161,7 +171,7 @@ export function EntityRowShortcutScope({
 				return
 			}
 
-			const nextId = onMoveFocus(delta, {
+			const nextId = moveFocus(delta, {
 				preserveAnchor: false,
 				selectRange: false,
 			})
@@ -171,13 +181,14 @@ export function EntityRowShortcutScope({
 
 		window.addEventListener('keydown', handleKeyDown)
 		return () => window.removeEventListener('keydown', handleKeyDown)
+		// useLatestRef 返回的 ref 对象稳定；列入 deps 仅满足静态检查，不会导致反复订阅
 	}, [
 		focusId,
 		ids,
-		onClearSelection,
-		onMoveFocus,
-		onSelectAll,
-		onToggleSelection,
+		onClearSelectionRef,
+		onMoveFocusRef,
+		onSelectAllRef,
+		onToggleSelectionRef,
 		selectedIdSet,
 		updateHoveredRow,
 	])

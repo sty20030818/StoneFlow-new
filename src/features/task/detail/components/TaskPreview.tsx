@@ -17,6 +17,14 @@ import {
 	taskPreviewSectionClass,
 } from './taskPreviewTokens'
 
+// 模块级 Intl 格式化器：避免每次调用都重建，格式选项固定不变
+const updatedAtFormatter = new Intl.DateTimeFormat('zh-CN', {
+	month: 'numeric',
+	day: 'numeric',
+	hour: 'numeric',
+	minute: 'numeric',
+})
+
 type TaskPreviewProps = {
 	task: TaskListItem | null
 	linkSummary: {
@@ -162,10 +170,5 @@ function formatUpdatedAt(value: string) {
 		return value
 	}
 
-	return new Intl.DateTimeFormat('zh-CN', {
-		month: 'numeric',
-		day: 'numeric',
-		hour: 'numeric',
-		minute: 'numeric',
-	}).format(date)
+	return updatedAtFormatter.format(date)
 }

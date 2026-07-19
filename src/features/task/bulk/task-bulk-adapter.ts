@@ -57,6 +57,8 @@ export function createTaskBulkAdapter({
 
 		for (const taskId of ids) {
 			try {
+				// 批量操作需要逐条记录成功/失败，且下游刷新依赖“已处理完”的确定状态，故保持串行
+				// react-doctor-disable-next-line react-doctor/async-await-in-loop
 				const detail = await mutate(taskId)
 				succeededIds.push(taskId)
 				emitEvent({ type: taskEventType, payload: { taskId: detail.id } })

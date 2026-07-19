@@ -223,12 +223,16 @@ function createSubmitRegistryStore(): SubmitRegistryStore {
 function resolveActiveTargetRecord(
 	registrations: Map<symbol, SubmitTarget>,
 ): SubmitRegistryTargetRecord | null {
-	const sorted = Array.from(registrations.entries())
-		.map(([token, target]) => ({ token, target }))
-		.filter((record) => record.target.canSubmit)
-		.sort((left, right) => right.target.priority - left.target.priority)
+	// 合并 map + filter 为单次遍历
+	const candidates: SubmitRegistryTargetRecord[] = []
+	for (const [token, target] of registrations) {
+		if (target.canSubmit) {
+			candidates.push({ token, target })
+		}
+	}
+	candidates.sort((left, right) => right.target.priority - left.target.priority)
 
-	return sorted[0] ?? null
+	return candidates[0] ?? null
 }
 
 function resolveHighestPriorityTargetRecord(

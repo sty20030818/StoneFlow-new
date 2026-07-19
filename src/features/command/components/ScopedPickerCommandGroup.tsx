@@ -200,9 +200,13 @@ export function ScopedPickerCommandGroup({
 			}),
 		)
 		const options = group.options
-		const normalizedDueDates = context.selection.entities
-			.filter((entity) => entity.type === 'task')
-			.map((entity) => normalizeMetadataDateValue(entity.dueAt))
+		// 合并 filter + map 为单次遍历
+		const normalizedDueDates: Array<string | null> = []
+		for (const entity of context.selection.entities) {
+			if (entity.type === 'task') {
+				normalizedDueDates.push(normalizeMetadataDateValue(entity.dueAt))
+			}
+		}
 		const uniqueNonEmptyDueDates = Array.from(
 			new Set(normalizedDueDates.filter((value): value is string => Boolean(value))),
 		)

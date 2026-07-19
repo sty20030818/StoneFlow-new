@@ -343,6 +343,8 @@ async function runForTargets(
 	runner: (target: TaskListItem) => Promise<void> | void,
 ) {
 	for (const target of targets) {
+		// 无 try/catch，任一 target 失败即中断后续处理（fail-fast），并行化会破坏这个语义，故保持串行
+		// react-doctor-disable-next-line react-doctor/async-await-in-loop
 		await runner(target)
 	}
 }

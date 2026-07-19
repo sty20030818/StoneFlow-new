@@ -9,6 +9,15 @@ import { TaskLabelsSection } from './TaskLabelsSection'
 import { TaskPlacementSection } from './TaskPlacementSection'
 import { TaskPropertiesSection } from './TaskPropertiesSection'
 
+// 模块级 Intl 格式化器：避免每次调用都重建，格式选项固定不变
+const timestampFormatter = new Intl.DateTimeFormat('zh-CN', {
+	year: 'numeric',
+	month: 'numeric',
+	day: 'numeric',
+	hour: 'numeric',
+	minute: 'numeric',
+})
+
 type TaskPageSidebarProps = {
 	task: TaskDetail
 	autosave: AutosaveController<TaskDetailDraft>
@@ -104,11 +113,5 @@ function formatTimestamp(value: string) {
 		return value
 	}
 
-	return new Intl.DateTimeFormat('zh-CN', {
-		year: 'numeric',
-		month: 'numeric',
-		day: 'numeric',
-		hour: 'numeric',
-		minute: 'numeric',
-	}).format(date)
+	return timestampFormatter.format(date)
 }

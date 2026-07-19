@@ -127,7 +127,9 @@ export function useCommandShortcuts({
 			window.removeEventListener('keydown', handleKeyDown)
 			clearChordState()
 		}
-	}, [bindings, scope])
+		// onTriggerRef/shouldTriggerRef/onChordStateChangeRef 由 useLatestRef 提供，
+		// 引用本身稳定不变，纳入依赖只是满足 exhaustive-deps 检查，不会引起重新订阅。
+	}, [bindings, scope, onTriggerRef, shouldTriggerRef, onChordStateChangeRef])
 }
 
 // 只对"有修饰键"或"特殊功能键"的绑定 preventDefault，普通字母键不 prevent，

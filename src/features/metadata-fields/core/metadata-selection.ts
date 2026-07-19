@@ -32,14 +32,20 @@ export function buildMetadataShortcutItems<TValue>(
 	mode: MetadataShortcutMode = 'default',
 ): Array<ShortcutMenuItem<TValue>> {
 	if (mode === 'clear-only') {
-		return options
-			.filter((option) => option.isEmptyValue)
-			.map((option) => ({
+		// 合并 filter + map 为单次遍历
+		const items: Array<ShortcutMenuItem<TValue>> = []
+		for (const option of options) {
+			if (!option.isEmptyValue) {
+				continue
+			}
+			items.push({
 				label: option.label,
 				value: option.value,
 				disabled: option.disabled,
 				isEmptyValue: true,
-			}))
+			})
+		}
+		return items
 	}
 
 	return options.map((option) => ({
