@@ -2,9 +2,11 @@
 
 use std::sync::Arc;
 
+use tauri::Manager;
 use tokio::sync::{Mutex, Notify};
 
 use crate::app::error::AppError;
+use crate::window::main::persist_main_window_geometry;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ExitReason {
@@ -76,4 +78,25 @@ impl ExitCoordinator {
             .unwrap_or(Ok(()))
             .map_err(AppError::initialization)
     }
+}
+
+/// 真正退出前：落盘几何 → destroy 全部 WebView（绕过 main 的 hide）→ `exit`。
+/// 减少 Windows 上 `Chrome_WidgetWin_0` / Error 1412 的拆窗竞态噪音。
+pub async fn request_exit_and_quit(app_handle: &tauri::AppHandle, reason: ExitReason) {
+    if let Some(exit_coordinator) = app_handle.try_state::<ExitCoordinator>() {
+        if let Err(error) = exit_coordinator.request_exit(reason).await {
+            log::warn!("请求退出失败 ({reason:?}): {error}");
+        }
+    }
+
+    persist_main_window_geometry(app_handle);
+
+    // 必须用 destroy：main 的 CloseRequested 会 prevent_close + hide，close() 退不出去。
+    for (label, window) in app_handle.webview_windows() {
+        if let Err(error) = window.destroy() {
+            log::warn!("退出前销毁窗口 {label} 失败: {error}");
+        }
+    }
+
+    app_handle.exit(0);
 }

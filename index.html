@@ -5,6 +5,20 @@
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>stoneflow</title>
+		<!--
+			首帧壳色：与 --sf-neutral-100 / --sf-shell-bg 对齐。
+			在 CSS/JS 就绪前铺底，避免 WebView 默认白闪（开屏方案 W1）。
+			改 token 时请同步此处硬编码色。
+		-->
+		<style>
+			html,
+			body,
+			#root {
+				margin: 0;
+				min-height: 100%;
+				background: #f3f3f4;
+			}
+		</style>
 	</head>
 	<body>
 		<div id="root"></div>

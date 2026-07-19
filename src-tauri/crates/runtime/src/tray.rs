@@ -6,7 +6,7 @@ use tauri::{
     Manager,
 };
 
-use crate::exit_coordinator;
+use crate::exit_coordinator::{self, ExitReason};
 use crate::window::main::{toggle_main_window, MAIN_WINDOW_LABEL};
 
 const MAIN_TRAY_SHOW_ID: &str = "tray-show-main";
@@ -41,7 +41,8 @@ pub fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
                     MAIN_TRAY_QUIT_ID => {
                         let app_handle = app_handle.clone();
                         tauri::async_runtime::spawn(async move {
-                            request_exit_and_quit(&app_handle).await;
+                            exit_coordinator::request_exit_and_quit(&app_handle, ExitReason::TrayQuit)
+                                .await;
                         });
                     }
                     _ => {}
@@ -71,16 +72,4 @@ pub fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
         .build(app)?;
 
     Ok(())
-}
-
-pub async fn request_exit_and_quit(app_handle: &tauri::AppHandle) {
-    if let Some(exit_coordinator) = app_handle.try_state::<exit_coordinator::ExitCoordinator>() {
-        if let Err(error) = exit_coordinator
-            .request_exit(exit_coordinator::ExitReason::TrayQuit)
-            .await
-        {
-            log::warn!("tray quit 请求退出失败: {error}");
-        }
-    }
-    app_handle.exit(0);
 }

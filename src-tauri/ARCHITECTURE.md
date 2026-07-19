@@ -277,6 +277,7 @@ crates/runtime/src/
 1. `composition.rs` 是 composition root 命名，不再使用旧的 `assembly`
 2. `window/launcher/*` 是 Launcher 窗口主线，不再放回主窗口目录
 3. `commands/launcher` 按 `domain` 和 `window` 分开
+4. 主窗几何由 `window-state`（仅 `main`，flags 不含 `VISIBLE`）+ `window/main.rs` 冷启动编排；Launcher 不参与
 
 ---
 

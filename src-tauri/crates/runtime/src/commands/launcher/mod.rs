@@ -8,13 +8,13 @@ pub use error::{
     LauncherErrorPayload, LauncherInitialStateResponse, LauncherOpenSessionResponse,
 };
 
-use tauri::{Manager, State};
+use tauri::State;
 
 use crate::app::{
     error::AppError,
     state::{CommandOpenState, PendingCommandOpenIntent},
 };
-use crate::exit_coordinator::{ExitCoordinator, ExitReason};
+use crate::exit_coordinator::{request_exit_and_quit, ExitReason};
 
 #[tauri::command]
 pub async fn restore_main_window(app_handle: tauri::AppHandle) -> Result<(), AppError> {
@@ -23,12 +23,7 @@ pub async fn restore_main_window(app_handle: tauri::AppHandle) -> Result<(), App
 
 #[tauri::command]
 pub async fn quit_stoneflow(app_handle: tauri::AppHandle) -> Result<(), AppError> {
-    if let Some(exit_coordinator) = app_handle.try_state::<ExitCoordinator>() {
-        exit_coordinator
-            .request_exit(ExitReason::CommandQuit)
-            .await?;
-    }
-    app_handle.exit(0);
+    request_exit_and_quit(&app_handle, ExitReason::CommandQuit).await;
     Ok(())
 }
 

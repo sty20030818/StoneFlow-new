@@ -19,8 +19,13 @@ pub use window::main::MAIN_WINDOW_LABEL;
 
 /// 组装主应用 Builder。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
+    use crate::window::main::{
+        persist_main_window_geometry, MAIN_WINDOW_LABEL, MAIN_WINDOW_STATE_FLAGS,
+    };
+
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            // 热唤起：只恢复可见性，不改几何、不 center。
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
                 let _ = window.show();
                 let _ = window.unminimize();
@@ -31,7 +36,16 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build());
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        // 主窗几何：只跟踪 main；不含 VISIBLE（关窗=hide）。
+        // skip_initial_state：冷启动由 build_main_window 在 show 前唯一 restore，避免竞态跳动。
+        .plugin(
+            tauri_plugin_window_state::Builder::new()
+                .with_state_flags(MAIN_WINDOW_STATE_FLAGS)
+                .with_filter(|label| label == MAIN_WINDOW_LABEL)
+                .skip_initial_state(MAIN_WINDOW_LABEL)
+                .build(),
+        );
 
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_nspanel::init());
@@ -43,6 +57,8 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
                 if let WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();
+                    // 用户关窗 = hide，不会走 Exit；此处落盘保证下次恢复位置。
+                    persist_main_window_geometry(window.app_handle());
                 }
             }
         })
@@ -71,7 +87,11 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
             api.prevent_exit();
             let app_handle = app_handle.clone();
             tauri::async_runtime::spawn(async move {
-                tray::request_exit_and_quit(&app_handle).await;
+                exit_coordinator::request_exit_and_quit(
+                    &app_handle,
+                    exit_coordinator::ExitReason::RunEventExitRequested,
+                )
+                .await;
             });
         }
         tauri::RunEvent::Resumed => {
