@@ -13,10 +13,7 @@ import {
 	type TaskDisplayPropertyKey,
 } from '@/features/display-options/core'
 
-import {
-	resolveTaskDisplayOptionsFromPreferencePayload,
-	useTaskDisplayPreferenceQuery,
-} from './taskDisplayOptions.queries'
+import { useTaskDisplayPreferenceQuery } from './taskDisplayOptions.queries'
 import { useUpdateTaskDisplayPreferenceMutation } from './taskDisplayOptions.mutations'
 
 type UseTaskDisplayOptionsResult = {
@@ -124,5 +121,3 @@ export function useTaskDisplayOptions(pageKey: TaskDisplayPageKey): UseTaskDispl
 		},
 	}
 }
-
-export { resolveTaskDisplayOptionsFromPreferencePayload }

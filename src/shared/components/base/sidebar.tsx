@@ -152,13 +152,11 @@ function SidebarProvider({
 		const mediaQuery = window.matchMedia(`(min-width: ${SIDEBAR_DESKTOP_BREAKPOINT_PX}px)`)
 
 		const commitMode = (nextMode: SidebarLayoutMode) => {
-			setLayoutMode((prev) => {
-				if (prev === nextMode) return prev
-				if (nextMode === 'mobile') {
-					setMobileOpen(false)
-				}
-				return nextMode
-			})
+			// 不在 setState updater 内嵌套 setMobileOpen（Strict Mode 可能双跑）
+			setLayoutMode((prev) => (prev === nextMode ? prev : nextMode))
+			if (nextMode === 'mobile') {
+				setMobileOpen(false)
+			}
 		}
 
 		const handleChange = () => {

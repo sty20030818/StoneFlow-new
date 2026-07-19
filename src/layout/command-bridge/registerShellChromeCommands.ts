@@ -33,6 +33,8 @@ export function registerShellChromeCommands(
 		| 'navigate'
 		| 'currentScope'
 		| 'currentSpaceId'
+		| 'isSettingsMode'
+		| 'settingsReturnPath'
 	>,
 ): Partial<ShellCommandActions> {
 	return {

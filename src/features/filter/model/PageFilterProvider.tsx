@@ -142,23 +142,18 @@ export function usePageFilterContext() {
 
 export function useRegisterPageFilterController(controller: PageFilterRegistration) {
 	const actions = useContext(PageFilterActionsContext)
-	const tokenRef = useRef<symbol | null>(null)
-
-	if (!tokenRef.current) {
-		tokenRef.current = Symbol('page-filter-registration')
-	}
+	const [token] = useState(() => Symbol('page-filter-registration'))
 
 	useEffect(() => {
 		if (!actions) {
 			return
 		}
 
-		const token = tokenRef.current!
 		actions.registerController(token, controller)
 		return () => {
 			actions.clearControllerRegistration(token)
 		}
-	}, [actions, controller])
+	}, [actions, controller, token])
 }
 
 export function isTaskCompleted(status: TaskStatus) {

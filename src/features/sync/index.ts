@@ -43,3 +43,6 @@ export { SyncStatusProvider, useSharedSyncStatus } from './model/SyncStatusProvi
 
 export { SyncFooterStatusItem } from './components/SyncFooterStatusItem'
 export { SyncConfigDialog } from './components/SyncConfigDialog'
+
+/** 原生选路径 / 确认框（plugin-dialog）；同步目录等场景从此取 */
+export { ask, message, open, save } from '@/shared/tauri/nativeDialog'

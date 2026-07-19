@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, type ReactNode } from 'react'
 
 import type { ShellRoute } from '@/app/navigation'
 import type { ShellSectionKey } from '@/layout/types'
@@ -26,12 +26,4 @@ export function ShellProvider({
 	children: ReactNode
 }) {
 	return <ShellContext.Provider value={value}>{children}</ShellContext.Provider>
-}
-
-export function useShellContext(): ShellContextValue {
-	const value = useContext(ShellContext)
-	if (!value) {
-		throw new Error('useShellContext must be used within ShellProvider')
-	}
-	return value
 }

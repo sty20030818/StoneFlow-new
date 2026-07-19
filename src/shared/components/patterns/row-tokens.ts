@@ -17,7 +17,6 @@ export const ROW_SHELL_SELECTED_CLASS = 'border-transparent bg-sf-selection-surf
 export const ROW_SHELL_GROUP_SELECTED_CLASS = 'border-transparent bg-transparent'
 export const ROW_SHELL_SECTION_HEADER_CLASS =
 	'flex h-10 items-center gap-2 rounded-md bg-sf-list-section-bg pl-3 pr-1'
-export const ROW_SHELL_META_TEXT_CLASS = 'text-xs font-medium text-sf-text-tertiary'
 
 /** RowShell.Actions 布局 class，内联于 row 层，不依赖 entity-board。 */
 export const ROW_SHELL_ACTIONS_CLASS = 'flex shrink-0 items-center gap-2'

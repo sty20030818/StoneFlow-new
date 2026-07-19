@@ -11,7 +11,7 @@ import {
 } from '@/shared/components/patterns/sidebar-item'
 
 /** 仅负责三列内容（图标 / 标题 / 数字槽），不关心路由与菜单 */
-export function SidebarNavRowLayout({
+function SidebarNavRowLayout({
 	icon: Icon,
 	label,
 	badge,

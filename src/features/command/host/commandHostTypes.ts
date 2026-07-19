@@ -64,4 +64,7 @@ export type CommandHostContext = {
 		closePreview: () => void
 	}
 	toggleShortcutHelp: () => void
+	/** Settings Mode：Esc / 关闭应走 returnPath，而非会话 goBack */
+	isSettingsMode?: boolean
+	settingsReturnPath?: string
 }

@@ -135,42 +135,14 @@ export function useEntitySelection(entityIds: string[]) {
 				resetAnchorToStart?: boolean
 			} = {},
 		) => {
+			// 必须用 functional update：同一事件内连续 moveFocus 不能读到陈旧 closure state。
+			// 向外写 nextFocusedId 在 compute 纯函数前提下 Strict Mode 双跑结果一致。
 			let nextFocusedId: string | null = null
 			setSelectionState((currentState) => {
-				const startFocusedId =
-					options.startFromId && entityIds.includes(options.startFromId)
-						? options.startFromId
-						: currentState.focusedId
-				if (options.selectRange && options.resetAnchorToStart && startFocusedId) {
-					nextFocusedId = startFocusedId
-					return {
-						selectedIds: toggleEntitySelectionByVisibleOrder(
-							entityIds,
-							currentState.selectedIds,
-							startFocusedId,
-						),
-						focusedId: startFocusedId,
-						selectionAnchorId: startFocusedId,
-					}
-				}
-
-				nextFocusedId = moveEntitySelectionFocus(entityIds, startFocusedId, delta)
-				const nextAnchorId = options.preserveAnchor
-					? (currentState.selectionAnchorId ?? startFocusedId ?? nextFocusedId)
-					: nextFocusedId
-				return {
-					selectedIds: options.selectRange
-						? nextFocusedId
-							? toggleEntitySelectionByVisibleOrder(
-									entityIds,
-									currentState.selectedIds,
-									nextFocusedId,
-								)
-							: currentState.selectedIds
-						: currentState.selectedIds,
-					focusedId: nextFocusedId,
-					selectionAnchorId: nextAnchorId,
-				}
+				// react-doctor-disable-next-line react-doctor/no-impure-state-updater -- 纯 compute + 同步返回 focusedId；双跑幂等
+				const nextState = computeMovedFocusState(currentState, entityIds, delta, options)
+				nextFocusedId = nextState.focusedId
+				return nextState
 			})
 			return nextFocusedId
 		},
@@ -224,5 +196,47 @@ export function useEntitySelection(entityIds: string[]) {
 		clearSelection,
 		selectIds,
 		selectAll,
+	}
+}
+
+function computeMovedFocusState(
+	currentState: EntitySelectionState,
+	entityIds: string[],
+	delta: number,
+	options: {
+		preserveAnchor?: boolean
+		selectRange?: boolean
+		startFromId?: string | null
+		resetAnchorToStart?: boolean
+	},
+): EntitySelectionState {
+	const startFocusedId =
+		options.startFromId && entityIds.includes(options.startFromId)
+			? options.startFromId
+			: currentState.focusedId
+	if (options.selectRange && options.resetAnchorToStart && startFocusedId) {
+		return {
+			selectedIds: toggleEntitySelectionByVisibleOrder(
+				entityIds,
+				currentState.selectedIds,
+				startFocusedId,
+			),
+			focusedId: startFocusedId,
+			selectionAnchorId: startFocusedId,
+		}
+	}
+
+	const nextFocusedId = moveEntitySelectionFocus(entityIds, startFocusedId, delta)
+	const nextAnchorId = options.preserveAnchor
+		? (currentState.selectionAnchorId ?? startFocusedId ?? nextFocusedId)
+		: nextFocusedId
+	return {
+		selectedIds: options.selectRange
+			? nextFocusedId
+				? toggleEntitySelectionByVisibleOrder(entityIds, currentState.selectedIds, nextFocusedId)
+				: currentState.selectedIds
+			: currentState.selectedIds,
+		focusedId: nextFocusedId,
+		selectionAnchorId: nextAnchorId,
 	}
 }

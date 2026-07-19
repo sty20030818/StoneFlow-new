@@ -23,28 +23,30 @@ export function useLauncherLifecycleBridge({
 }: UseLauncherLifecycleBridgeArgs) {
 	const refreshRecentRef = useRef<() => void>(() => {})
 
-	refreshRecentRef.current = () => {
-		void fetchSnapshot()
-			.then((openContext) => {
-				startTransition(() => {
-					dispatch({
-						type: 'recentDataRefreshed',
-						payload: {
-							currentScope: openContext.currentScope,
-							defaultSpaceId: openContext.defaultSpaceId,
-							defaultPlacement: openContext.defaultPlacement,
-							spaces: openContext.spaces,
-							projects: openContext.projects,
-							recentTasks: openContext.recentTasks,
-							recentProjects: openContext.recentProjects,
-						},
+	useLayoutEffect(() => {
+		refreshRecentRef.current = () => {
+			void fetchSnapshot()
+				.then((openContext) => {
+					startTransition(() => {
+						dispatch({
+							type: 'recentDataRefreshed',
+							payload: {
+								currentScope: openContext.currentScope,
+								defaultSpaceId: openContext.defaultSpaceId,
+								defaultPlacement: openContext.defaultPlacement,
+								spaces: openContext.spaces,
+								projects: openContext.projects,
+								recentTasks: openContext.recentTasks,
+								recentProjects: openContext.recentProjects,
+							},
+						})
 					})
 				})
-			})
-			.catch((error) => {
-				onRefreshRecentError(error)
-			})
-	}
+				.catch((error) => {
+					onRefreshRecentError(error)
+				})
+		}
+	}, [dispatch, fetchSnapshot, onRefreshRecentError])
 
 	useLayoutEffect(() => {
 		if (!nextOpenContext) {

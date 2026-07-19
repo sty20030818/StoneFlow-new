@@ -34,15 +34,6 @@ export const detailSaveStatusClass = 'text-[11px] leading-none text-sf-text-tert
 
 export const detailSaveStatusErrorClass = 'text-[11px] leading-none text-sf-danger-soft-text'
 
-export const detailPageLayoutClass = 'flex h-full min-h-0 flex-col overflow-hidden'
-
-export const detailPageHeaderClass =
-	'flex shrink-0 items-center justify-between gap-3 border-b border-sf-divider px-5 py-3'
-
-export const detailPageContentClass = 'min-h-0 flex-1'
-
-export const detailPageViewportClass = 'min-h-full px-4 py-4 md:px-5 md:py-5'
-
 export const detailPageGridClass = 'grid min-h-full gap-4 lg:grid-cols-[minmax(0,1fr)_280px]'
 
 export const detailPageMainClass = 'min-w-0'

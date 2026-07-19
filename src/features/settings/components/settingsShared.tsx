@@ -30,7 +30,7 @@ export function SettingsSection({
 }
 
 /** 行式偏好项：左文案右控件（窄屏上下堆叠） */
-export function SettingsPreferenceRow({
+function SettingsPreferenceRow({
 	label,
 	description,
 	control,

@@ -1,6 +1,5 @@
 export { taskDisplayOptionsKeys } from './taskDisplayOptions.keys'
 export {
-	resolveTaskDisplayOptionsFromPreferencePayload,
 	taskDisplayPreferenceQueryOptions,
 	useTaskDisplayPreferenceQuery,
 } from './taskDisplayOptions.queries'

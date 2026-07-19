@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { buildDigitShortcutMap, type ShortcutMenuItem } from './buildDigitShortcutMap'
+import { useLatestRef } from '@/shared/lib/useLatestRef'
 
 type UseShortcutDigitSelectOptions<TValue> = {
 	items: ShortcutMenuItem<TValue>[]
@@ -18,10 +19,8 @@ export function useShortcutDigitSelect<TValue>({
 	onSelect,
 }: UseShortcutDigitSelectOptions<TValue>) {
 	const digitShortcutMap = useMemo(() => buildDigitShortcutMap(items), [items])
-	const onSelectRef = useRef(onSelect)
-	onSelectRef.current = onSelect
-	const mapRef = useRef(digitShortcutMap)
-	mapRef.current = digitShortcutMap
+	const onSelectRef = useLatestRef(onSelect)
+	const mapRef = useLatestRef(digitShortcutMap)
 
 	useEffect(() => {
 		function handleKeyDown(event: KeyboardEvent) {

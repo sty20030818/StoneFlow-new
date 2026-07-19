@@ -29,8 +29,6 @@ export const allCommands = [
 	...viewCommands,
 ]
 
-export const commandRegistry = new CommandRegistry(allCommands)
-
 export function createShellCommandRegistry(adapter: ShellCommandAdapter) {
 	return new CommandRegistry(allCommands.map((command) => bindShellCommand(command, adapter)))
 }

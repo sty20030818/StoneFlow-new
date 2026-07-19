@@ -79,5 +79,3 @@ export const taskDisplayOptionsSchema = z.object({
 	showEmptyGroups: z.boolean(),
 	visibleProperties: z.array(taskDisplayPropertyKeySchema),
 })
-
-export const taskDisplayPreferenceSchema = taskDisplayOptionsSchema.partial()

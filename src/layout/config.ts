@@ -9,14 +9,13 @@ import {
 	InboxIcon,
 	ListTodoIcon,
 	Layers2Icon,
-	Settings2Icon,
 	Trash2Icon,
 } from 'lucide-react'
 
 type ShellIcon = ComponentType<{ className?: string }>
 type ShellMainNavKey = 'inbox' | 'tasks' | 'views' | 'projectOverview'
 type ShellFooterNavKey = 'archive' | 'trash'
-type ShellCommandNavKey = ShellMainNavKey | ShellFooterNavKey | 'settings'
+type ShellCommandNavKey = ShellMainNavKey | ShellFooterNavKey
 
 type ShellNavItem<TKey extends string = ShellCommandNavKey> = {
 	key: TKey
@@ -79,22 +78,6 @@ export const SHELL_FOOTER_ITEMS: ShellNavItem<ShellFooterNavKey>[] = [
 		to: (scope, fallbackSpaceId) => openSection(scope, 'trash', fallbackSpaceId),
 	},
 ]
-
-export const SHELL_SETTINGS_ITEM: ShellNavItem<'settings'> = {
-	key: 'settings',
-	section: 'inbox',
-	label: '设置',
-	icon: Settings2Icon,
-	to: (scope, fallbackSpaceId) => openSection(scope, 'settings', fallbackSpaceId),
-}
-
-export const SHELL_COMMAND_ROUTE_ITEMS = [
-	...SHELL_NAV_ITEMS,
-	...SHELL_FOOTER_ITEMS,
-	SHELL_SETTINGS_ITEM,
-]
-
-export const SHELL_ROUTE_ITEMS = SHELL_COMMAND_ROUTE_ITEMS
 
 export function getSectionLabel(section: ShellSectionKey) {
 	switch (section) {

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 
 import { isAnyModalOpen } from '@/shared/lib/modal-guard'
 import { setGlobalChordPending } from '@/shared/lib/global-chord-guard'
+import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { COMMAND_IDS, type CommandId } from '@/features/command/core'
 import {
 	KEYBINDING_CHORD_TIMEOUT_MS,
@@ -29,15 +30,11 @@ export function useCommandShortcuts({
 	onChordStateChange,
 	scope = 'global',
 }: UseCommandShortcutsOptions) {
-	const onTriggerRef = useRef(onTrigger)
-	const shouldTriggerRef = useRef(shouldTrigger)
-	const onChordStateChangeRef = useRef(onChordStateChange)
+	const onTriggerRef = useLatestRef(onTrigger)
+	const shouldTriggerRef = useLatestRef(shouldTrigger)
+	const onChordStateChangeRef = useLatestRef(onChordStateChange)
 	const chordStateRef = useRef<KeybindingChordState | null>(null)
 	const timeoutRef = useRef<number | null>(null)
-
-	onTriggerRef.current = onTrigger
-	shouldTriggerRef.current = shouldTrigger
-	onChordStateChangeRef.current = onChordStateChange
 
 	useEffect(() => {
 		function emitChordState(chordState: KeybindingChordState | null) {

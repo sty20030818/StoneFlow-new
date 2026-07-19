@@ -167,10 +167,6 @@ export const taskBulkActions: BulkAction[] = taskBulkActionDefinitions.map((defi
 	},
 }))
 
-export function getTaskBulkActionDefinition(actionId: BulkActionId) {
-	return taskBulkActionDefinitions.find((action) => action.id === actionId) ?? null
-}
-
 function getTaskBulkAdapter(adapter: unknown): TaskBulkAdapter | null {
 	if (
 		adapter &&

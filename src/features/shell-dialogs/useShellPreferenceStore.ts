@@ -60,8 +60,6 @@ export const useShellPreferenceStore = create<ShellPreferenceState>()(
 )
 
 // ----- Selectors -----
-export const selectProjectTreeCollapsed = (state: ShellPreferenceState) =>
-	state.projectTreeCollapsed
 export const selectProjectTaskBoardOpenSections = (state: ShellPreferenceState) =>
 	state.projectTaskBoardOpenSections
 

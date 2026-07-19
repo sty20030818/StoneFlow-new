@@ -27,7 +27,6 @@ export {
 	taskDisplayOptionsSchema,
 	taskDisplayOrderBySchema,
 	taskDisplayOrderDirectionSchema,
-	taskDisplayPreferenceSchema,
 	taskDisplayPropertyKeySchema,
 	TASK_DISPLAY_COMPLETED_ORDER_VALUES,
 	TASK_DISPLAY_GROUP_BY_VALUES,

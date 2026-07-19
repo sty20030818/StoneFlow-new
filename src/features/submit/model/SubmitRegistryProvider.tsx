@@ -4,7 +4,7 @@ import {
 	useEffect,
 	useLayoutEffect,
 	useMemo,
-	useRef,
+	useState,
 	useSyncExternalStore,
 	type PropsWithChildren,
 } from 'react'
@@ -72,29 +72,25 @@ const SubmitRegistryStateContext = createContext<SubmitRegistryStore | null>(nul
 const SubmitRegistryActionsContext = createContext<SubmitRegistryActions | null>(null)
 
 export function SubmitRegistryProvider({ children }: PropsWithChildren) {
-	const storeRef = useRef<SubmitRegistryStore | null>(null)
-
-	if (!storeRef.current) {
-		storeRef.current = createSubmitRegistryStore()
-	}
+	const [store] = useState(() => createSubmitRegistryStore())
 
 	const actions = useMemo<SubmitRegistryActions>(
 		() => ({
 			registerTarget: (token, target) => {
-				storeRef.current?.registerTarget(token, target)
+				store.registerTarget(token, target)
 			},
 			clearTargetRegistration: (token) => {
-				storeRef.current?.clearTargetRegistration(token)
+				store.clearTargetRegistration(token)
 			},
 			submitActiveTarget: async (intent = 'default') =>
-				(await storeRef.current?.submitActiveTarget(intent)) ?? false,
+				(await store.submitActiveTarget(intent)) ?? false,
 		}),
-		[],
+		[store],
 	)
 
 	return (
 		<SubmitRegistryActionsContext.Provider value={actions}>
-			<SubmitRegistryStateContext.Provider value={storeRef.current}>
+			<SubmitRegistryStateContext.Provider value={store}>
 				{children}
 			</SubmitRegistryStateContext.Provider>
 		</SubmitRegistryActionsContext.Provider>
@@ -149,30 +145,22 @@ export function useSubmitRegistryActions() {
 
 export function useRegisterSubmitTarget(target: SubmitTarget | null) {
 	const actions = useSubmitRegistryActions()
-	const tokenRef = useRef<symbol | null>(null)
-
-	if (!tokenRef.current) {
-		tokenRef.current = Symbol('submit-target-registration')
-	}
+	const [token] = useState(() => Symbol('submit-target-registration'))
 
 	useEffect(() => {
-		const token = tokenRef.current!
-
 		return () => {
 			actions.clearTargetRegistration(token)
 		}
-	}, [actions])
+	}, [actions, token])
 
 	useLayoutEffect(() => {
-		const token = tokenRef.current!
-
 		if (!target) {
 			actions.clearTargetRegistration(token)
 			return
 		}
 
 		actions.registerTarget(token, target)
-	}, [actions, target])
+	}, [actions, target, token])
 }
 
 function createSubmitRegistryStore(): SubmitRegistryStore {

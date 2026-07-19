@@ -8,10 +8,6 @@ export const TASK_BOARD_STATUS_ORDER: readonly TaskStatus[] = [
 	'canceled',
 ]
 
-export const ACTIVE_TASK_BOARD_STATUS_ORDER = TASK_BOARD_STATUS_ORDER.filter((status) =>
-	['todo', 'doing', 'waiting'].includes(status),
-)
-
 type TaskBoardCustomSection = {
 	tasks: TaskListItem[]
 }

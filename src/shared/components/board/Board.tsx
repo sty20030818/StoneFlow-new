@@ -305,7 +305,7 @@ export function BoardCollapsibleSection({
 	)
 }
 
-export function BoardChevron({ className, ...props }: ComponentProps<'span'>) {
+function BoardChevron({ className, ...props }: ComponentProps<'span'>) {
 	return (
 		<span
 			{...props}

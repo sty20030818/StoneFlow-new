@@ -30,10 +30,3 @@ export function useRegisterOpenModal(open: boolean) {
 export function isAnyModalOpen(): boolean {
 	return openModalCount > 0
 }
-
-/**
- * 仅用于测试场景的重置入口，避免跨用例脏数据。
- */
-export function __resetModalGuardForTests() {
-	openModalCount = 0
-}

@@ -15,7 +15,6 @@ import {
 	createStatusActionSpec,
 	type MetadataActionIconKey,
 } from '@/features/metadata-fields'
-import type { TaskPriority, TaskStatus } from '@/shared/types'
 
 import { mapMetadataActionSpecToCommandMenuGroup } from './command-menu-metadata'
 
@@ -25,14 +24,6 @@ export function getCommandMenuPriorityOptions() {
 
 export function getCommandMenuStatusOptions() {
 	return mapMetadataActionSpecToCommandMenuGroup(createStatusActionSpec()).options
-}
-
-export function getCommandMenuPriorityLeading(priority: TaskPriority) {
-	return mapMetadataIconToCommandLeading(`priority-${priority}`)
-}
-
-export function getCommandMenuStatusLeading(status: TaskStatus) {
-	return mapMetadataIconToCommandLeading(`status-${status}`)
 }
 
 export function mapMetadataIconToCommandLeading(iconKey: MetadataActionIconKey | string) {

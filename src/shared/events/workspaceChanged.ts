@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { listen } from '@tauri-apps/api/event'
+
+import { useLatestRef } from '@/shared/lib/useLatestRef'
 
 export const WORKSPACE_CHANGED_EVENT = 'stoneflow://workspace/changed'
 
@@ -81,14 +83,13 @@ export function subscribeToWorkspaceChanged(
 export function useWorkspaceChangedListener(
 	onWorkspaceChanged: (payload: WorkspaceChangedPayload) => void,
 ) {
-	const onWorkspaceChangedRef = useRef(onWorkspaceChanged)
-	onWorkspaceChangedRef.current = onWorkspaceChanged
+	const onWorkspaceChangedRef = useLatestRef(onWorkspaceChanged)
 
 	useEffect(
 		() =>
 			subscribeToWorkspaceChanged((payload) => {
 				onWorkspaceChangedRef.current(payload)
 			}),
-		[],
+		[onWorkspaceChangedRef],
 	)
 }

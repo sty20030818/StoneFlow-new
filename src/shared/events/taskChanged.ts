@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { listen } from '@tauri-apps/api/event'
 
+import { useLatestRef } from '@/shared/lib/useLatestRef'
 import type { Scope } from '@/shared/types'
 
 export const TASKS_CHANGED_EVENT = 'stoneflow://tasks/changed'
@@ -85,10 +86,8 @@ export function useTaskChangedListener(
 	scope: Scope,
 	onTaskChanged: (payload: TaskChangedPayload) => void,
 ) {
-	const onTaskChangedRef = useRef(onTaskChanged)
-	onTaskChangedRef.current = onTaskChanged
-	const scopeRef = useRef(scope)
-	scopeRef.current = scope
+	const onTaskChangedRef = useLatestRef(onTaskChanged)
+	const scopeRef = useLatestRef(scope)
 
 	useEffect(
 		() =>
@@ -98,6 +97,6 @@ export function useTaskChangedListener(
 				}
 				onTaskChangedRef.current(payload)
 			}),
-		[],
+		[onTaskChangedRef, scopeRef],
 	)
 }

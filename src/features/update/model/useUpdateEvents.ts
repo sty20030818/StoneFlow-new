@@ -79,7 +79,6 @@ export function useUpdateEvents() {
 	useEffect(() => {
 		let disposed = false
 		let unlistenPhase: (() => void) | undefined
-		let rehydrateTimer: ReturnType<typeof setTimeout> | undefined
 
 		async function setupListeners() {
 			// 1) 尽早挂监听，降低启动检查 emit 丢失概率
@@ -107,29 +106,30 @@ export function useUpdateEvents() {
 			} catch (err) {
 				console.error('Failed to hydrate update session:', err)
 			}
-
-			// 4) 启动检查约 3s 后才跑；延迟再 hydrate，兜底 emit 丢失
-			rehydrateTimer = setTimeout(() => {
-				if (disposed) return
-				void getUpdateSession()
-					.then((session) => {
-						if (disposed) return
-						maybeHydrateIfIdle(session)
-					})
-					.catch(() => {
-						// 延迟 hydrate 失败可忽略
-					})
-			}, STARTUP_SESSION_REHYDRATE_MS)
 		}
 
 		void setupListeners().catch((err) => {
 			console.error('Failed to setup update event listeners:', err)
 		})
 
+		// 4) 启动检查约 3s 后才跑；自 mount 起延迟再 hydrate，兜底 emit 丢失。
+		// setTimeout 放在 effect 同步体，保证 cleanup 一定能 clear（避免 async 竞态漏清）。
+		const rehydrateTimer = setTimeout(() => {
+			if (disposed) return
+			void getUpdateSession()
+				.then((session) => {
+					if (disposed) return
+					maybeHydrateIfIdle(session)
+				})
+				.catch(() => {
+					// 延迟 hydrate 失败可忽略
+				})
+		}, STARTUP_SESSION_REHYDRATE_MS)
+
 		return () => {
 			disposed = true
 			unlistenPhase?.()
-			if (rehydrateTimer !== undefined) clearTimeout(rehydrateTimer)
+			clearTimeout(rehydrateTimer)
 		}
 	}, [])
 }

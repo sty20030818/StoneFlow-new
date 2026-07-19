@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { listen } from '@tauri-apps/api/event'
+
+import { useLatestRef } from '@/shared/lib/useLatestRef'
 
 export const COMMAND_OPEN_EVENT = 'stoneflow://command/open'
 
@@ -77,8 +79,10 @@ export function subscribeToCommandOpen(onCommandOpen: (payload: CommandOpenPaylo
 }
 
 export function useCommandOpenListener(onCommandOpen: (payload: CommandOpenPayload) => void) {
-	const onCommandOpenRef = useRef(onCommandOpen)
-	onCommandOpenRef.current = onCommandOpen
+	const onCommandOpenRef = useLatestRef(onCommandOpen)
 
-	useEffect(() => subscribeToCommandOpen((payload) => onCommandOpenRef.current(payload)), [])
+	useEffect(
+		() => subscribeToCommandOpen((payload) => onCommandOpenRef.current(payload)),
+		[onCommandOpenRef],
+	)
 }

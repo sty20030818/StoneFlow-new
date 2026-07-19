@@ -8,15 +8,16 @@ import type { CommandSelectedEntity } from '@/features/command/core'
 export const COMMAND_SELECTION_CHIP_GAP_PX = 6
 
 export function CommandMenuSelectionChips({ entities }: { entities: CommandSelectedEntity[] }) {
-	if (entities.length === 0) {
-		return null
-	}
-
+	// hooks 必须在任何 early return 之前，避免空选中 ↔ 有选中时 Hook 顺序变化
 	const containerRef = useRef<HTMLDivElement>(null)
 	const measureRef = useRef<HTMLDivElement>(null)
 	const [visibleCount, setVisibleCount] = useState(entities.length)
 
 	useLayoutEffect(() => {
+		if (entities.length === 0) {
+			return
+		}
+
 		const container = containerRef.current
 		const measure = measureRef.current
 		if (!container || !measure) {
@@ -46,6 +47,10 @@ export function CommandMenuSelectionChips({ entities }: { entities: CommandSelec
 			observer.disconnect()
 		}
 	}, [entities])
+
+	if (entities.length === 0) {
+		return null
+	}
 
 	const visibleEntities = entities.slice(0, visibleCount)
 	const hiddenCount = entities.length - visibleEntities.length
@@ -93,7 +98,7 @@ export function CommandMenuSelectionChips({ entities }: { entities: CommandSelec
 	)
 }
 
-export function ReadonlySelectionSummaryChip({
+function ReadonlySelectionSummaryChip({
 	label,
 	tabular = false,
 	...props

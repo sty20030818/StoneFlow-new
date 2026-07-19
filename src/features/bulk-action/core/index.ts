@@ -33,12 +33,6 @@ export {
 	type BulkActionResultFeedback,
 } from './bulk-action-result-handling'
 export { createCommandBulkSelectionSnapshot } from './command-bulk-selection-snapshot'
-export {
-	createTaskBulkSelectionSnapshot,
-	createTaskBulkSelectionSnapshotFromTasks,
-} from './task-bulk-selection-snapshot'
+export { createTaskBulkSelectionSnapshotFromTasks } from './task-bulk-selection-snapshot'
 export { createLifecycleBulkSelectionSnapshot } from './lifecycle-bulk-selection-snapshot'
-export {
-	createProjectBulkSelectionSnapshot,
-	createProjectBulkSelectionSnapshotFromProjects,
-} from './project-bulk-selection-snapshot'
+export { createProjectBulkSelectionSnapshotFromProjects } from './project-bulk-selection-snapshot'

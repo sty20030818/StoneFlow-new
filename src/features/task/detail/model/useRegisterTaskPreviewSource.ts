@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useTaskPreviewContext } from './taskPreviewContext'
 import type { TaskPreviewSource } from './taskPreviewTypes'
@@ -6,26 +6,21 @@ import type { TaskPreviewSource } from './taskPreviewTypes'
 /**
  * 当前列表向预览系统注册「可见任务源」。
  *
- * 入参请保持引用稳定，避免无意义的 effect 重跑。
+ * effect 依赖拆成字段，避免调用方每次新建 source 对象导致无意义重跑。
  */
 export function useRegisterTaskPreviewSource(source: TaskPreviewSource) {
 	const { registerSource, clearSourceRegistration } = useTaskPreviewContext()
-	const tokenRef = useRef<symbol | null>(null)
+	const [token] = useState(() => Symbol('task-preview-source'))
 
-	if (!tokenRef.current) {
-		tokenRef.current = Symbol('task-preview-source')
-	}
+	const { tasks, focusedTaskId, activeTaskId } = source
 
 	useEffect(() => {
-		const token = tokenRef.current!
-		registerSource(token, source)
-	}, [registerSource, source])
+		registerSource(token, { tasks, focusedTaskId, activeTaskId })
+	}, [registerSource, tasks, focusedTaskId, activeTaskId, token])
 
 	useEffect(() => {
-		const token = tokenRef.current!
-
 		return () => {
 			clearSourceRegistration(token)
 		}
-	}, [clearSourceRegistration])
+	}, [clearSourceRegistration, token])
 }

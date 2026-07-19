@@ -7,9 +7,6 @@ export const shellChromeIconSubtleClass = 'shrink-0 text-sf-icon-subtle'
 export const shellChromeWindowControlClass =
 	'h-10 w-10 rounded-md bg-transparent shadow-none ring-0 text-sf-shell-text-secondary hover:bg-sf-shell-hover-strong hover:text-foreground focus-visible:bg-sf-shell-hover-strong focus-visible:text-foreground focus-visible:ring-0'
 
-export const shellChromePrimaryActionClass =
-	'border-border bg-card px-3 text-[12px] font-medium text-foreground shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle'
-
 export const shellChromeIconActionClass =
 	'border-border bg-card text-sf-shell-text-secondary shadow-(--sf-shadow-panel) hover:bg-sf-surface-panel-subtle hover:text-foreground'
 

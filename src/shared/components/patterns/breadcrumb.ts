@@ -4,5 +4,3 @@
 export const breadcrumbLeadClass = 'inline-flex items-center gap-1.5'
 export const breadcrumbLeadForegroundClass = `${breadcrumbLeadClass} text-foreground`
 export const breadcrumbLeadIconClass = 'size-4 shrink-0 text-sf-text-tertiary'
-export const breadcrumbCaptionClass =
-	'inline-flex items-center gap-1 text-[11px] text-sf-text-tertiary'

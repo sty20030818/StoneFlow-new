@@ -91,11 +91,14 @@ export function SpaceEditorDialog({
 		setSubmitting(true)
 		setError(null)
 		try {
+			// useEffectEvent：同组件事件回调中读取最新 props，避免 handleSubmit 依赖抖动
+			// react-doctor-disable-next-line react-doctor/rules-of-hooks
 			await submitSpace({
 				name: values.name.trim(),
 				iconKey: values.iconKey,
 				colorKey: values.colorKey,
 			})
+			// react-doctor-disable-next-line react-doctor/rules-of-hooks
 			closeDialog()
 		} catch (error) {
 			setError(normalizeSubmitError(error, 'Space 保存失败'))

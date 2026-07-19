@@ -4,7 +4,6 @@ export {
 	BOARD_GROUP_HEADER_CLASS,
 	BOARD_ROWS_CLASS,
 	BOARD_STACK_CLASS,
-	BoardChevron,
 	BoardCollapsibleSection,
 	BoardEmptyState,
 	BoardGroup,

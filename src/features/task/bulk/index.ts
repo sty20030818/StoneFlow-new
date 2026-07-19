@@ -1,5 +1,4 @@
 export {
-	getTaskBulkActionDefinition,
 	taskBulkActionDefinitions,
 	taskBulkActions,
 	type TaskBulkActionPayload,

@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { create } from 'zustand'
 
+import { useLatestRef } from '@/shared/lib/useLatestRef'
+
 // ----- 事件类型定义 -----
 
 export type AppEvent =
@@ -80,14 +82,16 @@ export function emitEvent(event: AppEvent) {
 // ----- React Hook -----
 
 /**
- * 订阅指定类型的事件
- * @param type 事件类型
- * @param handler 事件处理函数
+ * 订阅指定类型的事件。
+ * handler 经 ref 读取最新闭包，避免调用方每次 render 新建函数导致反复退订/订阅。
  */
 export function useEventSubscription(type: AppEventType, handler: (event: AppEvent) => void) {
 	const subscribe = useEventBus((state) => state.subscribe)
+	const handlerRef = useLatestRef(handler)
 
 	useEffect(() => {
-		return subscribe(type, handler)
-	}, [subscribe, type, handler])
+		return subscribe(type, (event) => {
+			handlerRef.current(event)
+		})
+	}, [handlerRef, subscribe, type])
 }

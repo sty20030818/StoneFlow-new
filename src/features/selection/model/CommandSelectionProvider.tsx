@@ -74,24 +74,19 @@ export function useCommandSelectionContext() {
 
 export function useRegisterCommandSelection(selection: CommandSelectionRegistration) {
 	const actions = useContext(CommandSelectionActionsContext)
-	const tokenRef = useRef<symbol | null>(null)
-
-	if (!tokenRef.current) {
-		tokenRef.current = Symbol('command-selection-registration')
-	}
+	const [token] = useState(() => Symbol('command-selection-registration'))
 
 	useEffect(() => {
 		if (!actions) {
 			return
 		}
 
-		const token = tokenRef.current!
 		actions.registerSelection(token, selection)
 
 		return () => {
 			actions.clearSelectionRegistration(token)
 		}
-	}, [actions, selection])
+	}, [actions, selection, token])
 }
 
 function normalizeCommandSelection(

@@ -186,8 +186,3 @@ export async function runTaskRowBulkCommand({
 export function getTaskBulkCommandActionId(kind: TaskBulkCommandKind): BulkActionId {
 	return TASK_BULK_COMMAND_SPEC[kind].actionId
 }
-
-/** 从 CommandContext 取任务选中（无选中则 no-op 由 host 判断） */
-export function hasTaskCommandSelection(ctx: CommandContext): boolean {
-	return ctx.selection.type === 'task' && ctx.selection.ids.length > 0
-}

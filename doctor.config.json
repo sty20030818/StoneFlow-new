@@ -1,0 +1,33 @@
+{
+  "$schema": "https://react.doctor/schema/config.json",
+  // StoneFlow · React Doctor 健康治理（B+选择性C）
+  // 详见 Documents/02-重构方案/06-ReactDoctor健康治理/
+  "lint": true,
+  "deadCode": true,
+  "verbose": false,
+  "blocking": "none",
+  "rules": {
+    // 与 feature「同文件 type/hook/组件 + barrel」约定冲突；不作架构门禁
+    "react-doctor/only-export-components": "off"
+  },
+  "ignore": {
+    "rules": [],
+    "files": [
+      // 文档 / 归档 / 方案产物不是应用运行时入口
+      "Documents/**",
+      "Docs/**",
+      "openspec/**",
+      "**/*.md",
+      // shadcn 库存件：暂未接线，保留供后续 UI
+      "src/shared/components/base/accordion.tsx",
+      "src/shared/components/base/date-picker.tsx",
+      "src/shared/components/base/tabs.tsx"
+    ],
+    "overrides": [
+      {
+        "files": ["src/features/selection/model/useEntitySelection.ts"],
+        "rules": ["react-doctor/no-impure-state-updater"]
+      }
+    ]
+  }
+}

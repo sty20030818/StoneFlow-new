@@ -30,4 +30,3 @@ export const sidebarMenuLabelClass = 'min-w-0 flex-1 truncate'
 export const sidebarSectionHeaderRowClass = 'flex items-center justify-between px-2.5'
 export const sidebarFooterContainerClass =
 	'border-t border-sf-divider px-3 py-3 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-2 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-2'
-export const sidebarSecondaryTextClass = 'text-sf-shell-text-secondary'
