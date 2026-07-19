@@ -5,12 +5,6 @@ import type { ShellRoute } from '@/app/navigation'
 import { openSection } from '@/app/navigation'
 import type { Scope } from '@/shared/types'
 import { ShellRouteProvider } from '@/app/navigation'
-import {
-	selectActiveSection,
-	selectCurrentSpaceId,
-	selectCurrentScopeType,
-	useShellNavStore,
-} from './model/useShellNavStore'
 import { AppLayout } from './AppLayout'
 import { ShellProvider } from './model/ShellContext'
 import { setActiveScope } from '@/features/space'
@@ -26,28 +20,24 @@ function toSectionNavigationTarget(section: ShellRoute['section']) {
 	return section === 'noProject' ? 'no-project' : section
 }
 
+/**
+ * 工作区壳入口：URL → 只读壳上下文，不再镜像可写 nav store。
+ * - activeSection / spaceId 直接来自 shellRoute + scope
+ * - all scope 下 currentSpaceId 回退到默认/首个可见 space（供创建等）
+ */
 export function ShellRouteLayout({ children, scope, shellRoute }: ShellRouteLayoutProps) {
 	const navigate = useNavigate({ from: '/' })
 	const isWorkPath = shellRoute.isWorkPath
-	const scopeType = scope.type
-	const scopeSpaceId = scope.type === 'space' ? scope.spaceId : null
 	const { spaces } = useSpaces()
-	const currentSpaceId = useShellNavStore(selectCurrentSpaceId)
-	const currentScopeType = useShellNavStore(selectCurrentScopeType)
-	const activeSection = useShellNavStore(selectActiveSection)
-	const setCurrentScope = useShellNavStore((state) => state.setCurrentScope)
-	const setActiveSection = useShellNavStore((state) => state.setActiveSection)
-	const visibleCurrentSpaceId =
-		currentSpaceId && spaces.some((space) => space.id === currentSpaceId) ? currentSpaceId : null
+	const activeSection = shellRoute.section
 	const fallbackSpaceId =
-		visibleCurrentSpaceId ?? spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
+		spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
 	const routeSpaceIsMissing =
 		isWorkPath &&
 		scope.type === 'space' &&
 		spaces.length > 0 &&
 		!spaces.some((space) => space.id === scope.spaceId)
 
-	// 路由壳层统一承接工作区事件同步与导航状态同步。
 	useWorkspaceSync(scope)
 
 	useEffect(() => {
@@ -67,34 +57,6 @@ export function ShellRouteLayout({ children, scope, shellRoute }: ShellRouteLayo
 			replace: true,
 		})
 	}, [fallbackSpaceId, navigate, routeSpaceIsMissing, shellRoute.section])
-
-	useEffect(() => {
-		if (!isWorkPath) {
-			return
-		}
-
-		const nextScopeType = scopeType
-		const nextSpaceId = scopeSpaceId ?? fallbackSpaceId
-		if (currentScopeType !== nextScopeType || currentSpaceId !== nextSpaceId) {
-			setCurrentScope(nextScopeType, nextSpaceId)
-		}
-
-		const nextSection = shellRoute.section
-		if (activeSection !== nextSection) {
-			setActiveSection(nextSection)
-		}
-	}, [
-		activeSection,
-		currentScopeType,
-		currentSpaceId,
-		fallbackSpaceId,
-		isWorkPath,
-		scopeSpaceId,
-		scopeType,
-		setActiveSection,
-		setCurrentScope,
-		shellRoute.section,
-	])
 
 	useEffect(() => {
 		if (!isWorkPath) {

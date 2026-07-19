@@ -2,7 +2,7 @@
 
 > 状态：**已落地 A–F + 整洁架构收口** · 2026-07-17（冒烟总表待本机勾选）
 > 规格源：[QuickCreate-Launcher面板技术文档](./QuickCreate-Launcher面板技术文档.md)
-> T2 对齐：[史诗 11](../../03-前端架构解析/05-模块治理/10-T2重构执行计划.md) · [M-F-QC](../../03-前端架构解析/05-模块治理/模块/M-F-QC.md)
+> T2 对齐：[史诗 11](../../98-归档/04-前端架构解析-2026-07/05-模块治理/10-T2重构执行计划.md) · [M-F-QC](../../98-归档/04-前端架构解析-2026-07/05-模块治理/模块/M-F-QC.md)
 > **原则：** 串行 Phase；每 Phase 末 `bun run check`；先停测高再改壳再改 Rust；过程进度只写本文，不进 `src/**` 史诗号注释。
 
 ---
@@ -40,24 +40,24 @@ bun run check
 
 ### 0.5 范围边界（禁止顺手）
 
-| 做 | 不做 |
-|----|------|
+| 做                                       | 不做                                    |
+| ---------------------------------------- | --------------------------------------- |
 | QC runtime / layout / shell / surface UI | task 创建内核、searchEntities（史诗 9） |
-| `quick_window/spec`、NSPanel 材质与尺寸 | 主窗 layout / Dialog |
-| 删测高与 commit 路径 | 暗色专题 |
-| Advanced 壳内折叠 | Advanced overlay |
+| `quick_window/spec`、NSPanel 材质与尺寸  | 主窗 layout / Dialog                    |
+| 删测高与 commit 路径                     | 暗色专题                                |
+| Advanced 壳内折叠                        | Advanced overlay                        |
 
 ---
 
 ## 1. 目标与验收总纲
 
-| 目标 | 验收 |
-|------|------|
-| 外窗恒定 **720×500** logical | 首开 / 再开 / Advanced 展开 / 搜索多结果，外窗尺寸不变 |
-| 废弃 DOM 测高 | FE 无 `commitLayout` 调用；无 8 region ResizeObserver 测高 |
-| 原生材质 + 系统阴影 | 无 CSS 大阴影与 `p-7` 安全区；`hasShadow` + vibrancy（E） |
-| Session 简化 | 无 `measuring` / `readyToPresent` 几何语义 |
-| 业务回归 | 创建、连续创建、搜索跳转、Esc、失焦关窗与史诗 9 一致 |
+| 目标                         | 验收                                                       |
+| ---------------------------- | ---------------------------------------------------------- |
+| 外窗恒定 **720×500** logical | 首开 / 再开 / Advanced 展开 / 搜索多结果，外窗尺寸不变     |
+| 废弃 DOM 测高                | FE 无 `commitLayout` 调用；无 8 region ResizeObserver 测高 |
+| 原生材质 + 系统阴影          | 无 CSS 大阴影与 `p-7` 安全区；`hasShadow` + vibrancy（E）  |
+| Session 简化                 | 无 `measuring` / `readyToPresent` 几何语义                 |
+| 业务回归                     | 创建、连续创建、搜索跳转、Esc、失焦关窗与史诗 9 一致       |
 
 ---
 
@@ -67,57 +67,57 @@ bun run check
 
 ### 2.1 前端 · 将删或大改
 
-| 文件 | 动作 |
-|------|------|
-| `layout/useQuickCreateLayout.ts` | **删** |
-| `layout/measureQuickCreateLayout.ts` | **删** |
-| `layout/QuickCreateLayoutPresenter.tsx` | **删**；职责并入 Shell/Panel |
-| `shell/QuickCreateWindowShell.tsx` | **改**：去 `layoutRevisionKey`；直接挂 Panel |
-| `components/QuickCreateFrame.tsx` | **改/并**：去 `p-7`、layout props；或并入 Panel |
-| `components/QuickCreateSurface.tsx` | **改**：透明 + hairline；去大 shadow |
-| `components/QuickCreateBoardRegion.tsx` | **改**：去 `*Ref` / `onLayoutChange`；Results 内滚 |
-| `components/QuickCreateAdvancedMetaBar.tsx` | **改**：包进壳内折叠槽；单行横滑 |
-| `api/quickCreate.ts` | **改**：删 `commitLayout` / diagnostics 导出（或 DEV 门控后删） |
-| `runtime/quickCreateSessionTypes.ts` | **改**：phase 收敛 |
-| `runtime/quickCreateSessionReducer.ts` | **改**：删 measuring / readyToPresent 迁移 |
-| `runtime/QuickCreateSessionProvider.tsx` | **改**：删 `commitMeasured` / `markReadyToPresent` |
-| `components/QuickCreatePage.test.tsx` | **大改**：删测高断言；补固定壳断言 |
+| 文件                                        | 动作                                                            |
+| ------------------------------------------- | --------------------------------------------------------------- |
+| `layout/useQuickCreateLayout.ts`            | **删**                                                          |
+| `layout/measureQuickCreateLayout.ts`        | **删**                                                          |
+| `layout/QuickCreateLayoutPresenter.tsx`     | **删**；职责并入 Shell/Panel                                    |
+| `shell/QuickCreateWindowShell.tsx`          | **改**：去 `layoutRevisionKey`；直接挂 Panel                    |
+| `components/QuickCreateFrame.tsx`           | **改/并**：去 `p-7`、layout props；或并入 Panel                 |
+| `components/QuickCreateSurface.tsx`         | **改**：透明 + hairline；去大 shadow                            |
+| `components/QuickCreateBoardRegion.tsx`     | **改**：去 `*Ref` / `onLayoutChange`；Results 内滚              |
+| `components/QuickCreateAdvancedMetaBar.tsx` | **改**：包进壳内折叠槽；单行横滑                                |
+| `api/quickCreate.ts`                        | **改**：删 `commitLayout` / diagnostics 导出（或 DEV 门控后删） |
+| `runtime/quickCreateSessionTypes.ts`        | **改**：phase 收敛                                              |
+| `runtime/quickCreateSessionReducer.ts`      | **改**：删 measuring / readyToPresent 迁移                      |
+| `runtime/QuickCreateSessionProvider.tsx`    | **改**：删 `commitMeasured` / `markReadyToPresent`              |
+| `components/QuickCreatePage.test.tsx`       | **大改**：删测高断言；补固定壳断言                              |
 
 ### 2.2 前端 · 业务少动
 
-| 文件 | 说明 |
-|------|------|
-| `domain/**` | 保留；去掉仅服务 `layoutRevisionKey` 的间接耦合 |
-| `api/map*` · `create` · `search` · `openTarget` | 不动 |
-| `controls/**` | 不动（Popover 行为保持） |
-| `routes` quick-create 入口 | 薄挂载，不动逻辑 |
+| 文件                                            | 说明                                            |
+| ----------------------------------------------- | ----------------------------------------------- |
+| `domain/**`                                     | 保留；去掉仅服务 `layoutRevisionKey` 的间接耦合 |
+| `api/map*` · `create` · `search` · `openTarget` | 不动                                            |
+| `controls/**`                                   | 不动（Popover 行为保持）                        |
+| `routes` quick-create 入口                      | 薄挂载，不动逻辑                                |
 
 ### 2.3 Rust · 将改
 
-| 文件 | 动作 |
-|------|------|
-| `platform/.../quick_window/spec.rs` | 常量 → 720×500；废弃 SHADOW_PADDING |
-| `platform/.../macos/panel.rs` | hasShadow true；注释改「固定尺寸」；place 写死尺寸 |
-| `platform/.../windows/panel.rs` | inner_size 跟常量 |
-| `platform/.../quick_window/controller.rs` | `apply_height` 调用路径收敛 / 可选保留 init |
-| `runtime/.../session.rs` | 删或空置 `commit_quick_create_layout` |
-| `runtime/.../window.rs`（commands） | 注销 commit / diagnostics 或标 deprecated |
-| `runtime/.../commands/mod.rs` | `generate_handler!` 同步 |
-| `runtime/.../runtime.rs` | `WaitingLayout` 收敛；改/删 recommit 测试 |
-| capabilities / tauri.conf | 确认 `macOSPrivateApi`（vibrancy） |
+| 文件                                      | 动作                                               |
+| ----------------------------------------- | -------------------------------------------------- |
+| `platform/.../quick_window/spec.rs`       | 常量 → 720×500；废弃 SHADOW_PADDING                |
+| `platform/.../macos/panel.rs`             | hasShadow true；注释改「固定尺寸」；place 写死尺寸 |
+| `platform/.../windows/panel.rs`           | inner_size 跟常量                                  |
+| `platform/.../quick_window/controller.rs` | `apply_height` 调用路径收敛 / 可选保留 init        |
+| `runtime/.../session.rs`                  | 删或空置 `commit_quick_create_layout`              |
+| `runtime/.../window.rs`（commands）       | 注销 commit / diagnostics 或标 deprecated          |
+| `runtime/.../commands/mod.rs`             | `generate_handler!` 同步                           |
+| `runtime/.../runtime.rs`                  | `WaitingLayout` 收敛；改/删 recommit 测试          |
+| capabilities / tauri.conf                 | 确认 `macOSPrivateApi`（vibrancy）                 |
 
 ---
 
 ## 3. Phase 总表
 
-| Phase | 名称 | 破坏性 | 依赖 | 建议提交粒度 |
-|-------|------|--------|------|--------------|
-| **A** | 规格冻结（文档） | 无 | — | 已完成于规格文档 |
-| **B** | FE 停测高 / 停 commit | 中 | A | **done**（2026-07-17） |
-| **C** | 固定壳 UI + 内滚 | 中 | B | **done**（2026-07-17） |
-| **D** | Rust 定尺 + 废 commit IPC | 高 | C（可弱并行 B 后） | **done**（2026-07-17） |
-| **E** | 原生材质 | 中 | D | 1 commit |
-| **F** | 删死代码 + 契约文档 | 低 | E | 1 commit |
+| Phase | 名称                      | 破坏性 | 依赖               | 建议提交粒度           |
+| ----- | ------------------------- | ------ | ------------------ | ---------------------- |
+| **A** | 规格冻结（文档）          | 无     | —                  | 已完成于规格文档       |
+| **B** | FE 停测高 / 停 commit     | 中     | A                  | **done**（2026-07-17） |
+| **C** | 固定壳 UI + 内滚          | 中     | B                  | **done**（2026-07-17） |
+| **D** | Rust 定尺 + 废 commit IPC | 高     | C（可弱并行 B 后） | **done**（2026-07-17） |
+| **E** | 原生材质                  | 中     | D                  | 1 commit               |
+| **F** | 删死代码 + 契约文档       | 低     | E                  | 1 commit               |
 
 **推荐顺序：A（done）→ B → C → D → E → F。**
 D 可与 C 尾部重叠，但 **FE 停调 commit 必须先于删 IPC**，避免运行时红屏。
@@ -126,9 +126,9 @@ D 可与 C 尾部重叠，但 **FE 停调 commit 必须先于删 IPC**，避免�
 
 ## 4. Phase A · 规格冻结
 
-| 字段 | 内容 |
-|------|------|
-| 状态 | **done**（2026-07-17） |
+| 字段 | 内容                                               |
+| ---- | -------------------------------------------------- |
+| 状态 | **done**（2026-07-17）                             |
 | 产出 | 本目录技术文档 + 本执行方案；M-F-QC / 史诗 11 回写 |
 
 ### 检查
@@ -140,11 +140,11 @@ D 可与 C 尾部重叠，但 **FE 停调 commit 必须先于删 IPC**，避免�
 
 ## 5. Phase B · FE 停测高 / 停 commit
 
-| 字段 | 内容 |
-|------|------|
-| 目标 | 打开链路不再测高、不再 `commitLayout`；仍可 present；**暂可保留旧窗尺寸** |
-| 破坏性 | 中（行为：不再跟内容涨窗） |
-| 状态 | **done**（2026-07-17） |
+| 字段   | 内容                                                                      |
+| ------ | ------------------------------------------------------------------------- |
+| 目标   | 打开链路不再测高、不再 `commitLayout`；仍可 present；**暂可保留旧窗尺寸** |
+| 破坏性 | 中（行为：不再跟内容涨窗）                                                |
+| 状态   | **done**（2026-07-17）                                                    |
 
 ### 5.1 步骤
 
@@ -172,20 +172,20 @@ D 可与 C 尾部重叠，但 **FE 停调 commit 必须先于删 IPC**，避免�
 
 ### 5.4 落地
 
-| 项 | 结果 |
-|----|------|
-| 日期 | 2026-07-17 |
+| 项   | 结果                                                                                                                                  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 日期 | 2026-07-17                                                                                                                            |
 | 备注 | Session：`preparing → presenting → visible`；Presenter 停 commit；Rust `mark_presenting_for` 允许 Preparing；测高 hook 暂留未驱动高度 |
 
 ---
 
 ## 6. Phase C · 固定壳 UI + 内滚
 
-| 字段 | 内容 |
-|------|------|
-| 目标 | 五行布局；Advanced 壳内折叠；Results 唯一滚动；去 `p-7` / 大阴影 |
-| 破坏性 | 中（视觉与布局） |
-| 状态 | **done**（2026-07-17） |
+| 字段   | 内容                                                             |
+| ------ | ---------------------------------------------------------------- |
+| 目标   | 五行布局；Advanced 壳内折叠；Results 唯一滚动；去 `p-7` / 大阴影 |
+| 破坏性 | 中（视觉与布局）                                                 |
+| 状态   | **done**（2026-07-17）                                           |
 
 ### 6.1 步骤
 
@@ -221,20 +221,20 @@ D 可与 C 尾部重叠，但 **FE 停调 commit 必须先于删 IPC**，避免�
 
 ### 6.4 落地
 
-| 项 | 结果 |
-|----|------|
-| 日期 | 2026-07-17 |
+| 项   | 结果                                                                                                    |
+| ---- | ------------------------------------------------------------------------------------------------------- |
+| 日期 | 2026-07-17                                                                                              |
 | 备注 | Panel 五行壳；Advanced 壳内折叠；Surface 去大阴影；Results `overflow-y-auto`；Presenter 不再挂测高 hook |
 
 ---
 
 ## 7. Phase D · Rust 定尺 + 废 commit IPC
 
-| 字段 | 内容 |
-|------|------|
-| 目标 | 原生窗 **720×500**；place/present 写死尺寸；FE/IPC 无 commit |
-| 破坏性 | 高 |
-| 状态 | **done**（2026-07-17） |
+| 字段   | 内容                                                         |
+| ------ | ------------------------------------------------------------ |
+| 目标   | 原生窗 **720×500**；place/present 写死尺寸；FE/IPC 无 commit |
+| 破坏性 | 高                                                           |
+| 状态   | **done**（2026-07-17）                                       |
 
 ### 7.1 步骤
 
@@ -266,19 +266,19 @@ D 可与 C 尾部重叠，但 **FE 停调 commit 必须先于删 IPC**，避免�
 
 ### 7.4 落地
 
-| 项 | 结果 |
-|----|------|
-| 日期 | 2026-07-17 |
+| 项   | 结果                                                                                             |
+| ---- | ------------------------------------------------------------------------------------------------ |
+| 日期 | 2026-07-17                                                                                       |
 | 备注 | spec 720×500；place 强制定尺；删 commit/diagnostics IPC 与 WaitingLayout；FE 删 commitLayout API |
 
 ---
 
 ## 8. Phase E · 原生材质
 
-| 字段 | 内容 |
-|------|------|
-| 目标 | vibrancy + 系统阴影；FE 配合全透明 |
-| 破坏性 | 中（观感） |
+| 字段   | 内容                               |
+| ------ | ---------------------------------- |
+| 目标   | vibrancy + 系统阴影；FE 配合全透明 |
+| 破坏性 | 中（观感）                         |
 
 ### 8.1 步骤
 
@@ -298,19 +298,19 @@ D 可与 C 尾部重叠，但 **FE 停调 commit 必须先于删 IPC**，避免�
 
 ### 8.3 落地
 
-| 项 | 结果 |
-|----|------|
-| 日期 | 2026-07-17 |
+| 项   | 结果                                                                                                                           |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 日期 | 2026-07-17                                                                                                                     |
 | 备注 | macOS：Popover vibrancy + hasShadow true；Windows：Acrylic + set_shadow true；FE Surface 透明，Composer/Advanced/Footer 薄衬底 |
 
 ---
 
 ## 9. Phase F · 删死代码 + 契约
 
-| 字段 | 内容 |
-|------|------|
-| 目标 | layout 夹清空；session API 干净；ARCHITECTURE 短契约 |
-| 破坏性 | 低 |
+| 字段   | 内容                                                 |
+| ------ | ---------------------------------------------------- |
+| 目标   | layout 夹清空；session API 干净；ARCHITECTURE 短契约 |
+| 破坏性 | 低                                                   |
 
 ### 9.1 步骤
 
@@ -331,37 +331,37 @@ D 可与 C 尾部重叠，但 **FE 停调 commit 必须先于删 IPC**，避免�
 
 ### 9.3 落地
 
-| 项 | 结果 |
-|----|------|
-| 日期 | 2026-07-17 |
+| 项   | 结果                                                                                            |
+| ---- | ----------------------------------------------------------------------------------------------- |
+| 日期 | 2026-07-17                                                                                      |
 | 备注 | 删 measure/useQuickCreateLayout、Composer/FooterRegion；ARCHITECTURE.md；session 已无 measuring |
 
 ---
 
 ## 10. 冒烟总表（史诗结束前人工）
 
-| # | 场景 | 预期 | 勾选 |
-|---|------|------|------|
-| 1 | Option+Space 首开 | 一次到位；无高度跳变 | [ ] |
-| 2 | 关闭后再开 | 同为 720×500 | [ ] |
-| 3 | 展开 Advanced | 外窗不变；Results 略矮；单行 | [ ] |
-| 4 | 搜索多结果 | Results 内滚 | [ ] |
-| 5 | 连续创建 | footer/toast 变；外窗不变 | [ ] |
-| 6 | Esc 链 | Popover → Advanced → 清空 → 关窗 | [ ] |
-| 7 | 失焦 | 关窗 | [ ] |
-| 8 | 创建 / 打开目标 | 与史诗 9 一致 | [ ] |
-| 9 | becameKey | Title 可输入 | [ ] |
-| 10 | 多屏 | 跟鼠标屏；尺寸仍固定 | [ ] |
+| #   | 场景              | 预期                             | 勾选 |
+| --- | ----------------- | -------------------------------- | ---- |
+| 1   | Option+Space 首开 | 一次到位；无高度跳变             | [ ]  |
+| 2   | 关闭后再开        | 同为 720×500                     | [ ]  |
+| 3   | 展开 Advanced     | 外窗不变；Results 略矮；单行     | [ ]  |
+| 4   | 搜索多结果        | Results 内滚                     | [ ]  |
+| 5   | 连续创建          | footer/toast 变；外窗不变        | [ ]  |
+| 6   | Esc 链            | Popover → Advanced → 清空 → 关窗 | [ ]  |
+| 7   | 失焦              | 关窗                             | [ ]  |
+| 8   | 创建 / 打开目标   | 与史诗 9 一致                    | [ ]  |
+| 9   | becameKey         | Title 可输入                     | [ ]  |
+| 10  | 多屏              | 跟鼠标屏；尺寸仍固定             | [ ]  |
 
 ---
 
 ## 11. 回滚策略
 
-| 阶段 | 回滚 |
-|------|------|
-| B–C 仅 FE | 还原分支；Rust 未改则风险低 |
-| D 已删 IPC | 需整 PR revert；勿只恢复 FE |
-| E 材质 | 可单独关 vibrancy / hasShadow，尺寸保留 |
+| 阶段       | 回滚                                    |
+| ---------- | --------------------------------------- |
+| B–C 仅 FE  | 还原分支；Rust 未改则风险低             |
+| D 已删 IPC | 需整 PR revert；勿只恢复 FE             |
+| E 材质     | 可单独关 vibrancy / hasShadow，尺寸保留 |
 
 每 Phase 独立可合并时，回滚成本最低。
 
@@ -369,22 +369,22 @@ D 可与 C 尾部重叠，但 **FE 停调 commit 必须先于删 IPC**，避免�
 
 ## 12. 风险与缓解（执行视角）
 
-| 风险 | Phase | 缓解 |
-|------|-------|------|
-| 停 commit 后旧 frame 高度残留 | D | place/present **强制**写 720×500 |
-| 测试绑定测高大量红 | B | 先改断言再删实现；分 commit |
-| vibrancy 对比不足 | E | 薄衬底；先亮色验收 |
-| resignKey 与材质 | E | 回归失焦关窗 |
-| 目录大搬家拖慢 | F | 可不改目录名，只删文件 |
+| 风险                          | Phase | 缓解                             |
+| ----------------------------- | ----- | -------------------------------- |
+| 停 commit 后旧 frame 高度残留 | D     | place/present **强制**写 720×500 |
+| 测试绑定测高大量红            | B     | 先改断言再删实现；分 commit      |
+| vibrancy 对比不足             | E     | 薄衬底；先亮色验收               |
+| resignKey 与材质              | E     | 回归失焦关窗                     |
+| 目录大搬家拖慢                | F     | 可不改目录名，只删文件           |
 
 ---
 
 ## 13. 与规格文档的关系
 
-| 文档 | 职责 |
-|------|------|
-| [技术文档](./QuickCreate-Launcher面板技术文档.md) | **What / Why** · UIUX · 目标架构 · 冻结决议 |
-| **本文** | **How / When** · Phase · 文件表 · 验收勾选 · 落地记录 |
+| 文档                                              | 职责                                                  |
+| ------------------------------------------------- | ----------------------------------------------------- |
+| [技术文档](./QuickCreate-Launcher面板技术文档.md) | **What / Why** · UIUX · 目标架构 · 冻结决议           |
+| **本文**                                          | **How / When** · Phase · 文件表 · 验收勾选 · 落地记录 |
 
 冲突时：先改技术文档决议，再改本文步骤。
 
@@ -392,9 +392,9 @@ D 可与 C 尾部重叠，但 **FE 停调 commit 必须先于删 IPC**，避免�
 
 ## 14. 变更记录
 
-| 日期 | 变更 |
-|------|------|
-| 2026-07-17 | 初版：Phase A–F、文件侦察、冒烟与回滚 |
+| 日期       | 变更                                                                              |
+| ---------- | --------------------------------------------------------------------------------- |
+| 2026-07-17 | 初版：Phase A–F、文件侦察、冒烟与回滚                                             |
 | 2026-07-17 | Phase B done：停 FE commitLayout；session presenting；Rust 允许 Preparing→present |
-| 2026-07-17 | Phase C done：固定壳 Panel、壳内 Advanced、Results 内滚、去 p-7/大阴影 |
-| 2026-07-17 | Phase D done：720×500 定尺；废 commit/diagnostics IPC；WaitingLayout 删除 |
+| 2026-07-17 | Phase C done：固定壳 Panel、壳内 Advanced、Results 内滚、去 p-7/大阴影            |
+| 2026-07-17 | Phase D done：720×500 定尺；废 commit/diagnostics IPC；WaitingLayout 删除         |
