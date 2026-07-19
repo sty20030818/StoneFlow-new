@@ -1,10 +1,7 @@
 import { useLayoutEffect, type CSSProperties } from 'react'
 
 import { dismissBootShell } from '@/shared/lib/bootShell'
-import {
-	DEFAULT_SIDEBAR_WIDTH,
-	SIDEBAR_ICON_RAIL_PX,
-} from '@/shared/lib/shellSidebarGeometry'
+import { DEFAULT_SIDEBAR_WIDTH, SIDEBAR_ICON_RAIL_PX } from '@/shared/lib/shellSidebarGeometry'
 
 type ShellLayoutSkeletonStatus = 'idle' | 'loading' | 'ready' | 'error'
 

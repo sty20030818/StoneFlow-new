@@ -4,7 +4,8 @@
 > 工具：React Doctor v0.7.8
 > 范围：709 files · 全量
 > 分数：**51 / 100 Critical**
-> 原始：`baseline-2026-07-15.log` · `baseline-2026-07-15.diagnostics.json`
+> **原始 diagnostics.json / .log 已清理（2026-07-20）**；本 README 保留人类可读摘要。
+> Phase D / POLISH 摘要仍见下文 §6 / §7；勿再依赖同目录下的 json/log 文件。
 
 ## 1. 总量
 
@@ -14,62 +15,62 @@
 
 ## 2. Top rules（按出现次数）
 
-| 次数 | rule |
-|------|------|
-| 39 | `unused-export` |
-| 39 | `only-export-components` |
-| 20 | `no-effect-with-fresh-deps` |
-| 18 | `no-multi-comp` |
-| 18 | `js-combine-iterations` |
-| 18 | `exhaustive-deps` |
-| 16 | `no-ref-current-in-render` |
-| 10 | `no-giant-component` |
-| 10 | `prefer-module-scope-pure-function` |
-| 10 | `unused-file` |
-| 8 | `js-set-map-lookups` |
-| 7 | `js-hoist-intl` |
-| 6 | `rules-of-hooks` |
-| 6 | `no-chain-state-updates` |
-| 5 | `prefer-use-effect-event` |
-| 5 | `no-reset-all-state-on-prop-change` |
-| 5 | `no-array-index-as-key` |
-| 4 | `async-await-in-loop` |
-| 4 | `js-tosorted-immutable` |
-| 3 | `rerender-memo-with-default-value` |
+| 次数 | rule                                |
+| ---- | ----------------------------------- |
+| 39   | `unused-export`                     |
+| 39   | `only-export-components`            |
+| 20   | `no-effect-with-fresh-deps`         |
+| 18   | `no-multi-comp`                     |
+| 18   | `js-combine-iterations`             |
+| 18   | `exhaustive-deps`                   |
+| 16   | `no-ref-current-in-render`          |
+| 10   | `no-giant-component`                |
+| 10   | `prefer-module-scope-pure-function` |
+| 10   | `unused-file`                       |
+| 8    | `js-set-map-lookups`                |
+| 7    | `js-hoist-intl`                     |
+| 6    | `rules-of-hooks`                    |
+| 6    | `no-chain-state-updates`            |
+| 5    | `prefer-use-effect-event`           |
+| 5    | `no-reset-all-state-on-prop-change` |
+| 5    | `no-array-index-as-key`             |
+| 4    | `async-await-in-loop`               |
+| 4    | `js-tosorted-immutable`             |
+| 3    | `rerender-memo-with-default-value`  |
 
 ## 3. Top 文件（问题最集中）
 
-| 次数 | 文件 |
-|------|------|
-| 22 | `src/features/workspace/model/useWorkspaceSync.ts` |
-| 11 | `src/routes/_shell/-detail-route-helpers.tsx` |
-| 10 | `src/app/layouts/entity-scene/EntityScene.tsx` |
-| 10 | `src/features/command/ui/CommandMenu.tsx` |
-| 7 | `src/features/selection/ui/EntityRowShortcutScope.tsx` |
-| 6 | `src/features/filter/model/PageFilterProvider.tsx` |
-| 6 | `src/features/submit/model/SubmitRegistryProvider.tsx` |
-| 6 | `src/features/task/detail/model/TaskPreviewProvider.tsx` |
-| 5 | `src/app/layouts/shell/ShellHeader.tsx` |
-| 5 | `src/features/update/model/useUpdateEvents.ts` |
-| 4 | `src/features/metadata-fields/core/metadata-date-options.ts` |
-| 4 | `src/features/project/ui/ProjectPage.tsx` |
-| 4 | `src/features/task/shortcuts/TaskRowShortcutScope.tsx` |
-| 4 | `src/features/update/ui/UpdateDialog.tsx` |
-| 4 | `src/shared/ui/base/sidebar.tsx` |
+| 次数 | 文件                                                         |
+| ---- | ------------------------------------------------------------ |
+| 22   | `src/features/workspace/model/useWorkspaceSync.ts`           |
+| 11   | `src/routes/_shell/-detail-route-helpers.tsx`                |
+| 10   | `src/app/layouts/entity-scene/EntityScene.tsx`               |
+| 10   | `src/features/command/ui/CommandMenu.tsx`                    |
+| 7    | `src/features/selection/ui/EntityRowShortcutScope.tsx`       |
+| 6    | `src/features/filter/model/PageFilterProvider.tsx`           |
+| 6    | `src/features/submit/model/SubmitRegistryProvider.tsx`       |
+| 6    | `src/features/task/detail/model/TaskPreviewProvider.tsx`     |
+| 5    | `src/app/layouts/shell/ShellHeader.tsx`                      |
+| 5    | `src/features/update/model/useUpdateEvents.ts`               |
+| 4    | `src/features/metadata-fields/core/metadata-date-options.ts` |
+| 4    | `src/features/project/ui/ProjectPage.tsx`                    |
+| 4    | `src/features/task/shortcuts/TaskRowShortcutScope.tsx`       |
+| 4    | `src/features/update/ui/UpdateDialog.tsx`                    |
+| 4    | `src/shared/ui/base/sidebar.tsx`                             |
 
 ## 4. 与架构债的映射（**T6 精读** · 2026-07-16）
 
 完整检查表与复跑协议：[`../../03-To-Be/06-React实践与检测.md`](../../03-To-Be/06-React实践与检测.md)
 
-| doctor 信号 | 与 Gap / 债 | 建议时机 |
-|-------------|-------------|----------|
-| `no-effect-with-fresh-deps`（三列表 + workspace） | **SCN-D1**；workspace deps | **M-3** list-scene；sync 触达修 |
-| `no-giant-component`（Shell* / CommandMenu） | **SHELL-D1** / command | **M-2** 壳拆分 |
-| unused-file / unused-export | **M-0** 死代码；public 收窄 | **M-0** |
-| `rules-of-hooks` / cleanup / impure updater / ref-in-render | 实现小债（非分层主轴） | 穿插小 PR（先人工核实） |
-| `only-export-components` 多数 | 与 hooks 共置冲突 | **可忽略**作门禁 |
-| `js-combine-iterations` 等 | perf | later / 热路径 |
-| import 环 | W7 · RING-META | M-1–M-3 边界 |
+| doctor 信号                                                 | 与 Gap / 债                 | 建议时机                        |
+| ----------------------------------------------------------- | --------------------------- | ------------------------------- |
+| `no-effect-with-fresh-deps`（三列表 + workspace）           | **SCN-D1**；workspace deps  | **M-3** list-scene；sync 触达修 |
+| `no-giant-component`（Shell\* / CommandMenu）               | **SHELL-D1** / command      | **M-2** 壳拆分                  |
+| unused-file / unused-export                                 | **M-0** 死代码；public 收窄 | **M-0**                         |
+| `rules-of-hooks` / cleanup / impure updater / ref-in-render | 实现小债（非分层主轴）      | 穿插小 PR（先人工核实）         |
+| `only-export-components` 多数                               | 与 hooks 共置冲突           | **可忽略**作门禁                |
+| `js-combine-iterations` 等                                  | perf                        | later / 热路径                  |
+| import 环                                                   | W7 · RING-META              | M-1–M-3 边界                    |
 
 ## 5. 使用约定
 
@@ -88,26 +89,26 @@
 
 ### 6.1 总量对比
 
-| 指标 | 基线 2026-07-15 | Phase D 后 | Δ |
-|------|-----------------|------------|---|
-| 文件 | 709 | 741 | +32（路径搬家 / 新文件计数） |
-| 分数 | 51 Critical | 51 Critical | 0 |
-| issues | 271 | 262 | **−9** |
-| error | 46 | 43 | **−3** |
-| warning | 225 | 219 | **−6** |
+| 指标    | 基线 2026-07-15 | Phase D 后  | Δ                            |
+| ------- | --------------- | ----------- | ---------------------------- |
+| 文件    | 709             | 741         | +32（路径搬家 / 新文件计数） |
+| 分数    | 51 Critical     | 51 Critical | 0                            |
+| issues  | 271             | 262         | **−9**                       |
+| error   | 46              | 43          | **−3**                       |
+| warning | 225             | 219         | **−6**                       |
 
 类别（post）：Maintainability 127 · Bugs 86 · Performance 44 · A11y 5。
 
 ### 6.2 关键 rule 变化
 
-| rule | 基线 | post | Δ | 解读 |
-|------|------|------|---|------|
-| `no-effect-with-fresh-deps` | 20 | 17 | **−3** | 三列表页（inbox/all-tasks/no-project）壳删除后消除；workspace 仍占多数 |
-| `exhaustive-deps` | 18 | 15 | **−3** | 随列表收口略降 |
-| `unused-export` | 39 | 37 | −2 | public 收窄有限收益 |
-| `no-giant-component` | 10 | 9 | −1 | `ShellLayout` 巨件消失；Header/Sidebar/CommandMenu 等仍在 |
-| `unused-file` | 10 | 11 | +1 | 噪声/路径变动，非回归主轴 |
-| `rules-of-hooks` / `no-ref-current-in-render` | 6 / 16 | 6 / 16 | 0 | 未作为本阶段目标 |
+| rule                                          | 基线   | post   | Δ      | 解读                                                                   |
+| --------------------------------------------- | ------ | ------ | ------ | ---------------------------------------------------------------------- |
+| `no-effect-with-fresh-deps`                   | 20     | 17     | **−3** | 三列表页（inbox/all-tasks/no-project）壳删除后消除；workspace 仍占多数 |
+| `exhaustive-deps`                             | 18     | 15     | **−3** | 随列表收口略降                                                         |
+| `unused-export`                               | 39     | 37     | −2     | public 收窄有限收益                                                    |
+| `no-giant-component`                          | 10     | 9      | −1     | `ShellLayout` 巨件消失；Header/Sidebar/CommandMenu 等仍在              |
+| `unused-file`                                 | 10     | 11     | +1     | 噪声/路径变动，非回归主轴                                              |
+| `rules-of-hooks` / `no-ref-current-in-render` | 6 / 16 | 6 / 16 | 0      | 未作为本阶段目标                                                       |
 
 ### 6.3 仍热点（非分层门禁）
 
@@ -135,12 +136,12 @@ npx react-doctor@latest . -y --verbose --json \
 
 ### 7.1 总量对比
 
-| 指标 | Phase D 2026-07-16 | POLISH 后 | Δ |
-|------|--------------------|-----------|---|
-| 分数 | 51 Critical | 51 Critical | 0 |
-| issues | 262 | 268 | +6（含工具升级噪声） |
-| error | 43 | **40** | **−3** |
-| warning | 219 | 228 | +9 |
+| 指标    | Phase D 2026-07-16 | POLISH 后   | Δ                    |
+| ------- | ------------------ | ----------- | -------------------- |
+| 分数    | 51 Critical        | 51 Critical | 0                    |
+| issues  | 262                | 268         | +6（含工具升级噪声） |
+| error   | 43                 | **40**      | **−3**               |
+| warning | 219                | 228         | +9                   |
 
 ### 7.2 本轮代码侧动作（对照）
 

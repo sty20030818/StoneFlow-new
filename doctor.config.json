@@ -1,65 +1,65 @@
 {
-  "$schema": "https://react.doctor/schema/config.json",
-  // StoneFlow · React Doctor 健康治理（B+选择性C）
-  // 详见 Documents/02-重构方案/06-ReactDoctor健康治理/
-  "lint": true,
-  "deadCode": true,
-  "verbose": false,
-  "blocking": "none",
-  "rules": {
-    // 与 feature「同文件 type/hook/组件 + barrel」约定冲突；不作架构门禁
-    "react-doctor/only-export-components": "off"
-  },
-  "ignore": {
-    "rules": [],
-    "files": [
-      // 文档 / 归档 / 方案产物不是应用运行时入口
-      "Documents/**",
-      "Docs/**",
-      "openspec/**",
-      "**/*.md",
-      // shadcn 库存件：暂未接线，保留供后续 UI
-      "src/shared/components/base/accordion.tsx",
-      "src/shared/components/base/date-picker.tsx",
-      "src/shared/components/base/tabs.tsx"
-    ],
-    "overrides": [
-      {
-        "files": ["src/features/selection/model/useEntitySelection.ts"],
-        "rules": ["react-doctor/no-impure-state-updater"]
-      },
-      // 对话框 / 面板：open 或实体切换时重置表单与瞬时 UI（合法模式，非双源 bug）
-      {
-        "files": [
-          "src/features/command/components/CommandMenu.tsx",
-          "src/features/space/components/SpaceEditorDialog.tsx",
-          "src/features/sync/components/SyncConfigDialog.tsx",
-          "src/features/task/detail/components/TaskLinkEditorPopover.tsx",
-          "src/features/task/detail/components/TaskActivityTimeline.tsx",
-          "src/layout/model/useShellCreateDialogState.ts"
-        ],
-        "rules": [
-          "react-doctor/no-adjust-state-on-prop-change",
-          "react-doctor/no-reset-all-state-on-prop-change",
-          "react-doctor/no-effect-chain"
-        ]
-      },
-      // 行快捷键 / 焦点桥：props ↔ 本地 focus/hover 同步是交互真源，非可派生纯展示
-      {
-        "files": [
-          "src/features/selection/components/EntityRowShortcutScope.tsx",
-          "src/features/task/shortcuts/useTaskRowShortcutController.ts",
-          "src/features/task/detail/components/TaskDrawer.tsx",
-          "src/features/global-search/model/useGlobalSearch.ts"
-        ],
-        "rules": [
-          "react-doctor/no-adjust-state-on-prop-change",
-          "react-doctor/no-derived-state",
-          "react-doctor/no-derived-state-effect",
-          "react-doctor/no-pass-data-to-parent",
-          "react-doctor/no-prop-callback-in-effect"
-        ]
-      }
-    ]
-  }
+	"$schema": "https://react.doctor/schema/config.json",
+	// StoneFlow · React Doctor 健康治理（B+选择性C）
+	// 详见 Documents/02-重构方案/06-ReactDoctor健康治理/
+	"lint": true,
+	"deadCode": true,
+	"verbose": false,
+	"blocking": "none",
+	"rules": {
+		// 与 feature「同文件 type/hook/组件 + barrel」约定冲突；不作架构门禁
+		"react-doctor/only-export-components": "off"
+	},
+	"ignore": {
+		"rules": [],
+		"files": [
+			// 文档 / 归档 / 方案产物不是应用运行时入口
+			"Documents/**",
+			"Docs/**",
+			"openspec/**",
+			"**/*.md",
+			// shadcn 库存件：暂未接线，保留供后续 UI
+			"src/shared/components/base/accordion.tsx",
+			"src/shared/components/base/date-picker.tsx",
+			"src/shared/components/base/tabs.tsx"
+		],
+		"overrides": [
+			{
+				"files": ["src/features/selection/model/useEntitySelection.ts"],
+				"rules": ["react-doctor/no-impure-state-updater"]
+			},
+			// 对话框 / 面板：open 或实体切换时重置表单与瞬时 UI（合法模式，非双源 bug）
+			{
+				"files": [
+					"src/features/command/components/CommandMenu.tsx",
+					"src/features/space/components/SpaceEditorDialog.tsx",
+					"src/features/sync/components/SyncConfigDialog.tsx",
+					"src/features/task/detail/components/TaskLinkEditorPopover.tsx",
+					"src/features/task/detail/components/TaskActivityTimeline.tsx",
+					"src/layout/model/useShellCreateDialogState.ts"
+				],
+				"rules": [
+					"react-doctor/no-adjust-state-on-prop-change",
+					"react-doctor/no-reset-all-state-on-prop-change",
+					"react-doctor/no-effect-chain"
+				]
+			},
+			// 行快捷键 / 焦点桥：props ↔ 本地 focus/hover 同步是交互真源，非可派生纯展示
+			{
+				"files": [
+					"src/features/selection/components/EntityRowShortcutScope.tsx",
+					"src/features/task/shortcuts/useTaskRowShortcutController.ts",
+					"src/features/task/detail/components/TaskDrawer.tsx",
+					"src/features/global-search/model/useGlobalSearch.ts"
+				],
+				"rules": [
+					"react-doctor/no-adjust-state-on-prop-change",
+					"react-doctor/no-derived-state",
+					"react-doctor/no-derived-state-effect",
+					"react-doctor/no-pass-data-to-parent",
+					"react-doctor/no-prop-callback-in-effect"
+				]
+			}
+		]
+	}
 }

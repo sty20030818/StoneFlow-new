@@ -12,20 +12,14 @@ export function UpdateNotesMarkdown({ content }: { content: string }) {
 			{blocks.map((block) => {
 				if (block.type === 'h2') {
 					return (
-						<h3
-							key={`h2-${block.text}`}
-							className='text-[14px] font-semibold text-foreground m-0'
-						>
+						<h3 key={`h2-${block.text}`} className='text-[14px] font-semibold text-foreground m-0'>
 							{renderInline(block.text)}
 						</h3>
 					)
 				}
 				if (block.type === 'h3') {
 					return (
-						<h4
-							key={`h3-${block.text}`}
-							className='text-[13px] font-semibold text-foreground m-0'
-						>
+						<h4 key={`h3-${block.text}`} className='text-[13px] font-semibold text-foreground m-0'>
 							{renderInline(block.text)}
 						</h4>
 					)

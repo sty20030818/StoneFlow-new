@@ -30,8 +30,7 @@ export function ShellRouteLayout({ children, scope, shellRoute }: ShellRouteLayo
 	const isWorkPath = shellRoute.isWorkPath
 	const { spaces } = useSpaces()
 	const activeSection = shellRoute.section
-	const fallbackSpaceId =
-		spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
+	const fallbackSpaceId = spaces.find((space) => space.isDefault)?.id ?? spaces[0]?.id ?? null
 	const routeSpaceIsMissing =
 		isWorkPath &&
 		scope.type === 'space' &&
