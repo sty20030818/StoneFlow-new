@@ -279,10 +279,8 @@ th{background:#fafafa}</style></head><body>
 </table>
 <h2>可用端点</h2>
 <ul>
-<li><a href="/stoneflow/updates/stable/darwin-aarch64/latest.json">/stoneflow/updates/stable/darwin-aarch64/latest.json</a></li>
-<li><a href="/stoneflow/updates/stable/windows-x86_64/latest.json">/stoneflow/updates/stable/windows-x86_64/latest.json</a></li>
-<li><a href="/stoneflow/updates/beta/darwin-aarch64/latest.json">/stoneflow/updates/beta/darwin-aarch64/latest.json</a></li>
-<li><a href="/stoneflow/updates/beta/windows-x86_64/latest.json">/stoneflow/updates/beta/windows-x86_64/latest.json</a></li>
+<li><a href="/stoneflow/updates/stable/latest.json">/stoneflow/updates/stable/latest.json</a></li>
+<li><a href="/stoneflow/updates/beta/latest.json">/stoneflow/updates/beta/latest.json</a></li>
 <li><a href="/health">/health</a></li>
 </ul>
 <h2>场景切换命令</h2>
@@ -319,6 +317,6 @@ console.log(`   版本: ${MOCK_VERSION}`)
 console.log(`   渠道: ${CHANNEL}`)
 console.log(`   场景: ${scenarioText}`)
 if (SLOW_MODE) console.log(`   慢模式: 开启 (${SLOW_DELAY_MS}ms 延迟)`)
-console.log(`\n   Stable: ${server.url}stoneflow/updates/stable/<platform>/latest.json`)
-console.log(`   Beta:   ${server.url}stoneflow/updates/beta/<platform>/latest.json`)
+console.log(`\n   Stable: ${server.url}stoneflow/updates/stable/latest.json`)
+console.log(`   Beta:   ${server.url}stoneflow/updates/beta/latest.json`)
 console.log(`\n   按 Ctrl+C 停止\n`)

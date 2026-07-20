@@ -3,7 +3,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-use tauri_plugin_updater::{target, UpdaterExt};
+use tauri_plugin_updater::UpdaterExt;
 
 use stoneflow_domain::UpdateChannel;
 use stoneflow_usecase::update::{UpdateInfo, UpdatePort};
@@ -71,12 +71,7 @@ impl TauriUpdateAdapter {
 
     /// 根据渠道构造远端 endpoint URL。
     fn endpoint_url(channel: UpdateChannel, base_url: &str) -> String {
-        format!(
-            "{}/{}/{}/latest.json",
-            base_url,
-            channel.path_segment(),
-            updater_platform_key()
-        )
+        format!("{}/{}/latest.json", base_url, channel.path_segment())
     }
 
     /// 根据渠道构建 UpdaterBuilder（配置 endpoint 和版本比较器）。
@@ -121,11 +116,6 @@ impl TauriUpdateAdapter {
             .build()
             .map_err(|e| UsecaseError::update(format!("构建 updater 失败: {e}")))
     }
-}
-
-/// 与 Tauri updater 选择 `latest.json.platforms` 的平台 key 保持同源。
-fn updater_platform_key() -> String {
-    target().unwrap_or_else(|| "unknown-unknown".to_owned())
 }
 
 /// Debug 模式下快速检测 Mock 服务器是否运行（TCP 连接，超时 200ms）。

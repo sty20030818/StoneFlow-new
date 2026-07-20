@@ -22,7 +22,7 @@
 		"release:stable": "bun run scripts/release/release.ts stable",
 		"release:beta": "bun run scripts/release/release.ts beta",
 		"mock:updates": "bun run scripts/release/mock-server.ts",
-		"mock:updates:beta": "bun run scripts/release/mock-server.ts --channel beta"
+		"mock:updates:beta": "bun run scripts/release/mock-server.ts -- --beta"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^5.4.0",

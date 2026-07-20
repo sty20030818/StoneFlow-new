@@ -40,18 +40,18 @@ R2_PUBLIC_URL=https://release.sty20030818.space/stoneflow
 stoneflow/
 ├── updates/
 │   ├── stable/
-│   │   ├── darwin-aarch64/
-│   │   │   ├── latest.json                # 当前平台 updater 清单
-│   │   │   ├── latest.meta.json           # 发布脚本元数据（commit / channel / platform）
-│   │   │   └── 0.1.0/
-│   │   │       ├── StoneFlow_0.1.0_aarch64.app.tar.gz
-│   │   │       └── StoneFlow_0.1.0_aarch64.app.tar.gz.sig
-│   │   └── windows-x86_64/
-│   │       ├── latest.json
-│   │       ├── latest.meta.json
+│   │   ├── latest.json                    # 全局 updater 清单
+│   │   ├── latest.release.json            # 全局 release 真相源
+│   │   └── releases/
 │   │       └── 0.1.0/
-│   │           ├── StoneFlow_0.1.0_x64-setup.exe
-│   │           └── StoneFlow_0.1.0_x64-setup.exe.sig
+│   │           ├── release.json
+│   │           └── platforms/
+│   │               ├── darwin-aarch64/
+│   │               │   ├── StoneFlow_0.1.0_aarch64.app.tar.gz
+│   │               │   └── StoneFlow_0.1.0_aarch64.app.tar.gz.sig
+│   │               └── windows-x86_64/
+│   │                   ├── StoneFlow_0.1.0_x64-setup.exe
+│   │                   └── StoneFlow_0.1.0_x64-setup.exe.sig
 │   └── beta/
 │       └── ...
 └── downloads/
@@ -104,12 +104,12 @@ Tauri updater 期望的 JSON 格式：
   "platforms": {
     "darwin-aarch64": {
       "signature": "base64-signature",
-      "url": "https://release.sty20030818.space/stoneflow/updates/stable/darwin-aarch64/0.1.0/StoneFlow_0.1.0_aarch64.app.tar.gz"
+      "url": "https://release.sty20030818.space/stoneflow/updates/stable/releases/0.1.0/platforms/darwin-aarch64/StoneFlow_0.1.0_aarch64.app.tar.gz"
     }
   }
 }
 ```
 
-StoneFlow 采用平台级 `latest.json`，远端目录名与 `latest.json.platforms` key 统一使用 Tauri updater 官方平台 key，例如 Windows x64 为 `windows-x86_64`。macOS 和 Windows 可以分别发布不同版本，互不覆盖。Beta 发布会读取同平台的 `latest.meta.json`：当前 git commit 相同则复用 beta 版本，不同则递增 `-beta.N`。
+StoneFlow 采用全局 `latest.json`。一个 Git commit 对应一个 release version，`latest.json.platforms` 只记录该版本下已发布的平台 artifact。Beta 发布会读取全局 `latest.release.json`：当前 git commit 相同则复用 beta 版本并追加平台，commit 不同才递增 `-beta.N`。
 
 Windows Beta 只构建 NSIS `.exe`。MSI 不支持 `0.1.1-beta.1` 这类带 `beta` 文本的预发布版本号。
