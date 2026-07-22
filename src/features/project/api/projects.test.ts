@@ -57,7 +57,7 @@ describe('projects api', () => {
 			name: '阶段 5',
 			description: null,
 			dueAt: null,
-			sortOrder: 1000,
+			position: 1000,
 			taskCount: 0,
 			activeTaskCount: 0,
 			completedAt: null,
@@ -78,7 +78,7 @@ describe('projects api', () => {
 			name: '阶段 5 收口',
 			description: '接 Project 真数据',
 			dueAt: '2026-05-01',
-			sortOrder: 2000,
+			position: 2000,
 		})
 		await archiveProject('project-1')
 
@@ -96,7 +96,7 @@ describe('projects api', () => {
 				name: '阶段 5 收口',
 				description: '接 Project 真数据',
 				dueAt: '2026-05-01',
-				sortOrder: 2000,
+				position: 2000,
 			},
 		})
 		expect(mockedInvoke).toHaveBeenNthCalledWith(3, 'archive_project', {

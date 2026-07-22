@@ -7,11 +7,14 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
-    pub task_id: String,
+    pub entity_type: String,
+    pub entity_id: String,
     pub operation_id: String,
     pub action: String,
-    pub actor_kind: String,
-    pub source_kind: String,
+    pub actor_type: String,
+    pub source: String,
+    pub summary: Option<String>,
+    pub metadata_json: Option<String>,
     pub created_at: String,
 }
 

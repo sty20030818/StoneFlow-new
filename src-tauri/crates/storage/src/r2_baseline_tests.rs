@@ -39,7 +39,7 @@ const EXPECTED_INDEXES: [&str; 15] = [
     "ix_tasks_deleted_at",
     "ix_task_links_task_position",
     "ix_views_position",
-    "ix_activity_events_task_created",
+    "ix_activity_events_entity_created",
     "ix_outbox_available",
     "ix_tombstones_deletion_seq",
     "ix_sync_changes_seq",

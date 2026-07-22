@@ -27,8 +27,6 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         projects::get_project_detail,
         projects::create_project,
         projects::update_project,
-        projects::complete_project,
-        projects::reopen_project,
         projects::archive_project,
         projects::restore_project,
         projects::delete_project,

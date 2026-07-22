@@ -1,4 +1,10 @@
-import type { Project, ProjectOverviewItem, ProjectSidebarItem } from '@/shared/types'
+import type {
+	Project,
+	ProjectOverviewItem,
+	ProjectSidebarItem,
+	TaskPriority,
+	TaskStatus,
+} from '@/shared/types'
 
 export type ProjectOverviewViewKey =
 	| 'active'
@@ -26,15 +32,23 @@ export type ProjectFormInput = {
 	spaceId: string
 	name: string
 	description?: string | null
+	status?: TaskStatus
+	priority?: TaskPriority
+	plannedAt?: string | null
 	dueAt?: string | null
+	remindAt?: string | null
 }
 
 export type ProjectUpdateInput = {
 	projectId: string
 	name?: string
 	description?: string | null
+	status?: TaskStatus
+	priority?: TaskPriority
+	plannedAt?: string | null
 	dueAt?: string | null
-	sortOrder?: number
+	remindAt?: string | null
+	position?: number
 }
 
 export type { Project, ProjectOverviewItem, ProjectSidebarItem }

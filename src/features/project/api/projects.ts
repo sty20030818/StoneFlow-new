@@ -62,6 +62,10 @@ export async function createProject(input: ProjectFormInput) {
 			name: input.name,
 			description: input.description ?? null,
 			dueAt: input.dueAt ?? null,
+			...(input.status === undefined ? {} : { status: input.status }),
+			...(input.priority === undefined ? {} : { priority: input.priority }),
+			...(input.plannedAt === undefined ? {} : { plannedAt: input.plannedAt }),
+			...(input.remindAt === undefined ? {} : { remindAt: input.remindAt }),
 		},
 	})
 }
@@ -73,21 +77,21 @@ export async function updateProject(input: ProjectUpdateInput) {
 			name: input.name,
 			description: input.description,
 			dueAt: input.dueAt,
-			sortOrder: input.sortOrder,
+			...(input.status === undefined ? {} : { status: input.status }),
+			...(input.priority === undefined ? {} : { priority: input.priority }),
+			...(input.plannedAt === undefined ? {} : { plannedAt: input.plannedAt }),
+			...(input.remindAt === undefined ? {} : { remindAt: input.remindAt }),
+			...(input.position === undefined ? {} : { position: input.position }),
 		},
 	})
 }
 
 export async function completeProject(projectId: string) {
-	return invoke<ProjectDetail>('complete_project', {
-		input: { projectId },
-	})
+	return updateProject({ projectId, status: 'done' })
 }
 
 export async function reopenProject(projectId: string) {
-	return invoke<ProjectDetail>('reopen_project', {
-		input: { projectId },
-	})
+	return updateProject({ projectId, status: 'todo' })
 }
 
 export async function archiveProject(projectId: string) {

@@ -1,4 +1,4 @@
-//! Activity 运行时薄壳：timeline 查询走 application，R2 下恒返回空。
+//! Activity 运行时薄壳：timeline 查询走 application。
 
 use stoneflow_application::activity::{
     ActivityService as ActivityUsecase, ActivityTimelineEntry, GetEntityActivitiesInput,

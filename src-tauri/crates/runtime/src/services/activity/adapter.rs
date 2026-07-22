@@ -1,4 +1,4 @@
-//! Activity 持久化适配（R2：activity 表已变为 task 专属；通用写入暂 no-op，保证编译）。
+//! Activity 持久化适配：通用实体时间线读写。
 
 use sea_orm::{DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use stoneflow_application::activity::{
@@ -6,18 +6,22 @@ use stoneflow_application::activity::{
     GetEntityActivitiesInput,
 };
 use stoneflow_application::ApplicationError;
+use stoneflow_storage::repositories::ActivityRepository;
 
 use crate::app::error::AppError;
 
-/// R2 过渡适配：不写入旧多实体 activity schema。
 #[derive(Debug, Clone)]
 pub struct ActivityPersistenceAdapter {
     db: DatabaseConnection,
+    repository: ActivityRepository,
 }
 
 impl ActivityPersistenceAdapter {
     pub fn new(db: DatabaseConnection) -> Self {
-        Self { db }
+        Self {
+            db,
+            repository: ActivityRepository::new(),
+        }
     }
 }
 
@@ -40,27 +44,36 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
 
     async fn insert_event_with_changes(
         &self,
-        _connection: &Self::Connection,
-        _event: &ActivityEventRecord,
-        _changes: &[ActivityChangeRecord],
+        connection: &Self::Connection,
+        event: &ActivityEventRecord,
+        changes: &[ActivityChangeRecord],
     ) -> Result<(), ApplicationError> {
-        // R2：通用 entity activity 写路径已拆除；后续按 task timeline 重建。
-        Ok(())
+        self.repository
+            .insert_event_with_changes(connection, event, changes)
+            .await
+            .map_err(|error| ApplicationError::storage(error.to_string()))
     }
 
     async fn insert_events_with_changes(
         &self,
-        _connection: &Self::Connection,
-        _records: &[(ActivityEventRecord, Vec<ActivityChangeRecord>)],
+        connection: &Self::Connection,
+        records: &[(ActivityEventRecord, Vec<ActivityChangeRecord>)],
     ) -> Result<(), ApplicationError> {
+        for (event, changes) in records {
+            self.insert_event_with_changes(connection, event, changes)
+                .await?;
+        }
         Ok(())
     }
 
     async fn list_by_entity(
         &self,
-        _input: GetEntityActivitiesInput,
+        input: GetEntityActivitiesInput,
     ) -> Result<Vec<ActivityTimelineEntry>, ApplicationError> {
-        Ok(Vec::new())
+        self.repository
+            .list_by_entity(&self.db, &input)
+            .await
+            .map_err(|error| ApplicationError::storage(error.to_string()))
     }
 }
 

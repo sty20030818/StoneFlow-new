@@ -11,6 +11,7 @@ pub struct Model {
     pub field_key: String,
     pub old_value: Option<String>,
     pub new_value: Option<String>,
+    pub created_at: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -7,7 +7,7 @@ use crate::services::{
 };
 use stoneflow_storage::{
     database::DatabaseRuntimeState,
-    repositories::{SettingsRepository, SpaceRepository},
+    repositories::{ProjectRepository, SettingsRepository, SpaceRepository},
 };
 
 pub fn build_lifecycle_service(database: &DatabaseRuntimeState) -> LifecycleService {
@@ -15,7 +15,10 @@ pub fn build_lifecycle_service(database: &DatabaseRuntimeState) -> LifecycleServ
 }
 
 pub fn build_project_service(database: &DatabaseRuntimeState) -> ProjectService {
-    ProjectService::new(database)
+    ProjectService::new(
+        ProjectRepository::new(database.connection().clone()),
+        SpaceRepository::new(database.connection().clone()),
+    )
 }
 
 pub fn build_launcher_service(database: &DatabaseRuntimeState) -> LauncherService {

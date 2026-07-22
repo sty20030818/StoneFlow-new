@@ -3,7 +3,7 @@
 use tauri::State;
 
 use crate::app::error::AppError;
-use crate::composition::{build_lifecycle_service, build_project_service};
+use crate::composition::build_project_service;
 use crate::services::{
     CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput, ProjectDetailDto,
     ProjectIdInput, ProjectOverviewItemDto, ProjectSidebarItemDto, UpdateProjectInput,
@@ -68,32 +68,6 @@ pub async fn update_project(
 }
 
 #[tauri::command]
-pub async fn complete_project(
-    input: ProjectIdInput,
-    app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
-) -> Result<ProjectDetailDto, AppError> {
-    let detail = build_project_service(database.inner())
-        .complete_project(input)
-        .await?;
-    sync::note_local_write(&app_handle).await;
-    Ok(detail)
-}
-
-#[tauri::command]
-pub async fn reopen_project(
-    input: ProjectIdInput,
-    app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
-) -> Result<ProjectDetailDto, AppError> {
-    let detail = build_project_service(database.inner())
-        .reopen_project(input)
-        .await?;
-    sync::note_local_write(&app_handle).await;
-    Ok(detail)
-}
-
-#[tauri::command]
 pub async fn archive_project(
     input: ProjectIdInput,
     app_handle: tauri::AppHandle,
@@ -138,8 +112,8 @@ pub async fn permanently_delete_project(
     app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<(), AppError> {
-    build_lifecycle_service(database.inner())
-        .permanently_delete_project(&input.project_id)
+    build_project_service(database.inner())
+        .permanently_delete_project(input)
         .await?;
     sync::note_local_write(&app_handle).await;
     Ok(())
@@ -149,9 +123,11 @@ pub async fn permanently_delete_project(
 mod tests {
     use stoneflow_test_support::TestDatabase;
 
-    use crate::composition::build_project_service;
-    use crate::services::CreateProjectInput;
-    use stoneflow_storage::repositories::SpaceRepository;
+    use crate::composition::{build_activity_service, build_project_service};
+    use crate::services::activity::GetEntityActivitiesInput;
+    use crate::services::{CreateProjectInput, ProjectIdInput};
+    use stoneflow_domain::WorkStatus;
+    use stoneflow_storage::repositories::{OutboxRepository, SpaceRepository};
 
     #[tokio::test]
     async fn create_project_command_should_fail_when_name_is_blank() {
@@ -168,11 +144,90 @@ mod tests {
                 space_id: spaces[0].id.clone(),
                 name: "   ".to_owned(),
                 description: None,
+                status: None,
+                priority: None,
+                planned_at: None,
                 due_at: None,
+                remind_at: None,
             })
             .await
             .expect_err("blank name should fail");
 
-        assert_eq!(error.to_string(), "内部错误: R2：Project CRUD 仓储尚未重建");
+        assert_eq!(error.to_string(), "验证失败: Project name 不能为空");
+    }
+
+    #[tokio::test]
+    async fn project_lifecycle_should_write_outbox_and_keep_work_state_manual() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        let spaces = SpaceRepository::new(database.connection().clone())
+            .list_visible()
+            .await
+            .expect("list visible spaces should succeed");
+        let service = build_project_service(&database);
+
+        let created = service
+            .create_project(CreateProjectInput {
+                space_id: spaces[0].id.clone(),
+                name: "R4 项目".to_owned(),
+                description: Some("说明".to_owned()),
+                status: Some(WorkStatus::Doing),
+                priority: Some(4),
+                planned_at: Some("2026-07-22T09:00:00Z".to_owned()),
+                due_at: Some("2026-07-23T09:00:00Z".to_owned()),
+                remind_at: Some("2026-07-22T10:00:00Z".to_owned()),
+            })
+            .await
+            .expect("create project should succeed");
+
+        assert_eq!(created.status, WorkStatus::Doing);
+        assert_eq!(created.priority, 4);
+        assert!(created.completed_at.is_none());
+        assert_eq!(
+            OutboxRepository::new(database.connection().clone())
+                .count_all()
+                .await
+                .expect("count outbox should succeed"),
+            1
+        );
+        let activity = build_activity_service(&database)
+            .get_entity_activities(GetEntityActivitiesInput {
+                entity_type: stoneflow_domain::ActivityEntityKind::Project,
+                entity_id: created.id.clone(),
+                limit: None,
+            })
+            .await
+            .expect("project activity should be readable");
+        assert_eq!(activity[0].action, "project.created");
+
+        let archived = service
+            .archive_project(ProjectIdInput {
+                project_id: created.id.clone(),
+            })
+            .await
+            .expect("archive project should succeed");
+        assert!(archived.archived_at.is_some());
+
+        let restored = service
+            .restore_project(ProjectIdInput {
+                project_id: created.id.clone(),
+            })
+            .await
+            .expect("restore project should succeed");
+        assert!(restored.archived_at.is_none());
+
+        service
+            .delete_project(ProjectIdInput {
+                project_id: created.id.clone(),
+            })
+            .await
+            .expect("delete project should succeed");
+        service
+            .permanently_delete_project(ProjectIdInput {
+                project_id: created.id.clone(),
+            })
+            .await
+            .expect("permanently delete project should succeed");
     }
 }
