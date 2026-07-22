@@ -1,8 +1,8 @@
 //! Launcher 业务命令（直接调用 usecase，不经 IPC）。
 
 use serde::Deserialize;
+use stoneflow_application::launcher::LauncherListProjectsBySpaceInput as UsecaseListProjectsBySpaceInput;
 use stoneflow_storage::database::DatabaseRuntimeState;
-use stoneflow_usecase::launcher::LauncherListProjectsBySpaceInput as UsecaseListProjectsBySpaceInput;
 use tauri::State;
 
 use crate::app::state::CommandOpenState;
@@ -10,9 +10,7 @@ use crate::command_open::{dispatch_command_open, restore_main_window, CommandOpe
 use crate::composition::{build_launcher_service, build_launcher_session_bridge};
 use crate::services::LauncherResolvedPlacement;
 
-use super::error::{
-    map_projects_by_space, LauncherErrorPayload, LauncherProjectsBySpaceResponse,
-};
+use super::error::{map_projects_by_space, LauncherErrorPayload, LauncherProjectsBySpaceResponse};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]

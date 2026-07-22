@@ -106,21 +106,23 @@ impl From<stoneflow_domain::DomainError> for AppError {
     }
 }
 
-impl From<stoneflow_usecase::UsecaseError> for AppError {
-    fn from(error: stoneflow_usecase::UsecaseError) -> Self {
+impl From<stoneflow_application::ApplicationError> for AppError {
+    fn from(error: stoneflow_application::ApplicationError) -> Self {
         match error {
-            stoneflow_usecase::UsecaseError::Validation(message) => Self::Validation(message),
-            stoneflow_usecase::UsecaseError::NotFound(message) => Self::NotFound(message),
-            stoneflow_usecase::UsecaseError::Conflict(message) => Self::Conflict(message),
-            stoneflow_usecase::UsecaseError::Storage(message) => Self::Database(message),
-            stoneflow_usecase::UsecaseError::Initialization(message) => {
+            stoneflow_application::ApplicationError::Validation(message) => {
+                Self::Validation(message)
+            }
+            stoneflow_application::ApplicationError::NotFound(message) => Self::NotFound(message),
+            stoneflow_application::ApplicationError::Conflict(message) => Self::Conflict(message),
+            stoneflow_application::ApplicationError::Storage(message) => Self::Database(message),
+            stoneflow_application::ApplicationError::Initialization(message) => {
                 Self::Initialization(message)
             }
-            stoneflow_usecase::UsecaseError::Internal(message) => Self::Internal(message),
-            stoneflow_usecase::UsecaseError::DefaultSpaceUnavailable(message) => {
+            stoneflow_application::ApplicationError::Internal(message) => Self::Internal(message),
+            stoneflow_application::ApplicationError::DefaultSpaceUnavailable(message) => {
                 Self::DefaultSpaceUnavailable(message)
             }
-            stoneflow_usecase::UsecaseError::Update(message) => Self::Internal(message),
+            stoneflow_application::ApplicationError::Update(message) => Self::Internal(message),
         }
     }
 }

@@ -1,7 +1,7 @@
 //! Activity 持久化 adapter：将 usecase port 接到 SeaORM repository。
 
 use sea_orm::{DatabaseTransaction, TransactionTrait};
-use stoneflow_usecase::activity::{
+use stoneflow_application::activity::{
     ActivityChangeRecord as UsecaseActivityChangeRecord,
     ActivityEventRecord as UsecaseActivityEventRecord, ActivityPersistence, ActivityTimelineEntry,
     GetEntityActivitiesInput,
@@ -31,7 +31,7 @@ impl ActivityPersistenceAdapter {
 impl ActivityPersistence for ActivityPersistenceAdapter {
     type Connection = DatabaseTransaction;
 
-    async fn begin(&self) -> Result<Self::Connection, stoneflow_usecase::UsecaseError> {
+    async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
@@ -42,7 +42,7 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
     async fn commit(
         &self,
         connection: Self::Connection,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         connection.commit().await.map_err(map_db_error)
     }
 
@@ -51,7 +51,7 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
         connection: &Self::Connection,
         event: &UsecaseActivityEventRecord,
         changes: &[UsecaseActivityChangeRecord],
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .insert_event_with_changes(
                 connection,
@@ -69,7 +69,7 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         records: &[(UsecaseActivityEventRecord, Vec<UsecaseActivityChangeRecord>)],
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         let mapped = records
             .iter()
             .map(|(event, changes)| {
@@ -92,7 +92,7 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
     async fn list_by_entity(
         &self,
         input: GetEntityActivitiesInput,
-    ) -> Result<Vec<ActivityTimelineEntry>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<ActivityTimelineEntry>, stoneflow_application::ApplicationError> {
         self.repository
             .list_by_entity(ActivityQuery {
                 entity_type: activity_entity_kind_to_schema(input.entity_type),
@@ -104,7 +104,7 @@ impl ActivityPersistence for ActivityPersistenceAdapter {
     }
 }
 
-fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {
+fn map_db_error(error: sea_orm::DbErr) -> stoneflow_application::ApplicationError {
     map_app_error(AppError::from(error))
 }
 
@@ -133,21 +133,23 @@ fn map_change_to_infrastructure(change: &UsecaseActivityChangeRecord) -> Activit
     }
 }
 
-fn map_app_error(error: AppError) -> stoneflow_usecase::UsecaseError {
+fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
     match error {
-        AppError::Validation(message) => stoneflow_usecase::UsecaseError::validation(message),
-        AppError::NotFound(message) => stoneflow_usecase::UsecaseError::not_found(message),
-        AppError::Conflict(message) => stoneflow_usecase::UsecaseError::conflict(message),
-        AppError::Database(message) => stoneflow_usecase::UsecaseError::storage(message),
+        AppError::Validation(message) => {
+            stoneflow_application::ApplicationError::validation(message)
+        }
+        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
+        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
+        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
         AppError::Initialization(message) => {
-            stoneflow_usecase::UsecaseError::initialization(message)
+            stoneflow_application::ApplicationError::initialization(message)
         }
         AppError::Internal(message)
         | AppError::Forbidden(message)
         | AppError::CaptureSpaceUnavailable(message)
         | AppError::DefaultSpaceUnavailable(message)
         | AppError::CapturePersistence(message) => {
-            stoneflow_usecase::UsecaseError::internal(message)
+            stoneflow_application::ApplicationError::internal(message)
         }
     }
 }

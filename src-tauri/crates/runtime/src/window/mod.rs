@@ -4,6 +4,6 @@ pub mod launcher;
 pub mod main;
 
 pub use launcher::runtime::{
-	LauncherWindowCloseReason, LauncherWindowOpenReason, LauncherWindowPhase,
-	LauncherWindowRuntimeState, LauncherWindowSession,
+    LauncherWindowCloseReason, LauncherWindowOpenReason, LauncherWindowPhase,
+    LauncherWindowRuntimeState, LauncherWindowSession,
 };

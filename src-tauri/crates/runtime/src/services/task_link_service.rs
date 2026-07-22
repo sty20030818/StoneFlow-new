@@ -1,12 +1,11 @@
-//! Task Link Service 兼容壳：真源在 `stoneflow-usecase`。
+//! Task Link Service 兼容壳：真源在 `stoneflow-application`。
 
-use serde::Serialize;
 use sea_orm::TransactionTrait;
-use stoneflow_usecase::{
+use serde::Serialize;
+use stoneflow_application::{
     activity::ActivityService as ActivityUsecase,
     task_link::{
-        TaskLinkPersistence, TaskLinkRecord, TaskLinkService as TaskLinkUsecase,
-        TaskLinkTaskReader,
+        TaskLinkPersistence, TaskLinkRecord, TaskLinkService as TaskLinkUsecase, TaskLinkTaskReader,
     },
 };
 
@@ -25,7 +24,7 @@ use stoneflow_storage::{
     },
 };
 
-pub use stoneflow_usecase::task_link::{
+pub use stoneflow_application::task_link::{
     CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto, UpdateTaskLinkInput,
 };
 
@@ -115,7 +114,7 @@ impl TaskLinkPersistenceAdapter {
 impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
     type Connection = sea_orm::DatabaseTransaction;
 
-    async fn begin(&self) -> Result<Self::Connection, stoneflow_usecase::UsecaseError> {
+    async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
@@ -126,15 +125,17 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
     async fn commit(
         &self,
         connection: Self::Connection,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         connection.commit().await.map_err(map_db_error)
     }
 
     async fn get(
         &self,
         link_id: &str,
-    ) -> Result<Option<stoneflow_usecase::task_link::TaskLinkRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_application::task_link::TaskLinkRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .get(link_id)
             .await
@@ -145,8 +146,10 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
     async fn list_by_task(
         &self,
         task_id: &str,
-    ) -> Result<Vec<stoneflow_usecase::task_link::TaskLinkRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Vec<stoneflow_application::task_link::TaskLinkRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .list_by_task(task_id)
             .await
@@ -163,7 +166,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         task_id: &str,
-    ) -> Result<i32, stoneflow_usecase::UsecaseError> {
+    ) -> Result<i32, stoneflow_application::ApplicationError> {
         self.repository
             .next_sort_order(connection, task_id)
             .await
@@ -173,8 +176,11 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
     async fn create(
         &self,
         connection: &Self::Connection,
-        record: stoneflow_usecase::task_link::CreateTaskLinkPersistenceRecord,
-    ) -> Result<stoneflow_usecase::task_link::TaskLinkRecord, stoneflow_usecase::UsecaseError> {
+        record: stoneflow_application::task_link::CreateTaskLinkPersistenceRecord,
+    ) -> Result<
+        stoneflow_application::task_link::TaskLinkRecord,
+        stoneflow_application::ApplicationError,
+    > {
         let link = self
             .repository
             .create(
@@ -192,7 +198,8 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             .await
             .map(map_task_link_model_to_record)
             .map_err(|error| map_app_error(error.into()))?;
-        let mutation_record = build_task_link_upsert_mutation_record(&link).map_err(map_app_error)?;
+        let mutation_record =
+            build_task_link_upsert_mutation_record(&link).map_err(map_app_error)?;
         self.sync_repository
             .insert_pending_mutation(connection, &mutation_record)
             .await
@@ -205,10 +212,12 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         link_id: &str,
-        patch: stoneflow_usecase::task_link::UpdateTaskLinkPatch,
+        patch: stoneflow_application::task_link::UpdateTaskLinkPatch,
         updated_at: &str,
-    ) -> Result<Option<stoneflow_usecase::task_link::TaskLinkRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_application::task_link::TaskLinkRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         let link = self
             .repository
             .update(
@@ -225,7 +234,8 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             .map_err(|error| map_app_error(error.into()))?;
 
         if let Some(link) = link.as_ref() {
-            let mutation_record = build_task_link_upsert_mutation_record(link).map_err(map_app_error)?;
+            let mutation_record =
+                build_task_link_upsert_mutation_record(link).map_err(map_app_error)?;
             self.sync_repository
                 .insert_pending_mutation(connection, &mutation_record)
                 .await
@@ -239,7 +249,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         link_id: &str,
-    ) -> Result<bool, stoneflow_usecase::UsecaseError> {
+    ) -> Result<bool, stoneflow_application::ApplicationError> {
         let current = self.get(link_id).await?;
         let deleted = self
             .repository
@@ -325,8 +335,8 @@ impl TaskLinkTaskReader for TaskLinkTaskReaderAdapter {
         &self,
         task_id: &str,
     ) -> Result<
-        Option<stoneflow_usecase::task_link::TaskLinkTaskRecord>,
-        stoneflow_usecase::UsecaseError,
+        Option<stoneflow_application::task_link::TaskLinkTaskRecord>,
+        stoneflow_application::ApplicationError,
     > {
         self.repository
             .get(task_id)
@@ -336,27 +346,29 @@ impl TaskLinkTaskReader for TaskLinkTaskReaderAdapter {
     }
 }
 
-fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {
+fn map_db_error(error: sea_orm::DbErr) -> stoneflow_application::ApplicationError {
     map_app_error(AppError::from(error))
 }
 
-fn map_app_error(error: AppError) -> stoneflow_usecase::UsecaseError {
+fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
     match error {
-        AppError::Validation(message) => stoneflow_usecase::UsecaseError::validation(message),
-        AppError::NotFound(message) => stoneflow_usecase::UsecaseError::not_found(message),
-        AppError::Conflict(message) => stoneflow_usecase::UsecaseError::conflict(message),
-        AppError::Database(message) => stoneflow_usecase::UsecaseError::storage(message),
+        AppError::Validation(message) => {
+            stoneflow_application::ApplicationError::validation(message)
+        }
+        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
+        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
+        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
         AppError::Initialization(message) => {
-            stoneflow_usecase::UsecaseError::initialization(message)
+            stoneflow_application::ApplicationError::initialization(message)
         }
         AppError::DefaultSpaceUnavailable(message) => {
-            stoneflow_usecase::UsecaseError::default_space_unavailable(message)
+            stoneflow_application::ApplicationError::default_space_unavailable(message)
         }
         AppError::Internal(message)
         | AppError::Forbidden(message)
         | AppError::CaptureSpaceUnavailable(message)
         | AppError::CapturePersistence(message) => {
-            stoneflow_usecase::UsecaseError::internal(message)
+            stoneflow_application::ApplicationError::internal(message)
         }
     }
 }

@@ -41,8 +41,11 @@ pub fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
                     MAIN_TRAY_QUIT_ID => {
                         let app_handle = app_handle.clone();
                         tauri::async_runtime::spawn(async move {
-                            exit_coordinator::request_exit_and_quit(&app_handle, ExitReason::TrayQuit)
-                                .await;
+                            exit_coordinator::request_exit_and_quit(
+                                &app_handle,
+                                ExitReason::TrayQuit,
+                            )
+                            .await;
                         });
                     }
                     _ => {}

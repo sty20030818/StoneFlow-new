@@ -1,12 +1,12 @@
 //! Seed 最小存取：避免把阶段 1 初始化逻辑扩散到 repository/service。
 
+use crate::entities::{
+    common::{ViewEntityKind, ViewKind},
+    setting, space, view,
+};
 use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, EntityTrait, PaginatorTrait,
     QueryFilter,
-};
-use stoneflow_schema::{
-    common::{ViewEntityKind, ViewKind},
-    setting, space, view,
 };
 
 pub async fn count_active_default_spaces<C>(connection: &C) -> Result<u64, sea_orm::DbErr>

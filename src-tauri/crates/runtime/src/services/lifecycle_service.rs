@@ -1,8 +1,8 @@
-//! Lifecycle Service 兼容壳：Archive / Trash 真源在 `stoneflow-usecase`。
+//! Lifecycle Service 兼容壳：Archive / Trash 真源在 `stoneflow-application`。
 
-use serde::Serialize;
 use sea_orm::TransactionTrait;
-use stoneflow_usecase::{
+use serde::Serialize;
+use stoneflow_application::{
     activity::ActivityService as ActivityUsecase,
     lifecycle::{
         LifecycleProjectPersistence, LifecycleService as LifecycleUsecase,
@@ -32,7 +32,7 @@ use stoneflow_storage::{
     },
 };
 
-pub use stoneflow_usecase::lifecycle::{
+pub use stoneflow_application::lifecycle::{
     LifecycleEntityType, LifecycleEntry, LifecycleMode, LifecycleScopeInput, LifecycleScopeKind,
     ListLifecycleEntriesInput,
 };
@@ -190,7 +190,7 @@ impl LifecycleSpacePersistenceAdapter {
 impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
     type Connection = sea_orm::DatabaseTransaction;
 
-    async fn begin(&self) -> Result<Self::Connection, stoneflow_usecase::UsecaseError> {
+    async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
@@ -201,14 +201,14 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
     async fn commit(
         &self,
         connection: Self::Connection,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         connection.commit().await.map_err(map_db_error)
     }
 
     async fn get(
         &self,
         space_id: &str,
-    ) -> Result<Option<SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<SpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .get(space_id)
             .await
@@ -216,7 +216,9 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
             .map_err(|error| map_app_error(error.into()))
     }
 
-    async fn get_default(&self) -> Result<Option<SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    async fn get_default(
+        &self,
+    ) -> Result<Option<SpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .get_default()
             .await
@@ -227,7 +229,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
     async fn list_by_ids(
         &self,
         space_ids: &[String],
-    ) -> Result<Vec<SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<SpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .list_by_ids(space_ids)
             .await
@@ -238,7 +240,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
     async fn list_archived(
         &self,
         scope_space_id: Option<&str>,
-    ) -> Result<Vec<SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<SpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .list_archived(scope_space_id)
             .await
@@ -249,7 +251,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
     async fn list_deleted(
         &self,
         scope_space_id: Option<&str>,
-    ) -> Result<Vec<SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<SpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .list_deleted(scope_space_id)
             .await
@@ -263,7 +265,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
         space_id: &str,
         archived_at: &str,
         updated_at: &str,
-    ) -> Result<Option<SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<SpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .archive_raw(connection, space_id, archived_at, updated_at)
             .await
@@ -276,7 +278,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
         connection: &Self::Connection,
         space_id: &str,
         updated_at: &str,
-    ) -> Result<Option<SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<SpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .restore_raw(connection, space_id, updated_at)
             .await
@@ -290,7 +292,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
         space_id: &str,
         deleted_at: &str,
         updated_at: &str,
-    ) -> Result<Option<SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<SpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .delete_raw(connection, space_id, deleted_at, updated_at)
             .await
@@ -302,7 +304,7 @@ impl LifecycleSpacePersistence for LifecycleSpacePersistenceAdapter {
         &self,
         connection: &Self::Connection,
         space_id: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .permanently_delete(connection, space_id)
             .await
@@ -325,7 +327,7 @@ impl LifecycleProjectPersistenceAdapter {
 impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
     type Connection = sea_orm::DatabaseTransaction;
 
-    async fn begin(&self) -> Result<Self::Connection, stoneflow_usecase::UsecaseError> {
+    async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
@@ -336,14 +338,14 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
     async fn commit(
         &self,
         connection: Self::Connection,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         connection.commit().await.map_err(map_db_error)
     }
 
     async fn get(
         &self,
         project_id: &str,
-    ) -> Result<Option<ProjectRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<ProjectRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .get(project_id)
             .await
@@ -354,7 +356,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
     async fn list_by_space(
         &self,
         space_id: &str,
-    ) -> Result<Vec<ProjectRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<ProjectRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .list_by_space(space_id)
             .await
@@ -370,7 +372,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
     async fn list_by_ids(
         &self,
         project_ids: &[String],
-    ) -> Result<Vec<ProjectRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<ProjectRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .list_by_ids(project_ids)
             .await
@@ -387,8 +389,8 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         &self,
         scope_space_id: Option<&str>,
     ) -> Result<
-        Vec<stoneflow_usecase::lifecycle::LifecycleProjectListRecord>,
-        stoneflow_usecase::UsecaseError,
+        Vec<stoneflow_application::lifecycle::LifecycleProjectListRecord>,
+        stoneflow_application::ApplicationError,
     > {
         self.repository
             .list_archived(scope_space_id)
@@ -406,8 +408,8 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         &self,
         scope_space_id: Option<&str>,
     ) -> Result<
-        Vec<stoneflow_usecase::lifecycle::LifecycleProjectListRecord>,
-        stoneflow_usecase::UsecaseError,
+        Vec<stoneflow_application::lifecycle::LifecycleProjectListRecord>,
+        stoneflow_application::ApplicationError,
     > {
         self.repository
             .list_deleted(scope_space_id)
@@ -428,7 +430,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         archived_at: &str,
         archived_by_id: &str,
         updated_at: &str,
-    ) -> Result<Option<ProjectRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<ProjectRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .archive_raw(
                 connection,
@@ -447,7 +449,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         connection: &Self::Connection,
         project_id: &str,
         updated_at: &str,
-    ) -> Result<Option<ProjectRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<ProjectRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .restore_raw(connection, project_id, updated_at)
             .await
@@ -462,7 +464,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         deleted_at: &str,
         deleted_by_id: &str,
         updated_at: &str,
-    ) -> Result<Option<ProjectRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<ProjectRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .delete_raw(
                 connection,
@@ -480,7 +482,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         project_id: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .permanently_delete(connection, project_id)
             .await
@@ -495,7 +497,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         archived_at: &str,
         archived_by_id: &str,
         updated_at: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .archive_by_space_raw(
                 connection,
@@ -516,7 +518,7 @@ impl LifecycleProjectPersistence for LifecycleProjectPersistenceAdapter {
         deleted_at: &str,
         deleted_by_id: &str,
         updated_at: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .delete_by_space_raw(connection, space_id, deleted_at, deleted_by_id, updated_at)
             .await
@@ -554,7 +556,7 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         &self,
         connection: &Self::Connection,
         space: &SpaceRecord,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         let record = build_space_mutation_record(space).map_err(map_app_error)?;
         self.sync_repository
             .insert_pending_mutation(connection, &record)
@@ -566,7 +568,7 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         &self,
         connection: &Self::Connection,
         space: &SpaceRecord,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         let record = build_space_delete_mutation_record(space).map_err(map_app_error)?;
         self.sync_repository
             .insert_pending_mutation(connection, &record)
@@ -578,7 +580,7 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         &self,
         connection: &Self::Connection,
         project: &ProjectRecord,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         let record = build_project_mutation_record(project).map_err(map_app_error)?;
         self.sync_repository
             .insert_pending_mutation(connection, &record)
@@ -590,7 +592,7 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         &self,
         connection: &Self::Connection,
         project: &ProjectRecord,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         let record = build_project_delete_mutation_record(project).map_err(map_app_error)?;
         self.sync_repository
             .insert_pending_mutation(connection, &record)
@@ -602,7 +604,7 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         &self,
         connection: &Self::Connection,
         task: &TaskRecord,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         let record = build_task_mutation_record(task).map_err(map_app_error)?;
         self.sync_repository
             .insert_pending_mutation(connection, &record)
@@ -614,7 +616,7 @@ impl LifecycleSyncHook for LifecycleSyncHookAdapter {
         &self,
         connection: &Self::Connection,
         task: &TaskRecord,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         let record = build_task_delete_mutation_record(task).map_err(map_app_error)?;
         self.sync_repository
             .insert_pending_mutation(connection, &record)
@@ -805,7 +807,7 @@ fn build_task_delete_mutation_record(
 impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
     type Connection = sea_orm::DatabaseTransaction;
 
-    async fn begin(&self) -> Result<Self::Connection, stoneflow_usecase::UsecaseError> {
+    async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
@@ -816,14 +818,14 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
     async fn commit(
         &self,
         connection: Self::Connection,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         connection.commit().await.map_err(map_db_error)
     }
 
     async fn get(
         &self,
         task_id: &str,
-    ) -> Result<Option<TaskRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<TaskRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .get(task_id)
             .await
@@ -834,7 +836,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
     async fn list_by_space(
         &self,
         space_id: &str,
-    ) -> Result<Vec<TaskRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<TaskRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .list_by_space(space_id)
             .await
@@ -845,7 +847,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
     async fn list_by_project(
         &self,
         project_id: &str,
-    ) -> Result<Vec<TaskRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<TaskRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .list_by_project(project_id)
             .await
@@ -857,8 +859,8 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         &self,
         scope_space_id: Option<&str>,
     ) -> Result<
-        Vec<stoneflow_usecase::lifecycle::LifecycleTaskListRecord>,
-        stoneflow_usecase::UsecaseError,
+        Vec<stoneflow_application::lifecycle::LifecycleTaskListRecord>,
+        stoneflow_application::ApplicationError,
     > {
         self.repository
             .list_archived(scope_space_id)
@@ -876,8 +878,8 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         &self,
         scope_space_id: Option<&str>,
     ) -> Result<
-        Vec<stoneflow_usecase::lifecycle::LifecycleTaskListRecord>,
-        stoneflow_usecase::UsecaseError,
+        Vec<stoneflow_application::lifecycle::LifecycleTaskListRecord>,
+        stoneflow_application::ApplicationError,
     > {
         self.repository
             .list_deleted(scope_space_id)
@@ -898,7 +900,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         archived_at: &str,
         archived_by_id: &str,
         updated_at: &str,
-    ) -> Result<Option<TaskRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<TaskRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .archive_raw(connection, task_id, archived_at, archived_by_id, updated_at)
             .await
@@ -911,7 +913,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         connection: &Self::Connection,
         task_id: &str,
         updated_at: &str,
-    ) -> Result<Option<TaskRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<TaskRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .restore_raw(connection, task_id, updated_at)
             .await
@@ -926,7 +928,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         deleted_at: &str,
         deleted_by_id: &str,
         updated_at: &str,
-    ) -> Result<Option<TaskRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<TaskRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .delete_raw(connection, task_id, deleted_at, deleted_by_id, updated_at)
             .await
@@ -938,7 +940,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         task_id: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .permanently_delete(connection, task_id)
             .await
@@ -952,7 +954,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         task_id: &str,
         patch: UpdateTaskPatch,
         updated_at: &str,
-    ) -> Result<Option<TaskRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<TaskRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .update(
                 connection,
@@ -987,7 +989,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         archived_at: &str,
         archived_by_id: &str,
         updated_at: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .archive_by_space_raw(
                 connection,
@@ -1008,7 +1010,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         deleted_at: &str,
         deleted_by_id: &str,
         updated_at: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .delete_by_space_raw(connection, space_id, deleted_at, deleted_by_id, updated_at)
             .await
@@ -1023,7 +1025,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         archived_at: &str,
         archived_by_id: &str,
         updated_at: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .archive_by_project_raw(
                 connection,
@@ -1044,7 +1046,7 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
         deleted_at: &str,
         deleted_by_id: &str,
         updated_at: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .delete_by_project_raw(
                 connection,
@@ -1059,27 +1061,29 @@ impl LifecycleTaskPersistence for LifecycleTaskPersistenceAdapter {
     }
 }
 
-fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {
+fn map_db_error(error: sea_orm::DbErr) -> stoneflow_application::ApplicationError {
     map_app_error(AppError::from(error))
 }
 
-fn map_app_error(error: AppError) -> stoneflow_usecase::UsecaseError {
+fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
     match error {
-        AppError::Validation(message) => stoneflow_usecase::UsecaseError::validation(message),
-        AppError::NotFound(message) => stoneflow_usecase::UsecaseError::not_found(message),
-        AppError::Conflict(message) => stoneflow_usecase::UsecaseError::conflict(message),
-        AppError::Database(message) => stoneflow_usecase::UsecaseError::storage(message),
+        AppError::Validation(message) => {
+            stoneflow_application::ApplicationError::validation(message)
+        }
+        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
+        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
+        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
         AppError::Initialization(message) => {
-            stoneflow_usecase::UsecaseError::initialization(message)
+            stoneflow_application::ApplicationError::initialization(message)
         }
         AppError::DefaultSpaceUnavailable(message) => {
-            stoneflow_usecase::UsecaseError::default_space_unavailable(message)
+            stoneflow_application::ApplicationError::default_space_unavailable(message)
         }
         AppError::Internal(message)
         | AppError::Forbidden(message)
         | AppError::CaptureSpaceUnavailable(message)
         | AppError::CapturePersistence(message) => {
-            stoneflow_usecase::UsecaseError::internal(message)
+            stoneflow_application::ApplicationError::internal(message)
         }
     }
 }

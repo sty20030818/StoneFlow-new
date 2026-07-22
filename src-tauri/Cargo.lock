@@ -5699,6 +5699,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "stoneflow-application"
+version = "0.1.1"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "stoneflow-domain",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "stoneflow-domain"
 version = "0.1.1"
 dependencies = [
@@ -5706,36 +5718,6 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "url",
- "uuid",
-]
-
-[[package]]
-name = "stoneflow-integration-tests"
-version = "0.1.1"
-dependencies = [
- "chrono",
- "sea-orm",
- "sea-orm-migration",
- "serde_json",
- "stoneflow-domain",
- "stoneflow-migration",
- "stoneflow-runtime",
- "stoneflow-schema",
- "stoneflow-storage",
- "stoneflow-test-support",
- "stoneflow-usecase",
- "tokio",
- "uuid",
-]
-
-[[package]]
-name = "stoneflow-migration"
-version = "0.1.1"
-dependencies = [
- "sea-orm",
- "sea-orm-migration",
- "serde_json",
- "stoneflow-schema",
  "uuid",
 ]
 
@@ -5762,14 +5744,15 @@ dependencies = [
  "chrono",
  "log",
  "sea-orm",
+ "sea-orm-migration",
  "serde",
  "serde_json",
+ "stoneflow-application",
  "stoneflow-domain",
  "stoneflow-platform",
- "stoneflow-schema",
  "stoneflow-storage",
+ "stoneflow-sync",
  "stoneflow-test-support",
- "stoneflow-usecase",
  "tauri",
  "tauri-nspanel",
  "tauri-plugin-dialog",
@@ -5788,33 +5771,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "stoneflow-schema"
-version = "0.1.1"
-dependencies = [
- "sea-orm",
- "serde",
-]
-
-[[package]]
 name = "stoneflow-storage"
 version = "0.1.1"
 dependencies = [
  "chrono",
  "sea-orm",
+ "sea-orm-migration",
  "serde",
  "serde_json",
+ "stoneflow-application",
  "stoneflow-domain",
- "stoneflow-migration",
- "stoneflow-schema",
  "stoneflow-test-support",
- "stoneflow-usecase",
  "thiserror 1.0.69",
  "tokio",
  "uuid",
 ]
 
 [[package]]
-name = "stoneflow-sync-worker"
+name = "stoneflow-sync"
 version = "0.1.1"
 dependencies = [
  "libsql",
@@ -5834,18 +5808,6 @@ dependencies = [
  "sea-orm",
  "stoneflow-storage",
  "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "stoneflow-usecase"
-version = "0.1.1"
-dependencies = [
- "chrono",
- "serde",
- "serde_json",
- "stoneflow-domain",
- "thiserror 1.0.69",
  "tokio",
 ]
 

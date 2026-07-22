@@ -6,8 +6,8 @@ use crate::app::error::AppError;
 use crate::services::update_events::UpdatePhasePayload;
 use crate::services::RuntimeUpdateService;
 use crate::update_schedule::UpdateScheduleWake;
+use stoneflow_application::update::{DownloadOutcome, UpdateInfo, UpdateSessionSnapshot};
 use stoneflow_domain::{UpdateChannel, UpdateCheckMode, UpdateSettings};
-use stoneflow_usecase::update::{DownloadOutcome, UpdateInfo, UpdateSessionSnapshot};
 
 #[tauri::command]
 pub async fn check_update(
@@ -85,9 +85,7 @@ pub async fn download_and_install(
 
 /// 安装已暂存的更新并重启（用户点击「立即重启」）。
 #[tauri::command]
-pub async fn restart_and_install(
-    service: State<'_, RuntimeUpdateService>,
-) -> Result<(), AppError> {
+pub async fn restart_and_install(service: State<'_, RuntimeUpdateService>) -> Result<(), AppError> {
     service.apply_and_restart().await?;
     Ok(())
 }

@@ -1,13 +1,13 @@
 //! View Repository：只负责 View 数据持久化与原始状态变更。
 
-use sea_orm::{
-    ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, DatabaseConnection,
-    EntityTrait, QueryFilter, QueryOrder, QuerySelect,
-};
-use stoneflow_schema::{
+use crate::entities::{
     common::{ViewEntityKind, ViewKind},
     prelude::View,
     view,
+};
+use sea_orm::{
+    ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, DatabaseConnection,
+    EntityTrait, QueryFilter, QueryOrder, QuerySelect,
 };
 
 use crate::error::StorageError;

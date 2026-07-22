@@ -1,10 +1,10 @@
 //! Settings Repository：只负责 Settings JSON 持久化入口。
 
+use crate::entities::{prelude::Setting, setting};
 use sea_orm::{
     ActiveModelTrait, ConnectionTrait, DatabaseConnection, EntityTrait, IntoActiveModel, Set,
 };
 use serde::{de::DeserializeOwned, Serialize};
-use stoneflow_schema::{prelude::Setting, setting};
 
 #[derive(Debug, Clone)]
 pub struct SettingsRepository {

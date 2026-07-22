@@ -1,10 +1,10 @@
 //! Task Link Repository：只负责 Task Link 子资源的持久化与基础查询。
 
+use crate::entities::{prelude::TaskLink, task_link};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait, QueryFilter,
     QueryOrder, QuerySelect, Set,
 };
-use stoneflow_schema::{prelude::TaskLink, task_link};
 
 use crate::error::StorageError;
 

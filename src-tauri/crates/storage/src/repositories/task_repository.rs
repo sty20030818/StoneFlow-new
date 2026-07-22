@@ -2,14 +2,14 @@
 
 use std::collections::HashMap;
 
-use sea_orm::{
-    sea_query::Expr, ActiveModelTrait, ActiveValue::Set, ColumnTrait, Condition, ConnectionTrait,
-    DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect,
-};
-use stoneflow_schema::{
+use crate::entities::{
     common::TaskStatus,
     prelude::{Task, TaskLink},
     task, task_link,
+};
+use sea_orm::{
+    sea_query::Expr, ActiveModelTrait, ActiveValue::Set, ColumnTrait, Condition, ConnectionTrait,
+    DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect,
 };
 
 use crate::error::StorageError;

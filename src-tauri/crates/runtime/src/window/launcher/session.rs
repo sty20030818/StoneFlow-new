@@ -11,7 +11,9 @@ use crate::app::state::ActiveScopeState;
 use crate::composition::build_launcher_session_bridge;
 
 use super::frontend::LauncherFrontendState;
-use super::runtime::{LauncherWindowCloseReason, LauncherWindowOpenReason, LauncherWindowRuntimeState};
+use super::runtime::{
+    LauncherWindowCloseReason, LauncherWindowOpenReason, LauncherWindowRuntimeState,
+};
 
 use crate::commands::launcher::{
     LauncherErrorPayload, LauncherInitialStateResponse, LauncherOpenSessionResponse,
@@ -175,12 +177,10 @@ pub async fn close_launcher_session(
         })?
         .is_some()
     {
-        controller
-            .hide()
-            .map_err(|message| LauncherErrorPayload {
-                type_: "Internal",
-                message,
-            })?;
+        controller.hide().map_err(|message| LauncherErrorPayload {
+            type_: "Internal",
+            message,
+        })?;
         runtime
             .finish_close_for(&input.session_id)
             .await

@@ -87,7 +87,7 @@ async fn bootstrap_database_with_connection(
 ) -> Result<DatabaseRuntimeState, StorageError> {
     run_smoke_query(&connection).await?;
 
-    let applied_migrations = stoneflow_migration::run_migrations(&connection)
+    let applied_migrations = crate::migration::run_migrations(&connection)
         .await
         .map_err(map_migration_error)?;
     run_seed(&connection).await?;

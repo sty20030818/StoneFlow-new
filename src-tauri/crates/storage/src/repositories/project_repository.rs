@@ -1,10 +1,10 @@
 //! Project Repository：只负责 Project 数据持久化与原始状态变更。
 
+use crate::entities::{prelude::Project, project};
 use sea_orm::{
     sea_query::Expr, ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DatabaseConnection,
     EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set,
 };
-use stoneflow_schema::{prelude::Project, project};
 
 use crate::error::StorageError;
 

@@ -2,12 +2,17 @@
 //!
 //! 负责：
 //! - SQLite 连接与 bootstrap；
-//! - SeaORM repository 实现；
-//! - schema model 与 usecase record 映射。
+//! - SeaORM entity 与 migration；
+//! - repository 实现；
+//! - entity 与 application record 映射。
+//!
+//! 仅本 crate 允许依赖 SeaORM。
 
 pub mod database;
+pub mod entities;
 pub mod error;
 pub mod mappers;
+pub mod migration;
 pub mod repositories;
 
 pub use error::StorageError;

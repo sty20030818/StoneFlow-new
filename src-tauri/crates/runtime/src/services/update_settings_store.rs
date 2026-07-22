@@ -2,12 +2,12 @@
 
 use tauri_plugin_store::StoreExt;
 
+use stoneflow_application::update::UpdateSettingsPort;
+use stoneflow_application::ApplicationError;
 use stoneflow_domain::{
     check_mode_to_stored, normalize_check_interval_secs, parse_check_mode, UpdateChannel,
     UpdateSettings, AUTO_CHECK_INTERVAL_SECS,
 };
-use stoneflow_usecase::update::UpdateSettingsPort;
-use stoneflow_usecase::UsecaseError;
 
 /// Store 文件名（存放在 Tauri app data 目录）。
 const STORE_PATH: &str = "update-settings.json";
@@ -33,10 +33,12 @@ impl StoreUpdateSettingsAdapter {
         Self { app }
     }
 
-    fn store(&self) -> Result<std::sync::Arc<tauri_plugin_store::Store<tauri::Wry>>, UsecaseError> {
+    fn store(
+        &self,
+    ) -> Result<std::sync::Arc<tauri_plugin_store::Store<tauri::Wry>>, ApplicationError> {
         self.app
             .store(STORE_PATH)
-            .map_err(|e| UsecaseError::update(format!("打开更新设置 store 失败: {e}")))
+            .map_err(|e| ApplicationError::update(format!("打开更新设置 store 失败: {e}")))
     }
 }
 
@@ -70,7 +72,7 @@ fn load_skipped_version(
 }
 
 impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
-    async fn load(&self) -> Result<UpdateSettings, UsecaseError> {
+    async fn load(&self) -> Result<UpdateSettings, ApplicationError> {
         let store = self.store()?;
 
         let raw_mode = store
@@ -103,8 +105,8 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
             .and_then(|v| v.as_i64().or_else(|| v.as_u64().map(|u| u as i64)))
             .unwrap_or(AUTO_CHECK_INTERVAL_SECS);
         let check_interval_secs = normalize_check_interval_secs(raw_interval);
-        let interval_needs_rewrite = check_interval_secs != raw_interval
-            || store.get(KEY_CHECK_INTERVAL_SECS).is_none();
+        let interval_needs_rewrite =
+            check_interval_secs != raw_interval || store.get(KEY_CHECK_INTERVAL_SECS).is_none();
 
         let settings = UpdateSettings {
             check_mode,
@@ -121,39 +123,42 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
         Ok(settings)
     }
 
-    async fn save(&self, settings: &UpdateSettings) -> Result<(), UsecaseError> {
+    async fn save(&self, settings: &UpdateSettings) -> Result<(), ApplicationError> {
         let store = self.store()?;
         let check_interval_secs = normalize_check_interval_secs(settings.check_interval_secs);
         store.set(
             KEY_CHECK_MODE,
             serde_json::to_value(settings.check_mode)
-                .map_err(|e| UsecaseError::update(format!("序列化 check_mode 失败: {e}")))?,
+                .map_err(|e| ApplicationError::update(format!("序列化 check_mode 失败: {e}")))?,
         );
         store.set(
             KEY_CHANNEL,
             serde_json::to_value(settings.channel)
-                .map_err(|e| UsecaseError::update(format!("序列化 channel 失败: {e}")))?,
+                .map_err(|e| ApplicationError::update(format!("序列化 channel 失败: {e}")))?,
         );
         store.set(
             KEY_SKIPPED_VERSION,
-            serde_json::to_value(&settings.skipped_version)
-                .map_err(|e| UsecaseError::update(format!("序列化 skipped_version 失败: {e}")))?,
+            serde_json::to_value(&settings.skipped_version).map_err(|e| {
+                ApplicationError::update(format!("序列化 skipped_version 失败: {e}"))
+            })?,
         );
         // 清掉旧数组键，避免双源
         store.delete(KEY_SKIPPED_VERSIONS_LEGACY);
         store.set(
             KEY_LAST_CHECKED_AT,
-            serde_json::to_value(settings.last_checked_at)
-                .map_err(|e| UsecaseError::update(format!("序列化 last_checked_at 失败: {e}")))?,
+            serde_json::to_value(settings.last_checked_at).map_err(|e| {
+                ApplicationError::update(format!("序列化 last_checked_at 失败: {e}"))
+            })?,
         );
         store.set(
             KEY_CHECK_INTERVAL_SECS,
-            serde_json::to_value(check_interval_secs)
-                .map_err(|e| UsecaseError::update(format!("序列化 check_interval_secs 失败: {e}")))?,
+            serde_json::to_value(check_interval_secs).map_err(|e| {
+                ApplicationError::update(format!("序列化 check_interval_secs 失败: {e}"))
+            })?,
         );
         store
             .save()
-            .map_err(|e| UsecaseError::update(format!("保存更新设置失败: {e}")))?;
+            .map_err(|e| ApplicationError::update(format!("保存更新设置失败: {e}")))?;
         Ok(())
     }
 }

@@ -2,15 +2,15 @@
 
 use std::collections::HashMap;
 
-use stoneflow_domain::LauncherSpaceCandidate;
-use stoneflow_schema::{project, space, task};
-use stoneflow_usecase::{
+use stoneflow_application::{
     launcher::{
-        LauncherPorts, LauncherTaskDetail, LauncherProjectItemDto, LauncherSidebarProjectDto,
-        LauncherSpaceSummaryDto, LauncherTaskItemDto,
+        LauncherPorts, LauncherProjectItemDto, LauncherSidebarProjectDto, LauncherSpaceSummaryDto,
+        LauncherTaskDetail, LauncherTaskItemDto,
     },
-    UsecaseError,
+    ApplicationError,
 };
+use stoneflow_domain::LauncherSpaceCandidate;
+use stoneflow_storage::entities::{project, space, task};
 
 use crate::{
     app::error::AppError,
@@ -55,7 +55,7 @@ impl LauncherPortsAdapter {
 }
 
 impl LauncherPorts for LauncherPortsAdapter {
-    async fn list_visible_spaces(&self) -> Result<Vec<LauncherSpaceSummaryDto>, UsecaseError> {
+    async fn list_visible_spaces(&self) -> Result<Vec<LauncherSpaceSummaryDto>, ApplicationError> {
         self.space_service
             .list_visible_spaces()
             .await
@@ -74,7 +74,7 @@ impl LauncherPorts for LauncherPortsAdapter {
             .map_err(map_app_error)
     }
 
-    async fn list_space_candidates(&self) -> Result<Vec<LauncherSpaceCandidate>, UsecaseError> {
+    async fn list_space_candidates(&self) -> Result<Vec<LauncherSpaceCandidate>, ApplicationError> {
         self.space_repository
             .list_visible()
             .await
@@ -93,7 +93,7 @@ impl LauncherPorts for LauncherPortsAdapter {
     async fn get_space(
         &self,
         space_id: &str,
-    ) -> Result<Option<LauncherSpaceCandidate>, UsecaseError> {
+    ) -> Result<Option<LauncherSpaceCandidate>, ApplicationError> {
         self.space_repository
             .get(space_id)
             .await
@@ -109,7 +109,7 @@ impl LauncherPorts for LauncherPortsAdapter {
     async fn list_sidebar_projects_for_space(
         &self,
         space_id: &str,
-    ) -> Result<Vec<LauncherSidebarProjectDto>, UsecaseError> {
+    ) -> Result<Vec<LauncherSidebarProjectDto>, ApplicationError> {
         self.project_service
             .list_sidebar_projects(ListSidebarProjectsInput {
                 scope: ProjectScopeInput {
@@ -133,7 +133,7 @@ impl LauncherPorts for LauncherPortsAdapter {
             .map_err(map_app_error)
     }
 
-    async fn get_task_detail(&self, task_id: &str) -> Result<LauncherTaskDetail, UsecaseError> {
+    async fn get_task_detail(&self, task_id: &str) -> Result<LauncherTaskDetail, ApplicationError> {
         self.task_service
             .get_task_detail(TaskIdInput {
                 task_id: task_id.to_owned(),
@@ -143,9 +143,9 @@ impl LauncherPorts for LauncherPortsAdapter {
             .map_err(map_app_error)
     }
 
-    async fn get_project_space_id(&self, project_id: &str) -> Result<String, UsecaseError> {
+    async fn get_project_space_id(&self, project_id: &str) -> Result<String, ApplicationError> {
         self.project_service
-            .get_project_detail(stoneflow_usecase::project::ProjectIdInput {
+            .get_project_detail(stoneflow_application::project::ProjectIdInput {
                 project_id: project_id.to_owned(),
             })
             .await
@@ -153,7 +153,10 @@ impl LauncherPorts for LauncherPortsAdapter {
             .map_err(map_app_error)
     }
 
-    async fn list_recent_tasks(&self, limit: usize) -> Result<Vec<LauncherTaskItemDto>, UsecaseError> {
+    async fn list_recent_tasks(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<LauncherTaskItemDto>, ApplicationError> {
         let spaces = self
             .space_repository
             .list_visible()
@@ -195,7 +198,7 @@ impl LauncherPorts for LauncherPortsAdapter {
     async fn list_recent_projects(
         &self,
         limit: usize,
-    ) -> Result<Vec<LauncherProjectItemDto>, UsecaseError> {
+    ) -> Result<Vec<LauncherProjectItemDto>, ApplicationError> {
         let spaces = self
             .space_repository
             .list_visible()
@@ -286,7 +289,7 @@ fn map_project_model(
     }
 }
 
-fn map_schema_task_status(status: stoneflow_schema::common::TaskStatus) -> String {
+fn map_schema_task_status(status: stoneflow_storage::entities::common::TaskStatus) -> String {
     match task_status_to_domain(status) {
         stoneflow_domain::TaskStatus::Todo => "todo".to_owned(),
         stoneflow_domain::TaskStatus::Doing => "doing".to_owned(),
@@ -296,23 +299,23 @@ fn map_schema_task_status(status: stoneflow_schema::common::TaskStatus) -> Strin
     }
 }
 
-fn map_storage_error(error: stoneflow_storage::StorageError) -> UsecaseError {
+fn map_storage_error(error: stoneflow_storage::StorageError) -> ApplicationError {
     map_app_error(AppError::from(error))
 }
 
-pub fn map_app_error(error: AppError) -> UsecaseError {
+pub fn map_app_error(error: AppError) -> ApplicationError {
     match error {
-        AppError::Validation(message) => UsecaseError::validation(message),
-        AppError::NotFound(message) => UsecaseError::not_found(message),
-        AppError::Conflict(message) => UsecaseError::conflict(message),
-        AppError::Database(message) => UsecaseError::storage(message),
-        AppError::Initialization(message) => UsecaseError::initialization(message),
+        AppError::Validation(message) => ApplicationError::validation(message),
+        AppError::NotFound(message) => ApplicationError::not_found(message),
+        AppError::Conflict(message) => ApplicationError::conflict(message),
+        AppError::Database(message) => ApplicationError::storage(message),
+        AppError::Initialization(message) => ApplicationError::initialization(message),
         AppError::DefaultSpaceUnavailable(message) => {
-            UsecaseError::default_space_unavailable(message)
+            ApplicationError::default_space_unavailable(message)
         }
         AppError::Internal(message)
         | AppError::Forbidden(message)
         | AppError::CaptureSpaceUnavailable(message)
-        | AppError::CapturePersistence(message) => UsecaseError::internal(message),
+        | AppError::CapturePersistence(message) => ApplicationError::internal(message),
     }
 }

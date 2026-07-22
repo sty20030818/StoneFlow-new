@@ -1,9 +1,9 @@
 # StoneFlow Tauri 后端架构
 
-> 版本：v7
+> 版本：v8
 > 作用：定义 `src-tauri/` 当前已经落地的 Rust + Tauri v2 正式边界
 > 适用范围：`/Users/stonefish/Desktop/StoneFlow/src-tauri`
-> 最后更新：2026-06-16
+> 最后更新：2026-07-22
 
 ---
 
@@ -13,9 +13,10 @@ StoneFlow 当前是一个单 binary 的 Tauri 桌面应用：
 
 1. 只有一个生产 binary：`stoneflow`
 2. 主窗口和 Launcher 浮窗由同一个 Tauri Core 管理
-3. 业务规则在 `domain` / `usecase`
-4. 持久化在 `storage` / `schema` / `migration`
-5. Tauri 壳层、IPC、窗口、shortcut、tray 在 `runtime` / `platform`
+3. 业务规则在 `domain` / `application`
+4. 持久化在 `storage`（含 entities 与 migration）
+5. 同步在同进程 `sync` library
+6. Tauri 壳层、IPC、窗口、shortcut、tray 在 `runtime` / `platform`
 
 前端与后端的真实关系是：
 
@@ -24,11 +25,11 @@ Frontend (React)
   -> feature api facade
   -> Tauri invoke / event
   -> runtime
-  -> usecase / storage / platform
-  -> SQLite
+  -> application / storage / sync / platform
+  -> SQLite / Turso
 ```
 
-前端不会直接访问数据库，也不会绕过 `runtime` 直连 `usecase`。
+前端不会直接访问数据库，也不会绕过 `runtime` 直连 `application`。
 
 ---
 
@@ -45,12 +46,10 @@ src-tauri/
 │  ├─ runtime/
 │  ├─ platform/
 │  ├─ domain/
-│  ├─ usecase/
+│  ├─ application/
 │  ├─ storage/
-│  ├─ schema/
-│  ├─ migration/
-│  ├─ test-support/
-│  └─ integration-tests/
+│  ├─ sync/
+│  └─ test-support/
 ├─ capabilities/
 │  ├─ main.json
 │  └─ launcher.json
@@ -58,19 +57,21 @@ src-tauri/
 └─ Cargo.toml
 ```
 
-当前 workspace members 一共 9 个：
+当前 workspace members：
 
 1. `crates/runtime`
 2. `crates/platform`
 3. `crates/domain`
-4. `crates/usecase`
+4. `crates/application`
 5. `crates/storage`
-6. `crates/schema`
+6. `crates/sync`
 7. `crates/test-support`
-8. `crates/integration-tests`
-9. `crates/migration`
 
 根包 `stoneflow` 本身只负责桌面入口与 Tauri 绑定。
+
+已移除：`usecase`（改名 application）、`schema` / `migration`（并入 storage）、`sync-worker` sidecar（改为 sync library）、`integration-tests` host（并入 runtime `#[cfg(test)]`）。
+
+`runtime/services` 仍是过渡 adapter，标记为 R9 清理目标。
 
 ---
 
@@ -397,7 +398,7 @@ pub fn run() {
 当前错误分层：
 
 1. `DomainError`
-2. `UsecaseError`
+2. `ApplicationError`
 3. `StorageError`
 4. `AppError`
 

@@ -101,3 +101,6 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
         _ => {}
     });
 }
+
+#[cfg(test)]
+mod integration_tests;

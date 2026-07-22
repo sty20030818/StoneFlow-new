@@ -5,21 +5,16 @@
 use serde::{Deserialize, Serialize};
 
 /// 更新检查模式（用户设置）。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum UpdateCheckMode {
     /// 不自动检查，仅用户手动触发。
     Manual,
     /// 启动 + 定时检查，发现更新弹窗提示，用户决定是否下载。
+    #[default]
     NotifyOnly,
     /// 静默后台下载，下载完成后提示用户重启（不自动重启）。
     AutoDownload,
-}
-
-impl Default for UpdateCheckMode {
-    fn default() -> Self {
-        Self::NotifyOnly
-    }
 }
 
 /// 从持久化字符串解析检查模式。
@@ -45,19 +40,14 @@ pub fn check_mode_to_stored(mode: UpdateCheckMode) -> &'static str {
 }
 
 /// 更新渠道。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum UpdateChannel {
     /// 正式版。
+    #[default]
     Stable,
     /// 测试版（包含实验性功能）。
     Beta,
-}
-
-impl Default for UpdateChannel {
-    fn default() -> Self {
-        Self::Stable
-    }
 }
 
 impl UpdateChannel {

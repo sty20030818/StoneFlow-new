@@ -1,8 +1,8 @@
 //! Seed 运行入口：负责幂等编排，不承载业务 CRUD。
 
+use crate::entities::{setting, space, view};
 use sea_orm::{ActiveValue::Set, DatabaseConnection, TransactionTrait};
 use serde_json::Value;
-use stoneflow_schema::{setting, space, view};
 
 use crate::error::StorageError;
 use stoneflow_domain::{create_id, now_utc};
@@ -81,7 +81,7 @@ where
                 id: Set(create_id().to_string()),
                 name: Set(seed.name.to_owned()),
                 description: Set(None),
-                r#type: Set(stoneflow_schema::common::ViewKind::System),
+                r#type: Set(crate::entities::common::ViewKind::System),
                 entity_type: Set(seed.entity_type),
                 key: Set(Some(seed.key.to_owned())),
                 filters: Set(json_string(&seed.filters)?),

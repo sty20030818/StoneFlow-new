@@ -2,22 +2,22 @@
 
 use std::collections::HashMap;
 
+use crate::entities::{
+    activity_change, activity_event,
+    common::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind},
+    prelude::{ActivityChange, ActivityEvent},
+};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait, QueryFilter,
     QueryOrder, QuerySelect, Set,
 };
 use serde_json::Value;
-use stoneflow_schema::{
-    activity_change, activity_event,
-    common::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind},
-    prelude::{ActivityChange, ActivityEvent},
-};
 
 use crate::error::StorageError;
 use crate::mappers::{
     activity_actor_kind_to_domain, activity_entity_kind_to_domain, activity_source_kind_to_domain,
 };
-use stoneflow_usecase::activity::{ActivityTimelineChange, ActivityTimelineEntry};
+use stoneflow_application::activity::{ActivityTimelineChange, ActivityTimelineEntry};
 
 /// 写入一条 Activity event 所需的持久化字段。
 #[derive(Debug, Clone)]

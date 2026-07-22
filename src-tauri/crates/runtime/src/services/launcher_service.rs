@@ -1,11 +1,11 @@
-//! Launcher Service：真源在 `stoneflow-usecase`。
+//! Launcher Service：真源在 `stoneflow-application`。
 
-use stoneflow_usecase::launcher::{
-    ActiveScopeInput, ActiveScopeKind, LauncherService as LauncherUsecase,
-    LauncherListProjectsBySpaceInput, LauncherProjectsBySpaceDto,
+use stoneflow_application::launcher::{
+    ActiveScopeInput, ActiveScopeKind, LauncherListProjectsBySpaceInput,
+    LauncherProjectsBySpaceDto, LauncherService as LauncherUsecase,
 };
 
-pub use stoneflow_usecase::launcher::{LauncherResolvedOpenTarget, LauncherResolvedPlacement};
+pub use stoneflow_application::launcher::{LauncherResolvedOpenTarget, LauncherResolvedPlacement};
 
 use crate::{
     app::{error::AppError, state::ActiveScopeSnapshot},

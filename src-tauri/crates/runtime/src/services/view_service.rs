@@ -1,12 +1,11 @@
-//! View Service 兼容壳：真源在 `stoneflow-usecase`。
+//! View Service 兼容壳：真源在 `stoneflow-application`。
 
-use serde::Serialize;
 use sea_orm::TransactionTrait;
-use stoneflow_usecase::{
+use serde::Serialize;
+use stoneflow_application::{
     activity::ActivityService as ActivityUsecase,
     view::{
-        ViewLookupReader, ViewPersistence, ViewRecord, ViewService as ViewUsecase,
-        ViewTaskReader,
+        ViewLookupReader, ViewPersistence, ViewRecord, ViewService as ViewUsecase, ViewTaskReader,
     },
 };
 
@@ -23,12 +22,12 @@ use stoneflow_storage::{
         view_kind_to_schema,
     },
     repositories::{
-        CreateViewRecord, ProjectRepository, SpaceRepository, TaskPlacementQuery, TaskRepository,
-        SyncRepository, UpdateViewPatch, ViewListQuery, ViewRepository,
+        CreateViewRecord, ProjectRepository, SpaceRepository, SyncRepository, TaskPlacementQuery,
+        TaskRepository, UpdateViewPatch, ViewListQuery, ViewRepository,
     },
 };
 
-pub use stoneflow_usecase::view::{
+pub use stoneflow_application::view::{
     CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunProjectViewInput,
     RunTaskViewInput, RunTaskViewOutput, TaskViewGroupDto, ToggleViewVisibleInput, UpdateViewInput,
     ViewDto, ViewSortDirection, ViewSortRuleDto,
@@ -133,7 +132,7 @@ impl ViewPersistenceAdapter {
 impl ViewPersistence for ViewPersistenceAdapter {
     type Connection = sea_orm::DatabaseTransaction;
 
-    async fn begin(&self) -> Result<Self::Connection, stoneflow_usecase::UsecaseError> {
+    async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
@@ -144,14 +143,17 @@ impl ViewPersistence for ViewPersistenceAdapter {
     async fn commit(
         &self,
         connection: Self::Connection,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         connection.commit().await.map_err(map_db_error)
     }
 
     async fn get(
         &self,
         view_id: &str,
-    ) -> Result<Option<stoneflow_usecase::view::ViewRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<
+        Option<stoneflow_application::view::ViewRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .get(view_id)
             .await
@@ -163,7 +165,10 @@ impl ViewPersistence for ViewPersistenceAdapter {
         &self,
         entity_type: stoneflow_domain::ViewEntityKind,
         key: &str,
-    ) -> Result<Option<stoneflow_usecase::view::ViewRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<
+        Option<stoneflow_application::view::ViewRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .get_by_key(view_entity_kind_to_schema(entity_type), key)
             .await
@@ -173,8 +178,9 @@ impl ViewPersistence for ViewPersistenceAdapter {
 
     async fn list(
         &self,
-        query: stoneflow_usecase::view::ViewListQuery,
-    ) -> Result<Vec<stoneflow_usecase::view::ViewRecord>, stoneflow_usecase::UsecaseError> {
+        query: stoneflow_application::view::ViewListQuery,
+    ) -> Result<Vec<stoneflow_application::view::ViewRecord>, stoneflow_application::ApplicationError>
+    {
         self.repository
             .list(ViewListQuery {
                 entity_type: view_entity_kind_to_schema(query.entity_type),
@@ -189,7 +195,7 @@ impl ViewPersistence for ViewPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         entity_type: stoneflow_domain::ViewEntityKind,
-    ) -> Result<i32, stoneflow_usecase::UsecaseError> {
+    ) -> Result<i32, stoneflow_application::ApplicationError> {
         self.repository
             .next_sort_order(connection, view_entity_kind_to_schema(entity_type))
             .await
@@ -199,8 +205,9 @@ impl ViewPersistence for ViewPersistenceAdapter {
     async fn create(
         &self,
         connection: &Self::Connection,
-        record: stoneflow_usecase::view::CreateViewPersistenceRecord,
-    ) -> Result<stoneflow_usecase::view::ViewRecord, stoneflow_usecase::UsecaseError> {
+        record: stoneflow_application::view::CreateViewPersistenceRecord,
+    ) -> Result<stoneflow_application::view::ViewRecord, stoneflow_application::ApplicationError>
+    {
         let view = self
             .repository
             .create(
@@ -237,8 +244,11 @@ impl ViewPersistence for ViewPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         view_id: &str,
-        patch: stoneflow_usecase::view::UpdateViewPatch,
-    ) -> Result<Option<stoneflow_usecase::view::ViewRecord>, stoneflow_usecase::UsecaseError> {
+        patch: stoneflow_application::view::UpdateViewPatch,
+    ) -> Result<
+        Option<stoneflow_application::view::ViewRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         let view = self
             .repository
             .update(
@@ -274,7 +284,7 @@ impl ViewPersistence for ViewPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         view_id: &str,
-    ) -> Result<u64, stoneflow_usecase::UsecaseError> {
+    ) -> Result<u64, stoneflow_application::ApplicationError> {
         let current = self.get(view_id).await?;
         let affected = self
             .repository
@@ -284,7 +294,8 @@ impl ViewPersistence for ViewPersistenceAdapter {
 
         if affected > 0 {
             if let Some(current) = current.as_ref() {
-                let mutation_record = build_view_delete_mutation_record(current).map_err(map_app_error)?;
+                let mutation_record =
+                    build_view_delete_mutation_record(current).map_err(map_app_error)?;
                 self.sync_repository
                     .insert_pending_mutation(connection, &mutation_record)
                     .await
@@ -336,13 +347,23 @@ impl<'a> From<&'a ViewRecord> for ViewSyncPayload<'a> {
 fn build_view_upsert_mutation_record(
     view: &ViewRecord,
 ) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
-    build_upsert_record("view", &view.id, &ViewSyncPayload::from(view), &view.updated_at)
+    build_upsert_record(
+        "view",
+        &view.id,
+        &ViewSyncPayload::from(view),
+        &view.updated_at,
+    )
 }
 
 fn build_view_delete_mutation_record(
     view: &ViewRecord,
 ) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
-    build_delete_record("view", &view.id, &ViewSyncPayload::from(view), &view.updated_at)
+    build_delete_record(
+        "view",
+        &view.id,
+        &ViewSyncPayload::from(view),
+        &view.updated_at,
+    )
 }
 
 #[derive(Debug, Clone)]
@@ -360,9 +381,12 @@ impl ViewTaskReader for ViewTaskReaderAdapter {
     async fn list_candidates(
         &self,
         space_id: Option<String>,
-        placement: stoneflow_usecase::view::ViewTaskPlacementQuery,
+        placement: stoneflow_application::view::ViewTaskPlacementQuery,
         include_deleted: bool,
-    ) -> Result<Vec<stoneflow_usecase::view::ViewTaskRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<
+        Vec<stoneflow_application::view::ViewTaskRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .list_candidates(
                 space_id,
@@ -399,15 +423,17 @@ impl ViewLookupReader for ViewLookupReaderAdapter {
     async fn list_spaces_by_ids(
         &self,
         space_ids: &[String],
-    ) -> Result<Vec<stoneflow_usecase::view::ViewSpaceLookupRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Vec<stoneflow_application::view::ViewSpaceLookupRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.space_repository
             .list_by_ids(space_ids)
             .await
             .map(|spaces| {
                 spaces
                     .into_iter()
-                    .map(|space| stoneflow_usecase::view::ViewSpaceLookupRecord {
+                    .map(|space| stoneflow_application::view::ViewSpaceLookupRecord {
                         id: space.id,
                         name: space.name,
                     })
@@ -420,8 +446,8 @@ impl ViewLookupReader for ViewLookupReaderAdapter {
         &self,
         project_ids: &[String],
     ) -> Result<
-        Vec<stoneflow_usecase::view::ViewProjectLookupRecord>,
-        stoneflow_usecase::UsecaseError,
+        Vec<stoneflow_application::view::ViewProjectLookupRecord>,
+        stoneflow_application::ApplicationError,
     > {
         self.project_repository
             .list_by_ids(project_ids)
@@ -429,10 +455,12 @@ impl ViewLookupReader for ViewLookupReaderAdapter {
             .map(|projects| {
                 projects
                     .into_iter()
-                    .map(|project| stoneflow_usecase::view::ViewProjectLookupRecord {
-                        id: project.id,
-                        name: project.name,
-                    })
+                    .map(
+                        |project| stoneflow_application::view::ViewProjectLookupRecord {
+                            id: project.id,
+                            name: project.name,
+                        },
+                    )
                     .collect()
             })
             .map_err(|error| map_app_error(error.into()))
@@ -440,39 +468,43 @@ impl ViewLookupReader for ViewLookupReaderAdapter {
 }
 
 fn map_view_task_placement_to_repo(
-    placement: stoneflow_usecase::view::ViewTaskPlacementQuery,
+    placement: stoneflow_application::view::ViewTaskPlacementQuery,
 ) -> TaskPlacementQuery {
     match placement {
-        stoneflow_usecase::view::ViewTaskPlacementQuery::All => TaskPlacementQuery::All,
-        stoneflow_usecase::view::ViewTaskPlacementQuery::Project(project_id) => {
+        stoneflow_application::view::ViewTaskPlacementQuery::All => TaskPlacementQuery::All,
+        stoneflow_application::view::ViewTaskPlacementQuery::Project(project_id) => {
             TaskPlacementQuery::Project(project_id)
         }
-        stoneflow_usecase::view::ViewTaskPlacementQuery::Inbox => TaskPlacementQuery::Inbox,
-        stoneflow_usecase::view::ViewTaskPlacementQuery::NoProject => TaskPlacementQuery::NoProject,
+        stoneflow_application::view::ViewTaskPlacementQuery::Inbox => TaskPlacementQuery::Inbox,
+        stoneflow_application::view::ViewTaskPlacementQuery::NoProject => {
+            TaskPlacementQuery::NoProject
+        }
     }
 }
 
-fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {
+fn map_db_error(error: sea_orm::DbErr) -> stoneflow_application::ApplicationError {
     map_app_error(AppError::from(error))
 }
 
-fn map_app_error(error: AppError) -> stoneflow_usecase::UsecaseError {
+fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
     match error {
-        AppError::Validation(message) => stoneflow_usecase::UsecaseError::validation(message),
-        AppError::NotFound(message) => stoneflow_usecase::UsecaseError::not_found(message),
-        AppError::Conflict(message) => stoneflow_usecase::UsecaseError::conflict(message),
-        AppError::Database(message) => stoneflow_usecase::UsecaseError::storage(message),
+        AppError::Validation(message) => {
+            stoneflow_application::ApplicationError::validation(message)
+        }
+        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
+        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
+        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
         AppError::Initialization(message) => {
-            stoneflow_usecase::UsecaseError::initialization(message)
+            stoneflow_application::ApplicationError::initialization(message)
         }
         AppError::DefaultSpaceUnavailable(message) => {
-            stoneflow_usecase::UsecaseError::default_space_unavailable(message)
+            stoneflow_application::ApplicationError::default_space_unavailable(message)
         }
         AppError::Internal(message)
         | AppError::Forbidden(message)
         | AppError::CaptureSpaceUnavailable(message)
         | AppError::CapturePersistence(message) => {
-            stoneflow_usecase::UsecaseError::internal(message)
+            stoneflow_application::ApplicationError::internal(message)
         }
     }
 }

@@ -1,6 +1,6 @@
 //! Launcher Open Context：prepare-session 只读上下文编排壳（真源在 usecase）。
 
-use stoneflow_usecase::launcher_context::{
+use stoneflow_application::launcher_context::{
     LauncherContextService as LauncherContextUsecase, LauncherInitialStateDto,
 };
 
@@ -8,7 +8,7 @@ use crate::{
     app::{error::AppError, state::ActiveScopeSnapshot},
     services::{
         activity::ActivityService, launcher_adapter::LauncherPortsAdapter,
-        launcher_service::map_active_scope, ProjectService, LauncherService, SpaceService,
+        launcher_service::map_active_scope, LauncherService, ProjectService, SpaceService,
         TaskService,
     },
 };

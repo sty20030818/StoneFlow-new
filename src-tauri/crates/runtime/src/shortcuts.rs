@@ -159,10 +159,7 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
             log::info!("runtime: 打开 launcher session={}", response.session_id);
         }
         Err(error) => {
-            log::warn!(
-                "runtime: launcher prepare session 失败: {}",
-                error.message
-            );
+            log::warn!("runtime: launcher prepare session 失败: {}", error.message);
         }
     }
 }

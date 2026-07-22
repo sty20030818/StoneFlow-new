@@ -1,8 +1,8 @@
-//! Settings Service 兼容壳：真实编排已迁到 `stoneflow-usecase`。
+//! Settings Service 兼容壳：真实编排已迁到 `stoneflow-application`。
 
-use serde::Serialize;
 use sea_orm::{DatabaseTransaction, TransactionTrait};
-use stoneflow_usecase::{
+use serde::Serialize;
+use stoneflow_application::{
     activity::ActivityService as ActivityUsecase,
     settings::{SettingsPersistence, SettingsService as SettingsUsecase},
 };
@@ -13,11 +13,11 @@ use crate::{
 };
 use stoneflow_storage::repositories::{SettingsRepository, SyncRepository};
 
-pub use stoneflow_usecase::settings::{
-	GetSidebarSettingsOutput, SidebarFooterItemKey, SidebarItemConfig, SidebarItemVisibilityTarget,
-	SidebarMainItemKey, SidebarMainItems, SidebarPreferenceSettings,
-	SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
-	UpdateSidebarProjectSectionInput,
+pub use stoneflow_application::settings::{
+    GetSidebarSettingsOutput, SidebarFooterItemKey, SidebarItemConfig, SidebarItemVisibilityTarget,
+    SidebarMainItemKey, SidebarMainItems, SidebarPreferenceSettings,
+    SidebarProjectSectionPreferenceConfig, UpdateSidebarItemVisibilityInput,
+    UpdateSidebarProjectSectionInput,
 };
 
 /// Settings 编排兼容壳。
@@ -48,14 +48,14 @@ impl SettingsService {
         &self.repository
     }
 
-	pub async fn get_sidebar_settings(&self) -> Result<SidebarPreferenceSettings, AppError> {
-		self.inner
-			.get_sidebar_settings()
-			.await
-			.map_err(AppError::from)
-	}
+    pub async fn get_sidebar_settings(&self) -> Result<SidebarPreferenceSettings, AppError> {
+        self.inner
+            .get_sidebar_settings()
+            .await
+            .map_err(AppError::from)
+    }
 
-	pub async fn update_sidebar_item_visibility(
+    pub async fn update_sidebar_item_visibility(
         &self,
         input: UpdateSidebarItemVisibilityInput,
     ) -> Result<SidebarPreferenceSettings, AppError> {
@@ -94,7 +94,7 @@ impl SettingsPersistenceAdapter {
 impl SettingsPersistence for SettingsPersistenceAdapter {
     type Connection = DatabaseTransaction;
 
-    async fn begin(&self) -> Result<Self::Connection, stoneflow_usecase::UsecaseError> {
+    async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
@@ -105,14 +105,14 @@ impl SettingsPersistence for SettingsPersistenceAdapter {
     async fn commit(
         &self,
         connection: Self::Connection,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         connection.commit().await.map_err(map_db_error)
     }
 
     async fn find_raw_setting(
         &self,
         key: &str,
-    ) -> Result<Option<String>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Option<String>, stoneflow_application::ApplicationError> {
         self.repository
             .find_raw_setting(key)
             .await
@@ -125,14 +125,14 @@ impl SettingsPersistence for SettingsPersistenceAdapter {
         key: &str,
         raw_value: &str,
         updated_at: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .set_raw_setting_in_connection(connection, key, raw_value, updated_at)
             .await
             .map_err(|error| map_app_error(error.into()))?;
 
-        let mutation_record = build_setting_mutation_record(key, raw_value, updated_at)
-            .map_err(map_app_error)?;
+        let mutation_record =
+            build_setting_mutation_record(key, raw_value, updated_at).map_err(map_app_error)?;
         self.sync_repository
             .insert_pending_mutation(connection, &mutation_record)
             .await
@@ -166,25 +166,27 @@ fn build_setting_mutation_record(
     )
 }
 
-fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {
+fn map_db_error(error: sea_orm::DbErr) -> stoneflow_application::ApplicationError {
     map_app_error(AppError::from(error))
 }
 
-fn map_app_error(error: AppError) -> stoneflow_usecase::UsecaseError {
+fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
     match error {
-        AppError::Validation(message) => stoneflow_usecase::UsecaseError::validation(message),
-        AppError::NotFound(message) => stoneflow_usecase::UsecaseError::not_found(message),
-        AppError::Conflict(message) => stoneflow_usecase::UsecaseError::conflict(message),
-        AppError::Database(message) => stoneflow_usecase::UsecaseError::storage(message),
+        AppError::Validation(message) => {
+            stoneflow_application::ApplicationError::validation(message)
+        }
+        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
+        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
+        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
         AppError::Initialization(message) => {
-            stoneflow_usecase::UsecaseError::initialization(message)
+            stoneflow_application::ApplicationError::initialization(message)
         }
         AppError::Internal(message)
         | AppError::Forbidden(message)
         | AppError::CaptureSpaceUnavailable(message)
         | AppError::DefaultSpaceUnavailable(message)
         | AppError::CapturePersistence(message) => {
-            stoneflow_usecase::UsecaseError::internal(message)
+            stoneflow_application::ApplicationError::internal(message)
         }
     }
 }

@@ -1,7 +1,7 @@
-//! Activity Service 兼容壳：真实编排已迁到 `stoneflow-usecase`。
+//! Activity Service 兼容壳：真实编排已迁到 `stoneflow-application`。
 
 use sea_orm::DatabaseTransaction;
-use stoneflow_usecase::activity::{
+use stoneflow_application::activity::{
     ActivityService as ActivityUsecase, ActivityTimelineEntry, GetEntityActivitiesInput,
     RecordActivityInput,
 };
@@ -9,7 +9,7 @@ use stoneflow_usecase::activity::{
 use crate::{app::error::AppError, services::activity::adapter::ActivityPersistenceAdapter};
 use stoneflow_storage::repositories::ActivityRepository;
 
-pub use stoneflow_usecase::activity::{
+pub use stoneflow_application::activity::{
     create_changes, ActivityAction, ActivityChangeInput, ActivityTimelineChange,
 };
 

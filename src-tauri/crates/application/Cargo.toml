@@ -1,0 +1,20 @@
+[package]
+name = "stoneflow-application"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "stoneflow_application"
+path = "src/lib.rs"
+
+[dependencies]
+chrono.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+stoneflow-domain = { path = "../domain" }
+thiserror.workspace = true
+tokio = { workspace = true, features = ["rt", "macros", "sync", "time"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "time"] }

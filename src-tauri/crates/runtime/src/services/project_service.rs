@@ -1,20 +1,19 @@
-//! Project Service 兼容壳：CRUD 真源在 `stoneflow-usecase`；生命周期仍委托 `LifecycleService`。
+//! Project Service 兼容壳：CRUD 真源在 `stoneflow-application`；生命周期仍委托 `LifecycleService`。
 
 use sea_orm::TransactionTrait;
-use stoneflow_domain::validate_project_id;
-use stoneflow_usecase::{
+use stoneflow_application::{
     activity::ActivityService as ActivityUsecase,
     project::{
-        ProjectPersistence, ProjectRecord, ProjectService as ProjectUsecase,
-        ProjectSpaceReader, ProjectTaskCounter,
+        ProjectPersistence, ProjectRecord, ProjectService as ProjectUsecase, ProjectSpaceReader,
+        ProjectTaskCounter,
     },
 };
+use stoneflow_domain::validate_project_id;
 
 use crate::{
     app::error::AppError,
     services::{
-        activity::ActivityPersistenceAdapter, sync_mutation::build_upsert_record,
-        LifecycleService,
+        activity::ActivityPersistenceAdapter, sync_mutation::build_upsert_record, LifecycleService,
     },
 };
 use stoneflow_storage::{
@@ -25,7 +24,7 @@ use stoneflow_storage::{
     },
 };
 
-pub use stoneflow_usecase::project::{
+pub use stoneflow_application::project::{
     CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput, ProjectDetailDto,
     ProjectIdInput, ProjectOverviewItemDto, ProjectScopeInput, ProjectScopeKind,
     ProjectSidebarItemDto, UpdateProjectInput,
@@ -214,7 +213,7 @@ impl ProjectPersistenceAdapter {
 impl ProjectPersistence for ProjectPersistenceAdapter {
     type Connection = sea_orm::DatabaseTransaction;
 
-    async fn begin(&self) -> Result<Self::Connection, stoneflow_usecase::UsecaseError> {
+    async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
@@ -225,15 +224,17 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
     async fn commit(
         &self,
         connection: Self::Connection,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         connection.commit().await.map_err(map_db_error)
     }
 
     async fn get(
         &self,
         project_id: &str,
-    ) -> Result<Option<stoneflow_usecase::project::ProjectRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_application::project::ProjectRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .get(project_id)
             .await
@@ -245,8 +246,10 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         &self,
         space_id: &str,
         name: &str,
-    ) -> Result<Option<stoneflow_usecase::project::ProjectRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_application::project::ProjectRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .get_visible_by_name(space_id, name)
             .await
@@ -258,7 +261,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         space_id: &str,
-    ) -> Result<i32, stoneflow_usecase::UsecaseError> {
+    ) -> Result<i32, stoneflow_application::ApplicationError> {
         self.repository
             .next_sort_order(connection, space_id)
             .await
@@ -268,8 +271,11 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
     async fn create(
         &self,
         connection: &Self::Connection,
-        record: stoneflow_usecase::project::CreateProjectPersistenceRecord,
-    ) -> Result<stoneflow_usecase::project::ProjectRecord, stoneflow_usecase::UsecaseError> {
+        record: stoneflow_application::project::CreateProjectPersistenceRecord,
+    ) -> Result<
+        stoneflow_application::project::ProjectRecord,
+        stoneflow_application::ApplicationError,
+    > {
         let project = self
             .repository
             .create(
@@ -301,10 +307,12 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         &self,
         connection: &Self::Connection,
         project_id: &str,
-        patch: stoneflow_usecase::project::UpdateProjectPatch,
+        patch: stoneflow_application::project::UpdateProjectPatch,
         updated_at: &str,
-    ) -> Result<Option<stoneflow_usecase::project::ProjectRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_application::project::ProjectRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         let project = self
             .repository
             .update(
@@ -336,9 +344,11 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
     async fn list_overview_by_scope(
         &self,
         space_id: Option<&str>,
-        view: stoneflow_usecase::project::ProjectOverviewView,
-    ) -> Result<Vec<stoneflow_usecase::project::ProjectRecord>, stoneflow_usecase::UsecaseError>
-    {
+        view: stoneflow_application::project::ProjectOverviewView,
+    ) -> Result<
+        Vec<stoneflow_application::project::ProjectRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .list_overview_by_scope(space_id, map_overview_view_to_repo(view))
             .await
@@ -356,8 +366,10 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         space_id: Option<&str>,
         show_completed: bool,
         max_visible: Option<u64>,
-    ) -> Result<Vec<stoneflow_usecase::project::ProjectRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Vec<stoneflow_application::project::ProjectRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .list_sidebar_by_scope(space_id, show_completed, max_visible)
             .await
@@ -376,8 +388,10 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         project_id: &str,
         completed_at: &str,
         updated_at: &str,
-    ) -> Result<Option<stoneflow_usecase::project::ProjectRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_application::project::ProjectRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         let project = self
             .repository
             .complete_raw(connection, project_id, completed_at, updated_at)
@@ -401,8 +415,10 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         connection: &Self::Connection,
         project_id: &str,
         updated_at: &str,
-    ) -> Result<Option<stoneflow_usecase::project::ProjectRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_application::project::ProjectRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         let project = self
             .repository
             .reopen_raw(connection, project_id, updated_at)
@@ -438,8 +454,8 @@ impl ProjectSpaceReader for ProjectSpaceReaderAdapter {
         &self,
         space_id: &str,
     ) -> Result<
-        Option<stoneflow_usecase::project::ProjectSpaceRecord>,
-        stoneflow_usecase::UsecaseError,
+        Option<stoneflow_application::project::ProjectSpaceRecord>,
+        stoneflow_application::ApplicationError,
     > {
         self.repository
             .get(space_id)
@@ -451,8 +467,10 @@ impl ProjectSpaceReader for ProjectSpaceReaderAdapter {
     async fn list_by_ids(
         &self,
         space_ids: &[String],
-    ) -> Result<Vec<stoneflow_usecase::project::ProjectSpaceRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Vec<stoneflow_application::project::ProjectSpaceRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .list_by_ids(space_ids)
             .await
@@ -482,8 +500,8 @@ impl ProjectTaskCounter for ProjectTaskCounterAdapter {
         &self,
         project_ids: &[String],
     ) -> Result<
-        std::collections::HashMap<String, stoneflow_usecase::project::ProjectTaskCount>,
-        stoneflow_usecase::UsecaseError,
+        std::collections::HashMap<String, stoneflow_application::project::ProjectTaskCount>,
+        stoneflow_application::ApplicationError,
     > {
         self.repository
             .count_by_project_ids(project_ids)
@@ -494,7 +512,7 @@ impl ProjectTaskCounter for ProjectTaskCounterAdapter {
                     .map(|(id, count)| {
                         (
                             id,
-                            stoneflow_usecase::project::ProjectTaskCount {
+                            stoneflow_application::project::ProjectTaskCount {
                                 total_count: count.total_count,
                                 active_count: count.active_count,
                             },
@@ -507,21 +525,23 @@ impl ProjectTaskCounter for ProjectTaskCounterAdapter {
 }
 
 fn map_overview_view_to_repo(
-    view: stoneflow_usecase::project::ProjectOverviewView,
+    view: stoneflow_application::project::ProjectOverviewView,
 ) -> RepoProjectOverviewView {
     match view {
-        stoneflow_usecase::project::ProjectOverviewView::Active => RepoProjectOverviewView::Active,
-        stoneflow_usecase::project::ProjectOverviewView::Completed => {
+        stoneflow_application::project::ProjectOverviewView::Active => {
+            RepoProjectOverviewView::Active
+        }
+        stoneflow_application::project::ProjectOverviewView::Completed => {
             RepoProjectOverviewView::Completed
         }
-        stoneflow_usecase::project::ProjectOverviewView::Archived => {
+        stoneflow_application::project::ProjectOverviewView::Archived => {
             RepoProjectOverviewView::Archived
         }
-        stoneflow_usecase::project::ProjectOverviewView::All => RepoProjectOverviewView::All,
+        stoneflow_application::project::ProjectOverviewView::All => RepoProjectOverviewView::All,
     }
 }
 
-fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {
+fn map_db_error(error: sea_orm::DbErr) -> stoneflow_application::ApplicationError {
     map_app_error(AppError::from(error))
 }
 
@@ -569,21 +589,23 @@ fn build_project_mutation_record(
     )
 }
 
-fn map_app_error(error: AppError) -> stoneflow_usecase::UsecaseError {
+fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
     match error {
-        AppError::Validation(message) => stoneflow_usecase::UsecaseError::validation(message),
-        AppError::NotFound(message) => stoneflow_usecase::UsecaseError::not_found(message),
-        AppError::Conflict(message) => stoneflow_usecase::UsecaseError::conflict(message),
-        AppError::Database(message) => stoneflow_usecase::UsecaseError::storage(message),
+        AppError::Validation(message) => {
+            stoneflow_application::ApplicationError::validation(message)
+        }
+        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
+        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
+        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
         AppError::Initialization(message) => {
-            stoneflow_usecase::UsecaseError::initialization(message)
+            stoneflow_application::ApplicationError::initialization(message)
         }
         AppError::Internal(message)
         | AppError::Forbidden(message)
         | AppError::CaptureSpaceUnavailable(message)
         | AppError::DefaultSpaceUnavailable(message)
         | AppError::CapturePersistence(message) => {
-            stoneflow_usecase::UsecaseError::internal(message)
+            stoneflow_application::ApplicationError::internal(message)
         }
     }
 }

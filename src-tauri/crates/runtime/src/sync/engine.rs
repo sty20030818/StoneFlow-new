@@ -1,12 +1,8 @@
 //! 云同步调度与执行入口。
 
-use std::path::{Path, PathBuf};
-
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tauri::{Emitter, Manager};
 use tokio::sync::OwnedMutexGuard;
-use tokio::process::Command;
 
 use crate::app::error::AppError;
 
@@ -15,11 +11,16 @@ use super::{
     local::inspect_local_replica,
     state::{SyncRunMode, SyncRuntimeState},
     types::{
-        ConfigureSyncInput, SyncDiagnosticsPayload, SyncProbeResult, SyncReplicaState,
-        SyncStatusPayload, UpdateSyncPolicyInput,
+        ConfigureSyncInput, SyncDiagnosticsCountsPayload, SyncDiagnosticsPayload,
+        SyncLocalDiagnosticsPayload, SyncProbeResult, SyncRemoteDiagnosticsPayload,
+        SyncReplicaState, SyncStatusPayload, UpdateSyncPolicyInput,
     },
 };
 use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SyncRepository};
+use stoneflow_sync::{
+    SyncError, SyncErrorKind, SyncRemoteConfig as EngineRemoteConfig, SyncRequest,
+    SyncRunMode as EngineSyncMode,
+};
 
 const WORKSPACE_CHANGED_EVENT: &str = "stoneflow://workspace/changed";
 const SYNC_STATUS_CHANGED_EVENT: &str = "stoneflow://sync/status-changed";
@@ -86,7 +87,9 @@ pub async fn update_sync_policy(
 }
 
 /// 读取当前设备和 Turso 远端的只读诊断摘要。
-pub async fn get_sync_diagnostics(app_handle: &tauri::AppHandle) -> Result<SyncDiagnosticsPayload, AppError> {
+pub async fn get_sync_diagnostics(
+    app_handle: &tauri::AppHandle,
+) -> Result<SyncDiagnosticsPayload, AppError> {
     let sync_state = sync_state_from_app(app_handle)?;
     let database = database_state_from_app(app_handle)?;
     refresh_local_replica_state(&sync_state, &database).await?;
@@ -101,15 +104,43 @@ pub async fn get_sync_diagnostics(app_handle: &tauri::AppHandle) -> Result<SyncD
         redact_remote_url(&remote_config.url)
     );
 
-    let mut diagnostics = run_sync_worker_json::<SyncDiagnosticsPayload>(
-        app_handle,
-        database.database_path().display().to_string(),
-        &remote_config,
-        "diagnose",
-    )
-    .await?;
-    diagnostics.remote_host = Some(redact_remote_url(&remote_config.url));
-    Ok(diagnostics)
+    let db_path = database
+        .database_path()
+        .to_str()
+        .ok_or_else(|| AppError::initialization("数据库路径包含无效 UTF-8，无法执行同步诊断"))?;
+    let output = stoneflow_sync::diagnose(db_path, &to_engine_remote(&remote_config))
+        .await
+        .map_err(map_sync_error)?;
+
+    Ok(SyncDiagnosticsPayload {
+        remote_host: Some(redact_remote_url(&remote_config.url)),
+        local: SyncLocalDiagnosticsPayload {
+            device_id: output.local.device_id,
+            last_pulled_server_seq: output.local.last_pulled_server_seq,
+            pending_mutation_count: output.local.pending_mutation_count,
+            counts: SyncDiagnosticsCountsPayload {
+                spaces: output.local.counts.spaces,
+                projects: output.local.counts.projects,
+                tasks: output.local.counts.tasks,
+                task_links: output.local.counts.task_links,
+                views: output.local.counts.views,
+                settings: output.local.counts.settings,
+                total_items: output.local.counts.total_items,
+            },
+        },
+        remote: SyncRemoteDiagnosticsPayload {
+            latest_server_seq: output.remote.latest_server_seq,
+            counts: SyncDiagnosticsCountsPayload {
+                spaces: output.remote.counts.spaces,
+                projects: output.remote.counts.projects,
+                tasks: output.remote.counts.tasks,
+                task_links: output.remote.counts.task_links,
+                views: output.remote.counts.views,
+                settings: output.remote.counts.settings,
+                total_items: output.remote.counts.total_items,
+            },
+        },
+    })
 }
 
 /// 保存远端配置并刷新运行态缓存。
@@ -281,17 +312,13 @@ async fn schedule_probe_sync(app_handle: &tauri::AppHandle, source: &str) {
             return;
         }
     };
-    let probe = match run_sync_worker_json::<SyncProbeResult>(
-        app_handle,
-        database.database_path().display().to_string(),
-        &remote_config,
-        "probe",
-    )
-    .await
-    {
-        Ok(value) => value,
+    let probe = match stoneflow_sync::probe(&to_engine_remote(&remote_config)).await {
+        Ok(payload) => SyncProbeResult {
+            latest_server_seq: payload.latest_server_seq,
+            schema_version: payload.schema_version,
+        },
         Err(error) => {
-            log::warn!("sync:probe worker failed source={source}: {error}");
+            log::warn!("sync:probe failed source={source}: {error}");
             return;
         }
     };
@@ -449,12 +476,18 @@ fn emit_workspace_changed(
     changed_domains: Option<Vec<&'static str>>,
 ) -> Result<(), AppError> {
     app_handle
-        .emit(WORKSPACE_CHANGED_EVENT, workspace_changed_payload(mode, changed_domains))
+        .emit(
+            WORKSPACE_CHANGED_EVENT,
+            workspace_changed_payload(mode, changed_domains),
+        )
         .map_err(|error| AppError::internal(error.to_string()))
 }
 
 fn emit_sync_status_changed(app_handle: &tauri::AppHandle, reason: &'static str) {
-    if let Err(error) = app_handle.emit(SYNC_STATUS_CHANGED_EVENT, sync_status_changed_payload(reason)) {
+    if let Err(error) = app_handle.emit(
+        SYNC_STATUS_CHANGED_EVENT,
+        sync_status_changed_payload(reason),
+    ) {
         log::warn!("sync:status event emit failed reason={reason}: {error}");
     }
 }
@@ -483,34 +516,24 @@ async fn run_sync_round(
 
     let database_path = database.database_path().display().to_string();
     let result = match mode {
-        SyncRunMode::Push | SyncRunMode::Pull => sync_database(
-            app_handle,
-            database_path,
-            &remote_config,
-            mode,
-        )
-        .await
-        .map_err(|error| SyncRoundFailure {
-            failed_mode: mode,
-            error,
-        }),
-        SyncRunMode::Sync => run_sync_round_trip(
-            app_handle,
-            sync_state,
-            database_path,
-            &remote_config,
-        )
-        .await,
+        SyncRunMode::Push | SyncRunMode::Pull => {
+            sync_database(app_handle, database_path, &remote_config, mode)
+                .await
+                .map_err(|error| SyncRoundFailure {
+                    failed_mode: mode,
+                    error,
+                })
+        }
+        SyncRunMode::Sync => {
+            run_sync_round_trip(app_handle, sync_state, database_path, &remote_config).await
+        }
     };
 
     match result {
         Ok(()) => {
             let after_server_seq = read_local_server_seq_cursor(&database).await?;
-            let changed_domains = resolve_round_changed_domains(
-                before_server_seq,
-                after_server_seq,
-                pending_domains,
-            );
+            let changed_domains =
+                resolve_round_changed_domains(before_server_seq, after_server_seq, pending_domains);
             sync_state.complete_run(mode).await;
             emit_sync_status_changed(app_handle, "completed");
             log::info!("sync:round success mode={}", mode_label(mode));
@@ -653,7 +676,8 @@ async fn refresh_local_replica_state(
     sync_state: &SyncRuntimeState,
     database: &DatabaseRuntimeState,
 ) -> Result<(), AppError> {
-    let snapshot = inspect_local_replica(database, sync_state.remote_config().await.is_some()).await?;
+    let snapshot =
+        inspect_local_replica(database, sync_state.remote_config().await.is_some()).await?;
     sync_state
         .set_replica_state(snapshot.state, snapshot.reason, snapshot.last_restore_at)
         .await;
@@ -697,265 +721,70 @@ fn sync_execution_enabled() -> bool {
     true
 }
 
+fn to_engine_remote(remote: &crate::sync::types::SyncRemoteConfig) -> EngineRemoteConfig {
+    EngineRemoteConfig {
+        url: remote.url.clone(),
+        token: remote.token.clone(),
+    }
+}
+
+fn map_sync_error(error: SyncError) -> AppError {
+    let message = error.message().to_owned();
+    match error.kind() {
+        SyncErrorKind::Validation | SyncErrorKind::Authentication => AppError::validation(message),
+        SyncErrorKind::LocalDatabase | SyncErrorKind::RemoteDatabase => AppError::database(message),
+        SyncErrorKind::Serialization | SyncErrorKind::Protocol | SyncErrorKind::Internal => {
+            AppError::internal(message)
+        }
+    }
+}
+
 async fn run_sync_worker(
-    app_handle: &tauri::AppHandle,
+    _app_handle: &tauri::AppHandle,
     database_path: &str,
     remote_config: &crate::sync::types::SyncRemoteConfig,
     mode: SyncRunMode,
 ) -> Result<(), AppError> {
-    run_sync_worker_with_label(app_handle, database_path, remote_config, mode_label(mode)).await
+    let engine_mode = match mode {
+        SyncRunMode::Push => EngineSyncMode::Push,
+        SyncRunMode::Pull => EngineSyncMode::Pull,
+        SyncRunMode::Sync => {
+            return Err(AppError::internal(
+                "完整 sync 应由 migrate/push/pull 分段调用，不应直接传入 SyncRunMode::Sync",
+            ))
+        }
+    };
+    run_sync_engine(database_path, remote_config, engine_mode).await
 }
 
 async fn run_sync_worker_with_label(
-    app_handle: &tauri::AppHandle,
+    _app_handle: &tauri::AppHandle,
     database_path: &str,
     remote_config: &crate::sync::types::SyncRemoteConfig,
     worker_mode: &str,
 ) -> Result<(), AppError> {
-    let mut command =
-        build_sync_worker_command(app_handle, database_path, remote_config, worker_mode)?;
-    let output = command.output().await.map_err(|error| {
-        AppError::internal(format!("启动同步 worker 失败: {error}"))
-    })?;
-
-    if output.status.success() {
-        return Ok(());
-    }
-
-    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
-    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-    let failure = parse_sync_worker_failure(&stderr, &stdout, output.status.code());
-    log::warn!(
-        "sync:worker failed mode={} kind={} message={}",
-        worker_mode,
-        failure.kind.as_str(),
-        failure.message
-    );
-
-    Err(failure.into_app_error())
+    let mode = match worker_mode {
+        "push" => EngineSyncMode::Push,
+        "pull" => EngineSyncMode::Pull,
+        "migrate" => EngineSyncMode::Migrate,
+        other => return Err(AppError::internal(format!("不支持的同步引擎模式: {other}"))),
+    };
+    run_sync_engine(database_path, remote_config, mode).await
 }
 
-async fn run_sync_worker_json<T: DeserializeOwned>(
-    app_handle: &tauri::AppHandle,
-    database_path: String,
-    remote_config: &crate::sync::types::SyncRemoteConfig,
-    mode_label: &str,
-) -> Result<T, AppError> {
-    let mut command =
-        build_sync_worker_command(app_handle, &database_path, remote_config, mode_label)?;
-    let output = command.output().await.map_err(|error| {
-        AppError::internal(format!("启动同步 worker 失败: {error}"))
-    })?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_owned();
-        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-        let failure = parse_sync_worker_failure(&stderr, &stdout, output.status.code());
-        log::warn!(
-            "sync:worker failed mode={} kind={} message={}",
-            mode_label,
-            failure.kind.as_str(),
-            failure.message
-        );
-        return Err(failure.into_app_error());
-    }
-
-    let stdout = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-    if stdout.is_empty() {
-        return Err(AppError::internal(format!(
-            "同步 worker 未返回 {mode_label} 结果"
-        )));
-    }
-
-    serde_json::from_str::<T>(&stdout).map_err(|error| {
-        AppError::internal(format!("解析同步 worker {mode_label} 结果失败: {error}"))
-    })
-}
-
-fn build_sync_worker_command(
-    app_handle: &tauri::AppHandle,
+async fn run_sync_engine(
     database_path: &str,
     remote_config: &crate::sync::types::SyncRemoteConfig,
-    worker_mode: &str,
-) -> Result<Command, AppError> {
-    let worker_args = [
-        "--database-path",
-        database_path,
-        "--remote-url",
-        remote_config.url.as_str(),
-        "--remote-token",
-        remote_config.token.as_str(),
-        "--mode",
-        worker_mode,
-    ];
-
-    if let Some(worker_binary) = find_bundled_sync_worker(app_handle)? {
-        let mut command = Command::new(worker_binary);
-        hide_child_console_window(&mut command);
-        command.args(worker_args);
-        return Ok(command);
-    }
-
-    if let Some((manifest_path, workdir)) = find_workspace_manifest_for_dev() {
-        let mut command = Command::new("cargo");
-        hide_child_console_window(&mut command);
-        command
-            .arg("run")
-            .arg("--manifest-path")
-            .arg(manifest_path)
-            .arg("-p")
-            .arg("stoneflow-sync-worker")
-            .arg("--quiet")
-            .arg("--")
-            .args(worker_args)
-            .current_dir(workdir);
-        return Ok(command);
-    }
-
-    Err(AppError::initialization(
-        "未找到同步 worker 可执行文件；当前构建无法执行 Turso 同步。",
-    ))
-}
-
-#[cfg(target_os = "windows")]
-fn hide_child_console_window(command: &mut Command) {
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
-    command.creation_flags(CREATE_NO_WINDOW);
-}
-
-#[cfg(not(target_os = "windows"))]
-fn hide_child_console_window(_command: &mut Command) {}
-
-fn find_bundled_sync_worker(app_handle: &tauri::AppHandle) -> Result<Option<PathBuf>, AppError> {
-    let current_exe = std::env::current_exe()
-        .map_err(|error| AppError::initialization(format!("读取当前可执行文件路径失败: {error}")))?;
-    let Some(base_dir) = current_exe.parent() else {
-        return Ok(None);
-    };
-
-    let worker_file_name = if cfg!(target_os = "windows") {
-        "stoneflow-sync-worker.exe"
-    } else {
-        "stoneflow-sync-worker"
-    };
-
-    // sidecar 在不同打包器下的落点略有差异，按最接近运行时产物的位置依次查找。
-    let direct_path = base_dir.join(worker_file_name);
-    if direct_path.is_file() {
-        return Ok(Some(direct_path));
-    }
-
-    let sidecar_path = base_dir.join("binaries").join(worker_file_name);
-    if sidecar_path.is_file() {
-        return Ok(Some(sidecar_path));
-    }
-
-    if let Ok(resource_dir) = app_handle.path().resource_dir() {
-        let resource_path = resource_dir.join(worker_file_name);
-        if resource_path.is_file() {
-            return Ok(Some(resource_path));
-        }
-
-        let resource_sidecar_path = resource_dir.join("binaries").join(worker_file_name);
-        if resource_sidecar_path.is_file() {
-            return Ok(Some(resource_sidecar_path));
-        }
-    }
-
-    Ok(None)
-}
-
-fn find_workspace_manifest_for_dev() -> Option<(PathBuf, PathBuf)> {
-    let runtime_manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let workspace_root = runtime_manifest_dir.parent()?.parent()?;
-    let manifest_path = workspace_root.join("Cargo.toml");
-    if !manifest_path.is_file() {
-        return None;
-    }
-
-    Some((manifest_path, workspace_root.to_path_buf()))
-}
-
-fn parse_sync_worker_failure(
-    stderr: &str,
-    stdout: &str,
-    exit_code: Option<i32>,
-) -> SyncWorkerFailure {
-    for raw in [stderr, stdout] {
-        if raw.is_empty() {
-            continue;
-        }
-
-        if let Ok(failure) = serde_json::from_str::<SyncWorkerFailure>(raw) {
-            return failure;
-        }
-    }
-
-    let message = if !stderr.is_empty() {
-        stderr.to_owned()
-    } else if !stdout.is_empty() {
-        stdout.to_owned()
-    } else {
-        format!(
-            "同步 worker 异常退出，exit_code={}",
-            exit_code
-                .map(|code| code.to_string())
-                .unwrap_or_else(|| "unknown".to_owned())
-        )
-    };
-
-    SyncWorkerFailure {
-        kind: SyncWorkerErrorKind::Internal,
-        message,
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum SyncWorkerErrorKind {
-    Validation,
-    Authentication,
-    LocalDatabase,
-    RemoteDatabase,
-    Serialization,
-    Protocol,
-    Internal,
-}
-
-impl SyncWorkerErrorKind {
-    fn as_str(self) -> &'static str {
-        match self {
-            Self::Validation => "validation",
-            Self::Authentication => "authentication",
-            Self::LocalDatabase => "local_database",
-            Self::RemoteDatabase => "remote_database",
-            Self::Serialization => "serialization",
-            Self::Protocol => "protocol",
-            Self::Internal => "internal",
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-struct SyncWorkerFailure {
-    kind: SyncWorkerErrorKind,
-    message: String,
-}
-
-impl SyncWorkerFailure {
-    fn into_app_error(self) -> AppError {
-        match self.kind {
-            SyncWorkerErrorKind::Validation | SyncWorkerErrorKind::Authentication => {
-                AppError::validation(self.message)
-            }
-            SyncWorkerErrorKind::LocalDatabase | SyncWorkerErrorKind::RemoteDatabase => {
-                AppError::database(self.message)
-            }
-            SyncWorkerErrorKind::Serialization
-            | SyncWorkerErrorKind::Protocol
-            | SyncWorkerErrorKind::Internal => AppError::internal(self.message),
-        }
-    }
+    mode: EngineSyncMode,
+) -> Result<(), AppError> {
+    log::info!("sync:engine start mode={mode:?}");
+    stoneflow_sync::run(SyncRequest {
+        database_path: database_path.to_owned(),
+        remote: to_engine_remote(remote_config),
+        mode,
+    })
+    .await
+    .map_err(map_sync_error)
 }
 
 #[cfg(test)]
@@ -963,8 +792,8 @@ mod tests {
     use stoneflow_test_support::TestDatabase;
 
     use super::{
-        configure_sync, get_sync_status, initialize_state, parse_sync_worker_failure,
-        sync_status_changed_payload, workspace_changed_payload,
+        configure_sync, get_sync_status, initialize_state, sync_status_changed_payload,
+        workspace_changed_payload,
     };
     use crate::sync::{
         state::SyncRuntimeState,
@@ -995,7 +824,10 @@ mod tests {
         assert!(payload.enabled);
         assert!(payload.has_remote_config);
         assert_eq!(payload.status, SyncStatusKind::Synced);
-        assert_eq!(payload.remote_url.as_deref(), Some("libsql://example.turso.io"));
+        assert_eq!(
+            payload.remote_url.as_deref(),
+            Some("libsql://example.turso.io")
+        );
     }
 
     #[tokio::test]
@@ -1017,18 +849,6 @@ mod tests {
         assert_eq!(payload.status, SyncStatusKind::Disabled);
         assert_eq!(payload.last_error_mode, None);
         assert_eq!(payload.replica_state, SyncReplicaState::Uninitialized);
-    }
-
-    #[test]
-    fn parse_sync_worker_failure_should_read_wire_json() {
-        let failure = parse_sync_worker_failure(
-            r#"{"kind":"authentication","message":"token invalid"}"#,
-            "",
-            Some(1),
-        );
-
-        assert_eq!(failure.kind, super::SyncWorkerErrorKind::Authentication);
-        assert_eq!(failure.message, "token invalid");
     }
 
     #[test]
@@ -1059,7 +879,10 @@ mod tests {
     fn resolve_round_changed_domains_should_include_sync_domains_when_server_seq_advances() {
         let domains = super::resolve_round_changed_domains(Some(12), Some(18), vec!["tasks"]);
 
-        assert_eq!(domains, vec!["tasks", "projects", "spaces", "lifecycle", "views"]);
+        assert_eq!(
+            domains,
+            vec!["tasks", "projects", "spaces", "lifecycle", "views"]
+        );
     }
 
     #[test]

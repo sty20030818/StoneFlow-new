@@ -5,9 +5,9 @@ use std::sync::Arc;
 
 use tauri_plugin_updater::UpdaterExt;
 
+use stoneflow_application::update::{UpdateInfo, UpdatePort};
+use stoneflow_application::ApplicationError;
 use stoneflow_domain::UpdateChannel;
-use stoneflow_usecase::update::{UpdateInfo, UpdatePort};
-use stoneflow_usecase::UsecaseError;
 
 /// 生产环境 CDN 更新基础 URL。
 const PROD_UPDATES_BASE_URL: &str = "https://release.sty20030818.space/stoneflow/updates";
@@ -78,18 +78,18 @@ impl TauriUpdateAdapter {
     fn build_updater(
         &self,
         channel: UpdateChannel,
-    ) -> Result<tauri_plugin_updater::Updater, UsecaseError> {
+    ) -> Result<tauri_plugin_updater::Updater, ApplicationError> {
         let base_url = Self::resolve_base_url();
         let url = Self::endpoint_url(channel, &base_url);
-        let parsed_url: url::Url = url
-            .parse()
-            .map_err(|e: url::ParseError| UsecaseError::update(format!("endpoint URL 无效: {e}")))?;
+        let parsed_url: url::Url = url.parse().map_err(|e: url::ParseError| {
+            ApplicationError::update(format!("endpoint URL 无效: {e}"))
+        })?;
 
         // release 构建中禁止 HTTP，防止意外配置错误（dangerousInsecureTransportProtocol 在 tauri.conf.json 中开启，
         // 仅用于 debug 模式下的本地 mock 测试；此处双重保险）
         #[cfg(not(debug_assertions))]
         if parsed_url.scheme() == "http" {
-            return Err(UsecaseError::update(
+            return Err(ApplicationError::update(
                 "release 构建禁止使用 HTTP 更新端点，请使用 HTTPS".to_string(),
             ));
         }
@@ -103,7 +103,7 @@ impl TauriUpdateAdapter {
             .app
             .updater_builder()
             .endpoints(vec![parsed_url])
-            .map_err(|e| UsecaseError::update(format!("配置 updater endpoint 失败: {e}")))?;
+            .map_err(|e| ApplicationError::update(format!("配置 updater endpoint 失败: {e}")))?;
 
         // Stable 渠道只接受更高的正式版本，过滤同版本、低版本和预发布版本。
         if channel == UpdateChannel::Stable {
@@ -114,7 +114,7 @@ impl TauriUpdateAdapter {
 
         builder
             .build()
-            .map_err(|e| UsecaseError::update(format!("构建 updater 失败: {e}")))
+            .map_err(|e| ApplicationError::update(format!("构建 updater 失败: {e}")))
     }
 }
 
@@ -133,16 +133,13 @@ fn is_mock_server_reachable() -> bool {
 }
 
 impl UpdatePort for TauriUpdateAdapter {
-    async fn check(
-        &self,
-        channel: UpdateChannel,
-    ) -> Result<Option<UpdateInfo>, UsecaseError> {
+    async fn check(&self, channel: UpdateChannel) -> Result<Option<UpdateInfo>, ApplicationError> {
         let updater = self.build_updater(channel)?;
 
         let update = updater
             .check()
             .await
-            .map_err(|e| UsecaseError::update(format!("检查更新失败: {e}")))?;
+            .map_err(|e| ApplicationError::update(format!("检查更新失败: {e}")))?;
 
         Ok(update.map(|u| {
             let pub_date = u.date.map(|d| {
@@ -161,15 +158,15 @@ impl UpdatePort for TauriUpdateAdapter {
         &self,
         channel: UpdateChannel,
         on_progress: impl Fn(u64, Option<u64>) + Send + Sync + 'static,
-    ) -> Result<(String, Vec<u8>), UsecaseError> {
+    ) -> Result<(String, Vec<u8>), ApplicationError> {
         let updater = self.build_updater(channel)?;
 
         // 仅在此处 check 一次，拿到可下载的 Update 句柄（Tauri API 要求）。
         let update = updater
             .check()
             .await
-            .map_err(|e| UsecaseError::update(format!("检查更新失败: {e}")))?
-            .ok_or_else(|| UsecaseError::update("当前没有可用更新"))?;
+            .map_err(|e| ApplicationError::update(format!("检查更新失败: {e}")))?
+            .ok_or_else(|| ApplicationError::update("当前没有可用更新"))?;
 
         let version = update.version.to_string();
 
@@ -188,7 +185,7 @@ impl UpdatePort for TauriUpdateAdapter {
                 || {},
             )
             .await
-            .map_err(|e| UsecaseError::update(format!("下载更新失败: {e}")))?;
+            .map_err(|e| ApplicationError::update(format!("下载更新失败: {e}")))?;
 
         log::info!(
             target: "updater",
@@ -203,16 +200,16 @@ impl UpdatePort for TauriUpdateAdapter {
         &self,
         channel: UpdateChannel,
         bytes: Vec<u8>,
-    ) -> Result<(), UsecaseError> {
+    ) -> Result<(), ApplicationError> {
         let updater = self.build_updater(channel)?;
 
         // install 需要 Update 句柄（路径/配置）；再 check 一次拿句柄，安装内容用已暂存的 bytes。
         let update = updater
             .check()
             .await
-            .map_err(|e| UsecaseError::update(format!("安装前检查更新失败: {e}")))?
+            .map_err(|e| ApplicationError::update(format!("安装前检查更新失败: {e}")))?
             .ok_or_else(|| {
-                UsecaseError::update("安装失败：远端已无此更新，请重新检查并下载".to_string())
+                ApplicationError::update("安装失败：远端已无此更新，请重新检查并下载".to_string())
             })?;
 
         log::info!(
@@ -224,12 +221,12 @@ impl UpdatePort for TauriUpdateAdapter {
         // Windows：内部 ShellExecute 安装器后 process::exit(0)，不会返回。
         update
             .install(bytes)
-            .map_err(|e| UsecaseError::update(format!("安装更新失败: {e}")))?;
+            .map_err(|e| ApplicationError::update(format!("安装更新失败: {e}")))?;
 
         Ok(())
     }
 
-    async fn restart(&self) -> Result<(), UsecaseError> {
+    async fn restart(&self) -> Result<(), ApplicationError> {
         self.app.restart();
         // restart() 会终止当前进程，以下代码仅为类型兼容
         #[allow(unreachable_code)]

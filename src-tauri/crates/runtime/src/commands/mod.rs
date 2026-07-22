@@ -3,9 +3,9 @@
 use tauri::ipc::Invoke;
 
 pub(crate) mod activity;
+pub(crate) mod launcher;
 pub(crate) mod lifecycle;
 pub(crate) mod projects;
-pub(crate) mod launcher;
 pub(crate) mod search;
 pub(crate) mod settings;
 pub(crate) mod spaces;

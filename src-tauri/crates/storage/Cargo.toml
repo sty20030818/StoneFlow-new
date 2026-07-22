@@ -11,18 +11,18 @@ path = "src/lib.rs"
 [dependencies]
 chrono.workspace = true
 sea-orm.workspace = true
+sea-orm-migration.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+stoneflow-application = { path = "../application" }
 stoneflow-domain = { path = "../domain" }
-stoneflow-migration = { path = "../migration" }
-stoneflow-schema = { path = "../schema" }
-stoneflow-usecase = { path = "../usecase" }
 thiserror.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
 stoneflow-test-support = { path = "../test-support" }
 tokio.workspace = true
+sea-orm.workspace = true
 
 [features]
 test-helpers = []

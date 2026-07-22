@@ -3,7 +3,7 @@
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
-use stoneflow_usecase::update::UpdateInfo;
+use stoneflow_application::update::UpdateInfo;
 
 /// 统一更新阶段事件名。
 pub const UPDATE_PHASE_EVENT: &str = "update-phase";

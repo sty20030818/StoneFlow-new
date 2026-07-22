@@ -2,12 +2,12 @@
 
 use crate::app::error::AppError;
 use serde::Serialize;
-use stoneflow_usecase::launcher::{
+use stoneflow_application::launcher::{
     LauncherPlacementDto, LauncherPlacementKind, LauncherProjectItemDto, LauncherProjectOptionDto,
     LauncherProjectOptionKind, LauncherProjectsBySpaceDto, LauncherScopeDto, LauncherScopeKind,
     LauncherSpaceSummaryDto, LauncherTaskItemDto,
 };
-use stoneflow_usecase::launcher_context::LauncherInitialStateDto;
+use stoneflow_application::launcher_context::LauncherInitialStateDto;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LauncherErrorPayload {
@@ -151,7 +151,6 @@ pub struct LauncherProjectsBySpaceResponse {
     pub projects: Vec<LauncherProjectOptionResponse>,
 }
 
-
 fn map_scope(payload: LauncherScopeDto) -> LauncherScopeResponse {
     LauncherScopeResponse {
         kind: match payload.kind {
@@ -239,4 +238,3 @@ pub(crate) fn map_projects_by_space(
             .collect(),
     }
 }
-

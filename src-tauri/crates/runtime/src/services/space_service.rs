@@ -1,8 +1,8 @@
-//! Space Service 兼容壳：CRUD 真源在 `stoneflow-usecase`；生命周期仍委托 `LifecycleService`。
+//! Space Service 兼容壳：CRUD 真源在 `stoneflow-application`；生命周期仍委托 `LifecycleService`。
 
-use serde::Serialize;
 use sea_orm::TransactionTrait;
-use stoneflow_usecase::{
+use serde::Serialize;
+use stoneflow_application::{
     activity::ActivityService as ActivityUsecase,
     space::{SpacePersistence, SpaceRecord, SpaceService as SpaceUsecase},
 };
@@ -10,9 +10,7 @@ use stoneflow_usecase::{
 use crate::{
     app::error::AppError,
     services::{
-        activity::ActivityPersistenceAdapter,
-        sync_mutation::build_upsert_record,
-        LifecycleService,
+        activity::ActivityPersistenceAdapter, sync_mutation::build_upsert_record, LifecycleService,
     },
 };
 use stoneflow_storage::{
@@ -23,7 +21,7 @@ use stoneflow_storage::{
     },
 };
 
-pub use stoneflow_usecase::space::{
+pub use stoneflow_application::space::{
     CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, UpdateSpaceInput,
 };
 
@@ -139,7 +137,7 @@ impl SpacePersistenceAdapter {
 impl SpacePersistence for SpacePersistenceAdapter {
     type Connection = sea_orm::DatabaseTransaction;
 
-    async fn begin(&self) -> Result<Self::Connection, stoneflow_usecase::UsecaseError> {
+    async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
@@ -150,13 +148,16 @@ impl SpacePersistence for SpacePersistenceAdapter {
     async fn commit(
         &self,
         connection: Self::Connection,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         connection.commit().await.map_err(map_db_error)
     }
 
     async fn list_visible(
         &self,
-    ) -> Result<Vec<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<
+        Vec<stoneflow_application::space::SpaceRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .list_visible()
             .await
@@ -167,8 +168,10 @@ impl SpacePersistence for SpacePersistenceAdapter {
     async fn get(
         &self,
         space_id: &str,
-    ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_application::space::SpaceRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         self.repository
             .get(space_id)
             .await
@@ -179,7 +182,7 @@ impl SpacePersistence for SpacePersistenceAdapter {
     async fn next_sort_order(
         &self,
         connection: &Self::Connection,
-    ) -> Result<i32, stoneflow_usecase::UsecaseError> {
+    ) -> Result<i32, stoneflow_application::ApplicationError> {
         self.repository
             .next_sort_order(connection)
             .await
@@ -189,8 +192,9 @@ impl SpacePersistence for SpacePersistenceAdapter {
     async fn create(
         &self,
         connection: &Self::Connection,
-        record: stoneflow_usecase::space::CreateSpacePersistenceRecord,
-    ) -> Result<stoneflow_usecase::space::SpaceRecord, stoneflow_usecase::UsecaseError> {
+        record: stoneflow_application::space::CreateSpacePersistenceRecord,
+    ) -> Result<stoneflow_application::space::SpaceRecord, stoneflow_application::ApplicationError>
+    {
         let space = self
             .repository
             .create(
@@ -222,10 +226,12 @@ impl SpacePersistence for SpacePersistenceAdapter {
         &self,
         connection: &Self::Connection,
         space_id: &str,
-        patch: stoneflow_usecase::space::UpdateSpacePatch,
+        patch: stoneflow_application::space::UpdateSpacePatch,
         updated_at: &str,
-    ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_application::space::SpaceRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         let space = self
             .repository
             .update(
@@ -257,7 +263,7 @@ impl SpacePersistence for SpacePersistenceAdapter {
         &self,
         connection: &Self::Connection,
         updated_at: &str,
-    ) -> Result<(), stoneflow_usecase::UsecaseError> {
+    ) -> Result<(), stoneflow_application::ApplicationError> {
         self.repository
             .clear_default(connection, updated_at)
             .await
@@ -270,8 +276,10 @@ impl SpacePersistence for SpacePersistenceAdapter {
         connection: &Self::Connection,
         space_id: &str,
         updated_at: &str,
-    ) -> Result<Option<stoneflow_usecase::space::SpaceRecord>, stoneflow_usecase::UsecaseError>
-    {
+    ) -> Result<
+        Option<stoneflow_application::space::SpaceRecord>,
+        stoneflow_application::ApplicationError,
+    > {
         let space = self
             .repository
             .set_default(connection, space_id, updated_at)
@@ -325,28 +333,35 @@ impl<'a> From<&'a SpaceRecord> for SpaceSyncPayload<'a> {
 fn build_space_mutation_record(
     space: &SpaceRecord,
 ) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
-    build_upsert_record("space", &space.id, &SpaceSyncPayload::from(space), &space.updated_at)
+    build_upsert_record(
+        "space",
+        &space.id,
+        &SpaceSyncPayload::from(space),
+        &space.updated_at,
+    )
 }
 
-fn map_db_error(error: sea_orm::DbErr) -> stoneflow_usecase::UsecaseError {
+fn map_db_error(error: sea_orm::DbErr) -> stoneflow_application::ApplicationError {
     map_app_error(AppError::from(error))
 }
 
-fn map_app_error(error: AppError) -> stoneflow_usecase::UsecaseError {
+fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
     match error {
-        AppError::Validation(message) => stoneflow_usecase::UsecaseError::validation(message),
-        AppError::NotFound(message) => stoneflow_usecase::UsecaseError::not_found(message),
-        AppError::Conflict(message) => stoneflow_usecase::UsecaseError::conflict(message),
-        AppError::Database(message) => stoneflow_usecase::UsecaseError::storage(message),
+        AppError::Validation(message) => {
+            stoneflow_application::ApplicationError::validation(message)
+        }
+        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
+        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
+        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
         AppError::Initialization(message) => {
-            stoneflow_usecase::UsecaseError::initialization(message)
+            stoneflow_application::ApplicationError::initialization(message)
         }
         AppError::Internal(message)
         | AppError::Forbidden(message)
         | AppError::CaptureSpaceUnavailable(message)
         | AppError::DefaultSpaceUnavailable(message)
         | AppError::CapturePersistence(message) => {
-            stoneflow_usecase::UsecaseError::internal(message)
+            stoneflow_application::ApplicationError::internal(message)
         }
     }
 }

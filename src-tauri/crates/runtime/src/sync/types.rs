@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 use super::policy::{SyncPolicy, SyncPolicyMode};
 
 /// 同步状态机对前端暴露的稳定状态。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncStatusKind {
+    #[default]
     Disabled,
     Synced,
     Syncing,
@@ -16,26 +17,15 @@ pub enum SyncStatusKind {
     NeedsAttention,
 }
 
-impl Default for SyncStatusKind {
-    fn default() -> Self {
-        Self::Disabled
-    }
-}
-
 /// 当前设备本地副本是否适合继续做普通同步。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SyncReplicaState {
+    #[default]
     Uninitialized,
     Ready,
     BaselineRequired,
     Diverged,
-}
-
-impl Default for SyncReplicaState {
-    fn default() -> Self {
-        Self::Uninitialized
-    }
 }
 
 /// 设置页读取的最小同步状态载荷。

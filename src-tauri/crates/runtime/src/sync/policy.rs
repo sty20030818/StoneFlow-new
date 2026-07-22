@@ -38,18 +38,22 @@ impl SyncPolicy {
                 mode: SyncPolicyMode::Manual,
                 interval_minutes: DEFAULT_SYNC_INTERVAL_MINUTES,
             }),
-            SyncPolicyMode::Interval if ALLOWED_INTERVAL_MINUTES.contains(&self.interval_minutes) => {
+            SyncPolicyMode::Interval
+                if ALLOWED_INTERVAL_MINUTES.contains(&self.interval_minutes) =>
+            {
                 Ok(self)
             }
-            SyncPolicyMode::Interval => Err(AppError::validation(
-                "同步频率只支持 5、15 或 30 分钟",
-            )),
+            SyncPolicyMode::Interval => {
+                Err(AppError::validation("同步频率只支持 5、15 或 30 分钟"))
+            }
         }
     }
 
     pub fn next_sync_at(&self, now: DateTime<Utc>) -> Option<DateTime<Utc>> {
         match self.mode {
-            SyncPolicyMode::Interval => Some(now + Duration::minutes(i64::from(self.interval_minutes))),
+            SyncPolicyMode::Interval => {
+                Some(now + Duration::minutes(i64::from(self.interval_minutes)))
+            }
             SyncPolicyMode::Manual => None,
         }
     }

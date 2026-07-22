@@ -50,9 +50,7 @@ where
     T: Serialize,
 {
     let payload = serde_json::to_string(payload).map_err(|error| {
-        AppError::internal(format!(
-            "序列化 {entity_type} sync payload 失败: {error}"
-        ))
+        AppError::internal(format!("序列化 {entity_type} sync payload 失败: {error}"))
     })?;
 
     Ok(SyncMutationRecord {

@@ -5,12 +5,10 @@ use std::future::Future;
 use tauri::Manager;
 
 use crate::app::state::{ActiveScopeState, CommandOpenState};
-use crate::services::update_events::{
-    emit_available, emit_downloading, emit_error, emit_ready,
-};
+use crate::services::update_events::{emit_available, emit_downloading, emit_error, emit_ready};
 use crate::services::{build_update_service, RuntimeUpdateService};
-use stoneflow_usecase::{DownloadOutcome, UpdateCheckKind};
 use crate::sync::{self, SyncRuntimeState};
+use stoneflow_application::{DownloadOutcome, UpdateCheckKind};
 use stoneflow_domain::{
     normalize_check_interval_secs, UpdateCheckMode, AUTO_CHECK_INTERVAL_SECS,
     STARTUP_CHECK_DELAY_SECS,
@@ -22,8 +20,8 @@ use crate::exit_coordinator;
 use crate::shortcuts;
 use crate::tray;
 use crate::update_schedule::UpdateScheduleWake;
-use crate::window::main::build_main_window;
 use crate::window::launcher::frontend::LauncherFrontendState;
+use crate::window::main::build_main_window;
 use crate::window::LauncherWindowRuntimeState;
 
 pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
@@ -34,6 +32,9 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
             } else {
                 log::LevelFilter::Warn
             })
+            // 本地滚动：单文件 20MB；保留约 14 份归档（约 14 天量级，视写入量而定）。
+            .max_file_size(20 * 1024 * 1024)
+            .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepSome(14))
             .build(),
     )?;
 
@@ -69,7 +70,7 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
     tray::setup_tray(app)?;
 
     // 构建并注册更新服务
-    let update_service = build_update_service(&app.handle());
+    let update_service = build_update_service(app.handle());
     app.manage(update_service);
 
     let update_wake = UpdateScheduleWake::new();
@@ -131,6 +132,8 @@ fn schedule_update_checker(app_handle: tauri::AppHandle, wake: UpdateScheduleWak
         // 首次为启动检查（绕过间隔节流）；之后按配置间隔循环
         let mut is_startup = true;
 
+        // 循环体含 continue/复杂分支，保持 loop + break 更清晰。
+        #[expect(clippy::while_let_loop)]
         loop {
             let Some(service) = app_handle.try_state::<RuntimeUpdateService>() else {
                 break;

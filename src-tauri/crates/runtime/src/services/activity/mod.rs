@@ -7,6 +7,6 @@ pub use adapter::ActivityPersistenceAdapter;
 pub use service::{
     create_changes, ActivityAction, ActivityChangeInput, ActivityService, ActivityTimelineChange,
 };
-pub use stoneflow_usecase::activity::{
+pub use stoneflow_application::activity::{
     ActivityTimelineEntry, GetEntityActivitiesInput, RecordActivityInput,
 };

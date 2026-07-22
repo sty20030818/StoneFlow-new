@@ -1,14 +1,19 @@
 //! SQLite 连接与基础检查。
+//!
+//! PRAGMA 通过 sqlx SqliteConnectOptions 配置，确保连接池内每条物理连接一致。
 
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use sea_orm::{
+    sqlx::sqlite::{SqliteJournalMode, SqliteSynchronous},
     ConnectOptions, ConnectionTrait, Database, DatabaseConnection, DbBackend, Statement,
 };
 
 use crate::error::StorageError;
 
 const DATABASE_FILE_NAME: &str = "stoneflow.sqlite3";
+const SQLITE_BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// 解析 StoneFlow 本地数据库路径。
 pub fn resolve_database_path(base_dir: &Path) -> PathBuf {
@@ -31,7 +36,7 @@ pub async fn connect_sqlite(database_path: &Path) -> Result<DatabaseConnection, 
     ensure_database_parent_dir(database_path)?;
 
     let database_url = format!("sqlite://{}?mode=rwc", database_path.to_string_lossy());
-    connect_sqlite_with_options(&database_url, 5, "WAL").await
+    connect_sqlite_with_options(&database_url, 5, SqliteJournalMode::Wal).await
 }
 
 /// 测试用文件库连接：单连接 + DELETE journal，便于 Windows 下释放文件锁。
@@ -41,38 +46,34 @@ pub async fn connect_sqlite_for_test(
     ensure_database_parent_dir(database_path)?;
 
     let database_url = format!("sqlite://{}?mode=rwc", database_path.to_string_lossy());
-    connect_sqlite_with_options(&database_url, 1, "DELETE").await
+    connect_sqlite_with_options(&database_url, 1, SqliteJournalMode::Delete).await
 }
 
 /// 测试用内存库连接：不落盘，适合绝大多数集成/仓储测试。
 pub async fn connect_sqlite_memory() -> Result<DatabaseConnection, StorageError> {
-    connect_sqlite_with_options(SQLITE_MEMORY_URL, 5, "DELETE").await
+    connect_sqlite_with_options(SQLITE_MEMORY_URL, 5, SqliteJournalMode::Delete).await
 }
 
 async fn connect_sqlite_with_options(
     database_url: &str,
     max_connections: u32,
-    journal_mode: &str,
+    journal_mode: SqliteJournalMode,
 ) -> Result<DatabaseConnection, StorageError> {
     let mut options = ConnectOptions::new(database_url);
     options.max_connections(max_connections);
     options.min_connections(1);
-    options.acquire_timeout(std::time::Duration::from_secs(10));
-    options.idle_timeout(std::time::Duration::from_secs(60));
+    options.acquire_timeout(Duration::from_secs(10));
+    options.idle_timeout(Duration::from_secs(60));
     options.sqlx_logging(false);
+    // 每条物理连接建立时生效，而不是只配置池里的第一条连接。
+    options.map_sqlx_sqlite_opts(move |opts| {
+        opts.foreign_keys(true)
+            .journal_mode(journal_mode)
+            .synchronous(SqliteSynchronous::Full)
+            .busy_timeout(SQLITE_BUSY_TIMEOUT)
+    });
 
-    let connection = Database::connect(options).await?;
-    connection
-        .execute_unprepared(&format!(
-            r#"
-            PRAGMA foreign_keys = ON;
-            PRAGMA journal_mode = {journal_mode};
-            PRAGMA synchronous = NORMAL;
-            "#
-        ))
-        .await?;
-
-    Ok(connection)
+    Database::connect(options).await.map_err(StorageError::from)
 }
 
 /// 执行最小 smoke query，确认连接可用。

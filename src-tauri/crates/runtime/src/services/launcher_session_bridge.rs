@@ -1,6 +1,6 @@
 //! Launcher Session Bridge：提供 prepare-session 所需的只读桥接入口。
 
-use stoneflow_usecase::launcher_context::LauncherInitialStateDto;
+use stoneflow_application::launcher_context::LauncherInitialStateDto;
 
 use crate::{
     app::{error::AppError, state::ActiveScopeSnapshot},

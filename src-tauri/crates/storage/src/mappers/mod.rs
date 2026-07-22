@@ -1,12 +1,12 @@
 //! schema 与 domain 枚举互转。
 
-use stoneflow_domain::{
-    ActivityActorKind, ActivityEntityKind, ActivitySourceKind, TaskStatus, ViewEntityKind, ViewKind,
-};
-use stoneflow_schema::common::{
+use crate::entities::common::{
     ActivityActorKind as SchemaActivityActorKind, ActivityEntityKind as SchemaActivityEntityKind,
     ActivitySourceKind as SchemaActivitySourceKind, TaskStatus as SchemaTaskStatus,
     ViewEntityKind as SchemaViewEntityKind, ViewKind as SchemaViewKind,
+};
+use stoneflow_domain::{
+    ActivityActorKind, ActivityEntityKind, ActivitySourceKind, TaskStatus, ViewEntityKind, ViewKind,
 };
 
 pub fn task_status_to_domain(status: SchemaTaskStatus) -> TaskStatus {
@@ -87,9 +87,9 @@ pub fn activity_source_kind_to_schema(kind: ActivitySourceKind) -> SchemaActivit
 }
 
 pub fn map_space_model_to_record(
-    model: stoneflow_schema::space::Model,
-) -> stoneflow_usecase::space::SpaceRecord {
-    stoneflow_usecase::space::SpaceRecord {
+    model: crate::entities::space::Model,
+) -> stoneflow_application::space::SpaceRecord {
+    stoneflow_application::space::SpaceRecord {
         id: model.id,
         name: model.name,
         icon_key: model.icon_key,
@@ -104,9 +104,9 @@ pub fn map_space_model_to_record(
 }
 
 pub fn map_project_model_to_lifecycle_list_record(
-    model: stoneflow_schema::project::Model,
-) -> stoneflow_usecase::lifecycle::LifecycleProjectListRecord {
-    stoneflow_usecase::lifecycle::LifecycleProjectListRecord {
+    model: crate::entities::project::Model,
+) -> stoneflow_application::lifecycle::LifecycleProjectListRecord {
+    stoneflow_application::lifecycle::LifecycleProjectListRecord {
         id: model.id,
         space_id: model.space_id,
         name: model.name,
@@ -120,9 +120,9 @@ pub fn map_project_model_to_lifecycle_list_record(
 }
 
 pub fn map_task_model_to_lifecycle_list_record(
-    model: stoneflow_schema::task::Model,
-) -> stoneflow_usecase::lifecycle::LifecycleTaskListRecord {
-    stoneflow_usecase::lifecycle::LifecycleTaskListRecord {
+    model: crate::entities::task::Model,
+) -> stoneflow_application::lifecycle::LifecycleTaskListRecord {
+    stoneflow_application::lifecycle::LifecycleTaskListRecord {
         id: model.id,
         space_id: model.space_id,
         project_id: model.project_id,
@@ -137,9 +137,9 @@ pub fn map_task_model_to_lifecycle_list_record(
 }
 
 pub fn map_project_model_to_record(
-    model: stoneflow_schema::project::Model,
-) -> stoneflow_usecase::project::ProjectRecord {
-    stoneflow_usecase::project::ProjectRecord {
+    model: crate::entities::project::Model,
+) -> stoneflow_application::project::ProjectRecord {
+    stoneflow_application::project::ProjectRecord {
         id: model.id,
         space_id: model.space_id,
         name: model.name,
@@ -155,9 +155,9 @@ pub fn map_project_model_to_record(
 }
 
 pub fn map_space_model_to_project_space_record(
-    model: stoneflow_schema::space::Model,
-) -> stoneflow_usecase::project::ProjectSpaceRecord {
-    stoneflow_usecase::project::ProjectSpaceRecord {
+    model: crate::entities::space::Model,
+) -> stoneflow_application::project::ProjectSpaceRecord {
+    stoneflow_application::project::ProjectSpaceRecord {
         id: model.id,
         name: model.name,
         archived_at: model.archived_at,
@@ -166,9 +166,9 @@ pub fn map_space_model_to_project_space_record(
 }
 
 pub fn map_task_link_model_to_record(
-    model: stoneflow_schema::task_link::Model,
-) -> stoneflow_usecase::task_link::TaskLinkRecord {
-    stoneflow_usecase::task_link::TaskLinkRecord {
+    model: crate::entities::task_link::Model,
+) -> stoneflow_application::task_link::TaskLinkRecord {
+    stoneflow_application::task_link::TaskLinkRecord {
         id: model.id,
         task_id: model.task_id,
         title: model.title,
@@ -180,9 +180,9 @@ pub fn map_task_link_model_to_record(
 }
 
 pub fn map_task_model_to_link_task_record(
-    model: stoneflow_schema::task::Model,
-) -> stoneflow_usecase::task_link::TaskLinkTaskRecord {
-    stoneflow_usecase::task_link::TaskLinkTaskRecord {
+    model: crate::entities::task::Model,
+) -> stoneflow_application::task_link::TaskLinkTaskRecord {
+    stoneflow_application::task_link::TaskLinkTaskRecord {
         id: model.id,
         title: model.title,
         deleted_at: model.deleted_at,
@@ -218,9 +218,9 @@ pub fn view_entity_kind_to_schema(kind: ViewEntityKind) -> SchemaViewEntityKind 
 }
 
 pub fn map_view_model_to_record(
-    model: stoneflow_schema::view::Model,
-) -> stoneflow_usecase::view::ViewRecord {
-    stoneflow_usecase::view::ViewRecord {
+    model: crate::entities::view::Model,
+) -> stoneflow_application::view::ViewRecord {
+    stoneflow_application::view::ViewRecord {
         id: model.id,
         name: model.name,
         description: model.description,
@@ -238,9 +238,9 @@ pub fn map_view_model_to_record(
 }
 
 pub fn map_task_model_to_record(
-    model: stoneflow_schema::task::Model,
-) -> stoneflow_usecase::task::TaskRecord {
-    stoneflow_usecase::task::TaskRecord {
+    model: crate::entities::task::Model,
+) -> stoneflow_application::task::TaskRecord {
+    stoneflow_application::task::TaskRecord {
         id: model.id,
         space_id: model.space_id,
         project_id: model.project_id,
@@ -264,9 +264,9 @@ pub fn map_task_model_to_record(
 }
 
 pub fn map_space_model_to_task_space_record(
-    model: stoneflow_schema::space::Model,
-) -> stoneflow_usecase::task::TaskSpaceRecord {
-    stoneflow_usecase::task::TaskSpaceRecord {
+    model: crate::entities::space::Model,
+) -> stoneflow_application::task::TaskSpaceRecord {
+    stoneflow_application::task::TaskSpaceRecord {
         id: model.id,
         name: model.name,
         archived_at: model.archived_at,
@@ -275,9 +275,9 @@ pub fn map_space_model_to_task_space_record(
 }
 
 pub fn map_project_model_to_task_project_record(
-    model: stoneflow_schema::project::Model,
-) -> stoneflow_usecase::task::TaskProjectRecord {
-    stoneflow_usecase::task::TaskProjectRecord {
+    model: crate::entities::project::Model,
+) -> stoneflow_application::task::TaskProjectRecord {
+    stoneflow_application::task::TaskProjectRecord {
         id: model.id,
         name: model.name,
         space_id: model.space_id,
@@ -287,9 +287,9 @@ pub fn map_project_model_to_task_project_record(
 }
 
 pub fn map_task_model_to_view_task_record(
-    model: stoneflow_schema::task::Model,
-) -> stoneflow_usecase::view::ViewTaskRecord {
-    stoneflow_usecase::view::ViewTaskRecord {
+    model: crate::entities::task::Model,
+) -> stoneflow_application::view::ViewTaskRecord {
+    stoneflow_application::view::ViewTaskRecord {
         id: model.id,
         space_id: model.space_id,
         project_id: model.project_id,

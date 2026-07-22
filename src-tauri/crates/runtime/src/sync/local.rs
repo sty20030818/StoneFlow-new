@@ -30,7 +30,8 @@ pub async fn inspect_local_replica(
     let server_seq_cursor = repository.find_cursor(SERVER_SEQ_CURSOR_SCOPE).await?;
     let last_restore_at = repository.find_cursor(LAST_RESTORE_AT_SCOPE).await?;
 
-    let has_sync_metadata = has_non_empty_cursor(&device_id) || has_non_empty_cursor(&server_seq_cursor);
+    let has_sync_metadata =
+        has_non_empty_cursor(&device_id) || has_non_empty_cursor(&server_seq_cursor);
     let looks_empty_replica = counts.has_no_user_content() && counts.pending_mutation_count == 0;
     let has_restore_marker = has_non_empty_cursor(&last_restore_at);
     let has_server_seq_cursor = has_non_empty_cursor(&server_seq_cursor);
@@ -111,12 +112,14 @@ async fn read_local_replica_counts(
         task_link_count: row
             .try_get("", "task_link_count")
             .map_err(|error| AppError::database(format!("读取 task_link_count 失败: {error}")))?,
-        non_default_space_count: row.try_get("", "non_default_space_count").map_err(|error| {
-            AppError::database(format!("读取 non_default_space_count 失败: {error}"))
+        non_default_space_count: row
+            .try_get("", "non_default_space_count")
+            .map_err(|error| {
+                AppError::database(format!("读取 non_default_space_count 失败: {error}"))
+            })?,
+        pending_mutation_count: row.try_get("", "pending_mutation_count").map_err(|error| {
+            AppError::database(format!("读取 pending_mutation_count 失败: {error}"))
         })?,
-        pending_mutation_count: row
-            .try_get("", "pending_mutation_count")
-            .map_err(|error| AppError::database(format!("读取 pending_mutation_count 失败: {error}")))?,
     })
 }
 

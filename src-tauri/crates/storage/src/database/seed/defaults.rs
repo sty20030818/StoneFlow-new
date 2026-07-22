@@ -1,7 +1,7 @@
 //! 静态默认数据定义。
 
+use crate::entities::common::ViewEntityKind;
 use serde_json::{json, Value};
-use stoneflow_schema::common::ViewEntityKind;
 
 pub struct DefaultSpaceSeed {
     pub name: &'static str,

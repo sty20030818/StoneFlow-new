@@ -2,13 +2,14 @@
 
 ## 当前阶段
 
-已拆分为 R0-R10 独立任务，待从 R0 开始实施。
+R0 / R1 已完成。下一步从 R2 开始。
 
 ## 阶段任务
 
 | 阶段 | 任务 | 状态 |
 |---|---|---|
-| R0 | [备份与基线](../2026-07-22-r0-backup-baseline/SPEC.md) | 待开始 |
+| R0 | [备份与基线](../2026-07-22-r0-backup-baseline/SPEC.md) | 已完成（范围见 R0 实施偏差） |
+| R1 | [Workspace 与架构边界](../2026-07-22-r1-workspace-boundaries/SPEC.md) | 已完成（见 R1 实施偏差与遗留债） |
 | R1 | [Workspace 与架构边界](../2026-07-22-r1-workspace-boundaries/SPEC.md) | 待开始 |
 | R2 | [领域与存储基线](../2026-07-22-r2-domain-storage-baseline/SPEC.md) | 待开始 |
 | R3 | [Space](../2026-07-22-r3-space/SPEC.md) | 待开始 |

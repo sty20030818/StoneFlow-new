@@ -1,6 +1,6 @@
-//! Search Service 兼容壳：真实搜索编排已迁到 `stoneflow-usecase`。
+//! Search Service 兼容壳：真实搜索编排已迁到 `stoneflow-application`。
 
-use stoneflow_usecase::search::{
+use stoneflow_application::search::{
     ProjectSearchLifecycle as UsecaseProjectSearchLifecycle, SearchProjectReader,
     SearchProjectRecord, SearchService as SearchUsecase, SearchSpaceReader, SearchSpaceRecord,
     SearchTaskReader, SearchTaskRecord, TaskSearchLifecycle as UsecaseTaskSearchLifecycle,
@@ -15,7 +15,7 @@ use stoneflow_storage::{
     },
 };
 
-pub use stoneflow_usecase::search::{
+pub use stoneflow_application::search::{
     SearchEntitiesInput, SearchEntitiesResultDto, SearchProjectItemDto, SearchTaskItemDto,
 };
 
@@ -27,7 +27,7 @@ struct SpaceReaderAdapter {
 impl SearchSpaceReader for SpaceReaderAdapter {
     async fn list_visible_spaces(
         &self,
-    ) -> Result<Vec<SearchSpaceRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<SearchSpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .list_visible()
             .await
@@ -54,7 +54,7 @@ impl SearchProjectReader for ProjectReaderAdapter {
         &self,
         query: &str,
         lifecycle: UsecaseProjectSearchLifecycle,
-    ) -> Result<Vec<SearchProjectRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<SearchProjectRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .search_by_query(
                 query,
@@ -80,7 +80,7 @@ impl SearchTaskReader for TaskReaderAdapter {
         &self,
         query: &str,
         lifecycle: UsecaseTaskSearchLifecycle,
-    ) -> Result<Vec<SearchTaskRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<SearchTaskRecord>, stoneflow_application::ApplicationError> {
         self.task_repository
             .search_by_query(
                 query,
@@ -97,7 +97,7 @@ impl SearchTaskReader for TaskReaderAdapter {
     async fn list_projects_by_ids(
         &self,
         project_ids: &[String],
-    ) -> Result<Vec<SearchProjectRecord>, stoneflow_usecase::UsecaseError> {
+    ) -> Result<Vec<SearchProjectRecord>, stoneflow_application::ApplicationError> {
         self.project_repository
             .list_by_ids(project_ids)
             .await
@@ -145,7 +145,7 @@ impl SearchService {
     }
 }
 
-fn map_project_record(project: stoneflow_schema::project::Model) -> SearchProjectRecord {
+fn map_project_record(project: stoneflow_storage::entities::project::Model) -> SearchProjectRecord {
     SearchProjectRecord {
         id: project.id,
         space_id: project.space_id,
@@ -156,7 +156,7 @@ fn map_project_record(project: stoneflow_schema::project::Model) -> SearchProjec
     }
 }
 
-fn map_task_record(task: stoneflow_schema::task::Model) -> SearchTaskRecord {
+fn map_task_record(task: stoneflow_storage::entities::task::Model) -> SearchTaskRecord {
     SearchTaskRecord {
         id: task.id,
         space_id: task.space_id,
@@ -171,21 +171,23 @@ fn map_task_record(task: stoneflow_schema::task::Model) -> SearchTaskRecord {
     }
 }
 
-fn map_app_error(error: AppError) -> stoneflow_usecase::UsecaseError {
+fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
     match error {
-        AppError::Validation(message) => stoneflow_usecase::UsecaseError::validation(message),
-        AppError::NotFound(message) => stoneflow_usecase::UsecaseError::not_found(message),
-        AppError::Conflict(message) => stoneflow_usecase::UsecaseError::conflict(message),
-        AppError::Database(message) => stoneflow_usecase::UsecaseError::storage(message),
+        AppError::Validation(message) => {
+            stoneflow_application::ApplicationError::validation(message)
+        }
+        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
+        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
+        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
         AppError::Initialization(message) => {
-            stoneflow_usecase::UsecaseError::initialization(message)
+            stoneflow_application::ApplicationError::initialization(message)
         }
         AppError::Internal(message)
         | AppError::Forbidden(message)
         | AppError::CaptureSpaceUnavailable(message)
         | AppError::DefaultSpaceUnavailable(message)
         | AppError::CapturePersistence(message) => {
-            stoneflow_usecase::UsecaseError::internal(message)
+            stoneflow_application::ApplicationError::internal(message)
         }
     }
 }

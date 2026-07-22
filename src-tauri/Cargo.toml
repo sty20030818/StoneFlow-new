@@ -1,15 +1,12 @@
 [workspace]
 members = [
   "crates/runtime",
-  "crates/sync-worker",
+  "crates/sync",
   "crates/platform",
   "crates/domain",
-  "crates/usecase",
+  "crates/application",
   "crates/storage",
-  "crates/schema",
   "crates/test-support",
-  "crates/integration-tests",
-  "crates/migration",
 ]
 resolver = "2"
 
