@@ -26,6 +26,13 @@ export type ActiveScopePayload = {
 	scope: Scope
 }
 
+export type SpaceLifecycleResult = {
+	space: Space
+	replacementSpaceId: string | null
+	affectedProjectCount: number
+	affectedTaskCount: number
+}
+
 /**
  * 读取所有可见 Space。
  */
@@ -73,7 +80,7 @@ export async function setDefaultSpace(spaceId: string) {
  * 归档 Space。
  */
 export async function archiveSpace(spaceId: string) {
-	return invoke<Space>('archive_space', {
+	return invoke<SpaceLifecycleResult>('archive_space', {
 		input: { spaceId },
 	})
 }
@@ -82,7 +89,7 @@ export async function archiveSpace(spaceId: string) {
  * 恢复 Space。
  */
 export async function restoreSpace(spaceId: string) {
-	return invoke<Space>('restore_space', {
+	return invoke<SpaceLifecycleResult>('restore_space', {
 		input: { spaceId },
 	})
 }
@@ -91,7 +98,7 @@ export async function restoreSpace(spaceId: string) {
  * 删除 Space。
  */
 export async function deleteSpace(spaceId: string) {
-	return invoke<Space>('delete_space', {
+	return invoke<SpaceLifecycleResult>('delete_space', {
 		input: { spaceId },
 	})
 }

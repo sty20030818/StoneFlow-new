@@ -61,6 +61,7 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         sync::get_sync_diagnostics,
         sync::run_sync,
         spaces::list_visible_spaces,
+        spaces::get_space,
         spaces::create_space,
         spaces::update_space,
         spaces::set_default_space,

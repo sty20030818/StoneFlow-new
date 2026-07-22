@@ -101,7 +101,7 @@ describe('buildTaskActivityDisplayItems', () => {
 				name: '工作',
 				iconKey: 'briefcase',
 				colorKey: 'blue',
-				sortOrder: 1,
+				position: 1,
 				isDefault: true,
 				archivedAt: null,
 				deletedAt: null,

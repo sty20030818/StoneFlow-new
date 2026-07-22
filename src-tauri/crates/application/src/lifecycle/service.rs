@@ -6,7 +6,7 @@
 #![allow(async_fn_in_trait)]
 #![allow(dead_code)]
 
-use stoneflow_domain::{validate_project_id, validate_space_id, validate_task_id};
+use stoneflow_domain::{validate_project_id, validate_task_id};
 
 use crate::{
     activity::{ActivityPersistence, ActivityService},
@@ -32,22 +32,6 @@ fn pending(op: &str) -> ApplicationError {
 /// 同步钩子：软删走 upsert；永久删走 tombstone。
 pub trait LifecycleSyncHook: Send + Sync {
     type Connection: Send + Sync;
-
-    async fn enqueue_space_upsert(
-        &self,
-        _connection: &Self::Connection,
-        _space: &SpaceRecord,
-    ) -> Result<(), ApplicationError> {
-        Ok(())
-    }
-
-    async fn enqueue_space_tombstone(
-        &self,
-        _connection: &Self::Connection,
-        _space: &SpaceRecord,
-    ) -> Result<(), ApplicationError> {
-        Ok(())
-    }
 
     async fn enqueue_project_upsert(
         &self,
@@ -88,10 +72,6 @@ pub trait LifecycleSpacePersistence: Send + Sync {
 
     async fn begin(&self) -> Result<Self::Connection, ApplicationError>;
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError>;
-    async fn get(&self, space_id: &str) -> Result<Option<SpaceRecord>, ApplicationError>;
-    async fn get_default(&self) -> Result<Option<SpaceRecord>, ApplicationError>;
-    async fn list_by_ids(&self, space_ids: &[String])
-        -> Result<Vec<SpaceRecord>, ApplicationError>;
     async fn list_archived(
         &self,
         scope_space_id: Option<&str>,
@@ -100,31 +80,6 @@ pub trait LifecycleSpacePersistence: Send + Sync {
         &self,
         scope_space_id: Option<&str>,
     ) -> Result<Vec<SpaceRecord>, ApplicationError>;
-    async fn archive_raw(
-        &self,
-        connection: &Self::Connection,
-        space_id: &str,
-        archived_at: &str,
-        updated_at: &str,
-    ) -> Result<Option<SpaceRecord>, ApplicationError>;
-    async fn soft_delete_raw(
-        &self,
-        connection: &Self::Connection,
-        space_id: &str,
-        deleted_at: &str,
-        updated_at: &str,
-    ) -> Result<Option<SpaceRecord>, ApplicationError>;
-    async fn restore_raw(
-        &self,
-        connection: &Self::Connection,
-        space_id: &str,
-        updated_at: &str,
-    ) -> Result<Option<SpaceRecord>, ApplicationError>;
-    async fn hard_delete(
-        &self,
-        connection: &Self::Connection,
-        space_id: &str,
-    ) -> Result<(), ApplicationError>;
 }
 
 /// Project 生命周期持久化边界。
@@ -255,28 +210,6 @@ where
             activity,
             sync_hook,
         }
-    }
-
-    pub async fn archive_space(&self, space_id: &str) -> Result<SpaceRecord, ApplicationError> {
-        let _ = validate_space_id(space_id)?;
-        Err(pending("archive_space"))
-    }
-
-    pub async fn restore_space(&self, space_id: &str) -> Result<SpaceRecord, ApplicationError> {
-        let _ = validate_space_id(space_id)?;
-        Err(pending("restore_space"))
-    }
-
-    /// 软删进回收站（仍同步）。
-    pub async fn delete_space(&self, space_id: &str) -> Result<SpaceRecord, ApplicationError> {
-        let _ = validate_space_id(space_id)?;
-        Err(pending("delete_space"))
-    }
-
-    /// 回收站永久删除（物理删 + tombstone）。
-    pub async fn permanently_delete_space(&self, space_id: &str) -> Result<(), ApplicationError> {
-        let _ = validate_space_id(space_id)?;
-        Err(pending("permanently_delete_space"))
     }
 
     pub async fn archive_project(

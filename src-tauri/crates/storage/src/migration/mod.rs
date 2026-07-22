@@ -5,13 +5,17 @@
 pub use sea_orm_migration::prelude::*;
 
 mod m20260722_000001_r2_baseline;
+mod m20260722_000002_r3_space_lifecycle;
 
 pub struct Migrator;
 
 #[async_trait::async_trait]
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
-        vec![Box::new(m20260722_000001_r2_baseline::Migration) as Box<dyn MigrationTrait>]
+        vec![
+            Box::new(m20260722_000001_r2_baseline::Migration) as Box<dyn MigrationTrait>,
+            Box::new(m20260722_000002_r3_space_lifecycle::Migration),
+        ]
     }
 }
 

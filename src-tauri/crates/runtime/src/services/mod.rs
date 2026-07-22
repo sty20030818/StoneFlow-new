@@ -44,7 +44,8 @@ pub use settings_service::{
     UpdateSidebarProjectSectionInput,
 };
 pub use space_service::{
-    CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceService, UpdateSpaceInput,
+    CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceLifecycleResult,
+    SpaceService, UpdateSpaceInput,
 };
 pub use task_link_service::{
     CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto, TaskLinkService,

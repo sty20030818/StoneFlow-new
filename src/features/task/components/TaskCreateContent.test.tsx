@@ -220,7 +220,7 @@ function renderTaskCreate({
 						iconKey: 'folder',
 						colorKey: 'blue',
 						isDefault: true,
-						sortOrder: 0,
+						position: 0,
 						archivedAt: null,
 						deletedAt: null,
 						createdAt: '2026-05-19T10:00:00.000Z',
@@ -287,7 +287,7 @@ function createTaskDetail() {
 		archivedAt: null,
 		createdAt: '2026-05-19T10:00:00.000Z',
 		updatedAt: '2026-05-19T10:00:00.000Z',
-		sortOrder: 1,
+		position: 1,
 		deletedAt: null,
 	}
 }

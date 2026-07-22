@@ -35,7 +35,7 @@ describe('SpaceEditorDialog', () => {
 					iconKey: 'user',
 					colorKey: 'blue',
 					isDefault: true,
-					sortOrder: 100,
+					position: 100,
 					archivedAt: null,
 					deletedAt: null,
 					createdAt: '2026-04-30T00:00:00.000Z',

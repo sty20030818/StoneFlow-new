@@ -12,6 +12,8 @@ mod tombstone_repository;
 pub use applied_operation_repository::AppliedOperationRepository;
 pub use outbox_repository::OutboxRepository;
 pub use settings_repository::SettingsRepository;
-pub use space_repository::{CreateSpaceRecord, SpaceRepository, UpdateSpacePatch};
+pub use space_repository::{
+    CreateSpaceRecord, SpaceCascadeEntities, SpaceCascadeResult, SpaceRepository, UpdateSpacePatch,
+};
 pub use sync_repository::{SyncCursorRecord, SyncDeviceRecord, SyncRepository};
 pub use tombstone_repository::TombstoneRepository;

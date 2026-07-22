@@ -8,7 +8,7 @@
 
 - Space 创建、读取、更新、默认切换、归档、恢复、删除与永久删除。
 - 默认 Space 被归档或删除时选择替代活跃 Space；无替代项时拒绝操作。
-- Space 生命周期对 Project 与 Task 的级联，以及精确恢复原层级与排序。
+- Space 生命周期对 Project 与 Task 的级联，以及精确恢复原层级与排序；自定义 View 的生命周期由 R6 在结构化 scope 落地后处理。
 - application、storage、runtime command、前端 DTO 与测试同步完成。
 
 ## 不做什么
@@ -34,7 +34,7 @@
 ## 实施设计
 
 1. application 的 Space service 接收 DTO 并调用受控 persistence port，不接触 SeaORM model。
-2. storage 在一个 transaction 内读取替代默认 Space、执行级联、写 restore manifest、Activity 和 Outbox。
+2. storage 在一个 transaction 内读取替代默认 Space、执行级联、写操作来源字段和 Outbox。子实体保留原层级与排序；恢复只处理来源匹配同一 operation 的记录。
 3. command 返回新的 Space/受影响范围 DTO；前端只失效 Space/Project/Task 相关 Query，不解析底层级联细节。
 4. 默认 Space 的唯一性由部分唯一索引兜底；被竞态触发时映射为稳定 conflict 错误。
 
@@ -46,7 +46,7 @@
 ## 退出条件
 
 - 默认 Space 唯一性由数据库和 application 双层保证。
-- 每个 Space 操作均在单事务写 Activity/Outbox/级联记录。
+- 每个 Space 操作均在单事务写 Outbox/级联记录；Space 不记录 Activity。
 - 前端可通过稳定 command 合约使用新 Space 模型。
 
 ## 验证

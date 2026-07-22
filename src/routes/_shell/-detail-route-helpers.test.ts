@@ -16,7 +16,7 @@ function createSpace(input: Pick<Space, 'id' | 'name'>): Space {
 		colorKey: 'blue',
 		iconKey: 'inbox',
 		isDefault: true,
-		sortOrder: 0,
+		position: 0,
 		archivedAt: null,
 		deletedAt: null,
 		createdAt: '2026-01-01T00:00:00Z',

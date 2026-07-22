@@ -58,11 +58,11 @@ export function useArchiveSpaceMutation() {
 
 	return useMutation({
 		mutationFn: archiveSpace,
-		onSuccess: async (space) => {
-			emitEvent({ type: 'space:updated', payload: { spaceId: space.id } })
+		onSuccess: async (result) => {
+			emitEvent({ type: 'space:updated', payload: { spaceId: result.space.id } })
 			emitEvent({
 				type: 'lifecycle:changed',
-				payload: { entityType: 'space', entityId: space.id },
+				payload: { entityType: 'space', entityId: result.space.id },
 			})
 			await invalidate()
 		},
@@ -74,11 +74,11 @@ export function useDeleteSpaceMutation() {
 
 	return useMutation({
 		mutationFn: deleteSpace,
-		onSuccess: async (space) => {
-			emitEvent({ type: 'space:deleted', payload: { spaceId: space.id } })
+		onSuccess: async (result) => {
+			emitEvent({ type: 'space:deleted', payload: { spaceId: result.space.id } })
 			emitEvent({
 				type: 'lifecycle:changed',
-				payload: { entityType: 'space', entityId: space.id },
+				payload: { entityType: 'space', entityId: result.space.id },
 			})
 			await invalidate()
 		},

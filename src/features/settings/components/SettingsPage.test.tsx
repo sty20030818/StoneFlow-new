@@ -934,7 +934,7 @@ function createSpace(overrides: Partial<Space> & Pick<Space, 'id' | 'name' | 'is
 		iconKey: overrides.iconKey ?? 'briefcase',
 		colorKey: overrides.colorKey ?? 'blue',
 		isDefault: overrides.isDefault,
-		sortOrder: overrides.sortOrder ?? 100,
+		position: overrides.position ?? 100,
 		archivedAt: overrides.archivedAt ?? null,
 		deletedAt: overrides.deletedAt ?? null,
 		createdAt: overrides.createdAt ?? '2026-05-03T10:00:00Z',

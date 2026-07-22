@@ -81,6 +81,7 @@ import {
 } from 'lucide-react'
 
 type ShellNavBadges = Partial<Record<ShellSectionKey, string>>
+type SpaceRemovalResult = Space | { replacementSpaceId: string | null }
 
 type ShellSidebarProps = {
 	currentScope: Scope
@@ -97,8 +98,8 @@ type ShellSidebarProps = {
 		colorKey?: string
 	}) => Promise<Space>
 	onSetDefaultSpace: (spaceId: string) => Promise<Space>
-	onArchiveSpace: (spaceId: string) => Promise<Space>
-	onDeleteSpace: (spaceId: string) => Promise<Space>
+	onArchiveSpace: (spaceId: string) => Promise<SpaceRemovalResult>
+	onDeleteSpace: (spaceId: string) => Promise<SpaceRemovalResult>
 	onOpenProjectCreateDialog: () => void
 	onUpdateItemVisibility: (target: SidebarItemVisibilityTarget, visible: boolean) => void
 	onResetMainItemsVisibility: () => void
@@ -136,7 +137,7 @@ export function ShellSidebar({
 			: spaces.find((space) => space.id === fallbackSpaceId)) ??
 		spaces[0] ??
 		null
-	const canArchiveOrDeleteActiveSpace = !activeSpace?.isDefault
+	const canArchiveOrDeleteActiveSpace = Boolean(activeSpace)
 	const scopedProjectLinks = currentScope.type === 'all' ? [] : projects
 	const currentScopeLabel =
 		currentScope.type === 'all' ? '所有空间' : (activeSpace?.name ?? '未选择 Space')
@@ -194,18 +195,11 @@ export function ShellSidebar({
 		() => (activeSpace ? getSpaceVisual(activeSpace) : null),
 		[activeSpace],
 	)
-	const resolvePostSpaceRemovalPath = useCallback(
-		(removedSpaceId: string) => {
-			const remainingSpaces = spaces.filter((space) => space.id !== removedSpaceId)
-			const nextSpaceId =
-				remainingSpaces.find((space) => space.isDefault)?.id ?? remainingSpaces[0]?.id ?? null
-
-			return nextSpaceId
-				? openSection({ type: 'space', spaceId: nextSpaceId }, 'inbox', nextSpaceId)
-				: openStartupFallback({ type: 'all' })
-		},
-		[spaces],
-	)
+	const resolvePostSpaceRemovalPath = useCallback((replacementSpaceId: string | null) => {
+		return replacementSpaceId
+			? openSection({ type: 'space', spaceId: replacementSpaceId }, 'inbox', replacementSpaceId)
+			: openStartupFallback({ type: 'all' })
+	}, [])
 
 	async function runSpaceMutation(task: () => Promise<void>) {
 		try {
@@ -460,10 +454,12 @@ export function ShellSidebar({
 																	return
 																}
 																await runSpaceMutation(async () => {
-																	await onArchiveSpace(activeSpace.id)
+																	const result = await onArchiveSpace(activeSpace.id)
 																	if (currentScope.type === 'space') {
 																		void navigate({
-																			to: resolvePostSpaceRemovalPath(activeSpace.id) as never,
+																			to: resolvePostSpaceRemovalPath(
+																				getReplacementSpaceId(result),
+																			) as never,
 																		})
 																	}
 																})
@@ -489,10 +485,12 @@ export function ShellSidebar({
 																	return
 																}
 																await runSpaceMutation(async () => {
-																	await onDeleteSpace(activeSpace.id)
+																	const result = await onDeleteSpace(activeSpace.id)
 																	if (currentScope.type === 'space') {
 																		void navigate({
-																			to: resolvePostSpaceRemovalPath(activeSpace.id) as never,
+																			to: resolvePostSpaceRemovalPath(
+																				getReplacementSpaceId(result),
+																			) as never,
 																		})
 																	}
 																})
@@ -659,4 +657,8 @@ export function ShellSidebar({
 			/>
 		</ContextMenu>
 	)
+}
+
+function getReplacementSpaceId(result: SpaceRemovalResult): string | null {
+	return 'replacementSpaceId' in result ? result.replacementSpaceId : null
 }

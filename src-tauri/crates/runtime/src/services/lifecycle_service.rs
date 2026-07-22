@@ -1,6 +1,6 @@
 //! Lifecycle Service（R2 stub）。
 
-use stoneflow_application::{project::ProjectRecord, space::SpaceRecord, task::TaskRecord};
+use stoneflow_application::{project::ProjectRecord, task::TaskRecord};
 use stoneflow_storage::database::DatabaseRuntimeState;
 
 use crate::app::error::AppError;
@@ -19,22 +19,6 @@ impl LifecycleService {
         Self {
             _database: database.clone(),
         }
-    }
-
-    pub async fn archive_space(&self, _space_id: &str) -> Result<SpaceRecord, AppError> {
-        Err(AppError::internal("R2：archive_space 未实现"))
-    }
-
-    pub async fn restore_space(&self, _space_id: &str) -> Result<SpaceRecord, AppError> {
-        Err(AppError::internal("R2：restore_space 未实现"))
-    }
-
-    pub async fn delete_space(&self, _space_id: &str) -> Result<SpaceRecord, AppError> {
-        Err(AppError::internal("R2：delete_space 未实现"))
-    }
-
-    pub async fn permanently_delete_space(&self, _space_id: &str) -> Result<(), AppError> {
-        Err(AppError::internal("R2：permanently_delete_space 未实现"))
     }
 
     pub async fn archive_project(&self, _project_id: &str) -> Result<ProjectRecord, AppError> {

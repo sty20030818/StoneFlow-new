@@ -4,7 +4,7 @@ export type Space = {
 	iconKey: string
 	colorKey: string
 	isDefault: boolean
-	sortOrder: number
+	position: number
 	archivedAt: string | null
 	deletedAt: string | null
 	createdAt: string

@@ -51,6 +51,8 @@ where
             generation: Set(1),
             archived_at: Set(None),
             deleted_at: Set(None),
+            archived_by_operation_id: Set(None),
+            deleted_by_operation_id: Set(None),
             created_at: Set(now.clone()),
             updated_at: Set(now),
         },
