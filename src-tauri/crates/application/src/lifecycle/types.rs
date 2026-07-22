@@ -1,4 +1,4 @@
-//! Lifecycle 列表与查询 DTO。
+//! Lifecycle 列表与查询 DTO（归档 + 回收站两阶段删除）。
 
 use serde::{Deserialize, Serialize};
 use stoneflow_domain::LifecycleEntityType;
@@ -28,7 +28,7 @@ pub struct ListLifecycleEntriesInput {
     pub entity_filter: Option<LifecycleEntityType>,
 }
 
-/// 归档/回收站列表条目。
+/// 归档 / 回收站列表条目。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LifecycleEntry {
@@ -46,21 +46,17 @@ pub struct LifecycleEntry {
     pub restore_hint: String,
 }
 
-/// Project 生命周期列表读模型（含来源字段）。
+/// Project 生命周期列表读模型。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LifecycleProjectListRecord {
     pub id: String,
     pub space_id: String,
     pub name: String,
     pub archived_at: Option<String>,
-    pub archived_by_type: Option<String>,
-    pub archived_by_id: Option<String>,
     pub deleted_at: Option<String>,
-    pub deleted_by_type: Option<String>,
-    pub deleted_by_id: Option<String>,
 }
 
-/// Task 生命周期列表读模型（含来源字段）。
+/// Task 生命周期列表读模型。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LifecycleTaskListRecord {
     pub id: String,
@@ -68,9 +64,5 @@ pub struct LifecycleTaskListRecord {
     pub project_id: Option<String>,
     pub title: String,
     pub archived_at: Option<String>,
-    pub archived_by_type: Option<String>,
-    pub archived_by_id: Option<String>,
     pub deleted_at: Option<String>,
-    pub deleted_by_type: Option<String>,
-    pub deleted_by_id: Option<String>,
 }

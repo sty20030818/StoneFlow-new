@@ -140,13 +140,12 @@ pub async fn delete_task_link(
     input: DeleteTaskLinkInput,
     app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
-) -> Result<TaskLinkDto, AppError> {
-    let link = build_task_link_service(database.inner())
+) -> Result<(), AppError> {
+    build_task_link_service(database.inner())
         .delete_task_link(input)
         .await?;
     sync::note_local_write(&app_handle).await;
-    emit_task_changed_for_task_id(&app_handle, database.inner(), &link.task_id).await?;
-    Ok(link)
+    Ok(())
 }
 
 #[tauri::command]

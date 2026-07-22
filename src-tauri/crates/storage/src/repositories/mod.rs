@@ -1,29 +1,17 @@
-//! Repository 骨架：阶段 0 只建立边界，不提前写业务规则。
+//! Repository：R2 基线持久化。
+//!
+//! 旧 soft-delete / sync_mutations CRUD 已拆除；Task/Project/View 等由后续切片重建。
 
-mod activity_repository;
-mod project_repository;
+mod applied_operation_repository;
+mod outbox_repository;
 mod settings_repository;
 mod space_repository;
 mod sync_repository;
-mod task_link_repository;
-mod task_repository;
-mod view_repository;
+mod tombstone_repository;
 
-pub use activity_repository::{
-    ActivityChangeRecord, ActivityEventRecord, ActivityQuery, ActivityRepository,
-};
-pub use project_repository::{
-    CreateProjectRecord, ProjectOverviewView, ProjectRepository, ProjectSearchLifecycle,
-    UpdateProjectPatch,
-};
+pub use applied_operation_repository::AppliedOperationRepository;
+pub use outbox_repository::OutboxRepository;
 pub use settings_repository::SettingsRepository;
 pub use space_repository::{CreateSpaceRecord, SpaceRepository, UpdateSpacePatch};
-pub use sync_repository::{
-    SyncClientRecord, SyncCursorRecord, SyncMutationRecord, SyncRepository, SyncShadowRecord,
-};
-pub use task_link_repository::{CreateTaskLinkRecord, TaskLinkRepository, UpdateTaskLinkPatch};
-pub use task_repository::{
-    CreateTaskRecord, TaskLifecycleView, TaskListQuery, TaskPlacementQuery, TaskRepository,
-    TaskSearchLifecycle, UpdateTaskPatch,
-};
-pub use view_repository::{CreateViewRecord, UpdateViewPatch, ViewListQuery, ViewRepository};
+pub use sync_repository::{SyncCursorRecord, SyncDeviceRecord, SyncRepository};
+pub use tombstone_repository::TombstoneRepository;

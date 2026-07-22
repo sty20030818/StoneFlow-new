@@ -3,7 +3,7 @@
 use std::cmp::Ordering;
 
 use chrono::NaiveDate;
-use stoneflow_domain::{parse_calendar_date, today_local_date, TaskStatus};
+use stoneflow_domain::{parse_calendar_date, today_local_date, WorkStatus};
 
 use crate::{
     activity::{ActivityAction, ActivityChangeInput},
@@ -68,42 +68,34 @@ pub(crate) fn apply_view_preset(
     }
 }
 
-pub(crate) fn status_key(status: TaskStatus) -> &'static str {
-    match status {
-        TaskStatus::Todo => "todo",
-        TaskStatus::Doing => "doing",
-        TaskStatus::Waiting => "waiting",
-        TaskStatus::Done => "done",
-        TaskStatus::Canceled => "canceled",
-    }
+pub(crate) fn status_key(status: WorkStatus) -> &'static str {
+    status.as_str()
 }
 
-pub(crate) fn timestamps_for_status(
-    status: TaskStatus,
-    now: &str,
-) -> (Option<String>, Option<String>) {
-    match status {
-        TaskStatus::Done => (Some(now.to_owned()), None),
-        TaskStatus::Canceled => (None, Some(now.to_owned())),
-        TaskStatus::Todo | TaskStatus::Doing | TaskStatus::Waiting => (None, None),
+/// 依据目标状态推导 completed_at（R2：WorkState 只用单一 completed_at 表达“完成”）。
+pub(crate) fn completed_at_for_status(status: WorkStatus, now: &str) -> Option<String> {
+    if status.is_done() {
+        Some(now.to_owned())
+    } else {
+        None
     }
 }
 
 pub(crate) fn select_update_action(
     current: &TaskRecord,
-    next_status: Option<TaskStatus>,
+    next_status: Option<WorkStatus>,
     changes: &[ActivityChangeInput],
 ) -> ActivityAction {
     if let Some(status) = next_status {
         return match status {
-            TaskStatus::Done => ActivityAction::TaskCompleted,
-            TaskStatus::Canceled => ActivityAction::TaskCanceled,
-            TaskStatus::Todo | TaskStatus::Doing | TaskStatus::Waiting
-                if matches!(current.status, TaskStatus::Done | TaskStatus::Canceled) =>
+            WorkStatus::Done => ActivityAction::TaskCompleted,
+            WorkStatus::Canceled => ActivityAction::TaskCanceled,
+            WorkStatus::Todo | WorkStatus::Doing | WorkStatus::Waiting
+                if matches!(current.status, WorkStatus::Done | WorkStatus::Canceled) =>
             {
                 ActivityAction::TaskReopened
             }
-            TaskStatus::Todo | TaskStatus::Doing | TaskStatus::Waiting => {
+            WorkStatus::Todo | WorkStatus::Doing | WorkStatus::Waiting => {
                 ActivityAction::TaskStatusChanged
             }
         };
@@ -113,13 +105,6 @@ pub(crate) fn select_update_action(
         .iter()
         .map(|change| change.field.as_str())
         .collect::<Vec<_>>();
-    if changed_fields.contains(&"inbox_at") {
-        return if current.inbox_at.is_some() {
-            ActivityAction::TaskInboxLeft
-        } else {
-            ActivityAction::TaskInboxEntered
-        };
-    }
     if changed_fields.contains(&"project_id") {
         return ActivityAction::TaskMovedProject;
     }
@@ -132,10 +117,10 @@ pub(crate) fn select_update_action(
     if changed_fields.contains(&"due_at") {
         return ActivityAction::TaskDueUpdated;
     }
-    if changed_fields.contains(&"scheduled_at") {
+    if changed_fields.contains(&"planned_at") {
         return ActivityAction::TaskScheduledUpdated;
     }
-    if changed_fields.contains(&"reminder_at") {
+    if changed_fields.contains(&"remind_at") {
         return ActivityAction::TaskReminderUpdated;
     }
     if changed_fields.contains(&"note") {
@@ -154,8 +139,6 @@ pub(crate) fn build_update_summary(action: ActivityAction, title: &str) -> Strin
         ActivityAction::TaskMovedProject => format!("调整任务所属项目「{title}」"),
         ActivityAction::TaskMovedSpace => format!("调整任务所属 Space「{title}」"),
         ActivityAction::TaskPriorityChanged => format!("更新任务优先级「{title}」"),
-        ActivityAction::TaskInboxEntered => format!("将任务放回 Inbox「{title}」"),
-        ActivityAction::TaskInboxLeft => format!("将任务移出 Inbox「{title}」"),
         ActivityAction::TaskDueUpdated => format!("更新任务截止时间「{title}」"),
         ActivityAction::TaskScheduledUpdated => format!("更新任务计划时间「{title}」"),
         ActivityAction::TaskReminderUpdated => format!("更新任务提醒时间「{title}」"),
@@ -165,20 +148,20 @@ pub(crate) fn build_update_summary(action: ActivityAction, title: &str) -> Strin
 }
 
 fn matches_focus(task: &TaskRecord) -> bool {
-    matches!(task.status, TaskStatus::Todo | TaskStatus::Doing) && task.priority >= 3
+    matches!(task.status, WorkStatus::Todo | WorkStatus::Doing) && task.priority >= 3
 }
 
 fn matches_today(task: &TaskRecord, today: NaiveDate) -> bool {
     let due_date = due_date(task);
-    let scheduled_date = scheduled_date(task);
-    scheduled_date == Some(today)
+    let planned_date = planned_date(task);
+    planned_date == Some(today)
         || due_date == Some(today)
         || due_date.is_some_and(|value| value < today)
 }
 
 fn matches_upcoming(task: &TaskRecord, today: NaiveDate) -> bool {
     due_date(task).is_some_and(|value| value > today)
-        || scheduled_date(task).is_some_and(|value| value > today)
+        || planned_date(task).is_some_and(|value| value > today)
 }
 
 fn matches_overdue(task: &TaskRecord, today: NaiveDate) -> bool {
@@ -189,7 +172,7 @@ fn compare_today_tasks(left: &TaskRecord, right: &TaskRecord, today: NaiveDate) 
     compare_ordering_chain([
         today_bucket(left, today).cmp(&today_bucket(right, today)),
         right.priority.cmp(&left.priority),
-        left.sort_order.cmp(&right.sort_order),
+        left.position.cmp(&right.position),
         right.updated_at.cmp(&left.updated_at),
     ])
 }
@@ -198,8 +181,8 @@ fn compare_focus_tasks(left: &TaskRecord, right: &TaskRecord) -> Ordering {
     compare_ordering_chain([
         right.priority.cmp(&left.priority),
         compare_option_date_asc(due_date(left), due_date(right)),
-        compare_option_date_asc(scheduled_date(left), scheduled_date(right)),
-        left.sort_order.cmp(&right.sort_order),
+        compare_option_date_asc(planned_date(left), planned_date(right)),
+        left.position.cmp(&right.position),
         right.updated_at.cmp(&left.updated_at),
     ])
 }
@@ -211,7 +194,7 @@ fn compare_upcoming_tasks(left: &TaskRecord, right: &TaskRecord, today: NaiveDat
             next_upcoming_date(right, today),
         ),
         right.priority.cmp(&left.priority),
-        left.sort_order.cmp(&right.sort_order),
+        left.position.cmp(&right.position),
         right.updated_at.cmp(&left.updated_at),
     ])
 }
@@ -220,7 +203,7 @@ fn compare_overdue_tasks(left: &TaskRecord, right: &TaskRecord) -> Ordering {
     compare_ordering_chain([
         compare_option_date_asc(due_date(left), due_date(right)),
         right.priority.cmp(&left.priority),
-        left.sort_order.cmp(&right.sort_order),
+        left.position.cmp(&right.position),
         right.updated_at.cmp(&left.updated_at),
     ])
 }
@@ -232,14 +215,14 @@ fn today_bucket(task: &TaskRecord, today: NaiveDate) -> u8 {
     if due_date(task) == Some(today) {
         return 1;
     }
-    if scheduled_date(task) == Some(today) {
+    if planned_date(task) == Some(today) {
         return 2;
     }
     3
 }
 
 fn next_upcoming_date(task: &TaskRecord, today: NaiveDate) -> Option<NaiveDate> {
-    [scheduled_date(task), due_date(task)]
+    [planned_date(task), due_date(task)]
         .into_iter()
         .flatten()
         .filter(|date| *date > today)
@@ -250,8 +233,8 @@ fn due_date(task: &TaskRecord) -> Option<NaiveDate> {
     task.due_at.as_deref().and_then(parse_calendar_date)
 }
 
-fn scheduled_date(task: &TaskRecord) -> Option<NaiveDate> {
-    task.scheduled_at.as_deref().and_then(parse_calendar_date)
+fn planned_date(task: &TaskRecord) -> Option<NaiveDate> {
+    task.planned_at.as_deref().and_then(parse_calendar_date)
 }
 
 fn compare_option_date_asc(left: Option<NaiveDate>, right: Option<NaiveDate>) -> Ordering {

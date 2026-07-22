@@ -24,7 +24,7 @@ pub struct TaskLinkRecord {
     pub task_id: String,
     pub title: String,
     pub url: String,
-    pub sort_order: i32,
+    pub position: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -36,7 +36,7 @@ pub struct CreateTaskLinkPersistenceRecord {
     pub task_id: String,
     pub title: String,
     pub url: String,
-    pub sort_order: i32,
+    pub position: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -53,7 +53,6 @@ pub struct UpdateTaskLinkPatch {
 pub struct TaskLinkTaskRecord {
     pub id: String,
     pub title: String,
-    pub deleted_at: Option<String>,
 }
 
 /// Task Link 持久化边界。
@@ -64,11 +63,11 @@ pub trait TaskLinkPersistence: Send + Sync {
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError>;
     async fn get(&self, link_id: &str) -> Result<Option<TaskLinkRecord>, ApplicationError>;
     async fn list_by_task(&self, task_id: &str) -> Result<Vec<TaskLinkRecord>, ApplicationError>;
-    async fn next_sort_order(
+    async fn next_position(
         &self,
         connection: &Self::Connection,
         task_id: &str,
-    ) -> Result<i32, ApplicationError>;
+    ) -> Result<i64, ApplicationError>;
     async fn create(
         &self,
         connection: &Self::Connection,
@@ -101,7 +100,7 @@ pub struct TaskLinkDto {
     pub task_id: String,
     pub title: String,
     pub url: String,
-    pub sort_order: i32,
+    pub position: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -187,9 +186,9 @@ where
         let task = self.require_visible_task(&task_id).await?;
         let now = now_utc().to_rfc3339();
         let transaction = self.persistence.begin().await?;
-        let sort_order = self
+        let position = self
             .persistence
-            .next_sort_order(&transaction, &task_id)
+            .next_position(&transaction, &task_id)
             .await?;
         let created = self
             .persistence
@@ -200,7 +199,7 @@ where
                     task_id: task_id.clone(),
                     title: title.clone(),
                     url: url.clone(),
-                    sort_order,
+                    position,
                     created_at: now.clone(),
                     updated_at: now.clone(),
                 },
@@ -358,17 +357,10 @@ where
         &self,
         task_id: &str,
     ) -> Result<TaskLinkTaskRecord, ApplicationError> {
-        let task = self
-            .task_reader
+        self.task_reader
             .get(task_id)
             .await?
-            .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
-
-        if task.deleted_at.is_some() {
-            return Err(ApplicationError::not_found("Task 不存在"));
-        }
-
-        Ok(task)
+            .ok_or_else(|| ApplicationError::not_found("Task 不存在"))
     }
 }
 
@@ -378,7 +370,7 @@ fn map_task_link_dto(item: TaskLinkRecord) -> TaskLinkDto {
         task_id: item.task_id,
         title: item.title,
         url: item.url,
-        sort_order: item.sort_order,
+        position: item.position,
         created_at: item.created_at,
         updated_at: item.updated_at,
     }

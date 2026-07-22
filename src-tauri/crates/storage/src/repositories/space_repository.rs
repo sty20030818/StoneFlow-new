@@ -1,4 +1,4 @@
-//! Space Repository：只负责 Space 数据持久化与原始状态变更。
+//! Space Repository（R2：无软删）。
 
 use crate::entities::{prelude::Space, space};
 use sea_orm::{
@@ -7,6 +7,7 @@ use sea_orm::{
 };
 
 use crate::error::StorageError;
+use stoneflow_domain::POSITION_STEP;
 
 /// 创建 Space 所需的持久化字段。
 #[derive(Debug, Clone)]
@@ -16,7 +17,7 @@ pub struct CreateSpaceRecord {
     pub icon_key: String,
     pub color_key: String,
     pub is_default: bool,
-    pub sort_order: i32,
+    pub position: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -43,19 +44,17 @@ impl SpaceRepository {
         &self.db
     }
 
-    /// 返回所有活跃可见的 Space。
     pub async fn list_visible(&self) -> Result<Vec<space::Model>, StorageError> {
         Space::find()
             .filter(space::Column::ArchivedAt.is_null())
             .filter(space::Column::DeletedAt.is_null())
-            .order_by_asc(space::Column::SortOrder)
+            .order_by_asc(space::Column::Position)
             .order_by_asc(space::Column::CreatedAt)
             .all(self.connection())
             .await
             .map_err(StorageError::from)
     }
 
-    /// 根据 ID 查询单个 Space。
     pub async fn get(&self, space_id: &str) -> Result<Option<space::Model>, StorageError> {
         Space::find_by_id(space_id.to_owned())
             .one(self.connection())
@@ -63,7 +62,6 @@ impl SpaceRepository {
             .map_err(StorageError::from)
     }
 
-    /// 查询当前默认且活跃的 Space。
     pub async fn get_default(&self) -> Result<Option<space::Model>, StorageError> {
         Space::find()
             .filter(space::Column::IsDefault.eq(true))
@@ -74,79 +72,22 @@ impl SpaceRepository {
             .map_err(StorageError::from)
     }
 
-    /// 根据一组 ID 查询 Space。
-    pub async fn list_by_ids(
-        &self,
-        space_ids: &[String],
-    ) -> Result<Vec<space::Model>, StorageError> {
-        if space_ids.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        Space::find()
-            .filter(space::Column::Id.is_in(space_ids.iter().cloned()))
-            .all(self.connection())
-            .await
-            .map_err(StorageError::from)
-    }
-
-    /// 列出归档中的 Space。
-    pub async fn list_archived(
-        &self,
-        scope_space_id: Option<&str>,
-    ) -> Result<Vec<space::Model>, StorageError> {
-        let mut query = Space::find()
-            .filter(space::Column::ArchivedAt.is_not_null())
-            .filter(space::Column::DeletedAt.is_null())
-            .order_by_desc(space::Column::ArchivedAt)
-            .order_by_desc(space::Column::UpdatedAt);
-
-        if let Some(space_id) = scope_space_id {
-            query = query.filter(space::Column::Id.eq(space_id));
-        }
-
-        query
-            .all(self.connection())
-            .await
-            .map_err(StorageError::from)
-    }
-
-    /// 列出已删除的 Space。
-    pub async fn list_deleted(
-        &self,
-        scope_space_id: Option<&str>,
-    ) -> Result<Vec<space::Model>, StorageError> {
-        let mut query = Space::find()
-            .filter(space::Column::DeletedAt.is_not_null())
-            .order_by_desc(space::Column::DeletedAt)
-            .order_by_desc(space::Column::UpdatedAt);
-
-        if let Some(space_id) = scope_space_id {
-            query = query.filter(space::Column::Id.eq(space_id));
-        }
-
-        query
-            .all(self.connection())
-            .await
-            .map_err(StorageError::from)
-    }
-
-    /// 计算下一条 Space 的排序值。
-    pub async fn next_sort_order<C>(&self, connection: &C) -> Result<i32, StorageError>
+    pub async fn next_position<C>(&self, connection: &C) -> Result<i64, StorageError>
     where
         C: ConnectionTrait,
     {
-        let max_sort_order = Space::find()
+        let max = Space::find()
             .select_only()
-            .column_as(space::Column::SortOrder.max(), "max_sort_order")
-            .into_tuple::<Option<i32>>()
+            .column_as(space::Column::Position.max(), "max_position")
+            .into_tuple::<Option<i64>>()
             .one(connection)
-            .await?
-            .flatten();
-        Ok(max_sort_order.unwrap_or(0) + 1000)
+            .await
+            .map_err(StorageError::from)?
+            .flatten()
+            .unwrap_or(0);
+        Ok(max + POSITION_STEP)
     }
 
-    /// 原始创建，不承载业务规则。
     pub async fn create<C>(
         &self,
         connection: &C,
@@ -161,7 +102,8 @@ impl SpaceRepository {
             icon_key: Set(record.icon_key),
             color_key: Set(record.color_key),
             is_default: Set(record.is_default),
-            sort_order: Set(record.sort_order),
+            position: Set(record.position),
+            generation: Set(1),
             archived_at: Set(None),
             deleted_at: Set(None),
             created_at: Set(record.created_at),
@@ -172,7 +114,6 @@ impl SpaceRepository {
         .map_err(StorageError::from)
     }
 
-    /// 更新基础字段，不做额外规则判断。
     pub async fn update<C>(
         &self,
         connection: &C,
@@ -183,32 +124,32 @@ impl SpaceRepository {
     where
         C: ConnectionTrait,
     {
-        let Some(model) = Space::find_by_id(space_id.to_owned())
-            .one(connection)
-            .await?
-        else {
+        let Some(current) = self.get(space_id).await? else {
             return Ok(None);
         };
-
-        let mut active_model: space::ActiveModel = model.into();
+        let mut model: space::ActiveModel = current.into();
         if let Some(name) = patch.name {
-            active_model.name = Set(name);
+            model.name = Set(name);
         }
         if let Some(icon_key) = patch.icon_key {
-            active_model.icon_key = Set(icon_key);
+            model.icon_key = Set(icon_key);
         }
         if let Some(color_key) = patch.color_key {
-            active_model.color_key = Set(color_key);
+            model.color_key = Set(color_key);
         }
-        active_model.updated_at = Set(updated_at.to_owned());
-        active_model
+        let next_generation = match &model.generation {
+            sea_orm::ActiveValue::Set(value) | sea_orm::ActiveValue::Unchanged(value) => value + 1,
+            sea_orm::ActiveValue::NotSet => 1,
+        };
+        model.updated_at = Set(updated_at.to_owned());
+        model.generation = Set(next_generation);
+        model
             .update(connection)
             .await
             .map(Some)
             .map_err(StorageError::from)
     }
 
-    /// 清除所有活跃 Space 的默认标记。
     pub async fn clear_default<C>(
         &self,
         connection: &C,
@@ -217,18 +158,16 @@ impl SpaceRepository {
     where
         C: ConnectionTrait,
     {
-        let result = Space::update_many()
+        Space::update_many()
             .col_expr(space::Column::IsDefault, Expr::value(false))
-            .col_expr(space::Column::UpdatedAt, Expr::value(updated_at.to_owned()))
+            .col_expr(space::Column::UpdatedAt, Expr::value(updated_at))
             .filter(space::Column::IsDefault.eq(true))
-            .filter(space::Column::ArchivedAt.is_null())
-            .filter(space::Column::DeletedAt.is_null())
             .exec(connection)
-            .await?;
-        Ok(result.rows_affected)
+            .await
+            .map(|result| result.rows_affected)
+            .map_err(StorageError::from)
     }
 
-    /// 将某个 Space 设置为默认。
     pub async fn set_default<C>(
         &self,
         connection: &C,
@@ -238,109 +177,30 @@ impl SpaceRepository {
     where
         C: ConnectionTrait,
     {
-        let Some(model) = Space::find_by_id(space_id.to_owned())
+        let Some(current) = Space::find_by_id(space_id.to_owned())
             .one(connection)
-            .await?
+            .await
+            .map_err(StorageError::from)?
         else {
             return Ok(None);
         };
-
-        let mut active_model: space::ActiveModel = model.into();
-        active_model.is_default = Set(true);
-        active_model.updated_at = Set(updated_at.to_owned());
-        active_model
+        let mut model: space::ActiveModel = current.into();
+        model.is_default = Set(true);
+        let next_generation = match &model.generation {
+            sea_orm::ActiveValue::Set(value) | sea_orm::ActiveValue::Unchanged(value) => value + 1,
+            sea_orm::ActiveValue::NotSet => 1,
+        };
+        model.updated_at = Set(updated_at.to_owned());
+        model.generation = Set(next_generation);
+        model
             .update(connection)
             .await
             .map(Some)
             .map_err(StorageError::from)
     }
 
-    /// 原始归档：只更新 Space 自身。
-    pub async fn archive_raw<C>(
-        &self,
-        connection: &C,
-        space_id: &str,
-        archived_at: &str,
-        updated_at: &str,
-    ) -> Result<Option<space::Model>, StorageError>
-    where
-        C: ConnectionTrait,
-    {
-        let Some(model) = Space::find_by_id(space_id.to_owned())
-            .one(connection)
-            .await?
-        else {
-            return Ok(None);
-        };
-
-        let mut active_model: space::ActiveModel = model.into();
-        active_model.archived_at = Set(Some(archived_at.to_owned()));
-        active_model.updated_at = Set(updated_at.to_owned());
-        active_model
-            .update(connection)
-            .await
-            .map(Some)
-            .map_err(StorageError::from)
-    }
-
-    /// 原始恢复：只恢复 Space 自身。
-    pub async fn restore_raw<C>(
-        &self,
-        connection: &C,
-        space_id: &str,
-        updated_at: &str,
-    ) -> Result<Option<space::Model>, StorageError>
-    where
-        C: ConnectionTrait,
-    {
-        let Some(model) = Space::find_by_id(space_id.to_owned())
-            .one(connection)
-            .await?
-        else {
-            return Ok(None);
-        };
-
-        let mut active_model: space::ActiveModel = model.into();
-        active_model.archived_at = Set(None);
-        active_model.deleted_at = Set(None);
-        active_model.updated_at = Set(updated_at.to_owned());
-        active_model
-            .update(connection)
-            .await
-            .map(Some)
-            .map_err(StorageError::from)
-    }
-
-    /// 原始删除：只更新 Space 自身。
-    pub async fn delete_raw<C>(
-        &self,
-        connection: &C,
-        space_id: &str,
-        deleted_at: &str,
-        updated_at: &str,
-    ) -> Result<Option<space::Model>, StorageError>
-    where
-        C: ConnectionTrait,
-    {
-        let Some(model) = Space::find_by_id(space_id.to_owned())
-            .one(connection)
-            .await?
-        else {
-            return Ok(None);
-        };
-
-        let mut active_model: space::ActiveModel = model.into();
-        active_model.deleted_at = Set(Some(deleted_at.to_owned()));
-        active_model.updated_at = Set(updated_at.to_owned());
-        active_model
-            .update(connection)
-            .await
-            .map(Some)
-            .map_err(StorageError::from)
-    }
-
-    /// 永久删除 Space。
-    pub async fn permanently_delete<C>(
+    /// 物理删除 Space。
+    pub async fn delete_physical<C>(
         &self,
         connection: &C,
         space_id: &str,
@@ -348,9 +208,10 @@ impl SpaceRepository {
     where
         C: ConnectionTrait,
     {
-        let result = Space::delete_by_id(space_id.to_owned())
+        Space::delete_by_id(space_id.to_owned())
             .exec(connection)
-            .await?;
-        Ok(result.rows_affected)
+            .await
+            .map(|result| result.rows_affected)
+            .map_err(StorageError::from)
     }
 }

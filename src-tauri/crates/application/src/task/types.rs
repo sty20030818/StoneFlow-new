@@ -1,6 +1,6 @@
 //! Task 读模型与列表查询内部类型。
 
-use stoneflow_domain::TaskStatus;
+use stoneflow_domain::WorkStatus;
 
 /// Task 持久化读模型。
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -10,16 +10,15 @@ pub struct TaskRecord {
     pub project_id: Option<String>,
     pub title: String,
     pub note: Option<String>,
-    pub status: TaskStatus,
+    pub status: WorkStatus,
     pub status_changed_at: String,
     pub priority: i32,
-    pub inbox_at: Option<String>,
+    pub planned_at: Option<String>,
     pub due_at: Option<String>,
-    pub scheduled_at: Option<String>,
-    pub reminder_at: Option<String>,
-    pub sort_order: i32,
+    pub remind_at: Option<String>,
+    pub position: i64,
+    pub generation: i64,
     pub completed_at: Option<String>,
-    pub canceled_at: Option<String>,
     pub archived_at: Option<String>,
     pub deleted_at: Option<String>,
     pub created_at: String,
@@ -34,16 +33,14 @@ pub struct CreateTaskPersistenceRecord {
     pub project_id: Option<String>,
     pub title: String,
     pub note: Option<String>,
-    pub status: TaskStatus,
+    pub status: WorkStatus,
     pub status_changed_at: String,
     pub priority: i32,
-    pub inbox_at: Option<String>,
+    pub planned_at: Option<String>,
     pub due_at: Option<String>,
-    pub scheduled_at: Option<String>,
-    pub reminder_at: Option<String>,
-    pub sort_order: i32,
+    pub remind_at: Option<String>,
+    pub position: i64,
     pub completed_at: Option<String>,
-    pub canceled_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -53,18 +50,16 @@ pub struct CreateTaskPersistenceRecord {
 pub struct UpdateTaskPatch {
     pub title: Option<String>,
     pub note: Option<Option<String>>,
-    pub status: Option<TaskStatus>,
+    pub status: Option<WorkStatus>,
     pub status_changed_at: Option<String>,
     pub priority: Option<i32>,
     pub space_id: Option<String>,
     pub project_id: Option<Option<String>>,
-    pub inbox_at: Option<Option<String>>,
+    pub planned_at: Option<Option<String>>,
     pub due_at: Option<Option<String>>,
-    pub scheduled_at: Option<Option<String>>,
-    pub reminder_at: Option<Option<String>>,
-    pub sort_order: Option<i32>,
+    pub remind_at: Option<Option<String>>,
+    pub position: Option<i64>,
     pub completed_at: Option<Option<String>>,
-    pub canceled_at: Option<Option<String>>,
 }
 
 /// Task 编排所需的 Space 读模型。
@@ -97,13 +92,12 @@ pub enum TaskLifecycleView {
     All,
 }
 
-/// Task 列表 placement 查询。
+/// Task 列表 placement 查询（R2：取消 Inbox 概念，未分配 Project 一律视为 NoProject）。
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum TaskPlacementQuery {
     #[default]
     All,
     Project(String),
-    Inbox,
     NoProject,
 }
 
@@ -126,7 +120,6 @@ pub(crate) struct TaskScope {
 pub(crate) enum TaskPlacement {
     All,
     Project(String),
-    Inbox,
     NoProject,
 }
 

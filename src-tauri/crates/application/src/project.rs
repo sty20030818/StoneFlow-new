@@ -7,8 +7,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::json;
 use stoneflow_domain::{
-    create_id, ensure_project_mutable, normalize_required_text, now_utc, validate_project_id,
-    validate_space_id, ActivityEntityKind,
+    create_id, normalize_required_text, now_utc, validate_project_id, validate_space_id,
+    ActivityEntityKind, WorkStatus,
 };
 
 use crate::{
@@ -26,9 +26,15 @@ pub struct ProjectRecord {
     pub space_id: String,
     pub name: String,
     pub description: Option<String>,
+    pub status: WorkStatus,
+    pub priority: i32,
+    pub planned_at: Option<String>,
     pub due_at: Option<String>,
-    pub sort_order: i32,
+    pub remind_at: Option<String>,
+    pub status_changed_at: String,
     pub completed_at: Option<String>,
+    pub position: i64,
+    pub generation: i64,
     pub archived_at: Option<String>,
     pub deleted_at: Option<String>,
     pub created_at: String,
@@ -42,8 +48,11 @@ pub struct CreateProjectPersistenceRecord {
     pub space_id: String,
     pub name: String,
     pub description: Option<String>,
+    pub status: WorkStatus,
+    pub priority: i32,
     pub due_at: Option<String>,
-    pub sort_order: i32,
+    pub status_changed_at: String,
+    pub position: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -54,7 +63,7 @@ pub struct UpdateProjectPatch {
     pub name: Option<String>,
     pub description: Option<Option<String>>,
     pub due_at: Option<Option<String>>,
-    pub sort_order: Option<i32>,
+    pub position: Option<i64>,
 }
 
 /// Project Overview 的分页视图。
@@ -79,7 +88,6 @@ pub struct ProjectSpaceRecord {
     pub id: String,
     pub name: String,
     pub archived_at: Option<String>,
-    pub deleted_at: Option<String>,
 }
 
 /// Project 持久化边界。
@@ -94,11 +102,11 @@ pub trait ProjectPersistence: Send + Sync {
         space_id: &str,
         name: &str,
     ) -> Result<Option<ProjectRecord>, ApplicationError>;
-    async fn next_sort_order(
+    async fn next_position(
         &self,
         connection: &Self::Connection,
         space_id: &str,
-    ) -> Result<i32, ApplicationError>;
+    ) -> Result<i64, ApplicationError>;
     async fn create(
         &self,
         connection: &Self::Connection,
@@ -181,7 +189,7 @@ pub struct ProjectOverviewItemDto {
     pub name: String,
     pub description: Option<String>,
     pub due_at: Option<String>,
-    pub sort_order: i32,
+    pub position: i64,
     pub task_count: u64,
     pub active_task_count: u64,
     pub completed_at: Option<String>,
@@ -196,7 +204,7 @@ pub struct ProjectSidebarItemDto {
     pub id: String,
     pub space_id: String,
     pub name: String,
-    pub sort_order: i32,
+    pub position: i64,
     pub task_count: u64,
     pub active_task_count: u64,
     pub completed_at: Option<String>,
@@ -213,7 +221,7 @@ pub struct ProjectDetailDto {
     pub name: String,
     pub description: Option<String>,
     pub due_at: Option<String>,
-    pub sort_order: i32,
+    pub position: i64,
     pub task_count: u64,
     pub active_task_count: u64,
     pub completed_at: Option<String>,
@@ -245,7 +253,7 @@ pub struct UpdateProjectInput {
     #[serde(default)]
     #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub due_at: Option<Option<String>>,
-    pub sort_order: Option<i32>,
+    pub position: Option<i64>,
 }
 
 /// 仅携带 Project ID 的输入。
@@ -336,7 +344,7 @@ where
                     name: project.name,
                     description: project.description,
                     due_at: project.due_at,
-                    sort_order: project.sort_order,
+                    position: project.position,
                     task_count: count.total_count,
                     active_task_count: count.active_count,
                     completed_at: project.completed_at,
@@ -371,7 +379,7 @@ where
                     id: project.id,
                     space_id: project.space_id,
                     name: project.name,
-                    sort_order: project.sort_order,
+                    position: project.position,
                     task_count: count.total_count,
                     active_task_count: count.active_count,
                     completed_at: project.completed_at,
@@ -393,7 +401,7 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Project 不存在"))?;
 
-        if current.archived_at.is_some() || current.deleted_at.is_some() {
+        if current.archived_at.is_some() {
             return Err(ApplicationError::not_found("Project 不存在"));
         }
 
@@ -424,9 +432,9 @@ where
 
         let now = now_utc().to_rfc3339();
         let transaction = self.persistence.begin().await?;
-        let sort_order = self
+        let position = self
             .persistence
-            .next_sort_order(&transaction, &space_id)
+            .next_position(&transaction, &space_id)
             .await?;
         let project = self
             .persistence
@@ -437,8 +445,11 @@ where
                     space_id: space_id.clone(),
                     name: name.clone(),
                     description: description.clone(),
+                    status: WorkStatus::Todo,
+                    priority: 0,
                     due_at: due_at.clone(),
-                    sort_order,
+                    status_changed_at: now.clone(),
+                    position,
                     created_at: now.clone(),
                     updated_at: now.clone(),
                 },
@@ -491,11 +502,7 @@ where
         input: UpdateProjectInput,
     ) -> Result<ProjectDetailDto, ApplicationError> {
         let project_id = validate_project_id(&input.project_id)?;
-        let current = self.require_existing_project(&project_id).await?;
-        ensure_project_mutable(
-            current.archived_at.as_deref(),
-            current.deleted_at.as_deref(),
-        )?;
+        let current = self.require_editable_project(&project_id).await?;
 
         let next_name = normalize_optional_required_text(input.name.as_deref(), "Project name")?;
         let next_description = normalize_optional_nullable_long_text(input.description);
@@ -553,14 +560,14 @@ where
                 ));
             }
         }
-        if let Some(sort_order) = input.sort_order {
-            if sort_order != current.sort_order {
-                patch.sort_order = Some(sort_order);
+        if let Some(position) = input.position {
+            if position != current.position {
+                patch.position = Some(position);
                 activity_records.push((
                     ActivityAction::ProjectSortChanged,
-                    "sortOrder".to_owned(),
-                    Some(json!(current.sort_order)),
-                    Some(json!(sort_order)),
+                    "position".to_owned(),
+                    Some(json!(current.position)),
+                    Some(json!(position)),
                 ));
             }
         }
@@ -612,11 +619,7 @@ where
         input: ProjectIdInput,
     ) -> Result<ProjectDetailDto, ApplicationError> {
         let project_id = validate_project_id(&input.project_id)?;
-        let current = self.require_existing_project(&project_id).await?;
-        ensure_project_mutable(
-            current.archived_at.as_deref(),
-            current.deleted_at.as_deref(),
-        )?;
+        let current = self.require_editable_project(&project_id).await?;
 
         if current.completed_at.is_some() {
             return self.build_project_detail(current).await;
@@ -660,11 +663,7 @@ where
         input: ProjectIdInput,
     ) -> Result<ProjectDetailDto, ApplicationError> {
         let project_id = validate_project_id(&input.project_id)?;
-        let current = self.require_existing_project(&project_id).await?;
-        ensure_project_mutable(
-            current.archived_at.as_deref(),
-            current.deleted_at.as_deref(),
-        )?;
+        let current = self.require_editable_project(&project_id).await?;
 
         if current.completed_at.is_none() {
             return self.build_project_detail(current).await;
@@ -720,6 +719,18 @@ where
             .ok_or_else(|| ApplicationError::not_found("Project 不存在"))
     }
 
+    /// 归档的 Project 不允许继续编辑（R2：无 deleted_at，仅需拦截已归档）。
+    async fn require_editable_project(
+        &self,
+        project_id: &str,
+    ) -> Result<ProjectRecord, ApplicationError> {
+        let project = self.require_existing_project(project_id).await?;
+        if project.archived_at.is_some() {
+            return Err(ApplicationError::conflict("已归档 Project 不能修改"));
+        }
+        Ok(project)
+    }
+
     async fn require_visible_space(
         &self,
         space_id: &str,
@@ -730,7 +741,7 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Space 不存在"))?;
 
-        if space.archived_at.is_some() || space.deleted_at.is_some() {
+        if space.archived_at.is_some() {
             return Err(ApplicationError::conflict("当前 Space 不可用"));
         }
 
@@ -759,7 +770,7 @@ where
             name: project.name,
             description: project.description,
             due_at: project.due_at,
-            sort_order: project.sort_order,
+            position: project.position,
             task_count: count.total_count,
             active_task_count: count.active_count,
             completed_at: project.completed_at,
@@ -878,23 +889,7 @@ fn normalize_optional_nullable_long_text(value: Option<Option<String>>) -> Optio
 
 #[cfg(test)]
 mod tests {
-    use stoneflow_domain::DomainError;
-
     use super::*;
-
-    #[test]
-    fn ensure_project_mutable_should_reject_deleted_project() {
-        let error = ensure_project_mutable(None, Some("2026-01-01T00:00:00Z"))
-            .expect_err("deleted should fail");
-        assert!(matches!(error, DomainError::Validation(_)));
-    }
-
-    #[test]
-    fn ensure_project_mutable_should_reject_archived_project() {
-        let error = ensure_project_mutable(Some("2026-01-01T00:00:00Z"), None)
-            .expect_err("archived should fail");
-        assert!(matches!(error, DomainError::Validation(_)));
-    }
 
     #[test]
     fn parse_overview_view_should_accept_aliases() {

@@ -14,5 +14,10 @@ pub mod error;
 pub mod mappers;
 pub mod migration;
 pub mod repositories;
+pub mod unit_of_work;
 
 pub use error::StorageError;
+pub use unit_of_work::SqliteUnitOfWork;
+
+#[cfg(test)]
+mod r2_baseline_tests;

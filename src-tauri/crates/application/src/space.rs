@@ -5,8 +5,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use stoneflow_domain::{
-    create_id, ensure_space_mutable, normalize_required_text, now_utc, validate_space_id,
-    ActivityEntityKind,
+    create_id, normalize_required_text, now_utc, validate_space_id, ActivityEntityKind,
 };
 
 use crate::{
@@ -25,7 +24,8 @@ pub struct SpaceRecord {
     pub icon_key: String,
     pub color_key: String,
     pub is_default: bool,
-    pub sort_order: i32,
+    pub position: i64,
+    pub generation: i64,
     pub archived_at: Option<String>,
     pub deleted_at: Option<String>,
     pub created_at: String,
@@ -40,7 +40,7 @@ pub struct CreateSpacePersistenceRecord {
     pub icon_key: String,
     pub color_key: String,
     pub is_default: bool,
-    pub sort_order: i32,
+    pub position: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -61,8 +61,7 @@ pub trait SpacePersistence: Send + Sync {
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError>;
     async fn list_visible(&self) -> Result<Vec<SpaceRecord>, ApplicationError>;
     async fn get(&self, space_id: &str) -> Result<Option<SpaceRecord>, ApplicationError>;
-    async fn next_sort_order(&self, connection: &Self::Connection)
-        -> Result<i32, ApplicationError>;
+    async fn next_position(&self, connection: &Self::Connection) -> Result<i64, ApplicationError>;
     async fn create(
         &self,
         connection: &Self::Connection,
@@ -97,7 +96,7 @@ pub struct SpaceDto {
     pub icon_key: String,
     pub color_key: String,
     pub is_default: bool,
-    pub sort_order: i32,
+    pub position: i64,
     pub archived_at: Option<String>,
     pub deleted_at: Option<String>,
     pub created_at: String,
@@ -172,7 +171,7 @@ where
         let icon_key = normalize_required_text(&input.icon_key, "Space iconKey")?;
         let color_key = normalize_required_text(&input.color_key, "Space colorKey")?;
         let transaction = self.persistence.begin().await?;
-        let sort_order = self.persistence.next_sort_order(&transaction).await?;
+        let position = self.persistence.next_position(&transaction).await?;
 
         let space = self
             .persistence
@@ -184,7 +183,7 @@ where
                     icon_key: icon_key.clone(),
                     color_key: color_key.clone(),
                     is_default: false,
-                    sort_order,
+                    position,
                     created_at: now.clone(),
                     updated_at: now.clone(),
                 },
@@ -234,7 +233,6 @@ where
     ) -> Result<SpaceDto, ApplicationError> {
         let space_id = validate_space_id(&input.space_id)?;
         let current = self.require_existing_space(&space_id).await?;
-        ensure_space_mutable(current.deleted_at.as_deref())?;
 
         let next_name = normalize_optional_required_text(input.name.as_deref(), "Space name")?;
         let next_icon_key =
@@ -324,7 +322,6 @@ where
     ) -> Result<SpaceDto, ApplicationError> {
         let space_id = validate_space_id(&input.space_id)?;
         let current = self.require_existing_space(&space_id).await?;
-        ensure_space_mutable(current.deleted_at.as_deref())?;
 
         if current.is_default {
             return Ok(map_space_record(current));
@@ -383,7 +380,7 @@ fn map_space_record(record: SpaceRecord) -> SpaceDto {
         icon_key: record.icon_key,
         color_key: record.color_key,
         is_default: record.is_default,
-        sort_order: record.sort_order,
+        position: record.position,
         archived_at: record.archived_at,
         deleted_at: record.deleted_at,
         created_at: record.created_at,
@@ -404,18 +401,4 @@ fn normalize_optional_required_text(
     Ok(value
         .map(|value| normalize_required_text(value, field))
         .transpose()?)
-}
-
-#[cfg(test)]
-mod tests {
-    use stoneflow_domain::DomainError;
-
-    use super::*;
-
-    #[test]
-    fn ensure_space_mutable_should_reject_deleted_space() {
-        let error =
-            ensure_space_mutable(Some("2026-01-01T00:00:00Z")).expect_err("deleted should fail");
-        assert!(matches!(error, DomainError::Validation(_)));
-    }
 }

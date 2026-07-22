@@ -1,4 +1,9 @@
 //! Lifecycle 领域规则与枚举。
+//!
+//! 两阶段删除：
+//! - Delete：软删进入回收站（仍是实体，可同步、可恢复）
+//! - Restore：从回收站撤回
+//! - PermanentlyDelete：物理删除并写 tombstone
 
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +19,6 @@ pub enum LifecycleEntityType {
 }
 
 impl LifecycleEntityType {
-    /// 返回实体类型的字符串标识。
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Space => "space",
@@ -24,46 +28,74 @@ impl LifecycleEntityType {
     }
 }
 
-/// 生命周期列表模式。
+/// 生命周期操作模式。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum LifecycleMode {
+    /// 归档（Space / Project / Task）。
     Archive,
-    Trash,
+    /// 软删进入回收站。
+    Delete,
+    /// 从归档或回收站恢复。
+    Restore,
+    /// 回收站内永久删除（物理删 + tombstone）。
+    PermanentlyDelete,
 }
 
-/// 阻止归档/删除唯一活跃默认 Space。
+/// 阻止对唯一活跃默认 Space 执行归档/软删。
 pub fn ensure_not_only_active_default(
     is_default: bool,
-    archived_at: Option<&str>,
-    deleted_at: Option<&str>,
+    has_other_active_space: bool,
     message: &str,
 ) -> Result<(), DomainError> {
-    if is_default && archived_at.is_none() && deleted_at.is_none() {
+    if is_default && !has_other_active_space {
         return Err(DomainError::validation(message));
     }
-
     Ok(())
 }
 
-/// 永久删除前必须处于删除态。
-pub fn ensure_deleted(deleted_at: Option<&str>, entity_name: &str) -> Result<(), DomainError> {
-    if deleted_at.is_none() {
+/// 实体不在回收站（可编辑 / 可软删）。
+pub fn ensure_not_in_trash(deleted_at: Option<&str>, entity: &str) -> Result<(), DomainError> {
+    if deleted_at.is_some() {
         return Err(DomainError::validation(format!(
-            "{entity_name} 只有处于删除态时才能永久删除"
+            "{entity} 已在回收站，请先恢复或永久删除"
         )));
     }
-
     Ok(())
 }
 
-/// 恢复提示文案。
+/// 实体已在回收站（可恢复 / 可永久删除）。
+pub fn ensure_in_trash(deleted_at: Option<&str>, entity: &str) -> Result<(), DomainError> {
+    if deleted_at.is_none() {
+        return Err(DomainError::validation(format!("{entity} 不在回收站")));
+    }
+    Ok(())
+}
+
+/// 活跃实体可变（未归档且未进回收站）。
+pub fn ensure_active_mutable(
+    archived_at: Option<&str>,
+    deleted_at: Option<&str>,
+    entity: &str,
+) -> Result<(), DomainError> {
+    ensure_not_in_trash(deleted_at, entity)?;
+    if archived_at.is_some() {
+        return Err(DomainError::validation(format!(
+            "{entity} 已归档，无法直接编辑"
+        )));
+    }
+    Ok(())
+}
+
+/// 恢复操作提示。
 pub fn restore_hint(entity_type: LifecycleEntityType) -> String {
     match entity_type {
-        LifecycleEntityType::Space => "只恢复 Space 本身，不恢复子 Project / Task".to_owned(),
-        LifecycleEntityType::Project => "只恢复 Project 本身，前提是所属 Space 仍可用".to_owned(),
+        LifecycleEntityType::Space => "恢复本次操作影响的 Space 及其原层级与排序位置".to_owned(),
+        LifecycleEntityType::Project => {
+            "恢复本次操作影响的 Project；所属 Space 必须仍可用".to_owned()
+        }
         LifecycleEntityType::Task => {
-            "优先回原 Space；原 Project 不可用则回 Inbox；原 Space 不可用则落默认 Space".to_owned()
+            "恢复到原 Space；若原 Project 不可用则进入 Space 独立待办容器".to_owned()
         }
     }
 }
@@ -73,22 +105,29 @@ mod tests {
     use super::*;
 
     #[test]
-    fn ensure_not_only_active_default_should_reject_active_default_space() {
-        let err = ensure_not_only_active_default(true, None, None, "不能删除唯一默认 Space")
-            .expect_err("active default should be rejected");
+    fn ensure_not_only_active_default_should_reject_sole_default() {
+        let err = ensure_not_only_active_default(true, false, "不能删除唯一默认 Space")
+            .expect_err("sole default");
         assert!(err.to_string().contains("不能删除唯一默认 Space"));
     }
 
     #[test]
-    fn ensure_not_only_active_default_should_allow_archived_default_space() {
-        ensure_not_only_active_default(true, Some("2026-01-01T00:00:00Z"), None, "msg")
-            .expect("archived default should pass");
+    fn ensure_not_only_active_default_should_allow_when_other_active_exists() {
+        ensure_not_only_active_default(true, true, "msg").expect("other active exists");
     }
 
     #[test]
-    fn ensure_deleted_should_require_deleted_state() {
-        ensure_deleted(Some("2026-01-01T00:00:00Z"), "Task").expect("deleted should pass");
-        let err = ensure_deleted(None, "Task").expect_err("active should fail");
-        assert!(err.to_string().contains("永久删除"));
+    fn trash_guards_should_distinguish_soft_delete_state() {
+        ensure_not_in_trash(None, "Task").expect("active");
+        assert!(ensure_not_in_trash(Some("t"), "Task").is_err());
+        ensure_in_trash(Some("t"), "Task").expect("trashed");
+        assert!(ensure_in_trash(None, "Task").is_err());
+    }
+
+    #[test]
+    fn active_mutable_rejects_archived_or_trashed() {
+        ensure_active_mutable(None, None, "Project").expect("ok");
+        assert!(ensure_active_mutable(Some("a"), None, "Project").is_err());
+        assert!(ensure_active_mutable(None, Some("d"), "Project").is_err());
     }
 }

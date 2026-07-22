@@ -1,22 +1,22 @@
-//! View 读模型与 Task View 执行内部类型。
+//! View 读模型与 Task View 执行内部类型（R2：仅自定义 View）。
+
+#![allow(dead_code)]
 
 use serde::{Deserialize, Serialize};
-use stoneflow_domain::{TaskStatus, ViewEntityKind, ViewKind};
+use stoneflow_domain::{ViewEntityKind, WorkStatus};
 
-/// View 持久化读模型。
+/// View 持久化读模型（对齐 R2 schema）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ViewRecord {
     pub id: String,
     pub name: String,
-    pub description: Option<String>,
-    pub kind: ViewKind,
-    pub entity_type: ViewEntityKind,
-    pub key: Option<String>,
-    pub filters: String,
-    pub sort: String,
-    pub group_by: Option<String>,
-    pub is_visible: bool,
-    pub sort_order: i32,
+    pub entity_kind: ViewEntityKind,
+    pub scope_json: String,
+    pub filters_json: String,
+    pub sort_json: String,
+    pub group_by_json: Option<String>,
+    pub position: i64,
+    pub generation: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -29,18 +29,14 @@ pub struct ViewTaskRecord {
     pub project_id: Option<String>,
     pub title: String,
     pub note: Option<String>,
-    pub status: TaskStatus,
+    pub status: WorkStatus,
     pub status_changed_at: String,
     pub priority: i32,
-    pub inbox_at: Option<String>,
+    pub planned_at: Option<String>,
     pub due_at: Option<String>,
-    pub scheduled_at: Option<String>,
-    pub reminder_at: Option<String>,
-    pub sort_order: i32,
+    pub remind_at: Option<String>,
+    pub position: i64,
     pub completed_at: Option<String>,
-    pub canceled_at: Option<String>,
-    pub archived_at: Option<String>,
-    pub deleted_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -64,15 +60,12 @@ pub struct ViewProjectLookupRecord {
 pub struct CreateViewPersistenceRecord {
     pub id: String,
     pub name: String,
-    pub description: Option<String>,
-    pub kind: ViewKind,
-    pub entity_type: ViewEntityKind,
-    pub key: Option<String>,
-    pub filters: String,
-    pub sort: String,
-    pub group_by: Option<String>,
-    pub is_visible: bool,
-    pub sort_order: i32,
+    pub entity_kind: ViewEntityKind,
+    pub scope_json: String,
+    pub filters_json: String,
+    pub sort_json: String,
+    pub group_by_json: Option<String>,
+    pub position: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -81,20 +74,18 @@ pub struct CreateViewPersistenceRecord {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UpdateViewPatch {
     pub name: Option<String>,
-    pub description: Option<Option<String>>,
-    pub filters: Option<String>,
-    pub sort: Option<String>,
-    pub group_by: Option<Option<String>>,
-    pub is_visible: Option<bool>,
-    pub sort_order: Option<i32>,
+    pub scope_json: Option<String>,
+    pub filters_json: Option<String>,
+    pub sort_json: Option<String>,
+    pub group_by_json: Option<Option<String>>,
+    pub position: Option<i64>,
     pub updated_at: Option<String>,
 }
 
 /// View 列表查询条件。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ViewListQuery {
-    pub entity_type: ViewEntityKind,
-    pub visible_only: bool,
+    pub entity_kind: ViewEntityKind,
 }
 
 /// Task View 候选集 placement 查询。
@@ -102,7 +93,6 @@ pub struct ViewListQuery {
 pub enum ViewTaskPlacementQuery {
     All,
     Project(String),
-    Inbox,
     NoProject,
 }
 
@@ -111,17 +101,14 @@ pub enum ViewTaskPlacementQuery {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct TaskViewFiltersValue {
     #[serde(default)]
-    pub status: Vec<TaskStatus>,
+    pub status: Vec<WorkStatus>,
     pub priority: Option<PriorityFilter>,
-    pub inbox: Option<bool>,
     pub project: Option<ProjectFilter>,
     pub due: Option<DateFilter>,
-    pub scheduled: Option<DateFilter>,
+    pub planned: Option<DateFilter>,
     pub created: Option<DateFilter>,
     pub updated: Option<DateFilter>,
     pub completed: Option<DateFilter>,
-    pub archived: Option<bool>,
-    pub deleted: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -165,10 +152,10 @@ pub(crate) struct DateFilter {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TaskSortField {
-    SortOrder,
+    Position,
     Priority,
     DueAt,
-    ScheduledAt,
+    PlannedAt,
     CreatedAt,
     UpdatedAt,
     CompletedAt,
@@ -181,5 +168,5 @@ pub(crate) enum TaskGroupBy {
     Priority,
     Project,
     Due,
-    Scheduled,
+    Planned,
 }

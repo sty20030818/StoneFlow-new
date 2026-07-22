@@ -153,6 +153,47 @@ pub struct SidebarPreferenceSettings {
     pub footer_items: SidebarFooterItems,
 }
 
+impl Default for SidebarPreferenceSettings {
+    fn default() -> Self {
+        Self {
+            main_items: SidebarMainItems {
+                inbox: SidebarItemConfig {
+                    visible: true,
+                    order: 0,
+                },
+                all_tasks: SidebarItemConfig {
+                    visible: true,
+                    order: 1,
+                },
+                views: SidebarItemConfig {
+                    visible: true,
+                    order: 2,
+                },
+                project_overview: SidebarItemConfig {
+                    visible: true,
+                    order: 3,
+                },
+            },
+            project_section: SidebarProjectSectionPreferenceConfig {
+                visible: true,
+                order: 0,
+                show_counts: true,
+                show_completed: false,
+            },
+            footer_items: SidebarFooterItems {
+                archive: SidebarItemConfig {
+                    visible: true,
+                    order: 0,
+                },
+                trash: SidebarItemConfig {
+                    visible: true,
+                    order: 1,
+                },
+            },
+        }
+    }
+}
+
 /// Rust command 返回的 typed payload。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -215,9 +256,8 @@ where
             return normalize_sidebar_settings(settings);
         }
 
-        Err(ApplicationError::not_found(format!(
-            "setting `{SIDEBAR_PREFERENCE_SETTING_KEY}` 不存在"
-        )))
+        // R2：settings 不再 seed；缺失时返回可写默认值。
+        normalize_sidebar_settings(SidebarPreferenceSettings::default())
     }
 
     /// 更新单个可见性开关。

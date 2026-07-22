@@ -106,17 +106,22 @@ impl SettingsRepository {
     where
         C: ConnectionTrait,
     {
-        let model = Setting::find_by_id(key.to_owned())
-            .one(connection)
-            .await?
-            .ok_or_else(|| {
-                crate::error::StorageError::not_found(format!("setting `{key}` 不存在"))
-            })?;
+        if let Some(model) = Setting::find_by_id(key.to_owned()).one(connection).await? {
+            let mut active_model: setting::ActiveModel = model.into_active_model();
+            active_model.value = Set(raw_value.to_owned());
+            active_model.updated_at = Set(updated_at.to_owned());
+            active_model.update(connection).await?;
+            return Ok(());
+        }
 
-        let mut active_model: setting::ActiveModel = model.into_active_model();
-        active_model.value = Set(raw_value.to_owned());
-        active_model.updated_at = Set(updated_at.to_owned());
-        active_model.update(connection).await?;
+        setting::ActiveModel {
+            key: Set(key.to_owned()),
+            value: Set(raw_value.to_owned()),
+            created_at: Set(updated_at.to_owned()),
+            updated_at: Set(updated_at.to_owned()),
+        }
+        .insert(connection)
+        .await?;
 
         Ok(())
     }

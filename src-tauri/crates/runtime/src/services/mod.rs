@@ -1,7 +1,6 @@
 //! 应用 adapter 层：业务真源在 `stoneflow-application`，此处仅保留 port 实现与 `AppError` 映射。
 //!
-//! **过渡入口（R1）**：现有 command 仍经本目录适配。禁止新增调用路径；
-//! R2-R8 纵切迁移完成后，由 R9 删除 `runtime/services` 生产入口。
+//! R2：旧 sync_mutations 双写与 soft-delete 适配已拆除；多数业务服务为编译边界 stub。
 
 pub mod activity;
 
@@ -14,7 +13,6 @@ mod project_service;
 mod search_service;
 mod settings_service;
 mod space_service;
-mod sync_mutation;
 mod task_link_service;
 mod task_service;
 mod update_adapter;
@@ -24,9 +22,7 @@ mod update_settings_store;
 mod view_service;
 
 pub use launcher_open_context_service::LauncherOpenContextService;
-pub use launcher_service::{
-    LauncherResolvedOpenTarget, LauncherResolvedPlacement, LauncherService,
-};
+pub use launcher_service::{LauncherResolvedPlacement, LauncherService};
 pub use launcher_session_bridge::LauncherSessionBridge;
 pub use lifecycle_service::{
     LifecycleEntityType, LifecycleEntry, LifecycleMode, LifecycleScopeInput, LifecycleScopeKind,
@@ -34,8 +30,8 @@ pub use lifecycle_service::{
 };
 pub use project_service::{
     CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput, ProjectDetailDto,
-    ProjectIdInput, ProjectOverviewItemDto, ProjectScopeInput, ProjectScopeKind, ProjectService,
-    ProjectSidebarItemDto, UpdateProjectInput,
+    ProjectIdInput, ProjectOverviewItemDto, ProjectService, ProjectSidebarItemDto,
+    UpdateProjectInput,
 };
 pub use search_service::{
     SearchEntitiesInput, SearchEntitiesResultDto, SearchProjectItemDto, SearchService,
@@ -62,7 +58,6 @@ pub use task_service::{
 };
 pub use update_service::{build_update_service, RuntimeUpdateService};
 pub use view_service::{
-    CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunProjectViewInput,
-    RunTaskViewInput, RunTaskViewOutput, TaskViewGroupDto, ToggleViewVisibleInput, UpdateViewInput,
-    ViewDto, ViewService, ViewSortDirection, ViewSortRuleDto,
+    CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunTaskViewInput,
+    RunTaskViewOutput, ToggleViewVisibleInput, UpdateViewInput, ViewDto, ViewService,
 };

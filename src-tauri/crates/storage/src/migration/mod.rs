@@ -1,17 +1,17 @@
 //! 数据库迁移历史。
 //!
-//! 开发期已 squash 为单一当前 schema baseline；旧本地库需要备份后重建。
+//! R2 硬切为单一当前 schema baseline；旧本地库需备份后删除重建。
 
 pub use sea_orm_migration::prelude::*;
 
-mod m20260429_000001_current_schema;
+mod m20260722_000001_r2_baseline;
 
 pub struct Migrator;
 
 #[async_trait::async_trait]
 impl MigratorTrait for Migrator {
     fn migrations() -> Vec<Box<dyn MigrationTrait>> {
-        vec![Box::new(m20260429_000001_current_schema::Migration) as Box<dyn MigrationTrait>]
+        vec![Box::new(m20260722_000001_r2_baseline::Migration) as Box<dyn MigrationTrait>]
     }
 }
 

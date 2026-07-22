@@ -13,6 +13,7 @@ pub mod error;
 pub mod launcher;
 pub mod launcher_context;
 pub mod lifecycle;
+pub mod operation;
 pub mod ports;
 pub mod project;
 pub mod search;
@@ -24,6 +25,10 @@ pub mod update;
 pub mod view;
 
 pub use error::ApplicationError;
+pub use operation::{
+    AppliedOperationRecord, AppliedOperationWriter, OperationContext, OutboxEnqueueRecord,
+    OutboxOpKind, OutboxWriter, SyncEntityKind, TombstoneRecord, TombstoneWriter, UnitOfWork,
+};
 pub use update::{
     DownloadOutcome, UpdateCheckKind, UpdateInfo, UpdatePort, UpdateService, UpdateSessionPhase,
     UpdateSessionSnapshot, UpdateSettingsPort,

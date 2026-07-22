@@ -1,155 +1,77 @@
-//! Activity 持久化 adapter：将 usecase port 接到 SeaORM repository。
+//! Activity 持久化适配（R2：activity 表已变为 task 专属；通用写入暂 no-op，保证编译）。
 
-use sea_orm::{DatabaseTransaction, TransactionTrait};
+use sea_orm::{DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use stoneflow_application::activity::{
-    ActivityChangeRecord as UsecaseActivityChangeRecord,
-    ActivityEventRecord as UsecaseActivityEventRecord, ActivityPersistence, ActivityTimelineEntry,
+    ActivityChangeRecord, ActivityEventRecord, ActivityPersistence, ActivityTimelineEntry,
     GetEntityActivitiesInput,
 };
+use stoneflow_application::ApplicationError;
 
 use crate::app::error::AppError;
-use stoneflow_storage::{
-    mappers::{
-        activity_actor_kind_to_schema, activity_entity_kind_to_schema,
-        activity_source_kind_to_schema,
-    },
-    repositories::{ActivityChangeRecord, ActivityEventRecord, ActivityQuery, ActivityRepository},
-};
 
-/// Activity 持久化 adapter。
+/// R2 过渡适配：不写入旧多实体 activity schema。
 #[derive(Debug, Clone)]
 pub struct ActivityPersistenceAdapter {
-    repository: ActivityRepository,
+    db: DatabaseConnection,
 }
 
 impl ActivityPersistenceAdapter {
-    pub fn new(repository: ActivityRepository) -> Self {
-        Self { repository }
+    pub fn new(db: DatabaseConnection) -> Self {
+        Self { db }
     }
 }
 
 impl ActivityPersistence for ActivityPersistenceAdapter {
     type Connection = DatabaseTransaction;
 
-    async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
-        self.repository
-            .connection()
+    async fn begin(&self) -> Result<Self::Connection, ApplicationError> {
+        self.db
             .begin()
             .await
-            .map_err(map_db_error)
+            .map_err(|error| ApplicationError::storage(error.to_string()))
     }
 
-    async fn commit(
-        &self,
-        connection: Self::Connection,
-    ) -> Result<(), stoneflow_application::ApplicationError> {
-        connection.commit().await.map_err(map_db_error)
+    async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError> {
+        connection
+            .commit()
+            .await
+            .map_err(|error| ApplicationError::storage(error.to_string()))
     }
 
     async fn insert_event_with_changes(
         &self,
-        connection: &Self::Connection,
-        event: &UsecaseActivityEventRecord,
-        changes: &[UsecaseActivityChangeRecord],
-    ) -> Result<(), stoneflow_application::ApplicationError> {
-        self.repository
-            .insert_event_with_changes(
-                connection,
-                &map_event_to_infrastructure(event),
-                &changes
-                    .iter()
-                    .map(map_change_to_infrastructure)
-                    .collect::<Vec<_>>(),
-            )
-            .await
-            .map_err(|error| map_app_error(error.into()))
+        _connection: &Self::Connection,
+        _event: &ActivityEventRecord,
+        _changes: &[ActivityChangeRecord],
+    ) -> Result<(), ApplicationError> {
+        // R2：通用 entity activity 写路径已拆除；后续按 task timeline 重建。
+        Ok(())
     }
 
     async fn insert_events_with_changes(
         &self,
-        connection: &Self::Connection,
-        records: &[(UsecaseActivityEventRecord, Vec<UsecaseActivityChangeRecord>)],
-    ) -> Result<(), stoneflow_application::ApplicationError> {
-        let mapped = records
-            .iter()
-            .map(|(event, changes)| {
-                (
-                    map_event_to_infrastructure(event),
-                    changes
-                        .iter()
-                        .map(map_change_to_infrastructure)
-                        .collect::<Vec<_>>(),
-                )
-            })
-            .collect::<Vec<_>>();
-
-        self.repository
-            .insert_events_with_changes(connection, &mapped)
-            .await
-            .map_err(|error| map_app_error(error.into()))
+        _connection: &Self::Connection,
+        _records: &[(ActivityEventRecord, Vec<ActivityChangeRecord>)],
+    ) -> Result<(), ApplicationError> {
+        Ok(())
     }
 
     async fn list_by_entity(
         &self,
-        input: GetEntityActivitiesInput,
-    ) -> Result<Vec<ActivityTimelineEntry>, stoneflow_application::ApplicationError> {
-        self.repository
-            .list_by_entity(ActivityQuery {
-                entity_type: activity_entity_kind_to_schema(input.entity_type),
-                entity_id: input.entity_id,
-                limit: u64::from(input.limit.unwrap_or(50)),
-            })
-            .await
-            .map_err(|error| map_app_error(error.into()))
+        _input: GetEntityActivitiesInput,
+    ) -> Result<Vec<ActivityTimelineEntry>, ApplicationError> {
+        Ok(Vec::new())
     }
 }
 
-fn map_db_error(error: sea_orm::DbErr) -> stoneflow_application::ApplicationError {
-    map_app_error(AppError::from(error))
+/// 构造独立 ActivityService（命令侧查询用）。
+pub fn build_activity_service(
+    db: DatabaseConnection,
+) -> stoneflow_application::activity::ActivityService<ActivityPersistenceAdapter> {
+    stoneflow_application::activity::ActivityService::new(ActivityPersistenceAdapter::new(db))
 }
 
-fn map_event_to_infrastructure(event: &UsecaseActivityEventRecord) -> ActivityEventRecord {
-    ActivityEventRecord {
-        id: event.id.clone(),
-        entity_type: activity_entity_kind_to_schema(event.entity_type),
-        entity_id: event.entity_id.clone(),
-        action: event.action.clone(),
-        actor_type: activity_actor_kind_to_schema(event.actor_type),
-        source: activity_source_kind_to_schema(event.source),
-        summary: event.summary.clone(),
-        metadata: event.metadata.clone(),
-        created_at: event.created_at.clone(),
-    }
-}
-
-fn map_change_to_infrastructure(change: &UsecaseActivityChangeRecord) -> ActivityChangeRecord {
-    ActivityChangeRecord {
-        id: change.id.clone(),
-        event_id: change.event_id.clone(),
-        field: change.field.clone(),
-        old_value: change.old_value.clone(),
-        new_value: change.new_value.clone(),
-        created_at: change.created_at.clone(),
-    }
-}
-
-fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
-    match error {
-        AppError::Validation(message) => {
-            stoneflow_application::ApplicationError::validation(message)
-        }
-        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
-        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
-        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
-        AppError::Initialization(message) => {
-            stoneflow_application::ApplicationError::initialization(message)
-        }
-        AppError::Internal(message)
-        | AppError::Forbidden(message)
-        | AppError::CaptureSpaceUnavailable(message)
-        | AppError::DefaultSpaceUnavailable(message)
-        | AppError::CapturePersistence(message) => {
-            stoneflow_application::ApplicationError::internal(message)
-        }
-    }
+#[allow(dead_code)]
+pub fn map_activity_error(error: ApplicationError) -> AppError {
+    error.into()
 }

@@ -1,70 +1,23 @@
-//! Launcher Service：真源在 `stoneflow-application`。
+//! Launcher Service（R2 stub）。
 
-use stoneflow_application::launcher::{
-    ActiveScopeInput, ActiveScopeKind, LauncherListProjectsBySpaceInput,
-    LauncherProjectsBySpaceDto, LauncherService as LauncherUsecase,
+use stoneflow_storage::database::DatabaseRuntimeState;
+
+use crate::app::error::AppError;
+use crate::services::TaskDetailDto;
+
+pub use stoneflow_application::launcher::{
+    LauncherListProjectsBySpaceInput, LauncherProjectsBySpaceDto, LauncherResolvedOpenTarget,
+    LauncherResolvedPlacement,
 };
 
-pub use stoneflow_application::launcher::{LauncherResolvedOpenTarget, LauncherResolvedPlacement};
-
-use crate::{
-    app::{error::AppError, state::ActiveScopeSnapshot},
-    services::{
-        activity::ActivityService, launcher_adapter::LauncherPortsAdapter, ProjectService,
-        SpaceService, TaskDetailDto, TaskService,
-    },
-};
-use stoneflow_storage::repositories::{
-    ActivityRepository, ProjectRepository, SpaceRepository, SyncRepository, TaskRepository,
-};
-
-#[derive(Debug, Clone)]
 pub struct LauncherService {
-    inner: LauncherUsecase<LauncherPortsAdapter>,
-    task_service: TaskService,
+    _database: DatabaseRuntimeState,
 }
 
 impl LauncherService {
-    pub fn new(
-        space_repository: SpaceRepository,
-        project_repository: ProjectRepository,
-        task_repository: TaskRepository,
-        activity_repository: ActivityRepository,
-    ) -> Self {
-        let activity_service = ActivityService::new(activity_repository);
-        let space_service = SpaceService::new(
-            space_repository.clone(),
-            SyncRepository::new(space_repository.connection().clone()),
-            project_repository.clone(),
-            task_repository.clone(),
-            activity_service.clone(),
-        );
-        let project_service = ProjectService::new(
-            space_repository.clone(),
-            project_repository.clone(),
-            task_repository.clone(),
-            SyncRepository::new(project_repository.connection().clone()),
-            activity_service.clone(),
-        );
-        let task_service = TaskService::new(
-            space_repository.clone(),
-            project_repository.clone(),
-            task_repository.clone(),
-            SyncRepository::new(task_repository.connection().clone()),
-            activity_service,
-        );
-        let ports = LauncherPortsAdapter::new(
-            space_service,
-            project_service,
-            task_service.clone(),
-            space_repository,
-            project_repository,
-            task_repository,
-        );
-
+    pub fn new(database: &DatabaseRuntimeState) -> Self {
         Self {
-            inner: LauncherUsecase::new(ports),
-            task_service,
+            _database: database.clone(),
         }
     }
 
@@ -72,47 +25,34 @@ impl LauncherService {
         &self,
         input: LauncherListProjectsBySpaceInput,
     ) -> Result<LauncherProjectsBySpaceDto, AppError> {
-        self.inner
-            .list_projects_by_space(input)
-            .await
-            .map_err(AppError::from)
-    }
-
-    pub async fn get_task_detail(&self, task_id: &str) -> Result<TaskDetailDto, AppError> {
-        self.task_service
-            .get_task_detail(crate::services::TaskIdInput {
-                task_id: task_id.to_owned(),
-            })
-            .await
+        Err(AppError::internal(format!(
+            "R2：Launcher list_projects_by_space({}) 尚未重建",
+            input.space_id
+        )))
     }
 
     pub async fn resolve_task_open_target(
         &self,
-        task_id: &str,
+        _task_id: &str,
     ) -> Result<LauncherResolvedOpenTarget, AppError> {
-        self.inner
-            .resolve_task_open_target(task_id)
-            .await
-            .map_err(AppError::from)
+        Err(AppError::internal(
+            "R2：Launcher resolve_task_open_target 尚未重建",
+        ))
     }
 
     pub async fn resolve_project_open_target(
         &self,
-        project_id: &str,
+        _project_id: &str,
     ) -> Result<LauncherResolvedOpenTarget, AppError> {
-        self.inner
-            .resolve_project_open_target(project_id)
-            .await
-            .map_err(AppError::from)
+        Err(AppError::internal(
+            "R2：Launcher resolve_project_open_target 尚未重建",
+        ))
     }
-}
 
-pub(crate) fn map_active_scope(snapshot: Option<ActiveScopeSnapshot>) -> Option<ActiveScopeInput> {
-    snapshot.map(|scope| ActiveScopeInput {
-        kind: match scope.kind {
-            crate::app::state::ActiveScopeKind::All => ActiveScopeKind::All,
-            crate::app::state::ActiveScopeKind::Space => ActiveScopeKind::Space,
-        },
-        space_id: scope.space_id.map(|id| id.to_string()),
-    })
+    pub async fn create_inbox_task_from_capture(
+        &self,
+        _title: String,
+    ) -> Result<TaskDetailDto, AppError> {
+        Err(AppError::internal("R2：Launcher capture 尚未重建"))
+    }
 }

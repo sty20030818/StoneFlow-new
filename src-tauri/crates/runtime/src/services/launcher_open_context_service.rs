@@ -1,75 +1,25 @@
-//! Launcher Open Context：prepare-session 只读上下文编排壳（真源在 usecase）。
+//! Launcher Open Context（R2 stub）。
 
-use stoneflow_application::launcher_context::{
-    LauncherContextService as LauncherContextUsecase, LauncherInitialStateDto,
-};
+use stoneflow_application::launcher_context::LauncherInitialStateDto;
+use stoneflow_storage::database::DatabaseRuntimeState;
 
-use crate::{
-    app::{error::AppError, state::ActiveScopeSnapshot},
-    services::{
-        activity::ActivityService, launcher_adapter::LauncherPortsAdapter,
-        launcher_service::map_active_scope, LauncherService, ProjectService, SpaceService,
-        TaskService,
-    },
-};
-use stoneflow_storage::repositories::{
-    ActivityRepository, ProjectRepository, SpaceRepository, SyncRepository, TaskRepository,
-};
+use crate::app::{error::AppError, state::ActiveScopeSnapshot};
 
-#[derive(Debug, Clone)]
 pub struct LauncherOpenContextService {
-    inner: LauncherContextUsecase<LauncherPortsAdapter>,
+    _database: DatabaseRuntimeState,
 }
 
 impl LauncherOpenContextService {
-    pub fn new(
-        launcher_service: LauncherService,
-        space_repository: SpaceRepository,
-        project_repository: ProjectRepository,
-        task_repository: TaskRepository,
-    ) -> Self {
-        let _ = launcher_service;
-        let connection = space_repository.connection().clone();
-        let activity_service = ActivityService::new(ActivityRepository::new(connection.clone()));
-        let ports = LauncherPortsAdapter::new(
-            SpaceService::new(
-                space_repository.clone(),
-                SyncRepository::new(connection.clone()),
-                project_repository.clone(),
-                task_repository.clone(),
-                activity_service.clone(),
-            ),
-            ProjectService::new(
-                space_repository.clone(),
-                project_repository.clone(),
-                task_repository.clone(),
-                SyncRepository::new(connection.clone()),
-                activity_service.clone(),
-            ),
-            TaskService::new(
-                space_repository.clone(),
-                project_repository.clone(),
-                task_repository.clone(),
-                SyncRepository::new(connection.clone()),
-                activity_service,
-            ),
-            space_repository,
-            project_repository,
-            task_repository,
-        );
-
+    pub fn new(database: &DatabaseRuntimeState) -> Self {
         Self {
-            inner: LauncherContextUsecase::new(ports),
+            _database: database.clone(),
         }
     }
 
     pub async fn get_initial_state(
         &self,
-        active_scope: Option<ActiveScopeSnapshot>,
+        _active_scope: Option<ActiveScopeSnapshot>,
     ) -> Result<LauncherInitialStateDto, AppError> {
-        self.inner
-            .get_initial_state(map_active_scope(active_scope))
-            .await
-            .map_err(AppError::from)
+        Err(AppError::internal("R2：Launcher 初始态依赖尚未重建"))
     }
 }

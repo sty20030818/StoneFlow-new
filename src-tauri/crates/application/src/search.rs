@@ -6,7 +6,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
-use stoneflow_domain::{normalize_slug, TaskStatus};
+use stoneflow_domain::{normalize_slug, WorkStatus};
 
 use crate::ApplicationError;
 
@@ -36,11 +36,10 @@ pub struct SearchTaskRecord {
     pub id: String,
     pub space_id: String,
     pub project_id: Option<String>,
-    pub inbox_at: Option<String>,
     pub title: String,
     pub note: Option<String>,
     pub priority: i32,
-    pub status: TaskStatus,
+    pub status: WorkStatus,
     pub updated_at: String,
     pub completed_at: Option<String>,
 }
@@ -105,11 +104,10 @@ pub struct SearchTaskItemDto {
     pub space_slug: String,
     pub project_id: Option<String>,
     pub project_name: Option<String>,
-    pub inbox_at: Option<String>,
     pub title: String,
     pub note: Option<String>,
     pub priority: i32,
-    pub status: TaskStatus,
+    pub status: WorkStatus,
     pub updated_at: String,
     pub completed_at: Option<String>,
 }
@@ -291,7 +289,6 @@ where
                             space_slug,
                             project_id: item.project_id,
                             project_name,
-                            inbox_at: item.inbox_at,
                             title: item.title,
                             note: item.note,
                             priority: item.priority,
@@ -397,13 +394,13 @@ fn classify_match(primary: &str, secondary: Option<&str>, query: &str) -> Option
     })
 }
 
-fn classify_task_status(status: TaskStatus) -> TaskSearchStatusRank {
+fn classify_task_status(status: WorkStatus) -> TaskSearchStatusRank {
     match status {
-        TaskStatus::Doing => TaskSearchStatusRank::Doing,
-        TaskStatus::Todo => TaskSearchStatusRank::Todo,
-        TaskStatus::Waiting => TaskSearchStatusRank::Waiting,
-        TaskStatus::Done => TaskSearchStatusRank::Done,
-        TaskStatus::Canceled => TaskSearchStatusRank::Canceled,
+        WorkStatus::Doing => TaskSearchStatusRank::Doing,
+        WorkStatus::Todo => TaskSearchStatusRank::Todo,
+        WorkStatus::Waiting => TaskSearchStatusRank::Waiting,
+        WorkStatus::Done => TaskSearchStatusRank::Done,
+        WorkStatus::Canceled => TaskSearchStatusRank::Canceled,
     }
 }
 
@@ -434,7 +431,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use stoneflow_domain::TaskStatus;
+    use stoneflow_domain::WorkStatus;
 
     use super::{
         ProjectSearchLifecycle, SearchEntitiesInput, SearchProjectReader, SearchProjectRecord,
@@ -533,11 +530,10 @@ mod tests {
             id: id.to_owned(),
             space_id: "space-1".to_owned(),
             project_id: None,
-            inbox_at: None,
             title: title.to_owned(),
             note: note.map(str::to_owned),
             priority: 0,
-            status: TaskStatus::Todo,
+            status: WorkStatus::Todo,
             updated_at: updated_at.to_owned(),
             completed_at: None,
         }

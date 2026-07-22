@@ -1,0 +1,265 @@
+//! 当前完整 Schema：R2 硬切基线，无旧表升级链。
+
+use sea_orm_migration::prelude::*;
+
+#[derive(DeriveMigrationName)]
+pub struct Migration;
+
+const CREATE_SCHEMA_SQL: &str = r#"
+CREATE TABLE IF NOT EXISTS spaces (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    icon_key TEXT NOT NULL,
+    color_key TEXT NOT NULL,
+    is_default INTEGER NOT NULL CHECK (is_default IN (0, 1)),
+    position INTEGER NOT NULL CHECK (position >= 0),
+    generation INTEGER NOT NULL CHECK (generation >= 1),
+    archived_at TEXT NULL,
+    deleted_at TEXT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+-- 活跃默认 Space 至多一个（未归档且未进回收站）
+CREATE UNIQUE INDEX IF NOT EXISTS ux_spaces_single_default_active
+ON spaces(is_default)
+WHERE is_default = 1 AND archived_at IS NULL AND deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS ix_spaces_position ON spaces(position);
+CREATE INDEX IF NOT EXISTS ix_spaces_deleted_at
+ON spaces(deleted_at)
+WHERE deleted_at IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS projects (
+    id TEXT NOT NULL,
+    space_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NULL,
+    status TEXT NOT NULL CHECK (status IN ('todo', 'doing', 'waiting', 'done', 'canceled')),
+    priority INTEGER NOT NULL CHECK (priority IN (0, 1, 2, 3, 4)),
+    planned_at TEXT NULL,
+    due_at TEXT NULL,
+    remind_at TEXT NULL,
+    status_changed_at TEXT NOT NULL,
+    completed_at TEXT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    generation INTEGER NOT NULL CHECK (generation >= 1),
+    archived_at TEXT NULL,
+    deleted_at TEXT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (id, space_id),
+    FOREIGN KEY (space_id) REFERENCES spaces(id)
+);
+
+CREATE INDEX IF NOT EXISTS ix_projects_space_position
+ON projects(space_id, position);
+CREATE INDEX IF NOT EXISTS ix_projects_deleted_at
+ON projects(deleted_at)
+WHERE deleted_at IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS tasks (
+    id TEXT PRIMARY KEY NOT NULL,
+    space_id TEXT NOT NULL,
+    project_id TEXT NULL,
+    title TEXT NOT NULL,
+    note TEXT NULL,
+    status TEXT NOT NULL CHECK (status IN ('todo', 'doing', 'waiting', 'done', 'canceled')),
+    priority INTEGER NOT NULL CHECK (priority IN (0, 1, 2, 3, 4)),
+    planned_at TEXT NULL,
+    due_at TEXT NULL,
+    remind_at TEXT NULL,
+    status_changed_at TEXT NOT NULL,
+    completed_at TEXT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    generation INTEGER NOT NULL CHECK (generation >= 1),
+    archived_at TEXT NULL,
+    deleted_at TEXT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (space_id) REFERENCES spaces(id),
+    FOREIGN KEY (project_id, space_id) REFERENCES projects(id, space_id)
+);
+
+-- Space 独立待办容器排序（排除归档与回收站）
+CREATE INDEX IF NOT EXISTS ix_tasks_space_inbox_position
+ON tasks(space_id, position)
+WHERE project_id IS NULL AND archived_at IS NULL AND deleted_at IS NULL;
+
+-- Project 内排序（排除归档与回收站）
+CREATE INDEX IF NOT EXISTS ix_tasks_project_position
+ON tasks(project_id, position)
+WHERE project_id IS NOT NULL AND archived_at IS NULL AND deleted_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS ix_tasks_archived_at
+ON tasks(archived_at)
+WHERE archived_at IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS ix_tasks_deleted_at
+ON tasks(deleted_at)
+WHERE deleted_at IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS task_links (
+    id TEXT PRIMARY KEY NOT NULL,
+    task_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    url TEXT NOT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS ix_task_links_task_position
+ON task_links(task_id, position);
+
+CREATE TABLE IF NOT EXISTS views (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    entity_kind TEXT NOT NULL CHECK (entity_kind IN ('task', 'project')),
+    scope_json TEXT NOT NULL,
+    filters_json TEXT NOT NULL,
+    sort_json TEXT NOT NULL,
+    group_by_json TEXT NULL,
+    position INTEGER NOT NULL CHECK (position >= 0),
+    generation INTEGER NOT NULL CHECK (generation >= 1),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_views_position ON views(position);
+
+CREATE TABLE IF NOT EXISTS activity_events (
+    id TEXT PRIMARY KEY NOT NULL,
+    task_id TEXT NOT NULL,
+    operation_id TEXT NOT NULL,
+    action TEXT NOT NULL,
+    actor_kind TEXT NOT NULL,
+    source_kind TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS ix_activity_events_task_created
+ON activity_events(task_id, created_at);
+
+CREATE TABLE IF NOT EXISTS activity_changes (
+    id TEXT PRIMARY KEY NOT NULL,
+    event_id TEXT NOT NULL,
+    field_key TEXT NOT NULL,
+    old_value TEXT NULL,
+    new_value TEXT NULL,
+    FOREIGN KEY (event_id) REFERENCES activity_events(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS ix_activity_changes_event
+ON activity_changes(event_id);
+
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY NOT NULL,
+    value TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS outbox (
+    id TEXT PRIMARY KEY NOT NULL,
+    operation_id TEXT NOT NULL UNIQUE,
+    entity_type TEXT NOT NULL CHECK (entity_type IN ('space', 'project', 'task', 'task_link', 'view', 'setting', 'activity')),
+    entity_id TEXT NOT NULL,
+    generation INTEGER NOT NULL CHECK (generation >= 1),
+    operation_type TEXT NOT NULL CHECK (operation_type IN ('upsert', 'delete', 'restore', 'patch')),
+    payload_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    available_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_outbox_available
+ON outbox(available_at, created_at);
+
+CREATE TABLE IF NOT EXISTS applied_operations (
+    operation_id TEXT PRIMARY KEY NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    applied_at TEXT NOT NULL,
+    server_seq INTEGER NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_applied_operations_entity
+ON applied_operations(entity_type, entity_id);
+
+CREATE TABLE IF NOT EXISTS sync_changes (
+    server_seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    operation_id TEXT NOT NULL UNIQUE,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    generation INTEGER NOT NULL,
+    operation_type TEXT NOT NULL,
+    payload_json TEXT NOT NULL,
+    committed_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_sync_changes_seq
+ON sync_changes(server_seq);
+
+CREATE TABLE IF NOT EXISTS tombstones (
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    generation INTEGER NOT NULL CHECK (generation >= 1),
+    deletion_seq INTEGER NOT NULL,
+    deleted_at TEXT NOT NULL,
+    PRIMARY KEY (entity_type, entity_id)
+);
+
+CREATE INDEX IF NOT EXISTS ix_tombstones_deletion_seq
+ON tombstones(deletion_seq);
+
+CREATE TABLE IF NOT EXISTS sync_cursors (
+    scope TEXT PRIMARY KEY NOT NULL,
+    cursor TEXT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sync_devices (
+    device_id TEXT PRIMARY KEY NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+"#;
+
+#[async_trait::async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .get_connection()
+            .execute_unprepared(CREATE_SCHEMA_SQL)
+            .await?;
+        Ok(())
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        manager
+            .get_connection()
+            .execute_unprepared(
+                r#"
+                DROP TABLE IF EXISTS sync_devices;
+                DROP TABLE IF EXISTS sync_cursors;
+                DROP TABLE IF EXISTS tombstones;
+                DROP TABLE IF EXISTS sync_changes;
+                DROP TABLE IF EXISTS applied_operations;
+                DROP TABLE IF EXISTS outbox;
+                DROP TABLE IF EXISTS settings;
+                DROP TABLE IF EXISTS activity_changes;
+                DROP TABLE IF EXISTS activity_events;
+                DROP TABLE IF EXISTS views;
+                DROP TABLE IF EXISTS task_links;
+                DROP TABLE IF EXISTS tasks;
+                DROP TABLE IF EXISTS projects;
+                DROP TABLE IF EXISTS spaces;
+                "#,
+            )
+            .await?;
+        Ok(())
+    }
+}

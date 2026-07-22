@@ -1,8 +1,8 @@
-//! Space 实体。
+//! Space entity。
 
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "spaces")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
@@ -11,7 +11,8 @@ pub struct Model {
     pub icon_key: String,
     pub color_key: String,
     pub is_default: bool,
-    pub sort_order: i32,
+    pub position: i64,
+    pub generation: i64,
     pub archived_at: Option<String>,
     pub deleted_at: Option<String>,
     pub created_at: String,

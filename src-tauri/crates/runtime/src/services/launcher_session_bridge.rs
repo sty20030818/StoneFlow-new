@@ -1,21 +1,21 @@
-//! Launcher Session Bridge：提供 prepare-session 所需的只读桥接入口。
+//! Launcher Session Bridge（R2 stub）。
 
 use stoneflow_application::launcher_context::LauncherInitialStateDto;
+use stoneflow_storage::database::DatabaseRuntimeState;
 
 use crate::{
     app::{error::AppError, state::ActiveScopeSnapshot},
     services::LauncherOpenContextService,
 };
 
-#[derive(Debug, Clone)]
 pub struct LauncherSessionBridge {
     open_context_service: LauncherOpenContextService,
 }
 
 impl LauncherSessionBridge {
-    pub fn new(open_context_service: LauncherOpenContextService) -> Self {
+    pub fn new(database: &DatabaseRuntimeState) -> Self {
         Self {
-            open_context_service,
+            open_context_service: LauncherOpenContextService::new(database),
         }
     }
 

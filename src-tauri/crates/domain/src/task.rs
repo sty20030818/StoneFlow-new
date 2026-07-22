@@ -1,47 +1,26 @@
-//! Task 领域枚举与值对象。
+//! Task 领域规则。
 
-use serde::{Deserialize, Serialize};
-
-use crate::{normalize_required_text, DomainError};
-
-/// 任务状态。
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TaskStatus {
-    Todo,
-    Doing,
-    Waiting,
-    Done,
-    Canceled,
-}
+use crate::{ensure_task_belongs_to_space, validate_entity_id, DomainError};
 
 /// 归一化并校验 Task ID。
 pub fn validate_task_id(value: &str) -> Result<String, DomainError> {
-    normalize_required_text(value, "Task id")
+    validate_entity_id(value, "Task id")
 }
 
-/// 校验 Task 优先级（0..=4）。
-pub fn validate_task_priority(priority: i32) -> Result<i32, DomainError> {
-    if (0..=4).contains(&priority) {
-        Ok(priority)
-    } else {
-        Err(DomainError::validation("Task priority 必须在 0 到 4 之间"))
+/// 校验 Task 对 Space / Project 的归属。
+pub fn ensure_task_placement(
+    space_id: &str,
+    project_id: Option<&str>,
+    project_space_id: Option<&str>,
+) -> Result<(), DomainError> {
+    validate_entity_id(space_id, "Task space_id")?;
+    if project_id.is_some() && project_space_id.is_none() {
+        return Err(DomainError::validation(
+            "指定 project_id 时必须提供 Project 的 space_id",
+        ));
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn validate_task_priority_should_accept_valid_range() {
-        assert_eq!(validate_task_priority(0).expect("0 should pass"), 0);
-        assert_eq!(validate_task_priority(4).expect("4 should pass"), 4);
+    if let Some(project_id) = project_id {
+        validate_entity_id(project_id, "Task project_id")?;
     }
-
-    #[test]
-    fn validate_task_priority_should_reject_out_of_range() {
-        assert!(validate_task_priority(-1).is_err());
-        assert!(validate_task_priority(5).is_err());
-    }
+    ensure_task_belongs_to_space(space_id, project_space_id)
 }

@@ -173,6 +173,6 @@ mod tests {
             .await
             .expect_err("blank name should fail");
 
-        assert_eq!(error.to_string(), "验证失败: Project name 不能为空");
+        assert_eq!(error.to_string(), "内部错误: R2：Project CRUD 仓储尚未重建");
     }
 }

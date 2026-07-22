@@ -8,7 +8,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{json, Value};
 use stoneflow_domain::{
     create_id, normalize_required_text, normalize_slug, now_utc, validate_project_id,
-    validate_space_id, validate_task_id, validate_task_priority, ActivityEntityKind, TaskStatus,
+    validate_space_id, validate_task_id, ActivityEntityKind, WorkPriority, WorkStatus,
 };
 
 use crate::{
@@ -18,9 +18,8 @@ use crate::{
     },
     task::{
         executor::{
-            apply_view_preset, build_update_summary, parse_view_key,
+            apply_view_preset, build_update_summary, completed_at_for_status, parse_view_key,
             repository_lifecycle_for_preset, select_update_action, status_key,
-            timestamps_for_status,
         },
         types::{
             CreateTaskPersistenceRecord, TaskListQuery, TaskPlacement, TaskPlacementQuery,
@@ -65,13 +64,12 @@ pub struct ListTasksPlacementInput {
     pub project_id: Option<String>,
 }
 
-/// Task 列表 placement 类型。
+/// Task 列表 placement 类型（R2：取消 Inbox，未分配 Project 统一为 NoProject）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ListTasksPlacementKind {
     All,
     Project,
-    Inbox,
     NoProject,
 }
 
@@ -85,17 +83,15 @@ pub struct TaskListItemDto {
     pub space_slug: String,
     pub project_id: Option<String>,
     pub project_name: Option<String>,
-    pub inbox_at: Option<String>,
     pub title: String,
     pub note: Option<String>,
-    pub status: TaskStatus,
+    pub status: WorkStatus,
     pub status_changed_at: String,
     pub priority: i32,
+    pub planned_at: Option<String>,
     pub due_at: Option<String>,
-    pub scheduled_at: Option<String>,
-    pub reminder_at: Option<String>,
+    pub remind_at: Option<String>,
     pub completed_at: Option<String>,
-    pub canceled_at: Option<String>,
     pub archived_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
@@ -113,16 +109,14 @@ pub struct TaskDetailDto {
     pub project_name: Option<String>,
     pub title: String,
     pub note: Option<String>,
-    pub status: TaskStatus,
+    pub status: WorkStatus,
     pub status_changed_at: String,
     pub priority: i32,
-    pub inbox_at: Option<String>,
+    pub planned_at: Option<String>,
     pub due_at: Option<String>,
-    pub scheduled_at: Option<String>,
-    pub reminder_at: Option<String>,
-    pub sort_order: i32,
+    pub remind_at: Option<String>,
+    pub position: i64,
     pub completed_at: Option<String>,
-    pub canceled_at: Option<String>,
     pub archived_at: Option<String>,
     pub deleted_at: Option<String>,
     pub created_at: String,
@@ -137,11 +131,11 @@ pub struct CreateTaskInput {
     pub placement: CreateTaskPlacementInput,
     pub title: String,
     pub note: Option<String>,
-    pub status: Option<TaskStatus>,
+    pub status: Option<WorkStatus>,
     pub priority: Option<i32>,
     pub due_at: Option<String>,
-    pub scheduled_at: Option<String>,
-    pub reminder_at: Option<String>,
+    pub planned_at: Option<String>,
+    pub remind_at: Option<String>,
 }
 
 /// 创建 Task 时的归属策略输入。
@@ -153,12 +147,11 @@ pub struct CreateTaskPlacementInput {
     pub project_id: Option<String>,
 }
 
-/// 创建 Task 时的 placement 类型。
+/// 创建 Task 时的 placement 类型（R2：取消 Inbox）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CreateTaskPlacementKind {
     Project,
-    Inbox,
     NoProject,
 }
 
@@ -171,7 +164,7 @@ pub struct UpdateTaskInput {
     #[serde(default)]
     #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub note: Option<Option<String>>,
-    pub status: Option<TaskStatus>,
+    pub status: Option<WorkStatus>,
     pub priority: Option<i32>,
     pub placement: Option<UpdateTaskPlacementInput>,
     #[serde(default)]
@@ -179,10 +172,10 @@ pub struct UpdateTaskInput {
     pub due_at: Option<Option<String>>,
     #[serde(default)]
     #[serde(deserialize_with = "deserialize_nullable_string_field")]
-    pub scheduled_at: Option<Option<String>>,
+    pub planned_at: Option<Option<String>>,
     #[serde(default)]
     #[serde(deserialize_with = "deserialize_nullable_string_field")]
-    pub reminder_at: Option<Option<String>>,
+    pub remind_at: Option<Option<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -198,7 +191,6 @@ pub struct UpdateTaskPlacementInput {
 #[serde(rename_all = "camelCase")]
 pub enum UpdateTaskPlacementKind {
     Project,
-    Inbox,
     NoProject,
 }
 
@@ -217,12 +209,12 @@ pub trait TaskPersistence: Send + Sync {
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError>;
     async fn get(&self, task_id: &str) -> Result<Option<TaskRecord>, ApplicationError>;
     async fn list(&self, query: TaskListQuery) -> Result<Vec<TaskRecord>, ApplicationError>;
-    async fn next_sort_order(
+    async fn next_position(
         &self,
         connection: &Self::Connection,
         space_id: &str,
         project_id: Option<&str>,
-    ) -> Result<i32, ApplicationError>;
+    ) -> Result<i64, ApplicationError>;
     async fn create(
         &self,
         connection: &Self::Connection,
@@ -324,10 +316,6 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
 
-        if current.deleted_at.is_some() {
-            return Err(ApplicationError::not_found("Task 不存在"));
-        }
-
         self.build_task_detail(current).await
     }
 
@@ -339,22 +327,22 @@ where
         let title = normalize_required_text(&input.title, "Task title")?;
         let note = normalize_optional_long_text(input.note);
         let due_at = normalize_optional_text(input.due_at);
-        let scheduled_at = normalize_optional_text(input.scheduled_at);
-        let reminder_at = normalize_optional_text(input.reminder_at);
-        let status = input.status.unwrap_or(TaskStatus::Todo);
-        let priority = validate_task_priority(input.priority.unwrap_or(0))?;
+        let planned_at = normalize_optional_text(input.planned_at);
+        let remind_at = normalize_optional_text(input.remind_at);
+        let status = input.status.unwrap_or(WorkStatus::Todo);
+        let priority = validate_task_priority(input.priority)?;
         let placement = normalize_create_placement(&input.placement)?;
         let project = match &placement {
             TaskPlacement::Project(project_id) => {
                 Some(self.require_visible_project(project_id).await?)
             }
-            TaskPlacement::Inbox | TaskPlacement::NoProject | TaskPlacement::All => None,
+            TaskPlacement::NoProject | TaskPlacement::All => None,
         };
         let space = match (&placement, &project) {
             (TaskPlacement::Project(_), Some(project)) => {
                 self.require_visible_space(&project.space_id).await?
             }
-            (TaskPlacement::Inbox | TaskPlacement::NoProject, None) => {
+            (TaskPlacement::NoProject, None) => {
                 let raw_space_id = input
                     .space_id
                     .as_deref()
@@ -366,19 +354,15 @@ where
 
         let now = now_utc().to_rfc3339();
         let transaction = self.persistence.begin().await?;
-        let sort_order = self
+        let position = self
             .persistence
-            .next_sort_order(
+            .next_position(
                 &transaction,
                 &space.id,
                 project.as_ref().map(|item| item.id.as_str()),
             )
             .await?;
-        let (completed_at, canceled_at) = timestamps_for_status(status, &now);
-        let inbox_at = match &placement {
-            TaskPlacement::Inbox => Some(now.clone()),
-            TaskPlacement::Project(_) | TaskPlacement::NoProject | TaskPlacement::All => None,
-        };
+        let completed_at = completed_at_for_status(status, &now);
         let created = self
             .persistence
             .create(
@@ -392,13 +376,11 @@ where
                     status,
                     status_changed_at: now.clone(),
                     priority,
-                    inbox_at,
+                    planned_at: planned_at.clone(),
                     due_at: due_at.clone(),
-                    scheduled_at: scheduled_at.clone(),
-                    reminder_at: reminder_at.clone(),
-                    sort_order,
+                    remind_at: remind_at.clone(),
+                    position,
                     completed_at: completed_at.clone(),
-                    canceled_at: canceled_at.clone(),
                     created_at: now.clone(),
                     updated_at: now.clone(),
                 },
@@ -443,17 +425,12 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
 
-        if current.deleted_at.is_some() {
-            return Err(ApplicationError::not_found("Task 不存在"));
-        }
-
         let mut patch = UpdateTaskPatch::default();
         let mut changes = Vec::new();
         let now = now_utc().to_rfc3339();
 
         let mut next_space_id = current.space_id.clone();
         let mut next_project_id = current.project_id.clone();
-        let mut next_inbox_at = current.inbox_at.clone();
 
         if let Some(placement) = input.placement.as_ref() {
             match placement.kind {
@@ -469,19 +446,11 @@ where
                     }
                     next_space_id = project.space_id.clone();
                     next_project_id = Some(project.id.clone());
-                    next_inbox_at = None;
-                }
-                UpdateTaskPlacementKind::Inbox => {
-                    let space = self.require_visible_space(&placement.space_id).await?;
-                    next_space_id = space.id.clone();
-                    next_project_id = None;
-                    next_inbox_at = Some(now.clone());
                 }
                 UpdateTaskPlacementKind::NoProject => {
                     let space = self.require_visible_space(&placement.space_id).await?;
                     next_space_id = space.id.clone();
                     next_project_id = None;
-                    next_inbox_at = None;
                 }
             }
         }
@@ -513,7 +482,7 @@ where
         }
 
         if let Some(priority) = input.priority {
-            let priority = validate_task_priority(priority)?;
+            let priority = validate_task_priority(Some(priority))?;
             if priority != current.priority {
                 push_change(
                     &mut changes,
@@ -545,22 +514,6 @@ where
             patch.project_id = Some(next_project_id.clone());
         }
 
-        if let Some(status) = input.status {
-            if matches!(status, TaskStatus::Done | TaskStatus::Canceled) {
-                next_inbox_at = None;
-            }
-        }
-
-        if next_inbox_at != current.inbox_at {
-            push_change(
-                &mut changes,
-                "inbox_at",
-                json_option_string(&current.inbox_at),
-                json_option_string(&next_inbox_at),
-            );
-            patch.inbox_at = Some(next_inbox_at.clone());
-        }
-
         if let Some(due_at) = input.due_at {
             let due_at = normalize_optional_text_option(due_at);
             if due_at != current.due_at {
@@ -574,29 +527,29 @@ where
             }
         }
 
-        if let Some(scheduled_at) = input.scheduled_at {
-            let scheduled_at = normalize_optional_text_option(scheduled_at);
-            if scheduled_at != current.scheduled_at {
+        if let Some(planned_at) = input.planned_at {
+            let planned_at = normalize_optional_text_option(planned_at);
+            if planned_at != current.planned_at {
                 push_change(
                     &mut changes,
-                    "scheduled_at",
-                    json_option_string(&current.scheduled_at),
-                    json_option_string(&scheduled_at),
+                    "planned_at",
+                    json_option_string(&current.planned_at),
+                    json_option_string(&planned_at),
                 );
-                patch.scheduled_at = Some(scheduled_at);
+                patch.planned_at = Some(planned_at);
             }
         }
 
-        if let Some(reminder_at) = input.reminder_at {
-            let reminder_at = normalize_optional_text_option(reminder_at);
-            if reminder_at != current.reminder_at {
+        if let Some(remind_at) = input.remind_at {
+            let remind_at = normalize_optional_text_option(remind_at);
+            if remind_at != current.remind_at {
                 push_change(
                     &mut changes,
-                    "reminder_at",
-                    json_option_string(&current.reminder_at),
-                    json_option_string(&reminder_at),
+                    "remind_at",
+                    json_option_string(&current.remind_at),
+                    json_option_string(&remind_at),
                 );
-                patch.reminder_at = Some(reminder_at);
+                patch.remind_at = Some(remind_at);
             }
         }
 
@@ -620,7 +573,7 @@ where
                 }
                 patch.status_changed_at = Some(now.clone());
 
-                let (next_completed_at, next_canceled_at) = timestamps_for_status(status, &now);
+                let next_completed_at = completed_at_for_status(status, &now);
                 if next_completed_at != current.completed_at {
                     push_change(
                         &mut changes,
@@ -629,15 +582,6 @@ where
                         json_option_string(&next_completed_at),
                     );
                     patch.completed_at = Some(next_completed_at);
-                }
-                if next_canceled_at != current.canceled_at {
-                    push_change(
-                        &mut changes,
-                        "canceled_at",
-                        json_option_string(&current.canceled_at),
-                        json_option_string(&next_canceled_at),
-                    );
-                    patch.canceled_at = Some(next_canceled_at);
                 }
             }
         }
@@ -714,17 +658,15 @@ where
                     space_slug,
                     project_id: item.project_id,
                     project_name,
-                    inbox_at: item.inbox_at,
                     title: item.title,
                     note: item.note,
                     status: item.status,
                     status_changed_at: item.status_changed_at,
                     priority: item.priority,
                     due_at: item.due_at,
-                    scheduled_at: item.scheduled_at,
-                    reminder_at: item.reminder_at,
+                    planned_at: item.planned_at,
+                    remind_at: item.remind_at,
                     completed_at: item.completed_at,
-                    canceled_at: item.canceled_at,
                     archived_at: item.archived_at,
                     created_at: item.created_at,
                     updated_at: item.updated_at,
@@ -756,13 +698,11 @@ where
             status: item.status,
             status_changed_at: item.status_changed_at,
             priority: item.priority,
-            inbox_at: item.inbox_at,
+            planned_at: item.planned_at,
             due_at: item.due_at,
-            scheduled_at: item.scheduled_at,
-            reminder_at: item.reminder_at,
-            sort_order: item.sort_order,
+            remind_at: item.remind_at,
+            position: item.position,
             completed_at: item.completed_at,
-            canceled_at: item.canceled_at,
             archived_at: item.archived_at,
             deleted_at: item.deleted_at,
             created_at: item.created_at,
@@ -781,7 +721,7 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Space 不存在"))?;
 
-        if space.archived_at.is_some() || space.deleted_at.is_some() {
+        if space.archived_at.is_some() {
             return Err(ApplicationError::not_found("Space 不存在"));
         }
 
@@ -799,7 +739,7 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Project 不存在"))?;
 
-        if project.archived_at.is_some() || project.deleted_at.is_some() {
+        if project.archived_at.is_some() {
             return Err(ApplicationError::not_found("Project 不存在"));
         }
 
@@ -859,7 +799,6 @@ fn normalize_list_placement(
 ) -> Result<TaskPlacement, ApplicationError> {
     match input.kind {
         ListTasksPlacementKind::All => Ok(TaskPlacement::All),
-        ListTasksPlacementKind::Inbox => Ok(TaskPlacement::Inbox),
         ListTasksPlacementKind::NoProject => Ok(TaskPlacement::NoProject),
         ListTasksPlacementKind::Project => {
             let project_id = input
@@ -875,7 +814,6 @@ fn normalize_create_placement(
     input: &CreateTaskPlacementInput,
 ) -> Result<TaskPlacement, ApplicationError> {
     match input.kind {
-        CreateTaskPlacementKind::Inbox => Ok(TaskPlacement::Inbox),
         CreateTaskPlacementKind::NoProject => Ok(TaskPlacement::NoProject),
         CreateTaskPlacementKind::Project => {
             let project_id = input
@@ -891,7 +829,6 @@ fn to_placement_query(placement: &TaskPlacement) -> TaskPlacementQuery {
     match placement {
         TaskPlacement::All => TaskPlacementQuery::All,
         TaskPlacement::Project(project_id) => TaskPlacementQuery::Project(project_id.clone()),
-        TaskPlacement::Inbox => TaskPlacementQuery::Inbox,
         TaskPlacement::NoProject => TaskPlacementQuery::NoProject,
     }
 }
@@ -900,9 +837,14 @@ fn placement_key(placement: &TaskPlacement) -> &'static str {
     match placement {
         TaskPlacement::All => "all",
         TaskPlacement::Project(_) => "project",
-        TaskPlacement::Inbox => "inbox",
         TaskPlacement::NoProject => "noProject",
     }
+}
+
+/// 校验并归一化优先级：未提供时取 WorkPriority::None。
+fn validate_task_priority(value: Option<i32>) -> Result<i32, ApplicationError> {
+    let value = value.unwrap_or(0);
+    Ok(WorkPriority::from_i32(value)?.as_i32())
 }
 
 fn deserialize_nullable_string_field<'de, D>(

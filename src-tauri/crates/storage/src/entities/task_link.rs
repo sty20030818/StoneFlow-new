@@ -1,8 +1,8 @@
-//! Task Link 实体。
+//! TaskLink entity。
 
 use sea_orm::entity::prelude::*;
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "task_links")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
@@ -10,7 +10,7 @@ pub struct Model {
     pub task_id: String,
     pub title: String,
     pub url: String,
-    pub sort_order: i32,
+    pub position: i64,
     pub created_at: String,
     pub updated_at: String,
 }

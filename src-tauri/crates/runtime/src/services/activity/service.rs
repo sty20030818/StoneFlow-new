@@ -1,67 +1,30 @@
-//! Activity Service 兼容壳：真实编排已迁到 `stoneflow-application`。
+//! Activity 运行时薄壳：timeline 查询走 application，R2 下恒返回空。
 
-use sea_orm::DatabaseTransaction;
 use stoneflow_application::activity::{
     ActivityService as ActivityUsecase, ActivityTimelineEntry, GetEntityActivitiesInput,
-    RecordActivityInput,
 };
+use stoneflow_storage::database::DatabaseRuntimeState;
 
-use crate::{app::error::AppError, services::activity::adapter::ActivityPersistenceAdapter};
-use stoneflow_storage::repositories::ActivityRepository;
+use crate::app::error::AppError;
+
+use super::adapter::{build_activity_service, ActivityPersistenceAdapter};
 
 pub use stoneflow_application::activity::{
     create_changes, ActivityAction, ActivityChangeInput, ActivityTimelineChange,
 };
 
-/// Activity 编排兼容壳。
-#[derive(Debug, Clone)]
+/// Runtime Activity Service。
 pub struct ActivityService {
     inner: ActivityUsecase<ActivityPersistenceAdapter>,
-    repository: ActivityRepository,
 }
 
 impl ActivityService {
-    pub fn new(repository: ActivityRepository) -> Self {
-        let repository_for_accessor = repository.clone();
+    pub fn new(database: &DatabaseRuntimeState) -> Self {
         Self {
-            inner: ActivityUsecase::new(ActivityPersistenceAdapter::new(repository)),
-            repository: repository_for_accessor,
+            inner: build_activity_service(database.connection().clone()),
         }
     }
 
-    /// 以独立事务记录一条 Activity。
-    pub async fn record_activity(&self, input: RecordActivityInput) -> Result<(), AppError> {
-        self.inner
-            .record_activity(input)
-            .await
-            .map_err(AppError::from)
-    }
-
-    /// 在外部事务中记录 Activity，供后续业务服务复用。
-    pub async fn record_activity_in_txn(
-        &self,
-        transaction: &DatabaseTransaction,
-        input: RecordActivityInput,
-    ) -> Result<(), AppError> {
-        self.inner
-            .record_activity_in_txn(transaction, input)
-            .await
-            .map_err(AppError::from)
-    }
-
-    /// 在外部事务中批量记录多条 Activity。
-    pub async fn record_activities_in_txn(
-        &self,
-        transaction: &DatabaseTransaction,
-        inputs: Vec<RecordActivityInput>,
-    ) -> Result<(), AppError> {
-        self.inner
-            .record_activities_in_txn(transaction, inputs)
-            .await
-            .map_err(AppError::from)
-    }
-
-    /// 查询单个实体的 Activity timeline。
     pub async fn get_entity_activities(
         &self,
         input: GetEntityActivitiesInput,
@@ -70,9 +33,5 @@ impl ActivityService {
             .get_entity_activities(input)
             .await
             .map_err(AppError::from)
-    }
-
-    pub fn repository(&self) -> &ActivityRepository {
-        &self.repository
     }
 }

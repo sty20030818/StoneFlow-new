@@ -1,17 +1,13 @@
-//! Settings Service 兼容壳：真实编排已迁到 `stoneflow-application`。
+//! Settings Service：真源在 application；R2 去掉 mutation 双写。
 
-use sea_orm::{DatabaseTransaction, TransactionTrait};
-use serde::Serialize;
+use sea_orm::TransactionTrait;
 use stoneflow_application::{
     activity::ActivityService as ActivityUsecase,
     settings::{SettingsPersistence, SettingsService as SettingsUsecase},
 };
+use stoneflow_storage::repositories::SettingsRepository;
 
-use crate::{
-    app::error::AppError,
-    services::{activity::ActivityPersistenceAdapter, sync_mutation::build_upsert_record},
-};
-use stoneflow_storage::repositories::{SettingsRepository, SyncRepository};
+use crate::{app::error::AppError, services::activity::ActivityPersistenceAdapter};
 
 pub use stoneflow_application::settings::{
     GetSidebarSettingsOutput, SidebarFooterItemKey, SidebarItemConfig, SidebarItemVisibilityTarget,
@@ -20,32 +16,19 @@ pub use stoneflow_application::settings::{
     UpdateSidebarProjectSectionInput,
 };
 
-/// Settings 编排兼容壳。
 #[derive(Debug, Clone)]
 pub struct SettingsService {
     inner: SettingsUsecase<SettingsPersistenceAdapter, ActivityPersistenceAdapter>,
-    repository: SettingsRepository,
 }
 
 impl SettingsService {
-    pub fn new(
-        repository: SettingsRepository,
-        sync_repository: SyncRepository,
-        activity_service: crate::services::activity::ActivityService,
-    ) -> Self {
-        let activity_repo = activity_service.repository().clone();
-        let repository_for_accessor = repository.clone();
+    pub fn new(repository: SettingsRepository) -> Self {
+        let activity = ActivityUsecase::new(ActivityPersistenceAdapter::new(
+            repository.connection().clone(),
+        ));
         Self {
-            inner: SettingsUsecase::new(
-                SettingsPersistenceAdapter::new(repository.clone(), sync_repository),
-                ActivityUsecase::new(ActivityPersistenceAdapter::new(activity_repo)),
-            ),
-            repository: repository_for_accessor,
+            inner: SettingsUsecase::new(SettingsPersistenceAdapter { repository }, activity),
         }
-    }
-
-    pub fn repository(&self) -> &SettingsRepository {
-        &self.repository
     }
 
     pub async fn get_sidebar_settings(&self) -> Result<SidebarPreferenceSettings, AppError> {
@@ -79,34 +62,27 @@ impl SettingsService {
 #[derive(Debug, Clone)]
 struct SettingsPersistenceAdapter {
     repository: SettingsRepository,
-    sync_repository: SyncRepository,
-}
-
-impl SettingsPersistenceAdapter {
-    fn new(repository: SettingsRepository, sync_repository: SyncRepository) -> Self {
-        Self {
-            repository,
-            sync_repository,
-        }
-    }
 }
 
 impl SettingsPersistence for SettingsPersistenceAdapter {
-    type Connection = DatabaseTransaction;
+    type Connection = sea_orm::DatabaseTransaction;
 
     async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
             .await
-            .map_err(map_db_error)
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
     async fn commit(
         &self,
         connection: Self::Connection,
     ) -> Result<(), stoneflow_application::ApplicationError> {
-        connection.commit().await.map_err(map_db_error)
+        connection
+            .commit()
+            .await
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
     async fn find_raw_setting(
@@ -116,7 +92,7 @@ impl SettingsPersistence for SettingsPersistenceAdapter {
         self.repository
             .find_raw_setting(key)
             .await
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
     async fn set_raw_setting_in_connection(
@@ -129,64 +105,6 @@ impl SettingsPersistence for SettingsPersistenceAdapter {
         self.repository
             .set_raw_setting_in_connection(connection, key, raw_value, updated_at)
             .await
-            .map_err(|error| map_app_error(error.into()))?;
-
-        let mutation_record =
-            build_setting_mutation_record(key, raw_value, updated_at).map_err(map_app_error)?;
-        self.sync_repository
-            .insert_pending_mutation(connection, &mutation_record)
-            .await
-            .map_err(|error| map_app_error(error.into()))?;
-
-        Ok(())
-    }
-}
-
-#[derive(Debug, Serialize)]
-struct SettingSyncPayload<'a> {
-    key: &'a str,
-    raw_value: &'a str,
-    updated_at: &'a str,
-}
-
-fn build_setting_mutation_record(
-    key: &str,
-    raw_value: &str,
-    updated_at: &str,
-) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
-    build_upsert_record(
-        "setting",
-        key,
-        &SettingSyncPayload {
-            key,
-            raw_value,
-            updated_at,
-        },
-        updated_at,
-    )
-}
-
-fn map_db_error(error: sea_orm::DbErr) -> stoneflow_application::ApplicationError {
-    map_app_error(AppError::from(error))
-}
-
-fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
-    match error {
-        AppError::Validation(message) => {
-            stoneflow_application::ApplicationError::validation(message)
-        }
-        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
-        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
-        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
-        AppError::Initialization(message) => {
-            stoneflow_application::ApplicationError::initialization(message)
-        }
-        AppError::Internal(message)
-        | AppError::Forbidden(message)
-        | AppError::CaptureSpaceUnavailable(message)
-        | AppError::DefaultSpaceUnavailable(message)
-        | AppError::CapturePersistence(message) => {
-            stoneflow_application::ApplicationError::internal(message)
-        }
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 }

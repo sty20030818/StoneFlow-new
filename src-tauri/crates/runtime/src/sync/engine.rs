@@ -389,17 +389,24 @@ fn sync_status_changed_payload(reason: &'static str) -> SyncStatusChangedPayload
 async fn read_pending_changed_domains(
     database: &DatabaseRuntimeState,
 ) -> Result<Vec<&'static str>, AppError> {
-    let repository = SyncRepository::new(database.connection().clone());
-    let mutations = repository.list_mutations_by_status("pending", 1000).await?;
+    use sea_orm::{ConnectionTrait, DbBackend, Statement};
+
+    let rows = database
+        .connection()
+        .query_all(Statement::from_string(
+            DbBackend::Sqlite,
+            "SELECT DISTINCT entity_type FROM outbox",
+        ))
+        .await
+        .map_err(|error| AppError::database(format!("读取 outbox 实体类型失败: {error}")))?;
+
     let mut domains = Vec::new();
-    for mutation in mutations {
-        if let Some(domain) = domain_for_entity_type(&mutation.entity_type) {
+    for row in rows {
+        let entity_type: String = row.try_get("", "entity_type").unwrap_or_default();
+        if let Some(domain) = domain_for_entity_type(&entity_type) {
             push_unique_domain(&mut domains, domain);
         }
-        if matches!(
-            mutation.operation.as_str(),
-            "soft_delete" | "hard_delete" | "restore"
-        ) {
+        if matches!(entity_type.as_str(), "space" | "project" | "task") {
             push_unique_domain(&mut domains, "lifecycle");
         }
     }
@@ -453,7 +460,7 @@ async fn read_local_server_seq_cursor(
     database: &DatabaseRuntimeState,
 ) -> Result<Option<i64>, AppError> {
     let repository = SyncRepository::new(database.connection().clone());
-    let Some(record) = repository.find_cursor(SERVER_SEQ_CURSOR_SCOPE).await? else {
+    let Some(record) = repository.get_cursor(SERVER_SEQ_CURSOR_SCOPE).await? else {
         return Ok(None);
     };
     let Some(cursor) = record.cursor else {

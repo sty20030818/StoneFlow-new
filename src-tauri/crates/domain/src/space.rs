@@ -1,21 +1,19 @@
 //! Space 领域规则。
 
-use uuid::Uuid;
+use crate::{validate_entity_id, DomainError};
 
-use crate::{normalize_required_text, DomainError};
-
-/// 归一化并校验 Space ID（UUID v7）。
+/// 归一化并校验 Space ID（UUID）。
 pub fn validate_space_id(value: &str) -> Result<String, DomainError> {
-    let normalized = normalize_required_text(value, "Space id")?;
-    Uuid::parse_str(&normalized).map_err(|_| DomainError::validation("spaceId 必须是合法 UUID"))?;
-    Ok(normalized)
+    validate_entity_id(value, "Space id")
 }
 
-/// 已删除的 Space 不允许直接编辑或切换默认。
-pub fn ensure_space_mutable(deleted_at: Option<&str>) -> Result<(), DomainError> {
-    if deleted_at.is_some() {
-        return Err(DomainError::validation("已删除的 Space 不能直接编辑或归档"));
+/// 阻止归档/删除唯一活跃默认 Space。
+pub fn ensure_can_retire_default_space(
+    is_default: bool,
+    has_other_active_space: bool,
+) -> Result<(), DomainError> {
+    if is_default && !has_other_active_space {
+        return Err(DomainError::validation("不能归档或删除唯一活跃默认 Space"));
     }
-
     Ok(())
 }

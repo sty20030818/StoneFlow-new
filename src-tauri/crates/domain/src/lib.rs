@@ -2,7 +2,7 @@
 //!
 //! 这里承载：
 //! - 与 I/O 无关的纯规则；
-//! - 统一 ID / 时间值对象；
+//! - 统一 ID / 时间 / WorkState 值对象；
 //! - 文本归一化与 slug 规则；
 //! - 仅表达规则失败的领域错误。
 
@@ -19,21 +19,28 @@ mod task_link;
 mod time;
 mod update;
 mod view;
+mod work;
 
 pub use activity::{ActivityActorKind, ActivityEntityKind, ActivitySourceKind};
 pub use error::DomainError;
-pub use ids::{create_id, next_runtime_id};
+pub use ids::{
+    create_id, ensure_position_in_container, ensure_task_belongs_to_space, next_runtime_id,
+    validate_entity_id, Generation, Position, POSITION_STEP,
+};
 pub use launcher::{resolve_default_space_id, LauncherSpaceCandidate};
 pub use lifecycle::{
-    ensure_deleted, ensure_not_only_active_default, restore_hint, LifecycleEntityType,
-    LifecycleMode,
+    ensure_active_mutable, ensure_in_trash, ensure_not_in_trash, ensure_not_only_active_default,
+    restore_hint, LifecycleEntityType, LifecycleMode,
 };
-pub use project::{ensure_project_mutable, validate_project_id};
+pub use project::{ensure_project_belongs_to_space, validate_project_id};
 pub use settings::validate_sidebar_main_visible_count;
-pub use space::{ensure_space_mutable, validate_space_id};
-pub use task::{validate_task_id, validate_task_priority, TaskStatus};
+pub use space::{ensure_can_retire_default_space, validate_space_id};
+pub use task::{ensure_task_placement, validate_task_id};
 pub use task_link::{validate_http_https_url, validate_link_id, validate_task_id_for_link};
-pub use time::{is_same_utc_day, now_utc, parse_calendar_date, to_date_only, today_local_date};
+pub use time::{
+    format_utc_rfc3339, is_same_utc_day, now_utc, parse_calendar_date, parse_utc_rfc3339,
+    to_date_only, today_local_date,
+};
 pub use update::{
     check_mode_to_stored, is_version_skipped, normalize_check_interval_secs, parse_check_mode,
     should_auto_check, should_auto_check_with_interval, UpdateChannel, UpdateCheckMode,
@@ -41,6 +48,9 @@ pub use update::{
     STARTUP_CHECK_DELAY_SECS,
 };
 pub use view::{ViewEntityKind, ViewKind};
+pub use work::{
+    parse_optional_utc_rfc3339, transition_status, WorkPriority, WorkState, WorkStatus,
+};
 
 /// 归一化必填文本。
 pub fn normalize_required_text(value: &str, field: &str) -> Result<String, DomainError> {

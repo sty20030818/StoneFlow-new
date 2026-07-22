@@ -2,6 +2,8 @@
 
 use chrono::{DateTime, Local, NaiveDate, Utc};
 
+use crate::DomainError;
+
 /// 返回当前 UTC 时间。
 pub fn now_utc() -> DateTime<Utc> {
     Utc::now()
@@ -22,8 +24,24 @@ pub fn today_local_date() -> NaiveDate {
     Local::now().date_naive()
 }
 
-/// 解析阶段 8 使用的日期字符串。
-/// 优先按 `yyyy-MM-dd` 处理，兼容旧值时回退到 RFC3339 时间戳。
+/// 解析并校验 UTC RFC3339 精确时间戳。
+pub fn parse_utc_rfc3339(value: &str, field: &str) -> Result<DateTime<Utc>, DomainError> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Err(DomainError::validation(format!("{field} 不能为空")));
+    }
+
+    DateTime::parse_from_rfc3339(trimmed)
+        .map(|dt| dt.with_timezone(&Utc))
+        .map_err(|_| DomainError::validation(format!("{field} 必须是 UTC RFC3339 时间戳")))
+}
+
+/// 序列化为 UTC RFC3339。
+pub fn format_utc_rfc3339(value: DateTime<Utc>) -> String {
+    value.to_rfc3339()
+}
+
+/// 解析日历日字符串（展示层辅助；持久化仍只用 RFC3339）。
 pub fn parse_calendar_date(value: &str) -> Option<NaiveDate> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
@@ -33,8 +51,24 @@ pub fn parse_calendar_date(value: &str) -> Option<NaiveDate> {
     NaiveDate::parse_from_str(trimmed, "%Y-%m-%d")
         .ok()
         .or_else(|| {
-            chrono::DateTime::parse_from_rfc3339(trimmed)
+            DateTime::parse_from_rfc3339(trimmed)
                 .ok()
-                .map(|date_time| date_time.with_timezone(&Local).date_naive())
+                .map(|date_time| date_time.with_timezone(&Utc).date_naive())
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_utc_rfc3339_should_accept_z_suffix() {
+        let value = parse_utc_rfc3339("2026-07-22T10:00:00Z", "due_at").expect("parse");
+        assert_eq!(format_utc_rfc3339(value), "2026-07-22T10:00:00+00:00");
+    }
+
+    #[test]
+    fn parse_utc_rfc3339_should_reject_date_only() {
+        assert!(parse_utc_rfc3339("2026-07-22", "due_at").is_err());
+    }
 }

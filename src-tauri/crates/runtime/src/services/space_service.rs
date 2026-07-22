@@ -1,75 +1,40 @@
-//! Space Service 兼容壳：CRUD 真源在 `stoneflow-application`；生命周期仍委托 `LifecycleService`。
+//! Space Service：CRUD 真源在 `stoneflow-application`；无 mutation 双写。
 
-use sea_orm::TransactionTrait;
-use serde::Serialize;
+use sea_orm::{DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use stoneflow_application::{
     activity::ActivityService as ActivityUsecase,
-    space::{SpacePersistence, SpaceRecord, SpaceService as SpaceUsecase},
-};
-
-use crate::{
-    app::error::AppError,
-    services::{
-        activity::ActivityPersistenceAdapter, sync_mutation::build_upsert_record, LifecycleService,
+    space::{
+        CreateSpacePersistenceRecord, SpacePersistence, SpaceRecord, SpaceService as SpaceUsecase,
+        UpdateSpacePatch as AppUpdateSpacePatch,
     },
 };
 use stoneflow_storage::{
-    mappers::map_space_model_to_record,
-    repositories::{
-        CreateSpaceRecord, ProjectRepository, SpaceRepository, SyncRepository, TaskRepository,
-        UpdateSpacePatch,
-    },
+    entities::space,
+    repositories::{CreateSpaceRecord, SpaceRepository, UpdateSpacePatch},
 };
+
+use crate::{app::error::AppError, services::activity::ActivityPersistenceAdapter};
 
 pub use stoneflow_application::space::{
     CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, UpdateSpaceInput,
 };
 
-/// Space 编排兼容壳。
-#[derive(Debug, Clone)]
+type InnerSpaceService = SpaceUsecase<SpacePersistenceAdapter, ActivityPersistenceAdapter>;
+
 pub struct SpaceService {
-    inner: SpaceUsecase<SpacePersistenceAdapter, ActivityPersistenceAdapter>,
+    inner: InnerSpaceService,
     repository: SpaceRepository,
-    sync_repository: SyncRepository,
-    project_repository: ProjectRepository,
-    task_repository: TaskRepository,
-    activity_service: crate::services::activity::ActivityService,
 }
 
 impl SpaceService {
-    pub fn new(
-        repository: SpaceRepository,
-        sync_repository: SyncRepository,
-        project_repository: ProjectRepository,
-        task_repository: TaskRepository,
-        activity_service: crate::services::activity::ActivityService,
-    ) -> Self {
-        let activity_repo = activity_service.repository().clone();
+    pub fn new(repository: SpaceRepository) -> Self {
+        let activity = ActivityUsecase::new(ActivityPersistenceAdapter::new(
+            repository.connection().clone(),
+        ));
         Self {
-            inner: SpaceUsecase::new(
-                SpacePersistenceAdapter::new(repository.clone(), sync_repository.clone()),
-                ActivityUsecase::new(ActivityPersistenceAdapter::new(activity_repo)),
-            ),
+            inner: SpaceUsecase::new(SpacePersistenceAdapter::new(repository.clone()), activity),
             repository,
-            sync_repository,
-            project_repository,
-            task_repository,
-            activity_service,
         }
-    }
-
-    pub fn repository(&self) -> &SpaceRepository {
-        &self.repository
-    }
-
-    fn lifecycle_service(&self) -> LifecycleService {
-        LifecycleService::new(
-            self.repository.clone(),
-            self.sync_repository.clone(),
-            self.project_repository.clone(),
-            self.task_repository.clone(),
-            self.activity_service.clone(),
-        )
     }
 
     pub async fn list_visible_spaces(&self) -> Result<Vec<SpaceDto>, AppError> {
@@ -97,106 +62,99 @@ impl SpaceService {
             .map_err(AppError::from)
     }
 
-    pub async fn archive_space(&self, input: SpaceIdInput) -> Result<SpaceDto, AppError> {
-        let space_id =
-            stoneflow_domain::validate_space_id(&input.space_id).map_err(AppError::from)?;
-        let updated = self.lifecycle_service().archive_space(&space_id).await?;
-        Ok(SpaceDto::from(updated))
+    pub async fn archive_space(&self, _input: SpaceIdInput) -> Result<SpaceDto, AppError> {
+        Err(AppError::internal(
+            "R2：Space archive 尚未接入 lifecycle 写路径",
+        ))
     }
 
-    pub async fn restore_space(&self, input: SpaceIdInput) -> Result<SpaceDto, AppError> {
-        let space_id =
-            stoneflow_domain::validate_space_id(&input.space_id).map_err(AppError::from)?;
-        let restored = self.lifecycle_service().restore_space(&space_id).await?;
-        Ok(SpaceDto::from(restored))
+    pub async fn restore_space(&self, _input: SpaceIdInput) -> Result<SpaceDto, AppError> {
+        Err(AppError::internal(
+            "R2：Space restore 尚未接入 lifecycle 写路径",
+        ))
     }
 
-    pub async fn delete_space(&self, input: SpaceIdInput) -> Result<SpaceDto, AppError> {
-        let space_id =
-            stoneflow_domain::validate_space_id(&input.space_id).map_err(AppError::from)?;
-        let updated = self.lifecycle_service().delete_space(&space_id).await?;
-        Ok(SpaceDto::from(updated))
+    pub async fn delete_space(&self, _input: SpaceIdInput) -> Result<SpaceDto, AppError> {
+        Err(AppError::internal(
+            "R2：Space delete 尚未接入 outbox/tombstone 写路径",
+        ))
+    }
+
+    #[allow(dead_code)]
+    pub fn repository(&self) -> &SpaceRepository {
+        &self.repository
     }
 }
 
 #[derive(Debug, Clone)]
 struct SpacePersistenceAdapter {
     repository: SpaceRepository,
-    sync_repository: SyncRepository,
 }
 
 impl SpacePersistenceAdapter {
-    fn new(repository: SpaceRepository, sync_repository: SyncRepository) -> Self {
-        Self {
-            repository,
-            sync_repository,
-        }
+    fn new(repository: SpaceRepository) -> Self {
+        Self { repository }
     }
 }
 
 impl SpacePersistence for SpacePersistenceAdapter {
-    type Connection = sea_orm::DatabaseTransaction;
+    type Connection = DatabaseTransaction;
 
     async fn begin(&self) -> Result<Self::Connection, stoneflow_application::ApplicationError> {
         self.repository
             .connection()
             .begin()
             .await
-            .map_err(map_db_error)
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
     async fn commit(
         &self,
         connection: Self::Connection,
     ) -> Result<(), stoneflow_application::ApplicationError> {
-        connection.commit().await.map_err(map_db_error)
+        connection
+            .commit()
+            .await
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
     async fn list_visible(
         &self,
-    ) -> Result<
-        Vec<stoneflow_application::space::SpaceRecord>,
-        stoneflow_application::ApplicationError,
-    > {
+    ) -> Result<Vec<SpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .list_visible()
             .await
-            .map(|spaces| spaces.into_iter().map(map_space_model_to_record).collect())
-            .map_err(|error| map_app_error(error.into()))
+            .map(|rows| rows.into_iter().map(map_space).collect())
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
     async fn get(
         &self,
         space_id: &str,
-    ) -> Result<
-        Option<stoneflow_application::space::SpaceRecord>,
-        stoneflow_application::ApplicationError,
-    > {
+    ) -> Result<Option<SpaceRecord>, stoneflow_application::ApplicationError> {
         self.repository
             .get(space_id)
             .await
-            .map(|space| space.map(map_space_model_to_record))
-            .map_err(|error| map_app_error(error.into()))
+            .map(|row| row.map(map_space))
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
-    async fn next_sort_order(
+    async fn next_position(
         &self,
         connection: &Self::Connection,
-    ) -> Result<i32, stoneflow_application::ApplicationError> {
+    ) -> Result<i64, stoneflow_application::ApplicationError> {
         self.repository
-            .next_sort_order(connection)
+            .next_position(connection)
             .await
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
     async fn create(
         &self,
         connection: &Self::Connection,
-        record: stoneflow_application::space::CreateSpacePersistenceRecord,
-    ) -> Result<stoneflow_application::space::SpaceRecord, stoneflow_application::ApplicationError>
-    {
-        let space = self
-            .repository
+        record: CreateSpacePersistenceRecord,
+    ) -> Result<SpaceRecord, stoneflow_application::ApplicationError> {
+        self.repository
             .create(
                 connection,
                 CreateSpaceRecord {
@@ -205,35 +163,24 @@ impl SpacePersistence for SpacePersistenceAdapter {
                     icon_key: record.icon_key,
                     color_key: record.color_key,
                     is_default: record.is_default,
-                    sort_order: record.sort_order,
+                    position: record.position,
                     created_at: record.created_at,
                     updated_at: record.updated_at,
                 },
             )
             .await
-            .map(map_space_model_to_record)
-            .map_err(|error| map_app_error(error.into()))?;
-        let mutation_record = build_space_mutation_record(&space).map_err(map_app_error)?;
-        self.sync_repository
-            .insert_pending_mutation(connection, &mutation_record)
-            .await
-            .map_err(|error| map_app_error(error.into()))?;
-
-        Ok(space)
+            .map(map_space)
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
     async fn update(
         &self,
         connection: &Self::Connection,
         space_id: &str,
-        patch: stoneflow_application::space::UpdateSpacePatch,
+        patch: AppUpdateSpacePatch,
         updated_at: &str,
-    ) -> Result<
-        Option<stoneflow_application::space::SpaceRecord>,
-        stoneflow_application::ApplicationError,
-    > {
-        let space = self
-            .repository
+    ) -> Result<Option<SpaceRecord>, stoneflow_application::ApplicationError> {
+        self.repository
             .update(
                 connection,
                 space_id,
@@ -245,18 +192,8 @@ impl SpacePersistence for SpacePersistenceAdapter {
                 updated_at,
             )
             .await
-            .map(|space| space.map(map_space_model_to_record))
-            .map_err(|error| map_app_error(error.into()))?;
-
-        if let Some(space) = space.as_ref() {
-            let mutation_record = build_space_mutation_record(space).map_err(map_app_error)?;
-            self.sync_repository
-                .insert_pending_mutation(connection, &mutation_record)
-                .await
-                .map_err(|error| map_app_error(error.into()))?;
-        }
-
-        Ok(space)
+            .map(|row| row.map(map_space))
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
     async fn clear_default(
@@ -268,7 +205,7 @@ impl SpacePersistence for SpacePersistenceAdapter {
             .clear_default(connection, updated_at)
             .await
             .map(|_| ())
-            .map_err(|error| map_app_error(error.into()))
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 
     async fn set_default(
@@ -276,92 +213,31 @@ impl SpacePersistence for SpacePersistenceAdapter {
         connection: &Self::Connection,
         space_id: &str,
         updated_at: &str,
-    ) -> Result<
-        Option<stoneflow_application::space::SpaceRecord>,
-        stoneflow_application::ApplicationError,
-    > {
-        let space = self
-            .repository
+    ) -> Result<Option<SpaceRecord>, stoneflow_application::ApplicationError> {
+        self.repository
             .set_default(connection, space_id, updated_at)
             .await
-            .map(|space| space.map(map_space_model_to_record))
-            .map_err(|error| map_app_error(error.into()))?;
-
-        if let Some(space) = space.as_ref() {
-            let mutation_record = build_space_mutation_record(space).map_err(map_app_error)?;
-            self.sync_repository
-                .insert_pending_mutation(connection, &mutation_record)
-                .await
-                .map_err(|error| map_app_error(error.into()))?;
-        }
-
-        Ok(space)
+            .map(|row| row.map(map_space))
+            .map_err(|error| stoneflow_application::ApplicationError::storage(error.to_string()))
     }
 }
 
-#[derive(Debug, Serialize)]
-struct SpaceSyncPayload<'a> {
-    id: &'a str,
-    name: &'a str,
-    icon_key: &'a str,
-    color_key: &'a str,
-    is_default: bool,
-    sort_order: i32,
-    archived_at: Option<&'a str>,
-    deleted_at: Option<&'a str>,
-    created_at: &'a str,
-    updated_at: &'a str,
-}
-
-impl<'a> From<&'a SpaceRecord> for SpaceSyncPayload<'a> {
-    fn from(space: &'a SpaceRecord) -> Self {
-        Self {
-            id: &space.id,
-            name: &space.name,
-            icon_key: &space.icon_key,
-            color_key: &space.color_key,
-            is_default: space.is_default,
-            sort_order: space.sort_order,
-            archived_at: space.archived_at.as_deref(),
-            deleted_at: space.deleted_at.as_deref(),
-            created_at: &space.created_at,
-            updated_at: &space.updated_at,
-        }
+fn map_space(model: space::Model) -> SpaceRecord {
+    SpaceRecord {
+        id: model.id,
+        name: model.name,
+        icon_key: model.icon_key,
+        color_key: model.color_key,
+        is_default: model.is_default,
+        position: model.position,
+        generation: model.generation,
+        archived_at: model.archived_at,
+        deleted_at: model.deleted_at,
+        created_at: model.created_at,
+        updated_at: model.updated_at,
     }
 }
 
-fn build_space_mutation_record(
-    space: &SpaceRecord,
-) -> Result<stoneflow_storage::repositories::SyncMutationRecord, AppError> {
-    build_upsert_record(
-        "space",
-        &space.id,
-        &SpaceSyncPayload::from(space),
-        &space.updated_at,
-    )
-}
-
-fn map_db_error(error: sea_orm::DbErr) -> stoneflow_application::ApplicationError {
-    map_app_error(AppError::from(error))
-}
-
-fn map_app_error(error: AppError) -> stoneflow_application::ApplicationError {
-    match error {
-        AppError::Validation(message) => {
-            stoneflow_application::ApplicationError::validation(message)
-        }
-        AppError::NotFound(message) => stoneflow_application::ApplicationError::not_found(message),
-        AppError::Conflict(message) => stoneflow_application::ApplicationError::conflict(message),
-        AppError::Database(message) => stoneflow_application::ApplicationError::storage(message),
-        AppError::Initialization(message) => {
-            stoneflow_application::ApplicationError::initialization(message)
-        }
-        AppError::Internal(message)
-        | AppError::Forbidden(message)
-        | AppError::CaptureSpaceUnavailable(message)
-        | AppError::DefaultSpaceUnavailable(message)
-        | AppError::CapturePersistence(message) => {
-            stoneflow_application::ApplicationError::internal(message)
-        }
-    }
-}
+// 抑制未使用 DatabaseConnection 告警路径
+#[allow(dead_code)]
+fn _keep_connection_type(_: &DatabaseConnection) {}
