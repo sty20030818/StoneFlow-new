@@ -19,8 +19,8 @@ export function useLauncherCommands({ dispatch, scheduleClose }: UseLauncherComm
 			status: draft.status,
 			priority: draft.priority,
 			dueAt: draft.dueAt,
-			scheduledAt: draft.scheduledAt,
-			reminderAt: draft.reminderAt,
+			plannedAt: draft.plannedAt,
+			remindAt: draft.remindAt,
 		}),
 		[],
 	)

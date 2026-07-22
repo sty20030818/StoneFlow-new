@@ -10,7 +10,7 @@
 - TaskLink 仅保存 URL 与标题。
 - Task Activity 时间线及其有效用户操作；描述只记录“已修改描述”。
 - 同类型批量操作的全成全败事务语义。
-- 物理删除、最小 tombstone、Toast 撤销的新 restore 操作。
+- 对齐 Space/Project 的回收站生命周期：软删除、按原 operation 恢复、永久删除时写最小 tombstone。
 
 ## 不做什么
 
@@ -27,7 +27,7 @@
 - `create_task` 要求 Space，可选 Project、WorkState、描述与 TaskLinks；不再创建 Inbox Task。
 - `update_task` 使用字段 patch，名称、描述、状态、优先级、时间、Space、Project、position 独立表达。
 - `bulk_update_tasks` 只接受同类型 Task IDs 和一种明确操作；整个集合要么全部完成，要么回滚。
-- `archive/delete/restore` 产生一个 operation，Task 删除时同时清理 links/Activity，restore 使用 operation payload 重建。
+- `archive/delete/restore` 产生一个 operation；delete 先进入回收站，restore 只接受原 lifecycle operation；permanently delete 才物理清理 links/Activity 并写 tombstone。
 - Activity 记录创建、名称、描述、WorkState、时间、归属、生命周期和 restore；不记录排序/同步/自动字段。
 
 ## 实施设计
@@ -36,19 +36,19 @@
 2. TaskLink 是 Task 内聚子资源，不创建独立聚合或同步流程。
 3. 描述 patch 只产生活动类型，不携带旧新正文；同步 patch 可携带当前正文，但日志必须脱敏。
 4. Batch operation 使用一个 `operation_id` 和一个远端事务；每个 Task 可有自己的 Activity 记录。
-5. 删除后 restore 需检查 tombstone generation，拒绝与旧离线 patch 混淆。
+5. 回收站 restore 沿用 R3 的 operation guard；永久删除后以 tombstone generation 拒绝旧离线 patch。
 
 ## 前端契约影响
 
 - 创建/编辑 UI 统一提交 WorkState 字段，不再使用待完成/已完成二态专用 mutation。
-- 删除 Toast 接收可撤销 operation 标识；撤销调用新的 restore command。
+- 删除 Toast 接收当前 lifecycle operation 标识；撤销调用既有 restore command。
 - Activity 时间线按后端 action 渲染，不由前端根据字段 diff 猜测。
 
 ## 约束
 
 - 已完成/已取消为终态；重新进入非终态时清空 `completed_at`。
 - 排序、同步拉取与自动时间维护不创建 Activity。
-- 删除 Task 同时删除链接与 Activity。
+- 永久删除 Task 同时删除链接与 Activity。
 
 ## 退出条件
 

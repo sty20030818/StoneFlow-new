@@ -2,13 +2,14 @@
 
 #![allow(async_fn_in_trait)]
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::{json, Value};
 use stoneflow_domain::{
-    create_id, normalize_required_text, normalize_slug, now_utc, validate_project_id,
-    validate_space_id, validate_task_id, ActivityEntityKind, WorkPriority, WorkStatus,
+    create_id, normalize_required_text, normalize_slug, now_utc, parse_optional_utc_rfc3339,
+    parse_utc_rfc3339, validate_project_id, validate_space_id, validate_task_id,
+    ActivityEntityKind, WorkPriority, WorkState, WorkStatus,
 };
 
 use crate::{
@@ -16,9 +17,10 @@ use crate::{
         ActivityAction, ActivityChangeInput, ActivityPersistence, ActivityService,
         RecordActivityInput,
     },
+    operation::{OperationContext, OutboxEnqueueRecord, OutboxOpKind, SyncEntityKind},
     task::{
         executor::{
-            apply_view_preset, build_update_summary, completed_at_for_status, parse_view_key,
+            apply_view_preset, build_update_summary, parse_view_key,
             repository_lifecycle_for_preset, select_update_action, status_key,
         },
         types::{
@@ -176,6 +178,7 @@ pub struct UpdateTaskInput {
     #[serde(default)]
     #[serde(deserialize_with = "deserialize_nullable_string_field")]
     pub remind_at: Option<Option<String>>,
+    pub position: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -199,6 +202,32 @@ pub enum UpdateTaskPlacementKind {
 #[serde(rename_all = "camelCase")]
 pub struct TaskIdInput {
     pub task_id: String,
+}
+
+/// 批量操作只允许现有 UI 已暴露的明确业务意图，不接受泛化字段 patch。
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum BulkTaskAction {
+    Archive,
+    Delete,
+    SetPriority { priority: i32 },
+    SetStatus { status: WorkStatus },
+    SetDueAt { due_at: Option<String> },
+    SetPlacement { placement: UpdateTaskPlacementInput },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkUpdateTasksInput {
+    pub task_ids: Vec<String>,
+    pub action: BulkTaskAction,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BulkUpdateTasksDto {
+    pub task_ids: Vec<String>,
+    pub operation_id: String,
 }
 
 /// Task 持久化边界。
@@ -226,6 +255,38 @@ pub trait TaskPersistence: Send + Sync {
         task_id: &str,
         patch: UpdateTaskPatch,
         updated_at: &str,
+    ) -> Result<Option<TaskRecord>, ApplicationError>;
+    async fn enqueue(
+        &self,
+        connection: &Self::Connection,
+        record: &OutboxEnqueueRecord,
+    ) -> Result<(), ApplicationError>;
+    async fn archive(
+        &self,
+        connection: &Self::Connection,
+        task_id: &str,
+        operation_id: &str,
+        archived_at: &str,
+    ) -> Result<Option<TaskRecord>, ApplicationError>;
+    async fn soft_delete(
+        &self,
+        connection: &Self::Connection,
+        task_id: &str,
+        operation_id: &str,
+        deleted_at: &str,
+    ) -> Result<Option<TaskRecord>, ApplicationError>;
+    async fn restore(
+        &self,
+        connection: &Self::Connection,
+        task_id: &str,
+        operation_id: &str,
+        updated_at: &str,
+    ) -> Result<Option<TaskRecord>, ApplicationError>;
+    async fn permanently_delete(
+        &self,
+        connection: &Self::Connection,
+        task_id: &str,
+        deleted_at: &str,
     ) -> Result<Option<TaskRecord>, ApplicationError>;
 }
 
@@ -326,9 +387,9 @@ where
     ) -> Result<TaskDetailDto, ApplicationError> {
         let title = normalize_required_text(&input.title, "Task title")?;
         let note = normalize_optional_long_text(input.note);
-        let due_at = normalize_optional_text(input.due_at);
-        let planned_at = normalize_optional_text(input.planned_at);
-        let remind_at = normalize_optional_text(input.remind_at);
+        let due_at = normalize_timestamp(input.due_at, "dueAt")?;
+        let planned_at = normalize_timestamp(input.planned_at, "plannedAt")?;
+        let remind_at = normalize_timestamp(input.remind_at, "remindAt")?;
         let status = input.status.unwrap_or(WorkStatus::Todo);
         let priority = validate_task_priority(input.priority)?;
         let placement = normalize_create_placement(&input.placement)?;
@@ -352,7 +413,9 @@ where
             _ => return Err(ApplicationError::validation("创建 Task placement 非法")),
         };
 
-        let now = now_utc().to_rfc3339();
+        let now_time = now_utc();
+        let now = now_time.to_rfc3339();
+        let operation = OperationContext::new("local");
         let transaction = self.persistence.begin().await?;
         let position = self
             .persistence
@@ -362,7 +425,11 @@ where
                 project.as_ref().map(|item| item.id.as_str()),
             )
             .await?;
-        let completed_at = completed_at_for_status(status, &now);
+        let completed_at = WorkState::new_todo(now_time)
+            .with_priority(WorkPriority::from_i32(priority)?)
+            .with_status(status, now_time)
+            .completed_at
+            .map(|value| value.to_rfc3339());
         let created = self
             .persistence
             .create(
@@ -391,6 +458,7 @@ where
             .record_activity_in_txn(
                 &transaction,
                 RecordActivityInput {
+                    operation_id: Some(operation.operation_id.clone()),
                     entity_type: ActivityEntityKind::Task,
                     entity_id: created.id.clone(),
                     action: ActivityAction::TaskCreated,
@@ -408,6 +476,14 @@ where
                 },
             )
             .await?;
+        self.enqueue_task_operation(
+            &transaction,
+            &created,
+            &operation,
+            OutboxOpKind::Upsert,
+            "create",
+        )
+        .await?;
 
         self.persistence.commit(transaction).await?;
         self.build_task_detail(created).await
@@ -474,8 +550,8 @@ where
                 push_change(
                     &mut changes,
                     "note",
-                    json_option_string(&current.note),
-                    json_option_string(&note),
+                    None,
+                    None,
                 );
                 patch.note = Some(note);
             }
@@ -491,6 +567,15 @@ where
                     Some(json!(priority)),
                 );
                 patch.priority = Some(priority);
+            }
+        }
+
+        if let Some(position) = input.position {
+            if position < 0 {
+                return Err(ApplicationError::validation("Task position 不能小于 0"));
+            }
+            if position != current.position {
+                patch.position = Some(position);
             }
         }
 
@@ -515,7 +600,7 @@ where
         }
 
         if let Some(due_at) = input.due_at {
-            let due_at = normalize_optional_text_option(due_at);
+            let due_at = normalize_timestamp(due_at, "dueAt")?;
             if due_at != current.due_at {
                 push_change(
                     &mut changes,
@@ -528,7 +613,7 @@ where
         }
 
         if let Some(planned_at) = input.planned_at {
-            let planned_at = normalize_optional_text_option(planned_at);
+            let planned_at = normalize_timestamp(planned_at, "plannedAt")?;
             if planned_at != current.planned_at {
                 push_change(
                     &mut changes,
@@ -541,7 +626,7 @@ where
         }
 
         if let Some(remind_at) = input.remind_at {
-            let remind_at = normalize_optional_text_option(remind_at);
+            let remind_at = normalize_timestamp(remind_at, "remindAt")?;
             if remind_at != current.remind_at {
                 push_change(
                     &mut changes,
@@ -573,7 +658,25 @@ where
                 }
                 patch.status_changed_at = Some(now.clone());
 
-                let next_completed_at = completed_at_for_status(status, &now);
+                let current_state = WorkState {
+                    status: current.status,
+                    priority: WorkPriority::from_i32(current.priority)?,
+                    planned_at: None,
+                    due_at: None,
+                    remind_at: None,
+                    status_changed_at: parse_utc_rfc3339(
+                        &current.status_changed_at,
+                        "Task status_changed_at",
+                    )?,
+                    completed_at: parse_optional_utc_rfc3339(
+                        current.completed_at.as_deref(),
+                        "Task completed_at",
+                    )?,
+                };
+                let next_completed_at = current_state
+                    .with_status(status, now_utc())
+                    .completed_at
+                    .map(|value| value.to_rfc3339());
                 if next_completed_at != current.completed_at {
                     push_change(
                         &mut changes,
@@ -586,41 +689,322 @@ where
             }
         }
 
-        if changes.is_empty() {
+        let should_record_activity = !changes.is_empty();
+        if !should_record_activity && patch.position.is_none() {
             return self.build_task_detail(current).await;
         }
 
         let action = select_update_action(&current, patch.status, &changes);
         let summary = Some(build_update_summary(action, &current.title));
+        let operation = OperationContext::new("local");
         let transaction = self.persistence.begin().await?;
+        if patch.position.is_none() && (patch.space_id.is_some() || patch.project_id.is_some()) {
+            // 跨容器移动没有显式排序目标时，追加到目标容器末尾。
+            patch.position = Some(
+                self.persistence
+                    .next_position(
+                        &transaction,
+                        &next_space_id,
+                        next_project_id.as_deref(),
+                    )
+                    .await?,
+            );
+        }
         let updated = self
             .persistence
             .update(&transaction, &task_id, patch, &now)
             .await?
             .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
 
+        if should_record_activity {
+            self.activity
+                .record_activity_in_txn(
+                    &transaction,
+                    RecordActivityInput {
+                        operation_id: Some(operation.operation_id.clone()),
+                        entity_type: ActivityEntityKind::Task,
+                        entity_id: updated.id.clone(),
+                        action,
+                        actor_type: None,
+                        source: None,
+                        summary,
+                        metadata: Some(json!({
+                            "taskId": updated.id,
+                            "spaceId": updated.space_id,
+                            "projectId": updated.project_id,
+                        })),
+                        changes,
+                    },
+                )
+                .await?;
+        }
+        self.enqueue_task_operation(
+            &transaction,
+            &updated,
+            &operation,
+            OutboxOpKind::Patch,
+            "update",
+        )
+        .await?;
+
+        self.persistence.commit(transaction).await?;
+        self.build_task_detail(updated).await
+    }
+
+    pub async fn archive_task(
+        &self,
+        input: TaskIdInput,
+    ) -> Result<TaskDetailDto, ApplicationError> {
+        self.remove_task(input, true).await
+    }
+
+    /// 同类 Task 的批量操作：所有校验完成后才开始事务，任一写入失败即整体回滚。
+    pub async fn bulk_update_tasks(
+        &self,
+        input: BulkUpdateTasksInput,
+    ) -> Result<BulkUpdateTasksDto, ApplicationError> {
+        if input.task_ids.is_empty() {
+            return Err(ApplicationError::validation("批量操作至少需要一个 Task"));
+        }
+        let mut seen = HashSet::new();
+        let mut tasks = Vec::with_capacity(input.task_ids.len());
+        for raw_id in &input.task_ids {
+            let task_id = validate_task_id(raw_id)?;
+            if !seen.insert(task_id.clone()) {
+                return Err(ApplicationError::validation("批量操作不能包含重复 Task"));
+            }
+            let task = self
+                .persistence
+                .get(&task_id)
+                .await?
+                .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
+            if task.archived_at.is_some() || task.deleted_at.is_some() {
+                return Err(ApplicationError::conflict("批量操作包含不可编辑 Task"));
+            }
+            tasks.push(task);
+        }
+
+        let placement = match &input.action {
+            BulkTaskAction::SetPlacement { placement } => Some(match placement.kind {
+                UpdateTaskPlacementKind::Project => {
+                    let project_id = placement.project_id.as_deref().ok_or_else(|| {
+                        ApplicationError::validation("placement.kind=project 时必须提供 projectId")
+                    })?;
+                    let project = self.require_visible_project(project_id).await?;
+                    if project.space_id != placement.space_id {
+                        return Err(ApplicationError::validation(
+                            "placement.spaceId 与 project.spaceId 不一致",
+                        ));
+                    }
+                    (project.space_id, Some(project.id))
+                }
+                UpdateTaskPlacementKind::NoProject => {
+                    let space = self.require_visible_space(&placement.space_id).await?;
+                    (space.id, None)
+                }
+            }),
+            _ => None,
+        };
+        let priority = match &input.action {
+            BulkTaskAction::SetPriority { priority } => Some(validate_task_priority(Some(*priority))?),
+            _ => None,
+        };
+        let due_at = match &input.action {
+            BulkTaskAction::SetDueAt { due_at } => Some(normalize_timestamp(due_at.clone(), "dueAt")?),
+            _ => None,
+        };
+
+        let operation = OperationContext::new("local");
+        let transaction = self.persistence.begin().await?;
+        for current in tasks {
+            let now = operation.created_at.clone();
+            let mut patch = UpdateTaskPatch::default();
+            let mut changes = Vec::new();
+            let action = match &input.action {
+                BulkTaskAction::Archive => {
+                    let updated = self
+                        .persistence
+                        .archive(&transaction, &current.id, &operation.operation_id, &now)
+                        .await?
+                        .ok_or_else(|| ApplicationError::conflict("Task 当前不可归档"))?;
+                    self.record_bulk_activity(
+                        &transaction,
+                        &operation,
+                        &updated,
+                        ActivityAction::TaskArchived,
+                        Vec::new(),
+                    )
+                    .await?;
+                    self.enqueue_task_operation(&transaction, &updated, &operation, OutboxOpKind::Patch, "archive").await?;
+                    continue;
+                }
+                BulkTaskAction::Delete => {
+                    let updated = self
+                        .persistence
+                        .soft_delete(&transaction, &current.id, &operation.operation_id, &now)
+                        .await?
+                        .ok_or_else(|| ApplicationError::conflict("Task 当前不可删除"))?;
+                    self.record_bulk_activity(
+                        &transaction,
+                        &operation,
+                        &updated,
+                        ActivityAction::TaskDeleted,
+                        Vec::new(),
+                    )
+                    .await?;
+                    self.enqueue_task_operation(&transaction, &updated, &operation, OutboxOpKind::Patch, "delete").await?;
+                    continue;
+                }
+                BulkTaskAction::SetPriority { .. } => {
+                    let priority = priority.ok_or_else(|| ApplicationError::internal("批量优先级预校验丢失"))?;
+                    if priority != current.priority {
+                        patch.priority = Some(priority);
+                        push_change(&mut changes, "priority", Some(json!(current.priority)), Some(json!(priority)));
+                    }
+                    ActivityAction::TaskPriorityChanged
+                }
+                BulkTaskAction::SetDueAt { .. } => {
+                    let due_at = due_at.clone().ok_or_else(|| ApplicationError::internal("批量时间预校验丢失"))?;
+                    if due_at != current.due_at {
+                        patch.due_at = Some(due_at.clone());
+                        push_change(&mut changes, "due_at", json_option_string(&current.due_at), json_option_string(&due_at));
+                    }
+                    ActivityAction::TaskDueUpdated
+                }
+                BulkTaskAction::SetPlacement { .. } => {
+                    let (space_id, project_id) = placement.clone().ok_or_else(|| ApplicationError::internal("批量归属预校验丢失"))?;
+                    if space_id != current.space_id {
+                        patch.space_id = Some(space_id.clone());
+                        push_change(&mut changes, "space_id", Some(json!(current.space_id)), Some(json!(space_id)));
+                    }
+                    if project_id != current.project_id {
+                        patch.project_id = Some(project_id.clone());
+                        push_change(&mut changes, "project_id", json_option_string(&current.project_id), json_option_string(&project_id));
+                    }
+                    ActivityAction::TaskMovedProject
+                }
+                BulkTaskAction::SetStatus { status } => {
+                    if *status != current.status {
+                        patch.status = Some(*status);
+                        patch.status_changed_at = Some(now.clone());
+                        push_change(&mut changes, "status", Some(json!(status_key(current.status))), Some(json!(status_key(*status))));
+                        let next_completed_at = WorkState {
+                            status: current.status,
+                            priority: WorkPriority::from_i32(current.priority)?,
+                            planned_at: None,
+                            due_at: None,
+                            remind_at: None,
+                            status_changed_at: parse_utc_rfc3339(&current.status_changed_at, "Task status_changed_at")?,
+                            completed_at: parse_optional_utc_rfc3339(current.completed_at.as_deref(), "Task completed_at")?,
+                        }
+                        .with_status(*status, now_utc())
+                        .completed_at
+                        .map(|value| value.to_rfc3339());
+                        if next_completed_at != current.completed_at {
+                            patch.completed_at = Some(next_completed_at.clone());
+                            push_change(&mut changes, "completed_at", json_option_string(&current.completed_at), json_option_string(&next_completed_at));
+                        }
+                    }
+                    select_update_action(&current, Some(*status), &changes)
+                }
+            };
+            if changes.is_empty() {
+                continue;
+            }
+            let updated = self.persistence.update(&transaction, &current.id, patch, &now).await?
+                .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
+            self.record_bulk_activity(&transaction, &operation, &updated, action, changes).await?;
+            self.enqueue_task_operation(&transaction, &updated, &operation, OutboxOpKind::Patch, "bulkUpdate").await?;
+        }
+        self.persistence.commit(transaction).await?;
+        Ok(BulkUpdateTasksDto { task_ids: input.task_ids, operation_id: operation.operation_id })
+    }
+
+    pub async fn delete_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, ApplicationError> {
+        self.remove_task(input, false).await
+    }
+
+    pub async fn restore_task(
+        &self,
+        input: TaskIdInput,
+    ) -> Result<TaskDetailDto, ApplicationError> {
+        let task_id = validate_task_id(&input.task_id)?;
+        let current = self
+            .persistence
+            .get(&task_id)
+            .await?
+            .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
+        let operation_id = current
+            .deleted_by_operation_id
+            .as_deref()
+            .or(current.archived_by_operation_id.as_deref())
+            .ok_or_else(|| ApplicationError::conflict("Task 当前不可恢复"))?;
+        let transaction = self.persistence.begin().await?;
+        let operation = OperationContext::new("local");
+        let restored = self
+            .persistence
+            .restore(&transaction, &task_id, operation_id, &operation.created_at)
+            .await?
+            .ok_or_else(|| ApplicationError::conflict("Task 当前不可恢复"))?;
         self.activity
             .record_activity_in_txn(
                 &transaction,
                 RecordActivityInput {
+                    operation_id: Some(operation.operation_id.clone()),
                     entity_type: ActivityEntityKind::Task,
-                    entity_id: updated.id.clone(),
-                    action,
+                    entity_id: restored.id.clone(),
+                    action: ActivityAction::TaskRestored,
                     actor_type: None,
                     source: None,
-                    summary,
-                    metadata: Some(json!({
-                        "taskId": updated.id,
-                        "spaceId": updated.space_id,
-                        "projectId": updated.project_id,
-                    })),
-                    changes,
+                    summary: Some(format!("恢复任务「{}」", restored.title)),
+                    metadata: None,
+                    changes: Vec::new(),
                 },
             )
             .await?;
-
+        self.enqueue_task_operation(
+            &transaction,
+            &restored,
+            &operation,
+            OutboxOpKind::Restore,
+            "restore",
+        )
+        .await?;
         self.persistence.commit(transaction).await?;
-        self.build_task_detail(updated).await
+        self.build_task_detail(restored).await
+    }
+
+    pub async fn permanently_delete_task(
+        &self,
+        input: TaskIdInput,
+    ) -> Result<(), ApplicationError> {
+        let task_id = validate_task_id(&input.task_id)?;
+        let current = self
+            .persistence
+            .get(&task_id)
+            .await?
+            .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
+        if current.deleted_at.is_none() {
+            return Err(ApplicationError::conflict(
+                "Task 必须先移入回收站才能永久删除",
+            ));
+        }
+        let transaction = self.persistence.begin().await?;
+        let operation = OperationContext::new("local");
+        let deleted = self
+            .persistence
+            .permanently_delete(&transaction, &task_id, &operation.created_at)
+            .await?
+            .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
+        self.enqueue_task_operation(
+            &transaction,
+            &deleted,
+            &operation,
+            OutboxOpKind::Delete,
+            "permanentlyDelete",
+        )
+        .await?;
+        self.persistence.commit(transaction).await
     }
 
     /// 从持久化记录构建 Task 详情（供 lifecycle 委托后复用）。
@@ -629,6 +1013,79 @@ where
         task: TaskRecord,
     ) -> Result<TaskDetailDto, ApplicationError> {
         self.build_task_detail(task).await
+    }
+
+    async fn remove_task(
+        &self,
+        input: TaskIdInput,
+        archive: bool,
+    ) -> Result<TaskDetailDto, ApplicationError> {
+        let task_id = validate_task_id(&input.task_id)?;
+        let current = self
+            .persistence
+            .get(&task_id)
+            .await?
+            .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
+        if current.archived_at.is_some() || current.deleted_at.is_some() {
+            return Err(ApplicationError::conflict("Task 当前不可归档或删除"));
+        }
+        let transaction = self.persistence.begin().await?;
+        let operation = OperationContext::new("local");
+        let updated = if archive {
+            self.persistence
+                .archive(
+                    &transaction,
+                    &task_id,
+                    &operation.operation_id,
+                    &operation.created_at,
+                )
+                .await?
+        } else {
+            self.persistence
+                .soft_delete(
+                    &transaction,
+                    &task_id,
+                    &operation.operation_id,
+                    &operation.created_at,
+                )
+                .await?
+        }
+        .ok_or_else(|| ApplicationError::conflict("Task 当前不可归档或删除"))?;
+        let action = if archive {
+            ActivityAction::TaskArchived
+        } else {
+            ActivityAction::TaskDeleted
+        };
+        self.activity
+            .record_activity_in_txn(
+                &transaction,
+                RecordActivityInput {
+                    operation_id: Some(operation.operation_id.clone()),
+                    entity_type: ActivityEntityKind::Task,
+                    entity_id: updated.id.clone(),
+                    action,
+                    actor_type: None,
+                    source: None,
+                    summary: Some(format!(
+                        "{}任务「{}」",
+                        if archive { "归档" } else { "删除" },
+                        updated.title
+                    )),
+                    metadata: None,
+                    changes: Vec::new(),
+                },
+            )
+            .await?;
+        self.enqueue_task_operation(
+            &transaction,
+            &updated,
+            &operation,
+            OutboxOpKind::Patch,
+            if archive { "archive" } else { "delete" },
+        )
+        .await?;
+        self.persistence.commit(transaction).await?;
+        self.build_task_detail(updated).await
     }
 
     async fn build_task_list(
@@ -721,7 +1178,7 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Space 不存在"))?;
 
-        if space.archived_at.is_some() {
+        if space.archived_at.is_some() || space.deleted_at.is_some() {
             return Err(ApplicationError::not_found("Space 不存在"));
         }
 
@@ -739,7 +1196,7 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Project 不存在"))?;
 
-        if project.archived_at.is_some() {
+        if project.archived_at.is_some() || project.deleted_at.is_some() {
             return Err(ApplicationError::not_found("Project 不存在"));
         }
 
@@ -776,6 +1233,76 @@ where
             .into_iter()
             .map(|item| (item.id.clone(), item))
             .collect::<HashMap<_, _>>())
+    }
+
+    async fn enqueue_task_operation(
+        &self,
+        connection: &P::Connection,
+        task: &TaskRecord,
+        operation: &OperationContext,
+        operation_type: OutboxOpKind,
+        action: &str,
+    ) -> Result<(), ApplicationError> {
+        let payload = json!({
+            "version": 1,
+            "operationId": operation.operation_id,
+            "action": action,
+            "task": {
+                "id": task.id, "spaceId": task.space_id, "projectId": task.project_id,
+                "title": task.title, "note": task.note, "status": task.status.as_str(),
+                "priority": task.priority, "plannedAt": task.planned_at, "dueAt": task.due_at,
+                "remindAt": task.remind_at, "statusChangedAt": task.status_changed_at,
+                "completedAt": task.completed_at, "position": task.position,
+                "generation": task.generation, "archivedAt": task.archived_at, "deletedAt": task.deleted_at,
+            },
+        });
+        self.persistence
+            .enqueue(
+                connection,
+                &OutboxEnqueueRecord {
+                    id: create_id().to_string(),
+                    operation_id: operation.operation_id.clone(),
+                    entity_type: SyncEntityKind::Task,
+                    entity_id: task.id.clone(),
+                    generation: task.generation,
+                    operation_type,
+                    payload_json: serde_json::to_string(&payload)
+                        .map_err(|error| ApplicationError::internal(error.to_string()))?,
+                    created_at: operation.created_at.clone(),
+                    available_at: operation.created_at.clone(),
+                },
+            )
+            .await
+    }
+
+    async fn record_bulk_activity(
+        &self,
+        connection: &P::Connection,
+        operation: &OperationContext,
+        task: &TaskRecord,
+        action: ActivityAction,
+        changes: Vec<ActivityChangeInput>,
+    ) -> Result<(), ApplicationError> {
+        self.activity
+            .record_activity_in_txn(
+                connection,
+                RecordActivityInput {
+                    operation_id: Some(operation.operation_id.clone()),
+                    entity_type: ActivityEntityKind::Task,
+                    entity_id: task.id.clone(),
+                    action,
+                    actor_type: None,
+                    source: None,
+                    summary: Some(build_update_summary(action, &task.title)),
+                    metadata: Some(json!({
+                        "taskId": task.id,
+                        "spaceId": task.space_id,
+                        "projectId": task.project_id,
+                    })),
+                    changes,
+                },
+            )
+            .await
     }
 }
 
@@ -856,15 +1383,14 @@ where
     Option::<String>::deserialize(deserializer).map(Some)
 }
 
-fn normalize_optional_text(value: Option<String>) -> Option<String> {
-    value.and_then(|text| {
-        let trimmed = text.trim();
-        if trimmed.is_empty() {
-            None
-        } else {
-            Some(trimmed.to_owned())
-        }
-    })
+fn normalize_timestamp(
+    value: Option<String>,
+    field: &str,
+) -> Result<Option<String>, ApplicationError> {
+    value
+        .map(|value| parse_utc_rfc3339(&value, field).map(|timestamp| timestamp.to_rfc3339()))
+        .transpose()
+        .map_err(Into::into)
 }
 
 fn normalize_optional_long_text(value: Option<String>) -> Option<String> {
@@ -873,17 +1399,6 @@ fn normalize_optional_long_text(value: Option<String>) -> Option<String> {
             None
         } else {
             Some(text)
-        }
-    })
-}
-
-fn normalize_optional_text_option(value: Option<String>) -> Option<String> {
-    value.and_then(|text| {
-        let trimmed = text.trim();
-        if trimmed.is_empty() {
-            None
-        } else {
-            Some(trimmed.to_owned())
         }
     })
 }
@@ -911,4 +1426,14 @@ fn push_change(
         old_value,
         new_value,
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::normalize_timestamp;
+
+    #[test]
+    fn task_timestamp_should_require_rfc3339() {
+        assert!(normalize_timestamp(Some("2026-07-23".to_owned()), "dueAt").is_err());
+    }
 }

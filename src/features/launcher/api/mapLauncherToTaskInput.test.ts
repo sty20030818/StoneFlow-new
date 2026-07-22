@@ -11,8 +11,8 @@ describe('mapLauncherToTaskInput', () => {
 				status: 'todo',
 				priority: 2,
 				dueAt: null,
-				scheduledAt: null,
-				reminderAt: null,
+				plannedAt: null,
+				remindAt: null,
 			}),
 		).toEqual({
 			spaceId: 'space-1',
@@ -22,8 +22,8 @@ describe('mapLauncherToTaskInput', () => {
 			status: 'todo',
 			priority: 2,
 			dueAt: null,
-			scheduledAt: null,
-			reminderAt: null,
+			plannedAt: null,
+			remindAt: null,
 		})
 	})
 
@@ -37,8 +37,8 @@ describe('mapLauncherToTaskInput', () => {
 				status: 'doing',
 				priority: 1,
 				dueAt: '2026-01-01',
-				scheduledAt: null,
-				reminderAt: null,
+				plannedAt: null,
+				remindAt: null,
 			}),
 		).toMatchObject({
 			spaceId: null,

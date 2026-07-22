@@ -7,10 +7,10 @@ export type ViewEntityType = 'task' | 'project'
 export type ViewKind = 'system' | 'custom'
 export type ViewSortDirection = 'asc' | 'desc'
 export type ViewSortField =
-	| 'sortOrder'
+	| 'position'
 	| 'priority'
 	| 'dueAt'
-	| 'scheduledAt'
+	| 'plannedAt'
 	| 'createdAt'
 	| 'updatedAt'
 	| 'completedAt'
@@ -72,7 +72,7 @@ export type View = {
 	sort: ViewSortRule[]
 	groupBy: TaskGroupBy | null
 	isVisible: boolean
-	sortOrder: number
+	position: number
 	createdAt: string
 	updatedAt: string
 }

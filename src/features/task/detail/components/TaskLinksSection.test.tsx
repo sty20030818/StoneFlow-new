@@ -10,7 +10,7 @@ const mockTaskLinksController = vi.hoisted(() => ({
 			taskId: string
 			title: string
 			url: string
-			sortOrder: number
+			position: number
 			createdAt: string
 			updatedAt: string
 		}>,
@@ -151,7 +151,7 @@ function baseTaskLinksControllerState() {
 			taskId: string
 			title: string
 			url: string
-			sortOrder: number
+			position: number
 			createdAt: string
 			updatedAt: string
 		}>,
@@ -177,7 +177,7 @@ function createTaskLink() {
 		taskId: 'task-1',
 		title: '技术方案',
 		url: 'https://example.com/spec',
-		sortOrder: 1000,
+		position: 1000,
 		createdAt: '2026-05-23T10:00:00Z',
 		updatedAt: '2026-05-23T10:00:00Z',
 	}

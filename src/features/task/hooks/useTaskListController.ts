@@ -55,20 +55,20 @@ export function useTaskListController() {
 		)
 	}
 
-	async function updateTaskScheduledAt(task: TaskListItem, scheduledAt: string | null) {
+	async function updateTaskScheduledAt(task: TaskListItem, plannedAt: string | null) {
 		await runTaskAction(task.id, () =>
 			updateTask.mutateAsync({
 				taskId: task.id,
-				scheduledAt,
+				plannedAt,
 			}),
 		)
 	}
 
-	async function updateTaskReminderAt(task: TaskListItem, reminderAt: string | null) {
+	async function updateTaskReminderAt(task: TaskListItem, remindAt: string | null) {
 		await runTaskAction(task.id, () =>
 			updateTask.mutateAsync({
 				taskId: task.id,
-				reminderAt,
+				remindAt,
 			}),
 		)
 	}

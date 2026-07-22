@@ -377,6 +377,7 @@ where
                 .record_activity_in_txn(
                     &transaction,
                     RecordActivityInput {
+                        operation_id: None,
                         entity_type: ActivityEntityKind::Setting,
                         entity_id: SIDEBAR_PREFERENCE_SETTING_KEY.to_owned(),
                         action: ActivityAction::SettingsUpdated,

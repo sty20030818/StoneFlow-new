@@ -32,24 +32,24 @@ export function AdvancedMetaBar() {
 				value={state.draft.dueAt}
 			/>
 			<DateControl
-				field='scheduledAt'
+				field='plannedAt'
 				icon={<Clock3Icon className='size-3.5' />}
 				label='计划时间'
 				onDateChange={actions.setDate}
 				onOpenChange={handleDatePopoverChange(actions.setPopover)}
 				open={state.activePopover === 'scheduled'}
 				popoverKey='scheduled'
-				value={state.draft.scheduledAt}
+				value={state.draft.plannedAt}
 			/>
 			<DateControl
-				field='reminderAt'
+				field='remindAt'
 				icon={<BellIcon className='size-3.5' />}
 				label='提醒时间'
 				onDateChange={actions.setDate}
 				onOpenChange={handleDatePopoverChange(actions.setPopover)}
 				open={state.activePopover === 'reminder'}
 				popoverKey='reminder'
-				value={state.draft.reminderAt}
+				value={state.draft.remindAt}
 			/>
 		</div>
 	)

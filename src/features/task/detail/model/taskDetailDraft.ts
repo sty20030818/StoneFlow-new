@@ -13,8 +13,8 @@ export type TaskDetailDraft = {
 	projectId: string
 	inboxAt: string
 	dueAt: string
-	scheduledAt: string
-	reminderAt: string
+	plannedAt: string
+	remindAt: string
 }
 
 export type TaskDetailPatch = UpdateTaskInput
@@ -30,8 +30,8 @@ export function createTaskDetailDraft(task: TaskDetail): TaskDetailDraft {
 		projectId: task.projectId ?? '',
 		inboxAt: task.inboxAt ?? '',
 		dueAt: task.dueAt ?? '',
-		scheduledAt: task.scheduledAt ?? '',
-		reminderAt: task.reminderAt ?? '',
+		plannedAt: task.plannedAt ?? '',
+		remindAt: task.remindAt ?? '',
 	}
 }
 
@@ -41,8 +41,8 @@ export function normalizeTaskDetailDraft(draft: TaskDetailDraft): TaskDetailDraf
 		title: draft.title.trim(),
 		inboxAt: draft.inboxAt.trim(),
 		dueAt: draft.dueAt.trim(),
-		scheduledAt: draft.scheduledAt.trim(),
-		reminderAt: draft.reminderAt.trim(),
+		plannedAt: draft.plannedAt.trim(),
+		remindAt: draft.remindAt.trim(),
 	}
 }
 
@@ -90,16 +90,16 @@ export function getTaskDetailPatch(
 		patch.dueAt = nextDueAt
 	}
 
-	const nextScheduledAt = draft.scheduledAt || null
-	const baseScheduledAt = base.scheduledAt || null
+	const nextScheduledAt = draft.plannedAt || null
+	const baseScheduledAt = base.plannedAt || null
 	if (nextScheduledAt !== baseScheduledAt) {
-		patch.scheduledAt = nextScheduledAt
+		patch.plannedAt = nextScheduledAt
 	}
 
-	const nextReminderAt = draft.reminderAt || null
-	const baseReminderAt = base.reminderAt || null
+	const nextReminderAt = draft.remindAt || null
+	const baseReminderAt = base.remindAt || null
 	if (nextReminderAt !== baseReminderAt) {
-		patch.reminderAt = nextReminderAt
+		patch.remindAt = nextReminderAt
 	}
 
 	return Object.keys(patch).length > 1 ? patch : null

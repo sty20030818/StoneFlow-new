@@ -56,17 +56,17 @@ export function TaskPreview({
 		})
 	}
 
-	if (task.scheduledAt) {
+	if (task.plannedAt) {
 		dateItems.push({
 			icon: taskDateMetadataIcons.scheduled,
-			label: `计划 ${formatShortDate(task.scheduledAt)}`,
+			label: `计划 ${formatShortDate(task.plannedAt)}`,
 		})
 	}
 
-	if (task.reminderAt) {
+	if (task.remindAt) {
 		dateItems.push({
 			icon: taskDateMetadataIcons.reminder,
-			label: `提醒 ${formatShortDate(task.reminderAt)}`,
+			label: `提醒 ${formatShortDate(task.remindAt)}`,
 		})
 	}
 

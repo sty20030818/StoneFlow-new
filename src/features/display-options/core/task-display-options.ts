@@ -17,7 +17,7 @@ export const TASK_DISPLAY_ORDER_BY_VALUES = [
 	'priority',
 	'status',
 	'dueAt',
-	'scheduledAt',
+	'plannedAt',
 	'inboxAt',
 	'statusChangedAt',
 	'createdAt',
@@ -35,7 +35,7 @@ export const TASK_DISPLAY_PROPERTY_KEY_VALUES = [
 	'priority',
 	'project',
 	'dueAt',
-	'scheduledAt',
+	'plannedAt',
 	'updatedAt',
 	'createdAt',
 ] as const

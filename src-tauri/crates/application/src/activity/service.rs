@@ -96,6 +96,7 @@ fn build_activity_records(
     input: RecordActivityInput,
 ) -> Result<(ActivityEventRecord, Vec<ActivityChangeRecord>), ApplicationError> {
     let event_id = create_id().to_string();
+    let operation_id = input.operation_id.unwrap_or_else(|| event_id.clone());
     let created_at = now_utc().to_rfc3339();
     let entity_id = normalize_required_text(&input.entity_id, "Activity entity_id")?;
     let summary = normalize_optional_text(input.summary);
@@ -118,6 +119,7 @@ fn build_activity_records(
 
     let event = ActivityEventRecord {
         id: event_id,
+        operation_id,
         entity_type: input.entity_type,
         entity_id,
         action: input.action.to_string(),
@@ -251,6 +253,7 @@ mod tests {
 
         service
             .record_activity(RecordActivityInput {
+                operation_id: None,
                 entity_type: ActivityEntityKind::Task,
                 entity_id: "task-1".to_owned(),
                 action: ActivityAction::TaskStatusChanged,
@@ -276,6 +279,30 @@ mod tests {
 
         assert_eq!(persistence_probe.lock().expect("lock").len(), 1);
         assert_eq!(changes_probe.lock().expect("lock").len(), 2);
+    }
+
+    #[tokio::test]
+    async fn record_activity_should_keep_the_caller_operation_id() {
+        let persistence = FakePersistence::default();
+        let events = persistence.events.clone();
+        let service = ActivityService::new(persistence);
+
+        service
+            .record_activity(RecordActivityInput {
+                operation_id: Some("operation-1".to_owned()),
+                entity_type: ActivityEntityKind::Task,
+                entity_id: "task-1".to_owned(),
+                action: ActivityAction::TaskCreated,
+                actor_type: None,
+                source: None,
+                summary: None,
+                metadata: None,
+                changes: Vec::new(),
+            })
+            .await
+            .expect("activity should persist");
+
+        assert_eq!(events.lock().expect("lock")[0].operation_id, "operation-1");
     }
 
     #[tokio::test]

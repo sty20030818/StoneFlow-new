@@ -29,7 +29,7 @@ const mockTaskLinksController = vi.hoisted(() => ({
 			taskId: string
 			title: string
 			url: string
-			sortOrder: number
+			position: number
 			createdAt: string
 			updatedAt: string
 		}>,
@@ -87,7 +87,7 @@ vi.mock('@/features/space', () => ({
 				iconKey: 'briefcase',
 				colorKey: 'blue',
 				isDefault: true,
-				sortOrder: 1,
+				position: 1,
 				archivedAt: null,
 				deletedAt: null,
 				createdAt: '2026-05-19T00:00:00Z',
@@ -99,7 +99,7 @@ vi.mock('@/features/space', () => ({
 				iconKey: 'home',
 				colorKey: 'green',
 				isDefault: false,
-				sortOrder: 2,
+				position: 2,
 				archivedAt: null,
 				deletedAt: null,
 				createdAt: '2026-05-19T00:00:00Z',
@@ -355,8 +355,8 @@ function createAutosaveController(
 			projectId: '',
 			inboxAt: '',
 			dueAt: '',
-			scheduledAt: '',
-			reminderAt: '',
+			plannedAt: '',
+			remindAt: '',
 		},
 		status: 'idle',
 		error: null,
@@ -387,14 +387,14 @@ function createTaskDetail(overrides: Partial<TaskDetail> = {}): TaskDetail {
 		statusChangedAt: '2026-05-19T00:00:00Z',
 		priority: 2,
 		dueAt: null,
-		scheduledAt: null,
-		reminderAt: null,
+		plannedAt: null,
+		remindAt: null,
 		completedAt: null,
 		canceledAt: null,
 		archivedAt: null,
 		createdAt: '2026-05-19T00:00:00Z',
 		updatedAt: '2026-05-19T00:00:00Z',
-		sortOrder: 100,
+		position: 100,
 		deletedAt: null,
 		...overrides,
 	}

@@ -20,8 +20,8 @@ export const taskCreateSchema = z
 			...TaskStatus[],
 		]),
 		dueAt: z.string().nullable(),
-		scheduledAt: z.string().nullable(),
-		reminderAt: z.string().nullable(),
+		plannedAt: z.string().nullable(),
+		remindAt: z.string().nullable(),
 		createMore: z.boolean(),
 	})
 	.superRefine((values, ctx) => {
@@ -73,8 +73,8 @@ export function buildTaskCreateDefaultValues(input: {
 		projectId: input.initialProjectId ?? '',
 		status: input.initialStatus,
 		dueAt: null,
-		scheduledAt: null,
-		reminderAt: null,
+		plannedAt: null,
+		remindAt: null,
 		createMore: false,
 	}
 }
@@ -88,8 +88,8 @@ export function toTaskCreateInput(values: TaskCreateFormValues): CreateTaskInput
 		status: values.status,
 		priority: values.priority,
 		dueAt: values.dueAt,
-		scheduledAt: values.scheduledAt,
-		reminderAt: values.reminderAt,
+		plannedAt: values.plannedAt,
+		remindAt: values.remindAt,
 	}
 }
 

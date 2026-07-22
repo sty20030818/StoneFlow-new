@@ -7,7 +7,7 @@ import { Calendar } from '@/shared/components/base/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/components/base/popover'
 import { cn } from '@/shared/lib/utils'
 
-type DateField = 'dueAt' | 'scheduledAt' | 'reminderAt'
+type DateField = 'dueAt' | 'plannedAt' | 'remindAt'
 
 type DateControlProps = {
 	open: boolean

@@ -85,13 +85,13 @@ export function TaskCreateContent({
 	})
 	const { field: statusField } = useController({ control: form.control, name: 'status' })
 	const { field: dueAtField } = useController({ control: form.control, name: 'dueAt' })
-	const { field: scheduledAtField } = useController({
+	const { field: plannedAtField } = useController({
 		control: form.control,
-		name: 'scheduledAt',
+		name: 'plannedAt',
 	})
-	const { field: reminderAtField } = useController({
+	const { field: remindAtField } = useController({
 		control: form.control,
-		name: 'reminderAt',
+		name: 'remindAt',
 	})
 	const { field: createMoreField } = useController({
 		control: form.control,
@@ -109,8 +109,8 @@ export function TaskCreateContent({
 	const projectId = projectIdField.value
 	const status = statusField.value as TaskStatus
 	const dueAt = dueAtField.value
-	const scheduledAt = scheduledAtField.value
-	const reminderAt = reminderAtField.value
+	const plannedAt = plannedAtField.value
+	const remindAt = remindAtField.value
 	const hasPlacementTarget =
 		placement === 'project' ? projectId.trim().length > 0 : spaceId.trim().length > 0
 	const canSubmit = !isSubmitting && titleField.value.trim().length > 0 && hasPlacementTarget
@@ -244,14 +244,14 @@ export function TaskCreateContent({
 					<MetadataDateDropdown
 						icon={taskDateMetadataIcons.scheduled}
 						label='计划时间'
-						value={scheduledAt}
-						onChange={scheduledAtField.onChange}
+						value={plannedAt}
+						onChange={plannedAtField.onChange}
 					/>
 					<MetadataDateDropdown
 						icon={taskDateMetadataIcons.reminder}
 						label='提醒时间'
-						value={reminderAt}
-						onChange={reminderAtField.onChange}
+						value={remindAt}
+						onChange={remindAtField.onChange}
 					/>
 					<Button onClick={() => toast.info('标签功能即将支持')} size='sm' variant='outline'>
 						<TagIcon />

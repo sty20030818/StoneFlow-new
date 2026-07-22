@@ -52,8 +52,8 @@ type TaskRowAdapterProps = {
 		onUpdateTaskPriority: (task: TaskListItem, priority: TaskPriorityValue) => Promise<void>
 		onUpdateTaskStatus: (task: TaskListItem, status: TaskStatus) => Promise<void>
 		onUpdateTaskDueDate?: (task: TaskListItem, dueAt: string | null) => Promise<void>
-		onUpdateTaskScheduledAt?: (task: TaskListItem, scheduledAt: string | null) => Promise<void>
-		onUpdateTaskReminderAt?: (task: TaskListItem, reminderAt: string | null) => Promise<void>
+		onUpdateTaskScheduledAt?: (task: TaskListItem, plannedAt: string | null) => Promise<void>
+		onUpdateTaskReminderAt?: (task: TaskListItem, remindAt: string | null) => Promise<void>
 		onToggleTaskStatus: (task: TaskListItem) => Promise<void>
 		onArchiveTask?: (task: TaskListItem) => Promise<void>
 		onDeleteTask?: (task: TaskListItem) => Promise<void>
@@ -100,13 +100,13 @@ export function TaskRowAdapter({
 		inboxAt: task.inboxAt,
 	})
 	const visiblePropertySet = new Set(
-		visibleProperties ?? ['status', 'priority', 'project', 'dueAt', 'scheduledAt', 'createdAt'],
+		visibleProperties ?? ['status', 'priority', 'project', 'dueAt', 'plannedAt', 'createdAt'],
 	)
 	const showStatus = visiblePropertySet.has('status')
 	const showPriority = visiblePropertySet.has('priority')
 	const showProject = visiblePropertySet.has('project') && showProjectCellOptions
 	const showDueAt = visiblePropertySet.has('dueAt')
-	const showScheduledAt = visiblePropertySet.has('scheduledAt')
+	const showScheduledAt = visiblePropertySet.has('plannedAt')
 	const showUpdatedAt = visiblePropertySet.has('updatedAt')
 	const showCreatedAt = visiblePropertySet.has('createdAt')
 
@@ -280,7 +280,7 @@ export function TaskRowAdapter({
 								label='计划时间'
 								menuAlign='end'
 								stopPropagation
-								value={task.scheduledAt}
+								value={task.plannedAt}
 								onChange={(value) => void actions.onUpdateTaskScheduledAt?.(task, value)}
 							/>
 						) : null}

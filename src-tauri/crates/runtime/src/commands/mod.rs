@@ -35,6 +35,7 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         tasks::get_task_detail,
         tasks::create_task,
         tasks::update_task,
+        tasks::bulk_update_tasks,
         tasks::archive_task,
         tasks::restore_task,
         tasks::delete_task,

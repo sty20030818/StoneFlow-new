@@ -1,13 +1,9 @@
 import type { BulkSelectionSnapshot } from '@/features/bulk-action'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import { emitEvent } from '@/shared/events'
-import type { TaskDetail, TaskStatus } from '@/shared/types'
+import type { TaskStatus } from '@/shared/types'
 
-import {
-	archiveTask as archiveTaskApi,
-	deleteTask as deleteTaskApi,
-	updateTask as updateTaskApi,
-} from '../api/tasks'
+import { bulkUpdateTasks as bulkUpdateTasksApi, type BulkTaskAction } from '../api/tasks'
 import type { TaskPriorityValue } from '../model/taskPriority'
 
 export type TaskBulkMutationReport = {
@@ -28,64 +24,48 @@ export type TaskBulkAdapter = {
 }
 
 type TaskBulkAdapterOptions = {
-	updateTask?: typeof updateTaskApi
-	archiveTask?: typeof archiveTaskApi
-	deleteTask?: typeof deleteTaskApi
+	bulkUpdateTasks?: typeof bulkUpdateTasksApi
+	/** 仅保留到本轮测试迁移完成，生产实现不再读取逐条 mutation。 */
+	updateTask?: unknown
+	archiveTask?: unknown
+	deleteTask?: unknown
 	refreshLoadedSlices: () => Promise<void>
 }
 
 export function createTaskBulkAdapter({
-	archiveTask = archiveTaskApi,
-	deleteTask = deleteTaskApi,
+	bulkUpdateTasks = bulkUpdateTasksApi,
 	refreshLoadedSlices,
-	updateTask = updateTaskApi,
 }: TaskBulkAdapterOptions): TaskBulkAdapter {
 	async function runTaskBulkMutation({
 		ids,
+		action,
 		lifecycleOperation,
-		mutate,
 		taskEventType = 'task:updated',
 	}: {
 		ids: string[]
-		mutate: (taskId: string) => Promise<TaskDetail>
+		action: BulkTaskAction
 		taskEventType?: 'task:updated' | 'task:deleted'
 		lifecycleOperation?: 'archive' | 'delete'
 	}): Promise<TaskBulkMutationReport> {
-		const succeededIds: string[] = []
-		const failedIds: string[] = []
-		const skippedIds: string[] = []
-
-		for (const taskId of ids) {
-			try {
-				// 批量操作需要逐条记录成功/失败，且下游刷新依赖“已处理完”的确定状态，故保持串行
-				// react-doctor-disable-next-line react-doctor/async-await-in-loop
-				const detail = await mutate(taskId)
-				succeededIds.push(taskId)
-				emitEvent({ type: taskEventType, payload: { taskId: detail.id } })
+		try {
+			const result = await bulkUpdateTasks(ids, action)
+			for (const taskId of result.taskIds) {
+				emitEvent({ type: taskEventType, payload: { taskId } })
 				if (lifecycleOperation) {
 					emitEvent({
 						type: 'lifecycle:changed',
 						payload: {
 							entityType: 'task',
-							entityId: detail.id,
+							entityId: taskId,
 							operation: lifecycleOperation,
 						},
 					})
 				}
-			} catch {
-				failedIds.push(taskId)
 			}
-		}
-
-		if (succeededIds.length > 0) {
 			await refreshLoadedSlices()
-		}
-
-		return {
-			requestedIds: [...ids],
-			succeededIds,
-			failedIds,
-			skippedIds,
+			return { requestedIds: [...ids], succeededIds: result.taskIds, failedIds: [], skippedIds: [] }
+		} catch {
+			return { requestedIds: [...ids], succeededIds: [], failedIds: [...ids], skippedIds: [] }
 		}
 	}
 
@@ -94,60 +74,47 @@ export function createTaskBulkAdapter({
 			const nextStatus = resolveBulkCompleteStatus(snapshot)
 			return runTaskBulkMutation({
 				ids: snapshot.ids,
-				mutate: (taskId) => updateTask({ taskId, status: nextStatus }),
+				action: { kind: 'setStatus', status: nextStatus },
 			})
 		},
 		archive: (ids) =>
 			runTaskBulkMutation({
 				ids,
 				lifecycleOperation: 'archive',
-				mutate: archiveTask,
+				action: { kind: 'archive' },
 			}),
 		delete: (ids) =>
 			runTaskBulkMutation({
 				ids,
 				lifecycleOperation: 'delete',
-				mutate: deleteTask,
+				action: { kind: 'delete' },
 				taskEventType: 'task:deleted',
 			}),
 		updatePriority: (ids, priority) =>
 			runTaskBulkMutation({
 				ids,
-				mutate: (taskId) => updateTask({ taskId, priority }),
+				action: { kind: 'setPriority', priority },
 			}),
 		updateStatus: (ids, status) =>
 			runTaskBulkMutation({
 				ids,
-				mutate: (taskId) => updateTask({ taskId, status }),
+				action: { kind: 'setStatus', status },
 			}),
 		updateDate: (ids, dueAt) =>
 			runTaskBulkMutation({
 				ids,
-				mutate: (taskId) => updateTask({ taskId, dueAt }),
+				action: { kind: 'setDueAt', dueAt },
 			}),
 		updatePlacement: (ids, target) =>
 			runTaskBulkMutation({
 				ids,
-				mutate: (taskId) =>
-					updateTask({
-						taskId,
-						placement:
-							target.kind === 'project'
-								? {
-										kind: 'project',
-										spaceId: target.spaceId,
-										projectId: target.projectId,
-									}
-								: target.kind === 'inbox'
-									? {
-											kind: 'inbox',
-											spaceId: target.spaceId,
-										}
-									: {
-											kind: 'noProject',
-											spaceId: target.spaceId,
-										},
-					}),
+				action: {
+					kind: 'setPlacement',
+					placement:
+						target.kind === 'project'
+							? { kind: 'project', spaceId: target.spaceId, projectId: target.projectId }
+							: { kind: 'noProject', spaceId: target.spaceId },
+				},
 			}),
 	}
 }

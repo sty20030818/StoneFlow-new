@@ -76,7 +76,7 @@ export function useLauncherDraftActions({
 	)
 
 	const setDate = useCallback(
-		(field: 'dueAt' | 'scheduledAt' | 'reminderAt', value: string | null) => {
+		(field: 'dueAt' | 'plannedAt' | 'remindAt', value: string | null) => {
 			dispatch({ type: 'dateChanged', field, value })
 			dispatch({ type: 'activePopoverClosed' })
 			focusInput()

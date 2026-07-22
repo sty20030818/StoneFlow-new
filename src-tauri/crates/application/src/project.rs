@@ -540,6 +540,7 @@ where
             .record_activity_in_txn(
                 &transaction,
                 RecordActivityInput {
+                    operation_id: None,
                     entity_type: ActivityEntityKind::Project,
                     entity_id: project.id.clone(),
                     action: ActivityAction::ProjectCreated,
@@ -752,6 +753,7 @@ where
                 .record_activity_in_txn(
                     &transaction,
                     RecordActivityInput {
+                        operation_id: None,
                         entity_type: ActivityEntityKind::Project,
                         entity_id: updated.id.clone(),
                         action,
@@ -831,6 +833,7 @@ where
             .record_activity_in_txn(
                 &transaction,
                 RecordActivityInput {
+                    operation_id: None,
                     entity_type: ActivityEntityKind::Project,
                     entity_id: cascade.project.id.clone(),
                     action: ActivityAction::ProjectRestored,
@@ -948,6 +951,7 @@ where
             .record_activity_in_txn(
                 &transaction,
                 RecordActivityInput {
+                    operation_id: None,
                     entity_type: ActivityEntityKind::Project,
                     entity_id: cascade.project.id.clone(),
                     action: if archive {

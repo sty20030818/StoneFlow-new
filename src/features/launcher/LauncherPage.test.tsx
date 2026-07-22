@@ -859,14 +859,14 @@ function createTaskDetail() {
 		status: 'todo' as const,
 		statusChangedAt: '2026-05-10T10:00:00Z',
 		dueAt: null,
-		scheduledAt: null,
-		reminderAt: null,
+		plannedAt: null,
+		remindAt: null,
 		completedAt: null,
 		canceledAt: null,
 		archivedAt: null,
 		createdAt: '2026-05-10T10:00:00Z',
 		updatedAt: '2026-05-10T10:00:00Z',
-		sortOrder: 0,
+		position: 0,
 		deletedAt: null,
 	}
 }

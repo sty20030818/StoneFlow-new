@@ -25,7 +25,7 @@ export type LauncherAction =
 	| { type: 'statusChanged'; status: LauncherStatus }
 	| { type: 'spaceChanged'; spaceId: string }
 	| { type: 'placementChanged'; placement: LauncherPlacement }
-	| { type: 'dateChanged'; field: 'dueAt' | 'scheduledAt' | 'reminderAt'; value: string | null }
+	| { type: 'dateChanged'; field: 'dueAt' | 'plannedAt' | 'remindAt'; value: string | null }
 	| { type: 'advancedToggled' }
 	| { type: 'activePopoverChanged'; key: LauncherPopoverKey | null }
 	| { type: 'projectSearchChanged'; query: string }
@@ -74,7 +74,7 @@ export type LauncherDomainActions = {
 	setProjectSearch: (query: string) => void
 	selectPlacement: (placement: LauncherPlacement) => void
 	selectSpace: (spaceId: string) => void
-	setDate: (field: 'dueAt' | 'scheduledAt' | 'reminderAt', value: string | null) => void
+	setDate: (field: 'dueAt' | 'plannedAt' | 'remindAt', value: string | null) => void
 	moveFocus: (direction: 1 | -1) => void
 	focusCreate: () => void
 	focusResult: (index: number) => void

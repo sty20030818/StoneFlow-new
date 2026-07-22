@@ -1,5 +1,4 @@
 import { emitEvent } from '@/shared/events'
-import type { TaskDetail } from '@/shared/types'
 import { createBulkSelectionSnapshot } from '@/features/bulk-action'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 
@@ -34,14 +33,14 @@ describe('TaskBulkAdapter', () => {
 		expect(resolveBulkCompleteStatus(completedSnapshot)).toBe('todo')
 	})
 
-	it('多 id mutation 后只刷新一次', async () => {
+	it('多 id mutation 使用一次原子 command 并只刷新一次', async () => {
 		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
-		const updateTask = vi.fn<(input: { taskId: string }) => Promise<TaskDetail>>((input) =>
-			Promise.resolve(createTaskDetail(input.taskId)),
+		const bulkUpdateTasks = vi.fn(() =>
+			Promise.resolve({ taskIds: ['task-a', 'task-b'], operationId: 'operation-1' }),
 		)
 		const adapter = createTaskBulkAdapter({
 			refreshLoadedSlices,
-			updateTask: updateTask as never,
+			bulkUpdateTasks,
 		})
 
 		const result = await adapter.updateStatus(['task-a', 'task-b'], 'doing')
@@ -50,46 +49,39 @@ describe('TaskBulkAdapter', () => {
 			succeededIds: ['task-a', 'task-b'],
 			failedIds: [],
 		})
-		expect(updateTask).toHaveBeenCalledTimes(2)
+		expect(bulkUpdateTasks).toHaveBeenCalledWith(['task-a', 'task-b'], {
+			kind: 'setStatus',
+			status: 'doing',
+		})
 		expect(refreshLoadedSlices).toHaveBeenCalledTimes(1)
 	})
 
-	it('单个 id 失败时返回 partial 所需的 failedIds，且不中断其余 id', async () => {
+	it('原子 command 失败时全部失败且不刷新', async () => {
 		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
-		const updateTask = vi.fn<(input: { taskId: string }) => Promise<TaskDetail>>((input) => {
-			if (input.taskId === 'task-b') {
-				return Promise.reject(new Error('boom'))
-			}
-			return Promise.resolve(createTaskDetail(input.taskId))
-		})
+		const bulkUpdateTasks = vi.fn(() => Promise.reject(new Error('boom')))
 		const adapter = createTaskBulkAdapter({
 			refreshLoadedSlices,
-			updateTask: updateTask as never,
+			bulkUpdateTasks,
 		})
 
 		const result = await adapter.updatePriority(['task-a', 'task-b', 'task-c'], 3)
 
 		expect(result).toEqual({
 			requestedIds: ['task-a', 'task-b', 'task-c'],
-			succeededIds: ['task-a', 'task-c'],
-			failedIds: ['task-b'],
+			succeededIds: [],
+			failedIds: ['task-a', 'task-b', 'task-c'],
 			skippedIds: [],
 		})
-		expect(updateTask).toHaveBeenCalledTimes(3)
-		expect(refreshLoadedSlices).toHaveBeenCalledTimes(1)
+		expect(refreshLoadedSlices).not.toHaveBeenCalled()
 	})
 
 	it('archive/delete 触发 task 与 lifecycle 事件', async () => {
 		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
-		const archiveTask = vi.fn<(taskId: string) => Promise<TaskDetail>>((taskId) =>
-			Promise.resolve(createTaskDetail(taskId)),
-		)
-		const deleteTask = vi.fn<(taskId: string) => Promise<TaskDetail>>((taskId) =>
-			Promise.resolve(createTaskDetail(taskId)),
+		const bulkUpdateTasks = vi.fn((ids: string[]) =>
+			Promise.resolve({ taskIds: ids, operationId: 'operation-1' }),
 		)
 		const adapter = createTaskBulkAdapter({
-			archiveTask: archiveTask as never,
-			deleteTask: deleteTask as never,
+			bulkUpdateTasks,
 			refreshLoadedSlices,
 		})
 
@@ -116,19 +108,12 @@ describe('TaskBulkAdapter', () => {
 
 	it('updatePlacement 走统一 placement mutation 路径', async () => {
 		const refreshLoadedSlices = vi.fn<() => Promise<void>>(() => Promise.resolve())
-		const updateTask = vi.fn<
-			(input: {
-				taskId: string
-				placement?: {
-					kind: 'inbox' | 'noProject' | 'project'
-					spaceId: string
-					projectId?: string | null
-				}
-			}) => Promise<TaskDetail>
-		>((input) => Promise.resolve(createTaskDetail(input.taskId)))
+		const bulkUpdateTasks = vi.fn((ids: string[]) =>
+			Promise.resolve({ taskIds: ids, operationId: 'operation-1' }),
+		)
 		const adapter = createTaskBulkAdapter({
 			refreshLoadedSlices,
-			updateTask: updateTask as never,
+			bulkUpdateTasks,
 		})
 		const inboxTarget: TaskPlacementTarget = { kind: 'inbox', spaceId: 'space-a' }
 		const projectTarget: TaskPlacementTarget = {
@@ -142,45 +127,14 @@ describe('TaskBulkAdapter', () => {
 		await adapter.updatePlacement(['task-b'], inboxTarget)
 		await adapter.updatePlacement(['task-c'], noProjectTarget)
 
-		expect(updateTask).toHaveBeenCalledWith({
-			taskId: 'task-a',
+		expect(bulkUpdateTasks).toHaveBeenNthCalledWith(1, ['task-a'], {
+			kind: 'setPlacement',
 			placement: { kind: 'project', spaceId: 'space-a', projectId: 'project-a' },
 		})
-		expect(updateTask).toHaveBeenCalledWith({
-			taskId: 'task-b',
-			placement: { kind: 'inbox', spaceId: 'space-a' },
-		})
-		expect(updateTask).toHaveBeenCalledWith({
-			taskId: 'task-c',
+		expect(bulkUpdateTasks).toHaveBeenNthCalledWith(2, ['task-b'], {
+			kind: 'setPlacement',
 			placement: { kind: 'noProject', spaceId: 'space-a' },
 		})
 		expect(refreshLoadedSlices).toHaveBeenCalledTimes(3)
 	})
 })
-
-function createTaskDetail(taskId: string): TaskDetail {
-	return {
-		id: taskId,
-		spaceId: 'space-a',
-		spaceName: 'Space A',
-		spaceSlug: 'space-a',
-		projectId: null,
-		projectName: null,
-		inboxAt: null,
-		title: taskId,
-		note: null,
-		status: 'todo',
-		statusChangedAt: '2026-05-17T00:00:00.000Z',
-		priority: 0,
-		dueAt: null,
-		scheduledAt: null,
-		reminderAt: null,
-		completedAt: null,
-		canceledAt: null,
-		archivedAt: null,
-		createdAt: '2026-05-17T00:00:00.000Z',
-		updatedAt: '2026-05-17T00:00:00.000Z',
-		sortOrder: 0,
-		deletedAt: null,
-	}
-}

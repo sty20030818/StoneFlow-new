@@ -17,6 +17,8 @@ pub struct ActivityChangeInput {
 /// 记录 Activity 的统一输入。
 #[derive(Debug, Clone, PartialEq)]
 pub struct RecordActivityInput {
+    /// 与实体变更和 Outbox 共用的操作 ID；旧调用不提供时以 event ID 退化。
+    pub operation_id: Option<String>,
     pub entity_type: ActivityEntityKind,
     pub entity_id: String,
     pub action: ActivityAction,

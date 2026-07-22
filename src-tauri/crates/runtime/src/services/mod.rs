@@ -52,10 +52,10 @@ pub use task_link_service::{
     UpdateTaskLinkInput,
 };
 pub use task_service::{
-    CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind, ListTasksInput,
-    ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput, TaskListItemDto,
-    TaskScopeInput, TaskScopeKind, TaskService, UpdateTaskInput, UpdateTaskPlacementInput,
-    UpdateTaskPlacementKind,
+    BulkUpdateTasksDto, BulkUpdateTasksInput, CreateTaskInput, CreateTaskPlacementInput,
+    CreateTaskPlacementKind, ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind,
+    TaskDetailDto, TaskIdInput, TaskListItemDto, TaskScopeInput, TaskScopeKind, TaskService,
+    UpdateTaskInput, UpdateTaskPlacementInput, UpdateTaskPlacementKind,
 };
 pub use update_service::{build_update_service, RuntimeUpdateService};
 pub use view_service::{

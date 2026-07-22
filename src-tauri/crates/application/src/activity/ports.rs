@@ -13,6 +13,7 @@ use super::{ActivityTimelineEntry, GetEntityActivitiesInput};
 #[derive(Debug, Clone, PartialEq)]
 pub struct ActivityEventRecord {
     pub id: String,
+    pub operation_id: String,
     pub entity_type: ActivityEntityKind,
     pub entity_id: String,
     pub action: String,

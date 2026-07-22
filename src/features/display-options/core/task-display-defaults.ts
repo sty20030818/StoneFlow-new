@@ -10,7 +10,7 @@ const DEFAULT_PROJECT_DETAIL_VISIBLE_PROPERTIES = [
 	'status',
 	'priority',
 	'dueAt',
-	'scheduledAt',
+	'plannedAt',
 	'updatedAt',
 ] as const
 const DEFAULT_INBOX_VISIBLE_PROPERTIES = ['status', 'priority', 'project', 'createdAt'] as const
@@ -19,7 +19,7 @@ const DEFAULT_DATE_FOCUSED_VISIBLE_PROPERTIES = [
 	'priority',
 	'project',
 	'dueAt',
-	'scheduledAt',
+	'plannedAt',
 ] as const
 const DEFAULT_HISTORY_VISIBLE_PROPERTIES = ['status', 'priority', 'project', 'updatedAt'] as const
 
@@ -77,7 +77,7 @@ const TASK_DISPLAY_PAGE_DEFAULTS: Record<TaskDisplayPageKind, TaskDisplayOptions
 	'task:upcoming': {
 		...BASE_TASK_DISPLAY_OPTIONS,
 		groupBy: 'scheduled',
-		orderBy: 'scheduledAt',
+		orderBy: 'plannedAt',
 		orderDirection: 'asc',
 		visibleProperties: [...DEFAULT_DATE_FOCUSED_VISIBLE_PROPERTIES],
 	},

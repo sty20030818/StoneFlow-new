@@ -115,8 +115,8 @@ export type LauncherDraft = {
 	spaceId: string | null
 	placement: LauncherPlacement
 	dueAt: string | null
-	scheduledAt: string | null
-	reminderAt: string | null
+	plannedAt: string | null
+	remindAt: string | null
 }
 
 export type LauncherPopoverKey =

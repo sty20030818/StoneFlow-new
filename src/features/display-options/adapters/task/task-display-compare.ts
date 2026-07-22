@@ -57,8 +57,8 @@ export function createTaskDisplayComparator(
 			return compareByStatus(options.orderDirection)
 		case 'dueAt':
 			return compareByDateField('dueAt', options.orderDirection)
-		case 'scheduledAt':
-			return compareByDateField('scheduledAt', options.orderDirection)
+		case 'plannedAt':
+			return compareByDateField('plannedAt', options.orderDirection)
 		case 'inboxAt':
 			return compareByDateField('inboxAt', options.orderDirection)
 		case 'statusChangedAt':
@@ -158,7 +158,7 @@ export function compareByDateField(
 	field: keyof Pick<
 		TaskListItem,
 		| 'dueAt'
-		| 'scheduledAt'
+		| 'plannedAt'
 		| 'inboxAt'
 		| 'statusChangedAt'
 		| 'createdAt'
@@ -175,7 +175,7 @@ export function compareByDateField(
 }
 
 export function getTaskUrgencyBucket(task: TaskListItem): TaskDateBucketKey {
-	const relevantDate = task.dueAt ?? task.scheduledAt
+	const relevantDate = task.dueAt ?? task.plannedAt
 	if (!relevantDate) {
 		return 'none'
 	}
@@ -202,8 +202,8 @@ export function getTaskUrgencyBucket(task: TaskListItem): TaskDateBucketKey {
 }
 
 function compareRelevantDate(left: TaskListItem, right: TaskListItem) {
-	const leftRelevantDate = left.dueAt ?? left.scheduledAt
-	const rightRelevantDate = right.dueAt ?? right.scheduledAt
+	const leftRelevantDate = left.dueAt ?? left.plannedAt
+	const rightRelevantDate = right.dueAt ?? right.plannedAt
 	return compareByDateValue(leftRelevantDate, rightRelevantDate, 'asc')
 }
 

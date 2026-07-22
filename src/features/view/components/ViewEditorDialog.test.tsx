@@ -101,7 +101,7 @@ function buildView(): View {
 		sort: [{ field: 'priority', direction: 'asc' }],
 		groupBy: 'project',
 		isVisible: true,
-		sortOrder: 0,
+		position: 0,
 		createdAt: '2026-06-18T00:00:00.000Z',
 		updatedAt: '2026-06-18T00:00:00.000Z',
 	}

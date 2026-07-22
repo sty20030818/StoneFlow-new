@@ -67,7 +67,7 @@ const ORDER_LABELS: Record<ResolvedTaskDisplayOptions['orderBy'], string> = {
 	priority: '优先级',
 	status: '状态',
 	dueAt: '截止时间',
-	scheduledAt: '计划时间',
+	plannedAt: '计划时间',
 	inboxAt: '进入收件箱时间',
 	statusChangedAt: '状态更新时间',
 	createdAt: '创建时间',
@@ -86,7 +86,7 @@ const PROPERTY_META: Record<TaskDisplayPropertyKey, { label: string }> = {
 	priority: { label: '优先级' },
 	project: { label: '项目' },
 	dueAt: { label: '截止时间' },
-	scheduledAt: { label: '计划时间' },
+	plannedAt: { label: '计划时间' },
 	updatedAt: { label: '更新时间' },
 	createdAt: { label: '创建时间' },
 }
@@ -96,7 +96,7 @@ const TASK_DISPLAY_ORDERED_PROPERTIES = [
 	'priority',
 	'project',
 	'dueAt',
-	'scheduledAt',
+	'plannedAt',
 	'updatedAt',
 	'createdAt',
 ] as const satisfies readonly TaskDisplayPropertyKey[]

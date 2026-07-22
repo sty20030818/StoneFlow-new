@@ -14,6 +14,7 @@ use crate::{
         ActivityAction, ActivityChangeInput, ActivityPersistence, ActivityService,
         RecordActivityInput,
     },
+    operation::{OperationContext, OutboxEnqueueRecord, OutboxOpKind, SyncEntityKind},
     ApplicationError,
 };
 
@@ -85,6 +86,11 @@ pub trait TaskLinkPersistence: Send + Sync {
         connection: &Self::Connection,
         link_id: &str,
     ) -> Result<bool, ApplicationError>;
+    async fn enqueue(
+        &self,
+        connection: &Self::Connection,
+        record: &OutboxEnqueueRecord,
+    ) -> Result<(), ApplicationError>;
 }
 
 /// Task Link 所需的 Task 读取边界。
@@ -185,6 +191,7 @@ where
         let url = validate_http_https_url(&input.url)?;
         let task = self.require_visible_task(&task_id).await?;
         let now = now_utc().to_rfc3339();
+        let operation = OperationContext::new("local");
         let transaction = self.persistence.begin().await?;
         let position = self
             .persistence
@@ -205,11 +212,11 @@ where
                 },
             )
             .await?;
-
         self.activity
             .record_activity_in_txn(
                 &transaction,
                 RecordActivityInput {
+                    operation_id: Some(operation.operation_id.clone()),
                     entity_type: ActivityEntityKind::Task,
                     entity_id: task.id.clone(),
                     action: ActivityAction::TaskLinkAdded,
@@ -225,6 +232,8 @@ where
                     changes: Vec::new(),
                 },
             )
+            .await?;
+        self.enqueue_link_operation(&transaction, &created, &operation, OutboxOpKind::Upsert, "create")
             .await?;
 
         self.persistence.commit(transaction).await?;
@@ -277,6 +286,7 @@ where
         }
 
         let now = now_utc().to_rfc3339();
+        let operation = OperationContext::new("local");
         let transaction = self.persistence.begin().await?;
         let updated = self
             .persistence
@@ -288,6 +298,7 @@ where
             .record_activity_in_txn(
                 &transaction,
                 RecordActivityInput {
+                    operation_id: Some(operation.operation_id.clone()),
                     entity_type: ActivityEntityKind::Task,
                     entity_id: task.id.clone(),
                     action: ActivityAction::TaskLinkUpdated,
@@ -303,6 +314,8 @@ where
                     changes,
                 },
             )
+            .await?;
+        self.enqueue_link_operation(&transaction, &updated, &operation, OutboxOpKind::Patch, "update")
             .await?;
 
         self.persistence.commit(transaction).await?;
@@ -322,6 +335,7 @@ where
             .ok_or_else(|| ApplicationError::not_found("链接不存在"))?;
         let task = self.require_visible_task(&current.task_id).await?;
 
+        let operation = OperationContext::new("local");
         let transaction = self.persistence.begin().await?;
         let deleted = self.persistence.delete(&transaction, &link_id).await?;
         if !deleted {
@@ -332,6 +346,7 @@ where
             .record_activity_in_txn(
                 &transaction,
                 RecordActivityInput {
+                    operation_id: Some(operation.operation_id.clone()),
                     entity_type: ActivityEntityKind::Task,
                     entity_id: task.id.clone(),
                     action: ActivityAction::TaskLinkRemoved,
@@ -348,6 +363,8 @@ where
                 },
             )
             .await?;
+        self.enqueue_link_operation(&transaction, &current, &operation, OutboxOpKind::Delete, "delete")
+            .await?;
 
         self.persistence.commit(transaction).await?;
         Ok(map_task_link_dto(current))
@@ -361,6 +378,34 @@ where
             .get(task_id)
             .await?
             .ok_or_else(|| ApplicationError::not_found("Task 不存在"))
+    }
+
+    async fn enqueue_link_operation(
+        &self,
+        connection: &P::Connection,
+        link: &TaskLinkRecord,
+        operation: &OperationContext,
+        operation_type: OutboxOpKind,
+        action: &str,
+    ) -> Result<(), ApplicationError> {
+        let payload = json!({ "version": 1, "operationId": operation.operation_id, "action": action, "taskLink": { "id": link.id, "taskId": link.task_id, "title": link.title, "url": link.url, "position": link.position } });
+        self.persistence
+            .enqueue(
+                connection,
+                &OutboxEnqueueRecord {
+                    id: create_id().to_string(),
+                    operation_id: operation.operation_id.clone(),
+                    entity_type: SyncEntityKind::TaskLink,
+                    entity_id: link.id.clone(),
+                    generation: 1,
+                    operation_type,
+                    payload_json: serde_json::to_string(&payload)
+                        .map_err(|error| ApplicationError::internal(error.to_string()))?,
+                    created_at: operation.created_at.clone(),
+                    available_at: operation.created_at.clone(),
+                },
+            )
+            .await
     }
 }
 

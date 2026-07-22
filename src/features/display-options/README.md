@@ -161,7 +161,7 @@ const resolved = applyDisplayOptionsToTasks({
 
 ## 6. 新增一个排序字段时改哪里
 
-例如要新增 `reminderAt`：
+例如要新增 `remindAt`：
 
 1. 先改 `core/task-display-options.ts`
 2. 再改 validator / normalizer
@@ -219,7 +219,7 @@ schema
 
 1. `ViewEditorDialog` 是“保存视图”表单，不是“页面显示”面板；
 2. `taskBoardOrder.ts` 现在只处理视觉状态顺序，不是完整 display engine；
-3. 后端默认排序里仍存在 `sortOrder` 被全局误用的问题。
+3. 后端默认排序里仍存在 `position` 被全局误用的问题。
 
 ---
 
@@ -283,7 +283,7 @@ schema
 1. 页面组件不允许直接写比较器。
 2. 页面组件不允许直接合并 workspace default 和 personal override。
 3. 运行时 display config 不允许继续塞进 `ViewEditorDialog`。
-4. `sortOrder` 不允许再作为全局任务页默认主排序键。
+4. `position` 不允许再作为全局任务页默认主排序键。
 5. `manual` 排序只能在单容器语义明确时开放。
 6. 新增 display option 前，先确认任务域有没有真实字段支撑。
 

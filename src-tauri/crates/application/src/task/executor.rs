@@ -72,15 +72,6 @@ pub(crate) fn status_key(status: WorkStatus) -> &'static str {
     status.as_str()
 }
 
-/// 依据目标状态推导 completed_at（R2：WorkState 只用单一 completed_at 表达“完成”）。
-pub(crate) fn completed_at_for_status(status: WorkStatus, now: &str) -> Option<String> {
-    if status.is_done() {
-        Some(now.to_owned())
-    } else {
-        None
-    }
-}
-
 pub(crate) fn select_update_action(
     current: &TaskRecord,
     next_status: Option<WorkStatus>,
@@ -118,10 +109,10 @@ pub(crate) fn select_update_action(
         return ActivityAction::TaskDueUpdated;
     }
     if changed_fields.contains(&"planned_at") {
-        return ActivityAction::TaskScheduledUpdated;
+        return ActivityAction::TaskPlannedUpdated;
     }
     if changed_fields.contains(&"remind_at") {
-        return ActivityAction::TaskReminderUpdated;
+        return ActivityAction::TaskRemindUpdated;
     }
     if changed_fields.contains(&"note") {
         return ActivityAction::TaskNoteUpdated;
@@ -140,8 +131,8 @@ pub(crate) fn build_update_summary(action: ActivityAction, title: &str) -> Strin
         ActivityAction::TaskMovedSpace => format!("调整任务所属 Space「{title}」"),
         ActivityAction::TaskPriorityChanged => format!("更新任务优先级「{title}」"),
         ActivityAction::TaskDueUpdated => format!("更新任务截止时间「{title}」"),
-        ActivityAction::TaskScheduledUpdated => format!("更新任务计划时间「{title}」"),
-        ActivityAction::TaskReminderUpdated => format!("更新任务提醒时间「{title}」"),
+        ActivityAction::TaskPlannedUpdated => format!("更新任务计划时间「{title}」"),
+        ActivityAction::TaskRemindUpdated => format!("更新任务提醒时间「{title}」"),
         ActivityAction::TaskNoteUpdated => format!("更新任务备注「{title}」"),
         _ => format!("更新任务「{title}」"),
     }

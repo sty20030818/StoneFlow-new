@@ -16,6 +16,17 @@ import type {
 } from '@/shared/types'
 import type { Scope } from '@/shared/types'
 
+export type BulkTaskAction =
+	| { kind: 'archive' }
+	| { kind: 'delete' }
+	| { kind: 'setPriority'; priority: number }
+	| { kind: 'setStatus'; status: 'todo' | 'doing' | 'waiting' | 'done' | 'canceled' }
+	| { kind: 'setDueAt'; dueAt: string | null }
+	| {
+			kind: 'setPlacement'
+			placement: { kind: 'project' | 'noProject'; spaceId: string; projectId?: string }
+	  }
+
 type TaskScopePayload =
 	| {
 			type: 'all'
@@ -61,8 +72,8 @@ export async function createTask(input: CreateTaskInput) {
 			status: input.status ?? null,
 			priority: input.priority ?? null,
 			dueAt: input.dueAt ?? null,
-			scheduledAt: input.scheduledAt ?? null,
-			reminderAt: input.reminderAt ?? null,
+			plannedAt: input.plannedAt ?? null,
+			remindAt: input.remindAt ?? null,
 		},
 	})
 }
@@ -83,9 +94,16 @@ export async function updateTask(input: UpdateTaskInput) {
 					}
 				: undefined,
 			dueAt: input.dueAt,
-			scheduledAt: input.scheduledAt,
-			reminderAt: input.reminderAt,
+			plannedAt: input.plannedAt,
+			remindAt: input.remindAt,
+			...(input.position === undefined ? {} : { position: input.position }),
 		},
+	})
+}
+
+export async function bulkUpdateTasks(taskIds: string[], action: BulkTaskAction) {
+	return invoke<{ taskIds: string[]; operationId: string }>('bulk_update_tasks', {
+		input: { taskIds, action },
 	})
 }
 

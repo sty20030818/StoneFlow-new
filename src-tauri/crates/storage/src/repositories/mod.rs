@@ -9,6 +9,8 @@ mod project_repository;
 mod settings_repository;
 mod space_repository;
 mod sync_repository;
+mod task_link_repository;
+mod task_repository;
 mod tombstone_repository;
 
 pub use activity_repository::ActivityRepository;
@@ -22,4 +24,6 @@ pub use space_repository::{
     CreateSpaceRecord, SpaceCascadeEntities, SpaceCascadeResult, SpaceRepository, UpdateSpacePatch,
 };
 pub use sync_repository::{SyncCursorRecord, SyncDeviceRecord, SyncRepository};
+pub use task_link_repository::{CreateTaskLinkRecord, TaskLinkRepository, UpdateTaskLinkPatch};
+pub use task_repository::{CreateTaskRecord, TaskRepository, UpdateTaskPatch};
 pub use tombstone_repository::TombstoneRepository;

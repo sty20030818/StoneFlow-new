@@ -132,8 +132,8 @@ function createDraft(overrides: Partial<TaskDetailDraft> = {}): TaskDetailDraft 
 		projectId: '',
 		inboxAt: '',
 		dueAt: '',
-		scheduledAt: '',
-		reminderAt: '',
+		plannedAt: '',
+		remindAt: '',
 		...overrides,
 	}
 }

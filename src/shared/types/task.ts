@@ -24,9 +24,7 @@ export type TaskListPlacementInput =
 			kind: 'project'
 			projectId: string
 	  }
-	| {
-			kind: 'inbox'
-	  }
+	| { kind: 'inbox' }
 	| {
 			kind: 'noProject'
 	  }
@@ -36,9 +34,7 @@ export type TaskCreatePlacementInput =
 			kind: 'project'
 			projectId: string
 	  }
-	| {
-			kind: 'inbox'
-	  }
+	| { kind: 'inbox' }
 	| {
 			kind: 'noProject'
 	  }
@@ -49,10 +45,7 @@ export type TaskUpdatePlacementInput =
 			spaceId: string
 			projectId: string
 	  }
-	| {
-			kind: 'inbox'
-			spaceId: string
-	  }
+	| { kind: 'inbox'; spaceId: string }
 	| {
 			kind: 'noProject'
 			spaceId: string
@@ -66,6 +59,7 @@ export type Task = {
 	status: TaskStatus
 	projectId: string | null
 	projectName: string | null
+	inboxAt: string | null
 	pinned: boolean
 }
 
@@ -91,8 +85,8 @@ export type TaskListItem = {
 	statusChangedAt: string
 	priority: TaskPriority
 	dueAt: string | null
-	scheduledAt: string | null
-	reminderAt: string | null
+	plannedAt: string | null
+	remindAt: string | null
 	completedAt: string | null
 	canceledAt: string | null
 	archivedAt: string | null
@@ -101,7 +95,7 @@ export type TaskListItem = {
 }
 
 export type TaskDetail = TaskListItem & {
-	sortOrder: number
+	position: number
 	deletedAt: string | null
 }
 
@@ -110,7 +104,7 @@ export type TaskLink = {
 	taskId: string
 	title: string
 	url: string
-	sortOrder: number
+	position: number
 	createdAt: string
 	updatedAt: string
 }
@@ -129,8 +123,8 @@ export type CreateTaskInput = {
 	status?: TaskStatus | null
 	priority?: TaskPriority | null
 	dueAt?: string | null
-	scheduledAt?: string | null
-	reminderAt?: string | null
+	plannedAt?: string | null
+	remindAt?: string | null
 }
 
 export type UpdateTaskInput = {
@@ -141,8 +135,9 @@ export type UpdateTaskInput = {
 	priority?: TaskPriority
 	placement?: TaskUpdatePlacementInput
 	dueAt?: string | null
-	scheduledAt?: string | null
-	reminderAt?: string | null
+	plannedAt?: string | null
+	remindAt?: string | null
+	position?: number
 }
 
 export type ListTaskLinksInput = {

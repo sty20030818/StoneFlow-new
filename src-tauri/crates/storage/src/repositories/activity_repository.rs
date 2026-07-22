@@ -41,7 +41,7 @@ impl ActivityRepository {
                 stoneflow_domain::ActivityEntityKind::Setting => "setting".to_owned(),
             }),
             entity_id: Set(event.entity_id.clone()),
-            operation_id: Set(event.id.clone()),
+            operation_id: Set(event.operation_id.clone()),
             action: Set(event.action.clone()),
             actor_type: Set(format!("{:?}", event.actor_type).to_lowercase()),
             source: Set(format!("{:?}", event.source).to_lowercase()),

@@ -116,11 +116,11 @@ export function useLauncherDerivedState(state: LauncherPanelState): LauncherDeri
 		if (state.draft.dueAt) {
 			parts.push(`截止 ${formatDateLabel(state.draft.dueAt)}`)
 		}
-		if (state.draft.scheduledAt) {
-			parts.push(`计划 ${formatDateLabel(state.draft.scheduledAt)}`)
+		if (state.draft.plannedAt) {
+			parts.push(`计划 ${formatDateLabel(state.draft.plannedAt)}`)
 		}
-		if (state.draft.reminderAt) {
-			parts.push(`提醒 ${formatDateLabel(state.draft.reminderAt)}`)
+		if (state.draft.remindAt) {
+			parts.push(`提醒 ${formatDateLabel(state.draft.remindAt)}`)
 		}
 
 		return parts.join(' · ')
@@ -129,8 +129,8 @@ export function useLauncherDerivedState(state: LauncherPanelState): LauncherDeri
 		placementLabel,
 		state.draft.dueAt,
 		state.draft.priority,
-		state.draft.reminderAt,
-		state.draft.scheduledAt,
+		state.draft.remindAt,
+		state.draft.plannedAt,
 		state.draft.status,
 	])
 

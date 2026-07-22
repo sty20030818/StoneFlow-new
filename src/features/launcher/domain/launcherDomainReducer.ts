@@ -8,8 +8,8 @@ const defaultDraft: LauncherDraft = {
 	spaceId: null,
 	placement: { kind: 'inbox', projectId: null },
 	dueAt: null,
-	scheduledAt: null,
-	reminderAt: null,
+	plannedAt: null,
+	remindAt: null,
 }
 
 export function createLauncherInitialState(): LauncherPanelState {
@@ -61,8 +61,8 @@ export function launcherDomainReducer(
 						spaceId: action.payload.defaultSpaceId,
 						placement: action.payload.defaultPlacement,
 						dueAt: null,
-						scheduledAt: null,
-						reminderAt: null,
+						plannedAt: null,
+						remindAt: null,
 					},
 					projectOptions: action.payload.projects,
 					projectSearch: '',
@@ -287,8 +287,8 @@ export function launcherDomainReducer(
 					priority: 0,
 					status: 'todo',
 					dueAt: null,
-					scheduledAt: null,
-					reminderAt: null,
+					plannedAt: null,
+					remindAt: null,
 				},
 				searchResults: { tasks: [], projects: [] },
 				searchView: 'recent',

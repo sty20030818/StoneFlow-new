@@ -22,7 +22,7 @@ export function mapLauncherToTaskInput(input: LauncherInput): CreateTaskInput {
 		status: (input.status as TaskStatus | null) ?? null,
 		priority: (input.priority as TaskPriority | null) ?? null,
 		dueAt: input.dueAt,
-		scheduledAt: input.scheduledAt,
-		reminderAt: input.reminderAt,
+		plannedAt: input.plannedAt,
+		remindAt: input.remindAt,
 	}
 }

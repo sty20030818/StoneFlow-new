@@ -63,8 +63,8 @@ describe('tasks api', () => {
 			status: 'doing',
 			priority: 3,
 			dueAt: '2026-05-01T10:00:00Z',
-			scheduledAt: null,
-			reminderAt: null,
+			plannedAt: null,
+			remindAt: null,
 		})
 		await updateTask({
 			taskId: 'task-1',
@@ -91,8 +91,8 @@ describe('tasks api', () => {
 				status: 'doing',
 				priority: 3,
 				dueAt: '2026-05-01T10:00:00Z',
-				scheduledAt: null,
-				reminderAt: null,
+				plannedAt: null,
+				remindAt: null,
 			},
 		})
 		expect(mockedInvoke).toHaveBeenNthCalledWith(3, 'update_task', {
@@ -108,8 +108,8 @@ describe('tasks api', () => {
 					projectId: null,
 				},
 				dueAt: undefined,
-				scheduledAt: undefined,
-				reminderAt: undefined,
+				plannedAt: undefined,
+				remindAt: undefined,
 			},
 		})
 	})
@@ -181,8 +181,8 @@ describe('tasks api', () => {
 					projectId: null,
 				},
 				dueAt: undefined,
-				scheduledAt: undefined,
-				reminderAt: undefined,
+				plannedAt: undefined,
+				remindAt: undefined,
 			},
 		})
 		expect(mockedInvoke).toHaveBeenNthCalledWith(5, 'update_task', {
@@ -198,8 +198,8 @@ describe('tasks api', () => {
 					projectId: 'project-1',
 				},
 				dueAt: undefined,
-				scheduledAt: undefined,
-				reminderAt: undefined,
+				plannedAt: undefined,
+				remindAt: undefined,
 			},
 		})
 		expect(mockedInvoke).toHaveBeenNthCalledWith(6, 'update_task', {
@@ -215,8 +215,8 @@ describe('tasks api', () => {
 					projectId: null,
 				},
 				dueAt: undefined,
-				scheduledAt: undefined,
-				reminderAt: undefined,
+				plannedAt: undefined,
+				remindAt: undefined,
 			},
 		})
 	})

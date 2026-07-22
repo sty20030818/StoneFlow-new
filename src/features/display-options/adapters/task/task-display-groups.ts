@@ -125,7 +125,7 @@ export function resolveTaskGroupValue(
 		case 'due':
 			return resolveTaskDateBucket(task.dueAt)
 		case 'scheduled':
-			return resolveTaskDateBucket(task.scheduledAt)
+			return resolveTaskDateBucket(task.plannedAt)
 		case 'none':
 		default:
 			return 'all'

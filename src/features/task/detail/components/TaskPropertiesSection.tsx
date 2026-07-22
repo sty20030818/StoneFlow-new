@@ -82,9 +82,9 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.scheduled}
 					label='计划时间'
-					value={autosave.draft.scheduledAt}
+					value={autosave.draft.plannedAt}
 					onChange={(value) =>
-						autosave.setField('scheduledAt', value ?? '', {
+						autosave.setField('plannedAt', value ?? '', {
 							saveMode: 'immediate',
 						})
 					}
@@ -97,9 +97,9 @@ export function TaskPropertiesSection({ autosave, disabled = false }: TaskProper
 					drawerOwnedOverlay
 					icon={taskDateMetadataIcons.reminder}
 					label='提醒时间'
-					value={autosave.draft.reminderAt}
+					value={autosave.draft.remindAt}
 					onChange={(value) =>
-						autosave.setField('reminderAt', value ?? '', {
+						autosave.setField('remindAt', value ?? '', {
 							saveMode: 'immediate',
 						})
 					}

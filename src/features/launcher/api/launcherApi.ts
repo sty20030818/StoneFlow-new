@@ -19,8 +19,8 @@ export type LauncherInput = {
 	status: string | null
 	priority: number | null
 	dueAt: string | null
-	scheduledAt: string | null
-	reminderAt: string | null
+	plannedAt: string | null
+	remindAt: string | null
 }
 
 export type LauncherOpenTargetInput = {

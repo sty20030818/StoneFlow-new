@@ -70,10 +70,10 @@ export const viewEditorSchema = z
 			...TaskGroupBy[],
 		]),
 		sortField: z.enum([
-			'sortOrder',
+			'position',
 			'priority',
 			'dueAt',
-			'scheduledAt',
+			'plannedAt',
 			'createdAt',
 			'updatedAt',
 			'completedAt',

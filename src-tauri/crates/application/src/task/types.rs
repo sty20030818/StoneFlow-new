@@ -21,6 +21,8 @@ pub struct TaskRecord {
     pub completed_at: Option<String>,
     pub archived_at: Option<String>,
     pub deleted_at: Option<String>,
+    pub archived_by_operation_id: Option<String>,
+    pub deleted_by_operation_id: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }

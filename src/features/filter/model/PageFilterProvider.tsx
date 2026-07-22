@@ -161,9 +161,9 @@ export function isTaskCompleted(status: TaskStatus) {
 }
 
 export function hasTaskDate(task: TaskListItem) {
-	return Boolean(task.dueAt || task.scheduledAt || task.reminderAt)
+	return Boolean(task.dueAt || task.plannedAt || task.remindAt)
 }
 
 export function resolveTaskDateValue(task: TaskListItem) {
-	return task.dueAt ?? task.scheduledAt ?? task.reminderAt
+	return task.dueAt ?? task.plannedAt ?? task.remindAt
 }

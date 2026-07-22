@@ -71,11 +71,11 @@ const GROUP_BY_OPTIONS: Array<{ value: TaskGroupBy; label: string }> = [
 const SORT_FIELD_OPTIONS: Array<{ value: ViewSortField; label: string }> = [
 	{ value: 'priority', label: '优先级' },
 	{ value: 'dueAt', label: '截止时间' },
-	{ value: 'scheduledAt', label: '计划时间' },
+	{ value: 'plannedAt', label: '计划时间' },
 	{ value: 'createdAt', label: '创建时间' },
 	{ value: 'updatedAt', label: '更新时间' },
 	{ value: 'completedAt', label: '完成时间' },
-	{ value: 'sortOrder', label: '原始排序' },
+	{ value: 'position', label: '原始排序' },
 ]
 
 type ViewEditorDialogProps = {

@@ -177,8 +177,8 @@ describe('TaskCreateContent', () => {
 		expect(createTaskMock).toHaveBeenCalledWith(
 			expect.objectContaining({
 				dueAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-				scheduledAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
-				reminderAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+				plannedAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+				remindAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
 			}),
 		)
 	})
@@ -280,8 +280,8 @@ function createTaskDetail() {
 		statusChangedAt: '2026-05-19T10:00:00.000Z',
 		priority: 0 as const,
 		dueAt: null,
-		scheduledAt: null,
-		reminderAt: null,
+		plannedAt: null,
+		remindAt: null,
 		completedAt: null,
 		canceledAt: null,
 		archivedAt: null,
