@@ -71,7 +71,8 @@ export function createDueDateActionSpec({
 	}
 }
 
-export function createPlacementActionSpec({
+/** 项目「父项目」选择（与 Task 归属 placement 无关）。 */
+export function createParentProjectActionSpec({
 	projects,
 }: {
 	projects: Array<{ id: string; name: string }>

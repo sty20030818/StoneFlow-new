@@ -6,10 +6,8 @@ use stoneflow_application::launcher::{
 };
 use tauri::State;
 
-use crate::app::state::{ActiveScopeKind, ActiveScopeSnapshot, AppState, CommandOpenState};
+use crate::app::state::{map_active_scope, AppState, CommandOpenState};
 use crate::command_open::{dispatch_command_open, restore_main_window, CommandOpenPayload};
-use stoneflow_application::launcher::{ActiveScopeInput, ActiveScopeKind as AppActiveScopeKind};
-
 use stoneflow_application::launcher::LauncherProjectsBySpaceDto;
 
 use super::error::{LauncherErrorPayload, LauncherInitialStateResponse};
@@ -116,14 +114,4 @@ async fn open_existing_target(
     .await
     .map_err(LauncherErrorPayload::from)?;
     Ok(())
-}
-
-fn map_active_scope(snapshot: Option<ActiveScopeSnapshot>) -> Option<ActiveScopeInput> {
-    snapshot.map(|scope| ActiveScopeInput {
-        kind: match scope.kind {
-            ActiveScopeKind::All => AppActiveScopeKind::All,
-            ActiveScopeKind::Space => AppActiveScopeKind::Space,
-        },
-        space_id: scope.space_id.map(|id| id.to_string()),
-    })
 }

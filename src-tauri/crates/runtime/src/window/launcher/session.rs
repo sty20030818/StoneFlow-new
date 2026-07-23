@@ -7,10 +7,7 @@ use tauri::{Emitter, Manager};
 use super::controller::build_quick_controller;
 
 use crate::app::error::AppError;
-use crate::app::state::{
-    ActiveScopeKind, ActiveScopeSnapshot, ActiveScopeState, AppState,
-};
-use stoneflow_application::launcher::{ActiveScopeInput, ActiveScopeKind as AppActiveScopeKind};
+use crate::app::state::{map_active_scope, ActiveScopeState, AppState};
 
 use super::frontend::LauncherFrontendState;
 use super::runtime::{
@@ -247,12 +244,4 @@ fn map_close_reason_output(reason: LauncherWindowCloseReason) -> &'static str {
     }
 }
 
-fn map_active_scope(snapshot: Option<ActiveScopeSnapshot>) -> Option<ActiveScopeInput> {
-    snapshot.map(|scope| ActiveScopeInput {
-        kind: match scope.kind {
-            ActiveScopeKind::All => AppActiveScopeKind::All,
-            ActiveScopeKind::Space => AppActiveScopeKind::Space,
-        },
-        space_id: scope.space_id.map(|id| id.to_string()),
-    })
-}
+

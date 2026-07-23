@@ -23,7 +23,7 @@ export type {
 } from '@/features/task/contract'
 export {
 	createDueDateActionSpec,
-	createPlacementActionSpec,
+	createParentProjectActionSpec,
 	createPriorityActionSpec,
 	createSpaceActionSpec,
 	createStatusActionSpec,

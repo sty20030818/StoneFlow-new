@@ -40,6 +40,12 @@ Rust workspace                                   SQLite（本地事实源）
 - TanStack Query 管服务端/业务数据缓存与失效；Zustand 只管跨组件 UI 状态；组件 local state 只管瞬时交互。
 - SQLite 是离线与业务读写的本地事实源。同步完成后由统一的工作区变更事件失效前端 Query。
 
+## 任务归属（简）
+
+- **项目任务** / **独立事项（standalone）** 二选一；`project_id IS NULL` = 独立事项。
+- 无 Inbox 容器；独立事项入口在 Space 项目列表顶部虚拟行，路径 `/$scopeKey/standalone`。
+- 细节见 [领域模型](./Documents/01-架构/A1-领域模型.md)。
+
 ## 全局架构约束
 
 - 不在 Query、Zustand 与 local state 中复制 Task、Project、View、Space 或同步业务数据。

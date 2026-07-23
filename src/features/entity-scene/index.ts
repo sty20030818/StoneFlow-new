@@ -16,5 +16,4 @@ export type {
 	EntitySceneTaskBoardActions,
 	EntitySceneTaskBoardConfig,
 	EntitySceneTaskBoardData,
-	EntitySceneVariant,
 } from './types'

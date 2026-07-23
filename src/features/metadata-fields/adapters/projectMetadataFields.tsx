@@ -2,7 +2,7 @@ import { CalendarX2Icon } from 'lucide-react'
 
 import type { ProjectOption } from '@/features/project'
 import {
-	createPlacementActionSpec,
+	createParentProjectActionSpec,
 	mapMetadataActionSpecToDropdownProps,
 	type MetadataDropdownMappedProps,
 } from '@/features/metadata-fields/core'
@@ -11,7 +11,7 @@ export function createProjectParentMetadataDropdownProps(
 	projects: Array<Pick<ProjectOption, 'id' | 'name'>>,
 ): MetadataDropdownMappedProps<string> {
 	return mapMetadataActionSpecToDropdownProps(
-		createPlacementActionSpec({
+		createParentProjectActionSpec({
 			projects,
 		}),
 	)

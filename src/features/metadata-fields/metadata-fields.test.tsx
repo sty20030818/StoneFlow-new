@@ -11,7 +11,7 @@ import {
 	MetadataFieldDropdown,
 	MetadataPlacementDropdown,
 } from '@/features/metadata-fields'
-import { createPlacementActionSpec } from './core'
+import { createParentProjectActionSpec } from './core'
 
 describe('metadata-fields', () => {
 	it('status / priority / dueDate action spec 输出最终文案和数字规则', () => {
@@ -208,7 +208,7 @@ describe('metadata-fields', () => {
 
 	it('parent project action spec 只保留 generic 语义', () => {
 		expect(
-			createPlacementActionSpec({ projects: [{ id: 'project-1', name: '项目 A' }] }),
+			createParentProjectActionSpec({ projects: [{ id: 'project-1', name: '项目 A' }] }),
 		).toMatchObject({
 			fieldKey: 'parentProject',
 			headerLabel: '设置父项目为...',

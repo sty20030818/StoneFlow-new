@@ -1,9 +1,9 @@
 # StoneFlow Tauri 后端架构
 
-> 版本：v9
+> 版本：v9.1
 > 作用：定义 `src-tauri/` 当前已经落地的 Rust + Tauri v2 正式边界
 > 适用范围：`/Users/stonefish/Desktop/StoneFlow/src-tauri`
-> 最后更新：2026-07-23
+> 最后更新：2026-07-24
 
 ---
 
@@ -72,6 +72,8 @@ src-tauri/
 已移除：独立 schema/migration crate、`sync-worker` sidecar、`runtime/services` 过渡层。
 
 `runtime` 仅作 composition / transport；业务用例经 `AppState` 调用 `application`，ports 由 `storage::adapters` 实现。本地 schema 为**单一 baseline 迁移**，不支持旧库在线升级。
+
+**Task 归属：** write `TaskWritePlacementKind` = `project` \| `standalone`；list `TaskPlacementQuery` = `All` \| `Project` \| `Standalone`。无 Inbox / `inbox_at`。独立事项 = `project_id IS NULL`。Launcher 初始态直出 application DTO（与 tasks 薄 transport 一致）。
 
 ---
 

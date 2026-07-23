@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**后端主线已完成**；前端产品/路由硬切另立 follow-up（见同目录 `FRONTEND-FOLLOWUP.md`）。
+**后端 + 前端 hard-cut 均已完成**（含 standalone 统一与后续结构精简）。
 
 ## 产品结论（侧栏，已确认）
 
@@ -19,32 +19,31 @@
 
 ## 阶段二：Rust / 同步 / schema
 
-- [x] **单一 baseline 迁移** `m20260723_000001_baseline`（删除 r2–r7 分片迁移）。
-- [x] 索引 `ix_tasks_space_no_project_position`（原 inbox 命名）。
+- [x] **单一 baseline 迁移** `m20260723_000001_baseline`。
+- [x] 索引 `ix_tasks_space_standalone_position`（独立事项排序）。
 - [x] `r7_push` / `r7_pull` → `outbox_push` / `cursor_pull`。
-- [x] 注释/错误/测试名去掉 `R2`–`R8` 阶段性标记。
-- [x] Launcher / Application 去掉 Inbox 枚举与 `inbox_at` 兼容字段。
-- [x] Sidebar settings 去掉 `SidebarMainItemKey::Inbox` 与 `main_items.inbox`。
-- [x] 仅 `manage(AppState)`（不再双 manage database/sync）。
-- [x] 删除 `runtime/services`（R8 已完成，本阶段确认无残留）。
+- [x] 注释/错误/测试名去掉阶段性标记。
+- [x] Launcher / Application 去掉 Inbox；placement = project \| standalone。
+- [x] Sidebar settings 去掉 Inbox 主入口键。
+- [x] 仅 `manage(AppState)`（业务双 State 移除）。
+- [x] 删除 `runtime/services`。
+- [x] create/list placement 内部类型拆分；`resolve_write_placement`；Launcher 直出 DTO。
 
 ## 阶段三：前端
 
-- [ ] **不在本阶段完成** → 见 `FRONTEND-FOLLOWUP.md`。
+- [x] 主导航无收件箱；独立事项虚拟行 + `/$scopeKey/standalone`。
+- [x] 类型/API/命令硬切为 standalone；无兼容映射。
+- [x] `TaskPlacementTarget` ≡ update placement；`standaloneOnly` 客户端筛选命名。
+- [x] typecheck / lint / vitest 全绿。
 
 ## 阶段四：文档与校验
 
-- [x] 更新 `src-tauri/ARCHITECTURE.md`（v9）、sync/runtime README/DESIGN 相关表述。
-- [x] `cargo test -p stoneflow-{application,storage,runtime} --lib` 通过。
-- [ ] 全 workspace Clippy / 前端 typecheck（前端未硬切前可能失败，属预期）。
-
-## 与 SPEC 的实施偏差
-
-1. 前端 transport/路由硬切拆到 follow-up，避免后端与前端大 diff 缠在一起。
-2. UI session State（ActiveScope、Launcher 窗口、Update 服务）仍独立 manage——非业务双写，属 Tauri 壳层状态。
+- [x] 领域模型 / 界面 IA / src 架构表述对齐 standalone。
+- [x] `FRONTEND-FOLLOWUP.md` 标完成。
+- [x] `cargo check` + task 相关 lib 测；前端 typecheck / lint / test。
 
 ## 完成记录
 
-- 完成日期：2026-07-23（后端主线）
-- 删除/合并证据：见 git diff（migration 7→1；r7_* 模块改名；Inbox 字段删除）
-- 遗留：前端 follow-up；R7 阶段五真环境验证；libsql 与 SQLite 同进程链接警告
+- 后端主线：2026-07-23
+- 前端 hard-cut + 结构精简：2026-07-23～24
+- 遗留（非阻断）：R7 真环境同步验证；Clippy 全量可选；Space 快捷键 `S` 产品化

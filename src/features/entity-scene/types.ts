@@ -13,16 +13,6 @@ import type {
 } from '@/shared/types'
 import type { BoardSection } from '@/shared/components/board'
 
-export type EntitySceneVariant =
-	| 'tasks'
-	| 'view'
-	| 'standalone'
-	| 'archive'
-	| 'trash'
-	| 'project-overview'
-	| 'project-detail'
-	| 'settings'
-
 export type BoardKind = 'task' | 'project' | 'lifecycle'
 export type EntitySceneBoardStatus = 'idle' | 'loading' | 'ready' | 'error'
 

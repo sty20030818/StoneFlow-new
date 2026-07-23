@@ -7,6 +7,9 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::sync::SyncRuntimeState;
+use stoneflow_application::launcher::{
+    ActiveScopeInput, ActiveScopeKind as AppActiveScopeKind,
+};
 use stoneflow_storage::database::DatabaseRuntimeState;
 use stoneflow_storage::{
     ActivityAppService, LauncherAppService, LauncherContextAppService, LifecycleAppService,
@@ -28,6 +31,24 @@ pub struct ActiveScopeSnapshot {
     pub id: Uuid,
     pub kind: ActiveScopeKind,
     pub space_id: Option<Uuid>,
+}
+
+impl ActiveScopeSnapshot {
+    /// 映射为 application Launcher 的 Scope 输入。
+    pub fn to_launcher_input(&self) -> ActiveScopeInput {
+        ActiveScopeInput {
+            kind: match self.kind {
+                ActiveScopeKind::All => AppActiveScopeKind::All,
+                ActiveScopeKind::Space => AppActiveScopeKind::Space,
+            },
+            space_id: self.space_id.map(|id| id.to_string()),
+        }
+    }
+}
+
+/// runtime 快照 → application ActiveScopeInput（Launcher 共用）。
+pub fn map_active_scope(snapshot: Option<ActiveScopeSnapshot>) -> Option<ActiveScopeInput> {
+    snapshot.map(|scope| scope.to_launcher_input())
 }
 
 /// 当前 Scope 的轻量运行时状态。

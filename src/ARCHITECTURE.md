@@ -78,9 +78,11 @@ src/
 └── CONVENTIONS.md
 ```
 
-**勿再当作现状：** 顶层 `pages/`、`app/layouts`、`shared/ui`、独立 feature 壳 `inbox` / `all-tasks` / `archive` / `trash` / `standalone` / `views`、`healthcheck` / `task-drawer`。
+**勿再当作现状：** 顶层 `pages/`、`app/layouts`、`shared/ui`、独立 feature 壳 `inbox` / `all-tasks`、`healthcheck` / `task-drawer`。
 
-列表类 URL → 薄页 + domain list-scene（如 `TaskListSceneView`），不再各做 feature 包。
+列表类 URL → 薄页 + domain list-scene（如 `TaskListSceneView` variant `all` \| `standalone`），不再各做 feature 包。归档 / 回收站 / 视图走 lifecycle 或 view 场景，非独立 inbox 域。
+
+**任务归属：** 仅 `project` \| `standalone`（`project_id` 空 = 独立事项）。路径 `/$scopeKey/standalone`；无 Inbox。
 
 ---
 
