@@ -3,11 +3,14 @@
 #![allow(async_fn_in_trait)]
 
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json, Map, Value};
 use stoneflow_domain::{create_id, normalize_required_text, now_utc, validate_space_id};
 
 use crate::{
-    operation::{OperationContext, OutboxEnqueueRecord, OutboxOpKind, SyncEntityKind},
+    operation::{
+        changed_outbox_fields, OperationContext, OutboxEnqueueRecord, OutboxLifecycleState,
+        OutboxOpKind, OutboxPayload, SyncEntityKind,
+    },
     ApplicationError,
 };
 
@@ -202,9 +205,6 @@ struct SpaceOutboxOperation<'a> {
     operation: &'a OperationContext,
     operation_type: OutboxOpKind,
     action: &'a str,
-    default_space_id: Option<String>,
-    affected_project_count: u64,
-    affected_task_count: u64,
 }
 
 /// Space 用例编排（不含 archive / restore / delete）。
@@ -276,9 +276,6 @@ where
                 operation: &operation,
                 operation_type: OutboxOpKind::Upsert,
                 action: "create",
-                default_space_id: None,
-                affected_project_count: 0,
-                affected_task_count: 0,
             },
         )
         .await?;
@@ -336,17 +333,11 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Space 不存在"))?;
         let operation = OperationContext::new("local");
-        self.enqueue_space_operation(
+        self.enqueue_space_patch(
             &transaction,
-            SpaceOutboxOperation {
-                space: &updated,
-                operation: &operation,
-                operation_type: OutboxOpKind::Patch,
-                action: "update",
-                default_space_id: None,
-                affected_project_count: 0,
-                affected_task_count: 0,
-            },
+            &updated,
+            &operation,
+            changed_outbox_fields(&space_fields(&current), &space_fields(&updated)),
         )
         .await?;
 
@@ -369,6 +360,13 @@ where
 
         let updated_at = now_utc().to_rfc3339();
         let transaction = self.persistence.begin().await?;
+        let previous_default = self
+            .persistence
+            .list_active_except(&transaction, &space_id)
+            .await?
+            .into_iter()
+            .find(|space| space.is_default)
+            .ok_or_else(|| ApplicationError::conflict("工作区缺少可用默认 Space"))?;
         self.persistence
             .clear_default(&transaction, &updated_at)
             .await?;
@@ -378,17 +376,24 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Space 不存在"))?;
         let operation = OperationContext::new("local");
-        self.enqueue_space_operation(
+        self.enqueue_space_patch(
             &transaction,
-            SpaceOutboxOperation {
-                space: &updated,
-                operation: &operation,
-                operation_type: OutboxOpKind::Patch,
-                action: "set_default",
-                default_space_id: None,
-                affected_project_count: 0,
-                affected_task_count: 0,
-            },
+            &previous_default,
+            &operation,
+            Map::from_iter([
+                ("is_default".to_owned(), json!(false)),
+                ("updated_at".to_owned(), json!(updated_at.clone())),
+            ]),
+        )
+        .await?;
+        self.enqueue_space_patch(
+            &transaction,
+            &updated,
+            &operation,
+            Map::from_iter([
+                ("is_default".to_owned(), json!(true)),
+                ("updated_at".to_owned(), json!(updated_at.clone())),
+            ]),
         )
         .await?;
 
@@ -456,9 +461,6 @@ where
                 operation: &operation,
                 operation_type: OutboxOpKind::Restore,
                 action: "restore",
-                default_space_id: None,
-                affected_project_count: cascade.affected_project_count,
-                affected_task_count: cascade.affected_task_count,
             },
         )
         .await?;
@@ -495,9 +497,6 @@ where
                 operation: &operation,
                 operation_type: OutboxOpKind::Delete,
                 action: "permanently_delete",
-                default_space_id: None,
-                affected_project_count: cascade.affected_project_count,
-                affected_task_count: cascade.affected_task_count,
             },
         )
         .await?;
@@ -570,9 +569,6 @@ where
                     OutboxOpKind::Delete
                 },
                 action: if archive { "archive" } else { "delete" },
-                default_space_id: default_space_id.clone(),
-                affected_project_count: cascade.affected_project_count,
-                affected_task_count: cascade.affected_task_count,
             },
         )
         .await?;
@@ -585,15 +581,28 @@ where
         connection: &P::Connection,
         entry: SpaceOutboxOperation<'_>,
     ) -> Result<(), ApplicationError> {
-        let payload = json!({
-            "version": 1,
-            "operationId": entry.operation.operation_id,
-            "action": entry.action,
-            "space": map_space_record(entry.space.clone()),
-            "defaultSpaceId": entry.default_space_id,
-            "affectedProjectCount": entry.affected_project_count,
-            "affectedTaskCount": entry.affected_task_count,
-        });
+        let payload = match entry.action {
+            "create" => OutboxPayload::Patch {
+                fields: space_fields(entry.space),
+            },
+            "archive" => OutboxPayload::Lifecycle {
+                state: OutboxLifecycleState::Archived,
+            },
+            "delete" => OutboxPayload::Lifecycle {
+                state: OutboxLifecycleState::Trashed,
+            },
+            "restore" => OutboxPayload::Lifecycle {
+                state: OutboxLifecycleState::Active,
+            },
+            "permanently_delete" => OutboxPayload::Tombstone {
+                deleted_at: entry.operation.created_at.clone(),
+            },
+            other => {
+                return Err(ApplicationError::internal(format!(
+                    "未知 Space Outbox action: {other}"
+                )))
+            }
+        };
         self.persistence
             .enqueue(
                 connection,
@@ -604,10 +613,34 @@ where
                     entity_id: entry.space.id.clone(),
                     generation: entry.space.generation,
                     operation_type: entry.operation_type,
-                    payload_json: serde_json::to_string(&payload)
-                        .map_err(|error| ApplicationError::internal(error.to_string()))?,
+                    payload_json: payload.to_json()?,
                     created_at: entry.operation.created_at.clone(),
                     available_at: entry.operation.created_at.clone(),
+                },
+            )
+            .await
+    }
+
+    async fn enqueue_space_patch(
+        &self,
+        connection: &P::Connection,
+        space: &SpaceRecord,
+        operation: &OperationContext,
+        fields: Map<String, Value>,
+    ) -> Result<(), ApplicationError> {
+        self.persistence
+            .enqueue(
+                connection,
+                &OutboxEnqueueRecord {
+                    id: create_id().to_string(),
+                    operation_id: operation.operation_id.clone(),
+                    entity_type: SyncEntityKind::Space,
+                    entity_id: space.id.clone(),
+                    generation: space.generation,
+                    operation_type: OutboxOpKind::Patch,
+                    payload_json: OutboxPayload::Patch { fields }.to_json()?,
+                    created_at: operation.created_at.clone(),
+                    available_at: operation.created_at.clone(),
                 },
             )
             .await
@@ -627,6 +660,18 @@ fn map_space_record(record: SpaceRecord) -> SpaceDto {
         created_at: record.created_at,
         updated_at: record.updated_at,
     }
+}
+
+fn space_fields(record: &SpaceRecord) -> Map<String, Value> {
+    Map::from_iter([
+        ("name".to_owned(), json!(record.name)),
+        ("icon_key".to_owned(), json!(record.icon_key)),
+        ("color_key".to_owned(), json!(record.color_key)),
+        ("is_default".to_owned(), json!(record.is_default)),
+        ("position".to_owned(), json!(record.position)),
+        ("created_at".to_owned(), json!(record.created_at)),
+        ("updated_at".to_owned(), json!(record.updated_at)),
+    ])
 }
 
 impl From<SpaceRecord> for SpaceDto {

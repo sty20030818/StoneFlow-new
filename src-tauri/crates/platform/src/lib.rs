@@ -5,7 +5,10 @@
 //! - Windows 浮层窗口行为；
 //! - Launcher 的 prepare / present / hide / resize。
 
+pub mod credentials;
 pub mod launcher_window;
+
+pub use credentials::SyncTokenStore;
 
 #[cfg(target_os = "macos")]
 pub mod macos;

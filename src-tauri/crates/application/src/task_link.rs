@@ -3,7 +3,7 @@
 #![allow(async_fn_in_trait)]
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 use stoneflow_domain::{
     create_id, now_utc, validate_http_https_url, validate_link_id, validate_task_id_for_link,
     ActivityEntityKind,
@@ -14,7 +14,10 @@ use crate::{
         ActivityAction, ActivityChangeInput, ActivityPersistence, ActivityService,
         RecordActivityInput,
     },
-    operation::{OperationContext, OutboxEnqueueRecord, OutboxOpKind, SyncEntityKind},
+    operation::{
+        changed_outbox_fields, OperationContext, OutboxEnqueueRecord, OutboxOpKind, OutboxPayload,
+        SyncEntityKind,
+    },
     ApplicationError,
 };
 
@@ -238,7 +241,9 @@ where
             &created,
             &operation,
             OutboxOpKind::Upsert,
-            "create",
+            OutboxPayload::Patch {
+                fields: task_link_fields(&created),
+            },
         )
         .await?;
 
@@ -326,7 +331,12 @@ where
             &updated,
             &operation,
             OutboxOpKind::Patch,
-            "update",
+            OutboxPayload::Patch {
+                fields: changed_outbox_fields(
+                    &task_link_fields(&current),
+                    &task_link_fields(&updated),
+                ),
+            },
         )
         .await?;
 
@@ -380,7 +390,9 @@ where
             &current,
             &operation,
             OutboxOpKind::Delete,
-            "delete",
+            OutboxPayload::Tombstone {
+                deleted_at: operation.created_at.clone(),
+            },
         )
         .await?;
 
@@ -404,9 +416,8 @@ where
         link: &TaskLinkRecord,
         operation: &OperationContext,
         operation_type: OutboxOpKind,
-        action: &str,
+        payload: OutboxPayload,
     ) -> Result<(), ApplicationError> {
-        let payload = json!({ "version": 1, "operationId": operation.operation_id, "action": action, "taskLink": { "id": link.id, "taskId": link.task_id, "title": link.title, "url": link.url, "position": link.position } });
         self.persistence
             .enqueue(
                 connection,
@@ -417,14 +428,24 @@ where
                     entity_id: link.id.clone(),
                     generation: 1,
                     operation_type,
-                    payload_json: serde_json::to_string(&payload)
-                        .map_err(|error| ApplicationError::internal(error.to_string()))?,
+                    payload_json: payload.to_json()?,
                     created_at: operation.created_at.clone(),
                     available_at: operation.created_at.clone(),
                 },
             )
             .await
     }
+}
+
+fn task_link_fields(link: &TaskLinkRecord) -> Map<String, Value> {
+    Map::from_iter([
+        ("task_id".to_owned(), json!(link.task_id)),
+        ("title".to_owned(), json!(link.title)),
+        ("url".to_owned(), json!(link.url)),
+        ("position".to_owned(), json!(link.position)),
+        ("created_at".to_owned(), json!(link.created_at)),
+        ("updated_at".to_owned(), json!(link.updated_at)),
+    ])
 }
 
 fn map_task_link_dto(item: TaskLinkRecord) -> TaskLinkDto {

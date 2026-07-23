@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use serde::{Deserialize, Deserializer, Serialize};
-use serde_json::json;
+use serde_json::{json, Map, Value};
 use stoneflow_domain::{
     create_id, normalize_required_text, now_utc, parse_optional_utc_rfc3339, validate_project_id,
     validate_space_id, ActivityEntityKind, WorkPriority, WorkStatus,
@@ -16,7 +16,10 @@ use crate::{
         ActivityAction, ActivityChangeInput, ActivityPersistence, ActivityService,
         RecordActivityInput,
     },
-    operation::{OperationContext, OutboxEnqueueRecord, OutboxOpKind, SyncEntityKind},
+    operation::{
+        changed_outbox_fields, OperationContext, OutboxEnqueueRecord, OutboxLifecycleState,
+        OutboxOpKind, OutboxPayload, SyncEntityKind,
+    },
     ApplicationError,
 };
 
@@ -774,12 +777,11 @@ where
                 .await?;
         }
 
-        self.enqueue_project_operation(
+        self.enqueue_project_patch(
             &transaction,
             &updated,
             &OperationContext::new("local"),
-            OutboxOpKind::Patch,
-            "update",
+            changed_outbox_fields(&project_fields(&current), &project_fields(&updated)),
         )
         .await?;
 
@@ -1088,28 +1090,28 @@ where
         operation_type: OutboxOpKind,
         action: &str,
     ) -> Result<(), ApplicationError> {
-        let payload = json!({
-            "version": 1,
-            "operationId": operation.operation_id,
-            "action": action,
-            "project": {
-                "id": project.id,
-                "spaceId": project.space_id,
-                "name": project.name,
-                "description": project.description,
-                "status": project.status.as_str(),
-                "priority": project.priority,
-                "plannedAt": project.planned_at,
-                "dueAt": project.due_at,
-                "remindAt": project.remind_at,
-                "statusChangedAt": project.status_changed_at,
-                "completedAt": project.completed_at,
-                "position": project.position,
-                "generation": project.generation,
-                "archivedAt": project.archived_at,
-                "deletedAt": project.deleted_at,
+        let payload = match action {
+            "create" => OutboxPayload::Patch {
+                fields: project_fields(project),
             },
-        });
+            "archive" => OutboxPayload::Lifecycle {
+                state: OutboxLifecycleState::Archived,
+            },
+            "delete" => OutboxPayload::Lifecycle {
+                state: OutboxLifecycleState::Trashed,
+            },
+            "restore" => OutboxPayload::Lifecycle {
+                state: OutboxLifecycleState::Active,
+            },
+            "permanentlyDelete" => OutboxPayload::Tombstone {
+                deleted_at: operation.created_at.clone(),
+            },
+            other => {
+                return Err(ApplicationError::internal(format!(
+                    "未知 Project Outbox action: {other}"
+                )))
+            }
+        };
         self.persistence
             .enqueue(
                 connection,
@@ -1120,14 +1122,59 @@ where
                     entity_id: project.id.clone(),
                     generation: project.generation,
                     operation_type,
-                    payload_json: serde_json::to_string(&payload)
-                        .map_err(|error| ApplicationError::internal(error.to_string()))?,
+                    payload_json: payload.to_json()?,
                     created_at: operation.created_at.clone(),
                     available_at: operation.created_at.clone(),
                 },
             )
             .await
     }
+
+    async fn enqueue_project_patch(
+        &self,
+        connection: &P::Connection,
+        project: &ProjectRecord,
+        operation: &OperationContext,
+        fields: Map<String, Value>,
+    ) -> Result<(), ApplicationError> {
+        self.persistence
+            .enqueue(
+                connection,
+                &OutboxEnqueueRecord {
+                    id: create_id().to_string(),
+                    operation_id: operation.operation_id.clone(),
+                    entity_type: SyncEntityKind::Project,
+                    entity_id: project.id.clone(),
+                    generation: project.generation,
+                    operation_type: OutboxOpKind::Patch,
+                    payload_json: OutboxPayload::Patch { fields }.to_json()?,
+                    created_at: operation.created_at.clone(),
+                    available_at: operation.created_at.clone(),
+                },
+            )
+            .await
+    }
+}
+
+fn project_fields(project: &ProjectRecord) -> Map<String, Value> {
+    Map::from_iter([
+        ("space_id".to_owned(), json!(project.space_id)),
+        ("name".to_owned(), json!(project.name)),
+        ("description".to_owned(), json!(project.description)),
+        ("status".to_owned(), json!(project.status.as_str())),
+        ("priority".to_owned(), json!(project.priority)),
+        ("planned_at".to_owned(), json!(project.planned_at)),
+        ("due_at".to_owned(), json!(project.due_at)),
+        ("remind_at".to_owned(), json!(project.remind_at)),
+        (
+            "status_changed_at".to_owned(),
+            json!(project.status_changed_at),
+        ),
+        ("completed_at".to_owned(), json!(project.completed_at)),
+        ("position".to_owned(), json!(project.position)),
+        ("created_at".to_owned(), json!(project.created_at)),
+        ("updated_at".to_owned(), json!(project.updated_at)),
+    ])
 }
 
 #[derive(Debug, Clone)]
@@ -1172,13 +1219,7 @@ fn parse_overview_view(value: &str) -> Result<ProjectOverviewView, ApplicationEr
 }
 
 fn normalize_optional_long_text(value: Option<String>) -> Option<String> {
-    value.and_then(|value| {
-        if value.trim().is_empty() {
-            None
-        } else {
-            Some(value)
-        }
-    })
+    value.filter(|value| !value.trim().is_empty())
 }
 
 fn normalize_optional_required_text(

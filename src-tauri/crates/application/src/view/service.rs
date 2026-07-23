@@ -3,7 +3,9 @@
 #![allow(async_fn_in_trait)]
 
 use crate::{
-    operation::{OutboxEnqueueRecord, OutboxOpKind, SyncEntityKind},
+    operation::{
+        changed_outbox_fields, OutboxEnqueueRecord, OutboxOpKind, OutboxPayload, SyncEntityKind,
+    },
     view::{
         executor::{is_active, local_date, matches, sort},
         CreateViewPersistenceRecord, DateFilterMode, ProjectFilterMode, TaskGroupBy,
@@ -15,6 +17,7 @@ use crate::{
 };
 use chrono::{Duration, Local, LocalResult, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Map, Value};
 use std::collections::{HashMap, HashSet};
 use stoneflow_domain::{create_id, normalize_required_text, now_utc, ViewEntityKind, WorkStatus};
 
@@ -228,6 +231,9 @@ where
             &record,
             OutboxOpKind::Upsert,
             &now,
+            OutboxPayload::Patch {
+                fields: view_fields(&record)?,
+            },
         )
         .await?;
         self.persistence.commit(connection).await?;
@@ -239,7 +245,7 @@ where
             .get(&input.view_id)
             .await?
             .ok_or_else(|| ApplicationError::not_found("View 不存在"))?;
-        let current_dto = decode_view(current)?;
+        let current_dto = decode_view(current.clone())?;
         let scope = input.scope.unwrap_or(current_dto.scope);
         let filters = input.filters.unwrap_or(current_dto.filters);
         let sort_rules = input.sort.unwrap_or(current_dto.sort);
@@ -269,12 +275,16 @@ where
             )
             .await?
             .ok_or_else(|| ApplicationError::not_found("View 不存在"))?;
+        let payload = OutboxPayload::Patch {
+            fields: changed_outbox_fields(&view_fields(&current)?, &view_fields(&record)?),
+        };
         enqueue(
             &self.persistence,
             &connection,
             &record,
             OutboxOpKind::Patch,
             &now,
+            payload,
         )
         .await?;
         self.persistence.commit(connection).await?;
@@ -297,6 +307,9 @@ where
             &current,
             OutboxOpKind::Delete,
             &now,
+            OutboxPayload::Tombstone {
+                deleted_at: now.clone(),
+            },
         )
         .await?;
         self.persistence.commit(connection).await
@@ -630,6 +643,7 @@ async fn enqueue<P: ViewPersistence>(
     record: &ViewRecord,
     operation_type: OutboxOpKind,
     now: &str,
+    payload: OutboxPayload,
 ) -> Result<(), ApplicationError> {
     persistence
         .enqueue(
@@ -646,12 +660,47 @@ async fn enqueue<P: ViewPersistence>(
                         0
                     },
                 operation_type,
-                payload_json: "{}".to_owned(),
+                payload_json: payload.to_json()?,
                 created_at: now.to_owned(),
                 available_at: now.to_owned(),
             },
         )
         .await
+}
+
+fn view_fields(record: &ViewRecord) -> Result<Map<String, Value>, ApplicationError> {
+    Ok(Map::from_iter([
+        ("name".to_owned(), json!(record.name)),
+        ("entity_kind".to_owned(), json!(record.entity_kind)),
+        (
+            "scope".to_owned(),
+            serde_json::from_str(&record.scope_json)
+                .map_err(|_| ApplicationError::validation("View scope 定义无效"))?,
+        ),
+        (
+            "filters".to_owned(),
+            serde_json::from_str(&record.filters_json)
+                .map_err(|_| ApplicationError::validation("View filters 定义无效"))?,
+        ),
+        (
+            "sort".to_owned(),
+            serde_json::from_str(&record.sort_json)
+                .map_err(|_| ApplicationError::validation("View sort 定义无效"))?,
+        ),
+        (
+            "group_by".to_owned(),
+            record
+                .group_by_json
+                .as_deref()
+                .map(serde_json::from_str)
+                .transpose()
+                .map_err(|_| ApplicationError::validation("View groupBy 定义无效"))?
+                .unwrap_or(Value::Null),
+        ),
+        ("position".to_owned(), json!(record.position)),
+        ("created_at".to_owned(), json!(record.created_at)),
+        ("updated_at".to_owned(), json!(record.updated_at)),
+    ]))
 }
 
 #[cfg(test)]

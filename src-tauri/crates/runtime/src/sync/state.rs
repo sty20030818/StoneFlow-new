@@ -12,6 +12,8 @@ use super::{
     types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind, SyncStatusPayload},
 };
 
+const WRITE_DEBOUNCE: Duration = Duration::seconds(3);
+
 #[derive(Debug, Default)]
 struct SyncRuntimeInner {
     remote_config: Option<SyncRemoteConfig>,
@@ -100,10 +102,7 @@ impl SyncRuntimeState {
         let mut guard = self.inner.write().await;
         guard.policy = policy;
         guard.next_sync_at = if guard.dirty_since.is_some() {
-            guard
-                .policy
-                .next_sync_at(now_utc())
-                .map(|time| time.to_rfc3339())
+            next_write_deadline(&guard.policy, now_utc())
         } else {
             next_sync_at
         };
@@ -141,7 +140,7 @@ impl SyncRuntimeState {
             guard.dirty_since = Some(now.to_rfc3339());
         }
         if guard.next_sync_at.is_none() {
-            guard.next_sync_at = guard.policy.next_sync_at(now).map(|time| time.to_rfc3339());
+            guard.next_sync_at = next_write_deadline(&guard.policy, now);
         }
 
         if is_running(guard.status) {
@@ -184,18 +183,6 @@ impl SyncRuntimeState {
         guard.status = SyncStatusKind::Syncing;
     }
 
-    /// 完整同步轮次在同一轮中切换到中间 push 阶段。
-    pub(crate) async fn enter_sync_push_phase(&self) {
-        let mut guard = self.inner.write().await;
-        guard.status = SyncStatusKind::Syncing;
-    }
-
-    /// 完整同步轮次在同一轮中切换到最后的 confirm pull 阶段。
-    pub(crate) async fn enter_sync_confirm_pull_phase(&self) {
-        let mut guard = self.inner.write().await;
-        guard.status = SyncStatusKind::Syncing;
-    }
-
     /// 同步成功后落状态。
     pub(crate) async fn complete_run(&self, mode: SyncRunMode) {
         let mut guard = self.inner.write().await;
@@ -225,17 +212,25 @@ impl SyncRuntimeState {
     }
 
     /// 同步失败只更新状态，不影响业务写入结果。
-    pub(crate) async fn fail_run(&self, mode: SyncRunMode, message: String) {
+    pub(crate) async fn fail_run(&self, mode: SyncRunMode, message: String, needs_attention: bool) {
         let mut guard = self.inner.write().await;
-        guard.status = SyncStatusKind::Error;
+        guard.status = if needs_attention {
+            SyncStatusKind::NeedsAttention
+        } else {
+            SyncStatusKind::Error
+        };
         guard.last_error = Some(message);
         guard.last_error_mode = Some(mode);
-        guard.failure_count = guard.failure_count.saturating_add(1);
-        guard.next_sync_at = match guard.policy.mode {
-            super::policy::SyncPolicyMode::Interval => {
-                Some((now_utc() + retry_backoff(guard.failure_count)).to_rfc3339())
-            }
-            super::policy::SyncPolicyMode::Manual => None,
+        if needs_attention {
+            guard.next_sync_at = None;
+        } else {
+            guard.failure_count = guard.failure_count.saturating_add(1);
+            guard.next_sync_at = match guard.policy.mode {
+                super::policy::SyncPolicyMode::Interval => {
+                    Some((now_utc() + retry_backoff(guard.failure_count)).to_rfc3339())
+                }
+                super::policy::SyncPolicyMode::Manual => None,
+            };
         };
         drop(guard);
         self.scheduler_notify.notify_one();
@@ -297,9 +292,14 @@ fn queue_pending_mode(inner: &mut SyncRuntimeInner, next_mode: SyncRunMode) {
 fn retry_backoff(failure_count: u32) -> Duration {
     match failure_count {
         0 | 1 => Duration::minutes(1),
-        2 => Duration::minutes(5),
-        _ => Duration::minutes(15),
+        2 => Duration::minutes(2),
+        _ => Duration::minutes(5),
     }
+}
+
+fn next_write_deadline(policy: &SyncPolicy, now: DateTime<Utc>) -> Option<String> {
+    matches!(policy.mode, super::policy::SyncPolicyMode::Interval)
+        .then(|| (now + WRITE_DEBOUNCE).to_rfc3339())
 }
 
 fn merge_modes(current: SyncRunMode, next: SyncRunMode) -> SyncRunMode {
@@ -315,6 +315,8 @@ fn merge_modes(current: SyncRunMode, next: SyncRunMode) -> SyncRunMode {
 
 #[cfg(test)]
 mod tests {
+    use chrono::Duration;
+
     use super::{SyncRunMode, SyncRuntimeState};
     use crate::sync::types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind};
     use crate::sync::{SyncPolicy, SyncPolicyMode};
@@ -404,11 +406,52 @@ mod tests {
             .await;
 
         state
-            .fail_run(SyncRunMode::Sync, "network down".to_owned())
+            .fail_run(SyncRunMode::Sync, "network down".to_owned(), false)
             .await;
 
         let payload = state.snapshot().await;
         assert!(payload.next_sync_at.is_some());
+    }
+
+    #[tokio::test]
+    async fn fail_run_should_stop_retry_for_actionable_error() {
+        let state = SyncRuntimeState::default();
+        state
+            .set_remote_config(Some(SyncRemoteConfig {
+                url: "libsql://example.turso.io".to_owned(),
+                token: "token".to_owned(),
+            }))
+            .await;
+
+        state
+            .fail_run(SyncRunMode::Sync, "schema incompatible".to_owned(), true)
+            .await;
+
+        let payload = state.snapshot().await;
+        assert_eq!(payload.status, SyncStatusKind::NeedsAttention);
+        assert_eq!(payload.next_sync_at, None);
+    }
+
+    #[test]
+    fn retry_backoff_should_cap_at_five_minutes() {
+        assert_eq!(super::retry_backoff(1), Duration::minutes(1));
+        assert_eq!(super::retry_backoff(2), Duration::minutes(2));
+        assert_eq!(super::retry_backoff(3), Duration::minutes(5));
+        assert_eq!(super::retry_backoff(99), Duration::minutes(5));
+    }
+
+    #[test]
+    fn next_write_deadline_should_use_short_debounce_for_interval_policy() {
+        let now = chrono::Utc::now();
+        let deadline = super::next_write_deadline(
+            &SyncPolicy {
+                mode: SyncPolicyMode::Interval,
+                interval_minutes: 30,
+            },
+            now,
+        );
+
+        assert_eq!(deadline, Some((now + Duration::seconds(3)).to_rfc3339()));
     }
 
     #[tokio::test]

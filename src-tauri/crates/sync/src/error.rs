@@ -6,6 +6,7 @@ pub enum SyncErrorKind {
     Authentication,
     LocalDatabase,
     RemoteDatabase,
+    Schema,
     Serialization,
     Protocol,
     Internal,
@@ -21,10 +22,14 @@ pub enum SyncError {
     LocalDatabase { message: String },
     #[error("远端数据库错误: {message}")]
     RemoteDatabase { message: String },
+    #[error("远端同步 schema 错误: {message}")]
+    Schema { message: String },
     #[error("序列化错误: {message}")]
     Serialization { message: String },
     #[error("同步协议错误: {message}")]
     Protocol { message: String },
+    #[error("同步 cursor 已过期，需要下载当前基线")]
+    CursorExpired,
     #[error("内部错误: {message}")]
     Internal { message: String },
 }
@@ -54,6 +59,12 @@ impl SyncError {
         }
     }
 
+    pub fn schema(message: impl Into<String>) -> Self {
+        Self::Schema {
+            message: message.into(),
+        }
+    }
+
     pub fn serialization(message: impl Into<String>) -> Self {
         Self::Serialization {
             message: message.into(),
@@ -64,6 +75,10 @@ impl SyncError {
         Self::Protocol {
             message: message.into(),
         }
+    }
+
+    pub fn cursor_expired() -> Self {
+        Self::CursorExpired
     }
 
     pub fn internal(message: impl Into<String>) -> Self {
@@ -78,8 +93,9 @@ impl SyncError {
             Self::Authentication { .. } => SyncErrorKind::Authentication,
             Self::LocalDatabase { .. } => SyncErrorKind::LocalDatabase,
             Self::RemoteDatabase { .. } => SyncErrorKind::RemoteDatabase,
+            Self::Schema { .. } => SyncErrorKind::Schema,
             Self::Serialization { .. } => SyncErrorKind::Serialization,
-            Self::Protocol { .. } => SyncErrorKind::Protocol,
+            Self::Protocol { .. } | Self::CursorExpired => SyncErrorKind::Protocol,
             Self::Internal { .. } => SyncErrorKind::Internal,
         }
     }
@@ -90,9 +106,11 @@ impl SyncError {
             | Self::Authentication { message }
             | Self::LocalDatabase { message }
             | Self::RemoteDatabase { message }
+            | Self::Schema { message }
             | Self::Serialization { message }
             | Self::Protocol { message }
             | Self::Internal { message } => message,
+            Self::CursorExpired => "同步 cursor 已过期，需要下载当前基线",
         }
     }
 }

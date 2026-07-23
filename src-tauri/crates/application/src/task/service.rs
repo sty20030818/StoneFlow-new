@@ -5,7 +5,7 @@
 use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Deserializer, Serialize};
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 use stoneflow_domain::{
     create_id, normalize_required_text, normalize_slug, now_utc, parse_optional_utc_rfc3339,
     parse_utc_rfc3339, validate_project_id, validate_space_id, validate_task_id,
@@ -17,7 +17,10 @@ use crate::{
         ActivityAction, ActivityChangeInput, ActivityPersistence, ActivityService,
         RecordActivityInput,
     },
-    operation::{OperationContext, OutboxEnqueueRecord, OutboxOpKind, SyncEntityKind},
+    operation::{
+        changed_outbox_fields, OperationContext, OutboxEnqueueRecord, OutboxLifecycleState,
+        OutboxOpKind, OutboxPayload, SyncEntityKind,
+    },
     task::{
         executor::{
             apply_view_preset, build_update_summary, parse_view_key,
@@ -729,12 +732,11 @@ where
                 )
                 .await?;
         }
-        self.enqueue_task_operation(
+        self.enqueue_task_patch(
             &transaction,
             &updated,
             &operation,
-            OutboxOpKind::Patch,
-            "update",
+            changed_outbox_fields(&task_fields(&current), &task_fields(&updated)),
         )
         .await?;
 
@@ -968,12 +970,11 @@ where
                 .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
             self.record_bulk_activity(&transaction, &operation, &updated, action, changes)
                 .await?;
-            self.enqueue_task_operation(
+            self.enqueue_task_patch(
                 &transaction,
                 &updated,
                 &operation,
-                OutboxOpKind::Patch,
-                "bulkUpdate",
+                changed_outbox_fields(&task_fields(&current), &task_fields(&updated)),
             )
             .await?;
         }
@@ -1307,19 +1308,28 @@ where
         operation_type: OutboxOpKind,
         action: &str,
     ) -> Result<(), ApplicationError> {
-        let payload = json!({
-            "version": 1,
-            "operationId": operation.operation_id,
-            "action": action,
-            "task": {
-                "id": task.id, "spaceId": task.space_id, "projectId": task.project_id,
-                "title": task.title, "note": task.note, "status": task.status.as_str(),
-                "priority": task.priority, "plannedAt": task.planned_at, "dueAt": task.due_at,
-                "remindAt": task.remind_at, "statusChangedAt": task.status_changed_at,
-                "completedAt": task.completed_at, "position": task.position,
-                "generation": task.generation, "archivedAt": task.archived_at, "deletedAt": task.deleted_at,
+        let payload = match action {
+            "create" => OutboxPayload::Patch {
+                fields: task_fields(task),
             },
-        });
+            "archive" => OutboxPayload::Lifecycle {
+                state: OutboxLifecycleState::Archived,
+            },
+            "delete" => OutboxPayload::Lifecycle {
+                state: OutboxLifecycleState::Trashed,
+            },
+            "restore" => OutboxPayload::Lifecycle {
+                state: OutboxLifecycleState::Active,
+            },
+            "permanentlyDelete" => OutboxPayload::Tombstone {
+                deleted_at: operation.created_at.clone(),
+            },
+            other => {
+                return Err(ApplicationError::internal(format!(
+                    "未知 Task Outbox action: {other}"
+                )))
+            }
+        };
         self.persistence
             .enqueue(
                 connection,
@@ -1330,8 +1340,32 @@ where
                     entity_id: task.id.clone(),
                     generation: task.generation,
                     operation_type,
-                    payload_json: serde_json::to_string(&payload)
-                        .map_err(|error| ApplicationError::internal(error.to_string()))?,
+                    payload_json: payload.to_json()?,
+                    created_at: operation.created_at.clone(),
+                    available_at: operation.created_at.clone(),
+                },
+            )
+            .await
+    }
+
+    async fn enqueue_task_patch(
+        &self,
+        connection: &P::Connection,
+        task: &TaskRecord,
+        operation: &OperationContext,
+        fields: Map<String, Value>,
+    ) -> Result<(), ApplicationError> {
+        self.persistence
+            .enqueue(
+                connection,
+                &OutboxEnqueueRecord {
+                    id: create_id().to_string(),
+                    operation_id: operation.operation_id.clone(),
+                    entity_type: SyncEntityKind::Task,
+                    entity_id: task.id.clone(),
+                    generation: task.generation,
+                    operation_type: OutboxOpKind::Patch,
+                    payload_json: OutboxPayload::Patch { fields }.to_json()?,
                     created_at: operation.created_at.clone(),
                     available_at: operation.created_at.clone(),
                 },
@@ -1458,17 +1492,33 @@ fn normalize_timestamp(
 }
 
 fn normalize_optional_long_text(value: Option<String>) -> Option<String> {
-    value.and_then(|text| {
-        if text.trim().is_empty() {
-            None
-        } else {
-            Some(text)
-        }
-    })
+    value.filter(|text| !text.trim().is_empty())
 }
 
 fn normalize_optional_long_text_option(value: Option<String>) -> Option<String> {
     normalize_optional_long_text(value)
+}
+
+fn task_fields(task: &TaskRecord) -> Map<String, Value> {
+    Map::from_iter([
+        ("space_id".to_owned(), json!(task.space_id)),
+        ("project_id".to_owned(), json!(task.project_id)),
+        ("title".to_owned(), json!(task.title)),
+        ("note".to_owned(), json!(task.note)),
+        ("status".to_owned(), json!(task.status.as_str())),
+        ("priority".to_owned(), json!(task.priority)),
+        ("planned_at".to_owned(), json!(task.planned_at)),
+        ("due_at".to_owned(), json!(task.due_at)),
+        ("remind_at".to_owned(), json!(task.remind_at)),
+        (
+            "status_changed_at".to_owned(),
+            json!(task.status_changed_at),
+        ),
+        ("completed_at".to_owned(), json!(task.completed_at)),
+        ("position".to_owned(), json!(task.position)),
+        ("created_at".to_owned(), json!(task.created_at)),
+        ("updated_at".to_owned(), json!(task.updated_at)),
+    ])
 }
 
 fn json_option_string(value: &Option<String>) -> Option<Value> {

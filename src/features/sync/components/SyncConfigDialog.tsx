@@ -82,7 +82,7 @@ export function SyncConfigDialog({
 				<DialogHeader className={dialogShellHeaderClass}>
 					<DialogTitle className={dialogShellTitleClass}>Turso 远端配置</DialogTitle>
 					<DialogDescription className={dialogShellDescriptionClass}>
-						配置会保存在本地 settings 表；页面刷新后只会自动回填 URL，已保存的 token 不会回显。
+						URL 保存在本地 settings 表；token 由系统钥匙串保管，页面刷新后不会回显。
 					</DialogDescription>
 				</DialogHeader>
 

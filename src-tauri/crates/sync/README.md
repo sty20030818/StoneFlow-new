@@ -1,18 +1,18 @@
 # stoneflow-sync
 
-同进程逻辑同步库。负责 Turso 协议、push/pull/migrate 与只读诊断。
+同进程 R7 远端协议库。负责 Turso schema、operation push、cursor pull、baseline 与远端只读诊断。
 
 ## 职责
 
-- 打开本地 SQLite 与远端 Turso 连接
-- 执行 push / pull / migrate
-- 提供 probe / diagnose 只读结果
+- 打开远端 Turso 连接并校验 R7 schema
+- 提交 operation、读取增量变更与 baseline
+- 提供远端 probe / diagnose 只读结果
 
 ## 公开入口
 
-- `run(SyncRequest)`
-- `probe(&SyncRemoteConfig)`
-- `diagnose(database_path, &SyncRemoteConfig)`
+- `push_operations(&SyncRemoteConfig, &[SyncOperation])`
+- `fetch_protocol_changes(&SyncRemoteConfig, cursor)` / `fetch_protocol_baseline(&SyncRemoteConfig)`
+- `probe(&SyncRemoteConfig)` / `diagnose_remote(&SyncRemoteConfig)`
 
 ## 禁止依赖
 

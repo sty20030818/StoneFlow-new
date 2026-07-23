@@ -1,70 +1,58 @@
 //! 同进程逻辑同步引擎。
 //!
-//! 负责 Turso 协议、push/pull/migrate 与诊断；不依赖 Tauri。
+//! 负责 R7 Turso 协议与远端诊断；不依赖 Tauri。
 //! 调度与 UI 事件由 runtime 负责。
 
-mod apply;
 mod diagnose;
 mod error;
-mod local;
-mod migrate;
-mod pull;
-mod push;
+mod protocol;
+mod protocol_pull;
+mod protocol_push;
 mod remote;
-mod schema;
+mod remote_schema;
 mod types;
 
-pub use diagnose::{
-    LocalSyncDiagnosticsOutput, RemoteSyncDiagnosticsOutput, SyncDiagnosticsCountsOutput,
-    SyncDiagnosticsOutput, SyncProbeOutput,
-};
+pub use diagnose::{RemoteSyncDiagnosticsOutput, SyncDiagnosticsCountsOutput, SyncProbeOutput};
 pub use error::{SyncError, SyncErrorKind};
-pub use types::{SyncRemoteConfig, SyncRunMode};
+pub use protocol::{
+    apply_mutation, ApplyOutcome, Baseline, EntityIdentity, EntityPatch, EntitySnapshot,
+    LifecycleState, ReplicaEntity, SequencedMutation, SyncCursor, SyncEntityKind, SyncMutation,
+    SyncOperation, Tombstone,
+};
+pub use protocol_pull::{fetch_protocol_baseline, fetch_protocol_changes, PROTOCOL_PULL_PAGE_SIZE};
+pub use protocol_push::{submit_operation, PushResult};
+pub use remote_schema::{bootstrap_protocol_schema, PROTOCOL_SCHEMA_VERSION};
+pub use types::SyncRemoteConfig;
 
-use diagnose::{collect_sync_diagnostics, collect_sync_probe};
-use migrate::migrate_baseline;
-use pull::pull_remote_changes;
-use push::push_local_changes;
-use remote::{bootstrap_remote_schema, open_local_sqlite, open_remote};
+use diagnose::{collect_sync_probe, collect_sync_remote_diagnostics};
+use remote::open_remote;
 
-/// 同步请求：由 runtime 传入 owned 配置，避免跨 await 借用。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct SyncRequest {
-    pub database_path: String,
-    pub remote: SyncRemoteConfig,
-    pub mode: SyncRunMode,
-}
-
-/// 执行 push / pull / migrate。
-pub async fn run(request: SyncRequest) -> Result<(), SyncError> {
-    let local = open_local_sqlite(&request.database_path).await?;
-    let remote = open_remote(&request.remote).await?;
-    bootstrap_remote_schema(&remote).await?;
-
-    match request.mode {
-        SyncRunMode::Push => push_local_changes(&local, &remote).await,
-        SyncRunMode::Pull => pull_remote_changes(&local, &remote).await,
-        SyncRunMode::Migrate => migrate_baseline(&local, &remote).await,
-        SyncRunMode::Probe | SyncRunMode::Diagnose => Err(SyncError::validation(
-            "probe/diagnose 请使用专用入口，不要走 run()",
-        )),
+/// 提交已由 runtime 从本地 Outbox 归并好的 R7 operations。
+pub async fn push_operations(
+    remote_config: &SyncRemoteConfig,
+    operations: &[SyncOperation],
+) -> Result<Vec<PushResult>, SyncError> {
+    let remote = open_remote(remote_config).await?;
+    bootstrap_protocol_schema(&remote).await?;
+    let mut results = Vec::with_capacity(operations.len());
+    for operation in operations {
+        results.push(submit_operation(&remote, operation).await?);
     }
+    Ok(results)
 }
 
 /// 远端 head check。
 pub async fn probe(remote: &SyncRemoteConfig) -> Result<SyncProbeOutput, SyncError> {
     let remote = open_remote(remote).await?;
-    bootstrap_remote_schema(&remote).await?;
+    bootstrap_protocol_schema(&remote).await?;
     collect_sync_probe(&remote).await
 }
 
-/// 本地与远端只读诊断。
-pub async fn diagnose(
-    database_path: &str,
+/// R7 远端只读诊断。本地诊断属于 runtime 的 SQLite 边界。
+pub async fn diagnose_remote(
     remote: &SyncRemoteConfig,
-) -> Result<SyncDiagnosticsOutput, SyncError> {
-    let local = open_local_sqlite(database_path).await?;
+) -> Result<RemoteSyncDiagnosticsOutput, SyncError> {
     let remote = open_remote(remote).await?;
-    bootstrap_remote_schema(&remote).await?;
-    collect_sync_diagnostics(&local, &remote).await
+    bootstrap_protocol_schema(&remote).await?;
+    collect_sync_remote_diagnostics(&remote).await
 }

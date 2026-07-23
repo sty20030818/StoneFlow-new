@@ -23,4 +23,4 @@
 ## 相关文档
 
 - [模块架构](./ARCHITECTURE.md)
-- [同步协议设计](../../../src-tauri/crates/sync-worker/DESIGN.md)
+- [同步协议设计](../../../src-tauri/crates/sync/DESIGN.md)

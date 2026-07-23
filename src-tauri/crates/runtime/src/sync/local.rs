@@ -1,11 +1,11 @@
-//! 本地同步副本状态判定（R2：pending 以 outbox 计数，无 sync_mutations）。
+//! R7 本地同步副本状态与只读诊断。
 
 use sea_orm::{ConnectionTrait, DbBackend, Statement};
 
 use crate::app::error::AppError;
 use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SyncRepository};
 
-use super::types::SyncReplicaState;
+use super::types::{SyncDiagnosticsCountsPayload, SyncLocalDiagnosticsPayload, SyncReplicaState};
 
 const DEVICE_ID_SCOPE: &str = "sync:device_id";
 const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
@@ -57,6 +57,65 @@ pub async fn inspect_local_replica(
         state,
         reason,
         last_restore_at: last_restore_at.and_then(|record| record.cursor),
+    })
+}
+
+/// 本地同步诊断只通过应用持有的 SQLite 连接读取，避免 sync crate 重开数据库。
+pub async fn read_local_diagnostics(
+    database: &DatabaseRuntimeState,
+) -> Result<SyncLocalDiagnosticsPayload, AppError> {
+    let repository = SyncRepository::new(database.connection().clone());
+    let device_id = repository
+        .find_device()
+        .await?
+        .map(|device| device.device_id);
+    let last_pulled_server_seq = repository
+        .get_cursor(SERVER_SEQ_CURSOR_SCOPE)
+        .await?
+        .and_then(|cursor| cursor.cursor)
+        .map(|cursor| {
+            cursor
+                .parse()
+                .map_err(|error| AppError::database(format!("解析 R7 本地 cursor 失败: {error}")))
+        })
+        .transpose()?;
+    let row = database
+        .connection()
+        .query_one(Statement::from_string(
+            DbBackend::Sqlite,
+            r#"
+            SELECT
+                (SELECT COUNT(*) FROM spaces) AS spaces,
+                (SELECT COUNT(*) FROM projects) AS projects,
+                (SELECT COUNT(*) FROM tasks) AS tasks,
+                (SELECT COUNT(*) FROM task_links) AS task_links,
+                (SELECT COUNT(*) FROM views) AS views,
+                (SELECT COUNT(*) FROM outbox) AS pending_outbox
+            "#,
+        ))
+        .await
+        .map_err(|error| AppError::database(format!("读取 R7 本地诊断计数失败: {error}")))?
+        .ok_or_else(|| AppError::database("R7 本地诊断计数缺少结果行"))?;
+    let spaces = row.try_get("", "spaces")?;
+    let projects = row.try_get("", "projects")?;
+    let tasks = row.try_get("", "tasks")?;
+    let task_links = row.try_get("", "task_links")?;
+    let views = row.try_get("", "views")?;
+    let pending_mutation_count = row.try_get("", "pending_outbox")?;
+
+    Ok(SyncLocalDiagnosticsPayload {
+        device_id,
+        last_pulled_server_seq,
+        pending_mutation_count,
+        counts: SyncDiagnosticsCountsPayload {
+            spaces,
+            projects,
+            tasks,
+            task_links,
+            views,
+            settings: 0,
+            total_items: spaces + projects + tasks + task_links + views,
+        },
     })
 }
 
@@ -122,4 +181,24 @@ fn has_non_empty_cursor(
         .as_ref()
         .and_then(|item| item.cursor.as_deref())
         .is_some_and(|value| !value.trim().is_empty())
+}
+
+#[cfg(test)]
+mod tests {
+    use stoneflow_test_support::TestDatabase;
+
+    use super::read_local_diagnostics;
+
+    #[tokio::test]
+    async fn local_diagnostics_should_read_r7_outbox_state() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+
+        let output = read_local_diagnostics(&database)
+            .await
+            .expect("local diagnostics should read R7 tables");
+
+        assert_eq!(output.pending_mutation_count, 0);
+    }
 }

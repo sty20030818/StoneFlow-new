@@ -16,7 +16,7 @@ mod view_repository;
 
 pub use activity_repository::ActivityRepository;
 pub use applied_operation_repository::AppliedOperationRepository;
-pub use outbox_repository::OutboxRepository;
+pub use outbox_repository::{OutboxRepository, PendingOutboxOperation};
 pub use project_repository::{
     CreateProjectRecord, ProjectCascadeResult, ProjectRepository, UpdateProjectPatch,
 };

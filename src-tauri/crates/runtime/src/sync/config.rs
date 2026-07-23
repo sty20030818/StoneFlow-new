@@ -1,6 +1,7 @@
 //! 云同步配置持久化。
 
 use stoneflow_domain::now_utc;
+use stoneflow_platform::SyncTokenStore;
 use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SettingsRepository};
 
 use crate::app::error::AppError;
@@ -22,7 +23,14 @@ pub async fn load_remote_config(
         .find_json_setting::<SyncRemoteConfigSetting>(SYNC_CONFIG_SETTING_KEY)
         .await?;
 
-    Ok(stored.and_then(normalize_setting))
+    let Some(setting) = stored else {
+        return Ok(None);
+    };
+    let Some(url) = normalize_url(setting.url) else {
+        return Ok(None);
+    };
+    let token = read_sync_token().await?;
+    Ok(token.map(|token| SyncRemoteConfig { url, token }))
 }
 
 /// 从 settings 表读取同步策略；缺省值是 15 分钟自动同步。
@@ -81,6 +89,7 @@ pub async fn save_remote_config(
 ) -> Result<SyncRemoteConfig, AppError> {
     let config = normalize_fields(Some(url), Some(token))
         .ok_or_else(|| AppError::validation("请先填写完整的 Turso url 和 token"))?;
+    write_sync_token(config.token.clone()).await?;
     let repository = SettingsRepository::new(database.connection().clone());
     let updated_at = now_utc().to_rfc3339();
 
@@ -89,17 +98,12 @@ pub async fn save_remote_config(
             SYNC_CONFIG_SETTING_KEY,
             &SyncRemoteConfigSetting {
                 url: Some(config.url.clone()),
-                token: Some(config.token.clone()),
             },
             &updated_at,
         )
         .await?;
 
     Ok(config)
-}
-
-fn normalize_setting(setting: SyncRemoteConfigSetting) -> Option<SyncRemoteConfig> {
-    normalize_fields(setting.url, setting.token)
 }
 
 fn normalize_fields(url: Option<String>, token: Option<String>) -> Option<SyncRemoteConfig> {
@@ -114,4 +118,42 @@ fn normalize_fields(url: Option<String>, token: Option<String>) -> Option<SyncRe
         url: normalized_url,
         token: normalized_token,
     })
+}
+
+fn normalize_url(url: Option<String>) -> Option<String> {
+    let url = url?.trim().to_owned();
+    (!url.is_empty()).then_some(url)
+}
+
+async fn read_sync_token() -> Result<Option<String>, AppError> {
+    tokio::task::spawn_blocking(SyncTokenStore::load)
+        .await
+        .map_err(|error| AppError::internal(format!("读取同步系统凭证任务失败: {error}")))?
+        .map_err(|error| AppError::initialization(error.to_string()))
+}
+
+async fn write_sync_token(token: String) -> Result<(), AppError> {
+    tokio::task::spawn_blocking(move || SyncTokenStore::save(&token))
+        .await
+        .map_err(|error| AppError::internal(format!("保存同步系统凭证任务失败: {error}")))?
+        .map_err(|error| AppError::initialization(error.to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::SyncRemoteConfigSetting;
+
+    #[test]
+    fn remote_config_setting_should_only_serialize_url() {
+        let setting = SyncRemoteConfigSetting {
+            url: Some("libsql://stoneflow.turso.io".to_owned()),
+        };
+
+        assert_eq!(
+            serde_json::to_value(setting).expect("setting should serialize"),
+            json!({ "url": "libsql://stoneflow.turso.io" })
+        );
+    }
 }

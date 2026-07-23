@@ -12,7 +12,7 @@ React 前端
                                                    |
 Rust workspace                                   SQLite（本地事实源）
   runtime -> usecase -> domain / storage          |
-                 |                                +-> sync-worker -> Turso/libSQL（可选同步副本）
+                 |                                +-> sync library -> Turso/libSQL（可选同步副本）
                  +-> platform
 ```
 
@@ -25,7 +25,7 @@ Rust workspace                                   SQLite（本地事实源）
 | 前端共享层 | 类型、Query、Tauri 调用、基础组件和样式 | `src/shared/`、`src/styles/` | [src 架构](./src/ARCHITECTURE.md) |
 | Rust 业务核心 | 领域规则、用例、存储、运行时与平台能力 | `src-tauri/crates/` | [Rust 架构](./src-tauri/ARCHITECTURE.md) |
 | 本地数据 | SQLite 业务表、迁移和同步元数据 | `src-tauri/crates/{storage,migration,schema}/` | [领域模型](./Documents/01-架构/A1-领域模型.md) |
-| 同步 | 后台同步、远端副本和状态反馈 | `src/features/sync/`、`src-tauri/crates/sync-worker/` | [同步设计](./Documents/01-架构/A2-系统设计.md#云同步) |
+| 同步 | 后台同步、远端副本和状态反馈 | `src/features/sync/`、`src-tauri/crates/{runtime,sync}/` | [同步设计](./Documents/01-架构/A2-系统设计.md#云同步) |
 
 ## 模块依赖方向
 

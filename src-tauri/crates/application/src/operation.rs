@@ -3,6 +3,7 @@
 #![allow(async_fn_in_trait)]
 
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use stoneflow_domain::{create_id, now_utc};
 
 use crate::ApplicationError;
@@ -72,6 +73,44 @@ impl OutboxOpKind {
             Self::Patch => "patch",
         }
     }
+}
+
+/// R7 Outbox payload：只表达字段变更或生命周期，不保存整实体快照。
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum OutboxPayload {
+    Patch { fields: Map<String, Value> },
+    Lifecycle { state: OutboxLifecycleState },
+    Tombstone { deleted_at: String },
+}
+
+impl OutboxPayload {
+    pub fn to_json(&self) -> Result<String, ApplicationError> {
+        serde_json::to_string(self).map_err(|error| {
+            ApplicationError::internal(format!("序列化 R7 Outbox payload 失败: {error}"))
+        })
+    }
+}
+
+/// 仅保留实际变化的字段，保证远端字段级 LWW 不会覆盖并发编辑的无关字段。
+pub fn changed_outbox_fields(
+    before: &Map<String, Value>,
+    after: &Map<String, Value>,
+) -> Map<String, Value> {
+    after
+        .iter()
+        .filter(|(key, value)| before.get(*key) != Some(*value))
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect()
+}
+
+/// 可见实体的同步生命周期。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OutboxLifecycleState {
+    Active,
+    Archived,
+    Trashed,
 }
 
 /// 待发送 Outbox 记录。

@@ -8,7 +8,7 @@ use stoneflow_application::operation::{
 use stoneflow_domain::create_id;
 use stoneflow_test_support::TestDatabase;
 
-use crate::unit_of_work::SqliteUnitOfWork;
+use crate::{repositories::SyncRepository, unit_of_work::SqliteUnitOfWork};
 
 const EXPECTED_TABLES: [&str; 14] = [
     "spaces",
@@ -133,6 +133,25 @@ async fn bootstrap_should_seed_only_default_space() {
     assert_eq!(personal_count, 1);
     assert_eq!(view_count, 0);
     assert_eq!(setting_count, 0);
+}
+
+#[tokio::test]
+async fn sync_device_should_be_created_once_per_local_database() {
+    let database = TestDatabase::bootstrap()
+        .await
+        .expect("test database should bootstrap");
+    let repository = SyncRepository::new(database.connection().clone());
+
+    let first = repository
+        .get_or_create_device_id("2026-07-23T00:00:00Z")
+        .await
+        .expect("device identity should create");
+    let second = repository
+        .get_or_create_device_id("2026-07-23T00:01:00Z")
+        .await
+        .expect("device identity should reuse");
+
+    assert_eq!(first, second);
 }
 
 #[tokio::test]

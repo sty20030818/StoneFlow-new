@@ -5,8 +5,6 @@ use stoneflow_domain::create_id;
 
 use crate::error::StorageError;
 
-const DEVICE_ID_SCOPE: &str = "local_device";
-
 /// `sync_cursors` 单行。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyncCursorRecord {
@@ -43,13 +41,25 @@ impl SyncRepository {
         }
 
         let device_id = create_id().to_string();
-        self.upsert_device(&SyncDeviceRecord {
-            device_id: device_id.clone(),
-            created_at: now.to_owned(),
-            updated_at: now.to_owned(),
-        })
-        .await?;
-        Ok(device_id)
+        self.db
+            .execute(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                r#"
+                INSERT OR IGNORE INTO sync_devices (singleton, device_id, created_at, updated_at)
+                VALUES (1, ?, ?, ?)
+                "#,
+                [
+                    device_id.clone().into(),
+                    now.to_owned().into(),
+                    now.to_owned().into(),
+                ],
+            ))
+            .await?;
+
+        self.find_device()
+            .await?
+            .map(|record| record.device_id)
+            .ok_or_else(|| StorageError::initialization("创建本地同步设备身份后无法读取"))
     }
 
     pub async fn find_device(&self) -> Result<Option<SyncDeviceRecord>, StorageError> {
@@ -57,7 +67,8 @@ impl SyncRepository {
             .db
             .query_one(Statement::from_string(
                 DatabaseBackend::Sqlite,
-                "SELECT device_id, created_at, updated_at FROM sync_devices LIMIT 1".to_owned(),
+                "SELECT device_id, created_at, updated_at FROM sync_devices WHERE singleton = 1"
+                    .to_owned(),
             ))
             .await?;
 
@@ -69,25 +80,6 @@ impl SyncRepository {
             }),
             None => None,
         })
-    }
-
-    pub async fn upsert_device(&self, record: &SyncDeviceRecord) -> Result<(), StorageError> {
-        self.db
-            .execute(Statement::from_sql_and_values(
-                DatabaseBackend::Sqlite,
-                r#"
-                INSERT INTO sync_devices (device_id, created_at, updated_at)
-                VALUES (?, ?, ?)
-                ON CONFLICT(device_id) DO UPDATE SET updated_at = excluded.updated_at
-                "#,
-                [
-                    record.device_id.clone().into(),
-                    record.created_at.clone().into(),
-                    record.updated_at.clone().into(),
-                ],
-            ))
-            .await?;
-        Ok(())
     }
 
     pub async fn get_cursor(&self, scope: &str) -> Result<Option<SyncCursorRecord>, StorageError> {
@@ -110,11 +102,6 @@ impl SyncRepository {
         })
     }
 
-    /// 兼容旧调用名。
-    pub async fn find_cursor(&self, scope: &str) -> Result<Option<SyncCursorRecord>, StorageError> {
-        self.get_cursor(scope).await
-    }
-
     pub async fn upsert_cursor(&self, record: &SyncCursorRecord) -> Result<(), StorageError> {
         self.db
             .execute(Statement::from_sql_and_values(
@@ -133,7 +120,6 @@ impl SyncRepository {
                 ],
             ))
             .await?;
-        let _ = DEVICE_ID_SCOPE;
         Ok(())
     }
 }
