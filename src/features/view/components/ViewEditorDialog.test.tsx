@@ -51,8 +51,6 @@ describe('ViewEditorDialog', () => {
 		)
 
 		expect(screen.getByDisplayValue('重点事项')).toBeInTheDocument()
-		expect(screen.getByDisplayValue('只看高优先级')).toBeInTheDocument()
-
 		fireEvent.click(screen.getByRole('button', { name: '待办' }))
 		fireEvent.click(screen.getByRole('button', { name: '保存视图' }))
 
@@ -84,23 +82,18 @@ function buildView(): View {
 	return {
 		id: 'view-1',
 		name: '重点事项',
-		description: '只看高优先级',
-		type: 'custom',
-		entityType: 'task',
-		key: null,
+		kind: 'custom',
+		systemKey: null,
+		scope: { type: 'all' },
 		filters: {
 			status: ['todo', 'doing'],
 			priority: { gte: 3 },
-			inbox: false,
 			project: { mode: 'specific', ids: ['project-a'] },
 			due: { mode: 'today' },
-			scheduled: { mode: 'future' },
-			archived: false,
-			deleted: false,
+			planned: { mode: 'future' },
 		},
 		sort: [{ field: 'priority', direction: 'asc' }],
 		groupBy: 'project',
-		isVisible: true,
 		position: 0,
 		createdAt: '2026-06-18T00:00:00.000Z',
 		updatedAt: '2026-06-18T00:00:00.000Z',

@@ -41,7 +41,7 @@
 ## 关键约束
 
 - Task 的 `space_id` 不可为空；若 `project_id` 非空，Project 的 `space_id` 必须相同。
-- 活跃默认 Space 只能有一个；最后一个活跃默认 Space 不可删除或归档。
+- 活跃默认 Space 只能有一个；当前默认 Space 不可删除或归档，必须先将其他活跃 Space 设为默认。
 - Project 与 Task 的位置只在各自容器内有意义；position 允许为重排预留间隙。
 - 时间一律保存 UTC RFC3339/整数时间戳之一，具体数据库表示只允许一种，不得混用 date-only 与 timestamp。
 

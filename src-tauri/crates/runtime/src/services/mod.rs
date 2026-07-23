@@ -59,6 +59,6 @@ pub use task_service::{
 };
 pub use update_service::{build_update_service, RuntimeUpdateService};
 pub use view_service::{
-    CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunTaskViewInput,
-    RunTaskViewOutput, ToggleViewVisibleInput, UpdateViewInput, ViewDto, ViewService,
+    CreateViewInput, ListViewsInput, RunTaskViewInput, RunTaskViewOutput, UpdateViewInput, ViewDto,
+    ViewService,
 };

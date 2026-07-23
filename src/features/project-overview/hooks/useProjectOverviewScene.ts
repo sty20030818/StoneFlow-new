@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
 import {
@@ -31,7 +31,6 @@ import {
 	useEntitySelectionEscape,
 	useRegisterCommandSelection,
 } from '@/features/selection'
-import { useViewsQuery } from '@/features/view'
 
 /**
  * 项目总览页唯一 wiring：视图轨 / 选择 / bulk / 行动作。
@@ -48,7 +47,6 @@ export function useProjectOverviewScene() {
 	const [busyProjectId, setBusyProjectId] = useState<string | null>(null)
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
 	const overview = useProjectOverviewData(scope, viewKey)
-	const projectViewsQuery = useViewsQuery('project', false)
 	const completeProject = useCompleteProjectMutation()
 	const reopenProject = useReopenProjectMutation()
 	const archiveProject = useArchiveProjectMutation()
@@ -84,21 +82,6 @@ export function useProjectOverviewScene() {
 		hasSelection: selectedCount > 0,
 		clearSelection: clearProjectSelection,
 	})
-	const visibleProjectViews = (projectViewsQuery.data ?? []).filter((view) => view.isVisible)
-
-	useEffect(() => {
-		if (visibleProjectViews.length === 0) {
-			return
-		}
-
-		const matched = visibleProjectViews.find((view) => view.key === viewKey || view.id === viewKey)
-		if (matched) {
-			return
-		}
-
-		setViewKey((visibleProjectViews[0].key ?? visibleProjectViews[0].id) as ProjectOverviewViewKey)
-	}, [viewKey, visibleProjectViews])
-
 	async function runRowAction(projectId: string, runner: () => Promise<unknown>) {
 		setBusyProjectId(projectId)
 		try {
@@ -178,11 +161,6 @@ export function useProjectOverviewScene() {
 			label: '所有项目',
 			onClick: () => setViewKey('all_projects'),
 		},
-		...visibleProjectViews.map((view) => ({
-			active: (view.key ?? view.id) === viewKey,
-			label: view.name,
-			onClick: () => setViewKey((view.key ?? view.id) as ProjectOverviewViewKey),
-		})),
 	]
 
 	return {

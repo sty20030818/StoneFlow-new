@@ -243,11 +243,10 @@ mod tests {
             build_project_service, build_space_service, build_task_link_service, build_task_service,
         },
         services::{
-            BulkUpdateTasksInput, CreateTaskInput, CreateTaskLinkInput,
-            CreateSpaceInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
-            CreateProjectInput, ListTasksInput, ListTasksPlacementInput,
-            ListTasksPlacementKind, TaskIdInput, TaskScopeInput, TaskScopeKind, UpdateTaskInput,
-            UpdateTaskPlacementInput, UpdateTaskPlacementKind,
+            BulkUpdateTasksInput, CreateProjectInput, CreateSpaceInput, CreateTaskInput,
+            CreateTaskLinkInput, CreateTaskPlacementInput, CreateTaskPlacementKind, ListTasksInput,
+            ListTasksPlacementInput, ListTasksPlacementKind, TaskIdInput, TaskScopeInput,
+            TaskScopeKind, UpdateTaskInput, UpdateTaskPlacementInput, UpdateTaskPlacementKind,
         },
     };
 
@@ -278,9 +277,7 @@ mod tests {
         assert!(matches!(error, AppError::NotFound(_)));
         assert_eq!(
             service
-                .get_task_detail(TaskIdInput {
-                    task_id: task.id,
-                })
+                .get_task_detail(TaskIdInput { task_id: task.id })
                 .await
                 .expect("existing task should remain readable")
                 .priority,
@@ -374,30 +371,34 @@ mod tests {
             .await
             .expect("bulk delete should succeed");
 
-        assert_lifecycle_operation(&database, &archive.operation_id, &[&archive_a.id, &archive_b.id])
-            .await;
-        assert_lifecycle_operation(&database, &delete.operation_id, &[&delete_a.id, &delete_b.id])
-            .await;
-        assert!(
-            service
-                .get_task_detail(TaskIdInput {
-                    task_id: archive_a.id,
-                })
-                .await
-                .expect("archived task should remain readable")
-                .archived_at
-                .is_some()
-        );
-        assert!(
-            service
-                .get_task_detail(TaskIdInput {
-                    task_id: delete_a.id,
-                })
-                .await
-                .expect("deleted task should remain readable")
-                .deleted_at
-                .is_some()
-        );
+        assert_lifecycle_operation(
+            &database,
+            &archive.operation_id,
+            &[&archive_a.id, &archive_b.id],
+        )
+        .await;
+        assert_lifecycle_operation(
+            &database,
+            &delete.operation_id,
+            &[&delete_a.id, &delete_b.id],
+        )
+        .await;
+        assert!(service
+            .get_task_detail(TaskIdInput {
+                task_id: archive_a.id,
+            })
+            .await
+            .expect("archived task should remain readable")
+            .archived_at
+            .is_some());
+        assert!(service
+            .get_task_detail(TaskIdInput {
+                task_id: delete_a.id,
+            })
+            .await
+            .expect("deleted task should remain readable")
+            .deleted_at
+            .is_some());
     }
 
     #[tokio::test]
@@ -555,7 +556,9 @@ mod tests {
 
         for priority in 0..=4 {
             current = service
-                .update_task(task_update(current.id, |input| input.priority = Some(priority)))
+                .update_task(task_update(current.id, |input| {
+                    input.priority = Some(priority)
+                }))
                 .await
                 .expect("priority update should succeed");
             assert_eq!(current.priority, priority);
@@ -774,10 +777,7 @@ mod tests {
         );
     }
 
-    async fn create_task(
-        database: &TestDatabase,
-        title: &str,
-    ) -> crate::services::TaskDetailDto {
+    async fn create_task(database: &TestDatabase, title: &str) -> crate::services::TaskDetailDto {
         let space = SpaceRepository::new(database.connection().clone())
             .list_visible()
             .await

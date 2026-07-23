@@ -4,6 +4,9 @@ use sea_orm::{
     ActiveModelTrait, ActiveValue::Set, ColumnTrait, ConnectionTrait, DatabaseConnection,
     EntityTrait, QueryFilter, QueryOrder,
 };
+use stoneflow_application::view::{
+    DateFilterMode, ProjectFilterMode, TaskScopeKind, ViewTaskQuery,
+};
 use stoneflow_domain::WorkStatus;
 use stoneflow_domain::POSITION_STEP;
 
@@ -110,6 +113,52 @@ impl TaskRepository {
         query
             .order_by_asc(task::Column::Position)
             .order_by_asc(task::Column::CreatedAt)
+            .all(&self.db)
+            .await
+            .map_err(Into::into)
+    }
+
+    /// View 候选集的数据库过滤。排序与本地时区日期语义仍由 application 决定。
+    pub async fn list_for_view(
+        &self,
+        definition: &ViewTaskQuery,
+    ) -> Result<Vec<task::Model>, StorageError> {
+        let mut query = Task::find()
+            .filter(task::Column::ArchivedAt.is_null())
+            .filter(task::Column::DeletedAt.is_null());
+        if matches!(definition.scope.kind, TaskScopeKind::Space) {
+            query = query.filter(
+                task::Column::SpaceId.eq(definition.scope.space_id.as_deref().unwrap_or_default()),
+            );
+        }
+        if !definition.statuses.is_empty() {
+            query = query.filter(
+                task::Column::Status
+                    .is_in(definition.statuses.iter().copied().map(to_storage_status)),
+            );
+        }
+        if let Some(project) = &definition.project {
+            query = match project.mode {
+                ProjectFilterMode::Any => query,
+                ProjectFilterMode::None => query.filter(task::Column::ProjectId.is_null()),
+                ProjectFilterMode::Specific => {
+                    query.filter(task::Column::ProjectId.is_in(project.ids.iter().cloned()))
+                }
+            };
+        }
+        if let Some(due) = &definition.due {
+            if matches!(due.mode, DateFilterMode::Between) {
+                if let Some(from) = due.from.as_deref() {
+                    query = query.filter(task::Column::DueAt.gte(from));
+                }
+                if let Some(to) = due.to.as_deref() {
+                    query = query.filter(task::Column::DueAt.lte(to));
+                }
+            }
+        }
+        query
+            .order_by_asc(task::Column::DueAt)
+            .order_by_asc(task::Column::Position)
             .all(&self.db)
             .await
             .map_err(Into::into)

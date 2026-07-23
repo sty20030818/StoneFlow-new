@@ -125,7 +125,7 @@ mod tests {
     use stoneflow_test_support::TestDatabase;
 
     use crate::composition::build_space_service;
-    use crate::services::{CreateSpaceInput, SpaceIdInput};
+    use crate::services::{CreateSpaceInput, SetDefaultSpaceInput, SpaceIdInput};
 
     #[tokio::test]
     async fn list_visible_spaces_command_should_return_seeded_default_space() {
@@ -230,7 +230,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn archive_default_space_should_cascade_and_restore_only_its_operation() {
+    async fn archive_default_space_should_fail_without_writing_outbox() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
@@ -240,51 +240,33 @@ mod tests {
             .await
             .expect("seeded space should exist")
             .remove(0);
-        let replacement = service
+        service
             .create_space(CreateSpaceInput {
                 name: "工作".to_owned(),
                 icon_key: "briefcase".to_owned(),
                 color_key: "blue".to_owned(),
             })
             .await
-            .expect("replacement space should be created");
+            .expect("secondary space should be created");
         insert_project_and_task(&database, &default_space.id).await;
 
-        let archived = service
+        let error = service
             .archive_space(SpaceIdInput {
                 space_id: default_space.id.clone(),
             })
             .await
-            .expect("default space should archive with replacement");
+            .expect_err("default space should not archive");
 
-        assert_eq!(
-            archived.replacement_space_id.as_deref(),
-            Some(replacement.id.as_str())
-        );
-        assert_eq!(archived.affected_project_count, 1);
-        assert_eq!(archived.affected_task_count, 1);
-
-        let visible = service
-            .list_visible_spaces()
-            .await
-            .expect("visible spaces should load");
-        assert_eq!(visible.len(), 1);
-        assert_eq!(visible[0].id, replacement.id);
-        assert!(visible[0].is_default);
-
-        let restored = service
-            .restore_space(SpaceIdInput {
-                space_id: default_space.id,
-            })
-            .await
-            .expect("archived space should restore");
-        assert_eq!(restored.affected_project_count, 1);
-        assert_eq!(restored.affected_task_count, 1);
+        assert!(error.to_string().contains("默认 Space 不可归档或删除"));
         assert_eq!(active_child_count(&database).await, 2);
+        assert_eq!(
+            scalar_count(&database, "SELECT COUNT(*) AS value FROM outbox").await,
+            1
+        );
     }
 
     #[tokio::test]
-    async fn archive_last_active_space_should_fail_without_writing_outbox() {
+    async fn archive_only_default_space_should_fail_without_writing_outbox() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
@@ -299,12 +281,45 @@ mod tests {
         let error = service
             .archive_space(SpaceIdInput { space_id })
             .await
-            .expect_err("last active space must not archive");
+            .expect_err("default space must not archive");
 
-        assert!(error.to_string().contains("最后一个活跃 Space"));
+        assert!(error.to_string().contains("默认 Space 不可归档或删除"));
         assert_eq!(
             scalar_count(&database, "SELECT COUNT(*) AS value FROM outbox").await,
             0
+        );
+    }
+
+    #[tokio::test]
+    async fn delete_non_default_space_should_return_current_default_space() {
+        let database = TestDatabase::bootstrap_in_memory()
+            .await
+            .expect("test database should bootstrap");
+        let service = build_space_service(&database);
+        let default_space = service
+            .list_visible_spaces()
+            .await
+            .expect("seeded space should exist")
+            .remove(0);
+        let secondary = service
+            .create_space(CreateSpaceInput {
+                name: "临时空间".to_owned(),
+                icon_key: "folder".to_owned(),
+                color_key: "gray".to_owned(),
+            })
+            .await
+            .expect("secondary space should create");
+
+        let deleted = service
+            .delete_space(SpaceIdInput {
+                space_id: secondary.id,
+            })
+            .await
+            .expect("non-default space should delete");
+
+        assert_eq!(
+            deleted.default_space_id.as_deref(),
+            Some(default_space.id.as_str())
         );
     }
 
@@ -405,14 +420,20 @@ mod tests {
             .await
             .expect("seeded space should exist")
             .remove(0);
-        service
+        let secondary = service
             .create_space(CreateSpaceInput {
                 name: "替代空间".to_owned(),
                 icon_key: "briefcase".to_owned(),
                 color_key: "blue".to_owned(),
             })
             .await
-            .expect("replacement should create");
+            .expect("secondary space should create");
+        service
+            .set_default_space(SetDefaultSpaceInput {
+                space_id: secondary.id,
+            })
+            .await
+            .expect("secondary space should become default before archiving original");
         insert_project_and_task(&database, &default_space.id).await;
 
         service

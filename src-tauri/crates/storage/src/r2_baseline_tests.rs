@@ -27,7 +27,7 @@ const EXPECTED_TABLES: [&str; 14] = [
     "sync_devices",
 ];
 
-const EXPECTED_INDEXES: [&str; 15] = [
+const EXPECTED_INDEXES: [&str; 17] = [
     "ux_spaces_single_default_active",
     "ix_spaces_position",
     "ix_spaces_deleted_at",
@@ -43,6 +43,8 @@ const EXPECTED_INDEXES: [&str; 15] = [
     "ix_outbox_available",
     "ix_tombstones_deletion_seq",
     "ix_sync_changes_seq",
+    "ix_tasks_view_space_status_due",
+    "ix_tasks_view_status_due",
 ];
 
 const LEGACY_TABLES: [&str; 4] = [
@@ -84,6 +86,19 @@ async fn bootstrap_should_create_r2_tables_and_indexes() {
             "legacy table `{table_name}` must not exist"
         );
     }
+}
+
+#[tokio::test]
+async fn view_query_plan_should_use_space_status_due_index() {
+    let database = TestDatabase::bootstrap()
+        .await
+        .expect("test database should bootstrap");
+    let row = database.connection().query_one(Statement::from_string(DatabaseBackend::Sqlite, "EXPLAIN QUERY PLAN SELECT id FROM tasks WHERE space_id = 'space' AND status IN ('todo', 'doing', 'waiting') AND due_at >= '2026-07-23T00:00:00+00:00' AND due_at <= '2026-07-30T23:59:59+00:00' AND archived_at IS NULL AND deleted_at IS NULL ORDER BY due_at, position".to_owned())).await.expect("query plan").expect("query plan row");
+    let detail: String = row.try_get("", "detail").expect("plan detail");
+    assert!(
+        detail.contains("ix_tasks_view_space_status_due"),
+        "unexpected query plan: {detail}"
+    );
 }
 
 #[tokio::test]

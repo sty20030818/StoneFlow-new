@@ -233,8 +233,14 @@ where
                 },
             )
             .await?;
-        self.enqueue_link_operation(&transaction, &created, &operation, OutboxOpKind::Upsert, "create")
-            .await?;
+        self.enqueue_link_operation(
+            &transaction,
+            &created,
+            &operation,
+            OutboxOpKind::Upsert,
+            "create",
+        )
+        .await?;
 
         self.persistence.commit(transaction).await?;
         Ok(map_task_link_dto(created))
@@ -315,8 +321,14 @@ where
                 },
             )
             .await?;
-        self.enqueue_link_operation(&transaction, &updated, &operation, OutboxOpKind::Patch, "update")
-            .await?;
+        self.enqueue_link_operation(
+            &transaction,
+            &updated,
+            &operation,
+            OutboxOpKind::Patch,
+            "update",
+        )
+        .await?;
 
         self.persistence.commit(transaction).await?;
         Ok(map_task_link_dto(updated))
@@ -363,8 +375,14 @@ where
                 },
             )
             .await?;
-        self.enqueue_link_operation(&transaction, &current, &operation, OutboxOpKind::Delete, "delete")
-            .await?;
+        self.enqueue_link_operation(
+            &transaction,
+            &current,
+            &operation,
+            OutboxOpKind::Delete,
+            "delete",
+        )
+        .await?;
 
         self.persistence.commit(transaction).await?;
         Ok(map_task_link_dto(current))

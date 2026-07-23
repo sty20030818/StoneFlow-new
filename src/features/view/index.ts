@@ -12,6 +12,9 @@
 /** 视图列表 Query（project-overview 侧栏等）。 */
 export { useViewsQuery } from './hooks'
 
+/** URL search → 受限 View 查询定义。 */
+export { parseViewSearch } from './api/viewSearch'
+
 // ── UI ──────────────────────────────────────────────────────────────────────
 
 /** 自定义视图页（routes `/views`、`/views/$viewId`）。 */

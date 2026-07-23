@@ -8,6 +8,7 @@ mod m20260722_000001_r2_baseline;
 mod m20260722_000002_r3_space_lifecycle;
 mod m20260722_000003_r4_project_activity;
 mod m20260723_000004_r5_outbox_operation_group;
+mod m20260723_000005_r6_view_query_indexes;
 
 pub struct Migrator;
 
@@ -19,6 +20,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260722_000002_r3_space_lifecycle::Migration),
             Box::new(m20260722_000003_r4_project_activity::Migration),
             Box::new(m20260723_000004_r5_outbox_operation_group::Migration),
+            Box::new(m20260723_000005_r6_view_query_indexes::Migration),
         ]
     }
 }

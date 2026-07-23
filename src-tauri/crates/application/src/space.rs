@@ -192,7 +192,7 @@ pub type SetDefaultSpaceInput = SpaceIdInput;
 #[serde(rename_all = "camelCase")]
 pub struct SpaceLifecycleResult {
     pub space: SpaceDto,
-    pub replacement_space_id: Option<String>,
+    pub default_space_id: Option<String>,
     pub affected_project_count: u64,
     pub affected_task_count: u64,
 }
@@ -202,7 +202,7 @@ struct SpaceOutboxOperation<'a> {
     operation: &'a OperationContext,
     operation_type: OutboxOpKind,
     action: &'a str,
-    replacement_space_id: Option<String>,
+    default_space_id: Option<String>,
     affected_project_count: u64,
     affected_task_count: u64,
 }
@@ -276,7 +276,7 @@ where
                 operation: &operation,
                 operation_type: OutboxOpKind::Upsert,
                 action: "create",
-                replacement_space_id: None,
+                default_space_id: None,
                 affected_project_count: 0,
                 affected_task_count: 0,
             },
@@ -343,7 +343,7 @@ where
                 operation: &operation,
                 operation_type: OutboxOpKind::Patch,
                 action: "update",
-                replacement_space_id: None,
+                default_space_id: None,
                 affected_project_count: 0,
                 affected_task_count: 0,
             },
@@ -385,7 +385,7 @@ where
                 operation: &operation,
                 operation_type: OutboxOpKind::Patch,
                 action: "set_default",
-                replacement_space_id: None,
+                default_space_id: None,
                 affected_project_count: 0,
                 affected_task_count: 0,
             },
@@ -406,7 +406,7 @@ where
             .ok_or_else(|| ApplicationError::not_found("Space 不存在"))
     }
 
-    /// 归档 Space，并在需要时自动切换默认 Space。
+    /// 归档非默认 Space。默认 Space 必须先切走，避免工作区失去兜底 Scope。
     pub async fn archive_space(
         &self,
         input: SpaceIdInput,
@@ -414,7 +414,7 @@ where
         self.remove_space(input.space_id, true).await
     }
 
-    /// 软删 Space 到回收站，并在需要时自动切换默认 Space。
+    /// 软删非默认 Space 到回收站。默认 Space 必须先切走，避免工作区失去兜底 Scope。
     pub async fn delete_space(
         &self,
         input: SpaceIdInput,
@@ -456,7 +456,7 @@ where
                 operation: &operation,
                 operation_type: OutboxOpKind::Restore,
                 action: "restore",
-                replacement_space_id: None,
+                default_space_id: None,
                 affected_project_count: cascade.affected_project_count,
                 affected_task_count: cascade.affected_task_count,
             },
@@ -495,7 +495,7 @@ where
                 operation: &operation,
                 operation_type: OutboxOpKind::Delete,
                 action: "permanently_delete",
-                replacement_space_id: None,
+                default_space_id: None,
                 affected_project_count: cascade.affected_project_count,
                 affected_task_count: cascade.affected_task_count,
             },
@@ -518,28 +518,24 @@ where
             .await?
             .ok_or_else(|| ApplicationError::not_found("Space 不存在"))?;
         ensure_active(&current)?;
-
-        let replacement = if current.is_default {
-            self.persistence
-                .list_active_except(&transaction, &space_id)
-                .await?
-                .into_iter()
-                .next()
-                .ok_or_else(|| ApplicationError::conflict("最后一个活跃 Space 不可归档或删除"))?
-        } else {
-            current.clone()
-        };
-        let replacement_id = current.is_default.then(|| replacement.id.clone());
-        let updated_at = now_utc().to_rfc3339();
         if current.is_default {
-            self.persistence
-                .clear_default(&transaction, &updated_at)
-                .await?;
-            self.persistence
-                .set_default(&transaction, &replacement.id, &updated_at)
-                .await?
-                .ok_or_else(|| ApplicationError::not_found("替代默认 Space 不存在"))?;
+            return Err(ApplicationError::conflict(
+                "默认 Space 不可归档或删除，请先将其他 Space 设为默认",
+            ));
         }
+
+        let active_spaces = self
+            .persistence
+            .list_active_except(&transaction, &space_id)
+            .await?;
+        let default_space = active_spaces
+            .iter()
+            .find(|space| space.is_default)
+            .ok_or_else(|| {
+                ApplicationError::conflict("工作区缺少可用默认 Space，无法归档或删除")
+            })?;
+        let default_space_id = Some(default_space.id.clone());
+        let updated_at = now_utc().to_rfc3339();
 
         let operation = OperationContext::new("local");
         let cascade = if archive {
@@ -574,14 +570,14 @@ where
                     OutboxOpKind::Delete
                 },
                 action: if archive { "archive" } else { "delete" },
-                replacement_space_id: replacement_id.clone(),
+                default_space_id: default_space_id.clone(),
                 affected_project_count: cascade.affected_project_count,
                 affected_task_count: cascade.affected_task_count,
             },
         )
         .await?;
         self.persistence.commit(transaction).await?;
-        Ok(map_lifecycle_result(cascade, replacement_id))
+        Ok(map_lifecycle_result(cascade, default_space_id))
     }
 
     async fn enqueue_space_operation(
@@ -594,7 +590,7 @@ where
             "operationId": entry.operation.operation_id,
             "action": entry.action,
             "space": map_space_record(entry.space.clone()),
-            "replacementSpaceId": entry.replacement_space_id,
+            "defaultSpaceId": entry.default_space_id,
             "affectedProjectCount": entry.affected_project_count,
             "affectedTaskCount": entry.affected_task_count,
         });
@@ -641,11 +637,11 @@ impl From<SpaceRecord> for SpaceDto {
 
 fn map_lifecycle_result(
     record: SpaceCascadeRecord,
-    replacement_space_id: Option<String>,
+    default_space_id: Option<String>,
 ) -> SpaceLifecycleResult {
     SpaceLifecycleResult {
         space: map_space_record(record.space),
-        replacement_space_id,
+        default_space_id,
         affected_project_count: record.affected_project_count,
         affected_task_count: record.affected_task_count,
     }

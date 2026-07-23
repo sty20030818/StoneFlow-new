@@ -47,9 +47,6 @@ export function ViewsPage() {
 						onCreate={scene.openCreateEditor}
 						onDelete={scene.actions.onDelete}
 						onEdit={scene.openEditEditor}
-						onReorder={scene.actions.onReorder}
-						onToggleVisible={scene.actions.onToggleVisible}
-						views={scene.taskViews}
 					/>
 				}
 				toolbarPills={scene.visibleViews.map((view) => ({

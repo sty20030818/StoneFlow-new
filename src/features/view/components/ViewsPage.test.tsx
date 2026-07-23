@@ -10,7 +10,13 @@ import { ViewsPage } from '@/features/view/components/ViewsPage'
 
 const loadTaskViewsSpy = vi.fn<() => Promise<void>>()
 const runTaskViewSpy =
-	vi.fn<(input: { scope: { type: string }; viewId: string }) => Promise<void>>()
+	vi.fn<
+		(input: {
+			scope: { type: string }
+			viewId: string | null
+			viewKey: string | null
+		}) => Promise<void>
+	>()
 const refreshTaskRunSpy = vi.fn<() => Promise<void>>()
 const loadSidebarSpy = vi.fn<(scope: { type: string }) => Promise<void>>()
 const openDrawerSpy = vi.fn<(kind: string, id: string) => void>()
@@ -18,31 +24,27 @@ const openTaskCreateDialogSpy = vi.fn<(draft?: unknown) => void>()
 
 const mockViews = [
 	{
-		id: 'view-today',
+		id: 'today',
 		name: 'Today',
-		description: '今天计划、今天截止和已经逾期的任务会显示在这里。',
-		type: 'system' as const,
-		entityType: 'task' as const,
-		key: 'today',
+		kind: 'system' as const,
+		systemKey: 'today' as const,
+		scope: { type: 'all' as const },
 		filters: {},
 		sort: [{ field: 'dueAt' as const, direction: 'asc' as const }],
 		groupBy: 'none' as const,
-		isVisible: true,
 		position: 100,
 		createdAt: '2026-05-03T10:00:00Z',
 		updatedAt: '2026-05-03T10:00:00Z',
 	},
 	{
-		id: 'view-upcoming',
+		id: 'upcoming',
 		name: 'Upcoming',
-		description: '未来计划和未来截止的任务会显示在这里。',
-		type: 'system' as const,
-		entityType: 'task' as const,
-		key: 'upcoming',
+		kind: 'system' as const,
+		systemKey: 'upcoming' as const,
+		scope: { type: 'all' as const },
 		filters: {},
 		sort: [{ field: 'plannedAt' as const, direction: 'asc' as const }],
 		groupBy: 'none' as const,
-		isVisible: true,
 		position: 200,
 		createdAt: '2026-05-03T10:00:00Z',
 		updatedAt: '2026-05-03T10:00:00Z',
@@ -82,7 +84,8 @@ const mockTaskRunState = {
 	error: null,
 	input: {
 		scope: { type: 'all' as const },
-		viewId: 'view-today',
+		viewId: null,
+		viewKey: 'today',
 	},
 }
 
@@ -152,7 +155,9 @@ vi.mock('@/features/view/hooks/view.queries', () => ({
 			refetch: loadTaskViewsSpy,
 		}
 	},
-	useTaskViewRunQuery: (input: { scope: { type: string }; viewId: string } | null) => {
+	useTaskViewRunQuery: (
+		input: { scope: { type: string }; viewId: string | null; viewKey: string | null } | null,
+	) => {
 		if (input) {
 			runTaskViewSpy(input)
 		}
@@ -287,7 +292,8 @@ describe('ViewsPage', () => {
 			expect(loadSidebarSpy).toHaveBeenCalledWith({ type: 'all' })
 			expect(runTaskViewSpy).toHaveBeenCalledWith({
 				scope: { type: 'all' },
-				viewId: 'view-today',
+				viewId: null,
+				viewKey: 'today',
 			})
 		})
 
@@ -297,20 +303,21 @@ describe('ViewsPage', () => {
 	})
 
 	it('点击系统视图 tab 后切换到新的视图 id', async () => {
-		await renderViewsPage('/all/views/view-today')
+		await renderViewsPage('/all/views/today')
 
 		fireEvent.click(screen.getByRole('tab', { name: 'Upcoming' }))
 
 		await waitFor(() => {
 			expect(runTaskViewSpy).toHaveBeenLastCalledWith({
 				scope: { type: 'all' },
-				viewId: 'view-upcoming',
+				viewId: null,
+				viewKey: 'upcoming',
 			})
 		})
 	})
 
 	it('注册当前视图选择到 Command selection context', async () => {
-		await renderViewsPage('/all/views/view-today', {
+		await renderViewsPage('/all/views/today', {
 			node: (
 				<>
 					<ViewsPage />
@@ -354,7 +361,7 @@ describe('ViewsPage', () => {
 			},
 		}
 
-		await renderViewsPage('/all/views/view-today')
+		await renderViewsPage('/all/views/today')
 
 		expect(screen.getByText('当前没有任务')).toBeInTheDocument()
 		expect(
@@ -373,7 +380,7 @@ describe('ViewsPage', () => {
 			input: null,
 		}
 
-		await renderViewsPage('/all/views/view-today')
+		await renderViewsPage('/all/views/today')
 
 		expect(screen.getByText('当前还没有视图')).toBeInTheDocument()
 		expect(

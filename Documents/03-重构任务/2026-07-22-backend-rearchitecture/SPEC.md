@@ -39,7 +39,7 @@ StoneFlow 的前端与文档库已完成当前阶段的结构收口，但 Rust �
 ### 生命周期、Activity 与批量操作
 
 - Space/Project 的归档或删除级联其内容；恢复只恢复本次操作影响的对象、原层级和原排序位置。
-- 默认 Space 被归档或删除时自动切换到另一个活跃 Space；没有替代 Space 时拒绝操作。
+- 默认 Space 不允许归档或删除；若要移除当前默认 Space，必须先将其他活跃 Space 设为默认。非默认 Space 归档或删除后，前端回到当前默认 Space 的任务页。
 - 批量操作只能选同类型实体，必须在一个本地事务中全成或全败。
 - Activity 只记录 Task 与 Project 的用户可理解操作；描述只记“已修改描述”，不保存正文；排序、同步、迁移和自动维护不写 Activity。Space 仅作为个人容器，不记录 Activity。
 - Activity 作为原操作的一部分同步；永久删除 Task 时删除其链接与 Activity。

@@ -28,7 +28,7 @@ export type ActiveScopePayload = {
 
 export type SpaceLifecycleResult = {
 	space: Space
-	replacementSpaceId: string | null
+	defaultSpaceId: string | null
 	affectedProjectCount: number
 	affectedTaskCount: number
 }

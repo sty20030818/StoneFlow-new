@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from '@tanstack/react-router'
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 
 import {
 	openView,
@@ -29,11 +29,10 @@ import {
 import { useTaskChangedListener } from '@/shared/events'
 import type { View } from '@/shared/types'
 
+import type { ViewSearchDefinition } from '../api/viewSearch'
 import {
 	useCreateViewMutation,
 	useDeleteViewMutation,
-	useReorderViewsMutation,
-	useToggleViewVisibleMutation,
 	useUpdateViewMutation,
 } from './view.mutations'
 import { useTaskViewRunQuery, useViewsQuery } from './view.queries'
@@ -50,18 +49,17 @@ export function useViewsScene() {
 	const spaceId = shellRoute.spaceId
 	const navigate = useNavigate({ from: '/' })
 	const { viewId: routeViewId } = useParams({ strict: false }) as { viewId?: string }
+	const search = useSearch({ strict: false }) as Partial<ViewSearchDefinition>
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
 	const openEntityDrawer = entityDetailController.openDrawer
 	const taskPreviewController = useTaskPreviewController()
-	const taskViewsQuery = useViewsQuery('task', false)
+	const taskViewsQuery = useViewsQuery()
 	const taskViews = taskViewsQuery.data ?? EMPTY_TASK_VIEWS
 	const createTaskView = useCreateViewMutation()
 	const updateTaskView = useUpdateViewMutation()
 	const deleteTaskView = useDeleteViewMutation()
-	const toggleTaskViewVisible = useToggleViewVisibleMutation()
-	const reorderTaskViews = useReorderViewsMutation()
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
 	const {
@@ -81,24 +79,22 @@ export function useViewsScene() {
 	const [editingView, setEditingView] = useState<View | null>(null)
 	const [isSavingView, setIsSavingView] = useState(false)
 
-	const visibleViews = useMemo(() => taskViews.filter((view) => view.isVisible), [taskViews])
+	const visibleViews = taskViews
 	const activeView = useMemo(() => {
 		if (!routeViewId) {
 			return visibleViews[0] ?? null
 		}
 
-		return (
-			taskViews.find(
-				(view) => view.id === routeViewId || (view.key !== null && view.key === routeViewId),
-			) ??
-			visibleViews[0] ??
-			null
-		)
+		return taskViews.find((view) => view.id === routeViewId) ?? visibleViews[0] ?? null
 	}, [routeViewId, taskViews, visibleViews])
 	const taskRunInput = activeView
 		? {
 				scope,
-				viewId: activeView.id,
+				viewId: activeView.kind === 'custom' ? activeView.id : null,
+				viewKey: activeView.systemKey,
+				filters: Object.keys(search.filters ?? {}).length > 0 ? search.filters : undefined,
+				sort: search.sort && search.sort.length > 0 ? search.sort : undefined,
+				groupBy: search.groupBy ?? undefined,
 			}
 		: null
 	const taskRunQuery = useTaskViewRunQuery(taskRunInput)
@@ -210,6 +206,9 @@ export function useViewsScene() {
 	}
 
 	function openEditEditor(view: View) {
+		if (view.kind !== 'custom') {
+			return
+		}
 		setEditingView(view)
 		setEditorOpen(true)
 	}
@@ -222,7 +221,7 @@ export function useViewsScene() {
 	async function handleCreateView(input: Parameters<typeof createTaskView.mutateAsync>[0]) {
 		setIsSavingView(true)
 		try {
-			const created = await createTaskView.mutateAsync(input)
+			const created = await createTaskView.mutateAsync({ ...input, scope })
 			void navigate({ to: openView(scope, created.id, spaceId) as never })
 		} finally {
 			setIsSavingView(false)
@@ -239,6 +238,9 @@ export function useViewsScene() {
 	}
 
 	async function handleDeleteView(view: View) {
+		if (view.kind !== 'custom') {
+			return
+		}
 		await deleteTaskView.mutateAsync(view.id)
 		if (activeView?.id === view.id) {
 			const fallbackView = visibleViews.find((item) => item.id !== view.id)
@@ -246,23 +248,6 @@ export function useViewsScene() {
 				navigateToView(fallbackView)
 			}
 		}
-	}
-
-	async function handleToggleVisible(view: View, visible: boolean) {
-		await toggleTaskViewVisible.mutateAsync({ viewId: view.id, visible })
-		if (!visible && activeView?.id === view.id) {
-			const fallbackView = visibleViews.find((item) => item.id !== view.id)
-			if (fallbackView) {
-				navigateToView(fallbackView)
-			}
-		}
-	}
-
-	async function handleReorder(orderedIds: string[]) {
-		await reorderTaskViews.mutateAsync({
-			entityType: 'task',
-			orderedIds,
-		})
 	}
 
 	const board: EntitySceneBoardSlotProps = {
@@ -334,11 +319,7 @@ export function useViewsScene() {
 		board,
 		sceneVariant: 'view' as const,
 		displayPageKey,
-		footerDescription: taskRun?.view.description
-			? taskRun.view.description
-			: taskRun
-				? `当前视图共 ${taskRun.items.length} 条任务`
-				: '正在准备视图数据',
+		footerDescription: taskRun ? `当前视图共 ${taskRun.items.length} 条任务` : '正在准备视图数据',
 		bulk: {
 			selectedCount,
 			clearTaskSelection,
@@ -358,8 +339,6 @@ export function useViewsScene() {
 		},
 		actions: {
 			onDelete: (view: View) => void handleDeleteView(view),
-			onToggleVisible: (view: View, visible: boolean) => void handleToggleVisible(view, visible),
-			onReorder: (orderedIds: string[]) => void handleReorder(orderedIds),
 		},
 	}
 }

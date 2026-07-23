@@ -5,8 +5,7 @@ use tauri::State;
 use crate::app::error::AppError;
 use crate::composition::build_view_service;
 use crate::services::{
-    CreateViewInput, DeleteViewInput, ListViewsInput, ReorderViewsInput, RunTaskViewInput,
-    RunTaskViewOutput, ToggleViewVisibleInput, UpdateViewInput, ViewDto,
+    CreateViewInput, ListViewsInput, RunTaskViewInput, RunTaskViewOutput, UpdateViewInput, ViewDto,
 };
 use crate::sync;
 use stoneflow_storage::database::DatabaseRuntimeState;
@@ -57,39 +56,13 @@ pub async fn update_view(
 
 #[tauri::command]
 pub async fn delete_view(
-    input: DeleteViewInput,
+    view_id: String,
     app_handle: tauri::AppHandle,
     database: State<'_, DatabaseRuntimeState>,
 ) -> Result<(), AppError> {
     build_view_service(database.inner())
-        .delete_view(input)
+        .delete_view(&view_id)
         .await?;
     sync::note_local_write(&app_handle).await;
     Ok(())
-}
-
-#[tauri::command]
-pub async fn toggle_view_visible(
-    input: ToggleViewVisibleInput,
-    app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
-) -> Result<ViewDto, AppError> {
-    let view = build_view_service(database.inner())
-        .toggle_view_visible(input)
-        .await?;
-    sync::note_local_write(&app_handle).await;
-    Ok(view)
-}
-
-#[tauri::command]
-pub async fn reorder_views(
-    input: ReorderViewsInput,
-    app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
-) -> Result<Vec<ViewDto>, AppError> {
-    let views = build_view_service(database.inner())
-        .reorder_views(input)
-        .await?;
-    sync::note_local_write(&app_handle).await;
-    Ok(views)
 }

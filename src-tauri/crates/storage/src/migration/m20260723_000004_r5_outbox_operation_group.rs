@@ -45,6 +45,8 @@ impl MigrationTrait for Migration {
     }
 
     async fn down(&self, _manager: &SchemaManager) -> Result<(), DbErr> {
-        Err(DbErr::Migration("R5 Outbox operation 分组不支持降级".to_owned()))
+        Err(DbErr::Migration(
+            "R5 Outbox operation 分组不支持降级".to_owned(),
+        ))
     }
 }

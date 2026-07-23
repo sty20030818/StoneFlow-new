@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { createView, deleteView, reorderViews, toggleViewVisible, updateView } from '../api/views'
+import { createView, deleteView, updateView } from '../api/views'
 import { invalidateWorkspaceQueries } from '@/shared/query/invalidation'
 
 import { viewKeys } from './view.keys'
@@ -39,25 +39,6 @@ export function useDeleteViewMutation() {
 
 	return useMutation({
 		mutationFn: deleteView,
-		onSuccess: invalidate,
-	})
-}
-
-export function useToggleViewVisibleMutation() {
-	const invalidate = useInvalidateViewMutation()
-
-	return useMutation({
-		mutationFn: ({ viewId, visible }: { viewId: string; visible: boolean }) =>
-			toggleViewVisible(viewId, visible),
-		onSuccess: invalidate,
-	})
-}
-
-export function useReorderViewsMutation() {
-	const invalidate = useInvalidateViewMutation()
-
-	return useMutation({
-		mutationFn: reorderViews,
 		onSuccess: invalidate,
 	})
 }

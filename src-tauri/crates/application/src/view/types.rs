@@ -1,11 +1,8 @@
-//! View 读模型与 Task View 执行内部类型（R2：仅自定义 View）。
-
-#![allow(dead_code)]
+//! View 查询定义及其持久化读模型。
 
 use serde::{Deserialize, Serialize};
 use stoneflow_domain::{ViewEntityKind, WorkStatus};
 
-/// View 持久化读模型（对齐 R2 schema）。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ViewRecord {
     pub id: String,
@@ -21,7 +18,6 @@ pub struct ViewRecord {
     pub updated_at: String,
 }
 
-/// Task View 执行器所需的 Task 读模型。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ViewTaskRecord {
     pub id: String,
@@ -41,21 +37,27 @@ pub struct ViewTaskRecord {
     pub updated_at: String,
 }
 
-/// Space 名称查找辅助读模型。
+/// Storage 可直接执行的候选集约束；不包含排序或展示分组。
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ViewTaskQuery {
+    pub scope: TaskScopeInput,
+    pub statuses: Vec<WorkStatus>,
+    pub project: Option<ProjectFilter>,
+    pub due: Option<DateFilter>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ViewSpaceLookupRecord {
     pub id: String,
     pub name: String,
+    pub slug: String,
 }
-
-/// Project 名称查找辅助读模型。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ViewProjectLookupRecord {
     pub id: String,
     pub name: String,
 }
 
-/// 创建 View 的持久化输入。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CreateViewPersistenceRecord {
     pub id: String,
@@ -70,7 +72,6 @@ pub struct CreateViewPersistenceRecord {
     pub updated_at: String,
 }
 
-/// 更新 View 基础字段 patch。
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct UpdateViewPatch {
     pub name: Option<String>,
@@ -82,24 +83,29 @@ pub struct UpdateViewPatch {
     pub updated_at: Option<String>,
 }
 
-/// View 列表查询条件。
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ViewListQuery {
     pub entity_kind: ViewEntityKind,
 }
 
-/// Task View 候选集 placement 查询。
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ViewTaskPlacementQuery {
-    All,
-    Project(String),
-    NoProject,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct TaskScopeInput {
+    #[serde(rename = "type")]
+    pub kind: TaskScopeKind,
+    pub space_id: Option<String>,
 }
 
-/// Task View filters JSON 结构。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TaskScopeKind {
+    All,
+    Space,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct TaskViewFiltersValue {
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct TaskViewFiltersValue {
     #[serde(default)]
     pub status: Vec<WorkStatus>,
     pub priority: Option<PriorityFilter>,
@@ -112,28 +118,41 @@ pub(crate) struct TaskViewFiltersValue {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct PriorityFilter {
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PriorityFilter {
     pub eq: Option<i32>,
     pub gte: Option<i32>,
     pub lte: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct ProjectFilter {
-    pub mode: String,
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ProjectFilter {
+    pub mode: ProjectFilterMode,
     #[serde(default)]
     pub ids: Vec<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ProjectFilterMode {
+    Any,
+    None,
+    Specific,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct DateFilter {
+    pub mode: DateFilterMode,
+    pub from: Option<String>,
+    pub to: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub(crate) enum DateFilterMode {
+pub enum DateFilterMode {
     Today,
-    Tomorrow,
-    ThisWeek,
-    NextWeek,
     Overdue,
     Future,
     Past,
@@ -143,15 +162,15 @@ pub(crate) enum DateFilterMode {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct DateFilter {
-    pub mode: DateFilterMode,
-    pub from: Option<String>,
-    pub to: Option<String>,
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ViewSortRule {
+    pub field: TaskSortField,
+    pub direction: SortDirection,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum TaskSortField {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TaskSortField {
     Position,
     Priority,
     DueAt,
@@ -161,8 +180,16 @@ pub(crate) enum TaskSortField {
     CompletedAt,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum TaskGroupBy {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SortDirection {
+    Asc,
+    Desc,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TaskGroupBy {
     None,
     Status,
     Priority,

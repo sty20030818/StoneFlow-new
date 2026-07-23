@@ -49,8 +49,6 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         views::create_view,
         views::update_view,
         views::delete_view,
-        views::toggle_view_visible,
-        views::reorder_views,
         settings::get_sidebar_settings,
         settings::update_sidebar_item_visibility,
         settings::update_sidebar_project_section,

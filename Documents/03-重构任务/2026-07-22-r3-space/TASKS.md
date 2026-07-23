@@ -21,7 +21,7 @@
 目标：明确管理操作的用户语义，避免删除 Space 后残留悬挂 Project/Task。
 
 - [x] 定义 archive 与 delete 的可用条件、返回错误和用户可恢复边界。
-- [x] 对删除或归档默认 Space，由后端自动选择 position 最靠前的替代默认 Space；最后一个活跃 Space 不允许无替代地被移除。
+- [x] 删除或归档默认 Space 由前后端共同拒绝；若要移除当前默认 Space，必须先将其他活跃 Space 设为默认。
 - [x] 为 Project、Task 记录 lifecycle operation 来源；View 在 R6 建立结构化 scope 后处理，不在 R3 级联。
 - [x] 让级联业务变更、outbox 与删除 metadata 同事务提交。
 - [x] 覆盖默认替代、最后活跃 Space 拒绝、包含 Project/Task 的归档删除和失败回滚测试。

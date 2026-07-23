@@ -80,7 +80,10 @@ impl TaskService {
         &self,
         input: BulkUpdateTasksInput,
     ) -> Result<BulkUpdateTasksDto, AppError> {
-        self.inner.bulk_update_tasks(input).await.map_err(AppError::from)
+        self.inner
+            .bulk_update_tasks(input)
+            .await
+            .map_err(AppError::from)
     }
     pub async fn archive_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
         self.inner.archive_task(input).await.map_err(AppError::from)

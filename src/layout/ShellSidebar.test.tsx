@@ -95,7 +95,7 @@ describe('ShellSidebar', () => {
 	})
 
 	it('Space 删除会打开统一确认弹窗，并默认聚焦确认按钮', async () => {
-		const onDeleteSpace = vi.fn(async () => mockSpace)
+		const onDeleteSpace = vi.fn(async () => mockSpaceRemovalResult(null))
 		renderShellSidebar(
 			{
 				mainItems: {
@@ -140,6 +140,55 @@ describe('ShellSidebar', () => {
 		await waitFor(() => {
 			expect(onDeleteSpace).toHaveBeenCalledWith('space-personal')
 		})
+	})
+
+	it('当前 Space 是默认空间时不允许归档或删除', async () => {
+		const onArchiveSpace = vi.fn(async () => mockSpaceRemovalResult('space-personal'))
+		const onDeleteSpace = vi.fn(async () => mockSpaceRemovalResult('space-personal'))
+		renderShellSidebar(
+			{
+				mainItems: {
+					inbox: { visible: true, order: 100 },
+					allTasks: { visible: true, order: 200 },
+					views: { visible: true, order: 300 },
+					projectOverview: { visible: true, order: 400 },
+				},
+				projectSection: {
+					visible: true,
+					order: 500,
+					collapsed: false,
+					showCounts: true,
+					showCompleted: true,
+					maxVisible: null,
+				},
+				footerItems: {
+					archive: { visible: true, order: 900 },
+					trash: { visible: true, order: 1000 },
+				},
+				width: 256,
+				desktopPreference: 'expanded',
+			},
+			[],
+			{
+				onArchiveSpace,
+				onDeleteSpace,
+				spaces: [mockSpace],
+			},
+		)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '切换 Space' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '编辑空间' }))
+
+		const archiveItem = await screen.findByRole('menuitem', { name: '归档' })
+		const deleteItem = await screen.findByRole('menuitem', { name: '删除' })
+		expect(archiveItem).toHaveAttribute('aria-disabled', 'true')
+		expect(deleteItem).toHaveAttribute('aria-disabled', 'true')
+
+		fireEvent.click(archiveItem)
+		fireEvent.click(deleteItem)
+
+		expect(onArchiveSpace).not.toHaveBeenCalled()
+		expect(onDeleteSpace).not.toHaveBeenCalled()
 	})
 
 	it('Space 新建和编辑弹窗可从切换菜单打开', async () => {
@@ -263,8 +312,8 @@ describe('ShellSidebar', () => {
 		})
 	})
 
-	it('删除当前空间后会跳到剩余默认空间的收件箱', async () => {
-		const onDeleteSpace = vi.fn(async () => mockSpace)
+	it('删除当前非默认空间后会跳到默认 Space 的任务页', async () => {
+		const onDeleteSpace = vi.fn(async () => mockSpaceRemovalResult('space-work'))
 		renderShellSidebar(
 			{
 				mainItems: {
@@ -313,7 +362,7 @@ describe('ShellSidebar', () => {
 			expect(onDeleteSpace).toHaveBeenCalledWith('space-personal')
 		})
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/space-work/inbox')
+			expect(screen.getByTestId('location')).toHaveTextContent('/space-work/tasks')
 		})
 	})
 })
@@ -338,9 +387,9 @@ function renderShellSidebar(
 							<ShellSidebar
 								currentScope={{ type: 'space', spaceId: 'space-personal' }}
 								currentSpaceId='space-personal'
-								onArchiveSpace={async () => mockSpace}
+								onArchiveSpace={async () => mockSpaceRemovalResult(null)}
 								onCreateSpace={async () => mockSpace}
-								onDeleteSpace={async () => mockSpace}
+								onDeleteSpace={async () => mockSpaceRemovalResult(null)}
 								onOpenProjectCreateDialog={() => undefined}
 								onResetMainItemsVisibility={() => undefined}
 								onSetDefaultSpace={async () => mockSpace}
@@ -384,4 +433,13 @@ const mockSpace = {
 	deletedAt: null,
 	createdAt: '2026-04-30T00:00:00.000Z',
 	updatedAt: '2026-04-30T00:00:00.000Z',
+}
+
+function mockSpaceRemovalResult(defaultSpaceId: string | null) {
+	return {
+		space: mockSpace,
+		defaultSpaceId,
+		affectedProjectCount: 0,
+		affectedTaskCount: 0,
+	}
 }

@@ -547,12 +547,7 @@ where
         if let Some(note) = input.note {
             let note = normalize_optional_long_text_option(note);
             if note != current.note {
-                push_change(
-                    &mut changes,
-                    "note",
-                    None,
-                    None,
-                );
+                push_change(&mut changes, "note", None, None);
                 patch.note = Some(note);
             }
         }
@@ -702,11 +697,7 @@ where
             // 跨容器移动没有显式排序目标时，追加到目标容器末尾。
             patch.position = Some(
                 self.persistence
-                    .next_position(
-                        &transaction,
-                        &next_space_id,
-                        next_project_id.as_deref(),
-                    )
+                    .next_position(&transaction, &next_space_id, next_project_id.as_deref())
                     .await?,
             );
         }
@@ -806,11 +797,15 @@ where
             _ => None,
         };
         let priority = match &input.action {
-            BulkTaskAction::SetPriority { priority } => Some(validate_task_priority(Some(*priority))?),
+            BulkTaskAction::SetPriority { priority } => {
+                Some(validate_task_priority(Some(*priority))?)
+            }
             _ => None,
         };
         let due_at = match &input.action {
-            BulkTaskAction::SetDueAt { due_at } => Some(normalize_timestamp(due_at.clone(), "dueAt")?),
+            BulkTaskAction::SetDueAt { due_at } => {
+                Some(normalize_timestamp(due_at.clone(), "dueAt")?)
+            }
             _ => None,
         };
 
@@ -835,7 +830,14 @@ where
                         Vec::new(),
                     )
                     .await?;
-                    self.enqueue_task_operation(&transaction, &updated, &operation, OutboxOpKind::Patch, "archive").await?;
+                    self.enqueue_task_operation(
+                        &transaction,
+                        &updated,
+                        &operation,
+                        OutboxOpKind::Patch,
+                        "archive",
+                    )
+                    .await?;
                     continue;
                 }
                 BulkTaskAction::Delete => {
@@ -852,34 +854,66 @@ where
                         Vec::new(),
                     )
                     .await?;
-                    self.enqueue_task_operation(&transaction, &updated, &operation, OutboxOpKind::Patch, "delete").await?;
+                    self.enqueue_task_operation(
+                        &transaction,
+                        &updated,
+                        &operation,
+                        OutboxOpKind::Patch,
+                        "delete",
+                    )
+                    .await?;
                     continue;
                 }
                 BulkTaskAction::SetPriority { .. } => {
-                    let priority = priority.ok_or_else(|| ApplicationError::internal("批量优先级预校验丢失"))?;
+                    let priority = priority
+                        .ok_or_else(|| ApplicationError::internal("批量优先级预校验丢失"))?;
                     if priority != current.priority {
                         patch.priority = Some(priority);
-                        push_change(&mut changes, "priority", Some(json!(current.priority)), Some(json!(priority)));
+                        push_change(
+                            &mut changes,
+                            "priority",
+                            Some(json!(current.priority)),
+                            Some(json!(priority)),
+                        );
                     }
                     ActivityAction::TaskPriorityChanged
                 }
                 BulkTaskAction::SetDueAt { .. } => {
-                    let due_at = due_at.clone().ok_or_else(|| ApplicationError::internal("批量时间预校验丢失"))?;
+                    let due_at = due_at
+                        .clone()
+                        .ok_or_else(|| ApplicationError::internal("批量时间预校验丢失"))?;
                     if due_at != current.due_at {
                         patch.due_at = Some(due_at.clone());
-                        push_change(&mut changes, "due_at", json_option_string(&current.due_at), json_option_string(&due_at));
+                        push_change(
+                            &mut changes,
+                            "due_at",
+                            json_option_string(&current.due_at),
+                            json_option_string(&due_at),
+                        );
                     }
                     ActivityAction::TaskDueUpdated
                 }
                 BulkTaskAction::SetPlacement { .. } => {
-                    let (space_id, project_id) = placement.clone().ok_or_else(|| ApplicationError::internal("批量归属预校验丢失"))?;
+                    let (space_id, project_id) = placement
+                        .clone()
+                        .ok_or_else(|| ApplicationError::internal("批量归属预校验丢失"))?;
                     if space_id != current.space_id {
                         patch.space_id = Some(space_id.clone());
-                        push_change(&mut changes, "space_id", Some(json!(current.space_id)), Some(json!(space_id)));
+                        push_change(
+                            &mut changes,
+                            "space_id",
+                            Some(json!(current.space_id)),
+                            Some(json!(space_id)),
+                        );
                     }
                     if project_id != current.project_id {
                         patch.project_id = Some(project_id.clone());
-                        push_change(&mut changes, "project_id", json_option_string(&current.project_id), json_option_string(&project_id));
+                        push_change(
+                            &mut changes,
+                            "project_id",
+                            json_option_string(&current.project_id),
+                            json_option_string(&project_id),
+                        );
                     }
                     ActivityAction::TaskMovedProject
                 }
@@ -887,22 +921,38 @@ where
                     if *status != current.status {
                         patch.status = Some(*status);
                         patch.status_changed_at = Some(now.clone());
-                        push_change(&mut changes, "status", Some(json!(status_key(current.status))), Some(json!(status_key(*status))));
+                        push_change(
+                            &mut changes,
+                            "status",
+                            Some(json!(status_key(current.status))),
+                            Some(json!(status_key(*status))),
+                        );
                         let next_completed_at = WorkState {
                             status: current.status,
                             priority: WorkPriority::from_i32(current.priority)?,
                             planned_at: None,
                             due_at: None,
                             remind_at: None,
-                            status_changed_at: parse_utc_rfc3339(&current.status_changed_at, "Task status_changed_at")?,
-                            completed_at: parse_optional_utc_rfc3339(current.completed_at.as_deref(), "Task completed_at")?,
+                            status_changed_at: parse_utc_rfc3339(
+                                &current.status_changed_at,
+                                "Task status_changed_at",
+                            )?,
+                            completed_at: parse_optional_utc_rfc3339(
+                                current.completed_at.as_deref(),
+                                "Task completed_at",
+                            )?,
                         }
                         .with_status(*status, now_utc())
                         .completed_at
                         .map(|value| value.to_rfc3339());
                         if next_completed_at != current.completed_at {
                             patch.completed_at = Some(next_completed_at.clone());
-                            push_change(&mut changes, "completed_at", json_option_string(&current.completed_at), json_option_string(&next_completed_at));
+                            push_change(
+                                &mut changes,
+                                "completed_at",
+                                json_option_string(&current.completed_at),
+                                json_option_string(&next_completed_at),
+                            );
                         }
                     }
                     select_update_action(&current, Some(*status), &changes)
@@ -911,13 +961,27 @@ where
             if changes.is_empty() {
                 continue;
             }
-            let updated = self.persistence.update(&transaction, &current.id, patch, &now).await?
+            let updated = self
+                .persistence
+                .update(&transaction, &current.id, patch, &now)
+                .await?
                 .ok_or_else(|| ApplicationError::not_found("Task 不存在"))?;
-            self.record_bulk_activity(&transaction, &operation, &updated, action, changes).await?;
-            self.enqueue_task_operation(&transaction, &updated, &operation, OutboxOpKind::Patch, "bulkUpdate").await?;
+            self.record_bulk_activity(&transaction, &operation, &updated, action, changes)
+                .await?;
+            self.enqueue_task_operation(
+                &transaction,
+                &updated,
+                &operation,
+                OutboxOpKind::Patch,
+                "bulkUpdate",
+            )
+            .await?;
         }
         self.persistence.commit(transaction).await?;
-        Ok(BulkUpdateTasksDto { task_ids: input.task_ids, operation_id: operation.operation_id })
+        Ok(BulkUpdateTasksDto {
+            task_ids: input.task_ids,
+            operation_id: operation.operation_id,
+        })
     }
 
     pub async fn delete_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, ApplicationError> {

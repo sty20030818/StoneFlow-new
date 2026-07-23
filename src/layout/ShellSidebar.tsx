@@ -81,7 +81,7 @@ import {
 } from 'lucide-react'
 
 type ShellNavBadges = Partial<Record<ShellSectionKey, string>>
-type SpaceRemovalResult = Space | { replacementSpaceId: string | null }
+type SpaceRemovalResult = { defaultSpaceId: string | null }
 
 type ShellSidebarProps = {
 	currentScope: Scope
@@ -137,7 +137,7 @@ export function ShellSidebar({
 			: spaces.find((space) => space.id === fallbackSpaceId)) ??
 		spaces[0] ??
 		null
-	const canArchiveOrDeleteActiveSpace = Boolean(activeSpace)
+	const canArchiveOrDeleteActiveSpace = Boolean(activeSpace && !activeSpace.isDefault)
 	const scopedProjectLinks = currentScope.type === 'all' ? [] : projects
 	const currentScopeLabel =
 		currentScope.type === 'all' ? '所有空间' : (activeSpace?.name ?? '未选择 Space')
@@ -195,11 +195,22 @@ export function ShellSidebar({
 		() => (activeSpace ? getSpaceVisual(activeSpace) : null),
 		[activeSpace],
 	)
-	const resolvePostSpaceRemovalPath = useCallback((replacementSpaceId: string | null) => {
-		return replacementSpaceId
-			? openSection({ type: 'space', spaceId: replacementSpaceId }, 'inbox', replacementSpaceId)
-			: openStartupFallback({ type: 'all' })
-	}, [])
+	const resolvePostSpaceRemovalPath = useCallback(
+		(defaultSpaceId: string | null) => {
+			const nextDefaultSpaceId =
+				defaultSpaceId ?? spaces.find((space) => space.isDefault)?.id ?? null
+			if (!nextDefaultSpaceId) {
+				throw new Error('当前没有可用默认 Space，请先设置默认 Space')
+			}
+
+			return openSection(
+				{ type: 'space', spaceId: nextDefaultSpaceId },
+				'tasks',
+				nextDefaultSpaceId,
+			)
+		},
+		[spaces],
+	)
 
 	async function runSpaceMutation(task: () => Promise<void>) {
 		try {
@@ -458,7 +469,7 @@ export function ShellSidebar({
 																	if (currentScope.type === 'space') {
 																		void navigate({
 																			to: resolvePostSpaceRemovalPath(
-																				getReplacementSpaceId(result),
+																				getDefaultSpaceId(result),
 																			) as never,
 																		})
 																	}
@@ -489,7 +500,7 @@ export function ShellSidebar({
 																	if (currentScope.type === 'space') {
 																		void navigate({
 																			to: resolvePostSpaceRemovalPath(
-																				getReplacementSpaceId(result),
+																				getDefaultSpaceId(result),
 																			) as never,
 																		})
 																	}
@@ -659,6 +670,6 @@ export function ShellSidebar({
 	)
 }
 
-function getReplacementSpaceId(result: SpaceRemovalResult): string | null {
-	return 'replacementSpaceId' in result ? result.replacementSpaceId : null
+function getDefaultSpaceId(result: SpaceRemovalResult): string | null {
+	return result.defaultSpaceId
 }

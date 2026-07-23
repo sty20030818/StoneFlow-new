@@ -10,16 +10,14 @@ import type {
 	ViewSortField,
 	ViewSortRule,
 } from '@/shared/types'
-import { optionalTrimmedString, titleString } from '@/shared/validation'
+import { titleString } from '@/shared/validation'
 
-export type InboxMode = 'any' | 'inbox' | 'notInbox'
 export type PriorityMode = 'any' | 'p4' | 'p3+' | 'p2+' | 'p1+'
 type ProjectMode = 'any' | 'none' | 'specific'
 
 export const viewEditorSchema = z
 	.object({
 		name: titleString('视图名称'),
-		description: optionalTrimmedString,
 		statusList: z
 			.array(
 				z.enum(['todo', 'doing', 'waiting', 'done', 'canceled'] satisfies [
@@ -32,15 +30,11 @@ export const viewEditorSchema = z
 			PriorityMode,
 			...PriorityMode[],
 		]),
-		inboxMode: z.enum(['any', 'inbox', 'notInbox'] satisfies [InboxMode, ...InboxMode[]]),
 		projectMode: z.enum(['any', 'none', 'specific'] satisfies [ProjectMode, ...ProjectMode[]]),
 		specificProjectId: z.string().trim(),
 		dueMode: z.enum([
 			'none',
 			'today',
-			'tomorrow',
-			'this_week',
-			'next_week',
 			'overdue',
 			'future',
 			'past',
@@ -50,22 +44,19 @@ export const viewEditorSchema = z
 			NonNullable<TaskViewFilters['due']>['mode'],
 			...NonNullable<TaskViewFilters['due']>['mode'][],
 		]),
-		scheduledMode: z.enum([
+		plannedMode: z.enum([
 			'none',
 			'today',
-			'tomorrow',
-			'this_week',
-			'next_week',
 			'overdue',
 			'future',
 			'past',
 			'between',
 			'not_none',
 		] satisfies [
-			NonNullable<TaskViewFilters['scheduled']>['mode'],
-			...NonNullable<TaskViewFilters['scheduled']>['mode'][],
+			NonNullable<TaskViewFilters['planned']>['mode'],
+			...NonNullable<TaskViewFilters['planned']>['mode'][],
 		]),
-		groupBy: z.enum(['none', 'status', 'priority', 'project', 'due', 'scheduled'] satisfies [
+		groupBy: z.enum(['none', 'status', 'priority', 'project', 'due', 'planned'] satisfies [
 			TaskGroupBy,
 			...TaskGroupBy[],
 		]),
@@ -101,14 +92,12 @@ export function buildViewEditorDefaultValues(view: View | null): ViewEditorFormV
 
 	return {
 		name: view?.name ?? '',
-		description: view?.description ?? '',
 		statusList: filters.status ?? ['todo', 'doing', 'waiting'],
 		priorityMode: getPriorityMode(filters),
-		inboxMode: getInboxMode(filters),
 		projectMode: filters.project?.mode ?? 'any',
 		specificProjectId: filters.project?.ids?.[0] ?? 'none',
 		dueMode: filters.due?.mode ?? 'none',
-		scheduledMode: filters.scheduled?.mode ?? 'none',
+		plannedMode: filters.planned?.mode ?? 'none',
 		groupBy: view?.groupBy ?? 'none',
 		sortField: firstSortRule.field,
 		sortDirection: firstSortRule.direction,
@@ -117,9 +106,8 @@ export function buildViewEditorDefaultValues(view: View | null): ViewEditorFormV
 
 export function toCreateViewInput(values: ViewEditorFormValues): CreateViewInput {
 	return {
-		entityType: 'task',
 		name: values.name.trim(),
-		description: values.description?.trim() ? values.description.trim() : null,
+		scope: { type: 'all' },
 		filters: buildViewFilters(values),
 		sort: [{ field: values.sortField, direction: values.sortDirection }],
 		groupBy: values.groupBy,
@@ -130,7 +118,6 @@ export function toUpdateViewInput(values: ViewEditorFormValues, viewId: string):
 	return {
 		viewId,
 		name: values.name.trim(),
-		description: values.description?.trim() ? values.description.trim() : null,
 		filters: buildViewFilters(values),
 		sort: [{ field: values.sortField, direction: values.sortDirection }],
 		groupBy: values.groupBy,
@@ -142,15 +129,12 @@ function getInitialFilters(view: View | null): TaskViewFilters {
 	return {
 		status: filters.status ?? ['todo', 'doing', 'waiting'],
 		priority: filters.priority,
-		inbox: filters.inbox,
 		project: filters.project,
 		due: filters.due,
-		scheduled: filters.scheduled,
+		planned: filters.planned,
 		created: filters.created,
 		updated: filters.updated,
 		completed: filters.completed,
-		archived: filters.archived ?? false,
-		deleted: filters.deleted ?? false,
 	}
 }
 
@@ -161,12 +145,6 @@ function getPriorityMode(filters: TaskViewFilters): PriorityMode {
 	if (priority.gte === 3) return 'p3+'
 	if (priority.gte === 2) return 'p2+'
 	if (priority.gte === 1) return 'p1+'
-	return 'any'
-}
-
-function getInboxMode(filters: TaskViewFilters): InboxMode {
-	if (filters.inbox === true) return 'inbox'
-	if (filters.inbox === false) return 'notInbox'
 	return 'any'
 }
 
@@ -189,7 +167,6 @@ function buildViewFilters(values: ViewEditorFormValues): TaskViewFilters {
 	return {
 		status: values.statusList,
 		priority: buildPriorityFilter(values.priorityMode),
-		inbox: values.inboxMode === 'any' ? undefined : values.inboxMode === 'inbox',
 		project:
 			values.projectMode === 'any'
 				? undefined
@@ -200,8 +177,6 @@ function buildViewFilters(values: ViewEditorFormValues): TaskViewFilters {
 							ids: values.specificProjectId !== 'none' ? [values.specificProjectId] : [],
 						},
 		due: values.dueMode === 'none' ? undefined : { mode: values.dueMode },
-		scheduled: values.scheduledMode === 'none' ? undefined : { mode: values.scheduledMode },
-		archived: false,
-		deleted: false,
+		planned: values.plannedMode === 'none' ? undefined : { mode: values.plannedMode },
 	}
 }

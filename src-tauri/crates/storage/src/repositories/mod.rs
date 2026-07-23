@@ -12,6 +12,7 @@ mod sync_repository;
 mod task_link_repository;
 mod task_repository;
 mod tombstone_repository;
+mod view_repository;
 
 pub use activity_repository::ActivityRepository;
 pub use applied_operation_repository::AppliedOperationRepository;
@@ -27,3 +28,6 @@ pub use sync_repository::{SyncCursorRecord, SyncDeviceRecord, SyncRepository};
 pub use task_link_repository::{CreateTaskLinkRecord, TaskLinkRepository, UpdateTaskLinkPatch};
 pub use task_repository::{CreateTaskRecord, TaskRepository, UpdateTaskPatch};
 pub use tombstone_repository::TombstoneRepository;
+pub use view_repository::{
+    map_view, CreateViewRecord, UpdateViewPatch as StorageUpdateViewPatch, ViewRepository,
+};

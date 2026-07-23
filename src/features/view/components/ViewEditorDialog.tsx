@@ -33,7 +33,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/shared/components/base/select'
-import { Textarea } from '@/shared/components/base/textarea'
 import {
 	dialogShellContentVariants,
 	dialogShellDescriptionClass,
@@ -44,7 +43,6 @@ import {
 import { formFieldGridClass, formFieldLabelVariants } from '@/shared/components/patterns/form-field'
 import {
 	buildViewEditorDefaultValues,
-	type InboxMode,
 	type PriorityMode,
 	toCreateViewInput,
 	toUpdateViewInput,
@@ -65,7 +63,7 @@ const GROUP_BY_OPTIONS: Array<{ value: TaskGroupBy; label: string }> = [
 	{ value: 'priority', label: '按优先级' },
 	{ value: 'project', label: '按项目' },
 	{ value: 'due', label: '按截止时间' },
-	{ value: 'scheduled', label: '按计划时间' },
+	{ value: 'planned', label: '按计划时间' },
 ]
 
 const SORT_FIELD_OPTIONS: Array<{ value: ViewSortField; label: string }> = [
@@ -102,10 +100,6 @@ export function ViewEditorDialog({
 		defaultValues: buildViewEditorDefaultValues(view),
 	})
 	const { field: nameField } = useController({ control: form.control, name: 'name' })
-	const { field: descriptionField } = useController({
-		control: form.control,
-		name: 'description',
-	})
 	const { field: statusListField } = useController({
 		control: form.control,
 		name: 'statusList',
@@ -113,10 +107,6 @@ export function ViewEditorDialog({
 	const { field: priorityModeField } = useController({
 		control: form.control,
 		name: 'priorityMode',
-	})
-	const { field: inboxModeField } = useController({
-		control: form.control,
-		name: 'inboxMode',
 	})
 	const { field: projectModeField } = useController({
 		control: form.control,
@@ -127,9 +117,9 @@ export function ViewEditorDialog({
 		name: 'specificProjectId',
 	})
 	const { field: dueModeField } = useController({ control: form.control, name: 'dueMode' })
-	const { field: scheduledModeField } = useController({
+	const { field: plannedModeField } = useController({
 		control: form.control,
-		name: 'scheduledMode',
+		name: 'plannedMode',
 	})
 	const { field: groupByField } = useController({ control: form.control, name: 'groupBy' })
 	const { field: sortFieldField } = useController({
@@ -158,11 +148,10 @@ export function ViewEditorDialog({
 
 	const statusList = statusListField.value
 	const priorityMode = priorityModeField.value as PriorityMode
-	const inboxMode = inboxModeField.value as InboxMode
 	const projectMode = projectModeField.value
 	const specificProjectId = specificProjectIdField.value
 	const dueMode = dueModeField.value
-	const scheduledMode = scheduledModeField.value
+	const plannedMode = plannedModeField.value
 	const groupBy = groupByField.value as TaskGroupBy
 	const sortField = sortFieldField.value as ViewSortField
 	const sortDirection = sortDirectionField.value as ViewSortRule['direction']
@@ -217,37 +206,20 @@ export function ViewEditorDialog({
 					</DialogHeader>
 
 					<div className='grid gap-5 px-6 py-5'>
-						<section className='grid gap-3'>
-							<div className={formFieldGridClass}>
-								<label
-									className={formFieldLabelVariants({ tone: 'muted' })}
-									htmlFor='view-editor-name'
-								>
-									名称
-								</label>
-								<Input
-									id='view-editor-name'
-									onBlur={nameField.onBlur}
-									onChange={nameField.onChange}
-									value={nameField.value}
-								/>
-							</div>
-							<div className={formFieldGridClass}>
-								<label
-									className={formFieldLabelVariants({ tone: 'muted' })}
-									htmlFor='view-editor-description'
-								>
-									说明
-								</label>
-								<Textarea
-									id='view-editor-description'
-									onBlur={descriptionField.onBlur}
-									onChange={descriptionField.onChange}
-									placeholder='给这个视图留一句简短说明'
-									value={descriptionField.value}
-								/>
-							</div>
-						</section>
+						<div className={formFieldGridClass}>
+							<label
+								className={formFieldLabelVariants({ tone: 'muted' })}
+								htmlFor='view-editor-name'
+							>
+								名称
+							</label>
+							<Input
+								id='view-editor-name'
+								onBlur={nameField.onBlur}
+								onChange={nameField.onChange}
+								value={nameField.value}
+							/>
+						</div>
 
 						<section className='grid gap-2'>
 							<div className={formFieldLabelVariants({ tone: 'muted' })}>状态筛选</div>
@@ -283,16 +255,6 @@ export function ViewEditorDialog({
 									{ value: 'p1+', label: 'P1 及以上' },
 								]}
 								value={priorityMode}
-							/>
-							<DialogSelect
-								label='收件箱'
-								onValueChange={(value) => inboxModeField.onChange(value as InboxMode)}
-								options={[
-									{ value: 'any', label: '不限' },
-									{ value: 'inbox', label: '仅 Inbox' },
-									{ value: 'notInbox', label: '排除 Inbox' },
-								]}
-								value={inboxMode}
 							/>
 							<DialogSelect
 								label='项目归属'
@@ -335,8 +297,8 @@ export function ViewEditorDialog({
 							<DialogSelect
 								label='计划时间'
 								onValueChange={(value) =>
-									scheduledModeField.onChange(
-										value as NonNullable<TaskViewFilters['scheduled']>['mode'],
+									plannedModeField.onChange(
+										value as NonNullable<TaskViewFilters['planned']>['mode'],
 									)
 								}
 								options={[
@@ -345,7 +307,7 @@ export function ViewEditorDialog({
 									{ value: 'future', label: '未来' },
 									{ value: 'past', label: '过去' },
 								]}
-								value={scheduledMode}
+								value={plannedMode}
 							/>
 						</section>
 

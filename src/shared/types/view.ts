@@ -3,8 +3,8 @@ import type { Scope } from './space'
 import type { TaskListItem, TaskStatus } from './task'
 import type { TaskPriority } from './taskPriority'
 
-export type ViewEntityType = 'task' | 'project'
 export type ViewKind = 'system' | 'custom'
+export type SystemViewKey = 'all' | 'active' | 'today' | 'upcoming' | 'overdue'
 export type ViewSortDirection = 'asc' | 'desc'
 export type ViewSortField =
 	| 'position'
@@ -15,13 +15,10 @@ export type ViewSortField =
 	| 'updatedAt'
 	| 'completedAt'
 
-export type TaskGroupBy = 'none' | 'status' | 'priority' | 'project' | 'due' | 'scheduled'
+export type TaskGroupBy = 'none' | 'status' | 'priority' | 'project' | 'due' | 'planned'
 
 export type DateFilterMode =
 	| 'today'
-	| 'tomorrow'
-	| 'this_week'
-	| 'next_week'
 	| 'overdue'
 	| 'future'
 	| 'past'
@@ -42,18 +39,15 @@ export type TaskViewFilters = {
 		gte?: TaskPriority
 		lte?: TaskPriority
 	}
-	inbox?: boolean
 	project?: {
 		mode: 'any' | 'none' | 'specific'
 		ids?: string[]
 	}
 	due?: DateFilter
-	scheduled?: DateFilter
+	planned?: DateFilter
 	created?: DateFilter
 	updated?: DateFilter
 	completed?: DateFilter
-	archived?: boolean
-	deleted?: boolean
 }
 
 export type ViewSortRule = {
@@ -64,14 +58,12 @@ export type ViewSortRule = {
 export type View = {
 	id: string
 	name: string
-	description: string | null
-	type: ViewKind
-	entityType: ViewEntityType
-	key: string | null
-	filters: TaskViewFilters | Record<string, unknown>
+	kind: ViewKind
+	systemKey: SystemViewKey | null
+	scope: Scope
+	filters: TaskViewFilters
 	sort: ViewSortRule[]
-	groupBy: TaskGroupBy | null
-	isVisible: boolean
+	groupBy: TaskGroupBy
 	position: number
 	createdAt: string
 	updatedAt: string
@@ -86,11 +78,10 @@ export type ViewTaskGroup = {
 export type RunTaskViewInput = {
 	scope: Scope
 	viewId?: string | null
-	viewKey?: string | null
-	placement?: {
-		kind: 'all' | 'project' | 'inbox' | 'noProject'
-		projectId?: string
-	} | null
+	viewKey?: SystemViewKey | null
+	filters?: TaskViewFilters
+	sort?: ViewSortRule[]
+	groupBy?: TaskGroupBy | null
 }
 
 export type RunTaskViewResult = {
@@ -100,26 +91,20 @@ export type RunTaskViewResult = {
 }
 
 export type CreateViewInput = {
-	entityType: ViewEntityType
 	name: string
-	description?: string | null
+	scope: Scope
 	filters: TaskViewFilters
 	sort: ViewSortRule[]
-	groupBy?: TaskGroupBy | null
+	groupBy: TaskGroupBy
 }
 
 export type UpdateViewInput = {
 	viewId: string
 	name?: string
-	description?: string | null
+	scope?: Scope
 	filters?: TaskViewFilters
 	sort?: ViewSortRule[]
 	groupBy?: TaskGroupBy | null
-}
-
-export type ReorderViewsInput = {
-	entityType: ViewEntityType
-	orderedIds: string[]
 }
 
 export type RunProjectViewResult = {

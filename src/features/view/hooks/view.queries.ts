@@ -1,16 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { listViews, runTaskView } from '../api/views'
-import type { RunTaskViewInput, View, ViewEntityType } from '@/shared/types'
+import type { RunTaskViewInput, View } from '@/shared/types'
 
 import { viewKeys } from './view.keys'
 
 const EMPTY_VIEWS: View[] = []
 
-export function useViewsQuery(entityType: ViewEntityType, visibleOnly = false) {
+export function useViewsQuery() {
 	return useQuery({
-		queryKey: viewKeys.list(entityType, visibleOnly),
-		queryFn: () => listViews(entityType, visibleOnly),
+		queryKey: viewKeys.list(),
+		queryFn: listViews,
 		placeholderData: EMPTY_VIEWS,
 	})
 }
