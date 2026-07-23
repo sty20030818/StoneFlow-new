@@ -487,7 +487,7 @@ describe('LauncherPage', () => {
 		})
 	})
 
-	it('切换 Space 后会把项目重置为收件箱', async () => {
+	it('切换 Space 后会把项目重置为独立事项', async () => {
 		render(<LauncherPage />)
 		await screen.findByTestId('launcher-recent-tasks-section')
 
@@ -502,7 +502,7 @@ describe('LauncherPage', () => {
 			expect(mockedListProjectsBySpace).toHaveBeenCalledWith('space-2')
 		})
 		await waitFor(() => {
-			expect(screen.getByLabelText('项目选择')).toHaveTextContent('收件箱')
+			expect(screen.getByLabelText('项目选择')).toHaveTextContent('独立事项')
 		})
 	})
 
@@ -558,7 +558,6 @@ describe('LauncherPage', () => {
 			},
 			defaultSpaceId: 'space-2',
 			projects: [
-				createProjectOption({ kind: 'inbox', id: null, name: '收件箱', spaceId: 'space-2' }),
 				createProjectOption({ kind: 'noProject', id: null, name: '独立事项', spaceId: 'space-2' }),
 				createProjectOption({
 					kind: 'project',
@@ -629,7 +628,7 @@ describe('LauncherPage', () => {
 				currentScope: { type: 'space', spaceId: 'space-2' },
 				defaultSpaceId: 'space-2',
 				projects: [
-					createProjectOption({ kind: 'inbox', id: null, name: '收件箱', spaceId: 'space-2' }),
+					createProjectOption({ kind: 'noProject', id: null, name: '独立事项', spaceId: 'space-2' }),
 					createProjectOption({
 						kind: 'noProject',
 						id: null,
@@ -732,7 +731,7 @@ function createInitialState(): LauncherInitialState {
 		},
 		defaultSpaceId: 'space-1',
 		defaultPlacement: {
-			kind: 'inbox',
+			kind: 'noProject',
 			projectId: null,
 		},
 		spaces: [
@@ -740,7 +739,6 @@ function createInitialState(): LauncherInitialState {
 			{ id: 'space-2', name: '工程基础', iconKey: 'sparkles', colorKey: 'amber', isDefault: false },
 		],
 		projects: [
-			createProjectOption({ kind: 'inbox', id: null, name: '收件箱' }),
 			createProjectOption({ kind: 'noProject', id: null, name: '独立事项' }),
 			createProjectOption({ kind: 'project', id: 'project-1', name: 'StoneFlow 开发' }),
 		],
@@ -773,7 +771,6 @@ function createOpenSessionResponse(
 function createProjectsBySpace(spaceId: string): LauncherProjectsBySpace {
 	return {
 		spaceId,
-		inboxProject: createProjectOption({ kind: 'inbox', id: null, name: '收件箱', spaceId }),
 		noProjectOption: createProjectOption({
 			kind: 'noProject',
 			id: null,
@@ -787,42 +784,24 @@ function createProjectsBySpace(spaceId: string): LauncherProjectsBySpace {
 }
 
 function createProjectOption(
-	overrides: Partial<Extract<LauncherProjectOption, { kind: 'project' }>> &
-		Pick<Extract<LauncherProjectOption, { kind: 'project' }>, 'kind' | 'id' | 'name'>,
-): Extract<LauncherProjectOption, { kind: 'project' }>
-function createProjectOption(
-	overrides: Partial<Extract<LauncherProjectOption, { kind: 'inbox' }>> &
-		Pick<Extract<LauncherProjectOption, { kind: 'inbox' }>, 'kind' | 'id' | 'name'>,
-): Extract<LauncherProjectOption, { kind: 'inbox' }>
-function createProjectOption(
-	overrides: Partial<Extract<LauncherProjectOption, { kind: 'noProject' }>> &
-		Pick<Extract<LauncherProjectOption, { kind: 'noProject' }>, 'kind' | 'id' | 'name'>,
-): Extract<LauncherProjectOption, { kind: 'noProject' }>
-function createProjectOption(
-	overrides: Partial<LauncherProjectOption> & Pick<LauncherProjectOption, 'kind' | 'id' | 'name'>,
+	overrides: Partial<LauncherProjectOption> & Pick<LauncherProjectOption, 'kind' | 'name'> & {
+		id?: string | null
+		spaceId?: string
+	},
 ): LauncherProjectOption {
-	switch (overrides.kind) {
-		case 'project':
-			return {
-				kind: 'project',
-				id: overrides.id ?? 'project-1',
-				spaceId: overrides.spaceId ?? 'space-1',
-				name: overrides.name,
-			}
-		case 'inbox':
-			return {
-				kind: 'inbox',
-				id: null,
-				spaceId: overrides.spaceId ?? 'space-1',
-				name: overrides.name,
-			}
-		default:
-			return {
-				kind: 'noProject',
-				id: null,
-				spaceId: overrides.spaceId ?? 'space-1',
-				name: overrides.name,
-			}
+	if (overrides.kind === 'project') {
+		return {
+			kind: 'project',
+			id: overrides.id ?? 'project-1',
+			spaceId: overrides.spaceId ?? 'space-1',
+			name: overrides.name,
+		}
+	}
+	return {
+		kind: 'noProject',
+		id: null,
+		spaceId: overrides.spaceId ?? 'space-1',
+		name: overrides.name,
 	}
 }
 

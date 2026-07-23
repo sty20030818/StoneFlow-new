@@ -1,94 +1,51 @@
-//! TaskLink runtime adapter。
+//! TaskLink port 实现与 application service 工厂。
 
-use crate::app::error::AppError;
-use sea_orm::{DatabaseTransaction, TransactionTrait};
+use sea_orm::{DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use stoneflow_application::{
     activity::{
-        ActivityChangeRecord, ActivityEventRecord, ActivityPersistence, ActivityTimelineEntry,
-        GetEntityActivitiesInput,
+        ActivityChangeRecord, ActivityEventRecord, ActivityPersistence, ActivityService,
+        ActivityTimelineEntry, GetEntityActivitiesInput,
     },
     task_link::{
-        CreateTaskLinkPersistenceRecord, TaskLinkPersistence, TaskLinkRecord,
-        TaskLinkService as TaskLinkUsecase, TaskLinkTaskReader, TaskLinkTaskRecord,
-        UpdateTaskLinkPatch as AppUpdateTaskLinkPatch,
+        CreateTaskLinkPersistenceRecord, TaskLinkPersistence, TaskLinkRecord, TaskLinkService,
+        TaskLinkTaskReader, TaskLinkTaskRecord, UpdateTaskLinkPatch as AppUpdateTaskLinkPatch,
     },
     ApplicationError,
 };
-use stoneflow_storage::{
-    entities::task_link,
-    repositories::{
-        ActivityRepository, CreateTaskLinkRecord, OutboxRepository, TaskLinkRepository,
-        TaskRepository, UpdateTaskLinkPatch,
-    },
+
+use crate::adapters::error::{from_db, from_storage};
+use crate::entities::task_link;
+use crate::repositories::{
+    ActivityRepository, CreateTaskLinkRecord, OutboxRepository, TaskLinkRepository, TaskRepository,
+    UpdateTaskLinkPatch,
 };
 
-pub use stoneflow_application::task_link::{
-    CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto, UpdateTaskLinkInput,
-};
-
-type InnerTaskLinkService = TaskLinkUsecase<
+/// 已装配的 TaskLink application service。
+pub type TaskLinkAppService = TaskLinkService<
     TaskLinkPersistenceAdapter,
     TaskLinkPersistenceAdapter,
     TaskLinkPersistenceAdapter,
 >;
-pub struct TaskLinkService {
-    inner: InnerTaskLinkService,
+
+/// 从数据库连接构造 TaskLink 用例。
+pub fn build_task_link_service(connection: DatabaseConnection) -> TaskLinkAppService {
+    let links = TaskLinkRepository::new(connection.clone());
+    let tasks = TaskRepository::new(connection);
+    let adapter = TaskLinkPersistenceAdapter {
+        outbox: OutboxRepository::new(links.connection().clone()),
+        links,
+        tasks,
+        activities: ActivityRepository::new(),
+    };
+    TaskLinkService::new(
+        adapter.clone(),
+        ActivityService::new(adapter.clone()),
+        adapter,
+    )
 }
-impl TaskLinkService {
-    pub fn new(links: TaskLinkRepository, tasks: TaskRepository) -> Self {
-        let adapter = TaskLinkPersistenceAdapter {
-            outbox: OutboxRepository::new(links.connection().clone()),
-            links,
-            tasks,
-            activities: ActivityRepository::new(),
-        };
-        Self {
-            inner: TaskLinkUsecase::new(
-                adapter.clone(),
-                stoneflow_application::activity::ActivityService::new(adapter.clone()),
-                adapter,
-            ),
-        }
-    }
-    pub async fn list_task_links(
-        &self,
-        input: ListTaskLinksInput,
-    ) -> Result<Vec<TaskLinkDto>, AppError> {
-        self.inner
-            .list_task_links(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn create_task_link(
-        &self,
-        input: CreateTaskLinkInput,
-    ) -> Result<TaskLinkDto, AppError> {
-        self.inner
-            .create_task_link(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn update_task_link(
-        &self,
-        input: UpdateTaskLinkInput,
-    ) -> Result<TaskLinkDto, AppError> {
-        self.inner
-            .update_task_link(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn delete_task_link(
-        &self,
-        input: DeleteTaskLinkInput,
-    ) -> Result<TaskLinkDto, AppError> {
-        self.inner
-            .delete_task_link(input)
-            .await
-            .map_err(AppError::from)
-    }
-}
+
 #[derive(Debug, Clone)]
-struct TaskLinkPersistenceAdapter {
+pub struct TaskLinkPersistenceAdapter {
     links: TaskLinkRepository,
     tasks: TaskRepository,
     activities: ActivityRepository,
@@ -101,27 +58,27 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             .connection()
             .begin()
             .await
-            .map_err(|e| ApplicationError::storage(e.to_string()))
+            .map_err(from_db)
     }
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError> {
         connection
             .commit()
             .await
-            .map_err(|e| ApplicationError::storage(e.to_string()))
+            .map_err(from_db)
     }
     async fn get(&self, id: &str) -> Result<Option<TaskLinkRecord>, ApplicationError> {
         self.links
             .get(id)
             .await
             .map(|row| row.map(map_link))
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn list_by_task(&self, task_id: &str) -> Result<Vec<TaskLinkRecord>, ApplicationError> {
         self.links
             .list_by_task(task_id)
             .await
             .map(|rows| rows.into_iter().map(map_link).collect())
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn next_position(
         &self,
@@ -131,7 +88,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         self.links
             .next_position(connection, task_id)
             .await
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn create(
         &self,
@@ -153,7 +110,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             )
             .await
             .map(map_link)
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn update(
         &self,
@@ -174,7 +131,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
             )
             .await
             .map(|row| row.map(map_link))
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn delete(
         &self,
@@ -184,7 +141,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         self.links
             .delete(connection, id)
             .await
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn enqueue(
         &self,
@@ -194,7 +151,7 @@ impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
         self.outbox
             .enqueue_in_connection(connection, record)
             .await
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
 }
 impl TaskLinkTaskReader for TaskLinkPersistenceAdapter {
@@ -209,7 +166,7 @@ impl TaskLinkTaskReader for TaskLinkPersistenceAdapter {
                         title: task.title,
                     })
             })
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
 }
 impl ActivityPersistence for TaskLinkPersistenceAdapter {
@@ -229,7 +186,7 @@ impl ActivityPersistence for TaskLinkPersistenceAdapter {
         self.activities
             .insert_event_with_changes(connection, event, changes)
             .await
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn insert_events_with_changes(
         &self,
@@ -260,6 +217,4 @@ fn map_link(row: task_link::Model) -> TaskLinkRecord {
         updated_at: row.updated_at,
     }
 }
-fn storage_error(error: stoneflow_storage::StorageError) -> ApplicationError {
-    ApplicationError::storage(error.to_string())
-}
+

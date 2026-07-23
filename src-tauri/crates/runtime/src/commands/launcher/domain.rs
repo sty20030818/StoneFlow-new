@@ -1,14 +1,14 @@
-//! Launcher 业务命令（直接调用 usecase，不经 IPC）。
+//! Launcher 业务命令：薄 transport，业务在 AppState.launcher / launcher_context。
 
 use serde::Deserialize;
-use stoneflow_application::launcher::LauncherListProjectsBySpaceInput as UsecaseListProjectsBySpaceInput;
-use stoneflow_storage::database::DatabaseRuntimeState;
+use stoneflow_application::launcher::{
+    LauncherListProjectsBySpaceInput as UsecaseListProjectsBySpaceInput, LauncherResolvedPlacement,
+};
 use tauri::State;
 
-use crate::app::state::CommandOpenState;
+use crate::app::state::{ActiveScopeKind, ActiveScopeSnapshot, AppState, CommandOpenState};
 use crate::command_open::{dispatch_command_open, restore_main_window, CommandOpenPayload};
-use crate::composition::{build_launcher_service, build_launcher_session_bridge};
-use crate::services::LauncherResolvedPlacement;
+use stoneflow_application::launcher::{ActiveScopeInput, ActiveScopeKind as AppActiveScopeKind};
 
 use super::error::{map_projects_by_space, LauncherErrorPayload, LauncherProjectsBySpaceResponse};
 
@@ -35,14 +35,14 @@ pub enum LauncherOpenTargetKind {
 
 #[tauri::command]
 pub async fn launcher_get_initial_state(
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
     active_scope: State<'_, crate::app::state::ActiveScopeState>,
 ) -> Result<super::error::LauncherInitialStateResponse, LauncherErrorPayload> {
-    let bridge = build_launcher_session_bridge(database.inner());
-    let payload = bridge
-        .prepare_initial_state(active_scope.get().await)
+    let payload = state
+        .launcher_context
+        .get_initial_state(map_active_scope(active_scope.get().await))
         .await
-        .map_err(LauncherErrorPayload::from)?;
+        .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))?;
     Ok(super::error::LauncherInitialStateResponse::from_dto(
         payload,
     ))
@@ -51,15 +51,15 @@ pub async fn launcher_get_initial_state(
 #[tauri::command]
 pub async fn launcher_list_projects_by_space(
     input: LauncherListProjectsBySpaceInput,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<LauncherProjectsBySpaceResponse, LauncherErrorPayload> {
-    let service = build_launcher_service(database.inner());
-    let payload = service
+    let payload = state
+        .launcher
         .list_projects_by_space(UsecaseListProjectsBySpaceInput {
             space_id: input.space_id,
         })
         .await
-        .map_err(LauncherErrorPayload::from)?;
+        .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))?;
     Ok(map_projects_by_space(payload))
 }
 
@@ -67,29 +67,36 @@ pub async fn launcher_list_projects_by_space(
 pub async fn launcher_open_target(
     input: LauncherOpenTargetInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
     command_open_state: State<'_, CommandOpenState>,
 ) -> Result<(), LauncherErrorPayload> {
-    let service = build_launcher_service(database.inner());
-    open_existing_target(&app_handle, &service, command_open_state.inner(), input).await?;
+    open_existing_target(
+        &app_handle,
+        state.inner(),
+        command_open_state.inner(),
+        input,
+    )
+    .await?;
     Ok(())
 }
 
 async fn open_existing_target(
     app_handle: &tauri::AppHandle,
-    service: &crate::services::LauncherService,
+    state: &AppState,
     command_open_state: &CommandOpenState,
     input: LauncherOpenTargetInput,
 ) -> Result<(), LauncherErrorPayload> {
     let target = match input.kind {
-        LauncherOpenTargetKind::Task => service
+        LauncherOpenTargetKind::Task => state
+            .launcher
             .resolve_task_open_target(&input.id)
             .await
-            .map_err(LauncherErrorPayload::from)?,
-        LauncherOpenTargetKind::Project => service
+            .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))?,
+        LauncherOpenTargetKind::Project => state
+            .launcher
             .resolve_project_open_target(&input.id)
             .await
-            .map_err(LauncherErrorPayload::from)?,
+            .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))?,
     };
     restore_main_window(app_handle)
         .await
@@ -112,4 +119,14 @@ async fn open_existing_target(
     .await
     .map_err(LauncherErrorPayload::from)?;
     Ok(())
+}
+
+fn map_active_scope(snapshot: Option<ActiveScopeSnapshot>) -> Option<ActiveScopeInput> {
+    snapshot.map(|scope| ActiveScopeInput {
+        kind: match scope.kind {
+            ActiveScopeKind::All => AppActiveScopeKind::All,
+            ActiveScopeKind::Space => AppActiveScopeKind::Space,
+        },
+        space_id: scope.space_id.map(|id| id.to_string()),
+    })
 }

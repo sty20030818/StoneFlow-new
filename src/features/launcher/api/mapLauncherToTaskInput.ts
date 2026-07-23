@@ -14,9 +14,7 @@ export function mapLauncherToTaskInput(input: LauncherInput): CreateTaskInput {
 		placement:
 			placementKind === 'project'
 				? { kind: 'project', projectId: projectId ?? '' }
-				: placementKind === 'noProject'
-					? { kind: 'noProject' }
-					: { kind: 'inbox' },
+				: { kind: 'noProject' },
 		title: input.title.trim(),
 		note: input.note?.trim() ? input.note.trim() : null,
 		status: (input.status as TaskStatus | null) ?? null,

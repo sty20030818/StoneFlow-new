@@ -1,4 +1,4 @@
-import { CheckIcon, FolderIcon, InboxIcon, TargetIcon } from 'lucide-react'
+import { CheckIcon, FolderIcon, TargetIcon } from 'lucide-react'
 
 import type { LauncherPlacement, LauncherProjectOption } from '../../model/types'
 import { Button } from '@/shared/components/base/button'
@@ -38,7 +38,7 @@ export function PlacementControl({
 	onPlacementChange,
 }: PlacementControlProps) {
 	const TriggerIcon =
-		value.kind === 'inbox' ? InboxIcon : value.kind === 'noProject' ? TargetIcon : FolderIcon
+		value.kind === 'noProject' ? TargetIcon : FolderIcon
 
 	return (
 		<DropdownMenu onOpenChange={onOpenChange} open={open}>
@@ -69,15 +69,11 @@ export function PlacementControl({
 									onPlacementChange(
 										option.kind === 'project'
 											? { kind: 'project', projectId: option.id }
-											: option.kind === 'noProject'
-												? { kind: 'noProject', projectId: null }
-												: { kind: 'inbox', projectId: null },
+											: { kind: 'noProject', projectId: null },
 									)
 								}
 							>
-								{option.kind === 'inbox' ? (
-									<InboxIcon className='size-3.5 text-sf-text-secondary' />
-								) : option.kind === 'noProject' ? (
+								{option.kind === 'noProject' ? (
 									<TargetIcon className='size-3.5 text-sf-text-secondary' />
 								) : (
 									<FolderIcon className='size-3.5 text-sf-text-secondary' />

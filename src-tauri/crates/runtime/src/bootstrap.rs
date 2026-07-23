@@ -4,17 +4,17 @@ use std::future::Future;
 
 use tauri::Manager;
 
-use crate::app::state::{ActiveScopeState, CommandOpenState};
-use crate::services::update_events::{emit_available, emit_downloading, emit_error, emit_ready};
-use crate::services::{build_update_service, RuntimeUpdateService};
-use crate::sync::{self, SyncRuntimeState};
+use crate::app::state::{ActiveScopeState, AppState, CommandOpenState};
+use crate::composition::build_app_state;
+use crate::update::events::{emit_available, emit_downloading, emit_error, emit_ready};
+use crate::update::{build_update_service, RuntimeUpdateService};
+use crate::sync;
 use stoneflow_application::{DownloadOutcome, UpdateCheckKind};
 use stoneflow_domain::{
     normalize_check_interval_secs, UpdateCheckMode, AUTO_CHECK_INTERVAL_SECS,
     STARTUP_CHECK_DELAY_SECS,
 };
 use stoneflow_storage::database::bootstrap_database;
-use stoneflow_storage::database::DatabaseRuntimeState;
 
 use crate::exit_coordinator;
 use crate::shortcuts;
@@ -57,10 +57,13 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
             .await
             .map_err(|error| error.to_string())
     })?;
-    app.manage(database_state);
 
-    let sync_state = SyncRuntimeState::default();
-    app.manage(sync_state);
+    // 单一 composition root：业务服务 + sync 句柄一次性装配。
+    // manage database 供 sync helper 与诊断读取；业务服务均经 AppState。
+    let app_state = build_app_state(database_state.clone());
+    app.manage(app_state.sync.clone());
+    app.manage(app_state);
+    app.manage(database_state);
 
     build_main_window(app)?;
 
@@ -83,22 +86,13 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
 
 fn schedule_post_startup_jobs(app_handle: tauri::AppHandle) {
     spawn_detached_job(move || async move {
-        let Some(database) = app_handle
-            .try_state::<DatabaseRuntimeState>()
-            .map(|state| state.inner().clone())
+        let Some(app_state) = app_handle.try_state::<AppState>().map(|state| state.inner().clone())
         else {
-            log::warn!("runtime: startup async init missing database state");
-            return;
-        };
-        let Some(sync_state) = app_handle
-            .try_state::<SyncRuntimeState>()
-            .map(|state| state.inner().clone())
-        else {
-            log::warn!("runtime: startup async init missing sync state");
+            log::warn!("runtime: startup async init missing AppState");
             return;
         };
 
-        if let Err(error) = sync::initialize_state(&sync_state, &database).await {
+        if let Err(error) = sync::initialize_state(&app_state.sync, &app_state.database).await {
             log::warn!("runtime: startup async sync init failed: {error}");
             return;
         }

@@ -1,18 +1,19 @@
-//! Activity 调试读取命令。
+//! Activity 命令：薄 transport。
 
 use tauri::State;
 
 use crate::app::error::AppError;
-use crate::composition::build_activity_service;
-use crate::services::activity::{ActivityTimelineEntry, GetEntityActivitiesInput};
-use stoneflow_storage::database::DatabaseRuntimeState;
+use crate::app::state::AppState;
+use stoneflow_application::activity::{ActivityTimelineEntry, GetEntityActivitiesInput};
 
 #[tauri::command]
 pub async fn get_entity_activities(
     input: GetEntityActivitiesInput,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<Vec<ActivityTimelineEntry>, AppError> {
-    build_activity_service(database.inner())
+    state
+        .activities
         .get_entity_activities(input)
         .await
+        .map_err(AppError::from)
 }

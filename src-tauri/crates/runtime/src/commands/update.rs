@@ -3,8 +3,8 @@
 use tauri::{ipc::Channel, State};
 
 use crate::app::error::AppError;
-use crate::services::update_events::UpdatePhasePayload;
-use crate::services::RuntimeUpdateService;
+use crate::update::events::UpdatePhasePayload;
+use crate::update::RuntimeUpdateService;
 use crate::update_schedule::UpdateScheduleWake;
 use stoneflow_application::update::{DownloadOutcome, UpdateInfo, UpdateSessionSnapshot};
 use stoneflow_domain::{UpdateChannel, UpdateCheckMode, UpdateSettings};

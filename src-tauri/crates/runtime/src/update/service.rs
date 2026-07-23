@@ -1,7 +1,7 @@
 //! 更新服务运行时包装：组合 adapter 和 settings store，作为 Tauri state 管理。
 
-use super::update_adapter::TauriUpdateAdapter;
-use super::update_settings_store::StoreUpdateSettingsAdapter;
+use super::adapter::TauriUpdateAdapter;
+use super::settings_store::StoreUpdateSettingsAdapter;
 
 /// 具体类型的更新服务，注册为 Tauri managed state。
 pub type RuntimeUpdateService =

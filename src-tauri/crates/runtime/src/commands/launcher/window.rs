@@ -1,9 +1,8 @@
 //! Launcher 窗口 session 命令。
 
-use stoneflow_storage::database::DatabaseRuntimeState;
 use tauri::State;
 
-use crate::app::state::ActiveScopeState;
+use crate::app::state::{ActiveScopeState, AppState};
 use crate::window::launcher::{
     frontend::LauncherFrontendState,
     runtime::LauncherWindowRuntimeState,
@@ -20,14 +19,14 @@ pub async fn launcher_prepare_session(
     app_handle: tauri::AppHandle,
     frontend: State<'_, LauncherFrontendState>,
     runtime: State<'_, LauncherWindowRuntimeState>,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
     active_scope: State<'_, ActiveScopeState>,
 ) -> Result<LauncherOpenSessionResponse, LauncherErrorPayload> {
     prepare_launcher_session(
         app_handle,
         frontend.inner(),
         runtime.inner(),
-        database.inner(),
+        state.inner(),
         active_scope.inner(),
     )
     .await

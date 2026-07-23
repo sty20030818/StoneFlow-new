@@ -5,10 +5,12 @@ use stoneflow_platform::launcher_window::spec::LAUNCHER_LABEL;
 use tauri::{Emitter, Manager};
 
 use super::controller::build_quick_controller;
-use stoneflow_storage::database::DatabaseRuntimeState;
 
-use crate::app::state::ActiveScopeState;
-use crate::composition::build_launcher_session_bridge;
+use crate::app::error::AppError;
+use crate::app::state::{
+    ActiveScopeKind, ActiveScopeSnapshot, ActiveScopeState, AppState,
+};
+use stoneflow_application::launcher::{ActiveScopeInput, ActiveScopeKind as AppActiveScopeKind};
 
 use super::frontend::LauncherFrontendState;
 use super::runtime::{
@@ -46,7 +48,7 @@ pub async fn prepare_launcher_session(
     app_handle: tauri::AppHandle,
     frontend: &LauncherFrontendState,
     runtime: &LauncherWindowRuntimeState,
-    database: &DatabaseRuntimeState,
+    app_state: &AppState,
     active_scope: &ActiveScopeState,
 ) -> Result<LauncherOpenSessionResponse, LauncherErrorPayload> {
     if !frontend.is_ready().await {
@@ -74,11 +76,11 @@ pub async fn prepare_launcher_session(
         });
     }
 
-    let bridge = build_launcher_session_bridge(database);
-    let open_context = bridge
-        .prepare_initial_state(active_scope.get().await)
+    let open_context = app_state
+        .launcher_context
+        .get_initial_state(map_active_scope(active_scope.get().await))
         .await
-        .map_err(LauncherErrorPayload::from)?;
+        .map_err(|error| LauncherErrorPayload::from(AppError::from(error)))?;
 
     let open_context = LauncherInitialStateResponse::from_dto(open_context);
     let response = LauncherOpenSessionResponse {
@@ -246,4 +248,14 @@ fn map_close_reason_output(reason: LauncherWindowCloseReason) -> &'static str {
         LauncherWindowCloseReason::Toggle => "toggle",
         LauncherWindowCloseReason::Invalidated => "invalidated",
     }
+}
+
+fn map_active_scope(snapshot: Option<ActiveScopeSnapshot>) -> Option<ActiveScopeInput> {
+    snapshot.map(|scope| ActiveScopeInput {
+        kind: match scope.kind {
+            ActiveScopeKind::All => AppActiveScopeKind::All,
+            ActiveScopeKind::Space => AppActiveScopeKind::Space,
+        },
+        space_id: scope.space_id.map(|id| id.to_string()),
+    })
 }

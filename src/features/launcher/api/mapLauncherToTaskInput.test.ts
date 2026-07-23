@@ -1,11 +1,11 @@
 import { mapLauncherToTaskInput } from './mapLauncherToTaskInput'
 
 describe('mapLauncherToTaskInput', () => {
-	it('inbox placement 保留 spaceId', () => {
+	it('noProject placement 保留 spaceId', () => {
 		expect(
 			mapLauncherToTaskInput({
 				spaceId: 'space-1',
-				placement: { kind: 'inbox', projectId: null },
+				placement: { kind: 'noProject', projectId: null },
 				title: '  标题  ',
 				note: null,
 				status: 'todo',
@@ -16,7 +16,7 @@ describe('mapLauncherToTaskInput', () => {
 			}),
 		).toEqual({
 			spaceId: 'space-1',
-			placement: { kind: 'inbox' },
+			placement: { kind: 'noProject' },
 			title: '标题',
 			note: null,
 			status: 'todo',

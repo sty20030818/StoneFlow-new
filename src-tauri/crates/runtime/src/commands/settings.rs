@@ -1,98 +1,75 @@
-//! Sidebar sync settings 命令。
+//! Sidebar settings 命令：薄 transport。
 
 use tauri::State;
 
 use crate::app::error::AppError;
-use crate::composition::build_settings_service;
-use crate::services::{
+use crate::app::state::AppState;
+use crate::sync;
+use stoneflow_application::settings::{
     GetSidebarSettingsOutput, UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
 };
-use crate::sync;
-use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
 pub async fn get_sidebar_settings(
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<GetSidebarSettingsOutput, AppError> {
-    get_sidebar_settings_impl(database.inner()).await
+    let settings = state
+        .settings
+        .get_sidebar_settings()
+        .await
+        .map_err(AppError::from)?;
+    Ok(GetSidebarSettingsOutput { settings })
 }
 
 #[tauri::command]
 pub async fn update_sidebar_item_visibility(
     input: UpdateSidebarItemVisibilityInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<GetSidebarSettingsOutput, AppError> {
-    let payload = update_sidebar_item_visibility_impl(database.inner(), input).await?;
+    let settings = state
+        .settings
+        .update_sidebar_item_visibility(input)
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
-    Ok(payload)
+    Ok(GetSidebarSettingsOutput { settings })
 }
 
 #[tauri::command]
 pub async fn update_sidebar_project_section(
     input: UpdateSidebarProjectSectionInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<GetSidebarSettingsOutput, AppError> {
-    let payload = update_sidebar_project_section_impl(database.inner(), input).await?;
-    sync::note_local_write(&app_handle).await;
-    Ok(payload)
-}
-
-async fn get_sidebar_settings_impl(
-    database: &DatabaseRuntimeState,
-) -> Result<GetSidebarSettingsOutput, AppError> {
-    let settings = build_settings_service(database)
-        .get_sidebar_settings()
-        .await?;
-    Ok(GetSidebarSettingsOutput { settings })
-}
-
-async fn update_sidebar_item_visibility_impl(
-    database: &DatabaseRuntimeState,
-    input: UpdateSidebarItemVisibilityInput,
-) -> Result<GetSidebarSettingsOutput, AppError> {
-    let settings = build_settings_service(database)
-        .update_sidebar_item_visibility(input)
-        .await?;
-    Ok(GetSidebarSettingsOutput { settings })
-}
-
-async fn update_sidebar_project_section_impl(
-    database: &DatabaseRuntimeState,
-    input: UpdateSidebarProjectSectionInput,
-) -> Result<GetSidebarSettingsOutput, AppError> {
-    let settings = build_settings_service(database)
+    let settings = state
+        .settings
         .update_sidebar_project_section(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
+    sync::note_local_write(&app_handle).await;
     Ok(GetSidebarSettingsOutput { settings })
 }
 
 #[cfg(test)]
 mod tests {
-    use stoneflow_test_support::TestDatabase;
-
-    use super::{
-        get_sidebar_settings_impl, update_sidebar_item_visibility_impl,
-        update_sidebar_project_section_impl,
-    };
-    use crate::services::{
+    use stoneflow_application::settings::{
         SidebarItemVisibilityTarget, SidebarMainItemKey, SidebarProjectSectionPreferenceConfig,
         UpdateSidebarItemVisibilityInput, UpdateSidebarProjectSectionInput,
     };
+    use stoneflow_storage::build_settings_service;
+    use stoneflow_test_support::TestDatabase;
 
     #[tokio::test]
     async fn get_sidebar_settings_command_should_return_typed_payload() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-
-        let payload = get_sidebar_settings_impl(&database)
+        let settings = build_settings_service(database.connection().clone())
+            .get_sidebar_settings()
             .await
-            .expect("get sidebar settings should succeed");
-
-        assert!(payload.settings.main_items.inbox.visible);
-        assert!(payload.settings.project_section.show_counts);
+            .expect("settings should load");
+        assert!(settings.main_items.all_tasks.visible);
     }
 
     #[tokio::test]
@@ -100,18 +77,15 @@ mod tests {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-
-        let payload = update_sidebar_item_visibility_impl(
-            &database,
-            UpdateSidebarItemVisibilityInput {
+        let service = build_settings_service(database.connection().clone());
+        let updated = service
+            .update_sidebar_item_visibility(UpdateSidebarItemVisibilityInput {
                 target: SidebarItemVisibilityTarget::Main(SidebarMainItemKey::Views),
                 visible: false,
-            },
-        )
-        .await
-        .expect("update sidebar item visibility should succeed");
-
-        assert!(!payload.settings.main_items.views.visible);
+            })
+            .await
+            .expect("visibility update should succeed");
+        assert!(!updated.main_items.views.visible);
     }
 
     #[tokio::test]
@@ -119,22 +93,19 @@ mod tests {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-
-        let payload = update_sidebar_project_section_impl(
-            &database,
-            UpdateSidebarProjectSectionInput {
+        let service = build_settings_service(database.connection().clone());
+        let updated = service
+            .update_sidebar_project_section(UpdateSidebarProjectSectionInput {
                 config: SidebarProjectSectionPreferenceConfig {
                     visible: true,
-                    order: 500,
+                    order: 0,
                     show_counts: false,
-                    show_completed: false,
+                    show_completed: true,
                 },
-            },
-        )
-        .await
-        .expect("update sidebar project section should succeed");
-
-        assert!(!payload.settings.project_section.show_counts);
-        assert!(!payload.settings.project_section.show_completed);
+            })
+            .await
+            .expect("project section update should succeed");
+        assert!(!updated.project_section.show_counts);
+        assert!(updated.project_section.show_completed);
     }
 }

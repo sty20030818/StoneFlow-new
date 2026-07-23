@@ -74,5 +74,5 @@ function getTaskSubtitle(item: LauncherTaskItem) {
 		return `${item.spaceName} / ${item.projectName}`
 	}
 
-	return `${item.spaceName} / ${item.inboxAt ? '收件箱' : '独立事项'}`
+	return `${item.spaceName} / ${item.projectName ?? '独立事项'}`
 }

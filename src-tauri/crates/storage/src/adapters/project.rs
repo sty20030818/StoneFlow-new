@@ -1,142 +1,54 @@
-//! Project runtime adapter：实现 application ports，不在 command 层保留业务规则。
+//! Project port 实现与 application service 工厂。
 
 use std::collections::HashMap;
 
-use sea_orm::{DatabaseTransaction, TransactionTrait};
+use sea_orm::{DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use stoneflow_application::{
     activity::{
-        ActivityChangeRecord, ActivityEventRecord, ActivityPersistence, ActivityTimelineEntry,
-        GetEntityActivitiesInput,
+        ActivityChangeRecord, ActivityEventRecord, ActivityPersistence, ActivityService,
+        ActivityTimelineEntry, GetEntityActivitiesInput,
     },
     operation::OutboxEnqueueRecord,
     project::{
         CreateProjectPersistenceRecord, ProjectCascadeRecord, ProjectPersistence, ProjectRecord,
-        ProjectService as ProjectUsecase, ProjectSpaceReader, ProjectSpaceRecord, ProjectTaskCount,
-        ProjectTaskCounter, UpdateProjectPatch as AppUpdateProjectPatch,
+        ProjectService, ProjectSpaceReader, ProjectSpaceRecord, ProjectTaskCount, ProjectTaskCounter,
+        UpdateProjectPatch as AppUpdateProjectPatch,
     },
     ApplicationError,
 };
-use stoneflow_storage::{
-    entities::{common::WorkStatus as StorageWorkStatus, project},
-    repositories::{
-        ActivityRepository, CreateProjectRecord, OutboxRepository, ProjectRepository,
-        SpaceRepository, UpdateProjectPatch,
-    },
+
+use crate::adapters::error::{from_db, from_storage};
+use crate::entities::project;
+use crate::mappers::work_status_to_domain;
+use crate::repositories::{
+    ActivityRepository, CreateProjectRecord, OutboxRepository, ProjectRepository, SpaceRepository,
+    UpdateProjectPatch,
 };
 
-use crate::app::error::AppError;
-
-pub use stoneflow_application::project::{
-    CreateProjectInput, ListProjectOverviewInput, ListSidebarProjectsInput, ProjectDetailDto,
-    ProjectIdInput, ProjectOverviewItemDto, ProjectSidebarItemDto, UpdateProjectInput,
-};
-
-type InnerProjectService = ProjectUsecase<
+/// 已装配的 Project application service。
+pub type ProjectAppService = ProjectService<
     ProjectPersistenceAdapter,
     ProjectPersistenceAdapter,
     ProjectPersistenceAdapter,
     ProjectPersistenceAdapter,
 >;
 
-pub struct ProjectService {
-    inner: InnerProjectService,
+/// 从数据库连接构造 Project 用例。
+pub fn build_project_service(connection: DatabaseConnection) -> ProjectAppService {
+    let projects = ProjectRepository::new(connection.clone());
+    let spaces = SpaceRepository::new(connection);
+    let adapter = ProjectPersistenceAdapter::new(projects, spaces);
+    ProjectService::new(
+        adapter.clone(),
+        ActivityService::new(adapter.clone()),
+        adapter.clone(),
+        adapter,
+    )
 }
 
-impl ProjectService {
-    pub fn new(repository: ProjectRepository, spaces: SpaceRepository) -> Self {
-        let adapter = ProjectPersistenceAdapter::new(repository, spaces);
-        Self {
-            inner: ProjectUsecase::new(
-                adapter.clone(),
-                stoneflow_application::activity::ActivityService::new(adapter.clone()),
-                adapter.clone(),
-                adapter,
-            ),
-        }
-    }
-
-    pub async fn list_project_overview(
-        &self,
-        input: ListProjectOverviewInput,
-    ) -> Result<Vec<ProjectOverviewItemDto>, AppError> {
-        self.inner
-            .list_project_overview(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn list_sidebar_projects(
-        &self,
-        input: ListSidebarProjectsInput,
-    ) -> Result<Vec<ProjectSidebarItemDto>, AppError> {
-        self.inner
-            .list_sidebar_projects(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn get_project_detail(
-        &self,
-        input: ProjectIdInput,
-    ) -> Result<ProjectDetailDto, AppError> {
-        self.inner
-            .get_project_detail(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn create_project(
-        &self,
-        input: CreateProjectInput,
-    ) -> Result<ProjectDetailDto, AppError> {
-        self.inner
-            .create_project(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn update_project(
-        &self,
-        input: UpdateProjectInput,
-    ) -> Result<ProjectDetailDto, AppError> {
-        self.inner
-            .update_project(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn archive_project(
-        &self,
-        input: ProjectIdInput,
-    ) -> Result<ProjectDetailDto, AppError> {
-        self.inner
-            .archive_project(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn restore_project(
-        &self,
-        input: ProjectIdInput,
-    ) -> Result<ProjectDetailDto, AppError> {
-        self.inner
-            .restore_project(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn delete_project(
-        &self,
-        input: ProjectIdInput,
-    ) -> Result<ProjectDetailDto, AppError> {
-        self.inner
-            .delete_project(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn permanently_delete_project(&self, input: ProjectIdInput) -> Result<(), AppError> {
-        self.inner
-            .permanently_delete_project(input)
-            .await
-            .map_err(AppError::from)
-    }
-}
-
+/// Project 持久化 adapter。
 #[derive(Debug, Clone)]
-struct ProjectPersistenceAdapter {
+pub struct ProjectPersistenceAdapter {
     projects: ProjectRepository,
     spaces: SpaceRepository,
     outbox: OutboxRepository,
@@ -144,7 +56,7 @@ struct ProjectPersistenceAdapter {
 }
 
 impl ProjectPersistenceAdapter {
-    fn new(projects: ProjectRepository, spaces: SpaceRepository) -> Self {
+    pub fn new(projects: ProjectRepository, spaces: SpaceRepository) -> Self {
         let connection = projects.connection().clone();
         Self {
             projects,
@@ -159,21 +71,17 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
     type Connection = DatabaseTransaction;
 
     async fn begin(&self) -> Result<Self::Connection, ApplicationError> {
-        self.projects
-            .connection()
-            .begin()
-            .await
-            .map_err(storage_error)
+        self.projects.connection().begin().await.map_err(from_db)
     }
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError> {
-        connection.commit().await.map_err(storage_error)
+        connection.commit().await.map_err(from_db)
     }
     async fn get(&self, project_id: &str) -> Result<Option<ProjectRecord>, ApplicationError> {
         self.projects
             .get(project_id)
             .await
             .map(|row| row.map(map_project))
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn get_visible_by_name(
         &self,
@@ -184,7 +92,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .get_visible_by_name(space_id, name)
             .await
             .map(|row| row.map(map_project))
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn next_position(
         &self,
@@ -194,7 +102,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         self.projects
             .next_position(connection, space_id)
             .await
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn create(
         &self,
@@ -223,7 +131,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             )
             .await
             .map(map_project)
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn update(
         &self,
@@ -252,7 +160,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             )
             .await
             .map(|row| row.map(map_project))
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn list_overview_by_scope(
         &self,
@@ -267,7 +175,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .projects
             .list_visible(space_id, include_completed)
             .await
-            .map_err(map_storage_error)?;
+            .map_err(from_storage)?;
         if matches!(
             view,
             stoneflow_application::project::ProjectOverviewView::Completed
@@ -292,7 +200,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
             .projects
             .list_visible(space_id, show_completed)
             .await
-            .map_err(map_storage_error)?;
+            .map_err(from_storage)?;
         if let Some(max_visible) = max_visible {
             rows.truncate(max_visible as usize);
         }
@@ -306,7 +214,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
         self.outbox
             .enqueue_in_connection(connection, record)
             .await
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn archive_cascade(
         &self,
@@ -324,7 +232,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
                     affected_task_count: row.affected_task_count,
                 })
             })
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn soft_delete_cascade(
         &self,
@@ -342,7 +250,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
                     affected_task_count: row.affected_task_count,
                 })
             })
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn restore_archive_cascade(
         &self,
@@ -360,7 +268,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
                     affected_task_count: row.affected_task_count,
                 })
             })
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn restore_deleted_cascade(
         &self,
@@ -378,7 +286,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
                     affected_task_count: row.affected_task_count,
                 })
             })
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn permanently_delete_cascade(
         &self,
@@ -395,7 +303,7 @@ impl ProjectPersistence for ProjectPersistenceAdapter {
                     affected_task_count: row.affected_task_count,
                 })
             })
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
 }
 
@@ -411,7 +319,7 @@ impl ProjectSpaceReader for ProjectPersistenceAdapter {
                     archived_at: space.archived_at,
                 })
             })
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn list_by_ids(
         &self,
@@ -436,7 +344,7 @@ impl ProjectTaskCounter for ProjectPersistenceAdapter {
             .projects
             .count_tasks_by_project_ids(project_ids)
             .await
-            .map_err(map_storage_error)?
+            .map_err(from_storage)?
             .into_iter()
             .map(|(id, total_count, active_count)| {
                 (
@@ -468,7 +376,7 @@ impl ActivityPersistence for ProjectPersistenceAdapter {
         self.activities
             .insert_event_with_changes(connection, event, changes)
             .await
-            .map_err(map_storage_error)
+            .map_err(from_storage)
     }
     async fn insert_events_with_changes(
         &self,
@@ -495,7 +403,7 @@ fn map_project(row: project::Model) -> ProjectRecord {
         space_id: row.space_id,
         name: row.name,
         description: row.description,
-        status: from_storage_status(row.status),
+        status: work_status_to_domain(row.status),
         priority: row.priority,
         planned_at: row.planned_at,
         due_at: row.due_at,
@@ -511,20 +419,4 @@ fn map_project(row: project::Model) -> ProjectRecord {
         created_at: row.created_at,
         updated_at: row.updated_at,
     }
-}
-
-fn from_storage_status(status: StorageWorkStatus) -> stoneflow_domain::WorkStatus {
-    match status {
-        StorageWorkStatus::Todo => stoneflow_domain::WorkStatus::Todo,
-        StorageWorkStatus::Doing => stoneflow_domain::WorkStatus::Doing,
-        StorageWorkStatus::Waiting => stoneflow_domain::WorkStatus::Waiting,
-        StorageWorkStatus::Done => stoneflow_domain::WorkStatus::Done,
-        StorageWorkStatus::Canceled => stoneflow_domain::WorkStatus::Canceled,
-    }
-}
-fn storage_error(error: sea_orm::DbErr) -> ApplicationError {
-    ApplicationError::storage(error.to_string())
-}
-fn map_storage_error(error: stoneflow_storage::StorageError) -> ApplicationError {
-    ApplicationError::storage(error.to_string())
 }

@@ -134,7 +134,6 @@ pub struct LauncherListProjectsBySpaceInput {
 #[serde(rename_all = "camelCase")]
 pub struct LauncherProjectsBySpaceDto {
     pub space_id: String,
-    pub inbox_project: LauncherProjectOptionDto,
     pub no_project_option: LauncherProjectOptionDto,
     pub projects: Vec<LauncherProjectOptionDto>,
 }
@@ -219,12 +218,6 @@ impl<P: LauncherPorts> LauncherService<P> {
 
         Ok(LauncherProjectsBySpaceDto {
             space_id: space.id.clone(),
-            inbox_project: LauncherProjectOptionDto {
-                kind: LauncherProjectOptionKind::Inbox,
-                id: None,
-                space_id: space.id.clone(),
-                name: "收件箱".to_owned(),
-            },
             no_project_option: LauncherProjectOptionDto {
                 kind: LauncherProjectOptionKind::NoProject,
                 id: None,

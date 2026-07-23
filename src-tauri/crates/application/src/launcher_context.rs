@@ -60,13 +60,13 @@ impl<P: LauncherPorts> LauncherContextService<P> {
         Ok(LauncherInitialStateDto {
             current_scope,
             default_space_id,
+            // R2 起无 Inbox 容器；默认落在独立事项（NoProject）。
             default_placement: LauncherPlacementDto {
-                kind: LauncherPlacementKind::Inbox,
+                kind: LauncherPlacementKind::NoProject,
                 project_id: None,
             },
             spaces,
-            projects: std::iter::once(projects_payload.inbox_project)
-                .chain(std::iter::once(projects_payload.no_project_option))
+            projects: std::iter::once(projects_payload.no_project_option)
                 .chain(projects_payload.projects)
                 .collect(),
             recent_tasks,

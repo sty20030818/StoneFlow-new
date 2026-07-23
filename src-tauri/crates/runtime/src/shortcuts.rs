@@ -4,7 +4,7 @@ use stoneflow_platform::launcher_window::spec::LAUNCHER_SHORTCUT;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
-use crate::app::state::ActiveScopeState;
+use crate::app::state::{ActiveScopeState, AppState};
 use crate::window::launcher::{
     callbacks::runtime_launcher_window_callbacks,
     controller::build_quick_controller,
@@ -12,7 +12,6 @@ use crate::window::launcher::{
     runtime::{LauncherWindowCloseReason, LauncherWindowRuntimeState},
     session::prepare_launcher_session,
 };
-use stoneflow_storage::database::DatabaseRuntimeState;
 
 /// 注册全局快捷键；失败时只记录 warn，不阻塞应用启动。
 pub fn register_global_shortcut(app_handle: &AppHandle<tauri::Wry>) {
@@ -83,8 +82,8 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
         log::error!("runtime: quick popup runtime 未注册");
         return;
     };
-    let Some(database) = app_handle.try_state::<DatabaseRuntimeState>() else {
-        log::error!("runtime: database state 未注册");
+    let Some(app_state) = app_handle.try_state::<AppState>() else {
+        log::error!("runtime: AppState 未注册");
         return;
     };
     let Some(active_scope) = app_handle.try_state::<ActiveScopeState>() else {
@@ -150,7 +149,7 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
         app_handle.clone(),
         frontend.inner(),
         runtime.inner(),
-        database.inner(),
+        app_state.inner(),
         active_scope.inner(),
     )
     .await

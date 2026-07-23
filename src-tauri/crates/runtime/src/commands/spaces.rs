@@ -1,42 +1,45 @@
-//! Space 命令：Tauri IPC 边界只负责 DTO 与 service 组装。
+//! Space 命令：薄 transport — 解析 owned DTO、调 AppState 服务、映射错误。
 
 use tauri::State;
 
 use crate::app::error::AppError;
-use crate::composition::build_space_service;
-use crate::services::{
+use crate::app::state::AppState;
+use crate::sync;
+use stoneflow_application::space::{
     CreateSpaceInput, SetDefaultSpaceInput, SpaceDto, SpaceIdInput, SpaceLifecycleResult,
     UpdateSpaceInput,
 };
-use crate::sync;
-use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
 pub async fn list_visible_spaces(
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<Vec<SpaceDto>, AppError> {
-    build_space_service(database.inner())
+    state
+        .spaces
         .list_visible_spaces()
         .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
 pub async fn get_space(
     input: SpaceIdInput,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<SpaceDto, AppError> {
-    build_space_service(database.inner()).get_space(input).await
+    state.spaces.get_space(input).await.map_err(AppError::from)
 }
 
 #[tauri::command]
 pub async fn create_space(
     input: CreateSpaceInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<SpaceDto, AppError> {
-    let space = build_space_service(database.inner())
+    let space = state
+        .spaces
         .create_space(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     Ok(space)
 }
@@ -45,11 +48,13 @@ pub async fn create_space(
 pub async fn update_space(
     input: UpdateSpaceInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<SpaceDto, AppError> {
-    let space = build_space_service(database.inner())
+    let space = state
+        .spaces
         .update_space(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     Ok(space)
 }
@@ -58,11 +63,13 @@ pub async fn update_space(
 pub async fn set_default_space(
     input: SetDefaultSpaceInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<SpaceDto, AppError> {
-    let space = build_space_service(database.inner())
+    let space = state
+        .spaces
         .set_default_space(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     Ok(space)
 }
@@ -71,11 +78,13 @@ pub async fn set_default_space(
 pub async fn archive_space(
     input: SpaceIdInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<SpaceLifecycleResult, AppError> {
-    let space = build_space_service(database.inner())
+    let space = state
+        .spaces
         .archive_space(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     Ok(space)
 }
@@ -84,11 +93,13 @@ pub async fn archive_space(
 pub async fn restore_space(
     input: SpaceIdInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<SpaceLifecycleResult, AppError> {
-    let space = build_space_service(database.inner())
+    let space = state
+        .spaces
         .restore_space(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     Ok(space)
 }
@@ -97,11 +108,13 @@ pub async fn restore_space(
 pub async fn delete_space(
     input: SpaceIdInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<SpaceLifecycleResult, AppError> {
-    let space = build_space_service(database.inner())
+    let space = state
+        .spaces
         .delete_space(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     Ok(space)
 }
@@ -110,11 +123,13 @@ pub async fn delete_space(
 pub async fn permanently_delete_space(
     input: SpaceIdInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<SpaceLifecycleResult, AppError> {
-    let result = build_space_service(database.inner())
+    let result = state
+        .spaces
         .permanently_delete_space(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     Ok(result)
 }
@@ -122,10 +137,11 @@ pub async fn permanently_delete_space(
 #[cfg(test)]
 mod tests {
     use sea_orm::{ConnectionTrait, DbBackend, Statement};
+    use stoneflow_application::space::{CreateSpaceInput, SetDefaultSpaceInput, SpaceIdInput};
+    use stoneflow_storage::build_space_service;
     use stoneflow_test_support::TestDatabase;
 
-    use crate::composition::build_space_service;
-    use crate::services::{CreateSpaceInput, SetDefaultSpaceInput, SpaceIdInput};
+    use crate::app::error::AppError;
 
     #[tokio::test]
     async fn list_visible_spaces_command_should_return_seeded_default_space() {
@@ -133,7 +149,7 @@ mod tests {
             .await
             .expect("test database should bootstrap");
 
-        let payload = build_space_service(&database)
+        let payload = build_space_service(database.connection().clone())
             .list_visible_spaces()
             .await
             .expect("list visible spaces should succeed");
@@ -149,7 +165,7 @@ mod tests {
             .await
             .expect("test database should bootstrap");
 
-        let error = build_space_service(&database)
+        let error = build_space_service(database.connection().clone())
             .create_space(CreateSpaceInput {
                 name: "   ".to_owned(),
                 icon_key: "house".to_owned(),
@@ -158,7 +174,8 @@ mod tests {
             .await
             .expect_err("blank name should fail");
 
-        assert_eq!(error.to_string(), "验证失败: Space name 不能为空");
+        let mapped = AppError::from(error);
+        assert_eq!(mapped.to_string(), "验证失败: Space name 不能为空");
     }
 
     #[tokio::test]
@@ -172,7 +189,7 @@ mod tests {
             .await
             .expect("seeded space should delete for this isolated case");
 
-        let space = build_space_service(&database)
+        let space = build_space_service(database.connection().clone())
             .create_space(CreateSpaceInput {
                 name: "第一个空间".to_owned(),
                 icon_key: "home".to_owned(),
@@ -189,7 +206,7 @@ mod tests {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-        let service = build_space_service(&database);
+        let service = build_space_service(database.connection().clone());
         let default_space = service
             .list_visible_spaces()
             .await
@@ -216,16 +233,17 @@ mod tests {
             .await
             .expect("test database should bootstrap");
 
-        let error = build_space_service(&database)
+        let error = build_space_service(database.connection().clone())
             .restore_space(SpaceIdInput {
                 space_id: uuid::Uuid::new_v4().to_string(),
             })
             .await
             .expect_err("missing space should fail");
 
+        let mapped = AppError::from(error);
         assert!(
-            error.to_string().contains("不存在"),
-            "unexpected error: {error}"
+            mapped.to_string().contains("不存在"),
+            "unexpected error: {mapped}"
         );
     }
 
@@ -234,7 +252,7 @@ mod tests {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-        let service = build_space_service(&database);
+        let service = build_space_service(database.connection().clone());
         let default_space = service
             .list_visible_spaces()
             .await
@@ -257,7 +275,8 @@ mod tests {
             .await
             .expect_err("default space should not archive");
 
-        assert!(error.to_string().contains("默认 Space 不可归档或删除"));
+        let mapped = AppError::from(error);
+        assert!(mapped.to_string().contains("默认 Space 不可归档或删除"));
         assert_eq!(active_child_count(&database).await, 2);
         assert_eq!(
             scalar_count(&database, "SELECT COUNT(*) AS value FROM outbox").await,
@@ -270,7 +289,7 @@ mod tests {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-        let service = build_space_service(&database);
+        let service = build_space_service(database.connection().clone());
         let space_id = service
             .list_visible_spaces()
             .await
@@ -283,7 +302,8 @@ mod tests {
             .await
             .expect_err("default space must not archive");
 
-        assert!(error.to_string().contains("默认 Space 不可归档或删除"));
+        let mapped = AppError::from(error);
+        assert!(mapped.to_string().contains("默认 Space 不可归档或删除"));
         assert_eq!(
             scalar_count(&database, "SELECT COUNT(*) AS value FROM outbox").await,
             0
@@ -295,7 +315,7 @@ mod tests {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-        let service = build_space_service(&database);
+        let service = build_space_service(database.connection().clone());
         let default_space = service
             .list_visible_spaces()
             .await
@@ -328,7 +348,7 @@ mod tests {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-        let service = build_space_service(&database);
+        let service = build_space_service(database.connection().clone());
         let space = service
             .create_space(CreateSpaceInput {
                 name: "临时空间".to_owned(),
@@ -380,7 +400,7 @@ mod tests {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-        let service = build_space_service(&database);
+        let service = build_space_service(database.connection().clone());
         let space = service
             .create_space(CreateSpaceInput {
                 name: "重复删除".to_owned(),
@@ -402,7 +422,8 @@ mod tests {
             .await
             .expect_err("second delete should be rejected");
 
-        assert!(error.to_string().contains("回收站"));
+        let mapped = AppError::from(error);
+        assert!(mapped.to_string().contains("回收站"));
         assert_eq!(
             scalar_count(&database, "SELECT COUNT(*) AS value FROM outbox").await,
             before,
@@ -414,7 +435,7 @@ mod tests {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-        let service = build_space_service(&database);
+        let service = build_space_service(database.connection().clone());
         let default_space = service
             .list_visible_spaces()
             .await

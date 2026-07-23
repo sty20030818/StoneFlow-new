@@ -151,6 +151,66 @@ pub async fn note_local_write(app_handle: &tauri::AppHandle) {
     log::info!("sync:dirty local write marked dirty");
 }
 
+/// 进程退出前的有界同步收尾：优先 push 本地 outbox，总预算 3 秒，不阻塞 UI 线程无界等待。
+///
+/// - 未配置远端 / 未启用：立即返回
+/// - 已有同步在跑：不抢锁、不排队，仅记录并返回
+/// - 超时：放弃本轮，允许进程继续退出
+pub async fn flush_before_exit(app_handle: &tauri::AppHandle) {
+    const EXIT_FLUSH_BUDGET: std::time::Duration = std::time::Duration::from_secs(3);
+
+    match tokio::time::timeout(EXIT_FLUSH_BUDGET, attempt_exit_flush(app_handle)).await {
+        Ok(Ok(())) => log::info!("sync:exit flush completed within budget"),
+        Ok(Err(error)) => log::warn!("sync:exit flush failed: {error}"),
+        Err(_) => log::warn!(
+            "sync:exit flush timed out after {}s; continuing process exit",
+            EXIT_FLUSH_BUDGET.as_secs()
+        ),
+    }
+}
+
+async fn attempt_exit_flush(app_handle: &tauri::AppHandle) -> Result<(), AppError> {
+    if !sync_execution_enabled() {
+        log::info!("sync:exit flush skipped because remote execution disabled");
+        return Ok(());
+    }
+
+    let sync_state = match sync_state_from_app(app_handle) {
+        Ok(state) => state,
+        Err(_) => {
+            log::info!("sync:exit flush skipped because sync state missing");
+            return Ok(());
+        }
+    };
+
+    if ensure_remote_config(&sync_state).await.is_err() {
+        log::info!("sync:exit flush skipped because remote config missing");
+        return Ok(());
+    }
+
+    let database = match database_state_from_app(app_handle) {
+        Ok(state) => state,
+        Err(_) => {
+            log::info!("sync:exit flush skipped because database state missing");
+            return Ok(());
+        }
+    };
+
+    if let Err(error) = ensure_sync_allowed(&sync_state, &database).await {
+        log::info!("sync:exit flush blocked: {error}");
+        return Ok(());
+    }
+
+    let Some(guard) = sync_state.try_lock_execution() else {
+        log::info!("sync:exit flush skipped because another run is active");
+        return Ok(());
+    };
+
+    // 退出时优先推送本地变更，避免在 pull 上耗尽预算。
+    log::info!("sync:exit flush starting push");
+    run_sync_loop(app_handle, guard, SyncRunMode::Push).await
+}
+
 /// 启动后在后台执行一轮 push 后 pull。
 pub fn trigger_startup_sync(app_handle: &tauri::AppHandle) {
     if !sync_execution_enabled() {
@@ -490,6 +550,9 @@ async fn sync_database(
 }
 
 fn sync_state_from_app(app_handle: &tauri::AppHandle) -> Result<SyncRuntimeState, AppError> {
+    if let Some(app_state) = app_handle.try_state::<crate::app::state::AppState>() {
+        return Ok(app_state.sync.clone());
+    }
     app_handle
         .try_state::<SyncRuntimeState>()
         .map(|state| state.inner().clone())
@@ -499,6 +562,9 @@ fn sync_state_from_app(app_handle: &tauri::AppHandle) -> Result<SyncRuntimeState
 fn database_state_from_app(
     app_handle: &tauri::AppHandle,
 ) -> Result<DatabaseRuntimeState, AppError> {
+    if let Some(app_state) = app_handle.try_state::<crate::app::state::AppState>() {
+        return Ok(app_state.database.clone());
+    }
     app_handle
         .try_state::<DatabaseRuntimeState>()
         .map(|state| state.inner().clone())

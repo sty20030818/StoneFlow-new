@@ -1,28 +1,31 @@
-//! Lifecycle 命令：统一 Archive / Trash 列表查询与生命周期内核组装。
+//! Lifecycle 命令：归档 / 回收站列表。
 
 use tauri::State;
 
 use crate::app::error::AppError;
-use crate::composition::build_lifecycle_service;
-use crate::services::{LifecycleEntry, ListLifecycleEntriesInput};
-use stoneflow_storage::database::DatabaseRuntimeState;
+use crate::app::state::AppState;
+use stoneflow_application::lifecycle::{LifecycleEntry, ListLifecycleEntriesInput};
 
 #[tauri::command]
 pub async fn list_archive_entries(
     input: ListLifecycleEntriesInput,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<Vec<LifecycleEntry>, AppError> {
-    build_lifecycle_service(database.inner())
+    state
+        .lifecycle
         .list_archive_entries(input)
         .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
 pub async fn list_trash_entries(
     input: ListLifecycleEntriesInput,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<Vec<LifecycleEntry>, AppError> {
-    build_lifecycle_service(database.inner())
+    state
+        .lifecycle
         .list_trash_entries(input)
         .await
+        .map_err(AppError::from)
 }

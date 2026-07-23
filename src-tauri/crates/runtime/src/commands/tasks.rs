@@ -1,17 +1,18 @@
-//! Task 命令：Tauri IPC 边界只负责 DTO、service 组装与事件发射。
+//! Task 命令：薄 transport — 解析 owned DTO、调 AppState 服务、映射错误。
 
 use serde::Serialize;
 use tauri::{Emitter, State};
 
 use crate::app::error::AppError;
-use crate::composition::{build_task_link_service, build_task_service};
-use crate::services::{
-    BulkUpdateTasksDto, BulkUpdateTasksInput, CreateTaskInput, CreateTaskLinkInput,
-    DeleteTaskLinkInput, ListTaskLinksInput, ListTasksInput, TaskDetailDto, TaskIdInput,
-    TaskLinkDto, TaskListItemDto, UpdateTaskInput, UpdateTaskLinkInput,
-};
+use crate::app::state::AppState;
 use crate::sync;
-use stoneflow_storage::database::DatabaseRuntimeState;
+use stoneflow_application::task::{
+    BulkUpdateTasksDto, BulkUpdateTasksInput, CreateTaskInput, ListTasksInput, TaskDetailDto,
+    TaskIdInput, TaskListItemDto, UpdateTaskInput,
+};
+use stoneflow_application::task_link::{
+    CreateTaskLinkInput, DeleteTaskLinkInput, ListTaskLinksInput, TaskLinkDto, UpdateTaskLinkInput,
+};
 
 const TASKS_CHANGED_EVENT: &str = "stoneflow://tasks/changed";
 
@@ -27,30 +28,34 @@ struct TaskChangedPayload {
 #[tauri::command]
 pub async fn list_tasks(
     input: ListTasksInput,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<Vec<TaskListItemDto>, AppError> {
-    build_task_service(database.inner()).list_tasks(input).await
+    state.tasks.list_tasks(input).await.map_err(AppError::from)
 }
 
 #[tauri::command]
 pub async fn get_task_detail(
     input: TaskIdInput,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<TaskDetailDto, AppError> {
-    build_task_service(database.inner())
+    state
+        .tasks
         .get_task_detail(input)
         .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
 pub async fn create_task(
     input: CreateTaskInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner())
+    let detail = state
+        .tasks
         .create_task(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
@@ -60,11 +65,13 @@ pub async fn create_task(
 pub async fn update_task(
     input: UpdateTaskInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner())
+    let detail = state
+        .tasks
         .update_task(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
@@ -74,14 +81,16 @@ pub async fn update_task(
 pub async fn bulk_update_tasks(
     input: BulkUpdateTasksInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<BulkUpdateTasksDto, AppError> {
-    let result = build_task_service(database.inner())
+    let result = state
+        .tasks
         .bulk_update_tasks(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     for task_id in &result.task_ids {
-        emit_task_changed_for_task_id(&app_handle, database.inner(), task_id).await?;
+        emit_task_changed_for_task_id(&app_handle, &state, task_id).await?;
     }
     Ok(result)
 }
@@ -90,11 +99,13 @@ pub async fn bulk_update_tasks(
 pub async fn archive_task(
     input: TaskIdInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner())
+    let detail = state
+        .tasks
         .archive_task(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
@@ -104,11 +115,13 @@ pub async fn archive_task(
 pub async fn restore_task(
     input: TaskIdInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner())
+    let detail = state
+        .tasks
         .restore_task(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
@@ -117,24 +130,28 @@ pub async fn restore_task(
 #[tauri::command]
 pub async fn list_task_links(
     input: ListTaskLinksInput,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<Vec<TaskLinkDto>, AppError> {
-    build_task_link_service(database.inner())
+    state
+        .task_links
         .list_task_links(input)
         .await
+        .map_err(AppError::from)
 }
 
 #[tauri::command]
 pub async fn create_task_link(
     input: CreateTaskLinkInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<TaskLinkDto, AppError> {
-    let link = build_task_link_service(database.inner())
+    let link = state
+        .task_links
         .create_task_link(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
-    emit_task_changed_for_task_id(&app_handle, database.inner(), &link.task_id).await?;
+    emit_task_changed_for_task_id(&app_handle, &state, &link.task_id).await?;
     Ok(link)
 }
 
@@ -142,13 +159,15 @@ pub async fn create_task_link(
 pub async fn update_task_link(
     input: UpdateTaskLinkInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<TaskLinkDto, AppError> {
-    let link = build_task_link_service(database.inner())
+    let link = state
+        .task_links
         .update_task_link(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
-    emit_task_changed_for_task_id(&app_handle, database.inner(), &link.task_id).await?;
+    emit_task_changed_for_task_id(&app_handle, &state, &link.task_id).await?;
     Ok(link)
 }
 
@@ -156,13 +175,15 @@ pub async fn update_task_link(
 pub async fn delete_task_link(
     input: DeleteTaskLinkInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<TaskLinkDto, AppError> {
-    let link = build_task_link_service(database.inner())
+    let link = state
+        .task_links
         .delete_task_link(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
-    emit_task_changed_for_task_id(&app_handle, database.inner(), &link.task_id).await?;
+    emit_task_changed_for_task_id(&app_handle, &state, &link.task_id).await?;
     Ok(link)
 }
 
@@ -170,11 +191,13 @@ pub async fn delete_task_link(
 pub async fn delete_task(
     input: TaskIdInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<TaskDetailDto, AppError> {
-    let detail = build_task_service(database.inner())
+    let detail = state
+        .tasks
         .delete_task(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     emit_task_changed(&app_handle, &detail)?;
     Ok(detail)
@@ -184,11 +207,13 @@ pub async fn delete_task(
 pub async fn permanently_delete_task(
     input: TaskIdInput,
     app_handle: tauri::AppHandle,
-    database: State<'_, DatabaseRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<(), AppError> {
-    build_task_service(database.inner())
+    state
+        .tasks
         .permanently_delete_task(input)
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     sync::note_local_write(&app_handle).await;
     Ok(())
 }
@@ -213,14 +238,16 @@ fn emit_task_changed(
 
 async fn emit_task_changed_for_task_id(
     app_handle: &tauri::AppHandle,
-    database: &DatabaseRuntimeState,
+    state: &AppState,
     task_id: &str,
 ) -> Result<(), AppError> {
-    let detail = build_task_service(database)
+    let detail = state
+        .tasks
         .get_task_detail(TaskIdInput {
             task_id: task_id.to_owned(),
         })
-        .await?;
+        .await
+        .map_err(AppError::from)?;
     emit_task_changed(app_handle, &detail)
 }
 
@@ -237,25 +264,27 @@ mod tests {
     };
     use stoneflow_test_support::TestDatabase;
 
-    use crate::{
-        app::error::AppError,
-        composition::{
-            build_project_service, build_space_service, build_task_link_service, build_task_service,
-        },
-        services::{
-            BulkUpdateTasksInput, CreateProjectInput, CreateSpaceInput, CreateTaskInput,
-            CreateTaskLinkInput, CreateTaskPlacementInput, CreateTaskPlacementKind, ListTasksInput,
-            ListTasksPlacementInput, ListTasksPlacementKind, TaskIdInput, TaskScopeInput,
-            TaskScopeKind, UpdateTaskInput, UpdateTaskPlacementInput, UpdateTaskPlacementKind,
-        },
+    use stoneflow_application::project::CreateProjectInput;
+    use stoneflow_application::space::CreateSpaceInput;
+    use stoneflow_application::task::{
+        BulkUpdateTasksInput, CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
+        ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput,
+        TaskScopeInput, TaskScopeKind, UpdateTaskInput, UpdateTaskPlacementInput,
+        UpdateTaskPlacementKind,
     };
+    use stoneflow_application::task_link::CreateTaskLinkInput;
+    use stoneflow_storage::{
+        build_project_service, build_space_service, build_task_link_service, build_task_service,
+    };
+
+    use crate::app::error::AppError;
 
     #[tokio::test]
     async fn bulk_update_tasks_should_leave_no_writes_when_prevalidation_fails() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
-        let service = build_task_service(&database);
+        let service = build_task_service(database.connection().clone());
         let task = create_task(&database, "保留原值").await;
         let outbox_count_before = OutboxRepository::new(database.connection().clone())
             .count_all()
@@ -266,13 +295,15 @@ mod tests {
             .await
             .expect("activity count should succeed");
 
-        let error = service
-            .bulk_update_tasks(BulkUpdateTasksInput {
-                task_ids: vec![task.id.clone(), create_id().to_string()],
-                action: BulkTaskAction::SetPriority { priority: 4 },
-            })
-            .await
-            .expect_err("a missing task should reject the entire bulk operation");
+        let error = AppError::from(
+            service
+                .bulk_update_tasks(BulkUpdateTasksInput {
+                    task_ids: vec![task.id.clone(), create_id().to_string()],
+                    action: BulkTaskAction::SetPriority { priority: 4 },
+                })
+                .await
+                .expect_err("a missing task should reject the entire bulk operation"),
+        );
 
         assert!(matches!(error, AppError::NotFound(_)));
         assert_eq!(
@@ -306,7 +337,7 @@ mod tests {
             .expect("test database should bootstrap");
         let task_a = create_task(&database, "任务 A").await;
         let task_b = create_task(&database, "任务 B").await;
-        let service = build_task_service(&database);
+        let service = build_task_service(database.connection().clone());
 
         let result = service
             .bulk_update_tasks(BulkUpdateTasksInput {
@@ -354,7 +385,7 @@ mod tests {
         let archive_b = create_task(&database, "归档 B").await;
         let delete_a = create_task(&database, "删除 A").await;
         let delete_b = create_task(&database, "删除 B").await;
-        let service = build_task_service(&database);
+        let service = build_task_service(database.connection().clone());
 
         let archive = service
             .bulk_update_tasks(BulkUpdateTasksInput {
@@ -414,7 +445,7 @@ mod tests {
             .into_iter()
             .next()
             .expect("a visible default space should exist");
-        let project = build_project_service(&database)
+        let project = build_project_service(database.connection().clone())
             .create_project(CreateProjectInput {
                 space_id: space.id.clone(),
                 name: "空项目".to_owned(),
@@ -428,7 +459,7 @@ mod tests {
             .await
             .expect("project should create");
 
-        let moved = build_task_service(&database)
+        let moved = build_task_service(database.connection().clone())
             .update_task(UpdateTaskInput {
                 task_id: task.id,
                 title: None,
@@ -464,7 +495,7 @@ mod tests {
             .await
             .expect("activity count should succeed");
 
-        let reordered = build_task_service(&database)
+        let reordered = build_task_service(database.connection().clone())
             .update_task(UpdateTaskInput {
                 task_id: third.id,
                 title: None,
@@ -498,7 +529,7 @@ mod tests {
             .await
             .expect("test database should bootstrap");
         let task = create_task(&database, "时间任务").await;
-        let service = build_task_service(&database);
+        let service = build_task_service(database.connection().clone());
 
         let with_due_at = service
             .update_task(task_update(task.id.clone(), |input| {
@@ -526,7 +557,7 @@ mod tests {
             .await
             .expect("test database should bootstrap");
         let task = create_task(&database, "初始标题").await;
-        let service = build_task_service(&database);
+        let service = build_task_service(database.connection().clone());
 
         let renamed = service
             .update_task(task_update(task.id, |input| {
@@ -578,7 +609,7 @@ mod tests {
             .into_iter()
             .next()
             .expect("a visible default space should exist");
-        let other_space = build_space_service(&database)
+        let other_space = build_space_service(database.connection().clone())
             .create_space(CreateSpaceInput {
                 name: "另一个空间".to_owned(),
                 icon_key: "folder".to_owned(),
@@ -586,7 +617,7 @@ mod tests {
             })
             .await
             .expect("second space should create");
-        let project = build_project_service(&database)
+        let project = build_project_service(database.connection().clone())
             .create_project(CreateProjectInput {
                 space_id: default_space.id,
                 name: "默认空间项目".to_owned(),
@@ -600,16 +631,18 @@ mod tests {
             .await
             .expect("project should create");
 
-        let error = build_task_service(&database)
-            .update_task(task_update(task.id, |input| {
-                input.placement = Some(UpdateTaskPlacementInput {
-                    kind: UpdateTaskPlacementKind::Project,
-                    space_id: other_space.id,
-                    project_id: Some(project.id),
-                });
-            }))
-            .await
-            .expect_err("cross-space project should be rejected");
+        let error = AppError::from(
+            build_task_service(database.connection().clone())
+                .update_task(task_update(task.id, |input| {
+                    input.placement = Some(UpdateTaskPlacementInput {
+                        kind: UpdateTaskPlacementKind::Project,
+                        space_id: other_space.id,
+                        project_id: Some(project.id),
+                    });
+                }))
+                .await
+                .expect_err("cross-space project should be rejected"),
+        );
 
         assert!(matches!(error, AppError::Validation(_)));
     }
@@ -626,7 +659,7 @@ mod tests {
             .into_iter()
             .next()
             .expect("a visible default space should exist");
-        let project = build_project_service(&database)
+        let project = build_project_service(database.connection().clone())
             .create_project(CreateProjectInput {
                 space_id: space.id.clone(),
                 name: "任务项目".to_owned(),
@@ -640,7 +673,7 @@ mod tests {
             .await
             .expect("project should create");
 
-        let task = build_task_service(&database)
+        let task = build_task_service(database.connection().clone())
             .create_task(CreateTaskInput {
                 space_id: Some(space.id),
                 placement: CreateTaskPlacementInput {
@@ -670,7 +703,7 @@ mod tests {
             .await
             .expect("test database should bootstrap");
         let default_task = create_task(&database, "默认空间任务").await;
-        let second_space = build_space_service(&database)
+        let second_space = build_space_service(database.connection().clone())
             .create_space(CreateSpaceInput {
                 name: "第二空间".to_owned(),
                 icon_key: "folder".to_owned(),
@@ -678,7 +711,7 @@ mod tests {
             })
             .await
             .expect("second space should create");
-        let second_task = build_task_service(&database)
+        let second_task = build_task_service(database.connection().clone())
             .create_task(CreateTaskInput {
                 space_id: Some(second_space.id),
                 placement: CreateTaskPlacementInput {
@@ -696,7 +729,7 @@ mod tests {
             .await
             .expect("second task should create");
 
-        let tasks = build_task_service(&database)
+        let tasks = build_task_service(database.connection().clone())
             .list_tasks(ListTasksInput {
                 scope: TaskScopeInput {
                     kind: TaskScopeKind::All,
@@ -728,7 +761,7 @@ mod tests {
             .await
             .expect("test database should bootstrap");
         let task = create_task(&database, "待彻底删除").await;
-        build_task_link_service(&database)
+        build_task_link_service(database.connection().clone())
             .create_task_link(CreateTaskLinkInput {
                 task_id: task.id.clone(),
                 title: "参考链接".to_owned(),
@@ -736,14 +769,16 @@ mod tests {
             })
             .await
             .expect("task link should create");
-        let service = build_task_service(&database);
+        let service = build_task_service(database.connection().clone());
 
-        let active_task_error = service
-            .permanently_delete_task(TaskIdInput {
-                task_id: task.id.clone(),
-            })
-            .await
-            .expect_err("active task should not permanently delete");
+        let active_task_error = AppError::from(
+            service
+                .permanently_delete_task(TaskIdInput {
+                    task_id: task.id.clone(),
+                })
+                .await
+                .expect_err("active task should not permanently delete"),
+        );
         assert!(matches!(active_task_error, AppError::Conflict(_)));
 
         service
@@ -777,7 +812,7 @@ mod tests {
         );
     }
 
-    async fn create_task(database: &TestDatabase, title: &str) -> crate::services::TaskDetailDto {
+    async fn create_task(database: &TestDatabase, title: &str) -> TaskDetailDto {
         let space = SpaceRepository::new(database.connection().clone())
             .list_visible()
             .await
@@ -785,7 +820,7 @@ mod tests {
             .into_iter()
             .next()
             .expect("a visible default space should exist");
-        build_task_service(database)
+        build_task_service(database.connection().clone())
             .create_task(CreateTaskInput {
                 space_id: Some(space.id.clone()),
                 placement: CreateTaskPlacementInput {

@@ -1,109 +1,52 @@
-//! Task runtime adapter：把 application ports 连接到 SQLite repository。
+//! Task port 实现与 application service 工厂。
 
-use sea_orm::{DatabaseTransaction, TransactionTrait};
+use sea_orm::{DatabaseConnection, DatabaseTransaction, TransactionTrait};
 use stoneflow_application::{
     activity::{
-        ActivityChangeRecord, ActivityEventRecord, ActivityPersistence, ActivityTimelineEntry,
-        GetEntityActivitiesInput,
+        ActivityChangeRecord, ActivityEventRecord, ActivityPersistence, ActivityService,
+        ActivityTimelineEntry, GetEntityActivitiesInput,
     },
     operation::{OutboxEnqueueRecord, SyncEntityKind, TombstoneRecord},
     task::{
         CreateTaskPersistenceRecord, TaskLifecycleView, TaskPersistence, TaskProjectReader,
-        TaskProjectRecord, TaskRecord, TaskService as TaskUsecase, TaskSpaceReader,
-        TaskSpaceRecord, UpdateTaskPatch as AppUpdateTaskPatch,
+        TaskProjectRecord, TaskRecord, TaskService, TaskSpaceReader, TaskSpaceRecord,
+        UpdateTaskPatch as AppUpdateTaskPatch,
     },
     ApplicationError,
 };
-use stoneflow_storage::{
-    entities::{common::WorkStatus as StorageWorkStatus, task},
-    repositories::{
-        ActivityRepository, CreateTaskRecord, OutboxRepository, ProjectRepository, SpaceRepository,
-        TaskRepository, TombstoneRepository, UpdateTaskPatch,
-    },
+
+use crate::adapters::error::{from_db, from_storage};
+use crate::entities::{common::WorkStatus as StorageWorkStatus, task};
+use crate::mappers::work_status_to_domain;
+use crate::repositories::{
+    ActivityRepository, CreateTaskRecord, OutboxRepository, ProjectRepository, SpaceRepository,
+    TaskRepository, TombstoneRepository, UpdateTaskPatch,
 };
 
-use crate::app::error::AppError;
-
-pub use stoneflow_application::task::{
-    BulkUpdateTasksDto, BulkUpdateTasksInput, CreateTaskInput, CreateTaskPlacementInput,
-    CreateTaskPlacementKind, ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind,
-    TaskDetailDto, TaskIdInput, TaskListItemDto, TaskScopeInput, TaskScopeKind, UpdateTaskInput,
-    UpdateTaskPlacementInput, UpdateTaskPlacementKind,
-};
-
-type InnerTaskService = TaskUsecase<
+/// 已装配的 Task application service。
+pub type TaskAppService = TaskService<
     TaskPersistenceAdapter,
     TaskPersistenceAdapter,
     TaskPersistenceAdapter,
     TaskPersistenceAdapter,
 >;
 
-pub struct TaskService {
-    inner: InnerTaskService,
-}
-
-impl TaskService {
-    pub fn new(
-        tasks: TaskRepository,
-        spaces: SpaceRepository,
-        projects: ProjectRepository,
-    ) -> Self {
-        let adapter = TaskPersistenceAdapter::new(tasks, spaces, projects);
-        Self {
-            inner: TaskUsecase::new(
-                adapter.clone(),
-                stoneflow_application::activity::ActivityService::new(adapter.clone()),
-                adapter.clone(),
-                adapter,
-            ),
-        }
-    }
-    pub async fn list_tasks(
-        &self,
-        input: ListTasksInput,
-    ) -> Result<Vec<TaskListItemDto>, AppError> {
-        self.inner.list_tasks(input).await.map_err(AppError::from)
-    }
-    pub async fn get_task_detail(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
-        self.inner
-            .get_task_detail(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn create_task(&self, input: CreateTaskInput) -> Result<TaskDetailDto, AppError> {
-        self.inner.create_task(input).await.map_err(AppError::from)
-    }
-    pub async fn update_task(&self, input: UpdateTaskInput) -> Result<TaskDetailDto, AppError> {
-        self.inner.update_task(input).await.map_err(AppError::from)
-    }
-    pub async fn bulk_update_tasks(
-        &self,
-        input: BulkUpdateTasksInput,
-    ) -> Result<BulkUpdateTasksDto, AppError> {
-        self.inner
-            .bulk_update_tasks(input)
-            .await
-            .map_err(AppError::from)
-    }
-    pub async fn archive_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
-        self.inner.archive_task(input).await.map_err(AppError::from)
-    }
-    pub async fn restore_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
-        self.inner.restore_task(input).await.map_err(AppError::from)
-    }
-    pub async fn delete_task(&self, input: TaskIdInput) -> Result<TaskDetailDto, AppError> {
-        self.inner.delete_task(input).await.map_err(AppError::from)
-    }
-    pub async fn permanently_delete_task(&self, input: TaskIdInput) -> Result<(), AppError> {
-        self.inner
-            .permanently_delete_task(input)
-            .await
-            .map_err(AppError::from)
-    }
+/// 从数据库连接构造 Task 用例。
+pub fn build_task_service(connection: DatabaseConnection) -> TaskAppService {
+    let tasks = TaskRepository::new(connection.clone());
+    let spaces = SpaceRepository::new(connection.clone());
+    let projects = ProjectRepository::new(connection);
+    let adapter = TaskPersistenceAdapter::new(tasks, spaces, projects);
+    TaskService::new(
+        adapter.clone(),
+        ActivityService::new(adapter.clone()),
+        adapter.clone(),
+        adapter,
+    )
 }
 
 #[derive(Debug, Clone)]
-struct TaskPersistenceAdapter {
+pub struct TaskPersistenceAdapter {
     tasks: TaskRepository,
     spaces: SpaceRepository,
     projects: ProjectRepository,
@@ -112,7 +55,7 @@ struct TaskPersistenceAdapter {
     tombstones: TombstoneRepository,
 }
 impl TaskPersistenceAdapter {
-    fn new(tasks: TaskRepository, spaces: SpaceRepository, projects: ProjectRepository) -> Self {
+    pub fn new(tasks: TaskRepository, spaces: SpaceRepository, projects: ProjectRepository) -> Self {
         let connection = tasks.connection().clone();
         Self {
             tasks,
@@ -131,20 +74,20 @@ impl TaskPersistence for TaskPersistenceAdapter {
             .connection()
             .begin()
             .await
-            .map_err(|e| ApplicationError::storage(e.to_string()))
+            .map_err(from_db)
     }
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError> {
         connection
             .commit()
             .await
-            .map_err(|e| ApplicationError::storage(e.to_string()))
+            .map_err(from_db)
     }
     async fn get(&self, task_id: &str) -> Result<Option<TaskRecord>, ApplicationError> {
         self.tasks
             .get(task_id)
             .await
             .map(|row| row.map(map_task))
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn list(
         &self,
@@ -162,7 +105,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             .tasks
             .list_visible(query.space_id.as_deref(), placement, include_archived, None)
             .await
-            .map_err(storage_error)?;
+            .map_err(from_storage)?;
         rows.retain(|row| match query.lifecycle {
             TaskLifecycleView::Active => {
                 !matches!(
@@ -190,7 +133,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
         self.tasks
             .next_position(connection, space_id, project_id)
             .await
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn create(
         &self,
@@ -220,7 +163,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             )
             .await
             .map(map_task)
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn update(
         &self,
@@ -251,7 +194,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             )
             .await
             .map(|row| row.map(map_task))
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn enqueue(
         &self,
@@ -261,7 +204,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
         self.outbox
             .enqueue_in_connection(connection, record)
             .await
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn archive(
         &self,
@@ -274,7 +217,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             .archive(connection, task_id, operation_id, archived_at)
             .await
             .map(|row| row.map(map_task))
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn soft_delete(
         &self,
@@ -287,7 +230,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             .soft_delete(connection, task_id, operation_id, deleted_at)
             .await
             .map(|row| row.map(map_task))
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn restore(
         &self,
@@ -300,7 +243,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             .restore(connection, task_id, operation_id, updated_at)
             .await
             .map(|row| row.map(map_task))
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn permanently_delete(
         &self,
@@ -312,7 +255,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             .tasks
             .permanently_delete(connection, task_id)
             .await
-            .map_err(storage_error)?;
+            .map_err(from_storage)?;
         if let Some(task) = &deleted {
             self.tombstones
                 .insert_in_connection(
@@ -326,7 +269,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
                     },
                 )
                 .await
-                .map_err(storage_error)?;
+                .map_err(from_storage)?;
         }
         Ok(deleted.map(map_task))
     }
@@ -344,7 +287,7 @@ impl TaskSpaceReader for TaskPersistenceAdapter {
                     deleted_at: space.deleted_at,
                 })
             })
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn list_by_ids(&self, ids: &[String]) -> Result<Vec<TaskSpaceRecord>, ApplicationError> {
         let mut rows = Vec::new();
@@ -370,7 +313,7 @@ impl TaskProjectReader for TaskPersistenceAdapter {
                     deleted_at: project.deleted_at,
                 })
             })
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn list_by_ids(
         &self,
@@ -402,7 +345,7 @@ impl ActivityPersistence for TaskPersistenceAdapter {
         self.activities
             .insert_event_with_changes(connection, event, changes)
             .await
-            .map_err(storage_error)
+            .map_err(from_storage)
     }
     async fn insert_events_with_changes(
         &self,
@@ -429,7 +372,7 @@ fn map_task(row: task::Model) -> TaskRecord {
         project_id: row.project_id,
         title: row.title,
         note: row.note,
-        status: from_storage_status(row.status),
+        status: work_status_to_domain(row.status),
         status_changed_at: row.status_changed_at,
         priority: row.priority,
         planned_at: row.planned_at,
@@ -446,15 +389,5 @@ fn map_task(row: task::Model) -> TaskRecord {
         updated_at: row.updated_at,
     }
 }
-fn from_storage_status(status: StorageWorkStatus) -> stoneflow_domain::WorkStatus {
-    match status {
-        StorageWorkStatus::Todo => stoneflow_domain::WorkStatus::Todo,
-        StorageWorkStatus::Doing => stoneflow_domain::WorkStatus::Doing,
-        StorageWorkStatus::Waiting => stoneflow_domain::WorkStatus::Waiting,
-        StorageWorkStatus::Done => stoneflow_domain::WorkStatus::Done,
-        StorageWorkStatus::Canceled => stoneflow_domain::WorkStatus::Canceled,
-    }
-}
-fn storage_error(error: stoneflow_storage::StorageError) -> ApplicationError {
-    ApplicationError::storage(error.to_string())
-}
+
+

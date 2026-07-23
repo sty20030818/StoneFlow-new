@@ -146,7 +146,6 @@ pub struct LauncherProjectItemResponse {
 #[serde(rename_all = "camelCase")]
 pub struct LauncherProjectsBySpaceResponse {
     pub space_id: String,
-    pub inbox_project: LauncherProjectOptionResponse,
     pub no_project_option: LauncherProjectOptionResponse,
     pub projects: Vec<LauncherProjectOptionResponse>,
 }
@@ -164,8 +163,8 @@ fn map_scope(payload: LauncherScopeDto) -> LauncherScopeResponse {
 fn map_placement(payload: LauncherPlacementDto) -> LauncherPlacementResponse {
     LauncherPlacementResponse {
         kind: match payload.kind {
-            LauncherPlacementKind::Inbox => "inbox",
-            LauncherPlacementKind::NoProject => "noProject",
+            // R2 起无 Inbox；遗留 Inbox 枚举映射为 noProject。
+            LauncherPlacementKind::Inbox | LauncherPlacementKind::NoProject => "noProject",
             LauncherPlacementKind::Project => "project",
         },
         project_id: payload.project_id,
@@ -185,8 +184,7 @@ fn map_space(payload: LauncherSpaceSummaryDto) -> LauncherSpaceSummaryResponse {
 fn map_project_option(payload: LauncherProjectOptionDto) -> LauncherProjectOptionResponse {
     LauncherProjectOptionResponse {
         kind: match payload.kind {
-            LauncherProjectOptionKind::Inbox => "inbox",
-            LauncherProjectOptionKind::NoProject => "noProject",
+            LauncherProjectOptionKind::Inbox | LauncherProjectOptionKind::NoProject => "noProject",
             LauncherProjectOptionKind::Project => "project",
         },
         id: payload.id,
@@ -229,7 +227,6 @@ pub(crate) fn map_projects_by_space(
 ) -> LauncherProjectsBySpaceResponse {
     LauncherProjectsBySpaceResponse {
         space_id: payload.space_id,
-        inbox_project: map_project_option(payload.inbox_project),
         no_project_option: map_project_option(payload.no_project_option),
         projects: payload
             .projects

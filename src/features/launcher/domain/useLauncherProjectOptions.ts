@@ -17,7 +17,7 @@ export function useLauncherProjectOptions({ dispatch }: UseLauncherProjectOption
 				startTransition(() => {
 					dispatch({
 						type: 'projectsLoadingSucceeded',
-						options: [payload.inboxProject, payload.noProjectOption, ...payload.projects],
+						options: [payload.noProjectOption, ...payload.projects],
 					})
 				})
 			} catch (error) {

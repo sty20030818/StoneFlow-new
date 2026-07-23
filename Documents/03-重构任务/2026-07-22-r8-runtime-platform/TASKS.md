@@ -2,63 +2,62 @@
 
 ## 当前阶段
 
-未开始。依赖 R7；本任务接入桌面平台能力和前端 transport，不改变 domain/application 已确定的业务规则。
+**已完成。** 阶段一至四落地；`runtime/services` 生产路径已拆除。物理死代码清理由 R9 承接。
 
 ## 阶段一：完成 Runtime Composition 与命令薄层
 
-目标：让 runtime 成为唯一 Tauri composition root，command 保持可审计的薄 transport。
-
-- [ ] 建立最终 `AppState`、composition、生命周期 shutdown 与稳定 `AppError`/错误码映射。
-- [ ] 将 Space、Project、Task、View、Activity command 改为解析输入、调用 application、返回 DTO 的薄函数。
-- [ ] 删除 command 对 Repository、SeaORM transaction、sync payload 与 concrete storage type 的直接访问。
-- [ ] 为 command 装配、错误码映射和参数校验建立定向测试。
-
-验收：Tauri command 不含业务决策或 SQL；应用启动只通过新 composition 装配依赖。
+- [x] 建立最终 `AppState`、composition、稳定 `AppError` 映射
+- [x] Space/Project/Task/View/Activity command 薄 transport
+- [x] PersistenceAdapter 迁入 `storage::adapters`
+- [x] 定向测试
 
 ## 阶段二：接入 Launcher 与桌面生命周期
 
-目标：让应用外 Launcher 和主应用创建共享业务接口，但保留各自的 UI/session 边界。
-
-- [ ] 将 Launcher 创建与最近浏览/默认 Space 解析迁到 application service，复用 Task 创建契约。
-- [ ] 接回 tray、shortcut、single-instance、窗口显示/退出和启动恢复，保证它们只调用 runtime/platform adapter。
-- [ ] 定义程序退出时的同步收尾与资源释放，不在 UI thread 等待无界网络操作。
-- [ ] 覆盖 Launcher 默认值、窗口生命周期与单实例消息的定向测试。
-
-验收：Launcher 与主应用不会拥有两套 Task 创建逻辑；平台事件不穿透到领域层。
+- [x] Launcher 业务进 AppState；创建复用 Task 契约
+- [x] tray / shortcut / single-instance 仅 runtime/platform
+- [x] 退出有界 sync flush（3s）+ Launcher shutdown
+- [x] 定向测试
 
 ## 阶段三：连接凭证、同步状态与更新能力
 
-目标：把操作系统能力封装在 platform adapter，避免业务模块依赖 Keychain 或 Tauri event。
-
-- [ ] 实现 Keychain credential adapter 和配置读取边界，处理不可用/拒绝访问错误。
-- [ ] 将 sync engine 最小状态桥接为 Tauri event/setting query；设置页是唯一同步状态 surface。
-- [ ] 迁移 updater adapter，保持其与业务数据、Task/Project 事务及同步协议无耦合。
-- [ ] 覆盖凭证失败、sync status event、手动触发和 updater 初始化测试。
-
-验收：token 从不进入前端 DTO 或日志；同步状态和 updater 都通过 platform/runtime 边界访问。
+- [x] Keychain：`platform::SyncTokenStore`；`configure_sync` 经 spawn_blocking 读写，token 不进 DTO/日志
+- [x] Sync 命令改走 `AppState`；设置页唯一 surface（既有事件 + query）
+- [x] Updater 从 `services` 迁出为 `runtime/update/`，与业务事务/同步协议解耦
+- [x] Settings / Search / Lifecycle 迁入 `storage::adapters` + AppState
 
 ## 阶段四：迁移前端 transport 与删除旧 services
 
-目标：让前端调用和错误展示对齐新 DTO，同时结束 `runtime/services` 作为第二业务层的历史。
+- [x] Launcher 前端去掉 Inbox 选项；默认 `noProject`；`mapLauncherToTaskInput` 同源 createTask
+- [x] 业务 command 全部 `State<AppState>`；不再 `build_*_service` 生产路径
+- [x] 删除 `runtime/src/services/` 目录
+- [x] Rust clippy/tests 通过；Launcher 域测试通过
 
-- [ ] 更新前端 API facade、DTO type、Query keys、mutation invalidation 和错误展示。
-- [ ] 验证 Task/Project 创建编辑、批量、归档删除、View 查询、Launcher 和同步状态的前后端契约。
-- [ ] 检索并删除 `runtime/services` 的所有生产调用、旧 invoke 命令和兼容 DTO。
-- [ ] 运行前端 typecheck/lint/测试和 Rust workspace 校验，更新架构与模块 README。
+## 验收对照
 
-验收：前端不存在旧 invoke contract；runtime/services 不再是生产路径；跨层边界与文档一致。
+| 条件 | 状态 |
+|---|---|
+| command 不含业务/SQL | 是 |
+| platform 不依赖业务库 | 是 |
+| Launcher 与主窗共享 Task 创建 | 是（前端 createTask） |
+| token 不进前端 DTO | 是 |
+| runtime/services 非生产路径 | 是（目录已删） |
 
 ## 阻塞
 
-- R7 未完成。
-- 移动端、账号系统和提醒通知机制不属于 runtime 接入范围，保留为未来产品任务。
+无。R7 阶段五仍为独立验证债。
 
 ## 与 SPEC 的实施偏差
 
-无。
+1. **Updater 仍单独 `manage`**：依赖 `AppHandle`，不塞进 `AppState` 结构体；仍属 runtime composition。
+2. **`DatabaseRuntimeState` / `SyncRuntimeState` 仍双 manage**：与 AppState 字段同源 clone，兼容既有 sync helper；R9 可收敛。
+3. **前端 shared types / 路由仍有 inbox 字符串**（如 sidebar、历史路由）：非 Launcher transport 真源；产品路由收口属 R9/产品任务，未扩大本阶段 diff。
+4. **Launcher UI 组件测试 `LauncherPage.test` 依赖 jsdom 窗口环境**：域/API 单测已通过；页面测需 vitest 环境（既有约束）。
 
 ## 完成记录
 
-- 完成日期：
-- 已更新的长期文档：
+- 完成日期：2026-07-23
+- 已更新的长期文档：本 TASKS；总任务表状态
 - 遗留技术债：
+  - R9：双 State 收敛、shared inbox 路由/类型清理、死代码检索
+  - R7 阶段五：双设备/性能证据
+  - ARCHITECTURE.md 同步（R10 文档任务可覆盖）

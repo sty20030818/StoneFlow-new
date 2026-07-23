@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-R0 / R1 / R2 / R3 / R4 / R5 已完成，R6 待开始。
+R0–R7（协议/引擎 1–4）已完成；R8 阶段一进行中。R7 阶段五为双设备/性能验证债。
 
 ## 阶段任务
 
@@ -14,9 +14,9 @@ R0 / R1 / R2 / R3 / R4 / R5 已完成，R6 待开始。
 | R3 | [Space](../2026-07-22-r3-space/SPEC.md) | 已完成（默认替代、Project/Task 精确级联恢复、tombstone 与前端契约迁移） |
 | R4 | [Project](../2026-07-22-r4-project/SPEC.md) | 已完成 |
 | R5 | [Task 与 Activity](../2026-07-22-r5-task-activity/SPEC.md) | 已完成 |
-| R6 | [View 与查询](../2026-07-22-r6-view-queries/SPEC.md) | 待开始 |
-| R7 | [同步引擎](../2026-07-22-r7-sync-engine/SPEC.md) | 待开始 |
-| R8 | [Runtime 与 Platform](../2026-07-22-r8-runtime-platform/SPEC.md) | 待开始 |
+| R6 | [View 与查询](../2026-07-22-r6-view-queries/SPEC.md) | 已完成 |
+| R7 | [同步引擎](../2026-07-22-r7-sync-engine/SPEC.md) | 阶段一至四完成；阶段五验证债 |
+| R8 | [Runtime 与 Platform](../2026-07-22-r8-runtime-platform/SPEC.md) | 已完成（见 R8 TASKS） |
 | R9 | [旧链路清理](../2026-07-22-r9-legacy-cleanup/SPEC.md) | 待开始 |
 | R10 | [全量验证与文档](../2026-07-22-r10-verification-docs/SPEC.md) | 待开始 |
 

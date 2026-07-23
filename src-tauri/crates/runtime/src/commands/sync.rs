@@ -1,40 +1,33 @@
-//! 云同步命令：配置、状态读取与手动同步。
+//! 云同步命令：配置、状态读取与手动同步（设置页唯一 surface）。
 
 use tauri::State;
 
 use crate::{
     app::error::AppError,
-    sync::{
-        self, ConfigureSyncInput, SyncDiagnosticsPayload, SyncRuntimeState, SyncStatusPayload,
-        UpdateSyncPolicyInput,
-    },
+    app::state::AppState,
+    sync::{self, ConfigureSyncInput, SyncDiagnosticsPayload, SyncStatusPayload, UpdateSyncPolicyInput},
 };
-use stoneflow_storage::database::DatabaseRuntimeState;
 
 #[tauri::command]
-pub async fn get_sync_status(
-    database: State<'_, DatabaseRuntimeState>,
-    sync_state: State<'_, SyncRuntimeState>,
-) -> Result<SyncStatusPayload, AppError> {
-    sync::get_sync_status(sync_state.inner(), database.inner()).await
+pub async fn get_sync_status(state: State<'_, AppState>) -> Result<SyncStatusPayload, AppError> {
+    sync::get_sync_status(&state.sync, &state.database).await
 }
 
 #[tauri::command]
 pub async fn configure_sync(
     input: ConfigureSyncInput,
-    database: State<'_, DatabaseRuntimeState>,
-    sync_state: State<'_, SyncRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<SyncStatusPayload, AppError> {
-    sync::configure_sync(database.inner(), sync_state.inner(), input).await
+    // token 经 platform Keychain 写入；payload 不回传 token。
+    sync::configure_sync(&state.database, &state.sync, input).await
 }
 
 #[tauri::command]
 pub async fn update_sync_policy(
     input: UpdateSyncPolicyInput,
-    database: State<'_, DatabaseRuntimeState>,
-    sync_state: State<'_, SyncRuntimeState>,
+    state: State<'_, AppState>,
 ) -> Result<SyncStatusPayload, AppError> {
-    sync::update_sync_policy(database.inner(), sync_state.inner(), input).await
+    sync::update_sync_policy(&state.database, &state.sync, input).await
 }
 
 #[tauri::command]

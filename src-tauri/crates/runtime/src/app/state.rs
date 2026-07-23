@@ -6,6 +6,14 @@ use serde::Serialize;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
+use crate::sync::SyncRuntimeState;
+use stoneflow_storage::database::DatabaseRuntimeState;
+use stoneflow_storage::{
+    ActivityAppService, LauncherAppService, LauncherContextAppService, LifecycleAppService,
+    ProjectAppService, SearchAppService, SettingsAppService, SpaceAppService, TaskAppService,
+    TaskLinkAppService, ViewAppService,
+};
+
 /// 当前被主应用选中的 Scope 类型。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -67,4 +75,25 @@ impl CommandOpenState {
     pub async fn take_pending_command_open(&self) -> Option<PendingCommandOpenIntent> {
         self.pending_command_open.write().await.take()
     }
+}
+
+/// Runtime composition root：一次性装配的业务服务与同步句柄。
+///
+/// command 只从这里取 application service；不在此暴露 Repository / SeaORM。
+/// 更新服务依赖 `AppHandle`，在 bootstrap 中单独 `manage`，不放进本结构。
+#[derive(Clone)]
+pub struct AppState {
+    pub database: DatabaseRuntimeState,
+    pub spaces: Arc<SpaceAppService>,
+    pub projects: Arc<ProjectAppService>,
+    pub tasks: Arc<TaskAppService>,
+    pub task_links: Arc<TaskLinkAppService>,
+    pub views: Arc<ViewAppService>,
+    pub activities: Arc<ActivityAppService>,
+    pub launcher: Arc<LauncherAppService>,
+    pub launcher_context: Arc<LauncherContextAppService>,
+    pub settings: Arc<SettingsAppService>,
+    pub search: Arc<SearchAppService>,
+    pub lifecycle: Arc<LifecycleAppService>,
+    pub sync: SyncRuntimeState,
 }
