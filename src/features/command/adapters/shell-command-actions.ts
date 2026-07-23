@@ -12,7 +12,7 @@ export type ShellChromeCommandActions = {
 	focusSearch: () => void
 	openQuickTaskCreate: () => void
 	openFullTaskCreate: () => void
-	openInboxTaskCreate: () => void
+	openStandaloneTaskCreate: () => void
 	openProjectCreate: () => void
 	openTaskPicker: () => void
 	openProjectPicker: () => void
@@ -62,7 +62,7 @@ export const SHELL_CHROME_ACTION_KEYS = [
 	'focusSearch',
 	'openQuickTaskCreate',
 	'openFullTaskCreate',
-	'openInboxTaskCreate',
+	'openStandaloneTaskCreate',
 	'openProjectCreate',
 	'openTaskPicker',
 	'openProjectPicker',

@@ -26,12 +26,12 @@ export const newCommands: Command[] = [
 		run: () => {},
 	},
 	{
-		id: COMMAND_IDS.newTaskInInbox,
-		title: '新建任务到收件箱',
+		id: COMMAND_IDS.newStandaloneTask,
+		title: '创建独立事项',
 		category: 'new',
 		scope: ['global'],
-		description: '强制将新任务创建到 Inbox。',
-		keywords: ['task', 'create', 'inbox', '收件箱'],
+		description: '在当前 Space 创建无项目归属的独立事项。',
+		keywords: ['task', 'create', 'standalone', '独立事项'],
 		run: () => {},
 	},
 	{

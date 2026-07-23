@@ -28,14 +28,14 @@ describe('keybinding', () => {
 
 		const chordState = toChordState(pending, 100)
 		expect(matchCommand('t', chordState, 600)).toBe(COMMAND_IDS.newFullTask)
-		expect(matchCommand('i', chordState, 600)).toBe(COMMAND_IDS.newTaskInInbox)
+		expect(matchCommand('i', chordState, 600)).toBe(COMMAND_IDS.newStandaloneTask)
 		expect(matchCommand('p', chordState, 600)).toBe(COMMAND_IDS.newProject)
 		expect(matchCommand('v', chordState, 600)).toBe(COMMAND_IDS.newView)
 	})
 
 	it('匹配 G 组导航命令', () => {
 		const cases = [
-			['i', COMMAND_IDS.goInbox],
+			['i', COMMAND_IDS.goStandalone],
 			['t', COMMAND_IDS.goAllTasks],
 			['d', COMMAND_IDS.goToday],
 			['u', COMMAND_IDS.goUpcoming],

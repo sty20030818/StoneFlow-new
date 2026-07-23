@@ -2,9 +2,9 @@ import { isSettingsSectionKey, type SettingsSectionKey } from '@/features/settin
 import type { Scope } from '@/shared/types'
 
 import {
+	isShellSectionKey,
 	locationPartsFromInput,
 	parseAppRoute,
-	SECTION_SEGMENT_TO_KEY,
 	splitPathSegments,
 	stripQueryAndHash,
 	type AppRoute,
@@ -78,7 +78,7 @@ export function resolveShellSection(routeOrPath: AppRoute | string): ShellSectio
 		case 'project':
 			return 'projects'
 		default:
-			return 'inbox'
+			return 'tasks'
 	}
 }
 
@@ -257,15 +257,15 @@ function appRouteFromMatch(
 			fullPath,
 		}
 	}
-	const sectionKey = SECTION_SEGMENT_TO_KEY[remainder[0] ?? '']
+	const head = remainder[0] ?? ''
 	if (
-		sectionKey &&
-		(remainder.length === 1 || (sectionKey === 'settings' && remainder.length <= 2))
+		isShellSectionKey(head) &&
+		(remainder.length === 1 || (head === 'settings' && remainder.length <= 2))
 	) {
 		return {
 			kind: 'shell-section',
 			scope,
-			section: sectionKey,
+			section: head,
 			pathname,
 			search,
 			hash,

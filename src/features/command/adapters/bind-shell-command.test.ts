@@ -70,12 +70,12 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 
 		await runtime.execute(COMMAND_IDS.newQuickTask)
 		await runtime.execute(COMMAND_IDS.newFullTask)
-		await runtime.execute(COMMAND_IDS.newTaskInInbox)
+		await runtime.execute(COMMAND_IDS.newStandaloneTask)
 		await runtime.execute(COMMAND_IDS.newProject)
 
 		expect(actions.openQuickTaskCreate).toHaveBeenCalledTimes(1)
 		expect(actions.openFullTaskCreate).toHaveBeenCalledTimes(1)
-		expect(actions.openInboxTaskCreate).toHaveBeenCalledTimes(1)
+		expect(actions.openStandaloneTaskCreate).toHaveBeenCalledTimes(1)
 		expect(actions.openProjectCreate).toHaveBeenCalledTimes(1)
 	})
 
@@ -120,7 +120,7 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 	})
 
 	it.each([
-		[COMMAND_IDS.goInbox, 'inbox'],
+		[COMMAND_IDS.goStandalone, 'standalone'],
 		[COMMAND_IDS.goAllTasks, 'tasks'],
 		[COMMAND_IDS.goFocus, 'views/focus'],
 		[COMMAND_IDS.goViews, 'views'],
@@ -202,7 +202,6 @@ describe('bindShellCommand / ShellCommandAdapter', () => {
 		[COMMAND_IDS.projectRename, '项目命令尚未接入'],
 		[COMMAND_IDS.filterToggleCompleted, '当前页面不支持完成筛选'],
 		[COMMAND_IDS.systemOpenDataFolder, '系统命令尚未接入'],
-		[COMMAND_IDS.inboxClean, 'Inbox 清理命令尚未接入'],
 		[COMMAND_IDS.viewSuggestFilters, '视图建议命令尚未接入'],
 	] as const)('command-only 命令 %s 返回 disabled', async (commandId, reason) => {
 		const runtime = createRuntime(createActions())
@@ -435,7 +434,7 @@ function createActions(overrides: Partial<ShellCommandActions> = {}): ShellComma
 		focusSearch: vi.fn(),
 		openQuickTaskCreate: vi.fn(),
 		openFullTaskCreate: vi.fn(),
-		openInboxTaskCreate: vi.fn(),
+		openStandaloneTaskCreate: vi.fn(),
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),

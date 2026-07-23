@@ -23,11 +23,10 @@ import {
 export const ROUTE_MEMORY_VERSION = 3
 
 export const ALLOWED_SECTION_SEGMENTS = new Set([
-	'inbox',
 	'tasks',
 	'views',
 	'projects',
-	'no-project',
+	'standalone',
 	'archive',
 	'trash',
 ])
@@ -212,12 +211,12 @@ export function buildFallbackPathForScopeKey(scopeKey: ShellScopeKey, spaces: Sp
 
 	const spaceId = extractSpaceIdFromScopeKey(scopeKey)
 	if (spaceId && spaces.some((space) => space.id === spaceId)) {
-		return buildCanonicalSectionPath({ type: 'space', spaceId }, 'inbox')
+		return buildCanonicalSectionPath({ type: 'space', spaceId }, 'standalone')
 	}
 
 	const defaultSpaceId = resolveDefaultSpaceId(spaces)
 	return defaultSpaceId
-		? buildCanonicalSectionPath({ type: 'space', spaceId: defaultSpaceId }, 'inbox')
+		? buildCanonicalSectionPath({ type: 'space', spaceId: defaultSpaceId }, 'standalone')
 		: buildCanonicalSectionPath({ type: 'all' }, 'tasks')
 }
 
@@ -314,7 +313,7 @@ export async function resolveStartupPathFromMemory({
 			scopeKey: memory.lastScopeKey,
 			routeMemory: memory,
 			spaces,
-			defaultPath: buildCanonicalSectionPath({ type: 'space', spaceId: targetSpaceId }, 'inbox'),
+			defaultPath: buildCanonicalSectionPath({ type: 'space', spaceId: targetSpaceId }, 'standalone'),
 		})
 	}
 

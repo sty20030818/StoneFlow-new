@@ -16,7 +16,6 @@ function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
 		spaceSlug: 'personal',
 		projectId: 'project-1',
 		projectName: '项目 A',
-		inboxAt: null,
 		title: '任务 A',
 		note: null,
 		status: 'todo',
@@ -129,7 +128,7 @@ describe('TaskRowAdapter', () => {
 		expect(actions.onUpdateTaskStatus).toHaveBeenCalledWith(task, 'done')
 	})
 
-	it('归属字段使用 local grouped placement，并暴露 inbox / no_project / project 三态', async () => {
+	it('归属字段使用 local grouped placement，并暴露 standalone / project', async () => {
 		const { projectBinding, task } = renderTaskRowAdapter()
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
@@ -137,21 +136,13 @@ describe('TaskRowAdapter', () => {
 
 		expect(screen.getByText('个人')).toBeInTheDocument()
 		expect(screen.queryByText('工作')).not.toBeInTheDocument()
-		expect(screen.getByRole('menuitem', { name: /收件箱/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /独立事项/ })).toBeInTheDocument()
 		expect(screen.queryByRole('menuitem', { name: /项目 C/ })).not.toBeInTheDocument()
-		expect(getShortcutHintDigits()).toEqual(['0', '1'])
+		expect(getShortcutHintDigits()).toEqual(['0'])
 
-		fireEvent.click(screen.getByRole('menuitem', { name: /收件箱/ }))
+		fireEvent.click(screen.getByRole('menuitem', { name: /独立事项/ }))
 		expect(projectBinding?.onSelectPlacement).toHaveBeenCalledWith(task, {
-			kind: 'inbox',
-			spaceId: 'space-1',
-		} satisfies TaskPlacementTarget)
-
-		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
-		expect(projectBinding?.onSelectPlacement).toHaveBeenCalledWith(task, {
-			kind: 'no_project',
+			kind: 'standalone',
 			spaceId: 'space-1',
 		} satisfies TaskPlacementTarget)
 
@@ -191,10 +182,7 @@ describe('TaskRowAdapter', () => {
 
 	it('右键菜单属性动作在多选时统一走 placement bulk 入口', async () => {
 		const task = buildTask()
-		const contextTasks = [
-			task,
-			buildTask({ id: 'task-2', title: '任务 B', inboxAt: '2026-05-07T09:00:00.000Z' }),
-		]
+		const contextTasks = [task, buildTask({ id: 'task-2', title: '任务 B', projectId: null })]
 		const contextMenuActions = buildContextMenuActions()
 		const projectBinding = createProjectBinding()
 
@@ -207,9 +195,9 @@ describe('TaskRowAdapter', () => {
 
 		fireEvent.contextMenu(screen.getByRole('button', { name: '打开任务 任务 A' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /归属/ }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /收件箱/ }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
 		expect(contextMenuActions.onSelectPlacement).toHaveBeenCalledWith(contextTasks, {
-			kind: 'inbox',
+			kind: 'standalone',
 			spaceId: 'space-1',
 		})
 		expect(projectBinding.onSelectPlacement).not.toHaveBeenCalled()

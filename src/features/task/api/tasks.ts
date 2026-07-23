@@ -24,7 +24,7 @@ export type BulkTaskAction =
 	| { kind: 'setDueAt'; dueAt: string | null }
 	| {
 			kind: 'setPlacement'
-			placement: { kind: 'project' | 'noProject'; spaceId: string; projectId?: string }
+			placement: { kind: 'project' | 'standalone'; spaceId: string; projectId?: string }
 	  }
 
 type TaskScopePayload =

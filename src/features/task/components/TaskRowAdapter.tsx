@@ -97,7 +97,6 @@ export function TaskRowAdapter({
 	const projectValue = resolveTaskPlacementTarget({
 		spaceId: task.spaceId,
 		projectId: task.projectId,
-		inboxAt: task.inboxAt,
 	})
 	const visiblePropertySet = new Set(
 		visibleProperties ?? ['status', 'priority', 'project', 'dueAt', 'plannedAt', 'createdAt'],
@@ -358,7 +357,6 @@ function buildTaskContextSelectionValues(tasks: TaskListItem[]) {
 			resolveTaskPlacementTarget({
 				spaceId: item.spaceId,
 				projectId: item.projectId,
-				inboxAt: item.inboxAt,
 			}),
 		),
 		projectNames: tasks.map((item) => item.projectName ?? null),

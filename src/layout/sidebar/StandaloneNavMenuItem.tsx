@@ -5,7 +5,7 @@ import { TargetIcon } from 'lucide-react'
 
 import { SidebarNavRow } from './SidebarNavRow'
 
-export type NoProjectNavMenuItemProps = {
+export type StandaloneNavMenuItemProps = {
 	badge?: string
 	currentScope: Scope
 	fallbackSpaceId: string | null
@@ -13,13 +13,13 @@ export type NoProjectNavMenuItemProps = {
 }
 
 /** 「独立事项」入口：与主导航共用 SidebarNavRow */
-export function NoProjectNavMenuItem({
+export function StandaloneNavMenuItem({
 	badge,
 	currentScope,
 	fallbackSpaceId,
 	contextMenuContent,
-}: NoProjectNavMenuItemProps) {
-	const noProjectPath = openSection(currentScope, 'no-project', fallbackSpaceId)
+}: StandaloneNavMenuItemProps) {
+	const standalonePath = openSection(currentScope, 'standalone', fallbackSpaceId)
 
 	return (
 		<SidebarMenuItem>
@@ -28,7 +28,7 @@ export function NoProjectNavMenuItem({
 				contextMenuContent={contextMenuContent}
 				icon={TargetIcon}
 				label='独立事项'
-				to={noProjectPath}
+				to={standalonePath}
 				tooltip='独立事项'
 			/>
 		</SidebarMenuItem>

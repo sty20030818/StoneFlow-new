@@ -21,7 +21,6 @@ function createTask(
 		spaceSlug: overrides.spaceSlug ?? 'workspace',
 		projectId: overrides.projectId ?? null,
 		projectName: overrides.projectName ?? null,
-		inboxAt: overrides.inboxAt ?? null,
 		note: overrides.note ?? null,
 		status: overrides.status ?? 'todo',
 		statusChangedAt: overrides.statusChangedAt ?? '2026-06-28T10:00:00.000Z',

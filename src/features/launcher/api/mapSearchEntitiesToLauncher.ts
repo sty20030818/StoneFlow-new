@@ -29,7 +29,6 @@ function mapSearchTask(item: SearchTaskItem): LauncherTaskItem {
 		spaceName: item.spaceName,
 		projectId: item.projectId,
 		projectName: item.projectName,
-		inboxAt: item.inboxAt,
 		title: item.title,
 		note: item.note,
 		priority: item.priority,

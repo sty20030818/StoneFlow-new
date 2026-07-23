@@ -6,7 +6,7 @@ import { SHELL_FOOTER_ITEMS, SHELL_NAV_ITEMS, type ShellProjectLink } from '@/la
 import {
 	SIDEBAR_ENTITY_SELECTOR,
 	MainNavSidebarMenuItem,
-	NoProjectNavMenuItem,
+	StandaloneNavMenuItem,
 	ProjectNavMenuItem,
 	SidebarCustomizeSubmenu,
 	SidebarItemContextMenu,
@@ -274,7 +274,7 @@ export function ShellSidebar({
 				void navigate({
 					to: openSection(
 						{ type: 'space', spaceId: createdSpace.id },
-						'inbox',
+						'standalone',
 						createdSpace.id,
 					) as never,
 				})
@@ -385,7 +385,7 @@ export function ShellSidebar({
 																	`space:${space.id}`,
 																	openSection(
 																		{ type: 'space', spaceId: space.id },
-																		'inbox',
+																		'standalone',
 																		space.id,
 																	),
 																)
@@ -580,8 +580,8 @@ export function ShellSidebar({
 												</div>
 											) : (
 												<SidebarMenu>
-													<NoProjectNavMenuItem
-														badge={navBadges.noProject}
+													<StandaloneNavMenuItem
+														badge={navBadges.standalone}
 														contextMenuContent={
 															<ContextMenuContent className='w-52'>
 																<ContextMenuGroup>

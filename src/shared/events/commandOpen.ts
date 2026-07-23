@@ -10,7 +10,7 @@ export type CommandOpenPayload = {
 	id: string
 	spaceId: string
 	projectId: string | null
-	placement: 'project' | 'inbox' | 'no_project'
+	placement: 'project' | 'standalone'
 }
 
 type RawCommandOpenPayload = {
@@ -41,13 +41,11 @@ export function normalizeCommandOpenPayload(payload: unknown): CommandOpenPayloa
 		spaceId: candidate.space_id,
 		projectId: typeof candidate.project_id === 'string' ? candidate.project_id : null,
 		placement:
-			candidate.placement === 'project' ||
-			candidate.placement === 'inbox' ||
-			candidate.placement === 'no_project'
+			candidate.placement === 'project' || candidate.placement === 'standalone'
 				? candidate.placement
 				: typeof candidate.project_id === 'string'
 					? 'project'
-					: 'no_project',
+					: 'standalone',
 	}
 }
 

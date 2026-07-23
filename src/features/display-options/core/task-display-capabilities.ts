@@ -63,17 +63,6 @@ const ACTIVE_ORDER_BY = [
 	'updatedAt',
 ] as const satisfies readonly TaskDisplayOrderBy[]
 
-const INBOX_ORDER_BY = [
-	'smart',
-	'priority',
-	'dueAt',
-	'plannedAt',
-	'inboxAt',
-	'statusChangedAt',
-	'createdAt',
-	'updatedAt',
-] as const satisfies readonly TaskDisplayOrderBy[]
-
 const PROJECT_DETAIL_ORDER_BY = [
 	'manual',
 	'smart',
@@ -105,17 +94,7 @@ const TASK_DISPLAY_PAGE_CAPABILITIES: Record<TaskDisplayPageKind, TaskDisplayPag
 			allowedSubGroupBy: NO_SUB_GROUPS,
 		},
 	},
-	'task:inbox': {
-		allowedLayouts: ['list'],
-		allowedGroupBy: ['none', 'status', 'priority', 'project'],
-		allowedSubGroupBy: ['none', 'status', 'priority'],
-		allowedOrderBy: INBOX_ORDER_BY,
-		allowedCompletedOrder: COMMON_COMPLETED_ORDER,
-		allowedVisibleProperties: COMMON_VISIBLE_PROPERTIES,
-		supportsShowEmptyGroups: true,
-		board: null,
-	},
-	'task:no-project': {
+	'task:standalone': {
 		allowedLayouts: ['list', 'board'],
 		allowedGroupBy: LIST_GROUPS,
 		allowedSubGroupBy: LIST_GROUPS,

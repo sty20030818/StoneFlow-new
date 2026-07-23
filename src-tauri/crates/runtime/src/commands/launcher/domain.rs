@@ -111,7 +111,7 @@ async fn open_existing_target(
             project_id: target.project_id,
             placement: match target.placement {
                 LauncherResolvedPlacement::Project => "project",
-                LauncherResolvedPlacement::NoProject => "no_project",
+                LauncherResolvedPlacement::Standalone => "standalone",
             },
         },
     )

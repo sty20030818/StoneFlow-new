@@ -76,7 +76,7 @@ describe('resolveTaskDisplayOptions', () => {
 	it('在 list-only 页面裁剪不支持的 layout 和 subGroupBy', () => {
 		expect(
 			resolveTaskDisplayOptions({
-				pageKey: 'task:inbox',
+				pageKey: 'task:today',
 				personalOverride: {
 					layout: 'board',
 					subGroupBy: 'scheduled',

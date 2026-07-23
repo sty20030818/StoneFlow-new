@@ -88,7 +88,7 @@ describe('CommandMenu', () => {
 		expect(screen.getByText('打开任务')).toBeInTheDocument()
 		expect(screen.getByText('快速新建任务')).toBeInTheDocument()
 		expect(screen.getByText('完整新建任务')).toBeInTheDocument()
-		expect(screen.getByText('前往收件箱')).toBeInTheDocument()
+		expect(screen.getByText('前往独立事项')).toBeInTheDocument()
 		expect(screen.getByText('项目 A')).toBeInTheDocument()
 		expect(screen.getByText('创建')).toBeInTheDocument()
 		expect(screen.getByText('导航')).toBeInTheDocument()
@@ -270,13 +270,13 @@ describe('CommandMenu', () => {
 		expect(await screen.findByText('工作')).toBeInTheDocument()
 		expect(screen.getByText('生活')).toBeInTheDocument()
 		expect(screen.getAllByText('独立事项')).toHaveLength(2)
-		expectCommandRowIndicator('收件箱', 'mixed', '0')
+		expectCommandRowIndicator('独立事项', 'mixed', '0')
 		expectCommandRowIndicator('项目 B', 'mixed')
 		fireEvent.click(screen.getAllByText('独立事项')[0]!)
 
 		expect(onOpenChange).toHaveBeenCalledWith(false)
 		expect(onSelectTaskPlacement).toHaveBeenCalledWith({
-			kind: 'no_project',
+			kind: 'standalone',
 			spaceId: 'space-a',
 		})
 	})
@@ -304,7 +304,6 @@ describe('CommandMenu', () => {
 					entities: context.selection.entities.map((entity) => ({
 						...entity,
 						projectId: 'project-b',
-						inboxAt: null,
 					})),
 				},
 			},
@@ -721,7 +720,7 @@ function createActions(): ShellCommandActions {
 		focusSearch: vi.fn(),
 		openQuickTaskCreate: vi.fn(),
 		openFullTaskCreate: vi.fn(),
-		openInboxTaskCreate: vi.fn(),
+		openStandaloneTaskCreate: vi.fn(),
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),
@@ -764,10 +763,9 @@ function createTaskSelectionContext(): CommandContext {
 					id: 'task-a',
 					type: 'task',
 					title: '任务 A',
-					subtitle: 'Inbox',
+					subtitle: '独立事项',
 					spaceId: 'space-a',
 					projectId: null,
-					inboxAt: '2026-05-15T00:00:00Z',
 					status: 'todo',
 				},
 				{
@@ -777,7 +775,6 @@ function createTaskSelectionContext(): CommandContext {
 					subtitle: '项目 B',
 					spaceId: 'space-a',
 					projectId: 'project-b',
-					inboxAt: null,
 					status: 'done',
 				},
 			],
@@ -785,10 +782,9 @@ function createTaskSelectionContext(): CommandContext {
 				id: 'task-a',
 				type: 'task',
 				title: '任务 A',
-				subtitle: 'Inbox',
+				subtitle: '独立事项',
 				spaceId: 'space-a',
 				projectId: null,
-				inboxAt: '2026-05-15T00:00:00Z',
 			},
 			source: 'task-list',
 			hasSelection: true,
@@ -863,7 +859,6 @@ function createTaskResult(overrides: Partial<SearchTaskItem> = {}): SearchTaskIt
 		note: null,
 		priority: 2,
 		status: 'todo',
-		inboxAt: null,
 		projectName: '项目 A',
 		updatedAt: '2026-05-15T00:00:00Z',
 		completedAt: null,

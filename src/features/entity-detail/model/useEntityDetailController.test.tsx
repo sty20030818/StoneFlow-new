@@ -17,19 +17,19 @@ describe('useEntityDetailController', () => {
 	})
 
 	it('从 URL 恢复 active detail', async () => {
-		await renderController('/work/inbox?task=task-a')
+		await renderController('/work/standalone?task=task-a')
 
 		expect(screen.getByTestId('active-detail')).toHaveTextContent('task:task-a')
 		expect(screen.getByTestId('is-open')).toHaveTextContent('open')
 	})
 
 	it('openDrawer 更新 URL', async () => {
-		await renderController('/work/inbox')
+		await renderController('/work/standalone')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务' }))
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/work/inbox?task=task-a')
+			expect(screen.getByTestId('location')).toHaveTextContent('/work/standalone?task=task-a')
 		})
 	})
 
@@ -57,7 +57,7 @@ describe('useEntityDetailController', () => {
 			id: 'task-a',
 			spaceId: 'space-work',
 		})
-		await renderController('/work/inbox?task=task-a')
+		await renderController('/work/standalone?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))
 
@@ -68,14 +68,14 @@ describe('useEntityDetailController', () => {
 
 	it('openPage 解析失败时停留在当前页面', async () => {
 		getTaskDetailMock.mockRejectedValue(new Error('not found'))
-		await renderController('/work/inbox?task=task-a')
+		await renderController('/work/standalone?task=task-a')
 
 		fireEvent.click(screen.getByRole('button', { name: '打开任务页面' }))
 
 		await waitFor(() => {
 			expect(getTaskDetailMock).toHaveBeenCalledWith('task-a')
 		})
-		expect(screen.getByTestId('location')).toHaveTextContent('/work/inbox?task=task-a')
+		expect(screen.getByTestId('location')).toHaveTextContent('/work/standalone?task=task-a')
 	})
 })
 

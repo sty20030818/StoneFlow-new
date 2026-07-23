@@ -26,11 +26,11 @@ describe('entityDetailNavigation', () => {
 	it('首次打开 Drawer 使用 push', () => {
 		expect(
 			openEntityDrawerTarget(
-				{ pathname: '/work/inbox', search: '' },
+				{ pathname: '/work/standalone', search: '' },
 				{ kind: 'task', id: 'task-a' },
 			),
 		).toEqual({
-			pathname: '/work/inbox',
+			pathname: '/work/standalone',
 			search: '?task=task-a',
 			replace: false,
 		})
@@ -39,11 +39,11 @@ describe('entityDetailNavigation', () => {
 	it('切换 task 使用 replace', () => {
 		expect(
 			openEntityDrawerTarget(
-				{ pathname: '/work/inbox', search: '?task=task-a' },
+				{ pathname: '/work/standalone', search: '?task=task-a' },
 				{ kind: 'task', id: 'task-b' },
 			),
 		).toEqual({
-			pathname: '/work/inbox',
+			pathname: '/work/standalone',
 			search: '?task=task-b',
 			replace: true,
 		})

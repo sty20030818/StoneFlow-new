@@ -420,11 +420,6 @@ describe('SettingsPage', () => {
 
 		expect(screen.getByLabelText('Turso URL')).toHaveValue('libsql://saved.turso.io')
 		expect(screen.getByLabelText('Turso Token')).toHaveValue('')
-		expect(
-			screen.getByText('配置会保存在本地 settings 表；页面刷新后只会自动回填 URL', {
-				exact: false,
-			}),
-		).toBeInTheDocument()
 	})
 
 	it('未配置同步时展示本地优先提示', async () => {
@@ -905,7 +900,6 @@ function createSpaceStoreState() {
 function createSidebarSettings(): ShellSidebarSettings {
 	return {
 		mainItems: {
-			inbox: { visible: true, order: 100 },
 			allTasks: { visible: true, order: 200 },
 			views: { visible: true, order: 300 },
 			projectOverview: { visible: true, order: 400 },

@@ -18,7 +18,7 @@ export const TASK_DISPLAY_ORDER_BY_VALUES = [
 	'status',
 	'dueAt',
 	'plannedAt',
-	'inboxAt',
+	
 	'statusChangedAt',
 	'createdAt',
 	'updatedAt',

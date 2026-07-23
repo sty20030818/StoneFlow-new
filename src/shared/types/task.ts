@@ -14,7 +14,7 @@ export type TaskListViewKey =
 	| 'upcoming'
 	| 'overdue'
 
-export type TaskPlacement = 'project' | 'inbox' | 'noProject'
+export type TaskPlacement = 'project' | 'standalone'
 
 export type TaskListPlacementInput =
 	| {
@@ -24,9 +24,8 @@ export type TaskListPlacementInput =
 			kind: 'project'
 			projectId: string
 	  }
-	| { kind: 'inbox' }
 	| {
-			kind: 'noProject'
+			kind: 'standalone'
 	  }
 
 export type TaskCreatePlacementInput =
@@ -34,9 +33,8 @@ export type TaskCreatePlacementInput =
 			kind: 'project'
 			projectId: string
 	  }
-	| { kind: 'inbox' }
 	| {
-			kind: 'noProject'
+			kind: 'standalone'
 	  }
 
 export type TaskUpdatePlacementInput =
@@ -45,9 +43,8 @@ export type TaskUpdatePlacementInput =
 			spaceId: string
 			projectId: string
 	  }
-	| { kind: 'inbox'; spaceId: string }
 	| {
-			kind: 'noProject'
+			kind: 'standalone'
 			spaceId: string
 	  }
 
@@ -59,7 +56,6 @@ export type Task = {
 	status: TaskStatus
 	projectId: string | null
 	projectName: string | null
-	inboxAt: string | null
 	pinned: boolean
 }
 
@@ -78,7 +74,6 @@ export type TaskListItem = {
 	spaceSlug: string
 	projectId: string | null
 	projectName: string | null
-	inboxAt: string | null
 	title: string
 	note: string | null
 	status: TaskStatus

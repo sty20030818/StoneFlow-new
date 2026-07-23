@@ -12,7 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * inbox / all / no-project 共用列表场景（EntityScene）。
+ * all / standalone 共用列表场景（EntityScene）。
  *
  * routes 只挂此组件 + variant，不写列表 wiring。
  */

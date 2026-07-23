@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS tasks (
 );
 
 -- Space 内无 Project 归属的任务排序（独立事项）
-CREATE INDEX IF NOT EXISTS ix_tasks_space_no_project_position
+CREATE INDEX IF NOT EXISTS ix_tasks_space_standalone_position
 ON tasks(space_id, position)
 WHERE project_id IS NULL AND archived_at IS NULL AND deleted_at IS NULL;
 

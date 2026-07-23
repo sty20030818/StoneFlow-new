@@ -4,7 +4,7 @@ import { resolveSettingsReturnPath } from './useSettingsReturnPath'
 
 describe('resolveSettingsReturnPath', () => {
 	it('接受可记忆的工作 path', () => {
-		expect(resolveSettingsReturnPath('/all/inbox', { type: 'all' })).toBe('/all/inbox')
+		expect(resolveSettingsReturnPath('/all/standalone', { type: 'all' })).toBe('/all/standalone')
 		expect(
 			resolveSettingsReturnPath('/space-a/projects/p1', { type: 'space', spaceId: 'space-a' }),
 		).toBe('/space-a/projects/p1')
@@ -15,7 +15,7 @@ describe('resolveSettingsReturnPath', () => {
 		expect(resolveSettingsReturnPath('/launcher', { type: 'all' })).toBe('/all/tasks')
 		expect(resolveSettingsReturnPath('  ', { type: 'all' })).toBe('/all/tasks')
 		expect(resolveSettingsReturnPath(null, { type: 'space', spaceId: 'space-a' })).toBe(
-			'/space-a/inbox',
+			'/space-a/standalone',
 		)
 	})
 })

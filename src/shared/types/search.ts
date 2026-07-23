@@ -11,7 +11,6 @@ export type SearchTaskItem = {
 	note: string | null
 	priority: TaskPriority
 	status: TaskStatus
-	inboxAt: string | null
 	projectName: string | null
 	updatedAt: string
 	completedAt: string | null

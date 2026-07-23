@@ -12,7 +12,7 @@ type TaskListSceneViewProps = {
 }
 
 /**
- * inbox / all-tasks / no-project 共用场景视图。
+ * 全部任务 / 独立事项 共用场景视图。
  *
  * 业务 wiring 在 {@link useTaskListScene}；本组件只拼 EntityScene 槽位。
  * routes 薄页应：`import { TaskListSceneView } from '@/features/task'`。
@@ -25,10 +25,10 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 	return (
 		<EntityScene
 			afterBoard={
-				scene.showNoProjectHint ? (
+				scene.showStandaloneHint ? (
 					<div className='mt-auto flex items-center gap-2 px-1 text-[12px] text-sf-text-tertiary'>
 						<Layers3Icon className='size-3.5' />
-						这些任务已经离开 Inbox，但还没有归属到任何 Project。
+						这些是当前 Space 下尚未归属到任何 Project 的独立事项。
 					</div>
 				) : undefined
 			}

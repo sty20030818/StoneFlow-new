@@ -81,7 +81,6 @@ function createTask(overrides: Partial<TaskListItem> = {}): TaskListItem {
 		spaceSlug: 'work',
 		projectId: null,
 		projectName: null,
-		inboxAt: null,
 		title: '任务',
 		note: null,
 		status: 'todo',

@@ -16,10 +16,6 @@ type ShellRouteLayoutProps = PropsWithChildren<{
 	shellRoute: ShellRoute
 }>
 
-function toSectionNavigationTarget(section: ShellRoute['section']) {
-	return section === 'noProject' ? 'no-project' : section
-}
-
 /**
  * 工作区壳入口：URL → 只读壳上下文，不再镜像可写 nav store。
  * - activeSection / spaceId 直接来自 shellRoute + scope
@@ -50,7 +46,7 @@ export function ShellRouteLayout({ children, scope, shellRoute }: ShellRouteLayo
 					type: 'space',
 					spaceId: fallbackSpaceId,
 				},
-				toSectionNavigationTarget(shellRoute.section),
+				shellRoute.section,
 				fallbackSpaceId,
 			) as never,
 			replace: true,

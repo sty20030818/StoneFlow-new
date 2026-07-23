@@ -45,7 +45,6 @@ describe('resolveBreadcrumb', () => {
 					title: '任务 A',
 					projectId: 'project-1',
 					projectName: '项目 A',
-					inboxAt: null,
 				},
 			}),
 		).toMatchObject([
@@ -55,7 +54,7 @@ describe('resolveBreadcrumb', () => {
 		])
 	})
 
-	it('inbox task detail 生成收件箱链路', () => {
+	it('standalone task detail 生成独立事项链路', () => {
 		expect(
 			resolveBreadcrumb({
 				route: createRoute({
@@ -69,34 +68,10 @@ describe('resolveBreadcrumb', () => {
 					title: '任务 A',
 					projectId: null,
 					projectName: null,
-					inboxAt: '2026-05-01T00:00:00Z',
 				},
 			}),
 		).toMatchObject([
-			{ label: '收件箱', to: '/space-1/inbox' },
-			{ label: '任务 A', current: true },
-		])
-	})
-
-	it('no-project task detail 生成独立事项链路', () => {
-		expect(
-			resolveBreadcrumb({
-				route: createRoute({
-					kind: 'task',
-					scope: { type: 'space', spaceId: 'space-1' },
-					spaceId: 'space-1',
-					taskId: 'task-1',
-				}),
-				taskDetail: {
-					id: 'task-1',
-					title: '任务 A',
-					projectId: null,
-					projectName: null,
-					inboxAt: null,
-				},
-			}),
-		).toMatchObject([
-			{ label: '独立事项', to: '/space-1/no-project' },
+			{ label: '独立事项', to: '/space-1/standalone' },
 			{ label: '任务 A', current: true },
 		])
 	})
@@ -154,7 +129,6 @@ describe('resolveBreadcrumb', () => {
 					title: '',
 					projectId: null,
 					projectName: null,
-					inboxAt: null,
 				},
 			}),
 		).toMatchObject([{ label: '独立事项' }, { label: '任务详情' }])
@@ -178,7 +152,7 @@ function createRoute(overrides: Partial<ShellRoute>): ShellRoute {
 		kind: 'shell-section',
 		scope: { type: 'all' },
 		spaceId: null,
-		section: 'inbox',
+		section: 'standalone',
 		settingsSection: null,
 		viewId: null,
 		projectId: null,

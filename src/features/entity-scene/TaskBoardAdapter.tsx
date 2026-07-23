@@ -13,7 +13,7 @@ type TaskBoardAdapterProps = {
 }
 
 /** 独立事项和项目详情页不显示行内 ProjectCell 下拉选项 */
-const HIDE_PROJECT_CELL_OPTIONS_VARIANTS = new Set(['no-project', 'project-detail'])
+const HIDE_PROJECT_CELL_OPTIONS_VARIANTS = new Set(['standalone', 'project-detail'])
 
 /**
  * 任务实体适配层。

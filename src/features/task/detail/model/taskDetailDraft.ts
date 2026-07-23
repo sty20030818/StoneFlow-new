@@ -11,7 +11,6 @@ export type TaskDetailDraft = {
 	priority: TaskPriorityValue
 	spaceId: string
 	projectId: string
-	inboxAt: string
 	dueAt: string
 	plannedAt: string
 	remindAt: string
@@ -28,7 +27,6 @@ export function createTaskDetailDraft(task: TaskDetail): TaskDetailDraft {
 		priority: task.priority,
 		spaceId: task.spaceId,
 		projectId: task.projectId ?? '',
-		inboxAt: task.inboxAt ?? '',
 		dueAt: task.dueAt ?? '',
 		plannedAt: task.plannedAt ?? '',
 		remindAt: task.remindAt ?? '',
@@ -39,7 +37,6 @@ export function normalizeTaskDetailDraft(draft: TaskDetailDraft): TaskDetailDraf
 	return {
 		...draft,
 		title: draft.title.trim(),
-		inboxAt: draft.inboxAt.trim(),
 		dueAt: draft.dueAt.trim(),
 		plannedAt: draft.plannedAt.trim(),
 		remindAt: draft.remindAt.trim(),
@@ -134,16 +131,6 @@ export function applyTaskPlacementDraftChange(
 			...draft,
 			spaceId: target.spaceId,
 			projectId: target.projectId,
-			inboxAt: '',
-		}
-	}
-
-	if (target.kind === 'inbox') {
-		return {
-			...draft,
-			spaceId: target.spaceId,
-			projectId: '',
-			inboxAt: new Date().toISOString(),
 		}
 	}
 
@@ -151,7 +138,6 @@ export function applyTaskPlacementDraftChange(
 		...draft,
 		spaceId: target.spaceId,
 		projectId: '',
-		inboxAt: '',
 	}
 }
 
@@ -180,15 +166,8 @@ function toTaskPlacementPatch(draft: TaskDetailDraft): NonNullable<UpdateTaskInp
 		}
 	}
 
-	if (draft.inboxAt) {
-		return {
-			kind: 'inbox',
-			spaceId: draft.spaceId,
-		}
-	}
-
 	return {
-		kind: 'noProject',
+		kind: 'standalone',
 		spaceId: draft.spaceId,
 	}
 }

@@ -12,12 +12,12 @@ function openSession(
 		payload: {
 			currentScope: { type: 'space', spaceId: 'space-1' },
 			defaultSpaceId: 'space-1',
-			defaultPlacement: { kind: 'noProject', projectId: null },
+			defaultPlacement: { kind: 'standalone', projectId: null },
 			spaces: [
 				{ id: 'space-1', name: '工作', iconKey: 'briefcase', colorKey: 'blue', isDefault: true },
 			],
 			projects: [
-				{ kind: 'noProject', id: null, name: '独立事项', spaceId: 'space-1' },
+				{ kind: 'standalone', id: null, name: '独立事项', spaceId: 'space-1' },
 				{ kind: 'project', id: 'project-1', name: '项目 A', spaceId: 'space-1' },
 			],
 			recentTasks: [],
@@ -32,7 +32,7 @@ describe('launcherDomainReducer', () => {
 		const next = launcherDomainReducer(createLauncherInitialState(), openSession())
 
 		expect(next.draft.spaceId).toBe('space-1')
-		expect(next.draft.placement).toEqual({ kind: 'noProject', projectId: null })
+		expect(next.draft.placement).toEqual({ kind: 'standalone', projectId: null })
 		expect(next.searchView).toBe('recent')
 		expect(next.focusTarget).toBe('none')
 	})
@@ -60,7 +60,6 @@ describe('launcherDomainReducer', () => {
 						spaceName: '工作',
 						projectId: null,
 						projectName: null,
-						inboxAt: null,
 						title: '命中',
 						note: null,
 						priority: 0,

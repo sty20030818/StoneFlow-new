@@ -518,7 +518,7 @@ fn group(tasks: &[ViewTaskRecord], group_by: TaskGroupBy) -> Vec<TaskViewGroupDt
             TaskGroupBy::Project => task
                 .project_id
                 .clone()
-                .unwrap_or_else(|| "no-project".to_owned()),
+                .unwrap_or_else(|| "standalone".to_owned()),
             TaskGroupBy::Due => task
                 .due_at
                 .as_deref()

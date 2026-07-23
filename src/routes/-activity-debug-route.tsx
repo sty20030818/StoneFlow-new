@@ -92,7 +92,7 @@ export function ActivityDebugRoute() {
 		<ActivityDebugPage
 			backAction={
 				<Button asChild className='h-10 rounded-lg' type='button' variant='ghost'>
-					<Link from='/' params={{ scopeKey: 'all' }} to='/$scopeKey/inbox'>
+					<Link from='/' params={{ scopeKey: 'all' }} to='/$scopeKey/tasks'>
 						返回
 					</Link>
 				</Button>

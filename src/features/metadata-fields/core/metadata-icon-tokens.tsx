@@ -6,7 +6,6 @@ import {
 	CalendarOffIcon,
 	CalendarX2Icon,
 	FolderIcon,
-	InboxIcon,
 	OrbitIcon,
 	TargetIcon,
 } from 'lucide-react'
@@ -47,8 +46,6 @@ export function renderMetadataActionIcon(iconKey: MetadataActionIconKey | undefi
 			return <FolderIcon className='size-3.5 text-sf-icon-secondary' />
 		case 'target':
 			return <TargetIcon className='size-3.5 text-sf-icon-secondary' />
-		case 'inbox':
-			return <InboxIcon className='size-3.5 text-sf-icon-secondary' />
 		case 'space':
 			return <OrbitIcon className='size-3.5 text-sf-icon-secondary' />
 		default:

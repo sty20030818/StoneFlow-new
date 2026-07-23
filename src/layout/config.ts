@@ -6,14 +6,14 @@ import type { Scope, Space } from '@/shared/types'
 import {
 	ArchiveIcon,
 	BoxIcon,
-	InboxIcon,
 	ListTodoIcon,
 	Layers2Icon,
 	Trash2Icon,
 } from 'lucide-react'
 
 type ShellIcon = ComponentType<{ className?: string }>
-type ShellMainNavKey = 'inbox' | 'tasks' | 'views' | 'projectOverview'
+/** 主导航：全部任务 / 视图 / 项目总览。 */
+type ShellMainNavKey = 'tasks' | 'views' | 'projectOverview'
 type ShellFooterNavKey = 'archive' | 'trash'
 type ShellCommandNavKey = ShellMainNavKey | ShellFooterNavKey
 
@@ -32,13 +32,6 @@ export type ShellProjectLink = {
 }
 
 export const SHELL_NAV_ITEMS: ShellNavItem<ShellMainNavKey>[] = [
-	{
-		key: 'inbox',
-		section: 'inbox',
-		label: '收件箱',
-		icon: InboxIcon,
-		to: (scope, fallbackSpaceId) => openSection(scope, 'inbox', fallbackSpaceId),
-	},
 	{
 		key: 'tasks',
 		section: 'tasks',
@@ -81,15 +74,13 @@ export const SHELL_FOOTER_ITEMS: ShellNavItem<ShellFooterNavKey>[] = [
 
 export function getSectionLabel(section: ShellSectionKey) {
 	switch (section) {
-		case 'inbox':
-			return '收件箱'
 		case 'tasks':
 			return '所有任务'
 		case 'views':
 			return '视图'
 		case 'projects':
 			return '项目总览'
-		case 'noProject':
+		case 'standalone':
 			return '独立事项'
 		case 'archive':
 			return '归档'

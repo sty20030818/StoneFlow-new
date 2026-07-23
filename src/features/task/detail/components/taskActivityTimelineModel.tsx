@@ -273,8 +273,6 @@ function buildFieldChangeActivityItem({
 				text: buildTextFieldActivityText(actorLabel, '标题', change),
 				relativeTime,
 			}
-		case 'inbox_at':
-			return null
 		default:
 			return null
 	}

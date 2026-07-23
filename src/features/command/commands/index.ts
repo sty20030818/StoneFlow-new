@@ -3,7 +3,7 @@ import { bindShellCommand, type ShellCommandAdapter } from '@/features/command/a
 
 import { filterCommands } from './filter.commands'
 import { generalCommands } from './general.commands'
-import { inboxCommands } from './inbox.commands'
+
 import { layoutCommands } from './layout.commands'
 import { lifecycleCommands } from './lifecycle.commands'
 import { navigationCommands } from './navigation.commands'
@@ -22,7 +22,6 @@ export const allCommands = [
 	...taskCommands,
 	...projectCommands,
 	...filterCommands,
-	...inboxCommands,
 	...layoutCommands,
 	...lifecycleCommands,
 	...systemCommands,
@@ -35,7 +34,6 @@ export function createShellCommandRegistry(adapter: ShellCommandAdapter) {
 
 export { filterCommands } from './filter.commands'
 export { generalCommands } from './general.commands'
-export { inboxCommands } from './inbox.commands'
 export { layoutCommands } from './layout.commands'
 export { lifecycleCommands } from './lifecycle.commands'
 export { navigationCommands } from './navigation.commands'

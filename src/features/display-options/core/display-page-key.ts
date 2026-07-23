@@ -4,8 +4,7 @@ export type TaskDisplayScopedViewPageKey = `task:view:${string}`
 
 export type TaskDisplayStaticPageKey =
 	| 'task:all'
-	| 'task:inbox'
-	| 'task:no-project'
+	| 'task:standalone'
 	| 'task:project-detail'
 	| 'task:today'
 	| 'task:focus'
@@ -21,8 +20,7 @@ export type TaskDisplayPageKind = TaskDisplayStaticPageKey | 'task:view'
 
 export const TASK_DISPLAY_STATIC_PAGE_KEYS = [
 	'task:all',
-	'task:inbox',
-	'task:no-project',
+	'task:standalone',
 	'task:project-detail',
 	'task:today',
 	'task:focus',

@@ -10,7 +10,6 @@ function task(id: string): LauncherTaskItem {
 		spaceName: 'Space',
 		projectId: null,
 		projectName: null,
-		inboxAt: null,
 		title: id,
 		note: null,
 		priority: 0,

@@ -24,11 +24,11 @@ const projects = [
 
 describe('useShellSessionRouteHistory', () => {
 	it('基于 ShellRoute 生成 canonical label 并剥离 drawer query', async () => {
-		await renderHistoryProbe('/space-a/inbox?task=task-a')
+		await renderHistoryProbe('/space-a/standalone?task=task-a')
 
 		await waitFor(() => {
 			expect(screen.getByTestId('current-entry')).toHaveTextContent(
-				'/space-a/inbox|收件箱|space-a|工作',
+				'/space-a/standalone|独立事项|space-a|工作',
 			)
 		})
 	})
@@ -77,7 +77,7 @@ describe('useShellSessionRouteHistory', () => {
 	})
 
 	it('REPLACE 会替换当前 history entry', async () => {
-		await renderHistoryProbe('/space-a/inbox')
+		await renderHistoryProbe('/space-a/standalone')
 
 		fireEvent.click(screen.getByRole('button', { name: 'replace views' }))
 
@@ -90,7 +90,7 @@ describe('useShellSessionRouteHistory', () => {
 	})
 
 	it('back/forward 走 router history，entries 只是最近浏览列表', async () => {
-		await renderHistoryProbe('/space-a/inbox')
+		await renderHistoryProbe('/space-a/standalone')
 
 		fireEvent.click(screen.getByRole('button', { name: 'go task detail' }))
 		await waitFor(() => {
@@ -164,9 +164,9 @@ async function renderHistoryProbe(initialEntry: string) {
 		path: '$spaceId',
 		component: () => <Outlet />,
 	})
-	const inboxRoute = createRoute({
+	const standaloneRoute = createRoute({
 		getParentRoute: () => spaceRoute,
-		path: 'inbox',
+		path: 'standalone',
 		component: () => null,
 	})
 	const spaceViewsRoute = createRoute({
@@ -208,7 +208,7 @@ async function renderHistoryProbe(initialEntry: string) {
 		allRoute.addChildren([allViewsRoute.addChildren([allViewDetailRoute])]),
 		spacesRoute.addChildren([
 			spaceRoute.addChildren([
-				inboxRoute,
+				standaloneRoute,
 				spaceViewsRoute.addChildren([spaceViewDetailRoute]),
 				tasksRoute.addChildren([taskDetailRoute]),
 				projectsRoute.addChildren([projectDetailRoute]),

@@ -160,7 +160,6 @@ export const useSidebarSettingsStore = create<SidebarSettingsState>((set, get) =
 
 		resetMainItemsVisibility: async () => {
 			await Promise.all([
-				get().setItemVisibility({ kind: 'main', key: 'inbox' }, true),
 				get().setItemVisibility({ kind: 'main', key: 'allTasks' }, true),
 				get().setItemVisibility({ kind: 'main', key: 'views' }, true),
 				get().setItemVisibility({ kind: 'main', key: 'projectOverview' }, true),

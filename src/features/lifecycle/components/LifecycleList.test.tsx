@@ -180,7 +180,7 @@ describe('LifecycleList', () => {
 
 		expect(screen.getByText('当前没有已删除内容')).toBeInTheDocument()
 		expect(
-			screen.getByText('删除后的任务和项目会先来到这里。点「返回收件箱」先回去继续处理内容就好。'),
+			screen.getByText('删除后的任务和项目会先来到这里。点「返回独立事项」先回去继续处理内容就好。'),
 		).toBeInTheDocument()
 	})
 

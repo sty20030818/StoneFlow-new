@@ -20,7 +20,7 @@ describe('taskOpenStrategy', () => {
 				id: 'task-2',
 				spaceId: 'space-2',
 				projectId: null,
-				placement: 'inbox',
+				placement: 'standalone',
 			}),
 		).toBe('/space-2/tasks/task-2')
 	})

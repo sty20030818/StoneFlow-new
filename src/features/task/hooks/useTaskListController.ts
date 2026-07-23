@@ -84,15 +84,10 @@ export function useTaskListController() {
 								spaceId: target.spaceId,
 								projectId: target.projectId,
 							}
-						: target.kind === 'inbox'
-							? {
-									kind: 'inbox',
-									spaceId: target.spaceId,
-								}
-							: {
-									kind: 'noProject',
-									spaceId: target.spaceId,
-								},
+						: {
+								kind: 'standalone',
+								spaceId: target.spaceId,
+							},
 			}),
 		)
 	}

@@ -14,9 +14,8 @@ export function resolveCommandRoutePage(section: ShellSectionKey): CommandRouteC
 			return 'archive'
 		case 'trash':
 			return 'trash'
-		case 'inbox':
-		case 'noProject':
-			return 'inbox'
+		case 'standalone':
+			return 'standalone'
 		default:
 			return 'unknown'
 	}

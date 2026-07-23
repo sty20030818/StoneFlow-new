@@ -1,7 +1,6 @@
 import {
 	BoxIcon,
 	FolderIcon,
-	InboxIcon,
 	Layers2Icon,
 	ListTodoIcon,
 	Settings2Icon,
@@ -13,7 +12,7 @@ import { getSectionLabel } from '@/layout/config'
 import type { ShellRoute } from './shellLocation'
 import { openProjectDetail, openSection } from './intents'
 import { resolveShellRouteScope } from './shellLocation'
-import type { ShellSectionKey } from './shellLocation'
+import type { ShellSectionKey } from './path'
 import type { ProjectDetail } from '@/features/project'
 import type { TaskDetail } from '@/shared/types'
 import type { BreadcrumbNode } from '@/shared/components/AppBreadcrumb'
@@ -21,16 +20,11 @@ import type { BreadcrumbNode } from '@/shared/components/AppBreadcrumb'
 type BreadcrumbContext = {
 	route: ShellRoute
 	projectDetail?: Pick<ProjectDetail, 'id' | 'name'> | null
-	taskDetail?: Pick<TaskDetail, 'id' | 'title' | 'projectId' | 'projectName' | 'inboxAt'> | null
+	taskDetail?: Pick<TaskDetail, 'id' | 'title' | 'projectId' | 'projectName'> | null
 	viewName?: string | null
 }
 
 const SECTION_BREADCRUMB_PRESETS = {
-	inbox: {
-		key: 'inbox',
-		label: '收件箱',
-		icon: InboxIcon,
-	},
 	tasks: {
 		key: 'tasks',
 		label: '所有任务',
@@ -41,8 +35,8 @@ const SECTION_BREADCRUMB_PRESETS = {
 		label: '项目总览',
 		icon: BoxIcon,
 	},
-	noProject: {
-		key: 'no-project',
+	standalone: {
+		key: 'standalone',
 		label: '独立事项',
 		icon: TargetIcon,
 	},
@@ -130,7 +124,7 @@ function resolveProjectBreadcrumb(
 
 function resolveTaskBreadcrumb(
 	route: ShellRoute,
-	taskDetail?: Pick<TaskDetail, 'id' | 'title' | 'projectId' | 'projectName' | 'inboxAt'> | null,
+	taskDetail?: Pick<TaskDetail, 'id' | 'title' | 'projectId' | 'projectName'> | null,
 ): BreadcrumbNode[] {
 	const taskId = taskDetail?.id ?? route.taskId ?? 'unknown-task'
 	const taskLabel = taskDetail?.title?.trim() || '任务详情'
@@ -163,28 +157,11 @@ function resolveTaskBreadcrumb(
 		]
 	}
 
-	if (taskDetail?.inboxAt) {
-		return [
-			{
-				...toSectionBreadcrumb('inbox', route),
-				current: false,
-				to: openSection(scope, 'inbox', route.spaceId),
-			},
-			{
-				key: `task:${taskId}`,
-				label: taskLabel,
-				icon: ListTodoIcon,
-				current: true,
-				truncate: true,
-			},
-		]
-	}
-
 	return [
 		{
-			...toSectionBreadcrumb('noProject', route),
+			...toSectionBreadcrumb('standalone', route),
 			current: false,
-			to: openSection(scope, 'no-project', route.spaceId),
+			to: openSection(scope, 'standalone', route.spaceId),
 		},
 		{
 			key: `task:${taskId}`,
@@ -206,16 +183,10 @@ function toSectionBreadcrumb(
 		label: getSectionLabel(section),
 		icon: preset.icon,
 		current: true,
-		to: openSection(resolveRouteScope(route), normalizeSectionTarget(section), route.spaceId),
+		to: openSection(resolveRouteScope(route), section, route.spaceId),
 	}
 }
 
 function resolveRouteScope(route: Pick<ShellRoute, 'scope' | 'spaceId'>) {
 	return resolveShellRouteScope(route)
-}
-
-function normalizeSectionTarget(
-	section: ShellSectionKey,
-): 'inbox' | 'tasks' | 'views' | 'projects' | 'archive' | 'trash' | 'settings' | 'no-project' {
-	return section === 'noProject' ? 'no-project' : section
 }

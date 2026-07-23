@@ -113,7 +113,7 @@ export function createTaskBulkAdapter({
 					placement:
 						target.kind === 'project'
 							? { kind: 'project', spaceId: target.spaceId, projectId: target.projectId }
-							: { kind: 'noProject', spaceId: target.spaceId },
+							: { kind: 'standalone', spaceId: target.spaceId },
 				},
 			}),
 	}

@@ -17,7 +17,6 @@ const MAIN_ITEM_OPTIONS: Array<{
 	label: string
 	description: string
 }> = [
-	{ key: 'inbox', label: '收件箱', description: '保留任务收集入口，方便快速回到待整理列表。' },
 	{ key: 'allTasks', label: '所有任务', description: '统一查看当前范围内的全部任务。' },
 	{ key: 'views', label: '视图', description: '保留视图入口，方便按条件聚焦任务。' },
 	{

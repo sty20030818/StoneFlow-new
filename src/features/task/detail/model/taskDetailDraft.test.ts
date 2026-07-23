@@ -25,7 +25,7 @@ describe('taskDetailDraft', () => {
 				projectId: 'project-1',
 			}),
 			{
-				kind: 'no_project',
+				kind: 'standalone',
 				spaceId: 'space-2',
 			},
 		)
@@ -65,7 +65,6 @@ function createDraft(overrides: Partial<TaskDetailDraft> = {}): TaskDetailDraft 
 		priority: 2,
 		spaceId: 'space-1',
 		projectId: '',
-		inboxAt: '',
 		dueAt: '',
 		plannedAt: '',
 		remindAt: '',

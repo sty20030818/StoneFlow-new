@@ -28,7 +28,6 @@ describe('ShellSidebar', () => {
 	it('按 settings 渲染主导航；App 侧栏不再展示设置入口', () => {
 		renderShellSidebar({
 			mainItems: {
-				inbox: { visible: true, order: 100 },
 				allTasks: { visible: false, order: 200 },
 				views: { visible: true, order: 300 },
 				projectOverview: { visible: true, order: 400 },
@@ -49,7 +48,7 @@ describe('ShellSidebar', () => {
 			desktopPreference: 'expanded',
 		})
 
-		expect(screen.getByRole('link', { name: '收件箱' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '独立事项' })).toBeInTheDocument()
 		expect(screen.queryByRole('link', { name: '所有任务' })).not.toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '视图' })).toBeInTheDocument()
 		expect(screen.getByRole('link', { name: '项目总览' })).toBeInTheDocument()
@@ -62,7 +61,6 @@ describe('ShellSidebar', () => {
 		renderShellSidebar(
 			{
 				mainItems: {
-					inbox: { visible: true, order: 100 },
 					allTasks: { visible: true, order: 200 },
 					views: { visible: true, order: 300 },
 					projectOverview: { visible: true, order: 400 },
@@ -99,7 +97,6 @@ describe('ShellSidebar', () => {
 		renderShellSidebar(
 			{
 				mainItems: {
-					inbox: { visible: true, order: 100 },
 					allTasks: { visible: true, order: 200 },
 					views: { visible: true, order: 300 },
 					projectOverview: { visible: true, order: 400 },
@@ -148,7 +145,6 @@ describe('ShellSidebar', () => {
 		renderShellSidebar(
 			{
 				mainItems: {
-					inbox: { visible: true, order: 100 },
 					allTasks: { visible: true, order: 200 },
 					views: { visible: true, order: 300 },
 					projectOverview: { visible: true, order: 400 },
@@ -194,7 +190,6 @@ describe('ShellSidebar', () => {
 	it('Space 新建和编辑弹窗可从切换菜单打开', async () => {
 		renderShellSidebar({
 			mainItems: {
-				inbox: { visible: true, order: 100 },
 				allTasks: { visible: true, order: 200 },
 				views: { visible: true, order: 300 },
 				projectOverview: { visible: true, order: 400 },
@@ -233,7 +228,6 @@ describe('ShellSidebar', () => {
 	it('项目区和 footer 一起位于 AppScrollArea 滚动容器内，内容不足时 footer 仍可贴底', () => {
 		renderShellSidebar({
 			mainItems: {
-				inbox: { visible: true, order: 100 },
 				allTasks: { visible: true, order: 200 },
 				views: { visible: true, order: 300 },
 				projectOverview: { visible: true, order: 400 },
@@ -270,7 +264,6 @@ describe('ShellSidebar', () => {
 		renderShellSidebar(
 			{
 				mainItems: {
-					inbox: { visible: true, order: 100 },
 					allTasks: { visible: true, order: 200 },
 					views: { visible: true, order: 300 },
 					projectOverview: { visible: true, order: 400 },
@@ -308,7 +301,7 @@ describe('ShellSidebar', () => {
 		fireEvent.click(await screen.findByRole('menuitem', { name: '工作' }))
 
 		await waitFor(() => {
-			expect(screen.getByTestId('location')).toHaveTextContent('/space-work/inbox')
+			expect(screen.getByTestId('location')).toHaveTextContent('/space-work/standalone')
 		})
 	})
 
@@ -317,7 +310,6 @@ describe('ShellSidebar', () => {
 		renderShellSidebar(
 			{
 				mainItems: {
-					inbox: { visible: true, order: 100 },
 					allTasks: { visible: true, order: 200 },
 					views: { visible: true, order: 300 },
 					projectOverview: { visible: true, order: 400 },
@@ -406,7 +398,7 @@ function renderShellSidebar(
 			</DangerConfirmProvider>
 		</SubmitRegistryProvider>,
 		{
-			initialEntry: '/space-personal/inbox',
+			initialEntry: '/space-personal/standalone',
 		},
 	)
 }

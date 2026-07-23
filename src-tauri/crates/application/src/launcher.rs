@@ -23,7 +23,7 @@ pub enum ActiveScopeKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LauncherResolvedPlacement {
     Project,
-    NoProject,
+    Standalone,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,7 +53,7 @@ pub struct LauncherScopeDto {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LauncherPlacementKind {
-    NoProject,
+    Standalone,
     Project,
 }
 
@@ -78,7 +78,7 @@ pub struct LauncherSpaceSummaryDto {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LauncherProjectOptionKind {
-    NoProject,
+    Standalone,
     Project,
 }
 
@@ -130,7 +130,7 @@ pub struct LauncherListProjectsBySpaceInput {
 #[serde(rename_all = "camelCase")]
 pub struct LauncherProjectsBySpaceDto {
     pub space_id: String,
-    pub no_project_option: LauncherProjectOptionDto,
+    pub standalone_option: LauncherProjectOptionDto,
     pub projects: Vec<LauncherProjectOptionDto>,
 }
 
@@ -213,8 +213,8 @@ impl<P: LauncherPorts> LauncherService<P> {
 
         Ok(LauncherProjectsBySpaceDto {
             space_id: space.id.clone(),
-            no_project_option: LauncherProjectOptionDto {
-                kind: LauncherProjectOptionKind::NoProject,
+            standalone_option: LauncherProjectOptionDto {
+                kind: LauncherProjectOptionKind::Standalone,
                 id: None,
                 space_id: space.id.clone(),
                 name: "独立事项".to_owned(),
@@ -274,7 +274,7 @@ fn resolve_task_placement(detail: &LauncherTaskDetail) -> LauncherResolvedPlacem
     if detail.project_id.is_some() {
         return LauncherResolvedPlacement::Project;
     }
-    LauncherResolvedPlacement::NoProject
+    LauncherResolvedPlacement::Standalone
 }
 
 fn map_default_space_domain_error(error: stoneflow_domain::DomainError) -> ApplicationError {

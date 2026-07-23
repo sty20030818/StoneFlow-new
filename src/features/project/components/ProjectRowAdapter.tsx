@@ -37,7 +37,7 @@ type ProjectRowAdapterProps = {
 		showProjectCell?: boolean
 		projectOptions?: Array<{ id: string; name: string }>
 		onSelectProject?: (projectId: string) => void
-		onSelectNoProject?: () => void
+		onSelectStandalone?: () => void
 	}
 	actions: {
 		onOpenProject: (projectId: string) => void
@@ -66,7 +66,7 @@ export function ProjectRowAdapter({
 		showProjectCell &&
 		projectBinding?.projectOptions &&
 		projectBinding.onSelectProject &&
-		projectBinding.onSelectNoProject,
+		projectBinding.onSelectStandalone,
 	)
 	const hasSelection = typeof actions.onToggleSelected === 'function'
 	const isSelected = rowState.isSelected ?? false
@@ -152,7 +152,7 @@ export function ProjectRowAdapter({
 										projectBinding?.onSelectProject?.(value)
 										return
 									}
-									projectBinding?.onSelectNoProject?.()
+									projectBinding?.onSelectStandalone?.()
 								}}
 							/>
 						) : null}

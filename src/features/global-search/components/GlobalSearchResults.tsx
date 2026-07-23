@@ -116,7 +116,7 @@ function SearchTaskResultRow({
 	onHighlight,
 	onSelect,
 }: SearchTaskResultRowProps) {
-	const placementLabel = task.projectName ?? (task.inboxAt ? 'Inbox' : '独立事项')
+	const placementLabel = task.projectName ?? '独立事项'
 
 	return (
 		<button

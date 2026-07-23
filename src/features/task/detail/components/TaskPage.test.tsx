@@ -129,7 +129,7 @@ describe('TaskPage', () => {
 		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
 	})
 
-	it('项目任务显示项目链路，收件箱任务显示收件箱链路', async () => {
+	it('项目任务显示项目链路，无项目任务显示独立事项链路', async () => {
 		taskDetailQueryState.data = createTaskDetail({
 			projectId: 'project-1',
 			projectName: '项目 A',
@@ -142,11 +142,10 @@ describe('TaskPage', () => {
 		taskDetailQueryState.data = createTaskDetail({
 			projectId: null,
 			projectName: null,
-			inboxAt: '2026-05-19T00:00:00Z',
 		})
 
 		await view.rerender(renderTaskPageElement())
-		expect(screen.getByRole('link', { name: '收件箱' })).toBeInTheDocument()
+		expect(screen.getByRole('link', { name: '独立事项' })).toBeInTheDocument()
 	})
 
 	it('真实详情数据直接驱动页面，不依赖 fallback draft', async () => {
@@ -221,7 +220,6 @@ function createAutosaveController(
 			priority: 2,
 			spaceId: 'space-1',
 			projectId: '',
-			inboxAt: '',
 			dueAt: '',
 			plannedAt: '',
 			remindAt: '',
@@ -248,7 +246,6 @@ function createTaskDetail(overrides: Partial<TaskDetail> = {}): TaskDetail {
 		spaceSlug: 'work',
 		projectId: null,
 		projectName: null,
-		inboxAt: null,
 		title: '任务 A',
 		note: '',
 		status: 'todo',

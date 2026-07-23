@@ -10,7 +10,7 @@ import {
 
 describe('path build (S1)', () => {
 	it('构建 all / space section path', () => {
-		expect(buildCanonicalSectionPath({ type: 'all' }, 'inbox')).toBe('/all/inbox')
+		expect(buildCanonicalSectionPath({ type: 'all' }, 'standalone')).toBe('/all/standalone')
 		expect(buildCanonicalSectionPath({ type: 'space', spaceId: 'space-a' }, 'tasks')).toBe(
 			'/space-a/tasks',
 		)
@@ -28,6 +28,8 @@ describe('path build (S1)', () => {
 		expect(buildScopedSettingsPath({ type: 'all' }, null, 'sync')).toBe('/all/settings/sync')
 		expect(buildSettingsPath()).toBe('/all/settings/general')
 		expect(buildStartupFallbackPath()).toBe('/all/tasks')
-		expect(buildStartupFallbackPath({ type: 'space', spaceId: 'space-a' })).toBe('/space-a/inbox')
+		expect(buildStartupFallbackPath({ type: 'space', spaceId: 'space-a' })).toBe(
+			'/space-a/standalone',
+		)
 	})
 })

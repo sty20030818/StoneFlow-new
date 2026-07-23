@@ -14,14 +14,13 @@ import type { Space } from '@/shared/types'
 import { formatTaskStatusLabel } from '@/features/task/model/taskStatus'
 import type { useTaskListController } from '../useTaskListController'
 import type { useTaskSelection } from '../useTaskSelection'
-import { ALL_TASK_FILTERS, NO_PROJECT_FILTERS, type VariantConfig } from './variantConfig'
+import { ALL_TASK_FILTERS, STANDALONE_STATUS_FILTERS, type VariantConfig } from './variantConfig'
 
 type DisplayResult = ReturnType<typeof applyTaskDisplayOptionsToTasks>
 
 type UseListSceneBoardArgs = {
 	config: VariantConfig
 	controller: PageFilterController
-	filteredTasks: DisplayResult['orderedItems']
 	displayResult: DisplayResult
 	taskBoardStatus: EntitySceneTaskBoardData['status']
 	activeTaskId: string | null
@@ -51,7 +50,6 @@ type UseListSceneBoardArgs = {
 export function useListSceneBoard({
 	config,
 	controller,
-	filteredTasks,
 	displayResult,
 	taskBoardStatus,
 	activeTaskId,
@@ -74,17 +72,8 @@ export function useListSceneBoard({
 	}, [config.createDraft, openTaskCreateDialog])
 
 	const toolbarPills = useMemo((): MainCardToolbarPill[] => {
-		if (config.showStatusPills === 'inbox-count') {
-			return [
-				{
-					label: `待整理 ${filteredTasks.length}`,
-					active: true,
-				},
-			]
-		}
-
 		if (config.showStatusPills === 'status-only') {
-			return NO_PROJECT_FILTERS.map((filter) => ({
+			return STANDALONE_STATUS_FILTERS.map((filter) => ({
 				label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
 				active:
 					filter === 'all'
@@ -103,13 +92,13 @@ export function useListSceneBoard({
 			label:
 				filter === 'all'
 					? '所有任务'
-					: filter === 'noProject'
+					: filter === 'standalone'
 						? '独立事项'
 						: formatTaskStatusLabel(filter),
 			active:
 				filter === 'all'
 					? controller.state.statusValues.length === 0 && !controller.state.projectlessOnly
-					: filter === 'noProject'
+					: filter === 'standalone'
 						? controller.state.projectlessOnly
 						: controller.state.statusValues.length === 1 &&
 							controller.state.statusValues[0] === filter &&
@@ -121,7 +110,7 @@ export function useListSceneBoard({
 					return
 				}
 
-				if (filter === 'noProject') {
+				if (filter === 'standalone') {
 					controller.actions.applyFilter({ kind: 'status', values: [] })
 					controller.actions.applyFilter({ kind: 'projectlessOnly', enabled: true })
 					return
@@ -131,7 +120,7 @@ export function useListSceneBoard({
 				controller.actions.applyFilter({ kind: 'status', values: [filter] })
 			},
 		}))
-	}, [config.showStatusPills, controller, filteredTasks.length])
+	}, [config.showStatusPills, controller])
 
 	const boardConfig: EntitySceneTaskBoardConfig = useMemo(
 		() => ({

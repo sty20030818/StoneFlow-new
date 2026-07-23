@@ -46,7 +46,7 @@ export function ShellLayoutContent({
 	})
 
 	const routeProjectId = shellRoute.kind === 'project' ? shellRoute.projectId : null
-	const isNoProjectPage = shellRoute.section === 'noProject'
+	const isStandalonePage = shellRoute.section === 'standalone'
 
 	/** 按当前页预填「新建任务」草稿（项目页 / 无项目页） */
 	const handleOpenTaskCreate = useMemo(() => {
@@ -54,11 +54,11 @@ export function ShellLayoutContent({
 		if (routeProjectId) {
 			return () => open({ projectId: routeProjectId }, 'default')
 		}
-		if (isNoProjectPage) {
-			return () => open({ placement: 'noProject' }, 'default')
+		if (isStandalonePage) {
+			return () => open({ placement: 'standalone' }, 'default')
 		}
 		return () => open(undefined, 'default')
-	}, [createDialog.openTaskCreateDialog, isNoProjectPage, routeProjectId])
+	}, [createDialog.openTaskCreateDialog, isStandalonePage, routeProjectId])
 
 	const routeHistory = useShellSessionRouteHistory({
 		currentScope,

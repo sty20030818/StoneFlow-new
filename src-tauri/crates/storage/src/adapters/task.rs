@@ -98,7 +98,7 @@ impl TaskPersistence for TaskPersistenceAdapter {
             stoneflow_application::task::TaskPlacementQuery::Project(ref id) => {
                 Some(Some(id.as_str()))
             }
-            stoneflow_application::task::TaskPlacementQuery::NoProject => Some(None),
+            stoneflow_application::task::TaskPlacementQuery::Standalone => Some(None),
         };
         let include_archived = matches!(query.lifecycle, TaskLifecycleView::Archived);
         let mut rows = self

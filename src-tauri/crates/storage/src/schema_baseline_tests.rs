@@ -33,7 +33,7 @@ const EXPECTED_INDEXES: [&str; 17] = [
     "ix_spaces_deleted_at",
     "ix_projects_space_position",
     "ix_projects_deleted_at",
-    "ix_tasks_space_no_project_position",
+    "ix_tasks_space_standalone_position",
     "ix_tasks_project_position",
     "ix_tasks_archived_at",
     "ix_tasks_deleted_at",

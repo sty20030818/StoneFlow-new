@@ -58,7 +58,7 @@ describe('routeMemoryStore', () => {
 			normalizeShellRouteMemory({
 				lastScopeKey: 'space:space-a',
 				lastRouteByScopeKey: {
-					'space:space-a': '/space-a/inbox',
+					'space:space-a': '/space-a/standalone',
 				},
 			}),
 		).toBeNull()
@@ -90,8 +90,8 @@ describe('routeMemoryStore', () => {
 			resolveRememberedPathForScope({
 				scopeKey: 'space:space-a',
 				spaces: [{ id: 'space-a' } as never],
-				defaultPath: '/space-a/inbox',
+				defaultPath: '/space-a/standalone',
 			}),
-		).resolves.toBe('/space-a/inbox')
+		).resolves.toBe('/space-a/standalone')
 	})
 })

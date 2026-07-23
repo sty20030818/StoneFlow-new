@@ -69,13 +69,13 @@ pub struct ListTasksPlacementInput {
     pub project_id: Option<String>,
 }
 
-/// Task 列表 placement 类型（取消 Inbox，未分配 Project 统一为 NoProject）。
+/// Task 列表 placement 类型（未分配 Project = Standalone）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ListTasksPlacementKind {
     All,
     Project,
-    NoProject,
+    Standalone,
 }
 
 /// Task 列表单条记录。
@@ -152,12 +152,12 @@ pub struct CreateTaskPlacementInput {
     pub project_id: Option<String>,
 }
 
-/// 创建 Task 时的 placement 类型（取消 Inbox）。
+/// 创建 Task 时的 placement 类型。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CreateTaskPlacementKind {
     Project,
-    NoProject,
+    Standalone,
 }
 
 /// 更新 Task 的输入。
@@ -197,7 +197,7 @@ pub struct UpdateTaskPlacementInput {
 #[serde(rename_all = "camelCase")]
 pub enum UpdateTaskPlacementKind {
     Project,
-    NoProject,
+    Standalone,
 }
 
 /// 仅携带 Task ID 的输入。
@@ -396,17 +396,21 @@ where
         let status = input.status.unwrap_or(WorkStatus::Todo);
         let priority = validate_task_priority(input.priority)?;
         let placement = normalize_create_placement(&input.placement)?;
+        // create 仅 Project | Standalone；All 只用于 list 查询。
         let project = match &placement {
             TaskPlacement::Project(project_id) => {
                 Some(self.require_visible_project(project_id).await?)
             }
-            TaskPlacement::NoProject | TaskPlacement::All => None,
+            TaskPlacement::Standalone => None,
+            TaskPlacement::All => {
+                return Err(ApplicationError::validation("创建 Task placement 非法"))
+            }
         };
         let space = match (&placement, &project) {
             (TaskPlacement::Project(_), Some(project)) => {
                 self.require_visible_space(&project.space_id).await?
             }
-            (TaskPlacement::NoProject, None) => {
+            (TaskPlacement::Standalone, None) => {
                 let raw_space_id = input
                     .space_id
                     .as_deref()
@@ -526,7 +530,7 @@ where
                     next_space_id = project.space_id.clone();
                     next_project_id = Some(project.id.clone());
                 }
-                UpdateTaskPlacementKind::NoProject => {
+                UpdateTaskPlacementKind::Standalone => {
                     let space = self.require_visible_space(&placement.space_id).await?;
                     next_space_id = space.id.clone();
                     next_project_id = None;
@@ -791,7 +795,7 @@ where
                     }
                     (project.space_id, Some(project.id))
                 }
-                UpdateTaskPlacementKind::NoProject => {
+                UpdateTaskPlacementKind::Standalone => {
                     let space = self.require_visible_space(&placement.space_id).await?;
                     (space.id, None)
                 }
@@ -1424,7 +1428,7 @@ fn normalize_list_placement(
 ) -> Result<TaskPlacement, ApplicationError> {
     match input.kind {
         ListTasksPlacementKind::All => Ok(TaskPlacement::All),
-        ListTasksPlacementKind::NoProject => Ok(TaskPlacement::NoProject),
+        ListTasksPlacementKind::Standalone => Ok(TaskPlacement::Standalone),
         ListTasksPlacementKind::Project => {
             let project_id = input
                 .project_id
@@ -1439,7 +1443,7 @@ fn normalize_create_placement(
     input: &CreateTaskPlacementInput,
 ) -> Result<TaskPlacement, ApplicationError> {
     match input.kind {
-        CreateTaskPlacementKind::NoProject => Ok(TaskPlacement::NoProject),
+        CreateTaskPlacementKind::Standalone => Ok(TaskPlacement::Standalone),
         CreateTaskPlacementKind::Project => {
             let project_id = input
                 .project_id
@@ -1454,7 +1458,7 @@ fn to_placement_query(placement: &TaskPlacement) -> TaskPlacementQuery {
     match placement {
         TaskPlacement::All => TaskPlacementQuery::All,
         TaskPlacement::Project(project_id) => TaskPlacementQuery::Project(project_id.clone()),
-        TaskPlacement::NoProject => TaskPlacementQuery::NoProject,
+        TaskPlacement::Standalone => TaskPlacementQuery::Standalone,
     }
 }
 
@@ -1462,7 +1466,7 @@ fn placement_key(placement: &TaskPlacement) -> &'static str {
     match placement {
         TaskPlacement::All => "all",
         TaskPlacement::Project(_) => "project",
-        TaskPlacement::NoProject => "noProject",
+        TaskPlacement::Standalone => "standalone",
     }
 }
 

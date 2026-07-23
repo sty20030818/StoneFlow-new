@@ -47,7 +47,7 @@ export function registerShellChromeCommands(
 		focusSearch: host.requestSearchFocus,
 		openQuickTaskCreate: host.handleOpenTaskCreate,
 		openFullTaskCreate: () => host.openTaskCreateDialog(undefined, 'default'),
-		openInboxTaskCreate: () => host.openTaskCreateDialog({ placement: 'inbox' }, 'default'),
+		openStandaloneTaskCreate: () => host.openTaskCreateDialog({ placement: 'standalone' }, 'default'),
 		openProjectCreate: () => host.openProjectCreateDialog(),
 		openTaskPicker: () => {
 			useDialogStore.getState().openCommand('task-picker')

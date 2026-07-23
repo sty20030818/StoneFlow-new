@@ -14,10 +14,9 @@ import type {
 import type { BoardSection } from '@/shared/components/board'
 
 export type EntitySceneVariant =
-	| 'inbox'
 	| 'tasks'
 	| 'view'
-	| 'no-project'
+	| 'standalone'
 	| 'archive'
 	| 'trash'
 	| 'project-overview'
@@ -28,7 +27,7 @@ export type BoardKind = 'task' | 'project' | 'lifecycle'
 export type EntitySceneBoardStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 export type EntitySceneTaskBoardConfig = {
-	variant: 'inbox' | 'tasks' | 'view' | 'no-project' | 'project-detail'
+	variant: 'standalone' | 'tasks' | 'view' | 'project-detail'
 	emptyTitle?: string
 	emptyDescription?: string
 	emptyActionLabel?: string

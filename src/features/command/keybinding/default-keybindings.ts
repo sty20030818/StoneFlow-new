@@ -172,7 +172,7 @@ export const DEFAULT_KEYBINDINGS: Keybinding[] = [
 		allowInEditable: false,
 	},
 	{
-		commandId: COMMAND_IDS.newTaskInInbox,
+		commandId: COMMAND_IDS.newStandaloneTask,
 		sequence: [{ key: 'n' }, { key: 'i' }],
 		scope: 'global',
 		preventDefault: true,
@@ -235,7 +235,7 @@ export const DEFAULT_KEYBINDINGS: Keybinding[] = [
 		allowInEditable: false,
 	},
 	{
-		commandId: COMMAND_IDS.goInbox,
+		commandId: COMMAND_IDS.goStandalone,
 		sequence: [{ key: 'g' }, { key: 'i' }],
 		scope: 'global',
 		preventDefault: true,

@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 
-export type SidebarMainItemKey = 'inbox' | 'allTasks' | 'views' | 'projectOverview'
+/** 与后端 SidebarMainItemKey 对齐。 */
+export type SidebarMainItemKey = 'allTasks' | 'views' | 'projectOverview'
 export type SidebarFooterItemKey = 'archive' | 'trash'
 
 export type SidebarItemConfig = {

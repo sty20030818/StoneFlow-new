@@ -78,7 +78,7 @@ src/
 └── CONVENTIONS.md
 ```
 
-**勿再当作现状：** 顶层 `pages/`、`app/layouts`、`shared/ui`、独立 feature 壳 `inbox` / `all-tasks` / `archive` / `trash` / `no-project` / `views`、`healthcheck` / `task-drawer`。
+**勿再当作现状：** 顶层 `pages/`、`app/layouts`、`shared/ui`、独立 feature 壳 `inbox` / `all-tasks` / `archive` / `trash` / `standalone` / `views`、`healthcheck` / `task-drawer`。
 
 列表类 URL → 薄页 + domain list-scene（如 `TaskListSceneView`），不再各做 feature 包。
 

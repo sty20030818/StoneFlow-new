@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { ContextMenuItem, ContextMenuSubTrigger } from '@/shared/components/base/context-menu'
-import { CheckIcon, FolderIcon, InboxIcon, MinusIcon, TargetIcon } from 'lucide-react'
+import { CheckIcon, FolderIcon, MinusIcon, TargetIcon } from 'lucide-react'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 
 import type { PropertyOptionIndicator } from './task-context-menu-helpers'
@@ -8,10 +8,6 @@ import type { PropertyOptionIndicator } from './task-context-menu-helpers'
 export function getPlacementIcon(target: TaskPlacementTarget) {
 	if (target.kind === 'project') {
 		return <FolderIcon />
-	}
-
-	if (target.kind === 'inbox') {
-		return <InboxIcon />
 	}
 
 	return <TargetIcon />

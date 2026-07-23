@@ -40,7 +40,6 @@ function buildTask(partial: Partial<TaskListItem> = {}): TaskListItem {
 		spaceSlug: 'personal',
 		projectId: 'project-1',
 		projectName: '项目 A',
-		inboxAt: null,
 		title: '任务 A',
 		note: null,
 		status: 'todo',
@@ -79,7 +78,7 @@ describe('useTaskContextMenuBulkActions', () => {
 				spaceId: 'space-1',
 			})
 			result.current.onSelectPlacement(tasks, {
-				kind: 'inbox',
+				kind: 'standalone',
 				spaceId: 'space-1',
 			})
 		})
@@ -104,7 +103,7 @@ describe('useTaskContextMenuBulkActions', () => {
 			},
 			{
 				target: {
-					kind: 'inbox',
+					kind: 'standalone',
 					spaceId: 'space-1',
 				} satisfies TaskPlacementTarget,
 			},

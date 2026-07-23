@@ -10,10 +10,7 @@ export const taskCreateSchema = z
 		note: optionalTrimmedString,
 		priority: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
 		spaceId: z.string().trim(),
-		placement: z.enum(['project', 'inbox', 'noProject'] satisfies [
-			TaskPlacement,
-			...TaskPlacement[],
-		]),
+		placement: z.enum(['project', 'standalone'] satisfies [TaskPlacement, ...TaskPlacement[]]),
 		projectId: z.string().trim(),
 		status: z.enum(['todo', 'doing', 'waiting', 'done', 'canceled'] satisfies [
 			TaskStatus,
@@ -29,7 +26,7 @@ export const taskCreateSchema = z
 			ctx.addIssue({
 				code: 'custom',
 				path: ['projectId'],
-				message: '请选择一个项目，或改为进入收件箱 / 独立事项。',
+				message: '请选择一个项目，或改为独立事项。',
 			})
 		}
 
@@ -62,7 +59,7 @@ export function buildTaskCreateDefaultValues(input: {
 		getInitialSpaceId(input.currentScope, defaultSpaceId)
 	const resolvedInitialPlacement: TaskPlacement = input.initialProjectId
 		? 'project'
-		: (input.initialPlacement ?? 'inbox')
+		: (input.initialPlacement ?? 'standalone')
 
 	return {
 		title: '',

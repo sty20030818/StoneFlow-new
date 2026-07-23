@@ -9,5 +9,5 @@ function ScopeIndex() {
 	if (scopeKey === 'all') {
 		return <Navigate params={{ scopeKey: 'all' }} replace to='/$scopeKey/tasks' />
 	}
-	return <Navigate params={{ scopeKey }} replace to='/$scopeKey/inbox' />
+	return <Navigate params={{ scopeKey }} replace to='/$scopeKey/standalone' />
 }

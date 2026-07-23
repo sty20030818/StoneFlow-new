@@ -943,7 +943,6 @@ function createTask(overrides: Partial<TaskListItem> = {}): TaskListItem {
 		spaceSlug: 'work',
 		projectId: null,
 		projectName: null,
-		inboxAt: '2026-05-15T00:00:00Z',
 		title: '任务 A',
 		note: null,
 		status: 'todo',

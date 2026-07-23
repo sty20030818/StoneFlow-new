@@ -35,7 +35,7 @@ function createActions(): ShellCommandActions {
 		focusSearch: vi.fn(),
 		openQuickTaskCreate: vi.fn(),
 		openFullTaskCreate: vi.fn(),
-		openInboxTaskCreate: vi.fn(),
+		openStandaloneTaskCreate: vi.fn(),
 		openProjectCreate: vi.fn(),
 		openTaskPicker: vi.fn(),
 		openProjectPicker: vi.fn(),

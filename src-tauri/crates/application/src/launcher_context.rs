@@ -62,11 +62,11 @@ impl<P: LauncherPorts> LauncherContextService<P> {
             default_space_id,
             // 默认落在独立事项（当前 Space 内无 Project 归属）。
             default_placement: LauncherPlacementDto {
-                kind: LauncherPlacementKind::NoProject,
+                kind: LauncherPlacementKind::Standalone,
                 project_id: None,
             },
             spaces,
-            projects: std::iter::once(projects_payload.no_project_option)
+            projects: std::iter::once(projects_payload.standalone_option)
                 .chain(projects_payload.projects)
                 .collect(),
             recent_tasks,

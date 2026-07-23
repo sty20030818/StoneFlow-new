@@ -8,7 +8,7 @@ const openContext: LauncherOpenSessionResponse = {
 	openedAt: '2026-07-18T00:00:00.000Z',
 	currentScope: { type: 'space', spaceId: 'space-1' },
 	defaultSpaceId: 'space-1',
-	defaultPlacement: { kind: 'noProject', projectId: null },
+	defaultPlacement: { kind: 'standalone', projectId: null },
 	spaces: [],
 	projects: [],
 	recentTasks: [],

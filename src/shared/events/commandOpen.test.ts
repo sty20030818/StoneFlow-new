@@ -19,7 +19,7 @@ describe('commandOpen event helpers', () => {
 		})
 	})
 
-	it('没有项目归属时使用 no_project 作为默认 placement', () => {
+	it('没有项目归属时使用 standalone 作为默认 placement', () => {
 		expect(
 			normalizeCommandOpenPayload({
 				kind: 'task',
@@ -31,7 +31,7 @@ describe('commandOpen event helpers', () => {
 			id: 'task-uuid',
 			spaceId: 'space-uuid',
 			projectId: null,
-			placement: 'no_project',
+			placement: 'standalone',
 		})
 	})
 

@@ -115,17 +115,15 @@ describe('TaskBulkAdapter', () => {
 			refreshLoadedSlices,
 			bulkUpdateTasks,
 		})
-		const inboxTarget: TaskPlacementTarget = { kind: 'inbox', spaceId: 'space-a' }
+		const standaloneTarget: TaskPlacementTarget = { kind: 'standalone', spaceId: 'space-a' }
 		const projectTarget: TaskPlacementTarget = {
 			kind: 'project',
 			spaceId: 'space-a',
 			projectId: 'project-a',
 		}
-		const noProjectTarget: TaskPlacementTarget = { kind: 'no_project', spaceId: 'space-a' }
 
 		await adapter.updatePlacement(['task-a'], projectTarget)
-		await adapter.updatePlacement(['task-b'], inboxTarget)
-		await adapter.updatePlacement(['task-c'], noProjectTarget)
+		await adapter.updatePlacement(['task-b'], standaloneTarget)
 
 		expect(bulkUpdateTasks).toHaveBeenNthCalledWith(1, ['task-a'], {
 			kind: 'setPlacement',
@@ -133,8 +131,8 @@ describe('TaskBulkAdapter', () => {
 		})
 		expect(bulkUpdateTasks).toHaveBeenNthCalledWith(2, ['task-b'], {
 			kind: 'setPlacement',
-			placement: { kind: 'noProject', spaceId: 'space-a' },
+			placement: { kind: 'standalone', spaceId: 'space-a' },
 		})
-		expect(refreshLoadedSlices).toHaveBeenCalledTimes(3)
+		expect(refreshLoadedSlices).toHaveBeenCalledTimes(2)
 	})
 })

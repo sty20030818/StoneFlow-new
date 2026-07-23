@@ -25,7 +25,6 @@ export type MetadataActionIconKey =
 	| 'calendar-x-2'
 	| 'folder'
 	| 'target'
-	| 'inbox'
 	| 'space'
 
 export type MetadataActionOption<TValue> = {

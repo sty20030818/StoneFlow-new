@@ -13,10 +13,10 @@ export type LauncherScope =
 			spaceId: string
 	  }
 
-/** R2 起无 Inbox；仅 noProject / project。 */
+/** 归属：独立事项 / 项目。 */
 export type LauncherPlacement =
 	| {
-			kind: 'noProject'
+			kind: 'standalone'
 			projectId: null
 	  }
 	| {
@@ -34,7 +34,7 @@ export type LauncherSpaceSummary = {
 
 export type LauncherProjectOption =
 	| {
-			kind: 'noProject'
+			kind: 'standalone'
 			id: null
 			spaceId: string
 			name: string
@@ -52,8 +52,6 @@ export type LauncherTaskItem = {
 	spaceName: string
 	projectId: string | null
 	projectName: string | null
-	/** @deprecated R2 无 Inbox；兼容字段，恒为 null */
-	inboxAt: string | null
 	title: string
 	note: string | null
 	priority: LauncherPriority
@@ -90,7 +88,7 @@ export type LauncherInitialState = {
 
 export type LauncherProjectsBySpace = {
 	spaceId: string
-	noProjectOption: Extract<LauncherProjectOption, { kind: 'noProject' }>
+	standaloneOption: Extract<LauncherProjectOption, { kind: 'standalone' }>
 	projects: Array<Extract<LauncherProjectOption, { kind: 'project' }>>
 }
 
@@ -108,4 +106,38 @@ export type LauncherDraft = {
 	dueAt: string | null
 	plannedAt: string | null
 	remindAt: string | null
+}
+
+export type LauncherPopoverKey =
+	| 'priority'
+	| 'project'
+	| 'status'
+	| 'due'
+	| 'scheduled'
+	| 'reminder'
+	| 'space'
+
+export type LauncherFocusTarget = 'none' | 'create' | { kind: 'result'; index: number }
+
+export type LauncherSubmitAction = 'create' | 'createAndOpen' | 'createAndContinue' | 'openResult'
+
+export type LauncherSubmitState = 'idle' | 'submitting' | 'success' | 'error'
+
+export type LauncherPanelState = {
+	initialState: LauncherInitialState | null
+	draft: LauncherDraft
+	projectOptions: LauncherProjectOption[]
+	projectSearch: string
+	isProjectOptionsLoading: boolean
+	activePopover: LauncherPopoverKey | null
+	isAdvancedOpen: boolean
+	searchResults: LauncherSearchResponse
+	searchView: 'recent' | 'results' | 'empty'
+	searchError: string | null
+	isSearching: boolean
+	focusTarget: LauncherFocusTarget
+	submitState: LauncherSubmitState
+	message: string
+	continuousCreateCount: number
+	errorMessage: string | null
 }

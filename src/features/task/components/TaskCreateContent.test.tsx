@@ -102,29 +102,29 @@ describe('TaskCreateContent', () => {
 		)
 	})
 
-	it('归属菜单可在收件箱、独立事项和项目之间切换并保持提交语义', async () => {
+	it('归属菜单可在独立事项和项目之间切换并保持提交语义', async () => {
 		renderTaskCreate()
 
 		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 E' } })
-		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('收件箱')
+		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('独立事项')
 		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 		await screen.findByRole('menu')
 		expect(screen.getByText('工作')).toBeInTheDocument()
 		expect(screen.queryByText('生活')).not.toBeInTheDocument()
-		expect(getShortcutHintDigits()).toEqual(['0', '1'])
+		expect(getShortcutHintDigits()).toEqual(['0'])
 		expect(getPlacementMenuitemTexts()).toEqual([
-			'收件箱0Inbox',
-			'独立事项1No Project',
+			'独立事项0Standalone',
 			'项目 AProject · 工作',
 		])
-		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
+		// 关闭归属菜单后再提交（菜单打开时 footer 会被 aria-hidden）
+		fireEvent.keyDown(document, { key: 'Escape' })
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
 
 		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
 		expect(createTaskMock).toHaveBeenLastCalledWith(
 			expect.objectContaining({
 				spaceId: 'space-a',
-				placement: { kind: 'noProject' },
+				placement: { kind: 'standalone' },
 			}),
 		)
 
@@ -146,14 +146,14 @@ describe('TaskCreateContent', () => {
 		createTaskMock.mockClear()
 		fireEvent.change(screen.getByPlaceholderText('任务标题'), { target: { value: '任务 G' } })
 		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
-		fireEvent.click(await screen.findByRole('menuitem', { name: /收件箱/ }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /独立事项/ }))
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))
 
 		await waitFor(() => expect(createTaskMock).toHaveBeenCalledTimes(1))
 		expect(createTaskMock).toHaveBeenLastCalledWith(
 			expect.objectContaining({
 				spaceId: 'space-a',
-				placement: { kind: 'inbox' },
+				placement: { kind: 'standalone' },
 			}),
 		)
 	})
@@ -195,7 +195,7 @@ function renderTaskCreate({
 		<SubmitRegistryProvider>
 			<TaskCreateContent
 				currentScope={{ type: 'space', spaceId: 'space-a' }}
-				initialPlacement='inbox'
+				initialPlacement='standalone'
 				initialProjectId={null}
 				initialStatus='todo'
 				onClose={onClose}
@@ -273,7 +273,6 @@ function createTaskDetail() {
 		spaceSlug: 'work',
 		projectId: null,
 		projectName: null,
-		inboxAt: '2026-05-19T10:00:00.000Z',
 		title: '任务',
 		note: null,
 		status: 'todo' as const,

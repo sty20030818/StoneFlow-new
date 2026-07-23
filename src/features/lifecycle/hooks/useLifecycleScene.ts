@@ -140,7 +140,7 @@ export function useLifecycleScene(mode: LifecycleMode) {
 
 		if (entry.spaceId) {
 			void navigate({
-				to: openSection({ type: 'space', spaceId: entry.spaceId }, 'inbox', entry.spaceId) as never,
+				to: openSection({ type: 'space', spaceId: entry.spaceId }, 'standalone', entry.spaceId) as never,
 			})
 		}
 	}
@@ -180,11 +180,11 @@ export function useLifecycleScene(mode: LifecycleMode) {
 	const board: EntitySceneBoardSlotProps = {
 		boardKind: 'lifecycle',
 		boardConfig: {
-			emptyActionLabel: '返回收件箱',
+			emptyActionLabel: '返回独立事项',
 			emptyDescription:
 				mode === 'archive'
-					? '归档后的任务和项目会放在这里。点「返回收件箱」先回去继续处理手头内容就好。'
-					: '删除后的任务和项目会先来到这里。点「返回收件箱」先回去继续处理内容就好。',
+					? '归档后的任务和项目会放在这里。点「返回独立事项」先回去继续处理手头内容就好。'
+					: '删除后的任务和项目会先来到这里。点「返回独立事项」先回去继续处理内容就好。',
 			emptyTitle: mode === 'archive' ? '当前没有已归档内容' : '当前没有已删除内容',
 			mode,
 		},
@@ -197,7 +197,7 @@ export function useLifecycleScene(mode: LifecycleMode) {
 		},
 		boardActions: {
 			onEmptyAction: () => {
-				void navigate({ to: openSection(scope, 'inbox', spaceId) as never })
+				void navigate({ to: openSection(scope, 'standalone', spaceId) as never })
 			},
 			onOpenDetail: mode === 'archive' ? handleOpenDetail : undefined,
 			onRestore: (entry: LifecycleEntry) => {

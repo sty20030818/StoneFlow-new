@@ -21,9 +21,9 @@ describe('getCommandShortcutTokens', () => {
 					.sequence,
 			),
 		)
-		expect(getCommandShortcutTokens(COMMAND_IDS.goInbox)).toEqual(
+		expect(getCommandShortcutTokens(COMMAND_IDS.goStandalone)).toEqual(
 			tokenizeKeybindingSequence(
-				DEFAULT_KEYBINDINGS.find((binding) => binding.commandId === COMMAND_IDS.goInbox)!.sequence,
+				DEFAULT_KEYBINDINGS.find((binding) => binding.commandId === COMMAND_IDS.goStandalone)!.sequence,
 			),
 		)
 	})

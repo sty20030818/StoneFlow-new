@@ -4,7 +4,6 @@ import {
 	ArchiveIcon,
 	BoxIcon,
 	FolderIcon,
-	InboxIcon,
 	Layers2Icon,
 	ListTodoIcon,
 	SparklesIcon,
@@ -39,10 +38,10 @@ const SECTION_ICON_MAP: Record<string, LucideIcon> = {
 	tasks: ListTodoIcon,
 	views: Layers2Icon,
 	projects: BoxIcon,
-	noProject: SparklesIcon,
+	standalone: SparklesIcon,
 	archive: ArchiveIcon,
 	trash: Trash2Icon,
-	inbox: InboxIcon,
+	settings: Layers2Icon,
 }
 
 function resolveEntryIcon(route: ShellRoute): LucideIcon {
@@ -54,7 +53,7 @@ function resolveEntryIcon(route: ShellRoute): LucideIcon {
 		return FolderIcon
 	}
 
-	return SECTION_ICON_MAP[route.section] ?? InboxIcon
+	return SECTION_ICON_MAP[route.section] ?? ListTodoIcon
 }
 
 export function buildShellRouteHistoryEntry(
@@ -68,7 +67,7 @@ export function buildShellRouteHistoryEntry(
 	const path = normalizeShellMemoryPath(route.fullPath)
 
 	if (!isRememberableShellPath(path)) {
-		return createHistoryEntry(path, '工作区', null, '所有空间', InboxIcon)
+		return createHistoryEntry(path, '工作区', null, '所有空间', ListTodoIcon)
 	}
 
 	if (route.kind === 'task') {

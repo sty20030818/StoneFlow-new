@@ -2,11 +2,12 @@ import { COMMAND_IDS, type Command } from '@/features/command/core'
 
 export const navigationCommands: Command[] = [
 	{
-		id: COMMAND_IDS.goInbox,
-		title: '前往收件箱',
+		id: COMMAND_IDS.goStandalone,
+		title: '前往独立事项',
 		category: 'navigation',
 		scope: ['global'],
-		keywords: ['inbox', 'go', '收件箱'],
+		keywords: ['standalone', 'go', '独立事项', '未归属'],
+		// 仅 Space 上下文有意义；adapter 负责 navigateTo('standalone')
 		run: () => {},
 	},
 	{

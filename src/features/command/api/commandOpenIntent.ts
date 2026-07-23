@@ -7,7 +7,7 @@ type PendingCommandOpenResponse = {
 	id: string
 	spaceId: string
 	projectId: string | null
-	placement: 'project' | 'inbox' | 'no_project'
+	placement: 'project' | 'standalone'
 }
 
 /**

@@ -145,7 +145,7 @@ pub struct LauncherProjectItemResponse {
 #[serde(rename_all = "camelCase")]
 pub struct LauncherProjectsBySpaceResponse {
     pub space_id: String,
-    pub no_project_option: LauncherProjectOptionResponse,
+    pub standalone_option: LauncherProjectOptionResponse,
     pub projects: Vec<LauncherProjectOptionResponse>,
 }
 
@@ -162,7 +162,7 @@ fn map_scope(payload: LauncherScopeDto) -> LauncherScopeResponse {
 fn map_placement(payload: LauncherPlacementDto) -> LauncherPlacementResponse {
     LauncherPlacementResponse {
         kind: match payload.kind {
-            LauncherPlacementKind::NoProject => "noProject",
+            LauncherPlacementKind::Standalone => "standalone",
             LauncherPlacementKind::Project => "project",
         },
         project_id: payload.project_id,
@@ -182,7 +182,7 @@ fn map_space(payload: LauncherSpaceSummaryDto) -> LauncherSpaceSummaryResponse {
 fn map_project_option(payload: LauncherProjectOptionDto) -> LauncherProjectOptionResponse {
     LauncherProjectOptionResponse {
         kind: match payload.kind {
-            LauncherProjectOptionKind::NoProject => "noProject",
+            LauncherProjectOptionKind::Standalone => "standalone",
             LauncherProjectOptionKind::Project => "project",
         },
         id: payload.id,
@@ -224,7 +224,7 @@ pub(crate) fn map_projects_by_space(
 ) -> LauncherProjectsBySpaceResponse {
     LauncherProjectsBySpaceResponse {
         space_id: payload.space_id,
-        no_project_option: map_project_option(payload.no_project_option),
+        standalone_option: map_project_option(payload.standalone_option),
         projects: payload
             .projects
             .into_iter()

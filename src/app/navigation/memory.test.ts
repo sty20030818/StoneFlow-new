@@ -41,7 +41,7 @@ describe('routeMemory', () => {
 				version: 2,
 				lastScopeKey: 'space:space-a',
 				lastRouteByScopeKey: {
-					'space:space-a': '/space-a/inbox',
+					'space:space-a': '/space-a/standalone',
 				},
 			}),
 		).toBeNull()
@@ -50,15 +50,15 @@ describe('routeMemory', () => {
 				version: 3,
 				lastScopeKey: 'space:space-a',
 				lastRouteByScopeKey: {
-					'space:space-a': '/space-a/inbox',
-					bad: '/all/inbox',
+					'space:space-a': '/space-a/standalone',
+					bad: '/all/standalone',
 				},
 			}),
 		).toEqual({
 			version: 3,
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
-				'space:space-a': '/space-a/inbox',
+				'space:space-a': '/space-a/standalone',
 			},
 		})
 	})
@@ -68,13 +68,13 @@ describe('routeMemory', () => {
 			createNextShellRouteMemory(
 				null,
 				{ type: 'space', spaceId: 'space-a' },
-				'/space-a/inbox?task=task-a&view=today',
+				'/space-a/standalone?task=task-a&view=today',
 			),
 		).toEqual({
 			version: 3,
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
-				'space:space-a': '/space-a/inbox?view=today',
+				'space:space-a': '/space-a/standalone?view=today',
 			},
 		})
 	})
@@ -97,7 +97,7 @@ describe('routeMemory', () => {
 			lastScopeKey: 'space:space-a',
 			lastRouteByScopeKey: {
 				all: '/all/tasks',
-				'space:space-a': '/space-a/inbox',
+				'space:space-a': '/space-a/standalone',
 			},
 		})
 	})
@@ -106,17 +106,17 @@ describe('routeMemory', () => {
 		expect(createNextShellRouteMemory(null, { type: 'all' }, '/launcher')).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, TASK_SHORTCUT_PATH)).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, PROJECT_SHORTCUT_PATH)).toBeNull()
-		expect(createNextShellRouteMemory(null, { type: 'all' }, '/inbox')).toBeNull()
+		expect(createNextShellRouteMemory(null, { type: 'all' }, '/standalone')).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, '/unknown')).toBeNull()
 	})
 
 	it('rememberable 白名单：canonical 工作区路径可记，其余不可', () => {
-		expect(isRememberableShellPath('/all/inbox')).toBe(true)
+		expect(isRememberableShellPath('/all/standalone')).toBe(true)
 		expect(isRememberableShellPath('/all/views/today')).toBe(true)
 		expect(isRememberableShellPath('/space-a/projects/project-a')).toBe(true)
 		expect(isRememberableShellPath('/space-a/tasks/task-a')).toBe(true)
 		expect(isRememberableShellPath('/space-a/views/today')).toBe(true)
-		expect(isRememberableShellPath('/inbox')).toBe(false)
+		expect(isRememberableShellPath('/standalone')).toBe(false)
 		expect(isRememberableShellPath(TASK_SHORTCUT_PATH)).toBe(false)
 		expect(isRememberableShellPath('/launcher')).toBe(false)
 		expect(isRememberableShellPath('/all/settings/general')).toBe(false)
@@ -129,7 +129,7 @@ describe('routeMemory', () => {
 		expect(stripShellDetailSearch('/all/views/focus?task=task-a#top')).toBe('/all/views/focus#top')
 	})
 
-	it('启动恢复遇到非法 path 时回退到 canonical inbox', async () => {
+	it('启动恢复遇到非法 path 时回退到 canonical standalone', async () => {
 		await expect(
 			resolveStartupPathFromMemory({
 				routeMemory: {
@@ -141,7 +141,7 @@ describe('routeMemory', () => {
 				},
 				spaces: [{ id: 'space-a' } as never],
 			}),
-		).resolves.toBe('/space-a/inbox')
+		).resolves.toBe('/space-a/standalone')
 	})
 
 	it('scope remembered path 遇到非法 path 时返回 defaultPath', async () => {
@@ -156,9 +156,9 @@ describe('routeMemory', () => {
 					},
 				},
 				spaces: [{ id: 'space-a' } as never],
-				defaultPath: '/space-a/inbox',
+				defaultPath: '/space-a/standalone',
 			}),
-		).resolves.toBe('/space-a/inbox')
+		).resolves.toBe('/space-a/standalone')
 	})
 
 	it('space scope 不得恢复到 all scope 路径', async () => {
@@ -173,9 +173,9 @@ describe('routeMemory', () => {
 					},
 				},
 				spaces: [{ id: 'space-a' } as never],
-				defaultPath: '/space-a/inbox',
+				defaultPath: '/space-a/standalone',
 			}),
-		).resolves.toBe('/space-a/inbox')
+		).resolves.toBe('/space-a/standalone')
 	})
 
 	it('all scope 不得恢复到 space scope 路径', async () => {
@@ -186,7 +186,7 @@ describe('routeMemory', () => {
 					version: 3,
 					lastScopeKey: 'all',
 					lastRouteByScopeKey: {
-						all: '/space-a/inbox',
+						all: '/space-a/standalone',
 					},
 				},
 				spaces: [{ id: 'space-a' } as never],
@@ -203,7 +203,7 @@ describe('routeMemory', () => {
 			normalizeRememberedShellPath(
 				'/space-a/tasks/task-a',
 				[{ id: 'space-a' } as never],
-				'/all/inbox',
+				'/all/standalone',
 			),
 		).resolves.toBe('/space-a/tasks/task-a')
 		await expect(
@@ -218,7 +218,7 @@ describe('routeMemory', () => {
 	it('all scope 只能记住 all scope 路径', async () => {
 		await expect(
 			normalizeRememberedShellPath(
-				'/space-a/inbox',
+				'/space-a/standalone',
 				[{ id: 'space-a' } as never],
 				'/all/tasks',
 				'all',

@@ -45,7 +45,7 @@ export function TaskPreview({
 		return null
 	}
 
-	const placementLabel = task.projectName ?? (task.inboxAt ? 'Inbox' : '独立事项')
+	const placementLabel = task.projectName ?? '独立事项'
 	const breadcrumbLabel = `${task.spaceName} > ${placementLabel}`
 	const dateItems: Array<{ icon: ReactNode; label: string }> = []
 

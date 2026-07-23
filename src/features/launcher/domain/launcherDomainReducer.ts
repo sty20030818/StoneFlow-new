@@ -6,7 +6,7 @@ const defaultDraft: LauncherDraft = {
 	priority: 0,
 	status: 'todo',
 	spaceId: null,
-	placement: { kind: 'noProject', projectId: null },
+	placement: { kind: 'standalone', projectId: null },
 	dueAt: null,
 	plannedAt: null,
 	remindAt: null,
@@ -142,7 +142,7 @@ export function launcherDomainReducer(
 				draft: {
 					...state.draft,
 					spaceId: action.spaceId,
-					placement: { kind: 'noProject', projectId: null },
+					placement: { kind: 'standalone', projectId: null },
 				},
 				projectSearch: '',
 				isProjectOptionsLoading: true,

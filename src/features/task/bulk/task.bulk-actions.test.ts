@@ -75,19 +75,18 @@ describe('taskBulkActions', () => {
 
 	it('setPlacement 使用最终 target 调用 adapter', async () => {
 		const adapter = createAdapter()
-		const inboxTarget: TaskPlacementTarget = { kind: 'inbox', spaceId: 'space-a' }
+		const standaloneTarget: TaskPlacementTarget = { kind: 'standalone', spaceId: 'space-a' }
 		const projectTarget: TaskPlacementTarget = {
 			kind: 'project',
 			spaceId: 'space-a',
 			projectId: 'project-a',
 		}
-		const noProjectTarget: TaskPlacementTarget = { kind: 'no_project', spaceId: 'space-a' }
 
 		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(
 			snapshot,
 			{ adapter },
 			{
-				target: inboxTarget,
+				target: standaloneTarget,
 			},
 		)
 		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(
@@ -97,21 +96,9 @@ describe('taskBulkActions', () => {
 				target: projectTarget,
 			},
 		)
-		await getAction(TASK_BULK_ACTION_IDS.setPlacementSelected).run(
-			snapshot,
-			{ adapter },
-			{
-				target: noProjectTarget,
-			},
-		)
 
-		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(1, ['task-a', 'task-b'], inboxTarget)
+		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(1, ['task-a', 'task-b'], standaloneTarget)
 		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(2, ['task-a', 'task-b'], projectTarget)
-		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(
-			3,
-			['task-a', 'task-b'],
-			noProjectTarget,
-		)
 	})
 
 	it('archive/delete 成功时标记 shouldClearSelection', async () => {

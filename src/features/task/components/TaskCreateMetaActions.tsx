@@ -124,11 +124,7 @@ function toTaskPlacementTarget(
 		return { kind: 'project', projectId, spaceId }
 	}
 
-	if (placement === 'noProject') {
-		return { kind: 'no_project', spaceId }
-	}
-
-	return { kind: 'inbox', spaceId }
+	return { kind: 'standalone', spaceId }
 }
 
 function fromTaskPlacementTarget(value: TaskPlacementTarget): {
@@ -143,7 +139,7 @@ function fromTaskPlacementTarget(value: TaskPlacementTarget): {
 	}
 
 	return {
-		placement: value.kind === 'no_project' ? 'noProject' : 'inbox',
+		placement: 'standalone',
 		projectId: null,
 	}
 }

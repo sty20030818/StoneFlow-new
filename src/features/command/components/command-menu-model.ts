@@ -37,7 +37,7 @@ const GROUPS: Array<{
 	{
 		key: 'action',
 		heading: '操作',
-		categories: ['general', 'layout', 'filter', 'inbox', 'view', 'system', 'move'],
+		categories: ['general', 'layout', 'filter', 'view', 'system', 'move'],
 	},
 	{ key: 'project', heading: '项目', categories: ['project'] },
 	{ key: 'task', heading: '任务', categories: ['task'] },

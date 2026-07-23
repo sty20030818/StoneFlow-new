@@ -275,7 +275,7 @@ export function ScopedPickerCommandGroup({
 							title={task.title}
 							trailing={
 								<CommandRowMeta>
-									{task.projectName ?? (task.inboxAt ? 'Task · Inbox' : 'Task · 独立事项')}
+									{task.projectName ?? 'Task · 独立事项'}
 								</CommandRowMeta>
 							}
 						/>

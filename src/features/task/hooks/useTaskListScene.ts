@@ -17,7 +17,7 @@ import { VARIANT_CONFIG, type TaskListSceneVariant } from './list-scene/variantC
 export type { TaskListSceneVariant } from './list-scene/variantConfig'
 
 /**
- * 三列表页（inbox / all-tasks / no-project）的唯一 wiring 入口。
+ * 任务列表页（all / standalone）的唯一 wiring 入口。
  *
  * 收口：list data、filter、display、selection、command selection、
  * bulk 可见性、preview source 注册，以及 EntityScene board 打包字段。
@@ -76,7 +76,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const { openCreate, toolbarPills, board } = useListSceneBoard({
 		config,
 		controller,
-		filteredTasks,
 		displayResult,
 		taskBoardStatus,
 		activeTaskId,
@@ -103,8 +102,8 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 			clearTaskSelection: selection.clearTaskSelection,
 		},
 		openCreate,
-		/** no-project 页脚提示由 View 渲染 */
-		showNoProjectHint: variant === 'no-project',
+		/** standalone 页脚提示由 View 渲染 */
+		showStandaloneHint: variant === 'standalone',
 	}
 }
 

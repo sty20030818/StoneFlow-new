@@ -88,7 +88,6 @@ describe('useSidebarSettingsStore', () => {
 		mockedUpdateSidebarItemVisibility.mockResolvedValue(
 			createSidebarPreferenceSettings({
 				mainItems: {
-					inbox: { visible: true, order: 100 },
 					allTasks: { visible: false, order: 200 },
 					views: { visible: true, order: 300 },
 					projectOverview: { visible: true, order: 400 },
@@ -197,7 +196,6 @@ function createSidebarPreferenceSettings(
 ): SidebarPreferenceSettings {
 	return {
 		mainItems: {
-			inbox: { visible: true, order: 100 },
 			allTasks: { visible: true, order: 200 },
 			views: { visible: true, order: 300 },
 			projectOverview: { visible: true, order: 400 },
@@ -244,7 +242,6 @@ function createShellSidebarSettings(
 ): ShellSidebarSettings {
 	return {
 		mainItems: {
-			inbox: { visible: true, order: 100 },
 			allTasks: { visible: true, order: 200 },
 			views: { visible: true, order: 300 },
 			projectOverview: { visible: true, order: 400 },

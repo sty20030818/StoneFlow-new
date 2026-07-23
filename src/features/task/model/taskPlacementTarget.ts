@@ -1,10 +1,6 @@
 export type TaskPlacementTarget =
 	| {
-			kind: 'inbox'
-			spaceId: string
-	  }
-	| {
-			kind: 'no_project'
+			kind: 'standalone'
 			spaceId: string
 	  }
 	| {
@@ -17,10 +13,8 @@ export function getTaskPlacementTargetValue(target: TaskPlacementTarget) {
 	switch (target.kind) {
 		case 'project':
 			return `project:${target.projectId}`
-		case 'inbox':
-			return `inbox:${target.spaceId}`
 		default:
-			return `no_project:${target.spaceId}`
+			return `standalone:${target.spaceId}`
 	}
 }
 
@@ -39,7 +33,6 @@ export function isTaskPlacementTargetEqual(left: TaskPlacementTarget, right: Tas
 export function resolveTaskPlacementTarget(input: {
 	spaceId: string
 	projectId?: string | null
-	inboxAt?: string | null
 }): TaskPlacementTarget {
 	if (input.projectId) {
 		return {
@@ -49,15 +42,8 @@ export function resolveTaskPlacementTarget(input: {
 		}
 	}
 
-	if (input.inboxAt) {
-		return {
-			kind: 'inbox',
-			spaceId: input.spaceId,
-		}
-	}
-
 	return {
-		kind: 'no_project',
+		kind: 'standalone',
 		spaceId: input.spaceId,
 	}
 }

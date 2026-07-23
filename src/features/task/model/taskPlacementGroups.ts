@@ -75,31 +75,16 @@ export function buildTaskPlacementGroups({
 		const projectsInSpace = projectsBySpaceId.get(space.id) ?? []
 
 		items.push({
-			key: `inbox:${space.id}`,
-			title: '收件箱',
-			meta: 'Inbox',
-			value: getTaskPlacementGroupSearchText({
-				title: '收件箱',
-				spaceName: space.name,
-				meta: 'inbox',
-			}),
-			target: { kind: 'inbox', spaceId: space.id },
-			digit: '0',
-			isEmptyValue: true,
-			showsDigit: true,
-		})
-
-		items.push({
-			key: `no-project:${space.id}`,
+			key: `standalone:${space.id}`,
 			title: '独立事项',
-			meta: 'No Project',
+			meta: 'Standalone',
 			value: getTaskPlacementGroupSearchText({
 				title: '独立事项',
 				spaceName: space.name,
-				meta: 'no project',
+				meta: 'standalone',
 			}),
-			target: { kind: 'no_project', spaceId: space.id },
-			digit: '1',
+			target: { kind: 'standalone', spaceId: space.id },
+			digit: '0',
 			isEmptyValue: true,
 			showsDigit: true,
 		})

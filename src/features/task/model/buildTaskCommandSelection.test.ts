@@ -10,7 +10,7 @@ describe('buildTaskCommandSelection', () => {
 				createTask({ id: 'task-a', title: '任务 A', projectName: null }),
 				createTask({ id: 'task-b', title: '任务 B', projectName: '项目 B' }),
 			],
-			fallbackSubtitle: 'Inbox',
+			fallbackSubtitle: '独立事项',
 			focusedTaskId: 'task-a',
 		})
 
@@ -35,7 +35,7 @@ describe('buildTaskCommandSelection', () => {
 				id: 'task-a',
 				type: 'task',
 				title: '任务 A',
-				subtitle: 'Inbox',
+				subtitle: '独立事项',
 				status: 'todo',
 				priority: '2',
 			},
@@ -49,7 +49,7 @@ describe('buildTaskCommandSelection', () => {
 		const selection = buildTaskCommandSelection({
 			selectedIds: ['missing'],
 			tasks: [createTask({ id: 'task-a' })],
-			fallbackSubtitle: 'Inbox',
+			fallbackSubtitle: '独立事项',
 			focusedTaskId: 'task-a',
 		})
 
@@ -74,7 +74,6 @@ function createTask(overrides: Partial<TaskListItem> = {}): TaskListItem {
 		spaceSlug: 'work',
 		projectId: null,
 		projectName: null,
-		inboxAt: '2026-05-16T00:00:00Z',
 		title: '任务 A',
 		note: null,
 		status: 'todo',

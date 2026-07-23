@@ -1,6 +1,6 @@
 export { SIDEBAR_ENTITY_SELECTOR } from './constants'
 export { MainNavSidebarMenuItem } from './MainNavSidebarMenuItem'
-export { NoProjectNavMenuItem } from './NoProjectNavMenuItem'
+export { StandaloneNavMenuItem } from './StandaloneNavMenuItem'
 export { ProjectNavMenuItem } from './ProjectNavMenuItem'
 export { SidebarCustomizeSubmenu } from './SidebarCustomizeSubmenu'
 export { SidebarItemContextMenu } from './SidebarItemContextMenu'

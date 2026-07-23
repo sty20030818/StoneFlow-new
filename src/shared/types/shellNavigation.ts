@@ -3,11 +3,11 @@
  * app/navigation 与 command adapter 共用，禁止再抄一份 union。
  */
 export type ShellNavigationTarget =
-	| 'inbox'
 	| 'tasks'
 	| 'views'
 	| `views/${string}`
 	| 'projects'
+	| 'standalone'
 	| 'archive'
 	| 'trash'
 	| 'settings'

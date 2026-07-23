@@ -7,7 +7,7 @@ import { useCommandShortcuts } from './use-command-shortcuts'
 const bindings: Keybinding[] = [
 	createBinding(COMMAND_IDS.newQuickTask, [{ key: 'c' }]),
 	createBinding(COMMAND_IDS.newFullTask, [{ key: 'n' }, { key: 't' }]),
-	createBinding(COMMAND_IDS.newTaskInInbox, [{ key: 'n' }, { key: 'i' }]),
+	createBinding(COMMAND_IDS.newStandaloneTask, [{ key: 'n' }, { key: 'i' }]),
 	createBinding(COMMAND_IDS.newProject, [{ key: 'n' }, { key: 'p' }]),
 	createBinding(COMMAND_IDS.newView, [{ key: 'n' }, { key: 'v' }]),
 	createBinding(COMMAND_IDS.openTask, [{ key: 'o' }, { key: 't' }]),
@@ -15,7 +15,7 @@ const bindings: Keybinding[] = [
 	createBinding(COMMAND_IDS.openView, [{ key: 'o' }, { key: 'v' }]),
 	createBinding(COMMAND_IDS.openSpace, [{ key: 'o' }, { key: 's' }]),
 	createBinding(COMMAND_IDS.openRecent, [{ key: 'o' }, { key: 'r' }]),
-	createBinding(COMMAND_IDS.goInbox, [{ key: 'g' }, { key: 'i' }]),
+	createBinding(COMMAND_IDS.goStandalone, [{ key: 'g' }, { key: 'i' }]),
 	createBinding(COMMAND_IDS.goAllTasks, [{ key: 'g' }, { key: 't' }]),
 	createBinding(COMMAND_IDS.goToday, [{ key: 'g' }, { key: 'd' }]),
 	createBinding(COMMAND_IDS.goUpcoming, [{ key: 'g' }, { key: 'u' }]),
@@ -88,7 +88,7 @@ describe('useCommandShortcuts', () => {
 		})
 
 		expect(onTrigger).toHaveBeenNthCalledWith(1, COMMAND_IDS.newFullTask)
-		expect(onTrigger).toHaveBeenNthCalledWith(2, COMMAND_IDS.newTaskInInbox)
+		expect(onTrigger).toHaveBeenNthCalledWith(2, COMMAND_IDS.newStandaloneTask)
 		expect(onTrigger).toHaveBeenNthCalledWith(3, COMMAND_IDS.newProject)
 		expect(onTrigger).toHaveBeenNthCalledWith(4, COMMAND_IDS.newView)
 	})
@@ -129,7 +129,7 @@ describe('useCommandShortcuts', () => {
 			vi.runAllTimers()
 		})
 
-		expect(onTrigger).toHaveBeenNthCalledWith(1, COMMAND_IDS.goInbox)
+		expect(onTrigger).toHaveBeenNthCalledWith(1, COMMAND_IDS.goStandalone)
 		expect(onTrigger).toHaveBeenNthCalledWith(2, COMMAND_IDS.goAllTasks)
 		expect(onTrigger).toHaveBeenNthCalledWith(3, COMMAND_IDS.goToday)
 		expect(onTrigger).toHaveBeenNthCalledWith(4, COMMAND_IDS.goUpcoming)
@@ -346,7 +346,7 @@ describe('useCommandShortcuts', () => {
 		// 字母键 chord（g→i）两键均不 preventDefault，GlobalChordGuard 负责隔离 Row
 		expect(prefixEvent.defaultPrevented).toBe(false)
 		expect(secondEvent.defaultPrevented).toBe(false)
-		expect(onTrigger).toHaveBeenCalledWith(COMMAND_IDS.goInbox)
+		expect(onTrigger).toHaveBeenCalledWith(COMMAND_IDS.goStandalone)
 	})
 })
 

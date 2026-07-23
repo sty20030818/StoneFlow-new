@@ -19,14 +19,13 @@ export type { ShellNavigationTarget }
 export function openSection(
 	scope: Scope,
 	section:
-		| 'inbox'
 		| 'tasks'
 		| 'views'
 		| 'projects'
 		| 'archive'
 		| 'trash'
 		| 'settings'
-		| 'no-project',
+		| 'standalone',
 	fallbackSpaceId?: string | null,
 ) {
 	if (section === 'settings') {

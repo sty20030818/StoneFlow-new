@@ -17,10 +17,10 @@ export const COMMAND_IDS = {
 	openRecent: 'open.recent',
 	newQuickTask: 'new.quickTask',
 	newFullTask: 'new.fullTask',
-	newTaskInInbox: 'new.taskInInbox',
+	newStandaloneTask: 'new.standaloneTask',
 	newProject: 'new.project',
 	newView: 'new.view',
-	goInbox: 'navigation.goInbox',
+	goStandalone: 'navigation.goStandalone',
 	goAllTasks: 'navigation.goAllTasks',
 	goToday: 'navigation.goToday',
 	goUpcoming: 'navigation.goUpcoming',
@@ -56,7 +56,6 @@ export const COMMAND_IDS = {
 	layoutToggleSidebar: 'layout.toggleSidebar',
 	layoutTogglePreview: 'layout.togglePreview',
 	systemOpenDataFolder: 'system.openDataFolder',
-	inboxClean: 'inbox.clean',
 	viewSuggestFilters: 'view.suggestFilters',
 	lifecycleRestore: 'lifecycle.restore',
 	lifecycleDelete: 'lifecycle.delete',
@@ -77,7 +76,6 @@ export type CommandCategory =
 	| 'project'
 	| 'view'
 	| 'filter'
-	| 'inbox'
 	| 'layout'
 	| 'system'
 	| 'lifecycle'
@@ -88,7 +86,7 @@ export type CommandScope =
 	| 'task-list'
 	| 'project-list'
 	| 'project-page'
-	| 'inbox-page'
+	| 'standalone-page'
 	| 'views-page'
 	| 'trash-page'
 	| 'preview-drawer'
@@ -97,7 +95,7 @@ export type CommandScope =
 	| 'dropdown'
 
 export type CommandRouteContext = {
-	page: 'inbox' | 'tasks' | 'views' | 'projects' | 'archive' | 'trash' | 'settings' | 'unknown'
+	page: 'standalone' | 'tasks' | 'views' | 'projects' | 'archive' | 'trash' | 'settings' | 'unknown'
 	projectId?: string
 	viewId?: string
 }
@@ -123,7 +121,6 @@ export type CommandSelectedEntity = {
 	subtitle?: string
 	spaceId?: string
 	projectId?: string | null
-	inboxAt?: string | null
 	dueAt?: string | null
 	status?: string
 	priority?: string

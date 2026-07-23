@@ -168,7 +168,7 @@ describe('ProjectRowAdapter', () => {
 				{ id: 'project-2', name: '项目 B' },
 			],
 			onSelectProject: vi.fn(),
-			onSelectNoProject: vi.fn(),
+			onSelectStandalone: vi.fn(),
 		}
 
 		renderProjectRowAdapter({ projectBinding })
@@ -179,7 +179,7 @@ describe('ProjectRowAdapter', () => {
 
 		fireEvent.pointerDown(screen.getByRole('button', { name: '父项目' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /无父项目/ }))
-		expect(projectBinding.onSelectNoProject).toHaveBeenCalledTimes(1)
+		expect(projectBinding.onSelectStandalone).toHaveBeenCalledTimes(1)
 	})
 
 	it('字段点击不会触发行打开，日期无值时不渲染', async () => {
@@ -189,7 +189,7 @@ describe('ProjectRowAdapter', () => {
 				showProjectCell: true,
 				projectOptions: [{ id: 'project-2', name: '项目 B' }],
 				onSelectProject: vi.fn(),
-				onSelectNoProject: vi.fn(),
+				onSelectStandalone: vi.fn(),
 			},
 		})
 

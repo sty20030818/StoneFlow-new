@@ -57,7 +57,6 @@ function createTaskResult(overrides: Partial<SearchTaskItem> = {}): SearchTaskIt
 		note: '补充说明',
 		priority: 2 as const,
 		status: 'todo' as const,
-		inboxAt: null,
 		updatedAt: '2026-05-09T10:00:00Z',
 		completedAt: null,
 		...overrides,

@@ -30,22 +30,14 @@ describe('GlobalSearchInput', () => {
 		expect(screen.getByLabelText('全局搜索')).toHaveFocus()
 	})
 
-	it('按任务和项目分区展示结果，并标出 Inbox / 独立事项上下文', async () => {
+	it('按任务和项目分区展示结果，并标出独立事项上下文', async () => {
 		mockedSearchEntities.mockResolvedValue({
 			tasks: [
 				createTaskResult({
-					id: 'task-inbox',
-					title: 'Inbox 任务',
-					projectId: null,
-					projectName: null,
-					inboxAt: '2026-05-09T10:00:00Z',
-				}),
-				createTaskResult({
-					id: 'task-no-project',
+					id: 'task-standalone',
 					title: '独立事项任务',
 					projectId: null,
 					projectName: null,
-					inboxAt: null,
 				}),
 			],
 			projects: [createProjectResult({ id: 'project-active', name: '项目 A' })],
@@ -71,7 +63,6 @@ describe('GlobalSearchInput', () => {
 
 		expect((await screen.findAllByText('任务')).length).toBeGreaterThan(0)
 		expect(screen.getAllByText('项目').length).toBeGreaterThan(0)
-		expect(screen.getByText('Inbox')).toBeInTheDocument()
 		expect(screen.getByText('独立事项')).toBeInTheDocument()
 		expect(screen.getAllByText('工作').length).toBeGreaterThan(0)
 	})
@@ -223,7 +214,6 @@ function createTaskResult(overrides: Partial<SearchTaskItem> = {}): SearchTaskIt
 		note: '补充说明',
 		priority: 2 as const,
 		status: 'todo' as const,
-		inboxAt: null,
 		updatedAt: '2026-05-09T10:00:00Z',
 		completedAt: null,
 		...overrides,

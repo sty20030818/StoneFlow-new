@@ -715,7 +715,7 @@ mod tests {
             .create_task(CreateTaskInput {
                 space_id: Some(second_space.id),
                 placement: CreateTaskPlacementInput {
-                    kind: CreateTaskPlacementKind::NoProject,
+                    kind: CreateTaskPlacementKind::Standalone,
                     project_id: None,
                 },
                 title: "第二空间任务".to_owned(),
@@ -824,7 +824,7 @@ mod tests {
             .create_task(CreateTaskInput {
                 space_id: Some(space.id.clone()),
                 placement: CreateTaskPlacementInput {
-                    kind: CreateTaskPlacementKind::NoProject,
+                    kind: CreateTaskPlacementKind::Standalone,
                     project_id: None,
                 },
                 title: title.to_owned(),

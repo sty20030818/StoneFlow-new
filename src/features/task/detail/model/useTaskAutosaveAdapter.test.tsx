@@ -36,7 +36,6 @@ describe('useTaskAutosaveAdapter', () => {
 						spaceId: input.placement.spaceId,
 						projectId:
 							input.placement.kind === 'project' ? (input.placement.projectId ?? null) : null,
-						inboxAt: input.placement.kind === 'inbox' ? '2026-05-19T01:00:00Z' : null,
 					}
 				: {}),
 			...('dueAt' in input ? { dueAt: input.dueAt ?? null } : {}),
@@ -217,7 +216,6 @@ function createTaskDetail(overrides: Partial<TaskDetail> = {}): TaskDetail {
 		spaceSlug: 'work',
 		projectId: null,
 		projectName: null,
-		inboxAt: null,
 		title: '任务 A',
 		note: '',
 		status: 'todo',

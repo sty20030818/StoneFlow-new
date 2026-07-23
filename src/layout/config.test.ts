@@ -20,9 +20,8 @@ const spaces = [
 describe('shell config helpers', () => {
 	it('routing 按 canonical 路由解析主分区', () => {
 		expect(resolveShellSection('/all/views')).toBe('views')
-		expect(resolveShellSection('/space-personal/inbox')).toBe('inbox')
 		expect(resolveShellSection('/space-personal/tasks')).toBe('tasks')
-		expect(resolveShellSection('/space-personal/no-project')).toBe('noProject')
+		expect(resolveShellSection('/space-personal/standalone')).toBe('standalone')
 		expect(resolveShellSection('/space-personal/projects')).toBe('projects')
 		expect(resolveShellSection('/space-personal/archive')).toBe('archive')
 		expect(resolveShellSection('/space-personal/trash')).toBe('trash')
@@ -32,7 +31,7 @@ describe('shell config helpers', () => {
 	})
 
 	it('为已知分区和空间返回标签', () => {
-		expect(getSectionLabel('inbox')).toBe('收件箱')
+		expect(getSectionLabel('standalone')).toBe('独立事项')
 		expect(getSectionLabel('tasks')).toBe('所有任务')
 		expect(getSectionLabel('views')).toBe('视图')
 		expect(getSectionLabel('projects')).toBe('项目总览')

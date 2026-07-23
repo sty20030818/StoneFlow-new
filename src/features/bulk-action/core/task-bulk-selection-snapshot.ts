@@ -13,7 +13,7 @@ export function createTaskBulkSelectionSnapshotFromTasks(
 		entities: tasks.map((task) => ({
 			id: task.id,
 			title: task.title,
-			subtitle: task.projectName ?? (task.inboxAt ? 'Inbox' : '独立事项'),
+			subtitle: task.projectName ?? '独立事项',
 			status: task.status,
 			priority: String(task.priority),
 		})),

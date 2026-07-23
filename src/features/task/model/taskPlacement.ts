@@ -5,25 +5,19 @@ import type {
 	TaskPlacement,
 } from '@/shared/types'
 
-type TaskPlacementLike = Pick<TaskListItem, 'projectId'> & Partial<Pick<TaskDetail, 'inboxAt'>>
+type TaskPlacementLike = Pick<TaskListItem, 'projectId'> & Partial<Pick<TaskDetail, 'projectId'>>
 
 export function getTaskPlacement(task: TaskPlacementLike): TaskPlacement {
 	if (task.projectId) {
 		return 'project'
 	}
 
-	if (task.inboxAt) {
-		return 'inbox'
-	}
-
-	return 'noProject'
+	return 'standalone'
 }
 
 export function formatTaskPlacementLabel(placement: TaskPlacement) {
 	switch (placement) {
-		case 'inbox':
-			return '收件箱'
-		case 'noProject':
+		case 'standalone':
 			return '独立事项'
 		case 'project':
 			return '项目'
@@ -43,9 +37,5 @@ export function buildCreatePlacementInput(
 		}
 	}
 
-	if (placement === 'noProject') {
-		return { kind: 'noProject' }
-	}
-
-	return { kind: 'inbox' }
+	return { kind: 'standalone' }
 }

@@ -6,7 +6,7 @@
  */
 
 /**
- * 任务归属目标（收件箱 / 无项目 / 项目）。
+ * 任务归属目标（独立事项 / 项目）。
  */
 export type { TaskPlacementTarget } from './model/taskPlacementTarget'
 

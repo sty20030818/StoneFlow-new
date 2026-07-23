@@ -168,14 +168,14 @@ export function bindShellCommand(command: Command, adapter: ShellCommandAdapter)
 			return { ...command, run: adapter.openQuickTaskCreate }
 		case COMMAND_IDS.newFullTask:
 			return { ...command, run: adapter.openFullTaskCreate }
-		case COMMAND_IDS.newTaskInInbox:
-			return { ...command, run: adapter.openInboxTaskCreate }
+		case COMMAND_IDS.newStandaloneTask:
+			return { ...command, run: adapter.openStandaloneTaskCreate }
 		case COMMAND_IDS.newProject:
 			return { ...command, run: adapter.openProjectCreate }
 		case COMMAND_IDS.newView:
 			return createDisabledCommand(command, '视图创建入口尚未接入')
-		case COMMAND_IDS.goInbox:
-			return { ...command, run: () => adapter.navigateTo('inbox') }
+		case COMMAND_IDS.goStandalone:
+			return { ...command, run: () => adapter.navigateTo('standalone') }
 		case COMMAND_IDS.goAllTasks:
 			return { ...command, run: () => adapter.navigateTo('tasks') }
 		case COMMAND_IDS.goFocus:

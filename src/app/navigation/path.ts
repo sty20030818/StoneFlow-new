@@ -10,25 +10,24 @@ import { DEFAULT_SETTINGS_SECTION, type SettingsSectionKey } from '@/features/se
 
 export type RouteScope = Scope
 
-export type ShellSectionSegment =
-	| 'inbox'
-	| 'tasks'
-	| 'views'
-	| 'projects'
-	| 'no-project'
-	| 'archive'
-	| 'trash'
-	| 'settings'
+/** 壳分区：path segment 与 section key 已统一为同一组字面量（无映射层）。 */
+export const SHELL_SECTION_KEYS = [
+	'tasks',
+	'views',
+	'projects',
+	'standalone',
+	'archive',
+	'trash',
+	'settings',
+] as const
 
-export type ShellSectionKey =
-	| 'inbox'
-	| 'tasks'
-	| 'views'
-	| 'projects'
-	| 'noProject'
-	| 'archive'
-	| 'trash'
-	| 'settings'
+export type ShellSectionKey = (typeof SHELL_SECTION_KEYS)[number]
+/** path segment 与 section key 同形；别名仅作阅读语义。 */
+export type ShellSectionSegment = ShellSectionKey
+
+export function isShellSectionKey(value: string): value is ShellSectionKey {
+	return (SHELL_SECTION_KEYS as readonly string[]).includes(value)
+}
 
 export type AppRouteKind =
 	| 'startup'
@@ -117,27 +116,11 @@ export type ShellRouteLocationLike =
 // ── dialect ──
 
 export const ALL_SCOPE_KEY = 'all' as const
-export const DEFAULT_SPACE_SECTION: ShellSectionSegment = 'inbox'
-export const DEFAULT_ALL_SECTION: ShellSectionSegment = 'tasks'
+/** Space 默认落地到独立事项（无 Project 归属任务列表）。 */
+export const DEFAULT_SPACE_SECTION: ShellSectionKey = 'standalone'
+export const DEFAULT_ALL_SECTION: ShellSectionKey = 'tasks'
 
 export const RESERVED_SCOPE_KEYS = new Set([ALL_SCOPE_KEY, 'launcher', 'settings', 'debug'])
-
-export const SECTION_SEGMENT_TO_KEY: Record<string, ShellSectionKey> = {
-	inbox: 'inbox',
-	tasks: 'tasks',
-	views: 'views',
-	projects: 'projects',
-	'no-project': 'noProject',
-	archive: 'archive',
-	trash: 'trash',
-	settings: 'settings',
-}
-
-export function toSectionSegment(
-	section: ShellSectionKey | ShellSectionSegment,
-): ShellSectionSegment {
-	return section === 'noProject' ? 'no-project' : section
-}
 
 export function encodeScopeKey(scope: RouteScope, fallbackSpaceId?: string | null): string {
 	if (scope.type === 'all') return ALL_SCOPE_KEY
@@ -183,7 +166,7 @@ export function isSettingsRemainder(remainder: string[]) {
 export function isCanonicalWorkRemainder(remainder: string[], allowDetail: boolean) {
 	if (remainder.length === 0) return false
 	const head = remainder[0]
-	if (remainder.length === 1) return head in SECTION_SEGMENT_TO_KEY
+	if (remainder.length === 1) return isShellSectionKey(head)
 	if (head === 'views' && remainder.length === 2) return true
 	if (head === 'projects' && remainder.length === 2 && allowDetail) return true
 	if (allowDetail && head === 'tasks' && remainder.length === 2) return true
@@ -208,10 +191,10 @@ export function splitWorkspacePath(pathname: string): {
 
 export function buildCanonicalSectionPath(
 	scope: RouteScope,
-	section: ShellSectionKey | ShellSectionSegment,
+	section: ShellSectionKey,
 	fallbackSpaceId?: string | null,
 ) {
-	return `/${encodeScopeKey(scope, fallbackSpaceId)}/${toSectionSegment(section)}`
+	return `/${encodeScopeKey(scope, fallbackSpaceId)}/${section}`
 }
 
 export function buildCanonicalViewPath(
@@ -361,11 +344,8 @@ function parseWorkRemainder(
 	if (isSettingsRemainder(remainder)) {
 		return { kind: 'shell-section', scope, section: 'settings', pathname, search, hash, fullPath }
 	}
-	if (remainder.length === 1) {
-		const section = SECTION_SEGMENT_TO_KEY[head]
-		if (section) {
-			return { kind: 'shell-section', scope, section, pathname, search, hash, fullPath }
-		}
+	if (remainder.length === 1 && isShellSectionKey(head)) {
+		return { kind: 'shell-section', scope, section: head, pathname, search, hash, fullPath }
 	}
 	return { kind: 'unknown', pathname, search, hash, fullPath }
 }

@@ -3,7 +3,6 @@
 import {
 	ArrowRightIcon,
 	CheckCircle2Icon,
-	CircleIcon,
 	CompassIcon,
 	CommandIcon,
 	FolderIcon,
@@ -117,7 +116,7 @@ export function getSelectedTaskPlacementValues(context: CommandContext) {
 				resolveTaskPlacementTarget({
 					spaceId: entity.spaceId,
 					projectId: entity.projectId,
-					inboxAt: entity.inboxAt,
+					
 				}),
 			),
 		)
@@ -284,10 +283,6 @@ export function resolveCommandIcon(commandId: CommandId): ComponentType<LucidePr
 
 	if (commandId.startsWith('layout.')) {
 		return PanelLeftIcon
-	}
-
-	if (commandId.startsWith('inbox.')) {
-		return CircleIcon
 	}
 
 	if (commandId.startsWith('system.')) {

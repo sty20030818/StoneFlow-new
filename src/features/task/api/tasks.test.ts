@@ -71,7 +71,7 @@ describe('tasks api', () => {
 			status: 'done',
 			priority: 4,
 			placement: {
-				kind: 'noProject',
+				kind: 'standalone',
 				spaceId: 'space-1',
 			},
 		})
@@ -103,7 +103,7 @@ describe('tasks api', () => {
 				status: 'done',
 				priority: 4,
 				placement: {
-					kind: 'noProject',
+					kind: 'standalone',
 					spaceId: 'space-1',
 					projectId: null,
 				},
@@ -139,7 +139,7 @@ describe('tasks api', () => {
 		await updateTask({
 			taskId: 'task-1',
 			placement: {
-				kind: 'inbox',
+				kind: 'standalone',
 				spaceId: 'space-1',
 			},
 		})
@@ -154,7 +154,7 @@ describe('tasks api', () => {
 		await updateTask({
 			taskId: 'task-1',
 			placement: {
-				kind: 'noProject',
+				kind: 'standalone',
 				spaceId: 'space-1',
 			},
 		})
@@ -176,7 +176,7 @@ describe('tasks api', () => {
 				status: undefined,
 				priority: undefined,
 				placement: {
-					kind: 'inbox',
+					kind: 'standalone',
 					spaceId: 'space-1',
 					projectId: null,
 				},
@@ -210,7 +210,7 @@ describe('tasks api', () => {
 				status: undefined,
 				priority: undefined,
 				placement: {
-					kind: 'noProject',
+					kind: 'standalone',
 					spaceId: 'space-1',
 					projectId: null,
 				},

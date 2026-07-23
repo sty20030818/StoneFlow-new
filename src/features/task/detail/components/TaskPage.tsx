@@ -97,7 +97,7 @@ function TaskPageLoaded({ task, projects, spaces, isReadOnly }: TaskPageLoadedPr
 					title: task.title,
 					projectId: task.projectId,
 					projectName: task.projectName,
-					inboxAt: task.inboxAt,
+					
 				},
 			}),
 		[task],

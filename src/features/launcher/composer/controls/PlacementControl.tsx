@@ -38,7 +38,7 @@ export function PlacementControl({
 	onPlacementChange,
 }: PlacementControlProps) {
 	const TriggerIcon =
-		value.kind === 'noProject' ? TargetIcon : FolderIcon
+		value.kind === 'standalone' ? TargetIcon : FolderIcon
 
 	return (
 		<DropdownMenu onOpenChange={onOpenChange} open={open}>
@@ -69,11 +69,11 @@ export function PlacementControl({
 									onPlacementChange(
 										option.kind === 'project'
 											? { kind: 'project', projectId: option.id }
-											: { kind: 'noProject', projectId: null },
+											: { kind: 'standalone', projectId: null },
 									)
 								}
 							>
-								{option.kind === 'noProject' ? (
+								{option.kind === 'standalone' ? (
 									<TargetIcon className='size-3.5 text-sf-text-secondary' />
 								) : (
 									<FolderIcon className='size-3.5 text-sf-text-secondary' />

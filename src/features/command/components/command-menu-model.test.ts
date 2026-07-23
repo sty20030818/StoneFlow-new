@@ -72,7 +72,7 @@ describe('buildCommandMenuGroups', () => {
 			createCommand('test.project', { category: 'project' }),
 			createCommand('test.view', { category: 'view' }),
 			createCommand('test.filter', { category: 'filter' }),
-			createCommand('test.inbox', { category: 'inbox' }),
+			createCommand('test.standalone', { category: 'task' }),
 			createCommand('test.layout', { category: 'layout' }),
 			createCommand('test.system', { category: 'system' }),
 		])

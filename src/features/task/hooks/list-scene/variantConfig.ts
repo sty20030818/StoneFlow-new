@@ -2,11 +2,11 @@ import type { EntitySceneVariant, EntitySceneTaskBoardConfig } from '@/features/
 import type { TaskDisplayPageKey } from '@/features/display-options'
 import type { TaskPlacement, TaskStatus } from '@/shared/types'
 
-export type TaskListSceneVariant = 'inbox' | 'all' | 'no-project'
+export type TaskListSceneVariant = 'all' | 'standalone'
 
 export type VariantConfig = {
 	displayPageKey: TaskDisplayPageKey
-	placement: { kind: 'inbox' | 'all' | 'noProject' }
+	placement: { kind: 'all' | 'standalone' }
 	sceneVariant: EntitySceneVariant
 	boardVariant: EntitySceneTaskBoardConfig['variant']
 	emptyTitle: string
@@ -18,28 +18,13 @@ export type VariantConfig = {
 	}
 	initialShowCompleted?: boolean
 	supportsProject: boolean
-	/** inbox：按当前 space 过滤 project options */
+	/** 是否按当前 space 过滤 project options */
 	filterProjectsBySpace: boolean
-	fallbackSubtitle: string | ((task: { inboxAt: string | null }) => string)
-	showStatusPills: 'all' | 'status-only' | 'inbox-count'
+	fallbackSubtitle: string | ((task: { projectId: string | null }) => string)
+	showStatusPills: 'all' | 'status-only'
 }
 
 export const VARIANT_CONFIG: Record<TaskListSceneVariant, VariantConfig> = {
-	inbox: {
-		displayPageKey: 'task:inbox',
-		placement: { kind: 'inbox' },
-		sceneVariant: 'inbox',
-		boardVariant: 'inbox',
-		emptyTitle: 'Inbox 已清空',
-		emptyDescription:
-			'新捕获的任务都会先来到这里，现在这一批已经整理完了。点「创建任务」也可以先记一条，之后再决定把它放去哪里。',
-		createDraft: undefined,
-		initialShowCompleted: false,
-		supportsProject: true,
-		filterProjectsBySpace: true,
-		fallbackSubtitle: '收件箱',
-		showStatusPills: 'inbox-count',
-	},
 	all: {
 		displayPageKey: 'task:all',
 		placement: { kind: 'all' },
@@ -51,18 +36,18 @@ export const VARIANT_CONFIG: Record<TaskListSceneVariant, VariantConfig> = {
 		createDraft: { status: 'todo' },
 		supportsProject: true,
 		filterProjectsBySpace: false,
-		fallbackSubtitle: (task) => (task.inboxAt ? '收件箱' : '独立事项'),
+		fallbackSubtitle: (task) => (task.projectId ? '项目' : '独立事项'),
 		showStatusPills: 'all',
 	},
-	'no-project': {
-		displayPageKey: 'task:no-project',
-		placement: { kind: 'noProject' },
-		sceneVariant: 'no-project',
-		boardVariant: 'no-project',
+	standalone: {
+		displayPageKey: 'task:standalone',
+		placement: { kind: 'standalone' },
+		sceneVariant: 'standalone',
+		boardVariant: 'standalone',
 		emptyTitle: '当前没有独立事项',
 		emptyDescription:
 			'这里会放那些还没归属到项目里的任务，现在暂时还是空的。点「创建任务」先记下来，之后再决定要不要放进某个项目。',
-		createDraft: { placement: 'noProject' },
+		createDraft: { placement: 'standalone' },
 		supportsProject: false,
 		filterProjectsBySpace: false,
 		fallbackSubtitle: '独立事项',
@@ -70,9 +55,9 @@ export const VARIANT_CONFIG: Record<TaskListSceneVariant, VariantConfig> = {
 	},
 }
 
-export const ALL_TASK_FILTERS: Array<'all' | 'noProject' | TaskStatus> = [
+export const ALL_TASK_FILTERS: Array<'all' | 'standalone' | TaskStatus> = [
 	'all',
-	'noProject',
+	'standalone',
 	'doing',
 	'todo',
 	'waiting',
@@ -80,7 +65,7 @@ export const ALL_TASK_FILTERS: Array<'all' | 'noProject' | TaskStatus> = [
 	'canceled',
 ]
 
-export const NO_PROJECT_FILTERS: Array<'all' | TaskStatus> = [
+export const STANDALONE_STATUS_FILTERS: Array<'all' | TaskStatus> = [
 	'all',
 	'doing',
 	'todo',

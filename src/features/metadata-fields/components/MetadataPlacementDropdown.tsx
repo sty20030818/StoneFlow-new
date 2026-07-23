@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { FolderIcon, InboxIcon, TargetIcon } from 'lucide-react'
+import { FolderIcon, TargetIcon } from 'lucide-react'
 
 import {
 	buildMetadataShortcutItems,
@@ -146,9 +146,7 @@ function getGroupedPlacementIcon(
 		return <FolderIcon className='size-3.5' />
 	}
 
-	if (target.kind === 'inbox') {
-		return <InboxIcon className='size-3.5' />
-	}
+	
 
 	return <TargetIcon className='size-3.5' />
 }

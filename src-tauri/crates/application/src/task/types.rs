@@ -94,13 +94,13 @@ pub enum TaskLifecycleView {
     All,
 }
 
-/// Task 列表 placement 查询（取消 Inbox 概念，未分配 Project 一律视为 NoProject）。
+/// Task 列表 placement 查询（未分配 Project = Standalone）。
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum TaskPlacementQuery {
     #[default]
     All,
     Project(String),
-    NoProject,
+    Standalone,
 }
 
 /// Task 列表查询条件。
@@ -122,7 +122,7 @@ pub(crate) struct TaskScope {
 pub(crate) enum TaskPlacement {
     All,
     Project(String),
-    NoProject,
+    Standalone,
 }
 
 /// 内置 viewKey 预设。

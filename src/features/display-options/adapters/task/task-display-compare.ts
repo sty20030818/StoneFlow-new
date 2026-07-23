@@ -59,8 +59,6 @@ export function createTaskDisplayComparator(
 			return compareByDateField('dueAt', options.orderDirection)
 		case 'plannedAt':
 			return compareByDateField('plannedAt', options.orderDirection)
-		case 'inboxAt':
-			return compareByDateField('inboxAt', options.orderDirection)
 		case 'statusChangedAt':
 			return compareByDateField('statusChangedAt', options.orderDirection)
 		case 'createdAt':
@@ -159,7 +157,6 @@ export function compareByDateField(
 		TaskListItem,
 		| 'dueAt'
 		| 'plannedAt'
-		| 'inboxAt'
 		| 'statusChangedAt'
 		| 'createdAt'
 		| 'updatedAt'

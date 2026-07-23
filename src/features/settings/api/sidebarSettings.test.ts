@@ -21,7 +21,6 @@ describe('sidebarSettings api', () => {
 		mockedInvoke.mockResolvedValue({
 			settings: {
 				mainItems: {
-					inbox: { visible: true, order: 100 },
 					allTasks: { visible: true, order: 200 },
 					views: { visible: true, order: 300 },
 					projectOverview: { visible: true, order: 400 },
@@ -50,7 +49,6 @@ describe('sidebarSettings api', () => {
 		mockedInvoke.mockResolvedValue({
 			settings: {
 				mainItems: {
-					inbox: { visible: true, order: 100 },
 					allTasks: { visible: true, order: 200 },
 					views: { visible: false, order: 300 },
 					projectOverview: { visible: true, order: 400 },
@@ -82,7 +80,6 @@ describe('sidebarSettings api', () => {
 		mockedInvoke.mockResolvedValue({
 			settings: {
 				mainItems: {
-					inbox: { visible: true, order: 100 },
 					allTasks: { visible: true, order: 200 },
 					views: { visible: true, order: 300 },
 					projectOverview: { visible: true, order: 400 },

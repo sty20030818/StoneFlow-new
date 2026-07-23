@@ -558,7 +558,7 @@ describe('LauncherPage', () => {
 			},
 			defaultSpaceId: 'space-2',
 			projects: [
-				createProjectOption({ kind: 'noProject', id: null, name: '独立事项', spaceId: 'space-2' }),
+				createProjectOption({ kind: 'standalone', id: null, name: '独立事项', spaceId: 'space-2' }),
 				createProjectOption({
 					kind: 'project',
 					id: 'project-2',
@@ -628,9 +628,9 @@ describe('LauncherPage', () => {
 				currentScope: { type: 'space', spaceId: 'space-2' },
 				defaultSpaceId: 'space-2',
 				projects: [
-					createProjectOption({ kind: 'noProject', id: null, name: '独立事项', spaceId: 'space-2' }),
+					createProjectOption({ kind: 'standalone', id: null, name: '独立事项', spaceId: 'space-2' }),
 					createProjectOption({
-						kind: 'noProject',
+						kind: 'standalone',
 						id: null,
 						name: '独立事项',
 						spaceId: 'space-2',
@@ -731,7 +731,7 @@ function createInitialState(): LauncherInitialState {
 		},
 		defaultSpaceId: 'space-1',
 		defaultPlacement: {
-			kind: 'noProject',
+			kind: 'standalone',
 			projectId: null,
 		},
 		spaces: [
@@ -739,7 +739,7 @@ function createInitialState(): LauncherInitialState {
 			{ id: 'space-2', name: '工程基础', iconKey: 'sparkles', colorKey: 'amber', isDefault: false },
 		],
 		projects: [
-			createProjectOption({ kind: 'noProject', id: null, name: '独立事项' }),
+			createProjectOption({ kind: 'standalone', id: null, name: '独立事项' }),
 			createProjectOption({ kind: 'project', id: 'project-1', name: 'StoneFlow 开发' }),
 		],
 		recentTasks: [createTaskResult({ id: 'task-recent', title: '最近任务 A' })],
@@ -771,14 +771,17 @@ function createOpenSessionResponse(
 function createProjectsBySpace(spaceId: string): LauncherProjectsBySpace {
 	return {
 		spaceId,
-		noProjectOption: createProjectOption({
-			kind: 'noProject',
+		standaloneOption: createProjectOption({
+			kind: 'standalone',
 			id: null,
 			name: '独立事项',
 			spaceId,
-		}),
+		}) as Extract<LauncherProjectOption, { kind: 'standalone' }>,
 		projects: [
-			createProjectOption({ kind: 'project', id: 'project-2', name: '工程基座', spaceId }),
+			createProjectOption({ kind: 'project', id: 'project-2', name: '工程基座', spaceId }) as Extract<
+				LauncherProjectOption,
+				{ kind: 'project' }
+			>,
 		],
 	}
 }
@@ -798,7 +801,7 @@ function createProjectOption(
 		}
 	}
 	return {
-		kind: 'noProject',
+		kind: 'standalone',
 		id: null,
 		spaceId: overrides.spaceId ?? 'space-1',
 		name: overrides.name,
@@ -812,7 +815,6 @@ function createTaskResult(overrides: Partial<LauncherTaskItem> = {}): LauncherTa
 		spaceName: '产品研发',
 		projectId: null,
 		projectName: null,
-		inboxAt: '2026-05-10T10:00:00Z',
 		title: '任务 A',
 		note: null,
 		priority: 2,
@@ -831,7 +833,6 @@ function createTaskDetail() {
 		spaceSlug: 'work',
 		projectId: null,
 		projectName: null,
-		inboxAt: '2026-05-10T10:00:00Z',
 		title: '新任务',
 		note: null,
 		priority: 0 as const,

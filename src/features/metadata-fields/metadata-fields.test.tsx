@@ -112,7 +112,7 @@ describe('metadata-fields', () => {
 		expect(onChange).toHaveBeenCalledWith(null)
 	})
 
-	it('Task placement grouped dropdown 在 global 模式下显示每个 space 的 inbox / no_project / project', async () => {
+	it('Task placement grouped dropdown 在 global 模式下显示每个 space 的 standalone / project', async () => {
 		const groupedProps = createTaskPlacementGroupedDropdownProps({
 			mode: 'global',
 			currentSpaceId: 'space-a',
@@ -142,14 +142,13 @@ describe('metadata-fields', () => {
 
 		expect(await screen.findByText('工作')).toBeInTheDocument()
 		expect(screen.getByText('生活')).toBeInTheDocument()
-		expect(screen.getAllByRole('menuitem', { name: /收件箱/ })).toHaveLength(2)
 		expect(screen.getAllByRole('menuitem', { name: /独立事项/ })).toHaveLength(2)
 		expect(screen.getByRole('menuitem', { name: /项目 A/ })).toBeInTheDocument()
 		expect(screen.getByRole('menuitem', { name: /项目 B/ })).toBeInTheDocument()
 		expect(getHeaderShortcutSummary()).toBe('⇧ P')
 	})
 
-	it('Task placement grouped dropdown 支持 inbox 当前值、mixed indicator 和 clear-only digit', async () => {
+	it('Task placement grouped dropdown 支持 standalone 当前值、mixed indicator 和 clear-only digit', async () => {
 		const groupedProps = createTaskPlacementGroupedDropdownProps({
 			mode: 'local',
 			currentSpaceId: 'space-a',
@@ -161,20 +160,20 @@ describe('metadata-fields', () => {
 			<MetadataPlacementDropdown
 				groups={groupedProps.groups}
 				label='归属'
-				value={{ kind: 'inbox', spaceId: 'space-a' }}
+				value={{ kind: 'standalone', spaceId: 'space-a' }}
 				values={[
-					{ kind: 'inbox', spaceId: 'space-a' },
+					{ kind: 'standalone', spaceId: 'space-a' },
 					{ kind: 'project', spaceId: 'space-a', projectId: 'project-a' },
 				]}
 				onChange={() => undefined}
 			/>,
 		)
 
-		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('收件箱')
+		expect(screen.getByRole('button', { name: '归属' })).toHaveTextContent('独立事项')
 		fireEvent.pointerDown(screen.getByRole('button', { name: '归属' }))
 
-		expect(getShortcutHintDigits()).toEqual(['0', '1'])
-		expect(getIndicatorState('收件箱')).toBe('mixed')
+		expect(getShortcutHintDigits()).toEqual(['0'])
+		expect(getIndicatorState('独立事项')).toBe('mixed')
 		expect(getIndicatorState('项目 A')).toBe('mixed')
 	})
 
@@ -195,7 +194,7 @@ describe('metadata-fields', () => {
 				menuAlign='end'
 				menuLabel='显式标题'
 				stopPropagation
-				value={{ kind: 'no_project', spaceId: 'space-a' }}
+				value={{ kind: 'standalone', spaceId: 'space-a' }}
 				onChange={() => undefined}
 			/>,
 		)

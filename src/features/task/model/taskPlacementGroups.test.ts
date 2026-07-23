@@ -19,7 +19,7 @@ describe('task-placement-groups', () => {
 		).toEqual([])
 	})
 
-	it('global 模式当前 space 第一组，且每组都有收件箱和独立事项', () => {
+	it('global 模式当前 space 第一组，且每组都有独立事项与项目', () => {
 		const groups = buildTaskPlacementGroups({
 			mode: 'global',
 			currentSpaceId: 'space-b',
@@ -46,12 +46,12 @@ describe('task-placement-groups', () => {
 		})
 
 		expect(groups.map((group) => group.heading)).toEqual(['生活', '工作'])
-		expect(groups[0]?.items.map((item) => item.title)).toEqual(['收件箱', '独立事项', '项目 B'])
-		expect(groups[1]?.items.map((item) => item.title)).toEqual(['收件箱', '独立事项', '项目 A'])
-		expect(groups[0]?.items.map((item) => item.digit)).toEqual(['0', '1', undefined])
+		expect(groups[0]?.items.map((item) => item.title)).toEqual(['独立事项', '项目 B'])
+		expect(groups[1]?.items.map((item) => item.title)).toEqual(['独立事项', '项目 A'])
+		expect(groups[0]?.items.map((item) => item.digit)).toEqual(['0', undefined])
 	})
 
-	it('local 模式只显示当前 space，顺序固定为 inbox -> no_project -> projects', () => {
+	it('local 模式只显示当前 space，顺序固定为 standalone -> projects', () => {
 		const groups = buildTaskPlacementGroups({
 			mode: 'local',
 			currentSpaceId: 'space-a',
@@ -79,7 +79,7 @@ describe('task-placement-groups', () => {
 
 		expect(groups).toHaveLength(1)
 		expect(groups[0]?.heading).toBe('工作')
-		expect(groups[0]?.items.map((item) => item.title)).toEqual(['收件箱', '独立事项', '项目 A'])
+		expect(groups[0]?.items.map((item) => item.title)).toEqual(['独立事项', '项目 A'])
 	})
 
 	it('已完成项目不会出现在分组中', () => {
@@ -98,10 +98,10 @@ describe('task-placement-groups', () => {
 			],
 		})
 
-		expect(groups[0]?.items.map((item) => item.title)).toEqual(['收件箱', '独立事项'])
+		expect(groups[0]?.items.map((item) => item.title)).toEqual(['独立事项'])
 	})
 
-	it('target helper 和 group item 查找覆盖三态', () => {
+	it('target helper 和 group item 查找覆盖独立事项与项目', () => {
 		const groups = buildTaskPlacementGroups({
 			mode: 'global',
 			currentSpaceId: 'space-a',
@@ -117,9 +117,8 @@ describe('task-placement-groups', () => {
 			],
 		})
 
-		expect(getTaskPlacementTargetValue({ kind: 'inbox', spaceId: 'space-a' })).toBe('inbox:space-a')
-		expect(getTaskPlacementTargetValue({ kind: 'no_project', spaceId: 'space-a' })).toBe(
-			'no_project:space-a',
+		expect(getTaskPlacementTargetValue({ kind: 'standalone', spaceId: 'space-a' })).toBe(
+			'standalone:space-a',
 		)
 		expect(
 			getTaskPlacementTargetValue({
@@ -131,20 +130,20 @@ describe('task-placement-groups', () => {
 
 		expect(
 			isTaskPlacementTargetEqual(
-				{ kind: 'inbox', spaceId: 'space-a' },
-				{ kind: 'inbox', spaceId: 'space-a' },
+				{ kind: 'standalone', spaceId: 'space-a' },
+				{ kind: 'standalone', spaceId: 'space-a' },
 			),
 		).toBe(true)
 		expect(
 			isTaskPlacementTargetEqual(
-				{ kind: 'no_project', spaceId: 'space-a' },
+				{ kind: 'standalone', spaceId: 'space-a' },
 				{ kind: 'project', spaceId: 'space-a', projectId: 'project-a' },
 			),
 		).toBe(false)
 
-		expect(findTaskPlacementGroupItem(groups, { kind: 'inbox', spaceId: 'space-a' })?.title).toBe(
-			'收件箱',
-		)
+		expect(
+			findTaskPlacementGroupItem(groups, { kind: 'standalone', spaceId: 'space-a' })?.title,
+		).toBe('独立事项')
 		expect(
 			findTaskPlacementGroupItem(groups, {
 				kind: 'project',

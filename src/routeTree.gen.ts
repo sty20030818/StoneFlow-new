@@ -16,8 +16,7 @@ import { Route as ShellScopeKeyRouteRouteImport } from './routes/_shell/$scopeKe
 import { Route as DebugActivityRouteImport } from './routes/debug.activity'
 import { Route as ShellScopeKeyIndexRouteImport } from './routes/_shell/$scopeKey/index'
 import { Route as ShellScopeKeyArchiveRouteImport } from './routes/_shell/$scopeKey/archive'
-import { Route as ShellScopeKeyInboxRouteImport } from './routes/_shell/$scopeKey/inbox'
-import { Route as ShellScopeKeyNoProjectRouteImport } from './routes/_shell/$scopeKey/no-project'
+import { Route as ShellScopeKeyStandaloneRouteImport } from './routes/_shell/$scopeKey/standalone'
 import { Route as ShellScopeKeyProjectsRouteRouteImport } from './routes/_shell/$scopeKey/projects/route'
 import { Route as ShellScopeKeySettingsRouteRouteImport } from './routes/_shell/$scopeKey/settings/route'
 import { Route as ShellScopeKeyTasksRouteRouteImport } from './routes/_shell/$scopeKey/tasks/route'
@@ -66,14 +65,9 @@ const ShellScopeKeyArchiveRoute = ShellScopeKeyArchiveRouteImport.update({
   path: '/archive',
   getParentRoute: () => ShellScopeKeyRouteRoute,
 } as any)
-const ShellScopeKeyInboxRoute = ShellScopeKeyInboxRouteImport.update({
-  id: '/inbox',
-  path: '/inbox',
-  getParentRoute: () => ShellScopeKeyRouteRoute,
-} as any)
-const ShellScopeKeyNoProjectRoute = ShellScopeKeyNoProjectRouteImport.update({
-  id: '/no-project',
-  path: '/no-project',
+const ShellScopeKeyStandaloneRoute = ShellScopeKeyStandaloneRouteImport.update({
+  id: '/standalone',
+  path: '/standalone',
   getParentRoute: () => ShellScopeKeyRouteRoute,
 } as any)
 const ShellScopeKeyProjectsRouteRoute =
@@ -160,8 +154,7 @@ export interface FileRoutesByFullPath {
   '/$scopeKey/tasks': typeof ShellScopeKeyTasksRouteRouteWithChildren
   '/$scopeKey/views': typeof ShellScopeKeyViewsRouteRouteWithChildren
   '/$scopeKey/archive': typeof ShellScopeKeyArchiveRoute
-  '/$scopeKey/inbox': typeof ShellScopeKeyInboxRoute
-  '/$scopeKey/no-project': typeof ShellScopeKeyNoProjectRoute
+  '/$scopeKey/standalone': typeof ShellScopeKeyStandaloneRoute
   '/$scopeKey/trash': typeof ShellScopeKeyTrashRoute
   '/$scopeKey/': typeof ShellScopeKeyIndexRoute
   '/$scopeKey/projects/$projectId': typeof ShellScopeKeyProjectsProjectIdRoute
@@ -178,8 +171,7 @@ export interface FileRoutesByTo {
   '/launcher': typeof LauncherRoute
   '/debug/activity': typeof DebugActivityRoute
   '/$scopeKey/archive': typeof ShellScopeKeyArchiveRoute
-  '/$scopeKey/inbox': typeof ShellScopeKeyInboxRoute
-  '/$scopeKey/no-project': typeof ShellScopeKeyNoProjectRoute
+  '/$scopeKey/standalone': typeof ShellScopeKeyStandaloneRoute
   '/$scopeKey/trash': typeof ShellScopeKeyTrashRoute
   '/$scopeKey': typeof ShellScopeKeyIndexRoute
   '/$scopeKey/projects/$projectId': typeof ShellScopeKeyProjectsProjectIdRoute
@@ -203,8 +195,7 @@ export interface FileRoutesById {
   '/_shell/$scopeKey/tasks': typeof ShellScopeKeyTasksRouteRouteWithChildren
   '/_shell/$scopeKey/views': typeof ShellScopeKeyViewsRouteRouteWithChildren
   '/_shell/$scopeKey/archive': typeof ShellScopeKeyArchiveRoute
-  '/_shell/$scopeKey/inbox': typeof ShellScopeKeyInboxRoute
-  '/_shell/$scopeKey/no-project': typeof ShellScopeKeyNoProjectRoute
+  '/_shell/$scopeKey/standalone': typeof ShellScopeKeyStandaloneRoute
   '/_shell/$scopeKey/trash': typeof ShellScopeKeyTrashRoute
   '/_shell/$scopeKey/': typeof ShellScopeKeyIndexRoute
   '/_shell/$scopeKey/projects/$projectId': typeof ShellScopeKeyProjectsProjectIdRoute
@@ -228,8 +219,7 @@ export interface FileRouteTypes {
     | '/$scopeKey/tasks'
     | '/$scopeKey/views'
     | '/$scopeKey/archive'
-    | '/$scopeKey/inbox'
-    | '/$scopeKey/no-project'
+    | '/$scopeKey/standalone'
     | '/$scopeKey/trash'
     | '/$scopeKey/'
     | '/$scopeKey/projects/$projectId'
@@ -246,8 +236,7 @@ export interface FileRouteTypes {
     | '/launcher'
     | '/debug/activity'
     | '/$scopeKey/archive'
-    | '/$scopeKey/inbox'
-    | '/$scopeKey/no-project'
+    | '/$scopeKey/standalone'
     | '/$scopeKey/trash'
     | '/$scopeKey'
     | '/$scopeKey/projects/$projectId'
@@ -270,8 +259,7 @@ export interface FileRouteTypes {
     | '/_shell/$scopeKey/tasks'
     | '/_shell/$scopeKey/views'
     | '/_shell/$scopeKey/archive'
-    | '/_shell/$scopeKey/inbox'
-    | '/_shell/$scopeKey/no-project'
+    | '/_shell/$scopeKey/standalone'
     | '/_shell/$scopeKey/trash'
     | '/_shell/$scopeKey/'
     | '/_shell/$scopeKey/projects/$projectId'
@@ -342,18 +330,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellScopeKeyArchiveRouteImport
       parentRoute: typeof ShellScopeKeyRouteRoute
     }
-    '/_shell/$scopeKey/inbox': {
-      id: '/_shell/$scopeKey/inbox'
-      path: '/inbox'
-      fullPath: '/$scopeKey/inbox'
-      preLoaderRoute: typeof ShellScopeKeyInboxRouteImport
-      parentRoute: typeof ShellScopeKeyRouteRoute
-    }
-    '/_shell/$scopeKey/no-project': {
-      id: '/_shell/$scopeKey/no-project'
-      path: '/no-project'
-      fullPath: '/$scopeKey/no-project'
-      preLoaderRoute: typeof ShellScopeKeyNoProjectRouteImport
+    '/_shell/$scopeKey/standalone': {
+      id: '/_shell/$scopeKey/standalone'
+      path: '/standalone'
+      fullPath: '/$scopeKey/standalone'
+      preLoaderRoute: typeof ShellScopeKeyStandaloneRouteImport
       parentRoute: typeof ShellScopeKeyRouteRoute
     }
     '/_shell/$scopeKey/projects': {
@@ -520,8 +501,7 @@ interface ShellScopeKeyRouteRouteChildren {
   ShellScopeKeyTasksRouteRoute: typeof ShellScopeKeyTasksRouteRouteWithChildren
   ShellScopeKeyViewsRouteRoute: typeof ShellScopeKeyViewsRouteRouteWithChildren
   ShellScopeKeyArchiveRoute: typeof ShellScopeKeyArchiveRoute
-  ShellScopeKeyInboxRoute: typeof ShellScopeKeyInboxRoute
-  ShellScopeKeyNoProjectRoute: typeof ShellScopeKeyNoProjectRoute
+  ShellScopeKeyStandaloneRoute: typeof ShellScopeKeyStandaloneRoute
   ShellScopeKeyTrashRoute: typeof ShellScopeKeyTrashRoute
   ShellScopeKeyIndexRoute: typeof ShellScopeKeyIndexRoute
 }
@@ -532,8 +512,7 @@ const ShellScopeKeyRouteRouteChildren: ShellScopeKeyRouteRouteChildren = {
   ShellScopeKeyTasksRouteRoute: ShellScopeKeyTasksRouteRouteWithChildren,
   ShellScopeKeyViewsRouteRoute: ShellScopeKeyViewsRouteRouteWithChildren,
   ShellScopeKeyArchiveRoute: ShellScopeKeyArchiveRoute,
-  ShellScopeKeyInboxRoute: ShellScopeKeyInboxRoute,
-  ShellScopeKeyNoProjectRoute: ShellScopeKeyNoProjectRoute,
+  ShellScopeKeyStandaloneRoute: ShellScopeKeyStandaloneRoute,
   ShellScopeKeyTrashRoute: ShellScopeKeyTrashRoute,
   ShellScopeKeyIndexRoute: ShellScopeKeyIndexRoute,
 }
