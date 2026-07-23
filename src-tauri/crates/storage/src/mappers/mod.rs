@@ -1,4 +1,4 @@
-//! schema 与 domain 枚举互转（R2）。
+//! schema 与 domain 枚举互转。
 
 use crate::entities::common::{
     SyncEntityType as SchemaSyncEntityType, ViewEntityKind as SchemaViewEntityKind,

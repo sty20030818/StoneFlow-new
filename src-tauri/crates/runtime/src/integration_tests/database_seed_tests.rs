@@ -1,4 +1,4 @@
-//! R2 Seed 回归：仅默认 Space「个人」，无系统 View。
+//! Seed 回归：仅默认 Space「个人」，无系统 View。
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
 use stoneflow_storage::database::bootstrap_database_for_test;
@@ -50,8 +50,8 @@ async fn bootstrap_should_not_seed_system_views_or_settings() {
     .await
     .expect("settings count query should succeed");
 
-    assert_eq!(view_count, 0, "R2：系统 View 不入库");
-    assert_eq!(settings_count, 0, "R2：Settings 不预置默认行");
+    assert_eq!(view_count, 0, "系统 View 不入库");
+    assert_eq!(settings_count, 0, "Settings 不预置默认行");
 }
 
 async fn scalar_i64(connection: &impl ConnectionTrait, sql: &str) -> Result<i64, sea_orm::DbErr> {

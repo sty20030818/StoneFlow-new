@@ -1,10 +1,10 @@
 # stoneflow-sync
 
-同进程 R7 远端协议库。负责 Turso schema、operation push、cursor pull、baseline 与远端只读诊断。
+同进程远端协议库。负责 Turso schema、operation push、cursor pull、baseline 与远端只读诊断。
 
 ## 职责
 
-- 打开远端 Turso 连接并校验 R7 schema
+- 打开远端 Turso 连接并校验远端 schema
 - 提交 operation、读取增量变更与 baseline
 - 提供远端 probe / diagnose 只读结果
 

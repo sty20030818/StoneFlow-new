@@ -134,8 +134,6 @@ impl LauncherPorts for LauncherPortsAdapter {
             id: task.id,
             space_id: task.space_id,
             project_id: task.project_id,
-            // R2 起无 Inbox 容器；字段保留契约兼容，恒为 None。
-            inbox_at: None,
             title: task.title,
             note: task.note,
             due_at: task.due_at,
@@ -190,7 +188,6 @@ impl LauncherPorts for LauncherPortsAdapter {
                 space_name,
                 project_id: row.project_id,
                 project_name,
-                inbox_at: None,
                 title: row.title,
                 note: row.note,
                 priority: row.priority,

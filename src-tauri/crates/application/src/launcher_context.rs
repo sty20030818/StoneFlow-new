@@ -60,7 +60,7 @@ impl<P: LauncherPorts> LauncherContextService<P> {
         Ok(LauncherInitialStateDto {
             current_scope,
             default_space_id,
-            // R2 起无 Inbox 容器；默认落在独立事项（NoProject）。
+            // 默认落在独立事项（当前 Space 内无 Project 归属）。
             default_placement: LauncherPlacementDto {
                 kind: LauncherPlacementKind::NoProject,
                 project_id: None,

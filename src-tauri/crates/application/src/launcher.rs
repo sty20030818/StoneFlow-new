@@ -23,7 +23,6 @@ pub enum ActiveScopeKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LauncherResolvedPlacement {
     Project,
-    Inbox,
     NoProject,
 }
 
@@ -54,7 +53,6 @@ pub struct LauncherScopeDto {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LauncherPlacementKind {
-    Inbox,
     NoProject,
     Project,
 }
@@ -80,7 +78,6 @@ pub struct LauncherSpaceSummaryDto {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum LauncherProjectOptionKind {
-    Inbox,
     NoProject,
     Project,
 }
@@ -103,7 +100,6 @@ pub struct LauncherTaskItemDto {
     pub space_name: String,
     pub project_id: Option<String>,
     pub project_name: Option<String>,
-    pub inbox_at: Option<String>,
     pub title: String,
     pub note: Option<String>,
     pub priority: i32,
@@ -144,7 +140,6 @@ pub struct LauncherTaskDetail {
     pub id: String,
     pub space_id: String,
     pub project_id: Option<String>,
-    pub inbox_at: Option<String>,
     pub title: String,
     pub note: Option<String>,
     pub due_at: Option<String>,
@@ -279,11 +274,6 @@ fn resolve_task_placement(detail: &LauncherTaskDetail) -> LauncherResolvedPlacem
     if detail.project_id.is_some() {
         return LauncherResolvedPlacement::Project;
     }
-
-    if detail.inbox_at.is_some() {
-        return LauncherResolvedPlacement::Inbox;
-    }
-
     LauncherResolvedPlacement::NoProject
 }
 

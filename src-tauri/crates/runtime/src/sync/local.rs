@@ -1,4 +1,4 @@
-//! R7 本地同步副本状态与只读诊断。
+//! 本地同步副本状态与只读诊断。
 
 use sea_orm::{ConnectionTrait, DbBackend, Statement};
 
@@ -76,7 +76,7 @@ pub async fn read_local_diagnostics(
         .map(|cursor| {
             cursor
                 .parse()
-                .map_err(|error| AppError::database(format!("解析 R7 本地 cursor 失败: {error}")))
+                .map_err(|error| AppError::database(format!("解析 本地 cursor 失败: {error}")))
         })
         .transpose()?;
     let row = database
@@ -94,8 +94,8 @@ pub async fn read_local_diagnostics(
             "#,
         ))
         .await
-        .map_err(|error| AppError::database(format!("读取 R7 本地诊断计数失败: {error}")))?
-        .ok_or_else(|| AppError::database("R7 本地诊断计数缺少结果行"))?;
+        .map_err(|error| AppError::database(format!("读取 本地诊断计数失败: {error}")))?
+        .ok_or_else(|| AppError::database("本地诊断计数缺少结果行"))?;
     let spaces = row.try_get("", "spaces")?;
     let projects = row.try_get("", "projects")?;
     let tasks = row.try_get("", "tasks")?;
@@ -190,14 +190,14 @@ mod tests {
     use super::read_local_diagnostics;
 
     #[tokio::test]
-    async fn local_diagnostics_should_read_r7_outbox_state() {
+    async fn local_diagnostics_should_read_outbox_state() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
 
         let output = read_local_diagnostics(&database)
             .await
-            .expect("local diagnostics should read R7 tables");
+            .expect("local diagnostics should read tables");
 
         assert_eq!(output.pending_mutation_count, 0);
     }

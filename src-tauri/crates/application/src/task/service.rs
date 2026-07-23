@@ -69,7 +69,7 @@ pub struct ListTasksPlacementInput {
     pub project_id: Option<String>,
 }
 
-/// Task 列表 placement 类型（R2：取消 Inbox，未分配 Project 统一为 NoProject）。
+/// Task 列表 placement 类型（取消 Inbox，未分配 Project 统一为 NoProject）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ListTasksPlacementKind {
@@ -152,7 +152,7 @@ pub struct CreateTaskPlacementInput {
     pub project_id: Option<String>,
 }
 
-/// 创建 Task 时的 placement 类型（R2：取消 Inbox）。
+/// 创建 Task 时的 placement 类型（取消 Inbox）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum CreateTaskPlacementKind {

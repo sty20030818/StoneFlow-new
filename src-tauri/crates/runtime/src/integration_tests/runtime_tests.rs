@@ -19,7 +19,7 @@ fn healthcheck_payload(database: DatabaseRuntimeSnapshot) -> (&'static str, &'st
 }
 
 #[test]
-fn healthcheck_should_report_stage_0_runtime() {
+fn healthcheck_should_report_ready_runtime() {
     let (status, app, database_ready) = healthcheck_payload(DatabaseRuntimeSnapshot {
         database_path: "/tmp/stoneflow.sqlite3".to_owned(),
         database_ready: true,

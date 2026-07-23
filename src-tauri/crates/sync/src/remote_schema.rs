@@ -1,4 +1,4 @@
-//! R7 远端数据面。
+//! 远端同步数据面 schema。
 //!
 //! 只创建缺失表；已存在但版本不匹配时返回明确错误，绝不自动 drop 或 rebuild。
 
@@ -65,13 +65,13 @@ const SCHEMA_STATEMENTS: &[&str] = &[
     "CREATE INDEX IF NOT EXISTS idx_sync_tombstones_identity ON sync_tombstones(entity_type, entity_id, generation)",
 ];
 
-/// 在空远端建立 R7 schema，或验证已存在 schema 的版本。
+/// 在空远端建立 schema，或验证已存在 schema 的版本。
 pub async fn bootstrap_protocol_schema(remote: &Connection) -> Result<(), SyncError> {
     for statement in SCHEMA_STATEMENTS {
         remote
             .execute(statement, params![])
             .await
-            .map_err(|error| SyncError::schema(format!("初始化 R7 远端同步表失败: {error}")))?;
+            .map_err(|error| SyncError::schema(format!("初始化 远端同步表失败: {error}")))?;
     }
 
     let mut rows = remote
@@ -80,14 +80,14 @@ pub async fn bootstrap_protocol_schema(remote: &Connection) -> Result<(), SyncEr
             params![],
         )
         .await
-        .map_err(|error| SyncError::schema(format!("读取 R7 远端 schema 版本失败: {error}")))?;
+        .map_err(|error| SyncError::schema(format!("读取 远端 schema 版本失败: {error}")))?;
     let version = rows
         .next()
         .await
-        .map_err(|error| SyncError::schema(format!("遍历 R7 远端 schema 版本失败: {error}")))?
+        .map_err(|error| SyncError::schema(format!("遍历 远端 schema 版本失败: {error}")))?
         .map(|row| row.get::<i64>(0))
         .transpose()
-        .map_err(|error| SyncError::schema(format!("读取 R7 远端 schema 版本失败: {error}")))?;
+        .map_err(|error| SyncError::schema(format!("读取 远端 schema 版本失败: {error}")))?;
 
     match version {
         None => {
@@ -98,13 +98,13 @@ pub async fn bootstrap_protocol_schema(remote: &Connection) -> Result<(), SyncEr
                 )
                 .await
                 .map_err(|error| {
-                    SyncError::schema(format!("写入 R7 远端 schema 版本失败: {error}"))
+                    SyncError::schema(format!("写入 远端 schema 版本失败: {error}"))
                 })?;
             Ok(())
         }
         Some(PROTOCOL_SCHEMA_VERSION) => Ok(()),
         Some(version) => Err(SyncError::schema(format!(
-            "R7 远端 schema 版本不兼容: 当前 {version}，需要 {PROTOCOL_SCHEMA_VERSION}"
+            "远端 schema 版本不兼容: 当前 {version}，需要 {PROTOCOL_SCHEMA_VERSION}"
         ))),
     }
 }

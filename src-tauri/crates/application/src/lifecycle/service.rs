@@ -1,7 +1,7 @@
 //! Lifecycle 用例编排。
 //!
 //! 两阶段删除：Delete=软删进回收站（仍同步）；PermanentlyDelete=物理删+tombstone。
-//! 完整仓储接线留给 R3–R5；当前写路径仍 stub，但契约与列表语义已对齐产品。
+//! 列表语义已对齐；写路径由各实体 application service 承担。
 
 #![allow(async_fn_in_trait)]
 #![allow(dead_code)]

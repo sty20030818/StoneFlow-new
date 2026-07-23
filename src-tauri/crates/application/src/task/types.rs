@@ -94,7 +94,7 @@ pub enum TaskLifecycleView {
     All,
 }
 
-/// Task 列表 placement 查询（R2：取消 Inbox 概念，未分配 Project 一律视为 NoProject）。
+/// Task 列表 placement 查询（取消 Inbox 概念，未分配 Project 一律视为 NoProject）。
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum TaskPlacementQuery {
     #[default]

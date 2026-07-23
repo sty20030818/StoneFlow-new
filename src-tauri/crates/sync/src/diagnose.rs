@@ -1,4 +1,4 @@
-//! R7 远端协议数据面的只读诊断。
+//! 远端协议数据面的只读诊断。
 
 use libsql::{params, Connection};
 use serde::Serialize;
@@ -51,13 +51,13 @@ async fn read_latest_server_seq(remote: &Connection) -> Result<Option<i64>, Sync
     let mut rows = remote
         .query("SELECT MAX(server_seq) FROM sync_change_log", params![])
         .await
-        .map_err(remote_error("读取 R7 最新 server sequence"))?;
+        .map_err(remote_error("读取 最新 server sequence"))?;
     rows.next()
         .await
-        .map_err(remote_error("遍历 R7 最新 server sequence"))?
-        .ok_or_else(|| SyncError::remote_database("R7 最新 server sequence 缺少结果行"))?
+        .map_err(remote_error("遍历 最新 server sequence"))?
+        .ok_or_else(|| SyncError::remote_database("最新 server sequence 缺少结果行"))?
         .get::<Option<i64>>(0)
-        .map_err(remote_error("读取 R7 最新 server sequence"))
+        .map_err(remote_error("读取 最新 server sequence"))
 }
 
 async fn read_remote_counts(remote: &Connection) -> Result<SyncDiagnosticsCountsOutput, SyncError> {
@@ -75,12 +75,12 @@ async fn read_remote_counts(remote: &Connection) -> Result<SyncDiagnosticsCounts
             params![],
         )
         .await
-        .map_err(remote_error("读取 R7 远端实体计数"))?;
+        .map_err(remote_error("读取 远端实体计数"))?;
     let row = rows
         .next()
         .await
-        .map_err(remote_error("遍历 R7 远端实体计数"))?
-        .ok_or_else(|| SyncError::remote_database("R7 远端实体计数缺少结果行"))?;
+        .map_err(remote_error("遍历 远端实体计数"))?
+        .ok_or_else(|| SyncError::remote_database("远端实体计数缺少结果行"))?;
     let spaces = read_count(&row, 0)?;
     let projects = read_count(&row, 1)?;
     let tasks = read_count(&row, 2)?;
@@ -100,7 +100,7 @@ async fn read_remote_counts(remote: &Connection) -> Result<SyncDiagnosticsCounts
 fn read_count(row: &libsql::Row, index: i32) -> Result<i64, SyncError> {
     row.get::<Option<i64>>(index)
         .map(|value| value.unwrap_or(0))
-        .map_err(remote_error("读取 R7 远端实体计数"))
+        .map_err(remote_error("读取 远端实体计数"))
 }
 
 fn remote_error(context: &'static str) -> impl Fn(libsql::Error) -> SyncError {
@@ -116,7 +116,7 @@ mod tests {
     use crate::bootstrap_protocol_schema;
 
     #[tokio::test]
-    async fn remote_diagnostics_should_count_r7_snapshots() {
+    async fn remote_diagnostics_should_count_snapshots() {
         let (_directory, connection) = open_test_connection().await;
         bootstrap_protocol_schema(&connection)
             .await
@@ -131,14 +131,14 @@ mod tests {
 
         let output = collect_sync_remote_diagnostics(&connection)
             .await
-            .expect("diagnostics should read R7 schema");
+            .expect("diagnostics should read schema");
 
         assert_eq!(output.counts.tasks, 1);
         assert_eq!(output.counts.total_items, 1);
     }
 
     #[tokio::test]
-    async fn probe_should_read_r7_change_log_head() {
+    async fn probe_should_read_change_log_head() {
         let (_directory, connection) = open_test_connection().await;
         bootstrap_protocol_schema(&connection)
             .await
@@ -153,7 +153,7 @@ mod tests {
 
         let output = collect_sync_probe(&connection)
             .await
-            .expect("probe should read R7 schema");
+            .expect("probe should read schema");
 
         assert_eq!(output.latest_server_seq, Some(1));
     }

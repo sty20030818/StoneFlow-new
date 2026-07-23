@@ -17,7 +17,7 @@ R0–R7（协议/引擎 1–4）已完成；R8 阶段一进行中。R7 阶段五
 | R6 | [View 与查询](../2026-07-22-r6-view-queries/SPEC.md) | 已完成 |
 | R7 | [同步引擎](../2026-07-22-r7-sync-engine/SPEC.md) | 阶段一至四完成；阶段五验证债 |
 | R8 | [Runtime 与 Platform](../2026-07-22-r8-runtime-platform/SPEC.md) | 已完成（见 R8 TASKS） |
-| R9 | [旧链路清理](../2026-07-22-r9-legacy-cleanup/SPEC.md) | 待开始 |
+| R9 | [旧链路清理](../2026-07-22-r9-legacy-cleanup/SPEC.md) | 后端主线完成；[前端 follow-up](../2026-07-22-r9-legacy-cleanup/FRONTEND-FOLLOWUP.md) |
 | R10 | [全量验证与文档](../2026-07-22-r10-verification-docs/SPEC.md) | 待开始 |
 
 ## 阻塞

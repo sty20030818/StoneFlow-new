@@ -191,7 +191,7 @@ mod tests {
         let created = service
             .create_project(CreateProjectInput {
                 space_id: spaces[0].id.clone(),
-                name: "R4 项目".to_owned(),
+                name: "项目".to_owned(),
                 description: Some("说明".to_owned()),
                 status: Some(WorkStatus::Doing),
                 priority: Some(4),

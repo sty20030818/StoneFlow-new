@@ -75,7 +75,7 @@ impl OutboxOpKind {
     }
 }
 
-/// R7 Outbox payload：只表达字段变更或生命周期，不保存整实体快照。
+/// Outbox payload：只表达字段变更或生命周期，不保存整实体快照。
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum OutboxPayload {
@@ -87,7 +87,7 @@ pub enum OutboxPayload {
 impl OutboxPayload {
     pub fn to_json(&self) -> Result<String, ApplicationError> {
         serde_json::to_string(self).map_err(|error| {
-            ApplicationError::internal(format!("序列化 R7 Outbox payload 失败: {error}"))
+            ApplicationError::internal(format!("序列化 Outbox payload 失败: {error}"))
         })
     }
 }

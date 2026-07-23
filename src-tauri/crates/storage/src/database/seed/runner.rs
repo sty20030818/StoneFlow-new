@@ -17,7 +17,7 @@ pub fn multiple_default_spaces_error() -> StorageError {
     StorageError::initialization(MULTIPLE_DEFAULT_SPACES_ERROR)
 }
 
-/// 执行 R2 默认 Seed（仅默认 Space）。
+/// 执行默认 Seed（仅默认 Space）。
 pub async fn run_seed(connection: &DatabaseConnection) -> Result<(), StorageError> {
     if store::count_active_default_spaces(connection).await? > 1 {
         return Err(multiple_default_spaces_error());

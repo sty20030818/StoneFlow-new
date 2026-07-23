@@ -11,7 +11,7 @@ Tauri transport 与组合层。这是唯一允许依赖 Tauri 并装配各层的
 
 ## 过渡说明
 
-`services/` 仍承载旧 adapter 与部分编排壳，供现有 command 编译。R2-R8 纵切迁移后，由 R9 删除生产入口。
+业务服务经 `AppState` 装配；`update/` 为更新适配；无 `services` 过渡层。
 
 ## 禁止
 

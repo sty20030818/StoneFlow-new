@@ -2,7 +2,7 @@
 
 ## 设计范围
 
-`sync` 是不依赖 Tauri 的 R7 远端协议库。它负责远端 schema、幂等 operation 提交、增量读取与基线读取；本地 SQLite 回放、Outbox 确认、调度、状态与 Tauri 事件由 `runtime` 负责。
+`sync` 是不依赖 Tauri 的 远端协议库。它负责远端 schema、幂等 operation 提交、增量读取与基线读取；本地 SQLite 回放、Outbox 确认、调度、状态与 Tauri 事件由 `runtime` 负责。
 
 ## 实现总览
 
@@ -10,7 +10,7 @@
 runtime 调度
   -> 读取本地 Outbox / cursor
   -> sync library
-      -> Turso/libSQL R7 protocol tables
+      -> Turso/libSQL protocol tables
   -> runtime 在本地短事务中物化 replica、确认 Outbox、更新 cursor
   -> runtime 发出同步状态和工作区变更事件
 ```
@@ -58,7 +58,7 @@ runtime 调度
 | `protocol.rs` | 字段级 LWW、生命周期与 tombstone 规则 |
 | `protocol_push.rs` | 幂等 operation 提交与远端状态物化 |
 | `protocol_pull.rs` | 分页增量与 baseline 读取 |
-| `remote_schema.rs` | R7 远端协议表及版本检查 |
+| `remote_schema.rs` | 远端协议表及版本检查 |
 | `remote.rs` | Turso/libSQL 远端连接 |
 | `error.rs` | 协议边界的结构化错误 |
 

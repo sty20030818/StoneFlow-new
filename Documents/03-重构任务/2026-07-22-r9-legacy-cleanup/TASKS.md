@@ -2,63 +2,49 @@
 
 ## 当前阶段
 
-未开始。依赖 R8；本任务只删除已经由新实现替代的旧链路，不以“清理”为名引入新的架构改动。
+**后端主线已完成**；前端产品/路由硬切另立 follow-up（见同目录 `FRONTEND-FOLLOWUP.md`）。
 
-## 阶段一：建立旧入口与替代 Owner 清单
+## 产品结论（侧栏，已确认）
 
-目标：先证明每个待删对象确实无生产职责，防止删掉未迁移的能力。
+- **方案 A**：顶栏仅「全部任务 / 项目总览 / 视图」。
+- **去掉收件箱**（无 Inbox 容器）。
+- **独立事项**：当前 Space 项目列表顶部的虚拟入口 = 该 Space 下 `project_id IS NULL` 的任务。
+- **不做**全局未归类 View。
 
-- [ ] 从 Cargo metadata、Tauri config、command registry、前端 API facade 和测试入口建立旧路径清单。
-- [ ] 搜索旧 crate、worker、CLI、snapshot、Inbox/Focus、complete/reopen、兼容 DTO 与 raw connection escape hatch。
-- [ ] 为每个待删项记录新的 Owner、替代证据或明确标记为死代码；没有替代证据的项目不得删除。
-- [ ] 将用户数据备份和 R0 验证结果作为删除前置条件，而不是在本任务重新导出数据。
+## 阶段一：清单与替代证据
 
-验收：待删清单可追溯到替代实现；没有仅凭名称猜测的删除项。
+- [x] 扫描 Cargo / command / migration / 阶段性命名 / Inbox 兼容。
+- [x] 确认 migration 可合并（空库、无在线升级）。
+- [x] 确认 AppState 为唯一业务 State 根。
 
-## 阶段二：删除 Rust 与同步旧链路
+## 阶段二：Rust / 同步 / schema
 
-目标：结束新旧后端并存，缩小长期维护和安全面。
+- [x] **单一 baseline 迁移** `m20260723_000001_baseline`（删除 r2–r7 分片迁移）。
+- [x] 索引 `ix_tasks_space_no_project_position`（原 inbox 命名）。
+- [x] `r7_push` / `r7_pull` → `outbox_push` / `cursor_pull`。
+- [x] 注释/错误/测试名去掉 `R2`–`R8` 阶段性标记。
+- [x] Launcher / Application 去掉 Inbox 枚举与 `inbox_at` 兼容字段。
+- [x] Sidebar settings 去掉 `SidebarMainItemKey::Inbox` 与 `main_items.inbox`。
+- [x] 仅 `manage(AppState)`（不再双 manage database/sync）。
+- [x] 删除 `runtime/services`（R8 已完成，本阶段确认无残留）。
 
-- [ ] 删除旧 Rust crate、sync-worker/sidecar、stdout JSON、旧 schema/migration、compat adapter 与无调用 repository。
-- [ ] 删除旧同步 snapshot/全量路径、worker path lookup、externalBin、过时 capability 和无用依赖。
-- [ ] 删除 raw connection 逃生通道，确保数据库访问通过 storage/application 已确认边界。
-- [ ] 运行 Cargo metadata 和全仓检索，确保旧 crate、命令、feature flag 与配置没有残留。
+## 阶段三：前端
 
-验收：Rust workspace、Tauri bundle 配置和运行时不再可启动旧同步/数据路径。
+- [ ] **不在本阶段完成** → 见 `FRONTEND-FOLLOWUP.md`。
 
-## 阶段三：删除前端兼容与测试残留
+## 阶段四：文档与校验
 
-目标：使 UI 和测试只描述当前产品模型，避免旧概念继续影响新功能。
-
-- [ ] 删除旧前端 invoke、DTO、Query/store、fixture 和兼容 UI 分支。
-- [ ] 删除 Focus/Inbox、complete/reopen、旧 status 和旧快速创建文案的残留。
-- [ ] 更新或删除仅链接旧实现的测试、mock 和开发工具说明；保留测试价值而不是机械删测试。
-- [ ] 检查死导出、未使用依赖和不再可达的路由/command。
-
-验收：前端不再包含旧产品术语或调用合同；测试只覆盖当前契约。
-
-## 阶段四：文档与构建收口
-
-目标：确保未来开发者和 AI 不会根据过期资料重建已删除的设计。
-
-- [ ] 将旧实现链接从常青文档删除或替换为当前 Owner；历史任务仅在归档中保留，不作为操作说明。
-- [ ] 运行全仓检索、Cargo metadata、fmt、严格 Clippy、workspace tests、Bun typecheck/lint/format。
-- [ ] 对每个删除项记录新 Owner 或验证证据，无法验证的项留在完成记录而不声称已清理。
-
-验收：构建与校验通过；常青文档没有指向废弃生产路径；删除证据完整。
-
-## 阻塞
-
-- R8 未完成。
-- 若某旧路径仍承担未迁移的用户可见行为，先回到对应 R1-R8 任务完成迁移，不在这里保留长期兼容层。
+- [x] 更新 `src-tauri/ARCHITECTURE.md`（v9）、sync/runtime README/DESIGN 相关表述。
+- [x] `cargo test -p stoneflow-{application,storage,runtime} --lib` 通过。
+- [ ] 全 workspace Clippy / 前端 typecheck（前端未硬切前可能失败，属预期）。
 
 ## 与 SPEC 的实施偏差
 
-无。
+1. 前端 transport/路由硬切拆到 follow-up，避免后端与前端大 diff 缠在一起。
+2. UI session State（ActiveScope、Launcher 窗口、Update 服务）仍独立 manage——非业务双写，属 Tauri 壳层状态。
 
 ## 完成记录
 
-- 完成日期：
-- 删除清单与替代证据：
-- 已更新的长期文档：
-- 遗留技术债：
+- 完成日期：2026-07-23（后端主线）
+- 删除/合并证据：见 git diff（migration 7→1；r7_* 模块改名；Inbox 字段删除）
+- 遗留：前端 follow-up；R7 阶段五真环境验证；libsql 与 SQLite 同进程链接警告

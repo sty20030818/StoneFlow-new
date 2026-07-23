@@ -5,16 +5,15 @@ use tauri::State;
 use uuid::Uuid;
 
 use crate::app::error::AppError;
-use crate::app::state::{ActiveScopeKind, ActiveScopeSnapshot, ActiveScopeState};
+use crate::app::state::{ActiveScopeKind, ActiveScopeSnapshot, ActiveScopeState, AppState};
 use stoneflow_domain::next_runtime_id;
-use stoneflow_storage::database::{DatabaseRuntimeSnapshot, DatabaseRuntimeState};
+use stoneflow_storage::database::DatabaseRuntimeSnapshot;
 
 /// 当前基座的健康检查响应。
 #[derive(Debug, Clone, Serialize)]
 pub struct RuntimeHealthcheckPayload {
     pub status: &'static str,
     pub app: &'static str,
-    pub architecture_stage: &'static str,
     pub database_path: String,
     pub database_ready: bool,
 }
@@ -27,7 +26,6 @@ fn healthcheck_payload(database: DatabaseRuntimeSnapshot) -> RuntimeHealthcheckP
             "degraded"
         },
         app: "stoneflow",
-        architecture_stage: "stage_0_infra",
         database_path: database.database_path,
         database_ready: database.database_ready,
     }
@@ -56,8 +54,8 @@ pub struct ActiveScopePayload {
 }
 
 #[tauri::command]
-pub fn healthcheck(database: State<'_, DatabaseRuntimeState>) -> RuntimeHealthcheckPayload {
-    healthcheck_payload(database.snapshot())
+pub fn healthcheck(state: State<'_, AppState>) -> RuntimeHealthcheckPayload {
+    healthcheck_payload(state.database.snapshot())
 }
 
 #[tauri::command]

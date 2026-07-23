@@ -1,4 +1,4 @@
-//! R7 Outbox push bridge：本地读取与远端提交之间不持有 SQLite 事务。
+//! Outbox push：本地读取与远端提交之间不持有 SQLite 事务。
 
 use std::{collections::BTreeMap, time::Instant};
 
@@ -78,7 +78,7 @@ async fn ensure_default_space_is_remote(
             "SELECT id, name, icon_key, color_key, position, generation, created_at, updated_at FROM spaces WHERE is_default = 1 AND archived_at IS NULL AND deleted_at IS NULL LIMIT 1".to_owned(),
         ))
         .await?
-        .ok_or_else(|| AppError::initialization("本机缺少可用默认 Space，无法建立 R7 同步基线"))?;
+        .ok_or_else(|| AppError::initialization("本机缺少可用默认 Space，无法建立 同步基线"))?;
     let id: String = row.try_get("", "id")?;
     let created_at: String = row.try_get("", "created_at")?;
     let operation = SyncOperation {
@@ -173,7 +173,7 @@ fn to_mutation(
         generation: entry.generation,
     };
     let payload: OutboxPayload = serde_json::from_str(&entry.payload_json)
-        .map_err(|error| AppError::internal(format!("解析 R7 Outbox payload 失败: {error}")))?;
+        .map_err(|error| AppError::internal(format!("解析 Outbox payload 失败: {error}")))?;
     Ok(match payload {
         OutboxPayload::Patch { fields } => SyncMutation::Patch {
             patch: EntityPatch {
@@ -207,7 +207,7 @@ fn map_entity_type(value: SyncEntityType) -> Result<SyncEntityKind, AppError> {
         SyncEntityType::TaskLink => Ok(SyncEntityKind::TaskLink),
         SyncEntityType::View => Ok(SyncEntityKind::View),
         SyncEntityType::Setting | SyncEntityType::Activity => {
-            Err(AppError::internal("非同步业务实体不应进入 R7 Outbox push"))
+            Err(AppError::internal("非同步业务实体不应进入 Outbox push"))
         }
     }
 }

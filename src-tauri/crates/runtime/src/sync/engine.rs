@@ -142,11 +142,11 @@ pub async fn configure_sync(
 
 /// 本地写入成功后的统一入口：只标记 dirty，自动同步交给后续调度入口决定。
 pub async fn note_local_write(app_handle: &tauri::AppHandle) {
-    let Some(sync_state) = app_handle.try_state::<SyncRuntimeState>() else {
+    let Some(app_state) = app_handle.try_state::<crate::app::state::AppState>() else {
         return;
     };
 
-    sync_state.mark_dirty().await;
+    app_state.sync.mark_dirty().await;
     emit_sync_status_changed(app_handle, "dirty");
     log::info!("sync:dirty local write marked dirty");
 }
@@ -239,7 +239,7 @@ pub fn trigger_resume_sync(app_handle: &tauri::AppHandle) {
     });
 }
 
-/// 手动执行一轮 R7 push 后 pull，并等待本轮完成。
+/// 手动执行一轮 push 后 pull，并等待本轮完成。
 pub async fn run_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload, AppError> {
     let sync_state = sync_state_from_app(app_handle)?;
     let database = database_state_from_app(app_handle)?;
@@ -550,25 +550,19 @@ async fn sync_database(
 }
 
 fn sync_state_from_app(app_handle: &tauri::AppHandle) -> Result<SyncRuntimeState, AppError> {
-    if let Some(app_state) = app_handle.try_state::<crate::app::state::AppState>() {
-        return Ok(app_state.sync.clone());
-    }
     app_handle
-        .try_state::<SyncRuntimeState>()
-        .map(|state| state.inner().clone())
-        .ok_or_else(|| AppError::initialization("云同步状态未注册"))
+        .try_state::<crate::app::state::AppState>()
+        .map(|state| state.sync.clone())
+        .ok_or_else(|| AppError::initialization("AppState 未注册"))
 }
 
 fn database_state_from_app(
     app_handle: &tauri::AppHandle,
 ) -> Result<DatabaseRuntimeState, AppError> {
-    if let Some(app_state) = app_handle.try_state::<crate::app::state::AppState>() {
-        return Ok(app_state.database.clone());
-    }
     app_handle
-        .try_state::<DatabaseRuntimeState>()
-        .map(|state| state.inner().clone())
-        .ok_or_else(|| AppError::initialization("数据库状态未注册"))
+        .try_state::<crate::app::state::AppState>()
+        .map(|state| state.database.clone())
+        .ok_or_else(|| AppError::initialization("AppState 未注册"))
 }
 
 async fn ensure_remote_config(sync_state: &SyncRuntimeState) -> Result<(), AppError> {
@@ -679,20 +673,20 @@ async fn run_sync_worker(
     match mode {
         SyncRunMode::Push => {
             let database = database_state_from_app(app_handle)?;
-            super::r7_push::push_pending_outbox(&database, remote_config)
+            super::outbox_push::push_pending_outbox(&database, remote_config)
                 .await
                 .map(|_| ())
         }
         SyncRunMode::Pull => {
             let database = database_state_from_app(app_handle)?;
-            super::r7_pull::pull_remote_changes(&database, remote_config)
+            super::cursor_pull::pull_remote_changes(&database, remote_config)
                 .await
                 .map(|_| ())
         }
         SyncRunMode::Sync => {
             let database = database_state_from_app(app_handle)?;
-            super::r7_push::push_pending_outbox(&database, remote_config).await?;
-            super::r7_pull::pull_remote_changes(&database, remote_config)
+            super::outbox_push::push_pending_outbox(&database, remote_config).await?;
+            super::cursor_pull::pull_remote_changes(&database, remote_config)
                 .await
                 .map(|_| ())
         }

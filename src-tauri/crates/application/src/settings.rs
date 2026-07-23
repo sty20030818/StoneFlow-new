@@ -35,8 +35,6 @@ pub trait SettingsPersistence: Send + Sync {
 /// Sidebar 主区单项开关。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SidebarMainItemKey {
-    #[serde(rename = "inbox")]
-    Inbox,
     #[serde(rename = "allTasks")]
     AllTasks,
     #[serde(rename = "views")]
@@ -48,7 +46,6 @@ pub enum SidebarMainItemKey {
 impl SidebarMainItemKey {
     fn json_key(self) -> &'static str {
         match self {
-            Self::Inbox => "inbox",
             Self::AllTasks => "allTasks",
             Self::Views => "views",
             Self::ProjectOverview => "projectOverview",
@@ -86,7 +83,6 @@ pub struct SidebarItemConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SidebarMainItems {
-    pub inbox: SidebarItemConfig,
     #[serde(rename = "allTasks")]
     pub all_tasks: SidebarItemConfig,
     pub views: SidebarItemConfig,
@@ -97,7 +93,6 @@ pub struct SidebarMainItems {
 impl SidebarMainItems {
     fn visible_count(&self) -> usize {
         [
-            self.inbox.visible,
             self.all_tasks.visible,
             self.views.visible,
             self.project_overview.visible,
@@ -109,7 +104,6 @@ impl SidebarMainItems {
 
     fn item_mut(&mut self, key: SidebarMainItemKey) -> &mut SidebarItemConfig {
         match key {
-            SidebarMainItemKey::Inbox => &mut self.inbox,
             SidebarMainItemKey::AllTasks => &mut self.all_tasks,
             SidebarMainItemKey::Views => &mut self.views,
             SidebarMainItemKey::ProjectOverview => &mut self.project_overview,
@@ -157,21 +151,17 @@ impl Default for SidebarPreferenceSettings {
     fn default() -> Self {
         Self {
             main_items: SidebarMainItems {
-                inbox: SidebarItemConfig {
+                all_tasks: SidebarItemConfig {
                     visible: true,
                     order: 0,
                 },
-                all_tasks: SidebarItemConfig {
+                views: SidebarItemConfig {
                     visible: true,
                     order: 1,
                 },
-                views: SidebarItemConfig {
-                    visible: true,
-                    order: 2,
-                },
                 project_overview: SidebarItemConfig {
                     visible: true,
-                    order: 3,
+                    order: 2,
                 },
             },
             project_section: SidebarProjectSectionPreferenceConfig {
@@ -256,7 +246,7 @@ where
             return normalize_sidebar_settings(settings);
         }
 
-        // R2：settings 不再 seed；缺失时返回可写默认值。
+        // settings 不再 seed；缺失时返回可写默认值。
         normalize_sidebar_settings(SidebarPreferenceSettings::default())
     }
 
@@ -440,21 +430,17 @@ mod tests {
     #[test]
     fn validate_main_items_should_reject_all_hidden() {
         let main_items = SidebarMainItems {
-            inbox: SidebarItemConfig {
+            all_tasks: SidebarItemConfig {
                 visible: false,
                 order: 0,
             },
-            all_tasks: SidebarItemConfig {
+            views: SidebarItemConfig {
                 visible: false,
                 order: 1,
             },
-            views: SidebarItemConfig {
-                visible: false,
-                order: 2,
-            },
             project_overview: SidebarItemConfig {
                 visible: false,
-                order: 3,
+                order: 2,
             },
         };
 

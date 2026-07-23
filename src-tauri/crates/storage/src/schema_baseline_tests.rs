@@ -1,4 +1,4 @@
-//! R2 schema / seed / 约束 / Outbox 同事务集成测试。
+//! Schema / seed / 约束 / Outbox 同事务集成测试。
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, TransactionTrait};
 use stoneflow_application::operation::{
@@ -33,7 +33,7 @@ const EXPECTED_INDEXES: [&str; 17] = [
     "ix_spaces_deleted_at",
     "ix_projects_space_position",
     "ix_projects_deleted_at",
-    "ix_tasks_space_inbox_position",
+    "ix_tasks_space_no_project_position",
     "ix_tasks_project_position",
     "ix_tasks_archived_at",
     "ix_tasks_deleted_at",
@@ -55,7 +55,7 @@ const LEGACY_TABLES: [&str; 4] = [
 ];
 
 #[tokio::test]
-async fn bootstrap_should_create_r2_tables_and_indexes() {
+async fn bootstrap_should_create_tables_and_indexes() {
     let database = TestDatabase::bootstrap()
         .await
         .expect("test database should bootstrap");

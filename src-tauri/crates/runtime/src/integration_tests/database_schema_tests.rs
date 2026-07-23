@@ -35,7 +35,7 @@ const EXPECTED_INDEXES: [&str; 16] = [
     "ix_spaces_deleted_at",
     "ix_projects_space_position",
     "ix_projects_deleted_at",
-    "ix_tasks_space_inbox_position",
+    "ix_tasks_space_no_project_position",
     "ix_tasks_project_position",
     "ix_tasks_archived_at",
     "ix_tasks_deleted_at",
@@ -57,7 +57,7 @@ const LEGACY_TABLES: [&str; 5] = [
 ];
 
 #[tokio::test]
-async fn bootstrap_should_create_all_r2_tables() {
+async fn bootstrap_should_create_all_tables() {
     let database = TestDatabase::bootstrap()
         .await
         .expect("test database should bootstrap");
@@ -71,7 +71,7 @@ async fn bootstrap_should_create_all_r2_tables() {
 }
 
 #[tokio::test]
-async fn bootstrap_should_create_r2_sync_tables_without_legacy_mutations() {
+async fn bootstrap_should_create_sync_tables_without_legacy_mutations() {
     let database = TestDatabase::bootstrap()
         .await
         .expect("test database should bootstrap");
@@ -92,7 +92,7 @@ async fn bootstrap_should_create_r2_sync_tables_without_legacy_mutations() {
 }
 
 #[tokio::test]
-async fn bootstrap_should_create_expected_r2_indexes() {
+async fn bootstrap_should_create_expected_indexes() {
     let database = TestDatabase::bootstrap()
         .await
         .expect("test database should bootstrap");

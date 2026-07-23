@@ -1,4 +1,4 @@
-//! Sync 元数据：cursor / device（R2；无 sync_mutations / sync_shadow）。
+//! Sync 元数据：cursor / device。
 
 use sea_orm::{ConnectionTrait, DatabaseBackend, DatabaseConnection, Statement};
 use stoneflow_domain::create_id;

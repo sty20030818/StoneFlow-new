@@ -1,4 +1,4 @@
-//! Space Repository（R2：无软删）。
+//! Space Repository。
 
 use crate::entities::{
     prelude::{Project, Space, Task},

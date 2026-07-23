@@ -1,4 +1,4 @@
-//! R7 本地副本回放：协议状态是事实来源，业务表是其物化结果。
+//! Cursor pull：协议状态是事实来源，业务表是其物化结果。
 
 use std::time::Instant;
 
@@ -17,7 +17,7 @@ use super::{engine::map_sync_error, types::SyncRemoteConfig as RuntimeRemoteConf
 const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
 const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
 
-/// 拉取 R7 远端变更并将每一页原子物化到本地。
+/// 拉取 远端变更并将每一页原子物化到本地。
 pub async fn pull_remote_changes(
     database: &DatabaseRuntimeState,
     remote: &RuntimeRemoteConfig,
@@ -60,7 +60,7 @@ pub async fn pull_remote_changes(
         after = changes
             .last()
             .map(|change| change.server_seq)
-            .ok_or_else(|| AppError::internal("非空 R7 pull page 缺少末尾 sequence"))?;
+            .ok_or_else(|| AppError::internal("非空 pull page 缺少末尾 sequence"))?;
         apply_page(database, &changes, after).await?;
         applied += changes.len();
     }
@@ -129,7 +129,7 @@ async fn apply_page(
         }
     }
     let Some(last_change) = changes.last() else {
-        return Err(AppError::internal("R7 pull page 不能为空"));
+        return Err(AppError::internal("pull page 不能为空"));
     };
     write_cursor(&transaction, cursor, &last_change.committed_at).await?;
     transaction.commit().await?;
@@ -150,7 +150,7 @@ async fn read_cursor(database: &DatabaseRuntimeState) -> Result<Option<i64>, App
         .map(|cursor| {
             cursor
                 .parse()
-                .map_err(|error| AppError::database(format!("解析 R7 cursor 失败: {error}")))
+                .map_err(|error| AppError::database(format!("解析 cursor 失败: {error}")))
         })
         .transpose()
 }
@@ -194,7 +194,7 @@ async fn persist_replica(
                 .as_ref()
                 .map(|tombstone| &tombstone.entity)
         })
-        .ok_or_else(|| AppError::internal("空 R7 replica 不应持久化"))?;
+        .ok_or_else(|| AppError::internal("空 replica 不应持久化"))?;
     transaction.execute(statement(
         "INSERT INTO sync_protocol_entities(entity_type, entity_id, generation, snapshot_json, tombstone_json) VALUES (?, ?, ?, ?, ?) ON CONFLICT(entity_type, entity_id) DO UPDATE SET generation=excluded.generation, snapshot_json=excluded.snapshot_json, tombstone_json=excluded.tombstone_json",
         vec![entity_label(entity.entity_type).into(), entity.entity_id.clone().into(), entity.generation.into(), replica.snapshot.as_ref().map(serialize_json).transpose()?.into(), replica.tombstone.as_ref().map(serialize_json).transpose()?.into()],
@@ -385,11 +385,11 @@ fn entity_rank(kind: SyncEntityKind) -> u8 {
 }
 fn parse_json<T: serde::de::DeserializeOwned>(raw: String) -> Result<T, AppError> {
     serde_json::from_str(&raw)
-        .map_err(|error| AppError::internal(format!("解析 R7 本地协议状态失败: {error}")))
+        .map_err(|error| AppError::internal(format!("解析 本地协议状态失败: {error}")))
 }
 fn serialize_json(value: &impl serde::Serialize) -> Result<String, AppError> {
     serde_json::to_string(value)
-        .map_err(|error| AppError::internal(format!("序列化 R7 本地协议状态失败: {error}")))
+        .map_err(|error| AppError::internal(format!("序列化 本地协议状态失败: {error}")))
 }
 fn required_string(
     fields: &std::collections::BTreeMap<String, Value>,
@@ -399,7 +399,7 @@ fn required_string(
         .get(key)
         .and_then(Value::as_str)
         .map(str::to_owned)
-        .ok_or_else(|| AppError::internal(format!("R7 {} 缺少字符串字段 {key}", "entity")))
+        .ok_or_else(|| AppError::internal(format!("{} 缺少字符串字段 {key}", "entity")))
 }
 fn required_i64(
     fields: &std::collections::BTreeMap<String, Value>,
@@ -408,7 +408,7 @@ fn required_i64(
     fields
         .get(key)
         .and_then(Value::as_i64)
-        .ok_or_else(|| AppError::internal(format!("R7 entity 缺少整数字段 {key}")))
+        .ok_or_else(|| AppError::internal(format!("entity 缺少整数字段 {key}")))
 }
 fn nullable_string(
     fields: &std::collections::BTreeMap<String, Value>,
@@ -419,7 +419,7 @@ fn nullable_string(
         Some(value) => value
             .as_str()
             .map(|value| Some(value.to_owned()))
-            .ok_or_else(|| AppError::internal(format!("R7 entity 字段 {key} 必须是字符串或 null"))),
+            .ok_or_else(|| AppError::internal(format!("entity 字段 {key} 必须是字符串或 null"))),
     }
 }
 fn json_field(
@@ -430,8 +430,8 @@ fn json_field(
         .get(key)
         .map(serde_json::to_string)
         .transpose()
-        .map_err(|error| AppError::internal(format!("序列化 R7 字段 {key} 失败: {error}")))?
-        .ok_or_else(|| AppError::internal(format!("R7 entity 缺少 JSON 字段 {key}")))
+        .map_err(|error| AppError::internal(format!("序列化 字段 {key} 失败: {error}")))?
+        .ok_or_else(|| AppError::internal(format!("entity 缺少 JSON 字段 {key}")))
 }
 fn project_values(
     snapshot: &EntitySnapshot,

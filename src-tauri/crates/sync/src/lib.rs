@@ -1,6 +1,6 @@
 //! 同进程逻辑同步引擎。
 //!
-//! 负责 R7 Turso 协议与远端诊断；不依赖 Tauri。
+//! 负责 Turso 协议与远端诊断；不依赖 Tauri。
 //! 调度与 UI 事件由 runtime 负责。
 
 mod diagnose;
@@ -27,7 +27,7 @@ pub use types::SyncRemoteConfig;
 use diagnose::{collect_sync_probe, collect_sync_remote_diagnostics};
 use remote::open_remote;
 
-/// 提交已由 runtime 从本地 Outbox 归并好的 R7 operations。
+/// 提交已由 runtime 从本地 Outbox 归并好的 operations。
 pub async fn push_operations(
     remote_config: &SyncRemoteConfig,
     operations: &[SyncOperation],
@@ -48,7 +48,7 @@ pub async fn probe(remote: &SyncRemoteConfig) -> Result<SyncProbeOutput, SyncErr
     collect_sync_probe(&remote).await
 }
 
-/// R7 远端只读诊断。本地诊断属于 runtime 的 SQLite 边界。
+/// 远端只读诊断。本地诊断属于 runtime 的 SQLite 边界。
 pub async fn diagnose_remote(
     remote: &SyncRemoteConfig,
 ) -> Result<RemoteSyncDiagnosticsOutput, SyncError> {

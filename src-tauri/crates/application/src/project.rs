@@ -989,7 +989,7 @@ where
         self.build_project_detail(cascade.project).await
     }
 
-    /// 归档的 Project 不允许继续编辑（R2：无 deleted_at，仅需拦截已归档）。
+    /// 归档的 Project 不允许继续编辑（无 deleted_at，仅需拦截已归档）。
     async fn require_editable_project(
         &self,
         project_id: &str,

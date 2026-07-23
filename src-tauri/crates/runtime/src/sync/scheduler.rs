@@ -5,7 +5,9 @@ use std::time::Duration;
 use chrono::{DateTime, Utc};
 use tauri::Manager;
 
-use super::{engine, state::SyncRunMode, SyncRuntimeState};
+use crate::app::state::AppState;
+
+use super::{engine, state::SyncRunMode};
 use stoneflow_domain::now_utc;
 
 const IDLE_SLEEP: Duration = Duration::from_secs(60 * 60);
@@ -19,13 +21,12 @@ pub fn start_scheduler(app_handle: tauri::AppHandle) {
 
 async fn run_scheduler(app_handle: tauri::AppHandle) {
     loop {
-        let Some(sync_state) = app_handle
-            .try_state::<SyncRuntimeState>()
-            .map(|state| state.inner().clone())
+        let Some(app_state) = app_handle.try_state::<AppState>().map(|state| state.inner().clone())
         else {
-            log::warn!("sync:scheduler stopped because sync state is missing");
+            log::warn!("sync:scheduler stopped because AppState is missing");
             return;
         };
+        let sync_state = app_state.sync.clone();
         let notifier = sync_state.scheduler_notifier();
         let sleep_for = sync_state
             .next_sync_deadline()

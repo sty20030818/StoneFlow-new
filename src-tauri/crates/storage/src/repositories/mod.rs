@@ -1,4 +1,4 @@
-//! Repository：R2 基线持久化。
+//! Repository：本地持久化。
 //!
 //! 旧 soft-delete / sync_mutations CRUD 已拆除；Task/Project/View 等由后续切片重建。
 

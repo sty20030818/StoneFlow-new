@@ -121,7 +121,6 @@ pub struct LauncherTaskItemResponse {
     pub space_name: String,
     pub project_id: Option<String>,
     pub project_name: Option<String>,
-    pub inbox_at: Option<String>,
     pub title: String,
     pub note: Option<String>,
     pub priority: i32,
@@ -163,8 +162,7 @@ fn map_scope(payload: LauncherScopeDto) -> LauncherScopeResponse {
 fn map_placement(payload: LauncherPlacementDto) -> LauncherPlacementResponse {
     LauncherPlacementResponse {
         kind: match payload.kind {
-            // R2 起无 Inbox；遗留 Inbox 枚举映射为 noProject。
-            LauncherPlacementKind::Inbox | LauncherPlacementKind::NoProject => "noProject",
+            LauncherPlacementKind::NoProject => "noProject",
             LauncherPlacementKind::Project => "project",
         },
         project_id: payload.project_id,
@@ -184,7 +182,7 @@ fn map_space(payload: LauncherSpaceSummaryDto) -> LauncherSpaceSummaryResponse {
 fn map_project_option(payload: LauncherProjectOptionDto) -> LauncherProjectOptionResponse {
     LauncherProjectOptionResponse {
         kind: match payload.kind {
-            LauncherProjectOptionKind::Inbox | LauncherProjectOptionKind::NoProject => "noProject",
+            LauncherProjectOptionKind::NoProject => "noProject",
             LauncherProjectOptionKind::Project => "project",
         },
         id: payload.id,
@@ -200,7 +198,6 @@ fn map_task_item(payload: LauncherTaskItemDto) -> LauncherTaskItemResponse {
         space_name: payload.space_name,
         project_id: payload.project_id,
         project_name: payload.project_name,
-        inbox_at: payload.inbox_at,
         title: payload.title,
         note: payload.note,
         priority: payload.priority,

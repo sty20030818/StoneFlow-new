@@ -30,4 +30,4 @@ pub use error::StorageError;
 pub use unit_of_work::SqliteUnitOfWork;
 
 #[cfg(test)]
-mod r2_baseline_tests;
+mod schema_baseline_tests;

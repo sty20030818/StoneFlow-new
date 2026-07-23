@@ -1,4 +1,4 @@
-//! R7 operation 到远端协议数据面的原子提交。
+//! Operation 到远端协议数据面的原子提交。
 
 use libsql::{params, Connection, Transaction};
 
@@ -49,12 +49,12 @@ async fn submit_operation_once(
     let transaction = remote
         .transaction()
         .await
-        .map_err(remote_error("开启 R7 push 事务"))?;
+        .map_err(remote_error("开启 push 事务"))?;
     if let Some(committed_seq) = find_applied_operation(&transaction, operation).await? {
         transaction
             .commit()
             .await
-            .map_err(remote_error("提交 R7 幂等读取事务"))?;
+            .map_err(remote_error("提交 幂等读取事务"))?;
         return Ok(PushResult {
             committed_seq,
             was_already_applied: true,
@@ -93,11 +93,11 @@ async fn submit_operation_once(
             ],
         )
         .await
-        .map_err(remote_error("写入 R7 operation 幂等记录"))?;
+        .map_err(remote_error("写入 operation 幂等记录"))?;
     transaction
         .commit()
         .await
-        .map_err(remote_error("提交 R7 push 事务"))?;
+        .map_err(remote_error("提交 push 事务"))?;
 
     Ok(PushResult {
         committed_seq,
@@ -115,13 +115,13 @@ async fn find_applied_operation(
             params![operation.device_id.clone(), operation.operation_id.clone()],
         )
         .await
-        .map_err(remote_error("查询 R7 operation 幂等记录"))?;
+        .map_err(remote_error("查询 operation 幂等记录"))?;
     rows.next()
         .await
-        .map_err(remote_error("遍历 R7 operation 幂等记录"))?
+        .map_err(remote_error("遍历 operation 幂等记录"))?
         .map(|row| {
             row.get::<i64>(0)
-                .map_err(remote_error("读取 R7 operation sequence"))
+                .map_err(remote_error("读取 operation sequence"))
         })
         .transpose()
 }
@@ -136,13 +136,13 @@ async fn find_applied_operation_on_remote(
             params![operation.device_id.clone(), operation.operation_id.clone()],
         )
         .await
-        .map_err(remote_error("并发重试时查询 R7 operation 幂等记录"))?;
+        .map_err(remote_error("并发重试时查询 operation 幂等记录"))?;
     rows.next()
         .await
-        .map_err(remote_error("并发重试时遍历 R7 operation 幂等记录"))?
+        .map_err(remote_error("并发重试时遍历 operation 幂等记录"))?
         .map(|row| {
             row.get::<i64>(0)
-                .map_err(remote_error("并发重试时读取 R7 operation sequence"))
+                .map_err(remote_error("并发重试时读取 operation sequence"))
         })
         .transpose()
 }
@@ -180,17 +180,17 @@ async fn reserve_change(
             ],
         )
         .await
-        .map_err(remote_error("预留 R7 change sequence"))?;
+        .map_err(remote_error("预留 change sequence"))?;
     let mut rows = transaction
         .query("SELECT last_insert_rowid()", params![])
         .await
-        .map_err(remote_error("读取 R7 change sequence"))?;
+        .map_err(remote_error("读取 change sequence"))?;
     rows.next()
         .await
-        .map_err(remote_error("遍历 R7 change sequence"))?
-        .ok_or_else(|| SyncError::remote_database("R7 change sequence 缺少结果行"))?
+        .map_err(remote_error("遍历 change sequence"))?
+        .ok_or_else(|| SyncError::remote_database("change sequence 缺少结果行"))?
         .get::<i64>(0)
-        .map_err(remote_error("读取 R7 change sequence"))
+        .map_err(remote_error("读取 change sequence"))
 }
 
 fn assign_tombstone_sequence(mutation: &SyncMutation, server_seq: i64) -> SyncMutation {
@@ -232,30 +232,30 @@ async fn load_snapshot(
             params![entity_kind_label(entity), entity.entity_id.clone()],
         )
         .await
-        .map_err(remote_error("读取 R7 entity snapshot"))?;
+        .map_err(remote_error("读取 entity snapshot"))?;
     let Some(row) = rows
         .next()
         .await
-        .map_err(remote_error("遍历 R7 entity snapshot"))?
+        .map_err(remote_error("遍历 entity snapshot"))?
     else {
         return Ok(None);
     };
     let generation = row
         .get::<i64>(0)
-        .map_err(remote_error("读取 R7 snapshot generation"))?;
+        .map_err(remote_error("读取 snapshot generation"))?;
     let fields = parse_json(
         row.get::<String>(1)
-            .map_err(remote_error("读取 R7 snapshot fields"))?,
-        "R7 snapshot fields",
+            .map_err(remote_error("读取 snapshot fields"))?,
+        "snapshot fields",
     )?;
     let field_sequences = parse_json(
         row.get::<String>(2)
-            .map_err(remote_error("读取 R7 field versions"))?,
-        "R7 field versions",
+            .map_err(remote_error("读取 field versions"))?,
+        "field versions",
     )?;
     let lifecycle = parse_lifecycle(
         &row.get::<String>(3)
-            .map_err(remote_error("读取 R7 lifecycle"))?,
+            .map_err(remote_error("读取 lifecycle"))?,
     )?;
     Ok(Some(EntitySnapshot {
         entity: EntityIdentity {
@@ -267,10 +267,10 @@ async fn load_snapshot(
         lifecycle,
         lifecycle_seq: row
             .get::<i64>(4)
-            .map_err(remote_error("读取 R7 lifecycle sequence"))?,
+            .map_err(remote_error("读取 lifecycle sequence"))?,
         updated_seq: row
             .get::<i64>(5)
-            .map_err(remote_error("读取 R7 updated sequence"))?,
+            .map_err(remote_error("读取 updated sequence"))?,
     }))
 }
 
@@ -290,11 +290,11 @@ async fn load_tombstone(
             params![entity_kind_label(entity), entity.entity_id.clone()],
         )
         .await
-        .map_err(remote_error("读取 R7 tombstone"))?;
+        .map_err(remote_error("读取 tombstone"))?;
     let Some(row) = rows
         .next()
         .await
-        .map_err(remote_error("遍历 R7 tombstone"))?
+        .map_err(remote_error("遍历 tombstone"))?
     else {
         return Ok(None);
     };
@@ -302,15 +302,15 @@ async fn load_tombstone(
         entity: EntityIdentity {
             generation: row
                 .get::<i64>(0)
-                .map_err(remote_error("读取 R7 tombstone generation"))?,
+                .map_err(remote_error("读取 tombstone generation"))?,
             ..entity.clone()
         },
         deletion_seq: row
             .get::<i64>(1)
-            .map_err(remote_error("读取 R7 tombstone sequence"))?,
+            .map_err(remote_error("读取 tombstone sequence"))?,
         deleted_at: row
             .get::<String>(2)
-            .map_err(remote_error("读取 R7 tombstone time"))?,
+            .map_err(remote_error("读取 tombstone time"))?,
     }))
 }
 
@@ -333,9 +333,9 @@ async fn persist_replica(
                 updated_seq = excluded.updated_seq
             "#,
             params![entity_kind_label(&snapshot.entity), snapshot.entity.entity_id.clone(), snapshot.entity.generation,
-                serialize_json(&snapshot.fields, "R7 snapshot fields")?, serialize_json(&snapshot.field_sequences, "R7 field versions")?,
+                serialize_json(&snapshot.fields, "snapshot fields")?, serialize_json(&snapshot.field_sequences, "field versions")?,
                 lifecycle_label(snapshot.lifecycle), snapshot.lifecycle_seq, snapshot.updated_seq],
-        ).await.map_err(remote_error("写入 R7 entity snapshot"))?;
+        ).await.map_err(remote_error("写入 entity snapshot"))?;
     }
     if let Some(tombstone) = &replica.tombstone {
         transaction.execute(
@@ -346,14 +346,14 @@ async fn persist_replica(
                 deletion_seq = excluded.deletion_seq, deleted_at = excluded.deleted_at
             "#,
             params![entity_kind_label(&tombstone.entity), tombstone.entity.entity_id.clone(), tombstone.entity.generation, tombstone.deletion_seq, tombstone.deleted_at.clone()],
-        ).await.map_err(remote_error("写入 R7 tombstone"))?;
+        ).await.map_err(remote_error("写入 tombstone"))?;
         transaction
             .execute(
                 "DELETE FROM sync_entity_snapshots WHERE entity_type = ?1 AND entity_id = ?2",
                 params![entity_kind_label(entity), entity.entity_id.clone()],
             )
             .await
-            .map_err(remote_error("删除 R7 tombstoned snapshot"))?;
+            .map_err(remote_error("删除 tombstoned snapshot"))?;
     }
     Ok(())
 }
@@ -366,10 +366,10 @@ async fn write_change_payload(
     transaction
         .execute(
             "UPDATE sync_change_log SET payload_json = ?1 WHERE server_seq = ?2",
-            params![serialize_json(mutation, "R7 change payload")?, server_seq],
+            params![serialize_json(mutation, "change payload")?, server_seq],
         )
         .await
-        .map_err(remote_error("写入 R7 change payload"))?;
+        .map_err(remote_error("写入 change payload"))?;
     Ok(())
 }
 
@@ -415,7 +415,7 @@ fn parse_lifecycle(value: &str) -> Result<LifecycleState, SyncError> {
         "archived" => Ok(LifecycleState::Archived),
         "trashed" => Ok(LifecycleState::Trashed),
         _ => Err(SyncError::protocol(format!(
-            "未知 R7 lifecycle state: {value}"
+            "未知 lifecycle state: {value}"
         ))),
     }
 }

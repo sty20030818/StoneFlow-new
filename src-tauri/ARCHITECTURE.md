@@ -1,9 +1,9 @@
 # StoneFlow Tauri 后端架构
 
-> 版本：v8
+> 版本：v9
 > 作用：定义 `src-tauri/` 当前已经落地的 Rust + Tauri v2 正式边界
 > 适用范围：`/Users/stonefish/Desktop/StoneFlow/src-tauri`
-> 最后更新：2026-07-22
+> 最后更新：2026-07-23
 
 ---
 
@@ -69,9 +69,9 @@ src-tauri/
 
 根包 `stoneflow` 本身只负责桌面入口与 Tauri 绑定。
 
-已移除：`usecase`（改名 application）、`schema` / `migration`（并入 storage）、`sync-worker` sidecar（改为 sync library）、`integration-tests` host（并入 runtime `#[cfg(test)]`）。
+已移除：独立 schema/migration crate、`sync-worker` sidecar、`runtime/services` 过渡层。
 
-`runtime/services` 仍是过渡 adapter，标记为 R9 清理目标。
+`runtime` 仅作 composition / transport；业务用例经 `AppState` 调用 `application`，ports 由 `storage::adapters` 实现。本地 schema 为**单一 baseline 迁移**，不支持旧库在线升级。
 
 ---
 
@@ -88,7 +88,7 @@ src-tauri/
 3. commands 注册；
 4. 主窗口、Launcher、tray、global shortcut、single-instance；
 5. Tauri `State`；
-6. usecase / storage adapter 装配；
+6. AppState 装配（application services + sync）；
 7. event 发射与 pending command open 协调。
 
 它不负责：
@@ -106,7 +106,8 @@ src-tauri/
 
 1. Launcher 浮窗 prepare / present / hide / resize；
 2. macOS / Windows 差异封装；
-3. 窗口规格和回调注入点。
+3. 窗口规格和回调注入点；
+4. 系统凭证（Keychain / Credential Manager）适配。
 
 它不负责：
 

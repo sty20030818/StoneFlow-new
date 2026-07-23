@@ -58,12 +58,9 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
             .map_err(|error| error.to_string())
     })?;
 
-    // 单一 composition root：业务服务 + sync 句柄一次性装配。
-    // manage database 供 sync helper 与诊断读取；业务服务均经 AppState。
-    let app_state = build_app_state(database_state.clone());
-    app.manage(app_state.sync.clone());
+    // 唯一业务 composition root：数据库与同步句柄只经 AppState 访问。
+    let app_state = build_app_state(database_state);
     app.manage(app_state);
-    app.manage(database_state);
 
     build_main_window(app)?;
 

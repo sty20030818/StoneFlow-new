@@ -1,4 +1,4 @@
-//! R7 远端增量与基线读取。
+//! 远端增量与基线读取。
 //!
 //! 此模块只负责网络读取与协议反序列化；本地 SQLite 回放由 runtime 的本地副本模块负责，
 //! 因此网络 await 永远不占用本地写事务。
@@ -10,7 +10,7 @@ use crate::{
     SequencedMutation, SyncCursor, SyncEntityKind, SyncError, SyncRemoteConfig, Tombstone,
 };
 
-/// R7 每页变更数量。这个限制保护本地事务时长；调整需要先有性能证据。
+/// 每页变更数量。这个限制保护本地事务时长；调整需要先有性能证据。
 pub const PROTOCOL_PULL_PAGE_SIZE: i64 = 200;
 
 /// 从远端读取一个按 sequence 排序的增量页。
@@ -50,26 +50,26 @@ async fn fetch_protocol_changes_from_connection(
             params![after_server_seq, limit],
         )
         .await
-        .map_err(remote_error("读取 R7 增量变更"))?;
+        .map_err(remote_error("读取 增量变更"))?;
     let mut changes = Vec::new();
     while let Some(row) = rows
         .next()
         .await
-        .map_err(remote_error("遍历 R7 增量变更"))?
+        .map_err(remote_error("遍历 增量变更"))?
     {
         let payload = row
             .get::<String>(1)
-            .map_err(remote_error("读取 R7 增量 payload"))?;
+            .map_err(remote_error("读取 增量 payload"))?;
         changes.push(SequencedMutation {
             server_seq: row
                 .get::<i64>(0)
-                .map_err(remote_error("读取 R7 增量 sequence"))?,
+                .map_err(remote_error("读取 增量 sequence"))?,
             mutation: serde_json::from_str(&payload).map_err(|error| {
-                SyncError::serialization(format!("解析 R7 增量 payload 失败: {error}"))
+                SyncError::serialization(format!("解析 增量 payload 失败: {error}"))
             })?,
             committed_at: row
                 .get::<String>(2)
-                .map_err(remote_error("读取 R7 增量时间"))?,
+                .map_err(remote_error("读取 增量时间"))?,
         });
     }
     Ok(changes)
@@ -83,17 +83,17 @@ async fn ensure_cursor_is_available(
     let mut rows = remote
         .query("SELECT MIN(server_seq) FROM sync_change_log", params![])
         .await
-        .map_err(remote_error("读取 R7 最早 change sequence"))?;
+        .map_err(remote_error("读取 最早 change sequence"))?;
     let Some(row) = rows
         .next()
         .await
-        .map_err(remote_error("遍历 R7 最早 change sequence"))?
+        .map_err(remote_error("遍历 最早 change sequence"))?
     else {
         return Ok(());
     };
     let first_sequence = row
         .get::<Option<i64>>(0)
-        .map_err(remote_error("读取 R7 最早 change sequence"))?;
+        .map_err(remote_error("读取 最早 change sequence"))?;
     if first_sequence.is_some_and(|first| after_server_seq < first.saturating_sub(1)) {
         return Err(SyncError::cursor_expired());
     }
@@ -122,13 +122,13 @@ async fn read_latest_sequence(remote: &Connection) -> Result<i64, SyncError> {
             params![],
         )
         .await
-        .map_err(remote_error("读取 R7 最新 sequence"))?;
+        .map_err(remote_error("读取 最新 sequence"))?;
     rows.next()
         .await
-        .map_err(remote_error("遍历 R7 最新 sequence"))?
-        .ok_or_else(|| SyncError::remote_database("R7 最新 sequence 缺少结果行"))?
+        .map_err(remote_error("遍历 最新 sequence"))?
+        .ok_or_else(|| SyncError::remote_database("最新 sequence 缺少结果行"))?
         .get::<i64>(0)
-        .map_err(remote_error("读取 R7 最新 sequence"))
+        .map_err(remote_error("读取 最新 sequence"))
 }
 
 async fn read_snapshots(remote: &Connection) -> Result<Vec<EntitySnapshot>, SyncError> {
@@ -138,46 +138,46 @@ async fn read_snapshots(remote: &Connection) -> Result<Vec<EntitySnapshot>, Sync
             params![],
         )
         .await
-        .map_err(remote_error("读取 R7 基线实体"))?;
+        .map_err(remote_error("读取 基线实体"))?;
     let mut entities = Vec::new();
     while let Some(row) = rows
         .next()
         .await
-        .map_err(remote_error("遍历 R7 基线实体"))?
+        .map_err(remote_error("遍历 基线实体"))?
     {
         entities.push(EntitySnapshot {
             entity: EntityIdentity {
                 entity_type: parse_entity_kind(
                     &row.get::<String>(0)
-                        .map_err(remote_error("读取 R7 基线实体类型"))?,
+                        .map_err(remote_error("读取 基线实体类型"))?,
                 )?,
                 entity_id: row
                     .get::<String>(1)
-                    .map_err(remote_error("读取 R7 基线实体 ID"))?,
+                    .map_err(remote_error("读取 基线实体 ID"))?,
                 generation: row
                     .get::<i64>(2)
-                    .map_err(remote_error("读取 R7 基线 generation"))?,
+                    .map_err(remote_error("读取 基线 generation"))?,
             },
             fields: parse_json(
                 row.get::<String>(3)
-                    .map_err(remote_error("读取 R7 基线 fields"))?,
-                "R7 基线 fields",
+                    .map_err(remote_error("读取 基线 fields"))?,
+                "基线 fields",
             )?,
             field_sequences: parse_json(
                 row.get::<String>(4)
-                    .map_err(remote_error("读取 R7 基线 field versions"))?,
-                "R7 基线 field versions",
+                    .map_err(remote_error("读取 基线 field versions"))?,
+                "基线 field versions",
             )?,
             lifecycle: parse_lifecycle(
                 &row.get::<String>(5)
-                    .map_err(remote_error("读取 R7 基线 lifecycle"))?,
+                    .map_err(remote_error("读取 基线 lifecycle"))?,
             )?,
             lifecycle_seq: row
                 .get::<i64>(6)
-                .map_err(remote_error("读取 R7 基线 lifecycle sequence"))?,
+                .map_err(remote_error("读取 基线 lifecycle sequence"))?,
             updated_seq: row
                 .get::<i64>(7)
-                .map_err(remote_error("读取 R7 基线 updated sequence"))?,
+                .map_err(remote_error("读取 基线 updated sequence"))?,
         });
     }
     Ok(entities)
@@ -190,32 +190,32 @@ async fn read_tombstones(remote: &Connection) -> Result<Vec<Tombstone>, SyncErro
             params![],
         )
         .await
-        .map_err(remote_error("读取 R7 基线 tombstone"))?;
+        .map_err(remote_error("读取 基线 tombstone"))?;
     let mut tombstones = Vec::new();
     while let Some(row) = rows
         .next()
         .await
-        .map_err(remote_error("遍历 R7 基线 tombstone"))?
+        .map_err(remote_error("遍历 基线 tombstone"))?
     {
         tombstones.push(Tombstone {
             entity: EntityIdentity {
                 entity_type: parse_entity_kind(
                     &row.get::<String>(0)
-                        .map_err(remote_error("读取 R7 tombstone 类型"))?,
+                        .map_err(remote_error("读取 tombstone 类型"))?,
                 )?,
                 entity_id: row
                     .get::<String>(1)
-                    .map_err(remote_error("读取 R7 tombstone ID"))?,
+                    .map_err(remote_error("读取 tombstone ID"))?,
                 generation: row
                     .get::<i64>(2)
-                    .map_err(remote_error("读取 R7 tombstone generation"))?,
+                    .map_err(remote_error("读取 tombstone generation"))?,
             },
             deletion_seq: row
                 .get::<i64>(3)
-                .map_err(remote_error("读取 R7 tombstone sequence"))?,
+                .map_err(remote_error("读取 tombstone sequence"))?,
             deleted_at: row
                 .get::<String>(4)
-                .map_err(remote_error("读取 R7 tombstone 时间"))?,
+                .map_err(remote_error("读取 tombstone 时间"))?,
         });
     }
     Ok(tombstones)
@@ -233,7 +233,7 @@ fn parse_entity_kind(value: &str) -> Result<SyncEntityKind, SyncError> {
         "task" => Ok(SyncEntityKind::Task),
         "task_link" => Ok(SyncEntityKind::TaskLink),
         "view" => Ok(SyncEntityKind::View),
-        _ => Err(SyncError::protocol(format!("未知 R7 实体类型: {value}"))),
+        _ => Err(SyncError::protocol(format!("未知 实体类型: {value}"))),
     }
 }
 
@@ -242,7 +242,7 @@ fn parse_lifecycle(value: &str) -> Result<LifecycleState, SyncError> {
         "active" => Ok(LifecycleState::Active),
         "archived" => Ok(LifecycleState::Archived),
         "trashed" => Ok(LifecycleState::Trashed),
-        _ => Err(SyncError::protocol(format!("未知 R7 生命周期: {value}"))),
+        _ => Err(SyncError::protocol(format!("未知 生命周期: {value}"))),
     }
 }
 
