@@ -317,7 +317,6 @@ export function useViewsScene() {
 		visibleViews,
 		breadcrumbItems,
 		board,
-		sceneVariant: 'view' as const,
 		displayPageKey,
 		footerDescription: taskRun ? `当前视图共 ${taskRun.items.length} 条任务` : '正在准备视图数据',
 		bulk: {

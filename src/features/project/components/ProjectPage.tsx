@@ -92,7 +92,6 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 					</div>
 				) : null
 			}
-			sceneVariant={scene.sceneVariant}
 			toolbarDisplayAction={<DisplayOptionsButton pageKey={scene.displayPageKey} />}
 			toolbarPills={scene.toolbarPills}
 		/>

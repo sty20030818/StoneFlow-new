@@ -15,8 +15,7 @@ export { TaskPage } from './components/TaskPage'
 export { TaskPreview } from './components/TaskPreview'
 export type { TaskDetailDraft, TaskDetailPatch } from './model/taskDetailDraft'
 export {
-	applyTaskProjectDraftChange,
-	applyTaskSpaceDraftChange,
+	applyTaskPlacementDraftChange,
 	createTaskDetailDraft,
 	getTaskDetailPatch,
 	normalizeTaskDetailDraft,

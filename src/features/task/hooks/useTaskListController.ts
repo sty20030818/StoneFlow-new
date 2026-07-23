@@ -77,17 +77,7 @@ export function useTaskListController() {
 		await runTaskAction(task.id, () =>
 			updateTask.mutateAsync({
 				taskId: task.id,
-				placement:
-					target.kind === 'project'
-						? {
-								kind: 'project',
-								spaceId: target.spaceId,
-								projectId: target.projectId,
-							}
-						: {
-								kind: 'standalone',
-								spaceId: target.spaceId,
-							},
+				placement: target,
 			}),
 		)
 	}

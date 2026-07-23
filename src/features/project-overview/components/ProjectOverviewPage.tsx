@@ -37,7 +37,6 @@ export function ProjectOverviewPage() {
 					<PlusIcon />
 				</MainCard.GhostAction>
 			}
-			sceneVariant={scene.sceneVariant}
 			toolbarPills={scene.toolbarPills}
 		/>
 	)

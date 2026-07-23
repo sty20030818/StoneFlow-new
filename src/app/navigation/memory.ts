@@ -6,6 +6,7 @@ import {
 	buildCanonicalSectionPath,
 	buildStartupFallbackPath,
 	isCanonicalWorkRemainder,
+	SHELL_SECTION_KEYS,
 	splitWorkspacePath,
 	stripQueryAndHash,
 } from './path'
@@ -22,14 +23,10 @@ import {
 
 export const ROUTE_MEMORY_VERSION = 3
 
-export const ALLOWED_SECTION_SEGMENTS = new Set([
-	'tasks',
-	'views',
-	'projects',
-	'standalone',
-	'archive',
-	'trash',
-])
+/** 可记入 route memory 的 section（不含 settings）。 */
+export const ALLOWED_SECTION_SEGMENTS: ReadonlySet<string> = new Set(
+	SHELL_SECTION_KEYS.filter((section) => section !== 'settings'),
+)
 
 export function defaultShellRouteMemory(): ShellRouteMemory {
 	return {

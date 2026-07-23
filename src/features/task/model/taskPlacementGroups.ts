@@ -1,4 +1,5 @@
 import type { TaskPlacementTarget } from './taskPlacementTarget'
+import { isTaskPlacementTargetEqual } from './taskPlacementTarget'
 
 export type TaskPlacementGroupProject = {
 	id: string
@@ -77,11 +78,10 @@ export function buildTaskPlacementGroups({
 		items.push({
 			key: `standalone:${space.id}`,
 			title: '独立事项',
-			meta: 'Standalone',
+			meta: '独立事项',
 			value: getTaskPlacementGroupSearchText({
 				title: '独立事项',
 				spaceName: space.name,
-				meta: 'standalone',
 			}),
 			target: { kind: 'standalone', spaceId: space.id },
 			digit: '0',
@@ -124,18 +124,7 @@ export function findTaskPlacementGroupItem(
 ) {
 	for (const group of groups) {
 		for (const item of group.items) {
-			if (item.target.kind !== value.kind) {
-				continue
-			}
-
-			if (item.target.kind === 'project' && value.kind === 'project') {
-				if (item.target.projectId === value.projectId && item.target.spaceId === value.spaceId) {
-					return item
-				}
-				continue
-			}
-
-			if (item.target.spaceId === value.spaceId) {
+			if (isTaskPlacementTargetEqual(item.target, value)) {
 				return item
 			}
 		}

@@ -1,30 +1,7 @@
-import type {
-	TaskCreatePlacementInput,
-	TaskDetail,
-	TaskListItem,
-	TaskPlacement,
-} from '@/shared/types'
+import type { TaskCreatePlacementInput, TaskPlacement } from '@/shared/types'
 
-type TaskPlacementLike = Pick<TaskListItem, 'projectId'> & Partial<Pick<TaskDetail, 'projectId'>>
-
-export function getTaskPlacement(task: TaskPlacementLike): TaskPlacement {
-	if (task.projectId) {
-		return 'project'
-	}
-
-	return 'standalone'
-}
-
-export function formatTaskPlacementLabel(placement: TaskPlacement) {
-	switch (placement) {
-		case 'standalone':
-			return '独立事项'
-		case 'project':
-			return '项目'
-		default:
-			return '任务'
-	}
-}
+import type { TaskPlacementTarget } from './taskPlacementTarget'
+import { resolveTaskPlacementTarget } from './taskPlacementTarget'
 
 export function buildCreatePlacementInput(
 	placement: TaskPlacement,
@@ -38,4 +15,28 @@ export function buildCreatePlacementInput(
 	}
 
 	return { kind: 'standalone' }
+}
+
+/** 创建草稿字段 → 菜单 Target（project 且无 id 时落到独立事项）。 */
+export function targetFromPlacementDraft(
+	placement: TaskPlacement,
+	spaceId: string,
+	projectId: string | null,
+): TaskPlacementTarget {
+	return resolveTaskPlacementTarget({
+		spaceId,
+		projectId: placement === 'project' ? projectId : null,
+	})
+}
+
+/** 菜单 Target → 创建草稿字段。 */
+export function placementDraftFromTarget(target: TaskPlacementTarget): {
+	placement: TaskPlacement
+	projectId: string | null
+} {
+	if (target.kind === 'project') {
+		return { placement: 'project', projectId: target.projectId }
+	}
+
+	return { placement: 'standalone', projectId: null }
 }

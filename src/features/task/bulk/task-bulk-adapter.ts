@@ -25,10 +25,6 @@ export type TaskBulkAdapter = {
 
 type TaskBulkAdapterOptions = {
 	bulkUpdateTasks?: typeof bulkUpdateTasksApi
-	/** 仅保留到本轮测试迁移完成，生产实现不再读取逐条 mutation。 */
-	updateTask?: unknown
-	archiveTask?: unknown
-	deleteTask?: unknown
 	refreshLoadedSlices: () => Promise<void>
 }
 
@@ -110,10 +106,7 @@ export function createTaskBulkAdapter({
 				ids,
 				action: {
 					kind: 'setPlacement',
-					placement:
-						target.kind === 'project'
-							? { kind: 'project', spaceId: target.spaceId, projectId: target.projectId }
-							: { kind: 'standalone', spaceId: target.spaceId },
+					placement: target,
 				},
 			}),
 	}

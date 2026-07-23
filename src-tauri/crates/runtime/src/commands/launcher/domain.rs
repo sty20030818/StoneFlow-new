@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 use stoneflow_application::launcher::{
-    LauncherListProjectsBySpaceInput as UsecaseListProjectsBySpaceInput, LauncherResolvedPlacement,
+    LauncherListProjectsBySpaceInput as UsecaseListProjectsBySpaceInput, LauncherPlacementKind,
 };
 use tauri::State;
 
@@ -10,7 +10,9 @@ use crate::app::state::{ActiveScopeKind, ActiveScopeSnapshot, AppState, CommandO
 use crate::command_open::{dispatch_command_open, restore_main_window, CommandOpenPayload};
 use stoneflow_application::launcher::{ActiveScopeInput, ActiveScopeKind as AppActiveScopeKind};
 
-use super::error::{map_projects_by_space, LauncherErrorPayload, LauncherProjectsBySpaceResponse};
+use stoneflow_application::launcher::LauncherProjectsBySpaceDto;
+
+use super::error::{LauncherErrorPayload, LauncherInitialStateResponse};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -37,30 +39,26 @@ pub enum LauncherOpenTargetKind {
 pub async fn launcher_get_initial_state(
     state: State<'_, AppState>,
     active_scope: State<'_, crate::app::state::ActiveScopeState>,
-) -> Result<super::error::LauncherInitialStateResponse, LauncherErrorPayload> {
-    let payload = state
+) -> Result<LauncherInitialStateResponse, LauncherErrorPayload> {
+    state
         .launcher_context
         .get_initial_state(map_active_scope(active_scope.get().await))
         .await
-        .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))?;
-    Ok(super::error::LauncherInitialStateResponse::from_dto(
-        payload,
-    ))
+        .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))
 }
 
 #[tauri::command]
 pub async fn launcher_list_projects_by_space(
     input: LauncherListProjectsBySpaceInput,
     state: State<'_, AppState>,
-) -> Result<LauncherProjectsBySpaceResponse, LauncherErrorPayload> {
-    let payload = state
+) -> Result<LauncherProjectsBySpaceDto, LauncherErrorPayload> {
+    state
         .launcher
         .list_projects_by_space(UsecaseListProjectsBySpaceInput {
             space_id: input.space_id,
         })
         .await
-        .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))?;
-    Ok(map_projects_by_space(payload))
+        .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))
 }
 
 #[tauri::command]
@@ -110,8 +108,8 @@ async fn open_existing_target(
             space_id: target.space_id,
             project_id: target.project_id,
             placement: match target.placement {
-                LauncherResolvedPlacement::Project => "project",
-                LauncherResolvedPlacement::Standalone => "standalone",
+                LauncherPlacementKind::Project => "project",
+                LauncherPlacementKind::Standalone => "standalone",
             },
         },
     )

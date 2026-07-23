@@ -183,7 +183,7 @@ export function formatDateMeta(context: CommandContext) {
 
 export function formatProjectMeta(context: CommandContext, projects: CommandMenuProject[]) {
 	if (!context.view.projectFilterId) {
-		return context.view.projectlessOnly ? '仅独立事项' : '未筛选'
+		return context.view.standaloneOnly ? '仅独立事项' : '未筛选'
 	}
 
 	const project = projects.find((item) => item.id === context.view.projectFilterId)

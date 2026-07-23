@@ -166,7 +166,6 @@ export function useProjectOverviewScene() {
 	return {
 		breadcrumbItems,
 		board,
-		sceneVariant: 'project-overview' as const,
 		toolbarPills,
 		bulk: {
 			selectedCount,

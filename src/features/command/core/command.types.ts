@@ -86,7 +86,6 @@ export type CommandScope =
 	| 'task-list'
 	| 'project-list'
 	| 'project-page'
-	| 'standalone-page'
 	| 'views-page'
 	| 'trash-page'
 	| 'preview-drawer'
@@ -174,7 +173,7 @@ export type CommandViewContext = {
 	statusFilterValues: TaskStatus[]
 	dateFilterValue: string
 	projectFilterId: string | null
-	projectlessOnly: boolean
+	standaloneOnly: boolean
 	filterCapabilities: {
 		supportsPriority: boolean
 		supportsStatus: boolean

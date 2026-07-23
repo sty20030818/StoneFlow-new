@@ -1,6 +1,6 @@
-import type { ProjectOption } from '@/features/project'
 import type { TaskPlacementTarget } from '@/features/metadata-fields'
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import { resolveTaskPlacementTarget } from '@/features/task/model/taskPlacementTarget'
 import type { TaskDetail, TaskStatus, UpdateTaskInput } from '@/shared/types'
 
 export type TaskDetailDraft = {
@@ -102,26 +102,6 @@ export function getTaskDetailPatch(
 	return Object.keys(patch).length > 1 ? patch : null
 }
 
-export function applyTaskProjectDraftChange(
-	draft: TaskDetailDraft,
-	projectId: string,
-	projects: ProjectOption[],
-): TaskDetailDraft {
-	if (!projectId) {
-		return {
-			...draft,
-			projectId: '',
-		}
-	}
-
-	const nextProject = projects.find((project) => project.id === projectId)
-	return {
-		...draft,
-		projectId,
-		spaceId: nextProject?.spaceId ?? draft.spaceId,
-	}
-}
-
 export function applyTaskPlacementDraftChange(
 	draft: TaskDetailDraft,
 	target: TaskPlacementTarget,
@@ -141,33 +121,9 @@ export function applyTaskPlacementDraftChange(
 	}
 }
 
-export function applyTaskSpaceDraftChange(
-	draft: TaskDetailDraft,
-	spaceId: string,
-	projects: ProjectOption[],
-): TaskDetailDraft {
-	const shouldClearProject =
-		draft.projectId &&
-		!projects.some((project) => project.id === draft.projectId && project.spaceId === spaceId)
-
-	return {
-		...draft,
-		spaceId,
-		projectId: shouldClearProject ? '' : draft.projectId,
-	}
-}
-
 function toTaskPlacementPatch(draft: TaskDetailDraft): NonNullable<UpdateTaskInput['placement']> {
-	if (draft.projectId) {
-		return {
-			kind: 'project',
-			spaceId: draft.spaceId,
-			projectId: draft.projectId,
-		}
-	}
-
-	return {
-		kind: 'standalone',
+	return resolveTaskPlacementTarget({
 		spaceId: draft.spaceId,
-	}
+		projectId: draft.projectId || null,
+	})
 }

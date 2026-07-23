@@ -97,26 +97,26 @@ export function useListSceneBoard({
 						: formatTaskStatusLabel(filter),
 			active:
 				filter === 'all'
-					? controller.state.statusValues.length === 0 && !controller.state.projectlessOnly
+					? controller.state.statusValues.length === 0 && !controller.state.standaloneOnly
 					: filter === 'standalone'
-						? controller.state.projectlessOnly
+						? controller.state.standaloneOnly
 						: controller.state.statusValues.length === 1 &&
 							controller.state.statusValues[0] === filter &&
-							!controller.state.projectlessOnly,
+							!controller.state.standaloneOnly,
 			onClick: () => {
 				if (filter === 'all') {
 					controller.actions.applyFilter({ kind: 'status', values: [] })
-					controller.actions.applyFilter({ kind: 'projectlessOnly', enabled: false })
+					controller.actions.applyFilter({ kind: 'standaloneOnly', enabled: false })
 					return
 				}
 
 				if (filter === 'standalone') {
 					controller.actions.applyFilter({ kind: 'status', values: [] })
-					controller.actions.applyFilter({ kind: 'projectlessOnly', enabled: true })
+					controller.actions.applyFilter({ kind: 'standaloneOnly', enabled: true })
 					return
 				}
 
-				controller.actions.applyFilter({ kind: 'projectlessOnly', enabled: false })
+				controller.actions.applyFilter({ kind: 'standaloneOnly', enabled: false })
 				controller.actions.applyFilter({ kind: 'status', values: [filter] })
 			},
 		}))

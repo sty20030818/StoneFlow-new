@@ -12,7 +12,6 @@ import {
 	type RouteScope,
 	type ShellRouteLocationLike,
 	type ShellSectionKey,
-	type ShellSectionSegment,
 } from './path'
 
 export type {
@@ -21,7 +20,6 @@ export type {
 	RouteScope,
 	ShellRouteLocationLike,
 	ShellSectionKey,
-	ShellSectionSegment,
 	SettingsSectionKey,
 }
 

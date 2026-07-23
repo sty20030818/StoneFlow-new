@@ -1,25 +1,4 @@
-import type { ShellSectionKey } from '@/layout/types'
-import type { CommandFocusContext, CommandRouteContext } from '@/features/command'
-
-/** 当前壳 section → 命令系统 route.page（影响哪些命令 enabled）。 */
-export function resolveCommandRoutePage(section: ShellSectionKey): CommandRouteContext['page'] {
-	switch (section) {
-		case 'tasks':
-			return 'tasks'
-		case 'views':
-			return 'views'
-		case 'projects':
-			return 'projects'
-		case 'archive':
-			return 'archive'
-		case 'trash':
-			return 'trash'
-		case 'standalone':
-			return 'standalone'
-		default:
-			return 'unknown'
-	}
-}
+import type { CommandFocusContext } from '@/features/command'
 
 /**
  * 焦点面板优先级：命令板 > 快捷键帮助/创建弹层 > 预览 > 详情抽屉 > 主区。
@@ -41,10 +20,7 @@ export function resolveCommandActivePanel({
 	if (isCommandOpen) {
 		return 'command-menu'
 	}
-	if (isShortcutHelpOpen) {
-		return 'modal'
-	}
-	if (isModalOpen) {
+	if (isShortcutHelpOpen || isModalOpen) {
 		return 'modal'
 	}
 	if (isPreviewOpen) {

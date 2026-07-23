@@ -4,7 +4,7 @@ pub mod domain;
 pub mod error;
 pub mod window;
 
-pub use error::{LauncherErrorPayload, LauncherInitialStateResponse, LauncherOpenSessionResponse};
+pub use error::{LauncherErrorPayload, LauncherOpenSessionResponse};
 
 use tauri::State;
 

@@ -17,9 +17,7 @@ use super::runtime::{
     LauncherWindowCloseReason, LauncherWindowOpenReason, LauncherWindowRuntimeState,
 };
 
-use crate::commands::launcher::{
-    LauncherErrorPayload, LauncherInitialStateResponse, LauncherOpenSessionResponse,
-};
+use crate::commands::launcher::{LauncherErrorPayload, LauncherOpenSessionResponse};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -82,7 +80,6 @@ pub async fn prepare_launcher_session(
         .await
         .map_err(|error| LauncherErrorPayload::from(AppError::from(error)))?;
 
-    let open_context = LauncherInitialStateResponse::from_dto(open_context);
     let response = LauncherOpenSessionResponse {
         session_id: session.session_id.clone(),
         opened_at: session.opened_at.to_rfc3339(),

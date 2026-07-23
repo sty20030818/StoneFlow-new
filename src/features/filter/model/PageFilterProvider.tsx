@@ -28,7 +28,7 @@ export type PageFilterState = {
 	statusValues: TaskStatus[]
 	dateValue: PageDateFilterValue
 	projectId: string | null
-	projectlessOnly: boolean
+	standaloneOnly: boolean
 	showCompleted: boolean
 	hasActiveFilters: boolean
 }
@@ -47,7 +47,7 @@ export type PageFilterApplyInput =
 	| { kind: 'status'; values: TaskStatus[] }
 	| { kind: 'date'; value: PageDateFilterValue }
 	| { kind: 'project'; projectId: string | null }
-	| { kind: 'projectlessOnly'; enabled: boolean }
+	| { kind: 'standaloneOnly'; enabled: boolean }
 	| { kind: 'showCompleted'; value: boolean }
 
 export type PageFilterController = {
@@ -77,7 +77,7 @@ const EMPTY_STATE: PageFilterState = {
 	statusValues: [],
 	dateValue: 'none',
 	projectId: null,
-	projectlessOnly: false,
+	standaloneOnly: false,
 	showCompleted: true,
 	hasActiveFilters: false,
 }

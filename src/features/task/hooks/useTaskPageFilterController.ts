@@ -21,7 +21,7 @@ type UseTaskPageFilterControllerOptions = {
 	tasks: TaskListItem[]
 	projects?: ProjectOption[]
 	capabilities: PageFilterCapabilities
-	initialProjectlessOnly?: boolean
+	initialStandaloneOnly?: boolean
 	initialFilterKind?: PageFilterKind
 	initialShowCompleted?: boolean
 }
@@ -30,7 +30,7 @@ export function useTaskPageFilterController({
 	tasks,
 	projects = EMPTY_PROJECTS,
 	capabilities,
-	initialProjectlessOnly = false,
+	initialStandaloneOnly = false,
 	initialFilterKind = 'root',
 	initialShowCompleted = true,
 }: UseTaskPageFilterControllerOptions) {
@@ -38,7 +38,7 @@ export function useTaskPageFilterController({
 	const [statusValues, setStatusValues] = useState<TaskStatus[]>([])
 	const [dateValue, setDateValue] = useState<PageDateFilterValue>('none')
 	const [projectId, setProjectId] = useState<string | null>(null)
-	const [projectlessOnly, setProjectlessOnly] = useState(initialProjectlessOnly)
+	const [standaloneOnly, setStandaloneOnly] = useState(initialStandaloneOnly)
 	const [showCompleted, setShowCompleted] = useState(initialShowCompleted)
 	const [currentFilterKind, setCurrentFilterKind] = useState<PageFilterKind>(initialFilterKind)
 
@@ -55,7 +55,7 @@ export function useTaskPageFilterController({
 				return false
 			}
 
-			if (projectlessOnly && task.projectId !== null) {
+			if (standaloneOnly && task.projectId !== null) {
 				return false
 			}
 
@@ -115,14 +115,14 @@ export function useTaskPageFilterController({
 			}
 		}
 		return result
-	}, [dateValue, priorityValues, projectId, projectlessOnly, showCompleted, statusValues, tasks])
+	}, [dateValue, priorityValues, projectId, standaloneOnly, showCompleted, statusValues, tasks])
 
 	const hasActiveFilters =
 		priorityValues.length > 0 ||
 		statusValues.length > 0 ||
 		dateValue !== 'none' ||
 		projectId !== null ||
-		projectlessOnly ||
+		standaloneOnly ||
 		!showCompleted
 
 	const clearAll = useCallback(() => {
@@ -130,10 +130,10 @@ export function useTaskPageFilterController({
 		setStatusValues([])
 		setDateValue('none')
 		setProjectId(null)
-		setProjectlessOnly(initialProjectlessOnly)
+		setStandaloneOnly(initialStandaloneOnly)
 		setShowCompleted(initialShowCompleted)
 		setCurrentFilterKind('root')
-	}, [initialProjectlessOnly, initialShowCompleted])
+	}, [initialStandaloneOnly, initialShowCompleted])
 
 	const controller = useMemo<PageFilterController>(
 		() => ({
@@ -142,7 +142,7 @@ export function useTaskPageFilterController({
 				statusValues,
 				dateValue,
 				projectId,
-				projectlessOnly,
+				standaloneOnly,
 				showCompleted,
 				hasActiveFilters,
 			},
@@ -167,8 +167,8 @@ export function useTaskPageFilterController({
 						case 'project':
 							setProjectId(input.projectId)
 							break
-						case 'projectlessOnly':
-							setProjectlessOnly(input.enabled)
+						case 'standaloneOnly':
+							setStandaloneOnly(input.enabled)
 							break
 						case 'showCompleted':
 							setShowCompleted(input.value)
@@ -189,7 +189,7 @@ export function useTaskPageFilterController({
 			hasActiveFilters,
 			priorityValues,
 			projectId,
-			projectlessOnly,
+			standaloneOnly,
 			projects,
 			showCompleted,
 			statusValues,

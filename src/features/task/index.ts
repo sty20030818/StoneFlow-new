@@ -152,11 +152,6 @@ export {
 export { TASK_STATUS_OPTIONS, formatTaskStatusLabel } from './model/taskStatus'
 
 /**
- * 归属展示文案。
- */
-export { formatTaskPlacementLabel } from './model/taskPlacement'
-
-/**
  * 纯展示优先级图标。
  */
 export { PriorityIcon } from './model/indicators/PriorityIcon'

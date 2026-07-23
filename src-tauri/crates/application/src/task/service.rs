@@ -27,7 +27,7 @@ use crate::{
             repository_lifecycle_for_preset, select_update_action, status_key,
         },
         types::{
-            CreateTaskPersistenceRecord, TaskListQuery, TaskPlacement, TaskPlacementQuery,
+            CreatePlacement, CreateTaskPersistenceRecord, TaskListQuery, TaskPlacementQuery,
             TaskProjectRecord, TaskRecord, TaskScope, TaskSpaceRecord, UpdateTaskPatch,
         },
     },
@@ -148,14 +148,14 @@ pub struct CreateTaskInput {
 #[serde(rename_all = "camelCase")]
 pub struct CreateTaskPlacementInput {
     #[serde(rename = "kind")]
-    pub kind: CreateTaskPlacementKind,
+    pub kind: TaskWritePlacementKind,
     pub project_id: Option<String>,
 }
 
-/// 创建 Task 时的 placement 类型。
+/// create / update 共用的写入归属 kind（无 All）。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub enum CreateTaskPlacementKind {
+pub enum TaskWritePlacementKind {
     Project,
     Standalone,
 }
@@ -188,16 +188,9 @@ pub struct UpdateTaskInput {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateTaskPlacementInput {
     #[serde(rename = "kind")]
-    pub kind: UpdateTaskPlacementKind,
+    pub kind: TaskWritePlacementKind,
     pub space_id: String,
     pub project_id: Option<String>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum UpdateTaskPlacementKind {
-    Project,
-    Standalone,
 }
 
 /// 仅携带 Task ID 的输入。
@@ -359,7 +352,7 @@ where
             .persistence
             .list(TaskListQuery {
                 space_id: scope.space_id,
-                placement: to_placement_query(&placement),
+                placement,
                 lifecycle: repository_lifecycle_for_preset(view_preset),
             })
             .await?;
@@ -396,28 +389,20 @@ where
         let status = input.status.unwrap_or(WorkStatus::Todo);
         let priority = validate_task_priority(input.priority)?;
         let placement = normalize_create_placement(&input.placement)?;
-        // create 仅 Project | Standalone；All 只用于 list 查询。
-        let project = match &placement {
-            TaskPlacement::Project(project_id) => {
-                Some(self.require_visible_project(project_id).await?)
+        let (space, project) = match placement {
+            CreatePlacement::Project(project_id) => {
+                let project = self.require_visible_project(&project_id).await?;
+                let space = self.require_visible_space(&project.space_id).await?;
+                (space, Some(project))
             }
-            TaskPlacement::Standalone => None,
-            TaskPlacement::All => {
-                return Err(ApplicationError::validation("创建 Task placement 非法"))
-            }
-        };
-        let space = match (&placement, &project) {
-            (TaskPlacement::Project(_), Some(project)) => {
-                self.require_visible_space(&project.space_id).await?
-            }
-            (TaskPlacement::Standalone, None) => {
+            CreatePlacement::Standalone => {
                 let raw_space_id = input
                     .space_id
                     .as_deref()
-                    .ok_or_else(|| ApplicationError::validation("创建 Task 时必须提供 spaceId"))?;
-                self.require_visible_space(raw_space_id).await?
+                    .ok_or_else(|| ApplicationError::validation("创建独立事项时必须提供 spaceId"))?;
+                let space = self.require_visible_space(raw_space_id).await?;
+                (space, None)
             }
-            _ => return Err(ApplicationError::validation("创建 Task placement 非法")),
         };
 
         let now_time = now_utc();
@@ -477,7 +462,11 @@ where
                         "spaceId": created.space_id,
                         "spaceName": space.name,
                         "projectId": created.project_id,
-                        "placement": placement_key(&placement),
+                        "placement": if created.project_id.is_some() {
+                            "project"
+                        } else {
+                            "standalone"
+                        },
                     })),
                     changes: Vec::new(),
                 },
@@ -516,26 +505,9 @@ where
         let mut next_project_id = current.project_id.clone();
 
         if let Some(placement) = input.placement.as_ref() {
-            match placement.kind {
-                UpdateTaskPlacementKind::Project => {
-                    let project_id = placement.project_id.as_deref().ok_or_else(|| {
-                        ApplicationError::validation("placement.kind=project 时必须提供 projectId")
-                    })?;
-                    let project = self.require_visible_project(project_id).await?;
-                    if project.space_id != placement.space_id {
-                        return Err(ApplicationError::validation(
-                            "placement.spaceId 与 project.spaceId 不一致",
-                        ));
-                    }
-                    next_space_id = project.space_id.clone();
-                    next_project_id = Some(project.id.clone());
-                }
-                UpdateTaskPlacementKind::Standalone => {
-                    let space = self.require_visible_space(&placement.space_id).await?;
-                    next_space_id = space.id.clone();
-                    next_project_id = None;
-                }
-            }
+            let resolved = self.resolve_write_placement(placement).await?;
+            next_space_id = resolved.0;
+            next_project_id = resolved.1;
         }
 
         if let Some(title) = input.title {
@@ -782,24 +754,9 @@ where
         }
 
         let placement = match &input.action {
-            BulkTaskAction::SetPlacement { placement } => Some(match placement.kind {
-                UpdateTaskPlacementKind::Project => {
-                    let project_id = placement.project_id.as_deref().ok_or_else(|| {
-                        ApplicationError::validation("placement.kind=project 时必须提供 projectId")
-                    })?;
-                    let project = self.require_visible_project(project_id).await?;
-                    if project.space_id != placement.space_id {
-                        return Err(ApplicationError::validation(
-                            "placement.spaceId 与 project.spaceId 不一致",
-                        ));
-                    }
-                    (project.space_id, Some(project.id))
-                }
-                UpdateTaskPlacementKind::Standalone => {
-                    let space = self.require_visible_space(&placement.space_id).await?;
-                    (space.id, None)
-                }
-            }),
+            BulkTaskAction::SetPlacement { placement } => {
+                Some(self.resolve_write_placement(placement).await?)
+            }
             _ => None,
         };
         let priority = match &input.action {
@@ -1406,6 +1363,31 @@ where
             )
             .await
     }
+
+    /// update / bulk 共用：解析写入归属为 (space_id, project_id)。
+    async fn resolve_write_placement(
+        &self,
+        placement: &UpdateTaskPlacementInput,
+    ) -> Result<(String, Option<String>), ApplicationError> {
+        match placement.kind {
+            TaskWritePlacementKind::Project => {
+                let project_id = placement.project_id.as_deref().ok_or_else(|| {
+                    ApplicationError::validation("placement.kind=project 时必须提供 projectId")
+                })?;
+                let project = self.require_visible_project(project_id).await?;
+                if project.space_id != placement.space_id {
+                    return Err(ApplicationError::validation(
+                        "placement.spaceId 与 project.spaceId 不一致",
+                    ));
+                }
+                Ok((project.space_id, Some(project.id)))
+            }
+            TaskWritePlacementKind::Standalone => {
+                let space = self.require_visible_space(&placement.space_id).await?;
+                Ok((space.id, None))
+            }
+        }
+    }
 }
 
 fn normalize_scope(input: &TaskScopeInput) -> Result<TaskScope, ApplicationError> {
@@ -1425,50 +1407,35 @@ fn normalize_scope(input: &TaskScopeInput) -> Result<TaskScope, ApplicationError
 
 fn normalize_list_placement(
     input: &ListTasksPlacementInput,
-) -> Result<TaskPlacement, ApplicationError> {
+) -> Result<TaskPlacementQuery, ApplicationError> {
     match input.kind {
-        ListTasksPlacementKind::All => Ok(TaskPlacement::All),
-        ListTasksPlacementKind::Standalone => Ok(TaskPlacement::Standalone),
+        ListTasksPlacementKind::All => Ok(TaskPlacementQuery::All),
+        ListTasksPlacementKind::Standalone => Ok(TaskPlacementQuery::Standalone),
         ListTasksPlacementKind::Project => {
             let project_id = input
                 .project_id
                 .as_deref()
                 .ok_or_else(|| ApplicationError::validation("kind=project 时必须提供 projectId"))?;
-            Ok(TaskPlacement::Project(validate_project_id(project_id)?))
+            Ok(TaskPlacementQuery::Project(validate_project_id(project_id)?))
         }
     }
 }
 
 fn normalize_create_placement(
     input: &CreateTaskPlacementInput,
-) -> Result<TaskPlacement, ApplicationError> {
+) -> Result<CreatePlacement, ApplicationError> {
     match input.kind {
-        CreateTaskPlacementKind::Standalone => Ok(TaskPlacement::Standalone),
-        CreateTaskPlacementKind::Project => {
+        TaskWritePlacementKind::Standalone => Ok(CreatePlacement::Standalone),
+        TaskWritePlacementKind::Project => {
             let project_id = input
                 .project_id
                 .as_deref()
                 .ok_or_else(|| ApplicationError::validation("kind=project 时必须提供 projectId"))?;
-            Ok(TaskPlacement::Project(validate_project_id(project_id)?))
+            Ok(CreatePlacement::Project(validate_project_id(project_id)?))
         }
     }
 }
 
-fn to_placement_query(placement: &TaskPlacement) -> TaskPlacementQuery {
-    match placement {
-        TaskPlacement::All => TaskPlacementQuery::All,
-        TaskPlacement::Project(project_id) => TaskPlacementQuery::Project(project_id.clone()),
-        TaskPlacement::Standalone => TaskPlacementQuery::Standalone,
-    }
-}
-
-fn placement_key(placement: &TaskPlacement) -> &'static str {
-    match placement {
-        TaskPlacement::All => "all",
-        TaskPlacement::Project(_) => "project",
-        TaskPlacement::Standalone => "standalone",
-    }
-}
 
 /// 校验并归一化优先级：未提供时取 WorkPriority::None。
 fn validate_task_priority(value: Option<i32>) -> Result<i32, ApplicationError> {

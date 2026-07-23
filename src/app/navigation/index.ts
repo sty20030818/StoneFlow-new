@@ -9,7 +9,6 @@ export {
 	type AppRouteKind,
 	type RouteScope,
 	type ShellSectionKey,
-	type ShellSectionSegment,
 	type ShellRouteLocationLike,
 } from './path'
 

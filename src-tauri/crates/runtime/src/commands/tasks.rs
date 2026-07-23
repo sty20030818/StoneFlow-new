@@ -267,10 +267,9 @@ mod tests {
     use stoneflow_application::project::CreateProjectInput;
     use stoneflow_application::space::CreateSpaceInput;
     use stoneflow_application::task::{
-        BulkUpdateTasksInput, CreateTaskInput, CreateTaskPlacementInput, CreateTaskPlacementKind,
-        ListTasksInput, ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput,
-        TaskScopeInput, TaskScopeKind, UpdateTaskInput, UpdateTaskPlacementInput,
-        UpdateTaskPlacementKind,
+        BulkUpdateTasksInput, CreateTaskInput, CreateTaskPlacementInput, ListTasksInput,
+        ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput, TaskScopeInput,
+        TaskScopeKind, TaskWritePlacementKind, UpdateTaskInput, UpdateTaskPlacementInput,
     };
     use stoneflow_application::task_link::CreateTaskLinkInput;
     use stoneflow_storage::{
@@ -467,7 +466,7 @@ mod tests {
                 status: None,
                 priority: None,
                 placement: Some(UpdateTaskPlacementInput {
-                    kind: UpdateTaskPlacementKind::Project,
+                    kind: TaskWritePlacementKind::Project,
                     space_id: space.id,
                     project_id: Some(project.id),
                 }),
@@ -635,7 +634,7 @@ mod tests {
             build_task_service(database.connection().clone())
                 .update_task(task_update(task.id, |input| {
                     input.placement = Some(UpdateTaskPlacementInput {
-                        kind: UpdateTaskPlacementKind::Project,
+                        kind: TaskWritePlacementKind::Project,
                         space_id: other_space.id,
                         project_id: Some(project.id),
                     });
@@ -677,7 +676,7 @@ mod tests {
             .create_task(CreateTaskInput {
                 space_id: Some(space.id),
                 placement: CreateTaskPlacementInput {
-                    kind: CreateTaskPlacementKind::Project,
+                    kind: TaskWritePlacementKind::Project,
                     project_id: Some(project.id.clone()),
                 },
                 title: "完整字段任务".to_owned(),
@@ -715,7 +714,7 @@ mod tests {
             .create_task(CreateTaskInput {
                 space_id: Some(second_space.id),
                 placement: CreateTaskPlacementInput {
-                    kind: CreateTaskPlacementKind::Standalone,
+                    kind: TaskWritePlacementKind::Standalone,
                     project_id: None,
                 },
                 title: "第二空间任务".to_owned(),
@@ -824,7 +823,7 @@ mod tests {
             .create_task(CreateTaskInput {
                 space_id: Some(space.id.clone()),
                 placement: CreateTaskPlacementInput {
-                    kind: CreateTaskPlacementKind::Standalone,
+                    kind: TaskWritePlacementKind::Standalone,
                     project_id: None,
                 },
                 title: title.to_owned(),

@@ -37,7 +37,6 @@ export function ViewsPage() {
 						<PlusIcon />
 					</MainCard.GhostAction>
 				}
-				sceneVariant={scene.sceneVariant}
 				toolbarDisplayAction={
 					scene.activeView ? <DisplayOptionsButton pageKey={scene.displayPageKey} /> : undefined
 				}

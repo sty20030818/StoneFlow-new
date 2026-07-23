@@ -3,15 +3,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 
-import type { ProjectOption } from '@/features/project'
 import { updateTask } from '@/features/task/api/tasks'
 import type { TaskDetail } from '@/shared/types'
 
-import {
-	applyTaskProjectDraftChange,
-	applyTaskSpaceDraftChange,
-	createTaskDetailDraft,
-} from './taskDetailDraft'
+import { applyTaskPlacementDraftChange, createTaskDetailDraft } from './taskDetailDraft'
 import { useTaskAutosaveAdapter } from './useTaskAutosaveAdapter'
 
 vi.mock('@/features/task/api/tasks', () => ({
@@ -187,21 +182,24 @@ describe('useTaskAutosaveAdapter', () => {
 		})
 	})
 
-	it('project 变化同步 spaceId，space 变化清理不属于该 space 的 projectId', () => {
-		const projects: ProjectOption[] = [
-			{ id: 'project-1', name: '项目 1', spaceId: 'space-1' },
-			{ id: 'project-2', name: '项目 2', spaceId: 'space-2' },
-		]
+	it('placement 变化同步 spaceId / projectId', () => {
 		const draft = createTaskDetailDraft(baseTask)
 
-		const projectDraft = applyTaskProjectDraftChange(draft, 'project-2', projects)
+		const projectDraft = applyTaskPlacementDraftChange(draft, {
+			kind: 'project',
+			spaceId: 'space-2',
+			projectId: 'project-2',
+		})
 		expect(projectDraft).toMatchObject({
 			projectId: 'project-2',
 			spaceId: 'space-2',
 		})
 
-		const spaceDraft = applyTaskSpaceDraftChange(projectDraft, 'space-1', projects)
-		expect(spaceDraft).toMatchObject({
+		const standaloneDraft = applyTaskPlacementDraftChange(projectDraft, {
+			kind: 'standalone',
+			spaceId: 'space-1',
+		})
+		expect(standaloneDraft).toMatchObject({
 			projectId: '',
 			spaceId: 'space-1',
 		})

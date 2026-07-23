@@ -9,7 +9,7 @@ import type {
 	LauncherTaskItem,
 } from '../model/types'
 import { interleaveTaskProjectResults } from '../model/interleaveResults'
-import { formatTaskPlacementLabel } from '@/features/task'
+
 import { formatTaskPriorityLabel } from '@/features/task'
 
 const RECENT_TASK_LIMIT = 5
@@ -103,7 +103,7 @@ export function useLauncherDerivedState(state: LauncherPanelState): LauncherDeri
 			)
 		}
 
-		return formatTaskPlacementLabel(state.draft.placement.kind)
+		return '独立事项'
 	}, [state.draft.placement, state.projectOptions])
 
 	const createMeta = useMemo(() => {

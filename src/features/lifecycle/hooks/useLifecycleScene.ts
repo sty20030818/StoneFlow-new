@@ -242,7 +242,6 @@ export function useLifecycleScene(mode: LifecycleMode) {
 		mode,
 		board,
 		breadcrumbItems,
-		sceneVariant: mode,
 		toolbarPills,
 		bulk: {
 			selectedCount,

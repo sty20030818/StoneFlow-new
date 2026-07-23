@@ -278,7 +278,6 @@ export function useProjectDetailScene({ scopeOverride }: UseProjectDetailSceneAr
 		busyAction,
 		breadcrumbItems,
 		board,
-		sceneVariant: 'project-detail' as const,
 		displayPageKey: PROJECT_DETAIL_DISPLAY_PAGE_KEY,
 		toolbarPills,
 		bulk: {

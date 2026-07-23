@@ -86,7 +86,6 @@ export function SettingsPage() {
 			}
 			beforeBoard={<div className='flex flex-col gap-4 pb-4'>{renderPanel(section)}</div>}
 			bodyClassName='gap-4 p-2'
-			sceneVariant='settings'
 		/>
 	)
 }

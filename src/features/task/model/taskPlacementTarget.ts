@@ -1,21 +1,15 @@
-export type TaskPlacementTarget =
-	| {
-			kind: 'standalone'
-			spaceId: string
-	  }
-	| {
-			kind: 'project'
-			projectId: string
-			spaceId: string
-	  }
+import type { TaskUpdatePlacementInput } from '@/shared/types'
+
+/**
+ * UI / 批量 / 详情归属目标。
+ * 与 update_task placement 契约同形，不再做二次转换。
+ */
+export type TaskPlacementTarget = TaskUpdatePlacementInput
 
 export function getTaskPlacementTargetValue(target: TaskPlacementTarget) {
-	switch (target.kind) {
-		case 'project':
-			return `project:${target.projectId}`
-		default:
-			return `standalone:${target.spaceId}`
-	}
+	return target.kind === 'project'
+		? `project:${target.projectId}`
+		: `standalone:${target.spaceId}`
 }
 
 export function isTaskPlacementTargetEqual(left: TaskPlacementTarget, right: TaskPlacementTarget) {

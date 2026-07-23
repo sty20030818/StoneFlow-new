@@ -12,6 +12,7 @@ import type {
 	TaskDetail,
 	TaskListItem,
 	TaskListViewKey,
+	TaskUpdatePlacementInput,
 	UpdateTaskInput,
 } from '@/shared/types'
 import type { Scope } from '@/shared/types'
@@ -24,7 +25,7 @@ export type BulkTaskAction =
 	| { kind: 'setDueAt'; dueAt: string | null }
 	| {
 			kind: 'setPlacement'
-			placement: { kind: 'project' | 'standalone'; spaceId: string; projectId?: string }
+			placement: TaskUpdatePlacementInput
 	  }
 
 type TaskScopePayload =

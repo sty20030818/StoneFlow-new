@@ -54,7 +54,7 @@ export function createEmptyCommandContext(): CommandContext {
 			statusFilterValues: [],
 			dateFilterValue: 'none',
 			projectFilterId: null,
-			projectlessOnly: false,
+			standaloneOnly: false,
 			filterCapabilities: {
 				supportsPriority: false,
 				supportsStatus: false,

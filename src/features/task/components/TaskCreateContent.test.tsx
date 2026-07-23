@@ -113,7 +113,7 @@ describe('TaskCreateContent', () => {
 		expect(screen.queryByText('生活')).not.toBeInTheDocument()
 		expect(getShortcutHintDigits()).toEqual(['0'])
 		expect(getPlacementMenuitemTexts()).toEqual([
-			'独立事项0Standalone',
+			'独立事项0独立事项',
 			'项目 AProject · 工作',
 		])
 		// 关闭归属菜单后再提交（菜单打开时 footer 会被 aria-hidden）

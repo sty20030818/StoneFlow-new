@@ -117,10 +117,9 @@ pub(crate) struct TaskScope {
     pub space_id: Option<String>,
 }
 
-/// 列表 / 创建 placement 内部表示。
+/// 创建时的归属（无 All；list 用 {@link TaskPlacementQuery}）。
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum TaskPlacement {
-    All,
+pub(crate) enum CreatePlacement {
     Project(String),
     Standalone,
 }

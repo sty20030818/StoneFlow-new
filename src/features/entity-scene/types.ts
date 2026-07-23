@@ -179,7 +179,6 @@ export type EntitySceneBoardSlotProps =
 	  }
 
 export type EntitySceneProps = {
-	sceneVariant: EntitySceneVariant
 	breadcrumb: ReactNode
 	headerActions?: ReactNode
 	headerClassName?: string

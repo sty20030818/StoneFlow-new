@@ -22,8 +22,6 @@ export const SHELL_SECTION_KEYS = [
 ] as const
 
 export type ShellSectionKey = (typeof SHELL_SECTION_KEYS)[number]
-/** path segment 与 section key 同形；别名仅作阅读语义。 */
-export type ShellSectionSegment = ShellSectionKey
 
 export function isShellSectionKey(value: string): value is ShellSectionKey {
 	return (SHELL_SECTION_KEYS as readonly string[]).includes(value)

@@ -20,23 +20,18 @@ pub enum ActiveScopeKind {
     Space,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LauncherResolvedPlacement {
-    Project,
-    Standalone,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LauncherResolvedOpenTarget {
     pub kind: &'static str,
     pub id: String,
     pub space_id: String,
     pub project_id: Option<String>,
-    pub placement: LauncherResolvedPlacement,
+    /// 与 draft placement 同形：project | standalone。
+    pub placement: LauncherPlacementKind,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "camelCase")]
 pub enum LauncherScopeKind {
     All,
     Space,
@@ -75,18 +70,12 @@ pub struct LauncherSpaceSummaryDto {
     pub is_default: bool,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum LauncherProjectOptionKind {
-    Standalone,
-    Project,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LauncherProjectOptionDto {
+    /// 与 placement 同形：standalone 虚拟项 / project 实体。
     #[serde(rename = "kind")]
-    pub kind: LauncherProjectOptionKind,
+    pub kind: LauncherPlacementKind,
     pub id: Option<String>,
     pub space_id: String,
     pub name: String,
@@ -214,7 +203,7 @@ impl<P: LauncherPorts> LauncherService<P> {
         Ok(LauncherProjectsBySpaceDto {
             space_id: space.id.clone(),
             standalone_option: LauncherProjectOptionDto {
-                kind: LauncherProjectOptionKind::Standalone,
+                kind: LauncherPlacementKind::Standalone,
                 id: None,
                 space_id: space.id.clone(),
                 name: "独立事项".to_owned(),
@@ -222,7 +211,7 @@ impl<P: LauncherPorts> LauncherService<P> {
             projects: projects
                 .into_iter()
                 .map(|project| LauncherProjectOptionDto {
-                    kind: LauncherProjectOptionKind::Project,
+                    kind: LauncherPlacementKind::Project,
                     id: Some(project.id),
                     space_id: project.space_id,
                     name: project.name,
@@ -265,16 +254,16 @@ impl<P: LauncherPorts> LauncherService<P> {
             id: project_id.to_owned(),
             space_id,
             project_id: None,
-            placement: LauncherResolvedPlacement::Project,
+            placement: LauncherPlacementKind::Project,
         })
     }
 }
 
-fn resolve_task_placement(detail: &LauncherTaskDetail) -> LauncherResolvedPlacement {
+fn resolve_task_placement(detail: &LauncherTaskDetail) -> LauncherPlacementKind {
     if detail.project_id.is_some() {
-        return LauncherResolvedPlacement::Project;
+        return LauncherPlacementKind::Project;
     }
-    LauncherResolvedPlacement::Standalone
+    LauncherPlacementKind::Standalone
 }
 
 fn map_default_space_domain_error(error: stoneflow_domain::DomainError) -> ApplicationError {

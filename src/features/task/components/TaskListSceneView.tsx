@@ -46,7 +46,6 @@ export function TaskListSceneView({ variant }: TaskListSceneViewProps) {
 					<PlusIcon />
 				</MainCard.GhostAction>
 			}
-			sceneVariant={scene.sceneVariant}
 			toolbarDisplayAction={<DisplayOptionsButton pageKey={scene.displayPageKey} />}
 			toolbarPills={scene.toolbarPills}
 		/>

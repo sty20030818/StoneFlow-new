@@ -35,7 +35,7 @@ pub use lifecycle::{
 pub use project::{ensure_project_belongs_to_space, validate_project_id};
 pub use settings::validate_sidebar_main_visible_count;
 pub use space::{ensure_can_retire_default_space, validate_space_id};
-pub use task::{ensure_task_placement, validate_task_id};
+pub use task::validate_task_id;
 pub use task_link::{validate_http_https_url, validate_link_id, validate_task_id_for_link};
 pub use time::{
     format_utc_rfc3339, is_same_utc_day, now_utc, parse_calendar_date, parse_utc_rfc3339,

@@ -6,6 +6,7 @@ import {
 	buildScopedSettingsPath,
 	buildStartupFallbackPath,
 	buildTaskDetailPath,
+	type ShellSectionKey,
 } from './path'
 import { readLastSettingsSection, type SettingsSectionKey } from '@/features/settings/contract'
 import type { Scope, ShellNavigationTarget } from '@/shared/types'
@@ -18,14 +19,7 @@ export type { ShellNavigationTarget }
  */
 export function openSection(
 	scope: Scope,
-	section:
-		| 'tasks'
-		| 'views'
-		| 'projects'
-		| 'archive'
-		| 'trash'
-		| 'settings'
-		| 'standalone',
+	section: ShellSectionKey,
 	fallbackSpaceId?: string | null,
 ) {
 	if (section === 'settings') {

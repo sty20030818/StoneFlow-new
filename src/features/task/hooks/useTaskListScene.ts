@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo } from 'react'
 
 import { useCurrentShellRoute, resolveBreadcrumb, resolveShellRouteScope } from '@/app/navigation'
 import { useDialogStore } from '@/features/shell-dialogs'
@@ -28,7 +28,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const config = VARIANT_CONFIG[variant]
 	const shellRoute = useCurrentShellRoute()
 	const scope = resolveShellRouteScope(shellRoute)
-	const spaceId = shellRoute.spaceId
 	const openTaskCreateDialog = useDialogStore((state) => state.openTaskCreateDialog)
 	const entityDetailController = useEntityDetailController()
 	const activeDetail = entityDetailController.activeDetail
@@ -49,12 +48,6 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
-	const resolvedProjectOptions = useMemo(() => {
-		if (!config.filterProjectsBySpace || !spaceId) {
-			return projectOptions
-		}
-		return projectOptions.filter((project) => project.spaceId === spaceId)
-	}, [config.filterProjectsBySpace, projectOptions, spaceId])
 
 	const mutations = useTaskListController()
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
@@ -62,7 +55,7 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const { controller, filteredTasks, displayResult } = useListSceneFilterDisplay({
 		config,
 		taskSourceItems,
-		projectOptions: resolvedProjectOptions,
+		projectOptions,
 	})
 
 	const activeTaskId = activeDetail?.kind === 'task' ? activeDetail.id : null
@@ -86,13 +79,12 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		openPreview: taskPreviewController.openPreview,
 		mutations,
 		selection,
-		projectOptions: resolvedProjectOptions,
+		projectOptions,
 		spaces,
 	})
 
 	return {
 		variant,
-		sceneVariant: config.sceneVariant,
 		displayPageKey: config.displayPageKey,
 		breadcrumbItems,
 		board,
@@ -106,8 +98,3 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 		showStandaloneHint: variant === 'standalone',
 	}
 }
-
-export type TaskListSceneFacade = ReturnType<typeof useTaskListScene>
-
-/** 供 View 拼装 afterBoard 等 ReactNode 时的类型提示 */
-export type TaskListSceneAfterBoard = ReactNode

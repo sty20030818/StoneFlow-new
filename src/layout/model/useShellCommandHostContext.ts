@@ -2,10 +2,7 @@ import { useMemo } from 'react'
 
 import type { ShellRoute } from '@/app/navigation'
 import type { ShellSectionKey } from '@/layout/types'
-import {
-	resolveCommandRoutePage,
-	resolveCommandActivePanel,
-} from '@/layout/shellCommandRouteHelpers'
+import { resolveCommandActivePanel } from '@/layout/shellCommandRouteHelpers'
 import { resolveShellDetailState } from '@/features/task'
 import type { EntityDetailRouteState } from '@/features/entity-detail'
 import { useCommandContext, type CommandSelectionContext } from '@/features/command'
@@ -63,7 +60,8 @@ export function useShellCommandHostContext({
 
 	const commandRoute = useMemo(
 		() => ({
-			page: resolveCommandRoutePage(activeSection),
+			// ShellSectionKey ⊆ CommandRouteContext.page（settings 保留，用于禁用新建等）
+			page: activeSection,
 			projectId: routeProjectId ?? undefined,
 		}),
 		[activeSection, routeProjectId],
@@ -126,7 +124,7 @@ export function useShellCommandHostContext({
 			statusFilterValues: pageFilter.state.statusValues,
 			dateFilterValue: pageFilter.state.dateValue,
 			projectFilterId: pageFilter.state.projectId,
-			projectlessOnly: pageFilter.state.projectlessOnly,
+			standaloneOnly: pageFilter.state.standaloneOnly,
 			filterCapabilities: pageFilter.capabilities,
 			filterKind: commandMenuFilterKind,
 		}),
@@ -137,7 +135,7 @@ export function useShellCommandHostContext({
 			pageFilter.state.hasActiveFilters,
 			pageFilter.state.priorityValues,
 			pageFilter.state.projectId,
-			pageFilter.state.projectlessOnly,
+			pageFilter.state.standaloneOnly,
 			pageFilter.state.showCompleted,
 			pageFilter.state.statusValues,
 		],

@@ -1,4 +1,8 @@
 import type { TaskPriorityValue } from '@/features/task/model/taskPriority'
+import {
+	placementDraftFromTarget,
+	targetFromPlacementDraft,
+} from '@/features/task/model/taskPlacement'
 import type { TaskPlacement } from '@/shared/types'
 import type { TaskStatus } from '@/shared/types'
 import type { ProjectOption } from '@/features/project'
@@ -94,7 +98,7 @@ export function PlacementMetaAction({
 		spaces,
 		projects,
 	})
-	const value = toTaskPlacementTarget(placement, spaceId, projectId)
+	const value = targetFromPlacementDraft(placement, spaceId, projectId)
 	const needsProjectSelection = placement === 'project' && !projectId
 
 	return (
@@ -108,38 +112,9 @@ export function PlacementMetaAction({
 			menuLabel={groupedDropdownProps.menuLabel}
 			value={value}
 			onChange={(nextValue: TaskPlacementTarget) => {
-				const nextPlacement = fromTaskPlacementTarget(nextValue)
-				onPlacementChange(nextPlacement.placement, nextPlacement.projectId)
+				const next = placementDraftFromTarget(nextValue)
+				onPlacementChange(next.placement, next.projectId)
 			}}
 		/>
 	)
-}
-
-function toTaskPlacementTarget(
-	placement: TaskPlacement,
-	spaceId: string,
-	projectId: string,
-): TaskPlacementTarget {
-	if (placement === 'project' && projectId) {
-		return { kind: 'project', projectId, spaceId }
-	}
-
-	return { kind: 'standalone', spaceId }
-}
-
-function fromTaskPlacementTarget(value: TaskPlacementTarget): {
-	placement: TaskPlacement
-	projectId: string | null
-} {
-	if (value.kind === 'project') {
-		return {
-			placement: 'project',
-			projectId: value.projectId,
-		}
-	}
-
-	return {
-		placement: 'standalone',
-		projectId: null,
-	}
 }

@@ -36,7 +36,6 @@ export function LifecycleList({ mode }: LifecycleListProps) {
 					selectedCount={scene.bulk.selectedCount}
 				/>
 			}
-			sceneVariant={scene.sceneVariant}
 			toolbarPills={scene.toolbarPills}
 		/>
 	)
