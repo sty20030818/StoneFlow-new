@@ -16,9 +16,9 @@ import { Route as ShellScopeKeyRouteRouteImport } from './routes/_shell/$scopeKe
 import { Route as DebugActivityRouteImport } from './routes/debug.activity'
 import { Route as ShellScopeKeyIndexRouteImport } from './routes/_shell/$scopeKey/index'
 import { Route as ShellScopeKeyArchiveRouteImport } from './routes/_shell/$scopeKey/archive'
-import { Route as ShellScopeKeyStandaloneRouteImport } from './routes/_shell/$scopeKey/standalone'
 import { Route as ShellScopeKeyProjectsRouteRouteImport } from './routes/_shell/$scopeKey/projects/route'
 import { Route as ShellScopeKeySettingsRouteRouteImport } from './routes/_shell/$scopeKey/settings/route'
+import { Route as ShellScopeKeyStandaloneRouteImport } from './routes/_shell/$scopeKey/standalone'
 import { Route as ShellScopeKeyTasksRouteRouteImport } from './routes/_shell/$scopeKey/tasks/route'
 import { Route as ShellScopeKeyTrashRouteImport } from './routes/_shell/$scopeKey/trash'
 import { Route as ShellScopeKeyViewsRouteRouteImport } from './routes/_shell/$scopeKey/views/route'
@@ -65,11 +65,6 @@ const ShellScopeKeyArchiveRoute = ShellScopeKeyArchiveRouteImport.update({
   path: '/archive',
   getParentRoute: () => ShellScopeKeyRouteRoute,
 } as any)
-const ShellScopeKeyStandaloneRoute = ShellScopeKeyStandaloneRouteImport.update({
-  id: '/standalone',
-  path: '/standalone',
-  getParentRoute: () => ShellScopeKeyRouteRoute,
-} as any)
 const ShellScopeKeyProjectsRouteRoute =
   ShellScopeKeyProjectsRouteRouteImport.update({
     id: '/projects',
@@ -82,6 +77,11 @@ const ShellScopeKeySettingsRouteRoute =
     path: '/settings',
     getParentRoute: () => ShellScopeKeyRouteRoute,
   } as any)
+const ShellScopeKeyStandaloneRoute = ShellScopeKeyStandaloneRouteImport.update({
+  id: '/standalone',
+  path: '/standalone',
+  getParentRoute: () => ShellScopeKeyRouteRoute,
+} as any)
 const ShellScopeKeyTasksRouteRoute = ShellScopeKeyTasksRouteRouteImport.update({
   id: '/tasks',
   path: '/tasks',
@@ -330,13 +330,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellScopeKeyArchiveRouteImport
       parentRoute: typeof ShellScopeKeyRouteRoute
     }
-    '/_shell/$scopeKey/standalone': {
-      id: '/_shell/$scopeKey/standalone'
-      path: '/standalone'
-      fullPath: '/$scopeKey/standalone'
-      preLoaderRoute: typeof ShellScopeKeyStandaloneRouteImport
-      parentRoute: typeof ShellScopeKeyRouteRoute
-    }
     '/_shell/$scopeKey/projects': {
       id: '/_shell/$scopeKey/projects'
       path: '/projects'
@@ -349,6 +342,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/$scopeKey/settings'
       preLoaderRoute: typeof ShellScopeKeySettingsRouteRouteImport
+      parentRoute: typeof ShellScopeKeyRouteRoute
+    }
+    '/_shell/$scopeKey/standalone': {
+      id: '/_shell/$scopeKey/standalone'
+      path: '/standalone'
+      fullPath: '/$scopeKey/standalone'
+      preLoaderRoute: typeof ShellScopeKeyStandaloneRouteImport
       parentRoute: typeof ShellScopeKeyRouteRoute
     }
     '/_shell/$scopeKey/tasks': {
