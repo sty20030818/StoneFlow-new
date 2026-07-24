@@ -120,7 +120,7 @@ export function SyncConfigDialog({
 				</div>
 
 				<div className={dialogShellPanelFooterClass}>
-					<div className={dialogShellFooterClass}>
+					<div className={cn(dialogShellFooterClass, 'border-t-0 pt-0')}>
 						<Button disabled={busy} onClick={onClose} type='button' variant='secondary'>
 							取消
 						</Button>

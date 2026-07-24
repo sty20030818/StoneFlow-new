@@ -650,9 +650,7 @@ async fn resolve_bootstrap_plan(
         let remote_max = probe.latest_server_seq.unwrap_or(0);
 
         if matches!(local, LocalContent::HasData) && remote_max == 0 {
-            log::warn!(
-                "同步:检测到云端序号为空但本机有数据且已有序号={local_seq}，将重新灌库上传"
-            );
+            log::warn!("同步:检测到云端序号为空但本机有数据且已有序号={local_seq}，将重新灌库上传");
             super::origin_seed::reset_origin_binding_for_reseed(database).await?;
             return Ok(classify(
                 LocalContent::HasData,
@@ -662,9 +660,7 @@ async fn resolve_bootstrap_plan(
         }
 
         if remote_max > 0 && local_seq > remote_max {
-            log::warn!(
-                "同步:本机序号 {local_seq} 超前于云端头 {remote_max}，清除序号后重新分类"
-            );
+            log::warn!("同步:本机序号 {local_seq} 超前于云端头 {remote_max}，清除序号后重新分类");
             super::origin_seed::reset_origin_binding_for_reseed(database).await?;
             // 清序号后按「无 cursor」路径用全量探针分类。
             let baseline = stoneflow_sync::download_full(&cloud)

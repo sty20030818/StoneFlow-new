@@ -9,7 +9,8 @@ use crate::app::error::AppError;
 use crate::app::state::AppState;
 use crate::sync;
 use crate::window::launcher::{runtime::LauncherWindowRuntimeState, session::shutdown_launcher};
-use crate::window::main::persist_main_window_size;
+#[cfg(target_os = "windows")]
+use crate::window::main::persist_windows_main_window_state;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ExitReason {
@@ -100,7 +101,7 @@ impl ExitCoordinator {
     }
 }
 
-/// 真正退出前：有界收尾 → 落盘主窗尺寸 → destroy 全部 WebView → `exit`。
+/// 真正退出前：有界收尾 → Windows 落盘主窗状态 → destroy 全部 WebView → `exit`。
 /// 减少 Windows 上 `Chrome_WidgetWin_0` / Error 1412 的拆窗竞态噪音。
 pub async fn request_exit_and_quit(app_handle: &tauri::AppHandle, reason: ExitReason) {
     if let Some(exit_coordinator) = app_handle.try_state::<ExitCoordinator>() {
@@ -112,7 +113,8 @@ pub async fn request_exit_and_quit(app_handle: &tauri::AppHandle, reason: ExitRe
         sync::flush_before_exit(app_handle).await;
     }
 
-    persist_main_window_size(app_handle);
+    #[cfg(target_os = "windows")]
+    persist_windows_main_window_state(app_handle);
 
     // 必须用 destroy：main 的 CloseRequested 会 prevent_close + hide，close() 退不出去。
     for (label, window) in app_handle.webview_windows() {

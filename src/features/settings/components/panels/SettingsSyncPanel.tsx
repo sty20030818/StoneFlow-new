@@ -264,22 +264,16 @@ export function SettingsSyncPanel() {
 		if (syncStatus?.policyMode === mode) {
 			return
 		}
-		const minutes =
-			clampIntervalMinutes(
-				Number(intervalMinutesDraft) ||
-					syncStatus?.policyIntervalMinutes ||
-					DEFAULT_INTERVAL_MINUTES,
-			)
+		const minutes = clampIntervalMinutes(
+			Number(intervalMinutesDraft) || syncStatus?.policyIntervalMinutes || DEFAULT_INTERVAL_MINUTES,
+		)
 		await persistSyncPolicy(mode, minutes)
 	}
 
 	async function handleIntervalMinutesCommit() {
 		const minutes = clampIntervalMinutes(Number(intervalMinutesDraft))
 		setIntervalMinutesDraft(String(minutes))
-		if (
-			syncStatus?.policyMode === 'interval' &&
-			syncStatus.policyIntervalMinutes === minutes
-		) {
+		if (syncStatus?.policyMode === 'interval' && syncStatus.policyIntervalMinutes === minutes) {
 			return
 		}
 		await persistSyncPolicy('interval', minutes)
@@ -380,11 +374,7 @@ export function SettingsSyncPanel() {
 						<div className='mt-4 flex min-w-0 flex-col gap-3'>
 							<div className={formFieldStackClass}>
 								<span className={formFieldLabelVariants()}>同步频率</span>
-								<div
-									aria-label='同步频率'
-									className='grid gap-2 sm:grid-cols-3'
-									role='radiogroup'
-								>
+								<div aria-label='同步频率' className='grid gap-2 sm:grid-cols-3' role='radiogroup'>
 									{SYNC_MODE_OPTIONS.map((option) => {
 										const selected = policyMode === option.mode
 										return (
@@ -403,9 +393,7 @@ export function SettingsSyncPanel() {
 												role='radio'
 												type='button'
 											>
-												<span className='text-sm font-medium text-foreground'>
-													{option.label}
-												</span>
+												<span className='text-sm font-medium text-foreground'>{option.label}</span>
 												<span className='text-[11px] leading-4 text-muted-foreground'>
 													{option.description}
 												</span>

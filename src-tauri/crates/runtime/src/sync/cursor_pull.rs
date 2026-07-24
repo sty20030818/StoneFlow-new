@@ -924,7 +924,11 @@ async fn hydrate_missing_fields_from_business(
             insert_opt_str_if_missing(f, "planned_at", row.try_get("", "planned_at")?);
             insert_opt_str_if_missing(f, "due_at", row.try_get("", "due_at")?);
             insert_opt_str_if_missing(f, "remind_at", row.try_get("", "remind_at")?);
-            insert_str_if_missing(f, "status_changed_at", row.try_get("", "status_changed_at")?);
+            insert_str_if_missing(
+                f,
+                "status_changed_at",
+                row.try_get("", "status_changed_at")?,
+            );
             insert_opt_str_if_missing(f, "completed_at", row.try_get("", "completed_at")?);
             insert_i64_if_missing(f, "position", row.try_get("", "position")?);
             insert_str_if_missing(f, "created_at", row.try_get("", "created_at")?);
@@ -953,7 +957,11 @@ async fn hydrate_missing_fields_from_business(
             insert_opt_str_if_missing(f, "planned_at", row.try_get("", "planned_at")?);
             insert_opt_str_if_missing(f, "due_at", row.try_get("", "due_at")?);
             insert_opt_str_if_missing(f, "remind_at", row.try_get("", "remind_at")?);
-            insert_str_if_missing(f, "status_changed_at", row.try_get("", "status_changed_at")?);
+            insert_str_if_missing(
+                f,
+                "status_changed_at",
+                row.try_get("", "status_changed_at")?,
+            );
             insert_opt_str_if_missing(f, "completed_at", row.try_get("", "completed_at")?);
             insert_i64_if_missing(f, "position", row.try_get("", "position")?);
             insert_str_if_missing(f, "created_at", row.try_get("", "created_at")?);

@@ -281,7 +281,7 @@ crates/runtime/src/
 1. `composition.rs` 是 composition root 命名，不再使用旧的 `assembly`
 2. `window/launcher/*` 是 Launcher 窗口主线，不再放回主窗口目录
 3. `commands/launcher` 按 `domain` 和 `window` 分开
-4. `window-state` 只持久化主窗口尺寸，不保存位置和最大化状态；`window/main.rs` 每次冷启动先居中、再恢复尺寸并显示，Launcher 不参与
+4. Windows 使用 `window-state` 持久化主窗口位置和尺寸（不保存最大化状态）；macOS / Linux 每次冷启动使用默认尺寸并居中；Launcher 不参与
 
 ---
 

@@ -16,13 +16,11 @@ pub mod update_schedule;
 pub mod window;
 
 pub use window::main::MAIN_WINDOW_LABEL;
+#[cfg(target_os = "windows")]
+use window::main::{persist_windows_main_window_state, WINDOWS_MAIN_WINDOW_STATE};
 
 /// 组装主应用 Builder。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
-    use crate::window::main::{
-        persist_main_window_size, MAIN_WINDOW_LABEL, MAIN_WINDOW_SIZE_STATE,
-    };
-
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             // 热唤起：只恢复可见性，不改几何、不 center。
@@ -36,17 +34,18 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        // 主窗口只持久化尺寸；新文件让旧的位置、最大化和异常尺寸记录直接失效。
-        // skip_initial_state：冷启动由 build_main_window 在 show 前唯一 restore，避免竞态跳动。
-        .plugin(
-            tauri_plugin_window_state::Builder::new()
-                .with_state_flags(MAIN_WINDOW_SIZE_STATE)
-                .with_filename(".main-window-size.json")
-                .with_filter(|label| label == MAIN_WINDOW_LABEL)
-                .skip_initial_state(MAIN_WINDOW_LABEL)
-                .build(),
-        );
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build());
+
+    // Windows 的官方插件会先恢复位置再恢复物理尺寸，避免跨 DPI 显示器时尺寸换算错误。
+    #[cfg(target_os = "windows")]
+    let builder = builder.plugin(
+        tauri_plugin_window_state::Builder::new()
+            .with_state_flags(WINDOWS_MAIN_WINDOW_STATE)
+            .with_filename(".main-window-state.json")
+            .with_filter(|label| label == MAIN_WINDOW_LABEL)
+            .skip_initial_state(MAIN_WINDOW_LABEL)
+            .build(),
+    );
 
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_nspanel::init());
@@ -58,8 +57,9 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
                 if let WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();
-                    // 用户关窗 = hide，不会走 Exit；此处落盘保存最新尺寸。
-                    persist_main_window_size(window.app_handle());
+                    // Windows 用户关窗 = hide，不会走 Exit；此处落盘保存窗口状态。
+                    #[cfg(target_os = "windows")]
+                    persist_windows_main_window_state(window.app_handle());
                 }
             }
         })

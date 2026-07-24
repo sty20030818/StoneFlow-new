@@ -523,8 +523,6 @@ mod tests {
         assert_eq!(super::retry_backoff(99), Duration::minutes(5));
     }
 
-
-
     #[tokio::test]
     async fn queue_pending_should_merge_push_and_pull_into_sync() {
         let state = SyncRuntimeState::default();
