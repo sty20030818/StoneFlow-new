@@ -569,6 +569,7 @@ async fn apply_baseline(
     baseline: Baseline,
 ) -> Result<(), AppError> {
     let transaction = database.connection().begin().await?;
+    // 全量基线以云端为准：清空本机业务（含空壳默认 Space），避免新机叠出两个「个人」。
     reset_replica(&transaction).await?;
     let mut entities = baseline.entities;
     entities.sort_by_key(|snapshot| entity_rank(snapshot.entity.entity_type));
@@ -594,6 +595,8 @@ async fn apply_baseline(
         .await?;
         materialize_tombstone(&transaction, &tombstone).await?;
     }
+    // is_default 不进协议：在物化结果上为本机指一个默认 Space。
+    ensure_local_default_space(&transaction).await?;
     write_cursor(&transaction, baseline.cursor.server_seq, "baseline").await?;
     let restored_at = stoneflow_domain::now_utc().to_rfc3339();
     write_setting(
@@ -969,18 +972,73 @@ async fn reset_replica(transaction: &DatabaseTransaction) -> Result<(), AppError
         "views",
         "tombstones",
         "sync_protocol_entities",
+        // 含本机 seed 的默认 Space：占位 id 不得与云端业务 Space 并存。
+        "spaces",
     ] {
         transaction
             .execute_raw(statement(&format!("DELETE FROM {table}"), vec![]))
             .await?;
     }
-    // 保留本机默认 Space 作为空远端或中断 baseline 的最小可用兜底。
+    Ok(())
+}
+
+/// 全量基线后为本机挑选 `is_default`（协议字段不含此项）。
+/// 优先「个人」→ position 最小 → id；若云端无 Space 则重建本机空壳默认。
+async fn ensure_local_default_space(transaction: &DatabaseTransaction) -> Result<(), AppError> {
     transaction
         .execute_raw(statement(
-            "DELETE FROM spaces WHERE is_default = 0 OR archived_at IS NOT NULL OR deleted_at IS NOT NULL",
+            "UPDATE spaces SET is_default = 0 WHERE is_default = 1",
             vec![],
         ))
         .await?;
+
+    let row = transaction
+        .query_one_raw(statement(
+            r#"
+            SELECT id FROM spaces
+            WHERE archived_at IS NULL AND deleted_at IS NULL
+            ORDER BY
+                CASE WHEN name = '个人' THEN 0 ELSE 1 END,
+                position ASC,
+                id ASC
+            LIMIT 1
+            "#,
+            vec![],
+        ))
+        .await?;
+
+    if let Some(row) = row {
+        let id: String = row.try_get("", "id")?;
+        transaction
+            .execute_raw(statement(
+                "UPDATE spaces SET is_default = 1 WHERE id = ?",
+                vec![id.into()],
+            ))
+            .await?;
+        return Ok(());
+    }
+
+    // 云端无存活 Space：补本机兜底，保证 UI 可启动（与 bootstrap seed 字段对齐）。
+    let id = stoneflow_domain::create_id().to_string();
+    let now = stoneflow_domain::now_utc().to_rfc3339();
+    transaction
+        .execute_raw(statement(
+            r#"
+            INSERT INTO spaces(
+                id, name, icon_key, color_key, is_default, position, generation,
+                archived_at, deleted_at, archived_by_operation_id, deleted_by_operation_id,
+                created_at, updated_at
+            ) VALUES (?, '个人', 'home', 'blue', 1, ?, 1, NULL, NULL, NULL, NULL, ?, ?)
+            "#,
+            vec![
+                id.into(),
+                stoneflow_domain::POSITION_STEP.into(),
+                now.clone().into(),
+                now.into(),
+            ],
+        ))
+        .await?;
+    log::info!("同步:全量基线后重建本机默认 Space");
     Ok(())
 }
 

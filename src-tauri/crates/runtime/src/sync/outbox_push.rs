@@ -68,11 +68,17 @@ pub async fn push_pending_outbox(
 
 /// 默认 Space 是本机兜底，但其实体必须先于引用它的任务存在于远端。
 /// 远端回放不会把 `is_default` 写回其他设备，因此不同设备的兜底选择不会互相覆盖。
+///
+/// 本机若只有空壳默认（无业务数据）：**禁止**把占位「个人」推上云，否则新机会污染云端并叠同名 Space。
 async fn ensure_default_space_is_remote(
     database: &DatabaseRuntimeState,
     remote: &SyncRemoteConfig,
     device_id: &str,
 ) -> Result<(), AppError> {
+    if !super::cursor_pull::local_has_user_content_for_plan(database).await? {
+        log::info!("同步:跳过默认 Space 上传（本机仅空壳占位）");
+        return Ok(());
+    }
     let row = database
         .connection()
         .query_one_raw(Statement::from_string(

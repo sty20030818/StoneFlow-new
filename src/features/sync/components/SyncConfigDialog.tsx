@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
+import { cn } from '@/shared/lib/utils'
 import { StatusNotice } from '@/shared/components/StatusNotice'
 import { Button } from '@/shared/components/base/button'
 import {
@@ -77,7 +78,9 @@ export function SyncConfigDialog({
 
 	return (
 		<Dialog onOpenChange={(nextOpen) => !nextOpen && !busy && onClose()} open={open}>
-			<DialogContent className={dialogShellContentVariants({ size: 'lg' })}>
+			<DialogContent
+				className={cn(dialogShellContentVariants({ size: 'lg' }), 'min-w-0 overflow-hidden')}
+			>
 				<DialogHeader className={dialogShellHeaderClass}>
 					<DialogTitle className={dialogShellTitleClass}>配置云端副本</DialogTitle>
 					<DialogDescription className={dialogShellDescriptionClass}>
@@ -86,12 +89,13 @@ export function SyncConfigDialog({
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className={`${dialogShellBodyClass} flex flex-col gap-4`}>
-					<label className={formFieldStackClass}>
+				<div className={`${dialogShellBodyClass} flex min-w-0 flex-col gap-4`}>
+					<label className={`${formFieldStackClass} min-w-0`}>
 						<span className={formFieldLabelVariants()}>同步数据库连接</span>
+						{/* 连接串无空格超长：禁止 field-sizing 横向撑破弹窗，强制断行。 */}
 						<Textarea
 							autoComplete='off'
-							className='min-h-24 font-mono text-[13px] leading-5'
+							className='min-h-24 max-w-full resize-y overflow-x-hidden break-all font-mono text-[13px] leading-5 field-sizing-fixed'
 							disabled={busy}
 							onChange={(event) => onDatabaseUrlChange(event.currentTarget.value)}
 							placeholder={

@@ -291,7 +291,8 @@ fn workspace_changed_payload(
 ) -> WorkspaceChangedPayload {
     WorkspaceChangedPayload {
         source: "sync",
-        reason: mode_label(mode),
+        // 事件 reason 保持稳定英文，便于前端/测试契约；日志用 mode_label 中文。
+        reason: mode_reason(mode),
         changed_domains,
     }
 }
@@ -546,6 +547,14 @@ fn mode_label(mode: SyncRunMode) -> &'static str {
         SyncRunMode::Push => "仅上传",
         SyncRunMode::Pull => "仅下载",
         SyncRunMode::Sync => "完整同步",
+    }
+}
+
+fn mode_reason(mode: SyncRunMode) -> &'static str {
+    match mode {
+        SyncRunMode::Push => "push",
+        SyncRunMode::Pull => "pull",
+        SyncRunMode::Sync => "sync",
     }
 }
 
