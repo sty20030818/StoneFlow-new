@@ -14,23 +14,20 @@ use super::{
 pub const SYNC_CONFIG_SETTING_KEY: &str = "app.sync.config";
 pub const SYNC_POLICY_SETTING_KEY: &str = "app.sync.policy";
 
-/// 从 settings 表读取同步远端配置。
+/// 从钥匙串读取完整连接串；settings 仅存脱敏展示。
+///
+/// 硬切：钥匙串里若是旧 Turso token（非 postgres URL）则视为未配置。
 pub async fn load_remote_config(
     database: &DatabaseRuntimeState,
 ) -> Result<Option<SyncRemoteConfig>, AppError> {
-    let repository = SettingsRepository::new(database.connection().clone());
-    let stored = repository
-        .find_json_setting::<SyncRemoteConfigSetting>(SYNC_CONFIG_SETTING_KEY)
-        .await?;
-
-    let Some(setting) = stored else {
+    let _ = database;
+    let Some(database_url) = read_sync_secret().await?.and_then(normalize_database_url) else {
         return Ok(None);
     };
-    let Some(url) = normalize_url(setting.url) else {
+    if !looks_like_postgres_url(&database_url) {
         return Ok(None);
-    };
-    let token = read_sync_token().await?;
-    Ok(token.map(|token| SyncRemoteConfig { url, token }))
+    }
+    Ok(Some(SyncRemoteConfig { database_url }))
 }
 
 /// 从 settings 表读取同步策略；缺省值是 15 分钟自动同步。
@@ -81,79 +78,131 @@ pub async fn save_sync_policy(
     Ok(policy)
 }
 
-/// 写入并返回标准化后的同步远端配置。
+/// 写入并返回标准化后的云端副本配置。
 pub async fn save_remote_config(
     database: &DatabaseRuntimeState,
-    url: String,
-    token: String,
+    database_url: String,
 ) -> Result<SyncRemoteConfig, AppError> {
-    let config = normalize_fields(Some(url), Some(token))
-        .ok_or_else(|| AppError::validation("请先填写完整的 Turso url 和 token"))?;
-    write_sync_token(config.token.clone()).await?;
+    let database_url = normalize_database_url(database_url)
+        .ok_or_else(|| AppError::validation("请填写有效的同步数据库连接串"))?;
+    if !looks_like_postgres_url(&database_url) {
+        return Err(AppError::validation(
+            "连接串应以 postgresql:// 或 postgres:// 开头（Neon / 自建 Postgres）",
+        ));
+    }
+    write_sync_secret(database_url.clone()).await?;
     let repository = SettingsRepository::new(database.connection().clone());
     let updated_at = now_utc().to_rfc3339();
-
     repository
         .set_json_setting(
             SYNC_CONFIG_SETTING_KEY,
             &SyncRemoteConfigSetting {
-                url: Some(config.url.clone()),
+                display_host: Some(redact_database_url(&database_url)),
             },
             &updated_at,
         )
         .await?;
 
-    Ok(config)
+    Ok(SyncRemoteConfig { database_url })
 }
 
-fn normalize_fields(url: Option<String>, token: Option<String>) -> Option<SyncRemoteConfig> {
-    let normalized_url = url?.trim().to_owned();
-    let normalized_token = token?.trim().to_owned();
-
-    if normalized_url.is_empty() || normalized_token.is_empty() {
-        return None;
-    }
-
-    Some(SyncRemoteConfig {
-        url: normalized_url,
-        token: normalized_token,
-    })
-}
-
-fn normalize_url(url: Option<String>) -> Option<String> {
-    let url = url?.trim().to_owned();
+pub(super) fn normalize_database_url(url: impl Into<String>) -> Option<String> {
+    // 去掉首尾空白与粘贴时常见的换行/零宽字符，避免「看起来对但校验失败」。
+    let url = url
+        .into()
+        .trim()
+        .trim_matches(|c: char| c == '\u{feff}' || c == '\u{200b}')
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty() && !line.starts_with('#'))
+        .unwrap_or("")
+        .to_owned();
     (!url.is_empty()).then_some(url)
 }
 
-async fn read_sync_token() -> Result<Option<String>, AppError> {
-    tokio::task::spawn_blocking(SyncTokenStore::load)
-        .await
-        .map_err(|error| AppError::internal(format!("读取同步系统凭证任务失败: {error}")))?
-        .map_err(|error| AppError::initialization(error.to_string()))
+fn looks_like_postgres_url(url: &str) -> bool {
+    let lower = url.to_ascii_lowercase();
+    lower.starts_with("postgresql://") || lower.starts_with("postgres://")
 }
 
-async fn write_sync_token(token: String) -> Result<(), AppError> {
-    tokio::task::spawn_blocking(move || SyncTokenStore::save(&token))
+/// 日志与 UI 展示：去掉用户密码。
+pub fn redact_database_url(url: &str) -> String {
+    // postgresql://user:pass@host:port/db → postgresql://user:***@host:port/db
+    if let Some(scheme_end) = url.find("://") {
+        let scheme = &url[..scheme_end + 3];
+        let rest = &url[scheme_end + 3..];
+        if let Some(at) = rest.rfind('@') {
+            let userinfo = &rest[..at];
+            let host_and_path = &rest[at + 1..];
+            let user = userinfo.split(':').next().unwrap_or(userinfo);
+            return format!("{scheme}{user}:***@{host_and_path}");
+        }
+    }
+    url.to_owned()
+}
+
+async fn read_sync_secret() -> Result<Option<String>, AppError> {
+    // 钥匙串未授权 / 不可用时视为「未配置」，绝不阻断 App 启动。
+    match tokio::task::spawn_blocking(SyncTokenStore::load).await {
+        Ok(Ok(value)) => Ok(value),
+        Ok(Err(error)) => {
+            log::warn!("同步:钥匙串不可用 {error}");
+            Ok(None)
+        }
+        Err(error) => {
+            log::warn!("同步:钥匙串任务失败 {error}");
+            Ok(None)
+        }
+    }
+}
+
+async fn write_sync_secret(secret: String) -> Result<(), AppError> {
+    tokio::task::spawn_blocking(move || SyncTokenStore::save(&secret))
         .await
         .map_err(|error| AppError::internal(format!("保存同步系统凭证任务失败: {error}")))?
-        .map_err(|error| AppError::initialization(error.to_string()))
+        .map_err(|error| {
+            AppError::validation(format!(
+                "无法写入系统钥匙串（{error}）。请在「系统设置 → 隐私与安全性」允许 StoneFlow 访问钥匙串后重试。"
+            ))
+        })
 }
 
 #[cfg(test)]
 mod tests {
     use serde_json::json;
 
-    use super::SyncRemoteConfigSetting;
+    use super::{normalize_database_url, redact_database_url, SyncRemoteConfigSetting};
 
     #[test]
-    fn remote_config_setting_should_only_serialize_url() {
+    fn remote_config_setting_should_only_serialize_display_host() {
         let setting = SyncRemoteConfigSetting {
-            url: Some("libsql://stoneflow.turso.io".to_owned()),
+            display_host: Some("postgresql://user:***@db.example.com:5432/sf".to_owned()),
         };
 
         assert_eq!(
             serde_json::to_value(setting).expect("setting should serialize"),
-            json!({ "url": "libsql://stoneflow.turso.io" })
+            json!({ "displayHost": "postgresql://user:***@db.example.com:5432/sf" })
+        );
+    }
+
+    #[test]
+    fn redact_database_url_should_hide_password() {
+        assert_eq!(
+            redact_database_url("postgresql://root:s3cret@47.0.0.1:5432/narrative"),
+            "postgresql://root:***@47.0.0.1:5432/narrative"
+        );
+        assert_eq!(
+            redact_database_url("postgres://localhost/db"),
+            "postgres://localhost/db"
+        );
+    }
+
+    #[test]
+    fn normalize_database_url_should_skip_comments_and_blank_lines() {
+        let raw = "\n# comment\npostgresql://u:p@h/db?sslmode=require\n";
+        assert_eq!(
+            normalize_database_url(raw).as_deref(),
+            Some("postgresql://u:p@h/db?sslmode=require")
         );
     }
 }

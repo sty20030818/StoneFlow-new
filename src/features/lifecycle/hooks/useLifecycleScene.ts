@@ -140,7 +140,11 @@ export function useLifecycleScene(mode: LifecycleMode) {
 
 		if (entry.spaceId) {
 			void navigate({
-				to: openSection({ type: 'space', spaceId: entry.spaceId }, 'standalone', entry.spaceId) as never,
+				to: openSection(
+					{ type: 'space', spaceId: entry.spaceId },
+					'standalone',
+					entry.spaceId,
+				) as never,
 			})
 		}
 	}

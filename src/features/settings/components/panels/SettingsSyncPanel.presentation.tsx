@@ -97,7 +97,7 @@ export function SyncReplicaBadge({ state }: { state: SyncReplicaState }) {
 	)
 }
 
-export function SyncTursoConfigBadge({ configured }: { configured: boolean }) {
+export function SyncCloudConfigBadge({ configured }: { configured: boolean }) {
 	return (
 		<Badge variant={configured ? 'success' : 'outline'}>
 			<span
@@ -106,7 +106,7 @@ export function SyncTursoConfigBadge({ configured }: { configured: boolean }) {
 					configured ? 'bg-sf-project-task-status-done' : 'bg-(--sf-neutral-500)',
 				)}
 			/>
-			{configured ? 'Turso 已配置' : 'Turso 未配置'}
+			{configured ? '云端副本已配置' : '云端副本未配置'}
 		</Badge>
 	)
 }
@@ -223,8 +223,8 @@ export function getSyncStatusCopy({
 	if (syncSaving) {
 		return {
 			title: '正在保存同步配置',
-			summary: '正在保存 Turso URL 和 token。保存成功后会立即刷新状态，并清空当前 token 输入框。',
-			statusDescription: '正在保存新的 Turso 远端配置。',
+			summary: '正在保存同步数据库连接。保存成功后会立即刷新状态，并清空当前连接串输入。',
+			statusDescription: '正在保存新的云端副本配置。',
 			variant: 'warning' as const,
 		}
 	}
@@ -243,19 +243,19 @@ export function getSyncStatusCopy({
 	if (!hasRemoteConfig || status === 'disabled') {
 		return {
 			title: '尚未启用云同步',
-			summary: '当前还没有保存可用的 Turso 远端。完成配置前，所有数据只会保留在本地数据库。',
-			statusDescription: '未配置 Turso 远端，本机只保留本地数据。',
+			summary: '当前还没有保存可用的同步数据库连接。完成配置前，所有数据只会保留在本地数据库。',
+			statusDescription: '未配置云端副本，本机只保留本地数据。',
 			variant: 'neutral' as const,
 		}
 	}
 
 	if (replicaState === 'baseline_required') {
 		return {
-			title: '当前设备需要建立同步基线',
+			title: '需要首次同步建立基线',
 			summary:
 				replicaReason ??
-				'当前设备已有本地数据，但缺少同步基线。为避免误覆盖本地副本，已暂停自动同步，请先完成基线迁移。',
-			statusDescription: '当前设备缺少同步基线，普通同步已暂停。',
+				'本机已有数据，但还没有同步序号。点「建立基线并同步」：会把本机数据上传到云端副本，并在不覆盖本机数据的前提下建立同步位置。',
+			statusDescription: '首次绑定云端副本后，请点一次「建立基线并同步」。',
 			variant: 'warning' as const,
 		}
 	}
@@ -291,7 +291,7 @@ export function getSyncStatusCopy({
 			return {
 				title: '同步需要处理',
 				summary:
-					'上一轮同步失败了。先检查 URL、token、网络和 Turso 远端状态，修正后再触发下一轮同步。',
+					'上一轮同步失败了。先检查连接串、网络和云端 Postgres 状态，修正后再触发下一轮同步。',
 				statusDescription: '上一轮同步失败，等待人工处理或下一次重试。',
 				variant: 'danger' as const,
 			}

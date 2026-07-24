@@ -18,23 +18,25 @@ version = "0.1.1"
 [workspace.dependencies]
 anyhow = "1"
 chrono = { version = "0.4", features = ["clock", "serde"] }
-libsql = { version = "0.10.0-pre.4", default-features = false, features = ["core", "sync", "tls"] }
 log = "0.4"
-sea-orm = { version = "1.1.20", default-features = false, features = ["macros", "sqlx-sqlite", "runtime-tokio-rustls", "with-chrono", "with-json", "with-uuid"] }
-sea-orm-migration = { version = "1.1.20", default-features = false, features = ["sqlx-sqlite", "runtime-tokio-rustls"] }
+# SeaORM 2.0 起 sea-bae 不再依赖已废弃的 proc-macro-error2
+sea-orm = { version = "2.0.0", default-features = false, features = ["macros", "sqlx-sqlite", "runtime-tokio-rustls", "with-chrono", "with-json", "with-uuid"] }
+sea-orm-migration = { version = "2.0.0", default-features = false, features = ["sqlx-sqlite", "runtime-tokio-rustls"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tauri = { version = "2.11.0", features = ["macos-private-api", "tray-icon"] }
-tauri-plugin-dialog = "2"
-tauri-plugin-log = "2"
-tauri-plugin-global-shortcut = "2"
-tauri-plugin-opener = "2"
-tauri-plugin-single-instance = "2"
-tauri-plugin-store = "2"
-tauri-plugin-updater = "2"
-tauri-plugin-window-state = "2"
+# sqlx 0.9：runtime / tls 特性拆分
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "json"] }
+tauri = { version = "2.11.5", features = ["macos-private-api", "tray-icon"] }
+tauri-plugin-dialog = "2.7.2"
+tauri-plugin-log = "2.9.0"
+tauri-plugin-global-shortcut = "2.3.2"
+tauri-plugin-opener = "2.5.4"
+tauri-plugin-single-instance = "2.4.3"
+tauri-plugin-store = "2.4.4"
+tauri-plugin-updater = "2.10.1"
+tauri-plugin-window-state = "2.4.1"
 tempfile = "3"
-thiserror = "1"
+thiserror = "2"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "io-util", "time", "net", "process"] }
 url = "2"
 uuid = { version = "1", features = ["v4", "v7", "serde"] }
@@ -52,7 +54,7 @@ name = "app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.5.6", features = [] }
+tauri-build = { version = "2.6.3", features = [] }
 
 [dependencies]
 serde_json.workspace = true

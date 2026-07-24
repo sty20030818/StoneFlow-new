@@ -54,17 +54,10 @@ pub struct TaskLinkPersistenceAdapter {
 impl TaskLinkPersistence for TaskLinkPersistenceAdapter {
     type Connection = DatabaseTransaction;
     async fn begin(&self) -> Result<Self::Connection, ApplicationError> {
-        self.links
-            .connection()
-            .begin()
-            .await
-            .map_err(from_db)
+        self.links.connection().begin().await.map_err(from_db)
     }
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError> {
-        connection
-            .commit()
-            .await
-            .map_err(from_db)
+        connection.commit().await.map_err(from_db)
     }
     async fn get(&self, id: &str) -> Result<Option<TaskLinkRecord>, ApplicationError> {
         self.links
@@ -217,4 +210,3 @@ fn map_link(row: task_link::Model) -> TaskLinkRecord {
         updated_at: row.updated_at,
     }
 }
-

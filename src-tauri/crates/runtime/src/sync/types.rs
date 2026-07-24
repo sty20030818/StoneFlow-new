@@ -41,6 +41,7 @@ pub struct SyncStatusPayload {
     pub dirty_since: Option<String>,
     pub pending_resync: bool,
     pub has_remote_config: bool,
+    /// 脱敏后的同步库地址（无密码），供 UI 展示。
     pub remote_url: Option<String>,
     pub replica_state: SyncReplicaState,
     pub replica_reason: Option<String>,
@@ -73,7 +74,7 @@ pub struct SyncLocalDiagnosticsPayload {
     pub counts: SyncDiagnosticsCountsPayload,
 }
 
-/// 远端 Turso 工作集的诊断摘要。
+/// 云端副本的诊断摘要。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncRemoteDiagnosticsPayload {
@@ -91,12 +92,11 @@ pub struct SyncDiagnosticsPayload {
     pub remote: SyncRemoteDiagnosticsPayload,
 }
 
-/// 前端提交的远端配置输入。
+/// 前端提交的云端副本配置（单字段连接串）。
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigureSyncInput {
-    pub url: String,
-    pub token: String,
+    pub database_url: String,
 }
 
 /// 前端提交的同步策略输入。
@@ -116,11 +116,12 @@ impl From<UpdateSyncPolicyInput> for SyncPolicy {
     }
 }
 
-/// Settings 表中持久化的同步配置。
+/// Settings 表中持久化的同步配置（仅脱敏展示，不含密码）。
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncRemoteConfigSetting {
-    pub url: Option<String>,
+    /// 脱敏 host 展示；完整连接串在系统钥匙串。
+    pub display_host: Option<String>,
 }
 
 /// Settings 表中持久化的同步策略配置。
@@ -132,11 +133,10 @@ pub struct SyncPolicySetting {
     pub next_sync_at: Option<String>,
 }
 
-/// 运行态可用的远端配置。
+/// 运行态可用的云端副本配置。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyncRemoteConfig {
-    pub url: String,
-    pub token: String,
+    pub database_url: String,
 }
 
 /// 最近一次失败发生在哪个同步入口。

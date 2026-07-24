@@ -55,7 +55,11 @@ pub struct TaskPersistenceAdapter {
     tombstones: TombstoneRepository,
 }
 impl TaskPersistenceAdapter {
-    pub fn new(tasks: TaskRepository, spaces: SpaceRepository, projects: ProjectRepository) -> Self {
+    pub fn new(
+        tasks: TaskRepository,
+        spaces: SpaceRepository,
+        projects: ProjectRepository,
+    ) -> Self {
         let connection = tasks.connection().clone();
         Self {
             tasks,
@@ -70,17 +74,10 @@ impl TaskPersistenceAdapter {
 impl TaskPersistence for TaskPersistenceAdapter {
     type Connection = DatabaseTransaction;
     async fn begin(&self) -> Result<Self::Connection, ApplicationError> {
-        self.tasks
-            .connection()
-            .begin()
-            .await
-            .map_err(from_db)
+        self.tasks.connection().begin().await.map_err(from_db)
     }
     async fn commit(&self, connection: Self::Connection) -> Result<(), ApplicationError> {
-        connection
-            .commit()
-            .await
-            .map_err(from_db)
+        connection.commit().await.map_err(from_db)
     }
     async fn get(&self, task_id: &str) -> Result<Option<TaskRecord>, ApplicationError> {
         self.tasks
@@ -389,5 +386,3 @@ fn map_task(row: task::Model) -> TaskRecord {
         updated_at: row.updated_at,
     }
 }
-
-

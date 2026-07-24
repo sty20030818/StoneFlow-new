@@ -14,14 +14,12 @@ serde.workspace = true
 serde_json.workspace = true
 tauri = { workspace = true, features = ["macos-private-api"] }
 thiserror.workspace = true
-window-vibrancy = "0.6"
+window-vibrancy = "0.8"
+# keyring 4：默认 v1 特性按平台选 Keychain / Credential Manager / Secret Service
+keyring = "4.1.5"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-keyring = { version = "3.6.2", features = ["apple-native"] }
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }
 objc2 = "0.6.4"
 objc2-app-kit = "0.3.2"
 objc2-foundation = "0.3.2"
-
-[target.'cfg(target_os = "windows")'.dependencies]
-keyring = { version = "3.6.2", features = ["windows-native"] }

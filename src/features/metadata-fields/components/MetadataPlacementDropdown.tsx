@@ -146,7 +146,5 @@ function getGroupedPlacementIcon(
 		return <FolderIcon className='size-3.5' />
 	}
 
-	
-
 	return <TargetIcon className='size-3.5' />
 }

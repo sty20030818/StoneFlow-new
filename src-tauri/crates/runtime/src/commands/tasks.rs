@@ -268,8 +268,9 @@ mod tests {
     use stoneflow_application::space::CreateSpaceInput;
     use stoneflow_application::task::{
         BulkUpdateTasksInput, CreateTaskInput, CreateTaskPlacementInput, ListTasksInput,
-        ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput, TaskScopeInput,
-        TaskScopeKind, TaskWritePlacementKind, UpdateTaskInput, UpdateTaskPlacementInput,
+        ListTasksPlacementInput, ListTasksPlacementKind, TaskDetailDto, TaskIdInput,
+        TaskScopeInput, TaskScopeKind, TaskWritePlacementKind, UpdateTaskInput,
+        UpdateTaskPlacementInput,
     };
     use stoneflow_application::task_link::CreateTaskLinkInput;
     use stoneflow_storage::{

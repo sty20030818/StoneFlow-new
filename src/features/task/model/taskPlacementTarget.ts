@@ -7,9 +7,7 @@ import type { TaskUpdatePlacementInput } from '@/shared/types'
 export type TaskPlacementTarget = TaskUpdatePlacementInput
 
 export function getTaskPlacementTargetValue(target: TaskPlacementTarget) {
-	return target.kind === 'project'
-		? `project:${target.projectId}`
-		: `standalone:${target.spaceId}`
+	return target.kind === 'project' ? `project:${target.projectId}` : `standalone:${target.spaceId}`
 }
 
 export function isTaskPlacementTargetEqual(left: TaskPlacementTarget, right: TaskPlacementTarget) {

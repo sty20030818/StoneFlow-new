@@ -51,7 +51,7 @@ import {
 	SyncReplicaBadge,
 	SyncStatusBadge,
 	SyncTimestampValue,
-	SyncTursoConfigBadge,
+	SyncCloudConfigBadge,
 } from './SettingsSyncPanel.presentation'
 
 const SYNC_STATUS_CHANGED_EVENT = 'stoneflow://sync/status-changed'
@@ -80,8 +80,7 @@ export function SettingsSyncPanel() {
 	const [syncSaving, setSyncSaving] = useState(false)
 	const [syncRunning, setSyncRunning] = useState(false)
 	const [syncDiagnosing, setSyncDiagnosing] = useState(false)
-	const [syncUrl, setSyncUrl] = useState('')
-	const [syncToken, setSyncToken] = useState('')
+	const [databaseUrl, setDatabaseUrl] = useState('')
 	const [syncConfigDialogOpen, setSyncConfigDialogOpen] = useState(false)
 	const [syncDetailsOpen, setSyncDetailsOpen] = useState(false)
 
@@ -142,7 +141,8 @@ export function SettingsSyncPanel() {
 				setSyncDiagnosticsMessage(null)
 			}
 			if (syncUrlDraft) {
-				setSyncUrl(payload.remoteUrl ?? '')
+				// remoteUrl 为脱敏展示；编辑框默认清空以免误提交旧密码
+				setDatabaseUrl('')
 			}
 		} catch (error) {
 			setSyncStatus(null)
@@ -174,18 +174,22 @@ export function SettingsSyncPanel() {
 		}
 	}
 
-	async function handleSaveSyncConfig(input: { url: string; token: string }) {
+	async function handleSaveSyncConfig(input: { databaseUrl: string }) {
+		// 只做「写配置」：禁止在此 await 远端诊断/同步，否则弹窗会卡在连库上。
 		setSyncSaving(true)
 		setSyncStatusMessage(null)
-		setSyncDiagnostics(null)
 		setSyncDiagnosticsMessage(null)
 		try {
-			await configureSync(input)
-			setSyncToken('')
-			await refreshSyncStatus({ syncUrlDraft: true })
-			await refreshSyncDiagnostics({ silent: true })
+			const payload = await configureSync(input)
+			setSyncStatus(payload)
+			setDatabaseUrl('')
+			// 诊断后台刷新，失败不影响保存成功
+			if (payload.hasRemoteConfig) {
+				void refreshSyncDiagnostics({ silent: true })
+			}
 		} catch (error) {
-			setSyncStatusMessage(normalizeTauriError(error, '同步配置保存失败'))
+			const message = normalizeTauriError(error, '同步配置保存失败')
+			setSyncStatusMessage(message)
 			throw error
 		} finally {
 			setSyncSaving(false)
@@ -235,7 +239,6 @@ export function SettingsSyncPanel() {
 	const syncBusy = syncSaving || syncRunning || syncLoading
 	const syncActionBusy = syncBusy || syncDiagnosing
 	const replicaState: SyncReplicaState = syncStatus?.replicaState ?? 'uninitialized'
-	const syncRequiresBaseline = replicaState === 'baseline_required'
 	const syncPolicyValue = syncStatus
 		? `${syncStatus.policyMode}:${syncStatus.policyIntervalMinutes}`
 		: 'interval:15'
@@ -259,7 +262,7 @@ export function SettingsSyncPanel() {
 	return (
 		<div className='flex w-full min-w-0 flex-col gap-4'>
 			<SettingsSection
-				description='所有业务仍然只读写本地数据库；这里仅配置 Turso 远端，并在需要时手动或自动触发同步。'
+				description='所有业务仍然只读写本地数据库；这里仅配置云端 Postgres 副本，并在需要时手动或自动触发同步。'
 				title='云同步'
 			>
 				<div className='overflow-hidden rounded-xl border border-sf-border-subtle bg-card'>
@@ -269,7 +272,7 @@ export function SettingsSyncPanel() {
 								<div className='flex flex-wrap items-center gap-2'>
 									<SyncStatusBadge status={displayedSyncStatus} />
 									<SyncReplicaBadge state={replicaState} />
-									<SyncTursoConfigBadge configured={syncStatus?.hasRemoteConfig ?? false} />
+									<SyncCloudConfigBadge configured={syncStatus?.hasRemoteConfig ?? false} />
 								</div>
 								<h3 className='mt-3 text-base font-semibold tracking-tight text-foreground'>
 									{syncStatusCopy.title}
@@ -280,7 +283,7 @@ export function SettingsSyncPanel() {
 							</div>
 							<div className='flex shrink-0 items-center gap-2 self-start'>
 								<Button
-									aria-label='配置 Turso 远端'
+									aria-label='配置同步数据库'
 									disabled={syncActionBusy}
 									onClick={() => setSyncConfigDialogOpen(true)}
 									size='icon-sm'
@@ -290,12 +293,16 @@ export function SettingsSyncPanel() {
 									<SettingsIcon />
 								</Button>
 								<Button
-									disabled={syncActionBusy || !syncStatus?.hasRemoteConfig || syncRequiresBaseline}
+									disabled={syncActionBusy || !syncStatus?.hasRemoteConfig}
 									onClick={() => void handleRunSync()}
 									type='button'
 									variant='secondary'
 								>
-									{syncRunning ? '同步中...' : '立即同步'}
+									{syncRunning
+										? '同步中...'
+										: replicaState === 'baseline_required'
+											? '建立基线并同步'
+											: '立即同步'}
 								</Button>
 							</div>
 						</div>
@@ -370,7 +377,7 @@ export function SettingsSyncPanel() {
 									variant={syncStatusCopy.variant}
 								/>
 
-								{syncRequiresBaseline && syncStatus?.replicaReason ? (
+								{replicaState === 'baseline_required' && syncStatus?.replicaReason ? (
 									<StatusNotice
 										description={syncStatus.replicaReason}
 										title='当前设备需要建立同步基线'
@@ -394,7 +401,7 @@ export function SettingsSyncPanel() {
 										<div className='min-w-0'>
 											<h3 className='text-sm font-semibold text-foreground'>同步诊断</h3>
 											<p className={formFieldHintClass}>
-												只读查看当前设备与 Turso 远端的 server_seq 和工作集摘要，用于排查同步问题。
+												只读查看当前设备与云端副本的同步序号和工作集摘要，用于排查同步问题。
 											</p>
 										</div>
 										<Button
@@ -411,8 +418,8 @@ export function SettingsSyncPanel() {
 									{syncDiagnostics ? (
 										<div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
 											<SettingInfoRow
-												description='当前保存并正在使用的 Turso 远端 host。'
-												label='远端 Host'
+												description='当前保存并正在使用的云端副本地址（已脱敏）。'
+												label='云端副本'
 												value={
 													<span className='break-all font-medium text-foreground'>
 														{syncDiagnostics.remoteHost ?? '未读取'}
@@ -427,8 +434,8 @@ export function SettingsSyncPanel() {
 												}
 											/>
 											<SettingInfoRow
-												description='Turso 远端 remote_change_log 当前看到的最新 server_seq。'
-												label='远端 server_seq'
+												description='云端变更日志当前看到的最新同步序号。'
+												label='远端同步序号'
 												value={<SyncCursorValue value={syncDiagnostics.remote.latestServerSeq} />}
 											/>
 											<SettingInfoRow
@@ -441,12 +448,12 @@ export function SettingsSyncPanel() {
 												}
 											/>
 											<SettingInfoRow
-												description='当前设备本地工作集的计数摘要。'
+												description='本机存活实体（未永久删除），口径与云端投影对齐。'
 												label='本地工作集'
 												value={<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />}
 											/>
 											<SettingInfoRow
-												description='Turso 远端当前镜像表的计数摘要。'
+												description='云端 sync_entity_state 投影行数（同步用精简状态，不是业务整库镜像）。'
 												label='远端工作集'
 												value={<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />}
 											/>
@@ -456,7 +463,7 @@ export function SettingsSyncPanel() {
 											description={
 												syncStatus?.hasRemoteConfig
 													? '点击「刷新诊断」后，会显示本地 cursor、远端 cursor 和工作集计数。'
-													: '先保存可用的 Turso URL 和 token，才能读取远端诊断信息。'
+													: '先保存可用的同步数据库连接，才能读取远端诊断信息。'
 											}
 											title='尚未读取同步诊断'
 										/>
@@ -479,14 +486,12 @@ export function SettingsSyncPanel() {
 				</div>
 
 				<SyncConfigDialog
+					databaseUrl={databaseUrl}
 					onClose={() => setSyncConfigDialogOpen(false)}
+					onDatabaseUrlChange={setDatabaseUrl}
 					onSave={handleSaveSyncConfig}
-					onSyncTokenChange={setSyncToken}
-					onSyncUrlChange={setSyncUrl}
 					open={syncConfigDialogOpen}
-					syncBusy={syncBusy}
-					syncToken={syncToken}
-					syncUrl={syncUrl}
+					saving={syncSaving}
 				/>
 			</SettingsSection>
 		</div>

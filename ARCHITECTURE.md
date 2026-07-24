@@ -2,7 +2,7 @@
 
 ## 系统边界
 
-StoneFlow 是一个 Tauri 桌面应用。前端负责界面、路由和交互状态；Rust 负责领域规则、本地 SQLite 持久化、同步运行时和桌面平台能力。Turso/libSQL 是当前可选的同步远端，不是业务数据的直接前端来源。
+StoneFlow 是一个 Tauri 桌面应用。前端负责界面、路由和交互状态；Rust 负责领域规则、本地 SQLite 持久化、同步运行时和桌面平台能力。用户自备 PostgreSQL（Neon/自建）作可选云端副本，不是业务数据的直接前端来源。
 
 ## 架构总览
 
@@ -12,7 +12,7 @@ React 前端
                                                    |
 Rust workspace                                   SQLite（本地事实源）
   runtime -> usecase -> domain / storage          |
-                 |                                +-> sync library -> Turso/libSQL（可选同步副本）
+                 |                                +-> sync library -> Postgres 云端副本（可选）
                  +-> platform
 ```
 

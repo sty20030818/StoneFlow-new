@@ -181,7 +181,7 @@ function openTaskPropertyPicker(
 			subtitle: task.projectName ?? '独立事项',
 			spaceId: task.spaceId,
 			projectId: task.projectId,
-			
+
 			dueAt: task.dueAt,
 			status: task.status,
 			priority: String(task.priority),
@@ -193,7 +193,7 @@ function openTaskPropertyPicker(
 			subtitle: tasks[0].projectName ?? '独立事项',
 			spaceId: tasks[0].spaceId,
 			projectId: tasks[0].projectId,
-			
+
 			dueAt: tasks[0].dueAt,
 			status: tasks[0].status,
 			priority: String(tasks[0].priority),

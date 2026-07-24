@@ -396,10 +396,9 @@ where
                 (space, Some(project))
             }
             CreatePlacement::Standalone => {
-                let raw_space_id = input
-                    .space_id
-                    .as_deref()
-                    .ok_or_else(|| ApplicationError::validation("创建独立事项时必须提供 spaceId"))?;
+                let raw_space_id = input.space_id.as_deref().ok_or_else(|| {
+                    ApplicationError::validation("创建独立事项时必须提供 spaceId")
+                })?;
                 let space = self.require_visible_space(raw_space_id).await?;
                 (space, None)
             }
@@ -1416,7 +1415,9 @@ fn normalize_list_placement(
                 .project_id
                 .as_deref()
                 .ok_or_else(|| ApplicationError::validation("kind=project 时必须提供 projectId"))?;
-            Ok(TaskPlacementQuery::Project(validate_project_id(project_id)?))
+            Ok(TaskPlacementQuery::Project(validate_project_id(
+                project_id,
+            )?))
         }
     }
 }
@@ -1435,7 +1436,6 @@ fn normalize_create_placement(
         }
     }
 }
-
 
 /// 校验并归一化优先级：未提供时取 WorkPriority::None。
 fn validate_task_priority(value: Option<i32>) -> Result<i32, ApplicationError> {

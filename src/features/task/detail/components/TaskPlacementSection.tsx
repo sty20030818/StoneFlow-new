@@ -28,7 +28,6 @@ export function TaskPlacementSection({
 	const currentValue: TaskPlacementTarget = resolveTaskPlacementTarget({
 		spaceId: autosave.draft.spaceId,
 		projectId: autosave.draft.projectId,
-		
 	})
 
 	const dropdownProps = createTaskPlacementGroupedDropdownProps({

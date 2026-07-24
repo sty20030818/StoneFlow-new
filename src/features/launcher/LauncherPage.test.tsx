@@ -628,7 +628,12 @@ describe('LauncherPage', () => {
 				currentScope: { type: 'space', spaceId: 'space-2' },
 				defaultSpaceId: 'space-2',
 				projects: [
-					createProjectOption({ kind: 'standalone', id: null, name: '独立事项', spaceId: 'space-2' }),
+					createProjectOption({
+						kind: 'standalone',
+						id: null,
+						name: '独立事项',
+						spaceId: 'space-2',
+					}),
 					createProjectOption({
 						kind: 'standalone',
 						id: null,
@@ -778,19 +783,22 @@ function createProjectsBySpace(spaceId: string): LauncherProjectsBySpace {
 			spaceId,
 		}) as Extract<LauncherProjectOption, { kind: 'standalone' }>,
 		projects: [
-			createProjectOption({ kind: 'project', id: 'project-2', name: '工程基座', spaceId }) as Extract<
-				LauncherProjectOption,
-				{ kind: 'project' }
-			>,
+			createProjectOption({
+				kind: 'project',
+				id: 'project-2',
+				name: '工程基座',
+				spaceId,
+			}) as Extract<LauncherProjectOption, { kind: 'project' }>,
 		],
 	}
 }
 
 function createProjectOption(
-	overrides: Partial<LauncherProjectOption> & Pick<LauncherProjectOption, 'kind' | 'name'> & {
-		id?: string | null
-		spaceId?: string
-	},
+	overrides: Partial<LauncherProjectOption> &
+		Pick<LauncherProjectOption, 'kind' | 'name'> & {
+			id?: string | null
+			spaceId?: string
+		},
 ): LauncherProjectOption {
 	if (overrides.kind === 'project') {
 		return {

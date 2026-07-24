@@ -16,7 +16,7 @@ pub enum SyncErrorKind {
 pub enum SyncError {
     #[error("参数错误: {message}")]
     Validation { message: String },
-    #[error("Turso 鉴权失败: {message}")]
+    #[error("同步库鉴权失败: {message}")]
     Authentication { message: String },
     #[error("本地数据库错误: {message}")]
     LocalDatabase { message: String },
@@ -28,7 +28,7 @@ pub enum SyncError {
     Serialization { message: String },
     #[error("同步协议错误: {message}")]
     Protocol { message: String },
-    #[error("同步 cursor 已过期，需要下载当前基线")]
+    #[error("同步位置已过期，需要全量同步")]
     CursorExpired,
     #[error("内部错误: {message}")]
     Internal { message: String },
@@ -110,7 +110,7 @@ impl SyncError {
             | Self::Serialization { message }
             | Self::Protocol { message }
             | Self::Internal { message } => message,
-            Self::CursorExpired => "同步 cursor 已过期，需要下载当前基线",
+            Self::CursorExpired => "同步位置已过期，需要全量同步",
         }
     }
 }

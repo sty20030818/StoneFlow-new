@@ -42,10 +42,9 @@ pub async fn push_pending_outbox(
             .iter()
             .map(|group| to_sync_operation(&device_id, group))
             .collect::<Result<Vec<_>, _>>()?;
-        stoneflow_sync::push_operations(
-            &stoneflow_sync::SyncRemoteConfig {
-                url: remote.url.clone(),
-                token: remote.token.clone(),
+        stoneflow_sync::upload_operations(
+            &stoneflow_sync::SyncCloudConfig {
+                database_url: remote.database_url.clone(),
             },
             &operations,
         )
@@ -57,10 +56,13 @@ pub async fn push_pending_outbox(
         }
     }
 
-    log::info!(
-        "sync:r7 push operations={pushed} elapsed_ms={}",
-        started_at.elapsed().as_millis()
-    );
+    if pushed > 0 {
+        log::info!(
+            "同步:上传 {} 条 耗时ms={}",
+            pushed,
+            started_at.elapsed().as_millis()
+        );
+    }
     Ok(pushed)
 }
 
@@ -73,7 +75,7 @@ async fn ensure_default_space_is_remote(
 ) -> Result<(), AppError> {
     let row = database
         .connection()
-        .query_one(Statement::from_string(
+        .query_one_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             "SELECT id, name, icon_key, color_key, position, generation, created_at, updated_at FROM spaces WHERE is_default = 1 AND archived_at IS NULL AND deleted_at IS NULL LIMIT 1".to_owned(),
         ))
@@ -115,10 +117,9 @@ async fn ensure_default_space_is_remote(
         }],
         created_at,
     };
-    stoneflow_sync::push_operations(
-        &stoneflow_sync::SyncRemoteConfig {
-            url: remote.url.clone(),
-            token: remote.token.clone(),
+    stoneflow_sync::upload_operations(
+        &stoneflow_sync::SyncCloudConfig {
+            database_url: remote.database_url.clone(),
         },
         &[operation],
     )

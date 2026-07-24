@@ -26,7 +26,7 @@ async fn query_pragma_i64(
     sql: &str,
 ) -> Result<i64, sea_orm::DbErr> {
     let row = connection
-        .query_one(Statement::from_string(
+        .query_one_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             sql.to_owned(),
         ))

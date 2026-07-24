@@ -11,5 +11,5 @@
 
 - SeaORM / SQLite
 - Tauri
-- libsql
+- sqlx / 同步驱动
 - application / storage / sync / runtime

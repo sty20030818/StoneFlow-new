@@ -111,7 +111,7 @@ async fn sqlite_object_exists(
     name: &str,
 ) -> Result<bool, sea_orm::DbErr> {
     let row = connection
-        .query_one(Statement::from_sql_and_values(
+        .query_one_raw(Statement::from_sql_and_values(
             DatabaseBackend::Sqlite,
             "SELECT 1 AS value FROM sqlite_master WHERE type = ? AND name = ?",
             [object_type.into(), name.into()],

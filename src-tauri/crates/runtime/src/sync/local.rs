@@ -40,7 +40,7 @@ pub async fn inspect_local_replica(
         (
             SyncReplicaState::BaselineRequired,
             Some(
-                "当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。"
+                "本机已有数据，但还没有同步序号。请点「建立基线并同步」：会上传本机数据到云端，并建立同步位置（不会清空本机）。"
                     .to_owned(),
             ),
         )
@@ -81,13 +81,14 @@ pub async fn read_local_diagnostics(
         .transpose()?;
     let row = database
         .connection()
-        .query_one(Statement::from_string(
+        .query_one_raw(Statement::from_string(
             DbBackend::Sqlite,
             r#"
             SELECT
-                (SELECT COUNT(*) FROM spaces) AS spaces,
-                (SELECT COUNT(*) FROM projects) AS projects,
-                (SELECT COUNT(*) FROM tasks) AS tasks,
+                -- 与云端 entity_state / origin seed 对齐：只计存活实体（未永久删除）
+                (SELECT COUNT(*) FROM spaces WHERE deleted_at IS NULL) AS spaces,
+                (SELECT COUNT(*) FROM projects WHERE deleted_at IS NULL) AS projects,
+                (SELECT COUNT(*) FROM tasks WHERE deleted_at IS NULL) AS tasks,
                 (SELECT COUNT(*) FROM task_links) AS task_links,
                 (SELECT COUNT(*) FROM views) AS views,
                 (SELECT COUNT(*) FROM outbox) AS pending_outbox
@@ -141,7 +142,7 @@ async fn read_local_replica_counts(
     connection: &impl ConnectionTrait,
 ) -> Result<LocalReplicaCounts, AppError> {
     let row = connection
-        .query_one(Statement::from_string(
+        .query_one_raw(Statement::from_string(
             DbBackend::Sqlite,
             r#"
             SELECT

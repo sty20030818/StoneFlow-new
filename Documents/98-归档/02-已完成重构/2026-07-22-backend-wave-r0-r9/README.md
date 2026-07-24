@@ -20,13 +20,14 @@
 - 同进程 outbox 同步（libsql → Turso）——**长期将被「客户端直连用户 Postgres」替换**
 - 前端 hard-cut standalone
 
-## 未并入本归档、转入新活跃任务
+## 后续任务（已归档）
 
-见：[`Documents/03-重构任务/2026-07-24-local-first-sync-platform/`](../../../03-重构任务/2026-07-24-local-first-sync-platform/SPEC.md)
+本地优先同步平台（去 libsql → 用户 Postgres）已完成单设备主路径并归档：
 
-- 去掉主进程 libsql / 双 SQLite 链接
-- 同步数据面：用户自备 PostgreSQL（Neon/自建同一路径），客户端直连
-- 双设备真实环境验证与性能证据
+[`2026-07-24-local-first-sync-platform`](../2026-07-24-local-first-sync-platform/SPEC.md)
+
+- 主进程无 libsql；云端副本为用户 Postgres
+- 双设备与性能证据（P3）仍延期，见该归档 README
 
 ## 历史遗留（归档时已知）
 

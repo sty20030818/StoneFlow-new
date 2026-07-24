@@ -310,7 +310,10 @@ export async function resolveStartupPathFromMemory({
 			scopeKey: memory.lastScopeKey,
 			routeMemory: memory,
 			spaces,
-			defaultPath: buildCanonicalSectionPath({ type: 'space', spaceId: targetSpaceId }, 'standalone'),
+			defaultPath: buildCanonicalSectionPath(
+				{ type: 'space', spaceId: targetSpaceId },
+				'standalone',
+			),
 		})
 	}
 

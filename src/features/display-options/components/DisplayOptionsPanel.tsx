@@ -68,7 +68,7 @@ const ORDER_LABELS: Record<ResolvedTaskDisplayOptions['orderBy'], string> = {
 	status: '状态',
 	dueAt: '截止时间',
 	plannedAt: '计划时间',
-	
+
 	statusChangedAt: '状态更新时间',
 	createdAt: '创建时间',
 	updatedAt: '更新时间',

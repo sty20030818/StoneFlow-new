@@ -6,9 +6,9 @@ use tauri::Manager;
 
 use crate::app::state::{ActiveScopeState, AppState, CommandOpenState};
 use crate::composition::build_app_state;
+use crate::sync;
 use crate::update::events::{emit_available, emit_downloading, emit_error, emit_ready};
 use crate::update::{build_update_service, RuntimeUpdateService};
-use crate::sync;
 use stoneflow_application::{DownloadOutcome, UpdateCheckKind};
 use stoneflow_domain::{
     normalize_check_interval_secs, UpdateCheckMode, AUTO_CHECK_INTERVAL_SECS,
@@ -32,6 +32,11 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
             } else {
                 log::LevelFilter::Warn
             })
+            // sqlx / 驱动的英文 NOTICE（如 relation already exists）降到 Warn 以下，避免刷屏。
+            .level_for("sqlx", log::LevelFilter::Warn)
+            .level_for("sqlx_postgres", log::LevelFilter::Warn)
+            .level_for("sqlx_core", log::LevelFilter::Warn)
+            .level_for("sea_orm_migration", log::LevelFilter::Warn)
             // 本地滚动：单文件 20MB；保留约 14 份归档（约 14 天量级，视写入量而定）。
             .max_file_size(20 * 1024 * 1024)
             .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepSome(14))
@@ -83,7 +88,9 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
 
 fn schedule_post_startup_jobs(app_handle: tauri::AppHandle) {
     spawn_detached_job(move || async move {
-        let Some(app_state) = app_handle.try_state::<AppState>().map(|state| state.inner().clone())
+        let Some(app_state) = app_handle
+            .try_state::<AppState>()
+            .map(|state| state.inner().clone())
         else {
             log::warn!("runtime: startup async init missing AppState");
             return;

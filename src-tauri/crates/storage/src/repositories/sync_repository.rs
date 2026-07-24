@@ -42,7 +42,7 @@ impl SyncRepository {
 
         let device_id = create_id().to_string();
         self.db
-            .execute(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_sql_and_values(
                 DatabaseBackend::Sqlite,
                 r#"
                 INSERT OR IGNORE INTO sync_devices (singleton, device_id, created_at, updated_at)
@@ -65,7 +65,7 @@ impl SyncRepository {
     pub async fn find_device(&self) -> Result<Option<SyncDeviceRecord>, StorageError> {
         let row = self
             .db
-            .query_one(Statement::from_string(
+            .query_one_raw(Statement::from_string(
                 DatabaseBackend::Sqlite,
                 "SELECT device_id, created_at, updated_at FROM sync_devices WHERE singleton = 1"
                     .to_owned(),
@@ -85,7 +85,7 @@ impl SyncRepository {
     pub async fn get_cursor(&self, scope: &str) -> Result<Option<SyncCursorRecord>, StorageError> {
         let row = self
             .db
-            .query_one(Statement::from_sql_and_values(
+            .query_one_raw(Statement::from_sql_and_values(
                 DatabaseBackend::Sqlite,
                 "SELECT scope, cursor, updated_at FROM sync_cursors WHERE scope = ? LIMIT 1",
                 [scope.into()],
@@ -104,7 +104,7 @@ impl SyncRepository {
 
     pub async fn upsert_cursor(&self, record: &SyncCursorRecord) -> Result<(), StorageError> {
         self.db
-            .execute(Statement::from_sql_and_values(
+            .execute_raw(Statement::from_sql_and_values(
                 DatabaseBackend::Sqlite,
                 r#"
                 INSERT INTO sync_cursors (scope, cursor, updated_at)

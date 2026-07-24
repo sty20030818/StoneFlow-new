@@ -10,7 +10,7 @@
 runtime 调度
   -> 读取本地 Outbox / cursor
   -> sync library
-      -> Turso/libSQL protocol tables
+      -> Postgres 协议表（change_log / entity_state / …）
   -> runtime 在本地短事务中物化 replica、确认 Outbox、更新 cursor
   -> runtime 发出同步状态和工作区变更事件
 ```
@@ -56,10 +56,8 @@ runtime 调度
 | 文件 | 职责 |
 |---|---|
 | `protocol.rs` | 字段级 LWW、生命周期与 tombstone 规则 |
-| `protocol_push.rs` | 幂等 operation 提交与远端状态物化 |
-| `protocol_pull.rs` | 分页增量与 baseline 读取 |
-| `remote_schema.rs` | 远端协议表及版本检查 |
-| `remote.rs` | Turso/libSQL 远端连接 |
+| `postgres/` | sqlx：连接、DDL、上传、下载、health |
+| `lib.rs` | 门面：`upload_operations` / `download_*` / `health` / `diagnose_cloud` |
 | `error.rs` | 协议边界的结构化错误 |
 
 ## 异常与恢复
@@ -84,7 +82,7 @@ runtime 调度
 
 ## 已知限制
 
-- 当前同步目标和后续账号系统无绑定；Turso/libSQL 也不是永久产品承诺。
+- 当前同步目标和后续账号系统无绑定；云端是用户自备 Postgres，不是托管账号体系。
 - 文本字段的并发修改虽以协议自动处理为目标，但不等于所有设备并发场景都已被产品级验证。
 - 领域模型重构需要同时更新本地 schema、远端 schema、mutation payload、apply 规则和基线策略。
 
@@ -93,4 +91,11 @@ runtime 调度
 ```bash
 cargo test --manifest-path src-tauri/Cargo.toml -p stoneflow-sync
 cargo check --manifest-path src-tauri/Cargo.toml --workspace
+# 有 Postgres 时：STONEFLOW_SYNC_DATABASE_URL=... cargo test -p stoneflow-sync -- --ignored
 ```
+
+## 实现状态
+
+- 传输面：用户 Postgres（sqlx）；无 libsql / Turso。
+- 单设备路径：上传、下载、全量基线、origin seed / adopt、协议预热与语义物化已落地。
+- 双设备与性能证据：延期，不在本设计文档展开。

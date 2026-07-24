@@ -18,4 +18,4 @@
 
 - SeaORM
 - Tauri
-- libsql / 同步协议实现
+- 同步协议 / 远端驱动实现

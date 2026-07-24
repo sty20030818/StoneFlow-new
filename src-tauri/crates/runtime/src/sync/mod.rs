@@ -1,9 +1,11 @@
 //! 云同步运行时边界：主进程负责状态、调度与协议编排。
 
+mod bootstrap_plan;
 mod config;
 mod cursor_pull;
 mod engine;
 mod local;
+mod origin_seed;
 mod outbox_push;
 mod policy;
 mod scheduler;

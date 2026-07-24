@@ -1,5 +1,6 @@
 //! Project 持久化：Project SQL 与其 Task 生命周期级联保持在同一事务。
 
+use sea_orm::sea_query::ExprTrait;
 use sea_orm::{
     sea_query::Expr, ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection,
     EntityTrait, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set,

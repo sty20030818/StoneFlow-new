@@ -34,7 +34,7 @@ export function buildTaskCommandSelection({
 					(typeof fallbackSubtitle === 'function' ? fallbackSubtitle(task) : fallbackSubtitle),
 				spaceId: task.spaceId,
 				projectId: task.projectId,
-				
+
 				dueAt: task.dueAt,
 				status: task.status,
 				priority: String(task.priority),

@@ -1,58 +1,96 @@
 //! 同进程逻辑同步引擎。
 //!
-//! 负责 Turso 协议与远端诊断；不依赖 Tauri。
-//! 调度与 UI 事件由 runtime 负责。
+//! - 纯协议：`protocol`（无 IO）
+//! - 云端副本：`postgres`（用户自备 Postgres，sqlx）
+//!
+//! 调度与 UI 事件由 runtime 负责；本 crate 不依赖 Tauri。
 
-mod diagnose;
 mod error;
+mod postgres;
 mod protocol;
-mod protocol_pull;
-mod protocol_push;
-mod remote;
-mod remote_schema;
 mod types;
 
-pub use diagnose::{RemoteSyncDiagnosticsOutput, SyncDiagnosticsCountsOutput, SyncProbeOutput};
 pub use error::{SyncError, SyncErrorKind};
+pub use postgres::{DOWNLOAD_PAGE_SIZE, PROTOCOL_SCHEMA_VERSION};
 pub use protocol::{
     apply_mutation, ApplyOutcome, Baseline, EntityIdentity, EntityPatch, EntitySnapshot,
     LifecycleState, ReplicaEntity, SequencedMutation, SyncCursor, SyncEntityKind, SyncMutation,
     SyncOperation, Tombstone,
 };
-pub use protocol_pull::{fetch_protocol_baseline, fetch_protocol_changes, PROTOCOL_PULL_PAGE_SIZE};
-pub use protocol_push::{submit_operation, PushResult};
-pub use remote_schema::{bootstrap_protocol_schema, PROTOCOL_SCHEMA_VERSION};
-pub use types::SyncRemoteConfig;
+pub use types::{PushResult, SyncCloudConfig, UploadResult};
 
-use diagnose::{collect_sync_probe, collect_sync_remote_diagnostics};
-use remote::open_remote;
+/// 与旧 pull 分页常量同值，供 runtime 对照。
+pub const PROTOCOL_PULL_PAGE_SIZE: i64 = DOWNLOAD_PAGE_SIZE;
 
-/// 提交已由 runtime 从本地 Outbox 归并好的 operations。
-pub async fn push_operations(
-    remote_config: &SyncRemoteConfig,
+/// 上传一批 operations（逐条事务；整批非单事务）。
+pub async fn upload_operations(
+    config: &SyncCloudConfig,
     operations: &[SyncOperation],
-) -> Result<Vec<PushResult>, SyncError> {
-    let remote = open_remote(remote_config).await?;
-    bootstrap_protocol_schema(&remote).await?;
+) -> Result<Vec<UploadResult>, SyncError> {
+    let mut conn = postgres::connect_ready(config).await?;
     let mut results = Vec::with_capacity(operations.len());
     for operation in operations {
-        results.push(submit_operation(&remote, operation).await?);
+        results.push(postgres::upload_operation(&mut conn, operation).await?);
     }
     Ok(results)
 }
 
-/// 远端 head check。
-pub async fn probe(remote: &SyncRemoteConfig) -> Result<SyncProbeOutput, SyncError> {
-    let remote = open_remote(remote).await?;
-    bootstrap_protocol_schema(&remote).await?;
-    collect_sync_probe(&remote).await
+/// 按同步位置下载增量页。
+pub async fn download_after(
+    config: &SyncCloudConfig,
+    after_server_seq: i64,
+) -> Result<Vec<SequencedMutation>, SyncError> {
+    let mut conn = postgres::connect_ready(config).await?;
+    postgres::download_after(&mut conn, after_server_seq, DOWNLOAD_PAGE_SIZE).await
 }
 
-/// 远端只读诊断。本地诊断属于 runtime 的 SQLite 边界。
-pub async fn diagnose_remote(
-    remote: &SyncRemoteConfig,
+/// 全量同步。
+pub async fn download_full(config: &SyncCloudConfig) -> Result<Baseline, SyncError> {
+    let mut conn = postgres::connect_ready(config).await?;
+    postgres::download_full(&mut conn).await
+}
+
+/// 连通检查。
+pub async fn health(config: &SyncCloudConfig) -> Result<SyncProbeOutput, SyncError> {
+    let mut conn = postgres::connect_ready(config).await?;
+    let probe = postgres::health(&mut conn).await?;
+    Ok(probe)
+}
+
+/// 云端只读诊断。
+pub async fn diagnose_cloud(
+    config: &SyncCloudConfig,
 ) -> Result<RemoteSyncDiagnosticsOutput, SyncError> {
-    let remote = open_remote(remote).await?;
-    bootstrap_protocol_schema(&remote).await?;
-    collect_sync_remote_diagnostics(&remote).await
+    let mut conn = postgres::connect_ready(config).await?;
+    postgres::diagnose(&mut conn).await
+}
+
+// 诊断 DTO 放在 lib 以便 postgres/health 与门面共用。
+
+use serde::Serialize;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoteSyncDiagnosticsOutput {
+    pub latest_server_seq: Option<i64>,
+    pub counts: SyncDiagnosticsCountsOutput,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncDiagnosticsCountsOutput {
+    pub spaces: i64,
+    pub projects: i64,
+    pub tasks: i64,
+    pub task_links: i64,
+    pub views: i64,
+    pub settings: i64,
+    pub total_items: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncProbeOutput {
+    pub latest_server_seq: Option<i64>,
+    pub schema_version: Option<i64>,
 }

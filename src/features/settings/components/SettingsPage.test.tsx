@@ -17,7 +17,7 @@ const loadSpacesSpy = vi.fn<() => Promise<void>>()
 const setDefaultSpaceSpy = vi.fn<(spaceId: string) => Promise<Space>>()
 const getSyncStatusSpy = vi.fn<() => Promise<unknown>>()
 const getSyncDiagnosticsSpy = vi.fn<() => Promise<unknown>>()
-const configureSyncSpy = vi.fn<(input: { url: string; token: string }) => Promise<unknown>>()
+const configureSyncSpy = vi.fn<(input: { databaseUrl: string }) => Promise<unknown>>()
 const runSyncSpy = vi.fn<() => Promise<unknown>>()
 const updateSyncPolicySpy =
 	vi.fn<
@@ -60,7 +60,7 @@ vi.mock('@/features/sync', async (importOriginal) => {
 		...actual,
 		getSyncStatus: () => getSyncStatusSpy(),
 		getSyncDiagnostics: () => getSyncDiagnosticsSpy(),
-		configureSync: (input: { url: string; token: string }) => configureSyncSpy(input),
+		configureSync: (input: { databaseUrl: string }) => configureSyncSpy(input),
 		runSync: () => runSyncSpy(),
 		updateSyncPolicy: (input: { mode: 'interval' | 'manual'; intervalMinutes: 5 | 15 | 30 }) =>
 			updateSyncPolicySpy(input),
@@ -212,7 +212,7 @@ describe('SettingsPage', () => {
 		)
 		getSyncDiagnosticsSpy.mockReset()
 		getSyncDiagnosticsSpy.mockResolvedValue({
-			remoteHost: 'libsql://example.turso.io',
+			remoteHost: 'postgresql://user:***@db.example.com:5432/sf',
 			local: {
 				deviceId: 'device-1',
 				lastPulledServerSeq: 12,
@@ -253,7 +253,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -271,7 +271,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -289,7 +289,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -378,24 +378,21 @@ describe('SettingsPage', () => {
 		await renderSettingsPage()
 		openSyncConfigDialog()
 
-		fireEvent.change(screen.getByLabelText('Turso URL'), {
-			target: { value: 'libsql://example.turso.io' },
-		})
-		fireEvent.change(screen.getByLabelText('Turso Token'), {
-			target: { value: 'secret-token' },
+		fireEvent.change(screen.getByLabelText('同步数据库连接'), {
+			target: { value: 'postgresql://user:secret@db.example.com:5432/sf' },
 		})
 		fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
 
 		await waitFor(() => {
 			expect(configureSyncSpy).toHaveBeenCalledWith({
-				url: 'libsql://example.turso.io',
-				token: 'secret-token',
+				databaseUrl: 'postgresql://user:secret@db.example.com:5432/sf',
 			})
 		})
-		expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
+		// 保存路径直接用 configureSync 返回的状态，不再额外 getSyncStatus
+		expect(getSyncStatusSpy).toHaveBeenCalledTimes(1)
 	})
 
-	it('页面加载后会回填已保存的同步配置', async () => {
+	it('页面加载后连接串输入保持空白（密码不回显）', async () => {
 		getSyncStatusSpy.mockResolvedValue(
 			createSyncStatusPayload({
 				enabled: true,
@@ -407,7 +404,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'libsql://saved.turso.io',
+				remoteUrl: 'postgresql://user:***@saved.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -418,8 +415,8 @@ describe('SettingsPage', () => {
 		await renderSettingsPage()
 		openSyncConfigDialog()
 
-		expect(screen.getByLabelText('Turso URL')).toHaveValue('libsql://saved.turso.io')
-		expect(screen.getByLabelText('Turso Token')).toHaveValue('')
+		expect(screen.getByLabelText('同步数据库连接')).toHaveValue('')
+		expect(screen.getByText('云端副本已配置')).toBeInTheDocument()
 	})
 
 	it('未配置同步时展示本地优先提示', async () => {
@@ -427,7 +424,7 @@ describe('SettingsPage', () => {
 		await renderSettingsPage()
 
 		expect(screen.getByText('尚未启用云同步')).toBeInTheDocument()
-		expect(screen.getByText('未配置 Turso 远端，本机只保留本地数据。')).toBeInTheDocument()
+		expect(screen.getByText('未配置云端副本，本机只保留本地数据。')).toBeInTheDocument()
 		expect(screen.getByText('未启用')).toBeInTheDocument()
 		expect(screen.getAllByText('从未同步')).toHaveLength(2)
 	})
@@ -453,7 +450,7 @@ describe('SettingsPage', () => {
 					dirtySince: null,
 					pendingResync: false,
 					hasRemoteConfig: true,
-					remoteUrl: 'libsql://saved.turso.io',
+					remoteUrl: 'postgresql://user:***@saved.example.com:5432/sf',
 					replicaState: 'ready',
 					replicaReason: null,
 					lastRestoreAt: null,
@@ -470,7 +467,7 @@ describe('SettingsPage', () => {
 					dirtySince: null,
 					pendingResync: false,
 					hasRemoteConfig: true,
-					remoteUrl: 'libsql://saved.turso.io',
+					remoteUrl: 'postgresql://user:***@saved.example.com:5432/sf',
 					replicaState: 'ready',
 					replicaReason: null,
 					lastRestoreAt: null,
@@ -481,19 +478,17 @@ describe('SettingsPage', () => {
 		await renderSettingsPage()
 		openSyncConfigDialog()
 
-		fireEvent.change(screen.getByLabelText('Turso URL'), {
-			target: { value: 'libsql://new.turso.io' },
-		})
-		fireEvent.change(screen.getByLabelText('Turso Token'), {
-			target: { value: 'new-token' },
+		fireEvent.change(screen.getByLabelText('同步数据库连接'), {
+			target: { value: 'postgresql://user:new@new.example.com:5432/sf' },
 		})
 
 		await waitFor(() => {
 			expect(getSyncStatusSpy).toHaveBeenCalledTimes(2)
 		})
 
-		expect(screen.getByLabelText('Turso URL')).toHaveValue('libsql://new.turso.io')
-		expect(screen.getByLabelText('Turso Token')).toHaveValue('new-token')
+		expect(screen.getByLabelText('同步数据库连接')).toHaveValue(
+			'postgresql://user:new@new.example.com:5432/sf',
+		)
 		expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000)
 
 		setIntervalSpy.mockRestore()
@@ -511,7 +506,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -540,7 +535,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -575,7 +570,7 @@ describe('SettingsPage', () => {
 				dirtySince: '2026-06-26T00:00:00Z',
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -603,7 +598,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
@@ -639,7 +634,7 @@ describe('SettingsPage', () => {
 					dirtySince: null,
 					pendingResync: false,
 					hasRemoteConfig: true,
-					remoteUrl: 'libsql://example.turso.io',
+					remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 					replicaState: 'ready',
 					replicaReason: null,
 					lastRestoreAt: null,
@@ -656,7 +651,7 @@ describe('SettingsPage', () => {
 					dirtySince: null,
 					pendingResync: false,
 					hasRemoteConfig: true,
-					remoteUrl: 'libsql://example.turso.io',
+					remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 					replicaState: 'ready',
 					replicaReason: null,
 					lastRestoreAt: null,
@@ -688,7 +683,7 @@ describe('SettingsPage', () => {
 					dirtySince: null,
 					pendingResync: false,
 					hasRemoteConfig: true,
-					remoteUrl: 'libsql://example.turso.io',
+					remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 					replicaState: 'ready',
 					replicaReason: null,
 					lastRestoreAt: null,
@@ -705,7 +700,7 @@ describe('SettingsPage', () => {
 					dirtySince: '2026-06-26T00:00:00Z',
 					pendingResync: false,
 					hasRemoteConfig: true,
-					remoteUrl: 'libsql://example.turso.io',
+					remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 					replicaState: 'ready',
 					replicaReason: null,
 					lastRestoreAt: null,
@@ -737,16 +732,13 @@ describe('SettingsPage', () => {
 		expect(await screen.findByText('等待同步')).toBeInTheDocument()
 	})
 
-	it('保存同步配置成功后会清空 token 输入框', async () => {
+	it('保存同步配置成功后会清空连接串输入框', async () => {
 		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 		openSyncConfigDialog()
 
-		fireEvent.change(screen.getByLabelText('Turso URL'), {
-			target: { value: 'libsql://example.turso.io' },
-		})
-		fireEvent.change(screen.getByLabelText('Turso Token'), {
-			target: { value: 'secret-token' },
+		fireEvent.change(screen.getByLabelText('同步数据库连接'), {
+			target: { value: 'postgresql://user:secret@db.example.com:5432/sf' },
 		})
 		fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
 
@@ -755,11 +747,11 @@ describe('SettingsPage', () => {
 		})
 		openSyncConfigDialog()
 		await waitFor(() => {
-			expect(screen.getByLabelText('Turso Token')).toHaveValue('')
+			expect(screen.getByLabelText('同步数据库连接')).toHaveValue('')
 		})
 	})
 
-	it('缺少同步基线时展示提示并禁用立即同步', async () => {
+	it('缺少同步基线时展示提示并允许建立基线同步', async () => {
 		getSyncStatusSpy.mockResolvedValue(
 			createSyncStatusPayload({
 				enabled: true,
@@ -771,7 +763,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 				replicaState: 'baseline_required',
 				replicaReason:
 					'当前设备已有本地数据，但缺少 server_seq cursor。为避免把未知本地副本误覆盖，暂不自动同步；请先完成同步基线迁移。',
@@ -782,9 +774,10 @@ describe('SettingsPage', () => {
 		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 
-		expect(screen.getByText('当前设备需要建立同步基线')).toBeInTheDocument()
+		expect(screen.getByText('需要首次同步建立基线')).toBeInTheDocument()
 		expect(screen.getAllByText('缺少基线').length).toBeGreaterThanOrEqual(1)
-		expect(screen.getByRole('button', { name: '立即同步' })).toBeDisabled()
+		// 允许点「建立基线并同步」：会 origin seed + 上传，不会 wipe 本机
+		expect(screen.getByRole('button', { name: '建立基线并同步' })).toBeEnabled()
 	})
 
 	it('点击刷新诊断时展示远端与本地摘要', async () => {
@@ -799,7 +792,7 @@ describe('SettingsPage', () => {
 				dirtySince: null,
 				pendingResync: false,
 				hasRemoteConfig: true,
-				remoteUrl: 'libsql://example.turso.io',
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: '2026-06-28T00:00:00Z',
@@ -816,7 +809,7 @@ describe('SettingsPage', () => {
 			expect(getSyncDiagnosticsSpy).toHaveBeenCalledTimes(1)
 		})
 		expect(screen.getByText('同步诊断')).toBeInTheDocument()
-		expect(screen.getByText('libsql://example.turso.io')).toBeInTheDocument()
+		expect(screen.getByText('postgresql://user:***@db.example.com:5432/sf')).toBeInTheDocument()
 		expect(screen.getAllByText('总计 88 条主数据')).toHaveLength(2)
 		expect(screen.getAllByText('1 条').length).toBeGreaterThanOrEqual(1)
 	})
@@ -827,7 +820,7 @@ async function renderSettingsPage() {
 }
 
 function openSyncConfigDialog() {
-	fireEvent.click(screen.getByRole('button', { name: '配置 Turso 远端' }))
+	fireEvent.click(screen.getByRole('button', { name: '配置同步数据库' }))
 }
 
 function openSyncDetails() {

@@ -64,7 +64,7 @@ impl SyncRuntimeState {
             remote_url: guard
                 .remote_config
                 .as_ref()
-                .map(|config| config.url.clone()),
+                .map(|config| super::config::redact_database_url(&config.database_url)),
             replica_state: guard.replica_state,
             replica_reason: guard.replica_reason.clone(),
             last_restore_at: guard.last_restore_at.clone(),
@@ -326,8 +326,7 @@ mod tests {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
-                url: "libsql://example.turso.io".to_owned(),
-                token: "token".to_owned(),
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
             }))
             .await;
 
@@ -343,8 +342,7 @@ mod tests {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
-                url: "libsql://example.turso.io".to_owned(),
-                token: "token".to_owned(),
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
             }))
             .await;
 
@@ -359,8 +357,7 @@ mod tests {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
-                url: "libsql://example.turso.io".to_owned(),
-                token: "token".to_owned(),
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
             }))
             .await;
 
@@ -375,8 +372,7 @@ mod tests {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
-                url: "libsql://example.turso.io".to_owned(),
-                token: "token".to_owned(),
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
             }))
             .await;
         state
@@ -400,8 +396,7 @@ mod tests {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
-                url: "libsql://example.turso.io".to_owned(),
-                token: "token".to_owned(),
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
             }))
             .await;
 
@@ -418,8 +413,7 @@ mod tests {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
-                url: "libsql://example.turso.io".to_owned(),
-                token: "token".to_owned(),
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
             }))
             .await;
 
@@ -459,8 +453,7 @@ mod tests {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
-                url: "libsql://example.turso.io".to_owned(),
-                token: "token".to_owned(),
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
             }))
             .await;
 
@@ -476,8 +469,7 @@ mod tests {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
-                url: "libsql://example.turso.io".to_owned(),
-                token: "token".to_owned(),
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
             }))
             .await;
         state.start_run(SyncRunMode::Pull).await;
@@ -493,8 +485,7 @@ mod tests {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
-                url: "libsql://example.turso.io".to_owned(),
-                token: "token".to_owned(),
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
             }))
             .await;
 

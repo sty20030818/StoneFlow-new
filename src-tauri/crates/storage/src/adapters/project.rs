@@ -11,8 +11,8 @@ use stoneflow_application::{
     operation::OutboxEnqueueRecord,
     project::{
         CreateProjectPersistenceRecord, ProjectCascadeRecord, ProjectPersistence, ProjectRecord,
-        ProjectService, ProjectSpaceReader, ProjectSpaceRecord, ProjectTaskCount, ProjectTaskCounter,
-        UpdateProjectPatch as AppUpdateProjectPatch,
+        ProjectService, ProjectSpaceReader, ProjectSpaceRecord, ProjectTaskCount,
+        ProjectTaskCounter, UpdateProjectPatch as AppUpdateProjectPatch,
     },
     ApplicationError,
 };

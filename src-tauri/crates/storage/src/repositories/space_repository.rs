@@ -4,6 +4,7 @@ use crate::entities::{
     prelude::{Project, Space, Task},
     project, space, task,
 };
+use sea_orm::sea_query::ExprTrait;
 use sea_orm::{
     sea_query::Expr, ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection,
     EntityTrait, QueryFilter, QueryOrder, QuerySelect, Set,

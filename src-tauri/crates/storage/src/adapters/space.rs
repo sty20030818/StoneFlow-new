@@ -24,7 +24,9 @@ pub type SpaceAppService = SpaceService<SpacePersistenceAdapter>;
 
 /// 从数据库连接构造 Space 用例。
 pub fn build_space_service(connection: DatabaseConnection) -> SpaceAppService {
-    SpaceService::new(SpacePersistenceAdapter::new(SpaceRepository::new(connection)))
+    SpaceService::new(SpacePersistenceAdapter::new(SpaceRepository::new(
+        connection,
+    )))
 }
 
 /// Space 持久化 adapter。

@@ -139,20 +139,9 @@ runtime 只依赖门面 + `SyncRemoteConfig`，不依赖 sqlx。
 
 文案：去掉「Turso」；用「云端副本 / 同步数据库」。
 
-## 5. CI 门槛（P2 启用）
+## 5. CI 门槛（P2，已完成）
 
-```bash
-# src-tauri：依赖树不得再出现 libsql
-if cargo tree -p stoneflow -i libsql 2>/dev/null | grep -q libsql; then
-  echo "error: libsql still in stoneflow dependency tree"
-  cargo tree -p stoneflow -i libsql
-  exit 1
-fi
-```
-
-- P1 前：文档 + 可选脚本，不强制红 CI。  
-- P2 去 libsql 后：接入 CI。  
-- 本地验收：构建日志无 `libsql_ffi` 双符号警告。  
+- libsql 已硬切删除；专用验收脚本已退役（无回流依赖面）。  
 - 协议回归：`postgres` 集成测 + 纯 `apply_mutation` 单元测。
 
 ## 6. 设置页（P2）

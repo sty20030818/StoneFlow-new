@@ -11,9 +11,7 @@ use stoneflow_application::space::{
 };
 
 #[tauri::command]
-pub async fn list_visible_spaces(
-    state: State<'_, AppState>,
-) -> Result<Vec<SpaceDto>, AppError> {
+pub async fn list_visible_spaces(state: State<'_, AppState>) -> Result<Vec<SpaceDto>, AppError> {
     state
         .spaces
         .list_visible_spaces()
@@ -511,7 +509,7 @@ mod tests {
     async fn scalar_count(database: &TestDatabase, sql: &str) -> i64 {
         database
             .connection()
-            .query_one(Statement::from_string(DbBackend::Sqlite, sql.to_owned()))
+            .query_one_raw(Statement::from_string(DbBackend::Sqlite, sql.to_owned()))
             .await
             .expect("count query should succeed")
             .expect("count query should return a row")

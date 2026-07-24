@@ -16,7 +16,7 @@ use super::{
     },
 };
 use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SyncRepository};
-use stoneflow_sync::{SyncError, SyncErrorKind, SyncRemoteConfig as EngineRemoteConfig};
+use stoneflow_sync::{SyncCloudConfig, SyncError, SyncErrorKind};
 
 const WORKSPACE_CHANGED_EVENT: &str = "stoneflow://workspace/changed";
 const SYNC_STATUS_CHANGED_EVENT: &str = "stoneflow://sync/status-changed";
@@ -44,16 +44,11 @@ pub async fn initialize_state(
     database: &DatabaseRuntimeState,
 ) -> Result<(), AppError> {
     let config = load_remote_config(database).await?;
-    match config.as_ref() {
-        Some(remote) => log::info!(
-            "sync:init loaded remote config host={} db_path={}",
-            redact_remote_url(&remote.url),
-            database.database_path().display()
-        ),
-        None => log::info!(
-            "sync:init remote config missing db_path={}",
-            database.database_path().display()
-        ),
+    if let Some(remote) = config.as_ref() {
+        log::info!(
+            "同步:已加载配置 {}",
+            super::config::redact_database_url(&remote.database_url)
+        );
     }
     sync_state.set_remote_config(config).await;
     let (policy, next_sync_at) = load_sync_policy(database).await?;
@@ -82,7 +77,7 @@ pub async fn update_sync_policy(
     Ok(sync_state.snapshot().await)
 }
 
-/// 读取当前设备和 Turso 远端的只读诊断摘要。
+/// 读取当前设备与云端副本的只读诊断摘要。
 pub async fn get_sync_diagnostics(
     app_handle: &tauri::AppHandle,
 ) -> Result<SyncDiagnosticsPayload, AppError> {
@@ -92,21 +87,17 @@ pub async fn get_sync_diagnostics(
     let remote_config = sync_state
         .remote_config()
         .await
-        .ok_or_else(|| AppError::validation("云同步尚未配置远端，请先保存 Turso url 和 token"))?;
+        .ok_or_else(|| AppError::validation("云同步尚未配置远端，请先保存同步数据库连接"))?;
 
-    log::info!(
-        "sync:diagnostics requested db_path={} host={}",
-        database.database_path().display(),
-        redact_remote_url(&remote_config.url)
-    );
+    let redacted = super::config::redact_database_url(&remote_config.database_url);
 
     let local = read_local_diagnostics(&database).await?;
-    let remote = stoneflow_sync::diagnose_remote(&to_engine_remote(&remote_config))
+    let remote = stoneflow_sync::diagnose_cloud(&to_cloud_config(&remote_config))
         .await
         .map_err(map_sync_error)?;
 
     Ok(SyncDiagnosticsPayload {
-        remote_host: Some(redact_remote_url(&remote_config.url)),
+        remote_host: Some(redacted),
         local,
         remote: SyncRemoteDiagnosticsPayload {
             latest_server_seq: remote.latest_server_seq,
@@ -129,11 +120,10 @@ pub async fn configure_sync(
     sync_state: &SyncRuntimeState,
     input: ConfigureSyncInput,
 ) -> Result<SyncStatusPayload, AppError> {
-    let config = save_remote_config(database, input.url, input.token).await?;
+    let config = save_remote_config(database, input.database_url).await?;
     log::info!(
-        "sync:configure saved remote config host={} db_path={}",
-        redact_remote_url(&config.url),
-        database.database_path().display()
+        "同步:配置已保存 {}",
+        super::config::redact_database_url(&config.database_url)
     );
     sync_state.set_remote_config(Some(config)).await;
     refresh_local_replica_state(sync_state, database).await?;
@@ -148,7 +138,6 @@ pub async fn note_local_write(app_handle: &tauri::AppHandle) {
 
     app_state.sync.mark_dirty().await;
     emit_sync_status_changed(app_handle, "dirty");
-    log::info!("sync:dirty local write marked dirty");
 }
 
 /// 进程退出前的有界同步收尾：优先 push 本地 outbox，总预算 3 秒，不阻塞 UI 线程无界等待。
@@ -160,67 +149,49 @@ pub async fn flush_before_exit(app_handle: &tauri::AppHandle) {
     const EXIT_FLUSH_BUDGET: std::time::Duration = std::time::Duration::from_secs(3);
 
     match tokio::time::timeout(EXIT_FLUSH_BUDGET, attempt_exit_flush(app_handle)).await {
-        Ok(Ok(())) => log::info!("sync:exit flush completed within budget"),
-        Ok(Err(error)) => log::warn!("sync:exit flush failed: {error}"),
-        Err(_) => log::warn!(
-            "sync:exit flush timed out after {}s; continuing process exit",
-            EXIT_FLUSH_BUDGET.as_secs()
-        ),
+        Ok(Ok(())) => {}
+        Ok(Err(error)) => log::warn!("同步:退出冲刷失败 {error}"),
+        Err(_) => log::warn!("同步:退出冲刷超时 {}s", EXIT_FLUSH_BUDGET.as_secs()),
     }
 }
 
 async fn attempt_exit_flush(app_handle: &tauri::AppHandle) -> Result<(), AppError> {
     if !sync_execution_enabled() {
-        log::info!("sync:exit flush skipped because remote execution disabled");
         return Ok(());
     }
 
-    let sync_state = match sync_state_from_app(app_handle) {
-        Ok(state) => state,
-        Err(_) => {
-            log::info!("sync:exit flush skipped because sync state missing");
-            return Ok(());
-        }
+    let Ok(sync_state) = sync_state_from_app(app_handle) else {
+        return Ok(());
     };
 
     if ensure_remote_config(&sync_state).await.is_err() {
-        log::info!("sync:exit flush skipped because remote config missing");
         return Ok(());
     }
 
-    let database = match database_state_from_app(app_handle) {
-        Ok(state) => state,
-        Err(_) => {
-            log::info!("sync:exit flush skipped because database state missing");
-            return Ok(());
-        }
+    let Ok(database) = database_state_from_app(app_handle) else {
+        return Ok(());
     };
 
-    if let Err(error) = ensure_sync_allowed(&sync_state, &database).await {
-        log::info!("sync:exit flush blocked: {error}");
+    if ensure_sync_allowed(&sync_state, &database).await.is_err() {
         return Ok(());
     }
 
     let Some(guard) = sync_state.try_lock_execution() else {
-        log::info!("sync:exit flush skipped because another run is active");
         return Ok(());
     };
 
     // 退出时优先推送本地变更，避免在 pull 上耗尽预算。
-    log::info!("sync:exit flush starting push");
     run_sync_loop(app_handle, guard, SyncRunMode::Push).await
 }
 
 /// 启动后在后台执行一轮 push 后 pull。
 pub fn trigger_startup_sync(app_handle: &tauri::AppHandle) {
     if !sync_execution_enabled() {
-        log::info!("sync:trigger startup sync skipped because remote execution disabled");
         return;
     }
 
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
-        log::info!("sync:trigger startup sync requested");
         schedule_background_sync(&app_handle, SyncRunMode::Sync).await;
     });
 }
@@ -228,13 +199,11 @@ pub fn trigger_startup_sync(app_handle: &tauri::AppHandle) {
 /// 应用恢复前台后在后台执行一轮 push 后 pull。
 pub fn trigger_resume_sync(app_handle: &tauri::AppHandle) {
     if !sync_execution_enabled() {
-        log::info!("sync:trigger resume sync skipped because remote execution disabled");
         return;
     }
 
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
-        log::info!("sync:trigger resume sync requested");
         schedule_background_sync(&app_handle, SyncRunMode::Sync).await;
     });
 }
@@ -247,7 +216,6 @@ pub async fn run_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload
     ensure_remote_config(&sync_state).await?;
     ensure_sync_allowed(&sync_state, &database).await?;
 
-    log::info!("sync:trigger manual sync requested");
     let guard = sync_state.lock_execution().await;
     run_sync_loop(app_handle, guard, SyncRunMode::Sync).await?;
     refresh_local_replica_state(&sync_state, &database).await?;
@@ -257,61 +225,39 @@ pub async fn run_sync(app_handle: &tauri::AppHandle) -> Result<SyncStatusPayload
 
 pub(super) async fn schedule_background_sync(app_handle: &tauri::AppHandle, mode: SyncRunMode) {
     if !sync_execution_enabled() {
-        log::info!(
-            "sync:schedule skipped because remote execution disabled mode={}",
-            mode_label(mode)
-        );
         return;
     }
 
     let Ok(sync_state) = sync_state_from_app(app_handle) else {
-        log::warn!("sync:schedule state missing");
         return;
     };
 
     if ensure_remote_config(&sync_state).await.is_err() {
-        log::info!(
-            "sync:schedule skipped because remote config missing mode={}",
-            mode_label(mode)
-        );
         return;
     }
 
     let Ok(database) = database_state_from_app(app_handle) else {
-        log::warn!("sync:schedule database state missing");
         return;
     };
 
     if let Err(error) = refresh_local_replica_state(&sync_state, &database).await {
-        log::warn!("sync:schedule refresh replica state failed: {error}");
+        log::warn!("同步:刷新状态失败 {error}");
         return;
     }
 
-    if let Err(error) = ensure_sync_allowed(&sync_state, &database).await {
-        log::info!(
-            "sync:schedule blocked mode={} reason={error}",
-            mode_label(mode)
-        );
+    if ensure_sync_allowed(&sync_state, &database).await.is_err() {
         return;
     }
 
     let Some(guard) = sync_state.try_lock_execution() else {
-        log::info!(
-            "sync:schedule queued because another run is active mode={}",
-            mode_label(mode)
-        );
         sync_state.queue_pending(mode).await;
         return;
     };
 
-    log::info!(
-        "sync:schedule spawning background run mode={}",
-        mode_label(mode)
-    );
     let app_handle = app_handle.clone();
     tauri::async_runtime::spawn(async move {
         if let Err(error) = run_sync_loop(&app_handle, guard, mode).await {
-            log::warn!("runtime: 云同步后台任务执行失败: {error}");
+            log::warn!("同步:后台失败 {error}");
         }
     });
 }
@@ -325,21 +271,14 @@ async fn run_sync_loop(
     let mut next_mode = initial_mode;
     let mut changed_domains = Vec::new();
 
-    log::info!("sync:loop start mode={}", mode_label(initial_mode));
     loop {
         let outcome = run_sync_round(app_handle, &sync_state, next_mode).await?;
         append_unique_domains(&mut changed_domains, outcome.changed_domains);
 
         let Some(pending_mode) = sync_state.take_pending_mode().await else {
-            log::info!("sync:loop finished last_mode={}", mode_label(next_mode));
             emit_workspace_changed(app_handle, next_mode, Some(changed_domains))?;
             break;
         };
-        log::info!(
-            "sync:loop continuing pending_mode={} after={}",
-            mode_label(pending_mode),
-            mode_label(next_mode)
-        );
         next_mode = pending_mode;
     }
 
@@ -371,7 +310,7 @@ async fn read_pending_changed_domains(
 
     let rows = database
         .connection()
-        .query_all(Statement::from_string(
+        .query_all_raw(Statement::from_string(
             DbBackend::Sqlite,
             "SELECT DISTINCT entity_type FROM outbox",
         ))
@@ -459,12 +398,10 @@ fn emit_workspace_changed(
 }
 
 fn emit_sync_status_changed(app_handle: &tauri::AppHandle, reason: &'static str) {
-    if let Err(error) = app_handle.emit(
+    let _ = app_handle.emit(
         SYNC_STATUS_CHANGED_EVENT,
         sync_status_changed_payload(reason),
-    ) {
-        log::warn!("sync:status event emit failed reason={reason}: {error}");
-    }
+    );
 }
 
 async fn run_sync_round(
@@ -476,20 +413,15 @@ async fn run_sync_round(
     let remote_config = sync_state
         .remote_config()
         .await
-        .ok_or_else(|| AppError::validation("云同步尚未配置远端，请先保存 Turso url 和 token"))?;
+        .ok_or_else(|| AppError::validation("云同步尚未配置远端，请先保存同步数据库连接"))?;
 
-    log::info!(
-        "sync:round start mode={} db_path={} host={}",
-        mode_label(mode),
-        database.database_path().display(),
-        redact_remote_url(&remote_config.url)
-    );
     let before_server_seq = read_local_server_seq_cursor(&database).await?;
     let pending_domains = read_pending_changed_domains(&database).await?;
     sync_state.start_run(mode).await;
     emit_sync_status_changed(app_handle, "started");
 
     let database_path = database.database_path().display().to_string();
+    let started_at = std::time::Instant::now();
     let result = match mode {
         SyncRunMode::Push | SyncRunMode::Pull | SyncRunMode::Sync => {
             sync_database(app_handle, database_path, &remote_config, mode)
@@ -508,7 +440,13 @@ async fn run_sync_round(
                 resolve_round_changed_domains(before_server_seq, after_server_seq, pending_domains);
             sync_state.complete_run(mode).await;
             emit_sync_status_changed(app_handle, "completed");
-            log::info!("sync:round success mode={}", mode_label(mode));
+            log::info!(
+                "同步:完成 {} 序号 {:?}→{:?} 耗时ms={}",
+                mode_label(mode),
+                before_server_seq,
+                after_server_seq,
+                started_at.elapsed().as_millis()
+            );
             Ok(SyncRoundOutcome { changed_domains })
         }
         Err(failure) => {
@@ -521,11 +459,7 @@ async fn run_sync_round(
                 .fail_run(failure.failed_mode, message.clone(), needs_attention)
                 .await;
             emit_sync_status_changed(app_handle, "failed");
-            log::warn!(
-                "sync:round failed mode={} failed_mode={} error={message}",
-                mode_label(mode),
-                mode_label(failure.failed_mode)
-            );
+            log::warn!("同步:失败 {} {message}", mode_label(mode));
             Err(failure.error)
         }
     }
@@ -571,7 +505,7 @@ async fn ensure_remote_config(sync_state: &SyncRuntimeState) -> Result<(), AppEr
     }
 
     Err(AppError::validation(
-        "云同步尚未配置远端，请先保存 Turso url 和 token",
+        "云同步尚未配置远端，请先保存同步数据库连接",
     ))
 }
 
@@ -592,11 +526,12 @@ async fn ensure_sync_allowed(
     database: &DatabaseRuntimeState,
 ) -> Result<(), AppError> {
     match sync_state.replica_state().await {
-        SyncReplicaState::Ready => Ok(()),
-        SyncReplicaState::BaselineRequired if has_pending_outbox(database).await? => Ok(()),
-        SyncReplicaState::BaselineRequired => Err(AppError::validation(
-            "当前设备已有本地数据但没有可上推的 Outbox 基线。为避免远端 baseline 覆盖本地副本，已暂停同步。",
-        )),
+        SyncReplicaState::Ready | SyncReplicaState::BaselineRequired => {
+            // BaselineRequired：本机有数据但还没有 server_seq。
+            // 允许同步：先 origin seed + push，再 pull 时对空云端 adopt cursor（不 wipe 本机）。
+            let _ = database;
+            Ok(())
+        }
         SyncReplicaState::Diverged => Err(AppError::validation(
             "当前设备的本地副本状态异常，已暂停普通同步，请先完成诊断或恢复。",
         )),
@@ -606,49 +541,21 @@ async fn ensure_sync_allowed(
     }
 }
 
-async fn has_pending_outbox(database: &DatabaseRuntimeState) -> Result<bool, AppError> {
-    use sea_orm::{ConnectionTrait, DbBackend, Statement};
-
-    let row = database
-        .connection()
-        .query_one(Statement::from_string(
-            DbBackend::Sqlite,
-            "SELECT EXISTS(SELECT 1 FROM outbox) AS has_pending".to_owned(),
-        ))
-        .await?;
-    let has_pending = row
-        .map(|row| row.try_get::<i64>("", "has_pending"))
-        .transpose()?
-        .is_some_and(|value| value != 0);
-    Ok(has_pending)
-}
-
 fn mode_label(mode: SyncRunMode) -> &'static str {
     match mode {
-        SyncRunMode::Push => "push",
-        SyncRunMode::Pull => "pull",
-        SyncRunMode::Sync => "sync",
+        SyncRunMode::Push => "仅上传",
+        SyncRunMode::Pull => "仅下载",
+        SyncRunMode::Sync => "完整同步",
     }
-}
-
-fn redact_remote_url(url: &str) -> String {
-    if let Some(rest) = url.strip_prefix("libsql://") {
-        return format!("libsql://{rest}");
-    }
-    if let Some(rest) = url.strip_prefix("https://") {
-        return format!("https://{rest}");
-    }
-    url.to_owned()
 }
 
 fn sync_execution_enabled() -> bool {
     true
 }
 
-fn to_engine_remote(remote: &crate::sync::types::SyncRemoteConfig) -> EngineRemoteConfig {
-    EngineRemoteConfig {
-        url: remote.url.clone(),
-        token: remote.token.clone(),
+fn to_cloud_config(remote: &crate::sync::types::SyncRemoteConfig) -> SyncCloudConfig {
+    SyncCloudConfig {
+        database_url: remote.database_url.clone(),
     }
 }
 
@@ -670,27 +577,76 @@ async fn run_sync_worker(
     remote_config: &crate::sync::types::SyncRemoteConfig,
     mode: SyncRunMode,
 ) -> Result<(), AppError> {
+    let database = database_state_from_app(app_handle)?;
+    let plan = resolve_bootstrap_plan(&database, remote_config).await?;
+    if !matches!(plan, super::bootstrap_plan::BootstrapPlan::Incremental) {
+        log::info!("同步:引导 {}", plan.label());
+    }
+    if matches!(plan, super::bootstrap_plan::BootstrapPlan::BothPreferLocal) {
+        log::warn!("同步:两边都有数据且无序号，默认本机优先");
+    }
+
     match mode {
         SyncRunMode::Push => {
-            let database = database_state_from_app(app_handle)?;
+            if plan.needs_origin_seed() {
+                super::origin_seed::seed_origin_outbox_if_needed(&database).await?;
+            }
             super::outbox_push::push_pending_outbox(&database, remote_config)
                 .await
                 .map(|_| ())
         }
-        SyncRunMode::Pull => {
-            let database = database_state_from_app(app_handle)?;
-            super::cursor_pull::pull_remote_changes(&database, remote_config)
-                .await
-                .map(|_| ())
-        }
+        SyncRunMode::Pull => super::cursor_pull::pull_remote_changes(&database, remote_config)
+            .await
+            .map(|_| ()),
         SyncRunMode::Sync => {
-            let database = database_state_from_app(app_handle)?;
+            if plan.needs_origin_seed() {
+                super::origin_seed::seed_origin_outbox_if_needed(&database).await?;
+            }
             super::outbox_push::push_pending_outbox(&database, remote_config).await?;
             super::cursor_pull::pull_remote_changes(&database, remote_config)
                 .await
                 .map(|_| ())
         }
     }
+}
+
+/// 分类当前同步引导计划（无 cursor 时会探针一次云端 baseline）。
+async fn resolve_bootstrap_plan(
+    database: &DatabaseRuntimeState,
+    remote_config: &crate::sync::types::SyncRemoteConfig,
+) -> Result<super::bootstrap_plan::BootstrapPlan, AppError> {
+    use super::bootstrap_plan::{classify, LocalContent, LocalCursor, RemoteContent};
+
+    let cursor = if read_local_server_seq_cursor(database).await?.is_some() {
+        LocalCursor::Present
+    } else {
+        LocalCursor::Missing
+    };
+    if matches!(cursor, LocalCursor::Present) {
+        return Ok(classify(
+            LocalContent::Empty,
+            RemoteContent::Empty,
+            LocalCursor::Present,
+        ));
+    }
+
+    let local = if super::cursor_pull::local_has_user_content_for_plan(database).await? {
+        LocalContent::HasData
+    } else {
+        LocalContent::Empty
+    };
+
+    let cloud = to_cloud_config(remote_config);
+    let baseline = stoneflow_sync::download_full(&cloud)
+        .await
+        .map_err(map_sync_error)?;
+    let remote = if baseline.entities.is_empty() && baseline.tombstones.is_empty() {
+        RemoteContent::Empty
+    } else {
+        RemoteContent::HasData
+    };
+
+    Ok(classify(local, remote, cursor))
 }
 
 #[cfg(test)]
@@ -720,8 +676,7 @@ mod tests {
             &database,
             &sync_state,
             ConfigureSyncInput {
-                url: "libsql://example.turso.io".to_owned(),
-                token: "secret".to_owned(),
+                database_url: "postgresql://user:secret@db.example.com:5432/stoneflow".to_owned(),
             },
         )
         .await
@@ -732,19 +687,17 @@ mod tests {
         assert_eq!(payload.status, SyncStatusKind::Synced);
         assert_eq!(
             payload.remote_url.as_deref(),
-            Some("libsql://example.turso.io")
+            Some("postgresql://user:***@db.example.com:5432/stoneflow")
         );
     }
 
     #[tokio::test]
     async fn get_sync_status_should_default_to_disabled_without_remote_config() {
+        // 不调用 initialize_state：避免读到本机钥匙串里其它测试写入的连接串。
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
         let sync_state = SyncRuntimeState::default();
-        initialize_state(&sync_state, &database)
-            .await
-            .expect("sync state should initialize");
 
         let payload = get_sync_status(&sync_state, &database)
             .await

@@ -156,7 +156,7 @@ function toTaskListItem(value: Record<string, unknown>): RunTaskViewResult['item
 		completedAt: value.completedAt as string | null,
 		createdAt: String(value.createdAt),
 		updatedAt: String(value.updatedAt),
-		
+
 		canceledAt: null,
 		archivedAt: null,
 	}

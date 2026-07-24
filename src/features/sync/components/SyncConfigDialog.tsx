@@ -10,7 +10,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/shared/components/base/dialog'
-import { Input } from '@/shared/components/base/input'
+import { Textarea } from '@/shared/components/base/textarea'
 import {
 	dialogShellBodyClass,
 	dialogShellContentVariants,
@@ -28,28 +28,26 @@ import {
 
 type SyncConfigDialogProps = {
 	open: boolean
-	syncUrl: string
-	syncToken: string
-	syncBusy: boolean
+	databaseUrl: string
+	/** 仅表示「正在保存本弹窗」，不要绑全局同步中（否则会误禁用） */
+	saving?: boolean
 	onClose: () => void
-	onSave: (input: { url: string; token: string }) => Promise<void>
-	onSyncUrlChange: (value: string) => void
-	onSyncTokenChange: (value: string) => void
+	onSave: (input: { databaseUrl: string }) => Promise<void>
+	onDatabaseUrlChange: (value: string) => void
 }
 
 export function SyncConfigDialog({
 	open,
-	syncUrl,
-	syncToken,
-	syncBusy,
+	databaseUrl,
+	saving: savingExternal = false,
 	onClose,
 	onSave,
-	onSyncUrlChange,
-	onSyncTokenChange,
+	onDatabaseUrlChange,
 }: SyncConfigDialogProps) {
 	const [saving, setSaving] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const configIncomplete = syncUrl.trim().length === 0 || syncToken.trim().length === 0
+	const configIncomplete = databaseUrl.trim().length === 0
+	const busy = saving || savingExternal
 
 	useEffect(() => {
 		if (!open) {
@@ -59,13 +57,16 @@ export function SyncConfigDialog({
 	}, [open])
 
 	async function handleSave() {
+		if (busy || configIncomplete) {
+			return
+		}
 		setSaving(true)
 		setError(null)
 		try {
 			await onSave({
-				url: syncUrl.trim(),
-				token: syncToken.trim(),
+				databaseUrl: databaseUrl.trim(),
 			})
+			// 保存成功立刻关窗，不把后续状态刷新绑在弹窗上
 			onClose()
 		} catch (saveError) {
 			setError(normalizeTauriError(saveError, '同步配置保存失败'))
@@ -74,44 +75,34 @@ export function SyncConfigDialog({
 		}
 	}
 
-	const disabled = syncBusy || saving
-
 	return (
-		<Dialog onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
+		<Dialog onOpenChange={(nextOpen) => !nextOpen && !busy && onClose()} open={open}>
 			<DialogContent className={dialogShellContentVariants({ size: 'lg' })}>
 				<DialogHeader className={dialogShellHeaderClass}>
-					<DialogTitle className={dialogShellTitleClass}>Turso 远端配置</DialogTitle>
+					<DialogTitle className={dialogShellTitleClass}>配置云端副本</DialogTitle>
 					<DialogDescription className={dialogShellDescriptionClass}>
-						URL 保存在本地 settings 表；token 由系统钥匙串保管，页面刷新后不会回显。
+						粘贴 Neon 或自建 Postgres
+						连接串。保存只写本机配置，不会立刻连库；连通性请用「立即同步」或诊断验证。
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className={`${dialogShellBodyClass} flex flex-col gap-4`}>
 					<label className={formFieldStackClass}>
-						<span className={formFieldLabelVariants()}>Turso URL</span>
-						<Input
+						<span className={formFieldLabelVariants()}>同步数据库连接</span>
+						<Textarea
 							autoComplete='off'
-							disabled={disabled}
-							onChange={(event) => onSyncUrlChange(event.currentTarget.value)}
-							placeholder='libsql://your-db.turso.io'
-							type='text'
-							value={syncUrl}
-						/>
-					</label>
-					<label className={formFieldStackClass}>
-						<span className={formFieldLabelVariants()}>Turso Token</span>
-						<Input
-							autoComplete='off'
-							disabled={disabled}
-							onChange={(event) => onSyncTokenChange(event.currentTarget.value)}
-							placeholder='输入 Turso auth token'
-							type='password'
-							value={syncToken}
+							className='min-h-24 font-mono text-[13px] leading-5'
+							disabled={busy}
+							onChange={(event) => onDatabaseUrlChange(event.currentTarget.value)}
+							placeholder={
+								'postgresql://user:password@host:5432/dbname\n# 或带 sslmode：\n# postgresql://user:pass@host/db?sslmode=require'
+							}
+							spellCheck={false}
+							value={databaseUrl}
 						/>
 					</label>
 					<p className={formFieldHintClass}>
-						需要更换 token
-						时直接输入新值覆盖保存。未配置前不会自动同步；配置完成后，本地写入会先标记待同步，再由同步引擎异步执行。
+						完整连接串保存在系统钥匙串；界面只展示脱敏地址。更换时粘贴新串覆盖即可。
 					</p>
 					{error ? (
 						<StatusNotice
@@ -126,15 +117,15 @@ export function SyncConfigDialog({
 
 				<div className={dialogShellPanelFooterClass}>
 					<div className={dialogShellFooterClass}>
-						<Button disabled={disabled} onClick={onClose} type='button' variant='secondary'>
+						<Button disabled={busy} onClick={onClose} type='button' variant='secondary'>
 							取消
 						</Button>
 						<Button
-							disabled={disabled || configIncomplete}
+							disabled={busy || configIncomplete}
 							onClick={() => void handleSave()}
 							type='button'
 						>
-							{saving ? '保存中...' : '保存配置'}
+							{busy ? '保存中...' : '保存配置'}
 						</Button>
 					</div>
 				</div>

@@ -79,7 +79,7 @@ async fn connect_sqlite_with_options(
 /// 执行最小 smoke query，确认连接可用。
 pub async fn run_smoke_query(connection: &DatabaseConnection) -> Result<(), StorageError> {
     let result = connection
-        .query_one(Statement::from_string(
+        .query_one_raw(Statement::from_string(
             DbBackend::Sqlite,
             "SELECT 1 AS healthcheck_value",
         ))

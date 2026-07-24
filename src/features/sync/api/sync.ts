@@ -68,9 +68,9 @@ export function getSyncDiagnostics() {
 }
 
 /**
- * 保存 Turso 远端配置。
+ * 保存同步数据库连接（Postgres / Neon 连接串）。
  */
-export function configureSync(input: { url: string; token: string }) {
+export function configureSync(input: { databaseUrl: string }) {
 	return invoke<SyncStatusPayload>('configure_sync', { input })
 }
 

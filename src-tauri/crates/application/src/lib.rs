@@ -6,7 +6,7 @@
 //! - repository / transaction ports；
 //! - 跨聚合流程协调。
 //!
-//! 禁止依赖：SeaORM、Tauri、libsql。
+//! 禁止依赖：SeaORM、Tauri、sqlx / 同步驱动。
 
 pub mod activity;
 pub mod error;

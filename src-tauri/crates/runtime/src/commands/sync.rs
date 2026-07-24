@@ -5,7 +5,9 @@ use tauri::State;
 use crate::{
     app::error::AppError,
     app::state::AppState,
-    sync::{self, ConfigureSyncInput, SyncDiagnosticsPayload, SyncStatusPayload, UpdateSyncPolicyInput},
+    sync::{
+        self, ConfigureSyncInput, SyncDiagnosticsPayload, SyncStatusPayload, UpdateSyncPolicyInput,
+    },
 };
 
 #[tauri::command]
@@ -18,7 +20,7 @@ pub async fn configure_sync(
     input: ConfigureSyncInput,
     state: State<'_, AppState>,
 ) -> Result<SyncStatusPayload, AppError> {
-    // token 经 platform Keychain 写入；payload 不回传 token。
+    // 只写钥匙串 + 本地 settings + 运行态缓存，不连远端库（保持保存响应快）。
     sync::configure_sync(&state.database, &state.sync, input).await
 }
 

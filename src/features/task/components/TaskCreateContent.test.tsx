@@ -112,10 +112,7 @@ describe('TaskCreateContent', () => {
 		expect(screen.getByText('工作')).toBeInTheDocument()
 		expect(screen.queryByText('生活')).not.toBeInTheDocument()
 		expect(getShortcutHintDigits()).toEqual(['0'])
-		expect(getPlacementMenuitemTexts()).toEqual([
-			'独立事项0独立事项',
-			'项目 AProject · 工作',
-		])
+		expect(getPlacementMenuitemTexts()).toEqual(['独立事项0独立事项', '项目 AProject · 工作'])
 		// 关闭归属菜单后再提交（菜单打开时 footer 会被 aria-hidden）
 		fireEvent.keyDown(document, { key: 'Escape' })
 		fireEvent.click(screen.getByRole('button', { name: '创建任务' }))

@@ -3,13 +3,7 @@ import type { ComponentType } from 'react'
 import { openSection } from '@/app/navigation'
 import type { ShellSectionKey } from '@/layout/types'
 import type { Scope, Space } from '@/shared/types'
-import {
-	ArchiveIcon,
-	BoxIcon,
-	ListTodoIcon,
-	Layers2Icon,
-	Trash2Icon,
-} from 'lucide-react'
+import { ArchiveIcon, BoxIcon, ListTodoIcon, Layers2Icon, Trash2Icon } from 'lucide-react'
 
 type ShellIcon = ComponentType<{ className?: string }>
 /** 主导航：全部任务 / 视图 / 项目总览。 */

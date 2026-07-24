@@ -116,7 +116,6 @@ export function getSelectedTaskPlacementValues(context: CommandContext) {
 				resolveTaskPlacementTarget({
 					spaceId: entity.spaceId,
 					projectId: entity.projectId,
-					
 				}),
 			),
 		)

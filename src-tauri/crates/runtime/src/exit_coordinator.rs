@@ -8,9 +8,7 @@ use tokio::sync::{Mutex, Notify};
 use crate::app::error::AppError;
 use crate::app::state::AppState;
 use crate::sync;
-use crate::window::launcher::{
-    runtime::LauncherWindowRuntimeState, session::shutdown_launcher,
-};
+use crate::window::launcher::{runtime::LauncherWindowRuntimeState, session::shutdown_launcher};
 use crate::window::main::persist_main_window_geometry;
 
 #[derive(Debug, Clone, Copy)]
@@ -46,7 +44,11 @@ impl ExitCoordinator {
     }
 
     /// 执行一次有界收尾（同步 flush + 状态标记）。可重入：并发调用者等待第一次完成。
-    pub async fn request_exit(&self, app_handle: &tauri::AppHandle, reason: ExitReason) -> Result<(), AppError> {
+    pub async fn request_exit(
+        &self,
+        app_handle: &tauri::AppHandle,
+        reason: ExitReason,
+    ) -> Result<(), AppError> {
         let should_run = {
             let mut state = self.inner.state.lock().await;
             if state.completed {

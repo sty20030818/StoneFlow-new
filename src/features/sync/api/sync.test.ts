@@ -52,28 +52,26 @@ describe('sync api', () => {
 			dirtySince: null,
 			pendingResync: false,
 			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
+			remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
 		})
 
 		await configureSync({
-			url: 'libsql://example.turso.io',
-			token: 'secret',
+			databaseUrl: 'postgresql://user:secret@db.example.com:5432/sf',
 		})
 
 		expect(mockedInvoke).toHaveBeenCalledWith('configure_sync', {
 			input: {
-				url: 'libsql://example.turso.io',
-				token: 'secret',
+				databaseUrl: 'postgresql://user:secret@db.example.com:5432/sf',
 			},
 		})
 	})
 
 	it('读取同步诊断时调用 get_sync_diagnostics', async () => {
 		mockedInvoke.mockResolvedValue({
-			remoteHost: 'libsql://example.turso.io',
+			remoteHost: 'postgresql://user:***@db.example.com:5432/sf',
 			local: {
 				deviceId: 'device-1',
 				lastPulledServerSeq: 12,
@@ -119,7 +117,7 @@ describe('sync api', () => {
 			dirtySince: null,
 			pendingResync: false,
 			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
+			remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,
@@ -141,7 +139,7 @@ describe('sync api', () => {
 			dirtySince: null,
 			pendingResync: false,
 			hasRemoteConfig: true,
-			remoteUrl: 'libsql://example.turso.io',
+			remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
 			replicaState: 'ready',
 			replicaReason: null,
 			lastRestoreAt: null,

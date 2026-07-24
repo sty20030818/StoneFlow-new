@@ -87,12 +87,16 @@ async fn open_existing_target(
             .launcher
             .resolve_task_open_target(&input.id)
             .await
-            .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))?,
+            .map_err(|error| {
+                LauncherErrorPayload::from(crate::app::error::AppError::from(error))
+            })?,
         LauncherOpenTargetKind::Project => state
             .launcher
             .resolve_project_open_target(&input.id)
             .await
-            .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))?,
+            .map_err(|error| {
+                LauncherErrorPayload::from(crate::app::error::AppError::from(error))
+            })?,
     };
     restore_main_window(app_handle)
         .await

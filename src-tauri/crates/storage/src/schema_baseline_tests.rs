@@ -93,7 +93,7 @@ async fn view_query_plan_should_use_space_status_due_index() {
     let database = TestDatabase::bootstrap()
         .await
         .expect("test database should bootstrap");
-    let row = database.connection().query_one(Statement::from_string(DatabaseBackend::Sqlite, "EXPLAIN QUERY PLAN SELECT id FROM tasks WHERE space_id = 'space' AND status IN ('todo', 'doing', 'waiting') AND due_at >= '2026-07-23T00:00:00+00:00' AND due_at <= '2026-07-30T23:59:59+00:00' AND archived_at IS NULL AND deleted_at IS NULL ORDER BY due_at, position".to_owned())).await.expect("query plan").expect("query plan row");
+    let row = database.connection().query_one_raw(Statement::from_string(DatabaseBackend::Sqlite, "EXPLAIN QUERY PLAN SELECT id FROM tasks WHERE space_id = 'space' AND status IN ('todo', 'doing', 'waiting') AND due_at >= '2026-07-23T00:00:00+00:00' AND due_at <= '2026-07-30T23:59:59+00:00' AND archived_at IS NULL AND deleted_at IS NULL ORDER BY due_at, position".to_owned())).await.expect("query plan").expect("query plan row");
     let detail: String = row.try_get("", "detail").expect("plan detail");
     assert!(
         detail.contains("ix_tasks_view_space_status_due"),
@@ -441,7 +441,8 @@ async fn sqlite_object_exists(
         "SELECT 1 FROM sqlite_master WHERE type = ? AND name = ? LIMIT 1",
         [object_type.into(), object_name.into()],
     );
-    Ok(connection.query_one(statement).await?.is_some())
+    // SeaORM 2：裸 Statement 走 query_one_raw，query_one 只接受 StatementBuilder。
+    Ok(connection.query_one_raw(statement).await?.is_some())
 }
 
 async fn scalar_i64(
@@ -449,7 +450,7 @@ async fn scalar_i64(
     sql: &str,
 ) -> Result<i64, sea_orm::DbErr> {
     let row = connection
-        .query_one(Statement::from_string(
+        .query_one_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             sql.to_owned(),
         ))
@@ -460,7 +461,7 @@ async fn scalar_i64(
 
 async fn exec(connection: &sea_orm::DatabaseConnection, sql: &str) -> Result<(), sea_orm::DbErr> {
     connection
-        .execute(Statement::from_string(
+        .execute_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             sql.to_owned(),
         ))
@@ -470,7 +471,7 @@ async fn exec(connection: &sea_orm::DatabaseConnection, sql: &str) -> Result<(),
 
 async fn exec_on<C: ConnectionTrait>(connection: &C, sql: &str) -> Result<(), sea_orm::DbErr> {
     connection
-        .execute(Statement::from_string(
+        .execute_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             sql.to_owned(),
         ))

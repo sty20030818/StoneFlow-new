@@ -52,14 +52,14 @@ async fn transaction_should_rollback_test_data() {
         .expect("transaction should start");
 
     transaction
-        .execute(Statement::from_string(
+        .execute_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             "CREATE TABLE transaction_rollback_probe (value INTEGER NOT NULL)",
         ))
         .await
         .expect("probe table should be created");
     transaction
-        .execute(Statement::from_string(
+        .execute_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             "INSERT INTO transaction_rollback_probe (value) VALUES (1)",
         ))
@@ -72,7 +72,7 @@ async fn transaction_should_rollback_test_data() {
 
     let probe = database
         .connection()
-        .query_one(Statement::from_string(
+        .query_one_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'transaction_rollback_probe'",
         ))
@@ -95,7 +95,7 @@ async fn failing_migration_should_not_leave_half_finished_schema() {
 
     let probe = database
         .connection()
-        .query_one(Statement::from_string(
+        .query_one_raw(Statement::from_string(
             DatabaseBackend::Sqlite,
             "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'failing_probe'",
         ))
@@ -113,7 +113,7 @@ impl MigrationTrait for FailingMigration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         manager
             .get_connection()
-            .execute(Statement::from_string(
+            .execute_raw(Statement::from_string(
                 DatabaseBackend::Sqlite,
                 "CREATE TABLE failing_probe (id INTEGER PRIMARY KEY)",
             ))

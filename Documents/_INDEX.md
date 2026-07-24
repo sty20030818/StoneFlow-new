@@ -38,8 +38,11 @@
 
 ## 当前活跃任务
 
-- [本地优先同步平台（长期）](./03-重构任务/2026-07-24-local-first-sync-platform/SPEC.md)
-  本地 SQLite + SeaORM；用户 Postgres 云端副本（上传/下载）；主进程去掉 libsql。
+（无）
+
+近期归档：
+
+- [本地优先同步平台（单设备主路径完成；P3 双设备延期）](./98-归档/02-已完成重构/2026-07-24-local-first-sync-platform/SPEC.md)
 
 ## 模块文档规则
 

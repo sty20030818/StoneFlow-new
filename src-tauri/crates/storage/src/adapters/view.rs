@@ -210,4 +210,3 @@ impl ViewLookupReader for ViewPersistenceAdapter {
         Ok(records)
     }
 }
-

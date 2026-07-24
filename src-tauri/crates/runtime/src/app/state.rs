@@ -7,9 +7,7 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::sync::SyncRuntimeState;
-use stoneflow_application::launcher::{
-    ActiveScopeInput, ActiveScopeKind as AppActiveScopeKind,
-};
+use stoneflow_application::launcher::{ActiveScopeInput, ActiveScopeKind as AppActiveScopeKind};
 use stoneflow_storage::database::DatabaseRuntimeState;
 use stoneflow_storage::{
     ActivityAppService, LauncherAppService, LauncherContextAppService, LifecycleAppService,

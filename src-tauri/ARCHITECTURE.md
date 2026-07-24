@@ -26,7 +26,7 @@ Frontend (React)
   -> Tauri invoke / event
   -> runtime
   -> application / storage / sync / platform
-  -> SQLite / Turso
+  -> SQLite / Postgres（云端副本）
 ```
 
 前端不会直接访问数据库，也不会绕过 `runtime` 直连 `application`。

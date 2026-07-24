@@ -97,7 +97,11 @@ describe('taskBulkActions', () => {
 			},
 		)
 
-		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(1, ['task-a', 'task-b'], standaloneTarget)
+		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(
+			1,
+			['task-a', 'task-b'],
+			standaloneTarget,
+		)
 		expect(adapter.updatePlacement).toHaveBeenNthCalledWith(2, ['task-a', 'task-b'], projectTarget)
 	})
 

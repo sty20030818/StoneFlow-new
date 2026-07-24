@@ -273,11 +273,7 @@ export function ScopedPickerCommandGroup({
 						<CommandRow
 							leading={renderCommandIcon(CircleIcon)}
 							title={task.title}
-							trailing={
-								<CommandRowMeta>
-									{task.projectName ?? 'Task · 独立事项'}
-								</CommandRowMeta>
-							}
+							trailing={<CommandRowMeta>{task.projectName ?? 'Task · 独立事项'}</CommandRowMeta>}
 						/>
 					</CommandItem>
 				))}

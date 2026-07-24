@@ -253,7 +253,11 @@ impl LifecycleProjectPersistence for LifecyclePortsAdapter {
         project_id: &str,
     ) -> Result<(), ApplicationError> {
         self.projects
-            .permanently_delete_cascade(connection, project_id, &stoneflow_domain::now_utc().to_rfc3339())
+            .permanently_delete_cascade(
+                connection,
+                project_id,
+                &stoneflow_domain::now_utc().to_rfc3339(),
+            )
             .await
             .map(|_| ())
             .map_err(from_storage)

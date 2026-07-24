@@ -1,6 +1,6 @@
 //! 同步协议的纯数据模型与冲突规则。
 //!
-//! 该模块不认识 SQLite、Turso 或 Tauri。服务端为每个 mutation 分配单调 sequence，
+//! 该模块不认识 SQLite、Postgres 驱动或 Tauri。服务端为每个 mutation 分配单调 sequence，
 //! 因而不同字段可合并，同字段与生命周期均可由一个确定的纯函数裁决。
 
 use std::collections::BTreeMap;

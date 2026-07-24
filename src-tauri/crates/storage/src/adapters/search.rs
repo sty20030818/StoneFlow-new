@@ -166,4 +166,3 @@ impl SearchTaskReader for SearchPortsAdapter {
             .map_err(from_display)
     }
 }
-

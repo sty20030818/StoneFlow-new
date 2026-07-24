@@ -189,7 +189,11 @@ pub struct SyncRemoteConfig {
 - CRDT、业务表镜像到 PG、进程外 sidecar  
 - 为整洁而 domain/app/infra 三套空壳  
 
-## 7. 文档索引
+## 7. 首次绑定 / 多场景引导
+
+见 [BOOTSTRAP.md](./BOOTSTRAP.md)：纯函数 `BootstrapPlan` + seed / upload / pull 执行分离。
+
+## 8. 文档索引
 
 | 文档 | 内容 |
 |---|---|
@@ -197,3 +201,4 @@ pub struct SyncRemoteConfig {
 | [TASKS.md](./TASKS.md) | 勾选清单 |
 | [PG-SCHEMA.md](./PG-SCHEMA.md) | 云端副本 DDL |
 | [MAPPING.md](./MAPPING.md) | 字段映射、方言、错误、CI |
+| [BOOTSTRAP.md](./BOOTSTRAP.md) | 新/老设备 × 空/有数据 场景矩阵 |

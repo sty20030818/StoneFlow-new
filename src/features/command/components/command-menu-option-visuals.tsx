@@ -66,9 +66,7 @@ export function getCommandMenuDateLeading(key: string) {
 	}
 }
 
-export function getCommandMenuPlacementLeading(
-	kind: 'project' | 'standalone' ,
-): ReactNode {
+export function getCommandMenuPlacementLeading(kind: 'project' | 'standalone'): ReactNode {
 	if (kind !== 'project') {
 		return <TargetIcon className='size-4 text-sf-icon-secondary' />
 	}

@@ -23,7 +23,8 @@ describe('getCommandShortcutTokens', () => {
 		)
 		expect(getCommandShortcutTokens(COMMAND_IDS.goStandalone)).toEqual(
 			tokenizeKeybindingSequence(
-				DEFAULT_KEYBINDINGS.find((binding) => binding.commandId === COMMAND_IDS.goStandalone)!.sequence,
+				DEFAULT_KEYBINDINGS.find((binding) => binding.commandId === COMMAND_IDS.goStandalone)!
+					.sequence,
 			),
 		)
 	})

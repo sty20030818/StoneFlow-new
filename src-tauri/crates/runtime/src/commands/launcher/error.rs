@@ -8,33 +8,33 @@ use stoneflow_application::launcher_context::LauncherInitialStateDto;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LauncherErrorPayload {
-	#[serde(rename = "type")]
-	pub type_: &'static str,
-	pub message: String,
+    #[serde(rename = "type")]
+    pub type_: &'static str,
+    pub message: String,
 }
 
 impl From<AppError> for LauncherErrorPayload {
-	fn from(error: AppError) -> Self {
-		let message = error.to_string();
-		let type_ = if message.starts_with("验证失败") {
-			"Validation"
-		} else if message.contains("不存在") {
-			"NotFound"
-		} else {
-			"Internal"
-		};
-		Self { type_, message }
-	}
+    fn from(error: AppError) -> Self {
+        let message = error.to_string();
+        let type_ = if message.starts_with("验证失败") {
+            "Validation"
+        } else if message.contains("不存在") {
+            "NotFound"
+        } else {
+            "Internal"
+        };
+        Self { type_, message }
+    }
 }
 
 /// prepare-session 响应：session 元数据 + 初始态（flatten）。
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LauncherOpenSessionResponse {
-	pub session_id: String,
-	pub opened_at: String,
-	#[serde(flatten)]
-	pub open_context: LauncherInitialStateDto,
+    pub session_id: String,
+    pub opened_at: String,
+    #[serde(flatten)]
+    pub open_context: LauncherInitialStateDto,
 }
 
 /// 初始态别名：直出 application DTO。

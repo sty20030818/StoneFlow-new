@@ -37,8 +37,7 @@ export function PlacementControl({
 	onOpenChange,
 	onPlacementChange,
 }: PlacementControlProps) {
-	const TriggerIcon =
-		value.kind === 'standalone' ? TargetIcon : FolderIcon
+	const TriggerIcon = value.kind === 'standalone' ? TargetIcon : FolderIcon
 
 	return (
 		<DropdownMenu onOpenChange={onOpenChange} open={open}>

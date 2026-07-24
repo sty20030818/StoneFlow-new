@@ -243,5 +243,3 @@ fn map_close_reason_output(reason: LauncherWindowCloseReason) -> &'static str {
         LauncherWindowCloseReason::Invalidated => "invalidated",
     }
 }
-
-
