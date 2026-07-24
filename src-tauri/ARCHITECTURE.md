@@ -292,7 +292,7 @@ Launcher 当前不是一个“前端小弹窗”，而是一条跨 Tauri / runti
 ### 6.1 窗口链路
 
 ```txt
-Option+Space
+全局快捷键（macOS: Option+Space；Windows: Alt+Space；其它: Control+Shift+Space）
 -> runtime::shortcuts
 -> runtime::window::launcher::runtime / session
 -> platform::launcher_window

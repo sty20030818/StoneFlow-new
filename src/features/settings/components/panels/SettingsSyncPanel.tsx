@@ -175,7 +175,8 @@ export function SettingsSyncPanel() {
 	}
 
 	async function handleSaveSyncConfig(input: { databaseUrl: string }) {
-		// 只做「写配置」：禁止在此 await 远端诊断/同步，否则弹窗会卡在连库上。
+		// 保存只写本机；后端会再调度一轮后台完整同步（验证连通 + 空云端灌库）。
+		// 禁止在此 await 同步，否则弹窗会卡在连库上。
 		setSyncSaving(true)
 		setSyncStatusMessage(null)
 		setSyncDiagnosticsMessage(null)
@@ -183,10 +184,18 @@ export function SettingsSyncPanel() {
 			const payload = await configureSync(input)
 			setSyncStatus(payload)
 			setDatabaseUrl('')
-			// 诊断后台刷新，失败不影响保存成功
-			if (payload.hasRemoteConfig) {
+			setSyncStatusMessage(
+				'配置已保存。正在后台连接云端并同步；完成后请点「刷新诊断」查看远端工作集。',
+			)
+			// 后台同步结束后静默刷新状态/诊断（给一点时间让 worker 启动）
+			window.setTimeout(() => {
+				void refreshSyncStatus({ silent: true, syncUrlDraft: false })
 				void refreshSyncDiagnostics({ silent: true })
-			}
+			}, 2500)
+			window.setTimeout(() => {
+				void refreshSyncStatus({ silent: true, syncUrlDraft: false })
+				void refreshSyncDiagnostics({ silent: true })
+			}, 8000)
 		} catch (error) {
 			const message = normalizeTauriError(error, '同步配置保存失败')
 			setSyncStatusMessage(message)

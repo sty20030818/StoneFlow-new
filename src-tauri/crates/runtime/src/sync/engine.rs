@@ -115,6 +115,9 @@ pub async fn get_sync_diagnostics(
 }
 
 /// 保存远端配置并刷新运行态缓存。
+///
+/// 只写本机配置，不在这里连库；调用方应随后触发一轮后台同步做验证与灌库。
+/// 保存后状态为「待同步」，避免「未连上就显示已同步」。
 pub async fn configure_sync(
     database: &DatabaseRuntimeState,
     sync_state: &SyncRuntimeState,
@@ -126,6 +129,8 @@ pub async fn configure_sync(
         super::config::redact_database_url(&config.database_url)
     );
     sync_state.set_remote_config(Some(config)).await;
+    // 新配置尚未对当前云端验证：标 dirty，UI 显示待同步而非已同步。
+    sync_state.mark_dirty().await;
     refresh_local_replica_state(sync_state, database).await?;
     Ok(sync_state.snapshot().await)
 }
@@ -619,26 +624,14 @@ async fn run_sync_worker(
     }
 }
 
-/// 分类当前同步引导计划（无 cursor 时会探针一次云端 baseline）。
+/// 分类当前同步引导计划（会探针一次云端 baseline，含「有 cursor 但云端已空」重绑）。
 async fn resolve_bootstrap_plan(
     database: &DatabaseRuntimeState,
     remote_config: &crate::sync::types::SyncRemoteConfig,
 ) -> Result<super::bootstrap_plan::BootstrapPlan, AppError> {
     use super::bootstrap_plan::{classify, LocalContent, LocalCursor, RemoteContent};
 
-    let cursor = if read_local_server_seq_cursor(database).await?.is_some() {
-        LocalCursor::Present
-    } else {
-        LocalCursor::Missing
-    };
-    if matches!(cursor, LocalCursor::Present) {
-        return Ok(classify(
-            LocalContent::Empty,
-            RemoteContent::Empty,
-            LocalCursor::Present,
-        ));
-    }
-
+    let local_cursor_value = read_local_server_seq_cursor(database).await?;
     let local = if super::cursor_pull::local_has_user_content_for_plan(database).await? {
         LocalContent::HasData
     } else {
@@ -654,7 +647,52 @@ async fn resolve_bootstrap_plan(
     } else {
         RemoteContent::HasData
     };
+    let remote_max_seq = baseline.cursor.server_seq;
 
+    // 本机有序号、云端空、本机有数据：典型「换了空库 / 云端被 wipe」。
+    // 旧逻辑直接走 Incremental → 不上传、假已同步、诊断远端 0。
+    if local_cursor_value.is_some()
+        && matches!(remote, RemoteContent::Empty)
+        && matches!(local, LocalContent::HasData)
+    {
+        log::warn!(
+            "同步:检测到云端为空但本机有数据且已有序号={}，将重新灌库上传",
+            local_cursor_value.unwrap_or(0)
+        );
+        super::origin_seed::reset_origin_binding_for_reseed(database).await?;
+        return Ok(classify(
+            LocalContent::HasData,
+            RemoteContent::Empty,
+            LocalCursor::Missing,
+        ));
+    }
+
+    // 本机序号严格大于云端头：换库后云端更短，或日志被截断。
+    // 云端仍有投影 → 全量以云端为准拉回；云端空已在上面处理。
+    if let Some(local_seq) = local_cursor_value {
+        if matches!(remote, RemoteContent::HasData) && local_seq > remote_max_seq {
+            log::warn!(
+                "同步:本机序号 {local_seq} 超前于云端头 {remote_max_seq}，清除序号后改全量基线"
+            );
+            super::origin_seed::reset_origin_binding_for_reseed(database).await?;
+            return Ok(classify(
+                if matches!(local, LocalContent::HasData) {
+                    // 两边都有：本机优先灌库（与 BothPreferLocal 一致）
+                    LocalContent::HasData
+                } else {
+                    LocalContent::Empty
+                },
+                remote,
+                LocalCursor::Missing,
+            ));
+        }
+    }
+
+    let cursor = if local_cursor_value.is_some() {
+        LocalCursor::Present
+    } else {
+        LocalCursor::Missing
+    };
     Ok(classify(local, remote, cursor))
 }
 
@@ -693,7 +731,8 @@ mod tests {
 
         assert!(payload.enabled);
         assert!(payload.has_remote_config);
-        assert_eq!(payload.status, SyncStatusKind::Synced);
+        // 保存配置后尚未验证连通：应为待同步，而不是立刻「已同步」。
+        assert_eq!(payload.status, SyncStatusKind::OfflinePending);
         assert_eq!(
             payload.remote_url.as_deref(),
             Some("postgresql://user:***@db.example.com:5432/stoneflow")

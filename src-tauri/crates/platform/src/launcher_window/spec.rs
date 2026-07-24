@@ -23,5 +23,14 @@ pub const LAUNCHER_PANEL_RADIUS: f64 = 8.0;
 /// 面板顶部锚点：距当前屏 visibleFrame 顶部的比例。
 pub const LAUNCHER_SCREEN_TOP_OFFSET_RATIO: f64 = 0.18;
 
-/// 全局快捷键：Option+Space。
+/// 全局快捷键：唤起 / 关闭 Launcher。
+///
+/// - macOS：`Option+Space`（产品约定）
+/// - Windows：`Alt+Space`（与 macOS 手感对齐；若与系统窗体菜单冲突以本机实测为准）
+/// - 其它：`Control+Shift+Space`
+#[cfg(target_os = "macos")]
 pub const LAUNCHER_SHORTCUT: &str = "Option+Space";
+#[cfg(target_os = "windows")]
+pub const LAUNCHER_SHORTCUT: &str = "Alt+Space";
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+pub const LAUNCHER_SHORTCUT: &str = "Control+Shift+Space";

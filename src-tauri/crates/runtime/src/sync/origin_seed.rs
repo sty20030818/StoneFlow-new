@@ -13,10 +13,50 @@ use crate::app::error::AppError;
 
 const SERVER_SEQ_CURSOR_SCOPE: &str = "sync:last_pulled_server_seq";
 const ORIGIN_SEED_SCOPE: &str = "sync:origin_seed_done";
+const LAST_RESTORE_AT_SCOPE: &str = "sync:last_restore_at";
+
+/// 换绑空云端 / 云端被清空时：清掉本机同步位置与「已灌库」标记，允许再次 origin seed。
+/// 不删业务数据、不删 device_id；仅清理历史 origin-seed 待传条目以免重复灌库。
+pub async fn reset_origin_binding_for_reseed(
+    database: &DatabaseRuntimeState,
+) -> Result<(), AppError> {
+    let connection = database.connection();
+    for scope in [
+        SERVER_SEQ_CURSOR_SCOPE,
+        ORIGIN_SEED_SCOPE,
+        LAST_RESTORE_AT_SCOPE,
+    ] {
+        connection
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Sqlite,
+                "DELETE FROM sync_cursors WHERE scope = ?",
+                [scope.into()],
+            ))
+            .await
+            .map_err(|error| {
+                AppError::database(format!("清除同步绑定标记失败 ({scope}): {error}"))
+            })?;
+    }
+    connection
+        .execute_raw(Statement::from_string(
+            DatabaseBackend::Sqlite,
+            r#"
+            DELETE FROM outbox
+            WHERE operation_id LIKE 'origin-seed:%'
+               OR operation_id LIKE 'r7-default-space:%'
+            "#
+            .to_owned(),
+        ))
+        .await
+        .map_err(|error| AppError::database(format!("清除历史灌库 outbox 失败: {error}")))?;
+    log::info!("同步:已清除序号/灌库标记（准备向当前云端重新灌库）");
+    Ok(())
+}
 
 /// 若本机尚无同步 cursor、且还没做过 origin seed，则把存活实体写入 Outbox。
 ///
 /// 返回写入条数。幂等：已 seed 或已有 cursor 时返回 0。
+/// 换绑空云端前须先调用 [`reset_origin_binding_for_reseed`]。
 pub async fn seed_origin_outbox_if_needed(
     database: &DatabaseRuntimeState,
 ) -> Result<usize, AppError> {

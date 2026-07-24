@@ -1,4 +1,7 @@
-//! 全局快捷键：Option+Space 触发 Launcher（单 Binary 路径）。
+//! 全局快捷键：唤起 Launcher（单 Binary 路径）。
+//!
+//! 具体组合见 [`stoneflow_platform::launcher_window::spec::LAUNCHER_SHORTCUT`]
+//! （macOS: Option+Space；Windows: Alt+Space；其它: Control+Shift+Space）。
 
 use stoneflow_platform::launcher_window::spec::LAUNCHER_SHORTCUT;
 use tauri::{AppHandle, Manager};

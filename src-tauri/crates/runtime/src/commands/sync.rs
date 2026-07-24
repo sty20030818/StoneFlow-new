@@ -17,11 +17,14 @@ pub async fn get_sync_status(state: State<'_, AppState>) -> Result<SyncStatusPay
 
 #[tauri::command]
 pub async fn configure_sync(
+    app_handle: tauri::AppHandle,
     input: ConfigureSyncInput,
     state: State<'_, AppState>,
 ) -> Result<SyncStatusPayload, AppError> {
-    // 只写钥匙串 + 本地 settings + 运行态缓存，不连远端库（保持保存响应快）。
-    sync::configure_sync(&state.database, &state.sync, input).await
+    // 先快速写本机配置（不连远端）；再后台跑一轮完整同步做验证/灌库。
+    let payload = sync::configure_sync(&state.database, &state.sync, input).await?;
+    sync::trigger_startup_sync(&app_handle);
+    Ok(payload)
 }
 
 #[tauri::command]
