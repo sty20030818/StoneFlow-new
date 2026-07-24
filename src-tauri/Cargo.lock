@@ -5022,7 +5022,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stoneflow"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "serde_json",
  "stoneflow-runtime",
@@ -5037,7 +5037,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-application"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "chrono",
  "serde",
@@ -5049,7 +5049,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-domain"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "chrono",
  "serde",
@@ -5060,7 +5060,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-platform"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "keyring",
  "log",
@@ -5077,7 +5077,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-runtime"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -5111,7 +5111,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-storage"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "chrono",
  "sea-orm",
@@ -5128,7 +5128,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-sync"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -5140,7 +5140,7 @@ dependencies = [
 
 [[package]]
 name = "stoneflow-test-support"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "log",
  "sea-orm",
