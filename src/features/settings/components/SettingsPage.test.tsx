@@ -21,7 +21,10 @@ const configureSyncSpy = vi.fn<(input: { databaseUrl: string }) => Promise<unkno
 const runSyncSpy = vi.fn<() => Promise<unknown>>()
 const updateSyncPolicySpy =
 	vi.fn<
-		(input: { mode: 'interval' | 'manual'; intervalMinutes: 5 | 15 | 30 }) => Promise<unknown>
+		(input: {
+			mode: 'interval' | 'on_write' | 'manual'
+			intervalMinutes: 5 | 15 | 30
+		}) => Promise<unknown>
 	>()
 const unlistenSyncStatusSpy = vi.fn<() => void>()
 const mockedListen = vi.mocked(listen)
@@ -62,8 +65,10 @@ vi.mock('@/features/sync', async (importOriginal) => {
 		getSyncDiagnostics: () => getSyncDiagnosticsSpy(),
 		configureSync: (input: { databaseUrl: string }) => configureSyncSpy(input),
 		runSync: () => runSyncSpy(),
-		updateSyncPolicy: (input: { mode: 'interval' | 'manual'; intervalMinutes: 5 | 15 | 30 }) =>
-			updateSyncPolicySpy(input),
+		updateSyncPolicy: (input: {
+			mode: 'interval' | 'on_write' | 'manual'
+			intervalMinutes: 5 | 15 | 30
+		}) => updateSyncPolicySpy(input),
 	}
 })
 
@@ -523,7 +528,7 @@ describe('SettingsPage', () => {
 		})
 	})
 
-	it('切换同步频率时调用 updateSyncPolicy', async () => {
+	it('切换同步频率时保留定时间隔偏好', async () => {
 		getSyncStatusSpy.mockResolvedValue(
 			createSyncStatusPayload({
 				enabled: true,
@@ -539,18 +544,94 @@ describe('SettingsPage', () => {
 				replicaState: 'ready',
 				replicaReason: null,
 				lastRestoreAt: null,
+				policyMode: 'interval',
+				policyIntervalMinutes: 7,
+			}),
+		)
+		updateSyncPolicySpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+				policyMode: 'manual',
+				policyIntervalMinutes: 7,
 			}),
 		)
 
 		mockSettingsSection = 'sync'
 		await renderSettingsPage()
 
-		fireEvent.change(screen.getByLabelText('同步频率'), { target: { value: 'manual:15' } })
+		fireEvent.click(screen.getByRole('radio', { name: /手动/ }))
 
 		await waitFor(() => {
 			expect(updateSyncPolicySpy).toHaveBeenCalledWith({
 				mode: 'manual',
-				intervalMinutes: 15,
+				intervalMinutes: 7,
+			})
+		})
+	})
+
+	it('定时模式下修改间隔分钟并提交', async () => {
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+				policyMode: 'interval',
+				policyIntervalMinutes: 15,
+			}),
+		)
+		updateSyncPolicySpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: true,
+				status: 'synced',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: true,
+				remoteUrl: 'postgresql://user:***@db.example.com:5432/sf',
+				replicaState: 'ready',
+				replicaReason: null,
+				lastRestoreAt: null,
+				policyMode: 'interval',
+				policyIntervalMinutes: 7,
+			}),
+		)
+
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+
+		const input = screen.getByLabelText('同步间隔分钟')
+		fireEvent.change(input, { target: { value: '7' } })
+		fireEvent.blur(input)
+
+		await waitFor(() => {
+			expect(updateSyncPolicySpy).toHaveBeenCalledWith({
+				mode: 'interval',
+				intervalMinutes: 7,
 			})
 		})
 	})

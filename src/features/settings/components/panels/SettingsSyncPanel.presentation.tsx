@@ -177,17 +177,24 @@ function formatSyncCountsSummary(counts: {
 
 export function formatSyncPolicySummary(status: SyncStatusPayload | null) {
 	if (!status) {
-		return '默认每 15 分钟自动同步。'
+		return '默认每 15 分钟定时同步。'
 	}
 
 	if (status.policyMode === 'manual') {
-		return '仅手动同步：本地写入会保留为待同步状态，直到点击“立即同步”。'
+		return '仅手动同步：本地写入会保留为待同步，直到点击「立即同步」。'
+	}
+
+	if (status.policyMode === 'on_write') {
+		const nextSyncText = status.nextSyncAt
+			? `计划同步：${formatSyncExactTime(status.nextSyncAt)}。`
+			: '有本地写入后，空闲约 3 秒会自动同步。'
+		return `有更新时：停止编辑约 3 秒后自动推送并拉取。${nextSyncText}`
 	}
 
 	const nextSyncText = status.nextSyncAt
-		? `下次自动同步：${formatSyncExactTime(status.nextSyncAt)}。`
-		: '下次自动同步会在调度器启动后计算。'
-	return `每 ${status.policyIntervalMinutes} 分钟自动同步。${nextSyncText}`
+		? `下次同步：${formatSyncExactTime(status.nextSyncAt)}。`
+		: '下次同步会在调度器启动后计算。'
+	return `定时：每 ${status.policyIntervalMinutes} 分钟自动同步（到点会 pull）。${nextSyncText}`
 }
 
 export function getSyncStatusCopy({

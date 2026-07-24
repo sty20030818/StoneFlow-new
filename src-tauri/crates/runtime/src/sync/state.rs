@@ -8,11 +8,9 @@ use tokio::sync::{Mutex, Notify, OwnedMutexGuard, RwLock};
 
 pub use super::types::SyncRunMode;
 use super::{
-    policy::SyncPolicy,
+    policy::{SyncPolicy, SyncPolicyMode},
     types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind, SyncStatusPayload},
 };
-
-const WRITE_DEBOUNCE: Duration = Duration::seconds(3);
 
 #[derive(Debug, Default)]
 struct SyncRuntimeInner {
@@ -100,11 +98,20 @@ impl SyncRuntimeState {
     /// 初始化或覆盖同步策略缓存。
     pub(crate) async fn set_policy(&self, policy: SyncPolicy, next_sync_at: Option<String>) {
         let mut guard = self.inner.write().await;
+        let now = now_utc();
         guard.policy = policy;
-        guard.next_sync_at = if guard.dirty_since.is_some() {
-            next_write_deadline(&guard.policy, now_utc())
-        } else {
-            next_sync_at
+        guard.next_sync_at = match guard.policy.mode {
+            SyncPolicyMode::OnWrite if guard.dirty_since.is_some() => guard
+                .policy
+                .next_on_write_at(now)
+                .map(|time| time.to_rfc3339()),
+            SyncPolicyMode::Interval => next_sync_at.or_else(|| {
+                guard
+                    .policy
+                    .next_interval_at(now)
+                    .map(|time| time.to_rfc3339())
+            }),
+            SyncPolicyMode::OnWrite | SyncPolicyMode::Manual => None,
         };
         drop(guard);
         self.scheduler_notify.notify_one();
@@ -139,8 +146,23 @@ impl SyncRuntimeState {
         if guard.dirty_since.is_none() {
             guard.dirty_since = Some(now.to_rfc3339());
         }
-        if guard.next_sync_at.is_none() {
-            guard.next_sync_at = next_write_deadline(&guard.policy, now);
+        // OnWrite：每次写入重置空闲计时（真 debounce）。
+        // Interval：不因写入提前触发，等周期点；若尚无下一拍则补一拍。
+        // Manual：不自动排程。
+        match guard.policy.mode {
+            SyncPolicyMode::OnWrite => {
+                guard.next_sync_at = guard
+                    .policy
+                    .next_on_write_at(now)
+                    .map(|time| time.to_rfc3339());
+            }
+            SyncPolicyMode::Interval if guard.next_sync_at.is_none() => {
+                guard.next_sync_at = guard
+                    .policy
+                    .next_interval_at(now)
+                    .map(|time| time.to_rfc3339());
+            }
+            SyncPolicyMode::Interval | SyncPolicyMode::Manual => {}
         }
 
         if is_running(guard.status) {
@@ -186,19 +208,20 @@ impl SyncRuntimeState {
     /// 同步成功后落状态。
     pub(crate) async fn complete_run(&self, mode: SyncRunMode) {
         let mut guard = self.inner.write().await;
-        let now = now_utc().to_rfc3339();
+        let now = now_utc();
+        let now_text = now.to_rfc3339();
 
         match mode {
             SyncRunMode::Push => {
-                guard.last_push_at = Some(now);
+                guard.last_push_at = Some(now_text);
                 guard.dirty_since = None;
             }
             SyncRunMode::Pull => {
-                guard.last_pull_at = Some(now);
+                guard.last_pull_at = Some(now_text);
             }
             SyncRunMode::Sync => {
-                guard.last_push_at = Some(now.clone());
-                guard.last_pull_at = Some(now);
+                guard.last_push_at = Some(now_text.clone());
+                guard.last_pull_at = Some(now_text);
                 guard.dirty_since = None;
             }
         }
@@ -206,7 +229,11 @@ impl SyncRuntimeState {
         guard.status = SyncStatusKind::Synced;
         guard.last_error_mode = None;
         guard.failure_count = 0;
-        guard.next_sync_at = None;
+        // 周期模式：成功后排下一拍；写后/手动：不再自动排。
+        guard.next_sync_at = guard
+            .policy
+            .next_interval_at(now)
+            .map(|time| time.to_rfc3339());
         drop(guard);
         self.scheduler_notify.notify_one();
     }
@@ -226,10 +253,10 @@ impl SyncRuntimeState {
         } else {
             guard.failure_count = guard.failure_count.saturating_add(1);
             guard.next_sync_at = match guard.policy.mode {
-                super::policy::SyncPolicyMode::Interval => {
+                SyncPolicyMode::Interval | SyncPolicyMode::OnWrite => {
                     Some((now_utc() + retry_backoff(guard.failure_count)).to_rfc3339())
                 }
-                super::policy::SyncPolicyMode::Manual => None,
+                SyncPolicyMode::Manual => None,
             };
         };
         drop(guard);
@@ -261,19 +288,23 @@ impl SyncRuntimeState {
 
     pub(crate) async fn should_run_scheduled_sync(&self, now: DateTime<Utc>) -> bool {
         let guard = self.inner.read().await;
-        if guard.remote_config.is_none()
-            || guard.dirty_since.is_none()
-            || guard.policy.mode == super::policy::SyncPolicyMode::Manual
-            || is_running(guard.status)
-        {
+        if guard.remote_config.is_none() || is_running(guard.status) {
             return false;
         }
 
-        guard
+        let deadline_due = guard
             .next_sync_at
             .as_ref()
             .and_then(|raw| DateTime::parse_from_rfc3339(raw).ok())
-            .is_some_and(|deadline| deadline.with_timezone(&Utc) <= now)
+            .is_some_and(|deadline| deadline.with_timezone(&Utc) <= now);
+
+        match guard.policy.mode {
+            // 写后模式：仅有待传写入时到点才跑。
+            SyncPolicyMode::OnWrite => guard.dirty_since.is_some() && deadline_due,
+            // 周期模式：到点就跑（无本地写入也会 pull，利于多设备收敛）。
+            SyncPolicyMode::Interval => deadline_due,
+            SyncPolicyMode::Manual => false,
+        }
     }
 }
 
@@ -295,11 +326,6 @@ fn retry_backoff(failure_count: u32) -> Duration {
         2 => Duration::minutes(2),
         _ => Duration::minutes(5),
     }
-}
-
-fn next_write_deadline(policy: &SyncPolicy, now: DateTime<Utc>) -> Option<String> {
-    matches!(policy.mode, super::policy::SyncPolicyMode::Interval)
-        .then(|| (now + WRITE_DEBOUNCE).to_rfc3339())
 }
 
 fn merge_modes(current: SyncRunMode, next: SyncRunMode) -> SyncRunMode {
@@ -353,18 +379,55 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn mark_dirty_should_schedule_next_sync_for_interval_policy() {
+    async fn mark_dirty_should_schedule_debounce_for_on_write_policy() {
         let state = SyncRuntimeState::default();
         state
             .set_remote_config(Some(SyncRemoteConfig {
                 database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
             }))
             .await;
+        state
+            .set_policy(
+                SyncPolicy {
+                    mode: SyncPolicyMode::OnWrite,
+                    interval_minutes: 15,
+                },
+                None,
+            )
+            .await;
 
         state.mark_dirty().await;
 
         let payload = state.snapshot().await;
         assert!(payload.next_sync_at.is_some());
+        assert_eq!(payload.policy_mode, SyncPolicyMode::OnWrite);
+    }
+
+    #[tokio::test]
+    async fn mark_dirty_should_not_pull_forward_interval_deadline() {
+        let state = SyncRuntimeState::default();
+        state
+            .set_remote_config(Some(SyncRemoteConfig {
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
+            }))
+            .await;
+        // set_policy 会为 Interval 预排下一拍
+        state
+            .set_policy(
+                SyncPolicy {
+                    mode: SyncPolicyMode::Interval,
+                    interval_minutes: 15,
+                },
+                None,
+            )
+            .await;
+        let before = state.snapshot().await.next_sync_at.clone();
+        assert!(before.is_some());
+
+        state.mark_dirty().await;
+
+        let after = state.snapshot().await.next_sync_at;
+        assert_eq!(after, before, "Interval 写入不应改写已排程的周期点");
     }
 
     #[tokio::test]
@@ -389,6 +452,32 @@ mod tests {
 
         let payload = state.snapshot().await;
         assert_eq!(payload.next_sync_at, None);
+    }
+
+    #[tokio::test]
+    async fn complete_run_should_reschedule_interval_policy() {
+        let state = SyncRuntimeState::default();
+        state
+            .set_remote_config(Some(SyncRemoteConfig {
+                database_url: "postgresql://user:token@db.example.com:5432/sf".to_owned(),
+            }))
+            .await;
+        state
+            .set_policy(
+                SyncPolicy {
+                    mode: SyncPolicyMode::Interval,
+                    interval_minutes: 15,
+                },
+                None,
+            )
+            .await;
+
+        state.complete_run(SyncRunMode::Sync).await;
+
+        let payload = state.snapshot().await;
+        assert_eq!(payload.status, SyncStatusKind::Synced);
+        assert!(payload.next_sync_at.is_some());
+        assert!(payload.dirty_since.is_none());
     }
 
     #[tokio::test]
@@ -434,19 +523,7 @@ mod tests {
         assert_eq!(super::retry_backoff(99), Duration::minutes(5));
     }
 
-    #[test]
-    fn next_write_deadline_should_use_short_debounce_for_interval_policy() {
-        let now = chrono::Utc::now();
-        let deadline = super::next_write_deadline(
-            &SyncPolicy {
-                mode: SyncPolicyMode::Interval,
-                interval_minutes: 30,
-            },
-            now,
-        );
 
-        assert_eq!(deadline, Some((now + Duration::seconds(3)).to_rfc3339()));
-    }
 
     #[tokio::test]
     async fn queue_pending_should_merge_push_and_pull_into_sync() {

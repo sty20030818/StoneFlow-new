@@ -88,17 +88,23 @@ async fn read_latest_sequence(conn: &mut PgConnection) -> Result<i64, SyncError>
 }
 
 async fn read_entity_states(conn: &mut PgConnection) -> Result<Vec<EntitySnapshot>, SyncError> {
+    // entity_state 语义是「当前投影」：每个实体只取最高 generation。
     let rows = sqlx::query(
         r#"
-        SELECT entity_type, entity_id, generation, fields_json, field_versions_json,
-               lifecycle_state, lifecycle_seq, updated_seq
+        SELECT DISTINCT ON (entity_type, entity_id)
+            entity_type, entity_id, generation, fields_json, field_versions_json,
+            lifecycle_state, lifecycle_seq, updated_seq
         FROM sync_entity_state
-        ORDER BY updated_seq ASC
+        ORDER BY entity_type, entity_id, generation DESC
         "#,
     )
     .fetch_all(&mut *conn)
     .await
     .map_err(|error| map_sqlx_error("读取 实体状态", error))?;
+
+    // 基线物化仍按 updated_seq 稳定排序（先父后子由 runtime entity_rank 再排）。
+    let mut rows = rows;
+    rows.sort_by_key(|row| row.get::<i64, _>("updated_seq"));
 
     let mut entities = Vec::with_capacity(rows.len());
     for row in rows {

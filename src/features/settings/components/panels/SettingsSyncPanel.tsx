@@ -17,14 +17,7 @@ import {
 } from '@/features/sync'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/components/base/button'
-import {
-	Select,
-	SelectContent,
-	SelectGroup,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/shared/components/base/select'
+import { Input } from '@/shared/components/base/input'
 import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 import {
 	formFieldHintClass,
@@ -56,17 +49,38 @@ import {
 
 const SYNC_STATUS_CHANGED_EVENT = 'stoneflow://sync/status-changed'
 const SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000
-const SYNC_POLICY_OPTIONS: Array<{
-	value: string
-	label: string
+const DEFAULT_INTERVAL_MINUTES = 15
+const MIN_INTERVAL_MINUTES = 1
+const MAX_INTERVAL_MINUTES = 1440
+
+const SYNC_MODE_OPTIONS: Array<{
 	mode: SyncPolicyMode
-	intervalMinutes: 5 | 15 | 30
+	label: string
+	description: string
 }> = [
-	{ value: 'interval:5', label: '每 5 分钟', mode: 'interval', intervalMinutes: 5 },
-	{ value: 'interval:15', label: '每 15 分钟', mode: 'interval', intervalMinutes: 15 },
-	{ value: 'interval:30', label: '每 30 分钟', mode: 'interval', intervalMinutes: 30 },
-	{ value: 'manual:15', label: '仅手动', mode: 'manual', intervalMinutes: 15 },
+	{
+		mode: 'on_write',
+		label: '有更新时',
+		description: '本地有修改且约 3 秒无新写入时自动同步。',
+	},
+	{
+		mode: 'interval',
+		label: '定时',
+		description: '按固定间隔自动同步（含从云端拉取）。',
+	},
+	{
+		mode: 'manual',
+		label: '手动',
+		description: '仅在点击「立即同步」时同步。',
+	},
 ]
+
+function clampIntervalMinutes(value: number): number {
+	if (!Number.isFinite(value)) {
+		return DEFAULT_INTERVAL_MINUTES
+	}
+	return Math.min(MAX_INTERVAL_MINUTES, Math.max(MIN_INTERVAL_MINUTES, Math.round(value)))
+}
 
 /**
  * 云同步设置 panel。
@@ -78,11 +92,14 @@ export function SettingsSyncPanel() {
 	const [syncDiagnosticsMessage, setSyncDiagnosticsMessage] = useState<string | null>(null)
 	const [syncLoading, setSyncLoading] = useState(true)
 	const [syncSaving, setSyncSaving] = useState(false)
+	const [syncPolicySaving, setSyncPolicySaving] = useState(false)
 	const [syncRunning, setSyncRunning] = useState(false)
 	const [syncDiagnosing, setSyncDiagnosing] = useState(false)
 	const [databaseUrl, setDatabaseUrl] = useState('')
 	const [syncConfigDialogOpen, setSyncConfigDialogOpen] = useState(false)
 	const [syncDetailsOpen, setSyncDetailsOpen] = useState(false)
+	/** 定时模式下的分钟草稿，失焦/回车时提交 */
+	const [intervalMinutesDraft, setIntervalMinutesDraft] = useState(String(DEFAULT_INTERVAL_MINUTES))
 
 	useEffect(() => {
 		void refreshSyncStatus({ syncUrlDraft: true })
@@ -136,6 +153,9 @@ export function SettingsSyncPanel() {
 		try {
 			const payload = await getSyncStatus()
 			setSyncStatus(payload)
+			if (payload.policyMode === 'interval') {
+				setIntervalMinutesDraft(String(payload.policyIntervalMinutes))
+			}
 			if (!payload.hasRemoteConfig) {
 				setSyncDiagnostics(null)
 				setSyncDiagnosticsMessage(null)
@@ -220,37 +240,58 @@ export function SettingsSyncPanel() {
 		}
 	}
 
-	async function handleSyncPolicyChange(value: string) {
-		const option = SYNC_POLICY_OPTIONS.find((item) => item.value === value)
-		if (!option) {
-			return
-		}
-
-		setSyncSaving(true)
+	async function persistSyncPolicy(mode: SyncPolicyMode, intervalMinutes: number) {
+		setSyncPolicySaving(true)
 		setSyncStatusMessage(null)
 		try {
 			const payload = await updateSyncPolicy({
-				mode: option.mode,
-				intervalMinutes: option.intervalMinutes,
+				mode,
+				intervalMinutes: clampIntervalMinutes(intervalMinutes),
 			})
 			setSyncStatus(payload)
+			if (payload.policyMode === 'interval') {
+				setIntervalMinutesDraft(String(payload.policyIntervalMinutes))
+			}
 		} catch (error) {
 			setSyncStatusMessage(normalizeTauriError(error, '同步频率保存失败'))
 			await refreshSyncStatus({ syncUrlDraft: false })
 		} finally {
-			setSyncSaving(false)
+			setSyncPolicySaving(false)
 		}
+	}
+
+	async function handleSyncModeChange(mode: SyncPolicyMode) {
+		if (syncStatus?.policyMode === mode) {
+			return
+		}
+		const minutes =
+			clampIntervalMinutes(
+				Number(intervalMinutesDraft) ||
+					syncStatus?.policyIntervalMinutes ||
+					DEFAULT_INTERVAL_MINUTES,
+			)
+		await persistSyncPolicy(mode, minutes)
+	}
+
+	async function handleIntervalMinutesCommit() {
+		const minutes = clampIntervalMinutes(Number(intervalMinutesDraft))
+		setIntervalMinutesDraft(String(minutes))
+		if (
+			syncStatus?.policyMode === 'interval' &&
+			syncStatus.policyIntervalMinutes === minutes
+		) {
+			return
+		}
+		await persistSyncPolicy('interval', minutes)
 	}
 
 	const effectiveSyncError =
 		syncStatus?.status === 'error' ? (syncStatus.lastError ?? syncStatusMessage) : syncStatusMessage
 	const effectiveSyncErrorTitle = getSyncErrorTitle(syncStatus?.lastErrorMode ?? null, syncRunning)
-	const syncBusy = syncSaving || syncRunning || syncLoading
+	const syncBusy = syncSaving || syncPolicySaving || syncRunning || syncLoading
 	const syncActionBusy = syncBusy || syncDiagnosing
 	const replicaState: SyncReplicaState = syncStatus?.replicaState ?? 'uninitialized'
-	const syncPolicyValue = syncStatus
-		? `${syncStatus.policyMode}:${syncStatus.policyIntervalMinutes}`
-		: 'interval:15'
+	const policyMode: SyncPolicyMode = syncStatus?.policyMode ?? 'interval'
 	const displayedSyncStatus: SyncStatus = syncRunning
 		? 'syncing'
 		: syncSaving
@@ -336,28 +377,76 @@ export function SettingsSyncPanel() {
 							<SyncMetricCard label='副本状态' value={formatReplicaState(replicaState)} />
 						</div>
 
-						<div className='mt-4 grid gap-3 md:grid-cols-[minmax(0,18rem)_1fr] md:items-end'>
-							<label className={formFieldStackClass}>
+						<div className='mt-4 flex min-w-0 flex-col gap-3'>
+							<div className={formFieldStackClass}>
 								<span className={formFieldLabelVariants()}>同步频率</span>
-								<Select
-									disabled={syncActionBusy}
-									onValueChange={handleSyncPolicyChange}
-									value={syncPolicyValue}
+								<div
+									aria-label='同步频率'
+									className='grid gap-2 sm:grid-cols-3'
+									role='radiogroup'
 								>
-									<SelectTrigger aria-label='同步频率' className='h-10 w-full'>
-										<SelectValue placeholder='选择同步频率' />
-									</SelectTrigger>
-									<SelectContent position='popper'>
-										<SelectGroup>
-											{SYNC_POLICY_OPTIONS.map((option) => (
-												<SelectItem key={option.value} value={option.value}>
+									{SYNC_MODE_OPTIONS.map((option) => {
+										const selected = policyMode === option.mode
+										return (
+											<button
+												aria-checked={selected}
+												className={cn(
+													'flex min-w-0 flex-col items-start gap-0.5 rounded-xl border px-3 py-2.5 text-left transition-colors',
+													selected
+														? 'border-primary bg-primary/5 shadow-sm'
+														: 'border-sf-border-subtle bg-card hover:border-sf-border-secondary',
+													syncActionBusy && 'pointer-events-none opacity-60',
+												)}
+												disabled={syncActionBusy}
+												key={option.mode}
+												onClick={() => void handleSyncModeChange(option.mode)}
+												role='radio'
+												type='button'
+											>
+												<span className='text-sm font-medium text-foreground'>
 													{option.label}
-												</SelectItem>
-											))}
-										</SelectGroup>
-									</SelectContent>
-								</Select>
-							</label>
+												</span>
+												<span className='text-[11px] leading-4 text-muted-foreground'>
+													{option.description}
+												</span>
+											</button>
+										)
+									})}
+								</div>
+							</div>
+
+							{policyMode === 'interval' ? (
+								<label className={`${formFieldStackClass} max-w-xs`}>
+									<span className={formFieldLabelVariants()}>同步间隔（分钟）</span>
+									<div className='flex items-center gap-2'>
+										<Input
+											aria-label='同步间隔分钟'
+											className='h-10 w-28 tabular-nums'
+											disabled={syncActionBusy}
+											inputMode='numeric'
+											max={MAX_INTERVAL_MINUTES}
+											min={MIN_INTERVAL_MINUTES}
+											onBlur={() => void handleIntervalMinutesCommit()}
+											onChange={(event) => setIntervalMinutesDraft(event.currentTarget.value)}
+											onKeyDown={(event) => {
+												if (event.key === 'Enter') {
+													event.preventDefault()
+													void handleIntervalMinutesCommit()
+												}
+											}}
+											step={1}
+											type='number'
+											value={intervalMinutesDraft}
+										/>
+										<span className='text-sm text-muted-foreground'>分钟</span>
+									</div>
+									<p className={formFieldHintClass}>
+										可填 {MIN_INTERVAL_MINUTES}–{MAX_INTERVAL_MINUTES}
+										（1 天）；精确到 1 分钟。
+									</p>
+								</label>
+							) : null}
+
 							<p className={formFieldHintClass}>{formatSyncPolicySummary(syncStatus)}</p>
 						</div>
 					</div>
@@ -457,12 +546,12 @@ export function SettingsSyncPanel() {
 												}
 											/>
 											<SettingInfoRow
-												description='本机存活实体（未永久删除），口径与云端投影对齐。'
+												description='本机未进回收站的实体数（含归档；不含永久删除）。'
 												label='本地工作集'
 												value={<SyncCountsSummaryValue counts={syncDiagnostics.local.counts} />}
 											/>
 											<SettingInfoRow
-												description='云端 sync_entity_state 投影行数（同步用精简状态，不是业务整库镜像）。'
+												description='云端当前投影：每个实体只计最新 generation，且不含 trashed。不是 change_log 条数。'
 												label='远端工作集'
 												value={<SyncCountsSummaryValue counts={syncDiagnostics.remote.counts} />}
 											/>

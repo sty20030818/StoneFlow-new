@@ -8,7 +8,7 @@ export type SyncStatus =
 	| 'error'
 	| 'needs_attention'
 export type SyncReplicaState = 'uninitialized' | 'ready' | 'baseline_required' | 'diverged'
-export type SyncPolicyMode = 'interval' | 'manual'
+export type SyncPolicyMode = 'interval' | 'on_write' | 'manual'
 
 export type SyncStatusPayload = {
 	enabled: boolean
@@ -77,7 +77,11 @@ export function configureSync(input: { databaseUrl: string }) {
 /**
  * 保存同步频率策略。
  */
-export function updateSyncPolicy(input: { mode: SyncPolicyMode; intervalMinutes: 5 | 15 | 30 }) {
+export function updateSyncPolicy(input: {
+	mode: SyncPolicyMode
+	/** 仅 mode=interval 有效；1–1440 分钟 */
+	intervalMinutes: number
+}) {
 	return invoke<SyncStatusPayload>('update_sync_policy', { input })
 }
 

@@ -20,7 +20,7 @@ pub use window::main::MAIN_WINDOW_LABEL;
 /// 组装主应用 Builder。
 pub fn builder() -> tauri::Builder<tauri::Wry> {
     use crate::window::main::{
-        persist_main_window_geometry, MAIN_WINDOW_LABEL, MAIN_WINDOW_STATE_FLAGS,
+        persist_main_window_size, MAIN_WINDOW_LABEL, MAIN_WINDOW_SIZE_STATE,
     };
 
     let builder = tauri::Builder::default()
@@ -37,11 +37,12 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        // 主窗几何：只跟踪 main；不含 VISIBLE（关窗=hide）。
+        // 主窗口只持久化尺寸；新文件让旧的位置、最大化和异常尺寸记录直接失效。
         // skip_initial_state：冷启动由 build_main_window 在 show 前唯一 restore，避免竞态跳动。
         .plugin(
             tauri_plugin_window_state::Builder::new()
-                .with_state_flags(MAIN_WINDOW_STATE_FLAGS)
+                .with_state_flags(MAIN_WINDOW_SIZE_STATE)
+                .with_filename(".main-window-size.json")
                 .with_filter(|label| label == MAIN_WINDOW_LABEL)
                 .skip_initial_state(MAIN_WINDOW_LABEL)
                 .build(),
@@ -57,8 +58,8 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
                 if let WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();
-                    // 用户关窗 = hide，不会走 Exit；此处落盘保证下次恢复位置。
-                    persist_main_window_geometry(window.app_handle());
+                    // 用户关窗 = hide，不会走 Exit；此处落盘保存最新尺寸。
+                    persist_main_window_size(window.app_handle());
                 }
             }
         })

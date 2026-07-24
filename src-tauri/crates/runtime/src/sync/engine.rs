@@ -624,7 +624,10 @@ async fn run_sync_worker(
     }
 }
 
-/// 分类当前同步引导计划（会探针一次云端 baseline，含「有 cursor 但云端已空」重绑）。
+/// 分类当前同步引导计划。
+///
+/// - 有 cursor：用轻量 `health` 探针（避免每轮 download_full）
+/// - 无 cursor / 需重绑：再 download_full 做完整分类
 async fn resolve_bootstrap_plan(
     database: &DatabaseRuntimeState,
     remote_config: &crate::sync::types::SyncRemoteConfig,
@@ -637,8 +640,52 @@ async fn resolve_bootstrap_plan(
     } else {
         LocalContent::Empty
     };
-
     let cloud = to_cloud_config(remote_config);
+
+    // 日常增量：只查云端头序号，不拉全量投影。
+    if let Some(local_seq) = local_cursor_value {
+        let probe = stoneflow_sync::health(&cloud)
+            .await
+            .map_err(map_sync_error)?;
+        let remote_max = probe.latest_server_seq.unwrap_or(0);
+
+        if matches!(local, LocalContent::HasData) && remote_max == 0 {
+            log::warn!(
+                "同步:检测到云端序号为空但本机有数据且已有序号={local_seq}，将重新灌库上传"
+            );
+            super::origin_seed::reset_origin_binding_for_reseed(database).await?;
+            return Ok(classify(
+                LocalContent::HasData,
+                RemoteContent::Empty,
+                LocalCursor::Missing,
+            ));
+        }
+
+        if remote_max > 0 && local_seq > remote_max {
+            log::warn!(
+                "同步:本机序号 {local_seq} 超前于云端头 {remote_max}，清除序号后重新分类"
+            );
+            super::origin_seed::reset_origin_binding_for_reseed(database).await?;
+            // 清序号后按「无 cursor」路径用全量探针分类。
+            let baseline = stoneflow_sync::download_full(&cloud)
+                .await
+                .map_err(map_sync_error)?;
+            let remote = if baseline.entities.is_empty() && baseline.tombstones.is_empty() {
+                RemoteContent::Empty
+            } else {
+                RemoteContent::HasData
+            };
+            return Ok(classify(local, remote, LocalCursor::Missing));
+        }
+
+        let remote = if remote_max > 0 {
+            RemoteContent::HasData
+        } else {
+            RemoteContent::Empty
+        };
+        return Ok(classify(local, remote, LocalCursor::Present));
+    }
+
     let baseline = stoneflow_sync::download_full(&cloud)
         .await
         .map_err(map_sync_error)?;
@@ -647,53 +694,7 @@ async fn resolve_bootstrap_plan(
     } else {
         RemoteContent::HasData
     };
-    let remote_max_seq = baseline.cursor.server_seq;
-
-    // 本机有序号、云端空、本机有数据：典型「换了空库 / 云端被 wipe」。
-    // 旧逻辑直接走 Incremental → 不上传、假已同步、诊断远端 0。
-    if local_cursor_value.is_some()
-        && matches!(remote, RemoteContent::Empty)
-        && matches!(local, LocalContent::HasData)
-    {
-        log::warn!(
-            "同步:检测到云端为空但本机有数据且已有序号={}，将重新灌库上传",
-            local_cursor_value.unwrap_or(0)
-        );
-        super::origin_seed::reset_origin_binding_for_reseed(database).await?;
-        return Ok(classify(
-            LocalContent::HasData,
-            RemoteContent::Empty,
-            LocalCursor::Missing,
-        ));
-    }
-
-    // 本机序号严格大于云端头：换库后云端更短，或日志被截断。
-    // 云端仍有投影 → 全量以云端为准拉回；云端空已在上面处理。
-    if let Some(local_seq) = local_cursor_value {
-        if matches!(remote, RemoteContent::HasData) && local_seq > remote_max_seq {
-            log::warn!(
-                "同步:本机序号 {local_seq} 超前于云端头 {remote_max_seq}，清除序号后改全量基线"
-            );
-            super::origin_seed::reset_origin_binding_for_reseed(database).await?;
-            return Ok(classify(
-                if matches!(local, LocalContent::HasData) {
-                    // 两边都有：本机优先灌库（与 BothPreferLocal 一致）
-                    LocalContent::HasData
-                } else {
-                    LocalContent::Empty
-                },
-                remote,
-                LocalCursor::Missing,
-            ));
-        }
-    }
-
-    let cursor = if local_cursor_value.is_some() {
-        LocalCursor::Present
-    } else {
-        LocalCursor::Missing
-    };
-    Ok(classify(local, remote, cursor))
+    Ok(classify(local, remote, LocalCursor::Missing))
 }
 
 #[cfg(test)]

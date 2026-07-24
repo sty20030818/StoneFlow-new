@@ -87,6 +87,19 @@ pub async fn ensure_ready(conn: &mut PgConnection) -> Result<(), SyncError> {
             .map_err(|error| SyncError::schema(format!("初始化 云端同步表失败: {error}")))?;
     }
 
+    // 兼容历史脏数据：投影只保留每个实体最高 generation。
+    conn.execute(
+        r#"
+        DELETE FROM sync_entity_state AS older
+        USING sync_entity_state AS newer
+        WHERE older.entity_type = newer.entity_type
+          AND older.entity_id = newer.entity_id
+          AND older.generation < newer.generation
+        "#,
+    )
+    .await
+    .map_err(|error| SyncError::schema(format!("清理旧 generation 投影失败: {error}")))?;
+
     let row = sqlx::query("SELECT version FROM sync_schema WHERE name = 'stoneflow'")
         .fetch_optional(&mut *conn)
         .await

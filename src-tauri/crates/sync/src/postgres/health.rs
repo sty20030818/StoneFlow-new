@@ -29,15 +29,30 @@ async fn read_latest_server_seq(conn: &mut PgConnection) -> Result<Option<i64>, 
 }
 
 async fn read_counts(conn: &mut PgConnection) -> Result<SyncDiagnosticsCountsOutput, SyncError> {
+    // 与本机诊断对齐：每个 (type,id) 只计最高 generation；排除已进回收站（trashed）。
+    // 旧实现 COUNT(*) 全表会把历史 generation 和 trashed 行算进去，远端会虚高。
     let row = sqlx::query(
         r#"
+        WITH latest AS (
+            SELECT DISTINCT ON (entity_type, entity_id)
+                entity_type,
+                lifecycle_state
+            FROM sync_entity_state
+            ORDER BY entity_type, entity_id, generation DESC
+        )
         SELECT
-            COUNT(*) FILTER (WHERE entity_type = 'space') AS spaces,
-            COUNT(*) FILTER (WHERE entity_type = 'project') AS projects,
-            COUNT(*) FILTER (WHERE entity_type = 'task') AS tasks,
+            COUNT(*) FILTER (
+                WHERE entity_type = 'space' AND lifecycle_state <> 'trashed'
+            ) AS spaces,
+            COUNT(*) FILTER (
+                WHERE entity_type = 'project' AND lifecycle_state <> 'trashed'
+            ) AS projects,
+            COUNT(*) FILTER (
+                WHERE entity_type = 'task' AND lifecycle_state <> 'trashed'
+            ) AS tasks,
             COUNT(*) FILTER (WHERE entity_type = 'task_link') AS task_links,
             COUNT(*) FILTER (WHERE entity_type = 'view') AS views
-        FROM sync_entity_state
+        FROM latest
         "#,
     )
     .fetch_one(&mut *conn)

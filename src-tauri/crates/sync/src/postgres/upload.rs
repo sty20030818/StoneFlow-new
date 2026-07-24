@@ -304,6 +304,20 @@ async fn persist_replica(
         .execute(&mut **tx)
         .await
         .map_err(|error| map_sqlx_error("写入 entity state", error))?;
+
+        // 投影只保留当前 generation，避免诊断/基线把历史代际算成多个实体。
+        sqlx::query(
+            r#"
+            DELETE FROM sync_entity_state
+            WHERE entity_type = $1 AND entity_id = $2 AND generation < $3
+            "#,
+        )
+        .bind(entity_kind_label(&snapshot.entity))
+        .bind(&snapshot.entity.entity_id)
+        .bind(snapshot.entity.generation)
+        .execute(&mut **tx)
+        .await
+        .map_err(|error| map_sqlx_error("清理旧 generation 投影", error))?;
     }
 
     if let Some(tombstone) = &replica.tombstone {

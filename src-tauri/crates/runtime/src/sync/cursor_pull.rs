@@ -7,7 +7,7 @@
 //!    - Tombstone → 物理删除业务行
 //!    - Lifecycle → 只更新 lifecycle 列（不要求业务字段）
 //!    - Patch → 对合并后的完整文档做 UPSERT
-//! 3. 禁止反向 hydrate（业务表回填协议）作为主路径；那是把投影当真相。
+//! 3. 协议文档优先；仅当增量 patch 合并后仍残缺时，才用本机业务行补全缺失键（修复冷协议）。
 
 use std::collections::BTreeMap;
 use std::time::Instant;
@@ -680,26 +680,32 @@ async fn materialize_applied_mutation(
                     "patch mutation 后 replica 缺少 snapshot",
                 ));
             };
-            if !snapshot_has_required_business_fields(snapshot) {
-                // 协议预热后不应发生。若仍残缺：有业务行则报错（数据问题），无行则跳过
-                // （常见：已 tombstone 本机行，或远端残缺投影），避免整页毒丸卡住 cursor。
-                if business_row_exists(transaction, snapshot).await? {
-                    return Err(AppError::internal(format!(
-                        "协议文档字段不全 type={} id={} keys={:?}",
-                        entity_label(snapshot.entity.entity_type),
-                        snapshot.entity.entity_id,
-                        snapshot.fields.keys().collect::<Vec<_>>()
-                    )));
+            // 脏字段 patch 常见；冷协议时合并结果残缺。先从本机业务行补缺失键，再投影。
+            let mut snapshot = snapshot.clone();
+            if !snapshot_has_required_business_fields(&snapshot) {
+                let filled =
+                    hydrate_missing_fields_from_business(transaction, &mut snapshot).await?;
+                if filled {
+                    let mut repaired = replica.clone();
+                    repaired.snapshot = Some(snapshot.clone());
+                    persist_replica(transaction, &repaired).await?;
                 }
-                log::warn!(
-                    "同步:跳过残缺 patch 物化 seq={} type={} id={}",
-                    server_seq,
-                    entity_label(snapshot.entity.entity_type),
-                    snapshot.entity.entity_id
-                );
-                return Ok(());
             }
-            materialize_document(transaction, snapshot, committed_at).await
+            if snapshot_has_required_business_fields(&snapshot) {
+                return materialize_document(transaction, &snapshot, committed_at).await;
+            }
+            if business_row_exists(transaction, &snapshot).await? {
+                // 仍不全：只更新 patch 里带的已知列（如 status 完成），绝不阻断整页。
+                return materialize_partial_fields(transaction, &snapshot).await;
+            }
+            log::warn!(
+                "同步:跳过残缺 patch 物化（本机无此行）seq={} type={} id={} keys={:?}",
+                server_seq,
+                entity_label(snapshot.entity.entity_type),
+                snapshot.entity.entity_id,
+                snapshot.fields.keys().collect::<Vec<_>>()
+            );
+            Ok(())
         }
     }
 }
@@ -883,6 +889,291 @@ fn snapshot_has_required_business_fields(snapshot: &EntitySnapshot) -> bool {
                 && has_str("updated_at")
         }
     }
+}
+
+/// 仅补「缺失」键，不覆盖 patch 已写入的字段。返回是否补过任何键。
+async fn hydrate_missing_fields_from_business(
+    transaction: &DatabaseTransaction,
+    snapshot: &mut EntitySnapshot,
+) -> Result<bool, AppError> {
+    let id = snapshot.entity.entity_id.clone();
+    let before = snapshot.fields.len();
+
+    match snapshot.entity.entity_type {
+        SyncEntityKind::Task => {
+            let Some(row) = transaction
+                .query_one_raw(statement(
+                    r#"
+                    SELECT space_id, project_id, title, note, status, priority, planned_at, due_at,
+                           remind_at, status_changed_at, completed_at, position, created_at, updated_at
+                    FROM tasks WHERE id = ?
+                    "#,
+                    vec![id.into()],
+                ))
+                .await?
+            else {
+                return Ok(false);
+            };
+            let f = &mut snapshot.fields;
+            insert_str_if_missing(f, "space_id", row.try_get("", "space_id")?);
+            insert_opt_str_if_missing(f, "project_id", row.try_get("", "project_id")?);
+            insert_str_if_missing(f, "title", row.try_get("", "title")?);
+            insert_opt_str_if_missing(f, "note", row.try_get("", "note")?);
+            insert_str_if_missing(f, "status", row.try_get("", "status")?);
+            insert_i64_if_missing(f, "priority", row.try_get("", "priority")?);
+            insert_opt_str_if_missing(f, "planned_at", row.try_get("", "planned_at")?);
+            insert_opt_str_if_missing(f, "due_at", row.try_get("", "due_at")?);
+            insert_opt_str_if_missing(f, "remind_at", row.try_get("", "remind_at")?);
+            insert_str_if_missing(f, "status_changed_at", row.try_get("", "status_changed_at")?);
+            insert_opt_str_if_missing(f, "completed_at", row.try_get("", "completed_at")?);
+            insert_i64_if_missing(f, "position", row.try_get("", "position")?);
+            insert_str_if_missing(f, "created_at", row.try_get("", "created_at")?);
+            insert_str_if_missing(f, "updated_at", row.try_get("", "updated_at")?);
+        }
+        SyncEntityKind::Project => {
+            let Some(row) = transaction
+                .query_one_raw(statement(
+                    r#"
+                    SELECT space_id, name, description, status, priority, planned_at, due_at,
+                           remind_at, status_changed_at, completed_at, position, created_at, updated_at
+                    FROM projects WHERE id = ?
+                    "#,
+                    vec![id.into()],
+                ))
+                .await?
+            else {
+                return Ok(false);
+            };
+            let f = &mut snapshot.fields;
+            insert_str_if_missing(f, "space_id", row.try_get("", "space_id")?);
+            insert_str_if_missing(f, "name", row.try_get("", "name")?);
+            insert_opt_str_if_missing(f, "description", row.try_get("", "description")?);
+            insert_str_if_missing(f, "status", row.try_get("", "status")?);
+            insert_i64_if_missing(f, "priority", row.try_get("", "priority")?);
+            insert_opt_str_if_missing(f, "planned_at", row.try_get("", "planned_at")?);
+            insert_opt_str_if_missing(f, "due_at", row.try_get("", "due_at")?);
+            insert_opt_str_if_missing(f, "remind_at", row.try_get("", "remind_at")?);
+            insert_str_if_missing(f, "status_changed_at", row.try_get("", "status_changed_at")?);
+            insert_opt_str_if_missing(f, "completed_at", row.try_get("", "completed_at")?);
+            insert_i64_if_missing(f, "position", row.try_get("", "position")?);
+            insert_str_if_missing(f, "created_at", row.try_get("", "created_at")?);
+            insert_str_if_missing(f, "updated_at", row.try_get("", "updated_at")?);
+        }
+        SyncEntityKind::Space => {
+            let Some(row) = transaction
+                .query_one_raw(statement(
+                    r#"
+                    SELECT name, icon_key, color_key, position, created_at, updated_at
+                    FROM spaces WHERE id = ?
+                    "#,
+                    vec![id.into()],
+                ))
+                .await?
+            else {
+                return Ok(false);
+            };
+            let f = &mut snapshot.fields;
+            insert_str_if_missing(f, "name", row.try_get("", "name")?);
+            insert_str_if_missing(f, "icon_key", row.try_get("", "icon_key")?);
+            insert_str_if_missing(f, "color_key", row.try_get("", "color_key")?);
+            insert_i64_if_missing(f, "position", row.try_get("", "position")?);
+            insert_str_if_missing(f, "created_at", row.try_get("", "created_at")?);
+            insert_str_if_missing(f, "updated_at", row.try_get("", "updated_at")?);
+        }
+        SyncEntityKind::TaskLink => {
+            let Some(row) = transaction
+                .query_one_raw(statement(
+                    r#"
+                    SELECT task_id, title, url, position, created_at, updated_at
+                    FROM task_links WHERE id = ?
+                    "#,
+                    vec![id.into()],
+                ))
+                .await?
+            else {
+                return Ok(false);
+            };
+            let f = &mut snapshot.fields;
+            insert_str_if_missing(f, "task_id", row.try_get("", "task_id")?);
+            insert_str_if_missing(f, "title", row.try_get("", "title")?);
+            insert_str_if_missing(f, "url", row.try_get("", "url")?);
+            insert_i64_if_missing(f, "position", row.try_get("", "position")?);
+            insert_str_if_missing(f, "created_at", row.try_get("", "created_at")?);
+            insert_str_if_missing(f, "updated_at", row.try_get("", "updated_at")?);
+        }
+        SyncEntityKind::View => {
+            // View 字段含 JSON，残缺时局部更新更稳妥；此处不 hydrate。
+            return Ok(false);
+        }
+    }
+    Ok(snapshot.fields.len() > before)
+}
+
+fn insert_str_if_missing(fields: &mut BTreeMap<String, Value>, key: &str, value: String) {
+    fields
+        .entry(key.to_owned())
+        .or_insert_with(|| Value::String(value));
+}
+
+fn insert_opt_str_if_missing(
+    fields: &mut BTreeMap<String, Value>,
+    key: &str,
+    value: Option<String>,
+) {
+    if fields.contains_key(key) {
+        return;
+    }
+    fields.insert(
+        key.to_owned(),
+        value.map(Value::String).unwrap_or(Value::Null),
+    );
+}
+
+fn insert_i64_if_missing(fields: &mut BTreeMap<String, Value>, key: &str, value: i64) {
+    fields.entry(key.to_owned()).or_insert_with(|| json!(value));
+}
+
+/// 残缺 patch：只更新协议里出现的已知业务列 + generation。
+async fn materialize_partial_fields(
+    transaction: &DatabaseTransaction,
+    snapshot: &EntitySnapshot,
+) -> Result<(), AppError> {
+    let f = &snapshot.fields;
+    let id = snapshot.entity.entity_id.clone();
+    match snapshot.entity.entity_type {
+        SyncEntityKind::Task => {
+            transaction
+                .execute_raw(statement(
+                    r#"
+                    UPDATE tasks SET
+                        generation = ?,
+                        status = COALESCE(?, status),
+                        status_changed_at = COALESCE(?, status_changed_at),
+                        completed_at = CASE WHEN ? = 1 THEN ? ELSE completed_at END,
+                        title = COALESCE(?, title),
+                        note = CASE WHEN ? = 1 THEN ? ELSE note END,
+                        priority = COALESCE(?, priority),
+                        position = COALESCE(?, position),
+                        planned_at = CASE WHEN ? = 1 THEN ? ELSE planned_at END,
+                        due_at = CASE WHEN ? = 1 THEN ? ELSE due_at END,
+                        remind_at = CASE WHEN ? = 1 THEN ? ELSE remind_at END,
+                        project_id = CASE WHEN ? = 1 THEN ? ELSE project_id END,
+                        space_id = COALESCE(?, space_id),
+                        updated_at = COALESCE(?, updated_at)
+                    WHERE id = ?
+                    "#,
+                    vec![
+                        snapshot.entity.generation.into(),
+                        optional_str_bind(f, "status").into(),
+                        optional_str_bind(f, "status_changed_at").into(),
+                        has_key(f, "completed_at").into(),
+                        optional_str_bind(f, "completed_at").into(),
+                        optional_str_bind(f, "title").into(),
+                        has_key(f, "note").into(),
+                        optional_str_bind(f, "note").into(),
+                        optional_i64_bind(f, "priority").into(),
+                        optional_i64_bind(f, "position").into(),
+                        has_key(f, "planned_at").into(),
+                        optional_str_bind(f, "planned_at").into(),
+                        has_key(f, "due_at").into(),
+                        optional_str_bind(f, "due_at").into(),
+                        has_key(f, "remind_at").into(),
+                        optional_str_bind(f, "remind_at").into(),
+                        has_key(f, "project_id").into(),
+                        optional_str_bind(f, "project_id").into(),
+                        optional_str_bind(f, "space_id").into(),
+                        optional_str_bind(f, "updated_at").into(),
+                        id.into(),
+                    ],
+                ))
+                .await?;
+        }
+        SyncEntityKind::Project => {
+            transaction
+                .execute_raw(statement(
+                    r#"
+                    UPDATE projects SET
+                        generation = ?,
+                        status = COALESCE(?, status),
+                        status_changed_at = COALESCE(?, status_changed_at),
+                        completed_at = CASE WHEN ? = 1 THEN ? ELSE completed_at END,
+                        name = COALESCE(?, name),
+                        description = CASE WHEN ? = 1 THEN ? ELSE description END,
+                        priority = COALESCE(?, priority),
+                        position = COALESCE(?, position),
+                        space_id = COALESCE(?, space_id),
+                        updated_at = COALESCE(?, updated_at)
+                    WHERE id = ?
+                    "#,
+                    vec![
+                        snapshot.entity.generation.into(),
+                        optional_str_bind(f, "status").into(),
+                        optional_str_bind(f, "status_changed_at").into(),
+                        has_key(f, "completed_at").into(),
+                        optional_str_bind(f, "completed_at").into(),
+                        optional_str_bind(f, "name").into(),
+                        has_key(f, "description").into(),
+                        optional_str_bind(f, "description").into(),
+                        optional_i64_bind(f, "priority").into(),
+                        optional_i64_bind(f, "position").into(),
+                        optional_str_bind(f, "space_id").into(),
+                        optional_str_bind(f, "updated_at").into(),
+                        id.into(),
+                    ],
+                ))
+                .await?;
+        }
+        SyncEntityKind::Space => {
+            transaction
+                .execute_raw(statement(
+                    r#"
+                    UPDATE spaces SET
+                        generation = ?,
+                        name = COALESCE(?, name),
+                        icon_key = COALESCE(?, icon_key),
+                        color_key = COALESCE(?, color_key),
+                        position = COALESCE(?, position),
+                        updated_at = COALESCE(?, updated_at)
+                    WHERE id = ?
+                    "#,
+                    vec![
+                        snapshot.entity.generation.into(),
+                        optional_str_bind(f, "name").into(),
+                        optional_str_bind(f, "icon_key").into(),
+                        optional_str_bind(f, "color_key").into(),
+                        optional_i64_bind(f, "position").into(),
+                        optional_str_bind(f, "updated_at").into(),
+                        id.into(),
+                    ],
+                ))
+                .await?;
+        }
+        SyncEntityKind::TaskLink | SyncEntityKind::View => {
+            // 结构简单；残缺又无完整文档时跳过，避免写坏行。
+            log::warn!(
+                "同步:跳过残缺 {} 局部物化 id={}",
+                entity_label(snapshot.entity.entity_type),
+                id
+            );
+        }
+    }
+    Ok(())
+}
+
+fn has_key(fields: &BTreeMap<String, Value>, key: &str) -> i64 {
+    i64::from(fields.contains_key(key))
+}
+
+fn optional_str_bind(fields: &BTreeMap<String, Value>, key: &str) -> Option<String> {
+    match fields.get(key) {
+        Some(Value::Null) | None => None,
+        Some(Value::String(s)) => Some(s.clone()),
+        Some(other) => other.as_str().map(str::to_owned),
+    }
+}
+
+fn optional_i64_bind(fields: &BTreeMap<String, Value>, key: &str) -> Option<i64> {
+    fields.get(key).and_then(Value::as_i64)
 }
 
 async fn business_row_exists(
