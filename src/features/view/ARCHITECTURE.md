@@ -9,8 +9,8 @@
 ```txt
 routes 薄页
   → ViewsPage（薄壳）
-  → useViewsScene（视图轨 / run / 选择 / 任务板 / 编辑器）
-  → EntityScene（boardKind=task，组合 task public）
+  → useViewsScene（视图轨 / run / 编辑器）+ task public 的 useTaskCollectionScene
+  → PageFrame + TaskBoard（组合 task public）
 
 写路径
   → 视图定义 CRUD：本域 api / mutations
@@ -42,7 +42,7 @@ src/features/view/
     ├── ViewEditorDialog · ViewEditorDialog.form
 ```
 
-列表与任务板编排在 `hooks/useViewsScene`；`ViewsPage` 只拼 EntityScene 槽位与编辑器。
+列表与任务板编排在 `hooks/useViewsScene`；`ViewsPage` 只组合页面框架、任务 Board 与编辑器。
 
 ---
 
@@ -64,7 +64,7 @@ run query、mutations、编辑器、ActionsMenu、`viewKeys` 默认包内使用�
 |------|------|
 | task | 任务板只组合其 public（controller / selection / preview / command selection） |
 | display-options | pageKey = view；应用分组/字段走其 public |
-| entity-scene / entity-detail / selection / bulk-action | 页编排消费；禁本域 → layout |
+| page-frame / entity-detail / selection / bulk-action | 页编排消费；禁本域 → layout |
 | project-overview | 只 `useViewsQuery` |
 | routes | 极薄：只挂 `ViewsPage` |
 

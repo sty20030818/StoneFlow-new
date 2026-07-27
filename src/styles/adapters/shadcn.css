@@ -1,7 +1,7 @@
 :root {
 	--radius: 0.5rem;
 
-	/* shadcn compatibility */
+	/* shadcn semantic token mapping */
 	--background: var(--sf-main-bg);
 	--foreground: var(--sf-main-text);
 
@@ -49,7 +49,7 @@
 	--font-sans: var(--sf-font-family-sans);
 	--font-mono: var(--sf-font-family-mono);
 
-	/* shadcn compatibility */
+	/* shadcn Tailwind token mapping */
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -102,6 +102,8 @@
 	--color-sf-surface-hover: var(--sf-surface-hover);
 	--color-sf-surface-active: var(--sf-surface-active);
 	--color-sf-surface-raised: var(--sf-surface-raised);
+	--color-sf-shell-chrome-bg: var(--sf-shell-chrome-bg);
+	--color-sf-shell-drawer-bg: var(--sf-shell-drawer-bg);
 	--color-sf-border-interactive: var(--sf-border-interactive);
 	--color-sf-border-interactive-hover: var(--sf-border-interactive-hover);
 	--color-sf-border-interactive-active: var(--sf-border-interactive-active);
@@ -129,6 +131,7 @@
 	--color-sf-control-active: var(--sf-control-active);
 	--color-sf-control-text: var(--sf-control-text);
 	--color-sf-control-text-secondary: var(--sf-control-text-secondary);
+	--color-sf-status-online: var(--sf-status-online);
 	--color-sf-list-section-bg: var(--sf-list-section-bg);
 	--color-sf-list-row-hover: var(--sf-list-row-hover);
 	--color-sf-list-row-selected: var(--sf-list-row-selected);
@@ -138,37 +141,16 @@
 	--color-sf-danger-surface: var(--sf-danger-surface);
 	--color-sf-danger-surface-border: var(--sf-danger-surface-border);
 	--color-sf-danger-surface-text: var(--sf-danger-surface-text);
+	--color-sf-info-surface-text: var(--sf-info-surface-text);
 	--color-sf-warning-surface: var(--sf-warning-surface);
 	--color-sf-warning-surface-border: var(--sf-warning-surface-border);
 	--color-sf-warning-surface-text: var(--sf-warning-surface-text);
 	--color-sf-success-surface: var(--sf-success-surface);
 	--color-sf-success-surface-border: var(--sf-success-surface-border);
 	--color-sf-success-surface-text: var(--sf-success-surface-text);
-
-	/* legacy sf-* utility compatibility (now mapped to semantic source tokens) */
-	--color-sf-bg-elevated: var(--sf-surface-raised);
-	--color-sf-bg-surface-hover: var(--sf-surface-hover);
-	--color-sf-bg-surface-muted: var(--sf-surface-panel-muted);
-	--color-sf-shell-chrome: var(--sf-shell-chrome-bg);
-	--color-sf-shell-drawer: var(--sf-shell-drawer-bg);
-	--color-sf-shell-secondary: var(--sf-shell-text-secondary);
-	--color-sf-shell-tertiary: var(--sf-shell-text-tertiary);
-	--color-sf-shell-online: var(--sf-status-online);
-	--color-sf-sidebar-action-foreground: var(--sf-control-text);
-	--color-sf-danger-soft: var(--sf-danger-surface);
-	--color-sf-danger-soft-border: var(--sf-danger-surface-border);
-	--color-sf-danger-soft-text: var(--sf-danger-surface-text);
-	--color-sf-success-soft: var(--sf-success-surface);
-	--color-sf-success-soft-border: var(--sf-success-surface-border);
-	--color-sf-success-soft-text: var(--sf-success-surface-text);
-	--color-sf-warning-soft: var(--sf-warning-surface);
-	--color-sf-warning-soft-border: var(--sf-warning-surface-border);
-	--color-sf-warning-soft-text: var(--sf-warning-surface-text);
-	--color-sf-info-soft-text: var(--sf-info-surface-text);
 	--color-sf-accent-soft-border: var(--sf-accent-soft-border);
 	--color-sf-priority-muted: var(--sf-priority-muted);
-	--color-sf-main-icon-button-foreground: var(--sf-control-text-secondary);
-	--color-sf-project-task-status-done: var(--sf-success-strong);
+	--color-sf-success-strong: var(--sf-success-strong);
 
 	--radius-sm: calc(var(--radius) - 0.1875rem);
 	--radius-md: calc(var(--radius) - 0.0625rem);

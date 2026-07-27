@@ -14,7 +14,7 @@ export function ShellDrawer({ open, activeDetail, currentSpaceLabel, onClose }: 
 		<Sheet modal={false} onOpenChange={(nextOpen) => !nextOpen && onClose()} open={open}>
 			<SheetContent
 				aria-describedby={undefined}
-				className='absolute inset-y-2 right-2 z-50 w-[min(var(--sf-shell-drawer-width),calc(100%-0.5rem))] max-w-[calc(100%-0.5rem)] rounded-xl border border-sf-border-secondary bg-sf-shell-drawer/98 p-0 shadow-(--sf-shadow-float) backdrop-blur data-[side=right]:inset-y-2 data-[side=right]:right-2 data-[side=right]:left-auto data-[side=right]:h-auto data-[side=right]:w-[min(var(--sf-shell-drawer-width),calc(100%-0.5rem))] data-[side=right]:max-w-[calc(100%-0.5rem)]'
+				className='absolute inset-y-2 right-2 z-50 w-[min(var(--sf-shell-drawer-width),calc(100%-0.5rem))] max-w-[calc(100%-0.5rem)] rounded-xl border border-sf-border-secondary bg-sf-shell-drawer-bg/98 p-0 shadow-(--sf-shadow-float) backdrop-blur data-[side=right]:inset-y-2 data-[side=right]:right-2 data-[side=right]:left-auto data-[side=right]:h-auto data-[side=right]:w-[min(var(--sf-shell-drawer-width),calc(100%-0.5rem))] data-[side=right]:max-w-[calc(100%-0.5rem)]'
 				data-shell-drawer-root='true'
 				inline
 				onInteractOutside={(event) => event.preventDefault()}

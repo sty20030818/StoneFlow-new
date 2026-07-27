@@ -24,7 +24,6 @@ describe('display-page-key', () => {
 describe('resolveTaskDisplayOptions', () => {
 	it('返回 task:all 的系统默认值', () => {
 		expect(resolveTaskDisplayOptions({ pageKey: 'task:all' })).toEqual({
-			layout: 'list',
 			groupBy: 'status',
 			subGroupBy: 'none',
 			orderBy: 'smart',
@@ -40,7 +39,6 @@ describe('resolveTaskDisplayOptions', () => {
 			resolveTaskDisplayOptions({
 				pageKey: 'task:project-detail',
 				workspaceDefault: {
-					layout: 'board',
 					groupBy: 'priority',
 					showEmptyGroups: true,
 				},
@@ -51,7 +49,6 @@ describe('resolveTaskDisplayOptions', () => {
 				},
 			}),
 		).toEqual({
-			layout: 'board',
 			groupBy: 'status',
 			subGroupBy: 'none',
 			orderBy: 'priority',
@@ -73,34 +70,15 @@ describe('resolveTaskDisplayOptions', () => {
 		).toBe('smart')
 	})
 
-	it('在 list-only 页面裁剪不支持的 layout 和 subGroupBy', () => {
+	it('裁剪页面不支持的子分组', () => {
 		expect(
 			resolveTaskDisplayOptions({
 				pageKey: 'task:today',
 				personalOverride: {
-					layout: 'board',
 					subGroupBy: 'scheduled',
 				},
 			}),
 		).toMatchObject({
-			layout: 'list',
-			subGroupBy: 'none',
-		})
-	})
-
-	it('在 board 模式下裁剪不支持的 groupBy 与 subGroupBy', () => {
-		expect(
-			resolveTaskDisplayOptions({
-				pageKey: 'task:all',
-				personalOverride: {
-					layout: 'board',
-					groupBy: 'due',
-					subGroupBy: 'priority',
-				},
-			}),
-		).toMatchObject({
-			layout: 'board',
-			groupBy: 'status',
 			subGroupBy: 'none',
 		})
 	})

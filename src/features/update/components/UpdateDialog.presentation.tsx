@@ -30,14 +30,14 @@ export function UpdateNotesMarkdown({ content }: { content: string }) {
 							{block.items.map((item, j) => (
 								<li key={j} className='flex items-start gap-2'>
 									<span className='mt-2.25 size-1 shrink-0 rounded-full bg-foreground/40' />
-									<span className='text-sf-shell-tertiary'>{renderInline(item)}</span>
+									<span className='text-sf-shell-text-tertiary'>{renderInline(item)}</span>
 								</li>
 							))}
 						</ul>
 					)
 				}
 				return (
-					<p key={`p-${block.text}`} className='m-0 text-sf-shell-tertiary'>
+					<p key={`p-${block.text}`} className='m-0 text-sf-shell-text-tertiary'>
 						{renderInline(block.text)}
 					</p>
 				)

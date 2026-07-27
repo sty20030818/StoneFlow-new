@@ -25,13 +25,13 @@ export function getSyncStatusTone(status: SyncStatus): SyncStatusTone {
 			return {
 				badgeVariant: 'success',
 				dotClassName: syncStatusDotClassNames.synced,
-				surfaceClassName: 'border-sf-success-soft-border bg-sf-success-soft',
+				surfaceClassName: 'border-sf-success-surface-border bg-sf-success-surface',
 			}
 		case 'offline_pending':
 			return {
 				badgeVariant: 'warning',
 				dotClassName: syncStatusDotClassNames.offline_pending,
-				surfaceClassName: 'border-sf-warning-soft-border bg-sf-warning-soft',
+				surfaceClassName: 'border-sf-warning-surface-border bg-sf-warning-surface',
 			}
 		case 'syncing':
 			return {
@@ -44,7 +44,7 @@ export function getSyncStatusTone(status: SyncStatus): SyncStatusTone {
 			return {
 				badgeVariant: 'destructive',
 				dotClassName: syncStatusDotClassNames.error,
-				surfaceClassName: 'border-sf-danger-soft-border bg-sf-danger-soft',
+				surfaceClassName: 'border-sf-danger-surface-border bg-sf-danger-surface',
 			}
 		default:
 			return {

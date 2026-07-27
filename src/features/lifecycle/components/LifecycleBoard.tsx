@@ -14,10 +14,11 @@ import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
 import { ArchiveIcon, BoxIcon, FolderIcon, TrashIcon } from 'lucide-react'
 import { LifecycleRowAdapter } from './LifecycleRowAdapter'
 import { EntityRowShortcutScope, type EntityRowShortcutState } from '@/features/selection'
+import { StatusNotice } from '@/shared/components/StatusNotice'
 
 export type LifecycleBoardSection = BoardSection<LifecycleEntry>
 
-type LifecycleBoardProps = {
+export type LifecycleBoardProps = {
 	mode: LifecycleMode
 	sections: LifecycleBoardSection[]
 	status?: 'idle' | 'loading' | 'ready' | 'error'
@@ -100,6 +101,16 @@ export function LifecycleBoard({
 
 	if (status === 'idle' || status === 'loading') {
 		return <BoardLoadingState />
+	}
+
+	if (status === 'error') {
+		return (
+			<StatusNotice
+				description='归档数据暂时无法读取，请稍后重试。'
+				title='读取归档失败'
+				variant='danger'
+			/>
+		)
 	}
 
 	if (status === 'ready' && visibleSections.length === 0) {

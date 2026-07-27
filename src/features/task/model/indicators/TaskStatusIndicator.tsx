@@ -41,19 +41,17 @@ function SolidCircleIcon({
 export function TaskStatusIndicator({ status }: { status: TaskStatus }) {
 	switch (status) {
 		case 'done':
-			return (
-				<SolidCircleIcon icon={CircleCheckIcon} color='var(--color-sf-project-task-status-done)' />
-			)
+			return <SolidCircleIcon icon={CircleCheckIcon} color='var(--color-sf-success-strong)' />
 		case 'doing':
 			return (
 				<span className='flex size-4 shrink-0 items-center justify-center'>
-					<PlayIcon className='size-3 text-sf-info-soft-text' fill='currentColor' />
+					<PlayIcon className='size-3 text-sf-info-surface-text' fill='currentColor' />
 				</span>
 			)
 		case 'waiting':
 			return (
 				<span className='flex size-4 shrink-0 items-center justify-center'>
-					<PauseIcon className='size-3 text-sf-warning-soft-text' fill='currentColor' />
+					<PauseIcon className='size-3 text-sf-warning-surface-text' fill='currentColor' />
 				</span>
 			)
 		case 'canceled':

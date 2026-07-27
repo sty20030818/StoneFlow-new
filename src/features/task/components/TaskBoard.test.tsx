@@ -54,7 +54,7 @@ describe('TaskBoard', () => {
 		expect(screen.queryByText('empty description')).not.toBeInTheDocument()
 	})
 
-	it('customSections 只有 all 分组时按纯列表渲染，不显示分组标题', () => {
+	it('customSections 只有 all 分组时仍显示分组标题', () => {
 		render(
 			<TaskBoard
 				activeTaskId={null}
@@ -79,7 +79,7 @@ describe('TaskBoard', () => {
 		)
 
 		expect(screen.getByText('任务 A')).toBeInTheDocument()
-		expect(screen.queryByText('全部任务')).not.toBeInTheDocument()
+		expect(screen.getByText('全部任务')).toBeInTheDocument()
 	})
 })
 

@@ -29,7 +29,6 @@ const DEFAULT_DATE_FOCUSED_VISIBLE_PROPERTIES = [
 const DEFAULT_HISTORY_VISIBLE_PROPERTIES = ['status', 'priority', 'project', 'updatedAt'] as const
 
 export const BASE_TASK_DISPLAY_OPTIONS: TaskDisplayOptions = {
-	layout: 'list',
 	groupBy: 'status',
 	subGroupBy: 'none',
 	orderBy: 'smart',
@@ -46,7 +45,6 @@ const TASK_DISPLAY_PAGE_DEFAULTS: Record<TaskDisplayPageKind, TaskDisplayOptions
 	},
 	'task:standalone': {
 		...BASE_TASK_DISPLAY_OPTIONS,
-		groupBy: 'none',
 		orderBy: 'updatedAt',
 		orderDirection: 'desc',
 		visibleProperties: [...DEFAULT_STANDALONE_VISIBLE_PROPERTIES],

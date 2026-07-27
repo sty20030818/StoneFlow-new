@@ -10,7 +10,7 @@
 routes 薄页
   → ProjectOverviewPage（薄壳）
   → useProjectOverviewScene（视图轨 / 选择 / bulk / 行动作）
-  → EntityScene（boardKind=project，组合 project public）
+  → PageFrame + ProjectBoard（组合 project public）
 
 不负责
   → project CRUD / overview 数据 hook（→ project）

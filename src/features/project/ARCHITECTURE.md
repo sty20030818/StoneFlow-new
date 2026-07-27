@@ -9,7 +9,7 @@
 ```txt
 详情页
   → ProjectPage（薄壳）
-  → useProjectDetailScene（组合 task public：list / filter / selection / preview / bulk）
+  → useProjectDetailScene（组合 task public 的 useTaskCollectionScene）
   → 不复制 task mutation；不 import layout
 
 概览（独立 scene）
@@ -49,7 +49,7 @@ src/features/project/
     └── ProjectCreateContent · form
 ```
 
-详情任务板编排在 `hooks/useProjectDetailScene`；`ProjectPage` 只拼 EntityScene 槽位。
+详情任务板编排在 `hooks/useProjectDetailScene`；`ProjectPage` 只组合项目头部与任务集合。
 
 ---
 
@@ -77,7 +77,7 @@ src/features/project/
 | task | 详情任务板只组合 task public；本域不写 task mutation |
 | bulk-action | 引擎在 bulk-action；本域贡献 actions/adapter |
 | command | 经 `registerProjectCommands` 注入 handlers |
-| entity-scene | 详情页挂 EntityScene；board 走本域 / task public |
+| page-frame | 详情页组合纯页面框架；Board 走本域 / task public |
 | shell-dialogs | 创建对话框状态在壳；本域只出表单内容 |
 | project-overview | 薄 scene；只依赖本域 public |
 | layout | 侧栏/options 数据走 public；**禁**本域 → layout |

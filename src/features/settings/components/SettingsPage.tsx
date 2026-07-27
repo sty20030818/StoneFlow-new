@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 
-import { EntityScene } from '@/features/entity-scene'
 import { useCurrentShellRoute } from '@/app/navigation'
 import {
 	getSettingsSectionLabel,
@@ -24,6 +23,7 @@ import {
 	breadcrumbLeadIconClass,
 } from '@/shared/components/patterns/breadcrumb'
 import { Settings2Icon } from 'lucide-react'
+import { PageFrame } from '@/shared/components/page-frame'
 
 function resolveActiveSection(section: SettingsSectionKey | null | undefined): SettingsSectionKey {
 	return section ?? DEFAULT_SETTINGS_SECTION
@@ -67,25 +67,26 @@ export function SettingsPage() {
 	}, [shellRoute.settingsSection])
 
 	return (
-		<EntityScene
-			breadcrumb={
-				<Breadcrumb>
-					<BreadcrumbList className='text-sm font-semibold leading-5'>
-						<BreadcrumbItem>
-							<span className={breadcrumbLeadClass}>
-								<Settings2Icon aria-hidden className={breadcrumbLeadIconClass} />
-								设置
-							</span>
-						</BreadcrumbItem>
-						<BreadcrumbSeparator />
-						<BreadcrumbItem>
-							<BreadcrumbPage>{sectionLabel}</BreadcrumbPage>
-						</BreadcrumbItem>
-					</BreadcrumbList>
-				</Breadcrumb>
-			}
-			beforeBoard={<div className='flex flex-col gap-4 pb-4'>{renderPanel(section)}</div>}
-			bodyClassName='gap-4 p-2'
-		/>
+		<PageFrame.Root>
+			<PageFrame.Header
+				breadcrumb={
+					<Breadcrumb>
+						<BreadcrumbList className='text-sm font-semibold leading-5'>
+							<BreadcrumbItem>
+								<span className={breadcrumbLeadClass}>
+									<Settings2Icon aria-hidden className={breadcrumbLeadIconClass} />
+									设置
+								</span>
+							</BreadcrumbItem>
+							<BreadcrumbSeparator />
+							<BreadcrumbItem>
+								<BreadcrumbPage>{sectionLabel}</BreadcrumbPage>
+							</BreadcrumbItem>
+						</BreadcrumbList>
+					</Breadcrumb>
+				}
+			/>
+			<PageFrame.Body className='gap-4 p-2'>{renderPanel(section)}</PageFrame.Body>
+		</PageFrame.Root>
 	)
 }

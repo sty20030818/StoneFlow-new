@@ -4,7 +4,6 @@ import { vi } from 'vitest'
 
 import { ShellRouteProvider } from '@/app/navigation'
 import { parseShellRoute } from '@/app/navigation'
-import { CommandSelectionProvider, useCommandSelectionContext } from '@/features/selection'
 import { renderWithMatchedRoute } from '@/test/renderWithRouter'
 import { ViewsPage } from '@/features/view/components/ViewsPage'
 
@@ -199,6 +198,29 @@ vi.mock('@/features/task', async () => {
 		await import('@/features/task/model/buildTaskCommandSelection')
 	return {
 		buildTaskCommandSelection,
+		useTaskCollectionScene: (input: {
+			source: { items: Array<{ id: string; title: string; projectName?: string | null }> }
+			fallbackSubtitle: string
+			onCreateTask: () => void
+			empty: {
+				emptyActionLabel?: string
+				emptyDescription?: string
+				emptyTitle?: string
+			}
+		}) => {
+			const clearTaskSelection = vi.fn()
+			return {
+				boardProps: {
+					emptyActionLabel: input.empty.emptyActionLabel,
+					emptyDescription: input.empty.emptyDescription,
+					emptyTitle: input.empty.emptyTitle ?? '',
+					onEmptyAction: input.onCreateTask,
+					tasks: input.source.items,
+				},
+				selectedCount: 1,
+				clearTaskSelection,
+			}
+		},
 		useTaskListController: () => ({
 			pendingTaskId: null,
 			updateTaskPriority: vi.fn<(task: unknown, priority: unknown) => Promise<void>>(),
@@ -315,41 +337,6 @@ describe('ViewsPage', () => {
 		})
 	})
 
-	it('注册当前视图选择到 Command selection context', async () => {
-		await renderViewsPage('/all/views/today', {
-			node: (
-				<>
-					<ViewsPage />
-					<CommandSelectionProbe />
-				</>
-			),
-			wrap: (children) => <CommandSelectionProvider>{children}</CommandSelectionProvider>,
-		})
-
-		await waitFor(() => {
-			expect(screen.getByTestId('command-selection-probe')).toHaveTextContent(
-				JSON.stringify({
-					ids: ['task-1'],
-					entities: [
-						{
-							id: 'task-1',
-							type: 'task',
-							title: '系统视图任务',
-							subtitle: '阶段 8',
-							spaceId: 'space-1',
-							projectId: 'project-1',
-							dueAt: '2026-05-03',
-							status: 'todo',
-							priority: '4',
-						},
-					],
-					source: 'task-list',
-					hasSelection: true,
-				}),
-			)
-		})
-	})
-
 	it('有视图但没有任务时展示更完整的空态文案', async () => {
 		mockViewQueryState.taskRun = {
 			...mockTaskRunState,
@@ -391,20 +378,6 @@ describe('ViewsPage', () => {
 		expect(screen.getByText('创建视图弹窗')).toBeInTheDocument()
 	})
 })
-
-function CommandSelectionProbe() {
-	const selection = useCommandSelectionContext()
-	return (
-		<output data-testid='command-selection-probe'>
-			{JSON.stringify({
-				ids: selection.ids,
-				entities: selection.entities,
-				source: selection.source,
-				hasSelection: selection.hasSelection,
-			})}
-		</output>
-	)
-}
 
 function renderViewsPage(
 	initialEntry: string,

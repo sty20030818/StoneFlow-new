@@ -10,7 +10,7 @@
 routes 薄页
   → LifecycleList（薄壳）
   → useLifecycleScene(mode)（选择 / bulk / 打开详情）
-  → LifecycleBoard（EntityScene）
+  → PageFrame + LifecycleBoard
 
 写路径
   → api 按 entityType 委托 task / project / space **public**
@@ -43,7 +43,7 @@ src/features/lifecycle/
     ├── LifecycleBoard · LifecycleRowAdapter · LifecycleContextMenu
 ```
 
-列表编排在 `hooks/useLifecycleScene`；`LifecycleList` 只拼 EntityScene 槽位。
+列表编排在 `hooks/useLifecycleScene`；`LifecycleList` 只组合页面框架与生命周期 Board。
 
 ---
 
@@ -69,7 +69,7 @@ src/features/lifecycle/
 | task / project / space | 写路径只调其 public；本域只编排 |
 | bulk-action | 引擎在 bulk-action；本域贡献 actions/adapter |
 | command | 经 `registerLifecycleCommands` 注入 handlers |
-| entity-scene | Board adapter 挂本域 `LifecycleBoard` |
+| page-frame | 页面组合纯框架；Board 归本域 |
 | layout | badges 用 `useLifecycleEntriesQuery`；**禁**本域 → layout |
 | routes | 极薄：只挂 `LifecycleList mode` |
 

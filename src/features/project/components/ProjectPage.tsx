@@ -1,6 +1,6 @@
 import { FolderIcon } from 'lucide-react'
 
-import { EntityScene } from '@/features/entity-scene'
+import { PageFrame } from '@/shared/components/page-frame'
 import { BulkActionBar, BulkCommandMenuAction } from '@/features/bulk-action'
 import { DisplayOptionsButton } from '@/features/display-options'
 import type { Scope } from '@/shared/types'
@@ -17,24 +17,60 @@ import {
 } from '@/shared/components/base/empty'
 
 import { useProjectDetailScene } from '../hooks/useProjectDetailScene'
+import { TaskBoard } from '@/features/task'
 
 type ProjectPageProps = {
 	scopeOverride?: Scope
 }
 
 /**
- * 项目详情页：只拼 EntityScene 槽位。
+ * 项目详情页：组合项目头部与任务集合。
  * wiring 在 {@link useProjectDetailScene}。
  */
 export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 	const scene = useProjectDetailScene({ scopeOverride })
 
 	return (
-		<EntityScene
-			board={scene.board}
-			breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
-			beforeBoard={
-				!scene.project ? (
+		<PageFrame.Root>
+			<PageFrame.Header
+				actions={
+					scene.project ? (
+						<div className='flex items-center gap-2'>
+							<Button
+								disabled={scene.busyAction !== null}
+								onClick={scene.completeOrReopen}
+								size='sm'
+								variant='outline'
+							>
+								{scene.project.completedAt ? '重开' : '完成'}
+							</Button>
+							<Button
+								disabled={scene.busyAction !== null}
+								onClick={() => void scene.archive()}
+								size='sm'
+								variant='outline'
+							>
+								归档
+							</Button>
+							<Button
+								disabled={scene.busyAction !== null}
+								onClick={() => void scene.remove()}
+								size='sm'
+								variant='outline'
+							>
+								删除
+							</Button>
+						</div>
+					) : null
+				}
+				breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
+			/>
+			<PageFrame.Toolbar
+				displayAction={<DisplayOptionsButton pageKey={scene.displayPageKey} />}
+				pills={scene.toolbarPills}
+			/>
+			<PageFrame.Body>
+				{!scene.project ? (
 					<EmptyPage>
 						<Empty>
 							<EmptyHeader>
@@ -51,49 +87,19 @@ export function ProjectPage({ scopeOverride }: ProjectPageProps = {}) {
 							</EmptyContent>
 						</Empty>
 					</EmptyPage>
-				) : null
-			}
-			bulkBar={
-				scene.project ? (
+				) : (
+					<TaskBoard {...scene.taskCollection.boardProps} />
+				)}
+			</PageFrame.Body>
+			{scene.project ? (
+				<PageFrame.BulkBar>
 					<BulkActionBar
 						action={<BulkCommandMenuAction />}
 						onClear={scene.bulk.clearTaskSelection}
 						selectedCount={scene.bulk.selectedCount}
 					/>
-				) : null
-			}
-			headerActions={
-				scene.project ? (
-					<div className='flex items-center gap-2'>
-						<Button
-							disabled={scene.busyAction !== null}
-							onClick={scene.completeOrReopen}
-							size='sm'
-							variant='outline'
-						>
-							{scene.project.completedAt ? '重开' : '完成'}
-						</Button>
-						<Button
-							disabled={scene.busyAction !== null}
-							onClick={() => void scene.archive()}
-							size='sm'
-							variant='outline'
-						>
-							归档
-						</Button>
-						<Button
-							disabled={scene.busyAction !== null}
-							onClick={() => void scene.remove()}
-							size='sm'
-							variant='outline'
-						>
-							删除
-						</Button>
-					</div>
-				) : null
-			}
-			toolbarDisplayAction={<DisplayOptionsButton pageKey={scene.displayPageKey} />}
-			toolbarPills={scene.toolbarPills}
-		/>
+				</PageFrame.BulkBar>
+			) : null}
+		</PageFrame.Root>
 	)
 }

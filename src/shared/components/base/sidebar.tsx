@@ -323,7 +323,7 @@ function Sidebar({ className, collapsible = 'none', children, style, ...props }:
 			<aside
 				aria-hidden={visualState === 'mobile-closed'}
 				className={cn(
-					'flex flex-col overflow-hidden bg-sf-shell-chrome shadow-none backface-hidden motion-reduce:transition-none',
+					'flex flex-col overflow-hidden bg-sf-shell-chrome-bg shadow-none backface-hidden motion-reduce:transition-none',
 					// desktop：流式侧栏，宽度由父列槽约束，避免与 grid 列动画双重插值宽度
 					'group-data-[sidebar-layout=desktop]/sidebar-wrapper:relative group-data-[sidebar-layout=desktop]/sidebar-wrapper:z-30 group-data-[sidebar-layout=desktop]/sidebar-wrapper:h-full group-data-[sidebar-layout=desktop]/sidebar-wrapper:min-h-0 group-data-[sidebar-layout=desktop]/sidebar-wrapper:w-full group-data-[sidebar-layout=desktop]/sidebar-wrapper:min-w-0 group-data-[sidebar-layout=desktop]/sidebar-wrapper:max-w-full group-data-[sidebar-layout=desktop]/sidebar-wrapper:translate-x-0',
 					// mobile：fixed 抽屉，覆盖 Header 安全区以下
@@ -399,7 +399,7 @@ function SidebarGroupLabel({ className, ...props }: React.ComponentProps<'div'>)
 	return (
 		<div
 			className={cn(
-				'px-2.5 text-[10.5px] font-medium tracking-[0.06em] text-sf-shell-tertiary uppercase',
+				'px-2.5 text-[10.5px] font-medium tracking-[0.06em] text-sf-shell-text-tertiary uppercase',
 				className,
 			)}
 			data-slot='sidebar-group-label'
@@ -420,7 +420,7 @@ function SidebarGroupAction({
 	return (
 		<Comp
 			className={cn(
-				'inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-secondary transition-colors hover:bg-sf-shell-hover hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
+				'inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-text-secondary transition-colors hover:bg-sf-shell-hover hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
 				className,
 			)}
 			data-slot='sidebar-group-action'
@@ -458,7 +458,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
 // icon 态下隐藏文字/末端元素、压成正方形；展开态恢复正常
 // 带 data-sidebar-keep 的子 span 会在 icon 态保留（例如 Space 的 icon badge）
 const sidebarMenuButtonVariants = cva(
-	'flex w-full min-w-0 items-center gap-2 rounded-md border border-transparent text-sf-shell-secondary outline-none transition-colors select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:mx-auto group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:justify-center group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-0 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:[&>span:not([data-sidebar-keep])]:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:mx-auto group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:justify-center group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-0 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:[&>span:not([data-sidebar-keep])]:hidden',
+	'flex w-full min-w-0 items-center gap-2 rounded-md border border-transparent text-sf-shell-text-secondary outline-none transition-colors select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:mx-auto group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:justify-center group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:px-0 group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:[&>span:not([data-sidebar-keep])]:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:mx-auto group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:justify-center group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:px-0 group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:[&>span:not([data-sidebar-keep])]:hidden',
 	{
 		variants: {
 			size: {
@@ -539,7 +539,7 @@ function SidebarMenuAction({
 	return (
 		<Comp
 			className={cn(
-				'inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-secondary transition-colors hover:bg-sf-shell-hover hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
+				'inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-text-secondary transition-colors hover:bg-sf-shell-hover hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
 				className,
 			)}
 			data-slot='sidebar-menu-action'
@@ -552,7 +552,7 @@ function SidebarMenuBadge({ className, ...props }: React.ComponentProps<'span'>)
 	return (
 		<span
 			className={cn(
-				'shrink-0 text-[12px] font-semibold text-sf-shell-secondary group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden',
+				'shrink-0 text-[12px] font-semibold text-sf-shell-text-secondary group-data-[sidebar-mode=desktop-collapsed]/sidebar-wrapper:hidden group-data-[sidebar-mode=mobile-closed]/sidebar-wrapper:hidden',
 				className,
 			)}
 			data-slot='sidebar-menu-badge'
@@ -579,7 +579,7 @@ function SidebarMenuSubItem({ className, ...props }: React.ComponentProps<'li'>)
 }
 
 const sidebarMenuSubButtonVariants = cva(
-	'relative flex w-full min-w-0 items-center gap-2 rounded-md border border-transparent text-sf-shell-secondary outline-none transition-colors select-none disabled:pointer-events-none disabled:opacity-50 before:absolute before:-left-3 before:top-1/2 before:h-px before:w-3 before:-translate-y-1/2 before:bg-sf-border-subtle [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
+	'relative flex w-full min-w-0 items-center gap-2 rounded-md border border-transparent text-sf-shell-text-secondary outline-none transition-colors select-none disabled:pointer-events-none disabled:opacity-50 before:absolute before:-left-3 before:top-1/2 before:h-px before:w-3 before:-translate-y-1/2 before:bg-sf-border-subtle [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-3.5',
 	{
 		variants: {
 			size: {
@@ -784,7 +784,7 @@ function SidebarTrigger({ className, stateful = true, onClick, ...props }: Sideb
 			aria-label={isOpen ? '收起侧边栏' : '展开侧边栏'}
 			className={cn(
 				// 与主壳 `Button` `icon-sm` 同 30×30 底槽，便于与顶栏三键/品牌圆钮对齐
-				'inline-flex size-7.5 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-secondary transition-colors hover:bg-sf-shell-hover hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
+				'inline-flex size-7.5 shrink-0 items-center justify-center rounded-md border border-transparent text-sf-shell-text-secondary transition-colors hover:bg-sf-shell-hover hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/18 focus-visible:outline-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
 				className,
 			)}
 			data-slot='sidebar-trigger'

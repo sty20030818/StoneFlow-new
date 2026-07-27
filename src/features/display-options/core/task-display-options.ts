@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-export const TASK_DISPLAY_LAYOUT_MODE_VALUES = ['list', 'board'] as const
-
 export const TASK_DISPLAY_GROUP_BY_VALUES = [
 	'none',
 	'status',
@@ -40,7 +38,6 @@ export const TASK_DISPLAY_PROPERTY_KEY_VALUES = [
 	'createdAt',
 ] as const
 
-export type DisplayLayoutMode = (typeof TASK_DISPLAY_LAYOUT_MODE_VALUES)[number]
 export type TaskDisplayGroupBy = (typeof TASK_DISPLAY_GROUP_BY_VALUES)[number]
 export type TaskDisplayOrderBy = (typeof TASK_DISPLAY_ORDER_BY_VALUES)[number]
 export type TaskDisplayOrderDirection = (typeof TASK_DISPLAY_ORDER_DIRECTION_VALUES)[number]
@@ -48,7 +45,6 @@ export type TaskDisplayCompletedOrder = (typeof TASK_DISPLAY_COMPLETED_ORDER_VAL
 export type TaskDisplayPropertyKey = (typeof TASK_DISPLAY_PROPERTY_KEY_VALUES)[number]
 
 export type TaskDisplayOptions = {
-	layout: DisplayLayoutMode
 	groupBy: TaskDisplayGroupBy
 	subGroupBy: TaskDisplayGroupBy
 	orderBy: TaskDisplayOrderBy
@@ -62,7 +58,6 @@ export type TaskDisplayPreferenceRecord = Partial<TaskDisplayOptions>
 
 export type ResolvedTaskDisplayOptions = TaskDisplayOptions
 
-export const taskDisplayLayoutModeSchema = z.enum(TASK_DISPLAY_LAYOUT_MODE_VALUES)
 export const taskDisplayGroupBySchema = z.enum(TASK_DISPLAY_GROUP_BY_VALUES)
 export const taskDisplayOrderBySchema = z.enum(TASK_DISPLAY_ORDER_BY_VALUES)
 export const taskDisplayOrderDirectionSchema = z.enum(TASK_DISPLAY_ORDER_DIRECTION_VALUES)
@@ -70,7 +65,6 @@ export const taskDisplayCompletedOrderSchema = z.enum(TASK_DISPLAY_COMPLETED_ORD
 export const taskDisplayPropertyKeySchema = z.enum(TASK_DISPLAY_PROPERTY_KEY_VALUES)
 
 export const taskDisplayOptionsSchema = z.object({
-	layout: taskDisplayLayoutModeSchema,
 	groupBy: taskDisplayGroupBySchema,
 	subGroupBy: taskDisplayGroupBySchema,
 	orderBy: taskDisplayOrderBySchema,

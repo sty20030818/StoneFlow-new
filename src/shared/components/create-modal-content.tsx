@@ -30,7 +30,7 @@ function Metadata({ children, error }: { children: React.ReactNode; error?: stri
 	return (
 		<div className={createDialogMetaClass}>
 			<div className='flex flex-wrap items-center gap-1.5'>{children}</div>
-			{error ? <p className='text-[12px] text-sf-danger-soft-text'>{error}</p> : null}
+			{error ? <p className='text-[12px] text-sf-danger-surface-text'>{error}</p> : null}
 		</div>
 	)
 }

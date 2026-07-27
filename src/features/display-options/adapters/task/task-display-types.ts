@@ -1,5 +1,3 @@
-// boardPatch 形状与 entity-scene 对齐（public 引用）
-import type { EntitySceneTaskBoardConfig } from '@/features/entity-scene'
 import type { TaskListItem, TaskStatus } from '@/shared/types'
 
 import type {
@@ -20,10 +18,11 @@ export type TaskDisplayApplyContext = {
 	includeEmptySections?: boolean
 }
 
-export type TaskDisplayBoardPatch = Pick<
-	EntitySceneTaskBoardConfig,
-	'customSections' | 'statusOrder' | 'hideEmptySections'
->
+export type TaskDisplayBoardPatch = {
+	customSections?: TaskDisplaySection[]
+	statusOrder?: readonly TaskStatus[]
+	hideEmptySections?: boolean
+}
 
 export type TaskDisplayApplyResult = {
 	options: ResolvedTaskDisplayOptions

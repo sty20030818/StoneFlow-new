@@ -100,7 +100,7 @@ export function RowShellIcon({ children, className, ...props }: ComponentProps<'
 		<span
 			{...props}
 			className={cn(
-				'flex size-4 shrink-0 items-center justify-center text-sf-shell-secondary',
+				'flex size-4 shrink-0 items-center justify-center text-sf-shell-text-secondary',
 				className,
 			)}
 		>

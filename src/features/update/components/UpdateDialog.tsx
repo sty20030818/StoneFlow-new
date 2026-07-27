@@ -138,7 +138,7 @@ export function UpdateDialog() {
 										style={{ width: `${progressPercent}%` }}
 									/>
 								</div>
-								<p className='text-[12px] leading-none text-sf-shell-tertiary tabular-nums'>
+								<p className='text-[12px] leading-none text-sf-shell-text-tertiary tabular-nums'>
 									{formatDownloadBytesLine(downloaded, total)}
 								</p>
 							</div>

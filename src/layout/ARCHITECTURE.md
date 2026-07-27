@@ -13,7 +13,7 @@
 当前负责：
 
 1. **工作区壳层**骨架与跨 feature **装配**（Provider、命令/批量接线、Chrome）
-2. **Overlays 挂载**；页级 EntityScene 在 `features/entity-scene`
+2. **Overlays 挂载**；页面框架在 `shared/components/page-frame`
 3. **ShellContext**：只读 `scope / shellRoute / currentSpaceId / activeSection`
 
 ```txt

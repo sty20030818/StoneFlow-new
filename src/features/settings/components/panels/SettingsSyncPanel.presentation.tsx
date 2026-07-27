@@ -115,7 +115,7 @@ export function SyncCloudConfigBadge({
 					unavailable
 						? 'bg-sf-danger'
 						: configured
-							? 'bg-sf-project-task-status-done'
+							? 'bg-sf-success-strong'
 							: 'bg-(--sf-neutral-500)',
 				)}
 			/>

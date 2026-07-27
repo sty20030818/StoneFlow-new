@@ -1,4 +1,3 @@
-import type { EntitySceneTaskBoardConfig } from '@/features/entity-scene'
 import type { TaskDisplayPageKey } from '@/features/display-options'
 import type { TaskPlacement, TaskStatus } from '@/shared/types'
 
@@ -7,7 +6,6 @@ export type TaskListSceneVariant = 'all' | 'standalone'
 export type VariantConfig = {
 	displayPageKey: TaskDisplayPageKey
 	placement: { kind: 'all' | 'standalone' }
-	boardVariant: EntitySceneTaskBoardConfig['variant']
 	emptyTitle: string
 	emptyDescription: string
 	/** openTaskCreateDialog 草稿；undefined = 无参 */
@@ -25,7 +23,6 @@ export const VARIANT_CONFIG: Record<TaskListSceneVariant, VariantConfig> = {
 	all: {
 		displayPageKey: 'task:all',
 		placement: { kind: 'all' },
-		boardVariant: 'tasks',
 		emptyTitle: '当前没有任务',
 		emptyDescription:
 			'这里本来会显示符合当前条件的任务，不过现在还是空的。点「创建任务」先记下一项，后面再慢慢整理也来得及。',
@@ -37,7 +34,6 @@ export const VARIANT_CONFIG: Record<TaskListSceneVariant, VariantConfig> = {
 	standalone: {
 		displayPageKey: 'task:standalone',
 		placement: { kind: 'standalone' },
-		boardVariant: 'standalone',
 		emptyTitle: '当前没有独立事项',
 		emptyDescription:
 			'这里会放那些还没归属到项目里的任务，现在暂时还是空的。点「创建任务」先记下来，之后再决定要不要放进某个项目。',

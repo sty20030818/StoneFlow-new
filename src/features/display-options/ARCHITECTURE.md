@@ -9,7 +9,7 @@
 
 **负责：**
 
-- 任务列表显示层：布局（list/board）、分组、排序、字段可见性
+- 任务列表显示层：分组、排序、字段可见性
 - 页面级偏好键（`TaskDisplayPageKey`）与默认值 / 归一化
 - 偏好读写（workspace default + personal override，Tauri store）
 - 将已解析选项应用到任务列表（`applyTaskDisplayOptionsToTasks`）
@@ -19,7 +19,7 @@
 
 - 任务数据获取与 mutation（→ `@/features/task`）
 - 视图筛选定义（→ `@/features/view`）
-- 页面路由与场景编排（→ 各列表页 / `entity-scene`）
+- 页面路由与场景编排（→ 各列表页）
 
 ---
 

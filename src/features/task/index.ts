@@ -12,16 +12,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * all / standalone 共用列表场景（EntityScene）。
+ * all / standalone 共用列表场景。
  *
  * routes 只挂此组件 + variant，不写列表 wiring。
  */
 export { TaskListSceneView } from './components/TaskListSceneView'
 
 /**
- * 任务看板 UI（entity-scene / project 等复用）。
+ * 任务集合使用的 Board UI。
  */
-export { TaskBoard } from './components/TaskBoard'
+export { TaskBoard, type TaskBoardProps } from './components/TaskBoard'
 
 /**
  * 壳层「新建任务」对话框内容。
@@ -122,6 +122,14 @@ export { useTaskSelection } from './hooks/useTaskSelection'
  * 列表数据 facade（Query → items + status）。
  */
 export { useTaskListData } from './hooks/useTaskData'
+
+/**
+ * 任务集合的共享筛选、展示、选择、预览、批量与 Board 编排。
+ */
+export {
+	useTaskCollectionScene,
+	type TaskCollectionSceneInput,
+} from './hooks/useTaskCollectionScene'
 
 /**
  * 列表 Query（与 list 页同 key，供 nav badges 复用）。

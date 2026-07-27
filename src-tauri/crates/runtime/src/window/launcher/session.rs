@@ -44,8 +44,8 @@ pub async fn prepare_launcher_session(
     app_state: &AppState,
     active_scope: &ActiveScopeState,
 ) -> Result<LauncherOpenSessionResponse, LauncherErrorPayload> {
-	let prepare_started_at = std::time::Instant::now();
-	let controller = build_quick_controller(app_handle.clone());
+    let prepare_started_at = std::time::Instant::now();
+    let controller = build_quick_controller(app_handle.clone());
     let session = runtime
         .begin_open(LauncherWindowOpenReason::GlobalShortcut)
         .await
@@ -68,10 +68,10 @@ pub async fn prepare_launcher_session(
         .get_open_context(map_active_scope(active_scope.get().await))
         .await
         .map_err(|error| LauncherErrorPayload::from(AppError::from(error)))?;
-	log::info!(
-		"launcher.session_prepared context_ms={}",
-		prepare_started_at.elapsed().as_millis()
-	);
+    log::info!(
+        "launcher.session_prepared context_ms={}",
+        prepare_started_at.elapsed().as_millis()
+    );
 
     let response = LauncherOpenSessionResponse {
         session_id: session.session_id.clone(),

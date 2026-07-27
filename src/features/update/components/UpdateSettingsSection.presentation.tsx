@@ -174,7 +174,7 @@ export function UpdateIntervalOptions({
 								disabled && 'cursor-not-allowed opacity-70',
 								checked
 									? 'border-primary/40 bg-primary/10 font-medium text-foreground'
-									: 'border-sf-border-subtle bg-muted/25 text-sf-shell-tertiary hover:bg-muted/45',
+									: 'border-sf-border-subtle bg-muted/25 text-sf-shell-text-tertiary hover:bg-muted/45',
 							)}
 						>
 							{option.label}

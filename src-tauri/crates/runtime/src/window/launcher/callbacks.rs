@@ -20,25 +20,25 @@ fn on_became_key(app: AppHandle<Wry>) {
         let runtime = runtime_state.inner().clone();
         let app_for_presented = app.clone();
         tauri::async_runtime::spawn(async move {
-			let snapshot = runtime.snapshot().await;
-			let Some(session) = snapshot.current_session else {
-				log::warn!("runtime: launcher visible 时缺少 active session");
-				return;
-			};
-			if let Err(error) = runtime.mark_visible_for(&session.session_id).await {
-				log::warn!("runtime: launcher 标记 visible 失败: {error}");
-				return;
-			}
-			log::info!(
-				"launcher.presented open_ms={}",
-				chrono::Utc::now()
-					.signed_duration_since(session.opened_at)
-					.num_milliseconds()
-			);
-			if let Some(window) = app_for_presented.get_webview_window(LAUNCHER_LABEL) {
-				if let Err(error) = window.emit(
-					"launcher:session-presented",
-					serde_json::json!({ "sessionId": session.session_id }),
+            let snapshot = runtime.snapshot().await;
+            let Some(session) = snapshot.current_session else {
+                log::warn!("runtime: launcher visible 时缺少 active session");
+                return;
+            };
+            if let Err(error) = runtime.mark_visible_for(&session.session_id).await {
+                log::warn!("runtime: launcher 标记 visible 失败: {error}");
+                return;
+            }
+            log::info!(
+                "launcher.presented open_ms={}",
+                chrono::Utc::now()
+                    .signed_duration_since(session.opened_at)
+                    .num_milliseconds()
+            );
+            if let Some(window) = app_for_presented.get_webview_window(LAUNCHER_LABEL) {
+                if let Err(error) = window.emit(
+                    "launcher:session-presented",
+                    serde_json::json!({ "sessionId": session.session_id }),
                 ) {
                     log::warn!("runtime: launcher:session-presented 事件发送失败: {error}");
                 }

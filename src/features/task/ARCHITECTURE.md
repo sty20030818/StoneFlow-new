@@ -9,6 +9,7 @@
 ```txt
 列表薄页 / project / view
   → TaskListSceneView | useTaskListScene
+  → useTaskCollectionScene（展示 / 选择 / 预览 / 批量 / Board 接线）
   → TaskBoard + filter / display / selection / preview
 
 详情
@@ -41,9 +42,10 @@ src/features/task/
 ├── api/                     # IO only（唯一 invoke）
 ├── hooks/
 │   ├── task.keys|queries|mutations
-│   ├── useTaskListController · useTaskSelection · useTaskData · filter
-│   ├── useTaskListScene.ts  # 列表 facade（薄编排）
-│   └── list-scene/          # variant · filter/display · selection · board
+	│   ├── useTaskListController · useTaskSelection · useTaskData · filter
+	│   ├── useTaskCollectionScene.ts # 任务集合的唯一交互编排
+	│   ├── useTaskListScene.ts  # all / standalone 数据源与页面差异
+	│   └── list-scene/          # variant 配置
 ├── model/                   # 纯规则 + indicators（无 React hook）
 ├── create/                  # 创建表单内核
 ├── bulk/                    # 批量动作 + adapter
@@ -59,7 +61,7 @@ src/features/task/
 
 | 类 | 示例 |
 |----|------|
-| 列表 | `TaskListSceneView` · `TaskBoard`（`useTaskListScene` 厚页可直接用） |
+| 列表 | `TaskListSceneView` · `TaskBoard` · `useTaskCollectionScene` |
 | 创建 | `TaskCreateContent` · `taskCreateSchema` · `toTaskCreateInput` |
 | 打开策略 | `resolveCommandOpenTargetPath` · `resolveShellDetailState` |
 | 筛选 | `useTaskPageFilterController` |
@@ -82,7 +84,7 @@ src/features/task/
 |------|------|
 | bulk-action | 引擎在 bulk-action；本域贡献 actions/adapter |
 | command | 经 `registerTaskCommands` 注入 handlers |
-| entity-scene | 列表页挂 EntityScene；board 走本域 public |
+| page-frame | 列表页组合纯页面框架；Board 走本域 public |
 | shell-dialogs | 创建对话框状态在壳；本域只出表单内容 |
 | metadata-fields | placement 归本域；status/priority 图标由本域注入 |
 | launcher | 创建内核 / 标签 formatters 复用本域 public |

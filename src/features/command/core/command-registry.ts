@@ -8,7 +8,7 @@ export class CommandRegistry {
 	}
 
 	register(command: Command) {
-		// CommandId 是命令系统的事实源，重复 id 必须在注册阶段直接暴露。
+		// CommandId 是命令系统的事实源，重复 id 必须在注册时直接暴露。
 		if (this.commands.has(command.id)) {
 			throw new Error(`Duplicate command id: ${command.id}`)
 		}

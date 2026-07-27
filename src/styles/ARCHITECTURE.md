@@ -1,7 +1,7 @@
 > 版本：v2
 > 作用：定义 `src/styles` 当前已经落地的样式体系边界
 > 适用范围：`/Users/stonefish/Desktop/StoneFlow/src/styles` 及所有消费这些样式的前端代码
-> 最后更新：2026-06-16
+> 最后更新：2026-07-28
 
 ---
 
@@ -18,13 +18,13 @@ primitive tokens
 -> shadcn adapter
 -> Tailwind v4 entry
 -> base rules / utilities
--> shared/ui patterns / app layouts / feature UI
+-> shared/components / layout / feature UI
 ```
 
 最重要的结论：
 
 1. StoneFlow token 才是产品视觉真相源
-2. shadcn token 只是兼容层，不是产品布局真相
+2. shadcn token 是基础组件语义映射，不是产品布局真相
 3. 页面层应尽量消费语义化 token 和已有 pattern，而不是直接堆原始色值
 
 ---
@@ -142,7 +142,7 @@ layout token 表达 StoneFlow 产品结构语义。
 规则：
 
 1. StoneFlow token 是上游真相源
-2. shadcn token 是兼容映射
+2. shadcn token 是语义映射
 3. 页面不应反向用 shadcn token 取代产品 token
 
 ### 3.6 `base.css`
@@ -169,19 +169,19 @@ layout token 表达 StoneFlow 产品结构语义。
 
 ```txt
 styles/tokens
--> shared/ui/base
--> shared/ui/patterns
--> app/layouts
+-> shared/components/base
+-> shared/components/patterns
+-> layout
 -> feature UI
 ```
 
 典型事实：
 
-1. `shared/ui/base/*` 复用 shadcn + Tailwind 基础能力
-2. `shared/ui/patterns/*` 承接 StoneFlow 的结构化视觉模式
-3. `app/layouts` 与 feature UI 优先消费这些 pattern 和 token
+1. `shared/components/base/*` 复用 shadcn + Tailwind 基础能力
+2. `shared/components/patterns/*` 承接 StoneFlow 的结构化视觉模式
+3. `layout` 与 feature UI 优先消费这些 pattern 和 token
 
-所以如果某个视觉模式已经在 `shared/ui/patterns` 存在，就不应回到页面里重新写一遍。
+所以如果某个视觉模式已经在 `shared/components/patterns` 存在，就不应回到页面里重新写一遍。
 
 ---
 
@@ -209,7 +209,7 @@ Shell、sidebar、footer、main、list row 这类产品结构，优先用：
 4. `--sf-control-*`
 5. `--sf-list-*`
 
-### 5.3 shadcn 是兼容层，不是终点
+### 5.3 shadcn 是基础组件映射，不是产品布局真相
 
 保留 `bg-background`、`text-foreground` 这类 utility 的目的，是让 base primitive 稳定工作。
 

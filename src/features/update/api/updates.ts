@@ -103,7 +103,7 @@ export async function getUpdateSettings(): Promise<UpdateSettings> {
 	return invoke<UpdateSettings>('get_update_settings')
 }
 
-/** 进程内更新会话阶段 */
+/** 进程内更新会话生命周期状态 */
 export type UpdateSessionPhase = 'idle' | 'available' | 'downloading' | 'ready'
 
 /** 进程内更新会话快照（挂载 hydrate） */

@@ -78,7 +78,7 @@ export function TaskLinkEditorPopover({
 						<div className='space-y-1'>
 							<h4 className='text-[13px] font-medium text-foreground'>{titleLabel}</h4>
 							<p className='text-[12px] leading-5 text-sf-shell-text-tertiary'>
-								当前阶段只支持 `http` / `https` URL。
+								仅支持 `http` / `https` URL。
 							</p>
 						</div>
 

@@ -16,7 +16,7 @@ export function RouterFeedbackPage({
 			<div className='flex w-full max-w-md flex-col items-center gap-3 text-center'>
 				<h1 className='text-base font-semibold text-foreground'>{title}</h1>
 				{description ? (
-					<div className='text-sm leading-6 text-sf-shell-tertiary'>{description}</div>
+					<div className='text-sm leading-6 text-sf-shell-text-tertiary'>{description}</div>
 				) : null}
 				{action}
 			</div>

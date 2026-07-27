@@ -17,7 +17,6 @@ import {
 	type BulkActionId,
 } from '@/features/bulk-action'
 import { useEntityDetailController } from '@/features/entity-detail'
-import type { EntitySceneBoardSlotProps } from '@/features/entity-scene'
 import {
 	useEntitySelection,
 	useEntitySelectionEscape,
@@ -34,6 +33,7 @@ import {
 import { useLifecycleEntriesQuery } from './lifecycle.queries'
 import { buildLifecycleCommandSelection } from '../model/buildLifecycleCommandSelection'
 import { buildLifecycleSections, type LifecycleEntityFilter } from '../model/buildLifecycleSections'
+import type { LifecycleBoardProps } from '../components/LifecycleBoard'
 
 const EMPTY_LIFECYCLE_ENTRIES: LifecycleEntry[] = []
 
@@ -185,70 +185,59 @@ export function useLifecycleScene(mode: LifecycleMode) {
 		[entityFilter, mode, sliceItems, scope],
 	)
 
-	const board: EntitySceneBoardSlotProps = {
-		boardKind: 'lifecycle',
-		boardConfig: {
-			emptyActionLabel: '返回独立事项',
-			emptyDescription:
-				mode === 'archive'
-					? '归档后的任务和项目会放在这里。点「返回独立事项」先回去继续处理手头内容就好。'
-					: '删除后的任务和项目会先来到这里。点「返回独立事项」先回去继续处理内容就好。',
-			emptyTitle: mode === 'archive' ? '当前没有已归档内容' : '当前没有已删除内容',
-			mode,
+	const lifecycleBoardProps: LifecycleBoardProps = {
+		mode,
+		sections,
+		status: sliceStatus,
+		pendingEntryId,
+		selectedEntryIdSet,
+		focusedEntryId,
+		emptyActionLabel: '返回独立事项',
+		emptyDescription:
+			mode === 'archive'
+				? '归档后的任务和项目会放在这里。点「返回独立事项」先回去继续处理手头内容就好。'
+				: '删除后的任务和项目会先来到这里。点「返回独立事项」先回去继续处理内容就好。',
+		emptyTitle: mode === 'archive' ? '当前没有已归档内容' : '当前没有已删除内容',
+		onEmptyAction: () => {
+			void navigate({ to: openSection(scope, 'standalone', spaceId) as never })
 		},
-		boardData: {
-			sections,
-			status: sliceStatus,
-			pendingEntryId,
-			selectedEntryIdSet,
-			focusedEntryId,
+		onOpenDetail: mode === 'archive' ? handleOpenDetail : undefined,
+		onRestore: (entry: LifecycleEntry) => {
+			void runEntryMutation(entry, () => restoreEntry.mutateAsync(entry))
 		},
-		boardActions: {
-			onEmptyAction: () => {
-				void navigate({ to: openSection(scope, 'standalone', spaceId) as never })
-			},
-			onOpenDetail: mode === 'archive' ? handleOpenDetail : undefined,
-			onRestore: (entry: LifecycleEntry) => {
-				void runEntryMutation(entry, () => restoreEntry.mutateAsync(entry))
-			},
-			onRestoreEntries: (entries: LifecycleEntry[]) => {
-				void runLifecycleBulkAction(
-					LIFECYCLE_BULK_ACTION_IDS.restoreSelected,
-					entries,
-					'context-menu',
-				)
-			},
-			onMoveToTrash: (entry: LifecycleEntry) => {
-				void runEntryMutation(entry, () => deleteEntry.mutateAsync(entry))
-			},
-			onMoveToTrashEntries: (entries: LifecycleEntry[]) => {
-				void runLifecycleBulkAction(
-					LIFECYCLE_BULK_ACTION_IDS.deleteSelected,
-					entries,
-					'context-menu',
-				)
-			},
-			onPermanentlyDelete: (entry: LifecycleEntry) => {
-				void runEntryMutation(entry, () => permanentlyDeleteEntry.mutateAsync(entry))
-			},
-			onPermanentlyDeleteEntries: (entries: LifecycleEntry[]) => {
-				void runLifecycleBulkAction(
-					LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected,
-					entries,
-					'context-menu',
-				)
-			},
-			onSelectAllEntries: selectEntryIds,
-			onToggleEntrySelection: toggleEntrySelection,
-			onSetFocusedEntry: setFocusedEntryId,
-			onMoveEntryFocus: moveFocus,
-			onClearEntrySelection: clearEntrySelection,
+		onRestoreEntries: (entries: LifecycleEntry[]) => {
+			void runLifecycleBulkAction(
+				LIFECYCLE_BULK_ACTION_IDS.restoreSelected,
+				entries,
+				'context-menu',
+			)
 		},
+		onMoveToTrash: (entry: LifecycleEntry) => {
+			void runEntryMutation(entry, () => deleteEntry.mutateAsync(entry))
+		},
+		onMoveToTrashEntries: (entries: LifecycleEntry[]) => {
+			void runLifecycleBulkAction(LIFECYCLE_BULK_ACTION_IDS.deleteSelected, entries, 'context-menu')
+		},
+		onPermanentlyDelete: (entry: LifecycleEntry) => {
+			void runEntryMutation(entry, () => permanentlyDeleteEntry.mutateAsync(entry))
+		},
+		onPermanentlyDeleteEntries: (entries: LifecycleEntry[]) => {
+			void runLifecycleBulkAction(
+				LIFECYCLE_BULK_ACTION_IDS.deletePermanentlySelected,
+				entries,
+				'context-menu',
+			)
+		},
+		onSelectAllEntries: selectEntryIds,
+		onToggleEntrySelection: toggleEntrySelection,
+		onSetFocusedEntry: setFocusedEntryId,
+		onMoveEntryFocus: moveFocus,
+		onClearEntrySelection: clearEntrySelection,
 	}
 
 	return {
 		mode,
-		board,
+		lifecycleBoardProps,
 		breadcrumbItems,
 		toolbarPills,
 		bulk: {

@@ -16,10 +16,10 @@ import {
 	type BulkActionId,
 } from '@/features/bulk-action'
 import { useDialogStore } from '@/features/shell-dialogs'
-import type { EntitySceneBoardSlotProps } from '@/features/entity-scene'
 import type { ProjectOverviewViewKey } from '@/features/project'
 import {
 	buildProjectCommandSelection,
+	type ProjectBoardProps,
 	useArchiveProjectMutation,
 	useCompleteProjectMutation,
 	useDeleteProjectMutation,
@@ -105,53 +105,46 @@ export function useProjectOverviewScene() {
 		[clearProjectSelection, runBulkAction, selectedProjects],
 	)
 
-	const board: EntitySceneBoardSlotProps = {
-		boardKind: 'project',
-		boardConfig: {
-			variant: 'overview',
-			emptyActionLabel: '创建项目',
-			emptyDescription:
-				'这里还没有项目，可以先从一个项目开始。点「创建项目」先建起来，后面的任务和节奏就有地方承接了。',
-			emptyTitle: '当前没有项目',
+	const projectBoardProps: ProjectBoardProps = {
+		variant: 'overview',
+		items: overviewItems,
+		status: overviewStatus,
+		busyProjectId,
+		selectedProjectIds,
+		focusedProjectId,
+		emptyActionLabel: '创建项目',
+		emptyDescription:
+			'这里还没有项目，可以先从一个项目开始。点「创建项目」先建起来，后面的任务和节奏就有地方承接了。',
+		emptyTitle: '当前没有项目',
+		onToggleProjectSelection: toggleProjectSelection,
+		onSetFocusedProject: setFocusedProjectId,
+		onMoveProjectFocus: moveFocus,
+		onClearProjectSelection: clearProjectSelection,
+		onArchive: (projectId) => {
+			void runRowAction(projectId, async () => {
+				await archiveProject.mutateAsync(projectId)
+			})
 		},
-		boardData: {
-			items: overviewItems,
-			status: overviewStatus,
-			busyProjectId,
-			selectedProjectIds,
-			focusedProjectId,
+		onComplete: (projectId) => {
+			void runRowAction(projectId, async () => {
+				await completeProject.mutateAsync(projectId)
+			})
 		},
-		boardActions: {
-			onToggleProjectSelection: toggleProjectSelection,
-			onSetFocusedProject: setFocusedProjectId,
-			onMoveProjectFocus: moveFocus,
-			onClearProjectSelection: clearProjectSelection,
-			onArchiveProject: (projectId) => {
-				void runRowAction(projectId, async () => {
-					await archiveProject.mutateAsync(projectId)
-				})
-			},
-			onCompleteProject: (projectId) => {
-				void runRowAction(projectId, async () => {
-					await completeProject.mutateAsync(projectId)
-				})
-			},
-			onDeleteProject: (projectId) => {
-				void runRowAction(projectId, async () => {
-					await deleteProject.mutateAsync(projectId)
-				})
-			},
-			onEmptyAction: () => openProjectCreateDialog(),
-			onOpenProject: (projectId) =>
-				void navigate({
-					to: openProjectDetail(projectId, { scope, fallbackSpaceId: spaceId }) as never,
-				}),
-			onSelectAllProjects: selectProjectIds,
-			onReopenProject: (projectId) => {
-				void runRowAction(projectId, async () => {
-					await reopenProject.mutateAsync(projectId)
-				})
-			},
+		onDelete: (projectId) => {
+			void runRowAction(projectId, async () => {
+				await deleteProject.mutateAsync(projectId)
+			})
+		},
+		onEmptyAction: () => openProjectCreateDialog(),
+		onOpen: (projectId) =>
+			void navigate({
+				to: openProjectDetail(projectId, { scope, fallbackSpaceId: spaceId }) as never,
+			}),
+		onSelectAllProjects: selectProjectIds,
+		onReopen: (projectId) => {
+			void runRowAction(projectId, async () => {
+				await reopenProject.mutateAsync(projectId)
+			})
 		},
 	}
 
@@ -165,7 +158,7 @@ export function useProjectOverviewScene() {
 
 	return {
 		breadcrumbItems,
-		board,
+		projectBoardProps,
 		toolbarPills,
 		bulk: {
 			selectedCount,

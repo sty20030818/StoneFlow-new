@@ -14,13 +14,13 @@ const badgeVariants = cva(
 				primary:
 					'border-sf-accent-soft-border bg-accent text-accent-foreground [a]:hover:bg-accent/80',
 				secondary:
-					'border-sf-border-subtle bg-secondary text-secondary-foreground [a]:hover:bg-sf-bg-surface-hover',
+					'border-sf-border-subtle bg-secondary text-secondary-foreground [a]:hover:bg-sf-surface-hover',
 				destructive:
-					'border-sf-danger-soft-border bg-sf-danger-soft text-sf-danger-soft-text focus-visible:ring-destructive/20 [a]:hover:bg-sf-danger-soft',
+					'border-sf-danger-surface-border bg-sf-danger-surface text-sf-danger-surface-text focus-visible:ring-destructive/20 [a]:hover:bg-sf-danger-surface',
 				success:
-					'border-sf-success-soft-border bg-sf-success-soft text-sf-success-soft-text [a]:hover:bg-sf-success-soft',
+					'border-sf-success-surface-border bg-sf-success-surface text-sf-success-surface-text [a]:hover:bg-sf-success-surface',
 				warning:
-					'border-sf-warning-soft-border bg-sf-warning-soft text-sf-warning-soft-text [a]:hover:bg-sf-warning-soft',
+					'border-sf-warning-surface-border bg-sf-warning-surface text-sf-warning-surface-text [a]:hover:bg-sf-warning-surface',
 				outline:
 					'border-sf-border-subtle bg-card text-sf-text-secondary [a]:hover:bg-muted/70 [a]:hover:text-foreground',
 				ghost:

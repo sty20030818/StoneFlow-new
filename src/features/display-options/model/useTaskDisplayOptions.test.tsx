@@ -43,13 +43,13 @@ describe('useTaskDisplayOptions', () => {
 		expect(result.current.options.groupBy).toBe('status')
 	})
 
-	it('setLayout 会持久化 personal override 并刷新结果', async () => {
+	it('setGrouping 会持久化 personal override 并刷新结果', async () => {
 		const { result } = renderWithQueryClient(() => useTaskDisplayOptions('task:all'))
 
 		await waitFor(() => expect(result.current.status).toBe('ready'))
-		await result.current.actions.setLayout('board')
+		await result.current.actions.setGrouping('priority')
 
-		await waitFor(() => expect(result.current.options.layout).toBe('board'))
+		await waitFor(() => expect(result.current.options.groupBy).toBe('priority'))
 		expect(storeSaveMock).toHaveBeenCalled()
 	})
 

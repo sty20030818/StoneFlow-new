@@ -31,7 +31,10 @@ export type SyncFooterViewInput = {
 	loading: boolean
 	running: boolean
 	message: string | null
-	statusPayload: Pick<SyncStatusPayload, 'credentialState' | 'hasRemoteConfig' | 'replicaState'> | null
+	statusPayload: Pick<
+		SyncStatusPayload,
+		'credentialState' | 'hasRemoteConfig' | 'replicaState'
+	> | null
 }
 
 export function deriveSyncFooterView(input: SyncFooterViewInput): SyncFooterView {
@@ -42,25 +45,26 @@ export function deriveSyncFooterView(input: SyncFooterViewInput): SyncFooterView
 	const busy = input.running || input.displayedStatus === 'syncing'
 	const tone = getSyncStatusTone(input.displayedStatus)
 
-	const label = credentialState === 'unavailable'
-		? '凭据异常'
-		: !hasRemoteConfig
-		? '未配置'
-		: blocked
-			? formatReplicaState(replicaState)
-			: input.displayedStatus === 'synced'
-				? '已同步'
-				: formatSyncStatus(input.displayedStatus)
+	const label =
+		credentialState === 'unavailable'
+			? '凭据异常'
+			: !hasRemoteConfig
+				? '未配置'
+				: blocked
+					? formatReplicaState(replicaState)
+					: input.displayedStatus === 'synced'
+						? '已同步'
+						: formatSyncStatus(input.displayedStatus)
 
 	const title = input.message
 		? input.message
 		: credentialState === 'unavailable'
 			? '无法访问同步凭据，请到设置中处理'
 			: !hasRemoteConfig
-			? '同步未配置远端，请到设置中配置'
-			: blocked
-				? formatReplicaState(replicaState)
-				: formatSyncStatus(input.displayedStatus)
+				? '同步未配置远端，请到设置中配置'
+				: blocked
+					? formatReplicaState(replicaState)
+					: formatSyncStatus(input.displayedStatus)
 
 	return {
 		label,

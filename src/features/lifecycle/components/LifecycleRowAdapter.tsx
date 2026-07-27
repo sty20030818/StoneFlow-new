@@ -39,7 +39,7 @@ type LifecycleRowAdapterProps = {
 
 /**
  * LifecycleRowAdapter 负责生命周期实体到统一 RowShell 的语义翻译。
- * 当前阶段常驻动作只保留恢复，其余动作不进入 row 主界面。
+ * 行内主操作只保留恢复，其余动作不进入 Row 主界面。
  */
 export function LifecycleRowAdapter({
 	entry,

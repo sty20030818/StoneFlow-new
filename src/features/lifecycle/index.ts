@@ -22,8 +22,8 @@ export { useLifecycleEntriesQuery } from './hooks'
 /** 归档/回收站列表页（routes 薄页挂 mode）。 */
 export { LifecycleList } from './components/LifecycleList'
 
-/** 生命周期看板（EntityScene adapter）。 */
-export { LifecycleBoard } from './components/LifecycleBoard'
+/** 生命周期看板。 */
+export { LifecycleBoard, type LifecycleBoardProps } from './components/LifecycleBoard'
 
 // ── 批量 / 命令 ─────────────────────────────────────────────────────────────
 

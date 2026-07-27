@@ -25,7 +25,6 @@ import { Switch } from '@/shared/components/base/switch'
 import { PropertyToggleGrid } from './PropertyToggleGrid'
 
 type DisplayOptionsPanelActions = {
-	setLayout: (layout: ResolvedTaskDisplayOptions['layout']) => Promise<void>
 	setGrouping: (groupBy: ResolvedTaskDisplayOptions['groupBy']) => Promise<void>
 	setSubGrouping: (subGroupBy: ResolvedTaskDisplayOptions['subGroupBy']) => Promise<void>
 	setOrdering: (
@@ -45,11 +44,6 @@ type DisplayOptionsPanelProps = {
 	error?: string | null
 	actions: DisplayOptionsPanelActions
 	className?: string
-}
-
-const LAYOUT_LABELS: Record<ResolvedTaskDisplayOptions['layout'], string> = {
-	list: '列表',
-	board: '看板',
 }
 
 const GROUP_LABELS: Record<ResolvedTaskDisplayOptions['groupBy'], string> = {
@@ -112,8 +106,7 @@ export function DisplayOptionsPanel({
 	const capabilities = getTaskDisplayPageCapabilities(pageKey)
 	const isPending = status === 'loading'
 	const isErrored = status === 'error'
-	const supportsSubGrouping =
-		getAllowedSubGroupChoices(pageKey, options.layout).filter((item) => item !== 'none').length > 0
+	const supportsSubGrouping = capabilities.allowedSubGroupBy.some((item) => item !== 'none')
 	const canToggleShowEmptyGroups =
 		capabilities.supportsShowEmptyGroups && options.groupBy !== 'none'
 	// 用 Set 承载已显示属性，避免下方 map 循环内重复 array.includes 扫描
@@ -136,30 +129,6 @@ export function DisplayOptionsPanel({
 	return (
 		<div className={cn('flex w-full min-w-0 flex-col gap-3', className)}>
 			<div className='flex flex-col gap-2'>
-				<DisplayOptionRow label='布局模式'>
-					<div
-						aria-label='布局模式'
-						className='flex max-w-full items-center justify-end gap-1 rounded-full border border-sf-border-subtle bg-muted/30 p-1'
-						role='tablist'
-					>
-						{capabilities.allowedLayouts.map((layout) => (
-							<Button
-								aria-selected={options.layout === layout}
-								className='min-w-12'
-								disabled={isPending || capabilities.allowedLayouts.length <= 1}
-								key={layout}
-								onClick={() => void actions.setLayout(layout)}
-								role='tab'
-								size='sm'
-								type='button'
-								variant={options.layout === layout ? 'outline' : 'ghost'}
-							>
-								{LAYOUT_LABELS[layout]}
-							</Button>
-						))}
-					</div>
-				</DisplayOptionRow>
-
 				<DisplayOptionRow label='主分组'>
 					<Select
 						disabled={isPending}
@@ -173,7 +142,7 @@ export function DisplayOptionsPanel({
 						</SelectTrigger>
 						<SelectContent position='popper'>
 							<SelectGroup>
-								{getAllowedGroupChoices(pageKey, options.layout).map((groupBy) => (
+								{capabilities.allowedGroupBy.map((groupBy) => (
 									<SelectItem key={groupBy} value={groupBy}>
 										{GROUP_LABELS[groupBy]}
 									</SelectItem>
@@ -197,7 +166,7 @@ export function DisplayOptionsPanel({
 							</SelectTrigger>
 							<SelectContent position='popper'>
 								<SelectGroup>
-									{getAllowedSubGroupChoices(pageKey, options.layout).map((groupBy) => (
+									{capabilities.allowedSubGroupBy.map((groupBy) => (
 										<SelectItem key={groupBy} value={groupBy}>
 											{GROUP_LABELS[groupBy]}
 										</SelectItem>
@@ -322,7 +291,7 @@ export function DisplayOptionsPanel({
 				{isErrored && error ? (
 					<p className='text-[12px] leading-5 text-destructive'>{error}</p>
 				) : isPending ? (
-					<p className='text-[12px] leading-5 text-sf-shell-tertiary'>正在读取显示偏好…</p>
+					<p className='text-[12px] leading-5 text-sf-shell-text-tertiary'>正在读取显示偏好…</p>
 				) : null}
 			</div>
 		</div>
@@ -357,32 +326,6 @@ function DisplayInlineSwitch({
 			/>
 		</>
 	)
-}
-
-function getAllowedGroupChoices(
-	pageKey: TaskDisplayPageKey,
-	layout: ResolvedTaskDisplayOptions['layout'],
-) {
-	const capabilities = getTaskDisplayPageCapabilities(pageKey)
-
-	if (layout === 'board') {
-		return capabilities.board?.allowedGroupBy ?? ['status']
-	}
-
-	return capabilities.allowedGroupBy
-}
-
-function getAllowedSubGroupChoices(
-	pageKey: TaskDisplayPageKey,
-	layout: ResolvedTaskDisplayOptions['layout'],
-) {
-	const capabilities = getTaskDisplayPageCapabilities(pageKey)
-
-	if (layout === 'board') {
-		return capabilities.board?.allowedSubGroupBy ?? ['none']
-	}
-
-	return capabilities.allowedSubGroupBy
 }
 
 function toggleVisibleProperty(

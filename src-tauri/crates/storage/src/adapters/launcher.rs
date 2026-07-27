@@ -168,7 +168,8 @@ impl LauncherPorts for LauncherPortsAdapter {
             .await
             .map_err(|error| ApplicationError::storage(error.to_string()))?;
 
-        let space_names = load_space_names(&self.db, rows.iter().map(|row| row.space_id.clone())).await?;
+        let space_names =
+            load_space_names(&self.db, rows.iter().map(|row| row.space_id.clone())).await?;
         let project_names = load_project_names(
             &self.db,
             rows.iter().filter_map(|row| row.project_id.clone()),
@@ -213,7 +214,8 @@ impl LauncherPorts for LauncherPortsAdapter {
             .await
             .map_err(|error| ApplicationError::storage(error.to_string()))?;
 
-        let space_names = load_space_names(&self.db, rows.iter().map(|row| row.space_id.clone())).await?;
+        let space_names =
+            load_space_names(&self.db, rows.iter().map(|row| row.space_id.clone())).await?;
 
         Ok(rows
             .into_iter()
@@ -237,7 +239,11 @@ async fn load_space_names(
     db: &DatabaseConnection,
     ids: impl IntoIterator<Item = String>,
 ) -> Result<HashMap<String, String>, ApplicationError> {
-    let ids = ids.into_iter().collect::<HashSet<_>>().into_iter().collect::<Vec<_>>();
+    let ids = ids
+        .into_iter()
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
     if ids.is_empty() {
         return Ok(HashMap::new());
     }
@@ -259,7 +265,11 @@ async fn load_project_names(
     db: &DatabaseConnection,
     ids: impl IntoIterator<Item = String>,
 ) -> Result<HashMap<String, String>, ApplicationError> {
-    let ids = ids.into_iter().collect::<HashSet<_>>().into_iter().collect::<Vec<_>>();
+    let ids = ids
+        .into_iter()
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
     if ids.is_empty() {
         return Ok(HashMap::new());
     }

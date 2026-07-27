@@ -1,26 +1,37 @@
 import { PlusIcon } from 'lucide-react'
 
-import { EntityScene } from '@/features/entity-scene'
 import { BulkActionBar } from '@/features/bulk-action'
 import { MainCard } from '@/shared/components/main-card/MainCardLayout'
 import { Button } from '@/shared/components/base/button'
 import { BULK_ACTION_BUTTON_CLASS } from '@/shared/components/patterns/bulk-action'
 import { AppBreadcrumb } from '@/shared/components/AppBreadcrumb'
+import { PageFrame } from '@/shared/components/page-frame'
+import { ProjectBoard } from '@/features/project'
 
 import { useProjectOverviewScene } from '../hooks/useProjectOverviewScene'
 
 /**
- * 项目总览页：只拼 EntityScene 槽位。
+ * 项目总览页：组合页面框架与项目集合。
  * wiring 在 {@link useProjectOverviewScene}。
  */
 export function ProjectOverviewPage() {
 	const scene = useProjectOverviewScene()
 
 	return (
-		<EntityScene
-			board={scene.board}
-			breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
-			bulkBar={
+		<PageFrame.Root>
+			<PageFrame.Header
+				actions={
+					<MainCard.GhostAction aria-label='创建项目' onClick={scene.openProjectCreateDialog}>
+						<PlusIcon />
+					</MainCard.GhostAction>
+				}
+				breadcrumb={<AppBreadcrumb items={scene.breadcrumbItems} />}
+			/>
+			<PageFrame.Toolbar pills={scene.toolbarPills} />
+			<PageFrame.Body>
+				<ProjectBoard {...scene.projectBoardProps} />
+			</PageFrame.Body>
+			<PageFrame.BulkBar>
 				<BulkActionBar
 					action={
 						<ProjectBulkBarActions
@@ -31,14 +42,8 @@ export function ProjectOverviewPage() {
 					onClear={scene.bulk.clearProjectSelection}
 					selectedCount={scene.bulk.selectedCount}
 				/>
-			}
-			headerActions={
-				<MainCard.GhostAction aria-label='创建项目' onClick={scene.openProjectCreateDialog}>
-					<PlusIcon />
-				</MainCard.GhostAction>
-			}
-			toolbarPills={scene.toolbarPills}
-		/>
+			</PageFrame.BulkBar>
+		</PageFrame.Root>
 	)
 }
 

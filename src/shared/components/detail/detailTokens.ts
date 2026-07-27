@@ -32,7 +32,7 @@ export const detailFieldDescriptionClass = 'mt-1 text-[11px] leading-4 text-sf-t
 
 export const detailSaveStatusClass = 'text-[11px] leading-none text-sf-text-tertiary'
 
-export const detailSaveStatusErrorClass = 'text-[11px] leading-none text-sf-danger-soft-text'
+export const detailSaveStatusErrorClass = 'text-[11px] leading-none text-sf-danger-surface-text'
 
 export const detailPageGridClass = 'grid min-h-full gap-4 lg:grid-cols-[minmax(0,1fr)_280px]'
 

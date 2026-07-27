@@ -2,7 +2,7 @@
 
 > 版本：v5.1 · 2026-07-18
 > 作用：`src/` **定稿最优架构**（WHAT / WHERE）。日常改码以本文 + [`CONVENTIONS.md`](./CONVENTIONS.md) + 各模块 `ARCHITECTURE.md` 为准。
-> 不写：债表、阶段进度、史诗号（那些属于 Docs 执行计划，且不得与本文抢权威）。
+> 不写：债表、执行进度、变更历史（这些不属于当前架构契约）。
 
 **冲突时：** 本文 + `CONVENTIONS` ≥ Docs 讨论卡 / 过时 As-Is。
 **改模块时：** 只更新该模块 `ARCHITECTURE.md` 的定稿形态。
@@ -99,7 +99,7 @@ src/
 ### 4.2 `layout/` · 铬架
 
 **负责：** Shell 布局与铬架、壳级 Provider 嵌套、Command Host 装配、Overlays、`ShellBulkActionBoundary`（只 compose 各域 bulk public）。
-**不负责：** 实体 Query 真相、domain 命令 handlers、EntityScene 实现（→ `features/entity-scene`）。
+**不负责：** 实体 Query 真相、domain 命令 handlers、页面实体 Board 实现。
 
 短契约：[`layout/ARCHITECTURE.md`](./layout/ARCHITECTURE.md)。
 
@@ -118,6 +118,10 @@ src/
 
 base UI、board/row、query 跨域失效工具、types、lib、events、form…
 禁止实体业务规则、feature 专属 API。
+
+`shared/components/page-frame` 是工作区页面的纯视觉骨架，只提供 Header、Toolbar、Body、Footer 与 BulkBar 的组合顺序。它不持有实体数据、Board 分发或业务操作。
+
+任务集合页面由 task 域的 `useTaskCollectionScene` 统一任务 Board、展示、选择、预览与批量操作接线；全部任务、独立事项、视图与项目详情只提供数据源和页面专属动作。项目总览与生命周期页面复用 `PageFrame`，各自在所属 Feature 内维护实体 Board 和业务编排。
 
 ### 4.6 `styles/`
 
@@ -144,7 +148,6 @@ Token、shadcn 映射、Tailwind 入口。见 [`styles/ARCHITECTURE.md`](./style
 | submit | platform | 壳级提交目标注册 | [submit](./features/submit/ARCHITECTURE.md) |
 | danger-confirm | platform | 危险确认 UI 协议 | [danger-confirm](./features/danger-confirm/ARCHITECTURE.md) |
 | entity-detail | platform | 抽屉打开 = URL search 契约 | [entity-detail](./features/entity-detail/ARCHITECTURE.md) |
-| entity-scene | platform | 列表页槽位编排 | [entity-scene](./features/entity-scene/ARCHITECTURE.md) |
 | global-search | platform | 主窗搜索 | [global-search](./features/global-search/ARCHITECTURE.md) |
 | workspace | platform | 听事件 → invalidate | [workspace](./features/workspace/ARCHITECTURE.md) |
 | sync | platform | 云同步 | [sync](./features/sync/ARCHITECTURE.md) |
@@ -194,11 +197,11 @@ QueryClient 默认（`app/providers`）：`staleTime 30s` · `gcTime 10min` · `
 
 ---
 
-## 9. 开放前破坏性阶段
+## 9. Hard-Cut 原则
 
 与 CONVENTIONS §0.3 一致：
 
-- 发布前可硬切 API / IPC / Store / URL / 记忆数据；
+- 可以硬切 API / IPC / Store / URL / 记忆数据；
 - 每次必须删净旧面，不留双轨；
 - 模块契约与本文在破坏后同步更新。
 
@@ -213,7 +216,7 @@ QueryClient 默认（`app/providers`）：`staleTime 30s` · `gcTime 10min` · `
 5. 命令 / 批量实现塞回单页或 layout 上帝表
 6. 跨 feature 绕过 public
 7. feature → layout
-8. 永久兼容层 / 只转发目录
+8. 只转发目录
 
 ---
 
@@ -243,11 +246,3 @@ bun run check
 ```
 
 ---
-
-## 变更记录
-
-| 日期 | 变更 |
-|------|------|
-| 2026-07-18 | v5.1：本文定位改为定稿最优架构（进度/债归执行计划）；对齐 CONVENTIONS v2.1 TSDoc |
-| 2026-07-18 | v5：对齐 T2 收口；feature 全图；破坏性阶段；链 CONVENTIONS v2 |
-| 2026-07-17 | v4.x：T2 执行期地图 |

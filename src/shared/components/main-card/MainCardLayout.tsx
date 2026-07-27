@@ -1,4 +1,4 @@
-import type { ComponentProps, ComponentType, ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 import { AppScrollArea } from '@/shared/components/AppScrollArea'
@@ -8,7 +8,6 @@ import {
 	mainCardSectionClass,
 	mainCardToolbarPillVariants,
 } from '@/shared/components/patterns/main-card'
-import { ListFilterIcon, PanelRightOpenIcon, SlidersHorizontalIcon } from 'lucide-react'
 
 /**
  * MainCard 是页级骨架：Root / Header / Body 为正式必选结构。
@@ -44,13 +43,6 @@ type MainCardToolbarProps = {
 type MainCardShellSlotProps = {
 	children: ReactNode
 	className?: string
-}
-
-type MainCardIconAction = {
-	label: string
-	icon: ComponentType
-	onClick?: () => void
-	disabled?: boolean
 }
 
 function MainCardRoot({ children, className }: MainCardRootProps) {
@@ -109,21 +101,12 @@ function MainCardToolbar({
 					))}
 			</div>
 
-			<div className={mainCardInlineActionsClass}>
-				{filterAction ?? (
-					<MainCardToolbarIconButton
-						action={{ label: '筛选', icon: ListFilterIcon, onClick: () => undefined }}
-					/>
-				)}
-				{displayAction ?? (
-					<MainCardToolbarIconButton
-						action={{ label: '视图选项', icon: SlidersHorizontalIcon, onClick: () => undefined }}
-					/>
-				)}
-				{createToolbarActions().map((action) => (
-					<MainCardToolbarIconButton action={action} key={action.label} />
-				))}
-			</div>
+			{filterAction || displayAction ? (
+				<div className={mainCardInlineActionsClass}>
+					{filterAction}
+					{displayAction}
+				</div>
+			) : null}
 		</div>
 	)
 }
@@ -162,29 +145,6 @@ function MainCardGhostAction({ children, className, ...props }: ComponentProps<t
 			{children}
 		</Button>
 	)
-}
-
-function MainCardToolbarIconButton({ action }: { action: MainCardIconAction }) {
-	const Icon = action.icon
-
-	return (
-		<Button
-			aria-label={action.label}
-			disabled={action.disabled}
-			onClick={action.onClick}
-			size='icon-sm'
-			type='button'
-			variant='outline'
-		>
-			<Icon />
-		</Button>
-	)
-}
-
-function createToolbarActions(): MainCardIconAction[] {
-	const noop = () => undefined
-
-	return [{ label: '打开右侧面板', icon: PanelRightOpenIcon, onClick: noop }]
 }
 
 export const MainCard = {

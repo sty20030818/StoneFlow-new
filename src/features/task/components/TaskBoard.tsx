@@ -34,8 +34,9 @@ import type { TaskListItem, TaskStatus } from '@/shared/types'
 import { Button } from '@/shared/components/base/button'
 import { ListTodoIcon, PlusIcon } from 'lucide-react'
 import { entityBoardSectionActionButtonClass } from '@/shared/components/patterns/entity-board'
+import { StatusNotice } from '@/shared/components/StatusNotice'
 
-type TaskBoardProps = {
+export type TaskBoardProps = {
 	tasks: TaskListItem[]
 	status?: 'idle' | 'loading' | 'ready' | 'error'
 	customSections?: Array<{
@@ -248,6 +249,16 @@ export function TaskBoard({
 		return <BoardLoadingState />
 	}
 
+	if (status === 'error') {
+		return (
+			<StatusNotice
+				description='任务数据暂时无法读取，请稍后重试。'
+				title='读取任务失败'
+				variant='danger'
+			/>
+		)
+	}
+
 	if (status === 'ready' && tasks.length === 0 && emptyTitle) {
 		return (
 			<BoardEmptyState
@@ -277,25 +288,16 @@ export function TaskBoard({
 			{(rowShortcutState) =>
 				customSections && customSections.length > 0 ? (
 					<BoardRoot className='gap-2'>
-						{customSections.length === 1 && customSections[0]?.key === 'all' ? (
-							<BoardRows
-								getItemId={(_child, index) => customSections[0]?.tasks[index]?.id}
-								selectedIdSet={selectedTaskIdSet}
-							>
-								{customSections[0].tasks.map((task) => renderTaskRow(task, rowShortcutState))}
-							</BoardRows>
-						) : (
-							customSections.map((section) => (
-								<TaskCustomSection
-									createProjectId={createProjectId}
-									key={section.key}
-									label={section.label}
-									renderTaskRow={(task) => renderTaskRow(task, rowShortcutState)}
-									selectedTaskIdSet={selectedTaskIdSet}
-									tasks={section.tasks}
-								/>
-							))
-						)}
+						{customSections.map((section) => (
+							<TaskCustomSection
+								createProjectId={createProjectId}
+								key={section.key}
+								label={section.label}
+								renderTaskRow={(task) => renderTaskRow(task, rowShortcutState)}
+								selectedTaskIdSet={selectedTaskIdSet}
+								tasks={section.tasks}
+							/>
+						))}
 					</BoardRoot>
 				) : (
 					<BoardRoot>{renderStatusSections(rowShortcutState)}</BoardRoot>

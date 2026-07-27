@@ -35,6 +35,6 @@ pub async fn launcher_close_session(
 pub async fn launcher_frontend_ready(
     warmup: State<'_, LauncherWarmupState>,
 ) -> Result<(), LauncherErrorPayload> {
-	warmup.inner().mark_ready().await;
-	Ok(())
+    warmup.inner().mark_ready().await;
+    Ok(())
 }

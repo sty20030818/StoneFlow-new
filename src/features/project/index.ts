@@ -43,7 +43,7 @@ export {
 export { ProjectPage } from './components/ProjectPage'
 
 /** 概览 / lifecycle 风格项目看板。 */
-export { ProjectBoard } from './components/ProjectBoard'
+export { ProjectBoard, type ProjectBoardProps } from './components/ProjectBoard'
 
 /** 壳层新建项目对话框内容。 */
 export { ProjectCreateContent } from './components/ProjectCreateContent'

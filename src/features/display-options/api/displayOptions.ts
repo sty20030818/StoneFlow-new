@@ -28,7 +28,7 @@ export type UpdateTaskDisplayPreferenceInput = {
 
 /**
  * 读取单个页面的 display preference。
- * 第一阶段 personal 走本地 store，workspace default 只保留结构占位。
+ * personal 与 workspace default 都由本地 Store 持久化。
  */
 export async function getTaskDisplayPreference(
 	pageKey: TaskDisplayPageKey,

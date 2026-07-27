@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import { useCurrentShellRoute, resolveBreadcrumb, resolveShellRouteScope } from '@/app/navigation'
 import { useDialogStore } from '@/features/shell-dialogs'
@@ -8,11 +8,10 @@ import { useSpaces } from '@/features/space'
 import { useTaskPreviewController } from '@/features/task/detail'
 
 import { useTaskListData } from './useTaskData'
-import { useTaskListController } from './useTaskListController'
-import { useListSceneBoard } from './list-scene/useListSceneBoard'
-import { useListSceneFilterDisplay } from './list-scene/useListSceneFilterDisplay'
-import { useListSceneSelectionBridge } from './list-scene/useListSceneSelectionBridge'
+import { useTaskCollectionScene } from './useTaskCollectionScene'
 import { VARIANT_CONFIG, type TaskListSceneVariant } from './list-scene/variantConfig'
+import { ALL_TASK_FILTERS, STANDALONE_STATUS_FILTERS } from './list-scene/variantConfig'
+import { formatTaskStatusLabel } from '../model/taskStatus'
 
 export type { TaskListSceneVariant } from './list-scene/variantConfig'
 
@@ -20,7 +19,7 @@ export type { TaskListSceneVariant } from './list-scene/variantConfig'
  * 任务列表页（all / standalone）的唯一 wiring 入口。
  *
  * 收口：list data、filter、display、selection、command selection、
- * bulk 可见性、preview source 注册，以及 EntityScene board 打包字段。
+ * bulk 可见性、preview source 注册，以及任务 Board 的 props 组装。
  *
  * @param variant - 列表场景变体
  */
@@ -49,49 +48,99 @@ export function useTaskListScene(variant: TaskListSceneVariant) {
 	const projectOptions = useProjectOptions(scope)
 	const { spaces } = useSpaces()
 
-	const mutations = useTaskListController()
 	const breadcrumbItems = useMemo(() => resolveBreadcrumb({ route: shellRoute }), [shellRoute])
-
-	const { controller, filteredTasks, displayResult } = useListSceneFilterDisplay({
-		config,
-		taskSourceItems,
-		projectOptions,
-	})
-
 	const activeTaskId = activeDetail?.kind === 'task' ? activeDetail.id : null
-	const selection = useListSceneSelectionBridge({
-		config,
-		filteredTasks,
-		selectionOrderIds: displayResult.selectionOrderIds,
+	const openCreate = useCallback(() => {
+		openTaskCreateDialog(config.createDraft)
+	}, [config.createDraft, openTaskCreateDialog])
+	const taskCollection = useTaskCollectionScene({
+		source: { items: taskSourceItems, status: taskBoardStatus },
+		displayPageKey: config.displayPageKey,
+		projects: projectOptions,
+		supportsProject: config.supportsProject,
+		initialShowCompleted: config.initialShowCompleted,
+		fallbackSubtitle: config.fallbackSubtitle,
 		activeTaskId,
-	})
-
-	const { openCreate, toolbarPills, board } = useListSceneBoard({
-		config,
-		controller,
-		displayResult,
-		taskBoardStatus,
-		activeTaskId,
-		activeDetailKind: activeDetail?.kind,
-		openEntityDrawer,
-		openTaskCreateDialog,
-		closePreview: taskPreviewController.closePreview,
-		openPreview: taskPreviewController.openPreview,
-		mutations,
-		selection,
+		onCreateTask: openCreate,
+		onOpenTask: (taskId) => {
+			taskPreviewController.closePreview()
+			openEntityDrawer({ kind: 'task', id: taskId })
+		},
+		onPeekTask: (taskId, source) => {
+			if (activeDetail?.kind !== 'task') {
+				taskPreviewController.openPreview(taskId, source)
+			}
+		},
 		projectOptions,
 		spaces,
+		showProjectCellOptions: config.supportsProject,
+		empty: {
+			emptyActionLabel: '创建任务',
+			emptyDescription: config.emptyDescription,
+			emptyTitle: config.emptyTitle,
+		},
 	})
+	const toolbarPills = useMemo(() => {
+		if (config.showStatusPills === 'status-only') {
+			return STANDALONE_STATUS_FILTERS.map((filter) => ({
+				label: filter === 'all' ? '所有任务' : formatTaskStatusLabel(filter),
+				active:
+					filter === 'all'
+						? taskCollection.controller.state.statusValues.length === 0
+						: taskCollection.controller.state.statusValues.length === 1 &&
+							taskCollection.controller.state.statusValues[0] === filter,
+				onClick: () =>
+					taskCollection.controller.actions.applyFilter({
+						kind: 'status',
+						values: filter === 'all' ? [] : [filter],
+					}),
+			}))
+		}
+
+		return ALL_TASK_FILTERS.map((filter) => ({
+			label:
+				filter === 'all'
+					? '所有任务'
+					: filter === 'standalone'
+						? '独立事项'
+						: formatTaskStatusLabel(filter),
+			active:
+				filter === 'all'
+					? taskCollection.controller.state.statusValues.length === 0 &&
+						!taskCollection.controller.state.standaloneOnly
+					: filter === 'standalone'
+						? taskCollection.controller.state.standaloneOnly
+						: taskCollection.controller.state.statusValues.length === 1 &&
+							taskCollection.controller.state.statusValues[0] === filter &&
+							!taskCollection.controller.state.standaloneOnly,
+			onClick: () => {
+				if (filter === 'all') {
+					taskCollection.controller.actions.applyFilter({ kind: 'status', values: [] })
+					taskCollection.controller.actions.applyFilter({ kind: 'standaloneOnly', enabled: false })
+					return
+				}
+
+				if (filter === 'standalone') {
+					taskCollection.controller.actions.applyFilter({ kind: 'status', values: [] })
+					taskCollection.controller.actions.applyFilter({ kind: 'standaloneOnly', enabled: true })
+					return
+				}
+
+				taskCollection.controller.actions.applyFilter({ kind: 'standaloneOnly', enabled: false })
+				taskCollection.controller.actions.applyFilter({ kind: 'status', values: [filter] })
+			},
+		}))
+	}, [config.showStatusPills, taskCollection.controller])
 
 	return {
 		variant,
 		displayPageKey: config.displayPageKey,
 		breadcrumbItems,
-		board,
+		taskCollection,
 		toolbarPills,
 		bulk: {
-			selectedCount: selection.selectedCount,
-			clearTaskSelection: selection.clearTaskSelection,
+			selectedCount: taskCollection.selectedCount,
+			clearTaskSelection: taskCollection.clearTaskSelection,
 		},
 		openCreate,
 		/** standalone 页脚提示由 View 渲染 */

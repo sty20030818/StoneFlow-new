@@ -44,7 +44,6 @@ const FEATURES = [
 	'activity',
 	'project-overview',
 	'shell-dialogs',
-	'entity-scene',
 ]
 
 /** 稳定第二/第三入口（目前仅 settings 落地；其它 feature 尚未建文件也不算违规，但禁止任意深路径） */

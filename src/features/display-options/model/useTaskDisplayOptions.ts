@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 
 import {
-	type DisplayLayoutMode,
 	resolveTaskDisplayOptions,
 	type ResolvedTaskDisplayOptions,
 	type TaskDisplayCompletedOrder,
@@ -24,7 +23,6 @@ type UseTaskDisplayOptionsResult = {
 	personalOverride: TaskDisplayPreferenceRecord
 	actions: {
 		applyPartial: (patch: TaskDisplayPreferenceRecord) => Promise<void>
-		setLayout: (layout: DisplayLayoutMode) => Promise<void>
 		setGrouping: (groupBy: TaskDisplayGroupBy) => Promise<void>
 		setSubGrouping: (subGroupBy: TaskDisplayGroupBy) => Promise<void>
 		setOrdering: (
@@ -107,7 +105,6 @@ export function useTaskDisplayOptions(pageKey: TaskDisplayPageKey): UseTaskDispl
 		personalOverride,
 		actions: {
 			applyPartial,
-			setLayout: (layout) => applyPartial({ layout }),
 			setGrouping: (groupBy) => applyPartial({ groupBy }),
 			setSubGrouping: (subGroupBy) => applyPartial({ subGroupBy }),
 			setOrdering: (orderBy, orderDirection) => applyPartial({ orderBy, orderDirection }),

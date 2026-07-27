@@ -5,11 +5,9 @@ import {
 	taskDisplayOptionsSchema,
 	TASK_DISPLAY_COMPLETED_ORDER_VALUES,
 	TASK_DISPLAY_GROUP_BY_VALUES,
-	TASK_DISPLAY_LAYOUT_MODE_VALUES,
 	TASK_DISPLAY_ORDER_BY_VALUES,
 	TASK_DISPLAY_ORDER_DIRECTION_VALUES,
 	TASK_DISPLAY_PROPERTY_KEY_VALUES,
-	type DisplayLayoutMode,
 	type ResolvedTaskDisplayOptions,
 	type TaskDisplayCompletedOrder,
 	type TaskDisplayGroupBy,
@@ -26,7 +24,6 @@ export type ResolveTaskDisplayOptionsInput = {
 	personalOverride?: TaskDisplayPreferenceRecord | null
 }
 
-const LAYOUT_MODE_SET = new Set<string>(TASK_DISPLAY_LAYOUT_MODE_VALUES)
 const GROUP_BY_SET = new Set<string>(TASK_DISPLAY_GROUP_BY_VALUES)
 const ORDER_BY_SET = new Set<string>(TASK_DISPLAY_ORDER_BY_VALUES)
 const ORDER_DIRECTION_SET = new Set<string>(TASK_DISPLAY_ORDER_DIRECTION_VALUES)
@@ -46,33 +43,16 @@ export function resolveTaskDisplayOptions({
 		normalizeTaskDisplayPreference(personalOverride),
 	)
 
-	const layout: DisplayLayoutMode = normalizeChoice<DisplayLayoutMode>(
-		merged.layout ?? defaults.layout,
-		capabilities.allowedLayouts,
-		getFallbackValue(defaults.layout, capabilities.allowedLayouts),
-	)
-
-	const allowedGroupBy =
-		layout === 'board'
-			? ((capabilities.board?.allowedGroupBy ?? ['status']) satisfies readonly TaskDisplayGroupBy[])
-			: capabilities.allowedGroupBy
-	const allowedSubGroupBy =
-		layout === 'board'
-			? ((capabilities.board?.allowedSubGroupBy ?? [
-					'none',
-				]) satisfies readonly TaskDisplayGroupBy[])
-			: capabilities.allowedSubGroupBy
-
 	const groupBy: TaskDisplayGroupBy = normalizeChoice<TaskDisplayGroupBy>(
 		merged.groupBy ?? defaults.groupBy,
-		allowedGroupBy,
-		getFallbackValue(defaults.groupBy, allowedGroupBy),
+		capabilities.allowedGroupBy,
+		getFallbackValue(defaults.groupBy, capabilities.allowedGroupBy),
 	)
 
 	let subGroupBy: TaskDisplayGroupBy = normalizeChoice<TaskDisplayGroupBy>(
 		merged.subGroupBy ?? defaults.subGroupBy,
-		allowedSubGroupBy,
-		getFallbackValue(layout === 'board' ? 'none' : defaults.subGroupBy, allowedSubGroupBy),
+		capabilities.allowedSubGroupBy,
+		getFallbackValue(defaults.subGroupBy, capabilities.allowedSubGroupBy),
 	)
 
 	if (subGroupBy === groupBy) {
@@ -105,7 +85,6 @@ export function resolveTaskDisplayOptions({
 	)
 
 	const resolved: TaskDisplayOptions = {
-		layout,
 		groupBy,
 		subGroupBy,
 		orderBy,
@@ -149,10 +128,6 @@ export function normalizeTaskDisplayPreference(
 
 	const normalized: TaskDisplayPreferenceRecord = {}
 
-	if (isDisplayLayoutMode(preference.layout)) {
-		normalized.layout = preference.layout
-	}
-
 	if (isTaskDisplayGroupBy(preference.groupBy)) {
 		normalized.groupBy = preference.groupBy
 	}
@@ -185,10 +160,6 @@ export function normalizeTaskDisplayPreference(
 	}
 
 	return normalized
-}
-
-function isDisplayLayoutMode(value: unknown): value is DisplayLayoutMode {
-	return typeof value === 'string' && LAYOUT_MODE_SET.has(value)
 }
 
 function isTaskDisplayGroupBy(value: unknown): value is TaskDisplayGroupBy {

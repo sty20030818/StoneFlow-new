@@ -12,13 +12,14 @@ import { useSectionSelection } from '@/features/bulk-action'
 import type { ProjectOverviewItem } from '@/shared/types'
 import { ArchiveIcon, FolderIcon, PlayIcon, CheckIcon } from 'lucide-react'
 import { entityBoardMutedIconClass } from '@/shared/components/patterns/entity-board'
+import { StatusNotice } from '@/shared/components/StatusNotice'
 
 import { ProjectRowAdapter } from './ProjectRowAdapter'
 import { EntityRowShortcutScope, type EntityRowShortcutState } from '@/features/selection'
 
 type ProjectBoardSectionKey = 'active' | 'completed' | 'archived'
 
-type ProjectBoardProps = {
+export type ProjectBoardProps = {
 	variant: 'overview'
 	items: ProjectOverviewItem[]
 	status: 'idle' | 'loading' | 'ready' | 'error'
@@ -62,6 +63,16 @@ export function ProjectBoard(props: ProjectBoardProps) {
 
 	if (props.status === 'idle' || props.status === 'loading') {
 		return <BoardLoadingState />
+	}
+
+	if (props.status === 'error') {
+		return (
+			<StatusNotice
+				description='项目数据暂时无法读取，请稍后重试。'
+				title='读取项目失败'
+				variant='danger'
+			/>
+		)
 	}
 
 	if (props.status === 'ready' && props.items.length === 0) {
@@ -291,7 +302,7 @@ function ProjectSectionStatusIcon({ sectionKey }: { sectionKey: ProjectBoardSect
 			)
 		default:
 			return (
-				<span className='flex size-4 shrink-0 items-center justify-center text-sf-info-soft-text'>
+				<span className='flex size-4 shrink-0 items-center justify-center text-sf-info-surface-text'>
 					<PlayIcon className='size-3 fill-current' />
 				</span>
 			)

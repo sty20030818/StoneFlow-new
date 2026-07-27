@@ -5,7 +5,7 @@ import { cva } from 'class-variance-authority'
  */
 export const formFieldStackClass = 'flex flex-col gap-1.5'
 export const formFieldGridClass = 'grid gap-1.5'
-export const formFieldHintClass = 'mt-1 text-[12px] leading-5 text-sf-shell-tertiary'
+export const formFieldHintClass = 'mt-1 text-[12px] leading-5 text-sf-shell-text-tertiary'
 
 export const formFieldLabelVariants = cva('text-[12px] font-medium', {
 	variants: {
