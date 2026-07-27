@@ -3,6 +3,7 @@ import { FormProvider, useController } from 'react-hook-form'
 import { toast } from 'sonner'
 
 import { useCreateProjectMutation } from '../hooks/project.mutations'
+import type { ProjectDetail } from '../model/types'
 import { useSubmitTargetFromForm, type SubmitIntent } from '@/features/submit'
 import { normalizeSubmitError, useZodForm } from '@/shared/form'
 import { Button } from '@/shared/components/base/button'
@@ -20,13 +21,18 @@ import {
 type ProjectCreateContentProps = {
 	selectedSpaceId: string | null
 	onClose: () => void
+	onCreated: (project: ProjectDetail) => void
 }
 
 /**
  * 项目创建表单 — 使用 CreateModalContent 组合 layout。
  * 壳层（Dialog + Header）由 CreateDialogShell 统一提供。
  */
-export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreateContentProps) {
+export function ProjectCreateContent({
+	selectedSpaceId,
+	onClose,
+	onCreated,
+}: ProjectCreateContentProps) {
 	const createProject = useCreateProjectMutation()
 	const form = useZodForm({
 		schema: projectCreateSchema,
@@ -68,7 +74,9 @@ export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreate
 			setSubmitState('submitting')
 			setErrorMessage(null)
 			try {
-				await createProject.mutateAsync(toProjectCreateInput(values, selectedSpaceId))
+				const project = await createProject.mutateAsync(
+					toProjectCreateInput(values, selectedSpaceId),
+				)
 
 				if (effectiveIntent === 'continue') {
 					resetFieldsOnly()
@@ -79,12 +87,13 @@ export function ProjectCreateContent({ selectedSpaceId, onClose }: ProjectCreate
 
 				resetFieldsOnly()
 				onClose()
+				onCreated(project)
 			} catch (error) {
 				setSubmitState('error')
 				setErrorMessage(normalizeSubmitError(error, '项目创建失败'))
 			}
 		},
-		[createProject, form, onClose, resetFieldsOnly, selectedSpaceId],
+		[createProject, form, onClose, onCreated, resetFieldsOnly, selectedSpaceId],
 	)
 
 	useSubmitTargetFromForm({

@@ -20,7 +20,8 @@ describe('ProjectCreateContent', () => {
 	})
 
 	it('勾选创建更多后提交会清空名称描述、保留弹窗并显示计数', async () => {
-		renderProjectCreate()
+		const onCreated = vi.fn()
+		renderProjectCreate({ onCreated })
 
 		fireEvent.change(screen.getByPlaceholderText('项目名称'), { target: { value: '项目 A' } })
 		fireEvent.change(screen.getByPlaceholderText('添加项目说明…'), { target: { value: '说明 A' } })
@@ -31,6 +32,17 @@ describe('ProjectCreateContent', () => {
 		expect(screen.getByPlaceholderText('项目名称')).toHaveValue('')
 		expect(screen.getByPlaceholderText('添加项目说明…')).toHaveValue('')
 		expect(screen.getByText('已创建 1 个项目')).toBeInTheDocument()
+		expect(onCreated).not.toHaveBeenCalled()
+	})
+
+	it('普通创建完成后将新项目交给壳层导航', async () => {
+		const onCreated = vi.fn()
+		renderProjectCreate({ onCreated })
+
+		fireEvent.change(screen.getByPlaceholderText('项目名称'), { target: { value: '项目 A' } })
+		fireEvent.click(screen.getByRole('button', { name: '创建项目' }))
+
+		await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ id: 'project-created' }))
 	})
 
 	it('submitAndOpen 在项目创建中禁用，submitAndContinue 可用', async () => {
@@ -64,13 +76,15 @@ describe('ProjectCreateContent', () => {
 })
 
 function renderProjectCreate({
+	onCreated = vi.fn(),
 	withActions = false,
 }: {
+	onCreated?: (project: { id: string }) => void
 	withActions?: boolean
 } = {}) {
 	return render(
 		<SubmitRegistryProvider>
-			<ProjectCreateContent onClose={vi.fn()} selectedSpaceId='space-a' />
+			<ProjectCreateContent onClose={vi.fn()} onCreated={onCreated} selectedSpaceId='space-a' />
 			{withActions ? <SubmitActionProbe /> : null}
 		</SubmitRegistryProvider>,
 	)

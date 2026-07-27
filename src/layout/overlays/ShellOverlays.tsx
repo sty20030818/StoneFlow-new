@@ -1,3 +1,6 @@
+import { useNavigate } from '@tanstack/react-router'
+
+import { openCanonicalProjectDetail } from '@/app/navigation'
 import type { Scope, Space, TaskPlacement, TaskStatus } from '@/shared/types'
 import type { ProjectOption } from '@/features/project'
 import type { CustomDateDialogState } from '@/features/shell-dialogs'
@@ -50,6 +53,8 @@ export function ShellOverlays({
 	toggleTaskCreatePresentation,
 	closeCustomDateDialog,
 }: ShellOverlaysProps) {
+	const navigate = useNavigate({ from: '/' })
+
 	return (
 		<>
 			<CreateDialogShell
@@ -89,6 +94,11 @@ export function ShellOverlays({
 				) : createDialogType === 'project' ? (
 					<ProjectCreateContent
 						onClose={closeProjectCreateDialog}
+						onCreated={(project) => {
+							void navigate({
+								to: openCanonicalProjectDetail(project.id, project.spaceId) as never,
+							})
+						}}
 						selectedSpaceId={selectedSpaceId}
 					/>
 				) : null}
