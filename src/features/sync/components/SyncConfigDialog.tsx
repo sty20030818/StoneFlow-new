@@ -26,9 +26,11 @@ import {
 	formFieldLabelVariants,
 	formFieldStackClass,
 } from '@/shared/components/patterns/form-field'
+import type { SyncConfigSource } from '@/features/sync/api/sync'
 
 type SyncConfigDialogProps = {
 	open: boolean
+	configSource: SyncConfigSource
 	databaseUrl: string
 	/** 仅表示「正在保存本弹窗」，不要绑全局同步中（否则会误禁用） */
 	saving?: boolean
@@ -39,6 +41,7 @@ type SyncConfigDialogProps = {
 
 export function SyncConfigDialog({
 	open,
+	configSource,
 	databaseUrl,
 	saving: savingExternal = false,
 	onClose,
@@ -49,6 +52,7 @@ export function SyncConfigDialog({
 	const [error, setError] = useState<string | null>(null)
 	const configIncomplete = databaseUrl.trim().length === 0
 	const busy = saving || savingExternal
+	const environmentManaged = configSource === 'environment'
 
 	useEffect(() => {
 		if (!open) {
@@ -82,55 +86,70 @@ export function SyncConfigDialog({
 				className={cn(dialogShellContentVariants({ size: 'lg' }), 'min-w-0 overflow-hidden')}
 			>
 				<DialogHeader className={dialogShellHeaderClass}>
-					<DialogTitle className={dialogShellTitleClass}>配置云端副本</DialogTitle>
+					<DialogTitle className={dialogShellTitleClass}>
+						{environmentManaged ? '开发同步配置' : '配置云端副本'}
+					</DialogTitle>
 					<DialogDescription className={dialogShellDescriptionClass}>
-						粘贴 Neon 或自建 Postgres
-						连接串。保存只写本机配置，不会立刻连库；连通性请用「立即同步」或诊断验证。
+						{environmentManaged
+							? '开发构建只读取项目根目录 .env.local，不会写入系统钥匙串。'
+							: '粘贴 Neon 或自建 Postgres 连接串。保存只写本机配置，不会立刻连库；连通性请用「立即同步」或诊断验证。'}
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className={`${dialogShellBodyClass} flex min-w-0 flex-col gap-4`}>
-					<label className={`${formFieldStackClass} min-w-0`}>
-						<span className={formFieldLabelVariants()}>同步数据库连接</span>
-						{/* 连接串无空格超长：禁止 field-sizing 横向撑破弹窗，强制断行。 */}
-						<Textarea
-							autoComplete='off'
-							className='min-h-24 max-w-full resize-y overflow-x-hidden break-all font-mono text-[13px] leading-5 field-sizing-fixed'
-							disabled={busy}
-							onChange={(event) => onDatabaseUrlChange(event.currentTarget.value)}
-							placeholder={
-								'postgresql://user:password@host:5432/dbname\n# 或带 sslmode：\n# postgresql://user:pass@host/db?sslmode=require'
-							}
-							spellCheck={false}
-							value={databaseUrl}
-						/>
-					</label>
-					<p className={formFieldHintClass}>
-						完整连接串保存在系统钥匙串；界面只展示脱敏地址。更换时粘贴新串覆盖即可。
-					</p>
-					{error ? (
+					{environmentManaged ? (
 						<StatusNotice
-							description={error}
-							role='alert'
-							size='sm'
-							title='保存失败'
-							variant='danger'
+							description='设置 STONEFLOW_SYNC_DATABASE_URL 后重启开发应用。此模式不会保存或覆盖任何本机凭据。'
+							title='.env.local 是唯一配置来源'
+							variant='warning'
 						/>
-					) : null}
+					) : (
+						<>
+							<label className={`${formFieldStackClass} min-w-0`}>
+								<span className={formFieldLabelVariants()}>同步数据库连接</span>
+								{/* 连接串无空格超长：禁止 field-sizing 横向撑破弹窗，强制断行。 */}
+								<Textarea
+									autoComplete='off'
+									className='min-h-24 max-w-full resize-y overflow-x-hidden break-all font-mono text-[13px] leading-5 field-sizing-fixed'
+									disabled={busy}
+									onChange={(event) => onDatabaseUrlChange(event.currentTarget.value)}
+									placeholder={
+										'postgresql://user:password@host:5432/dbname\n# 或带 sslmode：\n# postgresql://user:pass@host/db?sslmode=require'
+									}
+									spellCheck={false}
+									value={databaseUrl}
+								/>
+							</label>
+							<p className={formFieldHintClass}>
+								完整连接串保存在系统钥匙串；界面只展示脱敏地址。更换时粘贴新串覆盖即可。
+							</p>
+							{error ? (
+								<StatusNotice
+									description={error}
+									role='alert'
+									size='sm'
+									title='保存失败'
+									variant='danger'
+								/>
+							) : null}
+						</>
+					)}
 				</div>
 
 				<div className={dialogShellPanelFooterClass}>
 					<div className={cn(dialogShellFooterClass, 'border-t-0 pt-0')}>
 						<Button disabled={busy} onClick={onClose} type='button' variant='secondary'>
-							取消
+							{environmentManaged ? '关闭' : '取消'}
 						</Button>
-						<Button
-							disabled={busy || configIncomplete}
-							onClick={() => void handleSave()}
-							type='button'
-						>
-							{busy ? '保存中...' : '保存配置'}
-						</Button>
+						{!environmentManaged ? (
+							<Button
+								disabled={busy || configIncomplete}
+								onClick={() => void handleSave()}
+								type='button'
+							>
+								{busy ? '保存中...' : '保存配置'}
+							</Button>
+						) : null}
 					</div>
 				</div>
 			</DialogContent>

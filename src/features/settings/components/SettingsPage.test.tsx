@@ -424,6 +424,36 @@ describe('SettingsPage', () => {
 		expect(screen.getByText('云端副本已配置')).toBeInTheDocument()
 	})
 
+	it('开发构建的同步配置只提示 .env.local，不提供写入表单', async () => {
+		getSyncStatusSpy.mockResolvedValue(
+			createSyncStatusPayload({
+				enabled: false,
+				status: 'disabled',
+				lastPushAt: null,
+				lastPullAt: null,
+				lastError: null,
+				lastErrorMode: null,
+				dirtySince: null,
+				pendingResync: false,
+				hasRemoteConfig: false,
+				credentialState: 'missing',
+				configSource: 'environment',
+				remoteUrl: null,
+				replicaState: 'uninitialized',
+				replicaReason: null,
+				lastRestoreAt: null,
+			}),
+		)
+
+		mockSettingsSection = 'sync'
+		await renderSettingsPage()
+		openSyncConfigDialog()
+
+		expect(screen.getByText('.env.local 是唯一配置来源')).toBeInTheDocument()
+		expect(screen.queryByLabelText('同步数据库连接')).not.toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: '保存配置' })).not.toBeInTheDocument()
+	})
+
 	it('未配置同步时展示本地优先提示', async () => {
 		mockSettingsSection = 'sync'
 		await renderSettingsPage()
@@ -910,6 +940,8 @@ function openSyncDetails() {
 
 function createSyncStatusPayload(overrides: Record<string, unknown>) {
 	return {
+		credentialState: 'available',
+		configSource: 'system_keychain',
 		policyMode: 'interval',
 		policyIntervalMinutes: 15,
 		nextSyncAt: null,

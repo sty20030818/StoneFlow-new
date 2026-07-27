@@ -9,7 +9,7 @@ describe('deriveSyncFooterView', () => {
 			loading: false,
 			running: false,
 			message: null,
-			statusPayload: { hasRemoteConfig: true, replicaState: 'ready' },
+			statusPayload: { credentialState: 'available', hasRemoteConfig: true, replicaState: 'ready' },
 		})
 		expect(view.label).toBe('已同步')
 		expect(view.actionDisabled).toBe(false)
@@ -23,7 +23,11 @@ describe('deriveSyncFooterView', () => {
 			loading: false,
 			running: false,
 			message: null,
-			statusPayload: { hasRemoteConfig: false, replicaState: 'uninitialized' },
+			statusPayload: {
+				credentialState: 'missing',
+				hasRemoteConfig: false,
+				replicaState: 'uninitialized',
+			},
 		})
 		expect(view.label).toBe('未配置')
 		expect(view.actionDisabled).toBe(true)
@@ -36,7 +40,11 @@ describe('deriveSyncFooterView', () => {
 			loading: false,
 			running: false,
 			message: null,
-			statusPayload: { hasRemoteConfig: true, replicaState: 'baseline_required' },
+			statusPayload: {
+				credentialState: 'available',
+				hasRemoteConfig: true,
+				replicaState: 'baseline_required',
+			},
 		})
 		expect(view.label).toBe('缺少基线')
 		expect(view.actionDisabled).toBe(true)
@@ -48,7 +56,7 @@ describe('deriveSyncFooterView', () => {
 			loading: false,
 			running: true,
 			message: null,
-			statusPayload: { hasRemoteConfig: true, replicaState: 'ready' },
+			statusPayload: { credentialState: 'available', hasRemoteConfig: true, replicaState: 'ready' },
 		})
 		expect(view.busy).toBe(true)
 		expect(view.actionDisabled).toBe(true)
@@ -61,9 +69,25 @@ describe('deriveSyncFooterView', () => {
 			loading: false,
 			running: false,
 			message: '网络超时',
-			statusPayload: { hasRemoteConfig: true, replicaState: 'ready' },
+			statusPayload: { credentialState: 'available', hasRemoteConfig: true, replicaState: 'ready' },
 		})
 		expect(view.title).toBe('网络超时')
 		expect(view.label).toBe('同步失败')
+	})
+
+	it('凭据不可用时不伪装成未配置', () => {
+		const view = deriveSyncFooterView({
+			displayedStatus: 'needs_attention',
+			loading: false,
+			running: false,
+			message: null,
+			statusPayload: {
+				credentialState: 'unavailable',
+				hasRemoteConfig: false,
+				replicaState: 'uninitialized',
+			},
+		})
+		expect(view.label).toBe('凭据异常')
+		expect(view.title).toContain('无法访问同步凭据')
 	})
 })

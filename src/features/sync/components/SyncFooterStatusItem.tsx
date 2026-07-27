@@ -21,6 +21,7 @@ export function SyncFooterStatusItem() {
 		message,
 		statusPayload: statusPayload
 			? {
+					credentialState: statusPayload.credentialState,
 					hasRemoteConfig: statusPayload.hasRemoteConfig,
 					replicaState: statusPayload.replicaState,
 				}

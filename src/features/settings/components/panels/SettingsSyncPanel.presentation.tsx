@@ -5,6 +5,8 @@ import {
 	formatSyncStatus,
 	getSyncReplicaTone,
 	getSyncStatusTone,
+	type SyncConfigSource,
+	type SyncCredentialState,
 	type SyncReplicaState,
 	type SyncStatus,
 	type SyncStatusPayload,
@@ -97,16 +99,27 @@ export function SyncReplicaBadge({ state }: { state: SyncReplicaState }) {
 	)
 }
 
-export function SyncCloudConfigBadge({ configured }: { configured: boolean }) {
+export function SyncCloudConfigBadge({
+	credentialState,
+}: {
+	credentialState: SyncCredentialState
+}) {
+	const unavailable = credentialState === 'unavailable'
+	const configured = credentialState === 'available'
+	const label = unavailable ? '同步凭据不可用' : configured ? '云端副本已配置' : '云端副本未配置'
 	return (
-		<Badge variant={configured ? 'success' : 'outline'}>
+		<Badge variant={unavailable ? 'destructive' : configured ? 'success' : 'outline'}>
 			<span
 				className={cn(
 					'size-2 shrink-0 rounded-full',
-					configured ? 'bg-sf-project-task-status-done' : 'bg-(--sf-neutral-500)',
+					unavailable
+						? 'bg-sf-danger'
+						: configured
+							? 'bg-sf-project-task-status-done'
+							: 'bg-(--sf-neutral-500)',
 				)}
 			/>
-			{configured ? '云端副本已配置' : '云端副本未配置'}
+			{label}
 		</Badge>
 	)
 }
@@ -202,6 +215,8 @@ export function getSyncStatusCopy({
 	dirtySince,
 	pendingResync,
 	hasRemoteConfig,
+	credentialState,
+	configSource,
 	replicaState,
 	replicaReason,
 	syncLoading,
@@ -212,6 +227,8 @@ export function getSyncStatusCopy({
 	dirtySince: string | null
 	pendingResync: boolean
 	hasRemoteConfig: boolean
+	credentialState: SyncCredentialState
+	configSource: SyncConfigSource
 	replicaState: SyncReplicaState
 	replicaReason: string | null
 	syncLoading: boolean
@@ -247,7 +264,26 @@ export function getSyncStatusCopy({
 		}
 	}
 
+	if (credentialState === 'unavailable') {
+		const sourceLabel = configSource === 'system_keychain' ? '系统钥匙串' : '.env.local'
+		return {
+			title: '同步凭据不可用',
+			summary: `无法访问 ${sourceLabel} 中的同步数据库连接。请修复凭据访问后重新打开应用；本地数据不会受影响。`,
+			statusDescription: `无法访问 ${sourceLabel} 中的同步凭据。`,
+			variant: 'danger' as const,
+		}
+	}
+
 	if (!hasRemoteConfig || status === 'disabled') {
+		if (configSource === 'environment') {
+			return {
+				title: '尚未配置开发同步',
+				summary:
+					'在项目根目录 .env.local 设置 STONEFLOW_SYNC_DATABASE_URL 后重启开发应用；连接串不会写入系统钥匙串。',
+				statusDescription: '开发构建尚未读取到 .env.local 中的同步连接串。',
+				variant: 'neutral' as const,
+			}
+		}
 		return {
 			title: '尚未启用云同步',
 			summary: '当前还没有保存可用的同步数据库连接。完成配置前，所有数据只会保留在本地数据库。',

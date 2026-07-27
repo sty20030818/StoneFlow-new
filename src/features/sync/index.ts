@@ -11,6 +11,8 @@
 
 export type {
 	SyncStatus,
+	SyncCredentialState,
+	SyncConfigSource,
 	SyncReplicaState,
 	SyncPolicyMode,
 	SyncStatusPayload,

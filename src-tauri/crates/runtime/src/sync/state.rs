@@ -9,12 +9,15 @@ use tokio::sync::{Mutex, Notify, OwnedMutexGuard, RwLock};
 pub use super::types::SyncRunMode;
 use super::{
     policy::{SyncPolicy, SyncPolicyMode},
-    types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind, SyncStatusPayload},
+    types::{
+        SyncCredentialState, SyncRemoteConfig, SyncReplicaState, SyncStatusKind, SyncStatusPayload,
+    },
 };
 
 #[derive(Debug, Default)]
 struct SyncRuntimeInner {
     remote_config: Option<SyncRemoteConfig>,
+    credential_state: SyncCredentialState,
     status: SyncStatusKind,
     last_push_at: Option<String>,
     last_pull_at: Option<String>,
@@ -47,10 +50,12 @@ impl SyncRuntimeState {
 
         SyncStatusPayload {
             enabled: has_remote_config,
-            status: if has_remote_config {
-                guard.status
-            } else {
-                SyncStatusKind::Disabled
+            status: match guard.credential_state {
+                SyncCredentialState::Unavailable => SyncStatusKind::NeedsAttention,
+                SyncCredentialState::Available if has_remote_config => guard.status,
+                SyncCredentialState::Missing | SyncCredentialState::Available => {
+                    SyncStatusKind::Disabled
+                }
             },
             last_push_at: guard.last_push_at.clone(),
             last_pull_at: guard.last_pull_at.clone(),
@@ -59,6 +64,8 @@ impl SyncRuntimeState {
             dirty_since: guard.dirty_since.clone(),
             pending_resync: guard.pending_resync,
             has_remote_config,
+            credential_state: guard.credential_state,
+            config_source: super::config::sync_config_source(),
             remote_url: guard
                 .remote_config
                 .as_ref()
@@ -76,6 +83,11 @@ impl SyncRuntimeState {
     pub(crate) async fn set_remote_config(&self, remote_config: Option<SyncRemoteConfig>) {
         let mut guard = self.inner.write().await;
         guard.remote_config = remote_config;
+        guard.credential_state = if guard.remote_config.is_some() {
+            SyncCredentialState::Available
+        } else {
+            SyncCredentialState::Missing
+        };
         guard.pending_resync = false;
         guard.pending_mode = None;
 
@@ -88,6 +100,19 @@ impl SyncRuntimeState {
         } else {
             guard.status = SyncStatusKind::Disabled;
         }
+    }
+
+    /// 凭据存储不可访问时保留明确错误，绝不伪装成未配置。
+    pub(crate) async fn set_credential_unavailable(&self, message: String) {
+        let mut guard = self.inner.write().await;
+        guard.remote_config = None;
+        guard.credential_state = SyncCredentialState::Unavailable;
+        guard.status = SyncStatusKind::NeedsAttention;
+        guard.last_error = Some(message);
+        guard.last_error_mode = None;
+        guard.pending_resync = false;
+        guard.pending_mode = None;
+        guard.next_sync_at = None;
     }
 
     /// 返回当前已加载的远端配置。
@@ -344,7 +369,9 @@ mod tests {
     use chrono::Duration;
 
     use super::{SyncRunMode, SyncRuntimeState};
-    use crate::sync::types::{SyncRemoteConfig, SyncReplicaState, SyncStatusKind};
+    use crate::sync::types::{
+        SyncCredentialState, SyncRemoteConfig, SyncReplicaState, SyncStatusKind,
+    };
     use crate::sync::{SyncPolicy, SyncPolicyMode};
 
     #[tokio::test]
@@ -589,6 +616,20 @@ mod tests {
             payload.last_restore_at.as_deref(),
             Some("2026-06-28T00:00:00Z")
         );
+    }
+
+    #[tokio::test]
+    async fn unavailable_credential_should_need_attention_in_snapshot() {
+        let state = SyncRuntimeState::default();
+
+        state
+            .set_credential_unavailable("keychain denied".to_owned())
+            .await;
+
+        let payload = state.snapshot().await;
+        assert_eq!(payload.status, SyncStatusKind::NeedsAttention);
+        assert_eq!(payload.credential_state, SyncCredentialState::Unavailable);
+        assert_eq!(payload.last_error.as_deref(), Some("keychain denied"));
     }
 
     #[tokio::test]

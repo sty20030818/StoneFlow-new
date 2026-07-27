@@ -78,5 +78,6 @@ src/features/sync/
 | ---------------- | --------------------------------------------------- |
 | 同步状态 payload | **UI** `useSyncStatusController`（Provider 内单例） |
 | Tauri 推送       | **事件** `stoneflow://sync/status-changed`          |
-| 配置表单         | **UI** `SyncConfigDialog` 本地 state + API 持久化   |
+| 同步凭据         | **Debug** 根目录 `.env.local`；**Release** 系统钥匙串 |
+| 配置表单         | `SyncConfigDialog`：Release 写系统钥匙串；Debug 只读说明 |
 | 页脚文案         | **派生** `deriveSyncFooterView`（无独立 store）     |

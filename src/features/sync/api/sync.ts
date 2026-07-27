@@ -9,6 +9,8 @@ export type SyncStatus =
 	| 'needs_attention'
 export type SyncReplicaState = 'uninitialized' | 'ready' | 'baseline_required' | 'diverged'
 export type SyncPolicyMode = 'interval' | 'on_write' | 'manual'
+export type SyncCredentialState = 'missing' | 'available' | 'unavailable'
+export type SyncConfigSource = 'environment' | 'system_keychain'
 
 export type SyncStatusPayload = {
 	enabled: boolean
@@ -20,6 +22,8 @@ export type SyncStatusPayload = {
 	dirtySince: string | null
 	pendingResync: boolean
 	hasRemoteConfig: boolean
+	credentialState: SyncCredentialState
+	configSource: SyncConfigSource
 	remoteUrl: string | null
 	replicaState: SyncReplicaState
 	replicaReason: string | null

@@ -68,6 +68,7 @@ pub fn builder() -> tauri::Builder<tauri::Wry> {
 
 /// 通过 runtime 边界启动 StoneFlow。
 pub fn run(context: tauri::Context<tauri::Wry>) {
+    load_development_environment();
     let app = builder()
         .build(context)
         .expect("failed to build StoneFlow Tauri application");
@@ -102,6 +103,21 @@ pub fn run(context: tauri::Context<tauri::Wry>) {
         _ => {}
     });
 }
+
+#[cfg(debug_assertions)]
+fn load_development_environment() {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../..")
+        .join(".env.local");
+    if let Err(error) = dotenvy::from_path(path) {
+        if !error.not_found() {
+            log::warn!("runtime: 无法加载开发环境配置: {error}");
+        }
+    }
+}
+
+#[cfg(not(debug_assertions))]
+fn load_development_environment() {}
 
 #[cfg(test)]
 mod integration_tests;

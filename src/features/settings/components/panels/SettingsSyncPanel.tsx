@@ -280,7 +280,9 @@ export function SettingsSyncPanel() {
 	}
 
 	const effectiveSyncError =
-		syncStatus?.status === 'error' ? (syncStatus.lastError ?? syncStatusMessage) : syncStatusMessage
+		syncStatus?.status === 'error' || syncStatus?.status === 'needs_attention'
+			? (syncStatus.lastError ?? syncStatusMessage)
+			: syncStatusMessage
 	const effectiveSyncErrorTitle = getSyncErrorTitle(syncStatus?.lastErrorMode ?? null, syncRunning)
 	const syncBusy = syncSaving || syncPolicySaving || syncRunning || syncLoading
 	const syncActionBusy = syncBusy || syncDiagnosing
@@ -295,6 +297,8 @@ export function SettingsSyncPanel() {
 		dirtySince: syncStatus?.dirtySince ?? null,
 		pendingResync: syncStatus?.pendingResync ?? false,
 		hasRemoteConfig: syncStatus?.hasRemoteConfig ?? false,
+		credentialState: syncStatus?.credentialState ?? 'missing',
+		configSource: syncStatus?.configSource ?? 'system_keychain',
 		replicaState,
 		replicaReason: syncStatus?.replicaReason ?? null,
 		status: displayedSyncStatus,
@@ -316,7 +320,9 @@ export function SettingsSyncPanel() {
 								<div className='flex flex-wrap items-center gap-2'>
 									<SyncStatusBadge status={displayedSyncStatus} />
 									<SyncReplicaBadge state={replicaState} />
-									<SyncCloudConfigBadge configured={syncStatus?.hasRemoteConfig ?? false} />
+									<SyncCloudConfigBadge
+										credentialState={syncStatus?.credentialState ?? 'missing'}
+									/>
 								</div>
 								<h3 className='mt-3 text-base font-semibold tracking-tight text-foreground'>
 									{syncStatusCopy.title}
@@ -572,6 +578,7 @@ export function SettingsSyncPanel() {
 				</div>
 
 				<SyncConfigDialog
+					configSource={syncStatus?.configSource ?? 'system_keychain'}
 					databaseUrl={databaseUrl}
 					onClose={() => setSyncConfigDialogOpen(false)}
 					onDatabaseUrlChange={setDatabaseUrl}

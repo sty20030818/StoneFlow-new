@@ -43,14 +43,23 @@ pub async fn initialize_state(
     sync_state: &SyncRuntimeState,
     database: &DatabaseRuntimeState,
 ) -> Result<(), AppError> {
-    let config = load_remote_config(database).await?;
-    if let Some(remote) = config.as_ref() {
-        log::info!(
-            "同步:已加载配置 {}",
-            super::config::redact_database_url(&remote.database_url)
-        );
+    match load_remote_config().await {
+        Ok(config) => {
+            if let Some(remote) = config.as_ref() {
+                log::info!(
+                    "同步:已加载配置 {}",
+                    super::config::redact_database_url(&remote.database_url)
+                );
+            }
+            sync_state.set_remote_config(config).await;
+        }
+        Err(error) => {
+            log::warn!("同步:凭据不可用 {error}");
+            sync_state
+                .set_credential_unavailable(error.to_string())
+                .await;
+        }
     }
-    sync_state.set_remote_config(config).await;
     let (policy, next_sync_at) = load_sync_policy(database).await?;
     sync_state.set_policy(policy, next_sync_at).await;
     refresh_local_replica_state(sync_state, database).await?;
@@ -123,7 +132,7 @@ pub async fn configure_sync(
     sync_state: &SyncRuntimeState,
     input: ConfigureSyncInput,
 ) -> Result<SyncStatusPayload, AppError> {
-    let config = save_remote_config(database, input.database_url).await?;
+    let config = save_remote_config(input.database_url).await?;
     log::info!(
         "同步:配置已保存 {}",
         super::config::redact_database_url(&config.database_url)
@@ -698,8 +707,7 @@ mod tests {
     use stoneflow_test_support::TestDatabase;
 
     use super::{
-        configure_sync, get_sync_status, initialize_state, sync_status_changed_payload,
-        workspace_changed_payload,
+        configure_sync, get_sync_status, sync_status_changed_payload, workspace_changed_payload,
     };
     use crate::sync::{
         state::SyncRuntimeState,
@@ -707,33 +715,22 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn configure_sync_should_enable_runtime_status() {
+    async fn configure_sync_should_not_persist_a_secret_in_debug_builds() {
         let database = TestDatabase::bootstrap_in_memory()
             .await
             .expect("test database should bootstrap");
         let sync_state = SyncRuntimeState::default();
-        initialize_state(&sync_state, &database)
-            .await
-            .expect("sync state should initialize");
-
-        let payload = configure_sync(
+        let error = configure_sync(
             &database,
             &sync_state,
             ConfigureSyncInput {
-                database_url: "postgresql://user:secret@db.example.com:5432/stoneflow".to_owned(),
+                database_url: "postgresql://user:secret@host.invalid:5432/stoneflow".to_owned(),
             },
         )
         .await
-        .expect("configure sync should succeed");
+        .expect_err("debug builds should not write to the system keychain");
 
-        assert!(payload.enabled);
-        assert!(payload.has_remote_config);
-        // 保存配置后尚未验证连通：应为待同步，而不是立刻「已同步」。
-        assert_eq!(payload.status, SyncStatusKind::OfflinePending);
-        assert_eq!(
-            payload.remote_url.as_deref(),
-            Some("postgresql://user:***@db.example.com:5432/stoneflow")
-        );
+        assert!(error.to_string().contains("STONEFLOW_SYNC_DATABASE_URL"));
     }
 
     #[tokio::test]

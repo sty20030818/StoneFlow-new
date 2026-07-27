@@ -1,6 +1,7 @@
 //! 云同步配置持久化。
 
 use stoneflow_domain::now_utc;
+#[cfg(not(debug_assertions))]
 use stoneflow_platform::SyncTokenStore;
 use stoneflow_storage::{database::DatabaseRuntimeState, repositories::SettingsRepository};
 
@@ -8,19 +9,15 @@ use crate::app::error::AppError;
 
 use super::{
     policy::SyncPolicy,
-    types::{SyncPolicySetting, SyncRemoteConfig, SyncRemoteConfigSetting},
+    types::{SyncConfigSource, SyncPolicySetting, SyncRemoteConfig},
 };
 
-pub const SYNC_CONFIG_SETTING_KEY: &str = "app.sync.config";
 pub const SYNC_POLICY_SETTING_KEY: &str = "app.sync.policy";
+#[cfg(debug_assertions)]
+const DEV_SYNC_DATABASE_URL_ENV: &str = "STONEFLOW_SYNC_DATABASE_URL";
 
-/// 从钥匙串读取完整连接串；settings 仅存脱敏展示。
-///
-/// 硬切：钥匙串里若是旧 Turso token（非 postgres URL）则视为未配置。
-pub async fn load_remote_config(
-    database: &DatabaseRuntimeState,
-) -> Result<Option<SyncRemoteConfig>, AppError> {
-    let _ = database;
+/// Debug 仅从 `.env.local` 读取；正式版仅从系统钥匙串读取。
+pub async fn load_remote_config() -> Result<Option<SyncRemoteConfig>, AppError> {
     let Some(database_url) = read_sync_secret().await?.and_then(normalize_database_url) else {
         return Ok(None);
     };
@@ -28,6 +25,16 @@ pub async fn load_remote_config(
         return Ok(None);
     }
     Ok(Some(SyncRemoteConfig { database_url }))
+}
+
+#[cfg(debug_assertions)]
+pub const fn sync_config_source() -> SyncConfigSource {
+    SyncConfigSource::Environment
+}
+
+#[cfg(not(debug_assertions))]
+pub const fn sync_config_source() -> SyncConfigSource {
+    SyncConfigSource::SystemKeychain
 }
 
 /// 从 settings 表读取同步策略；缺省值是 15 分钟自动同步。
@@ -78,11 +85,17 @@ pub async fn save_sync_policy(
     Ok(policy)
 }
 
+/// 开发构建只从环境变量读取，禁止 UI 写入任何凭据存储。
+#[cfg(debug_assertions)]
+pub async fn save_remote_config(_database_url: String) -> Result<SyncRemoteConfig, AppError> {
+    Err(AppError::validation(
+        "开发模式不保存同步连接串，请在项目根目录 .env.local 设置 STONEFLOW_SYNC_DATABASE_URL",
+    ))
+}
+
 /// 写入并返回标准化后的云端副本配置。
-pub async fn save_remote_config(
-    database: &DatabaseRuntimeState,
-    database_url: String,
-) -> Result<SyncRemoteConfig, AppError> {
+#[cfg(not(debug_assertions))]
+pub async fn save_remote_config(database_url: String) -> Result<SyncRemoteConfig, AppError> {
     let database_url = normalize_database_url(database_url)
         .ok_or_else(|| AppError::validation("请填写有效的同步数据库连接串"))?;
     if !looks_like_postgres_url(&database_url) {
@@ -90,19 +103,8 @@ pub async fn save_remote_config(
             "连接串应以 postgresql:// 或 postgres:// 开头（Neon / 自建 Postgres）",
         ));
     }
-    write_sync_secret(database_url.clone()).await?;
-    let repository = SettingsRepository::new(database.connection().clone());
-    let updated_at = now_utc().to_rfc3339();
-    repository
-        .set_json_setting(
-            SYNC_CONFIG_SETTING_KEY,
-            &SyncRemoteConfigSetting {
-                display_host: Some(redact_database_url(&database_url)),
-            },
-            &updated_at,
-        )
-        .await?;
 
+    write_sync_secret(database_url.clone()).await?;
     Ok(SyncRemoteConfig { database_url })
 }
 
@@ -141,21 +143,31 @@ pub fn redact_database_url(url: &str) -> String {
     url.to_owned()
 }
 
+#[cfg(debug_assertions)]
 async fn read_sync_secret() -> Result<Option<String>, AppError> {
-    // 钥匙串未授权 / 不可用时视为「未配置」，绝不阻断 App 启动。
-    match tokio::task::spawn_blocking(SyncTokenStore::load).await {
-        Ok(Ok(value)) => Ok(value),
-        Ok(Err(error)) => {
-            log::warn!("同步:钥匙串不可用 {error}");
-            Ok(None)
-        }
-        Err(error) => {
-            log::warn!("同步:钥匙串任务失败 {error}");
-            Ok(None)
-        }
+    match std::env::var(DEV_SYNC_DATABASE_URL_ENV) {
+        Ok(value) => Ok(Some(value)),
+        Err(std::env::VarError::NotPresent) => Ok(None),
+        Err(error) => Err(AppError::validation(format!(
+            "开发同步环境变量不可用: {error}"
+        ))),
     }
 }
 
+#[cfg(not(debug_assertions))]
+async fn read_sync_secret() -> Result<Option<String>, AppError> {
+    match tokio::task::spawn_blocking(SyncTokenStore::load).await {
+        Ok(Ok(value)) => Ok(value),
+        Ok(Err(error)) => Err(AppError::initialization(format!(
+            "无法读取系统钥匙串: {error}"
+        ))),
+        Err(error) => Err(AppError::internal(format!(
+            "读取系统钥匙串任务失败: {error}"
+        ))),
+    }
+}
+
+#[cfg(not(debug_assertions))]
 async fn write_sync_secret(secret: String) -> Result<(), AppError> {
     tokio::task::spawn_blocking(move || SyncTokenStore::save(&secret))
         .await
@@ -169,21 +181,7 @@ async fn write_sync_secret(secret: String) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-
-    use super::{normalize_database_url, redact_database_url, SyncRemoteConfigSetting};
-
-    #[test]
-    fn remote_config_setting_should_only_serialize_display_host() {
-        let setting = SyncRemoteConfigSetting {
-            display_host: Some("postgresql://user:***@db.example.com:5432/sf".to_owned()),
-        };
-
-        assert_eq!(
-            serde_json::to_value(setting).expect("setting should serialize"),
-            json!({ "displayHost": "postgresql://user:***@db.example.com:5432/sf" })
-        );
-    }
+    use super::{normalize_database_url, redact_database_url};
 
     #[test]
     fn redact_database_url_should_hide_password() {

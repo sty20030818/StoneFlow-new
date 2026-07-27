@@ -17,6 +17,24 @@ pub enum SyncStatusKind {
     NeedsAttention,
 }
 
+/// 同步凭据的当前可用性。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SyncCredentialState {
+    #[default]
+    Missing,
+    Available,
+    Unavailable,
+}
+
+/// 当前构建读取同步凭据的唯一来源。
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SyncConfigSource {
+    Environment,
+    SystemKeychain,
+}
+
 /// 当前设备本地副本是否适合继续做普通同步。
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -41,6 +59,8 @@ pub struct SyncStatusPayload {
     pub dirty_since: Option<String>,
     pub pending_resync: bool,
     pub has_remote_config: bool,
+    pub credential_state: SyncCredentialState,
+    pub config_source: SyncConfigSource,
     /// 脱敏后的同步库地址（无密码），供 UI 展示。
     pub remote_url: Option<String>,
     pub replica_state: SyncReplicaState,
@@ -114,14 +134,6 @@ impl From<UpdateSyncPolicyInput> for SyncPolicy {
             interval_minutes: input.interval_minutes,
         }
     }
-}
-
-/// Settings 表中持久化的同步配置（仅脱敏展示，不含密码）。
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SyncRemoteConfigSetting {
-    /// 脱敏 host 展示；完整连接串在系统钥匙串。
-    pub display_host: Option<String>,
 }
 
 /// Settings 表中持久化的同步策略配置。
