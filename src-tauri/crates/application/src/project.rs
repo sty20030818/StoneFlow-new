@@ -924,7 +924,7 @@ where
             .get(&project_id)
             .await?
             .ok_or_else(|| ApplicationError::not_found("Project 不存在"))?;
-        if current.archived_at.is_some() || current.deleted_at.is_some() {
+        if current.deleted_at.is_some() || (archive && current.archived_at.is_some()) {
             return Err(ApplicationError::conflict("Project 当前不可归档或删除"));
         }
         let operation = OperationContext::new("local");

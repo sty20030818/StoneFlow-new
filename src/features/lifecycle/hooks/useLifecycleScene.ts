@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { toast } from 'sonner'
 
 import {
 	openSection,
@@ -23,6 +24,7 @@ import {
 	useRegisterCommandSelection,
 } from '@/features/selection'
 import type { LifecycleEntry, LifecycleMode } from '@/shared/types'
+import { normalizeTauriError } from '@/shared/lib/normalize-tauri-error'
 
 import {
 	useDeleteLifecycleEntryMutation,
@@ -171,6 +173,8 @@ export function useLifecycleScene(mode: LifecycleMode) {
 		setPendingEntryId(entry.id)
 		try {
 			await runner()
+		} catch (error) {
+			toast.error(normalizeTauriError(error, '操作失败，请稍后重试'))
 		} finally {
 			setPendingEntryId(null)
 		}

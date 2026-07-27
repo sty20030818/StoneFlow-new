@@ -249,6 +249,19 @@ describe('LifecycleList', () => {
 			)
 		})
 	})
+
+	it('归档条目删除失败时显示错误，不产生未处理 Promise', async () => {
+		deleteEntrySpy.mockRejectedValueOnce({ message: '当前条目不可删除' })
+		await renderLifecycleList({ mode: 'archive' })
+
+		fireEvent.contextMenu(screen.getByRole('button', { name: '打开 补齐生命周期页面' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: '移入回收站' }))
+		fireEvent.click(await screen.findByRole('button', { name: '移入回收站' }))
+
+		await waitFor(() => {
+			expect(toastErrorSpy).toHaveBeenCalledWith('当前条目不可删除')
+		})
+	})
 })
 
 async function renderLifecycleList(props: { mode: 'archive' | 'trash' }) {

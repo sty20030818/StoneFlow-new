@@ -230,12 +230,30 @@ mod tests {
             .expect("archive project should succeed");
         assert!(archived.archived_at.is_some());
 
+        let trashed = service
+            .delete_project(ProjectIdInput {
+                project_id: created.id.clone(),
+            })
+            .await
+            .expect("archived project should move to trash");
+        assert!(trashed.archived_at.is_some());
+        assert!(trashed.deleted_at.is_some());
+
+        let restored_from_trash = service
+            .restore_project(ProjectIdInput {
+                project_id: created.id.clone(),
+            })
+            .await
+            .expect("trashed project should restore to archive");
+        assert!(restored_from_trash.archived_at.is_some());
+        assert!(restored_from_trash.deleted_at.is_none());
+
         let restored = service
             .restore_project(ProjectIdInput {
                 project_id: created.id.clone(),
             })
             .await
-            .expect("restore project should succeed");
+            .expect("archived project should restore");
         assert!(restored.archived_at.is_none());
 
         service

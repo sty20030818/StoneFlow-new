@@ -516,7 +516,9 @@ where
             .get_in_connection(&transaction, &space_id)
             .await?
             .ok_or_else(|| ApplicationError::not_found("Space 不存在"))?;
-        ensure_active(&current)?;
+        if current.deleted_at.is_some() || (archive && current.archived_at.is_some()) {
+            return Err(ApplicationError::conflict("Space 当前不可归档或删除"));
+        }
         if current.is_default {
             return Err(ApplicationError::conflict(
                 "默认 Space 不可归档或删除，请先将其他 Space 设为默认",

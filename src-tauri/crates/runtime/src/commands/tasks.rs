@@ -782,11 +782,17 @@ mod tests {
         assert!(matches!(active_task_error, AppError::Conflict(_)));
 
         service
+            .archive_task(TaskIdInput {
+                task_id: task.id.clone(),
+            })
+            .await
+            .expect("task should archive");
+        service
             .delete_task(TaskIdInput {
                 task_id: task.id.clone(),
             })
             .await
-            .expect("task should move to trash");
+            .expect("archived task should move to trash");
         service
             .permanently_delete_task(TaskIdInput {
                 task_id: task.id.clone(),
