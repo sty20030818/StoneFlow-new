@@ -1,12 +1,12 @@
 import { startTransition, useEffect, useLayoutEffect, useRef } from 'react'
 
-import type { LauncherInitialState } from '../model/types'
+import type { LauncherRecentData } from '../model/types'
 import type { LauncherOpenSessionResponse } from '../api/launcherApi'
 import type { LauncherAction } from './launcherDomainTypes'
 
 type UseLauncherLifecycleBridgeArgs = {
 	dispatch: React.ActionDispatch<[action: LauncherAction]>
-	fetchSnapshot: () => Promise<LauncherInitialState>
+	fetchRecent: () => Promise<LauncherRecentData>
 	focusInput: () => void
 	nextOpenContext: LauncherOpenSessionResponse | null
 	shouldFocusInput: boolean
@@ -15,7 +15,7 @@ type UseLauncherLifecycleBridgeArgs = {
 
 export function useLauncherLifecycleBridge({
 	dispatch,
-	fetchSnapshot,
+	fetchRecent,
 	focusInput,
 	nextOpenContext,
 	onRefreshRecentError,
@@ -25,45 +25,30 @@ export function useLauncherLifecycleBridge({
 
 	useLayoutEffect(() => {
 		refreshRecentRef.current = () => {
-			void fetchSnapshot()
-				.then((openContext) => {
+			dispatch({ type: 'recentDataLoading' })
+			void fetchRecent()
+				.then((recentData) => {
 					startTransition(() => {
 						dispatch({
-							type: 'recentDataRefreshed',
-							payload: {
-								currentScope: openContext.currentScope,
-								defaultSpaceId: openContext.defaultSpaceId,
-								defaultPlacement: openContext.defaultPlacement,
-								spaces: openContext.spaces,
-								projects: openContext.projects,
-								recentTasks: openContext.recentTasks,
-								recentProjects: openContext.recentProjects,
-							},
+							type: 'recentDataLoaded',
+							payload: recentData,
 						})
 					})
 				})
 				.catch((error) => {
 					onRefreshRecentError(error)
+					dispatch({ type: 'recentDataFailed' })
 				})
 		}
-	}, [dispatch, fetchSnapshot, onRefreshRecentError])
+	}, [dispatch, fetchRecent, onRefreshRecentError])
 
 	useLayoutEffect(() => {
 		if (!nextOpenContext) {
 			return
 		}
 
-		const payload = {
-			currentScope: nextOpenContext.currentScope,
-			defaultSpaceId: nextOpenContext.defaultSpaceId,
-			defaultPlacement: nextOpenContext.defaultPlacement,
-			spaces: nextOpenContext.spaces,
-			projects: nextOpenContext.projects,
-			recentTasks: nextOpenContext.recentTasks,
-			recentProjects: nextOpenContext.recentProjects,
-		}
-
-		dispatch({ type: 'sessionOpened', payload })
+		dispatch({ type: 'sessionOpened', payload: nextOpenContext })
+		refreshRecentRef.current()
 	}, [dispatch, nextOpenContext])
 
 	useEffect(() => {

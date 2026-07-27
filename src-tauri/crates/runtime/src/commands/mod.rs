@@ -3,6 +3,7 @@
 use tauri::ipc::Invoke;
 
 pub(crate) mod activity;
+pub(crate) mod app_lifecycle;
 pub(crate) mod launcher;
 pub(crate) mod lifecycle;
 pub(crate) mod projects;
@@ -18,6 +19,7 @@ pub(crate) mod workspace;
 /// 生成命令处理器。
 pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
+        app_lifecycle::app_main_surface_ready,
         activity::get_entity_activities,
         lifecycle::list_archive_entries,
         lifecycle::list_trash_entries,
@@ -81,13 +83,11 @@ pub fn handler() -> impl Fn(Invoke) -> bool + Send + Sync + 'static {
         launcher::restore_main_window,
         launcher::quit_stoneflow,
         launcher::take_pending_command_open_intent,
-        launcher::domain::launcher_get_initial_state,
+        launcher::domain::launcher_get_recent_data,
         launcher::domain::launcher_list_projects_by_space,
         launcher::domain::launcher_open_target,
-        launcher::window::launcher_prepare_session,
         launcher::window::launcher_present_session,
         launcher::window::launcher_close_session,
         launcher::window::launcher_frontend_ready,
-        launcher::window::launcher_frontend_unready,
     ]
 }

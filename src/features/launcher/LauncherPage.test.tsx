@@ -6,17 +6,17 @@ import {
 	closeSession,
 	create,
 	createAndOpen,
-	getOpenContextSnapshot,
+	getRecentData,
 	listProjectsBySpace,
 	notifyFrontendReady,
-	notifyFrontendUnready,
 	openTarget,
 	presentSession,
 	search,
 } from './api/launcherApi'
 import { LauncherPage } from './LauncherPage'
 import type {
-	LauncherInitialState,
+	LauncherOpenContext,
+	LauncherRecentData,
 	LauncherProjectItem,
 	LauncherProjectOption,
 	LauncherProjectsBySpace,
@@ -33,10 +33,9 @@ vi.mock('./api/launcherApi', () => ({
 	closeSession: vi.fn<typeof closeSession>(),
 	create: vi.fn<typeof create>(),
 	createAndOpen: vi.fn<typeof createAndOpen>(),
-	getOpenContextSnapshot: vi.fn<typeof getOpenContextSnapshot>(),
+	getRecentData: vi.fn<typeof getRecentData>(),
 	listProjectsBySpace: vi.fn<typeof listProjectsBySpace>(),
 	notifyFrontendReady: vi.fn<typeof notifyFrontendReady>(),
-	notifyFrontendUnready: vi.fn<typeof notifyFrontendUnready>(),
 	openTarget: vi.fn<typeof openTarget>(),
 	presentSession: vi.fn<typeof presentSession>(),
 	search: vi.fn<typeof search>(),
@@ -133,10 +132,9 @@ vi.mock('@/shared/components/base/calendar', () => ({
 const mockedCloseSession = vi.mocked(closeSession)
 const mockedCreate = vi.mocked(create)
 const mockedCreateAndOpen = vi.mocked(createAndOpen)
-const mockedGetOpenContextSnapshot = vi.mocked(getOpenContextSnapshot)
+const mockedGetRecentData = vi.mocked(getRecentData)
 const mockedListProjectsBySpace = vi.mocked(listProjectsBySpace)
 const mockedNotifyFrontendReady = vi.mocked(notifyFrontendReady)
-const mockedNotifyFrontendUnready = vi.mocked(notifyFrontendUnready)
 const mockedOpenTarget = vi.mocked(openTarget)
 const mockedPresentSession = vi.mocked(presentSession)
 const mockedSearch = vi.mocked(search)
@@ -188,14 +186,12 @@ describe('LauncherPage', () => {
 		mockedCreate.mockResolvedValue(createTaskDetail())
 		mockedCreateAndOpen.mockReset()
 		mockedCreateAndOpen.mockResolvedValue(createTaskDetail())
-		mockedGetOpenContextSnapshot.mockReset()
-		mockedGetOpenContextSnapshot.mockResolvedValue(createInitialState())
+		mockedGetRecentData.mockReset()
+		mockedGetRecentData.mockResolvedValue(createRecentData())
 		mockedListProjectsBySpace.mockReset()
 		mockedListProjectsBySpace.mockResolvedValue(createProjectsBySpace('space-2'))
 		mockedNotifyFrontendReady.mockReset()
 		mockedNotifyFrontendReady.mockResolvedValue(undefined)
-		mockedNotifyFrontendUnready.mockReset()
-		mockedNotifyFrontendUnready.mockResolvedValue(undefined)
 		mockedOpenTarget.mockReset()
 		mockedOpenTarget.mockResolvedValue(undefined)
 		mockedPresentSession.mockReset()
@@ -525,8 +521,7 @@ describe('LauncherPage', () => {
 	})
 
 	it('创建成功后会静默刷新全局最近任务', async () => {
-		mockedGetOpenContextSnapshot.mockResolvedValueOnce({
-			...createInitialState(),
+		mockedGetRecentData.mockResolvedValueOnce(createRecentData()).mockResolvedValueOnce({
 			recentTasks: [createTaskResult({ id: 'task-new', title: '新建后最近任务' })],
 			recentProjects: [createProjectResult({ id: 'project-recent', name: '最近项目 A' })],
 		})
@@ -542,7 +537,7 @@ describe('LauncherPage', () => {
 			expect(mockedCreate).toHaveBeenCalledWith(expect.objectContaining({ title: '刚创建的任务' }))
 		})
 		await waitFor(() => {
-			expect(mockedGetOpenContextSnapshot).toHaveBeenCalledTimes(1)
+			expect(mockedGetRecentData).toHaveBeenCalledTimes(2)
 		})
 		await waitFor(() => {
 			expect(screen.getByText('新建后最近任务')).toBeInTheDocument()
@@ -728,7 +723,7 @@ describe('formatDateLabel', () => {
 	})
 })
 
-function createInitialState(): LauncherInitialState {
+function createOpenContext(): LauncherOpenContext {
 	return {
 		currentScope: {
 			type: 'space',
@@ -747,29 +742,32 @@ function createInitialState(): LauncherInitialState {
 			createProjectOption({ kind: 'standalone', id: null, name: '独立事项' }),
 			createProjectOption({ kind: 'project', id: 'project-1', name: 'StoneFlow 开发' }),
 		],
+	}
+}
+
+function createRecentData(): LauncherRecentData {
+	return {
 		recentTasks: [createTaskResult({ id: 'task-recent', title: '最近任务 A' })],
 		recentProjects: [createProjectResult({ id: 'project-recent', name: '最近项目 A' })],
 	}
 }
 
 function createOpenSessionResponse(
-	overrides: Partial<LauncherInitialState & { sessionId: string; openedAt: string }> = {},
+	overrides: Partial<LauncherOpenContext & { sessionId: string; openedAt: string }> = {},
 ) {
-	const initialState = {
-		...createInitialState(),
+	const openContext = {
+		...createOpenContext(),
 		...overrides,
 	}
 
 	return {
 		sessionId: overrides.sessionId ?? DEFAULT_SESSION_ID,
 		openedAt: overrides.openedAt ?? '2026-05-13T08:00:00.000Z',
-		currentScope: initialState.currentScope,
-		defaultSpaceId: initialState.defaultSpaceId,
-		defaultPlacement: initialState.defaultPlacement,
-		spaces: initialState.spaces,
-		projects: initialState.projects,
-		recentTasks: initialState.recentTasks,
-		recentProjects: initialState.recentProjects,
+		currentScope: openContext.currentScope,
+		defaultSpaceId: openContext.defaultSpaceId,
+		defaultPlacement: openContext.defaultPlacement,
+		spaces: openContext.spaces,
+		projects: openContext.projects,
 	}
 }
 

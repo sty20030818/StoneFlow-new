@@ -29,7 +29,6 @@ export function isShellSectionKey(value: string): value is ShellSectionKey {
 
 export type AppRouteKind =
 	| 'startup'
-	| 'launcher'
 	| 'debug-activity'
 	| 'shell-section'
 	| 'view'
@@ -41,13 +40,6 @@ export type AppRoute =
 	| {
 			kind: 'startup'
 			pathname: '/'
-			search: string
-			hash: string
-			fullPath: string
-	  }
-	| {
-			kind: 'launcher'
-			pathname: '/launcher'
 			search: string
 			hash: string
 			fullPath: string
@@ -118,7 +110,7 @@ export const ALL_SCOPE_KEY = 'all' as const
 export const DEFAULT_SPACE_SECTION: ShellSectionKey = 'standalone'
 export const DEFAULT_ALL_SECTION: ShellSectionKey = 'tasks'
 
-export const RESERVED_SCOPE_KEYS = new Set([ALL_SCOPE_KEY, 'launcher', 'settings', 'debug'])
+export const RESERVED_SCOPE_KEYS = new Set([ALL_SCOPE_KEY, 'settings', 'debug'])
 
 export function encodeScopeKey(scope: RouteScope, fallbackSpaceId?: string | null): string {
 	if (scope.type === 'all') return ALL_SCOPE_KEY
@@ -278,9 +270,6 @@ export function parseAppRoute(
 	const segments = splitPathSegments(pathname)
 	if (segments.length === 0) {
 		return { kind: 'startup', pathname: '/', search, hash, fullPath }
-	}
-	if (segments.length === 1 && segments[0] === 'launcher') {
-		return { kind: 'launcher', pathname: '/launcher', search, hash, fullPath }
 	}
 	if (segments[0] === 'debug' && segments[1] === 'activity' && segments.length === 2) {
 		return { kind: 'debug-activity', pathname: '/debug/activity', search, hash, fullPath }

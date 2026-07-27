@@ -41,7 +41,7 @@ export function PrimaryMetaBar() {
 				onSelectSpace={actions.selectSpace}
 				open={state.activePopover === 'space'}
 				selectedSpaceId={state.draft.spaceId}
-				spaces={state.initialState?.spaces ?? []}
+				spaces={state.openContext?.spaces ?? []}
 			/>
 
 			<Button

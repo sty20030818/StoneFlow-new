@@ -4,9 +4,10 @@ import { searchEntities } from '@/features/global-search'
 import { mapLauncherToTaskInput } from './mapLauncherToTaskInput'
 import { mapSearchEntitiesToLauncher } from './mapSearchEntitiesToLauncher'
 import type {
-	LauncherInitialState,
 	LauncherPlacement,
+	LauncherOpenContext,
 	LauncherProjectsBySpace,
+	LauncherRecentData,
 	LauncherSearchResponse,
 } from '../model/types'
 import { createTask } from '@/features/task'
@@ -33,17 +34,10 @@ export type LauncherCloseReason = 'escape' | 'blur' | 'submit' | 'toggle' | 'inv
 export type LauncherOpenSessionResponse = {
 	sessionId: string
 	openedAt: string
-	currentScope: LauncherInitialState['currentScope']
-	defaultSpaceId: string
-	defaultPlacement: LauncherPlacement
-	spaces: LauncherInitialState['spaces']
-	projects: LauncherInitialState['projects']
-	recentTasks: LauncherInitialState['recentTasks']
-	recentProjects: LauncherInitialState['recentProjects']
-}
+} & LauncherOpenContext
 
-export async function getOpenContextSnapshot() {
-	return invoke<LauncherInitialState>('launcher_get_initial_state')
+export async function getRecentData() {
+	return invoke<LauncherRecentData>('launcher_get_recent_data')
 }
 
 export async function presentSession(input: { sessionId: string }) {
@@ -56,10 +50,6 @@ export async function closeSession(input: { sessionId: string; reason: LauncherC
 
 export async function notifyFrontendReady() {
 	return invoke('launcher_frontend_ready')
-}
-
-export async function notifyFrontendUnready() {
-	return invoke('launcher_frontend_unready')
 }
 
 export async function listProjectsBySpace(spaceId: string) {

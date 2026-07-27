@@ -105,7 +105,7 @@ export function isRememberableShellPath(path: string): boolean {
 	const canonicalPath = normalizeShellMemoryPath(path)
 	const pathname = stripQueryAndHash(canonicalPath)
 
-	if (pathname === '/launcher' || pathname === '/' || pathname.length === 0) {
+	if (pathname === '/' || pathname.length === 0) {
 		return false
 	}
 

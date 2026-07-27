@@ -9,11 +9,10 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 
 use crate::app::state::{ActiveScopeState, AppState};
 use crate::window::launcher::{
-    callbacks::runtime_launcher_window_callbacks,
     controller::build_quick_controller,
-    frontend::LauncherFrontendState,
     runtime::{LauncherWindowCloseReason, LauncherWindowRuntimeState},
     session::prepare_launcher_session,
+    warmup::{ensure_launcher_ready, LauncherWarmupState},
 };
 
 /// 注册全局快捷键；失败时只记录 warn，不阻塞应用启动。
@@ -27,7 +26,7 @@ pub fn register_global_shortcut(app_handle: &AppHandle<tauri::Wry>) {
                 return;
             }
 
-            log::debug!("runtime: 快捷键触发 -> {LAUNCHER_SHORTCUT}");
+            log::info!("runtime: 快捷键触发 -> {LAUNCHER_SHORTCUT}");
             let app_handle = handle.clone();
             tauri::async_runtime::spawn(async move {
                 handle_toggle(app_handle).await;
@@ -41,44 +40,9 @@ pub fn register_global_shortcut(app_handle: &AppHandle<tauri::Wry>) {
     }
 }
 
-fn ensure_launcher_panel(app_handle: &AppHandle<tauri::Wry>) {
-    if !should_initialize_launcher_panel(
-        app_handle
-            .get_webview_window(stoneflow_platform::launcher_window::spec::LAUNCHER_LABEL)
-            .is_some(),
-    ) {
-        return;
-    }
-
-    let callbacks = runtime_launcher_window_callbacks();
-
-    #[cfg(target_os = "macos")]
-    {
-        let app_handle = app_handle.clone();
-        if let Err(error) = app_handle.clone().run_on_main_thread(move || {
-            stoneflow_platform::macos::panel::init_launcher_panel(&app_handle, callbacks);
-        }) {
-            log::error!("runtime: launcher panel 主线程初始化失败: {error}");
-        }
-    }
-
-    #[cfg(target_os = "windows")]
-    stoneflow_platform::windows::panel::init_launcher_panel(app_handle, callbacks);
-
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    {
-        let _ = (app_handle, callbacks);
-        log::warn!("runtime: 当前平台尚未实现 Launcher 浮窗");
-    }
-}
-
-fn should_initialize_launcher_panel(panel_exists: bool) -> bool {
-    !panel_exists
-}
-
 async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
-    let Some(frontend) = app_handle.try_state::<LauncherFrontendState>() else {
-        log::error!("runtime: launcher frontend state 未注册");
+    let Some(warmup) = app_handle.try_state::<LauncherWarmupState>() else {
+        log::error!("runtime: launcher warmup state 未注册");
         return;
     };
     let Some(runtime) = app_handle.try_state::<LauncherWindowRuntimeState>() else {
@@ -94,25 +58,9 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
         return;
     };
 
-    ensure_launcher_panel(&app_handle);
-
-    if !frontend.inner().is_ready().await {
-        log::info!("runtime: launcher 前端未 ready，等待初始化完成");
-        let mut attempts = 0;
-        while attempts < 50 {
-            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
-            if frontend.inner().is_ready().await {
-                break;
-            }
-            attempts += 1;
-        }
-
-        if !frontend.inner().is_ready().await {
-            log::warn!("runtime: launcher 前端启动超时");
-            runtime.inner().mark_error().await;
-            runtime.inner().reset_to_idle().await;
-            return;
-        }
+    if let Err(error) = ensure_launcher_ready(app_handle.clone(), warmup.inner().clone()).await {
+        log::warn!("runtime: launcher 未就绪: {error}");
+        return;
     }
 
     let controller = build_quick_controller(app_handle.clone());
@@ -150,7 +98,6 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
 
     match prepare_launcher_session(
         app_handle.clone(),
-        frontend.inner(),
         runtime.inner(),
         app_state.inner(),
         active_scope.inner(),
@@ -163,20 +110,5 @@ async fn handle_toggle(app_handle: AppHandle<tauri::Wry>) {
         Err(error) => {
             log::warn!("runtime: launcher prepare session 失败: {}", error.message);
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::should_initialize_launcher_panel;
-
-    #[test]
-    fn launcher_panel_should_not_reinitialize_when_it_already_exists() {
-        assert!(!should_initialize_launcher_panel(true));
-    }
-
-    #[test]
-    fn launcher_panel_should_initialize_when_missing() {
-        assert!(should_initialize_launcher_panel(false));
     }
 }

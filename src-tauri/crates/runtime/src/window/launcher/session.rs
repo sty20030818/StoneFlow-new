@@ -9,7 +9,6 @@ use super::controller::build_quick_controller;
 use crate::app::error::AppError;
 use crate::app::state::{map_active_scope, ActiveScopeState, AppState};
 
-use super::frontend::LauncherFrontendState;
 use super::runtime::{
     LauncherWindowCloseReason, LauncherWindowOpenReason, LauncherWindowRuntimeState,
 };
@@ -41,19 +40,12 @@ pub enum LauncherCloseReasonInput {
 
 pub async fn prepare_launcher_session(
     app_handle: tauri::AppHandle,
-    frontend: &LauncherFrontendState,
     runtime: &LauncherWindowRuntimeState,
     app_state: &AppState,
     active_scope: &ActiveScopeState,
 ) -> Result<LauncherOpenSessionResponse, LauncherErrorPayload> {
-    if !frontend.is_ready().await {
-        return Err(LauncherErrorPayload {
-            type_: "Internal",
-            message: "launcher 前端未 ready，无法准备 session".to_owned(),
-        });
-    }
-
-    let controller = build_quick_controller(app_handle.clone());
+	let prepare_started_at = std::time::Instant::now();
+	let controller = build_quick_controller(app_handle.clone());
     let session = runtime
         .begin_open(LauncherWindowOpenReason::GlobalShortcut)
         .await
@@ -73,9 +65,13 @@ pub async fn prepare_launcher_session(
 
     let open_context = app_state
         .launcher_context
-        .get_initial_state(map_active_scope(active_scope.get().await))
+        .get_open_context(map_active_scope(active_scope.get().await))
         .await
         .map_err(|error| LauncherErrorPayload::from(AppError::from(error)))?;
+	log::info!(
+		"launcher.session_prepared context_ms={}",
+		prepare_started_at.elapsed().as_millis()
+	);
 
     let response = LauncherOpenSessionResponse {
         session_id: session.session_id.clone(),

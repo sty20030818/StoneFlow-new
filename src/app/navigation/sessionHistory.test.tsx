@@ -64,7 +64,7 @@ describe('useShellSessionRouteHistory', () => {
 	})
 
 	it('非 shell 路径不作为历史 entry', async () => {
-		await renderHistoryProbe('/launcher')
+		await renderHistoryProbe('/debug/activity')
 
 		fireEvent.click(screen.getByRole('button', { name: 'go task detail' }))
 
@@ -199,11 +199,6 @@ async function renderHistoryProbe(initialEntry: string) {
 		path: '$projectId',
 		component: () => null,
 	})
-	const launcherRoute = createRoute({
-		getParentRoute: () => rootRoute,
-		path: 'launcher',
-		component: () => null,
-	})
 	const routeTree = rootRoute.addChildren([
 		allRoute.addChildren([allViewsRoute.addChildren([allViewDetailRoute])]),
 		spacesRoute.addChildren([
@@ -214,7 +209,6 @@ async function renderHistoryProbe(initialEntry: string) {
 				projectsRoute.addChildren([projectDetailRoute]),
 			]),
 		]),
-		launcherRoute,
 	])
 	const router = createRouter({
 		routeTree,

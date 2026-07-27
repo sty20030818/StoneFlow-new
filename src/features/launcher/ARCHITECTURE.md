@@ -7,13 +7,15 @@
 ## 1. 心智
 
 ```txt
-routes/launcher
+src/launcher.tsx
   → LauncherPage（薄壳：半径 CSS + 挂载）
       → SessionProvider          // phase / bridge / close
       → DomainProvider           // draft / search / submit / derived
       → PresentSession           // preparing → present_session
       → Panel                    // Composer → Advanced → Create? → Results → Footer
 ```
+
+Launcher 不经过主应用 Router 或 Shell Provider。`launcher:session-prepared` 只携带创建所必需的 Open context；最近任务和项目由 `launcher_get_recent_data` 在该事件后异步补齐，不能阻塞输入聚焦或 `present_session`。
 
 | 层 | 负责 | 禁止 |
 |----|------|------|
@@ -23,7 +25,7 @@ routes/launcher
 | **composer / create / results** | 输入、新建行、列表 IA | 直接 invoke、platform |
 | **api** | 窗 IPC + map*（create→task，search→global-search） | 第二套 create/search 规则 |
 
-跨模块 **只** `import { LauncherPage } from '@/features/launcher'`。
+独立入口 **只** `import { LauncherPage } from '@/features/launcher'`。
 **禁止** deep-import；**禁止** `features/launcher` → `@/layout/**`。
 
 ---
@@ -33,7 +35,7 @@ routes/launcher
 ```txt
 src/features/launcher/
 ├── ARCHITECTURE.md
-├── index.ts                 # 仅导出 LauncherPage
+├── index.ts                 # 仅导出 LauncherPage 给独立入口
 ├── chrome/                  # Surface · Panel · Footer
 ├── composer/                # 输入与 meta / Advanced / controls
 ├── create/                  # 钉住的新建行
@@ -83,18 +85,20 @@ Create **不在** `flatItems` 内。搜索混排：`interleaveTaskProjectResults
 
 | 命令 | 用途 |
 |------|------|
-| `launcher_get_initial_state` | 打开上下文快照 |
+| `launcher_get_recent_data` | 窗口可见后异步读取最近任务与项目 |
 | `launcher_list_projects_by_space` | 归属选项 |
 | `launcher_open_target` | 聚焦主窗并导航 |
 | `launcher_prepare/present/close_session` | 会话显隐 |
-| `launcher_frontend_ready/unready` | 前端监听器就绪 |
+| `launcher_frontend_ready` | 前端监听器就绪 |
 
 ```txt
 booting → hidden → preparing → presenting → visible → closing
                  ↘ error
 ```
 
-平台：窗 label `launcher`，URL `index.html#/launcher`，capabilities `launcher.json`。
+平台：窗 label `launcher`，URL `launcher.html`，capabilities `launcher.json`。
+
+预热失败后保留原生窗，但下一轮预热会重载其 WebView，再等待前端重新注册 listener；不保留旧轮询或第二套入口。
 
 ---
 

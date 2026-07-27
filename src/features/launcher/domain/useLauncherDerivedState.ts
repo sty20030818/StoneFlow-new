@@ -26,22 +26,17 @@ export function useLauncherDerivedState(state: LauncherPanelState): LauncherDeri
 
 	const displayTasks = useMemo(() => {
 		if (isShowingRecent) {
-			return (state.initialState?.recentTasks ?? []).slice(0, RECENT_TASK_LIMIT)
+			return state.recentData.recentTasks.slice(0, RECENT_TASK_LIMIT)
 		}
 		if (state.searchView === 'results') {
 			return state.searchResults.tasks
 		}
 		return [] as LauncherTaskItem[]
-	}, [
-		isShowingRecent,
-		state.initialState?.recentTasks,
-		state.searchResults.tasks,
-		state.searchView,
-	])
+	}, [isShowingRecent, state.recentData.recentTasks, state.searchResults.tasks, state.searchView])
 
 	const displayProjects = useMemo(() => {
 		if (isShowingRecent) {
-			return (state.initialState?.recentProjects ?? []).slice(0, RECENT_PROJECT_LIMIT)
+			return state.recentData.recentProjects.slice(0, RECENT_PROJECT_LIMIT)
 		}
 		if (state.searchView === 'results') {
 			return state.searchResults.projects
@@ -49,7 +44,7 @@ export function useLauncherDerivedState(state: LauncherPanelState): LauncherDeri
 		return [] as LauncherProjectItem[]
 	}, [
 		isShowingRecent,
-		state.initialState?.recentProjects,
+		state.recentData.recentProjects,
 		state.searchResults.projects,
 		state.searchView,
 	])
@@ -77,7 +72,7 @@ export function useLauncherDerivedState(state: LauncherPanelState): LauncherDeri
 	}, [displayProjects.length, displayTasks.length, isSearchEmpty, isShowingRecent])
 
 	const currentSpace =
-		state.initialState?.spaces.find((space) => space.id === state.draft.spaceId) ?? null
+		state.openContext?.spaces.find((space) => space.id === state.draft.spaceId) ?? null
 
 	const projectOptions = useMemo(() => {
 		if (!state.projectSearch.trim()) {

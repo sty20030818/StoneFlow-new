@@ -1,5 +1,7 @@
 //! Launcher ports 的 SQLite 实现与 application service 工厂。
 
+use std::collections::{HashMap, HashSet};
+
 use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 use stoneflow_application::launcher::{
     LauncherPorts, LauncherProjectItemDto, LauncherService, LauncherSidebarProjectDto,
@@ -11,7 +13,7 @@ use stoneflow_domain::LauncherSpaceCandidate;
 
 use crate::adapters::error::from_storage;
 use crate::entities::prelude::{Project, Space, Task};
-use crate::entities::{project, task};
+use crate::entities::{project, space, task};
 use crate::mappers::work_status_to_domain;
 use crate::repositories::{ProjectRepository, SpaceRepository, TaskRepository};
 
@@ -166,37 +168,35 @@ impl LauncherPorts for LauncherPortsAdapter {
             .await
             .map_err(|error| ApplicationError::storage(error.to_string()))?;
 
-        let mut items = Vec::with_capacity(rows.len());
-        for row in rows {
-            let space_name = Space::find_by_id(&row.space_id)
-                .one(&self.db)
-                .await
-                .map_err(|error| ApplicationError::storage(error.to_string()))?
-                .map(|space| space.name)
-                .unwrap_or_else(|| row.space_id.clone());
-            let project_name = match row.project_id.as_ref() {
-                Some(project_id) => Project::find_by_id(project_id)
-                    .one(&self.db)
-                    .await
-                    .map_err(|error| ApplicationError::storage(error.to_string()))?
-                    .map(|project| project.name),
-                None => None,
-            };
-            items.push(LauncherTaskItemDto {
+        let space_names = load_space_names(&self.db, rows.iter().map(|row| row.space_id.clone())).await?;
+        let project_names = load_project_names(
+            &self.db,
+            rows.iter().filter_map(|row| row.project_id.clone()),
+        )
+        .await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| LauncherTaskItemDto {
                 id: row.id,
+                space_name: space_names
+                    .get(&row.space_id)
+                    .cloned()
+                    .unwrap_or_else(|| row.space_id.clone()),
+                project_name: row
+                    .project_id
+                    .as_ref()
+                    .and_then(|project_id| project_names.get(project_id).cloned()),
                 space_id: row.space_id,
-                space_name,
                 project_id: row.project_id,
-                project_name,
                 title: row.title,
                 note: row.note,
                 priority: row.priority,
                 status: work_status_to_domain(row.status).as_str().to_owned(),
                 updated_at: row.updated_at,
                 completed_at: row.completed_at,
-            });
-        }
-        Ok(items)
+            })
+            .collect())
     }
 
     async fn list_recent_projects(
@@ -213,24 +213,66 @@ impl LauncherPorts for LauncherPortsAdapter {
             .await
             .map_err(|error| ApplicationError::storage(error.to_string()))?;
 
-        let mut items = Vec::with_capacity(rows.len());
-        for row in rows {
-            let space_name = Space::find_by_id(&row.space_id)
-                .one(&self.db)
-                .await
-                .map_err(|error| ApplicationError::storage(error.to_string()))?
-                .map(|space| space.name)
-                .unwrap_or_else(|| row.space_id.clone());
-            items.push(LauncherProjectItemDto {
+        let space_names = load_space_names(&self.db, rows.iter().map(|row| row.space_id.clone())).await?;
+
+        Ok(rows
+            .into_iter()
+            .map(|row| LauncherProjectItemDto {
                 id: row.id,
+                space_name: space_names
+                    .get(&row.space_id)
+                    .cloned()
+                    .unwrap_or_else(|| row.space_id.clone()),
                 space_id: row.space_id,
-                space_name,
                 name: row.name,
                 note: row.description,
                 updated_at: row.updated_at,
                 completed_at: row.completed_at,
-            });
-        }
-        Ok(items)
+            })
+            .collect())
     }
+}
+
+async fn load_space_names(
+    db: &DatabaseConnection,
+    ids: impl IntoIterator<Item = String>,
+) -> Result<HashMap<String, String>, ApplicationError> {
+    let ids = ids.into_iter().collect::<HashSet<_>>().into_iter().collect::<Vec<_>>();
+    if ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    Space::find()
+        .filter(space::Column::Id.is_in(ids))
+        .all(db)
+        .await
+        .map(|spaces| {
+            spaces
+                .into_iter()
+                .map(|space| (space.id, space.name))
+                .collect()
+        })
+        .map_err(|error| ApplicationError::storage(error.to_string()))
+}
+
+async fn load_project_names(
+    db: &DatabaseConnection,
+    ids: impl IntoIterator<Item = String>,
+) -> Result<HashMap<String, String>, ApplicationError> {
+    let ids = ids.into_iter().collect::<HashSet<_>>().into_iter().collect::<Vec<_>>();
+    if ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    Project::find()
+        .filter(project::Column::Id.is_in(ids))
+        .all(db)
+        .await
+        .map(|projects| {
+            projects
+                .into_iter()
+                .map(|project| (project.id, project.name))
+                .collect()
+        })
+        .map_err(|error| ApplicationError::storage(error.to_string()))
 }

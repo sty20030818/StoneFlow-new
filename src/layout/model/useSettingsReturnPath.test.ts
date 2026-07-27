@@ -10,9 +10,9 @@ describe('resolveSettingsReturnPath', () => {
 		).toBe('/space-a/projects/p1')
 	})
 
-	it('拒绝 settings / launcher / 空 path，回落 startup fallback', () => {
+	it('拒绝 settings / 非 shell / 空 path，回落 startup fallback', () => {
 		expect(resolveSettingsReturnPath('/all/settings/general', { type: 'all' })).toBe('/all/tasks')
-		expect(resolveSettingsReturnPath('/launcher', { type: 'all' })).toBe('/all/tasks')
+		expect(resolveSettingsReturnPath('/debug/activity', { type: 'all' })).toBe('/all/tasks')
 		expect(resolveSettingsReturnPath('  ', { type: 'all' })).toBe('/all/tasks')
 		expect(resolveSettingsReturnPath(null, { type: 'space', spaceId: 'space-a' })).toBe(
 			'/space-a/standalone',

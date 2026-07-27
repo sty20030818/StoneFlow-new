@@ -271,7 +271,7 @@ crates/runtime/src/
       ├─ runtime.rs
       ├─ session.rs
       ├─ controller.rs
-      ├─ frontend.rs
+	   ├─ warmup.rs
       ├─ callbacks.rs
       └─ mod.rs
 ```
@@ -294,13 +294,16 @@ Launcher 当前不是一个“前端小弹窗”，而是一条跨 Tauri / runti
 ```txt
 全局快捷键（macOS: Option+Space；Windows: Alt+Space；其它: Control+Shift+Space）
 -> runtime::shortcuts
--> runtime::window::launcher::runtime / session
+-> runtime::window::launcher::warmup::ensure_launcher_ready
+-> runtime::window::launcher::session
 -> platform::launcher_window
 -> emit launcher:session-prepared
 -> frontend present_session
 -> launcher_present_session
 -> emit launcher:session-presented
 ```
+
+预热不属于快捷键关键路径：主窗口在首次可交互渲染后调用 `app_main_surface_ready`，runtime 校验来源为 `main`，再后台启动 `LauncherWarmupState`。该状态机只管理 `Cold -> Warming -> Ready | Failed`，通过 `Notify` 单飞等待前端 `launcher_frontend_ready`；每次用户打开的 session 状态仍由 `LauncherWindowRuntimeState` 独立管理。
 
 ### 6.2 业务链路
 

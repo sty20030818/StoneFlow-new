@@ -4,7 +4,7 @@
 
 use crate::app::error::AppError;
 use serde::Serialize;
-use stoneflow_application::launcher_context::LauncherInitialStateDto;
+use stoneflow_application::launcher_context::LauncherOpenContextDto;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LauncherErrorPayload {
@@ -34,8 +34,5 @@ pub struct LauncherOpenSessionResponse {
     pub session_id: String,
     pub opened_at: String,
     #[serde(flatten)]
-    pub open_context: LauncherInitialStateDto,
+    pub open_context: LauncherOpenContextDto,
 }
-
-/// 初始态别名：直出 application DTO。
-pub type LauncherInitialStateResponse = LauncherInitialStateDto;

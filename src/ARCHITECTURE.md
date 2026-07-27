@@ -67,6 +67,7 @@ styles   → 不依赖业务层
 ```txt
 src/
 ├── main.tsx
+├── launcher.tsx             # 独立 Launcher 窗口 composition root；不挂 Router / Shell Provider
 ├── app/                    # 组合根：Providers、router、navigation 语义
 ├── layout/                 # 产品铬架：Header / Sidebar / Main / overlays / command-bridge
 ├── routes/                 # file routes + 薄页
@@ -107,7 +108,7 @@ src/
 **负责：** 匹配、loader/redirect、挂载 feature page/scene。
 **不负责：** 厚业务、裸 `invoke()`。
 
-正式工作路径：`/:scopeKey/...`（`all` 与 `spaces/:id` 语义）；另有 `/launcher`、debug 等。
+正式工作路径：`/:scopeKey/...`（`all` 与 `spaces/:id` 语义）；另有 debug 路径。
 
 ### 4.4 `features/` · 能力切片
 
@@ -188,7 +189,7 @@ QueryClient 默认（`app/providers`）：`staleTime 30s` · `gcTime 10min` · `
 ## 8. 窗与壳
 
 - **主窗：** `layout` 铬架 + `_shell` 路由树。
-- **Launcher：** 独立窗 + `/launcher`；session/domain 在 `features/launcher`；固定壳几何见该模块契约。
+- **Launcher：** 独立窗 + `launcher.html`；session/domain 在 `features/launcher`；固定壳几何见该模块契约。
 - **Overlays：** 主窗创建等挂在 layout overlays，内容组件来自 feature public。
 
 ---

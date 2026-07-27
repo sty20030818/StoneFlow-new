@@ -2,7 +2,8 @@ import type { KeyboardEvent, RefObject } from 'react'
 
 import type {
 	LauncherFocusTarget,
-	LauncherInitialState,
+	LauncherOpenContext,
+	LauncherRecentData,
 	LauncherPanelState,
 	LauncherPlacement,
 	LauncherPopoverKey,
@@ -17,9 +18,10 @@ import type {
 } from '../model/types'
 
 export type LauncherAction =
-	| { type: 'sessionOpened'; payload: LauncherInitialState }
-	| { type: 'recentDataRefreshed'; payload: LauncherInitialState }
-	| { type: 'bootstrapFailed'; message: string }
+	| { type: 'sessionOpened'; payload: LauncherOpenContext }
+	| { type: 'recentDataLoading' }
+	| { type: 'recentDataLoaded'; payload: LauncherRecentData }
+	| { type: 'recentDataFailed' }
 	| { type: 'titleChanged'; title: string }
 	| { type: 'priorityChanged'; priority: LauncherPriority }
 	| { type: 'statusChanged'; status: LauncherStatus }

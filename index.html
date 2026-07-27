@@ -10,19 +10,8 @@
 			1. 壳色：与 --sf-neutral-100 / 原生 background_color 对齐（#f3f3f4）
 			2. 主窗静态骨架：复刻 ShellLayoutSkeleton（灰壳 + 白卡）；改尺寸/色时两边一起改
 			3. 骨架在 #root 外作遮罩，避免 createRoot 清空 root 时闪空帧；React 首帧后再撤
-			4. Launcher 共用本页（#/launcher）：不画主壳骨架
 			几何默认宽 = shared/lib/shellSidebarGeometry DEFAULT_SIDEBAR_WIDTH（256）
 		-->
-		<script>
-			;(function () {
-				var hash = location.hash || ''
-				var isLauncher =
-					hash === '#/launcher' ||
-					hash.indexOf('#/launcher?') === 0 ||
-					hash.indexOf('#/launcher/') === 0
-				document.documentElement.setAttribute('data-sf-boot', isLauncher ? 'launcher' : 'main')
-			})()
-		</script>
 		<style>
 			html,
 			body,
@@ -44,10 +33,6 @@
 				flex-direction: column;
 				overflow: hidden;
 				background: #f3f3f4;
-			}
-
-			html[data-sf-boot='launcher'] #sf-boot-shell {
-				display: none;
 			}
 
 			#sf-boot-shell .sf-boot-header {

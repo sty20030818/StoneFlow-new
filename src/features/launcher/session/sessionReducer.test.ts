@@ -11,8 +11,6 @@ const openContext: LauncherOpenSessionResponse = {
 	defaultPlacement: { kind: 'standalone', projectId: null },
 	spaces: [],
 	projects: [],
-	recentTasks: [],
-	recentProjects: [],
 }
 
 describe('LauncherSessionReducer', () => {

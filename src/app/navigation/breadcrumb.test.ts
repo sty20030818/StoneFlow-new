@@ -164,7 +164,6 @@ function createRoute(overrides: Partial<ShellRoute>): ShellRoute {
 		isShellPath: false,
 		isSettingsPath: false,
 		isDebugPath: false,
-		isLauncherPath: false,
 		isWorkPath: false,
 		...overrides,
 	} as ShellRoute

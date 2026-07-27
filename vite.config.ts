@@ -55,6 +55,10 @@ export default defineConfig({
 		sourcemap: !!process.env.TAURI_ENV_DEBUG,
 		// 壳层共享图会把重型 node_modules 捆进同一 chunk；按官方建议拆 vendor，避免单文件 >500kB。
 		rolldownOptions: {
+			input: {
+				main: fileURLToPath(new URL('./index.html', import.meta.url)),
+				launcher: fileURLToPath(new URL('./launcher.html', import.meta.url)),
+			},
 			output: {
 				codeSplitting: {
 					groups: [

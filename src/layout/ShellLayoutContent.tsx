@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo } from 'react'
+import { useEffect, useLayoutEffect, useMemo } from 'react'
 
 import type { AppLayoutProps } from '@/layout/appLayoutTypes'
 import { useShellSessionRouteHistory } from '@/app/navigation'
@@ -13,6 +13,7 @@ import { SidebarProvider } from '@/shared/components/base/sidebar'
 import { SyncStatusProvider } from '@/features/sync'
 import { useUpdateEvents } from '@/features/update'
 import { dismissBootShell } from '@/shared/lib/bootShell'
+import { notifyMainSurfaceReady } from '@/app/lifecycle/mainSurface'
 
 /**
  * 壳主体：组合数据 hooks → Chrome + Overlays。
@@ -167,5 +168,12 @@ function BootShellDismiss() {
 	useLayoutEffect(() => {
 		dismissBootShell()
 	}, [])
+
+	useEffect(() => {
+		void notifyMainSurfaceReady().catch((error) => {
+			console.warn('[app] launcher warmup request failed:', error)
+		})
+	}, [])
+
 	return null
 }

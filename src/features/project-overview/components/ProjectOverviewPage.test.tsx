@@ -119,7 +119,6 @@ vi.mock('@/app/navigation/ShellRouteContext', () => ({
 		isShellPath: true,
 		isSettingsPath: false,
 		isDebugPath: false,
-		isLauncherPath: false,
 		isWorkPath: true,
 	}),
 }))

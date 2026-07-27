@@ -74,12 +74,15 @@ export type LauncherResultItem =
 	| ({ kind: 'task' } & LauncherTaskItem)
 	| ({ kind: 'project' } & LauncherProjectItem)
 
-export type LauncherInitialState = {
+export type LauncherOpenContext = {
 	currentScope: LauncherScope
 	defaultSpaceId: string
 	defaultPlacement: LauncherPlacement
 	spaces: LauncherSpaceSummary[]
 	projects: LauncherProjectOption[]
+}
+
+export type LauncherRecentData = {
 	/** 全局最近任务，不随 Launcher 当前选中的 space 切换而变化。 */
 	recentTasks: LauncherTaskItem[]
 	/** 全局最近项目，不随 Launcher 当前选中的 space 切换而变化。 */
@@ -124,7 +127,9 @@ export type LauncherSubmitAction = 'create' | 'createAndOpen' | 'createAndContin
 export type LauncherSubmitState = 'idle' | 'submitting' | 'success' | 'error'
 
 export type LauncherPanelState = {
-	initialState: LauncherInitialState | null
+	openContext: LauncherOpenContext | null
+	recentData: LauncherRecentData
+	recentStatus: 'idle' | 'loading' | 'ready' | 'error'
 	draft: LauncherDraft
 	projectOptions: LauncherProjectOption[]
 	projectSearch: string

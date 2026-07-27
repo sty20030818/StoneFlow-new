@@ -2,35 +2,16 @@
 
 use tauri::State;
 
-use crate::app::state::{ActiveScopeState, AppState};
 use crate::window::launcher::{
-    frontend::LauncherFrontendState,
     runtime::LauncherWindowRuntimeState,
     session::{
-        close_launcher_session, prepare_launcher_session, present_launcher_session,
-        LauncherCloseSessionInput, LauncherSessionInput,
+        close_launcher_session, present_launcher_session, LauncherCloseSessionInput,
+        LauncherSessionInput,
     },
+    warmup::LauncherWarmupState,
 };
 
-use super::error::{LauncherErrorPayload, LauncherOpenSessionResponse};
-
-#[tauri::command]
-pub async fn launcher_prepare_session(
-    app_handle: tauri::AppHandle,
-    frontend: State<'_, LauncherFrontendState>,
-    runtime: State<'_, LauncherWindowRuntimeState>,
-    state: State<'_, AppState>,
-    active_scope: State<'_, ActiveScopeState>,
-) -> Result<LauncherOpenSessionResponse, LauncherErrorPayload> {
-    prepare_launcher_session(
-        app_handle,
-        frontend.inner(),
-        runtime.inner(),
-        state.inner(),
-        active_scope.inner(),
-    )
-    .await
-}
+use super::error::LauncherErrorPayload;
 
 #[tauri::command]
 pub async fn launcher_present_session(
@@ -52,18 +33,8 @@ pub async fn launcher_close_session(
 
 #[tauri::command]
 pub async fn launcher_frontend_ready(
-    frontend: State<'_, LauncherFrontendState>,
+    warmup: State<'_, LauncherWarmupState>,
 ) -> Result<(), LauncherErrorPayload> {
-    frontend.inner().mark_ready().await;
-    log::debug!("runtime: launcher 前端监听器已就绪");
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn launcher_frontend_unready(
-    frontend: State<'_, LauncherFrontendState>,
-) -> Result<(), LauncherErrorPayload> {
-    frontend.inner().mark_unready().await;
-    log::debug!("runtime: launcher 前端监听器已卸载");
-    Ok(())
+	warmup.inner().mark_ready().await;
+	Ok(())
 }

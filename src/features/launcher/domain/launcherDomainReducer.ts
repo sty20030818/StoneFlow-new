@@ -14,7 +14,9 @@ const defaultDraft: LauncherDraft = {
 
 export function createLauncherInitialState(): LauncherPanelState {
 	return {
-		initialState: null,
+		openContext: null,
+		recentData: { recentTasks: [], recentProjects: [] },
+		recentStatus: 'idle',
 		draft: defaultDraft,
 		projectOptions: [],
 		projectSearch: '',
@@ -39,9 +41,9 @@ export function launcherDomainReducer(
 ): LauncherPanelState {
 	switch (action.type) {
 		case 'sessionOpened': {
-			const previousDefaultSpaceId = state.initialState?.defaultSpaceId ?? null
-			const previousDefaultPlacement = state.initialState?.defaultPlacement ?? null
-			const shouldResetDraft = state.initialState === null
+			const previousDefaultSpaceId = state.openContext?.defaultSpaceId ?? null
+			const previousDefaultPlacement = state.openContext?.defaultPlacement ?? null
+			const shouldResetDraft = state.openContext === null
 			const shouldAdoptFreshDefaults =
 				!shouldResetDraft &&
 				state.draft.title.trim().length === 0 &&
@@ -52,7 +54,9 @@ export function launcherDomainReducer(
 			if (shouldResetDraft) {
 				return {
 					...state,
-					initialState: action.payload,
+					openContext: action.payload,
+					recentData: { recentTasks: [], recentProjects: [] },
+					recentStatus: 'idle',
 					draft: {
 						...state.draft,
 						title: '',
@@ -83,7 +87,9 @@ export function launcherDomainReducer(
 
 			return {
 				...state,
-				initialState: action.payload,
+				openContext: action.payload,
+				recentData: { recentTasks: [], recentProjects: [] },
+				recentStatus: 'idle',
 				draft: shouldAdoptFreshDefaults
 					? {
 							...state.draft,
@@ -96,24 +102,16 @@ export function launcherDomainReducer(
 				projectSearch: shouldAdoptFreshDefaults ? '' : state.projectSearch,
 			}
 		}
-		case 'bootstrapFailed':
+		case 'recentDataLoading':
+			return { ...state, recentStatus: 'loading' }
+		case 'recentDataLoaded':
 			return {
 				...state,
-				submitState: 'error',
-				message: action.message,
-				errorMessage: action.message,
+				recentData: action.payload,
+				recentStatus: 'ready',
 			}
-		case 'recentDataRefreshed':
-			return {
-				...state,
-				initialState: state.initialState
-					? {
-							...state.initialState,
-							recentTasks: action.payload.recentTasks,
-							recentProjects: action.payload.recentProjects,
-						}
-					: action.payload,
-			}
+		case 'recentDataFailed':
+			return { ...state, recentStatus: 'error' }
 		case 'titleChanged': {
 			const hasTitle = action.title.trim().length > 0
 			return {

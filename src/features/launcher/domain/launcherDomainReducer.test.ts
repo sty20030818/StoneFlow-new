@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import { createLauncherInitialState, launcherDomainReducer } from './launcherDomainReducer'
 import type { LauncherAction } from './launcherDomainTypes'
-import type { LauncherInitialState } from '../model/types'
+import type { LauncherOpenContext } from '../model/types'
 
 function openSession(
-	overrides: Partial<LauncherInitialState> = {},
+	overrides: Partial<LauncherOpenContext> = {},
 ): Extract<LauncherAction, { type: 'sessionOpened' }> {
 	return {
 		type: 'sessionOpened',
@@ -20,8 +20,6 @@ function openSession(
 				{ kind: 'standalone', id: null, name: '独立事项', spaceId: 'space-1' },
 				{ kind: 'project', id: 'project-1', name: '项目 A', spaceId: 'space-1' },
 			],
-			recentTasks: [],
-			recentProjects: [],
 			...overrides,
 		},
 	}

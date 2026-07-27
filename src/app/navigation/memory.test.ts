@@ -102,8 +102,8 @@ describe('routeMemory', () => {
 		})
 	})
 
-	it('不保存 launcher、shortcut、缺 scope 与未知 path', () => {
-		expect(createNextShellRouteMemory(null, { type: 'all' }, '/launcher')).toBeNull()
+	it('不保存非 shell、shortcut、缺 scope 与未知 path', () => {
+		expect(createNextShellRouteMemory(null, { type: 'all' }, '/debug/activity')).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, TASK_SHORTCUT_PATH)).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, PROJECT_SHORTCUT_PATH)).toBeNull()
 		expect(createNextShellRouteMemory(null, { type: 'all' }, '/standalone')).toBeNull()
@@ -118,7 +118,7 @@ describe('routeMemory', () => {
 		expect(isRememberableShellPath('/space-a/views/today')).toBe(true)
 		expect(isRememberableShellPath('/standalone')).toBe(false)
 		expect(isRememberableShellPath(TASK_SHORTCUT_PATH)).toBe(false)
-		expect(isRememberableShellPath('/launcher')).toBe(false)
+		expect(isRememberableShellPath('/debug/activity')).toBe(false)
 		expect(isRememberableShellPath('/all/settings/general')).toBe(false)
 	})
 

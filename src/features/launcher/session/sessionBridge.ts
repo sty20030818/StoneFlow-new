@@ -1,11 +1,7 @@
 import { useEffect } from 'react'
 import { listen } from '@tauri-apps/api/event'
 
-import {
-	notifyFrontendReady,
-	notifyFrontendUnready,
-	type LauncherOpenSessionResponse,
-} from '../api/launcherApi'
+import { notifyFrontendReady, type LauncherOpenSessionResponse } from '../api/launcherApi'
 import type {
 	LauncherSessionAction,
 	LauncherSessionClosePayload,
@@ -99,16 +95,15 @@ export function useLauncherSessionBridge(
 				if (disposed) {
 					return
 				}
-				void notifyFrontendReady().catch(() => {})
+				void notifyFrontendReady().catch(logLauncherSessionError)
 			})
-			.catch(() => {})
+			.catch(logLauncherSessionError)
 
 		return () => {
 			disposed = true
 			unlistenPrepared?.()
 			unlistenPresented?.()
 			unlistenInvalidated?.()
-			void notifyFrontendUnready().catch(() => {})
 		}
 	}, [dispatch])
 }

@@ -48,7 +48,6 @@ export type ShellRoute = {
 	isShellPath: boolean
 	isSettingsPath: boolean
 	isDebugPath: boolean
-	isLauncherPath: boolean
 	isWorkPath: boolean
 }
 
@@ -151,7 +150,6 @@ export function shellRouteFromAppRoute(
 		isShellPath,
 		isSettingsPath: appRoute.kind === 'shell-section' && appRoute.section === 'settings',
 		isDebugPath: appRoute.kind === 'debug-activity',
-		isLauncherPath: appRoute.kind === 'launcher',
 		isWorkPath:
 			appRoute.kind === 'shell-section' ||
 			appRoute.kind === 'view' ||

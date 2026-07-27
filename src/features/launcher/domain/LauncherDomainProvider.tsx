@@ -7,7 +7,7 @@ import {
 	type PropsWithChildren,
 } from 'react'
 
-import { getOpenContextSnapshot, search } from '../api/launcherApi'
+import { getRecentData, search } from '../api/launcherApi'
 import type { LauncherContextValue, LauncherDomainActions } from './launcherDomainTypes'
 import { useLauncherCommands } from './useLauncherCommands'
 import { useLauncherDraftActions } from './useLauncherDraftActions'
@@ -40,7 +40,7 @@ export function LauncherDomainProvider({ children }: PropsWithChildren) {
 
 	const { refreshRecent } = useLauncherLifecycleBridge({
 		dispatch,
-		fetchSnapshot: getOpenContextSnapshot,
+		fetchRecent: getRecentData,
 		focusInput,
 		nextOpenContext: 'openContext' in sessionState.phase ? sessionState.phase.openContext : null,
 		onRefreshRecentError: logRefreshRecentError,

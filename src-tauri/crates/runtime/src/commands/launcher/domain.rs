@@ -6,11 +6,11 @@ use stoneflow_application::launcher::{
 };
 use tauri::State;
 
-use crate::app::state::{map_active_scope, AppState, CommandOpenState};
+use crate::app::state::{AppState, CommandOpenState};
 use crate::command_open::{dispatch_command_open, restore_main_window, CommandOpenPayload};
 use stoneflow_application::launcher::LauncherProjectsBySpaceDto;
 
-use super::error::{LauncherErrorPayload, LauncherInitialStateResponse};
+use super::error::LauncherErrorPayload;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -34,13 +34,12 @@ pub enum LauncherOpenTargetKind {
 }
 
 #[tauri::command]
-pub async fn launcher_get_initial_state(
+pub async fn launcher_get_recent_data(
     state: State<'_, AppState>,
-    active_scope: State<'_, crate::app::state::ActiveScopeState>,
-) -> Result<LauncherInitialStateResponse, LauncherErrorPayload> {
+) -> Result<stoneflow_application::launcher_context::LauncherRecentDataDto, LauncherErrorPayload> {
     state
         .launcher_context
-        .get_initial_state(map_active_scope(active_scope.get().await))
+        .get_recent_data()
         .await
         .map_err(|error| LauncherErrorPayload::from(crate::app::error::AppError::from(error)))
 }

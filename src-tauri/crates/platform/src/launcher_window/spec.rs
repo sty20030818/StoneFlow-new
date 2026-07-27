@@ -3,8 +3,8 @@
 pub const LAUNCHER_LABEL: &str = "launcher";
 pub const LAUNCHER_TITLE: &str = "Launcher";
 
-/// 面板加载主 App 前端 bundle 的 Hash 路由。
-pub const LAUNCHER_URL: &str = "index.html#/launcher";
+/// 面板加载独立的最小前端入口，不经过主应用 Router / Shell。
+pub const LAUNCHER_URL: &str = "launcher.html";
 
 /// Launcher 固定壳逻辑尺寸（内容区内滚，外窗不随内容涨缩）。
 pub const LAUNCHER_PANEL_WIDTH: f64 = 720.0;

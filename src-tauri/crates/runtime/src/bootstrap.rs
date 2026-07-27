@@ -20,7 +20,7 @@ use crate::exit_coordinator;
 use crate::shortcuts;
 use crate::tray;
 use crate::update_schedule::UpdateScheduleWake;
-use crate::window::launcher::frontend::LauncherFrontendState;
+use crate::window::launcher::warmup::LauncherWarmupState;
 use crate::window::main::build_main_window;
 use crate::window::LauncherWindowRuntimeState;
 
@@ -45,12 +45,12 @@ pub fn setup_app(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>>
 
     let active_scope_state = ActiveScopeState::default();
     let command_open_state = CommandOpenState::default();
-    let quick_frontend_state = LauncherFrontendState::default();
+    let launcher_warmup_state = LauncherWarmupState::default();
     let launcher_runtime_state = LauncherWindowRuntimeState::default();
 
     app.manage(active_scope_state);
     app.manage(command_open_state);
-    app.manage(quick_frontend_state);
+    app.manage(launcher_warmup_state);
     app.manage(launcher_runtime_state);
 
     let database_state = tauri::async_runtime::block_on(async {

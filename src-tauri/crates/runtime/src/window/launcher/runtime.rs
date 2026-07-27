@@ -309,7 +309,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn runtime_should_allow_close_while_visible() {
+	async fn runtime_should_allow_close_while_visible() {
         let runtime = LauncherWindowRuntimeState::default();
         let session = runtime
             .begin_open(LauncherWindowOpenReason::GlobalShortcut)
@@ -329,8 +329,29 @@ mod tests {
             .await
             .expect("close should succeed")
             .expect("visible session should exist");
-        assert_eq!(closing_session.session_id, session.session_id);
-    }
+		assert_eq!(closing_session.session_id, session.session_id);
+	}
+
+	#[tokio::test]
+	async fn runtime_should_allow_blur_to_close_the_active_session() {
+		let runtime = LauncherWindowRuntimeState::default();
+		let session = runtime
+			.begin_open(LauncherWindowOpenReason::GlobalShortcut)
+			.await
+			.expect("open should succeed");
+
+		let closing_session = runtime
+			.begin_close_for(&session.session_id, LauncherWindowCloseReason::Blur)
+			.await
+			.expect("blur should begin close")
+			.expect("active session should exist");
+		assert_eq!(closing_session.session_id, session.session_id);
+		runtime
+			.finish_close_for(&session.session_id)
+			.await
+			.expect("blur close should finish");
+		assert_eq!(runtime.snapshot().await.phase, LauncherWindowPhase::Idle);
+	}
 
     #[tokio::test]
     async fn runtime_should_reject_present_while_visible() {
