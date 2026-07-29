@@ -29,6 +29,12 @@ Rust workspace 校验：
 cargo check --manifest-path src-tauri/Cargo.toml --workspace
 ```
 
+清理可再生依赖与构建输出：
+
+```bash
+bun clean
+```
+
 ## 仓库结构
 
 ```text
