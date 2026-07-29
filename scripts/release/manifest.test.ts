@@ -8,7 +8,6 @@ describe('assertLatestJsonConsistency', () => {
 			assertLatestJsonConsistency(
 				{
 					version: '0.1.2-beta.3',
-					notes: '',
 					pub_date: '2026-07-20T00:00:00.000Z',
 					platforms: {
 						'windows-x86_64': {

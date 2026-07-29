@@ -4,14 +4,12 @@ import type { LatestJson, ReleaseManifest, ReleasePlatformState, UploadItem } fr
 
 export function createLatestJson(input: {
 	version: string
-	notes: string
 	pubDate: string
 	platforms: LatestJson['platforms']
 	previousLatest: LatestJson | null
 }) {
 	return {
 		version: input.version,
-		notes: input.notes,
 		pub_date: input.pubDate,
 		platforms:
 			input.previousLatest?.version === input.version

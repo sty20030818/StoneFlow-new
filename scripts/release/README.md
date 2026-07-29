@@ -99,8 +99,7 @@ Tauri updater 期望的 JSON 格式：
 ```json
 {
   "version": "0.1.0",
-  "notes": "更新说明...",
-  "pub_date": "2024-01-01T00:00:00Z",
+	"pub_date": "2024-01-01T00:00:00Z",
   "platforms": {
     "darwin-aarch64": {
       "signature": "base64-signature",
@@ -111,5 +110,7 @@ Tauri updater 期望的 JSON 格式：
 ```
 
 StoneFlow 采用全局 `latest.json`。一个 Git commit 对应一个 release version，`latest.json.platforms` 只记录该版本下已发布的平台 artifact。Beta 发布会读取全局 `latest.release.json`：当前 git commit 相同则复用 beta 版本并追加平台，commit 不同才递增 `-beta.N`。
+
+用户可见的更新内容不在 `latest.json` 中。发布前维护根目录 `CHANGELOG.md`；脚本会校验版本标题、先上传 `stoneflow/CHANGELOG.md`，再覆盖渠道的 `latest.json`。
 
 Windows Beta 只构建 NSIS `.exe`。MSI 不支持 `0.1.1-beta.1` 这类带 `beta` 文本的预发布版本号。

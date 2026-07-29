@@ -71,21 +71,14 @@ function buildPlatforms(baseUrl: string, version: string) {
 	return platforms
 }
 
-function buildLatestJson(baseUrl: string, channel: 'stable' | 'beta', platform?: string) {
+function buildLatestJson(baseUrl: string, platform?: string) {
 	if (SCENARIO === 'error') return null
 
 	const isNoUpdate = SCENARIO === 'noUpdate'
 	const version = isNoUpdate ? '0.0.1' : MOCK_VERSION
 
-	const notes = isNoUpdate
-		? '当前已是最新版本'
-		: channel === 'beta'
-			? `## 🧪 Beta 测试版本 ${version}\n\n这是 beta 渠道的测试更新，包含实验性功能。\n\n### 注意事项\n- 可能存在未修复的问题\n- 仅用于测试，不建议日常使用`
-			: `## 🎉 测试版本 ${version}\n\n这是通过本地 mock 服务器返回的模拟更新。\n\n### 测试场景\n- ✅ 更新检查逻辑\n- ✅ 弹窗展示与更新说明\n- ✅ 跳过此版本功能\n- ✅ 4 种检查模式切换\n- ✅ 渠道切换（stable/beta）\n- ✅ 错误状态展示\n\n### 说明\n这是 mock 数据，点击"立即更新"会因为签名验证失败而报错（这是正常的，mock 无法测试真实下载安装）。`
-
 	return {
 		version,
-		notes,
 		pub_date: new Date().toISOString(),
 		platforms: isNoUpdate
 			? {}
@@ -119,6 +112,13 @@ const server = serve({
 			return new Response(null, { headers: corsHeaders })
 		}
 
+		if (url.pathname === '/stoneflow/CHANGELOG.md') {
+			return new Response(
+				`# StoneFlow 更新记录\n\n## [${MOCK_VERSION}] - 2026-07-29\n\n### ✨ 新功能\n- Mock 更新记录。`,
+				{ headers: { ...corsHeaders, 'Content-Type': 'text/markdown; charset=utf-8' } },
+			)
+		}
+
 		// 慢模式延迟
 		if (SLOW_MODE) {
 			await new Promise((r) => setTimeout(r, SLOW_DELAY_MS))
@@ -145,7 +145,6 @@ const server = serve({
 				const body = JSON.stringify(
 					{
 						version: '0.0.1',
-						notes: '',
 						pub_date: new Date().toISOString(),
 						platforms: {},
 					},
@@ -166,7 +165,6 @@ const server = serve({
 				const body = JSON.stringify(
 					{
 						version: '0.0.1',
-						notes: '',
 						pub_date: new Date().toISOString(),
 						platforms: {},
 					},
@@ -189,7 +187,7 @@ const server = serve({
 				})
 			}
 
-			const json = buildLatestJson(baseUrl, channel, platform)
+			const json = buildLatestJson(baseUrl, platform)
 			if (!json) {
 				return new Response('Internal Server Error', { status: 500, headers: corsHeaders })
 			}

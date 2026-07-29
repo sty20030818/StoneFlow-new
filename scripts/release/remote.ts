@@ -64,6 +64,7 @@ export function createS3Client(config: ReleaseRemoteConfig) {
 
 function isMutableReleasePointer(fileName: string) {
 	return (
+		fileName === 'CHANGELOG.md' ||
 		fileName === 'latest.json' ||
 		fileName === 'latest.release.json' ||
 		fileName.startsWith('latest.') ||
@@ -85,7 +86,11 @@ export async function uploadItems(config: ReleaseRemoteConfig, items: UploadItem
 				Bucket: config.bucket,
 				Key: item.key,
 				Body: body,
-				ContentType: fileName.endsWith('.json') ? 'application/json' : 'application/octet-stream',
+				ContentType: fileName.endsWith('.json')
+					? 'application/json'
+					: fileName === 'CHANGELOG.md'
+						? 'text/markdown; charset=utf-8'
+						: 'application/octet-stream',
 				CacheControl: isMutableFile ? 'no-cache' : 'public, max-age=31536000, immutable',
 			}),
 		)

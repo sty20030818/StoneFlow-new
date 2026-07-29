@@ -75,6 +75,9 @@ pub struct UpdateSettings {
     /// 自动检查间隔（秒）。缺省 / 非法值由 [`normalize_check_interval_secs`] 收敛。
     #[serde(default = "default_check_interval_secs")]
     pub check_interval_secs: i64,
+    /// 应用内更新重启前记录的目标版本；新进程匹配后一次性消费。
+    #[serde(default)]
+    pub pending_restart_version: Option<String>,
 }
 
 fn default_check_interval_secs() -> i64 {
@@ -89,6 +92,7 @@ impl Default for UpdateSettings {
             skipped_version: None,
             last_checked_at: None,
             check_interval_secs: AUTO_CHECK_INTERVAL_SECS,
+            pending_restart_version: None,
         }
     }
 }
@@ -151,6 +155,7 @@ mod tests {
         assert_eq!(settings.channel, UpdateChannel::Stable);
         assert!(settings.skipped_version.is_none());
         assert!(settings.last_checked_at.is_none());
+		assert!(settings.pending_restart_version.is_none());
     }
 
     #[test]

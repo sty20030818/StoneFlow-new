@@ -8,8 +8,6 @@ import type { UpdateProgress } from './useUpdateStore'
 export type UpdatePhaseEvent = {
 	phase: 'available' | 'downloading' | 'ready' | 'error'
 	version?: string | null
-	body?: string | null
-	pubDate?: string | null
 	downloaded?: number | null
 	total?: number | null
 	message?: string | null
@@ -38,11 +36,7 @@ export function applyUpdatePhaseEvent(
 	switch (event.phase) {
 		case 'available': {
 			if (!event.version) return null
-			const info: UpdateInfo = {
-				version: event.version,
-				body: event.body ?? null,
-				pubDate: event.pubDate ?? null,
-			}
+			const info: UpdateInfo = { version: event.version }
 			const openDialog = actions.checkMode !== 'autoDownload'
 			actions.showAvailable(info, { openDialog })
 			return null

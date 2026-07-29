@@ -19,14 +19,8 @@ function makeActions(overrides: Partial<UpdatePhaseActions> = {}): UpdatePhaseAc
 describe('applyUpdatePhaseEvent', () => {
 	it('opens dialog for available in notifyOnly mode', () => {
 		const actions = makeActions({ checkMode: 'notifyOnly' })
-		applyUpdatePhaseEvent(
-			{ phase: 'available', version: '1.2.0', body: 'notes', pubDate: null },
-			actions,
-		)
-		expect(actions.showAvailable).toHaveBeenCalledWith(
-			{ version: '1.2.0', body: 'notes', pubDate: null },
-			{ openDialog: true },
-		)
+		applyUpdatePhaseEvent({ phase: 'available', version: '1.2.0' }, actions)
+		expect(actions.showAvailable).toHaveBeenCalledWith({ version: '1.2.0' }, { openDialog: true })
 	})
 
 	it('does not open dialog for available in autoDownload mode', () => {

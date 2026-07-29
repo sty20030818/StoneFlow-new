@@ -18,7 +18,7 @@
 
 - 数据同步配置与状态（→ `@/features/sync`；chip 可只读展示 sync）
 - 壳 Overlays 开关编排（→ `layout/overlays`）
-- 后端 updater 实现细节
+- 用户 changelog 内容读取、解析与筛选（→ `@/features/changelog`）
 
 ---
 
@@ -28,6 +28,7 @@
 src/features/update/
 ├── ARCHITECTURE.md
 ├── index.ts
+├── contract.ts
 ├── api/updates.ts
 ├── model/
 │   ├── useUpdateStore.ts
@@ -37,7 +38,6 @@ src/features/update/
 │   └── deriveUpdateFooterView.ts
 └── components/
     ├── UpdateDialog.tsx
-    ├── UpdateDialog.presentation.tsx
     ├── SystemStatusChip.tsx
     ├── UpdateFooterChip.tsx
     ├── UpdateStatusFooterItem.tsx
@@ -55,6 +55,7 @@ src/features/update/
 |----|------|
 | 事件 | `useUpdateEvents` |
 | UI | `UpdateDialog` · `SystemStatusChip` · `UpdateStatusFooterItem` · `AppVersionFooterItem` · `UpdateSettingsSection` |
+| 跨 feature 读取 | `contract.ts` 的 `getUpdateSettings` · `UpdateChannel` |
 
 显式 export 清单，禁止 `export *`。API / store / 内部 chip 组件留包内。
 
@@ -73,12 +74,12 @@ src/features/update/
 
 | 位置 | 挂载 |
 |------|------|
-| `layout/ShellLayoutContent.tsx` | `useUpdateEvents()` |
-| `layout/overlays/ShellOverlays.tsx` | `UpdateDialog` · `SystemStatusChip` |
+| `layout/ShellLayoutContent.tsx` | `useUpdateEvents()`，消费一次性更新完成确认并发出 changelog 打开意图 |
+| `layout/overlays/ShellOverlays.tsx` | `UpdateDialog` · `SystemStatusChip`；更新记录弹窗由 changelog 模块装配 |
 | `layout/ShellFooter.tsx` | `UpdateStatusFooterItem` · `AppVersionFooterItem` |
 | `features/settings` 页（update 分区） | 直接挂 `UpdateSettingsSection` |
 
-`UpdateDialog` 壳层复用 `createDialogCompactShellClass`（create-dialog 同族）；ready/error 用 `StatusNotice`；changelog 在 `.presentation`。
+`UpdateDialog` 壳层复用 `createDialogCompactShellClass`（create-dialog 同族）；ready/error 用 `StatusNotice`。目标版本说明只读取 changelog 模块，updater manifest 不承载用户内容。
 
 ---
 

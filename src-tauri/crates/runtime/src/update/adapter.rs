@@ -39,7 +39,7 @@ impl TauriUpdateAdapter {
     /// 2. `STONEFLOW_USE_MOCK_UPDATES=1` 环境变量 → 使用本地 Mock 地址
     /// 3. debug 编译且 Mock 端口（1420）可访问 → 自动使用 Mock（仅 debug）
     /// 4. 默认使用生产地址
-    fn resolve_base_url() -> String {
+    pub(crate) fn resolve_base_url() -> String {
         // 1. 显式指定基础 URL
         if let Ok(url) = std::env::var(ENV_UPDATES_BASE_URL) {
             if !url.is_empty() {
@@ -72,6 +72,12 @@ impl TauriUpdateAdapter {
     /// 根据渠道构造远端 endpoint URL。
     fn endpoint_url(channel: UpdateChannel, base_url: &str) -> String {
         format!("{}/{}/latest.json", base_url, channel.path_segment())
+    }
+
+    /// 从 updater 的同一基础地址推导独立的 changelog 静态文件地址。
+    pub(crate) fn changelog_url(base_url: &str) -> String {
+        let release_base_url = base_url.strip_suffix("/updates").unwrap_or(base_url);
+        format!("{release_base_url}/CHANGELOG.md")
     }
 
     /// 根据渠道构建 UpdaterBuilder（配置 endpoint 和版本比较器）。
@@ -141,17 +147,9 @@ impl UpdatePort for TauriUpdateAdapter {
             .await
             .map_err(|e| ApplicationError::update(format!("检查更新失败: {e}")))?;
 
-        Ok(update.map(|u| {
-            let pub_date = u.date.map(|d| {
-                // OffsetDateTime 实现了 Display，输出为 ISO 8601 / RFC 3339 格式
-                d.to_string()
-            });
-            UpdateInfo {
-                version: u.version.to_string(),
-                body: u.body.clone(),
-                pub_date,
-            }
-        }))
+		Ok(update.map(|u| UpdateInfo {
+			version: u.version.to_string(),
+		}))
     }
 
     async fn download_package(
@@ -231,5 +229,18 @@ impl UpdatePort for TauriUpdateAdapter {
         // restart() 会终止当前进程，以下代码仅为类型兼容
         #[allow(unreachable_code)]
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TauriUpdateAdapter;
+
+    #[test]
+    fn changelog_url_should_share_release_root_with_update_base_url() {
+        assert_eq!(
+            TauriUpdateAdapter::changelog_url("https://release.example/stoneflow/updates"),
+            "https://release.example/stoneflow/CHANGELOG.md"
+        );
     }
 }

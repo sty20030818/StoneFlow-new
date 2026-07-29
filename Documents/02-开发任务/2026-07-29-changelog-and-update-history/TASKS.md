@@ -4,19 +4,19 @@
 
 ## 当前阶段
 
-阶段 3：任务已基于确认的 SPEC / PLAN 拆分，尚未开始实现。
+阶段 5：实现与验证收尾。
 
 ## 阶段任务
 
 ### Phase 1：内容源与发布链
 
-- [ ] **T1.1 版本内容格式与校验**
+- [x] **T1.1 版本内容格式与校验**
   模块：根 `CHANGELOG.md`、`scripts/release/`。
   依赖：无。
   对应：AC-1、AC-3。
   验证：版本标题的有效、重复和无目标版本条目测试。
 
-- [ ] **T1.2 独立静态文件发布与 manifest 收口**
+- [x] **T1.2 独立静态文件发布与 manifest 收口**
   模块：`scripts/release/`、release 测试与 mock。
   依赖：T1.1。
   对应：AC-1、AC-2、AC-3。
@@ -26,19 +26,19 @@
 
 ### Phase 2：Changelog 内容模块
 
-- [ ] **T2.1 本地快照与版本 Markdown 解析**
+- [x] **T2.1 本地快照与版本 Markdown 解析**
   模块：新增 `src/features/changelog/`、打包资源读取边界。
   依赖：T1.1。
   对应：AC-3、AC-7。
   验证：版本标题有效/重复/无条目、轻量 Markdown 块和本地快照读取测试。
 
-- [ ] **T2.2 远端读取与本地回退**
+- [x] **T2.2 远端读取与本地回退**
   模块：`src/features/changelog/`、Tauri 远端静态文件读取边界。
   依赖：T2.1。
   对应：AC-7。
   验证：远端优先、远端失败回退本地、远端与本地均失败返回空记录测试。
 
-- [ ] **T2.3 渠道过滤与目标版本定位**
+- [x] **T2.3 渠道过滤与目标版本定位**
   模块：`src/features/changelog/`。
   依赖：T2.1、T2.2。
   对应：AC-4、AC-5、AC-6。
@@ -48,13 +48,13 @@
 
 ### Phase 3：头像菜单与更新记录弹窗
 
-- [ ] **T3.1 菜单 open intent 与 overlay 装配**
+- [x] **T3.1 菜单 open intent 与 overlay 装配**
   模块：`UserAppMenu`、header shell、`ShellOverlays`。
   依赖：T2.3。
   对应：AC-4、AC-5。
   验证：头像菜单触发、弹窗可关闭、无路由和无命令注册的组件测试。
 
-- [ ] **T3.2 宽版记录弹窗与可访问性**
+- [x] **T3.2 宽版记录弹窗与可访问性**
   模块：`src/features/changelog/`、共享 Dialog / ScrollArea。
   依赖：T3.1。
   对应：AC-4、AC-5、AC-7。
@@ -64,13 +64,13 @@
 
 ### Phase 4：更新弹窗与一次性重启 Toast
 
-- [ ] **T4.1 目标版本说明接线**
+- [x] **T4.1 目标版本说明接线**
   模块：`src/features/update/`、`src/features/changelog/`。
   依赖：T2.3。
   对应：AC-2、AC-6、AC-7。
   验证：有内容、无内容、远端失败时，更新下载与操作均保持可用。
 
-- [ ] **T4.2 待确认版本与成功 Toast**
+- [x] **T4.2 待确认版本与成功 Toast**
   模块：update application/runtime、update store、Toast 与 overlay intent。
   依赖：T3.2、T4.1。
   对应：AC-8、AC-9。
@@ -80,13 +80,13 @@
 
 ### Phase 5：文档与验证收尾
 
-- [ ] **T5.1 长期文档同步**
+- [x] **T5.1 长期文档同步**
   模块：`scripts/release/README.md`、`scripts/release/HOWTO.md`、update architecture 文档、新 changelog 模块文档。
   依赖：T1 至 T4。
   对应：Definition of Done。
   验证：不再出现 `RELEASE_NOTES.md` 作为内容源；文档链接与 Owner 一致。
 
-- [ ] **T5.2 质量检查与行为核对**
+- [x] **T5.2 质量检查与行为核对**
   模块：受影响 TS / Rust workspace。
   依赖：T5.1。
   对应：全部 AC 与 Definition of Done。
@@ -100,8 +100,8 @@
 
 ## 与 SPEC/PLAN 的实施偏差
 
-暂无。
+本地验证已完成；真实 R2 发布、远端缓存头与跨平台安装重启需要单独发布授权后验证。
 
 ## 完成记录
 
-暂无。
+内容读取使用 Tauri 更新边界的原生 HTTP 请求加构建时快照回退，避免桌面 WebView 的跨域限制；前端不直接请求网络。

@@ -39,6 +39,7 @@ type ShellChromeProps = {
 	createDialog: CreateDialog
 	routeHistory: RouteHistory
 	handleOpenTaskCreate: () => void
+	onOpenChangelog: () => void
 }
 
 /**
@@ -60,6 +61,7 @@ export function ShellChrome({
 	createDialog,
 	routeHistory,
 	handleOpenTaskCreate,
+	onOpenChangelog,
 }: ShellChromeProps) {
 	return (
 		<>
@@ -91,6 +93,7 @@ export function ShellChrome({
 				onCloseDrawer={command.closeEntityDrawer}
 				onCommandOpenChange={command.setCommandOpen}
 				onNavigateToHistoryEntry={routeHistory.navigateToHistoryEntry}
+				onOpenChangelog={onOpenChangelog}
 				onOpenTaskPage={(task) => {
 					command.openTaskPage({ taskId: task.id, spaceId: task.spaceId })
 				}}

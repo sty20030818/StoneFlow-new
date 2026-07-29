@@ -9,6 +9,7 @@ import { ProjectCreateContent } from '@/features/project'
 import { TaskCreateContent } from '@/features/task'
 import { CustomDateDialog } from '@/features/metadata-fields'
 import { SystemStatusChip, UpdateDialog } from '@/features/update'
+import { ChangelogDialog } from '@/features/changelog'
 
 type TaskCreateDraft = {
 	projectId?: string | null
@@ -33,6 +34,9 @@ export type ShellOverlaysProps = {
 	closeProjectCreateDialog: () => void
 	toggleTaskCreatePresentation: () => void
 	closeCustomDateDialog: () => void
+	changelogOpen: boolean
+	onChangelogOpenChange: (open: boolean) => void
+	changelogVersion?: string | null
 }
 
 export function ShellOverlays({
@@ -52,6 +56,9 @@ export function ShellOverlays({
 	closeProjectCreateDialog,
 	toggleTaskCreatePresentation,
 	closeCustomDateDialog,
+	changelogOpen,
+	onChangelogOpenChange,
+	changelogVersion,
 }: ShellOverlaysProps) {
 	const navigate = useNavigate({ from: '/' })
 
@@ -122,6 +129,11 @@ export function ShellOverlays({
 				/>
 			) : null}
 			<UpdateDialog />
+			<ChangelogDialog
+				open={changelogOpen}
+				onOpenChange={onChangelogOpenChange}
+				version={changelogVersion}
+			/>
 			<SystemStatusChip />
 		</>
 	)

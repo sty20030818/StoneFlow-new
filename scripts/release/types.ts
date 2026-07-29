@@ -7,7 +7,6 @@ export interface PlatformMeta {
 
 export interface LatestJson {
 	version: string
-	notes: string
 	pub_date: string
 	platforms: Record<string, PlatformMeta>
 }

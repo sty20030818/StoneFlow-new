@@ -4,6 +4,7 @@
  * 进度与状态统一为 phase 形状（与全局 update-phase 同构）。
  */
 
+import { getVersion } from '@tauri-apps/api/app'
 import { Channel, invoke } from '@tauri-apps/api/core'
 
 /** 更新渠道 */
@@ -15,8 +16,6 @@ export type UpdateCheckMode = 'manual' | 'notifyOnly' | 'autoDownload'
 /** 远端返回的更新信息 */
 export interface UpdateInfo {
 	version: string
-	body: string | null
-	pubDate: string | null
 }
 
 /** 更新设置 */
@@ -50,8 +49,6 @@ export const UPDATE_EVENTS = {
 export interface UpdatePhasePayload {
 	phase: 'available' | 'downloading' | 'ready' | 'error'
 	version?: string | null
-	body?: string | null
-	pubDate?: string | null
 	downloaded?: number | null
 	total?: number | null
 	message?: string | null
@@ -60,6 +57,11 @@ export interface UpdatePhasePayload {
 /** 检查更新 */
 export async function checkUpdate(manual: boolean): Promise<UpdateInfo | null> {
 	return invoke<UpdateInfo | null>('check_update', { manual })
+}
+
+/** 读取独立远端 changelog；无内容或网络失败时返回 null。 */
+export async function getChangelog(): Promise<string | null> {
+	return invoke<string | null>('get_changelog')
 }
 
 /** 下载并安装；onPhase 接收与全局 update-phase 同构的 payload */
@@ -76,6 +78,11 @@ export async function downloadAndInstall(
 /** 重启并安装已下载的更新 */
 export async function restartAndInstall(): Promise<void> {
 	return invoke('restart_and_install')
+}
+
+/** 消费一次应用内更新完成确认；未匹配或已消费时返回 null。 */
+export async function consumeCompletedUpdate(): Promise<string | null> {
+	return invoke<string | null>('consume_completed_update', { currentVersion: await getVersion() })
 }
 
 /** 跳过指定版本 */
@@ -110,8 +117,6 @@ export type UpdateSessionPhase = 'idle' | 'available' | 'downloading' | 'ready'
 export interface UpdateSessionSnapshot {
 	phase: UpdateSessionPhase
 	version: string | null
-	body?: string | null
-	pubDate?: string | null
 	downloaded: number
 	total: number | null
 	downloadInFlight: boolean

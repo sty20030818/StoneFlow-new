@@ -152,7 +152,7 @@ cp .env.example .env.local
 ### 发布稳定版
 
 1. 确保代码已提交，版本号正确（`src-tauri/tauri.conf.json` 和 `package.json` 的 version 一致）
-2. 在项目根目录写 `RELEASE_NOTES.md`（可选，作为更新说明）
+2. 在项目根目录维护 `CHANGELOG.md`（有用户可见变化时新增版本条目）
 3. 运行：
    ```bash
    bun run release
@@ -162,7 +162,7 @@ cp .env.example .env.local
 - 执行 `tauri build`（带签名）
 - 收集当前平台 updater 产物（macOS 为 `.app.tar.gz`，Linux 为 `.AppImage.tar.gz`，Windows 优先 NSIS `.exe`，否则 MSI `.msi`）和对应 `.sig` 签名文件
 - 额外收集当前平台下载包到 `downloads/<channel>/<platform>/`，用于用户手动下载安装
-- 读取 RELEASE_NOTES.md 作为更新说明
+- 校验并先上传根 `CHANGELOG.md` 作为独立更新记录
 - 生成全局 `latest.json` 和 `latest.release.json`
 - 上传 updater 文件到 R2 的 `stoneflow/updates/stable/releases/<version>/platforms/<platform>/` 目录，上传下载包到 `stoneflow/downloads/stable/<platform>/` 目录
 - 上传完成后输出更新地址

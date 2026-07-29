@@ -36,7 +36,7 @@ export function createReleasePaths(input: {
 		repoRoot,
 		tauriConfPath: path.join(repoRoot, 'src-tauri/tauri.conf.json'),
 		tauriDist: path.join(repoRoot, 'src-tauri/target/release/bundle'),
-		notesPath: path.join(repoRoot, 'RELEASE_NOTES.md'),
+		changelogPath: path.join(repoRoot, 'CHANGELOG.md'),
 		workDir,
 		releaseRoot,
 		downloadsRoot,

@@ -40,10 +40,8 @@ pub enum UpdateCheckKind {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateSessionSnapshot {
-    pub phase: UpdateSessionPhase,
-    pub version: Option<String>,
-    pub body: Option<String>,
-    pub pub_date: Option<String>,
+	pub phase: UpdateSessionPhase,
+	pub version: Option<String>,
     pub downloaded: u64,
     pub total: Option<u64>,
     pub download_in_flight: bool,
@@ -56,9 +54,7 @@ struct SessionInner {
     downloaded: u64,
     total: Option<u64>,
     /// 最近一次 check 到的远端版本，供下载会话标注。
-    pending_version: Option<String>,
-    pending_body: Option<String>,
-    pending_pub_date: Option<String>,
+	pending_version: Option<String>,
     /// 已下载、待用户确认后安装的安装包（Windows 上 install 会立刻退出进程）。
     staged_package: Option<Vec<u8>>,
     /// 为 false 时停止推送进度（取消后）；配合 abort 中断下载 task。
@@ -78,8 +74,6 @@ impl Default for SessionInner {
             downloaded: 0,
             total: None,
             pending_version: None,
-            pending_body: None,
-            pending_pub_date: None,
             staged_package: None,
             emit_progress: true,
             abort_handle: None,
@@ -112,9 +106,7 @@ impl Drop for DownloadInFlightGuard {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateInfo {
-    pub version: String,
-    pub body: Option<String>,
-    pub pub_date: Option<String>,
+	pub version: String,
 }
 
 /// 更新操作 Port —— 由 runtime 层的 Tauri adapter 实现。
@@ -190,8 +182,6 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         UpdateSessionSnapshot {
             phase: s.phase,
             version,
-            body: s.pending_body.clone(),
-            pub_date: s.pending_pub_date.clone(),
             downloaded: s.downloaded,
             total: s.total,
             download_in_flight: s.in_flight,
@@ -322,8 +312,6 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         {
             if let Some(info) = update {
                 s.pending_version = Some(info.version.clone());
-                s.pending_body = info.body.clone();
-                s.pending_pub_date = info.pub_date.clone();
             }
             return;
         }
@@ -331,8 +319,6 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         match update {
             Some(info) => {
                 s.pending_version = Some(info.version.clone());
-                s.pending_body = info.body.clone();
-                s.pending_pub_date = info.pub_date.clone();
                 s.version = Some(info.version.clone());
                 s.phase = UpdateSessionPhase::Available;
                 s.downloaded = 0;
@@ -344,8 +330,6 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
                     s.phase = UpdateSessionPhase::Idle;
                     s.version = None;
                     s.pending_version = None;
-                    s.pending_body = None;
-                    s.pending_pub_date = None;
                     s.downloaded = 0;
                     s.total = None;
                 }
@@ -509,7 +493,16 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
     /// - 有暂存包：先 `install_package`（Windows 通常直接 exit + 安装器拉起新版本）
     /// - 无暂存包：仅 `restart`（兜底）
     pub async fn apply_and_restart(&self) -> Result<(), ApplicationError> {
-        let settings = self.settings_port.load().await?;
+        let mut settings = self.settings_port.load().await?;
+        if let Some(version) = self
+            .session
+            .lock()
+            .ok()
+            .and_then(|session| session.version.clone())
+        {
+            settings.pending_restart_version = Some(version);
+            self.settings_port.save(&settings).await?;
+        }
         let staged = self
             .session
             .lock()
@@ -522,6 +515,20 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
         }
 
         self.port.restart().await
+    }
+
+    /// 原子消费应用内更新的重启确认，只在当前版本严格匹配时返回版本号。
+    pub async fn consume_completed_update(
+        &self,
+        current_version: &str,
+    ) -> Result<Option<String>, ApplicationError> {
+        let mut settings = self.settings_port.load().await?;
+        let completed = settings
+            .pending_restart_version
+            .take()
+            .filter(|version| version == current_version);
+        self.settings_port.save(&settings).await?;
+        Ok(completed)
     }
 
     /// 重启应用（不安装）。
@@ -569,8 +576,6 @@ impl<P: UpdatePort + Clone + 'static, S: UpdateSettingsPort> UpdateService<P, S>
                 s.phase = UpdateSessionPhase::Idle;
                 s.version = None;
                 s.pending_version = None;
-                s.pending_body = None;
-                s.pending_pub_date = None;
                 s.downloaded = 0;
                 s.total = None;
             }
@@ -612,11 +617,9 @@ mod tests {
             &self,
             _channel: UpdateChannel,
         ) -> Result<Option<UpdateInfo>, ApplicationError> {
-            Ok(self.latest_version.map(|v| UpdateInfo {
-                version: v.to_string(),
-                body: Some("test notes".into()),
-                pub_date: None,
-            }))
+			Ok(self.latest_version.map(|v| UpdateInfo {
+				version: v.to_string(),
+			}))
         }
 
         async fn download_package(
@@ -838,6 +841,25 @@ mod tests {
         assert_eq!(snap.phase, UpdateSessionPhase::Ready);
         assert_eq!(snap.version.as_deref(), Some("0.3.0"));
         assert!(!snap.download_in_flight);
+    }
+
+    #[tokio::test]
+    async fn consume_completed_update_should_return_matching_version_once() {
+        let settings_port = MockSettingsPort::new(UpdateSettings {
+            pending_restart_version: Some("0.3.0".to_string()),
+            ..Default::default()
+        });
+        let service = UpdateService::new(MockUpdatePort::new(None), settings_port);
+
+        assert_eq!(
+            service.consume_completed_update("0.3.0").await.unwrap(),
+            Some("0.3.0".to_string())
+        );
+        assert!(service
+            .consume_completed_update("0.3.0")
+            .await
+            .unwrap()
+            .is_none());
     }
 
     #[tokio::test]

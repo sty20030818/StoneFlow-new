@@ -20,6 +20,7 @@ anyhow = "1"
 chrono = { version = "0.4", features = ["clock", "serde"] }
 dotenvy = "0.15"
 log = "0.4"
+reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
 # SeaORM 2.0 起 sea-bae 不再依赖已废弃的 proc-macro-error2
 sea-orm = { version = "2.0.0", default-features = false, features = ["macros", "sqlx-sqlite", "runtime-tokio-rustls", "with-chrono", "with-json", "with-uuid"] }
 sea-orm-migration = { version = "2.0.0", default-features = false, features = ["sqlx-sqlite", "runtime-tokio-rustls"] }

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 
 import type { AppLayoutProps } from '@/layout/appLayoutTypes'
 import { useShellSessionRouteHistory } from '@/app/navigation'
@@ -31,7 +31,16 @@ export function ShellLayoutContent({
 	activeSection,
 	shellRoute,
 }: AppLayoutProps) {
-	useUpdateEvents()
+	const [changelogIntent, setChangelogIntent] = useState<{ open: boolean; version: string | null }>(
+		{
+			open: false,
+			version: null,
+		},
+	)
+	const openChangelog = useCallback((version: string | null = null) => {
+		setChangelogIntent({ open: true, version })
+	}, [])
+	useUpdateEvents(openChangelog)
 
 	const isSettingsMode = shellRoute.isSettingsPath
 	/** 进入设置前的工作路径（边沿捕获）；供「返回应用」与 Esc 关层 */
@@ -132,6 +141,7 @@ export function ShellLayoutContent({
 					currentSpaceId={currentSpaceId}
 					currentSpaceLabel={currentSpaceLabel}
 					handleOpenTaskCreate={handleOpenTaskCreate}
+					onOpenChangelog={() => openChangelog()}
 					headerProjects={headerProjects}
 					isSettingsMode={isSettingsMode}
 					routeHistory={routeHistory}
@@ -144,12 +154,15 @@ export function ShellLayoutContent({
 					closeCustomDateDialog={createDialog.closeCustomDateDialog}
 					closeProjectCreateDialog={createDialog.closeProjectCreateDialog}
 					closeTaskCreateDialog={createDialog.closeTaskCreateDialog}
+					changelogOpen={changelogIntent.open}
+					changelogVersion={changelogIntent.version}
 					createDialogType={createDialog.createDialogType}
 					currentScope={currentScope}
 					customDateDialog={createDialog.customDateDialog}
 					defaultCreateSpaceId={createDialog.defaultCreateSpaceId}
 					projectOptions={chrome.projectOptions}
 					projectsLoading={chrome.sidebarProjects.status === 'loading'}
+					onChangelogOpenChange={(open) => setChangelogIntent((current) => ({ ...current, open }))}
 					selectedSpaceId={createDialog.selectedSpaceId}
 					setSelectedSpaceId={createDialog.setSelectedSpaceId}
 					shouldDelayTaskCreateDialog={createDialog.shouldDelayTaskCreateDialog}

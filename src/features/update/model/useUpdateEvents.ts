@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import {
 	cancelUpdateDownload,
 	checkUpdate,
+	consumeCompletedUpdate,
 	downloadAndInstall,
 	getUpdateSession,
 	getUpdateSettings,
@@ -57,8 +58,6 @@ function hydrateSessionSnapshot(session: Awaited<ReturnType<typeof getUpdateSess
 	useUpdateStore.getState().hydrateFromSession({
 		phase: session.phase,
 		version: session.version,
-		body: session.body ?? null,
-		pubDate: session.pubDate ?? null,
 		downloaded: session.downloaded,
 		total: session.total,
 	})
@@ -75,7 +74,7 @@ function maybeHydrateIfIdle(session: Awaited<ReturnType<typeof getUpdateSession>
 	}
 }
 
-export function useUpdateEvents() {
+export function useUpdateEvents(onCompletedUpdate?: (version: string) => void) {
 	useEffect(() => {
 		let disposed = false
 		let unlistenPhase: (() => void) | undefined
@@ -112,6 +111,18 @@ export function useUpdateEvents() {
 			console.error('Failed to setup update event listeners:', err)
 		})
 
+		void consumeCompletedUpdate()
+			.then((version) => {
+				if (!disposed && version) {
+					toast.success(`已更新至 ${version}`, {
+						action: { label: '查看更新内容', onClick: () => onCompletedUpdate?.(version) },
+					})
+				}
+			})
+			.catch(() => {
+				// 浏览器预览和一次性确认读取失败均不影响正常启动。
+			})
+
 		// 4) 启动检查约 3s 后才跑；自 mount 起延迟再 hydrate，兜底 emit 丢失。
 		// setTimeout 放在 effect 同步体，保证 cleanup 一定能 clear（避免 async 竞态漏清）。
 		const rehydrateTimer = setTimeout(() => {
@@ -131,7 +142,7 @@ export function useUpdateEvents() {
 			unlistenPhase?.()
 			clearTimeout(rehydrateTimer)
 		}
-	}, [])
+	}, [onCompletedUpdate])
 }
 
 export function useUpdateActions() {

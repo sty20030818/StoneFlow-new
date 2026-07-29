@@ -1,6 +1,6 @@
 /**
  * UpdateDialog 容器：store / 动作接线与相位编排。
- * 壳层复用 create-dialog compact；changelog 见 UpdateDialog.presentation。
+ * 壳层复用 create-dialog compact；目标版本说明由 changelog 模块提供。
  */
 
 import { DownloadIcon, RefreshCwIcon, XIcon } from 'lucide-react'
@@ -23,11 +23,11 @@ import {
 } from '@/shared/components/patterns/dialog-shell'
 import { StatusNotice } from '@/shared/components/StatusNotice'
 import { cn } from '@/shared/lib/utils'
+import { ChangelogMarkdown, useChangelog } from '@/features/changelog'
 import { skipVersion } from '../api/updates'
 import { useUpdateStore } from '../model/useUpdateStore'
 import { useUpdateActions } from '../model/useUpdateEvents'
 import { downloadProgressBarValue, formatDownloadBytesLine } from '../model/updatePresentation'
-import { UpdateNotesMarkdown } from './UpdateDialog.presentation'
 
 export function UpdateDialog() {
 	const dialogVisible = useUpdateStore((s) => s.dialogVisible)
@@ -38,6 +38,7 @@ export function UpdateDialog() {
 	const closeDialog = useUpdateStore((s) => s.closeDialog)
 	const skipAndClose = useUpdateStore((s) => s.skipAndClose)
 	const { startDownload, restart, cancelDownloadUi } = useUpdateActions()
+	const { entry } = useChangelog(updateInfo?.version)
 
 	function handleOpenChange(nextOpen: boolean) {
 		if (!nextOpen) closeDialog()
@@ -66,7 +67,7 @@ export function UpdateDialog() {
 	const progressPercent = isDownloading ? downloadProgressBarValue(downloaded, total) : 0
 
 	const displayVersion = updateInfo?.version ?? ''
-	const showNotes = !isDownloading && !isReady && Boolean(updateInfo?.body)
+	const showNotes = !isDownloading && !isReady && Boolean(entry?.content)
 	const showBody = showNotes || isDownloading || isReady || isError
 
 	const titleText = isReady
@@ -124,9 +125,9 @@ export function UpdateDialog() {
 
 				{showBody ? (
 					<div className='min-h-0 space-y-3 px-3'>
-						{showNotes && updateInfo?.body ? (
+						{showNotes && entry ? (
 							<div className='rounded-xl bg-muted p-3'>
-								<UpdateNotesMarkdown content={updateInfo.body} />
+								<ChangelogMarkdown content={entry.content} />
 							</div>
 						) : null}
 

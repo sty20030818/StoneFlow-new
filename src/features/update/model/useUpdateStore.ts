@@ -52,8 +52,6 @@ interface UpdateState {
 	hydrateFromSession: (input: {
 		phase: 'idle' | 'available' | 'downloading' | 'ready'
 		version: string | null
-		body?: string | null
-		pubDate?: string | null
 		downloaded: number
 		total: number | null
 	}) => void
@@ -119,13 +117,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			progress,
 			errorMessage: null,
 			downloadUiAbandoned: false,
-			updateInfo: version
-				? {
-						version,
-						body: prev?.version === version ? prev.body : (prev?.body ?? null),
-						pubDate: prev?.version === version ? prev.pubDate : (prev?.pubDate ?? null),
-					}
-				: prev,
+			updateInfo: version ? (prev?.version === version ? prev : { version }) : prev,
 		})
 	},
 
@@ -139,10 +131,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			// 下载完成 ≠ 自动安装：每次进入 ready 都重新展示底部悬浮栏
 			//（自动下载 / 手动下载同理；用户点「稍后」才会再藏）
 			readyChipDismissedVersion: null,
-			updateInfo:
-				prev?.version === version
-					? prev
-					: { version, body: prev?.body ?? null, pubDate: prev?.pubDate ?? null },
+			updateInfo: prev?.version === version ? prev : { version },
 		})
 	},
 
@@ -217,8 +206,6 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 	hydrateFromSession: (input) => {
 		if (input.phase === 'idle') return
 		const version = input.version
-		const body = input.body ?? get().updateInfo?.body ?? null
-		const pubDate = input.pubDate ?? get().updateInfo?.pubDate ?? null
 
 		// 已发现更新：恢复 available（emit 可能在监听前丢失）
 		if (input.phase === 'available') {
@@ -234,7 +221,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			const openDialog = !dismissed && current.checkMode !== 'autoDownload'
 			set({
 				phase: 'available',
-				updateInfo: { version, body, pubDate },
+				updateInfo: { version },
 				progress: null,
 				errorMessage: null,
 				downloadUiAbandoned: false,
@@ -250,7 +237,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 				errorMessage: null,
 				downloadUiAbandoned: false,
 				dialogVisible: false,
-				updateInfo: version ? { version, body, pubDate } : get().updateInfo,
+				updateInfo: version ? { version } : get().updateInfo,
 			})
 			return
 		}
@@ -264,7 +251,7 @@ export const useUpdateStore = create<UpdateState>((set, get) => ({
 			errorMessage: null,
 			downloadUiAbandoned: false,
 			dialogVisible: false,
-			updateInfo: { version, body, pubDate },
+			updateInfo: { version },
 			// 首次恢复 ready 时确保 chip 可见；已点「稍后」则尊重
 			readyChipDismissedVersion: chipDismissed ? version : null,
 		})

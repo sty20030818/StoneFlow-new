@@ -21,6 +21,7 @@ import {
 } from '@/shared/components/patterns/shell-chrome'
 import {
 	InfoIcon,
+	HistoryIcon,
 	KeyboardIcon,
 	RefreshCwIcon,
 	SettingsIcon,
@@ -55,13 +56,18 @@ export type UserAppMenuProps = {
 	/** 当前是否处于设置页（可选高亮「设置」项） */
 	isSettingsActive?: boolean
 	onRunCommand: (id: CommandId) => void
+	onOpenChangelog: () => void
 }
 
 /**
  * Header 头像应用菜单：偏好 / 帮助 / 应用 / 诊断。
  * V1 仅接线「设置」「键盘快捷键」；其余为占位。
  */
-export function UserAppMenu({ isSettingsActive = false, onRunCommand }: UserAppMenuProps) {
+export function UserAppMenu({
+	isSettingsActive = false,
+	onRunCommand,
+	onOpenChangelog,
+}: UserAppMenuProps) {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -115,6 +121,10 @@ export function UserAppMenu({ isSettingsActive = false, onRunCommand }: UserAppM
 
 				{/* 应用 */}
 				<DropdownMenuGroup>
+					<DropdownMenuItem onSelect={onOpenChangelog}>
+						<HistoryIcon />
+						<span>更新记录</span>
+					</DropdownMenuItem>
 					<DropdownMenuItem disabled title={PLACEHOLDER_HINT}>
 						<RefreshCwIcon />
 						<span>检查更新</span>

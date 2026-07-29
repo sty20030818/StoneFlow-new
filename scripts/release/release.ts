@@ -12,7 +12,7 @@
 
 import { $, argv } from 'bun'
 import { existsSync } from 'node:fs'
-import { mkdir, readFile, rm } from 'node:fs/promises'
+import { copyFile, mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
 
 import { collectReleaseArtifacts } from './artifacts'
@@ -28,6 +28,55 @@ import {
 	uploadItems,
 } from './remote'
 import type { LatestJson, ReleaseChannel, UploadItem } from './types'
+
+const CHANGELOG_ENTRY_HEADING = /^## \[\d+\.\d+\.\d+(?:-beta\.\d+)?\] - \d{4}-\d{2}-\d{2}$/
+
+export async function validateChangelog(filePath: string) {
+	if (!existsSync(filePath)) {
+		throw new Error('缺少根 CHANGELOG.md，发布已停止')
+	}
+
+	const content = await Bun.file(filePath).text()
+	const versions = new Set<string>()
+	for (const line of content.split('\n')) {
+		if (!line.startsWith('## ')) continue
+		if (!CHANGELOG_ENTRY_HEADING.test(line)) {
+			throw new Error(`CHANGELOG.md 版本标题格式错误: ${line}`)
+		}
+		const version = line.slice(4, line.indexOf(']'))
+		if (versions.has(version)) {
+			throw new Error(`CHANGELOG.md 存在重复版本: ${version}`)
+		}
+		versions.add(version)
+	}
+}
+
+export function createUploadList(input: {
+	channel: ReleaseChannel
+	version: string
+	changelogPath: string
+	artifactItems: UploadItem[]
+	latestJsonPath: string
+	latestReleasePath: string
+	versionReleasePath: string
+}): UploadItem[] {
+	return [
+		{ filePath: input.changelogPath, key: 'stoneflow/CHANGELOG.md' },
+		...input.artifactItems,
+		{
+			filePath: input.latestReleasePath,
+			key: `stoneflow/updates/${input.channel}/latest.release.json`,
+		},
+		{
+			filePath: input.versionReleasePath,
+			key: `stoneflow/updates/${input.channel}/releases/${input.version}/release.json`,
+		},
+		{
+			filePath: input.latestJsonPath,
+			key: `stoneflow/updates/${input.channel}/latest.json`,
+		},
+	]
+}
 
 function getArg(name: string): string | undefined {
 	const idx = argv.indexOf(name)
@@ -131,6 +180,7 @@ async function main() {
 	console.log(chalk.gray(`   发布平台: ${platformKey}`))
 
 	await emptyDir(paths.workDir)
+	await validateChangelog(paths.changelogPath)
 
 	const tauriConf = await readJSON<Record<string, unknown> & { version: string }>(
 		paths.tauriConfPath,
@@ -179,10 +229,8 @@ async function main() {
 		publicUrl: remoteConfig.publicUrl,
 	})
 
-	const notes = existsSync(paths.notesPath) ? await readFile(paths.notesPath, 'utf8') : ''
 	const latestJson = createLatestJson({
 		version,
-		notes,
 		pubDate,
 		platforms: collected.platforms,
 		previousLatest: latestJsonFromRemote,
@@ -198,7 +246,8 @@ async function main() {
 	})
 
 	await mkdir(releaseVersionDir, { recursive: true })
-	const uploadList: UploadItem[] = [...collected.uploadItems]
+	const changelogPath = path.join(paths.workDir, 'CHANGELOG.md')
+	await copyFile(paths.changelogPath, changelogPath)
 	const latestJsonPath = path.join(paths.workDir, 'updates', channel, 'latest.json')
 	const latestReleasePath = path.join(paths.workDir, 'updates', channel, 'latest.release.json')
 	const versionReleasePath = path.join(releaseVersionDir, 'release.json')
@@ -207,20 +256,15 @@ async function main() {
 	await writeJSON(latestJsonPath, latestJson)
 	await writeJSON(latestReleasePath, releaseManifest)
 	await writeJSON(versionReleasePath, releaseManifest)
-	uploadList.push(
-		{
-			filePath: latestJsonPath,
-			key: `stoneflow/updates/${channel}/latest.json`,
-		},
-		{
-			filePath: latestReleasePath,
-			key: `stoneflow/updates/${channel}/latest.release.json`,
-		},
-		{
-			filePath: versionReleasePath,
-			key: `stoneflow/updates/${channel}/releases/${version}/release.json`,
-		},
-	)
+	const uploadList = createUploadList({
+		channel,
+		version,
+		changelogPath,
+		artifactItems: collected.uploadItems,
+		latestJsonPath,
+		latestReleasePath,
+		versionReleasePath,
+	})
 	console.log(chalk.gray('\n📝 生成全局 latest.json / release manifest'))
 
 	console.log(chalk.gray('\n🔒 发布一致性校验...\n'))

@@ -17,10 +17,6 @@ pub struct UpdatePhasePayload {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub body: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub pub_date: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub downloaded: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total: Option<u64>,
@@ -34,8 +30,6 @@ pub fn emit_available(app: &AppHandle, info: &UpdateInfo) {
         &UpdatePhasePayload {
             phase: "available",
             version: Some(info.version.clone()),
-            body: info.body.clone(),
-            pub_date: info.pub_date.clone(),
             downloaded: None,
             total: None,
             message: None,
@@ -49,8 +43,6 @@ pub fn emit_downloading(app: &AppHandle, version: &str, downloaded: u64, total: 
         &UpdatePhasePayload {
             phase: "downloading",
             version: Some(version.to_owned()),
-            body: None,
-            pub_date: None,
             downloaded: Some(downloaded),
             total,
             message: None,
@@ -64,8 +56,6 @@ pub fn emit_ready(app: &AppHandle, version: &str) {
         &UpdatePhasePayload {
             phase: "ready",
             version: Some(version.to_owned()),
-            body: None,
-            pub_date: None,
             downloaded: None,
             total: None,
             message: None,
@@ -80,8 +70,6 @@ pub fn emit_error(app: &AppHandle, message: impl Into<String>) {
         &UpdatePhasePayload {
             phase: "error",
             version: None,
-            body: None,
-            pub_date: None,
             downloaded: None,
             total: None,
             message: Some(message),

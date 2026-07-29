@@ -21,6 +21,7 @@ const KEY_SKIPPED_VERSION: &str = "skippedVersion";
 const KEY_SKIPPED_VERSIONS_LEGACY: &str = "skippedVersions";
 const KEY_LAST_CHECKED_AT: &str = "lastCheckedAt";
 const KEY_CHECK_INTERVAL_SECS: &str = "checkIntervalSecs";
+const KEY_PENDING_RESTART_VERSION: &str = "pendingRestartVersion";
 
 /// 基于 tauri-plugin-store 的设置持久化。
 #[derive(Clone)]
@@ -107,6 +108,10 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
         let check_interval_secs = normalize_check_interval_secs(raw_interval);
         let interval_needs_rewrite =
             check_interval_secs != raw_interval || store.get(KEY_CHECK_INTERVAL_SECS).is_none();
+        let pending_restart_version = store
+            .get(KEY_PENDING_RESTART_VERSION)
+            .and_then(|v| serde_json::from_value::<Option<String>>(v.clone()).ok())
+            .flatten();
 
         let settings = UpdateSettings {
             check_mode,
@@ -114,6 +119,7 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
             skipped_version,
             last_checked_at,
             check_interval_secs,
+            pending_restart_version,
         };
 
         if mode_needs_rewrite || interval_needs_rewrite || skip_needs_migrate {
@@ -154,6 +160,12 @@ impl UpdateSettingsPort for StoreUpdateSettingsAdapter {
             KEY_CHECK_INTERVAL_SECS,
             serde_json::to_value(check_interval_secs).map_err(|e| {
                 ApplicationError::update(format!("序列化 check_interval_secs 失败: {e}"))
+            })?,
+        );
+        store.set(
+            KEY_PENDING_RESTART_VERSION,
+            serde_json::to_value(&settings.pending_restart_version).map_err(|e| {
+                ApplicationError::update(format!("序列化 pending_restart_version 失败: {e}"))
             })?,
         );
         store

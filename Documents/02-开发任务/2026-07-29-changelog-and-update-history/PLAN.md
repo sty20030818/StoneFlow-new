@@ -69,9 +69,9 @@ R2 路径由现有 `R2_PUBLIC_URL` 推导，不在多个前端组件散落硬编
 
 继续拥有更新检查、下载、跳过、重启和会话状态。它通过 changelog 模块取得目标版本说明；内容失败降级为无说明，不能改变更新相位或错误语义。
 
-### Shell 与 Tauri 边界
+### Shell 与内容读取边界
 
-头像菜单只发出打开意图；shell/header 持有 open state，`ShellOverlays` 装配 Dialog。远端静态读取和打包资源读取走同一 Tauri 边界，集中处理 URL、超时和本地回退，前端不直接散落网络实现。
+头像菜单只发出打开意图；shell/header 持有 open state，`ShellOverlays` 装配 Dialog。远端静态读取与超时由 Tauri 更新边界集中处理，changelog feature 只消费结果并在失败时使用构建时嵌入快照回退；其他前端组件不直接请求网络。
 
 ## 重启成功确认状态机
 
