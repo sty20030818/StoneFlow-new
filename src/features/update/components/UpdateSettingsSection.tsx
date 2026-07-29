@@ -211,7 +211,7 @@ export function UpdateSettingsSection() {
 						disabled={checking || saving}
 						onClick={() => void handleCheckNow()}
 						type='button'
-						variant='secondary'
+						variant='default'
 					>
 						<RefreshCwIcon
 							aria-hidden

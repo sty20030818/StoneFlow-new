@@ -2,6 +2,8 @@ import path from 'node:path'
 
 import type { LatestJson, ReleaseManifest, ReleasePlatformState, UploadItem } from './types'
 
+const GLOBAL_CHANGELOG_KEY = 'stoneflow/CHANGELOG.md'
+
 export function createLatestJson(input: {
 	version: string
 	pubDate: string
@@ -57,6 +59,10 @@ function isMutableReleasePointer(fileName: string) {
 		fileName.startsWith('latest.') ||
 		fileName.startsWith('latest-')
 	)
+}
+
+function isGlobalChangelogUpload(item: UploadItem) {
+	return item.key === GLOBAL_CHANGELOG_KEY && path.basename(item.filePath) === 'CHANGELOG.md'
 }
 
 export function assertLatestJsonConsistency(
@@ -121,6 +127,7 @@ export function assertLatestJsonConsistency(
 
 	for (const item of uploadItems) {
 		const base = path.basename(item.filePath)
+		if (isGlobalChangelogUpload(item)) continue
 		if (isMutableReleasePointer(base) || base.endsWith('.json')) continue
 
 		const artifactName = base.endsWith('.sig') ? base.slice(0, -'.sig'.length) : base
