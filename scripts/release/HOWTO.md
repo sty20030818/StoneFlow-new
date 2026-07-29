@@ -191,17 +191,21 @@ bun run release -- --no-upload
 
 产物会保存在 `.release-tmp/` 目录。
 
+实际上传成功后，脚本会自动清理 `.release-tmp/` 和 Tauri 的 bundle 输出目录；下一次发布开始时也会再次检查并清理，避免误用旧安装包。
+
 ### 手动上传（CI/CD 或不想配 R2 密钥）
 
 如果不想配置 R2 API 密钥，或者用 CI/CD 发布：
 
 1. 运行 `bun run release -- --no-upload`
-2. 手动把 `.release-tmp/updates/stable/` 上传到 R2 的 `stoneflow/updates/stable/`
-3. 手动把 `.release-tmp/downloads/stable/<platform>/` 上传到 R2 的 `stoneflow/downloads/stable/<platform>/`
-4. 或者用 wrangler CLI：
+2. 先把 `.release-tmp/CHANGELOG.md` 上传为 `stoneflow/CHANGELOG.md`
+3. 再上传 `.release-tmp/updates/stable/` 与 `.release-tmp/downloads/stable/<platform>/` 的版本产物
+4. 最后上传 `.release-tmp/updates/stable/latest.json`，使客户端在看到新版本前必定可读取更新记录
+5. 或者用 wrangler CLI：
    ```bash
+   npx wrangler r2 object put your-bucket-name/stoneflow/CHANGELOG.md --file .release-tmp/CHANGELOG.md
    npx wrangler r2 object put your-bucket-name/stoneflow/updates/stable/latest.json --file .release-tmp/updates/stable/latest.json
-   # 其他文件同理
+   # 在两条命令之间上传其他产物与 release manifest
    ```
 
 ---
@@ -212,6 +216,7 @@ bun run release -- --no-upload
 
 ```
 stoneflow/
+├── CHANGELOG.md                              # 唯一用户更新记录（先于 latest.json 上传）
 ├── updates/
 │   ├── stable/
 │   │   ├── latest.json                         # 全局更新清单（Cache-Control: no-cache）

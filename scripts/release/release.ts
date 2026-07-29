@@ -12,13 +12,14 @@
 
 import { $, argv } from 'bun'
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, rm } from 'node:fs/promises'
+import { copyFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 
 import { collectReleaseArtifacts } from './artifacts'
-import { chalk, emptyDir, readJSON, writeJSON } from './io'
+import { resetLocalReleaseOutputs } from './cleanup'
+import { chalk, readJSON, writeJSON } from './io'
 import { assertLatestJsonConsistency, createLatestJson, createReleaseManifest } from './manifest'
-import { BUNDLE_OUTPUT_DIRS, createReleasePaths, expandHomePath, resolvePlatformKey } from './paths'
+import { createReleasePaths, expandHomePath, resolvePlatformKey } from './paths'
 import { resolveReleasePlan } from './release-plan'
 import {
 	assertR2Config,
@@ -88,19 +89,6 @@ async function resolveGitCommit() {
 		return (await $`git rev-parse --short=8 HEAD`.quiet().text()).trim()
 	} catch {
 		return 'unknown'
-	}
-}
-
-async function cleanBundleOutputs(bundleRoot: string) {
-	console.log(chalk.gray('\n🧹 清理历史 bundle 产物...\n'))
-	for (const dirName of BUNDLE_OUTPUT_DIRS) {
-		const dir = path.join(bundleRoot, dirName)
-		if (!existsSync(dir)) {
-			console.log(chalk.gray(`   skip  ${dirName}/ (不存在)`))
-			continue
-		}
-		await rm(dir, { recursive: true, force: true })
-		console.log(chalk.green(`   clean ${dirName}/`))
 	}
 }
 
@@ -179,7 +167,7 @@ async function main() {
 	console.log(chalk.blue(`\n🚀 开始发布 ${channel} 渠道更新...\n`))
 	console.log(chalk.gray(`   发布平台: ${platformKey}`))
 
-	await emptyDir(paths.workDir)
+	await resetLocalReleaseOutputs(paths)
 	await validateChangelog(paths.changelogPath)
 
 	const tauriConf = await readJSON<Record<string, unknown> & { version: string }>(
@@ -208,7 +196,6 @@ async function main() {
 		console.log(chalk.gray('   同 commit 发布，复用已有 release version'))
 	}
 
-	await cleanBundleOutputs(paths.tauriDist)
 	await buildApp({
 		channel,
 		platformKey,
@@ -298,6 +285,7 @@ async function main() {
 
 	console.log(chalk.blue(`☁️  上传到 Cloudflare R2 (${remoteConfig.bucket})...\n`))
 	await uploadItems(remoteConfig, uploadList)
+	await resetLocalReleaseOutputs(paths)
 
 	console.log(chalk.green('\n✅ 发布完成!'))
 	console.log(chalk.gray(`\n   更新地址: ${remoteConfig.publicUrl}/updates/${channel}/latest.json`))
@@ -306,8 +294,6 @@ async function main() {
 	)
 	console.log(chalk.gray(`   版本: ${version}`))
 	console.log(chalk.gray(`   平台: ${Object.keys(latestJson.platforms).join(', ')}\n`))
-
-	await rm(paths.workDir, { recursive: true, force: true })
 }
 
 if (import.meta.main) {

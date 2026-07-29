@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 export const color = (code: number) => (text: string) => `\x1b[${code}m${text}\x1b[0m`
@@ -10,11 +10,6 @@ export const chalk = {
 	blue: color(34),
 	gray: color(90),
 	cyan: color(36),
-}
-
-export async function emptyDir(dir: string) {
-	await rm(dir, { recursive: true, force: true })
-	await mkdir(dir, { recursive: true })
 }
 
 export async function readJSON<T>(filePath: string): Promise<T> {
