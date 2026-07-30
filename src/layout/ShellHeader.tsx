@@ -64,6 +64,7 @@ type ShellHeaderProps = {
 	onRunCommand: (id: CommandId) => void
 	onShortcutHelpOpenChange: (open: boolean) => void
 	onOpenChangelog: () => void
+	onOpenAbout: () => void
 	onNavigateToHistoryEntry: (entry: ShellRouteHistoryEntry) => void
 	onCloseDrawer: () => void
 	onOpenTaskPage: (task: SearchTaskItem) => void
@@ -95,6 +96,7 @@ export function ShellHeader({
 	onRunCommand,
 	onShortcutHelpOpenChange,
 	onOpenChangelog,
+	onOpenAbout,
 	onNavigateToHistoryEntry,
 	onCloseDrawer,
 	onOpenTaskPage,
@@ -356,6 +358,7 @@ export function ShellHeader({
 							<div className={shellChromeAvatarClusterClass}>
 								<UserAppMenu
 									isSettingsActive={activeSection === 'settings'}
+									onOpenAbout={onOpenAbout}
 									onOpenChangelog={onOpenChangelog}
 									onRunCommand={onRunCommand}
 								/>

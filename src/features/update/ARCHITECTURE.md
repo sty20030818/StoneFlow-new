@@ -11,7 +11,7 @@
 
 - 检查 / 下载 / 安装 / 重启 / 跳过版本 API（Tauri invoke + 事件）
 - 更新 UI 相位单轨（Zustand `useUpdateStore`）
-- 事件监听与动作封装（`useUpdateEvents` · `useUpdateActions`）
+- 事件监听、主动检查与安装动作（`useUpdateEvents` · `useManualUpdateCheck` · 内部安装 Hook）
 - 更新对话框、页脚 chip、系统状态 chip、设置面板
 
 **不负责：**
@@ -30,9 +30,13 @@ src/features/update/
 ├── index.ts
 ├── contract.ts
 ├── api/updates.ts
-├── model/
-│   ├── useUpdateStore.ts
+├── hooks/
+│   ├── useManualUpdateCheck.ts
+│   ├── useUpdateInstallActions.ts
 │   ├── useUpdateEvents.ts
+│   └── updatePhaseEffects.ts
+├── model/
+│   └── useUpdateStore.ts
 │   ├── applyUpdatePhase.ts
 │   ├── updatePresentation.ts
 │   └── deriveUpdateFooterView.ts
@@ -41,7 +45,6 @@ src/features/update/
     ├── SystemStatusChip.tsx
     ├── UpdateFooterChip.tsx
     ├── UpdateStatusFooterItem.tsx
-    ├── AppVersionFooterItem.tsx
     ├── UpdateProgressRing.tsx
     ├── UpdateSettingsSection.tsx
     └── UpdateSettingsSection.presentation.tsx
@@ -53,8 +56,8 @@ src/features/update/
 
 | 类 | 符号 |
 |----|------|
-| 事件 | `useUpdateEvents` |
-| UI | `UpdateDialog` · `SystemStatusChip` · `UpdateStatusFooterItem` · `AppVersionFooterItem` · `UpdateSettingsSection` |
+| 事件 / 主动检查 | `useUpdateEvents` · `useManualUpdateCheck` |
+| UI | `UpdateDialog` · `SystemStatusChip` · `UpdateStatusFooterItem` · `UpdateSettingsSection` |
 | 跨 feature 读取 | `contract.ts` 的 `getUpdateSettings` · `UpdateChannel` |
 
 显式 export 清单，禁止 `export *`。API / store / 内部 chip 组件留包内。
@@ -76,8 +79,10 @@ src/features/update/
 |------|------|
 | `layout/ShellLayoutContent.tsx` | `useUpdateEvents()`，消费一次性更新完成确认并发出 changelog 打开意图 |
 | `layout/overlays/ShellOverlays.tsx` | `UpdateDialog` · `SystemStatusChip`；更新记录弹窗由 changelog 模块装配 |
-| `layout/ShellFooter.tsx` | `UpdateStatusFooterItem` · `AppVersionFooterItem` |
+| `layout/ShellFooter.tsx` | `UpdateStatusFooterItem` （版本号属 `@/features/app-info`） |
 | `features/settings` 页（update 分区） | 直接挂 `UpdateSettingsSection` |
+
+头像菜单、设置页和关于窗口只能调 `useManualUpdateCheck`，不得直接 `invoke('check_update')`或复制 `checking` 状态。
 
 `UpdateDialog` 壳层复用 `createDialogCompactShellClass`（create-dialog 同族）；ready/error 用 `StatusNotice`。目标版本说明只读取 changelog 模块，updater manifest 不承载用户内容。
 

@@ -77,9 +77,9 @@ src/features/update/
    ]
    ```
 
-3. 启动开发模式：
+3. 启动开发模式（仅该命令会合并本地 HTTP Mock 配置）：
    ```bash
-   bun tauri dev
+   bun run tauri:dev
    ```
 
 4. 建议按模式验收：
@@ -92,7 +92,7 @@ src/features/update/
 | 任意 · 下载中 | 关闭 Dialog / 点「后台继续」 | 下载不中断，Footer 仍显示进度 |
 | 就绪 | Chip 点「稍后」 | Chip 消失，Footer 仍「就绪」；点「重启」调 restart |
 
-5. **测试完后记得把 endpoints 改回正式地址！**（若曾手改配置）
+5. 测试完后关闭 Mock 服务即可。正式 `tauri.conf.json` 不允许 HTTP updater。
 
 你可以测试的内容：
 - 三档检查模式切换与文案

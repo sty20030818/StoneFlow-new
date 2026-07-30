@@ -35,7 +35,6 @@
         "https://release.sty20030818.space/stoneflow/updates/stable/latest.json",
         "https://release.sty20030818.space/stoneflow/updates/beta/latest.json"
       ],
-      "dangerousInsecureTransportProtocol": true,
       "windows": {
         "installMode": "passive"
       }

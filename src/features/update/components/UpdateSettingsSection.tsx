@@ -8,7 +8,6 @@ import { RefreshCwIcon } from 'lucide-react'
 
 import {
 	ALLOWED_CHECK_INTERVAL_SECS,
-	checkUpdate,
 	getUpdateSettings,
 	setChannel,
 	setCheckIntervalSecs,
@@ -17,6 +16,7 @@ import {
 	type UpdateChannel,
 	type UpdateCheckMode,
 } from '../api/updates'
+import { useManualUpdateCheck } from '../hooks/useManualUpdateCheck'
 import { useUpdateStore } from '../model/useUpdateStore'
 import { formFieldHintClass } from '@/shared/components/patterns/form-field'
 import {
@@ -38,16 +38,14 @@ import {
 export function UpdateSettingsSection() {
 	const [loading, setLoading] = useState(true)
 	const [saving, setSaving] = useState(false)
-	const [checking, setChecking] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const [checkResult, setCheckResult] = useState<{ found: boolean; version?: string } | null>(null)
 	const [settings, setSettings] = useState<{
 		checkMode: UpdateCheckMode
 		channel: UpdateChannel
 		checkIntervalSecs: number
 	} | null>(null)
-	const showAvailable = useUpdateStore((s) => s.showAvailable)
 	const setStoreCheckMode = useUpdateStore((s) => s.setCheckMode)
+	const { checkNow, isChecking } = useManualUpdateCheck()
 
 	const loadSettings = useCallback(async () => {
 		setLoading(true)
@@ -119,25 +117,6 @@ export function UpdateSettingsSection() {
 		}
 	}
 
-	async function handleCheckNow() {
-		setChecking(true)
-		setError(null)
-		setCheckResult(null)
-		try {
-			const info = await checkUpdate(true)
-			if (info) {
-				setCheckResult({ found: true, version: info.version })
-				showAvailable(info, { openDialog: true })
-			} else {
-				setCheckResult({ found: false })
-			}
-		} catch (err) {
-			setError(normalizeTauriError(err, '检查更新失败'))
-		} finally {
-			setChecking(false)
-		}
-	}
-
 	if (loading) {
 		return (
 			<section className={settingsPanelSectionClass}>
@@ -172,16 +151,6 @@ export function UpdateSettingsSection() {
 					/>
 				) : null}
 
-				{checkResult && !checkResult.found ? (
-					<StatusNotice
-						className='text-sm'
-						description='当前已是最新版本。'
-						size='sm'
-						title='已是最新'
-						variant='success'
-					/>
-				) : null}
-
 				<UpdateCheckModeOptions
 					value={settings?.checkMode}
 					disabled={saving}
@@ -208,16 +177,16 @@ export function UpdateSettingsSection() {
 						<p className={cn(formFieldHintClass, 'mt-0.5')}>立即向服务器查询是否有新版本可用。</p>
 					</div>
 					<Button
-						disabled={checking || saving}
-						onClick={() => void handleCheckNow()}
+						disabled={isChecking || saving}
+						onClick={() => void checkNow()}
 						type='button'
 						variant='default'
 					>
 						<RefreshCwIcon
 							aria-hidden
-							className={cn('-ml-0.5 mr-1.5 size-4', checking && 'animate-spin')}
+							className={cn('-ml-0.5 mr-1.5 size-4', isChecking && 'animate-spin')}
 						/>
-						{checking ? '检查中...' : '检查更新'}
+						{isChecking ? '检查中...' : '检查更新'}
 					</Button>
 				</div>
 			</div>

@@ -25,9 +25,10 @@ import { StatusNotice } from '@/shared/components/StatusNotice'
 import { cn } from '@/shared/lib/utils'
 import { ChangelogMarkdown, useChangelog } from '@/features/changelog'
 import { skipVersion } from '../api/updates'
-import { useUpdateStore } from '../model/useUpdateStore'
-import { useUpdateActions } from '../model/useUpdateEvents'
+import { useUpdateInstallActions } from '../hooks/useUpdateInstallActions'
+import { useManualUpdateCheck } from '../hooks/useManualUpdateCheck'
 import { downloadProgressBarValue, formatDownloadBytesLine } from '../model/updatePresentation'
+import { useUpdateStore } from '../model/useUpdateStore'
 
 export function UpdateDialog() {
 	const dialogVisible = useUpdateStore((s) => s.dialogVisible)
@@ -37,7 +38,8 @@ export function UpdateDialog() {
 	const errorMessage = useUpdateStore((s) => s.errorMessage)
 	const closeDialog = useUpdateStore((s) => s.closeDialog)
 	const skipAndClose = useUpdateStore((s) => s.skipAndClose)
-	const { startDownload, restart, cancelDownloadUi } = useUpdateActions()
+	const { startDownload, restart, cancelDownloadUi } = useUpdateInstallActions()
+	const { checkNow } = useManualUpdateCheck()
 	const { entry } = useChangelog(updateInfo?.version)
 
 	function handleOpenChange(nextOpen: boolean) {
@@ -55,11 +57,16 @@ export function UpdateDialog() {
 		skipAndClose()
 	}
 
+	function handleRetryCheck() {
+		// 保留当前 Dialog，在统一 store 进入 checking 后直接呈现检查中状态。
+		void checkNow()
+	}
+
 	const isDownloading = phase === 'downloading'
 	const isReady = phase === 'ready'
 	const isError = phase === 'error'
 	const isChecking = phase === 'checking'
-	const canDownload = phase === 'available' || phase === 'idle' || phase === 'upToDate' || isError
+	const canDownload = phase === 'available' || phase === 'idle' || phase === 'upToDate'
 
 	const downloaded = progress?.downloaded ?? 0
 	const total = progress?.total ?? null
@@ -85,7 +92,7 @@ export function UpdateDialog() {
 		: isDownloading
 			? '正在下载更新文件。整段进度可点回此窗口；取消后可重新下载。'
 			: isError
-				? (errorMessage ?? '更新失败')
+				? '未能完成更新操作。请稍后重新检查。'
 				: isChecking
 					? '正在检查更新...'
 					: '建议及时更新以获得最新功能和问题修复。'
@@ -193,25 +200,34 @@ export function UpdateDialog() {
 								下载中
 							</Button>
 						</>
+					) : isChecking ? (
+						<Button disabled size='sm' type='button'>
+							<span
+								aria-hidden
+								className='-ml-0.5 mr-2 size-3 animate-spin rounded-full border-2 border-current border-t-transparent'
+							/>
+							正在检查...
+						</Button>
+					) : isError ? (
+						<>
+							<Button onClick={handleRetryCheck} size='sm' type='button'>
+								<RefreshCwIcon aria-hidden className='-ml-0.5 mr-1 size-3.5' />
+								重新检查
+							</Button>
+						</>
 					) : (
 						<>
-							<Button
-								disabled={isChecking}
-								onClick={handleSkip}
-								size='sm'
-								type='button'
-								variant='ghost'
-							>
+							<Button onClick={handleSkip} size='sm' type='button' variant='ghost'>
 								跳过此版本
 							</Button>
 							<Button
-								disabled={!canDownload || isChecking}
+								disabled={!canDownload}
 								onClick={() => void startDownload()}
 								size='sm'
 								type='button'
 							>
 								<DownloadIcon aria-hidden className='-ml-0.5 mr-1 size-3.5' />
-								{isChecking ? '检查中...' : '立即更新'}
+								立即更新
 							</Button>
 						</>
 					)}

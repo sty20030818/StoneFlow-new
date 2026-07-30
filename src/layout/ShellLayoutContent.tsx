@@ -37,6 +37,7 @@ export function ShellLayoutContent({
 			version: null,
 		},
 	)
+	const [isAboutOpen, setIsAboutOpen] = useState(false)
 	const openChangelog = useCallback((version: string | null = null) => {
 		setChangelogIntent({ open: true, version })
 	}, [])
@@ -142,6 +143,7 @@ export function ShellLayoutContent({
 					currentSpaceLabel={currentSpaceLabel}
 					handleOpenTaskCreate={handleOpenTaskCreate}
 					onOpenChangelog={() => openChangelog()}
+					onOpenAbout={() => setIsAboutOpen(true)}
 					headerProjects={headerProjects}
 					isSettingsMode={isSettingsMode}
 					routeHistory={routeHistory}
@@ -156,6 +158,7 @@ export function ShellLayoutContent({
 					closeTaskCreateDialog={createDialog.closeTaskCreateDialog}
 					changelogOpen={changelogIntent.open}
 					changelogVersion={changelogIntent.version}
+					aboutOpen={isAboutOpen}
 					createDialogType={createDialog.createDialogType}
 					currentScope={currentScope}
 					customDateDialog={createDialog.customDateDialog}
@@ -163,6 +166,11 @@ export function ShellLayoutContent({
 					projectOptions={chrome.projectOptions}
 					projectsLoading={chrome.sidebarProjects.status === 'loading'}
 					onChangelogOpenChange={(open) => setChangelogIntent((current) => ({ ...current, open }))}
+					onAboutOpenChange={setIsAboutOpen}
+					onOpenChangelogFromAbout={() => {
+						setIsAboutOpen(false)
+						openChangelog()
+					}}
 					selectedSpaceId={createDialog.selectedSpaceId}
 					setSelectedSpaceId={createDialog.setSelectedSpaceId}
 					shouldDelayTaskCreateDialog={createDialog.shouldDelayTaskCreateDialog}

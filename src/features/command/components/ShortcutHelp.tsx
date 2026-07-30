@@ -11,6 +11,7 @@ import {
 	DialogDescription,
 	DialogTitle,
 } from '@/shared/components/base/dialog'
+import { dialogShellReadingClass } from '@/shared/components/patterns/dialog-shell'
 import { cn } from '@/shared/lib/utils'
 
 import { buildShortcutHelpGroups } from './shortcut-help-model'
@@ -41,10 +42,7 @@ export function ShortcutHelp({
 	return (
 		<Dialog onOpenChange={onOpenChange} open={open}>
 			<DialogContent
-				className={cn(
-					'top-[18%] translate-y-0 overflow-hidden rounded-lg border border-sf-border-subtle bg-background/98 p-0 text-popover-foreground shadow-(--sf-shadow-popover) max-sm:max-w-[calc(100%-1.5rem)] max-lg:max-w-[calc(100%-1.5rem)] sm:max-w-190',
-					className,
-				)}
+				className={cn(dialogShellReadingClass, className)}
 				disableAnimation
 				onOpenAutoFocus={(event) => {
 					event.preventDefault()

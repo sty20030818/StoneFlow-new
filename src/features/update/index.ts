@@ -5,9 +5,9 @@
  * 包内 API、store、派生 UI 不对外导出。
  */
 
-export { useUpdateEvents } from './model/useUpdateEvents'
+export { useManualUpdateCheck } from './hooks/useManualUpdateCheck'
+export { useUpdateEvents } from './hooks/useUpdateEvents'
 export { UpdateDialog } from './components/UpdateDialog'
 export { SystemStatusChip } from './components/SystemStatusChip'
 export { UpdateStatusFooterItem } from './components/UpdateStatusFooterItem'
-export { AppVersionFooterItem } from './components/AppVersionFooterItem'
 export { UpdateSettingsSection } from './components/UpdateSettingsSection'

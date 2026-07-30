@@ -27,6 +27,9 @@ export const dialogShellFooterClass =
 	'flex items-center justify-end gap-2 border-t border-sf-divider pt-3'
 export const dialogShellPanelFooterClass = 'border-t border-sf-divider bg-muted/60 px-6 py-4'
 export const dialogShellFloatingBaseClass = 'bg-popover p-0 shadow-(--sf-shadow-float)'
+/** 低频信息阅读弹窗（更新记录、快捷键帮助、关于）的统一面板外壳。 */
+export const dialogShellReadingClass =
+	'top-[18%] translate-y-0 overflow-hidden rounded-lg border border-sf-border-subtle bg-background/98 p-0 text-popover-foreground shadow-(--sf-shadow-popover) max-sm:max-w-[calc(100%-1.5rem)] max-lg:max-w-[calc(100%-1.5rem)] sm:max-w-190'
 export const dialogShellTitleClass =
 	'text-[1.0625rem] font-semibold tracking-[-0.02em] text-foreground'
 export const dialogShellDescriptionClass = 'text-[13px] leading-5 text-muted-foreground'

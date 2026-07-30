@@ -91,8 +91,7 @@ impl TauriUpdateAdapter {
             ApplicationError::update(format!("endpoint URL 无效: {e}"))
         })?;
 
-        // release 构建中禁止 HTTP，防止意外配置错误（dangerousInsecureTransportProtocol 在 tauri.conf.json 中开启，
-        // 仅用于 debug 模式下的本地 mock 测试；此处双重保险）
+        // release 构建中禁止 HTTP，防止开发 Mock 配置被错误带入发布包；此处是配置隔离之外的第二层防线。
         #[cfg(not(debug_assertions))]
         if parsed_url.scheme() == "http" {
             return Err(ApplicationError::update(

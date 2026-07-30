@@ -9,7 +9,7 @@ import { RefreshCwIcon } from 'lucide-react'
 
 import { useSharedSyncStatus } from '@/features/sync'
 import { formatReplicaState, formatSyncStatus } from '@/features/sync'
-import { useUpdateActions } from '../model/useUpdateEvents'
+import { useUpdateInstallActions } from '../hooks/useUpdateInstallActions'
 import { selectReadyChipVisible, useUpdateStore } from '../model/useUpdateStore'
 import { Button } from '@/shared/components/base/button'
 import { cn } from '@/shared/lib/utils'
@@ -32,7 +32,7 @@ export function SystemStatusChip() {
 	const updateReady = useUpdateStore(selectReadyChipVisible)
 	const updateInfo = useUpdateStore((s) => s.updateInfo)
 	const dismissReadyChip = useUpdateStore((s) => s.dismissReadyChip)
-	const { restart } = useUpdateActions()
+	const { restart } = useUpdateInstallActions()
 
 	const { displayedStatus, message, runNow, running, statusPayload } = useSharedSyncStatus()
 

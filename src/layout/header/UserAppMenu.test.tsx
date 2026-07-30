@@ -9,9 +9,14 @@ describe('UserAppMenu', () => {
 	it('点击头像打开应用菜单，并暴露设置与快捷键项', async () => {
 		const onRunCommand = vi.fn()
 		const onOpenChangelog = vi.fn()
+		const onOpenAbout = vi.fn()
 		render(
 			<TooltipProvider>
-				<UserAppMenu onOpenChangelog={onOpenChangelog} onRunCommand={onRunCommand} />
+				<UserAppMenu
+					onOpenAbout={onOpenAbout}
+					onOpenChangelog={onOpenChangelog}
+					onRunCommand={onRunCommand}
+				/>
 			</TooltipProvider>,
 		)
 
@@ -25,11 +30,11 @@ describe('UserAppMenu', () => {
 			'aria-disabled',
 			'true',
 		)
-		expect(screen.getByRole('menuitem', { name: /检查更新/ })).toHaveAttribute(
+		expect(screen.getByRole('menuitem', { name: /检查更新/ })).not.toHaveAttribute(
 			'aria-disabled',
 			'true',
 		)
-		expect(screen.getByRole('menuitem', { name: /关于 StoneFlow/ })).toHaveAttribute(
+		expect(screen.getByRole('menuitem', { name: /关于 StoneFlow/ })).not.toHaveAttribute(
 			'aria-disabled',
 			'true',
 		)
@@ -38,9 +43,14 @@ describe('UserAppMenu', () => {
 	it('选择设置与键盘快捷键时调用对应 command', async () => {
 		const onRunCommand = vi.fn()
 		const onOpenChangelog = vi.fn()
+		const onOpenAbout = vi.fn()
 		render(
 			<TooltipProvider>
-				<UserAppMenu onOpenChangelog={onOpenChangelog} onRunCommand={onRunCommand} />
+				<UserAppMenu
+					onOpenAbout={onOpenAbout}
+					onOpenChangelog={onOpenChangelog}
+					onRunCommand={onRunCommand}
+				/>
 			</TooltipProvider>,
 		)
 
@@ -55,5 +65,9 @@ describe('UserAppMenu', () => {
 		fireEvent.pointerDown(screen.getByRole('button', { name: '应用菜单' }))
 		fireEvent.click(await screen.findByRole('menuitem', { name: /更新记录/ }))
 		expect(onOpenChangelog).toHaveBeenCalledTimes(1)
+
+		fireEvent.pointerDown(screen.getByRole('button', { name: '应用菜单' }))
+		fireEvent.click(await screen.findByRole('menuitem', { name: /关于 StoneFlow/ }))
+		expect(onOpenAbout).toHaveBeenCalledTimes(1)
 	})
 })

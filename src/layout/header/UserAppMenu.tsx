@@ -1,6 +1,7 @@
 import { getCommandShortcutTokens } from '@/features/command'
 import { ShortcutTokens } from '@/features/command'
 import { COMMAND_IDS, type CommandId } from '@/features/command'
+import { useManualUpdateCheck } from '@/features/update'
 import { cn } from '@/shared/lib/utils'
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from '@/shared/components/base/avatar'
 import {
@@ -57,6 +58,7 @@ export type UserAppMenuProps = {
 	isSettingsActive?: boolean
 	onRunCommand: (id: CommandId) => void
 	onOpenChangelog: () => void
+	onOpenAbout: () => void
 }
 
 /**
@@ -67,7 +69,9 @@ export function UserAppMenu({
 	isSettingsActive = false,
 	onRunCommand,
 	onOpenChangelog,
+	onOpenAbout,
 }: UserAppMenuProps) {
+	const { checkNow, isChecking } = useManualUpdateCheck()
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -125,11 +129,11 @@ export function UserAppMenu({
 						<HistoryIcon />
 						<span>更新记录</span>
 					</DropdownMenuItem>
-					<DropdownMenuItem disabled title={PLACEHOLDER_HINT}>
+					<DropdownMenuItem disabled={isChecking} onSelect={() => void checkNow()}>
 						<RefreshCwIcon />
-						<span>检查更新</span>
+						<span>{isChecking ? '正在检查更新...' : '检查更新'}</span>
 					</DropdownMenuItem>
-					<DropdownMenuItem disabled title={PLACEHOLDER_HINT}>
+					<DropdownMenuItem onSelect={onOpenAbout}>
 						<InfoIcon />
 						<span>关于 StoneFlow</span>
 					</DropdownMenuItem>
