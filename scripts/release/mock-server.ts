@@ -129,10 +129,11 @@ const server = serve({
 			`[${new Date().toISOString()}] ${req.method} ${url.pathname}  scenario=${SCENARIO}  channel=${CHANNEL}`,
 		)
 
-		// ── 更新端点 ──
-		const updateMatch = /^\/stoneflow\/updates\/(stable|beta)(?:\/([^/]+))?\/latest\.json$/.exec(
-			url.pathname,
-		)
+		// ── 更新端点（按平台独立指针）──
+		const updateMatch =
+			/^\/stoneflow\/updates\/(stable|beta)\/platforms\/([^/]+)\/latest\.json$/.exec(
+				url.pathname,
+			)
 		const isStable = updateMatch?.[1] === 'stable'
 		const isBeta = updateMatch?.[1] === 'beta'
 
@@ -278,8 +279,9 @@ th{background:#fafafa}</style></head><body>
 </table>
 <h2>可用端点</h2>
 <ul>
-<li><a href="/stoneflow/updates/stable/latest.json">/stoneflow/updates/stable/latest.json</a></li>
-<li><a href="/stoneflow/updates/beta/latest.json">/stoneflow/updates/beta/latest.json</a></li>
+<li><a href="/stoneflow/updates/stable/platforms/darwin-aarch64/latest.json">/stoneflow/updates/stable/platforms/darwin-aarch64/latest.json</a></li>
+<li><a href="/stoneflow/updates/beta/platforms/darwin-aarch64/latest.json">/stoneflow/updates/beta/platforms/darwin-aarch64/latest.json</a></li>
+<li><a href="/stoneflow/updates/beta/platforms/windows-x86_64/latest.json">/stoneflow/updates/beta/platforms/windows-x86_64/latest.json</a></li>
 <li><a href="/health">/health</a></li>
 </ul>
 <h2>场景切换命令</h2>
@@ -316,6 +318,10 @@ console.log(`   版本: ${MOCK_VERSION}`)
 console.log(`   渠道: ${CHANNEL}`)
 console.log(`   场景: ${scenarioText}`)
 if (SLOW_MODE) console.log(`   慢模式: 开启 (${SLOW_DELAY_MS}ms 延迟)`)
-console.log(`\n   Stable: ${server.url}stoneflow/updates/stable/latest.json`)
-console.log(`   Beta:   ${server.url}stoneflow/updates/beta/latest.json`)
+console.log(
+	`\n   Stable: ${server.url}stoneflow/updates/stable/platforms/{{target}}-{{arch}}/latest.json`,
+)
+console.log(
+	`   Beta:   ${server.url}stoneflow/updates/beta/platforms/{{target}}-{{arch}}/latest.json`,
+)
 console.log(`\n   按 Ctrl+C 停止\n`)

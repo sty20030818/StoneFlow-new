@@ -47,9 +47,10 @@ describe('validateChangelog', () => {
 })
 
 describe('createUploadList', () => {
-	test('先上传 changelog，最后覆盖 latest.json', () => {
+	test('先上传 changelog，最后覆盖本平台 latest.json', () => {
 		const items = createUploadList({
 			channel: 'beta',
+			platformKey: 'darwin-aarch64',
 			version: '0.2.0-beta.1',
 			changelogPath: '/tmp/CHANGELOG.md',
 			artifactItems: [{ filePath: '/tmp/StoneFlow.dmg', key: 'stoneflow/artifact' }],
@@ -63,7 +64,7 @@ describe('createUploadList', () => {
 			'stoneflow/artifact',
 			'stoneflow/updates/beta/latest.release.json',
 			'stoneflow/updates/beta/releases/0.2.0-beta.1/release.json',
-			'stoneflow/updates/beta/latest.json',
+			'stoneflow/updates/beta/platforms/darwin-aarch64/latest.json',
 		])
 	})
 })

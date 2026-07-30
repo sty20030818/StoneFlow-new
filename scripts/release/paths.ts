@@ -22,6 +22,21 @@ export function resolvePlatformKey() {
 	throw new Error(`不支持当前发布平台: ${process.platform}-${process.arch}`)
 }
 
+/** 各平台独立的 updater 指针 key（R2 object key，含 stoneflow 前缀）。 */
+export function platformLatestJsonKey(channel: ReleaseChannel, platformKey: string) {
+	return `stoneflow/updates/${channel}/platforms/${platformKey}/latest.json`
+}
+
+/** 各平台独立的 updater 指针公开 URL。 */
+export function platformLatestJsonUrl(
+	publicUrl: string,
+	channel: ReleaseChannel,
+	platformKey: string,
+) {
+	const base = publicUrl.replace(/\/$/, '')
+	return `${base}/updates/${channel}/platforms/${platformKey}/latest.json`
+}
+
 export function createReleasePaths(input: {
 	channel: ReleaseChannel
 	platformKey: string

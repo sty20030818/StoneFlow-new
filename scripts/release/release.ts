@@ -1,7 +1,9 @@
 /**
  * StoneFlow 应用更新发布脚本
  *
- * 长期模型：一个 Git commit 对应一个 release version，平台只是该 release 的 artifact。
+ * 长期模型：
+ * - 版本号全局递增，同一 Git commit 绑定同一 release version
+ * - 各平台有独立的 latest.json 指针，允许「Mac 停在 beta.4、Win 已到 beta.5」
  *
  * 用法:
  *   bun run release
@@ -19,16 +21,21 @@ import { collectReleaseArtifacts } from './artifacts'
 import { resetLocalReleaseOutputs } from './cleanup'
 import { chalk, readJSON, writeJSON } from './io'
 import { assertLatestJsonConsistency, createLatestJson, createReleaseManifest } from './manifest'
-import { createReleasePaths, expandHomePath, resolvePlatformKey } from './paths'
+import {
+	createReleasePaths,
+	expandHomePath,
+	platformLatestJsonKey,
+	platformLatestJsonUrl,
+	resolvePlatformKey,
+} from './paths'
 import { resolveReleasePlan } from './release-plan'
 import {
 	assertR2Config,
-	fetchJson,
 	readRemoteLatestRelease,
 	type ReleaseRemoteConfig,
 	uploadItems,
 } from './remote'
-import type { LatestJson, ReleaseChannel, UploadItem } from './types'
+import type { ReleaseChannel, UploadItem } from './types'
 
 const CHANGELOG_ENTRY_HEADING = /^## \[\d+\.\d+\.\d+(?:-beta\.\d+)?\] - \d{4}-\d{2}-\d{2}$/
 
@@ -54,6 +61,7 @@ export async function validateChangelog(filePath: string) {
 
 export function createUploadList(input: {
 	channel: ReleaseChannel
+	platformKey: string
 	version: string
 	changelogPath: string
 	artifactItems: UploadItem[]
@@ -74,7 +82,7 @@ export function createUploadList(input: {
 		},
 		{
 			filePath: input.latestJsonPath,
-			key: `stoneflow/updates/${input.channel}/latest.json`,
+			key: platformLatestJsonKey(input.channel, input.platformKey),
 		},
 	]
 }
@@ -130,20 +138,6 @@ async function buildApp(input: {
 	}
 }
 
-async function readRemoteLatestJson(
-	config: ReleaseRemoteConfig,
-	channel: ReleaseChannel,
-	noUpload: boolean,
-) {
-	try {
-		return await fetchJson<LatestJson>(`${config.publicUrl}/updates/${channel}/latest.json`)
-	} catch (error) {
-		if (!noUpload) throw error
-		console.log(chalk.yellow('   无法读取全局 latest.json，--no-upload 将按空 manifest 处理'))
-		return null
-	}
-}
-
 async function main() {
 	const channel = argv.find((arg): arg is ReleaseChannel => arg === 'stable' || arg === 'beta')
 	if (!channel) {
@@ -176,7 +170,6 @@ async function main() {
 	const sourceVersion = tauriConf.version
 	const commit = await resolveGitCommit()
 	const latestRelease = await readRemoteLatestRelease(remoteConfig, channel, noUpload)
-	const latestJsonFromRemote = await readRemoteLatestJson(remoteConfig, channel, noUpload)
 	const releasePlan = resolveReleasePlan({
 		channel,
 		sourceVersion,
@@ -216,11 +209,12 @@ async function main() {
 		publicUrl: remoteConfig.publicUrl,
 	})
 
+	// 只推进本平台 pointer；其它平台的 latest 保持不变
 	const latestJson = createLatestJson({
 		version,
 		pubDate,
+		platformKey,
 		platforms: collected.platforms,
-		previousLatest: latestJsonFromRemote,
 	})
 	const releaseManifest = createReleaseManifest({
 		version,
@@ -235,7 +229,14 @@ async function main() {
 	await mkdir(releaseVersionDir, { recursive: true })
 	const changelogPath = path.join(paths.workDir, 'CHANGELOG.md')
 	await copyFile(paths.changelogPath, changelogPath)
-	const latestJsonPath = path.join(paths.workDir, 'updates', channel, 'latest.json')
+	const latestJsonPath = path.join(
+		paths.workDir,
+		'updates',
+		channel,
+		'platforms',
+		platformKey,
+		'latest.json',
+	)
 	const latestReleasePath = path.join(paths.workDir, 'updates', channel, 'latest.release.json')
 	const versionReleasePath = path.join(releaseVersionDir, 'release.json')
 
@@ -245,6 +246,7 @@ async function main() {
 	await writeJSON(versionReleasePath, releaseManifest)
 	const uploadList = createUploadList({
 		channel,
+		platformKey,
 		version,
 		changelogPath,
 		artifactItems: collected.uploadItems,
@@ -252,19 +254,19 @@ async function main() {
 		latestReleasePath,
 		versionReleasePath,
 	})
-	console.log(chalk.gray('\n📝 生成全局 latest.json / release manifest'))
+	console.log(chalk.gray('\n📝 生成平台 latest.json / 全局 release manifest'))
 
 	console.log(chalk.gray('\n🔒 发布一致性校验...\n'))
 	try {
-		assertLatestJsonConsistency(latestJson, version, uploadList)
-		console.log(chalk.green('   ✓ latest.json / 产物 / 上传列表一致'))
+		assertLatestJsonConsistency(latestJson, version, uploadList, platformKey)
+		console.log(chalk.green('   ✓ 平台 latest.json / 产物 / 上传列表一致'))
 	} catch (error) {
 		console.error(chalk.red(`\n❌ ${(error as Error).message}`))
 		process.exit(1)
 	}
 
 	console.log(chalk.gray('\n────────────────────────────────────────'))
-	console.log(chalk.cyan('更新清单预览:'))
+	console.log(chalk.cyan('本平台更新清单预览:'))
 	console.log(JSON.stringify(latestJson, null, 2))
 	console.log(chalk.gray('────────────────────────────────────────\n'))
 
@@ -288,12 +290,16 @@ async function main() {
 	await resetLocalReleaseOutputs(paths)
 
 	console.log(chalk.green('\n✅ 发布完成!'))
-	console.log(chalk.gray(`\n   更新地址: ${remoteConfig.publicUrl}/updates/${channel}/latest.json`))
+	console.log(
+		chalk.gray(
+			`\n   本平台更新地址: ${platformLatestJsonUrl(remoteConfig.publicUrl, channel, platformKey)}`,
+		),
+	)
 	console.log(
 		chalk.gray(`   下载目录: ${remoteConfig.publicUrl}/downloads/${channel}/${platformKey}/`),
 	)
 	console.log(chalk.gray(`   版本: ${version}`))
-	console.log(chalk.gray(`   平台: ${Object.keys(latestJson.platforms).join(', ')}\n`))
+	console.log(chalk.gray(`   平台: ${platformKey}\n`))
 }
 
 if (import.meta.main) {

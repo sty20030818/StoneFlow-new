@@ -69,11 +69,11 @@ src/features/update/
    # bun run mock:updates:beta
    ```
 
-2. Debug 模式会自动检测 1420 端口的 mock 服务器。若需要手动配置，endpoint 使用全局路径：
+2. Debug 模式会自动检测 1420 端口的 mock 服务器。若需要手动配置，endpoint 使用**按平台**路径：
    ```json
    "endpoints": [
-     "http://localhost:1420/stoneflow/updates/stable/latest.json",
-     "http://localhost:1420/stoneflow/updates/beta/latest.json"
+     "http://localhost:1420/stoneflow/updates/stable/platforms/{{target}}-{{arch}}/latest.json",
+     "http://localhost:1420/stoneflow/updates/beta/platforms/{{target}}-{{arch}}/latest.json"
    ]
    ```
 
@@ -163,9 +163,10 @@ cp .env.example .env.local
 - 收集当前平台 updater 产物（macOS 为 `.app.tar.gz`，Linux 为 `.AppImage.tar.gz`，Windows 优先 NSIS `.exe`，否则 MSI `.msi`）和对应 `.sig` 签名文件
 - 额外收集当前平台下载包到 `downloads/<channel>/<platform>/`，用于用户手动下载安装
 - 校验并先上传根 `CHANGELOG.md` 作为独立更新记录
-- 生成全局 `latest.json` 和 `latest.release.json`
-- 上传 updater 文件到 R2 的 `stoneflow/updates/stable/releases/<version>/platforms/<platform>/` 目录，上传下载包到 `stoneflow/downloads/stable/<platform>/` 目录
-- 上传完成后输出更新地址
+- 生成本平台 `platforms/<platform>/latest.json` 与全局 `latest.release.json`（版本分配）
+- 上传 updater 产物到 R2 的 `stoneflow/updates/stable/releases/<version>/platforms/<platform>/`，上传下载包到 `stoneflow/downloads/stable/<platform>/`
+- 只推进当前平台的 pointer，不覆盖其它平台的 latest
+- 上传完成后输出本平台更新地址
 
 ### 发布测试版（Beta）
 
@@ -177,7 +178,7 @@ bun run release:beta
 
 文件会上传到 `stoneflow/updates/beta/releases/<version>/platforms/<platform>/` 目录。
 
-**注意**：Beta 版本号由脚本根据全局 `latest.release.json` 自动计算。当前 git commit 相同则复用现有 beta 版本并追加当前平台；commit 不同才递增 `-beta.N`。Stable 渠道的版本比较器会自动过滤掉预发布版本，用户在设置里切换到 Beta 渠道才能收到。
+**注意**：Beta 版本号由脚本根据全局 `latest.release.json` 自动计算。当前 git commit 相同则复用现有 beta 版本并推进本平台 pointer；commit 不同才递增 `-beta.N`。各平台 latest 可分叉（例如 Mac 仍是 beta.4、Win 已是 beta.5）。Stable 渠道的版本比较器会自动过滤掉预发布版本，用户在设置里切换到 Beta 渠道才能收到。
 
 Windows Beta 只生成 NSIS `.exe`，不会生成 MSI。MSI 的版本字段不支持 `0.1.1-beta.1` 这类带 `beta` 文本的预发布标识。
 
@@ -200,11 +201,11 @@ bun run release -- --no-upload
 1. 运行 `bun run release -- --no-upload`
 2. 先把 `.release-tmp/CHANGELOG.md` 上传为 `stoneflow/CHANGELOG.md`
 3. 再上传 `.release-tmp/updates/stable/` 与 `.release-tmp/downloads/stable/<platform>/` 的版本产物
-4. 最后上传 `.release-tmp/updates/stable/latest.json`，使客户端在看到新版本前必定可读取更新记录
+4. 最后上传本平台 pointer：`.release-tmp/updates/stable/platforms/<platform>/latest.json`
 5. 或者用 wrangler CLI：
    ```bash
    npx wrangler r2 object put your-bucket-name/stoneflow/CHANGELOG.md --file .release-tmp/CHANGELOG.md
-   npx wrangler r2 object put your-bucket-name/stoneflow/updates/stable/latest.json --file .release-tmp/updates/stable/latest.json
+   npx wrangler r2 object put your-bucket-name/stoneflow/updates/stable/platforms/darwin-aarch64/latest.json --file .release-tmp/updates/stable/platforms/darwin-aarch64/latest.json
    # 在两条命令之间上传其他产物与 release manifest
    ```
 
@@ -216,11 +217,13 @@ bun run release -- --no-upload
 
 ```
 stoneflow/
-├── CHANGELOG.md                              # 唯一用户更新记录（先于 latest.json 上传）
+├── CHANGELOG.md                              # 唯一用户更新记录（先于平台 latest 上传）
 ├── updates/
 │   ├── stable/
-│   │   ├── latest.json                         # 全局更新清单（Cache-Control: no-cache）
-│   │   ├── latest.release.json                 # 全局 release 真相源（Cache-Control: no-cache）
+│   │   ├── latest.release.json                 # 全局：版本分配 / commit 绑定
+│   │   ├── platforms/
+│   │   │   ├── darwin-aarch64/latest.json      # 仅该平台 updater 指针
+│   │   │   └── windows-x86_64/latest.json
 │   │   └── releases/
 │   │       └── 0.1.0/
 │   │           ├── release.json
@@ -269,8 +272,9 @@ Cloudflare R2 公共访问配置（你已经配好了）：
 ## 六、常见问题
 
 ### Q: 用户收不到更新？
-1. 检查 `latest.json` 是否正确上传，访问全局地址（例如 `https://release.sty20030818.space/stoneflow/updates/stable/latest.json`）能否正常返回
-2. 检查 `latest.json` 里的 version 是否确实高于用户当前版本
+1. 检查**该用户平台**的 pointer 是否上传正确，例如  
+   `https://release.sty20030818.space/stoneflow/updates/stable/platforms/darwin-aarch64/latest.json`
+2. 检查该 pointer 里的 `version` 是否高于用户当前版本（与其它平台的最新无关）
 3. 检查用户设置的更新渠道（stable 收不到 beta）
 4. 检查用户是否跳过了该版本
 5. 检查自动检查节流（6小时内不重复检查，手动检查不受限）
@@ -286,9 +290,10 @@ Cloudflare R2 公共访问配置（你已经配好了）：
 - 真正的下载安装必须在 release 构建的包中测试
 
 ### Q: 如何撤销一个坏版本？
-- 把 R2 上的 `latest.json` 回退到上一个版本的内容即可
-- 已下载但未重启的用户，重启后会安装当前 latest.json 指向的版本
+- 把 R2 上**出问题平台**的 `platforms/<platform>/latest.json` 回退到上一个版本内容即可
+- 已下载但未重启的用户，重启后会安装当前该平台 pointer 指向的版本
 - 已安装坏版本的用户会在下一次检查时收到好版本的更新（如果好版本号更高）
+- 其它平台的 pointer 不受影响
 
 ### Q: 发布的 beta 版本号是新的，但装完还是旧 UI / 旧功能？
 这是「版本新、包旧」类事故，通常不是前端没编进去，而是**发布脚本选错了历史安装包**。
@@ -298,12 +303,12 @@ Cloudflare R2 公共访问配置（你已经配好了）：
 1. **构建前清空** `src-tauri/target/release/bundle/{nsis,msi,dmg,macos,appimage}`，杜绝旧包残留  
 2. **按本次 `VERSION` 精确匹配**产物文件名（必须含 `_0.1.1-beta.2_` 这类标记），禁止 `files[0]`  
 3. **签名与产物一一配对**（同路径 `.sig`，并检查 `file:` 声明）  
-4. **生成 `latest.json` 后、上传前硬校验**：version / URL 路径 / 文件名 / 上传列表必须一致，失败则中止上传  
+4. **生成平台 `latest.json` 后、上传前硬校验**：version / URL 路径 / 文件名 / 上传列表必须一致，失败则中止上传  
 
-发布日志应能看到被选中的完整 `path / size / mtime`。上传后请人工确认远端：
+发布日志应能看到被选中的完整 `path / size / mtime`。上传后请人工确认远端（以 Windows 为例）：
 
 ```text
-https://release.sty20030818.space/stoneflow/updates/beta/latest.json
+https://release.sty20030818.space/stoneflow/updates/beta/platforms/windows-x86_64/latest.json
 ```
 
 其中 `platforms.*.url` 的文件名必须是本次版本（例如 `StoneFlow_0.1.1-beta.3_x64-setup.exe`），**不能再出现旧的 `StoneFlow_0.1.0_...`**。

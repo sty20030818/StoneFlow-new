@@ -40,8 +40,12 @@ R2_PUBLIC_URL=https://release.sty20030818.space/stoneflow
 stoneflow/
 ├── updates/
 │   ├── stable/
-│   │   ├── latest.json                    # 全局 updater 清单
-│   │   ├── latest.release.json            # 全局 release 真相源
+│   │   ├── latest.release.json            # 全局：版本分配 / commit 绑定
+│   │   ├── platforms/
+│   │   │   ├── darwin-aarch64/
+│   │   │   │   └── latest.json            # 仅该平台的 updater 指针
+│   │   │   └── windows-x86_64/
+│   │   │       └── latest.json
 │   │   └── releases/
 │   │       └── 0.1.0/
 │   │           ├── release.json
@@ -88,18 +92,24 @@ bun run release -- --no-upload
 1. 构建前清空 `bundle/{nsis,msi,dmg,macos,appimage}` 历史产物  
 2. 按本次 `VERSION` 精确匹配安装包文件名，不取目录第一个文件  
 3. 要求 `.sig` 与产物同路径配对  
-4. 上传前校验 `latest.json` 的 version / URL / 文件名与上传列表一致  
+4. 上传前校验**本平台** `latest.json` 的 version / URL / 文件名与上传列表一致  
 
-任一校验失败会中止上传。发布后请确认 `latest.json` 里的 url 文件名含正确版本号。
+任一校验失败会中止上传。发布后请确认该平台 `latest.json` 里的 url 文件名含正确版本号。
 
-## 5. latest.json 格式
+## 5. 平台 latest.json 格式
 
-Tauri updater 期望的 JSON 格式：
+客户端 endpoint：
+
+```text
+https://release.sty20030818.space/stoneflow/updates/{channel}/platforms/{{target}}-{{arch}}/latest.json
+```
+
+每个平台一份指针，`platforms` **只含本平台一条**（Tauri static 格式）：
 
 ```json
 {
   "version": "0.1.0",
-	"pub_date": "2024-01-01T00:00:00Z",
+  "pub_date": "2024-01-01T00:00:00Z",
   "platforms": {
     "darwin-aarch64": {
       "signature": "base64-signature",
@@ -109,8 +119,12 @@ Tauri updater 期望的 JSON 格式：
 }
 ```
 
-StoneFlow 采用全局 `latest.json`。一个 Git commit 对应一个 release version，`latest.json.platforms` 只记录该版本下已发布的平台 artifact。Beta 发布会读取全局 `latest.release.json`：当前 git commit 相同则复用 beta 版本并追加平台，commit 不同才递增 `-beta.N`。
+模型：
 
-用户可见的更新内容不在 `latest.json` 中。发布前维护根目录 `CHANGELOG.md`；脚本会校验版本标题、先上传 `stoneflow/CHANGELOG.md`，再覆盖渠道的 `latest.json`。
+- **版本号全局**：同一 Git commit 绑定同一 release version；新 commit 才递增（beta 为 `-beta.N`）
+- **指针按平台**：只推进当前发布平台的 `platforms/<platformKey>/latest.json`；其它平台保持各自最新
+- 因此允许 Mac 停在 `beta.4`、Win 已到 `beta.5`；Mac 用户可升到 `beta.4`，不会被全局 `beta.5` 卡住
+
+用户可见的更新内容不在 `latest.json` 中。发布前维护根目录 `CHANGELOG.md`；脚本会校验版本标题、先上传 `stoneflow/CHANGELOG.md`，再覆盖本平台 pointer。
 
 Windows Beta 只构建 NSIS `.exe`。MSI 不支持 `0.1.1-beta.1` 这类带 `beta` 文本的预发布版本号。

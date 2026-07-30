@@ -69,9 +69,26 @@ impl TauriUpdateAdapter {
         PROD_UPDATES_BASE_URL.to_string()
     }
 
-    /// 根据渠道构造远端 endpoint URL。
-    fn endpoint_url(channel: UpdateChannel, base_url: &str) -> String {
-        format!("{}/{}/latest.json", base_url, channel.path_segment())
+    /// 根据渠道构造远端 endpoint URL（各平台独立指针）。
+    ///
+    /// Tauri 会替换 `{{target}}` / `{{arch}}`，例如：
+    /// `.../beta/platforms/darwin-aarch64/latest.json`
+    pub(crate) fn endpoint_url(channel: UpdateChannel, base_url: &str) -> String {
+        let base = base_url.trim_end_matches('/');
+        format!(
+            "{}/{}/platforms/{{{{target}}}}-{{{{arch}}}}/latest.json",
+            base,
+            channel.path_segment()
+        )
+    }
+
+    /// 本平台无可用清单时视为「无更新」，而不是检查失败。
+    pub(crate) fn is_absent_platform_update_error(message: &str) -> bool {
+        let lower = message.to_ascii_lowercase();
+        lower.contains("none of the fallback platforms")
+            || lower.contains("were not found in the response")
+            || lower.contains("404 not found")
+            || (lower.contains("status code") && lower.contains("404"))
     }
 
     /// 从 updater 的同一基础地址推导独立的 changelog 静态文件地址。
@@ -141,14 +158,24 @@ impl UpdatePort for TauriUpdateAdapter {
     async fn check(&self, channel: UpdateChannel) -> Result<Option<UpdateInfo>, ApplicationError> {
         let updater = self.build_updater(channel)?;
 
-        let update = updater
-            .check()
-            .await
-            .map_err(|e| ApplicationError::update(format!("检查更新失败: {e}")))?;
+        let update = match updater.check().await {
+            Ok(update) => update,
+            Err(e) => {
+                let message = e.to_string();
+                if Self::is_absent_platform_update_error(&message) {
+                    log::warn!(
+                        target: "updater",
+                        "本平台无可用更新清单，视为已最新: {message}"
+                    );
+                    return Ok(None);
+                }
+                return Err(ApplicationError::update(format!("检查更新失败: {message}")));
+            }
+        };
 
-		Ok(update.map(|u| UpdateInfo {
-			version: u.version.to_string(),
-		}))
+        Ok(update.map(|u| UpdateInfo {
+            version: u.version.to_string(),
+        }))
     }
 
     async fn download_package(
@@ -233,6 +260,8 @@ impl UpdatePort for TauriUpdateAdapter {
 
 #[cfg(test)]
 mod tests {
+    use stoneflow_domain::UpdateChannel;
+
     use super::TauriUpdateAdapter;
 
     #[test]
@@ -241,5 +270,36 @@ mod tests {
             TauriUpdateAdapter::changelog_url("https://release.example/stoneflow/updates"),
             "https://release.example/stoneflow/CHANGELOG.md"
         );
+    }
+
+    #[test]
+    fn endpoint_url_should_use_per_platform_latest_pointer() {
+        assert_eq!(
+            TauriUpdateAdapter::endpoint_url(
+                UpdateChannel::Beta,
+                "https://release.example/stoneflow/updates"
+            ),
+            "https://release.example/stoneflow/updates/beta/platforms/{{target}}-{{arch}}/latest.json"
+        );
+        assert_eq!(
+            TauriUpdateAdapter::endpoint_url(
+                UpdateChannel::Stable,
+                "https://release.example/stoneflow/updates/"
+            ),
+            "https://release.example/stoneflow/updates/stable/platforms/{{target}}-{{arch}}/latest.json"
+        );
+    }
+
+    #[test]
+    fn absent_platform_update_errors_are_recognized() {
+        assert!(TauriUpdateAdapter::is_absent_platform_update_error(
+            r#"None of the fallback platforms `["darwin-aarch64-app", "darwin-aarch64"]` were found in the response `platforms` object"#
+        ));
+        assert!(TauriUpdateAdapter::is_absent_platform_update_error(
+            "error sending request for url: status code 404"
+        ));
+        assert!(!TauriUpdateAdapter::is_absent_platform_update_error(
+            "network timeout while contacting update server"
+        ));
     }
 }
